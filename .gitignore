@@ -1,0 +1,8 @@
+utopia/bin/*
+utopia_fe/bin/*
+
+utopia/build/*
+utopia_fe/build/*
+
+utopia_fe/doc/*
+utopia/doc/*
