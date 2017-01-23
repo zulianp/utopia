@@ -14,8 +14,8 @@ set(UTOPIA_FE_CMAKES_PATH ${UTOPIA_FE_ROOT_PATH}/libcmake)
 set(TYPE DYNAMIC)
 
 ################################## Include cmake functions and find modules
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_FE_ROOT_PATH}/../cmakemodules")
-file(GLOB_RECURSE FUNC_LIB "${CMAKE_MODULE_PATH}/../cmakeutils/*.cmake" )
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_FE_ROOT_PATH}/cmake")
+file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils" )
 foreach(funcLib ${FUNC_LIB})
 	include(${funcLib})
 endforeach(funcLib)
