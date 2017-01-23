@@ -1,0 +1,11 @@
+Fixes:
+-identity(...) should respect the sparsity of the type
+-mixed operations to be implemented
+-GPU prototype
+-Add type of matrix to traits (e.g., SPARSE, DENSE, ...)
+-Add sparse(n,n) with automatic n entries x row 
+
+New features:
+-Monitoring in non-linear solvers
+-Deeper petsc SNES integration and control (SNESMonitor and SNESConvergenceTest)
+-Block iterations for petsc

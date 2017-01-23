@@ -1,0 +1,62 @@
+
+# The residal form F and the Jacobian (linearised) form J
+# for the nonlinear equation - div (1+u^2) grad u = f
+#
+# Compile this form with FFC: 
+#  							  ffc -l dolfin MinimalSurfaceLocal.ufl
+
+# in theory local problem doesnt have to be same as global one, 
+# as far as the 1st order consistency is satisfied 
+
+element_loc = FiniteElement("Lagrange", triangle, 1)
+
+
+# local staff
+# f_loc  		= Coefficient(element_loc)
+u_loc  		= Coefficient(element_loc)
+sigma_loc 	= Coefficient(element_loc)
+
+
+v_loc  	= TestFunction(element_loc)
+du_loc 	= TrialFunction(element_loc)
+
+k1_loc  = Constant(triangle)
+k2_loc	= Constant(triangle)
+f_loc 	= Constant(triangle)
+
+
+
+Pi_loc	 = 0.5 * (k1_loc + k2_loc*u_loc*u_loc)*inner(grad(u_loc), grad(u_loc))*dx - f_loc*u_loc*dx - sigma_loc*u_loc*ds
+F_loc    = derivative(Pi_loc, u_loc, v_loc)
+J_loc  	 = derivative(F_loc, u_loc, du_loc)
+
+
+
+# analytic der.  to compare staff ...
+# Pi = 0.5 * (k1 + k2*u*u)*inner(nabla_grad(u), nabla_grad(u))*dx - f*u*dx - sigma*u*ds
+
+# F = (k2* u *v)*inner(nabla_grad(u), nabla_grad(u))*dx + \
+#        (k1 + k2*u*u)*inner(nabla_grad(u), nabla_grad(v))*dx - \
+#        f*v*dx - sigma*v*ds
+
+# J = k2*du*v*inner(nabla_grad(u), nabla_grad(u))*dx + \
+#      2*(k2*u*v)*inner(nabla_grad(du), nabla_grad(u))*dx + \
+#      2*k2*du*u*inner(nabla_grad(u), nabla_grad(v))*dx + \
+#      (k1 + k2*u*u)*inner(nabla_grad(du), nabla_grad(v))*dx
+
+forms = [Pi_loc, F_loc, J_loc]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

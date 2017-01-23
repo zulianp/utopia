@@ -1,0 +1,59 @@
+
+# The residal form F and the Jacobian (linearised) form J
+# for the nonlinear equation - div (1+u^2) grad u = f
+#
+# Compile this form with FFC: 
+#  							  ffc -l dolfin MinimalSurface.ufl
+
+# Definition of the global problem 
+
+element = FiniteElement("Lagrange", triangle, 1)
+
+# f     = Coefficient(element)
+u  		= Coefficient(element)
+sigma 	= Coefficient(element)
+
+
+v  	= TestFunction(element)
+du 	= TrialFunction(element)
+
+k1  = Constant(triangle)
+k2	= Constant(triangle)
+f 	= Constant(triangle)
+
+
+Pi	 = 0.5 * (k1 + k2*u*u)*inner(nabla_grad(u), nabla_grad(u))*dx - f*u*dx - sigma*u*ds
+F    = derivative(Pi, u, v)
+J  	 = derivative(F, u, du)
+
+
+
+
+# anal. derivation of the equations 
+# Pi = 0.5 * (k1 + k2*u*u)*inner(nabla_grad(u), nabla_grad(u))*dx - f*u*dx - sigma*u*ds
+
+# F = (k2* u *v)*inner(nabla_grad(u), nabla_grad(u))*dx + \
+#        (k1 + k2*u*u)*inner(nabla_grad(u), nabla_grad(v))*dx - \
+#        f*v*dx - sigma*v*ds
+
+# J = k2*du*v*inner(nabla_grad(u), nabla_grad(u))*dx + \
+#      2*(k2*u*v)*inner(nabla_grad(du), nabla_grad(u))*dx + \
+#      2*k2*du*u*inner(nabla_grad(u), nabla_grad(v))*dx + \
+#      (k1 + k2*u*u)*inner(nabla_grad(du), nabla_grad(v))*dx
+
+forms = [Pi, F, J]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

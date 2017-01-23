@@ -1,0 +1,107 @@
+//
+// Created by Patrick Zulian on 29/08/16.
+//
+
+#ifndef UTOPIA_UTOPIA_EVAL_CONSTRUCT_HPP_HPP
+#define UTOPIA_UTOPIA_EVAL_CONSTRUCT_HPP_HPP
+
+#include "utopia_Eval_Empty.hpp"
+
+
+namespace utopia {
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<Construct<Left, Right>, Traits, Backend> {
+    public:
+        inline static bool apply(const Construct<Left, Right> &expr) {
+            UTOPIA_BACKEND(Traits).assign(Eval<Left,  Traits>::apply(expr.left()),
+                                          Eval<Right, Traits>::apply(expr.right()) );
+
+            //FIXME error handling
+            return true;
+        }
+    };
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval< Construct< Number<Left>, Right>, Traits, Backend> {
+    public:
+        inline static bool apply(const Construct< Number<Left>, Right> &expr)
+        {
+            expr.left() = Eval<Right, Traits>::apply(expr.right());
+            //FIXME error handling
+            return true;
+        }
+    };
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval< Construct<Left, Transposed <Wrapper<Right, 2> > >, Traits, Backend> {
+    public:
+        inline static bool apply(const Construct<Left, Transposed <Wrapper<Right, 2> > > &expr)
+        {
+            UTOPIA_BACKEND(Traits).assignTransposed(
+                    Eval<Left,  Traits>::apply(expr.left()),
+                    Eval<Wrapper<Right, 2>, Traits>::apply(expr.right().expr())
+            );
+
+            //FIXME error handling
+            return true;
+        }
+    };
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval< Construct< View<Left>, Right>, Traits, Backend> {
+    public:
+        inline static bool apply(const Construct<View<Left>, Right> &expr)
+        {
+            const auto &left = expr.left();
+            auto rr = row_range(left);
+            auto cr = col_range(left);
+
+            UTOPIA_BACKEND(Traits).assignToRange(Eval<Left,  Traits>::apply(expr.left().expr()),
+                                                 Eval<Right, Traits>::apply(expr.right()),
+                                                 rr, cr);
+            //FIXME error handling
+            return true;
+        }
+    };
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval< Construct< View< Wrapper<Left, 1> >, Right>, Traits, Backend> {
+    public:
+    typedef utopia::Wrapper<Left, 1> LeftWrapper;
+
+        inline static bool apply(const Construct<View<LeftWrapper>, Right> &expr)
+        {
+            const auto &left = expr.left();
+            auto rr = row_range(left);
+            auto cr = col_range(left);
+
+            UTOPIA_BACKEND(Traits).assignToRange(Eval<LeftWrapper, Traits>::apply(expr.left().expr()),
+                                                 Eval<Right, Traits>::apply(expr.right()),
+                                                 rr, cr);
+            //FIXME error handling
+            return true;
+        }
+    };
+
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval< Construct<Left, View<Right> >, Traits, Backend> {
+    public:
+        inline static bool apply(const Construct<Left, View<Right> > &expr)
+        {
+            UTOPIA_BACKEND(Traits).assignFromRange(
+                    Eval<Left,  Traits>::apply(expr.left()),
+                    Eval<Right, Traits>::apply(expr.right().expr()),
+                    row_range(expr.right()),
+                    col_range(expr.right())
+            );
+
+            
+            //FIXME error handling
+            return true;
+        }
+    };
+}
+
+#endif //UTOPIA_UTOPIA_EVAL_CONSTRUCT_HPP_HPP

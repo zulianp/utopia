@@ -1,0 +1,50 @@
+#ifndef UTOPIA_BOX_CONSTRAINTS_HPP
+#define UTOPIA_BOX_CONSTRAINTS_HPP 
+
+#include <memory>
+
+namespace utopia {
+	template<class Vector>
+	class BoxConstraints {
+	public:
+		BoxConstraints(const std::shared_ptr<Vector> &lower_bound,
+					   const std::shared_ptr<Vector> &upper_bound)
+		: lower_bound_(lower_bound), upper_bound_(upper_bound)
+		{}
+
+		inline std::shared_ptr<Vector> &upper_bound()
+		{
+			return upper_bound_;
+		}
+
+		inline std::shared_ptr<const Vector> upper_bound() const
+		{
+			return upper_bound_;
+		}
+
+		inline std::shared_ptr<Vector> &lower_bound()
+		{
+			return lower_bound_;
+		}
+
+		inline std::shared_ptr<const Vector> lower_bound() const
+		{
+			return lower_bound_;
+		}
+
+	private:
+		std::shared_ptr<Vector> lower_bound_;
+		std::shared_ptr<Vector> upper_bound_;
+		
+	};
+
+	template<class Vector>
+	inline BoxConstraints<Vector> make_box_constaints(const std::shared_ptr<Vector> &lower_bound, 
+											   const std::shared_ptr<Vector> &upper_bound)
+	{
+		return BoxConstraints<Vector>(lower_bound, upper_bound);
+	}
+	
+}
+
+#endif //UTOPIA_BOX_CONSTRAINTS_HPP

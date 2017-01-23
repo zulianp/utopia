@@ -1,0 +1,58 @@
+#ifndef UTOPIA_CONFIG_HPP
+#define UTOPIA_CONFIG_HPP
+
+#cmakedefine WITH_BLAS
+#cmakedefine WITH_LAPACK
+#cmakedefine WITH_PETSC
+#cmakedefine WITH_CPP11
+#cmakedefine WITH_UMFPACK
+#cmakedefine WITH_MPI
+#cmakedefine WITH_OPEN_BLAS
+#cmakedefine WITH_PETSC_CRAY
+#cmakedefine WITH_CUDA
+#cmakedefine WITH_UTOPIA_OPENCL
+#cmakedefine WITH_EIGEN_3
+
+#cmakedefine UTOPIA_PETSC_VERSION_MAJOR
+#cmakedefine UTOPIA_PETSC_VERSION_MINOR
+#cmakedefine UTOPIA_PETSC_VERSION_SUBMINOR
+
+
+#ifdef WITH_OPEN_BLAS
+#define WITH_BLAS
+#endif
+
+#ifdef WITH_PETSC_CRAY
+#define PETSC_CXX_STATIC_INLINE static inline
+#define PETSC_CXX_RESTRICT __restrict__
+#endif
+
+
+#ifdef WITH_CPP11                          //Global enabler
+#cmakedefine HAS_CXX11_AUTO               //auto keyword
+#cmakedefine HAS_CXX11_NULLPTR            //nullptr
+#cmakedefine HAS_CXX11_LAMBDA             //lambdas
+#cmakedefine HAS_CXX11_STATIC_ASSERT      //static_assert()
+#cmakedefine HAS_CXX11_RVALUE_REFERENCES  //rvalue references
+#cmakedefine HAS_CXX11_DECLTYPE           //decltype keyword
+#cmakedefine HAS_CXX11_CSTDINT_H          //cstdint header
+#cmakedefine HAS_CXX11_LONG_LONG          //long long signed & unsigned types
+#cmakedefine HAS_CXX11_VARIADIC_TEMPLATES //variadic templates
+#cmakedefine HAS_CXX11_CONSTEXPR          //constexpr keyword
+#cmakedefine HAS_CXX11_SIZEOF_MEMBER      //sizeof() non-static members
+#cmakedefine HAS_CXX11_FUNC               //__func__ preprocessor constant
+#endif //WITH_CPP11
+
+
+#ifdef WITH_PETSC
+	#define UTOPIA_PETSC_VERSION_LESS_THAN(major,minor,subminor)                   \
+	  ((PETSC_VERSION_MAJOR < (major) ||                   \
+	    (PETSC_VERSION_MAJOR == (major) && ((PETSC_VERSION_MINOR < (minor)) || \
+	                                                         (PETSC_VERSION_MINOR == (minor) && \
+	                                                          PETSC_VERSION_SUBMINOR < (subminor))))) ? 1 : 0)
+#else // WITH_PETSC
+	
+	#define UTOPIA_PETSC_VERSION_LESS_THAN(major,minor,subminor) 1
+#endif // WITH_PETSC
+
+#endif //UTOPIA_CONFIG_HPP

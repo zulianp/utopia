@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from ufl import *
+set_level(DEBUG)
+# from fenics import *
+shape = quadrilateral
+
+feu = VectorElement("Q1", shape, 1)
+fesigma = TensorElement("Q1", shape, 1)
+Wfe = MixedElement([feu,fesigma])
+
+
+u,sigma = TrialFunctions(Wfe)
+v,q     = TestFunctions(Wfe)
+
+d = len(u)
+
+mu    = Constant(shape)
+lmbda = Constant(shape)
+f     = VectorConstant(shape)
+
+eps = lambda u: sym(grad(u))
+AA  = lambda s: 1.0/(2*mu)*(s - lmbda/(d*lmbda+2*mu)*tr(s)*Identity(d))
+
+a  = inner(eps(v),eps(u)) * dx - inner(AA(sigma),eps(v)) * dx
+a += -inner(eps(u),AA(q)) * dx + inner(div(sigma),div(q)) * dx + inner(AA(sigma),AA(q)) * dx
+
+L = - inner(f, div(q)) * dx
+
+

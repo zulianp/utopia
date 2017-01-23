@@ -1,0 +1,27 @@
+
+# The residal form F and the Jacobian (linearised) form J
+# for the nonlinear equation - div (1+u^2) grad u = f
+#
+# Compile this form with FFC: 
+#  							  ffc -l dolfin NonlinearPoisson.ufl
+
+def weak_residual(u, v):
+	return inner((1. + u**2.) * grad(u), grad(v)) * dx
+
+
+
+element = FiniteElement("Lagrange", triangle, 1)
+
+f  = Coefficient(element)
+u  = Coefficient(element)
+v  = TestFunction(element)
+
+
+# note: this is no energy 
+Pi 	    = weak_residual(u, u) - f * u * dx
+F  		= weak_residual(u, v) - f * v * dx
+
+du 		= TrialFunction(element)
+J  		= derivative(F, u, du)
+
+forms = [Pi, J, F]

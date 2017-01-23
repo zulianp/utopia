@@ -1,0 +1,29 @@
+API reduction:
+Fix parameters with undefined default values to avoid overwritting the existing ones memory mangement of petsc tensors sucks (shared_ptr not consitently used)
+
+
+
+// Line 18 doesnt work 
+{
+    Vector v = zeros(2);
+    {
+        Write<Vector> w(v);
+        v.set(0, 1.0);
+        v.set(1, 10.0);
+    }
+
+    double one = norm2(v) * norm2(v) / dot(v, v);
+    assert(approxeq(1.0, one));
+
+    one = norm2(v/norm2(v));
+    std::cout << "done\n";
+    assert(approxeq(1.0, one));
+}
+
+
+Non-linear solvers:
+REFACTOR: Add line-search to newton solver, remove LineSearchBase and name LineSearchStrategy as LineSearch.
+FIX: call update on function if the solution changes and we need to recompute either value, gradient or hessian. 
+
+Constrained solvers:
+REFACTOR: decouple box-constraints from function 

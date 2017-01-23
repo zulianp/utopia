@@ -1,0 +1,43 @@
+# Compile this form with FFC: 
+# ffc -l dolfin -feliminate_zeros -fprecompute_basis_const -fprecompute_ip_const HyperElasticity.ufl
+
+# function spaces
+element = VectorElement("Lagrange", tetrahedron, 1)
+
+# trial and test functions
+du = TrialFunction(element)     # Incremental displacement
+v  = TestFunction(element)      # Test function
+
+# functions
+u = Coefficient(element)        # Displacement from previous iteration
+B = Coefficient(element)        # Body force per unit volume
+T = Coefficient(element)        # Traction force on the boundary
+
+# kinematics
+d = len(u)
+I = Identity(d)                 # Identity tensor
+F = I + grad(u)                 # Deformation gradient
+C = F.T*F                       # Right Cauchy-Green tensor
+
+# invariants of deformation tensors
+Ic = tr(C)
+J  = det(F)
+
+# elasticity parameters
+mu    = Constant(tetrahedron)
+lmbda = Constant(tetrahedron)
+
+# strain energy density --> compressible neo-Hookean model
+psi = (mu/2)*(Ic - 3) - mu*ln(J) + (lmbda/2)*(ln(J))**2
+
+# potential energy
+Pi = psi*dx - inner(B, u)*dx - inner(T, u)*ds
+
+# first variation of Pi (directional derivative about u in the direction of v)
+F = derivative(Pi, u, v)
+
+# Compute Jacobian of F
+J = derivative(F, u, du)
+
+
+forms = [Pi, F, J]

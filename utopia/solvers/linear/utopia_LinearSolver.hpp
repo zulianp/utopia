@@ -1,0 +1,101 @@
+#ifndef UTOPIA_SOLVER_SOLVER_H
+#define UTOPIA_SOLVER_SOLVER_H
+
+#include <string>
+#include "utopia_Core.hpp"
+#include "utopia_Parameters.hpp"    
+#include "utopia_Traits.hpp"
+#include "utopia_ConvergenceReason.hpp"
+#include "utopia_PrintInfo.hpp"
+#include "utopia_Preconditioner.hpp"
+#include "utopia_Utils.hpp"
+
+
+namespace  utopia 
+{
+    /**
+     * @brief      The base class for linear solvers.
+     * @tparam     Matrix  
+     * @tparam     Vector  
+     */
+    template<class Matrix, class Vector>
+    class LinearSolver : public Preconditioner<Vector> {
+    public:
+        typedef UTOPIA_SCALAR(Vector)           Scalar;
+
+        virtual ~LinearSolver() {}
+    
+        virtual bool apply(const Vector &rhs, Vector &sol) = 0;
+
+        virtual void set_parameters(const Parameters params) { } 
+
+
+        /**
+         * @brief      Solve routine. 
+         * @param[in]  A     
+         * @param[in]  b     
+         * @param      x0    
+         *
+         * @return    
+         */
+        virtual bool solve(const Matrix &A, const Vector &b, Vector &x0)
+        {
+            update(make_ref(A));
+            return apply(b, x0);
+        } 
+
+        /*! @brief if overriden the subclass has to also call this one first
+         */
+        virtual void update(const std::shared_ptr<const Matrix> &op)
+        {
+            op_ = op;
+        }
+
+        inline const std::shared_ptr<const Matrix> &get_operator() const
+        {
+            assert(op_);
+            return op_;
+        }
+
+        inline bool has_operator() const
+        {
+            return static_cast<bool>(op_);
+        }
+
+    private:
+        std::shared_ptr<const Matrix> op_;
+    };
+
+
+
+    template<class Matrix, class Vector>
+    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector> {
+    public:
+        virtual bool apply(const Vector &rhs, Vector &sol) override
+        {
+            sol = e_mul(d, rhs);
+            return true;
+        }
+
+        /*! @brief if overriden the subclass has to also call this one first
+         */
+        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        {
+            LinearSolver<Matrix, Vector>::update(op);
+            d = diag(*op);
+            d  = 1 / d; 
+        }
+
+        
+        virtual Vector get_d()
+        {
+            return d; 
+        }
+
+
+    private:
+        Vector d;
+    };
+}
+
+#endif //UTOPIA_SOLVER_SOLVER_H

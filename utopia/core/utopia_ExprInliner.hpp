@@ -1,0 +1,299 @@
+#ifndef UTOPIA_EXPR_INLINER_HPP
+#define UTOPIA_EXPR_INLINER_HPP
+
+#include "utopia_Range.hpp"
+
+namespace utopia {
+	template<class Expr>
+	class ExprInliner {
+	public:
+		typedef utopia::Traits<Expr> Traits;
+		typedef typename Traits::SizeType SizeType;
+		typedef typename Traits::Scalar Scalar;
+
+		inline static Scalar eval_at(const Factory<Identity, 2> &, const SizeType i, const SizeType j)
+		{
+			return i == j;
+		}
+
+		inline static Scalar eval_at(const Factory<LocalIdentity, 2> &, const SizeType i, const SizeType j)
+		{
+			return i == j;
+		}
+
+		template<int Order>
+		inline static Scalar eval_at(const Factory<Zeros, Order> &, const SizeType, const SizeType j = 0)
+		{
+			return 0.0;
+		}
+
+		template<typename T, int Order>
+		inline static Scalar eval_at(const Factory<Values<T>, Order> &expr, const SizeType, const SizeType j = 0)
+		{
+			return expr.type().value();
+		}
+
+		template<class InnerExpr>
+		inline static Scalar eval_at(const Negate<InnerExpr> &expr, const SizeType i, const SizeType j)
+		{
+			return -eval_at(expr.expr(), i, j);
+		}
+
+		template<class Left, class Right>
+		inline static void eval(const Construct<Left, Right> &expr){
+			eval(expr.right(), expr.left());
+		}
+
+		template<class Left, class Right>
+		inline static void eval(const Assign<Left, Right> &expr){
+			eval(expr.right(), expr.left());
+		}
+
+		template<class Left, class Right, class Operation>
+		inline static void eval(const InPlace<Left, Right, Operation> &expr)
+		{
+			//FIXME connect to backend without tree transformation
+			typedef utopia::Binary<Left, Right, Operation> TransformedExpr;
+			
+			       eval(
+			        TransformedExpr(
+			                expr.left(),
+			                expr.right(),
+			                expr.operation()
+			        ),  expr.left());
+		}
+
+		////////////////////////////////////////////////
+		//Tensor order 2
+		////////////////////////////////////////////////
+
+		template<class Derived, class Tensor>
+		inline static void eval(const Expression<Derived> &expr_w, Wrapper<Tensor, 2> &result)
+		{
+			const Derived &expr = expr_w.derived();
+			Size s = size(expr);
+			result.resize(s);
+
+			Write< Wrapper<Tensor, 2> > w(result);
+
+			Range rr = row_range(result);
+			Range cr = col_range(result);
+
+			for(SizeType i = rr.begin(); i < rr.end(); ++i) {
+				for(SizeType j = cr.begin(); j < cr.end(); ++j) {
+					result.set(i, j, eval_at(expr, i, j));
+				}
+			}
+		}
+
+		template<class Left, class Right, class Operation>
+		inline static Scalar eval_at(const Binary<Left, Right, Operation> &expr, const SizeType i, const SizeType j)
+		{
+			return Operation::template Fun<Scalar>()(eval_at(expr.left(),  i, j),  
+				eval_at(expr.right(), i, j) );
+		}
+
+		template<class Tensor>
+		inline static Scalar eval_at(const Wrapper<Tensor, 2> &expr, const SizeType i, const SizeType j)
+		{
+			return expr.get(i, j);
+		}
+
+		template<class Left, class Right, class Operation>
+		inline static Scalar eval_at(const Binary<Number<Left>, Right, Operation> &expr, const SizeType i, const SizeType j)
+		{
+			return Operation::template Fun<Scalar>()(expr.left(),  
+				eval_at(expr.right(), i, j) );
+		}
+
+		template<class Left, class Right, class Operation>
+		inline static Scalar eval_at(const Binary<Left, Number<Right>, Operation> &expr, const SizeType i, const SizeType j)
+		{
+			return Operation::template Fun<Scalar>()(eval_at(expr.left(), i, j),  
+				expr.right());
+		}
+
+		template<class InnerExpr, class Operation>
+		inline static Scalar eval_at(const Unary<InnerExpr, Operation> &expr, const SizeType i, const SizeType j)
+		{
+			return Operation::template Fun<Scalar>()(eval_at(expr.expr(), i, j));
+		}
+
+		template<class InnerExpr>
+		inline static Scalar eval_at(const Unary<InnerExpr, Minus> &expr, const SizeType i, const SizeType j)
+		{
+			return -eval_at(expr.expr(), i, j);
+		}
+
+		template<class InnerExpr>
+		inline static Scalar eval_at(const Transposed<InnerExpr> &expr, const SizeType i, const SizeType j)
+		{
+			return eval_at(expr.expr(), j, i);
+		}
+
+		////////////////////////////////////////////////
+		//Tensors order 1
+		////////////////////////////////////////////////
+
+		template<class Derived, class Tensor>
+		inline static void eval(const Expression<Derived> &expr_w, Wrapper<Tensor, 1> &result)
+		{
+			const Derived &expr = expr_w.derived();
+			Size s = size(expr);
+			result.resize(s);
+
+			Write< Wrapper<Tensor, 1> > w(result);
+
+			Range r = range(result);
+			for(SizeType i = r.begin(); i < r.end(); ++i) {
+				result.set(i, eval_at(expr, i));
+			}
+		}
+
+		template<class Left, class Right, class Operation>
+		inline static Scalar eval_at(const Binary<Left, Right, Operation> &expr, const SizeType i)
+		{
+			return Operation::template Fun<Scalar>()(eval_at(expr.left(),  i),  
+				eval_at(expr.right(), i) );
+		}
+
+		template<class Left, class Right, class Operation>
+		inline static Scalar eval_at(const Binary<Number<Left>, Right, Operation> &expr, const SizeType i)
+		{
+			return Operation::template Fun<Scalar>()(expr.left(),  
+				eval_at(expr.right(), i) );
+		}
+
+		template<class Left, class Right, class Operation>
+		inline static Scalar eval_at(const Binary<Left, Number<Right>, Operation> &expr, const SizeType i)
+		{
+			return Operation::template Fun<Scalar>()(eval_at(expr.left(),  i),  
+				expr.right());
+		}
+
+		template<class InnerExpr, class Operation>
+		inline static Scalar eval_at(const Unary<InnerExpr, Operation> &expr, const SizeType i)
+		{
+			return Operation::template Fun<Scalar>()(eval_at(expr.expr(),  i));
+		}
+
+		template<class Tensor>
+		inline static Scalar eval_at(const Wrapper<Tensor, 1> &expr, const SizeType i, const SizeType j)
+		{
+			assert(j == 0 && "Trying to access tensor of order 1 like an order 2 one.");
+			return expr.get(i);
+		}
+
+		template<class Tensor>
+		inline static Scalar eval_at(const Wrapper<Tensor, 1> &expr, const SizeType i)
+		{
+			return expr.get(i);
+		}
+
+		template<class Left, class Right>
+		inline static Scalar eval_at(const Multiply<Left, Right> &expr, 
+			const SizeType i, const SizeType j) {
+
+			//Not implemented in parallel
+			//FIXME implement range(expr)
+
+			Scalar result = 0;
+			Size s = size(expr.left());
+
+			assert(size(expr).n_dims() == 2 || j == 0);
+
+			for(SizeType k = 0; k < s.get(1); ++k) {
+				result += eval_at(expr.left(), i, k) * eval_at(expr.right(), k, j);
+			}
+
+			return result;
+		}
+
+		template<class Left, class Right>
+		inline static Scalar eval_at(const Multiply<Left, Right> &expr, 
+			const SizeType i) {
+
+			//Not implemented in parallel
+			//FIXME implement range(expr)
+
+			Scalar result = 0;
+			Size s = size(expr.right());
+			for(SizeType k = 0; k < s.get(0); ++k) {
+				result += eval_at(expr.left(), i, k) * eval_at(expr.right(), k);
+			}
+
+			return result;
+		}
+
+		////////////////////////////////////////////////
+		//Tensors order 0
+		////////////////////////////////////////////////
+
+		template<typename T>
+		inline static void eval(const Expr &expr, Number<T> &result)
+		{
+			result = eval_at(expr, 0, 0);
+		}
+
+		template<class InnerExpr, class ReduceOp, typename T, class Operation>
+		inline static Scalar eval_at(const Binary< Reduce<InnerExpr, ReduceOp>, Number<T>, Operation> &expr, const int i = 0, const int j = 0)
+		{
+			assert(i == 0 && j == 0);
+			return Operation::template Fun<Scalar>()(eval_at(expr.left()), expr.right()); 
+		}
+
+		template<class InnerExpr, class ReduceOp, typename T, class Operation>
+		inline static Scalar eval_at(const Binary<Number<T>, Reduce<InnerExpr, ReduceOp>, Operation> &expr, const int i = 0, const int j = 0)
+		{
+			assert(i == 0 && j == 0);
+			return Operation::template Fun<Scalar>()(expr.left(), eval_at(expr.right())); 
+		}
+
+		template<class Left, class ReduceOpLeft, class Right, class ReduceOpRight, class Operation>
+		inline static Scalar eval_at(const Binary<Reduce<Left, ReduceOpLeft>, Reduce<Right, ReduceOpRight>, Operation> &expr, const int i = 0, const int j = 0)
+		{
+			assert(i == 0 && j == 0);
+			return Operation::template Fun<Scalar>()(eval_at(expr.left()), eval_at(expr.right())); 
+		}
+
+		template<class InnerExpr, class Operation>
+		inline static Scalar eval_at(const Reduce<InnerExpr, Operation> &expr, const int i = 0, const int j = 0)
+		{
+			assert(i == 0 && j == 0);
+
+			Size s = size(expr.expr());
+
+			if(s.get(0) == 0) {
+				return 0;
+			}
+
+			Scalar result = eval_at(expr.expr(), 0, 0);
+			if(s.n_dims() == 1) {
+				for(SizeType i = 1; i < s.get(0); ++i) {
+					result = Operation::template Fun<Scalar>()(result, eval_at(expr.expr(), i, 0));
+				}
+			} else {
+
+				SizeType j = 1;
+				for(SizeType i = 0; i < s.get(0); ++i) {
+					for(; j < s.get(1); ++j) {
+					 result = Operation::template Fun<Scalar>()(result, eval_at(expr.expr(), i, j));
+					}
+
+					j = 0;
+				}
+			}
+
+			return result;
+		}
+		
+	};
+
+	template<class Expr, class Result>
+	void inline_eval(const Expression<Expr> &expr, Result &result)
+	{
+		ExprInliner<Expr>::eval(expr.derived(), result);
+	}
+}
+
+#endif //UTOPIA_EXPR_INLINER_HPP

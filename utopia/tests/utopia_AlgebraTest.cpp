@@ -1,0 +1,159 @@
+/*
+* @Author: Eric Botter
+* @Date:   2016-11-07
+*/
+#include "utopia.hpp"
+#include "utopia_AlgebraTest.hpp"
+
+namespace utopia {
+
+    template<class Matrix, class Vector>
+    class AlgebraTest {
+    private:
+        //FIXME(eric): original norm_test in main.cpp is still there
+        void norm_test()
+        {
+            Vector v = zeros(2);
+            {
+                Write<Vector> w(v);
+                v.set(0, 3.0);
+                v.set(1, 4.0);
+            }
+
+            double n = norm2(v);
+            assert(approxeq(5.0, n));
+
+            n = norm_infty(v);
+            assert(approxeq(4.0, n));
+
+            v *= 2.5;
+            n = norm2(v);
+            assert(approxeq(12.5, n));
+
+            n = norm_infty(v);
+            assert(approxeq(10.0, n));
+        }
+
+        void dot_test()
+        {
+            Vector v1 = zeros(2), v2 = zeros(2);
+            {
+                Write<Vector> w(v1);
+                v1.set(0, 0.0);
+                v1.set(1, 1.0);
+            }
+            {
+                Write<Vector> w(v2);
+                v2.set(0, 1.0);
+                v2.set(1, 0.0);
+            }
+
+            double v = dot(v1, v2 * 0.1);
+            assert(approxeq(0.0, v));
+        }
+
+        void dot_product_composition_test()
+        {
+            typedef typename utopia::Traits<Vector>::Scalar Scalar;
+
+            Vector v = zeros(2);
+            {
+                Write<Vector> w(v);
+                v.set(0, 1.0);
+                v.set(1, 10.0);
+            }
+
+            double one = norm2(v) * norm2(v) / dot(v, v);
+            assert(approxeq(1.0, one));
+
+            one = norm2(v * (1.0 / Scalar(norm2(v))));
+            assert(approxeq(1.0, one));
+        }
+
+        void multiply_test()
+        {
+            if(!is_sparse<Matrix>::value){
+                std::cerr << "[Warning] petsc does not support dense matrix-matrix multiplication" << std::endl;
+                return;
+            }
+
+            Matrix m1 = identity(3, 3);
+            {
+                Write<Matrix> w(m1);
+                m1.set(0, 1, 1);
+            }
+            Matrix m2 = values(3, 3, 2);
+            Matrix m3 = m2 * transpose(m2);
+            m3 = transpose(m1) * m3;
+            m3 = m2 * m3;
+            m3 = m1 * m3;
+            // Matrix m3 = m1 * m2 * transpose(m1) * m2 * transpose(m2);
+
+            each_read(m3, [](SizeType x, SizeType y, double entry) {
+                if (x == 0)
+                    assert(entry == 192);
+                else
+                    assert(entry == 96);
+            });
+        }
+
+        void determinant_test()
+        {   
+            if(mpi_world_size() > 1) {
+                std::cerr << "[Warning] determinant only implemented for serial and small matrices" << std::endl;
+                return;
+            }
+
+            int n = 3;
+            Matrix m = 0.5 * identity(n, n);
+            auto expr = det(m);
+
+            double val = expr;
+            assert(approxeq(0.125, val));
+        }
+
+        void size_test()
+        {
+            Matrix m = zeros(2, 3);
+            Size size = m.size();
+            assert(size.get(0) == 2);
+            assert(size.get(1) == 3);
+
+            Vector v = zeros(3);
+            size = v.size();
+            assert(size.get(0) == 3);
+
+            v = m * v;
+            size = v.size();
+            assert(size.get(0) == 2);
+        }
+
+       
+
+    public:
+        void run()
+        {
+            norm_test();
+            dot_test();
+            dot_product_composition_test();
+            multiply_test();
+            determinant_test();
+            size_test();
+        }
+    };
+
+    void runAlgebraTest()
+    {
+        std::cout << "Begin: AlgebraTest" << std::endl;
+
+        #ifdef WITH_BLAS
+            AlgebraTest<Matrixd, Vectord>().run();
+        #endif //WITH_BLAS
+
+        #ifdef WITH_PETSC
+            AlgebraTest<DMatrixd, DVectord>().run();
+        #endif //WITH_PETSC
+
+        std::cout << "End:   AlgebraTest" << std::endl;
+    }
+}

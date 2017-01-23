@@ -1,0 +1,4 @@
+#/bin/bash
+cd bin
+cmake 	 -DPETSC_INCLUDES=$PETSC_DIR/includes -DPETSC_INCLUDES=$PETSC_DIR/include -DPETSC_INCLUDE_CONF=$PETSC_DIR/include -DPETSC_LIBRARIES=$PETSC_DIR/lib/libpetsc.dylib -DPETSC_LIBRARY_SINGLE=$PETSC_DIR/lib/libpetsc.dylib	-DPETSC_EXECUTABLE_RUNS=ON -DPETSC_COMPILER=mpicc ..
+cd ..
