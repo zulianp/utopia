@@ -36,4 +36,6 @@ All the headers and binaries should be in the desired folder in the following fo
 
 The API documentation of Utopia can be generated through Doxygen by using the command *make docs* from the bin folder after calling cmake ... The API documentation is generated in the *utopia/doc/api* folder in both HTML (see html/index.html) and LateX (see refman.tex) formats.
 
-More details coming soon!
+
+
+# More details coming soon!
