@@ -10,7 +10,7 @@ Utopia is a C++ embedded domain specific language designed for parallel non-line
 
 # Dependencies
 - PETSc (https://www.mcs.anl.gov/petsc/)
-- LibMesh for experimental FE module (https://github.com/libMesh)
+- LibMesh for the experimental FE module (https://github.com/libMesh)
 
 # Getting started
 To compile utopia, go to the folder utopia
@@ -34,6 +34,6 @@ All the headers and binaries should be in the desired folder in the following fo
 - -DMPI_CXX_COMPILER=<the desired compiler>. Allows to set the mpi compiler for C++.
 
 
-The API documentation of Utopia can be generated through Doxygen by using the command make docs from the bin folder after calling cmake ... The API documentation is generated in the utopia/doc/api folder in both HTML (see html/index.html) and LateX (see refman.tex) formats.
+The API documentation of Utopia can be generated through Doxygen by using the command *make docs* from the bin folder after calling cmake ... The API documentation is generated in the *utopia/doc/api* folder in both HTML (see html/index.html) and LateX (see refman.tex) formats.
 
 More details coming soon!
