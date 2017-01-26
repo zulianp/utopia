@@ -385,6 +385,7 @@ include_directories(.)
 # link_libraries(${UTOPIA_LIBRARIES})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")# -Wextra -pedantic")
+set(CMAKE_CXX_FLAGS_DEBUG "-D_GLIBCXX_DEBUG")
 
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
 
