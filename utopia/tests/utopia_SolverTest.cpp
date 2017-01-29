@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-07-15
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2017-01-21
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-01-29
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -156,7 +156,7 @@ namespace utopia
             params.solver_type(TRUST_REGION_TAG);
             params.lin_solver_type(BICGSTAB_TAG);
             params.trust_region_alg(DOGLEG_TAG);
-            params.verbose(true);
+            params.verbose(false);
 
             // trust_region_solve(fun2, x, params);
             // trust_region_solve(fun_woods, x_w1, params);

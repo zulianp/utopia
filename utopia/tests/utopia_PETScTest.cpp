@@ -829,6 +829,24 @@ namespace utopia {
         disp(x);
     }
 
+
+    void petsc_is_nan_or_inf_test()
+    {
+        const int n     = 10; 
+        DVectord denom  = zeros(n);
+        DVectord nom    = values(n, 1.0);
+
+        DVectord sol    = nom/denom; 
+        
+        {
+            Write<DVectord> w(sol);
+            sol.set(2, 1); 
+        }
+
+        assert(has_nan_or_inf(sol) == 1);
+        assert(has_nan_or_inf(denom) == 0);
+    }
+
     #endif //WITH_PETSC;
 
     void runPETScTest() {
@@ -866,6 +884,8 @@ namespace utopia {
         petsc_tensor_reduction_test();
         petsc_inverse_test();
         
+
+        petsc_is_nan_or_inf_test(); 
 
         std::cout << "End:   PETScTest" << std::endl;
         #endif // WITH_PETSC
