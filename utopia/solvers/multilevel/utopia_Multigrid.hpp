@@ -14,6 +14,7 @@
 #include "utopia_Utils.hpp"
 #include "utopia_PrintInfo.hpp"
 #include "utopia_ConvergenceReason.hpp"
+#include "utopia_Level.hpp"
 #include <ctime>
 
 
@@ -33,9 +34,12 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::LinearSolver<Matrix, Vector>              Solver;
+        typedef utopia::LinearSolver<Matrix, Vector>        Solver;
         typedef utopia::IterativeSolver<Matrix, Vector>     IterativeSolver;
         typedef utopia::Smoother<Matrix, Vector>            Smoother;
+        typedef utopia::Level<Matrix, Vector>               Level;
+        typedef utopia::Transfer<Matrix, Vector>            Transfer;
+
         
 
         // typedef struct 
@@ -67,21 +71,20 @@ namespace utopia
         */
         Multigrid(  const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                     const std::shared_ptr<Solver> &direct_solver = std::shared_ptr<Solver>(),
-                    const Parameters params = Parameters()): 
-                                                                                             _smoother(smoother),
-                                                                                             _direct_solver(direct_solver) 
+                    const Parameters params = Parameters())
+        : _smoother(smoother), _direct_solver(direct_solver) 
         {
             set_parameters(params); 
         }
 
         virtual ~Multigrid(){} 
         
-        inline Level<Matrix, Vector>  levels(const SizeType &l)
+        inline Level &levels(const SizeType &l)
         {
             return this->_levels[l]; 
         }
 
-        inline Transfer<Matrix, Vector> transfers(const SizeType & l)
+        inline Transfer &transfers(const SizeType & l)
         {
             return this->_transfers[l]; 
         }

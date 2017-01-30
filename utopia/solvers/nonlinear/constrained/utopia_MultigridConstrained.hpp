@@ -37,6 +37,9 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector>        Solver;
         typedef utopia::Smoother<Matrix, Vector>            Smoother;
         typedef utopia::MultiLevelBase<Matrix, Vector>      MultiLevelBase;
+        typedef utopia::Level<Matrix, Vector>               Level;
+        typedef utopia::Transfer<Matrix, Vector>            Transfer;
+
         
 
 
@@ -58,12 +61,12 @@ namespace utopia
 
         ~MultigridConstrained(){} 
         
-        inline Level<Matrix, Vector>  levels(const SizeType &l)
+        inline Level &levels(const SizeType &l)
         {
             return MultiLevelBase::_levels[l]; 
         }
 
-        inline Transfer<Matrix, Vector> transfers(const SizeType & l)
+        inline Transfer &transfers(const SizeType &l)
         {
             return MultiLevelBase::_transfers[l]; 
         }

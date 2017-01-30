@@ -156,7 +156,7 @@ namespace utopia
             params.solver_type(TRUST_REGION_TAG);
             params.lin_solver_type(BICGSTAB_TAG);
             params.trust_region_alg(DOGLEG_TAG);
-            params.verbose(true);
+            params.verbose(false);
 
             // trust_region_solve(fun2, x, params);
             // trust_region_solve(fun_woods, x_w1, params);

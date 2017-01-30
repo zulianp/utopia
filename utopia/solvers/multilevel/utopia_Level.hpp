@@ -27,8 +27,7 @@
         public:
 
         Level(){}
-        Level(const Matrix & A):
-                                    _A(A)
+        Level(const Matrix & A): _A(A)
         {}
 
 
@@ -52,7 +51,7 @@
          *
          * @return     The stifness on given level.
          */
-        Matrix A()
+        Matrix &A()
         {
             return _A; 
         }
