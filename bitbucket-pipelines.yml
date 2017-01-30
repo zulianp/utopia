@@ -14,6 +14,6 @@ pipelines:
           - cd bin
           - apt-get update
           - apt-get install -y cmake
-          - cmake .. -DCMAKE_INSTALL_PREFIX=../build
+          - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug
           - make
           - ./utopia_exec
