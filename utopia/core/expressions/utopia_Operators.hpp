@@ -132,7 +132,7 @@ namespace utopia {
         class Function {
         public:
             inline T operator()(const T &x) const {
-                using std::abs;
+                using std::sqrt;
                 return sqrt(x);
             }
         };
@@ -151,7 +151,6 @@ namespace utopia {
         class Function {
         public:
             inline T operator()(const T &x) const {
-                using std::abs;
                 return x * x;
             }
         };

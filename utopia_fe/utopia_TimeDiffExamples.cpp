@@ -20,7 +20,7 @@ using namespace std;
 
 namespace utopia {
 
-#ifdef WITH_TIME_DIFF_EXAMPLES	
+#ifndef WITHOUT_TIME_DIFF_EXAMPLES	
 
 	template<class Expr_>
 	class ExplicitIntegratorTransform {

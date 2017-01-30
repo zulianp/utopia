@@ -25,6 +25,11 @@ option(UTOPIA_LOG "enables utopia logging facilities" OFF)
 #################################################################################
 #################################################################################
 
+IF(WIN32)
+	SET(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
+	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
+ENDIF()
+
 if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
 	IF(WIN32)
 	 	SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")

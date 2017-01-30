@@ -7,6 +7,9 @@
 
 #ifndef UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 #define UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
+
+#include <algorithm>
+
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_Dogleg.hpp"
