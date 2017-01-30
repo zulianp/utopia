@@ -4,6 +4,7 @@
 * @Last Modified by:   alenakopanicakova
 * @Last Modified time: 2016-10-13
 */
+#ifdef WITH_PETSC
 
 #ifndef UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP
 #define UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP
@@ -132,3 +133,4 @@ namespace utopia
 }
 
 #endif //UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP
+#endif //WITH_PETSC
