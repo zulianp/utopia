@@ -12,7 +12,7 @@
 #include "utopia_TR_base.hpp"
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_CauchyPoint.hpp"
-#include "utopia_NonLinearLeastSquaresSolver.hpp"
+#include "utopia_NonlinearLeastSquaresSolver.hpp"
 
      namespace utopia 
      {
