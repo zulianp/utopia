@@ -14,6 +14,10 @@ pipelines:
           - cd bin
           - apt-get update
           - apt-get install -y cmake
-          - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug
+          - apt-get install -y petsc-dev
+          - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug -DTRY_WITH_PETSC=OFF
+          - make
+          - ./utopia_exec
+          - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug -DTRY_WITH_PETSC=ON
           - make
           - ./utopia_exec
