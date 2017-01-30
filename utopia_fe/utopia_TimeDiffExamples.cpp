@@ -20,6 +20,8 @@ using namespace std;
 
 namespace utopia {
 
+#ifdef WITH_TIME_DIFF_EXAMPLES	
+
 	template<class Expr_>
 	class ExplicitIntegratorTransform {
 	public:
@@ -198,4 +200,8 @@ namespace utopia {
 
 		integrate(eq, 0, 0.001, 1, context); 		
 	}
+#else
+	void run_time_diff_examples(libMesh::LibMeshInit &init) {}
+#endif	
+
 }
