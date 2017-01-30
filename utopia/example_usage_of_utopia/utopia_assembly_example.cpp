@@ -73,17 +73,17 @@ void nl_gauss_seidel_step(const Matrix &mat, const Vector &diag, const Vector &r
 
 //only serial
 template<class Matrix, class Vector>
-bool nl_gauss_seidel_solve(const Matrix &mat, const Vector &rhs, const Vector &upper_bound, Vector &solution, const uint max_iterations = 1000)
+bool nl_gauss_seidel_solve(const Matrix &mat, const Vector &rhs, const Vector &upper_bound, Vector &solution, const int max_iterations = 1000)
 {   
     using namespace utopia;
-    uint check_residual_each = 1;
+    int check_residual_each = 1;
 
     Vector diag          = utopia::diag(mat);
     Vector prev_solution = zeros(size(solution));
 
     disp(diag);
 
-    for(uint k = 0; k < max_iterations; ++k) {
+    for(int k = 0; k < max_iterations; ++k) {
         nl_gauss_seidel_step(mat, diag, rhs, upper_bound, solution);
     
         if((k + 1) % check_residual_each == 0) {

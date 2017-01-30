@@ -7,6 +7,8 @@
 
 #include <assert.h>
 #include <ostream>
+#include <algorithm>
+
 
 namespace utopia {
     class Range {

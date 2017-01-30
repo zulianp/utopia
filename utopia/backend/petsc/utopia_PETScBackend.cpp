@@ -1579,7 +1579,7 @@ namespace utopia {
 		return ret;
 	}
 
-	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Plus &, const uint dim, Vector &result)
+	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Plus &, const int dim, Vector &result)
 	{
 		PETScVector rowSum; //FIXME initialize
 		Size gs, ls;

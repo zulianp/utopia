@@ -14,7 +14,7 @@ namespace utopia {
     template<class Expr, class Operation>
     class TensorReduce : public Expression< TensorReduce<Expr, Operation> > {
     public:
-        TensorReduce(const Expr &expr, const uint dim, const Operation op = Operation()) : expr_(expr), dim_(dim), op_(op)
+        TensorReduce(const Expr &expr, const int dim, const Operation op = Operation()) : expr_(expr), dim_(dim), op_(op)
         {}
 
         typedef typename Expr::Scalar Scalar;
@@ -31,7 +31,7 @@ namespace utopia {
             return  "TensorReduce<" + expr_.getClass() + ">";
         }
 
-        inline uint dim() const
+        inline int dim() const
         {
             return dim_;
         } 
@@ -43,7 +43,7 @@ namespace utopia {
 
     private:
        UTOPIA_STORE_CONST(Expr) expr_;
-       uint dim_;
+       int dim_;
        Operation op_;
     };
 

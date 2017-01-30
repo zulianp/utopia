@@ -348,7 +348,7 @@ namespace utopia
 
 		PetscScalar trace(const Matrix &mat);
 
-		bool apply_tensor_reduce(const Matrix &mat, const Plus &, const uint dim, Vector &result);
+		bool apply_tensor_reduce(const Matrix &mat, const Plus &, const int dim, Vector &result);
 		bool inverse(const Matrix &mat, Matrix &result);
 
 		// bool gemm(const PetscScalar alpha, const Matrix &left, const Matrix &right, 
