@@ -473,17 +473,17 @@ namespace utopia {
 
         //mesh_master->partitioner().reset(new SFCPartitioner());
 
-   	mesh_master->read("../data/cube_369.e");
-
-
-//        MeshTools::Generation::build_cube(*mesh_master,
-//                                          n_master, n_master, n_master,
-//                                          -2., 3.,
-//                                          -2., 3.,
-//                                          -2., 3.,
-//                                          HEX27);
-
-
+        
+        
+        MeshTools::Generation::build_cube(*mesh_master,
+                                          n_master, n_master, n_master,
+                                          -2., 3.,
+                                          -2., 3.,
+                                          -2., 3.,
+                                          TET4);
+        
+        
+        
 
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
@@ -494,15 +494,16 @@ namespace utopia {
 
         //mesh_slave->partitioner().reset(new SFCPartitioner());
 
-//        MeshTools::Generation::build_cube (*mesh_slave,
-//                                           n_slave, n_slave, n_slave,
-//                                           -2., 3.,
-//                                           -2., 3.,
-//                                           -2., 3.,
-//                                           HEX27);
-   	mesh_slave->read("../data/cube_2465-1.e");
-
-
+        
+        MeshTools::Generation::build_cube (*mesh_slave,
+                                           n_slave, n_slave, n_slave,
+                                           -2., 3.,
+                                           -2., 3.,
+                                           -2., 3.,
+                                           TET4);
+        
+        
+        
 
         //EXPRESS_EVENT_END("set_up");
         //mortar_transfer_aux(mesh_master, mesh_slave);
@@ -732,13 +733,12 @@ namespace utopia {
 
 		EXPRESS_PROFILING_BEGIN()
 
+		//mortar_transfer_2D(init);
+        //mortar_transfer_3D(init);
+		mortar_transfer_3D_monolithic(init);
+		//surface_mortar(init);
 
-		// mortar_transfer_2D(init);
-		// mortar_transfer_3D(init);
-		//mortar_transfer_3D_monolithic(init);
-		surface_mortar(init);
-
-		// run_curved_poly_disc();
+		//run_curved_poly_disc();
 
 		EXPRESS_PROFILING_END();
 	}
