@@ -1507,9 +1507,6 @@ namespace utopia {
 		return 0; 
 	}
 
-
-
-
 	// redistribution of local sizes of vector
 	// TODO: can be done also for matrices 
 	//       can be done also based on local sizes, no provided vector

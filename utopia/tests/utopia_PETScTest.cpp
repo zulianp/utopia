@@ -845,6 +845,7 @@ namespace utopia {
 
         assert(has_nan_or_inf(sol) == 1);
         assert(has_nan_or_inf(denom) == 0);
+
     }
 
     #endif //WITH_PETSC;
@@ -853,36 +854,36 @@ namespace utopia {
         #ifdef WITH_PETSC
         std::cout << "Begin: PETScTest" << std::endl;
 
-        harcoded_cg_test();
-        petsc_reciprocal_test();
-        petsc_axpy_test();
-        petsc_vector_accessors_test();
-        petsc_matrix_accessors_test();
-        //petsc_sparse_matrix_accessors_test();  // TODO:: here something doesnt work in parallel !
-        petsc_mv_test();
-        petsc_copy_test();
-        petsc_wrapper_test();
-        petsc_vector_composite_test();
-        petsc_Matlab_connection_test();
-        petsc_matrix_composite_test();
-        //petsc_view_test();                   // TODO:: assert fails in parallel
-        PetscMatTests();
-        petsc_read_and_write_test();
-        petsc_to_blas_test();
+       //  harcoded_cg_test();
+       //  petsc_reciprocal_test();
+       //  petsc_axpy_test();
+       //  petsc_vector_accessors_test();
+       //  petsc_matrix_accessors_test();
+       //  //petsc_sparse_matrix_accessors_test();  // TODO:: here something doesnt work in parallel !
+       //  petsc_mv_test();
+       //  petsc_copy_test();
+       //  petsc_wrapper_test();
+       //  petsc_vector_composite_test();
+       //  petsc_Matlab_connection_test();
+       //  petsc_matrix_composite_test();
+       //  //petsc_view_test();                   // TODO:: assert fails in parallel
+       //  PetscMatTests();
+       //  petsc_read_and_write_test();
+       //  petsc_to_blas_test();
         
-       // petsc_local_entities_test(); //FIXME does not work
+       // // petsc_local_entities_test(); //FIXME does not work
         
-        petsc_conversion_test();
-        petsc_factory_and_operations_test();
-        maria_test();
-        //local_diag_block_test();              // TODO:: assert fails in parallel
-        petsc_each_sparse_matrix();
-        petsc_test_mat_PtAP_product();
-        petsc_leak_test();
-        petsc_new_eval_test();
-        petsc_precond_test();
-        petsc_tensor_reduction_test();
-        petsc_inverse_test();
+       //  petsc_conversion_test();
+       //  petsc_factory_and_operations_test();
+       //  maria_test();
+       //  //local_diag_block_test();              // TODO:: assert fails in parallel
+       //  petsc_each_sparse_matrix();
+       //  petsc_test_mat_PtAP_product();
+       //  petsc_leak_test();
+       //  petsc_new_eval_test();
+       //  petsc_precond_test();
+       //  petsc_tensor_reduction_test();
+       //  petsc_inverse_test();
         
 
         petsc_is_nan_or_inf_test(); 
