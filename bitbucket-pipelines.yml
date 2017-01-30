@@ -13,6 +13,10 @@ pipelines:
           - mkdir build
           - cd bin
           - apt-get update
+          - apt-get dist-upgrade
+          - dpkg-reconfigure -a
+          - dpkg --configure -a
+          - update-initramfs -u
           - apt-get install -y cmake
           - apt-get install -y petsc-dev
           - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug -DTRY_WITH_PETSC=OFF
