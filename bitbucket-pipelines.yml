@@ -14,10 +14,11 @@ pipelines:
           - cd bin
           - apt-get update
           - apt-get dist-upgrade -y
-          - dpkg-reconfigure
-          - dpkg --configure -a
-          - update-initramfs -u
+#          - dpkg-reconfigure
+#          - dpkg --configure -a
+#          - update-initramfs -u
           - apt-get install -y cmake
+          - sudo apt-get -yq --no-install-suggests --no-install-recommends --force-yes install gfortran libblas-dev liblapack-dev
           - apt-get install -y petsc-dev
           - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug -DTRY_WITH_PETSC=OFF
           - make
