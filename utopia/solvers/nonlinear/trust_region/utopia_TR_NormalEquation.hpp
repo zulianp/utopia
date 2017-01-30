@@ -29,7 +29,7 @@
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem; 
         typedef utopia::NonLinearLeastSquaresSolver<Matrix, Vector> NonLinearLeastSquaresSolver;
      		typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        typedef TrustRegionBase<Matrix, Vector> TrustRegionBase;
+        typedef utopia::TrustRegionBase<Matrix, Vector> TrustRegionBase;
 
 
      	public:
