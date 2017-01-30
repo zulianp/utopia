@@ -1451,6 +1451,16 @@ namespace utopia {
             
             long n_intersections = 0;
             
+            
+            
+            using namespace cutlibpp;
+            using namespace express;
+            using namespace cutk;
+            
+            auto predicate = make_shared<MasterAndSlave>();
+            predicate->add(tag_1,tag_2);
+            
+            
             //std::cout<<"ciao sn in fun"<<std::endl;
             
             bool pair_intersected = false;
@@ -1737,7 +1747,7 @@ namespace utopia {
             //                        }
             
             
-            if(pair_intersected) {
+            if(pair_intersected && predicate->tagsAreRelated(tag_1,tag_2)) {
                 
                 
                 transform_to_reference_surf(*src_trans,  src_el.type(),  src_ir, src_ir_ref);
