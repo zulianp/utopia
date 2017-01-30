@@ -12,6 +12,8 @@ pipelines:
           - cd utopia
           - mkdir build
           - cd bin
+          - apt-get update
+          - apt-get install -y cmake
           - cmake .. -DCMAKE_INSTALL_PREFIX=../build
           - make
           - ./utopia_exec
