@@ -21,11 +21,11 @@ namespace utopia
         // runWrapperTest();
         // runSpecTest();
         // run_autodiff_test();
-        // runSolversTest();
+        runSolversTest();
         
         // runAlgebraTest();
         // runUtilitiesTest();
-        runPETScTest();
+        // runPETScTest();
         // runBLASTest();
         // runMiscTest();
 

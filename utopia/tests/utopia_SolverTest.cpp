@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-07-15
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-01-29
+* @Last Modified time: 2017-01-31
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -27,11 +27,11 @@ namespace utopia
 
         void run()
         {
-            newton_cg_utopia_test();
-            solver_from_params();
-            TR_test();
-            LS_test();
-            nl_solve_test();
+            // newton_cg_utopia_test();
+            // solver_from_params();
+            // TR_test();
+            // LS_test();
+            // nl_solve_test();
         }
 
 
@@ -323,20 +323,21 @@ namespace utopia
 
         void run()
         {
-            petsc_bicgstab_test();
-            petsc_gmres_test();
-            petsc_newton_test();
-            petsc_newton_rosenbrock_test();
-            petsc_sparse_semismooth_newton_test();
-            petsc_sparse_nonlinear_semismooth_newton_test();
-            petsc_direct_solver_newton_test();
-            petsc_newton_test_outInfo();
-            petsc_sparse_newton_test();
-            MG_test();
-            CG_MG_test();
-            PETSC_CG_MG_test();
-            petsc_newton_PETScCG_utopia_test();
-            petsc_tr_rr_test();
+            // petsc_bicgstab_test();
+            // petsc_gmres_test();
+            // petsc_newton_test();
+            // petsc_newton_rosenbrock_test();
+            // petsc_sparse_semismooth_newton_test();
+            // petsc_sparse_nonlinear_semismooth_newton_test();
+            // petsc_direct_solver_newton_test();
+            // petsc_newton_test_outInfo();
+            // petsc_sparse_newton_test();
+            // MG_test();
+            // CG_MG_test();
+            // PETSC_CG_MG_test();
+            // petsc_newton_PETScCG_utopia_test();
+            // petsc_tr_rr_test();
+            petsc_newton_inexact_newton_with_KSP_test(); 
 
             // neohookean_tr_test();
             // QP_example_MG();
@@ -916,6 +917,37 @@ namespace utopia
             assert(approxeq(expected, actual));
             // // std::cout << "         End: petsc_newton_PETScCG_utopia_test" << std::endl;
         }
+
+
+        void petsc_newton_inexact_newton_with_KSP_test()
+        {
+            using namespace utopia;
+            using namespace std;
+
+            const bool verbose = true;
+
+            auto linear_solver  = make_shared< KSPSolver<DMatrixd, DVectord> >();
+            auto preconditioner = make_shared< InvDiagPreconditioner<DMatrixd, DVectord> >();
+            linear_solver->set_preconditioner(preconditioner);
+
+
+            InexactNewton<DMatrixd, DVectord> newton_solver(linear_solver);
+            newton_solver.verbose(verbose);
+
+            const int n = 10;
+            DVectord actual   = values(n, 2.);
+            DVectord expected = values(n, 0.468919);
+
+            TestFunctionND_1<DMatrixd, DVectord> fun(n);
+
+            newton_solver.solve(fun, actual);
+            assert(approxeq(expected, actual));
+            // // std::cout << "         End: petsc_newton_PETScCG_utopia_test" << std::endl;
+        }
+
+
+
+
 
             PETScSolverTest()
         : _n(10) { }
