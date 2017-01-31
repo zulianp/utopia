@@ -50,7 +50,7 @@ namespace utopia
             Matrix hessian;
 
             Scalar g_norm, g0_norm, r_norm, s_norm;
-            SizeType it = 0, hessian_counter = 0;
+            SizeType it = 0;
 
             bool converged = false;
 
@@ -62,15 +62,11 @@ namespace utopia
 
             if(this->verbose_)
                 PrintInfo::print_iter_status(it, {g_norm, 1, 0});
-            it++;
-
-
+        
             while(!converged)
             {
-                if(hessian_counter % hessian_refresh_ == 0)
+                if(it % hessian_refresh_ == 0)
                     fun.hessian(x, hessian);
-
-                hessian_counter++; 
 
                 //find direction step
                 step = local_zeros(local_size(x));
@@ -100,13 +96,13 @@ namespace utopia
                 r_norm = g_norm/g0_norm;
                 s_norm = norm2(step);
 
+                it++;
                 // // print iteration status on every iteration
                 if(this->verbose_)
                     PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
 
                 // // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);
-                it++;
             }
 
             return true;
