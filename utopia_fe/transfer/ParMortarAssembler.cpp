@@ -51,7 +51,7 @@ namespace utopia {
             
             const int n_elements = master_slave->mesh().n_elem();
             
-            copy_global_dofs(*master_slave, dof_maps_[0], var_type_[0], n_elements, subdomain_id_[0], side_set_id_[0], 101, 102);
+            copy_global_dofs(*master_slave, dof_maps_[0], var_type_[0], n_elements, subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0], 101, 102);
             
             copy_var_number(*master_slave, var_number_[0]);
             
@@ -158,6 +158,7 @@ namespace utopia {
             return subdomain_id_[0];
         }
         
+        
         inline std::vector<ElementDofMap> &side_set_id()
         {
             
@@ -166,11 +167,24 @@ namespace utopia {
         
         
         
-        inline const std::vector<ElementDofMap> &side_set_id() const
+        inline const std::vector<ElementDofMap> & side_set_id() const
         {
             return side_set_id_[0];
         }
         
+        
+        inline std::vector<ElementDofMap> &side_set_id_tag()
+        {
+            
+            return side_set_id_tag_[0];
+        }
+        
+        
+        
+        inline const std::vector<ElementDofMap> & side_set_id_tag() const
+        {
+            return side_set_id_tag_[0];
+        }
         
     private:
         express::Communicator comm;
@@ -181,10 +195,11 @@ namespace utopia {
         std::vector<ElementDofMap> var_type_[1];
         std::vector<ElementDofMap> subdomain_id_[1];
         std::vector<ElementDofMap> side_set_id_[1];
+        std::vector<ElementDofMap> side_set_id_tag_[1];
         bool must_destroy_attached[1];
         
         
-        inline static void copy_global_dofs(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const int n_elements,std::vector<ElementDofMap> &subdomain_id, std::vector<ElementDofMap> &side_set_id, const int tag_1, const int tag_2)
+        inline static void copy_global_dofs(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const int n_elements,std::vector<ElementDofMap> &subdomain_id, std::vector<ElementDofMap> &side_set_id, std::vector<ElementDofMap> &side_set_id_tag, int tag_1, int tag_2)
         {
             
             auto &mesh = space.mesh();
@@ -197,11 +212,9 @@ namespace utopia {
             
             dof_map.resize(n_elements);
             subdomain_id.resize(n_elements);
-            
-            int jj_size = 0;
-            
-            
             side_set_id.resize(n_elements);
+            side_set_id_tag.resize(n_elements);
+            
             
             variable_type.resize(1);
             
@@ -209,35 +222,52 @@ namespace utopia {
             
             std::vector<const Node *> elem_nodes;
             
-            MeshBase::const_element_iterator e_it = mesh.active_local_elements_begin();
-            const MeshBase::const_element_iterator e_end = mesh.active_local_elements_end();
+            int jj_side_id_one = 0;
+            int jj_side_id_one_tag = 0;
+             int jj_side_id_one_check = 0;
             
-            for (; e_it != e_end; ++e_it)
+            for (; e_it_s != e_end_s; ++e_it_s)
             {
-                Elem * elem = *e_it;
+                Elem * elem = *e_it_s;
                 
                 
-                bool size_new=true;
+                bool  check_side_id_one=true;
+                bool  check_side_id_one_tag=true;
+                bool  check_side_id_one_check=true;
                 
-                int jj = 0;
-                
+                for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
+                    if (check_side_id_one==true){
+                        side_set_id[elem->id()].global.insert(side_set_id[elem->id()].global.end(),-1);
+                        check_side_id_one=false;
+                        jj_side_id_one++;
+                    }
+                }
+
                 if (elem->on_boundary()){
                     for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
-                        if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2)) & size_new==true){
-                            side_set_id[elem->id()].global.insert(side_set_id[elem->id()].global.end(),mesh.get_boundary_info().boundary_id(elem,side_elem));
-                            std::cout<<"elem_id"<<elem->id()<<"value_tag"<<side_set_id[elem->id()].global.at(0)<<std::endl;
-                            size_new=false;
-                            jj++;
+                         if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2)) && check_side_id_one_tag==true){
+                            side_set_id[elem->id()].global.insert(side_set_id[elem->id()].global.end()-1,mesh.get_boundary_info().boundary_id(elem,side_elem));
+                             check_side_id_one_tag=false;
+                            jj_side_id_one_tag++;
                         }
                     }
                 }
+                
+             
+                
+                for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
+                    if (check_side_id_one_check==true){
+//                        std::cout<<"side_set_id[ "<< elem->id() <<" ] = "<<side_set_id[elem->id()].global.at(0)<<std::endl;
+                        check_side_id_one_check=false;
+                        jj_side_id_one_check++;
+                    }
+                }
+
                 
                 subdomain_id[elem->id()].global.insert(subdomain_id[elem->id()].global.end(),elem->subdomain_id());
                 original_dof_map.dof_indices(elem, temp, 0);
                 dof_map[elem->id()].global.insert(dof_map[elem->id()].global.end(), temp.begin(), temp.end());
                 
-                //std::cout<<"subdomain_id.at(elem->id()) = "<<subdomain_id[elem->id()].global.at(0)<<std::endl;
-                //std::cout<<"< dof_map[elem->id()].global.at(0) = "<<dof_map[elem->id()].global.at(0)<<"elem_id"<<elem->id()<<std::endl;
                 if (first)
                 {
                     variable_type[0].global.push_back(elem->type());
@@ -246,6 +276,10 @@ namespace utopia {
                 }
                 
             }
+            
+            std::cout<<" jj_side_id_one_check = "<< jj_side_id_one_check <<std::endl;
+            
+            std::cout<<" jj_side_id_one_tag = "<< jj_side_id_one_tag <<std::endl;
             
         }
         
@@ -268,7 +302,7 @@ namespace utopia {
     
     
     template<class Iterator>
-    static void write_space(const Iterator &begin, const Iterator &end,LibMeshFESpaceBase &space,const std::vector<ElementDofMap> &dof_map, const std::vector<ElementDofMap> &variable_number, const std::vector<ElementDofMap> &variable_order, const std::vector<ElementDofMap> &subdomain_id,const std::vector<ElementDofMap> &side_set_id, cutk::OutputStream &os)
+    static void write_space(const Iterator &begin, const Iterator &end,LibMeshFESpaceBase &space, const std::vector<ElementDofMap> &dof_map, const std::vector<ElementDofMap> &variable_number, const std::vector<ElementDofMap> &variable_order, const std::vector<ElementDofMap> &subdomain_id, const std::vector<ElementDofMap> &side_set_id, cutk::OutputStream &os, const int tag_1, const int tag_2)
     {
         const int dim 		  = space.mesh().mesh_dimension();
         const long n_elements = std::distance(begin, end);
@@ -309,6 +343,8 @@ namespace utopia {
         
         //WRITE 6
         os << n_elements;
+        
+//        std::cout<<"elem write= "<<n_elements<<std::endl;
         
         
         
@@ -374,23 +410,26 @@ namespace utopia {
             
             os << volume_tag;
             
-            //std::cout<<"write volume role = "<<volume_tag<<std::endl;
-            
             int side_set_tag;
             
-            volume_tag=side_set_id[elem->id()].global.at(0);
+            bool check_side_id_one=true;
+   
+//            for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
+//                
+//                if(check_side_id_one==true){
             
+            side_set_tag=side_set_id[elem->id()].global.at(0);
+                    
+//                    std::cout<<" write surface role outside= "<< side_set_tag <<std::endl;
+                    
             os << side_set_tag;
-            
-            //std::cout<<"write surface role = "<<volume_tag<<std::endl;
-            
-      
-            
-            
-            
+//                    
+//                    check_side_id_one=false;
+//                }
+//            }
         }
-        
-        
+//        
+//        
         
         //WRITE 11
         os << variable_number.at(0);
@@ -408,7 +447,7 @@ namespace utopia {
         
         auto m = utopiamesh.utopiamesh()[0];
         
-        write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), os);
+        write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), os, 101, 102);
         
         
         
@@ -422,7 +461,8 @@ namespace utopia {
                            std::vector<ElementDofMap> &variable_order,
                            std::vector<ElementDofMap> &subdomain_id,
                            std::vector<ElementDofMap> &side_set_id,
-                           const libMesh::Parallel::Communicator &comm)
+                           const libMesh::Parallel::Communicator &comm,
+                           int tag_1, int tag_2)
     {
         using namespace std;
         
@@ -441,7 +481,7 @@ namespace utopia {
         long n_elements;
         is >> n_elements;
         
-        
+//        std::cout<<"elem read= "<<n_elements<<std::endl;
         
         auto mesh_ptr = std::make_shared<SerialMesh>(comm,dim);
         
@@ -467,6 +507,8 @@ namespace utopia {
         
         subdomain_id.resize(n_elements);
         
+        side_set_id.resize(n_elements);
+        
         
         for(long i = 0; i !=n_elements; ++i) {
             
@@ -478,7 +520,9 @@ namespace utopia {
             
             //std::cout<<"e_n_nodes_read = "<<e_n_nodes<<std::endl;
             
-            auto elem = Elem::build(ElemType(type)).release();
+            auto elem =  Elem::build(ElemType(type)).release();
+            
+            //std::cout<<"n_side_read ="<< elem->n_sides()<<std::endl;
             
             
             int index;
@@ -497,7 +541,9 @@ namespace utopia {
             is >> dof_map.at(i);
             //std::cout<< "dof_map_read = "<<dof_map[i].global.at(0)<<std::endl;
             
-            int volume_tag;
+            int volume_tag, side_set_tag;
+            
+            bool on_boundary=false;
             //std::cout<<"read n_elements = "<<n_elements<<std::endl;
             
             
@@ -506,26 +552,32 @@ namespace utopia {
             //std::cout<<" read volume role = "<< volume_tag <<std::endl;
             
             subdomain_id[i].global.insert(subdomain_id[i].global.end(),volume_tag);
+
             
-            int side_set_tag;
+//            bool check_side_id_two=true;
+//            
+//            for (unsigned int side=0; side<elem->n_sides(); side++){
+//                
+//                if (check_side_id_two==true){
             
             is >> side_set_tag;
+//                    
+//                    if (side_set_tag<0) side_set_tag=1000;
+//                    
+//                    mesh_ptr->get_boundary_info().add_side(elem, side, side_set_tag);
             
-            //std::cout<<" read side set role = "<< side_set_tag <<std::endl;
-            
+//                    std::cout<<" read surface role outside= "<< side_set_tag <<std::endl;
             side_set_id[i].global.insert(side_set_id[i].global.end(),side_set_tag);
+                    
+//                    check_side_id_two=false;
+//                }
+//            }
+//         
             
-            
+                
             mesh_ptr->add_elem(elem);
             
             libmesh_assert(elem);
-            
-            //std::cout<<"ciao "<<role<<std::endl;
-            
-            //std::cout<<"Local Elem"<<subdomain_id.at(i)<<std::endl;
-            
-            
-            
             
         }
         
@@ -558,7 +610,7 @@ namespace utopia {
         
         utopiamesh.utopiamesh().resize(1);
         
-        read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), comm_mesh);
+        read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), comm_mesh, 101, 102);
         
         utopiamesh.set_must_destroy_attached(0,true);
         
@@ -641,7 +693,6 @@ namespace utopia {
             Adapter a(*master_slave, elem->id(), elem->id() , tag);
             assert(!local_spaces->dof_map()[elem->id()].empty());
             a.set_dof_map(&local_spaces->dof_map()[elem->id()].global);
-            //std::cout<<"tag value"<<tag<<std::endl;
             tree->insert(a);
         }
         
@@ -688,8 +739,7 @@ namespace utopia {
             
             data.reserve(data.size() + proc_space->n_elements());
             std::vector<long> tag_vec = proc_space->subdomain_id()[0].global;
-            //
-            //			int src_order_new=src_order[0];
+          
             for(auto s : proc_space->utopiamesh()){
                 for (int i = 0; i<s->mesh().n_elem(); ++i) {
                     int tag =proc_space->subdomain_id()[i].global.at(0);
@@ -761,8 +811,12 @@ namespace utopia {
             
         };
         
+        cutk::Settings custom_settings = settings;
+        custom_settings.set("disable_redistribution", cutk::Boolean(true));
+        custom_settings.set("verbosity_level", cutk::Integer(2));
         
-        cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, settings);
+        
+        cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, custom_settings);
         
         long n_total_candidates = n_intersections + n_false_positives;
         
@@ -851,60 +905,12 @@ namespace utopia {
             
             
             
-            //
-            //            std::vector<long> src_order = local_fun_spaces->variable_order(0)[0].global;
-            //
-            //            int src_order_new=src_order[0];
-            //
-            //
-            //
-            //			std::vector<long> dest_order = local_fun_spaces->variable_order(1)[0].global;
-            //
-            //			int dest_order_new=dest_order[0];
-            //
-            //
-            //
-            //			std::vector<long> src_var_num = local_fun_spaces->variable_number(0)[0].global;
-            //
-            //			int src_var_new=src_var_num[0];
-            //
-            //
-            //
-            //			std::vector<long> dest_var_num = local_fun_spaces->variable_number(1)[0].global;
-            //
-            //			int dest_var_new=dest_var_num[0];
-            
-            
-            
-            
-            //			std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
-            //
-            //			master_fe = libMesh::FEBase::build(src_mesh.mesh_dimension(),  master_space->dof_map().variable_type(master_space->var_num()));
-            //			slave_fe  = libMesh::FEBase::build(dest_mesh.mesh_dimension(), slave_space->dof_map().variable_type(slave_space->var_num()));
-            //
-            //            			QMortar composite_ir(dim_src);
-            //            			QMortar src_ir(dim_src);
-            //            			QMortar dest_ir(dim_src);
-            //
-            //
-            //			const int order = order_for_l2_integral(dim, src_el, src_order_new, dest_el, dest_order_new);
-            
-            
-            
             if(dim_src == 2)  {
                 make_polygon(src_el,   src_pts);
                 make_polygon(dest_el, dest_pts);
                 
                 if(intersect_2D(src_pts, dest_pts, intersection2)) {
-                    //					total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
-                    //
-                    //					const libMesh::Real weight=isector.polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
-                    //
-                    //					make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
-                    //					pair_intersected = true;
-                    //
-                    //					src_trans  = std::make_shared<Transform2>(src_el);
-                    //					dest_trans = std::make_shared<Transform2>(dest_el);
+                    
                     pair_intersected = true;
                 }
             }
@@ -913,14 +919,7 @@ namespace utopia {
                 make_polyhedron(dest_el, dest_poly);
                 
                 if(intersect_3D(src_poly, dest_poly, intersection3)) {
-                    //					total_intersection_volume += isector.p_mesh_volume_3(intersection3);
-                    //
-                    //					const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
-                    //
-                    //
-                    //					make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
-                    //					src_trans  = std::make_shared<Transform3>(src_el);
-                    //					dest_trans = std::make_shared<Transform3>(dest_el);
+                    
                     pair_intersected = true;
                     
                 }
@@ -933,67 +932,6 @@ namespace utopia {
             if(pair_intersected) {
                 
                 
-                //				transform_to_reference(*src_trans,  src_el.type(),  composite_ir,  src_ir);
-                //				transform_to_reference(*dest_trans, dest_el.type(), composite_ir,  dest_ir);
-                //
-                //               // src.dof_map().dof_indices(&src_el,  master_dofs);
-                //               // dest.dof_map().dof_indices(&dest_el, slave_dofs);
-                //
-                //
-                //				const auto &master_dofs = master.dof_map();
-                //				const auto &slave_dofs  = slave.dof_map();
-                //               // composite_ir.print_info();
-                //
-                //
-                //				master_fe->attach_quadrature_rule(&src_ir);
-                //				master_fe->reinit(&src_el);
-                //
-                //				slave_fe->attach_quadrature_rule(&dest_ir);
-                //				slave_fe->reinit(&dest_el);
-                //
-                //				elemmat.zero();
-                //
-                //				mortar_assemble(*master_fe, *slave_fe, elemmat);
-                //
-                //				// std::cout << "-----------------------------------------\n";
-                //				// std::cout << src_index << ", " << dest_index << "\n";
-                //				// elemmat.print(std::cout);
-                //				// for(auto i : slave_dofs) {
-                //				// 	std::cout << i << " ";
-                //				// }
-                //				// std::cout << "\n";
-                //
-                //				// for(auto i : master_dofs) {
-                //				// 	std::cout << i << " ";
-                //				// }
-                //				// std::cout << "\n";
-                //				// std::cout << "-----------------------------------------\n";
-                //
-                //				auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
-                //                // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
-                //                // dest_ir.print_info();
-                //
-                //				local_element_matrices_sum += partial_sum;
-                //
-                //				intersected = true;
-                //
-                //				++n_intersections;
-                //
-                //				assert(slave_dofs.size() == elemmat.m());
-                //				assert(master_dofs.size() == elemmat.n());
-                //
-                //				for(int i = 0; i < slave_dofs.size(); ++i) {
-                //
-                //					const long dof_I = slave_dofs[i];
-                //
-                //					for(int j = 0; j < master_dofs.size(); ++j) {
-                //
-                //                        const long dof_J = master_dofs[j];
-                //
-                //                        mat_buffer.add(dof_I, dof_J, elemmat(i, j));
-                //					}
-                //				}
-                
                 return true;
                 
             } else {
@@ -1005,77 +943,10 @@ namespace utopia {
         if(!Assemble<Dimensions>(comm, master_slave, fun, settings)) {
             return false;
         }
-        //
-        //
-        //		// std::cout << mat_buffer << std::endl;
-        //
-        //		double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };
-        //
-        //		comm.allReduce(volumes, 2, express::MPISum());
-        //
-        //		const processor_id_type master_proc_id  = master->mesh().processor_id();
-        //
-        //		const dof_id_type n_dofs_on_proc_master = master->dof_map().n_dofs_on_processor(master_proc_id);
-        //
-        //		const processor_id_type slave_proc_id   = slave->mesh().processor_id();
-        //
-        //		const dof_id_type n_dofs_on_proc_slave  = slave->dof_map().n_dofs_on_processor(slave_proc_id);
-        //
-        //		if(comm.isRoot()) {
-        //			std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
-        //		}
-        
-        //
-        //
-        //		express::Array<express::SizeType>  ownershipRangesMaster(comm.size()+1);
-        //		ownershipRangesMaster.allSet(0);
-        //
-        //
-        //		express::Array<express::SizeType>  ownershipRangesSlave(comm.size()+1);
-        //		ownershipRangesSlave.allSet(0);
-        //
-        //
-        //		ownershipRangesMaster[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master);
-        //
-        //		ownershipRangesSlave[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave);
-        //
-        //		comm.allReduce(&ownershipRangesMaster[0], ownershipRangesMaster.size(), express::MPIMax());
-        //
-        //		comm.allReduce(&ownershipRangesSlave[0],  ownershipRangesSlave.size(),  express::MPIMax());
-        //
-        //		express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
-        //		redist.apply(ownershipRangesSlave, mat_buffer, express::AddAssign<double>());
-        //
-        //		assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
-        //
-        //		express::RootDescribe("petsc assembly begin", comm, std::cout);
-        //
-        //		SizeType  mMaxRowEntries = mat_buffer.maxEntriesXCol();
-        //		comm.allReduce(&mMaxRowEntries, 1, express::MPIMax());
-        //
-        //		const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
-        //		const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
-        //
-        //		B = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
-        //
-        //		{
-        //			utopia::Write<utopia::DSMatrixd> write(B);
-        //			for (auto it = mat_buffer.iter(); it; ++it) {
-        //				B.set(it.row(), it.col(), *it);
-        //
-        //			}
-        //		}
-        //
-        //
-        //		express::RootDescribe("petsc assembly end", comm, std::cout);
-        //
-        //
+     
         return true;
     }
-    //
-    //
-    //
-    //
+  
     bool ParMortarAssembler::Assemble(DSMatrixd &B)
     {
         
@@ -1097,25 +968,8 @@ namespace utopia {
         assert(false && "Dimension not supported!");
         return false;
     }
-    //
-    //
-    //
-    //	bool ParMortarAssembler::Transfer(DSMatrixd &B, DSMatrixd &T)
-    //	{
-    //		DVectord               diag_elem;
-    //		PetscInt               mG;
-    //		PetscInt               nG;
-    //		PetscInt               mL;
-    //		PetscInt               nL;
-    //
-    //		diag_elem = 1./sum(B,1);
-    //		T = diag(diag_elem)*B;
-    //
-    //		return true;
-    //	}
-    //
-    
-    
+
+
     template<int Dimensions, class Fun>
     static bool SurfaceAssemble(express::Communicator &comm,
                                 std::shared_ptr<LibMeshFESpaceBase> &master_slave,
@@ -1175,11 +1029,10 @@ namespace utopia {
         
         auto predicate = make_shared<MasterAndSlave>();
         predicate->add(tag_1,tag_2);
-        //std::cout<<"tag value 1 = "<<tag_1<<std::endl;
-        //std::cout<<"tag value 2 = "<<tag_2<<std::endl;
+        std::cout<<"tag value 1 = "<<tag_1<<std::endl;
+        std::cout<<"tag value 2 = "<<tag_2<<std::endl;
         
-        //std::cout<<"first value"<<block_id_def.at(0)<<std::endl;
-        //std::cout<<"second value"<<block_id_def.at(1)<<std::endl;
+
         
         EXPRESS_EVENT_BEGIN("create_adapters");
         ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1191,71 +1044,34 @@ namespace utopia {
         
         std::shared_ptr<UtopiaMesh> local_spaces = make_shared<UtopiaMesh>(master_slave);
         
-        //SurfaceAdapter a(*master_slave, 0,0,0, search_radius);
+        int jj=0;
         
         for (auto it = master_slave->mesh().active_local_elements_begin(); it!=master_slave->mesh().active_local_elements_end(); ++it) {
-            auto elem=*it;
             
+            auto elem=*it;
             
             if(!elem->on_boundary()) {
                 continue;
             }
-            bool size=false;
+            
+            bool check_size=false;
             
             for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
-                if (predicate->select(master_slave->mesh().get_boundary_info().boundary_id(elem, side_elem)) & size==false)
-                {   //std::cout<<"elem_id==="<<elem->id()<<std::endl;
+                if ((predicate->select(master_slave->mesh().get_boundary_info().boundary_id(elem, side_elem))) && check_size==false){
                     SurfaceAdapter a(*master_slave, elem->id(), elem->id(), master_slave->mesh().get_boundary_info().boundary_id(elem, side_elem), search_radius);
+//                    std::cout<<"side_set_id[ "<< elem->id() <<" ] = "<<local_spaces->side_set_id()[elem->id()].global.at(0)<<std::endl;
                     assert(!local_spaces->dof_map()[elem->id()].empty());
                     a.set_dof_map(&local_spaces->dof_map()[elem->id()].global);
-                    //std::cout<<"tag value==="<<master_slave->mesh().get_boundary_info().boundary_id(elem, side_elem)<<std::endl;
-                    //std::cout<<"elem_id==="<<elem->id()<<std::endl;
                     tree->insert(a);
-                    size==true;
-                    
-                    
+                    check_size=true;
+                    jj++;
                 }
-                
-                // break;
-                
-                
             }
-            
-            
-            
-            
-            
         }
+ 
         
+        std::cout<<"jj_tree_elem = "<< jj <<std::endl;
         
-        //        for (auto it = master_slave->mesh().active_local_elements_begin(); it!=master_slave->mesh().active_local_elements_end(); ++it) {
-        //            Elem * elem_new = *it;
-        //            std::cout<<"ciao"<<std::endl;
-        //            std::cout<<"ELEM_ID OUT"<<elem_new->id()<<std::endl;
-        //            if(elem_new->on_boundary()) {
-        //                bool size=false;
-        //                for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
-        //                    std::cout<<"ELEM_ID IN"<<elem_new->id()<<std::endl;
-        //                    if (predicate->select(local_spaces->subdomain_id()[elem_new->id()].global.at(0)) & size==false){
-        //                        SurfaceAdapter a(*master_slave, elem_new->id(), elem_new->id(), local_spaces->subdomain_id()[elem_new->id()].global.at(0), search_radius);
-        //                        assert(!local_spaces->dof_map()[elem->id()].empty());
-        //                        a.set_dof_map(&local_spaces->dof_map()[elem_new->id()].global);
-        //                        std::cout<<"tag value"<<master_slave->mesh().get_boundary_info().boundary_id(elem_new, side_elem)<<std::endl;
-        //                        tree->insert(a);
-        //                        size=true;
-        //                    }
-        //                }
-        //            }
-        //        }
-        //
-        //per ogni faccia
-        //if predicate->select(tag_della_faccia)
-        // inserisci l'ada
-        //break;
-        // finito il loop sulle faccie
-        
-        
-        //std::cout<<"tree n_elem"<<n_elements<<std::endl;
         
         tree->getRoot()->getBound().staticBound().enlarge(1e-8);
         
@@ -1272,7 +1088,7 @@ namespace utopia {
         std::map<long, std::vector<cutk::shared_ptr<UtopiaMesh> > > migrated_meshes;
         
         
-        auto read = [&utopiamesh, &migrated_meshes, block_id, comm, &libmesh_comm_mesh, search_radius, tag_1, tag_2]
+        auto read = [&utopiamesh, &migrated_meshes, block_id, comm, &libmesh_comm_mesh, search_radius]
         (
          const long ownerrank,
          const long senderrank,
@@ -1297,21 +1113,19 @@ namespace utopia {
             }
             
             data.reserve(data.size() + proc_space->n_elements());
-            std::vector<long> tag_vec = proc_space->subdomain_id()[0].global;
-            //
-            //			int src_order_new=src_order[0];
+
             for(auto s : proc_space->utopiamesh()){
-                
+                int i=0;
                 for (int i = 0; i<s->mesh().n_elem(); ++i) {
                     auto elem=s->mesh().elem(i);
                     int tag =proc_space->side_set_id()[i].global.at(0);
-                    data.push_back(SurfaceAdapter(*s, i, i,tag,search_radius));
-                    assert(!proc_space->dof_map()[i].empty());
-                    data.back().set_dof_map(&proc_space->dof_map()[i].global);
-                    std::cout<<"tag value_read"<<tag<<std::endl;
+                        data.push_back(SurfaceAdapter(*s, i, i,tag,search_radius));
+                        assert(!proc_space->dof_map()[i].empty());
+                        assert(!proc_space->side_set_id()[i].empty());
+                        data.back().set_dof_map(&proc_space->dof_map()[i].global);
+
+                    
                 }
-                
-                std::cout<<" CIAO AD READ " <<std::endl;
             }
             
             
@@ -1358,17 +1172,17 @@ namespace utopia {
         
         
         
-        long n_false_positives = 0, n_intersections = 0;
+        long n_false_positives = 0, n_projections = 0;
         
         
         
-        auto fun = [&n_false_positives, &n_intersections, &process_fun](
+        auto fun = [&n_false_positives, &n_projections, &process_fun](
                                                                         SurfaceAdapter &master, SurfaceAdapter &slave) -> bool {
             //std::cout<<"n_intersections"<<n_intersections<<std::endl;
             bool ok = process_fun(master, slave);
             
             if(ok) {
-                n_intersections++;
+                n_projections++;
                 //std::cout<<"n_intersections"<<n_intersections<<std::endl;
                 return true;
             } else {
@@ -1382,13 +1196,13 @@ namespace utopia {
         custom_settings.set("disable_redistribution", cutk::Boolean(true));
         custom_settings.set("verbosity_level", cutk::Integer(2));
         
-        cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, settings);
+        cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, custom_settings);
         
-        long n_total_candidates = n_intersections + n_false_positives;
+        long n_total_candidates = n_projections + n_false_positives;
         
         //std::cout<<"n_total_candidates"<<n_intersections<<std::endl;
         
-        long n_collection[3] = {n_intersections, n_total_candidates, n_false_positives};
+        long n_collection[3] = {n_projections, n_total_candidates, n_false_positives};
         comm.allReduce(n_collection, 3, express::MPISum());
         
         if (comm.isRoot()) {
@@ -1399,8 +1213,6 @@ namespace utopia {
         
         return true;
     }
-    
-    
     template<int Dimensions>
     bool SurfaceAssemble(
                          express::Communicator &comm,
@@ -1437,12 +1249,51 @@ namespace utopia {
         
         int skip_zeros = 1;
         
+        int slave_dof_n=0;
+        
+        int master_dof_n=0;
+        
         
         libMesh::Real total_intersection_volume = 0.0;
         libMesh::Real local_element_matrices_sum = 0.0;
         
-        //
-        //		express::MapSparseMatrix<double> mat_buffer(slave->dof_map().n_dofs(), master->dof_map().n_dofs());
+        MeshBase::const_element_iterator e_it = master_slave->mesh().active_local_elements_begin();
+        
+        const MeshBase::const_element_iterator e_end = master_slave->mesh().active_local_elements_end();
+        
+        
+        for (; e_it != e_end; ++e_it)
+        {
+            Elem * elem = *e_it;
+            
+            
+            bool size_new=true;
+            
+            int jj = 0;
+            
+            if (elem->on_boundary()){
+                
+                for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
+                    
+                    if (master_slave->mesh().get_boundary_info().has_boundary_id(elem,side_elem, tag_1)){
+                        
+                        master_dof_n++;
+                    }
+                    
+                    if (master_slave->mesh().get_boundary_info().has_boundary_id(elem,side_elem, tag_2)){
+                        
+                        slave_dof_n++;
+                    }
+                }
+            }
+        }
+        
+        
+        std::cout<<"slave_dof_n = "<<slave_dof_n<<std::endl;
+        
+        std::cout<<"master_dof_n = "<<master_dof_n<<std::endl;
+        
+        express::MapSparseMatrix<double> coupling(slave_dof_n, master_dof_n);
         
         bool intersected = false;
         
@@ -1450,9 +1301,7 @@ namespace utopia {
                        const SurfaceElementAdapter<Dimensions> &slave) -> bool {
             
             long n_intersections = 0;
-            
-            
-            
+
             using namespace cutlibpp;
             using namespace express;
             using namespace cutk;
@@ -1463,10 +1312,12 @@ namespace utopia {
             
             //std::cout<<"ciao sn in fun"<<std::endl;
             
-            bool pair_intersected = false;
             
             const auto &src  = master.space();
             const auto &dest = slave.space();
+            
+            
+            bool pair_intersected = false;
             
             const auto &src_mesh  = src.mesh();
             const auto &dest_mesh = dest.mesh();
@@ -1491,6 +1342,20 @@ namespace utopia {
             std::vector<long> src_order = local_fun_spaces->variable_order()[0].global;
             const int approx_order=src_order[0];
             
+            std::shared_ptr<Contact> surface_assemble;
+            
+            
+//            surface_assemble->parent_element_master  = src_index;
+//            //          surface_assemble->side_number_master     = side_1;
+//            surface_assemble->id_master 			 = src_el.id();
+//            //
+//            surface_assemble->parent_element_slave   = dest_index;
+//            //          surface_assemble->side_number_slave 	 = side_2;
+//            surface_assemble->id_slave 			     = dest_el.id();
+//            //
+//            surface_assemble->coupling.zero();
+//            
+  
             
             //FIXME This is a hack
             
@@ -1517,8 +1382,7 @@ namespace utopia {
             //
             //			int dest_var_new=dest_var_num[0];
             
-            
-            
+        
             
             std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
             //
@@ -1527,300 +1391,241 @@ namespace utopia {
             //
             
             typedef Intersector::Scalar Scalar;
-            //
-            //
-            //			const int order = order_for_l2_integral(dim, src_el, src_order_new, dest_el, dest_order_new);
+     
+                
+            if(dim_src == 2)  {
+                make_polygon(src_el,   src_pts);
+                make_polygon(dest_el,  dest_pts);
+                src_trans  = std::make_shared<Transform2>(src_el);
+                dest_trans = std::make_shared<Transform2>(dest_el);
+    
+            }
             
-            //            if(!has_constrained_dofs(src, src_el) &&
-            //               !has_constrained_dofs(dest, dest_el))
-            {
+            else if(dim_src == 3) {
+                make_polyhedron(src_el,  src_poly);
+                make_polyhedron(dest_el, dest_poly);
+                src_trans  = std::make_shared<Transform3>(src_el);
+                dest_trans = std::make_shared<Transform3>(dest_el);
+     
+            }
+            
+            for(uint side_1 = 0; side_1 < src_el.n_sides(); ++side_1) {
                 
-                if(dim_src == 2)  {
-                    make_polygon(src_el,   src_pts);
-                    make_polygon(dest_el,  dest_pts);
-                    {
-                        //					total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
-                        //
-                        //					const libMesh::Real weight=isector.polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
-                        //
-                        //					make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
-                        //					pair_intersected = true;
-                        //
-                        src_trans  = std::make_shared<Transform2>(src_el);
-                        dest_trans = std::make_shared<Transform2>(dest_el);
-                        //pair_intersected = true;
-                    }
+                
+                libMesh::UniquePtr<libMesh::Elem> s_1 = src_el.side(side_1);
+                
+                if(!s_1->on_boundary()) continue;
+                
+//                    if(src_el.neighbor_ptr(side_1) != nullptr) continue;
+                auto side_ptr_1 = src_el.build_side_ptr(side_1);
+                
+                compute_side_normal(dim_src, *side_ptr_1, n1);
+                
+                box_1.reset();
+                enlarge_box_from_side(dim_src, *side_ptr_1, box_1, search_radius);
+                
+                if(dim_src == 2) {
+                    make_polygon(*side_ptr_1, side_polygon_1);
+                } else if(dim_src == 3) {
+                    make_polygon_3(*side_ptr_1, side_polygon_1);
+                } else {
+                    assert(false);
                 }
                 
-                else if(dim_src == 3) {
-                    make_polyhedron(src_el,  src_poly);
-                    make_polyhedron(dest_el, dest_poly);
-                    {
-                        //					total_intersection_volume += isector.p_mesh_volume_3(intersection3);
-                        //
-                        //					const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
-                        //
-                        //
-                        //					make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
-                        src_trans  = std::make_shared<Transform3>(src_el);
-                        dest_trans = std::make_shared<Transform3>(dest_el);
-                        //pair_intersected = true;
-                    }
-                }
                 
-                for(uint side_1 = 0; side_1 < src_el.n_sides(); ++side_1) {
+                
+                for(uint side_2 = 0; side_2 < dest_el.n_sides(); ++side_2) {
                     
-                    if(src_el.neighbor_ptr(side_1) != nullptr) continue;
-                    auto side_ptr_1 = src_el.build_side_ptr(side_1);
+                    //if(dest_el.neighbor_ptr(side_2) != nullptr) continue;
                     
-                    compute_side_normal(dim_src, *side_ptr_1, n1);
+                    libMesh::UniquePtr<libMesh::Elem> s_2 = dest_el.side(side_2);
                     
-                    box_1.reset();
-                    enlarge_box_from_side(dim_src, *side_ptr_1, box_1, search_radius);
+                    if(!s_2->on_boundary()) continue;
                     
-                    if(dim_src == 2) {
-                        make_polygon(*side_ptr_1, side_polygon_1);
+                    auto side_ptr_2 = dest_el.build_side_ptr(side_2);
+                    compute_side_normal(dim_sla, *side_ptr_2, n2);
+                    
+                    const Real cos_angle = n1.contract(n2);
+                    
+                    //if the angle is more than 60 degrees ( cos(60/180*pi) == 0.5 ) or has same orientation skip
+                    if(cos_angle >= -0.5) {
+                        continue;
+                    }
+                    
+                    box_2.reset();
+                    enlarge_box_from_side(dim_sla, *side_ptr_2, box_2, search_radius);
+                    
+                    if(!box_1.intersects(box_2, tol)) {
+                        continue;
+                    }
+                    
+                    if(dim_sla==2){
+                        make_polygon(*side_ptr_2,side_polygon_2);
+                        if(!project_2D(side_polygon_1,side_polygon_2,isect_polygon_1,isect_polygon_2)){
+                            continue;
+                        }
+                        const Scalar dx = dest_pts(0, 0) - dest_pts(1, 0);
+                        const Scalar dy = dest_pts(0, 1) - dest_pts(1, 1);
+                        
+                        const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
+                        const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
+                        
+                        const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
+                        const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
+                        
+                        const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
+                        
+                        make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, src_ir);
+                        make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, dest_ir);
+                        
+                        pair_intersected = true;
+   
+                        surface_assemble = std::make_shared<Contact>();
+                        surface_assemble->isect_area	   = area;
+                        surface_assemble->relative_area = weight;
+                        
+                        
                     } else if(dim_src == 3) {
-                        make_polygon_3(*side_ptr_1, side_polygon_1);
+                        make_polygon_3(*side_ptr_2, side_polygon_2);
+                        
+                        if(!project_3D(
+                                       side_polygon_1,
+                                       side_polygon_2,
+                                       isect_polygon_1,
+                                       isect_polygon_2))
+                        {
+                            continue;
+                        }
+                        
+                        const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
+                        const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
+                        const Scalar weight 	= area/area_slave;
+                        
+                        const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
+                        
+                        make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, src_ir);
+                        make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, dest_ir);
+                        
+                        pair_intersected = true;
+           
+                        surface_assemble = std::make_shared<Contact>();
+                        surface_assemble->isect_area	   = area;
+                        surface_assemble->relative_area = weight;
+                        
                     } else {
                         assert(false);
-                    }
-                    
-                    
-                    
-                    for(uint side_2 = 0; side_2 < dest_el.n_sides(); ++side_2) {
-                        
-                        if(dest_el.neighbor_ptr(side_2) != nullptr) continue;
-                        
-                        auto side_ptr_2 = dest_el.build_side_ptr(side_2);
-                        compute_side_normal(dim_sla, *side_ptr_2, n2);
-                        
-                        const Real cos_angle = n1.contract(n2);
-                        
-                        //if the angle is more than 60 degrees ( cos(60/180*pi) == 0.5 ) or has same orientation skip
-                        if(cos_angle >= -0.5) {
-                            continue;
-                        }
-                        
-                        box_2.reset();
-                        enlarge_box_from_side(dim_sla, *side_ptr_2, box_2, search_radius);
-                        
-                        if(!box_1.intersects(box_2, tol)) {
-                            continue;
-                        }
-                        
-                        if(dim_sla==2){
-                            make_polygon(*side_ptr_2,side_polygon_2);
-                            if(!project_2D(side_polygon_1,side_polygon_2,isect_polygon_1,isect_polygon_2)){
-                                continue;
-                            }
-                            const Scalar dx = dest_pts(0, 0) - dest_pts(1, 0);
-                            const Scalar dy = dest_pts(0, 1) - dest_pts(1, 1);
-                            
-                            const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
-                            const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
-                            
-                            const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
-                            const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
-                            
-                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
-                            
-                            make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, src_ir);
-                            make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, dest_ir);
-                            
-                            pair_intersected = true;
-                            
-                            
-                            ++n_intersections;
-                            
-                            
-                            //                            current_contact = std::make_shared<Contact>();
-                            //                            current_contact->isect_area	   = area;
-                            //                            current_contact->relative_area = weight;
-                        } else if(dim_src == 3) {
-                            make_polygon_3(*side_ptr_2, side_polygon_2);
-                            
-                            if(!project_3D(
-                                           side_polygon_1,
-                                           side_polygon_2,
-                                           isect_polygon_1,
-                                           isect_polygon_2))
-                            {
-                                continue;
-                            }
-                            
-                            const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
-                            const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
-                            const Scalar weight 	= area/area_slave;
-                            
-                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
-                            
-                            make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, src_ir);
-                            make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, dest_ir);
-                            
-                            pair_intersected = true;
-                            
-                            
-                            ++n_intersections;
-                            
-                            //
-                            //                            current_contact = std::make_shared<Contact>();
-                            //                            current_contact->isect_area	   = area;
-                            //                            current_contact->relative_area = weight;
-                        } else {
-                            assert(false);
-                            return false;
-                        }
+                        return false;
                     }
                 }
             }
-            
-            
-            
-            
-            
-            
-            //                   bool pair_intersected = false;
-            //
-            //                   if(dim == 2) {
-            //                            make_polygon(*side_ptr_2, side_polygon_2);
-            //
-            //                            if(!project_2D(side_polygon_1, side_polygon_2, isect_polygon_1, isect_polygon_2)) {
-            //                                continue;
-            //                            }
-            //
-            //                            const Scalar dx = polygon_2(0, 0) - polygon_2(1, 0);
-            //                            const Scalar dy = polygon_2(0, 1) - polygon_2(1, 1);
-            //
-            //                            const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
-            //                            const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
-            //
-            //                            const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
-            //                            const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
-            //
-            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
-            //
-            //                            make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, q_1);
-            //                            make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, q_2);
-            //
-            //                            pair_intersected = true;
-            //                            ++n_projections;
-            //
-            //
-            //                            current_contact = std::make_shared<Contact>();
-            //                            current_contact->isect_area	   = area;
-            //                            current_contact->relative_area = weight;
-            //
-            //
-            //                        } else if(dim == 3) {
-            //                            make_polygon_3(*side_ptr_2, side_polygon_2);
-            //
-            //                            if(!project_3D(
-            //                                           side_polygon_1,
-            //                                           side_polygon_2,
-            //                                           isect_polygon_1,
-            //                                           isect_polygon_2))
-            //                            {
-            //                                continue;
-            //                            }
-            //
-            //                            const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
-            //                            const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
-            //                            const Scalar weight 	= area/area_slave;
-            //
-            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
-            //
-            //                            make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, q_1);
-            //                            make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, q_2);
-            //
-            //                            pair_intersected = true;
-            //                            ++n_projections;
-            //
-            //
-            //                            current_contact = std::make_shared<Contact>();
-            //                            current_contact->isect_area	   = area;
-            //                            current_contact->relative_area = weight;
-            
-            //                        } else {
-            //                            assert(false);
-            //                            return false;
-            //                        }
-            
-            
+       
+   
             if(pair_intersected && predicate->tagsAreRelated(tag_1,tag_2)) {
                 
                 
                 transform_to_reference_surf(*src_trans,  src_el.type(),  src_ir, src_ir_ref);
                 transform_to_reference_surf(*dest_trans, dest_el.type(), dest_ir, dest_ir_ref);
-                //
-                //               // src.dof_map().dof_indices(&src_el,  master_dofs);
-                //               // dest.dof_map().dof_indices(&dest_el, slave_dofs);
-                //
-                //
-                //				const auto &master_dofs = master.dof_map();
-                //				const auto &slave_dofs  = slave.dof_map();
-                //               // composite_ir.print_info();
-                //
-                //
+                
                 master_fe->attach_quadrature_rule(&src_ir_ref);
                 master_fe->reinit(&src_el);
                 
                 slave_fe->attach_quadrature_rule(&dest_ir_ref);
                 slave_fe->reinit(&dest_el);
-                //
-                //				elemmat.zero();
-                //
-                //				mortar_assemble(*master_fe, *slave_fe, elemmat);
-                //
-                //				// std::cout << "-----------------------------------------\n";
-                //				// std::cout << src_index << ", " << dest_index << "\n";
-                //				// elemmat.print(std::cout);
-                //				// for(auto i : slave_dofs) {
-                //				// 	std::cout << i << " ";
-                //				// }
-                //				// std::cout << "\n";
-                //
-                //				// for(auto i : master_dofs) {
-                //				// 	std::cout << i << " ";
-                //				// }
-                //				// std::cout << "\n";
-                //				// std::cout << "-----------------------------------------\n";
-                //
-                //				auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
-                //                // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
-                //                // dest_ir.print_info();
-                //
-                //				local_element_matrices_sum += partial_sum;
-                //
-                //				intersected = true;
-                //
-                //				++n_intersections;
-                //std::cout<<"n_intersections"<<n_intersections<<std::endl;
-                //
-                //				assert(slave_dofs.size() == elemmat.m());
-                //				assert(master_dofs.size() == elemmat.n());
-                //
-                //				for(int i = 0; i < slave_dofs.size(); ++i) {
-                //
-                //					const long dof_I = slave_dofs[i];
-                //
-                //					for(int j = 0; j < master_dofs.size(); ++j) {
-                //
-                //                        const long dof_J = master_dofs[j];
-                //
-                //                        mat_buffer.add(dof_I, dof_J, elemmat(i, j));
-                //					}
-                //				}
+  
                 
+                const auto &master_dofs = master.dof_map();
+                const auto &slave_dofs  = slave.dof_map();
+                
+                std::vector<int long> slave_dofs_new;
+                
+                slave_dofs_new.resize(slave_dofs.size());
+                
+                for(int i = 0; i < slave_dofs.size(); ++i){
+                    
+                    const long dof_s_old = slave_dofs[i];
+                    
+                    int long temp_id_dest = dest_el.id() *  dest_el.n_nodes() + dof_s_old;
+                    
+                    slave_dofs_new.insert(slave_dofs_new.end(), temp_id_dest);
+                }
+                
+                
+                std::vector<int long> master_dofs_new;
+                
+                master_dofs_new.resize(master_dofs.size());
+                
+    //                std::cout << "master_dofs.size()" << master_dofs.size() << std::endl;
+                
+                
+                for(int i = 0; i < master_dofs.size(); ++i){
+                    
+                    const long dof_m_old = master_dofs[i];
+                    
+                    int long temp_id_src = src_el.id() *  src_el.n_nodes() + dof_m_old;
+                    
+                    master_dofs_new.insert(master_dofs_new.end(), temp_id_src);
+                }
+                
+                //
+                //mortar_assemble(*master_fe, *slave_fe, surface_assemble->coupling);
+                
+                
+                // std::cout << "-----------------------------------------\n";
+                // std::cout << src_index << ", " << dest_index << "\n";
+                // elemmat.print(std::cout);
+                // for(auto i : slave_dofs) {
+                // 	std::cout << i << " ";
+                // }
+                // std::cout << "\n";
+                
+                // for(auto i : master_dofs) {
+                // 	std::cout << i << " ";
+                // }
+                // std::cout << "\n";
+                // std::cout << "-----------------------------------------\n";
+                
+//               auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
+                
+//                const Scalar local_mat_sum = std::accumulate(surface_assemble->coupling.get_values().begin(), surface_assemble->coupling.get_values().end(), libMesh::Real(0.0));
+//                
+//                local_element_matrices_sum += local_mat_sum;
+//                
+                // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
+                // dest_ir.print_info();
+  
+    //                
+    //                std::cout << "elemmat.n =" << elemmat.n() << "\n";
+    //                
+    //                std::cout << "elemmat.m =" << elemmat.m() << "\n";
+                
+    //                for(int i = 0; i < slave_dofs_new.size(); ++i) {
+    //
+    //                    const long dof_I = slave_dofs_new[i];
+    //
+    //                    for(int j = 0; j < master_dofs_new.size(); ++j) {
+    //
+    //                        const long dof_J = master_dofs_new[j];
+    //
+    //                        mat_buffer.add(dof_I, dof_J, elemmat(i, j));
+    //                    }
+    //                }
+
                 return true;
+                
+                
+                //Assemble p
+                //Iteri su elementi
+                //calcoli i=dof_map.index(elemen), j=el_id * n_dofs_x_el + local_dof_offset (local_dof_id e.g., triangolo = {0, 1, 2}, quad = {0, 1, 2, 3})
                 
             } else {
                 
                 return false;
             }
-            
+         
         };
-        
+     
+
+    
         if(!SurfaceAssemble<Dimensions>(comm, master_slave, fun, settings, search_radius, tag_1, tag_2)) {
             return false;
         }
@@ -1920,6 +1725,9 @@ namespace utopia {
         assert(false && "Dimension not supported!");
         return false;
     }
+    
+    
+    
     //
     //
     //
@@ -1938,4 +1746,547 @@ namespace utopia {
     //	}
     //
 }
+    
+//    template<int Dimensions>
+//    bool SurfaceAssemble(
+//                         express::Communicator &comm,
+//                         std::shared_ptr<LibMeshFESpaceBase> &master_slave,
+//                         DSMatrixd &B,
+//                         const cutk::Settings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
+//    {
+//        std::shared_ptr<UtopiaMesh> local_fun_spaces = cutk::make_shared<UtopiaMesh>(master_slave);
+//        
+//        libMesh::DenseMatrix<libMesh::Real> src_pts;
+//        libMesh::DenseMatrix<libMesh::Real> dest_pts;
+//        libMesh::DenseMatrix<libMesh::Real> intersection2;
+//        Polyhedron src_poly, dest_poly;
+//        Polyhedron  intersection3,temp_poly;
+//        Intersector isector;
+//        
+//        std::shared_ptr<LibMeshFESpaceBase> master_slave_space = master_slave;
+//        
+//        static const int tol = 1e-8;
+//        
+//        
+//        std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;
+//        libMesh::DenseMatrix<libMesh::Real> elemmat;
+//        libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
+//        DenseMatrix<Real> side_polygon_1, side_polygon_2;
+//        DenseMatrix<Real> isect_polygon_1, isect_polygon_2;
+//        
+//        std::shared_ptr<Transform> src_trans;
+//        std::shared_ptr<Transform> dest_trans;
+//        
+//        Point n1, n2;
+//        
+//        
+//        
+//        int skip_zeros = 1;
+//        
+//        
+//        libMesh::Real total_intersection_volume = 0.0;
+//        libMesh::Real local_element_matrices_sum = 0.0;
+//        
+//        //
+//        //		express::MapSparseMatrix<double> mat_buffer(slave->dof_map().n_dofs(), master->dof_map().n_dofs());
+//        
+//        bool intersected = false;
+//        
+//        auto fun = [&](const SurfaceElementAdapter<Dimensions> &master,
+//                       const SurfaceElementAdapter<Dimensions> &slave) -> bool {
+//            
+//            
+//            using namespace cutlibpp;
+//            using namespace express;
+//            using namespace cutk;
+//            
+//            auto predicate = make_shared<MasterAndSlave>();
+//            predicate->add(tag_1,tag_2);
+//            
+//            long n_intersections = 0;
+//            
+//            //std::cout<<"ciao sn in fun"<<std::endl;
+//            
+//            bool pair_intersected = false;
+//            
+//            const auto &src  = master.space();
+//            const auto &dest = slave.space();
+//            
+//            const auto &src_mesh  = src.mesh();
+//            const auto &dest_mesh = dest.mesh();
+//            
+//            //dest_mesh.print_info();
+//            
+//            const int src_index  = master.element();
+//            const int dest_index = slave.element();
+//            
+//            auto &src_el  = *src_mesh.elem(src_index);
+//            auto &dest_el = *dest_mesh.elem(dest_index);
+//            
+//            const int dim_src = src_mesh.mesh_dimension();
+//            const int dim_sla = dest_mesh.mesh_dimension();
+//            Box box_1(dim_src), box_2(dim_sla);
+//            
+//            QMortar src_ir_ref(dim_src);
+//            QMortar src_ir(dim_src);
+//            QMortar dest_ir(dim_sla);
+//            QMortar dest_ir_ref(dim_sla);
+//            
+//            
+//            
+//            
+//            std::vector<long> src_order = local_fun_spaces->variable_order()[0].global;
+//            const int approx_order=src_order[0];
+//            
+//            
+//            //FIXME This is a hack
+//            
+//            //
+//            //			std::vector<long> src_order = local_fun_spaces->variable_order(0)[0].global;
+//            //
+//            //			int src_order_new=src_order[0];
+//            //
+//            //
+//            //
+//            //			std::vector<long> dest_order = local_fun_spaces->variable_order(1)[0].global;
+//            //
+//            //			int dest_order_new=dest_order[0];
+//            //
+//            //
+//            //
+//            //			std::vector<long> src_var_num = local_fun_spaces->variable_number(0)[0].global;
+//            //
+//            //			int src_var_new=src_var_num[0];
+//            //
+//            //
+//            //
+//            //			std::vector<long> dest_var_num = local_fun_spaces->variable_number(1)[0].global;
+//            //
+//            //			int dest_var_new=dest_var_num[0];
+//            
+//            
+//            
+//            
+//            std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
+//            //
+//            master_fe = libMesh::FEBase::build(src_mesh.mesh_dimension(), FIRST);
+//            slave_fe  = libMesh::FEBase::build(dest_mesh.mesh_dimension(), FIRST);
+//            //
+//            
+//            typedef Intersector::Scalar Scalar;
+//            //
+//            //
+//            //			const int order = order_for_l2_integral(dim, src_el, src_order_new, dest_el, dest_order_new);
+//            
+//            //            if(!has_constrained_dofs(src, src_el) &&
+//            //               !has_constrained_dofs(dest, dest_el))
+//            {
+//                
+//                if(dim_src == 2)  {
+//                    make_polygon(src_el,   src_pts);
+//                    make_polygon(dest_el,  dest_pts);
+//                    {
+//                        //					total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
+//                        //
+//                        //					const libMesh::Real weight=isector.polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
+//                        //
+//                        //					make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
+//                        //					pair_intersected = true;
+//                        //
+//                        src_trans  = std::make_shared<Transform2>(src_el);
+//                        dest_trans = std::make_shared<Transform2>(dest_el);
+//                        //pair_intersected = true;
+//                    }
+//                }
+//                
+//                else if(dim_src == 3) {
+//                    make_polyhedron(src_el,  src_poly);
+//                    make_polyhedron(dest_el, dest_poly);
+//                    {
+//                        //					total_intersection_volume += isector.p_mesh_volume_3(intersection3);
+//                        //
+//                        //					const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
+//                        //
+//                        //
+//                        //					make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
+//                        src_trans  = std::make_shared<Transform3>(src_el);
+//                        dest_trans = std::make_shared<Transform3>(dest_el);
+//                        //pair_intersected = true;
+//                    }
+//                }
+//                
+//                for(uint side_1 = 0; side_1 < src_el.n_sides(); ++side_1) {
+//                    
+//                    if(src_el.neighbor_ptr(side_1) != nullptr) continue;
+//                    auto side_ptr_1 = src_el.build_side_ptr(side_1);
+//                    
+//                    compute_side_normal(dim_src, *side_ptr_1, n1);
+//                    
+//                    box_1.reset();
+//                    enlarge_box_from_side(dim_src, *side_ptr_1, box_1, search_radius);
+//                    
+//                    if(dim_src == 2) {
+//                        make_polygon(*side_ptr_1, side_polygon_1);
+//                    } else if(dim_src == 3) {
+//                        make_polygon_3(*side_ptr_1, side_polygon_1);
+//                    } else {
+//                        assert(false);
+//                    }
+//                    
+//                    
+//                    
+//                    for(uint side_2 = 0; side_2 < dest_el.n_sides(); ++side_2) {
+//                        
+//                        if(dest_el.neighbor_ptr(side_2) != nullptr) continue;
+//                        
+//                        auto side_ptr_2 = dest_el.build_side_ptr(side_2);
+//                        compute_side_normal(dim_sla, *side_ptr_2, n2);
+//                        
+//                        const Real cos_angle = n1.contract(n2);
+//                        
+//                        //if the angle is more than 60 degrees ( cos(60/180*pi) == 0.5 ) or has same orientation skip
+//                        if(cos_angle >= -0.5) {
+//                            continue;
+//                        }
+//                        
+//                        box_2.reset();
+//                        enlarge_box_from_side(dim_sla, *side_ptr_2, box_2, search_radius);
+//                        
+//                        if(!box_1.intersects(box_2, tol)) {
+//                            continue;
+//                        }
+//                        
+//                        if(dim_sla==2){
+//                            make_polygon(*side_ptr_2,side_polygon_2);
+//                            if(!project_2D(side_polygon_1,side_polygon_2,isect_polygon_1,isect_polygon_2)){
+//                                continue;
+//                            }
+//                            const Scalar dx = dest_pts(0, 0) - dest_pts(1, 0);
+//                            const Scalar dy = dest_pts(0, 1) - dest_pts(1, 1);
+//                            
+//                            const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
+//                            const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
+//                            
+//                            const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
+//                            const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
+//                            
+//                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
+//                            
+//                            make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, src_ir);
+//                            make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, dest_ir);
+//                            
+//                            pair_intersected = true;
+//                            
+//                            
+//                            ++n_intersections;
+//                            
+//                            
+//                            //                            current_contact = std::make_shared<Contact>();
+//                            //                            current_contact->isect_area	   = area;
+//                            //                            current_contact->relative_area = weight;
+//                        } else if(dim_src == 3) {
+//                            make_polygon_3(*side_ptr_2, side_polygon_2);
+//                            
+//                            if(!project_3D(
+//                                           side_polygon_1,
+//                                           side_polygon_2,
+//                                           isect_polygon_1,
+//                                           isect_polygon_2))
+//                            {
+//                                continue;
+//                            }
+//                            
+//                            const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
+//                            const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
+//                            const Scalar weight 	= area/area_slave;
+//                            
+//                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
+//                            
+//                            make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, src_ir);
+//                            make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, dest_ir);
+//                            
+//                            pair_intersected = true;
+//                            
+//                            
+//                            ++n_intersections;
+//                            
+//                            //
+//                            //                            current_contact = std::make_shared<Contact>();
+//                            //                            current_contact->isect_area	   = area;
+//                            //                            current_contact->relative_area = weight;
+//                        } else {
+//                            assert(false);
+//                            return false;
+//                        }
+//                    }
+//                }
+//            }
+//            
+//            
+//            
+//            
+//            
+//            
+//            //                   bool pair_intersected = false;
+//            //
+//            //                   if(dim == 2) {
+//            //                            make_polygon(*side_ptr_2, side_polygon_2);
+//            //
+//            //                            if(!project_2D(side_polygon_1, side_polygon_2, isect_polygon_1, isect_polygon_2)) {
+//            //                                continue;
+//            //                            }
+//            //
+//            //                            const Scalar dx = polygon_2(0, 0) - polygon_2(1, 0);
+//            //                            const Scalar dy = polygon_2(0, 1) - polygon_2(1, 1);
+//            //
+//            //                            const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
+//            //                            const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
+//            //
+//            //                            const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
+//            //                            const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
+//            //
+//            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
+//            //
+//            //                            make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, q_1);
+//            //                            make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, q_2);
+//            //
+//            //                            pair_intersected = true;
+//            //                            ++n_projections;
+//            //
+//            //
+//            //                            current_contact = std::make_shared<Contact>();
+//            //                            current_contact->isect_area	   = area;
+//            //                            current_contact->relative_area = weight;
+//            //
+//            //
+//            //                        } else if(dim == 3) {
+//            //                            make_polygon_3(*side_ptr_2, side_polygon_2);
+//            //
+//            //                            if(!project_3D(
+//            //                                           side_polygon_1,
+//            //                                           side_polygon_2,
+//            //                                           isect_polygon_1,
+//            //                                           isect_polygon_2))
+//            //                            {
+//            //                                continue;
+//            //                            }
+//            //
+//            //                            const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
+//            //                            const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
+//            //                            const Scalar weight 	= area/area_slave;
+//            //
+//            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
+//            //
+//            //                            make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, q_1);
+//            //                            make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, q_2);
+//            //
+//            //                            pair_intersected = true;
+//            //                            ++n_projections;
+//            //
+//            //
+//            //                            current_contact = std::make_shared<Contact>();
+//            //                            current_contact->isect_area	   = area;
+//            //                            current_contact->relative_area = weight;
+//            
+//            //                        } else {
+//            //                            assert(false);
+//            //                            return false;
+//            //                        }
+//            
+//            
+//            if(pair_intersected) {
+//                
+//                
+////                transform_to_reference_surf(*src_trans,  src_el.type(),  src_ir, src_ir_ref);
+////                transform_to_reference_surf(*dest_trans, dest_el.type(), dest_ir, dest_ir_ref);
+//                //
+//                //               // src.dof_map().dof_indices(&src_el,  master_dofs);
+//                //               // dest.dof_map().dof_indices(&dest_el, slave_dofs);
+//                //
+//                //
+//                //				const auto &master_dofs = master.dof_map();
+//                //				const auto &slave_dofs  = slave.dof_map();
+//                //               // composite_ir.print_info();
+//                //
+//                //
+////                master_fe->attach_quadrature_rule(&src_ir_ref);
+////                master_fe->reinit(&src_el);
+////                
+////                slave_fe->attach_quadrature_rule(&dest_ir_ref);
+////                slave_fe->reinit(&dest_el);
+//                //
+//                //				elemmat.zero();
+//                //
+//                //				mortar_assemble(*master_fe, *slave_fe, elemmat);
+//                //
+//                //				// std::cout << "-----------------------------------------\n";
+//                //				// std::cout << src_index << ", " << dest_index << "\n";
+//                //				// elemmat.print(std::cout);
+//                //				// for(auto i : slave_dofs) {
+//                //				// 	std::cout << i << " ";
+//                //				// }
+//                //				// std::cout << "\n";
+//                //
+//                //				// for(auto i : master_dofs) {
+//                //				// 	std::cout << i << " ";
+//                //				// }
+//                //				// std::cout << "\n";
+//                //				// std::cout << "-----------------------------------------\n";
+//                //
+//                //				auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
+//                //                // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
+//                //                // dest_ir.print_info();
+//                //
+//                //				local_element_matrices_sum += partial_sum;
+//                //
+//                //				intersected = true;
+//                //
+//                //				++n_intersections;
+//                //std::cout<<"n_intersections"<<n_intersections<<std::endl;
+//                //
+//                //				assert(slave_dofs.size() == elemmat.m());
+//                //				assert(master_dofs.size() == elemmat.n());
+//                //
+//                //				for(int i = 0; i < slave_dofs.size(); ++i) {
+//                //
+//                //					const long dof_I = slave_dofs[i];
+//                //
+//                //					for(int j = 0; j < master_dofs.size(); ++j) {
+//                //
+//                //                        const long dof_J = master_dofs[j];
+//                //
+//                //                        mat_buffer.add(dof_I, dof_J, elemmat(i, j));
+//                //					}
+//                //				}
+//                
+//                return true;
+//                
+//            } else {
+//                
+//                return false;
+//            }
+//            
+//        };
+//        
+//        if(!SurfaceAssemble<Dimensions>(comm, master_slave, fun, settings, search_radius, tag_1, tag_2)) {
+//            return false;
+//        }
+//        //
+//        //
+//        //		// std::cout << mat_buffer << std::endl;
+//        //
+//        //		double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };
+//        //
+//        //		comm.allReduce(volumes, 2, express::MPISum());
+//        //
+//        //		const processor_id_type master_proc_id  = master->mesh().processor_id();
+//        //
+//        //		const dof_id_type n_dofs_on_proc_master = master->dof_map().n_dofs_on_processor(master_proc_id);
+//        //
+//        //		const processor_id_type slave_proc_id   = slave->mesh().processor_id();
+//        //
+//        //		const dof_id_type n_dofs_on_proc_slave  = slave->dof_map().n_dofs_on_processor(slave_proc_id);
+//        //
+//        //		if(comm.isRoot()) {
+//        //			std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
+//        //		}
+//        
+//        //
+//        //
+//        //		express::Array<express::SizeType>  ownershipRangesMaster(comm.size()+1);
+//        //		ownershipRangesMaster.allSet(0);
+//        //
+//        //
+//        //		express::Array<express::SizeType>  ownershipRangesSlave(comm.size()+1);
+//        //		ownershipRangesSlave.allSet(0);
+//        //
+//        //
+//        //		ownershipRangesMaster[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master);
+//        //
+//        //		ownershipRangesSlave[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave);
+//        //
+//        //		comm.allReduce(&ownershipRangesMaster[0], ownershipRangesMaster.size(), express::MPIMax());
+//        //
+//        //		comm.allReduce(&ownershipRangesSlave[0],  ownershipRangesSlave.size(),  express::MPIMax());
+//        //
+//        //		express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
+//        //		redist.apply(ownershipRangesSlave, mat_buffer, express::AddAssign<double>());
+//        //
+//        //		assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
+//        //
+//        //		express::RootDescribe("petsc assembly begin", comm, std::cout);
+//        //
+//        //		SizeType  mMaxRowEntries = mat_buffer.maxEntriesXCol();
+//        //		comm.allReduce(&mMaxRowEntries, 1, express::MPIMax());
+//        //
+//        //		const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
+//        //		const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
+//        //
+//        //		B = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
+//        //
+//        //		{
+//        //			utopia::Write<utopia::DSMatrixd> write(B);
+//        //			for (auto it = mat_buffer.iter(); it; ++it) {
+//        //				B.set(it.row(), it.col(), *it);
+//        //
+//        //			}
+//        //		}
+//        //
+//        //
+//        //		express::RootDescribe("petsc assembly end", comm, std::cout);
+//        //
+//        //
+//        return true;
+//    }
+//    //
+//    //
+//    //
+//    //
+//    
+//    
+//    
+//    
+//    bool ParMortarAssembler::SurfaceAssemble(DSMatrixd &B, const libMesh::Real search_radius, const int tag_1, const int tag_2)
+//    {
+//        
+//        cutk::Settings settings;
+//        
+//        
+//        express::Communicator comm = libmesh_comm_.get();
+//        
+//        if(master_slave_->mesh().mesh_dimension() == 2) {
+//            //std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
+//            return utopia::SurfaceAssemble<2>(comm, master_slave_, B, settings, search_radius, tag_1, tag_2);
+//        }
+//        
+//        
+//        if(master_slave_->mesh().mesh_dimension() == 3) {
+//            return utopia::SurfaceAssemble<3>(comm, master_slave_, B, settings, search_radius, tag_1, tag_2);
+//        }
+//        
+//        assert(false && "Dimension not supported!");
+//        return false;
+//    }
+//    //
+//    //
+//    //
+//    //	bool ParMortarAssembler::Transfer(DSMatrixd &B, DSMatrixd &T)
+//    //	{
+//    //		DVectord               diag_elem;
+//    //		PetscInt               mG;
+//    //		PetscInt               nG;
+//    //		PetscInt               mL;
+//    //		PetscInt               nL;
+//    //
+//    //		diag_elem = 1./sum(B,1);
+//    //		T = diag(diag_elem)*B;
+//    //
+//    //		return true;
+//    //	}
+//    //
+//}
+//
+//
+//
+
 
