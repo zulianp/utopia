@@ -266,6 +266,7 @@ namespace utopia {
                 
                 subdomain_id[elem->id()].global.insert(subdomain_id[elem->id()].global.end(),elem->subdomain_id());
                 original_dof_map.dof_indices(elem, temp, 0);
+                std::cout<<" TEMP SIZE "<< temp.size() <<std::endl;
                 dof_map[elem->id()].global.insert(dof_map[elem->id()].global.end(), temp.begin(), temp.end());
                 
                 if (first)
@@ -1253,6 +1254,8 @@ namespace utopia {
         
         int master_dof_n=0;
         
+        const int dim = master_slave->mesh().mesh_dimension();
+        
         
         libMesh::Real total_intersection_volume = 0.0;
         libMesh::Real local_element_matrices_sum = 0.0;
@@ -1266,6 +1269,7 @@ namespace utopia {
         {
             Elem * elem = *e_it;
             
+            std::cout <<"subdomain_id = "<< elem->subdomain_id() << "elem_id = " << elem->id() <<std::endl;
             
             bool size_new=true;
             
@@ -1288,12 +1292,17 @@ namespace utopia {
             }
         }
         
+        int mat_buffer_row = master_slave->dof_map().n_dofs() * master_slave->mesh().n_elem();
         
-        std::cout<<"slave_dof_n = "<<slave_dof_n<<std::endl;
+        int mat_buffer_col = master_slave->dof_map().n_dofs() * master_slave->mesh().n_elem();
         
-        std::cout<<"master_dof_n = "<<master_dof_n<<std::endl;
+        express::MapSparseMatrix<double> mat_buffer( mat_buffer_row, mat_buffer_col);
         
-        express::MapSparseMatrix<double> coupling(slave_dof_n, master_dof_n);
+        express::MapSparseMatrix<double> p_buffer(master_slave->dof_map().n_dofs(), mat_buffer_col);
+        
+        express::MapSparseMatrix<double> q_buffer(mat_buffer_row, master_slave->dof_map().n_dofs());
+        
+        std::cout<<"*********** master_slave->dof_map().n_dofs() = "<<  master_slave->dof_map().n_dofs() <<std::endl;
         
         bool intersected = false;
         
@@ -1307,6 +1316,7 @@ namespace utopia {
             using namespace cutk;
             
             auto predicate = make_shared<MasterAndSlave>();
+            
             predicate->add(tag_1,tag_2);
             
             
@@ -1324,6 +1334,8 @@ namespace utopia {
             
             //dest_mesh.print_info();
             
+            libMesh::DenseMatrix<libMesh::Real> elemmat;
+            
             const int src_index  = master.element();
             const int dest_index = slave.element();
             
@@ -1332,6 +1344,7 @@ namespace utopia {
             
             const int dim_src = src_mesh.mesh_dimension();
             const int dim_sla = dest_mesh.mesh_dimension();
+            
             Box box_1(dim_src), box_2(dim_sla);
             
             QMortar src_ir_ref(dim_src);
@@ -1343,18 +1356,7 @@ namespace utopia {
             const int approx_order=src_order[0];
             
             std::shared_ptr<Contact> surface_assemble;
-            
-            
-//            surface_assemble->parent_element_master  = src_index;
-//            //          surface_assemble->side_number_master     = side_1;
-//            surface_assemble->id_master 			 = src_el.id();
-//            //
-//            surface_assemble->parent_element_slave   = dest_index;
-//            //          surface_assemble->side_number_slave 	 = side_2;
-//            surface_assemble->id_slave 			     = dest_el.id();
-//            //
-//            surface_assemble->coupling.zero();
-//            
+
   
             
             //FIXME This is a hack
@@ -1519,8 +1521,8 @@ namespace utopia {
                 }
             }
        
-   
-            if(pair_intersected && predicate->tagsAreRelated(tag_1,tag_2)) {
+
+            if(pair_intersected) {
                 
                 
                 transform_to_reference_surf(*src_trans,  src_el.type(),  src_ir, src_ir_ref);
@@ -1531,43 +1533,105 @@ namespace utopia {
                 
                 slave_fe->attach_quadrature_rule(&dest_ir_ref);
                 slave_fe->reinit(&dest_el);
-  
+                
+                
+                surface_assemble->parent_element_master  = src_index;
+              
+                surface_assemble->id_master 			 = src_el.id();
+                
+                surface_assemble->parent_element_slave   = dest_index;
+             
+                surface_assemble->id_slave 			     = dest_el.id();
+                
+                surface_assemble->coupling.zero();
+                
+                elemmat.zero();
+                
+
                 
                 const auto &master_dofs = master.dof_map();
                 const auto &slave_dofs  = slave.dof_map();
                 
-                std::vector<int long> slave_dofs_new;
                 
-                slave_dofs_new.resize(slave_dofs.size());
+                std::vector<dof_id_type> dof_indices_slave_vec(slave_dofs.size());
+                std::vector<dof_id_type> dof_indices_master_vec(master_dofs.size());
                 
-                for(int i = 0; i < slave_dofs.size(); ++i){
+                MeshBase::const_element_iterator e_it = master_slave->mesh().active_elements_begin();
+                const MeshBase::const_element_iterator e_end = master_slave->mesh().active_elements_end();
+                
+                std::vector<int> block_id;
+                std::vector<int> block_id_def;
+                
+                
+                
+                std::cout<<"************************************************** "<<std::endl;
+
+            
+                std::cout<<"************* dest_el.id() = "<< dest_el.id() <<std::endl;
+                
+                
+                std::cout<<"************* src_el.id() = "<< src_el.id() <<std::endl;
+                
+                
+                std::cout<<"************************************************** "<<std::endl;
+                
+                
+                
+                int i=0;
+                for (; e_it != e_end; ++e_it)
+                {
+                    Elem * elem = *e_it;
+                    if (i==0){
+                        block_id_def.push_back(elem->subdomain_id());}
                     
-                    const long dof_s_old = slave_dofs[i];
+                    block_id.push_back(elem->subdomain_id());
+                    if (i>0 && block_id.at(i)!=block_id.at(i-1)){
+                        block_id_def.push_back(block_id.at(i));
+                    }
                     
-                    int long temp_id_dest = dest_el.id() *  dest_el.n_nodes() + dof_s_old;
+                    i++;
                     
-                    slave_dofs_new.insert(slave_dofs_new.end(), temp_id_dest);
+                    
+                }
+                
+                for(uint i = 0; i <  slave_dofs.size(); ++i) {
+                    
+                    Elem *elem_off = *( master_slave->mesh().active_subdomain_elements_begin(block_id_def.at(1)));
+
+//                    std::cout<<"************* dest_el.id() = "<< dest_el.id() <<std::endl;
+//
+//                    std::cout<<"************* elem_off->id() = "<< elem_off->id()<<std::endl;
+
+                    dof_indices_slave_vec[i] =  dest_el.id() * dest_el.n_nodes() + i;
+
+                    std::cout<< "************ dof_I = "<<  dest_el.id() * dest_el.n_nodes() + i << std::endl;
+
+                    std::cout<< "************ dof_I_comparison = "<<  slave_dofs[i] << std::endl;
                 }
                 
                 
-                std::vector<int long> master_dofs_new;
+       
                 
-                master_dofs_new.resize(master_dofs.size());
-                
-    //                std::cout << "master_dofs.size()" << master_dofs.size() << std::endl;
-                
-                
-                for(int i = 0; i < master_dofs.size(); ++i){
+                for(uint i = 0; i <  master_dofs.size(); ++i) {
+
                     
-                    const long dof_m_old = master_dofs[i];
+                    Elem *elem_off = *( master_slave->mesh().active_subdomain_elements_begin(block_id_def.at(0)));
+
+                    std::cout<<"************* src_el.id() = "<< src_el.id() <<std::endl;
                     
-                    int long temp_id_src = src_el.id() *  src_el.n_nodes() + dof_m_old;
+                    std::cout<<"************* elem_off->id() = "<< elem_off->id()<<std::endl;
                     
-                    master_dofs_new.insert(master_dofs_new.end(), temp_id_src);
+                    dof_indices_master_vec[i] = src_el.id() * src_el.n_nodes() + i;
+                    
+                    std::cout<< "************ dof_J = "<< src_el.id() * src_el.n_nodes() + i << std::endl;
+                    
+                    std::cout<< "************ dof_J_comparison = "<<  master_dofs[i] << std::endl;
+                    
                 }
+
                 
-                //
-                //mortar_assemble(*master_fe, *slave_fe, surface_assemble->coupling);
+                
+                mortar_assemble(*master_fe, *slave_fe, elemmat);
                 
                 
                 // std::cout << "-----------------------------------------\n";
@@ -1584,32 +1648,80 @@ namespace utopia {
                 // std::cout << "\n";
                 // std::cout << "-----------------------------------------\n";
                 
-//               auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
+               auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
                 
-//                const Scalar local_mat_sum = std::accumulate(surface_assemble->coupling.get_values().begin(), surface_assemble->coupling.get_values().end(), libMesh::Real(0.0));
-//                
-//                local_element_matrices_sum += local_mat_sum;
-//                
+               // const Scalar local_mat_sum = std::accumulate(surface_assemble->coupling.get_values().begin(), surface_assemble->coupling.get_values().end(), libMesh::Real(0.0));
+                
+               local_element_matrices_sum += partial_sum;
+                
+               assert(slave_dofs.size() == elemmat.m());
+               assert(master_dofs.size() == elemmat.n());
+    //
                 // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
                 // dest_ir.print_info();
-  
+
     //                
     //                std::cout << "elemmat.n =" << elemmat.n() << "\n";
     //                
     //                std::cout << "elemmat.m =" << elemmat.m() << "\n";
-                
-    //                for(int i = 0; i < slave_dofs_new.size(); ++i) {
-    //
-    //                    const long dof_I = slave_dofs_new[i];
-    //
-    //                    for(int j = 0; j < master_dofs_new.size(); ++j) {
-    //
-    //                        const long dof_J = master_dofs_new[j];
-    //
-    //                        mat_buffer.add(dof_I, dof_J, elemmat(i, j));
-    //                    }
-    //                }
+            
+                for(int i = 0; i <  slave_dofs.size(); ++i) {
 
+                    const long dof_I = slave_dofs[i];
+
+                    for(int j = 0; j <  dof_indices_slave_vec.size(); ++j) {
+
+                        const long dof_J = dof_indices_slave_vec[j];
+                        
+                        int  entry=0;
+                        
+                        if (dof_J==dest_el.id()*dof_I+j) entry = 1;
+
+                        p_buffer.add(dof_I, dof_J, entry);
+                    }
+                }
+                
+//
+//                
+                for(int i = 0; i <  dof_indices_master_vec.size(); ++i) {
+                    
+                    const long dof_I = dof_indices_master_vec[i];
+                    
+                    std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
+                    
+                    for(int j = 0; j < master_dofs.size(); ++j) {
+                        
+                        const long dof_J = master_dofs[j];
+                        
+                        std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
+                        
+                        int  entry=0;
+                        
+                        if (dof_J==src_el.id()*dof_I+j) entry = 1;
+   
+                        q_buffer.add(dof_I, dof_J, entry);
+                    }
+                }
+                
+
+                
+                for(int i = 0; i <  dof_indices_slave_vec.size(); ++i) {
+                    
+                    const long dof_I = dof_indices_slave_vec[i];
+                    
+                    std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
+                    
+                    for(int j = 0; j <  dof_indices_master_vec.size(); ++j) {
+                        
+                        const long dof_J = dof_indices_master_vec[j];
+                        
+                        std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
+                        
+                        mat_buffer.add(dof_I, dof_J, elemmat(i, j));
+                    }
+                }
+                
+                
                 return true;
                 
                 
@@ -1629,79 +1741,224 @@ namespace utopia {
         if(!SurfaceAssemble<Dimensions>(comm, master_slave, fun, settings, search_radius, tag_1, tag_2)) {
             return false;
         }
-        //
-        //
-        //		// std::cout << mat_buffer << std::endl;
-        //
-        //		double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };
-        //
-        //		comm.allReduce(volumes, 2, express::MPISum());
-        //
-        //		const processor_id_type master_proc_id  = master->mesh().processor_id();
-        //
-        //		const dof_id_type n_dofs_on_proc_master = master->dof_map().n_dofs_on_processor(master_proc_id);
-        //
-        //		const processor_id_type slave_proc_id   = slave->mesh().processor_id();
-        //
-        //		const dof_id_type n_dofs_on_proc_slave  = slave->dof_map().n_dofs_on_processor(slave_proc_id);
-        //
-        //		if(comm.isRoot()) {
-        //			std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
-        //		}
+
+
+        // std::cout << mat_buffer << std::endl;
+
+        double volumes[1] = { local_element_matrices_sum };
+
+        comm.allReduce(volumes, 1, express::MPISum());
+
+        const processor_id_type master_proc_id  = master_slave->mesh().processor_id();
+
+        const dof_id_type n_dofs_on_proc_master = master_slave->dof_map().n_dofs_on_processor(master_proc_id) * master_slave->mesh().n_local_elem();
+
+        const processor_id_type slave_proc_id   = master_slave->mesh().processor_id();
+
+        const dof_id_type n_dofs_on_proc_slave  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id) * master_slave->mesh().n_local_elem();
+
+        if(comm.isRoot()) {
+            std::cout << "sum(B): " << volumes[0] <<std::endl;
+        }
+
+
+
+        express::Array<express::SizeType>  ownershipRangesMaster(comm.size()+1);
+        ownershipRangesMaster.allSet(0);
+
+
+        express::Array<express::SizeType>  ownershipRangesSlave(comm.size()+1);
+        ownershipRangesSlave.allSet(0);
+
+
+        ownershipRangesMaster[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master);
+
+        ownershipRangesSlave[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave);
+
+        comm.allReduce(&ownershipRangesMaster[0], ownershipRangesMaster.size(), express::MPISum());
+
+        comm.allReduce(&ownershipRangesSlave[0],  ownershipRangesSlave.size(),  express::MPISum());
         
-        //
-        //
-        //		express::Array<express::SizeType>  ownershipRangesMaster(comm.size()+1);
-        //		ownershipRangesMaster.allSet(0);
-        //
-        //
-        //		express::Array<express::SizeType>  ownershipRangesSlave(comm.size()+1);
-        //		ownershipRangesSlave.allSet(0);
-        //
-        //
-        //		ownershipRangesMaster[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master);
-        //
-        //		ownershipRangesSlave[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave);
-        //
-        //		comm.allReduce(&ownershipRangesMaster[0], ownershipRangesMaster.size(), express::MPIMax());
-        //
-        //		comm.allReduce(&ownershipRangesSlave[0],  ownershipRangesSlave.size(),  express::MPIMax());
-        //
-        //		express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
-        //		redist.apply(ownershipRangesSlave, mat_buffer, express::AddAssign<double>());
-        //
-        //		assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
-        //
-        //		express::RootDescribe("petsc assembly begin", comm, std::cout);
-        //
-        //		SizeType  mMaxRowEntries = mat_buffer.maxEntriesXCol();
-        //		comm.allReduce(&mMaxRowEntries, 1, express::MPIMax());
-        //
-        //		const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
-        //		const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
-        //
-        //		B = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
-        //
-        //		{
-        //			utopia::Write<utopia::DSMatrixd> write(B);
-        //			for (auto it = mat_buffer.iter(); it; ++it) {
-        //				B.set(it.row(), it.col(), *it);
-        //
-        //			}
-        //		}
-        //
-        //
-        //		express::RootDescribe("petsc assembly end", comm, std::cout);
-        //
-        //
+        std::partial_sum(ownershipRangesMaster.begin(), ownershipRangesMaster.end(),
+                         ownershipRangesMaster.begin());
+        
+        std::partial_sum(ownershipRangesSlave.begin(), ownershipRangesSlave.end(),
+                         ownershipRangesSlave.begin());
+        
+        
+        
+        if(comm.isRoot()) {
+            std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
+        }
+
+        express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
+        
+        redist.apply(ownershipRangesSlave, mat_buffer, express::AddAssign<double>());
+
+        assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
+
+        express::RootDescribe("petsc assembly begin", comm, std::cout);
+
+        SizeType  mMaxRowEntries = mat_buffer.maxEntriesXCol();
+        
+        comm.allReduce(&mMaxRowEntries, 1, express::MPIMax());
+
+        const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
+        const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
+        
+        
+        DSMatrixd B_tilde = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
+        
+        
+        {
+            utopia::Write<utopia::DSMatrixd> write(B_tilde);
+            for (auto it = mat_buffer.iter(); it; ++it) {
+                B_tilde.set(it.row(), it.col(), *it);
+                
+            }
+        }
+        
+        
+        /*P_tilde*/
+        
+        const dof_id_type n_dofs_on_proc_master_p = master_slave->dof_map().n_dofs_on_processor(master_proc_id) * master_slave->mesh().n_local_elem();
+        
+        const dof_id_type n_dofs_on_proc_slave_p  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id);
+        
+        if(comm.isRoot()) {
+            std::cout << "sum(B): " << volumes[0] <<std::endl;
+        }
+        
+        
+        
+        express::Array<express::SizeType>  ownershipRangesMaster_p(comm.size()+1);
+        ownershipRangesMaster_p.allSet(0);
+        
+        
+        express::Array<express::SizeType>  ownershipRangesSlave_p(comm.size()+1);
+        ownershipRangesSlave_p.allSet(0);
+        
+        
+        ownershipRangesMaster_p[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_p);
+        
+        ownershipRangesSlave_p[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave_p);
+        
+        comm.allReduce(&ownershipRangesMaster_p[0], ownershipRangesMaster_p.size(), express::MPISum());
+        
+        comm.allReduce(&ownershipRangesSlave_p[0],  ownershipRangesSlave_p.size(),  express::MPISum());
+        
+        std::partial_sum(ownershipRangesMaster_p.begin(), ownershipRangesMaster_p.end(),
+                         ownershipRangesMaster_p.begin());
+        
+        std::partial_sum(ownershipRangesSlave_p.begin(), ownershipRangesSlave_p.end(),
+                         ownershipRangesSlave_p.begin());
+        
+        
+        
+        if(comm.isRoot()) {
+            std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
+        }
+        
+        redist.apply(ownershipRangesSlave_p, p_buffer, express::AddAssign<double>());
+        
+        assert(ownershipRangesSlave_p.empty() == ownershipRangesMaster_p.empty() || ownershipRangesMaster_p.empty());
+        
+        express::RootDescribe("petsc assembly begin", comm, std::cout);
+        
+        SizeType  mMaxRowEntries_p = p_buffer.maxEntriesXCol();
+        
+        comm.allReduce(&mMaxRowEntries_p, 1, express::MPIMax());
+        
+        const SizeType local_range_slave_range_p  = ownershipRangesSlave_p [comm.rank()+1] - ownershipRangesSlave_p [comm.rank()];
+        const SizeType local_range_master_range_p = ownershipRangesMaster_p[comm.rank()+1] - ownershipRangesMaster_p[comm.rank()];
+        
+        DSMatrixd P_tilde = utopia::local_sparse(local_range_slave_range_p, local_range_master_range_p, mMaxRowEntries_p);
+        
+        
+        {
+            utopia::Write<utopia::DSMatrixd> write(P_tilde);
+            for (auto it = p_buffer.iter(); it; ++it) {
+                P_tilde.set(it.row(), it.col(), *it);
+                
+            }
+        }
+        
+        
+
+        /*Q_transpose*/
+        
+        const dof_id_type n_dofs_on_proc_master_q = master_slave->dof_map().n_dofs_on_processor(master_proc_id);
+        
+        const dof_id_type n_dofs_on_proc_slave_q  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id) * master_slave->mesh().n_local_elem();
+        
+        if(comm.isRoot()) {
+            std::cout << "sum(B): " << volumes[0] <<std::endl;
+        }
+        
+        
+        
+        express::Array<express::SizeType>  ownershipRangesMaster_q(comm.size()+1);
+        ownershipRangesMaster_q.allSet(0);
+        
+        
+        express::Array<express::SizeType>  ownershipRangesSlave_q(comm.size()+1);
+        ownershipRangesSlave_q.allSet(0);
+        
+        
+        ownershipRangesMaster_q[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_q);
+        
+        ownershipRangesSlave_q[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave_q);
+        
+        comm.allReduce(&ownershipRangesMaster_q[0], ownershipRangesMaster_q.size(), express::MPISum());
+    
+        comm.allReduce(&ownershipRangesSlave_q[0],  ownershipRangesSlave_q.size(),  express::MPISum());
+        
+        std::partial_sum(ownershipRangesMaster_q.begin(), ownershipRangesMaster_q.end(),
+                         ownershipRangesMaster_q.begin());
+        
+        std::partial_sum(ownershipRangesSlave_q.begin(), ownershipRangesSlave_q.end(),
+                         ownershipRangesSlave_q.begin());
+        
+        
+        
+        if(comm.isRoot()) {
+            std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
+        }
+        
+        redist.apply(ownershipRangesSlave_q, q_buffer, express::AddAssign<double>());
+        
+        assert(ownershipRangesSlave_q.empty() == ownershipRangesMaster_q.empty() || ownershipRangesMaster_q.empty());
+        
+        express::RootDescribe("petsc assembly begin", comm, std::cout);
+        
+        SizeType  mMaxRowEntries_q = q_buffer.maxEntriesXCol();
+        
+        comm.allReduce(&mMaxRowEntries_q, 1, express::MPIMax());
+        
+        const SizeType local_range_slave_range_q  = ownershipRangesSlave_q [comm.rank()+1] - ownershipRangesSlave_q [comm.rank()];
+        const SizeType local_range_master_range_q = ownershipRangesMaster_q[comm.rank()+1] - ownershipRangesMaster_q[comm.rank()];
+
+        DSMatrixd Q_transpose = utopia::local_sparse(local_range_slave_range_q, local_range_master_range_q, mMaxRowEntries);
+        
+        
+        {
+            utopia::Write<utopia::DSMatrixd> write(Q_transpose);
+            for (auto it = q_buffer.iter(); it; ++it) {
+                Q_transpose.set(it.row(), it.col(), *it);
+                
+            }
+        }
+        
+        
+       B = P_tilde * B_tilde * Q_transpose;
+
+
+
+        express::RootDescribe("petsc assembly end", comm, std::cout);
+ 
         return true;
     }
-    //
-    //
-    //
-    //
-    
-    
+  
     
     
     bool ParMortarAssembler::SurfaceAssemble(DSMatrixd &B, const libMesh::Real search_radius, const int tag_1, const int tag_2)

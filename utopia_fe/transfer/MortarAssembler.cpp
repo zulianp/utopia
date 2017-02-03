@@ -831,6 +831,9 @@ bool assemble_aux(
 	assign_master_and_slave_roles(dag, ordering, adj_list, role);
 
 	size_t n_dofs = space.dof_map().n_dofs();
+    
+    std::cout<<"*********************************************DOF = "<<n_dofs<<std::endl;
+    
 	gap = zeros(n_dofs);
 	if(space.is_vector()) {
 		normals = zeros(n_dofs);
