@@ -308,9 +308,11 @@ namespace utopia {
 	void mortar_transfer_2D_monolithic(LibMeshInit &init)
 	{
 		auto mesh = make_shared<Mesh>(init.comm());
+        EXPRESS_EVENT_BEGIN("set_up");
 		//mesh->partitioner().reset(new LinearPartitioner());
 		mesh->read("../data/master_slave2D_new.e");
 		par_mortar_transfer_aux(init.comm(),mesh);
+        EXPRESS_EVENT_END("set_up");
 	}
 
 	// #define F_MINUS(x) (1.0-x)
@@ -441,12 +443,12 @@ namespace utopia {
 		EXPRESS_EVENT_BEGIN("set_up");
 		auto mesh = make_shared<Mesh>(init.comm());
 
-		mesh->partitioner().reset(new LinearPartitioner());
+		//mesh->partitioner().reset(new LinearPartitioner());
             // Read the mesh file. Here the file lshape.unv contains
             // an L--shaped domain in .unv format.
-       mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
-       // mesh->read("../data/master_slave3D_translated.e");
-
+       // mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
+       //mesh->read("../data/master_slave3D_translated.e");
+        mesh->read("../data/rect.e");
 
             // Print information about the mesh to the screen.
 		// mesh->print_info();
@@ -520,19 +522,19 @@ namespace utopia {
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
 
-   	// static const bool is_leaflet = true;
-   	// ContactSimParams params = leaflets_contact;
+		//ContactSimParams params = leaflets_contact;
+		 ContactSimParams params = contact8;
 
-   	static const bool is_leaflet = false;
-
-		// ContactSimParams params = contact8;
     	// ContactSimParams params = multi_contact_quads;
 		// ContactSimParams params = triple_contact_circle;
 		ContactSimParams params = multi_contact_3D;
 
-   	auto mesh = make_shared<Mesh>(init.comm());		
-   	mesh->read(params.mesh_path);
-   	plot_mesh(*mesh, "mesh");
+
+		auto mesh = make_shared<Mesh>(init.comm());		
+		mesh->read(params.mesh_path);
+//		plot_mesh(*mesh, "mesh");
+        
+
 
    	const int dim = mesh->mesh_dimension();
 
