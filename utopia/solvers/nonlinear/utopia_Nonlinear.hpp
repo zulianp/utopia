@@ -10,6 +10,8 @@
 #include "utopia_Newton.hpp"
 
 
+#include "utopia_InexactNewton.hpp"
+
 #include "utopia_ConstrainedIncludes.hpp"
 #include "utopia_TrustRegionIncludes.hpp"
 #include "utopia_LineSearchIncludes.hpp"

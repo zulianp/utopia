@@ -542,6 +542,29 @@ namespace utopia {
     }
 
 
+
+
+
+    /**
+     * @ingroup    queries
+     * @brief      Checks, if Tensor contains inf/nan. 
+     *
+     * @param[in]  w       The wrapper of Tensor. 
+     *
+     * @tparam     Tensor  Actual tensor. 
+     * @tparam     Order   The order of the tensor. 
+     *
+     * @return     1 if there is some nan or inf, 0 otherwise
+     */
+    template<class Tensor, int Order>
+    bool has_nan_or_inf(const Wrapper<Tensor, Order> &w)
+    {
+        static_assert(Order == 1, "contains_nan_or_inf:: works just for vectors at the moment");
+        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().is_nan_or_inf(w.implementation());
+    }
+
+
+
     template<class Derived>
     inline constexpr int order(const Expression<Derived> &)
     {

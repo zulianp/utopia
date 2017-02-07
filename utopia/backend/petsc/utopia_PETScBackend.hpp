@@ -277,6 +277,8 @@ namespace utopia
 		bool triple_product_PtAP(const PETScMatrix &, const PETScMatrix &, PETScMatrix &); 
 		bool triple_product(const PETScMatrix &, const PETScMatrix &, const PETScMatrix &, PETScMatrix &); 
 
+		bool is_nan_or_inf(const PETScVector &); 
+
 
 		template<class Tensor>
 		void readAndWriteLock(const Tensor &) {}
