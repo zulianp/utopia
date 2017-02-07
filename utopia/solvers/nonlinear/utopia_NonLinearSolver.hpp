@@ -158,7 +158,7 @@ protected:
 
             if(verbose_)
             {
-                ConvergenceReason::exitMessage(num_it, convergence_reason);
+                ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);
 
                 if(mpi_world_rank() == 0)
                     std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";

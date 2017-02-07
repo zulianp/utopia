@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-07-15
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2017-01-21
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-02-07
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -337,6 +337,7 @@ namespace utopia
             PETSC_CG_MG_test();
             petsc_newton_PETScCG_utopia_test();
             petsc_tr_rr_test();
+            petsc_newton_inexact_newton_with_KSP_test(); 
 
             // neohookean_tr_test();
             // QP_example_MG();
@@ -916,6 +917,37 @@ namespace utopia
             assert(approxeq(expected, actual));
             // // std::cout << "         End: petsc_newton_PETScCG_utopia_test" << std::endl;
         }
+
+
+        void petsc_newton_inexact_newton_with_KSP_test()
+        {
+            using namespace utopia;
+            using namespace std;
+
+            const bool verbose = false;
+
+            auto linear_solver  = make_shared< KSPSolver<DMatrixd, DVectord> >();
+            auto preconditioner = make_shared< InvDiagPreconditioner<DMatrixd, DVectord> >();
+            linear_solver->set_preconditioner(preconditioner);
+
+
+            InexactNewton<DMatrixd, DVectord> newton_solver(linear_solver);
+            newton_solver.verbose(verbose);
+
+            const int n = 10;
+            DVectord actual   = values(n, 2.);
+            DVectord expected = values(n, 0.468919);
+
+            TestFunctionND_1<DMatrixd, DVectord> fun(n);
+
+            newton_solver.solve(fun, actual);
+            assert(approxeq(expected, actual));
+            // // std::cout << "         End: petsc_newton_PETScCG_utopia_test" << std::endl;
+        }
+
+
+
+
 
             PETScSolverTest()
         : _n(10) { }

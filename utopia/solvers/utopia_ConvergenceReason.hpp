@@ -1,8 +1,8 @@
 /*
 * @Author: Alena Kopanicakova
 * @Date:   2016-07-31
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-11
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-01-31
 */
 
 #ifndef UTOPIA_SOLVER_CONVERGENCE_REASON
@@ -54,6 +54,36 @@ namespace utopia
                 std::cout << "\033[1;32m  LinearSolver converged in " << num_it << " iterations.\033[0m\n";
             }
         }
+
+        static void exitMessage_nonlinear(const long &num_it, const int &convergence_reason)
+        {
+            std::cout << std::endl;
+            if(convergence_reason == DIVERGED_MAX_IT )
+            {
+                std::cerr << "\033[1;31m [Error] Nonlinear solver: Maximum number of iteration reached (" << num_it << "). \033[0m\n"; 
+            }
+            else if(convergence_reason == CONVERGED_SNORM_RELATIVE)
+            {
+                std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it << ", (step_length< tol). \033[0m\n";
+            }
+            else if(convergence_reason == CONVERGED_TR_DELTA)
+            {
+                std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it << ", (radius < 1e-12). \033[0m\n";
+            }
+            else if(convergence_reason == CONVERGED_SNORM_RELATIVE)
+            {
+                std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it << ", no more energy reduction. \033[0m\n";
+            }
+            else if(convergence_reason < 0)
+            {
+                std::cerr << "\033[1;31m [Error] NonlinearSolver stopped at iteration " << num_it << " . \033[0m\n";
+            }
+            else
+            {
+                std::cout << "\033[1;32m  NonlinearSolver converged in " << num_it << " iterations.\033[0m\n";
+            }
+        }
+
     
         // success 
         static const int CONVERGED_FNORM_ABS          = 2;   /* ||g|| < atol */

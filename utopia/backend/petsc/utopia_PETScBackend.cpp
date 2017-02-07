@@ -1528,6 +1528,26 @@ namespace utopia {
 	}
 
 
+
+	bool PETScBackend::is_nan_or_inf(const PETScVector & X)
+	{
+		PetscInt m; 
+        const PetscScalar *x;
+        VecGetLocalSize(X.implementation(), &m);
+        VecGetArrayRead(X.implementation(), &x);
+
+        PetscErrorCode error; 
+
+        for (PetscInt i=0; i<m; i++) 
+        {
+            error  =PetscIsInfOrNanScalar(x[i]); 
+            if(error ==1)
+            	return 1;
+        }
+        VecRestoreArrayRead(X.implementation(), &x);
+		return 0; 
+	}
+
 	// redistribution of local sizes of vector
 	// TODO: can be done also for matrices 
 	//       can be done also based on local sizes, no provided vector
