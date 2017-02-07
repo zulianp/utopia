@@ -37,14 +37,7 @@ namespace utopia {
 
     class Measurement {
     public:
-        template<class T, decltype(size(std::declval<T>()))>
-        Measurement(const Expression<T> &expr) {
-            id_ = generate_unique_id();
-            size_ = size(expr.derived());
-            class_ = expr.getClass();
-        }
-
-        // version for T that does not support size(T)
+        //FIXME - you cannot call size(T) on most T (compilation error). Already tried SFINAE exploits but those failed.
         template<class T>
         Measurement(const Expression<T> &expr) {
             id_ = generate_unique_id();
