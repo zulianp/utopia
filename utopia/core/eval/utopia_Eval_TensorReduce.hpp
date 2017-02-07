@@ -6,7 +6,7 @@
 #include "utopia_ForwardDeclarations.hpp"
 
 namespace utopia {
-	
+
 	template<class Expr, class Operation, class Traits, int Backend>
 	class Eval< TensorReduce<Expr, Operation>, Traits, Backend> {
 	public:
@@ -14,6 +14,9 @@ namespace utopia {
 
 	    inline static Result apply(const TensorReduce<Expr, Operation> &expr) {
 	        Result result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
 	        const bool ok = UTOPIA_BACKEND(Traits).apply_tensor_reduce(
 	                Eval<Expr,  Traits>::apply(expr.expr()),
 	                expr.operation(),
@@ -22,6 +25,8 @@ namespace utopia {
 	        );
 
 	        assert(ok);
+
+            UTOPIA_LOG_END(expr);
 	        return result;
 	    }
 	};
@@ -29,4 +34,3 @@ namespace utopia {
 
 
 #endif //UTOPIA_EVAL_TENSOR_REDUCE_HPP
-

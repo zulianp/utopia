@@ -1,5 +1,5 @@
 #ifndef UTOPIA_EVAL_INVERSE_PETSC_HPP
-#define UTOPIA_EVAL_INVERSE_PETSC_HPP 
+#define UTOPIA_EVAL_INVERSE_PETSC_HPP
 
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_Inverse.hpp"
@@ -12,10 +12,12 @@ namespace utopia {
 	    typedef typename TypeAndFill<Traits, Left>::Type Result;
 
 	    inline static void apply(const Expr &expr) {
+            UTOPIA_LOG_BEGIN(expr);
 	        auto & left   = Eval<Left, Traits>::apply(expr.left());
 	        auto && right = Eval<Right, Traits>::apply(expr.right().expr());
-       		
+
 	    	const bool ok = UTOPIA_BACKEND(Traits).inverse(right, left); assert(ok);
+			UTOPIA_LOG_END(expr);
 	    }
 	};
 
@@ -26,14 +28,15 @@ namespace utopia {
 	    typedef typename TypeAndFill<Traits, Left>::Type Result;
 
 	    inline static void apply(const Expr &expr) {
+			UTOPIA_LOG_BEGIN(expr);
 	        auto & left   = Eval<Left, Traits>::apply(expr.left());
 	        auto && right = Eval<Right, Traits>::apply(expr.right().expr());
-	      		
+
 	    	const bool ok = UTOPIA_BACKEND(Traits).inverse(right, left); assert(ok);
+			UTOPIA_LOG_END(expr);
 	    }
 	};
 
 }
 
 #endif //UTOPIA_EVAL_INVERSE_PETSC_HPP
-

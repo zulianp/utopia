@@ -16,6 +16,9 @@ namespace utopia {
 
         inline static Result apply(const Multiply<Left, Right> &expr) {
             Result result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             const bool ok = UTOPIA_BACKEND(Traits).apply(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right()),
@@ -24,6 +27,8 @@ namespace utopia {
             );
 
             assert(ok);
+
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };
@@ -35,6 +40,9 @@ namespace utopia {
 
         inline static Result apply(const Multiply <Transposed<Left>, Right> &expr) {
             Result result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             const bool ok = UTOPIA_BACKEND(Traits).gemm(
                     1.0,
                     Eval<Left, Traits>::apply(expr.left().expr()),
@@ -45,6 +53,8 @@ namespace utopia {
                     result);
 
             assert(ok);
+
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };
@@ -56,6 +66,9 @@ namespace utopia {
 
         inline static Result apply(const Multiply<Left, Transposed<Right> > &expr)         {
             Result result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             const bool ok = UTOPIA_BACKEND(Traits).gemm(
                     1.0,
                     Eval<Left,  Traits>::apply(expr.left()),
@@ -66,6 +79,8 @@ namespace utopia {
                     result);
 
             assert(ok);
+
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };
@@ -78,6 +93,9 @@ namespace utopia {
         inline static Result apply(const Multiply< Transposed<Left>, Transposed<Right> > &expr)
         {
             Result result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             const bool ok = UTOPIA_BACKEND(Traits).gemm(
                     1.0,
                     Eval<Left,  Traits>::apply(expr.left().expr()),
@@ -88,6 +106,8 @@ namespace utopia {
                     result);
 
             assert(ok);
+
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };
@@ -100,6 +120,9 @@ namespace utopia {
         inline static Result apply(const Transposed< Multiply<Left, Right> > &expr)
         {
             Result result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             bool ok = UTOPIA_BACKEND(Traits).gemm(
                     1.0,
                     Eval<Right, Traits>::apply(expr.expr().right()),
@@ -110,6 +133,8 @@ namespace utopia {
                     result);
 
             assert(ok);
+
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };

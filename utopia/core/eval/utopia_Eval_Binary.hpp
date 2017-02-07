@@ -17,6 +17,9 @@ namespace utopia {
         inline static Result apply(const Binary<Number<ScalarT>, Right, Operation> &expr)
         {
             Result result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             const bool ok =UTOPIA_BACKEND(Traits).apply(
                     expr.left(),
                     Eval<Right, Traits>::apply(expr.right()),
@@ -24,6 +27,8 @@ namespace utopia {
                     result);
 
             assert(ok);
+
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };
@@ -35,12 +40,16 @@ namespace utopia {
 
         inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr) {
             EXPR_TYPE(Traits, Expr) result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             UTOPIA_BACKEND(Traits).outer(
                     Eval<Left, Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right()),
                     result
             );
 
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };
@@ -54,6 +63,8 @@ namespace utopia {
         inline static Result apply(const Binary <Left, Right, Operation> &expr) {
             Result result;
 
+            UTOPIA_LOG_BEGIN(expr);
+
             const bool ok = UTOPIA_BACKEND(Traits).apply(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right()),
@@ -62,6 +73,8 @@ namespace utopia {
             );
 
             assert(ok);
+
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };
@@ -74,6 +87,9 @@ namespace utopia {
         inline static Result apply(const Binary<Left, Number<ScalarT>, Multiplies> &expr)
         {
             Result result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             bool ok = UTOPIA_BACKEND(Traits).apply(
                     expr.right(),
                     Eval<Left, Traits>::apply(expr.left()),
@@ -81,6 +97,8 @@ namespace utopia {
                     result);
 
             assert(ok);
+
+			UTOPIA_LOG_END(expr);
             return result;
         }
     };

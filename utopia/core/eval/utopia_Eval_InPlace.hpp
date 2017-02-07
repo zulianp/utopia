@@ -18,7 +18,9 @@ namespace utopia {
             typedef utopia::Binary<Left, Right, Operation> TransformedExpr;
             typedef utopia::Assign<Left, TransformedExpr> AssignExpr;
 
-            return Eval<AssignExpr, Traits>::apply(
+            UTOPIA_LOG_BEGIN(expr);
+            
+            bool out = Eval<AssignExpr, Traits>::apply(
                     AssignExpr(
                             expr.left(),
                             TransformedExpr(
@@ -28,6 +30,9 @@ namespace utopia {
                             )
                     )
             );
+
+            UTOPIA_LOG_END(expr);
+            return out;
         }
     };
 

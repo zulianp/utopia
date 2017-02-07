@@ -1,5 +1,5 @@
 #ifndef UTOPIA_EVAL_DETERMINANT_HPP
-#define UTOPIA_EVAL_DETERMINANT_HPP  
+#define UTOPIA_EVAL_DETERMINANT_HPP
 
 #include "utopia_Eval_Empty.hpp"
 
@@ -13,21 +13,27 @@ namespace utopia {
 
 		inline static Scalar apply(const Determinant<Tensor2> &expr)
 		{
+            UTOPIA_LOG_BEGIN(expr);
+
 			auto &t = expr.expr();
 			auto s = size(t);
 			assert(s.get(0) == s.get(1));
 
 			Read<Tensor2> r(t);
+			Scalar out;
+
 			switch(s.get(0)) {
 				case 1:
 				{
-					return t.get(0, 0);
+					out = t.get(0, 0);
+					break;
 				}
-				case 2: 
+				case 2:
 				{
-					return ( t.get(0, 0) * t.get(1, 1) - t.get(1, 0) * t.get(0, 1) );
+					out = ( t.get(0, 0) * t.get(1, 1) - t.get(1, 0) * t.get(0, 1) );
+					break;
 				}
-				case 3: 
+				case 3:
 				{
 					const Scalar m00 = t.get(0, 0);
 					const Scalar m01 = t.get(0, 1);
@@ -39,18 +45,25 @@ namespace utopia {
 					const Scalar m21 = t.get(2, 1);
 					const Scalar m22 = t.get(2, 2);
 
-					return m00 * m11 * m22  + 
-						   m01 * m12 * m20  + 
-						   m02 * m10 * m21  - 
-						   m00 * m12 * m21  - 
-						   m01 * m10 * m22  - 
-						   m02 * m11 * m20; 
-				} default: {
+					out = m00 * m11 * m22  +
+						  m01 * m12 * m20  +
+					   	  m02 * m10 * m21  -
+						  m00 * m12 * m21  -
+						  m01 * m10 * m22  -
+						  m02 * m11 * m20;
+					break;
+				}
+				default:
+				{
 					assert(false && "not implemented");
 					std::cerr << "det not implemented for matrices with n > 3" << std::endl;
+					UTOPIA_LOG_END(expr);
 					return -1;
 				}
 			}
+
+			UTOPIA_LOG_END(expr);
+			return out;
 		}
 	};
 }
