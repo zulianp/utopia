@@ -233,6 +233,11 @@ namespace utopia {
             using std::distance;
 
             if(_colptr.empty()) return INVALID_INDEX;
+
+            if(_colptr[j+1] >= _rowindex.size()) {
+                return INVALID_INDEX;
+            }
+
             auto low = lower_bound(_rowindex.begin() + _colptr[j],  _rowindex.begin() + _colptr[j+1], j);
             return (*low == i)? SizeType(distance(_rowindex.begin(), low)) : INVALID_INDEX;
         }

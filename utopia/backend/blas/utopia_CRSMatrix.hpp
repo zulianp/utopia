@@ -222,9 +222,10 @@ namespace utopia {
 
 //            const SizeType index = find(i, j);
             const SizeType index = find_efficient(i, j);
-            assert(find(i,j) == index);
+            assert(find(i, j) == index);
 
             if(index != INVALID_INDEX) {
+                assert(index < _entries.size());
                 _entries[index] = value;
                 return;
             }
@@ -238,7 +239,14 @@ namespace utopia {
             using std::distance;
 
             if(_rowptr.empty()) return INVALID_INDEX;
-            auto low = lower_bound(_colindex.begin() + _rowptr[i],  _colindex.begin() + _rowptr[i+1], j);
+
+            assert(i + 1 < _rowptr.size());
+            
+            if(_rowptr[i + 1] >= _colindex.size()) {
+                return INVALID_INDEX;
+            }
+
+            auto low = lower_bound(_colindex.begin() + _rowptr[i],  _colindex.begin() + _rowptr[i + 1], j);
             return (*low == j)? SizeType(distance(_colindex.begin(), low)) : INVALID_INDEX;
         }
 
