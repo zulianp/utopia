@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-03-28
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2017-01-17
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-01-29
 */
 
 #ifndef UTOPIA_ML_BASE_HPP

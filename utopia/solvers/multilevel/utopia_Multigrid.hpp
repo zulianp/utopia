@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-03-29
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2017-01-21
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-01-29
 */
 
 #ifndef UTOPIA_MULTIGRID_HPP
@@ -57,7 +57,8 @@ namespace utopia
         // LevelMemory memory;
 
 
-   //#define BENCHMARKING_mode
+   // #define BENCHMARKING_mode
+   // #define CHECK_NUM_PRECISION_mode
 
     public:
        static const int V_CYCLE = 1;
@@ -155,6 +156,14 @@ namespace utopia
                 multiplicative_cycle(rhs, l, x_0); 
                 // additive_cycle(rhs, l, x_0); 
 
+                #ifdef CHECK_NUM_PRECISION_mode
+                    if(has_nan_or_inf(x_0) == 1)
+                    {
+                        x_0 = local_zeros(local_size(x_0));
+                        return true; 
+                    }
+                #endif    
+
                 r = rhs - levels(l-1).A() * x_0; 
                 r_norm = norm2(r);
                 rel_norm = r_norm/r0_norm; 
@@ -245,7 +254,6 @@ namespace utopia
                 
                 }
             #endif
-
 
             return true; 
         }

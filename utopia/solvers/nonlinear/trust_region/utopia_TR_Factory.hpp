@@ -1,15 +1,18 @@
 // /*
 // * @Author: alenakopanicakova
 // * @Date:   2016-06-10
-// * @Last Modified by:   alenakopanicakova
-// * @Last Modified time: 2016-10-11
+// * @Last Modified by:   Alena Kopanicakova
+// * @Last Modified time: 2017-01-29
 // */
 
 #ifndef UTOPIA_TR_STRATEGY_FACTORY_HPP
 #define UTOPIA_TR_STRATEGY_FACTORY_HPP
 
 #include "utopia_Core.hpp"
-#include "utopia_PETScKSP_TR.hpp"
+
+#ifdef WITH_PETSC
+	#include "utopia_PETScKSP_TR.hpp"
+#endif
 
 namespace utopia 
 {
