@@ -37,10 +37,18 @@ namespace utopia {
 
     class Measurement {
     public:
-        template<class T>
+        template<class T, decltype(size(std::declval<T>()))>
         Measurement(const Expression<T> &expr) {
             id_ = generate_unique_id();
             size_ = size(expr.derived());
+            class_ = expr.getClass();
+        }
+
+        // version for T that does not support size(T)
+        template<class T>
+        Measurement(const Expression<T> &expr) {
+            id_ = generate_unique_id();
+            size_ = { -1 };
             class_ = expr.getClass();
         }
 
