@@ -6,6 +6,7 @@
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_PrintInfo.hpp"
 #include "utopia_Monitor.hpp"
+#include "utopia_PreconditionedSolver.hpp"
 
 namespace utopia 
 {
