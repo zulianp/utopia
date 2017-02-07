@@ -8,9 +8,9 @@
 #define UTOPIA_PETSC_KSP_H
 
 #include "utopia_Core.hpp"
-#include "utopia_IterativeSolver.hpp"
 #include "utopia_PETSc.hpp"
 #include "utopia_Preconditioner.hpp"
+#include "utopia_PreconditionedSolver.hpp"
 
 #include <algorithm>
 #include <petscpc.h>
@@ -48,15 +48,16 @@ namespace utopia
 
 
     template<typename Matrix, typename Vector>
-    class KSPSolver<Matrix, Vector, PETSC> : virtual public IterativeSolver<Matrix, Vector>
+    class KSPSolver<Matrix, Vector, PETSC> : virtual public PreconditionedSolver<Matrix, Vector>
     {
 
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::Preconditioner<Vector> Preconditioner;
-        typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
+        // typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver; 
+        typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
 
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "only works with petsc types");
 
@@ -94,7 +95,7 @@ namespace utopia
      */
     virtual void set_parameters(const Parameters params) override
     {
-        IterativeSolver::set_parameters(params);
+        PreconditionedSolver::set_parameters(params);
 
         // our param options - useful for passing from passo 
         ksp_type(params.lin_solver_type());                               
@@ -135,24 +136,6 @@ namespace utopia
     }
 
 
-   /**
-   * @brief      Sets the preconditioner.
-   *
-   * @param[in]  precond  The precondition
-   */
-    void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
-   {
-       precond_ = precond;
-   }
-
-
-    /**
-    * @brief      Resets the preconditioner.
-    */
-    void reset_preconditioner()
-    {
-       precond_.reset(); 
-    }
 
 
      /* @brief      Sets the choice of direct solver. 
@@ -225,7 +208,7 @@ public:
         const Matrix A = *this->get_operator(); 
 
 
-        IterativeSolver::init_solver("UTOPIA::PETSc KSP", {}); 
+        PreconditionedSolver::init_solver("UTOPIA::PETSc KSP", {}); 
           
         KSPConvergedReason  reason;
         // PetscReal           r_norm;
@@ -235,20 +218,32 @@ public:
 
         ierr = PetscObjectGetComm((PetscObject)raw_type(A), &comm);
         ierr = KSPCreate(comm, &ksp);
+
+        bool skip_set_operators = false;
         
-        ierr = KSPSetOperators(ksp, raw_type(A), raw_type(A));
+        if(this->get_preconditioner()) {
+            auto mat_prec = dynamic_cast< DelegatePreconditioner<Matrix, Vector> *>(this->get_preconditioner().get());
+            if(mat_prec) {
+                ierr = KSPSetOperators(ksp, raw_type(A), raw_type(*mat_prec->get_matrix()));
+                skip_set_operators = true;
+            } 
+        }
+       
+        if(!skip_set_operators) { 
+            ierr = KSPSetOperators(ksp, raw_type(A), raw_type(A));
+        }
 
         set_ksp_options(ksp); 
 
         //  Set the user-defined routine for applying the preconditioner 
-        if(precond_) 
+        if(this->get_preconditioner() && !skip_set_operators) 
         {
             PC pc; 
             ierr = KSPGetPC(ksp,&pc);
             ierr = PCSetType(pc, PCSHELL);  
             ierr = PCShellSetApply(pc, UtopiaPCApplyShell);
   
-            auto shell_ptr = dynamic_cast<LinearSolver *>(precond_.get());
+            auto shell_ptr = dynamic_cast<LinearSolver *>(this->get_preconditioner().get());
             ierr = PCShellSetContext(pc, shell_ptr);
             ierr = PCShellSetName(pc,"Utopia Preconditioner");
         }
@@ -271,17 +266,7 @@ public:
         return true;
     }
 
-    virtual void update(const std::shared_ptr<const Matrix> &op) override
-    {
-         IterativeSolver::update(op);
 
-         if(precond_) {
-            auto ls_ptr = dynamic_cast<LinearSolver *>(precond_.get());
-            if(ls_ptr) {
-                ls_ptr->update(op);    
-            }
-         }
-     }
 
 private: 
 
@@ -310,7 +295,7 @@ private:
         
         ierr = KSPSetType(ksp, KSP_type_.c_str());
 
-        if(!precond_) 
+        if(!this->get_preconditioner()) 
         {
             PC pc; 
             ierr = KSPGetPC(ksp, &pc);
@@ -318,11 +303,9 @@ private:
         }
 
         ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
-        ierr = KSPSetTolerances(ksp, IterativeSolver::rtol(), IterativeSolver::atol(), PETSC_DEFAULT,  IterativeSolver::max_it());
+        ierr = KSPSetTolerances(ksp, PreconditionedSolver::rtol(), PreconditionedSolver::atol(), PETSC_DEFAULT,  PreconditionedSolver::max_it());
     }
 
-
-    std::shared_ptr<Preconditioner> precond_;
 
     std::string KSP_type_;                                  /*!< Choice of preconditioner types. */  
     const std::vector<std::string> KSP_types;              /*!< Valid options for direct solver types. */  

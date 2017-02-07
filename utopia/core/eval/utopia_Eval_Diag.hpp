@@ -65,7 +65,7 @@ namespace utopia {
         inline static bool apply(const Assign<Wrapper<Left, 2>, Diag< Diag<Right> > > &expr)
         {
             UTOPIA_BACKEND(Traits).diag(
-                    Eval<Left,  Traits>::apply(expr.left()),
+                    Eval<Wrapper<Left, 2>,  Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right().expr().expr())
             );
 

@@ -31,8 +31,9 @@ namespace utopia {
 
 
 	void mortar_transfer_aux(const std::shared_ptr<Mesh> &mesh_master, 
-							 const std::shared_ptr<Mesh> &mesh_slave,
-							 const libMesh::Order order_elem = FIRST)
+		const std::shared_ptr<Mesh> &mesh_slave,
+		const libMesh::Order order_elem = FIRST,
+		const bool use_biorthogonal_mults = true)
 	{
 		Chrono c;
 		c.start();
@@ -50,7 +51,7 @@ namespace utopia {
 		slave_context.equation_systems.init();
 
 		auto v = make_ref(master_space);
-		bool use_biorthogonal_mults = true;
+		
 
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
@@ -154,101 +155,101 @@ namespace utopia {
 
 
 
-    
-    void mixed_par_mortar_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm, const std::shared_ptr<Mesh> &mesh_master, const std::shared_ptr<Mesh> &mesh_slave)
-    {
+
+	void mixed_par_mortar_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm, const std::shared_ptr<Mesh> &mesh_master, const std::shared_ptr<Mesh> &mesh_slave, const bool use_biorthogonal_mults = true)
+	{
 //         EXPRESS_EVENT_BEGIN("spaces");
 //        
 //         Chrono c;
 //         c.start();
-        
-        auto order_elem = FIRST;
-        int order_quad = order_elem + order_elem;
-        
-        LibMeshFEContext<LinearImplicitSystem> master_context(mesh_master);
-        auto master_space = fe_space(LAGRANGE, order_elem, master_context);
-        master_context.equation_systems.init();
-        
-        LibMeshFEContext<LinearImplicitSystem> slave_context(mesh_slave);
-        auto slave_space = fe_space(LAGRANGE, order_elem, slave_context);
-        slave_context.equation_systems.init();
-        
-        bool use_biorthogonal_mults = true;
-        
-       
-        
+
+		auto order_elem = FIRST;
+		int order_quad = order_elem + order_elem;
+
+		LibMeshFEContext<LinearImplicitSystem> master_context(mesh_master);
+		auto master_space = fe_space(LAGRANGE, order_elem, master_context);
+		master_context.equation_systems.init();
+
+		LibMeshFEContext<LinearImplicitSystem> slave_context(mesh_slave);
+		auto slave_space = fe_space(LAGRANGE, order_elem, slave_context);
+		slave_context.equation_systems.init();
+
+		
+
+
+
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
-        
+
         //        make_ref(master_space)->system();
         //        std::cout<<"I am a master system"<<make_ref(master_space)->system()<<std::endl;
-        
+
         // MPI_Comm comm = MPI_COMM_WORLD;
-        MixedParMortarAssembler assembler(libmesh_comm, make_ref(master_space), make_ref(slave_space));
-        assembler.set_use_biorthogonal_multipliers(use_biorthogonal_mults);
-        
+		MixedParMortarAssembler assembler(libmesh_comm, make_ref(master_space), make_ref(slave_space));
+		assembler.set_use_biorthogonal_multipliers(use_biorthogonal_mults);
+
         // std::cout<<"I am a slave system"<<make_ref(slave_space)->system()<<std::endl;
-        
-        
-        
+
+
+
         //		EXPRESS_EVENT_END("spaces");
-        
-        DSMatrixd transfer_op;
-        DSMatrixd matrix;
-        assembler.Assemble(matrix);
-        assembler.Transfer(matrix,transfer_op);
-        
-        
+
+		DSMatrixd transfer_op;
+		DSMatrixd matrix;
+		assembler.Assemble(matrix);
+		assembler.Transfer(matrix,transfer_op);
+
+
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
-        
+
         //      EXPRESS_EVENT_BEGIN("mass_matrix");
-        
-        const Size gs = size(matrix);
-        const Size ls = local_size(matrix);
-        
-        int dim = mesh_slave->mesh_dimension();
-        auto u = fe_function(slave_space);
-        u.set_quad_rule(make_shared<libMesh::QGauss>(dim, libMesh::Order(order_quad)));
-        
-        auto &mass_matrix = *slave_context.system.matrix;
-        auto ass = make_assembly([&]() -> void {
-         	assemble(u, u, integral(inner(u, u)), mass_matrix);
-         });
-        
-        slave_context.system.attach_assemble_object(ass);
-        slave_context.equation_systems.print_info();
-        slave_context.equation_systems.solve();
-     
-        DSMatrixd mass;
-        convert(mass_matrix, mass);
-        
-        DVectord val_master = local_values(ls.get(1), 1.0);
-        DVectord val_mult   = matrix * val_master;
-        DVectord val_slave  = local_zeros(ls.get(0));
-        
-        solve(mass, val_mult, val_slave);
-        
-        DVectord val_slave_pseudo=transfer_op*val_master;
-        
+
+		const Size gs = size(matrix);
+		const Size ls = local_size(matrix);
+
+		int dim = mesh_slave->mesh_dimension();
+		auto u = fe_function(slave_space);
+		u.set_quad_rule(make_shared<libMesh::QGauss>(dim, libMesh::Order(order_quad)));
+
+		auto &mass_matrix = *slave_context.system.matrix;
+		auto ass = make_assembly([&]() -> void {
+			assemble(u, u, integral(inner(u, u)), mass_matrix);
+		});
+
+		slave_context.system.attach_assemble_object(ass);
+		slave_context.equation_systems.print_info();
+		slave_context.equation_systems.solve();
+
+		DSMatrixd mass;
+		convert(mass_matrix, mass);
+
+		DVectord val_master = local_values(ls.get(1), 1.0);
+		DVectord val_mult   = matrix * val_master;
+		DVectord val_slave  = local_zeros(ls.get(0));
+
+		solve(mass, val_mult, val_slave);
+
+		DVectord val_slave_pseudo=transfer_op*val_master;
+
 //        monitor(0, matrix);
-        
+
         // c.stop();
-        std::cout << "|master_elements| = " << mesh_master->n_active_elem() << std::endl;
-        std::cout << "|slave_elements|  = " << mesh_slave->n_active_elem()  << std::endl;
+		std::cout << "|master_elements| = " << mesh_master->n_active_elem() << std::endl;
+		std::cout << "|slave_elements|  = " << mesh_slave->n_active_elem()  << std::endl;
 //        std::cout << double(sum(mass)) << "==" << double(sum(matrix)) << std::endl;
         // std::cout << "time: ";
         // c.describe(std::cout);
-        
-        
+
+
         //	EXPRESS_EVENT_END("mass_matrix");
-        
+
         //disp(val_slave);
        // disp(val_slave_pseudo);
         // write("par.m", matrix);
-    }
-    
-    
+	}
+
+
 	void par_mortar_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm,const std::shared_ptr<MeshBase> &master_slave)
 	{
 		Chrono c;
@@ -273,37 +274,37 @@ namespace utopia {
 		// EXPRESS_EVENT_END("l2assembly");
 	}
 
-    
-    
-    
-    
-    
-    void par_mortar_surface_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm,const std::shared_ptr<MeshBase> &master_slave)
-    {
-        Chrono c;
-        c.start();
-        
-        auto order_elem = FIRST;
-        int order_quad = order_elem + order_elem;
-        
-        LibMeshFEContext<LinearImplicitSystem> master_slave_context(master_slave);
-        auto master_slave_space = fe_space(LAGRANGE, order_elem, master_slave_context);
-        master_slave_context.equation_systems.init();
-        
-        //////////////////////////////////////////////////
-        //////////////////////////////////////////////////
-        
-        ParMortarAssembler surface_assembler(libmesh_comm, make_ref(master_slave_space));
-        
-        DSMatrixd matrix;
-        const  libMesh::Real search_radius=0.4;
-        // EXPRESS_EVENT_BEGIN("l2assembly");
-        surface_assembler.SurfaceAssemble(matrix,search_radius,101,102);
-        // EXPRESS_EVENT_END("l2assembly");
-    }
 
-    
-    
+
+
+
+
+	void par_mortar_surface_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm,const std::shared_ptr<MeshBase> &master_slave)
+	{
+		Chrono c;
+		c.start();
+
+		auto order_elem = FIRST;
+		int order_quad = order_elem + order_elem;
+
+		LibMeshFEContext<LinearImplicitSystem> master_slave_context(master_slave);
+		auto master_slave_space = fe_space(LAGRANGE, order_elem, master_slave_context);
+		master_slave_context.equation_systems.init();
+
+        //////////////////////////////////////////////////
+        //////////////////////////////////////////////////
+
+		ParMortarAssembler surface_assembler(libmesh_comm, make_ref(master_slave_space));
+
+		DSMatrixd matrix;
+		const  libMesh::Real search_radius=0.4;
+        // EXPRESS_EVENT_BEGIN("l2assembly");
+		surface_assembler.SurfaceAssemble(matrix,search_radius,101,102);
+        // EXPRESS_EVENT_END("l2assembly");
+	}
+
+
+
 	void mortar_transfer_2D_monolithic(LibMeshInit &init)
 	{
 		auto mesh = make_shared<Mesh>(init.comm());
@@ -312,21 +313,75 @@ namespace utopia {
 		par_mortar_transfer_aux(init.comm(),mesh);
 	}
 
+	// #define F_MINUS(x) (1.0-x)
+	// #define F_PLUS(x)  (x)
+	// #define D_MINUS(x) (-1.0)
+	// #define D_PLUS(x) (1.0)
+
+
+	// void quad_bilinear_fun_0(const int n_quad_points, const double * quad_points, double * funs)
+	// {
+	// 	for(int q = 0; q < n_quad_points; ++q) {	
+	// 		const int q2 = q*2;
+	// 		funs[q] = F_MINUS(quad_points[q2]) * F_MINUS(quad_points[q2+1]);
+	// 	}
+	// }
+
+	// void quad_bilinear_fun_1(const int n_quad_points, const double * quad_points, double * funs)
+	// {
+	// 	for(int q = 0; q < n_quad_points; ++q) {	
+	// 		const int q2 = q*2;
+	// 		funs[q] = F_PLUS(quad_points[q2]) * F_MINUS(quad_points[q2+1]);
+	// 	}
+	// }
+
+	// void quad_bilinear_fun_2(const int n_quad_points, const double * quad_points, double * funs)
+	// {
+	// 	for(int q = 0; q < n_quad_points; ++q) {	
+	// 		const int q2 = q*2;
+	// 		funs[q] = F_PLUS(quad_points[q2]) * F_PLUS(quad_points[q2+1]);
+	// 	}
+	// }
+
+	// void quad_bilinear_fun_3(const int n_quad_points, const double * quad_points, double * funs)
+	// {
+	// 	for(int q = 0; q < n_quad_points; ++q) {	
+	// 		const int q2 = q*2;
+	// 		funs[q] = F_MINUS(quad_points[q2]) * F_PLUS(quad_points[q2+1]);
+	// 	}
+	// }
+
+	// void bilinear_interp(const Point &p0, const Point &p1, const Point &p2, const Point &p3, const Point &x, Point &fx)
+	// {
+	// 	double f0, f1, f2, f3;
+	// 	double xp[2] = { x(0), x(1) };
+
+	// 	quad_bilinear_fun_0(1, xp, &f0);
+	// 	quad_bilinear_fun_1(1, xp, &f1);
+	// 	quad_bilinear_fun_2(1, xp, &f2);
+	// 	quad_bilinear_fun_3(1, xp, &f3);
+
+	// 	fx  = f0 * p0;
+	// 	fx  += f1 * p1;
+	// 	fx  += f2 * p2;
+	// 	fx  += f3 * p3;
+	// }
+
 	void mortar_transfer_2D(LibMeshInit &init)
 	{
 		std::cout << "-----------------------------\n";
 		std::cout << "mortar_transfer_2D\n";
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
-		int n_master = 30; 
-		int n_slave  = 10; 
+		int n_master = 8; 
+		int n_slave  = 3; 
 
 		auto mesh_master = make_shared<Mesh>(init.comm());		
 		MeshTools::Generation::build_square (*mesh_master,
 			n_master, n_master,
-			-1, 1.,
-			-1, 1.,
-			QUAD4);
+			0, 1,
+			0, 1,
+			QUAD8);
 
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
@@ -334,37 +389,48 @@ namespace utopia {
 		auto mesh_slave = make_shared<Mesh>(init.comm());		
 		MeshTools::Generation::build_square (*mesh_slave,
 			n_slave, n_slave,
-			-1, 1.,
-			-1, 1.,
-			TRI3);
+			0.3, 0.8,
+			0.3, 0.8,
+			TRI6);
 
-		// MeshTools::Modification::smooth (*mesh_slave,
-		//                                        10,
-		//                                        0.4);
+		const bool applyDistortion = true;
+		if(applyDistortion) {
+			MeshTools::Modification::smooth (*mesh_slave,
+				10,
+				0.4);
 
-		// MeshTools::Modification::distort (*mesh_slave,
-		//                                   0.03,
-		//                                   true);
+			MeshTools::Modification::distort (*mesh_slave,
+				0.03,
+				true);
 
-		// MeshTools::Modification::scale (*mesh_master,
-		//   1.1,
-		//   1.1,
-		//   1.1);
-		  
-		//   MeshTools::Modification::distort (*mesh_master,
-		//                                     0.01,
-		//                                     true);
-		 
-		// plot_polygon_mesh(*mesh_master, "mater");
-		// plot_polygon_mesh(*mesh_slave, "slave");
+			MeshTools::Modification::scale (*mesh_master,
+				1.1,
+				1.1,
+				1.1);
 
+			MeshTools::Modification::distort (*mesh_master,
+				0.01,
+				true);
 
-//		plot_mesh(*mesh_master, "mater");
-//		plot_mesh(*mesh_slave, "slave");
+			// const double dispX = 0.3, dispY = 0.3;
+			// Point p0(dispX - 0.2, dispY - 0.2);
+			// Point p1(dispX + 1,   dispY - 0.2);
+			// Point p2(dispX + 0.25, dispY + 0.25);
+			// Point p3(dispX - 0.1, dispY + 0.8);
 
+			// for(auto it = mesh_slave->active_nodes_begin(); it != mesh_slave->active_nodes_end(); ++it) {
+			// 	 bilinear_interp(p0, p1, p2, p3, (**it), (**it));
+			// }
 
-		mixed_par_mortar_transfer_aux(init.comm(), mesh_master, mesh_slave);
-		//mortar_transfer_aux(mesh_master, mesh_slave);
+			plot_polygon_mesh(*mesh_master, "mater");
+			plot_polygon_mesh(*mesh_slave, "slave");
+		} else {
+			plot_mesh(*mesh_master, "mater");
+			plot_mesh(*mesh_slave, "slave");
+		}
+
+		// mixed_par_mortar_transfer_aux(init.comm(), mesh_master, mesh_slave, !applyDistortion);
+		mortar_transfer_aux(mesh_master, mesh_slave, SECOND, !applyDistortion);
 		std::cout << "-----------------------------\n";
 
 	}
@@ -385,159 +451,163 @@ namespace utopia {
             // Print information about the mesh to the screen.
 		// mesh->print_info();
 
-		EXPRESS_EVENT_END("set_up");
+       EXPRESS_EVENT_END("set_up");
 
 		//par_mortar_transfer_aux(init.comm(),mesh);
-        par_mortar_surface_transfer_aux(init.comm(),mesh);
+       par_mortar_surface_transfer_aux(init.comm(),mesh);
 
-		std::cout << "-----------------------------\n";
-	}
+       std::cout << "-----------------------------\n";
+   }
 
-    void mortar_transfer_3D(LibMeshInit &init)
-    {
+   void mortar_transfer_3D(LibMeshInit &init)
+   {
         //EXPRESS_EVENT_BEGIN("set_up");
-        std::cout << "-----------------------------\n";
-        std::cout << "mortar_transfer_3D\n";
+   	std::cout << "-----------------------------\n";
+   	std::cout << "mortar_transfer_3D\n";
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
-        int n_master = 2;
-        int n_slave  = 3;
-        
-        auto mesh_master = make_shared<Mesh>(init.comm());
-        
+   	int n_master = 2;
+   	int n_slave  = 3;
+
+   	auto mesh_master = make_shared<Mesh>(init.comm());
+
         //mesh_master->partitioner().reset(new SFCPartitioner());
-        
-        mesh_master->read("../data/cube_369.e");
-        
-        
+
+   	mesh_master->read("../data/cube_369.e");
+
+
 //        MeshTools::Generation::build_cube(*mesh_master,
 //                                          n_master, n_master, n_master,
 //                                          -2., 3.,
 //                                          -2., 3.,
 //                                          -2., 3.,
 //                                          HEX27);
-        
-        
-        
+
+
+
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
-        
-        
-        
-        auto mesh_slave = make_shared<Mesh>(init.comm());
-        
+
+
+
+   	auto mesh_slave = make_shared<Mesh>(init.comm());
+
         //mesh_slave->partitioner().reset(new SFCPartitioner());
-        
+
 //        MeshTools::Generation::build_cube (*mesh_slave,
 //                                           n_slave, n_slave, n_slave,
 //                                           -2., 3.,
 //                                           -2., 3.,
 //                                           -2., 3.,
 //                                           HEX27);
-        mesh_slave->read("../data/cube_2465-1.e");
-        
-        
-        
+   	mesh_slave->read("../data/cube_2465-1.e");
+
+
+
         //EXPRESS_EVENT_END("set_up");
         //mortar_transfer_aux(mesh_master, mesh_slave);
-        mixed_par_mortar_transfer_aux(init.comm(), mesh_master, mesh_slave);
-        
-        
+   	mixed_par_mortar_transfer_aux(init.comm(), mesh_master, mesh_slave);
+
+
         //std::cout << "-----------------------------\n";
-    }
+   }
 
-	void surface_mortar(LibMeshInit &init)
-	{
-		std::cout << "-----------------------------\n";
-		std::cout << "surface_mortar\n";
+   void surface_mortar(LibMeshInit &init)
+   {
+   	std::cout << "-----------------------------\n";
+   	std::cout << "surface_mortar\n";
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
 
-		ContactSimParams params = leaflets_contact;
+   	// static const bool is_leaflet = true;
+   	// ContactSimParams params = leaflets_contact;
+
+   	static const bool is_leaflet = false;
+
 		// ContactSimParams params = contact8;
     	// ContactSimParams params = multi_contact_quads;
 		// ContactSimParams params = triple_contact_circle;
-		// ContactSimParams params = contact_3D_tets;
+		ContactSimParams params = multi_contact_3D;
 
-		auto mesh = make_shared<Mesh>(init.comm());		
-		mesh->read(params.mesh_path);
-		plot_mesh(*mesh, "mesh");
+   	auto mesh = make_shared<Mesh>(init.comm());		
+   	mesh->read(params.mesh_path);
+   	plot_mesh(*mesh, "mesh");
 
-		const int dim = mesh->mesh_dimension();
+   	const int dim = mesh->mesh_dimension();
 
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
 
-		Chrono c;
-		c.start();
+   	Chrono c;
+   	c.start();
 
-		LibMeshFEContext<LinearImplicitSystem> context(mesh);
-		auto space = vector_fe_space("disp_", LAGRANGE_VEC, FIRST, context);
-		auto u = fe_function(space);
+   	LibMeshFEContext<LinearImplicitSystem> context(mesh);
+   	auto space = vector_fe_space("disp_", LAGRANGE_VEC, FIRST, context);
+   	auto u = fe_function(space);
 
 
-		static const bool is_leaflet = true;
+   	
 
 		//boundary conditions
-		std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_1 = [dim, &params](const Point &, DenseVector<Real> &output) {
-			output.resize(dim);
-			output.zero();
+   	std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_1 = [dim, &params](const Point &, DenseVector<Real> &output) {
+   		output.resize(dim);
+   		output.zero();
 
-			if(is_leaflet) {
+   		if(is_leaflet) {
 				// output(0) = -params.dirichlet_value_1;
-				output(1) = params.dirichlet_value_1;
-			} else {
+   			output(1) = params.dirichlet_value_1;
+   		} else {
 				//offset to y coordinate of displacement
-				output(1) = params.dirichlet_value_1;
-			}
-		};
+   			output(1) = params.dirichlet_value_1;
+   		}
+   	};
 
-		auto bc_1 = boundary_conditions(u == vec_coeff(boundary_cond_1),    { params.boundary_tag_1 });
-		strong_enforce(bc_1);
+   	auto bc_1 = boundary_conditions(u == vec_coeff(boundary_cond_1),    { params.boundary_tag_1 });
+   	strong_enforce(bc_1);
 
-		std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_2 = [dim, &params](const Point &, DenseVector<Real> &output) {
-			output.resize(dim);
-			output.zero();
+   	std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_2 = [dim, &params](const Point &, DenseVector<Real> &output) {
+   		output.resize(dim);
+   		output.zero();
 
-			if(is_leaflet) {
-				output(0) = -params.dirichlet_value_2;
-				output(1) = -params.dirichlet_value_2;
-			} else {
+   		if(is_leaflet) {
+   			output(0) = -params.dirichlet_value_2;
+   			output(1) = -params.dirichlet_value_2;
+   		} else {
 				//offset to y coordinate of displacement
-				output(1) = params.dirichlet_value_2;
-			}
-		};
-		
-		auto bc_2 = boundary_conditions(u == vec_coeff(boundary_cond_2), { params.boundary_tag_2 });
-		strong_enforce(bc_2);
+   			output(1) = params.dirichlet_value_2;
+   		}
+   	};
+
+   	auto bc_2 = boundary_conditions(u == vec_coeff(boundary_cond_2), { params.boundary_tag_2 });
+   	strong_enforce(bc_2);
 
 
 
-		std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_3 = [dim, &params](const Point &, DenseVector<Real> &output) {
-			output.resize(dim);
-			output.zero();
+   	std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_3 = [dim, &params](const Point &, DenseVector<Real> &output) {
+   		output.resize(dim);
+   		output.zero();
 
-			if(is_leaflet) {
-				output(0) = params.dirichlet_value_3;
-				output(1) = -params.dirichlet_value_3;
-			} else {
+   		if(is_leaflet) {
+   			output(0) = params.dirichlet_value_3;
+   			output(1) = -params.dirichlet_value_3;
+   		} else {
 				//offset to y coordinate of displacement
-				output(1) = params.dirichlet_value_3;
-			}
-		};
+   			output(1) = params.dirichlet_value_3;
+   		}
+   	};
 
-		if(params.boundary_tag_3 >= 0) {
-			auto bc_3 = boundary_conditions(u == vec_coeff(boundary_cond_3), { params.boundary_tag_3 });
-			strong_enforce(bc_3);
-		}
+   	if(params.boundary_tag_3 >= 0) {
+   		auto bc_3 = boundary_conditions(u == vec_coeff(boundary_cond_3), { params.boundary_tag_3 });
+   		strong_enforce(bc_3);
+   	}
 
 
-	
 
-		context.equation_systems.init();
-		u.set_quad_rule(make_shared<libMesh::QGauss>(dim, SIXTH));
 
-		double mu   = 1.0, lambda = 1.0;
+   	context.equation_systems.init();
+   	u.set_quad_rule(make_shared<libMesh::QGauss>(dim, SIXTH));
+
+   	double mu   = 1.0, lambda = 1.0;
 		auto e      = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
 		auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
 
@@ -663,10 +733,10 @@ namespace utopia {
 		EXPRESS_PROFILING_BEGIN()
 
 
-		//mortar_transfer_2D(init);
-         mortar_transfer_3D(init);
+		// mortar_transfer_2D(init);
+		// mortar_transfer_3D(init);
 		//mortar_transfer_3D_monolithic(init);
-		// surface_mortar(init);
+		surface_mortar(init);
 
 		// run_curved_poly_disc();
 

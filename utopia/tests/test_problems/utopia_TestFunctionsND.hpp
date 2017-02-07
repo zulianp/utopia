@@ -78,6 +78,19 @@ namespace utopia {
             return true;
         }
 
+        bool has_preconditioner() const
+        {
+            return true;
+        }
+
+        bool hessian(const Vector &point, Matrix &H, Matrix &precond) const override
+        {
+            if(!hessian(point, H)) return false;
+            precond = diag(diag(H));
+            return true;
+        }
+
+
     private:
         const SizeType N;
         const Vector b;

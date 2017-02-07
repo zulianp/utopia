@@ -239,6 +239,18 @@ public:
             return linear_solver_->apply(rhs, sol);
         }
 
+        inline bool has_preconditioned_solver()
+        {
+            return dynamic_cast< PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get());
+        }
+
+
+        inline bool linear_solve(const Matrix &mat, const Matrix &prec, const Vector &rhs, Vector &sol)
+        {
+            static_cast< PreconditionedSolver<Matrix, Vector> *>(linear_solver_.get())->update(make_ref(mat), make_ref(prec));
+            return linear_solver_->apply(rhs, sol);
+        }
+
 
         std::shared_ptr<Solver> linear_solver_;     /*!< Linear solver parameters. */  
         Parameters params_;        /*!< Solver parameters. */  

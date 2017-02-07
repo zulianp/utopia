@@ -16,14 +16,24 @@ namespace utopia
     template<class Matrix, class Vector>
     class Function 
     {
-        public:
-            DEF_UTOPIA_SCALAR(Matrix)
+    public:
+        DEF_UTOPIA_SCALAR(Matrix)
 
-            virtual ~Function() { }
-            virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const = 0;
-            virtual bool gradient(const Vector &/*point*/, Vector &/*result*/) const = 0;
-            virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/) const = 0;
-            virtual bool update(const Vector &/*point*/) { return true; };
+        virtual ~Function() { }
+        virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const = 0;
+        virtual bool gradient(const Vector &/*point*/, Vector &/*result*/) const = 0;
+        virtual bool hessian(const Vector &x, Matrix &H) const = 0;
+
+        virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const 
+        {
+            return false;
+        }
+
+        virtual bool has_preconditioner() const {
+            return false;
+        }
+
+        virtual bool update(const Vector &/*point*/) { return true; };
 
     };
 }

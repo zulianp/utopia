@@ -1237,6 +1237,47 @@ namespace utopia {
 		
 	}
 
+	bool PETScBackend::diag(PETScMatrix &out, const PETScMatrix &in)
+	{
+		PETScVector vec;
+		if(!diag(vec, in)) {return false;}
+		return diag(out, vec);
+	}
+
+	bool PETScBackend::diag(PETScMatrix &mat, const PETScVector &vec)
+	{
+		// I do not think, this is needed
+		// because, doesnt run in parallel properly
+		// u can not change size of matrix after it was initialized...
+		// or at least it seems like ...
+		//!!! FIXME needs to check if matrix has been allocated already
+		
+		MPI_Comm comm = mat.communicator();
+		MatDestroy(&mat.implementation());
+		MatCreate(comm, &mat.implementation());
+		
+		PetscInt local_size, global_size;
+		VecGetLocalSize(vec.implementation(), &local_size);
+		VecGetSize(vec.implementation(), &global_size);
+		
+		if(mpi_world_size() == 1) {
+			MatSetType(mat.implementation(), MATSEQDENSE);
+			//
+			// MatSEQAIJSetPreallocation(mat.implementation(), 1, NULL, NULL, NULL);
+			MatSetSizes(mat.implementation(), local_size, local_size, global_size, global_size);
+			MatSetUp(mat.implementation());
+		} else {
+			MatSetType(mat.implementation(), MATMPIDENSE);
+			MatSetSizes(mat.implementation(), local_size, local_size, global_size, global_size);
+			MatMPIAIJSetPreallocation(mat.implementation(), 1, NULL, 0, NULL);
+		}
+		
+		
+		PetscInt err = MatDiagonalSet( mat.implementation(), vec.implementation(), INSERT_VALUES);
+		return PETScError::Check(err);
+		
+	}
+
 	bool PETScBackend::mat_diag_shift(PETScMatrix &left, const PetscScalar diag_factor)
 	{
 		return PETScError::Check(MatShift(left.implementation(), diag_factor));

@@ -829,12 +829,38 @@ namespace utopia {
         disp(x);
     }
 
+
+    void ksp_precond_delegate_test()
+    {
+        const int n = 10;
+        TestFunctionND_1<DMatrixd, DVectord> fun(n);
+
+        ConjugateGradient<DMatrixd, DVectord> cg;
+        cg.set_preconditioner(std::make_shared<DelegatePreconditioner<DMatrixd, DVectord> >());
+        Newton<DMatrixd, DVectord> newton(make_ref(cg));
+
+        DVectord x = zeros(n);
+        newton.solve(fun, x);
+        disp(x);
+
+        DVectord expected = values(n, 0.468919);
+        assert(approxeq(expected, x));
+
+        cg.set_preconditioner(std::make_shared<PointJacobi<DMatrixd, DVectord> >());
+        x = zeros(n);
+
+        newton.solve(fun, x);
+        assert(approxeq(expected, x));
+    }
+
+
     #endif //WITH_PETSC;
 
     void runPETScTest() {
         #ifdef WITH_PETSC
         std::cout << "Begin: PETScTest" << std::endl;
 
+        ksp_precond_delegate_test();
         harcoded_cg_test();
         petsc_reciprocal_test();
         petsc_axpy_test();

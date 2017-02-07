@@ -232,6 +232,8 @@ namespace utopia
 		bool diag(PETScVector &vec, const PETScMatrix &mat);
 		
 		bool diag(PETScSparseMatrix &mat, const PETScVector &vec);
+		bool diag(PETScMatrix &mat, const PETScVector &vec);
+		bool diag(PETScMatrix &out, const PETScMatrix &in);
 
         bool mat_diag_shift(PETScMatrix &left, const PetscScalar diag_factor);
         

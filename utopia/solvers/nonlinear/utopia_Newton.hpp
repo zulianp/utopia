@@ -50,7 +50,7 @@ namespace utopia
            using namespace utopia;
 
             Vector grad, step;
-            Matrix hessian;
+            Matrix hessian, preconditioner;
 
             Scalar g_norm, g0_norm, r_norm, s_norm;
             SizeType it = 0;
@@ -73,11 +73,16 @@ namespace utopia
 
             while(!converged)
             {
-                fun.hessian(x, hessian);
-
                 //find direction step
                 step = local_zeros(local_size(x));
-                this->linear_solve(hessian, grad, step);
+
+                if(this->has_preconditioned_solver() && fun.has_preconditioner()) {
+                    fun.hessian(x, hessian, preconditioner);
+                    this->linear_solve(hessian, preconditioner, grad, step);
+                } else {
+                    fun.hessian(x, hessian);
+                    this->linear_solve(hessian, grad, step);
+                }
 
                 if(ls_strategy_) {
                     
