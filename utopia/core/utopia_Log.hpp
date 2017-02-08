@@ -37,11 +37,12 @@ namespace utopia {
 
     class Measurement {
     public:
-        //FIXME - you cannot call size(T) on most T (compilation error). Already tried SFINAE exploits but those failed.
+        // Calls to size(expr.derived()) can cause compilation errors even if we check if there is a
+        // version of size that takes T, because that can be a recusive call that can fail later
+        // (example: Wrapper<PETScSerialSparseMatrix>). Size logging has been removed.
         template<class T>
         Measurement(const Expression<T> &expr) {
             id_ = generate_unique_id();
-            size_ = { -1 };
             class_ = expr.getClass();
         }
 
@@ -64,7 +65,6 @@ namespace utopia {
 
         MeasurementId id_;
         std::string class_;
-        Size size_;
         std::chrono::high_resolution_clock::time_point start_time_, end_time_;
     };
 
