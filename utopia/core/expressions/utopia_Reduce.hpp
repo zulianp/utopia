@@ -76,6 +76,11 @@ namespace utopia {
         return Reduce<Derived, Plus>(expr.derived());
     }
 
+    template<class Derived>
+    inline Reduce<Derived, Min> min(const Expression<Derived> &expr) {
+        return Reduce<Derived, Min>(expr.derived());
+    }
+
     /**
      * @ingroup     reductions
      * @brief       \f$  <x, y> \f$

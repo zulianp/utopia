@@ -167,6 +167,12 @@ namespace utopia {
 	        return result;
 	    }
 	};
+
+
+	//add MatMultTransposeAdd(Mat mat,Vec v1,Vec v2,Vec v3)
+	//add MatMultAdd(Mat mat,Vec v1,Vec v2,Vec v3)
+
+	//for later PetscErrorCode MatGetRowMax(Mat mat,Vec v,PetscInt idx[]) c = min(mat, 1); r = min(mat, 0)
 }
 
 #endif //UTOPIA_EVAL_PETSC_HPP

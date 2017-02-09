@@ -127,7 +127,8 @@ namespace utopia {
             const bool ok = UTOPIA_BACKEND(Traits).zaxpy(
                     -expr.left().right(),
                      Eval<Left,  Traits>::apply(expr.left().left()),
-                     Eval<Right, Traits>::apply(expr.right())
+                     Eval<Right, Traits>::apply(expr.right()),
+                     result
             );
 
             assert(ok);

@@ -208,6 +208,26 @@ namespace utopia {
     private:
         const T numerator_;
     };
+
+
+    class Min {
+    public:
+        std::string getClass() const { return "Min"; }
+
+        template<typename T>
+        class Function {
+        public:
+            inline T operator()(const T &left, const T &right) const {
+                using std::min;
+                return min(left, right);
+            }
+        };
+
+        template<typename T>
+        inline static Function<T> Fun() {
+            return Function<T>();
+        }
+    };
 }
 
 #endif //SIMMOD_utopia_OPERATORS_HPP
