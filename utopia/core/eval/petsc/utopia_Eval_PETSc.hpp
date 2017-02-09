@@ -1,5 +1,5 @@
 #ifndef UTOPIA_EVAL_PETSC_HPP
-#define UTOPIA_EVAL_PETSC_HPP 
+#define UTOPIA_EVAL_PETSC_HPP
 
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_PETScTraits.hpp"
@@ -16,12 +16,16 @@ namespace utopia {
 
 		inline static bool apply(const Construct<Left, LocalDiagBlock<Right> > & expr)
 		{
+            UTOPIA_LOG_BEGIN(expr);
+
 			const bool ok = UTOPIA_BACKEND(Traits).build_local_diag_block(
 				Eval<Left,  Traits>::apply(expr.left()),
 				Eval<Right, Traits>::apply(expr.right().expr())
 				);
 
 			assert(ok);
+
+			UTOPIA_LOG_END(expr);
 			return ok;
 		}
 	};
@@ -32,6 +36,9 @@ namespace utopia {
 		inline static EXPR_TYPE(Traits, Left) apply(const MatrixPtAPProduct<Left, Right> &expr)
 		{
 			EXPR_TYPE(Traits, Left) result;
+
+			UTOPIA_LOG_BEGIN(expr);
+
 			const bool ok = UTOPIA_BACKEND(Traits).triple_product_PtAP(
 				Eval<Left,  Traits>::apply(expr.left()),
 				Eval<Right, Traits>::apply(expr.right()),
@@ -39,13 +46,15 @@ namespace utopia {
 				);
 
 			assert(ok);
+
+			UTOPIA_LOG_END(expr);
 			return result;
 		}
 	};
 
 	// general mat-mat-mat multiplication
 	template<class M1, class M2, class M3, class Traits>
-	class Eval< Multiply< Multiply< Wrapper<M1, 2 >, Wrapper<M2, 2 >>, Wrapper<M3, 2 > >,  Traits,  PETSC> 
+	class Eval< Multiply< Multiply< Wrapper<M1, 2 >, Wrapper<M2, 2 >>, Wrapper<M3, 2 > >,  Traits,  PETSC>
 	{
 		public:
 			typedef utopia::Multiply< Multiply< Wrapper<M1, 2 >, Wrapper<M2, 2 > >, Wrapper<M3, 2 > > Expr;
@@ -53,6 +62,9 @@ namespace utopia {
 			inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
 			{
 				EXPR_TYPE(Traits, Expr) result;
+
+				UTOPIA_LOG_BEGIN(expr);
+
 				//Perform optimal triple product
 				const bool ok = UTOPIA_BACKEND(Traits).triple_product(
 					Eval<Wrapper<M1, 2 >, Traits>::apply(expr.left().left()),
@@ -62,21 +74,23 @@ namespace utopia {
 					);
 
 				assert(ok);
+
+				UTOPIA_LOG_END(expr);
 				return result;
 			}
 	};
 
 	//! [pattern matching and optimizations]
 
-	/*! 
-	* @brief Triple product (m1^T * m2 * m1 := transpose(m1) * m2 * m1) optimization for the petsc backend 
+	/*!
+	* @brief Triple product (m1^T * m2 * m1 := transpose(m1) * m2 * m1) optimization for the petsc backend
 	*/
 	template<class M1, class M2, class Traits>
 	class Eval<
 		//The pattern to match
-		Multiply< Multiply<Transposed<M1>, M2>, M1>, 
+		Multiply< Multiply<Transposed<M1>, M2>, M1>,
 		//Type information
-		Traits, 
+		Traits,
 		//Restriction to the backend with the PETSC tag.
 		PETSC> {
 	public:
@@ -85,6 +99,8 @@ namespace utopia {
 		inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
 		{
 			EXPR_TYPE(Traits, Expr) result;
+
+			UTOPIA_LOG_BEGIN(expr);
 
 			//Check if left and right operands are the same object
 			if(&expr.left().left().expr() == &expr.right()) {
@@ -107,6 +123,7 @@ namespace utopia {
 					result);
 			}
 
+			UTOPIA_LOG_END(expr);
 			return result;
 		}
 	};
@@ -120,6 +137,9 @@ namespace utopia {
 		inline static EXPR_TYPE(Traits, Left) apply(const LocalRedistribute<Left, Right> &expr)
 		{
 			EXPR_TYPE(Traits, Left) result;
+
+			UTOPIA_LOG_BEGIN(expr);
+
 			const bool ok = UTOPIA_BACKEND(Traits).build_local_redistribute(
 				Eval<Left,  Traits>::apply(expr.left()),
 				Eval<Right, Traits>::apply(expr.right()),
@@ -127,6 +147,8 @@ namespace utopia {
 				);
 
 			assert(ok);
+
+			UTOPIA_LOG_END(expr);
 			return result;
 		}
 	};
@@ -135,16 +157,16 @@ namespace utopia {
 
 	template<class Left, class Right, typename ScalarT, class Traits>
 	class Eval<Binary<
-	                    Binary<Number<ScalarT>, Left,  Multiplies>, 
-	                    Binary<Number<ScalarT>, Right, Multiplies>, 
+	                    Binary<Number<ScalarT>, Left,  Multiplies>,
+	                    Binary<Number<ScalarT>, Right, Multiplies>,
 	                    Plus
 	                 >,
 	                 Traits,
 	                 PETSC> {
 	public:
 		typedef utopia::Binary<
-	                    	Binary<Number<ScalarT>, Left,  Multiplies>, 
-	                    	Binary<Number<ScalarT>, Right, Multiplies>, 
+	                    	Binary<Number<ScalarT>, Left,  Multiplies>,
+	                    	Binary<Number<ScalarT>, Right, Multiplies>,
 	                    	Plus> Expr;
 
 	    inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)

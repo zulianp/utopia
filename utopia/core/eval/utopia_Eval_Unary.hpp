@@ -15,11 +15,13 @@ namespace utopia {
             Reciprocal<Scalar> >,
             Traits, Backend> {
     public:
-        
+
         inline static Tensor apply(const Unary<Wrapper<Tensor, 1>, Reciprocal<Scalar> > &expr)
         {
-            //UTOPIA_EVENT_BEGIN(expr.getClass())
             Tensor result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             const bool ok = UTOPIA_BACKEND(Traits).apply(
                     Eval<Wrapper<Tensor, 1>, Traits>::apply(expr.expr()),
                     expr.operation(),
@@ -28,7 +30,7 @@ namespace utopia {
 
             assert(ok);
 
-            //UTOPIA_EVENT_END(expr.getClass())
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };
@@ -41,6 +43,9 @@ namespace utopia {
         inline static Result apply(const Unary<Expr, Operation> &expr)
         {
             Result result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             const bool ok = UTOPIA_BACKEND(Traits).apply(
                     Eval<Expr, Traits>::apply(expr.expr()),
                     expr.operation(),
@@ -48,6 +53,8 @@ namespace utopia {
             );
 
             assert(ok);
+
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };

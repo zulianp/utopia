@@ -22,6 +22,7 @@
 #include "utopia_Norm.hpp"
 #include "utopia_FillTypeQuery.hpp"
 #include "utopia_MPI.hpp"
+#include "utopia_Log.hpp"
 
 
 namespace utopia {

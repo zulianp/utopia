@@ -17,11 +17,16 @@ namespace utopia {
         inline static Result apply(const Transposed<Tensor> &t)
         {
             Result result;
+
+            UTOPIA_LOG_BEGIN(t);
+
             bool ok = UTOPIA_BACKEND(Traits).transpose(
                     Eval<Tensor, Traits>::apply(t.expr()),
                     result);
 
             assert(ok);
+
+            UTOPIA_LOG_END(t);
             return result;
         }
     };

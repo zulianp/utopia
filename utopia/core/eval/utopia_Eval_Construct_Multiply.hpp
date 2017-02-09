@@ -14,12 +14,16 @@ namespace utopia {
 
         inline static void apply(const Expr &expr) {
 
+            UTOPIA_LOG_BEGIN(expr);
+
             auto & cleft       = Eval<CLeft, Traits>::apply(expr.left());
             const auto & left  = expr.right().left().implementation();
             auto && right      = Eval<Right, Traits>::apply(expr.right().right());
 
-        	assert(&cleft != &right && "should never happen");        		
+        	assert(&cleft != &right && "should never happen");
         	const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), cleft); assert(ok);
+
+			UTOPIA_LOG_END(expr);
         }
     };
 
@@ -30,6 +34,8 @@ namespace utopia {
         typedef typename TypeAndFill<Traits, CLeft>::Type Result;
 
         inline static void apply(const Expr &expr) {
+
+            UTOPIA_LOG_BEGIN(expr);
 
             auto & cleft       = Eval<CLeft, Traits>::apply(expr.left());
             const auto & left  = expr.right().left().implementation();
@@ -42,9 +48,10 @@ namespace utopia {
         		const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), result);  assert(ok);
         		cleft = result;
         	}
+
+            UTOPIA_LOG_END(expr);
         }
     };
 }
 
 #endif //UTOPIA_EVAL_CONSTRUCT_MULTIPLY_HPP
-

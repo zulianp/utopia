@@ -26,7 +26,7 @@ namespace utopia {
         std::map<std::string, std::vector<Measurement>> class_group;
 
         std::ofstream f_detail("log." + std::to_string(mpi_world_rank()) + ".csv");
-        f_detail << "Time;Duration (us);Class;Size" << std::endl;
+        f_detail << "Time;Duration (us);Class" << std::endl;
 
         for (auto it = event_map_.cbegin(); it != event_map_.cend(); ++it) {
             const Measurement &m = it->second;
@@ -36,8 +36,7 @@ namespace utopia {
                 m.start_time_ - start_time_).count();
 
             f_detail << timestamp << ';' << std::chrono::high_resolution_clock::duration(
-                m.end_time_ - m.start_time_).count() << ';' << m.class_ << ';';
-            disp(m.size_, f_detail);
+                m.end_time_ - m.start_time_).count() << ';' << m.class_ << std::endl;
         }
 
         f_detail.close();

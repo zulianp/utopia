@@ -14,6 +14,8 @@ namespace utopia {
     public:
         inline static bool apply(const Assign<View<Left>, Factory<Right, Order> > &expr)
         {
+            UTOPIA_LOG_BEGIN(expr);
+
             const auto &left = expr.left();
             UTOPIA_BACKEND(Traits).assignToRange(
                     Eval<Left, Traits>::apply(left.expr()),
@@ -23,6 +25,8 @@ namespace utopia {
             );
 
             //FIXME error handling
+
+            UTOPIA_LOG_END(expr);
             return true;
         }
     };
@@ -32,6 +36,8 @@ namespace utopia {
     public:
         inline static bool apply(const Construct<View<Left>, Factory<Right, Order> > &expr)
         {
+            UTOPIA_LOG_BEGIN(expr);
+
             const auto &left = expr.left();
             UTOPIA_BACKEND(Traits).assignToRange(
                     Eval<Left, Traits>::apply(left.expr()),
@@ -41,6 +47,8 @@ namespace utopia {
             );
 
             //FIXME error handling
+
+            UTOPIA_LOG_END(expr);
             return true;
         }
     };
@@ -53,6 +61,8 @@ namespace utopia {
     public:
         inline static bool apply(const Assign<Left, Factory<Right, Order> > &expr)
         {
+            UTOPIA_LOG_BEGIN(expr);
+
             UTOPIA_BACKEND(Traits).build(
                     Eval<Left, Traits>::apply(expr.left()),
                     expr.right().size(),
@@ -60,6 +70,8 @@ namespace utopia {
             );
 
             //FIXME error handling
+
+            UTOPIA_LOG_END(expr);
             return true;
         }
     };
@@ -69,6 +81,8 @@ namespace utopia {
     public:
         inline static bool apply(const Construct<Left, Factory<Right, Order> > &expr)
         {
+            UTOPIA_LOG_BEGIN(expr);
+
             UTOPIA_BACKEND(Traits).build(
                     Eval<Left, Traits>::apply(expr.left()),
                     expr.right().size(),
@@ -76,6 +90,8 @@ namespace utopia {
             );
 
             //FIXME error handling
+
+            UTOPIA_LOG_END(expr);
             return true;
         }
     };
@@ -88,7 +104,12 @@ namespace utopia {
     public:
         inline static typename TypeAndFill<Traits, Factory<Type, Order> >::Type apply(const Factory<Type, Order> &expr) {
             typename TypeAndFill<Traits, Factory<Type, Order> >::Type ret;
+
+            UTOPIA_LOG_BEGIN(expr);
+
             UTOPIA_BACKEND(Traits).build(ret, expr.size(), expr.type());
+
+            UTOPIA_LOG_END(expr);
             return ret;
         }
     };
