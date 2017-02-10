@@ -110,8 +110,9 @@ set(_MPI_Fortran_COMPILER_NAMES            mpif95   mpif95_r  mpf95   mpf95_r
 # GNU compiler names
 set(_MPI_GNU_C_COMPILER_NAMES              mpigcc mpgcc mpigcc_r mpgcc_r)
 set(_MPI_GNU_CXX_COMPILER_NAMES            mpig++ mpg++ mpig++_r mpg++_r)
-set(_MPI_GNU_Fortran_COMPILER_NAMES        mpigfortran mpgfortran mpigfortran_r mpgfortran_r
-                                           mpig77 mpig77_r mpg77 mpg77_r)
+set(_MPI_GNU_Fortran_COMPILER_NAMES        mpigfortran mpgfortran mpigfortran_r mpgfortran_r 
+                                           mpig77 mpig77_r mpg77 mpg77_r
+                                           gfortran-mp-6 gfortran-mp-5)
 
 # Intel MPI compiler names
 set(_MPI_Intel_C_COMPILER_NAMES            mpiicc)

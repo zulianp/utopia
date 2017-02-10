@@ -169,6 +169,16 @@ show :
     # compiling with clang (the libs may be required by 3rd party
     # Fortran libraries)
     find_program(GFORTRAN_EXECUTABLE gfortran)
+
+    if(NOT GFORTRAN_EXECUTABLE)
+      find_program(GFORTRAN_EXECUTABLE gfortran-mp-6)
+    endif()
+    
+    if(NOT GFORTRAN_EXECUTABLE)
+      find_program(GFORTRAN_EXECUTABLE gfortran-mp-5)
+    endif()
+
+    message(STATUS "gfortran: ${GFORTRAN_EXECUTABLE}")
     if (GFORTRAN_EXECUTABLE)
       execute_process(COMMAND ${GFORTRAN_EXECUTABLE} -print-file-name=libgfortran.dylib
       OUTPUT_VARIABLE GFORTRAN_LIBRARY
@@ -321,6 +331,8 @@ if (PETSC_INCLUDES)
   set(CMAKE_EXTRA_INCLUDE_FILES)
 endif()
 
+
+# message(STATUS "petsc libs: ${PETSC_LIBRARIES}\npetsc test runs: ${PETSC_TEST_RUNS}\npetsc incldudes: ${PETSC_INCLUDES}\npetsc version: ${PETSC_VERSION}")
 # Standard package handling
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PETSc
