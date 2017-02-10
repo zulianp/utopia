@@ -871,6 +871,35 @@ namespace utopia {
     }
 
 
+    void petsc_mat_mul_add_test()
+    {
+        int n = 55;
+        for (size_t i = 0; i < 50; i++) {
+            double d1 = rand()/(double)RAND_MAX,
+                d2 = rand()/(double)RAND_MAX,
+                d3 = rand()/(double)RAND_MAX;
+
+            DSMatrixd m = values(n, n, d1);
+            DVectord v1 = values(n, d2);
+            DVectord v2 = values(n, d3);
+            DVectord r1, r2, r3;
+
+            r1 = m * v1 + v2;
+            r2 = v2 + m * v1;
+
+            r3 = transpose(m) * v2 + v1;
+
+            DVectord expected = values(n, n * d1 * d2 + d3);
+
+            assert(approxeq(expected, r1));
+            assert(approxeq(expected, r2));
+
+            expected = values(n, n * d1 * d3 + d2);
+            assert(approxeq(expected, r3));
+        }
+    }
+
+
     void min_test()
     {
 
@@ -923,6 +952,7 @@ namespace utopia {
        //  petsc_inverse_test();
         
         petsc_is_nan_or_inf_test(); 
+        petsc_mat_mul_add_test();
 
         std::cout << "End:   PETScTest" << std::endl;
         #endif // WITH_PETSC
