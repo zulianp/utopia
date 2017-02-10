@@ -16,7 +16,7 @@ namespace utopia {
 
 		inline static bool apply(const Construct<Left, LocalDiagBlock<Right> > & expr)
 		{
-            UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_LOG_BEGIN(expr);
 
 			const bool ok = UTOPIA_BACKEND(Traits).build_local_diag_block(
 				Eval<Left,  Traits>::apply(expr.left()),
@@ -191,8 +191,37 @@ namespace utopia {
 	};
 
 
+
+	template<class M, class V1, class V2, class Traits>
+	class Eval<
+			Binary<Multiply<M, V1>, V2, Plus>,
+			Traits,
+			PETSC> {
+	public:
+		typedef utopia::Binary<Multiply<M, V1>, V2, Plus> Expr;
+
+		inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
+		{
+			EXPR_TYPE(Traits, Expr) result;
+
+			UTOPIA_LOG_BEGIN(expr);
+
+			const bool ok = UTOPIA_BACKEND(Traits).mat_mult_add(
+				Eval<M,  Traits>::apply(expr.left().left()),
+				Eval<V1, Traits>::apply(expr.left().right()),
+				Eval<V2, Traits>::apply(expr.right()),
+				result
+			);
+
+			assert(ok);
+
+			UTOPIA_LOG_END(expr);
+			return result;
+		}
+	};
+
+
 	//add MatMultTransposeAdd(Mat mat,Vec v1,Vec v2,Vec v3)
-	//add MatMultAdd(Mat mat,Vec v1,Vec v2,Vec v3)
 
 	//for later PetscErrorCode MatGetRowMax(Mat mat,Vec v,PetscInt idx[]) c = min(mat, 1); r = min(mat, 0)
 }

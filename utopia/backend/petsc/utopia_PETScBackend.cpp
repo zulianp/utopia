@@ -1046,6 +1046,27 @@ namespace utopia {
 		return true;
 	}
 
+	bool PETScBackend::mat_mult_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result)
+	{
+		if (&right.implementation() == &result.implementation() || &left.implementation() ==  &result.implementation()) {
+			assert(false);
+		}
+
+		PetscInt size, gsize;
+		VecGetSize(right.implementation(), &gsize);
+		VecGetLocalSize(right.implementation(), &size);
+
+		result.setCommunicator(right.communicator());
+
+		VecDestroy(&result.implementation());
+		VecCreateMPI(right.communicator(), size, gsize, &result.implementation());
+		VecAssemblyBegin(result.implementation());
+		VecAssemblyEnd(result.implementation());
+
+		MatMultAdd(m.implementation(), right.implementation(), left.implementation(), result.implementation());
+		return true;
+	}
+
 	bool PETScBackend::apply(const Vector &vec, const Abs &, Vector &result)
 	{
 		if(&vec != &result) {
