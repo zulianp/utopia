@@ -230,7 +230,7 @@ namespace utopia
 		PetscScalar reduce(const PETScVector &vec, const Plus &);
 		PetscScalar reduce(const PETScMatrix &mat, const Plus &op);
 		PetscScalar reduce(const PETScVector &, const Min &);
-		PetscScalar reduce(const PETScMatrix &m, const Min &);
+		PetscScalar reduce(const PETScMatrix &, const Min &);
 		
 		// get diagonal of matrix as vector
 		bool diag(PETScVector &vec, const PETScMatrix &mat);

@@ -900,7 +900,7 @@ namespace utopia {
     }
 
 
-    void min_test()
+    void petsc_min_test()
     {
         const int n = 10;
         DVectord v  = values(n, 1.0);
@@ -915,6 +915,23 @@ namespace utopia {
         DVectord min_row_A = min(A, 2);
         DVectord expected  = values(n, 0.0);
         assert(approxeq(expected, min_row_A));
+    }
+
+    void petsc_max_test()
+    {
+        const int n = 10;
+        DVectord v  = values(n, 1.0);
+        DSMatrixd A = identity(n, n);
+
+        // double max_v = max(v);
+        // assert(approxeq(1.0, max_v));
+        // 
+        // double max_A = max(A);
+        // assert(approxeq(1.0, max_A));
+        // 
+        // DVectord max_row_A = max(A, 2);
+        // DVectord expected  = values(n, 1.0);
+        // assert(approxeq(expected, max_row_A));
     }
 
     #endif //WITH_PETSC;
@@ -956,6 +973,9 @@ namespace utopia {
         
         petsc_is_nan_or_inf_test(); 
         petsc_mat_mul_add_test();
+        
+        petsc_min_test();
+        petsc_max_test();
 
         std::cout << "End:   PETScTest" << std::endl;
         #endif // WITH_PETSC

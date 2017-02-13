@@ -61,6 +61,11 @@ namespace utopia {
         return TensorReduce<Derived, Min>(expr.derived(), dim);
     }
 
+    template<class Derived>
+    TensorReduce<Derived, Max> max(const Expression<Derived> &expr, const int dim) {
+        return TensorReduce<Derived, Max>(expr.derived(), dim);
+    }
+
 
     template<class Expr, class Operation>
     inline Size size(const TensorReduce<Expr, Operation> &expr)
