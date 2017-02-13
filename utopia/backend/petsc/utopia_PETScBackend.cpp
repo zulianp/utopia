@@ -1228,6 +1228,28 @@ namespace utopia {
 		return reduce(rowSum, op);
 	}
 	
+	PetscScalar PETScBackend::reduce(const PETScVector &v, const Min &)
+	{
+		PetscScalar x;
+		VecMin(v.implementation(), nullptr, &x);
+		return x;
+	}
+
+	// WARNING: behavior of min(Matrix) differs from Matlab behavior (here, one scalar is returned)
+	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Min &op)
+	{
+		PetscScalar x;
+		PETScVector v;
+		PetscInt grows, gcols;
+		MatGetSize(m.implementation(), &grows, &gcols);
+		VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
+		
+		MatGetRowMin(m.implementation(), v.implementation(), nullptr);
+		VecMin(v.implementation(), nullptr, &x);
+		return x;
+	}
+
+	
 	// get diagonal of matrix as vector
 	bool PETScBackend::diag(PETScVector &vec, const PETScMatrix &mat)
 	{

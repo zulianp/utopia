@@ -907,10 +907,10 @@ namespace utopia {
         DVectord v  = values(n, 1.0);
         DSMatrixd A = identity(n, n);
 
-        // double min_v = min(v);
-        // disp(min_v);
+        double min_v = min(v);
+        disp(min_v);
 
-        // double min_A = min(A);
+        double min_A = min(A);
         // DVectord min_row_A = min(A, 1);
     }
 
