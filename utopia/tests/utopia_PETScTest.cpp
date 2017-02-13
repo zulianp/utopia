@@ -902,16 +902,19 @@ namespace utopia {
 
     void min_test()
     {
-
         const int n = 10;
         DVectord v  = values(n, 1.0);
         DSMatrixd A = identity(n, n);
 
         double min_v = min(v);
-        disp(min_v);
+        assert(approxeq(1.0, min_v));
 
         double min_A = min(A);
-        // DVectord min_row_A = min(A, 1);
+        assert(approxeq(0.0, min_A));
+
+        DVectord min_row_A = min(A, 2);
+        DVectord expected  = values(n, 0.0);
+        assert(approxeq(expected, min_row_A));
     }
 
     #endif //WITH_PETSC;

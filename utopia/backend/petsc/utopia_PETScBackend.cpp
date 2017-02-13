@@ -1235,7 +1235,6 @@ namespace utopia {
 		return x;
 	}
 
-	// WARNING: behavior of min(Matrix) differs from Matlab behavior (here, one scalar is returned)
 	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Min &op)
 	{
 		PetscScalar x;
@@ -1717,6 +1716,26 @@ namespace utopia {
 		} else {
 			//FIXME implement own
 			assert(false && "not available in pestsc");
+			return false;
+		}
+
+		return true;
+	}
+
+	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Min &, const int dim, Vector &result)
+	{
+		//FIXME - ensure Vector is constructed (by destroying and rebuilding it)?
+		PetscScalar x;
+		PetscInt grows, gcols;
+		MatGetSize(mat.implementation(), &grows, &gcols);
+
+		if (dim == 2) {
+			VecSetSizes(result.implementation(), PETSC_DECIDE, grows);
+			MatGetRowMin(mat.implementation(), result.implementation(), nullptr);
+		} else {
+			VecSetSizes(result.implementation(), PETSC_DECIDE, gcols);
+			//FIXME implement own
+			assert(false && "not available in petsc");
 			return false;
 		}
 
