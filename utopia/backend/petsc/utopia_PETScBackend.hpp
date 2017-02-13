@@ -218,6 +218,8 @@ namespace utopia
 		bool apply(const PETScVector &left, const PETScVector &right, const EMultiplies &, PETScVector &result);
 		bool apply(const PETScVector &left, const PETScVector &right, const Divides &, PETScVector &result);
 		
+		bool mat_mult_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result);
+		bool mat_multT_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result);
 		
 		// reciprocal
 		bool apply(const PETScVector &vec, const Reciprocal<double> &reciprocal, PETScVector &result);

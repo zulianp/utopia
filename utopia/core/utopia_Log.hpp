@@ -91,8 +91,8 @@ namespace utopia {
 
 #else  //UTOPIA_LOG_ENABLED
 
-#define UTOPIA_LOG_BEGIN(...)   0
-#define UTOPIA_LOG_END(...)     0
+#define UTOPIA_LOG_BEGIN(...)   ((void)0)
+#define UTOPIA_LOG_END(...)     ((void)0)
 
 #endif  //UTOPIA_LOG_ENABLED
 

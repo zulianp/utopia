@@ -16,7 +16,7 @@ namespace utopia {
 
 		inline static bool apply(const Construct<Left, LocalDiagBlock<Right> > & expr)
 		{
-            UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_LOG_BEGIN(expr);
 
 			const bool ok = UTOPIA_BACKEND(Traits).build_local_diag_block(
 				Eval<Left,  Traits>::apply(expr.left()),
@@ -191,8 +191,123 @@ namespace utopia {
 	};
 
 
-	//add MatMultTransposeAdd(Mat mat,Vec v1,Vec v2,Vec v3)
-	//add MatMultAdd(Mat mat,Vec v1,Vec v2,Vec v3)
+	template<class M, class V1, class V2, class Traits>
+	class Eval<
+			Binary<Multiply<Wrapper<M, 2>, Wrapper<V1, 1>>, Wrapper<V2, 1>, Plus>,
+			Traits,
+			PETSC> {
+	public:
+		typedef utopia::Binary<Multiply<Wrapper<M, 2>, Wrapper<V1, 1>>, Wrapper<V2, 1>, Plus> Expr;
+
+		inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
+		{
+			EXPR_TYPE(Traits, Expr) result;
+
+			UTOPIA_LOG_BEGIN(expr);
+
+			const bool ok = UTOPIA_BACKEND(Traits).mat_mult_add(
+				Eval<Wrapper<M, 2>,  Traits>::apply(expr.left().left()),
+				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left().right()),
+				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right()),
+				result
+			);
+
+			assert(ok);
+
+			UTOPIA_LOG_END(expr);
+			return result;
+		}
+	};
+
+
+
+	template<class M, class V1, class V2, class Traits>
+	class Eval<
+			Binary<Wrapper<V1, 1>, Multiply<Wrapper<M, 2>, Wrapper<V2, 1>>, Plus>,
+			Traits,
+			PETSC> {
+	public:
+		typedef utopia::Binary<Wrapper<V1, 1>, Multiply<Wrapper<M, 2>, Wrapper<V2, 1>>, Plus> Expr;
+
+		inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
+		{
+			EXPR_TYPE(Traits, Expr) result;
+
+			UTOPIA_LOG_BEGIN(expr);
+
+			const bool ok = UTOPIA_BACKEND(Traits).mat_mult_add(
+				Eval<Wrapper<M, 2>,  Traits>::apply(expr.right().left()),
+				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right().right()),
+				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left()),
+				result
+			);
+
+			assert(ok);
+
+			UTOPIA_LOG_END(expr);
+			return result;
+		}
+	};
+
+
+
+	template<class M, class V1, class V2, class Traits>
+	class Eval<
+			Binary<Multiply<Transposed<Wrapper<M, 2>>, Wrapper<V1, 1>>, Wrapper<V2, 1>, Plus>,
+			Traits,
+			PETSC> {
+	public:
+		typedef utopia::Binary<Multiply<Transposed<Wrapper<M, 2>>, Wrapper<V1, 1>>, Wrapper<V2, 1>, Plus> Expr;
+
+		inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
+		{
+			EXPR_TYPE(Traits, Expr) result;
+
+			UTOPIA_LOG_BEGIN(expr);
+
+			const bool ok = UTOPIA_BACKEND(Traits).mat_multT_add(
+				Eval<Wrapper<M, 2>,  Traits>::apply(expr.left().left().expr()),
+				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left().right()),
+				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right()),
+				result
+			);
+
+			assert(ok);
+
+			UTOPIA_LOG_END(expr);
+			return result;
+		}
+	};
+
+
+
+	template<class M, class V1, class V2, class Traits>
+	class Eval<
+			Binary<Wrapper<V1, 1>, Multiply<Transposed<Wrapper<M, 2>>, Wrapper<V2, 1>>, Plus>,
+			Traits,
+			PETSC> {
+	public:
+		typedef utopia::Binary<Wrapper<V1, 1>, Multiply<Transposed<Wrapper<M, 2>>, Wrapper<V2, 1>>, Plus> Expr;
+
+		inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
+		{
+			EXPR_TYPE(Traits, Expr) result;
+
+			UTOPIA_LOG_BEGIN(expr);
+
+			const bool ok = UTOPIA_BACKEND(Traits).mat_multT_add(
+				Eval<Wrapper<M, 2>,  Traits>::apply(expr.right().left().expr()),
+				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right().right()),
+				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left()),
+				result
+			);
+
+			assert(ok);
+
+			UTOPIA_LOG_END(expr);
+			return result;
+		}
+	};
 
 	//for later PetscErrorCode MatGetRowMax(Mat mat,Vec v,PetscInt idx[]) c = min(mat, 1); r = min(mat, 0)
 }
