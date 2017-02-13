@@ -229,6 +229,10 @@ namespace utopia
 		PetscScalar norm_infty(const PETScVector &v);
 		PetscScalar reduce(const PETScVector &vec, const Plus &);
 		PetscScalar reduce(const PETScMatrix &mat, const Plus &op);
+		PetscScalar reduce(const PETScVector &, const Min &);
+		PetscScalar reduce(const PETScMatrix &, const Min &);
+		PetscScalar reduce(const PETScVector &, const Max &);
+		PetscScalar reduce(const PETScMatrix &, const Max &);
 		
 		// get diagonal of matrix as vector
 		bool diag(PETScVector &vec, const PETScMatrix &mat);
@@ -355,6 +359,8 @@ namespace utopia
 		PetscScalar trace(const Matrix &mat);
 
 		bool apply_tensor_reduce(const Matrix &mat, const Plus &, const int dim, Vector &result);
+		bool apply_tensor_reduce(const Matrix &mat, const Min &, const int dim, Vector &result);
+		bool apply_tensor_reduce(const Matrix &mat, const Max &, const int dim, Vector &result);
 		bool inverse(const Matrix &mat, Matrix &result);
 
 		// bool gemm(const PetscScalar alpha, const Matrix &left, const Matrix &right, 

@@ -228,6 +228,25 @@ namespace utopia {
             return Function<T>();
         }
     };
+
+    class Max {
+    public:
+        std::string getClass() const { return "Max"; }
+
+        template<typename T>
+        class Function {
+        public:
+            inline T operator()(const T &left, const T &right) const {
+                using std::max;
+                return max(left, right);
+            }
+        };
+
+        template<typename T>
+        inline static Function<T> Fun() {
+            return Function<T>();
+        }
+    };
 }
 
 #endif //SIMMOD_utopia_OPERATORS_HPP
