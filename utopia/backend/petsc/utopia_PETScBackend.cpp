@@ -1752,7 +1752,7 @@ namespace utopia {
 		PetscInt grows, gcols;
 		MatGetSize(mat.implementation(), &grows, &gcols);
 
-		if (dim == 2) {
+		if (dim == 1) {
 			VecDestroy(&result.implementation());
 			VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
 			MatGetRowMin(mat.implementation(), result.implementation(), nullptr);
@@ -1773,7 +1773,7 @@ namespace utopia {
 		PetscInt grows, gcols;
 		MatGetSize(mat.implementation(), &grows, &gcols);
 
-		if (dim == 2) {
+		if (dim == 1) {
 			VecDestroy(&result.implementation());
 			VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
 			MatGetRowMax(mat.implementation(), result.implementation(), nullptr);

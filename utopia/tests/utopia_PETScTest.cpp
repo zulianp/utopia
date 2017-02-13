@@ -912,7 +912,7 @@ namespace utopia {
         double min_A = min(A);
         assert(approxeq(0.0, min_A));
 
-        DVectord min_row_A = min(A, 2);
+        DVectord min_row_A = min(A, 1);
         DVectord expected  = values(n, 0.0);
         assert(approxeq(expected, min_row_A));
     }
@@ -929,7 +929,7 @@ namespace utopia {
         double max_A = max(A);
         assert(approxeq(1.0, max_A));
 
-        DVectord max_row_A = max(A, 2);
+        DVectord max_row_A = max(A, 1);
         DVectord expected  = values(n, 1.0);
         assert(approxeq(expected, max_row_A));
     }
