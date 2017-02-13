@@ -1235,7 +1235,7 @@ namespace utopia {
 		return x;
 	}
 
-	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Min &op)
+	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Min &)
 	{
 		PetscScalar x;
 		PETScVector v;
@@ -1245,8 +1245,30 @@ namespace utopia {
 		MatGetSize(m.implementation(), &grows, &gcols);
 		VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
 		
-		MatGetRowMin(m.implementation(), v.implementation(), 0);
+		MatGetRowMin(m.implementation(), v.implementation(), nullptr);
 		VecMin(v.implementation(), nullptr, &x);
+		return x;
+	}
+
+	PetscScalar PETScBackend::reduce(const PETScVector &v, const Max &)
+	{
+		PetscScalar x;
+		VecMax(v.implementation(), nullptr, &x);
+		return x;
+	}
+
+	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Max &)
+	{
+		PetscScalar x;
+		PETScVector v;
+		VecSetType(v.implementation(), VECMPI);
+
+		PetscInt grows, gcols;
+		MatGetSize(m.implementation(), &grows, &gcols);
+		VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
+
+		MatGetRowMax(m.implementation(), v.implementation(), nullptr);
+		VecMax(v.implementation(), nullptr, &x);
 		return x;
 	}
 
@@ -1735,8 +1757,30 @@ namespace utopia {
 			VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
 			MatGetRowMin(mat.implementation(), result.implementation(), nullptr);
 		} else {
-			VecSetSizes(result.implementation(), PETSC_DECIDE, gcols);
 			//FIXME implement own
+			// VecDestroy(&result.implementation());
+			// VecCreateMPI(mat.communicator(), PETSC_DECIDE, gcols, &result.implementation());
+			assert(false && "not available in petsc");
+			return false;
+		}
+
+		return true;
+	}
+
+	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Max &, const int dim, Vector &result)
+	{
+		PetscScalar x;
+		PetscInt grows, gcols;
+		MatGetSize(mat.implementation(), &grows, &gcols);
+
+		if (dim == 2) {
+			VecDestroy(&result.implementation());
+			VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
+			MatGetRowMax(mat.implementation(), result.implementation(), nullptr);
+		} else {
+			//FIXME implement own
+			// VecDestroy(&result.implementation());
+			// VecCreateMPI(mat.communicator(), PETSC_DECIDE, gcols, &result.implementation());
 			assert(false && "not available in petsc");
 			return false;
 		}
