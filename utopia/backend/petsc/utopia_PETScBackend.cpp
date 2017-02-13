@@ -1239,11 +1239,13 @@ namespace utopia {
 	{
 		PetscScalar x;
 		PETScVector v;
+		VecSetType(v.implementation(), VECMPI);
+		
 		PetscInt grows, gcols;
 		MatGetSize(m.implementation(), &grows, &gcols);
 		VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
 		
-		MatGetRowMin(m.implementation(), v.implementation(), nullptr);
+		MatGetRowMin(m.implementation(), v.implementation(), 0);
 		VecMin(v.implementation(), nullptr, &x);
 		return x;
 	}
@@ -1724,13 +1726,13 @@ namespace utopia {
 
 	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Min &, const int dim, Vector &result)
 	{
-		//FIXME - ensure Vector is constructed (by destroying and rebuilding it)?
 		PetscScalar x;
 		PetscInt grows, gcols;
 		MatGetSize(mat.implementation(), &grows, &gcols);
 
 		if (dim == 2) {
-			VecSetSizes(result.implementation(), PETSC_DECIDE, grows);
+			VecDestroy(&result.implementation());
+			VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
 			MatGetRowMin(mat.implementation(), result.implementation(), nullptr);
 		} else {
 			VecSetSizes(result.implementation(), PETSC_DECIDE, gcols);

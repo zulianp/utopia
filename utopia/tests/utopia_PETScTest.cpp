@@ -975,7 +975,7 @@ namespace utopia {
         petsc_mat_mul_add_test();
         
         petsc_min_test();
-        petsc_max_test();
+        // petsc_max_test();
 
         std::cout << "End:   PETScTest" << std::endl;
         #endif // WITH_PETSC
