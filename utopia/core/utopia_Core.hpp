@@ -42,6 +42,7 @@
 #include "utopia_Variable.hpp"
 #include "utopia_ExprInliner.hpp"
 #include "utopia_Eval.hpp"
+#include "utopia_Memory.hpp"
 
 #include "utopia_Temp.hpp"
 
