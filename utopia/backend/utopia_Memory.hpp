@@ -11,7 +11,12 @@ namespace utopia {
 	template <typename T, int FillType>
 	class Allocator {
 	public:
-		static std::shared_ptr<T> claim(Size global, Size local) {
+		static std::unique_ptr<T> claim(Size global, Size local) {
+			assert(false && "No Allocator known for this type");
+			return nullptr;
+		}
+
+		static std::unique_ptr<T> clone(std::unique_ptr<T>&) {
 			assert(false && "No Allocator known for this type");
 			return nullptr;
 		}
@@ -24,7 +29,9 @@ namespace utopia {
 			mem_ = Allocator<T, FillType>::claim(global, local);
 		}
 
-		Memory(const Memory& m) : is_owner_(false), mem_(m.mem_) { }
+		Memory(const Memory& m) : is_owner_(false) {
+			mem_ = Allocator<T, FillType>::clone(m.mem_);
+		}
 
 		Memory(Memory&& m) : is_owner_(m.is_owner_), mem_(std::move(m.mem_)) {
 			m.is_owner_ = false;
@@ -36,7 +43,7 @@ namespace utopia {
 
 	private:
 		bool is_owner_;
-		std::shared_ptr<T> mem_;
+		std::unique_ptr<T> mem_; //TODO why were we using shared_ptr?
 	};
 
 }
