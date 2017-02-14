@@ -11,7 +11,7 @@ namespace utopia {
 	template <typename T, int FillType>
 	class Allocator {
 	public:
-		static std::unique_ptr<T> claim(Size global, Size local) {
+		static std::unique_ptr<T> claim(MPI_Comm comm, Size global, Size local) {
 			assert(false && "No Allocator known for this type");
 			return nullptr;
 		}
@@ -25,25 +25,52 @@ namespace utopia {
 	template <typename T, int FillType>
 	class Memory {
 	public:
-		Memory(Size global, Size local) : is_owner_(true) {
-			mem_ = Allocator<T, FillType>::claim(global, local);
+		Memory(MPI_Comm comm, Size global, Size local) : comm_(comm) {
+			mem_ = Allocator<T, FillType>::claim(comm, global, local);
 		}
 
-		Memory(const Memory& m) : is_owner_(false) {
+		Memory(const Memory& m) : comm_(m.comm_) {
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 		}
 
-		Memory(Memory&& m) : is_owner_(m.is_owner_), mem_(std::move(m.mem_)) {
-			m.is_owner_ = false;
+		Memory(Memory&& m) : comm_(m.comm_), mem_(std::move(m.mem_)) { }
+		
+		Memory& operator=(const Memory& m) {
+			comm_ = m.comm_;
+			mem_ = Allocator<T, FillType>::clone(m.mem_);
 		}
 
 		T& implementation() {
 			return *mem_;
 		}
 
+		MPI_Comm& commmunicator() {
+			return comm_;
+		}
+
+		const MPI_Comm& commmunicator() const {
+			return comm_;
+		}
+
+		void setCommunicator(const MPI_Comm comm) {
+            comm_ = comm;
+        }
+
+		const T& implementation() const {
+			return *mem_;
+		}
+
+		bool isInitialized() const { //legacy signature
+			return static_cast<bool>(mem_);
+		}
+
+		bool is_initialized() const {
+			return static_cast<bool>(mem_);
+		}
+
 	private:
-		bool is_owner_;
 		std::unique_ptr<T> mem_; //TODO why were we using shared_ptr?
+		MPI_Comm comm_;
 	};
 
 }
