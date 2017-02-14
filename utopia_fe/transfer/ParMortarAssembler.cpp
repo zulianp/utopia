@@ -266,7 +266,7 @@ namespace utopia {
                 
                 subdomain_id[elem->id()].global.insert(subdomain_id[elem->id()].global.end(),elem->subdomain_id());
                 original_dof_map.dof_indices(elem, temp, 0);
-                std::cout<<" TEMP SIZE "<< temp.size() <<std::endl;
+//                std::cout<<" TEMP SIZE "<< temp.size() <<std::endl;
                 dof_map[elem->id()].global.insert(dof_map[elem->id()].global.end(), temp.begin(), temp.end());
                 
                 if (first)
@@ -278,9 +278,9 @@ namespace utopia {
                 
             }
             
-            std::cout<<" jj_side_id_one_check = "<< jj_side_id_one_check <<std::endl;
-            
-            std::cout<<" jj_side_id_one_tag = "<< jj_side_id_one_tag <<std::endl;
+//            std::cout<<" jj_side_id_one_check = "<< jj_side_id_one_check <<std::endl;
+//            
+//            std::cout<<" jj_side_id_one_tag = "<< jj_side_id_one_tag <<std::endl;
             
         }
         
@@ -1071,7 +1071,7 @@ namespace utopia {
         }
  
         
-        std::cout<<"jj_tree_elem = "<< jj <<std::endl;
+//        std::cout<<"jj_tree_elem = "<< jj <<std::endl;
         
         
         tree->getRoot()->getBound().staticBound().enlarge(1e-8);
@@ -1463,6 +1463,7 @@ namespace utopia {
                     
                     if(dim_sla==2){
                         make_polygon(*side_ptr_2,side_polygon_2);
+                        
                         if(!project_2D(side_polygon_1,side_polygon_2,isect_polygon_1,isect_polygon_2)){
                             continue;
                         }
@@ -1478,13 +1479,14 @@ namespace utopia {
                         const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
                         
                         make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, src_ir);
+                        
                         make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, dest_ir);
                         
                         pair_intersected = true;
    
                         surface_assemble = std::make_shared<Contact>();
                         surface_assemble->isect_area	   = area;
-                        surface_assemble->relative_area = weight;
+                        surface_assemble->relative_area    = weight;
                         
                         
                     } else if(dim_src == 3) {
@@ -1544,7 +1546,7 @@ namespace utopia {
                 surface_assemble->id_slave 			     = dest_el.id();
                 
                 surface_assemble->coupling.zero();
-                
+
                 elemmat.zero();
                 
 
@@ -1563,18 +1565,18 @@ namespace utopia {
                 std::vector<int> block_id_def;
                 
                 
-                
-                std::cout<<"************************************************** "<<std::endl;
-
-            
-                std::cout<<"************* dest_el.id() = "<< dest_el.id() <<std::endl;
-                
-                
-                std::cout<<"************* src_el.id() = "<< src_el.id() <<std::endl;
-                
-                
-                std::cout<<"************************************************** "<<std::endl;
-                
+//                
+//                std::cout<<"************************************************** "<<std::endl;
+//
+//            
+//                std::cout<<"************* dest_el.id() = "<< dest_el.id() <<std::endl;
+//                
+//                
+//                std::cout<<"************* src_el.id() = "<< src_el.id() <<std::endl;
+//                
+//                
+//                std::cout<<"************************************************** "<<std::endl;
+//                
                 
                 
                 int i=0;
@@ -1604,9 +1606,9 @@ namespace utopia {
 
                     dof_indices_slave_vec[i] =  dest_el.id() * dest_el.n_nodes() + i;
 
-                    std::cout<< "************ dof_I = "<<  dest_el.id() * dest_el.n_nodes() + i << std::endl;
-
-                    std::cout<< "************ dof_I_comparison = "<<  slave_dofs[i] << std::endl;
+//                    std::cout<< "************ dof_I = "<<  dest_el.id() * dest_el.n_nodes() + i << std::endl;
+//
+//                    std::cout<< "************ dof_I_comparison = "<<  slave_dofs[i] << std::endl;
                 }
                 
                 
@@ -1617,15 +1619,15 @@ namespace utopia {
                     
                     Elem *elem_off = *( master_slave->mesh().active_subdomain_elements_begin(block_id_def.at(0)));
 
-                    std::cout<<"************* src_el.id() = "<< src_el.id() <<std::endl;
+//                    std::cout<<"************* src_el.id() = "<< src_el.id() <<std::endl;
                     
-                    std::cout<<"************* elem_off->id() = "<< elem_off->id()<<std::endl;
+//                    std::cout<<"************* elem_off->id() = "<< elem_off->id()<<std::endl;
                     
                     dof_indices_master_vec[i] = src_el.id() * src_el.n_nodes() + i;
                     
-                    std::cout<< "************ dof_J = "<< src_el.id() * src_el.n_nodes() + i << std::endl;
-                    
-                    std::cout<< "************ dof_J_comparison = "<<  master_dofs[i] << std::endl;
+//                    std::cout<< "************ dof_J = "<< src_el.id() * src_el.n_nodes() + i << std::endl;
+//                    
+//                    std::cout<< "************ dof_J_comparison = "<<  master_dofs[i] << std::endl;
                     
                 }
 
@@ -1656,14 +1658,14 @@ namespace utopia {
                 
                assert(slave_dofs.size() == elemmat.m());
                assert(master_dofs.size() == elemmat.n());
-    //
+    
                 // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
                 // dest_ir.print_info();
 
-    //                
-    //                std::cout << "elemmat.n =" << elemmat.n() << "\n";
-    //                
-    //                std::cout << "elemmat.m =" << elemmat.m() << "\n";
+               
+                //std::cout << "elemmat.n =" << elemmat.n() << "\n";
+                
+                //std::cout << "elemmat.m =" << elemmat.m() << "\n";
             
                 for(int i = 0; i <  slave_dofs.size(); ++i) {
 
@@ -1675,31 +1677,33 @@ namespace utopia {
                         
                         int  entry=0;
                         
-                        if (dof_J==dest_el.id()*dof_I+j) entry = 1;
+                        if (i==j) entry = 1;
 
-                        p_buffer.add(dof_I, dof_J, entry);
+                        p_buffer.setAt(dof_I, dof_J, entry);
                     }
                 }
                 
-//
-//                
+              
                 for(int i = 0; i <  dof_indices_master_vec.size(); ++i) {
                     
                     const long dof_I = dof_indices_master_vec[i];
-                    
-                    std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
                     
                     for(int j = 0; j < master_dofs.size(); ++j) {
                         
                         const long dof_J = master_dofs[j];
                         
-                        std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
+       
                         
                         int  entry=0;
                         
-                        if (dof_J==src_el.id()*dof_I+j) entry = 1;
+                        if (i==j) {
+                            entry=1;
+//                            std::cout<<"entry= "<<entry<<std::endl;
+//                            std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
+//                            std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
+                        }
    
-                        q_buffer.add(dof_I, dof_J, entry);
+                        q_buffer.setAt(dof_I, dof_J, entry);
                     }
                 }
                 
@@ -1709,18 +1713,31 @@ namespace utopia {
                     
                     const long dof_I = dof_indices_slave_vec[i];
                     
-                    std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
+                    //std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
                     
                     for(int j = 0; j <  dof_indices_master_vec.size(); ++j) {
                         
                         const long dof_J = dof_indices_master_vec[j];
                         
-                        std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
+                        //std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
                         
                         mat_buffer.add(dof_I, dof_J, elemmat(i, j));
                     }
                 }
                 
+                int dim = dim_src;
+                
+//                std::cout<< "surface_assemble->isect_area = " << surface_assemble->isect_area <<std::endl;
+//                
+//                std::cout<<" pow(surface_assemble->isect_area, dim/(dim-1.)) * dim = " << pow(surface_assemble->isect_area, dim/(dim-1.)) * dim  <<std::endl;
+//                
+//                std::cout<<" partial sum = " << partial_sum <<std::endl;
+// 
+//                std::cout<<" local_element_matrices_sum = " << local_element_matrices_sum <<std::endl;
+//                
+//                
+                
+                assert(fabs(partial_sum - pow(surface_assemble->isect_area, dim/(dim-1.))) < 1e-8 || (!is_quad(dest_el.type()) && !is_hex(dest_el.type())));
                 
                 return true;
                 
@@ -1814,6 +1831,7 @@ namespace utopia {
             utopia::Write<utopia::DSMatrixd> write(B_tilde);
             for (auto it = mat_buffer.iter(); it; ++it) {
                 B_tilde.set(it.row(), it.col(), *it);
+
                 
             }
         }
@@ -1852,7 +1870,7 @@ namespace utopia {
         
         std::partial_sum(ownershipRangesSlave_p.begin(), ownershipRangesSlave_p.end(),
                          ownershipRangesSlave_p.begin());
-        
+//
         
         
         if(comm.isRoot()) {
@@ -1951,12 +1969,16 @@ namespace utopia {
         
         
        B = P_tilde * B_tilde * Q_transpose;
+        
+//       disp(P_tilde);
+//       disp(Q_transpose);
+//       disp(B.size());
 
 
 
-        express::RootDescribe("petsc assembly end", comm, std::cout);
+       express::RootDescribe("petsc assembly end", comm, std::cout);
  
-        return true;
+      return true;
     }
   
     

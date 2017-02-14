@@ -772,7 +772,16 @@ namespace utopia {
 					intersected = true;
 
 					// current_contact->describe();
-					// assert(fabs(local_mat_sum - pow(current_contact->isect_area, dim/(dim-1.)) * dim) < 1e-8 || (!is_quad(el_2.type()) && !is_hex(el_2.type())));
+					assert(fabs(local_mat_sum - pow(current_contact->isect_area, dim/(dim-1.)) * dim) < 1e-8 || (!is_quad(el_2.type()) && !is_hex(el_2.type())));
+                    
+                    std::cout<< "surface_assemble->isect_area = " << current_contact->isect_area <<std::endl;
+                    
+                    std::cout<<" pow(surface_assemble->isect_area, dim/(dim-1.)) * dim = " << pow(current_contact->isect_area, dim/(dim-1.)) * dim  <<std::endl;
+                    
+                    std::cout<<" partial sum = " << local_mat_sum <<std::endl;
+                    
+                    std::cout<<" local_element_matrices_sum = " << local_element_matrices_sum <<std::endl;
+                    
 
 					current_contact->finalize();
 

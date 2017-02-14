@@ -447,8 +447,8 @@ namespace utopia {
             // Read the mesh file. Here the file lshape.unv contains
             // an L--shaped domain in .unv format.
        // mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
-       //mesh->read("../data/master_slave3D_translated.e");
-        mesh->read("../data/rect.e");
+       mesh->read("../data/cube12_space4.e");
+       // mesh->read("../data/rect.e");
 
             // Print information about the mesh to the screen.
 		// mesh->print_info();
