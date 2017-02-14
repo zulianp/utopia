@@ -124,10 +124,6 @@ namespace utopia {
     template<class Expr>
     class Determinant;
 
-
-    template<typename T, int FillType>
-    class Memory;
-
 #ifdef WITH_OPENCL
     template<class Expr, int Order>
     class Evaluate;
