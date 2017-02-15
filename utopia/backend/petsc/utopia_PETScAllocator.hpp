@@ -19,7 +19,7 @@ namespace utopia {
 	template<>
 	class Allocator<Mat, 0> {
 	public:
-		static std::unique_ptr<Mat, std::function<void(Mat*)>> claim(MPI_Comm comm, Size local, Size global) {
+		static MemoryPtr<Mat> claim(MPI_Comm comm, const Size& local, const Size& global) {
 			assert(global.n_dims() == 2);
 			assert(local.n_dims() == 2);
 
@@ -27,10 +27,10 @@ namespace utopia {
 			Mat* m = new Mat;
 			MatCreate(comm, m);
 
-			return std::unique_ptr<Mat, std::function<void(Mat*)>>(m, mat_destructor);
+			return MemoryPtr<Mat>(m, mat_destructor);
 		}
 
-		static std::unique_ptr<Mat, std::function<void(Mat*)>> clone(const std::unique_ptr<Mat, std::function<void(Mat*)>>&) {
+		static MemoryPtr<Mat> clone(const MemoryPtr<Mat>&) {
 			assert(false && "TODO");
 			return nullptr;
 		}

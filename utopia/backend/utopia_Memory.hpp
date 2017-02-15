@@ -11,28 +11,33 @@
 
 namespace utopia {
 
+	template <typename T>
+	using MemoryPtr = std::unique_ptr<T, std::function<void(T*)>>;
+
+
 	template <typename T, int FillType>
 	class Allocator {
 	public:
-		static std::unique_ptr<T, std::function<void(T*)>> claim(MPI_Comm comm, Size local, Size global) {
+		static MemoryPtr<T> claim(MPI_Comm comm, Size local, Size global) {
 			assert(false && "No Allocator known for this type");
 			return nullptr;
 		}
 
-		static std::unique_ptr<T, std::function<void(T*)>> clone(const std::unique_ptr<T, std::function<void(T*)>>&) {
+		static MemoryPtr<T> clone(const MemoryPtr<T>&) {
 			assert(false && "No Allocator known for this type");
 			return nullptr;
 		}
 	};
 
+
 	template <typename T, int FillType>
 	class Memory {
 	public:
 		Memory(MPI_Comm comm) : comm_(comm) {
-			mem_ = nullptr;
+			mem_ = Allocator<T, FillType>::claim(comm, {}, {});
 		}
-		
-		Memory(MPI_Comm comm, Size local, Size global) : comm_(comm) {
+
+		Memory(MPI_Comm comm, const Size& local, const Size& global) : comm_(comm) {
 			mem_ = Allocator<T, FillType>::claim(comm, local, global);
 		}
 
@@ -41,25 +46,25 @@ namespace utopia {
 		}
 
 		Memory(Memory&& m) : comm_(m.comm_), mem_(std::move(m.mem_)) { }
-		
+
 		Memory& operator=(const Memory& m) {
 			comm_ = m.comm_;
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 			return *this;
 		}
-		
-		void initialize(Size local, Size global) {
+
+		void initialize(const Size& local, const Size& global) {
 			mem_ = Allocator<T, FillType>::claim(comm_, local, global);
 		}
-		
-		void resize(Size local, Size global) {
+
+		void resize(const Size& local, const Size& global) {
 			mem_ = Allocator<T, FillType>::claim(comm_, local, global);
 		}
 
 		void destroy() {
 			mem_ = nullptr;
 		}
-		
+
 		T& implementation() {
 			return *mem_;
 		}
@@ -73,8 +78,8 @@ namespace utopia {
 		}
 
 		void setCommunicator(const MPI_Comm comm) {
-            comm_ = comm;
-        }
+			comm_ = comm;
+		}
 
 		const T& implementation() const {
 			return *mem_;
@@ -84,8 +89,8 @@ namespace utopia {
 			return static_cast<bool>(mem_);
 		}
 
-	protected:
-		std::unique_ptr<T, std::function<void(T*)>> mem_; //TODO why were we using shared_ptr?
+	private:
+		MemoryPtr<T> mem_;
 		MPI_Comm comm_;
 	};
 
