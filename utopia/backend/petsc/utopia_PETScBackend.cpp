@@ -964,11 +964,13 @@ namespace utopia {
 	}
 	
 	void PETScBackend::writeLock(PETScVector &vec) {
-		vec.assemblyBegin();
+		// vec.assemblyBegin();
+		PETScError::Check(VecAssemblyBegin(vec.implementation()));
 	}
 	
 	void PETScBackend::writeUnlock(PETScVector &vec) {
-		vec.assemblyEnd();
+		// vec.assemblyEnd();
+		PETScError::Check(VecAssemblyEnd(vec.implementation()));
 	}
 	
 	void PETScBackend::writeLock(const PETScMatrix &mat) {

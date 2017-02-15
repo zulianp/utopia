@@ -208,7 +208,7 @@ namespace utopia {
         }
 
         bool mul(PETScVector &rhs, PETScVector &result) {
-            if (!result.hasGhosts()) {
+            // if (!result.hasGhosts()) {
 
                 PetscInt globalRows, globalColumns;
                 MatGetSize(_wrapper->implementation(), &globalRows, &globalColumns);
@@ -216,7 +216,7 @@ namespace utopia {
                 MatGetLocalSize(_wrapper->implementation(), &localRows, &localColumns);
 
                 result.initialize(localRows, globalRows);
-            }
+            // }
 
             MatMult(_wrapper->implementation(), rhs.implementation(), result.implementation());
             return true;
