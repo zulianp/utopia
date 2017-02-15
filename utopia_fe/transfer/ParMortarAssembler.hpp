@@ -7,6 +7,8 @@
 #include "utopia_LibMeshBackend.hpp"
 #include <libmesh/sparse_matrix.h>
 #include "Box.hpp"
+#include "MortarAssembler.hpp"
+#include "libmesh/serial_mesh.h"
 
 
 namespace utopia {

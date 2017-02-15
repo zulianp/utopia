@@ -354,9 +354,15 @@ namespace utopia {
             libMesh::Point o, u, v, n, c, p;
             
             for(uint side = 0; side < e->n_sides(); ++side) {
-                if(e->neighbor_ptr(side) != nullptr) continue;
+                
+                libMesh::UniquePtr<libMesh::Elem> s = e->side(side);
+                
+                
+                if(!s->on_boundary()) continue;
+
                 
                 auto side_ptr = e->build_side_ptr(side);
+                
                 compute_side_normal(dim, *side_ptr, n);
                 
                 if(fix_normal_orientation(*e, side, n)) {
@@ -367,20 +373,26 @@ namespace utopia {
                 
                 for(uint i = 0; i < side_ptr->n_nodes(); ++i) {
                     c = side_ptr->point(i);
-                    // n.print();
-                    // std::cout << "\n";
+//                    bound_.staticBound()  += c;
+//                    bound_.dynamicBound() += c;
+//                    //instead of normal blow up
+//                    bound_.staticBound().enlarge(blow_up);
+//                    bound_.dynamicBound().enlarge(blow_up);
+//                     n.print();
+//                     std::cout << "\n";
                     
                     n *= blow_up;
                     p = c;
                     p += n;
                     
-                    // c.print();
-                    // std::cout << "\n";
+//                     c.print();
+//                     std::cout << "n = "<< n<<"\n";
                     
                     bound_.staticBound()  += p;
                     bound_.dynamicBound()  += p;
                     p = c;
-                    n *= 0.1;
+                    n *= 0.01;
+                    p -=n;
                     bound_.staticBound()  += p;
                     bound_.dynamicBound()  += p;
                 }
@@ -577,7 +589,7 @@ namespace utopia {
 				return global.empty();
 			}
 
-			std::vector<long> global;
+            std::vector<long> global;
 
 
 		};

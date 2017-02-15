@@ -1103,8 +1103,10 @@ namespace utopia {
         
         
          if(comm.isRoot()) {
+             
          	std::cout <<ownershipRangesMaster << std::endl;
-             std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
+             
+            std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
 
          }
 
