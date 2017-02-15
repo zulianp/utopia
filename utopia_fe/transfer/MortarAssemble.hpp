@@ -195,8 +195,47 @@ namespace utopia {
 		libMesh::DenseMatrix<libMesh::Real> &normals, 
 		libMesh::DenseVector<libMesh::Real> &gap);
 
+
 	void mortar_normal_and_gap_assemble(const uint dim,
 										const libMesh::FEVectorBase &test_fe, 
+										const libMesh::Point &surf_normal,
+						 				const libMesh::Point &plane_normal,
+						 				const libMesh::Real &plane_offset,
+						 				libMesh::DenseMatrix<libMesh::Real> &normals, 
+						 				libMesh::DenseVector<libMesh::Real> &gap);
+
+	void mortar_normal_and_gap_assemble_biorth(
+			const int type,
+			const libMesh::FEBase &test_fe, 
+			const libMesh::DenseVector<libMesh::Real> &surf_normal,
+			const libMesh::DenseVector<libMesh::Real> &plane_normal,
+			const libMesh::Real &plane_offset,
+			libMesh::DenseMatrix<libMesh::Real> &normals, 
+			libMesh::DenseVector<libMesh::Real> &gap);
+
+	void mortar_normal_and_gap_assemble_biorth(
+			const int type,
+			const uint dim,
+			const libMesh::FEBase &test_fe, 
+			const libMesh::Point &surf_normal,
+			const libMesh::Point &plane_normal,
+			const libMesh::Real &plane_offset,
+			libMesh::DenseMatrix<libMesh::Real> &normals, 
+			libMesh::DenseVector<libMesh::Real> &gap);
+
+	void mortar_normal_and_gap_assemble_biorth(
+		const int type,
+		const libMesh::FEVectorBase  &test_fe, 
+		const libMesh::DenseVector<libMesh::Real> &surf_normal,
+		const libMesh::DenseVector<libMesh::Real> &plane_normal,
+		const libMesh::Real &plane_offset,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap);
+
+	void mortar_normal_and_gap_assemble_biorth(
+										const int type,
+									    const uint dim,
+										const libMesh::FEVectorBase  &test_fe, 
 										const libMesh::Point &surf_normal,
 						 				const libMesh::Point &plane_normal,
 						 				const libMesh::Real &plane_offset,

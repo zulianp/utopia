@@ -692,7 +692,6 @@ template<class FE>
 		}
 
 		const auto &test   = test_fe.get_phi();
-		// const auto &grad   = test_fe.get_dphi();
 		const auto &point  = test_fe.get_xyz();
 		const auto &JxW    = test_fe.get_JxW();
 
@@ -702,8 +701,6 @@ template<class FE>
 		DenseVector<Real> p(dim);
 		DenseVector<Real> v(dim);
 
-		// double cum_gap = 0;
-		// double cum = 0;
 		for(uint qp = 0; qp < n_qp; ++qp) {
 
 				p(0) = point[qp](0);
@@ -716,15 +713,6 @@ template<class FE>
 				Real isect = 0;
 				isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
 				
-
-				// if(isect < 0) {
-				// 	printf(">>>>\n");
-				// 	printf("gap: %g\np:", isect);
-				// 	p.print(std::cout);
-				// 	printf("\n");
-				// }
-				// assert(isect > 0);
-				
 				v = surf_normal;
 				v *= isect;
 				// quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
@@ -732,18 +720,194 @@ template<class FE>
 			for(uint i = 0; i < n_test; ++i) {
 				gap(i) += test[i][qp](0) * isect * JxW[qp];
 				
-				// printf("%d -> %g\n", i, test[i][qp](0) * isect * JxW[qp]);
-				// cum_gap += test[i][qp](0) * isect * JxW[qp];
-				// cum += test[i][qp](0) * JxW[qp];
-
 				for(uint d = 0; d < dim; ++d) {
 					normals.get_values()[i] += test[i][qp](d) * surf_normal(d) * JxW[qp];
 				}
 			}
 		}
+	}
 
-		// printf("cum: %g\n", cum_gap/cum);
 
+	void mortar_normal_and_gap_assemble_biorth(
+			const int type,
+			const uint dim,
+			const libMesh::FEBase &test_fe, 
+			const libMesh::Point &surf_normal,
+			const libMesh::Point &plane_normal,
+			const libMesh::Real &plane_offset,
+			libMesh::DenseMatrix<libMesh::Real> &normals, 
+			libMesh::DenseVector<libMesh::Real> &gap)
+	{
+		using namespace libMesh;
+		DenseVector<Real> surf_normal_v(dim), plane_normal_v(dim);
+
+		for(uint i = 0; i < dim; ++i) {
+			surf_normal_v(i)  = surf_normal(i);
+			plane_normal_v(i) = plane_normal(i);
+		}
+
+		mortar_normal_and_gap_assemble_biorth(type, test_fe, surf_normal_v, plane_normal_v, plane_offset, normals, gap);
+	}
+
+
+	void mortar_normal_and_gap_assemble_biorth(
+			const int type,
+			const libMesh::FEBase &test_fe, 
+			const libMesh::DenseVector<libMesh::Real> &surf_normal,
+			const libMesh::DenseVector<libMesh::Real> &plane_normal,
+			const libMesh::Real &plane_offset,
+			libMesh::DenseMatrix<libMesh::Real> &normals, 
+			libMesh::DenseVector<libMesh::Real> &gap)
+		{
+			using namespace libMesh;
+
+			Intersector isector;
+
+			const uint dim = plane_normal.size();
+
+			libMesh::Real w_ii, w_ij;
+			biorthgonal_weights(type, w_ii, w_ij);
+
+			if(normals.m() != test_fe.get_phi().size() || dim != normals.n()) {
+				normals.resize(test_fe.get_phi().size(), dim);
+				normals.zero();
+				gap.resize(test_fe.get_phi().size());
+				gap.zero();
+			}
+
+			const auto &test   = test_fe.get_phi();
+			// const auto &grad   = test_fe.get_dphi();
+			const auto &point  = test_fe.get_xyz();
+			const auto &JxW    = test_fe.get_JxW();
+
+			const uint n_test  = test.size();
+			const uint n_qp    = test[0].size();
+
+			DenseVector<Real> p(dim);
+
+			for(uint i = 0; i < n_test; ++i) {
+				for(uint qp = 0; qp < n_qp; ++qp) {
+
+					p(0) = point[qp](0);
+					p(1) = point[qp](1);
+
+					if(dim > 2) {
+						p(2) = point[qp](2);
+					}
+
+					Real isect = 0;
+					 isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
+					
+
+					// printf("g: %g (%g, %g)\n", isect, p(1), plane_offset);
+					assert(isect > 0);
+
+					auto biorth_test = ((0 == i) ? w_ii : w_ij) * test[0][qp];
+
+					for(uint k = 1; k < n_test; ++k) {
+						biorth_test += ((k == i) ? w_ii : w_ij) * test[k][qp];
+					}
+
+
+					gap(i) += biorth_test * isect * JxW[qp];
+
+					for(uint d = 0; d < dim; ++d) {
+						normals(i, d) += biorth_test * surf_normal(d) * JxW[qp];
+					}
+				}
+			}
+		}
+
+
+
+	void mortar_normal_and_gap_assemble_biorth(
+		const int type,
+		const libMesh::FEVectorBase &test_fe, 
+		const libMesh::DenseVector<libMesh::Real> &surf_normal,
+		const libMesh::DenseVector<libMesh::Real> &plane_normal,
+		const libMesh::Real &plane_offset,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap)
+	{
+		libMesh::Real w_ii, w_ij;
+		biorthgonal_weights(type, w_ii, w_ij);
+
+		// std::cout << w_ii << " " << w_ij << std::endl;
+
+		using namespace libMesh;
+
+		Intersector isector;
+
+		const uint dim = plane_normal.size();
+
+		if(normals.m() != test_fe.get_phi().size()/dim || dim != normals.n()) {
+			normals.resize(test_fe.get_phi().size()/dim, dim);
+			normals.zero();
+			gap.resize(test_fe.get_phi().size());
+			gap.zero();
+		}
+
+		const auto &test   = test_fe.get_phi();
+		const auto &point  = test_fe.get_xyz();
+		const auto &JxW    = test_fe.get_JxW();
+
+		const uint n_test  = test.size();
+		const uint n_qp    = test[0].size();
+
+		DenseVector<Real> p(dim);
+		DenseVector<Real> v(dim);
+
+		for(uint qp = 0; qp < n_qp; ++qp) {
+
+				p(0) = point[qp](0);
+				p(1) = point[qp](1);
+
+				if(dim > 2) {
+					p(2) = point[qp](2);
+				}
+
+				Real isect = 0;
+				isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
+				
+				v = surf_normal;
+				v *= isect;
+				// quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
+
+			for(uint i = 0; i < n_test; ++i) {
+				auto biorth_test = ((0 == i) ? w_ii : w_ij) * test[0][qp];
+
+				for(uint k = 1; k < n_test; ++k) {
+					biorth_test += ((k == i) ? w_ii : w_ij) * test[k][qp];
+				}
+
+				gap(i) += biorth_test(0) * isect * JxW[qp];
+
+				for(uint d = 0; d < dim; ++d) {
+					normals.get_values()[i] += biorth_test(d) * surf_normal(d) * JxW[qp];
+				}
+			}
+		}
+	}
+	
+	void mortar_normal_and_gap_assemble_biorth(
+										const int type,
+										const uint dim,
+										const libMesh::FEVectorBase &test_fe, 
+										const libMesh::Point &surf_normal,
+						 				const libMesh::Point &plane_normal,
+						 				const libMesh::Real &plane_offset,
+						 				libMesh::DenseMatrix<libMesh::Real> &normals, 
+						 				libMesh::DenseVector<libMesh::Real> &gap)
+	{
+		using namespace libMesh;
+		DenseVector<Real> surf_normal_v(dim), plane_normal_v(dim);
+
+		for(uint i = 0; i < dim; ++i) {
+			surf_normal_v(i)  = surf_normal(i);
+			plane_normal_v(i) = plane_normal(i);
+		}
+
+		mortar_normal_and_gap_assemble_biorth(type, test_fe, surf_normal_v, plane_normal_v, plane_offset, normals, gap);
 	}
 
 	bool intersect_2D(const libMesh::DenseMatrix<libMesh::Real> &poly1, const libMesh::DenseMatrix<libMesh::Real> &poly2, libMesh::DenseMatrix<libMesh::Real> &intersection)

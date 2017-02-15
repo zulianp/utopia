@@ -246,7 +246,7 @@ namespace utopia {
 						mortar_assemble(*slave_fe, *slave_fe, other_mat);
 					}
 					
-				
+
 					add_matrix(elemmat,   slave_dofs, master_dofs, B);
 					add_matrix(other_mat, slave_dofs, slave_dofs, D);
 
@@ -577,138 +577,138 @@ namespace utopia {
 
 		//FIXME This is a hack
 		if(has_constrained_dofs(space, el_1) || 
-		   has_constrained_dofs(space, el_2)) {
+			has_constrained_dofs(space, el_2)) {
 			continue;
-		}
+	}
 
-		assert(is_valid_elem_type(el_1.type()));
-		assert(is_valid_elem_type(el_2.type()));
+	assert(is_valid_elem_type(el_1.type()));
+	assert(is_valid_elem_type(el_2.type()));
+
+	if(dim == 2) {
+		make_polygon(el_1, polygon_1);
+		make_polygon(el_2, polygon_2);
+
+		transform_1 = make_shared<Transform2>(el_1);
+		transform_2 = make_shared<Transform2>(el_2);
+
+	} else if(dim == 3) {
+		make_polyhedron(el_1, polyhedron_1);
+		make_polyhedron(el_2, polyhedron_2);
+
+		transform_1 = make_shared<Transform3>(el_1);
+		transform_2 = make_shared<Transform3>(el_2);
+	}
+
+	for(uint side_1 = 0; side_1 < el_1.n_sides(); ++side_1) {
+		if(el_1.neighbor_ptr(side_1) != nullptr) continue;
+		auto side_ptr_1 = el_1.build_side_ptr(side_1);	
+
+		compute_side_normal(dim, *side_ptr_1, n1);
+
+		box_1.reset();
+		enlarge_box_from_side(dim, *side_ptr_1, box_1, search_radius);
 
 		if(dim == 2) {
-			make_polygon(el_1, polygon_1);
-			make_polygon(el_2, polygon_2);
-
-			transform_1 = make_shared<Transform2>(el_1);
-			transform_2 = make_shared<Transform2>(el_2);
-
+			make_polygon(*side_ptr_1, side_polygon_1);
 		} else if(dim == 3) {
-			make_polyhedron(el_1, polyhedron_1);
-			make_polyhedron(el_2, polyhedron_2);
-
-			transform_1 = make_shared<Transform3>(el_1);
-			transform_2 = make_shared<Transform3>(el_2);
+			make_polygon_3(*side_ptr_1, side_polygon_1);
+		} else {
+			assert(false);
 		}
 
-		for(uint side_1 = 0; side_1 < el_1.n_sides(); ++side_1) {
-			if(el_1.neighbor_ptr(side_1) != nullptr) continue;
-			auto side_ptr_1 = el_1.build_side_ptr(side_1);	
+		for(uint side_2 = 0; side_2 < el_2.n_sides(); ++side_2) {
+			if(el_2.neighbor_ptr(side_2) != nullptr) continue;
 
-			compute_side_normal(dim, *side_ptr_1, n1);
+			auto side_ptr_2 = el_2.build_side_ptr(side_2);	
+			compute_side_normal(dim, *side_ptr_2, n2);
 
-			box_1.reset();
-			enlarge_box_from_side(dim, *side_ptr_1, box_1, search_radius);
-
-			if(dim == 2) {
-				make_polygon(*side_ptr_1, side_polygon_1);
-			} else if(dim == 3) {
-				make_polygon_3(*side_ptr_1, side_polygon_1);
-			} else {
-				assert(false);
-			}
-
-			for(uint side_2 = 0; side_2 < el_2.n_sides(); ++side_2) {
-				if(el_2.neighbor_ptr(side_2) != nullptr) continue;
-
-				auto side_ptr_2 = el_2.build_side_ptr(side_2);	
-				compute_side_normal(dim, *side_ptr_2, n2);
-
-				const Real cos_angle = n1.contract(n2);
+			const Real cos_angle = n1.contract(n2);
 
 				//if the angle is more than 60 degrees ( cos(60/180*pi) == 0.5 ) or has same orientation skip
-				if(cos_angle >= -0.5) {
+			if(cos_angle >= -0.5) {
+				continue;
+			}
+
+			box_2.reset();
+			enlarge_box_from_side(dim, *side_ptr_2, box_2, search_radius);
+
+			if(!box_1.intersects(box_2, tol)) {
+				continue;
+			}
+
+
+
+			++n_candidates;
+
+			bool pair_intersected = false;
+
+			if(dim == 2) {
+				make_polygon(*side_ptr_2, side_polygon_2);
+
+				if(!project_2D(side_polygon_1, side_polygon_2, isect_polygon_1, isect_polygon_2)) {
 					continue;
 				}
 
-				box_2.reset();
-				enlarge_box_from_side(dim, *side_ptr_2, box_2, search_radius);
+				const Scalar dx = polygon_2(0, 0) - polygon_2(1, 0);
+				const Scalar dy = polygon_2(0, 1) - polygon_2(1, 1);
 
-				if(!box_1.intersects(box_2, tol)) {
+				const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
+				const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
+
+				const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
+				const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
+
+				const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
+
+				make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, q_1);
+				make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, q_2);
+
+				pair_intersected = true;
+				++n_projections;
+
+
+				current_contact = std::make_shared<Contact>();
+				current_contact->isect_area	   = area;
+				current_contact->relative_area = weight;
+
+
+			} else if(dim == 3) {
+				make_polygon_3(*side_ptr_2, side_polygon_2);
+
+				if(!project_3D(
+					side_polygon_1, 
+					side_polygon_2, 
+					isect_polygon_1,
+					isect_polygon_2))
+				{
 					continue;
 				}
 
-				
+				const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);	
+				const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
+				const Scalar weight 	= area/area_slave;
 
-				++n_candidates;
+				const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
 
-				bool pair_intersected = false;
+				make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, q_1);
+				make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, q_2);
 
-				if(dim == 2) {
-					make_polygon(*side_ptr_2, side_polygon_2);
-
-					if(!project_2D(side_polygon_1, side_polygon_2, isect_polygon_1, isect_polygon_2)) {
-						continue;
-					}
-
-					const Scalar dx = polygon_2(0, 0) - polygon_2(1, 0);
-					const Scalar dy = polygon_2(0, 1) - polygon_2(1, 1);
-
-					const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
-					const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
-
-					const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
-					const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
-
-					const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
-
-					make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, q_1);
-					make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, q_2);
-
-					pair_intersected = true;
-					++n_projections;
+				pair_intersected = true;
+				++n_projections;
 
 
-					current_contact = std::make_shared<Contact>();
-					current_contact->isect_area	   = area;
-					current_contact->relative_area = weight;
+				current_contact = std::make_shared<Contact>();
+				current_contact->isect_area	   = area;
+				current_contact->relative_area = weight;
 
+			} else {
+				assert(false);
+				return false;
+			}
 
-				} else if(dim == 3) {
-					make_polygon_3(*side_ptr_2, side_polygon_2);
-
-					if(!project_3D(
-						side_polygon_1, 
-						side_polygon_2, 
-						isect_polygon_1,
-						isect_polygon_2))
-					{
-						continue;
-					}
-
-					const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);	
-					const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
-					const Scalar weight 	= area/area_slave;
-
-					const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
-
-					make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, q_1);
-					make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, q_2);
-
-					pair_intersected = true;
-					++n_projections;
-
-
-					current_contact = std::make_shared<Contact>();
-					current_contact->isect_area	   = area;
-					current_contact->relative_area = weight;
-
-				} else {
-					assert(false);
-					return false;
-				}
-
-				if(pair_intersected) {
-					transform_to_reference_surf(*transform_1, el_1.type(), q_1, qref_1);
-					transform_to_reference_surf(*transform_2, el_2.type(), q_2, qref_2);
+			if(pair_intersected) {
+				transform_to_reference_surf(*transform_1, el_1.type(), q_1, qref_1);
+				transform_to_reference_surf(*transform_2, el_2.type(), q_2, qref_2);
 
 					// std::cout << "----------------------\n";
 					// std::cout << "----------------------\n";
@@ -716,32 +716,36 @@ namespace utopia {
 					// std::cout << "----------------------\n";
 
 
-					master_fe->attach_quadrature_rule(&qref_1);
-					master_fe->reinit(&el_1);
+				master_fe->attach_quadrature_rule(&qref_1);
+				master_fe->reinit(&el_1);
 
-					slave_fe->attach_quadrature_rule(&qref_2);
-					slave_fe->reinit(&el_2);
+				slave_fe->attach_quadrature_rule(&qref_2);
+				slave_fe->reinit(&el_2);
 
-					current_contact->parent_element_master = index_1;
-					current_contact->side_number_master    = side_1;
-					current_contact->id_master 			   = el_1.id();
+				current_contact->parent_element_master = index_1;
+				current_contact->side_number_master    = side_1;
+				current_contact->id_master 			   = el_1.id();
 
-					current_contact->parent_element_slave  = index_2;
-					current_contact->side_number_slave 	   = side_2;
-					current_contact->id_slave 			   = el_2.id();
+				current_contact->parent_element_slave  = index_2;
+				current_contact->side_number_slave 	   = side_2;
+				current_contact->id_slave 			   = el_2.id();
 
-					current_contact->coupling.zero();
-					current_contact->gap.zero();
-					current_contact->normals.zero();
+				current_contact->coupling.zero();
+				current_contact->gap.zero();
+				current_contact->normals.zero();
 
-					
+				// bool use_biorth_ = true;
+				bool use_biorth_ = false;
 
-
+				if(use_biorth_) {
+					mortar_assemble_biorth(*master_fe, *slave_fe, side_ptr_2->type(), current_contact->coupling);
+				} else {
 					mortar_assemble(*master_fe, *slave_fe, current_contact->coupling);
+				}
 
-					const libMesh::Point pp = side_ptr_1->point(0);
-					const Real plane_offset = n1.contract(pp);
-					
+				const libMesh::Point pp = side_ptr_1->point(0);
+				const Real plane_offset = n1.contract(pp);
+
 					// std::cout << "-------------------------------------------------------------\n";
 					// std::cout << "p_p = [" << pp(0) << ", " << pp(1) << ", " << pp(2) << "];\n";
 					// std::cout << "n_p = [" << n1(0) << ", " << n1(1) << ", " << n1(2) << "];\n";
@@ -758,7 +762,9 @@ namespace utopia {
 					// plot_polygon(dim, isect_polygon_1.m(), &isect_polygon_1.get_values()[0], "m/isect/" + std::to_string(index_1));
 					// plot_quad_points(dim, q_2.get_points(), "slave/quadpoints");
 
-					mortar_normal_and_gap_assemble(
+				if(use_biorth_) {
+					mortar_normal_and_gap_assemble_biorth(
+						side_ptr_2->type(),
 						dim,
 						*slave_fe, 
 						n2,
@@ -767,45 +773,56 @@ namespace utopia {
 						current_contact->normals, 
 						current_contact->gap);
 
-					const Scalar local_mat_sum = std::accumulate(current_contact->coupling.get_values().begin(), current_contact->coupling.get_values().end(), libMesh::Real(0.0));
-					local_element_matrices_sum += local_mat_sum;
-					intersected = true;
+				} else {
+					mortar_normal_and_gap_assemble(
+						dim,
+						*slave_fe, 
+						n2,
+						n1,
+						plane_offset,
+						current_contact->normals, 
+						current_contact->gap);
+				}
+
+				const Scalar local_mat_sum = std::accumulate(current_contact->coupling.get_values().begin(), current_contact->coupling.get_values().end(), libMesh::Real(0.0));
+				local_element_matrices_sum += local_mat_sum;
+				intersected = true;
 
 					// current_contact->describe();
-					assert(fabs(local_mat_sum - pow(current_contact->isect_area, dim/(dim-1.)) * dim) < 1e-8 || (!is_quad(el_2.type()) && !is_hex(el_2.type())));
-                    
-                    std::cout<< "surface_assemble->isect_area = " << current_contact->isect_area <<std::endl;
-                    
-                    std::cout<<" pow(surface_assemble->isect_area, dim/(dim-1.)) * dim = " << pow(current_contact->isect_area, dim/(dim-1.)) * dim  <<std::endl;
-                    
-                    std::cout<<" partial sum = " << local_mat_sum <<std::endl;
-                    
-                    std::cout<<" local_element_matrices_sum = " << local_element_matrices_sum <<std::endl;
-                    
+					// assert(fabs(local_mat_sum - pow(current_contact->isect_area, dim/(dim-1.)) * dim) < 1e-8 || (!is_quad(el_2.type()) && !is_hex(el_2.type())));
 
-					current_contact->finalize();
+                    // std::cout<< "surface_assemble->isect_area = " << current_contact->isect_area <<std::endl;
 
-					if(strict_gap_policy) {
-						if(std::abs(current_contact->avg_gap) <= search_radius) {
-							contacts.push_back(current_contact);	
+                    // std::cout<<" pow(surface_assemble->isect_area, dim/(dim-1.)) * dim = " << pow(current_contact->isect_area, dim/(dim-1.)) * dim  <<std::endl;
+
+                    // std::cout<<" partial sum = " << local_mat_sum <<std::endl;
+
+                    // std::cout<<" local_element_matrices_sum = " << local_element_matrices_sum <<std::endl;
+
+
+				current_contact->finalize();
+
+				if(strict_gap_policy) {
+					if(std::abs(current_contact->avg_gap) <= search_radius) {
+						contacts.push_back(current_contact);	
 							// plot_box(box_2, "intersected/box");
-							plot_polygon(dim, side_polygon_2.m(),  &side_polygon_2.get_values()[0],  "s/poly/"  + std::to_string(index_2));
-						}
-					} else {
-						contacts.push_back(current_contact);
+						plot_polygon(dim, side_polygon_2.m(),  &side_polygon_2.get_values()[0],  "s/poly/"  + std::to_string(index_2));
 					}
+				} else {
+					contacts.push_back(current_contact);
+				}
 
 					// abort();
-				}
 			}
 		}
 	}
+}
 
-	std::cout << "n_candidates:  " << n_candidates  << std::endl;
-	std::cout << "n_projections: " << n_projections << std::endl; 
-	std::cout << "local_element_matrices_sum: " << local_element_matrices_sum << std::endl;
+std::cout << "n_candidates:  " << n_candidates  << std::endl;
+std::cout << "n_projections: " << n_projections << std::endl; 
+std::cout << "local_element_matrices_sum: " << local_element_matrices_sum << std::endl;
 
-	return intersected;
+return intersected;
 }
 
 template<class SpaceT, class FEBaseT>
@@ -840,9 +857,9 @@ bool assemble_aux(
 	assign_master_and_slave_roles(dag, ordering, adj_list, role);
 
 	size_t n_dofs = space.dof_map().n_dofs();
-    
-    std::cout<<"*********************************************DOF = "<<n_dofs<<std::endl;
-    
+
+	std::cout<<"*********************************************DOF = "<<n_dofs<<std::endl;
+
 	gap = zeros(n_dofs);
 	if(space.is_vector()) {
 		normals = zeros(n_dofs);

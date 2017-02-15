@@ -523,10 +523,10 @@ namespace utopia {
 
    	static const bool is_leaflet = false;
 		//ContactSimParams params = leaflets_contact;
-		 ContactSimParams params = contact8;
+		 // ContactSimParams params = contact8;
     	// ContactSimParams params = multi_contact_quads;
-		// ContactSimParams params = triple_contact_circle;
-		// ContactSimParams params = multi_contact_3D;
+		ContactSimParams params = triple_contact_circle;
+		// ContactSimParams params = contact_3D_tets;
 
 
 		auto mesh = make_shared<Mesh>(init.comm());		
@@ -736,8 +736,8 @@ namespace utopia {
 
 		//mortar_transfer_2D(init);
         //mortar_transfer_3D(init);
-		mortar_transfer_3D_monolithic(init);
-		//surface_mortar(init);
+		// mortar_transfer_3D_monolithic(init);
+		surface_mortar(init);
 
 		//run_curved_poly_disc();
 
