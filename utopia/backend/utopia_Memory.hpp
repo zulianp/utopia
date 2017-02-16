@@ -33,36 +33,40 @@ namespace utopia {
 	template <typename T, int FillType>
 	class Memory {
 	public:
-		Memory(MPI_Comm comm) : comm_(comm) {
+		Memory(MPI_Comm comm) : comm_(comm), init_(false) {
 			mem_ = Allocator<T, FillType>::claim(comm, {}, {});
 		}
 
-		Memory(MPI_Comm comm, const Size& local, const Size& global) : comm_(comm) {
+		Memory(MPI_Comm comm, const Size& local, const Size& global) : comm_(comm), init_(true) {
 			mem_ = Allocator<T, FillType>::claim(comm, local, global);
 		}
 
-		Memory(const Memory& m) : comm_(m.comm_) {
+		Memory(const Memory& m) : comm_(m.comm_), init_(m.init_) {
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 		}
 
-		Memory(Memory&& m) : comm_(m.comm_), mem_(std::move(m.mem_)) { }
+		Memory(Memory&& m) : comm_(m.comm_), mem_(std::move(m.mem_)), init_(m.init_) { }
 
 		Memory& operator=(const Memory& m) {
 			comm_ = m.comm_;
+			init_ = m.init_;
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 			return *this;
 		}
 
 		void initialize(const Size& local, const Size& global) {
 			mem_ = Allocator<T, FillType>::claim(comm_, local, global);
+			init_ = true;
 		}
 
 		void resize(const Size& local, const Size& global) {
 			mem_ = Allocator<T, FillType>::claim(comm_, local, global);
+			init_ = true;
 		}
 
 		void destroy() {
 			mem_ = nullptr;
+			init_ = false;
 		}
 
 		T& implementation() {
@@ -86,12 +90,13 @@ namespace utopia {
 		}
 
 		bool isInitialized() const {
-			return static_cast<bool>(mem_);
+			return init_;
 		}
 
 	private:
 		MemoryPtr<T> mem_;
 		MPI_Comm comm_;
+		bool init_;
 	};
 
 }
