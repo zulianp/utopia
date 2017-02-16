@@ -27,7 +27,7 @@ namespace utopia {
 			//TODO ask pool for m
 			Mat* m = new Mat;
 			if (global.n_dims() == 2 && local.n_dims() == 2) {
-				assert(false);
+				assert(false); //TODO PETScMatrix construction with sizes doesn't appear in the code
 			} else {
 				MatCreate(comm, m);
 			}
@@ -43,32 +43,8 @@ namespace utopia {
 		}
 	};
 
+	typedef Memory<Mat, 0> PETScMatrix;
 
-	class PETScMatrix : public Memory<Mat, 0> {
-	public:
-		using Memory<Mat, 0>::Memory;
-
-		void describe() const {
-			MatView(Memory<Mat, 0>::implementation(), PETSC_VIEWER_STDOUT_WORLD);
-		}
-	
-		// void save(const std::string &path) {
-		//     PetscViewer viewer;
-		//
-		//     PetscViewerCreate(_wrapper->communicator(), &viewer);
-		//     PetscViewerSetType(viewer, PETSCVIEWERASCII);
-		//     PetscViewerFileSetMode(viewer, FILE_MODE_WRITE);
-		//     PetscViewerFileSetName(viewer, path.c_str());
-		//     PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
-		//     MatView(_wrapper->implementation(), viewer);
-		//     PetscViewerDestroy(&viewer);
-		// }
-		//
-		// void setName(const std::string &name) {
-		//     PetscObjectSetName((PetscObject) _wrapper->implementation(), name.c_str());
-		// }
-
-	};
 }
 
 #endif //UTOPIA_UTOPIA_PETSCMATRIX_H

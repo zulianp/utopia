@@ -34,28 +34,6 @@ namespace utopia {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-    inline void disp(const Wrapper<PETScMatrix, 2> &w) {
-        w.implementation().describe();
-    }
-
-    inline void disp(const Wrapper<PETScSparseMatrix, 2> &w) {
-        w.implementation().describe();
-    }
-
-    inline void disp(const Wrapper<PETScSerialSparseMatrix, 2> &w) {
-        w.implementation().describe();
-    }
-
-    inline void disp(const Wrapper<PETScVector, 1> &w) {
-        w.implementation().describe();
-    }
-
-    inline void disp(const Wrapper<PETScSerialVector, 1> &w) {
-        w.implementation().describe();
-    }
-
-///////////////////////////////////////////////////////////////////////////////
-
     /**
      * @brief      Unwrapps backend specific type of the tensor. \n
      *             Same routine applies to other utopia tensor types. 
@@ -114,6 +92,28 @@ namespace utopia {
     inline const Vec &raw_type(const Wrapper<PETScSerialVector, 1> &utopiaType)
     {
         return utopiaType.implementation().implementation();
+    }
+
+///////////////////////////////////////////////////////////////////////////////
+
+    inline void disp(const Wrapper<PETScMatrix, 2> &w) {
+        MatView(raw_type(w), PETSC_VIEWER_STDOUT_WORLD);
+    }
+
+    inline void disp(const Wrapper<PETScSparseMatrix, 2> &w) {
+        MatView(raw_type(w), PETSC_VIEWER_STDOUT_WORLD);
+    }
+
+    inline void disp(const Wrapper<PETScSerialSparseMatrix, 2> &w) {
+        MatView(raw_type(w), PETSC_VIEWER_STDOUT_WORLD);
+    }
+
+    inline void disp(const Wrapper<PETScVector, 1> &w) {
+        VecView(raw_type(w), PETSC_VIEWER_STDOUT_WORLD);
+    }
+
+    inline void disp(const Wrapper<PETScSerialVector, 1> &w) {
+        VecView(raw_type(w), PETSC_VIEWER_STDOUT_WORLD);
     }
 
 

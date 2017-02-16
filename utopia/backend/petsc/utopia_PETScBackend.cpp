@@ -1295,7 +1295,7 @@ namespace utopia {
 		
 		PetscInt lenGlobal = max(globalRows, globalColumns);
 		PetscInt lenLocal  = max(localRows, localColumns);
-		vec.resize(lenLocal, lenGlobal);
+		vec.resize({lenLocal}, {lenGlobal});
 		err = MatGetDiagonal(mat.implementation(), vec.implementation());
 		return PETScError::Check(err);
 	}

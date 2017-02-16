@@ -44,43 +44,8 @@ namespace utopia {
 		}
 	};
 
+	typedef Memory<Vec, 0> PETScVector;
 
-	// Newer PETScVector (one level wrapper)
-
-	class PETScVector : public Memory<Vec, 0> {
-
-	public:
-		PETScVector(MPI_Comm comm = PETSC_COMM_WORLD) : super(comm) { }
-
-		PETScVector(const PETScVector &other) : super(other) { }
-
-		PETScVector &operator=(const PETScVector &other) {
-			super::operator= (other);
-			return *this;
-		}
-
-		~PETScVector() {
-			destroy();
-		}
-
-		bool initialize(const PetscInt nLocal, const PetscInt nGlobal) {
-			// FIXME Error check?
-			super::initialize({nLocal}, {nGlobal});
-			return true;
-		}
-
-		void resize(const PetscInt nLocal, const PetscInt nGlobal = PETSC_DETERMINE) {
-			// FIXME Error check?
-			super::resize({nLocal}, {nGlobal});
-		}
-
-		void describe() const {
-			VecView(super::implementation(), PETSC_VIEWER_STDOUT_WORLD);
-		}
-
-	private:
-		typedef Memory<Vec, 0> super;
-	};
 }
 
 #endif //UTOPIA_UTOPIA_PETSCVECTOR_H

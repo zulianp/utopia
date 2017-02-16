@@ -45,7 +45,7 @@ namespace utopia {
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 		}
 
-		Memory(Memory&& m) : comm_(m.comm_), mem_(std::move(m.mem_)), init_(m.init_) { }
+		Memory(Memory&& m) : mem_(std::move(m.mem_)), comm_(m.comm_), init_(m.init_) { }
 
 		Memory& operator=(const Memory& m) {
 			comm_ = m.comm_;
@@ -54,13 +54,10 @@ namespace utopia {
 			return *this;
 		}
 		
+		//FIXME wrap() puts Memory in a weird state. Don't use unless you just want to call
+		//  implementation and nothing else. When is_owner comes back, this will be fixed
 		void wrap(T& t) {
 			mem_ = MemoryPtr<T>(&t, [](T*){});
-		}
-
-		void initialize(const Size& local, const Size& global) {
-			mem_ = Allocator<T, FillType>::claim(comm_, local, global);
-			init_ = true;
 		}
 
 		void resize(const Size& local, const Size& global) {
@@ -68,12 +65,11 @@ namespace utopia {
 			init_ = true;
 		}
 
-		void destroy() {
-			mem_ = nullptr;
-			init_ = false;
+		T& implementation() {
+			return *mem_;
 		}
 
-		T& implementation() {
+		const T& implementation() const {
 			return *mem_;
 		}
 
@@ -85,12 +81,9 @@ namespace utopia {
 			return comm_;
 		}
 
+		//FIXME this doesn't actually change the communicator used by the underlying type
 		void setCommunicator(const MPI_Comm comm) {
 			comm_ = comm;
-		}
-
-		const T& implementation() const {
-			return *mem_;
 		}
 
 		bool isInitialized() const {
