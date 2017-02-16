@@ -33,7 +33,7 @@ namespace utopia {
 	template <typename T, int FillType>
 	class Memory {
 	public:
-		Memory(MPI_Comm comm) : comm_(comm), init_(false) {
+		Memory(MPI_Comm comm = PETSC_COMM_WORLD) : comm_(comm), init_(false) {
 			mem_ = Allocator<T, FillType>::claim(comm, {}, {});
 		}
 
@@ -52,6 +52,10 @@ namespace utopia {
 			init_ = m.init_;
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 			return *this;
+		}
+		
+		void wrap(T& t) {
+			mem_ = MemoryPtr<T>(&t, [](T*){});
 		}
 
 		void initialize(const Size& local, const Size& global) {

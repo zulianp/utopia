@@ -1420,7 +1420,8 @@ namespace utopia {
 		size(left, lsize);
 		size(right, rsize);
 		
-		result.initGlobal(lsize.get(0), rsize.get(1));
+		// result.initGlobal(lsize.get(0), rsize.get(1));
+		MatSetSizes(result.implementation(), PETSC_DECIDE, PETSC_DECIDE, lsize.get(0), rsize.get(1));
 		
 		MatType type;
 		MatGetType(right.implementation(), &type);

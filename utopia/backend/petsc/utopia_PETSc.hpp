@@ -6,7 +6,6 @@
 #ifndef UTOPIA_PETSC_HPP
 #define UTOPIA_PETSC_HPP 
 
-#include "utopia_PETScAllocator.hpp"
 #include "utopia_PETScBackend.hpp"
 #include "utopia_PETScError.hpp"
 #include "utopia_PETScForwardDeclaration.hpp"
