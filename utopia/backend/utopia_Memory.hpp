@@ -33,43 +33,54 @@ namespace utopia {
 	template <typename T, int FillType>
 	class Memory {
 	public:
-		Memory(MPI_Comm comm = PETSC_COMM_WORLD) : comm_(comm), init_(false) {
+		Memory(MPI_Comm comm = PETSC_COMM_WORLD) : comm_(comm), init_(false), is_owner_(true) {
 			mem_ = Allocator<T, FillType>::claim(comm, {}, {});
 		}
 
-		Memory(MPI_Comm comm, const Size& local, const Size& global) : comm_(comm), init_(true) {
+		Memory(MPI_Comm comm, const Size& local, const Size& global) : comm_(comm), init_(true), is_owner_(true) {
 			mem_ = Allocator<T, FillType>::claim(comm, local, global);
 		}
 
-		Memory(const Memory& m) : comm_(m.comm_), init_(m.init_) {
+		Memory(const Memory& m) : comm_(m.comm_), init_(m.init_), is_owner_(true) {
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 		}
 
-		Memory(Memory&& m) : mem_(std::move(m.mem_)), comm_(m.comm_), init_(m.init_) { }
+		Memory(Memory&& m) : mem_(std::move(m.mem_)), comm_(m.comm_), init_(m.init_), is_owner_(true) { }
 
 		Memory& operator=(const Memory& m) {
+			if (!is_used_ && is_owner_)
+				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
 			comm_ = m.comm_;
 			init_ = m.init_;
+			is_owner_ = true;
+			is_used_ = false;
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 			return *this;
 		}
-		
-		//FIXME wrap() puts Memory in a weird state. Don't use unless you just want to call
-		//  implementation and nothing else. When is_owner comes back, this will be fixed
+
 		void wrap(T& t) {
+			if (!is_used_ && is_owner_)
+				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
 			mem_ = MemoryPtr<T>(&t, [](T*){});
+			is_owner_ = false;
+			is_used_ = false;
 		}
 
 		void resize(const Size& local, const Size& global) {
+			if (!is_used_ && is_owner_)
+				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
 			mem_ = Allocator<T, FillType>::claim(comm_, local, global);
 			init_ = true;
+			is_used_ = false;
 		}
 
 		T& implementation() {
+			is_used_ = true;
 			return *mem_;
 		}
 
 		const T& implementation() const {
+			is_used_ = true;
 			return *mem_;
 		}
 
@@ -94,6 +105,8 @@ namespace utopia {
 		MemoryPtr<T> mem_;
 		MPI_Comm comm_;
 		bool init_;
+		bool is_owner_;
+		mutable bool is_used_ = false;
 	};
 
 }
