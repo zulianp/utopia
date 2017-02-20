@@ -308,11 +308,11 @@ namespace utopia {
 	void mortar_transfer_2D_monolithic(LibMeshInit &init)
 	{
 		auto mesh = make_shared<Mesh>(init.comm());
-        EXPRESS_EVENT_BEGIN("set_up");
+		EXPRESS_EVENT_BEGIN("set_up");
 		//mesh->partitioner().reset(new LinearPartitioner());
 		mesh->read("../data/master_slave2D_new.e");
 		par_mortar_transfer_aux(init.comm(),mesh);
-        EXPRESS_EVENT_END("set_up");
+		EXPRESS_EVENT_END("set_up");
 	}
 
 	// #define F_MINUS(x) (1.0-x)
@@ -447,169 +447,171 @@ namespace utopia {
             // Read the mesh file. Here the file lshape.unv contains
             // an L--shaped domain in .unv format.
        // mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
-       mesh->read("../data/cube12_space4.e");
+		mesh->read("../data/cube12_space4.e");
        // mesh->read("../data/rect.e");
 
             // Print information about the mesh to the screen.
 		// mesh->print_info();
 
-       EXPRESS_EVENT_END("set_up");
+		EXPRESS_EVENT_END("set_up");
 
 		//par_mortar_transfer_aux(init.comm(),mesh);
-       par_mortar_surface_transfer_aux(init.comm(),mesh);
+		par_mortar_surface_transfer_aux(init.comm(),mesh);
 
-       std::cout << "-----------------------------\n";
-   }
+		std::cout << "-----------------------------\n";
+	}
 
-   void mortar_transfer_3D(LibMeshInit &init)
-   {
+	void mortar_transfer_3D(LibMeshInit &init)
+	{
         //EXPRESS_EVENT_BEGIN("set_up");
-   	std::cout << "-----------------------------\n";
-   	std::cout << "mortar_transfer_3D\n";
+		std::cout << "-----------------------------\n";
+		std::cout << "mortar_transfer_3D\n";
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
-   	int n_master = 2;
-   	int n_slave  = 3;
+		int n_master = 2;
+		int n_slave  = 3;
 
-   	auto mesh_master = make_shared<Mesh>(init.comm());
+		auto mesh_master = make_shared<Mesh>(init.comm());
 
         //mesh_master->partitioner().reset(new SFCPartitioner());
-        
-        
-        MeshTools::Generation::build_cube(*mesh_master,
-                                          n_master, n_master, n_master,
-                                          -2., 3.,
-                                          -2., 3.,
-                                          -2., 3.,
-                                          TET4);
-        
-        
-        
+		
+		
+		MeshTools::Generation::build_cube(*mesh_master,
+			n_master, n_master, n_master,
+			-2., 3.,
+			-2., 3.,
+			-2., 3.,
+			TET4);
+		
+		
+		
 
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
 
 
 
-   	auto mesh_slave = make_shared<Mesh>(init.comm());
+		auto mesh_slave = make_shared<Mesh>(init.comm());
 
         //mesh_slave->partitioner().reset(new SFCPartitioner());
 
-        
-        MeshTools::Generation::build_cube (*mesh_slave,
-                                           n_slave, n_slave, n_slave,
-                                           -2., 3.,
-                                           -2., 3.,
-                                           -2., 3.,
-                                           TET4);
-        
-        
-        
+		
+		MeshTools::Generation::build_cube (*mesh_slave,
+			n_slave, n_slave, n_slave,
+			-2., 3.,
+			-2., 3.,
+			-2., 3.,
+			TET4);
+		
+		
+		
 
         //EXPRESS_EVENT_END("set_up");
         //mortar_transfer_aux(mesh_master, mesh_slave);
-   	mixed_par_mortar_transfer_aux(init.comm(), mesh_master, mesh_slave);
+		mixed_par_mortar_transfer_aux(init.comm(), mesh_master, mesh_slave);
 
 
         //std::cout << "-----------------------------\n";
-   }
+	}
 
-   void surface_mortar(LibMeshInit &init)
-   {
-   	std::cout << "-----------------------------\n";
-   	std::cout << "surface_mortar\n";
+	void surface_mortar(LibMeshInit &init)
+	{
+		std::cout << "-----------------------------\n";
+		std::cout << "surface_mortar\n";
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
 
-   	static const bool is_leaflet = false;
-		//ContactSimParams params = leaflets_contact;
-		 // ContactSimParams params = contact8;
-    	// ContactSimParams params = multi_contact_quads;
-		ContactSimParams params = triple_contact_circle;
+		// static const bool is_leaflet = true;
+		// ContactSimParams params = leaflets_contact;
+
+   		static const bool is_leaflet = false;
+		 // ContactSimParams params = contact_cuboids;
+    	ContactSimParams params = multi_contact_quads;
+		// ContactSimParams params = triple_contact_circle;
 		// ContactSimParams params = contact_3D_tets;
 
 
 		auto mesh = make_shared<Mesh>(init.comm());		
 		mesh->read(params.mesh_path);
-//		plot_mesh(*mesh, "mesh");
-        
+		plot_mesh(*mesh, "mesh");
+		
 
 
-   	const int dim = mesh->mesh_dimension();
+		const int dim = mesh->mesh_dimension();
 
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
 
-   	Chrono c;
-   	c.start();
+		Chrono c;
+		c.start();
 
-   	LibMeshFEContext<LinearImplicitSystem> context(mesh);
-   	auto space = vector_fe_space("disp_", LAGRANGE_VEC, FIRST, context);
-   	auto u = fe_function(space);
+		LibMeshFEContext<LinearImplicitSystem> context(mesh);
+		auto space = vector_fe_space("disp_", LAGRANGE_VEC, FIRST, context);
+		auto u = fe_function(space);
 
 
-   	
+		
 
 		//boundary conditions
-   	std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_1 = [dim, &params](const Point &, DenseVector<Real> &output) {
-   		output.resize(dim);
-   		output.zero();
+		std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_1 = [dim, &params](const Point &, DenseVector<Real> &output) {
+			output.resize(dim);
+			output.zero();
 
-   		if(is_leaflet) {
+			if(is_leaflet) {
 				// output(0) = -params.dirichlet_value_1;
-   			output(1) = params.dirichlet_value_1;
-   		} else {
+				output(1) = params.dirichlet_value_1;
+			} else {
 				//offset to y coordinate of displacement
-   			output(1) = params.dirichlet_value_1;
-   		}
-   	};
+				output(1) = params.dirichlet_value_1;
+			}
+		};
 
-   	auto bc_1 = boundary_conditions(u == vec_coeff(boundary_cond_1),    { params.boundary_tag_1 });
-   	strong_enforce(bc_1);
+		auto bc_1 = boundary_conditions(u == vec_coeff(boundary_cond_1),    { params.boundary_tag_1 });
+		strong_enforce(bc_1);
 
-   	std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_2 = [dim, &params](const Point &, DenseVector<Real> &output) {
-   		output.resize(dim);
-   		output.zero();
+		std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_2 = [dim, &params](const Point &, DenseVector<Real> &output) {
+			output.resize(dim);
+			output.zero();
 
-   		if(is_leaflet) {
-   			output(0) = -params.dirichlet_value_2;
-   			output(1) = -params.dirichlet_value_2;
-   		} else {
+			if(is_leaflet) {
+				output(0) = -params.dirichlet_value_2;
+				output(1) = -params.dirichlet_value_2;
+			} else {
 				//offset to y coordinate of displacement
-   			output(1) = params.dirichlet_value_2;
-   		}
-   	};
+				output(1) = params.dirichlet_value_2;
+			}
+		};
 
-   	auto bc_2 = boundary_conditions(u == vec_coeff(boundary_cond_2), { params.boundary_tag_2 });
-   	strong_enforce(bc_2);
+		auto bc_2 = boundary_conditions(u == vec_coeff(boundary_cond_2), { params.boundary_tag_2 });
+		strong_enforce(bc_2);
 
 
 
-   	std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_3 = [dim, &params](const Point &, DenseVector<Real> &output) {
-   		output.resize(dim);
-   		output.zero();
+		std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_3 = [dim, &params](const Point &, DenseVector<Real> &output) {
+			output.resize(dim);
+			output.zero();
 
-   		if(is_leaflet) {
-   			output(0) = params.dirichlet_value_3;
-   			output(1) = -params.dirichlet_value_3;
-   		} else {
+			if(is_leaflet) {
+				output(0) = params.dirichlet_value_3;
+				output(1) = -params.dirichlet_value_3;
+			} else {
 				//offset to y coordinate of displacement
-   			output(1) = params.dirichlet_value_3;
-   		}
-   	};
+				output(1) = params.dirichlet_value_3;
+			}
+		};
 
-   	if(params.boundary_tag_3 >= 0) {
-   		auto bc_3 = boundary_conditions(u == vec_coeff(boundary_cond_3), { params.boundary_tag_3 });
-   		strong_enforce(bc_3);
-   	}
-
-
+		if(params.boundary_tag_3 >= 0) {
+			auto bc_3 = boundary_conditions(u == vec_coeff(boundary_cond_3), { params.boundary_tag_3 });
+			strong_enforce(bc_3);
+		}
 
 
-   	context.equation_systems.init();
-   	u.set_quad_rule(make_shared<libMesh::QGauss>(dim, SIXTH));
 
-   	double mu   = 1.0, lambda = 1.0;
+
+		context.equation_systems.init();
+		u.set_quad_rule(make_shared<libMesh::QGauss>(dim, SIXTH));
+
+		double mu   = 1.0, lambda = 1.0;
 		auto e      = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
 		auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
 

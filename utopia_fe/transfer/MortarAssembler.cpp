@@ -734,7 +734,7 @@ namespace utopia {
 				current_contact->gap.zero();
 				current_contact->normals.zero();
 
-				// bool use_biorth_ = true;
+				// bool use_biorth_ = true; //does not work
 				bool use_biorth_ = false;
 
 				if(use_biorth_) {
@@ -788,19 +788,23 @@ namespace utopia {
 				local_element_matrices_sum += local_mat_sum;
 				intersected = true;
 
-					// current_contact->describe();
-					// assert(fabs(local_mat_sum - pow(current_contact->isect_area, dim/(dim-1.)) * dim) < 1e-8 || (!is_quad(el_2.type()) && !is_hex(el_2.type())));
+				// current_contact->describe();
+				
+                // std::cout<< "surface_assemble->isect_area = " << current_contact->isect_area <<std::endl;
 
-                    // std::cout<< "surface_assemble->isect_area = " << current_contact->isect_area <<std::endl;
+                // std::cout<<" pow(surface_assemble->isect_area, dim/(dim-1.)) * dim = " << pow(current_contact->isect_area, dim/(dim-1.)) * dim  <<std::endl;
 
-                    // std::cout<<" pow(surface_assemble->isect_area, dim/(dim-1.)) * dim = " << pow(current_contact->isect_area, dim/(dim-1.)) * dim  <<std::endl;
+                // std::cout<<" partial sum = " << local_mat_sum <<std::endl;
 
-                    // std::cout<<" partial sum = " << local_mat_sum <<std::endl;
+                // std::cout<<" local_element_matrices_sum = " << local_element_matrices_sum <<std::endl;
 
-                    // std::cout<<" local_element_matrices_sum = " << local_element_matrices_sum <<std::endl;
+                // assert(fabs(local_mat_sum - pow(current_contact->isect_area, dim/(dim-1.)) * dim) < 1e-8 || (!is_quad(el_2.type()) && !is_hex(el_2.type())));
 
 
 				current_contact->finalize();
+
+
+				// std::cout << "avg_gap: " << current_contact->avg_gap << std::endl;
 
 				if(strict_gap_policy) {
 					if(std::abs(current_contact->avg_gap) <= search_radius) {
