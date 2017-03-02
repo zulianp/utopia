@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-11-07
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-03-01
 */
 
 #ifndef UTOPIA_SOLVER_TRUSTREGION_HPP
@@ -120,8 +120,8 @@
         // TR delta initialization
         delta = this->delta0(); 
         rad_flg = this->delta_init(x_k ,delta); 
-        //delta = norm2(g);   // also possible
-        // delta = 10;        // testing 
+        // delta = norm2(g);   // also possible
+        //delta = 50;        // testing 
 
         // just to start  CHECK THIS OUT 
         // if(params().verbose()) 
