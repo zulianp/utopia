@@ -2,7 +2,7 @@
 // * @Author: alenakopanicakova
 // * @Date:   2016-06-10
 // * @Last Modified by:   Alena Kopanicakova
-// * @Last Modified time: 2017-03-01
+// * @Last Modified time: 2017-03-02
 // */
 
 #ifndef UTOPIA_TR_STRATEGY_FACTORY_HPP
@@ -126,7 +126,7 @@ namespace utopia
 			void init()
 			{
 				strategies_[CAUCHYPOINT_TAG] 		= std::make_shared<utopia::CauchyPoint<Matrix, Vector> >(); 
-				// strategies_[DOGLEG_TAG] 			= std::make_shared<utopia::Dogleg<Matrix, Vector> >(); 
+				strategies_[DOGLEG_TAG] 			= std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();  // THIS IS WRONG !!!!!!!
 				strategies_[STEIHAUG_TOINT_TAG] 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector> >(); 
 			}
 	};
