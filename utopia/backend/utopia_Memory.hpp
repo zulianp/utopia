@@ -18,6 +18,10 @@ namespace utopia {
 	template <typename T, int FillType>
 	class Allocator {
 	public:
+		static void destructor(T*) {
+			assert(false && "No Allocator known for this type");
+		}
+		
 		static MemoryPtr<T> claim(MPI_Comm comm, Size local, Size global) {
 			assert(false && "No Allocator known for this type");
 			return nullptr;
@@ -33,9 +37,7 @@ namespace utopia {
 	template <typename T, int FillType>
 	class Memory {
 	public:
-		Memory(MPI_Comm comm = PETSC_COMM_WORLD) : comm_(comm), init_(false), is_owner_(true) {
-			mem_ = Allocator<T, FillType>::claim(comm, {}, {});
-		}
+		Memory(MPI_Comm comm = PETSC_COMM_WORLD) : mem_(nullptr), comm_(comm), init_(false), is_owner_(true) { }
 
 		Memory(MPI_Comm comm, const Size& local, const Size& global) : comm_(comm), init_(true), is_owner_(true) {
 			mem_ = Allocator<T, FillType>::claim(comm, local, global);
@@ -45,36 +47,56 @@ namespace utopia {
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 		}
 
-		Memory(Memory&& m) : mem_(std::move(m.mem_)), comm_(m.comm_), init_(m.init_), is_owner_(true) { }
+		Memory(Memory&& m) : mem_(std::move(m.mem_)), comm_(m.comm_), init_(m.init_), is_owner_(m.is_owner_) {
+			m.init_ = false;
+			m.is_owner_ = false;
+		}
 
 		Memory& operator=(const Memory& m) {
-			if (!is_used_ && is_owner_)
+			if (!is_used_ && is_owner_ && mem_)
 				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
+			mem_ = Allocator<T, FillType>::clone(m.mem_);
 			comm_ = m.comm_;
 			init_ = m.init_;
 			is_owner_ = true;
 			is_used_ = false;
-			mem_ = Allocator<T, FillType>::clone(m.mem_);
 			return *this;
 		}
 
-		void wrap(T& t) {
-			if (!is_used_ && is_owner_)
+		void init(const Size& local, const Size& global) {
+			if (!is_used_ && is_owner_ && mem_)
+				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
+			mem_ = Allocator<T, FillType>::claim(comm_, local, global);
+			init_ = true;
+			is_owner_ = true;
+			is_used_ = false;
+		}
+
+		void init(T& t) {
+			if (!is_used_ && is_owner_ && mem_)
 				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
 			mem_ = MemoryPtr<T>(&t, [](T*){});
+			init_ = true;
 			is_owner_ = false;
 			is_used_ = false;
 		}
 
+		void init() {
+			init({}, {});
+			init_ = false;
+		}
+
+		void wrap(T& t) {
+			init(t);
+		}
+
 		void resize(const Size& local, const Size& global) {
-			if (!is_used_ && is_owner_)
-				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
-			mem_ = Allocator<T, FillType>::claim(comm_, local, global);
-			init_ = true;
-			is_used_ = false;
+			init(local, global);
 		}
 
 		T& implementation() {
+			if (!mem_)
+				init();
 			is_used_ = true;
 			return *mem_;
 		}
