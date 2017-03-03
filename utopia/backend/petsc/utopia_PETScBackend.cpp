@@ -74,7 +74,6 @@ namespace utopia {
 
 	void PETScBackend::resize(const Size &s, PETScMatrix &mat)
 	{
-		Mat &m = mat.implementation();
 		PetscInt r, c;
 		MatGetSize(mat.implementation(), &r, &c);
 		if(r == s.get(0) && c == s.get(1)) {
@@ -83,17 +82,15 @@ namespace utopia {
 
 		MPI_Comm comm = PetscObjectComm((PetscObject) mat.implementation());
 		MatType type;
-		PETScError::Check( MatGetType(m, &type) );
-		MatDestroy(&m);
-
-		MatCreate(comm, &m);
-		MatSetSizes(m, PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1));
-		MatSetType(m, type);
+		PETScError::Check( MatGetType(mat.implementation(), &type) );
+		
+		mat.init();
+		MatSetSizes(mat.implementation(), PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1));
+		MatSetType(mat.implementation(), type);
 	}
 
 	void PETScBackend::resize(const Size &local_s, const Size &global_s, PETScMatrix &mat)
 	{
-		Mat &m = mat.implementation();
 		PetscInt r, c, R, C;
 		MatGetLocalSize(mat.implementation(), &r, &c);
 		MatGetSize(mat.implementation(), &R, &C);
@@ -103,12 +100,10 @@ namespace utopia {
 
 		MPI_Comm comm = PetscObjectComm((PetscObject) mat.implementation());
 		MatType type;
-		PETScError::Check( MatGetType(m, &type) );
-		MatDestroy(&m);
-
-		MatCreate(comm, &m);
-		MatSetSizes(m, local_s.get(0), local_s.get(1), global_s.get(0), global_s.get(1));
-		MatSetType(m, type);
+		PETScError::Check( MatGetType(mat.implementation(), &type) );
+		mat.init();
+		MatSetSizes(mat.implementation(), local_s.get(0), local_s.get(1), global_s.get(0), global_s.get(1));
+		MatSetType(mat.implementation(), type);
 	}
 
 	void PETScBackend::resize(const Size &s, PETScVector &vec)
@@ -123,9 +118,7 @@ namespace utopia {
 			}
 		}
 
-		MPI_Comm comm = PetscObjectComm((PetscObject) vec.implementation());
-		VecDestroy(&v);	
-		VecCreateMPI(comm, PETSC_DECIDE, s.get(0), &v);
+		vec.resize({PETSC_DECIDE}, s);
 	}
 
 
@@ -142,9 +135,7 @@ namespace utopia {
 			}
 		}
 
-		MPI_Comm comm = PetscObjectComm((PetscObject) vec.implementation());
-		VecDestroy(&v);	
-		VecCreateMPI(comm, s_local.get(0), s_global.get(0), &v);
+		vec.resize(s_local, s_global);
 	}
 
 	bool PETScBackend::transpose(const PETScMatrix &mat, PETScMatrix &result)
@@ -160,8 +151,7 @@ namespace utopia {
 	
 	void PETScBackend::clear(PETScMatrix &mat) const
 	{
-		MatDestroy(&mat.implementation());
-		MatCreate(mat.communicator(), &mat.implementation());
+		mat.init();
 	}
 	
 	
@@ -172,8 +162,7 @@ namespace utopia {
 		PetscInt n, local_n;
 		VecGetSize(vec, &n);
 		VecGetLocalSize(vec, &local_n);
-		VecDestroy(&wrapper.implementation());
-		VecCreateMPI(comm, local_n, n, &wrapper.implementation());
+		wrapper.init({local_n}, {n});
 		VecCopy(vec, wrapper.implementation());
 		return true;
 	}
@@ -229,7 +218,7 @@ namespace utopia {
 
 	bool PETScBackend::wrap(Vec vec, PETScVector &wrapper)
 	{
-		// wrapper.wrap(vec);
+		wrapper.wrap(vec);
 		return true;
 	}
 	
@@ -492,14 +481,12 @@ namespace utopia {
 	{
 		MPI_Comm comm = Vec_A.communicator();
 
-		Vec &A = Vec_A.implementation();
-		VecDestroy(&A);
-
 		PetscViewer fd;
 		PetscViewerBinaryOpen(comm, path.c_str(), FILE_MODE_READ, &fd);
-		VecCreate(comm,&A);
+		
+		Vec_A.init();
 		bool status;
-		status =  PETScError::Check( VecLoad(A,fd));
+		status =  PETScError::Check( VecLoad(Vec_A.implementation(), fd));
 		PetscViewerDestroy(&fd);
 		return status;
 	}
@@ -877,8 +864,7 @@ namespace utopia {
 		}	
 
 		if(!v.isInitialized() || v_local_size.get(0) != local_size.get(0)) {
-			VecDestroy(&v.implementation());
-			VecCreateMPI(v.communicator(), local_size.get(0), global_size.get(0), &v.implementation());
+			v.init(local_size, global_size);
 		}
  
 		VecSet(v.implementation(), values.value());
@@ -888,8 +874,7 @@ namespace utopia {
 	
 	void PETScBackend::build(PETScVector &v, const Size &size, const Values<PetscScalar> &values) {
 
-		VecDestroy(&v.implementation());
-		VecCreateMPI(v.communicator(), PETSC_DECIDE, size.get(0), &v.implementation());
+		v.init({PETSC_DECIDE}, size);
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
@@ -925,10 +910,7 @@ namespace utopia {
 	}
 	
 	void PETScBackend::build(PETScVector &v, const Size &size, const LocalValues<PetscScalar> &values) {
-		MPI_Comm comm = v.communicator();
-		VecDestroy(&v.implementation());
-
-		VecCreateMPI(comm, size.get(0), PETSC_DETERMINE, &v.implementation());
+		v.init(size, {PETSC_DETERMINE});
 		
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
@@ -1024,8 +1006,7 @@ namespace utopia {
 		
 		result.setCommunicator(left.communicator());
 		
-		VecDestroy(&result.implementation());
-		VecCreateMPI(right.communicator(), rows, grows, &result.implementation());
+		result.init({rows}, {grows});
 		VecAssemblyBegin(result.implementation());
 		VecAssemblyEnd(result.implementation());
 		
@@ -1060,8 +1041,7 @@ namespace utopia {
 
 		result.setCommunicator(right.communicator());
 
-		VecDestroy(&result.implementation());
-		VecCreateMPI(right.communicator(), size, gsize, &result.implementation());
+		result.init({size}, {gsize});
 		VecAssemblyBegin(result.implementation());
 		VecAssemblyEnd(result.implementation());
 
@@ -1081,8 +1061,7 @@ namespace utopia {
 
 		result.setCommunicator(right.communicator());
 
-		VecDestroy(&result.implementation());
-		VecCreateMPI(right.communicator(), size, gsize, &result.implementation());
+		result.init({size}, {gsize});
 		VecAssemblyBegin(result.implementation());
 		VecAssemblyEnd(result.implementation());
 
@@ -1142,9 +1121,7 @@ namespace utopia {
 				PetscInt n_global;
 				VecGetSize(right.implementation(), &n_global);
 				result.setCommunicator(left.communicator());
-
-				VecDestroy(&result.implementation());
-				VecCreateMPI(PetscObjectComm((PetscObject)right.implementation()), n_wanted, n_global, &result.implementation());
+				result.init({n_wanted}, {n_global});
 			// }
 		}
 	}
@@ -1165,9 +1142,7 @@ namespace utopia {
 		PetscErrorCode err = 0;
 
 		if(&vec != &result) {
-			VecDestroy(&result.implementation());
-		 	err = VecDuplicate(vec.implementation(), &result.implementation());
-			err = VecCopy(vec.implementation(), result.implementation());
+			result = vec;
 		}	
 
 		if(reciprocal.numerator() == 1)
@@ -1295,7 +1270,7 @@ namespace utopia {
 		
 		PetscInt lenGlobal = max(globalRows, globalColumns);
 		PetscInt lenLocal  = max(localRows, localColumns);
-		vec.resize({lenLocal}, {lenGlobal});
+		vec.init({lenLocal}, {lenGlobal});
 		err = MatGetDiagonal(mat.implementation(), vec.implementation());
 		return PETScError::Check(err);
 	}
@@ -1308,9 +1283,7 @@ namespace utopia {
 		// or at least it seems like ...
 		//!!! FIXME needs to check if matrix has been allocated already
 		
-		MPI_Comm comm = mat.communicator();
-		MatDestroy(&mat.implementation());
-		MatCreate(comm, &mat.implementation());
+		mat.init();
 		
 		PetscInt local_size, global_size;
 		VecGetLocalSize(vec.implementation(), &local_size);
@@ -1349,9 +1322,7 @@ namespace utopia {
 		// or at least it seems like ...
 		//!!! FIXME needs to check if matrix has been allocated already
 		
-		MPI_Comm comm = mat.communicator();
-		MatDestroy(&mat.implementation());
-		MatCreate(comm, &mat.implementation());
+		mat.init();
 		
 		PetscInt local_size, global_size;
 		VecGetLocalSize(vec.implementation(), &local_size);
@@ -1765,8 +1736,7 @@ namespace utopia {
 		MatGetSize(mat.implementation(), &grows, &gcols);
 
 		if (dim == 1) {
-			VecDestroy(&result.implementation());
-			VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
+			result.init({PETSC_DECIDE}, {grows});
 			MatGetRowMin(mat.implementation(), result.implementation(), nullptr);
 		} else {
 			//FIXME implement own
@@ -1786,8 +1756,7 @@ namespace utopia {
 		MatGetSize(mat.implementation(), &grows, &gcols);
 
 		if (dim == 1) {
-			VecDestroy(&result.implementation());
-			VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
+			result.init({PETSC_DECIDE}, {grows});
 			MatGetRowMax(mat.implementation(), result.implementation(), nullptr);
 		} else {
 			//FIXME implement own
