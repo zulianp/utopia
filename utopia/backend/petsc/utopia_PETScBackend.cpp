@@ -72,40 +72,6 @@ namespace utopia {
 		bool must_destroy_right_;
 	};
 
-	void PETScBackend::resize(const Size &s, PETScMatrix &mat)
-	{
-		PetscInt r, c;
-		MatGetSize(mat.implementation(), &r, &c);
-		if(r == s.get(0) && c == s.get(1)) {
-			return;
-		}
-
-		MPI_Comm comm = PetscObjectComm((PetscObject) mat.implementation());
-		MatType type;
-		PETScError::Check( MatGetType(mat.implementation(), &type) );
-		
-		mat.init();
-		MatSetSizes(mat.implementation(), PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1));
-		MatSetType(mat.implementation(), type);
-	}
-
-	void PETScBackend::resize(const Size &local_s, const Size &global_s, PETScMatrix &mat)
-	{
-		PetscInt r, c, R, C;
-		MatGetLocalSize(mat.implementation(), &r, &c);
-		MatGetSize(mat.implementation(), &R, &C);
-		if(r == local_s.get(0) && c == local_s.get(1) && R == global_s.get(0) && C == global_s.get(1)) {
-			return;
-		}
-
-		MPI_Comm comm = PetscObjectComm((PetscObject) mat.implementation());
-		MatType type;
-		PETScError::Check( MatGetType(mat.implementation(), &type) );
-		mat.init();
-		MatSetSizes(mat.implementation(), local_s.get(0), local_s.get(1), global_s.get(0), global_s.get(1));
-		MatSetType(mat.implementation(), type);
-	}
-
 	void PETScBackend::resize(const Size &s, PETScVector &vec)
 	{
 		Vec &v = vec.implementation();
@@ -230,32 +196,7 @@ namespace utopia {
 		VecGetOwnershipRange(v.implementation(), &rbegin, &rend);
 		return Range(rbegin, rend);
 	}
-	
-	Range PETScBackend::rowRange(const PETScMatrix &m) 
-	{
-		PetscInt rbegin, rend;
-		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
-		assert(Range(rbegin, rend).valid());
-		return Range(rbegin, rend);
-	}
-	
-	Range PETScBackend::colRange(const PETScMatrix &m) 
-	{
-		PetscInt grows, gcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		return Range(0, gcols);
-	}
-	
-	bool PETScBackend::size(const PETScMatrix &m, Size &size) const 
-	{
-		PetscInt grows, gcols;
-		size.setDims(2);
-		MatGetSize(m.implementation(), &grows, &gcols);
-		size.set(0, grows);
-		size.set(1, gcols);
-		return true;
-	}
-	
+
 	bool PETScBackend::size(const PETScVector &m, Size &size) const 
 	{
 		PetscInt n;
@@ -274,52 +215,7 @@ namespace utopia {
 		return true;
 	}
 
-	bool PETScBackend::local_size(const PETScMatrix &mat, Size &size) const
-	{
-		PetscInt n, m;
-		size.setDims(2);
-		MatGetLocalSize(mat.implementation(), &n, &m);
-		size.set(0, n);
-		size.set(1, m);
-		return true;
-	}
-	
-	void PETScBackend::assignFromRange(PETScMatrix &left, const PETScMatrix &right, const Range &globalRowRange,
-									   const Range &globalColRange) {
-		assert(!globalRowRange.empty());
-		
-		MPI_Comm comm = right.communicator();
-		left.setCommunicator(comm);
-		left.init({PETSC_DECIDE, PETSC_DECIDE}, {globalRowRange.extent(), globalColRange.extent()});
-		
-		
-		Range rr = rowRange(right).intersect(globalRowRange);
-		Range cr = colRange(right).intersect(globalColRange);
-		
-		// rr might be invalid !!! so use < to compare with range
-		//            if(!rr.valid()) std::cout << rr << std::endl;
-		
-		
-		//use MAT_FLUSH_ASSEMBLY to not make petsc crash if nothing is added
-		MatAssemblyBegin(left.implementation(), MAT_FLUSH_ASSEMBLY);
-		
-		PetscInt r = 0, c = 0;
-		for (PetscInt rIt = rr.begin(); rIt < rr.end(); ++rIt) {
-			r = rIt - globalRowRange.begin();
-			for (PetscInt cIt = cr.begin(); cIt < cr.end(); ++cIt) {
-				c = cIt - globalColRange.begin();
-				set(left, r, c, get(right, rIt, cIt));
-			}
-		}
-		
-		MatAssemblyEnd(left.implementation(), MAT_FLUSH_ASSEMBLY);
-		
-		//To finalize the matrix
-		MatAssemblyBegin(left.implementation(), MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(left.implementation(), MAT_FINAL_ASSEMBLY);
-	}
-	
-	
+
 	// read matrix
 	bool PETScBackend::read(const std::string &path, PETScMatrix &Mat_A)
 	{
@@ -411,7 +307,7 @@ namespace utopia {
 		{
           	// log stifness
           	PetscViewerASCIIOpen(PETSC_COMM_WORLD, "log_hessian.m" ,&viewer_hessian);  
-          	PetscViewerPushFormat(viewer_hessian,PETSC_VIEWER_ASCII_MATLAB); 
+          	PetscViewerPushFormat(viewer_hessian,PETSC_VIEWER_ASCII_MATLAB);
         }   
     	Mat A; 
     	MatDuplicate(Mat_A.implementation(), MAT_COPY_VALUES,  &A); 
@@ -432,7 +328,7 @@ namespace utopia {
 		{
           	// log iterates
           	PetscViewerASCIIOpen(PETSC_COMM_WORLD, "log_iterate.m", &viewer_iterates);  
-          	PetscViewerPushFormat(viewer_iterates,PETSC_VIEWER_ASCII_MATLAB); 
+          	PetscViewerPushFormat(viewer_iterates,PETSC_VIEWER_ASCII_MATLAB);
         }
         Vec iterates; 	        
         VecDuplicate(Vec_A.implementation(), &iterates);
@@ -442,33 +338,6 @@ namespace utopia {
 
       	//PetscViewerDestroy(&viewer_iterates);
 		return true; 
-	}
-
-	PetscScalar PETScBackend::get_global_nnz(PETScMatrix &Mat_A)
-	{	
-		MatInfo        info;
-		MatGetInfo(Mat_A.implementation(), MAT_GLOBAL_SUM, &info); 
-		return info.nz_used; 
-	}
-
-
-	PetscScalar PETScBackend::get_local_nnz(PETScMatrix &Mat_A)
-	{	
-		MatInfo        info;
-		MatGetInfo(Mat_A.implementation(), MAT_LOCAL, &info); 
-		return info.nz_used; 
-	}
-
-
-
-	bool PETScBackend::set_zero_rows(PETScMatrix &Mat_A, const std::vector<int> &index)
-	{
-		return PETScError::Check(MatZeroRows(Mat_A.implementation(), index.size(), &index[0], 1.0, NULL, NULL));
-	}
-
-	bool  PETScBackend::apply_BC_to_system(PETScMatrix & A, PETScVector& x, PETScVector& rhs, const std::vector<int> &index)
-	{
-		return PETScError::Check(MatZeroRows(A.implementation(), index.size(), &index[0], 1.0, x.implementation(), rhs.implementation())); 
 	}
 
 	// read vector
@@ -521,20 +390,19 @@ namespace utopia {
 		
 		//assert(false); //TODO
 	}
-	
-	bool PETScBackend::scal(const PetscScalar scaleFactor, const PETScMatrix &left , PETScMatrix &right) {
-		if(&left == &right) {
-			MatScale(right.implementation(), scaleFactor);
-		} else {
-			assert(false); // FIXME
-			return false;
-		}
 
-		return true;
-	}
-	
-	
-	bool PETScBackend::gemm(const PetscScalar /*alpha*/, const PETScMatrix &/*left*/, const PETScMatrix &/*right*/, const PetscScalar /* beta*/,
+    bool PETScBackend::scal(const PetscScalar scaleFactor, const PETScMatrix &left , PETScMatrix &right) {
+        if(&left == &right) {
+            MatScale(right.implementation(), scaleFactor);
+        } else {
+            assert(false); // FIXME
+            return false;
+        }
+
+        return true;
+    }
+
+    bool PETScBackend::gemm(const PetscScalar /*alpha*/, const PETScMatrix &/*left*/, const PETScMatrix &/*right*/, const PetscScalar /* beta*/,
 							PETScMatrix & /*result*/) {
 		assert(false); //TODO
 		return false;
@@ -787,29 +655,19 @@ namespace utopia {
 	{
 		build(m, size, Zeros());
 	}
-	
-	void PETScBackend::build(PETScMatrix &m, const Size &size, const Zeros &)
-	{
-		build(m, size, Values<PetscScalar>(0));
-	}
-	
+
 	void PETScBackend::build(PETScVector &v, const Size &size, const Zeros &)
 	{
 		build(v, size, Values<PetscScalar>(0));
 	}
-	
-	void PETScBackend::build(PETScMatrix &m, const Size &size, const LocalZeros &)
-	{
-		build(m, size, LocalValues<PetscScalar>(0));
-	}
-	
+
 	void PETScBackend::build(PETScVector &v, const Size &size, const LocalZeros &)
 	{
 		build(v, size, LocalValues<PetscScalar>(0));
 	}
 	
 	void PETScBackend::build(PETScMatrix &m, const Size &size, const Values<PetscScalar> &values) {
-		m.init({PETSC_DECIDE, PETSC_DECIDE}, size);		
+		m.init({PETSC_DECIDE, PETSC_DECIDE}, size);
 		
 		PetscInt rbegin, rend;
 		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
@@ -960,84 +818,6 @@ namespace utopia {
 		VecGetValues(v.implementation(), 1, &index, &value);
 		return value;
 	}
-	
-	PetscScalar PETScBackend::get(const PETScMatrix &v, const PetscInt row, const PetscInt col) {
-		PetscScalar value;
-		MatGetValues(v.implementation(), 1, &row, 1, &col, &value);
-		return value;
-	}
-	
-	bool PETScBackend::apply(const PETScMatrix &left, const PETScVector &right, const Multiplies &, PETScVector &result) {
-		PetscInt grows, gcols;
-		MatGetSize(left.implementation(), &grows, &gcols);
-		
-		PetscInt rows, cols;
-		MatGetLocalSize(left.implementation(), &rows, &cols);
-		
-		result.setCommunicator(left.communicator());
-		
-		result.init({rows}, {grows});
-		VecAssemblyBegin(result.implementation());
-		VecAssemblyEnd(result.implementation());
-		
-		MatMult(left.implementation(), right.implementation(), result.implementation());
-		
-		return true;
-	}
-	
-	bool PETScBackend::apply(const PETScMatrix &left, const PETScMatrix &right, const Multiplies &, PETScMatrix &result)
-	{
-
-		if(&right.implementation() != &result.implementation() || &left.implementation() !=  &result.implementation()) {
-			MatDestroy(&result.implementation());
-		} else {
-			assert(false);
-		}
- 
-
-		MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
-		return true;
-	}
-
-	bool PETScBackend::mat_mult_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result)
-	{
-		if (&right.implementation() == &result.implementation() || &left.implementation() ==  &result.implementation()) {
-			assert(false);
-		}
-
-		PetscInt size, gsize;
-		VecGetSize(right.implementation(), &gsize);
-		VecGetLocalSize(right.implementation(), &size);
-
-		result.setCommunicator(right.communicator());
-
-		result.init({size}, {gsize});
-		VecAssemblyBegin(result.implementation());
-		VecAssemblyEnd(result.implementation());
-
-		MatMultAdd(m.implementation(), right.implementation(), left.implementation(), result.implementation());
-		return true;
-	}
-
-	bool PETScBackend::mat_multT_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result)
-	{
-		if (&right.implementation() == &result.implementation() || &left.implementation() ==  &result.implementation()) {
-			assert(false);
-		}
-
-		PetscInt size, gsize;
-		VecGetSize(right.implementation(), &gsize);
-		VecGetLocalSize(right.implementation(), &size);
-
-		result.setCommunicator(right.communicator());
-
-		result.init({size}, {gsize});
-		VecAssemblyBegin(result.implementation());
-		VecAssemblyEnd(result.implementation());
-
-		MatMultTransposeAdd(m.implementation(), right.implementation(), left.implementation(), result.implementation());
-		return true;
-	}
 
 	bool PETScBackend::apply(const Vector &vec, const Abs &, Vector &result)
 	{
@@ -1136,13 +916,7 @@ namespace utopia {
 		VecNorm(v.implementation(), NORM_2, &val);
 		return val;
 	}
-	
-	PetscScalar PETScBackend::norm2(const Matrix &m) {
-		PetscReal val;
-		MatNorm(m.implementation(), NORM_FROBENIUS, &val);
-		return val;
-	}
-	
+
 	PetscScalar PETScBackend::norm1(const PETScVector &v) {
 		PetscReal val;
 		VecNorm(v.implementation(), NORM_1, &val);
@@ -1162,46 +936,11 @@ namespace utopia {
 		VecSum(vec.implementation(), &result);
 		return result;
 	}
-	
-	PetscScalar PETScBackend::reduce(const PETScMatrix &mat, const Plus &op) {
-		// assert(false);
-		PETScVector rowSum; //FIXME initialize
-		Size gs, ls;
-		size(mat, gs);
-		local_size(mat, ls);
-		resize(ls, gs, rowSum);
 
-		MatGetRowSum(mat.implementation(), rowSum.implementation());
-		return reduce(rowSum, op);
-	}
-	
 	PetscScalar PETScBackend::reduce(const PETScVector &v, const Min &)
 	{
 		PetscScalar x;
 		VecMin(v.implementation(), nullptr, &x);
-		return x;
-	}
-
-	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Min &)
-	{
-		PetscScalar x;
-		MPI_Comm comm = m.communicator();
-		
-		
-		PetscInt grows, gcols, lrows, lcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		MatGetLocalSize(m.implementation(), &lrows, &lcols);
-		
-		Vec v;
-		VecCreate(comm, &v);
-
-		VecSetType(v, VECMPI);
-		VecSetSizes(v, lrows, grows);
-
-		MatGetRowMin(m.implementation(), v, nullptr);
-		VecMin(v, nullptr, &x);
-
-		VecDestroy(&v);
 		return x;
 	}
 
@@ -1212,39 +951,6 @@ namespace utopia {
 		return x;
 	}
 
-	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Max &)
-	{
-		PetscScalar x;
-		PETScVector v;
-		VecSetType(v.implementation(), VECMPI);
-
-		PetscInt grows, gcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
-
-		MatGetRowMax(m.implementation(), v.implementation(), nullptr);
-		VecMax(v.implementation(), nullptr, &x);
-		return x;
-	}
-
-	
-	// get diagonal of matrix as vector
-	bool PETScBackend::diag(PETScVector &vec, const PETScMatrix &mat)
-	{
-		using std::max;
-		PetscInt globalRows, globalColumns;
-		
-		PetscErrorCode err = MatGetSize(mat.implementation(), &globalRows, &globalColumns);
-		PetscInt localRows, localColumns;
-		err = MatGetLocalSize(mat.implementation(), &localRows, &localColumns);
-		
-		PetscInt lenGlobal = max(globalRows, globalColumns);
-		PetscInt lenLocal  = max(localRows, localColumns);
-		vec.init({lenLocal}, {lenGlobal});
-		err = MatGetDiagonal(mat.implementation(), vec.implementation());
-		return PETScError::Check(err);
-	}
-	
 	bool PETScBackend::diag(PETScSparseMatrix &mat, const PETScVector &vec)
 	{
 		// I do not think, this is needed
@@ -1275,13 +981,6 @@ namespace utopia {
 		PetscInt err = MatDiagonalSet( mat.implementation(), vec.implementation(), INSERT_VALUES);
 		return PETScError::Check(err);
 		
-	}
-
-	bool PETScBackend::diag(PETScMatrix &out, const PETScMatrix &in)
-	{
-		PETScVector vec;
-		if(!diag(vec, in)) {return false;}
-		return diag(out, vec);
 	}
 
 	bool PETScBackend::diag(PETScMatrix &mat, const PETScVector &vec)
@@ -1317,77 +1016,25 @@ namespace utopia {
 		
 	}
 
-	bool PETScBackend::mat_diag_shift(PETScMatrix &left, const PetscScalar diag_factor)
-	{
-		return PETScError::Check(MatShift(left.implementation(), diag_factor));
-	}
-	
 	bool PETScBackend::compare(const Vector &left, const Vector &right, const ApproxEqual &comp) {
 		PETScVector diff;
 		apply(left, right, Minus(), diff);
 		return norm_infty(diff) <= comp.getTol();
 	}
-	
-	bool PETScBackend::compare(const Matrix &left, const Matrix &right, const ApproxEqual &comp) {
-		Matrix diff;
-		apply(left, right, Minus(), diff);
-		return norm2(diff) <= comp.getTol();
-	}
-	
+
 	bool PETScBackend::apply(const PetscScalar factor, const Vector &vec, const Multiplies &, Vector &result) {
 		result = vec;
 		VecScale(result.implementation(), factor);
 		return true;
 	}
-	
-	bool PETScBackend::apply(const PetscScalar factor, const Matrix &mat, const Multiplies &, Matrix &result) {
-		result = mat;
-		MatScale(result.implementation(), factor);
-		return true;
-	}
-	
+
 	PetscScalar PETScBackend::dot(const Vector &left, const Vector &right) const {
 		PetscScalar result;
 		VecDot(left.implementation(), right.implementation(), &result);
 		return result;
 	}
 	
-	
-	bool PETScBackend::mul(const PETScMatrix &left, const PETScMatrix &right, PETScMatrix &result) {
-		
-		
-		
-		Size lsize, rsize;
-		size(left, lsize);
-		size(right, rsize);
-		
-		// result.initGlobal(lsize.get(0), rsize.get(1));
-		MatSetSizes(result.implementation(), PETSC_DECIDE, PETSC_DECIDE, lsize.get(0), rsize.get(1));
-		
-		MatType type;
-		MatGetType(right.implementation(), &type);
-		
-		//            //FIXME: When petsc is fixed for MATMPIDENSE remove branch
-		//            if (std::string(MATMPIDENSE) == type) {
-		//                Mat sparseleft, sparseright, sparseresult;
-		//                MatConvert(left.implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &sparseleft);
-		//                MatConvert(right.implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &sparseright);
-		//                if (!PETScError::Check(
-		//                        MatMatMult(sparseleft, sparseright, MAT_INITIAL_MATRIX,
-		//                                   PETSC_DEFAULT, &sparseresult))) {
-		//                    return false;
-		//                }
-		//
-		//                MatConvert(sparseresult, MATMPIDENSE, MAT_INITIAL_MATRIX, &result.implementation());
-		//                return true;
-		//
-		//            }
-		
-		return PETScError::Check(
-								 MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX,
-											PETSC_DEFAULT, &result.implementation()));
-	}
-	
+
 	bool PETScBackend::outer(const Vector &left, const Vector &right, Matrix &result) {
 		MPI_Comm comm;
 		PetscObjectGetComm((PetscObject)right.implementation(),&comm);
@@ -1468,18 +1115,7 @@ namespace utopia {
 		VecRestoreArrayRead(left.implementation(), &left_array);
 		return true;
 	}
-	
-	void PETScBackend::assignTransposed(PETScMatrix &left, const PETScMatrix &right) {
-		if(&left != &right) {
-			MatDestroy(&left.implementation());
-		} else {
-			assert(false);
-		}
 
-
-		MatTranspose(right.implementation(), MAT_INITIAL_MATRIX, &left.implementation());
-	}
-	
 	void PETScBackend::assignToRange(PETScMatrix & /*left*/, const PETScMatrix &/*right*/, const Range &/*globalRowRange*/,
 									 const Range &/*globalColRange*/)
 	{
@@ -1542,28 +1178,6 @@ namespace utopia {
 		convert(M, left);
 		
 		return true;
-	}
-	
-	bool PETScBackend::triple_product_PtAP(const PETScMatrix & A, const PETScMatrix & P, PETScMatrix & result)
-	{
-		if(&result.implementation() != &A.implementation() && &result.implementation() != &P.implementation()) {
-			MatDestroy(&result.implementation());
-		} //else FIXME
-
-		MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, 1.0, &result.implementation()); 
-		return true; 
-	}
-	
-
-
-	bool PETScBackend::triple_product(const PETScMatrix & A, const PETScMatrix & B, const PETScMatrix & C, PETScMatrix & result)
-	{
-		if(&result.implementation() != &A.implementation() && &result.implementation() != &B.implementation() && &result.implementation() != &C.implementation()) {
-			MatDestroy(&result.implementation());
-		}
-		
-		MatMatMatMult(A.implementation(), B.implementation(), C.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()); 
-		return true; 
 	}
 
 
@@ -1650,16 +1264,8 @@ namespace utopia {
 		return true;
 	}
 
-	bool PETScBackend::diag_scale_right(const Matrix &m, const Vector &diag, Matrix &result)
-	{
-		assign(result, m);
-		return PETScError::Check( MatDiagonalScale(result.implementation(), nullptr, diag.implementation()) );
-	}
-
 	bool PETScBackend::diag_scale_left(const Vector &diag, const Matrix &m, Matrix &result)
 	{
-		assign(result, m);
-		return PETScError::Check( MatDiagonalScale(result.implementation(), diag.implementation(), nullptr) );
 	}
 
 	bool PETScBackend::diag_scale_left(const Vector &diag, const Vector &m,  Vector &result)
@@ -1677,65 +1283,6 @@ namespace utopia {
 		PetscScalar ret;
 		MatGetTrace(mat.implementation(), &ret);
 		return ret;
-	}
-
-	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Plus &, const int dim, Vector &result)
-	{
-		PETScVector rowSum; //FIXME initialize
-		Size gs, ls;
-		size(mat, gs);
-		local_size(mat, ls);
-		resize(ls, gs, result);
-
-		if(dim == 1) {
-			MatGetRowSum(mat.implementation(), result.implementation());
-		} else {
-			//FIXME implement own
-			assert(false && "not available in pestsc");
-			return false;
-		}
-
-		return true;
-	}
-
-	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Min &, const int dim, Vector &result)
-	{
-		// PetscScalar x;
-		PetscInt grows, gcols;
-		MatGetSize(mat.implementation(), &grows, &gcols);
-
-		if (dim == 1) {
-			result.init({PETSC_DECIDE}, {grows});
-			MatGetRowMin(mat.implementation(), result.implementation(), nullptr);
-		} else {
-			//FIXME implement own
-			// VecDestroy(&result.implementation());
-			// VecCreateMPI(mat.communicator(), PETSC_DECIDE, gcols, &result.implementation());
-			assert(false && "not available in petsc");
-			return false;
-		}
-
-		return true;
-	}
-
-	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Max &, const int dim, Vector &result)
-	{
-		// PetscScalar x;
-		PetscInt grows, gcols;
-		MatGetSize(mat.implementation(), &grows, &gcols);
-
-		if (dim == 1) {
-			result.init({PETSC_DECIDE}, {grows});
-			MatGetRowMax(mat.implementation(), result.implementation(), nullptr);
-		} else {
-			//FIXME implement own
-			// VecDestroy(&result.implementation());
-			// VecCreateMPI(mat.communicator(), PETSC_DECIDE, gcols, &result.implementation());
-			assert(false && "not available in petsc");
-			return false;
-		}
-
-		return true;
 	}
 
 	bool PETScBackend::inverse(const Matrix &mat, Matrix &result)

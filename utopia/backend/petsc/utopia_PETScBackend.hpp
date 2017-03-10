@@ -30,6 +30,12 @@ namespace utopia
 			left = std::forward<LorRValueMatrix>(right);
 		}
 		
+		template<class LorRValueMatrix>
+		void assign(PETScSparseMatrix &left, LorRValueMatrix &&right)
+		{
+			left = std::forward<LorRValueMatrix>(right);
+		}
+		
 		template<class LorRValueVector>
 		void assign(PETScVector &left, LorRValueVector &&right)
 		{
@@ -50,22 +56,122 @@ namespace utopia
 		bool wrap(Vec vec, PETScVector &wrapper);
 		
 		Range range(const PETScVector &v);
-		Range rowRange(const PETScMatrix &m);
-		Range colRange(const PETScMatrix &m);
 		
-		bool size(const PETScMatrix &m, Size &size) const;
+		template<int FillType>
+		Range rowRange(const PETScGenericMatrix<FillType> &m) {
+			PetscInt rbegin, rend;
+			MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
+			assert(Range(rbegin, rend).valid());
+			return Range(rbegin, rend);
+		}
+		
+		template<int FillType>
+		Range colRange(const PETScGenericMatrix<FillType> &m) {
+			PetscInt grows, gcols;
+			MatGetSize(m.implementation(), &grows, &gcols);
+			return Range(0, gcols);
+		}
+		
+		template<int FillType>
+		bool size(const PETScGenericMatrix<FillType> &m, Size &size) const {
+			PetscInt grows, gcols;
+			size.setDims(2);
+			MatGetSize(m.implementation(), &grows, &gcols);
+			size.set(0, grows);
+			size.set(1, gcols);
+			return true;
+		}
+		
+		template<int FillType>
+		bool local_size(const PETScGenericMatrix<FillType> &mat, Size &size) const {
+			PetscInt n, m;
+			size.setDims(2);
+			MatGetLocalSize(mat.implementation(), &n, &m);
+			size.set(0, n);
+			size.set(1, m);
+			return true;
+		}
+		
 		bool size(const PETScVector &m, Size &size) const;
 		bool local_size(const PETScVector &m, Size &size) const;
-		bool local_size(const PETScMatrix &m, Size &size) const;
+		
+		template<int FillType>
+		void resize(const Size &s, PETScGenericMatrix<FillType> &mat)
+		{
+			PetscInt r, c;
+			MatGetSize(mat.implementation(), &r, &c);
+			if(r == s.get(0) && c == s.get(1)) {
+				return;
+			}
 
-		void resize(const Size &size, PETScMatrix &mat);
-		void resize(const Size &local_s, const Size &global_s, PETScMatrix &mat);
+			MatType type;
+			PETScError::Check( MatGetType(mat.implementation(), &type) );
+			
+			mat.init();
+			MatSetSizes(mat.implementation(), PETSC_DECIDE, PETSC_DECIDE, s.get(0), s.get(1));
+			MatSetType(mat.implementation(), type);
+		}
+
+		template<int FillType>
+		void resize(const Size &local_s, const Size &global_s, PETScGenericMatrix<FillType> &mat)
+		{
+			PetscInt r, c, R, C;
+			MatGetLocalSize(mat.implementation(), &r, &c);
+			MatGetSize(mat.implementation(), &R, &C);
+			if(r == local_s.get(0) && c == local_s.get(1) && R == global_s.get(0) && C == global_s.get(1)) {
+				return;
+			}
+
+			MatType type;
+			PETScError::Check( MatGetType(mat.implementation(), &type) );
+			mat.init();
+			MatSetSizes(mat.implementation(), local_s.get(0), local_s.get(1), global_s.get(0), global_s.get(1));
+			MatSetType(mat.implementation(), type);
+		}
+
 		void resize(const Size &size, PETScVector &mat);
 		void resize(const Size &s_local, const Size &s_global, PETScVector &vec);
 		
-		void assignFromRange(PETScMatrix &left, const PETScMatrix &right, const Range &globalRowRange,
-							 const Range &globalColRange);
+		template<int FillTypeLeft, int FillTypeRight>
+		void assignFromRange(PETScGenericMatrix<FillTypeLeft> &left, const PETScGenericMatrix<FillTypeRight> &right,
+				const Range &globalRowRange, const Range &globalColRange)
+		{
+			assert(!globalRowRange.empty());
+
+			MPI_Comm comm = right.communicator();
+			left.setCommunicator(comm);
+			left.init({PETSC_DECIDE, PETSC_DECIDE}, {globalRowRange.extent(), globalColRange.extent()});
+
+
+			Range rr = rowRange(right).intersect(globalRowRange);
+			Range cr = colRange(right).intersect(globalColRange);
+
+			// rr might be invalid !!! so use < to compare with range
+			//            if(!rr.valid()) std::cout << rr << std::endl;
+
+
+			//use MAT_FLUSH_ASSEMBLY to not make petsc crash if nothing is added
+			MatAssemblyBegin(left.implementation(), MAT_FLUSH_ASSEMBLY);
+
+			PetscInt r = 0, c = 0;
+			for (PetscInt rIt = rr.begin(); rIt < rr.end(); ++rIt) {
+			 r = rIt - globalRowRange.begin();
+			 for (PetscInt cIt = cr.begin(); cIt < cr.end(); ++cIt) {
+				 c = cIt - globalColRange.begin();
+				 set(left, r, c, get(right, rIt, cIt));
+			 }
+			}
+
+			MatAssemblyEnd(left.implementation(), MAT_FLUSH_ASSEMBLY);
+
+			//To finalize the matrix
+			MatAssemblyBegin(left.implementation(), MAT_FINAL_ASSEMBLY);
+			MatAssemblyEnd(left.implementation(), MAT_FINAL_ASSEMBLY);
+
+		}
 		
+		void assignFromRange(PETScVector &left, const PETScVector &right, const Range &globalRowRange,
+							 const Range & /*globalColRange */);
 		// read matrix
 		bool read(const std::string &path, PETScMatrix &Mat_A);
 		// write matrix
@@ -79,20 +185,45 @@ namespace utopia
 		bool monitor(const long & it,  PETScVector &Vec_A); 
 
 
-		PetscScalar get_global_nnz(PETScMatrix &Mat_A); 
-		PetscScalar get_local_nnz(PETScMatrix &Mat_A); 
+		template<int FillType>
+		PetscScalar get_global_nnz(PETScGenericMatrix<FillType> &Mat_A) {
+			MatInfo info;
+			MatGetInfo(Mat_A.implementation(), MAT_GLOBAL_SUM, &info); 
+			return info.nz_used; 
+		}
+		
+		template<int FillType>
+		PetscScalar get_local_nnz(PETScGenericMatrix<FillType> &Mat_A) {
+			MatInfo        info;
+			MatGetInfo(Mat_A.implementation(), MAT_LOCAL, &info); 
+			return info.nz_used; 
+		}
 
 		// call to MatZeroRows
-		bool set_zero_rows(PETScMatrix &Mat_A, const std::vector<int> &index); 
-		bool apply_BC_to_system(PETScMatrix & A, PETScVector& x, PETScVector& rhs, const std::vector<int> &index); 
+		template<int FillType>
+		bool set_zero_rows(PETScGenericMatrix<FillType> &Mat_A, const std::vector<int> &index) {
+			return PETScError::Check(MatZeroRows(Mat_A.implementation(), index.size(), &index[0], 0, NULL, NULL));
+		}
+
+		template<int FillType>
+		bool apply_BC_to_system(PETScGenericMatrix<FillType> & A, PETScVector& x, PETScVector& rhs, const std::vector<int> &index) {
+			return PETScError::Check(MatZeroRows(A.implementation(), index.size(), &index[0], 1.0, x.implementation(), rhs.implementation())); 
+		}
 
 		// read vector
 		bool read(const std::string &path, PETScVector &Vec_A);
 		
-		void assignFromRange(PETScVector &left, const PETScVector &right, const Range &globalRowRange,
-							 const Range & /*globalColRange */);
-		
-		bool scal(const PetscScalar /*scaleFactor*/, const PETScMatrix & /*m*/, PETScMatrix &/*result*/);
+		template<int FillType>
+		bool scal(const PetscScalar scaleFactor, const PETScGenericMatrix<FillType> &left, PETScGenericMatrix<FillType> &right) {
+			if(&left == &right) {
+				MatScale(right.implementation(), scaleFactor);
+			} else {
+				assert(false); // FIXME
+				return false;
+			}
+
+			return true;
+		}
 		// bool apply(const PetscScalar scaleFactor, const PETScMatrix &m, const Multiplies &, PETScMatrix &result)
 		// {
 		// 	return scal(scaleFactor, m, result);
@@ -170,11 +301,17 @@ namespace utopia
 		/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
 		void build(PETScMatrix  &m, const Size &size, const NNZ<PetscInt> &/*nnz*/);
 		
-		void build(PETScMatrix &m, const Size &size, const Zeros &);
+		template<int FillType>
+		void build(PETScGenericMatrix<FillType> &m, const Size &size, const Zeros &) {
+			build(m, size, Values<PetscScalar>(0));
+		}
 		
+		template<int FillType>
+		void build(PETScGenericMatrix<FillType> &m, const Size &size, const LocalZeros &) {
+			build(m, size, LocalValues<PetscScalar>(0));
+		}
+
 		void build(PETScVector &v, const Size &size, const Zeros &);
-		
-		void build(PETScMatrix &m, const Size &size, const LocalZeros &);
 		void build(PETScVector &v, const Size &size, const LocalZeros &);
 		
 		void build(PETScMatrix &m, const Size &size, const Values<PetscScalar> &values);
@@ -213,44 +350,201 @@ namespace utopia
 		
 		void set(PETScMatrix &v, const std::vector<PetscInt> rows, const std::vector<PetscInt> cols, const std::vector<PetscScalar> values);
 		PetscScalar get(const PETScVector &v, const PetscInt index);
-		PetscScalar get(const PETScMatrix &v, const PetscInt row, const PetscInt col);
-		bool apply(const PETScMatrix &left, const PETScVector &right, const Multiplies &, PETScVector &result);
-		bool apply(const PETScMatrix &left, const PETScMatrix &right, const Multiplies &, PETScMatrix &result);
+		
+		template<int FillType>
+		PetscScalar get(const PETScGenericMatrix<FillType> &v, const PetscInt row, const PetscInt col) {
+			PetscScalar value;
+			MatGetValues(v.implementation(), 1, &row, 1, &col, &value);
+			return value;
+		}
+		
+		template<int FillType>
+		bool apply(const PETScGenericMatrix<FillType> &left, const PETScVector &right, const Multiplies &, PETScVector &result) {
+			PetscInt grows, gcols;
+			MatGetSize(left.implementation(), &grows, &gcols);
+			
+			PetscInt rows, cols;
+			MatGetLocalSize(left.implementation(), &rows, &cols);
+			
+			result.setCommunicator(left.communicator());
+			
+			result.init({rows}, {grows});
+			VecAssemblyBegin(result.implementation());
+			VecAssemblyEnd(result.implementation());
+			
+			MatMult(left.implementation(), right.implementation(), result.implementation());
+			
+			return true;
+		}
+		
+		template<int FillTypeLeft, int FillTypeRight, int FillTypeResult>
+		bool apply(const PETScGenericMatrix<FillTypeLeft> &left, const PETScGenericMatrix<FillTypeRight> &right, const Multiplies &,
+				PETScGenericMatrix<FillTypeResult> &result)
+		{
+			if(&right.implementation() != &result.implementation() || &left.implementation() !=  &result.implementation()) {
+				MatDestroy(&result.implementation());
+			} else {
+				assert(false);
+			}
+	 
+			MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
+			return true;
+		}
+		
+		template<int FillType>
+		bool mat_mult_add(const PETScGenericMatrix<FillType> &m, const PETScVector &right, const PETScVector &left, PETScVector &result) {
+			if (&right.implementation() == &result.implementation() || &left.implementation() ==  &result.implementation()) {
+				assert(false);
+			}
+
+			PetscInt size, gsize;
+			VecGetSize(right.implementation(), &gsize);
+			VecGetLocalSize(right.implementation(), &size);
+
+			result.setCommunicator(right.communicator());
+
+			result.init({size}, {gsize});
+			VecAssemblyBegin(result.implementation());
+			VecAssemblyEnd(result.implementation());
+
+			MatMultAdd(m.implementation(), right.implementation(), left.implementation(), result.implementation());
+			return true;
+		}
+		
+		template<int FillType>
+		bool mat_multT_add(const PETScGenericMatrix<FillType> &m, const PETScVector &right, const PETScVector &left, PETScVector &result) {
+			if (&right.implementation() == &result.implementation() || &left.implementation() ==  &result.implementation()) {
+				assert(false);
+			}
+
+			PetscInt size, gsize;
+			VecGetSize(right.implementation(), &gsize);
+			VecGetLocalSize(right.implementation(), &size);
+
+			result.setCommunicator(right.communicator());
+
+			result.init({size}, {gsize});
+			VecAssemblyBegin(result.implementation());
+			VecAssemblyEnd(result.implementation());
+
+			MatMultTransposeAdd(m.implementation(), right.implementation(), left.implementation(), result.implementation());
+			return true;
+		}
+		
 		bool apply(const PETScVector &left, const PETScVector &right, const EMultiplies &, PETScVector &result);
 		bool apply(const PETScVector &left, const PETScVector &right, const Divides &, PETScVector &result);
-		
-		bool mat_mult_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result);
-		bool mat_multT_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result);
 		
 		// reciprocal
 		bool apply(const PETScVector &vec, const Reciprocal<double> &reciprocal, PETScVector &result);
 		PetscScalar norm2(const PETScVector &v);
-		PetscScalar norm2(const Matrix &m);
+		
+		template<int FillType>
+		PetscScalar norm2(const PETScGenericMatrix<FillType> &m) {
+			PetscReal val;
+			MatNorm(m.implementation(), NORM_FROBENIUS, &val);
+			return val;
+		}
+		
 		PetscScalar norm1(const PETScVector &v);
 		PetscScalar norm_infty(const PETScVector &v);
 		PetscScalar reduce(const PETScVector &vec, const Plus &);
-		PetscScalar reduce(const PETScMatrix &mat, const Plus &op);
+
+		template<int FillType>
+		PetscScalar reduce(const PETScGenericMatrix<FillType> &mat, const Plus &op) {
+			PETScVector rowSum;
+			Size gs, ls;
+			size(mat, gs);
+			local_size(mat, ls);
+			resize(ls, gs, rowSum);
+
+			MatGetRowSum(mat.implementation(), rowSum.implementation());
+			return reduce(rowSum, op);
+		}
+
 		PetscScalar reduce(const PETScVector &, const Min &);
-		PetscScalar reduce(const PETScMatrix &, const Min &);
+		
+		template<int FillType>
+		PetscScalar reduce(const PETScGenericMatrix<FillType> &m, const Min &) {
+			PetscScalar x;
+			PETScVector v;
+			VecSetType(v.implementation(), VECMPI);
+			
+			PetscInt grows, gcols;
+			MatGetSize(m.implementation(), &grows, &gcols);
+			VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
+			
+			MatGetRowMin(m.implementation(), v.implementation(), nullptr);
+			VecMin(v.implementation(), nullptr, &x);
+			return x;
+		}
+		
 		PetscScalar reduce(const PETScVector &, const Max &);
-		PetscScalar reduce(const PETScMatrix &, const Max &);
+		
+		template<int FillType>
+		PetscScalar reduce(const PETScGenericMatrix<FillType> &m, const Max &) {
+			PetscScalar x;
+			PETScVector v;
+			VecSetType(v.implementation(), VECMPI);
+
+			PetscInt grows, gcols;
+			MatGetSize(m.implementation(), &grows, &gcols);
+			VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
+
+			MatGetRowMax(m.implementation(), v.implementation(), nullptr);
+			VecMax(v.implementation(), nullptr, &x);
+			return x;
+		}
 		
 		// get diagonal of matrix as vector
-		bool diag(PETScVector &vec, const PETScMatrix &mat);
+		template<int FillType>
+		bool diag(PETScVector &vec, const PETScGenericMatrix<FillType> &mat) {
+			using std::max;
+			PetscInt globalRows, globalColumns;
+			
+			PetscErrorCode err = MatGetSize(mat.implementation(), &globalRows, &globalColumns);
+			PetscInt localRows, localColumns;
+			err = MatGetLocalSize(mat.implementation(), &localRows, &localColumns);
+			
+			PetscInt lenGlobal = max(globalRows, globalColumns);
+			PetscInt lenLocal  = max(localRows, localColumns);
+			vec.init({lenLocal}, {lenGlobal});
+			err = MatGetDiagonal(mat.implementation(), vec.implementation());
+			return PETScError::Check(err);
+		}
 		
 		bool diag(PETScSparseMatrix &mat, const PETScVector &vec);
 		bool diag(PETScMatrix &mat, const PETScVector &vec);
-		bool diag(PETScMatrix &out, const PETScMatrix &in);
+		
+		template<int FillTypeLeft, int FillTypeRight>
+		bool diag(PETScGenericMatrix<FillTypeLeft> &out, const PETScGenericMatrix<FillTypeRight> &in) {
+			PETScVector vec;
+			if(!diag(vec, in)) {return false;}
+			return diag(out, vec);
+		}
 
-        bool mat_diag_shift(PETScMatrix &left, const PetscScalar diag_factor);
-        
+		template<int FillType>
+		bool mat_diag_shift(PETScGenericMatrix<FillType> &left, const PetscScalar diag_factor) {
+			return PETScError::Check(MatShift(left.implementation(), diag_factor));
+		}
+		
 		bool compare(const Vector &left, const Vector &right, const ApproxEqual &comp);
 		
-		bool compare(const Matrix &left, const Matrix &right, const ApproxEqual &comp);
+		template<int FillType>
+		bool compare(const PETScGenericMatrix<FillType> &left, const PETScGenericMatrix<FillType> &right, const ApproxEqual &comp) {
+			PETScGenericMatrix<FillType> diff;
+			apply(left, right, Minus(), diff);
+			return norm2(diff) <= comp.getTol();
+		}
 		
 		
 		bool apply(const PetscScalar factor, const Vector &vec, const Multiplies &, Vector &result);
-		bool apply(const PetscScalar factor, const Matrix &mat, const Multiplies &, Matrix &result);
+		
+		template<int FillType>
+		bool apply(const PetscScalar factor, const PETScGenericMatrix<FillType> &mat, const Multiplies &, PETScGenericMatrix<FillType> &result) {
+			result = mat;
+			MatScale(result.implementation(), factor);
+			return true;
+		}
 
 		bool apply(const Vector &vec, const Abs &, Vector &result);
 		// bool apply(const Matrix &mat, const Abs &, Matrix &result);
@@ -258,11 +552,34 @@ namespace utopia
 		PetscScalar dot(const Vector &left, const Vector &right) const;
 		
 		
-		bool mul(const PETScMatrix &left, const PETScMatrix &right, PETScMatrix &result);
+		template<int FillTypeLeft, int FillTypeRight, int FillTypeResult>
+		bool mul(const PETScGenericMatrix<FillTypeLeft> &left, const PETScGenericMatrix<FillTypeRight> &right, PETScGenericMatrix<FillTypeResult> &result) {
+			Size lsize, rsize;
+			size(left, lsize);
+			size(right, rsize);
+			
+			MatSetSizes(result.implementation(), PETSC_DECIDE, PETSC_DECIDE, lsize.get(0), rsize.get(1));
+			
+			MatType type;
+			MatGetType(right.implementation(), &type);
+			
+			return PETScError::Check(
+				MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX,
+					PETSC_DEFAULT, &result.implementation()));
+		}
 		
 		bool outer(const Vector &left, const Vector &right, Matrix &result);
 		
-		void assignTransposed(PETScMatrix &left, const PETScMatrix &right);
+		template<int FillType>
+		void assignTransposed(PETScGenericMatrix<FillType> &left, const PETScGenericMatrix<FillType> &right) {
+			if(&left != &right) {
+				MatDestroy(&left.implementation());
+			} else {
+				assert(false);
+			}
+
+			MatTranspose(right.implementation(), MAT_INITIAL_MATRIX, &left.implementation());
+		}
 		
 		void assignToRange(PETScMatrix & /*left*/, const PETScMatrix &/*right*/, const Range &/*globalRowRange*/,
 						   const Range &/*globalColRange*/);
@@ -281,8 +598,25 @@ namespace utopia
 		bool build_local_diag_block(PETScSerialSparseMatrix &left, const PETScSparseMatrix &right);
 		bool build_local_redistribute(const PETScVector &, const PETScVector &, PETScVector &); 
 
-		bool triple_product_PtAP(const PETScMatrix &, const PETScMatrix &, PETScMatrix &); 
-		bool triple_product(const PETScMatrix &, const PETScMatrix &, const PETScMatrix &, PETScMatrix &); 
+		template<int FillType>
+		bool triple_product_PtAP(const PETScGenericMatrix<FillType> &A, const PETScGenericMatrix<FillType> &P, PETScGenericMatrix<FillType> &result) {
+			if(&result.implementation() != &A.implementation() && &result.implementation() != &P.implementation()) {
+				MatDestroy(&result.implementation());
+			} //else FIXME
+
+			MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, 1.0, &result.implementation()); 
+			return true; 
+		}
+		
+		template<int FillType>
+		bool triple_product(const PETScGenericMatrix<FillType> & A, const PETScGenericMatrix<FillType> & B, const PETScGenericMatrix<FillType> & C, PETScGenericMatrix<FillType> & result) {
+			if(&result.implementation() != &A.implementation() && &result.implementation() != &B.implementation() && &result.implementation() != &C.implementation()) {
+				MatDestroy(&result.implementation());
+			}
+			
+			MatMatMatMult(A.implementation(), B.implementation(), C.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()); 
+			return true; 
+		}
 
 		bool is_nan_or_inf(const PETScVector &); 
 
@@ -303,8 +637,18 @@ namespace utopia
 			return zaxpy(-1.0, std::forward<RightTensor>(right), std::forward<LeftTensor>(left), result);
 		}
 
-		bool diag_scale_right(const Matrix &m, const Vector &diag, Matrix &result);
-		bool diag_scale_left(const Vector &diag, const Matrix &m,  Matrix &result);
+		template<int FillType>
+		bool diag_scale_right(const PETScGenericMatrix<FillType> &m, const Vector &diag, PETScGenericMatrix<FillType> &result) {
+			assign(result, m);
+			return PETScError::Check( MatDiagonalScale(result.implementation(), nullptr, diag.implementation()) );
+		}
+		
+		template<int FillType>
+		bool diag_scale_left(const Vector &diag, const PETScGenericMatrix<FillType> &m, PETScGenericMatrix<FillType> &result) {
+			assign(result, m);
+			return PETScError::Check( MatDiagonalScale(result.implementation(), diag.implementation(), nullptr) );
+		}
+
 		bool diag_scale_left(const Vector &diag, const Vector &m, Vector &result);
 
 		template<class Operation>
@@ -359,9 +703,63 @@ namespace utopia
 
 		PetscScalar trace(const Matrix &mat);
 
-		bool apply_tensor_reduce(const Matrix &mat, const Plus &, const int dim, Vector &result);
-		bool apply_tensor_reduce(const Matrix &mat, const Min &, const int dim, Vector &result);
-		bool apply_tensor_reduce(const Matrix &mat, const Max &, const int dim, Vector &result);
+		template<int FillType>
+		bool apply_tensor_reduce(const PETScGenericMatrix<FillType> &mat, const Plus &, const int dim, Vector &result) {
+			PETScVector rowSum; //FIXME initialize
+			Size gs, ls;
+			size(mat, gs);
+			local_size(mat, ls);
+			resize(ls, gs, result);
+
+			if(dim == 1) {
+				MatGetRowSum(mat.implementation(), result.implementation());
+			} else {
+				//FIXME implement own
+				assert(false && "not available in pestsc");
+				return false;
+			}
+
+			return true;
+		}
+
+		template<int FillType>
+		bool apply_tensor_reduce(const PETScGenericMatrix<FillType> &mat, const Min &, const int dim, Vector &result) {
+			PetscInt grows, gcols;
+			MatGetSize(mat.implementation(), &grows, &gcols);
+
+			if (dim == 1) {
+				result.init({PETSC_DECIDE}, {grows});
+				MatGetRowMin(mat.implementation(), result.implementation(), nullptr);
+			} else {
+				//FIXME implement own
+				// VecDestroy(&result.implementation());
+				// VecCreateMPI(mat.communicator(), PETSC_DECIDE, gcols, &result.implementation());
+				assert(false && "not available in petsc");
+				return false;
+			}
+
+			return true;
+		}
+
+		template<int FillType>
+		bool apply_tensor_reduce(const PETScGenericMatrix<FillType> &mat, const Max &, const int dim, Vector &result) {
+			PetscInt grows, gcols;
+			MatGetSize(mat.implementation(), &grows, &gcols);
+
+			if (dim == 1) {
+				result.init({PETSC_DECIDE}, {grows});
+				MatGetRowMax(mat.implementation(), result.implementation(), nullptr);
+			} else {
+				//FIXME implement own
+				// VecDestroy(&result.implementation());
+				// VecCreateMPI(mat.communicator(), PETSC_DECIDE, gcols, &result.implementation());
+				assert(false && "not available in petsc");
+				return false;
+			}
+
+			return true;
+		}
+		
 		bool inverse(const Matrix &mat, Matrix &result);
 
 		// bool gemm(const PetscScalar alpha, const Matrix &left, const Matrix &right, 

@@ -37,6 +37,9 @@ namespace utopia {
 	template <typename T, int FillType>
 	class Memory {
 	public:
+		template<typename T2, int FillType2>
+		friend class Memory;
+		
 		Memory(MPI_Comm comm = PETSC_COMM_WORLD) : mem_(nullptr), comm_(comm), init_(false), is_owner_(true) { }
 
 		Memory(MPI_Comm comm, const Size& local, const Size& global) : comm_(comm), init_(true), is_owner_(true) {
@@ -57,6 +60,18 @@ namespace utopia {
 		}
 
 		Memory& operator=(const Memory& m) {
+			if (!is_used_ && is_owner_ && mem_)
+				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
+			mem_ = Allocator<T, FillType>::clone(m.mem_);
+			comm_ = m.comm_;
+			init_ = m.init_;
+			is_owner_ = true;
+			is_used_ = false;
+			return *this;
+		}
+
+		template<int FillTypeOther>
+		Memory& operator=(const Memory<T, FillTypeOther>& m) {
 			if (!is_used_ && is_owner_ && mem_)
 				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
