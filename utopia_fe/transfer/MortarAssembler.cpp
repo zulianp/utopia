@@ -577,7 +577,7 @@ namespace utopia {
 
 		//FIXME This is a hack
 		if(has_constrained_dofs(space, el_1) || 
-			has_constrained_dofs(space, el_2)) {
+		   has_constrained_dofs(space, el_2)) {
 			continue;
 	}
 
@@ -734,11 +734,29 @@ namespace utopia {
 				current_contact->gap.zero();
 				current_contact->normals.zero();
 
-				// bool use_biorth_ = true; //does not work
-				bool use_biorth_ = false;
-
+				bool use_biorth_ = true; //ugly but works
+				// bool use_biorth_ = false;
+				DenseVector<Real> indicator(slave_fe->n_shape_functions());
 				if(use_biorth_) {
-					mortar_assemble_biorth(*master_fe, *slave_fe, side_ptr_2->type(), current_contact->coupling);
+					indicator.zero();
+
+					for(int j = 0; j < el_2.n_nodes(); ++j) {
+						for(int i = 0; i < side_ptr_2->n_nodes(); ++i) {
+							if(side_ptr_2->node_id(i) == el_2.node_id(j)) {
+								for(int d = 0; d < dim; ++d) {
+									indicator(dim * j + d) = 1;
+								}
+
+								break;
+							}
+						}
+					}
+
+					// indicator.print(std::cout);
+
+					mortar_assemble_biorth(dim, *master_fe, *slave_fe, side_ptr_2->type(), indicator, current_contact->coupling);
+
+					// current_contact->coupling.print();
 				} else {
 					mortar_assemble(*master_fe, *slave_fe, current_contact->coupling);
 				}
@@ -770,6 +788,7 @@ namespace utopia {
 						n2,
 						n1,
 						plane_offset,
+						indicator,
 						current_contact->normals, 
 						current_contact->gap);
 

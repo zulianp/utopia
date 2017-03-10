@@ -526,9 +526,9 @@ namespace utopia {
 
    		static const bool is_leaflet = false;
 		 // ContactSimParams params = contact_cuboids;
-    	ContactSimParams params = multi_contact_quads;
-		// ContactSimParams params = triple_contact_circle;
-		// ContactSimParams params = contact_3D_tets;
+    	// ContactSimParams params = contact8;
+		ContactSimParams params = triple_contact_circle;
+		// ContactSimParams params = multi_contact_3D_2;
 
 
 		auto mesh = make_shared<Mesh>(init.comm());		
@@ -675,7 +675,8 @@ namespace utopia {
 		DVectord  sol_c = zeros(size(rhs));
 		DVectord  rhs_c = transpose(orhtogonal_trafos) * transpose(coupling) * rhs;
 		DSMatrixd K_c   = transpose(orhtogonal_trafos) * DSMatrixd(transpose(coupling) * K * coupling) * orhtogonal_trafos;
-		DVectord  gap_c = transpose(coupling) * gap;
+		// DVectord  gap_c = transpose(coupling) * gap;
+		DVectord  gap_c = gap;
 		apply_boundary_conditions(u, K_c, rhs_c);
 
 		SemismoothNewton<DSMatrixd, DVectord> newton(std::make_shared<Factorization<DSMatrixd, DVectord> >());

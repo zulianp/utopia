@@ -498,6 +498,39 @@ template<class FE>
 		}
 	}
 
+
+	libMesh::Real len(const libMesh::Real val)
+	{
+		return std::abs(val);
+	}
+
+	template<class Vec>
+	libMesh::Real len(const Vec &val)
+	{
+		return val.size();
+	}
+
+	static inline bool is_vec(const libMesh::Real val)
+	{
+		return false;
+	}
+
+	template<class Vec>
+	bool is_vec(const Vec &val)
+	{
+		return true;
+	}
+
+	void make_tp(const int i,  libMesh::Real &val) {}
+
+	template<class Vec>
+	void make_tp(const int i, Vec &val) {
+		 libMesh::Real s =  val(i);
+		 val.zero();
+		 val(i) = s;
+	}
+
+
 	template<class FE>
 	void mortar_assemble_biorth_aux(
 		const FE &trial_fe, 
@@ -572,6 +605,87 @@ template<class FE>
 		libMesh::Real w_ii, w_ij;
 		biorthgonal_weights(type, w_ii, w_ij);
 		mortar_assemble_biorth_aux(trial_fe, test_fe, w_ii, w_ij, elmat);
+	}
+
+
+	template<class FE>
+	void mortar_assemble_biorth_aux(
+		const int dim,
+		const FE &trial_fe, 
+		const FE &test_fe,
+		const libMesh::Real &wii,
+		const libMesh::Real &wij,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &elmat)
+	{
+		if(elmat.m() != test_fe.get_phi().size() ||  elmat.n() != trial_fe.get_phi().size()) {
+			elmat.resize(test_fe.get_phi().size(), trial_fe.get_phi().size());
+			elmat.zero();
+		}
+
+		const auto &trial = trial_fe.get_phi();
+		const auto &test  = test_fe.get_phi();
+		const auto &JxW   = test_fe.get_JxW();
+
+		const uint n_test  = test.size();
+		const uint n_trial = trial.size();
+		const uint n_qp    = test[0].size();
+
+		bool v = is_vec(test[0][0]);
+
+		for(uint qp = 0; qp < n_qp; ++qp) {
+			for(uint i = 0; i < n_test; ++i) {
+
+				auto biorth_test = ((0 == i) ? wii : wij) * test[0][qp];
+
+				for(uint k = 1; k < n_test; ++k) {
+					biorth_test += ((k == i) ? wii : wij) * test[k][qp];
+				}
+
+				for(int k = 0; k < dim; ++k) {
+					if(i % dim == k) {
+						make_tp(k, biorth_test);
+						break;
+					}
+				}
+
+				// if(indicator(i) > 0)
+				// 	std::cout <<  biorth_test << std::endl;
+ 
+				for(uint j = 0; j < n_trial; ++j) {
+					elmat(i, j) +=  indicator(i) * contract(biorth_test, trial[j][qp]) * JxW[qp];
+				}
+			}
+		}
+	}
+
+
+	void mortar_assemble_biorth(
+							const int dim,
+							const libMesh::FEBase &trial_fe, 
+							const libMesh::FEBase &test_fe,
+							const int type,
+							const libMesh::DenseVector<libMesh::Real> &indicator,
+							libMesh::DenseMatrix<libMesh::Real> &elmat)
+	{
+							
+							
+		libMesh::Real w_ii, w_ij;
+		biorthgonal_weights(type, w_ii, w_ij);
+		mortar_assemble_biorth_aux(dim, trial_fe, test_fe, w_ii, w_ij, indicator, elmat);
+	}
+
+	void mortar_assemble_biorth(
+							const int dim,
+							const libMesh::FEVectorBase &trial_fe, 
+						 	const libMesh::FEVectorBase &test_fe, 
+						 	const int type,
+						 	const libMesh::DenseVector<libMesh::Real> &indicator,
+						 	libMesh::DenseMatrix<libMesh::Real> &elmat)
+	{
+		libMesh::Real w_ii, w_ij;
+		biorthgonal_weights(type, w_ii, w_ij);
+		mortar_assemble_biorth_aux(dim, trial_fe, test_fe, w_ii, w_ij, indicator, elmat);
 	}
 
 
@@ -735,6 +849,7 @@ template<class FE>
 			const libMesh::Point &surf_normal,
 			const libMesh::Point &plane_normal,
 			const libMesh::Real &plane_offset,
+			const libMesh::DenseVector<libMesh::Real> &indicator,
 			libMesh::DenseMatrix<libMesh::Real> &normals, 
 			libMesh::DenseVector<libMesh::Real> &gap)
 	{
@@ -746,7 +861,7 @@ template<class FE>
 			plane_normal_v(i) = plane_normal(i);
 		}
 
-		mortar_normal_and_gap_assemble_biorth(type, test_fe, surf_normal_v, plane_normal_v, plane_offset, normals, gap);
+		mortar_normal_and_gap_assemble_biorth(type, test_fe, surf_normal_v, plane_normal_v, plane_offset, indicator, normals, gap);
 	}
 
 
@@ -756,6 +871,7 @@ template<class FE>
 			const libMesh::DenseVector<libMesh::Real> &surf_normal,
 			const libMesh::DenseVector<libMesh::Real> &plane_normal,
 			const libMesh::Real &plane_offset,
+			const libMesh::DenseVector<libMesh::Real> &indicator,
 			libMesh::DenseMatrix<libMesh::Real> &normals, 
 			libMesh::DenseVector<libMesh::Real> &gap)
 		{
@@ -808,11 +924,18 @@ template<class FE>
 						biorth_test += ((k == i) ? w_ii : w_ij) * test[k][qp];
 					}
 
+					for(int k = 0; k < dim; ++k) {
+						if(i % dim == k) {
+							make_tp(k, biorth_test);
+							break;
+						}
+					}
 
-					gap(i) += biorth_test * isect * JxW[qp];
+
+					gap(i) += indicator(i) * biorth_test * isect * JxW[qp];
 
 					for(uint d = 0; d < dim; ++d) {
-						normals(i, d) += biorth_test * surf_normal(d) * JxW[qp];
+						normals(i, d) += indicator(i) * biorth_test * surf_normal(d) * JxW[qp];
 					}
 				}
 			}
@@ -826,6 +949,7 @@ template<class FE>
 		const libMesh::DenseVector<libMesh::Real> &surf_normal,
 		const libMesh::DenseVector<libMesh::Real> &plane_normal,
 		const libMesh::Real &plane_offset,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
 		libMesh::DenseMatrix<libMesh::Real> &normals, 
 		libMesh::DenseVector<libMesh::Real> &gap)
 	{
@@ -880,10 +1004,17 @@ template<class FE>
 					biorth_test += ((k == i) ? w_ii : w_ij) * test[k][qp];
 				}
 
-				gap(i) += biorth_test(0) * isect * JxW[qp];
+				for(int k = 0; k < dim; ++k) {
+					if(i % dim == k) {
+						make_tp(k, biorth_test);
+						break;
+					}
+				}
+
+				gap(i) +=  indicator(i) * biorth_test(0) * isect * JxW[qp];
 
 				for(uint d = 0; d < dim; ++d) {
-					normals.get_values()[i] += biorth_test(d) * surf_normal(d) * JxW[qp];
+					normals.get_values()[i] +=  indicator(i) * biorth_test(d) * surf_normal(d) * JxW[qp];
 				}
 			}
 		}
@@ -896,6 +1027,7 @@ template<class FE>
 										const libMesh::Point &surf_normal,
 						 				const libMesh::Point &plane_normal,
 						 				const libMesh::Real &plane_offset,
+						 				const libMesh::DenseVector<libMesh::Real> &indicator,
 						 				libMesh::DenseMatrix<libMesh::Real> &normals, 
 						 				libMesh::DenseVector<libMesh::Real> &gap)
 	{
@@ -907,7 +1039,7 @@ template<class FE>
 			plane_normal_v(i) = plane_normal(i);
 		}
 
-		mortar_normal_and_gap_assemble_biorth(type, test_fe, surf_normal_v, plane_normal_v, plane_offset, normals, gap);
+		mortar_normal_and_gap_assemble_biorth(type, test_fe, surf_normal_v, plane_normal_v, plane_offset, indicator, normals, gap);
 	}
 
 	bool intersect_2D(const libMesh::DenseMatrix<libMesh::Real> &poly1, const libMesh::DenseMatrix<libMesh::Real> &poly2, libMesh::DenseMatrix<libMesh::Real> &intersection)
