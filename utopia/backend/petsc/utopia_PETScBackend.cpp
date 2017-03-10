@@ -175,9 +175,8 @@ namespace utopia {
 		MatGetSize(mat, &r, &c);
 		MatGetLocalSize(mat, &local_r, &local_c);
 		
-		MatDestroy(&wrapper.implementation());
-		MatCreateDense(comm, local_r, local_c, r, c, NULL,
-					   &wrapper.implementation());
+		wrapper.setCommunicator(comm);
+		wrapper.init({local_r, local_c}, {r, c});
 		MatCopy(mat, wrapper.implementation(), SAME_NONZERO_PATTERN);
 		return true;
 	}
@@ -186,8 +185,9 @@ namespace utopia {
 	{
 		//            MatCreateAIJ(m.communicator(), PETSC_DECIDE, PETSC_DECIDE, rows, cols, 1, PETSC_NULL,
 		//                         1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
-		MatDestroy(&wrapper.implementation());
-		MatDuplicate(mat, MAT_COPY_VALUES, &wrapper.implementation());
+		MPI_Comm comm = PetscObjectComm((PetscObject) mat);
+		PETScSparseMatrix m(comm, mat, false);
+		wrapper = m; // casues copy from mat
 		return true;
 	}
 	
@@ -288,14 +288,9 @@ namespace utopia {
 									   const Range &globalColRange) {
 		assert(!globalRowRange.empty());
 		
-		Mat &li = left.implementation();
-		//            const Mat &ri = left.implementation();
-
 		MPI_Comm comm = right.communicator();
-		MatDestroy(&left.implementation());
-		
-		MatCreateDense(comm, PETSC_DECIDE, PETSC_DECIDE, globalRowRange.extent(),
-					   globalColRange.extent(), PETSC_NULL, &li);
+		left.setCommunicator(comm);
+		left.init({PETSC_DECIDE, PETSC_DECIDE}, {globalRowRange.extent(), globalColRange.extent()});
 		
 		
 		Range rr = rowRange(right).intersect(globalRowRange);
@@ -306,7 +301,7 @@ namespace utopia {
 		
 		
 		//use MAT_FLUSH_ASSEMBLY to not make petsc crash if nothing is added
-		MatAssemblyBegin(li, MAT_FLUSH_ASSEMBLY);
+		MatAssemblyBegin(left.implementation(), MAT_FLUSH_ASSEMBLY);
 		
 		PetscInt r = 0, c = 0;
 		for (PetscInt rIt = rr.begin(); rIt < rr.end(); ++rIt) {
@@ -317,11 +312,11 @@ namespace utopia {
 			}
 		}
 		
-		MatAssemblyEnd(li, MAT_FLUSH_ASSEMBLY);
+		MatAssemblyEnd(left.implementation(), MAT_FLUSH_ASSEMBLY);
 		
 		//To finalize the matrix
-		MatAssemblyBegin(li, MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(li, MAT_FINAL_ASSEMBLY);
+		MatAssemblyBegin(left.implementation(), MAT_FINAL_ASSEMBLY);
+		MatAssemblyEnd(left.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
 	
@@ -610,11 +605,10 @@ namespace utopia {
 	
 	void PETScBackend::build(PETScMatrix &m, const Size &size, const Identity &) {
 		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
 
 		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
-		MatCreateDense(comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
-					   &m.implementation());
+		m.setCommunicator(comm);
+		m.init({PETSC_DECIDE, PETSC_DECIDE}, size);
 		
 		PetscInt rbegin, rend;
 		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
@@ -669,11 +663,10 @@ namespace utopia {
 	
 	void PETScBackend::build(PETScMatrix &m, const Size &size, const LocalIdentity &) {
 		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
 
 		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
-		MatCreateDense(comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, NULL,
-					   &m.implementation());
+		m.setCommunicator(comm);
+		m.init(size, {PETSC_DETERMINE, PETSC_DETERMINE});
 		
 		
 		PetscInt rbegin, rend;
@@ -831,10 +824,8 @@ namespace utopia {
 	
 	void PETScBackend::build(PETScMatrix &m, const Size &size, const Values<PetscScalar> &values) {
 		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-
-		MatCreateDense(comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
-					   &m.implementation());
+		m.setCommunicator(comm);
+		m.init({PETSC_DECIDE, PETSC_DECIDE}, size);
 		
 		
 		PetscInt rbegin, rend;
@@ -882,10 +873,8 @@ namespace utopia {
 	
 	void PETScBackend::build(PETScMatrix &m, const Size &size, const LocalValues<PetscScalar> &values) {
 		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-
-		MatCreateDense(comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, NULL,
-					   &m.implementation());
+		m.setCommunicator(comm);
+		m.init(size, {PETSC_DETERMINE, PETSC_DETERMINE});
 		
 		//TODO check if it can be simplified using known information.
 		
@@ -1480,9 +1469,8 @@ namespace utopia {
 		
 		err = VecRestoreArrayRead(right.implementation(), &right_array);
 		
-		MatDestroy(&result.implementation());
-		MatCreateDense(comm, l_range.extent(), PETSC_DECIDE, result_size.get(0), result_size.get(1), NULL,
-					   &result.implementation());
+		result.setCommunicator(comm);
+		result.init({l_range.extent(), PETSC_DECIDE}, result_size);
 		
 		MatAssemblyBegin(result.implementation(), MAT_FINAL_ASSEMBLY);
 		for(SizeType i = l_range.begin(); i != l_range.end(); ++i) {

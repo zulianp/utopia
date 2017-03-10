@@ -43,6 +43,10 @@ namespace utopia {
 			mem_ = Allocator<T, FillType>::claim(comm, local, global);
 		}
 
+		Memory(MPI_Comm comm, T& t, bool own) : comm_(comm), init_(true), is_owner_(own) {
+			mem_ = MemoryPtr<T>(&t, own ? Allocator<T, FillType>::destructor : [](T*){});
+		}
+
 		Memory(const Memory& m) : comm_(m.comm_), init_(m.init_), is_owner_(true) {
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 		}
@@ -72,12 +76,12 @@ namespace utopia {
 			is_used_ = false;
 		}
 
-		void init(T& t) {
+		void init(T& t, bool own) {
 			if (!is_used_ && is_owner_ && mem_)
 				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
-			mem_ = MemoryPtr<T>(&t, [](T*){});
+			mem_ = MemoryPtr<T>(&t, own ? Allocator<T, FillType>::destructor : [](T*){});
 			init_ = true;
-			is_owner_ = false;
+			is_owner_ = own;
 			is_used_ = false;
 		}
 
@@ -87,7 +91,7 @@ namespace utopia {
 		}
 
 		void wrap(T& t) {
-			init(t);
+			init(t, false);
 		}
 
 		void resize(const Size& local, const Size& global) {

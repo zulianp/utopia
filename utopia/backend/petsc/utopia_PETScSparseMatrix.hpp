@@ -6,11 +6,13 @@
 
 namespace utopia{
 
-	class PETScSparseMatrix : public PETScMatrix {
-	public:
-		virtual ~PETScSparseMatrix() {}
+class PETScSparseMatrix : public PETScMatrix {
+	using PETScMatrix::PETScMatrix;
 
-	};
+public:
+	virtual ~PETScSparseMatrix() {}
+
+};
 
 }
 

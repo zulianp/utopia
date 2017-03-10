@@ -26,8 +26,8 @@ namespace utopia {
 		static MemoryPtr<Mat> claim(MPI_Comm comm, const Size& local, const Size& global) {
 			//TODO ask pool for m
 			Mat* m = new Mat;
-			if (global.n_dims() == 2 && local.n_dims() == 2) {
-				assert(false); //TODO PETScMatrix construction with sizes doesn't appear in the code
+			if (global.n_dims() >= 2 && local.n_dims() >= 2) {
+				MatCreateDense(comm, local.get(0), local.get(1), global.get(0), global.get(1), NULL, m);
 			} else {
 				MatCreate(comm, m);
 			}
