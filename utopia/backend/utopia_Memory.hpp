@@ -21,7 +21,7 @@ namespace utopia {
 		static void destructor(T*) {
 			assert(false && "No Allocator known for this type");
 		}
-		
+
 		static MemoryPtr<T> claim(MPI_Comm comm, Size local, Size global) {
 			assert(false && "No Allocator known for this type");
 			return nullptr;

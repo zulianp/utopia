@@ -4,8 +4,7 @@
 
 
 #include "utopia_PETScError.hpp"
-#include "utopia_PETScVector.hpp"
-#include "utopia_Base.hpp"
+#include "utopia_Memory.hpp"
 
 #include "petscsys.h"
 #include "petscmat.h"
@@ -15,14 +14,14 @@
 namespace utopia {
 
 	template<>
-	class Allocator<Mat, 0> {
+	class Allocator<Mat, FillType::DENSE> {
 	public:
 		static void destructor(Mat* m) {
 			//TODO return m to pool
 			MatDestroy(m);
 			delete m;
 		};
-		
+
 		static MemoryPtr<Mat> claim(MPI_Comm comm, const Size& local, const Size& global) {
 			//TODO ask pool for m
 			Mat* m = new Mat;
@@ -43,7 +42,11 @@ namespace utopia {
 		}
 	};
 
-	typedef Memory<Mat, 0> PETScMatrix;
+
+	template<int FillType = FillType::DENSE>
+	using PETScGenericMatrix = Memory<Mat, FillType>;
+
+	using PETScMatrix = PETScGenericMatrix<>;
 
 }
 

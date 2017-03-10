@@ -159,10 +159,11 @@ namespace utopia
 		
 		void build(PETScSparseMatrix &m, const Size &size, const LocalIdentity &);
 		
-		void build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz);
-		
-		void build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz);
-		void build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz);
+		// TODO - find a way to pass NNZ to PETScSparseMatrix (or its Allocator)
+		// void build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz);
+		// 
+		// void build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz);
+		// void build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz);
 		/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
 		void build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */);
 		

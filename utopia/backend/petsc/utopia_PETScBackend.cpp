@@ -604,10 +604,7 @@ namespace utopia {
 	}
 	
 	void PETScBackend::build(PETScMatrix &m, const Size &size, const Identity &) {
-		MPI_Comm comm = m.communicator();
-
 		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
-		m.setCommunicator(comm);
 		m.init({PETSC_DECIDE, PETSC_DECIDE}, size);
 		
 		PetscInt rbegin, rend;
@@ -635,11 +632,7 @@ namespace utopia {
 		PetscInt cols = size.get(1);
 		//PetscInt n = std::min(rows, cols);
 
-		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-		
-		MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols, 1, PETSC_NULL,
-					 1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
+		m.init({PETSC_DECIDE, PETSC_DECIDE}, {rows, cols});
 		
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 		
@@ -662,12 +655,8 @@ namespace utopia {
 	}
 	
 	void PETScBackend::build(PETScMatrix &m, const Size &size, const LocalIdentity &) {
-		MPI_Comm comm = m.communicator();
-
 		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
-		m.setCommunicator(comm);
 		m.init(size, {PETSC_DETERMINE, PETSC_DETERMINE});
-		
 		
 		PetscInt rbegin, rend;
 		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
@@ -701,11 +690,7 @@ namespace utopia {
 		PetscInt cols = size.get(1);
 		//PetscInt n = std::min(rows, cols);
 
-		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-		
-		MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL,
-					 1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
+		m.init({rows, cols}, {PETSC_DETERMINE, PETSC_DETERMINE});
 		
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 		
@@ -737,58 +722,59 @@ namespace utopia {
 		
 	}
 	
-	void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz) {
-		
-		PetscInt rows = size.get(0);
-		PetscInt cols = size.get(1);
-
-		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-		
-		MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
-					 &m.implementation());
-		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-		
-		
-	}
-	
-	void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz) {
-		
-		//Sparse id
-		PetscInt rows = size.get(0);
-		PetscInt cols = size.get(1);
-
-		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-		
-		MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
-					 &m.implementation());
-		
-		
-		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-		
-	}
-	
-	void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz)
-	{
-		PetscInt rows = size.get(0);
-		PetscInt cols = size.get(1);
-
-		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-		
-		MatCreateAIJ(comm, rows, PETSC_DECIDE, PETSC_DETERMINE, cols,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
-					 &m.implementation());
-		
-		
-		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-	}
+	// TODO - find a way to pass NNZ to PETScSparseMatrix
+	// void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz) {
+	// 	
+	// 	PetscInt rows = size.get(0);
+	// 	PetscInt cols = size.get(1);
+	// 
+	// 	MPI_Comm comm = m.communicator();
+	// 	MatDestroy(&m.implementation());
+	// 	
+	// 	MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols,
+	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
+	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
+	// 				 &m.implementation());
+	// 	MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+	// 	
+	// 	
+	// }
+	// 
+	// void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz) {
+	// 	
+	// 	//Sparse id
+	// 	PetscInt rows = size.get(0);
+	// 	PetscInt cols = size.get(1);
+	// 
+	// 	MPI_Comm comm = m.communicator();
+	// 	MatDestroy(&m.implementation());
+	// 	
+	// 	MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE,
+	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
+	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
+	// 				 &m.implementation());
+	// 	
+	// 	
+	// 	MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+	// 	
+	// }
+	// 
+	// void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz)
+	// {
+	// 	PetscInt rows = size.get(0);
+	// 	PetscInt cols = size.get(1);
+	// 
+	// 	MPI_Comm comm = m.communicator();
+	// 	MatDestroy(&m.implementation());
+	// 	
+	// 	MatCreateAIJ(comm, rows, PETSC_DECIDE, PETSC_DETERMINE, cols,
+	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
+	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
+	// 				 &m.implementation());
+	// 	
+	// 	
+	// 	MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+	// }
 	
 	/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
 	void PETScBackend::build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */)
@@ -823,10 +809,7 @@ namespace utopia {
 	}
 	
 	void PETScBackend::build(PETScMatrix &m, const Size &size, const Values<PetscScalar> &values) {
-		MPI_Comm comm = m.communicator();
-		m.setCommunicator(comm);
-		m.init({PETSC_DECIDE, PETSC_DECIDE}, size);
-		
+		m.init({PETSC_DECIDE, PETSC_DECIDE}, size);		
 		
 		PetscInt rbegin, rend;
 		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
@@ -872,8 +855,6 @@ namespace utopia {
 	}
 	
 	void PETScBackend::build(PETScMatrix &m, const Size &size, const LocalValues<PetscScalar> &values) {
-		MPI_Comm comm = m.communicator();
-		m.setCommunicator(comm);
 		m.init(size, {PETSC_DETERMINE, PETSC_DETERMINE});
 		
 		//TODO check if it can be simplified using known information.
