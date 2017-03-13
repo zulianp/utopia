@@ -393,9 +393,10 @@ namespace utopia {
 			n_slave, n_slave,
 			0.3, 0.8,
 			0.3, 0.8,
-			TRI6);
+			QUAD8);
 
-		const bool applyDistortion = true;
+		const bool applyDistortion = false;
+		
 		if(applyDistortion) {
 			MeshTools::Modification::smooth (*mesh_slave,
 				10,
@@ -432,7 +433,7 @@ namespace utopia {
 		}
 
 		// mixed_par_mortar_transfer_aux(init.comm(), mesh_master, mesh_slave, !applyDistortion);
-		mortar_transfer_aux(mesh_master, mesh_slave, SECOND, !applyDistortion);
+		mortar_transfer_aux(mesh_master, mesh_slave, FIRST, !applyDistortion);
 		std::cout << "-----------------------------\n";
 
 	}
@@ -527,8 +528,9 @@ namespace utopia {
    		static const bool is_leaflet = false;
 		 // ContactSimParams params = contact_cuboids;
     	// ContactSimParams params = contact8;
-		ContactSimParams params = triple_contact_circle;
+		// ContactSimParams params = triple_contact_circle;
 		// ContactSimParams params = multi_contact_3D_2;
+		ContactSimParams params = contact_cylinder;
 
 
 		auto mesh = make_shared<Mesh>(init.comm());		
@@ -737,10 +739,10 @@ namespace utopia {
 
 		EXPRESS_PROFILING_BEGIN()
 
-		//mortar_transfer_2D(init);
+		mortar_transfer_2D(init);
         //mortar_transfer_3D(init);
 		// mortar_transfer_3D_monolithic(init);
-		surface_mortar(init);
+		// surface_mortar(init);
 
 		//run_curved_poly_disc();
 

@@ -238,6 +238,17 @@ namespace utopia {
 					other_mat.zero();
 
 					if(use_biorth_) {
+						// std::unique_ptr<libMesh::FEBase> biorth_elem = 
+						// libMesh::FEBase::build(slave_->mesh().mesh_dimension(), 
+						// 					   slave_->dof_map().variable_type(slave_->var_num()));
+
+						// libMesh::QGauss qg(dim, libMesh::Order(order));
+						// biorth_elem->attach_quadrature_rule(&qg);
+						// biorth_elem->reinit(&slave_el);
+
+						// libMesh::DenseMatrix<libMesh::Real> weights;
+						// mortar_assemble_weights(*biorth_elem, weights);
+
 						mortar_assemble_biorth(*master_fe, *slave_fe, slave_el.type(), elemmat);
 						mortar_assemble_biorth(*slave_fe,  *slave_fe, slave_el.type(), other_mat);
 
