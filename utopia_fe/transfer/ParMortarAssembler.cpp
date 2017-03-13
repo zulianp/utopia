@@ -1232,7 +1232,7 @@ namespace utopia {
         
         std::shared_ptr<LibMeshFESpaceBase> master_slave_space = master_slave;
         
-        static const int tol = 1e-8;
+        static const double tol = 1e-8;
         
         
         std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;
