@@ -739,9 +739,9 @@ namespace utopia {
 
 		EXPRESS_PROFILING_BEGIN()
 
-		mortar_transfer_2D(init);
+		// mortar_transfer_2D(init);
         //mortar_transfer_3D(init);
-		// mortar_transfer_3D_monolithic(init);
+		mortar_transfer_3D_monolithic(init);
 		// surface_mortar(init);
 
 		//run_curved_poly_disc();
