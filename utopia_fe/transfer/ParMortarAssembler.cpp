@@ -1668,46 +1668,16 @@ namespace utopia {
                 //std::cout << "elemmat.m =" << elemmat.m() << "\n";
             
                 for(int i = 0; i <  slave_dofs.size(); ++i) {
-
                     const long dof_I = slave_dofs[i];
-
-                    for(int j = 0; j <  dof_indices_slave_vec.size(); ++j) {
-
-                        const long dof_J = dof_indices_slave_vec[j];
-                        
-                        int  entry=0;
-                        
-                        if (i==j) entry = 1;
-
-                        p_buffer.setAt(dof_I, dof_J, entry);
-                    }
+                    const long dof_J = dof_indices_slave_vec[i];
+                    p_buffer.setAt(dof_I, dof_J, 1.);
                 }
                 
-              
                 for(int i = 0; i <  dof_indices_master_vec.size(); ++i) {
-                    
-                    const long dof_I = dof_indices_master_vec[i];
-                    
-                    for(int j = 0; j < master_dofs.size(); ++j) {
-                        
-                        const long dof_J = master_dofs[j];
-                        
-       
-                        
-                        int  entry=0;
-                        
-                        if (i==j) {
-                            entry=1;
-//                            std::cout<<"entry= "<<entry<<std::endl;
-//                            std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
-//                            std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
-                        }
-   
-                        q_buffer.setAt(dof_I, dof_J, entry);
-                    }
+                    const long dof_I = dof_indices_master_vec[i];    
+                    const long dof_J = master_dofs[i];
+                    q_buffer.setAt(dof_I, dof_J, 1.);
                 }
-                
-
                 
                 for(int i = 0; i <  dof_indices_slave_vec.size(); ++i) {
                     
