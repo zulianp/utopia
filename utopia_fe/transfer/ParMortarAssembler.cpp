@@ -51,7 +51,7 @@ namespace utopia {
             
             const int n_elements = master_slave->mesh().n_elem();
             
-            copy_global_dofs(*master_slave, dof_maps_[0], var_type_[0], n_elements, subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0], 101, 102);
+            copy_global_dofs(*master_slave, dof_maps_[0], var_type_[0], n_elements, subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0], face_set_id_global_[0], n_face_nodes_[0], 101, 102);
             
             copy_var_number(*master_slave, var_number_[0]);
             
@@ -173,6 +173,33 @@ namespace utopia {
         }
         
         
+        inline std::vector<ElementDofMap> &face_set_id_global()
+        {
+            
+            return face_set_id_global_[0];
+        }
+        
+        
+        
+        inline const std::vector<ElementDofMap> & face_set_id_global() const
+        {
+            return face_set_id_global_[0];
+        }
+        
+        inline std::vector<ElementDofMap> & n_face_nodes()
+        {
+            
+            return n_face_nodes_[0];
+        }
+        
+        
+        
+        inline const std::vector<ElementDofMap> & n_face_nodes() const
+        {
+            return n_face_nodes_[0];
+        }
+        
+        
         inline std::vector<ElementDofMap> &side_set_id_tag()
         {
             
@@ -195,25 +222,34 @@ namespace utopia {
         std::vector<ElementDofMap> var_type_[1];
         std::vector<ElementDofMap> subdomain_id_[1];
         std::vector<ElementDofMap> side_set_id_[1];
+        std::vector<ElementDofMap> face_set_id_global_[1];
         std::vector<ElementDofMap> side_set_id_tag_[1];
+        std::vector<ElementDofMap> n_face_nodes_[1];
         bool must_destroy_attached[1];
         
         
-        inline static void copy_global_dofs(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const int n_elements,std::vector<ElementDofMap> &subdomain_id, std::vector<ElementDofMap> &side_set_id, std::vector<ElementDofMap> &side_set_id_tag, int tag_1, int tag_2)
+        inline static void copy_global_dofs(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const int n_elements,std::vector<ElementDofMap> &subdomain_id, std::vector<ElementDofMap> &side_set_id, std::vector<ElementDofMap> &side_set_id_tag, std::vector<ElementDofMap> &face_set_id_global,std::vector<ElementDofMap> &n_face_nodes,int tag_1, int tag_2)
         {
             
             auto &mesh = space.mesh();
             auto &original_dof_map = space.dof_map();
             std::vector<dof_id_type> temp;
             
+
             
-            MeshBase::const_element_iterator e_it_s = mesh.active_local_elements_begin();
-            const MeshBase::const_element_iterator e_end_s = mesh.active_local_elements_end();
             
+            express::Communicator comm = mesh.comm().get();
+            express::Array<express::SizeType>  ownershipRangesOffset(comm.size()+1);
+            ownershipRangesOffset.allSet(0);
+            std::vector<ElementDofMap> face_set_id;
             dof_map.resize(n_elements);
             subdomain_id.resize(n_elements);
             side_set_id.resize(n_elements);
             side_set_id_tag.resize(n_elements);
+            face_set_id.resize(n_elements);
+            face_set_id_global.resize(n_elements);
+            n_face_nodes.resize(n_elements);
+     
             
             
             variable_type.resize(1);
@@ -221,19 +257,25 @@ namespace utopia {
             bool first=true;
             
             std::vector<const Node *> elem_nodes;
-            
             int jj_side_id_one = 0;
             int jj_side_id_one_tag = 0;
-             int jj_side_id_one_check = 0;
+            int jj_side_id_one_check = 0;
+            int offset=0;
+            int f_id=0;
+            int n_f=0;
+            MeshBase::const_element_iterator e_it_s = mesh.active_local_elements_begin();
+            const MeshBase::const_element_iterator e_end_s = mesh.active_local_elements_end();
+            
             
             for (; e_it_s != e_end_s; ++e_it_s)
             {
                 Elem * elem = *e_it_s;
-                
-                
+
+            
                 bool  check_side_id_one=true;
                 bool  check_side_id_one_tag=true;
                 bool  check_side_id_one_check=true;
+                bool  check_face_id=true;
                 
                 for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
                     if (check_side_id_one==true){
@@ -263,10 +305,37 @@ namespace utopia {
                     }
                 }
 
+                if (elem->on_boundary()){
+
+                    for(uint side_elem = 0; side_elem < elem->n_faces(); ++side_elem){
+                        n_face_nodes[elem->id()].global.insert(n_face_nodes[elem->id()].global.end(), n_f);
+                        n_f++;
+                        if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2))){
+                             face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(),f_id);
+                              f_id++;
+                              offset++;
+                        }
+                    }
+                }
+                else
+                {
+                    f_id=-1;
+                    face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(),f_id);
+                }
+
+                
+              
+                
+                
+//                for (int ll=0; ll<face_id.size(); ll++){
+//                    std::cout<<"local_id"<<face_id.at(ll) <<std::endl;
+//                }
+
+
                 
                 subdomain_id[elem->id()].global.insert(subdomain_id[elem->id()].global.end(),elem->subdomain_id());
                 original_dof_map.dof_indices(elem, temp, 0);
-//                std::cout<<" TEMP SIZE "<< temp.size() <<std::endl;
+//              std::cout<<" TEMP SIZE "<< temp.size() <<std::endl;
                 dof_map[elem->id()].global.insert(dof_map[elem->id()].global.end(), temp.begin(), temp.end());
                 
                 if (first)
@@ -278,12 +347,52 @@ namespace utopia {
                 
             }
             
-//            std::cout<<" jj_side_id_one_check = "<< jj_side_id_one_check <<std::endl;
-//            
-//            std::cout<<" jj_side_id_one_tag = "<< jj_side_id_one_tag <<std::endl;
             
+            std::cout<<"size for all"<<face_set_id.size()<<std::endl;
+            
+            
+            ownershipRangesOffset[comm.rank()+1]+= static_cast<unsigned int>(offset);
+    
+            std::cout<<"comm.rank"<<comm.rank()<<std::endl;
+            
+            comm.allReduce(&ownershipRangesOffset[0],  ownershipRangesOffset.size(),  express::MPISum());
+    
+            std::partial_sum(ownershipRangesOffset.begin(), ownershipRangesOffset.end(),
+                             ownershipRangesOffset.begin());
+    
+            if(comm.isRoot()) {
+                std::cout << "ownershipRangesOffset = "<< ownershipRangesOffset << std::endl;
+            }
+    
+    
+            MeshBase::const_element_iterator e_it_new = mesh.active_local_elements_begin();
+            const MeshBase::const_element_iterator e_end_new = mesh.active_local_elements_end();
+    
+    
+            for (; e_it_new != e_end_new; ++e_it_new)
+            {
+                 Elem * elem_new = *e_it_new;
+                
+                if (elem_new->on_boundary()){
+                    //                 std::cout<<"jj<face_set_id[elem_new->id()].global.size()"<<face_set_id[elem_new->id()].global.size()<<std::endl;
+                    //                 std::cout<<"face_id"<<face_id.size()<<std::endl;
+                    for (int jj=0; jj<face_set_id[elem_new->id()].global.size(); jj++){
+                        int i = face_set_id[elem_new->id()].global.at(jj);
+                         std::cout<<"size for el"<<n_face_nodes[elem_new->id()].global.size()<<std::endl;
+                        
+                        if(i!=-1){
+                           // std::cout<<"comm.rank"<<ownershipRangesOffset[comm.rank()]<<std::endl;
+                            int global_id = i + ownershipRangesOffset[comm.rank()] ;
+                            //std::cout<<"global_id"<<i<<std::endl;
+                            face_set_id_global[elem_new->id()].global.insert(face_set_id_global[elem_new->id()].global.end(),global_id);
+                        }
+                       else
+                           face_set_id_global[elem_new->id()].global.insert(face_set_id_global[elem_new->id()].global.end(),-1);
+                    }
+                }
+            }
         }
-        
+
         
         
         inline static void copy_var_number(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &variable_number)
@@ -301,9 +410,11 @@ namespace utopia {
         
     };
     
+
+    
     
     template<class Iterator>
-    static void write_space(const Iterator &begin, const Iterator &end,LibMeshFESpaceBase &space, const std::vector<ElementDofMap> &dof_map, const std::vector<ElementDofMap> &variable_number, const std::vector<ElementDofMap> &variable_order, const std::vector<ElementDofMap> &subdomain_id, const std::vector<ElementDofMap> &side_set_id, cutk::OutputStream &os, const int tag_1, const int tag_2)
+    static void write_space(const Iterator &begin, const Iterator &end,LibMeshFESpaceBase &space, const std::vector<ElementDofMap> &dof_map, const std::vector<ElementDofMap> &variable_number, const std::vector<ElementDofMap> &variable_order, const std::vector<ElementDofMap> &subdomain_id, const std::vector<ElementDofMap> &side_set_id, const std::vector<ElementDofMap> &face_set_id_global, const std::vector<ElementDofMap> &n_face_nodes,cutk::OutputStream &os, const int tag_1, const int tag_2)
     {
         const int dim 		  = space.mesh().mesh_dimension();
         const long n_elements = std::distance(begin, end);
@@ -413,6 +524,8 @@ namespace utopia {
             
             int side_set_tag;
             
+            int face_id;
+            
             bool check_side_id_one=true;
    
 //            for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
@@ -420,11 +533,16 @@ namespace utopia {
 //                if(check_side_id_one==true){
             
             side_set_tag=side_set_id[elem->id()].global.at(0);
+            
                     
 //                    std::cout<<" write surface role outside= "<< side_set_tag <<std::endl;
                     
             os << side_set_tag;
-//                    
+            
+            os << face_set_id_global.at(elem->id());
+            
+            os << n_face_nodes.at(elem->id());
+//
 //                    check_side_id_one=false;
 //                }
 //            }
@@ -448,7 +566,7 @@ namespace utopia {
         
         auto m = utopiamesh.utopiamesh()[0];
         
-        write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), os, 101, 102);
+        write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), utopiamesh.n_face_nodes(), os, 101, 102);
         
         
         
@@ -458,10 +576,13 @@ namespace utopia {
     
     
     static void read_space(cutk::InputStream &is, cutk::shared_ptr<LibMeshFESpaceBase> & space,
-                           std::vector<ElementDofMap> &dof_map,std::vector<ElementDofMap> &variable_number,
+                           std::vector<ElementDofMap> &dof_map,
+                           std::vector<ElementDofMap> &variable_number,
                            std::vector<ElementDofMap> &variable_order,
                            std::vector<ElementDofMap> &subdomain_id,
                            std::vector<ElementDofMap> &side_set_id,
+                           std::vector<ElementDofMap> &face_set_id_global,
+                           std::vector<ElementDofMap> &n_face_nodes,
                            const libMesh::Parallel::Communicator &comm,
                            int tag_1, int tag_2)
     {
@@ -510,6 +631,10 @@ namespace utopia {
         
         side_set_id.resize(n_elements);
         
+        face_set_id_global.resize(n_elements);
+        
+        n_face_nodes.resize(n_elements);
+        
         
         for(long i = 0; i !=n_elements; ++i) {
             
@@ -542,7 +667,7 @@ namespace utopia {
             is >> dof_map.at(i);
             //std::cout<< "dof_map_read = "<<dof_map[i].global.at(0)<<std::endl;
             
-            int volume_tag, side_set_tag;
+            int volume_tag, side_set_tag, face_id;
             
             bool on_boundary=false;
             //std::cout<<"read n_elements = "<<n_elements<<std::endl;
@@ -553,27 +678,14 @@ namespace utopia {
             //std::cout<<" read volume role = "<< volume_tag <<std::endl;
             
             subdomain_id[i].global.insert(subdomain_id[i].global.end(),volume_tag);
-
-            
-//            bool check_side_id_two=true;
-//            
-//            for (unsigned int side=0; side<elem->n_sides(); side++){
-//                
-//                if (check_side_id_two==true){
             
             is >> side_set_tag;
-//                    
-//                    if (side_set_tag<0) side_set_tag=1000;
-//                    
-//                    mesh_ptr->get_boundary_info().add_side(elem, side, side_set_tag);
             
-//                    std::cout<<" read surface role outside= "<< side_set_tag <<std::endl;
+            is >> face_set_id_global.at(i);
+
             side_set_id[i].global.insert(side_set_id[i].global.end(),side_set_tag);
-                    
-//                    check_side_id_two=false;
-//                }
-//            }
-//         
+            
+            is >> n_face_nodes.at(i);
             
                 
             mesh_ptr->add_elem(elem);
@@ -611,7 +723,7 @@ namespace utopia {
         
         utopiamesh.utopiamesh().resize(1);
         
-        read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), comm_mesh, 101, 102);
+        read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), utopiamesh.n_face_nodes() ,comm_mesh, 101, 102);
         
         utopiamesh.set_must_destroy_attached(0,true);
         
@@ -1055,6 +1167,26 @@ namespace utopia {
                 continue;
             }
             
+//            int offset=0;
+//            int face_id=elem->id()*elem->n_sides();
+//            std::vector<ElementDofMap> face_set_id;
+//            std::vector<ElementDofMap> face_set_off;
+//            face_set_id.resize(master_slave->mesh().n_elem());
+//            for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
+//                if ((predicate->select(master_slave->mesh().get_boundary_info().boundary_id(elem, side_elem)))){
+//                    face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end()-1,face_id);
+//                    face_id++;
+//                    
+//                }
+//            }
+//            
+//            std::vector<ElementDofMap> face_set_id_global;
+//            
+//            express::Communicator comm = master_slave->mesh().comm().get();
+//            comm.allReduce(&face_set_id, face_set_id.size(), express::MPISum());
+
+            
+            
             bool check_size=false;
             
             for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
@@ -1065,7 +1197,7 @@ namespace utopia {
                     a.set_dof_map(&local_spaces->dof_map()[elem->id()].global);
                     tree->insert(a);
                     check_size=true;
-                    jj++;
+//                    jj++;
                 }
             }
         }
@@ -1609,9 +1741,11 @@ namespace utopia {
 
 //                    std::cout<<"************* dest_el.id() = "<< dest_el.id() <<std::endl;
 //
-//                    std::cout<<"************* elem_off->id() = "<< elem_off->id()<<std::endl;
+                      std::cout<<"************* elem_off->id() = "<< local_fun_spaces->face_set_id_global()[dest_el.id()].global.at(0) <<std::endl;
+                    
+                      if (local_fun_spaces->face_set_id_global()[dest_el.id()].global.at(0)!=-1)
 
-                    dof_indices_slave_vec[i] =  dest_el.id() * dest_el.n_nodes() + i;
+                      dof_indices_slave_vec[i] = local_fun_spaces->face_set_id_global()[dest_el.id()].global.at(0)*local_fun_spaces->n_face_nodes()[dest_el.id()].global.size() + i;
 
 //                    std::cout<< "************ dof_I = "<<  dest_el.id() * dest_el.n_nodes() + i << std::endl;
 //
@@ -1628,9 +1762,11 @@ namespace utopia {
 
 //                    std::cout<<"************* src_el.id() = "<< src_el.id() <<std::endl;
                     
-//                    std::cout<<"************* elem_off->id() = "<< elem_off->id()<<std::endl;
+                     std::cout<<"************* elem_off->id() = "<< local_fun_spaces->face_set_id_global()[src_el.id()].global.at(0)<<std::endl;
                     
-                    dof_indices_master_vec[i] = src_el.id() * src_el.n_nodes() + i;
+                      if (local_fun_spaces->face_set_id_global()[src_el.id()].global.at(0)!=-1)
+        
+                      dof_indices_master_vec[i] = local_fun_spaces->face_set_id_global()[src_el.id()].global.at(0) * local_fun_spaces->n_face_nodes()[src_el.id()].global.size() + i;
                     
 //                    std::cout<< "************ dof_J = "<< src_el.id() * src_el.n_nodes() + i << std::endl;
 //                    
@@ -1927,9 +2063,9 @@ namespace utopia {
         
         
         
-        if(comm.isRoot()) {
-            std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
-        }
+//        if(comm.isRoot()) {
+//            std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
+//        }
         
         redist.apply(ownershipRangesSlave_q, q_buffer, express::AddAssign<double>());
         
