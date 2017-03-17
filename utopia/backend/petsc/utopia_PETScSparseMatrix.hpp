@@ -39,10 +39,6 @@ namespace utopia{
 
 
 	using PETScSparseMatrix = PETScGenericMatrix<FillType::SPARSE>;
-
-	// class PETScSparseMatrix : public PETScMatrix {
-	// 	using PETScMatrix::PETScMatrix;
-	// };
 }
 
 #endif //UTOPIA_PETSC_SPARSE_MATRIX_HPP
