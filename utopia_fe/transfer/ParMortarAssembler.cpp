@@ -23,6 +23,26 @@
 #include "LibMeshCutlibppAdapters.hpp"
 
 namespace utopia {
+
+    //codim is for VectorFE
+    template<class Elem, class Side>
+    void build_boundary_query(const Elem &el, const Side &side, const int codim, std::vector<bool> &node_is_boundary)
+    {
+        node_is_boundary.resize(el.n_nodes() * codim);
+        std::fill(node_is_boundary.begin(), node_is_boundary.end(), false);
+        
+        for(int j = 0; j < el.n_nodes(); ++j) {
+            for(int i = 0; i < side.n_nodes(); ++i) {
+                if(side.node_id(i) == el.node_id(j)) {
+                    for(int d = 0; d < codim; ++d) {
+                        node_is_boundary[codim * j + d] = true;
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
     
     using namespace libMesh;
     
