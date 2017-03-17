@@ -600,7 +600,7 @@ namespace utopia
 				PETScGenericMatrix<FillTypeResult> &result)
 		{
 			if(&right.implementation() != &result.implementation() || &left.implementation() !=  &result.implementation()) {
-				MatDestroy(&result.implementation());
+				result.init();
 			} else {
 				assert(false);
 			}
@@ -818,7 +818,7 @@ namespace utopia
 		template<int FillType>
 		void assignTransposed(PETScGenericMatrix<FillType> &left, const PETScGenericMatrix<FillType> &right) {
 			if(&left != &right) {
-				MatDestroy(&left.implementation());
+				left.init();
 			} else {
 				assert(false);
 			}
@@ -846,7 +846,7 @@ namespace utopia
 		template<int FillType>
 		bool triple_product_PtAP(const PETScGenericMatrix<FillType> &A, const PETScGenericMatrix<FillType> &P, PETScGenericMatrix<FillType> &result) {
 			if(&result.implementation() != &A.implementation() && &result.implementation() != &P.implementation()) {
-				MatDestroy(&result.implementation());
+				result.init();
 			} //else FIXME
 
 			MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, 1.0, &result.implementation());
@@ -856,7 +856,7 @@ namespace utopia
 		template<int FillType>
 		bool triple_product(const PETScGenericMatrix<FillType> & A, const PETScGenericMatrix<FillType> & B, const PETScGenericMatrix<FillType> & C, PETScGenericMatrix<FillType> & result) {
 			if(&result.implementation() != &A.implementation() && &result.implementation() != &B.implementation() && &result.implementation() != &C.implementation()) {
-				MatDestroy(&result.implementation());
+				result.init();
 			}
 
 			MatMatMatMult(A.implementation(), B.implementation(), C.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());

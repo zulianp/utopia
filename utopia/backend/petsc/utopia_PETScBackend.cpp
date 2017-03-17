@@ -421,37 +421,20 @@ namespace utopia {
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 
-	// TODO - find a way to pass NNZ to PETScSparseMatrix
 	void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz) {
+		m.init({PETSC_DECIDE, PETSC_DECIDE}, size);
+		if (nnz.nnz() > 1)
+			MatSeqAIJSetPreallocation(m.implementation(), nnz.nnz(), NULL);
 
-		PetscInt rows = size.get(0);
-		PetscInt cols = size.get(1);
-
-		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-
-		MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
-					 &m.implementation());
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 
 
 	}
 
 	void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz) {
-
-		//Sparse id
-		PetscInt rows = size.get(0);
-		PetscInt cols = size.get(1);
-
-		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-
-		MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
-					 &m.implementation());
+		m.init(size, {PETSC_DETERMINE, PETSC_DETERMINE});
+		if (nnz.nnz() > 1)
+			MatSeqAIJSetPreallocation(m.implementation(), nnz.nnz(), NULL);
 
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 	}
@@ -461,13 +444,9 @@ namespace utopia {
 		PetscInt rows = size.get(0);
 		PetscInt cols = size.get(1);
 
-		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-
-		MatCreateAIJ(comm, rows, PETSC_DECIDE, PETSC_DETERMINE, cols,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
-					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
-					 &m.implementation());
+		m.init({rows, PETSC_DECIDE}, {PETSC_DETERMINE, cols});
+		if (nnz.nnz() > 1)
+			MatSeqAIJSetPreallocation(m.implementation(), nnz.nnz(), NULL);
 
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 	}
