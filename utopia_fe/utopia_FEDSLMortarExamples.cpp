@@ -301,8 +301,45 @@ namespace utopia {
         // EXPRESS_EVENT_BEGIN("l2assembly");
 		surface_assembler.SurfaceAssemble(matrix,search_radius,101,102);
         // EXPRESS_EVENT_END("l2assembly");
-	}
 
+        DVectord v = zeros(size(matrix).get(1));
+        {
+        	Write<DVectord> w_v(v);
+	        each_read(matrix, [&v](const SizeType i, const SizeType j, const double value) -> void {
+	        	v.set(j, 1);
+	        });
+    	}
+
+    	disp(v);
+
+        DVectord mv = matrix * v;
+
+        DVectord d = sum(matrix, 1);
+        DSMatrixd D = diag(1./d);
+        D += identity(size(d).get(0), size(d).get(0));
+
+        // disp(matrix);
+        disp(mv);
+
+        double *arr;
+        VecGetArray(raw_type(mv), &arr);
+        plot_mesh_f(*master_slave_context.mesh, arr, "surface_mortar");
+        VecRestoreArray(raw_type(mv), &arr);
+
+
+        auto ass = make_assembly([&]() -> void {
+        		convert(D, *master_slave_context.system.matrix);
+        		convert(mv, *master_slave_context.system.rhs);
+        });
+
+        master_slave_context.system.attach_assemble_object(ass);
+        master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
+        master_slave_context.equation_systems.solve();
+
+        convert(mv, *master_slave_context.system.solution);
+
+        ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("surface_mortar_glue.e", master_slave_context.equation_systems);
+	}
 
 
 	void mortar_transfer_2D_monolithic(LibMeshInit &init)
@@ -448,7 +485,7 @@ namespace utopia {
             // Read the mesh file. Here the file lshape.unv contains
             // an L--shaped domain in .unv format.
        // mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
-		mesh->read("../data/cube12_space4.e");
+		mesh->read("../data/contact2D.e");
        // mesh->read("../data/rect.e");
 
             // Print information about the mesh to the screen.

@@ -1090,7 +1090,7 @@ namespace utopia {
     static bool SurfaceAssemble(express::Communicator &comm,
                                 std::shared_ptr<LibMeshFESpaceBase> &master_slave,
                                 Fun process_fun,
-                                const cutk::Settings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
+                                const cutk::Settings &settings,const libMesh::Real search_radius, const std::shared_ptr<cutlibpp::MasterAndSlave> &predicate)
     {
         
         
@@ -1142,13 +1142,7 @@ namespace utopia {
             
         }
         
-        
-        auto predicate = make_shared<MasterAndSlave>();
-        predicate->add(tag_1,tag_2);
-        std::cout<<"tag value 1 = "<<tag_1<<std::endl;
-        std::cout<<"tag value 2 = "<<tag_2<<std::endl;
-        
-
+    
         
         EXPRESS_EVENT_BEGIN("create_adapters");
         ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1349,6 +1343,12 @@ namespace utopia {
         Intersector isector;
         
         std::shared_ptr<LibMeshFESpaceBase> master_slave_space = master_slave;
+
+        auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
+        predicate->add(tag_1,tag_2);
+        std::cout<<"tag value 1 = "<<tag_1<<std::endl;
+        std::cout<<"tag value 2 = "<<tag_2<<std::endl;
+        
         
         static const double tol = 1e-8;
         
@@ -1437,11 +1437,8 @@ namespace utopia {
             using namespace express;
             using namespace cutk;
             
-            auto predicate = make_shared<MasterAndSlave>();
-            
-            predicate->add(tag_1,tag_2);
-            
-            
+
+    
             //std::cout<<"ciao sn in fun"<<std::endl;
             
             
@@ -1565,6 +1562,12 @@ namespace utopia {
                     libMesh::UniquePtr<libMesh::Elem> s_2 = dest_el.side(side_2);
                     
                     if(!s_2->on_boundary()) continue;
+
+                    if(!predicate->tagsAreRelated(
+                        src_mesh.get_boundary_info().boundary_id(&src_el, side_1),
+                        dest_mesh.get_boundary_info().boundary_id(&dest_el, side_2))) {
+                        continue;
+                    }
                     
                     auto side_ptr_2 = dest_el.build_side_ptr(side_2);
                     compute_side_normal(dim_sla, *side_ptr_2, n2);
@@ -1638,8 +1641,7 @@ namespace utopia {
                         surface_assemble->isect_area	= area;
                         surface_assemble->relative_area = weight;
 
-                        //use boundary info instead
-                        // rel_area_buff.add(s_2->id(), 0, weight);
+
                         
                     } else {
                         assert(false);
@@ -1767,6 +1769,18 @@ namespace utopia {
 //                 std::cout << "\n";
 //                 std::cout << "--------------------FINE---------------------\n";
                 
+                for(int i = 0; i <  slave_dofs.size(); ++i) {
+                   const long dof_I = slave_dofs[i];
+                   const long dof_J = dof_indices_slave_vec[i];
+                   p_buffer.setAt(dof_I, dof_J, 1.);
+               }
+
+               for(int i = 0; i <  dof_indices_master_vec.size(); ++i) {
+                   const long dof_I = dof_indices_master_vec[i];    
+                   const long dof_J = master_dofs[i];
+                   q_buffer.setAt(dof_I, dof_J, 1.);
+               }
+
                auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
                 
                // const Scalar local_mat_sum = std::accumulate(surface_assemble->coupling.get_values().begin(), surface_assemble->coupling.get_values().end(), libMesh::Real(0.0));
@@ -1816,7 +1830,7 @@ namespace utopia {
 //                
                 
                 assert(fabs(partial_sum - pow(surface_assemble->isect_area, dim/(dim-1.))) < 1e-8 || (!is_quad(dest_el.type()) && !is_hex(dest_el.type())));
-                
+                rel_area_buff.add(slave_face_id[0], 0, surface_assemble->relative_area);
                 return true;
                 
                 
@@ -1833,7 +1847,7 @@ namespace utopia {
      
 
     
-        if(!SurfaceAssemble<Dimensions>(comm, master_slave, fun, settings, search_radius, tag_1, tag_2)) {
+        if(!SurfaceAssemble<Dimensions>(comm, master_slave, fun, settings, search_radius, predicate)) {
             return false;
         }
 
@@ -1914,14 +1928,13 @@ namespace utopia {
             }
         }
 
-        // disp(relAreaVec);
+        disp(relAreaVec);
+
 
         {
             utopia::Write<utopia::DSMatrixd> write(B_tilde);
             for (auto it = mat_buffer.iter(); it; ++it) {
-                B_tilde.set(it.row(), it.col(), *it);
-
-                
+                B_tilde.set(it.row(), it.col(), *it); 
             }
         }
         
@@ -1936,128 +1949,128 @@ namespace utopia {
             std::cout << "sum(B): " << volumes[0] <<std::endl;
         }
         
-        
-        
-//        express::Array<express::SizeType>  ownershipRangesMaster_p(comm.size()+1);
-//        ownershipRangesMaster_p.allSet(0);
-//        
-//        
-//        express::Array<express::SizeType>  ownershipRangesSlave_p(comm.size()+1);
-//        ownershipRangesSlave_p.allSet(0);
-//        
-//        
-//        ownershipRangesMaster_p[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_p);
-//        
-//        ownershipRangesSlave_p[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave_p);
-//        
-//        comm.allReduce(&ownershipRangesMaster_p[0], ownershipRangesMaster_p.size(), express::MPISum());
-//        
-//        comm.allReduce(&ownershipRangesSlave_p[0],  ownershipRangesSlave_p.size(),  express::MPISum());
-//        
-//        std::partial_sum(ownershipRangesMaster_p.begin(), ownershipRangesMaster_p.end(),
-//                         ownershipRangesMaster_p.begin());
-//        
-//        std::partial_sum(ownershipRangesSlave_p.begin(), ownershipRangesSlave_p.end(),
-//                         ownershipRangesSlave_p.begin());
-////
-//        
-//        
+            
+       express::Array<express::SizeType>  ownershipRangesMaster_p(comm.size()+1);
+       ownershipRangesMaster_p.allSet(0);
+       
+       
+       express::Array<express::SizeType>  ownershipRangesSlave_p(comm.size()+1);
+       ownershipRangesSlave_p.allSet(0);
+       
+       
+       ownershipRangesMaster_p[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_p);
+       
+       ownershipRangesSlave_p[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave_p);
+       
+       comm.allReduce(&ownershipRangesMaster_p[0], ownershipRangesMaster_p.size(), express::MPISum());
+       
+       comm.allReduce(&ownershipRangesSlave_p[0],  ownershipRangesSlave_p.size(),  express::MPISum());
+       
+       std::partial_sum(ownershipRangesMaster_p.begin(), ownershipRangesMaster_p.end(),
+                        ownershipRangesMaster_p.begin());
+       
+       std::partial_sum(ownershipRangesSlave_p.begin(), ownershipRangesSlave_p.end(),
+                        ownershipRangesSlave_p.begin());
+//
+       
+       
+       if(comm.isRoot()) {
+           std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
+       }
+       
+       redist.apply(ownershipRangesSlave_p, p_buffer, express::AddAssign<double>());
+       
+       assert(ownershipRangesSlave_p.empty() == ownershipRangesMaster_p.empty() || ownershipRangesMaster_p.empty());
+       
+       express::RootDescribe("petsc assembly begin", comm, std::cout);
+       
+       SizeType  mMaxRowEntries_p = p_buffer.maxEntriesXCol();
+       
+       comm.allReduce(&mMaxRowEntries_p, 1, express::MPIMax());
+       
+       const SizeType local_range_slave_range_p  = ownershipRangesSlave_p [comm.rank()+1] - ownershipRangesSlave_p [comm.rank()];
+       const SizeType local_range_master_range_p = ownershipRangesMaster_p[comm.rank()+1] - ownershipRangesMaster_p[comm.rank()];
+       
+       DSMatrixd P_tilde = utopia::local_sparse(local_range_slave_range_p, local_range_master_range_p, mMaxRowEntries_p);
+       
+       
+       {
+           utopia::Write<utopia::DSMatrixd> write(P_tilde);
+           for (auto it = p_buffer.iter(); it; ++it) {
+               P_tilde.set(it.row(), it.col(), *it); 
+           }
+       }
+
+       disp(P_tilde);
+       
+       
+
+       /*Q_transpose*/
+       
+       const dof_id_type n_dofs_on_proc_master_q = master_slave->dof_map().n_dofs_on_processor(master_proc_id);
+       
+       const dof_id_type n_dofs_on_proc_slave_q  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id) * master_slave->mesh().n_local_elem();
+       
+       if(comm.isRoot()) {
+           std::cout << "sum(B): " << volumes[0] <<std::endl;
+       }
+       
+       
+       
+       express::Array<express::SizeType>  ownershipRangesMaster_q(comm.size()+1);
+       ownershipRangesMaster_q.allSet(0);
+       
+       
+       express::Array<express::SizeType>  ownershipRangesSlave_q(comm.size()+1);
+       ownershipRangesSlave_q.allSet(0);
+       
+       
+       ownershipRangesMaster_q[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_q);
+       
+       ownershipRangesSlave_q[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave_q);
+       
+       comm.allReduce(&ownershipRangesMaster_q[0], ownershipRangesMaster_q.size(), express::MPISum());
+   
+       comm.allReduce(&ownershipRangesSlave_q[0],  ownershipRangesSlave_q.size(),  express::MPISum());
+       
+       std::partial_sum(ownershipRangesMaster_q.begin(), ownershipRangesMaster_q.end(),
+                        ownershipRangesMaster_q.begin());
+       
+       std::partial_sum(ownershipRangesSlave_q.begin(), ownershipRangesSlave_q.end(),
+                        ownershipRangesSlave_q.begin());
+       
+       
+       
 //        if(comm.isRoot()) {
 //            std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
 //        }
-//        
-//        redist.apply(ownershipRangesSlave_p, p_buffer, express::AddAssign<double>());
-//        
-//        assert(ownershipRangesSlave_p.empty() == ownershipRangesMaster_p.empty() || ownershipRangesMaster_p.empty());
-//        
-//        express::RootDescribe("petsc assembly begin", comm, std::cout);
-//        
-//        SizeType  mMaxRowEntries_p = p_buffer.maxEntriesXCol();
-//        
-//        comm.allReduce(&mMaxRowEntries_p, 1, express::MPIMax());
-//        
-//        const SizeType local_range_slave_range_p  = ownershipRangesSlave_p [comm.rank()+1] - ownershipRangesSlave_p [comm.rank()];
-//        const SizeType local_range_master_range_p = ownershipRangesMaster_p[comm.rank()+1] - ownershipRangesMaster_p[comm.rank()];
-//        
-//        DSMatrixd P_tilde = utopia::local_sparse(local_range_slave_range_p, local_range_master_range_p, mMaxRowEntries_p);
-//        
-//        
-//        {
-//            utopia::Write<utopia::DSMatrixd> write(P_tilde);
-//            for (auto it = p_buffer.iter(); it; ++it) {
-//                P_tilde.set(it.row(), it.col(), *it);
-//                
-//            }
-//        }
-//        
-//        
-//
-//        /*Q_transpose*/
-//        
-//        const dof_id_type n_dofs_on_proc_master_q = master_slave->dof_map().n_dofs_on_processor(master_proc_id);
-//        
-//        const dof_id_type n_dofs_on_proc_slave_q  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id) * master_slave->mesh().n_local_elem();
-//        
-//        if(comm.isRoot()) {
-//            std::cout << "sum(B): " << volumes[0] <<std::endl;
-//        }
-//        
-//        
-//        
-//        express::Array<express::SizeType>  ownershipRangesMaster_q(comm.size()+1);
-//        ownershipRangesMaster_q.allSet(0);
-//        
-//        
-//        express::Array<express::SizeType>  ownershipRangesSlave_q(comm.size()+1);
-//        ownershipRangesSlave_q.allSet(0);
-//        
-//        
-//        ownershipRangesMaster_q[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_q);
-//        
-//        ownershipRangesSlave_q[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave_q);
-//        
-//        comm.allReduce(&ownershipRangesMaster_q[0], ownershipRangesMaster_q.size(), express::MPISum());
-//    
-//        comm.allReduce(&ownershipRangesSlave_q[0],  ownershipRangesSlave_q.size(),  express::MPISum());
-//        
-//        std::partial_sum(ownershipRangesMaster_q.begin(), ownershipRangesMaster_q.end(),
-//                         ownershipRangesMaster_q.begin());
-//        
-//        std::partial_sum(ownershipRangesSlave_q.begin(), ownershipRangesSlave_q.end(),
-//                         ownershipRangesSlave_q.begin());
-//        
-//        
-//        
-////        if(comm.isRoot()) {
-////            std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
-////        }
-//        
-//        redist.apply(ownershipRangesSlave_q, q_buffer, express::AddAssign<double>());
-//        
-//        assert(ownershipRangesSlave_q.empty() == ownershipRangesMaster_q.empty() || ownershipRangesMaster_q.empty());
-//        
-//        express::RootDescribe("petsc assembly begin", comm, std::cout);
-//        
-//        SizeType  mMaxRowEntries_q = q_buffer.maxEntriesXCol();
-//        
-//        comm.allReduce(&mMaxRowEntries_q, 1, express::MPIMax());
-//        
-//        const SizeType local_range_slave_range_q  = ownershipRangesSlave_q [comm.rank()+1] - ownershipRangesSlave_q [comm.rank()];
-//        const SizeType local_range_master_range_q = ownershipRangesMaster_q[comm.rank()+1] - ownershipRangesMaster_q[comm.rank()];
-//
-//        DSMatrixd Q_transpose = utopia::local_sparse(local_range_slave_range_q, local_range_master_range_q, mMaxRowEntries);
-//        
-//        
-//        {
-//            utopia::Write<utopia::DSMatrixd> write(Q_transpose);
-//            for (auto it = q_buffer.iter(); it; ++it) {
-//                Q_transpose.set(it.row(), it.col(), *it);
-//                
-//            }
-//        }
-//        
-//        
-//       B = P_tilde * B_tilde * Q_transpose;
+       
+       redist.apply(ownershipRangesSlave_q, q_buffer, express::AddAssign<double>());
+       
+       assert(ownershipRangesSlave_q.empty() == ownershipRangesMaster_q.empty() || ownershipRangesMaster_q.empty());
+       
+       express::RootDescribe("petsc assembly begin", comm, std::cout);
+       
+       SizeType  mMaxRowEntries_q = q_buffer.maxEntriesXCol();
+       
+       comm.allReduce(&mMaxRowEntries_q, 1, express::MPIMax());
+       
+       const SizeType local_range_slave_range_q  = ownershipRangesSlave_q [comm.rank()+1] - ownershipRangesSlave_q [comm.rank()];
+       const SizeType local_range_master_range_q = ownershipRangesMaster_q[comm.rank()+1] - ownershipRangesMaster_q[comm.rank()];
+
+       DSMatrixd Q_transpose = utopia::local_sparse(local_range_slave_range_q, local_range_master_range_q, mMaxRowEntries);
+       
+       
+       {
+           utopia::Write<utopia::DSMatrixd> write(Q_transpose);
+           for (auto it = q_buffer.iter(); it; ++it) {
+               Q_transpose.set(it.row(), it.col(), *it);
+               
+           }
+       }
+       
+       
+      B = P_tilde * B_tilde * Q_transpose;
 //        
 //       disp(P_tilde);
 //       disp(Q_transpose);
