@@ -2088,9 +2088,20 @@ namespace utopia {
                
            }
        }
+       {
+        Write<DSMatrixd> w_p(P_tilde);
+
+        //for each element use the face id check the area and remove the dofs from B_Tilde
+           // each_read(relAreaVec, [](const SizeType face_id, const double value) {
+                // if(std::abs(value - 1) > 1e-8) {
+                    //remove relative entrie from B_tilde 
+                    //use the face and their dofs to remove entries == 1
+                // }
+           // });
+        }
        
        
-      B = P_tilde * B_tilde * Q_transpose;
+        B = P_tilde * B_tilde * Q_transpose;
 //        
 //       disp(P_tilde);
 //       disp(Q_transpose);
