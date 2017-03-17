@@ -12,6 +12,33 @@
 
 namespace utopia 
 {	
+	class CompatibleMatPair {
+	public:
+		CompatibleMatPair(const MPI_Comm comm, const Mat &left, const Mat &right);
+		inline const Mat &left() const
+		{
+			return left_;
+		}
+	
+		inline const Mat &right() const
+		{
+			return right_;
+		}
+
+		~CompatibleMatPair();
+
+	private:
+		static bool is_sparse(const Mat &mat);
+
+		Mat left_;
+		Mat right_;
+		bool must_destroy_left_;
+		bool must_destroy_right_;
+	};
+
+	bool is_matlab_file(const std::string &path);
+
+	
 	class PETScBackend : public ScalarBackend<PetscScalar>  
 	{
 			
@@ -173,16 +200,54 @@ namespace utopia
 		void assignFromRange(PETScVector &left, const PETScVector &right, const Range &globalRowRange,
 							 const Range & /*globalColRange */);
 		// read matrix
-		bool read(const std::string &path, PETScMatrix &Mat_A);
+		template<int FillType>
+		bool read(const std::string &path, PETScGenericMatrix<FillType> &Mat_A)
+		{
+			Mat_A.init();
+			PetscViewer fd;
+			PetscViewerBinaryOpen(PETSC_COMM_WORLD, path.c_str(), FILE_MODE_READ, &fd);
+			bool status;
+			status =  PETScError::Check( MatLoad(Mat_A.implementation(),fd) );
+			PetscViewerDestroy(&fd);
+			return status;
+		}
+		
 		// write matrix
-		bool write(const std::string &path, const PETScMatrix &Mat_A);
+		template<int FillType>
+		bool write(const std::string &path, const PETScGenericMatrix<FillType> &Mat_A)
+		{
+			const Mat &A = Mat_A.implementation();
+
+			const bool is_matlab = is_matlab_file(path);
+					
+			if(is_matlab) {
+				PetscObjectSetName((PetscObject)A, "matrix");
+
+				PetscErrorCode ierr;
+				PetscViewer fd;
+				ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,path.c_str(), &fd); //CHKERRV(ierr);
+				ierr = PetscViewerSetFormat(fd,PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
+				ierr = MatView(A, fd); //CHKERRV(ierr);
+				PetscViewerDestroy(&fd);
+				return PETScError::Check(ierr);
+			} else {
+				PetscViewer fd;
+				PetscViewerBinaryOpen(PETSC_COMM_WORLD, path.c_str(), FILE_MODE_WRITE, &fd);
+				bool status;
+				status =  PETScError::Check( MatView(A,fd));
+				PetscViewerDestroy(&fd);
+				return status;
+			}
+
+		}
 		
 		// write vector
 		bool write(const std::string &path, const PETScVector &Vec_A);
 		
 		// monitor for cyrill 
-		bool monitor(const long & it,  PETScMatrix &Mat_A); 
-		bool monitor(const long & it,  PETScVector &Vec_A); 
+		bool monitor(const long & it, PETScMatrix &Mat_A); 
+		bool monitor(const long & it, PETScSparseMatrix &Mat_A); 
+		bool monitor(const long & it, PETScVector &Vec_A); 
 
 
 		template<int FillType>
@@ -245,27 +310,96 @@ namespace utopia
 		bool aux_zaxpy(const PetscScalar scaleFactor, const PETScVector &left,
 					   PETScVector &result);
 		
-		bool aux_zaxpy(const PetscScalar scaleFactor, const PETScMatrix &left,
-					   PETScMatrix &result);
+		template<int FillType>
+		bool aux_zaxpy(const PetscScalar scaleFactor, const PETScGenericMatrix<FillType> &left,
+									 PETScGenericMatrix<FillType> &result) {
+			MatAXPY(result.implementation(), scaleFactor, left.implementation(), DIFFERENT_NONZERO_PATTERN);
+			return true;
+		}
+
 		
+		// template<int FillTypeLeft, int FillTypeRight, int FillTypeResult>
+		// bool gemm(const PetscScalar alpha, const PETScGenericMatrix<FillTypeLeft> &left, const PETScGenericMatrix<FillTypeRight> &right,
+		// 		bool transpose_left, bool transpose_right, const PetscScalar beta, PETScGenericMatrix<FillTypeResult> &result) {
+		template<int FillType>
+		bool gemm(const PetscScalar alpha, const PETScGenericMatrix<FillType> &left, const PETScGenericMatrix<FillType> &right,
+				bool transpose_left, bool transpose_right, const PetscScalar beta, PETScGenericMatrix<FillType> &result) {
+			//FIXME only works for beta == 0 for the moment
+			assert(fabs(beta) < 1e-16);
+			//FIXME only works for alpha == 1 for the moment
+			assert(fabs(alpha - 1) < 1e-16);
+
+			CompatibleMatPair mat_pair(left.communicator(), left.implementation(), right.implementation());
+			auto l = mat_pair.left();
+			auto r = mat_pair.right();
+
+			result.init();
+			bool ok = false;
+			if(transpose_left && !transpose_right) {
+				ok = PETScError::Check(MatTransposeMatMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()));
+			} else if(!transpose_left && transpose_right) {
+				ok = PETScError::Check(MatMatTransposeMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()));
+			} else if(!transpose_left && !transpose_right) {
+				ok = PETScError::Check(MatMatMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()));
+			} else {
+				assert(transpose_left && transpose_right);
+				PETScGenericMatrix<FillType> temp;
+			
+				if(!PETScError::Check( MatMatMult(r, l, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation()) )) {
+					ok = false;
+				} else {
+					ok = transpose(temp, result);
+				}
+			}
+
+			return ok;
+		}
+
 		bool gemm(const PetscScalar /*alpha*/, const PETScMatrix &/*left*/, const PETScMatrix &/*right*/, const PetscScalar /* beta*/,
 				  PETScMatrix & /*result*/);
-		
-		bool gemm(const PetscScalar /*alpha*/, const PETScMatrix &/*left*/, const PETScMatrix &/*right*/,
-				  bool /*transpose_left*/, bool /*transpose_right*/, const PetscScalar /* beta*/, PETScMatrix &/*result*/);
 		
 		bool gemm(const PetscScalar /*alpha */, const PETScVector &/*left*/, const PETScMatrix &/*right*/,
 				  bool /*transpose_left*/, bool /*transpose_right*/, const PetscScalar /*beta*/, PETScMatrix &/*result*/);
 		
+		template<int FillType>
+		bool gemm(const double scaleFactor, const PETScGenericMatrix<FillType> &left, const Vector &right,
+				bool transpose_left,  bool transpose_right, const double beta, Vector &result)
+		{
+			 assert(!transpose_right);
+			
+			 Size gs, ls;
+			 size(left, gs);
+			 local_size(left, ls);
+
+			 VecSetType(result.implementation(), VECMPI);
+			 
+			 if(transpose_left) {
+			 	VecSetSizes(result.implementation(), ls.get(1), gs.get(1));
+			 	return PETScError::Check( MatMultTranspose(left.implementation(), right.implementation(), result.implementation()) );
+			 } else {
+			 	VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
+			 	return PETScError::Check( MatMult(left.implementation(), right.implementation(), result.implementation()) );
+			 }
+		}
+
 		
 		template<class Left, class Right, class Result>
 		bool gem(const double /*scaleFactor*/, const Left &/*left*/, const Right &/*right*/, bool /*transpose_left*/,
 				 bool /*transpose_right*/, const double /*beta*/, Result &/*result*/);
 
-  		bool gemm(const double scaleFactor, const PETScMatrix &left, const Vector &right, bool transpose_left,  bool transpose_right, const double beta, Vector &result);
-  
 
-		bool transpose(const PETScMatrix &mat, PETScMatrix &result);
+		template<int FillType>
+		bool transpose(const PETScGenericMatrix<FillType> &mat, PETScGenericMatrix<FillType> &result)
+		{
+			if(&mat != &result) {
+				result.init();
+			} else {
+				assert(false);
+			}
+
+			return PETScError::Check(MatTranspose(mat.implementation(), MAT_INITIAL_MATRIX, &result.implementation()));
+		}
+			 	
 		
 		bool scal(const PetscScalar /*scale_factor*/, const PETScVector &/*v*/, PETScVector &/*result */);
 		
@@ -291,10 +425,10 @@ namespace utopia
 		void build(PETScSparseMatrix &m, const Size &size, const LocalIdentity &);
 		
 		// TODO - find a way to pass NNZ to PETScSparseMatrix (or its Allocator)
-		// void build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz);
-		// 
-		// void build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz);
-		// void build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz);
+		void build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz);
+		
+		void build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz);
+		void build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz);
 		/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
 		void build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */);
 		
@@ -314,13 +448,61 @@ namespace utopia
 		void build(PETScVector &v, const Size &size, const Zeros &);
 		void build(PETScVector &v, const Size &size, const LocalZeros &);
 		
-		void build(PETScMatrix &m, const Size &size, const Values<PetscScalar> &values);
+		template<int FillType>
+		void build(PETScGenericMatrix<FillType> &m, const Size &size, const Values<PetscScalar> &values) {
+			m.init({PETSC_DECIDE, PETSC_DECIDE}, size);
+			
+			PetscInt rbegin, rend;
+			MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
+			
+			PetscInt grows, gcols;
+			MatGetSize(m.implementation(), &grows, &gcols);
+			
+			if (FillType == FillType::SPARSE)
+				MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+						
+			MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
+			
+			const PetscScalar v = values.value();
+			for (PetscInt i = rbegin; i < rend; ++i) {
+				for (PetscInt j = 0; j < gcols; ++j) {
+					MatSetValue(m.implementation(), i, j, v, INSERT_VALUES);
+				}
+			}
+			
+			MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
+		}
 		
 		void build(PETScVector &v, const Size &local_size, const Size &&global_size, const Values<PetscScalar> &values);
 		
 		void build(PETScVector &v, const Size &size, const Values<PetscScalar> &values);
 		
-		void build(PETScMatrix &m, const Size &size, const LocalValues<PetscScalar> &values);
+		template<int FillType>
+		void build(PETScGenericMatrix<FillType> &m, const Size &size, const LocalValues<PetscScalar> &values) {
+			m.init(size, {PETSC_DETERMINE, PETSC_DETERMINE});
+			
+			//TODO check if it can be simplified using known information.
+			
+			PetscInt rbegin, rend;
+			MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
+			
+			PetscInt grows, gcols;
+			MatGetSize(m.implementation(), &grows, &gcols);
+			
+			MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
+			
+			if (FillType == FillType::SPARSE)
+				MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+			
+			const PetscScalar v = values.value();
+			for (PetscInt i = rbegin; i < rend; ++i) {
+				for (PetscInt j = 0; j < gcols; ++j) {
+					MatSetValue(m.implementation(), i, j, v, ADD_VALUES);
+				}
+			}
+			
+			MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
+		}
 		
 		void build(PETScVector &v, const Size &size, const LocalValues<PetscScalar> &values);
 		
@@ -349,6 +531,7 @@ namespace utopia
 		
 		
 		void set(PETScMatrix &v, const std::vector<PetscInt> rows, const std::vector<PetscInt> cols, const std::vector<PetscScalar> values);
+		void set(PETScSparseMatrix &v, const std::vector<PetscInt> rows, const std::vector<PetscInt> cols, const std::vector<PetscScalar> values);
 		PetscScalar get(const PETScVector &v, const PetscInt index);
 		
 		template<int FillType>

@@ -5,72 +5,52 @@
 
 namespace utopia {
 
-	class CompatibleMatPair {
-	public:
-		CompatibleMatPair(const MPI_Comm comm, const Mat &left, const Mat &right)
-		{
-			const bool left_is_sparse  = is_sparse(left);
-			const bool right_is_sparse = is_sparse(right);
+	CompatibleMatPair::CompatibleMatPair(const MPI_Comm comm, const Mat &left, const Mat &right)
+	{
+		const bool left_is_sparse  = is_sparse(left);
+		const bool right_is_sparse = is_sparse(right);
 
-			must_destroy_left_  = false;
-			must_destroy_right_ = false;
+		must_destroy_left_  = false;
+		must_destroy_right_ = false;
 
-			MatType common_type;
-			if(left_is_sparse != right_is_sparse) {
-				if(left_is_sparse) {
-					MatCreate(comm, &left_);
-					PETScError::Check( MatGetType(right, &common_type) );
-					PETScError::Check( MatConvert(left, common_type, MAT_INITIAL_MATRIX, &left_) );
-					right_ = right;
-					must_destroy_left_  = true;
-			
-				} else {
-					MatCreate(comm, &right_);
-					PETScError::Check( MatGetType(left, &common_type) );
-					PETScError::Check( MatConvert(right, common_type, MAT_INITIAL_MATRIX, &right_) );
-					left_ = left;
-					must_destroy_right_ = true;
-				}
-			} else {
-				left_  = left;
+		MatType common_type;
+		if(left_is_sparse != right_is_sparse) {
+			if(left_is_sparse) {
+				MatCreate(comm, &left_);
+				PETScError::Check( MatGetType(right, &common_type) );
+				PETScError::Check( MatConvert(left, common_type, MAT_INITIAL_MATRIX, &left_) );
 				right_ = right;
+				must_destroy_left_  = true;
+
+			} else {
+				MatCreate(comm, &right_);
+				PETScError::Check( MatGetType(left, &common_type) );
+				PETScError::Check( MatConvert(right, common_type, MAT_INITIAL_MATRIX, &right_) );
+				left_ = left;
+				must_destroy_right_ = true;
 			}
+		} else {
+			left_  = left;
+			right_ = right;
 		}
+	}
 
+	CompatibleMatPair::~CompatibleMatPair()
+	{
+		if(must_destroy_left_) MatDestroy(&left_);
+		if(must_destroy_right_) MatDestroy(&right_);
+	}
 
-		inline const Mat &left() const
-		{
-			return left_;
-		}
+	bool CompatibleMatPair::is_sparse(const Mat &mat)
+	{
+		MatType type;
+		MatGetType(mat, &type);
+		const std::string type_str(type);
+		const size_t start = type_str.size() - 5;
+		// std::cout << type_str.substr(start, 5) << std::endl;
+		return !(type_str.substr(start, 5) == "dense");
+	}
 
-		inline const Mat &right() const
-		{
-			return right_;
-		}
-
-		~CompatibleMatPair()
-		{
-			if(must_destroy_left_) MatDestroy(&left_);
-			if(must_destroy_right_) MatDestroy(&right_);
-		}
-
-	private:
-
-		static bool is_sparse(const Mat &mat)
-		{
-			MatType type;
-			MatGetType(mat, &type);
-			const std::string type_str(type);
-			const size_t start = type_str.size() - 5;
-			// std::cout << type_str.substr(start, 5) << std::endl;
-			return !(type_str.substr(start, 5) == "dense");
-		}
-
-		Mat left_;
-		Mat right_;
-		bool must_destroy_left_;
-		bool must_destroy_right_;
-	};
 
 	void PETScBackend::resize(const Size &s, PETScVector &vec)
 	{
@@ -104,17 +84,6 @@ namespace utopia {
 		vec.resize(s_local, s_global);
 	}
 
-	bool PETScBackend::transpose(const PETScMatrix &mat, PETScMatrix &result)
-	{
-		if(&mat != &result) {
-			MatDestroy(&result.implementation());
-		} else {
-			assert(false);
-		}
-
-		return PETScError::Check(MatTranspose(mat.implementation(), MAT_INITIAL_MATRIX, &result.implementation()));
-	}
-	
 	void PETScBackend::clear(PETScMatrix &mat) const
 	{
 		mat.init();
@@ -216,21 +185,6 @@ namespace utopia {
 	}
 
 
-	// read matrix
-	bool PETScBackend::read(const std::string &path, PETScMatrix &Mat_A)
-	{
-			
-		Mat &A = Mat_A.implementation();
-		MatDestroy(&A);
-		PetscViewer fd;
-		PetscViewerBinaryOpen(PETSC_COMM_WORLD, path.c_str(), FILE_MODE_READ, &fd);
-		MatCreate(PETSC_COMM_WORLD,&A);
-		bool status;
-		status =  PETScError::Check( MatLoad(A,fd) );
-		PetscViewerDestroy(&fd);
-		return status;
-	}
-
 	bool is_matlab_file(const std::string &path)
 	{
 		size_t pos = path.find_last_of(".");
@@ -242,35 +196,7 @@ namespace utopia {
 
 		return is_matlab;
 	}
-	
-	// write matrix
-	bool PETScBackend::write(const std::string &path, const PETScMatrix &Mat_A)
-	{
-		const Mat &A = Mat_A.implementation();
 
-		const bool is_matlab = is_matlab_file(path);
-				
-		if(is_matlab) {
-			PetscObjectSetName((PetscObject)A, "matrix");
-
-			PetscErrorCode ierr;
-			PetscViewer fd;
-			ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,path.c_str(), &fd); //CHKERRV(ierr);
-			ierr = PetscViewerPushFormat(fd,PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
-			ierr = MatView(A, fd); //CHKERRV(ierr);
-			PetscViewerDestroy(&fd);
-			return PETScError::Check(ierr);
-		} else {
-			PetscViewer fd;
-			PetscViewerBinaryOpen(PETSC_COMM_WORLD, path.c_str(), FILE_MODE_WRITE, &fd);
-			bool status;
-			status =  PETScError::Check( MatView(A,fd));
-			PetscViewerDestroy(&fd);
-			return status;
-		}
-
-	}
-	
 	// write vector
 	bool PETScBackend::write(const std::string &path, const PETScVector &Vec_A)
 	{
@@ -320,6 +246,26 @@ namespace utopia {
 		return true; 
 	}
 	
+	bool PETScBackend::monitor(const long & it, PETScSparseMatrix &Mat_A)
+	{
+		PetscViewer viewer_hessian = nullptr;
+		if(it==0)
+		{
+          	// log stifness
+          	PetscViewerASCIIOpen(PETSC_COMM_WORLD, "log_hessian.m" ,&viewer_hessian);
+          	PetscViewerSetFormat(viewer_hessian,PETSC_VIEWER_ASCII_MATLAB);
+        }
+    	Mat A;
+    	MatDuplicate(Mat_A.implementation(), MAT_COPY_VALUES,  &A);
+    	MatCopy(Mat_A.implementation(), A, SAME_NONZERO_PATTERN);
+
+	    PetscObjectSetName((PetscObject)A, "H");
+	    MatView(A, viewer_hessian);
+		//PetscViewerDestroy(&viewer_hessian);
+
+		return true;
+	}
+
 	// monitor for cyrill  - maybe u need to adjust something here ...
 	bool PETScBackend::monitor(const long & it, PETScVector &Vec_A)
 	{
@@ -408,58 +354,6 @@ namespace utopia {
 		return false;
 	}
 
-	bool PETScBackend::gemm(const PetscScalar alpha, const PETScMatrix &left, const PETScMatrix &right,
-							bool transpose_left, bool transpose_right, const PetscScalar beta, PETScMatrix &result) {
-		//FIXME only works for beta == 0 for the moment
-		assert(fabs(beta) < 1e-16);
-		//FIXME only works for alpha == 1 for the moment
-		assert(fabs(alpha - 1) < 1e-16);
-
-		CompatibleMatPair mat_pair(left.communicator(), left.implementation(), right.implementation());
-		auto l = mat_pair.left();
-		auto r = mat_pair.right();
-
-		MatDestroy( &result.implementation());
-		bool ok = false;
-		if(transpose_left && !transpose_right) {
-			ok = PETScError::Check(MatTransposeMatMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()));
-		} else if(!transpose_left && transpose_right) {
-			ok = PETScError::Check(MatMatTransposeMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()));
-		} else if(!transpose_left && !transpose_right) {
-			ok = PETScError::Check(MatMatMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()));
-		} else {
-			assert(transpose_left && transpose_right);
-			PETScMatrix temp;
-
-			if(!PETScError::Check( MatMatMult(r, l, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation()) )) {
-				ok = false;
-			} else {
-				ok = transpose(temp, result);
-			}
-		}
-
-		return ok;
-	}
-
-	bool PETScBackend::gemm(const double scaleFactor, const PETScMatrix &left, const Vector &right, bool transpose_left,  bool transpose_right, const double beta, Vector &result)
-	{
-		 assert(!transpose_right);
-		
-		 Size gs, ls;
-		 size(left, gs);
-		 local_size(left, ls);
-
-		 VecSetType(result.implementation(), VECMPI);
-		 
-		 if(transpose_left) {
-		 	VecSetSizes(result.implementation(), ls.get(1), gs.get(1));
-		 	return PETScError::Check( MatMultTranspose(left.implementation(), right.implementation(), result.implementation()) );
-		 } else {
-		 	VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
-		 	return PETScError::Check( MatMult(left.implementation(), right.implementation(), result.implementation()) );
-		 }
-	}
-	
 	bool PETScBackend::gemm(const PetscScalar /*alpha */, const PETScVector &/*left*/, const PETScMatrix &/*right*/,
 							bool /*transpose_left*/, bool /*transpose_right*/, const PetscScalar /*beta*/, PETScMatrix &/*result*/) {
 		assert(false); //TODO
@@ -591,58 +485,58 @@ namespace utopia {
 	}
 	
 	// TODO - find a way to pass NNZ to PETScSparseMatrix
-	// void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz) {
-	// 	
-	// 	PetscInt rows = size.get(0);
-	// 	PetscInt cols = size.get(1);
-	// 
-	// 	MPI_Comm comm = m.communicator();
-	// 	MatDestroy(&m.implementation());
-	// 	
-	// 	MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols,
-	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
-	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
-	// 				 &m.implementation());
-	// 	MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-	// 	
-	// 	
-	// }
-	// 
-	// void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz) {
-	// 	
-	// 	//Sparse id
-	// 	PetscInt rows = size.get(0);
-	// 	PetscInt cols = size.get(1);
-	// 
-	// 	MPI_Comm comm = m.communicator();
-	// 	MatDestroy(&m.implementation());
-	// 	
-	// 	MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE,
-	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
-	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
-	// 				 &m.implementation());
-	// 	
-	// 	
-	// 	MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-	// 	
-	// }
-	// 
-	// void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz)
-	// {
-	// 	PetscInt rows = size.get(0);
-	// 	PetscInt cols = size.get(1);
-	// 
-	// 	MPI_Comm comm = m.communicator();
-	// 	MatDestroy(&m.implementation());
-	// 	
-	// 	MatCreateAIJ(comm, rows, PETSC_DECIDE, PETSC_DETERMINE, cols,
-	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
-	// 				 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
-	// 				 &m.implementation());
-	// 	
-	// 	
-	// 	MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-	// }
+	void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz) {
+
+		PetscInt rows = size.get(0);
+		PetscInt cols = size.get(1);
+
+		MPI_Comm comm = m.communicator();
+		MatDestroy(&m.implementation());
+
+		MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
+					 &m.implementation());
+		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+
+
+	}
+
+	void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz) {
+
+		//Sparse id
+		PetscInt rows = size.get(0);
+		PetscInt cols = size.get(1);
+
+		MPI_Comm comm = m.communicator();
+		MatDestroy(&m.implementation());
+
+		MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
+					 &m.implementation());
+
+
+		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+
+	}
+
+	void PETScBackend::build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz)
+	{
+		PetscInt rows = size.get(0);
+		PetscInt cols = size.get(1);
+
+		MPI_Comm comm = m.communicator();
+		MatDestroy(&m.implementation());
+
+		MatCreateAIJ(comm, rows, PETSC_DECIDE, PETSC_DETERMINE, cols,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
+					 &m.implementation());
+
+
+		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+	}
 	
 	/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
 	void PETScBackend::build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */)
@@ -665,29 +559,7 @@ namespace utopia {
 	{
 		build(v, size, LocalValues<PetscScalar>(0));
 	}
-	
-	void PETScBackend::build(PETScMatrix &m, const Size &size, const Values<PetscScalar> &values) {
-		m.init({PETSC_DECIDE, PETSC_DECIDE}, size);
-		
-		PetscInt rbegin, rend;
-		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
-		
-		PetscInt grows, gcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		
-		const PetscScalar v = values.value();
-		for (PetscInt i = rbegin; i < rend; ++i) {
-			for (PetscInt j = 0; j < gcols; ++j) {
-				MatSetValue(m.implementation(), i, j, v, INSERT_VALUES);
-			}
-		}
-		
-		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
-	}
-	
+
 	void PETScBackend::build(PETScVector &v, const Size &local_size, const Size &&global_size, const Values<PetscScalar> &values)
 	{
 		Size v_local_size;
@@ -711,32 +583,7 @@ namespace utopia {
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
 	}
-	
-	void PETScBackend::build(PETScMatrix &m, const Size &size, const LocalValues<PetscScalar> &values) {
-		m.init(size, {PETSC_DETERMINE, PETSC_DETERMINE});
-		
-		//TODO check if it can be simplified using known information.
-		
-		PetscInt rbegin, rend;
-		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
-		
-		PetscInt grows, gcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		
-		
-		const PetscScalar v = values.value();
-		for (PetscInt i = rbegin; i < rend; ++i) {
-			for (PetscInt j = 0; j < gcols; ++j) {
-				MatSetValue(m.implementation(), i, j, v, INSERT_VALUES);
-			}
-		}
-		
-		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
-	}
-	
+
 	void PETScBackend::build(PETScVector &v, const Size &size, const LocalValues<PetscScalar> &values) {
 		v.init(size, {PETSC_DETERMINE});
 		
@@ -813,6 +660,20 @@ namespace utopia {
 		}
 	}
 	
+	void PETScBackend::set(PETScSparseMatrix &v, const std::vector<PetscInt> rows, const std::vector<PetscInt> cols,
+						   const std::vector<PetscScalar> values) {
+		assert(rows.size() == values.size());
+		assert(cols.size() == values.size());
+		//FIXME use this instead of the loop below (PETSC has buggy behavior though)
+		//            MatSetValues(v.implementation(), static_cast<PetscInt>(rows.size()), &rows[0],
+		//                                             static_cast<PetscInt>(cols.size()), &cols[0],
+		//                                             &values[0], INSERT_VALUES);
+
+		for(std::vector<PetscInt>::size_type i = 0; i != rows.size(); ++i) {
+			set(v, rows[i], cols[i], values[i]);
+		}
+	}
+
 	PetscScalar PETScBackend::get(const PETScVector &v, const PetscInt index) {
 		PetscScalar value;
 		VecGetValues(v.implementation(), 1, &index, &value);
@@ -1257,16 +1118,6 @@ namespace utopia {
 		return true;
 	}
 
-	
-	bool PETScBackend::aux_zaxpy(const PetscScalar scaleFactor, const PETScMatrix &left,
-								 PETScMatrix &result) {
-		MatAXPY(result.implementation(), scaleFactor, left.implementation(), DIFFERENT_NONZERO_PATTERN);
-		return true;
-	}
-
-	bool PETScBackend::diag_scale_left(const Vector &diag, const Matrix &m, Matrix &result)
-	{
-	}
 
 	bool PETScBackend::diag_scale_left(const Vector &diag, const Vector &m,  Vector &result)
 	{
