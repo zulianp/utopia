@@ -51,7 +51,7 @@ namespace utopia {
             
             const int n_elements = master_slave->mesh().n_elem();
             
-            copy_global_dofs(*master_slave, dof_maps_[0], var_type_[0], n_elements, subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0], face_set_id_global_[0], n_face_nodes_[0], 101, 102);
+            copy_global_dofs(*master_slave, dof_maps_[0], var_type_[0], n_elements, subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0], face_set_id_global_[0], 101, 102);
             
             copy_var_number(*master_slave, var_number_[0]);
             
@@ -228,7 +228,7 @@ namespace utopia {
         bool must_destroy_attached[1];
         
         
-        inline static void copy_global_dofs(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const int n_elements,std::vector<ElementDofMap> &subdomain_id, std::vector<ElementDofMap> &side_set_id, std::vector<ElementDofMap> &side_set_id_tag, std::vector<ElementDofMap> &face_set_id_global,std::vector<ElementDofMap> &n_face_nodes,int tag_1, int tag_2)
+        inline static void copy_global_dofs(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const int n_elements,std::vector<ElementDofMap> &subdomain_id, std::vector<ElementDofMap> &side_set_id, std::vector<ElementDofMap> &side_set_id_tag, std::vector<ElementDofMap> &face_set_id_global,int tag_1, int tag_2)
         {
             
             auto &mesh = space.mesh();
@@ -248,7 +248,7 @@ namespace utopia {
             side_set_id_tag.resize(n_elements);
             face_set_id.resize(n_elements);
             face_set_id_global.resize(n_elements);
-            n_face_nodes.resize(n_elements);
+            //n_face_nodes.resize(n_elements);
      
             
             
@@ -307,9 +307,9 @@ namespace utopia {
 
                 if (elem->on_boundary()){
 
-                    for(uint side_elem = 0; side_elem < elem->n_faces(); ++side_elem){
-                        n_face_nodes[elem->id()].global.insert(n_face_nodes[elem->id()].global.end(), n_f);
-                        n_f++;
+                    for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
+//                        n_face_nodes[elem->id()].global.insert(n_face_nodes[elem->id()].global.end(), n_f);
+//                        n_f++;
                         if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2))){
                              face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(),f_id);
                               f_id++;
@@ -378,12 +378,12 @@ namespace utopia {
                     //                 std::cout<<"face_id"<<face_id.size()<<std::endl;
                     for (int jj=0; jj<face_set_id[elem_new->id()].global.size(); jj++){
                         int i = face_set_id[elem_new->id()].global.at(jj);
-                         std::cout<<"size for el"<<n_face_nodes[elem_new->id()].global.size()<<std::endl;
+                         //std::cout<<"size for el"<<n_face_nodes[elem_new->id()].global.size()<<std::endl;
                         
                         if(i!=-1){
                            // std::cout<<"comm.rank"<<ownershipRangesOffset[comm.rank()]<<std::endl;
                             int global_id = i + ownershipRangesOffset[comm.rank()] ;
-                            //std::cout<<"global_id"<<i<<std::endl;
+                            std::cout<<"global_id"<<i + ownershipRangesOffset[comm.rank()] <<std::endl;
                             face_set_id_global[elem_new->id()].global.insert(face_set_id_global[elem_new->id()].global.end(),global_id);
                         }
                        else
@@ -414,7 +414,7 @@ namespace utopia {
     
     
     template<class Iterator>
-    static void write_space(const Iterator &begin, const Iterator &end,LibMeshFESpaceBase &space, const std::vector<ElementDofMap> &dof_map, const std::vector<ElementDofMap> &variable_number, const std::vector<ElementDofMap> &variable_order, const std::vector<ElementDofMap> &subdomain_id, const std::vector<ElementDofMap> &side_set_id, const std::vector<ElementDofMap> &face_set_id_global, const std::vector<ElementDofMap> &n_face_nodes,cutk::OutputStream &os, const int tag_1, const int tag_2)
+    static void write_space(const Iterator &begin, const Iterator &end,LibMeshFESpaceBase &space, const std::vector<ElementDofMap> &dof_map, const std::vector<ElementDofMap> &variable_number, const std::vector<ElementDofMap> &variable_order, const std::vector<ElementDofMap> &subdomain_id, const std::vector<ElementDofMap> &side_set_id, const std::vector<ElementDofMap> &face_set_id_global,cutk::OutputStream &os, const int tag_1, const int tag_2)
     {
         const int dim 		  = space.mesh().mesh_dimension();
         const long n_elements = std::distance(begin, end);
@@ -539,9 +539,12 @@ namespace utopia {
                     
             os << side_set_tag;
             
+            
+            std::cout <<"write value"<< face_set_id_global[elem->id()].global.at(0)<<std::endl;
+            
             os << face_set_id_global.at(elem->id());
             
-            os << n_face_nodes.at(elem->id());
+//            os << n_face_nodes.at(elem->id())
 //
 //                    check_side_id_one=false;
 //                }
@@ -566,7 +569,7 @@ namespace utopia {
         
         auto m = utopiamesh.utopiamesh()[0];
         
-        write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), utopiamesh.n_face_nodes(), os, 101, 102);
+        write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), os, 101, 102);
         
         
         
@@ -582,7 +585,6 @@ namespace utopia {
                            std::vector<ElementDofMap> &subdomain_id,
                            std::vector<ElementDofMap> &side_set_id,
                            std::vector<ElementDofMap> &face_set_id_global,
-                           std::vector<ElementDofMap> &n_face_nodes,
                            const libMesh::Parallel::Communicator &comm,
                            int tag_1, int tag_2)
     {
@@ -633,7 +635,7 @@ namespace utopia {
         
         face_set_id_global.resize(n_elements);
         
-        n_face_nodes.resize(n_elements);
+        face_set_id_global.resize(n_elements);
         
         
         for(long i = 0; i !=n_elements; ++i) {
@@ -682,11 +684,10 @@ namespace utopia {
             is >> side_set_tag;
             
             is >> face_set_id_global.at(i);
+            
+            std::cout <<"read value"<< face_set_id_global[i].global.at(0)<<std::endl;
 
             side_set_id[i].global.insert(side_set_id[i].global.end(),side_set_tag);
-            
-            is >> n_face_nodes.at(i);
-            
                 
             mesh_ptr->add_elem(elem);
             
@@ -723,7 +724,7 @@ namespace utopia {
         
         utopiamesh.utopiamesh().resize(1);
         
-        read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), utopiamesh.n_face_nodes() ,comm_mesh, 101, 102);
+        read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh, 101, 102);
         
         utopiamesh.set_must_destroy_attached(0,true);
         
@@ -806,6 +807,7 @@ namespace utopia {
             Adapter a(*master_slave, elem->id(), elem->id() , tag);
             assert(!local_spaces->dof_map()[elem->id()].empty());
             a.set_dof_map(&local_spaces->dof_map()[elem->id()].global);
+            a.set_face_id(&local_spaces->face_set_id_global()[elem->id()].global);
             tree->insert(a);
         }
         
@@ -858,6 +860,7 @@ namespace utopia {
                     int tag =proc_space->subdomain_id()[i].global.at(0);
                     data.push_back(Adapter(*s, i, i, tag));
                     data.back().set_dof_map(&proc_space->dof_map()[i].global);
+                    data.back().set_face_id(&proc_space->face_set_id_global()[i].global);
                 }
             }
             
@@ -1167,26 +1170,6 @@ namespace utopia {
                 continue;
             }
             
-//            int offset=0;
-//            int face_id=elem->id()*elem->n_sides();
-//            std::vector<ElementDofMap> face_set_id;
-//            std::vector<ElementDofMap> face_set_off;
-//            face_set_id.resize(master_slave->mesh().n_elem());
-//            for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
-//                if ((predicate->select(master_slave->mesh().get_boundary_info().boundary_id(elem, side_elem)))){
-//                    face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end()-1,face_id);
-//                    face_id++;
-//                    
-//                }
-//            }
-//            
-//            std::vector<ElementDofMap> face_set_id_global;
-//            
-//            express::Communicator comm = master_slave->mesh().comm().get();
-//            comm.allReduce(&face_set_id, face_set_id.size(), express::MPISum());
-
-            
-            
             bool check_size=false;
             
             for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
@@ -1195,6 +1178,7 @@ namespace utopia {
 //                    std::cout<<"side_set_id[ "<< elem->id() <<" ] = "<<local_spaces->side_set_id()[elem->id()].global.at(0)<<std::endl;
                     assert(!local_spaces->dof_map()[elem->id()].empty());
                     a.set_dof_map(&local_spaces->dof_map()[elem->id()].global);
+                    a.set_face_id(&local_spaces->face_set_id_global()[elem->id()].global);
                     tree->insert(a);
                     check_size=true;
 //                    jj++;
@@ -1256,6 +1240,8 @@ namespace utopia {
                         assert(!proc_space->dof_map()[i].empty());
                         assert(!proc_space->side_set_id()[i].empty());
                         data.back().set_dof_map(&proc_space->dof_map()[i].global);
+                        data.back().set_face_id(&proc_space->face_set_id_global()[i].global);
+                        std::cout<<"&proc_space->dof_map()[i].global"<<proc_space->face_set_id_global()[i].global.at(0)<<std::endl;
 
                     
                 }
@@ -1694,6 +1680,12 @@ namespace utopia {
                 const auto &slave_dofs  = slave.dof_map();
                 
                 
+                const auto &master_face_id = master.dof_map_face();
+                const auto &slave_face_id  = slave.dof_map_face();
+//
+//                std::cout << "master_face_id.size()" << master_face_id.size() <<std::endl;
+                
+                
                 std::vector<dof_id_type> dof_indices_slave_vec(slave_dofs.size());
                 std::vector<dof_id_type> dof_indices_master_vec(master_dofs.size());
                 
@@ -1735,63 +1727,45 @@ namespace utopia {
                     
                 }
                 
-                for(uint i = 0; i <  slave_dofs.size(); ++i) {
-                    
-                    Elem *elem_off = *( master_slave->mesh().active_subdomain_elements_begin(block_id_def.at(1)));
-
-//                    std::cout<<"************* dest_el.id() = "<< dest_el.id() <<std::endl;
-//
-                      std::cout<<"************* elem_off->id() = "<< local_fun_spaces->face_set_id_global()[dest_el.id()].global.at(0) <<std::endl;
-                    
-                      if (local_fun_spaces->face_set_id_global()[dest_el.id()].global.at(0)!=-1)
-
-                      dof_indices_slave_vec[i] = local_fun_spaces->face_set_id_global()[dest_el.id()].global.at(0)*local_fun_spaces->n_face_nodes()[dest_el.id()].global.size() + i;
-
-//                    std::cout<< "************ dof_I = "<<  dest_el.id() * dest_el.n_nodes() + i << std::endl;
-//
-//                    std::cout<< "************ dof_I_comparison = "<<  slave_dofs[i] << std::endl;
+               libMesh::UniquePtr<libMesh::Elem> side_dest = dest_el.side(0);
+                
+                int n_nodes_face_dest = side_dest->n_nodes();
+                
+                libMesh::UniquePtr<libMesh::Elem> side_src = src_el.side(0);
+                
+                int n_nodes_face_src = side_src->n_nodes();
+                
+                //std::cout<<"addendum"<<addendum<<std::endl;
+                
+                for(uint i = 0; i <  slave_dofs.size(); ++i){
+                    if (slave_face_id[0]!=-1) dof_indices_slave_vec[i] =  slave_face_id[0] * n_nodes_face_dest + i;
                 }
-                
-                
-       
-                
+                    
+
                 for(uint i = 0; i <  master_dofs.size(); ++i) {
-
-                    
-                    Elem *elem_off = *( master_slave->mesh().active_subdomain_elements_begin(block_id_def.at(0)));
-
-//                    std::cout<<"************* src_el.id() = "<< src_el.id() <<std::endl;
-                    
-                     std::cout<<"************* elem_off->id() = "<< local_fun_spaces->face_set_id_global()[src_el.id()].global.at(0)<<std::endl;
-                    
-                      if (local_fun_spaces->face_set_id_global()[src_el.id()].global.at(0)!=-1)
-        
-                      dof_indices_master_vec[i] = local_fun_spaces->face_set_id_global()[src_el.id()].global.at(0) * local_fun_spaces->n_face_nodes()[src_el.id()].global.size() + i;
-                    
-//                    std::cout<< "************ dof_J = "<< src_el.id() * src_el.n_nodes() + i << std::endl;
-//                    
-//                    std::cout<< "************ dof_J_comparison = "<<  master_dofs[i] << std::endl;
-                    
+                    if (master_face_id[0]!=-1)   dof_indices_master_vec[i] = master_face_id[0] * n_nodes_face_src + i;
                 }
 
                 
                 
                 mortar_assemble(*master_fe, *slave_fe, elemmat);
                 
-                
-                // std::cout << "-----------------------------------------\n";
-                // std::cout << src_index << ", " << dest_index << "\n";
-                // elemmat.print(std::cout);
-                // for(auto i : slave_dofs) {
-                // 	std::cout << i << " ";
-                // }
-                // std::cout << "\n";
-                
-                // for(auto i : master_dofs) {
-                // 	std::cout << i << " ";
-                // }
-                // std::cout << "\n";
-                // std::cout << "-----------------------------------------\n";
+//                
+//                 std::cout << "-----------------INIZIO------------------------\n";
+//                 std::cout << src_index << ", " << dest_index << "\n";
+//                 //elemmat.print(std::cout);
+//                 for(auto i : slave_dofs) {
+//                 	std::cout << i << " ";
+//                 }
+//                 std::cout << "\n";
+//                
+//                 std::cout << "-----------------META------------------------\n";
+//                
+//                 for(auto i : master_dofs) {
+//                 	std::cout << i << " ";
+//                 }
+//                 std::cout << "\n";
+//                 std::cout << "--------------------FINE---------------------\n";
                 
                auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
                 
@@ -1810,29 +1784,20 @@ namespace utopia {
                 
                 //std::cout << "elemmat.m =" << elemmat.m() << "\n";
             
-                for(int i = 0; i <  slave_dofs.size(); ++i) {
-                    const long dof_I = slave_dofs[i];
-                    const long dof_J = dof_indices_slave_vec[i];
-                    p_buffer.setAt(dof_I, dof_J, 1.);
-                }
-                
-                for(int i = 0; i <  dof_indices_master_vec.size(); ++i) {
-                    const long dof_I = dof_indices_master_vec[i];    
-                    const long dof_J = master_dofs[i];
-                    q_buffer.setAt(dof_I, dof_J, 1.);
-                }
                 
                 for(int i = 0; i <  dof_indices_slave_vec.size(); ++i) {
                     
                     const long dof_I = dof_indices_slave_vec[i];
                     
-                    //std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
+//                    std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
                     
                     for(int j = 0; j <  dof_indices_master_vec.size(); ++j) {
                         
+//                    std::cout<<"************* J = "<< j <<std::endl;
+                        
                         const long dof_J = dof_indices_master_vec[j];
                         
-                        //std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
+//                    std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
                         
                         mat_buffer.add(dof_I, dof_J, elemmat(i, j));
                     }
@@ -1973,127 +1938,127 @@ namespace utopia {
         
         
         
-        express::Array<express::SizeType>  ownershipRangesMaster_p(comm.size()+1);
-        ownershipRangesMaster_p.allSet(0);
-        
-        
-        express::Array<express::SizeType>  ownershipRangesSlave_p(comm.size()+1);
-        ownershipRangesSlave_p.allSet(0);
-        
-        
-        ownershipRangesMaster_p[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_p);
-        
-        ownershipRangesSlave_p[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave_p);
-        
-        comm.allReduce(&ownershipRangesMaster_p[0], ownershipRangesMaster_p.size(), express::MPISum());
-        
-        comm.allReduce(&ownershipRangesSlave_p[0],  ownershipRangesSlave_p.size(),  express::MPISum());
-        
-        std::partial_sum(ownershipRangesMaster_p.begin(), ownershipRangesMaster_p.end(),
-                         ownershipRangesMaster_p.begin());
-        
-        std::partial_sum(ownershipRangesSlave_p.begin(), ownershipRangesSlave_p.end(),
-                         ownershipRangesSlave_p.begin());
-//
-        
-        
-        if(comm.isRoot()) {
-            std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
-        }
-        
-        redist.apply(ownershipRangesSlave_p, p_buffer, express::AddAssign<double>());
-        
-        assert(ownershipRangesSlave_p.empty() == ownershipRangesMaster_p.empty() || ownershipRangesMaster_p.empty());
-        
-        express::RootDescribe("petsc assembly begin", comm, std::cout);
-        
-        SizeType  mMaxRowEntries_p = p_buffer.maxEntriesXCol();
-        
-        comm.allReduce(&mMaxRowEntries_p, 1, express::MPIMax());
-        
-        const SizeType local_range_slave_range_p  = ownershipRangesSlave_p [comm.rank()+1] - ownershipRangesSlave_p [comm.rank()];
-        const SizeType local_range_master_range_p = ownershipRangesMaster_p[comm.rank()+1] - ownershipRangesMaster_p[comm.rank()];
-        
-        DSMatrixd P_tilde = utopia::local_sparse(local_range_slave_range_p, local_range_master_range_p, mMaxRowEntries_p);
-        
-        
-        {
-            utopia::Write<utopia::DSMatrixd> write(P_tilde);
-            for (auto it = p_buffer.iter(); it; ++it) {
-                P_tilde.set(it.row(), it.col(), *it);
-                
-            }
-        }
-        
-        
-
-        /*Q_transpose*/
-        
-        const dof_id_type n_dofs_on_proc_master_q = master_slave->dof_map().n_dofs_on_processor(master_proc_id);
-        
-        const dof_id_type n_dofs_on_proc_slave_q  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id) * master_slave->mesh().n_local_elem();
-        
-        if(comm.isRoot()) {
-            std::cout << "sum(B): " << volumes[0] <<std::endl;
-        }
-        
-        
-        
-        express::Array<express::SizeType>  ownershipRangesMaster_q(comm.size()+1);
-        ownershipRangesMaster_q.allSet(0);
-        
-        
-        express::Array<express::SizeType>  ownershipRangesSlave_q(comm.size()+1);
-        ownershipRangesSlave_q.allSet(0);
-        
-        
-        ownershipRangesMaster_q[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_q);
-        
-        ownershipRangesSlave_q[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave_q);
-        
-        comm.allReduce(&ownershipRangesMaster_q[0], ownershipRangesMaster_q.size(), express::MPISum());
-    
-        comm.allReduce(&ownershipRangesSlave_q[0],  ownershipRangesSlave_q.size(),  express::MPISum());
-        
-        std::partial_sum(ownershipRangesMaster_q.begin(), ownershipRangesMaster_q.end(),
-                         ownershipRangesMaster_q.begin());
-        
-        std::partial_sum(ownershipRangesSlave_q.begin(), ownershipRangesSlave_q.end(),
-                         ownershipRangesSlave_q.begin());
-        
-        
-        
+//        express::Array<express::SizeType>  ownershipRangesMaster_p(comm.size()+1);
+//        ownershipRangesMaster_p.allSet(0);
+//        
+//        
+//        express::Array<express::SizeType>  ownershipRangesSlave_p(comm.size()+1);
+//        ownershipRangesSlave_p.allSet(0);
+//        
+//        
+//        ownershipRangesMaster_p[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_p);
+//        
+//        ownershipRangesSlave_p[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave_p);
+//        
+//        comm.allReduce(&ownershipRangesMaster_p[0], ownershipRangesMaster_p.size(), express::MPISum());
+//        
+//        comm.allReduce(&ownershipRangesSlave_p[0],  ownershipRangesSlave_p.size(),  express::MPISum());
+//        
+//        std::partial_sum(ownershipRangesMaster_p.begin(), ownershipRangesMaster_p.end(),
+//                         ownershipRangesMaster_p.begin());
+//        
+//        std::partial_sum(ownershipRangesSlave_p.begin(), ownershipRangesSlave_p.end(),
+//                         ownershipRangesSlave_p.begin());
+////
+//        
+//        
 //        if(comm.isRoot()) {
 //            std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
 //        }
-        
-        redist.apply(ownershipRangesSlave_q, q_buffer, express::AddAssign<double>());
-        
-        assert(ownershipRangesSlave_q.empty() == ownershipRangesMaster_q.empty() || ownershipRangesMaster_q.empty());
-        
-        express::RootDescribe("petsc assembly begin", comm, std::cout);
-        
-        SizeType  mMaxRowEntries_q = q_buffer.maxEntriesXCol();
-        
-        comm.allReduce(&mMaxRowEntries_q, 1, express::MPIMax());
-        
-        const SizeType local_range_slave_range_q  = ownershipRangesSlave_q [comm.rank()+1] - ownershipRangesSlave_q [comm.rank()];
-        const SizeType local_range_master_range_q = ownershipRangesMaster_q[comm.rank()+1] - ownershipRangesMaster_q[comm.rank()];
-
-        DSMatrixd Q_transpose = utopia::local_sparse(local_range_slave_range_q, local_range_master_range_q, mMaxRowEntries);
-        
-        
-        {
-            utopia::Write<utopia::DSMatrixd> write(Q_transpose);
-            for (auto it = q_buffer.iter(); it; ++it) {
-                Q_transpose.set(it.row(), it.col(), *it);
-                
-            }
-        }
-        
-        
-       B = P_tilde * B_tilde * Q_transpose;
-        
+//        
+//        redist.apply(ownershipRangesSlave_p, p_buffer, express::AddAssign<double>());
+//        
+//        assert(ownershipRangesSlave_p.empty() == ownershipRangesMaster_p.empty() || ownershipRangesMaster_p.empty());
+//        
+//        express::RootDescribe("petsc assembly begin", comm, std::cout);
+//        
+//        SizeType  mMaxRowEntries_p = p_buffer.maxEntriesXCol();
+//        
+//        comm.allReduce(&mMaxRowEntries_p, 1, express::MPIMax());
+//        
+//        const SizeType local_range_slave_range_p  = ownershipRangesSlave_p [comm.rank()+1] - ownershipRangesSlave_p [comm.rank()];
+//        const SizeType local_range_master_range_p = ownershipRangesMaster_p[comm.rank()+1] - ownershipRangesMaster_p[comm.rank()];
+//        
+//        DSMatrixd P_tilde = utopia::local_sparse(local_range_slave_range_p, local_range_master_range_p, mMaxRowEntries_p);
+//        
+//        
+//        {
+//            utopia::Write<utopia::DSMatrixd> write(P_tilde);
+//            for (auto it = p_buffer.iter(); it; ++it) {
+//                P_tilde.set(it.row(), it.col(), *it);
+//                
+//            }
+//        }
+//        
+//        
+//
+//        /*Q_transpose*/
+//        
+//        const dof_id_type n_dofs_on_proc_master_q = master_slave->dof_map().n_dofs_on_processor(master_proc_id);
+//        
+//        const dof_id_type n_dofs_on_proc_slave_q  = master_slave->dof_map().n_dofs_on_processor(slave_proc_id) * master_slave->mesh().n_local_elem();
+//        
+//        if(comm.isRoot()) {
+//            std::cout << "sum(B): " << volumes[0] <<std::endl;
+//        }
+//        
+//        
+//        
+//        express::Array<express::SizeType>  ownershipRangesMaster_q(comm.size()+1);
+//        ownershipRangesMaster_q.allSet(0);
+//        
+//        
+//        express::Array<express::SizeType>  ownershipRangesSlave_q(comm.size()+1);
+//        ownershipRangesSlave_q.allSet(0);
+//        
+//        
+//        ownershipRangesMaster_q[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master_q);
+//        
+//        ownershipRangesSlave_q[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave_q);
+//        
+//        comm.allReduce(&ownershipRangesMaster_q[0], ownershipRangesMaster_q.size(), express::MPISum());
+//    
+//        comm.allReduce(&ownershipRangesSlave_q[0],  ownershipRangesSlave_q.size(),  express::MPISum());
+//        
+//        std::partial_sum(ownershipRangesMaster_q.begin(), ownershipRangesMaster_q.end(),
+//                         ownershipRangesMaster_q.begin());
+//        
+//        std::partial_sum(ownershipRangesSlave_q.begin(), ownershipRangesSlave_q.end(),
+//                         ownershipRangesSlave_q.begin());
+//        
+//        
+//        
+////        if(comm.isRoot()) {
+////            std::cout << "ownershipRangesMaster = "<< ownershipRangesMaster << std::endl;
+////        }
+//        
+//        redist.apply(ownershipRangesSlave_q, q_buffer, express::AddAssign<double>());
+//        
+//        assert(ownershipRangesSlave_q.empty() == ownershipRangesMaster_q.empty() || ownershipRangesMaster_q.empty());
+//        
+//        express::RootDescribe("petsc assembly begin", comm, std::cout);
+//        
+//        SizeType  mMaxRowEntries_q = q_buffer.maxEntriesXCol();
+//        
+//        comm.allReduce(&mMaxRowEntries_q, 1, express::MPIMax());
+//        
+//        const SizeType local_range_slave_range_q  = ownershipRangesSlave_q [comm.rank()+1] - ownershipRangesSlave_q [comm.rank()];
+//        const SizeType local_range_master_range_q = ownershipRangesMaster_q[comm.rank()+1] - ownershipRangesMaster_q[comm.rank()];
+//
+//        DSMatrixd Q_transpose = utopia::local_sparse(local_range_slave_range_q, local_range_master_range_q, mMaxRowEntries);
+//        
+//        
+//        {
+//            utopia::Write<utopia::DSMatrixd> write(Q_transpose);
+//            for (auto it = q_buffer.iter(); it; ++it) {
+//                Q_transpose.set(it.row(), it.col(), *it);
+//                
+//            }
+//        }
+//        
+//        
+//       B = P_tilde * B_tilde * Q_transpose;
+//        
 //       disp(P_tilde);
 //       disp(Q_transpose);
 //       disp(B.size());
@@ -2131,565 +2096,8 @@ namespace utopia {
     
     
     
-    //
-    //
-    //
-    //	bool ParMortarAssembler::Transfer(DSMatrixd &B, DSMatrixd &T)
-    //	{
-    //		DVectord               diag_elem;
-    //		PetscInt               mG;
-    //		PetscInt               nG;
-    //		PetscInt               mL;
-    //		PetscInt               nL;
-    //
-    //		diag_elem = 1./sum(B,1);
-    //		T = diag(diag_elem)*B;
-    //
-    //		return true;
-    //	}
-    //
 }
     
-//    template<int Dimensions>
-//    bool SurfaceAssemble(
-//                         express::Communicator &comm,
-//                         std::shared_ptr<LibMeshFESpaceBase> &master_slave,
-//                         DSMatrixd &B,
-//                         const cutk::Settings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
-//    {
-//        std::shared_ptr<UtopiaMesh> local_fun_spaces = cutk::make_shared<UtopiaMesh>(master_slave);
-//        
-//        libMesh::DenseMatrix<libMesh::Real> src_pts;
-//        libMesh::DenseMatrix<libMesh::Real> dest_pts;
-//        libMesh::DenseMatrix<libMesh::Real> intersection2;
-//        Polyhedron src_poly, dest_poly;
-//        Polyhedron  intersection3,temp_poly;
-//        Intersector isector;
-//        
-//        std::shared_ptr<LibMeshFESpaceBase> master_slave_space = master_slave;
-//        
-//        static const double tol = 1e-8;
-//        
-//        
-//        std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;
-//        libMesh::DenseMatrix<libMesh::Real> elemmat;
-//        libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
-//        DenseMatrix<Real> side_polygon_1, side_polygon_2;
-//        DenseMatrix<Real> isect_polygon_1, isect_polygon_2;
-//        
-//        std::shared_ptr<Transform> src_trans;
-//        std::shared_ptr<Transform> dest_trans;
-//        
-//        Point n1, n2;
-//        
-//        
-//        
-//        int skip_zeros = 1;
-//        
-//        
-//        libMesh::Real total_intersection_volume = 0.0;
-//        libMesh::Real local_element_matrices_sum = 0.0;
-//        
-//        //
-//        //		express::MapSparseMatrix<double> mat_buffer(slave->dof_map().n_dofs(), master->dof_map().n_dofs());
-//        
-//        bool intersected = false;
-//        
-//        auto fun = [&](const SurfaceElementAdapter<Dimensions> &master,
-//                       const SurfaceElementAdapter<Dimensions> &slave) -> bool {
-//            
-//            
-//            using namespace cutlibpp;
-//            using namespace express;
-//            using namespace cutk;
-//            
-//            auto predicate = make_shared<MasterAndSlave>();
-//            predicate->add(tag_1,tag_2);
-//            
-//            long n_intersections = 0;
-//            
-//            //std::cout<<"ciao sn in fun"<<std::endl;
-//            
-//            bool pair_intersected = false;
-//            
-//            const auto &src  = master.space();
-//            const auto &dest = slave.space();
-//            
-//            const auto &src_mesh  = src.mesh();
-//            const auto &dest_mesh = dest.mesh();
-//            
-//            //dest_mesh.print_info();
-//            
-//            const int src_index  = master.element();
-//            const int dest_index = slave.element();
-//            
-//            auto &src_el  = *src_mesh.elem(src_index);
-//            auto &dest_el = *dest_mesh.elem(dest_index);
-//            
-//            const int dim_src = src_mesh.mesh_dimension();
-//            const int dim_sla = dest_mesh.mesh_dimension();
-//            Box box_1(dim_src), box_2(dim_sla);
-//            
-//            QMortar src_ir_ref(dim_src);
-//            QMortar src_ir(dim_src);
-//            QMortar dest_ir(dim_sla);
-//            QMortar dest_ir_ref(dim_sla);
-//            
-//            
-//            
-//            
-//            std::vector<long> src_order = local_fun_spaces->variable_order()[0].global;
-//            const int approx_order=src_order[0];
-//            
-//            
-//            //FIXME This is a hack
-//            
-//            //
-//            //			std::vector<long> src_order = local_fun_spaces->variable_order(0)[0].global;
-//            //
-//            //			int src_order_new=src_order[0];
-//            //
-//            //
-//            //
-//            //			std::vector<long> dest_order = local_fun_spaces->variable_order(1)[0].global;
-//            //
-//            //			int dest_order_new=dest_order[0];
-//            //
-//            //
-//            //
-//            //			std::vector<long> src_var_num = local_fun_spaces->variable_number(0)[0].global;
-//            //
-//            //			int src_var_new=src_var_num[0];
-//            //
-//            //
-//            //
-//            //			std::vector<long> dest_var_num = local_fun_spaces->variable_number(1)[0].global;
-//            //
-//            //			int dest_var_new=dest_var_num[0];
-//            
-//            
-//            
-//            
-//            std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
-//            //
-//            master_fe = libMesh::FEBase::build(src_mesh.mesh_dimension(), FIRST);
-//            slave_fe  = libMesh::FEBase::build(dest_mesh.mesh_dimension(), FIRST);
-//            //
-//            
-//            typedef Intersector::Scalar Scalar;
-//            //
-//            //
-//            //			const int order = order_for_l2_integral(dim, src_el, src_order_new, dest_el, dest_order_new);
-//            
-//            //            if(!has_constrained_dofs(src, src_el) &&
-//            //               !has_constrained_dofs(dest, dest_el))
-//            {
-//                
-//                if(dim_src == 2)  {
-//                    make_polygon(src_el,   src_pts);
-//                    make_polygon(dest_el,  dest_pts);
-//                    {
-//                        //					total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
-//                        //
-//                        //					const libMesh::Real weight=isector.polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
-//                        //
-//                        //					make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
-//                        //					pair_intersected = true;
-//                        //
-//                        src_trans  = std::make_shared<Transform2>(src_el);
-//                        dest_trans = std::make_shared<Transform2>(dest_el);
-//                        //pair_intersected = true;
-//                    }
-//                }
-//                
-//                else if(dim_src == 3) {
-//                    make_polyhedron(src_el,  src_poly);
-//                    make_polyhedron(dest_el, dest_poly);
-//                    {
-//                        //					total_intersection_volume += isector.p_mesh_volume_3(intersection3);
-//                        //
-//                        //					const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
-//                        //
-//                        //
-//                        //					make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
-//                        src_trans  = std::make_shared<Transform3>(src_el);
-//                        dest_trans = std::make_shared<Transform3>(dest_el);
-//                        //pair_intersected = true;
-//                    }
-//                }
-//                
-//                for(uint side_1 = 0; side_1 < src_el.n_sides(); ++side_1) {
-//                    
-//                    if(src_el.neighbor_ptr(side_1) != nullptr) continue;
-//                    auto side_ptr_1 = src_el.build_side_ptr(side_1);
-//                    
-//                    compute_side_normal(dim_src, *side_ptr_1, n1);
-//                    
-//                    box_1.reset();
-//                    enlarge_box_from_side(dim_src, *side_ptr_1, box_1, search_radius);
-//                    
-//                    if(dim_src == 2) {
-//                        make_polygon(*side_ptr_1, side_polygon_1);
-//                    } else if(dim_src == 3) {
-//                        make_polygon_3(*side_ptr_1, side_polygon_1);
-//                    } else {
-//                        assert(false);
-//                    }
-//                    
-//                    
-//                    
-//                    for(uint side_2 = 0; side_2 < dest_el.n_sides(); ++side_2) {
-//                        
-//                        if(dest_el.neighbor_ptr(side_2) != nullptr) continue;
-//                        
-//                        auto side_ptr_2 = dest_el.build_side_ptr(side_2);
-//                        compute_side_normal(dim_sla, *side_ptr_2, n2);
-//                        
-//                        const Real cos_angle = n1.contract(n2);
-//                        
-//                        //if the angle is more than 60 degrees ( cos(60/180*pi) == 0.5 ) or has same orientation skip
-//                        if(cos_angle >= -0.5) {
-//                            continue;
-//                        }
-//                        
-//                        box_2.reset();
-//                        enlarge_box_from_side(dim_sla, *side_ptr_2, box_2, search_radius);
-//                        
-//                        if(!box_1.intersects(box_2, tol)) {
-//                            continue;
-//                        }
-//                        
-//                        if(dim_sla==2){
-//                            make_polygon(*side_ptr_2,side_polygon_2);
-//                            if(!project_2D(side_polygon_1,side_polygon_2,isect_polygon_1,isect_polygon_2)){
-//                                continue;
-//                            }
-//                            const Scalar dx = dest_pts(0, 0) - dest_pts(1, 0);
-//                            const Scalar dy = dest_pts(0, 1) - dest_pts(1, 1);
-//                            
-//                            const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
-//                            const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
-//                            
-//                            const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
-//                            const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
-//                            
-//                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
-//                            
-//                            make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, src_ir);
-//                            make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, dest_ir);
-//                            
-//                            pair_intersected = true;
-//                            
-//                            
-//                            ++n_intersections;
-//                            
-//                            
-//                            //                            current_contact = std::make_shared<Contact>();
-//                            //                            current_contact->isect_area	   = area;
-//                            //                            current_contact->relative_area = weight;
-//                        } else if(dim_src == 3) {
-//                            make_polygon_3(*side_ptr_2, side_polygon_2);
-//                            
-//                            if(!project_3D(
-//                                           side_polygon_1,
-//                                           side_polygon_2,
-//                                           isect_polygon_1,
-//                                           isect_polygon_2))
-//                            {
-//                                continue;
-//                            }
-//                            
-//                            const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
-//                            const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
-//                            const Scalar weight 	= area/area_slave;
-//                            
-//                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
-//                            
-//                            make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, src_ir);
-//                            make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, dest_ir);
-//                            
-//                            pair_intersected = true;
-//                            
-//                            
-//                            ++n_intersections;
-//                            
-//                            //
-//                            //                            current_contact = std::make_shared<Contact>();
-//                            //                            current_contact->isect_area	   = area;
-//                            //                            current_contact->relative_area = weight;
-//                        } else {
-//                            assert(false);
-//                            return false;
-//                        }
-//                    }
-//                }
-//            }
-//            
-//            
-//            
-//            
-//            
-//            
-//            //                   bool pair_intersected = false;
-//            //
-//            //                   if(dim == 2) {
-//            //                            make_polygon(*side_ptr_2, side_polygon_2);
-//            //
-//            //                            if(!project_2D(side_polygon_1, side_polygon_2, isect_polygon_1, isect_polygon_2)) {
-//            //                                continue;
-//            //                            }
-//            //
-//            //                            const Scalar dx = polygon_2(0, 0) - polygon_2(1, 0);
-//            //                            const Scalar dy = polygon_2(0, 1) - polygon_2(1, 1);
-//            //
-//            //                            const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
-//            //                            const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
-//            //
-//            //                            const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
-//            //                            const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
-//            //
-//            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
-//            //
-//            //                            make_composite_quadrature_on_surf_2D(isect_polygon_1, weight, order, q_1);
-//            //                            make_composite_quadrature_on_surf_2D(isect_polygon_2, weight, order, q_2);
-//            //
-//            //                            pair_intersected = true;
-//            //                            ++n_projections;
-//            //
-//            //
-//            //                            current_contact = std::make_shared<Contact>();
-//            //                            current_contact->isect_area	   = area;
-//            //                            current_contact->relative_area = weight;
-//            //
-//            //
-//            //                        } else if(dim == 3) {
-//            //                            make_polygon_3(*side_ptr_2, side_polygon_2);
-//            //
-//            //                            if(!project_3D(
-//            //                                           side_polygon_1,
-//            //                                           side_polygon_2,
-//            //                                           isect_polygon_1,
-//            //                                           isect_polygon_2))
-//            //                            {
-//            //                                continue;
-//            //                            }
-//            //
-//            //                            const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
-//            //                            const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
-//            //                            const Scalar weight 	= area/area_slave;
-//            //
-//            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
-//            //
-//            //                            make_composite_quadrature_on_surf_3D(isect_polygon_1, weight, order, q_1);
-//            //                            make_composite_quadrature_on_surf_3D(isect_polygon_2, weight, order, q_2);
-//            //
-//            //                            pair_intersected = true;
-//            //                            ++n_projections;
-//            //
-//            //
-//            //                            current_contact = std::make_shared<Contact>();
-//            //                            current_contact->isect_area	   = area;
-//            //                            current_contact->relative_area = weight;
-//            
-//            //                        } else {
-//            //                            assert(false);
-//            //                            return false;
-//            //                        }
-//            
-//            
-//            if(pair_intersected) {
-//                
-//                
-////                transform_to_reference_surf(*src_trans,  src_el.type(),  src_ir, src_ir_ref);
-////                transform_to_reference_surf(*dest_trans, dest_el.type(), dest_ir, dest_ir_ref);
-//                //
-//                //               // src.dof_map().dof_indices(&src_el,  master_dofs);
-//                //               // dest.dof_map().dof_indices(&dest_el, slave_dofs);
-//                //
-//                //
-//                //				const auto &master_dofs = master.dof_map();
-//                //				const auto &slave_dofs  = slave.dof_map();
-//                //               // composite_ir.print_info();
-//                //
-//                //
-////                master_fe->attach_quadrature_rule(&src_ir_ref);
-////                master_fe->reinit(&src_el);
-////                
-////                slave_fe->attach_quadrature_rule(&dest_ir_ref);
-////                slave_fe->reinit(&dest_el);
-//                //
-//                //				elemmat.zero();
-//                //
-//                //				mortar_assemble(*master_fe, *slave_fe, elemmat);
-//                //
-//                //				// std::cout << "-----------------------------------------\n";
-//                //				// std::cout << src_index << ", " << dest_index << "\n";
-//                //				// elemmat.print(std::cout);
-//                //				// for(auto i : slave_dofs) {
-//                //				// 	std::cout << i << " ";
-//                //				// }
-//                //				// std::cout << "\n";
-//                //
-//                //				// for(auto i : master_dofs) {
-//                //				// 	std::cout << i << " ";
-//                //				// }
-//                //				// std::cout << "\n";
-//                //				// std::cout << "-----------------------------------------\n";
-//                //
-//                //				auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
-//                //                // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
-//                //                // dest_ir.print_info();
-//                //
-//                //				local_element_matrices_sum += partial_sum;
-//                //
-//                //				intersected = true;
-//                //
-//                //				++n_intersections;
-//                //std::cout<<"n_intersections"<<n_intersections<<std::endl;
-//                //
-//                //				assert(slave_dofs.size() == elemmat.m());
-//                //				assert(master_dofs.size() == elemmat.n());
-//                //
-//                //				for(int i = 0; i < slave_dofs.size(); ++i) {
-//                //
-//                //					const long dof_I = slave_dofs[i];
-//                //
-//                //					for(int j = 0; j < master_dofs.size(); ++j) {
-//                //
-//                //                        const long dof_J = master_dofs[j];
-//                //
-//                //                        mat_buffer.add(dof_I, dof_J, elemmat(i, j));
-//                //					}
-//                //				}
-//                
-//                return true;
-//                
-//            } else {
-//                
-//                return false;
-//            }
-//            
-//        };
-//        
-//        if(!SurfaceAssemble<Dimensions>(comm, master_slave, fun, settings, search_radius, tag_1, tag_2)) {
-//            return false;
-//        }
-//        //
-//        //
-//        //		// std::cout << mat_buffer << std::endl;
-//        //
-//        //		double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };
-//        //
-//        //		comm.allReduce(volumes, 2, express::MPISum());
-//        //
-//        //		const processor_id_type master_proc_id  = master->mesh().processor_id();
-//        //
-//        //		const dof_id_type n_dofs_on_proc_master = master->dof_map().n_dofs_on_processor(master_proc_id);
-//        //
-//        //		const processor_id_type slave_proc_id   = slave->mesh().processor_id();
-//        //
-//        //		const dof_id_type n_dofs_on_proc_slave  = slave->dof_map().n_dofs_on_processor(slave_proc_id);
-//        //
-//        //		if(comm.isRoot()) {
-//        //			std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
-//        //		}
-//        
-//        //
-//        //
-//        //		express::Array<express::SizeType>  ownershipRangesMaster(comm.size()+1);
-//        //		ownershipRangesMaster.allSet(0);
-//        //
-//        //
-//        //		express::Array<express::SizeType>  ownershipRangesSlave(comm.size()+1);
-//        //		ownershipRangesSlave.allSet(0);
-//        //
-//        //
-//        //		ownershipRangesMaster[comm.rank()+1]+= static_cast<unsigned int>(n_dofs_on_proc_master);
-//        //
-//        //		ownershipRangesSlave[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_slave);
-//        //
-//        //		comm.allReduce(&ownershipRangesMaster[0], ownershipRangesMaster.size(), express::MPIMax());
-//        //
-//        //		comm.allReduce(&ownershipRangesSlave[0],  ownershipRangesSlave.size(),  express::MPIMax());
-//        //
-//        //		express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
-//        //		redist.apply(ownershipRangesSlave, mat_buffer, express::AddAssign<double>());
-//        //
-//        //		assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
-//        //
-//        //		express::RootDescribe("petsc assembly begin", comm, std::cout);
-//        //
-//        //		SizeType  mMaxRowEntries = mat_buffer.maxEntriesXCol();
-//        //		comm.allReduce(&mMaxRowEntries, 1, express::MPIMax());
-//        //
-//        //		const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
-//        //		const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
-//        //
-//        //		B = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
-//        //
-//        //		{
-//        //			utopia::Write<utopia::DSMatrixd> write(B);
-//        //			for (auto it = mat_buffer.iter(); it; ++it) {
-//        //				B.set(it.row(), it.col(), *it);
-//        //
-//        //			}
-//        //		}
-//        //
-//        //
-//        //		express::RootDescribe("petsc assembly end", comm, std::cout);
-//        //
-//        //
-//        return true;
-//    }
-//    //
-//    //
-//    //
-//    //
-//    
-//    
-//    
-//    
-//    bool ParMortarAssembler::SurfaceAssemble(DSMatrixd &B, const libMesh::Real search_radius, const int tag_1, const int tag_2)
-//    {
-//        
-//        cutk::Settings settings;
-//        
-//        
-//        express::Communicator comm = libmesh_comm_.get();
-//        
-//        if(master_slave_->mesh().mesh_dimension() == 2) {
-//            //std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-//            return utopia::SurfaceAssemble<2>(comm, master_slave_, B, settings, search_radius, tag_1, tag_2);
-//        }
-//        
-//        
-//        if(master_slave_->mesh().mesh_dimension() == 3) {
-//            return utopia::SurfaceAssemble<3>(comm, master_slave_, B, settings, search_radius, tag_1, tag_2);
-//        }
-//        
-//        assert(false && "Dimension not supported!");
-//        return false;
-//    }
-//    //
-//    //
-//    //
-//    //	bool ParMortarAssembler::Transfer(DSMatrixd &B, DSMatrixd &T)
-//    //	{
-//    //		DVectord               diag_elem;
-//    //		PetscInt               mG;
-//    //		PetscInt               nG;
-//    //		PetscInt               mL;
-//    //		PetscInt               nL;
-//    //
-//    //		diag_elem = 1./sum(B,1);
-//    //		T = diag(diag_elem)*B;
-//    //
-//    //		return true;
-//    //	}
-//    //
-//}
-//
-//
-//
+
 
 
