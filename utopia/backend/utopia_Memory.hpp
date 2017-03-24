@@ -60,7 +60,7 @@ namespace utopia {
 
 		Memory& operator=(const Memory& m) {
 			if (!is_used_ && is_owner_ && mem_)
-				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
+				std::cout << "[Warning] Destroying an unused object!" << std::endl;
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 			comm_ = m.comm_;
 			init_ = m.init_;
@@ -72,7 +72,7 @@ namespace utopia {
 		template<int FillTypeOther>
 		Memory& operator=(const Memory<T, FillTypeOther>& m) {
 			if (!is_used_ && is_owner_ && mem_)
-				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
+				std::cout << "[Warning] Destroying an unused object!" << std::endl;
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 			comm_ = m.comm_;
 			init_ = m.init_;
@@ -83,7 +83,7 @@ namespace utopia {
 
 		void init(const Size& local, const Size& global) {
 			if (!is_used_ && is_owner_ && mem_)
-				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
+				std::cout << "[Warning] Destroying an unused object!" << std::endl;
 			mem_ = Allocator<T, FillType>::claim(comm_, local, global);
 			init_ = true;
 			is_owner_ = true;
@@ -92,7 +92,7 @@ namespace utopia {
 
 		void init(T& t, bool own) {
 			if (!is_used_ && is_owner_ && mem_)
-				std::cerr << "[Warning] Destroying an unused object!" << std::endl;
+				std::cout << "[Warning] Destroying an unused object!" << std::endl;
 			mem_ = MemoryPtr<T>(&t, own ? Allocator<T, FillType>::destructor : [](T*){});
 			init_ = true;
 			is_owner_ = own;

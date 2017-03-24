@@ -17,26 +17,19 @@ namespace utopia {
 	class Allocator<Mat, FillType::DENSE> {
 	public:
 		static void destructor(Mat* m) {
-			//TODO return m to pool
-			MatDestroy(m);
-			delete m;
+			MEMPOOL().put(m);
 		};
 
 		static MemoryPtr<Mat> claim(MPI_Comm comm, const Size& local, const Size& global) {
-			//TODO ask pool for m
-			Mat* m = new Mat;
-			if (global.n_dims() >= 2 && local.n_dims() >= 2) {
-				MatCreateDense(comm, local.get(0), local.get(1), global.get(0), global.get(1), NULL, m);
-			} else {
-				MatCreate(comm, m);
-			}
+			MEMPOOL().setCommunicator(comm);
+			Mat* m = MEMPOOL().getMat(local, global);
 
 			return MemoryPtr<Mat>(m, destructor);
 		}
 
 		static MemoryPtr<Mat> clone(const MemoryPtr<Mat>& m) {
-			Mat* new_m = new Mat;
-			MatDuplicate(*m, MAT_COPY_VALUES, new_m);
+			Mat* new_m = MEMPOOL().getMat(*m);
+			MatConvert(*m, MATDENSE, MAT_REUSE_MATRIX, new_m);
 
 			return MemoryPtr<Mat>(new_m, destructor);
 		}

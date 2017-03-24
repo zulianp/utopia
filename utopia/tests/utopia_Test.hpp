@@ -2,6 +2,7 @@
 #define UTOPIA_UTOPIA_TEST_HPP
 
 #include <sstream>
+#include "utopia_MemoryPool.hpp"
 #include "utopia_SpecTest.hpp"
 #include "utopia_WrapperTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
@@ -21,10 +22,14 @@ namespace utopia
         runWrapperTest();
         runSpecTest();
         run_autodiff_test();
+        MEMPOOL().fullGC();
         runSolversTest();
+        MEMPOOL().fullGC();
         runAlgebraTest();
         runUtilitiesTest();
+        MEMPOOL().fullGC();
         runPETScTest();
+        MEMPOOL().fullGC();
         runBLASTest();
         runMiscTest();
 
@@ -44,6 +49,7 @@ namespace utopia
         std::istringstream iss(tests);
         std::string token;
         while (std::getline(iss, token, ',')) {
+            MEMPOOL().fullGC();
             if (token == "wrapper")
                 runWrapperTest();
             else if (token == "spec")

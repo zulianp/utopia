@@ -18,26 +18,18 @@ namespace utopia {
 	class Allocator<Vec, 0> {
 	public:
 		static void destructor(Vec* v) {
-			//TODO return v to pool
-			VecDestroy(v);
-			delete v;
+			MEMPOOL().put(v);
 		};
 
 		static MemoryPtr<Vec> claim(MPI_Comm comm, const Size& local, const Size& global) {
-			//TODO ask pool for v
-			Vec* v = new Vec;
-			if (global.n_dims() >= 1 && local.n_dims() >= 1) {
-				VecCreateMPI(comm, local.get(0), global.get(0), v);
-			} else {
-				VecCreate(comm, v);
-			}
+			MEMPOOL().setCommunicator(comm);
+			Vec* v = MEMPOOL().getVec(local, global);
 
 			return MemoryPtr<Vec>(v, destructor);
 		}
 
 		static MemoryPtr<Vec> clone(const MemoryPtr<Vec>& v) {
-			Vec* new_v = new Vec;
-			VecDuplicate(*v, new_v);
+			Vec* new_v = MEMPOOL().getVec(*v);
 			VecCopy(*v, *new_v);
 
 			return MemoryPtr<Vec>(new_v, destructor);
