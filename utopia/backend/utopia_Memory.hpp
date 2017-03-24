@@ -6,8 +6,7 @@
 
 #include <memory>
 
-#include "utopia_Base.hpp"
-#include "utopia_Size.hpp"
+#include "utopia_MemoryPool.hpp"
 
 namespace utopia {
 
@@ -39,7 +38,7 @@ namespace utopia {
 	public:
 		template<typename T2, int FillType2>
 		friend class Memory;
-		
+
 		Memory(MPI_Comm comm = PETSC_COMM_WORLD) : mem_(nullptr), comm_(comm), init_(false), is_owner_(true) { }
 
 		Memory(MPI_Comm comm, const Size& local, const Size& global) : comm_(comm), init_(true), is_owner_(true) {
