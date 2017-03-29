@@ -323,7 +323,7 @@ namespace utopia {
 
         double *arr;
         VecGetArray(raw_type(mv), &arr);
-        plot_mesh_f(*master_slave_context.mesh, arr, "surface_mortar");
+//        plot_mesh_f(*master_slave_context.mesh, arr, "surface_mortar");
         VecRestoreArray(raw_type(mv), &arr);
 
 

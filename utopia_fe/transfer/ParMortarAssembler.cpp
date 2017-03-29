@@ -512,8 +512,6 @@ namespace utopia {
             //WRITE 7
             os << type << e_n_nodes;
             
-            
-            
             for (int i = 0; i != e_n_nodes; ++i) {
                 
                 auto it = mapping.find(elem->node(i));
@@ -669,7 +667,6 @@ namespace utopia {
             //std::cout<<"e_n_nodes_read = "<<e_n_nodes<<std::endl;
             
             auto elem =  Elem::build(ElemType(type)).release();
-            
             //std::cout<<"n_side_read ="<< elem->n_sides()<<std::endl;
             
             
@@ -1759,13 +1756,30 @@ namespace utopia {
                 
                 //std::cout<<"addendum"<<addendum<<std::endl;
                 
+                std::vector<bool> node_is_boundary_dest;
+                
+                for (int i=0; i<dest_el.n_sides(); i++){
+                    auto side_ptr = dest_el.build_side_ptr(i);
+                    build_boundary_query(dest_el,*side_ptr,2,node_is_boundary_dest);
+                }
+                
+                std::vector<bool> node_is_boundary_src;
+                
+                for (int i=0; i<src_el.n_sides(); i++){
+                    auto side_ptr = src_el.build_side_ptr(i);
+                    build_boundary_query(src_el,*side_ptr,2,node_is_boundary_src);
+                }
+                
+                std::cout << node_is_boundary_dest.size() << ", " << node_is_boundary_src.size() << "\n";
+                std::cout << src_el.id() << ", " <<  dest_el.id()<< "\n";
+                
                 for(uint i = 0; i <  slave_dofs.size(); ++i){
-                    if (slave_face_id[0]!=-1) dof_indices_slave_vec[i] =  slave_face_id[0] * n_nodes_face_dest + i;
+                    if (slave_face_id[0]!=-1 && node_is_boundary_dest[i]==true) {std::cout<< node_is_boundary_dest[i]<<std::endl; dof_indices_slave_vec[i] =  slave_face_id[0] * n_nodes_face_dest + i;}
                 }
                     
 
                 for(uint i = 0; i <  master_dofs.size(); ++i) {
-                    if (master_face_id[0]!=-1)   dof_indices_master_vec[i] = master_face_id[0] * n_nodes_face_src + i;
+                    if (master_face_id[0]!=-1 && node_is_boundary_src[i]==true) {std::cout<< node_is_boundary_src[i]<<std::endl; dof_indices_master_vec[i] = master_face_id[0] * n_nodes_face_src + i;}
                 }
 
                 
