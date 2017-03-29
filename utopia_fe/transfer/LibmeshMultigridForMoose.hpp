@@ -251,7 +251,7 @@ namespace utopia {
         }
         
         ElementAdapter(MeshBase &fe, const libMesh::dof_id_type &element, const long element_handle, const int tag)
-        : fe_(&fe), element_(element), element_handle_(element_handle), tag_(tag), dof_map_(nullptr)
+        : fe_(&fe), element_(element), element_handle_(element_handle), tag_(tag), dof_map_(nullptr),level_(nullptr)
         {
             assert(element < fe.n_elem());
             
@@ -270,7 +270,7 @@ namespace utopia {
         
         
         ElementAdapter()
-        :fe_(nullptr) , element_(-1), element_handle_(-1), tag_(-1), dof_map_(nullptr) {}
+        :fe_(nullptr) , element_(-1), element_handle_(-1), tag_(-1), dof_map_(nullptr), level_(nullptr) {}
         
         
         inline long handle() const
@@ -322,6 +322,18 @@ namespace utopia {
             return *dof_map_;
         }
         
+        void set_level(long * ptr_level)
+        {
+            
+            level_ = ptr_level;
+        }
+        
+        inline const long &level_dof() const
+        {
+            assert(level_);
+            return *level_;
+        }
+
         
     private:
         MeshBase * fe_;
@@ -330,6 +342,7 @@ namespace utopia {
         int tag_;
         BoxBoxAdapter<Dimension> bound_;
         std::vector<long> * dof_map_;
+        long * level_;
     };
     
     
@@ -426,16 +439,17 @@ namespace utopia {
             
             // int n_elements=*master_elem+mesh->n_elem();
             std::cout<<"I am in the coarse level"<<std::endl;
-
-            copy_global_dofs(*mesh,  *dof_map_master, _to_var_num, dof_maps_[0], var_type_[0], *level, *coarse_elem);
+            
+            copy_global_dofs_coarse(*mesh,  *dof_map_master, _to_var_num, dof_maps_[0], mesh_level_[0], var_type_[0], *level, *coarse_elem);
             
             
             std::cout<<"I am in the fine level"<<std::endl;
-
-            copy_global_dofs(*mesh,  *dof_map_slave, _to_var_num, dof_maps_[1], var_type_[1], *level+1, *fine_elem);
-
-
-//            copy_var_order(*dof_map_slave, var_order_[0]);
+            
+            copy_global_dofs_fine(*mesh,  *dof_map_slave, _to_var_num, dof_maps_[1], mesh_level_[1], var_type_[1], *level+1, *fine_elem);
+            
+            
+            //            copy_var_order(*dof_map_slave, var_order_[0]);
+            
             
         }
         
@@ -503,31 +517,77 @@ namespace utopia {
         }
         
         
+        inline std::vector<ElementDofMap> &mesh_level(const int i)
+        {
+            
+            return mesh_level_[i];
+        }
+        
+        
+        
+        inline const std::vector<ElementDofMap> &mesh_level(const int i) const
+        {
+            return mesh_level_[i];
+        }
+        
+        inline std::vector<ElementDofMap> &size_c()
+        {
+            
+            return size_level_c[0];
+        }
+        
+        
+        
+        inline const std::vector<ElementDofMap> &size_c() const
+        {
+            return size_level_c[0];
+        }
+        
+        
+        inline std::vector<ElementDofMap> &size_f()
+        {
+            
+            return size_level_f[0];
+        }
+        
+        
+        
+        inline const std::vector<ElementDofMap> &size_f() const
+        {
+            return size_level_f[0];
+        }
+        
+        
     private:
         express::Communicator comm;
         std::vector<std::shared_ptr< MeshBase>> spaces_;
         std::vector<ElementDofMap> dof_maps_[2];
         std::vector<ElementDofMap> var_order_[2];
         std::vector<ElementDofMap> var_type_[2];
+        std::vector<ElementDofMap> mesh_level_[2];
+        std::vector<ElementDofMap> size_level_c[1];
+        std::vector<ElementDofMap> size_level_f[1];
         bool must_destroy_attached[1];
-
         
         
         
-        inline static void copy_global_dofs(MeshBase &space, const std::vector<ElementDofMap> &original_dof, const std::shared_ptr<const unsigned int>  &var_num,std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const unsigned int  &level, int n_elements)
+        
+        inline static void copy_global_dofs_fine(MeshBase &space, const std::vector<ElementDofMap> &original_dof, const std::shared_ptr<const unsigned int>  &var_num,std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &mesh_level, std::vector<ElementDofMap> &variable_type, const unsigned int  &level, int n_elements)
         {
             
             std::vector<dof_id_type> temp;
             std::shared_ptr<ElementDofMap> temp_ptr;
-
-            std::cout<<"ELEMENTS"<<n_elements<<std::endl;
-
-            dof_map.resize(n_elements);
-        
             
-            //        std::cout<<"______________________________COPY_DOF_BEGIN____________________________"<<std::endl;
+            std::cout<<"ELEMENTS"<<n_elements<<std::endl;
+            
+            dof_map.resize(n_elements);
+            
+            mesh_level.resize(n_elements);
+            
+            //std::cout<<"______________________________COPY_DOF_BEGIN____________________________"<<std::endl;
             
             MeshBase::const_element_iterator e_it        =space.local_level_elements_begin(level);
+            
             const MeshBase::const_element_iterator e_end =space.local_level_elements_end(level);
             
             int i=0;
@@ -535,21 +595,19 @@ namespace utopia {
             variable_type.resize(1);
             
             bool first=true;
-
+            
             
             for (; e_it != e_end; ++e_it){
                 
                 Elem *elem = *e_it;
-                Elem *first_elem = *space.local_level_elements_begin(level);
-               
-                dof_map[elem->id()-first_elem->id()].global.insert(dof_map[elem->id()-first_elem->id()].global.end(), original_dof[elem->id()-first_elem->id()].global.begin(), original_dof[elem->id()-first_elem->id()].global.end());
                 
-//                if (level==0){
-//
-//                std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[0] << "  \n";
-//                std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[1] << "  \n";
-//                std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[2] << "  \n";
-//                std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[3] << "  \n";}
+                Elem *first_elem = *space.local_level_elements_begin(level);
+                
+                mesh_level[elem->id()-first_elem->id()].global.insert(mesh_level[elem->id()-first_elem->id()].global.end(),level);
+                
+                assert(!original_dof.at(elem->id()-first_elem->id()).empty());
+                
+                dof_map[elem->id()-first_elem->id()].global.insert(dof_map[elem->id()-first_elem->id()].global.end(), original_dof[elem->id()-first_elem->id()].global.begin(), original_dof[elem->id()-first_elem->id()].global.end());
                 
                 if (first)
                 {
@@ -558,11 +616,11 @@ namespace utopia {
                     
                 }
                 i++;
-
-              //  std::cout<<i<<std::endl;
+                
+                
             }
             
-
+            
             
             
             
@@ -571,22 +629,63 @@ namespace utopia {
         }
         
         
+        inline static void copy_global_dofs_coarse(MeshBase &space, const std::vector<ElementDofMap> &original_dof, const std::shared_ptr<const unsigned int>  &var_num, std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &mesh_level,std::vector<ElementDofMap> &variable_type, const unsigned int  &level, int n_elements)
+        {
+            
+            std::vector<dof_id_type> temp;
+            std::shared_ptr<ElementDofMap> temp_ptr;
+            
+            std::cout<<"ELEMENTS"<<n_elements<<std::endl;
+            
+            dof_map.resize(n_elements);
+            
+            mesh_level.resize(n_elements);
+            
+            MeshBase::const_element_iterator e_it        = space.local_level_elements_begin(level);
+            const MeshBase::const_element_iterator e_end = space.local_level_elements_end(level);
+            
+            
+            variable_type.resize(1);
+            
+            bool first=true;
+            
+            
+            for (; e_it != e_end; ++e_it){
+                
+                Elem *elem = *e_it;
+                
+                Elem *first_elem = *space.elements_begin();
+                
+                mesh_level[elem->id()].global.insert(mesh_level[elem->id()-first_elem->id()].global.end(),level);
+                
+                assert(!original_dof.at(elem->id()).empty());
+                
+                dof_map[elem->id()].global.insert(dof_map[elem->id()].global.end(), original_dof[elem->id()].global.begin(), original_dof[elem->id()].global.end());
+                
+                
+                if (first)
+                {
+                    variable_type[0].global.push_back(elem->type());
+                    first=false;
+                    
+                }
+                
+                
+            }
+            
+            
+        }
         
-//        inline static void copy_var_order(DofMap &dofmap, std::vector<ElementDofMap> &variable_order)
-//        {
-//            variable_order.resize(1);
-//            FEType fe_type =  dofmap.variable(0).type();
-//            variable_order[0].global.push_back(fe_type.order);
-//        }
         
         
     };
     
     
+    
     template<class Iterator>
     static void write_space(const Iterator &begin, const Iterator &end, MeshBase &space,
                             const std::vector<ElementDofMap> &dof_map,/* const std::vector<ElementDofMap> &variable_number,*/
-                            const std::vector<ElementDofMap> &variable_order,const int role, cutk::OutputStream &os)
+                            /*const std::vector<ElementDofMap> &variable_order,*/ cutk::OutputStream &os)
     {
         const int dim 		  = space.mesh_dimension();
         const long n_elements = std::distance(begin, end);
@@ -615,8 +714,8 @@ namespace utopia {
         os.requestSpace( (n_elements * 8 + n_nodes * dim) * (sizeof(double) + sizeof(long)) );
         
         //WRITE 1
-        os << dim << role;
-        
+        os << dim;
+        std::cout<< "write_dim = "<<dim<<std::endl;
         
         int index = 0;
         for (auto nodeId : nodeIds) {
@@ -625,11 +724,11 @@ namespace utopia {
         
         //WRITE 2
         os << n_nodes;
+        std::cout<< "write_nd = "<<n_nodes<<std::endl;
         
         //WRITE 6
         os << n_elements;
-        
-//        std::cout<<"write_n_el = "<<n_elements<<std::endl;
+        std::cout<<"write_n_el = "<<n_elements<<std::endl;
         
         for(auto node_id : nodeIds){
             
@@ -679,12 +778,25 @@ namespace utopia {
             }
             
             //WRITE 9
-            assert(!dof_map.at(elem->id()).empty());
+            auto first_elem=*space.local_level_elements_begin(elem->level());
             
-            os << dof_map.at(elem->id());
+            std::cout<<" write level = "<< elem->level()<<std::endl;
+            
+            if (elem->level()==0) first_elem=*space.elements_begin();
+            
+            //            std::cout<<"first dof_map elem_id = "<<first_elem->id()<<std::endl;
+            //
+            //            std::cout<<"dof_map elem_id = "<<elem->id()-first_elem->id()<<std::endl;
+            
+            assert(!dof_map.at(elem->id()-first_elem->id()).empty());
             
             
             
+            os << dof_map.at(elem->id()-first_elem->id());
+            
+            //std::cout<<"dof_map elem_id"<<mesh_level[elem->id()-first_elem->id()].global.at(0)<<std::endl;
+            
+            //os << mesh_level[elem->id()-first_elem->id()].global.at(0);
         }
         
         CHECK_STREAM_WRITE_END("elements", os);
@@ -696,7 +808,7 @@ namespace utopia {
 //        os << variable_number.at(0);
         
         //WRITE 11
-        os << variable_order.at(0);
+//        os << variable_order.at(0);
         
         
         
@@ -706,21 +818,81 @@ namespace utopia {
 
     
     template<class Iterator>
-    static void write_element_selection(const Iterator &begin, const Iterator &end, const Spaces &spaces, const int &level, cutk::OutputStream &os)
+    static void write_element_selection(const Iterator &begin, const Iterator &end, const Spaces &spaces, const int &level, const int &coarse_elem, cutk::OutputStream &os)
     {
         
-        auto m = spaces.spaces()[0];
+        //auto m = spaces.spaces()[0];
         //write_space(begin, end, *m, spaces.dof_map(), spaces.variable_order(), level, os);
+        if(spaces.spaces().empty()){
+            assert(false);
+            return;
+        }
+        
+        
+        
+        auto m = spaces.spaces()[0];
+        
+        
+        unsigned int dim_master=m->mesh_dimension();
+        
+        std::vector<long> master_selection;
+        std::vector<long> slave_selection;
+        
+        bool met_slave_selection = false;
+        
+        std::cout<<"------------------------------------WRITE_ELEM_SELEC-MID---------------------------------------"<<std::endl;
+        
+        for(Iterator it = begin; it != end; ++it) {
+            int index =*it;
+            
+            Elem *elem=m->elem(index);
+            
+            if(elem->level()==0) {
+                master_selection.push_back(index);
+            }
+            
+            else {
+                
+                slave_selection.push_back(index);
+            }
+        }
+        
+        
+        
+        const bool has_master = !master_selection.empty();
+        const bool has_slave  = !slave_selection.empty();
+        
+        std::cout<<" has_master_write "<< has_master <<std::endl;
+        std::cout<<" has_slave_write "<<  has_slave <<std::endl;
+        
+        std::cout<<"------------------------------------ WRITE-ELEM_SELECTION-M1---------------------------------"<<std::endl;
+        
+        os << has_master << has_slave;
+        
+        std::cout<<"------------------------------------ WRITE-ELEM_SELECTION-M2---------------------------------"<<std::endl;
+        
+        
+        if(has_master) {
+            
+            std::cout<<"I am in master"<<std::endl;
+            write_space(master_selection.begin(), master_selection.end(), *m, spaces.dof_map(0), os);
+        }
+        
+        if(has_slave) {
+            std::cout<<"I am in slave"<<std::endl;
+            write_space(slave_selection.begin(), slave_selection.end(), *m, spaces.dof_map(1), os);
+        }
+        std::cout<<"------------------------------------ WRITE-ELEM_SELECTION-OUT--------------------------------"<<std::endl;
         
     }
 
 
     static void read_space(cutk::InputStream &is, cutk::shared_ptr<MeshBase> & space,
-                           std::vector<ElementDofMap> &dof_map, /*std::vector<ElementDofMap> &variable_number,*/
-                           std::vector<ElementDofMap> &variable_order, const libMesh::Parallel::Communicator &comm)
+                           std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &mesh_level /*std::vector<ElementDofMap> &variable_number,*/
+                           /*std::vector<ElementDofMap> &variable_order*/, const libMesh::Parallel::Communicator &comm)
     {
         
-        //   std::cout<<"------------------------------------READ-SPACE-IN-------------------------------------------"<<std::endl;
+        std::cout<<"------------------------------------READ-SPACE-IN--------------------------------------------"<<std::endl;
         
         
         using namespace std;
@@ -728,12 +900,14 @@ namespace utopia {
         
         
         //READ 1
-        int dim, role;
-        is >> dim >> role;
+        int dim;
+        is >> dim;
+        std::cout<< "read_dim = "<<dim<<std::endl;
         
         //READ 2
         long n_nodes;
         is >> n_nodes;
+        std::cout<<"read_nd = "<<n_nodes<<std::endl;
         
         //READ 6
         long n_elements;
@@ -741,17 +915,7 @@ namespace utopia {
         
         auto mesh_ptr = std::make_shared<SerialMesh>(comm, dim);
         
-//      std::cout<<"read_n_el = "<<n_elements<<std::endl;
-//        
-//      EquationSystems equation_systems (*mesh_ptr);
-//        
-//      LinearImplicitSystem & system = equation_systems.add_system<LinearImplicitSystem> ("Serial");
-//        
-//      std::cout<<"ciao2 = "<<n_elements<<std::endl;
-
-//      equation_systems.init();
-        
-//      equation_systems.print_info();
+        std::cout<<"read_n_el = "<<n_elements<<std::endl;
         
         mesh_ptr->reserve_nodes(n_nodes);
         
@@ -774,10 +938,22 @@ namespace utopia {
         
         dof_map.resize(n_elements);
    
+        mesh_level.resize(n_elements);
+        
+        bool first_value=true;
         
         CHECK_STREAM_READ_BEGIN("elements", is);
         
         for(long i = 0; i !=n_elements; ++i) {
+            
+            //READ 10
+            
+            int level;
+            
+            is >> level;
+            
+            mesh_level[i].global.insert(mesh_level[i].global.end(),level);
+            
             
             //READ 7
             
@@ -800,6 +976,13 @@ namespace utopia {
             }
             
             //READ 9
+            
+            //RefinementState rflag=level;
+            
+            //elem->set_p_level(level);
+            
+            std::cout<<"read level" << level << std::endl;
+            
             is >> dof_map.at(i);
             
             mesh_ptr->add_elem(elem);
@@ -815,40 +998,56 @@ namespace utopia {
         
         CHECK_STREAM_READ_END("elements", is);
         
-      //READ 10
-      //  variable_number.resize(1);
-      //  is >> variable_number.at(0);
-        
-        //READ 11
-        variable_order.resize(1);
-        is >> variable_order.at(0);
-        
-        
-        //!!!! dummy parameters
-        
-      //  space = make_shared<System>(equation_systems,"Serial",0);
-        
         space = mesh_ptr;
         
-      //   std::cout<<"------------------------------------READ-SPACE-OUT-------------------------------------------"<<std::endl;
+        std::cout<<"------------------------------------READ-SPACE-OUT-------------------------------------------"<<std::endl;
+        
         
     }
 
-    static void read_spaces(cutk::InputStream &is, Spaces &spaces, const libMesh::Parallel::Communicator &comm_slave)
+    static void read_spaces(cutk::InputStream &is, Spaces &spaces, const libMesh::Parallel::Communicator &comm_master, const libMesh::Parallel::Communicator &comm_slave)
     {
-        //    std::cout<<"------------------------------------READ-SPACES-IN-------------------------------------------"<<std::endl;
+        std::cout<<"------------------------------------READ-SPACES-IN-------------------------------------------"<<std::endl;
+        
         
         bool has_master, has_slave;
+        
+        
+        
         is >> has_master >> has_slave;
         
-        spaces.spaces().resize(1);
         
-        //node add level info
+        spaces.spaces().resize(2);
         
-        //read_space(is, spaces.spaces()[0], spaces.dof_map(0),spaces.variable_order(), comm_slave);
-        spaces.set_must_destroy_attached(0,true);
+        
+        if(has_master) {
+            std::cout<<" has_master read = "<< has_master <<std::endl;
+            read_space(is, spaces.spaces()[0], spaces.dof_map(0), spaces.mesh_level(0), comm_master);
+            spaces.set_must_destroy_attached(0,true);
+        }
+        else {
+            spaces.spaces()[0] = nullptr;
+            
+        }
+        
+        if(has_slave) {
+            std::cout<<" has_slave read = "<<  has_slave <<std::endl;
+            read_space(is, spaces.spaces()[1], spaces.dof_map(1), spaces.mesh_level(1), comm_slave);
+            spaces.set_must_destroy_attached(1,true);
+        }
+        else {
+            spaces.spaces()[1] = nullptr;
+            
+        }
+        
+        
+        std::cout<<"------------------------------------READ-SPACES-OUT------------------------------------------"<<std::endl;
+        
+        
     }
+    
 
+    
     template<int Dimensions, class Fun>
     static bool Assemble(express::Communicator &comm,
                          const std::shared_ptr<MeshBase> &mesh,
@@ -858,6 +1057,14 @@ namespace utopia {
                          const std::shared_ptr<const int> &level,
                          const std::shared_ptr<const int> &coarse_elem,
                          const std::shared_ptr<const int> &fine_elem,
+                         const std::shared_ptr<const int> &coarse_dof_G,
+                         const std::shared_ptr<const int> &fine_dof_G,
+                         const std::shared_ptr<const int> &coarse_dof_L,
+                         const std::shared_ptr<const int> &fine_dof_L,
+                         const FEType & master_fe_type,
+                         const FEType & slave_fe_type,
+                         int master_order,
+                         int slave_order,
                          Fun process_fun,
                          const cutk::Settings &settings)
     {
@@ -883,10 +1090,11 @@ namespace utopia {
 
         const auto &slave_mesh  = mesh;
         //const int n_elements_master = master_mesh->n_elem();
-       // const int n_elements_slave  = slave_mesh->n_elem();
+        //const int n_elements_slave  = slave_mesh->n_elem();
         const int n_elements 		= *fine_elem+*coarse_elem;
         
         const Parallel::Communicator &libmesh_comm_slave = mesh->comm();
+        const Parallel::Communicator &libmesh_comm_master = mesh->comm();
         
         
         auto predicate = make_shared<MasterAndSlave>();
@@ -901,46 +1109,44 @@ namespace utopia {
         
         std::shared_ptr<Spaces> local_spaces = make_shared<Spaces>(mesh, dof_master, dof_slave, _to_var_num, coarse_elem, fine_elem, level);
         
-
-         int j=0;
-         int l = *level;
-
-         int num_el=2;
-         int kk=0;
-
-         while (kk!=num_el){
-             for (auto it = mesh->local_level_elements_begin(l); it != mesh->local_level_elements_end(l); ++it) {
-                 auto elem=*it;
-                 auto first_elem=*mesh->local_level_elements_begin(l);
-                 Adapter a(*mesh, elem->id(), elem->id(), l);
-                 assert(!local_spaces->dof_map(l)[elem->id()-first_elem->id()].empty());
-                 a.set_dof_map(&local_spaces->dof_map(l)[elem->id()-first_elem->id()].global);
-                 tree->insert(a);
-                 std::cout<<"level"<<l<<std::endl;
-                 std::cout<<"lem_id()_ADAP"<<elem->id()<<std::endl;
-                 std::cout<<"elem_id()"<<elem->id()-first_elem->id()<<std::endl;
-                if (j==*coarse_elem-1)
-                    {l=l+1;
-                     kk=1;}
-                if (j==*fine_elem-1){kk=2;} 
-                j++;
-                }
+        
+        for (auto it = mesh->local_elements_begin(); it != mesh->local_elements_end(); ++it) {
+            auto elem=*it;
+            if (predicate->select(elem->level())){
+                // if (elem->level()==0) std::cout<<"level_ADP"<<elem->level()<<std::endl;
+                auto first_elem=*mesh->local_elements_begin();
+                if (elem->level()==0)  first_elem = *mesh->elements_begin();
+                if (elem->level() > 0) first_elem = *mesh->local_level_elements_begin(elem->level());
+                Adapter a(*mesh, elem->id(), elem->id(), elem->level());
+                //std::cout<<"elem-level"<< elem->level()<<std::endl;
+                //std::cout<<"elem-id"<< elem->id()-first_elem->id()<<std::endl;
+                //std::cout<<"elem-first-id"<<first_elem->id()<<std::endl;
+                assert(!local_spaces->dof_map(elem->level())[elem->id()-first_elem->id()].empty());
+                a.set_dof_map(&local_spaces->dof_map(elem->level())[elem->id()-first_elem->id()].global);
+                assert(!local_spaces->mesh_level(elem->level())[elem->id()-first_elem->id()].empty());
+                a.set_level(&local_spaces->mesh_level(elem->level())[elem->id()-first_elem->id()].global.at(0));
+                tree->insert(a);
+            }
         }
-    
-        //std::cout<<" --------------------------- tree->memory().nData()=" << tree->memory().nData()<<std::endl; ;
+        
+        
+        
+        std::cout<<" --------------------------- tree->memory().nData()=" << tree->memory().nData()<<std::endl; ;
         
         tree->getRoot()->getBound().staticBound().enlarge(1e-8);
         
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         EXPRESS_EVENT_END("create_adapters");
         
-        // std::cout<<"-----------------------------------ADAPTERS-------------------------------------------------"<<std::endl;
+        std::cout<<"-----------------------------------ADAPTERS-------------------------------------------------"<<std::endl;
+
         //Just to have an indexed-storage
         std::map<long, cutk::shared_ptr<Spaces> > spaces;
         std::map<long, std::vector<cutk::shared_ptr<Spaces> > > migrated_spaces;
     
         
-        auto read = [&spaces, &migrated_spaces, comm, &libmesh_comm_slave, &coarse_elem, &level]
+        
+         auto read = [&spaces, &migrated_spaces, comm, &libmesh_comm_master, &libmesh_comm_slave, &coarse_elem, &level]
         (
          const long ownerrank,
          const long senderrank,
@@ -949,14 +1155,14 @@ namespace utopia {
          ) {
             
             
-            //   std::cout<<"------------------------------------AUTO-READ-IN---------------------------------------------"<<std::endl;
+            std::cout<<"------------------------------------AUTO-READ-IN---------------------------------------------"<<std::endl;
             
             
             CHECK_STREAM_READ_BEGIN("vol_proj", in);
             
             cutk::shared_ptr<Spaces> proc_space = cutk::make_shared<Spaces>(comm);
             
-            read_spaces(in, *proc_space,libmesh_comm_slave);
+            read_spaces(in, *proc_space,libmesh_comm_master,libmesh_comm_slave);
             
             if (!is_forwarding) {
                 assert(!spaces[ownerrank]);
@@ -965,27 +1171,42 @@ namespace utopia {
                 migrated_spaces[ownerrank].push_back(proc_space);
             }
             
-            data.reserve(data.size() + 3000);
-            //std::cout<<proc_space->dof_map(0)[0].global<<std::endl;
-        
-            int l = *level; 
-
+            data.reserve(data.size() + proc_space->n_elements());
+            
+            std::cout<<"proc_space->n_elements() = "<<proc_space->n_elements()<<std::endl;
+            
+            std::vector<ElementDofMap>::iterator it;
+            
+            int tag_level = 0;
+            
+            int offset = 0;
+            
             for(auto s : proc_space->spaces()){
-                int i=0;
-            for (auto it = s->local_level_elements_begin(l); it != s->local_level_elements_end(l); ++it) {
-
-                        data.push_back(Adapter(*s, i, i, l) );
-                        assert(!proc_space->dof_map(l)[i].empty());
-                        data.back().set_dof_map(&proc_space->dof_map(l)[i].global);
-                        i++;
-                        if (i==*coarse_elem-1)
-                            {l=l+1;}
+                
+                for (int i=0; i<s->n_elem(); i++) {
+                    
+                    Elem *elem=s->elem(i);
+                    
+                    if (offset > 0) tag_level = 1;
+                    
+                    std::cout<<"tag_level = "<<tag_level<<std::endl;
+                    
+                    data.push_back(Adapter(*s, i, i+offset, tag_level) );
+                    
+                    assert(!proc_space->dof_map(tag_level)[i].empty());
+                    
+                    data.back().set_dof_map(&proc_space->dof_map(tag_level)[i].global);
+                    
+                    assert(!proc_space->mesh_level(tag_level)[i].empty());
+                    
+                    data.back().set_level(&proc_space->mesh_level(tag_level)[i].global.at(0));
+                    
+                }
+                
+                offset += s->n_elem();
+                
             }
-            
-            }
-            
-            
-            // std::cout<<"------------------------------------AUTO-READ-OUT---------------------------------------------"<<std::endl;
+            std::cout<<"------------------------------------AUTO-READ-OUT--------------------------------------------"<<std::endl;
             
             CHECK_STREAM_READ_END("vol_proj", in);
             
@@ -994,7 +1215,7 @@ namespace utopia {
         };
 
         
-        auto write = [&local_spaces, &spaces, &level, &comm]
+        auto write = [&local_spaces, &coarse_elem, &spaces, &level, &comm]
         (
          const long ownerrank, const long recvrank,
          const std::vector<long>::const_iterator &begin,
@@ -1004,11 +1225,11 @@ namespace utopia {
             
             CHECK_STREAM_WRITE_BEGIN("vol_proj", out);
             
-            //       std::cout<<"------------------------------------AUTO-WRITE-IN-------------------------------------------"<<std::endl;
+            std::cout<<"------------------------------------AUTO-WRITE-IN--------------------------------------------"<<std::endl;
             
             if (ownerrank == comm.rank()) {
                 
-                write_element_selection(begin, end, *local_spaces, *level, out);
+                 write_element_selection(begin, end, *local_spaces, *level, *coarse_elem, out);
                 
                 
             } else {
@@ -1017,11 +1238,11 @@ namespace utopia {
                 assert(it != spaces.end());
                 cutk::shared_ptr<Spaces> spaceptr = it->second;
                 assert(std::distance(begin, end) > 0);
-                write_element_selection(begin, end, *spaceptr, *level, out);
+                write_element_selection(begin, end, *spaceptr, *level, *coarse_elem, out);
                 
             }
             
-            //      std::cout<<"------------------------------------AUTO-WRITE-OUT-------------------------------------------"<<std::endl;
+            std::cout<<"------------------------------------AUTO-WRITE-OUT-------------------------------------------"<<std::endl;
             //      comm.barrier();
             
             CHECK_STREAM_WRITE_END("vol_proj", out);
@@ -1089,8 +1310,17 @@ namespace utopia {
                   const std::shared_ptr<const int> &level,
                   const std::shared_ptr<const int> &coarse_elem,
                   const std::shared_ptr<const int> &fine_elem,
+                  const std::shared_ptr<const int> &coarse_dof_G,
+                  const std::shared_ptr<const int> &fine_dof_G,
+                  const std::shared_ptr<const int> &coarse_dof_L,
+                  const std::shared_ptr<const int> &fine_dof_L,
+                  const FEType & master_fe_type,
+                  const FEType & slave_fe_type,
+                  int master_order,
+                  int slave_order,
                   DSMatrixd &B,
                   const cutk::Settings &settings)
+
     {
         std::shared_ptr<Spaces> local_fun_spaces = cutk::make_shared<Spaces>(mesh, dof_master, dof_slave, _to_var_num, coarse_elem, fine_elem, level);
         
@@ -1162,20 +1392,20 @@ namespace utopia {
             
             std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
             
-            master_fe = libMesh::FEBase::build(src_mesh.mesh_dimension(),  FIRST);
-            slave_fe  = libMesh::FEBase::build(dest_mesh.mesh_dimension(), FIRST);
+            master_fe = libMesh::FEBase::build(src_mesh.mesh_dimension(),  master_fe_type);
+            slave_fe  = libMesh::FEBase::build(dest_mesh.mesh_dimension(), slave_fe_type);
             
             QMortar composite_ir(dim);
             QMortar src_ir(dim);
             QMortar dest_ir(dim);
             
             
-            const int order = order_for_l2_integral(dim, src_el, SECOND , dest_el,FIRST);
-            
-            c.stop();
-            element_setup_time += c.get_seconds();
-            c.start();
-            
+            const int order = order_for_l2_integral(dim, src_el, master_order, dest_el, slave_order);
+            //
+            //            c.stop();
+            //            element_setup_time += c.get_seconds();
+            //            c.start();
+            //
             if(dim == 2)  {
                 make_polygon(src_el,   src_pts);
                 make_polygon(dest_el, dest_pts);
@@ -1214,11 +1444,11 @@ namespace utopia {
                 assert(false);
                 return false;
             }
-            
-            c.stop();
-            intersection_time += c.get_seconds();
-            c.start();
-            
+            //
+            //            c.stop();
+            //            intersection_time += c.get_seconds();
+            //            c.start();
+            //
             const auto &master_dofs = master.dof_map();
             const auto &slave_dofs  = slave.dof_map();
             
@@ -1228,11 +1458,11 @@ namespace utopia {
                 transform_to_reference(*src_trans,  src_el.type(),  composite_ir,  src_ir);
                 transform_to_reference(*dest_trans, dest_el.type(), composite_ir,  dest_ir);
                 
-                // src.dof_map(0).dof_indices(&src_el,  master_dofs);
-                // dest.dof_map(1).dof_indices(&dest_el, slave_dofs);
+                //                 src.dof_map(0).dof_indices(&src_el,  master_dofs);
+                //                 dest.dof_map(1).dof_indices(&dest_el, slave_dofs);
                 
                 
-       
+                
                 
                 assert(!master_dofs.empty());
                 assert(!slave_dofs.empty());
@@ -1273,33 +1503,38 @@ namespace utopia {
                 
                 ++n_intersections;
                 
+                // std::cout<<"n_intersections"<<n_intersections<<std::endl;
+                
                 
                 if(slave_dofs.size() != elemmat.m()) {
                     std::cout << slave_dofs.size() << " != " <<  elemmat.m() << std::endl;
                 }
                 
                 assert(slave_dofs.size() == elemmat.m());
-                assert(master_dofs.size() == elemmat.n());
-                
-               // std::cou;t<<"slave_dofs.size()"<<slave_dofs.size()<<std::endl;
-               // std::cout<<"master_dofs.size()"<<master_dofs.size()<<std::endl;
-             
+                //                assert(master_dofs.size() == elemmat.n());
+                //
+                //                std::cout<<"slave_dofs.size()"<<slave_dofs.size()<<std::endl;
+                //                std::cout<<"master_dofs.size()"<<master_dofs.size()<<std::endl;
+                //
+                //                std::cout<<"elemmat.m()"<<elemmat.m()<<std::endl;
+                //                std::cout<<"elemmat.m()"<<elemmat.m()<<std::endl;
+                //
                 for(int i = 0; i < slave_dofs.size(); ++i) {
                     const long dof_I = slave_dofs[i];
-                        for(int j = 0; j < master_dofs.size(); ++j) {
-                            const long dof_J = master_dofs[j];
-                            mat_buffer.add(dof_I, dof_J, elemmat(i, j));
+                    for(int j = 0; j < master_dofs.size(); ++j) {
+                        const long dof_J = master_dofs[j];
+                        mat_buffer.add(dof_I, dof_J, elemmat(i, j));
                     }
                 }
-            
-            return true;
-        } else {
                 
-            return false;
+                return true;
+            } else {
+                
+                return false;
             }
             
         };
-
+        
         
         
         // comm.barrier();
@@ -1307,26 +1542,27 @@ namespace utopia {
         // c2.start();
         
         
-        if(!Assemble<Dimensions>(comm, mesh, dof_master, dof_slave, _to_var_num, level, coarse_elem, fine_elem, fun, settings)) {
+        if(!Assemble<Dimensions>(comm, mesh, dof_master, dof_slave, _to_var_num, level, coarse_elem, fine_elem, coarse_dof_G, fine_dof_G, coarse_dof_L, fine_dof_L,
+                                 master_fe_type, slave_fe_type, master_order, slave_order,  fun, settings)) {
             std::cout << "n_intersections: false2" <<std::endl;
             return false;
         }
         
         
-        // c2.stop();
-        // std::cout << "Local mortars" << std::endl;
-        // c2.describe(std::cout);
+        //         c2.stop();
+        //         std::cout << "Local mortars" << std::endl;
+        //         c2.describe(std::cout);
         
         
-        // comm.barrier();
-        // std::stringstream ss;
-        // ss << "Setup_time: " << element_setup_time << "\n";
-        // ss << "intersection_time: " << intersection_time << "\n";
-        // ss << "assembly_time: " << assembly_time << std::endl;
-        
-        //express::SynchDescribe(ss.str(), comm, std::cout);
-        // comm.barrier();
-        // c2.start();
+        //         comm.barrier();
+        //         std::stringstream ss;
+        //         ss << "Setup_time: " << element_setup_time << "\n";
+        //         ss << "intersection_time: " << intersection_time << "\n";
+        //         ss << "assembly_time: " << assembly_time << std::endl;
+        //
+        //        express::SynchDescribe(ss.str(), comm, std::cout);
+        //         comm.barrier();
+        //         c2.start();
         
         std::cout << "n_intersections: " <<std::endl;
         
@@ -1334,9 +1570,9 @@ namespace utopia {
         
         comm.allReduce(volumes, 2, express::MPISum());
         
-        const dof_id_type n_dofs_on_proc_master = 71;
+        const dof_id_type n_dofs_on_proc_master = *coarse_dof_L;
         
-        const dof_id_type n_dofs_on_proc_slave  = 381;
+        const dof_id_type n_dofs_on_proc_slave  = *fine_dof_L;
         
         
         if(comm.isRoot()) {
@@ -1354,7 +1590,7 @@ namespace utopia {
         
         ownershipRangesSlave[comm.rank()+1]  += static_cast<unsigned int>(n_dofs_on_proc_slave);
         
-        std::cout<<"n_local_dofs: "<< n_dofs_on_proc_master <<"slave:  "<< n_dofs_on_proc_slave << "\n"; 
+        std::cout<<"n_local_dofs: "<< n_dofs_on_proc_master <<"slave:  "<< n_dofs_on_proc_slave << "\n";
         
         comm.allReduce(&ownershipRangesMaster[0], ownershipRangesMaster.size(), express::MPISum());
         
@@ -1366,8 +1602,8 @@ namespace utopia {
         
         
         if(comm.isRoot()) {
-            // std::cout <<ownershipRangesMaster << std::endl;
-            // std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
+            std::cout <<ownershipRangesMaster << std::endl;
+            //             std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
             
         }
         
@@ -1386,14 +1622,14 @@ namespace utopia {
         
         comm.allReduce(&mMaxRowEntries, 1, express::MPIMax());
         
-        const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
-        const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
+        const SizeType local_range_slave_range  = (ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()]);
+        const SizeType local_range_master_range = (ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()]);
         
         B = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
         
-
-        std::cout<<"B_size: "<< B.size().get(0)<< "   :  "<< B.size().get(1) << "\n"; 
-
+        
+        std::cout<<"B_size: "<< B.size().get(0)<< "   :  "<< B.size().get(1) << "\n";
+        
         {
             utopia::Write<utopia::DSMatrixd> write(B);
             for (auto it = mat_buffer.iter(); it; ++it) {
@@ -1401,6 +1637,8 @@ namespace utopia {
                 
             }
         }
+        
+        disp(B);
         
         express::RootDescribe("petsc assembly end", comm, std::cout);
         
@@ -1410,75 +1648,81 @@ namespace utopia {
         return true;
         
     }
-
     
-
-  inline  bool AssembleMultigridMOOSE(express::Communicator &comm,
-                       const std::shared_ptr<MeshBase> &mesh,
-                       const std::shared_ptr< std::vector<ElementDofMap>> &dof_master,
-                       const std::shared_ptr< std::vector<ElementDofMap>> &dof_slave,
-                       const std::shared_ptr<const unsigned int> & _to_var_num,
-                       const std::shared_ptr<const int> &level,
-                       const std::shared_ptr<const int> &coarse_elem,
-                       const std::shared_ptr<const int> &fine_elem,
-                       DSMatrixd &B)
+    
+    
+    inline  bool AssembleMultigridMOOSE(express::Communicator &comm,
+                                        const std::shared_ptr<MeshBase> &mesh,
+                                        const std::shared_ptr< std::vector<ElementDofMap>> &dof_master,
+                                        const std::shared_ptr< std::vector<ElementDofMap>> &dof_slave,
+                                        const std::shared_ptr<const unsigned int> & _to_var_num,
+                                        const std::shared_ptr<const int> &level,
+                                        const std::shared_ptr<const int> &coarse_elem,
+                                        const std::shared_ptr<const int> &fine_elem,
+                                        const std::shared_ptr<const int> &coarse_dof_G,
+                                        const std::shared_ptr<const int> &fine_dof_G,
+                                        const std::shared_ptr<const int> &coarse_dof_L,
+                                        const std::shared_ptr<const int> &fine_dof_L,
+                                        const FEType & master_fe_type,
+                                        const FEType & slave_fe_type,
+                                        int master_order,
+                                        int slave_order,
+                                        DSMatrixd &B)
     {
         cutk::Settings settings;
         
         if(mesh->mesh_dimension() == 2) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-
-            return utopia::Assemble<2>(comm, mesh, dof_master, dof_slave,  _to_var_num, level, coarse_elem, fine_elem, B, settings);
-
+            
+            return utopia::Assemble<2>(comm, mesh, dof_master, dof_slave,  _to_var_num, level, coarse_elem, fine_elem, coarse_dof_G, fine_dof_G,coarse_dof_L, fine_dof_L, master_fe_type, slave_fe_type, master_order, slave_order, B, settings);
+            
         }
         
         if(mesh->mesh_dimension() == 3) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-            return utopia::Assemble<3>(comm, mesh, dof_master, dof_slave,  _to_var_num, level, coarse_elem, fine_elem, B, settings);
+            return utopia::Assemble<3>(comm, mesh, dof_master, dof_slave,  _to_var_num, level, coarse_elem, fine_elem, coarse_dof_G, fine_dof_G,coarse_dof_L, fine_dof_L, master_fe_type, slave_fe_type, master_order, slave_order, B, settings);
         }
         
         assert(false && "Dimension not supported!");
         return false;
     }
-
-
-////    bool AssembleMOOSE(express::Communicator &comm,
-////                       const std::shared_ptr<MeshBase> &mesh_master,
-////                       const std::shared_ptr<MeshBase> &mesh_slave,
-////                       libMesh::Order master_order,
-////                       libMesh::Order slave_order,
-////                       DSMatrixd &B)
-////    {
-////        cutk::Settings settings;
-////        
-////    
-////        
-////        LibMeshFEContext<LinearImplicitSystem> master_context(mesh_master);
-////        auto master_space = fe_space(LAGRANGE, master_order, master_context);
-////        master_context.equation_systems.init();
-////        
-////        LibMeshFEContext<LinearImplicitSystem> slave_context(mesh_slave);
-////        auto slave_space = fe_space(LAGRANGE, slave_order, slave_context);
-////        slave_context.equation_systems.init();
-////
-////        
-////        if(mesh_master->mesh_dimension() == 2) {
-////            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-////            return utopia::Assemble<2>(comm, make_ref(master_space), make_ref(slave_space), B, settings);
-////        }
-////        
-////        if(mesh_master->mesh_dimension() == 3) {
-////            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-////            return utopia::Assemble<3>(comm, make_ref(master_space), make_ref(slave_space), B, settings);
-////        }
-////        
-////        assert(false && "Dimension not supported!");
-////        return false;
-////    }
-
+    
+    
+    ////    bool AssembleMOOSE(express::Communicator &comm,
+    ////                       const std::shared_ptr<MeshBase> &mesh_master,
+    ////                       const std::shared_ptr<MeshBase> &mesh_slave,
+    ////                       libMesh::Order master_order,
+    ////                       libMesh::Order slave_order,
+    ////                       DSMatrixd &B)
+    ////    {
+    ////        cutk::Settings settings;
+    ////
+    ////
+    ////
+    ////        LibMeshFEContext<LinearImplicitSystem> master_context(mesh_master);
+    ////        auto master_space = fe_space(LAGRANGE, master_order, master_context);
+    ////        master_context.equation_systems.init();
+    ////
+    ////        LibMeshFEContext<LinearImplicitSystem> slave_context(mesh_slave);
+    ////        auto slave_space = fe_space(LAGRANGE, slave_order, slave_context);
+    ////        slave_context.equation_systems.init();
+    ////
+    ////
+    ////        if(mesh_master->mesh_dimension() == 2) {
+    ////            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
+    ////            return utopia::Assemble<2>(comm, make_ref(master_space), make_ref(slave_space), B, settings);
+    ////        }
+    ////
+    ////        if(mesh_master->mesh_dimension() == 3) {
+    ////            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
+    ////            return utopia::Assemble<3>(comm, make_ref(master_space), make_ref(slave_space), B, settings);
+    ////        }
+    ////
+    ////        assert(false && "Dimension not supported!");
+    ////        return false;
+    ////    }
+    
 }
 
 #endif //Libmesh_MULTIGRID_ForMoose_HPP
-
-    
 

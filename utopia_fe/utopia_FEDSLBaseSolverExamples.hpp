@@ -88,33 +88,39 @@ namespace utopia {
 		unsigned int u_var = master_es.get_system("TMP_MASTER").add_variable("v", FIRST);
 		master_es.reinit();
 		DofMap &master_dof = master_es.get_system(0).get_dof_map();
-
+        const FEType & master_fe_type = master_dof.variable_type(0);
+        
+        int coarse_dof_g = master_dof.n_dofs();
+        
+        int coarse_dof_l = master_dof.n_local_dofs();
+        
+        int master_order = master_dof.variable(0).type().order;
         
         std::vector<ElementDofMap> dof_map_coarse;
         std::vector<ElementDofMap> dof_map_fine;
         dof_map_coarse.resize(mesh_coarse->n_elem());
-   
+        
         dof_map_coarse.resize(mesh_coarse->n_elem());
         MeshBase::const_element_iterator e_it        =mesh_coarse->elements_begin();
         const MeshBase::const_element_iterator e_end =mesh_coarse->elements_end();
         std::vector<dof_id_type> temp;
         
-    
+        
         for (; e_it != e_end; ++e_it){
             
             Elem *elem = *e_it;
             master_dof.dof_indices(elem, temp, 0);
             
             dof_map_coarse[elem->id()].global.insert(dof_map_coarse[elem->id()].global.end(), temp.begin(), temp.end());
-                
-                std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[0] << "  \n";
-                std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[1] << "  \n";
-                std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[2] << "  \n";
-                std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[3] << "  \n";
-
+            
+            std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[0] << "  \n";
+            std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[1] << "  \n";
+            std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[2] << "  \n";
+            std::cout<<"elem_id: "<< elem->id() << " tmp: "<< temp[3] << "  \n";
+            
         }
         
-
+        
 
      
       // auto mesh_coarse_copy= mesh_coarse;
@@ -217,15 +223,22 @@ namespace utopia {
         context.equation_systems.get_system("TMP_slave").add_variable("u", FIRST);
         context.equation_systems.reinit(); 
         DofMap &slave_dof = context.equation_systems.get_system("TMP_slave").get_dof_map();
-
-		// EquationSystems master_es (*mesh_coarse);
-//		 master_es.add_system<LinearImplicitSystem> ("TMP_MASTER");
-//		 unsigned int u_var = master_es.get_system("TMP_MASTER").add_variable("u", FIRST);
-//		 master_es.reinit();
-
+        const FEType & slave_fe_type = slave_dof.variable_type(0);
+        
+        int fine_dof_g = slave_dof.n_dofs();
+        int fine_dof_l = slave_dof.n_local_dofs();
+        int slave_order = slave_dof.variable(0).type().order;
+        
+        //         std::cout<<"fine_local_elem = "<<fine_local_elem << "  \n";
+        
+        // EquationSystems master_es (*mesh_coarse);
+        //		 master_es.add_system<LinearImplicitSystem> ("TMP_MASTER");
+        //		 unsigned int u_var = master_es.get_system("TMP_MASTER").add_variable("u", FIRST);
+        //		 master_es.reinit();
         
         
-
+        
+        
         
         dof_map_fine.resize(mesh_coarse->n_elem());
         MeshBase::const_element_iterator e_it_f        =mesh_coarse->local_level_elements_begin(1);
@@ -241,15 +254,14 @@ namespace utopia {
             
             dof_map_fine[elem_f->id()-first_elem->id()].global.insert(dof_map_fine[elem_f->id()-first_elem->id()].global.end(), temp_f.begin(), temp_f.end());
             
-            std::cout<<"elem_id: "<< elem_f->id()-first_elem->id() << " tmp: "<< temp_f[0] << "  \n";
-            std::cout<<"elem_id: "<< elem_f->id()-first_elem->id() << " tmp: "<< temp_f[1] << "  \n";
-            std::cout<<"elem_id: "<< elem_f->id()-first_elem->id() << " tmp: "<< temp_f[2] << "  \n";
-            std::cout<<"elem_id: "<< elem_f->id()-first_elem->id() << " tmp: "<< temp_f[3] << "  \n";
+            //            std::cout<<"elem_id: "<< elem_f->id()-first_elem->id() << " tmp: "<< temp_f[0] << "  \n";
+            //            std::cout<<"elem_id: "<< elem_f->id()-first_elem->id() << " tmp: "<< temp_f[1] << "  \n";
+            //            std::cout<<"elem_id: "<< elem_f->id()-first_elem->id() << " tmp: "<< temp_f[2] << "  \n";
+            //            std::cout<<"elem_id: "<< elem_f->id()-first_elem->id() << " tmp: "<< temp_f[3] << "  \n";
             
         }
 
-        
-       // exit(1);
+        // exit(1);
         
         
 
@@ -274,16 +286,26 @@ namespace utopia {
 //
 //
 //
-		AssembleMultigridMOOSE(	expressComm,
-                       			mesh_coarse,
-		                       	utopia::make_ref(dof_map_coarse),
-		                       	utopia::make_ref(dof_map_fine),
-		                       	utopia::make_ref(var_m),
-		                        utopia::make_ref(0),
-		                       //const std::shared_ptr<const unsigned int> &master_elem, 
-		                        utopia::make_ref(coarse_elem),
-		                        utopia::make_ref(fine_elem),
-		                       _B);
+        //
+        AssembleMultigridMOOSE(	expressComm,
+                               mesh_coarse,
+                               utopia::make_ref(dof_map_coarse),
+                               utopia::make_ref(dof_map_fine),
+                               utopia::make_ref(var_m),
+                               utopia::make_ref(0),
+                               //const std::shared_ptr<const unsigned int> &master_elem,
+                               utopia::make_ref(coarse_elem),
+                               utopia::make_ref(fine_elem),
+                               utopia::make_ref(coarse_dof_g),
+                               utopia::make_ref(fine_dof_g),
+                               utopia::make_ref(coarse_dof_l),
+                               utopia::make_ref(fine_dof_l),
+                               master_fe_type,
+                               slave_fe_type,
+                               master_order,
+                               slave_order,
+                               _B);
+        
 
 
 
