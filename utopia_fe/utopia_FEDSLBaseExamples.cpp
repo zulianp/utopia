@@ -95,7 +95,7 @@ namespace utopia {
 
 		auto mesh = make_shared<Mesh>(init.comm());		
 		MeshTools::Generation::build_cube (*mesh,
-			20, 20, 20,
+			4, 4, 4,
 			-1., 1.,
 			-1., 1.,
 			-1., 1.,
@@ -253,10 +253,10 @@ void boundary_conds(LibMeshInit &init)
 
 void run_base_examples(libMesh::LibMeshInit &init)
 {
-	anisotropic_laplacian(init);
+	//anisotropic_laplacian(init);
 	linear_elasticity(init);
-	nonlinear_laplace_eq(init);
-	boundary_conds(init);
+	//nonlinear_laplace_eq(init);
+	//boundary_conds(init);
 }
 
 }

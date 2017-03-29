@@ -159,13 +159,16 @@ namespace utopia {
 			return 10 * std::sqrt( p(0) * p(0) + p(1) * p(1)) - 5.0;
 		};
 
+
+		auto &matrix = *context.system.matrix;
+		auto &rhs 	 = *context.system.rhs;
+
 		auto ass = make_assembly([&]() -> void {
 			std::cout << "assemble called, norm(u):" << context.system.solution->l2_norm() << std::endl;
 			assemble(v, v, integral(dot(grad(v), grad(v)) ), integral(dot(coeff(f), v)), 
-				*context.system.matrix,  
-				*context.system.rhs);
+				matrix,  
+				rhs);
 		});
-
 
 
 		context.system.attach_assemble_object(ass);
@@ -180,20 +183,25 @@ namespace utopia {
 		auto ls_system   = dynamic_cast <LinearImplicitSystem *> (&context.equation_systems.get_system(0));  
 		ls_system->assemble(); 
 
-			long nn = ls_system->solution->size();
-			DSMatrixd A;
-			DVectord b; 
-			DVectord sol; 
-			sol = zeros(nn);
-			A = sparse(nn, nn, 40);
-		    b = zeros(nn);
 
-	        Vec p_vec = cast_ptr< libMesh::PetscVector<libMesh::Number> *>(ls_system->rhs)->vec();
-	        Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(ls_system->matrix)->mat();
-	        VecAssemblyEnd(p_vec); 
-	        MatAssemblyEnd(p_mat, MAT_FINAL_ASSEMBLY); 
-			utopia::convert(p_vec, b);
-			utopia::convert(p_mat, A);
+		long nn = ls_system->solution->size();
+		DSMatrixd A;
+		DVectord b; 
+		DVectord sol; 
+		sol = zeros(nn);
+		A = sparse(nn, nn, 40);
+	    b = zeros(nn);
+
+	   	ls_system->rhs->close();
+  		ls_system->matrix->close(); 
+
+
+        Vec p_vec = cast_ptr< libMesh::PetscVector<libMesh::Number> *>(ls_system->rhs)->vec();
+        Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(ls_system->matrix)->mat();
+
+		
+		utopia::convert(p_vec, b);
+		utopia::convert(p_mat, A);
 
 
 
