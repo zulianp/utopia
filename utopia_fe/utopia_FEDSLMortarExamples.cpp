@@ -484,8 +484,8 @@ namespace utopia {
 		//mesh->partitioner().reset(new LinearPartitioner());
             // Read the mesh file. Here the file lshape.unv contains
             // an L--shaped domain in .unv format.
-       // mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
-		mesh->read("../data/contact2D.e");
+        mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
+//mesh->read("../data/contact2D.e");
        // mesh->read("../data/rect.e");
 
             // Print information about the mesh to the screen.
