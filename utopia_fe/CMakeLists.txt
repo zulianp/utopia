@@ -59,6 +59,7 @@ list(APPEND SOURCES utopia_FEDSLMortarExamples.cpp)
 list(APPEND SOURCES utopia_FEDSLLeastSquaresExamples.cpp)
 list(APPEND SOURCES utopia_MixedFESpaceExample.cpp)
 list(APPEND SOURCES utopia_TimeDiffExamples.cpp)
+list(APPEND SOURCES utopia_Biomechanics.cpp)
 
 add_subdirectory(transfer)
 add_library(utopia_fe STATIC ${SOURCES} ${HEADERS})
