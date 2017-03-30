@@ -300,35 +300,71 @@ namespace utopia {
 		const  libMesh::Real search_radius=0.4;
         // EXPRESS_EVENT_BEGIN("l2assembly");
 		surface_assembler.SurfaceAssemble(matrix,search_radius,101,102);
+        
+        write("mat.m", matrix);
         // EXPRESS_EVENT_END("l2assembly");
 
-        DVectord v = zeros(size(matrix).get(1));
-        {
-        	Write<DVectord> w_v(v);
-	        each_read(matrix, [&v](const SizeType i, const SizeType j, const double value) -> void {
-	        	v.set(j, 1);
+        DVectord v = local_zeros(local_size(matrix).get(1));
+//        {
+	        each_write(v, [](const SizeType i) -> double {
+                return 0.1;
 	        });
-    	}
+            
+//            each_read(matrix, [ ](const SizeType i, const SizeType j, const double entry)
+//                      {
+//                          std::cout << "m(" << i << ", " << j << ") = " << entry << std::endl;
+//
+//                      });
+//    	}
 
-    	disp(v);
+//    	disp(v);
+        
+//        disp(matrix);
 
         DVectord mv = matrix * v;
 
+        
         DVectord d = sum(matrix, 1);
-        DSMatrixd D = diag(1./d);
-        D += identity(size(d).get(0), size(d).get(0));
+        DVectord d_inv = local_zeros(local_size(d));
+        
+        {
+            Write<DVectord> w_(d_inv);
+            
+            each_read(d, [&d_inv](const SizeType i, const double value) {
+                if(value != 0) {
+                    d_inv.set(i, 1./value);
+                } else {
+                    d_inv.set(i, 1.);
+                }
+            });
+        }
+        
+        DSMatrixd D_inv = diag(d_inv);
+        DSMatrixd T = D_inv * matrix;
+        
+        DVectord sum_T = sum(T, 1);
+//        disp(sum_T);
+        
+//        
+        T += local_identity(local_size(d).get(0), local_size(d).get(0));
+        
+        
 
         // disp(matrix);
-        disp(mv);
+//        disp(mv);
 
         double *arr;
         VecGetArray(raw_type(mv), &arr);
-//        plot_mesh_f(*master_slave_context.mesh, arr, "surface_mortar");
+        plot_mesh_f(*master_slave_context.mesh, arr, "surface_mortar");
         VecRestoreArray(raw_type(mv), &arr);
 
-
+//        MPI_Barrier(MPI_COMM_WORLD);
+//        std::cout << "HERE" << std::endl;
+        
+        //This BS is only for exporting the vtk
         auto ass = make_assembly([&]() -> void {
-        		convert(D, *master_slave_context.system.matrix);
+                DSMatrixd id = local_identity(local_size(T));
+        		convert(id, *master_slave_context.system.matrix);
         		convert(mv, *master_slave_context.system.rhs);
         });
 
@@ -336,7 +372,10 @@ namespace utopia {
         master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
         master_slave_context.equation_systems.solve();
 
+        
+        mv = T * v;
         convert(mv, *master_slave_context.system.solution);
+        
 
         ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("surface_mortar_glue.e", master_slave_context.equation_systems);
 	}
@@ -484,8 +523,8 @@ namespace utopia {
 		//mesh->partitioner().reset(new LinearPartitioner());
             // Read the mesh file. Here the file lshape.unv contains
             // an L--shaped domain in .unv format.
-        mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
-//mesh->read("../data/contact2D.e");
+       mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
+       //mesh->read("../data/contact2D_fine.e");
        // mesh->read("../data/rect.e");
 
             // Print information about the mesh to the screen.

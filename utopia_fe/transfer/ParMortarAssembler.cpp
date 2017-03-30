@@ -12,7 +12,7 @@
 #include "express_Profiler.hpp"
 #include "express_Redistribute.hpp"
 #include "MapSparseMatrix.hpp"
-
+#include "utopia_Socket.hpp"
 #include "libmesh/elem.h"
 #include "libmesh/transient_system.h"
 #include "libmesh/fe.h"
@@ -329,24 +329,24 @@ namespace utopia {
 //                        n_f++;
                         if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2))){
                              face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(),f_id);
+                             std::cout<<"f_id"<<f_id<<std::endl;
                               f_id++;
-                              offset++;
                         }
                     }
                 }
                 else
                 {
-                    f_id=-1;
-                    face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(),f_id);
+        
+                    face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(),-1);
                 }
 
                 
               
                 
                 
-//                for (int ll=0; ll<face_id.size(); ll++){
-//                    std::cout<<"local_id"<<face_id.at(ll) <<std::endl;
-//                }
+                for (int ll=0; ll<face_set_id[elem->id()].global.size(); ll++){
+                    std::cout<<"local_id"<<face_set_id[elem->id()].global.at(ll) <<std::endl;
+                }
 
 
                 
@@ -1462,7 +1462,7 @@ namespace utopia {
             const auto &dest = slave.space();
             
             
-            bool pair_intersected = false;
+            
             
             const auto &src_mesh  = src.mesh();
             const auto &dest_mesh = dest.mesh();
@@ -1491,6 +1491,9 @@ namespace utopia {
             const int approx_order=src_order[0];
             
             std::shared_ptr<Contact> surface_assemble;
+            
+            const auto &master_face_id = master.dof_map_face();
+            const auto &slave_face_id  = slave.dof_map_face();
 
   
             
@@ -1546,16 +1549,20 @@ namespace utopia {
      
             }
             
+            bool intersected = false;
+            
             for(uint side_1 = 0; side_1 < src_el.n_sides(); ++side_1) {
                 
                 
-                libMesh::UniquePtr<libMesh::Elem> s_1 = src_el.side(side_1);
                 
-                if(!s_1->on_boundary()) continue;
+//                libMesh::UniquePtr<libMesh::Elem> s_1 = src_el.side(side_1);
+
+                //std::cout << std::to_string(master_face_id[0]) << " -> " <<side_ptr_1->on_boundary() << std::endl;
+                //if(src_el.neighbor_ptr(side_1)!=nullptr) continue;
                 
-//                    if(src_el.neighbor_ptr(side_1) != nullptr) continue;
+                if(src_el.neighbor_ptr(side_1) != nullptr) continue;
+                
                 auto side_ptr_1 = src_el.build_side_ptr(side_1);
-                
                 compute_side_normal(dim_src, *side_ptr_1, n1);
                 
                 box_1.reset();
@@ -1571,15 +1578,16 @@ namespace utopia {
                 
                 
                 
+                
                 for(uint side_2 = 0; side_2 < dest_el.n_sides(); ++side_2) {
                     
-                    //if(dest_el.neighbor_ptr(side_2) != nullptr) continue;
+                    if(dest_el.neighbor_ptr(side_2) != nullptr) continue;
+                    if (!predicate->tagsAreRelated(tag_1, tag_2)) continue;
                     
-                    libMesh::UniquePtr<libMesh::Elem> s_2 = dest_el.side(side_2);
-                    
-                    if(!s_2->on_boundary()) continue;
-                    
+//                    libMesh::UniquePtr<libMesh::Elem> s_2 = dest_el.side(side_2);
                     auto side_ptr_2 = dest_el.build_side_ptr(side_2);
+                    //[if(!side_ptr_2->on_boundary()) continue;
+                    
                     compute_side_normal(dim_sla, *side_ptr_2, n2);
                     
                     const Real cos_angle = n1.contract(n2);
@@ -1589,6 +1597,9 @@ namespace utopia {
                         continue;
                     }
                     
+                    
+                    
+                    
                     box_2.reset();
                     enlarge_box_from_side(dim_sla, *side_ptr_2, box_2, search_radius);
                     
@@ -1596,8 +1607,13 @@ namespace utopia {
                         continue;
                     }
                     
+                    
+                    bool pair_intersected = false;
                     if(dim_sla==2){
                         make_polygon(*side_ptr_2,side_polygon_2);
+                        
+                        plot_lines(2, 2, &side_polygon_1.get_values()[0], "in_master/" + std::to_string(master_face_id[0]) + "_" + std::to_string(cos_angle));
+                        plot_lines(2, 2, &side_polygon_2.get_values()[0], "in_slave/" + std::to_string(slave_face_id[0]) + "_" + std::to_string(cos_angle));
                         
                         if(!project_2D(side_polygon_1,side_polygon_2,isect_polygon_1,isect_polygon_2)){
                             continue;
@@ -1658,221 +1674,226 @@ namespace utopia {
                         assert(false);
                         return false;
                     }
+                    
+                    
+                    if(pair_intersected) {
+                        
+                        
+                        transform_to_reference_surf(*src_trans,  src_el.type(),  src_ir, src_ir_ref);
+                        transform_to_reference_surf(*dest_trans, dest_el.type(), dest_ir, dest_ir_ref);
+                        
+                        master_fe->attach_quadrature_rule(&src_ir_ref);
+                        master_fe->reinit(&src_el);
+                        
+                        slave_fe->attach_quadrature_rule(&dest_ir_ref);
+                        slave_fe->reinit(&dest_el);
+                        
+                        
+                        surface_assemble->parent_element_master  = src_index;
+                        
+                        surface_assemble->id_master 			 = src_el.id();
+                        
+                        surface_assemble->parent_element_slave   = dest_index;
+                        
+                        surface_assemble->id_slave 			     = dest_el.id();
+                        
+                        surface_assemble->coupling.zero();
+                        
+                        elemmat.zero();
+                        
+                        
+                        
+                        const auto &master_dofs = master.dof_map();
+                        const auto &slave_dofs  = slave.dof_map();
+                        
+                        
+                        
+                        //
+                        //                std::cout << "master_face_id.size()" << master_face_id.size() <<std::endl;
+                        
+                        
+                        std::vector<dof_id_type> dof_indices_slave_vec(slave_dofs.size());
+                        std::vector<dof_id_type> dof_indices_master_vec(master_dofs.size());
+                        
+                        MeshBase::const_element_iterator e_it = master_slave->mesh().active_elements_begin();
+                        const MeshBase::const_element_iterator e_end = master_slave->mesh().active_elements_end();
+                        
+                        std::vector<int> block_id;
+                        std::vector<int> block_id_def;
+                        
+                        
+                        //
+                        //                std::cout<<"************************************************** "<<std::endl;
+                        //
+                        //
+                        //                std::cout<<"************* dest_el.id() = "<< dest_el.id() <<std::endl;
+                        //
+                        //
+                        //                std::cout<<"************* src_el.id() = "<< src_el.id() <<std::endl;
+                        //
+                        //
+                        //                std::cout<<"************************************************** "<<std::endl;
+                        //
+                        
+                        
+                        int i=0;
+                        for (; e_it != e_end; ++e_it)
+                        {
+                            Elem * elem = *e_it;
+                            if (i==0){
+                                block_id_def.push_back(elem->subdomain_id());}
+                            
+                            block_id.push_back(elem->subdomain_id());
+                            if (i>0 && block_id.at(i)!=block_id.at(i-1)){
+                                block_id_def.push_back(block_id.at(i));
+                            }
+                            
+                            i++;
+                            
+                            
+                        }
+                        
+                        auto side_dest = dest_el.build_side_ptr(0);
+                        
+                        
+                        int n_nodes_face_dest = side_dest->n_nodes();
+                        
+                        auto side_src = src_el.build_side_ptr(0);
+                        
+                        int n_nodes_face_src = side_src->n_nodes();
+                        
+                        //std::cout<<"addendum"<<addendum<<std::endl;
+                        
+                        std::vector<bool> node_is_boundary_dest;
+                        
+                        
+                        build_boundary_query(dest_el,*side_dest,1,node_is_boundary_dest);
+                        
+                        
+                        std::vector<bool> node_is_boundary_src;
+                        
+                        
+                        build_boundary_query(src_el,*side_src,1,node_is_boundary_src);
+                        
+                        plot_lines(dim_src,  side_src->n_nodes(), &side_polygon_1.get_values()[0] , "master/" + std::to_string(master_face_id[0]));
+                        plot_lines(dim_sla, side_dest->n_nodes(), &side_polygon_2.get_values()[0] , "slave/" + std::to_string(slave_face_id[0]));
+                        
+                        std::cout << node_is_boundary_dest.size() << ", " << node_is_boundary_src.size() << "\n";
+                        std::cout << src_el.id() << ", " <<  dest_el.id()<< "\n";
+                        
+                        int offset = 0;
+                        for(uint i = 0; i < node_is_boundary_dest.size(); ++i){
+                            if (slave_face_id[0]!=-1 && node_is_boundary_dest[i]) {dof_indices_slave_vec[i] =  slave_face_id[0] * n_nodes_face_dest + offset++;}
+                        }
+                        
+                        
+                        offset = 0;
+                        for(uint i = 0; i <  node_is_boundary_src.size(); ++i) {
+                            if (master_face_id[0]!=-1 && node_is_boundary_src[i]) {dof_indices_master_vec[i] = master_face_id[0] * n_nodes_face_src + offset++;}
+                        }
+                        
+                        
+                        
+                        mortar_assemble(*master_fe, *slave_fe, elemmat);
+                        
+                        //
+                        //                 std::cout << "-----------------INIZIO------------------------\n";
+                        //                 std::cout << src_index << ", " << dest_index << "\n";
+                        //                 //elemmat.print(std::cout);
+                        //                 for(auto i : slave_dofs) {
+                        //                 	std::cout << i << " ";
+                        //                 }
+                        //                 std::cout << "\n";
+                        //
+                        //                 std::cout << "-----------------META------------------------\n";
+                        //
+                        //                 for(auto i : master_dofs) {
+                        //                 	std::cout << i << " ";
+                        //                 }
+                        //                 std::cout << "\n";
+                        //                 std::cout << "--------------------FINE---------------------\n";
+                        
+                        
+                        
+                        for(int i = 0; i <  slave_dofs.size(); ++i) {
+                            const long dof_I = slave_dofs[i];
+                            const long dof_J = dof_indices_slave_vec[i];
+                            
+                            if(node_is_boundary_dest[i]) {
+                                p_buffer.setAt(dof_I, dof_J, 1.);
+                            }
+                        }
+                        
+                        for(int i = 0; i <  dof_indices_master_vec.size(); ++i) {
+                            const long dof_I = dof_indices_master_vec[i];
+                            const long dof_J = master_dofs[i];
+                            
+                            if(node_is_boundary_src[i]) {
+                                q_buffer.setAt(dof_I, dof_J, 1.);
+                            }
+                        }
+                        
+                        
+                        auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
+                        
+                        // const Scalar local_mat_sum = std::accumulate(surface_assemble->coupling.get_values().begin(), surface_assemble->coupling.get_values().end(), libMesh::Real(0.0));
+                        
+                        local_element_matrices_sum += partial_sum;
+                        
+                        assert(slave_dofs.size() == elemmat.m());
+                        assert(master_dofs.size() == elemmat.n());
+                        
+                        // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
+                        // dest_ir.print_info();
+                        
+                        
+                        //std::cout << "elemmat.n =" << elemmat.n() << "\n";
+                        
+                        //std::cout << "elemmat.m =" << elemmat.m() << "\n";
+                        
+                        
+                        for(int i = 0; i <  dof_indices_slave_vec.size(); ++i) {
+                            
+                            const long dof_I = dof_indices_slave_vec[i];
+                            
+                            //                    std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
+                            
+                            for(int j = 0; j <  dof_indices_master_vec.size(); ++j) {
+                                
+                                //                    std::cout<<"************* J = "<< j <<std::endl;
+                                
+                                const long dof_J = dof_indices_master_vec[j];
+                                
+                                //                    std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
+                                
+                                mat_buffer.add(dof_I, dof_J, elemmat(i, j));
+                            }
+                        }
+                        
+                        int dim = dim_src;
+                        
+                        //                std::cout<< "surface_assemble->isect_area = " << surface_assemble->isect_area <<std::endl;
+                        //                
+                        //                std::cout<<" pow(surface_assemble->isect_area, dim/(dim-1.)) * dim = " << pow(surface_assemble->isect_area, dim/(dim-1.)) * dim  <<std::endl;
+                        //                
+                        //                std::cout<<" partial sum = " << partial_sum <<std::endl;
+                        // 
+                        //                std::cout<<" local_element_matrices_sum = " << local_element_matrices_sum <<std::endl;
+                        //                
+                        //                
+                        
+                        assert(fabs(partial_sum - pow(surface_assemble->isect_area, dim/(dim-1.))) < 1e-8 || (!is_quad(dest_el.type()) && !is_hex(dest_el.type())));
+                        intersected = true;
+                        
+                        //Assemble p
+                        //Iteri su elementi
+                        //calcoli i=dof_map.index(elemen), j=el_id * n_dofs_x_el + local_dof_offset (local_dof_id e.g., triangolo = {0, 1, 2}, quad = {0, 1, 2, 3})
+                        
+                    }
                 }
             }
        
-
-            if(pair_intersected) {
-                
-                
-                transform_to_reference_surf(*src_trans,  src_el.type(),  src_ir, src_ir_ref);
-                transform_to_reference_surf(*dest_trans, dest_el.type(), dest_ir, dest_ir_ref);
-                
-                master_fe->attach_quadrature_rule(&src_ir_ref);
-                master_fe->reinit(&src_el);
-                
-                slave_fe->attach_quadrature_rule(&dest_ir_ref);
-                slave_fe->reinit(&dest_el);
-                
-                
-                surface_assemble->parent_element_master  = src_index;
-              
-                surface_assemble->id_master 			 = src_el.id();
-                
-                surface_assemble->parent_element_slave   = dest_index;
-             
-                surface_assemble->id_slave 			     = dest_el.id();
-                
-                surface_assemble->coupling.zero();
-
-                elemmat.zero();
-                
-
-                
-                const auto &master_dofs = master.dof_map();
-                const auto &slave_dofs  = slave.dof_map();
-                
-                
-                const auto &master_face_id = master.dof_map_face();
-                const auto &slave_face_id  = slave.dof_map_face();
-//
-//                std::cout << "master_face_id.size()" << master_face_id.size() <<std::endl;
-                
-                
-                std::vector<dof_id_type> dof_indices_slave_vec(slave_dofs.size());
-                std::vector<dof_id_type> dof_indices_master_vec(master_dofs.size());
-                
-                MeshBase::const_element_iterator e_it = master_slave->mesh().active_elements_begin();
-                const MeshBase::const_element_iterator e_end = master_slave->mesh().active_elements_end();
-                
-                std::vector<int> block_id;
-                std::vector<int> block_id_def;
-                
-                
-//                
-//                std::cout<<"************************************************** "<<std::endl;
-//
-//            
-//                std::cout<<"************* dest_el.id() = "<< dest_el.id() <<std::endl;
-//                
-//                
-//                std::cout<<"************* src_el.id() = "<< src_el.id() <<std::endl;
-//                
-//                
-//                std::cout<<"************************************************** "<<std::endl;
-//                
-                
-                
-                int i=0;
-                for (; e_it != e_end; ++e_it)
-                {
-                    Elem * elem = *e_it;
-                    if (i==0){
-                        block_id_def.push_back(elem->subdomain_id());}
-                    
-                    block_id.push_back(elem->subdomain_id());
-                    if (i>0 && block_id.at(i)!=block_id.at(i-1)){
-                        block_id_def.push_back(block_id.at(i));
-                    }
-                    
-                    i++;
-                    
-                    
-                }
-                
-               libMesh::UniquePtr<libMesh::Elem> side_dest = dest_el.side(0);
-                
-                int n_nodes_face_dest = side_dest->n_nodes();
-                
-                libMesh::UniquePtr<libMesh::Elem> side_src = src_el.side(0);
-                
-                int n_nodes_face_src = side_src->n_nodes();
-                
-                //std::cout<<"addendum"<<addendum<<std::endl;
-                
-                std::vector<bool> node_is_boundary_dest;
-                
-                for (int i=0; i<dest_el.n_sides(); i++){
-                    auto side_ptr = dest_el.build_side_ptr(i);
-                    build_boundary_query(dest_el,*side_ptr,2,node_is_boundary_dest);
-                }
-                
-                std::vector<bool> node_is_boundary_src;
-                
-                for (int i=0; i<src_el.n_sides(); i++){
-                    auto side_ptr = src_el.build_side_ptr(i);
-                    build_boundary_query(src_el,*side_ptr,2,node_is_boundary_src);
-                }
-                
-                std::cout << node_is_boundary_dest.size() << ", " << node_is_boundary_src.size() << "\n";
-                std::cout << src_el.id() << ", " <<  dest_el.id()<< "\n";
-                
-                for(uint i = 0; i <  slave_dofs.size(); ++i){
-                    if (slave_face_id[0]!=-1 && node_is_boundary_dest[i]==true) {std::cout<< node_is_boundary_dest[i]<<std::endl; dof_indices_slave_vec[i] =  slave_face_id[0] * n_nodes_face_dest + i;}
-                }
-                
-                
-                for(uint i = 0; i <  master_dofs.size(); ++i) {
-                    if (master_face_id[0]!=-1 && node_is_boundary_src[i]==true) {std::cout<< node_is_boundary_src[i]<<std::endl; dof_indices_master_vec[i] = master_face_id[0] * n_nodes_face_src + i;}
-                }
-                
-
-                
-                mortar_assemble(*master_fe, *slave_fe, elemmat);
-                
-//                
-//                 std::cout << "-----------------INIZIO------------------------\n";
-//                 std::cout << src_index << ", " << dest_index << "\n";
-//                 //elemmat.print(std::cout);
-//                 for(auto i : slave_dofs) {
-//                 	std::cout << i << " ";
-//                 }
-//                 std::cout << "\n";
-//                
-//                 std::cout << "-----------------META------------------------\n";
-//                
-//                 for(auto i : master_dofs) {
-//                 	std::cout << i << " ";
-//                 }
-//                 std::cout << "\n";
-//                 std::cout << "--------------------FINE---------------------\n";
-                
-                
-                
-                for(int i = 0; i <  slave_dofs.size(); ++i) {
-                    const long dof_I = slave_dofs[i];
-                    const long dof_J = dof_indices_slave_vec[i];
-                    p_buffer.setAt(dof_I, dof_J, 1.);
-                }
-                
-                for(int i = 0; i <  dof_indices_master_vec.size(); ++i) {
-                    const long dof_I = dof_indices_master_vec[i];
-                    const long dof_J = master_dofs[i];
-                    q_buffer.setAt(dof_I, dof_J, 1.);
-                }
- 
-                
-               auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
-                
-               // const Scalar local_mat_sum = std::accumulate(surface_assemble->coupling.get_values().begin(), surface_assemble->coupling.get_values().end(), libMesh::Real(0.0));
-                
-               local_element_matrices_sum += partial_sum;
-                
-               assert(slave_dofs.size() == elemmat.m());
-               assert(master_dofs.size() == elemmat.n());
-    
-                // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
-                // dest_ir.print_info();
-
-               
-                //std::cout << "elemmat.n =" << elemmat.n() << "\n";
-                
-                //std::cout << "elemmat.m =" << elemmat.m() << "\n";
-            
-                
-                for(int i = 0; i <  dof_indices_slave_vec.size(); ++i) {
-                    
-                    const long dof_I = dof_indices_slave_vec[i];
-                    
-//                    std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
-                    
-                    for(int j = 0; j <  dof_indices_master_vec.size(); ++j) {
-                        
-//                    std::cout<<"************* J = "<< j <<std::endl;
-                        
-                        const long dof_J = dof_indices_master_vec[j];
-                        
-//                    std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
-                        
-                        mat_buffer.add(dof_I, dof_J, elemmat(i, j));
-                    }
-                }
-                
-                int dim = dim_src;
-                
-//                std::cout<< "surface_assemble->isect_area = " << surface_assemble->isect_area <<std::endl;
-//                
-//                std::cout<<" pow(surface_assemble->isect_area, dim/(dim-1.)) * dim = " << pow(surface_assemble->isect_area, dim/(dim-1.)) * dim  <<std::endl;
-//                
-//                std::cout<<" partial sum = " << partial_sum <<std::endl;
-// 
-//                std::cout<<" local_element_matrices_sum = " << local_element_matrices_sum <<std::endl;
-//                
-//                
-                
-                assert(fabs(partial_sum - pow(surface_assemble->isect_area, dim/(dim-1.))) < 1e-8 || (!is_quad(dest_el.type()) && !is_hex(dest_el.type())));
-                
-                return true;
-                
-                
-                //Assemble p
-                //Iteri su elementi
-                //calcoli i=dof_map.index(elemen), j=el_id * n_dofs_x_el + local_dof_offset (local_dof_id e.g., triangolo = {0, 1, 2}, quad = {0, 1, 2, 3})
-                
-            } else {
-                
-                return false;
-            }
+            return intersected;
          
         };
      
@@ -2118,7 +2139,7 @@ namespace utopia {
         //
         //       disp(P_tilde);
         //       disp(Q_transpose);
-        //       disp(B.size());
+               disp(B.size());
         
         
         
