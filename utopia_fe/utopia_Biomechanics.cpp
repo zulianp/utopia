@@ -124,8 +124,8 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	static const bool is_leaflet = false;
 			 // ContactSimParams params = contact_cuboids;
 	    	// ContactSimParams params = contact8;
-			// ContactSimParams params = triple_contact_circle;
-			ContactSimParams params = multi_contact_3D_2;
+			ContactSimParams params = triple_contact_circle;
+			// ContactSimParams params = multi_contact_3D_2;
 	// ContactSimParams params = contact_cylinder;
 
 
