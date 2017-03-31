@@ -66,9 +66,11 @@ namespace utopia {
             
             must_destroy_attached[0] = false;
             
+            express::Communicator comm = master_slave->mesh().comm().get();
+            
             const int n_elements = master_slave->mesh().n_elem();
             
-            copy_global_dofs(*master_slave, dof_maps_[0], var_type_[0], n_elements, subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0], face_set_id_global_[0], 101, 102);
+            copy_global_dofs(*master_slave, dof_maps_[0], var_type_[0], n_elements, subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0], face_set_id_global_[0],ownershipRangesFaceID_[0], 101, 102);
             
             copy_var_number(*master_slave, var_number_[0]);
             
@@ -230,6 +232,20 @@ namespace utopia {
             return side_set_id_tag_[0];
         }
         
+        inline express::Array<express::SizeType> & ownershipRangesFaceID()
+        {
+            
+            return ownershipRangesFaceID_[0];
+        }
+        
+        
+        
+        inline const express::Array<express::SizeType>   & ownershipRangesFaceID() const
+        {
+            return ownershipRangesFaceID_[0];
+        }
+        
+        
     private:
         express::Communicator comm;
         std::vector<std::shared_ptr< LibMeshFESpaceBase>> utopiamesh_;
@@ -242,10 +258,11 @@ namespace utopia {
         std::vector<ElementDofMap> face_set_id_global_[1];
         std::vector<ElementDofMap> side_set_id_tag_[1];
         std::vector<ElementDofMap> n_face_nodes_[1];
+        express::Array<express::SizeType> ownershipRangesFaceID_[1];
         bool must_destroy_attached[1];
         
         
-        inline static void copy_global_dofs(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const int n_elements,std::vector<ElementDofMap> &subdomain_id, std::vector<ElementDofMap> &side_set_id, std::vector<ElementDofMap> &side_set_id_tag, std::vector<ElementDofMap> &face_set_id_global,int tag_1, int tag_2)
+        inline static void copy_global_dofs(LibMeshFESpaceBase &space, std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const int n_elements,std::vector<ElementDofMap> &subdomain_id, std::vector<ElementDofMap> &side_set_id, std::vector<ElementDofMap> &side_set_id_tag, std::vector<ElementDofMap> &face_set_id_global,  express::Array<express::SizeType>   & ownershipRangesFaceID, int tag_1, int tag_2)
         {
             
             auto &mesh = space.mesh();
@@ -256,8 +273,9 @@ namespace utopia {
             
             
             express::Communicator comm = mesh.comm().get();
-            express::Array<express::SizeType>  ownershipRangesOffset(comm.size()+1);
-            ownershipRangesOffset.allSet(0);
+           // express::Array<express::SizeType>
+            ownershipRangesFaceID.resize(comm.size()+1);
+            ownershipRangesFaceID.allSet(0);
             std::vector<ElementDofMap> face_set_id;
             dof_map.resize(n_elements);
             subdomain_id.resize(n_elements);
@@ -330,6 +348,8 @@ namespace utopia {
                              face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(),f_id);
                              std::cout<<"f_id"<<f_id<<std::endl;
                               f_id++;
+                              offset++;
+                            
                         }
                     }
                 }
@@ -367,17 +387,17 @@ namespace utopia {
             std::cout<<"size for all"<<face_set_id.size()<<std::endl;
             
             
-            ownershipRangesOffset[comm.rank()+1]+= static_cast<unsigned int>(offset);
+            ownershipRangesFaceID[comm.rank()+1]+= static_cast<unsigned int>(offset);
     
             std::cout<<"comm.rank"<<comm.rank()<<std::endl;
             
-            comm.allReduce(&ownershipRangesOffset[0],  ownershipRangesOffset.size(),  express::MPISum());
+            comm.allReduce(&ownershipRangesFaceID[0],  ownershipRangesFaceID.size(),  express::MPISum());
     
-            std::partial_sum(ownershipRangesOffset.begin(), ownershipRangesOffset.end(),
-                             ownershipRangesOffset.begin());
+            std::partial_sum(ownershipRangesFaceID.begin(), ownershipRangesFaceID.end(),
+                             ownershipRangesFaceID.begin());
     
             if(comm.isRoot()) {
-                std::cout << "ownershipRangesOffset = "<< ownershipRangesOffset << std::endl;
+                std::cout << "ownershipRangesFaceID = "<< ownershipRangesFaceID << std::endl;
             }
     
     
@@ -397,9 +417,9 @@ namespace utopia {
                          //std::cout<<"size for el"<<n_face_nodes[elem_new->id()].global.size()<<std::endl;
                         
                         if(i!=-1){
-                           // std::cout<<"comm.rank"<<ownershipRangesOffset[comm.rank()]<<std::endl;
-                            int global_id = i + ownershipRangesOffset[comm.rank()] ;
-                            std::cout<<"global_id"<<i + ownershipRangesOffset[comm.rank()] <<std::endl;
+                            std::cout<<"comm.rank"<<ownershipRangesFaceID[comm.rank()]<<std::endl;
+                            int global_id = i + ownershipRangesFaceID[comm.rank()] ;
+                            std::cout<<"global_id"<<i + ownershipRangesFaceID[comm.rank()] <<std::endl;
                             face_set_id_global[elem_new->id()].global.insert(face_set_id_global[elem_new->id()].global.end(),global_id);
                         }
                        else
@@ -407,6 +427,8 @@ namespace utopia {
                     }
                 }
             }
+            
+           // ownershipRangesFaceID[0]=ownershipRangesFaceID;
         }
 
         
@@ -1109,7 +1131,8 @@ namespace utopia {
                                 const cutk::Settings &settings,const libMesh::Real search_radius, const std::shared_ptr<cutlibpp::MasterAndSlave> &predicate)
     {
         
-        
+        std::shared_ptr<UtopiaMesh> local_fun_spaces_new = cutk::make_shared<UtopiaMesh>(master_slave);
+
         
         using namespace cutlibpp;
         using namespace express;
@@ -1348,7 +1371,7 @@ namespace utopia {
                          DSMatrixd &B,
                          const cutk::Settings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
     {
-        std::shared_ptr<UtopiaMesh> local_fun_spaces = cutk::make_shared<UtopiaMesh>(master_slave);
+        std::shared_ptr<UtopiaMesh> local_fun_spaces_new = cutk::make_shared<UtopiaMesh>(master_slave);
         
         libMesh::DenseMatrix<libMesh::Real> src_pts;
         libMesh::DenseMatrix<libMesh::Real> dest_pts;
@@ -1486,7 +1509,7 @@ namespace utopia {
             QMortar dest_ir(dim_sla);
             QMortar dest_ir_ref(dim_sla);
             
-            std::vector<long> src_order = local_fun_spaces->variable_order()[0].global;
+            std::vector<long> src_order = local_fun_spaces_new->variable_order()[0].global;
             const int approx_order=src_order[0];
             
             std::shared_ptr<Contact> surface_assemble;
@@ -1589,8 +1612,8 @@ namespace utopia {
                         if(!project_2D(side_polygon_1, side_polygon_2, isect_polygon_1, isect_polygon_2)){
                             continue;
                         }
-                        const Scalar dx = dest_pts(0, 0) - dest_pts(1, 0);
-                        const Scalar dy = dest_pts(0, 1) - dest_pts(1, 1);
+                        const Scalar dx = side_polygon_2(0, 0) - side_polygon_2(1, 0);
+                        const Scalar dy = side_polygon_2(0, 1) - side_polygon_2(1, 1);
                         
                         const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
                         const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
@@ -1841,7 +1864,7 @@ namespace utopia {
                                 
                                 const long dof_J = dof_indices_master_vec[j];
                                 
-//                                                    std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
+                                                    std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
                                 
                                 mat_buffer.add(dof_I, dof_J, elemmat(i, j));
                             }
@@ -1963,6 +1986,10 @@ namespace utopia {
         const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
         const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
         
+        const SizeType local_range_slave_range_b_tilde  =  master_slave->mesh().elem(0)->build_side_ptr(0)->n_nodes() * (local_fun_spaces_new->ownershipRangesFaceID()[comm.rank()+1] -  local_fun_spaces_new->ownershipRangesFaceID()[comm.rank()]);
+        std::cout<<"local_range_slave_range_b_tilde"<<local_range_slave_range_b_tilde<<std::endl;
+       // const SizeType local_range_master_range2 = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
+        
         
         DVectord relAreaVec = zeros(master_slave->dof_map().n_dofs());
         {
@@ -1973,10 +2000,11 @@ namespace utopia {
         }
 
 
-        DSMatrixd B_tilde = utopia::sparse(mat_buffer.rows(), mat_buffer.columns(), mMaxRowEntries);
+        DSMatrixd B_tilde = utopia::local_sparse(local_range_slave_range_b_tilde, local_range_slave_range_b_tilde, mMaxRowEntries);
         {
             utopia::Write<utopia::DSMatrixd> write(B_tilde);
             for (auto it = mat_buffer.iter(); it; ++it) {
+                std::cout<<"it.col()"<<it.col()<<std::endl;
                 B_tilde.set(it.row(), it.col(), *it);
             }
         }
@@ -1990,7 +2018,7 @@ namespace utopia {
         express::RootDescribe("petsc p_buffer assembly begin", comm, std::cout);
         
 
-        DSMatrixd P = utopia::local_row_sparse(local_range_slave_range, p_buffer.columns(), mMaxRowEntries_p);
+        DSMatrixd P = utopia::local_sparse(local_range_slave_range, local_range_slave_range_b_tilde, mMaxRowEntries_p);
         {
             utopia::Write<utopia::DSMatrixd> write(P);
             for (auto it = p_buffer.iter(); it; ++it) {
@@ -2000,7 +2028,7 @@ namespace utopia {
         
         express::RootDescribe("petsc q_buffer assembly begin", comm, std::cout);
         
-        DSMatrixd Q = utopia::local_row_sparse(local_range_master_range, q_buffer.columns(), mMaxRowEntries_q);
+        DSMatrixd Q = utopia::local_sparse(local_range_master_range, local_range_slave_range_b_tilde, mMaxRowEntries_q);
         {
             utopia::Write<utopia::DSMatrixd> write(Q);
             for (auto it = q_buffer.iter(); it; ++it) {
