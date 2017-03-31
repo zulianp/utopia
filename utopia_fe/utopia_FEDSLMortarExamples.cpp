@@ -343,7 +343,7 @@ namespace utopia {
         DSMatrixd T = D_inv * matrix;
         
         DVectord sum_T = sum(T, 1);
-//        disp(sum_T);
+        disp(sum_T);
         
 //        
         T += local_identity(local_size(d).get(0), local_size(d).get(0));
@@ -377,7 +377,7 @@ namespace utopia {
         convert(mv, *master_slave_context.system.solution);
         
 
-        ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("surface_mortar_glue.e", master_slave_context.equation_systems);
+        ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("surface_mortar_glue2.e", master_slave_context.equation_systems);
 	}
 
 
@@ -386,7 +386,7 @@ namespace utopia {
 		auto mesh = make_shared<Mesh>(init.comm());
 		EXPRESS_EVENT_BEGIN("set_up");
 		//mesh->partitioner().reset(new LinearPartitioner());
-		mesh->read("../data/master_slave2D_new.e");
+		mesh->read("../data/master_slave2D_new2.e");
 		par_mortar_transfer_aux(init.comm(),mesh);
 		EXPRESS_EVENT_END("set_up");
 	}
@@ -523,8 +523,8 @@ namespace utopia {
 		//mesh->partitioner().reset(new LinearPartitioner());
             // Read the mesh file. Here the file lshape.unv contains
             // an L--shaped domain in .unv format.
-       mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
-       //mesh->read("../data/contact2D_fine.e");
+       //mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
+       mesh->read("../data/contact2DNew4.e");
        // mesh->read("../data/rect.e");
 
             // Print information about the mesh to the screen.
