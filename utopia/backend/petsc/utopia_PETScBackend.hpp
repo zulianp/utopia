@@ -352,14 +352,18 @@ namespace utopia
 			auto l = mat_pair.left();
 			auto r = mat_pair.right();
 
-			result.init();
+			Mat* m = new Mat;
+			// *m = 0;
 			bool ok = false;
 			if(transpose_left && !transpose_right) {
-				ok = PETScError::Check(MatTransposeMatMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()));
+				ok = PETScError::Check(MatTransposeMatMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, m));
+				result.init(*m, true);
 			} else if(!transpose_left && transpose_right) {
-				ok = PETScError::Check(MatMatTransposeMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()));
+				ok = PETScError::Check(MatMatTransposeMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, m));
+				result.init(*m, true);
 			} else if(!transpose_left && !transpose_right) {
-				ok = PETScError::Check(MatMatMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()));
+				ok = PETScError::Check(MatMatMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, m));
+				result.init(*m, true);
 			} else {
 				assert(transpose_left && transpose_right);
 				PETScGenericMatrix<FillType> temp;
@@ -600,13 +604,16 @@ namespace utopia
 				PETScGenericMatrix<FillTypeResult> &result)
 		{
 			if(&right.implementation() != &result.implementation() || &left.implementation() !=  &result.implementation()) {
-				result.init();
+				// result.init();
 			} else {
 				assert(false);
 			}
 
-			MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
-			return true;
+			Mat* m = new Mat;
+			// *m = 0;
+			bool ok = PETScError::Check(MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, m));
+			result.init(*m, true);
+			return ok;
 		}
 
 		template<int FillType>
@@ -818,12 +825,15 @@ namespace utopia
 		template<int FillType>
 		void assignTransposed(PETScGenericMatrix<FillType> &left, const PETScGenericMatrix<FillType> &right) {
 			if(&left != &right) {
-				left.init();
+				// left.init();
 			} else {
 				assert(false);
 			}
 
-			MatTranspose(right.implementation(), MAT_INITIAL_MATRIX, &left.implementation());
+			Mat* m = new Mat;
+			// *m = 0;
+			bool ok = PETScError::Check(MatTranspose(right.implementation(), MAT_INITIAL_MATRIX, m));
+			left.init(*m, true);
 		}
 
 		void assignToRange(PETScMatrix & /*left*/, const PETScMatrix &/*right*/, const Range &/*globalRowRange*/,
@@ -845,12 +855,15 @@ namespace utopia
 
 		template<int FillType>
 		bool triple_product_PtAP(const PETScGenericMatrix<FillType> &A, const PETScGenericMatrix<FillType> &P, PETScGenericMatrix<FillType> &result) {
-			if(&result.implementation() != &A.implementation() && &result.implementation() != &P.implementation()) {
-				result.init();
-			} //else FIXME
+			// if(&result.implementation() != &A.implementation() && &result.implementation() != &P.implementation()) {
+			// 	result.init();
+			// } //else FIXME
 
-			MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, 1.0, &result.implementation());
-			return true;
+			Mat* m = new Mat;
+			// *m = 0;
+			bool ok = PETScError::Check(MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, 1.0, m));
+			result.init(*m, true);
+			return ok;
 		}
 
 		template<int FillType>

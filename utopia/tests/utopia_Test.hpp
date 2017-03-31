@@ -22,14 +22,10 @@ namespace utopia
         runWrapperTest();
         runSpecTest();
         run_autodiff_test();
-        MEMPOOL().fullGC();
         runSolversTest();
-        MEMPOOL().fullGC();
         runAlgebraTest();
         runUtilitiesTest();
-        MEMPOOL().fullGC();
         runPETScTest();
-        MEMPOOL().fullGC();
         runBLASTest();
         runMiscTest();
 

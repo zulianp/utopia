@@ -29,7 +29,7 @@ namespace utopia {
 
 		static MemoryPtr<Mat> clone(const MemoryPtr<Mat>& m) {
 			Mat* new_m = MEMPOOL().getMat(*m);
-			MatConvert(*m, MATDENSE, MAT_REUSE_MATRIX, new_m);
+			MatCopy(*m, *new_m, SAME_NONZERO_PATTERN);
 
 			return MemoryPtr<Mat>(new_m, destructor);
 		}

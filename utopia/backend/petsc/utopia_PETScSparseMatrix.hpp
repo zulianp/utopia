@@ -22,8 +22,9 @@ namespace utopia{
 		}
 
 		static MemoryPtr<Mat> clone(const MemoryPtr<Mat>& m) {
-			Mat* new_m = MEMPOOL().getSparseMat(*m);
-			MatConvert(*m, MATAIJ, MAT_REUSE_MATRIX, new_m);
+			// FIXME - cannot find a way to reuse sparse matrices with MatCopy
+			Mat* new_m = new Mat; //MEMPOOL().getSparseMat(*m);
+			MatConvert(*m, MATAIJ, MAT_INITIAL_MATRIX, new_m);
 
 			return MemoryPtr<Mat>(new_m, destructor);
 		}
