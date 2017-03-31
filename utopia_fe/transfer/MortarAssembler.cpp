@@ -660,8 +660,8 @@ namespace utopia {
 					continue;
 				}
 
-				const Scalar dx = polygon_2(0, 0) - polygon_2(1, 0);
-				const Scalar dy = polygon_2(0, 1) - polygon_2(1, 1);
+				const Scalar dx = side_polygon_2(0, 0) - side_polygon_2(1, 0);
+				const Scalar dy = side_polygon_2(0, 1) - side_polygon_2(1, 1);
 
 				const Scalar isect_dx = isect_polygon_2(0, 0) - isect_polygon_2(1, 0);
 				const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
