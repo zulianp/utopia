@@ -13,6 +13,8 @@
 #include "ParMortarAssembler.hpp"
 #include "utopia_Socket.hpp"
 #include "utopia_ContactSimParams.hpp"
+#include "utopia_UGMeshReader.hpp"
+
 
 using namespace utopia;
 using namespace std;
@@ -129,7 +131,19 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	// ContactSimParams params = contact_cylinder;
 
 
-	auto mesh = make_shared<Mesh>(init.comm());		
+
+
+	auto mesh = make_shared<Mesh>(init.comm());	
+
+
+	UGXMeshReader reader;
+	if(!reader.read("/Users/patrick/Downloads/AN_Keramik_Einlage_3971885250_3D01_96411_39-32.ugx", *mesh)) {
+		return;
+	}
+	
+	plot_mesh(*mesh, "mesh");
+	return;
+
 	mesh->read(params.mesh_path);
 	plot_mesh(*mesh, "mesh");
 

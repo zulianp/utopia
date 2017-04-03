@@ -52,7 +52,11 @@ endif()
 add_definitions("-D_LIBCPP_DEBUG=0")
 
 list(APPEND HEADERS utopia_fe.hpp)
+list(APPEND HEADERS rapidxml/rapidxml.hpp rapidxml/rapidxml_iterators.hpp rapidxml/rapidxml_print.hpp rapidxml/rapidxml_utils.hpp)
 set(SOURCES "")
+
+
+include_directories(rapidxml)
 
 list(APPEND SOURCES utopia_FEDSLBaseExamples.cpp)
 list(APPEND SOURCES utopia_FEDSLMortarExamples.cpp)
@@ -60,6 +64,7 @@ list(APPEND SOURCES utopia_FEDSLLeastSquaresExamples.cpp)
 list(APPEND SOURCES utopia_MixedFESpaceExample.cpp)
 list(APPEND SOURCES utopia_TimeDiffExamples.cpp)
 list(APPEND SOURCES utopia_Biomechanics.cpp)
+list(APPEND SOURCES utopia_UGMeshReader.cpp)
 
 add_subdirectory(transfer)
 add_library(utopia_fe STATIC ${SOURCES} ${HEADERS})
