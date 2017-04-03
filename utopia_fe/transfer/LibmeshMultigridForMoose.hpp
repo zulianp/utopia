@@ -989,7 +989,7 @@ namespace utopia {
 
         std::cout<<"read_el = "<<n_elements<<std::endl;
 
-        auto mesh_ptr = std::make_shared<SerialMesh>(comm, dim);
+        auto mesh_ptr = std::make_shared< libMesh::Mesh>(comm, dim);
 
         mesh_ptr->reserve_nodes(n_nodes);
 
