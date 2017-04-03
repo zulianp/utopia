@@ -1159,6 +1159,11 @@ namespace utopia {
         
         const Parallel::Communicator &libmesh_comm_mesh = master_slave->mesh().comm();
         
+        
+        
+        const int dim_src = master_slave->mesh().mesh_dimension();
+        const int dim_sla = master_slave->mesh().mesh_dimension();
+        
         MeshBase::const_element_iterator e_it = mesh.active_elements_begin();
         const MeshBase::const_element_iterator e_end = mesh.active_elements_end();
         std::vector<int> block_id;
@@ -1459,6 +1464,10 @@ namespace utopia {
         
         express::MapSparseMatrix<double> rel_area_buff;
         
+        express::MapSparseMatrix<double> gap_buff;
+        
+        express::MapSparseMatrix<double> normal_buff;
+        
         
         
         std::cout<<"*********** master_slave->dof_map().n_dofs() = "<<  master_slave->dof_map().n_dofs() <<std::endl;
@@ -1676,9 +1685,13 @@ namespace utopia {
                         transform_to_reference_surf(*dest_trans, dest_el.type(), dest_ir, dest_ir_ref);
                         
                         master_fe->attach_quadrature_rule(&src_ir_ref);
+                        
                         master_fe->reinit(&src_el);
                         
                         slave_fe->attach_quadrature_rule(&dest_ir_ref);
+                        
+                        slave_fe->get_xyz();
+                        
                         slave_fe->reinit(&dest_el);
                         
                         
@@ -1695,6 +1708,20 @@ namespace utopia {
                         elemmat.zero();
                         
                         mortar_assemble(*master_fe, *slave_fe, elemmat);
+                        
+                        
+                        const libMesh::Point pp = side_ptr_1->point(0);
+                        const Real plane_offset = n1.contract(pp);
+                        
+                        mortar_normal_and_gap_assemble(
+                                                       dim,
+                                                       *slave_fe,
+                                                       n2,
+                                                       n1,
+                                                       plane_offset,
+                                                       surface_assemble->normals,
+                                                       surface_assemble->gap);
+                        
                         
                         //////////////////////////////////////////////////////////////////////////////////////
                         
@@ -1879,6 +1906,13 @@ namespace utopia {
                             
                             const long dof_I = dof_indices_slave_vec[i];
                             
+                            gap_buff.add(dof_I, 0, surface_assemble->gap(i));
+                            
+                            for (int k=0; k<dim_sla; ++k)
+                            {
+                                normal_buff.add(dof_I,k, surface_assemble->normals(i,k));
+                            }
+                            
                             //                            std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
                             
                             for(int j = 0; j <  dof_indices_master_vec.size(); ++j) {
@@ -1990,6 +2024,8 @@ namespace utopia {
         p_buffer.finalizeStructure();
         q_buffer.finalizeStructure();
         rel_area_buff.finalizeStructure();
+        gap_buff.finalizeStructure();
+        normal_buff.finalizeStructure();
         
         SizeType sizes[6] = {
             mat_buffer.rows(), mat_buffer.columns(),
@@ -2008,10 +2044,14 @@ namespace utopia {
         p_buffer.setSize(sizes[2], fIndCols);
         q_buffer.setSize(sizes[4], fIndCols);
         rel_area_buff.setSize(fIndCols, 1);
-        
+        gap_buff.setSize(fIndCols, 1);
+        normal_buff.setSize(fIndCols, dim);
         
         express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
         redist.apply(ownershipRangesBTilde, mat_buffer, express::AddAssign<double>());
+        redist.apply(ownershipRangesBTilde, gap_buff, express::AddAssign<double>());
+        redist.apply(ownershipRangesBTilde, normal_buff, express::AddAssign<double>());
+        
         redist.apply(local_fun_spaces_new->ownershipRangesFaceID(), rel_area_buff, express::AddAssign<double>());
         
         redist.apply(ownershipRangesSlave, p_buffer, express::AddAssign<double>());
@@ -2056,6 +2096,40 @@ namespace utopia {
         
         express::RootDescribe("petsc mat_buffer assembly begin", comm, std::cout);
         
+        DVectord gap_vec = local_zeros(local_range_b_tilde);
+        {
+            utopia::Write<utopia::DVectord> write(gap_vec);
+            for (auto it = gap_buff.iter(); it; ++it) {
+                
+                const SizeType index = it.row() - ownershipRangesBTilde[comm.rank()];
+                assert(index < removeRow.size());
+                
+                //std::cout<< comm.rank() << " row  "<< it.row() << " index " << index << " " << *it << std::endl;
+                
+                if(!removeRow[index]) {
+                    gap_vec.set(it.row(), *it);
+                }
+            }
+        }
+        
+
+        DSMatrixd normal_tilde = utopia::local_sparse(local_range_b_tilde, dim, dim);
+        {
+            utopia::Write<utopia::DSMatrixd> write(normal_tilde);
+            for (auto it = normal_buff.iter(); it; ++it) {
+                
+                const SizeType index = it.row() - ownershipRangesBTilde[comm.rank()];
+                assert(index < removeRow.size());
+                
+                //std::cout<< comm.rank() << " row  "<< it.row() << " index " << index << " " << *it << std::endl;
+                
+                if(!removeRow[index]) {
+                    normal_tilde.set(it.row(), it.col(), *it);
+                }
+            }
+        }
+        
+        
         
         DSMatrixd B_tilde = utopia::local_sparse(local_range_b_tilde, local_range_b_tilde, mMaxRowEntries);
         {
@@ -2065,7 +2139,7 @@ namespace utopia {
                 const SizeType index = it.row() - ownershipRangesBTilde[comm.rank()];
                 assert(index < removeRow.size());
                 
-                std::cout<< comm.rank() << " row  "<< it.row() << " index " << index << " " << *it << std::endl;
+                //std::cout<< comm.rank() << " row  "<< it.row() << " index " << index << " " << *it << std::endl;
                 
                 if(!removeRow[index]) {
                     B_tilde.set(it.row(), it.col(), *it);
@@ -2109,7 +2183,107 @@ namespace utopia {
         
         
         DSMatrixd Q_t = transpose(Q);
+        
+        
         B = P * B_tilde * Q_t;
+        
+        
+        DSMatrixd normals = P * normal_tilde;
+        
+        DVectord gap = P * gap_vec;
+        
+        DVectord normals_vec = local_zeros(local_range_slave_range * dim);
+        
+        typedef Intersector::Scalar Scalar;
+        
+        
+        {
+            Write<DVectord> w(normals_vec);
+            
+            each_read(normals, [&](const SizeType i, const SizeType j, const double value){
+                normals_vec.set(i*dim+j, value);
+            });
+        }
+        
+        std::vector<bool> is_contact_node(local_range_slave_range , false);
+        
+        utopia::Range r = utopia::range(gap);
+        
+        each_read(gap, [&](const SizeType i , const double value){
+            if (value > 0)
+            {
+                is_contact_node[i - r.begin()] = true;
+            }
+            
+        });
+        
+
+        
+        DSMatrixd orthogonal_trafos = local_sparse(local_range_slave_range * dim, local_range_slave_range * dim, dim);
+        
+        {
+            std::vector<Scalar> normal(dim, 0);
+            std::vector<Scalar> H(dim * dim, 0);
+            
+            Read<DVectord>  r_n(normals_vec);
+            Write<DSMatrixd> w_o(orthogonal_trafos);
+            
+            utopia::Range r = utopia::range(normals_vec);
+            for(uint i = r.begin(); i < r.end(); i += dim) {
+                bool use_identity = true;
+                
+                
+                bool is_cn_i = is_contact_node[i/dim];
+                
+                if(is_cn_i) {
+                    
+                    for(uint d = 0; d < dim; ++d) {
+                        normal[d] = normals_vec.get(i + d);
+                    }
+                    
+                    if(std::abs(normal[0] - 1.) > 1e-8) {
+                        use_identity = false;
+                        
+                        //-e1 basis vector
+                        normal[0] -= 1;
+                        
+                        Real len = 0.;
+                        for(uint d = 0; d < dim; ++d) {
+                            len += normal[d] * normal[d];
+                        }
+                        
+                        len = std::sqrt(len);
+                        
+                        assert(len > 0);
+                        
+                        for(uint d = 0; d < dim; ++d) {
+                            normal[d] /= len;
+                        }
+                        
+                        if(dim == 2) {
+                            isector.householder_reflection_2(&normal[0], &H[0]);
+                        } else {
+                            isector.householder_reflection_3(&normal[0], &H[0]);
+                        }
+                        
+                        
+                        for(uint di = 0; di < dim; ++di) {
+                            for(uint dj = 0; dj < dim; ++dj) {
+                                orthogonal_trafos.set(i + di, i + dj, H[di * dim + dj]);
+                            }
+                        }
+                    }
+                } 
+                
+                if(use_identity)
+                {
+                    for(uint di = 0; di < dim; ++di) {
+                        orthogonal_trafos.set(i + di, i + di, 1.);
+                    }
+                }
+            }
+        }
+
         
         disp("B_tilde:");
         disp(B.size());
