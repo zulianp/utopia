@@ -34,6 +34,7 @@ namespace utopia
         if(mpi_world_size() == 1) {
             run_performance_test();
         }
+        MEMPOOL().fullGC();
     }
 
     inline static void runTests(const std::string& tests)

@@ -832,7 +832,7 @@ namespace utopia
 
 			Mat* m = new Mat;
 			// *m = 0;
-			bool ok = PETScError::Check(MatTranspose(right.implementation(), MAT_INITIAL_MATRIX, m));
+			PETScError::Check(MatTranspose(right.implementation(), MAT_INITIAL_MATRIX, m));
 			left.init(*m, true);
 		}
 

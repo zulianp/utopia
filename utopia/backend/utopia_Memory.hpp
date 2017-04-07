@@ -40,7 +40,7 @@ namespace utopia {
 		friend class Memory;
 
 		Memory(MPI_Comm comm = PETSC_COMM_WORLD) : mem_(nullptr), comm_(comm), init_(false), is_owner_(true) {
-			mem_ = Allocator<T, FillType>::claim(comm, {}, {});
+			// mem_ = Allocator<T, FillType>::claim(comm, {}, {});
 		}
 
 		Memory(MPI_Comm comm, const Size& local, const Size& global) : comm_(comm), init_(true), is_owner_(true) {
@@ -115,8 +115,8 @@ namespace utopia {
 		}
 
 		T& implementation() {
-			// if (!mem_)
-			// 	init();
+			if (!mem_)
+				init();
 			is_used_ = true;
 			return *mem_;
 		}

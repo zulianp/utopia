@@ -36,12 +36,43 @@ namespace utopia {
 
 	void MemoryPool::fullGC() {
 #ifdef WITH_PETSC
-/* Disabled for performance comparison
 		for (auto it = vec_pool_.begin(); it != vec_pool_.end(); it++) {
-			VecDestroy(it->second);
-			delete it->second;
+			for (size_t i = 0; i < it->second.size(); i++) {
+				VecDestroy(it->second[i]);
+				delete it->second[i];
+			}
 		}
 		vec_pool_.clear();
+		for (auto it = mat_pool_.begin(); it != mat_pool_.end(); it++) {
+			for (size_t i = 0; i < it->second.size(); i++) {
+				MatDestroy(it->second[i]);
+				delete it->second[i];
+			}
+		}
+		mat_pool_.clear();
+/*
+		for (auto it = sparse_mat_pool_.begin(); it != sparse_mat_pool_.end(); it++) {
+			MatDestroy(it->second);
+			delete it->second;
+		}
+		sparse_mat_pool_.clear();
+*/
+#endif // WITH_PETSC
+	}
+
+	void MemoryPool::GC() {
+#ifdef WITH_PETSC
+		for (auto it = vec_pool_.begin(); it != vec_pool_.end(); it++) {
+			if (it->second.size() == 0) {
+				vec_pool_.erase(it);
+			}
+		}
+		for (auto it = mat_pool_.begin(); it != mat_pool_.end(); it++) {
+			if (it->second.size() == 0) {
+				mat_pool_.erase(it);
+			}
+		}
+/*
 		for (auto it = mat_pool_.begin(); it != mat_pool_.end(); it++) {
 			MatDestroy(it->second);
 			delete it->second;
@@ -56,7 +87,6 @@ namespace utopia {
 #endif // WITH_PETSC
 	}
 
-
 #ifdef WITH_PETSC
 	void MemoryPool::setCommunicator(MPI_Comm comm) {
 		comm_ = comm;
@@ -64,14 +94,13 @@ namespace utopia {
 
 	Vec* MemoryPool::getVec(const Size& local, const Size& global) {
 		// TODO consider PETSC_DECIDE and PETSC_DETERMINE in pool lookup
-		/* Disabled for performance comparison
 		auto it = vec_pool_.find(std::make_pair(local, global));
-		if (it != vec_pool_.end()) {
+		if (it != vec_pool_.end() && it->second.size() > 0) {
 			// std::cout << "Succesfully reused Vec" << std::endl;
-			Vec* outval = it->second;
-			vec_pool_.erase(it);
+			Vec* outval = *it->second.rbegin();
+			it->second.pop_back();
 			return outval;
-		} */
+		}
 
 		// Allocation if not in pool
 		// std::cout << "Had to allocate Vec" << std::endl;
@@ -91,14 +120,13 @@ namespace utopia {
 
 	Mat* MemoryPool::getMat(const Size& local, const Size& global) {
 		// TODO consider PETSC_DECIDE and PETSC_DETERMINE in pool lookup
-		/* Disabled for performance comparison
 		auto it = mat_pool_.find(std::make_pair(local, global));
-		if (it != mat_pool_.end()) {
+		if (it != mat_pool_.end() && it->second.size() > 0) {
 			// std::cout << "Succesfully reused Mat" << std::endl;
-			Mat* outval = it->second;
-			mat_pool_.erase(it);
+			Mat* outval = *it->second.rbegin();
+			it->second.pop_back();
 			return outval;
-		} */
+		}
 
 		// Allocation if not in pool
 		// std::cout << "Had to allocate Mat" << std::endl;
@@ -145,25 +173,40 @@ namespace utopia {
 	}
 
 	void MemoryPool::put(Vec* v) {
-		// PetscInt local, global;
-		// VecType t;
-		// if (VecGetType(*v, &t) || t == 0 || VecGetLocalSize(*v, &local) || VecGetSize(*v, &global)) {
+		PetscInt local, global;
+		VecType t;
+		if (VecGetType(*v, &t) || t == 0 || VecGetLocalSize(*v, &local) || VecGetSize(*v, &global)) {
 			VecDestroy(v); // FIXME how can we reuse these?
 			delete v;
-		// } else {
-		// 	vec_pool_.insert(std::make_pair(std::make_pair<Size, Size>({local}, {global}), v));
-		// }
+		} else {
+			auto k = std::make_pair<Size, Size>({local}, {global});
+			if (vec_pool_[k].size() > 5) {
+				VecDestroy(v);
+				delete v;
+			} else {
+				vec_pool_[k].push_back(v);
+			}
+		}
 	}
 
 	void MemoryPool::put(Mat* m) {
-		// PetscInt local_m, local_n, global_m, global_n;
-		// MatType t;
-		// if (MatGetType(*m, &t) || t == 0 || MatGetLocalSize(*m, &local_m, &local_n) || MatGetSize(*m, &global_m, &global_n)) {
+		PetscInt local_m, local_n, global_m, global_n;
+		MatType t;
+		if (MatGetType(*m, &t) || t == 0 || MatGetLocalSize(*m, &local_m, &local_n) || MatGetSize(*m, &global_m, &global_n)) {
 			MatDestroy(m); // FIXME how can we reuse these?
 			delete m;
-		// } else {
-		// 	mat_pool_.insert(std::make_pair(std::make_pair<Size, Size>({local_m, local_n}, {global_m, global_n}), m));
-		// }
+		} else {
+			if (strcmp(t, "seqaij") == 0) {
+				assert(false && "Disposing a sparse matrix like it's a dense matrix");
+			}
+			auto k = std::make_pair<Size, Size>({local_m, local_n}, {global_m, global_n});
+			if (mat_pool_[k].size() > 5) {
+				MatDestroy(m);
+				delete m;
+			} else {
+				mat_pool_[k].push_back(m);
+			}
+		}
 	}
 
 	void MemoryPool::putSparse(Mat* m) {

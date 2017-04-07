@@ -1,7 +1,7 @@
 #ifndef UTOPIA_MEMORY_POOL_HPP
 #define UTOPIA_MEMORY_POOL_HPP
 
-#include <map>
+#include <unordered_map>
 
 #include "utopia_Base.hpp"
 #include "utopia_Size.hpp"
@@ -11,30 +11,42 @@
 #include "petscvec.h"
 #endif // WITH_PETSC
 
-// namespace std {
-// 	template<>
-// 	struct less<std::pair<utopia::Size, utopia::Size>> {
-// 		int operator()(const std::pair<utopia::Size, utopia::Size>& a, const std::pair<utopia::Size, utopia::Size>& b) const {
-// 			if (a.second.n_dims() == b.second.n_dims()) {
-// 				for (size_t i = 0; i < a.second.n_dims(); i++) {
-// 					if (a.second.get(i) != b.second.get(i))
-// 						return a.second.get(i) < b.second.get(i);
-// 				}
-// 				if (a.first.n_dims() == b.first.n_dims()) {
-// 					for (size_t i = 0; i < a.first.n_dims(); i++) {
-// 						if (a.first.get(i) != b.first.get(i))
-// 							return a.first.get(i) < b.first.get(i);
-// 					}
-// 					return 0;
-// 				} else {
-// 					return a.first.n_dims() < b.first.n_dims();
-// 				}
-// 			} else {
-// 				return a.second.n_dims() < b.second.n_dims();
-// 			}
-// 		}
-// 	};
-// }
+namespace std {
+	template<>
+	struct hash<std::pair<utopia::Size, utopia::Size>> {
+		uint64_t operator()(const std::pair<utopia::Size, utopia::Size>& x) const {
+			if (x.second.n_dims() == 0)
+				return 0;
+			if (x.second.n_dims() == 1)
+				return (x.second.get(0) << 32) ^ (x.first.get(0));
+			return ((x.second.get(0) ^ (x.second.get(1) << 12)) << 32)
+				^ (x.first.get(0) ^ (x.first.get(1) << 12));
+		}
+	};
+
+	template<>
+	struct equal_to<std::pair<utopia::Size, utopia::Size>> {
+		bool operator()(const std::pair<utopia::Size, utopia::Size>& a, const std::pair<utopia::Size, utopia::Size>& b) const {
+			if (a.second.n_dims() == b.second.n_dims()) {
+				for (size_t i = 0; i < a.second.n_dims(); i++) {
+					if (a.second.get(i) != b.second.get(i))
+						return false;
+				}
+				if (a.first.n_dims() == b.first.n_dims()) {
+					for (size_t i = 0; i < a.first.n_dims(); i++) {
+						if (a.first.get(i) != b.first.get(i))
+							return false;
+					}
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		}
+	};
+}
 
 namespace utopia {
 
@@ -42,6 +54,7 @@ namespace utopia {
 	public:
 		static MemoryPool& getInstance();
 
+		void GC();
 		void fullGC();
 
 #ifdef WITH_PETSC
@@ -65,10 +78,10 @@ namespace utopia {
 
 #ifdef WITH_PETSC
 		MPI_Comm comm_;
-		// TODO put a limit on maximum memory used
-		// std::multimap<std::pair<Size, Size>, Vec*> vec_pool_;
-		// std::multimap<std::pair<Size, Size>, Mat*> mat_pool_;
-		// std::multimap<std::pair<Size, Size>, Mat*> sparse_mat_pool_;
+
+		std::unordered_map<std::pair<Size, Size>, std::vector<Vec*>> vec_pool_;
+		std::unordered_map<std::pair<Size, Size>, std::vector<Mat*>> mat_pool_;
+		// std::unordered_map<std::pair<Size, Size>, std::vector<Mat*>> sparse_mat_pool_;
 #endif // WITH_PETSC
 
 	};

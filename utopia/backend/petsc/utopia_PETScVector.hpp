@@ -23,7 +23,8 @@ namespace utopia {
 
 		static MemoryPtr<Vec> claim(MPI_Comm comm, const Size& local, const Size& global) {
 			MEMPOOL().setCommunicator(comm);
-			Vec* v = MEMPOOL().getVec(local, global);
+			Vec* v = MEMPOOL().getVec(local.n_dims() > 1 ? Size({local.get(0)}) : local,
+				global.n_dims() > 1 ? Size({global.get(0)}) : global);
 
 			return MemoryPtr<Vec>(v, destructor);
 		}
