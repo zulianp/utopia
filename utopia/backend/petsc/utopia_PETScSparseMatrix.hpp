@@ -6,7 +6,7 @@
 
 namespace utopia{
 
-	// TODO - find a way to pass NNZ to the Allocator
+	// NNZ has to be set in the backend, after allocation of the Matrix
 	template<>
 	class Allocator<Mat, FillType::SPARSE> {
 	public:
@@ -24,7 +24,7 @@ namespace utopia{
 		static MemoryPtr<Mat> clone(const MemoryPtr<Mat>& m) {
 			// FIXME - cannot find a way to reuse sparse matrices with MatCopy
 			Mat* new_m = new Mat; //MEMPOOL().getSparseMat(*m);
-			MatConvert(*m, MATAIJ, MAT_INITIAL_MATRIX, new_m);
+			MatDuplicate(*m, MAT_COPY_VALUES, new_m);
 
 			return MemoryPtr<Mat>(new_m, destructor);
 		}
