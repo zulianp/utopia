@@ -1746,7 +1746,8 @@ bool biorthgonal_weights(const int type, libMesh::Real &w_ii, libMesh::Real &w_i
 	}
 }
 
-void mortar_assemble_weights(const libMesh::FEBase &fe, libMesh::DenseMatrix<libMesh::Real> &weights)
+template<class FE>
+void mortar_assemble_weights_aux(const FE &fe, libMesh::DenseMatrix<libMesh::Real> &weights)
 {
 	libMesh::DenseMatrix<libMesh::Real> elmat;
 	elmat.resize(fe.get_phi().size(), fe.get_phi().size());
@@ -1770,17 +1771,41 @@ void mortar_assemble_weights(const libMesh::FEBase &fe, libMesh::DenseMatrix<lib
 		}
 	}
 
+	libMesh::DenseVector<libMesh::Real> sum_elmat(n_test);
+	sum_elmat.zero();
 	libMesh::DenseVector<libMesh::Real> rhs(n_test);
 	rhs.zero();
 
 	libMesh::DenseVector<libMesh::Real> sol(n_test);
 	sol.zero();
 
-
 	for(uint i = 0; i < n_test; ++i) {
 		for(uint j = 0; j < n_test; ++j) {
-			rhs(i) += elmat(i, j);
+			sum_elmat(i) += elmat(i, j);
 		}
+
+		if(std::abs(sum_elmat(i)) < 1e-16) {
+			sum_elmat(i) = 0;
+			//set identity row where not defined
+			for(uint j = 0; j < n_test; ++j) {
+				elmat(i, j) = (i == j);
+			}
+		}
+	}
+
+	// std::cout << "-----------------------\n";
+	// std::cout << "-----------------------\n";
+	
+	// elmat.print(std::cout);
+
+	// std::cout << "-----------------------\n";
+
+	for(uint i = 0; i < n_test; ++i) {
+		if(sum_elmat(i) == 0) {
+			continue;
+		}
+
+		rhs(i) = sum_elmat(i);
 
 		elmat.cholesky_solve(rhs, sol);
 
@@ -1793,6 +1818,10 @@ void mortar_assemble_weights(const libMesh::FEBase &fe, libMesh::DenseMatrix<lib
 
 		//normalization for consistently scaled coefficients
 	for(uint i = 0; i < n_test; ++i) {
+		if(sum_elmat(i) == 0) {
+			continue;
+		}
+	
 		libMesh::Real t = 0;
 		for(uint j = 0; j < n_test; ++j) {
 			t += weights(i, j);
@@ -1802,6 +1831,18 @@ void mortar_assemble_weights(const libMesh::FEBase &fe, libMesh::DenseMatrix<lib
 			weights(i, j) *= 1./t;
 		}
 	}
+
+	// weights.print(std::cout);
+}
+
+void mortar_assemble_weights(const libMesh::FEVectorBase &fe, libMesh::DenseMatrix<libMesh::Real> &weights)
+{
+	mortar_assemble_weights_aux(fe, weights);
+}
+
+void mortar_assemble_weights(const libMesh::FEBase &fe, libMesh::DenseMatrix<libMesh::Real> &weights)
+{
+	mortar_assemble_weights_aux(fe, weights);
 }
 
 
@@ -1856,6 +1897,96 @@ void mortar_assemble_weighted_biorth(
 	libMesh::DenseMatrix<libMesh::Real> &elmat)
 {
 	mortar_assemble_weighted_aux(trial_fe, test_fe, weights, elmat);
+}
+
+void mortar_normal_and_gap_assemble_weighted_biorth(
+	const libMesh::FEVectorBase &test_fe, 
+	const int dim,
+	const libMesh::Point &surf_normal,
+	const libMesh::Point &plane_normal,
+	const libMesh::Real &plane_offset,
+	const libMesh::DenseMatrix<libMesh::Real> &weights,
+	libMesh::DenseMatrix<libMesh::Real> &normals, 
+	libMesh::DenseVector<libMesh::Real> &gap)
+{
+
+	using namespace libMesh;
+
+	Intersector isector;
+
+
+	if(normals.m() != test_fe.get_phi().size()/dim || dim != normals.n()) {
+		normals.resize(test_fe.get_phi().size()/dim, dim);
+		gap.resize(test_fe.get_phi().size());
+	}
+
+	normals.zero();
+	gap.zero();
+
+	const auto &test   = test_fe.get_phi();
+	const auto &point  = test_fe.get_xyz();
+	const auto &JxW    = test_fe.get_JxW();
+
+	const uint n_test  = test.size();
+	const uint n_qp    = test[0].size();
+
+	DenseVector<Real> p(dim);
+	DenseVector<Real> v(dim);
+
+	DenseVector<Real> s_n(dim);
+	DenseVector<Real> p_n(dim);
+
+	for(uint i = 0; i < dim; ++i) {
+		p_n(i) =  plane_normal(i);
+		s_n(i) =  surf_normal(i);
+	}
+
+	for(uint qp = 0; qp < n_qp; ++qp) {
+
+		p(0) = point[qp](0);
+		p(1) = point[qp](1);
+
+		if(dim > 2) {
+			p(2) = point[qp](2);
+		}
+
+		Real isect = 0;
+		isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &s_n.get_values()[0], &p_n.get_values()[0], plane_offset, &isect);
+
+		v = s_n;
+		v *= isect;
+		// quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
+
+		for(uint i = 0; i < n_test; ++i) {
+			auto biorth_test =  weights(i, 0) * test[0][qp];
+
+			for(uint k = 0; k < test.size(); ++k) {
+				biorth_test +=  weights(i, k) * test[k][qp];
+			}
+
+			gap(i) += biorth_test(0) * isect * JxW[qp];
+
+			for(uint d = 0; d < dim; ++d) {
+				normals.get_values()[i] += biorth_test(d) * surf_normal(d) * JxW[qp];
+			}
+		}
+	}
+
+	// gap.print(std::cout);
+
+}
+
+void mortar_normal_and_gap_assemble_weighted_biorth(
+	const libMesh::FEBase &test_fe, 
+	const int dim,
+	const libMesh::Point &surf_normal,
+	const libMesh::Point &plane_normal,
+	const libMesh::Real &plane_offset,
+	const libMesh::DenseMatrix<libMesh::Real> &weights,
+	libMesh::DenseMatrix<libMesh::Real> &normals, 
+	libMesh::DenseVector<libMesh::Real> &gap)
+{
+	assert(false && "implement me");
 }
 
 }

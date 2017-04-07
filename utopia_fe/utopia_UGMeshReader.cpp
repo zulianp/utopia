@@ -54,6 +54,11 @@ namespace utopia {
 		return true;
 	}
 
+	static bool read_triangles(const std::string &node_string, libMesh::Mesh &mesh)
+	{
+		return false;
+	}
+
 	static bool read_tetrahedra(const std::string &node_string, libMesh::Mesh &mesh)
 	{
 		typedef libMesh::Real Real;

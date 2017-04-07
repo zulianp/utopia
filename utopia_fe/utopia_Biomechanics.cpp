@@ -5,6 +5,7 @@
 #include <libmesh/petsc_matrix.h>
 #include <libmesh/mesh_modification.h>
 #include <libmesh/linear_partitioner.h>
+#include <libmesh/mesh_refinement.h>
 
 //fe extension
 #include "utopia_fe.hpp"
@@ -124,28 +125,36 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 			// ContactSimParams params = leaflets_contact;
 
 	static const bool is_leaflet = false;
-			 // ContactSimParams params = contact_cuboids;
-	    	// ContactSimParams params = contact8;
-			ContactSimParams params = triple_contact_circle;
-			// ContactSimParams params = multi_contact_3D_2;
-	// ContactSimParams params = contact_cylinder;
+	// ContactSimParams params = contact_cylinder; static const int coords = 1;
+	// ContactSimParams params = contact8;
+	// ContactSimParams params = triple_contact_circle; static const int coords = 1;
+	// ContactSimParams params = multi_contact_3D_2;
+	// ContactSimParams params = hip_femure_contact; static const int coords = 2;
+	ContactSimParams params = implant_contact; static const int coords = 1;
 
 
-
+	auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
+	// predicate->add(101, 102);
+	predicate->add(102, 101);
+ 	predicate->add(103, 102);
+ 	predicate->add(101, 104);
 
 	auto mesh = make_shared<Mesh>(init.comm());	
+ 	// mesh->read("/Users/patrick/Downloads/ASCII_bone/all_sidesets.e");
 
+	// UGXMeshReader reader;
+	// if(!reader.read("/Users/patrick/Downloads/AN_Keramik_Einlage_3971885250_3D01_96411_39-32.ugx", *mesh)) {
+	// 	return;
+	// }
 
-	UGXMeshReader reader;
-	if(!reader.read("/Users/patrick/Downloads/AN_Keramik_Einlage_3971885250_3D01_96411_39-32.ugx", *mesh)) {
-		return;
-	}
-	
-	plot_mesh(*mesh, "mesh");
-	return;
+	// MeshRefinement ref(*mesh);
+	// ref.uniformly_coarsen();
+
+	// plot_mesh(*mesh, "mesh");
+	// return;
 
 	mesh->read(params.mesh_path);
-	plot_mesh(*mesh, "mesh");
+	// plot_mesh(*mesh, "mesh");
 
 	const int dim = mesh->mesh_dimension();
 
@@ -153,7 +162,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	//////////////////////////////////////////////////
 
 	Chrono c;
-	c.start();
+
 
 	LibMeshFEContext<LinearImplicitSystem> context(mesh);
 	auto space = vector_fe_space("disp_", LAGRANGE_VEC, FIRST, context);
@@ -163,14 +172,8 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	std::function<void (const Point &, DenseVector<Real> &output)> boundary_cond_1 = [dim, &params](const Point &, DenseVector<Real> &output) {
 		output.resize(dim);
 		output.zero();
-
-		if(is_leaflet) {
-			// output(0) = -params.dirichlet_value_1;
-			output(1) = params.dirichlet_value_1;
-		} else {
-			//offset to y coordinate of displacement
-			output(1) = params.dirichlet_value_1;
-		}
+		//offset to y coordinate of displacement
+		output(coords) = params.dirichlet_value_1;
 	};
 
 	auto bc_1 = boundary_conditions(u == vec_coeff(boundary_cond_1),    { params.boundary_tag_1 });
@@ -180,13 +183,8 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 		output.resize(dim);
 		output.zero();
 
-		if(is_leaflet) {
-			output(0) = -params.dirichlet_value_2;
-			output(1) = -params.dirichlet_value_2;
-		} else {
-			//offset to y coordinate of displacement
-			output(1) = params.dirichlet_value_2;
-		}
+		//offset to coordinate of displacement
+		output(coords) = params.dirichlet_value_2;
 	};
 
 	auto bc_2 = boundary_conditions(u == vec_coeff(boundary_cond_2), { params.boundary_tag_2 });
@@ -196,13 +194,9 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 		output.resize(dim);
 		output.zero();
 
-		if(is_leaflet) {
-			output(0) = params.dirichlet_value_3;
-			output(1) = -params.dirichlet_value_3;
-		} else {
-			//offset to y coordinate of displacement
-			output(1) = params.dirichlet_value_3;
-		}
+		//offset to coordinate of displacement
+		output(coords) = params.dirichlet_value_3;
+		
 	};
 
 	if(params.boundary_tag_3 >= 0) {
@@ -213,22 +207,10 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	context.equation_systems.init();
 	u.set_quad_rule(make_shared<libMesh::QGauss>(dim, SIXTH));
 
-	double mu   = 1.0, lambda = 1.0;
+	double mu = 1.0, lambda = 1.0;
 	DenseVector<Real> vec(dim);
 	vec.zero();
 
-	auto ass = make_assembly([&]() -> void {
-		assemble_linear_elasticity_system(mu, lambda, u, *context.system.matrix, *context.system.rhs);
-	});
-
-	context.system.attach_assemble_object(ass);
-	context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
-	context.equation_systems.solve();
-
-	c.stop();
-	std::cout << "Matrix and rhs assembly: ";
-	c.describe(std::cout); 
-	std::cout << std::endl;
 
 	long n = u.dof_map().n_dofs();
 
@@ -240,13 +222,17 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	DVectord normals;
 	DSMatrixd orhtogonal_trafos;
 
+
+
 	std::vector<bool> is_contact_node;
 	if(!assembler.assemble(coupling, 
 		gap, 
 		normals, 
 		orhtogonal_trafos, 
 		is_contact_node, 
-		params.search_radius))
+		params.search_radius
+		, predicate
+		))
 	{
 		//Just set some values that do not change the original system
 		coupling = identity(n, n);
@@ -259,6 +245,21 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 
 	DSMatrixd K  = sparse(n, n, 20);
 	DVectord rhs = zeros(n);
+
+
+	c.start();
+	auto ass = make_assembly([&]() -> void {
+		assemble_linear_elasticity_system(mu, lambda, u, *context.system.matrix, *context.system.rhs);
+	});
+
+	context.system.attach_assemble_object(ass);
+	context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
+	context.equation_systems.solve();
+
+	c.stop();
+	std::cout << "Matrix and rhs assembly: ";
+	c.describe(std::cout); 
+	std::cout << std::endl;
 
 	convert(*context.system.rhs, rhs);
 	convert(*context.system.matrix, K);
