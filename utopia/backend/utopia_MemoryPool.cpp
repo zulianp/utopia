@@ -73,11 +73,6 @@ namespace utopia {
 			}
 		}
 /*
-		for (auto it = mat_pool_.begin(); it != mat_pool_.end(); it++) {
-			MatDestroy(it->second);
-			delete it->second;
-		}
-		mat_pool_.clear();
 		for (auto it = sparse_mat_pool_.begin(); it != sparse_mat_pool_.end(); it++) {
 			MatDestroy(it->second);
 			delete it->second;
@@ -180,7 +175,7 @@ namespace utopia {
 			delete v;
 		} else {
 			auto k = std::make_pair<Size, Size>({local}, {global});
-			if (vec_pool_[k].size() > 5) {
+			if (vec_pool_[k].size() > 6) {
 				VecDestroy(v);
 				delete v;
 			} else {
@@ -192,15 +187,13 @@ namespace utopia {
 	void MemoryPool::put(Mat* m) {
 		PetscInt local_m, local_n, global_m, global_n;
 		MatType t;
-		if (MatGetType(*m, &t) || t == 0 || MatGetLocalSize(*m, &local_m, &local_n) || MatGetSize(*m, &global_m, &global_n)) {
+		if (MatGetType(*m, &t) || t == 0 || strcmp(t, MATSEQAIJ) == 0 // avoid storing sparse Matrices in the dense matrix pool
+			|| MatGetLocalSize(*m, &local_m, &local_n) || MatGetSize(*m, &global_m, &global_n)) {
 			MatDestroy(m); // FIXME how can we reuse these?
 			delete m;
 		} else {
-			if (strcmp(t, "seqaij") == 0) {
-				assert(false && "Disposing a sparse matrix like it's a dense matrix");
-			}
 			auto k = std::make_pair<Size, Size>({local_m, local_n}, {global_m, global_n});
-			if (mat_pool_[k].size() > 5) {
+			if (mat_pool_[k].size() > 20) {
 				MatDestroy(m);
 				delete m;
 			} else {
