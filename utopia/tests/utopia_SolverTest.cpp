@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-07-15
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-02-07
+* @Last Modified time: 2017-04-09
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -339,13 +339,10 @@ namespace utopia
             petsc_tr_rr_test();
             petsc_newton_inexact_newton_with_KSP_test(); 
 
-            // neohookean_tr_test();
-            // QP_example_MG();
-            // TR_in_inf_norm_with_MG();
+            neohookean_tr_test();
+            QP_example_MG();
+            TR_in_inf_norm_with_MG();
         }
-
-
-
 
 
         // void neohookean_tr_test()
@@ -742,11 +739,20 @@ namespace utopia
             DVectord x_0 = zeros(A.size().get(0));
 
             Parameters params;
-            params.verbose(false);
             params.linear_solver_verbose(false);
             multigrid.set_parameters(params);
 
             multigrid.solve(rhs, x_0);
+
+            x_0 = zeros(A.size().get(0));
+            multigrid.cycle_type("full"); 
+            multigrid.solve(rhs, x_0);    
+
+            x_0 = zeros(A.size().get(0));
+            multigrid.cycle_type("full"); 
+            multigrid.v_cycle_repetition(2); 
+            multigrid.solve(rhs, x_0);    
+
            std::cout << "         End: MG_test" << std::endl;
         }
 

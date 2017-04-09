@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-03-29
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-01-29
+* @Last Modified time: 2017-04-09
 */
 
 #ifndef UTOPIA_MULTIGRID_HPP
@@ -102,6 +102,8 @@ namespace utopia
             _pre_smoothing_steps = params.pre_smoothing_steps(); 
             _post_smoothing_steps = params.post_smoothing_steps(); 
             _mg_type = params.mg_type(); 
+            _cycle_type = params.cycle_type(); 
+            _v_cycle_repetition = 1; 
 
         }
 
@@ -151,10 +153,18 @@ namespace utopia
                 this->atol(1e-15); 
             #endif
 
+            if(_cycle_type =="full")
+                this->max_it(1); 
+
             while(!converged)
             {            
-                multiplicative_cycle(rhs, l, x_0); 
-                // additive_cycle(rhs, l, x_0); 
+                if(_cycle_type =="multiplicative")
+                    multiplicative_cycle(rhs, l, x_0); 
+                else if(_cycle_type =="full")
+                    full_cycle(rhs, l, x_0); 
+                else
+                    std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n"; 
+
 
                 #ifdef CHECK_NUM_PRECISION_mode
                     if(has_nan_or_inf(x_0) == 1)
@@ -341,6 +351,41 @@ namespace utopia
         }
 
 
+        /**
+         * @brief      Function implements full multigrid cycle. 
+         *
+         * @param[in]  rhs   The rhs.
+         * @param[in]  l     The level.
+         * @param      x_0   The current iterate. 
+         *
+         */
+        virtual bool full_cycle(const Vector &rhs, const SizeType & l, Vector & x_0)
+        {
+            Vector rhs_h = rhs; 
+            std::vector<Vector> rhss; 
+            rhss.push_back(std::move(rhs));
+
+            for(SizeType i = l-2; i >=0; i--)
+            {
+                transfers(i).restrict(rhs_h, rhs_h); 
+                rhss.push_back(std::move(rhs_h));
+            }
+
+            coarse_solve(levels(0).A(), rhss[2], x_0);       
+            transfers(0).interpolate(x_0, x_0); 
+
+            for(SizeType i = 1; i <l-1; i++)
+            {
+                for(SizeType j = 0; j < v_cycle_repetition(); j++)
+                    multiplicative_cycle(rhss[i], i+1, x_0);  
+                transfers(i).interpolate(x_0, x_0); 
+            }
+
+            for(SizeType i = 0; i < v_cycle_repetition(); i++)
+                multiplicative_cycle(rhss[0], l, x_0);  
+            return true; 
+        }
+
 
         /**
          * @brief      The function invokes smoothing. 
@@ -391,6 +436,27 @@ namespace utopia
             _direct_solver->set_parameters(_parameters); 
             return true; 
         }
+
+
+        /**
+         * @brief      Function sets type of cycle
+         */
+        bool cycle_type(const std::string & type_in)
+        {
+            _cycle_type = type_in; 
+            return true; 
+        }
+
+        /**
+         * @brief    Sets amount of V-cycles inside of F-cycle
+         */
+        bool v_cycle_repetition(const SizeType & v_cycle_repetition_in)
+        {
+            _v_cycle_repetition = v_cycle_repetition_in; 
+            return true; 
+        }
+
+
 
         /**
          * @brief      Function changes soother in MG. 
@@ -457,6 +523,17 @@ namespace utopia
          */
         bool  mg_type() const                     { return _mg_type; } 
 
+        /**
+         * @return     Type of MG cycle. 
+         */
+        std::string  cycle_type() const         { return _cycle_type; } 
+
+
+        /**
+         * @brief      Amount of V-cycles on each level during full-cycle
+         */
+        SizeType v_cycle_repetition() const {return _v_cycle_repetition; }
+
     protected:   
         std::shared_ptr<Smoother>           _smoother;
         std::shared_ptr<Solver>             _direct_solver;
@@ -466,6 +543,9 @@ namespace utopia
         SizeType                            _pre_smoothing_steps; 
         SizeType                            _post_smoothing_steps; 
         SizeType                            _mg_type; 
+
+        std::string                         _cycle_type; 
+        SizeType                            _v_cycle_repetition; 
 
     };
 
