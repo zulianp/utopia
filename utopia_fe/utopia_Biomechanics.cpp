@@ -21,6 +21,103 @@ using namespace utopia;
 using namespace std;
 using namespace libMesh;
 
+class LameeParameters {
+public:
+	LameeParameters(const double default_mu, const double default_lambda)
+	: default_mu_(default_mu), default_lambda_(default_lambda)
+	{}
+
+	double mu(const int id) const
+	{
+		auto it = mu_.find(id);
+		if(it == mu_.end()) {
+			return default_mu_;
+		}
+
+		return it->second;
+	}
+
+	double lambda(const int id) const
+	{
+		auto it = lambda_.find(id);
+		if(it == lambda_.end()) {
+			return default_lambda_;
+		}
+
+		return it->second;
+	}
+
+	double default_mu_, default_lambda_;
+	std::map<int, double> mu_;
+	std::map<int, double> lambda_;
+};
+
+double von_mises_stress_2(const double *stress)
+{
+	double result =  0.5 * ( stress[0] - stress[3] ) * 
+	( stress[0] - stress[3] ) + 
+	3.0  *  stress[1] * stress[1];
+
+	result = sqrt( fabs(result) );
+	assert(result == result && "von_mises_stress_2: result is nan");
+	return result;
+}
+
+double von_mises_stress_3(const double *stress)
+{
+	double result =  0.5 * ( stress[0] - stress[4] ) * 
+	( stress[0] - stress[4] ) + 
+	3.0  *  stress[1] * stress[1];
+
+	result += 0.5 * (stress[8] - stress[4]) * (stress[8] - stress[4]) + 3.0  * stress[7] * stress[7];
+	result += 0.5 * (stress[8] - stress[0]) * (stress[8] - stress[0]) + 3.0  * stress[6] * stress[6];
+
+	result = sqrt( fabs(result) );
+
+	assert(result == result && "von_mises_stress_3: result is nan");
+	return result;
+}
+
+double von_mises_stress(const int n_dims, const double * stress)
+{
+	switch(n_dims) {
+		case 2: { return von_mises_stress_2(stress); }
+		case 3: { return von_mises_stress_3(stress); }
+		default : { assert(false && "von_mises_stress: not supported for dim."); return 0.0; }
+	}
+	return 0.0;
+}
+
+
+void stress_linear_elasticity(const double mu, const double lambda, const DenseMatrix<Real> &grad_u, DenseMatrix<Real> &stress)
+{
+	stress = grad_u;
+	const int n = stress.m();
+
+	double trace_grad_u = 0;
+
+	for(int i = 0; i < n; ++i) {
+		trace_grad_u += grad_u(i, i);
+
+		for(int j = 0; j < n; ++j) {
+			stress(i, j) += grad_u(j, i);
+		}
+	}
+
+	stress *= mu;
+	double temp = (lambda * trace_grad_u);
+	for(int i = 0; i < n; ++i) {
+		stress(i, i) += temp;
+	}
+}
+
+template<class FE>
+void von_mises_stress_linear_elasticity(FE &fe, const double mu, const double lambda, libMesh::DenseVector<libMesh::Real> &vec)
+{
+
+}
+
+
 
 template<class FE>
 void assemble_linear_elasticity(FE &fe, const Real lambda, const Real mu, libMesh::DenseMatrix<libMesh::Real> &mat)
@@ -80,9 +177,11 @@ void assemble_rhs(FE &fe, libMesh::DenseVector<libMesh::Real> &vec)
 	vec.zero();
 }
 
+
+
 template<class FE, class Matrix, class Vector>
 void assemble_linear_elasticity_system(
-	const Real lambda, const Real mu, 
+	const LameeParameters &params,
 	FE &fe, 
 	Matrix &mat,
 	Vector &rhs)
@@ -100,6 +199,10 @@ void assemble_linear_elasticity_system(
 	for(auto e_it = e_begin; e_it != e_end; ++e_it) {
 		fe.set_element(**e_it);
 
+		const int block_id = (*e_it)->subdomain_id();
+		
+		const double mu 	= params.mu(block_id);
+		const double lambda = params.lambda(block_id);
 
 		assemble_linear_elasticity(fe, lambda, mu, el_mat);
 		assemble_rhs(fe, el_vec);
@@ -112,6 +215,36 @@ void assemble_linear_elasticity_system(
 	}
 }
 
+template<class FE, class Vector>
+void assemble_von_mises_stress(
+	const LameeParameters &params,
+	FE &fe, 
+	Vector &stress)
+{
+	using namespace libMesh;
+	LibMeshBackend backend;
+
+	auto e_begin = fe.mesh().active_local_elements_begin();
+	auto e_end   = fe.mesh().active_local_elements_end();
+
+	std::vector<dof_id_type> dof_indices;
+
+	DenseVector<Real> el_vec;
+	for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+		fe.set_element(**e_it);
+
+		const int block_id = (*e_it)->subdomain_id();
+		
+		const double mu 	= params.mu(block_id);
+		const double lambda = params.lambda(block_id);
+
+		//von mises here
+
+		fe.dof_map().dof_indices(*e_it, dof_indices, fe.var_num());
+
+		add_vector(el_vec, dof_indices, stress);
+	}
+}
 
 
 void run_biomechanics_example(libMesh::LibMeshInit &init)
@@ -127,17 +260,19 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	static const bool is_leaflet = false;
 	// ContactSimParams params = contact_cylinder; static const int coords = 1;
 	// ContactSimParams params = contact8;
-	// ContactSimParams params = triple_contact_circle; static const int coords = 1;
+	ContactSimParams params = triple_contact_circle; static const int coords = 1;
 	// ContactSimParams params = multi_contact_3D_2;
 	// ContactSimParams params = hip_femure_contact; static const int coords = 2;
-	ContactSimParams params = implant_contact; static const int coords = 1;
+	// ContactSimParams params = implant_contact; static const int coords = 1;
 
 
 	auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
 	// predicate->add(101, 102);
+
 	predicate->add(102, 101);
- 	predicate->add(103, 102);
- 	predicate->add(101, 104);
+	predicate->add(103, 102);
+	predicate->add(104, 103);
+	predicate->add(105, 10);
 
 	auto mesh = make_shared<Mesh>(init.comm());	
  	// mesh->read("/Users/patrick/Downloads/ASCII_bone/all_sidesets.e");
@@ -231,7 +366,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 		orhtogonal_trafos, 
 		is_contact_node, 
 		params.search_radius
-		, predicate
+		// , predicate
 		))
 	{
 		//Just set some values that do not change the original system
@@ -246,10 +381,13 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	DSMatrixd K  = sparse(n, n, 20);
 	DVectord rhs = zeros(n);
 
+	LameeParameters lamee_params(mu, lambda);
+	// lamee_params.mu[1] = 
+	// lamee_params.mu[2] = 
 
 	c.start();
 	auto ass = make_assembly([&]() -> void {
-		assemble_linear_elasticity_system(mu, lambda, u, *context.system.matrix, *context.system.rhs);
+		assemble_linear_elasticity_system(lamee_params, u, *context.system.matrix, *context.system.rhs);
 	});
 
 	context.system.attach_assemble_object(ass);
