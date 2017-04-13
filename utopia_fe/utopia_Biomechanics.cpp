@@ -112,9 +112,53 @@ void stress_linear_elasticity(const double mu, const double lambda, const DenseM
 }
 
 template<class FE>
-void von_mises_stress_linear_elasticity(FE &fe, const double mu, const double lambda, libMesh::DenseVector<libMesh::Real> &vec)
+void von_mises_stress_linear_elasticity(FE &fe, const int dims, const double mu, const double lambda, const libMesh::DenseVector<libMesh::Real> &u, 
+	libMesh::DenseVector<libMesh::Real> &von_mises_stress_vec,
+	libMesh::DenseVector<libMesh::Real> &mass_vec)
 {
+	auto &fun = fe.get_fe().get_phi();
+	auto &grad_fun = fe.get_fe().get_dphi();
+	auto &JxW	= fe.get_fe().get_JxW();
 
+
+
+	von_mises_stress_vec.resize(fun.size());
+	von_mises_stress_vec.zero();
+
+	mass_vec.resize(fun.size());
+	mass_vec.zero();
+
+	Real vm_stress = 0.0;
+	Real mass = 0.0;
+
+	DenseMatrix<Real> grad_u;
+	DenseMatrix<Real> stress;
+	for(SizeType qp = 0; qp < JxW.size(); ++qp) {
+		DenseMatrix<Real> grad_u(dims, dims);
+		grad_u.zero();
+
+		for(SizeType i = 0; i < grad_fun.size(); ++i) {
+			for(SizeType di = 0; di < dims;  ++di) {
+				for(SizeType dj = 0; dj < dims; ++dj) {
+					grad_u(di, dj) += grad_fun[i][qp](di, dj) * u(i);
+				}
+			}
+			
+		}
+
+		stress_linear_elasticity(mu, lambda, grad_u, stress);
+		//von mises
+
+		for(SizeType i = 0; i < fun.size(); ++i) {
+			auto FxJxW = fun[i][qp] * von_mises_stress(dims, &stress.get_values()[0]) * JxW[qp];
+			auto MxJxW = fun[i][qp] * JxW[qp];
+
+			for(SizeType d = 0; d < dims; ++d) {
+				von_mises_stress_vec(i) += FxJxW(d);
+				mass_vec(i) += MxJxW(d);
+			}
+		}
+	}
 }
 
 
@@ -219,6 +263,7 @@ template<class FE, class Vector>
 void assemble_von_mises_stress(
 	const LameeParameters &params,
 	FE &fe, 
+	const Vector &u,
 	Vector &stress)
 {
 	using namespace libMesh;
@@ -229,21 +274,33 @@ void assemble_von_mises_stress(
 
 	std::vector<dof_id_type> dof_indices;
 
-	DenseVector<Real> el_vec;
-	for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-		fe.set_element(**e_it);
+	Vector mass = local_zeros(local_size(u));
+	stress = local_zeros(local_size(u));
 
-		const int block_id = (*e_it)->subdomain_id();
-		
-		const double mu 	= params.mu(block_id);
-		const double lambda = params.lambda(block_id);
+	Read<Vector> r_u(u);
+	{
+		Write<Vector> w_s(stress), w_m(mass);
 
-		//von mises here
+		DenseVector<Real> u_local, stress_local, mass_local;
+		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+			fe.set_element(**e_it);
 
-		fe.dof_map().dof_indices(*e_it, dof_indices, fe.var_num());
+			const int block_id = (*e_it)->subdomain_id();
 
-		add_vector(el_vec, dof_indices, stress);
+			const double mu 	= params.mu(block_id);
+			const double lambda = params.lambda(block_id);
+
+			fe.dof_map().dof_indices(*e_it, dof_indices, fe.var_num());
+
+			get_vector(u, dof_indices, u_local);
+
+			von_mises_stress_linear_elasticity(fe, fe.mesh().mesh_dimension(), mu, lambda, u_local, stress_local, mass_local);
+			add_vector(stress_local, dof_indices, stress);
+			add_vector(mass_local, dof_indices, mass);
+		}
 	}
+
+	stress = e_mul(stress, 1./mass);
 }
 
 
@@ -260,10 +317,10 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	static const bool is_leaflet = false;
 	// ContactSimParams params = contact_cylinder; static const int coords = 1;
 	// ContactSimParams params = contact8;
-	ContactSimParams params = triple_contact_circle; static const int coords = 1;
+	// ContactSimParams params = triple_contact_circle; static const int coords = 1;
 	// ContactSimParams params = multi_contact_3D_2;
 	// ContactSimParams params = hip_femure_contact; static const int coords = 2;
-	// ContactSimParams params = implant_contact; static const int coords = 1;
+	ContactSimParams params = implant_contact; static const int coords = 1;
 
 
 	auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
@@ -300,7 +357,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 
 
 	LibMeshFEContext<LinearImplicitSystem> context(mesh);
-	auto space = vector_fe_space("disp_", LAGRANGE_VEC, FIRST, context);
+	auto space = vector_fe_space("stress_", LAGRANGE_VEC, FIRST, context);
 	auto u = fe_function(space);
 
 	//boundary conditions
@@ -342,7 +399,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	context.equation_systems.init();
 	u.set_quad_rule(make_shared<libMesh::QGauss>(dim, SIXTH));
 
-	double mu = 1.0, lambda = 1.0;
+	
 	DenseVector<Real> vec(dim);
 	vec.zero();
 
@@ -366,7 +423,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 		orhtogonal_trafos, 
 		is_contact_node, 
 		params.search_radius
-		// , predicate
+		, predicate
 		))
 	{
 		//Just set some values that do not change the original system
@@ -381,9 +438,10 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	DSMatrixd K  = sparse(n, n, 20);
 	DVectord rhs = zeros(n);
 
+	double mu = 100.0, lambda = 200.0;
 	LameeParameters lamee_params(mu, lambda);
-	// lamee_params.mu[1] = 
-	// lamee_params.mu[2] = 
+	lamee_params.lambda_[1] = 5.;
+	lamee_params.mu_[1] = 10.;
 
 	c.start();
 	auto ass = make_assembly([&]() -> void {
@@ -418,22 +476,45 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	//Change back to original basis
 	DVectord sol = coupling * (orhtogonal_trafos * sol_c);
 
-	convert(sol, *context.system.solution);
+	// convert(sol, *context.system.solution);
+
+
+
+	DVectord stress;
+	assemble_von_mises_stress(lamee_params, u, sol, stress);
+	convert(stress, *context.system.solution);
 	ExodusII_IO(*mesh).write_equation_systems ("elasticity_contact.e", context.equation_systems);
 
-	{
-		Read<DVectord> w_g(gap);
-		Read<DVectord> w_n(normals);
-
-		for(size_t i = 0; i < is_contact_node.size(); ++i) {
-			if(is_contact_node[i]) {
-				const double len = gap.get((i/dim)*dim);
-				context.system.solution->set(i, len * normals.get(i));
-			} else {
-				context.system.solution->set(i, 0);
-			}
+	int sys_num = u.dof_map().sys_number();
+	int var_num = u.var_num();
+	for(auto n_it = mesh->local_nodes_begin(); n_it != mesh->local_nodes_end(); ++n_it) {
+		for(unsigned int c = 0; c != (*n_it)->n_comp(sys_num, var_num); ++c) {
+			const int dof_id = (*n_it)->dof_number(sys_num, var_num, c);
+			(**n_it)(c) += sol.get(dof_id);
 		}
 	}
 
-	ExodusII_IO(*mesh).write_equation_systems ("elasticity_contact_cn.e", context.equation_systems);
+	ExodusII_IO(*mesh).write_equation_systems ("elasticity_contact_deformed.e", context.equation_systems);
+
+	// e_io.write_nodal_data("elasticity_contact.e", *context.system.solution, {"stress_x","stress_y"});
+	// ExodusII_IO(*mesh).write_equation_systems ("elasticity_contact_von_mises.e", context.equation_systems);	
+
+	// {
+	// 	Read<DVectord> w_g(gap);
+	// 	Read<DVectord> w_n(normals);
+
+	// 	for(size_t i = 0; i < is_contact_node.size(); ++i) {
+	// 		if(is_contact_node[i]) {
+	// 			const double len = gap.get((i/dim)*dim);
+	// 			context.system.solution->set(i, len * normals.get(i));
+	// 		} else {
+	// 			context.system.solution->set(i, 0);
+	// 		}
+	// 	}
+	// }
+
+	// ExodusII_IO(*mesh).write_equation_systems ("elasticity_contact_cn.e", context.equation_systems);
+
+
+
 }
