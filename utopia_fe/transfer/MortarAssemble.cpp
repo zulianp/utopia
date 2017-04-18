@@ -754,7 +754,7 @@ namespace utopia {
 				
 
 				// printf("g: %g (%g, %g)\n", isect, p(1), plane_offset);
-				assert(isect > 0);
+//				assert(isect > 0);
 
 				gap(i) += test[i][qp] * isect * JxW[qp];
 

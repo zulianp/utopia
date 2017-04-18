@@ -13,6 +13,7 @@
 #include "libmesh/elem.h"
 #include "libmesh/transient_system.h"
 #include "libmesh/fe.h"
+#include "libmesh/serial_mesh.h"
 
 #include "express_Profiler.hpp"
 #include "express_Redistribute.hpp"
@@ -25,6 +26,7 @@
 
 #include <cmath>
 #include <queue>
+
 
 
 namespace utopia {
@@ -1210,6 +1212,27 @@ namespace utopia {
         return true;
     }
 
+    static void assemble_biorth_weights_from_space(const std::shared_ptr<MeshBase> &mesh,
+                                                  const std::shared_ptr<DofMap> &dof_map,
+                                                   const int var_num,
+                                                  libMesh::DenseMatrix<libMesh::Real> &weights)
+    {
+        const int dim = mesh->mesh_dimension();
+        std::unique_ptr<libMesh::FEBase> biorth_elem = 
+                        libMesh::FEBase::build(dim, 
+                                               dof_map->variable_type(var_num));
+
+        auto &el = **mesh->active_local_elements_begin();
+
+        const int order = order_for_l2_integral(dim, 
+                                        el, dof_map->variable(var_num).type().order, 
+                                        el, dof_map->variable(var_num).type().order);
+
+        libMesh::QGauss qg(dim, libMesh::Order(order));
+        biorth_elem->attach_quadrature_rule(&qg);
+        biorth_elem->reinit(&el);
+        mortar_assemble_weights(*biorth_elem, weights);
+    }
 
     template<int Dimensions>
     bool Assemble(
@@ -1223,6 +1246,9 @@ namespace utopia {
                   DSMatrixd &B,
                   const cutk::Settings &settings,bool  use_biorth_)
     {
+
+        const int var_num_slave = *_to_var_num;
+
         std::shared_ptr<Spaces> local_fun_spaces = cutk::make_shared<Spaces>(master, slave, dof_master, dof_slave,_from_var_num,_to_var_num);
         
         libMesh::DenseMatrix<libMesh::Real> src_pts;
@@ -1269,6 +1295,15 @@ namespace utopia {
                        const ElementAdapter<Dimensions> &slave) -> bool {
             
             c.start();
+
+            libMesh::DenseMatrix<libMesh::Real> biorth_weights;
+
+            if(use_biorth_) {
+                assemble_biorth_weights_from_space(slave_space,
+                                               dof_slave,
+                                               var_num_slave,
+                                               biorth_weights);
+            }
             
             long n_intersections = 0;
             
@@ -1383,7 +1418,9 @@ namespace utopia {
                 
                 
                 if(use_biorth_) {
-                    mortar_assemble_biorth(*master_fe, *slave_fe, dest_el.type(), elemmat);
+                    // mortar_assemble_biorth(*master_fe, *slave_fe, dest_el.type(), elemmat);
+                    //std::cout<<"I am here"<<std::endl;
+                    mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
                     
                 } else {
                     mortar_assemble(*master_fe, *slave_fe, elemmat);

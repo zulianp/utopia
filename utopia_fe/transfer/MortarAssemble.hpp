@@ -310,6 +310,12 @@ namespace utopia {
 		libMesh::DenseMatrix<libMesh::Real> &elmat);
 
 	void mortar_assemble_weighted_biorth(
+	const libMesh::FEBase &trial_fe, 
+	const libMesh::FEBase &test_fe,
+	const libMesh::DenseMatrix<libMesh::Real> &weights,
+	libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+	void mortar_assemble_weighted_biorth(
 		const libMesh::FEVectorBase &trial_fe, 
 		const libMesh::FEVectorBase &test_fe, 
 		const libMesh::DenseMatrix<libMesh::Real> &weights,
