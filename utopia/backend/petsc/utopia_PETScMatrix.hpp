@@ -49,7 +49,7 @@ namespace utopia {
 				assert(false);
 			}
 			Mat* new_m = MEMPOOL().getMat(*m);
-			MatCopy(*m, *new_m, DIFFERENT_NONZERO_PATTERN);
+			MatCopy(*m, *new_m, SAME_NONZERO_PATTERN);
 
 			return MemoryPtr<Mat>(new_m, destructor);
 		}

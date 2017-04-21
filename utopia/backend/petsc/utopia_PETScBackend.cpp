@@ -665,6 +665,47 @@ namespace utopia {
 		return x;
 	}
 
+	bool PETScBackend::diag(PETScSparseMatrix &mat, const PETScVector &vec)
+	{
+		// I do not think, this is needed
+		// because, doesnt run in parallel properly
+		// u can not change size of matrix after it was initialized...
+		// or at least it seems like ...
+		//!!! FIXME needs to check if matrix has been allocated already
+
+		mat.init();
+
+		PetscInt local_size, global_size;
+		VecGetLocalSize(vec.implementation(), &local_size);
+		VecGetSize(vec.implementation(), &global_size);
+
+		if(mpi_world_size() == 1) {
+			MatSetType(mat.implementation(), MATSEQAIJ);
+			//
+			// MatSEQAIJSetPreallocation(mat.implementation(), 1, NULL, NULL, NULL);
+			MatSetSizes(mat.implementation(), local_size, local_size, global_size, global_size);
+			MatSetUp(mat.implementation());
+		} else {
+			MatSetType(mat.implementation(), MATMPIAIJ);
+			MatSetSizes(mat.implementation(), local_size, local_size, global_size, global_size);
+			MatMPIAIJSetPreallocation(mat.implementation(), 1, NULL, 0, NULL);
+		}
+
+		PetscInt err = MatDiagonalSet( mat.implementation(), vec.implementation(), INSERT_VALUES);
+		return PETScError::Check(err);
+	}
+
+	bool PETScBackend::diag(PETScMatrix &mat, const PETScVector &vec) {
+		PetscInt local_size, global_size;
+		VecGetLocalSize(vec.implementation(), &local_size);
+		VecGetSize(vec.implementation(), &global_size);
+
+		mat.init({local_size, local_size}, {global_size, global_size});
+		MatZeroEntries(mat.implementation());
+		PetscInt err = MatDiagonalSet( mat.implementation(), vec.implementation(), INSERT_VALUES);
+		return PETScError::Check(err);
+	}
+
 	bool PETScBackend::compare(const Vector &left, const Vector &right, const ApproxEqual &comp) {
 		PETScVector diff;
 		apply(left, right, Minus(), diff);

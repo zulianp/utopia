@@ -7,7 +7,7 @@
 namespace utopia{
 
 	template<>
-	inline void check<Mat, 3>(Mat m) {
+	inline void check<Mat, FillType::SPARSE>(Mat m) {
 		// std::cout << "called spec sparse: ";
 		MatType type;
 		if (MatGetType(m, &type) == 0) {
@@ -35,9 +35,10 @@ namespace utopia{
 		}
 
 		static MemoryPtr<Mat> clone(const MemoryPtr<Mat>& m) {
-			// FIXME - cannot find a way to reuse sparse matrices with MatCopy
-			Mat* new_m = new Mat; //MEMPOOL().getSparseMat(*m);
-			MatDuplicate(*m, MAT_COPY_VALUES, new_m);
+			Mat* new_m = MEMPOOL().getSparseMat(*m);
+			// MatSeqAIJSetPreallocation(*new_m, m_info.nz_used, NULL); // this works in tests
+			MatSetOption(*new_m, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE); // but this is way faster
+			MatCopy(*m, *new_m, DIFFERENT_NONZERO_PATTERN);
 
 			return MemoryPtr<Mat>(new_m, destructor);
 		}
