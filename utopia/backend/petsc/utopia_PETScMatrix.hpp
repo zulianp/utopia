@@ -14,6 +14,19 @@
 namespace utopia {
 
 	template<>
+	inline void check<Mat, FillType::DENSE>(Mat m) {
+		// std::cout << "called spec dense: ";
+		MatType type;
+		if (MatGetType(m, &type) == 0) {
+			if (type && !strcmp(MATSEQAIJ, type)) {
+				std::cout << "[Error] Placing a sparse matrix in a dense one!" << '\n';
+				assert(false && "Cannot wrap a sparse matrix in a dense wrapper");
+			}
+		}
+		// std::cout << type << '\n';
+	}
+
+	template<>
 	class Allocator<Mat, FillType::DENSE> {
 	public:
 		static void destructor(Mat* m) {
@@ -28,8 +41,15 @@ namespace utopia {
 		}
 
 		static MemoryPtr<Mat> clone(const MemoryPtr<Mat>& m) {
+			MatType t;
+			MatGetType(*m, &t);
+
+			if (strcmp(MATSEQAIJ, t) == 0) {
+				std::cout << "[Warning] Cloning sparse matrix like a dense one!" << '\n';
+				assert(false);
+			}
 			Mat* new_m = MEMPOOL().getMat(*m);
-			MatCopy(*m, *new_m, SAME_NONZERO_PATTERN);
+			MatCopy(*m, *new_m, DIFFERENT_NONZERO_PATTERN);
 
 			return MemoryPtr<Mat>(new_m, destructor);
 		}

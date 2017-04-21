@@ -6,6 +6,19 @@
 
 namespace utopia{
 
+	template<>
+	inline void check<Mat, 3>(Mat m) {
+		// std::cout << "called spec sparse: ";
+		MatType type;
+		if (MatGetType(m, &type) == 0) {
+			if (type && strcmp(MATSEQAIJ, type)) {
+				std::cout << "[Error] Placing a dense matrix in a sparse one!" << '\n';
+				assert(false && "Cannot wrap a dense matrix in a sparse wrapper");
+			}
+		}
+		// std::cout << type << '\n';
+	}
+
 	// NNZ has to be set in the backend, after allocation of the Matrix
 	template<>
 	class Allocator<Mat, FillType::SPARSE> {

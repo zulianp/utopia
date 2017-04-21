@@ -32,30 +32,36 @@ namespace utopia {
 		}
 	};
 
+	template <typename T, int FillType>
+	inline void check(T t) {
+		// std::cout << "called generic: " << FillType << '\n';
+	}
 
 	template <typename T, int FillType>
 	class Memory {
 	public:
-		template<typename T2, int FillType2>
-		friend class Memory;
-
 		Memory(MPI_Comm comm = PETSC_COMM_WORLD) : mem_(nullptr), comm_(comm), init_(false), is_owner_(true) {
 			// mem_ = Allocator<T, FillType>::claim(comm, {}, {});
 		}
 
 		Memory(MPI_Comm comm, const Size& local, const Size& global) : comm_(comm), init_(true), is_owner_(true) {
 			mem_ = Allocator<T, FillType>::claim(comm, local, global);
+			check<T, FillType>(*mem_);
 		}
 
 		Memory(MPI_Comm comm, T& t, bool own) : comm_(comm), init_(true), is_owner_(own) {
+			check<T, FillType>(t);
 			mem_ = MemoryPtr<T>(&t, own ? Allocator<T, FillType>::destructor : [](T*){});
 		}
 
 		Memory(const Memory& m) : comm_(m.comm_), init_(m.init_), is_owner_(true) {
+			check<T, FillType>(m.implementation());
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 		}
 
-		Memory(Memory&& m) : mem_(std::move(m.mem_)), comm_(m.comm_), init_(m.init_), is_owner_(m.is_owner_) {
+		Memory(Memory&& m) : /*mem_(std::move(m.mem_)),*/ comm_(m.comm_), init_(m.init_), is_owner_(m.is_owner_) {
+			check<T, FillType>(m.implementation());
+			mem_ = std::move(m.mem_);
 			m.init_ = false;
 			m.is_owner_ = false;
 		}
@@ -63,6 +69,7 @@ namespace utopia {
 		Memory& operator=(const Memory& m) {
 			// if (!is_used_ && is_owner_ && mem_)
 			// 	std::cout << "[Warning] Destroying an unused object!" << std::endl;
+			check<T, FillType>(m.implementation());
 			mem_ = Allocator<T, FillType>::clone(m.mem_);
 			comm_ = m.comm_;
 			init_ = m.init_;
@@ -71,15 +78,15 @@ namespace utopia {
 			return *this;
 		}
 
-		template<int FillTypeOther>
-		Memory& operator=(const Memory<T, FillTypeOther>& m) {
-			// if (!is_used_ && is_owner_ && mem_)
-			// 	std::cout << "[Warning] Destroying an unused object!" << std::endl;
-			mem_ = Allocator<T, FillType>::clone(m.mem_);
+		Memory& operator=(Memory&& m) {
+			check<T, FillType>(m.implementation());
+			mem_ = std::move(m.mem_);
 			comm_ = m.comm_;
 			init_ = m.init_;
-			is_owner_ = true;
-			is_used_ = false;
+			is_owner_ = m.is_owner_;
+			is_used_ = m.is_used_;
+			m.init_ = false;
+			m.is_owner_ = false;
 			return *this;
 		}
 
@@ -87,6 +94,7 @@ namespace utopia {
 			// if (!is_used_ && is_owner_ && mem_)
 			// 	std::cout << "[Warning] Destroying an unused object!" << std::endl;
 			mem_ = Allocator<T, FillType>::claim(comm_, local, global);
+			check<T, FillType>(*mem_);
 			init_ = true;
 			is_owner_ = true;
 			is_used_ = false;
@@ -95,6 +103,7 @@ namespace utopia {
 		void init(T& t, bool own) {
 			// if (!is_used_ && is_owner_ && mem_)
 			// 	std::cout << "[Warning] Destroying an unused object!" << std::endl;
+			check<T, FillType>(t);
 			mem_ = MemoryPtr<T>(&t, own ? Allocator<T, FillType>::destructor : [](T*){});
 			init_ = true;
 			is_owner_ = own;
@@ -107,6 +116,7 @@ namespace utopia {
 		}
 
 		void wrap(T& t) {
+			check<T, FillType>(t);
 			init(t, false);
 		}
 

@@ -51,16 +51,40 @@ namespace utopia
 		using ScalarBackend<PetscScalar>::apply;
 		using ScalarBackend<PetscScalar>::zaxpy;
 
-		template<class LorRValueMatrix>
-		void assign(PETScMatrix &left, LorRValueMatrix &&right)
+		void assign(PETScMatrix &left, const PETScMatrix &right)
 		{
-			left = std::forward<LorRValueMatrix>(right);
+			left = right;
 		}
 
-		template<class LorRValueMatrix>
-		void assign(PETScSparseMatrix &left, LorRValueMatrix &&right)
+		void assign(PETScMatrix &left, PETScMatrix &&right)
 		{
-			left = std::forward<LorRValueMatrix>(right);
+			left = std::move(right);
+		}
+
+		void assign(PETScMatrix &left, const PETScSparseMatrix &right)
+		{
+			Mat* new_m = new Mat;
+			MatConvert(right.implementation(), MATDENSE, MAT_INITIAL_MATRIX, new_m);
+			left.init(*new_m, true);
+			// std::cout << "[Warning] Conversion between matrix types" << '\n';
+		}
+
+		void assign(PETScSparseMatrix &left, const PETScSparseMatrix &right)
+		{
+			left = right;
+		}
+
+		void assign(PETScSparseMatrix &left, PETScSparseMatrix &&right)
+		{
+			left = std::move(right);
+		}
+
+		void assign(PETScSparseMatrix &left, const PETScMatrix &right)
+		{
+			Mat* new_m = new Mat;
+			MatConvert(right.implementation(), MATSEQAIJ, MAT_INITIAL_MATRIX, new_m);
+			left.init(*new_m, true);
+			// std::cout << "[Warning] Conversion between matrix types" << '\n';
 		}
 
 		template<class LorRValueVector>
@@ -736,8 +760,7 @@ namespace utopia
 			return PETScError::Check(err);
 		}
 
-		template<int FillType>
-		bool diag(PETScGenericMatrix<FillType> &mat, const PETScVector &vec)
+		bool diag(PETScSparseMatrix &mat, const PETScVector &vec)
 		{
 			// I do not think, this is needed
 			// because, doesnt run in parallel properly
@@ -766,6 +789,23 @@ namespace utopia
 			PetscInt err = MatDiagonalSet( mat.implementation(), vec.implementation(), INSERT_VALUES);
 			return PETScError::Check(err);
 		}
+
+		bool diag(PETScMatrix &mat, const PETScVector &vec) {
+			PETScSparseMatrix m2;
+			bool out = diag(m2, vec);
+			assign(mat, m2); //FIXME - useless conversion!
+			return out;
+
+			// PetscInt local_size, global_size;
+			// VecGetLocalSize(vec.implementation(), &local_size);
+			// VecGetSize(vec.implementation(), &global_size);
+			//
+			// mat.init({local_size, local_size}, {global_size, global_size});
+			//
+			// PetscInt err = MatDiagonalSet( mat.implementation(), vec.implementation(), ADD_ALL_VALUES);
+			// return PETScError::Check(err);
+		}
+
 
 		template<int FillTypeLeft, int FillTypeRight>
 		bool diag(PETScGenericMatrix<FillTypeLeft> &out, const PETScGenericMatrix<FillTypeRight> &in) {

@@ -81,7 +81,7 @@ namespace utopia {
 
 		std::unordered_map<std::pair<Size, Size>, std::vector<Vec*>> vec_pool_;
 		std::unordered_map<std::pair<Size, Size>, std::vector<Mat*>> mat_pool_;
-		// std::unordered_map<std::pair<Size, Size>, std::vector<Mat*>> sparse_mat_pool_;
+		std::unordered_map<std::pair<Size, Size>, std::vector<Mat*>> sparse_mat_pool_;
 #endif // WITH_PETSC
 
 	};
