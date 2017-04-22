@@ -1451,9 +1451,9 @@ namespace utopia {
                 ++n_intersections;
                 
                 
-                if(slave_dofs.size() != elemmat.m()) {
-                    std::cout << slave_dofs.size() << " != " <<  elemmat.m() << std::endl;
-                }
+//                if(slave_dofs.size() != elemmat.m()) {
+//                    std::cout << slave_dofs.size() << " != " <<  elemmat.m() << std::endl;
+//                }
                 
                 assert(slave_dofs.size() == elemmat.m());
                 assert(master_dofs.size() == elemmat.n());
@@ -1551,11 +1551,11 @@ namespace utopia {
         std::partial_sum(ownershipRangesSlave.begin(), ownershipRangesSlave.end(), ownershipRangesSlave.begin());
         
         
-        if(comm.isRoot()) {
-            std::cout <<ownershipRangesMaster << std::endl;
-            std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
-            
-        }
+//        if(comm.isRoot()) {
+//            std::cout <<ownershipRangesMaster << std::endl;
+//            std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
+//            
+//        }
         
         
         
