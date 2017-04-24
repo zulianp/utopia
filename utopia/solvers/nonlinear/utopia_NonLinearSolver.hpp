@@ -8,6 +8,7 @@
 #include "utopia_Monitor.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 
+
 namespace utopia 
 {
     /**
@@ -33,9 +34,21 @@ namespace utopia
             set_parameters(params);        
         }
 
+
         virtual ~NonLinearSolver() {}
 
         virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
+
+
+        virtual bool solve(Function<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
+        {
+            fun.set_rhs(rhs); 
+            bool converged = this->solve(fun, x); 
+            fun.reset_rhs(); 
+            return converged; 
+        }
+
+
 
         /**
          * @brief      Enables the differentiation control.

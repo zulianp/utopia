@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-04-04
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2017-01-18
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-04-21
 */
 
 #ifndef UTOPIA_PETSC_GS_HPP
@@ -10,6 +10,10 @@
 
 #include "utopia_Smoother.hpp"
 #include "utopia_Core.hpp"
+
+
+#include <petscpc.h>
+#include <petscksp.h>
 
 // extern "C" 
 // {
@@ -120,14 +124,14 @@ namespace utopia {
          * @param[in]  lb           The lower bound. 
          * @param      active_set   The vector containing indices of active set. 
          */
-        bool nonlinear_smooth(const Matrix &A, const Vector &rhs, const Vector& ub, const Vector& lb, Vector &x, std::vector<SizeType>& active_set) override
-        {
+        // bool nonlinear_smooth(const Matrix &A, const Vector &rhs, const Vector& ub, const Vector& lb, Vector &x, std::vector<SizeType>& active_set) override
+        // {
             
-            smooth(A, rhs, x);
-            project_constraints(ub, lb, x, active_set); 
-            return true; 
+        //     smooth(A, rhs, x);
+        //     project_constraints(ub, lb, x, active_set); 
+        //     return true; 
 
-        }
+        // }
 
 
     private:

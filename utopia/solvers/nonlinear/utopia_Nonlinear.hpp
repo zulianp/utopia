@@ -19,5 +19,10 @@
 
 #include "utopia_NonlinearSolverFactory.hpp"
 
+
+#ifdef WITH_PETSC
+	#include "utopia_PETScFunction.hpp"
+#endif //WITH_PETSC	
+
 #endif //UTOPIA_NON_LINEAR_HPP
 

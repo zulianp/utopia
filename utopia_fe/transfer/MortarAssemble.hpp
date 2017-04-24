@@ -210,6 +210,7 @@ namespace utopia {
 			const libMesh::DenseVector<libMesh::Real> &surf_normal,
 			const libMesh::DenseVector<libMesh::Real> &plane_normal,
 			const libMesh::Real &plane_offset,
+			const libMesh::DenseVector<libMesh::Real> &indicator,
 			libMesh::DenseMatrix<libMesh::Real> &normals, 
 			libMesh::DenseVector<libMesh::Real> &gap);
 
@@ -220,6 +221,7 @@ namespace utopia {
 			const libMesh::Point &surf_normal,
 			const libMesh::Point &plane_normal,
 			const libMesh::Real &plane_offset,
+			const libMesh::DenseVector<libMesh::Real> &indicator,
 			libMesh::DenseMatrix<libMesh::Real> &normals, 
 			libMesh::DenseVector<libMesh::Real> &gap);
 
@@ -229,6 +231,7 @@ namespace utopia {
 		const libMesh::DenseVector<libMesh::Real> &surf_normal,
 		const libMesh::DenseVector<libMesh::Real> &plane_normal,
 		const libMesh::Real &plane_offset,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
 		libMesh::DenseMatrix<libMesh::Real> &normals, 
 		libMesh::DenseVector<libMesh::Real> &gap);
 
@@ -239,6 +242,7 @@ namespace utopia {
 										const libMesh::Point &surf_normal,
 						 				const libMesh::Point &plane_normal,
 						 				const libMesh::Real &plane_offset,
+						 				const libMesh::DenseVector<libMesh::Real> &indicator,
 						 				libMesh::DenseMatrix<libMesh::Real> &normals, 
 						 				libMesh::DenseVector<libMesh::Real> &gap);
 
@@ -277,6 +281,45 @@ namespace utopia {
 						 	const libMesh::FEVectorBase &test_fe, 
 						 	const int type,
 						 	libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+
+	void mortar_assemble_biorth(
+							const int dim,
+							const libMesh::FEBase &trial_fe, 
+							const libMesh::FEBase &test_fe,
+							const int type,
+							const libMesh::DenseVector<libMesh::Real> &indicator,
+							libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+	void mortar_assemble_biorth(
+							const int dim,
+							const libMesh::FEVectorBase &trial_fe, 
+						 	const libMesh::FEVectorBase &test_fe, 
+						 	const int type,
+						 	const libMesh::DenseVector<libMesh::Real> &indicator,
+						 	libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+	void mortar_assemble_weights(const libMesh::FEBase &fe, libMesh::DenseMatrix<libMesh::Real> &weights);
+
+	void mortar_assemble_weighted_biorth(
+		const int dim,
+		const libMesh::FEBase &trial_fe, 
+		const libMesh::FEBase &test_fe,
+		const int type,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+	void mortar_assemble_weighted_biorth(
+	const libMesh::FEBase &trial_fe, 
+	const libMesh::FEBase &test_fe,
+	const libMesh::DenseMatrix<libMesh::Real> &weights,
+	libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+	void mortar_assemble_weighted_biorth(
+		const libMesh::FEVectorBase &trial_fe, 
+		const libMesh::FEVectorBase &test_fe, 
+		const libMesh::DenseMatrix<libMesh::Real> &weights,
+		libMesh::DenseMatrix<libMesh::Real> &elmat);
 }
 
 #endif //MFEM_L2P_MORTAR_ASSEMBLE_HPP

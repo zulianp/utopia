@@ -17,7 +17,8 @@
 
 #include "utopia_ContactSimParams.hpp"
 #include "libmesh/linear_partitioner.h"
-
+#include "LibmeshContactForMoose.hpp"
+// #include "LibmeshTransferForMoose.hpp"
 
 #include "express_Profiler.hpp"
 #include "utopia_Polygon.hpp"
@@ -175,9 +176,9 @@ namespace utopia {
 		slave_context.equation_systems.init();
 
 		
+        express::Communicator expressComm(libmesh_comm.get());
 
-
-
+        int var_num =0;
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
 
@@ -187,7 +188,15 @@ namespace utopia {
         // MPI_Comm comm = MPI_COMM_WORLD;
 		MixedParMortarAssembler assembler(libmesh_comm, make_ref(master_space), make_ref(slave_space));
 		assembler.set_use_biorthogonal_multipliers(use_biorthogonal_mults);
-
+        // AssembleMOOSE(expressComm,
+        //               mesh_master,
+        //               mesh_slave,
+        //               utopia::make_ref(master_context.system.get_dof_map()),
+        //               utopia::make_ref(slave_context.system.get_dof_map())
+        //               utopia::make_ref(var_num),
+        //               utopia::make_ref(var_num),
+        //               bool  use_biorth_,
+        //               DSMatrixd &B)
         // std::cout<<"I am a slave system"<<make_ref(slave_space)->system()<<std::endl;
 
 
@@ -294,15 +303,106 @@ namespace utopia {
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
 
-		ParMortarAssembler surface_assembler(libmesh_comm, make_ref(master_slave_space));
+//		ParMortarAssembler surface_assembler(libmesh_comm, make_ref(master_slave_space));
 
 		DSMatrixd matrix;
 		const  libMesh::Real search_radius=0.4;
         // EXPRESS_EVENT_BEGIN("l2assembly");
-		surface_assembler.SurfaceAssemble(matrix,search_radius,101,102);
-        // EXPRESS_EVENT_END("l2assembly");
-	}
+        express::Communicator expressComm(libmesh_comm.get());
+        
+        //utopia::DSMatrixd matrix;
+        
+        utopia::DSMatrixd orthogonal_trafos;
 
+        utopia::DSMatrixd normals;
+        
+        utopia::DVectord gap;
+        
+        utopia::DVectord is_contact_node;
+        
+        unsigned int variable_number = 0;
+        
+        MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals,is_contact_node, 0.1, 101, 102);
+        
+        
+        write("mat.m", matrix);
+        // EXPRESS_EVENT_END("l2assembly");
+
+        DVectord v = local_zeros(local_size(matrix).get(1));
+//        {
+	        each_write(v, [](const SizeType i) -> double {
+                return 0.1;
+	        });
+            
+//            each_read(matrix, [ ](const SizeType i, const SizeType j, const double entry)
+//                      {
+//                          std::cout << "m(" << i << ", " << j << ") = " << entry << std::endl;
+//
+//                      });
+//    	}
+
+//    	disp(v);
+        
+//        disp(matrix);
+
+        DVectord mv = matrix * v;
+
+        
+        DVectord d = sum(matrix, 1);
+        DVectord d_inv = local_zeros(local_size(d));
+        
+        {
+            Write<DVectord> w_(d_inv);
+            
+            each_read(d, [&d_inv](const SizeType i, const double value) {
+                if(value != 0) {
+                    d_inv.set(i, 1./value);
+                } else {
+                    d_inv.set(i, 1.);
+                }
+            });
+        }
+        
+        DSMatrixd D_inv = diag(d_inv);
+        DSMatrixd T = D_inv * matrix;
+        
+        DVectord sum_T = sum(T, 1);
+        //disp(sum_T);
+        
+//        
+        T += local_identity(local_size(d).get(0), local_size(d).get(0));
+        
+        
+
+        // disp(matrix);
+//        disp(mv);
+
+        double *arr;
+        VecGetArray(raw_type(mv), &arr);
+        plot_mesh_f(*master_slave_context.mesh, arr, "surface_mortar");
+        VecRestoreArray(raw_type(mv), &arr);
+
+//        MPI_Barrier(MPI_COMM_WORLD);
+//        std::cout << "HERE" << std::endl;
+        
+        //This BS is only for exporting the vtk
+        // auto ass = make_assembly([&]() -> void {
+        //         DSMatrixd id = local_identity(local_size(T));
+        // 		convert(id, *master_slave_context.system.matrix);
+        // 		convert(mv, *master_slave_context.system.rhs);
+        // });
+
+        // master_slave_context.system.attach_assemble_object(ass);
+        // master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
+        // master_slave_context.equation_systems.solve();
+
+        
+        // mv = T * v;
+        // convert(mv, *master_slave_context.system.solution);
+        
+
+        // ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("surface_mortar_glue2.e", master_slave_context.equation_systems);
+	}
 
 
 	void mortar_transfer_2D_monolithic(LibMeshInit &init)
@@ -310,7 +410,7 @@ namespace utopia {
 		auto mesh = make_shared<Mesh>(init.comm());
 		EXPRESS_EVENT_BEGIN("set_up");
 		//mesh->partitioner().reset(new LinearPartitioner());
-		mesh->read("../data/master_slave2D_new.e");
+		mesh->read("../data/master_slave2D_new2.e");
 		par_mortar_transfer_aux(init.comm(),mesh);
 		EXPRESS_EVENT_END("set_up");
 	}
@@ -393,9 +493,10 @@ namespace utopia {
 			n_slave, n_slave,
 			0.3, 0.8,
 			0.3, 0.8,
-			TRI6);
+			QUAD8);
 
-		const bool applyDistortion = true;
+		const bool applyDistortion = false;
+		
 		if(applyDistortion) {
 			MeshTools::Modification::smooth (*mesh_slave,
 				10,
@@ -431,8 +532,8 @@ namespace utopia {
 			plot_mesh(*mesh_slave, "slave");
 		}
 
-		// mixed_par_mortar_transfer_aux(init.comm(), mesh_master, mesh_slave, !applyDistortion);
-		mortar_transfer_aux(mesh_master, mesh_slave, SECOND, !applyDistortion);
+		 mixed_par_mortar_transfer_aux(init.comm(), mesh_master, mesh_slave, !applyDistortion);
+		//mortar_transfer_aux(mesh_master, mesh_slave, FIRST, !applyDistortion);
 		std::cout << "-----------------------------\n";
 
 	}
@@ -446,8 +547,8 @@ namespace utopia {
 		//mesh->partitioner().reset(new LinearPartitioner());
             // Read the mesh file. Here the file lshape.unv contains
             // an L--shaped domain in .unv format.
-       // mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
-		mesh->read("../data/cube12_space4.e");
+       //mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
+       mesh->read("../data/multibody.e");
        // mesh->read("../data/rect.e");
 
             // Print information about the mesh to the screen.
@@ -526,9 +627,10 @@ namespace utopia {
 
    		static const bool is_leaflet = false;
 		 // ContactSimParams params = contact_cuboids;
-    	ContactSimParams params = multi_contact_quads;
+    	// ContactSimParams params = contact8;
 		// ContactSimParams params = triple_contact_circle;
-		// ContactSimParams params = contact_3D_tets;
+		// ContactSimParams params = multi_contact_3D_2;
+		ContactSimParams params = contact_cylinder;
 
 
 		auto mesh = make_shared<Mesh>(init.comm());		
@@ -675,7 +777,8 @@ namespace utopia {
 		DVectord  sol_c = zeros(size(rhs));
 		DVectord  rhs_c = transpose(orhtogonal_trafos) * transpose(coupling) * rhs;
 		DSMatrixd K_c   = transpose(orhtogonal_trafos) * DSMatrixd(transpose(coupling) * K * coupling) * orhtogonal_trafos;
-		DVectord  gap_c = transpose(coupling) * gap;
+		// DVectord  gap_c = transpose(coupling) * gap;
+		DVectord  gap_c = gap;
 		apply_boundary_conditions(u, K_c, rhs_c);
 
 		SemismoothNewton<DSMatrixd, DVectord> newton(std::make_shared<Factorization<DSMatrixd, DVectord> >());
@@ -736,10 +839,10 @@ namespace utopia {
 
 		EXPRESS_PROFILING_BEGIN()
 
-		//mortar_transfer_2D(init);
+		mortar_transfer_2D(init);
         //mortar_transfer_3D(init);
-		// mortar_transfer_3D_monolithic(init);
-		surface_mortar(init);
+		//mortar_transfer_3D_monolithic(init);
+		// surface_mortar(init);
 
 		//run_curved_poly_disc();
 

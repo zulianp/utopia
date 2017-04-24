@@ -2,9 +2,9 @@ set(LIBMESH_INCLUDES_MY_LOCATIONS ~/Desktop/libmesh/include)
 set(LIBMESH_LIB_MY_LOCATIONS ~/Desktop/libmesh/lib)
 set(LIBMESH_BIN_MY_LOCATIONS ~/Desktop/libmesh/bin)
 
-list(APPEND LIBMESH_INCLUDES_MY_LOCATIONS /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build/include)
-list(APPEND LIBMESH_LIB_MY_LOCATIONS /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build/lib)
-list(APPEND LIBMESH_BIN_MY_LOCATIONS /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build)
+# list(APPEND LIBMESH_INCLUDES_MY_LOCATIONS /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build/include)
+# list(APPEND LIBMESH_LIB_MY_LOCATIONS /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build/lib)
+# list(APPEND LIBMESH_BIN_MY_LOCATIONS /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
   set(CMAKE_BUILD_TYPE NONE)

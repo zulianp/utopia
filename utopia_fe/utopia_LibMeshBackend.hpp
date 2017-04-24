@@ -2192,6 +2192,20 @@ namespace utopia {
 		utopia::convert(p_mat, utopia_mat);
 	}
 
+	inline void convert(DSMatrixd &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
+		using namespace libMesh;
+		using namespace utopia;
+			
+
+		//Does not work
+		// Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
+		// utopia::convert(utopia_mat, p_mat);
+
+		each_read(utopia_mat, [&lm_mat](const SizeType i, const SizeType j, const double value) -> void {
+			lm_mat.set(i, j, value);
+		});
+	}
+
 	inline void convert(DVectord &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec)
 	{
 		{

@@ -20,6 +20,14 @@ namespace utopia
         DEF_UTOPIA_SCALAR(Matrix)
 
         virtual ~Function() { }
+
+        // TODO:: this needs to be changed ! 
+        Function(const Vector & rhs = local_zeros(1)) :
+                _rhs(rhs)
+        {
+
+        }
+
         virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const = 0;
         virtual bool gradient(const Vector &/*point*/, Vector &/*result*/) const = 0;
         virtual bool hessian(const Vector &x, Matrix &H) const = 0;
@@ -34,6 +42,35 @@ namespace utopia
         }
 
         virtual bool update(const Vector &/*point*/) { return true; };
+
+
+        virtual bool set_rhs(const Vector & rhs)
+        {
+            _rhs = rhs; 
+            return true; 
+        }
+
+        virtual bool reset_rhs()
+        {
+            _rhs = local_zeros(local_size(_rhs)); 
+            return true; 
+        }
+
+
+        virtual bool get_rhs( Vector & rhs)
+        {
+            rhs = _rhs; 
+            return true; 
+        }
+
+        virtual bool has_rhs() const
+        {
+            return (empty(_rhs))? false : true; 
+        }
+
+     protected:
+        Vector _rhs;
+
 
     };
 }

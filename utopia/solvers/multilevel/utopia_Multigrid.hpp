@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-03-29
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-09
+* @Last Modified time: 2017-04-24
 */
 
 #ifndef UTOPIA_MULTIGRID_HPP
@@ -57,7 +57,7 @@ namespace utopia
         // LevelMemory memory;
 
 
-   // #define BENCHMARKING_mode
+    // #define BENCHMARKING_mode
    // #define CHECK_NUM_PRECISION_mode
 
     public:
@@ -80,30 +80,11 @@ namespace utopia
 
         virtual ~Multigrid(){} 
         
-        inline Level &levels(const SizeType &l)
-        {
-            return this->_levels[l]; 
-        }
-
-        inline Transfer &transfers(const SizeType & l)
-        {
-            return this->_transfers[l]; 
-        }
-
         void set_parameters(const Parameters params) override
         {
             IterativeSolver::set_parameters(params); 
-
+            MultiLevelBase<Matrix, Vector>::set_parameters(params); 
             _smoother->set_parameters(params); 
-            // _direct_solver->set_parameters(params); 
-            
-            _parameters = params; 
-            
-            _pre_smoothing_steps = params.pre_smoothing_steps(); 
-            _post_smoothing_steps = params.post_smoothing_steps(); 
-            _mg_type = params.mg_type(); 
-            _cycle_type = params.cycle_type(); 
-            _v_cycle_repetition = 1; 
 
         }
 
@@ -153,14 +134,14 @@ namespace utopia
                 this->atol(1e-15); 
             #endif
 
-            if(_cycle_type =="full")
+            if(this->cycle_type() =="full")
                 this->max_it(1); 
 
             while(!converged)
             {            
-                if(_cycle_type =="multiplicative")
+                if(this->cycle_type() =="multiplicative")
                     multiplicative_cycle(rhs, l, x_0); 
-                else if(_cycle_type =="full")
+                else if(this->cycle_type() =="full")
                     full_cycle(rhs, l, x_0); 
                 else
                     std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n"; 
@@ -228,8 +209,7 @@ namespace utopia
                 PrintInfo::print_iter_status(it, {r_norm});
                 it++; 
 
-                // while(!converged)
-                while(it < 15 )
+                while(!converged)
                 {        
                     if(it == 1)
                         x_k01 = x_0; 
@@ -290,6 +270,17 @@ namespace utopia
 /*=======================================================================================================================================        =
 =========================================================================================================================================*/
     private:
+        inline Level &levels(const SizeType &l)
+        {
+            return this->_levels[l]; 
+        }
+
+        inline Transfer &transfers(const SizeType & l)
+        {
+            return this->_transfers[l]; 
+        }
+
+
         /**
          * @brief      Function implements multiplicative multigrid cycle. 
          *
@@ -315,7 +306,7 @@ namespace utopia
                 x_0 = redistribute_as(x_0, rhs); 
 
             // presmoothing 
-            smoothing(levels(l-1).A(), rhs, x_0, _pre_smoothing_steps); 
+            smoothing(levels(l-1).A(), rhs, x_0, this->pre_smoothing_steps()); 
 
             // residual transfer 
             r_h = rhs - levels(l-1).A() * x_0; 
@@ -333,7 +324,7 @@ namespace utopia
             else
             {
                 // recursive call into mg
-                for(SizeType k = 0; k < _mg_type; k++)
+                for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = l - 1; 
                     multiplicative_cycle(r_H, l_new, c_H); 
@@ -345,7 +336,7 @@ namespace utopia
             x_0 += c_h; 
 
             // postsmoothing 
-            smoothing(levels(l-1).A(), rhs, x_0, _post_smoothing_steps); 
+            smoothing(levels(l-1).A(), rhs, x_0, this->post_smoothing_steps()); 
             
             return true; 
         }
@@ -376,12 +367,12 @@ namespace utopia
 
             for(SizeType i = 1; i <l-1; i++)
             {
-                for(SizeType j = 0; j < v_cycle_repetition(); j++)
+                for(SizeType j = 0; j < this->v_cycle_repetition(); j++)
                     multiplicative_cycle(rhss[i], i+1, x_0);  
                 transfers(i).interpolate(x_0, x_0); 
             }
 
-            for(SizeType i = 0; i < v_cycle_repetition(); i++)
+            for(SizeType i = 0; i < this->v_cycle_repetition(); i++)
                 multiplicative_cycle(rhss[0], l, x_0);  
             return true; 
         }
@@ -437,27 +428,6 @@ namespace utopia
             return true; 
         }
 
-
-        /**
-         * @brief      Function sets type of cycle
-         */
-        bool cycle_type(const std::string & type_in)
-        {
-            _cycle_type = type_in; 
-            return true; 
-        }
-
-        /**
-         * @brief    Sets amount of V-cycles inside of F-cycle
-         */
-        bool v_cycle_repetition(const SizeType & v_cycle_repetition_in)
-        {
-            _v_cycle_repetition = v_cycle_repetition_in; 
-            return true; 
-        }
-
-
-
         /**
          * @brief      Function changes soother in MG. 
          *
@@ -472,67 +442,6 @@ namespace utopia
             return true; 
         }
 
-        /**
-         * @brief      Setting number pre-smoothing steps. 
-         *
-         * @param[in]  pre_smoothing_steps_in  Number of pre-smoothing steps.
-         */
-        void pre_smoothing_steps(const SizeType & pre_smoothing_steps_in ) 
-        { 
-            _pre_smoothing_steps = pre_smoothing_steps_in; 
-        }; 
-
-        /**
-         * @brief      Setting number of post-smoothing steps.
-         *
-         * @param[in]  post_smoothing_steps_in  Number of post-smoothing steps.
-         */
-        void post_smoothing_steps(const SizeType & post_smoothing_steps_in )
-        { 
-            _post_smoothing_steps = post_smoothing_steps_in; 
-        }; 
-
-        /**
-         * @brief      Setting type of MG:  1 goes for V_CYCLE, 2 for W-cycle. 
-         *
-         * @param[in]  mg_type_in  Choice of MG cycle.
-         */
-        void mg_type(const bool & mg_type_in ) 
-        { 
-            _mg_type = mg_type_in; 
-        }; 
-
-        /**
-         * @return     Number of pre-smoothing steps. 
-         */
-        SizeType  pre_smoothing_steps() const         
-        { 
-            return _pre_smoothing_steps; 
-        } 
-
-        /**
-         * @return     Number of post-smoothing steps.
-         */
-        SizeType  post_smoothing_steps() const        
-        { 
-            return _post_smoothing_steps; 
-        } 
-
-        /**
-         * @return     Type of MG cycle. 
-         */
-        bool  mg_type() const                     { return _mg_type; } 
-
-        /**
-         * @return     Type of MG cycle. 
-         */
-        std::string  cycle_type() const         { return _cycle_type; } 
-
-
-        /**
-         * @brief      Amount of V-cycles on each level during full-cycle
-         */
-        SizeType v_cycle_repetition() const {return _v_cycle_repetition; }
 
     protected:   
         std::shared_ptr<Smoother>           _smoother;
@@ -540,12 +449,6 @@ namespace utopia
 
     private:
         Parameters                          _parameters; 
-        SizeType                            _pre_smoothing_steps; 
-        SizeType                            _post_smoothing_steps; 
-        SizeType                            _mg_type; 
-
-        std::string                         _cycle_type; 
-        SizeType                            _v_cycle_repetition; 
 
     };
 
