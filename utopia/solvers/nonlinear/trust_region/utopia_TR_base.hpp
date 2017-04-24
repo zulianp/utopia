@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-11-07
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-03-01
 */
 
 #ifndef UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
@@ -190,7 +190,8 @@ namespace utopia
         radius = gamma1_ * radius; 
       }
 
-      else if (rho > eta2_ && (norm2(p_k) > ((1 - eps_) * radius ) ))
+      // else if (rho > eta2_ && (norm2(p_k) > ((1 - eps_) * radius ) ))
+      else if (rho > eta2_ )
       {
         radius = std::min(gamma2_ * radius, delta_max_); 
       }      

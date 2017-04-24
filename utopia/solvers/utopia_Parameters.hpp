@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-22
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-11-08
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-04-09
 */
 
 #ifndef UTOPIA_UTOPIA_PARAMETERS_HPP
@@ -70,6 +70,7 @@ namespace utopia
           post_smoothing_steps_ = 3; 
           omega_ = 0.66; 
           static_time_step_ = true; 
+          cycle_type_      = "multiplicative"; 
 
         /*----------  LS  ----------*/
           line_search_alg_ = "BACKTRACKING"; 
@@ -149,10 +150,12 @@ namespace utopia
     SizeType  block_size() const              { return blocksize_; }
     char const *   smoother_type() const      { return smoother_type_; }
     SizeType  mg_type()  const                { return mg_type_; }
+    char const *  cycle_type()  const          { return cycle_type_; }
     SizeType  pre_smoothing_steps()const      { return pre_smoothing_steps_; }
     SizeType  post_smoothing_steps()const     { return post_smoothing_steps_; }
     Scalar    omega()const                    { return omega_;    } 
     bool      static_time_step() const        { return static_time_step_; }; 
+
 
 /*---------------------------------  LS   --------------------------------------------------*/  
     Scalar c1()  const                        { return c1_; } 
@@ -229,7 +232,7 @@ namespace utopia
     void  post_smoothing_steps(const SizeType & post_smoothing_steps) {  post_smoothing_steps_ = post_smoothing_steps; }
     void  omega(const SizeType & omega)                               {  omega_ = omega; } 
     void  static_time_step(const bool & static_time_step)             {  static_time_step_ = static_time_step; }; 
-
+    void  cycle_type(char const *  cycle_type)                        {  cycle_type_ = cycle_type; }
 
 /*---------------------------------  LS   --------------------------------------------------*/  
     void  c1(const Scalar & c1)                                       {  c1_ = c1; } 
@@ -292,6 +295,7 @@ namespace utopia
 
           SizeType  blocksize_; 
           char const  * smoother_type_;
+          char const  * cycle_type_;
           SizeType  mg_type_; 
           SizeType  pre_smoothing_steps_; 
           SizeType  post_smoothing_steps_; 

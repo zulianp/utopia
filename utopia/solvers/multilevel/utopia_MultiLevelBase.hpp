@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-03-28
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-01-29
+* @Last Modified time: 2017-04-24
 */
 
 #ifndef UTOPIA_ML_BASE_HPP
@@ -37,9 +37,23 @@
     
     public:
 
-      MultiLevelBase( ){}
+      MultiLevelBase(const Parameters params = Parameters())
+      {
+        set_parameters(params); 
+      }
 
       virtual ~MultiLevelBase(){}
+
+      virtual void set_parameters(const Parameters params)
+      {
+          _parameters = params; 
+      
+          _pre_smoothing_steps = params.pre_smoothing_steps(); 
+          _post_smoothing_steps = params.post_smoothing_steps(); 
+          _mg_type = params.mg_type(); 
+          _cycle_type = params.cycle_type(); 
+          _v_cycle_repetition = 1;  // TODO:: create option in params for this 
+      }
 
 
       /**
@@ -106,22 +120,142 @@
       }
 
 
+
+
       /**
-       * @brief      Returns number of levels in hierarchy.
+       * @brief 
+       *        The function creates corser level operators provided by assembling on differnet levels of MG hierarchy
+       *        
+       * @param[in]  stifness matrix for finest level
+       *
        */
-      SizeType num_levels()
+      virtual bool assembly_linear_operators(const std::vector<Matrix> A, std::string const &type = "coarse_to_fine")
       {
-        return _num_levels; 
+          _levels.clear();
+          if(!type.compare("fine_to_coarse"))
+          {
+            for(auto I = A.rbegin(); I != A.rend() ; ++I )
+              _levels.push_back(std::move(*I));
+          }
+          else
+          {
+            for(auto I = A.begin(); I != A.end() ; ++I )
+              _levels.push_back(std::move(*I));
+          }
+          return true; 
       }
 
 
+
+
+        /**
+         * @brief      Returns number of levels in hierarchy.
+         */
+        virtual SizeType num_levels()
+        {
+          return _num_levels; 
+        }
+
+
+
+        /**
+         * @brief      Function sets type of cycle
+         */
+        bool cycle_type(const std::string & type_in)
+        {
+            _cycle_type = type_in; 
+            return true; 
+        }
+
+        /**
+         * @brief    Sets amount of V-cycles inside of F-cycle
+         */
+        bool v_cycle_repetition(const SizeType & v_cycle_repetition_in)
+        {
+            _v_cycle_repetition = v_cycle_repetition_in; 
+            return true; 
+        }
+
+
+        /**
+         * @brief      Setting number pre-smoothing steps. 
+         *
+         * @param[in]  pre_smoothing_steps_in  Number of pre-smoothing steps.
+         */
+        void pre_smoothing_steps(const SizeType & pre_smoothing_steps_in ) 
+        { 
+            _pre_smoothing_steps = pre_smoothing_steps_in; 
+        }; 
+
+        /**
+         * @brief      Setting number of post-smoothing steps.
+         *
+         * @param[in]  post_smoothing_steps_in  Number of post-smoothing steps.
+         */
+        void post_smoothing_steps(const SizeType & post_smoothing_steps_in )
+        { 
+            _post_smoothing_steps = post_smoothing_steps_in; 
+        }; 
+
+        /**
+         * @brief      Setting type of MG:  1 goes for V_CYCLE, 2 for W-cycle. 
+         *
+         * @param[in]  mg_type_in  Choice of MG cycle.
+         */
+        void mg_type(const bool & mg_type_in ) 
+        { 
+            _mg_type = mg_type_in; 
+        }; 
+
+        /**
+         * @return     Number of pre-smoothing steps. 
+         */
+        SizeType  pre_smoothing_steps() const         
+        { 
+            return _pre_smoothing_steps; 
+        } 
+
+        /**
+         * @return     Number of post-smoothing steps.
+         */
+        SizeType  post_smoothing_steps() const        
+        { 
+            return _post_smoothing_steps; 
+        } 
+
+        /**
+         * @return     Type of MG cycle. 
+         */
+        bool  mg_type() const                     { return _mg_type; } 
+
+        /**
+         * @return     Type of MG cycle. 
+         */
+        std::string  cycle_type() const         { return _cycle_type; } 
+
+
+        /**
+         * @brief      Amount of V-cycles on each level during full-cycle
+         */
+        SizeType v_cycle_repetition() const {return _v_cycle_repetition; }
+
+
+
+
+
     protected:
-        SizeType _num_levels;                                 /*!< number of levels in ML   -n   */ 
-        std::vector<Level>                      _levels;      /*!< vector of level operators     */
-        std::vector<Transfer>                   _transfers;   /*!< vector of transfer operators  */
-        
-        SizeType mpi_size = mpi_world_size();
-        SizeType mpi_rank = mpi_world_rank();
+        SizeType _num_levels;                             /*!< number of levels in ML   -n   */ 
+        std::vector<Level>                  _levels;      /*!< vector of level operators     */
+        std::vector<Transfer>               _transfers;   /*!< vector of transfer operators  */
+
+        Parameters                          _parameters; 
+
+        SizeType                            _pre_smoothing_steps; 
+        SizeType                            _post_smoothing_steps; 
+        SizeType                            _mg_type; 
+
+        std::string                         _cycle_type; 
+        SizeType                            _v_cycle_repetition; 
   };
 
 }
