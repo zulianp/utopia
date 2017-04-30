@@ -11,6 +11,8 @@
 #include "utopia_Multigrid.hpp"
 
 #include "utopia_FAS.hpp"
+#include "utopia_NonLinearMultigrid.hpp"
+
 #include "utopia_NonlinearMultiLevelBase.hpp"
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearJacobi.hpp"

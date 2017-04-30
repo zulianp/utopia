@@ -299,13 +299,6 @@ namespace utopia {
 
 				dof_map_ = ptr;
 			}
-            
-            void set_face_id(std::vector<long> * ptr2)
-            {
-                
-                face_id_ = ptr2;
-            }
-
 
 			inline const std::vector<long> &dof_map() const
 			{
@@ -321,8 +314,6 @@ namespace utopia {
 			int tag_;
 			BoxBoxAdapter<Dimension> bound_;
 			std::vector<long> * dof_map_;
-            std::vector<long> * face_id_;
-
 		};
     
     
@@ -352,7 +343,7 @@ namespace utopia {
         }
         
         SurfaceElementAdapter(LibMeshFESpaceBase &fe, const libMesh::dof_id_type &element, const long element_handle, const int tag, /*std::vector<long> &map,*/ const libMesh::Real blow_up)
-        : fe_(&fe), element_(element), element_handle_(element_handle), tag_(tag), dof_map_(nullptr), face_id_(nullptr) 
+        : fe_(&fe), element_(element), element_handle_(element_handle), tag_(tag), dof_map_(nullptr)
         {
             assert(element < fe.mesh().n_elem());
             
@@ -426,7 +417,7 @@ namespace utopia {
         
         
         SurfaceElementAdapter()
-        :fe_(nullptr) , element_(-1), element_handle_(-1), tag_(-1), dof_map_(nullptr) , face_id_(nullptr) {}
+        :fe_(nullptr) , element_(-1), element_handle_(-1), tag_(-1), dof_map_(nullptr) {}
         
         
         inline long handle() const
@@ -472,22 +463,10 @@ namespace utopia {
             dof_map_ = ptr;
         }
         
-        void set_face_id(std::vector<long> * ptr2)
-        {
-            
-            face_id_ = ptr2;
-        }
-        
         inline const std::vector<long> &dof_map() const
         {
             assert(dof_map_);
             return *dof_map_;
-        }
-        
-        inline const std::vector<long> &dof_map_face() const
-        {
-            assert(face_id_);
-            return *face_id_;
         }
         
         
@@ -498,7 +477,6 @@ namespace utopia {
         int tag_;
         BoxBoxAdapter<Dimension> bound_;
         std::vector<long> * dof_map_;
-        std::vector<long> * face_id_;
     };
 
 

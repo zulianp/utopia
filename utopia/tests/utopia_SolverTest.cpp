@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-07-15
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-09
+* @Last Modified time: 2017-04-24
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -339,9 +339,9 @@ namespace utopia
             petsc_tr_rr_test();
             petsc_newton_inexact_newton_with_KSP_test(); 
 
-            neohookean_tr_test();
-            QP_example_MG();
-            TR_in_inf_norm_with_MG();
+            // neohookean_tr_test();
+            // QP_example_MG();
+            // TR_in_inf_norm_with_MG();
         }
 
 

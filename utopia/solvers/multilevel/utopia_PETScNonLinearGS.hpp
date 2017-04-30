@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-22
+* @Last Modified time: 2017-04-29
 */
 
 #ifndef UTOPIA_NONLINEAR_PETSC_GS_HPP
@@ -13,8 +13,11 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NonLinearSmoother.hpp"
 
+
 #ifdef WITH_PETSC
     #include "utopia_PETScFunction.hpp"
+    #include <petsc/private/snesimpl.h>
+    #include "petscsnes.h"  
 #endif //WITH_PETSC
 
 
@@ -58,18 +61,23 @@ namespace utopia
                 SNES snes; 
                 fun_petsc->getSNES(snes); 
                 SNESSetFromOptions(snes); 
-                SNESSetType(snes, SNESNRICHARDSON);
+                // SNESSetType(snes, SNESNRICHARDSON);
 
-                SNES pc; 
-                SNESSetType(pc, SNESNGS);
+                // SNES pc; 
+                SNESSetType(snes, SNESNGS);
                 SNESSetTolerances(snes, 0.0, 0.0, 0.0, this->sweeps(), PETSC_DEFAULT);
 
 
                 SNESLineSearch linesearch; 
-                SNESGetLineSearch(pc, &linesearch);
+                SNESGetLineSearch(snes, &linesearch);
                 SNESLineSearchSetType(linesearch, SNESLINESEARCHL2); 
 
-                SNESSolve(snes, NULL, raw_type(x)); 
+                SNESSolve(snes, raw_type(rhs), raw_type(x)); 
+                snes->vec_rhs =  NULL; 
+
+                // std::cout<<"after GS smoother:  "<<norm2(x)<<  "  \n"; 
+
+                
             }
             else
             {

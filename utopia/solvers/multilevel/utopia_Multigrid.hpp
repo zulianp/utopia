@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-03-29
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-24
+* @Last Modified time: 2017-04-30
 */
 
 #ifndef UTOPIA_MULTIGRID_HPP
@@ -270,7 +270,7 @@ namespace utopia
 /*=======================================================================================================================================        =
 =========================================================================================================================================*/
     private:
-        inline Level &levels(const SizeType &l)
+                inline Level &levels(const SizeType &l)
         {
             return this->_levels[l]; 
         }
@@ -344,7 +344,10 @@ namespace utopia
 
         /**
          * @brief      Function implements full multigrid cycle. 
-         *
+         *              TODO:: fix
+         *              - can be used jsut with homegenous BC - due to restriction of RHS  
+         *              
+         *              
          * @param[in]  rhs   The rhs.
          * @param[in]  l     The level.
          * @param      x_0   The current iterate. 
@@ -362,7 +365,7 @@ namespace utopia
                 rhss.push_back(std::move(rhs_h));
             }
 
-            coarse_solve(levels(0).A(), rhss[2], x_0);       
+            coarse_solve(levels(0).A(), rhss[l], x_0);    
             transfers(0).interpolate(x_0, x_0); 
 
             for(SizeType i = 1; i <l-1; i++)

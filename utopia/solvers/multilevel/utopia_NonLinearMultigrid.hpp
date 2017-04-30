@@ -1,12 +1,12 @@
 /*
 * @Author: alenakopanicakova
-* @Date:   2017-04-19
+* @Date:   2017-04-24
 * @Last Modified by:   Alena Kopanicakova
 * @Last Modified time: 2017-04-30
 */
 
-#ifndef UTOPIA_FAS_HPP
-#define UTOPIA_FAS_HPP
+#ifndef UTOPIA_NMGM_HPP
+#define UTOPIA_NMGM_HPP
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_Core.hpp"
@@ -23,7 +23,7 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector, class FunctionType>
-    class FAS : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>
+    class NonLinearMultigrid : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -41,7 +41,7 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        FAS(    const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
+        NonLinearMultigrid(    const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                 const std::shared_ptr<Solver> &coarse_solver = std::shared_ptr<Solver>(),
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
@@ -51,16 +51,17 @@ namespace utopia
             set_parameters(params); 
         }
 
-        virtual ~FAS(){} 
+        virtual ~NonLinearMultigrid(){} 
         
 
         void set_parameters(const Parameters params)  // override
         {
+
             NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params); 
             _smoother->set_parameters(params); 
             _coarse_solver->set_parameters(params); 
             
-            _parameters = params; 
+            _parameters = params;         
         }
 
         virtual bool solve(FunctionType & fine_fun, Vector &x_h)
@@ -78,32 +79,33 @@ namespace utopia
          */
         virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
         {
-            this->init_solver("FAS", {" it. ", "|| r_N ||", "r_norm" }); 
+            this->init_solver("Nonlinear multigrid", {" it. ", "|| r_N ||", "r_norm" }); 
 
             Vector F_h  = local_zeros(local_size(x_h)); 
 
             bool converged = false; 
             SizeType it = 0, l = this->num_levels(); 
+
+
+            std::cout<<"NMG: number of levels: "<< l << "  \n"; 
             Scalar r_norm, r0_norm, rel_norm;
 
-            std::cout<<"FAS: number of levels: "<< l << "  \n"; 
-
-            // just to check what is problem 
-            Matrix hessian; 
-            fine_fun.hessian(x_h, hessian); 
 
             fine_fun.gradient(x_h, F_h); 
             r0_norm = norm2(F_h); 
+
+            // we assume NLMG to be part of nested iteration by defaul 
+            std::vector<Vector> rhss; 
+            std::vector<Vector> initial_iterates; 
+            nested_iteration_cycle(fine_fun, x_h, rhs, l, rhss, initial_iterates); 
+
 
             while(!converged)
             {            
                 if(this->cycle_type() =="multiplicative")
                     multiplicative_cycle(fine_fun, x_h, rhs, l); 
-                // else if(this->cycle_type() =="full")
-                //     full_cycle(rhs, l, x_0); 
-                else
-                    std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n"; 
-
+                else if(this->cycle_type() =="nested_iteration")
+                  NMGM(fine_fun, x_h, rhs, l, rhss, initial_iterates); 
 
                 #ifdef CHECK_NUM_PRECISION_mode
                     if(has_nan_or_inf(x_h) == 1)
@@ -127,6 +129,8 @@ namespace utopia
             
             }
 
+
+
             return true; 
         }
 
@@ -147,13 +151,101 @@ namespace utopia
 
 
 
+        bool nested_iteration_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l, std::vector<Vector> & rhss, std::vector<Vector> & initial_iterates)
+        {
+
+            for(SizeType i = l-2; i >=0; i--)
+            {
+              transfers(i).restrict(u_l, u_l); 
+            }
+            Vector L_l = local_zeros(local_size(u_l));
+            coarse_solve(levels(0), u_l, L_l); 
+
+
+            initial_iterates.push_back(u_l); 
+            levels(0).gradient(u_l, L_l); 
+            rhss.push_back(L_l); 
+            
+            transfers(0).interpolate(u_l, u_l); 
+
+            for(SizeType i = 1; i <l-1; i++)
+            {
+                for(SizeType j = 0; j < this->v_cycle_repetition(); j++)
+                {
+                  Vector f = local_zeros(local_size(u_l));
+                  NMGM(levels(i),  u_l, f, i+1, rhss, initial_iterates); 
+            
+                  initial_iterates.push_back(u_l); 
+                  levels(i).gradient(u_l, L_l); 
+                  rhss.push_back(L_l); 
+              }
+                  transfers(i).interpolate(u_l, u_l); 
+            }
+        
+            return true; 
+
+        }
+
+
+
+
+
+
+
+        bool NMGM(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l, const std::vector<Vector> & rhss, const std::vector<Vector> & initial_iterates)
+        {
+                
+            Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h; 
+
+            // PRE-SMOOTHING 
+            smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
+            fine_fun.gradient(u_l, L_l);             
+
+            r_h = L_l - f; 
+            transfers(l-2).restrict(r_h, r_2h); 
+          
+            u_2l    = initial_iterates[l-2]; 
+            Scalar s = scaling_factor(r_2h); 
+
+          
+            L_2l = rhss[l-2] - s *r_2h;  // tau correction 
+          
+            if(l == 2)
+            {
+                coarse_solve(levels(0), u_2l, L_2l); 
+            }
+            else
+            {
+                // recursive call into FAS - needs to be checked 
+                for(SizeType k = 0; k < this->mg_type(); k++)
+                {   
+                    SizeType l_new = l - 1; 
+                    NMGM(levels(l-2), u_2l, L_2l, l_new, rhss, initial_iterates); 
+                }
+            }
+
+            e_2h = 1/s * (u_2l - initial_iterates[l-2]); 
+            transfers(l-2).interpolate(e_2h, e_h);
+            u_l += e_h; 
+
+            // POST-SMOOTHING 
+            smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
+
+            return true; 
+        }
+
+
+
+
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
         {
+                
             Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h, u_init; 
 
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
             fine_fun.gradient(u_l, L_l);             
+
 
             r_h = L_l - f; 
 
@@ -162,9 +254,13 @@ namespace utopia
 
             levels(l-2).gradient(u_2l, L_2l); 
 
-            u_init = u_2l; 
-            L_2l = L_2l - r_2h;  // tau correction 
-                                 
+            u_init  = u_2l; 
+
+            
+            Scalar s = scaling_factor(r_2h); 
+
+            L_2l = L_2l - s *r_2h;  // tau correction 
+
             if(l == 2)
             {
                 coarse_solve(levels(0), u_2l, L_2l); 
@@ -179,7 +275,7 @@ namespace utopia
                 }
             }
 
-            e_2h = u_2l - u_init; 
+            e_2h = 1/s * (u_2l - u_init); 
             transfers(l-2).interpolate(e_2h, e_h);
             u_l += e_h; 
 
@@ -187,6 +283,22 @@ namespace utopia
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
 
             return true; 
+        }
+
+
+
+        /**
+         * @brief      Scaling factor 
+         *
+         * @param[in]  d    Vector of deffect correction. 
+         *
+         * @return     scaling factor
+         */
+        Scalar scaling_factor(const Vector & d)
+        {
+            Scalar sigma = 1; 
+            return sigma/norm2(d); 
+
         }
 
 
@@ -207,10 +319,17 @@ namespace utopia
             return true; 
         }
 
-
+        // with RHS
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs)
         {
             _coarse_solver->solve(fun, x, rhs); 
+            return true; 
+        }
+
+        // without RHS
+        bool coarse_solve(FunctionType &fun, Vector &x)
+        {
+            _coarse_solver->solve(fun, x); 
             return true; 
         }
 
@@ -244,5 +363,5 @@ namespace utopia
 
 }
 
-#endif //UTOPIA_FAS_HPP
+#endif //UTOPIA_NMGM_HPP
 
