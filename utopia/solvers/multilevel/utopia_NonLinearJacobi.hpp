@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-22
+* @Last Modified time: 2017-05-02
 */
 
 #ifndef UTOPIA_NONLINEAR_JACOBI_SMOOTHER_HPP
@@ -12,8 +12,6 @@
 #include "utopia_Core.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NonLinearSmoother.hpp"
-
-#include "utopia_PETScFunction.hpp"
 
 
 
