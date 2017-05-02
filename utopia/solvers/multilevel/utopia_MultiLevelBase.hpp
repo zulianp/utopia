@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-03-28
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-24
+* @Last Modified time: 2017-05-01
 */
 
 #ifndef UTOPIA_ML_BASE_HPP
@@ -142,6 +142,7 @@
             for(auto I = A.begin(); I != A.end() ; ++I )
               _levels.push_back(std::move(*I));
           }
+          std::cout<<"size of levels: "<< _levels.size() << "  \n"; 
           return true; 
       }
 

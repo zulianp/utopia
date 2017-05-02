@@ -128,9 +128,7 @@ namespace utopia
                 it++; 
             
             }
-
-
-
+            
             return true; 
         }
 
@@ -153,7 +151,6 @@ namespace utopia
 
         bool nested_iteration_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l, std::vector<Vector> & rhss, std::vector<Vector> & initial_iterates)
         {
-
             for(SizeType i = l-2; i >=0; i--)
             {
               transfers(i).restrict(u_l, u_l); 
@@ -181,13 +178,8 @@ namespace utopia
               }
                   transfers(i).interpolate(u_l, u_l); 
             }
-        
             return true; 
-
         }
-
-
-
 
 
 
@@ -256,7 +248,6 @@ namespace utopia
 
             u_init  = u_2l; 
 
-            
             Scalar s = scaling_factor(r_2h); 
 
             L_2l = L_2l - s *r_2h;  // tau correction 
@@ -290,15 +281,14 @@ namespace utopia
         /**
          * @brief      Scaling factor 
          *
-         * @param[in]  d    Vector of deffect correction. 
+         * @param[in]  d    Vector of correction. 
          *
          * @return     scaling factor
          */
         Scalar scaling_factor(const Vector & d)
         {
-            Scalar sigma = 1; 
+            Scalar sigma = 1;  
             return sigma/norm2(d); 
-
         }
 
 
