@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-03-02
+* @Last Modified time: 2017-05-02
 */
 
 #ifndef UTOPIA_TR_SUBPROBLEM_DOGLEG_HPP
@@ -44,7 +44,8 @@ namespace utopia
             Scalar pred_N, g_B_g = dot(g, B * g), pNlen, pred; 
 
             // this is the worst hard-codding ever 
-             auto lsolver = std::make_shared< Factorization<DSMatrixd, DVectord> >();
+             // auto lsolver = std::make_shared< Factorization<DSMatrixd, DVectord> >();
+            auto lsolver = std::make_shared< Factorization<Matrix, Vector> >();
 			#ifdef PETSC_HAVE_MUMPS
             	lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
 			#endif //PETSC_HAVE_MUMPS
