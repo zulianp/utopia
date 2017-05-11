@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-24
+* @Last Modified time: 2017-05-10
 */
 
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
@@ -38,6 +38,7 @@
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        typedef utopia::Transfer<Matrix, Vector> Transfer;
 
       NonlinearMultiLevelBase(const Parameters params = Parameters())
       {
@@ -81,6 +82,36 @@
           {
             for(auto I = level_functions.begin(); I != level_functions.end() ; ++I )
               _nonlinear_levels.push_back(std::move(*I));
+          }
+          return true; 
+      }
+
+
+
+       /* @brief 
+                Function initializes projections  operators. 
+                Operators need to be ordered FROM COARSE TO FINE. 
+                If u have them in reverse order use "fine_to_coarse" flg 
+                
+       *
+       * @param[in]  operators                The restriction operators.
+       * @param      type                     Ordering of the comming operators. 
+       *
+       */
+      virtual bool init_nonlinear_transfer(std::vector<Matrix> restriction_operators, std::vector<Matrix> projection_operators,  std::string const &type)
+      {
+          this->_num_levels = restriction_operators.size() + 1; 
+          this->_transfers.clear();
+
+          if(!type.compare("fine_to_coarse"))
+          {
+            for(auto I = restriction_operators.rbegin(), P = projection_operators.rbegin(); I != restriction_operators.rend() && P != projection_operators.rend(); ++I, ++P )
+              this->_transfers.push_back(std::move(Transfer(*I, *P)));
+          }
+          else
+          {
+            for(auto I = restriction_operators.begin(), P = projection_operators.begin(); I != restriction_operators.end() &&  P != projection_operators.end() ; ++I, ++P )
+              this->_transfers.push_back(std::move(Transfer(*I, *P)));
           }
           return true; 
       }
@@ -195,9 +226,80 @@ protected:
 
 
 
+
+
+        virtual bool make_iterate_feasible(FunctionType & fun, Vector & x)
+        {
+
+          // std::cout<<"make_iterate_feasible   \n"; 
+          Vector bc; 
+          fun.get_boundary_values(bc); 
+
+          // std::cout<<"yes non zero:   "; 
+
+            {
+                Write<Vector> w(x);
+                Read<Vector> r(bc);
+
+                Range range_w = range(x);
+                for (SizeType i = range_w.begin(); i != range_w.end(); i++) 
+                {
+                    Scalar value = bc.get(i);
+                    
+                    if(value != 0)
+                    {
+                      // std::cout<<"   "<< i << "    "; 
+                      x.set(i, value);
+                    }
+                }
+            }
+
+            std::cout<<"    \n"; 
+          return true; 
+        }
+
+
+
+        // zero correction
+        virtual bool zero_correction_contributions(FunctionType & fun, Vector & c)
+        {
+
+          // std::cout<<"zero_correction_contributions   \n"; 
+          Vector bc; 
+          fun.get_boundary_values(bc); 
+
+
+            {
+                Write<Vector> w(c);
+                Read<Vector> r(bc);
+
+                Range range_w = range(c);
+                for (SizeType i = range_w.begin(); i != range_w.end(); i++) 
+                {
+                    Scalar value = bc.get(i);
+                    
+                    if(value != 0)
+                    {
+                      // std::cout<<"yes non zero: "<< i << "   \n"; 
+                      c.set(i, 0);
+                    }
+                }
+            }
+
+          
+
+          return true; 
+        }
+
+
+
     protected:
         std::vector<FunctionType>                      _nonlinear_levels;  
-        Parameters params_;        /*!< Solver parameters. */  
+        Parameters params_;                /*!< Solver parameters. */  
+
+
+
+       // std::vector<Transfer>               _transfers;   /*!< vector of transfer operators  */
         
         // ... GENERAL SOLVER PARAMETERS ...
         Scalar atol_;                   /*!< Absolute tolerance. */  

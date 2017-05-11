@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-10-04
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-13
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-05-05
 */
 #ifdef WITH_PETSC
 
@@ -84,12 +84,12 @@ namespace utopia
 	   	}
 
 
-	protected:
+	// protected:
 
         virtual bool apply(const Vector &b, Vector &x) override
     	{
     		KSPSolver::apply(b, x); 
-    		x *= -1;  
+    		// x *= +1;  
     		return true; 
     	}
 

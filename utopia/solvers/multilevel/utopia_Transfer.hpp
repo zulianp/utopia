@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-04-02
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-11-15
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-05-10
 */
 
 #ifndef UTOPIA_ML_TRANSFER_HPP
@@ -26,18 +26,27 @@
 
         public:
 
-        Transfer()
+        Transfer(const Matrix & I)//:
+                                    // _I(I),
+                                    // _R(transpose(I))
         {
+            _I = I; 
+            _R = transpose(I);
+            _P = _R; 
+        }
 
+        
+
+        Transfer(const Matrix & I, const Matrix & P):
+                _I(I),
+                _R(transpose(I)),
+                _P(P)
+        {
+         
         }
 
 
-        Transfer(const Matrix & I):
-                                    _I(I),
-                                    _R(transpose(I))
-        {
 
-        }
 
         virtual ~Transfer(){} 
         
@@ -141,9 +150,10 @@
          */
         virtual bool restrict(const Matrix &M, Matrix &M_new)
         {
-            M_new =  mat_PtAP_product(M, _I);  // petsc implementation of this product is way faster ... 
+            M_new =  mat_PtAP_product(M, _I);  
             return true; 
         }
+
 
         /**
          * @brief      Zeros rows of the interpolation operator and saves adjusted I & R on given level. 
@@ -165,14 +175,50 @@
          * @brief      Return interpolation operator. 
          *
          */
-        Matrix I()
+        Matrix & I()
         {
             return _I; 
         }
 
 
-    private:        
-        Matrix _I, _R;  
+
+        /**
+         * @brief      Initialization of projection down operator.
+         *
+         * @param[in]  P_in  The projection operator. 
+         *
+         */
+        virtual bool P_init(const Matrix &P_in)
+        {
+            _P = P_in; 
+            return true; 
+        }
+
+
+
+        /**
+         * @brief      Projection of vector 
+         *            \f$  x_{new} = P * x  \f$
+         * @param[in]  x     
+         * @param      x_new 
+         *
+         */
+        virtual bool project_down(const Vector &x, Vector &x_new)
+        {
+            if(local_size(_P).get(1)==local_size(x).get(0))
+            {
+                // std::cout<<"YES projections down ... \n"; 
+                x_new = _P * x; 
+                return true; 
+            }
+            else
+                return(Transfer<Matrix, Vector>::restrict(x, x_new)); 
+        }
+
+
+        protected:        
+            Matrix _I, _R; // _P;  
+            Matrix  _P;  
 
 
     };

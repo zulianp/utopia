@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-04-07
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-11
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-05-05
 */
 #ifndef TR_SUBPROBLEM
 #define TR_SUBPROBLEM
@@ -97,7 +97,8 @@ namespace  utopia
                 return tau; 
             }
 
-    private:
+
+    public: 
 
         virtual bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k){ return false; };
         virtual bool preconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k){ return false; };
@@ -141,6 +142,8 @@ namespace  utopia
                 }
              }
          }
+
+    private:
 
 
         Scalar current_radius_;                     /*!< Radius on current iterate - used to solve constrained QP wrt TR bound. */  

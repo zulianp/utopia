@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-10
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-14
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-05-03
 */
 
 #ifndef UTOPIA_BACKTRACKING_HPP
@@ -79,14 +79,13 @@ namespace utopia
             if(verbose_)
                 PrintInfo::print_init("SIMPLE_BACKTRACKING_LS_INNER_ITERATIONS", {" it. ", "|| E_k1 ||"}); 
 
-            //        Wolfe conditions                        
-            while( E_k1 > (E_k + c1_ * alpha_k * g_p) && it < max_it_  && alpha_k > alpha_min_)
+            // Wolfe conditions                        
+            while( E_k1 < (E_k + c1_ * alpha_k * g_p) && it < max_it_  && alpha_k > 1e-6)
             {
 
                 alpha_k = alpha_k * rho_;
                 x_k = x_0 + alpha_k * p_k;
                 fun.value(x_k, E_k1);
-                g_p = dot(g, p_k);
                 it++; 
                 
                 if(verbose_)
@@ -94,6 +93,7 @@ namespace utopia
 
             }
 
+            std::cout<<"alpha_k:  "<< alpha_k << "  \n"; 
             return true;
         }
 

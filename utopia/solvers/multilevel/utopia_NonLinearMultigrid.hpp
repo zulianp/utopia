@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-24
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-30
+* @Last Modified time: 2017-05-05
 */
 
 #ifndef UTOPIA_NMGM_HPP
@@ -241,7 +241,7 @@ namespace utopia
 
             r_h = L_l - f; 
 
-            transfers(l-2).restrict(r_h, r_2h); 
+        
             transfers(l-2).restrict(u_l, u_2l); 
 
             levels(l-2).gradient(u_2l, L_2l); 

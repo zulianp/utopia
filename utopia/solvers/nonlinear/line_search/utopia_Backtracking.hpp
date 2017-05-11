@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-06-01
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-14
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-05-03
 */
 
 #ifndef UTOPIA_QUAD_CUB_BACKTRACKING_HPP
@@ -82,7 +82,8 @@ namespace utopia
             }
 
             fun.value(x_k, f);
-            f0 = fc =  f;
+            f0 = f;
+            fc = f;
             alpha_c = alpha; 
 
             Scalar it = 0; 
@@ -98,8 +99,7 @@ namespace utopia
                 // check decrease condition (wolfe condition)
                 if(f < f0 + c1_ * alpha * dg )
                 {
-                    //WHAT???? LOL
-                    alpha = alpha; 
+
                     return true; 
                 }
 

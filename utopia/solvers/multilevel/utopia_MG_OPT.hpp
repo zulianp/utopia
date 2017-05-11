@@ -1,57 +1,53 @@
 /*
 * @Author: alenakopanicakova
-* @Date:   2017-04-19
+* @Date:   2017-05-03
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-09
+* @Last Modified time: 2017-05-04
 */
 
-#ifndef UTOPIA_FAS_HPP
-#define UTOPIA_FAS_HPP
+#ifndef UTOPIA_MG_OPT_HPP
+#define UTOPIA_MG_OPT_HPP
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
-
+#include "utopia_LS_Strategy.hpp"
 
 
 namespace utopia 
 {
     /**
-     * @brief      The class for Nonlinear Multigrid solver. 
+     * @brief      The class for Line-search multilevel optimization algorithm. 
      *
      * @tparam     Matrix  
      * @tparam     Vector  
      */
     template<class Matrix, class Vector, class FunctionType>
-    class FAS : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>
+    class MG_OPT : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
-        typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
-        typedef utopia::Transfer<Matrix, Vector>   Transfer;
+        typedef utopia::LSStrategy<Matrix, Vector>          LSStrategy; 
+        typedef utopia::Transfer<Matrix, Vector>            Transfer;
 
     
 
     public:
 
-       /**
-        * @brief      Multigrid class
-        *
-        * @param[in]  smoother       The smoother.
-        * @param[in]  direct_solver  The direct solver for coarse level. 
-        */
-        FAS(    const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
+        MG_OPT( const std::shared_ptr<Solver> &smoother = std::shared_ptr<Solver>(), 
                 const std::shared_ptr<Solver> &coarse_solver = std::shared_ptr<Solver>(),
+                const std::shared_ptr<LSStrategy> &ls_strategy = std::shared_ptr<LSStrategy>(),
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
                 _smoother(smoother), 
-                _coarse_solver(coarse_solver) 
+                _coarse_solver(coarse_solver), 
+                _ls_strategy(ls_strategy) 
         {
             set_parameters(params); 
         }
 
-        virtual ~FAS(){} 
+        virtual ~MG_OPT(){} 
         
 
         void set_parameters(const Parameters params)  // override
@@ -78,7 +74,7 @@ namespace utopia
          */
         virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
         {
-            this->init_solver("FAS", {" it. ", "|| r_N ||", "r_norm" , "E"}); 
+            this->init_solver("MG_OPT", {" it. ", "|| r_N ||", "r_norm" , "E"}); 
 
             Vector F_h  = local_zeros(local_size(x_h)); 
 
@@ -86,7 +82,7 @@ namespace utopia
             SizeType it = 0, l = this->num_levels(); 
             Scalar r_norm, r0_norm, rel_norm;
 
-            std::cout<<"FAS: number of levels: "<< l << "  \n"; 
+            std::cout<<"MG_OPT: number of levels: "<< l << "  \n"; 
 
             // just to check what is problem 
             Matrix hessian; 
@@ -102,7 +98,7 @@ namespace utopia
                 // else if(this->cycle_type() =="full")
                 //     full_cycle(rhs, l, x_0); 
                 else
-                    std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n"; 
+                    std::cout<<"ERROR::MG_OPT<< unknown MG type... \n"; 
 
 
                 #ifdef CHECK_NUM_PRECISION_mode
@@ -148,6 +144,11 @@ namespace utopia
             return this->_transfers[l]; 
         }
 
+        bool full_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
+        {
+            std::cout<<"-------- not yet....... \n"; 
+            return true; 
+        }
 
 
 
@@ -161,12 +162,8 @@ namespace utopia
 
             r_h = L_l - f; 
 
-
             transfers(l-2).restrict(r_h, r_2h); 
-            // transfers(l-2).restrict(u_l, u_2l); 
-            
-            
-            transfers(l-2).project_down(u_l, u_2l); 
+            transfers(l-2).restrict(u_l, u_2l); 
 
             levels(l-2).gradient(u_2l, L_2l); 
 
@@ -189,7 +186,14 @@ namespace utopia
 
             e_2h = u_2l - u_init; 
             transfers(l-2).interpolate(e_2h, e_h);
-            u_l += e_h; 
+
+            fine_fun.gradient(u_l, L_l); 
+            Scalar alpha; 
+            _ls_strategy->get_alpha(fine_fun, L_l, u_l, e_h, alpha); 
+            alpha = 1; 
+
+
+            u_l += alpha * e_h; 
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
@@ -208,17 +212,25 @@ namespace utopia
          *
          * @return   
          */
-        bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
+        bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs, const SizeType & nu = 1)
         {
-            _smoother->sweeps(nu); 
-            _smoother->nonlinear_smooth(fun, x, f); 
+            _smoother->max_it(1); 
+            // _smoother->max_it(nu); 
+            _smoother->verbose(true); 
+            // std::cout<<"smoothing ... \n"; 
+            _smoother->solve(fun, x, rhs); 
+            // std::cout<<"smoothing end... \n"; 
             return true; 
         }
 
 
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs)
         {
+            _coarse_solver->verbose(true); 
+            // std::cout<<"solve begin... \n"; 
+            _coarse_solver->max_it(20); 
             _coarse_solver->solve(fun, x, rhs); 
+            // std::cout<<"solve end... \n"; 
             return true; 
         }
 
@@ -231,18 +243,44 @@ namespace utopia
          *
          * @return     
          */
-        bool change_coarse_solver(const std::shared_ptr<Solver> &nonlinear_solver = std::shared_ptr<Solver>())
+        bool set_coarse_solver(const std::shared_ptr<Solver> &nonlinear_solver = std::shared_ptr<Solver>())
         {
             _coarse_solver = nonlinear_solver; 
             _coarse_solver->set_parameters(_parameters); 
             return true; 
         }
 
+        /**
+         * @brief      Function changes direct solver needed for coarse grid solve. 
+         *
+         * @param[in]  linear_solver  The linear solver.
+         *
+         * @return     
+         */
+        bool set_smoother(const std::shared_ptr<Solver> &nonlinear_solver = std::shared_ptr<Solver>())
+        {
+            _smoother = nonlinear_solver; 
+            _smoother->set_parameters(_parameters); 
+            return true; 
+        }
+
+
+        /**
+         * @brief      Sets line search strategy. 
+         */
+        bool set_line_search(const std::shared_ptr<LSStrategy> &ls_strategy = std::shared_ptr<LSStrategy>())
+        {
+            _ls_strategy = ls_strategy; 
+            return true; 
+        }
+
 
 
     protected:   
-        std::shared_ptr<Smoother>           _smoother;
-        std::shared_ptr<Solver>             _coarse_solver;  
+        std::shared_ptr<Solver>             _smoother;          /*  optimization method used on fine levels */
+        std::shared_ptr<Solver>             _coarse_solver;     /*  optimization method on coarse level */
+        std::shared_ptr<LSStrategy>         _ls_strategy;       /*  LS used to determine step size inside of MG */
+
 
     private:
         Parameters                          _parameters; 
@@ -252,5 +290,5 @@ namespace utopia
 
 }
 
-#endif //UTOPIA_FAS_HPP
+#endif //UTOPIA_MG_OPT_HPP
 

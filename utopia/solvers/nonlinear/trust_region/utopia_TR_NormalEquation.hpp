@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-18
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-11
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-05-07
 */
 
 #ifndef UTOPIA_TRUSTREGION_NORMAL_EQ_HPP
@@ -53,14 +53,14 @@
         */
       virtual bool linear_solution_check(
         
-        Function<Matrix, Vector> &fun, 
+        LeastSquaresFunction<Matrix, Vector> &fun, 
         Vector & g, 
         const Matrix & H, 
         Vector & p_N, 
         Vector & x_k)
       {
         this->linear_solve(H, -1 * g, p_N);
-        fun.gradient(x_k + p_N, g);
+        fun.residual(x_k + p_N, g);
         Scalar g_norm = norm2(g);
 
         if(g_norm < 1e-7)

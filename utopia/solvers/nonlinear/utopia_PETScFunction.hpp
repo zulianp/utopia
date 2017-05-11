@@ -22,14 +22,18 @@ namespace utopia
     template<class Matrix, class Vector>
     class PETSCUtopiaNonlinearFunction<Matrix, Vector, PETSC> : public Function<Matrix, Vector> 
     {
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
 
         public:
-            PETSCUtopiaNonlinearFunction(SNES snes) 
-            : snes_(snes), first_grad(0), first_energy(0)
+            PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = local_zeros(1), const Vector & rhs = local_zeros(1)) 
+            :
+                Function<Matrix, Vector>(x_init, rhs),
+                snes_(snes), 
+                first_grad(0), 
+                first_energy(0)
             {
             
             }
-
 
 
             virtual bool gradient(const Vector &x, Vector &g) const override
@@ -41,10 +45,11 @@ namespace utopia
                 
                 SNESComputeFunction(snes_, raw_type(x), raw_type(g));   
 
-                if(local_size(g)==local_size(this->_rhs))
-                {
-                    g = g - this->_rhs; 
-                }
+                // if(local_size(g)==local_size(this->_rhs))
+                // {
+                //    std::cout<<"grad:: yes rhs ... \n"; 
+                //     g = g - this->_rhs; 
+                // }
 
                 return true; 
             }
@@ -63,18 +68,38 @@ namespace utopia
             virtual bool value(const Vector &x, typename Vector::Scalar &result) const override 
             {
 
-                // // hack to have fresh energy (MOOSE post-processor does things in strange way )
-                // Vector grad = 0 * x; 
-                // this->gradient(x, grad); 
+                // if(first_energy == 0) 
+                // {
+                //     result = 9e12; 
+                //     first_energy++; 
+                //     return true; 
+                // }
 
-                if(first_energy == 0) 
-                {
-                    result = 9e12; 
-                    first_energy++; 
-                    return true; 
-                }
+                // hack to have fresh energy (MOOSE post-processor does things in strange way )
+                Vector grad = 0 * x; 
+                this->gradient(x, grad);         
+
+            
 
                 SNESComputeObjective(snes_, raw_type(x), &result); 
+
+               // result = 0.5 * norm2(grad) * norm2(grad); 
+
+
+
+                // Matrix H;
+                // this->hessian(x, H);    
+
+                // Scalar EN2 = 0.5 * dot(x, H * x);
+                // Scalar EN3 = EN2 - dot(x, grad);
+
+               //  std::cout<<"multiplication result: "<< EN2 << "      E3:    "<< EN3 <<  "      result:    "<< result << "   \n"; 
+
+
+
+                // result -= dot(x,grad); 
+
+
                 return true; 
             }
 

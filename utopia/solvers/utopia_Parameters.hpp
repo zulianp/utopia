@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-22
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-09
+* @Last Modified time: 2017-05-10
 */
 
 #ifndef UTOPIA_UTOPIA_PARAMETERS_HPP
@@ -58,7 +58,7 @@ namespace utopia
           gamma2_ = 2.0; 
           eta1_ = 0.1; 
           eta2_ = 0.85; 
-          rho_tol_ = 1e-10; 
+          rho_tol_ = 0.01; 
           SteihaugToint_tol_ = 1e-10; 
           eps_ = 2e-12; 
 

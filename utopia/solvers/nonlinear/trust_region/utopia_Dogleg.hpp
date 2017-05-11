@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-02
+* @Last Modified time: 2017-05-04
 */
 
 #ifndef UTOPIA_TR_SUBPROBLEM_DOGLEG_HPP
@@ -10,7 +10,11 @@
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_CauchyPoint.hpp"
 #include "utopia_Parameters.hpp"    
+#include "utopia_LinearSolverInterfaces.hpp"
 
+// #ifdef WITH_PETSC
+//     #include "utopia_PETScFactorization.hpp"
+// #endif //WITH_PETSC
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,10 +50,11 @@ namespace utopia
             // this is the worst hard-codding ever 
              // auto lsolver = std::make_shared< Factorization<DSMatrixd, DVectord> >();
             auto lsolver = std::make_shared< Factorization<Matrix, Vector> >();
-			#ifdef PETSC_HAVE_MUMPS
-            	lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
-			#endif //PETSC_HAVE_MUMPS
-			       //
+			// #ifdef PETSC_HAVE_MUMPS
+   //          	lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+			// #endif //PETSC_HAVE_MUMPS
+			
+            //
             lsolver->solve(B, -1 * g, p_N);
 
 

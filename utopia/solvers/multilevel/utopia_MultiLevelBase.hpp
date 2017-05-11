@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-03-28
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-01
+* @Last Modified time: 2017-05-09
 */
 
 #ifndef UTOPIA_ML_BASE_HPP
@@ -42,6 +42,11 @@
         set_parameters(params); 
       }
 
+      // MultiLevelBase()
+      // {
+
+      // }
+
       virtual ~MultiLevelBase(){}
 
       virtual void set_parameters(const Parameters params)
@@ -71,7 +76,7 @@
       {
           _num_levels = restriction_operators.size() + 1; 
           _transfers.clear();
-
+          
           if(!type.compare("fine_to_coarse"))
           {
             for(auto I = restriction_operators.rbegin(); I != restriction_operators.rend() ; ++I )
@@ -82,6 +87,7 @@
             for(auto I = restriction_operators.begin(); I != restriction_operators.end() ; ++I )
               _transfers.push_back(std::move(Transfer(*I)));
           }
+
           return true; 
       }
 

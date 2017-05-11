@@ -64,7 +64,7 @@ namespace utopia
             g0_norm = norm2(grad);
             g_norm = g0_norm;
 
-            this->init_solver("NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || "});
+            this->init_solver("NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha_k"});
 
             if(this->verbose_)
                 PrintInfo::print_iter_status(it, {g_norm, 1, 0});
@@ -78,30 +78,30 @@ namespace utopia
 
                 if(this->has_preconditioned_solver() && fun.has_preconditioner()) {
                     fun.hessian(x, hessian, preconditioner);
-                    this->linear_solve(hessian, preconditioner, grad, step);
+                    this->linear_solve(hessian, preconditioner, -1*grad, step);
                 } else {
                     fun.hessian(x, hessian);
-                    this->linear_solve(hessian, grad, step);
+                    this->linear_solve(hessian, -1*grad, step);
                 }
 
                 if(ls_strategy_) {
                     
-                    ls_strategy_->get_alpha(fun, grad, x, -step, alpha_); 
-                    x -= alpha_ * step;
+                    ls_strategy_->get_alpha(fun, grad, x, step, alpha_); 
+                    x += alpha_ * step;
 
                 } else { 
                     //update x
                     if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
                     {
-                        x -= step;
+                        x += step;
                     }
                     else
                     {
-                        x -= alpha_ * step;
+                        x += alpha_ * step;
                     }
                 }
 
-                //notify listener
+                // notify listener
                 fun.update(x);
 
 
@@ -114,7 +114,7 @@ namespace utopia
 
                 // // print iteration status on every iteration
                 if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
+                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, alpha_});
 
                 // // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);

@@ -12,10 +12,17 @@
 
 #include "utopia_FAS.hpp"
 #include "utopia_NonLinearMultigrid.hpp"
+#include "utopia_MG_OPT.hpp"
+#include "utopia_RMTR.hpp"
 
 #include "utopia_NonlinearMultiLevelBase.hpp"
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearJacobi.hpp"
+// #include "utopia_NonLinearTRSmoother.hpp"
+
+
+#include "utopia_Transfer.hpp"
+#include "utopia_NonlinearTransfer.hpp"
 
 
 #ifdef WITH_PETSC
