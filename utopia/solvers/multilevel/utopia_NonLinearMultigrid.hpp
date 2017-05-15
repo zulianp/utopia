@@ -95,7 +95,8 @@ namespace utopia
             fine_fun.gradient(x_h, F_h); 
             r0_norm = norm2(F_h); 
 
-            // we assume NLMG to be part of nested iteration by defaul 
+            // we assume NLMG to be part of nested iteration by default
+            // as in "Multi-Grid Methods and Applications, W. Hackbush" 
             std::vector<Vector> rhss; 
             std::vector<Vector> initial_iterates; 
             nested_iteration_cycle(fine_fun, x_h, rhs, l, rhss, initial_iterates); 
@@ -104,9 +105,9 @@ namespace utopia
             while(!converged)
             {            
                 if(this->cycle_type() =="multiplicative")
-                     multiplicative_cycle(fine_fun, x_h, rhs, l); 
+                    multiplicative_cycle(fine_fun, x_h, rhs, l); 
                 else if(this->cycle_type() =="nested_iteration")
-                 NMGM(fine_fun, x_h, rhs, l, rhss, initial_iterates); 
+                    NMGM(fine_fun, x_h, rhs, l, rhss, initial_iterates); 
 
                 #ifdef CHECK_NUM_PRECISION_mode
                     if(has_nan_or_inf(x_h) == 1)
@@ -183,8 +184,6 @@ namespace utopia
         }
 
 
-
-
         bool NMGM(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l, const std::vector<Vector> & rhss, const std::vector<Vector> & initial_iterates)
         {
                 
@@ -218,6 +217,10 @@ namespace utopia
 
             e_2h = 1/s * (u_2l - initial_iterates[l-2]); 
             transfers(l-2).interpolate(e_2h, e_h);
+
+            this->zero_boundary_correction(fine_fun, e_h); 
+
+
             u_l += e_h; 
 
             // POST-SMOOTHING 
@@ -225,8 +228,6 @@ namespace utopia
 
             return true; 
         }
-
-
 
 
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
@@ -271,7 +272,7 @@ namespace utopia
             e_2h = 1/s * (u_2l - u_init); 
             transfers(l-2).interpolate(e_2h, e_h);
 
-            this->zero_correction_contributions(fine_fun, e_h); 
+            this->zero_boundary_correction(fine_fun, e_h); 
 
             u_l += e_h; 
 

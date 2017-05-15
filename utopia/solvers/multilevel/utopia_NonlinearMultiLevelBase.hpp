@@ -261,7 +261,7 @@ protected:
 
 
         // zero correction
-        virtual bool zero_correction_contributions(FunctionType & fun, Vector & c)
+        virtual bool zero_boundary_correction(FunctionType & fun, Vector & c)
         {
 
           // std::cout<<"zero_correction_contributions   \n"; 

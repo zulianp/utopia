@@ -13,11 +13,6 @@
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
 #include "utopia_Parameters.hpp"    
-
-
-
-#include <petscksp.h>
-#include <petscsys.h>
 #include "utopia_Core.hpp"
 
 

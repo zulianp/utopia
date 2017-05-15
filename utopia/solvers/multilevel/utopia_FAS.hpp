@@ -154,7 +154,7 @@ namespace utopia
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
         {
             Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h, u_init; 
-            
+
             this->make_iterate_feasible(fine_fun, u_l); 
 
             // PRE-SMOOTHING 
@@ -191,7 +191,7 @@ namespace utopia
             e_2h = u_2l - u_init; 
             transfers(l-2).interpolate(e_2h, e_h);
 
-            this->zero_correction_contributions(fine_fun, e_h); 
+            this->zero_boundary_correction(fine_fun, e_h); 
             
             u_l += e_h; 
 
