@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-22
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-10
+* @Last Modified time: 2017-05-15
 */
 
 #ifndef UTOPIA_UTOPIA_PARAMETERS_HPP
@@ -71,6 +71,7 @@ namespace utopia
           omega_ = 0.66; 
           static_time_step_ = true; 
           cycle_type_      = "multiplicative"; 
+          sigma_            = 1; 
 
         /*----------  LS  ----------*/
           line_search_alg_ = "BACKTRACKING"; 
@@ -154,8 +155,8 @@ namespace utopia
     SizeType  pre_smoothing_steps()const      { return pre_smoothing_steps_; }
     SizeType  post_smoothing_steps()const     { return post_smoothing_steps_; }
     Scalar    omega()const                    { return omega_;    } 
-    bool      static_time_step() const        { return static_time_step_; }; 
-
+    bool      static_time_step() const        { return static_time_step_; }
+    Scalar   sigma() const                    { return sigma_; }
 
 /*---------------------------------  LS   --------------------------------------------------*/  
     Scalar c1()  const                        { return c1_; } 
@@ -233,7 +234,7 @@ namespace utopia
     void  omega(const SizeType & omega)                               {  omega_ = omega; } 
     void  static_time_step(const bool & static_time_step)             {  static_time_step_ = static_time_step; }; 
     void  cycle_type(char const *  cycle_type)                        {  cycle_type_ = cycle_type; }
-
+    void sigma(const Scalar & sigma)                                  { sigma_    = sigma; }
 /*---------------------------------  LS   --------------------------------------------------*/  
     void  c1(const Scalar & c1)                                       {  c1_ = c1; } 
     void  c2(const Scalar & c2)                                       {  c2_ = c2; } 
@@ -301,6 +302,7 @@ namespace utopia
           SizeType  post_smoothing_steps_; 
           Scalar    omega_; 
           bool      static_time_step_; 
+          Scalar    sigma_; 
 
           char const  * line_search_alg_; 
           Scalar ls_rho_; 

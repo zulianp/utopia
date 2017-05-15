@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-29
+* @Last Modified time: 2017-05-15
 */
 
 #ifndef UTOPIA_NONLINEAR_PETSC_GS_HPP
@@ -61,7 +61,7 @@ namespace utopia
                 SNES snes; 
                 fun_petsc->getSNES(snes); 
                 SNESSetFromOptions(snes); 
-                // SNESSetType(snes, SNESNRICHARDSON);
+                SNESSetType(snes, SNESNRICHARDSON);
 
                 // SNES pc; 
                 SNESSetType(snes, SNESNGS);

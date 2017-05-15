@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-09
+* @Last Modified time: 2017-05-15
 */
 
 #ifndef UTOPIA_FAS_HPP
@@ -154,6 +154,8 @@ namespace utopia
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
         {
             Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h, u_init; 
+            
+            this->make_iterate_feasible(fine_fun, u_l); 
 
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
@@ -163,11 +165,9 @@ namespace utopia
 
 
             transfers(l-2).restrict(r_h, r_2h); 
-            // transfers(l-2).restrict(u_l, u_2l); 
-            
-            
             transfers(l-2).project_down(u_l, u_2l); 
 
+            
             levels(l-2).gradient(u_2l, L_2l); 
 
             u_init = u_2l; 
@@ -175,6 +175,7 @@ namespace utopia
                                  
             if(l == 2)
             {
+                this->make_iterate_feasible(levels(0), u_2l); 
                 coarse_solve(levels(0), u_2l, L_2l); 
             }
             else
@@ -189,6 +190,9 @@ namespace utopia
 
             e_2h = u_2l - u_init; 
             transfers(l-2).interpolate(e_2h, e_h);
+
+            this->zero_correction_contributions(fine_fun, e_h); 
+            
             u_l += e_h; 
 
             // POST-SMOOTHING 
@@ -217,7 +221,7 @@ namespace utopia
 
 
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs)
-        {
+        {   
             _coarse_solver->solve(fun, x, rhs); 
             return true; 
         }

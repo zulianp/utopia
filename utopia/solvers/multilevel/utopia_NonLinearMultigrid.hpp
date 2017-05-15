@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-24
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-05
+* @Last Modified time: 2017-05-15
 */
 
 #ifndef UTOPIA_NMGM_HPP
@@ -62,6 +62,7 @@ namespace utopia
             _coarse_solver->set_parameters(params); 
             
             _parameters = params;         
+            _sigma      = params.sigma(); 
         }
 
         virtual bool solve(FunctionType & fine_fun, Vector &x_h)
@@ -103,9 +104,9 @@ namespace utopia
             while(!converged)
             {            
                 if(this->cycle_type() =="multiplicative")
-                    multiplicative_cycle(fine_fun, x_h, rhs, l); 
+                     multiplicative_cycle(fine_fun, x_h, rhs, l); 
                 else if(this->cycle_type() =="nested_iteration")
-                  NMGM(fine_fun, x_h, rhs, l, rhss, initial_iterates); 
+                 NMGM(fine_fun, x_h, rhs, l, rhss, initial_iterates); 
 
                 #ifdef CHECK_NUM_PRECISION_mode
                     if(has_nan_or_inf(x_h) == 1)
@@ -148,7 +149,7 @@ namespace utopia
 
 
 
-
+        // TODO:: make this nicer ! 
         bool nested_iteration_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l, std::vector<Vector> & rhss, std::vector<Vector> & initial_iterates)
         {
             for(SizeType i = l-2; i >=0; i--)
@@ -199,7 +200,6 @@ namespace utopia
             u_2l    = initial_iterates[l-2]; 
             Scalar s = scaling_factor(r_2h); 
 
-          
             L_2l = rhss[l-2] - s *r_2h;  // tau correction 
           
             if(l == 2)
@@ -234,19 +234,20 @@ namespace utopia
                 
             Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h, u_init; 
 
+            this->make_iterate_feasible(fine_fun, u_l); 
+
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
             fine_fun.gradient(u_l, L_l);             
 
 
             r_h = L_l - f; 
+            transfers(l-2).restrict(r_h, r_2h); 
+            transfers(l-2).project_down(u_l, u_2l); 
+            u_init  = u_2l; 
 
-        
-            transfers(l-2).restrict(u_l, u_2l); 
 
             levels(l-2).gradient(u_2l, L_2l); 
-
-            u_init  = u_2l; 
 
             Scalar s = scaling_factor(r_2h); 
 
@@ -254,6 +255,7 @@ namespace utopia
 
             if(l == 2)
             {
+                this->make_iterate_feasible(levels(0), u_2l); 
                 coarse_solve(levels(0), u_2l, L_2l); 
             }
             else
@@ -268,6 +270,9 @@ namespace utopia
 
             e_2h = 1/s * (u_2l - u_init); 
             transfers(l-2).interpolate(e_2h, e_h);
+
+            this->zero_correction_contributions(fine_fun, e_h); 
+
             u_l += e_h; 
 
             // POST-SMOOTHING 
@@ -287,8 +292,7 @@ namespace utopia
          */
         Scalar scaling_factor(const Vector & d)
         {
-            Scalar sigma = 1;  
-            return sigma/norm2(d); 
+            return _sigma/norm2(d); 
         }
 
 
@@ -340,6 +344,19 @@ namespace utopia
         }
 
 
+        bool set_sigma(const Scalar & sigma)
+        {
+            _sigma = sigma; 
+            return true; 
+        }
+
+
+        Scalar get_sigma() const
+        {
+            return _sigma; 
+        }
+
+
 
     protected:   
         std::shared_ptr<Smoother>           _smoother;
@@ -347,7 +364,7 @@ namespace utopia
 
     private:
         Parameters                          _parameters; 
-
+        Scalar                              _sigma; 
 
     };
 

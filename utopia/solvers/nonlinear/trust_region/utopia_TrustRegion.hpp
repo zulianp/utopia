@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-11
+* @Last Modified time: 2017-05-15
 */
 
 #ifndef UTOPIA_SOLVER_TRUSTREGION_HPP
@@ -16,13 +16,10 @@
 
 
 
-
-// #include <petscksp.h>
-// #include <petscsys.h>
-
+#include <petscksp.h>
+#include <petscsys.h>
 #include "utopia_Core.hpp"
-// #include <petscksp.h>
-// #include <petscsys.h>
+
 
 
  namespace utopia 
@@ -103,7 +100,6 @@
 
       bool solve(Function<Matrix, Vector> &fun, Vector &x, const Vector & rhs) override
       {
-        std::cout<<"------------------------ strange ---------------------- \n"; 
         NonLinearSolver::solve(fun, x, rhs); 
         return true; 
       }
@@ -135,6 +131,9 @@
          Vector g, p_CP = x_k, p_N = x_k, p_k = x_k, x_k1 = x_k;
          Matrix H; 
 
+
+         p_k = x_k; 
+
          fun.hessian(x_k, H); 
          fun.gradient(x_k, g);
 
@@ -142,18 +141,12 @@
           //#define LS_check
 
 
-        // TR delta initialization
-        // NEEDED FOR RMTR 
-        delta = this->delta0(); 
-        std::cout<<"------------------------------------------- delta_0:   " << delta << "   \n"; 
-
-        p_k = x_k; 
 
 
-
+        // TR delta initialization 
         rad_flg = this->delta_init(x_k ,delta); 
-        // delta = norm2(g);   // also possible
-        //delta = 50;        // testing 
+        //  delta = norm2(g);   // also possible
+        //  delta = 50;        // testing 
 
         // just to start  CHECK THIS OUT 
         // if(params().verbose()) 

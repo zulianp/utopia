@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-10
+* @Last Modified time: 2017-05-15
 */
 
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
@@ -231,12 +231,11 @@ protected:
         virtual bool make_iterate_feasible(FunctionType & fun, Vector & x)
         {
 
-          // std::cout<<"make_iterate_feasible   \n"; 
           Vector bc; 
           fun.get_boundary_values(bc); 
 
-          // std::cout<<"yes non zero:   "; 
-
+          if(local_size(x)==local_size(bc))
+          {
             {
                 Write<Vector> w(x);
                 Read<Vector> r(bc);
@@ -253,8 +252,9 @@ protected:
                     }
                 }
             }
-
-            std::cout<<"    \n"; 
+          }
+          // std::cout<<"    \n"; 
+          
           return true; 
         }
 
@@ -268,7 +268,8 @@ protected:
           Vector bc; 
           fun.get_boundary_values(bc); 
 
-
+          if(local_size(c)==local_size(bc))
+          {
             {
                 Write<Vector> w(c);
                 Read<Vector> r(bc);
@@ -285,8 +286,7 @@ protected:
                     }
                 }
             }
-
-          
+          }
 
           return true; 
         }
