@@ -2,13 +2,18 @@
 * @Author: alenakopanicakova
 * @Date:   2016-06-01
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-03
+* @Last Modified time: 2017-05-16
 */
 
 #ifndef UTOPIA_QUAD_CUB_BACKTRACKING_HPP
 #define UTOPIA_QUAD_CUB_BACKTRACKING_HPP
 #include "utopia_LS_Strategy.hpp"
 
+
+#ifdef WITH_PETSC
+    #include <petscsnes.h>
+    #include "utopia_PETScFunction.hpp"
+#endif //WITH_PETSC 
 
 namespace utopia 
 {
@@ -22,11 +27,12 @@ namespace utopia
         reprinte by SIAM (1996), Section 6.3.2.
         @todo check params naming properly... 
      */
-    template<class Matrix, class Vector>
+    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Backtracking : public LSStrategy<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
+
 
     public:
 
@@ -180,6 +186,76 @@ namespace utopia
         Scalar alpha_min_;  /*!< Minimum allowed step-size.   */  
 
     };
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////    PETSC VERSION  ///////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    template<typename Matrix, typename Vector>
+    class Backtracking<Matrix, Vector, PETSC> : public LSStrategy<Matrix, Vector>
+    {
+
+        typedef UTOPIA_SCALAR(Vector)       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
+
+        
+        bool get_alpha(LeastSquaresFunction<Matrix, Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override 
+        {
+            return get_alpha_aux(fun, g, x, d, alpha);
+        }
+
+
+        bool get_alpha(Function<Matrix, Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
+        {
+            return get_alpha_aux(fun, g, x, d, alpha);
+        }
+
+
+        template<class FunctionT>
+        bool get_alpha_aux(FunctionT &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) 
+        {
+            SNESLineSearch      linesearch;
+            PETSCUtopiaNonlinearFunction<Matrix, Vector> * fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
+                
+            SNES snes; 
+            fun_petsc->getSNES(snes); 
+
+            SNESSetType(snes, SNESNEWTONLS); 
+            SNESGetLineSearch(snes, &linesearch);
+            SNESLineSearchSetType(linesearch,  SNESLINESEARCHBT); 
+            SNESLineSearchSetOrder(linesearch, SNES_LINESEARCH_ORDER_CUBIC); 
+
+            PetscReal fnorm; 
+            PetscReal lambda; 
+            VecNorm(raw_type(g), NORM_2, &fnorm); 
+
+
+            // if we reset objective, computation is done in Least-squares manner 
+            // SNESSetObjective(snes, NULL, NULL);  
+
+            // we do this, since current solution and F are going to be changed in apply routine...
+            // is it more efficient, but current solvers are set up differently
+            Vector x_p = x; 
+            Vector g_p = g; 
+
+            // set descent parameter used in Wolfe conditions 
+            // SNESLineSearchBTSetAlpha(linesearch, 0.1); 
+            
+            // linesearch  - The linesearch context
+            // X   - The current solution
+            // F   - The current function
+            // fnorm   - The current norm
+            // Y   - The search direction
+            SNESLineSearchApply(linesearch, raw_type(x_p), raw_type(g_p), &fnorm, raw_type(d));
+
+            SNESLineSearchGetLambda(linesearch, &lambda); 
+            alpha = lambda; 
+
+            return true; 
+        }
+
+    }; 
+
 
 }
 

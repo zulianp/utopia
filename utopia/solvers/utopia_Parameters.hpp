@@ -75,7 +75,7 @@ namespace utopia
 
         /*----------  LS  ----------*/
           line_search_alg_ = "BACKTRACKING"; 
-          ls_rho_ = 0.5; 
+          ls_rho_ = 0.99; 
           alpha_min_ = 1e-7; 
           c1_ = 1e-4; 
           c2_ = 1e-8; 

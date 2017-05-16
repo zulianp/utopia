@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-05-03
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-04
+* @Last Modified time: 2017-05-16
 */
 
 #ifndef UTOPIA_MG_OPT_HPP
@@ -12,7 +12,6 @@
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 #include "utopia_LS_Strategy.hpp"
-
 
 namespace utopia 
 {
@@ -91,6 +90,11 @@ namespace utopia
             fine_fun.gradient(x_h, F_h); 
             r0_norm = norm2(F_h); 
 
+            if(this->verbose())
+                PrintInfo::print_iter_status(it, {r0_norm}); 
+
+            it++; 
+
             while(!converged)
             {            
                 if(this->cycle_type() =="multiplicative")
@@ -155,6 +159,9 @@ namespace utopia
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
         {
             Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h, u_init; 
+            Scalar alpha; 
+
+            this->make_iterate_feasible(fine_fun, u_l); 
 
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
@@ -163,7 +170,7 @@ namespace utopia
             r_h = L_l - f; 
 
             transfers(l-2).restrict(r_h, r_2h); 
-            transfers(l-2).restrict(u_l, u_2l); 
+            transfers(l-2).project_down(u_l, u_2l); 
 
             levels(l-2).gradient(u_2l, L_2l); 
 
@@ -172,11 +179,11 @@ namespace utopia
                                  
             if(l == 2)
             {
+                this->make_iterate_feasible(levels(0), u_2l); 
                 coarse_solve(levels(0), u_2l, L_2l); 
             }
             else
             {
-                // recursive call into FAS - needs to be checked 
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = l - 1; 
@@ -187,10 +194,12 @@ namespace utopia
             e_2h = u_2l - u_init; 
             transfers(l-2).interpolate(e_2h, e_h);
 
+            this->zero_boundary_correction(fine_fun, e_h); 
+
             fine_fun.gradient(u_l, L_l); 
-            Scalar alpha; 
-            _ls_strategy->get_alpha(fine_fun, L_l, u_l, e_h, alpha); 
-            alpha = 1; 
+
+            _ls_strategy->get_alpha(fine_fun, L_l, u_l, e_h, alpha);
+            // std::cout<<"l:   "<< l << "   alpha:   "<< alpha << " <g_k, e_h>:   "<< dot(L_l, e_h) << "  \n"; 
 
 
             u_l += alpha * e_h; 
@@ -215,22 +224,17 @@ namespace utopia
         bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs, const SizeType & nu = 1)
         {
             _smoother->max_it(1); 
-            // _smoother->max_it(nu); 
-            _smoother->verbose(true); 
-            // std::cout<<"smoothing ... \n"; 
+            // _smoother->verbose(true); 
             _smoother->solve(fun, x, rhs); 
-            // std::cout<<"smoothing end... \n"; 
             return true; 
         }
 
 
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs)
         {
-            _coarse_solver->verbose(true); 
-            // std::cout<<"solve begin... \n"; 
-            _coarse_solver->max_it(20); 
+            // _coarse_solver->verbose(true); 
+            _coarse_solver->max_it(10); 
             _coarse_solver->solve(fun, x, rhs); 
-            // std::cout<<"solve end... \n"; 
             return true; 
         }
 

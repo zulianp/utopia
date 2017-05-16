@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-10
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-03
+* @Last Modified time: 2017-05-15
 */
 
 #ifndef UTOPIA_BACKTRACKING_HPP
@@ -67,11 +67,13 @@ namespace utopia
             Vector x_0 = x, x_k = x;
             Scalar E_k, E_k1, g_p;
 
-            fun.value(x_k, E_k);
+            fun.value(x_0, E_k);
             alpha_k = 1;
             g_p =  dot(g, p_k);
 
-            x_k = x_k + p_k;
+            E_k1 = E_k; 
+
+            x_k = x_0 + alpha_k * p_k;
             fun.value(x_k, E_k1);
 
             SizeType it = 0; 
@@ -83,9 +85,9 @@ namespace utopia
             while( E_k1 < (E_k + c1_ * alpha_k * g_p) && it < max_it_  && alpha_k > 1e-6)
             {
 
-                alpha_k = alpha_k * rho_;
                 x_k = x_0 + alpha_k * p_k;
                 fun.value(x_k, E_k1);
+                alpha_k *= rho_;
                 it++; 
                 
                 if(verbose_)
@@ -93,7 +95,7 @@ namespace utopia
 
             }
 
-            std::cout<<"alpha_k:  "<< alpha_k << "  \n"; 
+           // std::cout<<"it:  "<< it << "  \n"; 
             return true;
         }
 
