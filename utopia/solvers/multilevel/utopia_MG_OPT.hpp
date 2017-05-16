@@ -223,7 +223,7 @@ namespace utopia
          */
         bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs, const SizeType & nu = 1)
         {
-            _smoother->max_it(1); 
+            _smoother->max_it(nu); 
             // _smoother->verbose(true); 
             _smoother->solve(fun, x, rhs); 
             return true; 
@@ -233,7 +233,7 @@ namespace utopia
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs)
         {
             // _coarse_solver->verbose(true); 
-            _coarse_solver->max_it(10); 
+            // _coarse_solver->max_it(10); 
             _coarse_solver->solve(fun, x, rhs); 
             return true; 
         }
