@@ -2,7 +2,7 @@
 * @Author: Alena Kopanicakova
 * @Date:   2017-05-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-21
+* @Last Modified time: 2017-05-22
 */
 
 #ifndef UTOPIA_QPSOLVER_BOX_MPRGP_NEWTON_HPP
@@ -26,7 +26,7 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;
 
-        typedef BoxConstraints<Vector>      BoxConstraints;
+        typedef utopia::BoxConstraints<Vector> BoxConstraints;
         
     public:
         

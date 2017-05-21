@@ -21,7 +21,7 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
-        typedef BoxConstraints<Vector>      BoxConstraints;
+        typedef utopia::BoxConstraints<Vector>      BoxConstraints;
 
     public:
 
