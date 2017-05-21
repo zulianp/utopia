@@ -73,7 +73,7 @@ namespace utopia
                         A.set(N - 1, N - 1, 1.0);
                     }
 
-                    for (SizeType i = cr.begin(); i != N-2; i++) {
+                    for (SizeType i = cr.begin(); i != N-1; i++) {
                         A.set(N - 1, i, 0);
                     }
                 }

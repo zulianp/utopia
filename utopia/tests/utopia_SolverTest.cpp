@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-07-15
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-24
+* @Last Modified time: 2017-05-22
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -27,11 +27,12 @@ namespace utopia
 
         void run()
         {
-            newton_cg_utopia_test();
-            solver_from_params();
-            TR_test();
-            LS_test();
-            nl_solve_test();
+            // newton_cg_utopia_test();
+            // solver_from_params();
+            // TR_test();
+            // LS_test();
+            // nl_solve_test();
+           
         }
 
 
@@ -308,7 +309,6 @@ namespace utopia
            // std::cout << "         End: LS_test" << std::endl;
         }
 
-
         SolverTest()
         : _n(10) { }
 
@@ -323,26 +323,136 @@ namespace utopia
 
         void run()
         {
-            petsc_bicgstab_test();
-            petsc_gmres_test();
-            petsc_newton_test();
-            petsc_newton_rosenbrock_test();
+            // petsc_bicgstab_test();
+            // petsc_gmres_test();
+            // petsc_newton_test();
+            // petsc_newton_rosenbrock_test();
             petsc_sparse_semismooth_newton_test();
-            petsc_sparse_nonlinear_semismooth_newton_test();
-            petsc_direct_solver_newton_test();
-            petsc_newton_test_outInfo();
-            petsc_sparse_newton_test();
-            MG_test();
-            CG_MG_test();
-            PETSC_CG_MG_test();
-            petsc_newton_PETScCG_utopia_test();
-            petsc_tr_rr_test();
-            petsc_newton_inexact_newton_with_KSP_test(); 
+            // petsc_sparse_nonlinear_semismooth_newton_test();
+            // petsc_direct_solver_newton_test();
+            // petsc_newton_test_outInfo();
+            // petsc_sparse_newton_test();
+            // MG_test();
+            // CG_MG_test();
+            // PETSC_CG_MG_test();
+            // petsc_newton_PETScCG_utopia_test();
+            // petsc_tr_rr_test();
+            // petsc_newton_inexact_newton_with_KSP_test(); 
+
+
+
+        	mprgp_test(); 
+
 
             // neohookean_tr_test();
             // QP_example_MG();
             // TR_in_inf_norm_with_MG();
         }
+
+
+
+
+
+        void mprgp_test()
+        {
+        	SizeType n = 10; 
+        	PetscScalar h = 1.0/(n-1);
+
+
+        	DSMatrixd A = sparse(n, n, 3);
+        	DVectord b, u, l; 
+
+	        // 1d laplace 	
+	        {
+		        Write<DSMatrixd> w(A);
+		        Range r = row_range(A);
+
+		        for(SizeType i = r.begin(); i != r.end(); ++i) {
+		            if(i > 0) {    
+		                A.add(i, i - 1, -1.0);    
+		            }
+
+		            if(i < n-1) {
+		                A.add(i, i + 1, -1.0);
+		            }
+
+		            A.add(i, i, 2.0);
+		        }
+		    }
+
+		    A = (n-1)*A;
+
+		    // bc conditions 
+		    {
+		        Range r = row_range(A);
+		        Write<DSMatrixd> w(A);
+		        if(r.begin() == 0) {
+		            A.set(0, 0, 1.);
+		            A.set(0, 1, 0);
+		        }
+
+		        if(r.end() == n) {
+		            A.set(n-1, n-1, 1.);
+		            A.set(n-1, n-2, 0);
+		        }
+		    }
+
+		   	l = -1 * values(n, 1);
+		    u =  values(n, 1);
+		    
+		    b = 50 * values(n, 1);
+
+		    {
+	            Write<DVectord> w (b);
+	            Range rhs_range = range(b);;
+	            for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++)
+	            {
+	          		if(i > n/2)
+	                	b.set(i, -50);
+
+	                if(i ==0 || i == rhs_range.end()-1)
+	                	b.set(i, 0);
+	  
+	            }
+	        }
+
+			b *= h; 
+
+			// just testing 
+			// u =  values(local_size(u).get(0), 0.5); 
+			l =  values(local_size(u).get(0), -999); 
+
+			auto box = make_box_constaints(make_ref(l), make_ref(u)); 
+            
+
+            MPRGP<DSMatrixd, DVectord> mprgp;
+            mprgp.set_box_constraints(make_ref(box)); 
+
+            // initial guess 
+            DVectord x = 0 * b; 
+
+            mprgp.verbose(true); 
+            mprgp.solve(A, b, x); 
+
+
+
+            DVectord x_0 = 0 * x; 
+            auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+            SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
+
+            nlsolver.set_box_constraints(make_ref(box)); 
+
+            nlsolver.verbose(true); 
+            nlsolver.max_it(50); 
+            nlsolver.solve(A, b, x_0);
+
+            std::cout<<"|x- x_0| =  "<< norm2(x_0 - x) << " \n"; 
+
+            disp(x); 
+            disp(x_0); 
+
+        }
+
 
 
         // void neohookean_tr_test()
@@ -599,28 +709,33 @@ namespace utopia
 
             // std::cout << "         Begin: petsc_sparse_semismooth_newton_test" << std::endl;
             auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-            DSMatrixd A, B;
-            DVectord b, g;
+            DSMatrixd A;
+            DVectord b, ub;
 
             SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
-            nlsolver.enable_differentiation_control(false);
 
             Parameters params;
             params.verbose(false);
             nlsolver.set_parameters(params);
 
             // initial guess
-            DVectord x_0 = values(_n, 60);
-            {
-                Write<DVectord> w(x_0);
-                Range x_range = range(x_0);
-                if (x_range.begin() == 0) x_0.set(0, 0);
-                if (x_range.end() == _n) x_0.set(_n - 1, 0);
-            }
+            DVectord x_0 = values(_n, 0.0);
+  
 
             ExampleTestCase2<DSMatrixd, DVectord> example;
-            example.getOperators(_n, A, b, g);
-            nlsolver.solve(x_0, A, b, g);
+            example.getOperators(_n, A, b, ub);
+            
+
+            DVectord lb = -1 * std::numeric_limits<double>::infinity() * values(local_size(ub).get(0), 1); 
+
+
+			auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+            nlsolver.set_box_constraints(make_ref(box)); 
+
+            nlsolver.verbose(true); 
+            nlsolver.solve(A, b, x_0);
+
+            disp(x_0); 
 
            // std::cout << "         End: petsc_sparse_semismooth_newton_test" << std::endl;
 
