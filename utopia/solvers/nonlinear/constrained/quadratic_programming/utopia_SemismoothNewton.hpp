@@ -1,7 +1,10 @@
-/*! \file utopia_NonlinSemismoothNewton.hpp
-    Semismooth Newton method 
-    Created by Alena Kopanicakova 
+/*
+* @Author: Alena Kopanicakova
+* @Date:   2017-05-22
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-05-22
 */
+
 
 #ifndef UTOPIA_SOLVER_SEMISMOOTH_NEWTON_HPP
 #define UTOPIA_SOLVER_SEMISMOOTH_NEWTON_HPP
@@ -27,34 +30,202 @@ namespace utopia
 
         SemismoothNewton(const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
                          const Parameters params                         = Parameters() ) : 
-                            linear_solver_(linear_solver)
-
+                            linear_solver_(linear_solver) 
         { 
             set_parameters(params);
         }
 
-
+        // We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
         bool solve(const Matrix &A, const Vector &b, Vector &x)  
+        {
+            if( constraints_->has_upper_bound() && constraints_->has_lower_bound())
+                box_solve(A, b, x); 
+            else if((constraints_->has_upper_bound() && !constraints_->has_lower_bound()) || (!constraints_->has_upper_bound() && constraints_->has_lower_bound()))
+                single_bound_solve(A, b, x); 
+            else
+                std::cout<<"if u do not have constraints, use something else..... \n"; 
+            return true; 
+        }
+
+
+        virtual void set_parameters(const Parameters params) override
+        {
+            IterativeSolver<Matrix, Vector>::set_parameters(params);
+            c_ = 1.0; 
+        }
+
+
+        virtual bool set_box_constraints(const std::shared_ptr<BoxConstraints> & box)
+        {
+          constraints_ = box; 
+          return true; 
+        }
+
+        virtual std::shared_ptr<BoxConstraints> get_box_constraints() const
+        {
+          return constraints_; 
+        }
+
+
+        virtual void set_c(const Scalar & c)
+        {
+            c_ = c; 
+        }
+
+        virtual void get_c(Scalar & c) const 
+        {
+            c = c_; 
+        }
+
+
+private: 
+
+        bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x)
         {
             using namespace utopia;
 
             SizeType n = local_size(A).get(0), m = local_size(A).get(1); 
 
-            Scalar c = 1, x_diff_norm;
+            Scalar x_diff_norm;
 
 
             SizeType it = 0;
             bool converged = false; 
 
+            Vector bound; 
+
+            if(constraints_->has_upper_bound())
+                bound = *constraints_->upper_bound(); 
+            else
+                bound = *constraints_->lower_bound(); 
+
+            Vector lambda    = local_zeros(n);
+            Vector active    = local_zeros(n);
+            Vector G_inv     = local_zeros(n);
+
+            Vector x_old = x;
+
+            Vector d, prev_active;
+
+            // active/inactive constraints 
+            Matrix A_s, Ic;
+
+            // G can be changed to something else
+            Matrix G = identity(n, n);
+
+            Matrix H;
+
+            linear_solver_->solve(G, bound, G_inv); 
+    
+
+            if(this->verbose())
+                this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "      || x_k - x_{k-1} ||"});
+            
+            while(!converged) 
+            {
+                d = lambda + c_ * (G * x - bound);
+
+                if(is_sparse<Matrix>::value) 
+                {
+                    Ic   = local_sparse(n, m, 1); 
+                    Vector o = local_values(n, 1.0); 
+                    Ic = diag(o); 
+                } 
+                else 
+                {
+                    Ic   = local_values(n, m, 1.0); 
+                }
+               
+                active   = local_zeros(n);
+
+                {
+                    Write<Vector> wa(active);
+                    Read<Vector> rdp(d);                                   
+
+                    if(constraints_->has_upper_bound())
+                    {
+                        Range rr = range(d);
+                        for (SizeType i = rr.begin(); i != rr.end(); i++) 
+                        {
+                            if (d.get(i) >= 0) 
+                                active.set(i, 1.0);
+                        }
+                    }
+                    else
+                    {
+                        Range rr = range(d);
+                        for (SizeType i = rr.begin(); i != rr.end(); i++) 
+                        {
+                            if (d.get(i) <= 0) 
+                                active.set(i, 1.0);
+                        }
+                    }
+                }
+
+                A_s  = diag(active); 
+                Ic -= A_s; 
+
+                if (it > 1) 
+                {
+                    // active set doesn't change anymore => converged 
+                    SizeType sum = norm1(prev_active - active);
+                    if (sum == 0) 
+                    {
+                        if(this->verbose())
+                            std::cout<<"SemismoothNewton:: set is not changing ... \n"; 
+                        converged = true; 
+                    }
+                }
+
+                prev_active = active;        
+
+                H = A_s + Ic * A;         
+
+                Vector rhs =  Ic * b + A_s * G_inv; 
+
+                linear_solver_->solve(H, rhs, x); 
+    
+                lambda = A_s * (b - A * x);
+
+                x_diff_norm = norm2(x - x_old);
+                
+                // print iteration status on every iteration 
+                if(this->verbose())
+                    PrintInfo::print_iter_status(it, {x_diff_norm}); 
+
+                if(!converged)
+                    converged = this->check_convergence(it, x_diff_norm, 1, 1); 
+                
+                x_old = x;
+                it++;
+            }
+            
+            return true;
+        }   
+
+
+        bool box_solve(const Matrix &A, const Vector &b, Vector &x)  
+        {
+            using namespace utopia;
+
+            SizeType n = local_size(A).get(0), m = local_size(A).get(1); 
+
+            Scalar x_diff_norm;
+
+
+            SizeType it = 0;
+            bool converged = false; 
+
+
             Vector lb = *constraints_->lower_bound(); 
             Vector ub = *constraints_->upper_bound(); 
 
 
-            Vector lambda_p   = local_zeros(n);
-            Vector lambda_m   = local_zeros(n);
-            Vector active   = local_zeros(n);
-            Vector G_inv_ub = local_zeros(n);
-            Vector G_inv_lb = local_zeros(n);
+            Vector lambda_p     = local_zeros(n);
+            Vector lambda_m     = local_zeros(n);
+            Vector active       = local_zeros(n);
+            Vector G_inv_ub     = local_zeros(n);
+            Vector G_inv_lb     = local_zeros(n);
             
 
             Vector x_old = x;
@@ -79,8 +250,8 @@ namespace utopia
             
             while(!converged) 
             {
-                d_p = lambda_p + c * (G * x - ub);
-                d_m = lambda_m + c * (G * x - lb);
+                d_p = lambda_p + c_ * (G * x - ub);
+                d_m = lambda_m + c_ * (G * x - lb);
 
                 if(is_sparse<Matrix>::value) 
                 {
@@ -134,7 +305,8 @@ namespace utopia
                     SizeType sum = norm1(prev_active - active);
                     if (sum == 0) 
                     {
-                        std::cout<<"set is not changing ... \n"; 
+                        if(this->verbose())
+                            std::cout<<"SemismoothNewton:: set is not changing ... \n"; 
                         converged = true; 
                     }
             
@@ -148,7 +320,9 @@ namespace utopia
 
                 linear_solver_->solve(H, rhs, x); 
     
-                lambda_p = Ac_p * (b - A * x); 
+                lambda_p = Ac_p * (b - A * x);
+
+                // TODO::  check why it works with -g and +g (because sign does not matter in case of eq ? or something else ?)
                 lambda_m = Ac_m * (A * x - b);
 
                 x_diff_norm = norm2(x - x_old);
@@ -168,27 +342,10 @@ namespace utopia
         }
 
 
-        virtual void set_parameters(const Parameters params) override
-        {
-            IterativeSolver<Matrix, Vector>::set_parameters(params);
-        }
 
-
-        virtual bool set_box_constraints(const std::shared_ptr<BoxConstraints> & box)
-        {
-          constraints_ = box; 
-          return true; 
-        }
-
-        virtual std::shared_ptr<BoxConstraints> get_box_constraints()
-        {
-          return constraints_; 
-        }
-
-
-        private:
-            std::shared_ptr <Solver>        linear_solver_;  
-            std::shared_ptr<BoxConstraints> constraints_; 
+        std::shared_ptr <Solver>        linear_solver_;  
+        std::shared_ptr<BoxConstraints> constraints_; 
+        Scalar c_; 
     };
 
 }

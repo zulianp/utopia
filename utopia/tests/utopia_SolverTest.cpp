@@ -419,8 +419,8 @@ namespace utopia
 			b *= h; 
 
 			// just testing 
-			// u =  values(local_size(u).get(0), 0.5); 
-			l =  values(local_size(u).get(0), -999); 
+			// u =  values(local_size(u).get(0), 999); 
+			// l =  values(local_size(u).get(0), -999); 
 
 			auto box = make_box_constaints(make_ref(l), make_ref(u)); 
             
@@ -431,7 +431,7 @@ namespace utopia
             // initial guess 
             DVectord x = 0 * b; 
 
-            mprgp.verbose(true); 
+            mprgp.verbose(false); 
             mprgp.solve(A, b, x); 
 
 
@@ -442,15 +442,11 @@ namespace utopia
 
             nlsolver.set_box_constraints(make_ref(box)); 
 
-            nlsolver.verbose(true); 
+            nlsolver.verbose(false); 
             nlsolver.max_it(50); 
             nlsolver.solve(A, b, x_0);
 
-            std::cout<<"|x- x_0| =  "<< norm2(x_0 - x) << " \n"; 
-
-            disp(x); 
-            disp(x_0); 
-
+            assert(approxeq(x, x_0));
         }
 
 
@@ -729,13 +725,20 @@ namespace utopia
             DVectord lb = -1 * std::numeric_limits<double>::infinity() * values(local_size(ub).get(0), 1); 
 
 
-			auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+			// auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+			
+            auto box = BoxConstraints<DVectord>(make_ref(ub), "upper"); 
             nlsolver.set_box_constraints(make_ref(box)); 
 
-            nlsolver.verbose(true); 
+
+
+
+            nlsolver.verbose(false); 
+
+            nlsolver.max_it(5); 
             nlsolver.solve(A, b, x_0);
 
-            disp(x_0); 
+            // disp(x_0); 
 
            // std::cout << "         End: petsc_sparse_semismooth_newton_test" << std::endl;
 
