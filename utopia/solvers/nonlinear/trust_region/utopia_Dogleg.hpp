@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-04
+* @Last Modified time: 2017-05-22
 */
 
 #ifndef UTOPIA_TR_SUBPROBLEM_DOGLEG_HPP
@@ -45,7 +45,7 @@ namespace utopia
         	// check if LS was initialized 
             // LS_check(); 
             Vector p_N = g, p_SD = g, p_CP = g;
-            Scalar pred_N, g_B_g = dot(g, B * g), pNlen, pred; 
+            Scalar pred_N, g_B_g = dot(g, B * g), pNlen; 
 
             // this is the worst hard-codding ever 
              // auto lsolver = std::make_shared< Factorization<DSMatrixd, DVectord> >();

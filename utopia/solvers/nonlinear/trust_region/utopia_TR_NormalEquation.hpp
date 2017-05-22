@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-18
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-07
+* @Last Modified time: 2017-05-22
 */
 
 #ifndef UTOPIA_TRUSTREGION_NORMAL_EQ_HPP
@@ -83,7 +83,7 @@
        *
        * @return     true
        */
-      virtual bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k)
+      virtual bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) override
       {
 
          using namespace utopia;

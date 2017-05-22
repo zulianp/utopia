@@ -342,7 +342,7 @@ add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${UTOPIA_ROOT_PATH}/bin/Dox
 #################################################################################
 #################################################################################
 
-set(UTOPIA_MODULES core core/expressions core/expressions_parallel core/eval backend solvers solvers/linear solvers/linear/homemade solvers/nonlinear solvers/multilevel solvers/domain_decomposition solvers/nonlinear/line_search solvers/nonlinear/trust_region solvers/nonlinear/constrained solvers/eig utils differentiable tests)
+set(UTOPIA_MODULES core core/expressions core/expressions_parallel core/eval backend solvers solvers/linear solvers/linear/homemade solvers/nonlinear solvers/multilevel solvers/domain_decomposition solvers/nonlinear/line_search solvers/nonlinear/trust_region solvers/nonlinear/constrained solvers/nonlinear/constrained/quadratic_programming solvers/eig utils differentiable tests)
 
 if(BLAS_FOUND OR OPEN_BLAS_FOUND)
 	list(APPEND UTOPIA_MODULES backend/blas)

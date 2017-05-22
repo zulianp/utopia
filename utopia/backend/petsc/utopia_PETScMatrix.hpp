@@ -298,7 +298,7 @@ namespace utopia {
             PetscViewerSetType(viewer, PETSCVIEWERASCII);
             PetscViewerFileSetMode(viewer, FILE_MODE_WRITE);
             PetscViewerFileSetName(viewer, path.c_str());
-            PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+            PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
             MatView(_wrapper->implementation(), viewer);
             PetscViewerDestroy(&viewer);
         }

@@ -36,7 +36,7 @@ namespace utopia
         }
 
         // We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
-        bool solve(const Matrix &A, const Vector &b, Vector &x)  
+        bool solve(const Matrix &A, const Vector &b, Vector &x)  override
         {
             if( constraints_->has_upper_bound() && constraints_->has_lower_bound())
                 box_solve(A, b, x); 

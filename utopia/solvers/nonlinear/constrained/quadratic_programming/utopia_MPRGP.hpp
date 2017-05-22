@@ -43,7 +43,7 @@ namespace utopia
            SizeType it = 0; 
            bool converged = false;
 
-           Scalar normA, alpha, alpha_cg, alpha_f, g_norm = 9999, beta2; 
+           Scalar normA, alpha_cg, alpha_f, g_norm = 9999, beta2; 
            gersgorin(A, normA); 
 
            Scalar gamma = 1.0, alpha_bar = 1.95/normA; 

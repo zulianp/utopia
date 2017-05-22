@@ -376,7 +376,7 @@ namespace utopia {
 			PetscErrorCode ierr;
 			PetscViewer fd;
 			ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,path.c_str(), &fd); //CHKERRV(ierr);
-			ierr = PetscViewerSetFormat(fd,PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
+			ierr = PetscViewerPushFormat(fd,PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
 			ierr = MatView(A, fd); //CHKERRV(ierr);
 			PetscViewerDestroy(&fd);
 			return PETScError::Check(ierr);
@@ -403,7 +403,7 @@ namespace utopia {
 			PetscErrorCode ierr;
 			PetscViewer fd;
 			ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,path.c_str(), &fd); //CHKERRV(ierr);
-			ierr = PetscViewerSetFormat(fd,PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
+			ierr = PetscViewerPushFormat(fd,PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
 			ierr = VecView(A, fd); //CHKERRV(ierr);
 			PetscViewerDestroy(&fd);
 			return PETScError::Check(ierr);
@@ -427,7 +427,7 @@ namespace utopia {
 		{
           	// log stifness
           	PetscViewerASCIIOpen(PETSC_COMM_WORLD, "log_hessian.m" ,&viewer_hessian);  
-          	PetscViewerSetFormat(viewer_hessian,PETSC_VIEWER_ASCII_MATLAB); 
+          	PetscViewerPushFormat(viewer_hessian,PETSC_VIEWER_ASCII_MATLAB); 
         }   
     	Mat A; 
     	MatDuplicate(Mat_A.implementation(), MAT_COPY_VALUES,  &A); 
@@ -448,7 +448,7 @@ namespace utopia {
 		{
           	// log iterates
           	PetscViewerASCIIOpen(PETSC_COMM_WORLD, "log_iterate.m", &viewer_iterates);  
-          	PetscViewerSetFormat(viewer_iterates,PETSC_VIEWER_ASCII_MATLAB); 
+          	PetscViewerPushFormat(viewer_iterates,PETSC_VIEWER_ASCII_MATLAB); 
         }
         Vec iterates; 	        
         VecDuplicate(Vec_A.implementation(), &iterates);
@@ -1757,7 +1757,7 @@ namespace utopia {
 
 	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Min &, const int dim, Vector &result)
 	{
-		PetscScalar x;
+		// PetscScalar x;
 		PetscInt grows, gcols;
 		MatGetSize(mat.implementation(), &grows, &gcols);
 
@@ -1778,7 +1778,7 @@ namespace utopia {
 
 	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Max &, const int dim, Vector &result)
 	{
-		PetscScalar x;
+		// PetscScalar x;
 		PetscInt grows, gcols;
 		MatGetSize(mat.implementation(), &grows, &gcols);
 

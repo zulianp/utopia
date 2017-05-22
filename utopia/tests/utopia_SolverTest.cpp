@@ -770,7 +770,11 @@ namespace utopia
 
             }
 
-            const QuadraticFunctionConstrained<DSMatrixd, DVectord> funn(rhs, A, B, upbo);
+            QuadraticFunctionConstrained<DSMatrixd, DVectord> funn(rhs, A, B, upbo);
+
+            auto box = BoxConstraints<DVectord>(make_ref(upbo), "upper"); 
+            nlsolver.set_box_constraints(make_ref(box)); 
+
             nlsolver.solve(funn, rhs);
            // std::cout << "         End: petsc_sparse_nonlinear_semismooth_newton_test" << std::endl;
 
