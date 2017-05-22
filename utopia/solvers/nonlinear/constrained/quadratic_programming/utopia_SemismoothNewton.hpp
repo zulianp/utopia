@@ -40,7 +40,7 @@ namespace utopia
 
             SizeType n = local_size(A).get(0), m = local_size(A).get(1); 
 
-            Scalar c = 1.0, x_diff_norm;
+            Scalar c = 1, x_diff_norm;
 
 
             SizeType it = 0;
@@ -50,7 +50,8 @@ namespace utopia
             Vector ub = *constraints_->upper_bound(); 
 
 
-            Vector lambda   = local_zeros(n);
+            Vector lambda_p   = local_zeros(n);
+            Vector lambda_m   = local_zeros(n);
             Vector active   = local_zeros(n);
             Vector G_inv_ub = local_zeros(n);
             Vector G_inv_lb = local_zeros(n);
@@ -78,8 +79,8 @@ namespace utopia
             
             while(!converged) 
             {
-                d_p = lambda + c * (G * x - ub);
-                d_m = lambda + c * (G * x - lb);
+                d_p = lambda_p + c * (G * x - ub);
+                d_m = lambda_m + c * (G * x - lb);
 
                 if(is_sparse<Matrix>::value) 
                 {
@@ -141,14 +142,14 @@ namespace utopia
 
                 prev_active = active;        
 
-                H = A_s + Ic * A;              
-
+                H = A_s + Ic * A;         
 
                 Vector rhs =  Ic * b + Ac_p * G_inv_ub + Ac_m * G_inv_lb; 
 
                 linear_solver_->solve(H, rhs, x); 
     
-                lambda = A_s * (b - A * x);
+                lambda_p = Ac_p * (b - A * x); 
+                lambda_m = Ac_m * (A * x - b);
 
                 x_diff_norm = norm2(x - x_old);
                 
