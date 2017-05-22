@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-15
+* @Last Modified by:   alenakopanicakova
+* @Last Modified time: 2016-11-07
 */
 
 #ifndef UTOPIA_SOLVER_TRUSTREGION_HPP
@@ -13,8 +13,6 @@
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
 #include "utopia_Parameters.hpp"    
-#include "utopia_Core.hpp"
-
 
 
  namespace utopia 
@@ -72,9 +70,6 @@
         Vector & p_N, 
         Vector & x_k)
       {
-        fun.gradient(x_k, g);
-        Scalar g_norm0 = norm2(g);
-
         this->linear_solve(H, -1 * g, p_N);
         fun.gradient(x_k + p_N, g);
         Scalar g_norm = norm2(g);
@@ -89,17 +84,6 @@
         x_k += p_N; 
         return false; 
       }
-
-
-
-
-      bool solve(Function<Matrix, Vector> &fun, Vector &x, const Vector & rhs) override
-      {
-        NonLinearSolver::solve(fun, x, rhs); 
-        return true; 
-      }
-
-
 
 
       /**
@@ -119,29 +103,25 @@
          bool converged = false; 
          NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-         Scalar delta, product, ared, pred, rho, E_k, E_k1; 
+         Scalar delta, product, ared, pred, rho, E, E_k, E_k1; 
 
          SizeType it = 0; 
          Scalar rad_flg, g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
          Vector g, p_CP = x_k, p_N = x_k, p_k = x_k, x_k1 = x_k;
          Matrix H; 
 
-
-         p_k = x_k; 
-
          fun.hessian(x_k, H); 
          fun.gradient(x_k, g);
 
           #define DEBUG_mode
-          //#define LS_check
+          //  #define LS_check
 
 
-
-
-        // TR delta initialization 
+        // TR delta initialization
+        delta = this->delta0(); 
         rad_flg = this->delta_init(x_k ,delta); 
-        //  delta = norm2(g);   // also possible
-        //  delta = 50;        // testing 
+        //delta = norm2(g);   // also possible
+        // delta = 10;        // testing 
 
         // just to start  CHECK THIS OUT 
         // if(params().verbose()) 
@@ -155,7 +135,7 @@
           if(this->verbose_)
           {
               this->init_solver("TRUST_REGION_BASE",
-                                {" it. ", "|| g ||", "r_norm", "<g, dx>", "J_k", "J_{k+1}", "ared", "pred",
+                                {" it. ", "|| g ||", "r_norm", "<g, dx>", "J_k", "J_{k+1/2}", "J_{k+1}", "ared", "pred",
                                  "rho", "delta_k", "|| p_k || "});
             PrintInfo::print_iter_status(it, {g_norm}); 
           }
@@ -182,22 +162,14 @@
         #endif
 
         it++; 
-       // fun.value(x_k, E_k); 
-
+        fun.value(x_k, E); 
         fun.gradient(x_k, g);
-
-        x_k = 0*x_k; 
 
         // solve starts here 
         while(!converged)
         {
-          // E_k = E; 
+          E_k = E; 
           fun.hessian(x_k, H); 
-          fun.value(x_k, E_k);
-
-
-
-
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------          
@@ -206,7 +178,6 @@
 
           this->linear_solve(H, g, p_k);
           this->get_pred(g, H, p_k, pred); 
-        
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
 
@@ -237,24 +208,7 @@
             rho = 1; 
           } 
 
-
-          // good reduction, accept trial point 
-          if (rho >= this->rho_tol())
-          {
-            x_k1 = x_k + p_k;
-            // E = E_k1; 
-          }
-          // otherwise, keep old point
-          else
-          {
-            x_k1 = x_k;
-            // E = E_k; 
-          }
-
-
-
-
-         // this->trial_point_acceptance(rho, E, E_k, E_k1, p_k, x_k, x_k1);
+          this->trial_point_acceptance(rho, E, E_k, E_k1, p_k, x_k, x_k1);
     //----------------------------------------------------------------------------
     //    convergence check 
     //----------------------------------------------------------------------------
@@ -266,7 +220,7 @@
 
           #ifdef DEBUG_mode
             if(this->verbose_)
-              PrintInfo::print_iter_status(it, {g_norm, r_norm, product, E_k, E_k1, ared, pred, rho, delta, s_norm}); 
+              PrintInfo::print_iter_status(it, {g_norm, r_norm, product, E, E_k, E_k1, ared, pred, rho, delta, s_norm}); 
           #else
             if(this->verbose_)
               PrintInfo::print_iter_status(it, {g_norm, r_norm, E, E_k1, rho, delta, s_norm}); 
@@ -277,7 +231,6 @@
     //      tr. radius update 
     //----------------------------------------------------------------------------
           this->delta_update(rho, p_k, delta); 
-
           it++; 
         }
           return false;

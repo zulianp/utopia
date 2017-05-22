@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-03-29
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-30
+* @Last Modified time: 2017-05-22
 */
 
 #ifndef UTOPIA_MULTIGRID_HPP
@@ -365,7 +365,7 @@ namespace utopia
                 rhss.push_back(std::move(rhs_h));
             }
 
-            coarse_solve(levels(0).A(), rhss[l], x_0);    
+            coarse_solve(levels(0).A(), rhss[l-1], x_0);    
             transfers(0).interpolate(x_0, x_0); 
 
             for(SizeType i = 1; i <l-1; i++)
@@ -376,7 +376,7 @@ namespace utopia
             }
 
             for(SizeType i = 0; i < this->v_cycle_repetition(); i++)
-                multiplicative_cycle(rhss[0], l, x_0);  
+                multiplicative_cycle(rhss[0], l, x_0);
             return true; 
         }
 

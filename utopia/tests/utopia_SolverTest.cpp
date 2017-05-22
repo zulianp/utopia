@@ -27,11 +27,11 @@ namespace utopia
 
         void run()
         {
-            // newton_cg_utopia_test();
-            // solver_from_params();
-            // TR_test();
-            // LS_test();
-            // nl_solve_test();
+            newton_cg_utopia_test();
+            solver_from_params();
+            TR_test();
+            LS_test();
+            nl_solve_test();
            
         }
 
@@ -252,6 +252,7 @@ namespace utopia
             nlsolver1.set_parameters(params);
             nlsolver2.set_parameters(params);
 
+
             nlsolver1.solve(fun2, x1);
             nlsolver2.solve(fun2, x2);
 
@@ -323,24 +324,21 @@ namespace utopia
 
         void run()
         {
-            // petsc_bicgstab_test();
-            // petsc_gmres_test();
-            // petsc_newton_test();
-            // petsc_newton_rosenbrock_test();
+            petsc_bicgstab_test();
+            petsc_gmres_test();
+            petsc_newton_test();
+            petsc_newton_rosenbrock_test();
             petsc_sparse_semismooth_newton_test();
-            // petsc_sparse_nonlinear_semismooth_newton_test();
-            // petsc_direct_solver_newton_test();
-            // petsc_newton_test_outInfo();
-            // petsc_sparse_newton_test();
-            // MG_test();
-            // CG_MG_test();
-            // PETSC_CG_MG_test();
-            // petsc_newton_PETScCG_utopia_test();
-            // petsc_tr_rr_test();
-            // petsc_newton_inexact_newton_with_KSP_test(); 
-
-
-
+            petsc_sparse_nonlinear_semismooth_newton_test();
+            petsc_direct_solver_newton_test();
+            petsc_newton_test_outInfo();
+            petsc_sparse_newton_test();
+            MG_test();
+            CG_MG_test();
+            PETSC_CG_MG_test();
+            petsc_newton_PETScCG_utopia_test();
+            petsc_tr_rr_test();
+            petsc_newton_inexact_newton_with_KSP_test(); 
         	mprgp_test(); 
 
 
@@ -818,7 +816,7 @@ namespace utopia
         {
 
             using namespace utopia;
-            std::cout << "         Begin: MG_test" << std::endl;
+          //  std::cout << "         Begin: MG_test" << std::endl;
 
             // reading data from outside
             DVectord rhs;
@@ -871,7 +869,7 @@ namespace utopia
             multigrid.v_cycle_repetition(2); 
             multigrid.solve(rhs, x_0);    
 
-           std::cout << "         End: MG_test" << std::endl;
+         //  std::cout << "         End: MG_test" << std::endl;
         }
 
 
