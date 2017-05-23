@@ -2548,10 +2548,6 @@ namespace utopia {
                 } else {
                     gap.set(offset, LARGE_VALUE);
                 }
-
-                for(int d = 1; d < dim; ++d) {
-                    gap.set(offset + d, LARGE_VALUE);
-                }
             });
         }
         
