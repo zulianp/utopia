@@ -350,9 +350,9 @@ namespace utopia {
 		assert(fabs(sum_of_weights(ir) - 0.5) < 1e-8);
 		
 		double triangle[3 * 3] = {  polygon.get_values()[0], polygon.get_values()[1],  polygon.get_values()[2],
-								 	0., 0., 0., 
-								 	0., 0., 0. 
-								 };
+			0., 0., 0., 
+			0., 0., 0. 
+		};
 		
 		libMesh::DenseVector<libMesh::Real> o, u, v, p;
 		get_row(0, polygon, o);
@@ -470,7 +470,7 @@ namespace utopia {
 		return left * right;
 	}
 
-template<class FE>
+	template<class FE>
 	void mortar_assemble_aux(
 		const FE &trial_fe, 
 		const FE &test_fe,
@@ -497,6 +497,39 @@ template<class FE>
 			}
 		}
 	}
+
+
+	libMesh::Real len(const libMesh::Real val)
+	{
+		return std::abs(val);
+	}
+
+	template<class Vec>
+	libMesh::Real len(const Vec &val)
+	{
+		return val.size();
+	}
+
+	static inline bool is_vec(const libMesh::Real val)
+	{
+		return false;
+	}
+
+	template<class Vec>
+	bool is_vec(const Vec &val)
+	{
+		return true;
+	}
+
+	void make_tp(const int i,  libMesh::Real &val) {}
+
+	template<class Vec>
+	void make_tp(const int i, Vec &val) {
+		libMesh::Real s =  val(i);
+		val.zero();
+		val(i) = s;
+	}
+
 
 	template<class FE>
 	void mortar_assemble_biorth_aux(
@@ -544,34 +577,115 @@ template<class FE>
 	}
 
 	void mortar_assemble(const libMesh::FEVectorBase &trial_fe, 
-						 const libMesh::FEVectorBase &test_fe, 
-						 libMesh::DenseMatrix<libMesh::Real> &elmat)
+		const libMesh::FEVectorBase &test_fe, 
+		libMesh::DenseMatrix<libMesh::Real> &elmat)
 	{
 		mortar_assemble_aux(trial_fe, test_fe, elmat);
 	}
 
 	void mortar_assemble_biorth(
-							const libMesh::FEBase &trial_fe, 
-							const libMesh::FEBase &test_fe,
-							const int type,
-							libMesh::DenseMatrix<libMesh::Real> &elmat)
+		const libMesh::FEBase &trial_fe, 
+		const libMesh::FEBase &test_fe,
+		const int type,
+		libMesh::DenseMatrix<libMesh::Real> &elmat)
 	{
-							
-							
+
+
 		libMesh::Real w_ii, w_ij;
 		biorthgonal_weights(type, w_ii, w_ij);
 		mortar_assemble_biorth_aux(trial_fe, test_fe, w_ii, w_ij, elmat);
 	}
 
 	void mortar_assemble_biorth(
-							const libMesh::FEVectorBase &trial_fe, 
-						 	const libMesh::FEVectorBase &test_fe, 
-						 	const int type,
-						 	libMesh::DenseMatrix<libMesh::Real> &elmat)
+		const libMesh::FEVectorBase &trial_fe, 
+		const libMesh::FEVectorBase &test_fe, 
+		const int type,
+		libMesh::DenseMatrix<libMesh::Real> &elmat)
 	{
 		libMesh::Real w_ii, w_ij;
 		biorthgonal_weights(type, w_ii, w_ij);
 		mortar_assemble_biorth_aux(trial_fe, test_fe, w_ii, w_ij, elmat);
+	}
+
+
+	template<class FE>
+	void mortar_assemble_biorth_aux(
+		const int dim,
+		const FE &trial_fe, 
+		const FE &test_fe,
+		const libMesh::Real &wii,
+		const libMesh::Real &wij,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &elmat)
+	{
+		if(elmat.m() != test_fe.get_phi().size() ||  elmat.n() != trial_fe.get_phi().size()) {
+			elmat.resize(test_fe.get_phi().size(), trial_fe.get_phi().size());
+			elmat.zero();
+		}
+
+		const auto &trial = trial_fe.get_phi();
+		const auto &test  = test_fe.get_phi();
+		const auto &JxW   = test_fe.get_JxW();
+
+		const uint n_test  = test.size();
+		const uint n_trial = trial.size();
+		const uint n_qp    = test[0].size();
+
+		bool v = is_vec(test[0][0]);
+
+		for(uint qp = 0; qp < n_qp; ++qp) {
+			for(uint i = 0; i < n_test; ++i) {
+
+				auto biorth_test = ((0 == i) ? wii : wij) * test[0][qp];
+
+				for(uint k = 1; k < n_test; ++k) {
+					biorth_test += ((k == i) ? wii : wij) * test[k][qp];
+				}
+
+				for(int k = 0; k < dim; ++k) {
+					if(i % dim == k) {
+						make_tp(k, biorth_test);
+						break;
+					}
+				}
+
+				// if(indicator(i) > 0)
+				// 	std::cout <<  biorth_test << std::endl;
+
+				for(uint j = 0; j < n_trial; ++j) {
+					elmat(i, j) +=  indicator(i) * contract(biorth_test, trial[j][qp]) * JxW[qp];
+				}
+			}
+		}
+	}
+
+
+	void mortar_assemble_biorth(
+		const int dim,
+		const libMesh::FEBase &trial_fe, 
+		const libMesh::FEBase &test_fe,
+		const int type,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &elmat)
+	{
+
+
+		libMesh::Real w_ii, w_ij;
+		biorthgonal_weights(type, w_ii, w_ij);
+		mortar_assemble_biorth_aux(dim, trial_fe, test_fe, w_ii, w_ij, indicator, elmat);
+	}
+
+	void mortar_assemble_biorth(
+		const int dim,
+		const libMesh::FEVectorBase &trial_fe, 
+		const libMesh::FEVectorBase &test_fe, 
+		const int type,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &elmat)
+	{
+		libMesh::Real w_ii, w_ij;
+		biorthgonal_weights(type, w_ii, w_ij);
+		mortar_assemble_biorth_aux(dim, trial_fe, test_fe, w_ii, w_ij, indicator, elmat);
 	}
 
 
@@ -636,7 +750,7 @@ template<class FE>
 				}
 
 				Real isect = 0;
-				 isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
+				isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
 				
 
 				// printf("g: %g (%g, %g)\n", isect, p(1), plane_offset);
@@ -692,7 +806,6 @@ template<class FE>
 		}
 
 		const auto &test   = test_fe.get_phi();
-		// const auto &grad   = test_fe.get_dphi();
 		const auto &point  = test_fe.get_xyz();
 		const auto &JxW    = test_fe.get_JxW();
 
@@ -702,9 +815,94 @@ template<class FE>
 		DenseVector<Real> p(dim);
 		DenseVector<Real> v(dim);
 
-		// double cum_gap = 0;
-		// double cum = 0;
 		for(uint qp = 0; qp < n_qp; ++qp) {
+
+			p(0) = point[qp](0);
+			p(1) = point[qp](1);
+
+			if(dim > 2) {
+				p(2) = point[qp](2);
+			}
+
+			Real isect = 0;
+			isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
+
+			v = surf_normal;
+			v *= isect;
+				// quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
+
+			for(uint i = 0; i < n_test; ++i) {
+				gap(i) += test[i][qp](0) * isect * JxW[qp];
+				
+				for(uint d = 0; d < dim; ++d) {
+					normals.get_values()[i] += test[i][qp](d) * surf_normal(d) * JxW[qp];
+				}
+			}
+		}
+	}
+
+
+	void mortar_normal_and_gap_assemble_biorth(
+		const int type,
+		const uint dim,
+		const libMesh::FEBase &test_fe, 
+		const libMesh::Point &surf_normal,
+		const libMesh::Point &plane_normal,
+		const libMesh::Real &plane_offset,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap)
+	{
+		using namespace libMesh;
+		DenseVector<Real> surf_normal_v(dim), plane_normal_v(dim);
+
+		for(uint i = 0; i < dim; ++i) {
+			surf_normal_v(i)  = surf_normal(i);
+			plane_normal_v(i) = plane_normal(i);
+		}
+
+		mortar_normal_and_gap_assemble_biorth(type, test_fe, surf_normal_v, plane_normal_v, plane_offset, indicator, normals, gap);
+	}
+
+
+	void mortar_normal_and_gap_assemble_biorth(
+		const int type,
+		const libMesh::FEBase &test_fe, 
+		const libMesh::DenseVector<libMesh::Real> &surf_normal,
+		const libMesh::DenseVector<libMesh::Real> &plane_normal,
+		const libMesh::Real &plane_offset,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap)
+	{
+		using namespace libMesh;
+
+		Intersector isector;
+
+		const uint dim = plane_normal.size();
+
+		libMesh::Real w_ii, w_ij;
+		biorthgonal_weights(type, w_ii, w_ij);
+
+		if(normals.m() != test_fe.get_phi().size() || dim != normals.n()) {
+			normals.resize(test_fe.get_phi().size(), dim);
+			normals.zero();
+			gap.resize(test_fe.get_phi().size());
+			gap.zero();
+		}
+
+		const auto &test   = test_fe.get_phi();
+			// const auto &grad   = test_fe.get_dphi();
+		const auto &point  = test_fe.get_xyz();
+		const auto &JxW    = test_fe.get_JxW();
+
+		const uint n_test  = test.size();
+		const uint n_qp    = test[0].size();
+
+		DenseVector<Real> p(dim);
+
+		for(uint i = 0; i < n_test; ++i) {
+			for(uint qp = 0; qp < n_qp; ++qp) {
 
 				p(0) = point[qp](0);
 				p(1) = point[qp](1);
@@ -715,35 +913,133 @@ template<class FE>
 
 				Real isect = 0;
 				isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
-				
 
-				// if(isect < 0) {
-				// 	printf(">>>>\n");
-				// 	printf("gap: %g\np:", isect);
-				// 	p.print(std::cout);
-				// 	printf("\n");
-				// }
-				// assert(isect > 0);
-				
-				v = surf_normal;
-				v *= isect;
-				// quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
 
-			for(uint i = 0; i < n_test; ++i) {
-				gap(i) += test[i][qp](0) * isect * JxW[qp];
-				
-				// printf("%d -> %g\n", i, test[i][qp](0) * isect * JxW[qp]);
-				// cum_gap += test[i][qp](0) * isect * JxW[qp];
-				// cum += test[i][qp](0) * JxW[qp];
+					// printf("g: %g (%g, %g)\n", isect, p(1), plane_offset);
+				assert(isect > 0);
+
+				auto biorth_test = ((0 == i) ? w_ii : w_ij) * test[0][qp];
+
+				for(uint k = 1; k < n_test; ++k) {
+					biorth_test += ((k == i) ? w_ii : w_ij) * test[k][qp];
+				}
+
+				for(int k = 0; k < dim; ++k) {
+					if(i % dim == k) {
+						make_tp(k, biorth_test);
+						break;
+					}
+				}
+
+
+				gap(i) += indicator(i) * biorth_test * isect * JxW[qp];
 
 				for(uint d = 0; d < dim; ++d) {
-					normals.get_values()[i] += test[i][qp](d) * surf_normal(d) * JxW[qp];
+					normals(i, d) += indicator(i) * biorth_test * surf_normal(d) * JxW[qp];
 				}
 			}
 		}
+	}
 
-		// printf("cum: %g\n", cum_gap/cum);
 
+
+	void mortar_normal_and_gap_assemble_biorth(
+		const int type,
+		const libMesh::FEVectorBase &test_fe, 
+		const libMesh::DenseVector<libMesh::Real> &surf_normal,
+		const libMesh::DenseVector<libMesh::Real> &plane_normal,
+		const libMesh::Real &plane_offset,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap)
+	{
+		libMesh::Real w_ii, w_ij;
+		biorthgonal_weights(type, w_ii, w_ij);
+
+		// std::cout << w_ii << " " << w_ij << std::endl;
+
+		using namespace libMesh;
+
+		Intersector isector;
+
+		const uint dim = plane_normal.size();
+
+		if(normals.m() != test_fe.get_phi().size()/dim || dim != normals.n()) {
+			normals.resize(test_fe.get_phi().size()/dim, dim);
+			normals.zero();
+			gap.resize(test_fe.get_phi().size());
+			gap.zero();
+		}
+
+		const auto &test   = test_fe.get_phi();
+		const auto &point  = test_fe.get_xyz();
+		const auto &JxW    = test_fe.get_JxW();
+
+		const uint n_test  = test.size();
+		const uint n_qp    = test[0].size();
+
+		DenseVector<Real> p(dim);
+		DenseVector<Real> v(dim);
+
+		for(uint qp = 0; qp < n_qp; ++qp) {
+
+			p(0) = point[qp](0);
+			p(1) = point[qp](1);
+
+			if(dim > 2) {
+				p(2) = point[qp](2);
+			}
+
+			Real isect = 0;
+			isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
+
+			v = surf_normal;
+			v *= isect;
+				// quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
+
+			for(uint i = 0; i < n_test; ++i) {
+				auto biorth_test = ((0 == i) ? w_ii : w_ij) * test[0][qp];
+
+				for(uint k = 1; k < n_test; ++k) {
+					biorth_test += ((k == i) ? w_ii : w_ij) * test[k][qp];
+				}
+
+				for(int k = 0; k < dim; ++k) {
+					if(i % dim == k) {
+						make_tp(k, biorth_test);
+						break;
+					}
+				}
+
+				gap(i) +=  indicator(i) * biorth_test(0) * isect * JxW[qp];
+
+				for(uint d = 0; d < dim; ++d) {
+					normals.get_values()[i] +=  indicator(i) * biorth_test(d) * surf_normal(d) * JxW[qp];
+				}
+			}
+		}
+	}
+	
+	void mortar_normal_and_gap_assemble_biorth(
+		const int type,
+		const uint dim,
+		const libMesh::FEVectorBase &test_fe, 
+		const libMesh::Point &surf_normal,
+		const libMesh::Point &plane_normal,
+		const libMesh::Real &plane_offset,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap)
+	{
+		using namespace libMesh;
+		DenseVector<Real> surf_normal_v(dim), plane_normal_v(dim);
+
+		for(uint i = 0; i < dim; ++i) {
+			surf_normal_v(i)  = surf_normal(i);
+			plane_normal_v(i) = plane_normal(i);
+		}
+
+		mortar_normal_and_gap_assemble_biorth(type, test_fe, surf_normal_v, plane_normal_v, plane_offset, indicator, normals, gap);
 	}
 
 	bool intersect_2D(const libMesh::DenseMatrix<libMesh::Real> &poly1, const libMesh::DenseMatrix<libMesh::Real> &poly2, libMesh::DenseMatrix<libMesh::Real> &intersection)
@@ -754,7 +1050,7 @@ template<class FE>
 
 		assert( isector.polygon_area_2(poly1.m(),  &poly1.get_values()[0]) > 0 );
 		assert( isector.polygon_area_2(poly2.m(),  &poly2.get_values()[0]) > 0 );
-       // std::cout<<"ASSERT----------NO"<<std::endl;
+
 		if(!isector.intersect_convex_polygons(
 			poly1.m(), 
 			&poly1.get_values()[0], 
@@ -764,614 +1060,614 @@ template<class FE>
 			result_buffer, 
 			DEFAULT_TOLLERANCE)) {
 			return false;
-		} 
+	} 
 
-		assert( isector.polygon_area_2(n_vertices_result,  result_buffer) > 0 );
+	assert( isector.polygon_area_2(n_vertices_result,  result_buffer) > 0 );
 
-		intersection.resize(n_vertices_result, 2);
-		std::copy(result_buffer, result_buffer + n_vertices_result * 2, &intersection.get_values()[0]);
+	intersection.resize(n_vertices_result, 2);
+	std::copy(result_buffer, result_buffer + n_vertices_result * 2, &intersection.get_values()[0]);
 
-		// plot_polygon(2, n_vertices_result, &intersection.get_values()[0], "isect/poly");
-		return true;
+			// plot_polygon(2, n_vertices_result, &intersection.get_values()[0], "isect/poly");
+	return true;
+}
+
+void make_polygon_from_quad4(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+{
+	polygon.resize(e.n_nodes(), 2);
+
+	for(int i = 0; i < e.n_nodes(); ++i) {
+		for(int j = 0; j < 2; ++j) {
+			polygon(i, j) = e.point(i)(j);
+		}
 	}
+}
 
-    void make_polygon_from_quad4(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
-    {
-        polygon.resize(e.n_nodes(), 2);
-        
-        for(int i = 0; i < e.n_nodes(); ++i) {
-            for(int j = 0; j < 2; ++j) {
-                polygon(i, j) = e.point(i)(j);
-            }
-        }
-    }
-    
-    
-    void make_polygon_from_quad8(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
-    {
-        polygon.resize(e.n_nodes()/2, 2);
-        
-        for(int i = 0; i < e.n_nodes()/2; ++i) {
-            for(int j = 0; j < 2; ++j) {
-                polygon(i, j) = e.point(i)(j);
+
+void make_polygon_from_quad8(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+{
+	polygon.resize(e.n_nodes()/2, 2);
+
+	for(int i = 0; i < e.n_nodes()/2; ++i) {
+		for(int j = 0; j < 2; ++j) {
+			polygon(i, j) = e.point(i)(j);
                 // std::cout<<" polygon("<<i<<","<<j<<") = "<< polygon(i, j) <<std::endl;
-            }
-        }
-    }
-    
-    void make_polygon_from_tri3(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
-    {
-        polygon.resize(e.n_nodes(), 2);
-        
-        for(int i = 0; i < e.n_nodes(); ++i) {
-            for(int j = 0; j < 2; ++j) {
-                polygon(i, j) = e.point(i)(j);
-            }
-        }
-    }
+		}
+	}
+}
+
+void make_polygon_from_tri3(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+{
+	polygon.resize(e.n_nodes(), 2);
+
+	for(int i = 0; i < e.n_nodes(); ++i) {
+		for(int j = 0; j < 2; ++j) {
+			polygon(i, j) = e.point(i)(j);
+		}
+	}
+}
 
     template<int N>
-    void discretize_segmented_curve(const double x[N], const double y[N], 
-    							    const int order,
-    								const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
-    {
-    	using namespace libMesh;
+void discretize_segmented_curve(const double x[N], const double y[N], 
+	const int order,
+	const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+{
+	using namespace libMesh;
 
-    	static const int Dim = 2;
-    	
-    	auto f = [&e](const double * x, double *fx) -> void {
-    		Point p;
+	static const int Dim = 2;
 
-    		for(int d = 0; d < Dim; ++d) {
-    			p(d) = x[d];
-    		}
+	auto f = [&e](const double * x, double *fx) -> void {
+		Point p;
 
-    		Point fp = FE<Dim, libMesh::LAGRANGE>::map(&e, p);
+		for(int d = 0; d < Dim; ++d) {
+			p(d) = x[d];
+		}
 
-    		for(int d = 0; d < Dim; ++d) {
-    			fx[d] = fp(d);	
-    		}
-    	};
+		Point fp = FE<Dim, libMesh::LAGRANGE>::map(&e, p);
 
-    	std::vector<double> all;
-    	std::vector<double> params_points, polyline;
-    	
-    	for(int i = 0; i < N; ++i) {
-    		const int ip1 = (i+1) % N;
-    		const double from[Dim] = { x[i],   y[i] };
-    		const double to  [Dim] = { x[ip1], y[ip1]};
+		for(int d = 0; d < Dim; ++d) {
+			fx[d] = fp(d);	
+		}
+	};
 
-    		discretize_curve<Dim>(f, from, to, order, params_points, polyline, 1e-6);
-    		all.insert(all.end(), polyline.begin(), polyline.end()-2);
-    	}
+	std::vector<double> all;
+	std::vector<double> params_points, polyline;
 
-    	polygon.resize(all.size()/Dim, Dim);
+	for(int i = 0; i < N; ++i) {
+		const int ip1 = (i+1) % N;
+		const double from[Dim] = { x[i],   y[i] };
+		const double to  [Dim] = { x[ip1], y[ip1]};
 
-    	for(int i = 0; i < all.size(); i+= Dim) {
-    		polygon(i/Dim, 0) = all[i];
-    		polygon(i/Dim, 1) = all[i + 1];
-    	}
-    }
+		discretize_curve<Dim>(f, from, to, order, params_points, polyline, 1e-6);
+		all.insert(all.end(), polyline.begin(), polyline.end()-2);
+	}
 
-    void make_polygon_from_curved_tri6(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
-    {
-    	const double x[6] = { 0, 0.5, 1, 0.5, 0, 0.0 };
-    	const double y[6] = { 0, 0.0, 0, 0.5, 1, 0.5 };
-    	discretize_segmented_curve<6>(x, y, 2, e, polygon);
-    }
+	polygon.resize(all.size()/Dim, Dim);
 
-    void make_polygon_from_curved_quad8(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
-    {
-    	using namespace libMesh;
-    	const double x[8] = { -1,  0,  1, 1, 1, 0, -1, -1 };
-    	const double y[8] = { -1, -1, -1, 0, 1, 1,  1,  0 };
-    	discretize_segmented_curve<8>(x, y, 2, e, polygon);
-    }
-    
-    void make_polygon_from_tri6(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
-    {
-        polygon.resize(e.n_nodes()/2, 2);
-        for(int i = 0; i < e.n_nodes()/2; ++i) {
-            for(int j = 0; j < 2; ++j) {
-                polygon(i, j) = e.point(i)(j);
+	for(int i = 0; i < all.size(); i+= Dim) {
+		polygon(i/Dim, 0) = all[i];
+		polygon(i/Dim, 1) = all[i + 1];
+	}
+}
+
+void make_polygon_from_curved_tri6(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+{
+	const double x[6] = { 0, 0.5, 1, 0.5, 0, 0.0 };
+	const double y[6] = { 0, 0.0, 0, 0.5, 1, 0.5 };
+	discretize_segmented_curve<6>(x, y, 2, e, polygon);
+}
+
+void make_polygon_from_curved_quad8(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+{
+	using namespace libMesh;
+	const double x[8] = { -1,  0,  1, 1, 1, 0, -1, -1 };
+	const double y[8] = { -1, -1, -1, 0, 1, 1,  1,  0 };
+	discretize_segmented_curve<8>(x, y, 2, e, polygon);
+}
+
+void make_polygon_from_tri6(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+{
+	polygon.resize(e.n_nodes()/2, 2);
+	for(int i = 0; i < e.n_nodes()/2; ++i) {
+		for(int j = 0; j < 2; ++j) {
+			polygon(i, j) = e.point(i)(j);
                 // std::cout<<" polygon("<<i<<","<<j<<") = "<< polygon(i, j) <<std::endl;
-                
-            }
-        }
-    }
-    
-    void make_polygon(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
-    {
+
+		}
+	}
+}
+
+void make_polygon(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+{
         //FIXME use libMesh enum types
-        switch(e.n_nodes()){
-        	case 2: 
-        	{
+	switch(e.n_nodes()){
+		case 2: 
+		{
         		//works for lines too
-        		make_polygon_from_tri3(e, polygon);
-        		break;
-        	}
-            case 3:
-            {
-                make_polygon_from_tri3(e, polygon);
-                break;
-            }
-                
-            case 4:
-            {
-                make_polygon_from_quad4(e,polygon);
-                break;
-            }
-                
-            case 6:
-            {
-            	if(e.has_affine_map()) {
-            		make_polygon_from_tri6(e,polygon);
-            	} else {
-                	make_polygon_from_curved_tri6(e, polygon);
-            	}
-                break;
-            }
-                
-            case 8:
-            {
-            	if(e.has_affine_map()) {
-                	make_polygon_from_quad8(e, polygon);
-            	} else {
-            		make_polygon_from_curved_quad8(e, polygon);
-            	}
-                break;
-            }
-                
-            default:
-            {
-                assert(false);
-                break;
-            }
-        }
-    }
+			make_polygon_from_tri3(e, polygon);
+			break;
+		}
+		case 3:
+		{
+			make_polygon_from_tri3(e, polygon);
+			break;
+		}
 
-	void make_polygon_3(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
-	{
-		polygon.resize(e.n_nodes(), 3);
+		case 4:
+		{
+			make_polygon_from_quad4(e,polygon);
+			break;
+		}
 
-		for(int i = 0; i < e.n_nodes(); ++i) {
-			for(int j = 0; j < 3; ++j) {
-				polygon(i, j) = e.point(i)(j);
+		case 6:
+		{
+			if(e.has_affine_map()) {
+				make_polygon_from_tri6(e,polygon);
+			} else {
+				make_polygon_from_curved_tri6(e, polygon);
 			}
+			break;
+		}
+
+		case 8:
+		{
+			if(e.has_affine_map()) {
+				make_polygon_from_quad8(e, polygon);
+			} else {
+				make_polygon_from_curved_quad8(e, polygon);
+			}
+			break;
+		}
+
+		default:
+		{
+			assert(false);
+			break;
+		}
+	}
+}
+
+void make_polygon_3(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+{
+	polygon.resize(e.n_nodes(), 3);
+
+	for(int i = 0; i < e.n_nodes(); ++i) {
+		for(int j = 0; j < 3; ++j) {
+			polygon(i, j) = e.point(i)(j);
+		}
+	}
+}
+
+void make_polyhedron_from_tet4(const libMesh::Elem &e, Polyhedron &polyhedron)
+{
+	const int dim = 3;
+	assert(e.dim() == 3);
+	assert(e.n_nodes() == 4);
+
+	polyhedron.n_elements = 4;
+	polyhedron.n_nodes 	  = 4;
+	polyhedron.n_dims	  = 3;
+
+
+	for(int i = 0; i < e.n_nodes(); ++i) {
+		const int offset = i * dim;
+
+		for(int j = 0; j < dim; ++j) {
+			polyhedron.points[offset + j] = e.point(i)(j);
 		}
 	}
 
-	void make_polyhedron_from_tet4(const libMesh::Elem &e, Polyhedron &polyhedron)
-	{
-		const int dim = 3;
-		assert(e.dim() == 3);
-		assert(e.n_nodes() == 4);
-
-		polyhedron.n_elements = 4;
-		polyhedron.n_nodes 	  = 4;
-		polyhedron.n_dims	  = 3;
-
-
-		for(int i = 0; i < e.n_nodes(); ++i) {
-			const int offset = i * dim;
-
-			for(int j = 0; j < dim; ++j) {
-				polyhedron.points[offset + j] = e.point(i)(j);
-			}
-		}
-
-		polyhedron.el_ptr[0] = 0;
-		polyhedron.el_ptr[1] = 3;
-		polyhedron.el_ptr[2] = 6;
-		polyhedron.el_ptr[3] = 9;
-		polyhedron.el_ptr[4] = 12;
+	polyhedron.el_ptr[0] = 0;
+	polyhedron.el_ptr[1] = 3;
+	polyhedron.el_ptr[2] = 6;
+	polyhedron.el_ptr[3] = 9;
+	polyhedron.el_ptr[4] = 12;
 
 	//face 0
-		polyhedron.el_index[0] = 0;
-		polyhedron.el_index[1] = 1;
-		polyhedron.el_index[2] = 3;
+	polyhedron.el_index[0] = 0;
+	polyhedron.el_index[1] = 1;
+	polyhedron.el_index[2] = 3;
 
 	//face 1
-		polyhedron.el_index[3] = 1;
-		polyhedron.el_index[4] = 2;
-		polyhedron.el_index[5] = 3;
+	polyhedron.el_index[3] = 1;
+	polyhedron.el_index[4] = 2;
+	polyhedron.el_index[5] = 3;
 
 	//face 2
-		polyhedron.el_index[6] = 0;
-		polyhedron.el_index[7] = 3;
-		polyhedron.el_index[8] = 2;
+	polyhedron.el_index[6] = 0;
+	polyhedron.el_index[7] = 3;
+	polyhedron.el_index[8] = 2;
 
 	//face 3
-		polyhedron.el_index[9]  = 1;
-		polyhedron.el_index[10] = 2;
-		polyhedron.el_index[11] = 0;
+	polyhedron.el_index[9]  = 1;
+	polyhedron.el_index[10] = 2;
+	polyhedron.el_index[11] = 0;
+}
+
+
+
+
+
+void make_polyhedron_from_tet10(const libMesh::Elem &e, Polyhedron &polyhedron)
+{
+
+	const int dim = 3;
+	assert(e.dim() == 3);
+	assert(e.n_nodes() == 10);
+
+	polyhedron.n_elements = 4;
+	polyhedron.n_nodes 	  = 4;
+	polyhedron.n_dims	  = 3;
+
+
+	for(int i = 0; i < (e.n_nodes()/2-1); ++i) {
+		const int offset = i * dim;
+
+		for(int j = 0; j < dim; ++j) {
+			polyhedron.points[offset + j] = e.point(i)(j);
+
+		}
 	}
 
-    
-    
-    
-    
-    void make_polyhedron_from_tet10(const libMesh::Elem &e, Polyhedron &polyhedron)
-    {
-        
-        const int dim = 3;
-        assert(e.dim() == 3);
-        assert(e.n_nodes() == 10);
-        
-        polyhedron.n_elements = 4;
-        polyhedron.n_nodes 	  = 4;
-        polyhedron.n_dims	  = 3;
-        
-        
-        for(int i = 0; i < (e.n_nodes()/2-1); ++i) {
-            const int offset = i * dim;
-            
-            for(int j = 0; j < dim; ++j) {
-                polyhedron.points[offset + j] = e.point(i)(j);
-                
-            }
-        }
-    
-        polyhedron.el_ptr[0] = 0;
-        polyhedron.el_ptr[1] = 3;
-        polyhedron.el_ptr[2] = 6;
-        polyhedron.el_ptr[3] = 9;
-        polyhedron.el_ptr[4] = 12;
-        
+	polyhedron.el_ptr[0] = 0;
+	polyhedron.el_ptr[1] = 3;
+	polyhedron.el_ptr[2] = 6;
+	polyhedron.el_ptr[3] = 9;
+	polyhedron.el_ptr[4] = 12;
+
         //face 0
-        polyhedron.el_index[0] = 0;
-        polyhedron.el_index[1] = 1;
-        polyhedron.el_index[2] = 3;
-        
+	polyhedron.el_index[0] = 0;
+	polyhedron.el_index[1] = 1;
+	polyhedron.el_index[2] = 3;
+
         //face 1
-        polyhedron.el_index[3] = 1;
-        polyhedron.el_index[4] = 2;
-        polyhedron.el_index[5] = 3;
-        
+	polyhedron.el_index[3] = 1;
+	polyhedron.el_index[4] = 2;
+	polyhedron.el_index[5] = 3;
+
         //face 2
-        polyhedron.el_index[6] = 0;
-        polyhedron.el_index[7] = 3;
-        polyhedron.el_index[8] = 2;
-        
+	polyhedron.el_index[6] = 0;
+	polyhedron.el_index[7] = 3;
+	polyhedron.el_index[8] = 2;
+
         //face 3
-        polyhedron.el_index[9]  = 1;
-        polyhedron.el_index[10] = 2;
-        polyhedron.el_index[11] = 0;
-        
-        
-    }
-    
+	polyhedron.el_index[9]  = 1;
+	polyhedron.el_index[10] = 2;
+	polyhedron.el_index[11] = 0;
+
+
+}
+
 
 //FIXME between -1, 1 ?
-	void make_polyhedron_from_hex8(const libMesh::Elem &e, Polyhedron &polyhedron)
-	{
-		const int dim = 3;
-		assert(e.dim() == 3);
-		assert(e.n_nodes() == 8);
+void make_polyhedron_from_hex8(const libMesh::Elem &e, Polyhedron &polyhedron)
+{
+	const int dim = 3;
+	assert(e.dim() == 3);
+	assert(e.n_nodes() == 8);
 
-		polyhedron.n_elements = 6;
-		polyhedron.n_nodes 	  = 8;
-		polyhedron.n_dims	  = 3;
+	polyhedron.n_elements = 6;
+	polyhedron.n_nodes 	  = 8;
+	polyhedron.n_dims	  = 3;
 
 
-		for(int i = 0; i < e.n_nodes(); ++i) {
-			const int offset = i * dim;
+	for(int i = 0; i < e.n_nodes(); ++i) {
+		const int offset = i * dim;
 
-			for(int j = 0; j < dim; ++j) {
-				polyhedron.points[offset + j] = e.point(i)(j);
-			}
+		for(int j = 0; j < dim; ++j) {
+			polyhedron.points[offset + j] = e.point(i)(j);
 		}
+	}
 
-		polyhedron.el_ptr[0] = 0;
-		polyhedron.el_ptr[1] = 4;
-		polyhedron.el_ptr[2] = 8;
-		polyhedron.el_ptr[3] = 12;
-		polyhedron.el_ptr[4] = 16;
-		polyhedron.el_ptr[5] = 20;
-		polyhedron.el_ptr[6] = 24;
+	polyhedron.el_ptr[0] = 0;
+	polyhedron.el_ptr[1] = 4;
+	polyhedron.el_ptr[2] = 8;
+	polyhedron.el_ptr[3] = 12;
+	polyhedron.el_ptr[4] = 16;
+	polyhedron.el_ptr[5] = 20;
+	polyhedron.el_ptr[6] = 24;
 
 	//face 0
-		polyhedron.el_index[0] = 0;
-		polyhedron.el_index[1] = 1;
-		polyhedron.el_index[2] = 5;
-		polyhedron.el_index[3] = 4;
+	polyhedron.el_index[0] = 0;
+	polyhedron.el_index[1] = 1;
+	polyhedron.el_index[2] = 5;
+	polyhedron.el_index[3] = 4;
 
 	//face 1
-		polyhedron.el_index[4] = 1;
-		polyhedron.el_index[5] = 2;
-		polyhedron.el_index[6] = 6;
-		polyhedron.el_index[7] = 5;
+	polyhedron.el_index[4] = 1;
+	polyhedron.el_index[5] = 2;
+	polyhedron.el_index[6] = 6;
+	polyhedron.el_index[7] = 5;
 
 	//face 2
-		polyhedron.el_index[8]  = 3;
-		polyhedron.el_index[9]  = 7;
-		polyhedron.el_index[10] = 6;
-		polyhedron.el_index[11] = 2;
+	polyhedron.el_index[8]  = 3;
+	polyhedron.el_index[9]  = 7;
+	polyhedron.el_index[10] = 6;
+	polyhedron.el_index[11] = 2;
 
 	//face 3
-		polyhedron.el_index[12] = 0;
-		polyhedron.el_index[13] = 4;
-		polyhedron.el_index[14] = 7;
-		polyhedron.el_index[15] = 3;
+	polyhedron.el_index[12] = 0;
+	polyhedron.el_index[13] = 4;
+	polyhedron.el_index[14] = 7;
+	polyhedron.el_index[15] = 3;
 
 	//face 4
-		polyhedron.el_index[16] = 2;
-		polyhedron.el_index[17] = 1;
-		polyhedron.el_index[18] = 0;
-		polyhedron.el_index[19] = 3;
+	polyhedron.el_index[16] = 2;
+	polyhedron.el_index[17] = 1;
+	polyhedron.el_index[18] = 0;
+	polyhedron.el_index[19] = 3;
 
 	//face 5
-		polyhedron.el_index[20] = 6;
-		polyhedron.el_index[21] = 7;
-		polyhedron.el_index[22] = 4;
-		polyhedron.el_index[23] = 5;
-	}
-    
-    
+	polyhedron.el_index[20] = 6;
+	polyhedron.el_index[21] = 7;
+	polyhedron.el_index[22] = 4;
+	polyhedron.el_index[23] = 5;
+}
+
+
     //FIXME between -1, 1 ?
-    void make_polyhedron_from_hex27(const libMesh::Elem &e, Polyhedron &polyhedron)
-    {
-        const int dim = 3;
-        assert(e.dim() == 3);
-        assert(e.n_nodes() == 27);
-        
-        polyhedron.n_elements = 6;
-        polyhedron.n_nodes 	  = 8;
-        polyhedron.n_dims	  = 3;
-        
-        
-        for(int i = 0; i < e.n_nodes()/3; ++i) {
-            const int offset = i * dim;
-            
-            for(int j = 0; j < dim; ++j) {
-                polyhedron.points[offset + j] = e.point(i)(j);
-            }
-        }
-        
-        polyhedron.el_ptr[0] = 0;
-        polyhedron.el_ptr[1] = 4;
-        polyhedron.el_ptr[2] = 8;
-        polyhedron.el_ptr[3] = 12;
-        polyhedron.el_ptr[4] = 16;
-        polyhedron.el_ptr[5] = 20;
-        polyhedron.el_ptr[6] = 24;
-        
-        //face 0
-        polyhedron.el_index[0] = 0;
-        polyhedron.el_index[1] = 1;
-        polyhedron.el_index[2] = 5;
-        polyhedron.el_index[3] = 4;
-        
-        //face 1
-        polyhedron.el_index[4] = 1;
-        polyhedron.el_index[5] = 2;
-        polyhedron.el_index[6] = 6;
-        polyhedron.el_index[7] = 5;
-        
-        //face 2
-        polyhedron.el_index[8]  = 3;
-        polyhedron.el_index[9]  = 7;
-        polyhedron.el_index[10] = 6;
-        polyhedron.el_index[11] = 2;
-        
-        //face 3
-        polyhedron.el_index[12] = 0;
-        polyhedron.el_index[13] = 4;
-        polyhedron.el_index[14] = 7;
-        polyhedron.el_index[15] = 3;
-        
-        //face 4
-        polyhedron.el_index[16] = 2;
-        polyhedron.el_index[17] = 1;
-        polyhedron.el_index[18] = 0;
-        polyhedron.el_index[19] = 3;
-        
-        //face 5
-        polyhedron.el_index[20] = 6;
-        polyhedron.el_index[21] = 7;
-        polyhedron.el_index[22] = 4;
-        polyhedron.el_index[23] = 5;
-    }
+void make_polyhedron_from_hex27(const libMesh::Elem &e, Polyhedron &polyhedron)
+{
+	const int dim = 3;
+	assert(e.dim() == 3);
+	assert(e.n_nodes() == 27);
 
-	void make_polyhedron(const libMesh::Elem &e, Polyhedron &polyhedron)
-	{
-	//FIXME use libMesh enum types
-		switch(e.n_nodes()) {
-			case 4:
-			{
-				make_polyhedron_from_tet4(e, polyhedron);
-				break;
-			}
+	polyhedron.n_elements = 6;
+	polyhedron.n_nodes 	  = 8;
+	polyhedron.n_dims	  = 3;
 
-			case 8:
-			{
-				make_polyhedron_from_hex8(e, polyhedron);
-				break;
-			}
-                
-            case 10:
-            {
-                make_polyhedron_from_tet10(e, polyhedron);
-                break;
-            }
-                
-            case 27:
-            {
-                make_polyhedron_from_hex27(e, polyhedron);
-                break;
-            }
 
-			default:
-			{
-				assert(false);
-				break;
-			}	
+	for(int i = 0; i < e.n_nodes()/3; ++i) {
+		const int offset = i * dim;
+
+		for(int j = 0; j < dim; ++j) {
+			polyhedron.points[offset + j] = e.point(i)(j);
 		}
 	}
 
-	bool intersect_3D(const libMesh::Elem &el1, const libMesh::Elem &el2, Polyhedron &intersection)
-	{
-		Intersector isector;
-		Polyhedron p1, p2;
-		make_polyhedron(el1, p1);
-		make_polyhedron(el2, p2);
-		return isector.intersect_convex_polyhedra(p1, p2, &intersection);
+	polyhedron.el_ptr[0] = 0;
+	polyhedron.el_ptr[1] = 4;
+	polyhedron.el_ptr[2] = 8;
+	polyhedron.el_ptr[3] = 12;
+	polyhedron.el_ptr[4] = 16;
+	polyhedron.el_ptr[5] = 20;
+	polyhedron.el_ptr[6] = 24;
+
+        //face 0
+	polyhedron.el_index[0] = 0;
+	polyhedron.el_index[1] = 1;
+	polyhedron.el_index[2] = 5;
+	polyhedron.el_index[3] = 4;
+
+        //face 1
+	polyhedron.el_index[4] = 1;
+	polyhedron.el_index[5] = 2;
+	polyhedron.el_index[6] = 6;
+	polyhedron.el_index[7] = 5;
+
+        //face 2
+	polyhedron.el_index[8]  = 3;
+	polyhedron.el_index[9]  = 7;
+	polyhedron.el_index[10] = 6;
+	polyhedron.el_index[11] = 2;
+
+        //face 3
+	polyhedron.el_index[12] = 0;
+	polyhedron.el_index[13] = 4;
+	polyhedron.el_index[14] = 7;
+	polyhedron.el_index[15] = 3;
+
+        //face 4
+	polyhedron.el_index[16] = 2;
+	polyhedron.el_index[17] = 1;
+	polyhedron.el_index[18] = 0;
+	polyhedron.el_index[19] = 3;
+
+        //face 5
+	polyhedron.el_index[20] = 6;
+	polyhedron.el_index[21] = 7;
+	polyhedron.el_index[22] = 4;
+	polyhedron.el_index[23] = 5;
+}
+
+void make_polyhedron(const libMesh::Elem &e, Polyhedron &polyhedron)
+{
+	//FIXME use libMesh enum types
+	switch(e.n_nodes()) {
+		case 4:
+		{
+			make_polyhedron_from_tet4(e, polyhedron);
+			break;
+		}
+
+		case 8:
+		{
+			make_polyhedron_from_hex8(e, polyhedron);
+			break;
+		}
+
+		case 10:
+		{
+			make_polyhedron_from_tet10(e, polyhedron);
+			break;
+		}
+
+		case 27:
+		{
+			make_polyhedron_from_hex27(e, polyhedron);
+			break;
+		}
+
+		default:
+		{
+			assert(false);
+			break;
+		}	
 	}
+}
 
-	bool intersect_3D(const Polyhedron &poly1, const Polyhedron &poly2, Polyhedron &intersection)
-	{
-		Intersector isector;
-		return isector.intersect_convex_polyhedra(poly1, poly2, &intersection);
-	}
+bool intersect_3D(const libMesh::Elem &el1, const libMesh::Elem &el2, Polyhedron &intersection)
+{
+	Intersector isector;
+	Polyhedron p1, p2;
+	make_polyhedron(el1, p1);
+	make_polyhedron(el2, p2);
+	return isector.intersect_convex_polyhedra(p1, p2, &intersection);
+}
 
-	bool project_2D(const libMesh::DenseMatrix<libMesh::Real> &poly1, 
-		const libMesh::DenseMatrix<libMesh::Real> &poly2, 
-		libMesh::DenseMatrix<libMesh::Real> &projection_1,
-		libMesh::DenseMatrix<libMesh::Real> &projection_2)
-	{
-		using std::max;
-		using std::min;
+bool intersect_3D(const Polyhedron &poly1, const Polyhedron &poly2, Polyhedron &intersection)
+{
+	Intersector isector;
+	return isector.intersect_convex_polyhedra(poly1, poly2, &intersection);
+}
 
-		typedef Intersector::Scalar Scalar;
+bool project_2D(const libMesh::DenseMatrix<libMesh::Real> &poly1, 
+	const libMesh::DenseMatrix<libMesh::Real> &poly2, 
+	libMesh::DenseMatrix<libMesh::Real> &projection_1,
+	libMesh::DenseMatrix<libMesh::Real> &projection_2)
+{
+	using std::max;
+	using std::min;
 
-		Intersector isector;
+	typedef Intersector::Scalar Scalar;
 
-		Scalar A   [2 * 2], b   [2];
-		Scalar Ainv[2 * 2], binv[2];
+	Intersector isector;
 
-		Scalar normal_master[2];
-		Scalar normal_slave [2];
+	Scalar A   [2 * 2], b   [2];
+	Scalar Ainv[2 * 2], binv[2];
 
-		Intersector::SurfaceMortarWorkspace w;
+	Scalar normal_master[2];
+	Scalar normal_slave [2];
 
-		const uint n_points_master = poly1.m();
+	Intersector::SurfaceMortarWorkspace w;
+
+	const uint n_points_master = poly1.m();
 
 		//////////////////////////////////////////////////////////////////////////////////////////
 		//computing geometric surface projection
 
 		//moving from global space to reference space
-		isector.line_make_affine_transform_2(&poly2.get_values()[0], A, b);
-		isector.make_inverse_affine_transform_2(A, b, Ainv, binv);
+	isector.line_make_affine_transform_2(&poly2.get_values()[0], A, b);
+	isector.make_inverse_affine_transform_2(A, b, Ainv, binv);
 
-		isector.apply_affine_transform_2(Ainv, binv, n_points_master, &poly1.get_values()[0], w.ref_points_master);
+	isector.apply_affine_transform_2(Ainv, binv, n_points_master, &poly1.get_values()[0], w.ref_points_master);
 
-		Scalar x_min, y_min;
-		Scalar x_max, y_max;
+	Scalar x_min, y_min;
+	Scalar x_max, y_max;
 
-		if(w.ref_points_master[0] < w.ref_points_master[2]) {
-			x_min = w.ref_points_master[0];
-			y_min = w.ref_points_master[1];
+	if(w.ref_points_master[0] < w.ref_points_master[2]) {
+		x_min = w.ref_points_master[0];
+		y_min = w.ref_points_master[1];
 
-			x_max = w.ref_points_master[2];
-			y_max = w.ref_points_master[3];
-		} else {
-			x_min = w.ref_points_master[2];
-			y_min = w.ref_points_master[3];
+		x_max = w.ref_points_master[2];
+		y_max = w.ref_points_master[3];
+	} else {
+		x_min = w.ref_points_master[2];
+		y_min = w.ref_points_master[3];
 
-			x_max = w.ref_points_master[0];
-			y_max = w.ref_points_master[1];
-		}
+		x_max = w.ref_points_master[0];
+		y_max = w.ref_points_master[1];
+	}
 
 		//check if there is any intersection
-		if(x_max <= 0) {
-			return false;
-		}
+	if(x_max <= 0) {
+		return false;
+	}
 
-		if(x_min >= 1) {
-			return false;
-		}
+	if(x_min >= 1) {
+		return false;
+	}
 
-		const Scalar x_min_isect = max(x_min, (Scalar)0);
-		const Scalar x_max_isect = min(x_max, (Scalar)1);
+	const Scalar x_min_isect = max(x_min, (Scalar)0);
+	const Scalar x_max_isect = min(x_max, (Scalar)1);
 
-		const Scalar dx = (x_max - x_min);
-		const Scalar dy = (y_max - y_min);
+	const Scalar dx = (x_max - x_min);
+	const Scalar dy = (y_max - y_min);
 
-		const Scalar y_min_isect = (x_min_isect - x_min) / dx * dy + y_min;
-		const Scalar y_max_isect = (x_max_isect - x_min) / dx * dy + y_min;
+	const Scalar y_min_isect = (x_min_isect - x_min) / dx * dy + y_min;
+	const Scalar y_max_isect = (x_max_isect - x_min) / dx * dy + y_min;
 
 		//store intersection lines
-		w.isect_master[0] = x_min_isect;
-		w.isect_master[1] = y_min_isect; 	 
-		w.isect_master[2] = x_max_isect;
-		w.isect_master[3] = y_max_isect; 
+	w.isect_master[0] = x_min_isect;
+	w.isect_master[1] = y_min_isect; 	 
+	w.isect_master[2] = x_max_isect;
+	w.isect_master[3] = y_max_isect; 
 
-		w.isect_slave[0] = x_min_isect;
-		w.isect_slave[1] = 0;
-		w.isect_slave[2] = x_max_isect;
-		w.isect_slave[3] = 0;
+	w.isect_slave[0] = x_min_isect;
+	w.isect_slave[1] = 0;
+	w.isect_slave[2] = x_max_isect;
+	w.isect_slave[3] = 0;
 
-		const Scalar inv_area_slave = 2.0/( isector.det_2(A) );
+	const Scalar inv_area_slave = 2.0/( isector.det_2(A) );
 
 		//////////////////////////////////////////////////////////////////////////////////////////
 		//create master fe object from intersection
 
-		projection_1.resize(2, 2);
-		projection_2.resize(2, 2);
+	projection_1.resize(2, 2);
+	projection_2.resize(2, 2);
 
 		//move back to global coordinates
-		isector.apply_affine_transform_2(A, b, 2, w.isect_master, &projection_1.get_values()[0]);
+	isector.apply_affine_transform_2(A, b, 2, w.isect_master, &projection_1.get_values()[0]);
 
 		//move back to global coordinates
-		isector.apply_affine_transform_2(A, b, 2, w.isect_slave,  &projection_2.get_values()[0]);
-		return true;
-	}
+	isector.apply_affine_transform_2(A, b, 2, w.isect_slave,  &projection_2.get_values()[0]);
+	return true;
+}
 
 
-	bool project_3D(const libMesh::DenseMatrix<libMesh::Real> &polygon_1, 
-					const libMesh::DenseMatrix<libMesh::Real> &polygon_2, 
-					libMesh::DenseMatrix<libMesh::Real> &projection_1,
-					libMesh::DenseMatrix<libMesh::Real> &projection_2)
-	{
-		using namespace libMesh;
+bool project_3D(const libMesh::DenseMatrix<libMesh::Real> &polygon_1, 
+	const libMesh::DenseMatrix<libMesh::Real> &polygon_2, 
+	libMesh::DenseMatrix<libMesh::Real> &projection_1,
+	libMesh::DenseMatrix<libMesh::Real> &projection_2)
+{
+	using namespace libMesh;
 
-		typedef Intersector::Scalar Scalar;
+	typedef Intersector::Scalar Scalar;
 
-		const int dim = 3;
+	const int dim = 3;
 
-		Intersector isector;
+	Intersector isector;
 
-		Scalar A   [3 * 3], b   [3];
-		Scalar Ainv[3 * 3], binv[3];
+	Scalar A   [3 * 3], b   [3];
+	Scalar Ainv[3 * 3], binv[3];
 
-		Scalar normal_master[3];
-		Scalar normal_slave [3];
+	Scalar normal_master[3];
+	Scalar normal_slave [3];
 
-		Scalar isect_1[MAX_N_ISECT_POINTS * 3];
-		Scalar isect_2[MAX_N_ISECT_POINTS * 3];
+	Scalar isect_1[MAX_N_ISECT_POINTS * 3];
+	Scalar isect_2[MAX_N_ISECT_POINTS * 3];
 
-		libMesh::DenseMatrix<libMesh::Real> ref_polygon_1(polygon_1.m(), polygon_1.n());
-		libMesh::DenseMatrix<libMesh::Real> ref_polygon_2(polygon_2.m(), polygon_2.n());
-		libMesh::DenseMatrix<libMesh::Real> clipper_2(polygon_1.m(), 2);
+	libMesh::DenseMatrix<libMesh::Real> ref_polygon_1(polygon_1.m(), polygon_1.n());
+	libMesh::DenseMatrix<libMesh::Real> ref_polygon_2(polygon_2.m(), polygon_2.n());
+	libMesh::DenseMatrix<libMesh::Real> clipper_2(polygon_1.m(), 2);
 
-		ref_polygon_1.resize(polygon_1.m(), polygon_1.n());
-		clipper_2.resize(polygon_1.m(), dim - 1);
-		ref_polygon_2.resize(polygon_2.m(), polygon_2.n());
+	ref_polygon_1.resize(polygon_1.m(), polygon_1.n());
+	clipper_2.resize(polygon_1.m(), dim - 1);
+	ref_polygon_2.resize(polygon_2.m(), polygon_2.n());
 
-		isector.triangle_make_affine_transform_3(&polygon_2.get_values()[0], A, b);
-		isector.make_inverse_affine_transform_3(A, b, Ainv, binv);
-		
-		isector.apply_affine_transform_3(Ainv, binv,
-			polygon_1.m(),
-			&polygon_1.get_values()[0],
-			&ref_polygon_1.get_values()[0]);
+	isector.triangle_make_affine_transform_3(&polygon_2.get_values()[0], A, b);
+	isector.make_inverse_affine_transform_3(A, b, Ainv, binv);
+
+	isector.apply_affine_transform_3(Ainv, binv,
+		polygon_1.m(),
+		&polygon_1.get_values()[0],
+		&ref_polygon_1.get_values()[0]);
 
 		//FIXME could store reference instead of computing it each time
-		isector.apply_affine_transform_3(Ainv, binv, polygon_2.m(), 
-			&polygon_2.get_values()[0],
-			&ref_polygon_2.get_values()[0]);
+	isector.apply_affine_transform_3(Ainv, binv, polygon_2.m(), 
+		&polygon_2.get_values()[0],
+		&ref_polygon_2.get_values()[0]);
 
 
-		for(uint i = 0; i < polygon_1.m(); ++i) {
-			clipper_2(i, 0) = ref_polygon_2(i, 0);
-			clipper_2(i, 1) = ref_polygon_2(i, 1);
-		}
+	for(uint i = 0; i < polygon_1.m(); ++i) {
+		clipper_2(i, 0) = ref_polygon_2(i, 0);
+		clipper_2(i, 1) = ref_polygon_2(i, 1);
+	}
 
-		const int n_projection_points = isector.project_surface_poly_onto_ref_poly(
-			dim,
-			ref_polygon_1.m(), &ref_polygon_1.get_values()[0],
-			polygon_2.m(),     &clipper_2.get_values()[0], 
-			isect_1, isect_2); 
+	const int n_projection_points = isector.project_surface_poly_onto_ref_poly(
+		dim,
+		ref_polygon_1.m(), &ref_polygon_1.get_values()[0],
+		polygon_2.m(),     &clipper_2.get_values()[0], 
+		isect_1, isect_2); 
 
 
 		// plot_polygon(clipper_2.n(),     clipper_2.m(),      &clipper_2.get_values()[0], "clipper");
@@ -1379,44 +1675,44 @@ template<class FE>
 		// plot_polygon(3, n_projection_points,  isect_1, "clipper_isect");
 		// plot_polygon(3, n_projection_points,  isect_2, "clipped_isect");
 
-		if(!n_projection_points) {
-			return false;
-		}
-
-		projection_1.resize(n_projection_points, 3);
-		projection_2.resize(n_projection_points, 3);
-
-		isector.apply_affine_transform_3(A, b, n_projection_points, isect_1, &projection_1.get_values()[0]);
-		isector.apply_affine_transform_3(A, b, n_projection_points, isect_2, &projection_2.get_values()[0]);
-		return true;
+	if(!n_projection_points) {
+		return false;
 	}
 
+	projection_1.resize(n_projection_points, 3);
+	projection_2.resize(n_projection_points, 3);
 
-	bool biorthgonal_weights(const int type, libMesh::Real &w_ii, libMesh::Real &w_ij)
-	{
-		using namespace libMesh;
+	isector.apply_affine_transform_3(A, b, n_projection_points, isect_1, &projection_1.get_values()[0]);
+	isector.apply_affine_transform_3(A, b, n_projection_points, isect_2, &projection_2.get_values()[0]);
+	return true;
+}
 
-		switch(type) {
-			case EDGE2:
-			{
-				w_ii = 2.0;
-				w_ij = -1.0;
-				return true;
-			}
-			
-			case TRI3:
-			{
-				w_ii = 3.0;
-				w_ij = -1.0;
-				return true;
-			}
 
-			case TET4:
-			{
-				w_ii = 4.0;
-				w_ij = -1.0;
-				return true;
-			}
+bool biorthgonal_weights(const int type, libMesh::Real &w_ii, libMesh::Real &w_ij)
+{
+	using namespace libMesh;
+
+	switch(type) {
+		case EDGE2:
+		{
+			w_ii = 2.0;
+			w_ij = -1.0;
+			return true;
+		}
+
+		case TRI3:
+		{
+			w_ii = 3.0;
+			w_ij = -1.0;
+			return true;
+		}
+
+		case TET4:
+		{
+			w_ii = 4.0;
+			w_ij = -1.0;
+			return true;
+		}
 			// These do not work:
 			// case QUAD4:
 			// {
@@ -1432,21 +1728,265 @@ template<class FE>
 			// 	return true;
 			// }
 
-			default:
-			{
-				w_ii = 1.0;
-				w_ij = 0.0;
+		default:
+		{
+			w_ii = 1.0;
+			w_ij = 0.0;
 
-				static bool error_msg_printed = false;
+			static bool error_msg_printed = false;
 
-				if(!error_msg_printed) {
-					std::cerr << "[Error] biorthgonal weights not supported for element type: " << type << std::endl;
-					error_msg_printed = true;
-				}
+			if(!error_msg_printed) {
+				std::cerr << "[Error] biorthgonal weights not supported for element type: " << type << std::endl;
+				error_msg_printed = true;
+			}
 
-				assert(false && "TODO: add the weights for the missing element");
-				return false;
+			assert(false && "TODO: add the weights for the missing element");
+			return false;
+		}
+	}
+}
+
+template<class FE>
+void mortar_assemble_weights_aux(const FE &fe, libMesh::DenseMatrix<libMesh::Real> &weights)
+{
+	libMesh::DenseMatrix<libMesh::Real> elmat;
+	elmat.resize(fe.get_phi().size(), fe.get_phi().size());
+	elmat.zero();
+
+
+	weights.resize(elmat.m(), elmat.n());
+	weights.zero();
+
+	const auto &test = fe.get_phi();
+	const auto &JxW   = fe.get_JxW();
+
+	const uint n_test  = test.size();
+	const uint n_qp    = test[0].size();
+
+	for(uint qp = 0; qp < n_qp; ++qp) {
+		for(uint i = 0; i < n_test; ++i) {
+			for(uint j = 0; j < n_test; ++j) {
+				elmat(i, j) += contract(test[i][qp], test[j][qp]) * JxW[qp];
 			}
 		}
 	}
+
+	libMesh::DenseVector<libMesh::Real> sum_elmat(n_test);
+	sum_elmat.zero();
+	libMesh::DenseVector<libMesh::Real> rhs(n_test);
+	rhs.zero();
+
+	libMesh::DenseVector<libMesh::Real> sol(n_test);
+	sol.zero();
+
+	for(uint i = 0; i < n_test; ++i) {
+		for(uint j = 0; j < n_test; ++j) {
+			sum_elmat(i) += elmat(i, j);
+		}
+
+		if(std::abs(sum_elmat(i)) < 1e-16) {
+			sum_elmat(i) = 0;
+			//set identity row where not defined
+			for(uint j = 0; j < n_test; ++j) {
+				elmat(i, j) = (i == j);
+			}
+		}
+	}
+
+	// std::cout << "-----------------------\n";
+	// std::cout << "-----------------------\n";
+	
+	// elmat.print(std::cout);
+
+	// std::cout << "-----------------------\n";
+
+	for(uint i = 0; i < n_test; ++i) {
+		if(sum_elmat(i) == 0) {
+			continue;
+		}
+
+		rhs(i) = sum_elmat(i);
+
+		elmat.cholesky_solve(rhs, sol);
+
+		for(uint j = 0; j < n_test; ++j) {
+			weights(i, j) = sol(j);
+		}
+
+		rhs(i) = 0;
+	}
+
+		//normalization for consistently scaled coefficients
+	for(uint i = 0; i < n_test; ++i) {
+		if(sum_elmat(i) == 0) {
+			continue;
+		}
+	
+		libMesh::Real t = 0;
+		for(uint j = 0; j < n_test; ++j) {
+			t += weights(i, j);
+		}
+
+		for(uint j = 0; j < n_test; ++j) {
+			weights(i, j) *= 1./t;
+		}
+	}
+
+	// weights.print(std::cout);
+}
+
+void mortar_assemble_weights(const libMesh::FEVectorBase &fe, libMesh::DenseMatrix<libMesh::Real> &weights)
+{
+	mortar_assemble_weights_aux(fe, weights);
+}
+
+void mortar_assemble_weights(const libMesh::FEBase &fe, libMesh::DenseMatrix<libMesh::Real> &weights)
+{
+	mortar_assemble_weights_aux(fe, weights);
+}
+
+
+	template<class FE>
+void mortar_assemble_weighted_aux(
+	const FE &trial_fe, 
+	const FE &test_fe,
+	const libMesh::DenseMatrix<libMesh::Real> &weights,
+	libMesh::DenseMatrix<libMesh::Real> &elmat)
+{
+	if(elmat.m() != test_fe.get_phi().size() ||  elmat.n() != trial_fe.get_phi().size()) {
+		elmat.resize(test_fe.get_phi().size(), trial_fe.get_phi().size());
+		elmat.zero();
+	}
+
+	const auto &trial = trial_fe.get_phi();
+	const auto &test  = test_fe.get_phi();
+	const auto &JxW   = test_fe.get_JxW();
+
+	const uint n_test  = test.size();
+	const uint n_trial = trial.size();
+	const uint n_qp    = test[0].size();
+
+	for(uint i = 0; i < n_test; ++i) {
+		for(uint qp = 0; qp < n_qp; ++qp) {
+			auto w_test = test[i][qp] * 0.;
+
+			for(uint k = 0; k < n_test; ++k) {
+				w_test += test[k][qp] * weights(i, k);
+			}
+
+			for(uint j = 0; j < n_trial; ++j) {
+				elmat(i, j) += contract(w_test, trial[j][qp]) * JxW[qp];
+			}
+		}
+	}
+}
+
+void mortar_assemble_weighted_biorth(
+	const libMesh::FEBase &trial_fe, 
+	const libMesh::FEBase &test_fe,
+	const libMesh::DenseMatrix<libMesh::Real> &weights,
+	libMesh::DenseMatrix<libMesh::Real> &elmat)
+{
+	mortar_assemble_weighted_aux(trial_fe, test_fe, weights, elmat);
+}
+
+void mortar_assemble_weighted_biorth(
+	const libMesh::FEVectorBase &trial_fe, 
+	const libMesh::FEVectorBase &test_fe, 
+	const libMesh::DenseMatrix<libMesh::Real> &weights,
+	libMesh::DenseMatrix<libMesh::Real> &elmat)
+{
+	mortar_assemble_weighted_aux(trial_fe, test_fe, weights, elmat);
+}
+
+void mortar_normal_and_gap_assemble_weighted_biorth(
+	const libMesh::FEVectorBase &test_fe, 
+	const int dim,
+	const libMesh::Point &surf_normal,
+	const libMesh::Point &plane_normal,
+	const libMesh::Real &plane_offset,
+	const libMesh::DenseMatrix<libMesh::Real> &weights,
+	libMesh::DenseMatrix<libMesh::Real> &normals, 
+	libMesh::DenseVector<libMesh::Real> &gap)
+{
+
+	using namespace libMesh;
+
+	Intersector isector;
+
+
+	if(normals.m() != test_fe.get_phi().size()/dim || dim != normals.n()) {
+		normals.resize(test_fe.get_phi().size()/dim, dim);
+		gap.resize(test_fe.get_phi().size());
+	}
+
+	normals.zero();
+	gap.zero();
+
+	const auto &test   = test_fe.get_phi();
+	const auto &point  = test_fe.get_xyz();
+	const auto &JxW    = test_fe.get_JxW();
+
+	const uint n_test  = test.size();
+	const uint n_qp    = test[0].size();
+
+	DenseVector<Real> p(dim);
+	DenseVector<Real> v(dim);
+
+	DenseVector<Real> s_n(dim);
+	DenseVector<Real> p_n(dim);
+
+	for(uint i = 0; i < dim; ++i) {
+		p_n(i) =  plane_normal(i);
+		s_n(i) =  surf_normal(i);
+	}
+
+	for(uint qp = 0; qp < n_qp; ++qp) {
+
+		p(0) = point[qp](0);
+		p(1) = point[qp](1);
+
+		if(dim > 2) {
+			p(2) = point[qp](2);
+		}
+
+		Real isect = 0;
+		isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &s_n.get_values()[0], &p_n.get_values()[0], plane_offset, &isect);
+
+		v = s_n;
+		v *= isect;
+		// quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
+
+		for(uint i = 0; i < n_test; ++i) {
+			auto biorth_test =  weights(i, 0) * test[0][qp];
+
+			for(uint k = 0; k < test.size(); ++k) {
+				biorth_test +=  weights(i, k) * test[k][qp];
+			}
+
+			gap(i) += biorth_test(0) * isect * JxW[qp];
+
+			for(uint d = 0; d < dim; ++d) {
+				normals.get_values()[i] += biorth_test(d) * surf_normal(d) * JxW[qp];
+			}
+		}
+	}
+
+	// gap.print(std::cout);
+
+}
+
+void mortar_normal_and_gap_assemble_weighted_biorth(
+	const libMesh::FEBase &test_fe, 
+	const int dim,
+	const libMesh::Point &surf_normal,
+	const libMesh::Point &plane_normal,
+	const libMesh::Real &plane_offset,
+	const libMesh::DenseMatrix<libMesh::Real> &weights,
+	libMesh::DenseMatrix<libMesh::Real> &normals, 
+	libMesh::DenseVector<libMesh::Real> &gap)
+{
+	assert(false && "implement me");
+}
+
 }

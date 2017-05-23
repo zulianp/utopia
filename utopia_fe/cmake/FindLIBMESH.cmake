@@ -1,6 +1,10 @@
-SET(LIBMESH_INCLUDES_MY_LOCATIONS ~/Desktop/libmesh/include /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build/include)
-SET(LIBMESH_LIB_MY_LOCATIONS ~/Desktop/libmesh/lib /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build/lib)
-SET(LIBMESH_BIN_MY_LOCATIONS ~/Desktop/libmesh /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build)
+set(LIBMESH_INCLUDES_MY_LOCATIONS ~/Desktop/libmesh/include)
+set(LIBMESH_LIB_MY_LOCATIONS ~/Desktop/libmesh/lib)
+set(LIBMESH_BIN_MY_LOCATIONS ~/Desktop/libmesh/bin)
+
+# list(APPEND LIBMESH_INCLUDES_MY_LOCATIONS /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build/include)
+# list(APPEND LIBMESH_LIB_MY_LOCATIONS /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build/lib)
+# list(APPEND LIBMESH_BIN_MY_LOCATIONS /Users/mariagiuseppina/project_with_lib_and_moonolith/libmesh_build)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
   set(CMAKE_BUILD_TYPE NONE)
@@ -15,7 +19,10 @@ message(STATUS "linking against ${METHOD} libmesh library")
 
 find_package(PkgConfig QUIET)
 
-set(LIBMESH_DIR LIBMESH_DIR-NOTFOUND CACHE PATH "Libmesh installation directory")
+# set(LIBMESH_DIR LIBMESH_DIR-NOTFOUND CACHE PATH "Libmesh installation directory")
+if($ENV{LIBMESH_DIR})
+  set(ENV{PKG_CONFIG_PATH} $ENV{LIBMESH_DIR}/lib/pkgconfig)
+endif()
 
 if(LIBMESH_DIR)
   set(ENV{PKG_CONFIG_PATH} ${LIBMESH_DIR}/lib/pkgconfig)
@@ -43,7 +50,7 @@ find_path(LIBMESH_INCLUDE_DIR libmesh/libmesh.h
 )
 
 find_library(LIBMESH_LIBRARY
-             NAMES  libmesh_${METHOD} libmesh
+             NAMES  mesh_${METHOD} mesh
              HINTS  $ENV{LIBMESH_DIR}/lib 
                     $ENV{LIBMESH_DIR} 
                     ${PC_LIBMESH_LIBDIR} 

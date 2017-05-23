@@ -1269,7 +1269,7 @@ namespace utopia {
         {
             Elem * elem = *e_it;
             
-            std::cout <<"subdomain_id = "<< elem->subdomain_id() << "elem_id = " << elem->id() <<std::endl;
+            // std::cout <<"subdomain_id = "<< elem->subdomain_id() << "elem_id = " << elem->id() <<std::endl;
             
             bool size_new=true;
             
@@ -1301,6 +1301,10 @@ namespace utopia {
         express::MapSparseMatrix<double> p_buffer(master_slave->dof_map().n_dofs(), mat_buffer_col);
         
         express::MapSparseMatrix<double> q_buffer(mat_buffer_row, master_slave->dof_map().n_dofs());
+
+        express::MapSparseMatrix<double> rel_area_buff(master_slave->dof_map().n_dofs(), 1);
+
+        
         
         std::cout<<"*********** master_slave->dof_map().n_dofs() = "<<  master_slave->dof_map().n_dofs() <<std::endl;
         
@@ -1513,8 +1517,11 @@ namespace utopia {
                         pair_intersected = true;
            
                         surface_assemble = std::make_shared<Contact>();
-                        surface_assemble->isect_area	   = area;
+                        surface_assemble->isect_area	= area;
                         surface_assemble->relative_area = weight;
+
+                        //use boundary info instead
+                        // rel_area_buff.add(s_2->id(), 0, weight);
                         
                     } else {
                         assert(false);
@@ -1668,46 +1675,16 @@ namespace utopia {
                 //std::cout << "elemmat.m =" << elemmat.m() << "\n";
             
                 for(int i = 0; i <  slave_dofs.size(); ++i) {
-
                     const long dof_I = slave_dofs[i];
-
-                    for(int j = 0; j <  dof_indices_slave_vec.size(); ++j) {
-
-                        const long dof_J = dof_indices_slave_vec[j];
-                        
-                        int  entry=0;
-                        
-                        if (i==j) entry = 1;
-
-                        p_buffer.setAt(dof_I, dof_J, entry);
-                    }
+                    const long dof_J = dof_indices_slave_vec[i];
+                    p_buffer.setAt(dof_I, dof_J, 1.);
                 }
                 
-              
                 for(int i = 0; i <  dof_indices_master_vec.size(); ++i) {
-                    
-                    const long dof_I = dof_indices_master_vec[i];
-                    
-                    for(int j = 0; j < master_dofs.size(); ++j) {
-                        
-                        const long dof_J = master_dofs[j];
-                        
-       
-                        
-                        int  entry=0;
-                        
-                        if (i==j) {
-                            entry=1;
-//                            std::cout<<"entry= "<<entry<<std::endl;
-//                            std::cout<< "************ dof_J_index = "<< dof_J <<std::endl;
-//                            std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
-                        }
-   
-                        q_buffer.setAt(dof_I, dof_J, entry);
-                    }
+                    const long dof_I = dof_indices_master_vec[i];    
+                    const long dof_J = master_dofs[i];
+                    q_buffer.setAt(dof_I, dof_J, 1.);
                 }
-                
-
                 
                 for(int i = 0; i <  dof_indices_slave_vec.size(); ++i) {
                     
@@ -1827,6 +1804,17 @@ namespace utopia {
         DSMatrixd B_tilde = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
         
         
+        DVectord relAreaVec = zeros(master_slave->dof_map().n_dofs());
+            
+        {
+            utopia::Write<utopia::DVectord> write(relAreaVec);
+            for (auto it = rel_area_buff.iter(); it; ++it) {
+                relAreaVec.add(it.row(), *it);
+            }
+        }
+
+        // disp(relAreaVec);
+
         {
             utopia::Write<utopia::DSMatrixd> write(B_tilde);
             for (auto it = mat_buffer.iter(); it; ++it) {
@@ -2044,7 +2032,7 @@ namespace utopia {
 //        
 //        std::shared_ptr<LibMeshFESpaceBase> master_slave_space = master_slave;
 //        
-//        static const int tol = 1e-8;
+//        static const double tol = 1e-8;
 //        
 //        
 //        std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;

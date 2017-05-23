@@ -1238,15 +1238,23 @@ namespace utopia {
 	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Min &)
 	{
 		PetscScalar x;
-		PETScVector v;
-		VecSetType(v.implementation(), VECMPI);
+		MPI_Comm comm = m.communicator();
 		
-		PetscInt grows, gcols;
+		
+		PetscInt grows, gcols, lrows, lcols;
 		MatGetSize(m.implementation(), &grows, &gcols);
-		VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
+		MatGetLocalSize(m.implementation(), &lrows, &lcols);
 		
-		MatGetRowMin(m.implementation(), v.implementation(), nullptr);
-		VecMin(v.implementation(), nullptr, &x);
+		Vec v;
+		VecCreate(comm, &v);
+
+		VecSetType(v, VECMPI);
+		VecSetSizes(v, lrows, grows);
+
+		MatGetRowMin(m.implementation(), v, nullptr);
+		VecMin(v, nullptr, &x);
+
+		VecDestroy(&v);
 		return x;
 	}
 
@@ -1356,7 +1364,8 @@ namespace utopia {
 		} else {
 			MatSetType(mat.implementation(), MATMPIDENSE);
 			MatSetSizes(mat.implementation(), local_size, local_size, global_size, global_size);
-			MatMPIAIJSetPreallocation(mat.implementation(), 1, NULL, 0, NULL);
+			// MatMPIAIJSetPreallocation(mat.implementation(), 1, NULL, 0, NULL);
+			MatSetUp(mat.implementation());
 		}
 		
 		

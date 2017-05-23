@@ -37,19 +37,19 @@ namespace utopia {
 	inline bool is_hex(const int type)
 	{
 		return type == static_cast<int>(libMesh::HEX8) || type == static_cast<int>(libMesh::HEX20) ||
-			   type == static_cast<int>(libMesh::HEX27);	
+		type == static_cast<int>(libMesh::HEX27);	
 	}
 
 	inline bool is_quad(const int type)
 	{
 		return type == static_cast<int>(libMesh::QUAD4) || type == static_cast<int>(libMesh::QUADSHELL4) ||
-			   type == static_cast<int>(libMesh::QUAD8) || type == static_cast<int>(libMesh::QUAD9);
+		type == static_cast<int>(libMesh::QUAD8) || type == static_cast<int>(libMesh::QUAD9);
 	}
 
 	inline bool is_tri(const int type)
 	{
 		return type == static_cast<int>(libMesh::TRI3)  || type == static_cast<int>(libMesh::TRISHELL3) ||
-			   type == static_cast<int>(libMesh::TRI6);
+		type == static_cast<int>(libMesh::TRI6);
 	}
 
 	inline bool is_tet(const int type)
@@ -64,10 +64,10 @@ namespace utopia {
 
 
 	int order_for_l2_integral(const int dim, 
-							  const libMesh::Elem &master_el, 
-							  const int master_order,
-							  const libMesh::Elem &slave_el,
-							  const int slave_order);
+		const libMesh::Elem &master_el, 
+		const int master_order,
+		const libMesh::Elem &slave_el,
+		const int slave_order);
 
 	class Transform {
 	public:
@@ -96,22 +96,22 @@ namespace utopia {
 
 	class Transform3 : public Transform {
 	public:
-		public:
+	public:
 			// Transform3(const Polyhedron &polyhedron, const libMesh::Elem &elem)
 			// : polyhedron_(polyhedron), elem_(elem)
 			// {
 			// 	assert(polyhedron.n_nodes == 4 || polyhedron.n_nodes == 8 && "must be either a tetrahedron or a hex");
 			// }
 
-			Transform3(const libMesh::Elem &elem)
-			: elem_(elem)
-			{ }
+		Transform3(const libMesh::Elem &elem)
+		: elem_(elem)
+		{ }
 
-			void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
+		void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
 
-		private:
+	private:
 			// const Polyhedron &polyhedron_;
-			const libMesh::Elem &elem_;
+		const libMesh::Elem &elem_;
 
 	};
 
@@ -165,27 +165,27 @@ namespace utopia {
 
 
 	void mortar_assemble(const libMesh::FEBase &trial_fe, 
-						 const libMesh::FEBase &test_fe, 
-						 libMesh::DenseMatrix<libMesh::Real> &elmat);
+		const libMesh::FEBase &test_fe, 
+		libMesh::DenseMatrix<libMesh::Real> &elmat);
 
 	void mortar_assemble(const libMesh::FEVectorBase &trial_fe, 
-						 const libMesh::FEVectorBase &test_fe, 
-						 libMesh::DenseMatrix<libMesh::Real> &elmat);
+		const libMesh::FEVectorBase &test_fe, 
+		libMesh::DenseMatrix<libMesh::Real> &elmat);
 
 	void mortar_normal_and_gap_assemble(const libMesh::FEBase &test_fe, 
-										const libMesh::DenseVector<libMesh::Real> &surf_normal,
-						 				const libMesh::DenseVector<libMesh::Real> &plane_normal,
-						 				const libMesh::Real &plane_offset,
-						 				libMesh::DenseMatrix<libMesh::Real> &normals, 
-						 				libMesh::DenseVector<libMesh::Real> &gap);
+		const libMesh::DenseVector<libMesh::Real> &surf_normal,
+		const libMesh::DenseVector<libMesh::Real> &plane_normal,
+		const libMesh::Real &plane_offset,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap);
 
 	void mortar_normal_and_gap_assemble(const uint dim,
-										const libMesh::FEBase &test_fe, 
-										const libMesh::Point &surf_normal,
-						 				const libMesh::Point &plane_normal,
-						 				const libMesh::Real &plane_offset,
-						 				libMesh::DenseMatrix<libMesh::Real> &normals, 
-						 				libMesh::DenseVector<libMesh::Real> &gap);
+		const libMesh::FEBase &test_fe, 
+		const libMesh::Point &surf_normal,
+		const libMesh::Point &plane_normal,
+		const libMesh::Real &plane_offset,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap);
 
 	void mortar_normal_and_gap_assemble(
 		const libMesh::FEVectorBase &test_fe, 
@@ -195,13 +195,56 @@ namespace utopia {
 		libMesh::DenseMatrix<libMesh::Real> &normals, 
 		libMesh::DenseVector<libMesh::Real> &gap);
 
+
 	void mortar_normal_and_gap_assemble(const uint dim,
-										const libMesh::FEVectorBase &test_fe, 
-										const libMesh::Point &surf_normal,
-						 				const libMesh::Point &plane_normal,
-						 				const libMesh::Real &plane_offset,
-						 				libMesh::DenseMatrix<libMesh::Real> &normals, 
-						 				libMesh::DenseVector<libMesh::Real> &gap);
+		const libMesh::FEVectorBase &test_fe, 
+		const libMesh::Point &surf_normal,
+		const libMesh::Point &plane_normal,
+		const libMesh::Real &plane_offset,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap);
+
+	void mortar_normal_and_gap_assemble_biorth(
+		const int type,
+		const libMesh::FEBase &test_fe, 
+		const libMesh::DenseVector<libMesh::Real> &surf_normal,
+		const libMesh::DenseVector<libMesh::Real> &plane_normal,
+		const libMesh::Real &plane_offset,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap);
+
+	void mortar_normal_and_gap_assemble_biorth(
+		const int type,
+		const uint dim,
+		const libMesh::FEBase &test_fe, 
+		const libMesh::Point &surf_normal,
+		const libMesh::Point &plane_normal,
+		const libMesh::Real &plane_offset,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap);
+
+	void mortar_normal_and_gap_assemble_biorth(
+		const int type,
+		const libMesh::FEVectorBase  &test_fe, 
+		const libMesh::DenseVector<libMesh::Real> &surf_normal,
+		const libMesh::DenseVector<libMesh::Real> &plane_normal,
+		const libMesh::Real &plane_offset,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap);
+
+	void mortar_normal_and_gap_assemble_biorth(
+		const int type,
+		const uint dim,
+		const libMesh::FEVectorBase  &test_fe, 
+		const libMesh::Point &surf_normal,
+		const libMesh::Point &plane_normal,
+		const libMesh::Real &plane_offset,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap);
 
 	bool mortar_assemble(LibMeshFESpaceBase &src, LibMeshFESpaceBase &dest, std::shared_ptr<libMesh::SparseMatrix<libMesh::Real> > &B);
 
@@ -216,28 +259,80 @@ namespace utopia {
 	bool intersect_3D(const Polyhedron &poly1, const Polyhedron &poly2, Polyhedron &intersection);
 
 	bool project_2D(const libMesh::DenseMatrix<libMesh::Real> &poly1, 
-					const libMesh::DenseMatrix<libMesh::Real> &poly2, 
-					libMesh::DenseMatrix<libMesh::Real> &projection_1,
-					libMesh::DenseMatrix<libMesh::Real> &projection_2);
+		const libMesh::DenseMatrix<libMesh::Real> &poly2, 
+		libMesh::DenseMatrix<libMesh::Real> &projection_1,
+		libMesh::DenseMatrix<libMesh::Real> &projection_2);
 
 	bool project_3D(const libMesh::DenseMatrix<libMesh::Real> &polygon_1, 
-					const libMesh::DenseMatrix<libMesh::Real> &polygon_2, 
-					libMesh::DenseMatrix<libMesh::Real> &projection_1,
-					libMesh::DenseMatrix<libMesh::Real> &projection_2);
+		const libMesh::DenseMatrix<libMesh::Real> &polygon_2, 
+		libMesh::DenseMatrix<libMesh::Real> &projection_1,
+		libMesh::DenseMatrix<libMesh::Real> &projection_2);
 
 	bool biorthgonal_weights(const int type, libMesh::Real &w_ii, libMesh::Real &w_ij);
 
 	void mortar_assemble_biorth(
-							const libMesh::FEBase &trial_fe, 
-							const libMesh::FEBase &test_fe,
-							const int type,
-							libMesh::DenseMatrix<libMesh::Real> &elmat);
+		const libMesh::FEBase &trial_fe, 
+		const libMesh::FEBase &test_fe,
+		const int type,
+		libMesh::DenseMatrix<libMesh::Real> &elmat);
 
 	void mortar_assemble_biorth(
-							const libMesh::FEVectorBase &trial_fe, 
-						 	const libMesh::FEVectorBase &test_fe, 
-						 	const int type,
-						 	libMesh::DenseMatrix<libMesh::Real> &elmat);
+		const libMesh::FEVectorBase &trial_fe, 
+		const libMesh::FEVectorBase &test_fe, 
+		const int type,
+		libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+
+	void mortar_assemble_biorth(
+		const int dim,
+		const libMesh::FEBase &trial_fe, 
+		const libMesh::FEBase &test_fe,
+		const int type,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+	void mortar_assemble_biorth(
+		const int dim,
+		const libMesh::FEVectorBase &trial_fe, 
+		const libMesh::FEVectorBase &test_fe, 
+		const int type,
+		const libMesh::DenseVector<libMesh::Real> &indicator,
+		libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+	void mortar_assemble_weights(const libMesh::FEVectorBase &fe, libMesh::DenseMatrix<libMesh::Real> &weights);
+	void mortar_assemble_weights(const libMesh::FEBase &fe, libMesh::DenseMatrix<libMesh::Real> &weights);
+
+	void mortar_assemble_weighted_biorth(
+		const libMesh::FEBase &trial_fe, 
+		const libMesh::FEBase &test_fe,
+		const libMesh::DenseMatrix<libMesh::Real> &weights,
+		libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+	void mortar_assemble_weighted_biorth(
+		const libMesh::FEVectorBase &trial_fe, 
+		const libMesh::FEVectorBase &test_fe, 
+		const libMesh::DenseMatrix<libMesh::Real> &weights,
+		libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+	void mortar_normal_and_gap_assemble_weighted_biorth(
+		const libMesh::FEVectorBase &test_fe, 
+		const int dim,
+		const libMesh::Point &surf_normal,
+		const libMesh::Point &plane_normal,
+		const libMesh::Real &plane_offset,
+		const libMesh::DenseMatrix<libMesh::Real> &weights,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap);
+
+	void mortar_normal_and_gap_assemble_weighted_biorth(
+		const libMesh::FEBase &test_fe, 
+		const int dim,
+		const libMesh::Point &surf_normal,
+		const libMesh::Point &plane_normal,
+		const libMesh::Real &plane_offset,
+		const libMesh::DenseMatrix<libMesh::Real> &weights,
+		libMesh::DenseMatrix<libMesh::Real> &normals, 
+		libMesh::DenseVector<libMesh::Real> &gap);
 }
 
 #endif //MFEM_L2P_MORTAR_ASSEMBLE_HPP
