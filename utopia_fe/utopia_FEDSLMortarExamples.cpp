@@ -475,17 +475,15 @@ namespace utopia {
 		auto mesh_master = make_shared<Mesh>(init.comm());
 
         //mesh_master->partitioner().reset(new SFCPartitioner());
-		
-		
-		MeshTools::Generation::build_cube(*mesh_master,
-			n_master, n_master, n_master,
-			-2., 3.,
-			-2., 3.,
-			-2., 3.,
-			TET4);
-		
-		
-		
+
+               
+        MeshTools::Generation::build_cube(*mesh_master,
+                                          n_master, n_master, n_master,
+                                          -2., 3.,
+                                          -2., 3.,
+                                          -2., 3.,
+                                          TET4);
+        
 
         //////////////////////////////////////////////////
         //////////////////////////////////////////////////
@@ -522,15 +520,13 @@ namespace utopia {
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
 
-		// static const bool is_leaflet = true;
-		// ContactSimParams params = leaflets_contact;
 
-   		static const bool is_leaflet = false;
-		 // ContactSimParams params = contact_cuboids;
-    	// ContactSimParams params = contact8;
+   static const	bool is_leaflet = false;
+		//ContactSimParams params = leaflets_contact;
+		 ContactSimParams params = contact8;
+    	// ContactSimParams params = multi_contact_quads;
 		// ContactSimParams params = triple_contact_circle;
-		// ContactSimParams params = multi_contact_3D_2;
-		ContactSimParams params = contact_cylinder;
+		// ContactSimParams params = multi_contact_3D;
 
 
 		auto mesh = make_shared<Mesh>(init.comm());		
