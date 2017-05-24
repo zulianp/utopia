@@ -1559,6 +1559,7 @@ namespace utopia {
         
         
         
+        int dim = master->mesh_dimension();
         
         express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
         
@@ -1575,17 +1576,38 @@ namespace utopia {
         const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
         const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
         
-        B = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
+       DSMatrixd B_x = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
         
         {
-            utopia::Write<utopia::DSMatrixd> write(B);
+            utopia::Write<utopia::DSMatrixd> write(B_x);
             for (auto it = mat_buffer.iter(); it; ++it) {
-                B.set(it.row(), it.col(), *it);
+                B_x.set(it.row(), it.col(), *it);
                 
             }
         }
         
+        
+
+        
+        
+        auto s_B_x = local_size(B_x);
+        B = local_sparse(s_B_x.get(0), s_B_x.get(1), mMaxRowEntries * dim);
+        
+        {
+            Write<DSMatrixd> w_B(B);
+            each_read(B_x, [&](const SizeType i, const SizeType j, const double value) {
+                int pos = *_to_var_num;
+//                std::cout<<"_to_var_num"<<pos<<std::endl;
+//                std::cout<<"dim"<<dim<<std::endl;
+                for(SizeType d = 0; d < dim; ++d) {
+                    B.set(i, j, value);
+                }
+            });
+        }
+        
         express::RootDescribe("petsc assembly end", comm, std::cout);
+        
+        write("B_inside.m", B);
         
         // c2.stop();
         // std::cout << "Global stuff\n";

@@ -2551,7 +2551,7 @@ namespace utopia {
             });
         }
         
-        auto s_B_x = size(B_x);
+        auto s_B_x = local_size(B_x);
         B = local_sparse(s_B_x.get(0), s_B_x.get(1), mMaxRowEntries_q * dim);
 
         {
