@@ -52,11 +52,11 @@ int main(const int argc, char *argv[])
 
 	// run_base_examples(init);
 	// run_time_diff_examples(init);
-	// run_mortar_examples(init);
+	run_mortar_examples(init);
 	// run_least_squares_examples(init);
 	// run_mixed_fe_space_example(init);
     //run_solver_ex(init);
-    run_biomechanics_example(init);
+    // run_biomechanics_example(init);
 	return EXIT_SUCCESS;
 }
 

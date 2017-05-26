@@ -2456,7 +2456,7 @@ namespace utopia {
         }
         
         
-        utopia::Range r = utopia::range(gap);
+        // utopia::Range r = utopia::range(gap);
         each_read(is_contact_node, [&](const SizeType i , const double value){
             if (value > 0)
             {
@@ -2481,7 +2481,8 @@ namespace utopia {
                 bool use_identity = true;
                 
                 
-                bool is_cn_i = is_contact_node.get(i/dim);
+                // bool is_cn_i = is_contact_node.get(i/dim);
+                bool is_cn_i = is_contact_node.get(i);
                 
                 if(is_cn_i) {
                     

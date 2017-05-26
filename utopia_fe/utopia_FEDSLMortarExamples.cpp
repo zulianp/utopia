@@ -297,7 +297,9 @@ namespace utopia {
 		int order_quad = order_elem + order_elem;
 
 		LibMeshFEContext<LinearImplicitSystem> master_slave_context(master_slave);
-		auto master_slave_space = fe_space(LAGRANGE, order_elem, master_slave_context);
+		auto master_slave_space   = fe_space(LAGRANGE, order_elem, master_slave_context);
+		auto master_slave_space_2 = fe_space(LAGRANGE, order_elem, master_slave_context);
+
 		master_slave_context.equation_systems.init();
 
         //////////////////////////////////////////////////
@@ -325,7 +327,7 @@ namespace utopia {
         MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals,is_contact_node, 0.1, 101, 102);
         
         
-        write("mat.m", matrix);
+        // write("mat.m", matrix);
         // EXPRESS_EVENT_END("l2assembly");
 
         DVectord v = local_zeros(local_size(matrix).get(1));
@@ -377,10 +379,10 @@ namespace utopia {
         // disp(matrix);
 //        disp(mv);
 
-        double *arr;
-        VecGetArray(raw_type(mv), &arr);
-        plot_mesh_f(*master_slave_context.mesh, arr, "surface_mortar");
-        VecRestoreArray(raw_type(mv), &arr);
+        // double *arr;
+        // VecGetArray(raw_type(mv), &arr);
+        // plot_mesh_f(*master_slave_context.mesh, arr, "surface_mortar");
+        // VecRestoreArray(raw_type(mv), &arr);
 
 //        MPI_Barrier(MPI_COMM_WORLD);
 //        std::cout << "HERE" << std::endl;
@@ -835,9 +837,9 @@ namespace utopia {
 
 		EXPRESS_PROFILING_BEGIN()
 
-		mortar_transfer_2D(init);
+		// mortar_transfer_2D(init);
         //mortar_transfer_3D(init);
-		//mortar_transfer_3D_monolithic(init);
+		mortar_transfer_3D_monolithic(init);
 		// surface_mortar(init);
 
 		//run_curved_poly_disc();
