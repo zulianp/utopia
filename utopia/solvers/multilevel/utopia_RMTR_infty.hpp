@@ -76,6 +76,13 @@ namespace utopia
             _smoother->set_parameters(params); 
             _coarse_solver->set_parameters(params); 
             
+            _delta_init = 1; 
+
+            // _delta.resize(this->num_levels()); 
+
+            // for(Scalar i = 0; i < this->num_levels(); i ++)
+            //     _delta.push_back(_delta_init); 
+
             _parameters = params; 
         }
 
@@ -196,8 +203,9 @@ namespace utopia
 
             this->make_iterate_feasible(levels(l-2), u_2l); 
 
-            
+            // here, grad should be zero by default on places where are BC conditions             
             levels(l-2).gradient(u_2l, g_coarse); 
+
 
 
             u_init = u_2l; 
@@ -237,16 +245,13 @@ namespace utopia
             ared = E_old - E_new; 
             rho = ared / coarse_reduction; 
 
+            std::cout<<"ared:  "<< ared << "   pred:   "<< coarse_reduction <<      "  rho:  "<< rho << "   \n"; 
 
             if(rho > 0)
                 u_l = u_t; 
             else
                 std::cout<<"RMTR:: not taking trial point... \n"; 
 
-
-
-
-            std::cout<<"ared:  "<< ared << "   pred:   "<< coarse_reduction <<      "  rho:  "<< rho << "   \n"; 
 
 
             // POST-SMOOTHING 
@@ -268,17 +273,166 @@ namespace utopia
          */
         bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
         {
-            _smoother->sweeps(nu); 
-            _smoother->nonlinear_smooth(fun, x, f); 
+            // _smoother->sweeps(nu); 
+            // _smoother->nonlinear_smooth(fun, x, f); 
+            
+
+                Scalar delta = 1000; 
+
+                Vector g, s;
+
+                s = 0 * x;  
+                fun.gradient(x, g);
+
+                Matrix A; 
+                fun.hessian(x, A);
+
+
+                KSP ksp; 
+                PC pc; 
+                MPI_Comm            comm; 
+                PetscObjectGetComm((PetscObject)raw_type(A), &comm);
+                KSPCreate(comm, &ksp);
+
+                KSPSetOperators(ksp, raw_type(A), raw_type(A));
+                KSPSetType(ksp, KSPSTCG);  
+                KSPGetPC(ksp, &pc);
+                PCSetType(pc, PCASM);
+                KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 1000000); 
+                KSPSTCGSetRadius(ksp, delta);
+                KSPSolve(ksp, raw_type(g),raw_type(s));
+                // KSPSTCGGetObjFcn(ksp, &pred);
+
+
+                x = x -s; 
+
+
+
             return true; 
         }
 
 
+        // bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, Vector & s, Scalar & reduction)
+        // {   
+            
+        //         Scalar energy_old, energy2_old, energy3_old, energy, energy2, energy3, g_norm;
+        //         Scalar ared, pred, rho; 
+        //         Scalar ared2, pred2, rho2; 
+        //         Scalar ared3, pred3, rho3; 
+
+
+        //         ColorModifier red(FG_LIGHT_YELLOW);
+        //         ColorModifier def(FG_DEFAULT);
+        //         std::cout << red; 
+
+        //         this->init_solver("COARSE SOLVE", {" it. ", "|| g_norm ||", "E   ", "     E + <g_diff, x_k>", "     E + <g_diff, s>", "rho", "rho2", "rho3"}); 
+
+        //         Vector g; 
+        //         fun.gradient(x, g);
+
+        //         Vector x_init = x; 
+
+        //         g += g_diff; 
+
+
+        //         s = 0*x;
+
+        //         g_norm = norm2(g); 
+
+
+        //         fun.value(x, energy_old); 
+        //         energy2_old = energy_old + dot(g_diff, x); 
+        //         energy3_old = energy_old + dot(g_diff, s); 
+
+        //         PrintInfo::print_iter_status(0, {g_norm, energy_old, energy2_old, energy3_old}); 
+
+
+        //     for(auto i = 0; i < 50; i ++)
+        //     {
+        //         auto linear_solver  = std::make_shared< LUDecomposition<Matrix, Vector> >();
+
+            
+        //         Matrix A; 
+        //         fun.hessian(x, A); 
+                
+
+        //         linear_solver->solve(A, -1*g, s);
+
+        //         Vector r = -1*g - A * s; 
+        //         Scalar r_norm = norm2(r); 
+
+
+        //         x +=s;   
+
+
+        //         Vector g; 
+        //         fun.gradient(x, g);
+
+        //         Scalar l_term = dot(g, s);
+        //         Scalar qp_term = dot(s, A * s);
+        //         pred = - l_term - 0.5 * qp_term; 
+
+        //         pred *= -1;
+
+
+        //         g += g_diff; 
+
+
+
+        //         g_norm = norm2(g); 
+
+
+
+
+        //        this->make_iterate_feasible(fun, x); 
+
+
+        //         fun.value(x, energy); 
+        //         energy2 = energy + dot(g_diff, x); 
+        //         energy3 = energy + dot(g_diff, s); 
+
+
+        //         ared = energy_old - energy; 
+        //         ared2 = energy2_old - energy2; 
+        //         ared3 = energy3_old - energy3; 
+
+        //         // Scalar l_term = dot(g, s);
+        //         // Scalar qp_term = dot(s, A * s);
+        //         // pred = - l_term - 0.5 * qp_term; 
+
+        //         // pred *= -1;
+
+        //         rho = ared/pred; 
+
+
+        //         rho2 = ared2/pred; 
+        //         rho3 = ared3/pred; 
+
+
+
+        //         PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3, rho, rho2, rho3}); 
+        //         // PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3 }); 
+        //     }
+
+        //     // TODO:: check this in nonlinear case 
+        //     s = x - x_init; 
+            
+        //     reduction = ared; 
+
+        //     std::cout<< def; 
+
+        //     return true; 
+        // }
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, Vector & s, Scalar & reduction)
         {   
-                //_coarse_solver->solve(fun, x, rhs); 
             
-                Scalar energy_old, energy2_old, energy3_old, energy, energy2, energy3, g_norm;
+                Scalar energy_old, energy2_old, energy3_old, energy, energy2, energy3, energy_init, energy_2init, energy_3init, g_norm;
                 Scalar ared, pred, rho; 
                 Scalar ared2, pred2, rho2; 
                 Scalar ared3, pred3, rho3; 
@@ -298,86 +452,187 @@ namespace utopia
                 g += g_diff; 
 
 
-                s = 0*x;
-
                 g_norm = norm2(g); 
 
+                s = 0*x;
 
-                fun.value(x, energy_old); 
-                energy2_old = energy_old + dot(g_diff, x); 
-                energy3_old = energy_old + dot(g_diff, s); 
+                reduction = 0; 
 
-                PrintInfo::print_iter_status(0, {g_norm, energy_old, energy2_old, energy3_old}); 
+                fun.value(x, energy_init); 
+                energy_2init = energy_init + dot(g_diff, x); 
+                energy_3init = energy_init + dot(g_diff, s); 
+
+                PrintInfo::print_iter_status(0, {g_norm, energy_init, energy_2init, energy_3init}); 
 
 
-            for(auto i = 0; i < 1; i ++)
+                Scalar delta = 100000; 
+
+                Vector s_global = s; 
+
+
+            for(auto i = 0; i < 100; i ++)
             {
-                auto linear_solver  = std::make_shared< LUDecomposition<Matrix, Vector> >();
+                
 
             
                 Matrix A; 
                 fun.hessian(x, A); 
                 
 
-                linear_solver->solve(A, -1*g, s);
-
-                Vector r = -1*g - A * s; 
-                Scalar r_norm = norm2(r); 
-
-
-                x +=s;   
+                fun.value(x, energy_old); 
+                energy2_old = energy_old + dot(g_diff, x); 
+                energy3_old = energy_old + dot(g_diff, s_global); 
 
 
-                Vector g; 
-                fun.gradient(x, g);
-                g += g_diff; 
+                s = 0*x;
 
 
+                // strange thing 
+                KSP ksp; 
+                PC pc; 
+                MPI_Comm            comm; 
+                PetscObjectGetComm((PetscObject)raw_type(A), &comm);
+                KSPCreate(comm, &ksp);
 
-                g_norm = norm2(g); 
+                KSPSetOperators(ksp, raw_type(A), raw_type(A));
+                KSPSetType(ksp, KSPSTCG);  
+                KSPGetPC(ksp, &pc);
+                PCSetType(pc, PCASM);
+                KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 1000000); 
+                KSPSTCGSetRadius(ksp, delta);
+                KSPSolve(ksp, raw_type(g),raw_type(s));
+                KSPSTCGGetObjFcn(ksp, &pred);
+
+                // since Newton iteration is defined with - 
+                pred = -pred; 
+                s *=-1;  
+
+            //----------------------------------------------------------------------------
+            //     building trial point 
+            //----------------------------------------------------------------------------
+                
+                Vector tp = x + s;  
+            
+
+            //    x += s; 
+
+                // this makes it worse ... CHECK WHY :( 
+                
+                Vector tp_corr = tp; 
+                this->make_iterate_feasible(fun, tp_corr); 
 
 
+                fun.value(tp_corr, energy); 
+                s_global += s; 
 
-
-               this->make_iterate_feasible(fun, x); 
-
-
-                fun.value(x, energy); 
-                energy2 = energy + dot(g_diff, x); 
-                energy3 = energy + dot(g_diff, s); 
+                energy2 = energy + dot(g_diff, tp); 
+                energy3 = energy + dot(g_diff, s_global); 
 
 
                 ared = energy_old - energy; 
                 ared2 = energy2_old - energy2; 
                 ared3 = energy3_old - energy3; 
 
-                Scalar l_term = dot(g, s);
-                Scalar qp_term = dot(s, A * s);
-                pred = - l_term - 0.5 * qp_term; 
 
-                pred *= -1;
-
-                rho = ared/pred; 
+                // choice for the moment 
+                rho = ared3/pred; 
 
 
                 rho2 = ared2/pred; 
                 rho3 = ared3/pred; 
+               // std::cout<<"ared: "<< ared2 << "  pred:  "<< pred << " \n"; 
 
 
+                //----------------------------------------------------------------------------
+                //     acceptance of trial point 
+                //----------------------------------------------------------------------------
+                  
+
+                  // good reduction, accept trial point 
+                  if (rho >= 0.0000001)
+                  {
+                    x = tp; 
+                    reduction += ared3; 
+//                    it_success++; 
+                  }
+                  else
+                  {
+                    s_global -=s; 
+                  }
+
+
+
+                if(rho < 0.1)
+                {   
+                     delta = 0.2 * delta; 
+                }
+                else if (rho > 0.85 )
+                {
+                     delta = 2 * delta; 
+                }
+                else
+                {
+                    delta = delta; 
+                }      
+
+
+
+                fun.gradient(x, g);
+                g += g_diff; 
+
+                g_norm = norm2(g); 
 
                 PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3, rho, rho2, rho3}); 
+
+                if(g_norm < 1e-8)
+                {
+                    s = s_global; 
+                    std::cout<< def; 
+                    return 0; 
+                }
+
+
                 // PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3 }); 
             }
 
             // TODO:: check this in nonlinear case 
             // s = x - x_init; 
             
-            reduction = ared; 
+            // reduction = ared; 
+
+            s = s_global; 
 
             std::cout<< def; 
 
+            exit(1);
+
             return true; 
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     public:
@@ -396,10 +651,25 @@ namespace utopia
         }
 
 
+        bool set_delta(const SizeType & level, const Scalar & radius)
+        {
+            _delta[level] = radius; 
+            return true; 
+        }
+
+        Scalar get_delta(const SizeType & level) const 
+        {
+            return _delta[level]; 
+        }
+
 
     protected:   
         std::shared_ptr<Smoother>           _smoother;
         std::shared_ptr<Solver>             _coarse_solver;  
+
+        Scalar                              _delta_init; 
+
+        std::vector<Scalar>                 _delta;
 
     private:
         Parameters                          _parameters; 
