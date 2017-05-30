@@ -219,13 +219,8 @@ namespace utopia
                 // }
             }
 
-            // s_coarse = u_2l - u_init; 
-
-           // this->zero_boundary_correction(levels(0), s_coarse); 
 
             transfers(l-2).interpolate(s_coarse, s_fine);
-
-            //this->zero_boundary_correction(fine_fun, s_fine); 
             
             u_l += s_fine; 
 
@@ -258,30 +253,33 @@ namespace utopia
         {   
                 //_coarse_solver->solve(fun, x, rhs); 
             
+                Scalar energy, energy2, energy3, g_norm; 
+
+
+                ColorModifier red(FG_LIGHT_YELLOW);
+                ColorModifier def(FG_DEFAULT);
+                std::cout << red; 
+
+                this->init_solver("COARSE SOLVE", {" it. ", "|| g_norm ||", "E   ", "     E + <g_diff, x_k>", "     E + <g_diff, s>"}); 
+
                 Vector g; 
                 fun.gradient(x, g);
 
+                Vector x_init = x; 
 
-                Vector g_0 = g; 
-                g +=g_diff; 
+                g += g_diff; 
 
 
                 s = 0*x;
 
-                Scalar g_norm = norm2(g); 
+                g_norm = norm2(g); 
 
-                Scalar energy, energy2, energy3; 
 
                 fun.value(x, energy); 
-            
+                energy2 = energy + dot(g_diff, x); 
+                energy3 = energy + dot(g_diff, s); 
 
-                energy3 = energy; // - dot(g_diff, s); 
-                energy2 = energy - dot(g_diff, x); 
-
-
-                // STATISTICS 
-                // std::cout<<"g_norm:  "<< g_norm <<  "     linear residual norm: "<< r_norm<< "    E: "<< energy   <<"    E2: "<< energy2   << " \n"; 
-                std::cout<<"g_norm:  "<< g_norm <<  "   E3: "<< energy3 << "    E: "<< energy   <<"    E2: "<< energy2   << " \n"; 
+                PrintInfo::print_iter_status(0, {g_norm, energy, energy2, energy3}); 
 
 
             for(auto i = 0; i < 1; i ++)
@@ -304,7 +302,7 @@ namespace utopia
 
                 Vector g; 
                 fun.gradient(x, g);
-                g +=g_diff; 
+                g += g_diff; 
 
 
 
@@ -317,18 +315,18 @@ namespace utopia
 
 
                 fun.value(x, energy); 
-        
-                energy2 = energy - dot(g_diff, x); 
-                energy3 = energy - dot(g_diff, s); 
+                energy2 = energy + dot(g_diff, x); 
+                energy3 = energy + dot(g_diff, s); 
 
+                PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3}); 
 
-                // STATISTICS 
-                // std::cout<<"g_norm:  "<< g_norm <<  "     linear residual norm: "<< r_norm<< "    E: "<< energy   <<"    E2: "<< energy2   << " \n"; 
-                std::cout<<"g_norm:  "<< g_norm <<  "   E3: "<< energy3 << "    E: "<< energy   <<"    E2: "<< energy2   << " \n"; 
-            
+                // TODO:: check this in nonlinear case 
+                // s = x - x_init; 
 
             }
 
+            std::cout<< def; 
+            
             return true; 
         }
 
