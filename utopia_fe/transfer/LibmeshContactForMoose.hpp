@@ -30,6 +30,23 @@
 
 namespace utopia {
     using namespace libMesh;
+
+    template<typename T>
+    static void normalize(std::vector<T> &vec)
+    {
+        T len = 0.;
+        for(uint d = 0; d < vec.size(); ++d) {
+            len += vec[d] * vec[d];
+        }
+        
+        len = std::sqrt(len);
+        
+        assert(len > 0);
+        
+        for(uint d = 0; d < vec.size(); ++d) {
+            vec[d] /= len;
+        }
+    }
    
     template<typename T>
     inline void Print(const std::vector<T> &v, std::ostream &os)
@@ -2451,7 +2468,7 @@ namespace utopia {
             Write<DVectord> w(normals_vec);
             
             each_read(normals, [&](const SizeType i, const SizeType j, const double value){
-                normals_vec.set(i+j, value);
+                normals_vec.set(i + j, value);
             });
         }
         
@@ -2460,7 +2477,7 @@ namespace utopia {
         each_read(is_contact_node, [&](const SizeType i , const double value){
             if (value > 0)
             {
-                is_contact_node.set(i,1);
+                is_contact_node.set(i, 1);
             }
         });
         
@@ -2475,6 +2492,22 @@ namespace utopia {
             Read<DVectord>  r_n(normals_vec);
             Write<DSMatrixd> w_o(orthogonal_trafos);
             Read<DVectord> r_icn(is_contact_node);
+
+
+            // disp(is_contact_node);
+
+            // MPI_Barrier(PETSC_COMM_WORLD);
+
+            // std::cout << "normals_vec: " << std::endl;
+            // disp(local_size(normals_vec));
+
+            // std::cout << "is_contact_node: " << std::endl;
+            // disp(local_size(is_contact_node));
+            // std::cout << std::flush;
+
+            // MPI_Barrier(PETSC_COMM_WORLD);
+
+
             
             utopia::Range r = utopia::range(normals_vec);
             for(uint i = r.begin(); i < r.end(); i += dim) {
@@ -2490,24 +2523,14 @@ namespace utopia {
                         normal[d] = normals_vec.get(i + d);
                     }
                     
-                    if(std::abs(normal[0] - 1.) > 1e-8) {
+                    // if(std::abs(normal[0] - 1.) > 1e-8) {
                         use_identity = false;
                         
+                        normalize(normal);
                         //-e1 basis vector
                         normal[0] -= 1;
-                        
-                        Real len = 0.;
-                        for(uint d = 0; d < dim; ++d) {
-                            len += normal[d] * normal[d];
-                        }
-                        
-                        len = std::sqrt(len);
-                        
-                        assert(len > 0);
-                        
-                        for(uint d = 0; d < dim; ++d) {
-                            normal[d] /= len;
-                        }
+                        normalize(normal);
+
                         
                         if(dim == 2) {
                             isector.householder_reflection_2(&normal[0], &H[0]);
@@ -2521,7 +2544,7 @@ namespace utopia {
                                 orthogonal_trafos.set(i + di, i + dj, H[di * dim + dj]);
                             }
                         }
-                    }
+                    // }
                 }
                 
                 if(use_identity)

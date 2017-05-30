@@ -324,7 +324,7 @@ namespace utopia {
         
         unsigned int variable_number = 0;
         
-        MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals,is_contact_node, 0.1, 101, 102);
+        MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals, is_contact_node, 0.1, 101, 102);
         
         
         // write("mat.m", matrix);
@@ -388,22 +388,49 @@ namespace utopia {
 //        std::cout << "HERE" << std::endl;
         
         //This BS is only for exporting the vtk
-        // auto ass = make_assembly([&]() -> void {
-        //         DSMatrixd id = local_identity(local_size(T));
-        // 		convert(id, *master_slave_context.system.matrix);
-        // 		convert(mv, *master_slave_context.system.rhs);
-        // });
+        auto ass = make_assembly([&]() -> void {
+        		const int n  = local_size(is_contact_node).get(0);
 
-        // master_slave_context.system.attach_assemble_object(ass);
-        // master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
-        // master_slave_context.equation_systems.solve();
+        		std::cout << "local_size: " << n << std::endl;
+                DSMatrixd id = local_identity(n, n);
+
+                disp(id);
+                std::cout << std::flush;
+
+        		convert(id, *master_slave_context.system.matrix);
+        		convert(is_contact_node, *master_slave_context.system.rhs);
+        		convert(is_contact_node, *master_slave_context.system.solution);
+        });
+
+        master_slave_context.system.attach_assemble_object(ass);
+        master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 0;
+        master_slave_context.equation_systems.solve();
 
         
         // mv = T * v;
         // convert(mv, *master_slave_context.system.solution);
-        
 
-        // ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("surface_mortar_glue2.e", master_slave_context.equation_systems);
+
+        DVectord normals_vec = local_zeros(size(is_contact_node));
+
+        {
+            Write<DVectord> w(normals_vec);
+            
+            each_read(normals, [&](const SizeType i, const SizeType j, const double value){
+                normals_vec.set(i + j, value);
+            });
+        }
+
+        convert(is_contact_node, *master_slave_context.system.solution);
+        ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("is_c_node.e", master_slave_context.equation_systems);
+
+        convert(gap, *master_slave_context.system.solution);
+        ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("gap.e", master_slave_context.equation_systems);
+
+        disp(normals_vec);
+
+        convert(normals_vec, *master_slave_context.system.solution);
+        ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("normals.e", master_slave_context.equation_systems);
 	}
 
 
