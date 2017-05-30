@@ -2473,11 +2473,15 @@ namespace utopia {
         }
         
         
+        bool has_contact = false;
+        
         // utopia::Range r = utopia::range(gap);
         each_read(is_contact_node, [&](const SizeType i , const double value){
             if (value > 0)
             {
                 is_contact_node.set(i, 1);
+                has_contact = true;
+                std::cout << "expetected_contact_node: " << i << std::endl;
             }
         });
         
@@ -2507,17 +2511,21 @@ namespace utopia {
 
             // MPI_Barrier(PETSC_COMM_WORLD);
 
-
+            
+            bool check_has_contact = false;
             
             utopia::Range r = utopia::range(normals_vec);
             for(uint i = r.begin(); i < r.end(); i += dim) {
                 bool use_identity = true;
                 
                 
-                // bool is_cn_i = is_contact_node.get(i/dim);
-                bool is_cn_i = is_contact_node.get(i);
+                // bool is_cn_i = is_contact_node.get(i/dim) > 0;
+                bool is_cn_i = is_contact_node.get(i) > 0;
                 
                 if(is_cn_i) {
+                    std::cout << "actual_contact_node: " << i << std::endl;
+                    
+                    check_has_contact = true;
                     
                     for(uint d = 0; d < dim; ++d) {
                         normal[d] = normals_vec.get(i + d);
@@ -2554,7 +2562,13 @@ namespace utopia {
                     }
                 }
             }
+            
+            if(!check_has_contact == has_contact) {
+                std::cerr << "inconsistent contact determination" << std::endl;
+            }
         }
+        
+        
 
         auto s_gap = local_size(gap_x);
         gap = local_zeros(s_gap);
