@@ -2617,7 +2617,11 @@ namespace utopia {
         // write("B_tilde.m", B_tilde);
         // write("Q.m", Q);
         // write("P.m", P);
+
         // write("B.m", B);
+        // write("O.m", orthogonal_trafos);
+        // write("g.m", gap);
+        // write("c.m", is_contact_node);
         
         express::RootDescribe("petsc assembly end", comm, std::cout);
         
