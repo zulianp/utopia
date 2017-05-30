@@ -180,7 +180,7 @@ namespace utopia
 
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
         {
-            Vector g_fine, g_coarse, g_diff, r_h,  r_2h, u_2l, s_coarse, s_fine, u_init; 
+            Vector g_fine, g_coarse, g_diff, r_h,  g_restricted, u_2l, s_coarse, s_fine, u_init; 
 
            this->make_iterate_feasible(fine_fun, u_l); 
 
@@ -191,7 +191,7 @@ namespace utopia
             r_h = g_fine - f; 
 
 
-            transfers(l-2).restrict(r_h, r_2h); 
+            transfers(l-2).restrict(r_h, g_restricted); 
             transfers(l-2).project_down(u_l, u_2l); 
 
             this->make_iterate_feasible(levels(l-2), u_2l); 
@@ -201,12 +201,14 @@ namespace utopia
 
 
             u_init = u_2l; 
-            g_diff = r_2h - g_coarse;  // tau correction 
+            g_diff = g_restricted - g_coarse;  // tau correction 
                           
+
+            Scalar coarse_reduction; 
 
             if(l == 2)
             {
-                coarse_solve(levels(0), u_2l, g_diff, s_coarse); 
+                coarse_solve(levels(0), u_2l, g_diff, s_coarse, coarse_reduction); 
 
             }
             else
@@ -222,7 +224,30 @@ namespace utopia
 
             transfers(l-2).interpolate(s_coarse, s_fine);
             
-            u_l += s_fine; 
+            Scalar E_old, E_new, ared, rho; 
+
+
+            fine_fun.value(u_l, E_old); 
+
+            Vector u_t = u_l; 
+
+            u_t += s_fine; 
+            fine_fun.value(u_t, E_new); 
+
+            ared = E_old - E_new; 
+            rho = ared / coarse_reduction; 
+
+
+            if(rho > 0)
+                u_l = u_t; 
+            else
+                std::cout<<"RMTR:: not taking trial point... \n"; 
+
+
+
+
+            std::cout<<"ared:  "<< ared << "   pred:   "<< coarse_reduction <<      "  rho:  "<< rho << "   \n"; 
+
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
@@ -249,18 +274,21 @@ namespace utopia
         }
 
 
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, Vector & s)
+        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, Vector & s, Scalar & reduction)
         {   
                 //_coarse_solver->solve(fun, x, rhs); 
             
-                Scalar energy, energy2, energy3, g_norm; 
+                Scalar energy_old, energy2_old, energy3_old, energy, energy2, energy3, g_norm;
+                Scalar ared, pred, rho; 
+                Scalar ared2, pred2, rho2; 
+                Scalar ared3, pred3, rho3; 
 
 
                 ColorModifier red(FG_LIGHT_YELLOW);
                 ColorModifier def(FG_DEFAULT);
                 std::cout << red; 
 
-                this->init_solver("COARSE SOLVE", {" it. ", "|| g_norm ||", "E   ", "     E + <g_diff, x_k>", "     E + <g_diff, s>"}); 
+                this->init_solver("COARSE SOLVE", {" it. ", "|| g_norm ||", "E   ", "     E + <g_diff, x_k>", "     E + <g_diff, s>", "rho", "rho2", "rho3"}); 
 
                 Vector g; 
                 fun.gradient(x, g);
@@ -275,11 +303,11 @@ namespace utopia
                 g_norm = norm2(g); 
 
 
-                fun.value(x, energy); 
-                energy2 = energy + dot(g_diff, x); 
-                energy3 = energy + dot(g_diff, s); 
+                fun.value(x, energy_old); 
+                energy2_old = energy_old + dot(g_diff, x); 
+                energy3_old = energy_old + dot(g_diff, s); 
 
-                PrintInfo::print_iter_status(0, {g_norm, energy, energy2, energy3}); 
+                PrintInfo::print_iter_status(0, {g_norm, energy_old, energy2_old, energy3_old}); 
 
 
             for(auto i = 0; i < 1; i ++)
@@ -318,15 +346,36 @@ namespace utopia
                 energy2 = energy + dot(g_diff, x); 
                 energy3 = energy + dot(g_diff, s); 
 
-                PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3}); 
 
-                // TODO:: check this in nonlinear case 
-                // s = x - x_init; 
+                ared = energy_old - energy; 
+                ared2 = energy2_old - energy2; 
+                ared3 = energy3_old - energy3; 
 
+                Scalar l_term = dot(g, s);
+                Scalar qp_term = dot(s, A * s);
+                pred = - l_term - 0.5 * qp_term; 
+
+                pred *= -1;
+
+                rho = ared/pred; 
+
+
+                rho2 = ared2/pred; 
+                rho3 = ared3/pred; 
+
+
+
+                PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3, rho, rho2, rho3}); 
+                // PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3 }); 
             }
 
-            std::cout<< def; 
+            // TODO:: check this in nonlinear case 
+            // s = x - x_init; 
             
+            reduction = ared; 
+
+            std::cout<< def; 
+
             return true; 
         }
 
