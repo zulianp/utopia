@@ -2,16 +2,29 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-26
+* @Last Modified time: 2017-05-30
 */
 
-#ifndef UTOPIA_FAS_HPP
-#define UTOPIA_FAS_HPP
+#ifndef UTOPIA_RMTR_INFTY_HPP
+#define UTOPIA_RMTR_INFTY_HPP
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
+
+#include "utopia_Linear.hpp"
+
+#include "petscmat.h"
+#include "petscvec.h"
+#include <petsc/private/snesimpl.h>
+#include "petscsnes.h"  
+
+#include "utopia_Level.hpp"
+
+
+#include "utopia_NonLinearSolver.hpp"
+#include "utopia_NonLinearSmoother.hpp"
 
 
 namespace utopia 
@@ -23,13 +36,16 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector, class FunctionType>
-    class FAS : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>
+    class RMTR_infty : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
         typedef utopia::Transfer<Matrix, Vector>   Transfer;
+
+
+        typedef utopia::Level<Matrix, Vector>               Level;
 
     
 
@@ -41,7 +57,7 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        FAS(    const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
+        RMTR_infty(    const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                 const std::shared_ptr<Solver> &coarse_solver = std::shared_ptr<Solver>(),
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
@@ -51,7 +67,7 @@ namespace utopia
             set_parameters(params); 
         }
 
-        virtual ~FAS(){} 
+        virtual ~RMTR_infty(){} 
         
 
         void set_parameters(const Parameters params)  // override
@@ -78,19 +94,20 @@ namespace utopia
          */
         virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
         {
-            this->init_solver("FAS", {" it. ", "|| r_N ||", "r_norm" , "E"}); 
+            this->init_solver("RMTR_infty", {" it. ", "|| r_N ||", "r_norm" , "E"}); 
+
+
 
             Vector F_h  = local_zeros(local_size(x_h)); 
 
             bool converged = false; 
             SizeType it = 0, l = this->num_levels(); 
             Scalar r_norm, r0_norm, rel_norm;
+            std::cout<<"RMTR_infty: number of levels: "<< l << "  \n"; 
 
-            std::cout<<"FAS: number of levels: "<< l << "  \n"; 
-
-            // just to check what is problem 
             Matrix hessian; 
             fine_fun.hessian(x_h, hessian); 
+
 
             fine_fun.gradient(x_h, F_h); 
             r0_norm = norm2(F_h); 
@@ -131,6 +148,12 @@ namespace utopia
             
             }
 
+
+            Vector error = hessian * x_h - F_h; 
+            Scalar e_norm = norm2(error); 
+
+            std::cout<<"e_norm:  "<< e_norm << " \n"; 
+
             return true; 
         }
 
@@ -148,52 +171,63 @@ namespace utopia
             return this->_transfers[l]; 
         }
 
+        inline Level &lin_levels(const SizeType &l)
+        {
+            return this->_levels[l]; 
+        }
 
 
 
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
         {
-            Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h, u_init; 
+            Vector g_fine, g_coarse, g_diff, r_h,  r_2h, u_2l, s_coarse, s_fine, u_init; 
 
-            this->make_iterate_feasible(fine_fun, u_l); 
+           this->make_iterate_feasible(fine_fun, u_l); 
 
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
-            fine_fun.gradient(u_l, L_l);             
+            fine_fun.gradient(u_l, g_fine);             
 
-            r_h = L_l - f; 
+            r_h = g_fine - f; 
 
 
             transfers(l-2).restrict(r_h, r_2h); 
             transfers(l-2).project_down(u_l, u_2l); 
 
+            this->make_iterate_feasible(levels(l-2), u_2l); 
+
             
-            levels(l-2).gradient(u_2l, L_2l); 
+            levels(l-2).gradient(u_2l, g_coarse); 
+
 
             u_init = u_2l; 
-            L_2l = L_2l - r_2h;  // tau correction 
-                                 
+            g_diff = r_2h - g_coarse;  // tau correction 
+                          
+
             if(l == 2)
             {
-                this->make_iterate_feasible(levels(0), u_2l); 
-                coarse_solve(levels(0), u_2l, L_2l); 
+                coarse_solve(levels(0), u_2l, g_diff, s_coarse); 
+
             }
             else
             {
-                // recursive call into FAS - needs to be checked 
-                for(SizeType k = 0; k < this->mg_type(); k++)
-                {   
-                    SizeType l_new = l - 1; 
-                    multiplicative_cycle(levels(l-2), u_2l, L_2l, l_new); 
-                }
+                // // recursive call into FAS - needs to be checked 
+                // for(SizeType k = 0; k < this->mg_type(); k++)
+                // {   
+                //     SizeType l_new = l - 1; 
+                //     multiplicative_cycle(levels(l-2), u_2l, L_2l, l_new); 
+                // }
             }
 
-            e_2h = u_2l - u_init; 
-            transfers(l-2).interpolate(e_2h, e_h);
+            // s_coarse = u_2l - u_init; 
 
-            this->zero_boundary_correction(fine_fun, e_h); 
+           // this->zero_boundary_correction(levels(0), s_coarse); 
+
+            transfers(l-2).interpolate(s_coarse, s_fine);
+
+            //this->zero_boundary_correction(fine_fun, s_fine); 
             
-            u_l += e_h; 
+            u_l += s_fine; 
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
@@ -220,9 +254,81 @@ namespace utopia
         }
 
 
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs)
+        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, Vector & s)
         {   
-            _coarse_solver->solve(fun, x, rhs); 
+                //_coarse_solver->solve(fun, x, rhs); 
+            
+                Vector g; 
+                fun.gradient(x, g);
+
+
+                Vector g_0 = g; 
+                g +=g_diff; 
+
+
+                s = 0*x;
+
+                Scalar g_norm = norm2(g); 
+
+                Scalar energy, energy2, energy3; 
+
+                fun.value(x, energy); 
+            
+
+                energy3 = energy; // - dot(g_diff, s); 
+                energy2 = energy - dot(g_diff, x); 
+
+
+                // STATISTICS 
+                // std::cout<<"g_norm:  "<< g_norm <<  "     linear residual norm: "<< r_norm<< "    E: "<< energy   <<"    E2: "<< energy2   << " \n"; 
+                std::cout<<"g_norm:  "<< g_norm <<  "   E3: "<< energy3 << "    E: "<< energy   <<"    E2: "<< energy2   << " \n"; 
+
+
+            for(auto i = 0; i < 1; i ++)
+            {
+                auto linear_solver  = std::make_shared< LUDecomposition<Matrix, Vector> >();
+
+            
+                Matrix A; 
+                fun.hessian(x, A); 
+                
+
+                linear_solver->solve(A, -1*g, s);
+
+                Vector r = -1*g - A * s; 
+                Scalar r_norm = norm2(r); 
+
+
+                x +=s;   
+
+
+                Vector g; 
+                fun.gradient(x, g);
+                g +=g_diff; 
+
+
+
+                g_norm = norm2(g); 
+
+
+
+
+               this->make_iterate_feasible(fun, x); 
+
+
+                fun.value(x, energy); 
+        
+                energy2 = energy - dot(g_diff, x); 
+                energy3 = energy - dot(g_diff, s); 
+
+
+                // STATISTICS 
+                // std::cout<<"g_norm:  "<< g_norm <<  "     linear residual norm: "<< r_norm<< "    E: "<< energy   <<"    E2: "<< energy2   << " \n"; 
+                std::cout<<"g_norm:  "<< g_norm <<  "   E3: "<< energy3 << "    E: "<< energy   <<"    E2: "<< energy2   << " \n"; 
+            
+
+            }
+
             return true; 
         }
 
@@ -256,5 +362,5 @@ namespace utopia
 
 }
 
-#endif //UTOPIA_FAS_HPP
+#endif //UTOPIA_RMTR_INFTY_HPP
 

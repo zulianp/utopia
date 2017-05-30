@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-05-04
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-11
+* @Last Modified time: 2017-05-16
 */
 
 #ifndef UTOPIA_RMTR_HPP
@@ -16,8 +16,11 @@
 
 
 
-// #include <petscksp.h>
-// #include <petscsys.h>
+#include <petscksp.h>
+#include <petscsys.h>
+
+#include "petscmat.h"
+#include "petscvec.h"
 
 
 namespace utopia 
@@ -107,12 +110,14 @@ namespace utopia
 
             while(!converged)
             {            
-                if(this->cycle_type() =="multiplicative")
+                //if(this->cycle_type() =="multiplicative")
                     multiplicative_cycle(fine_fun, x_h, rhs, l); 
+
+
                 // else if(this->cycle_type() =="full")
                 //     full_cycle(rhs, l, x_0); 
-                else
-                    std::cout<<"ERROR::MG_OPT<< unknown MG type... \n"; 
+                // else
+                //     std::cout<<"ERROR::MG_OPT<< unknown MG type... \n"; 
 
 
                 #ifdef CHECK_NUM_PRECISION_mode
@@ -160,6 +165,9 @@ namespace utopia
         }
 
 
+
+
+
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
         {
             std::cout<<"-------- at some point: RMTR ....  multiplicative_cycle ....... \n"; 
@@ -183,33 +191,17 @@ namespace utopia
         {
 
             fine_fun.gradient(u_l, g_l);  
-            fine_fun.hessian(u_l, H_l);  
-
 
             Vector smooth_s =  0 * u_l; 
             Vector u_l_init = u_l; 
+                 
+            delta = 10000; 
 
-            // std::cout<<"-----------    FINE  SMOOTHING   ----------- \n";                            
-            local_smoother_TR(fine_fun, u_l, g_l, H_l, delta, 1, l, pred, smooth_s); 
-
-
-            // std::cout<<"delta from smoother: "<< delta << " \n"; 
-
-
-            // Scalar prod_1 = dot(u_l, smooth_s); 
-            
-            Vector x_diff = u_l_init + smooth_s - (u_l); 
-            Scalar diff = norm2(x_diff); 
-
-            std::cout<<"diff: "<<diff <<"     |u_l_init| "<< norm2(u_l_init)<<  "    smooth_s:  "<< norm2(smooth_s) << "    \n"; 
-
+            local_smoother_TR(fine_fun, u_l, g_l, delta, 0, l, pred, smooth_s); 
 
 
             fine_fun.gradient(u_l, g_l);  
             Scalar r_norm = norm2(g_l); 
-            std::cout<<"-----------RMTR---------    r_norm: "<< r_norm  << "  \n"; 
-
-
             bool converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(it, r_norm, 1, 1); 
 
             if(converged)
@@ -218,22 +210,16 @@ namespace utopia
 
             fine_fun.value(u_l, E_k_h);
 
-
             transfers(l-2).restrict(g_l, g_2l);    
-
-            // transfers(l-2).restrict(u_l, u_2l);   
             transfers(l-2).project_down(u_l, u_2l);   
-
-            transfers(l-2).restrict(H_l, H_2l); 
 
             Scalar delta_fine = delta; 
 
             Vector u_2l_init = u_2l; 
+               
+            local_smoother_TR(levels(0), u_2l, g_2l, delta, 1, l-1, pred, e_2h); 
 
-            // std::cout<<"---------------- COARSE   ------------- \n";                           
-            local_smoother_TR(levels(0), u_2l, g_2l, H_2l, delta, 1, l-1, pred, e_2h); 
-
-            std::cout<<"dot(u_2l, e_2h): "<<dot(u_2l_init, e_2h) << "    \n"; 
+            std::cout<<"dot(g_2l, e_2h): "<<dot(g_2l, e_2h) << "    \n"; 
 
 
             // here we take initial delta from fine level 
@@ -241,12 +227,10 @@ namespace utopia
 
             // correction is up
             transfers(l-2).interpolate(e_2h, e_h);
+            // this->zero_boundary_correction(fine_fun, e_h); 
 
 
-            //this->zero_correction_contributions(fine_fun, e_h); 
-
-            u_l_init = u_l; 
-            std::cout<<"after getting out, dot(u_l_init, e_2h): "<<dot(u_l_init, e_h) << "    \n"; 
+            std::cout<<"dot(g_l, e_h): "<<dot(g_l, e_h) << "    \n"; 
 
 
             Vector u_trial = u_l + e_h; 
@@ -280,9 +264,6 @@ namespace utopia
              // good reduction, accept trial point 
               if (rho >= this->rho_tol())
               {
-               
-                // E = E_k1;  // check this out 
-
                 std::cout<<"RMTR:: TAKING point from previous level ... \n"; 
                 u_l = u_trial; 
 
@@ -291,9 +272,6 @@ namespace utopia
               else
               {
                 std::cout<<"RMTR:: NOT  taking point from previous level ... \n"; 
-
-                // x_k1 = x_k;
-                // E = E_k; 
               }
 
 
@@ -364,12 +342,10 @@ namespace utopia
             //         // std::cout<<"yes, sum ... i:  "<< i << " \n"; 
             //         transfers(i-1).interpolate(s, s); 
             //     }
-            //     // std::cout<<"level_dependent_norm: "<< norm2(s) << "   \n"; 
+            //     //std::cout<<"level_dependent_norm: "<< norm2(s) << "   \n"; 
             //     return norm2(s); 
             // }
             
-
-
 
             if(current_l == this->num_levels())
             {
@@ -377,6 +353,7 @@ namespace utopia
             }
             else
             {
+                // Vector s = u; // carries over prolongated correction
                 Vector s = u; // carries over prolongated correction
          
                 for(SizeType i = current_l; i < this->num_levels(); i++)
@@ -385,6 +362,7 @@ namespace utopia
                     transfers(i-1).restrict(s, s); 
                     // s = dot(s,s); 
                 }
+             //   std::cout<<"level_dependent_norm graffon :   "<< norm2(s) << "   \n"; 
                 return norm2(s); 
             }
 
@@ -392,11 +370,9 @@ namespace utopia
 
 
 
-        bool local_smoother_TR(FunctionType & fun, Vector & x_k, const Vector & Rg, const Matrix &RH, Scalar & delta, const SizeType & max_it, const SizeType & level, Scalar & pred_local_model, Vector & s_global)
+        bool local_smoother_TR(FunctionType & fun, Vector & x_k, const Vector & Rg, Scalar & delta, const SizeType & max_it, const SizeType & level, Scalar & pred_local_model, Vector & s_global)
         {
             const Scalar delta0 = delta; 
-
-
             this->make_iterate_feasible(fun, x_k); 
 
 
@@ -429,11 +405,6 @@ namespace utopia
 
             std::cout<<"||g_delta|| "<< norm2(g_delta) << " \n"; 
 
-            // second order consistency
-            fun.hessian(x_k, H);
-            // H_delta = H - RH; 
-            // H_delta *=-1; 
-
 
             // in order to measure model decrease 
             g_norm = norm2(g + g_delta); 
@@ -464,34 +435,55 @@ namespace utopia
                 g = g + g_delta; 
 
                 fun.value(x_k, E_k); 
-                E_k = E_k + dot(g_delta, x_k); // + 0.5 * dot(x_k, H_delta * x_k); 
+                E_k = E_k + dot(g_delta, x_k); 
 
                 fun.hessian(x_k, H); 
-                // H = H + H_delta; 
 
 
-                // // strange thing 
-                // KSP ksp; 
-                // PC pc; 
-                // MPI_Comm            comm; 
-                // PetscObjectGetComm((PetscObject)raw_type(H), &comm);
-                // KSPCreate(comm, &ksp);
+                if(level >1)
+                {
+                    Vector sg = -1 * g; 
+                    Vector s_smooth; 
 
-                // KSPSetOperators(ksp, raw_type(H), raw_type(H));
-                // KSPSetType(ksp, KSPSTCG);  
-                // KSPGetPC(ksp, &pc);
-                // PCSetType(pc, PCASM);
-                // KSPSTCGSetRadius(ksp, delta);
-                // KSPSolve(ksp, raw_type(g),raw_type(s));
-                // KSPSTCGGetObjFcn(ksp, &pred);
+                    std::cout<<"smoothing.... \n"; 
+                    
+                    MatSOR( raw_type(H), 
+                    raw_type(sg), 
+                    1, 
+                    //  SOR_FORWARD_SWEEP,
+                    SOR_LOCAL_SYMMETRIC_SWEEP,    // parallel implementation - builds block jacobi and on blocks it calls GS 
+                    0, 
+                    2, 
+                    2, 
+                    raw_type(s)); 
 
-                // // since Newton iteration is defined with - 
-                // pred = -pred; 
-                // s *=-1;  
+                    this->get_pred(g, H, s, pred); 
+                    std::cout<<"norm2(s):   " << norm2(s) << "  \n"; 
 
+                }
+                else
+                {
 
+                    // strange thing 
+                    KSP ksp; 
+                    PC pc; 
+                    MPI_Comm            comm; 
+                    PetscObjectGetComm((PetscObject)raw_type(H), &comm);
+                    KSPCreate(comm, &ksp);
 
+                    KSPSetOperators(ksp, raw_type(H), raw_type(H));
+                    KSPSetType(ksp, KSPSTCG);  
+                    KSPGetPC(ksp, &pc);
+                    PCSetType(pc, PCASM);
+                    KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, PETSC_DEFAULT); 
+                    KSPSTCGSetRadius(ksp, 10000000);
+                    KSPSolve(ksp, raw_type(g),raw_type(s));
+                    KSPSTCGGetObjFcn(ksp, &pred);
 
+                    // since Newton iteration is defined with - 
+                    pred = -pred; 
+                    s *=-1;  
+                }
 
             //----------------------------------------------------------------------------
             //     building trial point 
@@ -529,7 +521,6 @@ namespace utopia
                 x_k = tp; 
                 E = E_k1; 
                 it_success++; 
-                //std::cout<< "it_success:  "<< it_success << "   \n"; 
               }
               // otherwise, keep old point
               else
@@ -563,7 +554,7 @@ namespace utopia
             if(smoothness_norm < _eps_smooth && level<this->num_levels())
             {
                 PrintInfo::print_iter_status(it, {g_norm, E, E_k, E_k1, ared, pred, rho, delta, s_norm}); 
-                std::cout<<"termination based on smoothness of grad. \n"; 
+                std::cout<<"termination based on smoothness of grad .... \n"; 
                 pred_local_model = E0 - E; 
                 std::cout<<"pred: "<< pred_local_model << " \n"; 
                 return true; 
@@ -575,9 +566,8 @@ namespace utopia
             if(corr_norm > (1 - _eps_delta)* delta0 && level<this->num_levels())
             {
                 PrintInfo::print_iter_status(it, {g_norm, E, E_k, E_k1, ared, pred, rho, delta, s_norm}); 
-                std::cout<<"correction too long .... \n"; 
+                std::cout<<"termination due to too long correction .... \n"; 
                 pred_local_model = E0 - E; 
-                std::cout<<"pred: "<< pred_local_model << " \n"; 
                 return true; 
             }
 
@@ -612,7 +602,7 @@ namespace utopia
 
 
                 if(delta < 1e-12)
-                {   std::cout<<"EROROR:: delta smaller than 0 anyway... what is wrong ?? \n ";              
+                {   std::cout<<"EROROR:: delta smaller than 0 ... something is wrong ?? \n ";              
                     pred_local_model = E0 - E; 
                     return true; 
                 }
@@ -639,26 +629,10 @@ namespace utopia
         Scalar _Kg; 
 
         Scalar _eps_delta; 
-
         Scalar _delta0;                     // initial tr radius - restr from fine level 
-        // Scalar _delta_fine;                 // fine level TR radius
-        // Scalar _delta;                      // current TR radius
-        // Scalar _intermediate_delta;         // current TR radius
-
-        // SizeType _l;                        // level 
 
 
         std::shared_ptr<TRSubproblem> _tr_subproblem;  // solving TR subproblems on different levels   
-
-
-
-
-
-
-
-
-
-
 
 
     };

@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-15
+* @Last Modified time: 2017-05-26
 */
 
 #ifndef UTOPIA_NONLINEAR_PETSC_GS_HPP
@@ -61,16 +61,20 @@ namespace utopia
                 SNES snes; 
                 fun_petsc->getSNES(snes); 
                 SNESSetFromOptions(snes); 
-                SNESSetType(snes, SNESNRICHARDSON);
+                // SNESSetType(snes, SNESNRICHARDSON);
+
+
+               SNESComputeJacobian(snes, raw_type(x), snes->jacobian,  snes->jacobian_pre);
+
 
                 // SNES pc; 
                 SNESSetType(snes, SNESNGS);
                 SNESSetTolerances(snes, 0.0, 0.0, 0.0, this->sweeps(), PETSC_DEFAULT);
 
 
-                SNESLineSearch linesearch; 
-                SNESGetLineSearch(snes, &linesearch);
-                SNESLineSearchSetType(linesearch, SNESLINESEARCHL2); 
+                // SNESLineSearch linesearch; 
+                // SNESGetLineSearch(snes, &linesearch);
+                // SNESLineSearchSetType(linesearch, SNESLINESEARCHL2); 
 
                 SNESSolve(snes, raw_type(rhs), raw_type(x)); 
                 snes->vec_rhs =  NULL; 

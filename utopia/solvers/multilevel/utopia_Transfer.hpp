@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-02
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-10
+* @Last Modified time: 2017-05-25
 */
 
 #ifndef UTOPIA_ML_TRANSFER_HPP
@@ -42,7 +42,7 @@
                 _R(transpose(I)),
                 _P(P)
         {
-         
+         std::cout<<"proper transfer down ... \n"; 
         }
 
 

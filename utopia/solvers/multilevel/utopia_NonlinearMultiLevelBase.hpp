@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-15
+* @Last Modified time: 2017-05-23
 */
 
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
@@ -227,7 +227,7 @@ protected:
 
 
 
-
+        // TODO:: this is not so good due to the fact that we have problems whe  DBC = 0
         virtual bool make_iterate_feasible(FunctionType & fun, Vector & x)
         {
 
