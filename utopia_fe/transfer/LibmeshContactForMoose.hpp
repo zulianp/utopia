@@ -2549,7 +2549,7 @@ namespace utopia {
                         
                         for(uint di = 0; di < dim; ++di) {
                             for(uint dj = 0; dj < dim; ++dj) {
-                                orthogonal_trafos.set(i + di, i + dj, H[di * dim + dj]);
+                                orthogonal_trafos.set((i + di), (i + dj), H[di * dim + dj]);
                             }
                         }
                     // }
