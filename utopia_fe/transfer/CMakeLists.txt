@@ -25,7 +25,7 @@ list(APPEND MOONOLITH_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(moonolith STATIC ${MOONOLITH_SOURCES} ${MOONOLITH_HEADERS})
 target_include_directories(moonolith PUBLIC ${MPI_CXX_INCLUDE_PATH} ${MOONOLITH_INCLUDES})
-target_link_libraries(moonolith PUBLIC ${TRANSFER_LIB})
+target_link_libraries(moonolith ${TRANSFER_LIB})
 target_compile_definitions(moonolith PUBLIC
   "-DWITH_AUTOMATIC_DIFFERENTIATION"
   "-DWITH_MPI"

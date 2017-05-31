@@ -391,11 +391,11 @@ namespace utopia {
         auto ass = make_assembly([&]() -> void {
         		const int n  = local_size(is_contact_node).get(0);
 
-        		std::cout << "local_size: " << n << std::endl;
+        		// std::cout << "local_size: " << n << std::endl;
                 DSMatrixd id = local_identity(n, n);
 
-                disp(id);
-                std::cout << std::flush;
+                // disp(id);
+                // std::cout << std::flush;
 
         		convert(id, *master_slave_context.system.matrix);
         		convert(is_contact_node, *master_slave_context.system.rhs);
@@ -427,7 +427,7 @@ namespace utopia {
         convert(gap, *master_slave_context.system.solution);
         ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("gap.e", master_slave_context.equation_systems);
 
-        disp(normals_vec);
+        // disp(normals_vec);
 
         convert(normals_vec, *master_slave_context.system.solution);
         ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("normals.e", master_slave_context.equation_systems);
