@@ -1243,7 +1243,7 @@ namespace utopia {
                   const std::shared_ptr<DofMap> &dof_slave,
                   const std::shared_ptr<const unsigned int> &_from_var_num,
                   const std::shared_ptr<const unsigned int> &_to_var_num,
-                  DSMatrixd &B1, DSMatrixd &B2,
+                  DSMatrixd &B1,/* DSMatrixd &B2,*/
                   const cutk::Settings &settings,bool  use_biorth_, bool  impact)
     {
         
@@ -1588,53 +1588,53 @@ namespace utopia {
 
         
         
-        if (impact)
-        {
-            auto s_B_x = local_size(B1);
-            B2 = local_sparse(s_B_x.get(0), s_B_x.get(1), mMaxRowEntries);
-            
-            {
-                std::cout<< "i am modifying the impact  matrix"<<std::endl;
-                utopia::Write<DSMatrixd> w_B(B2);
-                utopia::each_read(B1, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
-                    for(utopia::SizeType d = 0; d < dim; ++d) {
-                        //std::cout<< "i am modifying the matrix with value"<<value<<std::endl;
-                        B2.set(i, j, 0.0);
-                        B2.set(i, j+d, value);
-                    }
-                });
-                
-                
-            }
-        }
-        else
-        {
-            auto s_B_x = local_size(B1);
-          
-            B2 = local_sparse(s_B_x.get(0), s_B_x.get(1), mMaxRowEntries);
-            
-            
-            std::cout<< "i am modifying the matrix"<<std::endl;
-            utopia::Write<DSMatrixd> w_B(B2);
-            utopia::each_read(B1, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
-                for(utopia::SizeType d = 0; d < dim; ++d) {
-                   // std::cout<< "i am modifying the matrix with value"<<value<<std::endl;
-                    B2.set(i, j, 0.0);
-                    B2.set(i+d, j, value);
-                }
-            });
-            
-            
-            
-            
-        }
+//        if (impact)
+//        {
+//            auto s_B_x = local_size(B1);
+//            B2 = local_sparse(s_B_x.get(0), s_B_x.get(1), mMaxRowEntries);
+//            
+//            {
+//                std::cout<< "i am modifying the impact  matrix"<<std::endl;
+//                utopia::Write<DSMatrixd> w_B(B2);
+//                utopia::each_read(B1, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
+//                    for(utopia::SizeType d = 0; d < dim; ++d) {
+//                        //std::cout<< "i am modifying the matrix with value"<<value<<std::endl;
+//                        B2.set(i, j, 0.0);
+//                        B2.set(i, j+d, value);
+//                    }
+//                });
+//                
+//                
+//            }
+//        }
+//        else
+//        {
+//            auto s_B_x = local_size(B1);
+//          
+//            B2 = local_sparse(s_B_x.get(0), s_B_x.get(1), mMaxRowEntries);
+//            
+//            
+//            std::cout<< "i am modifying the matrix"<<std::endl;
+//            utopia::Write<DSMatrixd> w_B(B2);
+//            utopia::each_read(B1, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
+//                for(utopia::SizeType d = 0; d < dim; ++d) {
+//                   // std::cout<< "i am modifying the matrix with value"<<value<<std::endl;
+//                    B2.set(i, j, 0.0);
+//                    B2.set(i+d, j, value);
+//                }
+//            });
+//            
+//            
+//            
+//            
+//        }
         
         
         
         express::RootDescribe("petsc assembly end", comm, std::cout);
         
-        write("_B_1.m", B1);
-        write("_B_2.m", B2);
+//        write("_B_1.m", B1);
+//        write("_B_2.m", B2);
         
         // c2.stop();
         // std::cout << "Global stuff\n";
@@ -1653,18 +1653,18 @@ namespace utopia {
                               const std::shared_ptr<const unsigned int> & _from_var_num,
                               const std::shared_ptr<const unsigned int> & _to_var_num,
                               bool  use_biorth_, bool impact,
-                              DSMatrixd &B1, DSMatrixd &B2)
+                              DSMatrixd &B1/*, DSMatrixd &B2*/)
     {
         cutk::Settings settings;
         
         if(master->mesh_dimension() == 2) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-            return utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B1, B2, settings,use_biorth_, impact);
+            return utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B1, /*B2,*/ settings,use_biorth_, impact);
         }
         
         if(master->mesh_dimension() == 3) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-            return utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B1, B2, settings,use_biorth_, impact);
+            return utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B1, /*B2,*/ settings,use_biorth_, impact);
         }
         
         assert(false && "Dimension not supported!");
