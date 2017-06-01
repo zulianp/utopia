@@ -46,7 +46,6 @@ namespace utopia
             using namespace utopia;
 
             SizeType local_N = local_size(x_new).get(0);
-            // SizeType N = x_new.size().get(0);
 
             Scalar c = 1;
             SizeType iterations = 0;
