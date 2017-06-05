@@ -2,7 +2,7 @@
 * @Author: Alena Kopanicakova
 * @Date:   2017-05-22
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-22
+* @Last Modified time: 2017-05-23
 */
 
 
@@ -325,7 +325,14 @@ private:
                 // TODO::  check why it works with -g and +g (because sign does not matter in case of eq ? or something else ?)
                 lambda_m = Ac_m * (A * x - b);
 
-                x_diff_norm = norm2(x - x_old);
+                if(it > 1)
+                {
+                    x_diff_norm = norm2(x - x_old);
+                }
+                else
+                {
+                    x_diff_norm = 9999; 
+                }
                 
                 // print iteration status on every iteration 
                 if(this->verbose())

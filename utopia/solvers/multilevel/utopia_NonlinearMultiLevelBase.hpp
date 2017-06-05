@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-23
+* @Last Modified time: 2017-06-05
 */
 
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
@@ -227,27 +227,37 @@ protected:
 
 
 
-        // TODO:: this is not so good due to the fact that we have problems whe  DBC = 0
+        /**
+         * @brief      Function looks up for id, where we should apply Dirichlet BC and set value to required one
+         *
+         * @param      fun   The fun
+         * @param      x     
+         *
+         */
         virtual bool make_iterate_feasible(FunctionType & fun, Vector & x)
         {
 
-          Vector bc; 
-          fun.get_boundary_values(bc); 
+          Vector bc_values; 
+          fun.get_boundary_values(bc_values); 
 
-          if(local_size(x)==local_size(bc))
+          Vector bc_ids; 
+          fun.get_boundary_ids(bc_ids); 
+
+          if(local_size(x) == local_size(bc_ids))
           {
             {
                 Write<Vector> w(x);
-                Read<Vector> r(bc);
+                Read<Vector>  r_id(bc_ids);
+                Read<Vector>  r_val(bc_values);
 
                 Range range_w = range(x);
                 for (SizeType i = range_w.begin(); i != range_w.end(); i++) 
                 {
-                    Scalar value = bc.get(i);
+                    Scalar id = bc_ids.get(i);
+                    Scalar value = bc_values.get(i);
                     
-                    if(value != 0)
+                    if(id == 1)
                     {
-                      // std::cout<<"   "<< i << "    "; 
                       x.set(i, value);
                     }
                 }
@@ -260,13 +270,16 @@ protected:
 
 
 
-        // zero correction
+        /**
+         * @brief      Function zeors correction, where we have Dirichlet BC aplied.
+         *
+         * @param      fun   The fun
+         * @param      c     The correction
+         */
         virtual bool zero_boundary_correction(FunctionType & fun, Vector & c)
         {
-
-          // std::cout<<"zero_correction_contributions   \n"; 
           Vector bc; 
-          fun.get_boundary_values(bc); 
+          fun.get_boundary_ids(bc); 
 
           if(local_size(c)==local_size(bc))
           {
@@ -279,9 +292,8 @@ protected:
                 {
                     Scalar value = bc.get(i);
                     
-                    if(value != 0)
+                    if(value == 1)
                     {
-                      // std::cout<<"yes non zero: "<< i << "   \n"; 
                       c.set(i, 0);
                     }
                 }

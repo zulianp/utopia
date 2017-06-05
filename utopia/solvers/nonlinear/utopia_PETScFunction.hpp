@@ -32,7 +32,8 @@ namespace utopia
                 first_grad(0), 
                 first_energy(0)
             {
-            
+                // std::cout<<"constructor of PETSCUtopiaNonlinearFunction \n"; 
+                // disp(x_init); 
             }
 
 
@@ -45,11 +46,13 @@ namespace utopia
                 
                 SNESComputeFunction(snes_, raw_type(x), raw_type(g));   
 
-                // if(local_size(g)==local_size(this->_rhs))
-                // {
-                //    std::cout<<"grad:: yes rhs ... \n"; 
-                //     g = g - this->_rhs; 
-                // }
+
+                // THIS IS NEEDED FOR OTHER FUNCTIONS THAN TR 
+                if(local_size(g)==local_size(this->_rhs))
+                {
+                   // std::cout<<"grad:: yes rhs ... \n"; 
+                    g = g - this->_rhs; 
+                }
 
                 return true; 
             }
@@ -83,7 +86,18 @@ namespace utopia
 
                 SNESComputeObjective(snes_, raw_type(x), &result); 
 
-               // result = 0.5 * norm2(grad) * norm2(grad); 
+
+                // if(local_size(grad)==local_size(this->_rhs))
+                // {
+                //     Scalar prod = dot(this->_rhs, x); 
+                //     // std::cout<<"result - dot(this->_rhs, x):   "<< prod << "          \n"; 
+                //     result = result; // - prod; 
+                // }
+
+
+
+
+               //result = 0.5 * norm2(grad) * norm2(grad); 
 
 
 

@@ -22,9 +22,10 @@ namespace utopia
         virtual ~Function() { }
 
         // TODO:: this needs to be changed ! 
-        Function(const Vector & x_init = local_zeros(1), const Vector & rhs = local_zeros(1)) : 
+        Function(const Vector & x_init = local_zeros(1), const Vector & rhs = local_zeros(1), const Vector & bc_marker = local_zeros(1)) : 
                 _x_init(x_init),
-                _rhs(rhs)
+                _rhs(rhs), 
+                _boundary_marker(bc_marker)
         {
 
         }
@@ -78,18 +79,30 @@ namespace utopia
         }
 
 
-        virtual bool boundary_values_init(const Vector &x_in)
+        virtual bool set_boundary_values(const Vector &x_in)
         {
             _x_init = x_in; 
             return true; 
         }
 
+        virtual bool get_boundary_ids(Vector & x)
+        {   
+            x = _boundary_marker; 
+            return true; 
+        }
 
+
+        virtual bool set_boundary_ids(const Vector &x_in)
+        {
+            _boundary_marker = x_in; 
+            return true; 
+        }
 
 
      protected:
         Vector _x_init; 
         Vector _rhs;
+        Vector _boundary_marker;
 
 
     };

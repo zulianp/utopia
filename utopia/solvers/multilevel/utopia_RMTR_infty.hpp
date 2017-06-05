@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-30
+* @Last Modified time: 2017-06-01
 */
 
 #ifndef UTOPIA_RMTR_INFTY_HPP
@@ -101,7 +101,8 @@ namespace utopia
          */
         virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
         {
-            this->init_solver("RMTR_infty", {" it. ", "|| r_N ||", "r_norm" , "E"}); 
+            // this->init_solver("RMTR_infty", {" it. ", "|| r_N ||", "r_norm" , "E"}); 
+            this->init_solver("RMTR_infty", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
 
 
 
@@ -119,10 +120,19 @@ namespace utopia
             fine_fun.gradient(x_h, F_h); 
             r0_norm = norm2(F_h); 
 
+            this->make_iterate_feasible(fine_fun, x_h); 
+            Scalar energy; 
+            fine_fun.value(x_h, energy); 
+
+            Scalar ared=0, pred=0, rho=0; 
+
+            PrintInfo::print_iter_status(it, {r0_norm, energy, ared, pred, rho, 0.0}); 
+            it++; 
+
             while(!converged)
             {            
                 if(this->cycle_type() =="multiplicative")
-                    multiplicative_cycle(fine_fun, x_h, rhs, l); 
+                    multiplicative_cycle(fine_fun, x_h, rhs, l, ared, pred, rho); 
                 // else if(this->cycle_type() =="full")
                 //     full_cycle(rhs, l, x_0); 
                 else
@@ -139,7 +149,6 @@ namespace utopia
 
                 fine_fun.gradient(x_h, F_h); 
                 
-                Scalar energy; 
                 fine_fun.value(x_h, energy); 
                 
                 r_norm = norm2(F_h);
@@ -147,7 +156,8 @@ namespace utopia
 
                 // print iteration status on every iteration 
                 if(this->verbose())
-                    PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy}); 
+                    // PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy}); 
+                    PrintInfo::print_iter_status(it, {r_norm, energy, ared, pred, rho, 0.0}); 
 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, r_norm, rel_norm, 1); 
@@ -185,11 +195,17 @@ namespace utopia
 
 
 
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
+        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l, Scalar & ared, Scalar &coarse_reduction, Scalar &rho)
         {
             Vector g_fine, g_coarse, g_diff, r_h,  g_restricted, u_2l, s_coarse, s_fine, u_init; 
 
            this->make_iterate_feasible(fine_fun, u_l); 
+
+
+            Scalar E_bla; 
+            fine_fun.value(u_l, E_bla); 
+            
+            std::cout<<"E:  "<< E_bla << "   \n"; 
 
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
@@ -197,8 +213,11 @@ namespace utopia
 
             r_h = g_fine - f; 
 
+            fine_fun.value(u_l, E_bla); 
+                std::cout<<"E:  "<< E_bla << "   \n"; 
 
-            transfers(l-2).restrict(r_h, g_restricted); 
+            transfers(l-2).restrict(r_h, g_restricted);
+
             transfers(l-2).project_down(u_l, u_2l); 
 
             this->make_iterate_feasible(levels(l-2), u_2l); 
@@ -211,8 +230,7 @@ namespace utopia
             u_init = u_2l; 
             g_diff = g_restricted - g_coarse;  // tau correction 
                           
-
-            Scalar coarse_reduction; 
+            // this->zero_boundary_correction(fine_fun, g_diff); 
 
             if(l == 2)
             {
@@ -231,8 +249,10 @@ namespace utopia
 
 
             transfers(l-2).interpolate(s_coarse, s_fine);
+
+            this->zero_boundary_correction(fine_fun, s_fine); 
             
-            Scalar E_old, E_new, ared, rho; 
+            Scalar E_old, E_new; 
 
 
             fine_fun.value(u_l, E_old); 
@@ -245,17 +265,26 @@ namespace utopia
             ared = E_old - E_new; 
             rho = ared / coarse_reduction; 
 
-            std::cout<<"ared:  "<< ared << "   pred:   "<< coarse_reduction <<      "  rho:  "<< rho << "   \n"; 
+           // std::cout<<"E_old:  "<< E_old << "E_new:  "<< E_new << "  \n"; 
+
+            // TODO:: deltas, line-search, 
+
+            if(coarse_reduction<=0)
+                rho = 0; 
 
             if(rho > 0)
                 u_l = u_t; 
-            else
-                std::cout<<"RMTR:: not taking trial point... \n"; 
+            // else{
+            //     // u_l = u_t; 
+            //     std::cout<<"RMTR:: not taking trial point... \n"; 
+            // }
 
 
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
+
+
 
             return true; 
         }
@@ -273,8 +302,8 @@ namespace utopia
          */
         bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
         {
-            // _smoother->sweeps(nu); 
-            // _smoother->nonlinear_smooth(fun, x, f); 
+                // _smoother->sweeps(nu); 
+                // _smoother->nonlinear_smooth(fun, x, f); 
             
 
                 Scalar delta = 1000; 
@@ -298,13 +327,13 @@ namespace utopia
                 KSPSetType(ksp, KSPSTCG);  
                 KSPGetPC(ksp, &pc);
                 PCSetType(pc, PCASM);
-                KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 1000000); 
+                KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 15); 
                 KSPSTCGSetRadius(ksp, delta);
                 KSPSolve(ksp, raw_type(g),raw_type(s));
                 // KSPSTCGGetObjFcn(ksp, &pred);
 
 
-                x = x -s; 
+                x = x - s; 
 
 
 
@@ -312,165 +341,68 @@ namespace utopia
         }
 
 
-        // bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, Vector & s, Scalar & reduction)
-        // {   
-            
-        //         Scalar energy_old, energy2_old, energy3_old, energy, energy2, energy3, g_norm;
-        //         Scalar ared, pred, rho; 
-        //         Scalar ared2, pred2, rho2; 
-        //         Scalar ared3, pred3, rho3; 
-
-
-        //         ColorModifier red(FG_LIGHT_YELLOW);
-        //         ColorModifier def(FG_DEFAULT);
-        //         std::cout << red; 
-
-        //         this->init_solver("COARSE SOLVE", {" it. ", "|| g_norm ||", "E   ", "     E + <g_diff, x_k>", "     E + <g_diff, s>", "rho", "rho2", "rho3"}); 
-
-        //         Vector g; 
-        //         fun.gradient(x, g);
-
-        //         Vector x_init = x; 
-
-        //         g += g_diff; 
-
-
-        //         s = 0*x;
-
-        //         g_norm = norm2(g); 
-
-
-        //         fun.value(x, energy_old); 
-        //         energy2_old = energy_old + dot(g_diff, x); 
-        //         energy3_old = energy_old + dot(g_diff, s); 
-
-        //         PrintInfo::print_iter_status(0, {g_norm, energy_old, energy2_old, energy3_old}); 
-
-
-        //     for(auto i = 0; i < 50; i ++)
-        //     {
-        //         auto linear_solver  = std::make_shared< LUDecomposition<Matrix, Vector> >();
-
-            
-        //         Matrix A; 
-        //         fun.hessian(x, A); 
-                
-
-        //         linear_solver->solve(A, -1*g, s);
-
-        //         Vector r = -1*g - A * s; 
-        //         Scalar r_norm = norm2(r); 
-
-
-        //         x +=s;   
-
-
-        //         Vector g; 
-        //         fun.gradient(x, g);
-
-        //         Scalar l_term = dot(g, s);
-        //         Scalar qp_term = dot(s, A * s);
-        //         pred = - l_term - 0.5 * qp_term; 
-
-        //         pred *= -1;
-
-
-        //         g += g_diff; 
-
-
-
-        //         g_norm = norm2(g); 
-
-
-
-
-        //        this->make_iterate_feasible(fun, x); 
-
-
-        //         fun.value(x, energy); 
-        //         energy2 = energy + dot(g_diff, x); 
-        //         energy3 = energy + dot(g_diff, s); 
-
-
-        //         ared = energy_old - energy; 
-        //         ared2 = energy2_old - energy2; 
-        //         ared3 = energy3_old - energy3; 
-
-        //         // Scalar l_term = dot(g, s);
-        //         // Scalar qp_term = dot(s, A * s);
-        //         // pred = - l_term - 0.5 * qp_term; 
-
-        //         // pred *= -1;
-
-        //         rho = ared/pred; 
-
-
-        //         rho2 = ared2/pred; 
-        //         rho3 = ared3/pred; 
-
-
-
-        //         PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3, rho, rho2, rho3}); 
-        //         // PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3 }); 
-        //     }
-
-        //     // TODO:: check this in nonlinear case 
-        //     s = x - x_init; 
-            
-        //     reduction = ared; 
-
-        //     std::cout<< def; 
-
-        //     return true; 
-        // }
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, Vector & s, Scalar & reduction)
+        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, Vector & s_global, Scalar & reduction)
         {   
             
-                Scalar energy_old, energy2_old, energy3_old, energy, energy2, energy3, energy_init, energy_2init, energy_3init, g_norm;
-                Scalar ared, pred, rho; 
-                Scalar ared2, pred2, rho2; 
-                Scalar ared3, pred3, rho3; 
-
+                Scalar energy_old, energy, energy_init, g_norm;
+                Scalar ared = 0 , pred = 0, rho = 0; 
 
                 ColorModifier red(FG_LIGHT_YELLOW);
                 ColorModifier def(FG_DEFAULT);
                 std::cout << red; 
 
-                this->init_solver("COARSE SOLVE", {" it. ", "|| g_norm ||", "E   ", "     E + <g_diff, x_k>", "     E + <g_diff, s>", "rho", "rho2", "rho3"}); 
+                this->init_solver("COARSE SOLVE", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
+
+                Vector x_init = x; 
 
                 Vector g; 
                 fun.gradient(x, g);
 
-                Vector x_init = x; 
 
+            //     Vector g_diff = g_difff; 
+
+            // {
+            //     Write<Vector> w (g_diff);
+            //     Read<Vector> r (g);
+
+            //     Range rhs_range = range(g_diff);;
+            //     for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++)
+            //     {
+            //         Scalar v = g.get(i);
+            //         if(v==0)
+            //         {
+            //             g_diff.set(i, 0.0); 
+            //         }
+
+      
+            //     }
+            // }
+
+ 
                 g += g_diff; 
 
-
                 g_norm = norm2(g); 
-
-                s = 0*x;
-
-                reduction = 0; 
-
-                fun.value(x, energy_init); 
-                energy_2init = energy_init + dot(g_diff, x); 
-                energy_3init = energy_init + dot(g_diff, s); 
-
-                PrintInfo::print_iter_status(0, {g_norm, energy_init, energy_2init, energy_3init}); 
 
 
                 Scalar delta = 100000; 
 
-                Vector s_global = s; 
+                Vector s = 0 * x; 
+                s_global = s; 
+                reduction = 0.0; 
 
 
-            for(auto i = 0; i < 100; i ++)
+                fun.value(x, energy_init); 
+                energy_init += dot(g_diff, s); 
+
+                PrintInfo::print_iter_status(0, {g_norm, energy_init, ared, pred, rho, delta }); 
+
+
+
+
+
+            for(auto i = 0; i < 2; i ++)
             {
                 
 
@@ -480,11 +412,10 @@ namespace utopia
                 
 
                 fun.value(x, energy_old); 
-                energy2_old = energy_old + dot(g_diff, x); 
-                energy3_old = energy_old + dot(g_diff, s_global); 
+                energy_old += dot(g_diff, s_global); 
 
 
-                s = 0*x;
+                s = 0 * x;
 
 
                 // strange thing 
@@ -513,33 +444,21 @@ namespace utopia
                 
                 Vector tp = x + s;  
             
-
-            //    x += s; 
-
                 // this makes it worse ... CHECK WHY :( 
-                
-                Vector tp_corr = tp; 
-                this->make_iterate_feasible(fun, tp_corr); 
+               // this->make_iterate_feasible(fun, tp); 
 
 
-                fun.value(tp_corr, energy); 
+
+                fun.value(tp, energy); 
                 s_global += s; 
 
-                energy2 = energy + dot(g_diff, tp); 
-                energy3 = energy + dot(g_diff, s_global); 
-
-
+                energy += dot(g_diff, s_global); 
                 ared = energy_old - energy; 
-                ared2 = energy2_old - energy2; 
-                ared3 = energy3_old - energy3; 
 
 
                 // choice for the moment 
-                rho = ared3/pred; 
+                rho = ared/pred; 
 
-
-                rho2 = ared2/pred; 
-                rho3 = ared3/pred; 
                // std::cout<<"ared: "<< ared2 << "  pred:  "<< pred << " \n"; 
 
 
@@ -552,12 +471,12 @@ namespace utopia
                   if (rho >= 0.0000001)
                   {
                     x = tp; 
-                    reduction += ared3; 
-//                    it_success++; 
+                    reduction += ared; 
+//                  it_success++; 
                   }
                   else
                   {
-                    s_global -=s; 
+                    s_global -= s; 
                   }
 
 
@@ -572,7 +491,7 @@ namespace utopia
                 }
                 else
                 {
-                    delta = delta; 
+                    delta = delta; // just to remember it - delete it for performance 
                 }      
 
 
@@ -582,29 +501,24 @@ namespace utopia
 
                 g_norm = norm2(g); 
 
-                PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3, rho, rho2, rho3}); 
+                PrintInfo::print_iter_status(i, {g_norm, energy, ared, pred, rho, delta}); 
 
                 if(g_norm < 1e-8)
                 {
-                    s = s_global; 
                     std::cout<< def; 
                     return 0; 
                 }
 
 
-                // PrintInfo::print_iter_status(i, {g_norm, energy, energy2, energy3 }); 
             }
 
             // TODO:: check this in nonlinear case 
             // s = x - x_init; 
             
-            // reduction = ared; 
-
-            s = s_global; 
 
             std::cout<< def; 
 
-            exit(1);
+//            exit(1);
 
             return true; 
         }
