@@ -33,12 +33,12 @@ namespace utopia
                 std::cout << std::endl;
 
                 for(auto item =  status_variables.begin(); item!= status_variables.end(); item++ )
-                    std::cout << std::setw(17) << std::right << *item ;
+                    std::cout << std::setw(27) << std::right << *item ;
                 std::cout<<std::endl; 
                     
                 auto n = status_variables.size(); 
                 for(auto i = 0; i < n; i ++ )
-                    std::cout << std::setw(17) << std::right << std::string(10, '-'); 
+                    std::cout << std::setw(27) << std::right << std::string(10, '-'); 
                 std::cout<<std::endl; 
             }
         }     
@@ -61,9 +61,10 @@ namespace utopia
         {
             if(mpi_world_rank() == 0)
             {
-                std::cout << std::setw(17) << std::right << it; 
+                std::cout.precision(15); 
+                std::cout << std::setw(27) << std::right << it; 
                 for(auto item =  scalar_vars.begin(); item!= scalar_vars.end(); item++ )
-                    std::cout << std::setw(17) << std::right << *item; 
+                    std::cout << std::setw(27) << std::right << *item; 
                 std::cout<<std::endl; 
             }
         }
