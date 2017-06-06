@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-05-04
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-16
+* @Last Modified time: 2017-06-06
 */
 
 #ifndef UTOPIA_RMTR_HPP
@@ -16,11 +16,11 @@
 
 
 
-#include <petscksp.h>
-#include <petscsys.h>
+// #include <petscksp.h>
+// #include <petscsys.h>
 
-#include "petscmat.h"
-#include "petscvec.h"
+// #include "petscmat.h"
+// #include "petscvec.h"
 
 
 namespace utopia 
@@ -447,15 +447,15 @@ namespace utopia
 
                     std::cout<<"smoothing.... \n"; 
                     
-                    MatSOR( raw_type(H), 
-                    raw_type(sg), 
-                    1, 
-                    //  SOR_FORWARD_SWEEP,
-                    SOR_LOCAL_SYMMETRIC_SWEEP,    // parallel implementation - builds block jacobi and on blocks it calls GS 
-                    0, 
-                    2, 
-                    2, 
-                    raw_type(s)); 
+                    // MatSOR( raw_type(H), 
+                    // raw_type(sg), 
+                    // 1, 
+                    // //  SOR_FORWARD_SWEEP,
+                    // SOR_LOCAL_SYMMETRIC_SWEEP,    // parallel implementation - builds block jacobi and on blocks it calls GS 
+                    // 0, 
+                    // 2, 
+                    // 2, 
+                    // raw_type(s)); 
 
                     this->get_pred(g, H, s, pred); 
                     std::cout<<"norm2(s):   " << norm2(s) << "  \n"; 
@@ -465,20 +465,20 @@ namespace utopia
                 {
 
                     // strange thing 
-                    KSP ksp; 
-                    PC pc; 
-                    MPI_Comm            comm; 
-                    PetscObjectGetComm((PetscObject)raw_type(H), &comm);
-                    KSPCreate(comm, &ksp);
+                    // KSP ksp; 
+                    // PC pc; 
+                    // MPI_Comm            comm; 
+                    // PetscObjectGetComm((PetscObject)raw_type(H), &comm);
+                    // KSPCreate(comm, &ksp);
 
-                    KSPSetOperators(ksp, raw_type(H), raw_type(H));
-                    KSPSetType(ksp, KSPSTCG);  
-                    KSPGetPC(ksp, &pc);
-                    PCSetType(pc, PCASM);
-                    KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, PETSC_DEFAULT); 
-                    KSPSTCGSetRadius(ksp, 10000000);
-                    KSPSolve(ksp, raw_type(g),raw_type(s));
-                    KSPSTCGGetObjFcn(ksp, &pred);
+                    // KSPSetOperators(ksp, raw_type(H), raw_type(H));
+                    // KSPSetType(ksp, KSPSTCG);  
+                    // KSPGetPC(ksp, &pc);
+                    // PCSetType(pc, PCASM);
+                    // KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, PETSC_DEFAULT); 
+                    // KSPSTCGSetRadius(ksp, 10000000);
+                    // KSPSolve(ksp, raw_type(g),raw_type(s));
+                    // KSPSTCGGetObjFcn(ksp, &pred);
 
                     // since Newton iteration is defined with - 
                     pred = -pred; 
