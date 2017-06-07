@@ -24,6 +24,9 @@
 #include "libmesh/serial_mesh.h"
 #include "MortarAssemble.hpp"
 #include "MortarAssembler.hpp"
+
+#include "utopia_Socket.hpp"
+
 #include <cmath>
 #include <queue>
 
@@ -1905,6 +1908,9 @@ namespace utopia {
                         surface_assemble->isect_area	   = area;
                         surface_assemble->relative_area    = weight;
                         
+
+                        plot_polygon(2, 2, &side_polygon_1.get_values()[0], "master");
+                        plot_polygon(2, 2, &side_polygon_2.get_values()[0], "slave");
                         
                         
                     } else if(dim_src == 3) {
@@ -1941,6 +1947,8 @@ namespace utopia {
                     
                     
                     if(pair_intersected) {
+
+                        // std::cout << "isect: " << master.handle() << " -> " << slave.handle() << std::endl;
                         
                         //////////////////////////////////ASSEMBLY ////////////////////////////////////////
                         //////////////////////////////////////////////////////////////////////////////////////
@@ -2317,8 +2325,8 @@ namespace utopia {
         
         redist.apply(local_fun_spaces_new->ownershipRangesFaceID(), rel_area_buff, express::AddAssign<double>());
         
-        redist.apply(ownershipRangesSlave, p_buffer, express::AddAssign<double>());
-        redist.apply(ownershipRangesMaster, q_buffer, express::AddAssign<double>());
+        redist.apply(ownershipRangesSlave, p_buffer, express::Assign<double>());
+        redist.apply(ownershipRangesMaster, q_buffer, express::Assign<double>());
         
         
         
@@ -2337,7 +2345,7 @@ namespace utopia {
         
         express::Array<bool> removeRow(local_range_b_tilde);
 
-        rel_area_buff.save("rA.txt");
+        // rel_area_buff.save("rA.txt");
         
         if(!removeRow.isNull()) {
             removeRow.allSet(false);
