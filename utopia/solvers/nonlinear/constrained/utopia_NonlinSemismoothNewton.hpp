@@ -102,8 +102,7 @@ namespace utopia
                 for ( SizeType i = rr.begin(); i != rr.end(); i ++){
                     if(d.get(i) > 0){    
                         Ac.set(i, i, 1.0);
-                    }
-                    else {
+                    } else {
                         Ic.set(i, i, 1.0);
                     }
                 }
@@ -112,7 +111,7 @@ namespace utopia
             fun.gradient(x_new, grad);
             fun.hessian(x_new, Hessian);
 
-            g = -1 * grad + Hessian * x_new;
+            g = Hessian * x_new - grad;
 
             M = Ac + Ic * Hessian;
             this->linear_solve(M, (Ic * g + Ac * Ginvg), x_new);

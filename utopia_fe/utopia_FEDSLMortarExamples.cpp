@@ -324,8 +324,7 @@ namespace utopia {
         
         unsigned int variable_number = 0;
         
-        MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals, is_contact_node, 0.1, 101, 102);
-        
+        MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals, is_contact_node, 0.05, 102, 101);
         
         // write("mat.m", matrix);
         // EXPRESS_EVENT_END("l2assembly");
@@ -357,7 +356,7 @@ namespace utopia {
             Write<DVectord> w_(d_inv);
             
             each_read(d, [&d_inv](const SizeType i, const double value) {
-                if(value != 0) {
+                if(std::abs(value) > 1e-16) {
                     d_inv.set(i, 1./value);
                 } else {
                     d_inv.set(i, 1.);
@@ -375,6 +374,11 @@ namespace utopia {
         T += local_identity(local_size(d).get(0), local_size(d).get(0));
         
         
+        write("B_" + std::to_string(expressComm.size()) + ".m", matrix);
+        write("d_" + std::to_string(expressComm.size()) + ".m", d);
+        write("g_" + std::to_string(expressComm.size()) + ".m", gap);
+        write("T_" + std::to_string(expressComm.size()) + ".m", gap);
+        write("c_" + std::to_string(expressComm.size()) + ".m", is_contact_node);
 
         // disp(matrix);
 //        disp(mv);
@@ -391,16 +395,15 @@ namespace utopia {
         auto ass = make_assembly([&]() -> void {
         		const int n  = local_size(is_contact_node).get(0);
 
-        		// std::cout << "local_size: " << n << std::endl;
                 DSMatrixd id = local_identity(n, n);
-
-                // disp(id);
-                // std::cout << std::flush;
 
         		convert(id, *master_slave_context.system.matrix);
         		convert(is_contact_node, *master_slave_context.system.rhs);
         		convert(is_contact_node, *master_slave_context.system.solution);
         });
+
+
+
 
         master_slave_context.system.attach_assemble_object(ass);
         master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 0;
@@ -411,7 +414,7 @@ namespace utopia {
         // convert(mv, *master_slave_context.system.solution);
 
 
-        DVectord normals_vec = local_zeros(size(is_contact_node));
+        DVectord normals_vec = local_zeros(local_size(is_contact_node));
 
         {
             Write<DVectord> w(normals_vec);
@@ -427,10 +430,11 @@ namespace utopia {
         convert(gap, *master_slave_context.system.solution);
         ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("gap.e", master_slave_context.equation_systems);
 
-        // disp(normals_vec);
-
         convert(normals_vec, *master_slave_context.system.solution);
         ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("normals.e", master_slave_context.equation_systems);
+
+		convert(d, *master_slave_context.system.solution);
+		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("d.e", master_slave_context.equation_systems);
 	}
 
 
@@ -443,60 +447,6 @@ namespace utopia {
 		par_mortar_transfer_aux(init.comm(),mesh);
 		EXPRESS_EVENT_END("set_up");
 	}
-
-	// #define F_MINUS(x) (1.0-x)
-	// #define F_PLUS(x)  (x)
-	// #define D_MINUS(x) (-1.0)
-	// #define D_PLUS(x) (1.0)
-
-
-	// void quad_bilinear_fun_0(const int n_quad_points, const double * quad_points, double * funs)
-	// {
-	// 	for(int q = 0; q < n_quad_points; ++q) {	
-	// 		const int q2 = q*2;
-	// 		funs[q] = F_MINUS(quad_points[q2]) * F_MINUS(quad_points[q2+1]);
-	// 	}
-	// }
-
-	// void quad_bilinear_fun_1(const int n_quad_points, const double * quad_points, double * funs)
-	// {
-	// 	for(int q = 0; q < n_quad_points; ++q) {	
-	// 		const int q2 = q*2;
-	// 		funs[q] = F_PLUS(quad_points[q2]) * F_MINUS(quad_points[q2+1]);
-	// 	}
-	// }
-
-	// void quad_bilinear_fun_2(const int n_quad_points, const double * quad_points, double * funs)
-	// {
-	// 	for(int q = 0; q < n_quad_points; ++q) {	
-	// 		const int q2 = q*2;
-	// 		funs[q] = F_PLUS(quad_points[q2]) * F_PLUS(quad_points[q2+1]);
-	// 	}
-	// }
-
-	// void quad_bilinear_fun_3(const int n_quad_points, const double * quad_points, double * funs)
-	// {
-	// 	for(int q = 0; q < n_quad_points; ++q) {	
-	// 		const int q2 = q*2;
-	// 		funs[q] = F_MINUS(quad_points[q2]) * F_PLUS(quad_points[q2+1]);
-	// 	}
-	// }
-
-	// void bilinear_interp(const Point &p0, const Point &p1, const Point &p2, const Point &p3, const Point &x, Point &fx)
-	// {
-	// 	double f0, f1, f2, f3;
-	// 	double xp[2] = { x(0), x(1) };
-
-	// 	quad_bilinear_fun_0(1, xp, &f0);
-	// 	quad_bilinear_fun_1(1, xp, &f1);
-	// 	quad_bilinear_fun_2(1, xp, &f2);
-	// 	quad_bilinear_fun_3(1, xp, &f3);
-
-	// 	fx  = f0 * p0;
-	// 	fx  += f1 * p1;
-	// 	fx  += f2 * p2;
-	// 	fx  += f3 * p3;
-	// }
 
 	void mortar_transfer_2D(LibMeshInit &init)
 	{

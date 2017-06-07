@@ -1848,7 +1848,7 @@ namespace utopia {
                 for(uint side_2 = 0; side_2 < dest_el.n_sides(); ++side_2) {
                     
                     if(dest_el.neighbor_ptr(side_2) != nullptr) continue;
-                    if (!predicate->tagsAreRelated(tag_1, tag_2)) continue;
+                    // if (!predicate->tagsAreRelated(tag_1, tag_2)) continue;
                     
                     //                    libMesh::UniquePtr<libMesh::Elem> s_2 = dest_el.side(side_2);
                     auto side_ptr_2 = dest_el.build_side_ptr(side_2);
@@ -2336,6 +2336,8 @@ namespace utopia {
         express::RootDescribe("petsc rel_area_buff assembly begin", comm, std::cout);
         
         express::Array<bool> removeRow(local_range_b_tilde);
+
+        rel_area_buff.save("rA.txt");
         
         if(!removeRow.isNull()) {
             removeRow.allSet(false);
@@ -2348,7 +2350,7 @@ namespace utopia {
                         const SizeType faceId = it.row();
                         for(int k = 0; k < n_nodes_x_face; ++k) {
                             const SizeType nodeId = faceId * n_nodes_x_face + k;
-                            const SizeType index = nodeId - ownershipRangesBTilde[comm.rank()];
+                            const SizeType index  = nodeId - ownershipRangesBTilde[comm.rank()];
                             assert(index < removeRow.size());
                             removeRow[index] = true;
                         }
