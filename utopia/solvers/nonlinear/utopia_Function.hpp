@@ -22,7 +22,7 @@ namespace utopia
         virtual ~Function() { }
 
         // TODO:: this needs to be changed ! 
-        Function(const Vector & x_init = local_zeros(1), const Vector & rhs = local_zeros(1), const Vector & bc_marker = local_zeros(1)) : 
+        Function(const Vector & x_init = local_zeros(1), const Vector & bc_marker = local_zeros(1), const Vector & rhs = local_zeros(1)) : 
                 _x_init(x_init),
                 _rhs(rhs), 
                 _boundary_marker(bc_marker)

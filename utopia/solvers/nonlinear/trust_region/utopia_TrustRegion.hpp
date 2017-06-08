@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-11-07
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-06-07
 */
 
 #ifndef UTOPIA_SOLVER_TRUSTREGION_HPP
@@ -168,7 +168,7 @@
         // solve starts here 
         while(!converged)
         {
-          E_k = E; 
+          fun.value(x_k, E_k); 
           fun.hessian(x_k, H); 
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta

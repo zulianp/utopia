@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-06
+* @Last Modified time: 2017-06-08
 */
 
 #ifndef UTOPIA_RMTR_INFTY_HPP
@@ -15,10 +15,10 @@
 
 #include "utopia_Linear.hpp"
 
-// #include "petscmat.h"
-// #include "petscvec.h"
-// #include <petsc/private/snesimpl.h>
-// #include "petscsnes.h"  
+#include "petscmat.h"
+#include "petscvec.h"
+#include <petsc/private/snesimpl.h>
+#include "petscsnes.h"  
 
 #include "utopia_Level.hpp"
 
@@ -101,7 +101,6 @@ namespace utopia
          */
         virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
         {
-            // this->init_solver("RMTR_infty", {" it. ", "|| r_N ||", "r_norm" , "E"}); 
             this->init_solver("RMTR_infty", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
 
 
@@ -199,13 +198,7 @@ namespace utopia
         {
             Vector g_fine, g_coarse, g_diff, r_h,  g_restricted, u_2l, s_coarse, s_fine, u_init; 
 
-           this->make_iterate_feasible(fine_fun, u_l); 
-
-
-            Scalar E_bla; 
-            fine_fun.value(u_l, E_bla); 
-            
-            std::cout<<"E:  "<< E_bla << "   \n"; 
+           //this->make_iterate_feasible(fine_fun, u_l); 
 
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
@@ -213,29 +206,23 @@ namespace utopia
 
             r_h = g_fine - f; 
 
-            fine_fun.value(u_l, E_bla); 
-                std::cout<<"E:  "<< E_bla << "   \n"; 
-
             transfers(l-2).restrict(r_h, g_restricted);
-
             transfers(l-2).project_down(u_l, u_2l); 
 
-            this->make_iterate_feasible(levels(l-2), u_2l); 
+            this->make_iterate_feasible(levels(0), u_2l); 
 
             // here, grad should be zero by default on places where are BC conditions             
             levels(l-2).gradient(u_2l, g_coarse); 
 
-
-
             u_init = u_2l; 
+            this->zero_boundary_correction(levels(0), g_restricted); 
+
+
             g_diff = g_restricted - g_coarse;  // tau correction 
-                          
-            // this->zero_boundary_correction(fine_fun, g_diff); 
 
             if(l == 2)
             {
                 coarse_solve(levels(0), u_2l, g_diff, s_coarse, coarse_reduction); 
-
             }
             else
             {
@@ -249,12 +236,9 @@ namespace utopia
 
 
             transfers(l-2).interpolate(s_coarse, s_fine);
-
             this->zero_boundary_correction(fine_fun, s_fine); 
-            
+
             Scalar E_old, E_new; 
-
-
             fine_fun.value(u_l, E_old); 
 
             Vector u_t = u_l; 
@@ -265,7 +249,7 @@ namespace utopia
             ared = E_old - E_new; 
             rho = ared / coarse_reduction; 
 
-           // std::cout<<"E_old:  "<< E_old << "E_new:  "<< E_new << "  \n"; 
+           std::cout<<"E_old:  "<< E_old << "  E_new:  "<< E_new << "  \n"; 
 
             // TODO:: deltas, line-search, 
 
@@ -274,10 +258,10 @@ namespace utopia
 
             if(rho > 0)
                 u_l = u_t; 
-            // else{
-            //     // u_l = u_t; 
-            //     std::cout<<"RMTR:: not taking trial point... \n"; 
-            // }
+            else{
+                // u_l = u_t; 
+                std::cout<<"RMTR:: not taken trial point... \n"; 
+            }
 
 
 
@@ -302,19 +286,19 @@ namespace utopia
          */
         bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
         {
-                // _smoother->sweeps(nu); 
-                // _smoother->nonlinear_smooth(fun, x, f); 
+                _smoother->sweeps(nu); 
+                _smoother->nonlinear_smooth(fun, x, f); 
             
 
-                Scalar delta = 1000; 
+                // Scalar delta = 1000; 
 
-                Vector g, s;
+                // Vector g, s;
 
-                s = 0 * x;  
-                fun.gradient(x, g);
+                // s = 0 * x;  
+                // fun.gradient(x, g);
 
-                Matrix A; 
-                fun.hessian(x, A);
+                // Matrix A; 
+                // fun.hessian(x, A);
 
 
                 // KSP ksp; 
@@ -327,13 +311,13 @@ namespace utopia
                 // KSPSetType(ksp, KSPSTCG);  
                 // KSPGetPC(ksp, &pc);
                 // PCSetType(pc, PCASM);
-                // KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 15); 
+                // KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 10000); 
                 // KSPSTCGSetRadius(ksp, delta);
                 // KSPSolve(ksp, raw_type(g),raw_type(s));
                 // // KSPSTCGGetObjFcn(ksp, &pred);
 
 
-                x = x - s; 
+                // x = x - s; 
 
 
 
@@ -359,27 +343,6 @@ namespace utopia
 
                 Vector g; 
                 fun.gradient(x, g);
-
-
-            //     Vector g_diff = g_difff; 
-
-            // {
-            //     Write<Vector> w (g_diff);
-            //     Read<Vector> r (g);
-
-            //     Range rhs_range = range(g_diff);;
-            //     for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++)
-            //     {
-            //         Scalar v = g.get(i);
-            //         if(v==0)
-            //         {
-            //             g_diff.set(i, 0.0); 
-            //         }
-
-      
-            //     }
-            // }
-
  
                 g += g_diff; 
 
@@ -400,9 +363,7 @@ namespace utopia
 
 
 
-
-
-            for(auto i = 0; i < 2; i ++)
+            for(auto i = 0; i < 50; i ++)
             {
                 
 
@@ -419,20 +380,20 @@ namespace utopia
 
 
                 // strange thing 
-                // KSP ksp; 
-                // PC pc; 
-                // MPI_Comm            comm; 
-                // PetscObjectGetComm((PetscObject)raw_type(A), &comm);
-                // KSPCreate(comm, &ksp);
+                KSP ksp; 
+                PC pc; 
+                MPI_Comm            comm; 
+                PetscObjectGetComm((PetscObject)raw_type(A), &comm);
+                KSPCreate(comm, &ksp);
 
-                // KSPSetOperators(ksp, raw_type(A), raw_type(A));
-                // KSPSetType(ksp, KSPSTCG);  
-                // KSPGetPC(ksp, &pc);
-                // PCSetType(pc, PCASM);
-                // KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 1000000); 
-                // KSPSTCGSetRadius(ksp, delta);
-                // KSPSolve(ksp, raw_type(g),raw_type(s));
-                // KSPSTCGGetObjFcn(ksp, &pred);
+                KSPSetOperators(ksp, raw_type(A), raw_type(A));
+                KSPSetType(ksp, KSPSTCG);  
+                KSPGetPC(ksp, &pc);
+                PCSetType(pc, PCASM);
+                KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 1000000); 
+                KSPSTCGSetRadius(ksp, delta);
+                KSPSolve(ksp, raw_type(g),raw_type(s));
+                KSPSTCGGetObjFcn(ksp, &pred);
 
                 // since Newton iteration is defined with - 
                 pred = -pred; 
@@ -443,24 +404,15 @@ namespace utopia
             //----------------------------------------------------------------------------
                 
                 Vector tp = x + s;  
-            
-                // this makes it worse ... CHECK WHY :( 
-               // this->make_iterate_feasible(fun, tp); 
-
-
+                s_global += s;   
 
                 fun.value(tp, energy); 
-                s_global += s; 
-
                 energy += dot(g_diff, s_global); 
+                
                 ared = energy_old - energy; 
-
 
                 // choice for the moment 
                 rho = ared/pred; 
-
-               // std::cout<<"ared: "<< ared2 << "  pred:  "<< pred << " \n"; 
-
 
                 //----------------------------------------------------------------------------
                 //     acceptance of trial point 
@@ -476,6 +428,8 @@ namespace utopia
                   }
                   else
                   {
+                    // x = tp; 
+                    // since point was not taken 
                     s_global -= s; 
                   }
 
@@ -491,7 +445,7 @@ namespace utopia
                 }
                 else
                 {
-                    delta = delta; // just to remember it - delete it for performance 
+                    delta = delta; // just to remember it - delete it later
                 }      
 
 

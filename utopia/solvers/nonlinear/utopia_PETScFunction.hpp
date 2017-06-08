@@ -1,9 +1,9 @@
-// /*! \file passo_Newton_Solver.cpp
-//     Passo nonlinear function
-//     in order to have interface between petsc and utopia
-//     Created by Alena Kopanicakova 
-// */
-
+/*
+* @Author: alenakopanicakova
+* @Date:   2017-06-07
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-06-08
+*/
 #ifndef PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
 #define PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
 
@@ -47,73 +47,50 @@ namespace utopia
                 SNESComputeFunction(snes_, raw_type(x), raw_type(g));   
 
 
-                // THIS IS NEEDED FOR OTHER FUNCTIONS THAN TR 
-                if(local_size(g)==local_size(this->_rhs))
-                {
-                   // std::cout<<"grad:: yes rhs ... \n"; 
-                    g = g - this->_rhs; 
-                }
+                // // THIS IS NEEDED FOR OTHER FUNCTIONS THAN TR 
+                // if(local_size(g)==local_size(this->_rhs))
+                // {
+                //    // std::cout<<"grad:: yes rhs ... \n"; 
+                //     g = g - this->_rhs; 
+                // }
 
                 return true; 
             }
 
             virtual bool hessian(const Vector &x, Matrix &hessian) const override
             {
-                // std::cout<<"before hessian \n"; 
                 SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian,  snes_->jacobian_pre);
-                //hessian = sparse_mref(snes_->jacobian); 
-                convert(snes_->jacobian, hessian); 
-                // std::cout<<"after hessian \n"; 
+                hessian = sparse_mref(snes_->jacobian); 
 
                 return true; 
             }
 
             virtual bool value(const Vector &x, typename Vector::Scalar &result) const override 
             {
-
-                // if(first_energy == 0) 
-                // {
-                //     result = 9e12; 
-                //     first_energy++; 
-                //     return true; 
-                // }
-
                 // hack to have fresh energy (MOOSE post-processor does things in strange way )
                 Vector grad = 0 * x; 
                 this->gradient(x, grad);         
 
-            
+                if(first_energy==0)
+                {
+                    result = 9e9; 
+                    first_energy = 1; 
+                    return true; 
+                }
 
-                SNESComputeObjective(snes_, raw_type(x), &result); 
+                DM dm; 
+                DMSNES         sdm; 
 
-
-                // if(local_size(grad)==local_size(this->_rhs))
-                // {
-                //     Scalar prod = dot(this->_rhs, x); 
-                //     // std::cout<<"result - dot(this->_rhs, x):   "<< prod << "          \n"; 
-                //     result = result; // - prod; 
-                // }
-
-
-
-
-               //result = 0.5 * norm2(grad) * norm2(grad); 
-
-
-
-                // Matrix H;
-                // this->hessian(x, H);    
-
-                // Scalar EN2 = 0.5 * dot(x, H * x);
-                // Scalar EN3 = EN2 - dot(x, grad);
-
-               //  std::cout<<"multiplication result: "<< EN2 << "      E3:    "<< EN3 <<  "      result:    "<< result << "   \n"; 
-
-
-
-                // result -= dot(x,grad); 
-
-
+                SNESGetDM(snes_,&dm);
+                DMGetDMSNES(dm,&sdm);
+                if (sdm->ops->computeobjective) 
+                {
+                    SNESComputeObjective(snes_, raw_type(x), &result); 
+                } 
+                else 
+                {
+                    result = 0.5 * norm2(grad) * norm2(grad); 
+                }
                 return true; 
             }
 
