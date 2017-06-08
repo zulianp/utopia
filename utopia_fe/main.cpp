@@ -18,6 +18,9 @@
 #include "utopia_TimeDiffExamples.hpp"
 #include "utopia_TimeDiffExamples.hpp"
 //#include "utopia_FEDSLBaseSolverExamples.hpp"
+#include "utopia_Biomechanics.hpp"
+#include "utopia_UGMeshReader.hpp"
+
 using namespace utopia;
 using namespace std;
 using namespace libMesh;
@@ -26,13 +29,34 @@ using namespace libMesh;
 int main(const int argc, char *argv[]) 
 {
 	LibMeshInit init(argc, argv);
+	
+
+	if(argc > 3) {
+		const std::string command = argv[1];
+
+		if(command == "convert") {
+			const std::string src = argv[2];
+			const std::string dest = argv[3];
+
+			Mesh mesh(init.comm());
+			
+			UGXMeshReader reader;
+			if(!reader.read(src, mesh)) {
+				return EXIT_FAILURE;
+			}
+
+			ExodusII_IO(mesh).write(dest);
+			return EXIT_SUCCESS;
+		}
+	}
 
 	// run_base_examples(init);
 	// run_time_diff_examples(init);
-	run_mortar_examples(init);
+	// run_mortar_examples(init);
 	// run_least_squares_examples(init);
 	// run_mixed_fe_space_example(init);
     //run_solver_ex(init);
-	return 0;
+    run_biomechanics_example(init);
+	return EXIT_SUCCESS;
 }
 

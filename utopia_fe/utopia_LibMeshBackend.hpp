@@ -109,6 +109,16 @@ namespace utopia {
 		vec.add_vector(block, dofs);
 	}
 
+
+	inline static void get_vector(const DVectord &vec, const std::vector<libMesh::dof_id_type> &dofs, libMesh::DenseVector<libMesh::Real> &el_vec)
+	{	
+		el_vec.resize(dofs.size());
+		int i = 0;
+		for(auto test : dofs) {
+			el_vec(i++) = vec.get(test);
+		}
+	}
+
 	inline static void add_matrix(const libMesh::DenseMatrix<libMesh::Real> &block, 
 					const std::vector<libMesh::dof_id_type> &row_dofs, 
 					const std::vector<libMesh::dof_id_type> &col_dofs, 
@@ -1973,6 +1983,8 @@ namespace utopia {
 			++i;
 		}
 	}
+
+
 
 
 	template<class TrialFunction, class TestFunction, class Expr, class Matrix>

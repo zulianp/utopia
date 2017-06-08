@@ -13,6 +13,8 @@
 #include <libmesh/petsc_vector.h>
 #include <libmesh/petsc_matrix.h>
 
+#include "utopia_UGMeshReader.hpp"
+
 
 using namespace std;
 using namespace libMesh;
@@ -36,13 +38,22 @@ namespace utopia {
 	void anisotropic_laplacian(LibMeshInit &init)
 	{
 		auto mesh = make_shared<Mesh>(init.comm());		
-		// MeshTools::Generation::build_square (*mesh,
-		// 	15, 15,
-		// 	-1., 1.,
-		// 	-1., 1.,
-		// 	QUAD9);
+		MeshTools::Generation::build_square (*mesh,
+			15, 15,
+			-1., 1.,
+			-1., 1.,
+			QUAD9);
 
-		mesh->read("weird_cube.e");
+		// UGXMeshReader reader;
+		// if(!reader.read("/Users/patrick/Downloads/ASCII_bone/fragment.ugx", *mesh)) {
+		// 	return;
+		// }
+
+		// ExodusII_IO(*mesh).write("fragment_with_sidestes.e");
+		// return;
+
+
+		// mesh->read("/Users/patrick/Downloads/ASCII_bone/all_sidesets.e");
 
 
 		LibMeshFEContext<LinearImplicitSystem> context(mesh);
