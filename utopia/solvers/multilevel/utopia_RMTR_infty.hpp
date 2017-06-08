@@ -15,10 +15,10 @@
 
 #include "utopia_Linear.hpp"
 
-#include "petscmat.h"
-#include "petscvec.h"
-#include <petsc/private/snesimpl.h>
-#include "petscsnes.h"  
+// #include "petscmat.h"
+// #include "petscvec.h"
+// #include <petsc/private/snesimpl.h>
+// #include "petscsnes.h"  
 
 #include "utopia_Level.hpp"
 
@@ -380,20 +380,20 @@ namespace utopia
 
 
                 // strange thing 
-                KSP ksp; 
-                PC pc; 
-                MPI_Comm            comm; 
-                PetscObjectGetComm((PetscObject)raw_type(A), &comm);
-                KSPCreate(comm, &ksp);
+                // KSP ksp; 
+                // PC pc; 
+                // MPI_Comm            comm; 
+                // PetscObjectGetComm((PetscObject)raw_type(A), &comm);
+                // KSPCreate(comm, &ksp);
 
-                KSPSetOperators(ksp, raw_type(A), raw_type(A));
-                KSPSetType(ksp, KSPSTCG);  
-                KSPGetPC(ksp, &pc);
-                PCSetType(pc, PCASM);
-                KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 1000000); 
-                KSPSTCGSetRadius(ksp, delta);
-                KSPSolve(ksp, raw_type(g),raw_type(s));
-                KSPSTCGGetObjFcn(ksp, &pred);
+                // KSPSetOperators(ksp, raw_type(A), raw_type(A));
+                // KSPSetType(ksp, KSPSTCG);  
+                // KSPGetPC(ksp, &pc);
+                // PCSetType(pc, PCASM);
+                // KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 1000000); 
+                // KSPSTCGSetRadius(ksp, delta);
+                // KSPSolve(ksp, raw_type(g),raw_type(s));
+                // KSPSTCGGetObjFcn(ksp, &pred);
 
                 // since Newton iteration is defined with - 
                 pred = -pred; 
