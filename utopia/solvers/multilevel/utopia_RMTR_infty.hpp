@@ -543,7 +543,7 @@ namespace utopia
 
 
                 g_norm = norm2(g); 
-                converged  = check_convergence(it_success,  g_norm, level); 
+                converged  = check_convergence(it_success,  g_norm, level, get_delta(level-1)); 
 
                 PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
                 it++; 
@@ -654,8 +654,9 @@ namespace utopia
 
 
 
-        bool check_convergence(const SizeType & it_success, const Scalar & g_norm, const SizeType & level)
+        bool check_convergence(const SizeType & it_success, const Scalar & g_norm, const SizeType & level, const Scalar & delta)
         {   
+
             // coarse one 
             if(level == 1)
             {
@@ -668,6 +669,10 @@ namespace utopia
                 if(it_success >= _max_fine_it)
                     return true; 
             }
+
+            if(delta < 1e-10)
+                return true; 
+
 
             if(g_norm <= 1e-8)
                 return true; 

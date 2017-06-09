@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-10-04
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-13
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-06-09
 */
 #ifdef WITH_PETSC
 
@@ -82,6 +82,16 @@ namespace utopia
 	   	{
 	    	KSPSolver::set_preconditioner(precond); 
 	   	}
+
+
+	public:
+	    void atol(const Scalar & atol_in )  {  KSPSolver::atol(atol_in); }; 
+        void rtol(const Scalar & rtol_in )  {  KSPSolver::rtol(rtol_in);  }; 
+        void stol(const Scalar & stol_in ) { KSPSolver::stol(stol_in);; }; 	   	
+
+        Scalar      atol() const               { return KSPSolver::atol(); } 
+        Scalar      rtol()  const              { return KSPSolver::rtol(); } 
+        Scalar      stol()  const              { return KSPSolver::stol(); }
 
 
 	protected:
