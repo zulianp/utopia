@@ -479,7 +479,7 @@ namespace utopia {
 
 	bool PETScBackend::set_zero_rows(PETScMatrix &Mat_A, const std::vector<int> &index)
 	{
-		return PETScError::Check(MatZeroRows(Mat_A.implementation(), index.size(), &index[0], 0, NULL, NULL));
+		return PETScError::Check(MatZeroRows(Mat_A.implementation(), index.size(), &index[0], 1.0, NULL, NULL));
 	}
 
 	bool  PETScBackend::apply_BC_to_system(PETScMatrix & A, PETScVector& x, PETScVector& rhs, const std::vector<int> &index)

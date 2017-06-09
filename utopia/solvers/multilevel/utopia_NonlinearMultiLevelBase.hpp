@@ -16,7 +16,6 @@
 #include <vector>
 
 
-
   namespace utopia 
   {
     /**
@@ -312,6 +311,30 @@ protected:
           return true; 
         }
 
+
+
+        // TODO:: make nicer => does not need to be done every iteration
+        virtual bool zero_boundary_correction_mat(FunctionType & fun, Matrix & M)
+        {
+          Vector bc; 
+          fun.get_boundary_ids(bc); 
+
+          std::vector<SizeType> index;
+
+          {
+            Read<Vector> r(bc);
+
+            Range range_w = range(bc);
+            for (SizeType i = range_w.begin(); i != range_w.end(); i++) 
+            {
+                if(bc.get(i) == 1)
+                  index.push_back(i); 
+            }
+          }
+
+          set_zero_rows(M, index); 
+          return true; 
+        }
 
 
     protected:
