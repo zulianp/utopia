@@ -2,7 +2,7 @@
 // * @Author: alenakopanicakova
 // * @Date:   2016-06-10
 // * @Last Modified by:   Alena Kopanicakova
-// * @Last Modified time: 2017-03-02
+// * @Last Modified time: 2017-06-09
 // */
 
 #ifndef UTOPIA_TR_STRATEGY_FACTORY_HPP
@@ -78,7 +78,7 @@ namespace utopia
 					strategies_[STEIHAUG_TOINT_TAG] = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg"); 
 					strategies_[TOINT_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("qcg"); 
 					strategies_[NASH_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("nash"); 
-					strategies_[LANCZOS_TAG] 		= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg"); 
+					strategies_[LANCZOS_TAG] 		= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("gltr"); 
 					strategies_[CGNE_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("cgne"); 
 					strategies_[AUTO_TR_TAG] 		= std::make_shared<utopia::KSP_TR<Matrix, Vector> >(); 
 				#endif 	

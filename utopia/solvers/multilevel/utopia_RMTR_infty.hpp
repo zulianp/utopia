@@ -12,14 +12,8 @@
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
-
+#include "utopia_TRSubproblem.hpp"
 #include "utopia_Linear.hpp"
-
-#include "petscmat.h"
-#include "petscvec.h"
-#include <petsc/private/snesimpl.h>
-#include "petscsnes.h"  
-
 #include "utopia_Level.hpp"
 
 
@@ -36,12 +30,14 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector, class FunctionType>
-    class RMTR_infty : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>
+    class RMTR_infty : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>,
+                       public TrustRegionBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
+        typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem; 
         typedef utopia::Transfer<Matrix, Vector>   Transfer;
 
 
@@ -64,11 +60,13 @@ namespace utopia
         */
         RMTR_infty(    const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                 const std::shared_ptr<Solver> &coarse_solver = std::shared_ptr<Solver>(),
+                const std::shared_ptr<TRSubproblem> &tr_subproblem = std::shared_ptr<TRSubproblem>(),
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
                 _smoother(smoother), 
                 _coarse_solver(coarse_solver), 
-                _coherence(FIRST_ORDER) 
+                _coherence(FIRST_ORDER), 
+                _coarse_tr_subproblem(tr_subproblem) 
         {
             set_parameters(params); 
         }
@@ -95,7 +93,7 @@ namespace utopia
         virtual bool solve(FunctionType & fine_fun, Vector &x_h)
         {
             Vector rhs = local_zeros(local_size(x_h)); 
-            return solve(fine_fun,  x_h, rhs); 
+            return solve_rhs(fine_fun,  x_h, rhs); 
         }
 
         /**
@@ -105,7 +103,7 @@ namespace utopia
          * @param      x_0   The initial guess. 
          *
          */
-        virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
+        virtual bool solve_rhs(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
         {
             this->init_solver("RMTR_infty", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
 
@@ -161,11 +159,10 @@ namespace utopia
 
                 // print iteration status on every iteration 
                 if(this->verbose())
-                    // PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy}); 
                     PrintInfo::print_iter_status(it, {r_norm, energy, ared, pred, rho, 0.0}); 
 
                 // check convergence and print interation info
-                converged = this->check_convergence(it, r_norm, rel_norm, 1); 
+                converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(it, r_norm, rel_norm, 1); 
                 it++; 
             
             }
@@ -281,7 +278,7 @@ namespace utopia
             if(coarse_reduction<=0)
                 rho = 0; 
 
-            if(rho > 0)
+            if(rho > this->rho_tol())
                 u_l = u_t; 
             else{
                 // u_l = u_t; 
@@ -379,7 +376,7 @@ namespace utopia
 
 
                 Vector g; 
-                Matrix A; 
+                Matrix H; 
 
                 
                 // --------------------------------------- computation of grad -------------------------------
@@ -422,12 +419,12 @@ namespace utopia
         
                 // --------------------------------------- computation of hessian -------------------------------
                 if(_coherence != GALERKIN)
-                    fun.hessian(x, A); 
+                    fun.hessian(x, H); 
 
                 if(_coherence == SECOND_ORDER)
-                    A = A + H_diff; 
+                    H = H + H_diff; 
                 else if(_coherence == GALERKIN)
-                    A = H_diff; 
+                    H = H_diff; 
                 // --------------------------------------------------------------------------------------------
 
                 // --------------------------------------- computation of energy -------------------------------
@@ -443,42 +440,24 @@ namespace utopia
                 // --------------------------------------------------------------------------------------------
 
 
+            //----------------------------------------------------------------------------
+            //     solving constrained system to get correction
+            //----------------------------------------------------------------------------
+
                 s = 0 * x;
 
-
-                // strange thing 
-                KSP ksp; 
-                PC pc; 
-                MPI_Comm            comm; 
-                PetscObjectGetComm((PetscObject)raw_type(A), &comm);
-                KSPCreate(comm, &ksp);
-
-                KSPSetOperators(ksp, raw_type(A), raw_type(A));
-                KSPSetType(ksp, KSPSTCG);  
-                KSPGetPC(ksp, &pc);
-                PCSetType(pc, PCASM);
-                KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 1000000); 
-                KSPSTCGSetRadius(ksp, delta);
-                KSPSolve(ksp, raw_type(g),raw_type(s));
-                KSPSTCGGetObjFcn(ksp, &pred);
-
-                // since Newton iteration is defined with - 
-                pred = -pred; 
-                s *=-1;  
+                _coarse_tr_subproblem->current_radius(delta);  
+                _coarse_tr_subproblem->constrained_solve(H, g, s); 
+                TrustRegionBase<Matrix, Vector>::get_pred(g, H, s, pred); 
 
             //----------------------------------------------------------------------------
             //     building trial point 
             //----------------------------------------------------------------------------
                 
                 Vector tp = x + s;  
-                s_global += s;   
+                s_global += s;                   
 
-                // fun.value(tp, energy); 
-                // // energy += dot(g_diff, s_global); 
-                // energy += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                
-
-                // --------------------------------------- computation of energy -------------------------------
+            // --------------------------------------- computation of energy -------------------------------
                 if(_coherence != GALERKIN)
                     fun.value(tp, energy); 
 
@@ -488,7 +467,7 @@ namespace utopia
                     energy += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
                 else if(_coherence == GALERKIN)
                     energy = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                // --------------------------------------------------------------------------------------------
+            // --------------------------------------------------------------------------------------------
 
 
                 ared = energy_old - energy; 
@@ -502,7 +481,7 @@ namespace utopia
                   
 
                   // good reduction, accept trial point 
-                  if (rho >= 0.0000001)
+                  if (rho >= this->rho_tol())
                   {
                     x = tp; 
                     reduction += ared; 
@@ -512,18 +491,18 @@ namespace utopia
                   {
                    // x = tp; 
                     // since point was not taken 
-                    // s_global -= s; 
+                    s_global -= s; 
                   }
 
 
 
-                if(rho < 0.1)
+                if(rho < this->eta1())
                 {   
-                     delta = 0.2 * delta; 
+                     delta = this->gamma1() * delta; 
                 }
-                else if (rho > 0.85 )
+                else if (rho > this->eta2() )
                 {
-                     delta = 2 * delta; 
+                     delta = this->gamma2() * delta; 
                 }
                 else
                 {
@@ -564,32 +543,9 @@ namespace utopia
 
             std::cout<< def; 
 
-//            exit(1);
 
             return true; 
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -634,6 +590,7 @@ namespace utopia
 
     private:
         Parameters                          _parameters; 
+        std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem; 
 
 
     };

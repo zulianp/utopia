@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-04-07
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-11
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-06-09
 */
 #ifndef TR_SUBPROBLEM
 #define TR_SUBPROBLEM
@@ -96,6 +96,17 @@ namespace  utopia
                 p_k = s + tau * d; 
                 return tau; 
             }
+
+
+        public: 
+            virtual bool constrained_solve(const Matrix &H, const Vector &g, Vector &p_k)
+            {
+                update(make_ref(H));
+                apply(g, p_k); 
+                return true; 
+            }
+
+
 
     private:
 
