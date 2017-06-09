@@ -97,9 +97,14 @@ namespace utopia
         BG_DEFAULT  = 49
     };
 
-    class ColorModifier {
+    class ColorModifier 
+    {
         ColorCode code;
+
     public:
+
+    	void set_color_code(ColorCode new_code){ code = new_code;  }
+
         ColorModifier(ColorCode pCode) : code(pCode) {}
         friend std::ostream&
         operator<<(std::ostream& os, const ColorModifier& mod) {

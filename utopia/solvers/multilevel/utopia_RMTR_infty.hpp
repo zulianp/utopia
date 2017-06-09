@@ -66,7 +66,9 @@ namespace utopia
                 _smoother(smoother), 
                 _coarse_solver(coarse_solver), 
                 _coherence(FIRST_ORDER), 
-                _coarse_tr_subproblem(tr_subproblem) 
+                _coarse_tr_subproblem(tr_subproblem), 
+                _max_coarse_it(10),  
+                _max_fine_it(2)
         {
             set_parameters(params); 
         }
@@ -99,10 +101,8 @@ namespace utopia
          */
         virtual bool solve_rhs(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
         {
-            this->init_solver("RMTR_infty", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
-
-
-
+            // this->init_solver("RMTR_infty", {" it. ", "   E_old     ", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
+            
             Vector F_h  = local_zeros(local_size(x_h)); 
 
             bool converged = false; 
@@ -121,9 +121,8 @@ namespace utopia
             Scalar energy; 
             fine_fun.value(x_h, energy); 
 
-            Scalar ared=0, pred=0, rho=0; 
-
-            PrintInfo::print_iter_status(it, {r0_norm, energy, ared, pred, rho, 0.0}); 
+            // Scalar ared=0, pred=0, rho=0; 
+            // PrintInfo::print_iter_status(it, {r0_norm, energy, ared, pred, rho, 0.0}); 
             it++; 
 
             // init deltas 
@@ -134,9 +133,7 @@ namespace utopia
             while(!converged)
             {            
                 if(this->cycle_type() =="multiplicative")
-                    multiplicative_cycle(fine_fun, x_h, rhs, l, ared, pred, rho); 
-                // else if(this->cycle_type() =="full")
-                //     full_cycle(rhs, l, x_0); 
+                    multiplicative_cycle(fine_fun, x_h, rhs, l, it); 
                 else
                     std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n"; 
 
@@ -157,20 +154,24 @@ namespace utopia
                 rel_norm = r_norm/r0_norm; 
 
                 // print iteration status on every iteration 
-                if(this->verbose())
-                    PrintInfo::print_iter_status(it, {r_norm, energy, ared, pred, rho, 0.0}); 
+                // if(this->verbose())
+                //     PrintInfo::print_iter_status(it, {r_norm, energy, ared, pred, rho, 0.0}); 
+
+
+                ColorModifier red(FG_LIGHT_MAGENTA);
+                ColorModifier def(FG_DEFAULT);
+                std::cout << red; 
+
+                std::cout<<"outer loop, it: "<< it << "  energy: "<< energy << "     ||g||:    "<< r_norm << "   \n"; 
+
+                std::cout << def; 
+
 
                 // check convergence and print interation info
                 converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(it, r_norm, rel_norm, 1); 
                 it++; 
             
             }
-
-
-            Vector error = hessian * x_h - F_h; 
-            Scalar e_norm = norm2(error); 
-
-            std::cout<<"e_norm:  "<< e_norm << " \n"; 
 
             return true; 
         }
@@ -189,23 +190,40 @@ namespace utopia
             return this->_transfers[l]; 
         }
 
-        inline Level &lin_levels(const SizeType &l)
-        {
-            return this->_levels[l]; 
-        }
+        // inline Level &lin_levels(const SizeType &l)
+        // {
+        //     return this->_levels[l]; 
+        // }
 
 
-
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & level, Scalar & ared, Scalar &coarse_reduction, Scalar &rho)
+        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & level, const SizeType & it_global)
         {
             Vector g_fine, g_coarse, g_diff, r_h,  g_restricted, u_2l, s_coarse, s_fine, u_init; 
+            Matrix H_fine, H_restricted, H_coarse, H_diff; 
 
             // tr radius on this level 
             Scalar delta = get_delta(level-2); 
 
 
+            Scalar ared=0.0, coarse_reduction=0.0, rho=0.0; 
+
+//--------------------------------------------------------------------------------------------------------------------------------------------
             // PRE-SMOOTHING 
-            smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
+            // smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
+            
+            g_diff = 0 * u_l; 
+            fine_fun.hessian(u_l, H_diff);  // this is so not nice - really !!!!!!!!!! 
+            H_diff = 0 * H_diff;  
+            
+            //                                             - this 2 args are stupid
+            local_tr_solve(fine_fun, u_l, g_diff, H_diff, s_coarse, coarse_reduction, level); 
+//--------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
             fine_fun.gradient(u_l, g_fine);   
 
             r_h = g_fine - f; 
@@ -223,11 +241,8 @@ namespace utopia
             if(_coherence != GALERKIN)
                 this->zero_boundary_correction(levels(0), g_restricted); 
 
-
             g_diff = g_restricted - g_coarse;  // tau correction 
 
-
-            Matrix H_fine, H_restricted, H_coarse, H_diff; 
 
             if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
             {
@@ -247,7 +262,7 @@ namespace utopia
                 set_delta(0, get_delta(1)); 
 
                 SizeType l_new = level - 1; 
-                coarse_solve(levels(0), u_2l, g_diff, H_diff, s_coarse, coarse_reduction, l_new); 
+                local_tr_solve(levels(0), u_2l, g_diff, H_diff, s_coarse, coarse_reduction, l_new); 
             }
             else
             {
@@ -299,9 +314,25 @@ namespace utopia
             delta_update(rho, level, delta0, s_global); 
 
 
+            // just to see what is being printed 
+            this->init_solver("RMTR_coarse_corr_stat", {" it. ", "   E_old     ", "   E_old", "ared   ",  "  coarse_reduction  ", "  rho  ", "  delta "}); 
+            PrintInfo::print_iter_status(it_global, {E_old, E_new, ared, coarse_reduction, rho, get_delta(level-1) }); 
 
+
+
+
+            //--------------------------------------------------------------------------------------------------------------------------------------------
             // POST-SMOOTHING 
-            smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
+            // smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
+            
+            g_diff = 0 * u_l; 
+            fine_fun.hessian(u_l, H_diff);  // this is so not nice - really !!!!!!!!!! 
+            H_diff = 0 * H_diff;  
+            
+            //                                             - this 2 args are stupid
+            local_tr_solve(fine_fun, u_l, g_diff, H_diff, s_coarse, coarse_reduction, level); 
+            //--------------------------------------------------------------------------------------------------------------------------------------------
+
 
 
 
@@ -330,82 +361,92 @@ namespace utopia
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, const Matrix & H_diff, Vector & s_global, Scalar & reduction, const SizeType & level)
+        bool local_tr_solve(FunctionType &fun, Vector &x, const Vector & g_diff, const Matrix & H_diff, Vector & s_global, Scalar & reduction, const SizeType & level)
         {   
             
 
-                if(_coherence == FIRST_ORDER)
-                    std::cout<<"-------- Yes, first order....... \n"; 
-                else if(_coherence == SECOND_ORDER)
-                    std::cout<<"-------- Yes, second order....... \n"; 
+            if(_coherence == FIRST_ORDER)
+                std::cout<<"-------- Yes, first order....... \n"; 
+            else if(_coherence == SECOND_ORDER)
+                std::cout<<"-------- Yes, second order....... \n"; 
+
+            std::cout<<"level: "<< level << "   \n"; 
+
+            SizeType it_success = 0, it = 0; 
+            bool converged = false; 
 
 
-                std::cout<<"level: "<< level << "   \n"; 
+            Scalar energy_old, energy_new, energy_init, g_norm;
+            Scalar ared = 0 , pred = 0, rho = 0; 
 
+            ColorModifier color_out(FG_LIGHT_YELLOW);
+            ColorModifier color_def(FG_DEFAULT);
 
-
-                Scalar energy_old, energy, energy_init, g_norm;
-                Scalar ared = 0 , pred = 0, rho = 0; 
-
-                ColorModifier red(FG_LIGHT_YELLOW);
-                ColorModifier def(FG_DEFAULT);
-                std::cout << red; 
-
+            if(level == 1)
+            {
+                std::cout << color_out; 
                 this->init_solver("COARSE SOLVE", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
-
-                Vector x_init = x; 
-                Scalar delta0 = get_delta(level-1); 
-
-                std::cout<<"coarse delta0: "<< delta0 << "  \n"; 
-
-
-                Vector s = 0 * x; 
-                s_global = s; 
-                reduction = 0.0; 
-
-
-                Vector g; 
-                Matrix H; 
-
-                
-                // --------------------------------------- computation of grad -------------------------------
-                if(_coherence != GALERKIN)
-                    fun.gradient(x, g);
- 
-                if(_coherence == FIRST_ORDER)
-                    g += g_diff; 
-                else if(_coherence == SECOND_ORDER)
-                    g += g_diff + H_diff * s_global; 
-                else if(_coherence == GALERKIN)
-                    g = g_diff + H_diff * s_global; 
-                // --------------------------------------------------------------------------------------------
-
-
-                g_norm = norm2(g); 
-
-                // --------------------------------------- computation of energy -------------------------------
-                if(_coherence != GALERKIN)
-                    fun.value(x, energy_init); 
-
-                if(_coherence == FIRST_ORDER)
-                    energy_init += dot(g_diff, s_global); 
-                else if(_coherence == SECOND_ORDER)
-                    energy_init += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                else if(_coherence == GALERKIN)
-                    energy_init = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                // --------------------------------------------------------------------------------------------
-                
-
-
-                PrintInfo::print_iter_status(0, {g_norm, energy_init, ared, pred, rho, get_delta(level-1) }); 
+            }
+            else
+            {
+                color_out.set_color_code(FG_LIGHT_GREEN); 
+                std::cout << color_out; 
+                this->init_solver("SMOOTHER", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
+            }
 
 
 
-            for(auto i = 0; i < 50; i ++)
+            Vector x_init = x; 
+            Scalar delta0 = get_delta(level-1); 
+
+            std::cout<<"coarse delta0: "<< delta0 << "  \n"; 
+
+
+            Vector s = 0 * x; 
+            s_global = s; 
+            reduction = 0.0; 
+
+
+            Vector g; 
+            Matrix H; 
+
+            
+            // --------------------------------------- computation of grad -------------------------------
+            if(_coherence != GALERKIN)
+                fun.gradient(x, g);
+
+            if(_coherence == FIRST_ORDER)
+                g += g_diff; 
+            else if(_coherence == SECOND_ORDER)
+                g += g_diff + H_diff * s_global; 
+            else if(_coherence == GALERKIN)
+                g = g_diff + H_diff * s_global; 
+            // --------------------------------------------------------------------------------------------
+
+
+            g_norm = norm2(g); 
+
+            // --------------------------------------- computation of energy -------------------------------
+            if(_coherence != GALERKIN)
+                fun.value(x, energy_init); 
+
+            if(_coherence == FIRST_ORDER)
+                energy_init += dot(g_diff, s_global); 
+            else if(_coherence == SECOND_ORDER)
+                energy_init += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+            else if(_coherence == GALERKIN)
+                energy_init = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+            // --------------------------------------------------------------------------------------------
+            
+
+
+            PrintInfo::print_iter_status(0, {g_norm, energy_init, ared, pred, rho, get_delta(level-1) }); 
+
+            it++; 
+
+            while(!converged)
             {
                 
-
-        
                 // --------------------------------------- computation of hessian -------------------------------
                 if(_coherence != GALERKIN)
                     fun.hessian(x, H); 
@@ -432,7 +473,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //     solving constrained system to get correction
             //----------------------------------------------------------------------------
-
+                // this needs to get prepared 
                 s = 0 * x;
 
                 _coarse_tr_subproblem->current_radius(get_delta(level-1));  
@@ -448,18 +489,18 @@ namespace utopia
 
             // --------------------------------------- computation of energy -------------------------------
                 if(_coherence != GALERKIN)
-                    fun.value(tp, energy); 
+                    fun.value(tp, energy_new); 
 
                 if(_coherence == FIRST_ORDER)
-                    energy += dot(g_diff, s_global); 
+                    energy_new += dot(g_diff, s_global); 
                 else if(_coherence == SECOND_ORDER)
-                    energy += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                    energy_new += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
                 else if(_coherence == GALERKIN)
-                    energy = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                    energy_new = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
             // --------------------------------------------------------------------------------------------
 
 
-                ared = energy_old - energy; 
+                ared = energy_old - energy_new; 
 
                 // choice for the moment 
                 rho = ared/pred; 
@@ -468,17 +509,15 @@ namespace utopia
                 //     acceptance of trial point 
                 //----------------------------------------------------------------------------
                   
-
                   // good reduction, accept trial point 
                   if (rho >= this->rho_tol())
                   {
                     x = tp; 
                     reduction += ared; 
-//                  it_success++; 
+                    it_success++; 
                   }
                   else
                   {
-                   // x = tp; 
                     // since point was not taken 
                     s_global -= s; 
                   }
@@ -504,23 +543,21 @@ namespace utopia
 
 
                 g_norm = norm2(g); 
+                converged  = check_convergence(it_success,  g_norm, level); 
 
-                PrintInfo::print_iter_status(i, {g_norm, energy, ared, pred, rho, get_delta(level-1)}); 
-
-                if(g_norm < 1e-8)
-                {
-                    std::cout<< def; 
-                    return 0; 
-                }
-
+                PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
+                it++; 
 
             }
 
             // TODO:: check this in nonlinear case 
-            // s = x - x_init; 
+            // Vector corr = x - x_init; 
+            // Scalar corr_norm = norm2(corr); 
+            // Scalar sglob_norm = norm2(s_global); 
+            // std::cout<<"corr_norm:   "<< corr_norm << "      sglob_norm:    "<< sglob_norm << "    \n"; 
             
 
-            std::cout<< def; 
+            std::cout<< color_def; 
 
 
             return true; 
@@ -617,7 +654,27 @@ namespace utopia
 
 
 
+        bool check_convergence(const SizeType & it_success, const Scalar & g_norm, const SizeType & level)
+        {   
+            // coarse one 
+            if(level == 1)
+            {
+                if(it_success >= _max_coarse_it)
+                    return true; 
+            }
+            // every other level 
+            else
+            {
+                if(it_success >= _max_fine_it)
+                    return true; 
+            }
 
+            if(g_norm <= 1e-8)
+                return true; 
+            else
+                return false; 
+
+        }
 
 
 
@@ -635,6 +692,9 @@ namespace utopia
     private:
         Parameters                          _parameters; 
         std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem; 
+
+        SizeType                            _max_coarse_it; 
+        SizeType                            _max_fine_it; 
 
 
     };
