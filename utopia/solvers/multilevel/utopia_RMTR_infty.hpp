@@ -80,13 +80,7 @@ namespace utopia
             _smoother->set_parameters(params); 
             _coarse_solver->set_parameters(params); 
             
-            _delta_init = 1; 
-
-            // _delta.resize(this->num_levels()); 
-
-            // for(Scalar i = 0; i < this->num_levels(); i ++)
-            //     _delta.push_back(_delta_init); 
-
+            _delta_init = 1000000; 
             _parameters = params; 
         }
 
@@ -131,6 +125,11 @@ namespace utopia
 
             PrintInfo::print_iter_status(it, {r0_norm, energy, ared, pred, rho, 0.0}); 
             it++; 
+
+            // init deltas 
+            for(Scalar i = 0; i < l; i ++)
+                _delta.push_back(_delta_init); 
+
 
             while(!converged)
             {            
@@ -197,26 +196,27 @@ namespace utopia
 
 
 
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l, Scalar & ared, Scalar &coarse_reduction, Scalar &rho)
+        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & level, Scalar & ared, Scalar &coarse_reduction, Scalar &rho)
         {
             Vector g_fine, g_coarse, g_diff, r_h,  g_restricted, u_2l, s_coarse, s_fine, u_init; 
+
+            // tr radius on this level 
+            Scalar delta = get_delta(level-2); 
 
 
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
             fine_fun.gradient(u_l, g_fine);   
 
-
-
             r_h = g_fine - f; 
 
-            transfers(l-2).restrict(r_h, g_restricted);
-            transfers(l-2).project_down(u_l, u_2l); 
+            transfers(level-2).restrict(r_h, g_restricted);
+            transfers(level-2).project_down(u_l, u_2l); 
 
             this->make_iterate_feasible(levels(0), u_2l); 
 
             // here, grad should be zero by default on places where are BC conditions             
-            levels(l-2).gradient(u_2l, g_coarse); 
+            levels(level-2).gradient(u_2l, g_coarse); 
 
             u_init = u_2l; 
 
@@ -232,19 +232,22 @@ namespace utopia
             if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
             {
                 fine_fun.hessian(u_l, H_fine);   
-                transfers(l-2).restrict(H_fine, H_restricted);
+                transfers(level-2).restrict(H_fine, H_restricted);
                 
                 if(_coherence == SECOND_ORDER)
                     this->zero_boundary_correction_mat(levels(0), H_restricted); 
 
-                levels(l-2).hessian(u_2l, H_coarse); 
+                levels(level-2).hessian(u_2l, H_coarse); 
                 H_diff = H_restricted - H_coarse; 
             }
 
 
-            if(l == 2)
+            if(level == 2)
             {
-                coarse_solve(levels(0), u_2l, g_diff, H_diff, s_coarse, coarse_reduction); 
+                set_delta(0, get_delta(1)); 
+
+                SizeType l_new = level - 1; 
+                coarse_solve(levels(0), u_2l, g_diff, H_diff, s_coarse, coarse_reduction, l_new); 
             }
             else
             {
@@ -257,7 +260,7 @@ namespace utopia
             }
 
 
-            transfers(l-2).interpolate(s_coarse, s_fine);
+            transfers(level-2).interpolate(s_coarse, s_fine);
             this->zero_boundary_correction(fine_fun, s_fine); 
 
             Scalar E_old, E_new; 
@@ -286,6 +289,16 @@ namespace utopia
             }
 
 
+            //----------------------------------------------------------------------------
+            //     trust region update 
+            //----------------------------------------------------------------------------
+           
+           // TODO:: fix this ... 
+            Vector s_global = 0 * u_l; 
+            Scalar delta0 = 0.0; 
+            delta_update(rho, level, delta0, s_global); 
+
+
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
@@ -308,48 +321,16 @@ namespace utopia
          */
         bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
         {
-                _smoother->sweeps(nu); 
-                _smoother->nonlinear_smooth(fun, x, f); 
+            _smoother->sweeps(nu); 
+            _smoother->nonlinear_smooth(fun, x, f); 
             
-
-                // Scalar delta = 1000; 
-
-                // Vector g, s;
-
-                // s = 0 * x;  
-                // fun.gradient(x, g);
-
-                // Matrix A; 
-                // fun.hessian(x, A);
-
-
-                // KSP ksp; 
-                // PC pc; 
-                // MPI_Comm            comm; 
-                // PetscObjectGetComm((PetscObject)raw_type(A), &comm);
-                // KSPCreate(comm, &ksp);
-
-                // KSPSetOperators(ksp, raw_type(A), raw_type(A));
-                // KSPSetType(ksp, KSPSTCG);  
-                // KSPGetPC(ksp, &pc);
-                // PCSetType(pc, PCASM);
-                // KSPSetTolerances(ksp,1e-15, 1e-15, PETSC_DEFAULT, 10000); 
-                // KSPSTCGSetRadius(ksp, delta);
-                // KSPSolve(ksp, raw_type(g),raw_type(s));
-                // // KSPSTCGGetObjFcn(ksp, &pred);
-
-
-                // x = x - s; 
-
-
-
             return true; 
         }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, const Matrix & H_diff, Vector & s_global, Scalar & reduction)
+        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & g_diff, const Matrix & H_diff, Vector & s_global, Scalar & reduction, const SizeType & level)
         {   
             
 
@@ -357,6 +338,10 @@ namespace utopia
                     std::cout<<"-------- Yes, first order....... \n"; 
                 else if(_coherence == SECOND_ORDER)
                     std::cout<<"-------- Yes, second order....... \n"; 
+
+
+                std::cout<<"level: "<< level << "   \n"; 
+
 
 
                 Scalar energy_old, energy, energy_init, g_norm;
@@ -369,7 +354,11 @@ namespace utopia
                 this->init_solver("COARSE SOLVE", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
 
                 Vector x_init = x; 
-                Scalar delta = 100000; 
+                Scalar delta0 = get_delta(level-1); 
+
+                std::cout<<"coarse delta0: "<< delta0 << "  \n"; 
+
+
                 Vector s = 0 * x; 
                 s_global = s; 
                 reduction = 0.0; 
@@ -408,7 +397,7 @@ namespace utopia
                 
 
 
-                PrintInfo::print_iter_status(0, {g_norm, energy_init, ared, pred, rho, delta }); 
+                PrintInfo::print_iter_status(0, {g_norm, energy_init, ared, pred, rho, get_delta(level-1) }); 
 
 
 
@@ -446,7 +435,7 @@ namespace utopia
 
                 s = 0 * x;
 
-                _coarse_tr_subproblem->current_radius(delta);  
+                _coarse_tr_subproblem->current_radius(get_delta(level-1));  
                 _coarse_tr_subproblem->constrained_solve(H, g, s); 
                 TrustRegionBase<Matrix, Vector>::get_pred(g, H, s, pred); 
 
@@ -494,21 +483,11 @@ namespace utopia
                     s_global -= s; 
                   }
 
-
-
-                if(rho < this->eta1())
-                {   
-                     delta = this->gamma1() * delta; 
-                }
-                else if (rho > this->eta2() )
-                {
-                     delta = this->gamma2() * delta; 
-                }
-                else
-                {
-                    delta = delta; // just to remember it - delete it later
-                }      
-
+                //----------------------------------------------------------------------------
+                //     trust region update 
+                //----------------------------------------------------------------------------
+               
+                delta_update(rho, level, delta0, s_global); 
 
 
                 // --------------------------------------- computation of grad -------------------------------
@@ -526,7 +505,7 @@ namespace utopia
 
                 g_norm = norm2(g); 
 
-                PrintInfo::print_iter_status(i, {g_norm, energy, ared, pred, rho, delta}); 
+                PrintInfo::print_iter_status(i, {g_norm, energy, ared, pred, rho, get_delta(level-1)}); 
 
                 if(g_norm < 1e-8)
                 {
@@ -577,6 +556,71 @@ namespace utopia
         {
             return _delta[level]; 
         }
+
+
+
+
+
+        Scalar level_dependent_norm(const Vector & u, const SizeType & current_l)
+        {
+            if(current_l == this->num_levels())
+            {
+                return 0.0; 
+            }
+            else
+            {
+                Vector s = u; // carries over prolongated correction
+         
+                for(SizeType i = current_l; i < this->num_levels(); i++)
+                {   
+                    transfers(i-1).interpolate(s, s); 
+                }
+                return norm2(s); 
+            }    
+        }
+
+
+
+
+        virtual void delta_update(const Scalar & rho, const SizeType & level, const Scalar & delta0, const Vector & s_global)
+        {
+            Scalar intermediate_delta; 
+
+            if(rho < this->eta1())
+            {   
+                 intermediate_delta = this->gamma1() * get_delta(level-1); 
+            }
+            else if (rho > this->eta2() )
+            {
+                 intermediate_delta = this->gamma2() * get_delta(level-1); 
+            }
+            else
+            {
+                intermediate_delta = get_delta(level-1); 
+            }      
+
+            // on the finest level we work just with one radius 
+            if(level==this->num_levels())
+            {
+                std::cout<<"bigger delta   \n"; 
+                set_delta(level-1, intermediate_delta); 
+            }
+            else
+            {
+                std::cout<<"smaller delta ... \n"; 
+                // compute radius 
+                Scalar delta_help = delta0 - level_dependent_norm(s_global, level); 
+                // delta = std::min(intermediate_delta, delta_help); 
+                set_delta(level-1, std::min(intermediate_delta, delta_help)); 
+            }
+        }
+
+
+
+
+
+
+
 
 
     protected:   
