@@ -123,6 +123,7 @@ namespace utopia
             // init deltas 
             init_deltas(); 
             init_delta_gradients(); 
+            init_x_initials(); 
 
             if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
                 init_delta_hessians(); 
@@ -194,18 +195,7 @@ namespace utopia
 
 //--------------------------------------------------------------------------------------------------------------------------------------------
             // PRE-SMOOTHING 
-            // smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
-            
-            g_diff = 0 * u_l; 
-            fine_fun.hessian(u_l, H_diff);  // this is so not nice - really !!!!!!!!!! 
-            H_diff = 0 * H_diff;  
-            
-            set_delta_gradient(level - 1, g_diff); 
-            if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
-                set_delta_hessian(level - 1, H_diff); 
-
-            //                                             - this 2 args are stupid
-            local_tr_solve(fine_fun, u_l, s_coarse, coarse_reduction, level); 
+            local_tr_solve(fine_fun, u_l,  s_coarse, coarse_reduction, level); 
 //--------------------------------------------------------------------------------------------------------------------------------------------
 
             fine_fun.gradient(u_l, g_fine);   
@@ -243,14 +233,15 @@ namespace utopia
 
             if(level == 2)
             {
-                set_delta(0, get_delta(1)); 
                 SizeType l_new = level - 1; 
+                set_delta(0, get_delta(l_new)); 
 
                 set_delta_gradient(l_new - 1, g_diff); 
 
                 if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
                     set_delta_hessian(l_new - 1, H_diff); 
-                
+
+                set_x_initial(l_new - 1, u_2l); 
                 local_tr_solve(levels(0), u_2l, s_coarse, coarse_reduction, l_new); 
             }
             else
@@ -296,10 +287,11 @@ namespace utopia
             //     trust region update 
             //----------------------------------------------------------------------------
            
-           // TODO:: fix this ... 
+           // TODO:: fix this ... for more levels 
             Vector s_global = 0 * u_l; 
             Scalar delta0 = 0.0; 
             delta_update(rho, level, delta0, s_global); 
+
 
 
             // just to see what is being printed 
@@ -309,22 +301,10 @@ namespace utopia
 
 
 
-            //--------------------------------------------------------------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------------------------------------------------------
             // POST-SMOOTHING 
-            // smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
-            
-            g_diff = 0 * u_l; 
-            fine_fun.hessian(u_l, H_diff);  // this is so not nice - really !!!!!!!!!! 
-            H_diff = 0 * H_diff;  
-            
-            set_delta_gradient(level - 1, g_diff); 
-            if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
-                set_delta_hessian(level - 1, H_diff); 
-
-
-            //                                             - this 2 args are stupid
             local_tr_solve(fine_fun, u_l, s_coarse, coarse_reduction, level); 
-            //--------------------------------------------------------------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -334,17 +314,20 @@ namespace utopia
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        bool local_tr_solve(FunctionType &fun, Vector &x, Vector & s_global, Scalar & reduction, const SizeType & level)
+        bool local_tr_solve(FunctionType &fun, Vector & x,  Vector & s_global, Scalar & reduction, const SizeType & level)
         {   
-            Vector g_diff = get_delta_gradient(level-1); 
-            
+            Vector g_diff; 
             Matrix H_diff; 
 
-            if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
+            if(level < this->num_levels())
             {
-                 H_diff = get_delta_hessian(level-1); 
+                g_diff = get_delta_gradient(level-1); 
+                
+                if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
+                {
+                     H_diff = get_delta_hessian(level-1); 
+                }
             }
-
 
 
             if(_coherence == FIRST_ORDER)
@@ -377,9 +360,6 @@ namespace utopia
                 this->init_solver("SMOOTHER", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
             }
 
-
-
-            Vector x_init = x; 
             Scalar delta0 = get_delta(level-1); 
 
             std::cout<<"coarse delta0: "<< delta0 << "  \n"; 
@@ -398,12 +378,15 @@ namespace utopia
             if(_coherence != GALERKIN)
                 fun.gradient(x, g);
 
-            if(_coherence == FIRST_ORDER)
-                g += g_diff; 
-            else if(_coherence == SECOND_ORDER)
-                g += g_diff + H_diff * s_global; 
-            else if(_coherence == GALERKIN)
-                g = g_diff + H_diff * s_global; 
+            if(level < this->num_levels())
+            {
+                if(_coherence == FIRST_ORDER)
+                    g += g_diff; 
+                else if(_coherence == SECOND_ORDER)
+                    g += g_diff + H_diff * s_global; 
+                else if(_coherence == GALERKIN)
+                    g = g_diff + H_diff * s_global; 
+            }
             // --------------------------------------------------------------------------------------------
 
 
@@ -413,12 +396,15 @@ namespace utopia
             if(_coherence != GALERKIN)
                 fun.value(x, energy_init); 
 
-            if(_coherence == FIRST_ORDER)
-                energy_init += dot(g_diff, s_global); 
-            else if(_coherence == SECOND_ORDER)
-                energy_init += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-            else if(_coherence == GALERKIN)
-                energy_init = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+            if(level < this->num_levels())
+            {
+                if(_coherence == FIRST_ORDER)
+                    energy_init += dot(g_diff, s_global); 
+                else if(_coherence == SECOND_ORDER)
+                    energy_init += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                else if(_coherence == GALERKIN)
+                    energy_init = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+            }
             // --------------------------------------------------------------------------------------------
             
 
@@ -436,10 +422,13 @@ namespace utopia
                     if(_coherence != GALERKIN)
                         fun.hessian(x, H); 
 
-                    if(_coherence == SECOND_ORDER)
-                        H = H + H_diff; 
-                    else if(_coherence == GALERKIN)
-                        H = H_diff; 
+                    if(level < this->num_levels())
+                    {
+                        if(_coherence == SECOND_ORDER)
+                            H = H + H_diff; 
+                        else if(_coherence == GALERKIN)
+                            H = H_diff; 
+                    }
                 }
                 // --------------------------------------------------------------------------------------------
 
@@ -449,12 +438,15 @@ namespace utopia
                     if(_coherence != GALERKIN)
                         fun.value(x, energy_old); 
 
-                    if(_coherence == FIRST_ORDER)
-                        energy_old += dot(g_diff, s_global); 
-                    else if(_coherence == SECOND_ORDER)
-                        energy_old += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                    else if(_coherence == GALERKIN)
-                        energy_old = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                    if(level < this->num_levels())
+                    {
+                        if(_coherence == FIRST_ORDER)
+                            energy_old += dot(g_diff, s_global); 
+                        else if(_coherence == SECOND_ORDER)
+                            energy_old += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                        else if(_coherence == GALERKIN)
+                            energy_old = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                    }
                 }
                 // --------------------------------------------------------------------------------------------
 
@@ -484,18 +476,25 @@ namespace utopia
                 
                 Vector tp = x + s;  
                 // s_global += s;  
-                s_global = tp - x_init;                  
+                
+                if(level < this->num_levels())
+                {
+                    s_global = tp - get_x_initial(level - 1);                  
+                }
 
             // --------------------------------------- computation of energy -------------------------------
                 if(_coherence != GALERKIN)
                     fun.value(tp, energy_new); 
 
-                if(_coherence == FIRST_ORDER)
-                    energy_new += dot(g_diff, s_global); 
-                else if(_coherence == SECOND_ORDER)
-                    energy_new += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                else if(_coherence == GALERKIN)
-                    energy_new = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                if(level < this->num_levels())
+                {
+                    if(_coherence == FIRST_ORDER)
+                        energy_new += dot(g_diff, s_global); 
+                    else if(_coherence == SECOND_ORDER)
+                        energy_new += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                    else if(_coherence == GALERKIN)
+                        energy_new = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                }
             // --------------------------------------------------------------------------------------------
 
 
@@ -535,35 +534,29 @@ namespace utopia
                 {
                     if(_coherence != GALERKIN)
                         fun.gradient(x, g);
+
+                    if(level < this->num_levels())
+                    {
      
-                    if(_coherence == FIRST_ORDER)
-                        g += g_diff; 
-                    else if(_coherence == SECOND_ORDER)
-                        g += g_diff + H_diff * s_global; 
-                    else if(_coherence == GALERKIN)
-                        g = g_diff + H_diff * s_global; 
+                        if(_coherence == FIRST_ORDER)
+                            g += g_diff; 
+                        else if(_coherence == SECOND_ORDER)
+                            g += g_diff + H_diff * s_global; 
+                        else if(_coherence == GALERKIN)
+                            g = g_diff + H_diff * s_global; 
+                    }
 
                     g_norm = norm2(g); 
                 }
                 // --------------------------------------------------------------------------------------------
 
-
                 converged  = check_convergence(it_success,  g_norm, level, get_delta(level-1)); 
-
                 PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
                 it++; 
 
             }
 
-            // TODO:: check this in nonlinear case 
-            Vector corr = x - x_init; 
-            // Scalar corr_norm = norm2(corr); 
-            // Scalar sglob_norm = norm2(s_global); 
-            // std::cout<<"corr_norm:   "<< corr_norm << "      sglob_norm:    "<< sglob_norm << "    \n"; 
-            
-
             std::cout<< color_def; 
-
 
             return true; 
         }
@@ -654,9 +647,12 @@ namespace utopia
 
         }
 
+        // organized from coarsest
+        // _delta_gradients[0] =  coarsest level
+        // NOTE: we do not have any for the finest level, since function on the finest level is taken from problem definition by itself
         bool init_delta_gradients()
         {
-            _delta_gradients.resize(this->num_levels()); 
+            _delta_gradients.resize(this->num_levels()-1); 
             return true; 
         }
 
@@ -698,9 +694,12 @@ namespace utopia
         }
 
 
+        // organized from coarsest
+        // _delta_hessians[0] =  coarsest level
+        // NOTE: we do not have any for the finest level, since function on the finest level is taken from problem definition by itself
         bool init_delta_hessians()
         {
-            _delta_hessians.resize(this->num_levels()); 
+            _delta_hessians.resize(this->num_levels()-1); 
             return true; 
         }
 
@@ -716,6 +715,33 @@ namespace utopia
         {
             return _delta_hessians[level]; 
         }
+
+
+
+
+        // organized from coarsest
+        // _x_initials[0] =  coarsest level
+        // NOTE: we do not have any for the finest level, since function on the finest level is taken from problem definition by itself
+        bool init_x_initials()
+        {
+            _x_initials.resize(this->num_levels()-1); 
+            return true; 
+        }
+
+
+        bool set_x_initial(const SizeType & level, const Vector & x)
+        {
+            _x_initials[level] = x; 
+            return true; 
+        }
+
+
+        Vector & get_x_initial(const SizeType & level) 
+        {
+            return _x_initials[level]; 
+        }
+
+
 
 
 
@@ -737,6 +763,8 @@ namespace utopia
 
         std::vector<Vector>           _delta_gradients; 
         std::vector<Matrix>           _delta_hessians; 
+
+        std::vector<Vector>           _x_initials; 
 
 
     };
