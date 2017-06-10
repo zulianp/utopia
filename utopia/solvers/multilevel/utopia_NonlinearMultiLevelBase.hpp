@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-08
+* @Last Modified time: 2017-06-10
 */
 
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
@@ -239,17 +239,9 @@ protected:
           Vector bc_values; 
           fun.get_boundary_values(bc_values); 
 
-          // std::cout<<"bc values: \n"; 
-          // disp(bc_values); 
-
           Vector bc_ids; 
           fun.get_boundary_ids(bc_ids); 
 
-          // std::cout<<"bc ids: \n"; 
-          // disp(bc_ids); 
-
-          // if(local_size(x) == local_size(bc_ids))
-          // {
             {
                 Write<Vector> w(x);
                 Read<Vector>  r_id(bc_ids);
@@ -267,11 +259,6 @@ protected:
                     }
                 }
             }
-          // }
-
-          // std::cout<<"x_after: \n"; 
-          // disp(x); 
-          // std::cout<<"    \n"; 
           
           return true; 
         }
@@ -289,25 +276,21 @@ protected:
           Vector bc; 
           fun.get_boundary_ids(bc); 
 
-          // if(local_size(c)==local_size(bc))
-          // {
-            {
-                Write<Vector> w(c);
-                Read<Vector> r(bc);
+          {
+            Write<Vector> w(c);
+            Read<Vector> r(bc);
 
-                Range range_w = range(c);
-                for (SizeType i = range_w.begin(); i != range_w.end(); i++) 
+            Range range_w = range(c);
+            for (SizeType i = range_w.begin(); i != range_w.end(); i++) 
+            {
+                Scalar value = bc.get(i);
+                
+                if(value == 1)
                 {
-                    Scalar value = bc.get(i);
-                    
-                    if(value == 1)
-                    {
-                      c.set(i, 0);
-                    }
+                  c.set(i, 0);
                 }
             }
-          // }
-
+          }
           return true; 
         }
 
@@ -318,7 +301,6 @@ protected:
         {
           Vector bc; 
           fun.get_boundary_ids(bc); 
-
           std::vector<SizeType> index;
 
           {
@@ -331,7 +313,6 @@ protected:
                   index.push_back(i); 
             }
           }
-
           set_zero_rows(M, index); 
           return true; 
         }
@@ -339,11 +320,8 @@ protected:
 
     protected:
         std::vector<FunctionType>                      _nonlinear_levels;  
-        Parameters params_;                /*!< Solver parameters. */  
+        Parameters params_;                           /*!< Solver parameters. */  
 
-
-
-       // std::vector<Transfer>               _transfers;   /*!< vector of transfer operators  */
         
         // ... GENERAL SOLVER PARAMETERS ...
         Scalar atol_;                   /*!< Absolute tolerance. */  

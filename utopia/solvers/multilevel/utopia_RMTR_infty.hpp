@@ -58,17 +58,13 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        RMTR_infty(    const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
-                const std::shared_ptr<Solver> &coarse_solver = std::shared_ptr<Solver>(),
-                const std::shared_ptr<TRSubproblem> &tr_subproblem = std::shared_ptr<TRSubproblem>(),
+        RMTR_infty(    
+                const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse = std::shared_ptr<TRSubproblem>(),
+                const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother = std::shared_ptr<TRSubproblem>(),
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
-                _smoother(smoother), 
-                _coarse_solver(coarse_solver), 
-                _coherence(FIRST_ORDER), 
-                _coarse_tr_subproblem(tr_subproblem), 
-                _max_coarse_it(10),  
-                _max_fine_it(2)
+                _coarse_tr_subproblem(tr_subproblem_coarse), 
+                _smoother_tr_subproblem(tr_subproblem_smoother)
         {
             set_parameters(params); 
         }
@@ -78,12 +74,12 @@ namespace utopia
 
         void set_parameters(const Parameters params)  // override
         {
-            NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params); 
-            _smoother->set_parameters(params); 
-            _coarse_solver->set_parameters(params); 
-            
-            _delta_init = 1000000; 
-            _parameters = params; 
+            NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params);             
+            _delta_init     = 1000000; 
+            _parameters     = params; 
+            _coherence      = FIRST_ORDER, 
+            _max_coarse_it  = 10;  
+            _max_fine_it    = 2;
         }
 
         virtual bool solve(FunctionType & fine_fun, Vector &x_h)
@@ -101,7 +97,6 @@ namespace utopia
          */
         virtual bool solve_rhs(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
         {
-            // this->init_solver("RMTR_infty", {" it. ", "   E_old     ", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
             
             Vector F_h  = local_zeros(local_size(x_h)); 
 
@@ -121,13 +116,17 @@ namespace utopia
             Scalar energy; 
             fine_fun.value(x_h, energy); 
 
-            // Scalar ared=0, pred=0, rho=0; 
-            // PrintInfo::print_iter_status(it, {r0_norm, energy, ared, pred, rho, 0.0}); 
             it++; 
 
+
+            //-------------- INITIALIZATIONS ---------------
             // init deltas 
-            for(Scalar i = 0; i < l; i ++)
-                _delta.push_back(_delta_init); 
+            init_deltas(); 
+            init_delta_gradients(); 
+
+            if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
+                init_delta_hessians(); 
+            //----------------------------------------------
 
 
             while(!converged)
@@ -147,25 +146,16 @@ namespace utopia
                 #endif    
 
                 fine_fun.gradient(x_h, F_h); 
-                
                 fine_fun.value(x_h, energy); 
                 
                 r_norm = norm2(F_h);
                 rel_norm = r_norm/r0_norm; 
 
-                // print iteration status on every iteration 
-                // if(this->verbose())
-                //     PrintInfo::print_iter_status(it, {r_norm, energy, ared, pred, rho, 0.0}); 
-
-
                 ColorModifier red(FG_LIGHT_MAGENTA);
                 ColorModifier def(FG_DEFAULT);
                 std::cout << red; 
-
-                std::cout<<"outer loop, it: "<< it << "  energy: "<< energy << "     ||g||:    "<< r_norm << "   \n"; 
-
+                std::cout<<"outer loop, it: "<< it <<  "     ||g||:    "<< r_norm << "  energy: "<< energy << "   \n"; 
                 std::cout << def; 
-
 
                 // check convergence and print interation info
                 converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(it, r_norm, rel_norm, 1); 
@@ -190,11 +180,6 @@ namespace utopia
             return this->_transfers[l]; 
         }
 
-        // inline Level &lin_levels(const SizeType &l)
-        // {
-        //     return this->_levels[l]; 
-        // }
-
 
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & level, const SizeType & it_global)
         {
@@ -215,14 +200,13 @@ namespace utopia
             fine_fun.hessian(u_l, H_diff);  // this is so not nice - really !!!!!!!!!! 
             H_diff = 0 * H_diff;  
             
+            set_delta_gradient(level - 1, g_diff); 
+            if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
+                set_delta_hessian(level - 1, H_diff); 
+
             //                                             - this 2 args are stupid
-            local_tr_solve(fine_fun, u_l, g_diff, H_diff, s_coarse, coarse_reduction, level); 
+            local_tr_solve(fine_fun, u_l, s_coarse, coarse_reduction, level); 
 //--------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
 
             fine_fun.gradient(u_l, g_fine);   
 
@@ -260,9 +244,14 @@ namespace utopia
             if(level == 2)
             {
                 set_delta(0, get_delta(1)); 
-
                 SizeType l_new = level - 1; 
-                local_tr_solve(levels(0), u_2l, g_diff, H_diff, s_coarse, coarse_reduction, l_new); 
+
+                set_delta_gradient(l_new - 1, g_diff); 
+
+                if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
+                    set_delta_hessian(l_new - 1, H_diff); 
+                
+                local_tr_solve(levels(0), u_2l, s_coarse, coarse_reduction, l_new); 
             }
             else
             {
@@ -299,8 +288,7 @@ namespace utopia
             if(rho > this->rho_tol())
                 u_l = u_t; 
             else{
-                // u_l = u_t; 
-                std::cout<<"RMTR:: not taken trial point... \n"; 
+                std::cout<<"RMTR:: not taking trial point... \n"; 
             }
 
 
@@ -329,8 +317,13 @@ namespace utopia
             fine_fun.hessian(u_l, H_diff);  // this is so not nice - really !!!!!!!!!! 
             H_diff = 0 * H_diff;  
             
+            set_delta_gradient(level - 1, g_diff); 
+            if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
+                set_delta_hessian(level - 1, H_diff); 
+
+
             //                                             - this 2 args are stupid
-            local_tr_solve(fine_fun, u_l, g_diff, H_diff, s_coarse, coarse_reduction, level); 
+            local_tr_solve(fine_fun, u_l, s_coarse, coarse_reduction, level); 
             //--------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -339,31 +332,20 @@ namespace utopia
             return true; 
         }
 
-
-        /**
-         * @brief      The function invokes smoothing. 
-         *
-         * @param[in]  A     The stifness matrix. 
-         * @param[in]  rhs   The right hand side.
-         * @param      x     The current iterate. 
-         * @param[in]  nu    The number of smoothing steps. 
-         *
-         * @return   
-         */
-        bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
-        {
-            _smoother->sweeps(nu); 
-            _smoother->nonlinear_smooth(fun, x, f); 
-            
-            return true; 
-        }
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        bool local_tr_solve(FunctionType &fun, Vector &x, const Vector & g_diff, const Matrix & H_diff, Vector & s_global, Scalar & reduction, const SizeType & level)
+        bool local_tr_solve(FunctionType &fun, Vector &x, Vector & s_global, Scalar & reduction, const SizeType & level)
         {   
+            Vector g_diff = get_delta_gradient(level-1); 
             
+            Matrix H_diff; 
+
+            if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
+            {
+                 H_diff = get_delta_hessian(level-1); 
+            }
+
+
 
             if(_coherence == FIRST_ORDER)
                 std::cout<<"-------- Yes, first order....... \n"; 
@@ -483,8 +465,17 @@ namespace utopia
                 // this needs to get prepared 
                 s = 0 * x;
 
-                _coarse_tr_subproblem->current_radius(get_delta(level-1));  
-                _coarse_tr_subproblem->constrained_solve(H, g, s); 
+                if(level == 1)
+                {
+                    _coarse_tr_subproblem->current_radius(get_delta(level-1));  
+                    _coarse_tr_subproblem->constrained_solve(H, g, s); 
+                }
+                else
+                {
+                    _smoother_tr_subproblem->current_radius(get_delta(level-1));  
+                    _smoother_tr_subproblem->constrained_solve(H, g, s); 
+                }
+
                 TrustRegionBase<Matrix, Vector>::get_pred(g, H, s, pred); 
 
             //----------------------------------------------------------------------------
@@ -492,7 +483,8 @@ namespace utopia
             //----------------------------------------------------------------------------
                 
                 Vector tp = x + s;  
-                s_global += s;                   
+                // s_global += s;  
+                s_global = tp - x_init;                  
 
             // --------------------------------------- computation of energy -------------------------------
                 if(_coherence != GALERKIN)
@@ -564,7 +556,7 @@ namespace utopia
             }
 
             // TODO:: check this in nonlinear case 
-            // Vector corr = x - x_init; 
+            Vector corr = x - x_init; 
             // Scalar corr_norm = norm2(corr); 
             // Scalar sglob_norm = norm2(s_global); 
             // std::cout<<"corr_norm:   "<< corr_norm << "      sglob_norm:    "<< sglob_norm << "    \n"; 
@@ -581,36 +573,6 @@ namespace utopia
 
 
     public:
-        /**
-         * @brief      Function changes direct solver needed for coarse grid solve. 
-         *
-         * @param[in]  linear_solver  The linear solver.
-         *
-         * @return     
-         */
-        bool change_coarse_solver(const std::shared_ptr<Solver> &nonlinear_solver = std::shared_ptr<Solver>())
-        {
-            _coarse_solver = nonlinear_solver; 
-            _coarse_solver->set_parameters(_parameters); 
-            return true; 
-        }
-
-
-        bool set_delta(const SizeType & level, const Scalar & radius)
-        {
-            _delta[level] = radius; 
-            return true; 
-        }
-
-        Scalar get_delta(const SizeType & level) const 
-        {
-            return _delta[level]; 
-        }
-
-
-
-
-
         Scalar level_dependent_norm(const Vector & u, const SizeType & current_l)
         {
             if(current_l == this->num_levels())
@@ -628,8 +590,6 @@ namespace utopia
                 return norm2(s); 
             }    
         }
-
-
 
 
         virtual void delta_update(const Scalar & rho, const SizeType & level, const Scalar & delta0, const Vector & s_global)
@@ -694,25 +654,89 @@ namespace utopia
 
         }
 
+        bool init_delta_gradients()
+        {
+            _delta_gradients.resize(this->num_levels()); 
+            return true; 
+        }
 
+
+        bool set_delta_gradient(const SizeType & level, const Vector & g_diff)
+        {
+            _delta_gradients[level] = g_diff; 
+            return true; 
+        }
+
+
+        Vector & get_delta_gradient(const SizeType & level) 
+        {
+            return _delta_gradients[level]; 
+        }
+
+
+        bool set_delta(const SizeType & level, const Scalar & radius)
+        {
+            _delta[level] = radius; 
+            return true; 
+        }
+
+
+        Scalar get_delta(const SizeType & level) const 
+        {
+            return _delta[level]; 
+        }
+
+
+        // organized from coarsest
+        // delta[0] =  coarsest level
+        bool init_deltas()
+        {
+            for(Scalar i = 0; i < this->num_levels(); i ++)
+                _delta.push_back(_delta_init); 
+
+            return true; 
+        }
+
+
+        bool init_delta_hessians()
+        {
+            _delta_hessians.resize(this->num_levels()); 
+            return true; 
+        }
+
+
+        bool set_delta_hessian(const SizeType & level, const Matrix & H_diff)
+        {
+            _delta_hessians[level] = H_diff; 
+            return true; 
+        }
+
+
+        Matrix & get_delta_hessian(const SizeType & level) 
+        {
+            return _delta_hessians[level]; 
+        }
 
 
 
     protected:   
-        std::shared_ptr<Smoother>           _smoother;
-        std::shared_ptr<Solver>             _coarse_solver;  
-
         Scalar                              _delta_init; 
-
-        std::vector<Scalar>                 _delta;
+        std::vector<Scalar>                 _delta;                  
         Coherence_level                     _coherence; 
 
     private:
         Parameters                          _parameters; 
+
+
         std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem; 
+        std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem; 
 
         SizeType                            _max_coarse_it; 
         SizeType                            _max_fine_it; 
+
+
+        std::vector<Vector>           _delta_gradients; 
+        std::vector<Matrix>           _delta_hessians; 
 
 
     };
