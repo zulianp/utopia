@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-09
+* @Last Modified time: 2017-06-10
 */
 
 #ifndef UTOPIA_RMTR_INFTY_HPP
@@ -374,6 +374,7 @@ namespace utopia
 
             SizeType it_success = 0, it = 0; 
             bool converged = false; 
+            bool make_updates = true; 
 
 
             Scalar energy_old, energy_new, energy_init, g_norm;
@@ -448,25 +449,31 @@ namespace utopia
             {
                 
                 // --------------------------------------- computation of hessian -------------------------------
-                if(_coherence != GALERKIN)
-                    fun.hessian(x, H); 
+                if(make_updates)
+                {
+                    if(_coherence != GALERKIN)
+                        fun.hessian(x, H); 
 
-                if(_coherence == SECOND_ORDER)
-                    H = H + H_diff; 
-                else if(_coherence == GALERKIN)
-                    H = H_diff; 
+                    if(_coherence == SECOND_ORDER)
+                        H = H + H_diff; 
+                    else if(_coherence == GALERKIN)
+                        H = H_diff; 
+                }
                 // --------------------------------------------------------------------------------------------
 
                 // --------------------------------------- computation of energy -------------------------------
-                if(_coherence != GALERKIN)
-                    fun.value(x, energy_old); 
+                if(make_updates)
+                {
+                    if(_coherence != GALERKIN)
+                        fun.value(x, energy_old); 
 
-                if(_coherence == FIRST_ORDER)
-                    energy_old += dot(g_diff, s_global); 
-                else if(_coherence == SECOND_ORDER)
-                    energy_old += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                else if(_coherence == GALERKIN)
-                    energy_old = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                    if(_coherence == FIRST_ORDER)
+                        energy_old += dot(g_diff, s_global); 
+                    else if(_coherence == SECOND_ORDER)
+                        energy_old += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                    else if(_coherence == GALERKIN)
+                        energy_old = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
+                }
                 // --------------------------------------------------------------------------------------------
 
 
@@ -515,11 +522,13 @@ namespace utopia
                     x = tp; 
                     reduction += ared; 
                     it_success++; 
+                    make_updates =  true; 
                   }
                   else
                   {
                     // since point was not taken 
                     s_global -= s; 
+                    make_updates =  false; 
                   }
 
                 //----------------------------------------------------------------------------
@@ -530,19 +539,23 @@ namespace utopia
 
 
                 // --------------------------------------- computation of grad -------------------------------
-                if(_coherence != GALERKIN)
-                    fun.gradient(x, g);
- 
-                if(_coherence == FIRST_ORDER)
-                    g += g_diff; 
-                else if(_coherence == SECOND_ORDER)
-                    g += g_diff + H_diff * s_global; 
-                else if(_coherence == GALERKIN)
-                    g = g_diff + H_diff * s_global; 
+                if(make_updates)
+                {
+                    if(_coherence != GALERKIN)
+                        fun.gradient(x, g);
+     
+                    if(_coherence == FIRST_ORDER)
+                        g += g_diff; 
+                    else if(_coherence == SECOND_ORDER)
+                        g += g_diff + H_diff * s_global; 
+                    else if(_coherence == GALERKIN)
+                        g = g_diff + H_diff * s_global; 
+
+                    g_norm = norm2(g); 
+                }
                 // --------------------------------------------------------------------------------------------
 
 
-                g_norm = norm2(g); 
                 converged  = check_convergence(it_success,  g_norm, level, get_delta(level-1)); 
 
                 PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
