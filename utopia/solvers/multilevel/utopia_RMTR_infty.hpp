@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-10
+* @Last Modified time: 2017-06-11
 */
 
 #ifndef UTOPIA_RMTR_INFTY_HPP
@@ -75,11 +75,14 @@ namespace utopia
         void set_parameters(const Parameters params)  // override
         {
             NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params);             
-            _delta_init     = 1000000; 
-            _parameters     = params; 
-            _coherence      = FIRST_ORDER, 
-            _max_coarse_it  = 10;  
-            _max_fine_it    = 2;
+            _delta_init                 = 1000000; 
+            _parameters                 = params; 
+            _coherence                  = FIRST_ORDER, 
+            _max_coarse_it              = 10;  
+            _max_fine_it                = 2;
+            _eps_delta_termination      = 0.001; 
+            _delta_min                  = 1e-10; 
+            _grad_smoothess_termination = 0.5; 
         }
 
         virtual bool solve(FunctionType & fine_fun, Vector &x_h)
@@ -229,7 +232,7 @@ namespace utopia
 
 
         // -------------------- init of levels -----------------------------
-            set_delta(level-2, get_delta(l_new)); 
+            set_delta(level-2, get_delta(level-2)); 
             set_delta_gradient(level-2, g_diff); 
 
             if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
@@ -239,7 +242,8 @@ namespace utopia
             set_delta_zero(level-2, get_delta(level-2)); 
         // -------------------- end of init -----------------------------
 
-            if(level == 2)
+            // if grad is not smooth enoguh, we proceed to Taylor iterations, no recursion anymore
+            if(level == 2 || grad_smoothess_termination(g_restricted, g_coarse))
             {
                 SizeType l_new = level - 1; 
                 local_tr_solve(levels(level-2), u_2l, coarse_reduction, l_new); 
@@ -331,7 +335,8 @@ namespace utopia
             //     trust region update 
             //----------------------------------------------------------------------------
            
-            delta_update(rho, level, s_global); 
+            bool converged = false; 
+            delta_update(rho, level, s_global, converged); 
 
 
 
@@ -478,7 +483,6 @@ namespace utopia
 
                     if(level < this->num_levels())
                     {
-                        std::cout<<"-------- cond satisfied.......... \n"; 
                         if(_coherence == FIRST_ORDER)
                             energy_old += dot(g_diff, s_global); 
                         else if(_coherence == SECOND_ORDER)
@@ -565,7 +569,7 @@ namespace utopia
                 //     trust region update 
                 //----------------------------------------------------------------------------
                
-                delta_update(rho, level, s_global); 
+                delta_update(rho, level, s_global, converged); 
 
 
                 // --------------------------------------- computation of grad -------------------------------
@@ -589,9 +593,10 @@ namespace utopia
                 }
                 // --------------------------------------------------------------------------------------------
 
-                converged  = check_convergence(it_success,  g_norm, level, get_delta(level-1)); 
+                converged  = (converged  == true) ? true : check_convergence(it_success,  g_norm, level, get_delta(level-1)); 
                 PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
                 it++; 
+
 
             }
 
@@ -624,7 +629,7 @@ namespace utopia
         }
 
 
-        virtual void delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global)
+        virtual void delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global, bool & converged)
         {
             Scalar intermediate_delta; 
 
@@ -650,8 +655,24 @@ namespace utopia
             else
             {
                 std::cout<<"smaller delta ... \n"; 
-                Scalar delta_help = get_delta_zero(level-1) - level_dependent_norm(s_global, level); 
-                set_delta(level-1, std::min(intermediate_delta, delta_help)); 
+                Scalar corr_norm = level_dependent_norm(s_global, level); 
+                
+                converged = delta_termination(corr_norm, level); 
+                if(converged)
+                {
+                    std::cout<<"termination  due to small radius for given level ... \n"; 
+                    return; 
+                }
+
+                corr_norm = get_delta_zero(level-1) - corr_norm; 
+
+
+                corr_norm = std::min(intermediate_delta, corr_norm); 
+
+                if(corr_norm <= 0)
+                    corr_norm = 0; 
+
+                set_delta(level-1, std::min(intermediate_delta, corr_norm)); 
             }
         }
 
@@ -673,16 +694,58 @@ namespace utopia
                     return true; 
             }
 
-            if(delta < 1e-10)
+            if(delta < _delta_min)
                 return true; 
 
 
-            if(g_norm <= 1e-8)
+            return criticality_measure_termination(g_norm); 
+
+        }
+
+        /**
+         * @brief      THis check guarantee that iterates at a lower level remain in the TR radius defined at the calling level
+         *
+         * @param[in]  corr_norm  The norm of sum of all corrections on given level 
+         * @param[in]  level      The level
+         *
+         */
+        bool delta_termination(const Scalar & corr_norm, const SizeType & level)
+        {   
+            return (corr_norm > (1 - _eps_delta_termination) * get_delta(level-1)) ? true : false; 
+        }
+
+
+
+        // needs to be overriden in case of \infty norm 
+        bool criticality_measure_termination(const Scalar & g_norm)
+        {
+            // this should be fancier based on Graffon paper, but it is quite boring to work with so many mesh informations
+            // Scalar _eps_grad_termination = std::min(0.001, eps_grad_termination[level]/ psi); 
+            
+            Scalar _eps_grad_termination = 1e-8; 
+            return (g_norm < _eps_grad_termination) ? true : false;    
+        }
+
+
+
+        bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse)
+        {
+            Scalar Rg_norm = norm2(g_restricted); 
+            Scalar g_norm = norm2(g_coarse);
+            // return (Rg_norm >= _grad_smoothess_termination g_norm) ? true : false;   
+            
+            if(Rg_norm >= _grad_smoothess_termination * g_norm)
+            {
+                std::cout<<"grad is not smooth enough............... => NO RECURSION ANYMORE ....  \n"; 
                 return true; 
+            }
             else
                 return false; 
 
         }
+
+
+
 
         bool set_delta(const SizeType & level, const Scalar & radius)
         {
@@ -820,8 +883,13 @@ namespace utopia
 
         std::vector<Vector>           _delta_gradients; 
         std::vector<Matrix>           _delta_hessians; 
-
         std::vector<Vector>           _x_initials; 
+
+
+        Scalar                         _eps_delta_termination; 
+        Scalar                         _delta_min; 
+
+        Scalar                         _grad_smoothess_termination; 
 
 
     };
