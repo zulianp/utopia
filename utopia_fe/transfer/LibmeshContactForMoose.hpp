@@ -2492,7 +2492,7 @@ namespace utopia {
             });
         }
         
-        
+
 
         
         bool has_contact = false;
@@ -2508,7 +2508,7 @@ namespace utopia {
         });
         
         disp(normals_vec);
-        dis(is_contact_node);
+        disp(is_contact_node);
         
         orthogonal_trafos = local_sparse(local_range_slave_range , local_range_slave_range , dim);
         
