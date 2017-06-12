@@ -934,8 +934,9 @@ namespace utopia {
                 bool  check_face_id=true;
                 
                 for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
-                    if (check_side_id_one==true){
-                        side_set_id[elem->id()].global.insert(side_set_id[elem->id()].global.end(),-1);
+                    if (check_side_id_one) {
+                        // side_set_id[elem->id()].global.insert(side_set_id[elem->id()].global.end(),-1);
+                        // side_set_id[elem->id()].global.push_back(-1);
                         check_side_id_one=false;
                         jj_side_id_one++;
                     }
@@ -943,8 +944,11 @@ namespace utopia {
                 
                 if (elem->on_boundary()){
                     for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
-                        if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2)) && check_side_id_one_tag==true){
-                            side_set_id[elem->id()].global.insert(side_set_id[elem->id()].global.end()-1,mesh.get_boundary_info().boundary_id(elem,side_elem));
+                        if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || 
+                             mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2)) && 
+                            check_side_id_one_tag){
+                            // side_set_id[elem->id()].global.insert(side_set_id[elem->id()].global.end()-1,mesh.get_boundary_info().boundary_id(elem,side_elem));
+                            side_set_id[elem->id()].global.push_back(mesh.get_boundary_info().boundary_id(elem,side_elem));
                             check_side_id_one_tag=false;
                             jj_side_id_one_tag++;
                         }
@@ -954,7 +958,7 @@ namespace utopia {
                 
                 
                 for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
-                    if (check_side_id_one_check==true){
+                    if (check_side_id_one_check){
                         //                        std::cout<<"side_set_id[ "<< elem->id() <<" ] = "<<side_set_id[elem->id()].global.at(0)<<std::endl;
                         check_side_id_one_check=false;
                         jj_side_id_one_check++;
@@ -966,12 +970,12 @@ namespace utopia {
                     for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
                         //                        n_face_nodes[elem->id()].global.insert(n_face_nodes[elem->id()].global.end(), n_f);
                         //                        n_f++;
-                        if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2))){
-                            face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(),f_id);
-                            //std::cout<<"f_id"<<f_id<<std::endl;
-                            f_id++;
+                        if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || 
+                             mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2))){
+                            face_set_id[elem->id()].global.push_back(f_id++);
                             offset++;
-                            
+                        } else {
+                            face_set_id[elem->id()].global.push_back(-1);
                         }
                     }
                 }
@@ -1828,6 +1832,8 @@ namespace utopia {
                 
                 //std::cout << std::to_string(master_face_id[0]) << " -> " <<side_ptr_1->on_boundary() << std::endl;
                 //if(src_el.neighbor_ptr(side_1)!=nullptr) continue;
+
+                if(master_face_id[side_1] < 0) continue;
                 
                 if(src_el.neighbor_ptr(side_1) != nullptr) continue;
                 
@@ -1849,6 +1855,8 @@ namespace utopia {
                 
                 
                 for(uint side_2 = 0; side_2 < dest_el.n_sides(); ++side_2) {
+
+                    if(slave_face_id[side_2] < 0) continue;
                     
                     if(dest_el.neighbor_ptr(side_2) != nullptr) continue;
                     // if (!predicate->tagsAreRelated(tag_1, tag_2)) continue;
@@ -1881,7 +1889,7 @@ namespace utopia {
                     if(dim_sla==2){
                         make_polygon(*side_ptr_2, side_polygon_2);
                         
-                        //plot_lines(2, 2, &side_polygon_1.get_values()[0], "in_master/" + std::to_string(master_face_id[0]) + "_" + std::to_string(cos_angle));
+                        //plot_lines(2, 2, &side_polygon_1.get_values()[0], "in_master/" + std::to_string(master_facq) + "_" + std::to_string(cos_angle));
                         //plot_lines(2, 2, &side_polygon_2.get_values()[0], "in_slave/" + std::to_string(slave_face_id[0]) + "_" + std::to_string(cos_angle));
                         
                         if(!project_2D(side_polygon_1, side_polygon_2, isect_polygon_1, isect_polygon_2)){
@@ -1997,7 +2005,7 @@ namespace utopia {
                         //////////////////////////////////////////////////////////////////////////////////////
                         
                         // use boundary info instead
-                        rel_area_buff.add(slave_face_id[0], 0, surface_assemble->relative_area);
+                        rel_area_buff.add(slave_face_id[side_2], 0, surface_assemble->relative_area);
                         
                         
                         const auto &master_dofs = master.dof_map();
@@ -2128,14 +2136,14 @@ namespace utopia {
                         int offset = 0;
                         for(uint i = 0; i < node_is_boundary_dest.size(); ++i){
                             if (node_is_boundary_dest[i]) {
-                                dof_indices_slave_vec[i] =  slave_face_id[0] * n_nodes_face_dest + offset++;
+                                dof_indices_slave_vec[i] =  slave_face_id[side_2] * n_nodes_face_dest + offset++;
                             }
                         }
                         
                         offset = 0;
                         for(uint i = 0; i <  node_is_boundary_src.size(); ++i) {
                             if (node_is_boundary_src[i]) {
-                                dof_indices_master_vec[i] = master_face_id[0] * n_nodes_face_src + offset++;
+                                dof_indices_master_vec[i] = master_face_id[side_1] * n_nodes_face_src + offset++;
                             }
                         }
                         
@@ -2181,7 +2189,7 @@ namespace utopia {
                             
                             for (int k=0; k<dim_sla; ++k)
                             {
-                                normal_buff.add(dof_I,k, surface_assemble->normals(i,k));
+                                normal_buff.add(dof_I, k, surface_assemble->normals(i,k));
                             }
                             
                             //                            std::cout<< "************ dof_I_index = "<< dof_I <<std::endl;
@@ -2455,6 +2463,8 @@ namespace utopia {
                 
             }
         }
+
+        // disp(P);
         
         
         DSMatrixd Q_t = transpose(Q);
@@ -2483,6 +2493,8 @@ namespace utopia {
         }
         
         
+
+        
         bool has_contact = false;
         
         // utopia::Range r = utopia::range(gap);
@@ -2495,7 +2507,8 @@ namespace utopia {
             }
         });
         
-        
+        disp(normals_vec);
+        dis(is_contact_node);
         
         orthogonal_trafos = local_sparse(local_range_slave_range , local_range_slave_range , dim);
         
