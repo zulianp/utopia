@@ -2554,7 +2554,7 @@ namespace utopia {
                         normal[d] = normals_vec.get(i + d);
                     }
                     
-                    // if(std::abs(normal[0] - 1.) > 1e-8) {
+                    if(std::abs(normal[0] - 1.) > 1e-8) {
                         use_identity = false;
                         
                         normalize(normal);
@@ -2575,7 +2575,7 @@ namespace utopia {
                                 orthogonal_trafos.set((i + di), (i + dj), H[di * dim + dj]);
                             }
                         }
-                    // }
+                    }
                 }
                 
                 if(use_identity)
