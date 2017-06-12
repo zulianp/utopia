@@ -1917,8 +1917,8 @@ namespace utopia {
                         surface_assemble->relative_area    = weight;
                         
 
-                        plot_polygon(2, 2, &side_polygon_1.get_values()[0], "master");
-                        plot_polygon(2, 2, &side_polygon_2.get_values()[0], "slave");
+                        // plot_polygon(2, 2, &side_polygon_1.get_values()[0], "master");
+                        // plot_polygon(2, 2, &side_polygon_2.get_values()[0], "slave");
                         
                         
                     } else if(dim_src == 3) {
@@ -2451,14 +2451,14 @@ namespace utopia {
         comm.barrier();
         express::RootDescribe("petsc q_buffer assembly begin", comm, std::cout);
         
-        std::cout << local_range_master_range << " == " << 81 << std::endl;
+        // std::cout << local_range_master_range << " == " << 81 << std::endl;
         DSMatrixd Q = utopia::local_sparse(local_range_master_range, local_range_b_tilde, mMaxRowEntries_q);
         
        // disp(size(Q));
         {
             utopia::Write<utopia::DSMatrixd> write(Q);
             for (auto it = q_buffer.iter(); it; ++it) {
-                std::cout << it.row() << ", " << it.col() << std::endl;
+                // std::cout << it.row() << ", " << it.col() << std::endl;
                 Q.set(it.row(), it.col(), *it);
                 
             }
@@ -2503,12 +2503,12 @@ namespace utopia {
             {
                 is_contact_node.set(i, 1);
                 has_contact = true;
-                std::cout << "expetected_contact_node: " << i << std::endl;
+                // std::cout << "expetected_contact_node: " << i << std::endl;
             }
         });
         
-        disp(normals_vec);
-        disp(is_contact_node);
+        // disp(normals_vec);
+        // disp(is_contact_node);
         
         orthogonal_trafos = local_sparse(local_range_slave_range , local_range_slave_range , dim);
         
@@ -2546,7 +2546,7 @@ namespace utopia {
                 bool is_cn_i = is_contact_node.get(i) > 0;
                 
                 if(is_cn_i) {
-                    std::cout << "actual_contact_node: " << i << std::endl;
+                    // std::cout << "actual_contact_node: " << i << std::endl;
                     
                     check_has_contact = true;
                     
