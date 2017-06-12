@@ -1408,10 +1408,27 @@ namespace utopia {
                 
                 
                 master_fe->attach_quadrature_rule(&src_ir);
-                master_fe->reinit(&src_el);
+                // master_fe->reinit(&src_el);
+                // bbecsek:
+                // before we reinit, we need to request what exactly we want to compute
+                // this will set calculate_phi to true and we will avoid determine_calculations()
+                // to set everything to true
+                const std::vector<std::vector<Real>> & phi_master  = master_fe->get_phi();
+                // bbecsek: this new reinit call makes use of the quadrature points and weights
+                // computed by "transform_to_reference"
+                master_fe->reinit(&src_el, &src_ir.get_points(), &src_ir.get_weights());
                 
                 slave_fe->attach_quadrature_rule(&dest_ir);
-                slave_fe->reinit(&dest_el);
+                //  slave_fe->reinit(&dest_el);
+                // bbecsek:
+                // before we reinit, we need to request what exactly we want to compute
+                // this will set calculate_phi to true (see above)
+                const std::vector<std::vector<Real>> & phi_slave = slave_fe->get_phi();
+                // this will call _fe_map's get_JxW() and will set its calculate_dxyz to true
+                const std::vector<Real> & JxW_slave = slave_fe->get_JxW();
+                // bbecsek: this new reinit call makes use of the quadrature points and weights
+                // computed by "transform_to_reference"
+                slave_fe->reinit(&dest_el, &dest_ir.get_points(), &dest_ir.get_weights());
                 
                 elemmat.zero();
                 
