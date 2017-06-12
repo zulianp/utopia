@@ -2554,10 +2554,12 @@ namespace utopia {
                         normal[d] = normals_vec.get(i + d);
                     }
                     
+                    normalize(normal);
+                    
                     if(std::abs(normal[0] - 1.) > 1e-8) {
                         use_identity = false;
                         
-                        normalize(normal);
+                        
                         //-e1 basis vector
                         normal[0] -= 1;
                         normalize(normal);
