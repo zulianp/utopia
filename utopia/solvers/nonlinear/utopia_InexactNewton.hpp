@@ -51,7 +51,23 @@ namespace utopia
                 (void) fun;
                 SizeType n_local = local_size(x).get(0);
                 hessian = local_identity(n_local, n_local);
+
+                //for sparse
+                //fun(x, hessian)
+                
+                // opt 1
+                //hessian = hessian * 0.0 + diag(diag(hessian)) 
+               
+                //opt 2
+                //hessian *= 0.;
+                //hessian += local_identity(n_local, n_local);
+
             }
+
+            //sparse outer-product
+            // each_read(H, [&g, &H_new](i, j, value)) {
+            //  H_new.set(i, j, g.get(i) * g.get(j)); //the j might not be local
+            // }
 
             bool update(
                 Function<Matrix, Vector> &fun, 
