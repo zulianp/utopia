@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-11
+* @Last Modified time: 2017-06-12
 */
 
 #ifndef UTOPIA_RMTR_INFTY_HPP
@@ -83,6 +83,8 @@ namespace utopia
             _eps_delta_termination      = 0.001; 
             _delta_min                  = 1e-10; 
             _grad_smoothess_termination = 0.5; 
+            _hessian_update_delta       = 0.15; 
+            _hessian_update_eta         = 0.5;
         }
 
         virtual bool solve(FunctionType & fine_fun, Vector &x_h)
@@ -385,7 +387,7 @@ namespace utopia
 
             SizeType it_success = 0, it = 0; 
             bool converged = false; 
-            bool make_updates = true; 
+            bool make_grad_updates = true, make_hess_updates = true; 
 
 
             Scalar energy_old, energy_new, energy_init, g_norm;
@@ -460,7 +462,7 @@ namespace utopia
             {
                 
                 // --------------------------------------- computation of hessian -------------------------------
-                if(make_updates)
+                if(make_hess_updates)
                 {
                     if(_coherence != GALERKIN)
                         fun.hessian(x, H); 
@@ -476,8 +478,8 @@ namespace utopia
                 // --------------------------------------------------------------------------------------------
 
                 // --------------------------------------- computation of energy -------------------------------
-                // if(make_updates)
-                // {
+                if(make_grad_updates)
+                {
                     if(_coherence != GALERKIN)
                         fun.value(x, energy_old); 
 
@@ -490,7 +492,7 @@ namespace utopia
                         else if(_coherence == GALERKIN)
                             energy_old = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
                     }
-                // }
+                }
                 // --------------------------------------------------------------------------------------------
 
 
@@ -556,13 +558,13 @@ namespace utopia
                     x = tp; 
                     reduction += ared; 
                     it_success++; 
-                    make_updates =  true; 
+                    make_grad_updates =  true; 
                   }
                   else
                   {
                     // since point was not taken 
                     s_global -= s; 
-                    make_updates =  false; 
+                    make_grad_updates =  false; 
                   }
 
                 //----------------------------------------------------------------------------
@@ -573,8 +575,9 @@ namespace utopia
 
 
                 // --------------------------------------- computation of grad -------------------------------
-                if(make_updates)
+                if(make_grad_updates)
                 {
+                    Vector g_old = g; 
                     if(_coherence != GALERKIN)
                         fun.gradient(x, g);
 
@@ -590,6 +593,8 @@ namespace utopia
                     }
 
                     g_norm = norm2(g); 
+                    make_hess_updates =  update_hessian(g, g_old, s, H, rho, g_norm); 
+                    std::cout<<"make_hess_updates: "<< make_hess_updates << "  \n"; 
                 }
                 // --------------------------------------------------------------------------------------------
 
@@ -746,6 +751,20 @@ namespace utopia
 
 
 
+        bool update_hessian(const Vector & g_new, const Vector & g_old, const Vector & s, const Matrix & H, const Scalar & rho, const Scalar & g_norm)
+        {
+            // iteration is not sucessful enough
+            if(rho > 0 && rho < _hessian_update_eta)
+                return true; 
+
+            Vector help = g_new - g_old - H * s; 
+
+            // Hessian approx is relativelly poor
+            return (norm2(help) > _hessian_update_delta * g_norm) ? true : false; 
+        }
+
+
+
 
         bool set_delta(const SizeType & level, const Scalar & radius)
         {
@@ -890,6 +909,9 @@ namespace utopia
         Scalar                         _delta_min; 
 
         Scalar                         _grad_smoothess_termination; 
+
+        Scalar                         _hessian_update_delta; 
+        Scalar                         _hessian_update_eta; 
 
 
     };
