@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-08
+* @Last Modified time: 2017-06-13
 */
 
 #ifndef UTOPIA_NONLINEAR_PETSC_GS_HPP
@@ -62,8 +62,8 @@ namespace utopia
                 fun_petsc->getSNES(snes); 
 
                 PetscScalar result; 
-                SNESComputeObjective(snes, raw_type(x), &result); 
-                std::cout<<"before GS smoother, E:  "<< result <<  "  \n"; 
+                // SNESComputeObjective(snes, raw_type(x), &result); 
+                // std::cout<<"before GS smoother, E:  "<< result <<  "  \n"; 
 
                 SNESSetFromOptions(snes); 
                 SNESSetType(snes, SNESNRICHARDSON);
@@ -81,8 +81,8 @@ namespace utopia
                 SNESSolve(snes, raw_type(rhs), raw_type(x)); 
                 snes->vec_rhs =  NULL; 
 
-                SNESComputeObjective(snes, raw_type(x), &result); 
-                std::cout<<"after GS smoother, E:  "<< result <<  "  \n"; 
+                // SNESComputeObjective(snes, raw_type(x), &result); 
+                // std::cout<<"after GS smoother, E:  "<< result <<  "  \n"; 
                 
             }
             else
