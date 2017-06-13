@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-24
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-15
+* @Last Modified time: 2017-06-13
 */
 
 #ifndef UTOPIA_NMGM_HPP
@@ -156,6 +156,9 @@ namespace utopia
             for(SizeType i = l-2; i >=0; i--)
             {
               transfers(i).restrict(u_l, u_l); 
+
+              // TODO:: check indexing 
+              this->make_iterate_feasible(levels(i), u_l); 
             }
             Vector L_l = local_zeros(local_size(u_l));
             coarse_solve(levels(0), u_l, L_l); 
@@ -198,6 +201,9 @@ namespace utopia
           
             u_2l    = initial_iterates[l-2]; 
             Scalar s = scaling_factor(r_2h); 
+
+            this->zero_boundary_correction(levels(l-2), r_2h); 
+
 
             L_2l = rhss[l-2] - s *r_2h;  // tau correction 
           
@@ -245,6 +251,11 @@ namespace utopia
             r_h = L_l - f; 
             transfers(l-2).restrict(r_h, r_2h); 
             transfers(l-2).project_down(u_l, u_2l); 
+
+            this->make_iterate_feasible(levels(l-2), u_2l); 
+            this->zero_boundary_correction(levels(l-2), r_2h); 
+
+
             u_init  = u_2l; 
 
 

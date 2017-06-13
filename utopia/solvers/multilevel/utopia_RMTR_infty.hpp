@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-12
+* @Last Modified time: 2017-06-13
 */
 
 #ifndef UTOPIA_RMTR_INFTY_HPP
@@ -15,7 +15,7 @@
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_Linear.hpp"
 #include "utopia_Level.hpp"
-
+#include "utopia_LS_Strategy.hpp"
 
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NonLinearSmoother.hpp"
@@ -33,12 +33,13 @@ namespace utopia
     class RMTR_infty : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>,
                        public TrustRegionBase<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+        typedef UTOPIA_SCALAR(Vector)                       Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
         typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
-        typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem; 
-        typedef utopia::Transfer<Matrix, Vector>   Transfer;
+        typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem; 
+        // typedef utopia::LSStrategy<Matrix, Vector>          LSStrategy; 
+        typedef utopia::Transfer<Matrix, Vector>            Transfer;
 
 
         typedef utopia::Level<Matrix, Vector>               Level;
@@ -61,10 +62,12 @@ namespace utopia
         RMTR_infty(    
                 const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse = std::shared_ptr<TRSubproblem>(),
                 const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother = std::shared_ptr<TRSubproblem>(),
+                // const std::shared_ptr<LSStrategy> &ls_strategy = std::shared_ptr<LSStrategy>(),
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
                 _coarse_tr_subproblem(tr_subproblem_coarse), 
-                _smoother_tr_subproblem(tr_subproblem_smoother)
+                _smoother_tr_subproblem(tr_subproblem_smoother) //, 
+                // _ls_strategy(ls_strategy) 
         {
             set_parameters(params); 
         }
@@ -215,7 +218,7 @@ namespace utopia
 
 
             if(_coherence != GALERKIN)
-                this->zero_boundary_correction(levels(0), g_restricted); 
+                this->zero_boundary_correction(levels(level-2), g_restricted); 
 
             g_diff = g_restricted - g_coarse;  // tau correction 
 
@@ -895,6 +898,7 @@ namespace utopia
 
         std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem; 
         std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem; 
+        // std::shared_ptr<LSStrategy>         _ls_strategy;                     /*  LS used to determine step size */
 
         SizeType                            _max_coarse_it; 
         SizeType                            _max_fine_it; 

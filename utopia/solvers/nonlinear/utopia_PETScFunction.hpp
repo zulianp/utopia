@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-06-07
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-08
+* @Last Modified time: 2017-06-13
 */
 #ifndef PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
 #define PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
@@ -48,11 +48,11 @@ namespace utopia
 
 
                 // // THIS IS NEEDED FOR OTHER FUNCTIONS THAN TR 
-                // if(local_size(g)==local_size(this->_rhs))
-                // {
-                //    // std::cout<<"grad:: yes rhs ... \n"; 
-                //     g = g - this->_rhs; 
-                // }
+                if(local_size(g)==local_size(this->_rhs))
+                {
+                   // std::cout<<"grad:: yes rhs ... \n"; 
+                    g = g - this->_rhs; 
+                }
 
                 return true; 
             }

@@ -18,6 +18,8 @@
 
 
 #include "utopia_NonlinearSolverFactory.hpp"
+#include "utopia_HessianApproximations.hpp"
+
 
 
 #ifdef WITH_PETSC

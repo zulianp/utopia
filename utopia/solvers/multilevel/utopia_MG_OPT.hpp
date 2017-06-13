@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-05-03
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-16
+* @Last Modified time: 2017-06-13
 */
 
 #ifndef UTOPIA_MG_OPT_HPP
@@ -171,6 +171,9 @@ namespace utopia
 
             transfers(l-2).restrict(r_h, r_2h); 
             transfers(l-2).project_down(u_l, u_2l); 
+
+            this->make_iterate_feasible(levels(l-2), u_2l); 
+            this->zero_boundary_correction(levels(l-2), r_2h); 
 
             levels(l-2).gradient(u_2l, L_2l); 
 

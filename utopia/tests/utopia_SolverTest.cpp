@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-07-15
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-22
+* @Last Modified time: 2017-06-13
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -338,8 +338,10 @@ namespace utopia
             PETSC_CG_MG_test();
             petsc_newton_PETScCG_utopia_test();
             petsc_tr_rr_test();
-            petsc_newton_inexact_newton_with_KSP_test(); 
+            // petsc_newton_inexact_newton_with_KSP_test(); 
         	mprgp_test(); 
+
+            inexact_newton_test();
 
 
             // neohookean_tr_test();
@@ -653,6 +655,62 @@ namespace utopia
            // std::cout << "         End: PETSC_NEWTON_test" << std::endl;
 
         }
+
+
+
+        void inexact_newton_test()
+        {
+            using namespace utopia;
+          //  std::cout << "         Begin: inexact_newton_test" << std::endl;
+
+            Parameters params;
+            params.atol(1e-15);
+            params.rtol(1e-15);
+            params.stol(1e-15);
+            params.verbose(false);
+
+            auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
+            InexactNewton<DMatrixd, DVectord> nlsolver(lsolver);
+            nlsolver.set_parameters(params);
+
+            auto hess_approx_BFGS   = std::make_shared<BFGS<DMatrixd, DVectord> >(); 
+            nlsolver.set_hessian_approximation_strategy(hess_approx_BFGS); 
+
+
+            SimpleQuadraticFunction<DMatrixd, DVectord> fun;
+
+            DVectord x = values(_n, 2.);
+            DVectord expected_1 = zeros(x.size());
+
+            nlsolver.solve(fun, x);
+            assert(approxeq(expected_1, x));
+
+            
+            TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
+            x = values(_n, 2.0);
+            DVectord expected_2 = values(x.size().get(0), 0.468919);
+            nlsolver.solve(fun2, x);
+            assert(approxeq(expected_2, x));
+
+            // -------------------------------------- SR1 test ------------------
+            auto hess_approx_SR1    = std::make_shared<SR1<DMatrixd, DVectord> >(); 
+            nlsolver.set_hessian_approximation_strategy(hess_approx_SR1); 
+
+            x = values(_n, 2.);
+            nlsolver.solve(fun, x);
+            assert(approxeq(expected_1, x));
+
+
+            x = values(_n, 2.0);
+            nlsolver.solve(fun2, x);
+            assert(approxeq(expected_2, x));
+
+
+          // std::cout << "         End: inexact_newton_test" << std::endl;
+
+        }
+
+
 
         void petsc_newton_rosenbrock_test()
         {

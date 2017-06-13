@@ -2,7 +2,7 @@
 * @Author: Alena Kopanicakova
 * @Date:   2017-01-31
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-01-31
+* @Last Modified time: 2017-06-13
 */
 #ifndef UTOPIA_SOLVER_INEXACT_NEWTON_HPP
 #define UTOPIA_SOLVER_INEXACT_NEWTON_HPP
@@ -12,6 +12,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_LS_Strategy.hpp"
+#include "utopia_HessianApproximations.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -27,78 +28,22 @@ namespace utopia
     template<class Matrix, class Vector>
     class InexactNewton : public NonLinearSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
-        typedef utopia::IterativeSolver<Matrix, Vector> Solver; 
+        typedef UTOPIA_SCALAR(Vector)                           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
 
-        class HessianApproximation {
-        public:
-            virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x, Matrix &hessian);
-           
-            virtual bool update(
-                Function<Matrix, Vector> &fun, 
-                const Vector &sol_new,
-                const Vector &step,
-                Matrix &hessian_old_new, 
-                Vector &grad_old_new);
-        };
-        
-        class BFGS {
-        public:
-            bool initialize(Function<Matrix, Vector> &fun, const Vector &x, Matrix &hessian) override
-            {
-                (void) fun;
-                SizeType n_local = local_size(x).get(0);
-                hessian = local_identity(n_local, n_local);
+        typedef utopia::LSStrategy<Matrix, Vector>              LSStrategy; 
+        typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation; 
+        typedef utopia::IterativeSolver<Matrix, Vector>         Solver; 
 
-                //for sparse
-                //fun(x, hessian)
-                
-                // opt 1
-                //hessian = hessian * 0.0 + diag(diag(hessian)) 
-               
-                //opt 2
-                //hessian *= 0.;
-                //hessian += local_identity(n_local, n_local);
-
-            }
-
-            //sparse outer-product
-            // each_read(H, [&g, &H_new](i, j, value)) {
-            //  H_new.set(i, j, g.get(i) * g.get(j)); //the j might not be local
-            // }
-
-            bool update(
-                Function<Matrix, Vector> &fun, 
-                const Vector &sol_new,
-                const Vector &step,
-                Matrix &hessian_old_new, 
-                Vector &grad_old_new) override
-            {
-                diff_grad = grad_old_new;
-                if(!fun.gradient(sol_new, grad_old_new)) return false;
-                diff_grad = grad_old_new - diff_grad;
-
-                temp = outer(diff_grad, diff_grad);
-                temp *= 1./dot(diff_grad, step);
-                H_x_step = hessian_old_new * step;
-
-                //utopia::is_sparse<Matrix>::value
-                temp += (outer(H_x_step, H_x_step)/dot(step, H_x_step));
-                hessian_old_new = temp;
-                return true;
-            }   
-
-            Vector diff_grad;
-            Vector H_x_step;
-            Matrix temp;
-        };
 
     public:
-     InexactNewton(   const std::shared_ptr <Solver> &linear_solver = std::shared_ptr<Solver>(),
-        const Parameters params                       = Parameters() ):
-     NonLinearSolver<Matrix, Vector>(linear_solver, params), alpha_(1), hessian_refresh_(4), linear_solver_it_(1)
+     InexactNewton(     const std::shared_ptr <Solver> &linear_solver                   = std::shared_ptr<Solver>(),
+                        const Parameters params                                         = Parameters()
+                        ):
+     NonLinearSolver<Matrix, Vector>(linear_solver, params),alpha_(1), 
+                                                            hessian_refresh_(4), 
+                                                            linear_solver_it_(1),
+                                                            _has_hessian_approx_strategy(false)
      {
         set_parameters(params);
         linear_solver->max_it(linear_solver_it_); 
@@ -106,76 +51,81 @@ namespace utopia
 
     bool solve(Function<Matrix, Vector> &fun, Vector &x) override
     {
-     using namespace utopia;
+         using namespace utopia;
 
-     Vector grad, step;
-     Matrix hessian;
+         Vector grad, step;
+         Matrix hessian;
 
-     Scalar g_norm, g0_norm, r_norm, s_norm;
-     SizeType it = 0;
+         Scalar g_norm, g0_norm, r_norm, s_norm;
+         SizeType it = 0;
 
-     bool converged = false;
+         bool converged = false;
 
-     fun.gradient(x, grad);
-     g0_norm = norm2(grad);
-     g_norm = g0_norm;
+         fun.gradient(x, grad);
+         g0_norm = norm2(grad);
+         g_norm = g0_norm;
 
-     this->init_solver("INEXACT NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || "});
+         this->init_solver("INEXACT NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || "});
 
-     if(this->verbose_)
-        PrintInfo::print_iter_status(it, {g_norm, 1, 0});
+         if(this->verbose_)
+            PrintInfo::print_iter_status(it, {g_norm, 1, 0});
 
-    while(!converged)
-    {
-        if(it % hessian_refresh_ == 0)
-            fun.hessian(x, hessian);
 
-                //find direction step
-        step = local_zeros(local_size(x));
-        this->linear_solve(hessian, grad, step);
+        // TODO:: check this out 
+        hessian_approx_strategy_->initialize(fun, x, hessian);        
 
-        if(ls_strategy_) {
 
-            ls_strategy_->get_alpha(fun, grad, x, -step, alpha_); 
-            x -= alpha_ * step;
+        while(!converged)
+        {
+        
+            //find direction step
+            step = local_zeros(local_size(x));
+            this->linear_solve(hessian, -1* grad, step);
 
-        } else { 
-                    //update x
-            if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
-            {
-                x -= step;
+            if(ls_strategy_) {
+
+                ls_strategy_->get_alpha(fun, grad, x, step, alpha_); 
+                x += alpha_ * step;
+
+            } else { 
+                        //update x
+                if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
+                {
+                    x += step;
+                }
+                else
+                {
+                    x += alpha_ * step;
+                }
             }
-            else
-            {
-                x -= alpha_ * step;
-            }
+
+
+            hessian_approx_strategy_->approximate_hessian(fun, x, step, hessian,  grad); 
+
+            // norms needed for convergence check
+            g_norm = norm2(grad);
+            r_norm = g_norm/g0_norm;
+            s_norm = norm2(step);
+
+            it++;
+                    // // print iteration status on every iteration
+            if(this->verbose_)
+                PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
+
+                    // // check convergence and print interation info
+            converged = this->check_convergence(it, g_norm, r_norm, s_norm);
         }
 
-        fun.gradient(x, grad);
 
-                // norms needed for convergence check
-        g_norm = norm2(grad);
-        r_norm = g_norm/g0_norm;
-        s_norm = norm2(step);
-
-        it++;
-                // // print iteration status on every iteration
-        if(this->verbose_)
-            PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
-
-                // // check convergence and print interation info
-        converged = this->check_convergence(it, g_norm, r_norm, s_norm);
+        return true;
     }
 
-    return true;
-}
+    virtual void set_parameters(const Parameters params) override
+    {
+        NonLinearSolver<Matrix, Vector>::set_parameters(params);
+        alpha_ = params.alpha();
 
-virtual void set_parameters(const Parameters params) override
-{
-    NonLinearSolver<Matrix, Vector>::set_parameters(params);
-    alpha_ = params.alpha();
-
-}
+    }
 
 
     /**
@@ -185,27 +135,53 @@ virtual void set_parameters(const Parameters params) override
      *
      * @return     
      */
-virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
-{
-  ls_strategy_ = strategy; 
-  ls_strategy_->set_parameters(this->parameters());
-  return true; 
-}
+    virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
+    {
+      ls_strategy_ = strategy; 
+      ls_strategy_->set_parameters(this->parameters());
+      return true; 
+    }
 
 
     /**
      * @return     number of it. to keep same hessian
      */
-virtual const SizeType hessian_refresh()
-{
-    return hessian_refresh_; 
-}
+    virtual const SizeType hessian_refresh()
+    {
+        return hessian_refresh_; 
+    }
+
+    /**
+     * @brief      Sets strategy for computing step-size. 
+     *
+     * @param[in]  strategy  The line-search strategy.
+     *
+     * @return     
+     */
+    virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
+    {
+      hessian_approx_strategy_      = strategy; 
+      _has_hessian_approx_strategy  = true; 
+      return true; 
+    }
+
+
+    virtual bool has_hessian_approx()
+    {
+        return _has_hessian_approx_strategy;
+    }
+
+
 
 private:
         Scalar alpha_;                                          /*!< Dumping parameter. */
         const SizeType hessian_refresh_;                        /*!< How often refresh hessian. */
         const SizeType linear_solver_it_;                       /*!< How many linear solver iterations required. */
         std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */  
+
+        std::shared_ptr<HessianApproximation> hessian_approx_strategy_;             
+
+        bool _has_hessian_approx_strategy; 
 
 };
 
