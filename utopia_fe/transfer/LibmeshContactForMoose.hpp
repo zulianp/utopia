@@ -1933,8 +1933,8 @@ namespace utopia {
                     
                     if(pair_intersected) {
 
-                        plot_polygon(3, isect_polygon_1.get_values().size()/3, &isect_polygon_1.get_values()[0], "master");
-                        plot_polygon(3, isect_polygon_2.get_values().size()/3, &isect_polygon_2.get_values()[0], "slave");
+                        // plot_polygon(3, isect_polygon_1.get_values().size()/3, &isect_polygon_1.get_values()[0], "master");
+                        // plot_polygon(3, isect_polygon_2.get_values().size()/3, &isect_polygon_2.get_values()[0], "slave");
 
                         // std::cout << "isect: " << master.handle() << " -> " << slave.handle() << std::endl;
                         
