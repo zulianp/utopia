@@ -3,6 +3,8 @@
 
 
 #include "utopia_Function.hpp"
+#include "utopia_ExtendedFunction.hpp"
+
 #include "utopia_GLFunction.hpp"
 #include "utopia_FunctionNormalEq.hpp"
 

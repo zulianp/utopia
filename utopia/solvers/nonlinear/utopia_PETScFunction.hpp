@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-06-07
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-13
+* @Last Modified time: 2017-06-14
 */
 #ifndef PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
 #define PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
@@ -12,6 +12,7 @@
 #include <petsc/private/snesimpl.h>
 #include "utopia_Core.hpp"
 #include "utopia_PETScTypes.hpp"
+#include "utopia_ExtendedFunction.hpp"
 
 namespace utopia 
 {
@@ -20,20 +21,18 @@ namespace utopia
       
     
     template<class Matrix, class Vector>
-    class PETSCUtopiaNonlinearFunction<Matrix, Vector, PETSC> : public Function<Matrix, Vector> 
+    class PETSCUtopiaNonlinearFunction<Matrix, Vector, PETSC> : public ExtendedFunction<Matrix, Vector> 
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
 
         public:
-            PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = local_zeros(1), const Vector & rhs = local_zeros(1)) 
-            :
-                Function<Matrix, Vector>(x_init, rhs),
+            PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = local_zeros(1), const Vector & bc_marker = local_zeros(1), const Vector & rhs = local_zeros(1)) :
+                ExtendedFunction<Matrix, Vector>(x_init, bc_marker, rhs),
                 snes_(snes), 
                 first_grad(0), 
                 first_energy(0)
-            {
-                // std::cout<<"constructor of PETSCUtopiaNonlinearFunction \n"; 
-                // disp(x_init); 
+            {   
+
             }
 
 
@@ -47,7 +46,7 @@ namespace utopia
                 SNESComputeFunction(snes_, raw_type(x), raw_type(g));   
 
 
-                // // THIS IS NEEDED FOR OTHER FUNCTIONS THAN TR 
+                // THIS IS NEEDED FOR OTHER FUNCTIONS THAN TR 
                 if(local_size(g)==local_size(this->_rhs))
                 {
                    // std::cout<<"grad:: yes rhs ... \n"; 
@@ -108,7 +107,6 @@ namespace utopia
         };
 
     }
-
-
+    
 
 #endif  //PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP

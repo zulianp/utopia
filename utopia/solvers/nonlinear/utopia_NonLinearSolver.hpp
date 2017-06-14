@@ -2,6 +2,8 @@
 #define UTOPIA_UTOPIA_NONLINEARSOLVER_HPP
 
 #include "utopia_Function.hpp"
+#include "utopia_ExtendedFunction.hpp"
+
 #include "utopia_Parameters.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_PrintInfo.hpp"
@@ -40,7 +42,7 @@ namespace utopia
         virtual bool solve(Function<Matrix, Vector> &fun, Vector &x) = 0;
 
 
-        virtual bool solve(Function<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
+        virtual bool solve(ExtendedFunction<Matrix, Vector> &fun, Vector &x, const Vector & rhs)
         {
             fun.set_rhs(rhs); 
             bool converged = this->solve(fun, x); 

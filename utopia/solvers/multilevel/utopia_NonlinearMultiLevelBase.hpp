@@ -425,7 +425,8 @@ protected:
 
 
         /**
-         * @brief     Full multigrid cycle, after running F cycle once and reaching discretization tolerance, it continues as multiplicative cycle to achieve prescribed tolerance
+         * @brief     Full multigrid cycle, after running F cycle once and reaching discretization tolerance, 
+         *            solver continues as multiplicative cycle to achieve prescribed tolerance
          *
          * @param      fine_fun  Function to be minimized 
          * @param      u_l       The iterate 
