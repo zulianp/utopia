@@ -20,6 +20,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NonLinearSmoother.hpp"
 
+#include "utopia_MultiLevelEvaluations.hpp"
 
 namespace utopia 
 {
@@ -30,7 +31,7 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector, class FunctionType>
+    template<class Matrix, class Vector, class FunctionType, MultiLevelCoherence MC = FIRST_ORDER >
     class RMTR_infty : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>,
                        public TrustRegionBase<Matrix, Vector>
     {
@@ -39,30 +40,11 @@ namespace utopia
         typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
         typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem; 
-        // typedef utopia::LSStrategy<Matrix, Vector>          LSStrategy; 
+        // typedef utopia::LSStrategy<Matrix, Vector>       LSStrategy; 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
-
-
         typedef utopia::Level<Matrix, Vector>               Level;
 
     
-
-        enum Coherence_level {  FIRST_ORDER  = 1, 
-                                SECOND_ORDER = 2, 
-                                GALERKIN     = 0};
-
-
-
-
-        // void hessian_compute(FunctionType &fine_fun, Matrix & H, Vector &g, const Coherence_level & coh)
-        // {
-        //     // doesn't have normal
-        // }
-
-
-
-
-
     public:
 
        /**
@@ -77,6 +59,7 @@ namespace utopia
                 // const std::shared_ptr<LSStrategy> &ls_strategy = std::shared_ptr<LSStrategy>(),
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
+                _coherence(FIRST_ORDER), 
                 _coarse_tr_subproblem(tr_subproblem_coarse), 
                 _smoother_tr_subproblem(tr_subproblem_smoother) //, 
                 // _ls_strategy(ls_strategy) 
@@ -93,7 +76,6 @@ namespace utopia
             _it_global                  = 0;          
             _delta_init                 = 1000000; 
             _parameters                 = params; 
-            _coherence                  = FIRST_ORDER, 
             _max_coarse_it              = 10;  
             _max_fine_it                = 2;
             _eps_delta_termination      = 0.001; 
@@ -103,11 +85,6 @@ namespace utopia
             _hessian_update_eta         = 0.5;
         }
 
-        // virtual bool solve(FunctionType & fine_fun, Vector &x_h) ove
-        // {
-        //     Vector rhs = local_zeros(local_size(x_h)); 
-        //     return solve_rhs(fine_fun,  x_h, rhs); 
-        // }
 
         using NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::solve; 
 
@@ -298,45 +275,20 @@ namespace utopia
                 s_global = u_l - get_x_initial(level - 1);                  
             }
 
+                E_old = get_multilevel_energy(fine_fun,  u_l,  get_delta_gradient(level-1),  get_delta_hessian(level-1), s_global, level); 
+            // else
+            //     fine_fun.value(u_l, E_old); 
 
 
-            fine_fun.value(u_l, E_old); 
-            if(level < this->num_levels())
-            {
-                Vector g_diff = get_delta_gradient(level-1); 
-                Matrix  H_diff; 
 
-                if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
-                {
-                     H_diff = get_delta_hessian(level-1); 
-                }
 
-                if(_coherence == FIRST_ORDER)
-                    E_old += dot(g_diff, s_global); 
-                else if(_coherence == SECOND_ORDER)
-                    E_old += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                else if(_coherence == GALERKIN)
-                    E_old = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-            }
 
-            fine_fun.value(u_t, E_new); 
-            if(level < this->num_levels())
-            {
-                Vector g_diff = get_delta_gradient(level-1); 
-                Matrix  H_diff; 
-                
-                if(_coherence == SECOND_ORDER || _coherence == GALERKIN)
-                {
-                     H_diff = get_delta_hessian(level-1); 
-                }
+            // if(level < this->num_levels())
+                E_new = get_multilevel_energy(fine_fun,  u_t,  get_delta_gradient(level-1),  get_delta_hessian(level-1), s_global, level); 
+            // else
+            //     fine_fun.value(u_t, E_new); 
 
-                if(_coherence == FIRST_ORDER)
-                    E_new += dot(g_diff, s_global); 
-                else if(_coherence == SECOND_ORDER)
-                    E_new += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                else if(_coherence == GALERKIN)
-                    E_new = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-            }
+
 
 
             ared = E_old - E_new; 
@@ -443,36 +395,23 @@ namespace utopia
 
             
             // --------------------------------------- computation of grad -------------------------------
-            if(_coherence != GALERKIN)
-                fun.gradient(x, g);
+            // if(level < this->num_levels())
+                get_multilevel_gradient(fun, x, g, g_diff, H_diff, s_global, level); 
+            // else
+            //     fun.gradient(x, g);
 
-            if(level < this->num_levels())
-            {
-                if(_coherence == FIRST_ORDER)
-                    g += g_diff; 
-                else if(_coherence == SECOND_ORDER)
-                    g += g_diff + H_diff * s_global; 
-                else if(_coherence == GALERKIN)
-                    g = g_diff + H_diff * s_global; 
-            }
             // --------------------------------------------------------------------------------------------
 
 
             g_norm = norm2(g); 
 
             // --------------------------------------- computation of energy -------------------------------
-            if(_coherence != GALERKIN)
-                fun.value(x, energy_init); 
 
-            if(level < this->num_levels())
-            {
-                if(_coherence == FIRST_ORDER)
-                    energy_init += dot(g_diff, s_global); 
-                else if(_coherence == SECOND_ORDER)
-                    energy_init += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                else if(_coherence == GALERKIN)
-                    energy_init = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-            }
+            // if(level < this->num_levels())
+                energy_init = get_multilevel_energy(fun,  x,  g_diff,  H_diff, s_global, level); 
+            // else
+            //     fun.value(x, energy_init); 
+
             // --------------------------------------------------------------------------------------------
             
 
@@ -487,34 +426,20 @@ namespace utopia
                 // --------------------------------------- computation of hessian -------------------------------
                 if(make_hess_updates)
                 {
-                    if(_coherence != GALERKIN)
-                        fun.hessian(x, H); 
-
-                    if(level < this->num_levels())
-                    {
-                        if(_coherence == SECOND_ORDER)
-                            H = H + H_diff; 
-                        else if(_coherence == GALERKIN)
-                            H = H_diff; 
-                    }
+                    // if(level < this->num_levels())
+                        get_multilevel_hessian(fun, x, H, H_diff, level); 
+                    // else
+                    //     fun.hessian(x, H); 
                 }
                 // --------------------------------------------------------------------------------------------
 
                 // --------------------------------------- computation of energy -------------------------------
                 if(make_grad_updates)
                 {
-                    if(_coherence != GALERKIN)
-                        fun.value(x, energy_old); 
-
-                    if(level < this->num_levels())
-                    {
-                        if(_coherence == FIRST_ORDER)
-                            energy_old += dot(g_diff, s_global); 
-                        else if(_coherence == SECOND_ORDER)
-                            energy_old += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                        else if(_coherence == GALERKIN)
-                            energy_old = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                    }
+                    // if(level < this->num_levels())
+                        energy_old = get_multilevel_energy(fun,  x,  g_diff,  H_diff, s_global, level); 
+                    // else
+                    //     fun.value(x, energy_old); 
                 }
                 // --------------------------------------------------------------------------------------------
 
@@ -551,18 +476,11 @@ namespace utopia
                 }
 
             // --------------------------------------- computation of energy -------------------------------
-                if(_coherence != GALERKIN)
-                    fun.value(tp, energy_new); 
+                // if(level < this->num_levels())
+                    energy_new = get_multilevel_energy(fun,  tp,  g_diff,  H_diff, s_global, level); 
+                // else
+                //     fun.value(tp, energy_new); 
 
-                if(level < this->num_levels())
-                {
-                    if(_coherence == FIRST_ORDER)
-                        energy_new += dot(g_diff, s_global); 
-                    else if(_coherence == SECOND_ORDER)
-                        energy_new += dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                    else if(_coherence == GALERKIN)
-                        energy_new = dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global); 
-                }
             // --------------------------------------------------------------------------------------------
 
 
@@ -601,19 +519,12 @@ namespace utopia
                 if(make_grad_updates)
                 {
                     Vector g_old = g; 
-                    if(_coherence != GALERKIN)
-                        fun.gradient(x, g);
 
-                    if(level < this->num_levels())
-                    {
-     
-                        if(_coherence == FIRST_ORDER)
-                            g += g_diff; 
-                        else if(_coherence == SECOND_ORDER)
-                            g += g_diff + H_diff * s_global; 
-                        else if(_coherence == GALERKIN)
-                            g = g_diff + H_diff * s_global; 
-                    }
+                    // if(level < this->num_levels())
+                        get_multilevel_gradient(fun, x, g, g_diff, H_diff, s_global, level); 
+                    // else
+                    //     fun.gradient(x, g);
+
 
                     g_norm = norm2(g); 
                     make_hess_updates =  update_hessian(g, g_old, s, H, rho, g_norm); 
@@ -914,6 +825,45 @@ namespace utopia
 
 
 
+
+
+
+        bool get_multilevel_hessian(const FunctionType & fun, const Vector & x,  Matrix & H, const Matrix & H_diff, const SizeType & level)
+        {
+            if(level < this->num_levels())
+                return MultilevelHessianEval<Matrix, Vector, FunctionType, MC>::compute_hessian(fun, x, H, H_diff);
+            else
+                return fun.hessian(x, H); 
+        }
+
+
+        bool get_multilevel_gradient(const FunctionType & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global, const SizeType & level)
+        {
+            if(level < this->num_levels())
+                return MultilevelGradientEval<Matrix, Vector, FunctionType, MC>::compute_gradient(fun, x, g, g_diff, H_diff, s_global);
+            else
+                 return fun.gradient(x, g); 
+        }
+
+
+
+        Scalar get_multilevel_energy(const FunctionType & fun, const Vector & x, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global, const SizeType & level)
+        {
+            if(level < this->num_levels())
+                return MultilevelEnergyEval<Matrix, Vector, FunctionType, MC>::compute_energy(fun, x, g_diff, H_diff, s_global); 
+            else
+            {
+                Scalar energy; 
+                fun.value(x, energy); 
+                return energy; 
+            }
+        }
+
+
+
+
+
+
     protected:   
         SizeType                            _it_global; 
         Scalar                              _delta_init; 
@@ -921,7 +871,7 @@ namespace utopia
         std::vector<Scalar>                 _deltas_zero;        
 
 
-        Coherence_level                     _coherence; 
+        const MultiLevelCoherence                     _coherence; 
 
     private:
         Parameters                          _parameters; 

@@ -23,6 +23,7 @@
 #include "utopia_NonlinearMultiLevelBase.hpp"
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearJacobi.hpp"
+#include "utopia_MultiLevelEvaluations.hpp"
 
 
 #include "utopia_Transfer.hpp"
