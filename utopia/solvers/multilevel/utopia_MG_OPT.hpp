@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-05-03
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-13
+* @Last Modified time: 2017-06-14
 */
 
 #ifndef UTOPIA_MG_OPT_HPP
@@ -48,93 +48,18 @@ namespace utopia
 
         virtual ~MG_OPT(){} 
         
+        virtual std::string name_id()
+        {
+            return "MG_OPT"; 
+        }
 
         void set_parameters(const Parameters params)  // override
         {
             NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params); 
             _smoother->set_parameters(params); 
             _coarse_solver->set_parameters(params); 
-            
             _parameters = params; 
         }
-
-        virtual bool solve(FunctionType & fine_fun, Vector &x_h)
-        {
-            Vector rhs = local_zeros(local_size(x_h)); 
-            return solve(fine_fun,  x_h, rhs); 
-        }
-
-        /**
-         * @brief      The solve function for multigrid method. 
-         *
-         * @param[in]  rhs   The right hand side.
-         * @param      x_0   The initial guess. 
-         *
-         */
-        virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
-        {
-            this->init_solver("MG_OPT", {" it. ", "|| r_N ||", "r_norm" , "E"}); 
-
-            Vector F_h  = local_zeros(local_size(x_h)); 
-
-            bool converged = false; 
-            SizeType it = 0, l = this->num_levels(); 
-            Scalar r_norm, r0_norm, rel_norm;
-
-            std::cout<<"MG_OPT: number of levels: "<< l << "  \n"; 
-
-            // just to check what is problem 
-            Matrix hessian; 
-            fine_fun.hessian(x_h, hessian); 
-
-            fine_fun.gradient(x_h, F_h); 
-            r0_norm = norm2(F_h); 
-
-            if(this->verbose())
-                PrintInfo::print_iter_status(it, {r0_norm}); 
-
-            it++; 
-
-            while(!converged)
-            {            
-                if(this->cycle_type() =="multiplicative")
-                    multiplicative_cycle(fine_fun, x_h, rhs, l); 
-                // else if(this->cycle_type() =="full")
-                //     full_cycle(rhs, l, x_0); 
-                else
-                    std::cout<<"ERROR::MG_OPT<< unknown MG type... \n"; 
-
-
-                #ifdef CHECK_NUM_PRECISION_mode
-                    if(has_nan_or_inf(x_h) == 1)
-                    {
-                        x_h = local_zeros(local_size(x_h));
-                        return true; 
-                    }
-                #endif    
-
-                fine_fun.gradient(x_h, F_h); 
-                
-                Scalar energy; 
-                fine_fun.value(x_h, energy); 
-                
-                r_norm = norm2(F_h);
-                rel_norm = r_norm/r0_norm; 
-
-                // print iteration status on every iteration 
-                if(this->verbose())
-                    PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy}); 
-
-                // check convergence and print interation info
-                converged = this->check_convergence(it, r_norm, rel_norm, 1); 
-                it++; 
-            
-            }
-
-            return true; 
-        }
-
-
 
     private: 
 
@@ -148,15 +73,8 @@ namespace utopia
             return this->_transfers[l]; 
         }
 
-        bool full_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
-        {
-            std::cout<<"-------- not yet....... \n"; 
-            return true; 
-        }
 
-
-
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
+        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
             Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h, u_init; 
             Scalar alpha; 
@@ -233,7 +151,7 @@ namespace utopia
         }
 
 
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs)
+        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
         {
             // _coarse_solver->verbose(true); 
             // _coarse_solver->max_it(10); 

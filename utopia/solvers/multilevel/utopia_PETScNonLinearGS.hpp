@@ -61,7 +61,7 @@ namespace utopia
                 SNES snes; 
                 fun_petsc->getSNES(snes); 
 
-                PetscScalar result; 
+                // PetscScalar result; 
                 // SNESComputeObjective(snes, raw_type(x), &result); 
                 // std::cout<<"before GS smoother, E:  "<< result <<  "  \n"; 
 

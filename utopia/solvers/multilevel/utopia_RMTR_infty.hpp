@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-13
+* @Last Modified time: 2017-06-14
 */
 
 #ifndef UTOPIA_RMTR_INFTY_HPP
@@ -23,6 +23,7 @@
 
 namespace utopia 
 {
+
     /**
      * @brief      The class for Nonlinear Multigrid solver. 
      *
@@ -51,6 +52,17 @@ namespace utopia
                                 GALERKIN     = 0};
 
 
+
+
+        // void hessian_compute(FunctionType &fine_fun, Matrix & H, Vector &g, const Coherence_level & coh)
+        // {
+        //     // doesn't have normal
+        // }
+
+
+
+
+
     public:
 
        /**
@@ -77,7 +89,8 @@ namespace utopia
 
         void set_parameters(const Parameters params)  // override
         {
-            NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params);             
+            NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params);    
+            _it_global                  = 0;          
             _delta_init                 = 1000000; 
             _parameters                 = params; 
             _coherence                  = FIRST_ORDER, 
@@ -90,11 +103,19 @@ namespace utopia
             _hessian_update_eta         = 0.5;
         }
 
-        virtual bool solve(FunctionType & fine_fun, Vector &x_h)
+        // virtual bool solve(FunctionType & fine_fun, Vector &x_h) ove
+        // {
+        //     Vector rhs = local_zeros(local_size(x_h)); 
+        //     return solve_rhs(fine_fun,  x_h, rhs); 
+        // }
+
+        using NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::solve; 
+
+        virtual std::string name_id()
         {
-            Vector rhs = local_zeros(local_size(x_h)); 
-            return solve_rhs(fine_fun,  x_h, rhs); 
+            return "RMTR_infty"; 
         }
+        
 
         /**
          * @brief      The solve function for multigrid method. 
@@ -103,13 +124,13 @@ namespace utopia
          * @param      x_0   The initial guess. 
          *
          */
-        virtual bool solve_rhs(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
+        virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) override
         {
             
             Vector F_h  = local_zeros(local_size(x_h)); 
 
             bool converged = false; 
-            SizeType it = 0, l = this->num_levels(); 
+            SizeType l = this->num_levels(); 
             Scalar r_norm, r0_norm, rel_norm;
             std::cout<<"RMTR_infty: number of levels: "<< l << "  \n"; 
 
@@ -124,11 +145,10 @@ namespace utopia
             Scalar energy; 
             fine_fun.value(x_h, energy); 
 
-            it++; 
+            _it_global++; 
 
 
             //-------------- INITIALIZATIONS ---------------
-            // init deltas 
             init_deltas(); 
             init_delta_gradients(); 
             init_x_initials(); 
@@ -141,7 +161,7 @@ namespace utopia
             while(!converged)
             {            
                 if(this->cycle_type() =="multiplicative")
-                    multiplicative_cycle(fine_fun, x_h, rhs, l, it); 
+                    multiplicative_cycle(fine_fun, x_h, rhs, l); 
                 else
                     std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n"; 
 
@@ -163,12 +183,12 @@ namespace utopia
                 ColorModifier red(FG_LIGHT_MAGENTA);
                 ColorModifier def(FG_DEFAULT);
                 std::cout << red; 
-                std::cout<<"outer loop, it: "<< it <<  "     ||g||:    "<< r_norm << "  energy: "<< energy << "   \n"; 
+                std::cout<<"outer loop, it: "<< _it_global <<  "     ||g||:    "<< r_norm << "  energy: "<< energy << "   \n"; 
                 std::cout << def; 
 
                 // check convergence and print interation info
-                converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(it, r_norm, rel_norm, 1); 
-                it++; 
+                converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(_it_global, r_norm, rel_norm, 1); 
+                _it_global++; 
             
             }
 
@@ -190,7 +210,7 @@ namespace utopia
         }
 
 
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & level, const SizeType & it_global)
+        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & level) override
         {
             Vector g_fine, g_coarse, g_diff, r_h,  g_restricted, u_2l, s_coarse, s_fine; 
             Matrix H_fine, H_restricted, H_coarse, H_diff; 
@@ -201,7 +221,7 @@ namespace utopia
 
 //--------------------------------------------------------------------------------------------------------------------------------------------
             // PRE-SMOOTHING 
-            local_tr_solve(fine_fun, u_l, coarse_reduction, level); 
+            local_tr_solve(fine_fun, u_l, level); 
 //--------------------------------------------------------------------------------------------------------------------------------------------
 
             fine_fun.gradient(u_l, g_fine);   
@@ -251,7 +271,7 @@ namespace utopia
             if(level == 2 || grad_smoothess_termination(g_restricted, g_coarse))
             {
                 SizeType l_new = level - 1; 
-                local_tr_solve(levels(level-2), u_2l, coarse_reduction, l_new); 
+                coarse_reduction = local_tr_solve(levels(level-2), u_2l, l_new); 
             }
             else
             {
@@ -260,7 +280,7 @@ namespace utopia
                 {   
                     SizeType l_new = level - 1; 
                                                         // check g_diff here !!!!!!!!!!!!!!!!!!!!!!!
-                    multiplicative_cycle(levels(level-2), u_2l, g_diff, l_new, it_global); 
+                    multiplicative_cycle(levels(level-2), u_2l, g_diff, l_new); 
                 }
             }
 
@@ -347,14 +367,14 @@ namespace utopia
 
             // just to see what is being printed 
             this->init_solver("RMTR_coarse_corr_stat", {" it. ", "   E_old     ", "   E_old", "ared   ",  "  coarse_reduction  ", "  rho  ", "  delta "}); 
-            PrintInfo::print_iter_status(it_global, {E_old, E_new, ared, coarse_reduction, rho, get_delta(level-1) }); 
+            PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, get_delta(level-1) }); 
 
 
 
 
     //--------------------------------------------------------------------------------------------------------------------------------------------
             // POST-SMOOTHING 
-            local_tr_solve(fine_fun, u_l, coarse_reduction, level); 
+            local_tr_solve(fine_fun, u_l, level); 
     //--------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -365,7 +385,7 @@ namespace utopia
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        bool local_tr_solve(FunctionType &fun, Vector & x, Scalar & reduction, const SizeType & level)
+        Scalar local_tr_solve(FunctionType &fun, Vector & x, const SizeType & level)
         {   
             Vector g_diff, s_global; 
             Matrix H_diff; 
@@ -415,7 +435,7 @@ namespace utopia
 
             Vector s = 0 * x; 
             s_global = s; 
-            reduction = 0.0; 
+            Scalar reduction = 0.0; 
 
 
             Vector g; 
@@ -610,7 +630,7 @@ namespace utopia
 
             std::cout<< color_def; 
 
-            return true; 
+            return reduction; 
         }
 
 
@@ -884,7 +904,18 @@ namespace utopia
 
 
 
+        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
+        {
+            // level 
+            local_tr_solve(fun, x, 0); 
+            return true; 
+        }
+
+
+
+
     protected:   
+        SizeType                            _it_global; 
         Scalar                              _delta_init; 
         std::vector<Scalar>                 _deltas;  
         std::vector<Scalar>                 _deltas_zero;        

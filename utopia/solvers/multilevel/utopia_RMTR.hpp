@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-05-04
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-06
+* @Last Modified time: 2017-06-13
 */
 
 #ifndef UTOPIA_RMTR_HPP
@@ -60,6 +60,12 @@ namespace utopia
 
         virtual ~RMTR(){} 
         
+
+        virtual std::string name_id()
+        {
+            return "RMTR"; 
+        }
+
 
         void set_parameters(const Parameters params)  override
         {
@@ -168,7 +174,7 @@ namespace utopia
 
 
 
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
+        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
             std::cout<<"-------- at some point: RMTR ....  multiplicative_cycle ....... \n"; 
 

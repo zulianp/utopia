@@ -56,7 +56,7 @@ namespace utopia
          Vector grad, step;
          Matrix hessian;
 
-         Scalar g_norm, g0_norm, r_norm, s_norm;
+         Scalar g_norm, g0_norm, r_norm=1, s_norm=1;
          SizeType it = 0;
 
          bool converged = false;
@@ -65,18 +65,25 @@ namespace utopia
          g0_norm = norm2(grad);
          g_norm = g0_norm;
 
-         this->init_solver("INEXACT NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || "});
-
          if(this->verbose_)
-            PrintInfo::print_iter_status(it, {g_norm, 1, 0});
+            this->init_solver("INEXACT NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || "});
 
 
-        // TODO:: check this out 
-        hessian_approx_strategy_->initialize(fun, x, hessian);        
+
+        if(has_hessian_approx())
+            hessian_approx_strategy_->initialize(fun, x, hessian);        
+        else
+            fun.hessian(x, hessian); 
 
 
         while(!converged)
         {
+            // print iteration status on every iteration
+            if(this->verbose_)
+                PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
+
+            // check convergence and print interation info
+            converged = this->check_convergence(it, g_norm, r_norm, s_norm);
         
             //find direction step
             step = local_zeros(local_size(x));
@@ -99,8 +106,10 @@ namespace utopia
                 }
             }
 
-
-            hessian_approx_strategy_->approximate_hessian(fun, x, step, hessian,  grad); 
+            if(has_hessian_approx())
+                hessian_approx_strategy_->approximate_hessian(fun, x, step, hessian,  grad); 
+            else
+                fun.hessian(x, hessian); 
 
             // norms needed for convergence check
             g_norm = norm2(grad);
@@ -108,12 +117,6 @@ namespace utopia
             s_norm = norm2(step);
 
             it++;
-                    // // print iteration status on every iteration
-            if(this->verbose_)
-                PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
-
-                    // // check convergence and print interation info
-            converged = this->check_convergence(it, g_norm, r_norm, s_norm);
         }
 
 

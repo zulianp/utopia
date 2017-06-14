@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-24
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-13
+* @Last Modified time: 2017-06-14
 */
 
 #ifndef UTOPIA_NMGM_HPP
@@ -65,6 +65,15 @@ namespace utopia
             _sigma      = params.sigma(); 
         }
 
+
+        virtual std::string name_id()
+        {
+            return "Nonlinear Multigrid"; 
+        }
+
+
+
+
         virtual bool solve(FunctionType & fine_fun, Vector &x_h)
         {
             Vector rhs = local_zeros(local_size(x_h)); 
@@ -78,7 +87,7 @@ namespace utopia
          * @param      x_0   The initial guess. 
          *
          */
-        virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
+        virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) override
         {
             this->init_solver("Nonlinear multigrid", {" it. ", "|| r_N ||", "r_norm" }); 
 
@@ -236,7 +245,7 @@ namespace utopia
         }
 
 
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
+        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
                 
             Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h, u_init; 
@@ -326,7 +335,7 @@ namespace utopia
         }
 
         // with RHS
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs)
+        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
         {
             _coarse_solver->solve(fun, x, rhs); 
             return true; 

@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-13
+* @Last Modified time: 2017-06-14
 */
 
 #ifndef UTOPIA_FAS_HPP
@@ -17,7 +17,7 @@
 namespace utopia 
 {
     /**
-     * @brief      The class for Nonlinear Multigrid solver. 
+     * @brief      The class for Full approximation scheme.
      *
      * @tparam     Matrix  
      * @tparam     Vector  
@@ -36,7 +36,7 @@ namespace utopia
     public:
 
        /**
-        * @brief      Multigrid class
+        * @brief      The class for Full approximation scheme.
         *
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
@@ -54,6 +54,11 @@ namespace utopia
         virtual ~FAS(){} 
         
 
+        /**
+         * @brief      Sets the parameters.
+         *
+         * @param[in]  params  The parameters
+         */
         void set_parameters(const Parameters params)  // override
         {
             NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params); 
@@ -63,77 +68,14 @@ namespace utopia
             _parameters = params; 
         }
 
-        virtual bool solve(FunctionType & fine_fun, Vector &x_h)
-        {
-            Vector rhs = local_zeros(local_size(x_h)); 
-            return solve(fine_fun,  x_h, rhs); 
-        }
-
         /**
-         * @brief      The solve function for multigrid method. 
          *
-         * @param[in]  rhs   The right hand side.
-         * @param      x_0   The initial guess. 
-         *
+         * @return     Name of class
          */
-        virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) 
+        virtual std::string name_id()
         {
-            this->init_solver("FAS", {" it. ", "|| r_N ||", "r_norm" , "E"}); 
-
-            Vector F_h  = local_zeros(local_size(x_h)); 
-
-            bool converged = false; 
-            SizeType it = 0, l = this->num_levels(); 
-            Scalar r_norm, r0_norm, rel_norm;
-
-            std::cout<<"FAS: number of levels: "<< l << "  \n"; 
-
-            // just to check what is problem 
-            Matrix hessian; 
-            fine_fun.hessian(x_h, hessian); 
-
-            fine_fun.gradient(x_h, F_h); 
-            r0_norm = norm2(F_h); 
-
-            while(!converged)
-            {            
-                if(this->cycle_type() =="multiplicative")
-                    multiplicative_cycle(fine_fun, x_h, rhs, l); 
-                // else if(this->cycle_type() =="full")
-                //     full_cycle(rhs, l, x_0); 
-                else
-                    std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n"; 
-
-
-                #ifdef CHECK_NUM_PRECISION_mode
-                    if(has_nan_or_inf(x_h) == 1)
-                    {
-                        x_h = local_zeros(local_size(x_h));
-                        return true; 
-                    }
-                #endif    
-
-                fine_fun.gradient(x_h, F_h); 
-                
-                Scalar energy; 
-                fine_fun.value(x_h, energy); 
-                
-                r_norm = norm2(F_h);
-                rel_norm = r_norm/r0_norm; 
-
-                // print iteration status on every iteration 
-                if(this->verbose())
-                    PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy}); 
-
-                // check convergence and print interation info
-                converged = this->check_convergence(it, r_norm, rel_norm, 1); 
-                it++; 
-            
-            }
-
-            return true; 
+            return "FAS"; 
         }
-
 
 
     private: 
@@ -149,36 +91,33 @@ namespace utopia
         }
 
 
-
-
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
+        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
-            Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h, u_init; 
+            Vector g_fine, g_coarse, u_2l, e, u_init; 
 
-            this->make_iterate_feasible(fine_fun, u_l); 
+           this->make_iterate_feasible(fine_fun, u_l); 
 
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
-            fine_fun.gradient(u_l, L_l);             
+            fine_fun.gradient(u_l, g_fine);             
 
-            r_h = L_l - f; 
+            g_fine -= f; 
 
-
-            transfers(l-2).restrict(r_h, r_2h); 
+            transfers(l-2).restrict(g_fine, g_fine); 
             transfers(l-2).project_down(u_l, u_2l); 
 
             this->make_iterate_feasible(levels(l-2), u_2l); 
-            this->zero_boundary_correction(levels(l-2), r_2h); 
+            this->zero_boundary_correction(levels(l-2), g_fine); 
 
-            levels(l-2).gradient(u_2l, L_2l); 
+            levels(l-2).gradient(u_2l, g_coarse); 
 
             u_init = u_2l; 
-            L_2l = L_2l - r_2h;  // tau correction 
+            g_coarse -= g_fine;  // tau correction 
                                  
             if(l == 2)
             {
                 this->make_iterate_feasible(levels(0), u_2l); 
-                coarse_solve(levels(0), u_2l, L_2l); 
+                coarse_solve(levels(0), u_2l, g_coarse); 
             }
             else
             {
@@ -186,16 +125,15 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = l - 1; 
-                    multiplicative_cycle(levels(l-2), u_2l, L_2l, l_new); 
+                    this->multiplicative_cycle(levels(l-2), u_2l, g_coarse, l_new); 
                 }
             }
 
-            e_2h = u_2l - u_init; 
-            transfers(l-2).interpolate(e_2h, e_h);
-
-            this->zero_boundary_correction(fine_fun, e_h); 
+            e = u_2l - u_init; 
+            transfers(l-2).interpolate(e, e);
+            this->zero_boundary_correction(fine_fun, e); 
             
-            u_l += e_h; 
+            u_l += e; 
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
@@ -207,8 +145,8 @@ namespace utopia
         /**
          * @brief      The function invokes smoothing. 
          *
-         * @param[in]  A     The stifness matrix. 
-         * @param[in]  rhs   The right hand side.
+         * @param      fun   Function to be minimized 
+         * @param[in]  f     The right hand side.
          * @param      x     The current iterate. 
          * @param[in]  nu    The number of smoothing steps. 
          *
@@ -222,7 +160,18 @@ namespace utopia
         }
 
 
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs)
+
+        /**
+         * @brief      The function invokes coarse solver. 
+         *
+         * @param      fun   Function to be minimized 
+         * @param[in]  rhs   The right hand side.
+         * @param      x     The current iterate. 
+         * @param[in]  nu    The number of smoothing steps. 
+         *
+         * @return   
+         */
+        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
         {   
             _coarse_solver->verbose(true); 
             _coarse_solver->solve(fun, x, rhs); 

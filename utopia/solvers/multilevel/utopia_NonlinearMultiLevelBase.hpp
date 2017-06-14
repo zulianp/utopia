@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-10
+* @Last Modified time: 2017-06-14
 */
 
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
@@ -20,9 +20,8 @@
   {
     /**
      * @brief      Base class for all nonlinear multilevel solvers. \n
-     *             Takes care of inializing multilevel hierarchy. \n
-     *             Different levels are created by interpolation and restriction operators.\n
-     *             Additionally, it provides stifness matrices on each level, created by using Galerkin assembly. \n
+     *             Takes care of inializing multilevel hierarchy - calls into assembly routines on each level. \n
+     *             Different levels are created by interpolation and restriction.\n
      *
      * @tparam     Matrix 
      * @tparam     Vector 
@@ -31,8 +30,6 @@
     class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>,
                                     public Monitor<Matrix, Vector>
     {
-
-      // typedef utopia::Function<Matrix, Vector> Function;
     
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -47,6 +44,11 @@
       virtual ~NonlinearMultiLevelBase(){}
 
 
+      /**
+       * @brief      Sets the parameters.
+       *
+       * @param[in]  params  The parameters
+       */
       virtual void set_parameters(const Parameters params) override
       {
         MultiLevelBase<Matrix, Vector>::set_parameters(params); 
@@ -58,6 +60,87 @@
         max_it_             = params.max_it(); 
         verbose_            = params.verbose(); 
         time_statistics_    = params.time_statistics();  
+      }
+
+
+        /**
+         * @brief      The solve function for nonlinear multilevel solvers. 
+         *
+         * @param[in]  rhs   Function to be minimized.
+         * @param[in]  rhs   The right hand side.
+         * @param      x_h   The initial guess. 
+         *
+         */
+        virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs)
+        {
+            this->init_solver(this->name_id(), {" it. ", "|| grad ||", "r_norm" , "Energy"}); 
+  
+            bool converged = false; 
+            SizeType it = 0, l = this->num_levels(); 
+            Scalar r_norm, r0_norm=1, rel_norm=1, energy;
+
+            std::cout<<"Number of levels: "<< l << "  \n"; 
+
+            Vector g  = local_zeros(local_size(x_h)); 
+            fine_fun.gradient(x_h, g); 
+            r0_norm = norm2(g); 
+
+            fine_fun.value(x_h, energy); 
+
+            if(this->verbose())
+              PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy}); 
+            
+            it++; 
+
+            while(!converged)
+            {            
+                if(this->cycle_type() =="multiplicative")
+                    this->multiplicative_cycle(fine_fun, x_h, rhs, l); 
+                else if(this->cycle_type() =="full")
+                {
+                  this->full_cycle(fine_fun, x_h, rhs, l); 
+                  this->cycle_type("multiplicative"); 
+                }
+                else
+                    std::cout<<"ERROR::UTOPIA_Multilevel<< unknown MG type... \n"; 
+
+
+                #ifdef CHECK_NUM_PRECISION_mode
+                    if(has_nan_or_inf(x_h) == 1)
+                    {
+                        x_h = local_zeros(local_size(x_h));
+                        return true; 
+                    }
+                #endif    
+
+                fine_fun.gradient(x_h, g); 
+                fine_fun.value(x_h, energy); 
+                
+                r_norm = norm2(g);
+                rel_norm = r_norm/r0_norm; 
+
+                // print iteration status on every iteration 
+                if(this->verbose())
+                    PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy}); 
+
+                // check convergence and print interation info
+                converged = this->check_convergence(it, r_norm, rel_norm, 1); 
+                it++; 
+            }
+            return true; 
+        }
+
+      /**
+       * @brief      The solve function for nonlinear multilevel solvers. 
+       *
+       * @param[in]  rhs   Function to be minimized.
+       * @param      x_h   The initial guess. 
+       *
+       */
+      virtual bool solve(FunctionType & fine_fun, Vector &x_h)
+      {
+        Vector rhs = local_zeros(local_size(x_h)); 
+        return this->solve(fine_fun,  x_h, rhs); 
       }
 
 
@@ -159,24 +242,21 @@ protected:
         virtual void exit_solver(const SizeType &num_it, const Scalar & convergence_reason) override
          {            
             _time.stop();
-
             params_.convergence_reason(convergence_reason);
             params_.num_it(num_it);
 
             if(verbose_)
             {
                 ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);
-
                 if(mpi_world_rank() == 0)
                     std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
-                    
             }
          }
 
 
         virtual bool solver_monitor(const SizeType& it, Vector & x, Matrix & H) override
         {
-          std::cout<<"utopia::NonlinearMultilevelBase:: WE ARE NOT SUPPORTING monitor for FAS at the moment... \n"; 
+          std::cout<<"utopia::NonlinearMultilevelBase:: WE ARE NOT SUPPORTING this function at the moment... \n"; 
           return true; 
         }
 
@@ -195,39 +275,37 @@ protected:
             // termination because norm of grad is down
             if(g_norm < atol_)
             {
-                exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
-                return true; 
+              exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
+              return true; 
             }
 
             // step size so small that we rather exit than wait for nan's
             if(s_norm < stol_)
             {
-                exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
-                return true; 
+              exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
+              return true; 
             }
 
             // step size so small that we rather exit than wait for nan's
             if(r_norm < rtol_)
             {
-                exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
-                return true; 
+              exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
+              return true; 
             }
 
             // check number of iterations
             if( it > max_it_)
             {
-                exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
-                return true; 
+              exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
+              return true; 
             }
 
             return false; 
         }
 
 
-
-
         /**
-         * @brief      Function looks up for id, where we should apply Dirichlet BC and set value to required one
+         * @brief      Function looks up for ids, where we should apply Dirichlet BC and set value to required one
          *
          * @param      fun   The fun
          * @param      x     
@@ -264,7 +342,6 @@ protected:
         }
 
 
-
         /**
          * @brief      Function zeors correction, where we have Dirichlet BC aplied.
          *
@@ -284,11 +361,8 @@ protected:
             for (SizeType i = range_w.begin(); i != range_w.end(); i++) 
             {
                 Scalar value = bc.get(i);
-                
                 if(value == 1)
-                {
                   c.set(i, 0);
-                }
             }
           }
           return true; 
@@ -316,6 +390,74 @@ protected:
           set_zero_rows(M, index); 
           return true; 
         }
+
+
+        inline FunctionType &levels(const SizeType &l) { return this->_nonlinear_levels[l];  }
+        inline Transfer &transfers(const SizeType & l) { return this->_transfers[l];  }
+
+
+        /**
+         * @brief     Multiplicative V/W cycle
+         *
+         * @param      fine_fun  Function to be minimized 
+         * @param      u_l       The iterate 
+         * @param[in]  f         Right hand side 
+         * @param[in]  l         level
+         *                       
+         */
+        virtual bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)=0; 
+
+        /**
+         * @return     Name of solver - to have nice printouts 
+         */
+        virtual std::string name_id() = 0; 
+
+
+        /**
+         * @brief      Coarse solve function. 
+         *
+         * @param      fun   Function to be minimized 
+         * @param      x     Iterate
+         * @param[in]  rhs   The right hand side
+         *
+         */
+        virtual bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) = 0; 
+
+
+        /**
+         * @brief     Full multigrid cycle, after running F cycle once and reaching discretization tolerance, it continues as multiplicative cycle to achieve prescribed tolerance
+         *
+         * @param      fine_fun  Function to be minimized 
+         * @param      u_l       The iterate 
+         * @param[in]  f         Right hand side 
+         * @param[in]  l         level
+         *                       
+         */
+        virtual bool full_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
+        {            
+          for(SizeType i = l-2; i >=0; i--)
+          {
+            transfers(i).restrict(u_l, u_l); 
+            this->make_iterate_feasible(levels(i), u_l); 
+          }
+
+          Vector L_l = local_zeros(local_size(u_l));
+          this->coarse_solve(levels(0), u_l, L_l); 
+
+          transfers(0).interpolate(u_l, u_l); 
+
+          for(SizeType i = 1; i <l-1; i++)
+          {
+            for(SizeType j = 0; j < this->v_cycle_repetition(); j++)
+            {
+              Vector f = local_zeros(local_size(u_l));
+              this->multiplicative_cycle(levels(i), u_l, f, i+1); 
+            }
+            transfers(i).interpolate(u_l, u_l); 
+          }
+            return true; 
+        }
+
 
 
     protected:
