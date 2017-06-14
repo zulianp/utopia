@@ -76,54 +76,51 @@ namespace utopia
 
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
-            Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h, u_init; 
-            Scalar alpha; 
+           Vector g_fine, g_coarse, u_2l, e, u_init; 
+           Scalar alpha; 
 
-            this->make_iterate_feasible(fine_fun, u_l); 
+           this->make_iterate_feasible(fine_fun, u_l); 
 
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
-            fine_fun.gradient(u_l, L_l);             
+            fine_fun.gradient(u_l, g_fine);             
 
-            r_h = L_l - f; 
+            g_fine -= f; 
 
-            transfers(l-2).restrict(r_h, r_2h); 
+            transfers(l-2).restrict(g_fine, g_fine); 
             transfers(l-2).project_down(u_l, u_2l); 
 
             this->make_iterate_feasible(levels(l-2), u_2l); 
-            this->zero_boundary_correction(levels(l-2), r_2h); 
+            this->zero_boundary_correction(levels(l-2), g_fine); 
 
-            levels(l-2).gradient(u_2l, L_2l); 
+            levels(l-2).gradient(u_2l, g_coarse); 
 
             u_init = u_2l; 
-            L_2l = L_2l - r_2h;  // tau correction 
+            g_coarse -= g_fine;  // tau correction 
                                  
             if(l == 2)
             {
                 this->make_iterate_feasible(levels(0), u_2l); 
-                coarse_solve(levels(0), u_2l, L_2l); 
+                coarse_solve(levels(0), u_2l, g_coarse); 
             }
             else
             {
+                // recursive call into FAS - needs to be checked 
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = l - 1; 
-                    multiplicative_cycle(levels(l-2), u_2l, L_2l, l_new); 
+                    this->multiplicative_cycle(levels(l-2), u_2l, g_coarse, l_new); 
                 }
             }
 
-            e_2h = u_2l - u_init; 
-            transfers(l-2).interpolate(e_2h, e_h);
-
-            this->zero_boundary_correction(fine_fun, e_h); 
-
-            fine_fun.gradient(u_l, L_l); 
-
-            _ls_strategy->get_alpha(fine_fun, L_l, u_l, e_h, alpha);
+            e = u_2l - u_init; 
+            transfers(l-2).interpolate(e, e);
+            this->zero_boundary_correction(fine_fun, e); 
+            
+            _ls_strategy->get_alpha(fine_fun, g_fine, u_l, e, alpha);
             // std::cout<<"l:   "<< l << "   alpha:   "<< alpha << " <g_k, e_h>:   "<< dot(L_l, e_h) << "  \n"; 
 
-
-            u_l += alpha * e_h; 
+            u_l += alpha * e; 
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
@@ -150,7 +147,16 @@ namespace utopia
             return true; 
         }
 
-
+        /**
+         * @brief      The function invokes coarse solver. 
+         *
+         * @param      fun   Function to be minimized 
+         * @param[in]  rhs   The right hand side.
+         * @param      x     The current iterate. 
+         * @param[in]  nu    The number of smoothing steps. 
+         *
+         * @return   
+         */
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
         {
             // _coarse_solver->verbose(true); 
@@ -200,10 +206,9 @@ namespace utopia
         }
 
 
-
     protected:   
         std::shared_ptr<Solver>             _smoother;          /*  optimization method used on fine levels */
-        std::shared_ptr<Solver>             _coarse_solver;     /*  optimization method on coarse level */
+        std::shared_ptr<Solver>             _coarse_solver;     /*  optimization method for coarse level */
         std::shared_ptr<LSStrategy>         _ls_strategy;       /*  LS used to determine step size inside of MG */
 
 
