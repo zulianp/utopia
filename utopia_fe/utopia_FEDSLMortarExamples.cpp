@@ -327,10 +327,8 @@ namespace utopia {
         
         // MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals, is_contact_node, 0.01, 102, 101);
         MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals, is_contact_node, 0.1, 1, 2);
-        
-        // write("mat.m", matrix);
-        // EXPRESS_EVENT_END("l2assembly");
 
+        
         DVectord v = local_zeros(local_size(matrix).get(1));
 //        {
 	        each_write(v, [](const SizeType i) -> double {

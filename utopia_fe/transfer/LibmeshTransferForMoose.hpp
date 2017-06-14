@@ -988,7 +988,7 @@ namespace utopia {
                          const std::shared_ptr<const unsigned int> &_from_var_num,
                          const std::shared_ptr<const unsigned int> &_to_var_num,
                          Fun process_fun,
-                         const cutk::Settings &settings, bool use_biorth_, bool impact)
+                         const cutk::Settings &settings, bool use_biorth_, int n_var)
     {
         
         
@@ -1243,8 +1243,8 @@ namespace utopia {
                   const std::shared_ptr<DofMap> &dof_slave,
                   const std::shared_ptr<const unsigned int> &_from_var_num,
                   const std::shared_ptr<const unsigned int> &_to_var_num,
-                  DSMatrixd &B1,/* DSMatrixd &B2,*/
-                  const cutk::Settings &settings,bool  use_biorth_, bool  impact)
+                  DSMatrixd &B1, DSMatrixd &B2,
+                  const cutk::Settings &settings,bool  use_biorth_, int n_var)
     {
         
         const int var_num_slave = *_to_var_num;
@@ -1408,10 +1408,27 @@ namespace utopia {
                 
                 
                 master_fe->attach_quadrature_rule(&src_ir);
-                master_fe->reinit(&src_el);
+                // master_fe->reinit(&src_el);
+                // bbecsek:
+                // before we reinit, we need to request what exactly we want to compute
+                // this will set calculate_phi to true and we will avoid determine_calculations()
+                // to set everything to true
+                const std::vector<std::vector<Real>> & phi_master  = master_fe->get_phi();
+                // bbecsek: this new reinit call makes use of the quadrature points and weights
+                // computed by "transform_to_reference"
+                master_fe->reinit(&src_el, &src_ir.get_points(), &src_ir.get_weights());
                 
                 slave_fe->attach_quadrature_rule(&dest_ir);
-                slave_fe->reinit(&dest_el);
+                //  slave_fe->reinit(&dest_el);
+                // bbecsek:
+                // before we reinit, we need to request what exactly we want to compute
+                // this will set calculate_phi to true (see above)
+                const std::vector<std::vector<Real>> & phi_slave = slave_fe->get_phi();
+                // this will call _fe_map's get_JxW() and will set its calculate_dxyz to true
+                const std::vector<Real> & JxW_slave = slave_fe->get_JxW();
+                // bbecsek: this new reinit call makes use of the quadrature points and weights
+                // computed by "transform_to_reference"
+                slave_fe->reinit(&dest_el, &dest_ir.get_points(), &dest_ir.get_weights());
                 
                 elemmat.zero();
                 
@@ -1489,7 +1506,7 @@ namespace utopia {
         // c2.start();
         
         
-        if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, fun, settings, use_biorth_,impact)) {
+        if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, fun, settings, use_biorth_,n_var)) {
             std::cout << "n_intersections: false2" <<std::endl;
             return false;
         }
@@ -1576,15 +1593,33 @@ namespace utopia {
         const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
         const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
         
+        //DSMatrixd;
+
         B1 = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
         
         {
             utopia::Write<utopia::DSMatrixd> write(B1);
             for (auto it = mat_buffer.iter(); it; ++it) {
                 B1.set(it.row(), it.col(), *it);
+                //B1.set(it.row()+2, it.col()+2, *it);
+                //B1.set(it.row()+3, it.col()+3, *it);
                 
             }
         }
+        
+
+//        auto s_B_x = local_size(B_x);
+//        
+//        B1 = local_sparse(s_B_x.get(0), s_B_x.get(1), mMaxRowEntries * dim);
+//        
+//        {
+//            Write<DSMatrixd> w_B1(B1);
+//            each_read(B_x, [&](const SizeType i, const SizeType j, const double value) {
+//                for(SizeType d = 0; d < dim; ++d) {
+//                    B1.set(i + d, j + d, value);
+//                }
+//            });
+//        }
 
         
         
@@ -1608,30 +1643,30 @@ namespace utopia {
 //            }
 //        }
 //        else
-//        {
-//            auto s_B_x = local_size(B1);
-//          
-//            B2 = local_sparse(s_B_x.get(0), s_B_x.get(1), mMaxRowEntries);
-//            
-//            
-//            std::cout<< "i am modifying the matrix"<<std::endl;
-//            utopia::Write<DSMatrixd> w_B(B2);
-//            utopia::each_read(B1, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
-//                for(utopia::SizeType d = 0; d < dim; ++d) {
-//                   // std::cout<< "i am modifying the matrix with value"<<value<<std::endl;
-//                    B2.set(i, j, 0.0);
-//                    B2.set(i+d, j, value);
-//                }
-//            });
-//            
-//            
-//            
-//            
-//        }
+        {
+            auto s_B_x = local_size(B1);
+          
+            B2 = local_sparse(s_B_x.get(0), s_B_x.get(1), n_var * mMaxRowEntries);
+            
+            
+            std::cout<< "modify the matrix  B"<<std::endl;
+            utopia::Write<DSMatrixd> w_B(B2);
+            utopia::each_read(B1, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
+                for(utopia::SizeType d = 0; d < n_var; ++d) {
+                    B2.set(i+d, j+d, value);
+                }
+            });
+            
+            
+            
+            
+        }
         
         
         
         express::RootDescribe("petsc assembly end", comm, std::cout);
+        
+//        disp(B1.size());
         
 //        write("_B_1.m", B1);
 //        write("_B_2.m", B2);
@@ -1652,19 +1687,19 @@ namespace utopia {
                               const std::shared_ptr<DofMap> &dof_slave,
                               const std::shared_ptr<const unsigned int> & _from_var_num,
                               const std::shared_ptr<const unsigned int> & _to_var_num,
-                              bool  use_biorth_, bool impact,
-                              DSMatrixd &B1/*, DSMatrixd &B2*/)
+                              bool  use_biorth_, int n_var,
+                              DSMatrixd &B1, DSMatrixd &B2)
     {
         cutk::Settings settings;
         
         if(master->mesh_dimension() == 2) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-            return utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B1, /*B2,*/ settings,use_biorth_, impact);
+            return utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B1, B2, settings,use_biorth_, n_var);
         }
         
         if(master->mesh_dimension() == 3) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-            return utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B1, /*B2,*/ settings,use_biorth_, impact);
+            return utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B1, B2, settings,use_biorth_, n_var);
         }
         
         assert(false && "Dimension not supported!");
