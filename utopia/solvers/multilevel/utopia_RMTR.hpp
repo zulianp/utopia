@@ -106,7 +106,8 @@ namespace utopia
             bool converged = false; 
             SizeType l = this->num_levels(); 
             Scalar r_norm, r0_norm, rel_norm;
-            std::cout<<"RMTRy: number of levels: "<< l << "  \n"; 
+            
+            std::cout<< this->name_id() <<"     Number of levels: "<< l << "  \n"; 
 
             Matrix hessian; 
             fine_fun.hessian(x_h, hessian); 
@@ -135,7 +136,7 @@ namespace utopia
             while(!converged)
             {            
                 if(this->cycle_type() =="multiplicative")
-                    multiplicative_cycle(fine_fun, x_h, rhs, l); 
+                    this->multiplicative_cycle(fine_fun, x_h, rhs, l); 
                 else
                     std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n"; 
 
@@ -184,7 +185,7 @@ namespace utopia
         }
 
 
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & level) override
+        virtual bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & level) override
         {
             Vector g_fine, g_coarse, g_diff, g_restricted, u_2l, s_coarse, s_fine; 
             Matrix H_fine, H_restricted, H_coarse, H_diff; 
@@ -241,14 +242,14 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   initializing levels 
             //----------------------------------------------------------------------------
-            set_delta(level-2, get_delta(level-2)); 
+            set_delta(level-2, get_delta(level-1)); 
             set_delta_gradient(level-2, g_diff); 
 
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
                 set_delta_hessian(level-2, H_diff); 
 
             set_x_initial(level-2, u_2l); 
-            set_delta_zero(level-2, get_delta(level-2)); 
+            set_delta_zero(level-2, get_delta(level-1)); 
         
 
             //----------------------------------------------------------------------------
@@ -330,7 +331,7 @@ namespace utopia
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        Scalar local_tr_solve(FunctionType &fun, Vector & x, const SizeType & level)
+        virtual Scalar local_tr_solve(FunctionType &fun, Vector & x, const SizeType & level)
         {   
             Vector g_diff, s_global, g; 
             Matrix H_diff, H; 
@@ -413,7 +414,7 @@ namespace utopia
             //     trust region update 
             //----------------------------------------------------------------------------
            
-                delta_update(rho, level, s_global, converged); 
+                this->delta_update(rho, level, s_global, converged); 
 
                 if(make_grad_updates)
                 {
