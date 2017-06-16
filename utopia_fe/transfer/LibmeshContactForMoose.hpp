@@ -683,7 +683,8 @@ namespace utopia {
             copy_global_dofs(*master_slave, original_dofmap, _var_num,
                              dof_maps_[0], var_type_[0], n_elements, var_number_[0],
                              subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0],
-                             face_set_id_global_[0],ownershipRangesFaceID_[0], 101, 102);
+                             // face_set_id_global_[0],ownershipRangesFaceID_[0], 101, 102);
+                             face_set_id_global_[0],ownershipRangesFaceID_[0], 1, 2); //FIXME
             
 //            copy_var_number(*original_dofmap, var_number_[0]);
             
@@ -944,8 +945,8 @@ namespace utopia {
                 
                 if (elem->on_boundary()){
                     for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
-                        if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || 
-                             mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2)) && 
+                        if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem, tag_1) || 
+                             mesh.get_boundary_info().has_boundary_id(elem,side_elem, tag_2)) && 
                             check_side_id_one_tag){
                             // side_set_id[elem->id()].global.insert(side_set_id[elem->id()].global.end()-1,mesh.get_boundary_info().boundary_id(elem,side_elem));
                             side_set_id[elem->id()].global.push_back(mesh.get_boundary_info().boundary_id(elem,side_elem));
@@ -959,7 +960,6 @@ namespace utopia {
                 
                 for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
                     if (check_side_id_one_check){
-                        //                        std::cout<<"side_set_id[ "<< elem->id() <<" ] = "<<side_set_id[elem->id()].global.at(0)<<std::endl;
                         check_side_id_one_check=false;
                         jj_side_id_one_check++;
                     }
@@ -968,11 +968,11 @@ namespace utopia {
                 if (elem->on_boundary()){
                     
                     for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
-                        //                        n_face_nodes[elem->id()].global.insert(n_face_nodes[elem->id()].global.end(), n_f);
-                        //                        n_f++;
-                        if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_1) || 
-                             mesh.get_boundary_info().has_boundary_id(elem,side_elem,tag_2))){
+                        if ((mesh.get_boundary_info().has_boundary_id(elem, side_elem, tag_1) || 
+                             mesh.get_boundary_info().has_boundary_id(elem, side_elem, tag_2))) {
+                            
                             face_set_id[elem->id()].global.push_back(f_id++);
+                            
                             offset++;
                         } else {
                             face_set_id[elem->id()].global.push_back(-1);
@@ -1214,16 +1214,10 @@ namespace utopia {
     template<class Iterator>
     static void write_element_selection(const Iterator &begin, const Iterator &end, const UtopiaMesh &utopiamesh, cutk::OutputStream &os)
     {
-        
-        
         auto m = utopiamesh.utopiamesh()[0];
         
-        write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), os, 101, 102);
-        
-        
-        
-        
-        
+        // write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), os, 101, 102); 
+        write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), os, 1, 2); //FIXME
     }
     
     
@@ -1372,7 +1366,8 @@ namespace utopia {
         
         utopiamesh.utopiamesh().resize(1);
         
-        read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh, 101, 102);
+        // read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh, 101, 102);
+        read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh, 1, 2); //FIXME
         
         utopiamesh.set_must_destroy_attached(0,true);
         
@@ -1658,7 +1653,7 @@ namespace utopia {
         std::shared_ptr<MeshBase> master_slave_space = master_slave;
         
         auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
-        predicate->add(tag_1,tag_2);
+        predicate->add(tag_1, tag_2);
         std::cout<<"tag value 1 = "<<tag_1<<std::endl;
         std::cout<<"tag value 2 = "<<tag_2<<std::endl;
         
@@ -1703,18 +1698,18 @@ namespace utopia {
             
             bool size_new=true;
             
-            int jj = 0;
+            // int jj = 0;
             
-            if (elem->on_boundary()){
+            if (elem->on_boundary()) {
                 
-                for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
+                for (int side_elem = 0; side_elem < elem->n_sides(); side_elem++){
                     
-                    if (master_slave->get_boundary_info().has_boundary_id(elem,side_elem, tag_1)){
+                    if (master_slave->get_boundary_info().has_boundary_id(elem, side_elem, tag_1)){
                         
                         master_dof_n++;
                     }
                     
-                    if (master_slave->get_boundary_info().has_boundary_id(elem,side_elem, tag_2)){
+                    if (master_slave->get_boundary_info().has_boundary_id(elem, side_elem, tag_2)){
                         
                         slave_dof_n++;
                     }
@@ -1806,7 +1801,7 @@ namespace utopia {
             typedef Intersector::Scalar Scalar;
             
             
-            if(dim_src == 2)  {
+            if(dim_sla == 2)  {
                 make_polygon(src_el,   src_pts);
                 make_polygon(dest_el,  dest_pts);
                 src_trans  = std::make_shared<Transform2>(src_el);
@@ -1814,7 +1809,7 @@ namespace utopia {
                 
             }
             
-            else if(dim_src == 3) {
+            else if(dim_sla == 3) {
                 make_polyhedron(src_el,  src_poly);
                 make_polyhedron(dest_el, dest_poly);
                 src_trans  = std::make_shared<Transform3>(src_el);
@@ -1825,14 +1820,6 @@ namespace utopia {
             bool intersected = false;
             
             for(uint side_1 = 0; side_1 < src_el.n_sides(); ++side_1) {
-                
-                
-                
-                //                libMesh::UniquePtr<libMesh::Elem> s_1 = src_el.side(side_1);
-                
-                //std::cout << std::to_string(master_face_id[0]) << " -> " <<side_ptr_1->on_boundary() << std::endl;
-                //if(src_el.neighbor_ptr(side_1)!=nullptr) continue;
-
                 if(master_face_id[side_1] < 0) continue;
                 
                 if(src_el.neighbor_ptr(side_1) != nullptr) continue;
@@ -1843,7 +1830,7 @@ namespace utopia {
                 box_1.reset();
                 enlarge_box_from_side(dim_src, *side_ptr_1, box_1, search_radius);
                 
-                if(dim_src == 2) {
+                if(dim_sla == 2) {
                     make_polygon(*side_ptr_1, side_polygon_1);
                 } else if(dim_src == 3) {
                     make_polygon_3(*side_ptr_1, side_polygon_1);
@@ -1851,19 +1838,12 @@ namespace utopia {
                     assert(false);
                 }
                 
-                
-                
-                
                 for(uint side_2 = 0; side_2 < dest_el.n_sides(); ++side_2) {
-
                     if(slave_face_id[side_2] < 0) continue;
-                    
                     if(dest_el.neighbor_ptr(side_2) != nullptr) continue;
                     // if (!predicate->tagsAreRelated(tag_1, tag_2)) continue;
                     
-                    //                    libMesh::UniquePtr<libMesh::Elem> s_2 = dest_el.side(side_2);
                     auto side_ptr_2 = dest_el.build_side_ptr(side_2);
-                    //[if(!side_ptr_2->on_boundary()) continue;
                     
                     compute_side_normal(dim_sla, *side_ptr_2, n2);
                     
@@ -1873,9 +1853,6 @@ namespace utopia {
                     if(cos_angle >= -0.5) {
                         continue;
                     }
-                    
-                    
-                    
                     
                     box_2.reset();
                     enlarge_box_from_side(dim_sla, *side_ptr_2, box_2, search_radius);
@@ -1921,9 +1898,9 @@ namespace utopia {
                         // plot_polygon(2, 2, &side_polygon_2.get_values()[0], "slave");
                         
                         
-                    } else if(dim_src == 3) {
+                    } else if(dim_sla == 3) {
                         make_polygon_3(*side_ptr_2, side_polygon_2);
-                        
+
                         if(!project_3D(
                                        side_polygon_1,
                                        side_polygon_2,
@@ -1955,6 +1932,9 @@ namespace utopia {
                     
                     
                     if(pair_intersected) {
+
+                        // plot_polygon(3, isect_polygon_1.get_values().size()/3, &isect_polygon_1.get_values()[0], "master");
+                        // plot_polygon(3, isect_polygon_2.get_values().size()/3, &isect_polygon_2.get_values()[0], "slave");
 
                         // std::cout << "isect: " << master.handle() << " -> " << slave.handle() << std::endl;
                         
@@ -2520,21 +2500,6 @@ namespace utopia {
             Write<DSMatrixd> w_o(orthogonal_trafos);
             Read<DVectord> r_icn(is_contact_node);
 
-
-            // disp(is_contact_node);
-
-            // MPI_Barrier(PETSC_COMM_WORLD);
-
-            // std::cout << "normals_vec: " << std::endl;
-            // disp(local_size(normals_vec));
-
-            // std::cout << "is_contact_node: " << std::endl;
-            // disp(local_size(is_contact_node));
-            // std::cout << std::flush;
-
-            // MPI_Barrier(PETSC_COMM_WORLD);
-
-            
             bool check_has_contact = false;
             
             utopia::Range r = utopia::range(normals_vec);
@@ -2663,18 +2628,8 @@ namespace utopia {
                                   DVectord &is_contact_node,
                                   const libMesh::Real search_radius, const int tag_1, const int tag_2)
     {
-        
-        cutk::Settings settings;
-        
-//        auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
-//        
-//        predicate->add(tag_1,tag_2);
-        
-        
-//        express::Communicator comm = libmesh_comm_.get();
-        
+        cutk::Settings settings;        
         if(mesh->mesh_dimension() == 2) {
-            //std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
             return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tag_1, tag_2);
         }
         
@@ -2686,656 +2641,6 @@ namespace utopia {
         assert(false && "Dimension not supported!");
         return false;
     }
-
-//
-//    template<int Dimensions, class Fun>
-//    static bool Assemble(express::Communicator &comm,
-//                         const std::shared_ptr<MeshBase> &master,
-//                         const std::shared_ptr<MeshBase> &slave,
-//                         const std::shared_ptr<DofMap> &dof_master,
-//                         const std::shared_ptr<DofMap> &dof_slave,
-//                         const std::shared_ptr<const unsigned int> &_from_var_num,
-//                         const std::shared_ptr<const unsigned int> &_to_var_num,
-//                         Fun process_fun,
-//                         const cutk::Settings &settings, bool use_biorth_)
-//    {
-//        
-//        
-//        using namespace cutlibpp;
-//        using namespace express;
-//        using namespace cutk;
-//        
-//        typedef LibMeshTree<Dimensions> NTreeT;
-//        typedef typename NTreeT::DataContainer DataContainer;
-//        typedef typename NTreeT::DataType Adapter;
-//        
-//        long maxNElements = 100;
-//        long maxDepth = 5;
-//        
-//        
-//        if (!settings.get("max_depth").isNull()) {
-//            maxDepth = settings.get("max_depth").toInt();
-//            std::cout<<"max_depth  = "<< maxDepth  <<std::endl;
-//        }
-//        
-//        const auto &master_mesh = master;
-//        const auto &slave_mesh  = slave;
-//        const int n_elements_master = master_mesh->n_elem();
-//        const int n_elements_slave  = slave_mesh->n_elem();
-//        const int n_elements 		= n_elements_master + n_elements_slave;
-//        
-//        
-//        const Parallel::Communicator &libmesh_comm_master = master_mesh->comm();
-//        const Parallel::Communicator &libmesh_comm_slave = slave_mesh->comm();
-//        
-//        
-//        auto predicate = make_shared<MasterAndSlave>();
-//        predicate->add(0, 1);
-//        
-//        EXPRESS_EVENT_BEGIN("create_adapters");
-//        ////////////////////////////////////////////////////////////////////////////////////////////////////
-//        cutk::shared_ptr<NTreeT> tree = NTreeT::New(predicate, maxNElements, maxDepth);
-//        std::cout<<"n_elements"<<n_elements<<std::endl;
-//        tree->reserve(n_elements);
-//        
-//        
-//        std::shared_ptr<Spaces> local_spaces = make_shared<Spaces>(master, slave, dof_master, dof_slave, _from_var_num, _to_var_num);
-//        
-//        int offset = 0;
-//        int space_num = 0;
-//        
-//        for(auto s : local_spaces->spaces()) {
-//            if(s) {
-//                
-//                bool first = true;
-//                for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it) {
-//                    auto elem=*it;
-//                    Adapter a(*s, elem->id(), offset+elem->id(), space_num);
-//                    assert(!local_spaces->dof_map(space_num)[elem->id()].empty());
-//                    a.set_dof_map(&local_spaces->dof_map(space_num)[elem->id()].global);
-//                    tree->insert(a);
-//                }
-//                
-//                offset += s->n_elem(); //s->mesh().n_active_local_elem();//(*s->mesh().active_local_elements_end())->id();
-//                
-//            }
-//            
-//            
-//            ++space_num;
-//            
-//            
-//        }
-//        
-//        //std::cout<<" --------------------------- tree->memory().nData()=" << tree->memory().nData()<<std::endl; ;
-//        
-//        tree->getRoot()->getBound().staticBound().enlarge(1e-8);
-//        
-//        ////////////////////////////////////////////////////////////////////////////////////////////////////
-//        EXPRESS_EVENT_END("create_adapters");
-//        
-//        // std::cout<<"-----------------------------------ADAPTERS-------------------------------------------------"<<std::endl;
-//        //Just to have an indexed-storage
-//        std::map<long, cutk::shared_ptr<Spaces> > spaces;
-//        std::map<long, std::vector<cutk::shared_ptr<Spaces> > > migrated_spaces;
-//        
-//        
-//        auto read = [&spaces, &migrated_spaces, comm, &libmesh_comm_master, &libmesh_comm_slave ]
-//        (
-//         const long ownerrank,
-//         const long senderrank,
-//         bool is_forwarding, DataContainer &data,
-//         InputStream &in
-//         ) {
-//            
-//            
-//            //   std::cout<<"------------------------------------AUTO-READ-IN---------------------------------------------"<<std::endl;
-//            
-//            
-//            CHECK_STREAM_READ_BEGIN("vol_proj", in);
-//            
-//            cutk::shared_ptr<Spaces> proc_space = cutk::make_shared<Spaces>(comm);
-//            
-//            read_spaces(in, *proc_space, libmesh_comm_master, libmesh_comm_slave);
-//            
-//            if (!is_forwarding) {
-//                assert(!spaces[ownerrank]);
-//                spaces[ownerrank] = proc_space;
-//            } else {
-//                migrated_spaces[ownerrank].push_back(proc_space);
-//            }
-//            
-//            data.reserve(data.size() + 3000);
-//            //std::cout<<proc_space->dof_map(0)[0].global<<std::endl;
-//            
-//            int space_num = 0;
-//            long offset = 0;
-//            for(auto s : proc_space->spaces()) {
-//                if(s) {
-//                    for (int i=0; i<s->n_elem(); i++) {
-//                        data.push_back(Adapter(*s, i, offset + i, space_num) );
-//                        assert(!proc_space->dof_map(space_num)[i].empty());
-//                        data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
-//                    }
-//                    
-//                    offset += s->n_elem();
-//                    
-//                }
-//                
-//                ++space_num;
-//                
-//            }
-//            
-//            
-//            //    std::cout<<"------------------------------------AUTO-READ-OUT---------------------------------------------"<<std::endl;
-//            
-//            CHECK_STREAM_READ_END("vol_proj", in);
-//            
-//            
-//            
-//        };
-//
-//        
-//        auto write = [&local_spaces, &spaces, &comm]
-//        (
-//         const long ownerrank, const long recvrank,
-//         const std::vector<long>::const_iterator &begin,
-//         const std::vector<long>::const_iterator &end,
-//         const DataContainer &data,
-//         OutputStream &out) {
-//            
-//            CHECK_STREAM_WRITE_BEGIN("vol_proj", out);
-//            
-//            //       std::cout<<"------------------------------------AUTO-WRITE-IN-------------------------------------------"<<std::endl;
-//            
-//            if (ownerrank == comm.rank()) {
-//                
-//                write_element_selection(begin, end, *local_spaces, out);
-//                
-//                
-//            } else {
-//                
-//                auto it = spaces.find(ownerrank);
-//                assert(it != spaces.end());
-//                cutk::shared_ptr<Spaces> spaceptr = it->second;
-//                assert(std::distance(begin, end) > 0);
-//                write_element_selection(begin, end, *spaceptr, out);
-//                
-//            }
-//            
-//            //      std::cout<<"------------------------------------AUTO-WRITE-OUT-------------------------------------------"<<std::endl;
-//            //      comm.barrier();
-//            
-//            CHECK_STREAM_WRITE_END("vol_proj", out);
-//            
-//        };
-//
-//        
-//        long n_false_positives = 0, n_intersections = 0;
-//        
-//        //       std::cout<<"------------------------------------SEARCH-COMPUTE-------------------------------------------"<<std::endl;
-//        
-//        auto fun = [&n_false_positives, &n_intersections, &process_fun](
-//                                                                        
-//                                                                        Adapter &master, Adapter &slave) -> bool {
-//            
-//            bool ok = process_fun(master, slave);
-//            
-//            if(ok) {
-//                n_intersections++;
-//                
-//                return true;
-//            } else {
-//                
-//                n_false_positives++;
-//                return false;
-//            }
-//            return true;
-//            
-//        };
-//
-//        
-//
-//        cutk::Settings custom_settings = settings;
-//        custom_settings.set("disable_redistribution", cutk::Boolean(true));
-//        custom_settings.set("verbosity_level", cutk::Integer(2));
-//        
-//        
-//        cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, custom_settings);
-//        
-//        
-//        
-//        long n_total_candidates = n_intersections + n_false_positives;
-//        
-//        long n_collection[3] = {n_intersections, n_total_candidates, n_false_positives};
-//        
-//        
-//        comm.allReduce(n_collection, 3, express::MPISum());
-//        
-//        
-//        if (comm.isRoot()) {
-//            std::cout << "n_intersections: " << n_collection[0]
-//            << ", n_total_candidates: " 	 << n_collection[1]
-//            << ", n_false_positives: " 	     << n_collection[2] << std::endl;
-//        }
-//        
-//        return true;
-//    }
-//
-//
-//    template<int Dimensions>
-//    bool Assemble(
-//                  express::Communicator &comm,
-//                  const std::shared_ptr<MeshBase> &master,
-//                  const std::shared_ptr<MeshBase> &slave,
-//                  const std::shared_ptr<DofMap> &dof_master,
-//                  const std::shared_ptr<DofMap> &dof_slave,
-//                  const std::shared_ptr<const unsigned int> &_from_var_num,
-//                  const std::shared_ptr<const unsigned int> &_to_var_num,
-//                  DSMatrixd &B,
-//                  const cutk::Settings &settings,bool  use_biorth_)
-//    {
-//        std::shared_ptr<Spaces> local_fun_spaces = cutk::make_shared<Spaces>(master, slave, dof_master, dof_slave,_from_var_num,_to_var_num);
-//        
-//        libMesh::DenseMatrix<libMesh::Real> src_pts;
-//        libMesh::DenseMatrix<libMesh::Real> dest_pts;
-//        libMesh::DenseMatrix<libMesh::Real> intersection2;
-//        Polyhedron src_poly, dest_poly;
-//        Polyhedron  intersection3,temp_poly;
-//        Intersector isector;
-//        
-//        std::shared_ptr<MeshBase> master_space = master;
-//        std::shared_ptr<MeshBase> slave_space  = slave;
-//        
-//        
-//       // std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;
-//        libMesh::DenseMatrix<libMesh::Real> elemmat;
-//        libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
-//        
-//        std::shared_ptr<Transform> src_trans;
-//        std::shared_ptr<Transform> dest_trans;
-//        
-//        
-//        int skip_zeros = 1;
-//        
-//        
-//        libMesh::Real total_intersection_volume = 0.0;
-//        libMesh::Real local_element_matrices_sum = 0.0;
-//        
-//        
-//        
-//        express::MapSparseMatrix<double> mat_buffer(dof_slave->n_dofs(), dof_master->n_dofs());
-//        
-////        std::cout<<"dof_slave->n_dofs()"<<dof_slave->n_dofs()<<std::endl;
-////        std::cout<<"dof_master->n_dofs()"<<dof_master->n_dofs()<<std::endl;
-//        
-//        bool intersected = false;
-//        
-//        double element_setup_time = 0.0;
-//        double intersection_time = 0.0;
-//        double assembly_time     = 0.0;
-//        
-//        utopia::Chrono c;
-//        
-//        auto fun = [&](const ElementAdapter<Dimensions> &master,
-//                       const ElementAdapter<Dimensions> &slave) -> bool {
-//            
-//            c.start();
-//            
-//            long n_intersections = 0;
-//            
-//            bool pair_intersected = false;
-//            
-//            const auto &src  = master.space();
-//            
-//            const auto &dest = slave.space();
-//            
-//            const auto &src_mesh  = src;
-//            
-//            const auto &dest_mesh = dest;
-//            
-//            const int src_index  = master.element();
-//            
-//            const int dest_index = slave.element();
-//            
-//            auto &src_el  = *src_mesh.elem(src_index);
-//            
-//            auto &dest_el = *dest_mesh.elem(dest_index);
-//            
-//            const int dim = src_mesh.mesh_dimension();
-//            
-//            
-//            std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
-//            
-//            master_fe = libMesh::FEBase::build(src_mesh.mesh_dimension(),  dof_master->variable_type(0));
-//            slave_fe  = libMesh::FEBase::build(dest_mesh.mesh_dimension(), dof_slave->variable_type(0));
-//            
-//            QMortar composite_ir(dim);
-//            QMortar src_ir(dim);
-//            QMortar dest_ir(dim);
-//            
-//            
-//            const int order = order_for_l2_integral(dim, src_el, dof_master->variable(0).type().order , dest_el,dof_slave->variable(0).type().order);
-//            
-//            c.stop();
-//            element_setup_time += c.get_seconds();
-//            c.start();
-//            
-//            if(dim == 2)  {
-//                make_polygon(src_el,   src_pts);
-//                make_polygon(dest_el, dest_pts);
-//                
-//                if(intersect_2D(src_pts, dest_pts, intersection2)) {
-//                    total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
-//                    
-//                    const libMesh::Real weight=isector.polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
-//                    
-//                    make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
-//                    pair_intersected = true;
-//                    
-//                    src_trans  = std::make_shared<Transform2>(src_el);
-//                    dest_trans = std::make_shared<Transform2>(dest_el);
-//                    pair_intersected = true;
-//                }
-//            }
-//            else if(dim == 3) {
-//                make_polyhedron(src_el,  src_poly);
-//                make_polyhedron(dest_el, dest_poly);
-//                
-//                
-//                if(intersect_3D(src_poly, dest_poly, intersection3)) {
-//                    
-//                    total_intersection_volume += isector.p_mesh_volume_3(intersection3);
-//                    
-//                    const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
-//                    
-//                    make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
-//                    src_trans  = std::make_shared<Transform3>(src_el);
-//                    dest_trans = std::make_shared<Transform3>(dest_el);
-//                    pair_intersected = true;
-//                }
-//                
-//            } else {
-//                assert(false);
-//                return false;
-//            }
-//            
-//            c.stop();
-//            intersection_time += c.get_seconds();
-//            c.start();
-//            
-//            const auto &master_dofs = master.dof_map();
-//            const auto &slave_dofs  = slave.dof_map();
-//            
-//            if(pair_intersected) {
-//                
-//                
-//                transform_to_reference(*src_trans,  src_el.type(),  composite_ir,  src_ir);
-//                transform_to_reference(*dest_trans, dest_el.type(), composite_ir,  dest_ir);
-//                
-//                //            src.dof_map().dof_indices(&src_el,  master_dofs);
-//                //            dest.dof_map().dof_indices(&dest_el, slave_dofs);
-//                
-//                
-//       
-//                
-//                assert(!master_dofs.empty());
-//                assert(!slave_dofs.empty());
-//                //composite_ir.print_info();
-//                
-//                
-//                master_fe->attach_quadrature_rule(&src_ir);
-//                master_fe->reinit(&src_el);
-//                
-//                slave_fe->attach_quadrature_rule(&dest_ir);
-//                slave_fe->reinit(&dest_el);
-//                
-//                elemmat.zero();
-//                
-//                
-//                
-//                if(use_biorth_) {
-//                    mortar_assemble_biorth(*master_fe, *slave_fe, dest_el.type(), elemmat);
-//                    
-//                } else {
-//                    mortar_assemble(*master_fe, *slave_fe, elemmat);
-//                }
-//                
-//                // std::cout << "-----------------------------------------\n";
-//                // std::cout << src_index << ", " << dest_index << "\n";
-//                // elemmat.print(std::cout);
-//                // for(auto i : slave_dofs) {
-//                // 	std::cout << i << " ";
-//                // }
-//                // std::cout << "\n";
-//                
-//                // for(auto i : master_dofs) {
-//                // 	std::cout << i << " ";
-//                // }
-//                // std::cout << "\n";
-//                // std::cout << "-----------------------------------------\n";
-//                
-//                auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
-//                // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
-//                // dest_ir.print_info();
-//                
-//                local_element_matrices_sum += partial_sum;
-//                
-//                intersected = true;
-//                
-//                ++n_intersections;
-//                
-//                
-//                if(slave_dofs.size() != elemmat.m()) {
-//                    std::cout << slave_dofs.size() << " != " <<  elemmat.m() << std::endl;
-//                }
-//                
-//                assert(slave_dofs.size() == elemmat.m());
-//                assert(master_dofs.size() == elemmat.n());
-//                
-//               // std::cout<<"slave_dofs.size()"<<slave_dofs.size()<<std::endl;
-//               // std::cout<<"master_dofs.size()"<<master_dofs.size()<<std::endl;
-//                
-//                for(int i = 0; i < slave_dofs.size(); ++i) {
-//                    
-//                    const long dof_I = slave_dofs[i];
-//                    
-//                    for(int j = 0; j < master_dofs.size(); ++j) {
-//                        
-//                        const long dof_J = master_dofs[j];
-//                        
-//                        mat_buffer.add(dof_I, dof_J, elemmat(i, j));
-//                    }
-//                }
-//                
-//                return true;
-//                
-//            } else {
-//                
-//                return false;
-//            }
-//            
-//        };
-//
-//        
-//        
-//        // comm.barrier();
-//        // utopia::Chrono c2;
-//        // c2.start();
-//        
-//        
-//        if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, fun, settings, use_biorth_)) {
-//            std::cout << "n_intersections: false2" <<std::endl;
-//            return false;
-//        }
-//        
-//        // c2.stop();
-//        // std::cout << "Local mortars" << std::endl;
-//        // c2.describe(std::cout);
-//        
-//        
-//        // comm.barrier();
-//        // std::stringstream ss;
-//        // ss << "Setup_time: " << element_setup_time << "\n";
-//        // ss << "intersection_time: " << intersection_time << "\n";
-//        // ss << "assembly_time: " << assembly_time << std::endl;
-//        
-//        //express::SynchDescribe(ss.str(), comm, std::cout);
-//        // comm.barrier();
-//        // c2.start();
-//        
-//        std::cout << "n_intersections: " <<std::endl;
-//        
-//        double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };
-//        
-//        comm.allReduce(volumes, 2, express::MPISum());
-//        
-//        const processor_id_type master_proc_id  = master->processor_id();
-//        
-//        const dof_id_type n_dofs_on_proc_master = dof_master->n_local_dofs();
-//        
-//        const processor_id_type slave_proc_id   = slave->processor_id();
-//        
-//        const dof_id_type n_dofs_on_proc_slave  =dof_slave->n_local_dofs();
-//        
-//        const int n_dofs_on_proc_print  = dof_slave->n_local_dofs();
-//        
-//        if(comm.isRoot()) {
-//            std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
-//        }
-//        
-//        express::Array<express::SizeType>  ownershipRangesMaster(comm.size()+1);
-//        ownershipRangesMaster.allSet(0);
-//        
-//        express::Array<express::SizeType>  ownershipRangesSlave(comm.size()+1);
-//        ownershipRangesSlave.allSet(0);
-//        
-//        
-//        ownershipRangesMaster[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_master);
-//        
-//        ownershipRangesSlave[comm.rank()+1]  += static_cast<unsigned int>(n_dofs_on_proc_slave);
-//        
-//        
-//        
-//        comm.allReduce(&ownershipRangesMaster[0], ownershipRangesMaster.size(), express::MPISum());
-//        
-//        comm.allReduce(&ownershipRangesSlave[0],  ownershipRangesSlave.size(),  express::MPISum());
-//        
-//        
-//        std::partial_sum(ownershipRangesMaster.begin(), ownershipRangesMaster.end(), ownershipRangesMaster.begin());
-//        std::partial_sum(ownershipRangesSlave.begin(), ownershipRangesSlave.end(), ownershipRangesSlave.begin());
-//        
-//        
-//        if(comm.isRoot()) {
-//            std::cout <<ownershipRangesMaster << std::endl;
-//            std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
-//            
-//        }
-//        
-//        
-//        
-//        
-//        express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
-//        
-//        redist.apply(ownershipRangesSlave, mat_buffer, express::AddAssign<double>());
-//        
-//        assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
-//        
-//        express::RootDescribe("petsc assembly begin", comm, std::cout);
-//        
-//        SizeType  mMaxRowEntries = mat_buffer.maxEntriesXCol();
-//        
-//        comm.allReduce(&mMaxRowEntries, 1, express::MPIMax());
-//        
-//        const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
-//        const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
-//        
-//        B = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
-//        
-//        {
-//            utopia::Write<utopia::DSMatrixd> write(B);
-//            for (auto it = mat_buffer.iter(); it; ++it) {
-//                B.set(it.row(), it.col(), *it);
-//                
-//            }
-//        }
-//        
-//        express::RootDescribe("petsc assembly end", comm, std::cout);
-//        
-//        // c2.stop();
-//        // std::cout << "Global stuff\n";
-//        // c2.describe(std::cout);
-//        return true;
-//        
-//    }
-//
-//
-//
-//inline bool AssembleMOOSE(express::Communicator &comm,
-//                       const std::shared_ptr<MeshBase> &master,
-//                       const std::shared_ptr<MeshBase> &slave,
-//                       const std::shared_ptr<DofMap> &dof_master,
-//                       const std::shared_ptr<DofMap> &dof_slave,
-//                       const std::shared_ptr<const unsigned int> & _from_var_num,
-//                       const std::shared_ptr<const unsigned int> & _to_var_num,
-//                       bool  use_biorth_,
-//                       DSMatrixd &B)
-//    {
-//        cutk::Settings settings;
-//        
-//        if(master->mesh_dimension() == 2) {
-//            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-//            return utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B, settings,use_biorth_);
-//        }
-//        
-//        if(master->mesh_dimension() == 3) {
-//            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-//            return utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B, settings,use_biorth_);
-//        }
-//        
-//        assert(false && "Dimension not supported!");
-//        return false;
-//    }
-////
-////
-//////    bool AssembleMOOSE(express::Communicator &comm,
-//////                       const std::shared_ptr<MeshBase> &mesh_master,
-//////                       const std::shared_ptr<MeshBase> &mesh_slave,
-//////                       libMesh::Order master_order,
-//////                       libMesh::Order slave_order,
-//////                       DSMatrixd &B)
-//////    {
-//////        cutk::Settings settings;
-//////        
-//////    
-//////        
-//////        LibMeshFEContext<LinearImplicitSystem> master_context(mesh_master);
-//////        auto master_space = fe_space(LAGRANGE, master_order, master_context);
-//////        master_context.equation_systems.init();
-//////        
-//////        LibMeshFEContext<LinearImplicitSystem> slave_context(mesh_slave);
-//////        auto slave_space = fe_space(LAGRANGE, slave_order, slave_context);
-//////        slave_context.equation_systems.init();
-//////
-//////        
-//////        if(mesh_master->mesh_dimension() == 2) {
-//////            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-//////            return utopia::Assemble<2>(comm, make_ref(master_space), make_ref(slave_space), B, settings);
-//////        }
-//////        
-//////        if(mesh_master->mesh_dimension() == 3) {
-//////            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-//////            return utopia::Assemble<3>(comm, make_ref(master_space), make_ref(slave_space), B, settings);
-//////        }
-//////        
-//////        assert(false && "Dimension not supported!");
-//////        return false;
-//////    }
-//////    
-////
-////
-////
-////   
-////
 }
 
 #endif //LIBMESH_CUTLIBPP_ADAPTERS_HPP
