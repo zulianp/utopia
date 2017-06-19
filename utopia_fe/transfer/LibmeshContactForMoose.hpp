@@ -667,7 +667,7 @@ namespace utopia {
         
         UtopiaMesh(const std::shared_ptr<MeshBase> &master_slave,
                    const std::shared_ptr<libMesh::DofMap>  &original_dofmap,
-                   const std::shared_ptr<const unsigned int> &_var_num)
+                   const std::shared_ptr<const unsigned int> &_var_num,  const int tag_m,  const int tag_s)
         {
             
             utopiamesh_.reserve(1);
@@ -684,7 +684,7 @@ namespace utopia {
                              dof_maps_[0], var_type_[0], n_elements, var_number_[0],
                              subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0],
                              // face_set_id_global_[0],ownershipRangesFaceID_[0], 101, 102);
-                             face_set_id_global_[0],ownershipRangesFaceID_[0], 1, 2); //FIXME
+                             face_set_id_global_[0],ownershipRangesFaceID_[0], tag_m, tag_s); //FIXME
             
 //            copy_var_number(*original_dofmap, var_number_[0]);
             
@@ -884,7 +884,7 @@ namespace utopia {
                                             const int n_elements, std::vector<ElementDofMap> &variable_number,
                                             std::vector<ElementDofMap> &subdomain_id, std::vector<ElementDofMap> &side_set_id,
                                             std::vector<ElementDofMap> &side_set_id_tag, std::vector<ElementDofMap> &face_set_id_global,
-                                            express::Array<express::SizeType>  & ownershipRangesFaceID, int tag_1, int tag_2)
+                                            express::Array<express::SizeType>  & ownershipRangesFaceID, const int tag_1, const int tag_2)
         {
             
             auto &mesh = space;
@@ -1212,12 +1212,12 @@ namespace utopia {
     }
 
     template<class Iterator>
-    static void write_element_selection(const Iterator &begin, const Iterator &end, const UtopiaMesh &utopiamesh, cutk::OutputStream &os)
+    static void write_element_selection(const Iterator &begin, const Iterator &end, const UtopiaMesh &utopiamesh, cutk::OutputStream &os,  const int tag_m,  const int tag_s)
     {
         auto m = utopiamesh.utopiamesh()[0];
         
         // write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), os, 101, 102); 
-        write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), os, 1, 2); //FIXME
+        write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), os, tag_m, tag_s); //FIXME
     }
     
     
@@ -1358,7 +1358,7 @@ namespace utopia {
     }
     
     
-    static void read_spaces(cutk::InputStream &is, UtopiaMesh &utopiamesh, const libMesh::Parallel::Communicator &comm_mesh)
+    static void read_spaces(cutk::InputStream &is, UtopiaMesh &utopiamesh, const libMesh::Parallel::Communicator &comm_mesh,  const int tag_m,  const int tag_s)
     {
         
         bool has_master, has_slave;
@@ -1367,7 +1367,7 @@ namespace utopia {
         utopiamesh.utopiamesh().resize(1);
         
         // read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh, 101, 102);
-        read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh, 1, 2); //FIXME
+        read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh, tag_m, tag_s); //FIXME
         
         utopiamesh.set_must_destroy_attached(0,true);
         
@@ -1383,7 +1383,7 @@ namespace utopia {
                                 const cutk::Settings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
     {
         
-        std::shared_ptr<UtopiaMesh> local_fun_spaces_new = cutk::make_shared<UtopiaMesh>(master_slave, dof_map, _var_num);
+        std::shared_ptr<UtopiaMesh> local_fun_spaces_new = cutk::make_shared<UtopiaMesh>(master_slave, dof_map, _var_num, tag_1, tag_2);
         auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
         predicate->add(tag_1,tag_2);
         
@@ -1448,7 +1448,7 @@ namespace utopia {
         
         std::cout << "nElements = tree->memory().nData()_inside " << n_elements << std::endl;
         
-        std::shared_ptr<UtopiaMesh> local_spaces = make_shared<UtopiaMesh>(master_slave, dof_map, _var_num);
+        std::shared_ptr<UtopiaMesh> local_spaces = make_shared<UtopiaMesh>(master_slave, dof_map, _var_num, tag_1, tag_2);
         
         int jj=0;
         
@@ -1495,7 +1495,7 @@ namespace utopia {
         std::map<long, std::vector<cutk::shared_ptr<UtopiaMesh> > > migrated_meshes;
         
         
-        auto read = [&utopiamesh, &migrated_meshes, block_id, comm, &libmesh_comm_mesh, search_radius]
+        auto read = [&utopiamesh, &migrated_meshes, block_id, comm, &libmesh_comm_mesh, search_radius, tag_1, tag_2]
         (
          const long ownerrank,
          const long senderrank,
@@ -1510,7 +1510,7 @@ namespace utopia {
             
             //std::cout<<"I am in read space"<<std::endl;
             
-            read_spaces(in, *proc_space, libmesh_comm_mesh);
+            read_spaces(in, *proc_space, libmesh_comm_mesh, tag_1, tag_2);
             
             if (!is_forwarding) {
                 assert(!utopiamesh[ownerrank]);
@@ -1548,7 +1548,7 @@ namespace utopia {
         
         
         
-        auto write = [&local_spaces, &utopiamesh, &comm]
+        auto write = [&local_spaces, &utopiamesh, &comm, &tag_1, &tag_2]
         (
          const long ownerrank, const long recvrank,
          const std::vector<long>::const_iterator &begin,
@@ -1561,7 +1561,7 @@ namespace utopia {
             
             
             if (ownerrank == comm.rank()) {
-                write_element_selection(begin, end, *local_spaces, out);
+                write_element_selection(begin, end, *local_spaces, out, tag_1, tag_2);
                 
                 
             } else {
@@ -1569,7 +1569,7 @@ namespace utopia {
                 assert(it != utopiamesh.end());
                 cutk::shared_ptr<UtopiaMesh> spaceptr = it->second;
                 assert(std::distance(begin, end) > 0);
-                write_element_selection(begin, end, *spaceptr, out);
+                write_element_selection(begin, end, *spaceptr, out, tag_1, tag_2);
                 
             }
             
@@ -1641,7 +1641,7 @@ namespace utopia {
                          const cutk::Settings &settings,const libMesh::Real search_radius,
                          const int tag_1, const int tag_2)
     {
-        std::shared_ptr<UtopiaMesh> local_fun_spaces_new = cutk::make_shared<UtopiaMesh>(master_slave, dof_map, _var_num);
+        std::shared_ptr<UtopiaMesh> local_fun_spaces_new = cutk::make_shared<UtopiaMesh>(master_slave, dof_map, _var_num,tag_1,tag_2);
         
         libMesh::DenseMatrix<libMesh::Real> src_pts;
         libMesh::DenseMatrix<libMesh::Real> dest_pts;
