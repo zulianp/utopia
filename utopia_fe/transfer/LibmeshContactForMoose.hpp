@@ -60,6 +60,43 @@ namespace utopia {
         
         os << "\n";
     }
+
+
+    //Hacky but it is the only way with libmesh that we know of without having to clone the boundary info!!!!
+    void nodes_are_boundary_hack(
+        const libMesh::DenseMatrix<libMesh::Real> &mat, 
+        std::vector<bool> &rows, 
+        std::vector<bool> &cols)
+    {
+
+        rows.resize(mat.m()); 
+        cols.resize(mat.n()); 
+
+        std::fill(rows.begin(), rows.end(), 0);
+        std::fill(cols.begin(), cols.end(), 0);
+
+        std::vector<double> sum_rows(mat.m(), 0.);
+        std::vector<double> sum_cols(mat.n(), 0.);
+
+        for(int i = 0; i < sum_rows.size(); ++i) {
+            for(int j = 0; j < sum_cols.size(); ++j) {
+                sum_rows[i] += std::abs(mat(i, j));
+                sum_cols[j] += std::abs(mat(i, j));
+            }
+        }
+        
+        for(int i = 0; i < sum_rows.size(); ++i) {
+            if(std::abs(sum_rows[i]) > 1e-16) {
+                rows[i] = true;
+            }
+        }
+
+        for(int i = 0; i < sum_cols.size(); ++i) {
+            if(std::abs(sum_cols[i]) > 1e-16) {
+                cols[i] = true;
+            }
+        } 
+    }
     
     static std::ostream &logger()
     {
@@ -2042,70 +2079,13 @@ namespace utopia {
                         int n_nodes_face_dest = side_dest->n_nodes();
                         
                         auto side_src = src_el.build_side_ptr(0);
-                        
+
                         int n_nodes_face_src = side_src->n_nodes();
                         
-                        //std::cout<<"addendum"<<addendum<<std::endl;
-                        
-                        std::vector<bool> node_is_boundary_dest(elemmat.m(), false);
-                        std::vector<bool> node_is_boundary_src(elemmat.n(), false);
-                        
-                        
-                        std::vector<double> sum_rows(elemmat.m(), 0.);
-                        std::vector<double> sum_cols(elemmat.n(), 0.);
-                        
-                        
-                        for(int i = 0; i < sum_rows.size(); ++i) {
-                            for(int j = 0; j < sum_cols.size(); ++j) {
-                                sum_rows[i] += std::abs(elemmat(i, j));
-                                sum_cols[j] += std::abs(elemmat(i, j));
-                            }
-                        }
-                        
-                        
-                        //Hacky but it is the only way with libmesh that we know of!!!!
-                        for(int i = 0; i < sum_rows.size(); ++i) {
-                            if(std::abs(sum_rows[i]) > 1e-16) {
-                                node_is_boundary_dest[i] = true;
-                            }
-                        }
-                        //                        int kk=0;
-                        //                        for(int j = 0; j < dest_el.n_sides(); ++j){
-                        //                            //auto side_dest=build_side_ptr(j);
-                        //                            for(int i = 0; i < side_dest->n_nodes(); ++i) {
-                        //                                if(dest_mesh.get_boundary_info().has_boundary_id(&dest_el,j,tag_2)) {
-                        //                                    node_is_boundary_dest[kk] = true;
-                        //                                    kk++;
-                        //                                }
-                        //                            }
-                        //                        }
-                        //
-                        //                        std::cout<<"query nodes"<<kk<<std::endl;
-                        //                        int kkk=0;
-                        //                        for(int j = 0; j < src_el.n_sides(); ++j){
-                        //                            //auto side_dest=build_side_ptr(j);
-                        //                            for(int i = 0; i < side_src->n_nodes(); ++i) {
-                        //                                if(src_mesh.get_boundary_info().has_boundary_id(&src_el,j,tag_1)) {
-                        //                                    node_is_boundary_src[kkk] = true;
-                        //                                    kkk++;
-                        //                                }
-                        //                            }
-                        //                        }
-                        
-                        
-                        //Hacky but it is the only way with libmesh that we know of!!!!
-                        for(int i = 0; i < sum_cols.size(); ++i) {
-                            if(std::abs(sum_cols[i]) > 1e-16) {
-                                node_is_boundary_src[i] = true;
-                            }
-                        }
-                        
-                        
-                        //                        build_boundary_query(dest_el, *side_dest, 1, node_is_boundary_dest);
-                        //
-                        
-                        //                        build_boundary_query(src_el, *side_src, 1, node_is_boundary_src);
-                        
+                        std::vector<bool> node_is_boundary_dest;
+                        std::vector<bool> node_is_boundary_src;
+                        nodes_are_boundary_hack(elemmat, node_is_boundary_dest, node_is_boundary_src);
+                                                
                         //plot_lines(dim_src,  side_src->n_nodes(), &side_polygon_1.get_values()[0] , "master/" + std::to_string(master_face_id[0]));
                         //plot_lines(dim_sla, side_dest->n_nodes(), &side_polygon_2.get_values()[0] , "slave/" + std::to_string(slave_face_id[0]));
                         

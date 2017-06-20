@@ -30,6 +30,70 @@ using namespace libMesh;
 
 namespace utopia {
 
+	void convert_normal_matrix_to_vector(const DSMatrixd &mat, DVectord &vec)
+	{
+		auto s = local_size(mat);
+
+		vec = local_zeros(s.get(0));
+		DVectord norm_squared = local_zeros(s.get(0) / s.get(1));
+
+		{
+		    Write<DVectord> w_ns(norm_squared);
+		    each_read(mat, [&](const SizeType i, const SizeType j, const double value){
+		        norm_squared.add(i, value * value);
+		    });
+		}
+
+		norm_squared = sqrt(norm_squared);
+
+		{
+		    Write<DVectord> w(vec);
+		    Read<DVectord> r_ns(norm_squared);
+		    
+		    each_read(mat, [&](const SizeType i, const SizeType j, const double value){
+		        vec.set(i + j, value/norm_squared.get(i));
+		    });
+		}
+	}
+
+	void plot_normal_field(const LibMeshFEContext<LinearImplicitSystem> &context, const DVectord &vec)
+	{
+
+
+			using namespace libMesh;
+			LibMeshBackend backend;
+
+			auto e_begin = context.mesh->active_local_elements_begin();
+			auto e_end   = context.mesh->active_local_elements_end();
+
+			std::vector<dof_id_type> dof_indices;
+			auto &dof_map = context.system.get_dof_map();
+			int mesh_dim = context.mesh->mesh_dimension();
+
+			DenseVector<Real> el_vec;
+			for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+				auto &e = **e_it;
+
+				dof_map.dof_indices(*e_it, dof_indices, 0);
+
+				std::vector<double> normals(dof_indices.size() * mesh_dim, 0.);
+
+				for(int i = 0; i < mesh_dim; ++i) {
+					dof_map.dof_indices(*e_it, dof_indices, i);
+
+					get_vector(vec, dof_indices, el_vec);
+
+					for(int j = 0; j < dof_indices.size(); ++j) {
+						normals[j * mesh_dim + i] = el_vec(j);
+					}
+				}
+				
+				// add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
+				// add_vector(el_vec, dof_indices_test, rhs);
+			}
+
+	}
+
 
 	void mortar_transfer_aux(const std::shared_ptr<Mesh> &mesh_master, 
 		const std::shared_ptr<Mesh> &mesh_slave,
@@ -299,7 +363,7 @@ namespace utopia {
 		LibMeshFEContext<LinearImplicitSystem> master_slave_context(master_slave);
 		auto master_slave_space   = fe_space(LAGRANGE, order_elem, master_slave_context);
 		auto master_slave_space_2 = fe_space(LAGRANGE, order_elem, master_slave_context);
-		auto master_slave_space_3 = fe_space(LAGRANGE, order_elem, master_slave_context);
+		// auto master_slave_space_3 = fe_space(LAGRANGE, order_elem, master_slave_context);
 
 		master_slave_context.equation_systems.init();
 
@@ -325,9 +389,13 @@ namespace utopia {
         
         unsigned int variable_number = 0;
         
-        // MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals, is_contact_node, 0.01, 102, 101);
-        MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals, is_contact_node, 0.1, 1, 2);
+        MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals, is_contact_node, 0.01, 102, 101);
+        // MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals, is_contact_node, 0.1, 1, 2);
 
+        DVectord normals_vec;
+        convert_normal_matrix_to_vector(normals, normals_vec);
+
+        // disp(normals_vec);
         
         DVectord v = local_zeros(local_size(matrix).get(1));
 //        {
@@ -373,7 +441,7 @@ namespace utopia {
 //        
         T += local_identity(local_size(d).get(0), local_size(d).get(0));
         
-        
+        write("O_" + std::to_string(expressComm.size()) + ".m", orthogonal_trafos);
         write("B_" + std::to_string(expressComm.size()) + ".m", matrix);
         write("d_" + std::to_string(expressComm.size()) + ".m", d);
         write("g_" + std::to_string(expressComm.size()) + ".m", gap);
@@ -414,15 +482,7 @@ namespace utopia {
         // convert(mv, *master_slave_context.system.solution);
 
 
-        DVectord normals_vec = local_zeros(local_size(is_contact_node));
 
-        {
-            Write<DVectord> w(normals_vec);
-            
-            each_read(normals, [&](const SizeType i, const SizeType j, const double value){
-                normals_vec.set(i + j, value);
-            });
-        }
 
         convert(is_contact_node, *master_slave_context.system.solution);
         ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("is_c_node.e", master_slave_context.equation_systems);
