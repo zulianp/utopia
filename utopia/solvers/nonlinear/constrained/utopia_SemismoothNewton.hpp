@@ -45,15 +45,15 @@ namespace utopia
         {
             using namespace utopia;
 
-            SizeType N = x_new.size().get(0);
+            SizeType local_N = local_size(x_new).get(0);
 
             Scalar c = 1;
             SizeType iterations = 0;
             bool converged = false; 
 
-            Vector lambda = zeros(N);
-            Vector active = zeros(N);
-            Vector Ginvg  = zeros(N);
+            Vector lambda = local_zeros(local_N);
+            Vector active = local_zeros(local_N);
+            Vector Ginvg  = local_zeros(local_N);
             Vector x_old = x_new;
 
             Vector d, prev_active;
@@ -63,7 +63,7 @@ namespace utopia
             Matrix Ic;
 
             //G can be changed to something else
-            Matrix G = identity(N, N);
+            Matrix G = local_identity(local_N, local_N);
 
             Matrix M;
 
@@ -80,11 +80,11 @@ namespace utopia
                 d = lambda + c * (G * x_new - g);
 
                 if(is_sparse<Matrix>::value) {
-                    Ac = sparse(N, N, 1);
-                    Ic = sparse(N, N, 1);
+                    Ac = local_sparse(local_N, local_N, 1);
+                    Ic = local_sparse(local_N, local_N, 1);
                 } else {
-                    Ac = zeros(N, N);
-                    Ic = zeros(N, N);
+                    Ac = local_zeros({local_N, local_N});
+                    Ic = local_zeros({local_N, local_N});
                 }
                
                 {
