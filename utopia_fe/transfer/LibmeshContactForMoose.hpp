@@ -152,6 +152,15 @@ namespace utopia {
                 weights.resize(4, 4);
                 weights.zero();
 
+#ifndef NDEBUG
+                int n_bound = 0;
+                for(std::size_t i = 0; i < is_boundary.size(); ++i) {
+                    n_bound += is_boundary[i];
+                }
+
+                assert(n_bound == 3);
+#endif //NDEBUG                
+
                 for(std::size_t i = 0; i < is_boundary.size(); ++i) {
                     if(!is_boundary[i]) { continue; }
 

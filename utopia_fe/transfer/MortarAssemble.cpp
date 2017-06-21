@@ -2021,6 +2021,7 @@ void mortar_normal_and_gap_assemble_weighted_biorth(
 
 
 	DenseVector<Real> p(dim);
+	// DenseMatrix<Real> v(dim);
 
 	for(uint i = 0; i < n_test; ++i) {
 		for(uint qp = 0; qp < n_qp; ++qp) {
@@ -2035,6 +2036,10 @@ void mortar_normal_and_gap_assemble_weighted_biorth(
 			Real isect = 0;
 			isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal_v[0], &plane_normal_v[0], plane_offset, &isect);
 			// assert(isect > 0);
+
+			// v.get_values() = surf_normal_v;
+			// v *= isect;
+			// quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
 
 			auto biorth_test = weights(i, 0) * test[0][qp];
 
