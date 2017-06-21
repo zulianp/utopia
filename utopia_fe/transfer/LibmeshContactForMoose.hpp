@@ -155,7 +155,7 @@ namespace utopia {
                 for(std::size_t i = 0; i < is_boundary.size(); ++i) {
                     if(!is_boundary[i]) { continue; }
 
-                    weights(i, i) = 4;
+                    weights(i, i) = 3;
 
                     for(std::size_t j = 0; j < is_boundary.size(); ++j) {
                         if(is_boundary[j] && i != j) {
