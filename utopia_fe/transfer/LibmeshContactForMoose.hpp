@@ -97,6 +97,87 @@ namespace utopia {
             }
         } 
     }
+
+
+
+
+    static void assemble_trace_biorth_weights_from_space(const ElemType &type,
+                                                         const std::vector<bool> &is_boundary,
+                                                         libMesh::DenseMatrix<libMesh::Real> &weights)
+    {
+        switch(type) {
+            case TRI3: 
+            {
+                weights.resize(3, 3);
+                weights.zero();
+
+                for(std::size_t i = 0; i < is_boundary.size(); ++i) {
+                    if(!is_boundary[i]) { continue; }
+
+                    weights(i, i) = 2;
+
+                    for(std::size_t j = 0; j < is_boundary.size(); ++j) {
+                        if(is_boundary[j] && i != j) {
+                            weights(i, j) = -1;
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case QUAD4:
+            {
+
+                weights.resize(4, 4);
+                weights.zero();
+
+                for(std::size_t i = 0; i < is_boundary.size(); ++i) {
+                    if(!is_boundary[i]) { continue; }
+
+                    weights(i, i) = 2;
+
+                    for(std::size_t j = 0; j < is_boundary.size(); ++j) {
+                        if(is_boundary[j] && i != j) {
+                            weights(i, j) = -1;
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case TET4:
+            {
+                weights.resize(4, 4);
+                weights.zero();
+
+                for(std::size_t i = 0; i < is_boundary.size(); ++i) {
+                    if(!is_boundary[i]) { continue; }
+
+                    weights(i, i) = 4;
+
+                    for(std::size_t j = 0; j < is_boundary.size(); ++j) {
+                        if(is_boundary[j]) {
+                            weights(i, j) = -1;
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            default: 
+            {
+                assert(false && "implement me!");
+                std::cerr << "Missing implementation for ElemType " << type << std::endl;
+                break;
+            }
+        }
+    }
+    
+
+
     
     static std::ostream &logger()
     {
@@ -1417,7 +1498,10 @@ namespace utopia {
                                 const std::shared_ptr<DofMap> &dof_map,
                                 const std::shared_ptr<const unsigned int> &_var_num,
                                 Fun process_fun,
-                                const cutk::Settings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
+                                const cutk::Settings &settings, 
+                                const libMesh::Real search_radius, 
+                                const int tag_1, const int tag_2,
+                                const bool use_biorth)
     {
         
         std::shared_ptr<UtopiaMesh> local_fun_spaces_new = cutk::make_shared<UtopiaMesh>(master_slave, dof_map, _var_num, tag_1, tag_2);
@@ -1675,8 +1759,10 @@ namespace utopia {
                          DVectord &gap,
                          DSMatrixd &normals,
                          DVectord &is_contact_node,
-                         const cutk::Settings &settings,const libMesh::Real search_radius,
-                         const int tag_1, const int tag_2)
+                         const cutk::Settings &settings,
+                         const libMesh::Real search_radius,
+                         const int tag_1, const int tag_2,
+                         const bool use_biorth)
     {
         std::shared_ptr<UtopiaMesh> local_fun_spaces_new = cutk::make_shared<UtopiaMesh>(master_slave, dof_map, _var_num,tag_1,tag_2);
         
@@ -1775,6 +1861,10 @@ namespace utopia {
         std::cout<<"*********** master_slave->dof_map().n_dofs() = "<<  dof_map->n_dofs() <<std::endl;
         
         bool intersected = false;
+
+
+
+        DenseMatrix<Real> biorth_weights;
         
         auto fun = [&](const SurfaceElementAdapter<Dimensions> &master,
                        const SurfaceElementAdapter<Dimensions> &slave) -> bool {
@@ -2004,21 +2094,47 @@ namespace utopia {
                         elemmat.zero();
                         
                         mortar_assemble(*master_fe, *slave_fe, elemmat);
+
+                        std::vector<bool> node_is_boundary_dest;
+                        std::vector<bool> node_is_boundary_src;
+                       
+                        nodes_are_boundary_hack(elemmat, node_is_boundary_dest, node_is_boundary_src);
+
+                        if(use_biorth) {
+                            assemble_trace_biorth_weights_from_space((*master_slave->active_local_elements_begin())->type(), node_is_boundary_dest, biorth_weights);
+                            // biorth_weights.print();
+                            elemmat.zero();
+
+                            mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
+
+                            // std::cout << "hello" << std::endl; 
+                        }
                         
                         
                         const libMesh::Point pp = side_ptr_1->point(0);
                         const Real plane_offset = n1.contract(pp);
                         
-                        mortar_normal_and_gap_assemble(
-                                                       dim,
-                                                       *slave_fe,
-                                                       n2,
-                                                       n1,
-                                                       plane_offset,
-                                                       surface_assemble->normals,
-                                                       surface_assemble->gap);
-                        
-                        
+
+                        if(use_biorth) {
+                            mortar_normal_and_gap_assemble_weighted_biorth(
+                                *slave_fe, 
+                                dim,
+                                n2,
+                                n1,
+                                plane_offset,
+                                biorth_weights,
+                                surface_assemble->normals,
+                                surface_assemble->gap);
+                        } else {
+                            mortar_normal_and_gap_assemble(
+                                                           dim,
+                                                           *slave_fe,
+                                                           n2,
+                                                           n1,
+                                                           plane_offset,
+                                                           surface_assemble->normals,
+                                                           surface_assemble->gap);
+                        }
                         //////////////////////////////////////////////////////////////////////////////////////
                         
                         // use boundary info instead
@@ -2082,9 +2198,7 @@ namespace utopia {
 
                         int n_nodes_face_src = side_src->n_nodes();
                         
-                        std::vector<bool> node_is_boundary_dest;
-                        std::vector<bool> node_is_boundary_src;
-                        nodes_are_boundary_hack(elemmat, node_is_boundary_dest, node_is_boundary_src);
+                 
                                                 
                         //plot_lines(dim_src,  side_src->n_nodes(), &side_polygon_1.get_values()[0] , "master/" + std::to_string(master_face_id[0]));
                         //plot_lines(dim_sla, side_dest->n_nodes(), &side_polygon_2.get_values()[0] , "slave/" + std::to_string(slave_face_id[0]));
@@ -2196,7 +2310,7 @@ namespace utopia {
         
         
         
-        if(!SurfaceAssemble<Dimensions>(comm, master_slave, dof_map, _var_num, fun, settings, search_radius, tag_1, tag_2)) {
+        if(!SurfaceAssemble<Dimensions>(comm, master_slave, dof_map, _var_num, fun, settings, search_radius, tag_1, tag_2, use_biorth)) {
             return false;
         }
         
@@ -2606,16 +2720,17 @@ namespace utopia {
                                   const std::shared_ptr<const unsigned int> &_var_num,
                                   DSMatrixd &B,DSMatrixd &orthogonal_trafos,DVectord &gap, DSMatrixd &normals,
                                   DVectord &is_contact_node,
-                                  const libMesh::Real search_radius, const int tag_1, const int tag_2)
+                                  const libMesh::Real search_radius, const int tag_1, const int tag_2,
+                                  const bool use_biorth = true)
     {
         cutk::Settings settings;        
         if(mesh->mesh_dimension() == 2) {
-            return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tag_1, tag_2);
+            return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tag_1, tag_2, use_biorth);
         }
         
         
         if(mesh->mesh_dimension() == 3) {
-            return utopia::SurfaceAssemble<3>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals,  is_contact_node, settings, search_radius, tag_1, tag_2);
+            return utopia::SurfaceAssemble<3>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals,  is_contact_node, settings, search_radius, tag_1, tag_2, use_biorth);
         }
         
         assert(false && "Dimension not supported!");

@@ -1976,6 +1976,15 @@ void mortar_normal_and_gap_assemble_weighted_biorth(
 
 }
 
+template<typename T>
+void convert_point_to_vector(const int dim, const libMesh::Point &point, std::vector<T> &point_vec)
+{
+	point_vec.resize(dim);
+	for(int i = 0; i < dim; ++i) {
+		point_vec[i] = point(i);
+	}
+}
+
 void mortar_normal_and_gap_assemble_weighted_biorth(
 	const libMesh::FEBase &test_fe, 
 	const int dim,
@@ -1986,7 +1995,61 @@ void mortar_normal_and_gap_assemble_weighted_biorth(
 	libMesh::DenseMatrix<libMesh::Real> &normals, 
 	libMesh::DenseVector<libMesh::Real> &gap)
 {
-	assert(false && "implement me");
+	using namespace libMesh;
+
+	Intersector isector;
+
+	if(normals.m() != test_fe.get_phi().size() || dim != normals.n()) {
+		normals.resize(test_fe.get_phi().size(), dim);
+		normals.zero();
+		gap.resize(test_fe.get_phi().size());
+		gap.zero();
+	}
+
+	const auto &test   = test_fe.get_phi();
+	// const auto &grad   = test_fe.get_dphi();
+	const auto &point  = test_fe.get_xyz();
+	const auto &JxW    = test_fe.get_JxW();
+
+	const uint n_test  = test.size();
+	const uint n_qp    = test[0].size();
+
+
+	std::vector<Real> surf_normal_v, plane_normal_v;
+	convert_point_to_vector(dim, surf_normal, surf_normal_v);
+	convert_point_to_vector(dim, plane_normal, plane_normal_v);
+
+
+	DenseVector<Real> p(dim);
+
+	for(uint i = 0; i < n_test; ++i) {
+		for(uint qp = 0; qp < n_qp; ++qp) {
+
+			p(0) = point[qp](0);
+			p(1) = point[qp](1);
+
+			if(dim > 2) {
+				p(2) = point[qp](2);
+			}
+
+			Real isect = 0;
+			isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal_v[0], &plane_normal_v[0], plane_offset, &isect);
+			// assert(isect > 0);
+
+			auto biorth_test = weights(i, 0) * test[0][qp];
+
+			for(uint k = 1; k < n_test; ++k) {
+				biorth_test += weights(i, k)  * test[k][qp];
+			}
+
+
+			gap(i) += biorth_test * isect * JxW[qp];
+
+			for(uint d = 0; d < dim; ++d) {
+				normals(i, d) += biorth_test * surf_normal(d) * JxW[qp];
+			}
+		}
+	}
 }
 
 }
