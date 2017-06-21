@@ -63,7 +63,7 @@ namespace utopia {
 
 
     //Hacky but it is the only way with libmesh that we know of without having to clone the boundary info!!!!
-    void nodes_are_boundary_hack(
+    inline static void nodes_are_boundary_hack(
         const libMesh::DenseMatrix<libMesh::Real> &mat, 
         std::vector<bool> &rows, 
         std::vector<bool> &cols)
@@ -101,7 +101,7 @@ namespace utopia {
 
 
 
-    static void assemble_trace_biorth_weights_from_space(const ElemType &type,
+    inline static void assemble_trace_biorth_weights_from_space(const ElemType &type,
                                                          const std::vector<bool> &is_boundary,
                                                          libMesh::DenseMatrix<libMesh::Real> &weights)
     {
