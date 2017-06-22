@@ -77,25 +77,48 @@ namespace utopia {
 
         std::vector<double> sum_rows(mat.m(), 0.);
         std::vector<double> sum_cols(mat.n(), 0.);
+        double sum_all = 0.0;
+        double vol_check = 0.0;
+
+#ifndef NDEBUG
+        std::vector<double> sum_rows_with_sign(mat.m(), 0.);
+
+#endif //NDEBUG
 
         for(int i = 0; i < sum_rows.size(); ++i) {
             for(int j = 0; j < sum_cols.size(); ++j) {
-                sum_rows[i] += std::abs(mat(i, j));
-                sum_cols[j] += std::abs(mat(i, j));
+                const double abs_ij = std::abs(mat(i, j)); 
+                sum_rows[i] += abs_ij;
+                sum_cols[j] += abs_ij;
+                sum_all += abs_ij;
+
+                vol_check += mat(i, j);
+
+#ifndef NDEBUG
+                sum_rows_with_sign[i] += mat(i, j);
+#endif //NDEBUG               
             }
         }
         
         for(int i = 0; i < sum_rows.size(); ++i) {
-            if(std::abs(sum_rows[i]) > 1e-16) {
+            if(std::abs(sum_rows[i]/sum_all) > 1e-8) {
                 rows[i] = true;
             }
         }
 
         for(int i = 0; i < sum_cols.size(); ++i) {
-            if(std::abs(sum_cols[i]) > 1e-16) {
+            if(std::abs(sum_cols[i]/sum_all) > 1e-8) {
                 cols[i] = true;
             }
         } 
+
+
+        assert(vol_check > 0);
+#ifndef NDEBUG
+        for(int i = 0; i < sum_rows_with_sign.size(); ++i) {
+            assert(sum_rows_with_sign[i]/sum_all >= -1e-8);
+        }
+#endif //NDEBUG        
     }
 
 
@@ -110,6 +133,15 @@ namespace utopia {
             {
                 weights.resize(3, 3);
                 weights.zero();
+
+#ifndef NDEBUG
+                int n_bound = 0;
+                for(std::size_t i = 0; i < is_boundary.size(); ++i) {
+                    n_bound += is_boundary[i];
+                }
+
+                assert(n_bound == 2);
+#endif //NDEBUG   
 
                 for(std::size_t i = 0; i < is_boundary.size(); ++i) {
                     if(!is_boundary[i]) { continue; }
@@ -127,10 +159,19 @@ namespace utopia {
             }
 
             case QUAD4:
+            case QUADSHELL4:
             {
 
                 weights.resize(4, 4);
                 weights.zero();
+#ifndef NDEBUG
+                int n_bound = 0;
+                for(std::size_t i = 0; i < is_boundary.size(); ++i) {
+                    n_bound += is_boundary[i];
+                }
+
+                assert(n_bound == 2);
+#endif //NDEBUG   
 
                 for(std::size_t i = 0; i < is_boundary.size(); ++i) {
                     if(!is_boundary[i]) { continue; }
@@ -178,8 +219,8 @@ namespace utopia {
 
             default: 
             {
-                assert(false && "implement me!");
                 std::cerr << "Missing implementation for ElemType " << type << std::endl;
+                assert(false && "implement me!");
                 break;
             }
         }
@@ -1962,6 +2003,8 @@ namespace utopia {
                 
                 auto side_ptr_1 = src_el.build_side_ptr(side_1);
                 compute_side_normal(dim_src, *side_ptr_1, n1);
+
+                fix_normal_orientation(src_el, side_1, n1);
                 
                 box_1.reset();
                 enlarge_box_from_side(dim_src, *side_ptr_1, box_1, search_radius);
@@ -1982,6 +2025,8 @@ namespace utopia {
                     auto side_ptr_2 = dest_el.build_side_ptr(side_2);
                     
                     compute_side_normal(dim_sla, *side_ptr_2, n2);
+
+                    fix_normal_orientation(dest_el, side_2, n2);
                     
                     const Real cos_angle = n1.contract(n2);
                     
@@ -1999,7 +2044,7 @@ namespace utopia {
                     
                     
                     bool pair_intersected = false;
-                    if(dim_sla==2){
+                    if(dim_sla == 2){
                         make_polygon(*side_ptr_2, side_polygon_2);
                         
                         //plot_lines(2, 2, &side_polygon_1.get_values()[0], "in_master/" + std::to_string(master_facq) + "_" + std::to_string(cos_angle));
@@ -2049,6 +2094,10 @@ namespace utopia {
                         const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
                         const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
                         const Scalar weight 	= area/area_slave;
+
+                        assert(area_slave > 0);
+                        assert(area > 0);
+                        assert(weight > 0);
                         
                         const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
                         
@@ -2110,11 +2159,29 @@ namespace utopia {
                         nodes_are_boundary_hack(elemmat, node_is_boundary_dest, node_is_boundary_src);
 
                         if(use_biorth) {
-                            assemble_trace_biorth_weights_from_space((*master_slave->active_local_elements_begin())->type(), node_is_boundary_dest, biorth_weights);
+                            assemble_trace_biorth_weights_from_space((*master_slave->active_local_elements_begin())->type(), 
+                                                                      node_is_boundary_dest, 
+                                                                      biorth_weights);
                             // biorth_weights.print();
                             elemmat.zero();
 
                             mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
+
+// #ifndef NDEBUG
+//                             std::vector<double> sum_rows_with_sign(elemmat.m(), 0.);
+//                             double total_abs = 0.0;
+//                             for(int i = 0; i < elemmat.m(); ++i) {
+//                                 for(int j = 0; j < elemmat.n(); ++j) {
+//                                     sum_rows_with_sign[i] += elemmat(i, j);
+//                                     total_abs += std::abs(elemmat(i, j));
+//                                 }
+//                             }
+
+//                             for(int i = 0; i < sum_rows_with_sign.size(); ++i) {
+//                                 const double rel_val = sum_rows_with_sign[i]/total_abs;
+//                                 assert(rel_val >= -1e-8);
+//                             }
+// #endif //NDEBUG                            
 
                             // std::cout << "hello" << std::endl; 
                         }
@@ -2253,10 +2320,12 @@ namespace utopia {
                         
                         
                         auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
-                        
+                        assert(partial_sum > 0);
                         // const Scalar local_mat_sum = std::accumulate(surface_assemble->coupling.get_values().begin(), surface_assemble->coupling.get_values().end(), libMesh::Real(0.0));
                         
                         local_element_matrices_sum += partial_sum;
+
+
                         
                         assert(slave_dofs.size() == elemmat.m());
                         assert(master_dofs.size() == elemmat.n());
@@ -2439,6 +2508,7 @@ namespace utopia {
         // rel_area_buff.save("rA.txt");
         
         if(!removeRow.isNull()) {
+            long n_remove_rows = 0;
             removeRow.allSet(false);
             
             {
@@ -2452,10 +2522,13 @@ namespace utopia {
                             const SizeType index  = nodeId - ownershipRangesBTilde[comm.rank()];
                             assert(index < removeRow.size());
                             removeRow[index] = true;
+                            ++n_remove_rows;
                         }
                     }
                 }
             }
+
+            std::cout << "n_remove_rows: " <<n_remove_rows << std::endl;
         }
         
         express::RootDescribe("petsc mat_buffer assembly begin", comm, std::cout);

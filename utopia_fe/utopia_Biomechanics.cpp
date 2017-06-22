@@ -321,15 +321,16 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	// ContactSimParams params = multi_contact_3D_2;
 	// ContactSimParams params = hip_femure_contact; static const int coords = 2;
 	ContactSimParams params = implant_contact; static const int coords = 1;
+	// ContactSimParams params = contact_cubes; static const int coords = 1;
 
 
 	auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
-	// predicate->add(101, 102);
+	predicate->add(101, 102);
 
-	predicate->add(102, 101);
-	predicate->add(103, 102);
-	predicate->add(104, 103);
-	predicate->add(105, 10);
+	// predicate->add(102, 101);
+	// predicate->add(103, 102);
+	// predicate->add(104, 103);
+	// predicate->add(105, 10);
 
 	auto mesh = make_shared<Mesh>(init.comm());	
  	// mesh->read("/Users/patrick/Downloads/ASCII_bone/all_sidesets.e");

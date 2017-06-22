@@ -409,7 +409,19 @@ namespace utopia {
 		
 		unsigned int variable_number = 0;
 		
-		MooseSurfaceAssemble(expressComm, (master_slave), utopia::make_ref(master_slave_context.system.get_dof_map()), utopia::make_ref(variable_number), matrix, orthogonal_trafos, gap, normals, is_contact_node, 1., 102, 101, false);
+		MooseSurfaceAssemble(expressComm, (master_slave), 
+							 utopia::make_ref(master_slave_context.system.get_dof_map()), 
+							 utopia::make_ref(variable_number), 
+							 matrix, 
+							 orthogonal_trafos, 
+							 gap, 
+							 normals, 
+							 is_contact_node, 
+							 1., 
+							 102, 
+							 101, 
+							 true);
+							 // false);
 
 		
 		DVectord v = local_zeros(local_size(matrix).get(1));
@@ -426,7 +438,11 @@ namespace utopia {
 			Write<DVectord> w_(d_inv);
 			
 			each_read(d, [&d_inv](const SizeType i, const double value) {
-				if(std::abs(value) > 1e-16) {
+				if(value < -1e-8) {
+					std::cerr << "negative el for " << i << std::endl;
+				}
+
+				if(std::abs(value) > 1e-15) {
 					d_inv.set(i, 1./value);
 				} else {
 					d_inv.set(i, 1.);
@@ -440,7 +456,7 @@ namespace utopia {
 		
 		DVectord D_inv_gap = D_inv * gap;
 
-		
+		write("T_" + std::to_string(expressComm.size()) + ".m", T);
 		//
 		T += local_identity(local_size(d).get(0), local_size(d).get(0));
 		
@@ -448,7 +464,7 @@ namespace utopia {
 		write("B_" + std::to_string(expressComm.size()) + ".m", matrix);
 		write("d_" + std::to_string(expressComm.size()) + ".m", d);
 		write("g_" + std::to_string(expressComm.size()) + ".m", gap);
-		write("T_" + std::to_string(expressComm.size()) + ".m", gap);
+		
 		write("c_" + std::to_string(expressComm.size()) + ".m", is_contact_node);
 		
 		
@@ -492,6 +508,11 @@ namespace utopia {
 		
 		convert(d, *master_slave_context.system.solution);
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("d.e", master_slave_context.equation_systems);
+
+
+		normals_vec = orthogonal_trafos * normals_vec;
+		convert(normals_vec, *master_slave_context.system.solution);
+		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("H_n.e", master_slave_context.equation_systems);
 	}
 	
 	
