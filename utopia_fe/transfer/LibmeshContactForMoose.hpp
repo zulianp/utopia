@@ -850,6 +850,13 @@ namespace utopia {
         }
         
         std::vector<long> global;
+        //for(int side_number = 0; side_number < e.n_sides(); ++side_number)
+            //boundary_face_dof_map[side_number] gives the dofs associated to 
+            //if(boundary_face_dof_map[side_number].empty()) { means is not a boundary face }
+        //the boundary face
+        //std::vector< std::vector<long> > boundary_face_dof_map;
+
+        //get_side_dof_query(side, std::vector<bool> &is_boundary)
         
         
     };
@@ -2005,6 +2012,8 @@ namespace utopia {
                         if(!project_2D(side_polygon_master, side_polygon_slave, isect_polygon_master, isect_polygon_slave)){
                             continue;
                         }
+
+
                         const Scalar dx = side_polygon_slave(0, 0) - side_polygon_slave(1, 0);
                         const Scalar dy = side_polygon_slave(0, 1) - side_polygon_slave(1, 1);
                         
@@ -2013,6 +2022,8 @@ namespace utopia {
                         
                         const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
                         const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
+
+                        if(weight < 1e-15) continue;
                         
                         const int order = order_for_l2_integral(dim_master, el_master, approx_order, dest_el, approx_order);
                         

@@ -383,7 +383,7 @@ namespace utopia {
 		LibMeshFEContext<LinearImplicitSystem> master_slave_context(master_slave);
 		auto master_slave_space   = fe_space(LAGRANGE, order_elem, master_slave_context);
 		auto master_slave_space_2 = fe_space(LAGRANGE, order_elem, master_slave_context);
-		auto master_slave_space_3 = fe_space(LAGRANGE, order_elem, master_slave_context);
+		// auto master_slave_space_3 = fe_space(LAGRANGE, order_elem, master_slave_context);
 		
 		master_slave_context.equation_systems.init();
 		
@@ -414,10 +414,11 @@ namespace utopia {
 							 normals, 
 							 is_contact_node, 
 							 search_radius,
-							 { {101, 102}, {101, 103} },
+							 {{101, 102}},
+							 // { {101, 102}, {101, 103} },
 							 // { { 102, 101 }, { 103, 101 } },
-							 true);
-							 // false);
+							 // true);
+							 false);
 
 		
 		DVectord v = local_zeros(local_size(B).get(1));
@@ -589,7 +590,8 @@ namespace utopia {
 		// Read the mesh file. Here the file lshape.unv contains
 		// an L--shaped domain in .unv format.
 		//mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
-		mesh->read("../data/standard_3_body.e");
+		// mesh->read("../data/standard_3_body.e");
+		mesh->read("../data/contact_circles.e");
 		// mesh->read("../data/rect.e");
 		
 		// Print information about the mesh to the screen.
