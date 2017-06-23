@@ -2591,7 +2591,7 @@ namespace utopia {
 
 
 
-   bool MooseSurfaceAssemble(express::Communicator &comm,
+   inline bool MooseSurfaceAssemble(express::Communicator &comm,
                                     const std::shared_ptr<MeshBase> &mesh,
                                     const std::shared_ptr<DofMap> &dof_map,
                                     const std::shared_ptr<const unsigned int> &_var_num,
