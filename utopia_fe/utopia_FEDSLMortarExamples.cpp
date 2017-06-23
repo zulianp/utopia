@@ -417,9 +417,10 @@ namespace utopia {
 							 gap, 
 							 normals, 
 							 is_contact_node, 
-							 1., 
-							 102, 
-							 101, 
+							 0.1,
+							 102,
+							 101,
+                             103,
 							 true);
 							 // false);
 
@@ -470,7 +471,7 @@ namespace utopia {
 		
 		DVectord normals_vec;
 		convert_normal_matrix_to_vector(normals, normals_vec);
-		plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
+		//plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
 		
 		//This BS is only for exporting the vtk
 		auto ass = make_assembly([&]() -> void {
@@ -582,11 +583,11 @@ namespace utopia {
 			// 	 bilinear_interp(p0, p1, p2, p3, (**it), (**it));
 			// }
 			
-			plot_polygon_mesh(*mesh_master, "mater");
-			plot_polygon_mesh(*mesh_slave, "slave");
+//			plot_polygon_mesh(*mesh_master, "mater");
+//			plot_polygon_mesh(*mesh_slave, "slave");
 		} else {
-			plot_mesh(*mesh_master, "mater");
-			plot_mesh(*mesh_slave, "slave");
+//			plot_mesh(*mesh_master, "mater");
+//			plot_mesh(*mesh_slave, "slave");
 		}
 		
 		mixed_par_mortar_transfer_aux(init.comm(), mesh_master, mesh_slave, !applyDistortion);
@@ -605,7 +606,7 @@ namespace utopia {
 		// Read the mesh file. Here the file lshape.unv contains
 		// an L--shaped domain in .unv format.
 		//mesh->read("../data/cube12_space5.e"); //("../data/master_slave3D_translated.e");
-		mesh->read("../data/multibody.e");
+		mesh->read("../data/standard_3_body.e");
 		// mesh->read("../data/rect.e");
 		
 		// Print information about the mesh to the screen.
@@ -688,8 +689,8 @@ namespace utopia {
 		
 		auto mesh = make_shared<Mesh>(init.comm());
 		mesh->read(params.mesh_path);
-		plot_mesh(*mesh, "mesh");
-		
+//		plot_mesh(*mesh, "mesh");
+//		
 		
 		
 		const int dim = mesh->mesh_dimension();
