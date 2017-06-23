@@ -1605,27 +1605,10 @@ namespace utopia {
         const MeshBase::const_element_iterator e_end = mesh->active_elements_end();
         std::vector<int> block_id;
         std::vector<int> block_id_def;
-        
-        //this???
-        int i=0;
-        for (; e_it != e_end; ++e_it)
-        {
-            Elem * elem = *e_it;
-            if (i==0){
-                block_id_def.push_back(elem->subdomain_id());}
-            
-            block_id.push_back(elem->subdomain_id());
-            if (i>0 && block_id.at(i)!=block_id.at(i-1)){
-                block_id_def.push_back(block_id.at(i));
-            }
-            
-            i++;
-        }
-        
+                
         EXPRESS_EVENT_BEGIN("create_adapters");
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         cutk::shared_ptr<NTreeT> tree = NTreeT::New(predicate, maxNElements, maxDepth);
-        
         tree->reserve(n_elements);
         
         std::cout << "nElements = tree->memory().nData()_inside " << n_elements << std::endl;
