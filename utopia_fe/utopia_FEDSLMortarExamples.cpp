@@ -417,10 +417,9 @@ namespace utopia {
 							 gap, 
 							 normals, 
 							 is_contact_node, 
-							 0.1,
-							 102,
-							 101,
-                             103,
+							 0.2,
+							 // { {101, 102}, {101, 103} },
+							 { { 102, 101 }, { 103, 101 } },
 							 true);
 							 // false);
 
@@ -471,7 +470,7 @@ namespace utopia {
 		
 		DVectord normals_vec;
 		convert_normal_matrix_to_vector(normals, normals_vec);
-		//plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
+		plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
 		
 		//This BS is only for exporting the vtk
 		auto ass = make_assembly([&]() -> void {

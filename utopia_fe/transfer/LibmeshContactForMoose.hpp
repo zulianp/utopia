@@ -851,8 +851,7 @@ namespace utopia {
             copy_global_dofs(*master_slave, original_dofmap, _var_num,
                              dof_maps_[0], var_type_[0], n_elements, var_number_[0],
                              subdomain_id_[0], side_set_id_[0], side_set_id_tag_[0],
-                             // face_set_id_global_[0],ownershipRangesFaceID_[0], 101, 102);
-                             face_set_id_global_[0],ownershipRangesFaceID_[0], tags); //FIXME
+                             face_set_id_global_[0],ownershipRangesFaceID_[0], tags); 
             
             //            copy_var_number(*original_dofmap, var_number_[0]);
             
@@ -1009,12 +1008,12 @@ namespace utopia {
         
         
         
-        inline const std::vector<ElementDofMap> & side_set_id_tag() const
+        inline const std::vector<ElementDofMap> &side_set_id_tag() const
         {
             return side_set_id_tag_[0];
         }
         
-        inline express::Array<express::SizeType> & ownershipRangesFaceID()
+        inline express::Array<express::SizeType> &ownershipRangesFaceID()
         {
             
             return ownershipRangesFaceID_[0];
@@ -1022,7 +1021,7 @@ namespace utopia {
         
         
         
-        inline const express::Array<express::SizeType>   & ownershipRangesFaceID() const
+        inline const express::Array<express::SizeType> &ownershipRangesFaceID() const
         {
             return ownershipRangesFaceID_[0];
         }
@@ -1044,13 +1043,21 @@ namespace utopia {
         bool must_destroy_attached[1];
         
         
-        //        inline static is_tagged_contact_boundary(mesh)
-        //        {
-        //            for(auto t : tags)
-        //            {
-        //                if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem, t->first) || mesh.get_boundary_info().has_boundary_id(elem,side_elem, t->second))
-        //
-        
+       inline static bool is_tagged_contact_boundary(const MeshBase &mesh, 
+                                                const Elem *elem,
+                                                const int side_elem,
+                                                const std::vector< std::pair<int, int> > &tags)
+       {
+           for(auto t : tags) {
+               if (mesh.get_boundary_info().has_boundary_id(elem, side_elem, t.first) || 
+                   mesh.get_boundary_info().has_boundary_id(elem, side_elem, t.second)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         
         
         
@@ -1121,14 +1128,12 @@ namespace utopia {
                 
                 if (elem->on_boundary()){
                     for (int side_elem=0; side_elem<elem->n_sides(); side_elem++){
-                       // for(auto t : tags)
                         {
-                            if ((mesh.get_boundary_info().has_boundary_id(elem,side_elem, 101) ||
-                                 mesh.get_boundary_info().has_boundary_id(elem,side_elem, 102) ||   mesh.get_boundary_info().has_boundary_id(elem,side_elem, 103)) &&
+                            if (is_tagged_contact_boundary(mesh, elem, side_elem, tags) &&
                                 check_side_id_one_tag){
                                 // side_set_id[elem->id()].global.insert(side_set_id[elem->id()].global.end()-1,mesh.get_boundary_info().boundary_id(elem,side_elem));
-                                side_set_id[elem->id()].global.push_back(mesh.get_boundary_info().boundary_id(elem,side_elem));
-                                check_side_id_one_tag=false;
+                                side_set_id[elem->id()].global.push_back(mesh.get_boundary_info().boundary_id(elem, side_elem));
+                                check_side_id_one_tag = false;
                                 jj_side_id_one_tag++;
                             }
                         }
@@ -1147,10 +1152,8 @@ namespace utopia {
                 if (elem->on_boundary()){
                     
                     for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
-                       // for(auto t : tags)
                         {
-                            if ((mesh.get_boundary_info().has_boundary_id(elem, side_elem,101) ||
-                                 mesh.get_boundary_info().has_boundary_id(elem, side_elem, 102) ||  mesh.get_boundary_info().has_boundary_id(elem, side_elem, 103) )) {
+                            if (is_tagged_contact_boundary(mesh, elem, side_elem, tags)) {
                                 
                                 face_set_id[elem->id()].global.push_back(f_id++);
                                 
@@ -1164,7 +1167,7 @@ namespace utopia {
                 else
                 {
                     
-                    face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(),-1);
+                    face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(), -1);
                 }
                 
                 
@@ -1397,8 +1400,6 @@ namespace utopia {
     static void write_element_selection(const Iterator &begin, const Iterator &end, const UtopiaMesh &utopiamesh, cutk::OutputStream &os)
     {
         auto m = utopiamesh.utopiamesh()[0];
-        
-        // write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), os, 101, 102);
         write_space(begin, end, *m, utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_number(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), os); //FIXME
     }
     
@@ -1546,8 +1547,7 @@ namespace utopia {
         // is >> has_master >> has_slave;
         
         utopiamesh.utopiamesh().resize(1);
-        
-        // read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh, 101, 102);
+    
         read_space(is, utopiamesh.utopiamesh()[0], utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh); //FIXME
         
         utopiamesh.set_must_destroy_attached(0,true);
@@ -2443,9 +2443,9 @@ namespace utopia {
         
         
         const int n_nodes_x_face = master_slave->elem(0)->build_side_ptr(0)->n_nodes();
-        express::Array<express::SizeType>  ownershipRangesBTilde = local_fun_spaces_new->ownershipRangesFaceID();
-        for(SizeType i = 0; i < ownershipRangesBTilde.size(); ++i) {
-            ownershipRangesBTilde[i] *= n_nodes_x_face;
+        express::Array<express::SizeType>  side_node_ownership_ranges = local_fun_spaces_new->ownershipRangesFaceID();
+        for(SizeType i = 0; i < side_node_ownership_ranges.size(); ++i) {
+            side_node_ownership_ranges[i] *= n_nodes_x_face;
         }
         
         
@@ -2464,7 +2464,7 @@ namespace utopia {
         
         const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank() + 1] - ownershipRangesSlave [comm.rank()];
         const SizeType local_range_master_range = ownershipRangesMaster[comm.rank() + 1] - ownershipRangesMaster[comm.rank()];
-        const SizeType local_range_b_tilde  = ownershipRangesBTilde[comm.rank() + 1] - ownershipRangesBTilde[comm.rank()];
+        const SizeType local_range_b_tilde  = side_node_ownership_ranges[comm.rank() + 1] - side_node_ownership_ranges[comm.rank()];
         
         
         
@@ -2500,9 +2500,9 @@ namespace utopia {
         normal_buff.setSize(fIndCols, dim);
         
         express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
-        redist.apply(ownershipRangesBTilde, mat_buffer, express::AddAssign<double>());
-        redist.apply(ownershipRangesBTilde, gap_buff, express::AddAssign<double>());
-        redist.apply(ownershipRangesBTilde, normal_buff, express::AddAssign<double>());
+        redist.apply(side_node_ownership_ranges, mat_buffer,     express::AddAssign<double>());
+        redist.apply(side_node_ownership_ranges, gap_buff,       express::AddAssign<double>());
+        redist.apply(side_node_ownership_ranges, normal_buff,    express::AddAssign<double>());
         
         redist.apply(local_fun_spaces_new->ownershipRangesFaceID(), rel_area_buff, express::AddAssign<double>());
         
@@ -2533,14 +2533,14 @@ namespace utopia {
             removeRow.allSet(false);
             
             {
-                //            utopia::Write<utopia::DVectord> write(relAreaVec);
                 for (auto it = rel_area_buff.iter(); it; ++it) {
                     //                relAreaVec.add(it.row(), *it);
                     if(*it < 1 - 1e-8) {
                         const SizeType faceId = it.row();
+
                         for(int k = 0; k < n_nodes_x_face; ++k) {
                             const SizeType nodeId = faceId * n_nodes_x_face + k;
-                            const SizeType index  = nodeId - ownershipRangesBTilde[comm.rank()];
+                            const SizeType index  = nodeId - side_node_ownership_ranges[comm.rank()];
                             assert(index < removeRow.size());
                             removeRow[index] = true;
                             ++n_remove_rows;
@@ -2560,7 +2560,7 @@ namespace utopia {
             utopia::Write<utopia::DVectord> write(gap_tilde);
             for (auto it = gap_buff.iter(); it; ++it) {
                 
-                const SizeType index = it.row() - ownershipRangesBTilde[comm.rank()];
+                const SizeType index = it.row() - side_node_ownership_ranges[comm.rank()];
                 assert(index < removeRow.size());
                 
                 //std::cout<< comm.rank() << " row  "<< it.row() << " index " << index << " " << *it << std::endl;
@@ -2578,7 +2578,7 @@ namespace utopia {
             utopia::Write<utopia::DSMatrixd> write(normal_tilde);
             for (auto it = normal_buff.iter(); it; ++it) {
                 
-                const SizeType index = it.row() - ownershipRangesBTilde[comm.rank()];
+                const SizeType index = it.row() - side_node_ownership_ranges[comm.rank()];
                 assert(index < removeRow.size());
                 
                 //std::cout<< comm.rank() << " row  "<< it.row() << " index " << index << " " << *it << std::endl;
@@ -2596,7 +2596,7 @@ namespace utopia {
             utopia::Write<utopia::DSMatrixd> write(B_tilde);
             for (auto it = mat_buffer.iter(); it; ++it) {
                 
-                const SizeType index = it.row() - ownershipRangesBTilde[comm.rank()];
+                const SizeType index = it.row() - side_node_ownership_ranges[comm.rank()];
                 assert(index < removeRow.size());
                 
                 //std::cout<< comm.rank() << " row  "<< it.row() << " index " << index << " " << *it << std::endl;
@@ -2816,65 +2816,64 @@ namespace utopia {
     }
     
     
-    inline bool MooseSurfaceAssemble(express::Communicator &comm,
-                                     const std::shared_ptr<MeshBase> &mesh,
-                                     const std::shared_ptr<DofMap> &dof_map,
-                                     const std::shared_ptr<const unsigned int> &_var_num,
-                                     DSMatrixd &B,DSMatrixd &orthogonal_trafos,
-                                     DVectord &gap,DSMatrixd &normals,
-                                     DVectord &is_contact_node,
-                                     const libMesh::Real search_radius,
-                                     const int tag_1, const int tag_2, const int tag_3,
-                                     const bool use_biorth = true)
-    {
-        const std::vector< std::pair<int, int> > tags{{tag_1, tag_2}, {tag_3, tag_2}};
-        
-        cutk::Settings settings;
-        if(mesh->mesh_dimension() == 2) {
-            return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tags, use_biorth);
-        }
-        
-        
-        if(mesh->mesh_dimension() == 3) {
-            return utopia::SurfaceAssemble<3>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals,  is_contact_node, settings, search_radius, tags, use_biorth);
-        }
-        
-        assert(false && "Dimension not supported!");
-        return false;
-    }
+
     
+// }
+
+
+
+
+   bool MooseSurfaceAssemble(express::Communicator &comm,
+                                    const std::shared_ptr<MeshBase> &mesh,
+                                    const std::shared_ptr<DofMap> &dof_map,
+                                    const std::shared_ptr<const unsigned int> &_var_num,
+                                    DSMatrixd &B,
+                                    DSMatrixd &orthogonal_trafos,
+                                    DVectord &gap,
+                                    DSMatrixd &normals,
+                                    DVectord &is_contact_node,
+                                    const libMesh::Real search_radius,
+                                    const std::vector< std::pair<int, int> > &tags,
+                                    const bool use_biorth = true)
+   {
+       cutk::Settings settings;
+       if(mesh->mesh_dimension() == 2) {
+           return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tags, use_biorth);
+       }
+
+
+       if(mesh->mesh_dimension() == 3) {
+           return utopia::SurfaceAssemble<3>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals,  is_contact_node, settings, search_radius, tags, use_biorth);
+       }
+
+       assert(false && "Dimension not supported!");
+       return false;
+   }
+
+
+   inline bool MooseSurfaceAssemble(express::Communicator &comm,
+                                    const std::shared_ptr<MeshBase> &mesh,
+                                    const std::shared_ptr<DofMap> &dof_map,
+                                    const std::shared_ptr<const unsigned int> &_var_num,
+                                    DSMatrixd &B,
+                                    DSMatrixd &orthogonal_trafos,
+                                    DVectord &gap,
+                                    DSMatrixd &normals,
+                                    DVectord &is_contact_node,
+                                    const libMesh::Real search_radius,
+                                    const int tag_1, 
+                                    const int tag_2,
+                                    const bool use_biorth = true)
+   {
+        return MooseSurfaceAssemble(
+            comm, mesh, dof_map, _var_num, 
+            B, orthogonal_trafos, 
+            gap, normals, is_contact_node, 
+            search_radius,
+            { {tag_1, tag_2} },
+            use_biorth);
+    }
 }
-
-
-
-
-//    bool MooseSurfaceAssemble(express::Communicator &comm,
-//                                     const std::shared_ptr<MeshBase> &mesh,
-//                                     const std::shared_ptr<DofMap> &dof_map,
-//                                     const std::shared_ptr<const unsigned int> &_var_num,
-//                                     DSMatrixd &B,
-//                                     DSMatrixd &orthogonal_trafos,
-//                                     DVectord &gap,
-//                                     DSMatrixd &normals,
-//                                     DVectord &is_contact_node,
-//                                     const libMesh::Real search_radius,
-//                                     const std::vector< std::pair<int, int> > &tags,
-//                                     const bool use_biorth = true)
-//    {
-//        cutk::Settings settings;
-//        if(mesh->mesh_dimension() == 2) {
-//            return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tags, use_biorth);
-//        }
-//
-//
-//        if(mesh->mesh_dimension() == 3) {
-//            return utopia::SurfaceAssemble<3>(comm, mesh, dof_map, _var_num, B,  orthogonal_trafos, gap, normals,  is_contact_node, settings, search_radius, tags, use_biorth);
-//        }
-//
-//        assert(false && "Dimension not supported!");
-//        return false;
-//    }
-//}
 
 #endif //LIBMESH_CUTLIBPP_ADAPTERS_HPP
 
