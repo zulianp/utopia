@@ -35,25 +35,25 @@ namespace utopia {
 		auto s = local_size(mat);
 		
 		vec = local_zeros(s.get(0));
-		DVectord norm_squared = local_zeros(s.get(0));
+		DVectord norms = local_zeros(s.get(0));
 		
-		auto s_ns = local_size(norm_squared);
+		auto s_ns = local_size(norms);
 		
 		{
-			Write<DVectord> w_ns(norm_squared);
+			Write<DVectord> w_ns(norms);
 			each_read(mat, [&](const SizeType i, const SizeType j, const double value){
-				norm_squared.add(i, value * value);
+				norms.add(i, value * value);
 			});
 		}
 		
-		norm_squared = sqrt(norm_squared);
+		norms = sqrt(norms);
 		
 		{
 			Write<DVectord> w(vec);
-			Read<DVectord> r_ns(norm_squared);
+			Read<DVectord> r_ns(norms);
 			
 			each_read(mat, [&](const SizeType i, const SizeType j, const double value){
-				vec.set(i + j, value/norm_squared.get(i));
+				vec.set(i + j, value/norms.get(i));
 			});
 		}
 	}
@@ -260,7 +260,7 @@ namespace utopia {
 		slave_context.equation_systems.init();
 		
 		
-		express::Communicator expressComm(libmesh_comm.get());
+		express::Communicator express_comm(libmesh_comm.get());
 		
 		int var_num =0;
 		//////////////////////////////////////////////////
@@ -272,7 +272,7 @@ namespace utopia {
 		// MPI_Comm comm = MPI_COMM_WORLD;
 		MixedParMortarAssembler assembler(libmesh_comm, make_ref(master_space), make_ref(slave_space));
 		assembler.set_use_biorthogonal_multipliers(use_biorthogonal_mults);
-		// AssembleMOOSE(expressComm,
+		// AssembleMOOSE(express_comm,
 		//               mesh_master,
 		//               mesh_slave,
 		//               utopia::make_ref(master_context.system.get_dof_map()),
@@ -393,9 +393,9 @@ namespace utopia {
 		//		ParMortarAssembler surface_assembler(libmesh_comm, make_ref(master_slave_space));
 		
 		DSMatrixd matrix;
-		const  libMesh::Real search_radius=0.4;
+		
 		// EXPRESS_EVENT_BEGIN("l2assembly");
-		express::Communicator expressComm(libmesh_comm.get());
+		express::Communicator express_comm(libmesh_comm.get());
 		
 		//utopia::DSMatrixd matrix;
 		
@@ -409,7 +409,8 @@ namespace utopia {
 		
 		unsigned int variable_number = 0;
 		
-		MooseSurfaceAssemble(expressComm, (master_slave), 
+		const libMesh::Real search_radius = 0.2;
+		MooseSurfaceAssemble(express_comm, (master_slave), 
 							 utopia::make_ref(master_slave_context.system.get_dof_map()), 
 							 utopia::make_ref(variable_number), 
 							 matrix, 
@@ -417,11 +418,11 @@ namespace utopia {
 							 gap, 
 							 normals, 
 							 is_contact_node, 
-							 0.2,
+							 search_radius,
 							 // { {101, 102}, {101, 103} },
 							 { { 102, 101 }, { 103, 101 } },
-							 true);
-							 // false);
+							 // true);
+							 false);
 
 		
 		DVectord v = local_zeros(local_size(matrix).get(1));
@@ -456,21 +457,20 @@ namespace utopia {
 		
 		DVectord D_inv_gap = D_inv * gap;
 
-		write("T_" + std::to_string(expressComm.size()) + ".m", T);
-		//
+		write("T_" + std::to_string(express_comm.size()) + ".m", T);
 		T += local_identity(local_size(d).get(0), local_size(d).get(0));
 		
-		write("O_" + std::to_string(expressComm.size()) + ".m", orthogonal_trafos);
-		write("B_" + std::to_string(expressComm.size()) + ".m", matrix);
-		write("d_" + std::to_string(expressComm.size()) + ".m", d);
-		write("g_" + std::to_string(expressComm.size()) + ".m", gap);
-		
-		write("c_" + std::to_string(expressComm.size()) + ".m", is_contact_node);
+		write("O_" + std::to_string(express_comm.size()) + ".m", orthogonal_trafos);
+		write("B_" + std::to_string(express_comm.size()) + ".m", matrix);
+		write("d_" + std::to_string(express_comm.size()) + ".m", d);
+		write("g_" + std::to_string(express_comm.size()) + ".m", gap);
+		write("c_" + std::to_string(express_comm.size()) + ".m", is_contact_node);
 		
 		
 		DVectord normals_vec;
 		convert_normal_matrix_to_vector(normals, normals_vec);
-		plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
+
+		if(express_comm.isAlone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
 		
 		//This BS is only for exporting the vtk
 		auto ass = make_assembly([&]() -> void {
@@ -483,19 +483,9 @@ namespace utopia {
 			convert(is_contact_node, *master_slave_context.system.solution);
 		});
 		
-		
-		
-		
 		master_slave_context.system.attach_assemble_object(ass);
 		master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 0;
 		master_slave_context.equation_systems.solve();
-		
-		
-		// mv = T * v;
-		// convert(mv, *master_slave_context.system.solution);
-		
-		
-		
 		
 		convert(is_contact_node, *master_slave_context.system.solution);
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("is_c_node.e", master_slave_context.equation_systems);
@@ -508,7 +498,6 @@ namespace utopia {
 		
 		convert(d, *master_slave_context.system.solution);
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("d.e", master_slave_context.equation_systems);
-
 
 		normals_vec = orthogonal_trafos * normals_vec;
 		convert(normals_vec, *master_slave_context.system.solution);
