@@ -120,6 +120,39 @@ namespace utopia {
         }
 #endif //NDEBUG
     }
+
+        inline static bool check_node_is_boundary(const ElemType &type,
+                                                  const std::vector<bool> &is_boundary)
+        {
+
+            int n_bound = 0;
+            for(std::size_t i = 0; i < is_boundary.size(); ++i) {
+                n_bound += is_boundary[i];
+            }
+            
+            switch(type) {
+                case TRI3:
+                case QUAD4:
+                case QUADSHELL4:
+                {
+                    assert(n_bound == 2);
+                    return n_bound == 2;   
+                }
+                    
+                case TET4:
+                {
+                    assert(n_bound == 3);
+                    return n_bound == 3;   
+                }
+                    
+                default:
+                {
+                    std::cerr << "Missing implementation for ElemType " << type << std::endl;
+                    assert(false && "implement me!");
+                    break;
+                }
+            }
+        }
     
     
     
@@ -2071,14 +2104,16 @@ namespace utopia {
                         
                         mortar_assemble(*master_fe, *slave_fe, elemmat);
                         
-                        std::vector<bool> node_is_boundary_dest;
-                        std::vector<bool> node_is_boundary_src;
+                        std::vector<bool> node_is_boundary_slave;
+                        std::vector<bool> node_is_boundary_master;
                         
-                        nodes_are_boundary_hack(elemmat, node_is_boundary_dest, node_is_boundary_src);
+                        nodes_are_boundary_hack(elemmat, node_is_boundary_slave, node_is_boundary_master);
+
+                        assert( check_node_is_boundary((*master_slave->active_local_elements_begin())->type(), node_is_boundary_master) );
                         
                         if(use_biorth) {
                             assemble_trace_biorth_weights_from_space((*master_slave->active_local_elements_begin())->type(),
-                                                                     node_is_boundary_dest,
+                                                                     node_is_boundary_slave,
                                                                      biorth_weights);
                             elemmat.zero();
                             mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
@@ -2111,16 +2146,12 @@ namespace utopia {
                         }
                         //////////////////////////////////////////////////////////////////////////////////////
                         
-                        // use boundary info instead
                         rel_area_buffer.add(face_id_slave[side_2], 0, surface_assemble->relative_area);
                         
                         const auto &master_dofs = master.dof_map();
                         const auto &slave_dofs  = slave.dof_map();
-                        
-                        // auto side_slave = dest_el.build_side_ptr(0);
-                        int n_nodes_face_slave = side_slave->n_nodes();
-                        
-                        // auto side_master = el_master.build_side_ptr(0);
+                    
+                        int n_nodes_face_slave  = side_slave->n_nodes();
                         int n_nodes_face_master = side_master->n_nodes();
                         
                         
@@ -2132,16 +2163,16 @@ namespace utopia {
                         
                         //generate face-node ids for slave
                         int offset = 0;
-                        for(uint i = 0; i < node_is_boundary_dest.size(); ++i){
-                            if (node_is_boundary_dest[i]) {
+                        for(uint i = 0; i < node_is_boundary_slave.size(); ++i){
+                            if (node_is_boundary_slave[i]) {
                                 face_node_id_slave[i] =  face_id_slave[side_2] * n_nodes_face_slave + offset++;
                             }
                         }
                         
                         //generate face-node ids for master
                         offset = 0;
-                        for(uint i = 0; i <  node_is_boundary_src.size(); ++i) {
-                            if (node_is_boundary_src[i]) {
+                        for(uint i = 0; i < node_is_boundary_master.size(); ++i) {
+                            if (node_is_boundary_master[i]) {
                                 face_node_id_master[i] = side_id_master[side_index_master] * n_nodes_face_master + offset++;
                             }
                         }
@@ -2151,7 +2182,7 @@ namespace utopia {
                             const long dof_I = slave_dofs[i];
                             const long dof_J = face_node_id_slave[i];
                             
-                            if(node_is_boundary_dest[i]) {
+                            if(node_is_boundary_slave[i]) {
                                 P_buffer.setAt(dof_I, dof_J, 1.);
                             }
                         }
@@ -2161,7 +2192,7 @@ namespace utopia {
                             const long dof_I = master_dofs[i];
                             const long dof_J = face_node_id_master[i];
                             
-                            if(node_is_boundary_src[i]) {
+                            if(node_is_boundary_master[i]) {
                                 Q_buffer.setAt(dof_I, dof_J, 1.);
                             }
                         }
@@ -2175,7 +2206,7 @@ namespace utopia {
                         assert(master_dofs.size() == elemmat.n());
                         
                         for(int i = 0; i < face_node_id_slave.size(); ++i) {
-                            if(!node_is_boundary_dest[i]) continue;
+                            if(!node_is_boundary_slave[i]) continue;
                             
                             const long dof_I = face_node_id_slave[i];
                             
@@ -2186,7 +2217,7 @@ namespace utopia {
                             }
                             
                             for(int j = 0; j <  face_node_id_master.size(); ++j) {
-                                if(!node_is_boundary_src[j]) continue;
+                                if(!node_is_boundary_master[j]) continue;
 
                                 const long dof_J = face_node_id_master[j];
                                                             

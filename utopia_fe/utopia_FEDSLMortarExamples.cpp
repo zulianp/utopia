@@ -388,17 +388,12 @@ namespace utopia {
 		master_slave_context.equation_systems.init();
 		
 		//////////////////////////////////////////////////
-		//////////////////////////////////////////////////
-		
-		//		ParMortarAssembler surface_assembler(libmesh_comm, make_ref(master_slave_space));
-		
-		DSMatrixd matrix;
+		//////////////////////////////////////////////////		
+		DSMatrixd B;
 		
 		// EXPRESS_EVENT_BEGIN("l2assembly");
 		express::Communicator express_comm(libmesh_comm.get());
-		
-		//utopia::DSMatrixd matrix;
-		
+				
 		utopia::DSMatrixd orthogonal_trafos;
 		
 		utopia::DSMatrixd normals;
@@ -413,26 +408,26 @@ namespace utopia {
 		MooseSurfaceAssemble(express_comm, (master_slave), 
 							 utopia::make_ref(master_slave_context.system.get_dof_map()), 
 							 utopia::make_ref(variable_number), 
-							 matrix, 
+							 B, 
 							 orthogonal_trafos, 
 							 gap, 
 							 normals, 
 							 is_contact_node, 
 							 search_radius,
-							 // { {101, 102}, {101, 103} },
-							 { { 102, 101 }, { 103, 101 } },
-							 // true);
-							 false);
+							 { {101, 102}, {101, 103} },
+							 // { { 102, 101 }, { 103, 101 } },
+							 true);
+							 // false);
 
 		
-		DVectord v = local_zeros(local_size(matrix).get(1));
+		DVectord v = local_zeros(local_size(B).get(1));
 
 		each_write(v, [](const SizeType i) -> double {
 			return 0.1;
 		});
 		
-		DVectord mv = matrix * v;
-		DVectord d = sum(matrix, 1);
+		DVectord mv = B * v;
+		DVectord d = sum(B, 1);
 		DVectord d_inv = local_zeros(local_size(d));
 		
 		{
@@ -452,7 +447,7 @@ namespace utopia {
 		}
 		
 		DSMatrixd D_inv = diag(d_inv);
-		DSMatrixd T = D_inv * matrix;
+		DSMatrixd T = D_inv * B;
 		DVectord sum_T = sum(T, 1);
 		
 		DVectord D_inv_gap = D_inv * gap;
@@ -461,7 +456,7 @@ namespace utopia {
 		T += local_identity(local_size(d).get(0), local_size(d).get(0));
 		
 		write("O_" + std::to_string(express_comm.size()) + ".m", orthogonal_trafos);
-		write("B_" + std::to_string(express_comm.size()) + ".m", matrix);
+		write("B_" + std::to_string(express_comm.size()) + ".m", B);
 		write("d_" + std::to_string(express_comm.size()) + ".m", d);
 		write("g_" + std::to_string(express_comm.size()) + ".m", gap);
 		write("c_" + std::to_string(express_comm.size()) + ".m", is_contact_node);

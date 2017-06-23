@@ -2019,7 +2019,6 @@ void mortar_normal_and_gap_assemble_weighted_biorth(
 	convert_point_to_vector(dim, surf_normal, surf_normal_v);
 	convert_point_to_vector(dim, plane_normal, plane_normal_v);
 
-
 	DenseVector<Real> p(dim);
 	// DenseMatrix<Real> v(dim);
 
@@ -2056,5 +2055,4 @@ void mortar_normal_and_gap_assemble_weighted_biorth(
 		}
 	}
 }
-
 }
