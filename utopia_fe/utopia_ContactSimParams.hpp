@@ -33,6 +33,7 @@ namespace utopia {
 	static const ContactSimParams contact_sphere	  	  = { "../data/contact_sphere.e", 1, 2, -1, 0.3, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams contact_cuboids	  	  = { "../data/contact_cuboids.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams triple_contact_circle	  = { "../data/triple_contact_circle.e", 1, 2, -1, 0.2, -0.2, 0.2, LARGE_VAL,false };
+	static const ContactSimParams contact_circles	  	  = { "../data/contact_circles_no_tag.e", 1, 2, -1, 0.2, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams contact2	  			  = { "../data/contact3D.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams contact_quads	  		  = { "../data/contact_quads.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams multi_contact	  		  = { "../data/multi_contact.e", 1, 2, -1, 0.05, 0.0, 0.0, LARGE_VAL,false };

@@ -304,6 +304,63 @@ void assemble_von_mises_stress(
 }
 
 
+static void plot_scaled_normal_field(MeshBase &mesh,
+							  const DVectord &normals,
+							  const DVectord &scale,
+							  const std::string &name = "normal_field")
+{
+	using namespace libMesh;
+	int mesh_dim = mesh.mesh_dimension();
+	
+
+	DenseVector<double> local_normal;
+	DenseVector<Real> local_scale;
+	
+	std::vector<double> all_points, all_normals;
+	
+	std::vector<double> point(mesh_dim, 0.);
+	for(auto n_it = mesh.active_nodes_begin(); n_it != mesh.active_nodes_end(); ++n_it) {
+		Node &n = **n_it;
+		
+		std::vector<dof_id_type> node_dof_ids;
+		
+		for(int d = 0; d < mesh_dim; ++d) {
+			auto dof_id = n.dof_number(0, 0, d);
+			node_dof_ids.push_back(dof_id);
+			
+			point[d] = n(d);
+		}
+		
+		get_vector(normals, node_dof_ids, local_normal);
+		get_vector(scale,   node_dof_ids, local_scale);
+		
+		for(int d = 0; d < mesh_dim; ++d) {
+			local_normal(d) *= local_scale(0);
+		}
+
+		if(local_normal.l2_norm() < 1e-16) continue;
+		
+		all_points.insert(all_points.end(),
+						  point.begin(),
+						  point.end());
+
+		all_normals.insert(all_normals.end(),
+						   local_normal.get_values().begin(),
+						   local_normal.get_values().end());
+	}
+	
+	if(all_points.empty()) {
+		return;
+	}
+	
+	quiver(mesh_dim,
+		   all_points.size()/mesh_dim,
+		   &all_points[0],
+		   &all_normals[0],
+		   name);
+}
+
+
 void run_biomechanics_example(libMesh::LibMeshInit &init)
 {
 	std::cout << "-----------------------------\n";
@@ -317,15 +374,16 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	static const bool is_leaflet = false;
 	// ContactSimParams params = contact_cylinder; static const int coords = 1;
 	// ContactSimParams params = contact8;
-	// ContactSimParams params = triple_contact_circle; static const int coords = 1;
+	ContactSimParams params = contact_circles; static const int coords = 1;
 	// ContactSimParams params = multi_contact_3D_2;
 	// ContactSimParams params = hip_femure_contact; static const int coords = 2;
-	ContactSimParams params = implant_contact; static const int coords = 1;
+	// ContactSimParams params = implant_contact; static const int coords = 1;
 	// ContactSimParams params = contact_cubes; static const int coords = 1;
 
 
-	auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
-	predicate->add(101, 102);
+	// auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
+	// predicate->add(101, 102);
+	auto predicate = nullptr;
 
 	// predicate->add(102, 101);
 	// predicate->add(103, 102);
@@ -479,7 +537,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 
 	// convert(sol, *context.system.solution);
 
-
+	plot_scaled_normal_field(*mesh, normals, gap, "biomech");
 
 	DVectord stress;
 	assemble_von_mises_stress(lamee_params, u, sol, stress);
@@ -497,8 +555,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 
 	ExodusII_IO(*mesh).write_equation_systems ("elasticity_contact_deformed.e", context.equation_systems);
 
-	// e_io.write_nodal_data("elasticity_contact.e", *context.system.solution, {"stress_x","stress_y"});
-	// ExodusII_IO(*mesh).write_equation_systems ("elasticity_contact_von_mises.e", context.equation_systems);	
+
 
 	// {
 	// 	Read<DVectord> w_g(gap);
