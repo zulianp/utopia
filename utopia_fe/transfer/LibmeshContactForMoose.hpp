@@ -1229,7 +1229,7 @@ namespace utopia {
             }
             
             
-            std::cout<<"size for all"<<face_set_id.size()<<std::endl;
+            // std::cout<<"size for all"<<face_set_id.size()<<std::endl;
             
             
             ownershipRangesFaceID[comm.rank()+1]+= static_cast<unsigned int>(offset);
@@ -1241,9 +1241,9 @@ namespace utopia {
             std::partial_sum(ownershipRangesFaceID.begin(), ownershipRangesFaceID.end(),
                              ownershipRangesFaceID.begin());
             
-            if(comm.isRoot()) {
-                std::cout << "ownershipRangesFaceID = "<< ownershipRangesFaceID << std::endl;
-            }
+            // if(comm.isRoot()) {
+            //     std::cout << "ownershipRangesFaceID = "<< ownershipRangesFaceID << std::endl;
+            // }
             
             
             MeshBase::const_element_iterator e_it_new = mesh.active_local_elements_begin();
@@ -1459,7 +1459,7 @@ namespace utopia {
         //READ 1
         int dim;
         is >> dim;
-        std::cout<<"I am reading the mesh "<<std::endl;
+        // std::cout<<"I am reading the mesh "<<std::endl;
         
         
         //READ 2
@@ -1470,7 +1470,7 @@ namespace utopia {
         long n_elements;
         is >> n_elements;
         
-        std::cout<<"elem read= "<<n_elements<<std::endl;
+        // std::cout<<"elem read= "<<n_elements<<std::endl;
         auto mesh_ptr = std::make_shared<SerialMesh>(comm,dim);
         
         mesh_ptr->reserve_nodes(n_nodes);
@@ -1634,7 +1634,7 @@ namespace utopia {
         
         const int n_elements = mesh->n_elem();
         
-        std::cout << "mesh_elem_inside " << n_elements << std::endl;
+        // std::cout << "mesh_elem_inside " << n_elements << std::endl;
         
         const Parallel::Communicator &libmesh_comm_mesh = master_slave->comm();
         
@@ -1800,10 +1800,9 @@ namespace utopia {
         };
         
         
-        
         cutk::Settings custom_settings = settings;
         custom_settings.set("disable_redistribution", cutk::Boolean(true));
-        custom_settings.set("verbosity_level", cutk::Integer(2));
+        custom_settings.set("verbosity_level", cutk::Integer(1));
         
         cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, custom_settings);
         
@@ -1883,7 +1882,7 @@ namespace utopia {
         express::MapSparseMatrix<double> gap_buffer;
         express::MapSparseMatrix<double> normal_buffer;
         
-        std::cout<<"*********** master_slave->dof_map().n_dofs() = "<<  dof_map->n_dofs() <<std::endl;
+        // std::cout<<"*********** master_slave->dof_map().n_dofs() = "<<  dof_map->n_dofs() <<std::endl;
                 
         DenseMatrix<Real> biorth_weights;
         
@@ -2357,7 +2356,7 @@ namespace utopia {
                 }
             }
             
-            std::cout << "n_remove_rows: " <<n_remove_rows << std::endl;
+            // std::cout << "n_remove_rows: " <<n_remove_rows << std::endl;
         }
         
         express::RootDescribe("petsc B_buffer assembly begin", comm, std::cout);
@@ -2413,8 +2412,8 @@ namespace utopia {
             }
         }
         
-        comm.barrier();
-        express::RootDescribe("petsc P_buffer assembly begin", comm, std::cout);
+        // comm.barrier();
+        // express::RootDescribe("petsc P_buffer assembly begin", comm, std::cout);
          
         DSMatrixd P = utopia::local_sparse(n_local_dofs_slave, n_local_side_node_dofs, n_max_row_entries_p);
         {
@@ -2424,8 +2423,8 @@ namespace utopia {
             }
         }
         
-        comm.barrier();
-        express::RootDescribe("petsc Q_buffer assembly begin", comm, std::cout);
+        // comm.barrier();
+        // express::RootDescribe("petsc Q_buffer assembly begin", comm, std::cout);
         
         DSMatrixd Q = utopia::local_sparse(n_local_dofs_master, n_local_side_node_dofs, n_max_row_entries_q);
         {
@@ -2579,7 +2578,7 @@ namespace utopia {
         // write("c.m", is_contact_node);
         
         comm.barrier();
-        express::RootDescribe("petsc assembly end", comm, std::cout);
+        express::RootDescribe("Contact assembly end", comm, std::cout);
         return true;
     }
     
