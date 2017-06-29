@@ -2092,12 +2092,12 @@ namespace utopia {
                         
                         master_fe->attach_quadrature_rule(&src_ir_ref);
                         
+                        master_fe->get_phi();
                         master_fe->reinit(&el_master);
                         
                         slave_fe->attach_quadrature_rule(&dest_ir_ref);
                         
                         slave_fe->get_xyz();
-                        
                         slave_fe->reinit(&dest_el);
                         
                         
