@@ -404,7 +404,7 @@ namespace utopia {
 		
 		unsigned int variable_number = 0;
 		
-		const libMesh::Real search_radius = 4.;
+		const libMesh::Real search_radius = 2.;
 		MooseSurfaceAssemble(express_comm, (master_slave), 
 							 utopia::make_ref(master_slave_context.system.get_dof_map()), 
 							 utopia::make_ref(variable_number), 
@@ -419,8 +419,8 @@ namespace utopia {
 							 {{3, 1}},
 							 // { {101, 102}, {101, 103} },
 							 // { { 102, 101 }, { 103, 101 } },
-							 // true);
-							 false);
+							 true);
+							 // false);
 
 		
 		DVectord v = local_zeros(local_size(B).get(1));
@@ -615,8 +615,8 @@ namespace utopia {
 		std::cout << "mortar_transfer_3D\n";
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
-		int n_master = 2;
-		int n_slave  = 3;
+		int n_master = 20;
+		int n_slave  = 30;
 		
 		auto mesh_master = make_shared<Mesh>(init.comm());
 		
@@ -882,8 +882,8 @@ namespace utopia {
 		EXPRESS_PROFILING_BEGIN()
 		
 		// mortar_transfer_2D(init);
-		//mortar_transfer_3D(init);
-		mortar_transfer_3D_monolithic(init);
+		mortar_transfer_3D(init);
+		// mortar_transfer_3D_monolithic(init);
 		// surface_mortar(init);
 		
 		//run_curved_poly_disc();

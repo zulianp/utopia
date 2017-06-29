@@ -756,16 +756,11 @@ namespace utopia {
         
         
         auto m = spaces.spaces()[0];
-        assert(m);
-        std::shared_ptr<MeshBase> s =nullptr;
+        std::shared_ptr<MeshBase> s = nullptr;
         
         if(spaces.spaces().size()>1) {
             s=spaces.spaces()[1];
         }
-        
-        
-        
-        unsigned int dim_master=m->mesh_dimension();
         
         std::vector<long> master_selection;
         std::vector<long> slave_selection;
@@ -803,14 +798,11 @@ namespace utopia {
         
         
         if(has_master) {
-            
-            //            std::cout<<"I am in master"<<std::endl;
             write_space(master_selection.begin(), master_selection.end(), *m, spaces.dof_map(0),
                         /*spaces.variable_number(0),*/ spaces.variable_order(0), 0, os);
         }
         
         if(has_slave) {
-            //            std::cout<<"I am in slave"<<std::endl;
             write_space(slave_selection.begin(), slave_selection.end(), *s, spaces.dof_map(1),
                         /*spaces.variable_number(1),*/ spaces.variable_order(1),1, os);
         }
