@@ -132,6 +132,7 @@ namespace utopia {
             
             switch(type) {
                 case TRI3:
+                case TRISHELL3:
                 case QUAD4:
                 case QUADSHELL4:
                 {
@@ -152,6 +153,8 @@ namespace utopia {
                     break;
                 }
             }
+
+            return false;
         }
     
     
@@ -163,6 +166,7 @@ namespace utopia {
     {
         switch(type) {
             case TRI3:
+            case TRISHELL3:
             {
                 weights.resize(3, 3);
                 weights.zero();

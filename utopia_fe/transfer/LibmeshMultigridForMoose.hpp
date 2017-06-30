@@ -1054,7 +1054,7 @@ namespace utopia {
 
         cutk::Settings custom_settings = settings;
         custom_settings.set("disable_redistribution", cutk::Boolean(true));
-        custom_settings.set("verbosity_level", cutk::Integer(2));
+        custom_settings.set("verbosity_level", cutk::Integer(1));
         
         
         cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, custom_settings);

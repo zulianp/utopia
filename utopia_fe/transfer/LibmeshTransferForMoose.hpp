@@ -432,10 +432,10 @@ namespace utopia {
             
             const int n_elements = n_elements_master + n_elements_slave;
             
-            std::cout<<"MASTER DOF"<<std::endl;
+            // std::cout<<"MASTER DOF"<<std::endl;
             copy_global_dofs(*master, dof_map_master, _from_var_num, dof_maps_[0], var_type_[0], n_elements);
             
-            std::cout<<"SLAVE DOF"<<std::endl;
+            // std::cout<<"SLAVE DOF"<<std::endl;
             copy_global_dofs(*slave,  dof_map_slave, _to_var_num, dof_maps_[1], var_type_[1], n_elements);
             
             //            copy_var_number(*master, var_number_[0]);
@@ -804,7 +804,7 @@ namespace utopia {
         
         if(has_slave) {
             write_space(slave_selection.begin(), slave_selection.end(), *s, spaces.dof_map(1),
-                        /*spaces.variable_number(1),*/ spaces.variable_order(1),1, os);
+                        /*spaces.variable_number(1),*/ spaces.variable_order(1), 1, os);
         }
         
         //   std::cout<<"------------------------------------WRITE_ELEM_SELEC--OUT----------------------------------------"<<std::endl;
@@ -1180,7 +1180,7 @@ namespace utopia {
         
         cutk::Settings custom_settings = settings;
         custom_settings.set("disable_redistribution", cutk::Boolean(true));
-        custom_settings.set("verbosity_level", cutk::Integer(2));
+        custom_settings.set("verbosity_level", cutk::Integer(1));
         
         
         cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, custom_settings);

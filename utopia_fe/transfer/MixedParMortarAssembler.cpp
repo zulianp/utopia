@@ -46,10 +46,10 @@ namespace utopia {
 
 			const int n_elements = n_elements_master + n_elements_slave;
 
-			std::cout<<"MASTER DOF"<<std::endl;
+			// std::cout<<"MASTER DOF"<<std::endl;
 			copy_global_dofs(*master, dof_maps_[0], var_type_[0], n_elements);
 
-			std::cout<<"SLAVE DOF"<<std::endl;
+			// std::cout<<"SLAVE DOF"<<std::endl;
 			copy_global_dofs(*slave,  dof_maps_[1], var_type_[1], n_elements);
 
 			copy_var_number(*master, var_number_[0]);
@@ -774,7 +774,7 @@ namespace utopia {
 
 
         cutk::Settings custom_settings = settings;
-//        custom_settings.set("disable_redistribution", cutk::Boolean(true));
+       // custom_settings.set("disable_redistribution", cutk::Boolean(true));
        custom_settings.set("verbosity_level", cutk::Integer(1));
 		
         
@@ -1104,7 +1104,7 @@ namespace utopia {
              
          	std::cout <<ownershipRangesMaster << std::endl;
              
-            std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
+            // std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
 
          }
 

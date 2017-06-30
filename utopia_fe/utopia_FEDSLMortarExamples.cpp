@@ -615,8 +615,8 @@ namespace utopia {
 		std::cout << "mortar_transfer_3D\n";
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
-		int n_master = 20;
-		int n_slave  = 30;
+		int n_master = 7;
+		int n_slave  = 11;
 		
 		auto mesh_master = make_shared<Mesh>(init.comm());
 		
@@ -882,8 +882,8 @@ namespace utopia {
 		EXPRESS_PROFILING_BEGIN()
 		
 		// mortar_transfer_2D(init);
-		mortar_transfer_3D(init);
-		// mortar_transfer_3D_monolithic(init);
+		// mortar_transfer_3D(init);
+		mortar_transfer_3D_monolithic(init);
 		// surface_mortar(init);
 		
 		//run_curved_poly_disc();
