@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-14
+* @Last Modified time: 2017-06-23
 */
 
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
@@ -363,6 +363,9 @@ protected:
                 Scalar value = bc.get(i);
                 if(value == 1)
                   c.set(i, 0);
+
+                // if((i + 1) % 3 == 0)
+                //   c.set(i, 0);
             }
           }
           return true; 

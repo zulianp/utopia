@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-07-15
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-13
+* @Last Modified time: 2017-06-16
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -355,98 +355,98 @@ namespace utopia
 
         void mprgp_test()
         {
-        	SizeType n = 10; 
-        	PetscScalar h = 1.0/(n-1);
+   //      	SizeType n = 10; 
+   //      	PetscScalar h = 1.0/(n-1);
 
 
-        	DSMatrixd A = sparse(n, n, 3);
-        	DVectord b, u, l; 
+   //      	DSMatrixd A = sparse(n, n, 3);
+   //      	DVectord b, u, l; 
 
-	        // 1d laplace 	
-	        {
-		        Write<DSMatrixd> w(A);
-		        Range r = row_range(A);
+	  //       // 1d laplace 	
+	  //       {
+		 //        Write<DSMatrixd> w(A);
+		 //        Range r = row_range(A);
 
-		        for(SizeType i = r.begin(); i != r.end(); ++i) {
-		            if(i > 0) {    
-		                A.add(i, i - 1, -1.0);    
-		            }
+		 //        for(SizeType i = r.begin(); i != r.end(); ++i) {
+		 //            if(i > 0) {    
+		 //                A.add(i, i - 1, -1.0);    
+		 //            }
 
-		            if(i < n-1) {
-		                A.add(i, i + 1, -1.0);
-		            }
+		 //            if(i < n-1) {
+		 //                A.add(i, i + 1, -1.0);
+		 //            }
 
-		            A.add(i, i, 2.0);
-		        }
-		    }
+		 //            A.add(i, i, 2.0);
+		 //        }
+		 //    }
 
-		    A = (n-1)*A;
+		 //    A = (n-1)*A;
 
-		    // bc conditions 
-		    {
-		        Range r = row_range(A);
-		        Write<DSMatrixd> w(A);
-		        if(r.begin() == 0) {
-		            A.set(0, 0, 1.);
-		            A.set(0, 1, 0);
-		        }
+		 //    // bc conditions 
+		 //    {
+		 //        Range r = row_range(A);
+		 //        Write<DSMatrixd> w(A);
+		 //        if(r.begin() == 0) {
+		 //            A.set(0, 0, 1.);
+		 //            A.set(0, 1, 0);
+		 //        }
 
-		        if(r.end() == n) {
-		            A.set(n-1, n-1, 1.);
-		            A.set(n-1, n-2, 0);
-		        }
-		    }
+		 //        if(r.end() == n) {
+		 //            A.set(n-1, n-1, 1.);
+		 //            A.set(n-1, n-2, 0);
+		 //        }
+		 //    }
 
-		   	l = -1 * values(n, 1);
-		    u =  values(n, 1);
+		 //   	l = -1 * values(n, 1);
+		 //    u =  values(n, 1);
 		    
-		    b = 50 * values(n, 1);
+		 //    b = 50 * values(n, 1);
 
-		    {
-	            Write<DVectord> w (b);
-	            Range rhs_range = range(b);;
-	            for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++)
-	            {
-	          		if(i > n/2)
-	                	b.set(i, -50);
+		 //    {
+	  //           Write<DVectord> w (b);
+	  //           Range rhs_range = range(b);;
+	  //           for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++)
+	  //           {
+	  //         		if(i > n/2)
+	  //               	b.set(i, -50);
 
-	                if(i ==0 || i == rhs_range.end()-1)
-	                	b.set(i, 0);
+	  //               if(i ==0 || i == rhs_range.end()-1)
+	  //               	b.set(i, 0);
 	  
-	            }
-	        }
+	  //           }
+	  //       }
 
-			b *= h; 
+			// b *= h; 
 
-			// just testing 
-			// u =  values(local_size(u).get(0), 999); 
-			// l =  values(local_size(u).get(0), -999); 
+			// // just testing 
+			// // u =  values(local_size(u).get(0), 999); 
+			// // l =  values(local_size(u).get(0), -999); 
 
-			auto box = make_box_constaints(make_ref(l), make_ref(u)); 
+			// auto box = make_box_constaints(make_ref(l), make_ref(u)); 
             
 
-            MPRGP<DSMatrixd, DVectord> mprgp;
-            mprgp.set_box_constraints(make_ref(box)); 
+   //          MPRGP<DSMatrixd, DVectord> mprgp;
+   //          mprgp.set_box_constraints(make_ref(box)); 
 
-            // initial guess 
-            DVectord x = 0 * b; 
+   //          // initial guess 
+   //          DVectord x = 0 * b; 
 
-            mprgp.verbose(false); 
-            mprgp.solve(A, b, x); 
+   //          mprgp.verbose(false); 
+   //          mprgp.solve(A, b, x); 
 
 
 
-            DVectord x_0 = 0 * x; 
-            auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-            SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
+   //          DVectord x_0 = 0 * x; 
+   //          auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+   //          SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 
-            nlsolver.set_box_constraints(make_ref(box)); 
+   //          nlsolver.set_box_constraints(make_ref(box)); 
 
-            nlsolver.verbose(false); 
-            nlsolver.max_it(50); 
-            nlsolver.solve(A, b, x_0);
+   //          nlsolver.verbose(false); 
+   //          nlsolver.max_it(50); 
+   //          nlsolver.solve(A, b, x_0);
 
-            assert(approxeq(x, x_0));
+   //          assert(approxeq(x, x_0));
         }
 
 
@@ -757,42 +757,42 @@ namespace utopia
 
         void petsc_sparse_semismooth_newton_test()
         {
-            using namespace utopia;
+   //          using namespace utopia;
 
-            // std::cout << "         Begin: petsc_sparse_semismooth_newton_test" << std::endl;
-            auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-            DSMatrixd A;
-            DVectord b, ub;
+   //          // std::cout << "         Begin: petsc_sparse_semismooth_newton_test" << std::endl;
+   //          auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+   //          DSMatrixd A;
+   //          DVectord b, ub;
 
-            SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
+   //          SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 
-            Parameters params;
-            params.verbose(false);
-            nlsolver.set_parameters(params);
+   //          Parameters params;
+   //          params.verbose(false);
+   //          nlsolver.set_parameters(params);
 
-            // initial guess
-            DVectord x_0 = values(_n, 0.0);
+   //          // initial guess
+   //          DVectord x_0 = values(_n, 0.0);
   
 
-            ExampleTestCase2<DSMatrixd, DVectord> example;
-            example.getOperators(_n, A, b, ub);
+   //          ExampleTestCase2<DSMatrixd, DVectord> example;
+   //          example.getOperators(_n, A, b, ub);
             
 
-            DVectord lb = -1 * std::numeric_limits<double>::infinity() * values(local_size(ub).get(0), 1); 
+   //          DVectord lb = -1 * std::numeric_limits<double>::infinity() * values(local_size(ub).get(0), 1); 
 
 
-			// auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+			// // auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
 			
-            auto box = BoxConstraints<DVectord>(make_ref(ub), "upper"); 
-            nlsolver.set_box_constraints(make_ref(box)); 
+   //          auto box = BoxConstraints<DVectord>(make_ref(ub), "upper"); 
+   //          nlsolver.set_box_constraints(make_ref(box)); 
 
 
 
 
-            nlsolver.verbose(false); 
+   //          nlsolver.verbose(false); 
 
-            nlsolver.max_it(5); 
-            nlsolver.solve(A, b, x_0);
+   //          nlsolver.max_it(5); 
+   //          nlsolver.solve(A, b, x_0);
 
             // disp(x_0); 
 
@@ -802,38 +802,38 @@ namespace utopia
 
         void petsc_sparse_nonlinear_semismooth_newton_test()
         {
-            using namespace utopia;
+            // using namespace utopia;
 
-            // std::cout << "         Begin: petsc_sparse_nonlinear_semismooth_newton_test" << std::endl;
-            auto lsolver = std::make_shared< ConjugateGradient<DSMatrixd, DVectord> >();
+            // // std::cout << "         Begin: petsc_sparse_nonlinear_semismooth_newton_test" << std::endl;
+            // auto lsolver = std::make_shared< ConjugateGradient<DSMatrixd, DVectord> >();
 
-            NonlinSemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
-            nlsolver.enable_differentiation_control(false);
-            Parameters params;
-            params.verbose(false);
-            nlsolver.set_parameters(params);
+            // NonlinSemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
+            // nlsolver.enable_differentiation_control(false);
+            // Parameters params;
+            // params.verbose(false);
+            // nlsolver.set_parameters(params);
 
-            DSMatrixd A, B;
-            DVectord upbo;
+            // DSMatrixd A, B;
+            // DVectord upbo;
 
-            ExampleTestCase<DSMatrixd, DVectord> example;
-            example.getOperators(_n, A, B, upbo);
+            // ExampleTestCase<DSMatrixd, DVectord> example;
+            // example.getOperators(_n, A, B, upbo);
 
-            DVectord rhs = values(_n, 60);
-            {
-                Write<DVectord> w(rhs);
-                Range rhs_range = range(rhs);
-                if (rhs_range.begin() == 0) rhs.set(0, 0);
-                if (rhs_range.end() == _n) rhs.set(_n - 1, 0);
+            // DVectord rhs = values(_n, 60);
+            // {
+            //     Write<DVectord> w(rhs);
+            //     Range rhs_range = range(rhs);
+            //     if (rhs_range.begin() == 0) rhs.set(0, 0);
+            //     if (rhs_range.end() == _n) rhs.set(_n - 1, 0);
 
-            }
+            // }
 
-            QuadraticFunctionConstrained<DSMatrixd, DVectord> funn(rhs, A, B, upbo);
+            // QuadraticFunctionConstrained<DSMatrixd, DVectord> funn(rhs, A, B, upbo);
 
-            auto box = BoxConstraints<DVectord>(make_ref(upbo), "upper"); 
-            nlsolver.set_box_constraints(make_ref(box)); 
+            // auto box = BoxConstraints<DVectord>(make_ref(upbo), "upper"); 
+            // nlsolver.set_box_constraints(make_ref(box)); 
 
-            nlsolver.solve(funn, rhs);
+            // nlsolver.solve(funn, rhs);
            // std::cout << "         End: petsc_sparse_nonlinear_semismooth_newton_test" << std::endl;
 
         }

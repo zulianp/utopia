@@ -1,0 +1,295 @@
+/*
+* @Author: alenakopanicakova
+* @Date:   2016-05-11
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-06-30
+*/
+
+#ifndef UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
+#define UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
+#include "utopia_NonLinearSolver.hpp"
+#include "utopia_TR_base.hpp"
+#include "utopia_TRBoxSubproblem.hpp"
+#include "utopia_Dogleg.hpp"
+#include "utopia_SteihaugToint.hpp"
+#include "utopia_Parameters.hpp"    
+
+
+ namespace utopia 
+ {
+    	template<class Matrix, class Vector>
+      /**
+       * @brief      Trust region solver taking into account also bound constrains.
+       */ 
+     	class TrustRegionVariableBound :  public NonLinearSolver<Matrix, Vector>, 
+                                        public TrustRegionBase<Matrix, Vector> 
+      {
+        typedef UTOPIA_SCALAR(Vector)    Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+
+        typedef utopia::TRBoxSubproblem<Matrix, Vector> TRBoxSubproblem; 
+        typedef utopia::TrustRegionBase<Matrix, Vector> TrustRegionBase; 
+        typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
+        
+        typedef utopia::BoxConstraints<Vector>              BoxConstraints;
+     	
+     	public:
+      TrustRegionVariableBound(const std::shared_ptr<TRBoxSubproblem> &tr_subproblem = std::shared_ptr<TRBoxSubproblem>(),
+                              const Parameters params = Parameters())
+                              : NonLinearSolver(tr_subproblem, params)  
+      {
+
+        set_parameters(params);        
+      }
+
+      /* @brief      Sets the parameters.
+      *
+      * @param[in]  params  The parameters
+      */
+      virtual void set_parameters(const Parameters params) override
+      {
+
+        NonLinearSolver::set_parameters(params);
+        TrustRegionBase::set_parameters(params);
+      }
+
+
+
+      /**
+       * @brief      Trust region solve. 
+       *
+       * @param      fun   The nonlinear solve function.
+       * @param      x_k   Initial gues/ solution
+       *
+       *  
+       * @return     true
+       */
+      bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override 
+      {
+        using namespace utopia;
+
+        // passing solver and parameters into subproblem 
+        bool converged = false, accepted = true; 
+        NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
+
+        Scalar delta, ared, pred, rho, E_old, E_new; 
+
+        SizeType it = 0; 
+        Scalar rad_flg, g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
+        Vector g = 0*x_k, p_k = 0*x_k, x_k1 = 0*x_k;
+        Matrix H; 
+
+        fun.gradient(x_k, g);
+
+        // TR delta initialization
+        delta = this->delta0(); 
+        rad_flg = this->delta_init(x_k ,delta); 
+        //delta = norm2(g);   // also possible
+        // delta = 10;        // testing 
+
+        // delta = 10000000000000000; 
+
+
+        
+        g0_norm = norm2(g);
+        g_norm = g0_norm;
+        
+        // print out - just to have idea how we are starting 
+        if(this->verbose_)
+        {
+          this->init_solver("TRUST_REGION_BASE",
+                              {" it. ", "||P_c(x-g)-x||","J_k", "J_{k+1}", "rho", "ared","pred", "delta_k", "|| p_k || "});
+          PrintInfo::print_iter_status(it, {g_norm}); 
+        }
+
+        it++; 
+        fun.value(x_k, E_old); 
+        fun.gradient(x_k, g);
+
+        // solve starts here 
+        while(!converged)
+        {
+          if(accepted)
+          {
+            fun.value(x_k, E_old); 
+            fun.hessian(x_k, H); 
+          }
+    //----------------------------------------------------------------------------
+    //     new step p_k w.r. ||p_k|| <= delta
+    //----------------------------------------------------------------------------          
+          if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver_.get()))
+          {
+            p_k = 0 * p_k; 
+            tr_subproblem->current_radius(delta);  
+
+            Vector ub, lb; 
+            tr_subproblem->prepare_tr_box_solve( delta, x_k, box_constraints_, ub, lb); 
+            
+            auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+            tr_subproblem->tr_constrained_solve(H, g, p_k, box);
+          }
+
+          this->get_pred(g, H, p_k, pred); 
+    //----------------------------------------------------------------------------
+    //----------------------------------------------------------------------------
+          // trial point 
+          x_k1 = x_k + p_k; 
+
+          // value of the objective function with correction 
+          fun.value(x_k1, E_new);
+
+          // decrease ratio 
+          ared = E_old - E_new;                // reduction observed on objective function
+          pred = std::abs(pred); 
+          rho = ared/ pred;               // decrease ratio         
+
+    //----------------------------------------------------------------------------
+    //     acceptance of trial point 
+    //----------------------------------------------------------------------------
+          if(ared < 0 || pred < 0)
+            rho = 0.0; 
+          else if(rho != rho)
+            rho = 0.0; 
+
+          this->trial_point_acceptance(rho, p_k, x_k, x_k1); 
+    //----------------------------------------------------------------------------
+    //    convergence check 
+    //----------------------------------------------------------------------------
+          if(accepted)
+            fun.gradient(x_k, g); 
+          
+          g_norm = this->criticality_measure_infty(x_k, g); 
+          s_norm = norm2(p_k); 
+
+          if(this->verbose_)
+            PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, rho, ared, pred, delta, s_norm}); 
+
+          converged = TrustRegionBase::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, s_norm, delta); 
+
+    //----------------------------------------------------------------------------
+    //      tr. radius update 
+    //----------------------------------------------------------------------------
+          this->delta_update(rho, p_k, delta); 
+          it++; 
+        }
+
+          return false;
+      }
+
+
+      /**
+       * @brief      Sets the box constraints.
+       *
+       * @param      box   The box
+       *
+       */
+      virtual bool set_box_constraints(BoxConstraints & box)
+      {
+        box_constraints_ = box; 
+        return true; 
+      }
+
+      /**
+       * @brief      Gets the box constraints.
+       *
+       * @return     The box constraints.
+       */
+      virtual BoxConstraints & get_box_constraints()
+      {
+        return box_constraints_; 
+      }
+
+
+
+  protected:
+    /**
+     * @brief      Update of TR radius
+     *
+     * @param[in]  rho     The rho
+     * @param[in]  p_k     The step
+     * @param      radius  The radius
+     *
+     */
+      virtual bool delta_update(const Scalar &rho, const Vector &p_k, Scalar &radius) override
+      {
+        if(rho < this->eta1())
+          radius = this->gamma1() * radius; 
+        else if(rho > this->eta2())
+          radius = this->gamma2() * radius; 
+        
+        return true; 
+      }
+
+      /**
+       * @brief      Computes criticality measure, which is later used for termination conditions
+       *
+       * @param[in]  x     The current iterate
+       * @param[in]  g     The gradient
+       *
+       */
+      virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g)
+      {
+
+        Vector Pc; 
+        Vector x_g = x - g; 
+        Vector ub, lb; 
+
+        Scalar n = local_size(x).get(0); 
+
+        if(box_constraints_.has_upper_bound())
+          ub = *box_constraints_.upper_bound(); 
+        else
+          ub =  local_values(n, 9e15); 
+
+        if(box_constraints_.has_lower_bound())
+          lb = *box_constraints_.lower_bound(); 
+        else
+          lb =  local_values(n, -9e15); 
+
+        get_projection(x_g, lb, ub, Pc); 
+        
+        Pc -= x; 
+        return norm2(Pc); 
+      }
+
+
+
+      /**
+       * @brief      Projection onto feasible set
+       *
+       * @param[in]  x     The quantity to be projected 
+       * @param[in]  lb    The lower bound
+       * @param[in]  ub    The upper bound
+       * @param      Pc    Projection
+       *
+       */
+      bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc)
+      {
+          Pc = local_values(local_size(x).get(0), 1.0);; 
+          {
+              Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
+              Write<Vector> wv(Pc); 
+
+              each_write(Pc, [ub, lb, x](const SizeType i) -> double { 
+                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
+                          if(li >= xi)
+                            return li; 
+                          else
+                            return (ui <= xi) ? ui : xi; }   );
+          }
+
+          return true;
+      }
+
+
+
+    protected: 
+      BoxConstraints box_constraints_; 
+
+
+  };
+
+}
+
+#endif //UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
+

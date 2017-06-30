@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-10-04
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-09
+* @Last Modified time: 2017-06-15
 */
 #ifdef WITH_PETSC
 
@@ -98,8 +98,8 @@ namespace utopia
 
         virtual bool apply(const Vector &b, Vector &x) override
     	{
-    		KSPSolver::apply(b, x); 
-    		x *= -1;  
+    		Vector grad = -1 * b; 
+    		KSPSolver::apply(grad, x); 
     		return true; 
     	}
 

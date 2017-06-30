@@ -12,7 +12,7 @@
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
-#include "utopia_TRSubproblem.hpp"
+#include "utopia_TRBoxSubproblem.hpp"
 #include "utopia_Linear.hpp"
 #include "utopia_Level.hpp"
 #include "utopia_LS_Strategy.hpp"
@@ -38,7 +38,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
         typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
-        typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem; 
+        typedef utopia::TRBoxSubproblem<Matrix, Vector>        TRBoxSubproblem; 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
 
@@ -52,8 +52,8 @@ namespace utopia
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
         RMTR_infty(    
-                const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse = std::shared_ptr<TRSubproblem>(),
-                const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother = std::shared_ptr<TRSubproblem>(),
+                const std::shared_ptr<TRBoxSubproblem> &tr_subproblem_coarse = std::shared_ptr<TRBoxSubproblem>(),
+                const std::shared_ptr<TRBoxSubproblem> &tr_subproblem_smoother = std::shared_ptr<TRBoxSubproblem>(),
                 // const std::shared_ptr<LSStrategy> &ls_strategy = std::shared_ptr<LSStrategy>(),
                 const Parameters params = Parameters()): 
                 RMTR<Matrix,Vector, FunctionType, CONSISTENCY_LEVEL>(tr_subproblem_coarse, tr_subproblem_smoother, params) 

@@ -9,8 +9,14 @@
 #include "utopia_TR_base.hpp"
 #include "utopia_TR_NormalEquation.hpp" 
 
+#include "utopia_TrustRegionVariableBound.hpp"
+
+#include "utopia_ActiveSetTRSubproblem.hpp"
 #include "utopia_TR_MGSubproblem.hpp"
 #include "utopia_TrustRegion.hpp"
+
+
+
 
 #include "utopia_TR_Factory.hpp"
 

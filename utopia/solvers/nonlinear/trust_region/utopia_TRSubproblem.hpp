@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-07
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-09
+* @Last Modified time: 2017-06-15
 */
 #ifndef TR_SUBPROBLEM
 #define TR_SUBPROBLEM
@@ -35,7 +35,7 @@ namespace  utopia
              *
              * @param[in]  params  The parameters
              */
-            void set_parameters(const Parameters params) override
+            virtual void set_parameters(const Parameters params) override
             {
                 IterativeSolver::set_parameters(params); 
                 current_radius(params.delta0()); 
@@ -46,7 +46,7 @@ namespace  utopia
              *
              * @param[in]  radius  The radius
              */
-            void current_radius(const Scalar &radius)
+            virtual void current_radius(const Scalar &radius)
             {
                 current_radius_ = radius; 
             }; 
@@ -54,7 +54,7 @@ namespace  utopia
             /**
              * @brief      Getter for current radius. 
              */
-            Scalar current_radius()
+            virtual Scalar current_radius()
             {
                 return current_radius_;
             }; 
@@ -99,7 +99,7 @@ namespace  utopia
 
 
         public: 
-            virtual bool constrained_solve(const Matrix &H, const Vector &g, Vector &p_k)
+            virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k)
             {
                 update(make_ref(H));
                 apply(g, p_k); 
@@ -153,9 +153,12 @@ namespace  utopia
              }
          }
 
-
-        Scalar current_radius_;                     /*!< Radius on current iterate - used to solve constrained QP wrt TR bound. */  
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */  
+
+
+
+    protected: 
+        Scalar current_radius_;                     /*!< Radius on current iterate - used to solve constrained QP wrt TR bound. */  
         
     };
 }

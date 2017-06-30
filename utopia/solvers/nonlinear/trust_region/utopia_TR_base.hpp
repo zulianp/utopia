@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-07
+* @Last Modified time: 2017-06-16
 */
 
 #ifndef UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
@@ -169,6 +169,31 @@ namespace utopia
       }
 
       return true; 
+    }
+
+
+    /**
+     * @brief      Trial ponit acceptance 
+     *
+     * @param[in]  rho   The rho
+     * @param[in]  p_k   The step/direction
+     * @param[in]  x_k   The current iterate
+     * @param      x_k1  The new_iterate - already in state x_k + p_k
+     *
+     * @return     accepted or no 
+     */
+    virtual bool trial_point_acceptance(const Scalar &rho, const Vector & p_k, Vector & x_k, const Vector & x_k1)
+    {
+      // good reduction, accept trial point 
+      if (rho >= rho_tol_)
+      {
+        x_k  = x_k1; 
+        return true; 
+      }
+      // otherwise, keep old point
+      else
+        return false; 
+
     }
 
 

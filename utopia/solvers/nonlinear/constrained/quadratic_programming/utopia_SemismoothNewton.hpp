@@ -2,7 +2,7 @@
 * @Author: Alena Kopanicakova
 * @Date:   2017-05-22
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-23
+* @Last Modified time: 2017-06-30
 */
 
 
@@ -38,9 +38,9 @@ namespace utopia
         // We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
         bool solve(const Matrix &A, const Vector &b, Vector &x)  override
         {
-            if( constraints_->has_upper_bound() && constraints_->has_lower_bound())
+            if( constraints_.has_upper_bound() && constraints_.has_lower_bound())
                 box_solve(A, b, x); 
-            else if((constraints_->has_upper_bound() && !constraints_->has_lower_bound()) || (!constraints_->has_upper_bound() && constraints_->has_lower_bound()))
+            else if((constraints_.has_upper_bound() && !constraints_.has_lower_bound()) || (!constraints_.has_upper_bound() && constraints_.has_lower_bound()))
                 single_bound_solve(A, b, x); 
             else
                 std::cout<<"if u do not have constraints, use something else..... \n"; 
@@ -55,15 +55,16 @@ namespace utopia
         }
 
 
-        virtual bool set_box_constraints(const std::shared_ptr<BoxConstraints> & box)
+        virtual bool set_box_constraints(const BoxConstraints & box)
         {
           constraints_ = box; 
           return true; 
         }
 
-        virtual std::shared_ptr<BoxConstraints> get_box_constraints() const
+        virtual bool  get_box_constraints(BoxConstraints & box)
         {
-          return constraints_; 
+            box = constraints_; 
+            return true; 
         }
 
 
@@ -94,10 +95,10 @@ private:
 
             Vector bound; 
 
-            if(constraints_->has_upper_bound())
-                bound = *constraints_->upper_bound(); 
+            if(constraints_.has_upper_bound())
+                bound = *constraints_.upper_bound(); 
             else
-                bound = *constraints_->lower_bound(); 
+                bound = *constraints_.lower_bound(); 
 
             Vector lambda    = local_zeros(n);
             Vector active    = local_zeros(n);
@@ -142,7 +143,7 @@ private:
                     Write<Vector> wa(active);
                     Read<Vector> rdp(d);                                   
 
-                    if(constraints_->has_upper_bound())
+                    if(constraints_.has_upper_bound())
                     {
                         Range rr = range(d);
                         for (SizeType i = rr.begin(); i != rr.end(); i++) 
@@ -203,23 +204,19 @@ private:
             return true;
         }   
 
-
+        // TODO: make this solve more efficient
         bool box_solve(const Matrix &A, const Vector &b, Vector &x)  
         {
             using namespace utopia;
 
             SizeType n = local_size(A).get(0), m = local_size(A).get(1); 
-
             Scalar x_diff_norm;
-
 
             SizeType it = 0;
             bool converged = false; 
 
-
-            Vector lb = *constraints_->lower_bound(); 
-            Vector ub = *constraints_->upper_bound(); 
-
+            Vector lb = *constraints_.lower_bound(); 
+            Vector ub = *constraints_.upper_bound(); 
 
             Vector lambda_p     = local_zeros(n);
             Vector lambda_m     = local_zeros(n);
@@ -229,7 +226,6 @@ private:
             
 
             Vector x_old = x;
-
             Vector d_p, d_m, prev_active;
 
             // active/inactive constraints 
@@ -244,21 +240,19 @@ private:
             linear_solver_->solve(G, lb, G_inv_lb); 
             
 
-
             if(this->verbose())
                 this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "      || x_k - x_{k-1} ||"});
-            
-            while(!converged) 
-            {
-                d_p = lambda_p + c_ * (G * x - ub);
-                d_m = lambda_m + c_ * (G * x - lb);
+
 
                 if(is_sparse<Matrix>::value) 
                 {
                     Ac_p = local_sparse(n, m, 1); 
                     Ac_m = local_sparse(n, m, 1); 
 
-                    Ic   = local_sparse(n, m, 1); 
+                    Ac_p  = diag(Vector(local_zeros(n))); 
+                    Ac_m  = diag(Vector(local_zeros(n))); 
+
+                    Ic   = local_identity(n, m); 
                     Vector o = local_values(n, 1.0); 
                     Ic = diag(o); 
                 } 
@@ -266,84 +260,95 @@ private:
                 {
                     Ac_p = local_zeros(n); 
                     Ac_m = local_zeros(n);
-                    Ic   = local_values(n, m, 1.0); 
+                    Ic   = local_identity(n, m); 
                 }
-               
-                active   = local_zeros(n);
 
+
+                while(!converged) 
                 {
-                    Write<Matrix> wAC_p(Ac_p);
-                    Write<Matrix> wAC_m(Ac_m);
-                    Write<Vector> wa(active);
+                    d_p = lambda_p + c_ * (G * x - ub);
+                    d_m = lambda_m + c_ * (G * x - lb);
 
-                    Read<Vector> rdp(d_p);                    
-                    Read<Vector> rdm(d_m);                    
-
-                    Range rr = row_range(Ac_p);
-                    for (SizeType i = rr.begin(); i != rr.end(); i++) 
                     {
-                        if (d_p.get(i) >= 0) 
-                        {
-                            Ac_p.set(i, i, 1.0);
-                            active.set(i, 1.0);
-                        }
-                        else if(d_m.get(i) <= 0)
-                        {
-                            Ac_m.set(i, i, 1.0);
-                            active.set(i, 1.0);
-                        }
+                        Write<Matrix> wAC_p(Ac_p);
+                        Write<Matrix> wAC_m(Ac_m);
+                        Write<Vector> wa(active);
 
+                        Read<Vector> rdp(d_p);                    
+                        Read<Vector> rdm(d_m);               
+                        Read<Vector> rb(b);               
+                        
+
+                        Range rr = row_range(Ac_p);
+                        for (SizeType i = rr.begin(); i != rr.end(); i++) 
+                        {
+                            if (d_p.get(i) >= 0) 
+                            {
+                                Ac_p.set(i, i, 1.0);
+                                active.set(i, 1.0);
+                            }
+                            else if(d_m.get(i) <= 0)
+                            {
+                                Ac_m.set(i, i, 1.0);
+                                active.set(i, 1.0);
+                            }
+                            else if (lambda_p.get(i) < 0) 
+                            {
+                                Ac_p.set(i, i, 0.0);
+                                active.set(i, 0.0);
+                            }
+                            else if(lambda_m.get(i) < 0)
+                            {
+                                Ac_m.set(i, i, 0.0);
+                                active.set(i, 0.0);
+                            }
+
+                        }
                     }
-                }
 
-                A_s  = diag(active); 
-                Ic -= A_s; 
 
-                if (it > 1) 
-                {
-                    // active set doesn't change anymore => converged 
-                    SizeType sum = norm1(prev_active - active);
-                    if (sum == 0) 
+                    A_s  = diag(active); 
+                    Ic   = local_identity(n, m); 
+                    Ic -= A_s; 
+
+
+                    if (it > 1) 
                     {
-                        if(this->verbose())
-                            std::cout<<"SemismoothNewton:: set is not changing ... \n"; 
-                        converged = true; 
+                        // active set doesn't change anymore => converged 
+                        SizeType sum = norm1(prev_active - active);
+                        if (sum == 0) 
+                        {
+                            if(this->verbose())
+                                std::cout<<"SemismoothNewton:: set is not changing ... \n"; 
+                            converged = true; 
+                        }
+                
                     }
-            
+
+                    prev_active = active;        
+                    H = A_s + Ic * A;         
+
+                    Vector rhs =  Ic * b + Ac_p * G_inv_ub + Ac_m * G_inv_lb; 
+                    linear_solver_->solve(H, rhs, x); 
+        
+                    lambda_p = Ac_p * (b - A * x);
+                    lambda_m = Ac_m * (A * x - b);
+
+
+                    // check for change in iterates 
+                    x_diff_norm = (it > 1) ? norm2(x - x_old): 9e9; 
+
+                    
+                    // print iteration status on every iteration 
+                    if(this->verbose())
+                        PrintInfo::print_iter_status(it, {x_diff_norm}); 
+
+                    if(!converged)
+                        converged = this->check_convergence(it, x_diff_norm, 1, 1); 
+                    
+                    x_old = x;
+                    it++;
                 }
-
-                prev_active = active;        
-
-                H = A_s + Ic * A;         
-
-                Vector rhs =  Ic * b + Ac_p * G_inv_ub + Ac_m * G_inv_lb; 
-
-                linear_solver_->solve(H, rhs, x); 
-    
-                lambda_p = Ac_p * (b - A * x);
-
-                // TODO::  check why it works with -g and +g (because sign does not matter in case of eq ? or something else ?)
-                lambda_m = Ac_m * (A * x - b);
-
-                if(it > 1)
-                {
-                    x_diff_norm = norm2(x - x_old);
-                }
-                else
-                {
-                    x_diff_norm = 9999; 
-                }
-                
-                // print iteration status on every iteration 
-                if(this->verbose())
-                    PrintInfo::print_iter_status(it, {x_diff_norm}); 
-
-                if(!converged)
-                    converged = this->check_convergence(it, x_diff_norm, 1, 1); 
-                
-                x_old = x;
-                it++;
-            }
             
             return true;
         }
@@ -351,7 +356,7 @@ private:
 
 
         std::shared_ptr <Solver>        linear_solver_;  
-        std::shared_ptr<BoxConstraints> constraints_; 
+        BoxConstraints                  constraints_; 
         Scalar c_; 
     };
 

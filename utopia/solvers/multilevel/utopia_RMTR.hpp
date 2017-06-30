@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-15
+* @Last Modified time: 2017-06-23
 */
 
 #ifndef UTOPIA_RMTR_HPP
@@ -76,7 +76,7 @@ namespace utopia
             _it_global                  = 0;          
             _delta_init                 = 1000000; 
             _parameters                 = params; 
-            _max_coarse_it              = 10;  
+            _max_coarse_it              = 30;  
             _max_smoothing_it           = 2;
             _eps_delta_termination      = 0.001; 
             _delta_min                  = 1e-10; 
@@ -709,12 +709,12 @@ namespace utopia
             if(level == 1)
             {
                 _coarse_tr_subproblem->current_radius(get_delta(level-1));  
-                _coarse_tr_subproblem->constrained_solve(H, g, s); 
+                _coarse_tr_subproblem->tr_constrained_solve(H, g, s); 
             }
             else
             {
                 _smoother_tr_subproblem->current_radius(get_delta(level-1));  
-                _smoother_tr_subproblem->constrained_solve(H, g, s); 
+                _smoother_tr_subproblem->tr_constrained_solve(H, g, s); 
             }
 
             return true; 
