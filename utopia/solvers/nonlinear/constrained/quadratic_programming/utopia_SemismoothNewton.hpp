@@ -2,7 +2,7 @@
 * @Author: Alena Kopanicakova
 * @Date:   2017-05-22
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-30
+* @Last Modified time: 2017-07-02
 */
 
 
@@ -81,124 +81,112 @@ namespace utopia
 
 private: 
 
-        bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x)
+        bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x_new)
         {
+
             using namespace utopia;
+            
+            Vector g; 
+            if(constraints_.has_upper_bound())
+                g = *constraints_.upper_bound(); 
+            else
+                g = *constraints_.lower_bound(); 
 
-            SizeType n = local_size(A).get(0), m = local_size(A).get(1); 
+            SizeType local_N = local_size(x_new).get(0);
 
-            Scalar x_diff_norm;
-
-
-            SizeType it = 0;
+            Scalar c = 1;
+            SizeType iterations = 0;
             bool converged = false; 
 
-            Vector bound; 
-
-            if(constraints_.has_upper_bound())
-                bound = *constraints_.upper_bound(); 
-            else
-                bound = *constraints_.lower_bound(); 
-
-            Vector lambda    = local_zeros(n);
-            Vector active    = local_zeros(n);
-            Vector G_inv     = local_zeros(n);
-
-            Vector x_old = x;
+            Vector lambda = local_zeros(local_N);
+            Vector active = local_zeros(local_N);
+            Vector Ginvg  = local_zeros(local_N);
+            Vector x_old = x_new;
 
             Vector d, prev_active;
 
             // active/inactive constraints 
-            Matrix A_s, Ic;
+            Matrix Ac;
+            Matrix Ic;
 
-            // G can be changed to something else
-            Matrix G = identity(n, n);
+            //G can be changed to something else
+            Matrix G = local_identity(local_N, local_N);
 
-            Matrix H;
+            Matrix M;
 
-            linear_solver_->solve(G, bound, G_inv); 
-    
+            if(!this->linear_solve(G, g, Ginvg)) {
+                return false;
+            }
 
-            if(this->verbose())
-                this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "      || x_k - x_{k-1} ||"});
+            Scalar f_norm = 999999999999;
+
+            this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "|| g ||"});
             
             while(!converged) 
             {
-                d = lambda + c_ * (G * x - bound);
+                d = lambda + c * (G * x_new - g);
 
-                if(is_sparse<Matrix>::value) 
-                {
-                    Ic   = local_sparse(n, m, 1); 
-                    Vector o = local_values(n, 1.0); 
-                    Ic = diag(o); 
-                } 
-                else 
-                {
-                    Ic   = local_values(n, m, 1.0); 
+                if(is_sparse<Matrix>::value) {
+                    Ac = local_sparse(local_N, local_N, 1);
+                    Ic = local_sparse(local_N, local_N, 1);
+                } else {
+                    Ac = local_zeros({local_N, local_N});
+                    Ic = local_zeros({local_N, local_N});
                 }
                
-                active   = local_zeros(n);
-
                 {
+                    Write<Matrix> wAC(Ac);
                     Write<Vector> wa(active);
-                    Read<Vector> rdp(d);                                   
+                    Write<Matrix> wIC(Ic);
 
-                    if(constraints_.has_upper_bound())
+                    Range rr = row_range(Ac);
+                    for (SizeType i = rr.begin(); i != rr.end(); i++) 
                     {
-                        Range rr = range(d);
-                        for (SizeType i = rr.begin(); i != rr.end(); i++) 
+                        if (d.get(i) > 0) 
                         {
-                            if (d.get(i) >= 0) 
-                                active.set(i, 1.0);
+                            Ac.set(i, i, 1.0);
+                            active.set(i, 1.0);
                         }
-                    }
-                    else
-                    {
-                        Range rr = range(d);
-                        for (SizeType i = rr.begin(); i != rr.end(); i++) 
+                        else 
                         {
-                            if (d.get(i) <= 0) 
-                                active.set(i, 1.0);
+                            Ic.set(i, i, 1.0);
                         }
                     }
                 }
 
-                A_s  = diag(active); 
-                Ic -= A_s; 
-
-                if (it > 1) 
+                if (iterations > 1) 
                 {
-                    // active set doesn't change anymore => converged 
                     SizeType sum = norm1(prev_active - active);
+
+                    // active set doesn't change anymore => converged 
                     if (sum == 0) 
                     {
-                        if(this->verbose())
-                            std::cout<<"SemismoothNewton:: set is not changing ... \n"; 
-                        converged = true; 
+                        // fix this to be done in other way 
+                        converged = this->check_convergence(iterations, 1e-15, 1, 1); 
+                        return true;
                     }
                 }
 
-                prev_active = active;        
+                prev_active = active;
 
-                H = A_s + Ic * A;         
+                M = Ac + Ic * A;
+                
+                if(!this->linear_solve(M, (Ic * b + Ac * Ginvg), x_new)) {
+                    return false;
+                }
 
-                Vector rhs =  Ic * b + A_s * G_inv; 
+                lambda = Ac * (b - A * x_new);
 
-                linear_solver_->solve(H, rhs, x); 
-    
-                lambda = A_s * (b - A * x);
-
-                x_diff_norm = norm2(x - x_old);
+                f_norm = norm2(x_new - x_old);
                 
                 // print iteration status on every iteration 
-                if(this->verbose())
-                    PrintInfo::print_iter_status(it, {x_diff_norm}); 
+                if(this->verbose_)
+                    PrintInfo::print_iter_status(iterations, {f_norm}); 
 
-                if(!converged)
-                    converged = this->check_convergence(it, x_diff_norm, 1, 1); 
+                converged = this->check_convergence(iterations, f_norm, 1, 1); 
                 
-                x_old = x;
-                it++;
+                x_old = x_new;
+                iterations++;
             }
             
             return true;
