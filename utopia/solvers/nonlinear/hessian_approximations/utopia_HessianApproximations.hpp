@@ -39,8 +39,8 @@ namespace utopia
 
 
 
-            virtual bool approximate_hessian( Function<Matrix, Vector> &fun,  const Vector &sol_new, const Vector &step, Matrix &hessian_old_new,  Vector &grad_old_new) = 0;
-            virtual bool approximate_hessian_inverse( Function<Matrix, Vector> &fun,  const Vector &sol_new, const Vector &step, Matrix &hessian_old_new,  Vector &grad_old_new) {return 0; };
+            virtual bool approximate_hessian( Function<Matrix, Vector> &/*fun*/,  const Vector & /*sol_new*/, const Vector & /*step*/, Matrix & /*hessian_old_new*/,  Vector & /*grad_old_new*/) = 0;
+            virtual bool approximate_hessian_inverse( Function<Matrix, Vector> & /*fun*/,  const Vector & /*sol_new*/, const Vector & /*step*/, Matrix & /*hessian_old_new*/,  Vector & /*grad_old_new*/) {return 0; };
         };
         
 

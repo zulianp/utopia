@@ -1,6 +1,18 @@
 #ifndef UTOPIA_CORE_HPP
 #define UTOPIA_CORE_HPP
 
+
+// to get rid of unused variables in Realease build 
+#define ASSERT_DEBUG
+
+#ifdef ASSERT_DEBUG
+#define ASSERT(x) do { (void)sizeof(x);} while (0)
+#else
+#include <assert.h>
+#define ASSERT(x) assert(x)
+#endif
+
+
 #include "utopia_Expressions.hpp"
 #include "utopia_AuxiliaryExpressions.hpp"
 #include "utopia_ExpressionsParallel.hpp"
@@ -10,8 +22,6 @@
 /** @defgroup base_functions Base Functions
  *  @brief      Base functions used in utopia programms.
  */
-
-
 
 
 #include "utopia_Backend.hpp"

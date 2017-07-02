@@ -26,7 +26,7 @@ namespace utopia {
                     result
             );
 
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -52,7 +52,7 @@ namespace utopia {
                     0.0,
                     result);
 
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -78,7 +78,7 @@ namespace utopia {
                     0.0,
                     result);
 
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -105,7 +105,7 @@ namespace utopia {
                     0.0,
                     result);
 
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -132,7 +132,7 @@ namespace utopia {
                     0.0,
                     result);
 
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
             return result;

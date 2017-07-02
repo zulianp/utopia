@@ -11,8 +11,6 @@
 namespace utopia 
 {
 
-
-
 	bool read(const std::string &path, std::string &str);
 	bool write(const std::string &path, const std::string &str);
 	void disp(const std::string &str);

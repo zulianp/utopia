@@ -36,7 +36,7 @@ namespace utopia {
 	class Traits< Trace<Expr> > : public Traits<Expr> {};
 
 	template<class Expr>
-	inline Size size(const Trace<Expr> &expr)
+	inline Size size(const Trace<Expr> &/*expr*/)
 	{
 		return {1};
 	}

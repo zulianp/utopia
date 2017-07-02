@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-14
+* @Last Modified time: 2017-07-02
 */
 
 #ifndef UTOPIA_FAS_HPP
@@ -59,7 +59,7 @@ namespace utopia
          *
          * @param[in]  params  The parameters
          */
-        void set_parameters(const Parameters params)  // override
+        void set_parameters(const Parameters params) override
         {
             NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params); 
             _smoother->set_parameters(params); 
@@ -72,7 +72,7 @@ namespace utopia
          *
          * @return     Name of class
          */
-        virtual std::string name_id()
+        virtual std::string name_id() override
         {
             return "FAS"; 
         }

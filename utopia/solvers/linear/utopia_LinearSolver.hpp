@@ -27,7 +27,7 @@ namespace  utopia
     
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;
 
-        virtual void set_parameters(const Parameters params) { } 
+        virtual void set_parameters(const Parameters /*params*/) { } 
 
 
         /**

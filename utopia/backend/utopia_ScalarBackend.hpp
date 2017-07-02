@@ -60,7 +60,7 @@ namespace utopia {
 
 
 		template<typename Left, typename Right, typename Operation, typename Result>
-		static inline void aux_apply(const Left &left, const Right &right, const Operation &op, Result &result)
+		static inline void aux_apply(const Left &left, const Right &right, const Operation &/*op*/, Result &result)
 		{
 			auto f = Operation::template Fun<Right>();
 			result = f(left, right);

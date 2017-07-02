@@ -22,13 +22,13 @@ namespace utopia {
 		}
 
 		template<int Order>
-		inline static Scalar eval_at(const Factory<Zeros, Order> &, const SizeType, const SizeType j = 0)
+		inline static Scalar eval_at(const Factory<Zeros, Order> &, const SizeType, const SizeType /*j = 0*/)
 		{
 			return 0.0;
 		}
 
 		template<typename T, int Order>
-		inline static Scalar eval_at(const Factory<Values<T>, Order> &expr, const SizeType, const SizeType j = 0)
+		inline static Scalar eval_at(const Factory<Values<T>, Order> &expr, const SizeType, const SizeType /*j = 0*/)
 		{
 			return expr.type().value();
 		}
@@ -180,7 +180,7 @@ namespace utopia {
 		template<class Tensor>
 		inline static Scalar eval_at(const Wrapper<Tensor, 1> &expr, const SizeType i, const SizeType j)
 		{
-			assert(j == 0 && "Trying to access tensor of order 1 like an order 2 one.");
+			ASSERT(j == 0 && "Trying to access tensor of order 1 like an order 2 one.");
 			return expr.get(i);
 		}
 
@@ -200,7 +200,7 @@ namespace utopia {
 			Scalar result = 0;
 			Size s = size(expr.left());
 
-			assert(size(expr).n_dims() == 2 || j == 0);
+			ASSERT(size(expr).n_dims() == 2 || j == 0);
 
 			for(SizeType k = 0; k < s.get(1); ++k) {
 				result += eval_at(expr.left(), i, k) * eval_at(expr.right(), k, j);
@@ -238,28 +238,28 @@ namespace utopia {
 		template<class InnerExpr, class ReduceOp, typename T, class Operation>
 		inline static Scalar eval_at(const Binary< Reduce<InnerExpr, ReduceOp>, Number<T>, Operation> &expr, const int i = 0, const int j = 0)
 		{
-			assert(i == 0 && j == 0);
+			ASSERT(i == 0 && j == 0);
 			return Operation::template Fun<Scalar>()(eval_at(expr.left()), expr.right()); 
 		}
 
 		template<class InnerExpr, class ReduceOp, typename T, class Operation>
 		inline static Scalar eval_at(const Binary<Number<T>, Reduce<InnerExpr, ReduceOp>, Operation> &expr, const int i = 0, const int j = 0)
 		{
-			assert(i == 0 && j == 0);
+			ASSERT(i == 0 && j == 0);
 			return Operation::template Fun<Scalar>()(expr.left(), eval_at(expr.right())); 
 		}
 
 		template<class Left, class ReduceOpLeft, class Right, class ReduceOpRight, class Operation>
 		inline static Scalar eval_at(const Binary<Reduce<Left, ReduceOpLeft>, Reduce<Right, ReduceOpRight>, Operation> &expr, const int i = 0, const int j = 0)
 		{
-			assert(i == 0 && j == 0);
+			ASSERT(i == 0 && j == 0);
 			return Operation::template Fun<Scalar>()(eval_at(expr.left()), eval_at(expr.right())); 
 		}
 
 		template<class InnerExpr, class Operation>
 		inline static Scalar eval_at(const Reduce<InnerExpr, Operation> &expr, const int i = 0, const int j = 0)
 		{
-			assert(i == 0 && j == 0);
+			ASSERT(i == 0 && j == 0);
 
 			Size s = size(expr.expr());
 

@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-23
+* @Last Modified time: 2017-07-02
 */
 
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
@@ -254,7 +254,7 @@ protected:
          }
 
 
-        virtual bool solver_monitor(const SizeType& it, Vector & x, Matrix & H) override
+        virtual bool solver_monitor(const SizeType& /*it*/, Vector & /*x*/, Matrix & /*H*/) override
         {
           std::cout<<"utopia::NonlinearMultilevelBase:: WE ARE NOT SUPPORTING this function at the moment... \n"; 
           return true; 
@@ -437,7 +437,7 @@ protected:
          * @param[in]  l         level
          *                       
          */
-        virtual bool full_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
+        virtual bool full_cycle(FunctionType &/*fine_fun*/, Vector & u_l, const Vector &/*f*/, const SizeType & l)
         {            
           for(SizeType i = l-2; i >=0; i--)
           {
@@ -445,6 +445,8 @@ protected:
             this->make_iterate_feasible(levels(i), u_l); 
           }
 
+          // TODO:: check this out 
+          // shouldnt be g - Rg_{L+1} ???
           Vector L_l = local_zeros(local_size(u_l));
           this->coarse_solve(levels(0), u_l, L_l); 
 

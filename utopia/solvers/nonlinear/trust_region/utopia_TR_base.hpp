@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-16
+* @Last Modified time: 2017-07-02
 */
 
 #ifndef UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
@@ -52,10 +52,12 @@ namespace utopia
       eta2_       = params.eta2();
       rho_tol_    = params.rho_tol();
       eps_        = params.eps();
+      delta_min_  = params.delta_min(); 
 
     }
 
     Scalar delta_max()  const  { return delta_max_; } 
+    Scalar delta_min()  const  { return delta_min_; } 
     Scalar delta0()     const  { return delta0_; } 
     Scalar gamma1()     const  { return gamma1_; } 
     Scalar gamma2()     const  { return gamma2_; } 
@@ -64,7 +66,9 @@ namespace utopia
     Scalar rho_tol()    const  { return rho_tol_; } 
     Scalar eps()        const  { return eps_; } 
 
+
     void delta_max(const bool & delta_max_in ) { delta_max_ = delta_max_in; }; 
+    void delta_min(const bool & delta_min_in ) { delta_min_ = delta_min_in; }; 
     void delta0(const bool & delta0_in ) { delta0_ = delta0_in; }; 
     void gamma1(const bool & gamma1_in ) { gamma1_ = gamma1_in; }; 
     void gamma2(const bool & gamma2_in ) { gamma2_ = gamma2_in; }; 
@@ -131,7 +135,7 @@ namespace utopia
       }
 
         // do not hard code this 
-      if(delta < eps_)
+      if(delta < delta_min_)
       {
         monitor.exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
         return true; 
@@ -182,12 +186,12 @@ namespace utopia
      *
      * @return     accepted or no 
      */
-    virtual bool trial_point_acceptance(const Scalar &rho, const Vector & p_k, Vector & x_k, const Vector & x_k1)
+    virtual bool trial_point_acceptance(const Scalar &rho, const Vector & x_trial, Vector & x_k)
     {
       // good reduction, accept trial point 
       if (rho >= rho_tol_)
       {
-        x_k  = x_k1; 
+        x_k  = x_trial; 
         return true; 
       }
       // otherwise, keep old point
@@ -233,19 +237,18 @@ namespace utopia
     \param x_k                - initial guess/ current iterate
     \param radius              - tr. radius 
       */
-    virtual bool delta_init(const Vector & x_k , Scalar & radius)
+    virtual Scalar delta_init(const Vector & x_k , const Scalar & radius0, bool rad_flg)
     {
       Scalar x_norm = norm2(x_k); 
-      if(radius == 0)
-      { 
-        radius =  (x_norm == 0)? 100 : 100 * x_norm; 
+      if(radius0 == 0){
+        rad_flg = true; 
+        return (x_norm == 0)? 100 : 100 * x_norm; 
       }
-      else
-      {
-        return false;  
+      else{
+        rad_flg =  false; 
+        return radius0; 
       }
 
-      return true; 
     }
 
 
@@ -267,6 +270,7 @@ namespace utopia
 
   private: 
     Scalar delta_max_; 
+    Scalar delta_min_; 
     Scalar delta0_; 
     Scalar gamma1_;
     Scalar gamma2_;

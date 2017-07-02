@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-07
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-15
+* @Last Modified time: 2017-07-02
 */
 #ifndef TR_SUBPROBLEM
 #define TR_SUBPROBLEM
@@ -110,8 +110,8 @@ namespace  utopia
 
     private:
 
-        virtual bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k){ return false; };
-        virtual bool preconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k){ return false; };
+        virtual bool unpreconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
+        virtual bool preconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
 
         /**
          * @brief                Solution routine for CG. 

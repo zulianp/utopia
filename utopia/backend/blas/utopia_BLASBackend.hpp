@@ -320,14 +320,14 @@ namespace utopia
         }
         
         template<class Tensor>
-        bool set_zero_rows(Tensor &Mat_A, const std::vector<int> &index)
+        bool set_zero_rows(Tensor & /*Mat_A */, const std::vector<int> & /*index*/)
         {
             std::cout<<"BLAS_backend:: set_zero_rows needs to be implemented  \n";     
             return true; 
         }
 
         template<class MatTensor, class VecTensor>
-        bool apply_BC_to_system(MatTensor & A, VecTensor& x, VecTensor& rhs, const std::vector<int> &index)
+        bool apply_BC_to_system(MatTensor & /*A*/, VecTensor& /*x*/, VecTensor& /*rhs*/, const std::vector<int> & /*index*/)
         {
             std::cout<<"BLAS_backend:: apply_BC_to_system needs to be implemented  \n";     
             return true; 
@@ -336,7 +336,7 @@ namespace utopia
 
         // TODO:: 
         template<typename Matrix>
-        bool triple_product_PtAP(const Matrix & M, const Matrix & I, Matrix & result)
+        bool triple_product_PtAP(const Matrix & /*M*/, const Matrix & /*I*/, Matrix & /*result*/)
         {
             std::cout<<"BLAS:: triple_product_PtAP not implemented ...  \n";     
             return true; 
@@ -349,7 +349,7 @@ namespace utopia
             result.resize(m.getRows(), m.getCols());
 
             const SizeType n = diag.size();
-            assert(n == m.getCols() && "sizes are not compatible");
+            ASSERT(n == m.getCols() && "sizes are not compatible");
 
             for(SizeType i = 0; i < m.getRows(); ++i) {
                 for(SizeType j = 0; j < m.getCols(); ++j) {
@@ -366,7 +366,7 @@ namespace utopia
             result.resize(m.getRows(), m.getCols());
 
             const SizeType n = diag.size();
-            assert(n == m.getRows() && "sizes are not compatible");
+            ASSERT(n == m.getRows() && "sizes are not compatible");
 
             for(SizeType i = 0; i < m.getRows(); ++i) {
                 for(SizeType j = 0; j < m.getCols(); ++j) {
@@ -549,7 +549,7 @@ namespace utopia
 
 
         bool handle(int err) const {
-            assert(err == 0);
+            ASSERT(err == 0);
             return true;
         }
 

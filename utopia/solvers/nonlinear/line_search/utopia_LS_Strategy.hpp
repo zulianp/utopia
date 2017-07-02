@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-03-10
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-14
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-07-02
 */ 
 #ifndef UTOPIA_LS_STRATEGY_HPP
 #define UTOPIA_LS_STRATEGY_HPP
@@ -39,7 +39,7 @@ namespace  utopia
          */
         virtual bool get_alpha(Function<Matrix, Vector> &, const Vector &, const Vector& , const Vector &, Scalar &) = 0;
         virtual bool get_alpha(LeastSquaresFunction<Matrix, Vector> &, const Vector &, const Vector& , const Vector &, Scalar &) = 0;
-        virtual bool set_parameters(const Parameters params){ return true; }
+        virtual bool set_parameters(const Parameters /*params*/){ return true; }
     };
 }
 

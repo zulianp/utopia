@@ -47,7 +47,7 @@ namespace utopia {
     class DelegatePreconditioner : public Preconditioner<Vector> {
     public:
 
-        bool apply(const Vector &rhs, Vector &sol) override
+        bool apply(const Vector &/*rhs*/, Vector &/*sol*/) override
         {
             std::cerr<< "[Warning] DelegatePreconditioner::apply doing nothing ... \n"; 
             return true;

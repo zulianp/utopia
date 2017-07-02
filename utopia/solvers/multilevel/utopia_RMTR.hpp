@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-23
+* @Last Modified time: 2017-07-02
 */
 
 #ifndef UTOPIA_RMTR_HPP
@@ -41,7 +41,6 @@ namespace utopia
         typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
         typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem; 
-        // typedef utopia::LSStrategy<Matrix, Vector>       LSStrategy; 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
 
@@ -57,12 +56,10 @@ namespace utopia
         RMTR(    
                 const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse = std::shared_ptr<TRSubproblem>(),
                 const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother = std::shared_ptr<TRSubproblem>(),
-                // const std::shared_ptr<LSStrategy> &ls_strategy = std::shared_ptr<LSStrategy>(),
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
                 _coarse_tr_subproblem(tr_subproblem_coarse), 
-                _smoother_tr_subproblem(tr_subproblem_smoother) //, 
-                // _ls_strategy(ls_strategy) 
+                _smoother_tr_subproblem(tr_subproblem_smoother) 
         {
             set_parameters(params); 
         }
@@ -70,20 +67,22 @@ namespace utopia
         virtual ~RMTR(){} 
         
 
-        void set_parameters(const Parameters params)  // override
+        void set_parameters(const Parameters params) override
         {
             NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params);    
             _it_global                  = 0;          
             _delta_init                 = 1000000; 
             _parameters                 = params; 
-            _max_coarse_it              = 30;  
-            _max_smoothing_it           = 2;
-            _eps_delta_termination      = 0.001; 
-            _delta_min                  = 1e-10; 
-            _grad_smoothess_termination = 0.5; 
-            _eps_grad_termination       = 1e-8; 
-            _hessian_update_delta       = 0.15; 
-            _hessian_update_eta         = 0.5;
+
+            _max_coarse_it              = params.max_coarse_it();
+            _max_smoothing_it           = params.max_smoothing_it();
+            _eps_delta_termination      = params.eps_delta_termination();
+            _delta_min                  = params.delta_min();
+            _grad_smoothess_termination = params.grad_smoothess_termination();
+            _eps_grad_termination       = params.eps_grad_termination();
+            _hessian_update_delta       = params.hessian_update_delta();
+            _hessian_update_eta         = params.hessian_update_eta();
+
         }
 
         using NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::solve; 
@@ -185,7 +184,7 @@ namespace utopia
         }
 
 
-        virtual bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & level) override
+        virtual bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &/*f*/, const SizeType & level) override
         {
             Vector g_fine, g_coarse, g_diff, g_restricted, u_2l, s_coarse, s_fine; 
             Matrix H_fine, H_restricted, H_coarse, H_diff; 
@@ -209,6 +208,7 @@ namespace utopia
                     return true; 
             }
 
+            // TODO:: check this out 
             // r_h = g_fine; // - f; 
 
             transfers(level-2).restrict(g_fine, g_restricted);
@@ -330,7 +330,6 @@ namespace utopia
         }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
         virtual Scalar local_tr_solve(FunctionType &fun, Vector & x, const SizeType & level)
         {   
             Vector g_diff, s_global, g; 
@@ -672,9 +671,9 @@ namespace utopia
 
 
         // in order to be able to use full cycle 
-        virtual bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
+        // CHECK IF RHS does not need to be set-up
+        virtual bool coarse_solve(FunctionType &fun, Vector &x, const Vector & /*rhs*/) override
         {
-            // level 
             local_tr_solve(fun, x, 0); 
             return true; 
         }
@@ -773,25 +772,26 @@ private:
 
     protected:   
         SizeType                            _it_global; 
-        Scalar                              _delta_init; 
         std::vector<Scalar>                 _deltas;  
         std::vector<Scalar>                 _deltas_zero;        
 
-        Parameters                          _parameters; 
+        
 
 
         std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem; 
         std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem; 
-        // std::shared_ptr<LSStrategy>         _ls_strategy;                     /*  LS used to determine step size */
-
-        SizeType                            _max_coarse_it; 
-        SizeType                            _max_smoothing_it; 
 
 
         std::vector<Vector>           _delta_gradients; 
         std::vector<Matrix>           _delta_hessians; 
         std::vector<Vector>           _x_initials; 
 
+
+        // ----------------------- PARAMETERS ----------------------
+        Parameters                          _parameters; 
+        Scalar                              _delta_init; 
+        SizeType                            _max_coarse_it; 
+        SizeType                            _max_smoothing_it; 
 
         Scalar                         _eps_delta_termination; 
         Scalar                         _delta_min; 

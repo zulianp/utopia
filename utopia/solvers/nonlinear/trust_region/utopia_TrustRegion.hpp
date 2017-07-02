@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-07
+* @Last Modified time: 2017-07-02
 */
 
 #ifndef UTOPIA_SOLVER_TRUSTREGION_HPP
@@ -106,7 +106,10 @@
          Scalar delta, product, ared, pred, rho, E, E_k, E_k1; 
 
          SizeType it = 0; 
-         Scalar rad_flg, g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
+         Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
+
+         bool rad_flg = false; 
+
          Vector g, p_CP = x_k, p_N = x_k, p_k = x_k, x_k1 = x_k;
          Matrix H; 
 
@@ -116,17 +119,10 @@
           #define DEBUG_mode
           //  #define LS_check
 
-
         // TR delta initialization
-        delta = this->delta0(); 
-        rad_flg = this->delta_init(x_k ,delta); 
-        //delta = norm2(g);   // also possible
-        // delta = 10;        // testing 
+        delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
 
-        // just to start  CHECK THIS OUT 
-        // if(params().verbose()) 
-        //   this->info().TR_init_message(params()); 
-        
+
         g0_norm = norm2(g);
         g_norm = g0_norm;
         

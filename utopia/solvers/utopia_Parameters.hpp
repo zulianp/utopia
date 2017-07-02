@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-22
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-15
+* @Last Modified time: 2017-07-02
 */
 
 #ifndef UTOPIA_UTOPIA_PARAMETERS_HPP
@@ -52,8 +52,10 @@ namespace utopia
 
         /*----------  TR  ----------*/
           trust_region_alg_ = "STEIHAUG_TOINT"; 
-          delta_max_ = 1e8; 
+          delta_max_  = 1e8; 
+          delta_min_  = 1e-10; 
           delta0_ = 1e5; 
+
           gamma1_ = 0.2; 
           gamma2_ = 2.0; 
           eta1_ = 0.1; 
@@ -61,6 +63,17 @@ namespace utopia
           rho_tol_ = 0.01; 
           SteihaugToint_tol_ = 1e-10; 
           eps_ = 2e-12; 
+
+        /*-------------- RMTR -----------*/
+
+          max_coarse_it_              = 30;  
+          max_smoothing_it_           = 2;
+          eps_delta_termination_      = 0.001; 
+          grad_smoothess_termination_ = 0.5; 
+          eps_grad_termination_       = 1e-8; 
+          hessian_update_delta_       = 0.15; 
+          hessian_update_eta_         = 0.5;
+
 
        /*----------  MG  ----------*/
           blocksize_ = 3; 
@@ -186,9 +199,22 @@ namespace utopia
     SizeType    overlap()   const            { return overlap_; } 
     SizeType    local_max_it()  const        { return local_max_it_; } 
 
+    /*----------------------------------- RMTR ----------------------------------------------*/
+    Scalar    eps_delta_termination() const       { return eps_delta_termination_; } 
+    Scalar    delta_min() const                   { return delta_min_; } 
+    Scalar    eps_grad_termination() const        { return eps_grad_termination_; } 
+    Scalar    grad_smoothess_termination() const  { return grad_smoothess_termination_; } 
+    Scalar    hessian_update_delta() const        { return hessian_update_delta_; } 
+    Scalar    hessian_update_eta() const          { return hessian_update_eta_; } 
+
+    SizeType    max_coarse_it() const             { return max_coarse_it_; } 
+    SizeType    max_smoothing_it() const          { return max_smoothing_it_; } 
 
 
-  /*----------------------------  SETTERS  ------------------------------------*/
+
+    // -------------------------------------------------------------------------------//
+    /* --------------------------------  SETTERS  ------------------------------------*/
+    // -------------------------------------------------------------------------------//
     void num_it(const SizeType & num_it)                              { num_it_  = num_it; }
     void convergence_reason(const SizeType & convergence_reason)      { convergence_reason_ = convergence_reason; }
     void max_it(const SizeType & max_it)                              { max_it_ = max_it; } 
@@ -263,6 +289,16 @@ namespace utopia
     void overlap(const SizeType & overlap)                            {  overlap_ = overlap; } 
     void local_max_it(const SizeType & local_max_it)                  {  local_max_it_ = local_max_it; } 
 
+  /*---------------------------------------------- RMTR ------------------------------*/
+    void    eps_delta_termination(const Scalar & eps_delta_termination)             {  eps_delta_termination_ =eps_delta_termination; } 
+    void    delta_min(const Scalar &delta_min)                                       {  delta_min_=delta_min; } 
+    void    eps_grad_termination(const Scalar & eps_grad_termination)               {  eps_grad_termination_=eps_grad_termination; } 
+    void    grad_smoothess_termination(const Scalar & grad_smoothess_termination)   {  grad_smoothess_termination_= grad_smoothess_termination; } 
+    void    hessian_update_delta(const Scalar & hessian_update_delta)               { hessian_update_delta_ = hessian_update_delta; } 
+    void    hessian_update_eta(const Scalar & hessian_update_eta)                   { hessian_update_eta_ = hessian_update_eta; } 
+
+    void    max_coarse_it(const SizeType & max_coarse_it)                           { max_coarse_it_ = max_coarse_it; } 
+    void    max_smoothing_it(const SizeType & max_smoothing_it)                     {  max_smoothing_it_ = max_smoothing_it ; } 
 
   
 
@@ -331,6 +367,21 @@ namespace utopia
           bool log_iterates_; 
           bool log_system_; 
           bool log_norms_;
+
+
+
+          // RMTR parameters
+          SizeType        max_coarse_it_; 
+          SizeType        max_smoothing_it_; 
+
+          Scalar          eps_delta_termination_; 
+          Scalar          delta_min_; 
+
+          Scalar          grad_smoothess_termination_; 
+          Scalar          eps_grad_termination_; 
+
+          Scalar          hessian_update_delta_; 
+          Scalar          hessian_update_eta_; 
 
     };
 

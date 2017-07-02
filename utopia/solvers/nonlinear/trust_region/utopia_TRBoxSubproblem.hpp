@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-06-15
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-30
+* @Last Modified time: 2017-07-02
 */
 #ifndef TR_BOX_SUBPROBLEM
 #define TR_BOX_SUBPROBLEM
@@ -25,7 +25,8 @@ namespace  utopia
         typedef utopia::BoxConstraints<Vector>          BoxConstraints;
 
         public:
-            TRBoxSubproblem(const Parameters params = Parameters()) 
+            TRBoxSubproblem(const Parameters params = Parameters())
+                : TRSubproblem(params)
             {
                 set_parameters(params); 
 
@@ -116,7 +117,7 @@ namespace  utopia
         virtual bool  prepare_tr_box_solve(const Scalar & tr_radius, const Vector & x_k, const BoxConstraints & pointwise_constrain, Vector & ub, Vector & lb)
         {
             this->current_radius(tr_radius); 
-            auto up_constrain = merge_tr_with_pointwise_constrains(x_k, tr_radius, pointwise_constrain, ub, lb); 
+            merge_tr_with_pointwise_constrains(x_k, tr_radius, pointwise_constrain, ub, lb); 
 
             return true; 
         }

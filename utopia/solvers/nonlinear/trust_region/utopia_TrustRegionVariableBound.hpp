@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-30
+* @Last Modified time: 2017-07-02
 */
 
 #ifndef UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
@@ -75,19 +75,17 @@
         Scalar delta, ared, pred, rho, E_old, E_new; 
 
         SizeType it = 0; 
-        Scalar rad_flg, g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
+        Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
+        bool rad_flg = false; 
+
         Vector g = 0*x_k, p_k = 0*x_k, x_k1 = 0*x_k;
         Matrix H; 
 
         fun.gradient(x_k, g);
 
         // TR delta initialization
-        delta = this->delta0(); 
-        rad_flg = this->delta_init(x_k ,delta); 
-        //delta = norm2(g);   // also possible
+        delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
         // delta = 10;        // testing 
-
-        // delta = 10000000000000000; 
 
 
         
@@ -151,7 +149,8 @@
           else if(rho != rho)
             rho = 0.0; 
 
-          this->trial_point_acceptance(rho, p_k, x_k, x_k1); 
+          
+          this->trial_point_acceptance(rho, x_k1, x_k); 
     //----------------------------------------------------------------------------
     //    convergence check 
     //----------------------------------------------------------------------------
@@ -202,23 +201,23 @@
 
 
   protected:
-    /**
-     * @brief      Update of TR radius
-     *
-     * @param[in]  rho     The rho
-     * @param[in]  p_k     The step
-     * @param      radius  The radius
-     *
-     */
-      virtual bool delta_update(const Scalar &rho, const Vector &p_k, Scalar &radius) override
-      {
-        if(rho < this->eta1())
-          radius = this->gamma1() * radius; 
-        else if(rho > this->eta2())
-          radius = this->gamma2() * radius; 
+    // /**
+    //  * @brief      Update of TR radius
+    //  *
+    //  * @param[in]  rho     The rho
+    //  * @param[in]  p_k     The step
+    //  * @param      radius  The radius
+    //  *
+    //  */
+    //   virtual bool delta_update(const Scalar &rho, const Vector &p_k, Scalar &radius) override
+    //   {
+    //     if(rho < this->eta1())
+    //       radius = this->gamma1() * radius; 
+    //     else if(rho > this->eta2())
+    //       radius = this->gamma2() * radius; 
         
-        return true; 
-      }
+    //     return true; 
+    //   }
 
       /**
        * @brief      Computes criticality measure, which is later used for termination conditions

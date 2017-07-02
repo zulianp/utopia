@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-06-15
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-30
+* @Last Modified time: 2017-07-02
 */
 #ifndef TR_ACTIVE_SET_TR_BOX_SUBPROBLEM
 #define TR_ACTIVE_SET_TR_BOX_SUBPROBLEM
@@ -22,15 +22,15 @@ namespace  utopia
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
         typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
-        typedef utopia::TRSubproblem<Matrix, Vector>            TRBoxSubproblem;
+        typedef utopia::TRBoxSubproblem<Matrix, Vector>         TRBoxSubproblem;
         typedef utopia::SemismoothNewton<Matrix, Vector>        SemismoothNewton;
         typedef utopia::Preconditioner<Vector>                  Preconditioner;
 
         public:
             ActiveSetTRSubproblem(  const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
-                                    const Parameters params = Parameters())
+                                    const Parameters params = Parameters()):
+                TRBoxSubproblem(params)
             {
-                TRBoxSubproblem::set_parameters(params); 
                 _active_set_solver = std::make_shared<SemismoothNewton>(linear_solver); 
             };
             

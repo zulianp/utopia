@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-24
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-14
+* @Last Modified time: 2017-07-02
 */
 
 #ifndef UTOPIA_NMGM_HPP
@@ -66,13 +66,13 @@ namespace utopia
         }
 
 
-        virtual std::string name_id()
+        virtual std::string name_id()  override
         {
             return "Nonlinear Multigrid"; 
         }
 
 
-        virtual bool solve(FunctionType & fine_fun, Vector &x_h)
+        virtual bool solve(FunctionType & fine_fun, Vector &x_h) override
         {
             Vector rhs = local_zeros(local_size(x_h)); 
             return solve(fine_fun,  x_h, rhs); 
@@ -104,7 +104,7 @@ namespace utopia
             // as in "Multi-Grid Methods and Applications, W. Hackbush" 
             std::vector<Vector> rhss; 
             std::vector<Vector> initial_iterates; 
-            nested_iteration_cycle(fine_fun, x_h, rhs, l, rhss, initial_iterates); 
+            nested_iteration_cycle(x_h, rhs, l, rhss, initial_iterates); 
 
             while(!converged)
             {            
@@ -154,7 +154,7 @@ namespace utopia
 
 
         // TODO:: make this nicer ! 
-        bool nested_iteration_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l, std::vector<Vector> & rhss, std::vector<Vector> & initial_iterates)
+        bool nested_iteration_cycle(Vector & u_l, const Vector &/*f*/, const SizeType & l, std::vector<Vector> & rhss, std::vector<Vector> & initial_iterates)
         {
             for(SizeType i = l-2; i >=0; i--)
             {

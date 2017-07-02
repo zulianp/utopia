@@ -21,7 +21,7 @@ namespace utopia
     class MultilevelHessianEval<Matrix, Vector, FunctionType, GALERKIN>
     {
         public:
-           inline static bool compute_hessian(const FunctionType & fun, const Vector & x, Matrix & H, const Matrix & H_diff)
+           inline static bool compute_hessian(const FunctionType & /*fun*/, const Vector & /*x*/, Matrix & H, const Matrix & H_diff)
             {
                 H = H_diff; 
                 return true; 
@@ -45,7 +45,7 @@ namespace utopia
     class MultilevelHessianEval<Matrix, Vector, FunctionType, FIRST_ORDER>
     {
         public: 
-           inline static bool compute_hessian(const FunctionType & fun, const Vector & x,  Matrix & H, const Matrix & H_diff)
+           inline static bool compute_hessian(const FunctionType & fun, const Vector & x,  Matrix & H, const Matrix & /*H_diff*/)
             {
                 fun.hessian(x, H); 
                 return true; 
@@ -62,7 +62,7 @@ namespace utopia
     class MultilevelGradientEval<Matrix, Vector, FunctionType, GALERKIN>
     {
         public:
-            inline static bool compute_gradient(const FunctionType & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
+            inline static bool compute_gradient(const FunctionType & /*fun*/, const Vector & /*x*/,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
             {
                 g = g_diff + H_diff * s_global; 
                 return true; 
@@ -86,7 +86,7 @@ namespace utopia
     class MultilevelGradientEval<Matrix, Vector, FunctionType, FIRST_ORDER>
     {
         public: 
-            inline static bool compute_gradient(const FunctionType & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
+            inline static bool compute_gradient(const FunctionType & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector & /*s_global*/)
             {
                 fun.gradient(x, g);
                 g += g_diff; 
@@ -105,7 +105,7 @@ namespace utopia
     class MultilevelEnergyEval<Matrix, Vector, FunctionType, GALERKIN>
     {
         public:
-            inline static typename Traits<Vector>::Scalar compute_energy(const FunctionType & fun, const Vector & x, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
+            inline static typename Traits<Vector>::Scalar compute_energy(const FunctionType & /*fun*/, const Vector & /*x*/, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
             {
                 return (dot(g_diff, s_global) + 0.5 * dot(s_global, H_diff * s_global)); 
             }
@@ -129,7 +129,7 @@ namespace utopia
     class MultilevelEnergyEval<Matrix, Vector, FunctionType, FIRST_ORDER>
     {
         public: 
-            inline static typename Traits<Vector>::Scalar compute_energy(const FunctionType & fun, const Vector & x, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
+            inline static typename Traits<Vector>::Scalar compute_energy(const FunctionType & fun, const Vector & x, const Vector & g_diff, const Matrix & /*H_diff*/, const Vector & s_global)
             {
                 typename Traits<Vector>::Scalar energy = 0.0; 
                 fun.value(x, energy); 

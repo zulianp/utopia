@@ -216,7 +216,7 @@ namespace utopia {
 		}
 
 		template<class Expr>
-		void pre_intercept(const Expr &expr)
+		void pre_intercept(const Expr &/*expr*/)
 		{
 
 		}
