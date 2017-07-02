@@ -114,13 +114,13 @@ private:
 
             Matrix M;
 
-            if(!this->linear_solve(G, g, Ginvg)) {
+            if(!linear_solver_->solve(G, g, Ginvg))
                 return false;
-            }
 
-            Scalar f_norm = 999999999999;
+            Scalar f_norm = 9e9;
 
-            this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "|| g ||"});
+            if(this->verbose())
+                this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "|| g ||"});
             
             while(!converged) 
             {
@@ -170,17 +170,16 @@ private:
                 prev_active = active;
 
                 M = Ac + Ic * A;
-                
-                if(!this->linear_solve(M, (Ic * b + Ac * Ginvg), x_new)) {
+            
+                if(!linear_solver_->solve(M, (Ic * b + Ac * Ginvg), x_new))
                     return false;
-                }
 
                 lambda = Ac * (b - A * x_new);
 
                 f_norm = norm2(x_new - x_old);
                 
                 // print iteration status on every iteration 
-                if(this->verbose_)
+                if(this->verbose())
                     PrintInfo::print_iter_status(iterations, {f_norm}); 
 
                 converged = this->check_convergence(iterations, f_norm, 1, 1); 

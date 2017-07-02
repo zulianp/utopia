@@ -474,7 +474,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 
 
     auto box = BoxConstraints<DVectord>(make_ref(gap_c), "upper"); 
-    newton.set_box_constraints(make_ref(box)); 
+    newton.set_box_constraints(box); 
 	newton.solve( K_c, rhs_c, sol_c);
 
 	//Change back to original basis
