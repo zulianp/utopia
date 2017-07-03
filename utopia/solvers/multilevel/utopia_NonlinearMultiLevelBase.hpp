@@ -151,9 +151,13 @@
        * @param      type             The type of ordering of level functions
        *
        */
-      virtual bool init_level_functions(std::vector<FunctionType> level_functions, std::string const &type = "coarse_to_fine")
+      virtual bool init_level_functions(const std::vector<FunctionType> &level_functions, std::string const &type = "coarse_to_fine")
       {
           _nonlinear_levels.clear();
+
+          //_nonlinear_levels.insert(_nonlinear_levels.end(), level_functions.begin(), level_functions.end());
+          //
+          //_nonlinear_levels.insert(_nonlinear_levels.end(), level_functions.rbegin(), level_functions.rend());
 
           if(!type.compare("fine_to_coarse"))
           {
@@ -180,7 +184,7 @@
        * @param      type                     Ordering of the comming operators. 
        *
        */
-      virtual bool init_nonlinear_transfer(std::vector<Matrix> restriction_operators, std::vector<Matrix> projection_operators,  std::string const &type)
+      virtual bool init_nonlinear_transfer(const std::vector<Matrix> &restriction_operators, const std::vector<Matrix> &projection_operators,  std::string const &type)
       {
           this->_num_levels = restriction_operators.size() + 1; 
           this->_transfers.clear();

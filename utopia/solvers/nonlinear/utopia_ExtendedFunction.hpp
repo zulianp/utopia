@@ -76,7 +76,9 @@ namespace utopia
             return true; 
         }
 
-
+        //set_equality_constraints(Vector &is_constrained, Vector &values)
+        //get_equality_values()
+        //get_equality_flags()
         virtual bool set_boundary_values(const Vector &x_in)
         {
             _x_init = x_in; 

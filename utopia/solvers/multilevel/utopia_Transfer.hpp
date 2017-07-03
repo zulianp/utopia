@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-02
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-25
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_ML_TRANSFER_HPP
@@ -39,7 +39,7 @@
 
         Transfer(const Matrix & I, const Matrix & P):
                 _I(I),
-                _R(transpose(I)),
+                _R(transpose(I)), //make_shared<Matrix>(transpose(*I))
                 _P(P)
         {
          std::cout<<"proper transfer down ... \n"; 
