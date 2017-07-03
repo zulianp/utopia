@@ -686,7 +686,7 @@ namespace utopia {
 		
 		newton.verbose(true);
 
-		auto box = BoxConstraints<DVectord>(make_ref(gap_c), "upper"); 
+		auto box = make_upper_bound_constraints(make_ref(gap_c));
         newton.set_box_constraints(box); 
 		newton.solve( K_c, rhs_c, sol_c);
 

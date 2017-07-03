@@ -720,7 +720,7 @@ namespace utopia
             example.getOperators(_n, A, b, ub);
             
 			
-            auto box = BoxConstraints<DVectord>(make_ref(ub), "upper"); 
+            auto box = make_upper_bound_constraints(make_ref(ub)); 
             nlsolver.set_box_constraints(box);
 
             nlsolver.verbose(false); 
@@ -760,7 +760,7 @@ namespace utopia
 
             QuadraticFunctionConstrained<DSMatrixd, DVectord> funn(rhs, A, B, upbo);
 
-            auto box = BoxConstraints<DVectord>(make_ref(upbo), "upper"); 
+            auto box = make_upper_bound_constraints(make_ref(upbo)); 
             nlsolver.set_box_constraints(make_ref(box)); 
 
             nlsolver.solve(funn, rhs);

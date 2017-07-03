@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_TR_SUBPROBLEM_STEIHAUG_TOINT_HPP
@@ -29,7 +29,7 @@ namespace utopia
 
         virtual ~SteihaugToint(){}
 
-private:
+protected:
         bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
         {
 

@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-07
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 #ifndef TR_SUBPROBLEM
 #define TR_SUBPROBLEM
@@ -97,21 +97,18 @@ namespace  utopia
                 return tau; 
             }
 
+    public: 
+        virtual bool unpreconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
+        virtual bool preconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
 
-        public: 
+
+        
             virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k)
             {
                 update(make_ref(H));
                 apply(g, p_k); 
                 return true; 
             }
-
-
-
-    private:
-
-        virtual bool unpreconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
-        virtual bool preconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
 
         /**
          * @brief                Solution routine for CG. 
@@ -153,11 +150,9 @@ namespace  utopia
              }
          }
 
+
+    private: 
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */  
-
-
-
-    protected: 
         Scalar current_radius_;                     /*!< Radius on current iterate - used to solve constrained QP wrt TR bound. */  
         
     };

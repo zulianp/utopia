@@ -4,39 +4,16 @@
 #include <memory>
 
 namespace utopia {
+
 	template<class Vector>
 	class BoxConstraints {
 	public:
 		BoxConstraints(const std::shared_ptr<Vector> &lower_bound,
 					   const std::shared_ptr<Vector> &upper_bound)
-		: lower_bound_(lower_bound), upper_bound_(upper_bound), has_lower_(true), has_upper_(true)
+		: lower_bound_(lower_bound), upper_bound_(upper_bound)
 		{}
 
-		BoxConstraints(): has_lower_(true), has_upper_(true)
-		{}
-
-
-		BoxConstraints(const std::shared_ptr<Vector> &bound, const std::string type = "upper")
-		{
-			if(type == "upper")
-			{
-				upper_bound_ = bound; 
-				has_lower_   = false; 
-				has_upper_	 = true; 
-			}
-			else if(type == "lower")
-			{
-				lower_bound_ = bound; 
-				has_lower_   = true; 
-				has_upper_	 = false; 
-			}
-			else
-			{
-				has_lower_   = false; 
-				has_upper_	 = false; 
-				std::cout<<"err: utopia_BoxConstraints:: check which kind of constraints are you setting .... \n"; 
-			}
-		}
+		BoxConstraints() {}
 
 		inline std::shared_ptr<Vector> upper_bound()
 		{
@@ -53,40 +30,44 @@ namespace utopia {
 			return lower_bound_;
 		}
 
-
 		inline std::shared_ptr<const Vector> lower_bound() const
 		{
 			return lower_bound_;
 		}
 
-
 		inline bool has_lower_bound() const 
 		{
-			return has_lower_; 
+			return static_cast<bool>(lower_bound_); 
 		}
 
 		inline bool has_upper_bound() const 
 		{
-			return has_upper_; 
+			return static_cast<bool>(upper_bound_); 
 		}
-
 
 	private:
 		std::shared_ptr<Vector> lower_bound_;
-		std::shared_ptr<Vector> upper_bound_;
-
-		bool has_lower_; 
-		bool has_upper_; 
-		
+		std::shared_ptr<Vector> upper_bound_;		
 	};
 
 	template<class Vector>
 	inline BoxConstraints<Vector> make_box_constaints(const std::shared_ptr<Vector> &lower_bound, 
-											   const std::shared_ptr<Vector> &upper_bound)
+											          const std::shared_ptr<Vector> &upper_bound)
 	{
 		return BoxConstraints<Vector>(lower_bound, upper_bound);
 	}
+
+	template<class Vector>
+	inline BoxConstraints<Vector> make_lower_bound_constraints(const std::shared_ptr<Vector> &lower_bound)
+	{
+		return BoxConstraints<Vector>(lower_bound, nullptr);
+	}
 	
+	template<class Vector>
+	inline BoxConstraints<Vector> make_upper_bound_constraints(const std::shared_ptr<Vector> &upper_bound)
+	{
+		return BoxConstraints<Vector>(nullptr, upper_bound);
+	}
 }
 
 #endif //UTOPIA_BOX_CONSTRAINTS_HPP

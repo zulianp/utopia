@@ -2,7 +2,7 @@
 * @Author: Alena Kopanicakova
 * @Date:   2017-05-22
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 
 
@@ -35,7 +35,16 @@ namespace utopia
             set_parameters(params);
         }
 
-        // We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
+        bool solve(Vector &x, const Matrix &A, const Vector &b, const Vector &g)  
+        {
+            std::cerr << "[Warning][Deprecated] SemismoothNewton: use the new box constraint interface. This method will be removed shortly" << std::endl;
+            std::cout << "[Warning][Deprecated] SemismoothNewton: use the new box constraint interface. This method will be removed shortly" << std::endl;
+
+            set_box_constraints(make_upper_bound_constraints(make_ref(g)));
+            return solve(A, b, x);
+        }
+
+
         bool solve(const Matrix &A, const Vector &b, Vector &x)  override
         {
             if( constraints_.has_upper_bound() && constraints_.has_lower_bound())
@@ -80,14 +89,16 @@ namespace utopia
 
 
 private: 
-
+        // We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
         bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x_new)
         {
 
             using namespace utopia;
             
+            bool is_upper_bound = constraints_.has_upper_bound();
+           
             Vector g; 
-            if(constraints_.has_upper_bound())
+            if(is_upper_bound)
                 g = *constraints_.upper_bound(); 
             else
                 g = *constraints_.lower_bound(); 
@@ -140,17 +151,34 @@ private:
                     Write<Matrix> wIC(Ic);
 
                     Range rr = row_range(Ac);
-                    for (SizeType i = rr.begin(); i != rr.end(); i++) 
-                    {
-                        if (d.get(i) > 0) 
+
+                    if(is_upper_bound) {
+                        for (SizeType i = rr.begin(); i != rr.end(); i++) 
                         {
-                            Ac.set(i, i, 1.0);
-                            active.set(i, 1.0);
+                            if (d.get(i) > 0) 
+                            {
+                                Ac.set(i, i, 1.0);
+                                active.set(i, 1.0);
+                            }
+                            else 
+                            {
+                                Ic.set(i, i, 1.0);
+                            }
                         }
-                        else 
+                    } else { //is_lower_bound
+                        for (SizeType i = rr.begin(); i != rr.end(); i++) 
                         {
-                            Ic.set(i, i, 1.0);
+                            if (d.get(i) < 0) 
+                            {
+                                Ac.set(i, i, 1.0);
+                                active.set(i, 1.0);
+                            }
+                            else 
+                            {
+                                Ic.set(i, i, 1.0);
+                            }
                         }
+
                     }
                 }
 
@@ -202,8 +230,8 @@ private:
             SizeType it = 0;
             bool converged = false; 
 
-            Vector lb = *constraints_.lower_bound(); 
-            Vector ub = *constraints_.upper_bound(); 
+            const Vector &lb = *constraints_.lower_bound(); 
+            const Vector &ub = *constraints_.upper_bound(); 
 
             Vector lambda_p     = local_zeros(n);
             Vector lambda_m     = local_zeros(n);

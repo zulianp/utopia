@@ -39,6 +39,7 @@ namespace utopia
 
         };
 
+protected: 
         bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
         {
             Vector p_N = g, p_SD = g, p_CP = g;

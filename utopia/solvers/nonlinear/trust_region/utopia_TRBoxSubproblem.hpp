@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-06-15
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 #ifndef TR_BOX_SUBPROBLEM
 #define TR_BOX_SUBPROBLEM
@@ -63,16 +63,6 @@ namespace  utopia
         protected:  
 
 
-            /**
-             * @brief      Here we are shifting constraints, such that update is inside
-             *             in addition, we are also merging constraints with tr boundary 
-             *
-             * @param[in]  x_k                  The iterate
-             * @param[in]  tr_constrain         The trust region generated constrain
-             * @param[in]  pointwise_constrain  The pointwise constrain given by problem
-             *
-             * @return     constrains to solve linear sytem for 
-             */
             virtual bool merge_tr_with_pointwise_constrains(const Vector & x_k, const Scalar & radius, const BoxConstraints & pointwise_constrain, Vector & u_f, Vector & l_f)
             {
                 if(pointwise_constrain.has_upper_bound())
