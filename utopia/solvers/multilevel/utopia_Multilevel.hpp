@@ -11,13 +11,10 @@
 #include "utopia_Multigrid.hpp"
 
 
-
 #include "utopia_FAS.hpp"
 #include "utopia_NonLinearMultigrid.hpp"
 #include "utopia_MG_OPT.hpp"
 #include "utopia_RMTR.hpp"
-#include "utopia_RMTR_infty.hpp"
-
 
 
 #include "utopia_NonlinearMultiLevelBase.hpp"

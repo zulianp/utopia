@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
@@ -364,6 +364,7 @@ protected:
                 if(value == 1)
                   c.set(i, 0);
 
+                // test for assigning just some corrections 
                 // if((i + 1) % 3 == 0)
                 //   c.set(i, 0);
             }

@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_FAS_HPP
@@ -173,7 +173,6 @@ namespace utopia
          */
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
         {   
-            _coarse_solver->verbose(true); 
             _coarse_solver->solve(fun, x, rhs); 
             return true; 
         }

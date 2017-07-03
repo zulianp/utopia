@@ -477,7 +477,7 @@ namespace utopia {
 
         matrix = localIdentity((rank && rank < size - 1) ? 4 : 3, 2);
 
-        disp(matrix);
+        // disp(matrix);
 
         if (size > 1) {
             Write<DSMatrixd> write(matrix);
@@ -498,8 +498,8 @@ namespace utopia {
 
         DVectord result = matrix * ones;
 
-        disp(matrix);
-        disp(result);
+        // disp(matrix);
+        // disp(result);
         std::cout << "End: petsc_local_entities_test." << std::endl;
     }
 
@@ -826,7 +826,7 @@ namespace utopia {
             ++i;
         }
 
-        disp(x);
+        // disp(x);
     }
 
     void ksp_precond_delegate_test()
@@ -840,7 +840,7 @@ namespace utopia {
 
         DVectord x = zeros(n);
         newton.solve(fun, x);
-        disp(x);
+        // disp(x);
 
         DVectord expected = values(n, 0.468919);
         assert(approxeq(expected, x));

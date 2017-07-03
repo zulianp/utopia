@@ -18,20 +18,20 @@ namespace utopia
 {
     inline static void runAllTests()
     {
-        // runWrapperTest();
-        // runSpecTest();
-        // run_autodiff_test();
+        runWrapperTest();
+        runSpecTest();
+        run_autodiff_test();
         runSolversTest();
-        // runAlgebraTest();
-        // runUtilitiesTest();
-        // runPETScTest();
-        // runBLASTest();
-        // runMiscTest();
+        runAlgebraTest();
+        runUtilitiesTest();
+        runPETScTest();
+        runBLASTest();
+        runMiscTest();
 
 
         //only works for serial
         if(mpi_world_size() == 1) {
-            //run_performance_test();
+            run_performance_test();
         }
     }
 

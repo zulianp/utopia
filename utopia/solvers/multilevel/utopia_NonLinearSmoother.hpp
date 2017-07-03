@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-22
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-04-22
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_NONLINEAR_SMOOTHER_HPP
@@ -93,10 +93,29 @@ namespace utopia {
         }
 
 
+        /**
+         * @brief      verbose ? 
+         *
+         */
+        virtual void verbose(const SizeType & verbose)
+        {
+            _verbose = verbose;
+        }
+
+        /**
+         * @brief      Verbose ?
+         *
+         */
+        virtual bool verbose()
+        {
+            return _verbose; 
+        }
+
 
         private:
             SizeType     _sweeps;  
             Scalar       _relaxation_parameter; 
+            bool         _verbose; 
 };
 
 }
