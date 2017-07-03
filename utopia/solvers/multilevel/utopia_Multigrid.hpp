@@ -93,7 +93,7 @@ namespace utopia
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
             IterativeSolver::update(op);
-            this->galerkin_assembly(*op);
+            this->galerkin_assembly(op);
         }
 
 
@@ -120,6 +120,7 @@ namespace utopia
             bool converged = false; 
 
             r = rhs - levels(l-1).A() * x_0; 
+
             r_norm = norm2(r); 
             r0_norm = r_norm; 
 
@@ -261,7 +262,7 @@ namespace utopia
          */
         virtual bool solve(const Matrix &A, const Vector &b, Vector &x0) override
         {   
-            this->galerkin_assembly(A);
+            this->galerkin_assembly(make_ref(A));
             solve(b, x0); 
 
             return true; 
@@ -270,7 +271,7 @@ namespace utopia
 /*=======================================================================================================================================        =
 =========================================================================================================================================*/
     private:
-                inline Level &levels(const SizeType &l)
+        inline Level &levels(const SizeType &l)
         {
             return this->_levels[l]; 
         }
@@ -291,6 +292,7 @@ namespace utopia
          */
         virtual bool multiplicative_cycle(const Vector &rhs, const SizeType & l, Vector & x_0)
         {
+
             Vector r_h, r_H, c_H, c_h;  // original 
             
             // Vector &r_h = memory.r_h[l];

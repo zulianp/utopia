@@ -26,20 +26,20 @@
 
         public:
 
-        Transfer(const Matrix & I)//:
+        Transfer(const std::shared_ptr <Matrix> & I)//:
                                     // _I(I),
                                     // _R(transpose(I))
         {
             _I = I; 
-            _R = transpose(I);
+            _R = std::make_shared<Matrix>(transpose(*I)); 
             _P = _R; 
         }
 
         
 
-        Transfer(const Matrix & I, const Matrix & P):
+        Transfer(const std::shared_ptr <Matrix> & I, const std::shared_ptr <Matrix> & P):
                 _I(I),
-                _R(transpose(I)), //make_shared<Matrix>(transpose(*I))
+                _R(std::make_shared<Matrix>(transpose(*I))),
                 _P(P)
         {
          std::cout<<"proper transfer down ... \n"; 
@@ -60,7 +60,7 @@
          * @param[in]  I_in  The interpolation. 
          *
          */
-        virtual bool I_init(const Matrix &I_in)
+        virtual bool I_init(const std::shared_ptr <Matrix> &I_in)
         {
             _I = I_in; 
             return true; 
@@ -72,7 +72,7 @@
          * @param[in]  R_in  The restriction. 
          *
          */
-        virtual bool R_init(const Matrix &R_in)
+        virtual bool R_init(const std::shared_ptr <Matrix> &R_in)
         {
             _R = R_in; 
             return true; 
@@ -87,7 +87,7 @@
          *
          * @return     
          */
-        virtual bool IR_init(const Matrix &I_in, const Matrix &R_in)
+        virtual bool IR_init(const std::shared_ptr <Matrix> &I_in, const std::shared_ptr <Matrix> &R_in)
         {
             _I = I_in; 
             _R = R_in; 
@@ -108,7 +108,7 @@
          */
         virtual bool interpolate(const Vector &x, Vector &x_new)
         {
-            x_new = _I * x; 
+            x_new = *_I * x; 
             return true; 
         }
         
@@ -120,12 +120,25 @@
          * @param      M_new 
          *
          */
-        virtual bool interpolate(const Matrix &M, Matrix &M_new)
+        virtual bool interpolate(const std::shared_ptr < Matrix> &M, std::shared_ptr <Matrix> &M_new)
         {            
-            M_new =  mat_PtAP_product(M, _R); 
+            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
             return true; 
         }
 
+        /**
+         * @brief      Interpolation of matrix. 
+         *             \f$  M_{new} = I * M  * I^{T}  \f$
+         *
+         * @param[in]  M     
+         * @param      M_new 
+         *
+         */
+        virtual bool interpolate(const std::shared_ptr <const Matrix> &M, std::shared_ptr <Matrix> &M_new)
+        {            
+            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
+            return true; 
+        }
 
         /**
          * @brief      Restriction of vector. 
@@ -136,7 +149,7 @@
          */
         virtual bool restrict(const Vector &x, Vector &x_new)
         {
-            x_new = _R * x; 
+            x_new = *_R * x; 
             return true; 
         }
         
@@ -148,36 +161,39 @@
          * @param      M_new 
          *
          */
-        virtual bool restrict(const Matrix &M, Matrix &M_new)
+        virtual bool restrict(const std::shared_ptr < Matrix> &M,  std::shared_ptr <Matrix> &M_new)
         {
-            M_new =  mat_PtAP_product(M, _I);  
+            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
+            return true; 
+        }
+
+        /**
+         * @brief      Restriction of matrix.
+         *             
+         *             \f$  M_{new} = I^{T} * M  * I  \f$
+         * @param[in]  M     
+         * @param      M_new 
+         *
+         */
+        virtual bool restrict(const std::shared_ptr <const  Matrix> &M,  std::shared_ptr <  Matrix> &M_new)
+        {
+            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
             return true; 
         }
 
 
         /**
-         * @brief      Zeros rows of the interpolation operator and saves adjusted I & R on given level. 
-         *             Should be called just on the finest level. 
-         *
-         * @param[in]  I          Interpolation operator.
-         * @param[in]  zero_rows  Rows to be zero-ed out. 
+         * @brief      Restriction of matrix.
+         *             
+         *             \f$  M_{new} = I^{T} * M  * I  \f$
+         * @param[in]  M     
+         * @param      M_new 
          *
          */
-        virtual bool apply_truncated_basis_to_interpolation(const std::vector<SizeType>& active_set)
+        virtual bool restrict(const Matrix &M,  Matrix &M_new)
         {
-            set_zero_rows(_I, active_set);
-            _R = transpose(_I); 
+            M_new =  mat_PtAP_product(M, *_I);  
             return true; 
-        }
-
-
-        /**
-         * @brief      Return interpolation operator. 
-         *
-         */
-        Matrix & I()
-        {
-            return _I; 
         }
 
 
@@ -188,7 +204,7 @@
          * @param[in]  P_in  The projection operator. 
          *
          */
-        virtual bool P_init(const Matrix &P_in)
+        virtual bool P_init(const std::shared_ptr <Matrix> &P_in)
         {
             _P = P_in; 
             return true; 
@@ -205,20 +221,14 @@
          */
         virtual bool project_down(const Vector &x, Vector &x_new)
         {
-            if(local_size(_P).get(1)==local_size(x).get(0))
-            {
-                // std::cout<<"YES projections down ... \n"; 
-                x_new = _P * x; 
-                return true; 
-            }
-            else
-                return(Transfer<Matrix, Vector>::restrict(x, x_new)); 
+            x_new = *_P * x; 
+            return true; 
         }
 
 
         protected:        
-            Matrix _I, _R; // _P;  
-            Matrix  _P;  
+            std::shared_ptr <Matrix> _I, _R; // _P;  
+            std::shared_ptr <Matrix>  _P;  
 
 
     };

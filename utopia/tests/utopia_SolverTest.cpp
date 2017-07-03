@@ -808,7 +808,7 @@ namespace utopia
         {
 
             using namespace utopia;
-          //  std::cout << "         Begin: MG_test" << std::endl;
+           // std::cout << "         Begin: MG_test" << std::endl;
 
             // reading data from outside
             DVectord rhs;
@@ -823,12 +823,13 @@ namespace utopia
             read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
 
 
-            std::vector <DSMatrixd> interpolation_operators;
+            std::vector<std::shared_ptr <DSMatrixd> > interpolation_operators;
+
 
             // from coarse to fine
             // interpolation_operators.push_back(std::move(I_1));
-            interpolation_operators.push_back(std::move(I_2));
-            interpolation_operators.push_back(std::move(I_3));
+            interpolation_operators.push_back(make_ref(I_2));
+            interpolation_operators.push_back(make_ref(I_3));
 
             //  init
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
@@ -840,9 +841,8 @@ namespace utopia
             // auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 
-
             multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
-            multigrid.galerkin_assembly(A);
+            multigrid.galerkin_assembly(make_ref(A));
 
             DVectord x_0 = zeros(A.size().get(0));
 
@@ -859,7 +859,9 @@ namespace utopia
             x_0 = zeros(A.size().get(0));
             multigrid.cycle_type(FULL_CYCLE); 
             multigrid.v_cycle_repetition(2); 
+
             multigrid.solve(rhs, x_0);    
+
 
          //  std::cout << "         End: MG_test" << std::endl;
         }
@@ -885,12 +887,12 @@ namespace utopia
             read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
             read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
 
-            std::vector <DSMatrixd> interpolation_operators;
+            std::vector<std::shared_ptr <DSMatrixd> > interpolation_operators;
 
              //interpolation operators from coarse to fine
-            interpolation_operators.push_back(std::move(I_1));
-            interpolation_operators.push_back(std::move(I_2));
-            interpolation_operators.push_back(std::move(I_3));
+            interpolation_operators.push_back(make_ref(I_1));
+            interpolation_operators.push_back(make_ref(I_2));
+            interpolation_operators.push_back(make_ref(I_3));
 
             //choose solver for coarse level solution
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
@@ -955,12 +957,12 @@ namespace utopia
                 disp(size(rhs));
             }
 
-            std::vector <DSMatrixd> interpolation_operators;
+            std::vector<std::shared_ptr <DSMatrixd> > interpolation_operators;
 
              // from coarse to fine
-            interpolation_operators.push_back(std::move(I_1));
-            interpolation_operators.push_back(std::move(I_2));
-            interpolation_operators.push_back(std::move(I_3));
+            interpolation_operators.push_back(make_ref(I_1));
+            interpolation_operators.push_back(make_ref(I_2));
+            interpolation_operators.push_back(make_ref(I_3));
 
             //  init
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
@@ -978,7 +980,7 @@ namespace utopia
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
             multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
-            multigrid.galerkin_assembly(A);
+            multigrid.galerkin_assembly(make_ref(A));
 
             multigrid.max_it(1);
             multigrid.mg_type(2);

@@ -70,7 +70,7 @@
        * @param[in]  operators                The restriction operators.
        *
        */
-      virtual bool init_transfer_from_coarse_to_fine(const std::vector<Matrix> & restriction_operators)
+      virtual bool init_transfer_from_coarse_to_fine(const std::vector<std::shared_ptr <Matrix> > & restriction_operators)
       {
           _num_levels = restriction_operators.size() + 1; 
           _transfers.clear();
@@ -92,7 +92,7 @@
        * @param[in]  operators                The restriction operators.
        *
        */
-      virtual bool init_transfer_from_fine_to_coarse(const std::vector<Matrix> & restriction_operators)
+      virtual bool init_transfer_from_fine_to_coarse(const std::vector<std::shared_ptr <Matrix> > & restriction_operators)
       {
           _num_levels = restriction_operators.size() + 1; 
           _transfers.clear();
@@ -117,28 +117,30 @@
        * @param[in]  stifness matrix for finest level
        *
        */
-      virtual bool galerkin_assembly(const Matrix & A)
+      virtual bool galerkin_assembly(const std::shared_ptr <const Matrix> & A)
       {
           _levels.clear();
           SizeType t_s = _transfers.size(); 
           if(t_s <= 0)
             std::cerr<<"Provide interpolation operators first!  \n"; 
 
-          _levels.push_back(std::move(A));  
-        
+          _levels.push_back(Level(A));  
+
           for(SizeType i = 1; i < _num_levels; i++)
           {
             // J_{i-1} = R * J_{i} * I
-            Matrix J_h; 
-            _transfers[t_s - i].restrict(_levels[i-1].A(), J_h); 
-            _levels.push_back(std::move(J_h));              
+            std::shared_ptr <Matrix>  J_h;     
+            
+            _transfers[t_s - i].restrict(_levels[i-1].A_ptr(), J_h); 
+            _levels.push_back(Level(J_h));         
+
+
           }
           
           std::reverse(std::begin(_levels), std::end(_levels));
+
           return true; 
       }
-
-
 
 
       /**
@@ -148,7 +150,7 @@
        * @param[in]  stifness matrix for finest level
        *
        */
-      virtual bool assembly_linear_operators_from_coarse_to_fine(const std::vector<Matrix> A)
+      virtual bool assembly_linear_operators_from_coarse_to_fine(const std::vector<std::shared_ptr <const Matrix> >  & A)
       {
           _levels.clear();          
           _levels.insert(_levels.begin(), A.rbegin(), A.rend());
@@ -164,7 +166,7 @@
        * @param[in]  stifness matrix for finest level
        *
        */
-      virtual bool assembly_linear_operators_from_fine_to_coarse(const std::vector<Matrix> A)
+      virtual bool assembly_linear_operators_from_fine_to_coarse(const std::vector<std::shared_ptr <const Matrix> > & A)
       {
           _levels.clear();
           _levels.insert(_levels.begin(), A.begin(), A.end());
@@ -263,7 +265,6 @@
          * @brief      Amount of V-cycles on each level during full-cycle
          */
         SizeType v_cycle_repetition() const {return _v_cycle_repetition; }
-
 
 
 

@@ -191,7 +191,7 @@
        * @param[in]  operators                The restriction operators.
        *
        */
-      virtual bool init_nonlinear_transfer_from_coarse_to_fine(const std::vector<Matrix> &restriction_operators, const std::vector<Matrix> &projection_operators)
+      virtual bool init_nonlinear_transfer_from_coarse_to_fine(const std::vector<std::shared_ptr <Matrix> > & restriction_operators, const std::vector<std::shared_ptr <Matrix> > & projection_operators)
       {
           this->_num_levels = restriction_operators.size() + 1; 
           this->_transfers.clear();
@@ -210,7 +210,7 @@
        * @param[in]  operators                The restriction operators.
        *
        */
-      virtual bool init_nonlinear_transfer_from_fine_to_coarse(const std::vector<Matrix> &restriction_operators, const std::vector<Matrix> &projection_operators)
+      virtual bool init_nonlinear_transfer_from_fine_to_coarse(const std::vector<std::shared_ptr <Matrix> > & restriction_operators, const std::vector<std::shared_ptr <Matrix> > & projection_operators)
       {
           this->_num_levels = restriction_operators.size() + 1; 
           this->_transfers.clear();
