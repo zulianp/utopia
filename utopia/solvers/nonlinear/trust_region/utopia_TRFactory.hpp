@@ -2,7 +2,7 @@
 // * @Author: alenakopanicakova
 // * @Date:   2016-06-10
 // * @Last Modified by:   Alena Kopanicakova
-// * @Last Modified time: 2017-06-09
+// * @Last Modified time: 2017-07-03
 // */
 
 #ifndef UTOPIA_TR_STRATEGY_FACTORY_HPP
@@ -11,7 +11,7 @@
 #include "utopia_Core.hpp"
 
 #ifdef WITH_PETSC
-	#include "utopia_PETScKSP_TR.hpp"
+	#include "utopia_PETScKSPTR.hpp"
 #endif
 
 namespace utopia 

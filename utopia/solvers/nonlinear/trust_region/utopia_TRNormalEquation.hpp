@@ -2,14 +2,14 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-18
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_TRUSTREGION_NORMAL_EQ_HPP
 #define UTOPIA_TRUSTREGION_NORMAL_EQ_HPP
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
-#include "utopia_TR_base.hpp"
+#include "utopia_TRBase.hpp"
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_CauchyPoint.hpp"
 #include "utopia_NonlinearLeastSquaresSolver.hpp"

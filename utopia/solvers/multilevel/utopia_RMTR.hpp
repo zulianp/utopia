@@ -19,7 +19,7 @@
 
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NonLinearSmoother.hpp"
-#include "utopia_TR_base.hpp"
+#include "utopia_TRBase.hpp"
 
 #include "utopia_MultiLevelEvaluations.hpp"
 
@@ -135,10 +135,12 @@ namespace utopia
 
             while(!converged)
             {            
-                if(this->cycle_type() =="multiplicative")
+                if(this->cycle_type() ==MULTIPLICATIVE_CYCLE)
                     this->multiplicative_cycle(fine_fun, x_h, rhs, l); 
-                else
-                    std::cout<<"ERROR::UTOPIA_RMTR<< unknown cycle type... \n"; 
+                else{
+                    std::cout<<"ERROR::UTOPIA_RMTR<< unknown cycle type, solving in multiplicative manner ... \n"; 
+                    this->multiplicative_cycle(fine_fun, x_h, rhs, l); 
+                }
 
 
                 #ifdef CHECK_NUM_PRECISION_mode

@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-03-28
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-09
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_ML_BASE_HPP
@@ -17,6 +17,7 @@
 
   namespace utopia 
   {
+
     /**
      * @brief      Base class for all multilevel solvers. \n
      *             Takes care of inializing multilevel hierarchy. \n
@@ -34,18 +35,15 @@
       typedef utopia::Level<Matrix, Vector> Level;
       typedef utopia::Transfer<Matrix, Vector> Transfer;
 
-    
+  
     public:
+      
 
       MultiLevelBase(const Parameters params = Parameters())
       {
         set_parameters(params); 
       }
 
-      // MultiLevelBase()
-      // {
-
-      // }
 
       virtual ~MultiLevelBase(){}
 
@@ -61,35 +59,50 @@
       }
 
 
+
+
+
       /**
        * @brief 
                 Function initializes restriction transfer operators. 
                 Operators need to be ordered FROM COARSE TO FINE. 
-                If u have them in reverse order use "fine_to_coarse" flg 
-                
-       *
+
        * @param[in]  operators                The restriction operators.
-       * @param      type                     Ordering of the comming operators. 
        *
        */
-      virtual bool init_transfer(std::vector<Matrix> restriction_operators, std::string const &type = "coarse_to_fine")
+      virtual bool init_transfer_from_coarse_to_fine(const std::vector<Matrix> & restriction_operators)
       {
           _num_levels = restriction_operators.size() + 1; 
           _transfers.clear();
           
-          if(!type.compare("fine_to_coarse"))
-          {
-            for(auto I = restriction_operators.rbegin(); I != restriction_operators.rend() ; ++I )
-              _transfers.push_back(std::move(Transfer(*I)));
-          }
-          else
-          {
-            for(auto I = restriction_operators.begin(); I != restriction_operators.end() ; ++I )
-              _transfers.push_back(std::move(Transfer(*I)));
-          }
+          for(auto I = restriction_operators.rbegin(); I != restriction_operators.rend() ; ++I )
+            _transfers.push_back(std::move(Transfer(*I)));
 
           return true; 
       }
+
+
+
+
+      /**
+       * @brief 
+                Function initializes restriction transfer operators. 
+                Operators need to be ordered FROM FINE TO COARSE.                 
+       *
+       * @param[in]  operators                The restriction operators.
+       *
+       */
+      virtual bool init_transfer_from_fine_to_coarse(const std::vector<Matrix> & restriction_operators)
+      {
+          _num_levels = restriction_operators.size() + 1; 
+          _transfers.clear();
+          
+          for(auto I = restriction_operators.begin(); I != restriction_operators.end() ; ++I )
+            _transfers.push_back(std::move(Transfer(*I)));
+
+          return true; 
+      }
+
 
 
       
@@ -109,7 +122,7 @@
           _levels.clear();
           SizeType t_s = _transfers.size(); 
           if(t_s <= 0)
-            std::cout<<"Provide interpolation operators first!  \n"; 
+            std::cerr<<"Provide interpolation operators first!  \n"; 
 
           _levels.push_back(std::move(A));  
         
@@ -135,23 +148,28 @@
        * @param[in]  stifness matrix for finest level
        *
        */
-      virtual bool assembly_linear_operators(const std::vector<Matrix> A, std::string const &type = "coarse_to_fine")
+      virtual bool assembly_linear_operators_from_coarse_to_fine(const std::vector<Matrix> A)
       {
-          _levels.clear();
-          if(!type.compare("fine_to_coarse"))
-          {
-            for(auto I = A.rbegin(); I != A.rend() ; ++I )
-              _levels.push_back(std::move(*I));
-          }
-          else
-          {
-            for(auto I = A.begin(); I != A.end() ; ++I )
-              _levels.push_back(std::move(*I));
-          }
-          std::cout<<"size of levels: "<< _levels.size() << "  \n"; 
+          _levels.clear();          
+          _levels.insert(_levels.begin(), A.rbegin(), A.rend());
           return true; 
       }
 
+
+
+      /**
+       * @brief 
+       *        The function creates corser level operators provided by assembling on differnet levels of MG hierarchy
+       *        
+       * @param[in]  stifness matrix for finest level
+       *
+       */
+      virtual bool assembly_linear_operators_from_fine_to_coarse(const std::vector<Matrix> A)
+      {
+          _levels.clear();
+          _levels.insert(_levels.begin(), A.begin(), A.end());
+          return true; 
+      }
 
 
 
@@ -168,7 +186,7 @@
         /**
          * @brief      Function sets type of cycle
          */
-        bool cycle_type(const std::string & type_in)
+        bool cycle_type(const int & type_in)
         {
             _cycle_type = type_in; 
             return true; 
@@ -238,7 +256,7 @@
         /**
          * @return     Type of MG cycle. 
          */
-        std::string  cycle_type() const         { return _cycle_type; } 
+        int  cycle_type() const         { return _cycle_type; } 
 
 
         /**
@@ -261,7 +279,7 @@
         SizeType                            _post_smoothing_steps; 
         SizeType                            _mg_type; 
 
-        std::string                         _cycle_type; 
+        int                                  _cycle_type; 
         SizeType                            _v_cycle_repetition; 
   };
 

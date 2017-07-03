@@ -23,9 +23,9 @@ namespace utopia
 
 
         ExtendedFunction(const Vector & x_init, const Vector & bc_marker, const Vector & rhs) : 
-                _x_init(x_init),
+                _x_eq_values(x_init),
                 _rhs(rhs), 
-                _boundary_marker(bc_marker)
+                _eq_constrains_flg(bc_marker)
         {
 
         }
@@ -70,39 +70,29 @@ namespace utopia
             return (empty(_rhs))? false : true; 
         }
 
-        virtual bool get_boundary_values(Vector & x)
+        virtual bool get_eq_constrains_values(Vector & x)
         {   
-            x = _x_init; 
+            x = _x_eq_values; 
             return true; 
         }
 
-        //set_equality_constraints(Vector &is_constrained, Vector &values)
-        //get_equality_values()
-        //get_equality_flags()
-        virtual bool set_boundary_values(const Vector &x_in)
-        {
-            _x_init = x_in; 
-            return true; 
-        }
-
-        virtual bool get_boundary_ids(Vector & x)
+        virtual bool get_eq_constrains_flg(Vector & x)
         {   
-            x = _boundary_marker; 
+            x = _eq_constrains_flg; 
             return true; 
         }
 
-
-        virtual bool set_boundary_ids(const Vector &x_in)
+        virtual bool set_equality_constrains(const Vector &eq_constrains_flg, const Vector &x_in)
         {
-            _boundary_marker = x_in; 
+            _x_eq_values             =  x_in; 
+            _eq_constrains_flg  = eq_constrains_flg; 
             return true; 
         }
-
 
      protected:
-        Vector _x_init; 
+        Vector _x_eq_values; 
         Vector _rhs;
-        Vector _boundary_marker;
+        Vector _eq_constrains_flg;
 
 
     };

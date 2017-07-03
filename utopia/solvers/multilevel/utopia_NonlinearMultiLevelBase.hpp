@@ -79,7 +79,8 @@
             SizeType it = 0, l = this->num_levels(); 
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
 
-            std::cout<<"Number of levels: "<< l << "  \n"; 
+            if(this->verbose())
+              std::cout<<"Number of levels: "<< l << "  \n"; 
 
             Vector g  = local_zeros(local_size(x_h)); 
             fine_fun.gradient(x_h, g); 
@@ -94,15 +95,19 @@
 
             while(!converged)
             {            
-                if(this->cycle_type() =="multiplicative")
+                if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
                     this->multiplicative_cycle(fine_fun, x_h, rhs, l); 
-                else if(this->cycle_type() =="full")
+                else if(this->cycle_type() == FULL_CYCLE)
                 {
                   this->full_cycle(fine_fun, x_h, rhs, l); 
-                  this->cycle_type("multiplicative"); 
+                  this->cycle_type(MULTIPLICATIVE_CYCLE); 
                 }
                 else
-                    std::cout<<"ERROR::UTOPIA_Multilevel<< unknown MG type... \n"; 
+                {
+                  std::cout<<"ERROR::UTOPIA_Multilevel<< unknown MG type, solving in multiplicative manner ... \n"; 
+                  this->multiplicative_cycle(fine_fun, x_h, rhs, l); 
+                  this->cycle_type(MULTIPLICATIVE_CYCLE); 
+                }
 
 
                 #ifdef CHECK_NUM_PRECISION_mode
@@ -148,57 +153,71 @@
        * @brief      Fnction inits functions associated with assemble on each level. 
        *
        * @param[in]  level_functions  The level functions
-       * @param      type             The type of ordering of level functions
        *
        */
-      virtual bool init_level_functions(const std::vector<FunctionType> &level_functions, std::string const &type = "coarse_to_fine")
+      virtual bool init_level_functions_from_coarse_to_fine(const std::vector<FunctionType> &level_functions)
       {
           _nonlinear_levels.clear();
+          _nonlinear_levels.insert(_nonlinear_levels.begin(), level_functions.rbegin(), level_functions.rend());
 
-          //_nonlinear_levels.insert(_nonlinear_levels.end(), level_functions.begin(), level_functions.end());
-          //
-          //_nonlinear_levels.insert(_nonlinear_levels.end(), level_functions.rbegin(), level_functions.rend());
-
-          if(!type.compare("fine_to_coarse"))
-          {
-            for(auto I = level_functions.rbegin(); I != level_functions.rend() ; ++I )
-              _nonlinear_levels.push_back(std::move(*I));
-          }
-          else
-          {
-            for(auto I = level_functions.begin(); I != level_functions.end() ; ++I )
-              _nonlinear_levels.push_back(std::move(*I));
-          }
           return true; 
       }
+
+
+
+
+      /**
+       * @brief      Fnction inits functions associated with assemble on each level. 
+       *
+       * @param[in]  level_functions  The level functions
+       *
+       */
+      virtual bool init_level_functions_from_fine_to_coarse(const std::vector<FunctionType> &level_functions)
+      {
+          _nonlinear_levels.clear();
+          _nonlinear_levels.insert(_nonlinear_levels.begin(), level_functions.begin(), level_functions.end());
+
+          return true; 
+      }
+
+
 
 
 
        /* @brief 
                 Function initializes projections  operators. 
                 Operators need to be ordered FROM COARSE TO FINE. 
-                If u have them in reverse order use "fine_to_coarse" flg 
-                
        *
        * @param[in]  operators                The restriction operators.
-       * @param      type                     Ordering of the comming operators. 
        *
        */
-      virtual bool init_nonlinear_transfer(const std::vector<Matrix> &restriction_operators, const std::vector<Matrix> &projection_operators,  std::string const &type)
+      virtual bool init_nonlinear_transfer_from_coarse_to_fine(const std::vector<Matrix> &restriction_operators, const std::vector<Matrix> &projection_operators)
       {
           this->_num_levels = restriction_operators.size() + 1; 
           this->_transfers.clear();
 
-          if(!type.compare("fine_to_coarse"))
-          {
             for(auto I = restriction_operators.rbegin(), P = projection_operators.rbegin(); I != restriction_operators.rend() && P != projection_operators.rend(); ++I, ++P )
               this->_transfers.push_back(std::move(Transfer(*I, *P)));
-          }
-          else
-          {
+        
+          return true; 
+      }
+
+
+       /* @brief 
+          Function initializes projections  operators. 
+          Operators need to be ordered FROM FINE TO COARSE. 
+       *
+       * @param[in]  operators                The restriction operators.
+       *
+       */
+      virtual bool init_nonlinear_transfer_from_fine_to_coarse(const std::vector<Matrix> &restriction_operators, const std::vector<Matrix> &projection_operators)
+      {
+          this->_num_levels = restriction_operators.size() + 1; 
+          this->_transfers.clear();
+
             for(auto I = restriction_operators.begin(), P = projection_operators.begin(); I != restriction_operators.end() &&  P != projection_operators.end() ; ++I, ++P )
               this->_transfers.push_back(std::move(Transfer(*I, *P)));
-          }
+
           return true; 
       }
 
@@ -319,10 +338,10 @@ protected:
         {
 
           Vector bc_values; 
-          fun.get_boundary_values(bc_values); 
+          fun.get_eq_constrains_values(bc_values); 
 
           Vector bc_ids; 
-          fun.get_boundary_ids(bc_ids); 
+          fun.get_eq_constrains_flg(bc_ids); 
 
             {
                 Write<Vector> w(x);
@@ -355,7 +374,7 @@ protected:
         virtual bool zero_boundary_correction(FunctionType & fun, Vector & c)
         {
           Vector bc; 
-          fun.get_boundary_ids(bc); 
+          fun.get_eq_constrains_flg(bc); 
 
           {
             Write<Vector> w(c);
@@ -377,12 +396,17 @@ protected:
         }
 
 
-
-        // TODO:: make nicer => does not need to be done every iteration
+        /**
+         * @brief      Function zeors correction, where we have Dirichlet BC aplied.
+         *
+         * @param      fun   The fun
+         * @param      M     matrix
+         *
+         */
         virtual bool zero_boundary_correction_mat(FunctionType & fun, Matrix & M)
         {
           Vector bc; 
-          fun.get_boundary_ids(bc); 
+          fun.get_eq_constrains_flg(bc); 
           std::vector<SizeType> index;
 
           {

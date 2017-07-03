@@ -841,7 +841,7 @@ namespace utopia
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 
 
-            multigrid.init_transfer(std::move(interpolation_operators));
+            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
             multigrid.galerkin_assembly(A);
 
             DVectord x_0 = zeros(A.size().get(0));
@@ -853,11 +853,11 @@ namespace utopia
             multigrid.solve(rhs, x_0);
 
             x_0 = zeros(A.size().get(0));
-            multigrid.cycle_type("full"); 
+            multigrid.cycle_type(FULL_CYCLE); 
             multigrid.solve(rhs, x_0);    
 
             x_0 = zeros(A.size().get(0));
-            multigrid.cycle_type("full"); 
+            multigrid.cycle_type(FULL_CYCLE); 
             multigrid.v_cycle_repetition(2); 
             multigrid.solve(rhs, x_0);    
 
@@ -903,7 +903,7 @@ namespace utopia
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             // auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.init_transfer(std::move(interpolation_operators));
+            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
             multigrid.max_it(1);
             multigrid.mg_type(2);
 
@@ -977,7 +977,7 @@ namespace utopia
 
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.init_transfer(std::move(interpolation_operators));
+            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
             multigrid.galerkin_assembly(A);
 
             multigrid.max_it(1);

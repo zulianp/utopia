@@ -6,8 +6,6 @@
 
 #include "utopia_FunctionBoxConstrained.hpp"
 
-
-
 #include "utopia_MPRGP.hpp"
 #include "utopia_SemismoothNewton.hpp"
 

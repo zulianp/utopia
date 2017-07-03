@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-06-07
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-14
+* @Last Modified time: 2017-07-03
 */
 #ifndef PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
 #define PETSC_BASED_UTOPIA_NONLINEAR_FUNCTION_HPP
@@ -27,10 +27,7 @@ namespace utopia
 
         public:
             PETSCUtopiaNonlinearFunction(SNES snes, const Vector & x_init = local_zeros(1), const Vector & bc_marker = local_zeros(1), const Vector & rhs = local_zeros(1)) :
-                ExtendedFunction<Matrix, Vector>(x_init, bc_marker, rhs),
-                snes_(snes), 
-                first_grad(0), 
-                first_energy(0)
+                ExtendedFunction<Matrix, Vector>(x_init, bc_marker, rhs), snes_(snes)
             {   
 
             }
@@ -39,19 +36,15 @@ namespace utopia
             virtual bool gradient(const Vector &x, Vector &g) const override
             {
                 // initialization of gradient vector... 
-                if(empty(g)){
+                if(empty(g))
                     g  = local_zeros(local_size(x));; 
-                }
                 
                 SNESComputeFunction(snes_, raw_type(x), raw_type(g));   
 
 
                 // THIS IS NEEDED FOR OTHER FUNCTIONS THAN TR 
-                if(local_size(g)==local_size(this->_rhs))
-                {
-                   // std::cout<<"grad:: yes rhs ... \n"; 
+                if(local_size(g)==local_size(this->_rhs)) 
                     g = g - this->_rhs; 
-                }
 
                 return true; 
             }
@@ -70,26 +63,18 @@ namespace utopia
                 Vector grad = 0 * x; 
                 this->gradient(x, grad);         
 
-                if(first_energy==0)
-                {
-                    result = 9e9; 
-                    first_energy = 1; 
-                    return true; 
-                }
-
+                
                 DM dm; 
                 DMSNES         sdm; 
 
                 SNESGetDM(snes_,&dm);
                 DMGetDMSNES(dm,&sdm);
                 if (sdm->ops->computeobjective) 
-                {
                     SNESComputeObjective(snes_, raw_type(x), &result); 
-                } 
                 else 
-                {
                     result = 0.5 * norm2(grad) * norm2(grad); 
-                }
+
+
                 return true; 
             }
 
@@ -102,8 +87,6 @@ namespace utopia
         private:
 
             SNES snes_;
-            mutable PetscInt first_grad; 
-            mutable PetscInt first_energy; 
         };
 
     }

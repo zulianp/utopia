@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-24
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_NMGM_HPP
@@ -62,7 +62,7 @@ namespace utopia
             
             _parameters = params;         
             _sigma      = params.sigma(); 
-            this->cycle_type("nested_iteration"); 
+            this->cycle_type(NESTED_ITERATION); 
         }
 
 
@@ -108,9 +108,9 @@ namespace utopia
 
             while(!converged)
             {            
-                if(this->cycle_type() =="multiplicative")
+                if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
                     multiplicative_cycle(fine_fun, x_h, rhs, l); 
-                else if(this->cycle_type() =="nested_iteration")
+                else if(this->cycle_type() ==NESTED_ITERATION)
                     NMGM(fine_fun, x_h, rhs, l, rhss, initial_iterates); 
 
                 #ifdef CHECK_NUM_PRECISION_mode

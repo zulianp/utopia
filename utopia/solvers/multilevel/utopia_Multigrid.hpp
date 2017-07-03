@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-03-29
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-22
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_MULTIGRID_HPP
@@ -134,14 +134,14 @@ namespace utopia
                 this->atol(1e-15); 
             #endif
 
-            if(this->cycle_type() =="full")
+            if(this->cycle_type() == FULL_CYCLE)
                 this->max_it(1); 
 
             while(!converged)
             {            
-                if(this->cycle_type() =="multiplicative")
+                if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
                     multiplicative_cycle(rhs, l, x_0); 
-                else if(this->cycle_type() =="full")
+                else if(this->cycle_type() == FULL_CYCLE)
                     full_cycle(rhs, l, x_0); 
                 else
                     std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n"; 

@@ -2,14 +2,14 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 //    .................................. WORK IN PROGRESS............................
 
 #ifndef UTOPIA_TRUSTREGION_LOCAL_SOLVE_HPP
 #define UTOPIA_TRUSTREGION_LOCAL_SOLVE_HPP
 #include "utopia_GLFunction.hpp"
-#include "utopia_TR_base.hpp"
+#include "utopia_TRBase.hpp"
 
 
 namespace utopia 

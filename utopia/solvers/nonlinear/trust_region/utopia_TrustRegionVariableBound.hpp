@@ -8,7 +8,7 @@
 #ifndef UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 #define UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 #include "utopia_NonLinearSolver.hpp"
-#include "utopia_TR_base.hpp"
+#include "utopia_TRBase.hpp"
 #include "utopia_TRBoxSubproblem.hpp"
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"

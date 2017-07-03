@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-22
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_UTOPIA_PARAMETERS_HPP
@@ -17,6 +17,14 @@
 
 namespace utopia 
 {
+
+
+      // type of cycles used in Multilevel stuff 
+      static const int MULTIPLICATIVE_CYCLE = 1;
+      static const int ADDITIVE_CYCLE       = 2;
+      static const int FULL_CYCLE           = 3;
+      static const int NESTED_ITERATION     = 4;
+
     /**
      * @brief      This class keeps track on all parameters, that we have in linear and nonlinear solvers.
      *             It provides default choice of params and routines to set user-defined preferences. 
@@ -83,7 +91,7 @@ namespace utopia
           post_smoothing_steps_ = 3; 
           omega_ = 0.66; 
           static_time_step_ = true; 
-          cycle_type_      = "multiplicative"; 
+          cycle_type_      = MULTIPLICATIVE_CYCLE; 
           sigma_            = 1; 
 
         /*----------  LS  ----------*/
@@ -164,7 +172,7 @@ namespace utopia
     SizeType  block_size() const              { return blocksize_; }
     char const *   smoother_type() const      { return smoother_type_; }
     SizeType  mg_type()  const                { return mg_type_; }
-    char const *  cycle_type()  const          { return cycle_type_; }
+    int cycle_type()  const                   { return cycle_type_; }
     SizeType  pre_smoothing_steps()const      { return pre_smoothing_steps_; }
     SizeType  post_smoothing_steps()const     { return post_smoothing_steps_; }
     Scalar    omega()const                    { return omega_;    } 
@@ -259,7 +267,7 @@ namespace utopia
     void  post_smoothing_steps(const SizeType & post_smoothing_steps) {  post_smoothing_steps_ = post_smoothing_steps; }
     void  omega(const SizeType & omega)                               {  omega_ = omega; } 
     void  static_time_step(const bool & static_time_step)             {  static_time_step_ = static_time_step; }; 
-    void  cycle_type(char const *  cycle_type)                        {  cycle_type_ = cycle_type; }
+    void  cycle_type(const int & cycle_type)                         {  cycle_type_ = cycle_type; }
     void sigma(const Scalar & sigma)                                  { sigma_    = sigma; }
 /*---------------------------------  LS   --------------------------------------------------*/  
     void  c1(const Scalar & c1)                                       {  c1_ = c1; } 
@@ -332,7 +340,7 @@ namespace utopia
 
           SizeType  blocksize_; 
           char const  * smoother_type_;
-          char const  * cycle_type_;
+          int cycle_type_;
           SizeType  mg_type_; 
           SizeType  pre_smoothing_steps_; 
           SizeType  post_smoothing_steps_; 

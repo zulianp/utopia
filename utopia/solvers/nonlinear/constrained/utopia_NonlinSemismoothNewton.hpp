@@ -46,9 +46,6 @@ namespace utopia
          SizeType iterations = 1;
 
          const SizeType local_N = local_size(x_new).get(0);
-
-         const SizeType N = x_new.size().get(0);
-
          Vector lambda = local_zeros(local_N);
          Vector Ginvg, d, g;
          Vector x_old = x_new;
