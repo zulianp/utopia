@@ -3,7 +3,7 @@
 
 
 // to get rid of unused variables in Realease build 
-#define ASSERT_DEBUG
+// #define ASSERT_DEBUG
 
 #ifdef ASSERT_DEBUG
 #define ASSERT(x) do { (void)sizeof(x);} while (0)
