@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-22
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_TR_SUBPROBLEM_DOGLEG_HPP
@@ -41,18 +41,14 @@ namespace utopia
 
         bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
         {
-        	//std::cout<<"utoia::dogleg.... unpreconditioned solve... \n"; 
-        	// check if LS was initialized 
-            // LS_check(); 
             Vector p_N = g, p_SD = g, p_CP = g;
             Scalar pred_N, g_B_g = dot(g, B * g), pNlen; 
 
             // this is the worst hard-codding ever 
-             // auto lsolver = std::make_shared< Factorization<DSMatrixd, DVectord> >();
             auto lsolver = std::make_shared< Factorization<Matrix, Vector> >();
-			// #ifdef PETSC_HAVE_MUMPS
-   //          	lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
-			// #endif //PETSC_HAVE_MUMPS
+			#ifdef PETSC_HAVE_MUMPS
+            	lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+			#endif //PETSC_HAVE_MUMPS
 			
             //
             lsolver->solve(B, -1 * g, p_N);
@@ -65,12 +61,10 @@ namespace utopia
             // good situation: p_N reduces m_k(p)
 	    	if(pred_N >= 0)
             {   
-            	//std::cout<<"pred_N >= this->current_radius()   \n"; 
                 pNlen = norm2(p_N);
                 // newton point inside of TR
                 if(pNlen <= this->current_radius())
                 {
-                	//std::cout<<"pNlen <= this->current_radius()   \n"; 
                     p_k = p_N;
                 }
                 else
@@ -101,7 +95,6 @@ namespace utopia
             {
                 if(g_B_g > 5 * std::sqrt(1e-14))
                 {
-                	//std::cout<<"g_B_g > smt   \n"; 
                     //  1D function is convex enough
                     //  find unconstrained SD minimizer for model fun
                     p_SD = -(dot(g, g)/g_B_g) * g;
@@ -110,23 +103,17 @@ namespace utopia
                     if(pSDlen <= this->current_radius())
                     {
                         p_k = p_SD;
-                        //std::cout<<"g_B_g > 1st   \n"; 
                     }
                     else
                     {
                         p_k = this->current_radius() * (p_SD* (1/pSDlen));
-                      //  std::cout<<"g_B_g > 2nd   \n"; 
                     }
                 }
                 else
                 {
                     //  1D slice of model function in gradient direction is concave:
                     //  SD minimizer lies on TR boundary, in direction of -g'
-                    //cauchyPoint(J, J_T, r, delta, p_CP);
-                    // cauchy_point.get_pk(g, B, delta, p_k, pred); 
                     cauchy_point.unpreconditioned_solve(B, g, p_k); 
-                   // std::cout<<"unprecond   \n"; 
-                    // p_k = p_k; 
                 }
             }
 

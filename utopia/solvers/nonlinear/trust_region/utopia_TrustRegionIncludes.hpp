@@ -12,7 +12,6 @@
 #include "utopia_TrustRegionVariableBound.hpp"
 
 #include "utopia_ActiveSetTRSubproblem.hpp"
-#include "utopia_TR_MGSubproblem.hpp"
 #include "utopia_TrustRegion.hpp"
 
 

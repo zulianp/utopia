@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
@@ -149,7 +149,7 @@
           else if(rho != rho)
             rho = 0.0; 
 
-          
+
           this->trial_point_acceptance(rho, x_k1, x_k); 
     //----------------------------------------------------------------------------
     //    convergence check 
@@ -201,23 +201,6 @@
 
 
   protected:
-    // /**
-    //  * @brief      Update of TR radius
-    //  *
-    //  * @param[in]  rho     The rho
-    //  * @param[in]  p_k     The step
-    //  * @param      radius  The radius
-    //  *
-    //  */
-    //   virtual bool delta_update(const Scalar &rho, const Vector &p_k, Scalar &radius) override
-    //   {
-    //     if(rho < this->eta1())
-    //       radius = this->gamma1() * radius; 
-    //     else if(rho > this->eta2())
-    //       radius = this->gamma2() * radius; 
-        
-    //     return true; 
-    //   }
 
       /**
        * @brief      Computes criticality measure, which is later used for termination conditions
