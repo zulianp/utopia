@@ -108,7 +108,7 @@ namespace utopia {
 //    }
 
     template<class Expr, class Operation>
-    inline Size size(const Reduce<Expr, Operation> &expr)
+    inline Size size(const Reduce<Expr, Operation> &/*expr*/)
     {
         Size s(1);
         s.set(0, 1);

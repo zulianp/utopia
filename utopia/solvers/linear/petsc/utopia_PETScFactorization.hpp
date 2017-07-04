@@ -53,7 +53,12 @@ namespace utopia {
 			{"lu", "jacobi", "sor", "shell",  "bjacobi",  "ilu",  "icc", "cholesky", "pbjacobi"}, 
 			{"mumps", "superlu", "superlu_dist", "petsc", "cusparse"} )
 		{ 
-			set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
+			if(pct=="lu" && sp == "mumps")
+				set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+			else if(pct=="cholesky")
+				set_type(PETSC_TAG, CHOLESKY_DECOMPOSITION_TAG);
+			else
+				set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
 		}
 
 		void set_type(DirectSolverLib lib, DirectSolverType type)

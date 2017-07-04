@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-03-29
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-11-14
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_ONE_LEVEL_HPP
@@ -27,8 +27,10 @@
         public:
 
         Level(){}
-        Level(const Matrix & A): _A(A)
-        {}
+        Level(const std::shared_ptr <const Matrix> & A): _A(A)
+        {
+
+        }
 
 
         virtual ~Level(){} 
@@ -40,7 +42,7 @@
          * @param[in]  A     The stifness matrix.
          *
          */
-        bool A(const Matrix & A)
+        bool A(const std::shared_ptr <const Matrix> & A)
         {
             _A = A; 
             return true; 
@@ -51,12 +53,22 @@
          *
          * @return     The stifness on given level.
          */
-        Matrix &A()
+        const Matrix &  A()
         {
-            return _A; 
+            return *_A; 
         }
 
 
+
+        /**
+         * @brief      Getter for stifness matrix. 
+         *
+         * @return     The stifness on given level.
+         */
+        std::shared_ptr <const Matrix> A_ptr()
+        {
+            return _A; 
+        }
 
         /**
          * @brief      Enforce active set to the system on given level. 
@@ -71,7 +83,7 @@
         }
 
     protected:        
-        Matrix _A;       
+        std::shared_ptr <const Matrix>  _A;     
 
 };
 

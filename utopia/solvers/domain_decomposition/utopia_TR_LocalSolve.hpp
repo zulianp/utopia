@@ -1,15 +1,15 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-11-08
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-07-03
 */
 //    .................................. WORK IN PROGRESS............................
 
 #ifndef UTOPIA_TRUSTREGION_LOCAL_SOLVE_HPP
 #define UTOPIA_TRUSTREGION_LOCAL_SOLVE_HPP
 #include "utopia_GLFunction.hpp"
-#include "utopia_TR_base.hpp"
+#include "utopia_TRBase.hpp"
 
 
 namespace utopia 
@@ -204,21 +204,21 @@ namespace utopia
     Scalar delta, delta_working; 
 
 
-    virtual bool delta_update(const Scalar &rho, const LocalVector &p_k, Scalar &delta)
-    {
-        if(rho < this->eta1())
-        {
-          // in L2 norm !!! 
-          // delta           = this->gamma1() * norm2(p_k); 
-          delta           = this->gamma1() * delta; 
-        }
-        else if (rho > this->eta2())
-        {
-          delta         = std::min(this->gamma2() * delta, this->delta_max()); 
-          // delta_working = this->delta_max() - norm2(p_k); 
-        }      
-          return true; 
-    }
+    // virtual bool delta_update(const Scalar &rho, const LocalVector &p_k, Scalar &delta)
+    // {
+    //     if(rho < this->eta1())
+    //     {
+    //       // in L2 norm !!! 
+    //       // delta           = this->gamma1() * norm2(p_k); 
+    //       delta           = this->gamma1() * delta; 
+    //     }
+    //     else if (rho > this->eta2())
+    //     {
+    //       delta         = std::min(this->gamma2() * delta, this->delta_max()); 
+    //       // delta_working = this->delta_max() - norm2(p_k); 
+    //     }      
+    //       return true; 
+    // }
 
 
     virtual bool check_convergence(const SizeType &it, const Scalar & g_norm, const Scalar & r_norm, const Scalar & s_norm, const Scalar & delta)

@@ -773,7 +773,7 @@ namespace utopia {
 		// SemismoothNewton<DSMatrixd, DVectord> newton(std::make_shared<ConjugateGradient<DSMatrixd, DVectord> >());
 
 		newton.verbose(true);
-		newton.solve(sol_c, K_c, rhs_c, gap_c);
+		//newton.solve(sol_c, K_c, rhs_c, gap_c);
 
 		//Change back to original basis
 		DVectord sol = coupling * (orhtogonal_trafos * sol_c);

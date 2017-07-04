@@ -51,7 +51,7 @@ namespace utopia
             else if (token == "autodiff")
                 run_autodiff_test();
             else if (token == "solvers")
-                runSolversTest();
+               runSolversTest();
             else if (token == "performance")
                 run_performance_test();
             else if (token == "algebra")

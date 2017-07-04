@@ -20,8 +20,8 @@ namespace utopia {
             const auto & left  = expr.right().left().implementation();
             auto && right      = Eval<Right, Traits>::apply(expr.right().right());
 
-        	assert(&cleft != &right && "should never happen");
-        	const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), cleft); assert(ok);
+        	ASSERT(&cleft != &right && "should never happen");
+        	const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), cleft); ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
         }
@@ -42,10 +42,10 @@ namespace utopia {
             auto && right      = Eval<Right, Traits>::apply(expr.right().right());
 
         	if(&cleft != &right) {
-        		const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), cleft);  assert(ok);
+        		const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), cleft);  ASSERT(ok);
         	} else {
         		Result result;
-        		const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), result);  assert(ok);
+        		const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), result);  ASSERT(ok);
         		cleft = result;
         	}
 

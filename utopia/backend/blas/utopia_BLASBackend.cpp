@@ -17,7 +17,7 @@
 #include "utopia_BackendInfo.hpp"
 #include "utopia_ScalarBackend.hpp"
 
-#include "utopia_BlasBackend.hpp"
+#include "utopia_BLASBackend.hpp"
 
 
 namespace utopia {

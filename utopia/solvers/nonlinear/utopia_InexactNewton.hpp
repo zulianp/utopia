@@ -2,7 +2,7 @@
 * @Author: Alena Kopanicakova
 * @Date:   2017-01-31
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-01-31
+* @Last Modified time: 2017-06-13
 */
 #ifndef UTOPIA_SOLVER_INEXACT_NEWTON_HPP
 #define UTOPIA_SOLVER_INEXACT_NEWTON_HPP
@@ -12,6 +12,7 @@
 #include "utopia_Function.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_LS_Strategy.hpp"
+#include "utopia_HessianApproximations.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -27,86 +28,100 @@ namespace utopia
     template<class Matrix, class Vector>
     class InexactNewton : public NonLinearSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)    Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
-        typedef utopia::IterativeSolver<Matrix, Vector> Solver; 
-        
+        typedef UTOPIA_SCALAR(Vector)                           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+
+        typedef utopia::LSStrategy<Matrix, Vector>              LSStrategy; 
+        typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation; 
+        typedef utopia::IterativeSolver<Matrix, Vector>         Solver; 
+
 
     public:
-       InexactNewton(   const std::shared_ptr <Solver> &linear_solver = std::shared_ptr<Solver>(),
-                        const Parameters params                       = Parameters() ):
-                        NonLinearSolver<Matrix, Vector>(linear_solver, params), alpha_(1), hessian_refresh_(4), linear_solver_it_(1)
-                        {
-                            set_parameters(params);
-                            linear_solver->max_it(linear_solver_it_); 
-                        }
+     InexactNewton(     const std::shared_ptr <Solver> &linear_solver                   = std::shared_ptr<Solver>(),
+                        const Parameters params                                         = Parameters()
+                        ):
+     NonLinearSolver<Matrix, Vector>(linear_solver, params),alpha_(1), 
+                                                            hessian_refresh_(4), 
+                                                            linear_solver_it_(1),
+                                                            _has_hessian_approx_strategy(false)
+     {
+        set_parameters(params);
+        linear_solver->max_it(linear_solver_it_); 
+    }
 
-        bool solve(Function<Matrix, Vector> &fun, Vector &x) override
-        {
-           using namespace utopia;
+    bool solve(Function<Matrix, Vector> &fun, Vector &x) override
+    {
+         using namespace utopia;
 
-            Vector grad, step;
-            Matrix hessian;
+         Vector grad, step;
+         Matrix hessian;
 
-            Scalar g_norm, g0_norm, r_norm, s_norm;
-            SizeType it = 0;
+         Scalar g_norm, g0_norm, r_norm=1, s_norm=1;
+         SizeType it = 0;
 
-            bool converged = false;
+         bool converged = false;
 
-            fun.gradient(x, grad);
-            g0_norm = norm2(grad);
-            g_norm = g0_norm;
+         fun.gradient(x, grad);
+         g0_norm = norm2(grad);
+         g_norm = g0_norm;
 
+         if(this->verbose_)
             this->init_solver("INEXACT NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || "});
 
+
+
+        if(has_hessian_approx())
+            hessian_approx_strategy_->initialize(fun, x, hessian);        
+        else
+            fun.hessian(x, hessian); 
+
+
+        while(!converged)
+        {
+            // print iteration status on every iteration
             if(this->verbose_)
-                PrintInfo::print_iter_status(it, {g_norm, 1, 0});
+                PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
+
+            // check convergence and print interation info
+            converged = this->check_convergence(it, g_norm, r_norm, s_norm);
         
-            while(!converged)
-            {
-                if(it % hessian_refresh_ == 0)
-                    fun.hessian(x, hessian);
+            //find direction step
+            step = local_zeros(local_size(x));
+            this->linear_solve(hessian, -1* grad, step);
 
-                //find direction step
-                step = local_zeros(local_size(x));
-                this->linear_solve(hessian, grad, step);
+            if(ls_strategy_) {
 
-                if(ls_strategy_) {
-                    
-                    ls_strategy_->get_alpha(fun, grad, x, -step, alpha_); 
-                    x -= alpha_ * step;
+                ls_strategy_->get_alpha(fun, grad, x, step, alpha_); 
+                x += alpha_ * step;
 
-                } else { 
-                    //update x
-                    if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
-                    {
-                        x -= step;
-                    }
-                    else
-                    {
-                        x -= alpha_ * step;
-                    }
+            } else { 
+                        //update x
+                if (fabs(alpha_ - 1) < std::numeric_limits<Scalar>::epsilon())
+                {
+                    x += step;
                 }
-
-                fun.gradient(x, grad);
-
-                // norms needed for convergence check
-                g_norm = norm2(grad);
-                r_norm = g_norm/g0_norm;
-                s_norm = norm2(step);
-
-                it++;
-                // // print iteration status on every iteration
-                if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm});
-
-                // // check convergence and print interation info
-                converged = this->check_convergence(it, g_norm, r_norm, s_norm);
+                else
+                {
+                    x += alpha_ * step;
+                }
             }
 
-            return true;
+            if(has_hessian_approx())
+                hessian_approx_strategy_->approximate_hessian(fun, x, step, hessian,  grad); 
+            else
+                fun.hessian(x, hessian); 
+
+            // norms needed for convergence check
+            g_norm = norm2(grad);
+            r_norm = g_norm/g0_norm;
+            s_norm = norm2(step);
+
+            it++;
         }
+
+
+        return true;
+    }
 
     virtual void set_parameters(const Parameters params) override
     {
@@ -139,13 +154,39 @@ namespace utopia
         return hessian_refresh_; 
     }
 
-    private:
+    /**
+     * @brief      Sets strategy for computing step-size. 
+     *
+     * @param[in]  strategy  The line-search strategy.
+     *
+     * @return     
+     */
+    virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
+    {
+      hessian_approx_strategy_      = strategy; 
+      _has_hessian_approx_strategy  = true; 
+      return true; 
+    }
+
+
+    virtual bool has_hessian_approx()
+    {
+        return _has_hessian_approx_strategy;
+    }
+
+
+
+private:
         Scalar alpha_;                                          /*!< Dumping parameter. */
         const SizeType hessian_refresh_;                        /*!< How often refresh hessian. */
         const SizeType linear_solver_it_;                       /*!< How many linear solver iterations required. */
         std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */  
 
-    };
+        std::shared_ptr<HessianApproximation> hessian_approx_strategy_;             
+
+        bool _has_hessian_approx_strategy; 
+
+};
 
 }
 #endif //UTOPIA_SOLVER_INEXACT_NEWTON_HPP

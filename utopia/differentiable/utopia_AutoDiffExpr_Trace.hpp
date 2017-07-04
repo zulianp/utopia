@@ -20,8 +20,9 @@ namespace utopia {
 		typedef typename Sim::Type Type;							   
 		
 		inline static UTOPIA_STORE_CONST(Type) make(const Expr &expr)
-		{
-			const auto &e = expr.expr();
+		{	
+			// unused 
+			//const auto &e = expr.expr();
 			return Sim::make( diag( Diff::make( diag(expr.expr())) ) );
 		}
 	};

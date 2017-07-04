@@ -24,7 +24,7 @@ namespace utopia {
                     Eval<Tensor, Traits>::apply(t.expr()),
                     result);
 
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(t);
             return result;

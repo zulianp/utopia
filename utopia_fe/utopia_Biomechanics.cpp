@@ -471,7 +471,9 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 
 	SemismoothNewton<DSMatrixd, DVectord> newton(std::make_shared<Factorization<DSMatrixd, DVectord> >());
 	newton.verbose(true);
-	newton.solve(sol_c, K_c, rhs_c, gap_c);
+
+    newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap_c))); 
+	newton.solve(K_c, rhs_c, sol_c);
 
 	//Change back to original basis
 	DVectord sol = coupling * (orhtogonal_trafos * sol_c);

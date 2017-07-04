@@ -24,7 +24,7 @@ namespace utopia {
                     Eval<Right, Traits>::apply(expr.right()),
                     result);
 
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -71,7 +71,7 @@ namespace utopia {
 
             typename TypeAndFill<Traits, Left>::Type result = Eval<Left, Traits>::apply(expr.left());
             const bool ok = UTOPIA_BACKEND(Traits).mat_diag_shift(result, 1.0);
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -88,7 +88,7 @@ namespace utopia {
 
             EXPR_TYPE(Traits, Left) result = Eval<Left, Traits>::apply(expr.left());
             const bool ok = UTOPIA_BACKEND(Traits).mat_diag_shift(result, expr.right().left());
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -112,7 +112,7 @@ namespace utopia {
                     result
             );
 
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -137,7 +137,7 @@ namespace utopia {
                      result
             );
 
-            assert(ok);
+            ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
             return result;

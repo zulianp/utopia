@@ -78,7 +78,7 @@ namespace utopia {
             return true;
         }
 
-        bool has_preconditioner() const
+        bool has_preconditioner() const override
         {
             return true;
         }

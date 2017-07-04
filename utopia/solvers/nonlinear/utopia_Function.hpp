@@ -20,6 +20,7 @@ namespace utopia
         DEF_UTOPIA_SCALAR(Matrix)
 
         virtual ~Function() { }
+
         virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const = 0;
         virtual bool gradient(const Vector &/*point*/, Vector &/*result*/) const = 0;
         virtual bool hessian(const Vector &x, Matrix &H) const = 0;

@@ -2,7 +2,7 @@
 // * @Author: alenakopanicakova
 // * @Date:   2016-06-10
 // * @Last Modified by:   Alena Kopanicakova
-// * @Last Modified time: 2017-01-29
+// * @Last Modified time: 2017-07-03
 // */
 
 #ifndef UTOPIA_TR_STRATEGY_FACTORY_HPP
@@ -11,7 +11,7 @@
 #include "utopia_Core.hpp"
 
 #ifdef WITH_PETSC
-	#include "utopia_PETScKSP_TR.hpp"
+	#include "utopia_PETScKSPTR.hpp"
 #endif
 
 namespace utopia 
@@ -73,12 +73,12 @@ namespace utopia
 			void init()
 			{	
 				strategies_[CAUCHYPOINT_TAG] 		= std::make_shared<utopia::CauchyPoint<Matrix, Vector> >(); 
-				// strategies_[DOGLEG_TAG] 			= std::make_shared<utopia::Dogleg<Matrix, Vector> >(); 
+				strategies_[DOGLEG_TAG] 			= std::make_shared<utopia::Dogleg<Matrix, Vector> >(); 
 				#ifdef WITH_PETSC
 					strategies_[STEIHAUG_TOINT_TAG] = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg"); 
 					strategies_[TOINT_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("qcg"); 
 					strategies_[NASH_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("nash"); 
-					strategies_[LANCZOS_TAG] 		= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg"); 
+					strategies_[LANCZOS_TAG] 		= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("gltr"); 
 					strategies_[CGNE_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("cgne"); 
 					strategies_[AUTO_TR_TAG] 		= std::make_shared<utopia::KSP_TR<Matrix, Vector> >(); 
 				#endif 	
@@ -126,7 +126,7 @@ namespace utopia
 			void init()
 			{
 				strategies_[CAUCHYPOINT_TAG] 		= std::make_shared<utopia::CauchyPoint<Matrix, Vector> >(); 
-				// strategies_[DOGLEG_TAG] 			= std::make_shared<utopia::Dogleg<Matrix, Vector> >(); 
+				strategies_[DOGLEG_TAG] 			= std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();  // THIS IS WRONG !!!!!!!
 				strategies_[STEIHAUG_TOINT_TAG] 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector> >(); 
 			}
 	};

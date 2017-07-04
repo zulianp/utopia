@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-07-15
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-02-07
+* @Last Modified time: 2017-07-03
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -32,6 +32,7 @@ namespace utopia
             TR_test();
             LS_test();
             nl_solve_test();
+           
         }
 
 
@@ -251,6 +252,7 @@ namespace utopia
             nlsolver1.set_parameters(params);
             nlsolver2.set_parameters(params);
 
+
             nlsolver1.solve(fun2, x1);
             nlsolver2.solve(fun2, x2);
 
@@ -308,7 +310,6 @@ namespace utopia
            // std::cout << "         End: LS_test" << std::endl;
         }
 
-
         SolverTest()
         : _n(10) { }
 
@@ -337,63 +338,112 @@ namespace utopia
             PETSC_CG_MG_test();
             petsc_newton_PETScCG_utopia_test();
             petsc_tr_rr_test();
-            petsc_newton_inexact_newton_with_KSP_test(); 
-
-            // neohookean_tr_test();
-            // QP_example_MG();
-            // TR_in_inf_norm_with_MG();
+        	mprgp_test(); 
+            inexact_newton_test();
         }
 
 
 
 
 
-        // void neohookean_tr_test()
-        // {
-        //     // std::cout<<"begin: neohook tr test \n";
-
-        //     const unsigned FE_nodes     = 10;
-        //     const unsigned int mu       = 1;
-        //     const unsigned int lambda   = 1;
-        //     GlobalAndLocalNeoHookean1D<DSMatrixd, DVectord, Matrixd, Vectord> fun_neohook(FE_nodes, mu, lambda);
-
-        //     Parameters params;
-        //     params.atol(1e-8);
-        //     params.rtol(1e-8);
-        //     params.stol(1e-8);
-        //     params.solver_type(TRUST_REGION_TAG);
-        //     params.trust_region_alg(STEIHAUG_TOINT_TAG);
-        //     params.verbose(false);
-
-        //     DVectord x = values(FE_nodes * mpi_world_size(), 0);
-
-        //     auto subproblem = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >();
-        //     TrustRegion<DSMatrixd, DVectord> tr_solver(subproblem);
-        //     tr_solver.set_parameters(params);
-        //     tr_solver.solve(fun_neohook, x);
+        void mprgp_test()
+        {
+            // std::cout << "         Begin: mprgp_test" << std::endl;
+        	SizeType n = 10; 
+        	PetscScalar h = 1.0/(n-1);
 
 
-        //     // std::cout<<"end: neohooke global tr test \n";
-        //     // std::cout<<"begin:  local neohook tr test \n";
+        	DSMatrixd A = sparse(n, n, 3);
+        	DVectord b, u, l; 
 
-        //     auto local_subproblem = std::make_shared<utopia::SteihaugToint<Matrixd, Vectord> >();
+	        // 1d laplace 	
+	        {
+		        Write<DSMatrixd> w(A);
+		        Range r = row_range(A);
+
+		        for(SizeType i = r.begin(); i != r.end(); ++i) {
+		            if(i > 0) {    
+		                A.add(i, i - 1, -1.0);    
+		            }
+
+		            if(i < n-1) {
+		                A.add(i, i + 1, -1.0);
+		            }
+
+		            A.add(i, i, 2.0);
+		        }
+		    }
+
+		    A = (n-1)*A;
+
+		    // bc conditions 
+		    {
+		        Range r = row_range(A);
+		        Write<DSMatrixd> w(A);
+		        if(r.begin() == 0) {
+		            A.set(0, 0, 1.);
+		            A.set(0, 1, 0);
+		        }
+
+		        if(r.end() == n) {
+		            A.set(n-1, n-1, 1.);
+		            A.set(n-1, n-2, 0);
+		        }
+		    }
+
+		   	l = -1 * values(n, 1);
+		    u =  values(n, 1);
+		    
+		    b = 50 * values(n, 1);
+
+		    {
+	            Write<DVectord> w (b);
+	            Range rhs_range = range(b);;
+	            for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++)
+	            {
+	          		if(i > n/2)
+	                	b.set(i, -50);
+
+	                if(i ==0 || i == rhs_range.end()-1)
+	                	b.set(i, 0);
+	  
+	            }
+	        }
+
+			b *= h; 
+
+			// just testing 
+			// u =  values(local_size(u).get(0), 999); 
+			// l =  values(local_size(u).get(0), -999); 
+
+			auto box = make_box_constaints(make_ref(l), make_ref(u)); 
+            
+
+            MPRGP<DSMatrixd, DVectord> mprgp;
+            mprgp.set_box_constraints(make_ref(box)); 
+
+            // initial guess 
+            DVectord x = 0 * b; 
+
+            mprgp.verbose(false); 
+            mprgp.solve(A, b, x); 
 
 
-        //     // auto lapackSolver = std::make_shared< LUDecomposition<Matrixd, Vectord> >();
-        //     Local_TR<DSMatrixd, DVectord, Matrixd, Vectord> local_TR(local_subproblem);
-        //     local_TR.set_parameters(params);
 
-        //     // APTS_test
-        //     APTS_with_overlap<DSMatrixd, DVectord, Matrixd, Vectord> apts_solver(local_TR, subproblem);
-        //     apts_solver.set_parameters(params);
+            DVectord x_0 = 0 * x; 
+            auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+            SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 
-        //     x = values(FE_nodes * mpi_world_size(), 0);
-        //     apts_solver.solve(fun_neohook, x);
+            nlsolver.set_box_constraints(box); 
 
-        //     // std::cout<<"end: local neohooke global tr test \n";
-        // }
+            nlsolver.verbose(false); 
+            nlsolver.max_it(50); 
+            nlsolver.solve(A, b, x_0);
 
+            assert(approxeq(x, x_0));
 
+//            std::cout << "         End: mprgp_test" << std::endl;
+        }
 
         void petsc_tr_rr_test()
         {
@@ -553,6 +603,62 @@ namespace utopia
 
         }
 
+
+
+        void inexact_newton_test()
+        {
+            using namespace utopia;
+          //  std::cout << "         Begin: inexact_newton_test" << std::endl;
+
+            Parameters params;
+            params.atol(1e-15);
+            params.rtol(1e-15);
+            params.stol(1e-15);
+            params.verbose(false);
+
+            auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
+            InexactNewton<DMatrixd, DVectord> nlsolver(lsolver);
+            nlsolver.set_parameters(params);
+
+            auto hess_approx_BFGS   = std::make_shared<BFGS<DMatrixd, DVectord> >(); 
+            nlsolver.set_hessian_approximation_strategy(hess_approx_BFGS); 
+
+
+            SimpleQuadraticFunction<DMatrixd, DVectord> fun;
+
+            DVectord x = values(_n, 2.);
+            DVectord expected_1 = zeros(x.size());
+
+            nlsolver.solve(fun, x);
+            assert(approxeq(expected_1, x));
+
+            
+            TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
+            x = values(_n, 2.0);
+            DVectord expected_2 = values(x.size().get(0), 0.468919);
+            nlsolver.solve(fun2, x);
+            assert(approxeq(expected_2, x));
+
+            // -------------------------------------- SR1 test ------------------
+            auto hess_approx_SR1    = std::make_shared<SR1<DMatrixd, DVectord> >(); 
+            nlsolver.set_hessian_approximation_strategy(hess_approx_SR1); 
+
+            x = values(_n, 2.);
+            nlsolver.solve(fun, x);
+            assert(approxeq(expected_1, x));
+
+
+            x = values(_n, 2.0);
+            nlsolver.solve(fun2, x);
+            assert(approxeq(expected_2, x));
+
+
+          // std::cout << "         End: inexact_newton_test" << std::endl;
+
+        }
+
+
+
         void petsc_newton_rosenbrock_test()
         {
             using namespace utopia;
@@ -602,28 +708,23 @@ namespace utopia
 
             // std::cout << "         Begin: petsc_sparse_semismooth_newton_test" << std::endl;
             auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-            DSMatrixd A, B;
-            DVectord b, g;
+            DSMatrixd A;
+            DVectord b, ub;
 
             SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
-            nlsolver.enable_differentiation_control(false);
-
-            Parameters params;
-            params.verbose(false);
-            nlsolver.set_parameters(params);
 
             // initial guess
-            DVectord x_0 = values(_n, 60);
-            {
-                Write<DVectord> w(x_0);
-                Range x_range = range(x_0);
-                if (x_range.begin() == 0) x_0.set(0, 0);
-                if (x_range.end() == _n) x_0.set(_n - 1, 0);
-            }
-
+            DVectord x_0 = values(_n, 0.0);
+  
             ExampleTestCase2<DSMatrixd, DVectord> example;
-            example.getOperators(_n, A, b, g);
-            nlsolver.solve(x_0, A, b, g);
+            example.getOperators(_n, A, b, ub);
+            
+			
+            auto box = make_upper_bound_constraints(make_ref(ub)); 
+            nlsolver.set_box_constraints(box);
+
+            nlsolver.verbose(false); 
+            nlsolver.solve(A, b, x_0);
 
            // std::cout << "         End: petsc_sparse_semismooth_newton_test" << std::endl;
 
@@ -657,7 +758,11 @@ namespace utopia
 
             }
 
-            const QuadraticFunctionConstrained<DSMatrixd, DVectord> funn(rhs, A, B, upbo);
+            QuadraticFunctionConstrained<DSMatrixd, DVectord> funn(rhs, A, B, upbo);
+
+            auto box = make_upper_bound_constraints(make_ref(upbo)); 
+            nlsolver.set_box_constraints(make_ref(box)); 
+
             nlsolver.solve(funn, rhs);
            // std::cout << "         End: petsc_sparse_nonlinear_semismooth_newton_test" << std::endl;
 
@@ -703,7 +808,7 @@ namespace utopia
         {
 
             using namespace utopia;
-            std::cout << "         Begin: MG_test" << std::endl;
+           // std::cout << "         Begin: MG_test" << std::endl;
 
             // reading data from outside
             DVectord rhs;
@@ -718,12 +823,13 @@ namespace utopia
             read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
 
 
-            std::vector <DSMatrixd> interpolation_operators;
+            std::vector<std::shared_ptr <DSMatrixd> > interpolation_operators;
+
 
             // from coarse to fine
             // interpolation_operators.push_back(std::move(I_1));
-            interpolation_operators.push_back(std::move(I_2));
-            interpolation_operators.push_back(std::move(I_3));
+            interpolation_operators.push_back(make_ref(I_2));
+            interpolation_operators.push_back(make_ref(I_3));
 
             //  init
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
@@ -735,19 +841,29 @@ namespace utopia
             // auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 
-
-            multigrid.init_transfer(std::move(interpolation_operators));
-            multigrid.galerkin_assembly(A);
+            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.galerkin_assembly(make_ref(A));
 
             DVectord x_0 = zeros(A.size().get(0));
 
             Parameters params;
-            params.verbose(false);
             params.linear_solver_verbose(false);
             multigrid.set_parameters(params);
 
             multigrid.solve(rhs, x_0);
-           std::cout << "         End: MG_test" << std::endl;
+
+            x_0 = zeros(A.size().get(0));
+            multigrid.cycle_type(FULL_CYCLE); 
+            multigrid.solve(rhs, x_0);    
+
+            x_0 = zeros(A.size().get(0));
+            multigrid.cycle_type(FULL_CYCLE); 
+            multigrid.v_cycle_repetition(2); 
+
+            multigrid.solve(rhs, x_0);    
+
+
+         //  std::cout << "         End: MG_test" << std::endl;
         }
 
 
@@ -771,12 +887,12 @@ namespace utopia
             read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
             read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
 
-            std::vector <DSMatrixd> interpolation_operators;
+            std::vector<std::shared_ptr <DSMatrixd> > interpolation_operators;
 
              //interpolation operators from coarse to fine
-            interpolation_operators.push_back(std::move(I_1));
-            interpolation_operators.push_back(std::move(I_2));
-            interpolation_operators.push_back(std::move(I_3));
+            interpolation_operators.push_back(make_ref(I_1));
+            interpolation_operators.push_back(make_ref(I_2));
+            interpolation_operators.push_back(make_ref(I_3));
 
             //choose solver for coarse level solution
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
@@ -789,7 +905,7 @@ namespace utopia
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             // auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.init_transfer(std::move(interpolation_operators));
+            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
             multigrid.max_it(1);
             multigrid.mg_type(2);
 
@@ -841,12 +957,12 @@ namespace utopia
                 disp(size(rhs));
             }
 
-            std::vector <DSMatrixd> interpolation_operators;
+            std::vector<std::shared_ptr <DSMatrixd> > interpolation_operators;
 
              // from coarse to fine
-            interpolation_operators.push_back(std::move(I_1));
-            interpolation_operators.push_back(std::move(I_2));
-            interpolation_operators.push_back(std::move(I_3));
+            interpolation_operators.push_back(make_ref(I_1));
+            interpolation_operators.push_back(make_ref(I_2));
+            interpolation_operators.push_back(make_ref(I_3));
 
             //  init
             auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
@@ -863,8 +979,8 @@ namespace utopia
 
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.init_transfer(std::move(interpolation_operators));
-            multigrid.galerkin_assembly(A);
+            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.galerkin_assembly(make_ref(A));
 
             multigrid.max_it(1);
             multigrid.mg_type(2);

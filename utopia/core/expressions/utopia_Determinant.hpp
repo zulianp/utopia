@@ -36,7 +36,7 @@ namespace utopia {
 	class Traits< Determinant<Expr> > : public Traits<Expr> {};
 
 	template<class Expr>
-	inline Size size(const Determinant<Expr> &expr)
+	inline Size size(const Determinant<Expr> & /*expr*/)
 	{
 		return {1};
 	}

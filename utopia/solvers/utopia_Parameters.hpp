@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-22
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-11-08
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_UTOPIA_PARAMETERS_HPP
@@ -17,6 +17,14 @@
 
 namespace utopia 
 {
+
+
+      // type of cycles used in Multilevel stuff 
+      static const int MULTIPLICATIVE_CYCLE = 1;
+      static const int ADDITIVE_CYCLE       = 2;
+      static const int FULL_CYCLE           = 3;
+      static const int NESTED_ITERATION     = 4;
+
     /**
      * @brief      This class keeps track on all parameters, that we have in linear and nonlinear solvers.
      *             It provides default choice of params and routines to set user-defined preferences. 
@@ -52,15 +60,28 @@ namespace utopia
 
         /*----------  TR  ----------*/
           trust_region_alg_ = "STEIHAUG_TOINT"; 
-          delta_max_ = 1e8; 
+          delta_max_  = 1e8; 
+          delta_min_  = 1e-10; 
           delta0_ = 1e5; 
+
           gamma1_ = 0.2; 
           gamma2_ = 2.0; 
           eta1_ = 0.1; 
           eta2_ = 0.85; 
-          rho_tol_ = 1e-10; 
+          rho_tol_ = 0.01; 
           SteihaugToint_tol_ = 1e-10; 
           eps_ = 2e-12; 
+
+        /*-------------- RMTR -----------*/
+
+          max_coarse_it_              = 30;  
+          max_smoothing_it_           = 2;
+          eps_delta_termination_      = 0.001; 
+          grad_smoothess_termination_ = 0.5; 
+          eps_grad_termination_       = 1e-8; 
+          hessian_update_delta_       = 0.15; 
+          hessian_update_eta_         = 0.5;
+
 
        /*----------  MG  ----------*/
           blocksize_ = 3; 
@@ -70,10 +91,12 @@ namespace utopia
           post_smoothing_steps_ = 3; 
           omega_ = 0.66; 
           static_time_step_ = true; 
+          cycle_type_      = MULTIPLICATIVE_CYCLE; 
+          sigma_            = 1; 
 
         /*----------  LS  ----------*/
           line_search_alg_ = "BACKTRACKING"; 
-          ls_rho_ = 0.5; 
+          ls_rho_ = 0.99; 
           alpha_min_ = 1e-7; 
           c1_ = 1e-4; 
           c2_ = 1e-8; 
@@ -149,10 +172,12 @@ namespace utopia
     SizeType  block_size() const              { return blocksize_; }
     char const *   smoother_type() const      { return smoother_type_; }
     SizeType  mg_type()  const                { return mg_type_; }
+    int cycle_type()  const                   { return cycle_type_; }
     SizeType  pre_smoothing_steps()const      { return pre_smoothing_steps_; }
     SizeType  post_smoothing_steps()const     { return post_smoothing_steps_; }
     Scalar    omega()const                    { return omega_;    } 
-    bool      static_time_step() const        { return static_time_step_; }; 
+    bool      static_time_step() const        { return static_time_step_; }
+    Scalar   sigma() const                    { return sigma_; }
 
 /*---------------------------------  LS   --------------------------------------------------*/  
     Scalar c1()  const                        { return c1_; } 
@@ -182,9 +207,22 @@ namespace utopia
     SizeType    overlap()   const            { return overlap_; } 
     SizeType    local_max_it()  const        { return local_max_it_; } 
 
+    /*----------------------------------- RMTR ----------------------------------------------*/
+    Scalar    eps_delta_termination() const       { return eps_delta_termination_; } 
+    Scalar    delta_min() const                   { return delta_min_; } 
+    Scalar    eps_grad_termination() const        { return eps_grad_termination_; } 
+    Scalar    grad_smoothess_termination() const  { return grad_smoothess_termination_; } 
+    Scalar    hessian_update_delta() const        { return hessian_update_delta_; } 
+    Scalar    hessian_update_eta() const          { return hessian_update_eta_; } 
+
+    SizeType    max_coarse_it() const             { return max_coarse_it_; } 
+    SizeType    max_smoothing_it() const          { return max_smoothing_it_; } 
 
 
-  /*----------------------------  SETTERS  ------------------------------------*/
+
+    // -------------------------------------------------------------------------------//
+    /* --------------------------------  SETTERS  ------------------------------------*/
+    // -------------------------------------------------------------------------------//
     void num_it(const SizeType & num_it)                              { num_it_  = num_it; }
     void convergence_reason(const SizeType & convergence_reason)      { convergence_reason_ = convergence_reason; }
     void max_it(const SizeType & max_it)                              { max_it_ = max_it; } 
@@ -229,8 +267,8 @@ namespace utopia
     void  post_smoothing_steps(const SizeType & post_smoothing_steps) {  post_smoothing_steps_ = post_smoothing_steps; }
     void  omega(const SizeType & omega)                               {  omega_ = omega; } 
     void  static_time_step(const bool & static_time_step)             {  static_time_step_ = static_time_step; }; 
-
-
+    void  cycle_type(const int & cycle_type)                         {  cycle_type_ = cycle_type; }
+    void sigma(const Scalar & sigma)                                  { sigma_    = sigma; }
 /*---------------------------------  LS   --------------------------------------------------*/  
     void  c1(const Scalar & c1)                                       {  c1_ = c1; } 
     void  c2(const Scalar & c2)                                       {  c2_ = c2; } 
@@ -259,6 +297,16 @@ namespace utopia
     void overlap(const SizeType & overlap)                            {  overlap_ = overlap; } 
     void local_max_it(const SizeType & local_max_it)                  {  local_max_it_ = local_max_it; } 
 
+  /*---------------------------------------------- RMTR ------------------------------*/
+    void    eps_delta_termination(const Scalar & eps_delta_termination)             {  eps_delta_termination_ =eps_delta_termination; } 
+    void    delta_min(const Scalar &delta_min)                                       {  delta_min_=delta_min; } 
+    void    eps_grad_termination(const Scalar & eps_grad_termination)               {  eps_grad_termination_=eps_grad_termination; } 
+    void    grad_smoothess_termination(const Scalar & grad_smoothess_termination)   {  grad_smoothess_termination_= grad_smoothess_termination; } 
+    void    hessian_update_delta(const Scalar & hessian_update_delta)               { hessian_update_delta_ = hessian_update_delta; } 
+    void    hessian_update_eta(const Scalar & hessian_update_eta)                   { hessian_update_eta_ = hessian_update_eta; } 
+
+    void    max_coarse_it(const SizeType & max_coarse_it)                           { max_coarse_it_ = max_coarse_it; } 
+    void    max_smoothing_it(const SizeType & max_smoothing_it)                     {  max_smoothing_it_ = max_smoothing_it ; } 
 
   
 
@@ -292,11 +340,13 @@ namespace utopia
 
           SizeType  blocksize_; 
           char const  * smoother_type_;
+          int cycle_type_;
           SizeType  mg_type_; 
           SizeType  pre_smoothing_steps_; 
           SizeType  post_smoothing_steps_; 
           Scalar    omega_; 
           bool      static_time_step_; 
+          Scalar    sigma_; 
 
           char const  * line_search_alg_; 
           Scalar ls_rho_; 
@@ -325,6 +375,21 @@ namespace utopia
           bool log_iterates_; 
           bool log_system_; 
           bool log_norms_;
+
+
+
+          // RMTR parameters
+          SizeType        max_coarse_it_; 
+          SizeType        max_smoothing_it_; 
+
+          Scalar          eps_delta_termination_; 
+          Scalar          delta_min_; 
+
+          Scalar          grad_smoothess_termination_; 
+          Scalar          eps_grad_termination_; 
+
+          Scalar          hessian_update_delta_; 
+          Scalar          hessian_update_eta_; 
 
     };
 

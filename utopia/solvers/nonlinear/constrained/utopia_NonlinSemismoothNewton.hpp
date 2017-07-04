@@ -9,8 +9,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Function.hpp"
-#include "utopia_FunctionBoxConstrained.hpp"  
-// #include "utopia_BoxConstaints.hpp"  
+#include "utopia_BoxConstraints.hpp"  
 #include "utopia_Core.hpp"
 #include <vector>
 
@@ -28,39 +27,25 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef typename NonLinearSolver<Matrix, Vector>::Solver Solver;
+        typedef utopia::BoxConstraints<Vector>      BoxConstraints;
 
     public:
        NonlinSemismoothNewton(  const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
-        const Parameters   params                       = Parameters())
-       : NonLinearSolver<Matrix, Vector>(linear_solver, params)
-       {  }
+                                const Parameters   params                       = Parameters())
+                                                    : NonLinearSolver<Matrix, Vector>(linear_solver, params)
+        {  
 
-        // void set_box_constaints(const BoxConstaints<Vector> &box_constaints)
-        // {
-        //     box_constaints_ = box_constaints;
-        // }
+        }
 
-        //! solve Nonlin - Semismooth Newton
-        /*!
-          \param fun function
-          \param x_new - initial guess/result
-          \param A - laplacian
-          \param B - boundary operator
-          \param tol 
-          \param maxIter 
-        */
-        // template<class Function>
-       bool solve(const FunctionBoxConstrained<Matrix, Vector> &fun, Vector &x_new) 
-       {
+        bool solve(Function<Matrix, Vector> & fun, Vector & x_new) override 
+        {
+
          using namespace utopia;
 
          Scalar c = 1;
          SizeType iterations = 1;
 
          const SizeType local_N = local_size(x_new).get(0);
-
-         const SizeType N = x_new.size().get(0);
-
          Vector lambda = local_zeros(local_N);
          Vector Ginvg, d, g;
          Vector x_old = x_new;
@@ -71,8 +56,12 @@ namespace utopia
          Matrix Hessian;
          Vector grad;
 
-         Vector upbo; 
-         fun.upper_bound(upbo); 
+        Vector upbo; 
+        if(constraints_->has_upper_bound())
+            upbo = *constraints_->upper_bound(); 
+        else
+            std::cout<<"NonlinSemismoothNewton does not support other types at the moment.... \n"; 
+
 
          this->linear_solve(G, upbo, Ginvg);
 
@@ -133,14 +122,25 @@ namespace utopia
         return true;
     }
 
-    bool solve(Function<Matrix, Vector> & , Vector & ) override 
-    {
-        return true;
-    }
+        virtual bool set_box_constraints(const std::shared_ptr<BoxConstraints> & box)
+        {
+          constraints_ = box; 
+          return true; 
+        }
+
+        virtual std::shared_ptr<BoxConstraints> get_box_constraints() const
+        {
+          return constraints_; 
+        }
 
 
-private:
-        // BoxConstaints<Vector> box_constaints_;
+        virtual void set_parameters(const Parameters params) override
+        {
+            NonLinearSolver<Matrix, Vector>::set_parameters(params);
+        }
+    
+    private:
+        std::shared_ptr<BoxConstraints> constraints_; 
 };
 
 }

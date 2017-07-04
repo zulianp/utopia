@@ -3,6 +3,8 @@
 
 
 #include "utopia_Function.hpp"
+#include "utopia_ExtendedFunction.hpp"
+
 #include "utopia_GLFunction.hpp"
 #include "utopia_FunctionNormalEq.hpp"
 
@@ -18,6 +20,13 @@
 
 
 #include "utopia_NonlinearSolverFactory.hpp"
+#include "utopia_HessianApproximations.hpp"
+
+
+
+#ifdef WITH_PETSC
+	#include "utopia_PETScFunction.hpp"
+#endif //WITH_PETSC	
 
 #endif //UTOPIA_NON_LINEAR_HPP
 

@@ -148,6 +148,12 @@ namespace utopia {
         return ret;
     }
 
+    inline std::shared_ptr <DSMatrixd> sparse_mref_ptr(Mat &m) {
+        DSMatrixd ret;
+        Backend<PetscScalar, PETSC>::Instance().wrap(m, ret.implementation());
+        return std::make_shared<DSMatrixd>(ret);
+    }
+
     inline DVectord vref(Vec &vec)
     {
         DVectord ret;

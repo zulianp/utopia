@@ -23,7 +23,7 @@ namespace utopia {
 				Eval<Right, Traits>::apply(expr.right().expr())
 				);
 
-			assert(ok);
+			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return ok;
@@ -45,7 +45,7 @@ namespace utopia {
 				result
 				);
 
-			assert(ok);
+			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;
@@ -73,7 +73,7 @@ namespace utopia {
 					result
 					);
 
-				assert(ok);
+				ASSERT(ok);
 
 				UTOPIA_LOG_END(expr);
 				return result;
@@ -111,7 +111,7 @@ namespace utopia {
 					result
 					);
 
-				assert(ok);
+				ASSERT(ok);
 
 			} else {
 				//Perform general triple product
@@ -146,7 +146,7 @@ namespace utopia {
 				result
 				);
 
-			assert(ok);
+			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;
@@ -183,7 +183,7 @@ namespace utopia {
 	                result
 	        );
 
-	        assert(ok);
+	        ASSERT(ok);
 
 	        UTOPIA_LOG_END(expr);
 	        return result;
@@ -212,7 +212,7 @@ namespace utopia {
 				result
 			);
 
-			assert(ok);
+			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;
@@ -242,7 +242,7 @@ namespace utopia {
 				result
 			);
 
-			assert(ok);
+			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;
@@ -272,7 +272,7 @@ namespace utopia {
 				result
 			);
 
-			assert(ok);
+			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;
@@ -302,7 +302,7 @@ namespace utopia {
 				result
 			);
 
-			assert(ok);
+			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;

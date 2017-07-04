@@ -24,7 +24,7 @@ namespace utopia {
 	                result
 	        );
 
-	        assert(ok);
+	        ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
 	        return result;

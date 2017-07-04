@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-11
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-11
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-07-03
 */
 
 
@@ -39,8 +39,7 @@ namespace utopia
 
         virtual ~CauchyPoint(){}; 
 		
-
-    private:
+    public: 
 
 		/**
 		 * @brief      Gets new Cauchy point step. 

@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-19
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-11-14
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-07-03
 */
 //    .................................. WORK IN PROGRESS............................
 
@@ -10,7 +10,7 @@
 #define UTOPIA_APTS_SOLVER_HPP
 
 #include "utopia_GLFunction.hpp"
-#include "utopia_TR_base.hpp"
+#include "utopia_TRBase.hpp"
 #include "utopia_TR_LocalSolve.hpp" 
 
 

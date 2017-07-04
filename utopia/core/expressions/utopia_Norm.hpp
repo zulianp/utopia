@@ -127,7 +127,7 @@ namespace utopia {
     }
 
     template<class Expr, int Type>
-    inline Size size(const Norm<Expr, Type> &expr)
+    inline Size size(const Norm<Expr, Type> &/*expr*/)
     {
         Size s(1);
         s.set(0, 1);

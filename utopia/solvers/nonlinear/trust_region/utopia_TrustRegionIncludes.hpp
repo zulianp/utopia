@@ -6,17 +6,21 @@
 #include "utopia_CauchyPoint.hpp"
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
-#include "utopia_TR_base.hpp"
-#include "utopia_TR_NormalEquation.hpp" 
+#include "utopia_TRBase.hpp"
+#include "utopia_TRNormalEquation.hpp" 
 
-#include "utopia_TR_MGSubproblem.hpp"
+#include "utopia_TrustRegionVariableBound.hpp"
+#include "utopia_ActiveSetTRSubproblem.hpp"
 #include "utopia_TrustRegion.hpp"
 
-#include "utopia_TR_Factory.hpp"
+
+
+
+#include "utopia_TRFactory.hpp"
 
 
 #ifdef WITH_PETSC
-	#include "utopia_PETScKSP_TR.hpp"
+	#include "utopia_PETScKSPTR.hpp"
 #endif
 
 #endif //UTOPIA_TR_INCLUDES_HPP

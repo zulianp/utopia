@@ -1,8 +1,8 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-04-04
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-11
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-07-02
 */
 
 #ifndef UTOPIA_SMOOTHER_HPP
@@ -10,6 +10,9 @@
 #include "utopia_Core.hpp"
 #include "utopia_Parameters.hpp"    
 #include <iomanip>
+#include "utopia_Function.hpp"
+
+
 
      namespace utopia 
      {
@@ -51,9 +54,7 @@
         /**
          * @brief      Quick interface for smoothing with projecting constraints.  
          */
-        virtual bool nonlinear_smooth(const Matrix &A, const Vector &rhs, const Vector& ub, const Vector& lb, Vector &x, std::vector<SizeType>& zero_rows){ return 0; }
-
-
+        virtual bool nonlinear_smooth(const Matrix &/*A*/, const Vector &/*rhs*/, const Vector& /*ub*/, const Vector& /*lb*/, Vector &/*x*/, std::vector<SizeType>& /*zero_rows*/){ return 0; }
 
         /**
          * @brief      Get number of sweeps.

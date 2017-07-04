@@ -1,8 +1,8 @@
 /*
 * @Author: Alena Kopanicakova
 * @Date:   2016-09-01
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2017-01-21
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-06-09
 */
 #ifndef UTOPIA_PETSC_KSP_H
 #define UTOPIA_PETSC_KSP_H

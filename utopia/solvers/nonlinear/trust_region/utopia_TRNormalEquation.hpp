@@ -1,15 +1,15 @@
 /*
 * @Author: alenakopanicakova
 * @Date:   2016-05-18
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-11
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2017-07-03
 */
 
 #ifndef UTOPIA_TRUSTREGION_NORMAL_EQ_HPP
 #define UTOPIA_TRUSTREGION_NORMAL_EQ_HPP
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
-#include "utopia_TR_base.hpp"
+#include "utopia_TRBase.hpp"
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_CauchyPoint.hpp"
 #include "utopia_NonlinearLeastSquaresSolver.hpp"
@@ -53,14 +53,14 @@
         */
       virtual bool linear_solution_check(
         
-        Function<Matrix, Vector> &fun, 
+        LeastSquaresFunction<Matrix, Vector> &fun, 
         Vector & g, 
         const Matrix & H, 
         Vector & p_N, 
         Vector & x_k)
       {
         this->linear_solve(H, -1 * g, p_N);
-        fun.gradient(x_k + p_N, g);
+        fun.residual(x_k + p_N, g);
         Scalar g_norm = norm2(g);
 
         if(g_norm < 1e-7)
@@ -83,7 +83,7 @@
        *
        * @return     true
        */
-      virtual bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k)
+      virtual bool solve(LeastSquaresFunction<Matrix, Vector> &fun, Vector &x_k) override
       {
 
          using namespace utopia;
@@ -92,7 +92,8 @@
          NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
          
 
-         Scalar it = 0, rad_flg;
+         Scalar it = 0;
+         bool rad_flg = false; 
          Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity(); 
 
          Vector r_k , p_CP = x_k, dx = x_k, p_N = x_k, p_k = x_k, x_k1 = x_k, g;
@@ -106,15 +107,10 @@
         #define DEBUG_mode
         //  #define LS_check
 
-
   			// TR delta initialization
-        delta = this->delta0_; 
-        rad_flg = this->delta_init(x_k ,delta); 
-
+        delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
 
         // just to start
-        // if(params().verbose()) 
-        //   this->info().TR_init_message(params()); 
         g0_norm = norm2(r_k);
         g_norm = g0_norm;
 
@@ -165,7 +161,6 @@
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------
-          // this->tr_subproblem->get_pk(r_k, g, J_k, H, delta, p_k, pred); 
         if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
           tr_subproblem->current_radius(delta);  
 
@@ -236,18 +231,8 @@
       */
       virtual void set_parameters(const Parameters params) override
       {
-
         NonLinearLeastSquaresSolver::set_parameters(params);
         TrustRegionBase::set_parameters(params);
-
-        delta_max_  = params.delta_max();
-        delta0_     = params.delta0();
-        gamma1_     = params.gamma1();
-        gamma2_     = params.gamma2();
-        eta1_       = params.eta1();
-        eta2_       = params.eta2();
-        rho_tol_    = params.rho_tol();
-        eps_        = params.eps();
       }
 
 
@@ -255,15 +240,6 @@
   private:
     Scalar delta, product, ared, pred, rho, E, E_k, E_k1; 
     std::shared_ptr<TRSubproblem> tr_subproblem;
-
-    Scalar delta_max_; 
-    Scalar delta0_; 
-    Scalar gamma1_;
-    Scalar gamma2_;
-    Scalar eta1_;
-    Scalar eta2_;
-    Scalar rho_tol_;
-    Scalar eps_; 
       
      /**
       * @brief      update of tr radius, specialized for solution in L2 norm. 
@@ -277,17 +253,18 @@
       */
     bool delta_update(const Scalar &rho, const Vector &p_k, Scalar &delta) override
     {
-        if(rho < eta1_)
+        if(rho < this->eta1())
         {
           Scalar dx_norm = norm2(p_k); 
-          delta = gamma1_ * dx_norm;   // this is fine for L2 norm 
+          delta = this->gamma1() * dx_norm;   // this is fine for L2 norm 
         }
-        else if (rho > eta2_)
+        else if (rho > this->eta2())
         {
-          delta = std::min(gamma2_ * delta, delta_max_); 
+          delta = std::min(this->gamma2() * delta, this->delta_max()); 
         }      
         return true; 
     }
+
 
   };
 
