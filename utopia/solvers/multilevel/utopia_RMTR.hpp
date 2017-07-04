@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
+* @Last Modified time: 2017-07-04
 */
 
 #ifndef UTOPIA_RMTR_HPP
@@ -236,7 +236,7 @@ namespace utopia
 
 
             if(CONSISTENCY_LEVEL != GALERKIN)
-                this->zero_boundary_correction(levels(level-2), g_restricted); 
+                this->zero_correction_related_to_equality_constrain(levels(level-2), g_restricted); 
 
             g_diff = g_restricted - g_coarse;  // tau correction 
 
@@ -247,7 +247,7 @@ namespace utopia
                 transfers(level-2).restrict(H_fine, H_restricted);
                 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
-                    this->zero_boundary_correction_mat(levels(level-2), H_restricted); 
+                    this->zero_correction_related_to_equality_constrain_mat(levels(level-2), H_restricted); 
 
                 levels(level-2).hessian(u_2l, H_coarse); 
                 H_diff = H_restricted - H_coarse; 
@@ -294,7 +294,7 @@ namespace utopia
 
             s_coarse = u_2l - this->get_x_initial(level - 2);
             transfers(level-2).interpolate(s_coarse, s_fine);
-            this->zero_boundary_correction(fine_fun, s_fine); 
+            this->zero_correction_related_to_equality_constrain(fine_fun, s_fine); 
 
             Vector u_t = u_l + s_fine; 
 

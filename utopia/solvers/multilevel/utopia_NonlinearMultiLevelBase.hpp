@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2016-04-17
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
+* @Last Modified time: 2017-07-04
 */
 
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
@@ -371,7 +371,7 @@ protected:
          * @param      fun   The fun
          * @param      c     The correction
          */
-        virtual bool zero_boundary_correction(FunctionType & fun, Vector & c)
+        virtual bool zero_correction_related_to_equality_constrain(FunctionType & fun, Vector & c)
         {
           Vector bc; 
           fun.get_eq_constrains_flg(bc); 
@@ -403,7 +403,7 @@ protected:
          * @param      M     matrix
          *
          */
-        virtual bool zero_boundary_correction_mat(FunctionType & fun, Matrix & M)
+        virtual bool zero_correction_related_to_equality_constrain_mat(FunctionType & fun, Matrix & M)
         {
           Vector bc; 
           fun.get_eq_constrains_flg(bc); 

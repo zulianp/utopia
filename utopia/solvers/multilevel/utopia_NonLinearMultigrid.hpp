@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-24
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
+* @Last Modified time: 2017-07-04
 */
 
 #ifndef UTOPIA_NMGM_HPP
@@ -202,7 +202,7 @@ namespace utopia
             u_2l    = initial_iterates[l-2]; 
             Scalar s = scaling_factor(r_2h); 
 
-            this->zero_boundary_correction(levels(l-2), r_2h); 
+            this->zero_correction_related_to_equality_constrain(levels(l-2), r_2h); 
             L_2l = rhss[l-2] - s *r_2h;  // tau correction 
           
             if(l == 2)
@@ -222,7 +222,7 @@ namespace utopia
             e_2h = 1/s * (u_2l - initial_iterates[l-2]); 
             transfers(l-2).interpolate(e_2h, e_h);
 
-            this->zero_boundary_correction(fine_fun, e_h); 
+            this->zero_correction_related_to_equality_constrain(fine_fun, e_h); 
             u_l += e_h; 
 
             // POST-SMOOTHING 
@@ -254,7 +254,7 @@ namespace utopia
             transfers(l-2).project_down(u_l, u_2l); 
 
             this->make_iterate_feasible(levels(l-2), u_2l); 
-            this->zero_boundary_correction(levels(l-2), g_fine); 
+            this->zero_correction_related_to_equality_constrain(levels(l-2), g_fine); 
 
             levels(l-2).gradient(u_2l, g_coarse); 
             Scalar s = scaling_factor(g_fine); 
@@ -280,7 +280,7 @@ namespace utopia
 
             e = u_2l - u_init; 
             transfers(l-2).interpolate(e, e);
-            this->zero_boundary_correction(fine_fun, e); 
+            this->zero_correction_related_to_equality_constrain(fine_fun, e); 
             
             u_l += 1/s * e; 
 

@@ -2,7 +2,7 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
+* @Last Modified time: 2017-07-04
 */
 
 #ifndef UTOPIA_FAS_HPP
@@ -107,7 +107,7 @@ namespace utopia
             transfers(l-2).project_down(u_l, u_2l); 
 
             this->make_iterate_feasible(levels(l-2), u_2l); 
-            this->zero_boundary_correction(levels(l-2), g_fine); 
+            this->zero_correction_related_to_equality_constrain(levels(l-2), g_fine); 
 
             levels(l-2).gradient(u_2l, g_coarse); 
 
@@ -131,7 +131,7 @@ namespace utopia
 
             e = u_2l - u_init; 
             transfers(l-2).interpolate(e, e);
-            this->zero_boundary_correction(fine_fun, e); 
+            this->zero_correction_related_to_equality_constrain(fine_fun, e); 
             
             u_l += e; 
 
