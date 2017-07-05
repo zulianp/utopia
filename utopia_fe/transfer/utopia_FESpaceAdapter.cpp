@@ -125,7 +125,7 @@ namespace utopia {
 	         
 	         if (elem->on_boundary()) {
 	             
-	             for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem) {
+	             for(unsigned int side_elem = 0; side_elem < elem->n_sides(); ++side_elem) {
 	                 {
 	                     if (is_tagged_contact_boundary(mesh, elem, side_elem, tags)) {
 	                         
