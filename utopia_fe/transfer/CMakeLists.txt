@@ -23,7 +23,15 @@ list(APPEND MOONOLITH_INCLUDES
 convert_filenames_to_full_paths(MOONOLITH_INCLUDES)
 list(APPEND MOONOLITH_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(moonolith STATIC ${MOONOLITH_SOURCES} ${MOONOLITH_HEADERS})
+
+# set(TRANSFER_SOURCES 
+#   utopia_BoxAdapter.cpp
+#   utopia_assemble_contact.cpp
+#   )
+
+# list(APPEND MOONOLITH_SOURCES ${TRANSFER_SOURCES})
+
+add_library(moonolith STATIC ${MOONOLITH_SOURCES}  ${MOONOLITH_HEADERS})
 target_include_directories(moonolith PUBLIC ${MPI_CXX_INCLUDE_PATH} ${MOONOLITH_INCLUDES})
 target_link_libraries(moonolith ${TRANSFER_LIB})
 target_compile_definitions(moonolith PUBLIC
@@ -31,7 +39,7 @@ target_compile_definitions(moonolith PUBLIC
   "-DWITH_MPI"
   "-DPLAIN_INSTALLATION")
 
-list(APPEND HDRS MortarAssembler.hpp)
+list(APPEND HDRS MortarAssembler.hpp utopia_assemble_contact.hpp)
 convert_filenames_to_full_paths(HDRS)
 
 set(HEADERS ${HEADERS} ${HDRS} PARENT_SCOPE)
