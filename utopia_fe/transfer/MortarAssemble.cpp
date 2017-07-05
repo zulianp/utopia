@@ -497,6 +497,36 @@ namespace utopia {
 			}
 		}
 	}
+    
+    
+    template<class FE>
+    void mortar_assemble_aux_reverse(
+                             const FE &test_fe,
+                             const FE &trial_fe,
+                             libMesh::DenseMatrix<libMesh::Real> &elmat)
+    {
+        if(elmat.m() != test_fe.get_phi().size() ||  elmat.n() != trial_fe.get_phi().size()) {
+            elmat.resize(test_fe.get_phi().size(), trial_fe.get_phi().size());
+            elmat.zero();
+        }
+        
+        const auto &trial = trial_fe.get_phi();
+        const auto &test  = test_fe.get_phi();
+        const auto &JxW   = test_fe.get_JxW();
+        
+        const uint n_test  = test.size();
+        const uint n_trial = trial.size();
+        const uint n_qp    = test[0].size();
+        
+        for(uint i = 0; i < n_test; ++i) {
+            for(uint j = 0; j < n_trial; ++j) {
+                for(uint qp = 0; qp < n_qp; ++qp) {
+                    elmat(i, j) += contract(test[i][qp], trial[j][qp]) * JxW[qp];
+                }
+            }
+        }
+    }
+
 
 
 	libMesh::Real len(const libMesh::Real val)
@@ -575,6 +605,15 @@ namespace utopia {
 	{
 		mortar_assemble_aux(trial_fe, test_fe, elmat);
 	}
+    
+    void mortar_assemble_reverse(
+                         const libMesh::FEBase &test_fe,
+                         const libMesh::FEBase &trial_fe,
+                         libMesh::DenseMatrix<libMesh::Real> &elmat)
+    {
+        mortar_assemble_aux_reverse(test_fe, trial_fe, elmat);
+    }
+
 
 	void mortar_assemble(const libMesh::FEVectorBase &trial_fe, 
 		const libMesh::FEVectorBase &test_fe, 
@@ -582,6 +621,14 @@ namespace utopia {
 	{
 		mortar_assemble_aux(trial_fe, test_fe, elmat);
 	}
+    
+    
+    void mortar_assemble_reverse(const libMesh::FEVectorBase &test_fe,
+                         const libMesh::FEVectorBase &trial_fe,
+                         libMesh::DenseMatrix<libMesh::Real> &elmat)
+    {
+        mortar_assemble_aux_reverse(test_fe, trial_fe, elmat);
+    }
 
 	void mortar_assemble_biorth(
 		const libMesh::FEBase &trial_fe, 
