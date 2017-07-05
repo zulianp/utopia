@@ -172,15 +172,6 @@ namespace utopia {
 		const libMesh::FEVectorBase &test_fe, 
 		libMesh::DenseMatrix<libMesh::Real> &elmat);
     
-    
-    void mortar_assemble_reverse(const libMesh::FEBase &test_fe,
-                         const libMesh::FEBase &trial_fe,
-                         libMesh::DenseMatrix<libMesh::Real> &elmat);
-    
-    void mortar_assemble_reverse(const libMesh::FEVectorBase &test_fe,
-                         const libMesh::FEVectorBase &trial_fe,
-                         libMesh::DenseMatrix<libMesh::Real> &elmat);
-
 	void mortar_normal_and_gap_assemble(const libMesh::FEBase &test_fe, 
 		const libMesh::DenseVector<libMesh::Real> &surf_normal,
 		const libMesh::DenseVector<libMesh::Real> &plane_normal,
