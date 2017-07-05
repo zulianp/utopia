@@ -46,10 +46,10 @@ namespace utopia {
 
 			const int n_elements = n_elements_master + n_elements_slave;
 
-			std::cout<<"MASTER DOF"<<std::endl;
+			// std::cout<<"MASTER DOF"<<std::endl;
 			copy_global_dofs(*master, dof_maps_[0], var_type_[0], n_elements);
 
-			std::cout<<"SLAVE DOF"<<std::endl;
+			// std::cout<<"SLAVE DOF"<<std::endl;
 			copy_global_dofs(*slave,  dof_maps_[1], var_type_[1], n_elements);
 
 			copy_var_number(*master, var_number_[0]);
@@ -278,7 +278,7 @@ namespace utopia {
         //WRITE 6
 		os << n_elements;
 
-	   std::cout<<"write_n_el = "<<n_elements<<std::endl;
+	   // std::cout<<"write_n_el = "<<n_elements<<std::endl;
 
 		for(auto node_id : nodeIds){
 
@@ -368,16 +368,14 @@ namespace utopia {
 
 
 		auto m = spaces.spaces()[0];
-		assert(m);
+		// assert(m);
 		std::shared_ptr<LibMeshFESpaceBase> s =nullptr;
 
 		if(spaces.spaces().size()>1) {
-			s=spaces.spaces()[1];
+			s = spaces.spaces()[1];
 		}
 
 
-
-		unsigned int dim_master=m->mesh().mesh_dimension();
         
 		std::vector<long> master_selection;
 		std::vector<long> slave_selection;
@@ -416,13 +414,13 @@ namespace utopia {
 
 		if(has_master) {
 			
-            std::cout<<"I am in master"<<std::endl;
+            // std::cout<<"I am in master"<<std::endl;
 			write_space(master_selection.begin(), master_selection.end(), *m, spaces.dof_map(0),
 				spaces.variable_number(0), spaces.variable_order(0), 0, os);
 		}
 
 		if(has_slave) {
-            std::cout<<"I am in slave"<<std::endl;
+            // std::cout<<"I am in slave"<<std::endl;
 			write_space(slave_selection.begin(), slave_selection.end(), *s, spaces.dof_map(1), 
 				spaces.variable_number(1), spaces.variable_order(1),1, os);
 		}
@@ -479,7 +477,7 @@ namespace utopia {
 
 		dof_map.resize(n_elements);
 
-		std::cout<<"read_n_el = "<<n_elements<<std::endl;
+		// std::cout<<"read_n_el = "<<n_elements<<std::endl;
 
         CHECK_STREAM_READ_BEGIN("elements", is);
         
@@ -532,7 +530,7 @@ namespace utopia {
 
         //!!!! dummy parameters
         
-        std::cout<<"read_n_el = "<<n_elements<<std::endl;
+        // std::cout<<"read_n_el = "<<n_elements<<std::endl;
         
         space = make_shared<LibMeshFESpaceReal>(mesh_ptr, nullptr, -1);
         
@@ -776,8 +774,8 @@ namespace utopia {
 
 
         cutk::Settings custom_settings = settings;
-//        custom_settings.set("disable_redistribution", cutk::Boolean(true));
-//        custom_settings.set("verbosity_level", cutk::Integer(2));
+       // custom_settings.set("disable_redistribution", cutk::Boolean(true));
+       custom_settings.set("verbosity_level", cutk::Integer(1));
 		
         
         cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, custom_settings);
@@ -1106,7 +1104,7 @@ namespace utopia {
              
          	std::cout <<ownershipRangesMaster << std::endl;
              
-            std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
+            // std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
 
          }
 
@@ -1172,13 +1170,13 @@ namespace utopia {
       
 
 		if(master_->mesh().mesh_dimension() == 2) {
-			std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
+			// std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
 			return utopia::Assemble<2>(comm, master_, slave_, B, settings, use_biorth_);
 		}
 
 
 		if(master_->mesh().mesh_dimension() == 3) {
-            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
+            // std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
 			return utopia::Assemble<3>(comm, master_, slave_, B, settings, use_biorth_);
 		}
 		

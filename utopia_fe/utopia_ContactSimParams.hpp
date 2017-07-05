@@ -33,6 +33,7 @@ namespace utopia {
 	static const ContactSimParams contact_sphere	  	  = { "../data/contact_sphere.e", 1, 2, -1, 0.3, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams contact_cuboids	  	  = { "../data/contact_cuboids.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams triple_contact_circle	  = { "../data/triple_contact_circle.e", 1, 2, -1, 0.2, -0.2, 0.2, LARGE_VAL,false };
+	static const ContactSimParams contact_circles	  	  = { "../data/contact_circles_no_tag.e", 1, 2, -1, 0.2, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams contact2	  			  = { "../data/contact3D.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams contact_quads	  		  = { "../data/contact_quads.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams multi_contact	  		  = { "../data/multi_contact.e", 1, 2, -1, 0.05, 0.0, 0.0, LARGE_VAL,false };
@@ -45,6 +46,7 @@ namespace utopia {
 	static const ContactSimParams multi_contact_quads 	  = { "../data/multi_contact_quads.e", 1, 2, -1, 0.01, -0.03, 0.03, LARGE_VAL, false }; 
 	static const ContactSimParams hip_femure_contact	  = { "/Users/patrick/Downloads/ASCII_bone/all_sidesets.e", 1, 2, -1, 10.0, 10.0, 0.0, LARGE_VAL, false };
 	static const ContactSimParams implant_contact	      = { "/Users/patrick/Downloads/ASCII_Implant_coarse/implant.e", 1, 11, -1, 4.0, -4.0, 0.0, LARGE_VAL, false };
+	static const ContactSimParams contact_cubes	      	  = { "../data/multibody.e", 1, 2, -1, 0.1, -0.2, 0.0, LARGE_VAL, false };
 
 	inline static void upper_boundary_cond(const libMesh::Point & p, libMesh::DenseVector<libMesh::Real> & output)
 	{
