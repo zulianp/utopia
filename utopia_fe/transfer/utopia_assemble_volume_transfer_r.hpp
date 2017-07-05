@@ -1,14 +1,27 @@
+#ifndef UTOPIA_ASSEMBLE_VOLUME_TRANSFER_R_HPP 
+#define UTOPIA_ASSEMBLE_VOLUME_TRANSFER_R_HPP 
 
-#ifndef LibmeshTransferForMoose_REVERSE_HPP
-#define LibmeshTransferForMoose_REVERSE_HPP
+#include <vector>
+#include <utility>
+#include <memory>
 
-#include "utopia_assemble_volume_transfer_r.hpp"
+#include "utopia.hpp"
+#include "libmesh/libmesh_common.h"
 
+//forward decl
+namespace express {
+	class Communicator;
+}
+
+namespace libMesh {
+	class MeshBase;
+	class DofMap;
+}
 
 namespace utopia {
-        
-    
-    inline bool AssembleMOOSEReverse(express::Communicator &comm,
+
+
+     bool assemble_volume_transfer_r(express::Communicator &comm,
                                     const std::shared_ptr<libMesh::MeshBase> &master,
                                     const std::shared_ptr<libMesh::MeshBase> &slave,
                                     const std::shared_ptr<libMesh::DofMap> &dof_master,
@@ -23,15 +36,9 @@ namespace utopia {
                                     int n_var,
                                     int n_var_r,
                                     DSMatrixd &B,
-                                    DSMatrixd &B_reverse)
-    {
-
-      return assemble_volume_transfer_r(comm, master, slave, dof_master, dof_slave, dof_reverse_master, 
-                                        dof_reverse_slave, _from_var_num, _to_var_num, _from_var_num_r, 
-                                        _to_var_num_r,  use_biorth_, n_var, n_var_r, B, B_reverse);
-    }
+                                    DSMatrixd &B_reverse);
+	
 
 }
 
-
-#endif //LIBMESH_TRANSFER_FOR_MOOSE_HPP
+#endif //UTOPIA_ASSEMBLE_VOLUME_TRANSFER_R_HPP 
