@@ -14,7 +14,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_Core.hpp"
 #include <vector>
-
+#include <memory>
 
 namespace utopia 
 {
@@ -40,7 +40,7 @@ namespace utopia
             std::cerr << "[Warning][Deprecated] SemismoothNewton: use the new box constraint interface. This method will be removed shortly" << std::endl;
             std::cout << "[Warning][Deprecated] SemismoothNewton: use the new box constraint interface. This method will be removed shortly" << std::endl;
 
-            set_box_constraints(make_upper_bound_constraints(make_ref(g)));
+            set_box_constraints(make_upper_bound_constraints(std::make_shared<Vector>(g)));
             return solve(A, b, x);
         }
 
