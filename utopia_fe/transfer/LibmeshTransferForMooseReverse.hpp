@@ -1,4 +1,3 @@
-
 #ifndef LibmeshTransferForMoose_HPP
 #define LibmeshTransferForMoose_HPP
 
@@ -319,12 +318,24 @@ namespace utopia {
             dof_map_ = ptr;
         }
         
+        
+        void set_dof_map_reverse(std::vector<long> * ptr)
+        {
+            
+            dof_map_reverse_ = ptr;
+        }
+        
         inline const std::vector<long> &dof_map() const
         {
             assert(dof_map_);
             return *dof_map_;
         }
         
+        inline const std::vector<long> &dof_map_reverse() const
+        {
+            assert(dof_map_reverse_);
+            return *dof_map_reverse_;
+        }
         
     private:
         MeshBase * fe_;
@@ -333,6 +344,7 @@ namespace utopia {
         int tag_;
         BoxBoxAdapter<Dimension> bound_;
         std::vector<long> * dof_map_;
+        std::vector<long> * dof_map_reverse_;
     };
     
     
@@ -417,8 +429,12 @@ namespace utopia {
                const std::shared_ptr<MeshBase> &slave,
                const std::shared_ptr<libMesh::DofMap>  &dof_map_master,
                const std::shared_ptr<libMesh::DofMap>  &dof_map_slave,
-               const std::shared_ptr<const unsigned int> &_from_var_num,
-               const std::shared_ptr<const unsigned int> &_to_var_num)
+               const std::shared_ptr<DofMap> &dof_map_reverse_master,
+               const std::shared_ptr<DofMap> &dof_map_reverse_slave,
+               const unsigned int &_from_var_num,
+               const unsigned int &_to_var_num,
+               const unsigned int &_from_var_num_r,
+               const unsigned int &_to_var_num_r)
         {
             
             spaces_.reserve(2);
@@ -433,11 +449,15 @@ namespace utopia {
             
             const int n_elements = n_elements_master + n_elements_slave;
             
-            // std::cout<<"MASTER DOF"<<std::endl;
-            copy_global_dofs(*master, dof_map_master, _from_var_num, dof_maps_[0], var_type_[0], n_elements);
+            // dof_map_reverse_master is the dof_map of the slave system
             
-            // std::cout<<"SLAVE DOF"<<std::endl;
-            copy_global_dofs(*slave,  dof_map_slave, _to_var_num, dof_maps_[1], var_type_[1], n_elements);
+            // dof_map_reverse_slave is the dof_map of the master system
+            
+            std::cout<<"MASTER DOF"<<std::endl;
+            copy_global_dofs(*master,dof_map_master, dof_map_reverse_master, _from_var_num, _to_var_num_r, dof_maps_[0],  dof_maps_reverse_[0], var_type_[0], n_elements);
+            
+            std::cout<<"SLAVE DOF"<<std::endl;
+            copy_global_dofs(*slave,dof_map_slave,   dof_map_reverse_slave,  _to_var_num,   _from_var_num_r,   dof_maps_[1], dof_maps_reverse_[1], var_type_[1], n_elements);
             
             //            copy_var_number(*master, var_number_[0]);
             //            copy_var_number(*slave,  var_number_[1]);
@@ -485,6 +505,21 @@ namespace utopia {
             assert(i < 2);
             assert(i >= 0);
             return dof_maps_[i];
+        }
+        
+        
+        inline std::vector<ElementDofMap> &dof_map_reverse(const int i)
+        {
+            assert(i < 2);
+            assert(i >= 0);
+            return dof_maps_reverse_[i];
+        }
+        
+        inline const std::vector<ElementDofMap> &dof_map_reverse(const int i) const
+        {
+            assert(i < 2);
+            assert(i >= 0);
+            return dof_maps_reverse_[i];
         }
         
         inline void set_must_destroy_attached(const int index, const bool value)
@@ -549,6 +584,7 @@ namespace utopia {
         express::Communicator comm;
         std::vector<std::shared_ptr< MeshBase>> spaces_;
         std::vector<ElementDofMap> dof_maps_[2];
+        std::vector<ElementDofMap> dof_maps_reverse_[2];
         std::vector<ElementDofMap> var_number_[2];
         std::vector<ElementDofMap> var_order_[2];
         std::vector<ElementDofMap> var_type_[2];
@@ -557,15 +593,22 @@ namespace utopia {
         
         
         
-        inline static void copy_global_dofs(MeshBase &space, const std::shared_ptr<libMesh::DofMap>  &original_dof_map, const std::shared_ptr<const unsigned int>  &var_num,
-                                            std::vector<ElementDofMap> &dof_map, std::vector<ElementDofMap> &variable_type, const int n_elements)
+        inline static void copy_global_dofs(MeshBase &space,
+                                            const std::shared_ptr<libMesh::DofMap>  &original_dof_map,
+                                            const std::shared_ptr<libMesh::DofMap>  &original_dof_map_reverse,
+                                            const unsigned int  &var_num,
+                                            const unsigned int  &var_num_r,
+                                            std::vector<ElementDofMap> &dof_map,
+                                            std::vector<ElementDofMap> &dof_map_reverse,
+                                            std::vector<ElementDofMap> &variable_type, const int n_elements)
         {
             
             //            auto &mesh = space.get_mesh();
             //            auto &original_dof_map = space.get_dof_map();
             std::vector<dof_id_type> temp;
-            std::shared_ptr<ElementDofMap> temp_ptr;
+            std::vector<dof_id_type> temp_reverse;
             dof_map.resize(n_elements);
+            dof_map_reverse.resize(n_elements);
             
             
             //        std::cout<<"______________________________COPY_DOF_BEGIN____________________________"<<std::endl;
@@ -583,9 +626,14 @@ namespace utopia {
             for (; e_it != e_end; ++e_it){
                 
                 Elem *elem = *e_it;
-                original_dof_map->dof_indices(elem, temp, *var_num);
+                
+                original_dof_map->dof_indices(elem, temp, var_num);
+                
+                original_dof_map_reverse->dof_indices(elem, temp_reverse, var_num_r);
                 
                 dof_map[elem->id()].global.insert(dof_map[elem->id()].global.end(), temp.begin(), temp.end());
+                
+                dof_map_reverse[elem->id()].global.insert(dof_map_reverse[elem->id()].global.end(), temp_reverse.begin(), temp_reverse.end());
                 
                 if (first)
                 {
@@ -624,6 +672,7 @@ namespace utopia {
     template<class Iterator>
     static void write_space(const Iterator &begin, const Iterator &end,MeshBase &space,
                             const std::vector<ElementDofMap> &dof_map,/* const std::vector<ElementDofMap> &variable_number,*/
+                            const std::vector<ElementDofMap> &dof_map_reverse,
                             const std::vector<ElementDofMap> &variable_order,const int role, cutk::OutputStream &os)
     {
         const int dim 		  = space.mesh_dimension();
@@ -718,8 +767,10 @@ namespace utopia {
             
             //WRITE 9
             assert(!dof_map.at(elem->id()).empty());
+            assert(!dof_map_reverse.at(elem->id()).empty());
             
             os << dof_map.at(elem->id());
+            os << dof_map_reverse.at(elem->id());
             
             
             
@@ -799,12 +850,12 @@ namespace utopia {
         
         
         if(has_master) {
-            write_space(master_selection.begin(), master_selection.end(), *m, spaces.dof_map(0),
+            write_space(master_selection.begin(), master_selection.end(), *m, spaces.dof_map(0), spaces.dof_map_reverse(0),
                         /*spaces.variable_number(0),*/ spaces.variable_order(0), 0, os);
         }
         
         if(has_slave) {
-            write_space(slave_selection.begin(), slave_selection.end(), *s, spaces.dof_map(1),
+            write_space(slave_selection.begin(), slave_selection.end(), *s, spaces.dof_map(1), spaces.dof_map_reverse(1),
                         /*spaces.variable_number(1),*/ spaces.variable_order(1), 1, os);
         }
         
@@ -816,6 +867,7 @@ namespace utopia {
     
     static void read_space(cutk::InputStream &is, cutk::shared_ptr<MeshBase> & space,
                            std::vector<ElementDofMap> &dof_map, /*std::vector<ElementDofMap> &variable_number,*/
+                           std::vector<ElementDofMap> &dof_map_reverse,
                            std::vector<ElementDofMap> &variable_order, const libMesh::Parallel::Communicator &comm)
     {
         
@@ -873,6 +925,7 @@ namespace utopia {
         
         dof_map.resize(n_elements);
         
+        dof_map_reverse.resize(n_elements);
         
         CHECK_STREAM_READ_BEGIN("elements", is);
         
@@ -900,6 +953,7 @@ namespace utopia {
             
             //READ 9
             is >> dof_map.at(i);
+            is >> dof_map_reverse.at(i);
             
             mesh_ptr->add_elem(elem);
             
@@ -951,7 +1005,7 @@ namespace utopia {
         
         
         if(has_master) {
-            read_space(is, spaces.spaces()[0], spaces.dof_map(0),
+            read_space(is, spaces.spaces()[0], spaces.dof_map(0),spaces.dof_map_reverse(0),
                        /* spaces.variable_number(0),*/spaces.variable_order(0), comm_master);
             spaces.set_must_destroy_attached(0,true);
         } else {
@@ -960,7 +1014,7 @@ namespace utopia {
         }
         
         if(has_slave) {
-            read_space(is, spaces.spaces()[1], spaces.dof_map(1),
+            read_space(is, spaces.spaces()[1], spaces.dof_map(1), spaces.dof_map_reverse(1),
                        /*spaces.variable_number(1),*/spaces.variable_order(1),comm_slave);
             spaces.set_must_destroy_attached(1,true);
         } else {
@@ -978,10 +1032,14 @@ namespace utopia {
                          const std::shared_ptr<MeshBase> &slave,
                          const std::shared_ptr<DofMap> &dof_master,
                          const std::shared_ptr<DofMap> &dof_slave,
-                         const std::shared_ptr<const unsigned int> &_from_var_num,
-                         const std::shared_ptr<const unsigned int> &_to_var_num,
+                         const std::shared_ptr<DofMap> &dof_reverse_master,
+                         const std::shared_ptr<DofMap> &dof_reverse_slave,
+                         const unsigned int &_from_var_num,
+                         const unsigned int &_to_var_num,
+                         const unsigned int &_from_var_num_r,
+                         const unsigned int &_to_var_num_r,
                          Fun process_fun,
-                         const cutk::Settings &settings, bool use_biorth_, int n_var)
+                         const cutk::Settings &settings, bool use_biorth_, int n_var, int n_var_r)
     {
         
         
@@ -1023,8 +1081,7 @@ namespace utopia {
         tree->reserve(n_elements);
         
         
-        std::shared_ptr<Spaces> local_spaces = make_shared<Spaces>(master, slave, dof_master, dof_slave, _from_var_num, _to_var_num);
-        
+        std::shared_ptr<Spaces> local_spaces = make_shared<Spaces>(master, slave, dof_master, dof_slave, dof_reverse_master, dof_reverse_slave, _from_var_num, _to_var_num, _from_var_num_r, _to_var_num_r);
         int offset = 0;
         int space_num = 0;
         
@@ -1036,7 +1093,9 @@ namespace utopia {
                     auto elem=*it;
                     Adapter a(*s, elem->id(), offset+elem->id(), space_num);
                     assert(!local_spaces->dof_map(space_num)[elem->id()].empty());
+                    assert(!local_spaces->dof_map_reverse(space_num)[elem->id()].empty());
                     a.set_dof_map(&local_spaces->dof_map(space_num)[elem->id()].global);
+                    a.set_dof_map_reverse(&local_spaces->dof_map_reverse(space_num)[elem->id()].global);
                     tree->insert(a);
                 }
                 
@@ -1098,7 +1157,9 @@ namespace utopia {
                     for (int i=0; i<s->n_elem(); i++) {
                         data.push_back(Adapter(*s, i, offset + i, space_num) );
                         assert(!proc_space->dof_map(space_num)[i].empty());
+                        assert(!proc_space->dof_map_reverse(space_num)[i].empty());
                         data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
+                        data.back().set_dof_map_reverse(&proc_space->dof_map_reverse(space_num)[i].global);
                     }
                     
                     offset += s->n_elem();
@@ -1234,20 +1295,25 @@ namespace utopia {
                   const std::shared_ptr<MeshBase> &slave,
                   const std::shared_ptr<DofMap> &dof_master,
                   const std::shared_ptr<DofMap> &dof_slave,
-                  const std::shared_ptr<const unsigned int> &_from_var_num,
-                  const std::shared_ptr<const unsigned int> &_to_var_num,
-                  DSMatrixd &B,
-                  const cutk::Settings &settings,bool  use_biorth_, int n_var)
+                  const std::shared_ptr<DofMap> &dof_reverse_master,
+                  const std::shared_ptr<DofMap> &dof_reverse_slave,
+                  const unsigned int &_from_var_num,
+                  const unsigned int &_to_var_num,
+                  const unsigned int &_from_var_num_r,
+                  const unsigned int &_to_var_num_r,
+                  DSMatrixd &B, DSMatrixd &B_reverse, //bbecsek
+                  const cutk::Settings &settings,bool  use_biorth_, int n_var, int n_var_r)
     {
         
-        const int var_num_slave = *_to_var_num;
+        const int var_num_slave = _to_var_num;
         
-        std::shared_ptr<Spaces> local_fun_spaces = cutk::make_shared<Spaces>(master, slave, dof_master, dof_slave,_from_var_num,_to_var_num);
+        std::shared_ptr<Spaces> local_fun_spaces = cutk::make_shared<Spaces>(master, slave, dof_master, dof_slave, dof_reverse_master, dof_reverse_slave, _from_var_num, _to_var_num, _from_var_num_r,
+        _to_var_num_r);
         
-        libMesh::DenseMatrix<libMesh::Real> src_pts;
-        libMesh::DenseMatrix<libMesh::Real> dest_pts;
+        libMesh::DenseMatrix<libMesh::Real> master_pts;
+        libMesh::DenseMatrix<libMesh::Real> slave_pts;
         libMesh::DenseMatrix<libMesh::Real> intersection2;
-        Polyhedron src_poly, dest_poly;
+        Polyhedron master_poly, slave_poly;
         Polyhedron  intersection3,temp_poly;
         Intersector isector;
         
@@ -1257,10 +1323,11 @@ namespace utopia {
         
         // std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;
         libMesh::DenseMatrix<libMesh::Real> elemmat;
+        libMesh::DenseMatrix<libMesh::Real> elemmat_reverse;
         libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
         
-        std::shared_ptr<Transform> src_trans;
-        std::shared_ptr<Transform> dest_trans;
+        std::shared_ptr<Transform> master_trans;
+        std::shared_ptr<Transform> slave_trans;
         
         
         int skip_zeros = 1;
@@ -1268,10 +1335,15 @@ namespace utopia {
         
         libMesh::Real total_intersection_volume = 0.0;
         libMesh::Real local_element_matrices_sum = 0.0;
+        libMesh::Real local_element_matrices_sum_reverse = 0.0;
+        
         
         
         
         express::MapSparseMatrix<double> mat_buffer(dof_slave->n_dofs(), dof_master->n_dofs());
+        // bbecsek
+        // this matrix needs to have the size of the other systems
+        express::MapSparseMatrix<double> mat_buffer_reverse(dof_reverse_master->n_dofs(), dof_reverse_slave->n_dofs());
         
         //        std::cout<<"dof_slave->n_dofs()"<<dof_slave->n_dofs()<<std::endl;
         //        std::cout<<"dof_master->n_dofs()"<<dof_master->n_dofs()<<std::endl;
@@ -1306,68 +1378,74 @@ namespace utopia {
             
             const auto &dest = slave.space();
             
-            const auto &src_mesh  = src;
+            const auto &master_mesh  = src;
             
-            const auto &dest_mesh = dest;
+            const auto &slave_mesh = dest;
             
-            const int src_index  = master.element();
+            const int master_index  = master.element();
             
-            const int dest_index = slave.element();
+            const int slave_index = slave.element();
             
-            auto &src_el  = *src_mesh.elem(src_index);
+            auto &master_el  = *master_mesh.elem(master_index);
             
-            auto &dest_el = *dest_mesh.elem(dest_index);
+            auto &slave_el = *slave_mesh.elem(slave_index);
             
-            const int dim = src_mesh.mesh_dimension();
+            const int dim = master_mesh.mesh_dimension();
             
             
             std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
             
-            master_fe = libMesh::FEBase::build(src_mesh.mesh_dimension(),  dof_master->variable_type(0));
-            slave_fe  = libMesh::FEBase::build(dest_mesh.mesh_dimension(), dof_slave->variable_type(0));
+            master_fe = libMesh::FEBase::build(master_mesh.mesh_dimension(),  dof_master->variable_type(0));
+            slave_fe  = libMesh::FEBase::build(slave_mesh.mesh_dimension(), dof_slave->variable_type(0));
             
+//            master_fe_r = libMesh::FEBase::build(master_mesh.mesh_dimension(),  dof_reverse_master->variable_type(0));
+//            slave_fe_r  = libMesh::FEBase::build(slave_mesh.mesh_dimension(), dof_reverse_slave->variable_type(0));
+//            
             QMortar composite_ir(dim);
-            QMortar src_ir(dim);
-            QMortar dest_ir(dim);
+            QMortar master_ir(dim);
+            QMortar slave_ir(dim);
             
             
-            const int order = order_for_l2_integral(dim, src_el, dof_master->variable(0).type().order , dest_el,dof_slave->variable(0).type().order);
+            const int order = order_for_l2_integral(dim, master_el, dof_master->variable(0).type().order , slave_el,dof_slave->variable(0).type().order);
+            libMesh::Real weight_reverse = 0;
             
             c.stop();
             element_setup_time += c.get_seconds();
             c.start();
             
             if(dim == 2)  {
-                make_polygon(src_el,   src_pts);
-                make_polygon(dest_el, dest_pts);
+                make_polygon(master_el,   master_pts);
+                make_polygon(slave_el, slave_pts);
                 
-                if(intersect_2D(src_pts, dest_pts, intersection2)) {
+                if(intersect_2D(master_pts, slave_pts, intersection2)) {
                     total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
                     
-                    const libMesh::Real weight=isector.polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
+                    const libMesh::Real weight = isector.polygon_area_2(slave_pts.m(), &slave_pts.get_values()[0]);
+                    weight_reverse = isector.polygon_area_2(master_pts.m(), &master_pts.get_values()[0])/weight;
                     
                     make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
                     pair_intersected = true;
                     
-                    src_trans  = std::make_shared<Transform2>(src_el);
-                    dest_trans = std::make_shared<Transform2>(dest_el);
+                    master_trans  = std::make_shared<Transform2>(master_el);
+                    slave_trans = std::make_shared<Transform2>(slave_el);
                     pair_intersected = true;
                 }
             }
             else if(dim == 3) {
-                make_polyhedron(src_el,  src_poly);
-                make_polyhedron(dest_el, dest_poly);
+                make_polyhedron(master_el,  master_poly);
+                make_polyhedron(slave_el, slave_poly);
                 
                 
-                if(intersect_3D(src_poly, dest_poly, intersection3)) {
+                if(intersect_3D(master_poly, slave_poly, intersection3)) {
                     
                     total_intersection_volume += isector.p_mesh_volume_3(intersection3);
                     
-                    const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
+                    const libMesh::Real weight = isector.p_mesh_volume_3(slave_poly);
+                    weight_reverse = isector.p_mesh_volume_3(master_poly)/weight;
                     
                     make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
-                    src_trans  = std::make_shared<Transform3>(src_el);
-                    dest_trans = std::make_shared<Transform3>(dest_el);
+                    master_trans  = std::make_shared<Transform3>(master_el);
+                    slave_trans = std::make_shared<Transform3>(slave_el);
                     pair_intersected = true;
                 }
                 
@@ -1383,78 +1461,70 @@ namespace utopia {
             const auto &master_dofs = master.dof_map();
             const auto &slave_dofs  = slave.dof_map();
             
+            const auto &master_dofs_reverse = master.dof_map_reverse();
+            const auto &slave_dofs_reverse  = slave.dof_map_reverse();
+            
             if(pair_intersected) {
                 
                 
-                transform_to_reference(*src_trans,  src_el.type(),  composite_ir,  src_ir);
-                transform_to_reference(*dest_trans, dest_el.type(), composite_ir,  dest_ir);
+                transform_to_reference(*master_trans,  master_el.type(),  composite_ir,  master_ir);
+                transform_to_reference(*slave_trans, slave_el.type(), composite_ir,  slave_ir);
                 
-                //            src.dof_map().dof_indices(&src_el,  master_dofs);
-                //            dest.dof_map().dof_indices(&dest_el, slave_dofs);
+                //important for correct scaling of the quadrature weights
                 
-                
-                
-                
+                for(int i = 0; i < master_ir.n_points(); ++i) {
+                    master_ir.get_weights()[i] /= weight_reverse;
+                }
+              
                 assert(!master_dofs.empty());
                 assert(!slave_dofs.empty());
-                //composite_ir.print_info();
+            
+                master_fe->attach_quadrature_rule(&master_ir);
+                master_fe->get_phi();
+                master_fe->get_JxW();
+                master_fe->reinit(&master_el);
                 
-                
-                master_fe->attach_quadrature_rule(&src_ir);
-                // master_fe->reinit(&src_el);
-                // bbecsek:
-                // before we reinit, we need to request what exactly we want to compute
-                // this will set calculate_phi to true and we will avoid determine_calculations()
-                // to set everything to true
-                const std::vector<std::vector<Real>> & phi_master  = master_fe->get_phi();
-                // bbecsek: this new reinit call makes use of the quadrature points and weights
-                // computed by "transform_to_reference"
-                master_fe->reinit(&src_el, &src_ir.get_points(), &src_ir.get_weights());
-                
-                slave_fe->attach_quadrature_rule(&dest_ir);
-                //  slave_fe->reinit(&dest_el);
-                // bbecsek:
-                // before we reinit, we need to request what exactly we want to compute
-                // this will set calculate_phi to true (see above)
-                const std::vector<std::vector<Real>> & phi_slave = slave_fe->get_phi();
-                // this will call _fe_map's get_JxW() and will set its calculate_dxyz to true
-                const std::vector<Real> & JxW_slave = slave_fe->get_JxW();
-                // bbecsek: this new reinit call makes use of the quadrature points and weights
-                // computed by "transform_to_reference"
-                slave_fe->reinit(&dest_el, &dest_ir.get_points(), &dest_ir.get_weights());
+                slave_fe->attach_quadrature_rule(&slave_ir);
+                slave_fe->get_phi();
+                slave_fe->get_JxW();
+                slave_fe->reinit(&slave_el);
                 
                 elemmat.zero();
-                
+                elemmat_reverse.zero();
                 
                 
                 if(use_biorth_) {
-                    // mortar_assemble_biorth(*master_fe, *slave_fe, dest_el.type(), elemmat);
+                    // mortar_assemble_biorth(*master_fe, *slave_fe, slave_el.type(), elemmat);
                     //std::cout<<"I am here"<<std::endl;
                     mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
                     
                 } else {
                     mortar_assemble(*master_fe, *slave_fe, elemmat);
+                    // bbecsek
+                    mortar_assemble(*slave_fe, *master_fe, elemmat_reverse);
                 }
                 
-                // std::cout << "-----------------------------------------\n";
-                // std::cout << src_index << ", " << dest_index << "\n";
-                // elemmat.print(std::cout);
-                // for(auto i : slave_dofs) {
-                // 	std::cout << i << " ";
-                // }
-                // std::cout << "\n";
+//                std::cout << "-----------------------------------------\n";
+//                std::cout << "master_index" << "\n";
+//                // elemmat.print(std::cout);
+//                for(auto i : master_dofs) {
+//                    std::cout << i << " " << "\n";
+//                }
+//                // std::cout << "\n";
+//                std::cout <<"slave_dofs_reverse" << "\n";
+//                
+//                for(auto i : slave_dofs_reverse) {
+//                    std::cout << i << " " << "\n";
+//                }
+//                std::cout << "\n";
+//                std::cout << "-----------------------------------------\n";
                 
-                // for(auto i : master_dofs) {
-                // 	std::cout << i << " ";
-                // }
-                // std::cout << "\n";
-                // std::cout << "-----------------------------------------\n";
                 
-                auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
-                // std::cout << src_index << ", " << dest_index << ": " << partial_sum << std::endl;
-                // dest_ir.print_info();
+                // std::cout << master_index << ", " << slave_index << ": " << partial_sum << std::endl;
+                // slave_ir.print_info();
                 
-                local_element_matrices_sum += partial_sum;
+                local_element_matrices_sum +=         std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
+                local_element_matrices_sum_reverse += std::accumulate(elemmat_reverse.get_values().begin(), elemmat_reverse.get_values().end(), libMesh::Real(0.0));;
                 
                 intersected = true;
                 
@@ -1467,6 +1537,9 @@ namespace utopia {
                 
                 assert(slave_dofs.size() == elemmat.m());
                 assert(master_dofs.size() == elemmat.n());
+                
+                assert(master_dofs_reverse.size() == elemmat_reverse.m());
+                assert(slave_dofs_reverse.size() == elemmat_reverse.n());
                 
                 // std::cout<<"slave_dofs.size()"<<slave_dofs.size()<<std::endl;
                 // std::cout<<"master_dofs.size()"<<master_dofs.size()<<std::endl;
@@ -1483,6 +1556,20 @@ namespace utopia {
                     }
                 }
                 
+//                 bbecsek
+                for(int i = 0; i < master_dofs_reverse.size(); ++i) {
+                    
+                    const long dof_I_r = master_dofs_reverse[i];
+            
+                    for(int j = 0; j < slave_dofs_reverse.size(); ++j) {
+                        
+                        const long dof_J_r = slave_dofs_reverse[j];
+                        
+                        mat_buffer_reverse.add(dof_I_r, dof_J_r, elemmat_reverse(i, j));
+                    }
+                }
+//                 bbecsek end
+                
                 return true;
                 
             } else {
@@ -1498,9 +1585,8 @@ namespace utopia {
         // utopia::Chrono c2;
         // c2.start();
         
-        
-        if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, fun, settings, use_biorth_,n_var)) {
-            std::cout << "n_intersections: false2" <<std::endl;
+        if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, dof_reverse_master, dof_reverse_slave, _from_var_num, _to_var_num, _from_var_num_r, _to_var_num_r, fun, settings, use_biorth_, n_var, n_var_r)) {
+//            std::cout << "no intersections" <<std::endl;
             return false;
         }
         
@@ -1519,11 +1605,10 @@ namespace utopia {
         // comm.barrier();
         // c2.start();
         
-        std::cout << "n_intersections: " <<std::endl;
         
-        double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };
+        double volumes[3] = { local_element_matrices_sum,  total_intersection_volume, local_element_matrices_sum_reverse };
         
-        comm.allReduce(volumes, 2, express::MPISum());
+        comm.allReduce(volumes, 3, express::MPISum());
         
         const processor_id_type master_proc_id  = master->processor_id();
         
@@ -1535,8 +1620,18 @@ namespace utopia {
         
         const int n_dofs_on_proc_print  = dof_slave->n_local_dofs();
         
+        
+        const dof_id_type n_dofs_on_proc_master_r  = dof_reverse_master->n_local_dofs();
+        const dof_id_type n_dofs_on_proc_slave_r   = dof_reverse_slave->n_local_dofs();
+        
+        std::cout<<" dof_slave_r->n_local_dofs() " <<  dof_reverse_master->n_local_dofs() <<std::endl;
+        
+        std::cout<<" dof_master_r->n_local_dofs() " << dof_reverse_slave->n_local_dofs() <<std::endl;
+        
+        
         if(comm.isRoot()) {
             std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
+            std::cout << "sum(B*): " << volumes[2] << std::endl;
         }
         
         express::Array<express::SizeType>  ownershipRangesMaster(comm.size()+1);
@@ -1561,6 +1656,26 @@ namespace utopia {
         std::partial_sum(ownershipRangesSlave.begin(), ownershipRangesSlave.end(), ownershipRangesSlave.begin());
         
         
+        // bbecsek:
+        express::Array<express::SizeType>  ownershipRangesMaster_r(comm.size()+1);
+        ownershipRangesMaster_r.allSet(0);
+        
+        express::Array<express::SizeType>  ownershipRangesSlave_r(comm.size()+1);
+        ownershipRangesSlave_r.allSet(0);
+        
+        ownershipRangesMaster_r[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_master_r);
+        
+        ownershipRangesSlave_r[comm.rank()+1]  += static_cast<unsigned int>(n_dofs_on_proc_slave_r);
+        
+        comm.allReduce(&ownershipRangesMaster_r[0], ownershipRangesMaster_r.size(), express::MPISum());
+        
+        comm.allReduce(&ownershipRangesSlave_r[0],  ownershipRangesSlave_r.size(),  express::MPISum());
+        
+        std::partial_sum(ownershipRangesMaster_r.begin(), ownershipRangesMaster_r.end(), ownershipRangesMaster_r.begin());
+        std::partial_sum(ownershipRangesSlave_r.begin(), ownershipRangesSlave_r.end(), ownershipRangesSlave_r.begin());
+        //
+        
+        
         //        if(comm.isRoot()) {
         //            std::cout <<ownershipRangesMaster << std::endl;
         //            std::cout<<"prova"<<n_dofs_on_proc_print<<std::endl;
@@ -1573,21 +1688,42 @@ namespace utopia {
         
         express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
         
+        // bbecsek
+        express::Redistribute< express::MapSparseMatrix<double> > redist_reverse(comm.getMPIComm());
+        
         redist.apply(ownershipRangesSlave, mat_buffer, express::AddAssign<double>());
         
+        // bbecsek
+        redist_reverse.apply(ownershipRangesMaster_r, mat_buffer_reverse, express::AddAssign<double>());
+        
         assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
+        
+        assert(ownershipRangesMaster_r.empty() == ownershipRangesSlave_r.empty() || ownershipRangesSlave_r.empty());
         
         express::RootDescribe("petsc assembly begin", comm, std::cout);
         
         SizeType  mMaxRowEntries = mat_buffer.maxEntriesXCol();
         
+        // bbecsek
+        SizeType  mMaxRowEntries_reverse = mat_buffer_reverse.maxEntriesXCol();
+        
         comm.allReduce(&mMaxRowEntries, 1, express::MPIMax());
+        comm.allReduce(&mMaxRowEntries_reverse, 1, express::MPIMax());
         
-        const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
-        const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
+        const SizeType local_range_slave  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
+        const SizeType local_range_master = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
+        // bbecsek
         
-        DSMatrixd B_x = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
+        express::RootDescribe("petsc assembly begin 1", comm, std::cout);
+        const SizeType local_range_slave_r  = ownershipRangesSlave_r [comm.rank()+1] - ownershipRangesSlave_r [comm.rank()];
+        const SizeType local_range_master_r = ownershipRangesMaster_r[comm.rank()+1] - ownershipRangesMaster_r[comm.rank()];
         
+        express::RootDescribe("petsc assembly begin 2", comm, std::cout);
+        
+        DSMatrixd B_x = utopia::local_sparse(local_range_slave, local_range_master, mMaxRowEntries);
+        // bbecsek
+        DSMatrixd B_x_reverse = utopia::local_sparse(local_range_master_r, local_range_slave_r, mMaxRowEntries_reverse);
+//        
         {
             utopia::Write<utopia::DSMatrixd> write(B_x);
             for (auto it = mat_buffer.iter(); it; ++it) {
@@ -1597,9 +1733,27 @@ namespace utopia {
         }
         
         
+        utopia::write("B_x.m",B_x);
+        // bbecsek
+        
+        express::RootDescribe("petsc assembly begin 3", comm, std::cout);
+        {
+            utopia::Write<utopia::DSMatrixd> write_reverse(B_x_reverse);
+            for (auto it = mat_buffer_reverse.iter(); it; ++it) {
+                B_x_reverse.set(it.row(), it.col(), *it);
+                
+            }
+        }
+        
+        //utopia::write("B_x_reverse.m",B_x_reverse);
+        
         auto s_B_x = local_size(B_x);
+        // bbecsek
+        auto s_B_x_reverse = local_size(B_x_reverse);
         
         B = local_sparse(s_B_x.get(0), s_B_x.get(1), n_var * mMaxRowEntries);
+        // bbecsek
+        B_reverse = local_sparse(s_B_x_reverse.get(0), s_B_x_reverse.get(1), n_var_r * mMaxRowEntries_reverse);
         
         
         std::cout<< "modify the matrix  B"<<std::endl;
@@ -1610,6 +1764,18 @@ namespace utopia {
             }
         });
         
+        //bbecsek: can we move this to the first iteration?
+        std::cout<<"n_var_r"<<n_var_r<<std::endl;
+        std::cout<< "modify the matrix  B_reverse"<<std::endl;
+        utopia::Write<DSMatrixd> w_B_reverse(B_reverse);
+        utopia::each_read(B_x_reverse, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
+            for(utopia::SizeType d = 0; d < n_var_r ; ++d) {
+                B_reverse.set(i+d, j+d, value);
+            }
+        });
+        
+        
+        //disp(B_reverse.size());
         
         
         
@@ -1630,74 +1796,58 @@ namespace utopia {
     
     
     
+    
     inline bool AssembleMOOSE(express::Communicator &comm,
                               const std::shared_ptr<MeshBase> &master,
                               const std::shared_ptr<MeshBase> &slave,
                               const std::shared_ptr<DofMap> &dof_master,
                               const std::shared_ptr<DofMap> &dof_slave,
-                              const std::shared_ptr<const unsigned int> & _from_var_num,
-                              const std::shared_ptr<const unsigned int> & _to_var_num,
-                              bool  use_biorth_, int n_var, DSMatrixd &B)
+                              const std::shared_ptr<DofMap> &dof_reverse_master,
+                              const std::shared_ptr<DofMap> &dof_reverse_slave,
+                              const unsigned int & _from_var_num,
+                              const unsigned int & _to_var_num,
+                              const unsigned int & _from_var_num_r,
+                              const unsigned int & _to_var_num_r,
+                              bool  use_biorth_,
+                              int n_var,
+                              int n_var_r,
+                              DSMatrixd &B,
+                              DSMatrixd &B_reverse)
     {
         cutk::Settings settings;
         
         if(master->mesh_dimension() == 2) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-            return utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B, settings,use_biorth_, n_var);
+            return utopia::Assemble<2>(comm,
+                                       master, slave,
+                                       dof_master, dof_slave,
+                                       dof_reverse_master, dof_reverse_slave,
+                                       _from_var_num,  _to_var_num,
+                                       _from_var_num_r, _to_var_num_r,
+                                       B, B_reverse,
+                                       settings,use_biorth_, n_var, n_var_r);
         }
         
         
         if(master->mesh_dimension() == 3) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-            return utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B, settings,use_biorth_, n_var);
+            return utopia::Assemble<3>(comm,
+                                       master, slave,
+                                       dof_master, dof_slave,
+                                       dof_reverse_master, dof_reverse_slave,
+                                       _from_var_num,  _to_var_num,
+                                       _from_var_num_r, _to_var_num_r,
+                                       B, B_reverse,
+                                       settings,use_biorth_, n_var, n_var_r);
         }
         
         assert(false && "Dimension not supported!");
         return false;
     }
-    //
-    //
-    ////    bool AssembleMOOSE(express::Communicator &comm,
-    ////                       const std::shared_ptr<MeshBase> &mesh_master,
-    ////                       const std::shared_ptr<MeshBase> &mesh_slave,
-    ////                       libMesh::Order master_order,
-    ////                       libMesh::Order slave_order,
-    ////                       DSMatrixd &B)
-    ////    {
-    ////        cutk::Settings settings;
-    ////
-    ////
-    ////
-    ////        LibMeshFEContext<LinearImplicitSystem> master_context(mesh_master);
-    ////        auto master_space = fe_space(LAGRANGE, master_order, master_context);
-    ////        master_context.equation_systems.init();
-    ////
-    ////        LibMeshFEContext<LinearImplicitSystem> slave_context(mesh_slave);
-    ////        auto slave_space = fe_space(LAGRANGE, slave_order, slave_context);
-    ////        slave_context.equation_systems.init();
-    ////
-    ////
-    ////        if(mesh_master->mesh_dimension() == 2) {
-    ////            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-    ////            return utopia::Assemble<2>(comm, make_ref(master_space), make_ref(slave_space), B, settings);
-    ////        }
-    ////
-    ////        if(mesh_master->mesh_dimension() == 3) {
-    ////            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-    ////            return utopia::Assemble<3>(comm, make_ref(master_space), make_ref(slave_space), B, settings);
-    ////        }
-    ////
-    ////        assert(false && "Dimension not supported!");
-    ////        return false;
-    ////    }
-    ////
-    //
-    //
-    //
-    //
-    //
+
 }
 
 #endif //LIBMESH_CUTLIBPP_ADAPTERS_HPP
+
 
 
