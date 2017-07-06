@@ -10,8 +10,6 @@
 //fe extension
 #include "utopia_fe.hpp"
 #include "MortarAssembler.hpp"
-#include "MixedParMortarAssembler.hpp"
-#include "ParMortarAssembler.hpp"
 #include "utopia_Socket.hpp"
 #include "utopia_ContactSimParams.hpp"
 #include "utopia_UGMeshReader.hpp"
