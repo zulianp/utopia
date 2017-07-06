@@ -1,14 +1,15 @@
 #ifndef UTOPIA_FE_SPACES_R_ADAPTER_HPP
 #define UTOPIA_FE_SPACES_R_ADAPTER_HPP 
 
+
+#include "utopia_copy_dofmap.hpp"
 #include "utopia_ElementDofMap.hpp"
+
 #include "Array.hpp"
 #include "express_Communicator.hpp"
 
 #include "libmesh/serial_mesh.h"
 #include "libmesh/dof_map.h"
-
-#include "utopia_copy_dofmap.hpp"
 
 #include <memory>
 #include <vector>
