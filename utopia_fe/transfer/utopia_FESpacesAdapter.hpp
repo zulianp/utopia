@@ -1,7 +1,9 @@
 #ifndef UTOPIA_FE_SPACES_ADAPTER_HPP
 #define UTOPIA_FE_SPACES_ADAPTER_HPP 
 
+#include "utopia_copy_dofmap.hpp"
 #include "utopia_ElementDofMap.hpp"
+
 #include "Array.hpp"
 #include "express_Communicator.hpp"
 
@@ -18,6 +20,7 @@ namespace libMesh {
 }
 
 namespace utopia {
+
  class FESpacesAdapter {
 	public:
 
@@ -136,18 +139,7 @@ namespace utopia {
         std::vector<ElementDofMap> var_order_[2];
         std::vector<ElementDofMap> var_type_[2];
         bool must_destroy_attached[2];
-        
-        
-        
-        
-        static void copy_global_dofs(libMesh::MeshBase &space,
-                                    const std::shared_ptr<libMesh::DofMap>  &original_dof_map,
-                                    const unsigned int  &var_num,
-                                    std::vector<ElementDofMap> &dof_map,
-                                    std::vector<ElementDofMap> &variable_type, const int n_elements);
-        
-        static void copy_var_order(libMesh::DofMap &dofmap, std::vector<ElementDofMap> &variable_order);
-        
+
     };
 }
 

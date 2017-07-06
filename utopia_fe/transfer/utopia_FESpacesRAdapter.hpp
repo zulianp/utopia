@@ -8,6 +8,8 @@
 #include "libmesh/serial_mesh.h"
 #include "libmesh/dof_map.h"
 
+#include "utopia_copy_dofmap.hpp"
+
 #include <memory>
 #include <vector>
 #include <utility>
@@ -156,20 +158,6 @@ namespace utopia {
         std::vector<ElementDofMap> var_order_[2];
         std::vector<ElementDofMap> var_type_[2];
         bool must_destroy_attached[2];
-        
-        
-        
-        
-        static void copy_global_dofs_r(libMesh::MeshBase &space,
-                                       const std::shared_ptr<libMesh::DofMap>  &original_dof_map,
-                                       const std::shared_ptr<libMesh::DofMap>  &original_dof_map_reverse,
-                                       const unsigned int  &var_num,
-                                       const unsigned int  &var_num_r,
-                                       std::vector<ElementDofMap> &dof_map,
-                                       std::vector<ElementDofMap> &dof_map_reverse,
-                                       std::vector<ElementDofMap> &variable_type, const int n_elements);
-        
-        static void copy_var_order_r(libMesh::DofMap &dofmap, std::vector<ElementDofMap> &variable_order);
         
     };
 }

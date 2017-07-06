@@ -6,7 +6,6 @@
 //fe extension
 #include "utopia_fe.hpp"
 #include "MortarAssembler.hpp"
-#include "MixedParMortarAssembler.hpp"
 #include "utopia_Socket.hpp"
 
 #include <libmesh/const_function.h>

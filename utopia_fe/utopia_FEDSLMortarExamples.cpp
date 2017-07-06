@@ -6,7 +6,6 @@
 //fe extension
 #include "utopia_fe.hpp"
 #include "MortarAssembler.hpp"
-#include "MixedParMortarAssembler.hpp"
 #include "ParMortarAssembler.hpp"
 #include "utopia_Socket.hpp"
 
@@ -18,8 +17,8 @@
 #include "utopia_ContactSimParams.hpp"
 #include "libmesh/linear_partitioner.h"
 #include "LibmeshContactForMoose.hpp"
-// #include "LibmeshTransferForMoose.hpp"
-
+#include "LibmeshTransferForMoose.hpp"
+#include "LibmeshTransferForMooseReverse.hpp"
 #include "express_Profiler.hpp"
 #include "utopia_Polygon.hpp"
 
@@ -263,34 +262,55 @@ namespace utopia {
 		express::Communicator express_comm(libmesh_comm.get());
 		
 		int var_num =0;
-		//////////////////////////////////////////////////
-		//////////////////////////////////////////////////
-		
-		//        make_ref(master_space)->system();
-		//        std::cout<<"I am a master system"<<make_ref(master_space)->system()<<std::endl;
-		
-		// MPI_Comm comm = MPI_COMM_WORLD;
-		MixedParMortarAssembler assembler(libmesh_comm, make_ref(master_space), make_ref(slave_space));
-		assembler.set_use_biorthogonal_multipliers(use_biorthogonal_mults);
+
+		DSMatrixd B, B_r;
+
 		// AssembleMOOSE(express_comm,
 		//               mesh_master,
 		//               mesh_slave,
 		//               utopia::make_ref(master_context.system.get_dof_map()),
-		//               utopia::make_ref(slave_context.system.get_dof_map())
-		//               utopia::make_ref(var_num),
-		//               utopia::make_ref(var_num),
-		//               bool  use_biorth_,
-		//               DSMatrixd &B)
-		// std::cout<<"I am a slave system"<<make_ref(slave_space)->system()<<std::endl;
-		
-		
-		
-		//		EXPRESS_EVENT_END("spaces");
+		//               utopia::make_ref(slave_context.system.get_dof_map()),
+		//               var_num,
+		//               var_num,
+		//               true,
+		//               1,
+		//               B);
+
+
+
+		AssembleMOOSEReverse(express_comm,
+		              mesh_master,
+		              mesh_slave,
+		              utopia::make_ref(master_context.system.get_dof_map()),
+		              utopia::make_ref(slave_context.system.get_dof_map()),
+		              utopia::make_ref(master_context.system.get_dof_map()),
+		              utopia::make_ref(slave_context.system.get_dof_map()),
+		              var_num,
+		              var_num,
+		              var_num,
+		              var_num,
+		              true,
+		              1,
+		              1,
+		              B,
+		              B_r);
+
+
 		
 		DSMatrixd transfer_op;
-		DSMatrixd matrix;
-		assembler.Assemble(matrix);
-		assembler.Transfer(matrix,transfer_op);
+
+		DVectord diag_elem = 1./sum(B,1);
+        
+        DSMatrixd D;
+        
+        DSMatrixd Dinv;
+        
+        
+        D = diag(sum(B, 1));
+
+        Dinv = diag(diag_elem);
+        
+		transfer_op = diag(diag_elem)*B;
 		
 		
 		//////////////////////////////////////////////////
@@ -298,8 +318,8 @@ namespace utopia {
 		
 		//      EXPRESS_EVENT_BEGIN("mass_matrix");
 		
-		const Size gs = size(matrix);
-		const Size ls = local_size(matrix);
+		const Size gs = size(B);
+		const Size ls = local_size(B);
 		
 		int dim = mesh_slave->mesh_dimension();
 		auto u = fe_function(slave_space);
@@ -318,7 +338,7 @@ namespace utopia {
 		convert(mass_matrix, mass);
 		
 		DVectord val_master = local_values(ls.get(1), 1.0);
-		DVectord val_mult   = matrix * val_master;
+		DVectord val_mult   = B * val_master;
 		DVectord val_slave  = local_zeros(ls.get(0));
 		
 		solve(mass, val_mult, val_slave);
@@ -883,8 +903,8 @@ namespace utopia {
 		EXPRESS_PROFILING_BEGIN()
 		
 		// mortar_transfer_2D(init);
-		// mortar_transfer_3D(init);
-		mortar_transfer_3D_monolithic(init);
+		 mortar_transfer_3D(init);
+		//mortar_transfer_3D_monolithic(init);
 		// surface_mortar(init);
 		
 		//run_curved_poly_disc();
