@@ -810,13 +810,13 @@ namespace utopia {
                 
                 
                 if(use_biorth_) {
-                    // mortar_assemble_biorth(*master_fe, *slave_fe, slave_el.type(), elemmat);
-                    //std::cout<<"I am here"<<std::endl;
                     mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
+
+                    mortar_assemble_weighted_biorth(*slave_fe, *master_fe, biorth_weights, elemmat);
                     
                 } else {
                     mortar_assemble(*master_fe, *slave_fe, elemmat);
-                    // bbecsek
+
                     mortar_assemble(*slave_fe, *master_fe, elemmat_reverse);
                 }
                 
@@ -827,11 +827,13 @@ namespace utopia {
                 intersected = true;
                 
                 ++n_intersections;
-                
-                
-            
+                           
                 assert(slave_dofs.size() == elemmat.m());
                 assert(master_dofs.size() == elemmat.n());
+
+                // std::cout<<"master_dofs_reverse.size() ==>"<< master_dofs_reverse.size()<<std::endl;
+
+                // std::cout<<"elemmat_reverse.m() ==>"<< elemmat_reverse.m()<<std::endl;
                 
                 assert(master_dofs_reverse.size() == elemmat_reverse.m());
                 assert(slave_dofs_reverse.size() == elemmat_reverse.n());
