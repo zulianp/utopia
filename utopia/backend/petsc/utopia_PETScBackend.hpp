@@ -229,6 +229,7 @@ namespace utopia
 
 		void assignFromRange(PETScVector &left, const PETScVector &right, const Range &globalRowRange,
 							 const Range & /*globalColRange */);
+
 		// read matrix
 		template<int FillType>
 		bool read(const std::string &path, PETScGenericMatrix<FillType> &Mat_A)

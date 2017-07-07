@@ -281,17 +281,6 @@ namespace utopia {
 		//assert(false); //TODO
 	}
 
-    bool PETScBackend::scal(const PetscScalar scaleFactor, const PETScMatrix &left , PETScMatrix &right) {
-        if(&left == &right) {
-            MatScale(right.implementation(), scaleFactor);
-        } else {
-            assert(false); // FIXME
-            return false;
-        }
-
-        return true;
-    }
-
     bool PETScBackend::gemm(const PetscScalar /*alpha*/, const PETScMatrix &/*left*/, const PETScMatrix &/*right*/, const PetscScalar /* beta*/,
 							PETScMatrix & /*result*/) {
 		assert(false); //TODO
