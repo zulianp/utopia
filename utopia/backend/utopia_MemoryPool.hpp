@@ -18,9 +18,9 @@ namespace std {
 			if (x.second.n_dims() == 0)
 				return 0;
 			if (x.second.n_dims() == 1)
-				return (x.second.get(0) << 32) ^ (x.first.get(0));
-			return ((x.second.get(0) ^ (x.second.get(1) << 12)) << 32)
-				^ (x.first.get(0) ^ (x.first.get(1) << 12));
+				return (uint64_t) ((x.second.get(0) << 32) ^ (x.first.get(0)));
+			return (uint64_t) (((x.second.get(0) ^ (x.second.get(1) << 12)) << 32)
+							   ^ (x.first.get(0) ^ (x.first.get(1) << 12)));
 		}
 	};
 

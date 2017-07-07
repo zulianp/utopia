@@ -11,8 +11,9 @@ namespace utopia{
 		// std::cout << "called spec sparse: ";
 		MatType type;
 		if (MatGetType(m, &type) == 0) {
-			if (type && strcmp(MATSEQAIJ, type)) {
+			if (type && strcmp(MATSEQAIJ, type) && strcmp(MATMPIAIJ, type)) {
 				std::cout << "[Error] Placing a dense matrix in a sparse one!" << '\n';
+				std::cout << "        Matrix is of type " << type << '\n';
 				assert(false && "Cannot wrap a dense matrix in a sparse wrapper");
 			}
 		}
