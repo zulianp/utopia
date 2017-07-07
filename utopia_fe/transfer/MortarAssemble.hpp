@@ -83,15 +83,33 @@ namespace utopia {
 		// 	assert(polygon_.m() == 3 || polygon_.m() == 4 && "must be either a triangle or a quad");
 		// }
 
-		Transform2(const libMesh::Elem &elem)
-		: elem_(elem)
-		{}
+		Transform2(const libMesh::Elem &elem, const bool force_affine_transform = false)
+		: elem_(elem), force_affine_transform_(force_affine_transform)
+		{
+			switch(elem.type()) 
+			{
+				case libMesh::TRI3:
+				case libMesh::TRI6:
+				{
+					break;
+				}
+				default:
+				{
+					break;
+				}
+			}
+
+		}
 
 		void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
 
 	private:
 		// const libMesh::DenseMatrix<libMesh::Real> &polygon_;
 		const libMesh::Elem &elem_;
+		bool force_affine_transform_;
+		
+		libMesh::DenseMatrix<libMesh::Real> A_inv;
+		libMesh::DenseVector<libMesh::Real> A_inv_x_m_b;
 	};
 
 	class Transform3 : public Transform {
