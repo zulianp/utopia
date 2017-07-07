@@ -499,8 +499,10 @@ namespace utopia
 			PetscInt grows, gcols;
 			MatGetSize(m.implementation(), &grows, &gcols);
 
-			if (FillType == FillType::SPARSE)
-				if (MatSeqAIJSetPreallocation(m.implementation(), gcols, NULL)) assert(false);
+			if (FillType == FillType::SPARSE) {
+//				if (MatSeqAIJSetPreallocation(m.implementation(), gcols, NULL)) assert(false);
+				MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+			}
 
 			MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 
