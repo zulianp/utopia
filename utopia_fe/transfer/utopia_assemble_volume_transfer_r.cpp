@@ -564,7 +564,7 @@ namespace utopia {
         
         
         cutk::Settings custom_settings = settings;
-        custom_settings.set("disable_redistribution", cutk::Boolean(true));
+        //custom_settings.set("disable_redistribution", cutk::Boolean(true));
         custom_settings.set("verbosity_level", cutk::Integer(1));
         
         
