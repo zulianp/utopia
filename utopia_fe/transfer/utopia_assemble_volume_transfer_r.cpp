@@ -742,8 +742,10 @@ namespace utopia {
                     make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
                     pair_intersected = true;
                     
-                    master_trans  = std::make_shared<Transform2>(master_el);
-                    slave_trans = std::make_shared<Transform2>(slave_el);
+//                    bool affine_transf=true;
+                    
+                    master_trans  = std::make_shared<AffineTransform2>(master_el);
+                    slave_trans = std::make_shared<AffineTransform2>(slave_el);
                     pair_intersected = true;
                 }
             }
@@ -760,8 +762,8 @@ namespace utopia {
                     weight_reverse = isector.p_mesh_volume_3(master_poly)/weight;
                     
                     make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
-                    master_trans  = std::make_shared<Transform3>(master_el);
-                    slave_trans = std::make_shared<Transform3>(slave_el);
+                    master_trans  = std::make_shared<AffineTransform3>(master_el);
+                    slave_trans = std::make_shared<AffineTransform3>(slave_el);
                     pair_intersected = true;
                 }
                 

@@ -142,7 +142,7 @@ namespace utopia {
 		
 		
 		MortarAssembler assembler(make_ref(master_space), make_ref(slave_space));
-		assembler.set_use_biorthogonal_multipliers(use_biorthogonal_mults);
+		//assembler.set_use_biorthogonal_multipliers(use_biorthogonal_mults);
 		
 		
 		DSMatrixd matrix;
@@ -635,8 +635,8 @@ namespace utopia {
 		std::cout << "mortar_transfer_3D\n";
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
-		int n_master = 7;
-		int n_slave  = 11;
+		int n_master = 3;
+		int n_slave  = 6;
 		
 		auto mesh_master = make_shared<Mesh>(init.comm());
 		
@@ -648,7 +648,7 @@ namespace utopia {
 										  -2., 3.,
 										  -2., 3.,
 										  -2., 3.,
-										  TET4);
+										  HEX8);
 		
 		
 		//////////////////////////////////////////////////
@@ -665,8 +665,8 @@ namespace utopia {
 										   n_slave, n_slave, n_slave,
 										   -2., 3.,
 										   -2., 3.,
-										   -2., 3.,
-										   TET4);
+                                           -2., 3.,
+										   HEX8);
 		
 		
 		

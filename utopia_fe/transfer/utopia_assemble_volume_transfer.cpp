@@ -546,7 +546,7 @@ namespace utopia {
         
         
         cutk::Settings custom_settings = settings;
-        custom_settings.set("disable_redistribution", cutk::Boolean(true));
+        custom_settings.set("enable_redistribution", cutk::Boolean(true));
         custom_settings.set("verbosity_level", cutk::Integer(1));
         
         
@@ -709,7 +709,7 @@ namespace utopia {
                     
                     make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
                     pair_intersected = true;
-                    
+                    //bool affine_map = true;
                     src_trans  = std::make_shared<Transform2>(src_el);
                     dest_trans = std::make_shared<Transform2>(dest_el);
                     pair_intersected = true;
