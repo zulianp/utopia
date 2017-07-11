@@ -839,16 +839,16 @@ namespace utopia {
 			if(dim_slave == 2)  {
 				make_polygon(el_master,   src_pts);
 				make_polygon(dest_el,  dest_pts);
-				trafo_master  = std::make_shared<Transform2>(el_master);
-				trafo_slave = std::make_shared<Transform2>(dest_el);
+				trafo_master  = std::make_shared<AffineTransform2>(el_master);
+				trafo_slave = std::make_shared<AffineTransform2>(dest_el);
 				
 			}
 			
 			else if(dim_slave == 3) {
 				make_polyhedron(el_master,  src_poly);
 				make_polyhedron(dest_el, dest_poly);
-				trafo_master  = std::make_shared<Transform3>(el_master);
-				trafo_slave = std::make_shared<Transform3>(dest_el);
+				trafo_master  = std::make_shared<AffineTransform3>(el_master);
+				trafo_slave = std::make_shared<AffineTransform3>(dest_el);
 				
 			}
 			

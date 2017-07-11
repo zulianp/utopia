@@ -710,8 +710,8 @@ namespace utopia {
                     make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
                     pair_intersected = true;
                     //bool affine_map = true;
-                    src_trans  = std::make_shared<Transform2>(src_el);
-                    dest_trans = std::make_shared<Transform2>(dest_el);
+                    src_trans  = std::make_shared<AffineTransform2>(src_el);
+                    dest_trans = std::make_shared<AffineTransform2>(dest_el);
                     pair_intersected = true;
                 }
             }
@@ -727,8 +727,8 @@ namespace utopia {
                     const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
                     
                     make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
-                    src_trans  = std::make_shared<Transform3>(src_el);
-                    dest_trans = std::make_shared<Transform3>(dest_el);
+                    src_trans  = std::make_shared<AffineTransform3>(src_el);
+                    dest_trans = std::make_shared<AffineTransform3>(dest_el);
                     pair_intersected = true;
                 }
                 
