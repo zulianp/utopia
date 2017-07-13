@@ -592,6 +592,14 @@ namespace utopia {
         biorth_elem->reinit(&el);
         mortar_assemble_weights(*biorth_elem, weights);
     }
+
+    static void scale_polyhedron(const double scaling, Polyhedron &poly)
+    {
+       const int n_values = poly.n_nodes * poly.n_dims;
+        for(int i = 0; i < n_values; ++i) {
+            poly.points[i] *= scaling;
+        }
+    }
     
     template<int Dimensions>
     bool Assemble(
@@ -716,15 +724,22 @@ namespace utopia {
                 }
             }
             else if(dim == 3) {
+
+                // const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly); //(volume)
+                //src_poly
                 make_polyhedron(src_el,  src_poly);
                 make_polyhedron(dest_el, dest_poly);
+
+                //scale_polyhedron(src_poly, 1./weight); //(volume)
+                //scale_polyhedron(dest_poly, 1./weight); //(volume)
                 
                 
                 if(intersect_3D(src_poly, dest_poly, intersection3)) {
-                    
+                    //scale_polyhedron(intersection3, weight); //(volume)
+
                     total_intersection_volume += isector.p_mesh_volume_3(intersection3);
                     
-                    const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
+                    const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly); //comment this out (volume)
                     
                     make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
                     src_trans  = std::make_shared<AffineTransform3>(src_el);
