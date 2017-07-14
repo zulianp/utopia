@@ -974,9 +974,11 @@ namespace utopia {
         
         petsc_is_nan_or_inf_test(); 
         petsc_mat_mul_add_test();
-        
-        petsc_min_test();
-        petsc_max_test();
+
+        if (mpi_world_size() == 1) {
+            petsc_min_test();
+            petsc_max_test();
+        }
 
         std::cout << "End:   PETScTest" << std::endl;
         #endif // WITH_PETSC

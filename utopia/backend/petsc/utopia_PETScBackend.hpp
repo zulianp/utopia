@@ -726,7 +726,7 @@ namespace utopia
 			MatGetSize(m.implementation(), &grows, &gcols);
 			VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
 
-			MatGetRowMin(m.implementation(), v.implementation(), nullptr);
+			MatGetRowMin(m.implementation(), v.implementation(), nullptr); //FIXME: this doesn't work in parallel
 			VecMin(v.implementation(), nullptr, &x);
 			return x;
 		}
@@ -741,7 +741,7 @@ namespace utopia
 			MatGetSize(m.implementation(), &grows, &gcols);
 			VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
 
-			MatGetRowMax(m.implementation(), v.implementation(), nullptr);
+			MatGetRowMax(m.implementation(), v.implementation(), nullptr); //FIXME: this doesn't work in parallel
 			VecMax(v.implementation(), nullptr, &x);
 			return x;
 		}

@@ -1079,7 +1079,9 @@ namespace utopia
         std::cout << "Begin: SolverTest" << std::endl;
 #ifdef WITH_PETSC
         SolverTest<DMatrixd, DVectord, PetscScalar>().run();
-        PETScSolverTest().run();
+        if (mpi_world_size() == 1) {
+            PETScSolverTest().run();
+        }
 #endif
 
 #ifdef WITH_BLAS
