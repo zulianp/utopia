@@ -8,6 +8,14 @@ cmake_cmd = ["cmake", "..", "-DUTOPIA_LOG=ON"]
 make_cmd = ["make", "-j8", "utopia_exec"]
 utopia_cmd = ["./utopia_exec"]
 
+# Columns in CSV
+CLASS = 0
+TOTAL_TIME = 1
+COUNT = 2
+MEAN_TIME = 3
+STD_DEV = 4
+REL_STD_DEV = 5
+
 # Argument parsing
 parser = argparse.ArgumentParser(description='Benchmarking utility for utopia')
 parser.add_argument('--mpi', dest='mpi', nargs=1, type=int, help='Number of processes spawned by mpirun', default=[1])
@@ -42,7 +50,7 @@ if status.returncode != 0:
     exit(2)
 
 # Execute benchmark
-data = [{}] * mpi_n
+data = [dict() for _ in range(mpi_n)]
 
 print("Running utopia (1 out of " + str(iterations) + ")...")
 status = subprocess.run(utopia_cmd)
@@ -54,7 +62,7 @@ for p in range(mpi_n):
         log_reader = csv.reader(csv_file, delimiter=';')
         next(log_reader, None)
         for row in log_reader:
-            data[p][row[0]] = float(row[3])
+            data[p][row[CLASS]] = (int(row[COUNT]), float(row[MEAN_TIME]))
 
 for i in range(2, iterations + 1):
     print("Running utopia (" + str(i) + " out of " + str(iterations) + ")...")
@@ -67,14 +75,17 @@ for i in range(2, iterations + 1):
             log_reader = csv.reader(csv_file, delimiter=';')
             next(log_reader, None)
             for row in log_reader:
-                data[p][row[0]] = data[p][row[0]] + (float(row[3]) - data[p][row[0]]) / i
+                data[p][row[CLASS]] = (
+                    data[p][row[CLASS]][0] + int(row[COUNT]),
+                    data[p][row[CLASS]][1] + (float(row[MEAN_TIME]) - data[p][row[CLASS]][1]) / i
+                )
 
 os.chdir(cwd)
 for p in range(mpi_n):
     with open('benchmark.' + str(p) + '.csv', 'w') as csv_file:
         output = csv.writer(csv_file, delimiter=';')
-        output.writerow(["Class", "Mean time (s)"])
+        output.writerow(["Class", "Count", "Mean time (s)"])
         for key in data[p].keys():
-            output.writerow([key, "{:.9f}".format(data[p][key])])
+            output.writerow([key, data[p][key][0], "{:.9f}".format(data[p][key][1])])
 
 print("Done")
