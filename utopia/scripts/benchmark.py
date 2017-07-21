@@ -6,9 +6,8 @@ import argparse
 
 cmake_cmd = ["cmake", "..", "-DUTOPIA_LOG=ON"]
 make_cmd = ["make", "-j8", "utopia_exec"]
-utopia_cmd = ["./utopia_exec"]
 
-# Columns in CSV
+# Columns in CSV files
 CLASS = 0
 TOTAL_TIME = 1
 COUNT = 2
@@ -20,24 +19,35 @@ REL_STD_DEV = 5
 parser = argparse.ArgumentParser(description='Benchmarking utility for utopia')
 parser.add_argument('--mpi', dest='mpi', nargs=1, type=int, help='Number of processes spawned by mpirun', default=[1])
 parser.add_argument('-n', dest='execs', nargs=1, type=int, help='Number of executions of utopia', default=[100])
+parser.add_argument('--utopia-path', dest='path', type=str, help='Full path of utopia_exec', default="./utopia_exec")
+parser.add_argument('args', nargs=argparse.REMAINDER, type=str, help="""Arguments to pass to utopia.
+Put these arguments at the end of the command line, preceded by '--' (double dash)""")
 args = parser.parse_args()
 
 iterations = args.execs[0]
 mpi_n = args.mpi[0]
-if mpi_n > 1:
-    utopia_cmd = ["mpirun", "-n", str(mpi_n)] + utopia_cmd
+utopia_cmd = [args.path] + args.args
 
 # Main program
 cwd = os.getcwd()
-if cwd.endswith('/scripts'):
-    os.chdir('../bin')
-elif cwd.endswith('/utopia/utopia'):
-    os.chdir('bin')
-elif cwd.endswith('/utopia'):
-    os.chdir('utopia/bin')
+if utopia_cmd[0] == "./utopia_exec":
+    if cwd.endswith('/scripts'):
+        os.chdir('../bin')
+    elif cwd.endswith('/utopia/utopia'):
+        os.chdir('bin')
+    elif cwd.endswith('/utopia'):
+        os.chdir('utopia/bin')
+    else:
+        print('Error: unable to figure out where is the utopia executable. Exiting')
+        exit(5)
 else:
-    print('Error: unable to figure out where is the utopia executable. Exiting')
-    exit(5)
+    u_dir, u_file = os.path.split(utopia_cmd[0])
+    os.chdir(u_dir)
+    print("Changed working directory to " + os.getcwd())
+utopia_cmd[0] = "./utopia_exec"
+
+if mpi_n > 1:
+    utopia_cmd = ["mpirun", "-n", str(mpi_n)] + utopia_cmd
 
 status = subprocess.run(cmake_cmd)
 if status.returncode != 0:
@@ -47,7 +57,7 @@ if status.returncode != 0:
 status = subprocess.run(make_cmd)
 if status.returncode != 0:
     print("Error in make! Exited with status code: " + str(status.returncode))
-    exit(2)
+    exit(1)
 
 # Execute benchmark
 data = [dict() for _ in range(mpi_n)]
