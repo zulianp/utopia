@@ -673,12 +673,12 @@ namespace utopia {
         double intersection_time = 0.0;
         double assembly_time     = 0.0;
         
-        utopia::Chrono c;
+        //utopia::Chrono c;
         
         auto fun = [&](const VElementAdapter<Dimensions> &master,
                        const VElementAdapter<Dimensions> &slave) -> bool {
             
-            c.start();
+            //c.start();
             
             libMesh::DenseMatrix<libMesh::Real> biorth_weights;
             
@@ -725,9 +725,9 @@ namespace utopia {
             const int order = order_for_l2_integral(dim, master_el, dof_master->variable(0).type().order , slave_el,dof_slave->variable(0).type().order);
             libMesh::Real weight_reverse = 0;
             
-            c.stop();
-            element_setup_time += c.get_seconds();
-            c.start();
+            //c.stop();
+            //element_setup_time += c.get_seconds();
+            //c.start();
             
             if(dim == 2)  {
                 make_polygon(master_el,   master_pts);
@@ -772,9 +772,9 @@ namespace utopia {
                 return false;
             }
             
-            c.stop();
-            intersection_time += c.get_seconds();
-            c.start();
+//            c.stop();
+//            intersection_time += c.get_seconds();
+//            c.start();
             
             const auto &master_dofs = master.dof_map();
             const auto &slave_dofs  = slave.dof_map();
