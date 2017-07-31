@@ -120,11 +120,11 @@
          * @param      M_new 
          *
          */
-        virtual bool interpolate(const std::shared_ptr < Matrix> &M, std::shared_ptr <Matrix> &M_new)
-        {            
-            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
-            return true; 
-        }
+        // virtual bool interpolate(const std::shared_ptr < Matrix> &M, std::shared_ptr <Matrix> &M_new)
+        // {            
+        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
+        //     return true; 
+        // }
 
         /**
          * @brief      Interpolation of matrix. 
@@ -134,11 +134,11 @@
          * @param      M_new 
          *
          */
-        virtual bool interpolate(const std::shared_ptr <const Matrix> &M, std::shared_ptr <Matrix> &M_new)
-        {            
-            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
-            return true; 
-        }
+        // virtual bool interpolate(const std::shared_ptr <const Matrix> &M, std::shared_ptr <Matrix> &M_new)
+        // {            
+        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
+        //     return true; 
+        // }
 
         /**
          * @brief      Restriction of vector. 
@@ -161,11 +161,11 @@
          * @param      M_new 
          *
          */
-        virtual bool restrict(const std::shared_ptr < Matrix> &M,  std::shared_ptr <Matrix> &M_new)
-        {
-            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
-            return true; 
-        }
+        // virtual bool restrict(const std::shared_ptr < Matrix> &M,  std::shared_ptr <Matrix> &M_new)
+        // {
+        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
+        //     return true; 
+        // }
 
         /**
          * @brief      Restriction of matrix.
@@ -175,11 +175,11 @@
          * @param      M_new 
          *
          */
-        virtual bool restrict(const std::shared_ptr <const  Matrix> &M,  std::shared_ptr <  Matrix> &M_new)
-        {
-            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
-            return true; 
-        }
+        // virtual bool restrict(const std::shared_ptr <const  Matrix> &M,  std::shared_ptr <  Matrix> &M_new)
+        // {
+        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
+        //     return true; 
+        // }
 
 
         /**
@@ -190,7 +190,7 @@
          * @param      M_new 
          *
          */
-        virtual bool restrict(const Matrix &M,  Matrix &M_new)
+        virtual bool restrict(const Matrix &M, Matrix &M_new) const
         {
             M_new =  mat_PtAP_product(M, *_I);  
             return true; 

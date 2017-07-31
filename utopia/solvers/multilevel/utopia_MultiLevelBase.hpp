@@ -129,16 +129,15 @@
           for(SizeType i = 1; i < _num_levels; i++)
           {
             // J_{i-1} = R * J_{i} * I
-            std::shared_ptr <Matrix>  J_h;     
+            std::shared_ptr<Matrix> J_h = std::make_shared<Matrix>();     
             
-            _transfers[t_s - i].restrict(_levels[i-1].A_ptr(), J_h); 
+            _transfers[t_s - i].restrict(_levels[i-1].A(), *J_h); 
             _levels.push_back(Level(J_h));         
 
 
           }
           
           std::reverse(std::begin(_levels), std::end(_levels));
-
           return true; 
       }
 
