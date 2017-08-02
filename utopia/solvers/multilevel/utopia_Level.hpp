@@ -9,6 +9,8 @@
 #define UTOPIA_ONE_LEVEL_HPP
 #include "utopia_Core.hpp"
 
+#include <memory>
+
      namespace utopia 
      {
         /**
@@ -26,7 +28,7 @@
             
         public:
 
-        Level(){}
+        Level() : _A(std::make_shared<const Matrix>()) {}
         Level(const std::shared_ptr <const Matrix> & A): _A(A)
         {
 
