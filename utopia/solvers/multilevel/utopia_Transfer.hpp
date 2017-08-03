@@ -32,6 +32,8 @@
                                     // _I(I),
                                     // _R(transpose(I))
         {
+            assert(I);
+
             _I = I; 
             _R = std::make_shared<Matrix>(transpose(*I)); 
             _P = _R; 
@@ -44,7 +46,10 @@
                 _R(std::make_shared<Matrix>(transpose(*I))),
                 _P(P)
         {
-         std::cout<<"proper transfer down ... \n"; 
+            assert(I);
+            assert(P);
+            
+            std::cout<<"proper transfer down ... \n"; 
         }
 
 
