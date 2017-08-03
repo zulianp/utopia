@@ -10,6 +10,7 @@
 #include "utopia_Core.hpp"
 
 #include <memory>
+#include <assert.h>
 
      namespace utopia 
      {
@@ -31,7 +32,7 @@
         Level() : _A(std::make_shared<const Matrix>()) {}
         Level(const std::shared_ptr <const Matrix> & A): _A(A)
         {
-
+            assert(_A);
         }
 
 
@@ -46,6 +47,7 @@
          */
         bool A(const std::shared_ptr <const Matrix> & A)
         {
+            assert(A);
             _A = A; 
             return true; 
         }
@@ -55,8 +57,9 @@
          *
          * @return     The stifness on given level.
          */
-        const Matrix &  A()
+        const Matrix &A()
         {
+            assert(_A);
             return *_A; 
         }
 
@@ -69,6 +72,7 @@
          */
         std::shared_ptr <const Matrix> A_ptr()
         {
+            assert(_A);
             return _A; 
         }
 
@@ -79,8 +83,9 @@
          * @param      x           The solution vector.
          * @param      b           The right hand side. 
          */
-        bool enforce_active_set(const std::vector<SizeType> & active_set,  Vector & x, Vector & b)
+        bool enforce_active_set(const std::vector<SizeType> & active_set, Vector & x, Vector & b)
         {
+            assert(_A);
             return apply_BC_to_system(_A, x, b, active_set); 
         }
 
