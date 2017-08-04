@@ -76,7 +76,7 @@
           _transfers.clear();
           
           for(auto I = restriction_operators.rbegin(); I != restriction_operators.rend() ; ++I )
-            _transfers.push_back(std::move(Transfer(*I)));
+            _transfers.push_back(Transfer(*I));
 
           return true; 
       }
@@ -98,7 +98,7 @@
           _transfers.clear();
           
           for(auto I = restriction_operators.begin(); I != restriction_operators.end() ; ++I )
-            _transfers.push_back(std::move(Transfer(*I)));
+            _transfers.push_back(Transfer(*I));
 
           return true; 
       }
