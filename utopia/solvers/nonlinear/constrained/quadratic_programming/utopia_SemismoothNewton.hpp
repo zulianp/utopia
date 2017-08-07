@@ -155,7 +155,7 @@ private:
                     if(is_upper_bound) {
                         for (SizeType i = rr.begin(); i != rr.end(); i++) 
                         {
-                            if (d.get(i) > 0) 
+                            if (d.get(i) >= 0) 
                             {
                                 Ac.set(i, i, 1.0);
                                 active.set(i, 1.0);
@@ -168,7 +168,7 @@ private:
                     } else { //is_lower_bound
                         for (SizeType i = rr.begin(); i != rr.end(); i++) 
                         {
-                            if (d.get(i) < 0) 
+                            if (d.get(i) <= 0) 
                             {
                                 Ac.set(i, i, 1.0);
                                 active.set(i, 1.0);
@@ -247,7 +247,7 @@ private:
             Matrix Ac_p, Ac_m, A_s, Ic;
 
             // G can be changed to something else
-            Matrix G = identity(n, n);
+            Matrix G = local_identity(n, n);
 
             Matrix H;
 
@@ -307,16 +307,17 @@ private:
                                 Ac_m.set(i, i, 1.0);
                                 active.set(i, 1.0);
                             }
-                            else if (lambda_p.get(i) < 0) 
-                            {
-                                Ac_p.set(i, i, 0.0);
-                                active.set(i, 0.0);
-                            }
-                            else if(lambda_m.get(i) < 0)
-                            {
-                                Ac_m.set(i, i, 0.0);
-                                active.set(i, 0.0);
-                            }
+                            //Why these next lines???? @Alena
+                            // else if (lambda_p.get(i) < 0) 
+                            // {
+                            //     Ac_p.set(i, i, 0.0);
+                            //     active.set(i, 0.0);
+                            // }
+                            // else if(lambda_m.get(i) < 0)
+                            // {
+                            //     Ac_m.set(i, i, 0.0);
+                            //     active.set(i, 0.0);
+                            // }
 
                         }
                     }
