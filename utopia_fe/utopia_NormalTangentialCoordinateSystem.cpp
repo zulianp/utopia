@@ -94,8 +94,7 @@ namespace utopia {
                     
              
                     dof_map.dof_indices(&e, dof_indices);
-                    
-                    std::cout<<"CIAO 3==>"<<dof_indices.size()<<std::endl;
+
                     
                     for(uint i = 0; i < dof_indices.size(); ++i) {
                         const uint ind = dof_indices[i];
