@@ -424,7 +424,7 @@ namespace utopia {
 		
 		unsigned int variable_number = 0;
 		
-		const libMesh::Real search_radius = 2.;
+		const libMesh::Real search_radius = 0.0001;
 		MooseSurfaceAssemble(express_comm, (master_slave), 
 							 utopia::make_ref(master_slave_context.system.get_dof_map()), 
 							 utopia::make_ref(variable_number), 
@@ -436,7 +436,8 @@ namespace utopia {
 							 search_radius,
 							 // {{101, 102}},
 							 // {{1, 3}},
-							 {{3, 1}},
+							 // {{3, 1}},
+							 {{102, 101}},
 							 // { {101, 102}, {101, 103} },
 							 // { { 102, 101 }, { 103, 101 } },
 							 true);
@@ -615,7 +616,8 @@ namespace utopia {
 		// mesh->read("../data/standard_3_body.e");
 		// mesh->read("../data/contact_circles.e");
 		// mesh->read("../data/rect.e");
-		mesh->read("../data/multibody.e");
+		// mesh->read("../data/multibody.e");
+		mesh->read("/Users/patrick/Desktop/PostDOC/sccer_turbines/turbine.e");
 		
 		// Print information about the mesh to the screen.
 		// mesh->print_info();
@@ -903,8 +905,8 @@ namespace utopia {
 		EXPRESS_PROFILING_BEGIN()
 		
 		// mortar_transfer_2D(init);
-		 mortar_transfer_3D(init);
-		//mortar_transfer_3D_monolithic(init);
+		 // mortar_transfer_3D(init);
+		mortar_transfer_3D_monolithic(init);
 		// surface_mortar(init);
 		
 		//run_curved_poly_disc();

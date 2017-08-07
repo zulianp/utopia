@@ -65,6 +65,7 @@ list(APPEND SOURCES utopia_MixedFESpaceExample.cpp)
 list(APPEND SOURCES utopia_TimeDiffExamples.cpp)
 list(APPEND SOURCES utopia_Biomechanics.cpp)
 list(APPEND SOURCES utopia_UGMeshReader.cpp)
+list(APPEND SOURCES utopia_NormalTangentialCoordinateSystem.cpp)
 
 add_subdirectory(transfer)
 add_library(utopia_fe STATIC ${SOURCES} ${HEADERS})
