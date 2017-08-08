@@ -21,6 +21,7 @@
 #include "LibmeshTransferForMooseReverse.hpp"
 #include "express_Profiler.hpp"
 #include "utopia_Polygon.hpp"
+#include "utopia_NormalTangentialCoordinateSystem.hpp"
 
 using namespace utopia;
 using namespace std;
@@ -57,61 +58,7 @@ namespace utopia {
 		}
 	}
 	
-	void plot_scaled_normal_field(MeshBase &mesh,
-								  const DVectord &normals,
-								  const DVectord &scale,
-								  const std::string &name = "normal_field")
-	{
-		using namespace libMesh;
-		int mesh_dim = mesh.mesh_dimension();
-		
-
-		DenseVector<double> local_normal;
-		DenseVector<Real> local_scale;
-		
-		std::vector<double> all_points, all_normals;
-		
-		std::vector<double> point(mesh_dim, 0.);
-		for(auto n_it = mesh.active_nodes_begin(); n_it != mesh.active_nodes_end(); ++n_it) {
-			Node &n = **n_it;
-			
-			std::vector<dof_id_type> node_dof_ids;
-			
-			for(int d = 0; d < mesh_dim; ++d) {
-				auto dof_id = n.dof_number(0, d, 0);
-				node_dof_ids.push_back(dof_id);
-				
-				point[d] = n(d);
-			}
-			
-			get_vector(normals, node_dof_ids, local_normal);
-			get_vector(scale,   node_dof_ids, local_scale);
-			
-			for(int d = 0; d < mesh_dim; ++d) {
-				local_normal(d) *= local_scale(0);
-			}
-
-			if(local_normal.l2_norm() < 1e-16) continue;
-			
-			all_points.insert(all_points.end(),
-							  point.begin(),
-							  point.end());
-
-			all_normals.insert(all_normals.end(),
-							   local_normal.get_values().begin(),
-							   local_normal.get_values().end());
-		}
-		
-		if(all_points.empty()) {
-			return;
-		}
-		
-		quiver(mesh_dim,
-			   all_points.size()/mesh_dim,
-			   &all_points[0],
-			   &all_normals[0],
-			   name);
-	}
+	
 	
 	
 	void mortar_transfer_aux(const std::shared_ptr<Mesh> &mesh_master,
