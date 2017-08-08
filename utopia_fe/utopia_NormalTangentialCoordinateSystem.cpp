@@ -60,17 +60,11 @@ namespace utopia {
                     
                     if(!select) continue;
                     
-                    std::cout<<"CIAO 0"<<std::endl;
-                    
                     fe->attach_quadrature_rule(&quad);
                     
                     fe->reinit(&e, side);
                     
-                    std::cout<<"CIAO 1"<<std::endl;
-                    
                     const auto &normals = fe->get_normals();
-                    
-                    std::cout<<"CIAO 2"<<std::endl;
                     
                     //assemble weighted normal
                     const auto &fun = fe->get_phi();
@@ -81,29 +75,28 @@ namespace utopia {
                     
                     vec.resize(n_fun*n_dims);
                     vec.zero();
-                    std::cout<<"n_fun*dim==>"<<n_fun*n_dims<<std::endl;
                     
                     for(uint qp = 0; qp < quad.n_points(); ++qp) {
-                      for(uint i = 0; i < fun.size(); ++i){
+                        for(uint i = 0; i < fun.size(); ++i){
                             for(uint d = 0; d < n_dims; ++d) {
-                                std::cout<<"i * n_dims + d ==>"<< i * n_dims + d <<std::endl;
                                 vec(i * n_dims + d) += fun[i][qp] * normals[i](d) * JxW[qp];
                             }
                         }
                     }
                     
-             
+                    
                     dof_map.dof_indices(&e, dof_indices);
-
+                    
+                    assert(dof_indices.size() == n_fun * n_dims);
                     
                     for(uint i = 0; i < dof_indices.size(); ++i) {
                         const uint ind = dof_indices[i];
-                       // for(uint d = 0; d < n_dims; ++d) {
-                            global_normal_vec.add(i,vec(i));
-                       // }
+                        // for(uint d = 0; d < n_dims; ++d) {
+                        global_normal_vec.add(i,vec(i));
+                        // }
                     }
                     
-                
+                    
                 }
             }
         } //synch-block end
@@ -114,9 +107,6 @@ namespace utopia {
         
         std::vector<Real> H(n_dims*n_dims, 0);
         
-        
-        std::cout<<"r==>"<<r.end()<<std::endl;
-        
         is_normal_component = local_zeros(local_dofs * n_dims);
         
         { //synch-block begin
@@ -126,14 +116,13 @@ namespace utopia {
             
             for(SizeType i = r.begin(); i < r.end(); i += n_dims) {
                 std::vector<Real> n(n_dims, 0);
-                std::cout<<"i==>"<< i <<std::endl;
                 Real norm = 0.;
                 for(uint j = 0; j < n_dims; ++j) {
                     n[j] = global_normal_vec.get(i + j);
                     norm += n[j] * n[j];
                 }
                 
-          
+                
                 bool use_identity = false;
                 
                 if(norm < 1e-16) {
@@ -176,7 +165,7 @@ namespace utopia {
         } //synch-block end
         
         
-        std::cout<<"Bye Bye Baby"<<std::endl;
+       
         return true;
     }
     
