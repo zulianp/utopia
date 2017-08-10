@@ -18,6 +18,7 @@
 #include "utopia_TimeDiffExamples.hpp"
 #include "utopia_TimeDiffExamples.hpp"
 #include "utopia_GeometryTest.hpp"
+#include "utopia_Biomechanics.hpp"
 
 //#include "utopia_FEDSLBaseSolverExamples.hpp"
 using namespace utopia;
@@ -35,8 +36,8 @@ int main(const int argc, char *argv[])
 	// run_least_squares_examples(init);
 	// run_mixed_fe_space_example(init);
     //run_solver_ex(init);
-    // run_biomechanics_example(init);
-    run_geometry_test(init);
+    run_biomechanics_example(init);
+    // run_geometry_test(init);
     // run_mortar_examples(init);
 	return EXIT_SUCCESS;
 }

@@ -349,7 +349,7 @@ namespace utopia
         void mprgp_test()
         {
             // std::cout << "         Begin: mprgp_test" << std::endl;
-        	SizeType n = 10; 
+        	SizeType n = 50; 
         	PetscScalar h = 1.0/(n-1);
 
 
@@ -391,10 +391,10 @@ namespace utopia
 		        }
 		    }
 
-		   	l = -1 * values(n, 1);
+		   	l =  values(n, -1);
 		    u =  values(n, 1);
 		    
-		    b = 50 * values(n, 1);
+		    b = values(n, 50);
 
 		    {
 	            Write<DVectord> w (b);
@@ -417,6 +417,9 @@ namespace utopia
 			// l =  values(local_size(u).get(0), -999); 
 
 			auto box = make_box_constaints(make_ref(l), make_ref(u)); 
+
+            //unilateral constraints do not work with MPRGP
+            // auto box = make_upper_bound_constraints(make_ref(u));
             
 
             MPRGP<DSMatrixd, DVectord> mprgp;
@@ -437,11 +440,11 @@ namespace utopia
             nlsolver.set_box_constraints(box); 
 
             nlsolver.verbose(false); 
-            nlsolver.max_it(50); 
+            nlsolver.max_it(200); 
+            nlsolver.verbose(true);
             nlsolver.solve(A, b, x_0);
 
             assert(approxeq(x, x_0));
-
 //            std::cout << "         End: mprgp_test" << std::endl;
         }
 

@@ -1605,7 +1605,9 @@ namespace utopia {
 	{
 		if(&result.implementation() != &A.implementation() && &result.implementation() != &P.implementation()) {
 			MatDestroy(&result.implementation());
-		} //else FIXME
+		} else {
+			std::cerr << "[Warning] not handled case in triple_product_PtAP" << std::endl;
+		}
 
 		MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, 1.0, &result.implementation()); 
 		return true; 

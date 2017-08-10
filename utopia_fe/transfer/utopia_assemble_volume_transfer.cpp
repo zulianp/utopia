@@ -773,7 +773,7 @@ namespace utopia {
 
                 const std::vector<std::vector<Real>> & phi_master  = master_fe->get_phi();
 
-                master_fe->reinit(&src_el, &src_ir.get_points(), &src_ir.get_weights());
+                master_fe->reinit(&src_el);
                 
                 slave_fe->attach_quadrature_rule(&dest_ir);
 
@@ -781,21 +781,16 @@ namespace utopia {
            
                 const std::vector<Real> & JxW_slave = slave_fe->get_JxW();
 
-                slave_fe->reinit(&dest_el, &dest_ir.get_points(), &dest_ir.get_weights());
+                slave_fe->reinit(&dest_el);
                 
                 elemmat.zero();
                 
-                
-                
                 if(use_biorth_) {
-
                     mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
-                    
                 } else {
                     mortar_assemble(*master_fe, *slave_fe, elemmat);
                 }
-                
-
+            
                 auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
  
                 local_element_matrices_sum += partial_sum;
@@ -831,12 +826,10 @@ namespace utopia {
         };
 
         if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, fun, settings, use_biorth_,n_var)) {
-            std::cout << "n_intersections: false2" <<std::endl;
+            std::cout << "no intersections" <<std::endl;
             return false;
         }
-        
-        std::cout << "n_intersections: " <<std::endl;
-        
+                
         double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };
         
         comm.allReduce(volumes, 2, express::MPISum());

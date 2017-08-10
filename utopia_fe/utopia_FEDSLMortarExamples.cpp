@@ -208,57 +208,48 @@ namespace utopia {
 		
 		express::Communicator express_comm(libmesh_comm.get());
 		
-		int var_num =0;
+		int var_num = 0;
 
 		DSMatrixd B, B_r;
 
-		// AssembleMOOSE(express_comm,
-		//               mesh_master,
-		//               mesh_slave,
-		//               utopia::make_ref(master_context.system.get_dof_map()),
-		//               utopia::make_ref(slave_context.system.get_dof_map()),
-		//               var_num,
-		//               var_num,
-		//               true,
-		//               1,
-		//               B);
-
-
-
-		AssembleMOOSEReverse(express_comm,
+		AssembleMOOSE(express_comm,
 		              mesh_master,
 		              mesh_slave,
 		              utopia::make_ref(master_context.system.get_dof_map()),
 		              utopia::make_ref(slave_context.system.get_dof_map()),
-		              utopia::make_ref(master_context.system.get_dof_map()),
-		              utopia::make_ref(slave_context.system.get_dof_map()),
-		              var_num,
-		              var_num,
 		              var_num,
 		              var_num,
 		              false,
 		              1,
-		              1,
-		              B,
-		              B_r);
+		              B);
 
 
-		
+
+		// AssembleMOOSEReverse(express_comm,
+		//               mesh_master,
+		//               mesh_slave,
+		//               utopia::make_ref(master_context.system.get_dof_map()),
+		//               utopia::make_ref(slave_context.system.get_dof_map()),
+		//               utopia::make_ref(master_context.system.get_dof_map()),
+		//               utopia::make_ref(slave_context.system.get_dof_map()),
+		//               var_num,
+		//               var_num,
+		//               var_num,
+		//               var_num,
+		//               false,
+		//               1,
+		//               1,
+		//               B,
+		//               B_r);
+
 		DSMatrixd transfer_op;
-
 		DVectord diag_elem = 1./sum(B,1);
         
-        DSMatrixd D;
-        
-        DSMatrixd Dinv;
-        
-        
+        DSMatrixd D, D_inv;        
         D = diag(sum(B, 1));
-
-        Dinv = diag(diag_elem);
+        D_inv = diag(diag_elem);
         
 		transfer_op = diag(diag_elem)*B;
-		
 		
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
@@ -283,6 +274,8 @@ namespace utopia {
 		
 		DSMatrixd mass;
 		convert(mass_matrix, mass);
+
+		std::cout << "sum(mass): " << double(sum(mass))<< std::endl;
 		
 		DVectord val_master = local_values(ls.get(1), 1.0);
 		DVectord val_mult   = B * val_master;
@@ -290,10 +283,22 @@ namespace utopia {
 		
 		solve(mass, val_mult, val_slave);
 		
-		DVectord val_slave_pseudo=transfer_op*val_master;
+		DVectord val_slave_pseudo = transfer_op * val_master;
 		
 		//        monitor(0, matrix);
+
+		// std::vector<double> fun(local_size(val_slave).get(0));
+		// {
+		// 	Read<DVectord> r_v(val_slave);
+		// 	auto r = range(val_slave);
+
+		// 	for(SizeType i = r.begin(); i < r.end(); ++i) {
+		// 		fun[i-r.begin()] = val_slave.get(i);
+		// 	}
+		// }
 		
+		// plot_mesh_f(*mesh_slave, &fun[0], "l2_projection");
+
 		// c.stop();
 		std::cout << "|master_elements| = " << mesh_master->n_active_elem() << std::endl;
 		std::cout << "|slave_elements|  = " << mesh_slave->n_active_elem()  << std::endl;
@@ -307,6 +312,9 @@ namespace utopia {
 		//disp(val_slave);
 		// disp(val_slave_pseudo);
 		// write("par.m", matrix);
+
+		convert(val_slave, *slave_context.system.solution);
+		ExodusII_IO(*slave_context.mesh).write_equation_systems ("constant_fun.e", slave_context.equation_systems);
 	}
 	
 	
@@ -592,12 +600,13 @@ namespace utopia {
 		//mesh_master->partitioner().reset(new SFCPartitioner());
 		
 		
-		MeshTools::Generation::build_cube(*mesh_master,
-										  n_master, n_master, n_master,
-										  -2., 3.,
-										  -2., 3.,
-										  -2., 3.,
-										  HEX8);
+		// MeshTools::Generation::build_cube(*mesh_master,
+		// 								  n_master, n_master, n_master,
+		// 								  -2., 3.,
+		// 								  -2., 3.,
+		// 								  -2., 3.,
+		// 								  HEX8);
+		
 		
 		
 		//////////////////////////////////////////////////
@@ -610,14 +619,19 @@ namespace utopia {
 		//mesh_slave->partitioner().reset(new SFCPartitioner());
 		
 		
-		MeshTools::Generation::build_cube (*mesh_slave,
-										   n_slave, n_slave, n_slave,
-										   -2., 3.,
-										   -2., 3.,
-                                           -2., 3.,
-										   HEX8);
+		// MeshTools::Generation::build_cube (*mesh_slave,
+		// 								   n_slave, n_slave, n_slave,
+		// 								   -2., 3.,
+		// 								   -2., 3.,
+  //                                          -2., 3.,
+		// 								   HEX8);
 		
+		// mesh_master->read("../data/working_experiment/turbine_4_coarse.e");
+		// mesh_slave->read("../data/working_experiment/turbine_1.e");
 		
+		// mesh_master->read("../data/bug_experiment/turbine_4.e");
+		mesh_master->read("../data/bug_experiment/turbine_4_refined_cubit.e");
+		mesh_slave->read("../data/bug_experiment/turbine_1.e");
 		
 		
 		//EXPRESS_EVENT_END("set_up");
@@ -852,8 +866,8 @@ namespace utopia {
 		EXPRESS_PROFILING_BEGIN()
 		
 		// mortar_transfer_2D(init);
-		 // mortar_transfer_3D(init);
-		mortar_transfer_3D_monolithic(init);
+		mortar_transfer_3D(init);
+		// mortar_transfer_3D_monolithic(init);
 		// surface_mortar(init);
 		
 		//run_curved_poly_disc();

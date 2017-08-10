@@ -19,8 +19,7 @@
 namespace utopia 
 {
     template<class Matrix, class Vector>
-    class SemismoothNewton : public IterativeSolver<Matrix, Vector>  
-    {
+    class SemismoothNewton : public IterativeSolver<Matrix, Vector> {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
@@ -29,8 +28,8 @@ namespace utopia
     public:
 
         SemismoothNewton(const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
-                         const Parameters params                         = Parameters() ) : 
-                            linear_solver_(linear_solver) 
+           const Parameters params                         = Parameters() ) : 
+        linear_solver_(linear_solver) 
         { 
             set_parameters(params);
         }
@@ -68,313 +67,316 @@ namespace utopia
         {
           constraints_ = box; 
           return true; 
-        }
+      }
 
-        virtual bool  get_box_constraints(BoxConstraints & box)
-        {
-            box = constraints_; 
-            return true; 
-        }
+      virtual bool  get_box_constraints(BoxConstraints & box)
+      {
+        box = constraints_; 
+        return true; 
+    }
 
 
-        virtual void set_c(const Scalar & c)
-        {
-            c_ = c; 
-        }
+    virtual void set_c(const Scalar & c)
+    {
+        c_ = c; 
+    }
 
-        virtual void get_c(Scalar & c) const 
-        {
-            c = c_; 
-        }
-
+    virtual void get_c(Scalar & c) const 
+    {
+        c = c_; 
+    }
 
 private: 
         // We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
-        bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x_new)
-        {
+    bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x_new)
+    {
 
-            using namespace utopia;
-            
-            bool is_upper_bound = constraints_.has_upper_bound();
-           
-            Vector g; 
-            if(is_upper_bound)
-                g = *constraints_.upper_bound(); 
-            else
-                g = *constraints_.lower_bound(); 
+        using namespace utopia;
 
-            SizeType local_N = local_size(x_new).get(0);
+        Scalar tol = 1e-8;
 
-            Scalar c = 1;
-            SizeType iterations = 0;
-            bool converged = false; 
+        bool is_upper_bound = constraints_.has_upper_bound();
 
-            Vector lambda = local_zeros(local_N);
-            Vector active = local_zeros(local_N);
-            Vector Ginvg  = local_zeros(local_N);
-            Vector x_old = x_new;
+        Vector g; 
+        if(is_upper_bound)
+            g = *constraints_.upper_bound(); 
+        else
+            g = *constraints_.lower_bound(); 
 
-            Vector d, prev_active;
+        SizeType local_N = local_size(x_new).get(0);
+
+        Scalar c = 1;
+        SizeType iterations = 0;
+        bool converged = false; 
+
+        Vector lambda = local_zeros(local_N);
+        Vector active = local_zeros(local_N);
+        Vector Ginvg  = local_zeros(local_N);
+        Vector x_old = x_new;
+
+        Vector d, prev_active;
 
             // active/inactive constraints 
-            Matrix Ac;
-            Matrix Ic;
+        Matrix Ac;
+        Matrix Ic;
 
             //G can be changed to something else
-            Matrix G = local_identity(local_N, local_N);
+        Matrix G = local_identity(local_N, local_N);
 
-            Matrix M;
+        Matrix M;
 
-            if(!linear_solver_->solve(G, g, Ginvg))
+        if(!linear_solver_->solve(G, g, Ginvg))
+            return false;
+
+        Scalar f_norm = 9e9;
+
+        if(this->verbose())
+            this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "|| g ||"});
+
+        while(!converged) 
+        {
+            d = lambda + c * (G * x_new - g);
+
+            if(is_sparse<Matrix>::value) {
+                Ac = local_sparse(local_N, local_N, 1);
+                Ic = local_sparse(local_N, local_N, 1);
+            } else {
+                Ac = local_zeros({local_N, local_N});
+                Ic = local_zeros({local_N, local_N});
+            }
+
+            {
+                Write<Matrix> wAC(Ac);
+                Write<Vector> wa(active);
+                Write<Matrix> wIC(Ic);
+
+                Range rr = row_range(Ac);
+
+                if(is_upper_bound) {
+                    for (SizeType i = rr.begin(); i != rr.end(); i++) {
+                        if (d.get(i) >= -tol) {
+                            Ac.set(i, i, 1.0);
+                            active.set(i, 1.0);
+                        } else {
+                            Ic.set(i, i, 1.0);
+                            active.set(i, 0.0);
+                        }
+                    }
+                     //is_lower_bound
+                } else {
+                    for (SizeType i = rr.begin(); i != rr.end(); i++) {
+                        if (d.get(i) <= tol) {
+                            Ac.set(i, i, 1.0);
+                            active.set(i, 1.0);
+                        } else {
+                            Ic.set(i, i, 1.0);
+                            active.set(i, 0.0);
+                        }
+                    }
+                }
+            }
+
+            if (iterations > 0) 
+            {
+                const SizeType n_changed = norm1(prev_active - active);
+                // if(this->verbose()) { std::cout << "active diff " << n_changed << std::endl; }
+                    // active set doesn't change anymore => converged 
+                if (n_changed == 0) 
+                {
+                        // fix this to be done in other way 
+                    converged = this->check_convergence(iterations, 1e-15, 1, 1); 
+                    return true;
+                }
+            }
+
+            prev_active = active;
+
+            M = Ac + Ic * A;
+
+            if(!linear_solver_->solve(M, (Ic * b + Ac * Ginvg), x_new))
                 return false;
 
-            Scalar f_norm = 9e9;
+            lambda = Ac * (b - A * x_new);
 
-            if(this->verbose())
-                this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "|| g ||"});
-            
-            while(!converged) 
-            {
-                d = lambda + c * (G * x_new - g);
+            f_norm = norm2(x_new - x_old);
 
-                if(is_sparse<Matrix>::value) {
-                    Ac = local_sparse(local_N, local_N, 1);
-                    Ic = local_sparse(local_N, local_N, 1);
-                } else {
-                    Ac = local_zeros({local_N, local_N});
-                    Ic = local_zeros({local_N, local_N});
-                }
-               
-                {
-                    Write<Matrix> wAC(Ac);
-                    Write<Vector> wa(active);
-                    Write<Matrix> wIC(Ic);
-
-                    Range rr = row_range(Ac);
-
-                    if(is_upper_bound) {
-                        for (SizeType i = rr.begin(); i != rr.end(); i++) 
-                        {
-                            if (d.get(i) >= 0) 
-                            {
-                                Ac.set(i, i, 1.0);
-                                active.set(i, 1.0);
-                            }
-                            else 
-                            {
-                                Ic.set(i, i, 1.0);
-                            }
-                        }
-                    } else { //is_lower_bound
-                        for (SizeType i = rr.begin(); i != rr.end(); i++) 
-                        {
-                            if (d.get(i) <= 0) 
-                            {
-                                Ac.set(i, i, 1.0);
-                                active.set(i, 1.0);
-                            }
-                            else 
-                            {
-                                Ic.set(i, i, 1.0);
-                            }
-                        }
-
-                    }
-                }
-
-                if (iterations > 1) 
-                {
-                    SizeType sum = norm1(prev_active - active);
-
-                    // active set doesn't change anymore => converged 
-                    if (sum == 0) 
-                    {
-                        // fix this to be done in other way 
-                        converged = this->check_convergence(iterations, 1e-15, 1, 1); 
-                        return true;
-                    }
-                }
-
-                prev_active = active;
-
-                M = Ac + Ic * A;
-            
-                if(!linear_solver_->solve(M, (Ic * b + Ac * Ginvg), x_new))
-                    return false;
-
-                lambda = Ac * (b - A * x_new);
-
-                f_norm = norm2(x_new - x_old);
-                
                 // print iteration status on every iteration 
-                if(this->verbose())
-                    PrintInfo::print_iter_status(iterations, {f_norm}); 
-
-                converged = this->check_convergence(iterations, f_norm, 1, 1); 
-                
-                x_old = x_new;
-                iterations++;
-            }
-            
-            return true;
-        }   
-
-        // TODO: make this solve more efficient
-        bool box_solve(const Matrix &A, const Vector &b, Vector &x)  
-        {
-            using namespace utopia;
-
-            SizeType n = local_size(A).get(0), m = local_size(A).get(1); 
-            Scalar x_diff_norm;
-
-            SizeType it = 0;
-            bool converged = false; 
-
-            const Vector &lb = *constraints_.lower_bound(); 
-            const Vector &ub = *constraints_.upper_bound(); 
-
-            Vector lambda_p     = local_zeros(n);
-            Vector lambda_m     = local_zeros(n);
-            Vector active       = local_zeros(n);
-            Vector G_inv_ub     = local_zeros(n);
-            Vector G_inv_lb     = local_zeros(n);
-            
-
-            Vector x_old = x;
-            Vector d_p, d_m, prev_active;
-
-            // active/inactive constraints 
-            Matrix Ac_p, Ac_m, A_s, Ic;
-
-            // G can be changed to something else
-            Matrix G = local_identity(n, n);
-
-            Matrix H;
-
-            linear_solver_->solve(G, ub, G_inv_ub); 
-            linear_solver_->solve(G, lb, G_inv_lb); 
-            
-
             if(this->verbose())
-                this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "      || x_k - x_{k-1} ||"});
+                PrintInfo::print_iter_status(iterations, {f_norm}); 
 
+            converged = this->check_convergence(iterations, f_norm, 1, 1); 
 
-                if(is_sparse<Matrix>::value) 
-                {
-                    Ac_p = local_sparse(n, m, 1); 
-                    Ac_m = local_sparse(n, m, 1); 
-
-                    Ac_p  = diag(Vector(local_zeros(n))); 
-                    Ac_m  = diag(Vector(local_zeros(n))); 
-
-                    Ic   = local_identity(n, m); 
-                    Vector o = local_values(n, 1.0); 
-                    Ic = diag(o); 
-                } 
-                else 
-                {
-                    Ac_p = local_zeros(n); 
-                    Ac_m = local_zeros(n);
-                    Ic   = local_identity(n, m); 
-                }
-
-
-                while(!converged) 
-                {
-                    d_p = lambda_p + c_ * (G * x - ub);
-                    d_m = lambda_m + c_ * (G * x - lb);
-
-                    {
-                        Write<Matrix> wAC_p(Ac_p);
-                        Write<Matrix> wAC_m(Ac_m);
-                        Write<Vector> wa(active);
-
-                        Read<Vector> rdp(d_p);                    
-                        Read<Vector> rdm(d_m);               
-                        Read<Vector> rb(b);               
-                        
-
-                        Range rr = row_range(Ac_p);
-                        for (SizeType i = rr.begin(); i != rr.end(); i++) 
-                        {
-                            if (d_p.get(i) >= 0) 
-                            {
-                                Ac_p.set(i, i, 1.0);
-                                active.set(i, 1.0);
-                            }
-                            else if(d_m.get(i) <= 0)
-                            {
-                                Ac_m.set(i, i, 1.0);
-                                active.set(i, 1.0);
-                            }
-                            //Why these next lines???? @Alena
-                            // else if (lambda_p.get(i) < 0) 
-                            // {
-                            //     Ac_p.set(i, i, 0.0);
-                            //     active.set(i, 0.0);
-                            // }
-                            // else if(lambda_m.get(i) < 0)
-                            // {
-                            //     Ac_m.set(i, i, 0.0);
-                            //     active.set(i, 0.0);
-                            // }
-
-                        }
-                    }
-
-
-                    A_s  = diag(active); 
-                    Ic   = local_identity(n, m); 
-                    Ic -= A_s; 
-
-
-                    if (it > 1) 
-                    {
-                        // active set doesn't change anymore => converged 
-                        SizeType sum = norm1(prev_active - active);
-                        if (sum == 0) 
-                        {
-                            if(this->verbose())
-                                std::cout<<"SemismoothNewton:: set is not changing ... \n"; 
-                            converged = true; 
-                        }
-                
-                    }
-
-                    prev_active = active;        
-                    H = A_s + Ic * A;         
-
-                    Vector rhs =  Ic * b + Ac_p * G_inv_ub + Ac_m * G_inv_lb; 
-                    linear_solver_->solve(H, rhs, x); 
-        
-                    lambda_p = Ac_p * (b - A * x);
-                    lambda_m = Ac_m * (A * x - b);
-
-
-                    // check for change in iterates 
-                    x_diff_norm = (it > 1) ? norm2(x - x_old): 9e9; 
-
-                    
-                    // print iteration status on every iteration 
-                    if(this->verbose())
-                        PrintInfo::print_iter_status(it, {x_diff_norm}); 
-
-                    if(!converged)
-                        converged = this->check_convergence(it, x_diff_norm, 1, 1); 
-                    
-                    x_old = x;
-                    it++;
-                }
-            
-            return true;
+            x_old = x_new;
+            iterations++;
         }
 
+        return true;
+    }   
+
+        // TODO: make this solve more efficient
+    bool box_solve(const Matrix &A, const Vector &b, Vector &x)  
+    {
+        using namespace utopia;
+
+        const Scalar tol = 1e-8;
+        SizeType n = local_size(A).get(0), m = local_size(A).get(1); 
+        Scalar x_diff_norm;
+
+        SizeType it = 0;
+        bool converged = false; 
+
+        const Vector &lb = *constraints_.lower_bound(); 
+        const Vector &ub = *constraints_.upper_bound(); 
+
+        Vector lambda_p     = local_zeros(n);
+        Vector lambda_m     = local_zeros(n);
+
+        Vector active_m     = local_zeros(n);
+        Vector active_p     = local_zeros(n);
+
+        Vector G_inv_ub     = local_zeros(n);
+        Vector G_inv_lb     = local_zeros(n);
 
 
-        std::shared_ptr <Solver>        linear_solver_;  
-        BoxConstraints                  constraints_; 
-        Scalar c_; 
-    };
+        Vector x_old = x;
+        Vector d_p, d_m;
+        Vector prev_active_p, prev_active_m;
+
+        Vector active;
+
+            // active/inactive constraints 
+        Matrix Ac_p, Ac_m, A_s, Ic;
+
+            // G can be changed to something else
+        Matrix G = local_identity(n, n);
+
+        Matrix H;
+
+        linear_solver_->solve(G, ub, G_inv_ub); 
+        linear_solver_->solve(G, lb, G_inv_lb); 
+
+
+        if(this->verbose()) {
+            this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "      || x_k - x_{k-1} ||"});
+        }
+
+        if(is_sparse<Matrix>::value) 
+        {
+            Ac_p = local_sparse(n, m, 1); 
+            Ac_m = local_sparse(n, m, 1); 
+
+            Ac_p  = diag(Vector(local_zeros(n))); 
+            Ac_m  = diag(Vector(local_zeros(n))); 
+
+            Ic   = local_identity(n, m); 
+            Vector o = local_values(n, 1.0); 
+            Ic = diag(o); 
+        } 
+        else 
+        {
+            Ac_p = local_zeros(n); 
+            Ac_m = local_zeros(n);
+            Ic   = local_identity(n, m); 
+        }
+
+        while(!converged) 
+        {
+            d_p = lambda_p + c_ * (G * x - ub);
+            d_m = lambda_m + c_ * (G * x - lb);
+
+            {
+                Write<Matrix> wAC_p(Ac_p);
+                Write<Matrix> wAC_m(Ac_m);
+                Write<Vector> w_am(active_m);
+                Write<Vector> w_ap(active_p);
+
+                Read<Vector> rdp(d_p);                    
+                Read<Vector> rdm(d_m);               
+                Read<Vector> rb(b);               
+
+                Range rr = row_range(Ac_p);
+                for (SizeType i = rr.begin(); i != rr.end(); i++) 
+                {
+                    if (d_p.get(i) >= -tol) {
+                        Ac_p.set(i, i, 1.0);
+
+                        active_p.set(i, 1.0);
+                        active_m.set(i, 0.0);
+
+                    } else if(d_m.get(i) <= tol) {
+                        Ac_m.set(i, i, 1.0);
+
+                        active_m.set(i, 1.0);
+                        active_p.set(i, 0.0);
+
+                    } else {
+                        Ac_m.set(i, i, 0.0);
+                        Ac_p.set(i, i, 0.0);
+
+                        active_m.set(i, 0.0);
+                        active_p.set(i, 0.0);
+                    }
+                }
+            }
+
+            active = active_m + active_p;
+            A_s  = diag(active); 
+            Ic   = local_identity(n, m); 
+            Ic -= A_s; 
+
+            if (it > 0) {
+            // active set doesn't change anymore => converged 
+             const SizeType lb_changed = norm1(prev_active_m - active_m);
+             const SizeType ub_changed = norm1(prev_active_p - active_p);
+             const SizeType n_changed = lb_changed + ub_changed;
+
+             // if(this->verbose()) { std::cout << "active changed upper_bound: " << ub_changed << "\t lower_bound: " << lb_changed << std::endl; }
+             if (n_changed == 0) 
+             {
+                if(this->verbose())
+                    std::cout<<"SemismoothNewton:: set is not changing ... \n"; 
+                converged = true; 
+                return true;
+            }
+
+        }
+
+        prev_active_m = active_m;
+        prev_active_p = active_p;
+
+        H = A_s + Ic * A;         
+
+        Vector rhs =  Ic * b + Ac_p * G_inv_ub + Ac_m * G_inv_lb; 
+        linear_solver_->solve(H, rhs, x); 
+
+        lambda_p = Ac_p * (b - A * x);
+        lambda_m = Ac_m * (b - A * x);
+
+        // check for change in iterates 
+        x_diff_norm = norm2(x - x_old); 
+
+        // print iteration status on every iteration 
+        if(this->verbose()) {
+            PrintInfo::print_iter_status(it, {x_diff_norm}); 
+        }
+
+        if(!converged) {
+            converged = this->check_convergence(it, x_diff_norm, 1, 1); 
+        }
+
+        x_old = x;
+        it++;
+    }
+
+    return true;
+}
+
+
+
+std::shared_ptr <Solver>        linear_solver_;  
+BoxConstraints                  constraints_; 
+Scalar c_; 
+};
 
 }
 #endif //UTOPIA_SOLVER_SEMISMOOTH_NEWTON_HPP

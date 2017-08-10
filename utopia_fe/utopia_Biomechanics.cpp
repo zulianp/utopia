@@ -372,21 +372,21 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	static const bool is_leaflet = false;
 	// ContactSimParams params = contact_cylinder; static const int coords = 1;
 	// ContactSimParams params = contact8;
-	ContactSimParams params = contact_circles; static const int coords = 1;
-	// ContactSimParams params = multi_contact_3D_2;
+	// ContactSimParams params = contact_circles; static const int coords = 1;
+	// ContactSimParams params = multi_contact_3D_2; 
 	// ContactSimParams params = hip_femure_contact; static const int coords = 2;
-	// ContactSimParams params = implant_contact; static const int coords = 1;
-	// ContactSimParams params = contact_cubes; static const int coords = 1;
+	ContactSimParams params = implant_contact; static const int coords = 1;
+	// ContactSimParams params = contact_cubes; static const int coords = 2;
 
 
-	// auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
+	auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
 	// predicate->add(101, 102);
-	auto predicate = nullptr;
+	// auto predicate = nullptr;
 
-	// predicate->add(102, 101);
-	// predicate->add(103, 102);
-	// predicate->add(104, 103);
-	// predicate->add(105, 10);
+	predicate->add(102, 101);
+	predicate->add(103, 102);
+	predicate->add(104, 103);
+	predicate->add(105, 10);
 
 	auto mesh = make_shared<Mesh>(init.comm());	
  	// mesh->read("/Users/patrick/Downloads/ASCII_bone/all_sidesets.e");
@@ -528,6 +528,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 
 	SemismoothNewton<DSMatrixd, DVectord> newton(std::make_shared<Factorization<DSMatrixd, DVectord> >());
 	newton.verbose(true);
+	newton.max_it(40);
 
     newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap_c))); 
 	newton.solve(K_c, rhs_c, sol_c);

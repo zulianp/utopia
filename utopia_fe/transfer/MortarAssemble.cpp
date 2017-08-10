@@ -122,7 +122,7 @@ namespace utopia {
     void Transform3::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
     {
         ref = libMesh::FE<3, libMesh::LAGRANGE>::inverse_map(&elem_, world);
-        assert( (libMesh::FE<3, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-6)) );
+        // assert( (libMesh::FE<3, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-6)) );
         assert( (libMesh::FE<3, libMesh::LAGRANGE>::map(&elem_, ref).absolute_fuzzy_equals(world, 1e-8)) );
     }
     
@@ -664,6 +664,8 @@ namespace utopia {
         const uint n_test  = test.size();
         const uint n_trial = trial.size();
         const uint n_qp    = test[0].size();
+
+        assert(test[0].size() == trial[0].size());
         
         for(uint i = 0; i < n_test; ++i) {
             for(uint j = 0; j < n_trial; ++j) {
