@@ -57,11 +57,12 @@ namespace utopia {
 					}
 				}
 			}
+			Vector v1 = values(dim, 0.85);
 
-			m = m * transpose(m);
-			m = transpose(m) * m;
-			m = m * m;
-			double n = sum(m);
+			Vector v = m * v1;
+			v1 = transpose(m) * v;
+			v = m * v1;
+			double n = sum(v);
 
 			markUsed(&n);
 		}
@@ -81,7 +82,7 @@ namespace utopia {
 			n += sum(v);
 			v = abs(m * pow2(v1) + sqrt(v2) - v3);
 			n += fabs(sum(v));
-			v = abs(transpose(0.1 * (m * m) - m) * (m) * v3);
+			v = abs(m * (transpose(0.1 * m - m) * (v1)));
 			n += sum(v);
 			v = (0.1 * pow2(v1) - pow2(v2)) + abs(v3);
 			n += fabs(sum(v));
@@ -99,7 +100,6 @@ namespace utopia {
 			Vector v = values(dim, 1.2);
 			TestFunctionND_1<Matrix, Vector> fun(static_cast<int>(dim));
 			solve(fun, v);
-			std::cout << "80%...\r";
 
 			auto linear_solver  = std::make_shared< ConjugateGradient<Matrix, Vector> >();
 			auto preconditioner = std::make_shared< InvDiagPreconditioner<Matrix, Vector> >();
@@ -112,14 +112,12 @@ namespace utopia {
 		}
 
 		void runAll() {
-			vectorAlgebra();
-			std::cout << "20%...\r";
-			matrixAlgebra();
-			std::cout << "40%...\r";
-			mixedAlgebra();
-			std::cout << "60%...\r";
+			for (int i = 0; i < 15; ++i) {
+				vectorAlgebra();
+				matrixAlgebra();
+				mixedAlgebra();
+			}
 			solvers();
-			std::cout << "100% complete\n";
 		}
 
 	private:
