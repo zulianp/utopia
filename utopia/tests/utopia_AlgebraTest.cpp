@@ -10,7 +10,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class AlgebraTest {
     private:
-        //FIXME(eric): original norm_test in main.cpp is still there
+
         void norm_test()
         {
             Vector v = zeros(2);

@@ -1,6 +1,7 @@
 
 #include "utopia.hpp"
 #include "utopia_Test.hpp"
+#include "utopia_Benchmark.hpp"
 #include <memory>
 #include <iostream>
 #include <sstream>
@@ -28,6 +29,16 @@ int main(const int argc, char *argv[])
             if (++i >= argc)
                 break;
             tests = argv[i];
+        } else if (argv[i] == std::string("-benchmark")) {
+            if (++i >= argc)
+                break;
+            size_t size = stoul(argv[i]);
+            if (size == 0) {
+                std::cerr << "Invalid size passed to -benchmark argument. Exiting";
+                break;
+            }
+            Benchmark<DMatrixd, DVectord>(size).runAll();
+            return Utopia::Finalize();
         }
     }
 

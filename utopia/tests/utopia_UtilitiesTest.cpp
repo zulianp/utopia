@@ -109,7 +109,6 @@ namespace utopia {
             assert(c.size().get(0) == 3);
         }
 
-        //TODO(eric): move this to AutoDiffTest?
         void simplify_test()
         {
             const int n = 2;
