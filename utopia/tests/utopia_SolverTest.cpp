@@ -32,9 +32,7 @@ namespace utopia
             TR_test();
             LS_test();
             nl_solve_test();
-           
         }
-
 
         class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
         public:
@@ -342,10 +340,6 @@ namespace utopia
             inexact_newton_test();
         }
 
-
-
-
-
         void mprgp_test()
         {
             // std::cout << "         Begin: mprgp_test" << std::endl;
@@ -387,26 +381,26 @@ namespace utopia
 
 		        if(r.end() == n) {
 		            A.set(n-1, n-1, 1.);
-		            A.set(n-1, n-2, 0);
+		            A.set(n-1, n-2, 0.);
 		        }
 		    }
 
-		   	l =  values(n, -1);
-		    u =  values(n, 1);
+		   	l = values(n, -1.);
+		    u = values(n, 1.);
 		    
-		    b = values(n, 50);
+		    b = values(n, 50.);
 
 		    {
 	            Write<DVectord> w (b);
 	            Range rhs_range = range(b);;
-	            for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++)
-	            {
-	          		if(i > n/2)
+	            for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++) {
+	          		if(i > n/2) {
 	                	b.set(i, -50);
+                    }
 
-	                if(i ==0 || i == rhs_range.end()-1)
+	                if(i ==0 || i == rhs_range.end()-1) {
 	                	b.set(i, 0);
-	  
+                    }
 	            }
 	        }
 
@@ -418,10 +412,9 @@ namespace utopia
 
 			auto box = make_box_constaints(make_ref(l), make_ref(u)); 
 
-            //unilateral constraints do not work with MPRGP
+            //FIXME the following unilateral constraints do not work with MPRGP
             // auto box = make_upper_bound_constraints(make_ref(u));
             
-
             MPRGP<DSMatrixd, DVectord> mprgp;
             mprgp.set_box_constraints(make_ref(box)); 
 
@@ -430,7 +423,6 @@ namespace utopia
 
             mprgp.verbose(false); 
             mprgp.solve(A, b, x); 
-
 
 
             DVectord x_0 = 0 * x; 

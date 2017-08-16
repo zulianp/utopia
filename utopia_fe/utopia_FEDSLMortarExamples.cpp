@@ -30,37 +30,6 @@ using namespace libMesh;
 
 namespace utopia {
 	
-	void convert_normal_matrix_to_vector(const DSMatrixd &mat, DVectord &vec)
-	{
-		auto s = local_size(mat);
-		
-		vec = local_zeros(s.get(0));
-		DVectord norms = local_zeros(s.get(0));
-		
-		auto s_ns = local_size(norms);
-		
-		{
-			Write<DVectord> w_ns(norms);
-			each_read(mat, [&](const SizeType i, const SizeType j, const double value){
-				norms.add(i, value * value);
-			});
-		}
-		
-		norms = sqrt(norms);
-		
-		{
-			Write<DVectord> w(vec);
-			Read<DVectord> r_ns(norms);
-			
-			each_read(mat, [&](const SizeType i, const SizeType j, const double value){
-				vec.set(i + j, value/norms.get(i));
-			});
-		}
-	}
-	
-	
-	
-	
 	void mortar_transfer_aux(const std::shared_ptr<Mesh> &mesh_master,
 							 const std::shared_ptr<Mesh> &mesh_slave,
 							 const libMesh::Order order_elem = FIRST,
@@ -370,8 +339,8 @@ namespace utopia {
 		express::Communicator express_comm(libmesh_comm.get());
 				
 		utopia::DSMatrixd orthogonal_trafos;
-		
-		utopia::DSMatrixd normals;
+		// utopia::DSMatrixd normals;
+		DVectord normals_vec;
 		
 		utopia::DVectord gap;
 		
@@ -379,20 +348,21 @@ namespace utopia {
 		
 		unsigned int variable_number = 0;
 		
-		const libMesh::Real search_radius = 0.0001;
-		MooseSurfaceAssemble(express_comm, (master_slave), 
+		const libMesh::Real search_radius = 11.;
+		assemble_contact(express_comm, (master_slave), 
 							 utopia::make_ref(master_slave_context.system.get_dof_map()), 
-							 utopia::make_ref(variable_number), 
+							 variable_number, 
 							 B, 
 							 orthogonal_trafos, 
 							 gap, 
-							 normals, 
+							 normals_vec,
 							 is_contact_node, 
 							 search_radius,
+							 {{3, 1}},
 							 // {{101, 102}},
 							 // {{1, 3}},
 							 // {{3, 1}},
-							 {{102, 101}},
+							 // {{102, 101}},
 							 // { {101, 102}, {101, 103} },
 							 // { { 102, 101 }, { 103, 101 } },
 							 true);
@@ -437,12 +407,13 @@ namespace utopia {
 		write("O_" + std::to_string(express_comm.size()) + ".m", orthogonal_trafos);
 		write("B_" + std::to_string(express_comm.size()) + ".m", B);
 		write("d_" + std::to_string(express_comm.size()) + ".m", d);
+		write("D_inv_" + std::to_string(express_comm.size()) + ".m", D_inv);
 		write("g_" + std::to_string(express_comm.size()) + ".m", gap);
 		write("c_" + std::to_string(express_comm.size()) + ".m", is_contact_node);
+		write("T_" + std::to_string(express_comm.size()) + ".m", T);
 		
-		
-		DVectord normals_vec;
-		convert_normal_matrix_to_vector(normals, normals_vec);
+		// DVectord normals_vec;
+		// convert_normal_matrix_to_vector(normals, normals_vec);
 
 		if(express_comm.isAlone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
 		
@@ -572,7 +543,8 @@ namespace utopia {
 		// mesh->read("../data/contact_circles.e");
 		// mesh->read("../data/rect.e");
 		// mesh->read("../data/multibody.e");
-		mesh->read("/Users/patrick/Desktop/PostDOC/sccer_turbines/turbine.e");
+		// mesh->read("/Users/patrick/Desktop/PostDOC/sccer_turbines/turbine.e");
+		mesh->read("../data/two_pseudo_rocks_refined.e");
 		
 		// Print information about the mesh to the screen.
 		// mesh->print_info();
@@ -866,8 +838,8 @@ namespace utopia {
 		EXPRESS_PROFILING_BEGIN()
 		
 		// mortar_transfer_2D(init);
-		mortar_transfer_3D(init);
-		// mortar_transfer_3D_monolithic(init);
+		// mortar_transfer_3D(init);
+		mortar_transfer_3D_monolithic(init);
 		// surface_mortar(init);
 		
 		//run_curved_poly_disc();

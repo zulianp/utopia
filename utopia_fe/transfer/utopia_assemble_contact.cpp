@@ -1534,4 +1534,108 @@ namespace utopia {
 								{ {tag_1, tag_2} },
 								use_biorth);
 	}
+
+	void convert_normal_matrix_to_vector(const DSMatrixd &mat, DVectord &vec)
+	{
+		auto s = local_size(mat);
+		
+		vec = local_zeros(s.get(0));
+		DVectord norms = local_zeros(s.get(0));
+		
+		auto s_ns = local_size(norms);
+		
+		{
+			Write<DVectord> w_ns(norms);
+			each_read(mat, [&](const SizeType i, const SizeType j, const double value){
+				norms.add(i, value * value);
+			});
+		}
+		
+		norms = sqrt(norms);
+		
+		{
+			Write<DVectord> w(vec);
+			Read<DVectord> r_ns(norms);
+			
+			each_read(mat, [&](const SizeType i, const SizeType j, const double value){
+				vec.set(i + j, value/norms.get(i));
+			});
+		}
+	}
+
+	bool assemble_contact(
+		express::Communicator &comm,
+		const std::shared_ptr<libMesh::MeshBase> &mesh,
+		const std::shared_ptr<libMesh::DofMap> &dof_map,
+		const unsigned int var_num,
+		DSMatrixd &B,
+		DSMatrixd &orthogonal_trafos,
+		DVectord &gap,
+		DVectord &normals,
+		DVectord &is_contact_node,
+		const libMesh::Real search_radius,
+		const std::vector< std::pair<int, int> > &tags,
+		const bool use_biorth) 
+	{
+
+		DSMatrixd direction_matrix;
+		if(!assemble_contact(
+				comm, mesh, dof_map, var_num, 
+				B, orthogonal_trafos, 
+				gap, direction_matrix, is_contact_node, 
+				search_radius,
+				tags,
+				use_biorth)) {
+			return false;
+		} 
+		
+		// auto s = local_size(gap);
+		// DVectord directions = local_zeros(s.get(0));
+		
+		// {
+		// 	Write<DVectord> w(directions);
+			
+		// 	each_read(direction_matrix, [&](const SizeType i, const SizeType j, const double value){
+		// 		directions.set(i + j, value);
+		// 	});
+		// }
+
+		// normals = local_zeros(s.get(0));
+
+		// auto r = range(directions);
+		
+		// const SizeType dims = mesh->mesh_dimension();
+
+		// std::vector<Real> n(dims);
+		// {	
+		// 	Read<DVectord> r_d(directions);
+		// 	Read<DVectord> r_icn(is_contact_node);
+
+		// 	for(SizeType i = r.begin(); i < r.end(); i += dims) {
+		// 		if(!is_contact_node.get(i)) continue;
+
+		// 		Real norm = 0;
+		// 		for(SizeType j = 0; j < dims; ++j) {
+		// 			n[j] = directions.get(i + j);
+		// 			norm += n[j] * n[j];
+		// 		}
+
+		// 		norm = std::sqrt(norm);
+
+		// 		if(norm < 1e-16) {
+		// 			std::cerr << "[Warning] 0-director" << std::endl;
+		// 			continue;
+		// 		}
+
+		// 		for(SizeType j = 0; j < dims; ++j) {
+		// 			n[j] /= norm;
+		// 			normals.set(i + j, n[j]);
+		// 		}
+		// 	}
+		// }
+
+		convert_normal_matrix_to_vector(direction_matrix, normals);
+		
+		return true;
+	}
 }

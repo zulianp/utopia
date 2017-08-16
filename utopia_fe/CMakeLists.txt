@@ -4,6 +4,12 @@ project(utopia_fe)
 #To kill the policy warning  (maybe not a good idea yet)
 set(CMAKE_MACOSX_RPATH 1)
 
+# if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+# 	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
+# 		SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
+# 	endif()
+# endif()
+
 #################################################################################
 #################################################################################
 #################################################################################
