@@ -381,7 +381,8 @@ namespace utopia {
                                                         const libMesh::Real &plane_offset,
                                                         const libMesh::DenseMatrix<libMesh::Real> &weights,
                                                         libMesh::DenseMatrix<libMesh::Real> &normals,
-                                                        libMesh::DenseVector<libMesh::Real> &gap);
+                                                        libMesh::DenseVector<libMesh::Real> &gap,
+                                                        const bool visdebug = false);
 }
 
 #endif //MFEM_L2P_MORTAR_ASSEMBLE_HPP

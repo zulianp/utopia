@@ -56,61 +56,20 @@ namespace utopia {
 	}
 	
 	//Hacky but it is the only way with libmesh that we know of without having to clone the boundary info!!!!
-	inline static void nodes_are_boundary_hack(
-											   const libMesh::DenseMatrix<libMesh::Real> &mat,
-											   std::vector<bool> &rows,
-											   std::vector<bool> &cols)
+	inline static void nodes_are_boundary_hack(libMesh::FEBase &fe,
+											   std::vector<bool> &result)
 	{
+		auto &phi = fe.get_phi();
+		result.resize(phi.size(), false);
 		
-		rows.resize(mat.m());
-		cols.resize(mat.n());
-		
-		std::fill(rows.begin(), rows.end(), 0);
-		std::fill(cols.begin(), cols.end(), 0);
-		
-		std::vector<double> sum_rows(mat.m(), 0.);
-		std::vector<double> sum_cols(mat.n(), 0.);
-		double sum_all = 0.0;
-		double vol_check = 0.0;
-		
-#ifndef NDEBUG
-		std::vector<double> sum_rows_with_sign(mat.m(), 0.);
-		
-#endif //NDEBUG
-		
-		for(int i = 0; i < sum_rows.size(); ++i) {
-			for(int j = 0; j < sum_cols.size(); ++j) {
-				const double abs_ij = std::abs(mat(i, j));
-				sum_rows[i] += abs_ij;
-				sum_cols[j] += abs_ij;
-				sum_all += abs_ij;
-				
-				vol_check += mat(i, j);
-				
-#ifndef NDEBUG
-				sum_rows_with_sign[i] += mat(i, j);
-#endif //NDEBUG
+		for(std::size_t i = 0; i < phi.size(); ++i) {
+			for(auto v : phi[i]) {
+				if(v > 1e-8) {
+					result[i] = true;
+					break;
+				}
 			}
 		}
-		
-		for(int i = 0; i < sum_rows.size(); ++i) {
-			if(std::abs(sum_rows[i]/sum_all) > 1e-8) {
-				rows[i] = true;
-			}
-		}
-		
-		for(int i = 0; i < sum_cols.size(); ++i) {
-			if(std::abs(sum_cols[i]/sum_all) > 1e-8) {
-				cols[i] = true;
-			}
-		}
-		
-		assert(vol_check > 0);
-#ifndef NDEBUG
-		for(int i = 0; i < sum_rows_with_sign.size(); ++i) {
-			assert(sum_rows_with_sign[i]/sum_all >= -1e-8);
-		}
-#endif //NDEBUG
 	}
 	
 	inline static bool check_node_is_boundary(const ElemType &type,
@@ -148,23 +107,23 @@ namespace utopia {
 		
 		return false;
 	}
-
+	
 	static bool check_lumped_is_positive(const libMesh::DenseMatrix<libMesh::Real> &mat)
 	{
 		std::vector<libMesh::Real> lumped(mat.m(), 0.);
-
+		
 		for(int i = 0; i < mat.m(); ++i) {
 			for(int j = 0; j < mat.n(); ++j) {
 				lumped[i] += mat(i, j);
 			}
 		}
-
-
+		
+		
 		for(auto v : lumped) {
 			assert(v >= 0.);
 			if(v < 0.) return false;
 		}
-
+		
 		return true;
 	}
 	
@@ -339,7 +298,7 @@ namespace utopia {
 		
 		for(Iterator it = begin; it != end; ++it) {
 			
-			const int k = *it;
+			//			const int k = *it;
 			
 			const Elem *elem = space.elem(*it);
 			
@@ -372,7 +331,7 @@ namespace utopia {
 			
 			os << dof_map.at(elem->id());
 			
-			bool  size=true;
+			//			bool  size=true;
 			
 			int volume_tag;
 			
@@ -382,9 +341,9 @@ namespace utopia {
 			
 			int side_set_tag;
 			
-			int face_id;
+			//			int face_id;
 			
-			bool check_side_id_one = true;
+			//			bool check_side_id_one = true;
 			side_set_tag=side_set_id[elem->id()].global.at(0);
 			
 			os << side_set_tag;
@@ -495,9 +454,10 @@ namespace utopia {
 			is >> dof_map.at(i);
 			//std::cout<< "dof_map_read = "<<dof_map[i].global.at(0)<<std::endl;
 			
-			int volume_tag, side_set_tag, face_id;
+			int volume_tag, side_set_tag;
+			//			int face_id;
 			
-			bool on_boundary=false;
+			//			bool on_boundary=false;
 			//std::cout<<"read n_elements = "<<n_elements<<std::endl;
 			
 			
@@ -581,8 +541,8 @@ namespace utopia {
 		
 		const Parallel::Communicator &libmesh_comm_mesh = master_slave->comm();
 		
-		const int dim_master = master_slave->mesh_dimension();
-		const int dim_slave = master_slave->mesh_dimension();
+		//		const int dim_master = master_slave->mesh_dimension();
+		//		const int dim_slave = master_slave->mesh_dimension();
 		
 		MeshBase::const_element_iterator e_it = mesh->active_elements_begin();
 		const MeshBase::const_element_iterator e_end = mesh->active_elements_end();
@@ -598,7 +558,7 @@ namespace utopia {
 		
 		std::shared_ptr<FESpaceAdapter> local_spaces = make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
 		
-		int jj=0;
+		//		int jj=0;
 		
 		for (auto it = master_slave->active_local_elements_begin();
 			 it != master_slave->active_local_elements_end(); ++it) {
@@ -762,14 +722,11 @@ namespace utopia {
 	{
 		std::shared_ptr<FESpaceAdapter> local_fun_spaces_new = cutk::make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
 		
-		libMesh::DenseMatrix<libMesh::Real> src_pts;
-		libMesh::DenseMatrix<libMesh::Real> dest_pts;
+		libMesh::DenseMatrix<libMesh::Real> points_master;
+		libMesh::DenseMatrix<libMesh::Real> points_slave;
 		libMesh::DenseMatrix<libMesh::Real> intersection2;
-		Polyhedron src_poly, dest_poly;
-		Polyhedron  intersection3,temp_poly;
+		Polyhedron poly_master, poly_slave;
 		Intersector isector;
-		
-		std::shared_ptr<MeshBase> master_slave_space = master_slave;
 		
 		auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
 		
@@ -780,7 +737,7 @@ namespace utopia {
 		
 		static const double tol = 1e-8;
 		
-		std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;
+		std::vector<libMesh::dof_id_type> dofs_master, dofs_slave;
 		
 		libMesh::DenseMatrix<libMesh::Real> elemmat;
 		libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
@@ -795,7 +752,6 @@ namespace utopia {
 		
 		const int dim = master_slave->mesh_dimension();
 		
-		libMesh::Real total_intersection_volume = 0.0;
 		libMesh::Real local_element_matrices_sum = 0.0;
 		
 		//all face dof buffers
@@ -806,14 +762,10 @@ namespace utopia {
 		express::MapSparseMatrix<double> gap_buffer;
 		express::MapSparseMatrix<double> normal_buffer;
 		
-		// std::cout<<"*********** master_slave->dof_map().n_dofs() = "<<  dof_map->n_dofs() <<std::endl;
-		
 		DenseMatrix<Real> biorth_weights;
 		
 		auto fun = [&](const SElementAdapter<Dimensions> &master,
 					   const SElementAdapter<Dimensions> &slave) -> bool {
-			
-			long n_intersections = 0;
 			
 			using namespace cutlibpp;
 			using namespace express;
@@ -824,21 +776,21 @@ namespace utopia {
 			
 			libMesh::DenseMatrix<libMesh::Real> elemmat;
 			
-			const int src_index  = master.element();
-			const int dest_index = slave.element();
+			const int index_master  = master.element();
+			const int index_slave = slave.element();
 			
-			auto &el_master  = *master_mesh.elem(src_index);
-			auto &dest_el = *slave_mesh.elem(dest_index);
+			auto &el_master  = *master_mesh.elem(index_master);
+			auto &el_slave = *slave_mesh.elem(index_slave);
 			
 			const int dim_master = master_mesh.mesh_dimension();
 			const int dim_slave = slave_mesh.mesh_dimension();
 			
 			Box box_master(dim_master), box_slave(dim_slave);
 			
-			QMortar src_ir_ref(dim_master);
-			QMortar src_ir(dim_master);
-			QMortar dest_ir(dim_slave);
-			QMortar dest_ir_ref(dim_slave);
+			QMortar ir_ref_master(dim_master);
+			QMortar ir_master(dim_master);
+			QMortar ir_slave(dim_slave);
+			QMortar ir_ref_slave(dim_slave);
 			
 			//only works because there are not mixed elements
 			const int approx_order = local_fun_spaces_new->variable_order()[0];
@@ -846,50 +798,60 @@ namespace utopia {
 			std::shared_ptr<Contact> surface_assemble;
 			
 			const auto &side_id_master = master.dof_map_face();
-			const auto &face_id_slave  = slave.dof_map_face();
+			const auto &side_id_slave  = slave.dof_map_face();
 			
 			std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
 			
 			master_fe = libMesh::FEBase::build(master_mesh.mesh_dimension(), FIRST);
 			slave_fe  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  FIRST);
 			
+			master_fe->get_phi();
+			master_fe->get_JxW();
+			
+			slave_fe->get_xyz();
+			slave_fe->get_phi();
+			slave_fe->get_JxW();
+			
 			typedef Intersector::Scalar Scalar;
 			
 			if(dim_slave == 2)  {
-				make_polygon(el_master,   src_pts);
-				make_polygon(dest_el,  dest_pts);
-				trafo_master  = std::make_shared<AffineTransform2>(el_master);
-				trafo_slave = std::make_shared<AffineTransform2>(dest_el);
+				make_polygon(el_master, points_master);
+				make_polygon(el_slave,  points_slave);
 				
-			}
-			
-			else if(dim_slave == 3) {
-				make_polyhedron(el_master,  src_poly);
-				make_polyhedron(dest_el, dest_poly);
-				trafo_master  = std::make_shared<AffineTransform3>(el_master);
-				trafo_slave = std::make_shared<AffineTransform3>(dest_el);
+				trafo_master = std::make_shared<AffineTransform2>(el_master);
+				trafo_slave  = std::make_shared<AffineTransform2>(el_slave);
+				
+			} else if(dim_slave == 3) {
+				make_polyhedron(el_master, poly_master);
+				make_polyhedron(el_slave,  poly_slave);
+				
+				trafo_master = std::make_shared<AffineTransform3>(el_master);
+				trafo_slave  = std::make_shared<AffineTransform3>(el_slave);
 				
 			}
 			
 			bool intersected = false;
 			
-			for(uint side_index_master = 0;
-				side_index_master < el_master.n_sides();
-				++side_index_master) {
-				
+			for(uint side_index_master = 0; side_index_master < el_master.n_sides(); ++side_index_master) {
 				if(side_id_master[side_index_master] < 0) continue;
 				
-				if(el_master.neighbor_ptr(side_index_master) != nullptr) continue;
+				if(el_master.neighbor_ptr(side_index_master) != nullptr) {
+					std::cerr << "[Warning] it should never happen" << std::endl;
+					continue;
+				}
 				
 				auto side_master = el_master.build_side_ptr(side_index_master);
 				
 				compute_side_normal(dim_master, *side_master, n_master);
-				fix_normal_orientation(el_master, side_index_master, n_master);
+				
+				if(fix_normal_orientation(el_master, side_index_master, n_master)) {
+					std::cerr << "[Warning] fixed normal orientation of master face" << std::endl;
+				}
 				
 				box_master.reset();
 				enlarge_box_from_side(dim_master, *side_master, box_master, search_radius);
 				
-				if(dim_slave == 2) {
+				if(dim_master == 2) {
 					make_polygon(*side_master, side_polygon_master);
 				} else if(dim_master == 3) {
 					make_polygon_3(*side_master, side_polygon_master);
@@ -897,16 +859,22 @@ namespace utopia {
 					assert(false);
 				}
 				
-				for(uint side_2 = 0; side_2 < dest_el.n_sides(); ++side_2) {
-					if(face_id_slave[side_2] < 0) continue;
-					if(dest_el.neighbor_ptr(side_2) != nullptr) continue;
+				for(uint side_2 = 0; side_2 < el_slave.n_sides(); ++side_2) {
+					if(side_id_slave[side_2] < 0) continue;
+					
+					if(el_slave.neighbor_ptr(side_2) != nullptr) {
+						std::cerr << "[Warning] it should never happen" << std::endl;
+						continue;
+					}
 					// if (!predicate->tagsAreRelated(tag_1, tag_2)) continue;
 					
-					auto side_slave = dest_el.build_side_ptr(side_2);
+					auto side_slave = el_slave.build_side_ptr(side_2);
 					
 					compute_side_normal(dim_slave, *side_slave, n_slave);
 					
-					fix_normal_orientation(dest_el, side_2, n_slave);
+					if(fix_normal_orientation(el_slave, side_2, n_slave)) {
+						std::cerr << "[Warning] fixed normal orientation of slave face" << std::endl;
+					}
 					
 					const Real cos_angle = n_master.contract(n_slave);
 					
@@ -922,13 +890,12 @@ namespace utopia {
 						continue;
 					}
 					
-					
 					bool pair_intersected = false;
 					if(dim_slave == 2){
 						make_polygon(*side_slave, side_polygon_slave);
 						
 						//plot_lines(2, 2, &side_polygon_master.get_values()[0], "in_master/" + std::to_string(master_facq) + "_" + std::to_string(cos_angle));
-						//plot_lines(2, 2, &side_polygon_slave.get_values()[0], "in_slave/" + std::to_string(face_id_slave[0]) + "_" + std::to_string(cos_angle));
+						//plot_lines(2, 2, &side_polygon_slave.get_values()[0], "in_slave/" + std::to_string(side_id_slave[0]) + "_" + std::to_string(cos_angle));
 						
 						if(!project_2D(side_polygon_master, side_polygon_slave, isect_polygon_master, isect_polygon_slave)){
 							continue;
@@ -941,22 +908,26 @@ namespace utopia {
 						const Scalar isect_dx = isect_polygon_slave(0, 0) - isect_polygon_slave(1, 0);
 						const Scalar isect_dy = isect_polygon_slave(0, 1) - isect_polygon_slave(1, 1);
 						
-						const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
-						const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
+						const Scalar area = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
+						const Scalar area_slave = std::sqrt(dx*dx + dy*dy);
+						const Scalar relative_area = area/area_slave;
+						const Scalar weight = 1./area_slave;
 						
 						if(weight < 1e-15) continue;
 						
-						const int order = order_for_l2_integral(dim_master, el_master, approx_order, dest_el, approx_order);
+						const int order = order_for_l2_integral(dim_master, el_master, approx_order, el_slave, approx_order);
 						
-						make_composite_quadrature_on_surf_2D(isect_polygon_master, weight, order, src_ir);
+						make_composite_quadrature_on_surf_2D(isect_polygon_master, weight, order, ir_master);
+						make_composite_quadrature_on_surf_2D(isect_polygon_slave, weight, order, ir_slave);
 						
-						make_composite_quadrature_on_surf_2D(isect_polygon_slave, weight, order, dest_ir);
+//						//Maybe remove
+//						ir_master.get_weights() = ir_slave.get_weights();
 						
 						pair_intersected = true;
 						
 						surface_assemble = std::make_shared<Contact>();
 						surface_assemble->isect_area	   = area;
-						surface_assemble->relative_area    = weight;
+						surface_assemble->relative_area    = relative_area;
 						
 						// plot_polygon(2, 2, &side_polygon_master.get_values()[0], "master");
 						// plot_polygon(2, 2, &side_polygon_slave.get_values()[0], "slave");
@@ -969,77 +940,82 @@ namespace utopia {
 									   side_polygon_master,
 									   side_polygon_slave,
 									   isect_polygon_master,
-									   isect_polygon_slave))
-						{
+									   isect_polygon_slave)) {
 							continue;
 						}
 						
 						const Scalar area_slave = isector.polygon_area_3(side_polygon_slave.m(),  &side_polygon_slave.get_values()[0]);
 						const Scalar area   	= isector.polygon_area_3(isect_polygon_slave.m(), &isect_polygon_slave.get_values()[0]);
-						const Scalar weight 	= area/area_slave;
+						const Scalar relative_area = area/area_slave;
+						const Scalar weight = 1./area_slave;
 						
 						assert(area_slave > 0);
 						assert(area > 0);
 						assert(weight > 0);
 						
-						const int order = order_for_l2_integral(dim_master, el_master, approx_order, dest_el, approx_order);
+						const int order = order_for_l2_integral(dim_master, el_master, approx_order, el_slave, approx_order);
 						
-						make_composite_quadrature_on_surf_3D(isect_polygon_master, weight, order, src_ir);
-						make_composite_quadrature_on_surf_3D(isect_polygon_slave, weight, order, dest_ir);
+						make_composite_quadrature_on_surf_3D(isect_polygon_master, weight, order, ir_master);
+						make_composite_quadrature_on_surf_3D(isect_polygon_slave,  weight, order, ir_slave);
+						
+						//Maybe remove
+						ir_master.get_weights() = ir_slave.get_weights();
 						
 						pair_intersected = true;
 						
 						surface_assemble = std::make_shared<Contact>();
 						surface_assemble->isect_area	= area;
-						surface_assemble->relative_area = weight;
+						surface_assemble->relative_area = relative_area;
 						
 					} else {
 						assert(false);
 						return false;
 					}
 					
+					// const bool enable_vis = side_id_slave.at(side_2) == 434;
+					const bool enable_vis = false;
 					
 					if(pair_intersected) {
 						
-						// plot_polygon(3, isect_polygon_master.get_values().size()/3, &isect_polygon_master.get_values()[0], "master");
-						// plot_polygon(3, isect_polygon_slave.get_values().size()/3, &isect_polygon_slave.get_values()[0], "slave");
+						
+						if(enable_vis) {
+							plot_polygon(3, isect_polygon_master.get_values().size()/3, &isect_polygon_master.get_values()[0], "master");
+							plot_polygon(3, isect_polygon_slave.get_values().size()/3,  &isect_polygon_slave.get_values()[0],  "slave");
+						}
 						
 						// std::cout << "isect: " << master.handle() << " -> " << slave.handle() << std::endl;
 						
 						//////////////////////////////////ASSEMBLY ////////////////////////////////////////
 						//////////////////////////////////////////////////////////////////////////////////////
-						transform_to_reference_surf(*trafo_master,  el_master.type(),  src_ir, src_ir_ref);
-						transform_to_reference_surf(*trafo_slave, dest_el.type(), dest_ir, dest_ir_ref);
+						transform_to_reference_surf(*trafo_master, el_master.type(),  ir_master, ir_ref_master);
+						transform_to_reference_surf(*trafo_slave,  el_slave.type(),   ir_slave,  ir_ref_slave);
 						
-						master_fe->attach_quadrature_rule(&src_ir_ref);
-						
-						master_fe->get_phi();
+						//master fe init
+						master_fe->attach_quadrature_rule(&ir_ref_master);
 						master_fe->reinit(&el_master);
 						
-						slave_fe->attach_quadrature_rule(&dest_ir_ref);
+						//slave fe init
+						slave_fe->attach_quadrature_rule(&ir_ref_slave);
+						slave_fe->reinit(&el_slave);
 						
-						slave_fe->get_xyz();
-						slave_fe->reinit(&dest_el);
-						
-						
-						surface_assemble->parent_element_master  = src_index;
+						//prepare result
+						surface_assemble->parent_element_master  = index_master;
 						
 						surface_assemble->id_master 			 = el_master.id();
 						
-						surface_assemble->parent_element_slave   = dest_index;
+						surface_assemble->parent_element_slave   = index_slave;
 						
-						surface_assemble->id_slave 			     = dest_el.id();
+						surface_assemble->id_slave 			     = el_slave.id();
 						
 						surface_assemble->coupling.zero();
 						
 						elemmat.zero();
 						
-						mortar_assemble(*master_fe, *slave_fe, elemmat);
-						
 						std::vector<bool> node_is_boundary_slave;
 						std::vector<bool> node_is_boundary_master;
 						
-						nodes_are_boundary_hack(elemmat, node_is_boundary_slave, node_is_boundary_master);
+						nodes_are_boundary_hack(*slave_fe, node_is_boundary_slave);
+						nodes_are_boundary_hack(*master_fe, node_is_boundary_master);
 						
 						assert( check_node_is_boundary((*master_slave->active_local_elements_begin())->type(), node_is_boundary_master) );
 						
@@ -1047,10 +1023,10 @@ namespace utopia {
 							assemble_trace_biorth_weights_from_space((*master_slave->active_local_elements_begin())->type(),
 																	 node_is_boundary_slave,
 																	 biorth_weights);
-							elemmat.zero();
+							
 							mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
-
-							// assert( check_lumped_is_positive(elemmat) );
+						} else {
+							mortar_assemble(*master_fe, *slave_fe, elemmat);
 						}
 						
 						
@@ -1067,7 +1043,8 @@ namespace utopia {
 																		   plane_offset,
 																		   biorth_weights,
 																		   surface_assemble->normals,
-																		   surface_assemble->gap);
+																		   surface_assemble->gap,
+																		   enable_vis);
 						} else {
 							mortar_normal_and_gap_assemble(
 														   dim,
@@ -1080,26 +1057,26 @@ namespace utopia {
 						}
 						//////////////////////////////////////////////////////////////////////////////////////
 						
-						rel_area_buffer.add(face_id_slave[side_2], 0, surface_assemble->relative_area);
+						rel_area_buffer.add(side_id_slave[side_2], 0, surface_assemble->relative_area);
 						
-						const auto &master_dofs = master.dof_map();
-						const auto &slave_dofs  = slave.dof_map();
+						const auto &dofs_master = master.dof_map();
+						const auto &dofs_slave  = slave.dof_map();
 						
 						int n_nodes_face_slave  = side_slave->n_nodes();
 						int n_nodes_face_master = side_master->n_nodes();
 						
 						
 						//plot_lines(dim_master,  side_master->n_nodes(), &side_polygon_master.get_values()[0] , "master/" + std::to_string(side_id_master[0]));
-						//plot_lines(dim_slave, side_slave->n_nodes(), &side_polygon_slave.get_values()[0] , "slave/" + std::to_string(face_id_slave[0]));
+						//plot_lines(dim_slave, side_slave->n_nodes(), &side_polygon_slave.get_values()[0] , "slave/" + std::to_string(side_id_slave[0]));
 						
-						std::vector<dof_id_type> face_node_id_slave(slave_dofs.size(),   -1);
-						std::vector<dof_id_type> face_node_id_master(master_dofs.size(), -1);
+						std::vector<dof_id_type> face_node_id_slave(dofs_slave.size(),   -1);
+						std::vector<dof_id_type> face_node_id_master(dofs_master.size(), -1);
 						
 						//generate face-node ids for slave
 						int offset = 0;
 						for(uint i = 0; i < node_is_boundary_slave.size(); ++i){
 							if (node_is_boundary_slave[i]) {
-								face_node_id_slave[i] =  face_id_slave[side_2] * n_nodes_face_slave + offset++;
+								face_node_id_slave[i] =  side_id_slave[side_2] * n_nodes_face_slave + offset++;
 							}
 						}
 						
@@ -1112,8 +1089,8 @@ namespace utopia {
 						}
 						
 						//fill-up slave permutation
-						for(int i = 0; i <  slave_dofs.size(); ++i) {
-							const long dof_I = slave_dofs[i];
+						for(int i = 0; i <  dofs_slave.size(); ++i) {
+							const long dof_I = dofs_slave[i];
 							const long dof_J = face_node_id_slave[i];
 							
 							if(node_is_boundary_slave[i]) {
@@ -1123,7 +1100,7 @@ namespace utopia {
 						
 						//fill-up master permutation
 						for(int i = 0; i <  face_node_id_master.size(); ++i) {
-							const long dof_I = master_dofs[i];
+							const long dof_I = dofs_master[i];
 							const long dof_J = face_node_id_master[i];
 							
 							if(node_is_boundary_master[i]) {
@@ -1131,13 +1108,22 @@ namespace utopia {
 							}
 						}
 						
+						if(enable_vis) {
+							DenseVector<Real> v(elemmat.n());
+							std::fill(v.get_values().begin(), v.get_values().end(), 1.0);
+							DenseVector<Real> r(elemmat.m());
+							std::fill(r.get_values().begin(), r.get_values().end(), 0.0);
+							elemmat.vector_mult(r, v);
+							r.print(std::cout);
+						}
+						
 						auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
 						assert(partial_sum > 0);
 						
 						local_element_matrices_sum += partial_sum;
 						
-						assert(slave_dofs.size() == elemmat.m());
-						assert(master_dofs.size() == elemmat.n());
+						assert(dofs_slave.size() == elemmat.m());
+						assert(dofs_master.size() == elemmat.n());
 						
 						for(int i = 0; i < face_node_id_slave.size(); ++i) {
 							if(!node_is_boundary_slave[i]) continue;
@@ -1260,14 +1246,14 @@ namespace utopia {
 		
 		express::Array<double> detect_negative(n_local_side_node_dofs);
 		detect_negative.allSet(0.);
-
+		
 		express::Array<bool> remove_row(n_local_side_node_dofs);
 		
 		if(!remove_row.isNull()) {
 			long n_remove_rows = 0;
 			remove_row.allSet(false);
-
-
+			
+			
 			//hack this is curing some symptoms of a bug but not the cause
 			{
 				for(auto it = B_buffer.iter(); it; ++it) {
@@ -1275,12 +1261,12 @@ namespace utopia {
 					detect_negative[index] += *it;
 				}
 			}
-
+			
 			
 			{
 				for (auto it = rel_area_buffer.iter(); it; ++it) {
 					bool must_remove = *it < 1 - 1e-8;
-
+					
 					if(!must_remove) {
 						const SizeType faceId = it.row();
 						
@@ -1289,13 +1275,14 @@ namespace utopia {
 							const SizeType index  = nodeId - side_node_ownership_ranges[comm.rank()];
 							
 							if(detect_negative[index] < 0.) {
-								must_remove = true;
-								std::cerr << "[Warning] removing element with negative contribution" << std::endl;
+								// must_remove = true;
+								std::cerr << "[Warning] removing element with negative contribution face id: " << faceId << ", node id: " << nodeId << ", node offset: " << k  << std::endl;
 								break;
 							}
 						}
 					}
-
+					
+					
 					if(must_remove) {
 						const SizeType faceId = it.row();
 						
@@ -1365,17 +1352,17 @@ namespace utopia {
 				}
 			}
 		}
-
+		
 		// rel_area_buffer.save("area.txt");
 		// B_buffer.save("B_tilde.txt");
-
+		
 #ifndef NEBUG
 		DVectord B_tilde_lumped = sum(B_tilde, 1);
 		each_read(B_tilde_lumped, [](const SizeType i, const double value) {
-			assert(value >= 0.);
+			//			assert(value >= 0.);
 		});
 #endif //NEBUG
-
+		
 		// comm.barrier();
 		// express::RootDescribe("petsc P_buffer assembly begin", comm, std::cout);
 		
@@ -1583,19 +1570,19 @@ namespace utopia {
 						  DSMatrixd &normals,
 						  DVectord &is_contact_node,
 						  const libMesh::Real search_radius,
-						  const int tag_1, 
+						  const int tag_1,
 						  const int tag_2,
 						  const bool use_biorth)
 	{
 		return assemble_contact(
-								comm, mesh, dof_map, var_num, 
-								B, orthogonal_trafos, 
-								gap, normals, is_contact_node, 
+								comm, mesh, dof_map, var_num,
+								B, orthogonal_trafos,
+								gap, normals, is_contact_node,
 								search_radius,
 								{ {tag_1, tag_2} },
 								use_biorth);
 	}
-
+	
 	void convert_normal_matrix_to_vector(const DSMatrixd &mat, DVectord &vec)
 	{
 		auto s = local_size(mat);
@@ -1623,78 +1610,78 @@ namespace utopia {
 			});
 		}
 	}
-
+	
 	bool assemble_contact(
-		express::Communicator &comm,
-		const std::shared_ptr<libMesh::MeshBase> &mesh,
-		const std::shared_ptr<libMesh::DofMap> &dof_map,
-		const unsigned int var_num,
-		DSMatrixd &B,
-		DSMatrixd &orthogonal_trafos,
-		DVectord &gap,
-		DVectord &normals,
-		DVectord &is_contact_node,
-		const libMesh::Real search_radius,
-		const std::vector< std::pair<int, int> > &tags,
-		const bool use_biorth) 
+						  express::Communicator &comm,
+						  const std::shared_ptr<libMesh::MeshBase> &mesh,
+						  const std::shared_ptr<libMesh::DofMap> &dof_map,
+						  const unsigned int var_num,
+						  DSMatrixd &B,
+						  DSMatrixd &orthogonal_trafos,
+						  DVectord &gap,
+						  DVectord &normals,
+						  DVectord &is_contact_node,
+						  const libMesh::Real search_radius,
+						  const std::vector< std::pair<int, int> > &tags,
+						  const bool use_biorth)
 	{
-
+		
 		DSMatrixd direction_matrix;
 		if(!assemble_contact(
-				comm, mesh, dof_map, var_num, 
-				B, orthogonal_trafos, 
-				gap, direction_matrix, is_contact_node, 
-				search_radius,
-				tags,
-				use_biorth)) {
+							 comm, mesh, dof_map, var_num,
+							 B, orthogonal_trafos,
+							 gap, direction_matrix, is_contact_node,
+							 search_radius,
+							 tags,
+							 use_biorth)) {
 			return false;
-		} 
+		}
 		
 		// auto s = local_size(gap);
 		// DVectord directions = local_zeros(s.get(0));
 		
 		// {
 		// 	Write<DVectord> w(directions);
-			
+		
 		// 	each_read(direction_matrix, [&](const SizeType i, const SizeType j, const double value){
 		// 		directions.set(i + j, value);
 		// 	});
 		// }
-
+		
 		// normals = local_zeros(s.get(0));
-
+		
 		// auto r = range(directions);
 		
 		// const SizeType dims = mesh->mesh_dimension();
-
+		
 		// std::vector<Real> n(dims);
-		// {	
+		// {
 		// 	Read<DVectord> r_d(directions);
 		// 	Read<DVectord> r_icn(is_contact_node);
-
+		
 		// 	for(SizeType i = r.begin(); i < r.end(); i += dims) {
 		// 		if(!is_contact_node.get(i)) continue;
-
+		
 		// 		Real norm = 0;
 		// 		for(SizeType j = 0; j < dims; ++j) {
 		// 			n[j] = directions.get(i + j);
 		// 			norm += n[j] * n[j];
 		// 		}
-
+		
 		// 		norm = std::sqrt(norm);
-
+		
 		// 		if(norm < 1e-16) {
 		// 			std::cerr << "[Warning] 0-director" << std::endl;
 		// 			continue;
 		// 		}
-
+		
 		// 		for(SizeType j = 0; j < dims; ++j) {
 		// 			n[j] /= norm;
 		// 			normals.set(i + j, n[j]);
 		// 		}
 		// 	}
 		// }
-
+		
 		convert_normal_matrix_to_vector(direction_matrix, normals);
 		
 		return true;

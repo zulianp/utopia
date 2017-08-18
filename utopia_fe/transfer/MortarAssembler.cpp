@@ -681,7 +681,9 @@ namespace utopia {
 			const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
 
 			const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
-			const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
+			const Scalar area_slave = std::sqrt(dx*dx + dy*dy);
+			const Scalar relative_area = area/area_slave;
+			const Scalar weight = 1./area_slave;
 
 			const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
 
@@ -694,7 +696,7 @@ namespace utopia {
 
 			current_contact = std::make_shared<Contact>();
 			current_contact->isect_area	   = area;
-			current_contact->relative_area = weight;
+			current_contact->relative_area = relative_area;
 
 
 		} else if(dim == 3) {
@@ -711,7 +713,8 @@ namespace utopia {
 
 			const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);	
 			const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
-			const Scalar weight 	= area/area_slave;
+			const Scalar relative_area 	= area/area_slave;
+			const Scalar weight = 1./area_slave;
 
 			const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
 
@@ -724,7 +727,7 @@ namespace utopia {
 
 			current_contact = std::make_shared<Contact>();
 			current_contact->isect_area	   = area;
-			current_contact->relative_area = weight;
+			current_contact->relative_area = relative_area;
 
 		} else {
 			assert(false);

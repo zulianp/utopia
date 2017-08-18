@@ -498,13 +498,14 @@ namespace utopia {
             c_ir.get_points()[k] *= w;
             c_ir.get_points()[k] += o;
             
-            c_ir.get_weights()[k] = ir.w(k) * weight * 0.5;
+            c_ir.get_weights()[k] = ir.w(k) * v.norm() * weight * 0.5;
         }
     }
     
     void make_composite_quadrature_on_surf_3D(const libMesh::DenseMatrix<libMesh::Real> &polygon, const double weight, const int order, QMortar &c_ir)
     {
-        
+		
+		Intersector isector;
         libMesh::QGauss ir(2, libMesh::Order(order));
         ir.init(libMesh::TRI3);
         
@@ -526,7 +527,6 @@ namespace utopia {
         get_row(0, polygon, o);
         
         c_ir.resize(n_quad_points);
-        Intersector isector;
         
         double relative_weight = 0;
         
@@ -545,6 +545,9 @@ namespace utopia {
             
             u -= o;
             v -= o;
+			
+			relative_weight = isector.polygon_area_3(3, triangle) * weight;
+            assert(relative_weight >= 0.);
             
             for(int k = 0; k < ir.n_points(); ++k, ++quad_index) {
                 auto &qp    = ir.get_points()[k];
@@ -558,7 +561,7 @@ namespace utopia {
                 c_qp(1) = p(1);
                 c_qp(2) = p(2);
                 
-                c_ir.get_weights()[quad_index] = ir.w(k) * weight;
+                c_ir.get_weights()[quad_index] = ir.w(k) * relative_weight;
             }
         }
         
@@ -1108,6 +1111,7 @@ namespace utopia {
         const uint n_qp    = test[0].size();
         
         DenseVector<Real> p(dim);
+        DenseVector<Real> v(dim);
         
         for(uint i = 0; i < n_test; ++i) {
             for(uint qp = 0; qp < n_qp; ++qp) {
@@ -1122,9 +1126,12 @@ namespace utopia {
                 Real isect = 0;
                 isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
                 
-                
+                v = surf_normal;
+                v *= isect;
+                quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
+
                 // printf("g: %g (%g, %g)\n", isect, p(1), plane_offset);
-                assert(isect > 0);
+                // assert(isect > 0);
                 
                 auto biorth_test = ((0 == i) ? w_ii : w_ij) * test[0][qp];
                 
@@ -2061,9 +2068,11 @@ namespace utopia {
                                       const libMesh::DenseMatrix<libMesh::Real> &weights,
                                       libMesh::DenseMatrix<libMesh::Real> &elmat)
     {
-        if(elmat.m() != test_fe.get_phi().size() ||  elmat.n() != trial_fe.get_phi().size()) {
-            elmat.resize(test_fe.get_phi().size(), trial_fe.get_phi().size());
-            elmat.zero();
+        if(elmat.m() != test_fe.get_phi().size() ||
+		   elmat.n() != trial_fe.get_phi().size()) {
+			
+		   elmat.resize(test_fe.get_phi().size(), trial_fe.get_phi().size());
+		   elmat.zero();
         }
         
         const auto &trial = trial_fe.get_phi();
@@ -2083,6 +2092,7 @@ namespace utopia {
                 }
                 
                 for(uint j = 0; j < n_trial; ++j) {
+                    assert(  JxW[qp] >= 0.0 );
                     elmat(i, j) += contract(w_test, trial[j][qp]) * JxW[qp];
                 }
             }
@@ -2204,7 +2214,9 @@ namespace utopia {
                                                         const libMesh::Real &plane_offset,
                                                         const libMesh::DenseMatrix<libMesh::Real> &weights,
                                                         libMesh::DenseMatrix<libMesh::Real> &normals,
-                                                        libMesh::DenseVector<libMesh::Real> &gap)
+                                                        libMesh::DenseVector<libMesh::Real> &gap,
+                                                        const bool visdbg
+                                                        )
     {
         using namespace libMesh;
         
@@ -2231,7 +2243,7 @@ namespace utopia {
         convert_point_to_vector(dim, plane_normal, plane_normal_v);
         
         DenseVector<Real> p(dim);
-        // DenseMatrix<Real> v(dim);
+        DenseMatrix<Real> v(dim); //visdbg
         
         for(uint i = 0; i < n_test; ++i) {
             for(uint qp = 0; qp < n_qp; ++qp) {
@@ -2246,10 +2258,11 @@ namespace utopia {
                 Real isect = 0;
                 isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal_v[0], &plane_normal_v[0], plane_offset, &isect);
                 // assert(isect > 0);
-                
-                // v.get_values() = surf_normal_v;
-                // v *= isect;
-                // quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
+                if(visdbg) {
+                    v.get_values() = surf_normal_v; //visdbg
+                    v *= isect; //visdbg
+                    quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]); //visdbg
+                }
                 
                 auto biorth_test = weights(i, 0) * test[0][qp];
                 
