@@ -372,11 +372,11 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	static const bool is_leaflet = false;
 	// ContactSimParams params = contact_cylinder; static const int coords = 1;
 	// ContactSimParams params = contact8;
-	ContactSimParams params = contact_circles; static const int coords = 1;
-	// ContactSimParams params = multi_contact_3D_2; 
+	// ContactSimParams params = contact_circles; static const int coords = 1;
+	// ContactSimParams params = multi_contact_3D_2; static const int coords = 1;
 	// ContactSimParams params = hip_femure_contact; static const int coords = 2;
 	// ContactSimParams params = implant_contact; static const int coords = 1;
-	// ContactSimParams params = contact_cubes; static const int coords = 2;
+	ContactSimParams params = contact_cubes; static const int coords = 2;
 
 
 	// auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();

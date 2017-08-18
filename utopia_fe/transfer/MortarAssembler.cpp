@@ -866,7 +866,7 @@ namespace utopia {
 						if(std::abs(current_contact->avg_gap) <= search_radius) {
 							contacts.push_back(current_contact);	
 							// plot_box(box_2, "intersected/box");
-							plot_polygon(dim, side_polygon_2.m(),  &side_polygon_2.get_values()[0],  "s/poly/"  + std::to_string(index_2));
+							// plot_polygon(dim, side_polygon_2.m(),  &side_polygon_2.get_values()[0],  "s/poly/"  + std::to_string(index_2));
 						}
 					} else {
 						contacts.push_back(current_contact);

@@ -1111,7 +1111,7 @@ namespace utopia {
         const uint n_qp    = test[0].size();
         
         DenseVector<Real> p(dim);
-        DenseVector<Real> v(dim);
+        // DenseVector<Real> v(dim);
         
         for(uint i = 0; i < n_test; ++i) {
             for(uint qp = 0; qp < n_qp; ++qp) {
@@ -1126,9 +1126,9 @@ namespace utopia {
                 Real isect = 0;
                 isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
                 
-                v = surf_normal;
-                v *= isect;
-                quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
+                // v = surf_normal;
+                // v *= isect;
+                // quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]);
 
                 // printf("g: %g (%g, %g)\n", isect, p(1), plane_offset);
                 // assert(isect > 0);
