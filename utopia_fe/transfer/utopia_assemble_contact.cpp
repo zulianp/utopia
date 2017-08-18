@@ -148,6 +148,25 @@ namespace utopia {
 		
 		return false;
 	}
+
+	static bool check_lumped_is_positive(const libMesh::DenseMatrix<libMesh::Real> &mat)
+	{
+		std::vector<libMesh::Real> lumped(mat.m(), 0.);
+
+		for(int i = 0; i < mat.m(); ++i) {
+			for(int j = 0; j < mat.n(); ++j) {
+				lumped[i] += mat(i, j);
+			}
+		}
+
+
+		for(auto v : lumped) {
+			assert(v >= 0.);
+			if(v < 0.) return false;
+		}
+
+		return true;
+	}
 	
 	inline static void assemble_trace_biorth_weights_from_space(const ElemType &type,
 																const std::vector<bool> &is_boundary,
@@ -1030,6 +1049,8 @@ namespace utopia {
 																	 biorth_weights);
 							elemmat.zero();
 							mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
+
+							// assert( check_lumped_is_positive(elemmat) );
 						}
 						
 						
@@ -1126,7 +1147,7 @@ namespace utopia {
 							gap_buffer.add(dof_I, 0, surface_assemble->gap(i));
 							
 							for (int k = 0; k < dim_slave; ++k) {
-								normal_buffer.add(dof_I, k, surface_assemble->normals(i,k));
+								normal_buffer.add(dof_I, k, surface_assemble->normals(i, k));
 							}
 							
 							for(int j = 0; j <  face_node_id_master.size(); ++j) {
@@ -1237,15 +1258,45 @@ namespace utopia {
 		
 		express::RootDescribe("petsc rel_area_buffer assembly begin", comm, std::cout);
 		
+		express::Array<double> detect_negative(n_local_side_node_dofs);
+		detect_negative.allSet(0.);
+
 		express::Array<bool> remove_row(n_local_side_node_dofs);
 		
 		if(!remove_row.isNull()) {
 			long n_remove_rows = 0;
 			remove_row.allSet(false);
+
+
+			//hack this is curing some symptoms of a bug but not the cause
+			{
+				for(auto it = B_buffer.iter(); it; ++it) {
+					const SizeType index  = it.row() - side_node_ownership_ranges[comm.rank()];
+					detect_negative[index] += *it;
+				}
+			}
+
 			
 			{
 				for (auto it = rel_area_buffer.iter(); it; ++it) {
-					if(*it < 1 - 1e-8) {
+					bool must_remove = *it < 1 - 1e-8;
+
+					if(!must_remove) {
+						const SizeType faceId = it.row();
+						
+						for(int k = 0; k < n_nodes_x_face; ++k) {
+							const SizeType nodeId = faceId * n_nodes_x_face + k;
+							const SizeType index  = nodeId - side_node_ownership_ranges[comm.rank()];
+							
+							if(detect_negative[index] < 0.) {
+								must_remove = true;
+								std::cerr << "[Warning] removing element with negative contribution" << std::endl;
+								break;
+							}
+						}
+					}
+
+					if(must_remove) {
 						const SizeType faceId = it.row();
 						
 						for(int k = 0; k < n_nodes_x_face; ++k) {
@@ -1314,7 +1365,17 @@ namespace utopia {
 				}
 			}
 		}
-		
+
+		// rel_area_buffer.save("area.txt");
+		// B_buffer.save("B_tilde.txt");
+
+#ifndef NEBUG
+		DVectord B_tilde_lumped = sum(B_tilde, 1);
+		each_read(B_tilde_lumped, [](const SizeType i, const double value) {
+			assert(value >= 0.);
+		});
+#endif //NEBUG
+
 		// comm.barrier();
 		// express::RootDescribe("petsc P_buffer assembly begin", comm, std::cout);
 		

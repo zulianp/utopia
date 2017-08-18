@@ -311,11 +311,7 @@ namespace utopia {
 		// EXPRESS_EVENT_END("l2assembly");
 	}
 	
-	
-	
-	
-	
-	
+
 	void par_mortar_surface_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm,const std::shared_ptr<MeshBase> &master_slave)
 	{
 		Chrono c;
@@ -348,7 +344,7 @@ namespace utopia {
 		
 		unsigned int variable_number = 0;
 		
-		const libMesh::Real search_radius = 11.;
+		const libMesh::Real search_radius = .2;
 		assemble_contact(express_comm, (master_slave), 
 							 utopia::make_ref(master_slave_context.system.get_dof_map()), 
 							 variable_number, 
@@ -412,9 +408,6 @@ namespace utopia {
 		write("c_" + std::to_string(express_comm.size()) + ".m", is_contact_node);
 		write("T_" + std::to_string(express_comm.size()) + ".m", T);
 		
-		// DVectord normals_vec;
-		// convert_normal_matrix_to_vector(normals, normals_vec);
-
 		if(express_comm.isAlone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
 		
 		//This BS is only for exporting the vtk
@@ -544,7 +537,9 @@ namespace utopia {
 		// mesh->read("../data/rect.e");
 		// mesh->read("../data/multibody.e");
 		// mesh->read("/Users/patrick/Desktop/PostDOC/sccer_turbines/turbine.e");
-		mesh->read("../data/two_pseudo_rocks_refined.e");
+		// mesh->read("../data/two_pseudo_rocks_refined.e");
+		// mesh->read("../data/quasi_signorini.e");
+		mesh->read("../data/quasi_signorini_coarse.e");
 		
 		// Print information about the mesh to the screen.
 		// mesh->print_info();
