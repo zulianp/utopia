@@ -344,7 +344,7 @@ namespace utopia {
 		
 		unsigned int variable_number = 0;
 		
-		const libMesh::Real search_radius = .2;
+		const libMesh::Real search_radius = 4.;
 		assemble_contact(express_comm, (master_slave), 
 							 utopia::make_ref(master_slave_context.system.get_dof_map()), 
 							 variable_number, 
@@ -538,8 +538,8 @@ namespace utopia {
 		// mesh->read("../data/multibody.e");
 		// mesh->read("/Users/patrick/Desktop/PostDOC/sccer_turbines/turbine.e");
 		// mesh->read("../data/two_pseudo_rocks_refined.e");
-		// mesh->read("../data/quasi_signorini.e");
-		mesh->read("../data/quasi_signorini_coarse.e");
+		mesh->read("../data/quasi_signorini.e");
+		// mesh->read("../data/quasi_signorini_coarse.e");
 		
 		// Print information about the mesh to the screen.
 		// mesh->print_info();

@@ -2243,7 +2243,7 @@ namespace utopia {
         convert_point_to_vector(dim, plane_normal, plane_normal_v);
         
         DenseVector<Real> p(dim);
-        DenseMatrix<Real> v(dim); //visdbg
+        // DenseMatrix<Real> v(dim); //visdbg
         
         for(uint i = 0; i < n_test; ++i) {
             for(uint qp = 0; qp < n_qp; ++qp) {
@@ -2258,11 +2258,11 @@ namespace utopia {
                 Real isect = 0;
                 isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal_v[0], &plane_normal_v[0], plane_offset, &isect);
                 // assert(isect > 0);
-                if(visdbg) {
-                    v.get_values() = surf_normal_v; //visdbg
-                    v *= isect; //visdbg
-                    quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]); //visdbg
-                }
+                // if(visdbg) {
+                    // v.get_values() = surf_normal_v; //visdbg
+                    // v *= isect; //visdbg
+                    // quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]); //visdbg
+                // }
                 
                 auto biorth_test = weights(i, 0) * test[0][qp];
                 

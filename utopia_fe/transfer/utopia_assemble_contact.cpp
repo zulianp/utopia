@@ -973,15 +973,13 @@ namespace utopia {
 					}
 					
 					// const bool enable_vis = side_id_slave.at(side_2) == 434;
-					const bool enable_vis = false;
+					// const bool enable_vis = false; //visdbg
 					
 					if(pair_intersected) {
-						
-						
-						if(enable_vis) {
-							plot_polygon(3, isect_polygon_master.get_values().size()/3, &isect_polygon_master.get_values()[0], "master");
-							plot_polygon(3, isect_polygon_slave.get_values().size()/3,  &isect_polygon_slave.get_values()[0],  "slave");
-						}
+						// if(enable_vis) { //visdbg
+							// plot_polygon(3, isect_polygon_master.get_values().size()/3, &isect_polygon_master.get_values()[0], "master"); //visdbg
+							// plot_polygon(3, isect_polygon_slave.get_values().size()/3,  &isect_polygon_slave.get_values()[0],  "slave");  //visdbg
+						// } //visdbg
 						
 						// std::cout << "isect: " << master.handle() << " -> " << slave.handle() << std::endl;
 						
@@ -1043,8 +1041,7 @@ namespace utopia {
 																		   plane_offset,
 																		   biorth_weights,
 																		   surface_assemble->normals,
-																		   surface_assemble->gap,
-																		   enable_vis);
+																		   surface_assemble->gap);
 						} else {
 							mortar_normal_and_gap_assemble(
 														   dim,
@@ -1108,14 +1105,14 @@ namespace utopia {
 							}
 						}
 						
-						if(enable_vis) {
-							DenseVector<Real> v(elemmat.n());
-							std::fill(v.get_values().begin(), v.get_values().end(), 1.0);
-							DenseVector<Real> r(elemmat.m());
-							std::fill(r.get_values().begin(), r.get_values().end(), 0.0);
-							elemmat.vector_mult(r, v);
-							r.print(std::cout);
-						}
+						// if(enable_vis) {
+						// 	DenseVector<Real> v(elemmat.n());
+						// 	std::fill(v.get_values().begin(), v.get_values().end(), 1.0);
+						// 	DenseVector<Real> r(elemmat.m());
+						// 	std::fill(r.get_values().begin(), r.get_values().end(), 0.0);
+						// 	elemmat.vector_mult(r, v);
+						// 	r.print(std::cout);
+						// }
 						
 						auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
 						assert(partial_sum > 0);
