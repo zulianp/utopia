@@ -108,25 +108,25 @@ namespace utopia {
 		return false;
 	}
 	
-	static bool check_lumped_is_positive(const libMesh::DenseMatrix<libMesh::Real> &mat)
-	{
-		std::vector<libMesh::Real> lumped(mat.m(), 0.);
-		
-		for(int i = 0; i < mat.m(); ++i) {
-			for(int j = 0; j < mat.n(); ++j) {
-				lumped[i] += mat(i, j);
-			}
-		}
-		
-		
-		for(auto v : lumped) {
-			assert(v >= 0.);
-			if(v < 0.) return false;
-		}
-		
-		return true;
-	}
-	
+//	static bool check_lumped_is_positive(const libMesh::DenseMatrix<libMesh::Real> &mat)
+//	{
+//		std::vector<libMesh::Real> lumped(mat.m(), 0.);
+//		
+//		for(int i = 0; i < mat.m(); ++i) {
+//			for(int j = 0; j < mat.n(); ++j) {
+//				lumped[i] += mat(i, j);
+//			}
+//		}
+//		
+//		
+//		for(auto v : lumped) {
+//			assert(v >= 0.);
+//			if(v < 0.) return false;
+//		}
+//		
+//		return true;
+//	}
+//	
 	inline static void assemble_trace_biorth_weights_from_space(const ElemType &type,
 																const std::vector<bool> &is_boundary,
 																libMesh::DenseMatrix<libMesh::Real> &weights)
@@ -619,9 +619,9 @@ namespace utopia {
 			
 			auto s = proc_space->mesh();
 			
-			int i=0;
+//			int i=0;
 			for (int i = 0; i<s->n_elem(); ++i) {
-				auto elem=s->elem(i);
+//				auto elem=s->elem(i);
 				int tag =proc_space->side_set_id()[i].global.at(0);
 				data.push_back(SurfaceAdapter(*s, i, i,tag,search_radius));
 				assert(!proc_space->dof_map()[i].empty());

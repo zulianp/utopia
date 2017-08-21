@@ -63,6 +63,7 @@ set(SOURCES "")
 
 
 include_directories(rapidxml)
+include_directories(transfer)
 
 list(APPEND SOURCES utopia_FEDSLBaseExamples.cpp)
 list(APPEND SOURCES utopia_FEDSLMortarExamples.cpp)
