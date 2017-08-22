@@ -622,6 +622,11 @@ namespace utopia {
 			return *funs_[index];
 		}
 
+		FEFun &get(int index) 		{
+			assert(index < N);
+			return *funs_[index];
+		}
+
 	private:
 		FEFun * funs_[N];
 	};

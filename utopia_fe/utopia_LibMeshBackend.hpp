@@ -106,6 +106,7 @@ namespace utopia {
 
 	inline static void add_vector(const libMesh::DenseVector<libMesh::Real> &block, const std::vector<libMesh::dof_id_type> &dofs, libMesh::NumericVector<libMesh::Real> &vec)
 	{
+		assert(block.size() == dofs.size());
 		vec.add_vector(block, dofs);
 	}
 
@@ -140,6 +141,7 @@ namespace utopia {
 
 	inline static void add_vector(const libMesh::DenseVector<libMesh::Real> &block, const std::vector<libMesh::dof_id_type> &dofs, DVectord &vec)
 	{
+		assert(block.size() == dofs.size());
 		for(uint i = 0; i < dofs.size(); ++i) {
 			vec.add(dofs[i], block(i));
 		}
@@ -1889,6 +1891,7 @@ namespace utopia {
 			}
 		}
 
+
 		template<int ROWS, int COLS, class Matrix>
 		static void constrain_mixed_matrix_and_add(libMesh::Elem *el, DenseMatrixT &diag_block, DenseMatrixT &off_diag_block, 
 									LibMeshVecFEFunction &u, MatrixFE<LibMeshFEFunction, ROWS, COLS> &sigma,
@@ -2183,6 +2186,71 @@ namespace utopia {
 			test.dof_map().dof_indices(*e_it,  dof_indices_test,  test.var_num());
 
 			test.dof_map().heterogenously_constrain_element_matrix_and_vector(el_mat, el_vec, dof_indices_test);			
+			
+			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
+			add_vector(el_vec, dof_indices_test, rhs);
+		}
+	}
+
+
+	template<int N>
+	static void collect_indices(libMesh::Elem *el, const VectorFE<LibMeshFEFunction, N> &fe, std::vector<libMesh::dof_id_type> &indices)
+	{
+		using namespace libMesh;
+		std::vector<dof_id_type> temp;
+		for(uint i = 0; i < N; ++i) {
+			auto &var = fe.get(i);
+			temp.clear();
+			var.dof_map().dof_indices(el, temp, var.var_num());
+			indices.insert(indices.end(), temp.begin(), temp.end());
+		}
+	}
+
+	template<class TrialFunction, 
+			 class TestFunction, 
+			 int NTrial,
+			 int NTest,
+			 class BilinearForm, 
+			 class LinearForm, 
+			 class Matrix, 
+			 class Vector>
+	void assemble(VectorFE<TrialFunction, NTrial> &trial, 
+				  VectorFE<TestFunction, NTest>  &test, 
+				  const Integral<BilinearForm> &bilinear_form,
+				  const Integral<LinearForm>   &linear_form,
+				  Matrix &mat,
+				  Vector &rhs)
+	{
+		using namespace libMesh;
+		LibMeshBackend backend;
+
+		auto e_begin = test.get(0).mesh().active_local_elements_begin();
+		auto e_end   = test.get(0).mesh().active_local_elements_end();
+
+		std::vector<dof_id_type> dof_indices_trial;
+		std::vector<dof_id_type> dof_indices_test;
+
+		DenseMatrix<Real> el_mat;
+		DenseVector<Real> el_vec;
+		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+			for(int i = 0; i < NTrial; ++i) {
+				trial.get(i).set_element(**e_it);
+			}
+
+			for(int i = 0; i < NTest; ++i) {
+				test.get(i).set_element(**e_it);
+			}
+
+			backend.assemble(bilinear_form, el_mat);
+			backend.assemble(linear_form, 	el_vec);
+
+			dof_indices_test.clear();
+			dof_indices_trial.clear();
+
+			collect_indices(*e_it, trial, dof_indices_trial);
+			collect_indices(*e_it, test,  dof_indices_test);
+
+			test.get(0).dof_map().heterogenously_constrain_element_matrix_and_vector(el_mat, el_vec, dof_indices_test);			
 			
 			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
 			add_vector(el_vec, dof_indices_test, rhs);
