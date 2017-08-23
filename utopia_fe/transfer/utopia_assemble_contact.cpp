@@ -27,13 +27,6 @@
 
 namespace utopia {
 
-	/* have a look at this
-	dofs_on_side(const Elem * const elem,
-	             const unsigned int dim,
-	             const FEType & fe_t,
-	             unsigned int s,
-
-	*/
 	using namespace libMesh;
 	
 	template<typename T>
@@ -63,23 +56,43 @@ namespace utopia {
 		os << "\n";
 	}
 	
-	//Hacky but it is the only way with libmesh that we know of without having to clone the boundary info!!!!
-	inline static void nodes_are_boundary_hack(libMesh::FEBase &fe,
+	template<int Dimensions>
+	inline static void nodes_are_boundary_hack(const libMesh::Elem &el,
+											   const int n_dofs,
+											   const int approx_order,
+											   const int side,
 											   std::vector<bool> &result)
 	{
-		auto &phi = fe.get_phi();
-		result.resize(phi.size(), false);
+	
+		result.resize(n_dofs, false);
+
+		std::vector<unsigned int> dofs;
+		libMesh::FE<Dimensions, LAGRANGE>::dofs_on_side(&el, libMesh::Order(approx_order), 0, dofs);
 		
-		for(std::size_t i = 0; i < phi.size(); ++i) {
-			for(auto v : phi[i]) {
-				if(v > 1e-15) {
-					result[i] = true;
-					break;
-				}
-			}
+		for(auto d : dofs) {
+			assert(d < result.size());
+			result[d] = true;
 		}
 	}
 	
+	
+	//Hacky but it is the only way with libmesh that we know of without having to clone the boundary info!!!!
+//	inline static void nodes_are_boundary_hack(libMesh::FEBase &fe,
+//											   std::vector<bool> &result)
+//	{
+//		auto &phi = fe.get_phi();
+//		result.resize(phi.size(), false);
+//		
+//		for(std::size_t i = 0; i < phi.size(); ++i) {
+//			for(auto v : phi[i]) {
+//				if(v > 1e-15) {
+//					result[i] = true;
+//					break;
+//				}
+//			}
+//		}
+//	}
+//	
 	inline static bool check_node_is_boundary(const ElemType &type,
 											  const std::vector<bool> &is_boundary)
 	{
@@ -116,25 +129,25 @@ namespace utopia {
 		return false;
 	}
 	
-//	static bool check_lumped_is_positive(const libMesh::DenseMatrix<libMesh::Real> &mat)
-//	{
-//		std::vector<libMesh::Real> lumped(mat.m(), 0.);
-//		
-//		for(int i = 0; i < mat.m(); ++i) {
-//			for(int j = 0; j < mat.n(); ++j) {
-//				lumped[i] += mat(i, j);
-//			}
-//		}
-//		
-//		
-//		for(auto v : lumped) {
-//			assert(v >= 0.);
-//			if(v < 0.) return false;
-//		}
-//		
-//		return true;
-//	}
-//	
+	//	static bool check_lumped_is_positive(const libMesh::DenseMatrix<libMesh::Real> &mat)
+	//	{
+	//		std::vector<libMesh::Real> lumped(mat.m(), 0.);
+	//
+	//		for(int i = 0; i < mat.m(); ++i) {
+	//			for(int j = 0; j < mat.n(); ++j) {
+	//				lumped[i] += mat(i, j);
+	//			}
+	//		}
+	//
+	//
+	//		for(auto v : lumped) {
+	//			assert(v >= 0.);
+	//			if(v < 0.) return false;
+	//		}
+	//
+	//		return true;
+	//	}
+	//
 	inline static void assemble_trace_biorth_weights_from_space(const ElemType &type,
 																const std::vector<bool> &is_boundary,
 																libMesh::DenseMatrix<libMesh::Real> &weights)
@@ -627,9 +640,9 @@ namespace utopia {
 			
 			auto s = proc_space->mesh();
 			
-//			int i=0;
+			//			int i=0;
 			for (int i = 0; i<s->n_elem(); ++i) {
-//				auto elem=s->elem(i);
+				//				auto elem=s->elem(i);
 				int tag =proc_space->side_set_id()[i].global.at(0);
 				data.push_back(SurfaceAdapter(*s, i, i,tag,search_radius));
 				assert(!proc_space->dof_map()[i].empty());
@@ -830,7 +843,7 @@ namespace utopia {
 				if(use_volume_differential) {
 					trafo_master = std::make_shared<AffineTransform2>(el_master);
 					trafo_slave  = std::make_shared<AffineTransform2>(el_slave);
-				} 
+				}
 				
 			} else if(dim_slave == 3) {
 				make_polyhedron(el_master, poly_master);
@@ -839,7 +852,7 @@ namespace utopia {
 				if(use_volume_differential) {
 					trafo_master = std::make_shared<AffineTransform3>(el_master);
 					trafo_slave  = std::make_shared<AffineTransform3>(el_slave);
-				} 
+				}
 			}
 			
 			bool intersected = false;
@@ -932,8 +945,8 @@ namespace utopia {
 						make_composite_quadrature_on_surf_2D(isect_polygon_master, weight, order, ir_master);
 						make_composite_quadrature_on_surf_2D(isect_polygon_slave, weight, order, ir_slave);
 						
-//						//Maybe remove
-//						ir_master.get_weights() = ir_slave.get_weights();
+						//						//Maybe remove
+						//						ir_master.get_weights() = ir_slave.get_weights();
 						
 						pair_intersected = true;
 						
@@ -989,12 +1002,12 @@ namespace utopia {
 					
 					if(pair_intersected) {
 						// if(enable_vis) { //visdbg
-							// plot_polygon(3, isect_polygon_master.get_values().size()/3, &isect_polygon_master.get_values()[0], "master"); //visdbg
-							// plot_polygon(3, isect_polygon_slave.get_values().size()/3,  &isect_polygon_slave.get_values()[0],  "slave");  //visdbg
+						// plot_polygon(3, isect_polygon_master.get_values().size()/3, &isect_polygon_master.get_values()[0], "master"); //visdbg
+						// plot_polygon(3, isect_polygon_slave.get_values().size()/3,  &isect_polygon_slave.get_values()[0],  "slave");  //visdbg
 						// } //visdbg
 						
 						// std::cout << "isect: " << master.handle() << " -> " << slave.handle() << std::endl;
-
+						
 						if(!use_volume_differential) {
 							switch(dim) {
 								case 2: {
@@ -1018,7 +1031,7 @@ namespace utopia {
 						//////////////////////////////////////////////////////////////////////////////////////
 						transform_to_reference_surf(*trafo_master, el_master.type(),  ir_master, ir_ref_master);
 						transform_to_reference_surf(*trafo_slave,  el_slave.type(),   ir_slave,  ir_ref_slave);
-												
+						
 						//master fe init
 						master_fe->attach_quadrature_rule(&ir_ref_master);
 						
@@ -1030,7 +1043,7 @@ namespace utopia {
 						
 						//slave fe init
 						slave_fe->attach_quadrature_rule(&ir_ref_slave);
-
+						
 						if(use_volume_differential) {
 							slave_fe->reinit(&el_slave);
 						} else {
@@ -1053,8 +1066,9 @@ namespace utopia {
 						std::vector<bool> node_is_boundary_slave;
 						std::vector<bool> node_is_boundary_master;
 						
-						nodes_are_boundary_hack(*slave_fe, node_is_boundary_slave);
-						nodes_are_boundary_hack(*master_fe, node_is_boundary_master);
+						nodes_are_boundary_hack<Dimensions>(el_slave, slave_fe->get_phi().size(), approx_order, side_index_slave, node_is_boundary_slave);
+						nodes_are_boundary_hack<Dimensions>(el_master, master_fe->get_phi().size(), approx_order, side_index_master, node_is_boundary_master);
+						
 						
 						assert( check_node_is_boundary((*master_slave->active_local_elements_begin())->type(), node_is_boundary_master) );
 						

@@ -311,7 +311,7 @@ namespace utopia {
 		// EXPRESS_EVENT_END("l2assembly");
 	}
 	
-// #define RUN_3D_CONTACT 1
+#define RUN_3D_CONTACT 1
 
 	void par_mortar_surface_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm,const std::shared_ptr<MeshBase> &master_slave)
 	{
