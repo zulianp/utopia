@@ -75,24 +75,6 @@ namespace utopia {
 		}
 	}
 	
-	
-	//Hacky but it is the only way with libmesh that we know of without having to clone the boundary info!!!!
-//	inline static void nodes_are_boundary_hack(libMesh::FEBase &fe,
-//											   std::vector<bool> &result)
-//	{
-//		auto &phi = fe.get_phi();
-//		result.resize(phi.size(), false);
-//		
-//		for(std::size_t i = 0; i < phi.size(); ++i) {
-//			for(auto v : phi[i]) {
-//				if(v > 1e-15) {
-//					result[i] = true;
-//					break;
-//				}
-//			}
-//		}
-//	}
-//	
 	inline static bool check_node_is_boundary(const ElemType &type,
 											  const std::vector<bool> &is_boundary)
 	{
@@ -828,7 +810,7 @@ namespace utopia {
 			slave_fe  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  FIRST);
 			
 			master_fe->get_phi();
-			master_fe->get_JxW();
+//			master_fe->get_JxW();
 			
 			slave_fe->get_xyz();
 			slave_fe->get_phi();
