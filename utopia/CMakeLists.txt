@@ -20,6 +20,7 @@ option(TRY_WITH_BLAS "Allows to enable to try enabling the blas backend" ON)
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" ON)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
 option(UTOPIA_LOG "enables utopia logging facilities" OFF)
+option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 
 #################################################################################
 #################################################################################
@@ -30,11 +31,11 @@ IF(WIN32)
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
 ENDIF()
 
-# if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-# 	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
-# 		SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
-# 	endif()
-# endif()
+if (ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
+		SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
+	endif()
+endif()
 
 if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
 	IF(WIN32)

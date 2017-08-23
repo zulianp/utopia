@@ -497,9 +497,9 @@ namespace utopia {
 
 		PetscViewer fd;
 		PetscViewerBinaryOpen(comm, path.c_str(), FILE_MODE_READ, &fd);
-		VecCreate(comm,&A);
+		VecCreate(comm, &A);
 		bool status;
-		status =  PETScError::Check( VecLoad(A,fd));
+		status =  PETScError::Check( VecLoad(A, fd));
 		PetscViewerDestroy(&fd);
 		return status;
 	}
@@ -1609,7 +1609,7 @@ namespace utopia {
 			std::cerr << "[Warning] not handled case in triple_product_PtAP" << std::endl;
 		}
 
-		MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, 1.0, &result.implementation()); 
+		MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()); 
 		return true; 
 	}
 	

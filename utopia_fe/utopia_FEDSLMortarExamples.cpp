@@ -428,22 +428,7 @@ namespace utopia {
 		write("T_" + std::to_string(express_comm.size()) + ".m", T);
 		
 		if(express_comm.isAlone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
-		
-		//This BS is only for exporting the vtk
-		// auto ass = make_assembly([&]() -> void {
-		// 	const int n  = local_size(is_contact_node).get(0);
-			
-		// 	DSMatrixd id = local_identity(n, n);
-			
-		// 	convert(id, *master_slave_context.system.matrix);
-		// 	convert(is_contact_node, *master_slave_context.system.rhs);
-		// 	convert(is_contact_node, *master_slave_context.system.solution);
-		// });
-		
-		// master_slave_context.system.attach_assemble_object(ass);
-		// master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 0;
-		// master_slave_context.equation_systems.solve();
-		
+				
 		DVectord contact_stress;
 		{
 			double mu = 1.0, lambda = 1.0;
@@ -484,7 +469,7 @@ namespace utopia {
 			convert(*master_slave_context.system.matrix, K);
 			
 			//Change of basis
-			DVectord sol_c = zeros(size(rhs));
+			DVectord sol_c = local_zeros(local_size(rhs));
 			DVectord rhs_c = transpose(orthogonal_trafos) * transpose(T) * rhs;
 			DSMatrixd K_c  = transpose(orthogonal_trafos) * DSMatrixd(transpose(T) * K * T) * orthogonal_trafos;
 			
@@ -504,26 +489,26 @@ namespace utopia {
 			convert(sol, *master_slave_context.system.solution);
 
 
-			auto s_K = local_size(K);
-			DSMatrixd mass_matrix = local_sparse(s_K.get(0), s_K.get(1), 10);
+			// auto s_K = local_size(K);
+			// DSMatrixd mass_matrix = local_sparse(s_K.get(0), s_K.get(1), 20);
 		
-			DVectord residual = (K * sol - rhs);
+			// DVectord residual = (K * sol - rhs);
 
-			DVectord dummy = local_zeros(local_size(rhs));
+			// DVectord dummy = local_zeros(local_size(rhs));
 
-			{
-				Write<DSMatrixd> w_mm(mass_matrix);
-				assemble(u, u, integral(dot(u, u)), l_form, mass_matrix, dummy);
-			}
+			// {
+			// 	Write<DSMatrixd> w_mm(mass_matrix);
+			// 	assemble(u, u, integral(dot(u, u)), l_form, mass_matrix, dummy);
+			// }
 
-			contact_stress = local_zeros(local_size(rhs));
-			solve(mass_matrix, residual, contact_stress);
+			// contact_stress = local_zeros(local_size(rhs));
+			// solve(mass_matrix, residual, contact_stress);
 		}
 
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("sol.e", master_slave_context.equation_systems);
 
-		convert(contact_stress, *master_slave_context.system.solution);
-		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("contact_stress.e", master_slave_context.equation_systems);
+		// convert(contact_stress, *master_slave_context.system.solution);
+		// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("contact_stress.e", master_slave_context.equation_systems);
 
 		convert(is_contact_node, *master_slave_context.system.solution);
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("is_c_node.e", master_slave_context.equation_systems);
@@ -540,7 +525,6 @@ namespace utopia {
 		normals_vec = orthogonal_trafos * normals_vec;
 		convert(normals_vec, *master_slave_context.system.solution);
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("H_n.e", master_slave_context.equation_systems);
-
 	}
 
 

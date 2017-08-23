@@ -343,8 +343,8 @@ namespace utopia
         void mprgp_test()
         {
             // std::cout << "         Begin: mprgp_test" << std::endl;
-        	SizeType n = 50; 
-        	PetscScalar h = 1.0/(n-1);
+        	const SizeType n = 50; 
+        	const PetscScalar h = 1.0/(n-1);
 
 
         	DSMatrixd A = sparse(n, n, 3);
@@ -352,8 +352,8 @@ namespace utopia
 
 	        // 1d laplace 	
 	        {
-		        Write<DSMatrixd> w(A);
-		        Range r = row_range(A);
+		        Write<DSMatrixd> w_A(A);
+		        const Range r = row_range(A);
 
 		        for(SizeType i = r.begin(); i != r.end(); ++i) {
 		            if(i > 0) {    
@@ -426,18 +426,31 @@ namespace utopia
 
 
             DVectord x_0 = 0 * x; 
-            auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+            // auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+            auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
             SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 
             nlsolver.set_box_constraints(box); 
 
-            nlsolver.verbose(false); 
+            // nlsolver.verbose(false); 
             nlsolver.max_it(200); 
             nlsolver.verbose(true);
             nlsolver.solve(A, b, x_0);
 
+            // if(!approxeq(x, x_0)) {
+            double diff = norm2(x - x_0);
+            double sum_A = sum(A);
+            double norm_x = norm2(x);
+            double norm_x0 = norm2(x_0);
+
+            if(mpi_world_rank() == 0) {
+                std::cout << "diff: " << diff << std::endl;
+                std::cout << "sum_A: " << sum_A << std::endl;
+                std::cout <<  "nx/nx0 = " << norm_x << "/" << norm_x0 << std::endl;
+            }
+            // }
+
             assert(approxeq(x, x_0));
-//            std::cout << "         End: mprgp_test" << std::endl;
         }
 
         void petsc_tr_rr_test()

@@ -806,8 +806,8 @@ namespace utopia {
 			
 			std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
 			
-			master_fe = libMesh::FEBase::build(master_mesh.mesh_dimension(), FIRST);
-			slave_fe  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  FIRST);
+			master_fe = libMesh::FEBase::build(master_mesh.mesh_dimension(), libMesh::Order(approx_order));
+			slave_fe  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  libMesh::Order(approx_order));
 			
 			master_fe->get_phi();
 //			master_fe->get_JxW();
@@ -1279,12 +1279,12 @@ namespace utopia {
 		express::RootDescribe("petsc rel_area_buffer assembly begin", comm, std::cout);
 		
 		express::Array<double> detect_negative(n_local_side_node_dofs);
-		detect_negative.allSet(0.);
-		
 		express::Array<bool> remove_row(n_local_side_node_dofs);
 		
 		if(!remove_row.isNull()) {
 			long n_remove_rows = 0;
+
+			detect_negative.allSet(0.);
 			remove_row.allSet(false);
 			
 			
