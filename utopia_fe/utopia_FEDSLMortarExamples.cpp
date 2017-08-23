@@ -311,6 +311,7 @@ namespace utopia {
 		// EXPRESS_EVENT_END("l2assembly");
 	}
 	
+// #define RUN_3D_CONTACT 1
 
 	void par_mortar_surface_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm,const std::shared_ptr<MeshBase> &master_slave)
 	{
@@ -324,12 +325,19 @@ namespace utopia {
 		LibMeshFEContext<LinearImplicitSystem> master_slave_context(master_slave);
 		auto space_x = fe_space(LAGRANGE, order_elem, master_slave_context);
 		auto space_y = fe_space(LAGRANGE, order_elem, master_slave_context);
+#ifdef RUN_3D_CONTACT
 		auto space_z = fe_space(LAGRANGE, order_elem, master_slave_context);
+#endif //RUN_3D_CONTACT
 
 		auto ux = fe_function(space_x);
 		auto uy = fe_function(space_y);
+
+#ifdef RUN_3D_CONTACT
 		auto uz = fe_function(space_z);
 		auto u = prod(ux, uy, uz);
+#else 
+		auto u = prod(ux, uy);
+#endif //RUN_3D_CONTACT
 
 		strong_enforce( boundary_conditions(uy == coeff(-0.1), {10}) );
 		strong_enforce( boundary_conditions(uy == coeff(0.1), {11}) );
@@ -339,7 +347,10 @@ namespace utopia {
 		//FIXME to be moved in the assembly loop
 		ux.set_quad_rule(make_shared<libMesh::QGauss>(dim, FIFTH));
 		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, FIFTH));
+
+#ifdef RUN_3D_CONTACT
 		uz.set_quad_rule(make_shared<libMesh::QGauss>(dim, FIFTH));
+#endif //RUN_3D_CONTACT
 		
 		
 		
@@ -629,7 +640,11 @@ namespace utopia {
 		// mesh->read("/Users/patrick/Desktop/PostDOC/sccer_turbines/turbine.e");
 		// mesh->read("../data/two_pseudo_rocks_refined.e");
 		// mesh->read("../data/quasi_signorini.e");
+#ifdef RUN_3D_CONTACT
 		mesh->read("../data/quasi_signorini_coarse.e");
+#else
+		mesh->read("../data/hertz_2d.e");
+#endif //RUN_3D_CONTACT
 		// mesh->read("../data/hertz_26432.e");
 
 		// Print information about the mesh to the screen.

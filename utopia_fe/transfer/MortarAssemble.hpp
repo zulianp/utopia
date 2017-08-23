@@ -127,6 +127,11 @@ namespace utopia {
 			compute_affine_transformation(elem, A_inv_ , A_inv_m_b_);
 		}
 		
+		AffineTransform2(const libMesh::DenseMatrix<libMesh::Real> &A_inv,
+						 const libMesh::DenseVector<libMesh::Real> A_inv_m_b)
+		: A_inv_(A_inv), A_inv_m_b_(A_inv_m_b)
+		{}
+		
 		void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
 		
 		AffineTransform2() {}
@@ -224,6 +229,12 @@ namespace utopia {
         inline void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override
         {
             a_trafo_.transform_to_reference(world, ref);
+			
+			//reference segment is (-1, 1)
+			ref(0) *= 2.;
+			ref(0) -= 1.;
+            
+            assert( std::abs(ref(1)) < 1e-8 );
             assert( std::abs(ref(2)) < 1e-8 );
         }
         

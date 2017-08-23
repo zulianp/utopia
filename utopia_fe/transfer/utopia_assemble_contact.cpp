@@ -72,7 +72,7 @@ namespace utopia {
 		
 		for(std::size_t i = 0; i < phi.size(); ++i) {
 			for(auto v : phi[i]) {
-				if(v > 1e-8) {
+				if(v > 1e-15) {
 					result[i] = true;
 					break;
 				}

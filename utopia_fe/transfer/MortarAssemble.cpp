@@ -173,11 +173,14 @@ namespace utopia {
 															 libMesh::DenseVector<libMesh::Real> &A_inv_m_b)
 	{
 		//ref element -1, 1
-		libMesh::Point p0, p1, p2, p4, u, v, n;
-		
+		libMesh::Point u, n;
 		auto side_ptr = elem.build_side_ptr(side);
-		p0 = side_ptr->point(0);
-		p1 = side_ptr->point(1);
+		
+		libMesh::Point ref_p0(-1.);
+		libMesh::Point ref_p1(1.0);
+		
+		libMesh::Point p0 = libMesh::FE<1, libMesh::LAGRANGE>::map(side_ptr.get(), ref_p0);
+		libMesh::Point p1 = libMesh::FE<1, libMesh::LAGRANGE>::map(side_ptr.get(), ref_p1);
 		
 		u = p1 - p0;
 		
@@ -190,27 +193,22 @@ namespace utopia {
 		A_inv_m_b.resize(2);
 		
 		libMesh::DenseMatrix<libMesh::Real> A;
-		A.resize(2,2);
+		A.resize(2, 2);
 		
 		A(0,0) = u(0);
 		A(0,1) = n(0);
 		A(1,0) = u(1);
 		A(1,1) = n(1);
 		
-		libMesh::Real det = A(0,0) * A(1,1) - A(0,1) * A(1,0);
+		const libMesh::Real det = A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
 		
-		A_inv(0,0) = 1./det * A(1,1);
-		A_inv(1,1) = 1./det * A(0,0);
-		A_inv(0,1) = -1./det * A(0,1);
-		A_inv(1,0) = -1./det * A(1,0);
+		A_inv(0,0) =  1./det * A(1, 1);
+		A_inv(1,1) =  1./det * A(0, 0);
+		A_inv(0,1) = -1./det * A(0, 1);
+		A_inv(1,0) = -1./det * A(1, 0);
 		
-		A_inv_m_b(0) = -1.0 * A_inv(0,0) * p0(0) - A_inv(0,1) * p0(1);
-		A_inv_m_b(1) = -1.0 * A_inv(1,0) * p0(0) - A_inv(1,1) * p0(1);
-		
-		//map it from (0, 1) to (-1, 1)
-		A_inv *= 2;
-		A_inv_m_b(0) -= 1.0;
-		
+		A_inv_m_b(0) = -1.0 * A_inv(0, 0) * p0(0) - A_inv(0, 1) * p0(1);
+		A_inv_m_b(1) = -1.0 * A_inv(1, 0) * p0(0) - A_inv(1, 1) * p0(1);		
 	}
 	
 	void SideAffineTransform3::compute_affine_transformation(const libMesh::Elem &elem,  const int side, libMesh::DenseMatrix<libMesh::Real> &A_inv, libMesh::DenseVector<libMesh::Real> &A_inv_m_b)
