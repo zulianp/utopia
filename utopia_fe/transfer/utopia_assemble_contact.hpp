@@ -32,7 +32,8 @@ namespace utopia {
 		DVectord &is_contact_node,
 		const libMesh::Real search_radius,
 		const std::vector< std::pair<int, int> > &tags,
-		const bool use_biorth = true);
+		const bool use_biorth = true,
+		const bool use_volume_differential = false);
 
 	bool assemble_contact(
 		express::Communicator &comm,
@@ -47,7 +48,8 @@ namespace utopia {
 		const libMesh::Real search_radius,
 		const int tag_1, 
 		const int tag_2,
-		const bool use_biorth = true);
+		const bool use_biorth = true,
+		const bool use_volume_differential = false);
 
 
 		bool assemble_contact(
@@ -62,7 +64,8 @@ namespace utopia {
 			DVectord &is_contact_node,
 			const libMesh::Real search_radius,
 			const std::vector< std::pair<int, int> > &tags,
-			const bool use_biorth = true);
+			const bool use_biorth = true,
+			const bool use_volume_differential = false);
 
 
 		void convert_normal_matrix_to_vector(const DSMatrixd &mat, DVectord &vec);

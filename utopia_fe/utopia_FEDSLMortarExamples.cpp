@@ -433,6 +433,7 @@ namespace utopia {
 		// master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 0;
 		// master_slave_context.equation_systems.solve();
 		
+		DVectord contact_stress;
 		{
 			double mu = 1.0, lambda = 1.0;
 			// auto e      = transpose(grad(u)) + grad(u); 
@@ -457,6 +458,8 @@ namespace utopia {
 				printf("Assembly: %g seconds\n", t);
 				printf("--------------------------------\n");
 			});
+
+
 
 
 			master_slave_context.system.attach_assemble_object(ass);
@@ -488,9 +491,28 @@ namespace utopia {
 			//Change back to original basis
 			DVectord sol = T * (orthogonal_trafos * sol_c);
 			convert(sol, *master_slave_context.system.solution);
+
+
+			auto s_K = local_size(K);
+			DSMatrixd mass_matrix = local_sparse(s_K.get(0), s_K.get(1), 10);
+		
+			DVectord residual = (K * sol - rhs);
+
+			DVectord dummy = local_zeros(local_size(rhs));
+
+			{
+				Write<DSMatrixd> w_mm(mass_matrix);
+				assemble(u, u, integral(dot(u, u)), l_form, mass_matrix, dummy);
+			}
+
+			contact_stress = local_zeros(local_size(rhs));
+			solve(mass_matrix, residual, contact_stress);
 		}
 
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("sol.e", master_slave_context.equation_systems);
+
+		convert(contact_stress, *master_slave_context.system.solution);
+		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("contact_stress.e", master_slave_context.equation_systems);
 
 		convert(is_contact_node, *master_slave_context.system.solution);
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("is_c_node.e", master_slave_context.equation_systems);

@@ -26,6 +26,14 @@
 #include <queue>
 
 namespace utopia {
+
+	/* have a look at this
+	dofs_on_side(const Elem * const elem,
+	             const unsigned int dim,
+	             const FEType & fe_t,
+	             unsigned int s,
+
+	*/
 	using namespace libMesh;
 	
 	template<typename T>
@@ -718,7 +726,8 @@ namespace utopia {
 						 const cutk::Settings &settings,
 						 const libMesh::Real search_radius,
 						 const std::vector< std::pair<int, int> > &tags,
-						 const bool use_biorth)
+						 const bool use_biorth,
+						 const bool use_volume_differential)
 	{
 		std::shared_ptr<FESpaceAdapter> local_fun_spaces_new = cutk::make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
 		
@@ -818,16 +827,19 @@ namespace utopia {
 				make_polygon(el_master, points_master);
 				make_polygon(el_slave,  points_slave);
 				
-				trafo_master = std::make_shared<AffineTransform2>(el_master);
-				trafo_slave  = std::make_shared<AffineTransform2>(el_slave);
+				if(use_volume_differential) {
+					trafo_master = std::make_shared<AffineTransform2>(el_master);
+					trafo_slave  = std::make_shared<AffineTransform2>(el_slave);
+				} 
 				
 			} else if(dim_slave == 3) {
 				make_polyhedron(el_master, poly_master);
 				make_polyhedron(el_slave,  poly_slave);
 				
-				trafo_master = std::make_shared<AffineTransform3>(el_master);
-				trafo_slave  = std::make_shared<AffineTransform3>(el_slave);
-				
+				if(use_volume_differential) {
+					trafo_master = std::make_shared<AffineTransform3>(el_master);
+					trafo_slave  = std::make_shared<AffineTransform3>(el_slave);
+				} 
 			}
 			
 			bool intersected = false;
@@ -859,20 +871,20 @@ namespace utopia {
 					assert(false);
 				}
 				
-				for(uint side_2 = 0; side_2 < el_slave.n_sides(); ++side_2) {
-					if(side_id_slave[side_2] < 0) continue;
+				for(uint side_index_slave = 0; side_index_slave < el_slave.n_sides(); ++side_index_slave) {
+					if(side_id_slave[side_index_slave] < 0) continue;
 					
-					if(el_slave.neighbor_ptr(side_2) != nullptr) {
+					if(el_slave.neighbor_ptr(side_index_slave) != nullptr) {
 						std::cerr << "[Warning] it should never happen" << std::endl;
 						continue;
 					}
 					// if (!predicate->tagsAreRelated(tag_1, tag_2)) continue;
 					
-					auto side_slave = el_slave.build_side_ptr(side_2);
+					auto side_slave = el_slave.build_side_ptr(side_index_slave);
 					
 					compute_side_normal(dim_slave, *side_slave, n_slave);
 					
-					if(fix_normal_orientation(el_slave, side_2, n_slave)) {
+					if(fix_normal_orientation(el_slave, side_index_slave, n_slave)) {
 						std::cerr << "[Warning] fixed normal orientation of slave face" << std::endl;
 					}
 					
@@ -972,7 +984,7 @@ namespace utopia {
 						return false;
 					}
 					
-					// const bool enable_vis = side_id_slave.at(side_2) == 434;
+					// const bool enable_vis = side_id_slave.at(side_index_slave) == 434;
 					// const bool enable_vis = false; //visdbg
 					
 					if(pair_intersected) {
@@ -982,19 +994,48 @@ namespace utopia {
 						// } //visdbg
 						
 						// std::cout << "isect: " << master.handle() << " -> " << slave.handle() << std::endl;
+
+						if(!use_volume_differential) {
+							switch(dim) {
+								case 2: {
+									trafo_master = std::make_shared<SideAffineTransform2>(el_master, side_index_master);
+									trafo_slave  = std::make_shared<SideAffineTransform2>(el_slave, side_index_slave);
+									break;
+								}
+								case 3: {
+									trafo_master = std::make_shared<SideAffineTransform3>(el_master, side_index_master);
+									trafo_slave  = std::make_shared<SideAffineTransform3>(el_slave, side_index_slave);
+									break;
+								}
+								default: {
+									assert(false);
+									break;
+								}
+							}
+						}
 						
 						//////////////////////////////////ASSEMBLY ////////////////////////////////////////
 						//////////////////////////////////////////////////////////////////////////////////////
 						transform_to_reference_surf(*trafo_master, el_master.type(),  ir_master, ir_ref_master);
 						transform_to_reference_surf(*trafo_slave,  el_slave.type(),   ir_slave,  ir_ref_slave);
-						
+												
 						//master fe init
 						master_fe->attach_quadrature_rule(&ir_ref_master);
-						master_fe->reinit(&el_master);
+						
+						if(use_volume_differential) {
+							master_fe->reinit(&el_master);
+						} else {
+							master_fe->reinit(&el_master, side_index_master);
+						}
 						
 						//slave fe init
 						slave_fe->attach_quadrature_rule(&ir_ref_slave);
-						slave_fe->reinit(&el_slave);
+
+						if(use_volume_differential) {
+							slave_fe->reinit(&el_slave);
+						} else {
+							slave_fe->reinit(&el_slave, side_index_slave);
+						}
 						
 						//prepare result
 						surface_assemble->parent_element_master  = index_master;
@@ -1054,7 +1095,7 @@ namespace utopia {
 						}
 						//////////////////////////////////////////////////////////////////////////////////////
 						
-						rel_area_buffer.add(side_id_slave[side_2], 0, surface_assemble->relative_area);
+						rel_area_buffer.add(side_id_slave[side_index_slave], 0, surface_assemble->relative_area);
 						
 						const auto &dofs_master = master.dof_map();
 						const auto &dofs_slave  = slave.dof_map();
@@ -1073,7 +1114,7 @@ namespace utopia {
 						int offset = 0;
 						for(uint i = 0; i < node_is_boundary_slave.size(); ++i){
 							if (node_is_boundary_slave[i]) {
-								face_node_id_slave[i] =  side_id_slave[side_2] * n_nodes_face_slave + offset++;
+								face_node_id_slave[i] =  side_id_slave[side_index_slave] * n_nodes_face_slave + offset++;
 							}
 						}
 						
@@ -1541,16 +1582,17 @@ namespace utopia {
 						  DVectord &is_contact_node,
 						  const libMesh::Real search_radius,
 						  const std::vector< std::pair<int, int> > &tags,
-						  const bool use_biorth)
+						  const bool use_biorth,
+						  const bool use_volume_differential)
 	{
 		cutk::Settings settings;
 		if(mesh->mesh_dimension() == 2) {
-			return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tags, use_biorth);
+			return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tags, use_biorth, use_volume_differential);
 		}
 		
 		
 		if(mesh->mesh_dimension() == 3) {
-			return utopia::SurfaceAssemble<3>(comm, mesh, dof_map, var_num, B,  orthogonal_trafos, gap, normals,  is_contact_node, settings, search_radius, tags, use_biorth);
+			return utopia::SurfaceAssemble<3>(comm, mesh, dof_map, var_num, B,  orthogonal_trafos, gap, normals,  is_contact_node, settings, search_radius, tags, use_biorth, use_volume_differential);
 		}
 		
 		assert(false && "Dimension not supported!");
@@ -1569,7 +1611,8 @@ namespace utopia {
 						  const libMesh::Real search_radius,
 						  const int tag_1,
 						  const int tag_2,
-						  const bool use_biorth)
+						  const bool use_biorth,
+						  const bool use_volume_differential)
 	{
 		return assemble_contact(
 								comm, mesh, dof_map, var_num,
@@ -1577,7 +1620,8 @@ namespace utopia {
 								gap, normals, is_contact_node,
 								search_radius,
 								{ {tag_1, tag_2} },
-								use_biorth);
+								use_biorth,
+								use_volume_differential);
 	}
 	
 	void convert_normal_matrix_to_vector(const DSMatrixd &mat, DVectord &vec)
@@ -1620,7 +1664,8 @@ namespace utopia {
 						  DVectord &is_contact_node,
 						  const libMesh::Real search_radius,
 						  const std::vector< std::pair<int, int> > &tags,
-						  const bool use_biorth)
+						  const bool use_biorth,
+						  const bool use_volume_differential)
 	{
 		
 		DSMatrixd direction_matrix;
@@ -1630,7 +1675,8 @@ namespace utopia {
 							 gap, direction_matrix, is_contact_node,
 							 search_radius,
 							 tags,
-							 use_biorth)) {
+							 use_biorth,
+							 use_volume_differential)) {
 			return false;
 		}
 		
