@@ -13,7 +13,7 @@
 #include "libmesh/const_function.h"
 #include "libmesh/petsc_vector.h"
 #include "libmesh/petsc_matrix.h"
-
+#include "libmesh/auto_ptr.h"
 
 // Define the Finite Element object.
 #include "libmesh/fe.h"
@@ -932,8 +932,13 @@ namespace utopia {
 		
 		libMesh::UniquePtr<libMesh::FunctionBase<Output> > clone() const override 
 		{
-			return libMesh::make_unique< LibMeshLambdaFunction<Output> >(*this);
-		}
+//#ifdef LIBMESH_HAVE_CXX14_MAKE_UNIQUE
+//			using libMesh::make_unique;
+//			return make_unique< LibMeshLambdaFunction<Output> >(*this);
+//#else
+			return libMesh::UniquePtr<libMesh::FunctionBase<Output> >( new LibMeshLambdaFunction<Output>(*this));
+//#endif		
+}
 
 		Output operator() (const Point &p, const Scalar time = 0.) override
 		{

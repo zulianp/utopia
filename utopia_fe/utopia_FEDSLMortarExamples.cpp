@@ -339,8 +339,16 @@ namespace utopia {
 		auto u = prod(ux, uy);
 #endif //RUN_3D_CONTACT
 
-		strong_enforce( boundary_conditions(uy == coeff(-0.1), {10}) );
-		strong_enforce( boundary_conditions(uy == coeff(0.1), {11}) );
+		// strong_enforce( boundary_conditions(uy == coeff(-0.1), {2}) );
+		// strong_enforce( boundary_conditions(uy == coeff(0.1), {4}) );
+
+#ifdef RUN_3D_CONTACT
+		strong_enforce( boundary_conditions(uz == coeff(-0.1), {2}) );
+		strong_enforce( boundary_conditions(uz == coeff(0.1), {4}) );
+#else
+		strong_enforce( boundary_conditions(uy == coeff(-0.1), {2}) );
+		strong_enforce( boundary_conditions(uy == coeff(0.1), {4}) );
+#endif //RUN_3D_CONTACT
 
 		master_slave_context.equation_systems.init();
 
@@ -427,7 +435,7 @@ namespace utopia {
 		write("c_" + std::to_string(express_comm.size()) + ".m", is_contact_node);
 		write("T_" + std::to_string(express_comm.size()) + ".m", T);
 		
-		if(express_comm.isAlone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
+		// if(express_comm.isAlone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
 				
 		DVectord contact_stress;
 		{
@@ -625,7 +633,8 @@ namespace utopia {
 		// mesh->read("../data/two_pseudo_rocks_refined.e");
 		// mesh->read("../data/quasi_signorini.e");
 #ifdef RUN_3D_CONTACT
-		mesh->read("../data/quasi_signorini_coarse.e");
+		mesh->read("../data/hertz_530.e");
+		// mesh->read("../data/quasi_signorini_coarse.e");
 #else
 		mesh->read("../data/hertz_2d.e");
 #endif //RUN_3D_CONTACT
