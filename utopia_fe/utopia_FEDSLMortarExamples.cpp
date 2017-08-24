@@ -346,8 +346,8 @@ namespace utopia {
 		strong_enforce( boundary_conditions(uy == coeff(0.0), {2}) );
 		strong_enforce( boundary_conditions(uy == coeff(0.0), {4}) );
 
-		strong_enforce( boundary_conditions(uz == coeff(-0.1), {2}) );
-		strong_enforce( boundary_conditions(uz == coeff(0.1), {4}) );
+		strong_enforce( boundary_conditions(uz == coeff(-0.5), {2}) );
+		strong_enforce( boundary_conditions(uz == coeff(0.5), {4}) );
 #else
 		strong_enforce( boundary_conditions(uy == coeff(-0.1), {2}) );
 		strong_enforce( boundary_conditions(uy == coeff(0.1), {4}) );
@@ -381,7 +381,7 @@ namespace utopia {
 		
 		unsigned int variable_number = 0;
 		
-		const libMesh::Real search_radius = 0.3;
+		const libMesh::Real search_radius = 1.;
 		assemble_contact(express_comm, (master_slave), 
 			utopia::make_ref(master_slave_context.system.get_dof_map()), 
 			variable_number, 
@@ -427,16 +427,16 @@ namespace utopia {
 		
 		DVectord D_inv_gap = D_inv * gap;
 
-		write("T_" + std::to_string(express_comm.size()) + ".m", T);
+		// write("T_" + std::to_string(express_comm.size()) + ".m", T);
 		T += local_identity(local_size(d).get(0), local_size(d).get(0));
 		
-		write("O_" + std::to_string(express_comm.size()) + ".m", orthogonal_trafos);
-		write("B_" + std::to_string(express_comm.size()) + ".m", B);
-		write("d_" + std::to_string(express_comm.size()) + ".m", d);
-		write("D_inv_" + std::to_string(express_comm.size()) + ".m", D_inv);
-		write("g_" + std::to_string(express_comm.size()) + ".m", gap);
-		write("c_" + std::to_string(express_comm.size()) + ".m", is_contact_node);
-		write("T_" + std::to_string(express_comm.size()) + ".m", T);
+		// write("O_" + std::to_string(express_comm.size()) + ".m", orthogonal_trafos);
+		// write("B_" + std::to_string(express_comm.size()) + ".m", B);
+		// write("d_" + std::to_string(express_comm.size()) + ".m", d);
+		// write("D_inv_" + std::to_string(express_comm.size()) + ".m", D_inv);
+		// write("g_" + std::to_string(express_comm.size()) + ".m", gap);
+		// write("c_" + std::to_string(express_comm.size()) + ".m", is_contact_node);
+		// write("T_" + std::to_string(express_comm.size()) + ".m", T);
 		
 		// if(express_comm.isAlone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
 				
@@ -524,18 +524,18 @@ namespace utopia {
 		convert(is_contact_node, *master_slave_context.system.solution);
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("is_c_node.e", master_slave_context.equation_systems);
 		
-		convert(gap, *master_slave_context.system.solution);
-		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("gap.e", master_slave_context.equation_systems);
+		// convert(gap, *master_slave_context.system.solution);
+		// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("gap.e", master_slave_context.equation_systems);
 		
-		convert(normals_vec, *master_slave_context.system.solution);
-		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("normals.e", master_slave_context.equation_systems);
+		// convert(normals_vec, *master_slave_context.system.solution);
+		// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("normals.e", master_slave_context.equation_systems);
 		
-		convert(d, *master_slave_context.system.solution);
-		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("d.e", master_slave_context.equation_systems);
+		// convert(d, *master_slave_context.system.solution);
+		// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("d.e", master_slave_context.equation_systems);
 
-		normals_vec = orthogonal_trafos * normals_vec;
-		convert(normals_vec, *master_slave_context.system.solution);
-		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("H_n.e", master_slave_context.equation_systems);
+		// normals_vec = orthogonal_trafos * normals_vec;
+		// convert(normals_vec, *master_slave_context.system.solution);
+		// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("H_n.e", master_slave_context.equation_systems);
 	}
 
 
