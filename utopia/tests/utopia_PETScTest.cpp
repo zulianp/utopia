@@ -902,36 +902,44 @@ namespace utopia {
 
     void petsc_min_test()
     {
-        const int n = 10;
-        DVectord v  = values(n, 1.0);
-        DSMatrixd A = identity(n, n);
+        // if(mpi_world_size() == 1) {
+            const int n = 10;
+            DVectord v  = values(n, 1.0);
+            DSMatrixd A = identity(n, n);
 
-        double min_v = min(v);
-        assert(approxeq(1.0, min_v));
+            double min_v = min(v);
+            assert(approxeq(1.0, min_v));
 
-        double min_A = min(A);
-        assert(approxeq(0.0, min_A));
+            double min_A = min(A);
+            assert(approxeq(0.0, min_A));
 
-        DVectord min_row_A = min(A, 1);
-        DVectord expected  = values(n, 0.0);
-        assert(approxeq(expected, min_row_A));
+            DVectord min_row_A = min(A, 1);
+            DVectord expected  = values(n, 0.0);
+            assert(approxeq(expected, min_row_A));
+        // } else {
+        //     std::cerr << "[Warning] min does not work in parallel due to to petsc MatGetRowMin not working properly\n" << std::endl;
+        // }
     }
 
     void petsc_max_test()
     {
-        const int n = 10;
-        DVectord v  = values(n, 1.0);
-        DSMatrixd A = identity(n, n);
+        // if(mpi_world_size() == 1) {
+            const int n = 10;
+            DVectord v  = values(n, 1.0);
+            DSMatrixd A = identity(n, n);
 
-        double max_v = max(v);
-        assert(approxeq(1.0, max_v));
+            double max_v = max(v);
+            assert(approxeq(1.0, max_v));
 
-        double max_A = max(A);
-        assert(approxeq(1.0, max_A));
+            double max_A = max(A);
+            assert(approxeq(1.0, max_A));
 
-        DVectord max_row_A = max(A, 1);
-        DVectord expected  = values(n, 1.0);
-        assert(approxeq(expected, max_row_A));
+            DVectord max_row_A = max(A, 1);
+            DVectord expected  = values(n, 1.0);
+            assert(approxeq(expected, max_row_A));
+        // } else {
+        //     std::cerr << "[Warning] max does not work in parallel due to to petsc MatGetRowMax not working properly\n" << std::endl;
+        // }
     }
 
     #endif //WITH_PETSC;

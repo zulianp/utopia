@@ -1230,54 +1230,103 @@ namespace utopia {
 	
 	PetscScalar PETScBackend::reduce(const PETScVector &v, const Min &)
 	{
-		PetscScalar x;
+		PetscScalar x = 0.0;
 		VecMin(v.implementation(), nullptr, &x);
 		return x;
 	}
 
-	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Min &)
+	template<class Operation>
+	inline static PetscScalar generic_local_reduce(const PETScMatrix &m, const PetscScalar &init_value, const Operation &op)
 	{
-		PetscScalar x;
+		PetscScalar x = init_value;
+		const PetscScalar * values;
+		const PetscInt * cols;
+		
+		PetscInt r_begin, r_end;
+		PetscInt n_values = 0;
+
+		PetscInt local_r, local_c;
+		MatGetLocalSize(m.implementation(), &local_r, &local_c);
+
+		auto fun = Operation::template Fun<PetscScalar>();
+
+		MatGetOwnershipRange(m.implementation(), &r_begin, &r_end);
+		
+		for(PetscInt row = r_begin; row < r_end; ++row) {	
+
+			MatGetRow(m.implementation(), row, &n_values, &cols, &values);
+
+			if(n_values < local_c) {
+				x = fun(x, 0.);
+			}
+
+			for(PetscInt i = 0; i < n_values; ++i) {
+				x = fun(x, values[i]);
+			}
+
+			MatRestoreRow(m.implementation(), row, &n_values, &cols, &values);
+		}
+
+		return x;
+	}
+
+	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Min &op)
+	{
+		PetscScalar x = std::numeric_limits<PetscScalar>::max();
 		MPI_Comm comm = m.communicator();
 		
-		
-		PetscInt grows, gcols, lrows, lcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		MatGetLocalSize(m.implementation(), &lrows, &lcols);
-		
-		Vec v;
-		VecCreate(comm, &v);
+		int size = 0;
+		MPI_Comm_size(comm, &size);
+		if(size == 1) {
+			PetscInt grows, gcols, lrows, lcols;
+			MatGetSize(m.implementation(), &grows, &gcols);
+			MatGetLocalSize(m.implementation(), &lrows, &lcols);
+			
+			Vec v;
+			VecCreateMPI(comm, lrows, grows, &v);
+			MatGetRowMin(m.implementation(), v, nullptr);
+			VecMin(v, nullptr, &x);
 
-		VecSetType(v, VECMPI);
-		VecSetSizes(v, lrows, grows);
-
-		MatGetRowMin(m.implementation(), v, nullptr);
-		VecMin(v, nullptr, &x);
-
-		VecDestroy(&v);
-		return x;
+			VecDestroy(&v);
+			return x;
+		} else {
+			x = generic_local_reduce(m, x, op);
+			MPI_Allreduce(MPI_IN_PLACE, &x, 1, MPI_DOUBLE, MPI_MIN, comm);
+			return x;
+		}
 	}
 
 	PetscScalar PETScBackend::reduce(const PETScVector &v, const Max &)
 	{
-		PetscScalar x;
+		PetscScalar x = -std::numeric_limits<PetscScalar>::max();
 		VecMax(v.implementation(), nullptr, &x);
 		return x;
 	}
 
-	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Max &)
+	PetscScalar PETScBackend::reduce(const PETScMatrix &m, const Max &op)
 	{
-		PetscScalar x;
-		PETScVector v;
-		VecSetType(v.implementation(), VECMPI);
+		PetscScalar x = -std::numeric_limits<PetscScalar>::max();
+		MPI_Comm comm = m.communicator();
+		
+		int size = 0;
+		MPI_Comm_size(comm, &size);
+		if(size == 1) {
+			PetscInt grows, gcols, lrows, lcols;
+			MatGetSize(m.implementation(), &grows, &gcols);
+			MatGetLocalSize(m.implementation(), &lrows, &lcols);
+			
+			Vec v;
+			VecCreateMPI(comm, lrows, grows, &v);
+			MatGetRowMax(m.implementation(), v, nullptr);
+			VecMax(v, nullptr, &x);
 
-		PetscInt grows, gcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		VecSetSizes(v.implementation(), PETSC_DECIDE, grows);
-
-		MatGetRowMax(m.implementation(), v.implementation(), nullptr);
-		VecMax(v.implementation(), nullptr, &x);
-		return x;
+			VecDestroy(&v);
+			return x;
+		} else {
+			x = generic_local_reduce(m, x, op);
+			MPI_Allreduce(MPI_IN_PLACE, &x, 1, MPI_DOUBLE, MPI_MAX, comm);
+			return x;
+		}
 	}
 
 	
@@ -1738,6 +1787,49 @@ namespace utopia {
 		return ret;
 	}
 
+	template<class Operation>
+	inline static void generic_col_reduce(
+		const PETScMatrix &mat, 
+		const PetscScalar &init_value, 
+		const Operation &op,
+		PETScVector &result)
+	{
+		
+		const PetscScalar * values;
+		const PetscInt * cols;
+		
+		PetscInt r_begin, r_end;
+		PetscInt n_values = 0;
+
+		PetscInt global_r, global_c, local_r, local_c;
+		MatGetSize(mat.implementation(), &global_r, &global_c);
+		MatGetLocalSize(mat.implementation(), &local_r, &local_c);
+		VecCreateMPI(mat.communicator(), local_r, global_r, &result.implementation());
+		VecAssemblyBegin(result.implementation());
+
+		auto fun = Operation::template Fun<PetscScalar>();
+
+		MatGetOwnershipRange(mat.implementation(), &r_begin, &r_end);
+		
+		for(PetscInt row = r_begin; row < r_end; ++row) {	
+			MatGetRow(mat.implementation(), row, &n_values, &cols, &values);
+
+			PetscScalar x = init_value;
+			for(PetscInt i = 0; i < n_values; ++i) {
+				x = fun(x, values[i]);
+			}
+
+			if(n_values < local_c) {
+				x = fun(x, 0.);
+			}
+
+			MatRestoreRow(mat.implementation(), row, &n_values, &cols, &values);
+			VecSetValues(result.implementation(), 1, &row, &x, INSERT_VALUES);
+		}
+
+		VecAssemblyEnd(result.implementation());
+	}
+
 	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Plus &, const int dim, Vector &result)
 	{
 		PETScVector rowSum; //FIXME initialize
@@ -1757,16 +1849,28 @@ namespace utopia {
 		return true;
 	}
 
-	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Min &, const int dim, Vector &result)
+	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Min &op, const int dim, Vector &result)
 	{
 		// PetscScalar x;
 		PetscInt grows, gcols;
 		MatGetSize(mat.implementation(), &grows, &gcols);
 
+		int comm_size = 0;
+		MPI_Comm_size(mat.communicator(), &comm_size);
+		bool is_serial = comm_size == 1;
+
 		if (dim == 1) {
-			VecDestroy(&result.implementation());
-			VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
-			MatGetRowMin(mat.implementation(), result.implementation(), nullptr);
+			if(is_serial) {
+				VecDestroy(&result.implementation());
+				VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
+				MatGetRowMin(mat.implementation(), result.implementation(), nullptr);
+			} else {
+				generic_col_reduce(
+					mat, 
+					std::numeric_limits<PetscScalar>::max(), 
+					op,
+					result);
+			}
 		} else {
 			//FIXME implement own
 			// VecDestroy(&result.implementation());
@@ -1778,16 +1882,28 @@ namespace utopia {
 		return true;
 	}
 
-	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Max &, const int dim, Vector &result)
+	bool PETScBackend::apply_tensor_reduce(const Matrix &mat, const Max &op, const int dim, Vector &result)
 	{
 		// PetscScalar x;
 		PetscInt grows, gcols;
 		MatGetSize(mat.implementation(), &grows, &gcols);
 
+		int comm_size = 0;
+		MPI_Comm_size(mat.communicator(), &comm_size);
+		bool is_serial = comm_size == 1;
+
 		if (dim == 1) {
+			if(is_serial) {
 			VecDestroy(&result.implementation());
 			VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
 			MatGetRowMax(mat.implementation(), result.implementation(), nullptr);
+			} else {
+				generic_col_reduce(
+					mat, 
+					-std::numeric_limits<PetscScalar>::max(), 
+					op,
+					result);
+			}
 		} else {
 			//FIXME implement own
 			// VecDestroy(&result.implementation());
