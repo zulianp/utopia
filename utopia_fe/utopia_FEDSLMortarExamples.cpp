@@ -339,10 +339,13 @@ namespace utopia {
 		auto u = prod(ux, uy);
 #endif //RUN_3D_CONTACT
 
-		// strong_enforce( boundary_conditions(uy == coeff(-0.1), {2}) );
-		// strong_enforce( boundary_conditions(uy == coeff(0.1), {4}) );
+		strong_enforce( boundary_conditions(ux == coeff(0.), {2}) );
+		strong_enforce( boundary_conditions(ux == coeff(0.), {4}) );
 
 #ifdef RUN_3D_CONTACT
+		strong_enforce( boundary_conditions(uy == coeff(0.0), {2}) );
+		strong_enforce( boundary_conditions(uy == coeff(0.0), {4}) );
+
 		strong_enforce( boundary_conditions(uz == coeff(-0.1), {2}) );
 		strong_enforce( boundary_conditions(uz == coeff(0.1), {4}) );
 #else
@@ -633,7 +636,8 @@ namespace utopia {
 		// mesh->read("../data/two_pseudo_rocks_refined.e");
 		// mesh->read("../data/quasi_signorini.e");
 #ifdef RUN_3D_CONTACT
-		mesh->read("../data/hertz_530.e");
+		// mesh->read("../data/hertz_530.e");
+		mesh->read("../data/two_rocks_26653.e");
 		// mesh->read("../data/quasi_signorini_coarse.e");
 #else
 		mesh->read("../data/hertz_2d.e");

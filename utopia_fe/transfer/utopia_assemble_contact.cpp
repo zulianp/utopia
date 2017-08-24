@@ -1310,7 +1310,7 @@ namespace utopia {
 							
 							if(detect_negative[index] < 0.) {
 								// must_remove = true;
-								std::cerr << "[Warning] removing element with negative contribution face id: " << faceId << ", node id: " << nodeId << ", node offset: " << k  << std::endl;
+								std::cerr << "[Warning] removing element with negative contribution face id: " << faceId << ", node id: " << nodeId << ", node offset: " << k  << " value: " << *it << std::endl;
 								break;
 							}
 						}
