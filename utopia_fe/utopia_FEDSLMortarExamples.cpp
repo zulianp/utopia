@@ -720,7 +720,7 @@ namespace utopia {
 		//////////////////////////////////////////////////
 
 
-		static const	bool is_leaflet = false;
+		static const bool is_leaflet = false;
 		//ContactSimParams params = leaflets_contact;
 		ContactSimParams params = contact8;
 		// ContactSimParams params = multi_contact_quads;
