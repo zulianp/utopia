@@ -1417,7 +1417,7 @@ namespace utopia {
 				}
 			}
 
-			return std::move(result);
+			return result;
 		}
 
 		template<class Left, int ROWS, int COLS>
@@ -1438,7 +1438,7 @@ namespace utopia {
 				}
 			}
 
-			return std::move(result);
+			return result;
 		}
 
 
@@ -1460,7 +1460,7 @@ namespace utopia {
 				}
 			}
 
-			return std::move(result);
+			return result;
 		}
 
 		inline static void mult_at_quad_point(const SizeType quad_index,

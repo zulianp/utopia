@@ -99,6 +99,11 @@ namespace utopia {
 					
 				}
 			}
+			default:
+			{
+				assert(false && "implement me");
+				break;
+			}
 		}
 	}
 	
@@ -892,7 +897,7 @@ namespace utopia {
 		const uint n_trial = trial.size();
 		const uint n_qp    = test[0].size();
 		
-		bool v = is_vec(test[0][0]);
+//		bool v = is_vec(test[0][0]);
 		
 		for(uint qp = 0; qp < n_qp; ++qp) {
 			for(uint i = 0; i < n_test; ++i) {
@@ -1800,8 +1805,8 @@ namespace utopia {
 		Scalar A   [2 * 2], b   [2];
 		Scalar Ainv[2 * 2], binv[2];
 		
-		Scalar normal_master[2];
-		Scalar normal_slave [2];
+//		Scalar normal_master[2];
+//		Scalar normal_slave [2];
 		
 		Intersector::SurfaceMortarWorkspace w;
 		
@@ -1862,7 +1867,7 @@ namespace utopia {
 		w.isect_slave[2] = x_max_isect;
 		w.isect_slave[3] = 0;
 		
-		const Scalar inv_area_slave = 2.0/( isector.det_2(A) );
+//		const Scalar inv_area_slave = 2.0/( isector.det_2(A) );
 		
 		//////////////////////////////////////////////////////////////////////////////////////////
 		//create master fe object from intersection
@@ -1895,8 +1900,8 @@ namespace utopia {
 		Scalar A   [3 * 3], b   [3];
 		Scalar Ainv[3 * 3], binv[3];
 		
-		Scalar normal_master[3];
-		Scalar normal_slave [3];
+//		Scalar normal_master[3];
+//		Scalar normal_slave [3];
 		
 		Scalar isect_1[MAX_N_ISECT_POINTS * 3];
 		Scalar isect_2[MAX_N_ISECT_POINTS * 3];

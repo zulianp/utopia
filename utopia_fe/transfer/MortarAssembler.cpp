@@ -69,8 +69,8 @@ namespace utopia {
 
 
 	 	//////////////////////////////////////////////////
-		int skip_zeros = 1;
-		B = sparse(slave_->dof_map().n_local_dofs(), 
+//		int skip_zeros = 1;
+		B = sparse(slave_->dof_map().n_local_dofs(),
 			master_->dof_map().n_local_dofs(), 
 			std::max(1, int(master_->dof_map().n_local_dofs() * 0.2)));
 
@@ -537,7 +537,7 @@ namespace utopia {
 		c.describe(std::cout);
 
 
-		size_t n = mesh.n_active_local_elem();
+//		size_t n = mesh.n_active_local_elem();
 		const int approx_order = space.order();
 
 			 //init extra quadrature quantities
@@ -548,7 +548,7 @@ namespace utopia {
 		DenseMatrix<Real> polygon_1, polygon_2, ref_polygon_1, ref_polygon_2, clipper_1;
 		DenseMatrix<Real> side_polygon_1, side_polygon_2;
 		DenseMatrix<Real> isect_polygon_1, isect_polygon_2;
-		Scalar isect_1[MAX_N_ISECT_POINTS * MAX_N_DIMS], isect_2[MAX_N_ISECT_POINTS * MAX_N_DIMS];
+//		Scalar isect_1[MAX_N_ISECT_POINTS * MAX_N_DIMS], isect_2[MAX_N_ISECT_POINTS * MAX_N_DIMS];
 
 		DenseMatrix<Real> A(dim, dim), Ainv(dim, dim);
 		DenseMatrix<Real> b(dim, 1), binv(dim, 1);
@@ -557,8 +557,8 @@ namespace utopia {
 
 		Intersector isector;
 
-		Scalar projection_1[MAX_N_ISECT_POINTS * MAX_N_DIMS];
-		Scalar projection_2[MAX_N_ISECT_POINTS * MAX_N_DIMS];
+//		Scalar projection_1[MAX_N_ISECT_POINTS * MAX_N_DIMS];
+//		Scalar projection_2[MAX_N_ISECT_POINTS * MAX_N_DIMS];
 
 		std::vector<Point> points_1, points_2;
 

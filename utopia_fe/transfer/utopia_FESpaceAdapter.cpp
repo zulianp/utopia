@@ -85,7 +85,7 @@ namespace utopia {
 	     int jj_side_id_one_check = 0;
 	     int offset=0;
 	     int f_id=0;
-	     int n_f=0;
+//	     int n_f=0;
 	     MeshBase::const_element_iterator e_it_s = mesh.active_local_elements_begin();
 	     const MeshBase::const_element_iterator e_end_s = mesh.active_local_elements_end();
 	     
@@ -95,7 +95,7 @@ namespace utopia {
 	         bool  check_side_id_one=true;
 	         bool  check_side_id_one_tag=true;
 	         bool  check_side_id_one_check=true;
-	         bool  check_face_id=true;
+//	         bool  check_face_id=true;
 	         
 	         for (int side_elem=0; side_elem<elem->n_sides(); side_elem++) {
 	             if (check_side_id_one) {
