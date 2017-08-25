@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH --job-name=utopia_test
+#SBATCH --job-name=UtopiaTest
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=patrick.zulian@usi.ch
 #SBATCH --time=00:30:00
@@ -13,4 +13,4 @@
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 #srun ../bin/utopia_exec
 #ddt --connect utopia_exec
-ddt ./utopia_exec
+srun ./utopia_exec -on_error_abort

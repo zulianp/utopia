@@ -22,7 +22,7 @@ module load Visit
 module load ddt
 
 #utopia_fe modules
-# module load cray-netcdf 
+# module load cray-netcdf #this breaks the linking with libmesh
 
 # export compiler wrapper paths
 # export CC=cc
@@ -34,3 +34,4 @@ module load ddt
 # make dynamic linking the default
 export CRAYPE_LINK_TYPE=dynamic
 export CRAY_ADD_RPATH=yes
+export CRAY_CPU_TARGET=x86-64

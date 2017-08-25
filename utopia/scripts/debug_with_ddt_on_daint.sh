@@ -1,14 +1,16 @@
-#in order to lunch this connect to the cluster with ssh -X username@ela.cscs.ch and ssh -X daint
+# For lunching this script connect to the cluster with ssh -X username@ela.cscs.ch and ssh -X daint
+# Eventually disconnecting and reconnecting with the cluster might fix problems arising with X server
 
-ALLINEA_MPI_INIT_PENDING=1 
-ALLINEA_MPI_INIT=MPI_Init_thread
+module load daint-mc
+module load ddt
+export ALLINEA_MPI_INIT_PENDING=1 
+export ALLINEA_MPI_INIT=MPI_Init_thread
 
-current=$PWD
+script_dir=$PWD
 cp ../bin/utopia_exec $SCRATCH/
-cp run_utopia_test_on_pitz_daint.sbatch $SCRATCH/
 cd $SCRATCH
 
-sbatch run_utopia_test_on_pitz_daint.sbatch
+salloc -n 8 --time=00:30:00 -C mc --partition=debug
+ddt --processes=8 ./utopia_exec 
 
-
-echo "use cd "$current" to go to script folder"
+echo "use cd $script_dir to go to script folder"
