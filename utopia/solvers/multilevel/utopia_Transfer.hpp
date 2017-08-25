@@ -7,7 +7,10 @@
 
 #ifndef UTOPIA_ML_TRANSFER_HPP
 #define UTOPIA_ML_TRANSFER_HPP
+
 #include "utopia_Smoother.hpp"
+#include <assert.h>
+#include <memory>
 
      namespace utopia 
      {
@@ -26,27 +29,27 @@
 
         public:
 
-        Transfer(const std::shared_ptr <Matrix> & I)//:
+        Transfer(const std::shared_ptr<Matrix> & I)//:
                                     // _I(I),
                                     // _R(transpose(I))
         {
+            assert(I);
+
             _I = I; 
             _R = std::make_shared<Matrix>(transpose(*I)); 
             _P = _R; 
         }
 
-        
-
-        Transfer(const std::shared_ptr <Matrix> & I, const std::shared_ptr <Matrix> & P):
+        Transfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P):
                 _I(I),
                 _R(std::make_shared<Matrix>(transpose(*I))),
                 _P(P)
         {
-         std::cout<<"proper transfer down ... \n"; 
+            assert(I);
+            assert(P);
+            
+            std::cout<<"proper transfer down ... \n"; 
         }
-
-
-
 
         virtual ~Transfer(){} 
         
@@ -60,8 +63,9 @@
          * @param[in]  I_in  The interpolation. 
          *
          */
-        virtual bool I_init(const std::shared_ptr <Matrix> &I_in)
+        virtual bool I_init(const std::shared_ptr<Matrix> &I_in)
         {
+            assert(I_in);
             _I = I_in; 
             return true; 
         }
@@ -72,12 +76,12 @@
          * @param[in]  R_in  The restriction. 
          *
          */
-        virtual bool R_init(const std::shared_ptr <Matrix> &R_in)
+        virtual bool R_init(const std::shared_ptr<Matrix> &R_in)
         {
+            assert(R_in);
             _R = R_in; 
             return true; 
         }
-
 
         /**
          * @brief      Initialization of interpolation & restriction operators. 
@@ -87,8 +91,13 @@
          *
          * @return     
          */
-        virtual bool IR_init(const std::shared_ptr <Matrix> &I_in, const std::shared_ptr <Matrix> &R_in)
+        virtual bool IR_init(
+            const std::shared_ptr<Matrix> &I_in, 
+            const std::shared_ptr<Matrix> &R_in)
         {
+            assert(I_in);
+            assert(R_in);
+
             _I = I_in; 
             _R = R_in; 
 
@@ -108,6 +117,7 @@
          */
         virtual bool interpolate(const Vector &x, Vector &x_new)
         {
+            assert(_I);
             x_new = *_I * x; 
             return true; 
         }
@@ -120,11 +130,11 @@
          * @param      M_new 
          *
          */
-        virtual bool interpolate(const std::shared_ptr < Matrix> &M, std::shared_ptr <Matrix> &M_new)
-        {            
-            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
-            return true; 
-        }
+        // virtual bool interpolate(const std::shared_pt < Matrix> &M, std::shared_ptr<Matrix> &M_new)
+        // {            
+        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
+        //     return true; 
+        // }
 
         /**
          * @brief      Interpolation of matrix. 
@@ -134,11 +144,11 @@
          * @param      M_new 
          *
          */
-        virtual bool interpolate(const std::shared_ptr <const Matrix> &M, std::shared_ptr <Matrix> &M_new)
-        {            
-            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
-            return true; 
-        }
+        // virtual bool interpolate(const std::shared_ptr<const Matrix> &M, std::shared_ptr<Matrix> &M_new)
+        // {            
+        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
+        //     return true; 
+        // }
 
         /**
          * @brief      Restriction of vector. 
@@ -149,6 +159,8 @@
          */
         virtual bool restrict(const Vector &x, Vector &x_new)
         {
+
+            assert(_R);
             x_new = *_R * x; 
             return true; 
         }
@@ -161,11 +173,11 @@
          * @param      M_new 
          *
          */
-        virtual bool restrict(const std::shared_ptr < Matrix> &M,  std::shared_ptr <Matrix> &M_new)
-        {
-            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
-            return true; 
-        }
+        // virtual bool restrict(const std::shared_pt < Matrix> &M,  std::shared_ptr<Matrix> &M_new)
+        // {
+        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
+        //     return true; 
+        // }
 
         /**
          * @brief      Restriction of matrix.
@@ -175,11 +187,11 @@
          * @param      M_new 
          *
          */
-        virtual bool restrict(const std::shared_ptr <const  Matrix> &M,  std::shared_ptr <  Matrix> &M_new)
-        {
-            M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
-            return true; 
-        }
+        // virtual bool restrict(const std::shared_ptr<const  Matrix> &M,  std::shared_pt <  Matrix> &M_new)
+        // {
+        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
+        //     return true; 
+        // }
 
 
         /**
@@ -190,13 +202,12 @@
          * @param      M_new 
          *
          */
-        virtual bool restrict(const Matrix &M,  Matrix &M_new)
+        virtual bool restrict(const Matrix &M, Matrix &M_new) const
         {
+            assert(_I);
             M_new =  mat_PtAP_product(M, *_I);  
             return true; 
         }
-
-
 
         /**
          * @brief      Initialization of projection down operator.
@@ -204,13 +215,12 @@
          * @param[in]  P_in  The projection operator. 
          *
          */
-        virtual bool P_init(const std::shared_ptr <Matrix> &P_in)
+        virtual bool P_init(const std::shared_ptr<Matrix> &P_in)
         {
+            assert(P_in);
             _P = P_in; 
             return true; 
         }
-
-
 
         /**
          * @brief      Projection of vector 
@@ -221,16 +231,14 @@
          */
         virtual bool project_down(const Vector &x, Vector &x_new)
         {
+            assert(_P);
             x_new = *_P * x; 
             return true; 
         }
 
-
         protected:        
-            std::shared_ptr <Matrix> _I, _R; // _P;  
-            std::shared_ptr <Matrix>  _P;  
-
-
+            std::shared_ptr<Matrix> _I, _R; // _P;  
+            std::shared_ptr<Matrix> _P;  
     };
 
 }

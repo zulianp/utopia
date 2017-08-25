@@ -29,11 +29,11 @@ namespace utopia {
 	static const ContactSimParams contact8	  			  = { "../data/contact8.e", 1, 2, -1, 0.2, 0, 0, LARGE_VAL,false };
 	static const ContactSimParams contact8_tris	  		  = { "../data/contact8_tris.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams contact_3D_tets	      = { "../data/contact_3D_tets.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
-	static const ContactSimParams contact_cylinder	  	  = { "../data/contact_cylinder.e", 1, 2, -1, 0.5, -0.2, 0.2, LARGE_VAL,false };
+	static const ContactSimParams contact_cylinder	  	  = { "../data/contact_cylinder.e", 1, 2, -1, 0.5, -0.1, 0.1, LARGE_VAL,false };
 	static const ContactSimParams contact_sphere	  	  = { "../data/contact_sphere.e", 1, 2, -1, 0.3, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams contact_cuboids	  	  = { "../data/contact_cuboids.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams triple_contact_circle	  = { "../data/triple_contact_circle.e", 1, 2, -1, 0.2, -0.2, 0.2, LARGE_VAL,false };
-	static const ContactSimParams contact_circles	  	  = { "../data/contact_circles_no_tag.e", 1, 2, -1, 0.2, -0.2, 0.2, LARGE_VAL,false };
+	static const ContactSimParams contact_circles	  	  = { "../data/contact_circles_no_tag.e", 1, 2, -1, 0.8, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams contact2	  			  = { "../data/contact3D.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams contact_quads	  		  = { "../data/contact_quads.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL,false };
 	static const ContactSimParams multi_contact	  		  = { "../data/multi_contact.e", 1, 2, -1, 0.05, 0.0, 0.0, LARGE_VAL,false };
@@ -45,9 +45,11 @@ namespace utopia {
 	static const ContactSimParams contact_least_squares_2 = { "../data/contact_least_squares_2.e", 1, 2, -1, 0.1, -0.2, 0.2, LARGE_VAL, false } ;
 	static const ContactSimParams multi_contact_quads 	  = { "../data/multi_contact_quads.e", 1, 2, -1, 0.01, -0.03, 0.03, LARGE_VAL, false }; 
 	static const ContactSimParams hip_femure_contact	  = { "/Users/patrick/Downloads/ASCII_bone/all_sidesets.e", 1, 2, -1, 10.0, 10.0, 0.0, LARGE_VAL, false };
-	static const ContactSimParams implant_contact	      = { "/Users/patrick/Downloads/ASCII_Implant_coarse/implant.e", 1, 11, -1, 4.0, -4.0, 0.0, LARGE_VAL, false };
+	static const ContactSimParams implant_contact	      = { "../data/implant.e", 1, 11, -1, 4.0, -4.0, 0.0, LARGE_VAL, false };
 	static const ContactSimParams contact_cubes	      	  = { "../data/multibody.e", 1, 2, -1, 0.1, -0.2, 0.0, LARGE_VAL, false };
-
+	static const ContactSimParams hertz_contact			  = { "../data/hertz_contact.e", 1, 2, -1, 0.4, -0.07, 0.07, LARGE_VAL, false };
+	static const ContactSimParams hertz_contact_coarse	  = { "../data/hertz_contact_coarse.e", 1, 2, -1, 0.4, -0.1, 0.1, LARGE_VAL, false };
+	
 	inline static void upper_boundary_cond(const libMesh::Point & p, libMesh::DenseVector<libMesh::Real> & output)
 	{
 		if(output.size() < 3) {

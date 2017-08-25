@@ -564,7 +564,7 @@ namespace utopia {
         
         
         cutk::Settings custom_settings = settings;
-        custom_settings.set("disable_redistribution", cutk::Boolean(true));
+        //custom_settings.set("disable_redistribution", cutk::Boolean(true));
         custom_settings.set("verbosity_level", cutk::Integer(1));
         
         
@@ -673,12 +673,12 @@ namespace utopia {
         double intersection_time = 0.0;
         double assembly_time     = 0.0;
         
-        utopia::Chrono c;
+        //utopia::Chrono c;
         
         auto fun = [&](const VElementAdapter<Dimensions> &master,
                        const VElementAdapter<Dimensions> &slave) -> bool {
             
-            c.start();
+            //c.start();
             
             libMesh::DenseMatrix<libMesh::Real> biorth_weights;
             
@@ -725,9 +725,9 @@ namespace utopia {
             const int order = order_for_l2_integral(dim, master_el, dof_master->variable(0).type().order , slave_el,dof_slave->variable(0).type().order);
             libMesh::Real weight_reverse = 0;
             
-            c.stop();
-            element_setup_time += c.get_seconds();
-            c.start();
+            //c.stop();
+            //element_setup_time += c.get_seconds();
+            //c.start();
             
             if(dim == 2)  {
                 make_polygon(master_el,   master_pts);
@@ -742,8 +742,10 @@ namespace utopia {
                     make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
                     pair_intersected = true;
                     
-                    master_trans  = std::make_shared<Transform2>(master_el);
-                    slave_trans = std::make_shared<Transform2>(slave_el);
+//                    bool affine_transf=true;
+                    
+                    master_trans  = std::make_shared<AffineTransform2>(master_el);
+                    slave_trans = std::make_shared<AffineTransform2>(slave_el);
                     pair_intersected = true;
                 }
             }
@@ -760,8 +762,8 @@ namespace utopia {
                     weight_reverse = isector.p_mesh_volume_3(master_poly)/weight;
                     
                     make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
-                    master_trans  = std::make_shared<Transform3>(master_el);
-                    slave_trans = std::make_shared<Transform3>(slave_el);
+                    master_trans  = std::make_shared<AffineTransform3>(master_el);
+                    slave_trans = std::make_shared<AffineTransform3>(slave_el);
                     pair_intersected = true;
                 }
                 
@@ -770,9 +772,9 @@ namespace utopia {
                 return false;
             }
             
-            c.stop();
-            intersection_time += c.get_seconds();
-            c.start();
+//            c.stop();
+//            intersection_time += c.get_seconds();
+//            c.start();
             
             const auto &master_dofs = master.dof_map();
             const auto &slave_dofs  = slave.dof_map();

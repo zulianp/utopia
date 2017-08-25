@@ -20,6 +20,7 @@ option(TRY_WITH_BLAS "Allows to enable to try enabling the blas backend" ON)
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" ON)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
 option(UTOPIA_LOG "enables utopia logging facilities" OFF)
+option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 
 #################################################################################
 #################################################################################
@@ -29,6 +30,12 @@ IF(WIN32)
 	SET(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
 ENDIF()
+
+if (ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
+		SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
+	endif()
+endif()
 
 if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
 	IF(WIN32)
@@ -205,9 +212,8 @@ if(TRY_WITH_PETSC)
 		list(APPEND UTOPIA_LIBRARIES  ${MPI_CXX_LIBRARIES} )
 	endif()
 
-
 	find_package(PETSc)
-set(PETSC_FOUND TRUE)
+	
 	if(PETSC_FOUND)
 		list(APPEND UTOPIA_INCLUDES ${PETSC_INCLUDES})
 		list(APPEND UTOPIA_LIBRARIES ${PETSC_LIBRARIES})
@@ -391,7 +397,7 @@ include_directories(.)
 # link_libraries(${UTOPIA_LIBRARIES})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall ")# -Wextra -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG ")
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG ")
 
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
 

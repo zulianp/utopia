@@ -69,8 +69,8 @@ namespace utopia {
 
 
 	 	//////////////////////////////////////////////////
-		int skip_zeros = 1;
-		B = sparse(slave_->dof_map().n_local_dofs(), 
+//		int skip_zeros = 1;
+		B = sparse(slave_->dof_map().n_local_dofs(),
 			master_->dof_map().n_local_dofs(), 
 			std::max(1, int(master_->dof_map().n_local_dofs() * 0.2)));
 
@@ -537,7 +537,7 @@ namespace utopia {
 		c.describe(std::cout);
 
 
-		size_t n = mesh.n_active_local_elem();
+//		size_t n = mesh.n_active_local_elem();
 		const int approx_order = space.order();
 
 			 //init extra quadrature quantities
@@ -548,7 +548,7 @@ namespace utopia {
 		DenseMatrix<Real> polygon_1, polygon_2, ref_polygon_1, ref_polygon_2, clipper_1;
 		DenseMatrix<Real> side_polygon_1, side_polygon_2;
 		DenseMatrix<Real> isect_polygon_1, isect_polygon_2;
-		Scalar isect_1[MAX_N_ISECT_POINTS * MAX_N_DIMS], isect_2[MAX_N_ISECT_POINTS * MAX_N_DIMS];
+//		Scalar isect_1[MAX_N_ISECT_POINTS * MAX_N_DIMS], isect_2[MAX_N_ISECT_POINTS * MAX_N_DIMS];
 
 		DenseMatrix<Real> A(dim, dim), Ainv(dim, dim);
 		DenseMatrix<Real> b(dim, 1), binv(dim, 1);
@@ -557,8 +557,8 @@ namespace utopia {
 
 		Intersector isector;
 
-		Scalar projection_1[MAX_N_ISECT_POINTS * MAX_N_DIMS];
-		Scalar projection_2[MAX_N_ISECT_POINTS * MAX_N_DIMS];
+//		Scalar projection_1[MAX_N_ISECT_POINTS * MAX_N_DIMS];
+//		Scalar projection_2[MAX_N_ISECT_POINTS * MAX_N_DIMS];
 
 		std::vector<Point> points_1, points_2;
 
@@ -681,7 +681,9 @@ namespace utopia {
 			const Scalar isect_dy = isect_polygon_2(0, 1) - isect_polygon_2(1, 1);
 
 			const Scalar area   = std::sqrt(isect_dx*isect_dx + isect_dy*isect_dy);
-			const Scalar weight = area/std::sqrt(dx*dx + dy*dy);
+			const Scalar area_slave = std::sqrt(dx*dx + dy*dy);
+			const Scalar relative_area = area/area_slave;
+			const Scalar weight = 1./area_slave;
 
 			const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
 
@@ -694,7 +696,7 @@ namespace utopia {
 
 			current_contact = std::make_shared<Contact>();
 			current_contact->isect_area	   = area;
-			current_contact->relative_area = weight;
+			current_contact->relative_area = relative_area;
 
 
 		} else if(dim == 3) {
@@ -711,7 +713,8 @@ namespace utopia {
 
 			const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);	
 			const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
-			const Scalar weight 	= area/area_slave;
+			const Scalar relative_area 	= area/area_slave;
+			const Scalar weight = 1./area_slave;
 
 			const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);
 
@@ -724,7 +727,7 @@ namespace utopia {
 
 			current_contact = std::make_shared<Contact>();
 			current_contact->isect_area	   = area;
-			current_contact->relative_area = weight;
+			current_contact->relative_area = relative_area;
 
 		} else {
 			assert(false);
@@ -863,7 +866,7 @@ namespace utopia {
 						if(std::abs(current_contact->avg_gap) <= search_radius) {
 							contacts.push_back(current_contact);	
 							// plot_box(box_2, "intersected/box");
-							plot_polygon(dim, side_polygon_2.m(),  &side_polygon_2.get_values()[0],  "s/poly/"  + std::to_string(index_2));
+							// plot_polygon(dim, side_polygon_2.m(),  &side_polygon_2.get_values()[0],  "s/poly/"  + std::to_string(index_2));
 						}
 					} else {
 						contacts.push_back(current_contact);

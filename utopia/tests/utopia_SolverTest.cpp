@@ -32,9 +32,7 @@ namespace utopia
             TR_test();
             LS_test();
             nl_solve_test();
-           
         }
-
 
         class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
         public:
@@ -342,15 +340,11 @@ namespace utopia
             inexact_newton_test();
         }
 
-
-
-
-
         void mprgp_test()
         {
             // std::cout << "         Begin: mprgp_test" << std::endl;
-        	SizeType n = 10; 
-        	PetscScalar h = 1.0/(n-1);
+        	const SizeType n = 50; 
+        	const PetscScalar h = 1.0/(n-1);
 
 
         	DSMatrixd A = sparse(n, n, 3);
@@ -358,8 +352,8 @@ namespace utopia
 
 	        // 1d laplace 	
 	        {
-		        Write<DSMatrixd> w(A);
-		        Range r = row_range(A);
+		        Write<DSMatrixd> w_A(A);
+		        const Range r = row_range(A);
 
 		        for(SizeType i = r.begin(); i != r.end(); ++i) {
 		            if(i > 0) {    
@@ -387,26 +381,26 @@ namespace utopia
 
 		        if(r.end() == n) {
 		            A.set(n-1, n-1, 1.);
-		            A.set(n-1, n-2, 0);
+		            A.set(n-1, n-2, 0.);
 		        }
 		    }
 
-		   	l = -1 * values(n, 1);
-		    u =  values(n, 1);
+		   	l = values(n, -1.);
+		    u = values(n, 1.);
 		    
-		    b = 50 * values(n, 1);
+		    b = values(n, 50.);
 
 		    {
 	            Write<DVectord> w (b);
 	            Range rhs_range = range(b);;
-	            for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++)
-	            {
-	          		if(i > n/2)
+	            for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++) {
+	          		if(i > n/2) {
 	                	b.set(i, -50);
+                    }
 
-	                if(i ==0 || i == rhs_range.end()-1)
+	                if(i ==0 || i == rhs_range.end()-1) {
 	                	b.set(i, 0);
-	  
+                    }
 	            }
 	        }
 
@@ -417,8 +411,10 @@ namespace utopia
 			// l =  values(local_size(u).get(0), -999); 
 
 			auto box = make_box_constaints(make_ref(l), make_ref(u)); 
-            
 
+            //FIXME the following unilateral constraints do not work with MPRGP
+            // auto box = make_upper_bound_constraints(make_ref(u));
+            
             MPRGP<DSMatrixd, DVectord> mprgp;
             mprgp.set_box_constraints(make_ref(box)); 
 
@@ -429,20 +425,32 @@ namespace utopia
             mprgp.solve(A, b, x); 
 
 
-
             DVectord x_0 = 0 * x; 
-            auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+            // auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+            auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
             SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 
             nlsolver.set_box_constraints(box); 
 
-            nlsolver.verbose(false); 
-            nlsolver.max_it(50); 
+            // nlsolver.verbose(false); 
+            nlsolver.max_it(200); 
+            nlsolver.verbose(true);
             nlsolver.solve(A, b, x_0);
 
-            assert(approxeq(x, x_0));
+            // if(!approxeq(x, x_0)) {
+            double diff = norm2(x - x_0);
+            double sum_A = sum(A);
+            double norm_x = norm2(x);
+            double norm_x0 = norm2(x_0);
 
-//            std::cout << "         End: mprgp_test" << std::endl;
+            if(mpi_world_rank() == 0) {
+                std::cout << "diff: " << diff << std::endl;
+                std::cout << "sum_A: " << sum_A << std::endl;
+                std::cout <<  "nx/nx0 = " << norm_x << "/" << norm_x0 << std::endl;
+            }
+            // }
+
+            assert(approxeq(x, x_0));
         }
 
         void petsc_tr_rr_test()

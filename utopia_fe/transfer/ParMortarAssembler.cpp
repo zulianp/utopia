@@ -1221,6 +1221,9 @@ namespace utopia {
                          DSMatrixd &B,
                          const cutk::Settings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
     {
+
+        assert(false && "never use this!");
+        
         std::shared_ptr<UtopiaMesh> local_fun_spaces = cutk::make_shared<UtopiaMesh>(master_slave);
         
         libMesh::DenseMatrix<libMesh::Real> src_pts;

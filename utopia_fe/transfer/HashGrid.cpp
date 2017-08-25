@@ -40,7 +40,7 @@ namespace utopia {
 		}
 
 		if(result >= totalDim || result < 0) {
-			printf("error -> %d\n", result);
+			printf("error -> %ld\n", result);
 		}
 
 		return result;

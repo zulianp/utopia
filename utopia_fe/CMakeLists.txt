@@ -4,6 +4,7 @@ project(utopia_fe)
 #To kill the policy warning  (maybe not a good idea yet)
 set(CMAKE_MACOSX_RPATH 1)
 
+
 #################################################################################
 #################################################################################
 #################################################################################
@@ -13,7 +14,13 @@ set(UTOPIA_FE_SRC_PATH ${UTOPIA_FE_ROOT_PATH}/src)
 set(UTOPIA_FE_CMAKES_PATH ${UTOPIA_FE_ROOT_PATH}/libcmake)
 set(TYPE DYNAMIC)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+if (ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
+		SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
+	endif()
+endif()
+
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 ################################## Include cmake functions and find modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_FE_ROOT_PATH}/cmake")
 file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils" )
@@ -57,6 +64,7 @@ set(SOURCES "")
 
 
 include_directories(rapidxml)
+include_directories(transfer)
 
 list(APPEND SOURCES utopia_FEDSLBaseExamples.cpp)
 list(APPEND SOURCES utopia_FEDSLMortarExamples.cpp)
@@ -65,6 +73,8 @@ list(APPEND SOURCES utopia_MixedFESpaceExample.cpp)
 list(APPEND SOURCES utopia_TimeDiffExamples.cpp)
 list(APPEND SOURCES utopia_Biomechanics.cpp)
 list(APPEND SOURCES utopia_UGMeshReader.cpp)
+list(APPEND SOURCES utopia_NormalTangentialCoordinateSystem.cpp)
+list(APPEND SOURCES utopia_GeometryTest.cpp)
 
 add_subdirectory(transfer)
 add_library(utopia_fe STATIC ${SOURCES} ${HEADERS})

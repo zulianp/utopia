@@ -546,7 +546,7 @@ namespace utopia {
         
         
         cutk::Settings custom_settings = settings;
-        custom_settings.set("disable_redistribution", cutk::Boolean(true));
+        custom_settings.set("enable_redistribution", cutk::Boolean(true));
         custom_settings.set("verbosity_level", cutk::Integer(1));
         
         
@@ -591,6 +591,14 @@ namespace utopia {
         biorth_elem->attach_quadrature_rule(&qg);
         biorth_elem->reinit(&el);
         mortar_assemble_weights(*biorth_elem, weights);
+    }
+
+    static void scale_polyhedron(const double scaling, Polyhedron &poly)
+    {
+       const int n_values = poly.n_nodes * poly.n_dims;
+        for(int i = 0; i < n_values; ++i) {
+            poly.points[i] *= scaling;
+        }
     }
     
     template<int Dimensions>
@@ -709,26 +717,33 @@ namespace utopia {
                     
                     make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
                     pair_intersected = true;
-                    
-                    src_trans  = std::make_shared<Transform2>(src_el);
-                    dest_trans = std::make_shared<Transform2>(dest_el);
+                    //bool affine_map = true;
+                    src_trans  = std::make_shared<AffineTransform2>(src_el);
+                    dest_trans = std::make_shared<AffineTransform2>(dest_el);
                     pair_intersected = true;
                 }
             }
             else if(dim == 3) {
+
+                // const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly); //(volume)
+                //src_poly
                 make_polyhedron(src_el,  src_poly);
                 make_polyhedron(dest_el, dest_poly);
+
+                //scale_polyhedron(src_poly, 1./weight); //(volume)
+                //scale_polyhedron(dest_poly, 1./weight); //(volume)
                 
                 
                 if(intersect_3D(src_poly, dest_poly, intersection3)) {
-                    
+                    //scale_polyhedron(intersection3, weight); //(volume)
+
                     total_intersection_volume += isector.p_mesh_volume_3(intersection3);
                     
-                    const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
+                    const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly); //comment this out (volume)
                     
                     make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
-                    src_trans  = std::make_shared<Transform3>(src_el);
-                    dest_trans = std::make_shared<Transform3>(dest_el);
+                    src_trans  = std::make_shared<AffineTransform3>(src_el);
+                    dest_trans = std::make_shared<AffineTransform3>(dest_el);
                     pair_intersected = true;
                 }
                 
@@ -758,7 +773,7 @@ namespace utopia {
 
                 const std::vector<std::vector<Real>> & phi_master  = master_fe->get_phi();
 
-                master_fe->reinit(&src_el, &src_ir.get_points(), &src_ir.get_weights());
+                master_fe->reinit(&src_el);
                 
                 slave_fe->attach_quadrature_rule(&dest_ir);
 
@@ -766,21 +781,16 @@ namespace utopia {
            
                 const std::vector<Real> & JxW_slave = slave_fe->get_JxW();
 
-                slave_fe->reinit(&dest_el, &dest_ir.get_points(), &dest_ir.get_weights());
+                slave_fe->reinit(&dest_el);
                 
                 elemmat.zero();
                 
-                
-                
                 if(use_biorth_) {
-
                     mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
-                    
                 } else {
                     mortar_assemble(*master_fe, *slave_fe, elemmat);
                 }
-                
-
+            
                 auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
  
                 local_element_matrices_sum += partial_sum;
@@ -816,12 +826,10 @@ namespace utopia {
         };
 
         if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, fun, settings, use_biorth_,n_var)) {
-            std::cout << "n_intersections: false2" <<std::endl;
+            std::cout << "no intersections" <<std::endl;
             return false;
         }
-        
-        std::cout << "n_intersections: " <<std::endl;
-        
+                
         double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };
         
         comm.allReduce(volumes, 2, express::MPISum());
