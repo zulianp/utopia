@@ -143,6 +143,7 @@ show :
 	-@echo -n \${\${VARIABLE}}
 ")
 
+
   # Define macro for getting PETSc variables from Makefile
   macro(PETSC_GET_VARIABLE var name)
     set(${var} "NOTFOUND" CACHE INTERNAL "Cleared" FORCE)
@@ -161,6 +162,8 @@ show :
   include(ResolveCompilerPaths)
   resolve_includes(PETSC_INCLUDES "${PETSC_CC_INCLUDES}")
   resolve_libraries(PETSC_LIBRARIES "${PETSC_LIB}")
+
+
 
   # Add some extra libraries on OSX
   if (APPLE)

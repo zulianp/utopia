@@ -3,25 +3,14 @@
 
 #include <string>
 #include <vector>
-#include <libmesh/point.h>
-#include <libmesh/mesh.h>
+
+//forward declarations
+namespace libMesh {
+	class MeshBase;
+	class Point;
+}
 
 namespace utopia {
-	class Socket {
-	private:
-		const std::string _host, _service;
-
-		
-	public:
-		typedef char byte;
-		
-		Socket(const std::string &_host, const std::string &_service)
-			: _host(_host), _service(_service)
-		{}
-
-		bool write(const byte * buff, const int size);
-	};
-
 	class Box;
 
 	void __attribute__ ((used)) plot_polygon(const int dims, const int n_points, const double *points, const std::string &name = "p");

@@ -1,17 +1,22 @@
+
 #include "utopia_Socket.hpp"
 
-#include <boost/asio.hpp>
-#include <boost/array.hpp>
+#include "libmesh/elem.h"
+#include <libmesh/point.h>
+#include <libmesh/mesh.h>
+
 #include <sstream>
 #include <string>
 #include <ostream>
 #include <iostream>
 
 #include "MortarAssemble.hpp"
-
-#include "libmesh/elem.h"
-
 #include "Box.hpp"
+
+#ifdef WITH_BOOST
+
+#include <boost/asio.hpp>
+#include <boost/array.hpp>
 
 static const char * host = "localhost";
 static const char * port = "24200";
@@ -24,6 +29,20 @@ using std::cout;
 using std::endl;
 
 namespace utopia {
+
+	class Socket {
+	private:
+		const std::string _host, _service;
+
+	public:
+		typedef char byte;
+		
+		Socket(const std::string &_host, const std::string &_service)
+		: _host(_host), _service(_service)
+		{}
+
+		bool write(const byte * buff, const int size);
+	};
 
 	bool Socket::write(const Socket::byte * buff, const int size)
 	{
@@ -48,18 +67,16 @@ namespace utopia {
 		return true;
 	}
 
-	
-
 	class Header {
 	public:
 
 		Header()
 		: name("object"), 
-		  type("undefined"), 
-		  color_rgb("255, 0, 0"), 
-		  shader("Color Shader"),
-		  mode("facesWithFrames"),
-		  is_polygon(false)
+		type("undefined"), 
+		color_rgb("255, 0, 0"), 
+		shader("Color Shader"),
+		mode("facesWithFrames"),
+		is_polygon(false)
 		{}
 
 		void write(std::ostream &os) {
@@ -162,14 +179,13 @@ namespace utopia {
 		plot_points(dims, points.size(), &pts[0], name);
 
 		// for(auto p : pts) {
-			
+
 		// 	std::cout << p << "\n";
 		// }
 
 		// std::cout << std::endl;
 
 	}
-
 
 	void quiver(const int dims, const int n_points, const double *points, const double *vectors, const std::string &name)
 	{
@@ -427,7 +443,7 @@ namespace utopia {
 
 				points.insert(points.end(), p4.begin(), p4.end());
 				points.insert(points.end(), b_max.get_values().begin(), b_max.get_values().end());
-			
+
 				//upper square
 				points.insert(points.end(), b_max.get_values().begin(), b_max.get_values().end());
 				points.insert(points.end(), p6.begin(), p6.end());
@@ -452,3 +468,54 @@ namespace utopia {
 	}
 }
 
+#else 
+//empty functions
+namespace utopia {
+
+	void plot_polygon(const int, const int, const double *, const std::string &)
+	{
+		std::cerr << "[Warning] plot function not implemented, make sure to have a proper boost installation" << std::endl;
+	}
+
+	void plot_lines(const int, const int, const double *, const std::string &)
+	{
+		std::cerr << "[Warning] plot function not implemented, make sure to have a proper boost installation" << std::endl;
+	}
+
+	void plot_points(const int, const int, const double *, const std::string &)
+	{
+		std::cerr << "[Warning] plot function not implemented, make sure to have a proper boost installation" << std::endl;
+	}
+
+	void quiver(const int, const int, const double *, const double *vectors, const std::string &)
+	{
+		std::cerr << "[Warning] plot function not implemented, make sure to have a proper boost installation" << std::endl;
+	}
+
+	void plot_quad_points(const int, const std::vector<libMesh::Point> &, const std::string &)
+	{
+		std::cerr << "[Warning] plot function not implemented, make sure to have a proper boost installation" << std::endl;
+	}
+
+	void plot_mesh(const libMesh::MeshBase &, const std::string &)
+	{
+		std::cerr << "[Warning] plot function not implemented, make sure to have a proper boost installation" << std::endl;
+	}
+
+	void plot_mesh_f(const libMesh::MeshBase &, const double * function, const std::string &)
+	{
+		std::cerr << "[Warning] plot function not implemented, make sure to have a proper boost installation" << std::endl;
+	}
+
+	void plot_polygon_mesh(const libMesh::MeshBase &, const std::string &)
+	{
+		std::cerr << "[Warning] plot function not implemented, make sure to have a proper boost installation" << std::endl;
+	}
+
+	void plot_box(const Box &, const std::string &)
+	{
+		std::cerr << "[Warning] plot function not implemented, make sure to have a proper boost installation" << std::endl;
+	}
+}
+
+#endif //WITH_BOOST

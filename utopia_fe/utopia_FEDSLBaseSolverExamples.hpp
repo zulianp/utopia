@@ -20,7 +20,7 @@
 #include "libmesh/nonlinear_implicit_system.h"
 #include "utopia_FEDSLMortarExamples.hpp"
 
-#include "utopia_FEDSLMortarExamples.cpp"
+#include "utopia_FEDSLMortarExamples.hpp"
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/equation_systems.h"
 

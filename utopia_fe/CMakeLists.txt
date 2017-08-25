@@ -52,11 +52,12 @@ if(Boost_FOUND)
 		include_directories(${Boost_INCLUDE_DIRS})
 		link_directories(${Boost_LIBRARY_DIRS})
 		list(APPEND UTOPIA_FE_LIBRARIES ${Boost_LIBRARIES})
+		add_definitions("-DWITH_BOOST")
 else()
 	MESSAGE(WARNING "Boost not found.")
 endif()
 
-add_definitions("-D_LIBCPP_DEBUG=0")
+# add_definitions("-D_LIBCPP_DEBUG=0")
 
 list(APPEND HEADERS utopia_fe.hpp)
 list(APPEND HEADERS rapidxml/rapidxml.hpp rapidxml/rapidxml_iterators.hpp rapidxml/rapidxml_print.hpp rapidxml/rapidxml_utils.hpp)
