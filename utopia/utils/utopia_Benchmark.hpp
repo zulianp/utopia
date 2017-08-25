@@ -7,11 +7,10 @@
 
 #include "test_problems/utopia_TestProblems.hpp"
 #include "utopia.hpp"
-//#include <memory>
 
 namespace utopia {
 
-	template <typename Matrix, typename Vector>
+	template <typename Matrix, typename SparseMatrix, typename Vector>
 	class Benchmark {
 	public:
 
@@ -20,7 +19,7 @@ namespace utopia {
 			sink_ = 0;
 		}
 
-		// call this to avoid compilers to optimize away computations
+		// call this to forbid compilers to optimize away computations
 		void markUsed(void* value) {
 			sink_ = *((char*)value);
 		}
@@ -67,12 +66,31 @@ namespace utopia {
 			markUsed(&n);
 		}
 
+		void sparseMatrixAlgebra() {
+			size_t dim = static_cast<size_t>(std::sqrt(size_));
+
+			Vector v = values(dim, 1.2);
+			SparseMatrix s1 = diag(v);
+			SparseMatrix s2 = identity(dim, dim);
+			{
+				Write<SparseMatrix> w(s2);
+				s2.set(0, 1, 1);
+			}
+
+			SparseMatrix s3 = s1 * s2 * transpose(s1) * s2 * transpose(s2);
+			s1 = s3 + s2 - s1;
+			s3 = s1 * s2 + s3 * transpose(s2);
+
+			markUsed(&s3);
+		}
+
 		void mixedAlgebra() {
 			size_t dim = static_cast<size_t>(std::sqrt(size_));
 			Matrix m  = values(dim, dim, 0.001);
 			Vector v1 = values(dim, 0.1);
 			Vector v2 = values(dim, 0.2);
 			Vector v3 = values(dim, 0.3);
+			SparseMatrix s1 = diag(v1);
 
 			Vector v = abs(m * v1 + v2 - v3);
 			double n = fabs(sum(v));
@@ -89,6 +107,8 @@ namespace utopia {
 			v = m * v2 * 0.1;
 			n += fabs(sum(v));
 			v = (m + 0.1 * identity(dim, dim)) * values(dim, 0.5);
+			n += fabs(sum(v));
+			v = s1 * v - m * v2 + s1 * (v3 - v1);
 			n += fabs(sum(v));
 
 			markUsed(&n);
@@ -112,11 +132,12 @@ namespace utopia {
 		}
 
 		void runAll() {
-			for (int i = 0; i < 15; ++i) {
-				vectorAlgebra();
-				matrixAlgebra();
-				mixedAlgebra();
+			vectorAlgebra();
+			matrixAlgebra();
+			if (mpi_world_size() == 1) {
+				sparseMatrixAlgebra();
 			}
+			mixedAlgebra();
 			solvers();
 		}
 

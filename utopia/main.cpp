@@ -29,6 +29,7 @@ int main(const int argc, char *argv[])
             if (++i >= argc)
                 break;
             tests = argv[i];
+#ifdef WITH_PETSC
         } else if (argv[i] == std::string("-benchmark")) {
             if (++i >= argc)
                 break;
@@ -37,8 +38,9 @@ int main(const int argc, char *argv[])
                 std::cerr << "Invalid size passed to -benchmark argument. Exiting";
                 break;
             }
-            Benchmark<DMatrixd, DVectord>(size).runAll();
+            Benchmark<DMatrixd, DSMatrixd, DVectord>(size).runAll();
             return Utopia::Finalize();
+#endif
         }
     }
 
