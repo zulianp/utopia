@@ -12,4 +12,5 @@
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 #srun ../bin/utopia_exec
-ddt --connect ../bin/utopia_exec
+#ddt --connect utopia_exec
+ddt ./utopia_exec
