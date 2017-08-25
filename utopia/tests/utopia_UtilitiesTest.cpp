@@ -52,8 +52,11 @@ namespace utopia {
 
             res = m * v * 0.1;
 
-            assert(approxeq(0.1, res.get(0)));
-            assert(approxeq(0.2, res.get(1)));
+            {
+                Read<Vector> w_res(res);
+                assert(approxeq(0.1, res.get(0)));
+                assert(approxeq(0.2, res.get(1)));
+            }
         }
 
         void range_test() {
@@ -66,7 +69,7 @@ namespace utopia {
 
             #ifdef WITH_PETSC
                 //NOTE(eric): range assignment is NYI in PETSc backend
-                if (std::is_same<Matrix, DMatrixd>::value) return;
+            if (std::is_same<Matrix, DMatrixd>::value) return;
             #endif
 
             Matrix m3 = m1;
@@ -173,7 +176,12 @@ namespace utopia {
             int n = 10;
             Vector v = values(n, 1.0);
             Vector res;
-            inline_eval(0.1 * v + abs(sqrt(v) - v), res);
+
+            {
+                Read<Vector> r_v(v);
+                inline_eval(0.1 * v + abs(sqrt(v) - v), res);
+            }
+
             Vector v_exp = values(n, 0.1);
             assert(approxeq(v_exp, res));
 
@@ -181,26 +189,46 @@ namespace utopia {
             Matrix m_res = dense(n, n);
 
             //we will be reading from n to the end of the function
-            Read<Matrix> r(m);
+            {
+                Read<Matrix> r_m(m);
+                inline_eval(0.1 * m + abs(sqrt(m) - m), m_res);
+            }
 
-            inline_eval(0.1 * m + abs(sqrt(m) - m), m_res);
             each_read(m_res, [](SizeType x, SizeType y, double entry) {
                 assert(approxeq(x == y ? 0.1 : 0.0, entry));
             });
 
-            inline_eval((m + m) * v + v, res);
+            {
+                Read<Matrix> r_m(m);
+                Read<Vector> r_v(v);                
+                inline_eval((m + m) * v + v, res);
+            }
+
             v_exp = values(n, 3.0);
             assert(approxeq(v_exp, res));
 
             Number<double> num = 0;
-            inline_eval(dot(m*v, 3*v), num);
+            
+            {
+                Read<Matrix> r_m(m);
+                Read<Vector> r_v(v);
+
+                inline_eval(dot(m*v, 3*v), num);
+            }
+
+
             assert(approxeq(30.0, num));
 
-            inline_eval(3. * dot(v, v) +
-                dot(m * transpose(m),
-                    0.1 * m + 0.5 * -0.6*identity(n, n) + values(n, n, 0.0001)
-                ), num
-            );
+            {
+                Read<Matrix> r_m(m);
+                Read<Vector> r_v(v);
+
+                inline_eval(3. * dot(v, v) +
+                    dot(m * transpose(m),
+                        0.1 * m + 0.5 * -0.6*identity(n, n) + values(n, n, 0.0001)
+                        ), num
+                    );
+            }
             assert(approxeq(28.001, num));
         }
 
@@ -250,7 +278,7 @@ namespace utopia {
 #endif //WITH_PETSC
 
 #ifdef WITH_BLAS
-            UtilitiesTest<Matrixd, Vectord>().run();
+        UtilitiesTest<Matrixd, Vectord>().run();
 #endif //WITH_BLAS
         // wrapper_test_stdvector();  // doesnt compile on cluster - TODO: fix it
 

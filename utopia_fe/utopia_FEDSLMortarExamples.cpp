@@ -466,9 +466,6 @@ namespace utopia {
 				printf("--------------------------------\n");
 			});
 
-
-
-
 			master_slave_context.system.attach_assemble_object(ass);
 			master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
 			master_slave_context.equation_systems.solve();
@@ -636,8 +633,8 @@ namespace utopia {
 		// mesh->read("../data/two_pseudo_rocks_refined.e");
 		// mesh->read("../data/quasi_signorini.e");
 #ifdef RUN_3D_CONTACT
-		// mesh->read("../data/hertz_530.e");
-		mesh->read("../data/two_rocks_26653.e");
+		mesh->read("../data/hertz_530.e");
+		// mesh->read("../data/two_rocks_26653.e");
 		// mesh->read("../data/quasi_signorini_coarse.e");
 #else
 		mesh->read("../data/hertz_2d.e");

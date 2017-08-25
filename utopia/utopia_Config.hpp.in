@@ -55,4 +55,14 @@
 	#define UTOPIA_PETSC_VERSION_LESS_THAN(major,minor,subminor) 1
 #endif // WITH_PETSC
 
+#ifndef NDEBUG 
+#include <assert.h>
+#cmakedefine ENABLE_LOCK_CHECK
+#ifdef ENABLE_LOCK_CHECK
+#define assert_enabled(expr_) assert(expr_)
+#else
+#define assert_enabled(expr_)  
+#endif //ENABLE_LOCK_CHECK
+#endif //NDEBUG
+
 #endif //UTOPIA_CONFIG_HPP

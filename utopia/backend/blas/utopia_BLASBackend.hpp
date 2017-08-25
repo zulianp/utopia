@@ -51,6 +51,22 @@ namespace utopia
         template<class Tensor>
         inline void writeUnlock(const Tensor &) {}
 
+        inline void writeLock(CRSMatrix<Scalar> &mat) {
+            mat.assemblyBegin();
+        }
+
+        inline void writeUnlock(CRSMatrix<Scalar> &mat) {
+            mat.assemblyEnd();
+        }
+
+        inline void writeLock(CCSMatrix<Scalar> &mat) {
+            mat.assemblyBegin();
+        }
+
+        inline void writeUnlock(CCSMatrix<Scalar> &mat) {
+            mat.assemblyEnd();
+        }
+
 
         template<class Tensor>
         inline void readAndWriteLock(const Tensor &) {}

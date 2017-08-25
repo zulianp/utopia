@@ -66,8 +66,17 @@ namespace utopia {
 
 			Vector res;
 			double checksum = .0;      
-			inline_eval(make_test_expr_2(m, v1, v2, v3), res); checksum += fabs(sum(res));
-			inline_eval(make_test_expr_6(m, v1, v2, v3), res); checksum += fabs(sum(res));
+
+			{
+				Read<Matrix> r_m(m);
+				Read<Vector> r_v1(v1);
+				Read<Vector> r_v2(v2);
+				Read<Vector> r_v3(v3);
+
+				inline_eval(make_test_expr_2(m, v1, v2, v3), res); checksum += fabs(sum(res));
+				inline_eval(make_test_expr_6(m, v1, v2, v3), res); checksum += fabs(sum(res));
+			}
+
 			c.stop();
 			if(verbose) {
 				std::cout<< "run inline " << ", check: " << checksum << ",\t";

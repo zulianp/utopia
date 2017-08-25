@@ -451,7 +451,8 @@ namespace utopia {
         Vectord y = values(xr.extent(), 2.0);
 
         {
-            Write<DVectord> write(x);
+            Read<Vectord> r_y(y);
+            Write<DVectord> w_x(x);
             for (SizeType i = xb; i < xb + xr.extent(); ++i)
                 x.set(i, y.get(i - xb));
         }

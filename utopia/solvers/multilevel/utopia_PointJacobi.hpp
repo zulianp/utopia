@@ -112,7 +112,7 @@ namespace utopia
         bool check_indef(Vector &diag_A) 
         {
             {
-                Write<Vector> w(diag_A);
+                ReadAndWrite<Vector> w(diag_A);
                 Range rr = range(diag_A);
 
                 for (SizeType i = rr.begin(); i != rr.end(); i++) 

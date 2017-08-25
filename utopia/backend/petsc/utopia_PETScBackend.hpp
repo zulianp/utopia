@@ -287,10 +287,14 @@ namespace utopia
 
 
 		template<class Tensor>
-		void readAndWriteLock(const Tensor &) {}
+		void readAndWriteLock(Tensor &t) {
+			writeLock(t);
+		}
 		
 		template<class Tensor>
-		void readAndWriteUnlock(const Tensor &) {}
+		void readAndWriteUnlock(Tensor &t){
+			writeUnlock(t);
+		}
 		
 		template<class LeftTensor, class RightTensor, class ResultTensor>
 		inline bool apply(LeftTensor &&left, RightTensor &&right, const Plus &, ResultTensor &result) {

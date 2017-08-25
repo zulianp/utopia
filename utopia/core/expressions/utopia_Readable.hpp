@@ -6,7 +6,7 @@
 #define UTOPIA_UTOPIA_READABLE_HPP
 
 #include "utopia_ForwardDeclarations.hpp"
-
+#include "utopia_Config.hpp"
 
 namespace utopia {
     
@@ -42,14 +42,41 @@ namespace utopia {
          */
         inline Scalar get(const int row, const int col) const
         {
+            assert_enabled(is_read_locked());
             assert(row < size(derived()).get(0));
             assert(col < size(derived()).get(1));
 
             return Backend<Scalar, Traits<Implementation>::Backend >::Instance().get(derived().implementation(), row, col);
         }
 
+#ifdef ENABLE_LOCK_CHECK
+        Readable()
+        : lock_active_(false)
+        { }
+
+        inline bool is_read_locked() const
+        {
+            return lock_active_;
+        }
+
+        inline void read_lock() const
+        {
+            lock_active_ = true;
+        }
+
+        inline void read_unlock() const
+        {
+            lock_active_ = false;
+        }
+#endif //NDEBUG   
+
     private:
         CONST_DERIVED_CRT(Derived);
+
+#ifdef ENABLE_LOCK_CHECK
+        mutable bool lock_active_;
+#endif //NDEBUG
+
     };
 
     /*!
@@ -74,12 +101,38 @@ namespace utopia {
          */
         inline Scalar get(const int index) const
         {
+            assert_enabled(is_read_locked());
             assert(index < size(derived()).get(0));
             return Backend<Scalar, Traits<Implementation>::Backend >::Instance().get(derived().implementation(), index);
         }
 
+#ifdef ENABLE_LOCK_CHECK
+        Readable()
+        : lock_active_(false)
+        { }
+
+        inline bool is_read_locked() const
+        {
+            return lock_active_;
+        }
+
+        inline void read_lock() const
+        {
+            lock_active_ = true;
+        }
+
+        inline void read_unlock() const
+        {
+            lock_active_ = false;
+        }
+#endif //NDEBUG   
+
     private:
         CONST_DERIVED_CRT(Derived);
+        
+#ifdef ENABLE_LOCK_CHECK
+        mutable bool lock_active_;
+#endif //NDEBUG
     };
 
 
@@ -97,12 +150,18 @@ namespace utopia {
         Read(const Tensor &tensor)
         : _tensor(tensor)
         {
+#ifdef ENABLE_LOCK_CHECK
+            _tensor.read_lock();
+#endif //NDEBUG
 
             Backend<Scalar, Traits<Tensor>::Backend >::Instance().readLock(_tensor.implementation());
         }
 
         ~Read()
         {
+#ifdef ENABLE_LOCK_CHECK
+            _tensor.read_unlock();
+#endif //NDEBUG
             Backend<Scalar, Traits<Tensor>::Backend >::Instance().readUnlock(_tensor.implementation());
         }
 
@@ -123,16 +182,24 @@ namespace utopia {
         ReadAndWrite(Tensor &tensor)
         : _tensor(tensor)
         {
+#ifdef ENABLE_LOCK_CHECK
+            _tensor.read_lock();
+            _tensor.write_lock();
+#endif            
             Backend<Scalar, Traits<Tensor>::Backend >::Instance().readAndWriteLock(_tensor.implementation());
         }
 
         ~ReadAndWrite()
         {
+#ifdef ENABLE_LOCK_CHECK
+            _tensor.read_unlock();
+            _tensor.write_unlock();
+#endif   
             Backend<Scalar, Traits<Tensor>::Backend >::Instance().readAndWriteUnlock(_tensor.implementation());
         }
 
     private:
-        const Tensor &_tensor;
+         Tensor &_tensor;
     };
 
 }

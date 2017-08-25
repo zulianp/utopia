@@ -174,11 +174,19 @@ namespace utopia {
         Matrixd m1(2, 2, {2.0, 2.0, 2.0, 2.0});
         Matrixd m2(2, 2, {0.0, 0.0, 0.0, 0.0});
 
-        v1.set(0, 1);
-        v1.set(1, 2);
+        {
+            Write<Vectord> w_v1(v1);
+            v1.set(0, 1);
+            v1.set(1, 2);
+        }
 
-        m2.set(0, 0, v1.get(0));
-        m2.set(1, 1, 1);
+        {
+            Write<Matrixd> w_m2(m2);
+            Read<Vectord> r_v1(v1);
+
+            m2.set(0, 0, v1.get(0));
+            m2.set(1, 1, 1);
+        }
 
         v1 -= v2;
         m1 *= m2;
@@ -201,7 +209,10 @@ namespace utopia {
         std::vector<int> cols{0, 1, 2};
         std::vector<double> vals{100, 101, 102};
 
-        m1.set(rows, cols, vals);
+        {
+            Write<Matrixd> w_m1(m1);
+            m1.set(rows, cols, vals);
+        }
 
         Matrixd m_exp(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0});
         assert(approxeq(m_exp, m1));

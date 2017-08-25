@@ -7,6 +7,7 @@
 
 #include "utopia_Base.hpp"
 #include "utopia_ForwardDeclarations.hpp"
+#include "utopia_Config.hpp"
 
 #ifdef WITH_PETSC
 #include "utopia_PETScTraits.hpp"
@@ -46,6 +47,7 @@ namespace utopia {
          */
         inline void set(const SizeType row, const SizeType col, const Scalar value)
         {
+            assert_enabled(is_write_locked());
             assert(row < size(derived()).get(0));
             assert(col < size(derived()).get(1));
             
@@ -64,6 +66,7 @@ namespace utopia {
          */
         inline void add(const SizeType row, const SizeType col, const Scalar value)
         {
+            assert_enabled(is_write_locked());
             assert(row < size(derived()).get(0));
             assert(col < size(derived()).get(1));
 
@@ -83,12 +86,15 @@ namespace utopia {
         template<typename Ordinal>
         inline void set(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
         {
+            assert_enabled(is_write_locked());
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), rows, columns, values);
         }
 
         template<typename RowT, typename ColT, typename ScalarT>
         inline void set(std::initializer_list<RowT> rows, std::initializer_list<ColT> cols, std::initializer_list<ScalarT> values)
         {
+            assert_enabled(is_write_locked());
+
             using std::copy;
             std::vector<SizeType> vrows(rows.size()), vcols(cols.size());
             std::vector<Scalar> vvalues(values.size());
@@ -99,8 +105,32 @@ namespace utopia {
             set(vrows, vcols, vvalues);
         }
 
+#ifdef ENABLE_LOCK_CHECK
+        Writeable()
+        : lock_active_(false)
+        { }
+
+        inline bool is_write_locked() const
+        {
+            return lock_active_;
+        }
+
+        inline void write_lock()
+        {
+            lock_active_ = true;
+        }
+
+        inline void write_unlock()
+        {
+            lock_active_ = false;
+        }
+#endif //ENABLE_LOCK_CHECK   
+
     private:
         DERIVED_CRT(Derived);
+#ifdef ENABLE_LOCK_CHECK
+        bool lock_active_;
+#endif //ENABLE_LOCK_CHECK  
     };
 
     template<class Implementation, class Derived>
@@ -118,6 +148,7 @@ namespace utopia {
          */
         inline void set(const SizeType index, const Scalar value)
         {
+            assert_enabled(is_write_locked());
             assert(index < size(derived()).get(0));
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), index, value);
         }
@@ -132,8 +163,8 @@ namespace utopia {
          */
         inline void add(const SizeType index, const Scalar value)
         {
+            assert_enabled(is_write_locked());
             assert(index < size(derived()).get(0));
-
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().add(derived().implementation(), index, value);
         }
 
@@ -149,11 +180,37 @@ namespace utopia {
         template<typename Ordinal>
         inline void set(const std::vector<Ordinal> &indices, const std::vector<Scalar> &values)
         {
+            assert_enabled(is_write_locked());
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), indices, values);
         }
 
+#ifdef ENABLE_LOCK_CHECK
+        Writeable()
+        : lock_active_(false)
+        {
+        }
+
+        inline bool is_write_locked() const
+        {
+            return lock_active_;
+        }
+
+        inline void write_lock()
+        {
+            lock_active_ = true;
+        }
+
+        inline void write_unlock()
+        {
+            lock_active_ = false;
+        }
+#endif //ENABLE_LOCK_CHECK   
+
     private:
         DERIVED_CRT(Derived);
+#ifdef ENABLE_LOCK_CHECK
+        bool lock_active_;
+#endif //ENABLE_LOCK_CHECK  
     };
 
 
@@ -171,11 +228,17 @@ namespace utopia {
         Write(Tensor &tensor)
         : _tensor(tensor)
         {
+#ifdef ENABLE_LOCK_CHECK
+            _tensor.write_lock();
+#endif //ENABLE_LOCK_CHECK            
             Backend<Scalar, Traits<Tensor>::Backend >::Instance().writeLock(_tensor.implementation());
         }
 
         ~Write()
         {
+#ifdef ENABLE_LOCK_CHECK
+            _tensor.write_unlock();
+#endif //ENABLE_LOCK_CHECK   
             Backend<Scalar, Traits<Tensor>::Backend >::Instance().writeUnlock(_tensor.implementation());
         }
     };

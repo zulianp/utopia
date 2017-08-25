@@ -38,7 +38,9 @@ namespace utopia {
             const Range r = range(point);
 
             {
-                const Read<Vector> read(point);
+                const Read<Vector> r_p(point);
+                const Read<Vector> r_b(b);
+
                 const Write<Vector> write(result);
 
                 for (SizeType i = r.begin(); i != r.end(); ++i) {

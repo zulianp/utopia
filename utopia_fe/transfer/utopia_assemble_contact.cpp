@@ -1339,7 +1339,9 @@ namespace utopia {
 		DVectord is_contact_node_tilde = local_zeros(n_local_side_node_dofs);
 		DVectord gap_tilde = local_zeros(n_local_side_node_dofs);
 		{
-			utopia::Write<utopia::DVectord> write(gap_tilde);
+			Write<DVectord> w_g(gap_tilde);
+			Write<DVectord> w_i(is_contact_node_tilde);
+
 			for (auto it = gap_buffer.iter(); it; ++it) {
 				
 				const SizeType index = it.row() - side_node_ownership_ranges[comm.rank()];
@@ -1441,13 +1443,16 @@ namespace utopia {
 		
 		bool has_contact = false;
 		
-		each_read(is_contact_node, [&](const SizeType i , const double value){
-			if (value > 0)
-			{
-				is_contact_node.set(i, 1);
-				has_contact = true;
-			}
-		});
+		{
+			Write<DVectord> w_i(is_contact_node);
+			each_read(is_contact_node, [&](const SizeType i , const double value){
+				if (value > 0)
+				{
+					is_contact_node.set(i, 1);
+					has_contact = true;
+				}
+			});
+		}
 		
 		orthogonal_trafos = local_sparse(n_local_dofs_slave , n_local_dofs_slave , dim);
 		{
