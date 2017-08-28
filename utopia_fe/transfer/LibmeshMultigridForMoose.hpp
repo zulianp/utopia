@@ -2,12 +2,12 @@
 #define Libmesh_MULTIGRID_ForMoose_HPP
 
 #include "cutlibpp.hpp"
-#include "cutlibpp_Base.hpp"
-#include "cutlibpp_Tree.hpp"
-#include "cutlibpp_NTreeMutatorFactory.hpp"
-#include "cutlibpp_NTreeWithSpanMutatorFactory.hpp"
-#include "cutlibpp_NTreeWithTagsMutatorFactory.hpp"
-#include "cutlibpp_API.hpp"
+#include "moonolith_Base.hpp"
+#include "moonolith_Tree.hpp"
+#include "moonolith_NTreeMutatorFactory.hpp"
+#include "moonolith_NTreeWithSpanMutatorFactory.hpp"
+#include "moonolith_NTreeWithTagsMutatorFactory.hpp"
+#include "moonolith_API.hpp"
 
 #include "libmesh/mesh_inserter_iterator.h"
 #include "libmesh/elem.h"
@@ -46,9 +46,9 @@ namespace utopia {
         return express::Express::Instance().logger().os();
     }
     
-    // class BoxAdapter : public cutk::Serializable, public cutk::Describable, public Box {
+    // class BoxAdapter : public moonolith::Serializable, public moonolith::Describable, public Box {
     // public:
-    //     void read(cutk::InputStream &is) override
+    //     void read(moonolith::InputStream &is) override
     //     {
     //         auto &min = get_min();
     //         auto &max = get_max();
@@ -64,7 +64,7 @@ namespace utopia {
     //         }
     //     }
         
-    //     void write(cutk::OutputStream &os) const override
+    //     void write(moonolith::OutputStream &os) const override
     //     {
     //         const int n = get_dims();
     //         auto &min = get_min();
@@ -122,11 +122,11 @@ namespace utopia {
     
     
     // template<int Dimension>
-    // class BoxBoxAdapter : public cutk::Describable, public cutk::Serializable {
+    // class BoxBoxAdapter : public moonolith::Describable, public moonolith::Serializable {
     // public:
     //     typedef utopia::BoxAdapter StaticBound;
         
-    //     void read(cutk::InputStream &is)
+    //     void read(moonolith::InputStream &is)
     //     {
     //         is >> static_;
     //         bool is_empty;
@@ -135,7 +135,7 @@ namespace utopia {
     //     }
         
         
-    //     void write(cutk::OutputStream &os) const
+    //     void write(moonolith::OutputStream &os) const
     //     {
     //         os << static_;
     //         bool is_empty = dynamic_.isEmpty();
@@ -227,7 +227,7 @@ namespace utopia {
     
     
     template<int Dimension>
-    class ElementAdapter : public cutk::Serializable {
+    class ElementAdapter : public moonolith::Serializable {
     public:
         inline int tag() const
         {
@@ -244,7 +244,7 @@ namespace utopia {
             return bound_;
         }
         
-        void applyRW(cutk::Stream &stream)
+        void applyRW(moonolith::Stream &stream)
         {
             stream & bound_;
             stream & element_;
@@ -347,21 +347,21 @@ namespace utopia {
     };
     
     template<int Dimension>
-    class LibMeshTree : public cutlibpp::Tree< TreeTraits<Dimension> > {
+    class LibMeshTree : public moonolith::Tree< TreeTraits<Dimension> > {
     public:
         typedef TreeTraits<Dimension> Traits;
         
         LibMeshTree() {};
         
         
-        static cutk::shared_ptr<LibMeshTree> New(const cutk::shared_ptr<cutlibpp::Predicate> &predicate,
-                                                 const int maxElementsXNode=cutlibpp::DEFAULT_REFINE_MAX_ELEMENTS,
-                                                 const int maxDepth=cutlibpp::DEFAULT_REFINE_DEPTH
+        static std::shared_ptr<LibMeshTree> New(const std::shared_ptr<moonolith::Predicate> &predicate,
+                                                 const int maxElementsXNode=moonolith::DEFAULT_REFINE_MAX_ELEMENTS,
+                                                 const int maxDepth=moonolith::DEFAULT_REFINE_DEPTH
                                                  ) {
             using namespace cutlibpp;
-            cutk::shared_ptr<LibMeshTree> tree = cutk::make_shared<LibMeshTree>();
-            cutk::shared_ptr<NTreeWithTagsMutatorFactory < LibMeshTree> > factory =
-            cutk::make_shared<NTreeWithTagsMutatorFactory < LibMeshTree> >(predicate);
+            std::shared_ptr<LibMeshTree> tree = moonolith::make_shared<LibMeshTree>();
+            std::shared_ptr<NTreeWithTagsMutatorFactory < LibMeshTree> > factory =
+            moonolith::make_shared<NTreeWithTagsMutatorFactory < LibMeshTree> >(predicate);
             factory->setRefineParams(maxElementsXNode, maxDepth);
             std::cout<<"LibMeshTree::maxElements = "<<maxElementsXNode<<std::endl;
             std::cout<<"LibMeshTree::maxDepth = "<<maxDepth<<std::endl;
@@ -372,9 +372,9 @@ namespace utopia {
         
     };
     
-    class ElementDofMap : public cutk::Serializable {
+    class ElementDofMap : public moonolith::Serializable {
     public:
-        void read(cutk::InputStream &is) override
+        void read(moonolith::InputStream &is) override
         {
             int n;
             is >> n;
@@ -382,7 +382,7 @@ namespace utopia {
             is.read(&global[0], n);
         }
         
-        void write(cutk::OutputStream &os) const override
+        void write(moonolith::OutputStream &os) const override
         {
             int n = global.size();
             os << n;
@@ -587,7 +587,7 @@ namespace utopia {
     template<class Iterator>
     static void write_space(const Iterator &begin, const Iterator &end, MeshBase &space,
                             const std::vector<ElementDofMap> &dof_map,/* const std::vector<ElementDofMap> &variable_number,*/
-                            const std::vector<ElementDofMap> &variable_order,const int role, cutk::OutputStream &os)
+                            const std::vector<ElementDofMap> &variable_order,const int role, moonolith::OutputStream &os)
     {
         const int dim 		  = space.mesh_dimension();
         const long n_elements = std::distance(begin, end);
@@ -707,7 +707,7 @@ namespace utopia {
 
     
     template<class Iterator>
-    static void write_element_selection(const Iterator &begin, const Iterator &end, const Spaces &spaces, const int &level, cutk::OutputStream &os)
+    static void write_element_selection(const Iterator &begin, const Iterator &end, const Spaces &spaces, const int &level, moonolith::OutputStream &os)
     {
         
         auto m = spaces.spaces()[0];
@@ -716,7 +716,7 @@ namespace utopia {
     }
 
 
-    static void read_space(cutk::InputStream &is, cutk::shared_ptr<MeshBase> & space,
+    static void read_space(moonolith::InputStream &is, std::shared_ptr<MeshBase> & space,
                            std::vector<ElementDofMap> &dof_map, /*std::vector<ElementDofMap> &variable_number,*/
                            std::vector<ElementDofMap> &variable_order, const libMesh::Parallel::Communicator &comm)
     {
@@ -835,7 +835,7 @@ namespace utopia {
         
     }
 
-    static void read_spaces(cutk::InputStream &is, Spaces &spaces, const libMesh::Parallel::Communicator &comm_slave)
+    static void read_spaces(moonolith::InputStream &is, Spaces &spaces, const libMesh::Parallel::Communicator &comm_slave)
     {
         //    std::cout<<"------------------------------------READ-SPACES-IN-------------------------------------------"<<std::endl;
         
@@ -860,7 +860,7 @@ namespace utopia {
                          const std::shared_ptr<const int> &coarse_elem,
                          const std::shared_ptr<const int> &fine_elem,
                          Fun process_fun,
-                         const cutk::Settings &settings)
+                         const moonolith::Settings &settings)
     {
         
         
@@ -895,7 +895,7 @@ namespace utopia {
         
         EXPRESS_EVENT_BEGIN("create_adapters");
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        cutk::shared_ptr<NTreeT> tree = NTreeT::New(predicate, maxNElements, maxDepth);
+        std::shared_ptr<NTreeT> tree = NTreeT::New(predicate, maxNElements, maxDepth);
         std::cout<<"n_elements"<<n_elements<<std::endl;
         tree->reserve(n_elements);
         
@@ -937,8 +937,8 @@ namespace utopia {
         
         // std::cout<<"-----------------------------------ADAPTERS-------------------------------------------------"<<std::endl;
         //Just to have an indexed-storage
-        std::map<long, cutk::shared_ptr<Spaces> > spaces;
-        std::map<long, std::vector<cutk::shared_ptr<Spaces> > > migrated_spaces;
+        std::map<long, std::shared_ptr<Spaces> > spaces;
+        std::map<long, std::vector<std::shared_ptr<Spaces> > > migrated_spaces;
     
         
         auto read = [&spaces, &migrated_spaces, comm, &libmesh_comm_slave, &coarse_elem, &level]
@@ -955,7 +955,7 @@ namespace utopia {
             
             CHECK_STREAM_READ_BEGIN("vol_proj", in);
             
-            cutk::shared_ptr<Spaces> proc_space = cutk::make_shared<Spaces>(comm);
+            std::shared_ptr<Spaces> proc_space = moonolith::make_shared<Spaces>(comm);
             
             read_spaces(in, *proc_space,libmesh_comm_slave);
             
@@ -1016,7 +1016,7 @@ namespace utopia {
                 
                 auto it = spaces.find(ownerrank);
                 assert(it != spaces.end());
-                cutk::shared_ptr<Spaces> spaceptr = it->second;
+                std::shared_ptr<Spaces> spaceptr = it->second;
                 assert(std::distance(begin, end) > 0);
                 write_element_selection(begin, end, *spaceptr, *level, out);
                 
@@ -1053,12 +1053,12 @@ namespace utopia {
 
         
 
-        cutk::Settings custom_settings = settings;
-        custom_settings.set("disable_redistribution", cutk::Boolean(true));
-        custom_settings.set("verbosity_level", cutk::Integer(1));
+        moonolith::Settings custom_settings = settings;
+        custom_settings.set("disable_redistribution", moonolith::Boolean(true));
+        custom_settings.set("verbosity_level", moonolith::Integer(1));
         
         
-        cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, custom_settings);
+        moonolith::search_and_compute(comm, tree, predicate, read, write, fun, custom_settings);
         
         
         
@@ -1091,9 +1091,9 @@ namespace utopia {
                   const std::shared_ptr<const int> &coarse_elem,
                   const std::shared_ptr<const int> &fine_elem,
                   DSMatrixd &B,
-                  const cutk::Settings &settings)
+                  const moonolith::Settings &settings)
     {
-        std::shared_ptr<Spaces> local_fun_spaces = cutk::make_shared<Spaces>(mesh, dof_master, dof_slave, _to_var_num, coarse_elem, fine_elem, level);
+        std::shared_ptr<Spaces> local_fun_spaces = moonolith::make_shared<Spaces>(mesh, dof_master, dof_slave, _to_var_num, coarse_elem, fine_elem, level);
         
         libMesh::DenseMatrix<libMesh::Real> src_pts;
         libMesh::DenseMatrix<libMesh::Real> dest_pts;
@@ -1424,7 +1424,7 @@ namespace utopia {
                        const std::shared_ptr<const int> &fine_elem,
                        DSMatrixd &B)
     {
-        cutk::Settings settings;
+        moonolith::Settings settings;
         
         if(mesh->mesh_dimension() == 2) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
@@ -1450,7 +1450,7 @@ namespace utopia {
 ////                       libMesh::Order slave_order,
 ////                       DSMatrixd &B)
 ////    {
-////        cutk::Settings settings;
+////        moonolith::Settings settings;
 ////        
 ////    
 ////        

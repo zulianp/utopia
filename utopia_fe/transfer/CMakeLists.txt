@@ -6,42 +6,26 @@ function(convert_filenames_to_full_paths NAMES)
   set(${NAMES} ${tmp_names} PARENT_SCOPE)
 endfunction()
 
+find_package(ParMoonolith)
 
-
-file(GLOB_RECURSE MOONOLITH_SOURCES "*.cpp")
-file(GLOB_RECURSE MOONOLITH_HEADERS "*.hpp")
-file(GLOB_RECURSE MOONOLITH_HEADERS_2 "*.h")
-list(APPEND MOONOLITH_HEADERS ${MOONOLITH_HEADERS_2})
+set(TRANSFER_SOURCES 
+  utopia_BoxAdapter.cpp
+  utopia_assemble_contact.cpp
+  )
 
 list(APPEND MOONOLITH_INCLUDES 
-            moonolith/headers 
-            moonolith/external 
-            moonolith/kernels 
-            ../
-            )
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ../ )
 
-convert_filenames_to_full_paths(MOONOLITH_INCLUDES)
-list(APPEND MOONOLITH_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(transfer STATIC ${TRANSFER_SOURCES})
+add_dependencies(transfer par_moonolith)
+target_include_directories(transfer PUBLIC ${MOONOLITH_INCLUDES})
+target_link_libraries(transfer ${MOONOLITH_LIB})
 
-
-# set(TRANSFER_SOURCES 
-#   utopia_BoxAdapter.cpp
-#   utopia_assemble_contact.cpp
-#   )
-
-# list(APPEND MOONOLITH_SOURCES ${TRANSFER_SOURCES})
-
-add_library(moonolith STATIC ${MOONOLITH_SOURCES}  ${MOONOLITH_HEADERS})
-target_include_directories(moonolith PUBLIC ${MPI_CXX_INCLUDE_PATH} ${MOONOLITH_INCLUDES})
-target_link_libraries(moonolith ${TRANSFER_LIB})
-target_compile_definitions(moonolith PUBLIC
-  "-DWITH_AUTOMATIC_DIFFERENTIATION"
-  "-DWITH_MPI"
-  "-DPLAIN_INSTALLATION")
 
 list(APPEND HDRS MortarAssembler.hpp utopia_assemble_contact.hpp)
 convert_filenames_to_full_paths(HDRS)
 
 set(HEADERS ${HEADERS} ${HDRS} PARENT_SCOPE)
-set(TRANSFER_LIB ${TRANSFER_LIB} moonolith PARENT_SCOPE)
-# set(SOURCES )
+set(TRANSFER_LIB ${TRANSFER_LIB} transfer PARENT_SCOPE)
+

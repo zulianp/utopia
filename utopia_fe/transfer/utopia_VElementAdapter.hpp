@@ -1,9 +1,9 @@
 #ifndef UTOPIA_V_ELEMENT_ADAPTER_HPP
 #define UTOPIA_V_ELEMENT_ADAPTER_HPP 
 
-#include "cutk_Serializable.hpp"
-#include "cutk_InputStream.hpp"
-#include "cutk_OutputStream.hpp"
+#include "moonolith_serializable.hpp"
+#include "moonolith_input_stream.hpp"
+#include "moonolith_output_stream.hpp"
 
 #include "utopia_BoxAdapter.hpp"
 
@@ -12,7 +12,7 @@
 namespace utopia {
 
 template<int Dimension>
-    class VElementAdapter : public cutk::Serializable {
+    class VElementAdapter : public moonolith::Serializable {
     public:
         inline int tag() const
         {
@@ -29,7 +29,7 @@ template<int Dimension>
             return bound_;
         }
         
-        void applyRW(cutk::Stream &stream)
+        void applyRW(moonolith::Stream &stream)
         {
             stream & bound_;
             stream & element_;

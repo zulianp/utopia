@@ -1,16 +1,5 @@
 #include "utopia_assemble_contact.hpp"
-
-#include "libmesh/mesh_inserter_iterator.h"
-#include "libmesh/elem.h"
-#include "libmesh/transient_system.h"
-#include "libmesh/fe.h"
-#include "libmesh/serial_mesh.h"
-
-#include "express_Profiler.hpp"
-#include "express_Redistribute.hpp"
-
 #include "utopia_fe.hpp"
-#include "MortarAssemble.hpp"
 
 #include "MortarAssemble.hpp"
 #include "MortarAssembler.hpp"
@@ -20,7 +9,16 @@
 #include "utopia_ElementDofMap.hpp"
 #include "utopia_FESpaceAdapter.hpp"
 
-#include "MapSparseMatrix.hpp"
+// #include "MapSparseMatrix.hpp"
+
+#include "libmesh/mesh_inserter_iterator.h"
+#include "libmesh/elem.h"
+#include "libmesh/transient_system.h"
+#include "libmesh/fe.h"
+#include "libmesh/serial_mesh.h"
+
+#include "moonolith_profiler.hpp"
+#include "moonolith_redistribute.hpp"
 
 #include <cmath>
 #include <queue>
@@ -505,7 +503,7 @@ namespace utopia {
 	
 	
 	template<int Dimensions, class Fun>
-	static bool SurfaceAssemble(express::Communicator &comm,
+	static bool SurfaceAssemble(moonolith::communicator &comm,
 								const std::shared_ptr<MeshBase> &master_slave,
 								const std::shared_ptr<DofMap> &dof_map,
 								const unsigned int var_num,
@@ -523,7 +521,7 @@ namespace utopia {
 			predicate->add(t.first, t.second);
 		
 		using namespace cutlibpp;
-		using namespace express;
+		using namespace moonolith;
 		using namespace cutk;
 		
 		typedef STree<Dimensions> NTreeT;
@@ -696,7 +694,7 @@ namespace utopia {
 		long n_total_candidates = n_projections + n_false_positives;
 		
 		long n_collection[3] = {n_projections, n_total_candidates, n_false_positives};
-		comm.allReduce(n_collection, 3, express::MPISum());
+		comm.allReduce(n_collection, 3, moonolith::mpisum());
 		
 		if (comm.isRoot()) {
 			std::cout << "n_intersections: " << n_collection[0]
@@ -709,7 +707,7 @@ namespace utopia {
 	
 	template<int Dimensions>
 	bool SurfaceAssemble(
-						 express::Communicator &comm,
+						 moonolith::communicator &comm,
 						 const std::shared_ptr<MeshBase> &master_slave,
 						 const std::shared_ptr<DofMap> &dof_map,
 						 const unsigned int var_num,
@@ -759,12 +757,12 @@ namespace utopia {
 		libMesh::Real local_element_matrices_sum = 0.0;
 		
 		//all face dof buffers
-		express::MapSparseMatrix<double> B_buffer;
-		express::MapSparseMatrix<double> P_buffer;
-		express::MapSparseMatrix<double> Q_buffer;
-		express::MapSparseMatrix<double> rel_area_buffer;
-		express::MapSparseMatrix<double> gap_buffer;
-		express::MapSparseMatrix<double> normal_buffer;
+		moonolith::mapsparsematrix<double> b_buffer;
+		moonolith::mapsparsematrix<double> p_buffer;
+		moonolith::mapsparsematrix<double> q_buffer;
+		moonolith::mapsparsematrix<double> rel_area_buffer;
+		moonolith::mapsparsematrix<double> gap_buffer;
+		moonolith::mapsparsematrix<double> normal_buffer;
 		
 		DenseMatrix<Real> biorth_weights;
 		
@@ -772,7 +770,7 @@ namespace utopia {
 					   const SElementAdapter<Dimensions> &slave) -> bool {
 			
 			using namespace cutlibpp;
-			using namespace express;
+			using namespace moonolith;
 			using namespace cutk;
 			
 			const auto &master_mesh = master.space();
@@ -1195,7 +1193,7 @@ namespace utopia {
 		
 		double volumes[1] = { local_element_matrices_sum };
 		
-		comm.allReduce(volumes, 1, express::MPISum());
+		comm.allReduce(volumes, 1, moonolith::mpisum());
 		
 		const processor_id_type master_proc_id  = master_slave->processor_id();
 		
@@ -1209,14 +1207,14 @@ namespace utopia {
 			std::cout << "sum(B_tilde): " << volumes[0] <<std::endl;
 		}
 		
-		express::Array<express::SizeType>  ownership_ranges_master(comm.size()+1);
+		moonolith::array<moonolith::sizetype>  ownership_ranges_master(comm.size()+1);
 		ownership_ranges_master.allSet(0);
 		
-		express::Array<express::SizeType>  ownership_ranges_slave(comm.size()+1);
+		moonolith::array<moonolith::sizetype>  ownership_ranges_slave(comm.size()+1);
 		ownership_ranges_slave.allSet(0);
 		
 		const int n_nodes_x_face = master_slave->elem(0)->build_side_ptr(0)->n_nodes();
-		express::Array<express::SizeType>  side_node_ownership_ranges = local_fun_spaces_new->ownershipRangesFaceID();
+		moonolith::array<moonolith::sizetype>  side_node_ownership_ranges = local_fun_spaces_new->ownershiprangesfaceid();
 		
 		for(SizeType i = 0; i < side_node_ownership_ranges.size(); ++i) {
 			side_node_ownership_ranges[i] *= n_nodes_x_face;
@@ -1225,8 +1223,8 @@ namespace utopia {
 		ownership_ranges_master[comm.rank() + 1] += static_cast<unsigned int>(n_dofs_on_proc_master);
 		ownership_ranges_slave[comm.rank()  + 1] += static_cast<unsigned int>(n_dofs_on_proc_slave);
 		
-		comm.allReduce(&ownership_ranges_master[0], ownership_ranges_master.size(), express::MPISum());
-		comm.allReduce(&ownership_ranges_slave[0],  ownership_ranges_slave.size(),  express::MPISum());
+		comm.allReduce(&ownership_ranges_master[0], ownership_ranges_master.size(), moonolith::mpisum());
+		comm.allReduce(&ownership_ranges_slave[0],  ownership_ranges_slave.size(),  moonolith::mpisum());
 		
 		std::partial_sum(ownership_ranges_master.begin(), ownership_ranges_master.end(),
 						 ownership_ranges_master.begin());
@@ -1252,9 +1250,9 @@ namespace utopia {
 			Q_buffer.rows(), Q_buffer.columns()
 		};
 		
-		comm.allReduce(sizes, 6, express::MPIMax());
+		comm.allReduce(sizes, 6, moonolith::mpimax());
 		
-		const SizeType n_side_node_dofs = express::Math<SizeType>::Max(sizes[0], sizes[1], sizes[3], sizes[5]);
+		const SizeType n_side_node_dofs = moonolith::math<sizetype>::max(sizes[0], sizes[1], sizes[3], sizes[5]);
 		std::cout << "n_side_node_dofs = " << n_side_node_dofs << std::endl;
 		
 		B_buffer.setSize(n_side_node_dofs, n_side_node_dofs);
@@ -1264,22 +1262,22 @@ namespace utopia {
 		gap_buffer.setSize(n_side_node_dofs, 1);
 		normal_buffer.setSize(n_side_node_dofs, dim);
 		
-		express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
-		redist.apply(side_node_ownership_ranges, B_buffer,     express::AddAssign<double>());
-		redist.apply(side_node_ownership_ranges, gap_buffer,       express::AddAssign<double>());
-		redist.apply(side_node_ownership_ranges, normal_buffer,    express::AddAssign<double>());
+		moonolith::redistribute< moonolith::mapsparsematrix<double> > redist(comm.getmpicomm());
+		redist.apply(side_node_ownership_ranges, B_buffer,     moonolith::addassign<double>());
+		redist.apply(side_node_ownership_ranges, gap_buffer,       moonolith::addassign<double>());
+		redist.apply(side_node_ownership_ranges, normal_buffer,    moonolith::addassign<double>());
 		
-		redist.apply(local_fun_spaces_new->ownershipRangesFaceID(), rel_area_buffer, express::AddAssign<double>());
+		redist.apply(local_fun_spaces_new->ownershipRangesFaceID(), rel_area_buffer, moonolith::addassign<double>());
 		
-		redist.apply(ownership_ranges_slave, P_buffer, express::Assign<double>());
-		redist.apply(ownership_ranges_master, Q_buffer, express::Assign<double>());
+		redist.apply(ownership_ranges_slave, P_buffer, moonolith::assign<double>());
+		redist.apply(ownership_ranges_master, Q_buffer, moonolith::assign<double>());
 		
 		std::cout << "n_local_side_node_dofs: " << n_local_side_node_dofs << std::endl;
 		
-		express::RootDescribe("petsc rel_area_buffer assembly begin", comm, std::cout);
+		moonolith::rootdescribe("petsc rel_area_buffer assembly begin", comm, std::cout);
 		
-		express::Array<double> detect_negative(n_local_side_node_dofs);
-		express::Array<bool> remove_row(n_local_side_node_dofs);
+		moonolith::array<double> detect_negative(n_local_side_node_dofs);
+		moonolith::array<bool> remove_row(n_local_side_node_dofs);
 		
 		if(!remove_row.isNull()) {
 			long n_remove_rows = 0;
@@ -1334,7 +1332,7 @@ namespace utopia {
 			// std::cout << "n_remove_rows: " <<n_remove_rows << std::endl;
 		}
 		
-		express::RootDescribe("petsc B_buffer assembly begin", comm, std::cout);
+		moonolith::rootdescribe("petsc b_buffer assembly begin", comm, std::cout);
 		
 		DVectord is_contact_node_tilde = local_zeros(n_local_side_node_dofs);
 		DVectord gap_tilde = local_zeros(n_local_side_node_dofs);
@@ -1369,7 +1367,7 @@ namespace utopia {
 		}
 		
 		SizeType n_max_row_entries_bpq[3] = { B_buffer.maxEntriesXCol(), P_buffer.maxEntriesXCol(), Q_buffer.maxEntriesXCol() };
-		comm.allReduce(n_max_row_entries_bpq, 3, express::MPIMax());
+		comm.allReduce(n_max_row_entries_bpq, 3, moonolith::mpimax());
 		
 		const SizeType n_max_row_entries_b = n_max_row_entries_bpq[0];
 		const SizeType n_max_row_entries_p = n_max_row_entries_bpq[1];
@@ -1400,7 +1398,7 @@ namespace utopia {
 #endif //NEBUG
 		
 		// comm.barrier();
-		// express::RootDescribe("petsc P_buffer assembly begin", comm, std::cout);
+		// moonolith::rootdescribe("petsc p_buffer assembly begin", comm, std::cout);
 		
 		DSMatrixd P = utopia::local_sparse(n_local_dofs_slave, n_local_side_node_dofs, n_max_row_entries_p);
 		{
@@ -1411,7 +1409,7 @@ namespace utopia {
 		}
 		
 		// comm.barrier();
-		// express::RootDescribe("petsc Q_buffer assembly begin", comm, std::cout);
+		// moonolith::rootdescribe("petsc q_buffer assembly begin", comm, std::cout);
 		
 		DSMatrixd Q = utopia::local_sparse(n_local_dofs_master, n_local_side_node_dofs, n_max_row_entries_q);
 		{
@@ -1568,11 +1566,11 @@ namespace utopia {
 		// write("c.m", is_contact_node);
 		
 		comm.barrier();
-		express::RootDescribe("Contact assembly end", comm, std::cout);
+		moonolith::rootdescribe("contact assembly end", comm, std::cout);
 		return true;
 	}
 	
-	bool assemble_contact(express::Communicator &comm,
+	bool assemble_contact(moonolith::communicator &comm,
 						  const std::shared_ptr<MeshBase> &mesh,
 						  const std::shared_ptr<DofMap> &dof_map,
 						  const unsigned int var_num,
@@ -1600,7 +1598,7 @@ namespace utopia {
 		return false;
 	}
 	
-	bool assemble_contact(express::Communicator &comm,
+	bool assemble_contact(moonolith::communicator &comm,
 						  const std::shared_ptr<MeshBase> &mesh,
 						  const std::shared_ptr<DofMap> &dof_map,
 						  const unsigned int var_num,
@@ -1654,7 +1652,7 @@ namespace utopia {
 	}
 	
 	bool assemble_contact(
-						  express::Communicator &comm,
+						  moonolith::communicator &comm,
 						  const std::shared_ptr<libMesh::MeshBase> &mesh,
 						  const std::shared_ptr<libMesh::DofMap> &dof_map,
 						  const unsigned int var_num,

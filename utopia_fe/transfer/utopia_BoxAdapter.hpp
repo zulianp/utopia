@@ -3,17 +3,17 @@
 
 
 #include "Box.hpp"
-#include "cutk_Serializable.hpp"
-#include "cutk_Describable.hpp"
-#include "cutk_InputStream.hpp"
-#include "cutk_OutputStream.hpp"
+#include "moonolith_serializable.hpp"
+#include "moonolith_describable.hpp"
+#include "moonolith_input_stream.hpp"
+#include "moonolith_output_stream.hpp"
 
 namespace utopia {
 
-	    class BoxAdapter : public cutk::Serializable, public cutk::Describable, public Box {
+	    class BoxAdapter : public moonolith::Serializable, public moonolith::Describable, public Box {
 	    public:
-	        void read(cutk::InputStream &is) override;
-	        void write(cutk::OutputStream &os) const override;
+	        void read(moonolith::InputStream &is) override;
+	        void write(moonolith::OutputStream &os) const override;
 	        
 	        void describe(std::ostream &os) const override
 	        {
@@ -57,11 +57,11 @@ namespace utopia {
 	    };
 	    
 	    template<int Dimension>
-	    class BoxBoxAdapter : public cutk::Describable, public cutk::Serializable {
+	    class BoxBoxAdapter : public moonolith::Describable, public moonolith::Serializable {
 	    public:
 	        typedef utopia::BoxAdapter StaticBound;
 	        
-	        void read(cutk::InputStream &is)
+	        void read(moonolith::InputStream &is)
 	        {
 	            is >> static_;
 	            bool is_empty;
@@ -70,7 +70,7 @@ namespace utopia {
 	        }
 	        
 	        
-	        void write(cutk::OutputStream &os) const
+	        void write(moonolith::OutputStream &os) const
 	        {
 	            os << static_;
 	            bool is_empty = dynamic_.isEmpty();
