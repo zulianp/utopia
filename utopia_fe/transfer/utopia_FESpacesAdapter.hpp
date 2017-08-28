@@ -4,11 +4,10 @@
 #include "utopia_copy_dofmap.hpp"
 #include "utopia_ElementDofMap.hpp"
 
-#include "Array.hpp"
-#include "express_Communicator.hpp"
-
 #include "libmesh/serial_mesh.h"
 #include "libmesh/dof_map.h"
+
+#include "moonolith_communicator.hpp"
 
 #include <memory>
 #include <vector>
@@ -24,7 +23,7 @@ namespace utopia {
  class FESpacesAdapter {
 	public:
 
-		inline FESpacesAdapter(const express::Communicator &comm) : comm(comm){}
+		inline FESpacesAdapter(const moonolith::Communicator &comm) : comm(comm){}
         	       
 		FESpacesAdapter(const std::shared_ptr<libMesh::MeshBase> &master,
                 const std::shared_ptr<libMesh::MeshBase> &slave,
@@ -132,7 +131,7 @@ namespace utopia {
         
         
     private:
-        express::Communicator comm;
+        moonolith::Communicator comm;
         std::vector<std::shared_ptr< libMesh::MeshBase>> spaces_;
         std::vector<ElementDofMap> dof_maps_[2];
         std::vector<ElementDofMap> var_number_[2];

@@ -14,7 +14,7 @@
 #include "utopia_Socket.hpp"
 #include "utopia_ContactSimParams.hpp"
 #include "utopia_UGMeshReader.hpp"
-#include "express_Communicator.hpp"
+#include "moonolith_communicator.hpp"
 
 
 
@@ -387,10 +387,10 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	
 	// predicate->add(101, 102);
 	
-	std::shared_ptr<cutlibpp::MasterAndSlave> predicate = nullptr;
+	std::shared_ptr<moonolith::MasterAndSlave> predicate = nullptr;
 	
 	if(is_implant) {
-		predicate = std::make_shared<cutlibpp::MasterAndSlave>();
+		predicate = std::make_shared<moonolith::MasterAndSlave>();
 		predicate->add(102, 101);
 		predicate->add(103, 102);
 		predicate->add(104, 103);
@@ -398,7 +398,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	}
 	
 	auto mesh = make_shared<Mesh>(init.comm());
-	// express::Communicator express_comm(init.comm().get());
+	// moonolith::Communicator moonolith_comm(init.comm().get());
 	// mesh->read("/Users/patrick/Downloads/ASCII_bone/all_sidesets.e");
 	
 	// UGXMeshReader reader;
@@ -512,9 +512,9 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 		//		std::shared_ptr<libMesh::DofMap> dof_map = utopia::make_ref(u.dof_map());
 		//		DSMatrixd B;
 		//
-		//		express::Communicator express_comm(init.comm().get());
+		//		moonolith::Communicator moonolith_comm(init.comm().get());
 		//		utopia::assemble_contact(
-		//								 express_comm,
+		//								 moonolith_comm,
 		//								 mesh,
 		//								 dof_map,
 		//								 0,
@@ -595,7 +595,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap_c)));
 	newton.solve(K_c, rhs_c, sol_c);
 	
-	// if(express_comm.isAlone()) plot_scaled_normal_field(*context.mesh, normals, gap_c);
+	// if(moonolith_comm.isAlone()) plot_scaled_normal_field(*context.mesh, normals, gap_c);
 	
 	//Change back to original basis
 	DVectord sol = coupling * (orhtogonal_trafos * sol_c);

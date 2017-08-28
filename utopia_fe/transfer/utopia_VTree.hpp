@@ -8,7 +8,7 @@
 #include "moonolith_n_tree_mutator_factory.hpp"
 #include "moonolith_n_tree_with_span_mutator_factory.hpp"
 #include "moonolith_n_tree_with_tags_mutator_factory.hpp"
-#include "moonolith_api.hpp"
+#include "par_moonolith.hpp"
 
 namespace utopia {
  template<int _Dimension>
@@ -32,17 +32,14 @@ namespace utopia {
         
         
         static std::shared_ptr<VTree> New(const std::shared_ptr<moonolith::Predicate> &predicate,
-                                                 const int maxElementsXNode=moonolith::DEFAULT_REFINE_MAX_ELEMENTS,
-                                                 const int maxDepth=moonolith::DEFAULT_REFINE_DEPTH
+                                          const int maxElementsXNode = moonolith::DEFAULT_REFINE_MAX_ELEMENTS,
+                                          const int maxDepth = moonolith::DEFAULT_REFINE_DEPTH
                                                  ) {
-            using namespace cutlibpp;
-            std::shared_ptr<VTree> tree = moonolith::make_shared<VTree>();
-            std::shared_ptr<NTreeWithTagsMutatorFactory < VTree> > factory =
-            moonolith::make_shared<NTreeWithTagsMutatorFactory < VTree> >(predicate);
-            factory->setRefineParams(maxElementsXNode, maxDepth);
-            std::cout<<"LibMeshTree::maxElements = "<<maxElementsXNode<<std::endl;
-            std::cout<<"LibMeshTree::maxDepth = "<<maxDepth<<std::endl;
-            tree->setMutatorFactory(factory);
+            using namespace moonolith;
+            auto tree = std::make_shared<VTree>();
+            auto factory = std::make_shared<NTreeWithTagsMutatorFactory < VTree> >(predicate);
+            factory->set_refine_params(maxElementsXNode, maxDepth);
+            tree->set_mutator_factory(factory);
             return tree;
         }
         

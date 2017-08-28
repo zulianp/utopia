@@ -22,7 +22,7 @@ namespace utopia {
 	    	    
 	    mesh_ = master_slave;
 	    	        
-	    express::Communicator comm = master_slave->comm().get();
+	    moonolith::Communicator comm = master_slave->comm().get();
 	    
 	    const int n_elements = master_slave->n_elem();
 	    
@@ -60,15 +60,15 @@ namespace utopia {
 	                                     std::vector<ElementDofMap> &side_set_id,
 	                                     std::vector<ElementDofMap> &side_set_id_tag, 
 	                                     std::vector<ElementDofMap> &face_set_id_global,
-	                                     express::Array<express::SizeType> &ownershipRangesFaceID, 
+	                                     std::vector<moonolith::Integer> &ownershipRangesFaceID, 
 	                                     const std::vector< std::pair<int, int> >  &tags)
 	 {
 	     std::vector<dof_id_type> temp;
 
-	     express::Communicator comm = mesh.comm().get();
+	     moonolith::Communicator comm = mesh.comm().get();
 
-	     ownershipRangesFaceID.resize(comm.size() + 1);
-	     ownershipRangesFaceID.allSet(0);
+	     ownershipRangesFaceID.resize(comm.size() + 1, 0);
+
 	     std::vector<ElementDofMap> face_set_id;
 	     dof_map.resize(n_elements);
 	     subdomain_id.resize(n_elements);
@@ -157,7 +157,7 @@ namespace utopia {
 	     
 	     ownershipRangesFaceID[comm.rank()+1]+= static_cast<unsigned int>(offset);
 	     
-	     comm.allReduce(&ownershipRangesFaceID[0],  ownershipRangesFaceID.size(),  express::MPISum());
+	     comm.all_reduce(&ownershipRangesFaceID[0],  ownershipRangesFaceID.size(),  moonolith::MPISum());
 	     
 	     std::partial_sum(ownershipRangesFaceID.begin(), ownershipRangesFaceID.end(),
 	                      ownershipRangesFaceID.begin());

@@ -1,9 +1,9 @@
 #ifndef UTOPIA_ELEMENT_DOF_MAP_HPP
 #define UTOPIA_ELEMENT_DOF_MAP_HPP 
 
-#include "moonolith_Serializable.hpp"
-#include "moonolith_InputStream.hpp"
-#include "moonolith_OutputStream.hpp"
+#include "moonolith_serializable.hpp"
+#include "moonolith_input_stream.hpp"
+#include "moonolith_output_stream.hpp"
 
 #include <vector>
 

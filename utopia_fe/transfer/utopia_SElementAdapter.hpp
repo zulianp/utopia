@@ -19,12 +19,12 @@ namespace utopia {
 	        return tag_;
 	    }
 	    
-	    const BoxBoxAdapter<Dimension> &getBound() const
+	    const BoxBoxAdapter<Dimension> &bound() const
 	    {
 	        return bound_;
 	    }
 	    
-	    BoxBoxAdapter<Dimension> &getBound()
+	    BoxBoxAdapter<Dimension> &bound()
 	    {
 	        return bound_;
 	    }
@@ -72,13 +72,18 @@ namespace utopia {
 	                p = c;
 	                p += n;
 
-	                bound_.staticBound()  += p;
-	                bound_.dynamicBound()  += p;
+	                std::array<double, Dimension> p_a;
+	                for(int d = 0; d < Dimension; ++d) {
+	                	p_a[d] = p(d);
+	                }
+
+	                bound_.static_bound()  += p_a;
+	                bound_.dynamic_bound() += p_a;
 	                p = c;
 	                n *= 0.01;
 	                p -=n;
-	                bound_.staticBound()  += p;
-	                bound_.dynamicBound()  += p;
+	                bound_.static_bound()  += p_a;
+	                bound_.dynamic_bound() += p_a;
 	            }
 	        }
 	    }

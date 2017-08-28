@@ -19,17 +19,17 @@ template<int Dimension>
             return tag_;
         }
         
-        const BoxBoxAdapter<Dimension> &getBound() const
+        const BoxBoxAdapter<Dimension> &bound() const
         {
             return bound_;
         }
         
-        BoxBoxAdapter<Dimension> &getBound()
+        BoxBoxAdapter<Dimension> &bound()
         {
             return bound_;
         }
         
-        void applyRW(moonolith::Stream &stream)
+        void apply_read_write(moonolith::Stream &stream) override
         {
             stream & bound_;
             stream & element_;
@@ -43,20 +43,20 @@ template<int Dimension>
             
             libMesh::Elem * e = fe.elem(element);
             
+            std::array<double, Dimension> p_a;
             for (libMesh::dof_id_type i = 0; i < e->n_nodes(); ++i) {
                 const libMesh::Point &p = fe.node(e->node(i));
-                bound_.staticBound()  += p;
-                bound_.dynamicBound() += p;
-                
-                
+                for(int d = 0; d < Dimension; ++d) {
+                    p_a[d] = p(d);
+                }
+
+                bound_.static_bound()  += p_a;
+                bound_.dynamic_bound() += p_a; 
             }
-            
         }
         
-        
-        
         VElementAdapter()
-        :fe_(nullptr) , element_(-1), element_handle_(-1), tag_(-1), dof_map_(nullptr) {}
+        : fe_(nullptr) , element_(-1), element_handle_(-1), tag_(-1), dof_map_(nullptr) {}
         
         
         inline long handle() const
@@ -131,4 +131,5 @@ template<int Dimension>
         std::vector<long> * dof_map_reverse_;
     };
 }
+
 #endif //UTOPIA_V_ELEMENT_ADAPTER_HPP

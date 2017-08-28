@@ -7,7 +7,9 @@
 #include "moonolith_n_tree_mutator_factory.hpp"
 #include "moonolith_n_tree_with_span_mutator_factory.hpp"
 #include "moonolith_n_tree_with_tags_mutator_factory.hpp"
-#include "moonolith_api.hpp"
+#include "par_moonolith.hpp"
+
+#include <memory>
 
 namespace utopia {
 	template<int _Dimension>
@@ -32,12 +34,12 @@ namespace utopia {
 	                                                    const int maxElementsXNode = moonolith::DEFAULT_REFINE_MAX_ELEMENTS,
 	                                                    const int maxDepth = moonolith::DEFAULT_REFINE_DEPTH
 	                                                    ) {
-	        using namespace cutlibpp;
-	        std::shared_ptr<STree> tree = moonolith::make_shared<STree>();
-	        std::shared_ptr<NTreeWithTagsMutatorFactory < STree> > factory =
-	        moonolith::make_shared<NTreeWithTagsMutatorFactory < STree> >(predicate);
-	        factory->setRefineParams(maxElementsXNode, maxDepth);
-	        tree->setMutatorFactory(factory);
+	        using namespace moonolith;
+	        std::shared_ptr<STree> tree = std::make_shared<STree>();
+	        std::shared_ptr<NTreeWithTagsMutatorFactory<STree>> factory =
+	        std::make_shared<NTreeWithTagsMutatorFactory<STree>>(predicate);
+	        factory->set_refine_params(maxElementsXNode, maxDepth);
+	        tree->set_mutator_factory(factory);
 	        return tree;
 	    } 
 	};

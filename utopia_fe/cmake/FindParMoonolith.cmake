@@ -30,7 +30,14 @@ list(APPEND MOONOLITH_INCLUDES
 	${MOONOLITH_INSTALL_DIR}/include
 	${MOONOLITH_INSTALL_DIR}/include/kernels
 	)
-find_library(MOONOLITH_LIB par_moonolith
-			 HINTS ${MOONOLITH_INSTALL_DIR}/lib
-			)
+
+set(MOONOLITH_LIB "")
+list(APPEND MOONOLITH_LIB 
+	"${MOONOLITH_INSTALL_DIR}/lib/libmoonolith_opencl.a"
+	"${MOONOLITH_INSTALL_DIR}/lib/libpar_moonolith.a"
+	"${MOONOLITH_INSTALL_DIR}/lib/libpar_moonolith_intersection.a"
+	"${MOONOLITH_INSTALL_DIR}/lib/libpar_moonolith_mpi.a"
+	"${MOONOLITH_INSTALL_DIR}/lib/libpar_moonolith_tree.a"
+	"${MOONOLITH_INSTALL_DIR}/lib/libpar_moonolith_utils.a"
+	)
 
