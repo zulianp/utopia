@@ -292,26 +292,26 @@ namespace utopia {
 	
 	void par_mortar_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm,const std::shared_ptr<MeshBase> &master_slave)
 	{
-		// Chrono c;
-		// c.start();
+		Chrono c;
+		c.start();
 		
-		// auto order_elem = FIRST;
-		// int order_quad = order_elem + order_elem;
+		auto order_elem = FIRST;
+		int order_quad = order_elem + order_elem;
 		
-		// LibMeshFEContext<LinearImplicitSystem> master_slave_context(master_slave);
-		// auto space = fe_space(LAGRANGE, order_elem, master_slave_context);
-		// master_slave_context.equation_systems.init();
+		LibMeshFEContext<LinearImplicitSystem> master_slave_context(master_slave);
+		auto space = fe_space(LAGRANGE, order_elem, master_slave_context);
+		master_slave_context.equation_systems.init();
 		
-		// //////////////////////////////////////////////////
-		// //////////////////////////////////////////////////
+		//////////////////////////////////////////////////
+		//////////////////////////////////////////////////
 		
-		// ParMortarAssembler assembler(libmesh_comm, make_ref(space));
+		ParMortarAssembler assembler(libmesh_comm, make_ref(space));
 		
-		// DSMatrixd matrix;
+		DSMatrixd matrix;
 		
-		// // MOONOLITH_EVENT_BEGIN("l2assembly");
-		// assembler.Assemble(matrix);
-		// // MOONOLITH_EVENT_END("l2assembly");
+		// MOONOLITH_EVENT_BEGIN("l2assembly");
+		assembler.Assemble(matrix);
+		// MOONOLITH_EVENT_END("l2assembly");
 	}
 	
 #define RUN_3D_CONTACT 1
@@ -441,7 +441,7 @@ namespace utopia {
 		// write("c_" + std::to_string(moonolith_comm.size()) + ".m", is_contact_node);
 		// write("T_" + std::to_string(moonolith_comm.size()) + ".m", T);
 		
-		// if(moonolith_comm.isAlone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
+		if(moonolith_comm.is_alone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
 				
 		DVectord contact_stress;
 		{
@@ -493,7 +493,7 @@ namespace utopia {
 			newton.set_box_constraints(make_upper_bound_constraints(make_ref(D_inv_gap)));
 			newton.solve(K_c, rhs_c, sol_c);
 			
-			// if(moonolith_comm.isAlone()) plot_scaled_normal_field(*context.mesh, normals, gap_c);
+			// if(moonolith_comm.is_alone()) plot_scaled_normal_field(*context.mesh, normals, gap_c);
 			
 			//Change back to original basis
 			DVectord sol = T * (orthogonal_trafos * sol_c);

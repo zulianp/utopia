@@ -550,13 +550,9 @@ namespace utopia {
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 		std::shared_ptr<NTreeT> tree = NTreeT::New(predicate, maxNElements, maxDepth);
 		tree->reserve(n_elements);
-		
-		std::cout << "nElements = tree->memory().nData()_inside " << n_elements << std::endl;
-		
+				
 		std::shared_ptr<FESpaceAdapter> local_spaces = std::make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
-		
-		//		int jj=0;
-		
+				
 		for (auto it = master_slave->active_local_elements_begin();
 			 it != master_slave->active_local_elements_end(); ++it) {
 			
@@ -590,7 +586,6 @@ namespace utopia {
 		std::map<long, std::shared_ptr<FESpaceAdapter> > utopiamesh;
 		std::map<long, std::vector<std::shared_ptr<FESpaceAdapter> > > migrated_meshes;
 		
-		
 		auto read = [&utopiamesh, &migrated_meshes, block_id, comm, &libmesh_comm_mesh, search_radius]
 		(
 		 const long ownerrank,
@@ -601,7 +596,7 @@ namespace utopia {
 			
 			CHECK_STREAM_READ_BEGIN("vol_proj", in);
 			
-			std::shared_ptr<FESpaceAdapter> proc_space = std::make_shared<FESpaceAdapter>(comm);
+			auto proc_space = std::make_shared<FESpaceAdapter>(comm);
 			
 			read_spaces(in, *proc_space, libmesh_comm_mesh);
 			
@@ -616,9 +611,7 @@ namespace utopia {
 			
 			auto s = proc_space->mesh();
 			
-			//			int i=0;
 			for (int i = 0; i<s->n_elem(); ++i) {
-				//				auto elem=s->elem(i);
 				int tag =proc_space->side_set_id()[i].global.at(0);
 				data.push_back(SurfaceAdapter(*s, i, i,tag,search_radius));
 				assert(!proc_space->dof_map()[i].empty());
@@ -656,15 +649,10 @@ namespace utopia {
 			}
 			
 			CHECK_STREAM_WRITE_END("vol_proj", out);
-			
 		};
 		
-		
-		
 		long n_false_positives = 0, n_projections = 0;
-		
-		
-		
+
 		auto fun = [&n_false_positives, &n_projections, &process_fun](
 																	  SurfaceAdapter &master, SurfaceAdapter &slave) -> bool {
 			bool ok = process_fun(master, slave);
@@ -760,10 +748,8 @@ namespace utopia {
 		auto fun = [&](const SElementAdapter<Dimensions> &master,
 					   const SElementAdapter<Dimensions> &slave) -> bool {
 			
-
 			using namespace moonolith;
 
-			
 			const auto &master_mesh = master.space();
 			const auto &slave_mesh  = slave.space();
 			
@@ -799,7 +785,7 @@ namespace utopia {
 			slave_fe  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  libMesh::Order(approx_order));
 			
 			master_fe->get_phi();
-//			master_fe->get_JxW();
+//			master_fe->get_JxW(); //not necessary
 			
 			slave_fe->get_xyz();
 			slave_fe->get_phi();
@@ -862,6 +848,7 @@ namespace utopia {
 						std::cerr << "[Warning] it should never happen" << std::endl;
 						continue;
 					}
+					//FIXME at some point we migth want to discrimate between faces of the same element
 					// if (!predicate->tagsAreRelated(tag_1, tag_2)) continue;
 					
 					auto side_slave = el_slave.build_side_ptr(side_index_slave);
