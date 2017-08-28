@@ -7,7 +7,6 @@
 
 namespace utopia {
         
-    
     inline bool AssembleMOOSE(moonolith::Communicator &comm,
                               const std::shared_ptr<libMesh::MeshBase> &master,
                               const std::shared_ptr<libMesh::MeshBase> &slave,
@@ -20,7 +19,6 @@ namespace utopia {
       return assemble_volume_transfer(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, use_biorth_, n_var, B);
     }
 }
-
 
 #endif //LIBMESH_TRANSFER_FOR_MOOSE_HPP
 

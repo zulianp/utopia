@@ -5,6 +5,7 @@
 #include "utopia_fe.hpp"
 #include "MortarAssemble.hpp"
 #include "utopia_BoxAdapter.hpp"
+#include "utopia_ElementDofMap.hpp"
 
 #include "libmesh/mesh_inserter_iterator.h"
 #include "libmesh/elem.h"
@@ -193,43 +194,12 @@ namespace utopia {
         
     };
     
-    class ElementDofMap : public moonolith::Serializable {
-    public:
-        void read(moonolith::InputStream &is) override
-        {
-            int n;
-            is >> n;
-            global.resize(n);
-            is.read(&global[0], n);
-        }
-        
-        void write(moonolith::OutputStream &os) const override
-        {
-            int n = global.size();
-            os << n;
-            os.write(&global[0], n);
-        }
-        
-        
-        inline bool empty() const
-        {
-            return global.empty();
-        }
-        
-        std::vector<long> global;
-        
-        
-    };
-    
-    
     class Spaces {
     public:
-        
         
         explicit Spaces(const moonolith::Communicator &comm) : comm(comm)
         {
             must_destroy_attached[0] = false;
-         
         }
         
         Spaces(const std::shared_ptr<MeshBase> &mesh,
