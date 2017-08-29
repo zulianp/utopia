@@ -68,6 +68,8 @@ set(SOURCES "")
 
 include_directories(rapidxml)
 include_directories(transfer)
+include_directories(tests)
+add_subdirectory(tests)
 
 list(APPEND SOURCES utopia_FEDSLBaseExamples.cpp)
 list(APPEND SOURCES utopia_FEDSLMortarExamples.cpp)
@@ -78,11 +80,12 @@ list(APPEND SOURCES utopia_Biomechanics.cpp)
 list(APPEND SOURCES utopia_UGMeshReader.cpp)
 list(APPEND SOURCES utopia_NormalTangentialCoordinateSystem.cpp)
 list(APPEND SOURCES utopia_GeometryTest.cpp)
+list(APPEND SOURCE  tests/utopia_SemigeometricMultigridTest.cpp)
 
 add_subdirectory(transfer)
 add_library(utopia_fe STATIC ${SOURCES} ${HEADERS})
 target_link_libraries(utopia_fe ${UTOPIA_LIBRARIES} ${UTOPIA_FE_LIBRARIES} ${TRANSFER_LIB})
 
 add_executable(utopia_fe_exec  main.cpp ${HEADERS})
-target_link_libraries(utopia_fe_exec utopia_fe)
+target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_LIBRARIES})
 

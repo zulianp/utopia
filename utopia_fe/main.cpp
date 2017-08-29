@@ -21,6 +21,7 @@
 #include "utopia_TimeDiffExamples.hpp"
 #include "utopia_GeometryTest.hpp"
 #include "utopia_Biomechanics.hpp"
+#include "utopia_UtopiaFETests.hpp"
 
 //#include "utopia_FEDSLBaseSolverExamples.hpp"
 using namespace utopia;
@@ -32,6 +33,7 @@ int main(const int argc, char *argv[])
 {
 	Utopia::Init(argc, argv);
 	LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
+	run_all_utopia_fe_tests(init);
 
 	// run_base_examples(init);
 	// run_time_diff_examples(init);
@@ -41,7 +43,7 @@ int main(const int argc, char *argv[])
     //run_solver_ex(init);
     // run_biomechanics_example(init);
     // run_geometry_test(init);
-    run_mortar_examples(init);
+    // run_mortar_examples(init);
 	return EXIT_SUCCESS;
 }
 
