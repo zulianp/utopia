@@ -2147,7 +2147,7 @@ namespace utopia {
 				}
 				
 				for(uint j = 0; j < n_trial; ++j) {
-					assert(  JxW[qp] >= 0.0 );
+					// assert(  JxW[qp] >= 0.0 );
 					elmat(i, j) += contract(w_test, trial[j][qp]) * JxW[qp];
 				}
 			}
