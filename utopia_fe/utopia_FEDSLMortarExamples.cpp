@@ -384,7 +384,7 @@ namespace utopia {
 		
 		unsigned int variable_number = 0;
 		
-		const libMesh::Real search_radius = 1.;
+		const libMesh::Real search_radius = 10.;
 		assemble_contact(moonolith_comm, (master_slave), 
 			utopia::make_ref(master_slave_context.system.get_dof_map()), 
 			variable_number, 

@@ -4,6 +4,8 @@ project(utopia_fe)
 #To kill the policy warning  (maybe not a good idea yet)
 set(CMAKE_MACOSX_RPATH 1)
 
+option(ENABLE_SANITIZER "check for memory access problems" OFF)
+
 
 #################################################################################
 #################################################################################

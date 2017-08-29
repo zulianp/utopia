@@ -12,11 +12,11 @@
 
 namespace utopia {
 
-	// template<int Dimension>
-	// using BoxBoxAdapter = moonolith::AABBWithKDOPSpan<Dimension, double>;
-
 	template<int Dimension>
-	using BoxBoxAdapter = moonolith::AABBWithSpan<Dimension, double>;
+	using BoxBoxAdapter = moonolith::AABBWithKDOPSpan<Dimension, double>;
+
+	// template<int Dimension>
+	// using BoxBoxAdapter = moonolith::AABBWithSpan<Dimension, double>;
 }
 
 #endif //UTOPIA_BOX_ADAPTER_HPP

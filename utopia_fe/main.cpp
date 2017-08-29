@@ -30,7 +30,8 @@ using namespace libMesh;
 
 int main(const int argc, char *argv[]) 
 {
-	LibMeshInit init(argc, argv);
+	Utopia::Init(argc, argv);
+	LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
 
 	// run_base_examples(init);
 	// run_time_diff_examples(init);

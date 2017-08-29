@@ -1561,6 +1561,8 @@ namespace utopia {
 						  const bool use_volume_differential)
 	{
 		moonolith::SearchSettings settings;
+		// settings.verbosity_level = 3;
+
 		if(mesh->mesh_dimension() == 2) {
 			return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tags, use_biorth, use_volume_differential);
 		}
@@ -1655,53 +1657,7 @@ namespace utopia {
 			return false;
 		}
 		
-		// auto s = local_size(gap);
-		// DVectord directions = local_zeros(s.get(0));
-		
-		// {
-		// 	Write<DVectord> w(directions);
-		
-		// 	each_read(direction_matrix, [&](const SizeType i, const SizeType j, const double value){
-		// 		directions.set(i + j, value);
-		// 	});
-		// }
-		
-		// normals = local_zeros(s.get(0));
-		
-		// auto r = range(directions);
-		
-		// const SizeType dims = mesh->mesh_dimension();
-		
-		// std::vector<Real> n(dims);
-		// {
-		// 	Read<DVectord> r_d(directions);
-		// 	Read<DVectord> r_icn(is_contact_node);
-		
-		// 	for(SizeType i = r.begin(); i < r.end(); i += dims) {
-		// 		if(!is_contact_node.get(i)) continue;
-		
-		// 		Real norm = 0;
-		// 		for(SizeType j = 0; j < dims; ++j) {
-		// 			n[j] = directions.get(i + j);
-		// 			norm += n[j] * n[j];
-		// 		}
-		
-		// 		norm = std::sqrt(norm);
-		
-		// 		if(norm < 1e-16) {
-		// 			std::cerr << "[Warning] 0-director" << std::endl;
-		// 			continue;
-		// 		}
-		
-		// 		for(SizeType j = 0; j < dims; ++j) {
-		// 			n[j] /= norm;
-		// 			normals.set(i + j, n[j]);
-		// 		}
-		// 	}
-		// }
-		
 		convert_normal_matrix_to_vector(direction_matrix, normals);
-		
 		return true;
 	}
 }
