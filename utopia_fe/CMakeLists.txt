@@ -70,6 +70,8 @@ include_directories(rapidxml)
 include_directories(transfer)
 include_directories(tests)
 add_subdirectory(tests)
+add_subdirectory(core)
+add_subdirectory(backend/libmesh)
 
 list(APPEND SOURCES utopia_FEDSLBaseExamples.cpp)
 list(APPEND SOURCES utopia_FEDSLMortarExamples.cpp)

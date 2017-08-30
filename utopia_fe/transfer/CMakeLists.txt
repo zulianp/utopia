@@ -36,7 +36,8 @@ list(APPEND MOONOLITH_INCLUDES
 add_library(transfer STATIC ${TRANSFER_SOURCES})
 add_dependencies(transfer par_moonolith)
 target_include_directories(transfer PUBLIC ${MOONOLITH_INCLUDES})
-target_link_libraries(transfer ${MOONOLITH_LIB})
+target_link_libraries(transfer ${MOONOLITH_LIB} utopia_fe_core)
+target_link_libraries(transfer ${MOONOLITH_LIB} utopia_fe_libmesh_backend)
 
 
 list(APPEND HDRS MortarAssembler.hpp utopia_assemble_contact.hpp)

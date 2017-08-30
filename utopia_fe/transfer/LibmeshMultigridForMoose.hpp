@@ -41,10 +41,10 @@ namespace utopia {
         os << "\n";
     }
     
-    static std::ostream &logger()
-    {
-        return moonolith::logger();
-    }
+    // static std::ostream &logger()
+    // {
+    //     return moonolith::logger();
+    // }
 
     
     template<int Dimension>

@@ -42,11 +42,7 @@ namespace utopia {
         
         os << "\n";
     }
-    
-    static std::ostream &logger()
-    {
-        return moonolith::logger();
-    }
+
     
     template<class Iterator>
     static void write_space(const Iterator &begin, const Iterator &end,MeshBase &space,
