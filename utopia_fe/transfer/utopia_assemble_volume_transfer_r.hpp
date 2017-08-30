@@ -8,10 +8,8 @@
 #include "utopia.hpp"
 #include "libmesh/libmesh_common.h"
 
-//forward decl
-namespace express {
-	class Communicator;
-}
+#include "moonolith_communicator.hpp"
+
 
 namespace libMesh {
 	class MeshBase;
@@ -21,7 +19,7 @@ namespace libMesh {
 namespace utopia {
 
 
-     bool assemble_volume_transfer_r(express::Communicator &comm,
+     bool assemble_volume_transfer_r(moonolith::Communicator &comm,
                                     const std::shared_ptr<libMesh::MeshBase> &master,
                                     const std::shared_ptr<libMesh::MeshBase> &slave,
                                     const std::shared_ptr<libMesh::DofMap> &dof_master,

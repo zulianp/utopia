@@ -5,6 +5,7 @@
 #include "utopia_LibMeshBackend.hpp"
 #include "Box.hpp"
 #include "MortarAssembler.hpp"
+#include "moonolith_communicator.hpp"
 
 #include <libmesh/sparse_matrix.h>
 #include "libmesh/serial_mesh.h"

@@ -7,7 +7,6 @@ function(convert_filenames_to_full_paths NAMES)
 endfunction()
 
 find_package(ParMoonolith)
-message(STATUS "Ml: ${MOONOLITH_LIB}")
 
 set(TRANSFER_SOURCES 
   utopia_BoxAdapter.cpp
@@ -18,7 +17,6 @@ set(TRANSFER_SOURCES
   MortarAssemble.cpp
   MortarAssembler.cpp
   ParMortarAssembler.cpp
-  opencl_adapter.cpp
   triangulate.cpp
   utopia_BoxAdapter.cpp
   utopia_FESpaceAdapter.cpp
