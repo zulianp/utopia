@@ -35,7 +35,7 @@ int main(const int argc, char *argv[])
 	// Utopia::Init(argc, argv);
 	
 	{
-		LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
+		LibMeshInit init(argc, argv);
 		run_all_utopia_fe_tests(init);
 	
 
