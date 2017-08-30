@@ -44,6 +44,7 @@ int main(const int argc, char *argv[])
     // run_biomechanics_example(init);
     // run_geometry_test(init);
     // run_mortar_examples(init);
-	return EXIT_SUCCESS;
+    return Utopia::Finalize();
+	// return EXIT_SUCCESS;
 }
 
