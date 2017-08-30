@@ -22,7 +22,7 @@
 
 
 
-class Intersector : public clipp::OpenCLAdapter {
+class Intersector : public moonolith::OpenCLAdapter {
 public:
 #include "all_kernels.cl"
 };
