@@ -2,6 +2,7 @@
 #define LibmeshContactForMoose_HPP
 
 #include "utopia_assemble_contact.hpp"
+#include "moonolith_communicator.hpp"
 
 namespace utopia {
 

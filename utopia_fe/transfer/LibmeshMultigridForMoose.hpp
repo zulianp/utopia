@@ -21,6 +21,7 @@
 #include "moonolith_n_tree_with_tags_mutator_factory.hpp"
 #include "moonolith_sparse_matrix.hpp"
 #include "par_moonolith.hpp"
+#include "moonolith_communicator.hpp"
 
 #include <cmath>
 #include <queue>
