@@ -34,7 +34,7 @@ int main(const int argc, char *argv[])
 
 	// Utopia::Init(argc, argv);
 	
-	{
+	// {
 		LibMeshInit init(argc, argv);
 		run_all_utopia_fe_tests(init);
 	
@@ -48,7 +48,7 @@ int main(const int argc, char *argv[])
     // run_biomechanics_example(init);
     // run_geometry_test(init);
     // run_mortar_examples(init);
-		}
+		// }
     // return Utopia::Finalize();
 	return EXIT_SUCCESS;
 }
