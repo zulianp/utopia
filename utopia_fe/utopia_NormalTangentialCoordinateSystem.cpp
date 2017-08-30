@@ -26,6 +26,7 @@ namespace utopia {
 								  const DVectord &scale,
 								  const std::string &name)
 	{
+#ifdef WITH_BOOST
 		using namespace libMesh;
 		int mesh_dim = mesh.mesh_dimension();
 		
@@ -75,6 +76,7 @@ namespace utopia {
 			   &all_points[0],
 			   &all_normals[0],
 			   name);
+#endif //WITH_BOOST
 	}
     
     bool assemble_normal_tangential_transformation(const libMesh::MeshBase &mesh,
