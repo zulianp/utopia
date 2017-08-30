@@ -31,10 +31,14 @@ using namespace libMesh;
 
 int main(const int argc, char *argv[]) 
 {
-	Utopia::Init(argc, argv);
-	LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
-	run_all_utopia_fe_tests(init);
 
+	Utopia::Init(argc, argv);
+	
+	{
+		LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
+		run_all_utopia_fe_tests(init);
+	}
+	
 	// run_base_examples(init);
 	// run_time_diff_examples(init);
 	
