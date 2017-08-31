@@ -65,8 +65,6 @@ namespace utopia {
 				std::vector<libMesh::Point> reference_points;
 				
 				{
-					
-					
 					libMesh::Point ref_p0(0.0, 0.0, 0.0);
 					
 					libMesh::Point ref_p1(1.0, 0.0, 0.0);
@@ -99,6 +97,8 @@ namespace utopia {
 					A_inv_m_b(1) = -1.0 * A_inv(1,0) * p0(0) - A_inv(1,1) * p0(1);
 					
 				}
+				
+				break;
 			}
 			default:
 			{
