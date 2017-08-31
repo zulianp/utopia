@@ -7,7 +7,7 @@
 
 //fe extension
 #include "utopia_TimeDiffExamples.hpp"
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "MortarAssembler.hpp"
 #include "utopia_Socket.hpp"
 

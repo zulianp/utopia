@@ -2,7 +2,7 @@
 #define MFEML2P_MORTAR_ASSEMBLER_HPP 
 
 
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "utopia_LibMeshBackend.hpp"
 #include <libmesh/sparse_matrix.h>
 #include "moonolith_predicate.hpp"

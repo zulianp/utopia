@@ -1,0 +1,6 @@
+#ifndef UTOPIA_FE_CONFIG_HPP
+#define UTOPIA_FE_CONFIG_HPP 
+
+#cmakedefine WITH_BOOST
+
+#endif //UTOPIA_FE_CONFIG_HPP

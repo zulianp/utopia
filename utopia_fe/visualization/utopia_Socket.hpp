@@ -1,6 +1,8 @@
 #ifndef UTOPIA_SOCKET_HPP
 #define UTOPIA_SOCKET_HPP
 
+#include "utopia.hpp"
+
 #include <string>
 #include <vector>
 
@@ -23,6 +25,12 @@ namespace utopia {
 	void __attribute__ ((used)) plot_polygon_mesh(const libMesh::MeshBase &mesh, const std::string &name);
 	void __attribute__ ((used)) plot_box(const Box &box, const std::string &name = "box");
 	// void plot_mesh_surf_elements(const libMesh::MeshBase &mesh, const std::string &name);
+
+	void plot_scaled_normal_field(
+		const libMesh::MeshBase &mesh,
+		const DVectord &normals,
+		const DVectord &scale,
+		const std::string &name = "normal_field");
 }
 
 #endif //UTOPIA_SOCKET_HPP

@@ -1,12 +1,9 @@
 #include "MortarAssembler.hpp"
 #include "MortarAssemble.hpp"
+#include "utopia_triangulate.hpp"
 
 #include <cmath>
 #include <queue>
-
-#include "utopia_Socket.hpp"
-#include "triangulate.hpp"
-
 
 namespace utopia {
 

@@ -1,7 +1,7 @@
-#ifndef TRIANGULATE_H
-#define TRIANGULATE_H
+#ifndef UTOPIA_TRIANGULATE_H
+#define UTOPIA_TRIANGULATE_H
 
 #include <vector>
 void triangulate_polygon(const int n_vertices, const double *in_polygon, std::vector<int> &result);
 
-#endif //TRIANGULATE_H
+#endif //UTOPIA_TRIANGULATE_H

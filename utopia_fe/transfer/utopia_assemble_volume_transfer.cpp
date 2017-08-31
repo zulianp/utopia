@@ -8,7 +8,7 @@
 #include "libmesh/serial_mesh.h"
 
 #include "Box.hpp"
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "MortarAssemble.hpp"
 #include "utopia_BoxAdapter.hpp"
 #include "utopia_VElementAdapter.hpp"

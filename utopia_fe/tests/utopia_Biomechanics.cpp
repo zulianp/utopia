@@ -9,7 +9,7 @@
 #include <libmesh/mesh_refinement.h>
 
 //fe extension
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "MortarAssembler.hpp"
 #include "utopia_Socket.hpp"
 #include "utopia_ContactSimParams.hpp"

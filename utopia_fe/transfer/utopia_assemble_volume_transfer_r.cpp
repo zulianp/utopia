@@ -1,7 +1,7 @@
 #include "utopia_assemble_volume_transfer_r.hpp"
 
 #include "Box.hpp"
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "MortarAssemble.hpp"
 #include "utopia_BoxAdapter.hpp"
 #include "utopia_VElementAdapter.hpp"

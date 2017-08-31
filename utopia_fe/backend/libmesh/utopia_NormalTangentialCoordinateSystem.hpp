@@ -10,13 +10,7 @@ namespace libMesh {
 }
 
 namespace utopia {
-
-	void plot_scaled_normal_field(
-		const libMesh::MeshBase &mesh,
-		const DVectord &normals,
-		const DVectord &scale,
-		const std::string &name = "normal_field");
-
+	
 	bool assemble_normal_tangential_transformation(
 		const libMesh::MeshBase &mesh, 
 		const libMesh::DofMap &dof_map,

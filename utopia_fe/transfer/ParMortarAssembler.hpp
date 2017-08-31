@@ -1,7 +1,7 @@
 #ifndef PAR_MORTAR_ASSEMBLER_HPP
 #define PAR_MORTAR_ASSEMBLER_HPP
 
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "utopia_LibMeshBackend.hpp"
 #include "Box.hpp"
 #include "MortarAssembler.hpp"

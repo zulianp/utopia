@@ -1,18 +1,35 @@
 
 
 list(APPEND LOCAL_HEADERS 
+	utopia_Biomechanics.hpp
+	utopia_ContactSimParams.hpp
+	utopia_FEDSLBaseExamples.hpp
+	utopia_FEDSLBaseSolverExamples.hpp
+	utopia_FEDSLLeastSquaresExamples.hpp
+	utopia_FEDSLMortarExamples.hpp
+	utopia_GeometryTest.hpp
+	utopia_MixedFESpaceExample.hpp
 	utopia_SemigeometricMultigridTest.hpp
+	utopia_TimeDiffExamples.hpp
 	utopia_UtopiaFETests.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 
+	utopia_Biomechanics.cpp
+	utopia_FEDSLBaseExamples.cpp
+	utopia_FEDSLBaseSolverExamples.cpp
+	utopia_FEDSLLeastSquaresExamples.cpp
+	utopia_FEDSLMortarExamples.cpp
+	utopia_GeometryTest.cpp
+	utopia_MixedFESpaceExample.cpp
 	utopia_SemigeometricMultigridTest.cpp
+	utopia_TimeDiffExamples.cpp
 	utopia_UtopiaFETests.cpp
 	)
 
 add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})
-target_link_libraries(utopia_fe_tests transfer)
-target_include_directories(utopia_fe_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) #;${CMAKE_CURRENT_SOURCE_DIR}/../transfer;${CMAKE_CURRENT_SOURCE_DIR}/.. )
+target_link_libraries(utopia_fe_tests transfer utopia_fe_visualization)
+target_include_directories(utopia_fe_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) 
 
 
 install(TARGETS utopia_fe_tests

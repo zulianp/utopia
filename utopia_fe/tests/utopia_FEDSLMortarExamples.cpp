@@ -4,7 +4,7 @@
 #include "utopia.hpp"
 
 //fe extension
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "MortarAssembler.hpp"
 #include "ParMortarAssembler.hpp"
 #include "utopia_Socket.hpp"

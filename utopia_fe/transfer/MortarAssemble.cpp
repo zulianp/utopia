@@ -2,9 +2,8 @@
 #include <memory>
 #include <assert.h>
 #include <libmesh/fe.h>
-#include <triangulate.hpp>
+#include "utopia_triangulate.hpp"
 #include "MortarAssemble.hpp"
-#include "utopia_Socket.hpp"
 #include "utopia_Polygon.hpp"
 
 
@@ -50,6 +49,8 @@ namespace utopia {
 			case libMesh::TRI6:
 			case libMesh::QUAD4:
 			case libMesh::QUAD8:
+			case libMesh::TRISHELL3:
+			case libMesh::QUADSHELL4:
 			{
 				
 				A_inv.resize(2,2);

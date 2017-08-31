@@ -1,12 +1,12 @@
-#ifndef MFEM_L2P_MORTAR_ASSEMBLE_HPP
-#define MFEM_L2P_MORTAR_ASSEMBLE_HPP
+#ifndef UTOPIA_MORTAR_ASSEMBLE_HPP
+#define UTOPIA_MORTAR_ASSEMBLE_HPP
 
 #include <memory>
 #include <math.h>
 
-//#include "utopia_fe.hpp"
+//#include "utopia_fe_core.hpp"
 //#include "utopia_LibMeshBackend.hpp"
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "utopia_LibMeshBackend.hpp"
 
 #include "HashGrid.hpp"
@@ -15,22 +15,7 @@
 #include <libmesh/quadrature_gauss.h>
 #include <libmesh/sparse_matrix.h>
 
-#include "opencl_adapter.hpp"
-
-#define USE_DOUBLE_PRECISION
-#define DEFAULT_TOLLERANCE 1e-12
-
-
-
-class Intersector : public moonolith::OpenCLAdapter {
-public:
-#include "all_kernels.cl"
-};
-
-typedef Intersector::PMesh Polyhedron;
-
-//clean-up after adapter
-#undef mortar_assemble
+#include "utopia_Intersector.hpp"
 
 namespace utopia {
 	
@@ -467,4 +452,4 @@ namespace utopia {
 														const bool visdebug = false);
 }
 
-#endif //MFEM_L2P_MORTAR_ASSEMBLE_HPP
+#endif //UTOPIA_MORTAR_ASSEMBLE_HPP

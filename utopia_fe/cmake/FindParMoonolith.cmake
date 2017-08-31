@@ -26,10 +26,11 @@ list(APPEND MOONOLITH_INCLUDES
 
 set(MOONOLITH_LIB "")
 list(APPEND MOONOLITH_LIB 
-	"${MOONOLITH_INSTALL_DIR}/lib/libmoonolith_opencl.a"
-	"${MOONOLITH_INSTALL_DIR}/lib/libpar_moonolith.a"
-	"${MOONOLITH_INSTALL_DIR}/lib/libpar_moonolith_intersection.a"
-	"${MOONOLITH_INSTALL_DIR}/lib/libpar_moonolith_mpi.a"
-	"${MOONOLITH_INSTALL_DIR}/lib/libpar_moonolith_tree.a"
-	"${MOONOLITH_INSTALL_DIR}/lib/libpar_moonolith_utils.a"
+	"-L${MOONOLITH_INSTALL_DIR}/lib"
+	"-lmoonolith_opencl"
+	"-lpar_moonolith"
+	"-lpar_moonolith_intersection"
+	"-lpar_moonolith_mpi"
+	"-lpar_moonolith_tree"
+	"-lpar_moonolith_utils"
 	)

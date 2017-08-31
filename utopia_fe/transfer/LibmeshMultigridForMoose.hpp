@@ -2,7 +2,7 @@
 #define Libmesh_MULTIGRID_ForMoose_HPP
 
 #include "Box.hpp"
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "MortarAssemble.hpp"
 #include "utopia_BoxAdapter.hpp"
 #include "utopia_ElementDofMap.hpp"
@@ -40,13 +40,7 @@ namespace utopia {
         
         os << "\n";
     }
-    
-    // static std::ostream &logger()
-    // {
-    //     return moonolith::logger();
-    // }
 
-    
     template<int Dimension>
     class ElementAdapter : public moonolith::Serializable {
     public:
