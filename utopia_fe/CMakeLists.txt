@@ -5,7 +5,7 @@ project(utopia_fe)
 set(CMAKE_MACOSX_RPATH 1)
 
 option(ENABLE_SANITIZER "check for memory access problems" OFF)
-
+option(ENABLE_BOOST "enable boost features" OFF)
 
 #################################################################################
 #################################################################################
@@ -48,15 +48,17 @@ else()
 	message(FATAL_ERROR "could not find LibMesh")
 endif()
 
-find_package(Boost)
-find_package(BoostExtended)
-if(Boost_FOUND)
-		include_directories(${Boost_INCLUDE_DIRS})
-		link_directories(${Boost_LIBRARY_DIRS})
-		list(APPEND UTOPIA_FE_LIBRARIES ${Boost_LIBRARIES})
-		add_definitions("-DWITH_BOOST")
-else()
-	MESSAGE(WARNING "Boost not found.")
+if(ENABLE_BOOST)
+	find_package(Boost)
+	find_package(BoostExtended)
+	if(Boost_FOUND)
+			include_directories(${Boost_INCLUDE_DIRS})
+			link_directories(${Boost_LIBRARY_DIRS})
+			list(APPEND UTOPIA_FE_LIBRARIES ${Boost_LIBRARIES})
+			add_definitions("-DWITH_BOOST")
+	else()
+		MESSAGE(WARNING "Boost not found.")
+	endif()
 endif()
 
 # add_definitions("-D_LIBCPP_DEBUG=0")
