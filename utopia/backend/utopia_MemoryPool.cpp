@@ -1,4 +1,5 @@
 #include "utopia_MemoryPool.hpp"
+#include "utopia_Log.hpp"
 
 namespace utopia {
 
@@ -57,6 +58,7 @@ namespace utopia {
 			}
 		}
 		sparse_mat_pool_.clear();
+		usedMemory = 0;
 #endif // WITH_PETSC
 	}
 
@@ -88,9 +90,11 @@ namespace utopia {
 	Vec* MemoryPool::getVec(const Size& local, const Size& global) {
 		// TODO consider PETSC_DECIDE and PETSC_DETERMINE in pool lookup
 		auto it = vec_pool_.find(std::make_pair(local, global));
-		if (it != vec_pool_.end() && it->second.size() > 0) {
+		if (it != vec_pool_.end() && !it->second.empty()) {
 			// std::cout << "Succesfully reused Vec" << std::endl;
 			Vec* outval = *it->second.rbegin();
+			usedMemory -= local.get(0) * 8;
+			UTOPIA_LOG_MEMORY();
 			it->second.pop_back();
 			return outval;
 		}
@@ -117,6 +121,8 @@ namespace utopia {
 		if (it != mat_pool_.end() && it->second.size() > 0) {
 			// std::cout << "Succesfully reused Mat" << std::endl;
 			Mat* outval = *it->second.rbegin();
+			usedMemory -= local.get(0) * local.get(1) * 8;
+			UTOPIA_LOG_MEMORY();
 			it->second.pop_back();
 			return outval;
 		}
@@ -172,10 +178,12 @@ namespace utopia {
 			delete v;
 		} else {
 			auto k = std::make_pair<Size, Size>({local}, {global});
-			if (vec_pool_[k].size() > 6) {
+			if (vec_pool_[k].size() > 10) {
 				VecDestroy(v);
 				delete v;
 			} else {
+				usedMemory += local * 8;
+				UTOPIA_LOG_MEMORY();
 				vec_pool_[k].push_back(v);
 			}
 		}
@@ -190,10 +198,12 @@ namespace utopia {
 			delete m;
 		} else {
 			auto k = std::make_pair<Size, Size>({local_m, local_n}, {global_m, global_n});
-			if (mat_pool_[k].size() > 20) {
+			if (mat_pool_[k].size() > 10) {
 				MatDestroy(m);
 				delete m;
 			} else {
+				usedMemory += local_m * local_n * 8;
+				UTOPIA_LOG_MEMORY();
 				mat_pool_[k].push_back(m);
 			}
 		}
@@ -206,7 +216,7 @@ namespace utopia {
 			delete m;
 		} else {
 			auto k = std::make_pair<Size, Size>({local_m, local_n}, {global_m, global_n});
-			if (sparse_mat_pool_[k].size() > 6) {
+			if (sparse_mat_pool_[k].size() > 10) {
 				MatDestroy(m);
 				delete m;
 			} else {

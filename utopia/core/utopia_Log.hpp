@@ -6,6 +6,7 @@
 #include <map>
 #include <stack>
 #include <chrono>
+#include <forward_list>
 
 #include "utopia_Core.hpp"
 
@@ -23,6 +24,8 @@ namespace utopia {
 
         inline void apply_end();
 
+		inline void logMemory();
+
         static Log &instance();
 
         void save_collected_log();
@@ -32,6 +35,10 @@ namespace utopia {
         std::chrono::high_resolution_clock::time_point start_time_;
         std::stack<MeasurementId> running_events_;
         std::map<MeasurementId, Measurement> event_map_;
+		std::forward_list<std::pair<
+				std::chrono::high_resolution_clock::time_point,
+				long
+		> > memory_log_;
     };
 
 
@@ -83,16 +90,24 @@ namespace utopia {
         running_events_.pop();
     }
 
+	inline void Log::logMemory() {
+		memory_log_.push_front(std::make_pair(
+			std::chrono::high_resolution_clock::now(),
+			MemoryPool::getInstance().usedMemory
+		));
+	}
 }
 
 #define UTOPIA_LOG_BEGIN(expr)  utopia::Log::instance().apply_begin(expr)
 #define UTOPIA_LOG_END(expr)    utopia::Log::instance().apply_end()
+#define UTOPIA_LOG_MEMORY()		utopia::Log::instance().logMemory()
 
 
 #else  //UTOPIA_LOG_ENABLED
 
 #define UTOPIA_LOG_BEGIN(...)   ((void)0)
 #define UTOPIA_LOG_END(...)     ((void)0)
+#define UTOPIA_LOG_MEMORY(...)  ((void)0)
 
 #endif  //UTOPIA_LOG_ENABLED
 

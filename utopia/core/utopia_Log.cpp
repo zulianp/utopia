@@ -28,8 +28,8 @@ namespace utopia {
         std::ofstream f_detail("log." + std::to_string(mpi_world_rank()) + ".csv");
         f_detail << std::fixed << std::setprecision(9) << "Time;Duration (s);Class" << std::endl;
 
-        for (auto it = event_map_.cbegin(); it != event_map_.cend(); ++it) {
-            const Measurement &m = it->second;
+        for (const auto &it : event_map_) {
+            const Measurement &m = it.second;
             class_group[m.class_].push_back(m);
 
             double timestamp = std::chrono::duration<double>(
@@ -45,10 +45,10 @@ namespace utopia {
         f_summary << std::fixed <<
             "Class;Total time spent (s);Count;Mean time (s);Std deviation (s);Relative std dev\n";
 
-        for (auto it = class_group.cbegin(); it != class_group.cend(); ++it) {
+        for (const auto &it : class_group) {
             std::vector<double> values;
-            values.reserve(it->second.size());
-            std::transform(it->second.begin(), it->second.end(), std::back_inserter(values),
+            values.reserve(it.second.size());
+            std::transform(it.second.begin(), it.second.end(), std::back_inserter(values),
                 [](const Measurement &m) {
                     return std::chrono::duration<double>(m.end_time_ - m.start_time_).count();
                 }
@@ -63,12 +63,23 @@ namespace utopia {
                 }) / values.size());
 
             f_summary << std::setprecision(9)
-                << it->first << ';' << total_time << ';' << values.size()
+                << it.first << ';' << total_time << ';' << values.size()
                 << ';' << mean << ';' << stddev << ';'
                 << std::setprecision(2) << stddev / mean << std::endl;
         }
 
         f_summary.close();
+
+		std::ofstream f_memory("memory." + std::to_string(mpi_world_rank()) + ".csv");
+		f_memory << std::fixed << "Time (s);Memory used by pool\n";
+
+		for (const auto &it : memory_log_) {
+			double timestamp = std::chrono::duration<double>(it.first - start_time_).count();
+
+			f_memory << timestamp << ';' << it.second << std::endl;
+		}
+
+		f_memory.close();
     }
 }
 

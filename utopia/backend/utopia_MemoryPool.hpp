@@ -72,6 +72,8 @@ namespace utopia {
 		void putSparse(Mat* m);
 #endif // WITH_PETSC
 
+		long usedMemory = 0;
+
 	private:
 		MemoryPool() = default;
 		~MemoryPool();

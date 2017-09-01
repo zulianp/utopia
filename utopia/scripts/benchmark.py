@@ -29,35 +29,41 @@ mpi_n = args.mpi[0]
 utopia_cmd = [args.path] + args.args
 
 # Main program
-cwd = os.getcwd()
-if utopia_cmd[0] == "./utopia_exec":
-    if cwd.endswith('/scripts'):
-        os.chdir('../bin')
-    elif cwd.endswith('/utopia/utopia'):
-        os.chdir('bin')
-    elif cwd.endswith('/utopia'):
-        os.chdir('utopia/bin')
+
+# If passed file is already there, don't bother compiling it
+isExecThere = true
+if not os.path.isfile(utopia_cmd[0]):
+    isExecThere = false
+    cwd = os.getcwd()
+    if utopia_cmd[0] == "./utopia_exec":
+        if cwd.endswith('/scripts'):
+    	os.chdir('../bin')
+        elif cwd.endswith('/utopia/utopia'):
+    	os.chdir('bin')
+        elif cwd.endswith('/utopia'):
+    	os.chdir('utopia/bin')
+        else:
+    	print('Error: unable to figure out where is the utopia executable. Exiting')
+    	exit(5)
     else:
-        print('Error: unable to figure out where is the utopia executable. Exiting')
-        exit(5)
-else:
-    u_dir, u_file = os.path.split(utopia_cmd[0])
-    os.chdir(u_dir)
-    print("Changed working directory to " + os.getcwd())
-utopia_cmd[0] = "./utopia_exec"
+        u_dir, u_file = os.path.split(utopia_cmd[0])
+        os.chdir(u_dir)
+        print("Changed working directory to " + os.getcwd())
+    utopia_cmd[0] = "./utopia_exec"
 
 if mpi_n > 1:
     utopia_cmd = ["mpirun", "-n", str(mpi_n)] + utopia_cmd
 
-status = subprocess.run(cmake_cmd)
-if status.returncode != 0:
-    print("Error in cmake! Exited with status code: " + str(status.returncode))
-    exit(1)
+if not isExecThere:
+    status = subprocess.run(cmake_cmd)
+    if status.returncode != 0:
+        print("Error in cmake! Exited with status code: " + str(status.returncode))
+        exit(1)
 
-status = subprocess.run(make_cmd)
-if status.returncode != 0:
-    print("Error in make! Exited with status code: " + str(status.returncode))
-    exit(1)
+    status = subprocess.run(make_cmd)
+    if status.returncode != 0:
+        print("Error in make! Exited with status code: " + str(status.returncode))
+        exit(1)
 
 # Execute benchmark
 data = [dict() for _ in range(mpi_n)]
