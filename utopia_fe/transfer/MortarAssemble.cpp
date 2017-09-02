@@ -686,7 +686,7 @@ namespace utopia {
 			if(is_tri(type)) {
 				ref_ir.get_weights()[i] *= 2.;
 			} else if(is_quad(type)) {
-				ref_ir.get_weights()[i] *= 4.;
+				ref_ir.get_weights()[i] *= 2.;
 			} else if(is_hex(type)) {
 				ref_ir.get_weights()[i] *= 8.;
 			} else if(is_tet(type)) {

@@ -56,11 +56,11 @@ namespace utopia {
 		auto uy = fe_function(space_y);
 		auto u = prod(ux, uy);
 
-		// strong_enforce( boundary_conditions(ux == coeff(0.), {2}) );
-		// strong_enforce( boundary_conditions(ux == coeff(0.), {4}) );
+		strong_enforce( boundary_conditions(ux == coeff(0.), {2}) );
+		strong_enforce( boundary_conditions(ux == coeff(0.), {4}) );
 
-		// strong_enforce( boundary_conditions(uy == coeff(-0.1), {2}) );
-		// strong_enforce( boundary_conditions(uy == coeff(0.1), {4}) );
+		strong_enforce( boundary_conditions(uy == coeff(-0.3), {4}) );
+		strong_enforce( boundary_conditions(uy == coeff(0.3), {2}) );
 
 		master_slave_context.equation_systems.init();
 
@@ -194,7 +194,8 @@ namespace utopia {
 	void run_contact_test(LibMeshInit &init)
 	{
 		auto mesh = make_shared<Mesh>(init.comm());
-		mesh->read("../data/contact_debug.e");
+		mesh->read("../data/fine_contact_2d.e");
+		// mesh->read("../data/hertz_2d.e");
 		Real search_radius = 0.1;
 		solve_contact_problem_2d(init, mesh, {{102, 101}}, search_radius);
 	}
