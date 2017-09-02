@@ -832,6 +832,8 @@ namespace utopia {
 			
 			master_fe = libMesh::FEBase::build(master_mesh.mesh_dimension(), libMesh::Order(approx_order));
 			slave_fe  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  libMesh::Order(approx_order));
+
+		
 			
 			master_fe->get_phi();
 //			master_fe->get_JxW(); //not necessary
@@ -839,7 +841,29 @@ namespace utopia {
 			slave_fe->get_xyz();
 			slave_fe->get_phi();
 			slave_fe->get_JxW();
+
+
+			//begin: hack stuff
+			std::unique_ptr<libMesh::FEBase>  master_fe_hack, slave_fe_hack;
+			master_fe_hack = libMesh::FEBase::build(master_mesh.mesh_dimension(), libMesh::Order(approx_order));
+			slave_fe_hack  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  libMesh::Order(approx_order));
 			
+			libMesh::QGauss ir_hack(dim-1, libMesh::Order(1)); 
+			
+			if(dim == 2) {
+				ir_hack.init(libMesh::EDGE2);
+			} else {
+				ir_hack.init(libMesh::TRI6);
+			}
+
+			master_fe_hack->get_phi();
+			slave_fe_hack->get_phi(); 
+
+			master_fe_hack->attach_quadrature_rule(&ir_hack);
+			slave_fe_hack->attach_quadrature_rule(&ir_hack);
+
+			//end: hack stuff
+
 			typedef Intersector::Scalar Scalar;
 			
 			if(dim_slave == 2)  {
@@ -1044,8 +1068,10 @@ namespace utopia {
 						
 						if(use_volume_differential) {
 							master_fe->reinit(&el_master);
+							master_fe_hack->reinit(&el_master);
 						} else {
 							master_fe->reinit(&el_master, side_index_master);
+							master_fe_hack->reinit(&el_master, side_index_master);
 						}
 						
 						//slave fe init
@@ -1053,8 +1079,10 @@ namespace utopia {
 						
 						if(use_volume_differential) {
 							slave_fe->reinit(&el_slave);
+							master_fe_hack->reinit(&el_slave);
 						} else {
 							slave_fe->reinit(&el_slave, side_index_slave);
+							slave_fe_hack->reinit(&el_slave, side_index_slave);
 						}
 
 						assert( check_positive_funs(*slave_fe) );
@@ -1080,8 +1108,8 @@ namespace utopia {
 						
 						// nodes_are_boundary_hack<Dimensions>(el_slave, slave_fe->get_phi().size(), approx_order, side_index_slave, node_is_boundary_slave);
 						// nodes_are_boundary_hack<Dimensions>(el_master, master_fe->get_phi().size(), approx_order, side_index_master, node_is_boundary_master);
-						nodes_are_boundary_hack(*slave_fe, node_is_boundary_slave);
-						nodes_are_boundary_hack(*master_fe, node_is_boundary_master);
+						nodes_are_boundary_hack(*slave_fe_hack, node_is_boundary_slave);
+						nodes_are_boundary_hack(*master_fe_hack, node_is_boundary_master);
 
 						assert( check_boundary_and_fun_consistent(*slave_fe, node_is_boundary_slave) );
 						
