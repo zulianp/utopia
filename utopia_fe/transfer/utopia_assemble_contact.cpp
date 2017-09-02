@@ -113,8 +113,8 @@ namespace utopia {
 
 		for(auto &f_i : f) {
 			for(auto f_iq : f_i) {
-				if(f_iq < -1e-16) {
-					assert(f_iq >= -1e-16);
+				if(f_iq < -1e-8) {
+					assert(f_iq >= -1e8);
 					return false;
 				}
 			}
