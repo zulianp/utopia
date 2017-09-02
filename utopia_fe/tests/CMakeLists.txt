@@ -3,6 +3,7 @@
 list(APPEND LOCAL_HEADERS 
 	utopia_Biomechanics.hpp
 	utopia_ContactSimParams.hpp
+	utopia_ContactTest.hpp
 	utopia_FEDSLBaseExamples.hpp
 	utopia_FEDSLBaseSolverExamples.hpp
 	utopia_FEDSLLeastSquaresExamples.hpp
@@ -16,6 +17,7 @@ list(APPEND LOCAL_HEADERS
 
 list(APPEND LOCAL_SOURCES 
 	utopia_Biomechanics.cpp
+	utopia_ContactTest.cpp
 	utopia_FEDSLBaseExamples.cpp
 	utopia_FEDSLBaseSolverExamples.cpp
 	utopia_FEDSLLeastSquaresExamples.cpp

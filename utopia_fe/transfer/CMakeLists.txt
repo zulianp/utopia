@@ -45,6 +45,9 @@ list(APPEND LOCAL_SOURCES
 
 add_library(transfer STATIC ${LOCAL_SOURCES})
 target_link_libraries(transfer utopia_fe_core utopia_fe_libmesh_backend utopia_fe_intersection)
+
+target_link_libraries(transfer utopia_fe_visualization) 
+
 target_include_directories(transfer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 install(TARGETS transfer

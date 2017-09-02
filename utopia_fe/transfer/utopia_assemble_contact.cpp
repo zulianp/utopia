@@ -21,6 +21,8 @@
 #include "moonolith_redistribute.hpp"
 #include "moonolith_sparse_matrix.hpp"
 
+#include "utopia_Socket.hpp"
+
 #include <cmath>
 #include <queue>
 
@@ -72,6 +74,53 @@ namespace utopia {
 			assert(d < result.size());
 			result[d] = true;
 		}
+	}
+
+
+	inline static void nodes_are_boundary_hack(const libMesh::FEBase &fe,
+											   std::vector<bool> &result)
+	{
+		auto &f = fe.get_phi();
+		result.resize(f.size(), false);
+
+		for(std::size_t i = 0; i < f.size(); ++i) {
+			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
+				if(f[i][qp] > 1e-16) {
+					result[i] = true;
+				}
+			}
+		}
+	}
+
+	inline static bool check_boundary_and_fun_consistent(const libMesh::FEBase &fe, const std::vector<bool> &node_is_boundary)
+	{
+		auto &f = fe.get_phi();
+		for(std::size_t i = 0; i < node_is_boundary.size(); ++i) {
+			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
+				if(f[i][qp] > 1e-16) {
+					assert(node_is_boundary[i]);
+					if(!node_is_boundary[i]) return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	inline static bool check_positive_funs(libMesh::FEBase &slave_fe)
+	{
+		auto &f = slave_fe.get_phi();
+
+		for(auto &f_i : f) {
+			for(auto f_iq : f_i) {
+				if(f_iq < -1e-16) {
+					assert(f_iq >= -1e-16);
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 	
 	inline static bool check_node_is_boundary(const ElemType &type,
@@ -720,7 +769,7 @@ namespace utopia {
 		
 		std::vector<libMesh::dof_id_type> dofs_master, dofs_slave;
 		
-		libMesh::DenseMatrix<libMesh::Real> elemmat;
+		libMesh::DenseMatrix<libMesh::Real> elemmat;//, massmat;
 		libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
 		
 		DenseMatrix<Real> side_polygon_master, side_polygon_slave;
@@ -956,12 +1005,12 @@ namespace utopia {
 					}
 					
 					// const bool enable_vis = side_id_slave.at(side_index_slave) == 434;
-					// const bool enable_vis = false; //visdbg
+					// const bool enable_vis = true; //visdbg
 					
 					if(pair_intersected) {
 						// if(enable_vis) { //visdbg
-						// plot_polygon(3, isect_polygon_master.get_values().size()/3, &isect_polygon_master.get_values()[0], "master"); //visdbg
-						// plot_polygon(3, isect_polygon_slave.get_values().size()/3,  &isect_polygon_slave.get_values()[0],  "slave");  //visdbg
+						// 	plot_polygon(dim, isect_polygon_master.get_values().size()/dim, &isect_polygon_master.get_values()[0], "master_" + std::to_string(side_id_slave[side_index_master])); //visdbg
+						// 	plot_polygon(dim, isect_polygon_slave.get_values().size()/dim,  &isect_polygon_slave.get_values()[0],  "slave_" + std::to_string(side_id_slave[side_index_slave]));  //visdbg
 						// } //visdbg
 						
 						// std::cout << "isect: " << master.handle() << " -> " << slave.handle() << std::endl;
@@ -1007,6 +1056,10 @@ namespace utopia {
 						} else {
 							slave_fe->reinit(&el_slave, side_index_slave);
 						}
+
+						assert( check_positive_funs(*slave_fe) );
+						assert( check_positive_funs(*master_fe) );
+
 						
 						//prepare result
 						surface_assemble->parent_element_master  = index_master;
@@ -1020,13 +1073,17 @@ namespace utopia {
 						surface_assemble->coupling.zero();
 						
 						elemmat.zero();
+						// massmat.zero();
 						
 						std::vector<bool> node_is_boundary_slave;
 						std::vector<bool> node_is_boundary_master;
 						
-						nodes_are_boundary_hack<Dimensions>(el_slave, slave_fe->get_phi().size(), approx_order, side_index_slave, node_is_boundary_slave);
-						nodes_are_boundary_hack<Dimensions>(el_master, master_fe->get_phi().size(), approx_order, side_index_master, node_is_boundary_master);
-						
+						// nodes_are_boundary_hack<Dimensions>(el_slave, slave_fe->get_phi().size(), approx_order, side_index_slave, node_is_boundary_slave);
+						// nodes_are_boundary_hack<Dimensions>(el_master, master_fe->get_phi().size(), approx_order, side_index_master, node_is_boundary_master);
+						nodes_are_boundary_hack(*slave_fe, node_is_boundary_slave);
+						nodes_are_boundary_hack(*master_fe, node_is_boundary_master);
+
+						assert( check_boundary_and_fun_consistent(*slave_fe, node_is_boundary_slave) );
 						
 						assert( check_node_is_boundary((*master_slave->active_local_elements_begin())->type(), node_is_boundary_master) );
 						
@@ -1036,6 +1093,35 @@ namespace utopia {
 																	 biorth_weights);
 							
 							mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
+							// mortar_assemble_weighted_biorth(*slave_fe, *slave_fe, biorth_weights, massmat);
+
+							// std::vector<int> buggy{ 23, 25, 27, 29, 31, 43, 45, 47, 49, 51 };
+
+							// if(buggy.index_of(ide_id_slave[side_index_slave]))
+							// if(side_id_slave[side_index_slave] == 23) {
+							// 	elemmat.print();
+							
+							// 	std::cout << "---------------" << std::endl;
+							// 	std::cout << "massmat: " << std::accumulate(massmat.get_values().begin(), massmat.get_values().end(), libMesh::Real(0.0)) << std::endl;
+							// 	massmat.print();
+							// 	std::cout << "---------------" << std::endl;
+							// 	for(auto &f_i : slave_fe->get_phi()) {
+							// 		for(auto f_iq : f_i) {
+							// 			std::cout << f_iq <<  " ";
+							// 		}
+							// 		std::cout << std::endl;
+							// 	}
+
+							// 	std::cout << "---------------" << std::endl;
+
+							// 	plot_polygon(dim, dim, &side_polygon_master.get_values()[0], "master" + std::to_string(side_id_master[side_index_master]));
+							// 	plot_polygon(dim, dim, &side_polygon_slave.get_values()[0],   "slave" + std::to_string(side_id_slave[side_index_slave]));
+							// 	plot_polygon(dim, isect_polygon_master.get_values().size()/dim, &isect_polygon_master.get_values()[0], "isect_master_" + std::to_string(side_id_master[side_index_master])); //visdbg
+							// 	plot_polygon(dim, isect_polygon_slave.get_values().size()/dim,  &isect_polygon_slave.get_values()[0],  "isect_slave_" + std::to_string(side_id_slave[side_index_slave]));  //visdbg
+
+							// 	plot_quad_points(dim, ir_slave.get_points(), "qp_slave");
+							// 	plot_quad_points(dim, ir_master.get_points(), "qp_master");
+							// }
 						} else {
 							mortar_assemble(*master_fe, *slave_fe, elemmat);
 						}
@@ -1129,6 +1215,12 @@ namespace utopia {
 						
 						auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
 						assert(partial_sum > 0);
+						assert( std::abs(surface_assemble->relative_area - 0.5*std::accumulate(ir_ref_slave.get_weights().begin(), ir_ref_slave.get_weights().end(), 0.0)) < 1e-8);
+						assert( std::abs(partial_sum - surface_assemble->isect_area) < 1e-8);
+						// std::cout << "====================================\n";
+						// std::cout << "areas: " << partial_sum << " == " << surface_assemble->isect_area << " ratio: " <<  (surface_assemble->isect_area /partial_sum) << std::endl;
+						// std::cout << "====================================\n";
+
 						
 						local_element_matrices_sum += partial_sum;
 						
