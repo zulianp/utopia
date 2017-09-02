@@ -1106,8 +1106,6 @@ namespace utopia {
 						std::vector<bool> node_is_boundary_slave;
 						std::vector<bool> node_is_boundary_master;
 						
-						// nodes_are_boundary_hack<Dimensions>(el_slave, slave_fe->get_phi().size(), approx_order, side_index_slave, node_is_boundary_slave);
-						// nodes_are_boundary_hack<Dimensions>(el_master, master_fe->get_phi().size(), approx_order, side_index_master, node_is_boundary_master);
 						nodes_are_boundary_hack(*slave_fe_hack, node_is_boundary_slave);
 						nodes_are_boundary_hack(*master_fe_hack, node_is_boundary_master);
 
@@ -1121,35 +1119,6 @@ namespace utopia {
 																	 biorth_weights);
 							
 							mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
-							// mortar_assemble_weighted_biorth(*slave_fe, *slave_fe, biorth_weights, massmat);
-
-							// std::vector<int> buggy{ 23, 25, 27, 29, 31, 43, 45, 47, 49, 51 };
-
-							// if(buggy.index_of(ide_id_slave[side_index_slave]))
-							// if(side_id_slave[side_index_slave] == 23) {
-							// 	elemmat.print();
-							
-							// 	std::cout << "---------------" << std::endl;
-							// 	std::cout << "massmat: " << std::accumulate(massmat.get_values().begin(), massmat.get_values().end(), libMesh::Real(0.0)) << std::endl;
-							// 	massmat.print();
-							// 	std::cout << "---------------" << std::endl;
-							// 	for(auto &f_i : slave_fe->get_phi()) {
-							// 		for(auto f_iq : f_i) {
-							// 			std::cout << f_iq <<  " ";
-							// 		}
-							// 		std::cout << std::endl;
-							// 	}
-
-							// 	std::cout << "---------------" << std::endl;
-
-							// 	plot_polygon(dim, dim, &side_polygon_master.get_values()[0], "master" + std::to_string(side_id_master[side_index_master]));
-							// 	plot_polygon(dim, dim, &side_polygon_slave.get_values()[0],   "slave" + std::to_string(side_id_slave[side_index_slave]));
-							// 	plot_polygon(dim, isect_polygon_master.get_values().size()/dim, &isect_polygon_master.get_values()[0], "isect_master_" + std::to_string(side_id_master[side_index_master])); //visdbg
-							// 	plot_polygon(dim, isect_polygon_slave.get_values().size()/dim,  &isect_polygon_slave.get_values()[0],  "isect_slave_" + std::to_string(side_id_slave[side_index_slave]));  //visdbg
-
-							// 	plot_quad_points(dim, ir_slave.get_points(), "qp_slave");
-							// 	plot_quad_points(dim, ir_master.get_points(), "qp_master");
-							// }
 						} else {
 							mortar_assemble(*master_fe, *slave_fe, elemmat);
 						}
