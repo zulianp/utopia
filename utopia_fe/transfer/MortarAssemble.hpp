@@ -15,7 +15,7 @@
 #include <libmesh/quadrature_gauss.h>
 #include <libmesh/sparse_matrix.h>
 
-#include "utopia_Intersector.hpp"
+#include "utopia_intersector.hpp"
 
 namespace utopia {
 	
