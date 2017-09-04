@@ -19,6 +19,7 @@ Define the utopia path (you can also add it to your .bash_profile)
 export UTOPIA\_DIR=<The aboslute path of where you want to install utopia>
 
 Go to the folder utopia/utopia:
+
 - mkdir bin
 - cd bin
 - cmake .. -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_DIR
@@ -33,6 +34,7 @@ You need a limesh installation. Define the libmesh install directory
 export LIBMESH\_DIR=<The aboslute path of where you installed libmesh>
 
 Go to the folder utopia/utopia\_fe:
+
 - mkdir bin
 - cd bin
 - cmake -DUTOPIA\_DIR=$UTOPIA\_DIR -DLIBMESH_DIR=$LIBMESH_DIR -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_DIR
