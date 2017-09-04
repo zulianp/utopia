@@ -2,8 +2,7 @@
 #define UTOPIA_FE_SPACE_ADAPTER_HPP 
 
 #include "utopia_ElementDofMap.hpp"
-#include "Array.hpp"
-#include "express_Communicator.hpp"
+#include "moonolith_communicator.hpp"
 
 #include "libmesh/serial_mesh.h"
 #include "libmesh/dof_map.h"
@@ -20,7 +19,7 @@ namespace libMesh {
 namespace utopia {
 	class FESpaceAdapter {
 	public:
-		inline explicit FESpaceAdapter(const express::Communicator &comm) : comm(comm) {}
+		inline explicit FESpaceAdapter(const moonolith::Communicator &comm) : comm(comm) {}
 
 		FESpaceAdapter(
 			const std::shared_ptr<libMesh::MeshBase> &master_slave,
@@ -145,19 +144,19 @@ namespace utopia {
 			return side_set_id_tag_;
 		}
 
-		inline express::Array<express::SizeType> &ownershipRangesFaceID()
+		inline std::vector<moonolith::Integer> &ownershipRangesFaceID()
 		{
 
 			return ownershipRangesFaceID_;
 		}
 
-		inline const express::Array<express::SizeType> &ownershipRangesFaceID() const
+		inline const std::vector<moonolith::Integer> &ownershipRangesFaceID() const
 		{
 			return ownershipRangesFaceID_;
 		}
 
 	private:
-		express::Communicator comm;
+		moonolith::Communicator comm;
 		std::shared_ptr< libMesh::MeshBase> mesh_;
 		std::vector<ElementDofMap> dof_maps_;
 		
@@ -172,7 +171,7 @@ namespace utopia {
 		std::vector<ElementDofMap> face_set_id_global_;
 		std::vector<ElementDofMap> side_set_id_tag_;
 		std::vector<ElementDofMap> n_face_nodes_;
-		express::Array<express::SizeType> ownershipRangesFaceID_;	    
+		std::vector<moonolith::Integer> ownershipRangesFaceID_;	    
 
 		static bool is_tagged_contact_boundary(
 			const libMesh::MeshBase &mesh, 
@@ -193,7 +192,7 @@ namespace utopia {
 			std::vector<ElementDofMap> &side_set_id,
 			std::vector<ElementDofMap> &side_set_id_tag, 
 			std::vector<ElementDofMap> &face_set_id_global,
-			express::Array<express::SizeType> &ownershipRangesFaceID, 
+			std::vector<moonolith::Integer> &ownershipRangesFaceID, 
 			const std::vector< std::pair<int, int> > &tags);
 
 

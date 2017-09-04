@@ -2,11 +2,10 @@
 #include <memory>
 #include <assert.h>
 #include <libmesh/fe.h>
-#include <triangulate.hpp>
+#include "utopia_triangulate.hpp"
 #include "MortarAssemble.hpp"
-#include "utopia_Socket.hpp"
 #include "utopia_Polygon.hpp"
-
+// #include "utopia_Socket.hpp"
 
 namespace utopia {
 	
@@ -50,6 +49,8 @@ namespace utopia {
 			case libMesh::TRI6:
 			case libMesh::QUAD4:
 			case libMesh::QUAD8:
+			case libMesh::TRISHELL3:
+			case libMesh::QUADSHELL4:
 			{
 				
 				A_inv.resize(2,2);
@@ -64,8 +65,6 @@ namespace utopia {
 				std::vector<libMesh::Point> reference_points;
 				
 				{
-					
-					
 					libMesh::Point ref_p0(0.0, 0.0, 0.0);
 					
 					libMesh::Point ref_p1(1.0, 0.0, 0.0);
@@ -98,6 +97,8 @@ namespace utopia {
 					A_inv_m_b(1) = -1.0 * A_inv(1,0) * p0(0) - A_inv(1,1) * p0(1);
 					
 				}
+				
+				break;
 			}
 			default:
 			{
@@ -543,6 +544,8 @@ namespace utopia {
 		
 		v(0) = line(1, 0) - line(0, 0);
 		v(1) = line(1, 1) - line(0, 1);
+
+		const Real length = v.norm();
 		
 		for(int k = 0; k < ir.n_points(); ++k) {
 			const Real w = (1 + ir.get_points()[k](0)) * 0.5;
@@ -553,8 +556,9 @@ namespace utopia {
 			c_ir.get_points()[k] *= w;
 			c_ir.get_points()[k] += o;
 			
-			c_ir.get_weights()[k] = ir.w(k) * v.norm() * weight * 0.5;
+			c_ir.get_weights()[k] = ir.w(k) * length * weight * 0.5;
 		}
+
 	}
 	
 	void make_composite_quadrature_on_surf_3D(const libMesh::DenseMatrix<libMesh::Real> &polygon, const double weight, const int order, QMortar &c_ir)
@@ -680,9 +684,9 @@ namespace utopia {
 			
 			
 			if(is_tri(type)) {
-				ref_ir.get_weights()[i] *= 0.5;
+				ref_ir.get_weights()[i] *= 2.;
 			} else if(is_quad(type)) {
-				ref_ir.get_weights()[i] *= 4.;
+				ref_ir.get_weights()[i] *= 2.;
 			} else if(is_hex(type)) {
 				ref_ir.get_weights()[i] *= 8.;
 			} else if(is_tet(type)) {
@@ -2147,7 +2151,7 @@ namespace utopia {
 				}
 				
 				for(uint j = 0; j < n_trial; ++j) {
-					assert(  JxW[qp] >= 0.0 );
+					// assert(  JxW[qp] >= 0.0 );
 					elmat(i, j) += contract(w_test, trial[j][qp]) * JxW[qp];
 				}
 			}
@@ -2314,9 +2318,9 @@ namespace utopia {
 				isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal_v[0], &plane_normal_v[0], plane_offset, &isect);
 				// assert(isect > 0);
 				// if(visdbg) {
-				// v.get_values() = surf_normal_v; //visdbg
-				// v *= isect; //visdbg
-				// quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]); //visdbg
+				// 	v.get_values() = surf_normal_v; //visdbg
+				// 	v *= isect; //visdbg
+				// 	quiver(dim, 1, &p.get_values()[0], &v.get_values()[0]); //visdbg
 				// }
 				
 				auto biorth_test = weights(i, 0) * test[0][qp];

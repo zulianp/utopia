@@ -63,6 +63,8 @@
 #else
 #define assert_enabled(expr_)  
 #endif //ENABLE_LOCK_CHECK
+#else 
+#define assert_enabled(expr_)    
 #endif //NDEBUG
 
 #endif //UTOPIA_CONFIG_HPP

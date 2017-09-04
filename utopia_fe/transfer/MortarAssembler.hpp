@@ -2,10 +2,10 @@
 #define MFEML2P_MORTAR_ASSEMBLER_HPP 
 
 
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "utopia_LibMeshBackend.hpp"
 #include <libmesh/sparse_matrix.h>
-#include "cutlibpp_Predicate.hpp"
+#include "moonolith_predicate.hpp"
 
 namespace utopia {
 
@@ -123,7 +123,7 @@ namespace utopia {
 		
 
 		MortarContactAssembler(const std::shared_ptr<LibMeshFESpaceBase> &space);
-		bool assemble(DSMatrixd &coupling, DVectord &gap, DVectord &normals, DSMatrixd &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<cutlibpp::Predicate> &predicate = std::shared_ptr<cutlibpp::Predicate>());
+		bool assemble(DSMatrixd &coupling, DVectord &gap, DVectord &normals, DSMatrixd &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate = std::shared_ptr<moonolith::Predicate>());
 
 		private:
 			std::shared_ptr<LibMeshFESpaceBase> space_;

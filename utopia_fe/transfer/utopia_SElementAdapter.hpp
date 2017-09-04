@@ -1,36 +1,35 @@
 #ifndef UTOPIA_S_ELEMENT_ADAPTER_HPP
 #define UTOPIA_S_ELEMENT_ADAPTER_HPP 
 
-#include "cutk_Serializable.hpp"
-#include "cutk_InputStream.hpp"
-#include "cutk_OutputStream.hpp"
-
 #include "utopia_BoxAdapter.hpp"
 
-#include "libmesh/serial_mesh.h"
+#include "moonolith_serializable.hpp"
+#include "moonolith_input_stream.hpp"
+#include "moonolith_output_stream.hpp"
 
+#include "libmesh/serial_mesh.h"
 
 namespace utopia {
 
 	template<int Dimension>
-	class SElementAdapter : public cutk::Serializable {
+	class SElementAdapter : public moonolith::Serializable {
 	public:
 	    inline int tag() const
 	    {
 	        return tag_;
 	    }
 	    
-	    const BoxBoxAdapter<Dimension> &getBound() const
+	    const BoxBoxAdapter<Dimension> &bound() const
 	    {
 	        return bound_;
 	    }
 	    
-	    BoxBoxAdapter<Dimension> &getBound()
+	    BoxBoxAdapter<Dimension> &bound()
 	    {
 	        return bound_;
 	    }
 	    
-	    void applyRW(cutk::Stream &stream)
+	    void applyRW(moonolith::Stream &stream)
 	    {
 	        stream & bound_;
 	        stream & element_;
@@ -73,13 +72,18 @@ namespace utopia {
 	                p = c;
 	                p += n;
 
-	                bound_.staticBound()  += p;
-	                bound_.dynamicBound()  += p;
+	                std::array<double, Dimension> p_a;
+	                for(int d = 0; d < Dimension; ++d) {
+	                	p_a[d] = p(d);
+	                }
+
+	                bound_.static_bound()  += p_a;
+	                bound_.dynamic_bound() += p_a;
 	                p = c;
 	                n *= 0.01;
 	                p -=n;
-	                bound_.staticBound()  += p;
-	                bound_.dynamicBound()  += p;
+	                bound_.static_bound()  += p_a;
+	                bound_.dynamic_bound() += p_a;
 	            }
 	        }
 	    }

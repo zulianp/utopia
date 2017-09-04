@@ -1,12 +1,9 @@
 #include "MortarAssembler.hpp"
 #include "MortarAssemble.hpp"
+#include "utopia_triangulate.hpp"
 
 #include <cmath>
 #include <queue>
-
-#include "utopia_Socket.hpp"
-#include "triangulate.hpp"
-
 
 namespace utopia {
 
@@ -510,7 +507,7 @@ namespace utopia {
 		const std::unique_ptr<FEBaseT> &slave_fe, 
 		std::vector< std::shared_ptr<Contact> > &contacts,
 		const libMesh::Real search_radius, const bool strict_gap_policy,
-		const std::shared_ptr<cutlibpp::Predicate> &predicate)
+		const std::shared_ptr<moonolith::Predicate> &predicate)
 	{
 		using namespace libMesh;
 		using namespace std;
@@ -635,7 +632,7 @@ namespace utopia {
 			if(el_2.neighbor_ptr(side_2) != nullptr) continue;
 
 			if(predicate) {
-				if(!predicate->areMasterAndSlave( 
+				if(!predicate->are_master_and_slave( 
 					mesh.get_boundary_info().boundary_id(&el_1, side_1),
 					mesh.get_boundary_info().boundary_id(&el_2, side_2)
 					)) {
@@ -893,7 +890,7 @@ bool assemble_aux(
 	DSMatrixd &coupling, DVectord &gap, DVectord &normals, DSMatrixd &orthogonal_trafos, 
 	std::vector<bool> &is_contact_node, const libMesh::Real search_radius, 
 	const bool strict_gap_policy, 
-	const std::shared_ptr<cutlibpp::Predicate> &predicate)
+	const std::shared_ptr<moonolith::Predicate> &predicate)
 {
 	using namespace libMesh;
 	using namespace std;
@@ -1199,7 +1196,7 @@ bool assemble_aux(
 	return true;
 }
 
-bool MortarContactAssembler::assemble(DSMatrixd &coupling, DVectord &gap, DVectord &normals, DSMatrixd &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<cutlibpp::Predicate> &predicate) {
+bool MortarContactAssembler::assemble(DSMatrixd &coupling, DVectord &gap, DVectord &normals, DSMatrixd &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate) {
 	
 
 	if(space_->is_vector()) {

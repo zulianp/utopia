@@ -9,7 +9,7 @@
 #include "libmesh/libmesh_common.h"
 
 //forward decl
-namespace express {
+namespace moonolith {
 	class Communicator;
 }
 
@@ -21,7 +21,7 @@ namespace libMesh {
 namespace utopia {
 
 	bool assemble_contact(
-		express::Communicator &comm,
+		moonolith::Communicator &comm,
 		const std::shared_ptr<libMesh::MeshBase> &mesh,
 		const std::shared_ptr<libMesh::DofMap> &dof_map,
 		const unsigned int var_num,
@@ -36,7 +36,7 @@ namespace utopia {
 		const bool use_volume_differential = false);
 
 	bool assemble_contact(
-		express::Communicator &comm,
+		moonolith::Communicator &comm,
 		const std::shared_ptr<libMesh::MeshBase> &mesh,
 		const std::shared_ptr<libMesh::DofMap> &dof_map,
 		const unsigned int var_num,
@@ -53,7 +53,7 @@ namespace utopia {
 
 
 		bool assemble_contact(
-			express::Communicator &comm,
+			moonolith::Communicator &comm,
 			const std::shared_ptr<libMesh::MeshBase> &mesh,
 			const std::shared_ptr<libMesh::DofMap> &dof_map,
 			const unsigned int var_num,

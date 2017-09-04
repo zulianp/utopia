@@ -1,9 +1,9 @@
 #ifndef UTOPIA_ELEMENT_DOF_MAP_HPP
 #define UTOPIA_ELEMENT_DOF_MAP_HPP 
 
-#include "cutk_Serializable.hpp"
-#include "cutk_InputStream.hpp"
-#include "cutk_OutputStream.hpp"
+#include "moonolith_serializable.hpp"
+#include "moonolith_input_stream.hpp"
+#include "moonolith_output_stream.hpp"
 
 #include <vector>
 
@@ -12,7 +12,7 @@ namespace utopia {
 	template<typename T>
 	inline void write_vector(
 		const std::vector<T> &v, 
-		cutk::OutputStream &os)
+		moonolith::OutputStream &os)
 	{
 		int n = v.size();
 		os << n;
@@ -22,7 +22,7 @@ namespace utopia {
 	template<typename T>
 	inline void read_vector(
 		std::vector<T> &v, 
-		cutk::InputStream &is)
+		moonolith::InputStream &is)
 	{
 		int n;
 		is >> n;
@@ -30,14 +30,14 @@ namespace utopia {
 		is.read(&v[0], n);
 	}
 
-	class ElementDofMap : public cutk::Serializable {
+	class ElementDofMap : public moonolith::Serializable {
 	public:
-		inline void read(cutk::InputStream &is) override
+		inline void read(moonolith::InputStream &is) override
 		{
 			read_vector(global, is);
 		}
 
-		inline void write(cutk::OutputStream &os) const override
+		inline void write(moonolith::OutputStream &os) const override
 		{
 			write_vector(global, os);
 		}

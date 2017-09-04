@@ -2,10 +2,11 @@
 #define LibmeshContactForMoose_HPP
 
 #include "utopia_assemble_contact.hpp"
+#include "moonolith_communicator.hpp"
 
 namespace utopia {
 
-   inline bool MooseSurfaceAssemble(express::Communicator &comm,
+   inline bool MooseSurfaceAssemble(moonolith::Communicator &comm,
     const std::shared_ptr<libMesh::MeshBase> &mesh,
     const std::shared_ptr<libMesh::DofMap> &dof_map,
     const std::shared_ptr<const unsigned int> &_var_num,
@@ -23,7 +24,7 @@ namespace utopia {
 
 
    inline bool MooseSurfaceAssemble(
-    express::Communicator &comm,
+    moonolith::Communicator &comm,
     const std::shared_ptr<libMesh::MeshBase> &mesh,
     const std::shared_ptr<libMesh::DofMap> &dof_map,
     const std::shared_ptr<const unsigned int> &_var_num,

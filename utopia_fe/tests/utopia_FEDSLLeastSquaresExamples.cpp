@@ -6,10 +6,11 @@
 #include "utopia.hpp"
 
 //fe extension
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "MortarAssembler.hpp"
 #include "utopia_Socket.hpp"
 #include "utopia_ContactSimParams.hpp"
+#include "utopia_LibMeshBackend.hpp"
 
 
 using namespace utopia;

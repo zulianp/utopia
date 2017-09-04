@@ -1,35 +1,35 @@
 #include "utopia_BoxAdapter.hpp"
 
-namespace utopia {
+// namespace utopia {
 
 
-	void BoxAdapter::read(cutk::InputStream &is) 
-	{
-	    auto &min = get_min();
-	    auto &max = get_max();
+// 	void BoxAdapter::read(moonolith::InputStream &is) 
+// 	{
+// 	    auto &min = get_min();
+// 	    auto &max = get_max();
 	    
-	    int n;
-	    is >> n;
+// 	    int n;
+// 	    is >> n;
 	    
-	    reset(n);
+// 	    reset(n);
 	    
-	    for (int i = 0; i < n; ++i) {
-	        min.el(i) << is;
-	        max.el(i) << is;
-	    }
-	}
+// 	    for (int i = 0; i < n; ++i) {
+// 	        min.el(i) << is;
+// 	        max.el(i) << is;
+// 	    }
+// 	}
 	
-	void BoxAdapter::write(cutk::OutputStream &os) const
-	{
-	    const int n = get_dims();
-	    auto &min = get_min();
-	    auto &max = get_max();
+// 	void BoxAdapter::write(moonolith::OutputStream &os) const
+// 	{
+// 	    const int n = get_dims();
+// 	    auto &min = get_min();
+// 	    auto &max = get_max();
 	    
-	    os << n;
+// 	    os << n;
 	    
-	    for (int i = 0; i < n; ++i) {
-	        os << min(i);
-	        os << max(i);
-	    }
-	}
-}
+// 	    for (int i = 0; i < n; ++i) {
+// 	        os << min(i);
+// 	        os << max(i);
+// 	    }
+// 	}
+// }

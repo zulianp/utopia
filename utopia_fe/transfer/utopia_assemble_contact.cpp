@@ -1,4 +1,15 @@
 #include "utopia_assemble_contact.hpp"
+#include "utopia_fe_core.hpp"
+#include "utopia_LibMeshBackend.hpp"
+
+#include "MortarAssemble.hpp"
+#include "MortarAssembler.hpp"
+
+#include "utopia_STree.hpp"
+#include "utopia_ElementDofMap.hpp"
+#include "utopia_FESpaceAdapter.hpp"
+
+// #include "MapSparseMatrix.hpp"
 
 #include "libmesh/mesh_inserter_iterator.h"
 #include "libmesh/elem.h"
@@ -6,21 +17,11 @@
 #include "libmesh/fe.h"
 #include "libmesh/serial_mesh.h"
 
-#include "express_Profiler.hpp"
-#include "express_Redistribute.hpp"
-
-#include "utopia_fe.hpp"
-#include "MortarAssemble.hpp"
-
-#include "MortarAssemble.hpp"
-#include "MortarAssembler.hpp"
+#include "moonolith_profiler.hpp"
+#include "moonolith_redistribute.hpp"
+#include "moonolith_sparse_matrix.hpp"
 
 #include "utopia_Socket.hpp"
-#include "utopia_STree.hpp"
-#include "utopia_ElementDofMap.hpp"
-#include "utopia_FESpaceAdapter.hpp"
-
-#include "MapSparseMatrix.hpp"
 
 #include <cmath>
 #include <queue>
@@ -73,6 +74,53 @@ namespace utopia {
 			assert(d < result.size());
 			result[d] = true;
 		}
+	}
+
+
+	inline static void nodes_are_boundary_hack(const libMesh::FEBase &fe,
+											   std::vector<bool> &result)
+	{
+		auto &f = fe.get_phi();
+		result.resize(f.size(), false);
+
+		for(std::size_t i = 0; i < f.size(); ++i) {
+			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
+				if(f[i][qp] > 1e-16) {
+					result[i] = true;
+				}
+			}
+		}
+	}
+
+	inline static bool check_boundary_and_fun_consistent(const libMesh::FEBase &fe, const std::vector<bool> &node_is_boundary)
+	{
+		auto &f = fe.get_phi();
+		for(std::size_t i = 0; i < node_is_boundary.size(); ++i) {
+			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
+				if(f[i][qp] > 1e-16) {
+					assert(node_is_boundary[i]);
+					if(!node_is_boundary[i]) return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	inline static bool check_positive_funs(libMesh::FEBase &slave_fe)
+	{
+		auto &f = slave_fe.get_phi();
+
+		for(auto &f_i : f) {
+			for(auto f_iq : f_i) {
+				if(f_iq < -1e-8) {
+					assert(f_iq >= -1e8);
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 	
 	inline static bool check_node_is_boundary(const ElemType &type,
@@ -243,7 +291,7 @@ namespace utopia {
 							const std::vector<ElementDofMap> &subdomain_id,
 							const std::vector<ElementDofMap> &side_set_id,
 							const std::vector<ElementDofMap> &face_set_id_global,
-							cutk::OutputStream &os)
+							moonolith::OutputStream &os)
 	{
 		const int dim 		  = space.mesh_dimension();
 		const long n_elements = std::distance(begin, end);
@@ -267,7 +315,7 @@ namespace utopia {
 		long n_nodes = nodeIds.size();
 		
 		// Estimate for allocation
-		os.requestSpace( (n_elements * 8 + n_nodes * dim) * (sizeof(double) + sizeof(long)) );
+		os.request_space( (n_elements * 8 + n_nodes * dim) * (sizeof(double) + sizeof(long)) );
 		
 		//WRITE 1
 		os << dim;
@@ -368,13 +416,13 @@ namespace utopia {
 										const Iterator &begin,
 										const Iterator &end,
 										const FESpaceAdapter &fespace,
-										cutk::OutputStream &os)
+										moonolith::OutputStream &os)
 	{
 		write_space(begin, end, *fespace.mesh(), fespace.dof_map(), fespace.variable_number(), fespace.variable_number(), fespace.subdomain_id(), fespace.side_set_id(), fespace.face_set_id_global(), os);
 	}
 	
 	
-	static void read_space(cutk::InputStream &is, cutk::shared_ptr<MeshBase> & space,
+	static void read_space(moonolith::InputStream &is, std::shared_ptr<MeshBase> & space,
 						   std::vector<ElementDofMap> &dof_map,
 						   std::vector<long> &variable_number,
 						   std::vector<long> &variable_order,
@@ -498,45 +546,40 @@ namespace utopia {
 		
 	}
 	
-	static void read_spaces(cutk::InputStream &is, FESpaceAdapter &utopiamesh, const libMesh::Parallel::Communicator &comm_mesh)
+	static void read_spaces(moonolith::InputStream &is, FESpaceAdapter &utopiamesh, const libMesh::Parallel::Communicator &comm_mesh)
 	{
 		read_space(is, utopiamesh.mesh(), utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh);
 	}
 	
 	
 	template<int Dimensions, class Fun>
-	static bool SurfaceAssemble(express::Communicator &comm,
+	static bool SurfaceAssemble(moonolith::Communicator &comm,
 								const std::shared_ptr<MeshBase> &master_slave,
 								const std::shared_ptr<DofMap> &dof_map,
 								const unsigned int var_num,
 								Fun process_fun,
-								const cutk::Settings &settings,
+								const moonolith::SearchSettings &settings,
 								const libMesh::Real search_radius,
 								const std::vector< std::pair<int, int> >  &tags,
 								const bool use_biorth)
 	{
 		
-		std::shared_ptr<FESpaceAdapter> local_fun_spaces_new = cutk::make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
-		auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
+		std::shared_ptr<FESpaceAdapter> local_fun_spaces_new = std::make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
+		auto predicate = std::make_shared<moonolith::MasterAndSlave>();
 		
 		for(auto t : tags)
 			predicate->add(t.first, t.second);
 		
-		using namespace cutlibpp;
-		using namespace express;
-		using namespace cutk;
+		using namespace moonolith;
+
 		
 		typedef STree<Dimensions> NTreeT;
 		typedef typename NTreeT::DataContainer DataContainer;
 		typedef typename NTreeT::DataType SurfaceAdapter;
 		
-		long maxNElements = 40;
-		long maxDepth = 5;
-		
-		
-		if (!settings.get("max_depth").isNull()) {
-			maxDepth = settings.get("max_depth").toInt();
-		}
+		long maxNElements = settings.max_elements;
+		long maxDepth = settings.max_depth;
+	
 		
 		const auto &mesh = master_slave;
 		
@@ -552,17 +595,13 @@ namespace utopia {
 		std::vector<int> block_id;
 		std::vector<int> block_id_def;
 		
-		EXPRESS_EVENT_BEGIN("create_adapters");
+		MOONOLITH_EVENT_BEGIN("create_adapters");
 		////////////////////////////////////////////////////////////////////////////////////////////////////
-		cutk::shared_ptr<NTreeT> tree = NTreeT::New(predicate, maxNElements, maxDepth);
+		std::shared_ptr<NTreeT> tree = NTreeT::New(predicate, maxNElements, maxDepth);
 		tree->reserve(n_elements);
-		
-		std::cout << "nElements = tree->memory().nData()_inside " << n_elements << std::endl;
-		
-		std::shared_ptr<FESpaceAdapter> local_spaces = make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
-		
-		//		int jj=0;
-		
+				
+		std::shared_ptr<FESpaceAdapter> local_spaces = std::make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
+				
 		for (auto it = master_slave->active_local_elements_begin();
 			 it != master_slave->active_local_elements_end(); ++it) {
 			
@@ -586,16 +625,15 @@ namespace utopia {
 			}
 		}
 		
-		tree->getRoot()->getBound().staticBound().enlarge(1e-8);
-		
+		tree->root()->bound().static_bound().enlarge(1e-8);
+	
 		
 		////////////////////////////////////////////////////////////////////////////////////////////////////
-		EXPRESS_EVENT_END("create_adapters");
+		MOONOLITH_EVENT_END("create_adapters");
 		
 		//Just to have an indexed-storage
-		std::map<long, cutk::shared_ptr<FESpaceAdapter> > utopiamesh;
-		std::map<long, std::vector<cutk::shared_ptr<FESpaceAdapter> > > migrated_meshes;
-		
+		std::map<long, std::shared_ptr<FESpaceAdapter> > utopiamesh;
+		std::map<long, std::vector<std::shared_ptr<FESpaceAdapter> > > migrated_meshes;
 		
 		auto read = [&utopiamesh, &migrated_meshes, block_id, comm, &libmesh_comm_mesh, search_radius]
 		(
@@ -607,7 +645,7 @@ namespace utopia {
 			
 			CHECK_STREAM_READ_BEGIN("vol_proj", in);
 			
-			cutk::shared_ptr<FESpaceAdapter> proc_space = cutk::make_shared<FESpaceAdapter>(comm);
+			auto proc_space = std::make_shared<FESpaceAdapter>(comm);
 			
 			read_spaces(in, *proc_space, libmesh_comm_mesh);
 			
@@ -622,9 +660,7 @@ namespace utopia {
 			
 			auto s = proc_space->mesh();
 			
-			//			int i=0;
 			for (int i = 0; i<s->n_elem(); ++i) {
-				//				auto elem=s->elem(i);
 				int tag =proc_space->side_set_id()[i].global.at(0);
 				data.push_back(SurfaceAdapter(*s, i, i,tag,search_radius));
 				assert(!proc_space->dof_map()[i].empty());
@@ -655,22 +691,17 @@ namespace utopia {
 			} else {
 				auto it = utopiamesh.find(ownerrank);
 				assert(it != utopiamesh.end());
-				cutk::shared_ptr<FESpaceAdapter> spaceptr = it->second;
+				std::shared_ptr<FESpaceAdapter> spaceptr = it->second;
 				assert(std::distance(begin, end) > 0);
 				write_element_selection(begin, end, *spaceptr, out);
 				
 			}
 			
 			CHECK_STREAM_WRITE_END("vol_proj", out);
-			
 		};
 		
-		
-		
 		long n_false_positives = 0, n_projections = 0;
-		
-		
-		
+
 		auto fun = [&n_false_positives, &n_projections, &process_fun](
 																	  SurfaceAdapter &master, SurfaceAdapter &slave) -> bool {
 			bool ok = process_fun(master, slave);
@@ -685,20 +716,15 @@ namespace utopia {
 			return true;
 			
 		};
-		
-		
-		cutk::Settings custom_settings = settings;
-		// custom_settings.set("disable_redistribution", cutk::Boolean(true));
-		custom_settings.set("verbosity_level", cutk::Integer(1));
-		
-		cutlibpp::search_and_compute(comm, tree, predicate, read, write, fun, custom_settings);
+				
+		moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);
 		
 		long n_total_candidates = n_projections + n_false_positives;
 		
 		long n_collection[3] = {n_projections, n_total_candidates, n_false_positives};
-		comm.allReduce(n_collection, 3, express::MPISum());
+		comm.all_reduce(n_collection, 3, moonolith::MPISum());
 		
-		if (comm.isRoot()) {
+		if (comm.is_root()) {
 			std::cout << "n_intersections: " << n_collection[0]
 			<< ", n_total_candidates: " 	 << n_collection[1]
 			<< ", n_false_positives: " 	     << n_collection[2] << std::endl;
@@ -709,7 +735,7 @@ namespace utopia {
 	
 	template<int Dimensions>
 	bool SurfaceAssemble(
-						 express::Communicator &comm,
+						 moonolith::Communicator &comm,
 						 const std::shared_ptr<MeshBase> &master_slave,
 						 const std::shared_ptr<DofMap> &dof_map,
 						 const unsigned int var_num,
@@ -718,13 +744,13 @@ namespace utopia {
 						 DVectord &gap,
 						 DSMatrixd &normals,
 						 DVectord &is_contact_node,
-						 const cutk::Settings &settings,
+						 const moonolith::SearchSettings &settings,
 						 const libMesh::Real search_radius,
 						 const std::vector< std::pair<int, int> > &tags,
 						 const bool use_biorth,
 						 const bool use_volume_differential)
 	{
-		std::shared_ptr<FESpaceAdapter> local_fun_spaces_new = cutk::make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
+		std::shared_ptr<FESpaceAdapter> local_fun_spaces_new = std::make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
 		
 		libMesh::DenseMatrix<libMesh::Real> points_master;
 		libMesh::DenseMatrix<libMesh::Real> points_slave;
@@ -732,7 +758,7 @@ namespace utopia {
 		Polyhedron poly_master, poly_slave;
 		Intersector isector;
 		
-		auto predicate = std::make_shared<cutlibpp::MasterAndSlave>();
+		auto predicate = std::make_shared<moonolith::MasterAndSlave>();
 		
 		for(auto t : tags){
 			predicate->add(t.first, t.second);
@@ -743,7 +769,7 @@ namespace utopia {
 		
 		std::vector<libMesh::dof_id_type> dofs_master, dofs_slave;
 		
-		libMesh::DenseMatrix<libMesh::Real> elemmat;
+		libMesh::DenseMatrix<libMesh::Real> elemmat;//, massmat;
 		libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
 		
 		DenseMatrix<Real> side_polygon_master, side_polygon_slave;
@@ -759,22 +785,20 @@ namespace utopia {
 		libMesh::Real local_element_matrices_sum = 0.0;
 		
 		//all face dof buffers
-		express::MapSparseMatrix<double> B_buffer;
-		express::MapSparseMatrix<double> P_buffer;
-		express::MapSparseMatrix<double> Q_buffer;
-		express::MapSparseMatrix<double> rel_area_buffer;
-		express::MapSparseMatrix<double> gap_buffer;
-		express::MapSparseMatrix<double> normal_buffer;
+		moonolith::SparseMatrix<double> B_buffer(comm);
+		moonolith::SparseMatrix<double> P_buffer(comm);
+		moonolith::SparseMatrix<double> Q_buffer(comm);
+		moonolith::SparseMatrix<double> rel_area_buffer(comm);
+		moonolith::SparseMatrix<double> gap_buffer(comm);
+		moonolith::SparseMatrix<double> normal_buffer(comm);
 		
 		DenseMatrix<Real> biorth_weights;
 		
 		auto fun = [&](const SElementAdapter<Dimensions> &master,
 					   const SElementAdapter<Dimensions> &slave) -> bool {
 			
-			using namespace cutlibpp;
-			using namespace express;
-			using namespace cutk;
-			
+			using namespace moonolith;
+
 			const auto &master_mesh = master.space();
 			const auto &slave_mesh  = slave.space();
 			
@@ -808,14 +832,38 @@ namespace utopia {
 			
 			master_fe = libMesh::FEBase::build(master_mesh.mesh_dimension(), libMesh::Order(approx_order));
 			slave_fe  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  libMesh::Order(approx_order));
+
+		
 			
 			master_fe->get_phi();
-//			master_fe->get_JxW();
+//			master_fe->get_JxW(); //not necessary
 			
 			slave_fe->get_xyz();
 			slave_fe->get_phi();
 			slave_fe->get_JxW();
+
+
+			//begin: hack stuff
+			std::unique_ptr<libMesh::FEBase>  master_fe_hack, slave_fe_hack;
+			master_fe_hack = libMesh::FEBase::build(master_mesh.mesh_dimension(), libMesh::Order(approx_order));
+			slave_fe_hack  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  libMesh::Order(approx_order));
 			
+			libMesh::QGauss ir_hack(dim-1, libMesh::Order(1)); 
+			
+			if(dim == 2) {
+				ir_hack.init(libMesh::EDGE2);
+			} else {
+				ir_hack.init(libMesh::TRI6);
+			}
+
+			master_fe_hack->get_phi();
+			slave_fe_hack->get_phi(); 
+
+			master_fe_hack->attach_quadrature_rule(&ir_hack);
+			slave_fe_hack->attach_quadrature_rule(&ir_hack);
+
+			//end: hack stuff
+
 			typedef Intersector::Scalar Scalar;
 			
 			if(dim_slave == 2)  {
@@ -873,6 +921,7 @@ namespace utopia {
 						std::cerr << "[Warning] it should never happen" << std::endl;
 						continue;
 					}
+					//FIXME at some point we migth want to discrimate between faces of the same element
 					// if (!predicate->tagsAreRelated(tag_1, tag_2)) continue;
 					
 					auto side_slave = el_slave.build_side_ptr(side_index_slave);
@@ -980,12 +1029,12 @@ namespace utopia {
 					}
 					
 					// const bool enable_vis = side_id_slave.at(side_index_slave) == 434;
-					// const bool enable_vis = false; //visdbg
+					// const bool enable_vis = true; //visdbg
 					
 					if(pair_intersected) {
 						// if(enable_vis) { //visdbg
-						// plot_polygon(3, isect_polygon_master.get_values().size()/3, &isect_polygon_master.get_values()[0], "master"); //visdbg
-						// plot_polygon(3, isect_polygon_slave.get_values().size()/3,  &isect_polygon_slave.get_values()[0],  "slave");  //visdbg
+						// 	plot_polygon(dim, isect_polygon_master.get_values().size()/dim, &isect_polygon_master.get_values()[0], "master_" + std::to_string(side_id_slave[side_index_master])); //visdbg
+						// 	plot_polygon(dim, isect_polygon_slave.get_values().size()/dim,  &isect_polygon_slave.get_values()[0],  "slave_" + std::to_string(side_id_slave[side_index_slave]));  //visdbg
 						// } //visdbg
 						
 						// std::cout << "isect: " << master.handle() << " -> " << slave.handle() << std::endl;
@@ -1019,8 +1068,10 @@ namespace utopia {
 						
 						if(use_volume_differential) {
 							master_fe->reinit(&el_master);
+							master_fe_hack->reinit(&el_master);
 						} else {
 							master_fe->reinit(&el_master, side_index_master);
+							master_fe_hack->reinit(&el_master, side_index_master);
 						}
 						
 						//slave fe init
@@ -1028,9 +1079,15 @@ namespace utopia {
 						
 						if(use_volume_differential) {
 							slave_fe->reinit(&el_slave);
+							master_fe_hack->reinit(&el_slave);
 						} else {
 							slave_fe->reinit(&el_slave, side_index_slave);
+							slave_fe_hack->reinit(&el_slave, side_index_slave);
 						}
+
+						assert( check_positive_funs(*slave_fe) );
+						assert( check_positive_funs(*master_fe) );
+
 						
 						//prepare result
 						surface_assemble->parent_element_master  = index_master;
@@ -1044,13 +1101,15 @@ namespace utopia {
 						surface_assemble->coupling.zero();
 						
 						elemmat.zero();
+						// massmat.zero();
 						
 						std::vector<bool> node_is_boundary_slave;
 						std::vector<bool> node_is_boundary_master;
 						
-						nodes_are_boundary_hack<Dimensions>(el_slave, slave_fe->get_phi().size(), approx_order, side_index_slave, node_is_boundary_slave);
-						nodes_are_boundary_hack<Dimensions>(el_master, master_fe->get_phi().size(), approx_order, side_index_master, node_is_boundary_master);
-						
+						nodes_are_boundary_hack(*slave_fe_hack, node_is_boundary_slave);
+						nodes_are_boundary_hack(*master_fe_hack, node_is_boundary_master);
+
+						assert( check_boundary_and_fun_consistent(*slave_fe, node_is_boundary_slave) );
 						
 						assert( check_node_is_boundary((*master_slave->active_local_elements_begin())->type(), node_is_boundary_master) );
 						
@@ -1128,7 +1187,7 @@ namespace utopia {
 							const long dof_J = face_node_id_slave[i];
 							
 							if(node_is_boundary_slave[i]) {
-								P_buffer.setAt(dof_I, dof_J, 1.);
+								P_buffer.set(dof_I, dof_J, 1.);
 							}
 						}
 						
@@ -1138,7 +1197,7 @@ namespace utopia {
 							const long dof_J = face_node_id_master[i];
 							
 							if(node_is_boundary_master[i]) {
-								Q_buffer.setAt(dof_I, dof_J, 1.);
+								Q_buffer.set(dof_I, dof_J, 1.);
 							}
 						}
 						
@@ -1153,6 +1212,12 @@ namespace utopia {
 						
 						auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
 						assert(partial_sum > 0);
+						assert( std::abs(surface_assemble->relative_area - 0.5*std::accumulate(ir_ref_slave.get_weights().begin(), ir_ref_slave.get_weights().end(), 0.0)) < 1e-8);
+						assert( std::abs(partial_sum - surface_assemble->isect_area) < 1e-8);
+						// std::cout << "====================================\n";
+						// std::cout << "areas: " << partial_sum << " == " << surface_assemble->isect_area << " ratio: " <<  (surface_assemble->isect_area /partial_sum) << std::endl;
+						// std::cout << "====================================\n";
+
 						
 						local_element_matrices_sum += partial_sum;
 						
@@ -1195,7 +1260,7 @@ namespace utopia {
 		
 		double volumes[1] = { local_element_matrices_sum };
 		
-		comm.allReduce(volumes, 1, express::MPISum());
+		comm.all_reduce(volumes, 1, moonolith::MPISum());
 		
 		const processor_id_type master_proc_id  = master_slave->processor_id();
 		
@@ -1205,18 +1270,16 @@ namespace utopia {
 		
 		const dof_id_type n_dofs_on_proc_slave  = dof_map->n_dofs_on_processor(slave_proc_id);
 		
-		if(comm.isRoot()) {
+		if(comm.is_root()) {
 			std::cout << "sum(B_tilde): " << volumes[0] <<std::endl;
 		}
 		
-		express::Array<express::SizeType>  ownership_ranges_master(comm.size()+1);
-		ownership_ranges_master.allSet(0);
-		
-		express::Array<express::SizeType>  ownership_ranges_slave(comm.size()+1);
-		ownership_ranges_slave.allSet(0);
+		std::vector<moonolith::Integer>  ownership_ranges_master(comm.size()+1, 0);
+		std::vector<moonolith::Integer>  ownership_ranges_slave(comm.size()+1, 0);
+
 		
 		const int n_nodes_x_face = master_slave->elem(0)->build_side_ptr(0)->n_nodes();
-		express::Array<express::SizeType>  side_node_ownership_ranges = local_fun_spaces_new->ownershipRangesFaceID();
+		std::vector<moonolith::Integer>  side_node_ownership_ranges = local_fun_spaces_new->ownershipRangesFaceID();
 		
 		for(SizeType i = 0; i < side_node_ownership_ranges.size(); ++i) {
 			side_node_ownership_ranges[i] *= n_nodes_x_face;
@@ -1225,8 +1288,8 @@ namespace utopia {
 		ownership_ranges_master[comm.rank() + 1] += static_cast<unsigned int>(n_dofs_on_proc_master);
 		ownership_ranges_slave[comm.rank()  + 1] += static_cast<unsigned int>(n_dofs_on_proc_slave);
 		
-		comm.allReduce(&ownership_ranges_master[0], ownership_ranges_master.size(), express::MPISum());
-		comm.allReduce(&ownership_ranges_slave[0],  ownership_ranges_slave.size(),  express::MPISum());
+		comm.all_reduce(&ownership_ranges_master[0], ownership_ranges_master.size(), moonolith::MPISum());
+		comm.all_reduce(&ownership_ranges_slave[0],  ownership_ranges_slave.size(),  moonolith::MPISum());
 		
 		std::partial_sum(ownership_ranges_master.begin(), ownership_ranges_master.end(),
 						 ownership_ranges_master.begin());
@@ -1239,53 +1302,53 @@ namespace utopia {
 		const SizeType n_local_dofs_master    = ownership_ranges_master[comm.rank() + 1] - ownership_ranges_master[comm.rank()];
 		const SizeType n_local_side_node_dofs = side_node_ownership_ranges[comm.rank() + 1] - side_node_ownership_ranges[comm.rank()];
 		
-		B_buffer.finalizeStructure();
-		P_buffer.finalizeStructure();
-		Q_buffer.finalizeStructure();
-		rel_area_buffer.finalizeStructure();
-		gap_buffer.finalizeStructure();
-		normal_buffer.finalizeStructure();
+		B_buffer.finalize_local_structure();
+		P_buffer.finalize_local_structure();
+		Q_buffer.finalize_local_structure();
+		rel_area_buffer.finalize_local_structure();
+		gap_buffer.finalize_local_structure();
+		normal_buffer.finalize_local_structure();
 		
 		SizeType sizes[6] = {
-			B_buffer.rows(), B_buffer.columns(),
-			P_buffer.rows(), P_buffer.columns(),
-			Q_buffer.rows(), Q_buffer.columns()
+			B_buffer.rows(), B_buffer.cols(),
+			P_buffer.rows(), P_buffer.cols(),
+			Q_buffer.rows(), Q_buffer.cols()
 		};
 		
-		comm.allReduce(sizes, 6, express::MPIMax());
+		comm.all_reduce(sizes, 6, moonolith::MPIMax());
 		
-		const SizeType n_side_node_dofs = express::Math<SizeType>::Max(sizes[0], sizes[1], sizes[3], sizes[5]);
+		const SizeType n_side_node_dofs = std::max(std::max(sizes[0], sizes[1]), std::max(sizes[3], sizes[5]));
 		std::cout << "n_side_node_dofs = " << n_side_node_dofs << std::endl;
 		
-		B_buffer.setSize(n_side_node_dofs, n_side_node_dofs);
-		P_buffer.setSize(sizes[2], n_side_node_dofs);
-		Q_buffer.setSize(sizes[4], n_side_node_dofs);
-		rel_area_buffer.setSize(n_side_node_dofs, 1);
-		gap_buffer.setSize(n_side_node_dofs, 1);
-		normal_buffer.setSize(n_side_node_dofs, dim);
+		B_buffer.set_size(n_side_node_dofs, n_side_node_dofs);
+		P_buffer.set_size(sizes[2], n_side_node_dofs);
+		Q_buffer.set_size(sizes[4], n_side_node_dofs);
+		rel_area_buffer.set_size(n_side_node_dofs, 1);
+		gap_buffer.set_size(n_side_node_dofs, 1);
+		normal_buffer.set_size(n_side_node_dofs, dim);
 		
-		express::Redistribute< express::MapSparseMatrix<double> > redist(comm.getMPIComm());
-		redist.apply(side_node_ownership_ranges, B_buffer,     express::AddAssign<double>());
-		redist.apply(side_node_ownership_ranges, gap_buffer,       express::AddAssign<double>());
-		redist.apply(side_node_ownership_ranges, normal_buffer,    express::AddAssign<double>());
+		moonolith::Redistribute< moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
+		redist.apply(side_node_ownership_ranges, B_buffer,     	moonolith::AddAssign<double>());
+		redist.apply(side_node_ownership_ranges, gap_buffer,    moonolith::AddAssign<double>());
+		redist.apply(side_node_ownership_ranges, normal_buffer, moonolith::AddAssign<double>());
 		
-		redist.apply(local_fun_spaces_new->ownershipRangesFaceID(), rel_area_buffer, express::AddAssign<double>());
+		redist.apply(local_fun_spaces_new->ownershipRangesFaceID(), rel_area_buffer, moonolith::AddAssign<double>());
 		
-		redist.apply(ownership_ranges_slave, P_buffer, express::Assign<double>());
-		redist.apply(ownership_ranges_master, Q_buffer, express::Assign<double>());
+		redist.apply(ownership_ranges_slave, P_buffer,  moonolith::Assign<double>());
+		redist.apply(ownership_ranges_master, Q_buffer, moonolith::Assign<double>());
 		
 		std::cout << "n_local_side_node_dofs: " << n_local_side_node_dofs << std::endl;
 		
-		express::RootDescribe("petsc rel_area_buffer assembly begin", comm, std::cout);
+		moonolith::root_describe("petsc rel_area_buffer assembly begin", comm, std::cout);
 		
-		express::Array<double> detect_negative(n_local_side_node_dofs);
-		express::Array<bool> remove_row(n_local_side_node_dofs);
+		std::vector<double> detect_negative(n_local_side_node_dofs);
+		std::vector<bool> remove_row(n_local_side_node_dofs);
 		
-		if(!remove_row.isNull()) {
+		if(!remove_row.empty()) {
 			long n_remove_rows = 0;
 
-			detect_negative.allSet(0.);
-			remove_row.allSet(false);
+			std::fill(detect_negative.begin(), detect_negative.end(), 0.);
+			std::fill(remove_row.begin(), remove_row.end(), false);
 			
 			
 			//hack this is curing some symptoms of a bug but not the cause
@@ -1334,7 +1397,7 @@ namespace utopia {
 			// std::cout << "n_remove_rows: " <<n_remove_rows << std::endl;
 		}
 		
-		express::RootDescribe("petsc B_buffer assembly begin", comm, std::cout);
+		moonolith::root_describe("petsc b_buffer assembly begin", comm, std::cout);
 		
 		DVectord is_contact_node_tilde = local_zeros(n_local_side_node_dofs);
 		DVectord gap_tilde = local_zeros(n_local_side_node_dofs);
@@ -1368,8 +1431,8 @@ namespace utopia {
 			}
 		}
 		
-		SizeType n_max_row_entries_bpq[3] = { B_buffer.maxEntriesXCol(), P_buffer.maxEntriesXCol(), Q_buffer.maxEntriesXCol() };
-		comm.allReduce(n_max_row_entries_bpq, 3, express::MPIMax());
+		SizeType n_max_row_entries_bpq[3] = { B_buffer.local_max_entries_x_col(), P_buffer.local_max_entries_x_col(), Q_buffer.local_max_entries_x_col() };
+		comm.all_reduce(n_max_row_entries_bpq, 3, moonolith::MPIMax());
 		
 		const SizeType n_max_row_entries_b = n_max_row_entries_bpq[0];
 		const SizeType n_max_row_entries_p = n_max_row_entries_bpq[1];
@@ -1400,7 +1463,7 @@ namespace utopia {
 #endif //NEBUG
 		
 		// comm.barrier();
-		// express::RootDescribe("petsc P_buffer assembly begin", comm, std::cout);
+		// moonolith::root_describe("petsc p_buffer assembly begin", comm, std::cout);
 		
 		DSMatrixd P = utopia::local_sparse(n_local_dofs_slave, n_local_side_node_dofs, n_max_row_entries_p);
 		{
@@ -1411,7 +1474,7 @@ namespace utopia {
 		}
 		
 		// comm.barrier();
-		// express::RootDescribe("petsc Q_buffer assembly begin", comm, std::cout);
+		// moonolith::root_describe("petsc q_buffer assembly begin", comm, std::cout);
 		
 		DSMatrixd Q = utopia::local_sparse(n_local_dofs_master, n_local_side_node_dofs, n_max_row_entries_q);
 		{
@@ -1568,11 +1631,11 @@ namespace utopia {
 		// write("c.m", is_contact_node);
 		
 		comm.barrier();
-		express::RootDescribe("Contact assembly end", comm, std::cout);
+		moonolith::root_describe("contact assembly end", comm, std::cout);
 		return true;
 	}
 	
-	bool assemble_contact(express::Communicator &comm,
+	bool assemble_contact(moonolith::Communicator &comm,
 						  const std::shared_ptr<MeshBase> &mesh,
 						  const std::shared_ptr<DofMap> &dof_map,
 						  const unsigned int var_num,
@@ -1586,7 +1649,9 @@ namespace utopia {
 						  const bool use_biorth,
 						  const bool use_volume_differential)
 	{
-		cutk::Settings settings;
+		moonolith::SearchSettings settings;
+		// settings.verbosity_level = 3;
+
 		if(mesh->mesh_dimension() == 2) {
 			return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tags, use_biorth, use_volume_differential);
 		}
@@ -1600,7 +1665,7 @@ namespace utopia {
 		return false;
 	}
 	
-	bool assemble_contact(express::Communicator &comm,
+	bool assemble_contact(moonolith::Communicator &comm,
 						  const std::shared_ptr<MeshBase> &mesh,
 						  const std::shared_ptr<DofMap> &dof_map,
 						  const unsigned int var_num,
@@ -1654,7 +1719,7 @@ namespace utopia {
 	}
 	
 	bool assemble_contact(
-						  express::Communicator &comm,
+						  moonolith::Communicator &comm,
 						  const std::shared_ptr<libMesh::MeshBase> &mesh,
 						  const std::shared_ptr<libMesh::DofMap> &dof_map,
 						  const unsigned int var_num,
@@ -1681,53 +1746,7 @@ namespace utopia {
 			return false;
 		}
 		
-		// auto s = local_size(gap);
-		// DVectord directions = local_zeros(s.get(0));
-		
-		// {
-		// 	Write<DVectord> w(directions);
-		
-		// 	each_read(direction_matrix, [&](const SizeType i, const SizeType j, const double value){
-		// 		directions.set(i + j, value);
-		// 	});
-		// }
-		
-		// normals = local_zeros(s.get(0));
-		
-		// auto r = range(directions);
-		
-		// const SizeType dims = mesh->mesh_dimension();
-		
-		// std::vector<Real> n(dims);
-		// {
-		// 	Read<DVectord> r_d(directions);
-		// 	Read<DVectord> r_icn(is_contact_node);
-		
-		// 	for(SizeType i = r.begin(); i < r.end(); i += dims) {
-		// 		if(!is_contact_node.get(i)) continue;
-		
-		// 		Real norm = 0;
-		// 		for(SizeType j = 0; j < dims; ++j) {
-		// 			n[j] = directions.get(i + j);
-		// 			norm += n[j] * n[j];
-		// 		}
-		
-		// 		norm = std::sqrt(norm);
-		
-		// 		if(norm < 1e-16) {
-		// 			std::cerr << "[Warning] 0-director" << std::endl;
-		// 			continue;
-		// 		}
-		
-		// 		for(SizeType j = 0; j < dims; ++j) {
-		// 			n[j] /= norm;
-		// 			normals.set(i + j, n[j]);
-		// 		}
-		// 	}
-		// }
-		
 		convert_normal_matrix_to_vector(direction_matrix, normals);
-		
 		return true;
 	}
 }

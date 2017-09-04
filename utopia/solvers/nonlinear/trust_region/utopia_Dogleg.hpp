@@ -45,11 +45,12 @@ protected:
             Vector p_N = g, p_SD = g, p_CP = g;
             Scalar pred_N, g_B_g = dot(g, B * g), pNlen; 
 
-            // this is the worst hard-codding ever 
+            
             auto lsolver = std::make_shared< Factorization<Matrix, Vector> >();
-			#ifdef PETSC_HAVE_MUMPS
-            	lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
-			#endif //PETSC_HAVE_MUMPS
+            // this is the worst hard-codding ever (edit: yes you are right ;-))
+			// #ifdef PETSC_HAVE_MUMPS
+   //          	lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+			// #endif //PETSC_HAVE_MUMPS
 			
             //
             lsolver->solve(B, -1 * g, p_N);

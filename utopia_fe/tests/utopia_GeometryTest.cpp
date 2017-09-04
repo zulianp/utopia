@@ -2,7 +2,7 @@
 
 #include "utopia_NormalTangentialCoordinateSystem.hpp"
 
-#include "utopia_fe.hpp"
+#include "utopia_fe_core.hpp"
 #include "utopia_LibMeshBackend.hpp"
 
 #include <libmesh/const_function.h>
