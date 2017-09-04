@@ -1212,7 +1212,7 @@ namespace utopia {
 						
 						auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
 						assert(partial_sum > 0);
-						assert( std::abs(surface_assemble->relative_area - 0.5*std::accumulate(ir_ref_slave.get_weights().begin(), ir_ref_slave.get_weights().end(), 0.0)) < 1e-8);
+						// assert( std::abs(surface_assemble->relative_area - 0.5*std::accumulate(ir_ref_slave.get_weights().begin(), ir_ref_slave.get_weights().end(), 0.0)) < 1e-8);
 						assert( std::abs(partial_sum - surface_assemble->isect_area) < 1e-8);
 						// std::cout << "====================================\n";
 						// std::cout << "areas: " << partial_sum << " == " << surface_assemble->isect_area << " ratio: " <<  (surface_assemble->isect_area /partial_sum) << std::endl;

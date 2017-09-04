@@ -221,8 +221,8 @@ namespace utopia {
 		strong_enforce( boundary_conditions(uy == coeff(0.), {4}) );
 		strong_enforce( boundary_conditions(uy == coeff(0.), {2}) );
 
-		strong_enforce( boundary_conditions(uz == coeff(1.), {4}) );
-		strong_enforce( boundary_conditions(uz == coeff(-1.), {2}) );
+		strong_enforce( boundary_conditions(uz == coeff(0.3), {4}) );
+		strong_enforce( boundary_conditions(uz == coeff(-0.3), {2}) );
 
 		master_slave_context.equation_systems.init();
 
@@ -240,6 +240,8 @@ namespace utopia {
 
 		unsigned int variable_number = 0;
 
+		double elapsed = MPI_Wtime();
+
 		assemble_contact(moonolith_comm, (master_slave), 
 			utopia::make_ref(master_slave_context.system.get_dof_map()), 
 			variable_number, 
@@ -252,11 +254,17 @@ namespace utopia {
 			tags,
 			true);
 
+		elapsed = MPI_Wtime() - elapsed;
+		std::cout << "contact: " << elapsed << std::endl;
+		// moonolith::root_describe("contat assemble: " + std::to_string(elapsed), moonolith_comm);
+
 		DVectord v = local_zeros(local_size(B).get(1));
 
 		each_write(v, [](const SizeType i) -> double {
 			return 0.1;
 		});
+
+		// write("B.m", B);
 
 		DVectord mv = B * v;
 		DVectord d = sum(B, 1);
@@ -323,7 +331,23 @@ namespace utopia {
 			DVectord rhs_c = transpose(orthogonal_trafos) * transpose(T) * rhs;
 			DSMatrixd K_c  = transpose(orthogonal_trafos) * DSMatrixd(transpose(T) * K * T) * orthogonal_trafos;
 
-			SemismoothNewton<DSMatrixd, DVectord> newton(std::make_shared<Factorization<DSMatrixd, DVectord> >());
+
+
+			std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > linear_solver;
+
+			auto s_sol = size(sol_c);
+			if(s_sol.get(0) > 5e5) {
+				auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord> >();
+				cg->atol(1e-12);
+				cg->rtol(1e-12);
+				cg->stol(1e-12);
+				linear_solver = cg;
+
+			} else {
+				linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+			}
+
+			SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
 			newton.verbose(true);
 			newton.max_it(40);
 
@@ -366,8 +390,10 @@ namespace utopia {
 		auto mesh = make_shared<Mesh>(init.comm());
 		// mesh->read("../data/hertz_530.e");
 		// mesh->read("../data/quasi_signorini_4593.e");
-		mesh->read("../data/two_rocks_26653.e");
-		Real search_radius = 1.;
-		solve_contact_problem_3d(init, mesh, {{1, 3}}, search_radius);
+		// mesh->read("../data/quasi_signorini_fine.e");
+		// mesh->read("../data/quasi_signorini_fine_surface_both.e");
+		mesh->read("../data/quasi_signorini_ultra_fine_surface_both.e");
+		// mesh->read("../data/two_rocks_26653.e");
+		solve_contact_problem_3d(init, mesh, {{1, 3}}, 0.3);
 	}
 }
