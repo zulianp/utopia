@@ -8,6 +8,8 @@ Utopia is a C++ embedded domain specific language designed for parallel non-line
 - Dr. Maria Giuseppina Chiara Nestola (Integration of parallel transfer for libmesh and MOOSE using Moonolith) 
 - Dr. Teseo Schneider (Visualization tool)
 
+Developed at the Institute of Computational Science, USI, Lugano, Switzerland (https://www.ics.usi.ch).
+
 # Dependencies
 - PETSc (https://www.mcs.anl.gov/petsc/)
 - LibMesh for the experimental FE module (https://github.com/libMesh)
