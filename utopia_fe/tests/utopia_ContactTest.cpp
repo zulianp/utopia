@@ -126,7 +126,13 @@ namespace utopia {
 
 		DVectord contact_stress;
 		{
-			auto b_form = integral(dot(grad(u), grad(u)));
+
+			// double mu = 1.0, lambda = 1.0;
+			auto e      = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
+			// auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
+
+			// auto b_form = integral(dot(grad(u), grad(u)) + dot(div(u), div(u)));
+			auto b_form = integral(dot(e, e));
 
 			DenseVector<Real> vec(dim);
 			vec.zero();
@@ -297,7 +303,7 @@ namespace utopia {
 
 		DVectord contact_stress;
 		{
-			auto b_form = integral(dot(grad(u), grad(u)));
+			auto b_form = integral(dot(grad(u), grad(u)) + dot(div(u), div(u)));
 
 			DenseVector<Real> vec(dim);
 			vec.zero();
@@ -380,21 +386,22 @@ namespace utopia {
 
 	void run_contact_test(LibMeshInit &init)
 	{
-		// auto mesh = make_shared<Mesh>(init.comm());
+		auto mesh = make_shared<Mesh>(init.comm());
+
+
 		// mesh->read("../data/fine_contact_2d.e");
 		// // mesh->read("../data/hertz_2d.e");
 		// Real search_radius = 0.1;
 		// solve_contact_problem_2d(init, mesh, {{102, 101}}, search_radius);
 
-
-		auto mesh = make_shared<Mesh>(init.comm());
 		// mesh->read("../data/hertz_530.e");
 		// mesh->read("../data/quasi_signorini_4593.e");
 		// mesh->read("../data/quasi_signorini_fine.e");
 		// mesh->read("../data/quasi_signorini_fine_surface_both.e");
 		// mesh->read("../data/quasi_signorini_ultra_fine_surface_both.e");
 		// mesh->read("../data/two_rocks_26653.e");
-		mesh->read("../data/quasi_signorini_526.e");
-		solve_contact_problem_3d(init, mesh, {{1, 3}}, 0.4);
+		// mesh->read("../data/quasi_signorini_526.e");
+		mesh->read("../data/quasi_signorini_248322.e");
+		solve_contact_problem_3d(init, mesh, {{1, 3}}, 0.3);
 	}
 }

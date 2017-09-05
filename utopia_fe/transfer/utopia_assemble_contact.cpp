@@ -97,7 +97,7 @@ namespace utopia {
 		auto &f = fe.get_phi();
 		for(std::size_t i = 0; i < node_is_boundary.size(); ++i) {
 			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
-				if(f[i][qp] > 1e-16) {
+				if(f[i][qp] > 1e-8) {
 					assert(node_is_boundary[i]);
 					if(!node_is_boundary[i]) return false;
 				}

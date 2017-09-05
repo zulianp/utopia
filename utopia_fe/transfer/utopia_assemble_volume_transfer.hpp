@@ -1,5 +1,5 @@
-#ifndef UTOPIA_ASSEMBLE_VOLUME_TRANSFER_HPP 
-#define UTOPIA_ASSEMBLE_VOLUME_TRANSFER_HPP 
+#ifndef UTOPIA_ASSEMBLE_VOLUME_TRANSFER_HPP
+#define UTOPIA_ASSEMBLE_VOLUME_TRANSFER_HPP
 
 #include <vector>
 #include <utility>
@@ -20,17 +20,17 @@ namespace libMesh {
 
 namespace utopia {
 
-
-	 bool assemble_volume_transfer(moonolith::Communicator &comm,
-                              const std::shared_ptr<libMesh::MeshBase> &master,
-                              const std::shared_ptr<libMesh::MeshBase> &slave,
-                              const std::shared_ptr<libMesh::DofMap> &dof_master,
-                              const std::shared_ptr<libMesh::DofMap> &dof_slave,
-                              const unsigned int & _from_var_num,
-                              const unsigned int & _to_var_num,
-                              bool  use_biorth_, int n_var, DSMatrixd &B);
-	
-
+  bool assemble_volume_transfer(
+      moonolith::Communicator &comm,
+      const std::shared_ptr<libMesh::MeshBase> &master,
+      const std::shared_ptr<libMesh::MeshBase> &slave,
+      const std::shared_ptr<libMesh::DofMap> &dof_master,
+      const std::shared_ptr<libMesh::DofMap> &dof_slave,
+      const unsigned int &from_var_num,
+      const unsigned int &to_var_num,
+      bool use_biorth, 
+      int n_var, 
+      DSMatrixd &B);
 }
 
-#endif //UTOPIA_ASSEMBLE_VOLUME_TRANSFER_HPP 
+#endif //UTOPIA_ASSEMBLE_VOLUME_TRANSFER_HPP
