@@ -37,7 +37,7 @@ Go to the folder utopia/utopia\_fe:
 
 - mkdir bin
 - cd bin
-- cmake -DUTOPIA\_DIR=$UTOPIA\_DIR -DLIBMESH_DIR=$LIBMESH_DIR -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_DIR
+- cmake -DUTOPIA\_DIR=$UTOPIA\_DIR -DLIBMESH_DIR=$LIBMESH_DIR -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_DIR -DMOONOLITH\_INSTALL\_PREFIX=$UTOPIA_DIR
 - make 
 - make install
 
@@ -48,6 +48,7 @@ All the headers and binaries should be in the desired folder in the following fo
 - bin
 - config (here you can find useful configuration file for your cmake or make build system)
 
+Setting MOONOLITH\_INSTALL\_PREFIX is optional. But if you want to delete the contect of the bin folder then it is required.
 
 ## Compiling your code with utopia
 
