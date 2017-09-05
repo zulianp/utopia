@@ -395,6 +395,6 @@ namespace utopia {
 		// mesh->read("../data/quasi_signorini_ultra_fine_surface_both.e");
 		// mesh->read("../data/two_rocks_26653.e");
 		mesh->read("../data/quasi_signorini_526.e");
-		solve_contact_problem_3d(init, mesh, {{1, 3}}, 0.2);
+		solve_contact_problem_3d(init, mesh, {{1, 3}}, 0.4);
 	}
 }
