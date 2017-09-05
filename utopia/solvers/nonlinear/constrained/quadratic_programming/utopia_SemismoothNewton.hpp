@@ -35,7 +35,7 @@ namespace utopia {
 			return solve(A, b, x);
 		}
 
-		inlinevoid set_active_set_tol(const Scalar tol)
+		inline void set_active_set_tol(const Scalar tol)
 		{
 			active_set_tol_ = tol;
 		}
