@@ -59,8 +59,8 @@ namespace utopia {
 		strong_enforce( boundary_conditions(ux == coeff(0.), {2}) );
 		strong_enforce( boundary_conditions(ux == coeff(0.), {4}) );
 
-		strong_enforce( boundary_conditions(uy == coeff(-0.2), {4}) );
-		strong_enforce( boundary_conditions(uy == coeff(0.2), {2}) );
+		strong_enforce( boundary_conditions(uy == coeff(-0.1), {4}) );
+		strong_enforce( boundary_conditions(uy == coeff(0.1), {2}) );
 
 		master_slave_context.equation_systems.init();
 
@@ -391,9 +391,9 @@ namespace utopia {
 		// mesh->read("../data/hertz_530.e");
 		// mesh->read("../data/quasi_signorini_4593.e");
 		// mesh->read("../data/quasi_signorini_fine.e");
-		// mesh->read("../data/quasi_signorini_fine_surface_both.e");
-		mesh->read("../data/quasi_signorini_ultra_fine_surface_both.e");
+		mesh->read("../data/quasi_signorini_fine_surface_both.e");
+		// mesh->read("../data/quasi_signorini_ultra_fine_surface_both.e");
 		// mesh->read("../data/two_rocks_26653.e");
-		solve_contact_problem_3d(init, mesh, {{1, 3}}, 0.3);
+		solve_contact_problem_3d(init, mesh, {{1, 3}}, 0.2);
 	}
 }
