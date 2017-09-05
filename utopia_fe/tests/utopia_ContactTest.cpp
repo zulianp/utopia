@@ -59,8 +59,8 @@ namespace utopia {
 		strong_enforce( boundary_conditions(ux == coeff(0.), {2}) );
 		strong_enforce( boundary_conditions(ux == coeff(0.), {4}) );
 
-		strong_enforce( boundary_conditions(uy == coeff(-0.1), {4}) );
-		strong_enforce( boundary_conditions(uy == coeff(0.1), {2}) );
+		strong_enforce( boundary_conditions(uy == coeff(-0.15), {4}) );
+		strong_enforce( boundary_conditions(uy == coeff(0.0), {2}) );
 
 		master_slave_context.equation_systems.init();
 
@@ -127,12 +127,12 @@ namespace utopia {
 		DVectord contact_stress;
 		{
 
-			// double mu = 1.0, lambda = 1.0;
-			auto e      = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
-			// auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
+			double mu = 1.0, lambda = 1.0;
+			auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
+			auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
 
 			// auto b_form = integral(dot(grad(u), grad(u)) + dot(div(u), div(u)));
-			auto b_form = integral(dot(e, e));
+			// auto b_form = integral(dot(e, e));
 
 			DenseVector<Real> vec(dim);
 			vec.zero();
@@ -165,6 +165,9 @@ namespace utopia {
 			DVectord sol_c = local_zeros(local_size(rhs));
 			DVectord rhs_c = transpose(orthogonal_trafos) * transpose(T) * rhs;
 			DSMatrixd K_c  = transpose(orthogonal_trafos) * DSMatrixd(transpose(T) * K * T) * orthogonal_trafos;
+
+			disp("n_dofs:");
+			disp(size(sol_c));
 
 			SemismoothNewton<DSMatrixd, DVectord> newton(std::make_shared<Factorization<DSMatrixd, DVectord> >());
 			newton.verbose(true);
@@ -303,7 +306,11 @@ namespace utopia {
 
 		DVectord contact_stress;
 		{
-			auto b_form = integral(dot(grad(u), grad(u)) + dot(div(u), div(u)));
+			// auto b_form = integral(dot(grad(u), grad(u)) + dot(div(u), div(u)));
+
+			double mu = 1.0, lambda = 1.0;
+			auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
+			auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
 
 			DenseVector<Real> vec(dim);
 			vec.zero();
@@ -337,7 +344,8 @@ namespace utopia {
 			DVectord rhs_c = transpose(orthogonal_trafos) * transpose(T) * rhs;
 			DSMatrixd K_c  = transpose(orthogonal_trafos) * DSMatrixd(transpose(T) * K * T) * orthogonal_trafos;
 
-
+			disp("n_dofs:");
+			disp(size(sol_c));
 
 			std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > linear_solver;
 
@@ -355,6 +363,7 @@ namespace utopia {
 
 			SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
 			newton.verbose(true);
+			newton.set_active_set_tol(1e-10);
 			newton.max_it(40);
 
 			newton.set_box_constraints(make_upper_bound_constraints(make_ref(D_inv_gap)));
