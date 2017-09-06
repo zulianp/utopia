@@ -27,7 +27,7 @@
 
 #include <cmath>
 #include <queue>
-
+#include <algorithm>
 
 using namespace libMesh;
 
