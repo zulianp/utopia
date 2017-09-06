@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <queue>
+#include <algorithm>
 
 // #include "LibMeshCutlibppAdapters.hpp"
 #include "utopia_ElementDofMap.hpp"

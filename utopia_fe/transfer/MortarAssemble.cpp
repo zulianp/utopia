@@ -1,11 +1,14 @@
 
-#include <memory>
-#include <assert.h>
 #include <libmesh/fe.h>
 #include "utopia_triangulate.hpp"
 #include "MortarAssemble.hpp"
 #include "utopia_Polygon.hpp"
 // #include "utopia_Socket.hpp"
+
+
+#include <memory>
+#include <assert.h>
+#include <algorithm>
 
 namespace utopia {
 	

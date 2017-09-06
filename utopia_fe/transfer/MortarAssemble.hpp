@@ -1,8 +1,7 @@
 #ifndef UTOPIA_MORTAR_ASSEMBLE_HPP
 #define UTOPIA_MORTAR_ASSEMBLE_HPP
 
-#include <memory>
-#include <math.h>
+
 
 //#include "utopia_fe_core.hpp"
 //#include "utopia_LibMeshBackend.hpp"
@@ -16,6 +15,10 @@
 #include <libmesh/sparse_matrix.h>
 
 #include "utopia_intersector.hpp"
+
+#include <memory>
+#include <math.h>
+#include <algorithm>
 
 namespace utopia {
 	
