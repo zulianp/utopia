@@ -5,14 +5,15 @@ project(utopia)
 set(CMAKE_MACOSX_RPATH 1)
 # set(CMAKE_INSTALL_RPATH "$ORIGIN")
 # set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-# SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath -Wl,$ORIGIN")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  -lm")
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -lrt" )
 # link_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 #################################################################################
 #################################################################################
 #################################################################################
-option(UTOPIA_ARCHIVE_ONLY "Allows to compile only the archive file. Suitable for linux" OFF)
-option(UTOPIA_STATIC_DEPENDENCIES_ONLY "Allows to restrict the linking to static libraries" OFF)
+option(UTOPIA_ARCHIVE_ONLY "Allows to compile only the archive file. Suitable for linux" ON)
+option(UTOPIA_STATIC_DEPENDENCIES_ONLY "Allows to restrict the linking to static libraries" ON)
 option(TRY_WITH_CUDA "Allows to enable to try enabling the cuda backend" OFF)
 option(TRY_WITH_OPENCL "Allows to enable to try enabling the opencl backend" OFF)
 option(TRY_WITH_PETSC "Allows to enable to try enabling the petsc backend" ON)
@@ -20,8 +21,6 @@ option(TRY_WITH_BLAS "Allows to enable to try enabling the blas backend" ON)
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" ON)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
 option(UTOPIA_LOG "enables utopia logging facilities" OFF)
-option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
-option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
 
 #################################################################################
 #################################################################################
@@ -31,16 +30,6 @@ IF(WIN32)
 	SET(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
 ENDIF()
-
-if (ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "8.1")
-		SET(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls ")
-	endif()
-endif()
-
-if(ENABLE_LOCK_CHECKING)
-	set(ENABLE_LOCK_CHECK TRUE)
-endif()
 
 if(UTOPIA_STATIC_DEPENDENCIES_ONLY)
 	IF(WIN32)
@@ -217,8 +206,9 @@ if(TRY_WITH_PETSC)
 		list(APPEND UTOPIA_LIBRARIES  ${MPI_CXX_LIBRARIES} )
 	endif()
 
+
 	find_package(PETSc)
-	
+set(PETSC_FOUND TRUE)
 	if(PETSC_FOUND)
 		list(APPEND UTOPIA_INCLUDES ${PETSC_INCLUDES})
 		list(APPEND UTOPIA_LIBRARIES ${PETSC_LIBRARIES})
@@ -402,12 +392,15 @@ include_directories(.)
 # link_libraries(${UTOPIA_LIBRARIES})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall ")# -Wextra -pedantic")
-# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG ")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG ")
 
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
 
 add_library(utopia STATIC ${UTOPIA_SOURCES})
 target_link_libraries(utopia ${UTOPIA_LIBRARIES})
+
+add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS})
+target_link_libraries(utopia_exec utopia)
 
 if(WITH_CUDA)
 	target_link_libraries(utopia utopia_cuda)

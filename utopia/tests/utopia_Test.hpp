@@ -27,8 +27,8 @@ namespace utopia
         runPETScTest();
         runBLASTest();
         runMiscTest();
-
-
+        run_performance_test();
+       
         //only works for serial
         if(mpi_world_size() == 1) {
             run_performance_test();

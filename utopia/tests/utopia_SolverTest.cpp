@@ -328,7 +328,7 @@ namespace utopia
 			petsc_newton_rosenbrock_test();
 			petsc_sparse_semismooth_newton_test();
 			petsc_sparse_nonlinear_semismooth_newton_test();
-			petsc_direct_solver_newton_test();
+			//petsc_direct_solver_newton_test();
 			petsc_newton_test_outInfo();
 			petsc_sparse_newton_test();
 			MG_test();
@@ -775,7 +775,7 @@ namespace utopia
 			nlsolver.solve(funn, rhs);
 			// std::cout << "         End: petsc_sparse_nonlinear_semismooth_newton_test" << std::endl;
 			
-		}
+		} 
 		
 		void petsc_direct_solver_newton_test()
 		{
@@ -785,7 +785,7 @@ namespace utopia
 			auto lsolver = std::make_shared< Factorization<DSMatrixd, DVectord> >();
 			
 #ifdef PETSC_HAVE_MUMPS
-			lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+		//	lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
 #endif //PETSC_HAVE_MUMPS
 			
 			Newton<DSMatrixd, DVectord> nlsolver(lsolver);
@@ -843,7 +843,7 @@ namespace utopia
 			//  init
 			auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 #ifdef PETSC_HAVE_MUMPS
-			direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+//			direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
 #endif //PETSC_HAVE_MUMPS
 			
 			auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
@@ -854,7 +854,7 @@ namespace utopia
 			multigrid.galerkin_assembly(make_ref(A));
 			
 			DVectord x_0 = zeros(A.size().get(0));
-			
+
 			Parameters params;
 			params.linear_solver_verbose(false);
 			multigrid.set_parameters(params);
@@ -907,7 +907,7 @@ namespace utopia
 			auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 			
 #ifdef PETSC_HAVE_MUMPS
-			direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+//			direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
 #endif //PETSC_HAVE_MUMPS
 			
 			//choose smoother

@@ -1,6 +1,8 @@
 #include "utopia_PerformanceTest.hpp"
 #include "utopia.hpp"
-
+#ifdef WITH_CUDA
+#include  "test_problems/utopia_TestProblems.hpp"
+#endif
 #ifdef WITH_EIGEN_3
 #include <Eigen/Dense>
 #endif //WITH_EIGEN_3
@@ -16,7 +18,8 @@ namespace utopia {
 	template<class M, class V>
 	auto make_test_expr_2(const M &m, const V &v1,  const V &v2, const V &v3) -> decltype( 10. * v1 + 5. * v2 )
 	{
-		return 10. * v1 + 5. * v2;
+	     std::cout<<"I am in make_test_expr_2"<<std::endl;
+             return 10. * v1 + 5. * v2;
 	}
 
 	template<class M, class V>
@@ -43,12 +46,45 @@ namespace utopia {
 		return (0.1 * pow2(v1) - pow2(v2)) + abs(v3);
 	}
 
-	static const int N_SIZES   = 5;
-	static const int N[] 	   = { 10, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000 };
-	static const int N_MIXED[] = { 10, 50,  100,  250, 	500,   750,   1000,   2000,   5000    };
+	static const int N_SIZES   = 10;
+	static const int N[] 	   = { 10, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 10000000 };
+	static const int N_MIXED[] = { 10, 50,  100,  250, 	500,   750,   1000,   2000,   5000, 10000   };
 	static const int N_RUNS    = 1;
-	static const bool verbose  = false;
+	static const bool verbose  = true;
 
+
+#ifdef WITH_CUDA
+
+        template<class Matrix, class Vector>
+        void test_poisson(const std::string &experiment_name)
+        {
+           Matrix A;
+           Vector rhs;
+           Matrix sol;
+           Poisson_1D<Matrix,Vector> test_cuda;
+           Chrono c;
+       
+                       
+            for(int k = 0; k < N_SIZES; ++k) {
+                    const int n = N[k];
+                   // c.start();
+                    test_cuda.getOperators(n,A,rhs);
+                    std::cout<<"I am trying to multiply"<<std::endl;
+                    c.start();
+                    //disp((local_size(A)).get(0));
+                    //disp((local_size(A)).get(1));
+                    //disp(local_size(rhs));
+                    sol=A*A;
+                    c.stop();
+                    if(verbose){
+                            std::cout<<"problem size = "<< n << ",\t";
+                            c.describe(std::cout);
+                    }
+             }
+          
+        }
+
+#else
 	template<class Matrix, class Vector>
 	void test_program_inlined(const std::string &experiment_name)
 	{
@@ -164,12 +200,20 @@ namespace utopia {
 		}
 	}
 
-	template<class Matrix, class Vector>
-	void test_program(const std::string &experiment_name)
-	{
-		test_program_vectors<Matrix, Vector>(experiment_name);
-		test_program_mixed<Matrix, Vector>(experiment_name);
-	}
+
+
+ template<class Matrix, class Vector>
+        void test_program(const std::string &experiment_name)
+        {
+           test_program_vectors<Matrix,Vector>(experimet_name);
+           test_program_mixed<Matrix,Vector>(experiment_name);
+        }
+
+
+
+
+
+#endif
 
 #ifdef WITH_EIGEN_3
 	void test_program_eigen_3_vectors(const std::string &experiment_name)
@@ -294,12 +338,23 @@ namespace utopia {
 #endif		
 
 #ifdef WITH_PETSC
+#ifdef WITH_CUDA
+                if(verbose) {
+                        std::cout << "------------------------------------\n";
+                        std::cout << "PETSC_WITH_CUDA: " << std::endl;
+                }
+                test_poisson<DSMatrixd, DVectord>("petsc_with_CUDA");
+#else
+
 		if(verbose) {
 			std::cout << "------------------------------------\n";
 			std::cout << "PETSC: " << std::endl; 
 		}
 		test_program<DMatrixd, DVectord>("petsc");
-#endif //WITH_PETSC		
+#endif //WITH_CUDA		
+#endif //WITH_PETSC
+
+
 
 #ifdef WITH_EIGEN_3
 		if(verbose) {

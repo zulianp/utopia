@@ -95,7 +95,12 @@ namespace utopia {
         bool initializeWithGhosts(const PetscInt nLocal, const PetscInt nGlobal, const std::vector<PetscInt> &ghosts) {
             // FIXME Error check?
             PETScError::Check(VecCreate(PETSC_COMM_WORLD, &_vec));
+           #ifdef WITH_CUDA 
+            std::cout<<"I am using CUDA"<<std::endl;
+            PETScError::Check(VecSetType(_vec, VECMPICUDA));
+           #else
             PETScError::Check(VecSetType(_vec, VECMPI));
+           #endif
             PETScError::Check(VecSetSizes(_vec, nLocal, nGlobal));
 
             if (!ghosts.empty()) {
@@ -201,8 +206,7 @@ namespace utopia {
 
             PetscSynchronizedPrintf(_comm, "\n");
          //   PetscSynchronizedFlush(_comm, PETSC_STDOUT);
-
-
+           
             VecRestoreArray(lx, &array);
             VecGhostRestoreLocalForm(_vec, &lx);
         }

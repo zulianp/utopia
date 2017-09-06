@@ -1,6 +1,10 @@
 #include "utopia_PETScBackend.hpp"
 
 #include "petscmat.h"
+#ifdef WITH_CUDA
+#undef __FUNCT__
+#define __FUNCT__ "MatCreateAIJCUSPARSE"
+#endif
 #include "petscvec.h"
 
 namespace utopia {
@@ -626,8 +630,13 @@ namespace utopia {
 		MatDestroy(&m.implementation());
 
 		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
+                #ifdef WITH_CUDA
+                MatCreateAIJCUSPARSE(comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), 1, PETSC_NULL,
+                                         1, PETSC_NULL, &m.implementation()); 
+                #else
 		MatCreateDense(comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
 					   &m.implementation());
+                #endif
 		
 		PetscInt rbegin, rend;
 		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
@@ -656,9 +665,13 @@ namespace utopia {
 
 		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
-		
-		MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols, 1, PETSC_NULL,
+		#ifdef WITH_CUDA 
+                MatCreateAIJCUSPARSE(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols, 1, PETSC_NULL,
+                                         1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
+		#else
+                MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols, 1, PETSC_NULL,
 					 1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
+                #endif
 		
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 		
@@ -685,9 +698,13 @@ namespace utopia {
 		MatDestroy(&m.implementation());
 
 		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
+                #ifdef WITH_CUDA
+                MatCreateAIJCUSPARSE(comm, size.get(0), size.get(1), PETSC_DECIDE, PETSC_DECIDE, 1, PETSC_NULL,
+                                         1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
+                #else
 		MatCreateDense(comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, NULL,
 					   &m.implementation());
-		
+		#endif
 		
 		PetscInt rbegin, rend;
 		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
@@ -723,10 +740,13 @@ namespace utopia {
 
 		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
-		
-		MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL,
+	       #ifdef WITH_CUDA
+	        MatCreateAIJCUSPARSE(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL,
+                                         1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation()); 
+              #else
+            	MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL,
 					 1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
-		
+	       #endif	
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 		
 		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
@@ -764,11 +784,17 @@ namespace utopia {
 
 		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
-		
+		#ifdef WITH_CUDA
+		MatCreateAIJCUSPARSE(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
+					 &m.implementation());
+                #else
 		MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
 					 &m.implementation());
+                #endif
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 		
 		
@@ -783,12 +809,17 @@ namespace utopia {
 		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 		
+		#ifdef WITH_CUDA
+		MatCreateAIJCUSPARSE(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
+	       				 &m.implementation());
+	        #else	
 		MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
 					 &m.implementation());
-		
-		
+	        #endif	
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 		
 	}
@@ -800,12 +831,18 @@ namespace utopia {
 
 		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
-		
+	      
+                #ifdef WITH_CUDA	
+		MatCreateAIJCUSPARSE(comm, rows, PETSC_DECIDE, PETSC_DETERMINE, cols,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
+					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
+					 &m.implementation());
+		#else
 		MatCreateAIJ(comm, rows, PETSC_DECIDE, PETSC_DETERMINE, cols,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
 					 &m.implementation());
-		
+                #endif
 		
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 	}
@@ -846,9 +883,15 @@ namespace utopia {
 		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 
+                #ifdef WITH_CUDA
+		MatCreateAIJCUSPARSE(comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1),
+					 PETSC_DETERMINE /*n DOF connected to local entries*/, PETSC_NULL,
+					 PETSC_DETERMINE /*n DOF connected to remote entries*/, PETSC_NULL,
+					 &m.implementation());
+                #else
 		MatCreateDense(comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
 					   &m.implementation());
-		
+		#endif
 		
 		PetscInt rbegin, rend;
 		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
@@ -878,8 +921,17 @@ namespace utopia {
 
 		if(!v.isInitialized() || v_local_size.get(0) != local_size.get(0)) {
 			VecDestroy(&v.implementation());
+                       #ifdef WITH_CUDA
+                        std::cout<<"I am using CUDA"<<std::endl;
+                        VecCreate(v.communicator(), &v.implementation());
+                        VecSetType(v.implementation(),VECMPICUDA);
+                        VecSetSizes(v.implementation(),local_size.get(0), global_size.get(0));
+                     //   VecSetType(v.implementation(),VECMPICUDA);
+                       #else
 			VecCreateMPI(v.communicator(), local_size.get(0), global_size.get(0), &v.implementation());
+                       #endif
 		}
+
  
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
@@ -888,9 +940,17 @@ namespace utopia {
 	
 	void PETScBackend::build(PETScVector &v, const Size &size, const Values<PetscScalar> &values) {
 
-		VecDestroy(&v.implementation());
-		VecCreateMPI(v.communicator(), PETSC_DECIDE, size.get(0), &v.implementation());
-		VecSet(v.implementation(), values.value());
+		
+                VecDestroy(&v.implementation());
+		#ifdef WITH_CUDA
+                std::cout<<"I am using CUDA"<<std::endl;
+                VecCreate(v.communicator(), &v.implementation());
+                VecSetSizes(v.implementation(),PETSC_DECIDE, size.get(0));
+                VecSetType(v.implementation(),VECMPICUDA);
+                #else 
+                VecCreateMPI(v.communicator(), PETSC_DECIDE, size.get(0), &v.implementation());
+		#endif
+                VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
 	}
@@ -899,9 +959,16 @@ namespace utopia {
 		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 
+                #ifdef WITH_CUDA
+		MatCreateAIJCUSPARSE(comm, size.get(0), size.get(1), PETSC_DECIDE, PETSC_DECIDE,
+					 size.get(0) /*n DOF connected to local entries*/, PETSC_NULL,
+					 size.get(1) /*n DOF connected to remote entries*/, PETSC_NULL,
+					 &m.implementation());
+                #else
 		MatCreateDense(comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, NULL,
-					   &m.implementation());
-		
+    					   &m.implementation());
+                #endif		
+
 		//TODO check if it can be simplified using known information.
 		
 		PetscInt rbegin, rend;
@@ -927,9 +994,15 @@ namespace utopia {
 	void PETScBackend::build(PETScVector &v, const Size &size, const LocalValues<PetscScalar> &values) {
 		MPI_Comm comm = v.communicator();
 		VecDestroy(&v.implementation());
-
+                
+                #ifdef WITH_CUDA
+                VecCreate(v.communicator(), &v.implementation());
+                VecSetType(v.implementation(),VECMPICUDA);
+                VecSetSizes(v.implementation(), size.get(0),PETSC_DECIDE);
+                #else
 		VecCreateMPI(comm, size.get(0), PETSC_DETERMINE, &v.implementation());
-		
+		#endif
+
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
@@ -1023,12 +1096,20 @@ namespace utopia {
 		result.setCommunicator(left.communicator());
 		
 		VecDestroy(&result.implementation());
+                #ifdef WITH_CUDA
+                std::cout<<"I want to perform a multiplication"<<std::endl;
+                VecCreate(right.communicator(), &result.implementation());
+                VecSetSizes(result.implementation(), rows, grows);
+                VecSetType(result.implementation(),VECMPICUDA);
+                #else
 		VecCreateMPI(right.communicator(), rows, grows, &result.implementation());
+                #endif
 		VecAssemblyBegin(result.implementation());
 		VecAssemblyEnd(result.implementation());
-		
+		std::cout<<"END Assembly"<<std::endl;
 		MatMult(left.implementation(), right.implementation(), result.implementation());
-		
+	        std::cout<<"I want to perform a multiplication END END"<<std::endl;   
+                 // utopia::disp(result);
 		return true;
 	}
 	
@@ -1041,7 +1122,7 @@ namespace utopia {
 			assert(false);
 		}
  
-
+                std::cout<<"I want to perform a multiplication MatMatMult"<<std::endl;
 		MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
 		return true;
 	}
@@ -1059,7 +1140,13 @@ namespace utopia {
 		result.setCommunicator(right.communicator());
 
 		VecDestroy(&result.implementation());
+                #ifdef WITH_CUDA
+                VecCreate(result.communicator(), &result.implementation());
+                VecSetSizes(result.implementation(), size, gsize);
+                VecSetType(result.implementation(),VECMPICUDA);
+                #else
 		VecCreateMPI(right.communicator(), size, gsize, &result.implementation());
+                #endif
 		VecAssemblyBegin(result.implementation());
 		VecAssemblyEnd(result.implementation());
 
@@ -1080,7 +1167,13 @@ namespace utopia {
 		result.setCommunicator(right.communicator());
 
 		VecDestroy(&result.implementation());
+                #ifdef WITH_CUDA
+                VecCreate(result.communicator(), &result.implementation());
+                VecSetSizes(result.implementation(), size, gsize);
+                VecSetType(result.implementation(),VECMPICUDA);
+                #else
 		VecCreateMPI(right.communicator(), size, gsize, &result.implementation());
+                #endif
 		VecAssemblyBegin(result.implementation());
 		VecAssemblyEnd(result.implementation());
 
@@ -1142,7 +1235,13 @@ namespace utopia {
 				result.setCommunicator(left.communicator());
 
 				VecDestroy(&result.implementation());
+                                #ifdef WITH_CUDA
+				VecCreate(PetscObjectComm((PetscObject)right.implementation()), &result.implementation());
+				VecSetSizes(result.implementation(), n_wanted, n_global);
+				VecSetType(result.implementation(),VECMPICUDA);
+                                #else 
 				VecCreateMPI(PetscObjectComm((PetscObject)right.implementation()), n_wanted, n_global, &result.implementation());
+                                #endif
 			// }
 		}
 	}
@@ -1283,7 +1382,13 @@ namespace utopia {
 			MatGetLocalSize(m.implementation(), &lrows, &lcols);
 			
 			Vec v;
+                        #ifdef WITH_CUDA
+			VecCreate(comm, &v);
+			VecSetSizes(v, lrows, grows);
+			VecSetType(v,VECMPICUDA);
+                        #else
 			VecCreateMPI(comm, lrows, grows, &v);
+                        #endif
 			MatGetRowMin(m.implementation(), v, nullptr);
 			VecMin(v, nullptr, &x);
 
@@ -1316,7 +1421,13 @@ namespace utopia {
 			MatGetLocalSize(m.implementation(), &lrows, &lcols);
 			
 			Vec v;
+                        #ifdef WITH_CUDA
+			VecCreate(comm, &v);
+			VecSetSizes(v, lrows, grows);
+			VecSetType(v,VECMPICUDA);
+                        #else
 			VecCreateMPI(comm, lrows, grows, &v);
+                        #endif
 			MatGetRowMax(m.implementation(), v, nullptr);
 			VecMax(v, nullptr, &x);
 
@@ -1364,13 +1475,21 @@ namespace utopia {
 		VecGetSize(vec.implementation(), &global_size);
 		
 		if(mpi_world_size() == 1) {
-			MatSetType(mat.implementation(), MATSEQAIJ);
-			//
+			#ifdef WITH_CUDA
+                        MatSetType(mat.implementation(), MATSEQAIJCUSPARSE);
+                        #else
+                        MatSetType(mat.implementation(), MATSEQAIJ);
+			#endif
+                        //
 			// MatSEQAIJSetPreallocation(mat.implementation(), 1, NULL, NULL, NULL);
 			MatSetSizes(mat.implementation(), local_size, local_size, global_size, global_size);
 			MatSetUp(mat.implementation());
 		} else {
+                        #ifdef WITH_CUDA
+                        MatSetType(mat.implementation(), MATAIJCUSPARSE);
+                        #else
 			MatSetType(mat.implementation(), MATMPIAIJ);
+                        #endif
 			MatSetSizes(mat.implementation(), local_size, local_size, global_size, global_size);
 			MatMPIAIJSetPreallocation(mat.implementation(), 1, NULL, 0, NULL);
 		}
@@ -1405,15 +1524,23 @@ namespace utopia {
 		VecGetSize(vec.implementation(), &global_size);
 		
 		if(mpi_world_size() == 1) {
-			MatSetType(mat.implementation(), MATSEQDENSE);
 			//
-			// MatSEQAIJSetPreallocation(mat.implementation(), 1, NULL, NULL, NULL);
+                        #ifdef WITH_CUSP
+			MatSetType(mat.implementation(), MATSEQAIJCUSPARSE);
+			MatSEQAIJSetPreallocation(mat.implementation(), 1, NULL, NULL, NULL);
+                        #else
+			MatSetType(mat.implementation(), MATSEQDENSE);
 			MatSetSizes(mat.implementation(), local_size, local_size, global_size, global_size);
+                        #endif
 			MatSetUp(mat.implementation());
 		} else {
+                        #ifdef WITH_CUSP
+			MatSetType(mat.implementation(), MATAIJCUSPARSE);
+			MatMPIAIJSetPreallocation(mat.implementation(), 1, NULL, 0, NULL);
+                        #else
 			MatSetType(mat.implementation(), MATMPIDENSE);
 			MatSetSizes(mat.implementation(), local_size, local_size, global_size, global_size);
-			// MatMPIAIJSetPreallocation(mat.implementation(), 1, NULL, 0, NULL);
+                        #endif
 			MatSetUp(mat.implementation());
 		}
 		
@@ -1442,7 +1569,8 @@ namespace utopia {
 	
 	bool PETScBackend::apply(const PetscScalar factor, const Vector &vec, const Multiplies &, Vector &result) {
 		result = vec;
-		VecScale(result.implementation(), factor);
+		std::cout<<"I am in Vecscale"<<std::endl;
+                VecScale(result.implementation(), factor);
 		return true;
 	}
 	
@@ -1556,8 +1684,13 @@ namespace utopia {
 		err = VecRestoreArrayRead(right.implementation(), &right_array);
 		
 		MatDestroy(&result.implementation());
+                #ifdef WITH_CUDA
+                MatCreateAIJCUSPARSE(comm, l_range.extent(), PETSC_DECIDE, result_size.get(0), result_size.get(1), l_range.extent(), PETSC_NULL,
+                                         l_range.extent(), PETSC_NULL, &result.implementation()); 
+                #else
 		MatCreateDense(comm, l_range.extent(), PETSC_DECIDE, result_size.get(0), result_size.get(1), NULL,
 					   &result.implementation());
+                #endif
 		
 		MatAssemblyBegin(result.implementation(), MAT_FINAL_ASSEMBLY);
 		for(SizeType i = l_range.begin(); i != l_range.end(); ++i) {
@@ -1804,7 +1937,13 @@ namespace utopia {
 		PetscInt global_r, global_c, local_r, local_c;
 		MatGetSize(mat.implementation(), &global_r, &global_c);
 		MatGetLocalSize(mat.implementation(), &local_r, &local_c);
+		#ifdef WITH_CUDA
+		VecCreate(mat.communicator(), &result.implementation());
+		VecSetSizes(result.implementation(), local_r, global_r);
+		VecSetType(result.implementation(),VECMPICUDA);
+		#else
 		VecCreateMPI(mat.communicator(), local_r, global_r, &result.implementation());
+                #endif
 		VecAssemblyBegin(result.implementation());
 
 		auto fun = Operation::template Fun<PetscScalar>();
@@ -1862,7 +2001,13 @@ namespace utopia {
 		if (dim == 1) {
 			if(is_serial) {
 				VecDestroy(&result.implementation());
+				#ifdef WITH_CUDA
+				VecCreate(mat.communicator(), &result.implementation());
+				VecSetSizes(result.implementation(), PETSC_DECIDE, grows);
+				VecSetType(result.implementation(),VECMPICUDA);
+				#else
 				VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
+                                #endif
 				MatGetRowMin(mat.implementation(), result.implementation(), nullptr);
 			} else {
 				generic_col_reduce(
@@ -1895,7 +2040,13 @@ namespace utopia {
 		if (dim == 1) {
 			if(is_serial) {
 			VecDestroy(&result.implementation());
+			#ifdef WITH_CUDA
+			VecCreate(mat.communicator(), &result.implementation());
+			VecSetSizes(result.implementation(), PETSC_DECIDE, grows);
+			VecSetType(result.implementation(),VECMPICUDA);
+			#else
 			VecCreateMPI(mat.communicator(), PETSC_DECIDE, grows, &result.implementation());
+                        #endif
 			MatGetRowMax(mat.implementation(), result.implementation(), nullptr);
 			} else {
 				generic_col_reduce(

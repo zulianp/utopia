@@ -62,7 +62,7 @@ namespace utopia {
 		LUDecomposition()
 		{
 #ifdef PETSC_HAVE_MUMPS			
-			strategy_.set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+//			strategy_.set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
 #elif PETSC_HAVE_SUPERLU_DIST
 			strategy_.set_type(SUPERLU_DIST_TAG, LU_DECOMPOSITION_TAG);			
 #elif PETSC_HAVE_SUPERLU

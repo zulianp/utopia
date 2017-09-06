@@ -202,6 +202,7 @@ namespace utopia {
         }
 
         bool mul(PETScMatrix &rhs, PETScMatrix &result) {
+             std::cout<<"I am in PetscMatrix "<<std::endl;
             return PETScError::Check(
                     MatMatMult(_wrapper->implementation(), rhs._wrapper->implementation(), MAT_INITIAL_MATRIX,
                                PETSC_DEFAULT, &result._wrapper->implementation()));
