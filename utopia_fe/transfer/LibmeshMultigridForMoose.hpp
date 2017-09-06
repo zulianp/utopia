@@ -27,6 +27,7 @@
 #include <queue>
 #include <array>
 #include <vector>
+#include <algorithm>
 
 namespace utopia {
     using namespace libMesh;
