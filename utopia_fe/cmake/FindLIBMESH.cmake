@@ -45,13 +45,19 @@ endforeach()
 set(LIBMESH_DEFINITIONS ${PC_LIBMESH_CFLAGS_STRIPPED})
 
 find_path(LIBMESH_INCLUDE_DIR libmesh/libmesh.h
-  HINTS $ENV{LIBMESH_DIR}/include ${PC_LIBMESH_INCLUDEDIR} ${PC_LIBMESH_INCLUDE_DIRS} ${LIBMESH_INCLUDES_MY_LOCATIONS}
+  HINTS 
+   ${LIBMESH_DIR}/include
+  $ENV{LIBMESH_DIR}/include 
+  ${PC_LIBMESH_INCLUDEDIR} 
+  ${PC_LIBMESH_INCLUDE_DIRS} 
+  ${LIBMESH_INCLUDES_MY_LOCATIONS}
   PATH_SUFFIXES libmesh
 )
 
 find_library(LIBMESH_LIBRARY
              NAMES  mesh_${METHOD} mesh
-             HINTS  $ENV{LIBMESH_DIR}/lib 
+             HINTS  ${LIBMESH_DIR}/lib
+                    $ENV{LIBMESH_DIR}/lib 
                     $ENV{LIBMESH_DIR} 
                     ${PC_LIBMESH_LIBDIR} 
                     ${PC_LIBMESH_LIBARY_DIRS}  
