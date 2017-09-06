@@ -604,6 +604,11 @@ namespace utopia {
 			Order = 1
 		};
 
+		constexpr static int size()
+		{
+			return N;
+		}
+
 		VectorFE(std::initializer_list<FEFun *> funs) 
 		{
 			assert(N == funs.size());

@@ -25,6 +25,7 @@
 #include "utopia_NormalTangentialCoordinateSystem.hpp"
 
 #include "moonolith_profiler.hpp"
+#include "utopia_ContactProblem.hpp"
 
 #include <iostream>
 
@@ -34,383 +35,100 @@ using std::shared_ptr;
 
 namespace utopia {
 
-	static void solve_contact_problem_2d(
-		const libMesh::LibMeshInit &init,
-		const std::shared_ptr<libMesh::Mesh> &master_slave,
-		const std::vector< std::pair<int, int> > &tags,
-		const Real &search_radius
-		)
-	{
-		Chrono c;
-		c.start();
 
-		auto order_elem = FIRST;
-		int order_quad = order_elem + order_elem;
-		int dim = master_slave->mesh_dimension();
+	class ExampleProblem3D : public ContactProblem::ElasticityBoundaryConditions {
+	public:
+		ExampleProblem3D() {
+			mesh_file = "../data/multibody.e";
+			top_boundary_tag = 1;
+			bottom_boundar_tag = 2;
+			contact_flags = {{12, 13}, {14, 13}};
+			is_multibody = true;
+			search_radius = 0.05;
 
-		LibMeshFEContext<LinearImplicitSystem> master_slave_context(master_slave);
-		auto space_x = fe_space(LAGRANGE, order_elem, master_slave_context);
-		auto space_y = fe_space(LAGRANGE, order_elem, master_slave_context);
-
-		auto ux = fe_function(space_x);
-		auto uy = fe_function(space_y);
-		auto u = prod(ux, uy);
-
-		strong_enforce( boundary_conditions(ux == coeff(0.), {2}) );
-		strong_enforce( boundary_conditions(ux == coeff(0.), {4}) );
-
-		strong_enforce( boundary_conditions(uy == coeff(-0.15), {4}) );
-		strong_enforce( boundary_conditions(uy == coeff(0.0), {2}) );
-
-		master_slave_context.equation_systems.init();
-
-		ux.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
-		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
-
-		DSMatrixd B;
-		moonolith::Communicator moonolith_comm(init.comm().get());
-
-		utopia::DSMatrixd orthogonal_trafos;
-		DVectord normals_vec;
-		utopia::DVectord gap;
-		utopia::DVectord is_contact_node;
-
-		unsigned int variable_number = 0;
-
-		assemble_contact(moonolith_comm, (master_slave), 
-			utopia::make_ref(master_slave_context.system.get_dof_map()), 
-			variable_number, 
-			B, 
-			orthogonal_trafos, 
-			gap, 
-			normals_vec,
-			is_contact_node, 
-			search_radius,
-			tags,
-			true);
-
-		DVectord v = local_zeros(local_size(B).get(1));
-
-		each_write(v, [](const SizeType i) -> double {
-			return 0.1;
-		});
-
-		DVectord mv = B * v;
-		DVectord d = sum(B, 1);
-		DVectord d_inv = local_zeros(local_size(d));
-
-		{
-			Write<DVectord> w_(d_inv);
-
-			each_read(d, [&d_inv](const SizeType i, const double value) {
-				if(value < -1e-8) {
-					std::cerr << "negative el for " << i << std::endl;
-				}
-
-				if(std::abs(value) > 1e-15) {
-					d_inv.set(i, 1./value);
-				} else {
-					d_inv.set(i, 1.);
-				}
-			});
+			//---------------------------------------------------
+			// mesh->read("../data/hertz_530.e");
+			// mesh->read("../data/quasi_signorini_4593.e");
+			// mesh->read("../data/quasi_signorini_fine.e");
+			// mesh->read("../data/quasi_signorini_fine_surface_both.e");
+			// mesh->read("../data/quasi_signorini_ultra_fine_surface_both.e");
+			// mesh->read("../data/two_rocks_26653.e");
+			// mesh->read("../data/quasi_signorini_526.e");
+			// mesh->read("../data/quasi_signorini_248322.e");
 		}
 
-		DSMatrixd D_inv = diag(d_inv);
-		DSMatrixd T = D_inv * B;
-		DVectord sum_T = sum(T, 1);
+		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
 
-		DVectord D_inv_gap = D_inv * gap;
-		T += local_identity(local_size(d).get(0), local_size(d).get(0));
-
-		if(moonolith_comm.is_alone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
-
-		DVectord contact_stress;
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override
 		{
-
-			double mu = 1.0, lambda = 1.0;
-			auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
-			auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
-
-			// auto b_form = integral(dot(grad(u), grad(u)) + dot(div(u), div(u)));
-			// auto b_form = integral(dot(e, e));
-
-			DenseVector<Real> vec(dim);
-			vec.zero();
-
-			auto f 	    = vec_coeff(vec);
-			auto l_form = integral(dot(f, u));
-
-			auto ass = make_assembly([&]() -> void {
-				double t = MPI_Wtime();
-
-				assemble(u, u, b_form, l_form, *master_slave_context.system.matrix, *master_slave_context.system.rhs);
-
-				t = MPI_Wtime() - t;
-
-				printf("--------------------------------\n");
-				printf("Assembly: %g seconds\n", t);
-				printf("--------------------------------\n");
-			});
-
-			master_slave_context.system.attach_assemble_object(ass);
-			master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
-			master_slave_context.equation_systems.solve();
-
-			DVectord rhs;
-			DSMatrixd K;
-
-			convert(*master_slave_context.system.rhs, rhs);
-			convert(*master_slave_context.system.matrix, K);
-
-			DVectord sol_c = local_zeros(local_size(rhs));
-			DVectord rhs_c = transpose(orthogonal_trafos) * transpose(T) * rhs;
-			DSMatrixd K_c  = transpose(orthogonal_trafos) * DSMatrixd(transpose(T) * K * T) * orthogonal_trafos;
-
-			disp("n_dofs:");
-			disp(size(sol_c));
-
-			SemismoothNewton<DSMatrixd, DVectord> newton(std::make_shared<Factorization<DSMatrixd, DVectord> >());
-			newton.verbose(true);
-			newton.max_it(40);
-
-			newton.set_box_constraints(make_upper_bound_constraints(make_ref(D_inv_gap)));
-			newton.solve(K_c, rhs_c, sol_c);
-
-			DVectord sol = T * (orthogonal_trafos * sol_c);
-			convert(sol, *master_slave_context.system.solution);
-		}
-
-		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("sol2.e", master_slave_context.equation_systems);
-
-		convert(is_contact_node, *master_slave_context.system.solution);
-		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("is_c_node2.e", master_slave_context.equation_systems);
-
-				// convert(gap, *master_slave_context.system.solution);
-				// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("gap.e", master_slave_context.equation_systems);
-
-				// convert(normals_vec, *master_slave_context.system.solution);
-				// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("normals.e", master_slave_context.equation_systems);
-
-				// convert(d, *master_slave_context.system.solution);
-				// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("d.e", master_slave_context.equation_systems);
-
-				// normals_vec = orthogonal_trafos * normals_vec;
-				// convert(normals_vec, *master_slave_context.system.solution);
-				// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("H_n.e", master_slave_context.equation_systems);
-	}
-
-
-	static void solve_contact_problem_3d(
-		const libMesh::LibMeshInit &init,
-		const std::shared_ptr<libMesh::Mesh> &master_slave,
-		const std::vector< std::pair<int, int> > &tags,
-		const Real &search_radius
-		)
-	{
-		Chrono c;
-		c.start();
-
-		auto order_elem = FIRST;
-		int order_quad = order_elem + order_elem;
-		int dim = master_slave->mesh_dimension();
-
-		LibMeshFEContext<LinearImplicitSystem> master_slave_context(master_slave);
-		auto space_x = fe_space(LAGRANGE, order_elem, master_slave_context);
-		auto space_y = fe_space(LAGRANGE, order_elem, master_slave_context);
-		auto space_z = fe_space(LAGRANGE, order_elem, master_slave_context);
-
-		auto ux = fe_function(space_x);
-		auto uy = fe_function(space_y);
-		auto uz = fe_function(space_z);
-		auto u = prod(ux, uy, uz);
-
-		strong_enforce( boundary_conditions(ux == coeff(0.), {2}) );
-		strong_enforce( boundary_conditions(ux == coeff(0.), {4}) );
-
-		strong_enforce( boundary_conditions(uy == coeff(0.), {4}) );
-		strong_enforce( boundary_conditions(uy == coeff(0.), {2}) );
-
-		strong_enforce( boundary_conditions(uz == coeff(0.3), {4}) );
-		strong_enforce( boundary_conditions(uz == coeff(-0.3), {2}) );
-
-		master_slave_context.equation_systems.init();
-
-		ux.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
-		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
-		uz.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
-
-		DSMatrixd B;
-		moonolith::Communicator moonolith_comm(init.comm().get());
-
-		utopia::DSMatrixd orthogonal_trafos;
-		DVectord normals_vec;
-		utopia::DVectord gap;
-		utopia::DVectord is_contact_node;
-
-		unsigned int variable_number = 0;
-
-		double elapsed = MPI_Wtime();
-
-		assemble_contact(moonolith_comm, (master_slave), 
-			utopia::make_ref(master_slave_context.system.get_dof_map()), 
-			variable_number, 
-			B, 
-			orthogonal_trafos, 
-			gap, 
-			normals_vec,
-			is_contact_node, 
-			search_radius,
-			tags,
-			true);
-
-		elapsed = MPI_Wtime() - elapsed;
-		std::cout << "contact: " << elapsed << std::endl;
-		// moonolith::root_describe("contat assemble: " + std::to_string(elapsed), moonolith_comm);
-
-		DVectord v = local_zeros(local_size(B).get(1));
-
-		each_write(v, [](const SizeType i) -> double {
-			return 0.1;
-		});
-
-		// write("B.m", B);
-
-		DVectord mv = B * v;
-		DVectord d = sum(B, 1);
-		DVectord d_inv = local_zeros(local_size(d));
-
-		{
-			Write<DVectord> w_(d_inv);
-
-			each_read(d, [&d_inv](const SizeType i, const double value) {
-				if(value < -1e-8) {
-					std::cerr << "negative el for " << i << std::endl;
-				}
-
-				if(std::abs(value) > 1e-15) {
-					d_inv.set(i, 1./value);
-				} else {
-					d_inv.set(i, 1.);
-				}
-			});
-		}
-
-		DSMatrixd D_inv = diag(d_inv);
-		DSMatrixd T = D_inv * B;
-		DVectord sum_T = sum(T, 1);
-
-		DVectord D_inv_gap = D_inv * gap;
-		T += local_identity(local_size(d).get(0), local_size(d).get(0));
-
-		if(moonolith_comm.is_alone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
-
-		DVectord contact_stress;
-		{
-			// auto b_form = integral(dot(grad(u), grad(u)) + dot(div(u), div(u)));
-
-			double mu = 1.0, lambda = 1.0;
-			auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
-			auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
-
-			DenseVector<Real> vec(dim);
-			vec.zero();
-
-			auto f 	    = vec_coeff(vec);
-			auto l_form = integral(dot(f, u));
-
-			auto ass = make_assembly([&]() -> void {
-				double t = MPI_Wtime();
-
-				assemble(u, u, b_form, l_form, *master_slave_context.system.matrix, *master_slave_context.system.rhs);
-
-				t = MPI_Wtime() - t;
-
-				printf("--------------------------------\n");
-				printf("Assembly: %g seconds\n", t);
-				printf("--------------------------------\n");
-			});
-
-			master_slave_context.system.attach_assemble_object(ass);
-			master_slave_context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
-			master_slave_context.equation_systems.solve();
-
-			DVectord rhs;
-			DSMatrixd K;
-
-			convert(*master_slave_context.system.rhs, rhs);
-			convert(*master_slave_context.system.matrix, K);
-
-			DVectord sol_c = local_zeros(local_size(rhs));
-			DVectord rhs_c = transpose(orthogonal_trafos) * transpose(T) * rhs;
-			DSMatrixd K_c  = transpose(orthogonal_trafos) * DSMatrixd(transpose(T) * K * T) * orthogonal_trafos;
-
-			disp("n_dofs:");
-			disp(size(sol_c));
-
-			std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > linear_solver;
-
-			auto s_sol = size(sol_c);
-			if(s_sol.get(0) > 5e5) {
-				auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord> >();
-				cg->atol(1e-12);
-				cg->rtol(1e-12);
-				cg->stol(1e-12);
-				linear_solver = cg;
-
-			} else {
-				linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(-0.3), {top_boundary_tag}) );
+
+			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(0.0), {bottom_boundar_tag}) );
+			
+			if(is_multibody) {
+				strong_enforce( boundary_conditions(ux == coeff(0.),  {3, 4, 5}) );
+				strong_enforce( boundary_conditions(uy == coeff(0.),  {3, 4, 5}) );
+
+				strong_enforce( boundary_conditions(uz == coeff(-0.08), {4}) );
+				strong_enforce( boundary_conditions(uz == coeff(0.08), {5}) );
 			}
-
-			SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
-			newton.verbose(true);
-			newton.set_active_set_tol(1e-10);
-			newton.max_it(40);
-
-			newton.set_box_constraints(make_upper_bound_constraints(make_ref(D_inv_gap)));
-			newton.solve(K_c, rhs_c, sol_c);
-
-			DVectord sol = T * (orthogonal_trafos * sol_c);
-			convert(sol, *master_slave_context.system.solution);
 		}
 
-		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("sol3.e", master_slave_context.equation_systems);
+		std::string mesh_file;
+		int top_boundary_tag;
+		int bottom_boundar_tag;
+		std::vector<std::pair<int, int> > contact_flags;
+		bool is_multibody;
+		double search_radius;
+	};
 
-		convert(is_contact_node, *master_slave_context.system.solution);
-		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("is_c_node3.e", master_slave_context.equation_systems);
 
-				// convert(gap, *master_slave_context.system.solution);
-				// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("gap.e", master_slave_context.equation_systems);
+	class ExampleProblem2D : public ContactProblem::ElasticityBoundaryConditions {
+	public:
+		ExampleProblem2D() {
+			mesh_file = "../data/fine_contact_2d.e";
+			top_boundary_tag = 4;
+			bottom_boundar_tag = 2;
+			contact_flags = {{102, 101}};
+			search_radius = 0.1;
+		}
 
-				// convert(normals_vec, *master_slave_context.system.solution);
-				// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("normals.e", master_slave_context.equation_systems);
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy) override
+		{
+			strong_enforce( boundary_conditions(ux == coeff(0.),    {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uy == coeff(-0.15), {top_boundary_tag}) );
 
-				// convert(d, *master_slave_context.system.solution);
-				// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("d.e", master_slave_context.equation_systems);
+			strong_enforce( boundary_conditions(ux == coeff(0.),    {bottom_boundar_tag}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.0),   {bottom_boundar_tag}) );
+		}
 
-				// normals_vec = orthogonal_trafos * normals_vec;
-				// convert(normals_vec, *master_slave_context.system.solution);
-				// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("H_n.e", master_slave_context.equation_systems);
-	}
+		void apply(LibMeshFEFunction &, LibMeshFEFunction &, LibMeshFEFunction &) override {}
 
+		std::string mesh_file;
+		int top_boundary_tag;
+		int bottom_boundar_tag;
+		std::vector<std::pair<int, int> > contact_flags;
+		double search_radius;
+	};
 
 	void run_contact_test(LibMeshInit &init)
 	{
 		auto mesh = make_shared<Mesh>(init.comm());
-
-
-		// mesh->read("../data/fine_contact_2d.e");
-		// // mesh->read("../data/hertz_2d.e");
-		// Real search_radius = 0.1;
-		// solve_contact_problem_2d(init, mesh, {{102, 101}}, search_radius);
-
-		// mesh->read("../data/hertz_530.e");
-		// mesh->read("../data/quasi_signorini_4593.e");
-		// mesh->read("../data/quasi_signorini_fine.e");
-		// mesh->read("../data/quasi_signorini_fine_surface_both.e");
-		// mesh->read("../data/quasi_signorini_ultra_fine_surface_both.e");
-		// mesh->read("../data/two_rocks_26653.e");
-		// mesh->read("../data/quasi_signorini_526.e");
-		mesh->read("../data/quasi_signorini_248322.e");
-		solve_contact_problem_3d(init, mesh, {{1, 3}}, 0.3);
+		ContactProblem p;
+			
+		//---------------------------------------------------
+		// auto e_problem = make_shared<ExampleProblem2D>();
+		auto e_problem = make_shared<ExampleProblem3D>();
+		//---------------------------------------------------
+		
+		mesh->read(e_problem->mesh_file);
+		p.init(init, mesh, e_problem, e_problem->contact_flags, e_problem->search_radius);
+		p.step();
+		p.save();
 	}
 }
+
