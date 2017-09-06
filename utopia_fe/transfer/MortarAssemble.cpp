@@ -605,7 +605,7 @@ namespace utopia {
 			u -= o;
 			v -= o;
 			
-			relative_weight = isector.polygon_area_3(3, triangle) * weight;
+			relative_weight = isector.polygon_area_3(3, triangle) * weight * 2.; 
 			assert(relative_weight >= 0.);
 			
 			for(int k = 0; k < ir.n_points(); ++k, ++quad_index) {
@@ -688,9 +688,9 @@ namespace utopia {
 			} else if(is_quad(type)) {
 				ref_ir.get_weights()[i] *= 2.;
 			} else if(is_hex(type)) {
-				ref_ir.get_weights()[i] *= 8.;
+				ref_ir.get_weights()[i] *= 1.;
 			} else if(is_tet(type)) {
-				ref_ir.get_weights()[i] *= 1./6.;
+				ref_ir.get_weights()[i] *= 0.5;
 			} else {
 				assert(false && "add special case");
 			}

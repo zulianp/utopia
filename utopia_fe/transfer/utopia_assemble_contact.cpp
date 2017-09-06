@@ -97,7 +97,7 @@ namespace utopia {
 		auto &f = fe.get_phi();
 		for(std::size_t i = 0; i < node_is_boundary.size(); ++i) {
 			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
-				if(f[i][qp] > 1e-16) {
+				if(f[i][qp] > 1e-8) {
 					assert(node_is_boundary[i]);
 					if(!node_is_boundary[i]) return false;
 				}
@@ -1213,10 +1213,12 @@ namespace utopia {
 						auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
 						assert(partial_sum > 0);
 						// assert( std::abs(surface_assemble->relative_area - 0.5*std::accumulate(ir_ref_slave.get_weights().begin(), ir_ref_slave.get_weights().end(), 0.0)) < 1e-8);
+
+						// std::cout << "====================================\n";
+						// std::cout << "areas: (" << side_id_slave[side_index_slave] << ", " << side_id_master[side_index_master] << ") "  << partial_sum << " == " << surface_assemble->isect_area << " ratio: " <<  (surface_assemble->isect_area/partial_sum) << std::endl;
+						// std::cout << "====================================\n";
 						assert( std::abs(partial_sum - surface_assemble->isect_area) < 1e-8);
-						// std::cout << "====================================\n";
-						// std::cout << "areas: " << partial_sum << " == " << surface_assemble->isect_area << " ratio: " <<  (surface_assemble->isect_area /partial_sum) << std::endl;
-						// std::cout << "====================================\n";
+
 
 						
 						local_element_matrices_sum += partial_sum;

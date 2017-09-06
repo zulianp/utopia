@@ -3,10 +3,12 @@ Utopia is a C++ embedded domain specific language designed for parallel non-line
 
 # Contributors of utopia
 
-- Patrick Zulian (Lead developer)
+- Dr. Patrick Zulian (Lead developer)
 - Alena Kopanicakova (Linear and non-linear solvers, Fenics and MOOSE interoperability)
 - Dr. Maria Giuseppina Chiara Nestola (Integration of parallel transfer for libmesh and MOOSE using Moonolith) 
-- Teseo Schneider (Visualization tool)
+- Dr. Teseo Schneider (Visualization tool)
+
+Developed at the Institute of Computational Science, USI, Lugano, Switzerland (https://www.ics.usi.ch).
 
 # Dependencies
 - PETSc (https://www.mcs.anl.gov/petsc/)
@@ -37,7 +39,7 @@ Go to the folder utopia/utopia\_fe:
 
 - mkdir bin
 - cd bin
-- cmake -DUTOPIA\_DIR=$UTOPIA\_DIR -DLIBMESH_DIR=$LIBMESH_DIR -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_DIR
+- cmake -DUTOPIA\_DIR=$UTOPIA\_DIR -DLIBMESH_DIR=$LIBMESH_DIR -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_DIR -DMOONOLITH\_INSTALL\_PREFIX=$UTOPIA_DIR
 - make 
 - make install
 
@@ -48,16 +50,24 @@ All the headers and binaries should be in the desired folder in the following fo
 - bin
 - config (here you can find useful configuration file for your cmake or make build system)
 
+Setting MOONOLITH\_INSTALL\_PREFIX is optional. But if you want to delete the contect of the bin folder then it is required.
 
-## Compiling your code with utopia
+## Compiling your code with utopia and Makefile
 
 If you are using utopia with 'make' you can use the utopia_config.makefile in the $UTOPIA\_DIR/config folder as shown
 in the example in the file utopia/utopia/example\_usage\_of\_utopia/Makefile
 
 If you are using utopia\_fe with 'make' you can use the utopia_fe_config.makefile in the $UTOPIA\_DIR/config folder as shown
-in the example in the file utopia/utopia_fe/example\_usage\_of\_utopia\_fe/Makefile
+in the example in the file utopia/utopia\_fe/example\_usage\_of\_utopia\_fe/Makefile
 
+## Compiling your code with utopia_fe and CMake
 
+If you are using utopia\_fe with 'cmake' you can use the utopia_fe_config.cmake in the $UTOPIA\_DIR/config folder as shown
+in the example in the file utopia/utopia\_fe/example\_usage\_of\_utopia\_fe/cmake\_example/CMakeLists.txt
+
+The FindUtopia.cmake and FindUtopiaFE.cmake can be found in utopia/utopia\_fe/cmake and they can be copied to your project when needed.
+
+## Extras
 - -DUTOPIA_ARCHIVE_ONLY=ON Allows to compile only the archive file utopia.a (or .lib for windows)
 - -DUTOPIA_STATIC_DEPENDENCIES_ONLY=ON Allows to restrict the linking to static libraries
 - -DMPI_CXX_COMPILER=<the desired compiler>. Allows to set the mpi compiler for C++.
@@ -66,5 +76,5 @@ in the example in the file utopia/utopia_fe/example\_usage\_of\_utopia\_fe/Makef
 The API documentation of Utopia can be generated through Doxygen by using the command *make docs* from the bin folder after calling cmake ... The API documentation is generated in the *utopia/doc/api* folder in both HTML (see html/index.html) and LateX (see refman.tex) formats.
 
 
-
 # More details coming soon!
+

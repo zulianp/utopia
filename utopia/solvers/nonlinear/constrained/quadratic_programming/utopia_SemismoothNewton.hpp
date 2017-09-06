@@ -21,7 +21,7 @@ namespace utopia {
 		
 		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
 						 const Parameters params                         = Parameters() ) :
-		linear_solver_(linear_solver)
+		linear_solver_(linear_solver), active_set_tol_(1e-15)
 		{
 			set_parameters(params);
 		}
@@ -34,6 +34,11 @@ namespace utopia {
 			set_box_constraints(make_upper_bound_constraints(std::make_shared<Vector>(g)));
 			return solve(A, b, x);
 		}
+
+		inline void set_active_set_tol(const Scalar tol)
+		{
+			active_set_tol_ = tol;
+		}
 		
 		
 		bool solve(const Matrix &A, const Vector &b, Vector &x)  override
@@ -43,7 +48,7 @@ namespace utopia {
 			} else if((constraints_.has_upper_bound() && !constraints_.has_lower_bound()) || (!constraints_.has_upper_bound() && constraints_.has_lower_bound())) {
 				single_bound_solve(A, b, x);
 			} else {
-				std::cout<<"if u do not have constraints, use something else..... \n";
+				std::cout<<"if you do not have constraints, use something else..... \n";
 			}
 			
 			return true;
@@ -69,9 +74,7 @@ namespace utopia {
 	private:
 		// We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
 		bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x_new)
-		{
-			const Scalar tol = 1e-16;
-			
+		{			
 			bool is_upper_bound = constraints_.has_upper_bound();
 			
 			Vector g;
@@ -125,7 +128,7 @@ namespace utopia {
 					
 					if(is_upper_bound) {
 						for (SizeType i = rr.begin(); i != rr.end(); i++) {
-							if (d.get(i) >= -tol) {
+							if (d.get(i) >= -active_set_tol_) {
 								A_c.set(i, i, 1.0);
 								active.set(i, 1.0);
 								
@@ -140,7 +143,7 @@ namespace utopia {
 					} else {
 						//is_lower_bound
 						for (SizeType i = rr.begin(); i != rr.end(); i++) {
-							if (d.get(i) <= tol) {
+							if (d.get(i) <= active_set_tol_) {
 								A_c.set(i, i, 1.0);
 								active.set(i, 1.0);
 								
@@ -194,7 +197,6 @@ namespace utopia {
 		{
 			using namespace utopia;
 			
-			const Scalar tol = 1e-16;
 			const Size s_A = local_size(A);
 			const SizeType n = s_A.get(0);
 			const SizeType m = s_A.get(1);
@@ -252,13 +254,13 @@ namespace utopia {
 					Range rr = row_range(A_c_p);
 					for (SizeType i = rr.begin(); i != rr.end(); i++)
 					{
-						if (d_p.get(i) >= -tol) {
+						if (d_p.get(i) >= -active_set_tol_) {
 							A_c_p.set(i, i, 1.0);
 							
 							active_p.set(i, 1.0);
 							active_m.set(i, 0.0);
 							
-						} else if(d_m.get(i) <= tol) {
+						} else if(d_m.get(i) <= active_set_tol_) {
 							A_c_m.set(i, i, 1.0);
 							
 							active_m.set(i, 1.0);
@@ -327,6 +329,7 @@ namespace utopia {
 		
 		std::shared_ptr <Solver>        linear_solver_;
 		BoxConstraints                  constraints_;
+		Scalar active_set_tol_;
 	};
 	
 }

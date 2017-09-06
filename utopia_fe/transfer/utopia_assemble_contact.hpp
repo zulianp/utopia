@@ -52,24 +52,23 @@ namespace utopia {
 		const bool use_volume_differential = false);
 
 
-		bool assemble_contact(
-			moonolith::Communicator &comm,
-			const std::shared_ptr<libMesh::MeshBase> &mesh,
-			const std::shared_ptr<libMesh::DofMap> &dof_map,
-			const unsigned int var_num,
-			DSMatrixd &B,
-			DSMatrixd &orthogonal_trafos,
-			DVectord &gap,
-			DVectord &normals,
-			DVectord &is_contact_node,
-			const libMesh::Real search_radius,
-			const std::vector< std::pair<int, int> > &tags,
-			const bool use_biorth = true,
-			const bool use_volume_differential = false);
+	bool assemble_contact(
+		moonolith::Communicator &comm,
+		const std::shared_ptr<libMesh::MeshBase> &mesh,
+		const std::shared_ptr<libMesh::DofMap> &dof_map,
+		const unsigned int var_num,
+		DSMatrixd &B,
+		DSMatrixd &orthogonal_trafos,
+		DVectord &gap,
+		DVectord &normals,
+		DVectord &is_contact_node,
+		const libMesh::Real search_radius,
+		const std::vector< std::pair<int, int> > &tags,
+		const bool use_biorth = true,
+		const bool use_volume_differential = false);
 
 
-		void convert_normal_matrix_to_vector(const DSMatrixd &mat, DVectord &vec);
-
+	void convert_normal_matrix_to_vector(const DSMatrixd &mat, DVectord &vec);
 
 }
 

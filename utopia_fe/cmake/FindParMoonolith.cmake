@@ -5,7 +5,15 @@ set(STAGE_DIR 				"${CMAKE_BINARY_DIR}/stage")
 set(MOONOLITH_URL 			https://zulianp@bitbucket.org/zulianp/par_moonolith.git)
 set(MOONOLITH_SOURCE_DIR 	${STAGE_DIR}/par_moonolith)
 set(MOONOLITH_BIN_DIR 		${STAGE_DIR}/par_moonolith/bin)
-set(MOONOLITH_INSTALL_DIR 	${CMAKE_BINARY_DIR}/external)
+
+if(DEFINED ENV{MOONOLITH_INSTALL_PREFIX})
+	set(MOONOLITH_INSTALL_DIR $ENV{MOONOLITH_INSTALL_PREFIX})
+elseif(MOONOLITH_INSTALL_PREFIX)
+	set(MOONOLITH_INSTALL_DIR ${MOONOLITH_INSTALL_PREFIX})
+else()
+	set(MOONOLITH_INSTALL_DIR ${CMAKE_BINARY_DIR}/external)
+	message(STATUS "Moonolith will be installed in ${MOONOLITH_INSTALL_DIR}.\nIf you want a different location set MOONOLITH_INSTALL_PREFIX")
+endif()
 
 ExternalProject_Add(
 	par_moonolith 

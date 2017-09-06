@@ -1289,6 +1289,29 @@ public:
 			return result;
 		}
 
+		template<class FE, int N>
+		inline static std::vector< std::vector<TensorValueT> > eval(
+			const Binary< 
+				Transposed< Gradient< VectorFE<FE, N> > >, 
+				Gradient< VectorFE<FE, N> >,
+				Plus> 
+			&expr, const Context &ctx)
+		{
+			using namespace libMesh;
+			auto &&left  = eval(expr.left().expr(), ctx);
+			auto &&right = eval(expr.right(), ctx); 
+
+			std::vector< std::vector<TensorValueT> > result(right);
+
+			for(uint i = 0; i < left.size(); ++i) {
+				for(uint q = 0; q < left[i].size(); ++q) {
+					result[i][q] += left[i][q].transpose();
+				}
+			}
+
+			return result;
+		}
+
 		template<typename T>
 		inline static std::vector< std::vector<TensorValueT> > eval(
 			const Binary<Number<T>, Binary< Transposed< Gradient<LibMeshVecFEFunction> >, 
