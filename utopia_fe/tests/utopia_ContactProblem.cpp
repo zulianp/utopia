@@ -23,6 +23,7 @@ namespace utopia {
 		comm.set_mpi_comm(init.comm().get());
 		init_discretization();
 		init_material();
+		iteration = 0;
 	}
 
 	void ContactProblem::init_discretization()
@@ -59,7 +60,7 @@ namespace utopia {
 		auto ass = make_assembly([&]() -> void {
 			double t = MPI_Wtime();
 
-			assemble(u, u, b_form, l_form, *context.system.matrix, *context.system.rhs);
+			assemble(u, u, b_form, l_form, *context.system.matrix, *context.system.rhs, false);
 
 			t = MPI_Wtime() - t;
 
@@ -68,13 +69,15 @@ namespace utopia {
 			printf("--------------------------------\n");
 		});
 
+
+
 		context.system.attach_assemble_object(ass);
 		context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
 
 		convert( *context.system.matrix, stiffness_matrix);
 		convert( *context.system.rhs, force);
-
+		apply_boundary_conditions(u.get(0), stiffness_matrix, force);
 	}
 
 	void ContactProblem::init_material_2d()
@@ -122,6 +125,18 @@ namespace utopia {
 		} else {
 			init_material_3d();
 		}
+
+		old_displacement = local_zeros(local_size(force));
+
+		velocity = local_zeros(local_size(force));
+		old_velocity = local_zeros(local_size(force));
+
+		acceleration = local_zeros(local_size(force));
+		old_acceleration = local_zeros(local_size(force));
+
+		internal_force = local_zeros(local_size(force));
+		total_displacement =  local_zeros(local_size(force));
+		
 	}
 
 	void ContactProblem::compute_contact_conditions()
@@ -162,22 +177,29 @@ namespace utopia {
 			});
 		}
 
-		DSMatrixd D_inv = diag(d_inv);
-		transfer_operator = D_inv * coupling;
+		boundary_mass_inv = diag(d_inv);
+		transfer_operator = boundary_mass_inv * coupling;
 		transfer_operator += local_identity(local_size(d).get(0), local_size(d).get(0));
-		gap = D_inv * weighted_gap;
+		gap = boundary_mass_inv * weighted_gap;
 
 		if(comm.is_alone()) plot_scaled_normal_field(*mesh, normals, gap);
 	}
 
-	void ContactProblem::step()
+	void ContactProblem::step(const double dt)
 	{
 		disp("n_dofs:");
 		disp(size(force));
 		compute_contact_conditions();
 
+		DVectord rhs = (force - dt * internal_force);
+
+		double internal_force_mag = norm2(internal_force);
+		std::cout << "internal_force_mag(" << iteration << "): " << internal_force_mag << std::endl;
+
+		// DVectord rhs = force;
+
 		DVectord sol_c = local_zeros(local_size(force));
-		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * force;
+		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
 		DSMatrixd K_c  = transpose(orthogonal_trafo) *
 							DSMatrixd(
 								transpose(transfer_operator) * 
@@ -185,22 +207,10 @@ namespace utopia {
 								transfer_operator) * 
 							orthogonal_trafo;
 
-
 		std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > linear_solver;
-
-		// auto s_sol = size(sol_c);
-		// if(s_sol.get(0) > 2.5e5) {
-		// 	auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord> >();
-		// 	cg->atol(1e-12);
-		// 	cg->rtol(1e-12);
-		// 	cg->stol(1e-12);
-		// 	linear_solver = cg;
-		// } else {
-			linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-		// }
+		linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 
 		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
-		newton.verbose(true);
 		newton.set_active_set_tol(1e-8);
 		newton.max_it(40);
 
@@ -208,31 +218,85 @@ namespace utopia {
 		newton.solve(K_c, rhs_c, sol_c);
 
 		displacement = transfer_operator * (orthogonal_trafo * sol_c);
+		
+		total_displacement += displacement;
+		internal_force = stiffness_matrix * total_displacement;
+
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), internal_force);
+		
+		normal_stress = local_zeros(local_size(displacement));
+
+		DVectord unscaled_stress = boundary_mass_inv * (force - dt * internal_force);
+		{
+			Write<DVectord> w_ns(normal_stress);
+			Read<DVectord> r_n(normals);
+			Read<DVectord> r_d(unscaled_stress);
+
+
+			auto r = range(unscaled_stress);
+
+			const int dim = mesh->mesh_dimension();
+			for(auto i = r.begin(); i < r.end(); i += dim) {
+				double ns = 0.;
+				for(int j = 0; j < dim; ++j) {
+					ns += normals.get(i + j) * unscaled_stress.get(i + j);
+					// ns += unscaled_stress.get(i + j) * unscaled_stress.get(i + j);
+				}
+
+				normal_stress.set(i, ns);
+			}
+		}
+
+
 		apply_displacement(displacement);
+
+		++iteration;
 	}
 
 	void ContactProblem::apply_displacement(const DVectord &displacement)
 	{
 		//FIXME
-		// int sys_num = 0;
+		int sys_num = 0;
+		Read<DVectord> r_d(displacement);
 
-		// displaced_mesh = std::shared_ptr<MeshBase>(mesh->clone().release());
-		// Read<DVectord> r_d(displacement);
+		auto m_it  = mesh->local_nodes_begin();
+		auto m_end = mesh->local_nodes_end();
 
-		// for(auto n_it = displaced_mesh->local_nodes_begin(); n_it != displaced_mesh->local_nodes_end(); ++n_it) {
-		// 	for(unsigned int c = 0; c < displaced_mesh->mesh_dimension(); ++c) {
-		// 		const int dof_id = (*n_it)->dof_number(sys_num, c, 0);
-		// 		(**n_it)(c) += displacement.get(dof_id);
-		// 	}
-		// }
+
+		for(; m_it != m_end; ++m_it) { //, ++d_it)
+			for(unsigned int c = 0; c < mesh->mesh_dimension(); ++c) {
+				const int dof_id = (*m_it)->dof_number(sys_num, c, 0);
+				(**m_it)(c) += displacement.get(dof_id);
+			}
+		}
+
+		const int dim = mesh->mesh_dimension();
+		std::vector<double> normal_stress_x(local_size(normal_stress).get(0)/dim);
+		
+		{
+			auto r = range(normal_stress);
+			Read<DVectord> r_n(normal_stress);
+			
+			for(auto i = r.begin(); i < r.end(); i += dim) {
+				normal_stress_x[i/dim] = normal_stress.get(i);
+			}
+		}
+
+		plot_mesh_f(*mesh, &normal_stress_x[0], "time_series/mesh");
 	}
 
 	void ContactProblem::save(const std::string &output_dir)
 	{
-		convert(displacement, *context_ptr->system.solution);
-		ExodusII_IO(*context_ptr->mesh).write_equation_systems (output_dir + "/sol.e", context_ptr->equation_systems);
+		convert(total_displacement, *context_ptr->system.solution);
+		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/sol_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 
 		convert(is_contact_node, *context_ptr->system.solution);
-		ExodusII_IO(*context_ptr->mesh).write_equation_systems (output_dir + "/is_c_n.e", context_ptr->equation_systems);
+		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/is_c_n_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+
+		convert(normal_stress, *context_ptr->system.solution);
+		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/ns_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+
+		convert(internal_force, *context_ptr->system.solution);
+		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/if_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 	}
 }

@@ -383,7 +383,6 @@ namespace utopia {
         MOONOLITH_EVENT_BEGIN("create_adapters");
 
         std::shared_ptr<NTreeT> tree = NTreeT::New(predicate, maxNElements, maxDepth);
-        std::cout<<"n_elements"<<n_elements<<std::endl;
         tree->reserve(n_elements);
         
         

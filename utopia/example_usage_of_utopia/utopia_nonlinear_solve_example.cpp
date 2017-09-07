@@ -4,7 +4,7 @@ template<class Matrix, class Vector>
 class Rosenbrock2DFunction : public utopia::Function<Matrix, Vector> 
 {
     public:
-        typedef DEF_UTOPIA_SCALAR(Matrix) Scalar;
+        typedef UTOPIA_SCALAR(Matrix) Scalar;
 
         Rosenbrock2DFunction() 
         {

@@ -897,6 +897,30 @@ public:
 		mat = std::move(temp);
 	}
 
+	template<class DofMap, class Vector>
+	void apply_zero_boundary_conditions(DofMap &dof_map, Vector &vec)
+	{
+		std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+		std::cout << dof_map.n_constrained_dofs() << std::endl;
+		std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+
+		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
+			std::cerr << "[Warning] no boundary conditions to apply\n" << std::endl;
+			return;
+		}
+
+		{
+			Write<Vector> w_v(vec);
+			Range r = range(vec);
+			for(SizeType i = r.begin(); i < r.end(); ++i) {
+				if(dof_map.is_constrained_dof(i)) {					     
+					vec.set(i, 0.0);
+				}
+			}
+		}
+	}
+
+
 
 	template<typename Output>
 	class LibMeshLambdaFunction : public libMesh::FunctionBase<Output> {
@@ -2179,7 +2203,8 @@ public:
 		const Integral<BilinearForm> &bilinear_form,
 		const Integral<LinearForm>   &linear_form,
 		Matrix &mat,
-		Vector &rhs)
+		Vector &rhs,
+		const bool apply_constraints = true)
 	{
 		using namespace libMesh;
 		LibMeshBackend backend;
@@ -2202,8 +2227,10 @@ public:
 			trial.dof_map().dof_indices(*e_it, dof_indices_trial, trial.var_num());
 			test.dof_map().dof_indices(*e_it,  dof_indices_test,  test.var_num());
 
-			test.dof_map().heterogenously_constrain_element_matrix_and_vector(el_mat, el_vec, dof_indices_test);			
-			
+			if(apply_constraints) {
+				test.dof_map().heterogenously_constrain_element_matrix_and_vector(el_mat, el_vec, dof_indices_test);			
+			}
+
 			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
 			add_vector(el_vec, dof_indices_test, rhs);
 		}
@@ -2231,12 +2258,14 @@ public:
 	class LinearForm, 
 	class Matrix, 
 	class Vector>
-	void assemble(VectorFE<TrialFunction, NTrial> &trial, 
+	void assemble(
+		VectorFE<TrialFunction, NTrial> &trial, 
 		VectorFE<TestFunction, NTest>  &test, 
 		const Integral<BilinearForm> &bilinear_form,
 		const Integral<LinearForm>   &linear_form,
 		Matrix &mat,
-		Vector &rhs)
+		Vector &rhs,
+		const bool apply_constraints = true)
 	{
 		using namespace libMesh;
 		LibMeshBackend backend;
@@ -2267,7 +2296,9 @@ public:
 			collect_indices(*e_it, trial, dof_indices_trial);
 			collect_indices(*e_it, test,  dof_indices_test);
 
-			test.get(0).dof_map().heterogenously_constrain_element_matrix_and_vector(el_mat, el_vec, dof_indices_test);			
+			if(apply_constraints) {
+				test.get(0).dof_map().heterogenously_constrain_element_matrix_and_vector(el_mat, el_vec, dof_indices_test);			
+			}
 			
 			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
 			add_vector(el_vec, dof_indices_test, rhs);

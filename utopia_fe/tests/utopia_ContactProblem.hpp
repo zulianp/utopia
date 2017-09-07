@@ -18,15 +18,25 @@ namespace utopia {
 		//discretization
 		FEContextPtr context_ptr;
 		std::shared_ptr<libMesh::Mesh> mesh;
-		std::shared_ptr<libMesh::MeshBase> displaced_mesh;
+		// std::shared_ptr<libMesh::MeshBase> displaced_mesh;
 		std::vector<FESpacePtr> spaces;
 
 		//material quantities
 		DSMatrixd stiffness_matrix;
+		DSMatrixd neumann_matrix;
 		DSMatrixd mass_matrix;
 		DVectord force;
 		DVectord displacement;
 		DVectord old_displacement;
+		DVectord total_displacement;
+
+		DVectord velocity;
+		DVectord old_velocity;
+
+		DVectord acceleration;
+		DVectord old_acceleration;
+
+		DVectord internal_force;
 
 		//contact quantities
 		DSMatrixd coupling;
@@ -36,11 +46,15 @@ namespace utopia {
 		DVectord is_contact_node;
 		DVectord weighted_gap;
 		DVectord gap;
+		DSMatrixd boundary_mass_inv;
+		DVectord normal_stress;
 
 		double search_radius;
 		std::vector< std::pair<int, int> > contact_pair_tags;
 
 		moonolith::Communicator comm;
+
+		int iteration;
 
 		class ElasticityBoundaryConditions {
 		public:
@@ -51,7 +65,7 @@ namespace utopia {
 
 		std::shared_ptr< ElasticityBoundaryConditions > bc_ptr;
 
-		void step();
+		void step(const double dt = 1.0);
 
 		void init(
 			const libMesh::LibMeshInit &init, 
