@@ -741,6 +741,7 @@ namespace utopia {
 		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 	       #ifdef WITH_CUDA
+                std::cout<<"I am using cuda matrix"<<std::endl;
 	        MatCreateAIJCUSPARSE(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL,
                                          1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation()); 
               #else
@@ -785,6 +786,7 @@ namespace utopia {
 		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 		#ifdef WITH_CUDA
+                std::cout<<"I am using cuda matrix 2"<<std::endl;
 		MatCreateAIJCUSPARSE(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
@@ -810,6 +812,7 @@ namespace utopia {
 		MatDestroy(&m.implementation());
 		
 		#ifdef WITH_CUDA
+                std::cout<<"I am using cuda matrix 3"<<std::endl;
 		MatCreateAIJCUSPARSE(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
@@ -926,7 +929,7 @@ namespace utopia {
                         VecCreate(v.communicator(), &v.implementation());
                         VecSetType(v.implementation(),VECMPICUDA);
                         VecSetSizes(v.implementation(),local_size.get(0), global_size.get(0));
-                     //   VecSetType(v.implementation(),VECMPICUDA);
+                        VecSetFromOptions(v.implementation());
                        #else
 			VecCreateMPI(v.communicator(), local_size.get(0), global_size.get(0), &v.implementation());
                        #endif
@@ -947,7 +950,8 @@ namespace utopia {
                 VecCreate(v.communicator(), &v.implementation());
                 VecSetSizes(v.implementation(),PETSC_DECIDE, size.get(0));
                 VecSetType(v.implementation(),VECMPICUDA);
-                #else 
+                VecSetFromOptions(v.implementation()); 
+               #else 
                 VecCreateMPI(v.communicator(), PETSC_DECIDE, size.get(0), &v.implementation());
 		#endif
                 VecSet(v.implementation(), values.value());
@@ -999,6 +1003,7 @@ namespace utopia {
                 VecCreate(v.communicator(), &v.implementation());
                 VecSetType(v.implementation(),VECMPICUDA);
                 VecSetSizes(v.implementation(), size.get(0),PETSC_DECIDE);
+                VecSetFromOptions(v.implementation());
                 #else
 		VecCreateMPI(comm, size.get(0), PETSC_DETERMINE, &v.implementation());
 		#endif
@@ -1101,6 +1106,7 @@ namespace utopia {
                 VecCreate(right.communicator(), &result.implementation());
                 VecSetSizes(result.implementation(), rows, grows);
                 VecSetType(result.implementation(),VECMPICUDA);
+                VecSetFromOptions(result.implementation());
                 #else
 		VecCreateMPI(right.communicator(), rows, grows, &result.implementation());
                 #endif
@@ -1108,7 +1114,9 @@ namespace utopia {
 		VecAssemblyEnd(result.implementation());
 		std::cout<<"END Assembly"<<std::endl;
 		MatMult(left.implementation(), right.implementation(), result.implementation());
+                
 	        std::cout<<"I want to perform a multiplication END END"<<std::endl;   
+                std::cout.flush();
                  // utopia::disp(result);
 		return true;
 	}
@@ -1144,6 +1152,7 @@ namespace utopia {
                 VecCreate(result.communicator(), &result.implementation());
                 VecSetSizes(result.implementation(), size, gsize);
                 VecSetType(result.implementation(),VECMPICUDA);
+                VecSetFromOptions(result.implementation());
                 #else
 		VecCreateMPI(right.communicator(), size, gsize, &result.implementation());
                 #endif
@@ -1171,6 +1180,7 @@ namespace utopia {
                 VecCreate(result.communicator(), &result.implementation());
                 VecSetSizes(result.implementation(), size, gsize);
                 VecSetType(result.implementation(),VECMPICUDA);
+                VecSetFromOptions(result.implementation());
                 #else
 		VecCreateMPI(right.communicator(), size, gsize, &result.implementation());
                 #endif
@@ -1239,6 +1249,7 @@ namespace utopia {
 				VecCreate(PetscObjectComm((PetscObject)right.implementation()), &result.implementation());
 				VecSetSizes(result.implementation(), n_wanted, n_global);
 				VecSetType(result.implementation(),VECMPICUDA);
+                                VecSetFromOptions(result.implementation());
                                 #else 
 				VecCreateMPI(PetscObjectComm((PetscObject)right.implementation()), n_wanted, n_global, &result.implementation());
                                 #endif

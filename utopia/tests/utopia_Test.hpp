@@ -8,6 +8,7 @@
 #include "utopia_AutoDiffTest.hpp"
 #include "utopia_SolverTest.hpp"
 #include "utopia_PerformanceTest.hpp"
+#include "utopia_PerformanceTestCuda.hpp"
 #include "utopia_AlgebraTest.hpp"
 #include "utopia_UtilitiesTest.hpp"
 #include "utopia_PETScTest.hpp"
@@ -54,6 +55,8 @@ namespace utopia
                runSolversTest();
             else if (token == "performance")
                 run_performance_test();
+            else if (token == "CUDA")
+                run_performance_CUDA_test();
             else if (token == "algebra")
                 runAlgebraTest();
             else if (token == "utilities")

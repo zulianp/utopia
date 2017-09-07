@@ -284,7 +284,7 @@ if(TRY_WITH_CUDA)
 		if(THRUST_FOUND)
 
 			file(GLOB CUDA_FILES "${UTOPIA_ROOT_PATH}/backend/cuda/*.cu") 
-			list(APPEND CUDA_FILES backend/cuda/utopia_CUDAKernels.cu backend/cuda/utopia_Thrust.cu)
+			list(APPEND CUDA_FILES backend/cuda/utopia_CUDAKernels.cu backend/cuda/utopia_Thrust.cu tests/utopia_PerformanceTestCuda.cu)
 			set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER}) 
 			cuda_include_directories( ${UTOPIA_ROOT_PATH}/backend/cuda ${THRUST_INCLUDE_DIR} ${UTOPIA_ROOT_PATH}/core ${UTOPIA_ROOT_PATH}/core/expressions ${CMAKE_BINARY_DIR})
 			set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; "-std=c++11")

@@ -8,7 +8,19 @@
 namespace utopia {
 
 	namespace cuda_generic {
-		template<typename T>
+		
+                template<typename T>
+                __global__ void build_values(const int rows, const int cols, const T value, T *values)
+                {
+                        int id_x = blockIdx.x * blockDim.x + threadIdx.x;
+                        int id_y = blockIdx.y * blockDim.y + threadIdx.y;
+
+                        if(id_x < rows && id_y < cols) {
+                                values[id_x * cols + id_y] = value;
+                        }
+                }
+                
+                template<typename T>
 		__global__ void build_identity(const int rows, const int cols, T *values)
 		{
 			int id_x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -40,6 +52,26 @@ namespace utopia {
 				result[id_x] = prod;
 			}
 		}
+
+
+
+                template<typename T>
+                __global__ void mat_mat_mul(const int rows, const int cols, const int width, const T *mat_left, const T *mat_right, T *result)
+                {
+                        int id_x = blockIdx.x * blockDim.x + threadIdx.x;
+                        int id_y = blockIdx.y * blockDim.y + threadIdx.y;
+                    
+                        if(id_x < rows && id_y < cols) {
+
+                                T prod = 0;
+                                for(int j = 0; j < width ; ++j) {
+                                        prod += mat_left[id_y*width + j] * mat_right[j*width+id_x];
+                                }
+
+                                // __synchthreads();
+                                result[id_y*width+id_x] = prod;
+                        }
+                }
 
 		std::pair<dim3, dim3> get_sizes_2(const int n_x, const int n_y)
 		{
@@ -93,11 +125,25 @@ namespace utopia {
 			cuda_generic::build_identity<double><<<s.first, s.second>>>(rows, cols, raw_ptr);
 		}
 		
-		void build_values(const int n, const double value, CUDAVector &v)
+                 void build_values(const int rows, const int cols, const double value, CUDAMatrix &m)
+                {
+                        m.values.resize(rows * cols);
+                        m.rows = rows;
+                        m.cols = cols;
+
+                        double *raw_ptr = thrust::raw_pointer_cast(&m.values[0]);
+                        dim3 n_blocks, n_threads_x_block;
+                        std::pair<dim3, dim3> s = cuda_generic::get_sizes_2(rows, cols);
+
+                        cuda_generic::build_values<double><<<s.first, s.second>>>(rows, cols, value, raw_ptr);
+                }
+ 		
+                void build_values(const int n, const double value, CUDAVector &v)
 		{
 			v.values.resize(n);
 			thrust::fill(v.values.begin(), v.values.end(), value);
 		}
+
 
 		double dot(const CUDAVector &left, const CUDAVector &right)
 		{
@@ -122,6 +168,27 @@ namespace utopia {
 
 			//CUDAError::CheckLastError();
 		}
+
+
+                 void mat_mat_mul(const CUDAMatrix &left, const CUDAMatrix &right, const int width, CUDAMatrix &result)
+                {
+                        result.values.resize(left.rows);
+
+                        dim3 n_blocks, n_threads_x_block, n_threads_y_block;
+
+                        std::pair<dim3, dim3> s = cuda_generic::get_sizes_1(left.rows);
+                       
+                        cuda_generic::mat_mat_mul<double><<<s.first, s.second>>>(
+                                left.rows,
+                                left.cols,
+                                width,
+                                thrust::raw_pointer_cast(&left.values[0]),
+                                thrust::raw_pointer_cast(&right.values[0]),
+                                thrust::raw_pointer_cast(&result.values[0])
+                                );
+
+                        //CUDAError::CheckLastError();
+                }
 	}
 }
 

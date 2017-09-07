@@ -1,7 +1,10 @@
 #include "utopia_PerformanceTest.hpp"
 #include "utopia.hpp"
 #ifdef WITH_CUDA
+cudaEvent_t start, stop;
 #include  "test_problems/utopia_TestProblems.hpp"
+#include <vector>
+#include "utopia_Function.hpp"
 #endif
 #ifdef WITH_EIGEN_3
 #include <Eigen/Dense>
@@ -47,7 +50,7 @@ namespace utopia {
 	}
 
 	static const int N_SIZES   = 10;
-	static const int N[] 	   = { 10, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 10000000 };
+	static const int  N[] 	   = { 10, 100, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 100000000 };
 	static const int N_MIXED[] = { 10, 50,  100,  250, 	500,   750,   1000,   2000,   5000, 10000   };
 	static const int N_RUNS    = 1;
 	static const bool verbose  = true;
@@ -59,24 +62,113 @@ namespace utopia {
         void test_poisson(const std::string &experiment_name)
         {
            Matrix A;
-           Vector rhs;
-           Matrix sol;
-           Poisson_1D<Matrix,Vector> test_cuda;
+           Vector rhs_old,rhs_new,sol_D;
+           Matrix sol_M;
+           typedef typename utopia::Traits<Vector>::Scalar Scalar;
+           //Poisson_1D<Matrix,Vector> test_cuda;
            Chrono c;
        
-                       
-            for(int k = 0; k < N_SIZES; ++k) {
+          typedef typename utopia::Traits<Vector>::Scalar Scalar;            
+          
+          for(int k = 0; k < N_SIZES; ++k) {
                     const int n = N[k];
-                   // c.start();
-                    test_cuda.getOperators(n,A,rhs);
-                    std::cout<<"I am trying to multiply"<<std::endl;
-                    c.start();
-                    //disp((local_size(A)).get(0));
-                    //disp((local_size(A)).get(1));
-                    //disp(local_size(rhs));
-                    sol=A*A;
-                    c.stop();
-                    if(verbose){
+                    Scalar h = 1.0 / (n - 1);
+		    A = sparse(n, n, 3);
+		    {
+			Write<Matrix> w(A);
+			Range rr = rowRange(A);
+			Range cr = colRange(A);
+			for (SizeType i = rr.begin(); i != rr.end(); i++) 
+			{
+			    const SizeType ip1 = i+1;
+			    const Scalar inv2h = (1 / (h * h));
+
+			    // diag 
+			    A.set(i, i, 2.0 * inv2h);
+
+			    // upper diag
+			    if(ip1 < cr.end()) {
+				A.set(i, i + 1, -1.0 * inv2h);
+			    }
+
+			    // lower diag
+			    if (ip1 < rr.end()) {
+				A.set(i + 1, i, -1.0 * inv2h);
+			    }
+			}
+		    }
+
+		    rhs_old = zeros(n);
+		    {
+			Write<Vector> w (rhs_old);
+			Range rhs_range = range(rhs_old);
+			Scalar x_step = 0.0, source;
+			for (SizeType i = rhs_range.begin(); i != rhs_range.end() ; i++)
+			{
+			    x_step += h;
+			    source = std::sin(3.16 * x_step);
+			    rhs_old.set(i,1.0);
+			}
+		    }
+                 /* PetscInt grows, gcols;      
+                  MatGetSize(raw_type(A), &grows, &gcols);
+                  PetscInt rows, cols;
+                  MatGetLocalSize(raw_type(A), &rows, &cols);
+                  MPI_Comm comm;
+		  PetscObjectGetComm((PetscObject)(raw_type(rhs)),&comm);
+                  VecCreate(comm, &raw_type(sol_D));
+                  VecSetSizes(raw_type(sol_D), rows, grows);
+                  VecSetType(raw_type(sol_D),VECMPICUDA);
+                  VecSetFromOptions(raw_type(sol_D));
+                  VecAssemblyBegin(raw_type(sol_D));
+                  VecAssemblyEnd(raw_type(sol_D));
+                  */
+                 const double solution = 1.0;
+
+                 // exact solution to our problem
+                 const Vector u_exact  = values(n, solution);
+
+                 // constructing initial guess
+                 Vector u = zeros(n); 
+
+                 // constructing rhs
+                 std::cout << "A*rhs_old " <<  std::endl;
+                 const Vector rhs   = A * rhs_old;
+
+                 // setting up parameters of solver 
+                 // Parameters params; 
+                 //params.tol(1e-9); 
+                 //params.lin_solver_type("UTOPIA_CG"); 
+                 //params.linear_solver_verbose(true); 
+ 
+                 auto lin_sol = std::make_shared< utopia::LUDecomposition<DSMatrixd, DVectord> >();
+                 //lin_solver->rtol(1e-16);
+                 //lin_solver->stol(1e-16);
+                 //lin_solver->atol(1e-16);
+                 c.start();
+                 // solve 
+                 std::cout << "Solving: " <<  std::endl;
+                 lin_sol->solve(A, rhs, u); 
+                 c.stop();
+                 // display solution 
+                 // disp(u); 
+
+                 // comparing obtained solution with 
+                 //std::cout << "Correct solution: " <<  (approxeq(u, u_exact)? "true." : "false." ) << std::endl;
+                 /* MPI_Comm comm_m;
+	         PetscObjectGetComm((PetscObject)(raw_type(A)),&comm_m);
+                 MatCreateAIJCUSPARSE(comm_m, rows, cols, grows, gcols, 3, PETSC_NULL, 1, PETSC_NULL, &raw_type(sol_M));
+                 MatAssemblyBegin(raw_type(sol_M), MAT_FINAL_ASSEMBLY);
+                 MatAssemblyEnd(raw_type(sol_M), MAT_FINAL_ASSEMBLY);
+                  
+                 c.start();
+                 std::cout<<"A*rhs"<<std::endl;
+                 MatMult(raw_type(A), raw_type(rhs), raw_type(sol_D));
+                 std::cout<<"A*A"<<std::endl;
+                 MatMatMult(raw_type(A), raw_type(A), MAT_REUSE_MATRIX , PETSC_DEFAULT, &raw_type(sol_M));
+                 c.stop();
+                 */
+                 if(verbose){
                             std::cout<<"problem size = "<< n << ",\t";
                             c.describe(std::cout);
                     }
