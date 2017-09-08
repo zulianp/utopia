@@ -38,23 +38,23 @@ namespace utopia {
 	void MemoryPool::fullGC() {
 #ifdef WITH_PETSC
 		for (auto it = vec_pool_.begin(); it != vec_pool_.end(); it++) {
-			for (size_t i = 0; i < it->second.size(); i++) {
-				VecDestroy(it->second[i]);
-				delete it->second[i];
+			if (it->second) {
+				VecDestroy(it->second);
+				delete it->second;
 			}
 		}
 		vec_pool_.clear();
 		for (auto it = mat_pool_.begin(); it != mat_pool_.end(); it++) {
-			for (size_t i = 0; i < it->second.size(); i++) {
-				MatDestroy(it->second[i]);
-				delete it->second[i];
+			if (it->second) {
+				MatDestroy(it->second);
+				delete it->second;
 			}
 		}
 		mat_pool_.clear();
 		for (auto it = sparse_mat_pool_.begin(); it != sparse_mat_pool_.end(); it++) {
-			for (size_t i = 0; i < it->second.size(); i++) {
-				MatDestroy(it->second[i]);
-				delete it->second[i];
+			if (it->second) {
+				MatDestroy(it->second);
+				delete it->second;
 			}
 		}
 		sparse_mat_pool_.clear();
@@ -65,17 +65,17 @@ namespace utopia {
 	void MemoryPool::GC() {
 #ifdef WITH_PETSC
 		for (auto it = vec_pool_.begin(); it != vec_pool_.end(); it++) {
-			if (it->second.size() == 0) {
+			if (!it->second) {
 				vec_pool_.erase(it);
 			}
 		}
 		for (auto it = mat_pool_.begin(); it != mat_pool_.end(); it++) {
-			if (it->second.size() == 0) {
+			if (!it->second) {
 				mat_pool_.erase(it);
 			}
 		}
 		for (auto it = sparse_mat_pool_.begin(); it != sparse_mat_pool_.end(); it++) {
-			if (it->second.size() == 0) {
+			if (!it->second) {
 				sparse_mat_pool_.erase(it);
 			}
 		}
@@ -90,12 +90,13 @@ namespace utopia {
 	Vec* MemoryPool::getVec(const Size& local, const Size& global) {
 		// TODO consider PETSC_DECIDE and PETSC_DETERMINE in pool lookup
 		auto it = vec_pool_.find(std::make_pair(local, global));
-		if (it != vec_pool_.end() && !it->second.empty()) {
+		if (it != vec_pool_.end() && it->second) {
 			// std::cout << "Succesfully reused Vec" << std::endl;
-			Vec* outval = *it->second.rbegin();
+			Vec* outval = it->second;
 			usedMemory -= local.get(0) * 8;
 			UTOPIA_LOG_MEMORY();
-			it->second.pop_back();
+			vec_pool_.erase(it);
+			// it->second = nullptr
 			return outval;
 		}
 
@@ -118,12 +119,13 @@ namespace utopia {
 	Mat* MemoryPool::getMat(const Size& local, const Size& global) {
 		// TODO consider PETSC_DECIDE and PETSC_DETERMINE in pool lookup
 		auto it = mat_pool_.find(std::make_pair(local, global));
-		if (it != mat_pool_.end() && it->second.size() > 0) {
+		if (it != mat_pool_.end() && it->second) {
 			// std::cout << "Succesfully reused Mat" << std::endl;
-			Mat* outval = *it->second.rbegin();
+			Mat* outval = it->second;
 			usedMemory -= local.get(0) * local.get(1) * 8;
 			UTOPIA_LOG_MEMORY();
-			it->second.pop_back();
+			mat_pool_.erase(it);
+			// it->second = nullptr
 			return outval;
 		}
 
@@ -146,10 +148,11 @@ namespace utopia {
 	Mat* MemoryPool::getSparseMat(const Size& local, const Size& global) {
 		// TODO consider PETSC_DECIDE and PETSC_DETERMINE in pool lookup
 		auto it = sparse_mat_pool_.find(std::make_pair(local, global));
-		if (it != sparse_mat_pool_.end() && it->second.size() > 0) {
+		if (it != sparse_mat_pool_.end() && it->second) {
 			// std::cout << "Succesfully reused Mat" << std::endl;
-			Mat* outval = *it->second.rbegin();
-			it->second.pop_back();
+			Mat* outval = it->second;
+			sparse_mat_pool_.erase(it);
+			// it->second = nullptr
 			return outval;
 		}
 
@@ -178,14 +181,12 @@ namespace utopia {
 			delete v;
 		} else {
 			auto k = std::make_pair<Size, Size>({local}, {global});
-			if (vec_pool_[k].size() > 10) {
-				VecDestroy(v);
-				delete v;
-			} else {
-				usedMemory += local * 8;
-				UTOPIA_LOG_MEMORY();
-				vec_pool_[k].push_back(v);
+			Vec*& vec = vec_pool_[k];
+			if (vec) {
+				VecDestroy(vec);
+				delete vec;
 			}
+			vec = v;
 		}
 	}
 
@@ -198,14 +199,12 @@ namespace utopia {
 			delete m;
 		} else {
 			auto k = std::make_pair<Size, Size>({local_m, local_n}, {global_m, global_n});
-			if (mat_pool_[k].size() > 10) {
-				MatDestroy(m);
-				delete m;
-			} else {
-				usedMemory += local_m * local_n * 8;
-				UTOPIA_LOG_MEMORY();
-				mat_pool_[k].push_back(m);
+			Mat*& mat = mat_pool_[k];
+			if (mat) {
+				MatDestroy(mat);
+				delete mat;
 			}
+			mat = m;
 		}
 	}
 
@@ -216,12 +215,12 @@ namespace utopia {
 			delete m;
 		} else {
 			auto k = std::make_pair<Size, Size>({local_m, local_n}, {global_m, global_n});
-			if (sparse_mat_pool_[k].size() > 10) {
-				MatDestroy(m);
-				delete m;
-			} else {
-				sparse_mat_pool_[k].push_back(m);
+			Mat*& mat = sparse_mat_pool_[k];
+			if (mat) {
+				MatDestroy(mat);
+				delete mat;
 			}
+			mat = m;
 		}
 	}
 

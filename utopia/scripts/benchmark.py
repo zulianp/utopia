@@ -29,27 +29,32 @@ mpi_n = args.mpi[0]
 utopia_cmd = [args.path] + args.args
 
 # Main program
+cwd = os.getcwd()
 
 # If passed file is already there, don't bother compiling it
-isExecThere = true
+isExecThere = True
 if not os.path.isfile(utopia_cmd[0]):
-    isExecThere = false
-    cwd = os.getcwd()
+    isExecThere = False
     if utopia_cmd[0] == "./utopia_exec":
         if cwd.endswith('/scripts'):
-    	os.chdir('../bin')
+            os.chdir('../bin')
         elif cwd.endswith('/utopia/utopia'):
-    	os.chdir('bin')
+            os.chdir('bin')
         elif cwd.endswith('/utopia'):
-    	os.chdir('utopia/bin')
+            os.chdir('utopia/bin')
         else:
-    	print('Error: unable to figure out where is the utopia executable. Exiting')
-    	exit(5)
+            print('Error: unable to figure out where is the utopia executable. Exiting')
+            exit(5)
     else:
         u_dir, u_file = os.path.split(utopia_cmd[0])
         os.chdir(u_dir)
         print("Changed working directory to " + os.getcwd())
     utopia_cmd[0] = "./utopia_exec"
+else:
+    u_dir, u_file = os.path.split(utopia_cmd[0])
+    os.chdir(u_dir)
+    print("Changed working directory to " + os.getcwd())
+    utopia_cmd[0] = "./" + u_file
 
 if mpi_n > 1:
     utopia_cmd = ["mpirun", "-n", str(mpi_n)] + utopia_cmd
