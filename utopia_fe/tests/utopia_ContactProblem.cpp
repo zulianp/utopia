@@ -24,6 +24,7 @@ namespace utopia {
 		init_discretization();
 		init_material();
 		iteration = 0;
+		linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
 	}
 
 	void ContactProblem::init_discretization()
@@ -37,6 +38,24 @@ namespace utopia {
 	}
 
 	template<class U, class SystemType>
+	void assemble_mass_matrix(
+		U &u, 
+		LibMeshFEContext<SystemType> &context,
+		DSMatrixd &mass_matrix)
+	{
+		const int dim = u.size();
+
+		double mu = 10., lambda = 10.;
+		// auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
+		// auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
+		auto b_form = integral(dot(u, u));
+		
+		long n_local_dofs = u.get(0).dof_map().n_local_dofs();
+		mass_matrix = local_sparse(n_local_dofs, n_local_dofs, 20);
+		assemble(u, u, b_form, mass_matrix, false);
+	}
+
+	template<class U, class SystemType>
 	void assemble_elasticity(
 		U &u, 
 		LibMeshFEContext<SystemType> &context,
@@ -46,10 +65,10 @@ namespace utopia {
 	{
 		const int dim = u.size();
 
-		double mu = 10., lambda = 10.;
-		// auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
-		// auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
-		auto b_form = integral(dot(grad(u), grad(u)));
+		double mu = 0.2, lambda = 0.2;
+		auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
+		auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
+		// auto b_form = integral(dot(grad(u), grad(u)));
 
 		DenseVector<Real> vec(dim);
 		vec.zero();
@@ -96,6 +115,7 @@ namespace utopia {
 		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		
 		assemble_elasticity(u, *context_ptr, stiffness_matrix, force);
+		assemble_mass_matrix(u, *context_ptr, mass_matrix);
 	}
 
 	void ContactProblem::init_material_3d()
@@ -116,6 +136,7 @@ namespace utopia {
 		uz.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 
 		assemble_elasticity(u, *context_ptr, stiffness_matrix, force);
+		assemble_mass_matrix(u, *context_ptr, mass_matrix);
 	}
 
 	void ContactProblem::init_material()
@@ -182,21 +203,42 @@ namespace utopia {
 		transfer_operator += local_identity(local_size(d).get(0), local_size(d).get(0));
 		gap = boundary_mass_inv * weighted_gap;
 
-		if(comm.is_alone()) plot_scaled_normal_field(*mesh, normals, gap);
+		if(comm.is_alone()) plot_scaled_normal_field(*mesh, normals, gap, "time_series_r/r" + std::to_string(iteration));
 	}
 
 	void ContactProblem::step(const double dt)
 	{
 		disp("n_dofs:");
 		disp(size(force));
+		const int dim = mesh->mesh_dimension();
+
+		// DVectord inertia = mass_matrix * acceleration;
+		// apply_zero_boundary_conditions(spaces[0]->dof_map(), inertia); 
+
+		DVectord rhs = (force - dt * internal_force);// - (dt*dt) * inertia;
+
+		if(iteration > 0)
+		{
+			search_radius = 1e-8;
+			auto r = range(old_displacement);
+			for(auto i = r.begin(); i < r.end(); i += dim) {
+				double lenght = 0.0;
+
+				for(int j = 0; j < dim; ++j) {
+					auto v =  old_displacement.get(i + j);
+					lenght += v*v;
+				}
+
+				search_radius = std::max(search_radius, std::sqrt(lenght));
+			}
+		}
+
+		search_radius += 1e-8;
+		comm.all_reduce(&search_radius, 1, moonolith::MPIMax());
+		disp("predicted search radius");
+		disp(search_radius);
+
 		compute_contact_conditions();
-
-		DVectord rhs = (force - dt * internal_force);
-
-		double internal_force_mag = norm2(internal_force);
-		std::cout << "internal_force_mag(" << iteration << "): " << internal_force_mag << std::endl;
-
-		// DVectord rhs = force;
 
 		DVectord sol_c = local_zeros(local_size(force));
 		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
@@ -207,8 +249,11 @@ namespace utopia {
 								transfer_operator) * 
 							orthogonal_trafo;
 
-		std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > linear_solver;
-		linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+		//predictor step
+		//DVectord displacement_pred = displacement + dt * velocity;
+		//DVectord displacement_pred_c = transpose(orthogonal_trafo) * displacement_pred
+		//DVectord addmissible_pred = min(displacement_pred_c, gap)
+		//DVectord pred = addmissible_pred - displacement_pred_c;
 
 		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
 		newton.set_active_set_tol(1e-8);
@@ -235,7 +280,7 @@ namespace utopia {
 
 			auto r = range(unscaled_stress);
 
-			const int dim = mesh->mesh_dimension();
+			
 			for(auto i = r.begin(); i < r.end(); i += dim) {
 				double ns = 0.;
 				for(int j = 0; j < dim; ++j) {
@@ -249,6 +294,18 @@ namespace utopia {
 
 
 		apply_displacement(displacement);
+
+		old_acceleration = acceleration;
+		old_velocity = velocity;
+
+		velocity = displacement - old_displacement;
+		velocity *= 1./dt;
+
+		acceleration = velocity - old_velocity;
+		acceleration *= 1./dt;
+
+		old_velocity = velocity;
+		old_displacement = displacement;
 
 		++iteration;
 	}
@@ -282,7 +339,7 @@ namespace utopia {
 			}
 		}
 
-		plot_mesh_f(*mesh, &normal_stress_x[0], "time_series/mesh");
+		if(comm.is_alone()) plot_mesh_f(*mesh, &normal_stress_x[0], "time_series_m/m" + std::to_string(iteration));
 	}
 
 	void ContactProblem::save(const std::string &output_dir)
@@ -298,5 +355,9 @@ namespace utopia {
 
 		convert(internal_force, *context_ptr->system.solution);
 		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/if_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+	
+		convert(acceleration, *context_ptr->system.solution);
+		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/a_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+
 	}
 }

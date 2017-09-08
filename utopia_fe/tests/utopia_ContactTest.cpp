@@ -141,6 +141,18 @@ namespace utopia {
 			mesh_file = "../data/quasi_signorini_32894.e";
 		}
 
+		void set_up_adaptive()
+		{
+			mesh_file = "../data/half_sphere_with_plate.e";
+		}
+
+
+		void set_up_time_dependent(){
+			dt = 0.1;
+			search_radius *= dt;
+			n_steps = 30;
+		}
+
 		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
 
 		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override
@@ -173,17 +185,19 @@ namespace utopia {
 			mesh_file = "../data/contact_2d.e";
 			search_radius = 0.05;
 			contact_flags = {{101, 102}};
-			dt = 0.025;
+			dt = 0.01;
 			n_steps = 100;
 		}
 
 		void set_up_m_coarse_t()
 		{
-			mesh_file = "../data/m_contact_2d.e";
+			// mesh_file = "../data/m_contact_2d.e";
+			mesh_file = "../data/m_contact_2d_ref.e";
 			search_radius = 0.01;
-			contact_flags = {{101, 102}, {103, 104}, {105, 106}};
+			// contact_flags = {{101, 102}, {103, 104}, {105, 106}};
+			contact_flags = {{102, 101}, {103, 104}, {105, 106}};
 			dt = 0.025;
-			n_steps = 90;
+			n_steps = 100;
 		}
 
 
@@ -219,7 +233,9 @@ namespace utopia {
 		
 		// auto e_problem = make_shared<ExampleProblem3D>();
 		// auto e_problem = make_shared<QuasiHertz>();
-		// auto e_problem = make_shared<QuasiSignorini>(); e_problem->set_up_middle_res();
+		// auto e_problem = make_shared<QuasiSignorini>(); 
+		// e_problem->set_up_adaptive();
+		// e_problem->set_up_time_dependent();
 		//---------------------------------------------------
 		
 		mesh->read(e_problem->mesh_file);

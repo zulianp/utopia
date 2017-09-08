@@ -2305,6 +2305,58 @@ public:
 		}
 	}
 
+	template<class TrialFunction, 
+	class TestFunction, 
+	int NTrial,
+	int NTest,
+	class BilinearForm>
+	void assemble(
+		VectorFE<TrialFunction, NTrial> &trial, 
+		VectorFE<TestFunction, NTest>  &test, 
+		const Integral<BilinearForm> &bilinear_form,
+		DSMatrixd &mat,
+		const bool apply_constraints)
+	{
+		using namespace libMesh;
+		LibMeshBackend backend;
+
+		assert(!apply_constraints);
+
+		auto e_begin = test.get(0).mesh().active_local_elements_begin();
+		auto e_end   = test.get(0).mesh().active_local_elements_end();
+
+		std::vector<dof_id_type> dof_indices_trial;
+		std::vector<dof_id_type> dof_indices_test;
+
+		const SizeType local_rows = test.get(0).dof_map().n_local_dofs();
+		const SizeType local_cols = trial.get(0).dof_map().n_local_dofs();
+		mat = local_sparse(local_rows, local_cols, 30);
+
+		Write<DSMatrixd> w_m(mat);
+
+		DenseMatrix<Real> el_mat;
+		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+			for(int i = 0; i < NTrial; ++i) {
+				trial.get(i).set_element(**e_it);
+			}
+
+			for(int i = 0; i < NTest; ++i) {
+				test.get(i).set_element(**e_it);
+			}
+
+			backend.assemble(bilinear_form, el_mat);
+
+
+			dof_indices_test.clear();
+			dof_indices_trial.clear();
+
+			collect_indices(*e_it, trial, dof_indices_trial);
+			collect_indices(*e_it, test,  dof_indices_test);
+
+			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
+		}
+	}
+
 
 	inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, DVectord &utopia_vec)
 	{

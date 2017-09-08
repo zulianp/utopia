@@ -81,6 +81,7 @@ namespace utopia {
 		color_rgb("255, 0, 0"), 
 		shader("Color Shader"),
 		mode("facesWithFrames"),
+		// mode("faces"),
 		is_polygon(false)
 		{}
 
@@ -143,7 +144,7 @@ namespace utopia {
 		Header h;
 		h.is_polygon = true;
 		h.type 		 = "lines";
-		h.name       = "polygon/" + name;
+		h.name       =  name;
 		h.color_rgb  = "0, 0, 0";
 
 		aux_plot(h, dims, n_points, points);
@@ -165,7 +166,7 @@ namespace utopia {
 		Header h;
 		h.is_polygon = false;
 		h.type 		 = "points";
-		h.name       = "points/" + name;
+		h.name       = name;
 		h.color_rgb  = "164, 174, 0";
 
 		aux_plot(h, dims, n_points, points);
@@ -197,7 +198,7 @@ namespace utopia {
 		Header h;
 		h.is_polygon = false;
 		h.type 		 = "lines";
-		h.name       = "quiver/" + name;
+		h.name       =  name;
 		h.color_rgb  = "0, 0, 255";
 
 		std::stringstream os;
@@ -290,7 +291,7 @@ namespace utopia {
 		Header h;
 		h.is_polygon = false;
 		h.type 		 = "mesh_json";
-		h.name       = "mesh/" + name;
+		h.name       = name;
 		h.color_rgb  = "0, 0, 0";
 		h.shader     =  shader;
 

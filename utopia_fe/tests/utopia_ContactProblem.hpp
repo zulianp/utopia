@@ -53,6 +53,7 @@ namespace utopia {
 		std::vector< std::pair<int, int> > contact_pair_tags;
 
 		moonolith::Communicator comm;
+		std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > linear_solver;
 
 		int iteration;
 
