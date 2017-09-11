@@ -56,6 +56,7 @@ namespace utopia {
 		std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > linear_solver;
 
 		int iteration;
+		bool verbose;
 
 		class ElasticityBoundaryConditions {
 		public:
@@ -78,6 +79,7 @@ namespace utopia {
 
 		void save(const std::string &output_dir = ".");
 
+		ContactProblem();
 	private:
 
 		void init_discretization();

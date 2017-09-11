@@ -857,9 +857,10 @@ public:
 		std::cout << dof_map.n_constrained_dofs() << std::endl;
 		std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
 
-		if( u.dof_map().constraint_rows_begin() == u.dof_map().constraint_rows_end()) {
+		const bool has_constaints = u.dof_map().constraint_rows_begin() != u.dof_map().constraint_rows_end();
+		if(!has_constaints) {
 			std::cerr << "[Warning] no boundary conditions to apply\n" << std::endl;
-			return;
+			// return;
 		}
 
 		libMesh::DofConstraintValueMap &rhs_values = u.dof_map().get_primal_constraint_values();
@@ -871,7 +872,7 @@ public:
 			Write<Matrix> w_t(temp);
 
 			each_read(mat, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
-				if(u.dof_map().is_constrained_dof(i)) {
+				if(has_constaints && u.dof_map().is_constrained_dof(i)) {
 					temp.set(i, j, i == j);
 				} 
 			});
@@ -886,7 +887,7 @@ public:
 
 			Range r = range(vec);
 			for(SizeType i = r.begin(); i < r.end(); ++i) {
-				if(u.dof_map().is_constrained_dof(i)) {					     
+				if(has_constaints && u.dof_map().is_constrained_dof(i)) {					     
 					auto valpos = rhs_values.find(i);
 					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
 				}
@@ -904,16 +905,18 @@ public:
 		std::cout << dof_map.n_constrained_dofs() << std::endl;
 		std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
 
+		bool has_constaints = true;
 		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
-			std::cerr << "[Warning] no boundary conditions to apply\n" << std::endl;
-			return;
+			std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
+			has_constaints = false;
+			// return;
 		}
 
 		{
 			Write<Vector> w_v(vec);
 			Range r = range(vec);
 			for(SizeType i = r.begin(); i < r.end(); ++i) {
-				if(dof_map.is_constrained_dof(i)) {					     
+				if(has_constaints && dof_map.is_constrained_dof(i)) {					     
 					vec.set(i, 0.0);
 				}
 			}
@@ -2333,6 +2336,53 @@ public:
 		mat = local_sparse(local_rows, local_cols, 30);
 
 		Write<DSMatrixd> w_m(mat);
+
+		DenseMatrix<Real> el_mat;
+		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+			for(int i = 0; i < NTrial; ++i) {
+				trial.get(i).set_element(**e_it);
+			}
+
+			for(int i = 0; i < NTest; ++i) {
+				test.get(i).set_element(**e_it);
+			}
+
+			backend.assemble(bilinear_form, el_mat);
+
+
+			dof_indices_test.clear();
+			dof_indices_trial.clear();
+
+			collect_indices(*e_it, trial, dof_indices_trial);
+			collect_indices(*e_it, test,  dof_indices_test);
+
+			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
+		}
+	}
+
+	template<class TrialFunction, 
+	class TestFunction, 
+	int NTrial,
+	int NTest,
+	class BilinearForm,
+	typename T>
+	void assemble_no_constraints(
+		VectorFE<TrialFunction, NTrial> &trial, 
+		VectorFE<TestFunction, NTest>  &test, 
+		const Integral<BilinearForm> &bilinear_form,
+		libMesh::SparseMatrix<T> &mat)
+	{
+		using namespace libMesh;
+		LibMeshBackend backend;
+
+		auto e_begin = test.get(0).mesh().active_local_elements_begin();
+		auto e_end   = test.get(0).mesh().active_local_elements_end();
+
+		std::vector<dof_id_type> dof_indices_trial;
+		std::vector<dof_id_type> dof_indices_test;
+
+		const SizeType local_rows = test.get(0).dof_map().n_local_dofs();
+		const SizeType local_cols = trial.get(0).dof_map().n_local_dofs();
 
 		DenseMatrix<Real> el_mat;
 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
