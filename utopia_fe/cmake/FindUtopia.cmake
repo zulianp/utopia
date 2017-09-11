@@ -20,8 +20,8 @@ include(FindPackageHandleStandardArgs)
 find_path(UTOPIA_INCLUDES
   NAMES "utopia.hpp"
   HINTS 
-      $ENV{UTOPIA_DIR}
       ${UTOPIA_DIR}
+      $ENV{UTOPIA_DIR}
       $ENV{MOONOLITH_ROOT}/utopia/build
   PATH_SUFFIXES include  
   NO_DEFAULT_PATH)
@@ -30,9 +30,10 @@ find_path(UTOPIA_INCLUDES
 find_library(UTOPIA_LIBRARIES
  NAMES utopia
  HINTS 
-     $ENV{UTOPIA_DIR}
      ${UTOPIA_DIR}
      ${UTOPIA_INCLUDES}/..
+     $ENV{UTOPIA_DIR}
+  
      PATH_SUFFIXES lib 
  NO_DEFAULT_PATH)
 

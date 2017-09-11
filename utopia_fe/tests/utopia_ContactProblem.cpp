@@ -91,7 +91,7 @@ namespace utopia {
 
 
 		context.system.attach_assemble_object(ass);
-		context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
+		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
 
 		convert( *context.system.matrix, stiffness_matrix);
