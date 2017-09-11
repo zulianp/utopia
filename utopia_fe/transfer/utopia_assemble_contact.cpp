@@ -584,7 +584,7 @@ namespace utopia {
 		
 		const auto &mesh = master_slave;
 		
-		const int n_elements = mesh->n_elem();
+		const int n_elements = mesh->n_active_local_elem();
 		
 		const Parallel::Communicator &libmesh_comm_mesh = master_slave->comm();
 		

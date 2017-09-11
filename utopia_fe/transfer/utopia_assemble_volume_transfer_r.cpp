@@ -393,8 +393,8 @@ namespace utopia {
                 
         const auto &master_mesh = master;
         const auto &slave_mesh  = slave;
-        const int n_elements_master = master_mesh->n_elem();
-        const int n_elements_slave  = slave_mesh->n_elem();
+        const int n_elements_master = master_mesh->n_active_local_elem();
+        const int n_elements_slave  = slave_mesh->n_active_local_elem();
         const int n_elements 		= n_elements_master + n_elements_slave;
         
         
