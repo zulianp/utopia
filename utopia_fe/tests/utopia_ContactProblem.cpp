@@ -57,7 +57,7 @@ namespace utopia {
 		LibMeshFEContext<SystemType> &context,
 		DSMatrixd &mass_matrix)
 	{
-		std::cout << "Contact problem: assembling mass matrix" << std::endl;
+		std::cout << "Contact problem: assembling mass matrix..." << std::flush;
 		
 		const int dim = u.size();
 		auto b_form = integral(dot(u, u));
@@ -76,8 +76,8 @@ namespace utopia {
 		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
 
-		std::cout << "done: (" << t << " seconds)" << std::endl; 
 		convert( *context.system.matrix, mass_matrix);
+		std::cout << "done: (" << t << " seconds)" << std::endl; 
 	}
 
 	template<class U, class SystemType>
@@ -113,12 +113,12 @@ namespace utopia {
 		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
 
-		std::cout << "done: (" << t << " seconds)" << std::endl; 
-		
 		convert( *context.system.matrix, stiffness_matrix);
 		convert( *context.system.rhs, force);
 
 		apply_boundary_conditions(u.get(0), stiffness_matrix, force);
+
+		std::cout << "done: (" << t << " seconds)" << std::endl; 
 	}
 
 	void ContactProblem::init_material_2d()
@@ -136,7 +136,7 @@ namespace utopia {
 		ux.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		
-		assemble_elasticity(u, *context_ptr, stiffness_matrix, force);
+		assemble_elasticity(u,  *context_ptr, stiffness_matrix, force);
 		assemble_mass_matrix(u, *context_ptr, mass_matrix);
 	}
 
@@ -157,7 +157,7 @@ namespace utopia {
 		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		uz.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 
-		assemble_elasticity(u, *context_ptr, stiffness_matrix, force);
+		assemble_elasticity(u,  *context_ptr, stiffness_matrix, force);
 		assemble_mass_matrix(u, *context_ptr, mass_matrix);
 	}
 
@@ -178,8 +178,7 @@ namespace utopia {
 		old_acceleration = local_zeros(local_size(force));
 
 		internal_force = local_zeros(local_size(force));
-		total_displacement =  local_zeros(local_size(force));
-		
+		total_displacement =  local_zeros(local_size(force));	
 	}
 
 	void ContactProblem::compute_contact_conditions()
