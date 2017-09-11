@@ -28,7 +28,6 @@ namespace utopia {
 		double search_radius
 		)
 	{
-		
 		if(verbose) std::cout << "Contact problem: initializing" << std::endl;
 
 		this->bc_ptr = bc_ptr;
@@ -61,26 +60,15 @@ namespace utopia {
 		std::cout << "Contact problem: assembling mass matrix" << std::endl;
 		
 		const int dim = u.size();
-
-		double mu = 10., lambda = 10.;
-		// auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
-		// auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
 		auto b_form = integral(dot(u, u));
 		
 		long n_local_dofs = u.get(0).dof_map().n_local_dofs();
-		// mass_matrix = local_sparse(n_local_dofs, n_local_dofs, 20);
-		// assemble(u, u, b_form, mass_matrix, false);
 
 		double t = 0.0;
 		auto ass = make_assembly([&]() -> void {
 			t = MPI_Wtime();
-
-			// assemble(u, u, b_form, l_form, *context.system.matrix, *context.system.rhs, false);
-
 			assemble_no_constraints(u, u, b_form, *context.system.matrix);
-
 			t = MPI_Wtime() - t;
-
 
 		});
 
@@ -88,10 +76,7 @@ namespace utopia {
 		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
 
-
 		std::cout << "done: (" << t << " seconds)" << std::endl; 
-		
-
 		convert( *context.system.matrix, mass_matrix);
 	}
 
@@ -110,7 +95,6 @@ namespace utopia {
 		double mu = 0.2, lambda = 0.2;
 		auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
 		auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
-		// auto b_form = integral(dot(grad(u), grad(u)));
 
 		DenseVector<Real> vec(dim);
 		vec.zero();
@@ -125,17 +109,12 @@ namespace utopia {
 			t = MPI_Wtime() - t;
 		});
 
-
-
 		context.system.attach_assemble_object(ass);
 		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
 
-
-
 		std::cout << "done: (" << t << " seconds)" << std::endl; 
 		
-
 		convert( *context.system.matrix, stiffness_matrix);
 		convert( *context.system.rhs, force);
 
@@ -376,7 +355,7 @@ namespace utopia {
 		auto m_end = mesh->local_nodes_end();
 
 
-		for(; m_it != m_end; ++m_it) { //, ++d_it)
+		for(; m_it != m_end; ++m_it) { 
 			for(unsigned int c = 0; c < mesh->mesh_dimension(); ++c) {
 				const int dof_id = (*m_it)->dof_number(sys_num, c, 0);
 				(**m_it)(c) += displacement.get(dof_id);
