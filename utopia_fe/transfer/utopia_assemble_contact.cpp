@@ -1390,7 +1390,7 @@ namespace utopia {
 						  const bool use_volume_differential)
 	{
 		moonolith::SearchSettings settings;
-		// settings.verbosity_level = 3;
+		settings.verbosity_level = 2;
 
 		if(mesh->mesh_dimension() == 2) {
 			return utopia::SurfaceAssemble<2>(comm, mesh, dof_map, var_num, B,  orthogonal_trafos, gap, normals, is_contact_node, settings, search_radius, tags, use_biorth, use_volume_differential);

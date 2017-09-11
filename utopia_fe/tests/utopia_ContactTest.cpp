@@ -1,6 +1,4 @@
 #include "utopia_ContactTest.hpp"
-#include "utopia_assemble_contact.hpp"
-
 
 #include "utopia.hpp"
 
@@ -9,23 +7,26 @@
 #include "MortarAssembler.hpp"
 #include "ParMortarAssembler.hpp"
 #include "utopia_Socket.hpp"
+#include "utopia_ContactSimParams.hpp"
+#include "utopia_Polygon.hpp"
+#include "utopia_NormalTangentialCoordinateSystem.hpp"
+#include "utopia_ContactProblem.hpp"
+#include "utopia_assemble_contact.hpp"
 
+#include "moonolith_profiler.hpp"
+
+#include <libmesh/mesh.h>
 #include <libmesh/const_function.h>
 #include <libmesh/petsc_vector.h>
 #include <libmesh/petsc_matrix.h>
 #include <libmesh/mesh_modification.h>
-
-#include "utopia_ContactSimParams.hpp"
+#include <libmesh/parallel_mesh.h>
 #include "libmesh/linear_partitioner.h"
 #include "LibmeshContactForMoose.hpp"
 #include "LibmeshTransferForMoose.hpp"
 #include "LibmeshTransferForMooseReverse.hpp"
+#include <libmesh/mesh_base.h>
 
-#include "utopia_Polygon.hpp"
-#include "utopia_NormalTangentialCoordinateSystem.hpp"
-
-#include "moonolith_profiler.hpp"
-#include "utopia_ContactProblem.hpp"
 
 #include <iostream>
 
@@ -244,7 +245,11 @@ namespace utopia {
 		//---------------------------------------------------
 		
 		std::cout << "reading mesh...." << std::flush;
+		// mesh->set_distributed();
 		mesh->read(e_problem->mesh_file);
+		// std::cout << "is_replicated: " << mesh->is_replicated() << std::endl;
+		mesh->delete_remote_elements();
+		
 		std::cout << "done" << std::endl;
 
 		p.init(init, mesh, e_problem, e_problem->contact_flags, e_problem->search_radius);

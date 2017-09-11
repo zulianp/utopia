@@ -22,7 +22,7 @@ namespace utopia {
 
 	void ContactProblem::init(
 		const libMesh::LibMeshInit &init, 
-		const std::shared_ptr<Mesh> &mesh,
+		const std::shared_ptr<MeshBase> &mesh,
 		const std::shared_ptr< ElasticityBoundaryConditions > &bc_ptr,
 		std::vector< std::pair<int, int> > contact_pair_tags,
 		double search_radius

@@ -17,7 +17,7 @@ namespace utopia {
 
 		//discretization
 		FEContextPtr context_ptr;
-		std::shared_ptr<libMesh::Mesh> mesh;
+		std::shared_ptr<libMesh::MeshBase> mesh;
 		// std::shared_ptr<libMesh::MeshBase> displaced_mesh;
 		std::vector<FESpacePtr> spaces;
 
@@ -71,7 +71,7 @@ namespace utopia {
 
 		void init(
 			const libMesh::LibMeshInit &init, 
-			const std::shared_ptr<libMesh::Mesh> &mesh,
+			const std::shared_ptr<libMesh::MeshBase> &mesh,
 			const std::shared_ptr< ElasticityBoundaryConditions > &bc_ptr,
 			std::vector< std::pair<int, int> > contact_pair_tags,
 			double search_radius
