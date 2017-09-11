@@ -49,7 +49,7 @@ namespace utopia {
             
             original_dof_map->dof_indices(elem, temp, var_num);
             
-            dof_map[elem->id()].global.insert(dof_map[local_element_id].global.end(), temp.begin(), temp.end());
+            dof_map[local_element_id].global.insert(dof_map[local_element_id].global.end(), temp.begin(), temp.end());
             
             if (first) {
                 variable_type[0].global.push_back(elem->type());

@@ -259,9 +259,7 @@ template<class Iterator>
     }
 
 
-
-
-template<class Iterator>
+    template<class Iterator>
     static void write_element_selection(
         const Iterator &begin, 
         const Iterator &end, 
@@ -277,8 +275,8 @@ template<class Iterator>
         auto m = spaces.spaces()[0];
         std::shared_ptr<libMesh::MeshBase> s = nullptr;
 
-        if(spaces.spaces().size()>1) {
-            s=spaces.spaces()[1];
+        if(spaces.spaces().size() > 1) {
+            s = spaces.spaces()[1];
         }
 
         std::vector<long> master_selection;
@@ -286,34 +284,28 @@ template<class Iterator>
 
         bool met_slave_selection = false;
 
+        const libMesh::dof_id_type n_elem = spaces.handle_to_element_id(0).size();
 
         for(Iterator it = begin; it != end; ++it) {
-            int index =*it;
+            int index = *it;
 
-            if(m && index >= m->n_active_local_elem()) {
-                index -= m->n_active_local_elem();
+            if(m && index >= n_elem) {
+                index -= n_elem;
                 slave_selection.push_back(index);
-            }
-
-            else if(!m) {
+            } else if(!m) {
                 met_slave_selection = true;
                 slave_selection.push_back(index);
-            }
-
-            else {
+            } else {
                 assert(!met_slave_selection);
-                assert(index < m->n_active_local_elem());
+                assert(index < n_elem);
                 master_selection.push_back(index);
             }
         }
-
-
 
         const bool has_master = !master_selection.empty();
         const bool has_slave  = !slave_selection.empty();
 
         os << has_master << has_slave;
-
 
         if(has_master) {
             write_space(
@@ -338,7 +330,6 @@ template<class Iterator>
                 1, 
                 os);
         }
-
     }
 
     static void read_space(

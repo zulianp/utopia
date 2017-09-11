@@ -1,6 +1,7 @@
 #include "utopia_Instance.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Log.hpp"
+#include "utopia_Config.hpp"
 
 #ifdef WITH_PETSC
 
