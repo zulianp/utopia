@@ -6,6 +6,8 @@
 #include "libmesh/serial_mesh.h"
 #include "libmesh/dof_map.h"
 
+#include <vector>
+
 namespace libMesh {
 	class MeshBase;
 	class DofMap;
@@ -22,7 +24,8 @@ namespace utopia {
                                     const std::shared_ptr<libMesh::DofMap>  &original_dof_map,
                                     const unsigned int  &var_num,
                                     std::vector<ElementDofMap> &dof_map,
-                                    std::vector<ElementDofMap> &variable_type, const int n_elements);
+                                    std::vector<ElementDofMap> &variable_type, 
+                                    std::vector<libMesh::dof_id_type> &handle_two_element_id);
         
     static void copy_var_order(libMesh::DofMap &dofmap, std::vector<ElementDofMap> &variable_order);
     };

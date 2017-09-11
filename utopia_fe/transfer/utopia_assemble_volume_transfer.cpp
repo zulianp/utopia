@@ -5,7 +5,7 @@
 #include "libmesh/transient_system.h"
 #include "libmesh/fe.h"
 #include "libmesh/serial_mesh.h"
-#include "libmesh/serial_mesh.h"
+
 
 #include "Box.hpp"
 #include "utopia_fe_core.hpp"
@@ -44,302 +44,7 @@ namespace utopia {
     }
 
     
-    template<class Iterator>
-    static void write_space(const Iterator &begin, const Iterator &end,MeshBase &space,
-                            const std::vector<ElementDofMap> &dof_map,/* const std::vector<ElementDofMap> &variable_number,*/
-                            const std::vector<ElementDofMap> &variable_order,const int role, moonolith::OutputStream &os)
-    {
-        const int dim 		  = space.mesh_dimension();
-        const long n_elements = std::distance(begin, end);
-        
-        std::set<long> nodeIds;
-        std::map<long, long> mapping;
-   
-        for(Iterator it = begin; it != end; ++it) {
-            
-            const Elem *elem = space.elem(*it);
-            
-            for(dof_id_type j = 0; j != elem->n_nodes(); ++j) {
-                
-                nodeIds.insert(elem->node(j));
-            }
-            
-        }
-        
-        long n_nodes = nodeIds.size();
-        
-        // Estimate for allocation
-        os.request_space( (n_elements * 8 + n_nodes * dim) * (sizeof(double) + sizeof(long)) );
-        
-        //WRITE 1
-        os << dim << role;
-        
-        
-        int index = 0;
-        for (auto nodeId : nodeIds) {
-            mapping[nodeId] = index++;
-        }
-        
-        //WRITE 2
-        os << n_nodes;
-        
-        //WRITE 6
-        os << n_elements;
-        
-        for(auto node_id : nodeIds){
-            
-            const Point &p = space.node(node_id);
-            
-            for(int i = 0; i < dim; ++i) {
-                
-                //WRITE 3
-                os << p(i);
-                
-            }
-            
-            //std::cout<<"write_point"<<p<<std::endl;
-            
-        }
-        
-        std::vector<dof_id_type> indices_vector;
-        
-        CHECK_STREAM_WRITE_BEGIN("elements", os);
-        
-        for(Iterator it = begin; it != end; ++it) {
-            
-            const int k = *it;
-            
-            const Elem *elem = space.elem(*it);
-            
-            const int e_n_nodes = elem->n_nodes();
-            
-            const int type = elem->type();
-            
-            //WRITE 7
-            os << type << e_n_nodes;
-            
-            
-            
-            for (int i = 0; i != e_n_nodes; ++i) {
-                
-                auto it = mapping.find(elem->node(i));
-                
-                assert(it != mapping.end());
-                
-                int index = it->second;
-                
-                //WRITE 8
-                os << index;
-                
-            }
-            
-            //WRITE 9
-            assert(!dof_map.at(elem->id()).empty());
-            
-            os << dof_map.at(elem->id());
-            
-            
-            
-        }
-        
-        CHECK_STREAM_WRITE_END("elements", os);
-        
-        //WRITE 10
-        //        os << variable_number.at(0);
-        
-        //WRITE 11
-        os << variable_order.at(0);
-        
-        
-        
-    }
     
-    
-    
-    
-    template<class Iterator>
-    static void write_element_selection(const Iterator &begin, const Iterator &end, const FESpacesAdapter &spaces, moonolith::OutputStream &os)
-    {
-        
-        if(spaces.spaces().empty()){
-            assert(false);
-            return;
-        }
-        
-        auto m = spaces.spaces()[0];
-        std::shared_ptr<MeshBase> s = nullptr;
-        
-        if(spaces.spaces().size()>1) {
-            s=spaces.spaces()[1];
-        }
-        
-        std::vector<long> master_selection;
-        std::vector<long> slave_selection;
-        
-        bool met_slave_selection = false;
-        
-       
-        for(Iterator it = begin; it != end; ++it) {
-            int index =*it;
-            
-            if(m && index >= m->n_elem()) {
-                index -= m->n_elem();
-                slave_selection.push_back(index);
-            }
-            
-            else if(!m) {
-                met_slave_selection = true;
-                slave_selection.push_back(index);
-            }
-            
-            else {
-                assert(!met_slave_selection);
-                assert(index < m->n_elem());
-                master_selection.push_back(index);
-            }
-        }
-        
-        
-        
-        const bool has_master = !master_selection.empty();
-        const bool has_slave  = !slave_selection.empty();
-        
-        os << has_master << has_slave;
-        
-        
-        if(has_master) {
-            write_space(master_selection.begin(), master_selection.end(), *m, spaces.dof_map(0),
-                        /*spaces.variable_number(0),*/ spaces.variable_order(0), 0, os);
-        }
-        
-        if(has_slave) {
-            write_space(slave_selection.begin(), slave_selection.end(), *s, spaces.dof_map(1),
-                        /*spaces.variable_number(1),*/ spaces.variable_order(1), 1, os);
-        }
-        
-    }
-
-    static void read_space(moonolith::InputStream &is, std::shared_ptr<MeshBase> & space,
-                           std::vector<ElementDofMap> &dof_map, /*std::vector<ElementDofMap> &variable_number,*/
-                           std::vector<ElementDofMap> &variable_order, const libMesh::Parallel::Communicator &comm)
-    {
-     
-        using namespace std;
-        
-        
-        
-        //READ 1
-        int dim, role;
-        is >> dim >> role;
-        
-        //READ 2
-        long n_nodes;
-        is >> n_nodes;
-        
-        //READ 6
-        long n_elements;
-        is >> n_elements;
-        
-        auto mesh_ptr = std::make_shared<SerialMesh>(comm, dim);
-        
-        mesh_ptr->reserve_nodes(n_nodes);
-        
-        for (long iii = 0; iii != n_nodes; ++iii) {
-            
-            Point p;
-            
-            for(int j = 0; j < dim; ++j) {
-                //READ 3
-                is >> p(j);
-            }
-            
-            mesh_ptr->add_point(p);        
-        }
-        
-        dof_map.resize(n_elements);
-        
-        
-        CHECK_STREAM_READ_BEGIN("elements", is);
-        
-        for(long i = 0; i !=n_elements; ++i) {
-            
-            //READ 7
-            
-            int type, e_n_nodes;
-            
-            is >> type >> e_n_nodes;
-            
-            auto elem = Elem::build(ElemType(type)).release();
-            
-            
-            int index;
-            
-            for (int ii = 0; ii != e_n_nodes; ++ii) {
-                
-                //READ 8
-                is >> index;
-                
-                elem->set_node(ii) = & mesh_ptr->node(index);
-                
-            }
-            
-            //READ 9
-            is >> dof_map.at(i);
-            
-            mesh_ptr->add_elem(elem);
-            
-            libmesh_assert(elem);
-    
-        }
-        
-        CHECK_STREAM_READ_END("elements", is);
-        
-        //READ 10
-        //  variable_number.resize(1);
-        //  is >> variable_number.at(0);
-        
-        //READ 11
-        variable_order.resize(1);
-        is >> variable_order.at(0);
-        
-        
-        //!!!! dummy parameters
-    
-        space = mesh_ptr;
-        
-    }
-    
-    static void read_spaces(moonolith::InputStream &is, FESpacesAdapter &spaces, const libMesh::Parallel::Communicator &comm_master, const libMesh::Parallel::Communicator &comm_slave)
-    {
-
-        
-        bool has_master, has_slave;
-        is >> has_master >> has_slave;
-        
-        spaces.spaces().resize(2);
-        
-        
-        if(has_master) {
-            read_space(is, spaces.spaces()[0], spaces.dof_map(0),
-                       /* spaces.variable_number(0),*/spaces.variable_order(0), comm_master);
-            spaces.set_must_destroy_attached(0,true);
-        } else {
-            spaces.spaces()[0] = nullptr;
-            
-        }
-        
-        if(has_slave) {
-            read_space(is, spaces.spaces()[1], spaces.dof_map(1),
-                       /*spaces.variable_number(1),*/spaces.variable_order(1),comm_slave);
-            spaces.set_must_destroy_attached(1,true);
-        } else {
-            spaces.spaces()[1] = nullptr;
-            
-        }
-        
-        
-        
-    }
     
     template<int Dimensions, class Fun>
     static bool Assemble(moonolith::Communicator &comm,
@@ -395,18 +100,18 @@ namespace utopia {
             if(s) {
                 
                 bool first = true;
-                for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it) {
+
+                libMesh::dof_id_type local_element_id = 0;
+                for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
                     auto elem=*it;
-                    Adapter a(*s, elem->id(), offset+elem->id(), space_num);
-                    assert(!local_spaces->dof_map(space_num)[elem->id()].empty());
-                    a.set_dof_map(&local_spaces->dof_map(space_num)[elem->id()].global);
+                    Adapter a(*s, elem->id(), offset+local_element_id, space_num);
+                    assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
+                    a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
                     tree->insert(a);
                 }
                 
-                offset += s->n_elem(); //s->mesh().n_active_local_elem();//(*s->mesh().active_local_elements_end())->id();
-                
+                offset += s->n_active_local_elem(); 
             }
-            
             
             ++space_num;
             
@@ -430,8 +135,6 @@ namespace utopia {
          bool is_forwarding, DataContainer &data,
          InputStream &in
          ) {
-            
-        
             CHECK_STREAM_READ_BEGIN("vol_proj", in);
             
             std::shared_ptr<FESpacesAdapter> proc_space = std::make_shared<FESpacesAdapter>(comm);
@@ -452,6 +155,7 @@ namespace utopia {
             long offset = 0;
             for(auto s : proc_space->spaces()) {
                 if(s) {
+                    //ID_FIX this should be fine n_elem is actually local sence the mesh is a SerialMesh
                     for (int i=0; i<s->n_elem(); i++) {
                         data.push_back(Adapter(*s, i, offset + i, space_num) );
                         assert(!proc_space->dof_map(space_num)[i].empty());
@@ -465,13 +169,8 @@ namespace utopia {
                 ++space_num;
                 
             }
-            
-            
-           
-            CHECK_STREAM_READ_END("vol_proj", in);
-            
-            
-            
+        
+            CHECK_STREAM_READ_END("vol_proj", in);    
         };
         
         
