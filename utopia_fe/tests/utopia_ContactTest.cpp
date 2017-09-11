@@ -131,7 +131,7 @@ namespace utopia {
 			top_boundary_tag = 2;
 			bottom_boundar_tag = 4;
 			contact_flags = {{3, 1}};
-			search_radius = 0.4;
+			search_radius = 0.2;
 			double dt = 1.;
 			n_steps = 1;
 		}
