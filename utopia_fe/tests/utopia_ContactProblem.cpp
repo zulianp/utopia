@@ -59,6 +59,7 @@ namespace utopia {
 		DSMatrixd &mass_matrix)
 	{
 		std::cout << "Contact problem: assembling mass matrix" << std::endl;
+		
 		const int dim = u.size();
 
 		double mu = 10., lambda = 10.;
@@ -70,9 +71,9 @@ namespace utopia {
 		// mass_matrix = local_sparse(n_local_dofs, n_local_dofs, 20);
 		// assemble(u, u, b_form, mass_matrix, false);
 
-
+		double t = 0.0;
 		auto ass = make_assembly([&]() -> void {
-			double t = MPI_Wtime();
+			t = MPI_Wtime();
 
 			// assemble(u, u, b_form, l_form, *context.system.matrix, *context.system.rhs, false);
 
@@ -80,14 +81,16 @@ namespace utopia {
 
 			t = MPI_Wtime() - t;
 
-			printf("--------------------------------\n");
-			printf("Assembly: %g seconds\n", t);
-			printf("--------------------------------\n");
+
 		});
 
 		context.system.attach_assemble_object(ass);
 		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
+
+
+		std::cout << "done: (" << t << " seconds)" << std::endl; 
+		
 
 		convert( *context.system.matrix, mass_matrix);
 	}
@@ -100,7 +103,8 @@ namespace utopia {
 		DVectord &force
 		)
 	{
-		std::cout << "Contact problem: assembling stiffness matrix" << std::endl;
+		std::cout << "Contact problem: assembling stiffness matrix..." << std::flush;
+		
 		const int dim = u.size();
 
 		double mu = 0.2, lambda = 0.2;
@@ -114,16 +118,11 @@ namespace utopia {
 		auto f 	    = vec_coeff(vec);
 		auto l_form = integral(dot(f, u));
 
+		double t = 0.;
 		auto ass = make_assembly([&]() -> void {
-			double t = MPI_Wtime();
-
+			t = MPI_Wtime();
 			assemble(u, u, b_form, l_form, *context.system.matrix, *context.system.rhs, false);
-
 			t = MPI_Wtime() - t;
-
-			printf("--------------------------------\n");
-			printf("Assembly: %g seconds\n", t);
-			printf("--------------------------------\n");
 		});
 
 
@@ -131,6 +130,11 @@ namespace utopia {
 		context.system.attach_assemble_object(ass);
 		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
+
+
+
+		std::cout << "done: (" << t << " seconds)" << std::endl; 
+		
 
 		convert( *context.system.matrix, stiffness_matrix);
 		convert( *context.system.rhs, force);
@@ -141,7 +145,7 @@ namespace utopia {
 	void ContactProblem::init_material_2d()
 	{
 		const int dim = 2;
-		std::cout << "assmebling 2d problem" << std::endl;
+		if(verbose) std::cout << "assmebling 2d problem" << std::endl;
 
 		auto ux = fe_function(*spaces[0]);
 		auto uy = fe_function(*spaces[1]);
@@ -160,7 +164,7 @@ namespace utopia {
 	void ContactProblem::init_material_3d()
 	{
 		const int dim = 3;
-		std::cout << "assmebling 3d problem" << std::endl;
+		if(verbose) std::cout << "assmebling 3d problem" << std::endl;
 
 		auto ux = fe_function(*spaces[0]);
 		auto uy = fe_function(*spaces[1]);
@@ -201,7 +205,10 @@ namespace utopia {
 
 	void ContactProblem::compute_contact_conditions()
 	{
-		if(verbose) std::cout << "Contact problem: compute_contact_conditions" << std::endl;
+		if(verbose) {
+			comm.barrier();
+			std::cout << "Contact problem: compute_contact_conditions" << std::endl;
+		}
 
 		unsigned int variable_number = 0;
 
@@ -286,11 +293,11 @@ namespace utopia {
 		DVectord sol_c = local_zeros(local_size(force));
 		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
 		DSMatrixd K_c  = transpose(orthogonal_trafo) *
-							DSMatrixd(
-								transpose(transfer_operator) * 
-								stiffness_matrix * 
-								transfer_operator) * 
-							orthogonal_trafo;
+		DSMatrixd(
+			transpose(transfer_operator) * 
+			stiffness_matrix * 
+			transfer_operator) * 
+		orthogonal_trafo;
 
 		//predictor step
 		//DVectord displacement_pred = displacement + dt * velocity;
@@ -404,7 +411,7 @@ namespace utopia {
 
 		convert(internal_force, *context_ptr->system.solution);
 		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/if_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-	
+		
 		convert(acceleration, *context_ptr->system.solution);
 		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/a_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 
