@@ -2,11 +2,23 @@
 #include "utopia_assemble_contact.hpp"
 #include "utopia_fe_core.hpp"
 #include "utopia_Socket.hpp"
+#include "libmesh/parameter_vector.h"
+#include "libmesh/parameter_accessor.h"
 
-using namespace std;
+#include <memory>
+
+//using namespace std;
+using std::make_shared;
+using std::shared_ptr;
+
 using namespace libMesh;
 
 namespace utopia {
+
+	ContactProblem::ContactProblem()
+	{
+		verbose = true;
+	}
 
 	void ContactProblem::init(
 		const libMesh::LibMeshInit &init, 
@@ -16,6 +28,9 @@ namespace utopia {
 		double search_radius
 		)
 	{
+		
+		if(verbose) std::cout << "Contact problem: initializing" << std::endl;
+
 		this->bc_ptr = bc_ptr;
 		this->contact_pair_tags = contact_pair_tags;
 		this->search_radius = search_radius;
@@ -43,6 +58,7 @@ namespace utopia {
 		LibMeshFEContext<SystemType> &context,
 		DSMatrixd &mass_matrix)
 	{
+		std::cout << "Contact problem: assembling mass matrix" << std::endl;
 		const int dim = u.size();
 
 		double mu = 10., lambda = 10.;
@@ -51,8 +67,29 @@ namespace utopia {
 		auto b_form = integral(dot(u, u));
 		
 		long n_local_dofs = u.get(0).dof_map().n_local_dofs();
-		mass_matrix = local_sparse(n_local_dofs, n_local_dofs, 20);
-		assemble(u, u, b_form, mass_matrix, false);
+		// mass_matrix = local_sparse(n_local_dofs, n_local_dofs, 20);
+		// assemble(u, u, b_form, mass_matrix, false);
+
+
+		auto ass = make_assembly([&]() -> void {
+			double t = MPI_Wtime();
+
+			// assemble(u, u, b_form, l_form, *context.system.matrix, *context.system.rhs, false);
+
+			assemble_no_constraints(u, u, b_form, *context.system.matrix);
+
+			t = MPI_Wtime() - t;
+
+			printf("--------------------------------\n");
+			printf("Assembly: %g seconds\n", t);
+			printf("--------------------------------\n");
+		});
+
+		context.system.attach_assemble_object(ass);
+		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
+		context.equation_systems.solve();
+
+		convert( *context.system.matrix, mass_matrix);
 	}
 
 	template<class U, class SystemType>
@@ -63,6 +100,7 @@ namespace utopia {
 		DVectord &force
 		)
 	{
+		std::cout << "Contact problem: assembling stiffness matrix" << std::endl;
 		const int dim = u.size();
 
 		double mu = 0.2, lambda = 0.2;
@@ -96,6 +134,7 @@ namespace utopia {
 
 		convert( *context.system.matrix, stiffness_matrix);
 		convert( *context.system.rhs, force);
+
 		apply_boundary_conditions(u.get(0), stiffness_matrix, force);
 	}
 
@@ -162,6 +201,7 @@ namespace utopia {
 
 	void ContactProblem::compute_contact_conditions()
 	{
+		if(verbose) std::cout << "Contact problem: compute_contact_conditions" << std::endl;
 
 		unsigned int variable_number = 0;
 
@@ -208,6 +248,9 @@ namespace utopia {
 
 	void ContactProblem::step(const double dt)
 	{
+
+		if(verbose) std::cout << "Contact problem: computing step" << std::endl;
+		
 		disp("n_dofs:");
 		disp(size(force));
 		const int dim = mesh->mesh_dimension();
@@ -312,6 +355,12 @@ namespace utopia {
 
 	void ContactProblem::apply_displacement(const DVectord &displacement)
 	{
+
+		if(!comm.is_alone()) {
+			std::cerr << "[Warning] apply_displacement not working in parallel" << std::endl;
+			return;
+		}
+
 		//FIXME
 		int sys_num = 0;
 		Read<DVectord> r_d(displacement);

@@ -146,6 +146,10 @@ namespace utopia {
 			mesh_file = "../data/half_sphere_with_plate.e";
 		}
 
+		void set_up_fine_res()
+		{
+			mesh_file = "../data/quasi_signorini_1928354.e";
+		}
 
 		void set_up_time_dependent(){
 			dt = 0.1;
@@ -228,23 +232,28 @@ namespace utopia {
 		ContactProblem p;
 			
 		//---------------------------------------------------
-		auto e_problem = make_shared<ExampleProblem2D>();
-		e_problem->set_up_m_coarse_t();
+		// auto e_problem = make_shared<ExampleProblem2D>();
+		// e_problem->set_up_m_coarse_t();
 		
 		// auto e_problem = make_shared<ExampleProblem3D>();
 		// auto e_problem = make_shared<QuasiHertz>();
-		// auto e_problem = make_shared<QuasiSignorini>(); 
+		auto e_problem = make_shared<QuasiSignorini>(); 
+		e_problem->set_up_fine_res();
 		// e_problem->set_up_adaptive();
 		// e_problem->set_up_time_dependent();
 		//---------------------------------------------------
 		
+		std::cout << "reading mesh...." << std::flush;
 		mesh->read(e_problem->mesh_file);
+		std::cout << "done" << std::endl;
+
 		p.init(init, mesh, e_problem, e_problem->contact_flags, e_problem->search_radius);
 		
 
 		double t = 0.0;
 		for(int i = 0; i < e_problem->n_steps; ++i) {
 			std::cout << "t: " << t << "/" << (e_problem->dt * e_problem->n_steps) << std::endl;
+			std::cout << std::flush;
 			t += e_problem->dt;
 			p.step();			
 		}
