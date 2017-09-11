@@ -2,8 +2,15 @@
 #include "utopia_assemble_contact.hpp"
 #include "utopia_fe_core.hpp"
 #include "utopia_Socket.hpp"
+#include "libmesh/parameter_vector.h"
+#include "libmesh/parameter_accessor.h"
 
-using namespace std;
+#include <memory>
+
+//using namespace std;
+using std::make_shared;
+using std::shared_ptr;
+
 using namespace libMesh;
 
 namespace utopia {
@@ -91,7 +98,7 @@ namespace utopia {
 
 
 		context.system.attach_assemble_object(ass);
-		context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
+		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
 
 		convert( *context.system.matrix, stiffness_matrix);
