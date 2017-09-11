@@ -281,276 +281,6 @@ namespace utopia {
 		}
 	}
 	
-	template<class Iterator>
-	static void write_space(
-							const Iterator &begin,
-							const Iterator &end,
-							MeshBase &space,
-							const std::vector<ElementDofMap> &dof_map,
-							const std::vector<long> &variable_number,
-							const std::vector<long> &variable_order,
-							const std::vector<ElementDofMap> &subdomain_id,
-							const std::vector<ElementDofMap> &side_set_id,
-							const std::vector<ElementDofMap> &face_set_id_global,
-							moonolith::OutputStream &os)
-	{
-		const int dim 		  = space.mesh_dimension();
-		const long n_elements = std::distance(begin, end);
-		
-		std::set<long> nodeIds;
-		std::map<long, long> mapping;
-		std::vector<dof_id_type> dof_array;
-		
-		for(Iterator it = begin; it != end; ++it) {
-			
-			const Elem *elem = space.elem(*it);
-			
-			for(dof_id_type j = 0; j != elem->n_nodes(); ++j) {
-				
-				nodeIds.insert(elem->node(j));
-				
-				
-			}
-		}
-		
-		long n_nodes = nodeIds.size();
-		
-		// Estimate for allocation
-		os.request_space( (n_elements * 8 + n_nodes * dim) * (sizeof(double) + sizeof(long)) );
-		
-		//WRITE 1
-		os << dim;
-		
-		int index = 0;
-		for (auto nodeId : nodeIds) {
-			mapping[nodeId] = index++;
-		}
-		
-		//WRITE 2
-		os << n_nodes;
-		
-		//WRITE 6
-		os << n_elements;
-		
-		for(auto node_id : nodeIds){
-			
-			const Point &p = space.node(node_id);
-			
-			for(int i = 0; i < dim; ++i) {
-				
-				//WRITE 3
-				os << p(i);
-				
-			}
-		}
-		
-		std::vector<dof_id_type> indices_vector;
-		
-		
-		
-		for(Iterator it = begin; it != end; ++it) {
-			
-			//			const int k = *it;
-			
-			const Elem *elem = space.elem(*it);
-			
-			const int e_n_nodes = elem->n_nodes();
-			
-			const int type = elem->type();
-			
-			//WRITE 7
-			os << type << e_n_nodes;
-			
-			
-			
-			for (int i = 0; i != e_n_nodes; ++i) {
-				
-				auto it = mapping.find(elem->node(i));
-				
-				assert(it != mapping.end());
-				
-				int index = it->second;
-				
-				//WRITE 8
-				os << index;
-				
-			}
-			
-			
-			
-			//WRITE 9
-			assert(!dof_map.at(elem->id()).empty());
-			
-			os << dof_map.at(elem->id());
-			
-			//			bool  size=true;
-			
-			int volume_tag;
-			
-			volume_tag=subdomain_id[elem->id()].global.at(0);
-			
-			os << volume_tag;
-			
-			int side_set_tag;
-			
-			//			int face_id;
-			
-			//			bool check_side_id_one = true;
-			side_set_tag=side_set_id[elem->id()].global.at(0);
-			
-			os << side_set_tag;
-			os << face_set_id_global.at(elem->id());
-		}
-		//
-		//
-		
-		//WRITE 11
-		os << variable_number.at(0);
-		
-		//WRITE 12
-		os << variable_order.at(0);
-		
-	}
-	
-	template<class Iterator>
-	static void write_element_selection(
-										const Iterator &begin,
-										const Iterator &end,
-										const FESpaceAdapter &fespace,
-										moonolith::OutputStream &os)
-	{
-		write_space(begin, end, *fespace.mesh(), fespace.dof_map(), fespace.variable_number(), fespace.variable_number(), fespace.subdomain_id(), fespace.side_set_id(), fespace.face_set_id_global(), os);
-	}
-	
-	
-	static void read_space(moonolith::InputStream &is, std::shared_ptr<MeshBase> & space,
-						   std::vector<ElementDofMap> &dof_map,
-						   std::vector<long> &variable_number,
-						   std::vector<long> &variable_order,
-						   std::vector<ElementDofMap> &subdomain_id,
-						   std::vector<ElementDofMap> &side_set_id,
-						   std::vector<ElementDofMap> &face_set_id_global,
-						   const libMesh::Parallel::Communicator &comm)
-	{
-		using namespace std;
-		
-		//READ 1
-		int dim;
-		is >> dim;
-		
-		//READ 2
-		long n_nodes;
-		is >> n_nodes;
-		
-		//READ 6
-		long n_elements;
-		is >> n_elements;
-		
-		auto mesh_ptr = std::make_shared<SerialMesh>(comm, dim);
-		
-		mesh_ptr->reserve_nodes(n_nodes);
-		
-		for (long iii = 0; iii != n_nodes; ++iii) {
-			
-			Point p;
-			
-			for(int j = 0; j < dim; ++j) {
-				//READ 3
-				is >> p(j);
-			}
-			
-			mesh_ptr->add_point(p);
-		}
-		
-		
-		
-		dof_map.resize(n_elements);
-		
-		subdomain_id.resize(n_elements);
-		
-		side_set_id.resize(n_elements);
-		
-		face_set_id_global.resize(n_elements);
-		
-		face_set_id_global.resize(n_elements);
-		
-		
-		for(long i = 0; i !=n_elements; ++i) {
-			
-			//READ 7
-			
-			int type, e_n_nodes;
-			
-			is >> type >> e_n_nodes;
-			
-			//std::cout<<"e_n_nodes_read = "<<e_n_nodes<<std::endl;
-			
-			auto elem =  Elem::build(ElemType(type)).release();
-			
-			//std::cout<<"n_side_read ="<< elem->n_sides()<<std::endl;
-			
-			
-			int index;
-			
-			for (int ii = 0; ii != e_n_nodes; ++ii) {
-				
-				//READ 8
-				is >> index;
-				//std::cout<<"index = "<<index<<std::endl;
-				elem->set_node(ii) = & mesh_ptr->node(index);
-				
-			}
-			
-			
-			//READ 9
-			is >> dof_map.at(i);
-			//std::cout<< "dof_map_read = "<<dof_map[i].global.at(0)<<std::endl;
-			
-			int volume_tag, side_set_tag;
-			//			int face_id;
-			
-			//			bool on_boundary=false;
-			//std::cout<<"read n_elements = "<<n_elements<<std::endl;
-			
-			
-			is >> volume_tag;
-			
-			//std::cout<<" read volume role = "<< volume_tag <<std::endl;
-			
-			subdomain_id[i].global.insert(subdomain_id[i].global.end(),volume_tag);
-			
-			is >> side_set_tag;
-			
-			is >> face_set_id_global.at(i);
-			
-			//std::cout <<"read value"<< face_set_id_global[i].global.at(0)<<std::endl;
-			
-			side_set_id[i].global.insert(side_set_id[i].global.end(),side_set_tag);
-			
-			mesh_ptr->add_elem(elem);
-			
-			libmesh_assert(elem);
-			
-		}
-		
-		//READ 11
-		variable_number.resize(1);
-		is >> variable_number.at(0);
-		
-		//READ 12
-		variable_order.resize(1);
-		is >> variable_order.at(0);
-		
-		
-		//!!!! dummy parameters
-		space = mesh_ptr;
-		
-	}
-	
-	static void read_spaces(moonolith::InputStream &is, FESpaceAdapter &utopiamesh, const libMesh::Parallel::Communicator &comm_mesh)
-	{
-		read_space(is, utopiamesh.mesh(), utopiamesh.dof_map(), utopiamesh.variable_number(), utopiamesh.variable_order(), utopiamesh.subdomain_id(), utopiamesh.side_set_id(), utopiamesh.face_set_id_global(), comm_mesh);
-	}
 	
 	
 	template<int Dimensions, class Fun>
@@ -602,26 +332,31 @@ namespace utopia {
 		tree->reserve(n_elements);
 				
 		std::shared_ptr<FESpaceAdapter> local_spaces = std::make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
-				
+		
+		//we assume that the local id is determined by the order given by the iterator
+		dof_id_type local_element_id = 0;
 		for (auto it = master_slave->active_local_elements_begin();
 			 it != master_slave->active_local_elements_end(); ++it) {
 			
 			auto elem = *it;
+
+			//ID_FIX
+			// const dof_id_type element_id = elem->id();
+			const dof_id_type element_id = local_element_id++;
 			
 			if(!elem->on_boundary()) {
 				continue;
 			}
-			
-			bool check_size=false;
-			
+						
 			for(uint side_elem = 0; side_elem < elem->n_sides(); ++side_elem){
-				if ((predicate->select(master_slave->get_boundary_info().boundary_id(elem, side_elem))) && check_size==false){
-					SurfaceAdapter a(*master_slave, elem->id(), elem->id(), master_slave->get_boundary_info().boundary_id(elem, side_elem), search_radius);
-					assert(!local_spaces->dof_map()[elem->id()].empty());
-					a.set_dof_map(&local_spaces->dof_map()[elem->id()].global);
-					a.set_face_id(&local_spaces->face_set_id_global()[elem->id()].global);
+				if ((predicate->select(master_slave->get_boundary_info().boundary_id(elem, side_elem)))) {
+					//ID_FIX
+					SurfaceAdapter a(*master_slave, elem->id(), element_id, master_slave->get_boundary_info().boundary_id(elem, side_elem), search_radius);
+					// SurfaceAdapter a(*master_slave, elem->id(), elem->id(), master_slave->get_boundary_info().boundary_id(elem, side_elem), search_radius);
+					assert(!local_spaces->dof_map()[element_id].empty());
+					a.set_dof_map(&local_spaces->dof_map()[element_id].global);
+					a.set_face_id(&local_spaces->face_set_id_global()[element_id].global);
 					tree->insert(a);
-					check_size=true;
 				}
 			}
 		}
@@ -661,9 +396,11 @@ namespace utopia {
 			
 			auto s = proc_space->mesh();
 			
+
+			//ID_FIX this should fine
 			for (int i = 0; i<s->n_elem(); ++i) {
 				int tag =proc_space->side_set_id()[i].global.at(0);
-				data.push_back(SurfaceAdapter(*s, i, i,tag,search_radius));
+				data.push_back(SurfaceAdapter(*s, i, i, tag, search_radius));
 				assert(!proc_space->dof_map()[i].empty());
 				assert(!proc_space->side_set_id()[i].empty());
 				data.back().set_dof_map(&proc_space->dof_map()[i].global);

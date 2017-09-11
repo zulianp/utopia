@@ -239,8 +239,8 @@ namespace utopia {
 		// auto e_problem = make_shared<QuasiHertz>();
 		auto e_problem = make_shared<QuasiSignorini>(); 
 		// e_problem->set_up_fine_res();
-		e_problem->set_up_adaptive();
-		e_problem->set_up_time_dependent();
+		// e_problem->set_up_adaptive();
+		// e_problem->set_up_time_dependent();
 		//---------------------------------------------------
 		
 		std::cout << "reading mesh...." << std::flush;

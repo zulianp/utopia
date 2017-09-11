@@ -23,13 +23,20 @@ namespace utopia {
 	    mesh_ = master_slave;
 	    	        
 	    moonolith::Communicator comm = master_slave->comm().get();
-	    
-	    const int n_elements = master_slave->n_elem();
-	    
-	    copy_global_dofs(*master_slave, original_dofmap, var_num,
-	                     dof_maps_, var_type_, n_elements, var_number_,
-	                     subdomain_id_, side_set_id_, side_set_id_tag_,
-	                     face_set_id_global_,ownershipRangesFaceID_, tags); 
+	    	    
+	    copy_global_dofs(*master_slave, 
+	    				 original_dofmap, 
+	    				 var_num,
+	                     dof_maps_, 
+	                     var_type_, 
+	                     var_number_,
+	                     subdomain_id_, 
+	                     side_set_id_, 
+	                     side_set_id_tag_,
+	                     face_set_id_global_,
+	                     ownershipRangesFaceID_, 
+	                     handle_to_element_id_,
+	                     tags); 
 	    	        
 	    copy_var_order(*original_dofmap, var_order_);
 	}
@@ -54,13 +61,13 @@ namespace utopia {
 	                                     const unsigned int  var_num,
 	                                     std::vector<ElementDofMap> &dof_map, 
 	                                     std::vector<long> &variable_type,
-	                                     const int n_elements, 
 	                                     std::vector<long> &variable_number,
 	                                     std::vector<ElementDofMap> &subdomain_id, 
 	                                     std::vector<ElementDofMap> &side_set_id,
 	                                     std::vector<ElementDofMap> &side_set_id_tag, 
 	                                     std::vector<ElementDofMap> &face_set_id_global,
 	                                     std::vector<moonolith::Integer> &ownershipRangesFaceID, 
+	                                     std::vector<libMesh::dof_id_type> &handle_to_element_id,
 	                                     const std::vector< std::pair<int, int> >  &tags)
 	 {
 	     std::vector<dof_id_type> temp;
@@ -69,6 +76,9 @@ namespace utopia {
 
 	     ownershipRangesFaceID.resize(comm.size() + 1, 0);
 
+	     libMesh::dof_id_type n_elements = mesh.n_active_local_elem();
+	     libMesh::dof_id_type local_element_id = 0;
+
 	     std::vector<ElementDofMap> face_set_id;
 	     dof_map.resize(n_elements);
 	     subdomain_id.resize(n_elements);
@@ -76,6 +86,7 @@ namespace utopia {
 	     side_set_id_tag.resize(n_elements);
 	     face_set_id.resize(n_elements);
 	     face_set_id_global.resize(n_elements);
+	     handle_to_element_id.resize(n_elements);
 	     	     
 	     bool first=true;
 	     
@@ -89,8 +100,10 @@ namespace utopia {
 	     MeshBase::const_element_iterator e_it_s = mesh.active_local_elements_begin();
 	     const MeshBase::const_element_iterator e_end_s = mesh.active_local_elements_end();
 	     
-	     for (; e_it_s != e_end_s; ++e_it_s) {
+	     for (; e_it_s != e_end_s; ++e_it_s, ++local_element_id) {
 	         Elem * elem = *e_it_s;
+
+	         handle_to_element_id[local_element_id] = elem->id();
 	         
 	         bool  check_side_id_one=true;
 	         bool  check_side_id_one_tag=true;
@@ -108,7 +121,7 @@ namespace utopia {
 	             for (int side_elem=0; side_elem<elem->n_sides(); side_elem++) {
 	                 {
 	                     if (is_tagged_contact_boundary(mesh, elem, side_elem, tags) && check_side_id_one_tag){
-	                         side_set_id[elem->id()].global.push_back(mesh.get_boundary_info().boundary_id(elem, side_elem));
+	                         side_set_id[local_element_id].global.push_back(mesh.get_boundary_info().boundary_id(elem, side_elem));
 	                         check_side_id_one_tag = false;
 	                         jj_side_id_one_tag++;
 	                     }
@@ -129,23 +142,23 @@ namespace utopia {
 	                 {
 	                     if (is_tagged_contact_boundary(mesh, elem, side_elem, tags)) {
 	                         
-	                         face_set_id[elem->id()].global.push_back(f_id++);
+	                         face_set_id[local_element_id].global.push_back(f_id++);
 	                         
 	                         offset++;
 	                     } else {
-	                         face_set_id[elem->id()].global.push_back(-1);
+	                         face_set_id[local_element_id].global.push_back(-1);
 	                     }
 	                 }
 	             }
 	         } else { 
-	             face_set_id[elem->id()].global.insert(face_set_id[elem->id()].global.end(), -1);
+	             face_set_id[local_element_id].global.insert(face_set_id[local_element_id].global.end(), -1);
 	         }
 	         
 	         
-	         subdomain_id[elem->id()].global.insert(subdomain_id[elem->id()].global.end(),elem->subdomain_id());
+	         subdomain_id[local_element_id].global.insert(subdomain_id[local_element_id].global.end(),elem->subdomain_id());
 	         original_dofmap->dof_indices(elem, temp, var_num);
 
-	         dof_map[elem->id()].global.insert(dof_map[elem->id()].global.end(), temp.begin(), temp.end());
+	         dof_map[local_element_id].global.insert(dof_map[local_element_id].global.end(), temp.begin(), temp.end());
 	         
 	         if(first) {
 	         	//works only because libmesh does not support mixed elements
@@ -165,20 +178,20 @@ namespace utopia {
 	     MeshBase::const_element_iterator e_it_new = mesh.active_local_elements_begin();
 	     const MeshBase::const_element_iterator e_end_new = mesh.active_local_elements_end();
 	     
-	     
-	     for (; e_it_new != e_end_new; ++e_it_new)
+	     local_element_id = 0;
+	     for (; e_it_new != e_end_new; ++e_it_new, ++local_element_id)
 	     {
 	         Elem * elem_new = *e_it_new;
 	         
 	         if (elem_new->on_boundary()){
-	             for (int jj=0; jj<face_set_id[elem_new->id()].global.size(); jj++){
-	                 int i = face_set_id[elem_new->id()].global.at(jj);
+	             for (int jj=0; jj<face_set_id[local_element_id].global.size(); jj++){
+	                 int i = face_set_id[local_element_id].global.at(jj);
 	                 
 	                 if(i != -1) {
 	                     int global_id = i + ownershipRangesFaceID[comm.rank()];
-	                     face_set_id_global[elem_new->id()].global.insert(face_set_id_global[elem_new->id()].global.end(),global_id);
+	                     face_set_id_global[local_element_id].global.insert(face_set_id_global[local_element_id].global.end(),global_id);
 	                 } else {
-	                     face_set_id_global[elem_new->id()].global.insert(face_set_id_global[elem_new->id()].global.end(),-1);
+	                     face_set_id_global[local_element_id].global.insert(face_set_id_global[local_element_id].global.end(),-1);
 	                 }
 	             }
 	         }
