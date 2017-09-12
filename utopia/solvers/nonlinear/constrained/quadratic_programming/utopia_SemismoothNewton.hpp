@@ -107,7 +107,6 @@ namespace utopia {
 				I_c = local_zeros({local_N, local_N});
 			}
 			
-			Matrix M;
 			Scalar f_norm = 9e9;
 			
 			if(this->verbose())
@@ -171,13 +170,21 @@ namespace utopia {
 				
 				prev_active = active;
 				
-				M = A_c + I_c * A;
+				Matrix H = A_c + I_c * A;
+				Vector sub_g = (I_c * b + A_c * g);
+
+				assert(!has_nan_or_inf(H));
+				assert(!has_nan_or_inf(g));
 				
-				if(!linear_solver_->solve(M, (I_c * b + A_c * g), x_new))
+				if(!linear_solver_->solve(H, sub_g, x_new))
 					return false;
 				
+				assert(!has_nan_or_inf(x_new));
+
 				lambda = A_c * (b - A * x_new);
 				
+				assert(!has_nan_or_inf(lambda));
+
 				f_norm = norm2(x_new - x_old);
 				
 				// print iteration status on every iteration

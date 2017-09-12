@@ -1695,6 +1695,35 @@ namespace utopia {
 		return 0; 
 	}
 
+	bool PETScBackend::is_nan_or_inf(const PETScMatrix &m)
+	{
+		bool has_nan = false;
+		const PetscScalar * values;
+		const PetscInt * cols;
+		
+		PetscInt r_begin, r_end;
+		PetscInt n_values = 0;
+
+		PetscInt local_r, local_c;
+		MatGetLocalSize(m.implementation(), &local_r, &local_c);
+		MatGetOwnershipRange(m.implementation(), &r_begin, &r_end);
+		
+		for(PetscInt row = r_begin; row < r_end; ++row) {	
+
+			MatGetRow(m.implementation(), row, &n_values, &cols, &values);
+
+			for(PetscInt i = 0; i < n_values; ++i) {
+				has_nan = PetscIsInfOrNanScalar(values[i]);
+				if(has_nan) break;
+			}
+
+			MatRestoreRow(m.implementation(), row, &n_values, &cols, &values);
+			if(has_nan) break;
+		}
+
+		return has_nan;
+	}
+
 	// redistribution of local sizes of vector
 	// TODO: can be done also for matrices 
 	//       can be done also based on local sizes, no provided vector

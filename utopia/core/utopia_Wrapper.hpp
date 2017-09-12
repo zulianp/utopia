@@ -559,7 +559,7 @@ namespace utopia {
     template<class Tensor, int Order>
     bool has_nan_or_inf(const Wrapper<Tensor, Order> &w)
     {
-        static_assert(Order == 1, "contains_nan_or_inf:: works just for vectors at the moment");
+        // static_assert(Order == 1, "contains_nan_or_inf:: works just for vectors at the moment");
         return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().is_nan_or_inf(w.implementation());
     }
 

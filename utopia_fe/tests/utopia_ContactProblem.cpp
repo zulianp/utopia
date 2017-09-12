@@ -40,10 +40,7 @@ namespace utopia {
 		init_material();
 		iteration = 0;
 		linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-
-		if(comm.size() > 1) {
-			output = std::make_shared<Nemesis_IO>(*mesh);
-		}
+		output = std::make_shared<Nemesis_IO>(*mesh);
 	}
 
 	void ContactProblem::init_discretization()
@@ -288,6 +285,7 @@ namespace utopia {
 		//DVectord pred = addmissible_pred - displacement_pred_c;
 
 		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
+		newton.verbose(true);
 		newton.set_active_set_tol(1e-8);
 		newton.max_it(40);
 
@@ -444,34 +442,24 @@ namespace utopia {
 
 	void ContactProblem::save(const double dt, const std::string &output_dir)
 	{
-		if(mesh->is_serial()) {
+		// if(mesh->is_serial()) {
+		// 	convert(total_displacement, *context_ptr->system.solution);
+		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/sol_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+
+		// 	convert(is_contact_node, *context_ptr->system.solution);
+		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/is_c_n_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+
+		// 	convert(normal_stress, *context_ptr->system.solution);
+		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/ns_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+
+		// 	convert(internal_force, *context_ptr->system.solution);
+		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/if_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+
+		// 	convert(acceleration, *context_ptr->system.solution);
+		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/a_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+		// } else {
 			convert(total_displacement, *context_ptr->system.solution);
-			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/sol_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-
-			convert(is_contact_node, *context_ptr->system.solution);
-			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/is_c_n_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-
-			convert(normal_stress, *context_ptr->system.solution);
-			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/ns_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-
-			convert(internal_force, *context_ptr->system.solution);
-			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/if_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-
-			convert(acceleration, *context_ptr->system.solution);
-			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/a_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-		} else {
-			// std::cerr << "[Warning] implement parallel output for distributed mesh" << std::endl;
-			convert(total_displacement, *context_ptr->system.solution);
-			// Nemesis_IO(*mesh).write_equation_systems (output_dir + "/sol_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 			output->write_timestep(output_dir + "/sol_" + std::to_string(comm.size()) + ".e", context_ptr->equation_systems, iteration + 1, iteration);
-			// DVectord process_id = local_zeros(local_size(total_displacement));
-
-			// each_write(process_id, [&](const SizeType i) -> double {
-			// 	return comm.rank();
-			// });
-
-			// convert(process_id, *context_ptr->system.solution);
-			// Nemesis_IO(*mesh).write_equation_systems (output_dir + "/proc_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-		}
+		// }
 	}
 }
