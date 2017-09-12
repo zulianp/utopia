@@ -1018,7 +1018,7 @@ namespace utopia {
 		std::vector<moonolith::Integer>  ownership_ranges_slave(comm.size()+1, 0);
 
 		
-		const int n_nodes_x_face = master_slave->elem(0)->build_side_ptr(0)->n_nodes();
+		const int n_nodes_x_face = (*master_slave->active_elements_begin())->build_side_ptr(0)->n_nodes();
 		std::vector<moonolith::Integer>  side_node_ownership_ranges = local_fun_spaces_new->ownershipRangesFaceID();
 		
 		for(SizeType i = 0; i < side_node_ownership_ranges.size(); ++i) {

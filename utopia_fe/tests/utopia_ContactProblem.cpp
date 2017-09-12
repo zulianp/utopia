@@ -69,14 +69,13 @@ namespace utopia {
 			t = MPI_Wtime();
 			assemble_no_constraints(u, u, b_form, *context.system.matrix);
 			t = MPI_Wtime() - t;
-
 		});
 
 		context.system.attach_assemble_object(ass);
 		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
 
-		convert( *context.system.matrix, mass_matrix);
+		convert(*context.system.matrix, mass_matrix);
 		std::cout << "done: (" << t << " seconds)" << std::endl; 
 	}
 
@@ -113,8 +112,8 @@ namespace utopia {
 		context.equation_systems.parameters.template set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
 
-		convert( *context.system.matrix, stiffness_matrix);
-		convert( *context.system.rhs, force);
+		convert(*context.system.matrix, stiffness_matrix);
+		convert(*context.system.rhs, force);
 
 		apply_boundary_conditions(u.get(0), stiffness_matrix, force);
 
@@ -378,20 +377,23 @@ namespace utopia {
 
 	void ContactProblem::save(const std::string &output_dir)
 	{
-		convert(total_displacement, *context_ptr->system.solution);
-		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/sol_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+		if(mesh->is_serial()) {
+			convert(total_displacement, *context_ptr->system.solution);
+			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/sol_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 
-		convert(is_contact_node, *context_ptr->system.solution);
-		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/is_c_n_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+			convert(is_contact_node, *context_ptr->system.solution);
+			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/is_c_n_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 
-		convert(normal_stress, *context_ptr->system.solution);
-		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/ns_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+			convert(normal_stress, *context_ptr->system.solution);
+			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/ns_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 
-		convert(internal_force, *context_ptr->system.solution);
-		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/if_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-		
-		convert(acceleration, *context_ptr->system.solution);
-		ExodusII_IO(*mesh).write_equation_systems (output_dir + "/a_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+			convert(internal_force, *context_ptr->system.solution);
+			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/if_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 
+			convert(acceleration, *context_ptr->system.solution);
+			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/a_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+		} else {
+			std::cerr << "[Warning] implement parallel output for distributed mesh" << std::endl;
+		}
 	}
 }

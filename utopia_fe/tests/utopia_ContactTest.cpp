@@ -229,7 +229,9 @@ namespace utopia {
 
 	void run_contact_test(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());
+		auto mesh = make_shared<DistributedMesh>(init.comm());
+		mesh->partitioner().reset(new LinearPartitioner());
+		// auto mesh = make_shared<Mesh>(init.comm());
 		ContactProblem p;
 			
 		//---------------------------------------------------
