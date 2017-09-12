@@ -249,7 +249,8 @@ namespace utopia {
 		
 		std::cout << "reading mesh...." << std::flush;
 		// mesh->set_distributed();
-		mesh->read(e_problem->mesh_file);
+		// mesh->read(e_problem->mesh_file);
+		mesh->read(e_problem->mesh_file, nullptr, true);
 		// std::cout << "is_replicated: " << mesh->is_replicated() << std::endl;
 		// mesh->delete_remote_elements();
 		

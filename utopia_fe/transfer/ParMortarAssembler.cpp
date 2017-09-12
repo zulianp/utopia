@@ -656,8 +656,8 @@ namespace utopia {
         
         const Parallel::Communicator &libmesh_comm_mesh = master_slave->mesh().comm();
         
-        MeshBase::const_element_iterator e_it = mesh.active_elements_begin();
-        const MeshBase::const_element_iterator e_end = mesh.active_elements_end();
+        MeshBase::const_element_iterator e_it = mesh.active_local_elements_begin();
+        const MeshBase::const_element_iterator e_end = mesh.active_local_elements_end();
         std::vector<int> block_id;
         std::vector<int> block_id_def;
         

@@ -321,8 +321,8 @@ namespace utopia {
 		//		const int dim_master = master_slave->mesh_dimension();
 		//		const int dim_slave = master_slave->mesh_dimension();
 		
-		MeshBase::const_element_iterator e_it = mesh->active_elements_begin();
-		const MeshBase::const_element_iterator e_end = mesh->active_elements_end();
+		MeshBase::const_element_iterator e_it = mesh->active_local_elements_begin();
+		const MeshBase::const_element_iterator e_end = mesh->active_local_elements_end();
 		std::vector<int> block_id;
 		std::vector<int> block_id_def;
 		
@@ -1018,7 +1018,7 @@ namespace utopia {
 		std::vector<moonolith::Integer>  ownership_ranges_slave(comm.size()+1, 0);
 
 		
-		const int n_nodes_x_face = (*master_slave->active_elements_begin())->build_side_ptr(0)->n_nodes();
+		const int n_nodes_x_face = (*master_slave->active_local_elements_begin())->build_side_ptr(0)->n_nodes();
 		std::vector<moonolith::Integer>  side_node_ownership_ranges = local_fun_spaces_new->ownershipRangesFaceID();
 		
 		for(SizeType i = 0; i < side_node_ownership_ranges.size(); ++i) {

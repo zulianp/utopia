@@ -6,6 +6,8 @@
 #include <sstream>
 #include <ctime>
 
+#include "petscis.h"  
+
 using namespace std;
 
 int main(const int argc, char *argv[])
@@ -15,6 +17,7 @@ int main(const int argc, char *argv[])
     Utopia::Init(argc, argv);
 
     std::string tests = "all";
+    bool run_tests = true;
 
     for (size_t i = 1; i < argc; i++) {
         if (argv[i] == std::string("-data_path")) {
@@ -28,12 +31,17 @@ int main(const int argc, char *argv[])
             if (++i >= argc)
                 break;
             tests = argv[i];
+        } else if(argv[i] == std::string("-skip-tests")) {
+            run_tests = false;
         }
     }
 
     // Utopia::Instance().set("default_tollerance", "1e-15");
     // Utopia::Instance().set("n_threads", "2");
-
-    runTests(tests);
+   
+    if(run_tests) { 
+        runTests(tests);
+    }
+    
     return Utopia::Finalize();
 }

@@ -339,41 +339,100 @@ namespace utopia {
 	}
 
 	void ContactProblem::apply_displacement(const DVectord &displacement)
-	{
+	{	
+		//FIXME		
+		int sys_num = 0;
 
 		if(!comm.is_alone()) {
-			std::cerr << "[Warning] apply_displacement not working in parallel" << std::endl;
-			return;
-		}
+			auto r = range(displacement);
+			Read<DVectord> r_d(displacement);
 
-		//FIXME
-		int sys_num = 0;
-		Read<DVectord> r_d(displacement);
+			auto m_begin = mesh->active_local_elements_begin();
+			auto m_end   = mesh->active_local_elements_end();
 
-		auto m_it  = mesh->local_nodes_begin();
-		auto m_end = mesh->local_nodes_end();
-
-
-		for(; m_it != m_end; ++m_it) { 
-			for(unsigned int c = 0; c < mesh->mesh_dimension(); ++c) {
-				const int dof_id = (*m_it)->dof_number(sys_num, c, 0);
-				(**m_it)(c) += displacement.get(dof_id);
-			}
-		}
-
-		const int dim = mesh->mesh_dimension();
-		std::vector<double> normal_stress_x(local_size(normal_stress).get(0)/dim);
-		
-		{
-			auto r = range(normal_stress);
-			Read<DVectord> r_n(normal_stress);
+			std::vector<PetscInt> idx;
+			std::set<PetscInt> unique_idx;
+			std::map<libMesh::dof_id_type, double> idx_to_value;
+			std::vector<libMesh::dof_id_type> dof_indices;
 			
-			for(auto i = r.begin(); i < r.end(); i += dim) {
-				normal_stress_x[i/dim] = normal_stress.get(i);
+			auto &dof_map = spaces[0]->dof_map();
+			for(auto m_it = m_begin; m_it != m_end; ++m_it) { 
+				dof_map.dof_indices(*m_it, dof_indices);
+				for(auto dof_id : dof_indices) {
+					if(r.inside(dof_id)) {
+						idx_to_value[dof_id] = displacement.get(dof_id);
+					} else {
+						unique_idx.insert(dof_id);
+					}
+				}
+			}
+
+			idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
+			DVectord out = local_zeros(idx.size());
+			IS is_in;
+			ISCreateGeneral(PETSC_COMM_WORLD, idx.size(), &idx[0], PETSC_USE_POINTER, &is_in);
+			VecScatter scatter_context;
+			VecScatterCreate(raw_type(displacement), is_in, raw_type(out), nullptr, &scatter_context);
+			VecScatterBegin(scatter_context, raw_type(displacement), raw_type(out), INSERT_VALUES, SCATTER_FORWARD);
+			VecScatterEnd(scatter_context, raw_type(displacement), raw_type(out), INSERT_VALUES, SCATTER_FORWARD);
+			ISDestroy(&is_in);
+			VecScatterDestroy(&scatter_context);
+
+			{
+				Read<DVectord> r_out(out);
+				auto range_out = range(out);
+
+				for(std::size_t i = 0; i < idx.size(); ++i) {
+					idx_to_value[idx[i]] = out.get(range_out.begin() + i);
+				}
+			}	
+
+			for(auto m_it = m_begin; m_it != m_end; ++m_it) { 
+				auto &e = **m_it;
+				for(int i = 0; i < e.n_nodes(); ++i) {
+					auto &node = e.node_ref(i);
+
+					for(unsigned int c = 0; c < mesh->mesh_dimension(); ++c) {
+						const int dof_id = node.dof_number(sys_num, c, 0);
+						assert(idx_to_value.find(dof_id) != idx_to_value.end());
+						double &val = idx_to_value[dof_id];
+						node(c) += val;
+						val = 0.;
+					}
+				}
+			}
+
+		} else {
+
+			Read<DVectord> r_d(displacement);
+
+			auto m_it  = mesh->local_nodes_begin();
+			auto m_end = mesh->local_nodes_end();
+
+
+			for(; m_it != m_end; ++m_it) { 
+				for(unsigned int c = 0; c < mesh->mesh_dimension(); ++c) {
+					const int dof_id = (*m_it)->dof_number(sys_num, c, 0);
+					(**m_it)(c) += displacement.get(dof_id);
+				}
 			}
 		}
 
-		if(comm.is_alone()) plot_mesh_f(*mesh, &normal_stress_x[0], "time_series_m/m" + std::to_string(iteration));
+		if(comm.is_alone()) {
+			const int dim = mesh->mesh_dimension();
+			std::vector<double> normal_stress_x(local_size(normal_stress).get(0)/dim);
+
+			{
+				auto r = range(normal_stress);
+				Read<DVectord> r_n(normal_stress);
+
+				for(auto i = r.begin(); i < r.end(); i += dim) {
+					normal_stress_x[i/dim] = normal_stress.get(i);
+				}
+			}
+
+			plot_mesh_f(*mesh, &normal_stress_x[0], "time_series_m/m" + std::to_string(iteration));
+		}
 	}
 
 	void ContactProblem::save(const std::string &output_dir)
