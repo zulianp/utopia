@@ -1674,30 +1674,30 @@ namespace utopia {
 		return true; 
 	}
 
-
-
-	bool PETScBackend::is_nan_or_inf(const PETScVector & X)
+	bool PETScBackend::is_nan_or_inf(const PETScVector &X)
 	{
 		PetscInt m; 
         const PetscScalar *x;
         VecGetLocalSize(X.implementation(), &m);
         VecGetArrayRead(X.implementation(), &x);
 
-        PetscErrorCode error; 
+        int has_nan = 0; 
 
-        for (PetscInt i=0; i<m; i++) 
-        {
-            error  =PetscIsInfOrNanScalar(x[i]); 
-            if(error ==1)
-            	return 1;
+        for (PetscInt i = 0; i < m; i++) {
+            has_nan = PetscIsInfOrNanScalar(x[i]); 
+            if(has_nan == 1)
+            	break;
         }
+
         VecRestoreArrayRead(X.implementation(), &x);
-		return 0; 
+        MPI_Comm comm = PetscObjectComm((PetscObject) X.implementation());
+        MPI_Allreduce(MPI_IN_PLACE, &has_nan, 1, MPI_INT, MPI_MAX, comm);
+		return has_nan > 0; 
 	}
 
 	bool PETScBackend::is_nan_or_inf(const PETScMatrix &m)
 	{
-		bool has_nan = false;
+		int has_nan = 0;
 		const PetscScalar * values;
 		const PetscInt * cols;
 		
@@ -1713,7 +1713,7 @@ namespace utopia {
 			MatGetRow(m.implementation(), row, &n_values, &cols, &values);
 
 			for(PetscInt i = 0; i < n_values; ++i) {
-				has_nan = PetscIsInfOrNanScalar(values[i]);
+				has_nan = (PetscIsInfOrNanScalar(values[i])? 1 : 0);
 				if(has_nan) break;
 			}
 
@@ -1721,7 +1721,9 @@ namespace utopia {
 			if(has_nan) break;
 		}
 
-		return has_nan;
+		MPI_Comm comm = PetscObjectComm((PetscObject) m.implementation());
+		MPI_Allreduce(MPI_IN_PLACE, &has_nan, 1, MPI_INT, MPI_MAX, comm);
+		return has_nan > 0;
 	}
 
 	// redistribution of local sizes of vector

@@ -283,8 +283,8 @@ namespace utopia
 		bool triple_product_PtAP(const PETScMatrix &, const PETScMatrix &, PETScMatrix &); 
 		bool triple_product(const PETScMatrix &, const PETScMatrix &, const PETScMatrix &, PETScMatrix &); 
 
-		bool is_nan_or_inf(const PETScVector &); 
-		bool is_nan_or_inf(const PETScMatrix &); 
+		bool is_nan_or_inf(const PETScVector &v); 
+		bool is_nan_or_inf(const PETScMatrix &m); 
 
 
 		template<class Tensor>

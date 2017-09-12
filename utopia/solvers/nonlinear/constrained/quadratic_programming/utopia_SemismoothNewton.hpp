@@ -178,8 +178,12 @@ namespace utopia {
 				
 				if(!linear_solver_->solve(H, sub_g, x_new))
 					return false;
-				
-				assert(!has_nan_or_inf(x_new));
+
+				if(has_nan_or_inf(x_new)) {
+					write("H.m", H);
+					write("g.m", sub_g);
+					assert(!has_nan_or_inf(x_new));
+				}
 
 				lambda = A_c * (b - A * x_new);
 				
