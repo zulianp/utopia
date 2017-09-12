@@ -40,6 +40,10 @@ namespace utopia {
 		init_material();
 		iteration = 0;
 		linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+
+		if(comm.size() > 1) {
+			output = std::make_shared<Nemesis_IO>(*mesh);
+		}
 	}
 
 	void ContactProblem::init_discretization()
@@ -432,10 +436,13 @@ namespace utopia {
 			}
 
 			plot_mesh_f(*mesh, &normal_stress_x[0], "time_series_m/m" + std::to_string(iteration));
-		}
+		} 
+		// else {
+		// 	plot_mesh(*mesh, "time_series_m/m" + std::to_string(iteration) + "_" + std::to_string(comm.rank()));
+		// }
 	}
 
-	void ContactProblem::save(const std::string &output_dir)
+	void ContactProblem::save(const double dt, const std::string &output_dir)
 	{
 		if(mesh->is_serial()) {
 			convert(total_displacement, *context_ptr->system.solution);
@@ -455,7 +462,16 @@ namespace utopia {
 		} else {
 			// std::cerr << "[Warning] implement parallel output for distributed mesh" << std::endl;
 			convert(total_displacement, *context_ptr->system.solution);
-			Nemesis_IO(*mesh).write_equation_systems (output_dir + "/sol_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+			// Nemesis_IO(*mesh).write_equation_systems (output_dir + "/sol_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
+			output->write_timestep(output_dir + "/sol_" + std::to_string(comm.size()) + ".e", context_ptr->equation_systems, iteration + 1, iteration);
+			// DVectord process_id = local_zeros(local_size(total_displacement));
+
+			// each_write(process_id, [&](const SizeType i) -> double {
+			// 	return comm.rank();
+			// });
+
+			// convert(process_id, *context_ptr->system.solution);
+			// Nemesis_IO(*mesh).write_equation_systems (output_dir + "/proc_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 		}
 	}
 }

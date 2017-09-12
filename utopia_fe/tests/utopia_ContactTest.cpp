@@ -244,7 +244,7 @@ namespace utopia {
 		auto e_problem = make_shared<QuasiSignorini>(); 
 		// e_problem->set_up_fine_res();
 		e_problem->set_up_adaptive();
-		// e_problem->set_up_time_dependent();
+		e_problem->set_up_time_dependent();
 		//---------------------------------------------------
 		
 		std::cout << "reading mesh...." << std::flush;
@@ -264,10 +264,11 @@ namespace utopia {
 			std::cout << "t: " << t << "/" << (e_problem->dt * e_problem->n_steps) << std::endl;
 			std::cout << std::flush;
 			t += e_problem->dt;
-			p.step();			
+			p.step(e_problem->dt);	
+			p.save(e_problem->dt);		
 		}
 
-		p.save();
+		
 	}
 }
 

@@ -7,6 +7,8 @@
 #include "moonolith_communicator.hpp"
 #include "utopia.hpp"
 
+#include "libmesh/nemesis_io.h"
+
 namespace utopia {
 	class ContactProblem {
 	public:
@@ -65,7 +67,8 @@ namespace utopia {
 			virtual void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) = 0;
 		};
 
-		std::shared_ptr< ElasticityBoundaryConditions > bc_ptr;
+		std::shared_ptr<ElasticityBoundaryConditions> bc_ptr;
+		std::shared_ptr<libMesh::Nemesis_IO> output;
 
 		void step(const double dt = 1.0);
 
@@ -77,7 +80,7 @@ namespace utopia {
 			double search_radius
 		);
 
-		void save(const std::string &output_dir = ".");
+		void save(const double dt = 1.0, const std::string &output_dir = ".");
 
 		ContactProblem();
 	private:
