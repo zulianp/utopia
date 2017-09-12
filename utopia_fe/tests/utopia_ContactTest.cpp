@@ -58,6 +58,7 @@ namespace utopia {
 			contact_flags = {{12, 13}, {14, 13}};
 			is_multibody = true;
 			search_radius = 0.05;
+			dt = 1.;
 
 			//---------------------------------------------------
 			// mesh->read("../data/hertz_530.e");
@@ -102,7 +103,7 @@ namespace utopia {
 			bottom_boundar_tag = 4;
 			contact_flags = {{1, 3}};
 			search_radius = 0.4;
-			double dt = 1.;
+			dt = 1.;
 			n_steps = 1;
 		}
 
@@ -133,7 +134,7 @@ namespace utopia {
 			bottom_boundar_tag = 4;
 			contact_flags = {{3, 1}};
 			search_radius = 0.2;
-			double dt = 1.;
+			dt = 1.;
 			n_steps = 1;
 		}
 
@@ -164,7 +165,7 @@ namespace utopia {
 		{
 			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uz == coeff(-dt*0.1), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(-dt*0.2), {top_boundary_tag}) );
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
@@ -230,7 +231,7 @@ namespace utopia {
 	void run_contact_test(LibMeshInit &init)
 	{
 		auto mesh = make_shared<DistributedMesh>(init.comm());
-		mesh->partitioner().reset(new LinearPartitioner());
+		// mesh->partitioner().reset(new LinearPartitioner());
 		// auto mesh = make_shared<Mesh>(init.comm());
 		ContactProblem p;
 			
@@ -242,7 +243,7 @@ namespace utopia {
 		// auto e_problem = make_shared<QuasiHertz>();
 		auto e_problem = make_shared<QuasiSignorini>(); 
 		// e_problem->set_up_fine_res();
-		// e_problem->set_up_adaptive();
+		e_problem->set_up_adaptive();
 		// e_problem->set_up_time_dependent();
 		//---------------------------------------------------
 		
@@ -250,7 +251,7 @@ namespace utopia {
 		// mesh->set_distributed();
 		mesh->read(e_problem->mesh_file);
 		// std::cout << "is_replicated: " << mesh->is_replicated() << std::endl;
-		mesh->delete_remote_elements();
+		// mesh->delete_remote_elements();
 		
 		std::cout << "done" << std::endl;
 

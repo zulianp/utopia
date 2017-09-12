@@ -4,6 +4,7 @@
 #include "utopia_Socket.hpp"
 #include "libmesh/parameter_vector.h"
 #include "libmesh/parameter_accessor.h"
+#include "libmesh/nemesis_io.h"
 
 #include <memory>
 
@@ -393,7 +394,9 @@ namespace utopia {
 			convert(acceleration, *context_ptr->system.solution);
 			ExodusII_IO(*mesh).write_equation_systems (output_dir + "/a_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 		} else {
-			std::cerr << "[Warning] implement parallel output for distributed mesh" << std::endl;
+			// std::cerr << "[Warning] implement parallel output for distributed mesh" << std::endl;
+			convert(total_displacement, *context_ptr->system.solution);
+			Nemesis_IO(*mesh).write_equation_systems (output_dir + "/sol_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 		}
 	}
 }
