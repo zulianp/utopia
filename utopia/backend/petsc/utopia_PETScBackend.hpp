@@ -105,7 +105,7 @@ namespace utopia
 			
 			if (result.implementation() == left.implementation()) {
 				//TODO
-				std::cerr << "axpy" << std::endl;
+				std::cerr << "[Error] axpy" << std::endl;
 			}
 			
 			return aux_zaxpy(scaleFactor, left, result);

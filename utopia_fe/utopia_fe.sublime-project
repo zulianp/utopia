@@ -2,7 +2,9 @@
 	"folders":
 	[
 		{
-			"path": "."
+			"path": ".",
+			 "folder_exclude_patterns": ["build", "bin", ".idea", "xcode", "doc/api", "build_debug", "bin_debug"],
+			 "file_exclude_patterns": ["*.sublime-workspace"]
 		}
 	]
 }

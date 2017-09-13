@@ -717,6 +717,8 @@ namespace utopia
 			
 			// std::cout << "         Begin: petsc_sparse_semismooth_newton_test" << std::endl;
 			auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+			// auto lsolver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+			// auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord>>();
 			DSMatrixd A;
 			DVectord b, ub;
 			
@@ -744,7 +746,8 @@ namespace utopia
 			using namespace utopia;
 			
 			// std::cout << "         Begin: petsc_sparse_nonlinear_semismooth_newton_test" << std::endl;
-			auto lsolver = std::make_shared< ConjugateGradient<DSMatrixd, DVectord> >();
+			// auto lsolver = std::make_shared< ConjugateGradient<DSMatrixd, DVectord> >();
+			auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
 			
 			NonlinSemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.enable_differentiation_control(false);

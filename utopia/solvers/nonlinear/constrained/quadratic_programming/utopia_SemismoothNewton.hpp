@@ -72,6 +72,67 @@ namespace utopia {
 		}
 		
 	private:
+		bool check_constraints(const Vector &x, const bool verbose) const
+		{
+			bool constrain_violated = false;
+			if(constraints_.has_upper_bound()) {
+				const auto &upper_bound = *constraints_.upper_bound();
+				Read<Vector> r_u(upper_bound);
+				each_read(x, [&upper_bound, &constrain_violated, verbose](const SizeType i, const Scalar value) {
+					const Scalar upbo = upper_bound.get(i);
+					if(value > upbo + 1e-5) {
+						constrain_violated = true;
+						if(verbose) {
+							std::cerr << "[Warning] upper bound violated at: " << i << " " << value << " > " << upbo << std::endl;
+						}
+					}
+				});
+			}
+
+			if(constraints_.has_lower_bound()) {
+				const auto &lower_bound = *constraints_.lower_bound();
+				Read<Vector> r_u(lower_bound);
+				each_read(x, [&lower_bound, &constrain_violated, verbose](const SizeType i, const Scalar value) {
+					const Scalar lobo = lower_bound.get(i);
+					if(value < lobo - 1e-5) {
+						constrain_violated = true;
+						if(verbose) {
+							std::cerr << "[Warning] lower bound violated at: " << i << " " << value << " < " << lobo << std::endl;
+						}
+					}
+				});
+			}
+
+			return !constrain_violated;
+		}
+
+		bool check_non_negative(const Vector &lambda, const bool verbose) const
+		{
+			bool is_non_negative = true;
+			each_read(lambda, [&is_non_negative, verbose](const SizeType i, const Scalar value) {
+				if(value < -1e-8) {
+					is_non_negative = false;
+					if(verbose) {
+						std::cerr << "[Warning] negative value at: " << i << " " << value << std::endl;
+					}
+				}
+			});
+
+			return is_non_negative;
+		}
+
+		bool check_zero(const Vector &r) const
+		{
+			const Scalar r_norm = norm2(r);
+
+			if(r_norm > 1e-5) {
+				std::cout << "non zero norm: " << r_norm << std::endl;
+				return false;
+			}
+
+			return true;
+		}
+
 		// We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
 		bool single_bound_solve(const Matrix &A, const Vector &b, Vector &x_new)
 		{			
@@ -114,8 +175,7 @@ namespace utopia {
 			
 			while(!converged)
 			{
-				d = lambda + (x_new - g);
-				
+				d = lambda + (x_new - g);				
 				{
 					Write<Vector> w_a(active);
 					Write<Matrix> w_A_c(A_c);
@@ -176,24 +236,34 @@ namespace utopia {
 				assert(!has_nan_or_inf(H));
 				assert(!has_nan_or_inf(g));
 				
-				if(!linear_solver_->solve(H, sub_g, x_new))
-					return false;
-
-				if(has_nan_or_inf(x_new)) {
-					write("H.m", H);
-					write("g.m", sub_g);
-					assert(!has_nan_or_inf(x_new));
+				if(!linear_solver_->solve(H, sub_g, x_new)) {
+					std::cerr << "[Error] linear solver did not manage to solve the linear system" << std::endl;
+					break;
 				}
 
-				lambda = A_c * (b - A * x_new);
-				
+				if(has_nan_or_inf(x_new)) {
+					assert(!has_nan_or_inf(x_new));
+					std::cerr << "[Error] nan/inf entries in the solution vector" << std::endl;
+					converged = false;
+					break;
+				}
+
+				if(!check_zero(H * x_new - sub_g)) {
+					assert(check_zero(H * x_new - sub_g));
+					std::cerr << "[Error] non-zero residual returned by linear-solver" << std::endl;
+					converged = false;
+					break;
+				}
+
+				lambda = (b - A * x_new);
 				assert(!has_nan_or_inf(lambda));
 
 				f_norm = norm2(x_new - x_old);
 				
 				// print iteration status on every iteration
-				if(this->verbose())
+				if(this->verbose()) {
 					PrintInfo::print_iter_status(iterations, {f_norm});
+				}
 				
 				converged = this->check_convergence(iterations, f_norm, 1, 1);
 				
@@ -201,7 +271,10 @@ namespace utopia {
 				iterations++;
 			}
 			
-			return true;
+			// disp(lambda);
+			assert(check_constraints(x_new, true));
+			assert(check_non_negative(lambda, true));
+			return converged;
 		}
 		
 		bool box_solve(const Matrix &A, const Vector &b, Vector &x)
@@ -304,7 +377,7 @@ namespace utopia {
 						}
 						
 						converged = true;
-						return true;
+						break;
 					}
 				}
 				
@@ -313,9 +386,9 @@ namespace utopia {
 				
 				H = A_s + I_c * A;
 				
-				Vector rhs =  I_c * b + A_c_p * ub + A_c_m * lb;
+				Vector rhs = I_c * b + A_c_p * ub + A_c_m * lb;
 				linear_solver_->solve(H, rhs, x);
-				
+
 				lambda_p = A_c_p * (b - A * x);
 				lambda_m = A_c_m * (b - A * x);
 				
@@ -335,6 +408,8 @@ namespace utopia {
 				it++;
 			}
 			
+			assert(check_constraints(x, true));
+			assert(check_non_negative(lambda_p, true));
 			return true;
 		}
 		

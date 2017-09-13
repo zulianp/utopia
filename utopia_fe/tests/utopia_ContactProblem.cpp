@@ -40,6 +40,8 @@ namespace utopia {
 		init_material();
 		iteration = 0;
 		linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+		// linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
+		// linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> >();
 		output = std::make_shared<Nemesis_IO>(*mesh);
 	}
 
