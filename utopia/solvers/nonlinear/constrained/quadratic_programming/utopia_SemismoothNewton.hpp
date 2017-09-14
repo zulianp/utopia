@@ -10,7 +10,7 @@
 
 namespace utopia {
 	
-	template<class Matrix, class Vector>
+	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
 	class SemismoothNewton : public IterativeSolver<Matrix, Vector> {
 		typedef UTOPIA_SCALAR(Vector)    Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -175,6 +175,7 @@ namespace utopia {
 			
 			while(!converged)
 			{
+				//reminder: complementarity-condition
 				d = lambda + (x_new - g);				
 				{
 					Write<Vector> w_a(active);

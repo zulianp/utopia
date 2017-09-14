@@ -202,21 +202,21 @@ namespace utopia {
 		return true;
 	}
 	
-	bool PETScBackend::convert(PETScVector &wrapper, Vec vec)
+	bool PETScBackend::convert(const PETScVector &wrapper, Vec vec)
 	{
 		VecCopy(wrapper.implementation(), vec);
 		return true;
 	}
 	
-	bool PETScBackend::convert(PETScMatrix &wrapper, Mat mat)
+	bool PETScBackend::convert(const PETScMatrix &wrapper, Mat mat)
 	{
-		MatCopy(wrapper.implementation(), mat, SAME_NONZERO_PATTERN);
+		MatCopy(wrapper.implementation(), mat, DIFFERENT_NONZERO_PATTERN);
 		return true;
 	}
 	
-	bool PETScBackend::convert(PETScSparseMatrix &wrapper, Mat mat)
+	bool PETScBackend::convert(const PETScSparseMatrix &wrapper, Mat mat)
 	{
-		MatCopy(wrapper.implementation(), mat, SAME_NONZERO_PATTERN);
+		MatCopy(wrapper.implementation(), mat, DIFFERENT_NONZERO_PATTERN);
 		return true;
 	}
 
@@ -429,6 +429,8 @@ namespace utopia {
           	PetscViewerASCIIOpen(PETSC_COMM_WORLD, "log_hessian.m" ,&viewer_hessian);  
           	PetscViewerPushFormat(viewer_hessian,PETSC_VIEWER_ASCII_MATLAB); 
         }   
+
+        //FIXME why are you duplicating and then copying?
     	Mat A; 
     	MatDuplicate(Mat_A.implementation(), MAT_COPY_VALUES,  &A); 
     	MatCopy(Mat_A.implementation(), A, SAME_NONZERO_PATTERN); 
@@ -450,6 +452,8 @@ namespace utopia {
           	PetscViewerASCIIOpen(PETSC_COMM_WORLD, "log_iterate.m", &viewer_iterates);  
           	PetscViewerPushFormat(viewer_iterates,PETSC_VIEWER_ASCII_MATLAB); 
         }
+
+        //FIXME why are you duplicating and then copying?
         Vec iterates; 	        
         VecDuplicate(Vec_A.implementation(), &iterates);
   		VecCopy(Vec_A.implementation(),iterates);

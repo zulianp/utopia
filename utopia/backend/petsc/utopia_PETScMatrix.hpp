@@ -247,6 +247,16 @@ namespace utopia {
             return *this;
         }
 
+        PETScMatrix &operator=(PETScMatrix &&other) {
+            if(_wrapper == other._wrapper) return *this;
+
+            this->_wrapper = other._wrapper;
+            other._wrapper = nullptr;
+            // _wrapper = std::make_shared<PETScMatWrapper>();
+            // other._wrapper->duplicate(*_wrapper);
+            return *this;
+        }
+
         bool get(const std::vector<PetscInt> &rowIndex, const std::vector<PetscInt> &colIndex,
                  std::vector<PetscReal> &values) {
             values.resize(rowIndex.size());

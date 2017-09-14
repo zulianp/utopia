@@ -132,9 +132,19 @@ namespace utopia {
         Backend<PetscScalar, PETSC>::Instance().convert(petsc_vec, utopia_vec.implementation());
     }
 
+    inline void convert(const Wrapper<PETScVector, 1> &utopia_vec, Vec &petsc_vec)
+    {
+        Backend<PetscScalar, PETSC>::Instance().convert(utopia_vec.implementation(), petsc_vec);
+    }
+
     inline void convert(const Mat &petsc_mat, Wrapper<PETScMatrix, 2> &utopia_mat)
     {
         Backend<PetscScalar, PETSC>::Instance().convert(petsc_mat, utopia_mat.implementation());
+    }
+
+    inline void convert(const Wrapper<PETScSparseMatrix, 2> &utopia_mat, Mat &petsc_mat)
+    {
+        Backend<PetscScalar, PETSC>::Instance().convert(utopia_mat.implementation(), petsc_mat);
     }
 
     inline void convert(const Mat &petsc_mat, Wrapper<PETScSparseMatrix, 2> &utopia_mat)
