@@ -136,6 +136,8 @@ namespace utopia {
             assert(i >= 0);
             return handle_to_element_id_[i];
         }
+        
+
 
     private:
         moonolith::Communicator comm;
@@ -247,6 +249,9 @@ template<class Iterator>
 //WRITE 9
             assert(!dof_map.at(local_element_id).empty());
             os << dof_map.at(local_element_id);
+//Volume Tag
+            int volume_tag=elem->subdomain_id();
+            os << volume_tag;
         }
 
         CHECK_STREAM_WRITE_END("elements", os);
@@ -336,7 +341,7 @@ template<class Iterator>
         moonolith::InputStream &is, 
         std::shared_ptr<libMesh::MeshBase> & space,
         std::vector<ElementDofMap> &dof_map, 
-        std::vector<ElementDofMap> &variable_order, 
+        std::vector<ElementDofMap> &variable_order,
         std::vector<libMesh::dof_id_type> &handle_to_element_id,
         const libMesh::Parallel::Communicator &comm)
     {
@@ -374,6 +379,7 @@ template<class Iterator>
         }
 
         dof_map.resize(n_elements);
+        
         handle_to_element_id.resize(n_elements);
 
 
@@ -398,16 +404,25 @@ template<class Iterator>
                 is >> index;
 
                 elem->set_node(ii) = & mesh_ptr->node(index);
+                
+                
 
             }
+            
+            mesh_ptr->add_elem(elem);
+            
+            libmesh_assert(elem);
 
 //READ 9
             is >> dof_map.at(i);
-
-            mesh_ptr->add_elem(elem);
-
-            libmesh_assert(elem);
-
+            
+//Set Volume Tag
+            
+            int volume_tag;
+            
+            is >> volume_tag;
+            
+            elem->subdomain_id()=volume_tag;
         }
 
         CHECK_STREAM_READ_END("elements", is);
@@ -454,6 +469,7 @@ template<class Iterator>
                 spaces.spaces()[1], 
                 spaces.dof_map(1),
                 spaces.variable_order(1),
+
                 spaces.handle_to_element_id(1),
                 comm_slave);
 

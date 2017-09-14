@@ -161,7 +161,7 @@ private:
     std::vector<ElementDofMap> var_number_[2];
     std::vector<ElementDofMap> var_order_[2];
     std::vector<ElementDofMap> var_type_[2];
-    std::vector<libMesh::dof_id_type> handle_to_element_id_[2];        
+    std::vector<libMesh::dof_id_type> handle_to_element_id_[2];
 };
 
 template<class Iterator>
@@ -263,6 +263,8 @@ static void write_space(
 
     os << dof_map.at(local_element_id);
     os << dof_map_reverse.at(local_element_id);
+    int block_id=elem->subdomain_id();
+    os << block_id;
 }
 
 CHECK_STREAM_WRITE_END("elements", os);
@@ -414,14 +416,21 @@ static void read_space(
             is >> index;
             elem->set_node(ii) = & mesh_ptr->node(index);
         }
+        
+        
+        mesh_ptr->add_elem(elem);
+        libmesh_assert(elem);
 
         //READ 9
         is >> dof_map.at(i);
         is >> dof_map_reverse.at(i);
+        int volume_tag;
+        
+        is >> volume_tag;
+        
+        elem->subdomain_id()=volume_tag;
 
-        mesh_ptr->add_elem(elem);
 
-        libmesh_assert(elem);
 
     }
 

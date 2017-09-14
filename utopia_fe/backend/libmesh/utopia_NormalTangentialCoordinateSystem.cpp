@@ -103,7 +103,7 @@ namespace utopia {
             }
         } //synch-block end
 
-        disp(global_normal_vec);
+        //disp(global_normal_vec);
         
         mat = local_sparse(local_dofs, local_dofs, n_dims);
         
