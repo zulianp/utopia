@@ -42,7 +42,7 @@ namespace utopia {
         
         os << "\n";
     }
-
+    
     
     
     
@@ -55,8 +55,9 @@ namespace utopia {
                          const unsigned int &_from_var_num,
                          const unsigned int &_to_var_num,
                          Fun process_fun,
-                         const moonolith::SearchSettings &settings, 
-                         bool use_biorth_, 
+                         const moonolith::SearchSettings &settings,
+                         bool use_biorth_,
+                         const std::vector< std::pair<int, int> > &tags,
                          int n_var)
     {
         
@@ -83,10 +84,17 @@ namespace utopia {
         
         
         auto predicate = std::make_shared<MasterAndSlave>();
-        predicate->add(0, 1);
+        
+        if(tags.size()==0){
+            predicate->add(0, 1);
+        }
+        else{
+            for(auto t : tags) predicate->add(t.first, t.second);
+        }
+        
         
         MOONOLITH_EVENT_BEGIN("create_adapters");
-
+        
         std::shared_ptr<NTreeT> tree = NTreeT::New(predicate, maxNElements, maxDepth);
         tree->reserve(n_elements);
         
@@ -94,41 +102,72 @@ namespace utopia {
         auto local_spaces = std::make_shared<FESpacesAdapter>(master, slave, dof_master, dof_slave, _from_var_num, _to_var_num);
         
         int offset = 0;
-        int space_num = 0;
         
-        for(auto s : local_spaces->spaces()) {
-            if(s) {
-                
-                bool first = true;
-
-                libMesh::dof_id_type local_element_id = 0;
-                for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
-                    auto elem=*it;
-                    Adapter a(*s, elem->id(), offset+local_element_id, space_num);
-                    assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
-                    a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
-                    tree->insert(a);
+        
+        if(tags.size()==0){
+            
+            int space_num = 0;
+            for(auto s : local_spaces->spaces()) {
+                if(s)
+                {
+                    bool first = true;
+                    //std::cout<<"I am using set predicate"<<std::endl;
+                    libMesh::dof_id_type local_element_id = 0;
+                    for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
+                        auto elem=*it;
+                        Adapter a(*s, elem->id(), offset+local_element_id,space_num);
+                        assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
+                        a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
+                        tree->insert(a);
+                        
+                    }
+                    
+                    offset += s->n_active_local_elem();
                 }
                 
-                offset += s->n_active_local_elem(); 
+                ++space_num;
             }
             
-            ++space_num;
             
-            
+        }
+        else
+        {
+            int space_num = 0;
+            std::cout<<"tags.size()"<<tags.size()<<std::endl;
+            for(auto s : local_spaces->spaces()) {
+                if(s) {
+                    
+                    bool first = true;
+                    
+                    libMesh::dof_id_type local_element_id = 0;
+                    for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
+                        auto elem=*it;
+                        if (predicate->select(elem->subdomain_id())){
+                            //std::cout<<"elem->subdomain_id() write"<<elem->subdomain_id()<<std::endl;
+                            Adapter a(*s, elem->id(), offset+local_element_id,elem->subdomain_id());
+                            assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
+                            a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
+                            tree->insert(a);
+                        }
+                    }
+                    
+                    offset += s->n_active_local_elem();
+                }
+                ++space_num;
+            }
         }
         
         tree->root()->bound().static_bound().enlarge(1e-8);
         
-   
+        
         MOONOLITH_EVENT_END("create_adapters");
         
-
+        
         std::map<long, std::shared_ptr<FESpacesAdapter> > spaces;
         std::map<long, std::vector<std::shared_ptr<FESpacesAdapter> > > migrated_spaces;
         
         
-        auto read = [&spaces, &migrated_spaces, comm, &libmesh_comm_master, &libmesh_comm_slave ]
+        auto read = [&spaces, &migrated_spaces, comm, &libmesh_comm_master, &libmesh_comm_slave, &tags]
         (
          const long ownerrank,
          const long senderrank,
@@ -149,28 +188,52 @@ namespace utopia {
             }
             
             data.reserve(data.size() + 3000);
-
             
-            int space_num = 0;
+            
+            
             long offset = 0;
-            for(auto s : proc_space->spaces()) {
-                if(s) {
-                    //ID_FIX this should be fine n_elem is actually local sence the mesh is a SerialMesh
-                    for (int i=0; i<s->n_elem(); i++) {
-                        data.push_back(Adapter(*s, i, offset + i, space_num) );
-                        assert(!proc_space->dof_map(space_num)[i].empty());
-                        data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
+            
+            if(tags.size()==0){
+                int space_num = 0;
+                for(auto s : proc_space->spaces()) {
+                    if(s) {
+                        //ID_FIX this should be fine n_elem is actually local sence the mesh is a SerialMesh
+                        for (int i=0; i<s->n_elem(); i++) {
+                            data.push_back(Adapter(*s, i, offset + i,space_num));
+                            assert(!proc_space->dof_map(space_num)[i].empty());
+                            data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
+                        }
+                        
+                        offset += s->n_elem();
+                        
                     }
                     
-                    offset += s->n_elem();
-                    
+                    ++space_num;
                 }
-                
-                ++space_num;
-                
             }
-        
-            CHECK_STREAM_READ_END("vol_proj", in);    
+            
+            else{
+                int space_num = 0;
+                for(auto s : proc_space->spaces()) {
+                    if(s) {
+                        for (int i=0; i<s->n_elem(); i++) {
+                            const Elem * elem = s->elem_ptr(i);
+                            //Volume Tag
+                            int volume_tag = elem->subdomain_id();
+                            data.push_back(Adapter(*s, i, offset + i,volume_tag) );
+                            assert(!proc_space->dof_map(space_num)[i].empty());
+                            data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
+                        }
+                        
+                        offset += s->n_elem();
+                        
+                    }
+                    
+                    ++space_num;
+                }
+            }
+            
+            CHECK_STREAM_READ_END("vol_proj", in);
         };
         
         
@@ -184,7 +247,7 @@ namespace utopia {
             
             CHECK_STREAM_WRITE_BEGIN("vol_proj", out);
             
-         
+            
             if (ownerrank == comm.rank()) {
                 
                 write_element_selection(begin, end, *local_spaces, out);
@@ -199,7 +262,7 @@ namespace utopia {
                 write_element_selection(begin, end, *spaceptr, out);
                 
             }
-
+            
             
             CHECK_STREAM_WRITE_END("vol_proj", out);
             
@@ -207,7 +270,7 @@ namespace utopia {
         
         
         long n_false_positives = 0, n_intersections = 0;
-    
+        
         
         auto fun = [&n_false_positives, &n_intersections, &process_fun](
                                                                         
@@ -227,7 +290,7 @@ namespace utopia {
             return true;
             
         };
-         
+        
         moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);
         
         
@@ -270,10 +333,10 @@ namespace utopia {
         biorth_elem->reinit(&el);
         mortar_assemble_weights(*biorth_elem, weights);
     }
-
+    
     static void scale_polyhedron(const double scaling, Polyhedron &poly)
     {
-       const int n_values = poly.n_nodes * poly.n_dims;
+        const int n_values = poly.n_nodes * poly.n_dims;
         for(int i = 0; i < n_values; ++i) {
             poly.points[i] *= scaling;
         }
@@ -289,7 +352,10 @@ namespace utopia {
                   const unsigned int &_from_var_num,
                   const unsigned int &_to_var_num,
                   DSMatrixd &B,
-                  const moonolith::SearchSettings &settings,bool  use_biorth_, int n_var)
+                  const moonolith::SearchSettings &settings,
+                  bool  use_biorth_,
+                  const std::vector< std::pair<int, int> > &tags,
+                  int n_var)
     {
         
         const int var_num_slave = _to_var_num;
@@ -305,7 +371,7 @@ namespace utopia {
         
         std::shared_ptr<MeshBase> master_space = master;
         std::shared_ptr<MeshBase> slave_space  = slave;
-
+        
         libMesh::DenseMatrix<libMesh::Real> elemmat;
         libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
         
@@ -403,19 +469,19 @@ namespace utopia {
                 }
             }
             else if(dim == 3) {
-
+                
                 // const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly); //(volume)
                 //src_poly
                 make_polyhedron(src_el,  src_poly);
                 make_polyhedron(dest_el, dest_poly);
-
+                
                 //scale_polyhedron(src_poly, 1./weight); //(volume)
                 //scale_polyhedron(dest_poly, 1./weight); //(volume)
                 
                 
                 if(intersect_3D(src_poly, dest_poly, intersection3)) {
                     //scale_polyhedron(intersection3, weight); //(volume)
-
+                    
                     total_intersection_volume += isector.p_mesh_volume_3(intersection3);
                     
                     const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly); //comment this out (volume)
@@ -444,22 +510,22 @@ namespace utopia {
                 transform_to_reference(*src_trans,  src_el.type(),  composite_ir,  src_ir);
                 transform_to_reference(*dest_trans, dest_el.type(), composite_ir,  dest_ir);
                 
-
+                
                 assert(!master_dofs.empty());
                 assert(!slave_dofs.empty());
-
+                
                 master_fe->attach_quadrature_rule(&src_ir);
-
+                
                 const std::vector<std::vector<Real>> & phi_master  = master_fe->get_phi();
-
+                
                 master_fe->reinit(&src_el);
                 
                 slave_fe->attach_quadrature_rule(&dest_ir);
-
+                
                 const std::vector<std::vector<Real>> & phi_slave = slave_fe->get_phi();
-           
+                
                 const std::vector<Real> & JxW_slave = slave_fe->get_JxW();
-
+                
                 slave_fe->reinit(&dest_el);
                 
                 elemmat.zero();
@@ -469,20 +535,20 @@ namespace utopia {
                 } else {
                     mortar_assemble(*master_fe, *slave_fe, elemmat);
                 }
-            
+                
                 auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
- 
+                
                 local_element_matrices_sum += partial_sum;
                 
                 intersected = true;
                 
                 ++n_intersections;
                 
-
+                
                 assert(slave_dofs.size() == elemmat.m());
                 assert(master_dofs.size() == elemmat.n());
                 
-                         
+                
                 for(int i = 0; i < slave_dofs.size(); ++i) {
                     
                     const long dof_I = slave_dofs[i];
@@ -503,12 +569,12 @@ namespace utopia {
             }
             
         };
-
-        if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, fun, settings, use_biorth_,n_var)) {
+        
+        if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, fun, settings, use_biorth_, tags, n_var)) {
             std::cout << "no intersections" <<std::endl;
             return false;
         }
-                
+        
         double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };
         
         comm.all_reduce(volumes, 2, moonolith::MPISum());
@@ -527,10 +593,10 @@ namespace utopia {
             std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
         }
         
-        std::vector<moonolith::Integer> ownershipRangesMaster(comm.size()+1, 0);        
+        std::vector<moonolith::Integer> ownershipRangesMaster(comm.size()+1, 0);
         std::vector<moonolith::Integer> ownershipRangesSlave(comm.size()+1, 0);
-
-        ownershipRangesMaster[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_master);        
+        
+        ownershipRangesMaster[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_master);
         ownershipRangesSlave[comm.rank()+1]  += static_cast<unsigned int>(n_dofs_on_proc_slave);
         
         comm.all_reduce(&ownershipRangesMaster[0], ownershipRangesMaster.size(), moonolith::MPISum());
@@ -587,23 +653,26 @@ namespace utopia {
     
     
     bool assemble_volume_transfer(moonolith::Communicator &comm,
-                              const std::shared_ptr<MeshBase> &master,
-                              const std::shared_ptr<MeshBase> &slave,
-                              const std::shared_ptr<DofMap> &dof_master,
-                              const std::shared_ptr<DofMap> &dof_slave,
-                              const unsigned int & _from_var_num,
-                              const unsigned int & _to_var_num,
-                              bool  use_biorth_, int n_var, DSMatrixd &B)
+                                  const std::shared_ptr<MeshBase> &master,
+                                  const std::shared_ptr<MeshBase> &slave,
+                                  const std::shared_ptr<DofMap> &dof_master,
+                                  const std::shared_ptr<DofMap> &dof_slave,
+                                  const unsigned int & _from_var_num,
+                                  const unsigned int & _to_var_num,
+                                  bool  use_biorth_,
+                                  int n_var, DSMatrixd &B,
+                                  const std::vector< std::pair<int, int> > &tags)
     {
         moonolith::SearchSettings settings;
         
+        
         if(master->mesh_dimension() == 2) {
-            return utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B, settings,use_biorth_, n_var);
+            return utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B, settings,use_biorth_, tags, n_var);
         }
         
         
         if(master->mesh_dimension() == 3) {
-            return utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B, settings,use_biorth_, n_var);
+            return utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, _from_var_num,  _to_var_num, B, settings,use_biorth_, tags, n_var);
         }
         
         assert(false && "Dimension not supported!");

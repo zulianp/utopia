@@ -24,7 +24,7 @@ namespace utopia {
                                     const std::shared_ptr<libMesh::DofMap>  &original_dof_map,
                                     const unsigned int  &var_num,
                                     std::vector<ElementDofMap> &dof_map,
-                                    std::vector<ElementDofMap> &variable_type, 
+                                    std::vector<ElementDofMap> &variable_type,
                                     std::vector<libMesh::dof_id_type> &handle_two_element_id);
         
     static void copy_var_order(libMesh::DofMap &dofmap, std::vector<ElementDofMap> &variable_order);
