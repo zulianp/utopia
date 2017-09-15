@@ -20,8 +20,8 @@ namespace utopia {
             //Assemble 1D laplacian with dirichlet nodes at the boundary
             {
                 Write<Matrix> write(mat);
-                Range rr = rowRange(mat);
-                //Range cr = colRange(mat);
+                Range rr = row_range(mat);
+                //Range cr = col_range(mat);
 
                 //FIXME assumed row is owned by this proc completely.
                 int rbegin = rr.begin();
@@ -68,8 +68,8 @@ namespace utopia {
             Matrix mat = values(_n, _n, 0.1);
             {
                 Read<Matrix> read(mat);
-                Range rr = rowRange(mat);
-                Range cr = colRange(mat);
+                Range rr = row_range(mat);
+                Range cr = col_range(mat);
 
                 for (int i = rr.begin(); i != rr.end(); ++i) {
                     for (int j = cr.begin(); j != cr.end(); ++j) {
@@ -81,8 +81,8 @@ namespace utopia {
             mat = identity(_n, _n);
             {
                 Read<Matrix> read(mat);
-                Range rr = rowRange(mat);
-                Range cr = colRange(mat);
+                Range rr = row_range(mat);
+                Range cr = col_range(mat);
 
                 for (int i = rr.begin(); i != rr.end(); ++i) {
                     for (int j = cr.begin(); j != cr.end(); ++j) {

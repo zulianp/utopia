@@ -37,14 +37,9 @@ namespace utopia {
     }
 
     void petsc_axpy_test() {
-        // std::cout << "begin: petsc_axpy_test" << std::endl;
-
+       
         {
-            int rank;
-            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
             //! [axpy (petsc)]
-
             int n = 10;
             DVectord x = values(n, 1.0);
             DVectord y = values(n, 2.0);
@@ -52,27 +47,35 @@ namespace utopia {
             const double alpha = 0.1;
 
             DVectord result = alpha * x + y;
-            // disp(result);
-
             assert(norm1(result - expected) < 1e-5);
-
             //! [axpy (petsc)]
         }
 
         ///////////////////////////////////
 
-        // {
-        //     const PetscInt n = 10;
-        //     const PetscInt m = 20;
+        {
+            const PetscInt n = 10;
+            const PetscInt m = 20;
 
-        //     DMatrixd a = values(m, n, 1.0);
-        //     DMatrixd b = identity(m, n);
-        //     const double alpha = 4;
-        //     DMatrixd result = alpha * a + b;
-        //     disp(result);
-        // }
+            DMatrixd X = values(m, n, 1.0);
+            DMatrixd Y = identity(m, n);
+            const double alpha = 4;
+            DMatrixd result = alpha * X + Y;
+            double actual = sum(result);
+            assert(approxeq(810., actual));
+        }
 
-        // std::cout << "end: petsc_axpy_test" << std::endl;
+        ///////////////////////////////////   
+       
+        {
+            const int m = mpi_world_size() * 3;
+            const int n = mpi_world_size() * 2;
+
+            DSMatrixd X = 2.  * identity(m, n);
+            DSMatrixd Y = 0.1 * identity(m, n);
+            double alpha = 4.;
+            DSMatrixd res = alpha * X + Y;
+        }
     }
 
     void petsc_vector_accessors_test() {
