@@ -11,9 +11,9 @@ typedef double Real;
 
 namespace utopia {
 
-    #ifdef WITH_BLAS
+#ifdef WITH_BLAS
 
-    void BLAS_test() {
+    void blas_test() {
         //variables
         Matrixd m1(2, 2, {1, 0, 0, 1});
         Matrixd m2(2, 2, {1, 2, 3, 4});
@@ -48,7 +48,7 @@ namespace utopia {
     }
 
 
-    void function_test() {
+    void blas_function_test() {
         Vectord point({1.0, -1.0});
 
         TestFunction2D_1<Matrixd, Vectord> fun;
@@ -71,9 +71,8 @@ namespace utopia {
         assert(approxeq(H_exp, H));
     }
 
-    void solver_test() {
+    void blas_solver_test() {
     #ifdef WITH_LAPACK
-    //    std::cout << "begin: solver_test" << std::endl;
     //    Matrixd A(5, 5,
     //              {6.80, -2.11, 5.66, 5.97, 8.23,
     //               -6.05, -3.30, 5.36, -4.44, 1.08,
@@ -140,12 +139,10 @@ namespace utopia {
     //
     //    disp(x3);
     //    disp(fun3.value(x3));
-        // std::cout << "end: solver_test" << std::endl;
     #endif //WITH_LAPACK
     }
 
-    void inplace_test() {
-        // std::cout << "begin: inplace_test" << std::endl;
+    void blas_inplace_test() {
         //! [in place operations (blas)]
 
         Vectord v1({4.0, 3.0, 2.0, 1.0});
@@ -163,12 +160,9 @@ namespace utopia {
         assert(approxeq(m_exp, m1));
 
         //! [in place operations (blas)]
-        // std::cout << "end: inplace_test" << std::endl;
     }
 
-    void accessors_test() {
-        // std::cout << "begin: accessors_test" << std::endl;
-
+    void blas_accessors_test() {
         Vectord v1({0.0, 0.0});
         Vectord v2({1.0, 1.0});
         Matrixd m1(2, 2, {2.0, 2.0, 2.0, 2.0});
@@ -196,13 +190,10 @@ namespace utopia {
 
         Matrixd m_exp(2, 2, {2.0, 2.0, 2.0, 2.0});
         assert(approxeq(m_exp, m1));
-
-        // std::cout << "end: accessors_test" << std::endl;
     }
 
 
-    void setvalues_test() {
-        // std::cout << "begin: setvalues_test" << std::endl;
+    void blas_set_values_test() {
         Matrixd m1 = identity(3, 3);
 
         std::vector<int> rows{0, 1, 2};
@@ -216,13 +207,9 @@ namespace utopia {
 
         Matrixd m_exp(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0});
         assert(approxeq(m_exp, m1));
-
-        // std::cout << "end: setvalues_test" << std::endl;
     }
 
-    void norm_test() {
-        // std::cout << "begin: norm_test" << std::endl;
-
+    void blas_norm_test() {
         Vectord w1({10.0, 3.0, 1.0});
         Vectord w2({20.0, 2.0, 3.0});
         Vectord w3({-30.0, -5.0, -4.0});
@@ -238,13 +225,9 @@ namespace utopia {
         // std::cout << tree_format(norm2(twiceaxpy).getClass()) << std::endl;
         // std::cout << val << std::endl;
         val = norm_infty(twiceaxpy);
-
-        // std::cout << "end: norm_test" << std::endl;
     }
 
-    void composite_test() {
-        // std::cout << "begin: composite_test" << std::endl;
-
+    void blas_composite_test() {
         Vectord w1({10.0, 3.0, 1.0});
         Vectord w2({20.0, 2.0, 3.0});
         Vectord w3({-30.0, -5.0, -4.0});
@@ -262,8 +245,6 @@ namespace utopia {
         wresult = expr;
         Vectord wexp({-24.311, -7.2893, -2.4321});
         assert(approxeq(wexp, wresult));
-
-        // std::cout << "end: composite_test" << std::endl;
     }
 
 
@@ -278,7 +259,7 @@ namespace utopia {
         return ret;
     }
 
-    void sparse_matrix_test() {
+    void blas_sparse_matrix_test() {
         CRSMatrixd mat = sparse(3, 3, 1);
 
         {
@@ -292,7 +273,7 @@ namespace utopia {
 
         CCSMatrixd ccsmat = mat;
 
-        #ifdef WITH_UMFPACK
+#ifdef WITH_UMFPACK
         //     auto lsolver = std::make_shared<UmfpackLU>();
 
         //     lsolver->solve(mat, v1, v2);
@@ -314,27 +295,24 @@ namespace utopia {
 
         //     expected = values(2, 1);
         //     assert(approxeq(expected, x2));
-        #endif //WITH_UMFPACK
-
+#endif //WITH_UMFPACK
     }
 
-    #endif //WITH_BLAS
+#endif //WITH_BLAS
 
     void runBLASTest() {
-        #ifdef WITH_BLAS
-        std::cout << "Begin: BLASTest" << std::endl;
-
-        BLAS_test();
-        function_test();
-        solver_test();
-        inplace_test();
-        accessors_test();
-        setvalues_test();
-        norm_test();
-        composite_test();
-        sparse_matrix_test();
-
-        std::cout << "End:   BLASTest" << std::endl;
-        #endif // WITH_BLAS
+#ifdef WITH_BLAS
+        UTOPIA_UNIT_TEST_BEGIN("BLASTest");
+        UTOPIA_RUN_TEST(blas_test);
+        UTOPIA_RUN_TEST(blas_function_test);
+        UTOPIA_RUN_TEST(blas_solver_test);
+        UTOPIA_RUN_TEST(blas_inplace_test);
+        UTOPIA_RUN_TEST(blas_accessors_test);
+        UTOPIA_RUN_TEST(blas_set_values_test);
+        UTOPIA_RUN_TEST(blas_norm_test);
+        UTOPIA_RUN_TEST(blas_composite_test);
+        UTOPIA_RUN_TEST(blas_sparse_matrix_test);
+        UTOPIA_UNIT_TEST_END("BLASTest");
+#endif // WITH_BLAS
     }
 }

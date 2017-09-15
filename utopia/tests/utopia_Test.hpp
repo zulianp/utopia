@@ -37,33 +37,41 @@ namespace utopia
 
     inline static void runTests(const std::string& tests)
     {
+        if(mpi_world_rank() == 0) {
+            std::cout << "[Begin testing]" << std::endl;
+        }
+
         if (tests == "all") {
             runAllTests();
-            return;
+        } else {
+            std::istringstream iss(tests);
+            std::string token;
+            while (std::getline(iss, token, ',')) {
+                if (token == "wrapper")
+                    runWrapperTest();
+                else if (token == "spec")
+                    runSpecTest();
+                else if (token == "autodiff")
+                    run_autodiff_test();
+                else if (token == "solvers")
+                   runSolversTest();
+                else if (token == "performance")
+                    run_performance_test();
+                else if (token == "algebra")
+                    runAlgebraTest();
+                else if (token == "utilities")
+                    runUtilitiesTest();
+                else if (token == "petsc")
+                    runPETScTest();
+                else if (token == "blas")
+                    runBLASTest();
+                else if (token == "misc")
+                    runMiscTest();
+            }
         }
-        std::istringstream iss(tests);
-        std::string token;
-        while (std::getline(iss, token, ',')) {
-            if (token == "wrapper")
-                runWrapperTest();
-            else if (token == "spec")
-                runSpecTest();
-            else if (token == "autodiff")
-                run_autodiff_test();
-            else if (token == "solvers")
-               runSolversTest();
-            else if (token == "performance")
-                run_performance_test();
-            else if (token == "algebra")
-                runAlgebraTest();
-            else if (token == "utilities")
-                runUtilitiesTest();
-            else if (token == "petsc")
-                runPETScTest();
-            else if (token == "blas")
-                runBLASTest();
-            else if (token == "misc")
-                runMiscTest();
+
+        if(mpi_world_rank() == 0) {
+            std::cout << "[End testing]" << std::endl;
         }
     }
 }

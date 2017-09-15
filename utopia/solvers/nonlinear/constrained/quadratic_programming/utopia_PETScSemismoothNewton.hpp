@@ -4,6 +4,9 @@
 #include "utopia_SemismoothNewton.hpp"
 #include "utopia_PETScKSPSolver.hpp"
 
+// PetscErrorCode  KSPRegister(const char sname[],PetscErrorCode (*function)(KSP))
+// KSPRegister("my_solver",MySolverCreate);
+
 namespace utopia {
 
 	//FIXME and then add PETSC to the backend flag
@@ -39,7 +42,7 @@ namespace utopia {
 			Vec lobo, upbo;
 
 			DVectord dummy_lobo, dummy_upbo;
-			if( constraints_.has_upper_bound()) {
+			if(constraints_.has_upper_bound()) {
 				upbo = raw_type(*constraints_.upper_bound());
 			} else {
 				dummy_upbo = local_values(local_size(b).get(0), PETSC_INFINITY);

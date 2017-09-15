@@ -294,45 +294,101 @@ namespace utopia {
 		size.set(1, m);
 		return true;
 	}
-	
-	void PETScBackend::assignFromRange(PETScMatrix &left, const PETScMatrix &right, const Range &globalRowRange,
-									   const Range &globalColRange) {
-		assert(!globalRowRange.empty());
-		
-		Mat &li = left.implementation();
-		//            const Mat &ri = left.implementation();
 
-		MPI_Comm comm = right.communicator();
-		MatDestroy(&left.implementation());
-		
-		MatCreateDense(comm, PETSC_DECIDE, PETSC_DECIDE, globalRowRange.extent(),
-					   globalColRange.extent(), PETSC_NULL, &li);
-		
-		
-		Range rr = rowRange(right).intersect(globalRowRange);
-		Range cr = colRange(right).intersect(globalColRange);
-		
-		// rr might be invalid !!! so use < to compare with range
-		//            if(!rr.valid()) std::cout << rr << std::endl;
-		
-		
-		//use MAT_FLUSH_ASSEMBLY to not make petsc crash if nothing is added
-		MatAssemblyBegin(li, MAT_FLUSH_ASSEMBLY);
-		
-		PetscInt r = 0, c = 0;
-		for (PetscInt rIt = rr.begin(); rIt < rr.end(); ++rIt) {
-			r = rIt - globalRowRange.begin();
-			for (PetscInt cIt = cr.begin(); cIt < cr.end(); ++cIt) {
-				c = cIt - globalColRange.begin();
-				set(left, r, c, get(right, rIt, cIt));
-			}
+	
+
+	static void par_assign_from_local_range(
+		const Range &local_row_range,
+		const Range &local_col_range,
+		const PETScMatrix &right,
+		PETScMatrix &result)
+	{
+		PetscErrorCode ierr = 0;
+
+		Mat &l = result.implementation();
+		const Mat r = right.implementation();
+
+		std::vector<PetscInt> remote_rows;
+		remote_rows.reserve(local_row_range.extent());
+		for(PetscInt l_row = local_row_range.begin(); l_row < local_row_range.end(); ++l_row) {	
+			remote_rows.push_back(l_row);
 		}
+
+		std::vector<PetscInt> remote_cols;
+		remote_cols.reserve(local_col_range.extent());
+		for(PetscInt l_col = local_col_range.begin(); l_col < local_col_range.end(); ++l_col) {	
+			remote_cols.push_back(l_col);
+		}
+
+		IS isrow;
+		ierr = ISCreateGeneral(PETSC_COMM_WORLD, remote_rows.size(), &remote_rows[0], PETSC_USE_POINTER, &isrow);
+
+		IS iscol;
+		ierr = ISCreateGeneral(PETSC_COMM_WORLD, remote_cols.size(), &remote_cols[0], PETSC_USE_POINTER, &iscol);
+
+		MatDestroy(&l);
+		ierr = MatGetSubMatrix(r, isrow, iscol, MAT_INITIAL_MATRIX, &l);
+	}
+
+	static void par_assign_from_global_range(
+		const Range &global_row_range,
+		const Range &global_col_range,
+		const PETScMatrix &right,
+		PETScMatrix &result)
+	{
+
+		const Mat r = right.implementation();
+		PetscInt global_rows = global_row_range.extent();
+		PetscInt local_rows  = PETSC_DECIDE;
+
+		PetscInt global_cols = global_col_range.extent();
+		PetscInt local_cols  = PETSC_DECIDE;
+
+		MPI_Comm comm = PetscObjectComm((PetscObject)r);
+		PetscSplitOwnership(comm, &local_rows, &global_rows);
+		PetscSplitOwnership(comm, &local_cols, &global_cols);
+
+		unsigned long offsets_in[2] = {
+			(unsigned long)local_rows,
+			(unsigned long)local_cols
+		};
+
+		unsigned long offset_out[2] = {
+			(unsigned long)0,
+			(unsigned long)0
+		};
 		
-		MatAssemblyEnd(li, MAT_FLUSH_ASSEMBLY);
-		
-		//To finalize the matrix
-		MatAssemblyBegin(li, MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(li, MAT_FINAL_ASSEMBLY);
+		MPI_Exscan(
+			&offsets_in,
+			&offset_out,
+			2, 
+			MPI_UNSIGNED_LONG ,
+			MPI_SUM,
+			comm);
+
+		offset_out[0] += global_row_range.begin();
+		offset_out[1] += global_col_range.begin();
+
+
+		par_assign_from_local_range(
+			Range(offset_out[0], offset_out[0] + local_rows),
+			Range(offset_out[1], offset_out[1] + local_cols),
+			right,
+			result);
+	}
+	
+	void PETScBackend::assignFromRange(
+		PETScMatrix &left,
+		const PETScMatrix &right,
+		const Range &global_row_range,
+		const Range &global_col_range) 
+	{
+		assert(!global_row_range.empty());
+		par_assign_from_global_range(
+			global_row_range,
+			global_col_range,
+			right,
+			left);
 	}
 	
 	
@@ -508,15 +564,15 @@ namespace utopia {
 		return status;
 	}
 	
-	void PETScBackend::assignFromRange(PETScVector &left, const PETScVector &right, const Range &globalRowRange,
-									   const Range & /*globalColRange */) {
-		assert(!globalRowRange.empty());
+	void PETScBackend::assignFromRange(PETScVector &left, const PETScVector &right, const Range &global_row_range,
+									   const Range & /*global_col_range */) {
+		assert(!global_row_range.empty());
 		
 		Vec &li = left.implementation();
 		//const Vec &ri = left.implementation();
 		
 		// get range of vector
-		Range rr = range(right).intersect(globalRowRange);
+		Range rr = range(right).intersect(global_row_range);
 		
 		// create vector
 		//VecCreate(left.communicator(), &li);
@@ -531,7 +587,7 @@ namespace utopia {
 		
 		PetscInt r = 0;
 		for (PetscInt rIt = rr.begin(); rIt < rr.end(); ++rIt) {
-			r = rIt - globalRowRange.begin();
+			r = rIt - global_row_range.begin();
 			set(left, r, get(right, rIt));
 		}
 		
@@ -1590,21 +1646,21 @@ namespace utopia {
 		MatTranspose(right.implementation(), MAT_INITIAL_MATRIX, &left.implementation());
 	}
 	
-	void PETScBackend::assignToRange(PETScMatrix & /*left*/, const PETScMatrix &/*right*/, const Range &/*globalRowRange*/,
-									 const Range &/*globalColRange*/)
+	void PETScBackend::assignToRange(PETScMatrix & /*left*/, const PETScMatrix &/*right*/, const Range &/*global_row_range*/,
+									 const Range &/*global_col_range*/)
 	{
 		
 		assert(false); //TODO
 		
 	}
 	
-	void PETScBackend::assignToRange( PETScMatrix &/*left*/, const Identity &/**/, const Range &/*globalRowRange*/,
-									 const Range &/*globalColRange*/) {
+	void PETScBackend::assignToRange( PETScMatrix &/*left*/, const Identity &/**/, const Range &/*global_row_range*/,
+									 const Range &/*global_col_range*/) {
 		assert(false); //TODO
 	}
 	
-	void PETScBackend::assignToRange( PETScVector &/*left*/, const PETScVector &/*right*/, const Range &/*globalRowRange*/,
-									 const Range &/*globalColRange*/) {
+	void PETScBackend::assignToRange( PETScVector &/*left*/, const PETScVector &/*right*/, const Range &/*global_row_range*/,
+									 const Range &/*global_col_range*/) {
 		assert(false); //TODO
 	}
 	
@@ -1839,6 +1895,8 @@ namespace utopia {
 		PetscInt global_r, global_c, local_r, local_c;
 		MatGetSize(mat.implementation(), &global_r, &global_c);
 		MatGetLocalSize(mat.implementation(), &local_r, &local_c);
+
+		VecDestroy(&result.implementation());
 		VecCreateMPI(mat.communicator(), local_r, global_r, &result.implementation());
 		VecAssemblyBegin(result.implementation());
 
