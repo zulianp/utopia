@@ -5,6 +5,7 @@
 #define UTOPIA_MEMORY_HPP
 
 #include <memory>
+#include <functional>
 
 #include "utopia_MemoryPool.hpp"
 
