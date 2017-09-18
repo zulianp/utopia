@@ -347,12 +347,12 @@ namespace utopia {
 		const auto &lf_1  = std::get<0>(rhs_blocks);
 		const auto &lf_2  = std::get<1>(rhs_blocks);
 
-		Chrono c;
+		// Chrono c;
 		auto ass = make_assembly([&]() -> void {
 
 			// int i = 0;
 
-			c.start();
+			// c.start();
 			DenseMatrix<Real> mat_11, mat_12, mat_21, mat_22;
 			DenseVector<Real> vec_1, vec_2;
 			std::vector<dof_id_type>  dof_u, dof_sigma;
@@ -413,9 +413,9 @@ namespace utopia {
 				backend.mixed_vector_add(*e_it, vec_1, vec_2, u, sigma, *context.system.rhs);
 			}
 
-			c.stop();
+			// c.stop();
 			std::cout << "Assembly time: ";
-			c.describe(std::cout);
+			// c.describe(std::cout);
 		});
 
 		context.system.attach_assemble_object(ass);
@@ -500,8 +500,8 @@ namespace utopia {
 
 		std::cout << "starting solve" << std::endl;
 
-		Chrono c;
-		c.start();
+		// Chrono c;
+		// c.start();
 		
 		Factorization<DSMatrixd, DVectord>().solve(mat, rhs, sol);
 		convert(sol, *context.system.solution);
@@ -510,9 +510,9 @@ namespace utopia {
 		// disp(rhs);
 		// disp(sol);
 
-		c.stop();
+		// c.stop();
 		std::cout << "Solving time: ";
-		c.describe(std::cout);
+		// c.describe(std::cout);
 
 		ExodusII_IO(*mesh).write_equation_systems (output_path, context.equation_systems);
 	}
@@ -706,8 +706,8 @@ namespace utopia {
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
 
-		Chrono c;
-		c.start();
+		// Chrono c;
+		// c.start();
 
 		long n = u.dof_map().n_dofs();
 

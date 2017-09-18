@@ -897,12 +897,12 @@ namespace utopia {
         double intersection_time = 0.0;
         double assembly_time     = 0.0;
         
-        utopia::Chrono c;
+        // utopia::Chrono c;
         
         auto fun = [&](const ElementAdapter<Dimensions> &master,
                        const ElementAdapter<Dimensions> &slave) -> bool {
             
-            c.start();
+            // c.start();
             
             long n_intersections = 0;
             
@@ -939,9 +939,9 @@ namespace utopia {
             
             const int order = order_for_l2_integral(dim, src_el, SECOND , dest_el,FIRST);
             
-            c.stop();
-            element_setup_time += c.get_seconds();
-            c.start();
+            // c.stop();
+            // element_setup_time += c.get_seconds();
+            // c.start();
             
             if(dim == 2)  {
                 make_polygon(src_el,   src_pts);
@@ -982,9 +982,9 @@ namespace utopia {
                 return false;
             }
             
-            c.stop();
-            intersection_time += c.get_seconds();
-            c.start();
+            // c.stop();
+            // intersection_time += c.get_seconds();
+            // c.start();
             
             const auto &master_dofs = master.dof_map();
             const auto &slave_dofs  = slave.dof_map();
