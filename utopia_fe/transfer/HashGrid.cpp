@@ -345,7 +345,7 @@ namespace utopia {
 
 	bool boundary_hash_grid_detect_intersections(const libMesh::MeshBase &mesh, std::vector<int> &pairs, const libMesh::Real blow_up)
 	{
-		utopia::Chrono c;
+		// utopia::Chrono c;
 
 		bool verbose = true;
 
@@ -355,13 +355,13 @@ namespace utopia {
 		std::vector<Box> boxes;
 		std::vector<long> map;
 
-		c.start();
+		// c.start();
 		boundary_build_boxes(mesh, boxes, box, map, blow_up);
-		c.stop();
+		// c.stop();
 
 		if(verbose) {
 			std::cout << "build boxes: ";
-			c.describe(std::cout);
+			// c.describe(std::cout);
 			box.print(std::cout);
 		}
 
@@ -372,14 +372,14 @@ namespace utopia {
 			dims[i] = n_x_dim;
 		}
 
-		c.start();
+		// c.start();
 		if(!hash_grid_detect_intersection(box, dims, boxes, boxes, pairs, 1e-16)) {
 			return false;
 		}
 
 		if(verbose) {
 			std::cout << "finding candidates: ";
-			c.describe(std::cout);
+			// c.describe(std::cout);
 		}
 
 		//remap indices
