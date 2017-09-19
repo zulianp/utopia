@@ -304,6 +304,8 @@ static void write_element_selection(
     bool met_slave_selection = false;
     const libMesh::dof_id_type n_elem = spaces.handle_to_element_id(0).size();
 
+    const libMesh::dof_id_type n_elem = spaces.handle_to_element_id(0).size();
+
     for(Iterator it = begin; it != end; ++it) {
         int index = *it;
 
