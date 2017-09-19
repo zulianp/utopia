@@ -480,6 +480,8 @@ namespace utopia {
 		const std::string &name)
 	{
 
+		Read<DVectord> r_n(normals), r_s(scale);
+
 		using namespace libMesh;
 		int mesh_dim = mesh.mesh_dimension();
 

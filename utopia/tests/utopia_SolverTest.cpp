@@ -24,9 +24,18 @@ namespace utopia
 	class SolverTest
 	{
 	public:
+
+
+		static void print_backend_info()
+		{
+		    if(Utopia::Instance().get("verbose") == "true") {
+		        std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+		    }
+		}
 		
 		void run()
 		{
+			print_backend_info();
 			UTOPIA_RUN_TEST(newton_cg_test);
 			UTOPIA_RUN_TEST(solver_from_params_test);
 			UTOPIA_RUN_TEST(tr_test);

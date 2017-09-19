@@ -246,6 +246,11 @@ namespace utopia {
         return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance();
     }
 
+    template<class Tensor, int Order>
+    inline const BackendInfo &backend_info(const Wrapper<Tensor, Order> &t) {
+        return backend(t).info();
+    }
+
 
     template<class Tensor, int Order>
     inline long unique_id(const Wrapper<Tensor, Order> &t)

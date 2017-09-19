@@ -217,7 +217,46 @@ namespace utopia
 		bool apply(const PETScMatrix &left, const PETScMatrix &right, const Multiplies &, PETScMatrix &result);
 		bool apply(const PETScVector &left, const PETScVector &right, const EMultiplies &, PETScVector &result);
 		bool apply(const PETScVector &left, const PETScVector &right, const Divides &, PETScVector &result);
+		bool apply(const PETScVector &left, const PETScVector &right, const Min &, PETScVector &result);
+		bool apply(const PETScVector &left, const PETScVector &right, const Max &, PETScVector &result);
 		
+		static void allocate_apply_vec(const PETScVector &left, const PETScVector &right, PETScVector &result);
+
+		template<class Operation>
+		bool apply_binary_generic(const PETScVector &left, const PETScVector &right, const Operation &op, PETScVector &result)
+		{
+			allocate_apply_vec(left, right, result);
+
+
+
+			const Vec &l = left.implementation();
+			const Vec &r = right.implementation();
+			Vec &out = result.implementation();
+
+			auto ll = range(left);
+			auto rr = range(right);
+
+			assert(ll.extent() == rr.extent());
+			assert(ll.begin() == rr.begin());
+
+			readLock(left);
+			readLock(right);
+			writeLock(result);
+
+			for(PetscInt i = ll.begin(); i < ll.end(); ++i) {
+				PetscScalar lv, rv;
+				VecGetValues(l, 1, &i, &lv);
+				VecGetValues(r, 1, &i, &rv);
+				PetscScalar val = op.template apply<PetscScalar>(lv, rv);
+				VecSetValues(out, 1, &i, &val, INSERT_VALUES);
+			}
+
+			readUnlock(left);
+			readUnlock(right);
+			writeUnlock(result);
+			return true;
+		}
+
 		bool mat_mult_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result);
 		bool mat_multT_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result);
 		
@@ -325,11 +364,11 @@ namespace utopia
 			writeLock(result);
 			readLock(v);
 
-			auto fun = Operation:: template Fun<PetscScalar>();
+
 
 			for(PetscInt i = r.begin(); i < r.end(); ++i) {
 				PetscScalar value = get(v, i);
-				VecSetValue(result.implementation(), i, fun(value), INSERT_VALUES);
+				VecSetValue(result.implementation(), i, Operation::template apply<PetscScalar>(value), INSERT_VALUES);
 			}
 
 			writeUnlock(result);
@@ -394,7 +433,7 @@ namespace utopia
 		
 		Backend()
 		{
-			info_.setName("petsc");
+			info_.set_name("petsc");
 		}
 	};
 }

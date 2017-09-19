@@ -249,6 +249,8 @@ namespace utopia {
 
 		if(iteration > 0)
 		{
+			Read<DVectord> r_od(old_displacement);
+
 			search_radius = 1e-8;
 			auto r = range(old_displacement);
 			for(auto i = r.begin(); i < r.end(); i += dim) {
