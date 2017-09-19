@@ -22,6 +22,7 @@
 #include "utopia_GeometryTest.hpp"
 #include "utopia_Biomechanics.hpp"
 #include "utopia_UtopiaFETests.hpp"
+#include <functional>
 
 //#include "utopia_FEDSLBaseSolverExamples.hpp"
 using namespace utopia;
@@ -48,18 +49,35 @@ int main(const int argc, char *argv[])
 	    runners["tests"] = run_all_utopia_fe_tests;
 
 		for(int i = 1; i < argc; ++i) {
-			if(argv[i] == std::string("-run")) {
+			if(argv[i] == std::string("-r")) {
 				const int ip1 = i+1;
 				if(ip1 < argc) {
 					auto it = runners.find(argv[ip1]);
 					if(it == runners.end()) {
 						std::cerr << "[Error] " << argv[ip1] << " not found" << std::endl;
 					} else {
+						std::cout << "--------------------------------------------" << std::endl;
+						std::cout << "[Status] Running: " << argv[ip1] << std::endl;
+						std::cout << "--------------------------------------------" << std::endl;
 						it->second(init);
+						std::cout << "--------------------------------------------" << std::endl;
+						std::cout << "--------------------------------------------" << std::endl;
 					}
 				} else {
 					std::cerr << "[Error] run requires an input string" << std::endl;
 				}
+			} else if(argv[i] == std::string("-h")) {
+				std::cout << "--------------------------------------------" << std::endl;
+				std::cout << "--------------------------------------------" << std::endl;
+				std::cout << "-r <runner name>\n";
+				std::cout << "Available runners:\n";
+
+				for(auto &r : runners) {
+					std::cout << "\t" << r.first << std::endl;
+				}
+
+				std::cout << "--------------------------------------------" << std::endl;
+				std::cout << "--------------------------------------------" << std::endl;
 			}
 		}
 	}

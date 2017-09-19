@@ -88,7 +88,7 @@ namespace utopia {
 		});
 
 		context.system.attach_assemble_object(ass);
-		context.equation_systems.print_info();
+		// context.equation_systems.print_info();
 		context.equation_systems.solve();
 
 		DVectord u_sol;
@@ -161,7 +161,7 @@ namespace utopia {
 
 
 	context.system.attach_assemble_object(ass);
-	context.equation_systems.print_info();
+	// context.equation_systems.print_info();
 	context.equation_systems.solve();
 
 	ExodusII_IO(*mesh).write_equation_systems ("linear_elasticity.e", context.equation_systems);
@@ -220,7 +220,7 @@ void nonlinear_laplace_eq(LibMeshInit &init)
 	});
 
 	context.system.attach_assemble_object(ass);
-	context.equation_systems.print_info();
+	// context.equation_systems.print_info();
 
 	for(auto i = 0; i < 10; ++i) {
 		context.equation_systems.solve();
