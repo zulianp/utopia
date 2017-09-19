@@ -301,18 +301,20 @@ static void write_element_selection(
 
     bool met_slave_selection = false;
 
+    const libMesh::dof_id_type n_elem = spaces.handle_to_element_id(0).size();
+
     for(Iterator it = begin; it != end; ++it) {
         int index = *it;
 
-        if(m && index >= m->n_active_local_elem()) {
-            index -= m->n_active_local_elem();
+        if(m && index >= n_elem) {
+            index -= n_elem;
             slave_selection.push_back(index);
         } else if(!m) {
             met_slave_selection = true;
             slave_selection.push_back(index);
         } else {
             assert(!met_slave_selection);
-            assert(index < m->n_active_local_elem());
+            assert(index < n_elem);
             master_selection.push_back(index);
         }
     }
