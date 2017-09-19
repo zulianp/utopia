@@ -37,8 +37,8 @@ namespace utopia {
 		const libMesh::Order order_elem = FIRST,
 		const bool use_biorthogonal_mults = true)
 	{
-		Chrono c;
-		c.start();
+		// Chrono c;
+		// c.start();
 		
 		
 		
@@ -128,12 +128,12 @@ namespace utopia {
 		// disp(assembler.D);
 		
 		
-		c.stop();
+		// c.stop();
 		std::cout << "|master_elements| = " << mesh_master->n_elem() << std::endl;
 		std::cout << "|slave_elements|  = " << mesh_slave->n_elem()  << std::endl;
 		std::cout << double(sum(mass)) << "==" << double(sum(matrix)) << std::endl;
 		std::cout << "time: ";
-		c.describe(std::cout);
+		// c.describe(std::cout);
 		
 		// disp(val_slave);
 		
@@ -292,8 +292,8 @@ namespace utopia {
 	
 	void par_mortar_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm,const std::shared_ptr<MeshBase> &master_slave)
 	{
-		Chrono c;
-		c.start();
+		// Chrono c;
+		// c.start();
 		
 		auto order_elem = FIRST;
 		int order_quad = order_elem + order_elem;
@@ -318,8 +318,8 @@ namespace utopia {
 
 	void par_mortar_surface_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm,const std::shared_ptr<MeshBase> &master_slave)
 	{
-		Chrono c;
-		c.start();
+		// Chrono c;
+		// c.start();
 		
 		auto order_elem = FIRST;
 		int order_quad = order_elem + order_elem;
@@ -739,8 +739,8 @@ namespace utopia {
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
 
-		Chrono c;
-		c.start();
+		// Chrono c;
+		// c.start();
 
 		LibMeshFEContext<LinearImplicitSystem> context(mesh);
 		auto space = vector_fe_space("disp_", LAGRANGE_VEC, FIRST, context);
@@ -830,9 +830,9 @@ namespace utopia {
 		context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
 		context.equation_systems.solve();
 		
-		c.stop();
+		// c.stop();
 		std::cout << "Matrix and rhs assembly: ";
-		c.describe(std::cout);
+		// c.describe(std::cout);
 		std::cout << std::endl;
 		
 		long n = u.dof_map().n_dofs();

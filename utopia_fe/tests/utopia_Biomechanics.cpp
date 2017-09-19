@@ -420,7 +420,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	//////////////////////////////////////////////////
 	//////////////////////////////////////////////////
 	
-	Chrono c;
+	// Chrono c;
 	
 	
 	LibMeshFEContext<LinearImplicitSystem> context(mesh);
@@ -562,7 +562,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	//	lamee_params.lambda_[1] = 5.;
 	//	lamee_params.mu_[1] = 10.;
 	
-	c.start();
+	// c.start();
 	auto ass = make_assembly([&]() -> void {
 		assemble_linear_elasticity_system(lamee_params, u, *context.system.matrix, *context.system.rhs);
 	});
@@ -571,9 +571,9 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 	context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
 	context.equation_systems.solve();
 	
-	c.stop();
+	// c.stop();
 	std::cout << "Matrix and rhs assembly: ";
-	c.describe(std::cout);
+	// c.describe(std::cout);
 	std::cout << std::endl;
 	
 	convert(*context.system.rhs, rhs);

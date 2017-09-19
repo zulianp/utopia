@@ -24,23 +24,23 @@ namespace utopia {
 
 		int dim = master_mesh.mesh_dimension();
 
-		Chrono c;
-		c.start();
+		// Chrono c;
+		// c.start();
 
 		std::vector<int> pairs;
 		if(!hash_grid_detect_intersections(master_mesh, slave_mesh, pairs)) {
 			return false;
 		}
 
-		c.stop();
+		// c.stop();
 
 		if(verbose) {
 			std::cout << "intersection detection:\t";
-			c.describe(std::cout);
+			// c.describe(std::cout);
 		}
 
 
-		c.start();
+		// c.start();
 
 		libMesh::DenseMatrix<libMesh::Real> master_pts;
 		libMesh::DenseMatrix<libMesh::Real> slave_pts;
@@ -268,11 +268,11 @@ namespace utopia {
 
 			if(!intersected) return false;
 
-			c.stop();
+			// c.stop();
 
 			if(verbose) {	
 				std::cout << "assembly time:\t";
-				c.describe(std::cout);
+				// c.describe(std::cout);
 
 				std::cout << "n_intersections:   " << n_intersections << std::endl;
 				std::cout << "n_false_positives: " << (pairs.size()/2 - n_intersections) << std::endl;
@@ -521,17 +521,17 @@ namespace utopia {
 
 		std::cout << "n_vol_elements:" << mesh.n_active_local_elem() << std::endl;
 
-		Chrono c;
-		c.start();
+		// Chrono c;
+		// c.start();
 		std::vector<int> pairs;
 		if(!boundary_hash_grid_detect_intersections(mesh, pairs, search_radius)) {
 			std::cout << "NO INTERSECTIONS" << std::endl;
 			return false;
 		}
 
-		c.stop();
+		// c.stop();
 		std::cout << "proximity detection ";
-		c.describe(std::cout);
+		// c.describe(std::cout);
 
 
 //		size_t n = mesh.n_active_local_elem();
