@@ -39,7 +39,7 @@ namespace utopia {
 	{
 		auto mesh = make_shared<Mesh>(init.comm());		
 		MeshTools::Generation::build_square (*mesh,
-			15, 15,
+			10, 10,
 			-1., 1.,
 			-1., 1.,
 			QUAD9);
@@ -69,10 +69,13 @@ namespace utopia {
 		v.set_quad_rule(make_shared<libMesh::QGauss>(dim, FIFTH));
 
 	//utopia Wrapper implemented with inliner
-		LMDenseMatrix A = identity(dim, dim);	
-		A.set(0, 0, 10);
-		A.set(1, 1, 0.1);
-		if(dim > 2) A.set(2, 2, 1);
+		LMDenseMatrix A = identity(dim, dim);
+		{
+			Write<LMDenseMatrix> w_A(A);
+			A.set(0, 0, 10);
+			A.set(1, 1, 0.1);
+			if(dim > 2) A.set(2, 2, 1);
+		}
 
 		std::function<Real (const Point &)> f = [dim](const Point &p) {
 			return 10 * std::sqrt( p(0) * p(0) + p(1) * p(1) ) - 5.0;
@@ -91,7 +94,7 @@ namespace utopia {
 		DVectord u_sol;
 		convert(*context.system.solution, u_sol);
 
-	
+
 
 		ExodusII_IO(*mesh).write_equation_systems ("anisotropic_laplacian.e", context.equation_systems);
 
@@ -106,7 +109,7 @@ namespace utopia {
 
 		auto mesh = make_shared<Mesh>(init.comm());		
 		MeshTools::Generation::build_cube (*mesh,
-			20, 20, 20,
+			10, 10, 10,
 			-1., 1.,
 			-1., 1.,
 			-1., 1.,
@@ -167,7 +170,7 @@ namespace utopia {
 
 void nonlinear_laplace_eq(LibMeshInit &init)
 {
-	int n = 50;
+	int n = 10;
 	auto mesh = make_shared<Mesh>(init.comm());		
 	MeshTools::Generation::build_square (*mesh,
 		n, n,
@@ -199,10 +202,13 @@ void nonlinear_laplace_eq(LibMeshInit &init)
 
 	auto c  = coeff(rhs_fun);
 	
-	LMDenseMatrix A = identity(dim, dim);	
-	A.set(0, 0, 2.);
-	A.set(1, 1, 0.5);
-	if(dim > 2) A.set(2, 2, 1);
+	LMDenseMatrix A = identity(dim, dim);
+	{	
+		Write<LMDenseMatrix> w_A(A);
+		A.set(0, 0, 2.);
+		A.set(1, 1, 0.5);
+		if(dim > 2) A.set(2, 2, 1);
+	}
 
 	auto v_k = interpolate(coeff(1.0), v, make_ref(*context.system.solution));
 	auto bf  = integral(dot(1./(pow2(v_k) + coeff(0.1)) * (A * grad(v)), grad(v)));	
@@ -227,7 +233,7 @@ void boundary_conds(LibMeshInit &init)
 {
 	auto mesh = make_shared<Mesh>(init.comm());		
 	MeshTools::Generation::build_square (*mesh,
-		20, 20,
+		10, 10,
 		-1., 1.,
 		-1., 1.,
 		QUAD9);

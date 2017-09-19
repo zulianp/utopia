@@ -15,8 +15,9 @@ namespace utopia {
         std::string getClass() const { return "Minus"; }
 
         template<typename T>
-        inline static std::minus<T> Fun() {
-            return std::minus<T>();
+        inline static T apply(const T &l, const T &r)
+        {
+            return l - r;
         }
     };
 
@@ -25,8 +26,9 @@ namespace utopia {
         std::string getClass() const { return "Plus"; }
 
         template<typename T>
-        inline static std::plus<T> Fun() {
-            return std::plus<T>();
+        inline static T apply(const T &l, const T &r)
+        {
+            return l + r;
         }
     };
 
@@ -35,19 +37,10 @@ namespace utopia {
         std::string getClass() const { return "AbsPlus"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &left, const T &right) const {
-                using std::abs;
-                return abs(left) + abs(right);
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &left, const T &right) {
+            using std::abs;
+            return abs(left) + abs(right);
         }
-
     };
 
     class And {
@@ -55,28 +48,18 @@ namespace utopia {
         std::string getClass() const { return "And"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &left, const T &right) const {
-                return left && right;
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &left, const T &right) {
+            return left && right;
         }
-
     };
-
 
     class Multiplies {
     public:
         std::string getClass() const { return "Multiplies"; }
 
         template<typename T>
-        inline static std::multiplies<T> Fun() {
-            return std::multiplies<T>();
+        inline static T apply(const T &left, const T &right) {
+            return left * right;
         }
     };
 
@@ -85,20 +68,18 @@ namespace utopia {
         std::string getClass() const { return "Divides"; }
 
         template<typename T>
-        inline static std::divides<T> Fun() {
-            return std::divides<T>();
+        inline static T apply(const T &left, const T &right) {
+            return left / right;
         }
     };
-
-
 
     class EMultiplies {
     public:
         std::string getClass() const { return "EMultiplies"; }
 
         template<typename T>
-        inline static std::multiplies<T> Fun() {
-            return std::multiplies<T>();
+        inline static T apply(const T &left, const T &right) {
+            return left * right;
         }
     };
 
@@ -115,8 +96,14 @@ namespace utopia {
         ApproxEqual(const double tol = 1e-8)
                 : _tol(tol) { }
 
-        double getTol() const {
+        inline double tol() const {
             return _tol;
+        }
+
+        template<typename T>
+        inline bool apply(const T &left, const T &right) const {
+            using std::abs;
+            return abs(left - right) < tol();
         }
 
     private:
@@ -129,17 +116,9 @@ namespace utopia {
         std::string getClass() const { return "Sqrt"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &x) const {
-                using std::sqrt;
-                return sqrt(x);
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &x) {
+            using std::sqrt;
+            return sqrt(x);
         }
     };
 
@@ -148,16 +127,8 @@ namespace utopia {
         std::string getClass() const { return "Pow2"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &x) const {
-                return x * x;
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &x) {
+            return x * x;
         }
     };
 
@@ -171,17 +142,9 @@ namespace utopia {
         std::string getClass() const { return "Abs"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &x) const {
-                using std::abs;
-                return abs(x);
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &x) {
+            using std::abs;
+            return abs(x);
         }
     };
 
@@ -190,7 +153,6 @@ namespace utopia {
     std::string GetClass() {
         return Expr().getClass();
     }
-
 
     //Special (FIND A NAME)
     template<typename  T>
@@ -215,17 +177,9 @@ namespace utopia {
         std::string getClass() const { return "Min"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &left, const T &right) const {
-                using std::min;
-                return min(left, right);
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &left, const T &right) {
+            using std::min;
+            return min(left, right);
         }
     };
 
@@ -234,17 +188,9 @@ namespace utopia {
         std::string getClass() const { return "Max"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &left, const T &right) const {
-                using std::max;
-                return max(left, right);
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &left, const T &right) {
+            using std::max;
+            return max(left, right);
         }
     };
 }

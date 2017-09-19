@@ -76,6 +76,32 @@ namespace utopia {
             double alpha = 4.;
             DSMatrixd res = alpha * X + Y;
         }
+
+        {
+            const int n = mpi_world_size() * 10;
+
+            DSMatrixd expected = sparse(n, n, 2);
+            DSMatrixd X = identity(n, n);
+            DSMatrixd Y = sparse(n, n, 1);
+
+            {
+                Write<DSMatrixd> w_e(expected), w_Y(Y);
+                Range r = row_range(expected);
+
+                for(auto i = r.begin(); i < r.end(); ++i) {
+                    expected.set(i, i, 0.1);
+                    expected.set(i, n-i-1, 0.1);
+                }
+
+                for(auto i = r.begin(); i < r.end(); ++i) {
+                    Y.set(i, n-i-1, 0.1);
+                }
+            }
+
+            DSMatrixd actual = 0.1 * X + Y;
+
+            assert(approxeq(expected, actual));
+        }
     }
 
     void petsc_vector_accessors_test() {
@@ -179,12 +205,11 @@ namespace utopia {
     }
 
     void petsc_sparse_matrix_accessors_test() {
-        // std::cout << "begin: petsc_sparse_matrix_accessors_test" << std::endl;
 
         //! [Read write matrix]
         int mult = mpi_world_size();
         const PetscInt n = 10 * mult;
-        DSMatrixd x = sparse(n, 10, 2);
+        DSMatrixd x = sparse(n, 10, 7);
         DSMatrixd y = sparse(n, 10, 2);
 
         // For parallel data structures (works also for serial ones. Adopt paridgm for code portability)
@@ -234,8 +259,6 @@ namespace utopia {
         }
 
         //! [Read write matrix]
-
-        // std::cout << "end: petsc_sparse_matrix_accessors_test" << std::endl;
     }
 
     void petsc_mv_test()
@@ -941,6 +964,25 @@ namespace utopia {
         assert(approxeq(expected, max_row_A));
     }
 
+    void petsc_binary_min_max()
+    {
+        const int n = mpi_world_size() * 2;
+        DVectord one = values(n, 1.);
+        DVectord two = values(n, 2.);
+
+        DVectord actual_min = min(one, two);
+        DVectord actual_max = max(one, two);
+        
+        assert(approxeq(one, actual_min));
+        assert(approxeq(two, actual_max));
+    
+        actual_min = min(two, values(n, 1.));
+        actual_max = max(values(n, 2.), one);
+    
+        assert(approxeq(one, actual_min));
+        assert(approxeq(two, actual_max));
+    }
+
     #endif //WITH_PETSC;
 
     void runPETScTest() {
@@ -973,6 +1015,8 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_new_eval_test);
         UTOPIA_RUN_TEST(petsc_tensor_reduction_test);
         UTOPIA_RUN_TEST(petsc_precond_test);
+        UTOPIA_RUN_TEST(petsc_binary_min_max);
+
         
         //serial tests
         UTOPIA_RUN_TEST(petsc_inverse_test);

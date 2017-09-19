@@ -853,9 +853,9 @@ public:
 	{
 
 		auto &dof_map = u.dof_map();
-		std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-		std::cout << dof_map.n_constrained_dofs() << std::endl;
-		std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+		// std::cout << dof_map.n_constrained_dofs() << std::endl;
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
 
 		const bool has_constaints = u.dof_map().constraint_rows_begin() != u.dof_map().constraint_rows_end();
 		if(!has_constaints) {
@@ -901,9 +901,9 @@ public:
 	template<class DofMap, class Vector>
 	void apply_zero_boundary_conditions(DofMap &dof_map, Vector &vec)
 	{
-		std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-		std::cout << dof_map.n_constrained_dofs() << std::endl;
-		std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+		// std::cout << dof_map.n_constrained_dofs() << std::endl;
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
 
 		bool has_constaints = true;
 		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
@@ -1280,7 +1280,7 @@ public:
 
 			for(uint i = 0; i < left.size(); ++i) {
 				// std::cout << op.fun_str() << "(" << left[i] << ","  << right[i] << ")" << std::endl; 
-				result[i] = Operation::template Fun<T>()(left[i], right[i]);
+				result[i] = op.template apply<T>(left[i], right[i]);
 			}
 		}
 
@@ -1291,7 +1291,7 @@ public:
 
 			for(uint i = 0; i < left.size(); ++i) {
 				// std::cout << op.getClass() << "(" << left[i] << ","  << right[i] << ")" << std::endl; 
-				result[i] = Operation::template Fun<T>()(left[i], right[i]);
+				result[i] = op.template apply<T>(left[i], right[i]);
 			}
 		}
 
@@ -1437,11 +1437,11 @@ public:
 		}
 
 		template<class Operation>
-		inline static void apply_unary_transform(const std::vector<libMesh::Real> &in, std::vector<libMesh::Real> &out, Operation op)
+		inline static void apply_unary_transform(const std::vector<libMesh::Real> &in, std::vector<libMesh::Real> &out, Operation &op)
 		{	
 			out.resize(in.size());
 			for(uint i = 0; i < in.size(); ++i) {
-				out[i] = Operation::template Fun<libMesh::Real>()(in[i]);
+				out[i] = op.template apply<libMesh::Real>(in[i]);
 			}
 		}
 

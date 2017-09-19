@@ -36,22 +36,34 @@ int main(const int argc, char *argv[])
 	
 	{
 		LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
-		// LibMeshInit init(argc, argv);
-		run_all_utopia_fe_tests(init);
 
-	
+		std::map<std::string, std::function<void(LibMeshInit &)> > runners;
+		runners["base"] = run_base_examples;
+		runners["time_diff"] = run_time_diff_examples;
+		runners["least_squares"] = run_least_squares_examples;
+		runners["mixed_fe_space"] = run_mixed_fe_space_example;
+	    runners["biomechanics"] = run_biomechanics_example;
+	    runners["geometry"] = run_geometry_test;
+	    runners["mortar"] = run_mortar_examples;
+	    runners["tests"] = run_all_utopia_fe_tests;
 
-	// run_base_examples(init);
-	// run_time_diff_examples(init);
-	
-	// run_least_squares_examples(init);
-	// run_mixed_fe_space_example(init);
-    //run_solver_ex(init);
-    // run_biomechanics_example(init);
-    // run_geometry_test(init);
-    // run_mortar_examples(init);
+		for(int i = 1; i < argc; ++i) {
+			if(argv[i] == std::string("-run")) {
+				const int ip1 = i+1;
+				if(ip1 < argc) {
+					auto it = runners.find(argv[ip1]);
+					if(it == runners.end()) {
+						std::cerr << "[Error] " << argv[ip1] << " not found" << std::endl;
+					} else {
+						it->second(init);
+					}
+				} else {
+					std::cerr << "[Error] run requires an input string" << std::endl;
+				}
+			}
 		}
+	}
+
     return Utopia::Finalize();
-	// return EXIT_SUCCESS;
 }
 

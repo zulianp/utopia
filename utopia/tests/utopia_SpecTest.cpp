@@ -14,6 +14,8 @@ namespace utopia {
         typedef typename Backend::Matrix Matrix;
 
         void run() {
+
+            print_backend_info();
             /* Test vectors operation */
             UTOPIA_RUN_TEST(vec_ops_test);
             /* Test vector assignments */
@@ -139,7 +141,7 @@ namespace utopia {
             backend.build(v1, Size({0, 1}), Zeros());
 
             /* Check ranges */
-            if (backend.info().getName() != "petsc") {
+            if (backend.info().get_name() != "petsc") {
                 assert(backend.range(v0).begin() == 0 &&
                        backend.range(v0).extent() == comm_size * _n &&
                        backend.range(v0).end() == comm_size * _n);
@@ -168,7 +170,7 @@ namespace utopia {
             backend.build(m2, Size({_n * comm_size, _n}), Zeros());
 
             /* Check ranges */
-            if (backend.info().getName() != "petsc") {
+            if (backend.info().get_name() != "petsc") {
                 assert(backend.rowRange(m0).begin() == 0 &&
                        backend.rowRange(m0).extent() == _n * comm_size &&
                        backend.rowRange(m0).end() == _n * comm_size);
@@ -345,7 +347,7 @@ namespace utopia {
             backend.build(right, Size({_n - 2, _n - 1}), Values<Scalar>(1));
             backend.build(left, Size({_n, _n}), Zeros());
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 backend.assignToRange(left, right, row_range, col_range);
 
                 /* Check operation result */
@@ -388,7 +390,7 @@ namespace utopia {
             backend.build(right_v, Size({_n, 1}), Values<Scalar>(1));
 
             /* Assign vector from range */
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 backend.assignToRange(left_v, right_v, v_range, c_range);
 
                 Range r = backend.range(left_v);
@@ -467,7 +469,7 @@ namespace utopia {
             backend.build(expected1, Size({_n, 1}), Values<Scalar>(4));
             backend.build(expected2, Size({_n, 1}), Values<Scalar>(0));
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 /* Apply scaling */
                 backend.scal(2, v1, result);
 
@@ -521,7 +523,7 @@ namespace utopia {
             backend.build(m1, Size({_n, _n}), Zeros());
             backend.build(m2, Size({_n, _n}), Values<Scalar>(2));
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 /* Apply reduction */
                 Scalar m1_reduction = backend.reduce(m1, Plus());
                 Scalar m2_reduction = backend.reduce(m2, Plus());
@@ -590,7 +592,7 @@ namespace utopia {
             backend.build(m, Size({_n, _n}), Values<Scalar>(3));
             backend.build(expected, Size({_n, _n}), Values<Scalar>(9));
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 backend.scal(3, m, res);
 
                 assert(backend.compare(res, expected, ApproxEqual()));
@@ -609,7 +611,7 @@ namespace utopia {
             backend.build(y, Size({_n, 1}), Values<Scalar>(2));
             backend.build(expected, Size({_n, 1}), Values<Scalar>(4 * _n + 2));
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 /* Compute y = 2 * A * x + y */
                 backend.gemv(2, A, x, 1, y);
 
@@ -622,7 +624,7 @@ namespace utopia {
 
             Matrix A, B, C, expected;
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 /* Create matrices */
                 backend.build(A, Size({_n - 1, _n}), Values<Scalar>(1));
                 backend.build(B, Size({_n, _n - 1}), Values<Scalar>(2));
@@ -672,6 +674,13 @@ namespace utopia {
 
         SpecTest()
                 : _n(10) { }
+
+        static void print_backend_info()
+        {
+            if(Utopia::Instance().get("verbose") == "true") {
+                std::cout << "\nBackend: " << Backend::Instance().info().get_name() << std::endl;
+            }
+        }      
 
     private:
         int _n;

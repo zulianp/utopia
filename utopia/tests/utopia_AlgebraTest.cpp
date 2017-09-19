@@ -72,8 +72,8 @@ namespace utopia {
 
         void multiply_test()
         {
-            if(!is_sparse<Matrix>::value){
-                std::cerr << "[Warning] petsc does not support dense matrix-matrix multiplication" << std::endl;
+            if(!is_sparse<Matrix>::value && Traits<Vector>::Backend == PETSC && mpi_world_size() > 1){
+                std::cerr << "[Warning] petsc does not support parallel dense matrix-matrix multiplication" << std::endl;
                 return;
             }
 
@@ -87,7 +87,6 @@ namespace utopia {
             m3 = transpose(m1) * m3;
             m3 = m2 * m3;
             m3 = m1 * m3;
-            // Matrix m3 = m1 * m2 * transpose(m1) * m2 * transpose(m2);
 
             each_read(m3, [](SizeType x, SizeType y, double entry) {
                 if (x == 0)
@@ -128,17 +127,44 @@ namespace utopia {
             assert(size.get(0) == 2);
         }
 
-       
+
+        void binary_min_max()
+        {
+            const int n = mpi_world_size() * 2;
+            Vector one = values(n, 1.);
+            Vector two = values(n, 2.);
+
+            Vector actual_min = utopia::min(one, two);
+            Vector actual_max = utopia::max(one, two);
+            
+            assert(approxeq(one, actual_min));
+            assert(approxeq(two, actual_max));
+        
+            actual_min = utopia::min(two, values(n, 1.));
+            actual_max = utopia::max(values(n, 2.), one);
+        
+            assert(approxeq(one, actual_min));
+            assert(approxeq(two, actual_max));
+        }
+
+        static void print_backend_info()
+        {
+            if(Utopia::Instance().get("verbose") == "true") {
+                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+        }
 
     public:
         void run()
         {
+            print_backend_info();
             UTOPIA_RUN_TEST(norm_test);
             UTOPIA_RUN_TEST(dot_test);
             UTOPIA_RUN_TEST(dot_product_composition_test);
             UTOPIA_RUN_TEST(multiply_test);
             UTOPIA_RUN_TEST(determinant_test);
             UTOPIA_RUN_TEST(size_test);
+            UTOPIA_RUN_TEST(binary_min_max);
         }
     };
 

@@ -522,11 +522,8 @@ namespace utopia
 
 
             result.resize(vec.size());
-
-            auto fun = Operation::template Fun<Scalar>();
-
             for(SizeType i = 0; i < vec.size(); ++i) {
-                result[i] = fun(vec[i]);
+                result[i] = Operation::template apply<Scalar>(vec[i]);
             }
 
             return true;
@@ -544,11 +541,11 @@ namespace utopia
 
 
         template<class Operation>
-        bool apply(const Vector &left, const Vector &right, const Operation &, Vector &result) {
+        bool apply(const Vector &left, const Vector &right, const Operation &op, Vector &result) {
 
 
             result.resize(left.size());
-            return apply(left, right, result, Operation::template Fun<Scalar>());
+            return apply(left, right, result, op);
         }
 
 
@@ -558,7 +555,7 @@ namespace utopia
         template<class Operation>
         bool apply(const Vector &left, const Vector &right, Vector &result, const Operation &op) {
             for (SizeType i = 0; i < left.size(); ++i) {
-                result[i] = op(left[i], right[i]);
+                result[i] = op.template apply<Scalar>(left[i], right[i]);
             }
             return true;
         }
@@ -612,7 +609,7 @@ namespace utopia
         
         Backend()
         {
-            info_.setName("blas");
+            info_.set_name("blas");
         }
     };
 }

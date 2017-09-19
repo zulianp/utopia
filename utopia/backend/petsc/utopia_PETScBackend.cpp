@@ -1184,7 +1184,7 @@ namespace utopia {
 	// }
 
 
-	static void allocate_apply_vec(const PETScVector &left, const PETScVector &right, PETScVector &result)
+	void PETScBackend::allocate_apply_vec(const PETScVector &left, const PETScVector &right, PETScVector &result)
 	{
 		if(&result.implementation() != &left.implementation() && &result.implementation() != &right.implementation()) {
 			PetscInt n_wanted; //, n;
@@ -1216,7 +1216,17 @@ namespace utopia {
 		allocate_apply_vec(left, right, result);
 		return PETScError::Check(VecPointwiseDivide(result.implementation(), left.implementation(), right.implementation()));
 	}
-	
+
+	bool PETScBackend::apply(const PETScVector &left, const PETScVector &right, const Min &op, PETScVector &result)
+	{
+		return apply_binary_generic(left, right, op, result);
+	}
+
+	bool PETScBackend::apply(const PETScVector &left, const PETScVector &right, const Max &op, PETScVector &result)
+	{
+		return apply_binary_generic(left, right, op, result);
+	}
+
 	// reciprocal
 	bool PETScBackend::apply(const PETScVector &vec, const Reciprocal<double> &reciprocal, PETScVector &result)
 	{
@@ -1308,7 +1318,6 @@ namespace utopia {
 		PetscInt local_r, local_c;
 		MatGetLocalSize(m.implementation(), &local_r, &local_c);
 
-		auto fun = Operation::template Fun<PetscScalar>();
 
 		MatGetOwnershipRange(m.implementation(), &r_begin, &r_end);
 		
@@ -1317,11 +1326,11 @@ namespace utopia {
 			MatGetRow(m.implementation(), row, &n_values, &cols, &values);
 
 			if(n_values < local_c) {
-				x = fun(x, 0.);
+				x = op.template apply<PetscScalar>(x, 0.);
 			}
 
 			for(PetscInt i = 0; i < n_values; ++i) {
-				x = fun(x, values[i]);
+				x = op.template apply<PetscScalar>(x, values[i]);
 			}
 
 			MatRestoreRow(m.implementation(), row, &n_values, &cols, &values);
@@ -1491,13 +1500,13 @@ namespace utopia {
 	bool PETScBackend::compare(const Vector &left, const Vector &right, const ApproxEqual &comp) {
 		PETScVector diff;
 		apply(left, right, Minus(), diff);
-		return norm_infty(diff) <= comp.getTol();
+		return norm_infty(diff) <= comp.tol();
 	}
 	
 	bool PETScBackend::compare(const Matrix &left, const Matrix &right, const ApproxEqual &comp) {
 		Matrix diff;
 		apply(left, right, Minus(), diff);
-		return norm2(diff) <= comp.getTol();
+		return norm2(diff) <= comp.tol();
 	}
 	
 	bool PETScBackend::apply(const PetscScalar factor, const Vector &vec, const Multiplies &, Vector &result) {
@@ -1900,7 +1909,7 @@ namespace utopia {
 		VecCreateMPI(mat.communicator(), local_r, global_r, &result.implementation());
 		VecAssemblyBegin(result.implementation());
 
-		auto fun = Operation::template Fun<PetscScalar>();
+		// auto fun = Operation::template Fun<PetscScalar>();
 
 		MatGetOwnershipRange(mat.implementation(), &r_begin, &r_end);
 		
@@ -1909,11 +1918,11 @@ namespace utopia {
 
 			PetscScalar x = init_value;
 			for(PetscInt i = 0; i < n_values; ++i) {
-				x = fun(x, values[i]);
+				x = op.template apply<PetscScalar>(x, values[i]);
 			}
 
 			if(n_values < local_c) {
-				x = fun(x, 0.);
+				x = op.template apply<PetscScalar>(x, 0.);
 			}
 
 			MatRestoreRow(mat.implementation(), row, &n_values, &cols, &values);

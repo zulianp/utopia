@@ -89,7 +89,7 @@ namespace utopia {
 		template<class Left, class Right, class Operation>
 		inline static Scalar eval_at(const Binary<Left, Right, Operation> &expr, const SizeType i, const SizeType j)
 		{
-			return Operation::template Fun<Scalar>()(eval_at(expr.left(),  i, j),  
+			return Operation::template apply<Scalar>(eval_at(expr.left(),  i, j),  
 				eval_at(expr.right(), i, j) );
 		}
 
@@ -102,21 +102,21 @@ namespace utopia {
 		template<class Left, class Right, class Operation>
 		inline static Scalar eval_at(const Binary<Number<Left>, Right, Operation> &expr, const SizeType i, const SizeType j)
 		{
-			return Operation::template Fun<Scalar>()(expr.left(),  
+			return Operation::template apply<Scalar>(expr.left(),  
 				eval_at(expr.right(), i, j) );
 		}
 
 		template<class Left, class Right, class Operation>
 		inline static Scalar eval_at(const Binary<Left, Number<Right>, Operation> &expr, const SizeType i, const SizeType j)
 		{
-			return Operation::template Fun<Scalar>()(eval_at(expr.left(), i, j),  
+			return Operation::template apply<Scalar>(eval_at(expr.left(), i, j),  
 				expr.right());
 		}
 
 		template<class InnerExpr, class Operation>
 		inline static Scalar eval_at(const Unary<InnerExpr, Operation> &expr, const SizeType i, const SizeType j)
 		{
-			return Operation::template Fun<Scalar>()(eval_at(expr.expr(), i, j));
+			return Operation::template apply<Scalar>(eval_at(expr.expr(), i, j));
 		}
 
 		template<class InnerExpr>
@@ -153,28 +153,28 @@ namespace utopia {
 		template<class Left, class Right, class Operation>
 		inline static Scalar eval_at(const Binary<Left, Right, Operation> &expr, const SizeType i)
 		{
-			return Operation::template Fun<Scalar>()(eval_at(expr.left(),  i),  
+			return Operation::template apply<Scalar>(eval_at(expr.left(),  i),  
 				eval_at(expr.right(), i) );
 		}
 
 		template<class Left, class Right, class Operation>
 		inline static Scalar eval_at(const Binary<Number<Left>, Right, Operation> &expr, const SizeType i)
 		{
-			return Operation::template Fun<Scalar>()(expr.left(),  
+			return Operation::template apply<Scalar>(expr.left(),  
 				eval_at(expr.right(), i) );
 		}
 
 		template<class Left, class Right, class Operation>
 		inline static Scalar eval_at(const Binary<Left, Number<Right>, Operation> &expr, const SizeType i)
 		{
-			return Operation::template Fun<Scalar>()(eval_at(expr.left(),  i),  
+			return Operation::template apply<Scalar>(eval_at(expr.left(),  i),  
 				expr.right());
 		}
 
 		template<class InnerExpr, class Operation>
 		inline static Scalar eval_at(const Unary<InnerExpr, Operation> &expr, const SizeType i)
 		{
-			return Operation::template Fun<Scalar>()(eval_at(expr.expr(),  i));
+			return Operation::template apply<Scalar>(eval_at(expr.expr(),  i));
 		}
 
 		template<class Tensor>
@@ -239,21 +239,21 @@ namespace utopia {
 		inline static Scalar eval_at(const Binary< Reduce<InnerExpr, ReduceOp>, Number<T>, Operation> &expr, const int i = 0, const int j = 0)
 		{
 			ASSERT(i == 0 && j == 0);
-			return Operation::template Fun<Scalar>()(eval_at(expr.left()), expr.right()); 
+			return Operation::template apply<Scalar>(eval_at(expr.left()), expr.right()); 
 		}
 
 		template<class InnerExpr, class ReduceOp, typename T, class Operation>
 		inline static Scalar eval_at(const Binary<Number<T>, Reduce<InnerExpr, ReduceOp>, Operation> &expr, const int i = 0, const int j = 0)
 		{
 			ASSERT(i == 0 && j == 0);
-			return Operation::template Fun<Scalar>()(expr.left(), eval_at(expr.right())); 
+			return Operation::template apply<Scalar>(expr.left(), eval_at(expr.right())); 
 		}
 
 		template<class Left, class ReduceOpLeft, class Right, class ReduceOpRight, class Operation>
 		inline static Scalar eval_at(const Binary<Reduce<Left, ReduceOpLeft>, Reduce<Right, ReduceOpRight>, Operation> &expr, const int i = 0, const int j = 0)
 		{
 			ASSERT(i == 0 && j == 0);
-			return Operation::template Fun<Scalar>()(eval_at(expr.left()), eval_at(expr.right())); 
+			return Operation::template apply<Scalar>(eval_at(expr.left()), eval_at(expr.right())); 
 		}
 
 		template<class InnerExpr, class Operation>
@@ -270,14 +270,14 @@ namespace utopia {
 			Scalar result = eval_at(expr.expr(), 0, 0);
 			if(s.n_dims() == 1) {
 				for(SizeType i = 1; i < s.get(0); ++i) {
-					result = Operation::template Fun<Scalar>()(result, eval_at(expr.expr(), i, 0));
+					result = Operation::template apply<Scalar>(result, eval_at(expr.expr(), i, 0));
 				}
 			} else {
 
 				SizeType j = 1;
 				for(SizeType i = 0; i < s.get(0); ++i) {
 					for(; j < s.get(1); ++j) {
-					 result = Operation::template Fun<Scalar>()(result, eval_at(expr.expr(), i, j));
+					 result = Operation::template apply<Scalar>(result, eval_at(expr.expr(), i, j));
 					}
 
 					j = 0;
