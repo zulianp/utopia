@@ -34,7 +34,8 @@ namespace utopia {
             int n_var,
             int n_var_r,
             DSMatrixd &B,
-            DSMatrixd &B_reverse);
+            DSMatrixd &B_reverse,
+            const std::vector< std::pair<int, int> > &tags=std::vector< std::pair<int, int> >());
 
 }
 

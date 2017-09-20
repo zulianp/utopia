@@ -84,12 +84,18 @@ namespace utopia {
         
         
         auto predicate = std::make_shared<MasterAndSlave>();
-        
-        if(tags.size()==0){
+    
+        if(tags.empty()){
+//           std::cout<<"tags.empty()==>"<<tags.empty()<<std::endl;
             predicate->add(0, 1);
         }
         else{
-            for(auto t : tags) predicate->add(t.first, t.second);
+          
+            for(auto t : tags)
+            {   predicate->add(t.first, t.second);
+//                std::cout<<"t.first==>"<<t.first<<std::endl;
+//                std::cout<<"t.second==>"<<t.second<<std::endl;
+            }
         }
         
         
@@ -104,14 +110,13 @@ namespace utopia {
         int offset = 0;
         
         
-        if(tags.size()==0){
+        if(tags.empty()){
             
             int space_num = 0;
             for(auto s : local_spaces->spaces()) {
                 if(s)
                 {
                     bool first = true;
-                    //std::cout<<"I am using set predicate"<<std::endl;
                     libMesh::dof_id_type local_element_id = 0;
                     for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
                         auto elem=*it;
@@ -133,7 +138,6 @@ namespace utopia {
         else
         {
             int space_num = 0;
-            std::cout<<"tags.size()"<<tags.size()<<std::endl;
             for(auto s : local_spaces->spaces()) {
                 if(s) {
                     
@@ -143,7 +147,6 @@ namespace utopia {
                     for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
                         auto elem=*it;
                         if (predicate->select(elem->subdomain_id())){
-                            //std::cout<<"elem->subdomain_id() write"<<elem->subdomain_id()<<std::endl;
                             Adapter a(*s, elem->id(), offset+local_element_id,elem->subdomain_id());
                             assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
                             a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
@@ -193,7 +196,7 @@ namespace utopia {
             
             long offset = 0;
             
-            if(tags.size()==0){
+            if(tags.empty()){
                 int space_num = 0;
                 for(auto s : proc_space->spaces()) {
                     if(s) {

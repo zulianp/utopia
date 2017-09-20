@@ -259,11 +259,15 @@ static void write_space(
 
         //WRITE 9
     assert(!dof_map.at(local_element_id).empty());
+        
     assert(!dof_map_reverse.at(local_element_id).empty());
 
     os << dof_map.at(local_element_id);
+        
     os << dof_map_reverse.at(local_element_id);
+        
     int block_id=elem->subdomain_id();
+        
     os << block_id;
 }
 
