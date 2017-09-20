@@ -4,6 +4,7 @@
 
 #include "utopia_fe_core.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
+#include "utopia_assemble_volume_transfer_r.hpp"
 #include "utopia_LibMeshBackend.hpp"
 
 
