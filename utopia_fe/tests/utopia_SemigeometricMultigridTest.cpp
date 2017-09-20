@@ -134,8 +134,6 @@ namespace utopia {
         
         convert(*p.fine_context->system.matrix, p.A);
         convert(*p.fine_context->system.rhs, 	p.rhs);
-        
-        // write("T.m", *T);
     }
     
     void run_semigeometric_multigrid_test(libMesh::LibMeshInit &init)
@@ -153,8 +151,11 @@ namespace utopia {
         multigrid.mg_type(2);
         
         // multigrid.max_it(1);
-        multigrid.verbose(true);
+        // multigrid.verbose(true);
         multigrid.solve(p.A, p.rhs, sol);
+
+        const double err = norm2(p.A * sol - p.rhs);
+        
         
         //CG with multigrid preconditioner
         // ConjugateGradient<DSMatrixd, DVectord> cg;
@@ -168,7 +169,6 @@ namespace utopia {
         
         convert(sol, *p.fine_context->system.solution);
         ExodusII_IO(*p.fine_mesh).write_equation_systems ("mg_solution_lapl.e", p.fine_context->equation_systems);
-        
-        
+        assert(err < 1e-7);
     }
 }
