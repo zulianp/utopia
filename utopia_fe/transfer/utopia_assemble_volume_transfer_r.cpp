@@ -372,6 +372,20 @@ namespace utopia {
         double intersection_time = 0.0;
         double assembly_time     = 0.0;
         
+
+        libMesh::DenseMatrix<libMesh::Real> biorth_weights, biorth_weights_r;
+
+        if(use_biorth_) {
+            assemble_biorth_weights_from_space(slave_space,
+                                               dof_slave,
+                                               var_num_slave,
+                                               biorth_weights);
+
+            assemble_biorth_weights_from_space(master_space,
+                                               dof_reverse_master,
+                                               from_var_num_r,
+                                               biorth_weights_r);
+        }
         //utopia::Chrono c;
         
         auto fun = [&](const VElementAdapter<Dimensions> &master,
@@ -379,14 +393,9 @@ namespace utopia {
             
             //c.start();
             
-            libMesh::DenseMatrix<libMesh::Real> biorth_weights;
             
-            if(use_biorth_) {
-                assemble_biorth_weights_from_space(slave_space,
-                                                   dof_slave,
-                                                   var_num_slave,
-                                                   biorth_weights);
-            }
+            
+          
             
             long n_intersections = 0;
             
@@ -513,7 +522,7 @@ namespace utopia {
                 if(use_biorth_) {
                     mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
                     
-                    mortar_assemble_weighted_biorth(*slave_fe, *master_fe, biorth_weights, elemmat_reverse);
+                    mortar_assemble_weighted_biorth(*slave_fe, *master_fe, biorth_weights_r, elemmat_reverse);
                     
                 } else {
                     mortar_assemble(*master_fe, *slave_fe, elemmat);
