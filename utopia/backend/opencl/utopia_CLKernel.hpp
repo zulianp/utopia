@@ -63,7 +63,11 @@ namespace utopia {
 					os_ << "[index]";
 				}
 				
-				tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name);
+				if(options.is_const()) {
+					tpl_.map("[list]ARG_IN", "__global const Scalar * " + var_name);
+				} else {
+					tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name);
+				}
 
 				if(options.is_permutation()) {
 					Size s = size(node);
@@ -104,7 +108,11 @@ namespace utopia {
 						os_ << "[index]";
 					}
 					
-					tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name);
+					if(options.is_const()) {
+						tpl_.map("[list]ARG_IN", "__global const Scalar * " + var_name);
+					} else {
+						tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name);
+					}
 				}
 				
 				post_visit();
@@ -143,13 +151,13 @@ namespace utopia {
 					//TODO
 					visit(node.left(), env, make_permutation(options));
 					os_ << " = (";
-					visit(node.right(), env, options);
+					visit(node.right(), env, make_const(options));
 					os_ << ") ";
 
 				} else {
 					visit(node.left(), env, options);
 					os_ << " = (";
-					visit(node.right(), env, options);
+					visit(node.right(), env, make_const(options));
 					os_ << ") ";
 				}
 				post_visit();
@@ -259,8 +267,14 @@ namespace utopia {
 						os_ << var_name_left << ", ";
 						os_ << var_name_right  << ")";
 
-						tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name_left);
-						tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name_right);
+						if(options.is_const()) {
+							tpl_.map("[list]ARG_IN", "__global const Scalar * " + var_name_left);
+							tpl_.map("[list]ARG_IN", "__global const Scalar * " + var_name_right);
+						} else {
+							tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name_left);
+							tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name_right);
+						}
+
 						tpl_.map("[list]ARG_IN", "const int " + var_name_rows);
 						tpl_.map("[list]ARG_IN", "const int " + var_name_cols);
 						tpl_.map("[list]ARG_IN", "const int " + var_name_right_cols);
@@ -275,9 +289,17 @@ namespace utopia {
 
 					os_ << var_name_rows << ", " << var_name_cols << ", ";
 					os_ << var_name_left << ", " << var_name_right << ")";
+
+					if(options.is_const()) {
+						tpl_.map("[list]ARG_IN", "__global const Scalar * " + var_name_left);
+						tpl_.map("[list]ARG_IN", "__global const Scalar * " + var_name_right);
+					} else {
+						tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name_left);
+						tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name_right);
+					}
 					
-					tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name_left);
-					tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name_right);
+					// tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name_left);
+					// tpl_.map("[list]ARG_IN", "__global Scalar * " + var_name_right);
 					tpl_.map("[list]ARG_IN", "const int " + var_name_rows);
 					tpl_.map("[list]ARG_IN", "const int " + var_name_cols);
 				}
@@ -613,16 +635,15 @@ namespace utopia {
 
 				err = queue.enqueueNDRangeKernel(kernel_, cl::NullRange, 
 					cl::NDRange(n_entries_to_reduce), 
-					cl::NDRange(group_size)); 				assert(check_cl_error(err));
+					cl::NDRange(group_size)); 											assert(check_cl_error(err));
 				err = queue.finish(); 													assert(check_cl_error(err));
 
 				result.synch_read_buffer(queue);
 
 				Scalar host_reduced = result.entries[0];
 
-				auto fun = Operation::template Fun<Scalar>();
 				for(SizeType i = 1; i < result.entries.size(); ++i) {
-					host_reduced = fun(host_reduced, result.entries[i]);
+					host_reduced = Operation::template apply<Scalar>(host_reduced, result.entries[i]);
 				}
 
 				eval.set_value(host_reduced);

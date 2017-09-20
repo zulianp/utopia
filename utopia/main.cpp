@@ -34,8 +34,10 @@ int main(const int argc, char *argv[])
             tests = argv[i];
         } else if(argv[i] == std::string("-skip-tests")) {
             run_tests = false;
-        } else if(argv[i] == std::string("--verbose")) {
+        } else if(argv[i] == std::string("-verbose")) {
             Utopia::Instance().set("verbose", "true");
+        } else if(argv[i] == std::string("-performance_test_verbose")) {
+            Utopia::Instance().set("performance_test_verbose", "true");
         }
     }
 

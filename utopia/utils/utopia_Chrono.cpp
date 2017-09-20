@@ -90,5 +90,54 @@ namespace utopia {
 #endif //WITH_MPI		
 	}
 
+
+	Chrono &Chrono::operator+=(const Chrono &other)
+	{
+		using std::min;
+		using std::max;
+
+#ifdef WITH_MPI
+		mpi_start_ = min(mpi_start_, other.mpi_start_);
+		mpi_end_   = max(mpi_end_, other.mpi_end_);
+		mpi_duration_ +=  other.mpi_duration_;
+#endif //WITH_MPI	
+
+
+#ifdef __APPLE__
+		mpi_start_ = min(realtime_start_, other.realtime_start_);
+		mpi_end_   = max(realtime_end_, other.realtime_end_);
+		realtime_duration_ += other.realtime_duration_;
+#endif //__APPLE__
+
+#ifdef WIN32
+		static const bool not_impl_msg = true;
+		if(not_impl_msg) {
+			std::cerr << "[Warning] Chrono &Chrono::operator+=(const Chrono &other) not implemented for windows" << std::endl;
+			not_impl_msg = false;
+		}
+#endif
+
+		return *this;
+	}
+
+	void Chrono::rescale_duration(const double factor)
+	{
+#ifdef WITH_MPI	
+		mpi_duration_ *= factor;
+#endif //WITH_MPI
+
+#ifdef __APPLE__
+		realtime_duration_ *= factor;
+#endif //__APPLE__
+
+#ifdef WIN32
+		static const bool not_impl_msg = true;
+		if(not_impl_msg) {
+			std::cerr << "[Warning] void Chrono::rescale_duration(const double factor) not implemented for windows" << std::endl;
+			not_impl_msg = false;
+		}
+#endif
+	}
+
 }
 

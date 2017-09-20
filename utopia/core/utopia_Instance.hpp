@@ -28,6 +28,8 @@ namespace utopia {
 
        static Utopia &Instance();
 
+      bool verbose() const;
+
    private:
    		Utopia();
        	std::map<std::string, std::string> settings_;

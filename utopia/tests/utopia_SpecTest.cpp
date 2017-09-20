@@ -677,7 +677,7 @@ namespace utopia {
 
         static void print_backend_info()
         {
-            if(Utopia::Instance().get("verbose") == "true") {
+            if(Utopia::Instance().verbose()) {
                 std::cout << "\nBackend: " << Backend::Instance().info().get_name() << std::endl;
             }
         }      

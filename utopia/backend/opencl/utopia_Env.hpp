@@ -11,7 +11,7 @@ namespace utopia {
 		class Options {
 		public:
 			Options()
-			: _transposed(false), is_permutation_(false)
+			: _transposed(false), is_permutation_(false), is_const_(false)
 			{}
 
 			inline bool transposed() const 
@@ -23,6 +23,12 @@ namespace utopia {
 			{
 				return is_permutation_;
 			}
+
+			inline bool is_const() const
+			{
+				return is_const_;
+			}
+
 
 			inline friend Options make_transposed(const Options &opts)
 			{
@@ -52,9 +58,17 @@ namespace utopia {
 				return new_opts;
 			}
 
+			inline friend Options make_const(const Options &opts)
+			{
+				Options new_opts = opts;
+				new_opts.is_const_ = true;
+				return new_opts;
+			}
+
 		private:
 			bool _transposed;
 			bool is_permutation_;
+			bool is_const_;
 
 			inline void toggleTransposed()
 			{
