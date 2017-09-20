@@ -1089,7 +1089,7 @@ namespace utopia {
         ownershipRangesMaster[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_master);
         ownershipRangesSlave[comm.rank()+1]  += static_cast<unsigned int>(n_dofs_on_proc_slave);
         
-        std::cout<<"n_local_dofs: "<< n_dofs_on_proc_master <<"slave:  "<< n_dofs_on_proc_slave << "\n"; 
+        // std::cout<<"n_local_dofs: "<< n_dofs_on_proc_master <<"slave:  "<< n_dofs_on_proc_slave << "\n"; 
         
         comm.all_reduce(&ownershipRangesMaster[0], ownershipRangesMaster.size(), moonolith::MPISum());
         comm.all_reduce(&ownershipRangesSlave[0],  ownershipRangesSlave.size(),  moonolith::MPISum());
@@ -1103,7 +1103,7 @@ namespace utopia {
         
         assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
         
-        moonolith::root_describe("petsc assembly begin", comm, std::cout);
+        // moonolith::root_describe("petsc assembly begin", comm, std::cout);
         
         SizeType  mMaxRowEntries = mat_buffer.local_max_entries_x_col();
         
@@ -1122,7 +1122,7 @@ namespace utopia {
             }
         }
         
-        moonolith::root_describe("petsc assembly end", comm, std::cout);
+        // moonolith::root_describe("petsc assembly end", comm, std::cout);
         return true;
         
     }
@@ -1142,14 +1142,11 @@ namespace utopia {
         moonolith::SearchSettings settings;
         
         if(mesh->mesh_dimension() == 2) {
-            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
-
             return utopia::Assemble<2>(comm, mesh, dof_master, dof_slave,  _to_var_num, level, coarse_elem, fine_elem, B, settings);
 
         }
         
         if(mesh->mesh_dimension() == 3) {
-            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
             return utopia::Assemble<3>(comm, mesh, dof_master, dof_slave,  _to_var_num, level, coarse_elem, fine_elem, B, settings);
         }
         
