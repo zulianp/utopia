@@ -107,13 +107,13 @@ DERIVED_CRT(Derived)
 
 #define UTOPIA_RUN_TEST(test_name) \
     {                               \
-        if(utopia::mpi_world_rank() == 0 && utopia::Utopia::Instance().get("verbose") == "true") { std::cout << "> " << (#test_name) << std::endl; } \
+        if(utopia::mpi_world_rank() == 0 && utopia::Utopia::Instance().verbose()) { std::cout << "> " << (#test_name) << std::endl; } \
         test_name(); \
     }
 
 #define UTOPIA_UNIT_TEST_BEGIN(test_unit_name)                          \
     {                                                                   \
-        if(utopia::mpi_world_rank() == 0 && utopia::Utopia::Instance().get("verbose") == "true") {                                     \
+        if(utopia::mpi_world_rank() == 0 && utopia::Utopia::Instance().verbose()) {                                     \
             std::cout << "-----------------------------------\n";       \
             std::cout << "begin:\t" << (test_unit_name) << std::endl;  \
             std::cout << "-----------------------------------\n";       \
@@ -122,7 +122,7 @@ DERIVED_CRT(Derived)
 
 #define UTOPIA_UNIT_TEST_END(test_unit_name) \
     {                                                                   \
-        if(utopia::mpi_world_rank() == 0 && utopia::Utopia::Instance().get("verbose") == "true") {                                     \
+        if(utopia::mpi_world_rank() == 0 && utopia::Utopia::Instance().verbose()) {                                     \
             std::cout << "-----------------------------------\n";       \
             std::cout << "end:\t" << (test_unit_name) << std::endl;  \
             std::cout << "-----------------------------------\n";       \

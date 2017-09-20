@@ -46,4 +46,9 @@ namespace utopia {
   set("opencl_templates_path", "../backend/opencl/templates");
 
 }
+
+bool Utopia::verbose() const
+{
+  return get("verbose") == "true";
+}
 }

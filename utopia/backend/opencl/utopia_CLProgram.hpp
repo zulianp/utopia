@@ -393,10 +393,14 @@ namespace utopia {
 
 				cl::Program::Sources sources;
 				for(auto k_ptr : kernels_) {
-					// write(k_ptr->get_name() + ".cl", 
-					// 	  k_ptr->get_code_string());
+				
 
 					if(!k_ptr->is_callable()) {
+// #ifdef UTOPIA_DEBUG_CL_KERNELS
+						write(k_ptr->get_name() + ".cl", 
+							  k_ptr->get_code_string());
+// #endif //UTOPIA_DEBUG_CL_KERNELS
+
 						sources.push_back({ k_ptr->get_code_string().c_str(), 
 									    	k_ptr->get_code_string().size() });
 					}
