@@ -107,7 +107,7 @@ namespace utopia {
         });
         
         p.fine_context->system.attach_assemble_object(ass);
-        p.fine_context->equation_systems.print_info();
+        // p.fine_context->equation_systems.print_info();
         // p.fine_context->equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
         //solve triggers the initialization and the assembly of the algebraic system (should be fixed at some point)
         p.fine_context->equation_systems.solve();
