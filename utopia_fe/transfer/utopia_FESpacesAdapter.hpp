@@ -212,8 +212,6 @@ template<class Iterator>
 
             }
 
-//std::cout<<"write_point"<<p<<std::endl;
-
         }
 
         std::vector<libMesh::dof_id_type> indices_vector;
