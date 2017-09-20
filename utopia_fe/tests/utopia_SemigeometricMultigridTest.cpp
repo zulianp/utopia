@@ -87,8 +87,9 @@ namespace utopia {
                                        1,
                                        1,
                                        B,
-                                       B_r,
-                                       {{1,2}}))
+                                       B_r
+                                       // , {{1,2}}
+                                       ))
         {
             
             std::cerr << "No intersection" << std::endl;
