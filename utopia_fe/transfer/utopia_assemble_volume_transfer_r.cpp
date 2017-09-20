@@ -32,7 +32,7 @@
 using namespace libMesh;
 
 namespace utopia {
-        
+    
     template<typename T>
     inline void Print(const std::vector<T> &v, std::ostream &os)
     {
@@ -56,10 +56,11 @@ namespace utopia {
                          const unsigned int &from_var_num_r,
                          const unsigned int &to_var_num_r,
                          Fun process_fun,
-                         const moonolith::SearchSettings &settings, 
-                         bool use_biorth_, 
-                         int n_var, 
-                         int n_var_r)
+                         const moonolith::SearchSettings &settings,
+                         bool use_biorth_,
+                         int n_var,
+                         int n_var_r,
+                         const std::vector< std::pair<int, int> >tags)
     {
         using namespace moonolith;
         
@@ -69,7 +70,7 @@ namespace utopia {
         
         const long maxNElements = settings.max_elements;
         const long maxDepth = settings.max_depth;
-                
+        
         const auto &master_mesh = master;
         const auto &slave_mesh  = slave;
         const int n_elements_master = master_mesh->n_active_local_elem();
@@ -81,37 +82,69 @@ namespace utopia {
         const Parallel::Communicator &libmesh_comm_slave = slave_mesh->comm();
         
         auto predicate = std::make_shared<MasterAndSlave>();
-        predicate->add(0, 1);
+        if(tags.empty()){
+            predicate->add(0, 1);
+        }
+        else{
+            for(auto t : tags) predicate->add(t.first, t.second);
+        }
+        
         
         MOONOLITH_EVENT_BEGIN("create_adapters");
-  
+        
         auto tree = NTreeT::New(predicate, maxNElements, maxDepth);
         tree->reserve(n_elements);
         
         auto local_spaces = std::make_shared<FESpacesRAdapter>(master, slave, dof_master, dof_slave, dof_reverse_master, dof_reverse_slave, from_var_num, to_var_num, from_var_num_r, to_var_num_r);
         int offset = 0;
         int space_num = 0;
-        
-        for(auto s : local_spaces->spaces()) {
-            if(s) {
-                bool first = true;
-                libMesh::dof_id_type local_element_id = 0;
-                for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
-                    auto elem = *it;
-                    Adapter a(*s, elem->id(), offset + local_element_id, space_num);
-                    assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
-                    assert(!local_spaces->dof_map_reverse(space_num)[local_element_id].empty());
-                    a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
-                    a.set_dof_map_reverse(&local_spaces->dof_map_reverse(space_num)[local_element_id].global);
-                    tree->insert(a);
+        if(tags.empty()){
+            for(auto s : local_spaces->spaces()) {
+                if(s) {
+                    bool first = true;
+                    libMesh::dof_id_type local_element_id = 0;
+                    for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
+                        auto elem = *it;
+                        Adapter a(*s, elem->id(), offset + local_element_id, space_num);
+                        assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
+                        assert(!local_spaces->dof_map_reverse(space_num)[local_element_id].empty());
+                        a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
+                        a.set_dof_map_reverse(&local_spaces->dof_map_reverse(space_num)[local_element_id].global);
+                        tree->insert(a);
+                    }
+                    
+                    offset += s->n_active_local_elem();
                 }
                 
-                offset += s->n_active_local_elem();
+                ++space_num;
+            }
+        }
+        else
+        {
+            for(auto s : local_spaces->spaces()) {
+                if(s) {
+                    bool first = true;
+                    libMesh::dof_id_type local_element_id = 0;
+                    for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
+                        auto elem = *it;
+                        if (predicate->select(elem->subdomain_id())){
+                            Adapter a(*s, elem->id(), offset + local_element_id, elem->subdomain_id());
+                            assert(!local_spaces->dof_map(space_num)[local_element_id].empty());
+                            assert(!local_spaces->dof_map_reverse(space_num)[local_element_id].empty());
+                            a.set_dof_map(&local_spaces->dof_map(space_num)[local_element_id].global);
+                            a.set_dof_map_reverse(&local_spaces->dof_map_reverse(space_num)[local_element_id].global);
+                            tree->insert(a);
+                        }
+                    }
+                    
+                    offset += s->n_active_local_elem();
+                }
+                
+                ++space_num;
             }
             
-            ++space_num;
         }
-                
+        
         tree->root()->bound().static_bound().enlarge(1e-8);
         
         MOONOLITH_EVENT_END("create_adapters");
@@ -119,8 +152,8 @@ namespace utopia {
         //Just to have an indexed-storage
         std::map<long, std::shared_ptr<FESpacesRAdapter> > spaces;
         std::map<long, std::vector<std::shared_ptr<FESpacesRAdapter> > > migrated_spaces;
-
-        auto read = [&spaces, &migrated_spaces, comm, &libmesh_comm_master, &libmesh_comm_slave]
+        
+        auto read = [&spaces, &migrated_spaces, comm, &libmesh_comm_master, &libmesh_comm_slave, &tags]
         (
          const long ownerrank,
          const long senderrank,
@@ -142,26 +175,52 @@ namespace utopia {
             }
             
             data.reserve(data.size() + 3000);
-            
-            int space_num = 0;
-            long offset = 0;
-            for(auto s : proc_space->spaces()) {
-                if(s) {
-                    for (int i=0; i<s->n_elem(); i++) {
-                        data.push_back(Adapter(*s, i, offset + i, space_num) );
-                        assert(!proc_space->dof_map(space_num)[i].empty());
-                        assert(!proc_space->dof_map_reverse(space_num)[i].empty());
-                        data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
-                        data.back().set_dof_map_reverse(&proc_space->dof_map_reverse(space_num)[i].global);
+            if (tags.empty()){
+                int space_num = 0;
+                long offset = 0;
+                for(auto s : proc_space->spaces()) {
+                    if(s) {
+                        for (int i=0; i<s->n_elem(); i++) {
+                            data.push_back(Adapter(*s, i, offset + i, space_num) );
+                            assert(!proc_space->dof_map(space_num)[i].empty());
+                            assert(!proc_space->dof_map_reverse(space_num)[i].empty());
+                            data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
+                            data.back().set_dof_map_reverse(&proc_space->dof_map_reverse(space_num)[i].global);
+                        }
+                        
+                        offset += s->n_elem();
                     }
                     
-                    offset += s->n_elem();
+                    ++space_num;
                 }
-                
-                ++space_num;
             }
             
-            CHECK_STREAM_READ_END("vol_proj", in); 
+            else
+            {
+                int space_num = 0;
+                long offset = 0;
+                for(auto s : proc_space->spaces()) {
+                    if(s) {
+                        for (int i=0; i<s->n_elem(); i++) {
+                            const Elem * elem = s->elem_ptr(i);
+                            //Volume Tag
+                            int volume_tag = elem->subdomain_id();
+                            data.push_back(Adapter(*s, i, offset + i, volume_tag));
+                            assert(!proc_space->dof_map(space_num)[i].empty());
+                            assert(!proc_space->dof_map_reverse(space_num)[i].empty());
+                            data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
+                            data.back().set_dof_map_reverse(&proc_space->dof_map_reverse(space_num)[i].global);
+                        }
+                        
+                        offset += s->n_elem();
+                    }
+                    
+                    ++space_num;
+                }
+                
+            }
+            
+            CHECK_STREAM_READ_END("vol_proj", in);
         };
         
         
@@ -174,7 +233,7 @@ namespace utopia {
          OutputStream &out) {
             
             CHECK_STREAM_WRITE_BEGIN("vol_proj", out);
-
+            
             if (ownerrank == comm.rank()) {
                 write_element_selection(begin, end, *local_spaces, out);
             } else {
@@ -185,7 +244,7 @@ namespace utopia {
                 assert(std::distance(begin, end) > 0);
                 write_element_selection(begin, end, *spaceptr, out);
             }
-
+            
             CHECK_STREAM_WRITE_END("vol_proj", out);
             
         };
@@ -209,7 +268,7 @@ namespace utopia {
             return true;
             
         };
-                
+        
         moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);
         
         long n_total_candidates = n_intersections + n_false_positives;
@@ -264,18 +323,18 @@ namespace utopia {
                   const unsigned int &to_var_num,
                   const unsigned int &from_var_num_r,
                   const unsigned int &to_var_num_r,
-                  DSMatrixd &B, 
+                  DSMatrixd &B,
                   DSMatrixd &B_reverse, //bbecsek
                   const moonolith::SearchSettings &settings,
-                  bool use_biorth_, 
-                  int n_var, 
-                  int n_var_r)
+                  bool use_biorth_,
+                  int n_var,
+                  int n_var_r,
+                  const std::vector< std::pair<int, int> >tags)
     {
         
         const int var_num_slave = to_var_num;
         
-        auto local_fun_spaces = std::make_shared<FESpacesRAdapter>(master, slave, dof_master, dof_slave, dof_reverse_master, dof_reverse_slave, from_var_num, to_var_num, from_var_num_r,
-        to_var_num_r);
+        auto local_fun_spaces = std::make_shared<FESpacesRAdapter>(master, slave, dof_master, dof_slave, dof_reverse_master, dof_reverse_slave, from_var_num, to_var_num, from_var_num_r,to_var_num_r);
         
         libMesh::DenseMatrix<libMesh::Real> master_pts;
         libMesh::DenseMatrix<libMesh::Real> slave_pts;
@@ -303,10 +362,10 @@ namespace utopia {
         
         moonolith::SparseMatrix<double> mat_buffer(comm);
         mat_buffer.set_size(dof_slave->n_dofs(), dof_master->n_dofs());
-       
+        
         moonolith::SparseMatrix<double> mat_buffer_reverse(comm);
         mat_buffer_reverse.set_size(dof_reverse_master->n_dofs(), dof_reverse_slave->n_dofs());
-  
+        
         bool intersected = false;
         
         double element_setup_time = 0.0;
@@ -382,7 +441,7 @@ namespace utopia {
                     make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
                     pair_intersected = true;
                     
-//                    bool affine_transf=true;
+                    //                    bool affine_transf=true;
                     
                     master_trans  = std::make_shared<AffineTransform2>(master_el);
                     slave_trans = std::make_shared<AffineTransform2>(slave_el);
@@ -412,9 +471,9 @@ namespace utopia {
                 return false;
             }
             
-//            c.stop();
-//            intersection_time += c.get_seconds();
-//            c.start();
+            //            c.stop();
+            //            intersection_time += c.get_seconds();
+            //            c.start();
             
             const auto &master_dofs = master.dof_map();
             const auto &slave_dofs  = slave.dof_map();
@@ -433,10 +492,10 @@ namespace utopia {
                 for(int i = 0; i < master_ir.n_points(); ++i) {
                     master_ir.get_weights()[i] /= weight_reverse;
                 }
-              
+                
                 assert(!master_dofs.empty());
                 assert(!slave_dofs.empty());
-            
+                
                 master_fe->attach_quadrature_rule(&master_ir);
                 master_fe->get_phi();
                 master_fe->get_JxW();
@@ -453,12 +512,12 @@ namespace utopia {
                 
                 if(use_biorth_) {
                     mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
-
-                    mortar_assemble_weighted_biorth(*slave_fe, *master_fe, biorth_weights, elemmat);
+                    
+                    mortar_assemble_weighted_biorth(*slave_fe, *master_fe, biorth_weights, elemmat_reverse);
                     
                 } else {
                     mortar_assemble(*master_fe, *slave_fe, elemmat);
-
+                    
                     mortar_assemble(*slave_fe, *master_fe, elemmat_reverse);
                 }
                 
@@ -469,17 +528,17 @@ namespace utopia {
                 intersected = true;
                 
                 ++n_intersections;
-                           
+                
                 assert(slave_dofs.size() == elemmat.m());
                 assert(master_dofs.size() == elemmat.n());
-
+                
                 // std::cout<<"master_dofs_reverse.size() ==>"<< master_dofs_reverse.size()<<std::endl;
-
+                
                 // std::cout<<"elemmat_reverse.m() ==>"<< elemmat_reverse.m()<<std::endl;
                 
                 assert(master_dofs_reverse.size() == elemmat_reverse.m());
                 assert(slave_dofs_reverse.size() == elemmat_reverse.n());
-
+                
                 for(int i = 0; i < slave_dofs.size(); ++i) {
                     
                     const long dof_I = slave_dofs[i];
@@ -492,11 +551,11 @@ namespace utopia {
                     }
                 }
                 
-//                 bbecsek
+                //                 bbecsek
                 for(int i = 0; i < master_dofs_reverse.size(); ++i) {
                     
                     const long dof_I_r = master_dofs_reverse[i];
-            
+                    
                     for(int j = 0; j < slave_dofs_reverse.size(); ++j) {
                         
                         const long dof_J_r = slave_dofs_reverse[j];
@@ -504,7 +563,7 @@ namespace utopia {
                         mat_buffer_reverse.add(dof_I_r, dof_J_r, elemmat_reverse(i, j));
                     }
                 }
-
+                
                 return true;
                 
             } else {
@@ -515,12 +574,12 @@ namespace utopia {
         };
         
         
-
-        if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, dof_reverse_master, dof_reverse_slave, from_var_num, to_var_num, from_var_num_r, to_var_num_r, fun, settings, use_biorth_, n_var, n_var_r)) {
-
+        
+        if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, dof_reverse_master, dof_reverse_slave, from_var_num, to_var_num, from_var_num_r, to_var_num_r, fun, settings, use_biorth_, n_var, n_var_r,tags)) {
+            
             return false;
         }
-  
+        
         
         
         double volumes[3] = { local_element_matrices_sum,  total_intersection_volume, local_element_matrices_sum_reverse };
@@ -551,8 +610,8 @@ namespace utopia {
             std::cout << "sum(B*): " << volumes[2] << std::endl;
         }
         
-        std::vector<moonolith::Integer>  ownershipRangesMaster(comm.size()+1, 0);        
-        std::vector<moonolith::Integer>  ownershipRangesSlave(comm.size()+1, 0);        
+        std::vector<moonolith::Integer>  ownershipRangesMaster(comm.size()+1, 0);
+        std::vector<moonolith::Integer>  ownershipRangesSlave(comm.size()+1, 0);
         
         ownershipRangesMaster[comm.rank()+1] += static_cast<unsigned int>(n_dofs_on_proc_master);
         ownershipRangesSlave[comm.rank()+1]  += static_cast<unsigned int>(n_dofs_on_proc_slave);
@@ -577,7 +636,7 @@ namespace utopia {
         
         std::partial_sum(ownershipRangesMaster_r.begin(), ownershipRangesMaster_r.end(), ownershipRangesMaster_r.begin());
         std::partial_sum(ownershipRangesSlave_r.begin(), ownershipRangesSlave_r.end(), ownershipRangesSlave_r.begin());
- 
+        
         int dim = master->mesh_dimension();
         
         moonolith::Redistribute< moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
@@ -617,7 +676,7 @@ namespace utopia {
         DSMatrixd B_x = utopia::local_sparse(local_range_slave, local_range_master, mMaxRowEntries);
         // bbecsek
         DSMatrixd B_x_reverse = utopia::local_sparse(local_range_master_r, local_range_slave_r, mMaxRowEntries_reverse);
-//        
+        //
         {
             utopia::Write<utopia::DSMatrixd> write(B_x);
             for (auto it = mat_buffer.iter(); it; ++it) {
@@ -693,57 +752,60 @@ namespace utopia {
                                     int n_var,
                                     int n_var_r,
                                     DSMatrixd &B,
-                                    DSMatrixd &B_reverse)
+                                    DSMatrixd &B_reverse,
+                                    const std::vector< std::pair<int, int> > &tags)
     {
         moonolith::SearchSettings settings;
         
         if(master->mesh_dimension() == 2) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
             return utopia::Assemble<2>(comm,
-                                       master, 
+                                       master,
                                        slave,
-                                       dof_master, 
+                                       dof_master,
                                        dof_slave,
-                                       dof_reverse_master, 
+                                       dof_reverse_master,
                                        dof_reverse_slave,
-                                       from_var_num,  
+                                       from_var_num,
                                        to_var_num,
-                                       from_var_num_r, 
+                                       from_var_num_r,
                                        to_var_num_r,
-                                       B, 
+                                       B,
                                        B_reverse,
                                        settings,
-                                       use_biorth_, 
-                                       n_var, 
-                                       n_var_r);
+                                       use_biorth_,
+                                       n_var,
+                                       n_var_r,
+                                       tags);
         }
         
         
         if(master->mesh_dimension() == 3) {
             std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
             return utopia::Assemble<3>(comm,
-                                       master, 
+                                       master,
                                        slave,
-                                       dof_master, 
+                                       dof_master,
                                        dof_slave,
-                                       dof_reverse_master, 
+                                       dof_reverse_master,
                                        dof_reverse_slave,
-                                       from_var_num,  
+                                       from_var_num,
                                        to_var_num,
-                                       from_var_num_r, 
+                                       from_var_num_r,
                                        to_var_num_r,
-                                       B, 
+                                       B,
                                        B_reverse,
                                        settings,
-                                       use_biorth_, 
-                                       n_var, 
-                                       n_var_r);
+                                       use_biorth_,
+                                       n_var,
+                                       n_var_r,
+                                       tags);
         }
         
         assert(false && "Dimension not supported!");
         return false;
     }
-
+    
 }
 
 

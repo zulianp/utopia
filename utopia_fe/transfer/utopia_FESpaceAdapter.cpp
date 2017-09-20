@@ -83,7 +83,7 @@ namespace utopia {
 	     dof_map.resize(n_elements);
 	     subdomain_id.resize(n_elements);
 	     side_set_id.resize(n_elements);
-	     side_set_id_tag.resize(n_elements);
+	     side_set_id_tag.resize(n_elements); //non serve
 	     face_set_id.resize(n_elements);
 	     face_set_id_global.resize(n_elements);
 	     handle_to_element_id.resize(n_elements);
@@ -156,6 +156,7 @@ namespace utopia {
 	         
 	         
 	         subdomain_id[local_element_id].global.insert(subdomain_id[local_element_id].global.end(),elem->subdomain_id());
+             
 	         original_dofmap->dof_indices(elem, temp, var_num);
 
 	         dof_map[local_element_id].global.insert(dof_map[local_element_id].global.end(), temp.begin(), temp.end());
