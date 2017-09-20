@@ -399,6 +399,16 @@ namespace utopia {
         double intersection_time = 0.0;
         double assembly_time     = 0.0;
         
+        libMesh::DenseMatrix<libMesh::Real> biorth_weights;
+        
+        if(use_biorth_) {
+            assemble_biorth_weights_from_space(slave_space,
+                                               dof_slave,
+                                               var_num_slave,
+                                               biorth_weights);
+        }
+
+
         utopia::Chrono c;
         
         auto fun = [&](const VElementAdapter<Dimensions> &master,
@@ -406,14 +416,9 @@ namespace utopia {
             
             c.start();
             
-            libMesh::DenseMatrix<libMesh::Real> biorth_weights;
             
-            if(use_biorth_) {
-                assemble_biorth_weights_from_space(slave_space,
-                                                   dof_slave,
-                                                   var_num_slave,
-                                                   biorth_weights);
-            }
+            
+      
             
             long n_intersections = 0;
             
