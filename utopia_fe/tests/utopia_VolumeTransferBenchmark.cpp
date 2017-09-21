@@ -25,6 +25,8 @@ namespace utopia {
 
 		moonolith::Communicator comm(init.comm().get());
 		moonolith::root_describe("creating fe spaces...", comm, std::cout);
+		Chrono c;
+		c.start();
 
 		Order order_elem_fine     = FIRST;
 		Order order_elem_coarse   = FIRST;
@@ -46,20 +48,18 @@ namespace utopia {
 			-1., 1.,
 			TET4);
 
-		auto slave_context   = make_shared<FEContextT>(slave_mesh);
+		auto slave_context  = make_shared<FEContextT>(slave_mesh);
 		auto master_context = make_shared<FEContextT>(master_mesh);
 
-		auto slave_space   = fe_space(LAGRANGE, order_elem_fine, *slave_context);
+		auto slave_space  = fe_space(LAGRANGE, order_elem_fine, *slave_context);
 		auto master_space = fe_space(LAGRANGE, order_elem_coarse, *master_context);
 
 		slave_context->equation_systems.init();
 		master_context->equation_systems.init();
 
-		
-		DSMatrixd B;
-
-		Chrono c;
 		comm.barrier();
+		c.stop();
+		moonolith::root_describe(c, comm, std::cout);
 
 		std::stringstream ss;
 		ss << "experiment: [n_elem: master " << master_mesh->n_elem() << ", slave " << slave_mesh->n_elem() << "]";
@@ -67,6 +67,7 @@ namespace utopia {
 
 		c.start();
 
+		DSMatrixd B;
 		if(!assemble_volume_transfer(
 			comm,
 			master_mesh,
@@ -77,9 +78,9 @@ namespace utopia {
 			0,
 			true,
 			1,
-			B)) {
-
-			assert(false);
+			B)) 
+		{
+			assert(false && "Should never get here!");
 		}
 
 		const double vol = sum(B);
@@ -97,15 +98,22 @@ namespace utopia {
 	{	
 		std::vector<std::pair<int,int> > resolutions = 
 		{
-			{2, 2},
+			{5,  6},
 			{10, 10},
-			{8, 20},
+			{8,  20},
 			{30, 24},
-			{10, 44},
+			{10, 44}
 		};
 
 		for(auto r : resolutions) {
 			run_experiment(init, r.first, r.second);
 		}
+	}
+
+	void run_weak_scaling_benchmark(LibMeshInit &init)
+	{
+		const int n_master = ceil(pow(mpi_world_size() * 12, 1./3.));
+		const int n_slave  = ceil(pow(mpi_world_size() * 9,  1./3.));
+		run_experiment(init, n_master, n_slave);
 	}
 }
