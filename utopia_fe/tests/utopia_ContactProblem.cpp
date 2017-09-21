@@ -319,7 +319,7 @@ namespace utopia {
 
 
 		if(dynamic_contact) {
-			double dumping = 0.99;
+			double dumping = 1.;
 			DVectord M_x_vel_inc = dumping * (dt * 0.5) * (2. * external_force - internal_force - new_internal_force);
 			apply_zero_boundary_conditions(spaces[0]->dof_map(), M_x_vel_inc);
 
