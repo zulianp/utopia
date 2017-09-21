@@ -5,6 +5,7 @@
 #include "libmesh/parameter_vector.h"
 #include "libmesh/parameter_accessor.h"
 #include "libmesh/nemesis_io.h"
+#include "moonolith_profiler.hpp"
 
 #include <memory>
 
@@ -30,6 +31,8 @@ namespace utopia {
 	{
 		if(verbose) std::cout << "Contact problem: initializing" << std::endl;
 
+		MOONOLITH_EVENT_BEGIN("init");
+
 		this->bc_ptr = bc_ptr;
 		this->contact_pair_tags = contact_pair_tags;
 		this->search_radius = search_radius;
@@ -42,6 +45,7 @@ namespace utopia {
 		// linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
 		// linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> >();
 		output = std::make_shared<Nemesis_IO>(*mesh);
+		MOONOLITH_EVENT_END("init");
 	}
 
 	void ContactProblem::init_discretization()
@@ -272,6 +276,8 @@ namespace utopia {
 
 		compute_contact_conditions();
 
+		MOONOLITH_EVENT_BEGIN("solving_vi");
+
 		DVectord sol_c = local_zeros(local_size(force));
 		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
 		DSMatrixd K_c  = transpose(orthogonal_trafo) *
@@ -287,12 +293,16 @@ namespace utopia {
 		//DVectord addmissible_pred = min(displacement_pred_c, gap)
 		//DVectord pred = addmissible_pred - displacement_pred_c;
 
+		
+
 		SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> newton(linear_solver);
 		newton.verbose(true);
 		newton.max_it(40);
 
 		newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
 		newton.solve(K_c, rhs_c, sol_c);
+
+		
 
 		displacement = transfer_operator * (orthogonal_trafo * sol_c);
 		
@@ -340,6 +350,8 @@ namespace utopia {
 		old_displacement = displacement;
 
 		++iteration;
+
+		MOONOLITH_EVENT_END("solving_vi");
 	}
 
 	void ContactProblem::apply_displacement(const DVectord &displacement)
@@ -437,31 +449,11 @@ namespace utopia {
 
 			plot_mesh_f(*mesh, &normal_stress_x[0], "time_series_m/m" + std::to_string(iteration));
 		} 
-		// else {
-		// 	plot_mesh(*mesh, "time_series_m/m" + std::to_string(iteration) + "_" + std::to_string(comm.rank()));
-		// }
 	}
 
 	void ContactProblem::save(const double dt, const std::string &output_dir)
 	{
-		// if(mesh->is_serial()) {
-		// 	convert(total_displacement, *context_ptr->system.solution);
-		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/sol_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-
-		// 	convert(is_contact_node, *context_ptr->system.solution);
-		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/is_c_n_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-
-		// 	convert(normal_stress, *context_ptr->system.solution);
-		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/ns_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-
-		// 	convert(internal_force, *context_ptr->system.solution);
-		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/if_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-
-		// 	convert(acceleration, *context_ptr->system.solution);
-		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/a_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
-		// } else {
 		convert(total_displacement, *context_ptr->system.solution);
 		output->write_timestep(output_dir + "/sol_" + std::to_string(comm.size()) + ".e", context_ptr->equation_systems, iteration + 1, iteration);
-		// }
 	}
 }
