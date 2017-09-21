@@ -24,7 +24,8 @@
 #include "utopia_UtopiaFETests.hpp"
 #include <functional>
 
-//#include "utopia_FEDSLBaseSolverExamples.hpp"
+#include "par_moonolith.hpp"
+
 using namespace utopia;
 using namespace std;
 using namespace libMesh;
@@ -34,6 +35,7 @@ int main(const int argc, char *argv[])
 {
 
 	Utopia::Init(argc, argv);
+	MOONOLITH_PROFILING_BEGIN();
 	
 	{
 		LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
@@ -82,6 +84,7 @@ int main(const int argc, char *argv[])
 		}
 	}
 
+	MOONOLITH_PROFILING_END();
     return Utopia::Finalize();
 }
 

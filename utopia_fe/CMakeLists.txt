@@ -6,6 +6,7 @@ set(CMAKE_MACOSX_RPATH 1)
 
 option(ENABLE_SANITIZER "check for memory access problems" OFF)
 option(ENABLE_BOOST "enable boost features" OFF)
+option(ENABLE_MOONOLITH_PROFILER "enable moonolith profiling capabilities" OFF)
 
 #################################################################################
 #################################################################################
