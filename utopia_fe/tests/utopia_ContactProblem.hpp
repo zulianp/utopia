@@ -27,16 +27,17 @@ namespace utopia {
 		DSMatrixd stiffness_matrix;
 		DSMatrixd neumann_matrix;
 		DSMatrixd mass_matrix;
-		DVectord force;
-		DVectord displacement;
-		DVectord old_displacement;
+		DSMatrixd internal_mass_matrix;
+		DVectord external_force;
+		DVectord displacement_increment;
+		DVectord old_displacement_increment;
 		DVectord total_displacement;
 
 		DVectord velocity;
-		DVectord old_velocity;
+		// DVectord old_velocity;
 
-		DVectord acceleration;
-		DVectord old_acceleration;
+		// DVectord acceleration;
+		// DVectord old_acceleration;
 
 		DVectord internal_force;
 
@@ -59,6 +60,7 @@ namespace utopia {
 
 		int iteration;
 		bool verbose;
+		bool dynamic_contact;
 
 		class ElasticityBoundaryConditions {
 		public:
@@ -81,10 +83,14 @@ namespace utopia {
 		);
 
 		void save(const double dt = 1.0, const std::string &output_dir = ".");
+		inline void set_dynamic_contact(const bool val)
+		{
+			dynamic_contact = val;
+		}
 
 		ContactProblem();
 	private:
-
+		void compute_normal_stress(const double dt);
 		void init_discretization();
 		void init_material();
 		void compute_contact_conditions();

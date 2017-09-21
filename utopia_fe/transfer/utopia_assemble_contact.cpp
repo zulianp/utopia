@@ -45,17 +45,7 @@ namespace utopia {
 			vec[d] /= len;
 		}
 	}
-	
-	template<typename T>
-	inline void Print(const std::vector<T> &v, std::ostream &os)
-	{
-		for(auto i : v) {
-			os << i << " ";
-		}
 		
-		os << "\n";
-	}
-	
 	template<int Dimensions>
 	inline static void nodes_are_boundary_hack(const libMesh::Elem &el,
 											   const int n_dofs,

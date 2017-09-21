@@ -19,6 +19,7 @@ namespace utopia {
 	ContactProblem::ContactProblem()
 	{
 		verbose = true;
+		dynamic_contact = false;
 	}
 
 	void ContactProblem::init(
@@ -91,19 +92,20 @@ namespace utopia {
 		U &u, 
 		LibMeshFEContext<SystemType> &context,
 		DSMatrixd &stiffness_matrix,
-		DVectord &force
+		DVectord &external_force
 		)
 	{
 		std::cout << "Contact problem: assembling stiffness matrix..." << std::flush;
 		
 		const int dim = u.size();
 
-		double mu = 0.2, lambda = 0.2;
+		double mu = 10., lambda = 10.;
 		auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
 		auto b_form = integral((mu * 0.5) * dot(e, e) + lambda * dot(div(u), div(u)));
 
 		DenseVector<Real> vec(dim);
 		vec.zero();
+		vec(1) = -0.1;
 
 		auto f 	    = vec_coeff(vec);
 		auto l_form = integral(dot(f, u));
@@ -120,9 +122,9 @@ namespace utopia {
 		context.equation_systems.solve();
 
 		convert(*context.system.matrix, stiffness_matrix);
-		convert(*context.system.rhs, force);
+		convert(*context.system.rhs, external_force);
 
-		apply_boundary_conditions(u.get(0), stiffness_matrix, force);
+		apply_boundary_conditions(u.get(0), stiffness_matrix, external_force);
 
 		std::cout << "done: (" << t << " seconds)" << std::endl; 
 	}
@@ -142,7 +144,7 @@ namespace utopia {
 		ux.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		
-		assemble_elasticity(u,  *context_ptr, stiffness_matrix, force);
+		assemble_elasticity(u,  *context_ptr, stiffness_matrix, external_force);
 		assemble_mass_matrix(u, *context_ptr, mass_matrix);
 	}
 
@@ -163,7 +165,7 @@ namespace utopia {
 		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		uz.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 
-		assemble_elasticity(u,  *context_ptr, stiffness_matrix, force);
+		assemble_elasticity(u,  *context_ptr, stiffness_matrix, external_force);
 		assemble_mass_matrix(u, *context_ptr, mass_matrix);
 	}
 
@@ -175,16 +177,16 @@ namespace utopia {
 			init_material_3d();
 		}
 
-		old_displacement = local_zeros(local_size(force));
+		old_displacement_increment = local_zeros(local_size(external_force));
 
-		velocity = local_zeros(local_size(force));
-		old_velocity = local_zeros(local_size(force));
+		velocity = local_zeros(local_size(external_force));
 
-		acceleration = local_zeros(local_size(force));
-		old_acceleration = local_zeros(local_size(force));
+		internal_force = local_zeros(local_size(external_force));
+		total_displacement =  local_zeros(local_size(external_force));	
 
-		internal_force = local_zeros(local_size(force));
-		total_displacement =  local_zeros(local_size(force));	
+		DVectord selector = local_values(local_size(external_force).get(0), 1.);
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), selector);
+		internal_mass_matrix = diag(selector) * mass_matrix;
 	}
 
 	void ContactProblem::compute_contact_conditions()
@@ -243,25 +245,20 @@ namespace utopia {
 		if(verbose) std::cout << "Contact problem: computing step" << std::endl;
 		
 		disp("n_dofs:");
-		disp(size(force));
+		disp(size(external_force));
 		const int dim = mesh->mesh_dimension();
 
-		// DVectord inertia = mass_matrix * acceleration;
-		// apply_zero_boundary_conditions(spaces[0]->dof_map(), inertia); 
-
-		DVectord rhs = (force - dt * internal_force);// - (dt*dt) * inertia;
-
-		if(iteration > 0)
-		{
-			Read<DVectord> r_od(old_displacement);
+		if(iteration > 0) {
+			Read<DVectord> r_od(old_displacement_increment);
+			Read<DVectord> r_v(velocity);
 
 			search_radius = 1e-8;
-			auto r = range(old_displacement);
+			auto r = range(old_displacement_increment);
 			for(auto i = r.begin(); i < r.end(); i += dim) {
 				double length = 0.0;
 
 				for(int j = 0; j < dim; ++j) {
-					double v =  old_displacement.get(i + j);
+					double v = old_displacement_increment.get(i + j) + (dt * dt) * velocity.get(i + j);
 					length += v * v;
 				}
 
@@ -278,42 +275,75 @@ namespace utopia {
 
 		MOONOLITH_EVENT_BEGIN("solving_vi");
 
-		DVectord sol_c = local_zeros(local_size(force));
+		DVectord rhs;
+		DSMatrixd K;
+
+
+		if(dynamic_contact) {
+			//newmark scheme
+			//predictor step
+			DVectord displacement_increment_pred = dt * velocity;
+			DVectord displacement_increment_pred_nt = utopia::min(orthogonal_trafo * displacement_increment_pred, gap);
+			displacement_increment_pred = orthogonal_trafo * displacement_increment_pred_nt;
+			rhs = mass_matrix * displacement_increment_pred + (dt*dt/2.) * (external_force - internal_force);
+			// DVectord  rhs = mass_matrix * dt * velocity + (dt*dt/2.) * (external_force - internal_force);
+			K = internal_mass_matrix + (dt*dt/4.) * stiffness_matrix;
+		} else {
+			K = stiffness_matrix;
+			rhs = dt * (external_force - internal_force);
+		}
+
+		DVectord sol_c = local_zeros(local_size(external_force));
 		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
 		DSMatrixd K_c  = transpose(orthogonal_trafo) *
 		DSMatrixd(
 			transpose(transfer_operator) * 
-			stiffness_matrix * 
+			K * 
 			transfer_operator) * 
 		orthogonal_trafo;
 
-		//predictor step
-		//DVectord displacement_pred = displacement + dt * velocity;
-		//DVectord displacement_pred_c = transpose(orthogonal_trafo) * displacement_pred
-		//DVectord addmissible_pred = min(displacement_pred_c, gap)
-		//DVectord pred = addmissible_pred - displacement_pred_c;
-
-		
-
-		SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> newton(linear_solver);
+	
+		// SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> newton(linear_solver);
+		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
 		newton.verbose(true);
 		newton.max_it(40);
 
 		newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
 		newton.solve(K_c, rhs_c, sol_c);
 
-		
+		displacement_increment = transfer_operator * (orthogonal_trafo * sol_c);		
+		total_displacement += displacement_increment;
 
-		displacement = transfer_operator * (orthogonal_trafo * sol_c);
-		
-		total_displacement += displacement;
-		internal_force = stiffness_matrix * total_displacement;
+		DVectord new_internal_force = stiffness_matrix * total_displacement;
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
 
-		apply_zero_boundary_conditions(spaces[0]->dof_map(), internal_force);
-		
-		normal_stress = local_zeros(local_size(displacement));
 
-		DVectord unscaled_stress = boundary_mass_inv * (force - dt * internal_force);
+		if(dynamic_contact) {
+			double dumping = 0.99;
+			DVectord M_x_vel_inc = dumping * (dt * 0.5) * (2. * external_force - internal_force - new_internal_force);
+			apply_zero_boundary_conditions(spaces[0]->dof_map(), M_x_vel_inc);
+
+			DVectord vel_inc = local_zeros(size(M_x_vel_inc));
+			solve(mass_matrix, M_x_vel_inc, vel_inc);
+
+			velocity += vel_inc;
+		}
+
+		old_displacement_increment = displacement_increment;
+		internal_force = new_internal_force;
+
+		compute_normal_stress(dt);
+		apply_displacement(displacement_increment);
+		MOONOLITH_EVENT_END("solving_vi");
+		++iteration;
+	}
+
+
+	void ContactProblem::compute_normal_stress(const double dt)
+	{
+		const int dim = mesh->mesh_dimension();
+		normal_stress = local_zeros(local_size(total_displacement));
+		DVectord unscaled_stress = boundary_mass_inv * (external_force - dt * internal_force);
 		{
 			Write<DVectord> w_ns(normal_stress);
 			Read<DVectord> r_n(normals);
@@ -321,8 +351,6 @@ namespace utopia {
 
 
 			auto r = range(unscaled_stress);
-
-			
 			for(auto i = r.begin(); i < r.end(); i += dim) {
 				double ns = 0.;
 				for(int j = 0; j < dim; ++j) {
@@ -333,35 +361,16 @@ namespace utopia {
 				normal_stress.set(i, ns);
 			}
 		}
-
-
-		apply_displacement(displacement);
-
-		old_acceleration = acceleration;
-		old_velocity = velocity;
-
-		velocity = displacement - old_displacement;
-		velocity *= 1./dt;
-
-		acceleration = velocity - old_velocity;
-		acceleration *= 1./dt;
-
-		old_velocity = velocity;
-		old_displacement = displacement;
-
-		++iteration;
-
-		MOONOLITH_EVENT_END("solving_vi");
 	}
 
-	void ContactProblem::apply_displacement(const DVectord &displacement)
+	void ContactProblem::apply_displacement(const DVectord &displacement_increment)
 	{	
 		//FIXME		
 		int sys_num = 0;
 
 		if(!comm.is_alone()) {
-			auto r = range(displacement);
-			Read<DVectord> r_d(displacement);
+			auto r = range(displacement_increment);
+			Read<DVectord> r_d(displacement_increment);
 
 			auto m_begin = mesh->active_local_elements_begin();
 			auto m_end   = mesh->active_local_elements_end();
@@ -376,7 +385,7 @@ namespace utopia {
 				dof_map.dof_indices(*m_it, dof_indices);
 				for(auto dof_id : dof_indices) {
 					if(r.inside(dof_id)) {
-						idx_to_value[dof_id] = displacement.get(dof_id);
+						idx_to_value[dof_id] = displacement_increment.get(dof_id);
 					} else {
 						unique_idx.insert(dof_id);
 					}
@@ -388,9 +397,9 @@ namespace utopia {
 			IS is_in;
 			ISCreateGeneral(PETSC_COMM_WORLD, idx.size(), &idx[0], PETSC_USE_POINTER, &is_in);
 			VecScatter scatter_context;
-			VecScatterCreate(raw_type(displacement), is_in, raw_type(out), nullptr, &scatter_context);
-			VecScatterBegin(scatter_context, raw_type(displacement), raw_type(out), INSERT_VALUES, SCATTER_FORWARD);
-			VecScatterEnd(scatter_context, raw_type(displacement), raw_type(out), INSERT_VALUES, SCATTER_FORWARD);
+			VecScatterCreate(raw_type(displacement_increment), is_in, raw_type(out), nullptr, &scatter_context);
+			VecScatterBegin(scatter_context, raw_type(displacement_increment), raw_type(out), INSERT_VALUES, SCATTER_FORWARD);
+			VecScatterEnd(scatter_context, raw_type(displacement_increment), raw_type(out), INSERT_VALUES, SCATTER_FORWARD);
 			ISDestroy(&is_in);
 			VecScatterDestroy(&scatter_context);
 
@@ -420,7 +429,7 @@ namespace utopia {
 
 		} else {
 
-			Read<DVectord> r_d(displacement);
+			Read<DVectord> r_d(displacement_increment);
 
 			auto m_it  = mesh->local_nodes_begin();
 			auto m_end = mesh->local_nodes_end();
@@ -429,11 +438,14 @@ namespace utopia {
 			for(; m_it != m_end; ++m_it) { 
 				for(unsigned int c = 0; c < mesh->mesh_dimension(); ++c) {
 					const int dof_id = (*m_it)->dof_number(sys_num, c, 0);
-					(**m_it)(c) += displacement.get(dof_id);
+					(**m_it)(c) += displacement_increment.get(dof_id);
 				}
 			}
 		}
+	}
 
+	void ContactProblem::save(const double dt, const std::string &output_dir)
+	{
 		if(comm.is_alone()) {
 			const int dim = mesh->mesh_dimension();
 			std::vector<double> normal_stress_x(local_size(normal_stress).get(0)/dim);
@@ -449,11 +461,8 @@ namespace utopia {
 
 			plot_mesh_f(*mesh, &normal_stress_x[0], "time_series_m/m" + std::to_string(iteration));
 		} 
-	}
 
-	void ContactProblem::save(const double dt, const std::string &output_dir)
-	{
 		convert(total_displacement, *context_ptr->system.solution);
-		output->write_timestep(output_dir + "/sol_" + std::to_string(comm.size()) + ".e", context_ptr->equation_systems, iteration + 1, iteration);
+		output->write_timestep(output_dir + "/sol_" + std::to_string(comm.size()) + ".e", context_ptr->equation_systems, iteration + 1, dt*iteration);
 	}
 }

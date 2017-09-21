@@ -46,6 +46,7 @@ namespace utopia {
 		double search_radius;
 		double dt;
 		int n_steps;
+		bool dynamic_contact;
 	};
 
 
@@ -59,6 +60,7 @@ namespace utopia {
 			is_multibody = true;
 			search_radius = 0.05;
 			dt = 1.;
+			dynamic_contact = false;
 
 			//---------------------------------------------------
 			// mesh->read("../data/hertz_530.e");
@@ -77,7 +79,7 @@ namespace utopia {
 		{
 			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uz == coeff(-dt*0.3), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(-0.3), {top_boundary_tag}) );
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
@@ -87,8 +89,8 @@ namespace utopia {
 				strong_enforce( boundary_conditions(ux == coeff(0.),  {3, 4, 5}) );
 				strong_enforce( boundary_conditions(uy == coeff(0.),  {3, 4, 5}) );
 
-				strong_enforce( boundary_conditions(uz == coeff(-dt*0.08), {4}) );
-				strong_enforce( boundary_conditions(uz == coeff(dt*0.08), {5}) );
+				strong_enforce( boundary_conditions(uz == coeff(-0.08), {4}) );
+				strong_enforce( boundary_conditions(uz == coeff(0.08), {5}) );
 			}
 		}
 
@@ -105,6 +107,7 @@ namespace utopia {
 			search_radius = 0.4;
 			dt = 1.;
 			n_steps = 1;
+			dynamic_contact = false;
 		}
 
 		void set_up_fine()
@@ -118,7 +121,7 @@ namespace utopia {
 		{
 			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uz == coeff(-dt*0.1), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(-0.1), {top_boundary_tag}) );
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
@@ -136,6 +139,7 @@ namespace utopia {
 			search_radius = 0.2;
 			dt = 1.;
 			n_steps = 1;
+			dynamic_contact = false;
 		}
 
 		void set_up_middle_res()
@@ -165,7 +169,7 @@ namespace utopia {
 		{
 			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uz == coeff(-dt*0.2), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(-0.2), {top_boundary_tag}) );
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
@@ -184,6 +188,8 @@ namespace utopia {
 			search_radius = 0.1;
 			dt = 1.;
 			n_steps = 1;
+			dynamic_contact = false;
+
 		}
 
 		void set_up_coarse_t()
@@ -200,12 +206,17 @@ namespace utopia {
 			// mesh_file = "../data/m_contact_2d.e";
 			mesh_file = "../data/m_contact_2d_ref.e";
 			search_radius = 0.1;
-			// contact_flags = {{101, 102}, {103, 104}, {105, 106}};
-			contact_flags = {{102, 101}, {103, 104}, {105, 106}};
-			dt = 0.025;
-			n_steps = 100;
+			contact_flags = {{101, 102}, {103, 104}, {105, 106}};
+			// contact_flags = {{102, 101}, {103, 104}, {105, 106}};
+			dt = 0.05;
+			n_steps = 60;
 		}
 
+		void set_up_m_coarse_t_dynamic()
+		{
+			set_up_m_coarse_t();
+			dynamic_contact = true;
+		}
 
 		void set_up_coarse()
 		{
@@ -218,8 +229,10 @@ namespace utopia {
 
 		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy) override
 		{
-			strong_enforce( boundary_conditions(ux == coeff(0.),    	 {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uy == coeff(-dt * 0.15), {top_boundary_tag}) );
+			if(!dynamic_contact) {
+				strong_enforce( boundary_conditions(ux == coeff(0.),    	 {top_boundary_tag}) );
+				strong_enforce( boundary_conditions(uy == coeff(-0.15), 	 {top_boundary_tag}) );
+			}
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),    	 {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.0),   	 {bottom_boundar_tag}) );
@@ -236,15 +249,16 @@ namespace utopia {
 		ContactProblem p;
 			
 		//---------------------------------------------------
-		// auto e_problem = make_shared<ExampleProblem2D>();
-		// e_problem->set_up_m_coarse_t();
+		auto e_problem = make_shared<ExampleProblem2D>();
+		e_problem->set_up_m_coarse_t();
+		// e_problem->set_up_m_coarse_t_dynamic();
 		
 		// auto e_problem = make_shared<ExampleProblem3D>();
 		// auto e_problem = make_shared<QuasiHertz>();
-		auto e_problem = make_shared<QuasiSignorini>(); 
+		// auto e_problem = make_shared<QuasiSignorini>(); 
 		// e_problem->set_up_fine_res();
-		e_problem->set_up_adaptive();
-		e_problem->set_up_time_dependent();
+		// e_problem->set_up_adaptive();
+		// e_problem->set_up_time_dependent();
 		//---------------------------------------------------
 		
 		MOONOLITH_EVENT_BEGIN("read_mesh");
@@ -252,7 +266,7 @@ namespace utopia {
 		MOONOLITH_EVENT_END("read_mesh");
 
 		p.init(init, mesh, e_problem, e_problem->contact_flags, e_problem->search_radius);
-		
+		p.set_dynamic_contact(e_problem->dynamic_contact);
 
 		double t = 0.0;
 		for(int i = 0; i < e_problem->n_steps; ++i) {
