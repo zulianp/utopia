@@ -267,7 +267,6 @@ namespace utopia {
 		auto fun = [&n_false_positives, &n_intersections, &process_fun](
 																		
 																		Adapter &master, Adapter &slave) -> bool {
-			
 			bool ok = process_fun(master, slave);
 			
 			if(ok) {
@@ -285,12 +284,8 @@ namespace utopia {
 		
 		moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);
 		
-		
-		
 		long n_total_candidates = n_intersections + n_false_positives;
-		
 		long n_collection[3] = {n_intersections, n_total_candidates, n_false_positives};
-		
 		
 		comm.all_reduce(n_collection, 3, moonolith::MPISum());
 		
@@ -335,8 +330,7 @@ namespace utopia {
 	}
 	
 	template<int Dimensions>
-	bool Assemble(
-				  moonolith::Communicator &comm,
+	bool Assemble(moonolith::Communicator &comm,
 				  const std::shared_ptr<MeshBase> &master,
 				  const std::shared_ptr<MeshBase> &slave,
 				  const std::shared_ptr<DofMap> &dof_master,
