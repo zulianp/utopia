@@ -7,53 +7,72 @@
 #include "utopia_LibMeshBackend.hpp"
 
 #include "moonolith_communicator.hpp"
+#include "moonolith_synched_describable.hpp"
 
 #include <libmesh/parallel_mesh.h>
 #include <memory>
+#include <sstream>
 
 using namespace libMesh;
 using std::shared_ptr;
 using std::make_shared;
 
 namespace utopia {
-	void run_volume_transfer_benchmark(LibMeshInit &init) {
+
+	void run_experiment(LibMeshInit &init, const int n_master, const int n_slave)
+	{
 		typedef utopia::LibMeshFEContext<libMesh::LinearImplicitSystem> FEContextT;
+
+		moonolith::Communicator comm(init.comm().get());
+		moonolith::root_describe("creating fe spaces...", comm, std::cout);
 
 		Order order_elem_fine     = FIRST;
 		Order order_elem_coarse   = FIRST;
 		Order order_of_quadrature = Order(int(order_elem_fine) + int(order_elem_coarse));
 
-		const std::string data_path = Utopia::Instance().get("data_path");
-		const std::string fine_mesh_path   = data_path + "/fine_mesh.e";
-		const std::string coarse_mesh_path = data_path + "/coarse_mesh.e";
+		auto slave_mesh = make_shared<DistributedMesh>(init.comm());
+		MeshTools::Generation::build_cube(*slave_mesh,
+			n_slave, n_slave, n_slave,
+			-0.9, 0.9,
+			-0.9, 0.9,
+			-0.9, 0.9,
+			TET4);
 
-		auto fine_mesh = make_shared<DistributedMesh>(init.comm());
-		fine_mesh->read(fine_mesh_path);
+		auto master_mesh = make_shared<DistributedMesh>(init.comm());
+		MeshTools::Generation::build_cube(*master_mesh,
+			n_master, n_master, n_master,
+			-1., 1.,
+			-1., 1.,
+			-1., 1.,
+			TET4);
 
-		auto coarse_mesh = make_shared<DistributedMesh>(init.comm());
-		coarse_mesh->read(coarse_mesh_path);
+		auto slave_context   = make_shared<FEContextT>(slave_mesh);
+		auto master_context = make_shared<FEContextT>(master_mesh);
 
-		auto fine_context   = make_shared<FEContextT>(fine_mesh);
-		auto coarse_context = make_shared<FEContextT>(coarse_mesh);
+		auto slave_space   = fe_space(LAGRANGE, order_elem_fine, *slave_context);
+		auto master_space = fe_space(LAGRANGE, order_elem_coarse, *master_context);
 
-		auto fine_space   = fe_space(LAGRANGE, order_elem_fine, *fine_context);
-		auto coarse_space = fe_space(LAGRANGE, order_elem_coarse, *coarse_context);
+		slave_context->equation_systems.init();
+		master_context->equation_systems.init();
 
-		auto u = fe_function(fine_space);
-		strong_enforce( boundary_conditions(u == coeff(0.), {1}) );
-
-		fine_context->equation_systems.init();
-		coarse_context->equation_systems.init();
-
-		moonolith::Communicator comm(init.comm().get());
+		
 		DSMatrixd B;
+
+		Chrono c;
+		comm.barrier();
+
+		std::stringstream ss;
+		ss << "experiment: [n_elem: master " << master_mesh->n_elem() << ", slave " << slave_mesh->n_elem() << "]";
+		moonolith::root_describe(ss.str(), comm, std::cout);
+
+		c.start();
 
 		if(!assemble_volume_transfer(
 			comm,
-			coarse_mesh,
-			fine_mesh,
-			utopia::make_ref(coarse_space.dof_map()),
-			utopia::make_ref(fine_space.dof_map()),
+			master_mesh,
+			slave_mesh,
+			utopia::make_ref(master_space.dof_map()),
+			utopia::make_ref(slave_space.dof_map()),
 			0,
 			0,
 			true,
@@ -61,6 +80,32 @@ namespace utopia {
 			B)) {
 
 			assert(false);
+		}
+
+		const double vol = sum(B);
+		const double expected_vol = 1.8*1.8*1.8;
+		std::cout << "diff vol: " << std::abs(vol - expected_vol) << std::endl;
+		assert(utopia::approxeq(vol, expected_vol, 1e-8));
+
+		comm.barrier();
+		c.stop();
+
+		moonolith::root_describe(c, comm, std::cout);
+	}
+
+	void run_volume_transfer_benchmark(LibMeshInit &init) 
+	{	
+		std::vector<std::pair<int,int> > resolutions = 
+		{
+			{2, 2},
+			{10, 10},
+			{8, 20},
+			{30, 24},
+			{10, 44},
+		};
+
+		for(auto r : resolutions) {
+			run_experiment(init, r.first, r.second);
 		}
 	}
 }
