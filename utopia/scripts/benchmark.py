@@ -4,9 +4,6 @@ import csv
 import subprocess, os
 import argparse
 
-cmake_cmd = ["cmake", "..", "-DUTOPIA_LOG=ON"]
-make_cmd = ["make", "-j8", "utopia_exec"]
-
 # Columns in CSV files
 CLASS = 0
 TOTAL_TIME = 1
@@ -17,25 +14,26 @@ REL_STD_DEV = 5
 
 # Argument parsing
 parser = argparse.ArgumentParser(description='Benchmarking utility for utopia')
-parser.add_argument('--mpi', dest='mpi', nargs=1, type=int, help='Number of processes spawned by mpirun', default=[1])
+group = parser.add_mutually_exclusive_group()
+group.add_argument('-m', '--mpi', dest='mpi', nargs=1, type=int, help='Number of processes spawned by mpirun', default=[1])
+group.add_argument('-s', '--slurm', dest='slurm', nargs=1, type=int, help='Number of processes spawned by srun', default=[1])
 parser.add_argument('-n', dest='execs', nargs=1, type=int, help='Number of executions of utopia', default=[100])
 parser.add_argument('--utopia-path', dest='path', type=str, help='Full path of utopia_exec', default="./utopia_exec")
 parser.add_argument('args', nargs=argparse.REMAINDER, type=str, help="""Arguments to pass to utopia.
-Put these arguments at the end of the command line, preceded by '--' (double dash)""")
+    Put these arguments at the end of the command line, preceded by '--' (double dash)""")
 args = parser.parse_args()
 
 iterations = args.execs[0]
 mpi_n = args.mpi[0]
+srun_n = args.slurm[0]
 utopia_cmd = [args.path] + args.args
 
 # Main program
 cwd = os.getcwd()
 
-# If passed file is already there, don't bother compiling it
-isExecThere = True
+# If file is not found, look for it
 if not os.path.isfile(utopia_cmd[0]):
-    isExecThere = False
-    if utopia_cmd[0] == "./utopia_exec":
+    if utopia_cmd[0] == "./utopia_exec":  # If it's default (or equal to default)
         if cwd.endswith('/scripts'):
             os.chdir('../bin')
         elif cwd.endswith('/utopia/utopia'):
@@ -45,6 +43,9 @@ if not os.path.isfile(utopia_cmd[0]):
         else:
             print('Error: unable to figure out where is the utopia executable. Exiting')
             exit(5)
+        if not os.path.isfile("utopia_exec"):
+            print('Error: utopia was not found in its default location. Please compile utopia first. Exiting')
+            exit(6)
     else:
         u_dir, u_file = os.path.split(utopia_cmd[0])
         os.chdir(u_dir)
@@ -58,17 +59,9 @@ else:
 
 if mpi_n > 1:
     utopia_cmd = ["mpirun", "-n", str(mpi_n)] + utopia_cmd
-
-if not isExecThere:
-    status = subprocess.run(cmake_cmd)
-    if status.returncode != 0:
-        print("Error in cmake! Exited with status code: " + str(status.returncode))
-        exit(1)
-
-    status = subprocess.run(make_cmd)
-    if status.returncode != 0:
-        print("Error in make! Exited with status code: " + str(status.returncode))
-        exit(1)
+elif srun_n > 1:
+    mpi_n = srun_n
+    utopia_cmd = ["srun", '--nodes=1', '--ntasks-per-core=1', '--ntasks-per-node=' + str(srun_n), '--cpus-per-task=1'] + ["mpirun", "-n", str(mpi_n)] + utopia_cmd
 
 # Execute benchmark
 data = [dict() for _ in range(mpi_n)]
