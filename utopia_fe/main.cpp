@@ -87,4 +87,3 @@ int main(const int argc, char *argv[])
 	MOONOLITH_PROFILING_END();
     return Utopia::Finalize();
 }
-

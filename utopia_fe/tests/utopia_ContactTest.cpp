@@ -154,9 +154,9 @@ namespace utopia {
 		}
 
 		void set_up_time_dependent(){
-			dt = 0.1;
+			dt = 0.3;
 			search_radius *= dt;
-			n_steps = 30;
+			n_steps = 10;
 		}
 
 		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
@@ -247,14 +247,9 @@ namespace utopia {
 		e_problem->set_up_time_dependent();
 		//---------------------------------------------------
 		
-		std::cout << "reading mesh...." << std::flush;
-		// mesh->set_distributed();
-		// mesh->read(e_problem->mesh_file);
-		mesh->read(e_problem->mesh_file, nullptr, true);
-		// std::cout << "is_replicated: " << mesh->is_replicated() << std::endl;
-		// mesh->delete_remote_elements();
-		
-		std::cout << "done" << std::endl;
+		MOONOLITH_EVENT_BEGIN("read_mesh");
+		mesh->read(e_problem->mesh_file);
+		MOONOLITH_EVENT_END("read_mesh");
 
 		p.init(init, mesh, e_problem, e_problem->contact_flags, e_problem->search_radius);
 		
@@ -267,8 +262,6 @@ namespace utopia {
 			p.step(e_problem->dt);	
 			p.save(e_problem->dt);		
 		}
-
-		
 	}
 }
 
