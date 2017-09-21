@@ -1336,8 +1336,7 @@ namespace utopia {
 						  const bool use_biorth,
 						  const bool use_volume_differential)
 	{
-		return assemble_contact(
-								comm, mesh, dof_map, var_num,
+		return assemble_contact(comm, mesh, dof_map, var_num,
 								B, orthogonal_trafos,
 								gap, normals, is_contact_node,
 								search_radius,
