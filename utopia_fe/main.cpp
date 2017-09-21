@@ -50,7 +50,10 @@ int main(const int argc, char *argv[])
 	    runners["geometry"] = run_geometry_test;
 	    runners["mortar"] = run_mortar_examples;
 	    runners["tests"] = run_all_utopia_fe_tests;
+
+	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
+	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
 
 		for(int i = 1; i < argc; ++i) {
 			if(argv[i] == std::string("-r")) {
