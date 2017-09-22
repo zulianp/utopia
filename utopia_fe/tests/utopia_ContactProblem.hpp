@@ -62,6 +62,9 @@ namespace utopia {
 		bool verbose;
 		bool dynamic_contact;
 
+
+		std::vector<int> var_num_aux;
+
 		class ElasticityBoundaryConditions {
 		public:
 			virtual ~ElasticityBoundaryConditions() {}
@@ -71,6 +74,7 @@ namespace utopia {
 
 		std::shared_ptr<ElasticityBoundaryConditions> bc_ptr;
 		std::shared_ptr<libMesh::Nemesis_IO> output;
+		// std::shared_ptr<libMesh::ExodusII_IO> output;
 
 		void step(const double dt = 1.0);
 
@@ -97,6 +101,7 @@ namespace utopia {
 		void init_material_2d();
 		void init_material_3d();
 		void apply_displacement(const DVectord &displacement);
+		void init_aux_system();
 	};
 }
 
