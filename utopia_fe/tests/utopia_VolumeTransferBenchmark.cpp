@@ -112,8 +112,8 @@ namespace utopia {
 
 	void run_weak_scaling_benchmark(LibMeshInit &init)
 	{
-		const int n_master = ceil(pow(mpi_world_size() * 12, 1./3.));
-		const int n_slave  = ceil(pow(mpi_world_size() * 9,  1./3.));
+		const int n_master = round(pow(mpi_world_size() * 21, 1./3.));
+		const int n_slave  = round(pow(mpi_world_size() * 18, 1./3.));
 		run_experiment(init, n_master, n_slave);
 	}
 }

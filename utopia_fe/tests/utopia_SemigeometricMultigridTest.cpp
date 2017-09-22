@@ -40,10 +40,9 @@ namespace utopia {
         
         moonolith::Communicator comm(init.comm().get());
         DSMatrixd B;
-                  /* without volume tags*/
+        /* without volume tags*/
         
-//        if(!assemble_volume_transfer(
-//                                     comm,
+//        if(!assemble_volume_transfer(comm,
 //                                     p.coarse_mesh,
 //                                     p.fine_mesh,
 //                                     utopia::make_ref(p.coarse_space->dof_map()),
@@ -54,10 +53,8 @@ namespace utopia {
 //                                     1,
 //                                     B))
         
-                  /* with volume tags*/
-            
-//        if(!assemble_volume_transfer(
-//                                     comm,
+        /* with volume tags*/    
+//        if(!assemble_volume_transfer(comm,
 //                                     p.coarse_mesh,
 //                                     p.fine_mesh,
 //                                     utopia::make_ref(p.coarse_space->dof_map()),
@@ -69,10 +66,9 @@ namespace utopia {
 //                                     B,
 //                                     {{1,2}}))
         
-                  /* with volume tags and reverse operator*/
+        /* with volume tags and reverse operator*/
         DSMatrixd B_r;
-        if(!assemble_volume_transfer_r(
-                                       comm,
+        if(!assemble_volume_transfer_r(comm,
                                        p.coarse_mesh,
                                        p.fine_mesh,
                                        utopia::make_ref(p.coarse_space->dof_map()),
@@ -87,10 +83,8 @@ namespace utopia {
                                        1,
                                        1,
                                        B,
-                                       B_r
-                                       ))
+                                       B_r))
         {
-            
             std::cerr << "No intersection" << std::endl;
             return;
         }
