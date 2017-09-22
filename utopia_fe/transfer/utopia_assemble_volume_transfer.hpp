@@ -31,7 +31,7 @@ namespace utopia {
       bool use_biorth, 
       int n_var,
       DSMatrixd &B,
-      const std::vector< std::pair<int, int> > &tags=std::vector< std::pair<int, int> >());
+      const std::vector< std::pair<int, int> > &tags = std::vector< std::pair<int, int> >());
 }
 
 #endif //UTOPIA_ASSEMBLE_VOLUME_TRANSFER_HPP
