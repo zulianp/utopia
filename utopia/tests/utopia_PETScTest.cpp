@@ -989,6 +989,8 @@ namespace utopia {
 #ifdef WITH_PETSC
         UTOPIA_UNIT_TEST_BEGIN("PETScTest");
         
+        // petsc_view_test();                   // TODO:: assert fails in parallel MatGetSubMatrix does not work if the distro changes
+        
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate_test);
         UTOPIA_RUN_TEST(petsc_harcoded_cg_test);
         UTOPIA_RUN_TEST(petsc_reciprocal_test);
@@ -1022,7 +1024,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_inverse_test);
 
         // petsc_sparse_matrix_accessors_test();  // TODO:: here something doesnt work in parallel !
-        // petsc_view_test();                   // TODO:: assert fails in parallel MatGetSubMatrix does not work if the distro changes
+        
         // // petsc_local_entities_test(); //FIXME does not work
         //  petsc_conversion_test();
         //  maria_test();
