@@ -63,7 +63,7 @@ namespace utopia {
             return size(expr.right());
         }
     }
-};
+}
 
 #undef TENSOR_ORDER_BINARY
 

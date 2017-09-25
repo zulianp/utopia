@@ -396,10 +396,10 @@ namespace utopia {
 				
 
 					if(!k_ptr->is_callable()) {
-// #ifdef UTOPIA_DEBUG_CL_KERNELS
+#ifdef UTOPIA_DEBUG_CL_KERNELS
 						write(k_ptr->get_name() + ".cl", 
 							  k_ptr->get_code_string());
-// #endif //UTOPIA_DEBUG_CL_KERNELS
+#endif //UTOPIA_DEBUG_CL_KERNELS
 
 						sources.push_back({ k_ptr->get_code_string().c_str(), 
 									    	k_ptr->get_code_string().size() });

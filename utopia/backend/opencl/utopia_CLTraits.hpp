@@ -121,7 +121,7 @@ namespace utopia {
 		program = cl::Program(CLContext::instance().current(), sources);
 		if(program.build({ CLContext::instance().current_device() }) != CL_SUCCESS){
 			std::cerr<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>( CLContext::instance().current_device() )<<"\n";
-			// assert(false);
+			assert(false);
 			return false;
 		}
 
@@ -139,7 +139,7 @@ namespace utopia {
 		program = cl::Program(CLContext::instance().current(), sources);
 		if(program.build({ CLContext::instance().current_device() }) != CL_SUCCESS){
 			std::cerr<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>( CLContext::instance().current_device() )<<"\n";
-			// assert(false);
+			assert(false);
 			return false;
 		}
 
@@ -151,7 +151,7 @@ namespace utopia {
 		program = cl::Program(CLContext::instance().current(), sources);
 		if(program.build({ CLContext::instance().current_device() }, flags.c_str()) != CL_SUCCESS){
 			std::cerr<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>( CLContext::instance().current_device() )<<"\n";
-			// assert(false);
+			assert(false);
 			return false;
 		}
 

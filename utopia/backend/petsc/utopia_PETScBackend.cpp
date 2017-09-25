@@ -328,6 +328,9 @@ namespace utopia {
 
 		MatDestroy(&l);
 		ierr = MatGetSubMatrix(r, isrow, iscol, MAT_INITIAL_MATRIX, &l);
+
+		ISDestroy(&isrow);
+		ISDestroy(&iscol);
 	}
 
 	static void par_assign_from_global_range(
