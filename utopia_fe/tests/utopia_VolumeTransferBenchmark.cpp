@@ -24,7 +24,7 @@ namespace utopia {
 		typedef utopia::LibMeshFEContext<libMesh::LinearImplicitSystem> FEContextT;
 
 		moonolith::Communicator comm(init.comm().get());
-		moonolith::root_describe("creating fe spaces...", comm, std::cout);
+		moonolith::root_describe("n procs: " + std::to_string(comm.size()) + "\ncreating fe spaces...", comm, std::cout);
 		Chrono c;
 		c.start();
 
@@ -112,8 +112,8 @@ namespace utopia {
 
 	void run_weak_scaling_benchmark(LibMeshInit &init)
 	{
-		const int n_master = round(pow(mpi_world_size() * 21, 1./3.));
-		const int n_slave  = round(pow(mpi_world_size() * 18, 1./3.));
+		const int n_master = round(pow(pow(mpi_world_size(), 2.3) * 21, 1./3.));
+		const int n_slave  = round(pow(pow(mpi_world_size(), 2.3) * 18, 1./3.));
 		run_experiment(init, n_master, n_slave);
 	}
 }
