@@ -442,7 +442,9 @@ public:
 				fe_->get_xyz();
 			} 
 
-			fe_->reinit(mesh_->elem(element));
+
+			elem_ = mesh_->elem(element);
+			fe_->reinit(elem_);
 			dof_map_->dof_indices(mesh_->elem(element), dof_indices_);
 		}
 
@@ -455,8 +457,15 @@ public:
 				fe_->get_xyz();
 			} 
 
-			fe_->reinit(&element);
+			elem_ = &element;
+			fe_->reinit(elem_);
 			dof_map_->dof_indices(&element, dof_indices_);
+		}
+
+		inline int block_id() const
+		{
+			assert(elem_);
+			return elem_->subdomain_id();
 		}
 
 		uint get_dimension()
@@ -503,6 +512,7 @@ public:
 		std::shared_ptr<libMesh::DofMap> dof_map_;
 		std::shared_ptr<libMesh::QGauss> qrule_;
 		std::vector<SizeType> dof_indices_;
+		const libMesh::Elem *elem_;
 	};
 
 	template<>
@@ -1021,21 +1031,23 @@ public:
 				init(fe);
 			}
 
-			Context(const std::vector<libMesh::Point> &points)
-			{
-				this->points = make_ref(points);
-			}
+			// Context(const std::vector<libMesh::Point> &points)
+			// {
+			// 	this->points = make_ref(points);
+			// }
 
 			void init(const LibMeshFEFunction &fe)
 			{
 				points  = make_ref(fe.get_fe().get_xyz());
 				weights = make_ref(fe.get_fe().get_JxW());
+				block_id = fe.block_id();
 			}
 
 			void init(const LibMeshVecFEFunction &fe)
 			{
 				points  = make_ref(fe.get_fe().get_xyz());
 				weights = make_ref(fe.get_fe().get_JxW());
+				block_id = 0; //TODO
 			}
 
 			inline bool good() const
@@ -1057,7 +1069,20 @@ public:
 
 			std::shared_ptr<const std::vector<libMesh::Point> > points;
 			std::shared_ptr<const std::vector<libMesh::Real> >  weights;
+			int block_id;
 		};
+
+		template<class FEFun, class Operation>
+		inline static void construct_context(const Unary<FEFun, Operation> &expr, Context &ctx) 
+		{
+			construct_context(expr.expr(), ctx);
+		}
+
+		template<class FEFun, class Operation>
+		inline static void construct_context(const Reduce<FEFun, Operation> &expr, Context &ctx) 
+		{
+			construct_context(expr.expr(), ctx);
+		}
 
 		template<class FEFun>
 		inline static void construct_context(const Divergence<FEFun> &expr, Context &ctx) 
@@ -1078,17 +1103,22 @@ public:
 		}
 		
 		template<class Left, class Right, class Operation>
-		inline static void  construct_context(const Binary<Left, Right, Operation> &expr, Context &ctx)
+		inline static void construct_context(const Binary<Left, Right, Operation> &expr, Context &ctx)
 		{
 			construct_context(expr.right(), ctx);
 		}
 
 		template<class Left, class Right, class Operation>
-		inline static void  construct_context(const Binary<Left, Number<Right>, Operation> &expr, Context &ctx)
+		inline static void construct_context(const Binary<Left, Number<Right>, Operation> &expr, Context &ctx)
 		{
 			construct_context(expr.left(), ctx);
 		}
 
+		template<class Left, class Right, class Operation>
+		inline static void construct_context(const Binary<Left, BlockVar<Right>, Operation> &expr, Context &ctx)
+		{
+			construct_context(expr.left(), ctx);
+		}
 
 		template<class Left, class Right>
 		inline static void  construct_context(const Multiply<Left, Right> &expr, Context &ctx)
@@ -1364,6 +1394,31 @@ public:
 		}
 
 
+		template<typename T>
+		inline static std::vector< std::vector<TensorValueT> > eval(
+			const Binary<BlockVar<T>, Binary< Transposed< Gradient<LibMeshVecFEFunction> >, 
+			Gradient<LibMeshVecFEFunction>,
+			Plus>,
+			Multiplies>
+			&expr, const Context &ctx)
+		{
+			using namespace libMesh;
+			auto &&left  = eval(expr.right().left().expr(), ctx);
+			auto &&right = eval(expr.right().right(), ctx); 
+
+			std::vector< std::vector<TensorValueT> > result(right);
+
+			auto val = eval(expr.left(), ctx);
+			for(uint i = 0; i < left.size(); ++i) {
+				for(uint q = 0; q < left[i].size(); ++q) {
+					result[i][q] += left[i][q].transpose();
+					result[i][q] *= val;
+				}
+			}
+
+			return result;
+		}
+
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1429,12 +1484,60 @@ public:
 
 			auto &&in = eval(expr.expr(), ctx);
 			result.resize(in.size());
+
+			auto val = eval(expr.operation().numerator(), ctx);
 			for(uint i = 0; i < in.size(); ++i) {
-				result[i] = expr.operation().numerator()/in[i];
+				result[i] = val/in[i];
 			}
 
 			return result;
 		}
+
+		inline static double eval(const double value, const Context &)
+		{
+			return value;
+		}
+
+		inline static int eval(const int value, const Context &)
+		{
+			return value;
+		}
+
+		inline static double eval(const float value, const Context &)
+		{
+			return value;
+		}
+
+		// template<class Tensor>
+		inline static const double eval(const BlockVar<double> &value, const Context &ctx)
+		{
+			return value.get(ctx.block_id);
+		}
+
+		// template<typename T, int Order>
+		// inline static const T eval(const BlockVar<ConstantCoefficient<T, Order> > &var, const Context &ctx)
+		// {
+		// 	return eval(var.get(ctx.block_id), ctx);
+		// }
+
+		// template<typename T, int Order>
+		// inline static const T eval(const BlockVar<FunctionCoefficient<T, Order> > &var, const Context &ctx)
+		// {
+		// 	return eval(var.get(ctx.block_id), ctx);
+		// }
+
+		// template<class Tensor>
+		// inline static auto eval(const BlockVar<Tensor> &value, const Context &ctx) -> decltype(eval(value.get(ctx.block_id)))
+		// {
+		// 	return eval(value.get(ctx.block_id));
+		// }
+
+		template<class Real>
+		inline static const Real eval(const Number<Real> &value, const Context &ctx)
+		{
+			return value;
+		}
+
 
 		template<class Operation>
 		inline static void apply_unary_transform(const std::vector<libMesh::Real> &in, std::vector<libMesh::Real> &out, Operation &op)
@@ -1604,90 +1707,124 @@ public:
 		}	
 
 
+		template<typename T, class Right>
+		static void assemble(
+			const Binary<BlockVar<T>, Right, Multiplies> &expr,
+			libMesh::DenseMatrix<libMesh::Real> &mat,
+			Context &ctx
+			)
+		{
+			using namespace libMesh;
+
+			assemble(expr.right(), mat, ctx);
+			mat *= eval(expr.left(), ctx);
+		}
+
+		template<typename T, class Right>
+		static void assemble(
+			const Binary<BlockVar<T>, Right, Multiplies> &expr,
+			libMesh::DenseVector<libMesh::Real> &vec,
+			Context &ctx
+			)
+		{
+			using namespace libMesh;
+
+			assemble(expr.right(), vec, ctx);
+			vec *= eval(expr.left(), ctx);
+		}
+
 		template<class Right>
 		static void assemble(
 			const Binary<Number<typename Right::Scalar>, Right, Multiplies> &expr,
-			libMesh::DenseMatrix<libMesh::Real> &mat
+			libMesh::DenseMatrix<libMesh::Real> &mat,
+			Context &ctx
 			)
 		{
 			using namespace libMesh;
 
-			assemble(expr.right(), mat);
+			assemble(expr.right(), mat, ctx);
 			mat *= expr.left();
 		}
 
+	
+
 		template<class Left, class Right>
 		static void assemble(
 			const Binary<Left, Right, Plus> &expr,
-			libMesh::DenseMatrix<libMesh::Real> &mat
+			libMesh::DenseMatrix<libMesh::Real> &mat,
+			Context &ctx
 			)
 		{
 			using namespace libMesh;
 
-			assemble(expr.left(), mat);
-			assemble(expr.right(), mat);
+			assemble(expr.left(), mat, ctx);
+			assemble(expr.right(), mat, ctx);
 		}
 
 		template<class Left, class Right>
 		static void assemble(
 			const Binary<Left, Right, Minus> &expr,
-			libMesh::DenseMatrix<libMesh::Real> &mat
+			libMesh::DenseMatrix<libMesh::Real> &mat,
+			Context &ctx
 			)
 		{
 			using namespace libMesh;
 
-			assemble(expr.right(), mat);
+			assemble(expr.right(), mat, ctx);
 			mat *= -1;
-			assemble(expr.left(), mat);
+			assemble(expr.left(), mat, ctx);
 		}
 
 		template<class Left, class Right>
 		static void assemble(
 			const Binary<Left, Right, Minus> &expr,
-			libMesh::DenseVector<libMesh::Real> &vec
+			libMesh::DenseVector<libMesh::Real> &vec,
+			Context &ctx
 			)
 		{
 			using namespace libMesh;
 
-			assemble(expr.right(), vec);
+			assemble(expr.right(), vec, ctx);
 			vec *= -1;
-			assemble(expr.left(), vec);
+			assemble(expr.left(), vec, ctx);
 		}
 
 		template<class Left, class Right>
 		static void assemble(
 			const Binary<Left, Right, Plus> &expr,
-			libMesh::DenseVector<libMesh::Real> &vec
+			libMesh::DenseVector<libMesh::Real> &vec,
+			Context &ctx
 			)
 		{
 			using namespace libMesh;
 
-			assemble(expr.left(), vec);
-			assemble(expr.right(), vec);
+			assemble(expr.left(), vec, ctx);
+			assemble(expr.right(), vec, ctx);
 		}
 
 		template<class Expr>
 		static void assemble(
 			const Unary<Expr, Minus> &expr,
-			libMesh::DenseMatrix<libMesh::Real> &mat
+			libMesh::DenseMatrix<libMesh::Real> &mat,
+			Context &ctx
 			)
 		{
 			using namespace libMesh;
-			assemble(expr.expr(), mat);
+			assemble(expr.expr(), mat, ctx);
 			mat *= -1;
 		}
 
 		template<class Expr>
 		static void assemble(
 			const Unary<Expr, Minus> &expr,
-			libMesh::DenseVector<libMesh::Real> &vec
+			libMesh::DenseVector<libMesh::Real> &vec,
+			Context &ctx
 			)
 		{
 			using namespace libMesh;
-			assemble(expr.expr(), vec);
+			assemble(expr.expr(), vec, ctx);
 			vec *= -1;
 		}
-
 
 		//Dot product
 		template<class Left, class Right>
@@ -1698,14 +1835,11 @@ public:
 			Right, 
 			EMultiplies>, 
 			Plus> &expr,  
-			libMesh::DenseMatrix<libMesh::Real> &mat)
+			libMesh::DenseMatrix<libMesh::Real> &mat,
+			Context &ctx)
 		{
 			using namespace libMesh;
 			// std::cout << tree_format(expr.getClass()) << std::endl;
-
-			Context ctx;
-			construct_context(expr.expr().right(), ctx);
-
 
 			auto && trial = eval(expr.expr().left(), ctx);
 			auto && test  = eval(expr.expr().right(), ctx);
@@ -1728,6 +1862,8 @@ public:
 			}
 		}
 
+
+
 		//Dot product
 		template<class Expr>
 		static void assemble(const Integral<Expr> &expr,
@@ -1735,7 +1871,11 @@ public:
 		{
 			// mat.zero();
 			mat.resize(0, 0);
-			assemble(expr.expr(), mat);
+
+
+			Context ctx;
+			construct_context(expr.expr(), ctx);	
+			assemble(expr.expr(), mat, ctx);
 		}
 
 
@@ -1748,13 +1888,14 @@ public:
 			Gradient<Right>, 
 			EMultiplies>, 
 			Plus> &expr,  
-			libMesh::DenseMatrix<libMesh::Real> &mat)
+			libMesh::DenseMatrix<libMesh::Real> &mat,
+			Context &ctx)
 		{
 			using namespace libMesh;
 			typedef unsigned int uint;
 
-			Context ctx;
-			construct_context(expr.expr().right(), ctx);
+			// Context ctx;
+			// construct_context(expr.expr().right(), ctx);
 
 			// std::cout << tree_format(expr.getClass()) << std::endl;
 			auto && trial = eval(expr.expr().left(), ctx);
@@ -1786,18 +1927,22 @@ public:
 		{
 			// mat.zero();
 			vec.resize(0);
-			assemble(expr.expr(), vec);
+
+			Context ctx;
+			construct_context(expr.expr(), ctx);	
+			assemble(expr.expr(), vec, ctx);
 		}
 
 		template<class Right>
 		static void assemble(
 			const Binary<Number<typename Right::Scalar>, Right, Multiplies> &expr,
-			libMesh::DenseVector<libMesh::Real> &vec
+			libMesh::DenseVector<libMesh::Real> &vec,
+			Context &ctx
 			)
 		{
 			using namespace libMesh;
 
-			assemble(expr.right(), vec);
+			assemble(expr.right(), vec, ctx);
 			vec *= expr.left();
 		}
 
@@ -1879,12 +2024,13 @@ public:
 			Right, 
 			EMultiplies>, 
 			Plus> &expr,  
-			libMesh::DenseVector<libMesh::Real> &vec)
+			libMesh::DenseVector<libMesh::Real> &vec,
+			Context &ctx)
 		{
 			using namespace libMesh;
 
-			Context ctx;
-			construct_context(expr.expr().right(), ctx);
+			// Context ctx;
+			// construct_context(expr.expr().right(), ctx);
 
 			auto && coef = eval(expr.expr().left(),  ctx);
 			auto && test = eval(expr.expr().right(), ctx);
