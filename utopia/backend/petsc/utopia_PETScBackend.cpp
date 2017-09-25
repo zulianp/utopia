@@ -326,8 +326,27 @@ namespace utopia {
 		IS iscol;
 		ierr = ISCreateGeneral(PETSC_COMM_WORLD, remote_cols.size(), &remote_cols[0], PETSC_USE_POINTER, &iscol);
 
-		MatDestroy(&l);
-		ierr = MatGetSubMatrix(r, isrow, iscol, MAT_INITIAL_MATRIX, &l);
+		MPI_Comm comm = PetscObjectComm((PetscObject)r);
+		int size;
+		MPI_Comm_size(comm, &size);
+
+		if(size > 1) {
+			Mat * l_ptr;
+			ierr = MatGetSubMatrices(r, 1, &isrow, &iscol, MAT_INITIAL_MATRIX, &l_ptr);
+
+			MatType type;
+			MatGetType(r, &type);
+			MatSetType(l, type);
+			MatSetSizes(l, local_row_range.extent(), local_col_range.extent(), PETSC_DETERMINE, PETSC_DETERMINE);
+			MatSetUp(l);
+			//TODO
+			assert(false);
+
+
+		} else {
+			MatDestroy(&l);
+			ierr = MatGetSubMatrix(r, isrow, iscol, MAT_INITIAL_MATRIX, &l);
+		}
 
 		ISDestroy(&isrow);
 		ISDestroy(&iscol);
