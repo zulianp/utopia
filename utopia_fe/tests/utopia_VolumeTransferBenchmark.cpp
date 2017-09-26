@@ -22,15 +22,19 @@ using std::make_shared;
 namespace utopia {
 
 
-	static void refine_mesh(MeshBase &mesh)
+	static void refine_mesh(MeshBase &mesh, const int n_refine)
 	{
 		MeshRefinement mesh_refinement(mesh);
 		mesh_refinement.make_flags_parallel_consistent();
-		mesh_refinement.uniformly_refine(1);
-
+		mesh_refinement.uniformly_refine(n_refine);
 	}
 
-	void run_experiment(LibMeshInit &init, const int n_master, const int n_slave, const bool refine_slave = false)
+	void run_experiment(
+		LibMeshInit &init, 
+		const int n_master,
+		const int n_slave,
+		const int n_refine_master = 0,
+		const int n_refine_slave = 0)
 	{
 		typedef utopia::LibMeshFEContext<libMesh::LinearImplicitSystem> FEContextT;
 
@@ -50,6 +54,7 @@ namespace utopia {
 			-0.9, 0.9,
 			-0.9, 0.9,
 			TET4);
+			// HEX8);
 
 		auto master_mesh = make_shared<DistributedMesh>(init.comm());
 		MeshTools::Generation::build_cube(*master_mesh,
@@ -58,9 +63,14 @@ namespace utopia {
 			-1., 1.,
 			-1., 1.,
 			TET4);
+			// HEX8);
 
-		if(refine_slave) {
-			refine_mesh(*slave_mesh);
+		if(n_refine_slave) {
+			refine_mesh(*slave_mesh, n_refine_slave);
+		}
+
+		if(n_refine_master) {
+			refine_mesh(*master_mesh, n_refine_master);
 		}
 
 		auto slave_context  = make_shared<FEContextT>(slave_mesh);
@@ -127,8 +137,9 @@ namespace utopia {
 
 	void run_weak_scaling_benchmark(LibMeshInit &init)
 	{
-		const int n_master = round(pow(pow(mpi_world_size(), 2) * 21, 1./3.));
-		const int n_slave  = round(pow(pow(mpi_world_size(), 2) * 18, 1./3.));
-		run_experiment(init, n_master, n_slave);
+		using std::max;
+		const int n_master = max(1., round(pow(mpi_world_size() * 216, 1./3)));
+		const int n_slave  = max(1., round(pow(mpi_world_size() * 343, 1./3)));
+		run_experiment(init, n_master, n_slave, 1, 1);
 	}
 }
