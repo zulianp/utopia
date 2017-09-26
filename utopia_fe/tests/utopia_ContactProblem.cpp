@@ -103,15 +103,23 @@ namespace utopia {
 		auto mu     = block_var(100., {{3, 10.}, {4, 150.}});
 		auto lambda = block_var(100., {{3, 10.}, {4, 150.}});
 
+		// auto mu     = 1.;
+		// auto lambda = 1.;
+
 		auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
-		auto b_form = integral(0.5 * (mu * dot(e, e)) + lambda * dot(div(u), div(u)));
+		auto b_form = integral((0.5 * mu) * dot(e, e) + lambda * dot(div(u), div(u)));
 
-		DenseVector<Real> vec(dim);
-		vec.zero();
-		vec(dim-1) = -0.1;
+		DenseVector<Real> vec_0(dim);
+		vec_0.zero();
 
-		auto f 	    = vec_coeff(vec);
-		auto l_form = integral(dot(f, u));
+		DenseVector<Real> vec_1(dim);
+		vec_1.zero();
+		vec_1(dim-1) = -0.1;
+
+		auto f_0 	= vec_coeff(vec_0);
+		auto f_1 	= vec_coeff(vec_1);
+		// auto l_form = integral(dot(f_0, u)) + integral(dot(f_1, u), 2);
+		auto l_form = integral(dot(f_1, u));
 
 		double t = 0.;
 		auto ass = make_assembly([&]() -> void {
