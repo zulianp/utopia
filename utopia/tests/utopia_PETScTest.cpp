@@ -392,17 +392,15 @@ namespace utopia {
 
     void petsc_view_test()
     {
-        // std::cout << "begin: petsc_view_test" << std::endl;
-
         //! [Global views]
-        const PetscInt n = 5;
-        const PetscInt m = 10;
-        DMatrixd m1 = identity(m, n);
-        DMatrixd m2 = m1.range(
-            1, 6, 
-            0, 5);
+        const PetscInt offset = mpi_world_size();
+        const PetscInt n = offset + 5;
+        const PetscInt m = offset + 10;
+        DSMatrixd m1 = identity(m, n);
+        DSMatrixd m2 = m1.range(
+            1, offset + 6, 
+            0, offset + 5);
 
-        disp(m2);
 
         each_read(m2, [](const SizeType i, const SizeType j, const double value) {
             if (i + 1 == j) {
@@ -416,7 +414,6 @@ namespace utopia {
         });
 
         //! [Global views]
-        // std::cout << "end: petsc_view_test" << std::endl;
     }
 
 
@@ -989,8 +986,7 @@ namespace utopia {
 #ifdef WITH_PETSC
         UTOPIA_UNIT_TEST_BEGIN("PETScTest");
         
-        // petsc_view_test();                   // TODO:: assert fails in parallel MatGetSubMatrix does not work if the distro changes
-        
+        UTOPIA_RUN_TEST(petsc_view_test);                
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate_test);
         UTOPIA_RUN_TEST(petsc_harcoded_cg_test);
         UTOPIA_RUN_TEST(petsc_reciprocal_test);
@@ -1019,7 +1015,6 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_precond_test);
         UTOPIA_RUN_TEST(petsc_binary_min_max);
 
-        
         //serial tests
         UTOPIA_RUN_TEST(petsc_inverse_test);
 

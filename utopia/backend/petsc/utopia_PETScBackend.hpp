@@ -63,8 +63,25 @@ namespace utopia
 		void resize(const Size &size, PETScVector &mat);
 		void resize(const Size &s_local, const Size &s_global, PETScVector &vec);
 		
-		void assignFromRange(PETScMatrix &left, const PETScMatrix &right, const Range &globalRowRange,
-							 const Range &globalColRange);
+		void assignFromRange(
+			PETScMatrix &left,
+			const PETScMatrix &right,
+			const Range &globalRowRange,
+			const Range &globalColRange);
+
+		static void par_assign_from_local_range(
+							const Range &local_row_range,
+							const Range &local_col_range,
+							const Range &global_col_range,
+							const PETScMatrix &right,
+							PETScMatrix &result);
+
+		static void par_assign_from_local_is(
+			const std::vector<PetscInt> &remote_rows,
+			const std::vector<PetscInt> &remote_cols,
+			const Range &local_col_range,
+			const PETScMatrix &right,
+			PETScMatrix &result);
 		
 		// read matrix
 		bool read(const std::string &path, PETScMatrix &Mat_A);
