@@ -1072,6 +1072,12 @@ public:
 			int block_id;
 		};
 
+		template<class FEFun>
+		inline static void construct_context(const Integral<FEFun> &expr, Context &ctx) 
+		{
+			construct_context(expr.expr(), ctx);
+		}
+
 		template<class FEFun, class Operation>
 		inline static void construct_context(const Unary<FEFun, Operation> &expr, Context &ctx) 
 		{
@@ -1369,55 +1375,7 @@ public:
 			return result;
 		}
 
-		template<typename T>
-		inline static std::vector< std::vector<TensorValueT> > eval(
-			const Binary<Number<T>, Binary< Transposed< Gradient<LibMeshVecFEFunction> >, 
-			Gradient<LibMeshVecFEFunction>,
-			Plus>,
-			Multiplies>
-			&expr, const Context &ctx)
-		{
-			using namespace libMesh;
-			auto &&left  = eval(expr.right().left().expr(), ctx);
-			auto &&right = eval(expr.right().right(), ctx); 
 
-			std::vector< std::vector<TensorValueT> > result(right);
-
-			for(uint i = 0; i < left.size(); ++i) {
-				for(uint q = 0; q < left[i].size(); ++q) {
-					result[i][q] += left[i][q].transpose();
-					result[i][q] *= expr.left();
-				}
-			}
-
-			return result;
-		}
-
-
-		template<typename T>
-		inline static std::vector< std::vector<TensorValueT> > eval(
-			const Binary<BlockVar<T>, Binary< Transposed< Gradient<LibMeshVecFEFunction> >, 
-			Gradient<LibMeshVecFEFunction>,
-			Plus>,
-			Multiplies>
-			&expr, const Context &ctx)
-		{
-			using namespace libMesh;
-			auto &&left  = eval(expr.right().left().expr(), ctx);
-			auto &&right = eval(expr.right().right(), ctx); 
-
-			std::vector< std::vector<TensorValueT> > result(right);
-
-			auto val = eval(expr.left(), ctx);
-			for(uint i = 0; i < left.size(); ++i) {
-				for(uint q = 0; q < left[i].size(); ++q) {
-					result[i][q] += left[i][q].transpose();
-					result[i][q] *= val;
-				}
-			}
-
-			return result;
-		}
 
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1514,17 +1472,25 @@ public:
 			return value.get(ctx.block_id);
 		}
 
+		inline static const DenseMatrixT & eval(const BlockVar<LMDenseMatrix> &value, const Context &ctx)
+		{
+			return raw_type(value.get(ctx.block_id));
+		}
+
+		// template<class Fun, typename T>
+		// inline static std::vector<libMesh::Real> eval(const FunctionCoefficient<Fun, T, 0> &expr, const Context &ctx)
+
 		// template<typename T, int Order>
 		// inline static const T eval(const BlockVar<ConstantCoefficient<T, Order> > &var, const Context &ctx)
 		// {
 		// 	return eval(var.get(ctx.block_id), ctx);
 		// }
 
-		// template<typename T, int Order>
-		// inline static const T eval(const BlockVar<FunctionCoefficient<T, Order> > &var, const Context &ctx)
-		// {
-		// 	return eval(var.get(ctx.block_id), ctx);
-		// }
+		template<typename Fun, typename T>
+		inline static const std::vector<libMesh::Real> eval(const BlockVar<FunctionCoefficient<Fun, T, 0> > &var, const Context &ctx)
+		{
+			return eval(var.get(ctx.block_id), ctx);
+		}
 
 		// template<class Tensor>
 		// inline static auto eval(const BlockVar<Tensor> &value, const Context &ctx) -> decltype(eval(value.get(ctx.block_id)))
@@ -1707,18 +1673,98 @@ public:
 		}	
 
 
-		template<typename T, class Right>
+		//////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////
+
+		// template<class Right>
+		// static void assemble(
+		// 	const Binary<Number<typename Right::Scalar>, Right, Multiplies> &expr,
+		// 	libMesh::DenseMatrix<libMesh::Real> &mat,
+		// 	Context &ctx
+		// 	)
+		// {
+		// 	using namespace libMesh;
+
+		// 	assemble(expr.right(), mat, ctx);
+		// 	mat *= expr.left();
+		// }
+
+		template<class Right>
 		static void assemble(
-			const Binary<BlockVar<T>, Right, Multiplies> &expr,
-			libMesh::DenseMatrix<libMesh::Real> &mat,
+			const Binary<Number<typename Right::Scalar>, Right, Multiplies> &expr,
+			libMesh::DenseVector<libMesh::Real> &vec,
 			Context &ctx
 			)
 		{
 			using namespace libMesh;
 
+			assemble(expr.right(), vec, ctx);
+			vec *= expr.left();
+		}
+
+		template<typename T1, typename T2>
+		static T2 eval(const Binary<Number<T1>, BlockVar<T2>, Multiplies> &expr, Context &ctx)
+		{
+			return eval(expr.left(), ctx) * eval(expr.right(), ctx);
+		}
+
+		template<typename T1, typename T2>
+		static T1 eval(const Binary<BlockVar<T1>, Number<T2>, Multiplies> &expr, Context &ctx)
+		{
+			return eval(expr.left(), ctx) * eval(expr.right(), ctx);
+		}
+
+		template<typename T>
+		inline static std::vector< std::vector<TensorValueT> > eval(
+			const Binary<Number<T>, Binary< Transposed< Gradient<LibMeshVecFEFunction> >, 
+			Gradient<LibMeshVecFEFunction>,
+			Plus>,
+			Multiplies>
+			&expr, const Context &ctx)
+		{
+			using namespace libMesh;
+			auto &&left  = eval(expr.right().left().expr(), ctx);
+			auto &&right = eval(expr.right().right(), ctx); 
+
+			std::vector< std::vector<TensorValueT> > result(right);
+
+			for(uint i = 0; i < left.size(); ++i) {
+				for(uint q = 0; q < left[i].size(); ++q) {
+					result[i][q] += left[i][q].transpose();
+					result[i][q] *= expr.left();
+				}
+			}
+
+			return result;
+		}
+
+		//////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////
+
+		template<class Factor, class Trial, class Test>
+		static void assemble(
+			const Binary<Factor, 
+						 Reduce<Binary<Trial, Test, EMultiplies>, Plus>,
+				   		 Multiplies> &expr,
+				   		 libMesh::DenseMatrix<libMesh::Real> &mat,
+				   		 Context &ctx)
+		{
 			assemble(expr.right(), mat, ctx);
 			mat *= eval(expr.left(), ctx);
 		}
+
+		// template<typename T, class Right>
+		// static void assemble(
+		// 	const Binary<BlockVar<T>, Right, Multiplies> &expr,
+		// 	libMesh::DenseMatrix<libMesh::Real> &mat,
+		// 	Context &ctx
+		// 	)
+		// {
+		// 	using namespace libMesh;
+
+		// 	assemble(expr.right(), mat, ctx);
+		// 	mat *= eval(expr.left(), ctx);
+		// }
 
 		template<typename T, class Right>
 		static void assemble(
@@ -1733,18 +1779,34 @@ public:
 			vec *= eval(expr.left(), ctx);
 		}
 
-		template<class Right>
-		static void assemble(
-			const Binary<Number<typename Right::Scalar>, Right, Multiplies> &expr,
-			libMesh::DenseMatrix<libMesh::Real> &mat,
-			Context &ctx
-			)
+		template<typename T>
+		inline static std::vector< std::vector<TensorValueT> > eval(
+			const Binary<BlockVar<T>, Binary< Transposed< Gradient<LibMeshVecFEFunction> >, 
+			Gradient<LibMeshVecFEFunction>,
+			Plus>,
+			Multiplies>
+			&expr, const Context &ctx)
 		{
 			using namespace libMesh;
+			auto &&left  = eval(expr.right().left().expr(), ctx);
+			auto &&right = eval(expr.right().right(), ctx); 
 
-			assemble(expr.right(), mat, ctx);
-			mat *= expr.left();
+			std::vector< std::vector<TensorValueT> > result(right);
+
+			auto val = eval(expr.left(), ctx);
+			for(uint i = 0; i < left.size(); ++i) {
+				for(uint q = 0; q < left[i].size(); ++q) {
+					result[i][q] += left[i][q].transpose();
+					result[i][q] *= val;
+				}
+			}
+
+			return result;
 		}
+
+
+		//////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////
 
 	
 
@@ -1862,20 +1924,104 @@ public:
 			}
 		}
 
+		//entry point
+		template<class L, class R>
+		static void assemble(const Binary<L, R, Plus> &expr,
+			libMesh::DenseMatrix<libMesh::Real> &mat)
+		{
+			// mat.zero();
+			mat.resize(0, 0);
+			Context ctx;
+			construct_context(expr.left(), ctx);	
+
+			assemble(expr.left(), mat, ctx);
+			assemble(expr.right(), mat, ctx);
+		}
+
+		//entry point
+		template<class L, class R>
+		static void assemble(const Binary<L, R, Minus> &expr,
+			libMesh::DenseVector<libMesh::Real> &vec)
+		{
+			vec.resize(0);
+			Context ctx;
+			construct_context(expr.left(), ctx);	
+
+			assemble(expr.right(), vec, ctx);
+			vec *= -1;
+			assemble(expr.left(), vec, ctx);
+		}
+
+		//entry point
+		template<class L, class R>
+		static void assemble(const Binary<L, R, Minus> &expr,
+			libMesh::DenseMatrix<libMesh::Real> &mat)
+		{
+			// mat.zero();
+			mat.resize(0, 0);
+			Context ctx;
+			construct_context(expr.left(), ctx);	
+
+			assemble(expr.right(), mat, ctx);
+			mat *= -1;
+			assemble(expr.left(), mat, ctx);
+			
+		}
+
+		//entry point
+		template<class L, class R>
+		static void assemble(const Binary<L, R, Plus> &expr,
+			libMesh::DenseVector<libMesh::Real> &vec)
+		{
+			vec.resize(0);
+			Context ctx;
+			construct_context(expr.left(), ctx);	
+
+			assemble(expr.left(), vec, ctx);
+			assemble(expr.right(), vec, ctx);
+		}
 
 
-		//Dot product
+		//entry point
 		template<class Expr>
 		static void assemble(const Integral<Expr> &expr,
 			libMesh::DenseMatrix<libMesh::Real> &mat)
 		{
 			// mat.zero();
-			mat.resize(0, 0);
-
-
+		
 			Context ctx;
-			construct_context(expr.expr(), ctx);	
+			construct_context(expr.expr(), ctx);
+
+			mat.resize(0, 0);	
 			assemble(expr.expr(), mat, ctx);
+		}
+
+		//Dot product
+		template<class Expr>
+		static void assemble(const Integral<Expr> &expr,
+			libMesh::DenseMatrix<libMesh::Real> &mat,
+			Context &ctx)
+		{
+
+			if(expr.has_block_id() && ctx.block_id != expr.block_id()) {
+				return;
+			}
+
+			assemble(expr.expr(), mat, ctx);
+		}
+
+		//Dot product
+		template<class Expr>
+		static void assemble(const Integral<Expr> &expr,
+			libMesh::DenseVector<libMesh::Real> &vec,
+			Context &ctx)
+		{
+
+			if(expr.has_block_id() && ctx.block_id != expr.block_id()) {
+				return;
+			}
+			
+			assemble(expr.expr(), vec, ctx);
 		}
 
 
@@ -1933,18 +2079,6 @@ public:
 			assemble(expr.expr(), vec, ctx);
 		}
 
-		template<class Right>
-		static void assemble(
-			const Binary<Number<typename Right::Scalar>, Right, Multiplies> &expr,
-			libMesh::DenseVector<libMesh::Real> &vec,
-			Context &ctx
-			)
-		{
-			using namespace libMesh;
-
-			assemble(expr.right(), vec, ctx);
-			vec *= expr.left();
-		}
 
 		template<typename Left, typename Right>
 		inline static libMesh::Real  contract(const Left &left, const Right &right)
@@ -2182,7 +2316,7 @@ public:
 
 	template<class TrialFunction, class TestFunction, class Expr, class Matrix>
 	void assemble(TrialFunction &trial, TestFunction &test, 
-		const Integral<Expr> &expr, Wrapper<Matrix, 2> &result,
+		const Expression<Expr> &expr, Wrapper<Matrix, 2> &result,
 		const bool apply_constraints = true)
 	{
 		using namespace libMesh;
@@ -2204,7 +2338,7 @@ public:
 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
 			trial.set_element(**e_it);
 			test.set_element(**e_it);
-			backend.assemble(expr, mat);
+			backend.assemble(expr.derived(), mat);
 			trial.dof_map().dof_indices(*e_it, dof_indices_trial, trial.var_num());
 			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
 
@@ -2218,7 +2352,7 @@ public:
 
 	template<class TestFunction, class Expr, class Vector>
 	void assemble(TestFunction &test, 
-		const Integral<Expr> &expr, 
+		const Expression<Expr> &expr, 
 		Wrapper<Vector, 1> &result,
 		const bool apply_constraints = true)
 	{
@@ -2237,7 +2371,7 @@ public:
 		DenseVector<Real> vec;
 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
 			test.set_element(**e_it);
-			backend.assemble(expr, vec);
+			backend.assemble(expr.derived(), vec);
 			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
 
 			if(apply_constraints) {
@@ -2250,7 +2384,7 @@ public:
 
 
 	template<class BilinearForm, class LinearForm>
-	void local_assemble(const Integral<BilinearForm> &b_form, const Integral<LinearForm> &l_form, 
+	void local_assemble(const Expression<BilinearForm> &b_form, const Expression<LinearForm> &l_form, 
 		libMesh::DenseMatrix<libMesh::Real> &mat, libMesh::DenseVector<libMesh::Real> &vec) {
 		
 		LibMeshBackend backend;
@@ -2260,12 +2394,12 @@ public:
 
 	template<class BilinearForm_11, class BilinearForm_12, class LinearForm_1,
 	class BilinearForm_21, class BilinearForm_22, class LinearForm_2>
-	void block_local_assemble(const Integral<BilinearForm_11> &b_form_11, 
-		const Integral<BilinearForm_12> &b_form_12,
-		const Integral<LinearForm_1> 	&l_form_1, 
-		const Integral<BilinearForm_21> &b_form_21, 
-		const Integral<BilinearForm_22> &b_form_22,
-		const Integral<LinearForm_2> 	&l_form_2, 
+	void block_local_assemble(const Expression<BilinearForm_11> &b_form_11, 
+		const Expression<BilinearForm_12> &b_form_12,
+		const Expression<LinearForm_1> 	&l_form_1, 
+		const Expression<BilinearForm_21> &b_form_21, 
+		const Expression<BilinearForm_22> &b_form_22,
+		const Expression<LinearForm_2> 	&l_form_2, 
 		libMesh::DenseMatrix<libMesh::Real> &mat_11, 
 		libMesh::DenseMatrix<libMesh::Real> &mat_12, 
 		libMesh::DenseVector<libMesh::Real> &vec_1,
@@ -2286,7 +2420,7 @@ public:
 
 	template<class TrialFunction, class TestFunction, class Expr, class Matrix>
 	void assemble(TrialFunction &trial, TestFunction &test, 
-		const Integral<Expr> &expr, Matrix &result, const bool apply_constraints = true)
+		const Expression<Expr> &expr, Matrix &result, const bool apply_constraints = true)
 	{
 		using namespace libMesh;
 		LibMeshBackend backend;
@@ -2301,7 +2435,7 @@ public:
 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
 			trial.set_element(**e_it);
 			test.set_element(**e_it);
-			backend.assemble(expr, mat);
+			backend.assemble(expr.derived(), mat);
 			trial.dof_map().dof_indices(*e_it, dof_indices_trial, trial.var_num());
 			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
 
@@ -2319,7 +2453,7 @@ public:
 
 	template<class TestFunction, class Expr>
 	void assemble(TestFunction &test, 
-		const Integral<Expr> &expr, 
+		const Expression<Expr> &expr, 
 		libMesh::NumericVector<libMesh::Real> &result,
 		const bool apply_constraints = true)
 	{
@@ -2333,7 +2467,7 @@ public:
 		DenseVector<Real> vec;
 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
 			test.set_element(**e_it);
-			backend.assemble(expr, vec);
+			backend.assemble(expr.derived(), vec);
 			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
 
 			if(apply_constraints) {
@@ -2349,8 +2483,8 @@ public:
 	template<class TrialFunction, class TestFunction, class BilinearForm, class LinearForm, class Matrix, class Vector>
 	void assemble(TrialFunction &trial, 
 		TestFunction  &test, 
-		const Integral<BilinearForm> &bilinear_form,
-		const Integral<LinearForm>   &linear_form,
+		const Expression<BilinearForm> &bilinear_form,
+		const Expression<LinearForm>   &linear_form,
 		Matrix &mat,
 		Vector &rhs,
 		const bool apply_constraints = true)
@@ -2370,8 +2504,8 @@ public:
 			trial.set_element(**e_it);
 			test.set_element(**e_it);
 
-			backend.assemble(bilinear_form, el_mat);
-			backend.assemble(linear_form, 	el_vec);
+			backend.assemble(bilinear_form.derived(), el_mat);
+			backend.assemble(linear_form.derived(), 	el_vec);
 
 			trial.dof_map().dof_indices(*e_it, dof_indices_trial, trial.var_num());
 			test.dof_map().dof_indices(*e_it,  dof_indices_test,  test.var_num());
@@ -2410,8 +2544,8 @@ public:
 	void assemble(
 		VectorFE<TrialFunction, NTrial> &trial, 
 		VectorFE<TestFunction, NTest>  &test, 
-		const Integral<BilinearForm> &bilinear_form,
-		const Integral<LinearForm>   &linear_form,
+		const Expression<BilinearForm> &bilinear_form,
+		const Expression<LinearForm>   &linear_form,
 		Matrix &mat,
 		Vector &rhs,
 		const bool apply_constraints = true)
@@ -2436,8 +2570,8 @@ public:
 				test.get(i).set_element(**e_it);
 			}
 
-			backend.assemble(bilinear_form, el_mat);
-			backend.assemble(linear_form, 	el_vec);
+			backend.assemble(bilinear_form.derived(), el_mat);
+			backend.assemble(linear_form.derived(), 	el_vec);
 
 			dof_indices_test.clear();
 			dof_indices_trial.clear();
@@ -2462,7 +2596,7 @@ public:
 	void assemble(
 		VectorFE<TrialFunction, NTrial> &trial, 
 		VectorFE<TestFunction, NTest>  &test, 
-		const Integral<BilinearForm> &bilinear_form,
+		const Expression<BilinearForm> &bilinear_form,
 		DSMatrixd &mat,
 		const bool apply_constraints)
 	{
@@ -2493,7 +2627,7 @@ public:
 				test.get(i).set_element(**e_it);
 			}
 
-			backend.assemble(bilinear_form, el_mat);
+			backend.assemble(bilinear_form.derived(), el_mat);
 
 
 			dof_indices_test.clear();
@@ -2515,7 +2649,7 @@ public:
 	void assemble_no_constraints(
 		VectorFE<TrialFunction, NTrial> &trial, 
 		VectorFE<TestFunction, NTest>  &test, 
-		const Integral<BilinearForm> &bilinear_form,
+		const Expression<BilinearForm> &bilinear_form,
 		libMesh::SparseMatrix<T> &mat)
 	{
 		using namespace libMesh;
@@ -2540,7 +2674,7 @@ public:
 				test.get(i).set_element(**e_it);
 			}
 
-			backend.assemble(bilinear_form, el_mat);
+			backend.assemble(bilinear_form.derived(), el_mat);
 
 
 			dof_indices_test.clear();

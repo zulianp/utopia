@@ -179,8 +179,8 @@ namespace utopia {
 
 		std::string getClass() const { return "Integral<" + expr_.getClass() + ">"; }
 
-		Integral(const Expr &expr)
-		: expr_(expr)
+		Integral(const Expr &expr, const int block_id = -1)
+		: expr_(expr), block_id_(block_id)
 		{}
 
 		inline const Expr &expr() const
@@ -188,14 +188,30 @@ namespace utopia {
 			return expr_;
 		}
 
+		inline int block_id() const
+		{
+			return block_id_;
+		}
+
+		inline int has_block_id() const
+		{
+			return block_id_ != -1;
+		}
+
 	private:
 		UTOPIA_STORE_CONST(Expr) expr_;
+		int block_id_;
 	};
 
 
 	template<class Derived>
 	inline Integral<Derived> integral(const Expression<Derived> &expr) {
 		return Integral<Derived>(expr);
+	}
+
+	template<class Derived>
+	inline Integral<Derived> integral(const Expression<Derived> &expr, const int block_id) {
+		return Integral<Derived>(expr, block_id);
 	}
 
 	template<class Expr>
@@ -470,6 +486,8 @@ namespace utopia {
 			};
 
 			typedef T Scalar;	
+
+			FunctionCoefficient() = default;
 
 			FunctionCoefficient(const Fun &fun)
 			: fun_(fun)

@@ -176,6 +176,10 @@ namespace utopia {
         // enum {
         //     FILL_TYPE = FillType::DENSE
         // };
+
+        enum {
+            Order = T::Order
+        };
     };
 
     template<>

@@ -229,8 +229,7 @@ namespace utopia {
 		};
 		
 		
-		auto write = [&local_spaces, &spaces, &comm]
-		(
+		auto write = [&local_spaces, &spaces, &comm] (
 		 const long ownerrank, const long recvrank,
 		 const std::vector<long>::const_iterator &begin,
 		 const std::vector<long>::const_iterator &end,
@@ -264,22 +263,18 @@ namespace utopia {
 		long n_false_positives = 0, n_intersections = 0;
 		
 		
-		auto fun = [&n_false_positives, &n_intersections, &process_fun](
-																		
-																		Adapter &master, Adapter &slave) -> bool {
+		auto fun = [&n_false_positives, &n_intersections, &process_fun](Adapter &master, Adapter &slave) -> bool {
 			bool ok = process_fun(master, slave);
 			
 			if(ok) {
 				n_intersections++;
-				
 				return true;
 			} else {
-				
 				n_false_positives++;
 				return false;
 			}
+
 			return true;
-			
 		};
 		
 		moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);

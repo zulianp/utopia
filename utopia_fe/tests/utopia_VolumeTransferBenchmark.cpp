@@ -37,6 +37,8 @@ namespace utopia {
 		const int n_refine_slave = 0)
 	{
 		typedef utopia::LibMeshFEContext<libMesh::LinearImplicitSystem> FEContextT;
+		// typedef ReplicatedMesh MeshT;
+		typedef DistributedMesh MeshT;
 
 		moonolith::Communicator comm(init.comm().get());
 		moonolith::root_describe("n procs: " + std::to_string(comm.size()) + "\ncreating fe spaces...", comm, std::cout);
@@ -47,7 +49,7 @@ namespace utopia {
 		Order order_elem_coarse   = FIRST;
 		Order order_of_quadrature = Order(int(order_elem_fine) + int(order_elem_coarse));
 
-		auto slave_mesh = make_shared<DistributedMesh>(init.comm());
+		auto slave_mesh = make_shared<MeshT>(init.comm());
 		MeshTools::Generation::build_cube(*slave_mesh,
 			n_slave, n_slave, n_slave,
 			-0.9, 0.9,
@@ -56,7 +58,7 @@ namespace utopia {
 			TET4);
 			// HEX8);
 
-		auto master_mesh = make_shared<DistributedMesh>(init.comm());
+		auto master_mesh = make_shared<MeshT>(init.comm());
 		MeshTools::Generation::build_cube(*master_mesh,
 			n_master, n_master, n_master,
 			-1., 1.,
@@ -123,15 +125,16 @@ namespace utopia {
 	{	
 		std::vector<std::pair<int,int> > resolutions = 
 		{
-			{5,  6},
-			{10, 10},
-			{8,  20},
-			{30, 24},
-			{10, 44}
+			{5,  6}
+			// ,
+			// {10, 10},
+			// {8,  20},
+			// {30, 24},
+			// {10, 44}
 		};
 
 		for(auto r : resolutions) {
-			run_experiment(init, r.first, r.second, true);
+			run_experiment(init, r.first, r.second, 1, 1);
 		}
 	}
 
