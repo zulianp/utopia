@@ -297,9 +297,10 @@ namespace utopia {
 
 	
 
-	static void par_assign_from_local_range(
+	void PETScBackend::par_assign_from_local_range(
 		const Range &local_row_range,
 		const Range &local_col_range,
+		const Range &global_col_range,
 		const PETScMatrix &right,
 		PETScMatrix &result)
 	{
@@ -315,13 +316,35 @@ namespace utopia {
 		}
 
 		std::vector<PetscInt> remote_cols;
-		remote_cols.reserve(local_col_range.extent());
-		for(PetscInt l_col = local_col_range.begin(); l_col < local_col_range.end(); ++l_col) {	
+		remote_cols.reserve(global_col_range.extent());
+		for(PetscInt l_col = global_col_range.begin(); l_col < global_col_range.end(); ++l_col) {	
 			remote_cols.push_back(l_col);
 		}
 
+		par_assign_from_local_is(remote_rows, remote_cols, local_col_range, right, result);
+	}
+
+
+	void PETScBackend::par_assign_from_local_is(
+		const std::vector<PetscInt> &remote_rows,
+		const std::vector<PetscInt> &remote_cols,
+		const Range &local_col_range,
+		const PETScMatrix &right,
+		PETScMatrix &result)
+	{
+
+		Mat &l = result.implementation();
+		const Mat r = right.implementation();
+
+
+		std::stringstream ss;
+
+		for(auto r : remote_rows) {
+			ss << r;
+		}
+
 		IS isrow;
-		ierr = ISCreateGeneral(PETSC_COMM_WORLD, remote_rows.size(), &remote_rows[0], PETSC_USE_POINTER, &isrow);
+		PetscErrorCode ierr = ISCreateGeneral(PETSC_COMM_WORLD, remote_rows.size(), &remote_rows[0], PETSC_USE_POINTER, &isrow);
 
 		IS iscol;
 		ierr = ISCreateGeneral(PETSC_COMM_WORLD, remote_cols.size(), &remote_cols[0], PETSC_USE_POINTER, &iscol);
@@ -330,18 +353,47 @@ namespace utopia {
 		int size;
 		MPI_Comm_size(comm, &size);
 
-		if(size > 1) {
+		int rank;
+		MPI_Comm_rank(comm, &rank);
+
+		//TODO maybe make it with collective comms for finiding out if there are off proc entries
+		bool has_off_proc_entries = size > 1;
+
+		if(has_off_proc_entries) {
 			Mat * l_ptr;
 			ierr = MatGetSubMatrices(r, 1, &isrow, &iscol, MAT_INITIAL_MATRIX, &l_ptr);
 
 			MatType type;
 			MatGetType(r, &type);
 			MatSetType(l, type);
-			MatSetSizes(l, local_row_range.extent(), local_col_range.extent(), PETSC_DETERMINE, PETSC_DETERMINE);
+			MatSetSizes(l, remote_rows.size(), local_col_range.extent(), PETSC_DETERMINE, PETSC_DETERMINE);
 			MatSetUp(l);
-			//TODO
-			assert(false);
 
+			PetscInt rbegin, rend, cbegin, cend;
+			MatGetOwnershipRange(l, &rbegin, &rend);
+			MatGetOwnershipRangeColumn(l, &cbegin, &cend);
+			PetscInt n_rows = rend - rbegin;
+
+			PetscInt n_values;
+			const PetscInt * cols;
+			const PetscScalar * values;
+
+			MatAssemblyBegin(l, MAT_FINAL_ASSEMBLY);
+
+			for(PetscInt row = 0; row < n_rows; ++row) {
+
+				MatGetRow(*l_ptr, row, &n_values, &cols, &values);
+
+				for(PetscInt i = 0; i < n_values; ++i) {
+					MatSetValue(l, rbegin + row, cols[i], values[i], INSERT_VALUES);
+				}
+
+				MatRestoreRow(*l_ptr, row, &n_values, &cols, &values);
+			}
+
+			MatAssemblyEnd(l, MAT_FINAL_ASSEMBLY);
+
+			MatDestroy(l_ptr);
 
 		} else {
 			MatDestroy(&l);
@@ -392,9 +444,10 @@ namespace utopia {
 		offset_out[1] += global_col_range.begin();
 
 
-		par_assign_from_local_range(
+		PETScBackend::par_assign_from_local_range(
 			Range(offset_out[0], offset_out[0] + local_rows),
 			Range(offset_out[1], offset_out[1] + local_cols),
+			global_col_range,
 			right,
 			result);
 	}

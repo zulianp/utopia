@@ -9,7 +9,9 @@
 #include "moonolith_communicator.hpp"
 #include "moonolith_synched_describable.hpp"
 
-#include <libmesh/parallel_mesh.h>
+#include "libmesh/parallel_mesh.h"
+#include "libmesh/mesh_refinement.h"
+
 #include <memory>
 #include <sstream>
 
@@ -19,7 +21,16 @@ using std::make_shared;
 
 namespace utopia {
 
-	void run_experiment(LibMeshInit &init, const int n_master, const int n_slave)
+
+	static void refine_mesh(MeshBase &mesh)
+	{
+		MeshRefinement mesh_refinement(mesh);
+		mesh_refinement.make_flags_parallel_consistent();
+		mesh_refinement.uniformly_refine(1);
+
+	}
+
+	void run_experiment(LibMeshInit &init, const int n_master, const int n_slave, const bool refine_slave = false)
 	{
 		typedef utopia::LibMeshFEContext<libMesh::LinearImplicitSystem> FEContextT;
 
@@ -47,6 +58,10 @@ namespace utopia {
 			-1., 1.,
 			-1., 1.,
 			TET4);
+
+		if(refine_slave) {
+			refine_mesh(*slave_mesh);
+		}
 
 		auto slave_context  = make_shared<FEContextT>(slave_mesh);
 		auto master_context = make_shared<FEContextT>(master_mesh);
@@ -106,7 +121,7 @@ namespace utopia {
 		};
 
 		for(auto r : resolutions) {
-			run_experiment(init, r.first, r.second);
+			run_experiment(init, r.first, r.second, true);
 		}
 	}
 
