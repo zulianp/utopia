@@ -72,7 +72,22 @@ namespace utopia {
 			virtual void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) = 0;
 		};
 
+		class ElasticityForcingFunction {
+		public:
+			virtual ~ElasticityForcingFunction() {}
+			virtual int block_id() const
+			{
+				return -1;
+			}
+
+			virtual void fill(libMesh::DenseVector<libMesh::Real> &v) 
+			{
+				v.zero();
+			}
+		};
+
 		std::shared_ptr<ElasticityBoundaryConditions> bc_ptr;
+		std::shared_ptr<ElasticityForcingFunction> ff_ptr;
 		std::shared_ptr<libMesh::Nemesis_IO> output;
 		// std::shared_ptr<libMesh::ExodusII_IO> output;
 
@@ -82,6 +97,7 @@ namespace utopia {
 			const libMesh::LibMeshInit &init, 
 			const std::shared_ptr<libMesh::MeshBase> &mesh,
 			const std::shared_ptr< ElasticityBoundaryConditions > &bc_ptr,
+			const std::shared_ptr< ElasticityForcingFunction > &ff_ptr,
 			std::vector< std::pair<int, int> > contact_pair_tags,
 			double search_radius
 		);

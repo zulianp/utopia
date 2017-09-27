@@ -295,7 +295,30 @@ namespace utopia {
 		return true;
 	}
 
-	
+	void PETScBackend::select(PETScVector &left,
+				const PETScVector &right,
+	      		const std::vector<PetscInt> &index)
+	{
+
+		Vec l = left.implementation();
+		Vec r = right.implementation();
+
+		IS is_in;
+		ISCreateGeneral(PETSC_COMM_WORLD, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
+		VecScatter scatter_context;
+
+		VecType type;
+		VecGetType(r, &type);
+		VecSetType(l, type);
+		VecSetSizes(l, index.size(), PETSC_DETERMINE);
+
+		VecScatterCreate(r, is_in, l, nullptr, &scatter_context);
+		VecScatterBegin(scatter_context, r, l, INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterEnd(scatter_context, r, l, INSERT_VALUES, SCATTER_FORWARD);
+		ISDestroy(&is_in);
+		VecScatterDestroy(&scatter_context);
+	}
+
 
 	void PETScBackend::par_assign_from_local_range(
 		const Range &local_row_range,

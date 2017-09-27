@@ -36,7 +36,7 @@ using std::shared_ptr;
 
 namespace utopia {
 
-	class ExampleProblemBase : public ContactProblem::ElasticityBoundaryConditions {
+	class ExampleProblemBase : public ContactProblem::ElasticityBoundaryConditions, public ContactProblem::ElasticityForcingFunction {
 	public:
 		virtual ~ExampleProblemBase() {}
 		std::string mesh_file;
@@ -182,6 +182,15 @@ namespace utopia {
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uz == coeff(0.0), {bottom_boundar_tag}) );
 		}
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			if(dynamic_contact) {
+				v(2) = -0.1;
+			} else {
+				v.zero();
+			}
+		}
 	};
 
 
@@ -254,6 +263,15 @@ namespace utopia {
 			strong_enforce( boundary_conditions(uy == coeff(0.0),   	 {bottom_boundar_tag}) );
 		}
 
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			if(dynamic_contact) {
+				v(1) = -0.1;
+			} else {
+				v.zero();
+			}
+		}
+
 		void apply(LibMeshFEFunction &, LibMeshFEFunction &, LibMeshFEFunction &) override {}
 	};
 
@@ -283,7 +301,7 @@ namespace utopia {
 		mesh->read(e_problem->mesh_file);
 		MOONOLITH_EVENT_END("read_mesh");
 
-		p.init(init, mesh, e_problem, e_problem->contact_flags, e_problem->search_radius);
+		p.init(init, mesh, e_problem, e_problem, e_problem->contact_flags, e_problem->search_radius);
 		p.set_dynamic_contact(e_problem->dynamic_contact);
 		p.save(e_problem->dt);
 

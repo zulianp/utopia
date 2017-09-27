@@ -147,6 +147,35 @@ namespace utopia {
             assert(approxeq(two, actual_max));
         }
 
+        void selection_test()
+        {
+            typedef typename utopia::Traits<Vector>::SizeType SizeType;
+
+            const int n = mpi_world_size() * 3;
+            Vector v = zeros(n);
+            auto r = range(v);
+            
+            {
+                Write<Vector> w_v(v);
+                for(auto i = r.begin(); i < r.end(); ++i) {
+                    v.set(i, i);
+                }
+            }
+
+            std::vector<SizeType> s;
+            s.push_back(r.begin());
+            s.push_back(r.end() % n);
+
+            Vector selection = v.select(s);
+            auto s_r = range(selection);
+
+            {
+                Read<Vector> r_s(selection);
+                assert(selection.get(s_r.begin()) == r.begin());
+                assert(selection.get(r.end() % n) == (r.end() % n));
+            }
+        }
+
         static void print_backend_info()
         {
             if(Utopia::Instance().verbose()) {
@@ -158,6 +187,7 @@ namespace utopia {
         void run()
         {
             print_backend_info();
+            UTOPIA_RUN_TEST(selection_test);
             UTOPIA_RUN_TEST(norm_test);
             UTOPIA_RUN_TEST(dot_test);
             UTOPIA_RUN_TEST(dot_product_composition_test);
