@@ -194,13 +194,39 @@ namespace utopia {
 
     }
 
-    void BLASBackend::select(Vector &left,
+    void BLASBackend::select(
+                Vector &left,
                 const Vector &right,
                 const std::vector<SizeType> &index)
     {
         left.resize(index.size());
         for(std::size_t i = 0; i <index.size(); ++i) {
             left[i] = right[index[i]];
+        }
+    }
+
+    void BLASBackend::select(Matrix &left,
+                const Matrix &right,
+                const std::vector<SizeType> &row_index,
+                const std::vector<SizeType> &col_index)
+    {
+        
+
+        if(col_index.empty()) {
+            left.resize(row_index.size(), right.getCols());
+            for(std::size_t i = 0; i < row_index.size(); ++i) {
+                for(std::size_t j = 0; j < right.getCols(); ++j) {
+                    left.set(i, j, right.get(row_index[i], j));
+                }
+            }
+
+        } else {
+            left.resize(row_index.size(), col_index.size());
+            for(std::size_t i = 0; i < row_index.size(); ++i) {
+                for(std::size_t j = 0; j < col_index.size(); ++j) {
+                    left.set(i, j, right.get(row_index[i], col_index[j]));
+                }
+            }
         }
     }
 

@@ -128,6 +128,11 @@ namespace utopia
                     const Vector &right,
                     const std::vector<SizeType> &index);
 
+        void select(Matrix &left,
+                    const Matrix &right,
+                    const std::vector<SizeType> &row_index,
+                    const std::vector<SizeType> &col_index);
+
         void assignToRange(Matrix &left, const Matrix &right, const Range &rowRange, const Range &colRange);
         void assignToRange(Matrix &left, const Identity &, const Range &rowRange, const Range &colRange);
         void assignToRange(Vector &left, const Vector &right, const Range &rowRange, const Range & /*colRange*/);

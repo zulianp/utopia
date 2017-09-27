@@ -106,9 +106,6 @@ namespace utopia {
 		auto mu     = block_var(100., {{3, 10.}, {4, 150.}});
 		auto lambda = block_var(100., {{3, 10.}, {4, 150.}});
 
-		// auto mu     = 1.;
-		// auto lambda = 1.;
-
 		auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
 		auto b_form = integral((0.5 * mu) * dot(e, e) + lambda * dot(div(u), div(u)));
 
@@ -118,10 +115,9 @@ namespace utopia {
 		DenseVector<Real> vec_1(dim);
 		ff.fill(vec_1);
 
-		auto f_0 = vec_coeff(vec_0);
-		auto f_1 = vec_coeff(vec_1);
+		auto f_0    = vec_coeff(vec_0);
+		auto f_1    = vec_coeff(vec_1);
 		auto l_form = integral(dot(f_0, u)) + integral(dot(f_1, u), ff.block_id());
-		// auto l_form = integral(dot(f_1, u));
 
 		double t = 0.;
 		auto ass = make_assembly([&]() -> void {
@@ -442,7 +438,7 @@ namespace utopia {
 					}
 				}
 			}
-			
+
 			idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
 			DVectord out = displacement_increment.select(idx);
 			{
@@ -492,19 +488,6 @@ namespace utopia {
 		const int dim = mesh->mesh_dimension();
 
 		if(comm.is_alone()) {
-			// const int dim = mesh->mesh_dimension();
-			// std::vector<double> normal_stress_x(local_size(normal_stress).get(0)/dim);
-
-			// {
-			// 	auto r = range(normal_stress);
-			// 	Read<DVectord> r_n(normal_stress);
-
-			// 	for(auto i = r.begin(); i < r.end(); i += dim) {
-			// 		normal_stress_x[i/dim] = normal_stress.get(i);
-			// 	}
-			// }
-
-			// plot_mesh_f(*mesh, &normal_stress_x[0], "time_series_m/m" + std::to_string(iteration));
 			plot_mesh(*mesh, "time_series_m/m" + std::to_string(iteration));
 		} 
 

@@ -10,6 +10,8 @@ namespace utopia {
     template<class Matrix, class Vector>
     class AlgebraTest {
     private:
+        typedef typename utopia::Traits<Vector>::Scalar Scalar;
+
         //FIXME(eric): original norm_test in main.cpp is still there
         void norm_test()
         {
@@ -54,7 +56,7 @@ namespace utopia {
 
         void dot_product_composition_test()
         {
-            typedef typename utopia::Traits<Vector>::Scalar Scalar;
+
 
             Vector v = zeros(2);
             {
@@ -147,14 +149,14 @@ namespace utopia {
             assert(approxeq(two, actual_max));
         }
 
-        void selection_test()
+        void vector_selection_test()
         {
             typedef typename utopia::Traits<Vector>::SizeType SizeType;
 
             const int n = mpi_world_size() * 3;
             Vector v = zeros(n);
             auto r = range(v);
-            
+
             {
                 Write<Vector> w_v(v);
                 for(auto i = r.begin(); i < r.end(); ++i) {
@@ -172,8 +174,58 @@ namespace utopia {
             {
                 Read<Vector> r_s(selection);
                 assert(selection.get(s_r.begin()) == r.begin());
-                assert(selection.get(r.end() % n) == (r.end() % n));
+                assert(selection.get(s_r.begin() + 1) == (r.end() % n));
             }
+
+            Scalar sum_v_s = sum(v.select(s));
+        }
+
+        void matrix_selection_test()
+        {
+            typedef typename utopia::Traits<Vector>::SizeType SizeType;
+            
+            const int n = mpi_world_size() * 3;
+            Matrix m = zeros(n, n);
+            auto rr = row_range(m);
+
+            {
+                Write<Matrix> w_m(m);
+                for(auto i = rr.begin(); i < rr.end(); ++i) {
+                    for(auto j = 0; j < n; ++j) {
+                        m.set(i, j, i * n + j);
+                    }
+                }
+            }
+
+            std::vector<SizeType> r_s;
+            std::vector<SizeType> c_s;
+
+            r_s.push_back(rr.begin());
+            r_s.push_back(rr.begin() + 1);
+
+            c_s.push_back(0);
+            c_s.push_back(2);
+
+            Matrix selection = m.select(r_s, c_s);
+
+            {
+                auto s_r = row_range(selection);
+                Read<Matrix> r_s(selection);
+                assert(selection.get(s_r.begin(), 0) == rr.begin() * n);
+                assert(selection.get(s_r.begin(), 1) == rr.begin() * n + 2);
+            }
+
+            Matrix row_selection = m.select(r_s);
+
+            {
+                auto s_r = row_range(row_selection);
+                Read<Matrix> r_s(row_selection);
+
+                for(SizeType i = 0; i < n; ++i) {
+                    assert(row_selection.get(s_r.begin(), i) == (rr.begin() * n + i));
+                }
+            }
+
         }
 
         static void print_backend_info()
@@ -187,7 +239,8 @@ namespace utopia {
         void run()
         {
             print_backend_info();
-            UTOPIA_RUN_TEST(selection_test);
+            UTOPIA_RUN_TEST(vector_selection_test);
+            UTOPIA_RUN_TEST(matrix_selection_test);
             UTOPIA_RUN_TEST(norm_test);
             UTOPIA_RUN_TEST(dot_test);
             UTOPIA_RUN_TEST(dot_product_composition_test);
