@@ -142,6 +142,12 @@ namespace utopia {
 			dynamic_contact = false;
 		}
 
+		int block_id() const override
+		{
+			return 1;
+		}
+
+
 		void set_up_middle_res()
 		{
 			mesh_file = "../data/quasi_signorini_32894.e";
@@ -192,6 +198,44 @@ namespace utopia {
 			}
 		}
 	};
+
+	class Rocks : public ExampleProblemBase {
+	public:
+		Rocks() {
+			mesh_file = "../data/two_rocks_2mm_8041.e";
+			top_boundary_tag = 2;
+			bottom_boundar_tag = 4;
+			contact_flags = {{3, 1}};
+			search_radius = 2.;
+			dt = 1.;
+			n_steps = 9;
+			dynamic_contact = false;
+		}
+
+		int block_id() const override
+		{
+			return 1;
+		}
+
+		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override
+		{
+			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(-0.5), {top_boundary_tag}) );
+
+			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(0.0), {bottom_boundar_tag}) );
+		}
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			v.zero();
+		}
+	};
+
 
 
 	class ExampleProblem2D : public ExampleProblemBase {
@@ -283,8 +327,9 @@ namespace utopia {
 		ContactProblem p;
 			
 		// ---------------------------------------------------
-		auto e_problem = make_shared<ExampleProblem2D>();
-		e_problem->set_up_m_coarse_t();
+		// auto e_problem = make_shared<ExampleProblem2D>();
+		// e_problem->set_up_m_coarse_t();
+		auto e_problem = make_shared<Rocks>();
 		// e_problem->set_up_m_coarse_t_dynamic();
 		// e_problem->set_up_dynamic();
 		
