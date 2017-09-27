@@ -194,6 +194,16 @@ namespace utopia {
 
     }
 
+    void BLASBackend::select(Vector &left,
+                const Vector &right,
+                const std::vector<SizeType> &index)
+    {
+        left.resize(index.size());
+        for(std::size_t i = 0; i <index.size(); ++i) {
+            left[i] = right[index[i]];
+        }
+    }
+
     void BLASBackend::assignToRange(Matrix &left, const Matrix &right, const Range &rowRange, const Range &colRange)
      {
         for (unsigned i = 0; i < rowRange.extent(); ++i) {

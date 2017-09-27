@@ -124,7 +124,9 @@ namespace utopia
         void assignTransposed(Matrix &left, const Matrix &right);
         void assignFromRange(Matrix &left, const Matrix &right, const Range &rowRange, const Range &colRange);
         void assignFromRange(Vector &left, const Vector &right, const Range &rowRange, const Range & /*colRange*/);
-        
+        void select(Vector &left,
+                    const Vector &right,
+                    const std::vector<SizeType> &index);
 
         void assignToRange(Matrix &left, const Matrix &right, const Range &rowRange, const Range &colRange);
         void assignToRange(Matrix &left, const Identity &, const Range &rowRange, const Range &colRange);

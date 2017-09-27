@@ -15,6 +15,7 @@
 #include "utopia_Readable.hpp"
 #include "utopia_Writable.hpp"
 #include "utopia_Ranged.hpp"
+#include "utopia_Select.hpp"
 
 #include <iostream>
 #include <type_traits>
@@ -56,11 +57,14 @@ namespace utopia {
                     public Readable<_Implementation, Wrapper<_Implementation, _Order>, _Order>,
                     public Writeable<_Implementation, Wrapper<_Implementation, _Order>, _Order>,
                     public Structured< Wrapper<_Implementation, _Order> >,
-                    public Ranged< Wrapper<_Implementation, _Order>, _Order>
+                    public Ranged< Wrapper<_Implementation, _Order>, _Order>,
+                    public Selectable< _Implementation, Wrapper<_Implementation, _Order>, _Order >
             {
     public:
         typedef _Implementation Implementation;
         typedef typename Traits<Implementation>::Scalar Scalar;
+        typedef typename Traits<Implementation>::SizeType SizeType;
+
         enum {
             Backend = Traits<Implementation>::Backend
         };
@@ -137,12 +141,15 @@ namespace utopia {
                                                 public Readable<_Implementation, Wrapper<_Implementation &, _Order>, _Order>,
                                                 public Writeable<_Implementation, Wrapper<_Implementation &, _Order>, _Order>,
                                                 public Structured< Wrapper<_Implementation &, _Order> >,
-                                                public Ranged< Wrapper<_Implementation &, _Order>, _Order>
+                                                public Ranged< Wrapper<_Implementation &, _Order>, _Order>,
+                                                public Selectable< _Implementation, Wrapper<_Implementation, _Order>, _Order >
 
     {
     public:
         typedef _Implementation Implementation;
         typedef typename Traits<Implementation>::Scalar Scalar;
+        typedef typename Traits<Implementation>::SizeType SizeType;
+
         enum {
             Backend = Traits<Implementation>::Backend
         };
@@ -203,11 +210,13 @@ namespace utopia {
      */
     template<class _Implementation, int _Order>
     class Wrapper<const _Implementation &, _Order> : public Expression< Wrapper<const _Implementation &, _Order> >,
-                                                    public Readable<_Implementation, Wrapper<const _Implementation &, _Order>, _Order>,
-                                                    public Structured< Wrapper<const _Implementation &, _Order> > {
+                                                     public Readable<_Implementation, Wrapper<const _Implementation &, _Order>, _Order>,
+                                                     public Structured< Wrapper<const _Implementation &, _Order> >,
+                                                     public Selectable< _Implementation, Wrapper<_Implementation, _Order>, _Order > {
     public:
         typedef _Implementation Implementation;
         typedef typename Traits<Implementation>::Scalar Scalar;
+        typedef typename Traits<Implementation>::SizeType SizeType;
 
 
         virtual ~Wrapper() { }

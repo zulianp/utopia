@@ -76,6 +76,10 @@ namespace utopia
 							const PETScMatrix &right,
 							PETScMatrix &result);
 
+		void select(PETScVector &left,
+					const PETScVector &right,
+		      		const std::vector<PetscInt> &index);
+
 		static void par_assign_from_local_is(
 			const std::vector<PetscInt> &remote_rows,
 			const std::vector<PetscInt> &remote_cols,

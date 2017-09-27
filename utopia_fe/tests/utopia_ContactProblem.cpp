@@ -26,6 +26,7 @@ namespace utopia {
 		const libMesh::LibMeshInit &init, 
 		const std::shared_ptr<MeshBase> &mesh,
 		const std::shared_ptr< ElasticityBoundaryConditions > &bc_ptr,
+		const std::shared_ptr< ElasticityForcingFunction > &ff_ptr,
 		std::vector< std::pair<int, int> > contact_pair_tags,
 		double search_radius
 		)
@@ -35,6 +36,7 @@ namespace utopia {
 		MOONOLITH_EVENT_BEGIN("init");
 
 		this->bc_ptr = bc_ptr;
+		this->ff_ptr = ff_ptr;
 		this->contact_pair_tags = contact_pair_tags;
 		this->search_radius = search_radius;
 		this->mesh = mesh;
@@ -92,6 +94,7 @@ namespace utopia {
 	void assemble_elasticity(
 		U &u, 
 		LibMeshFEContext<SystemType> &context,
+		ContactProblem::ElasticityForcingFunction &ff,
 		DSMatrixd &stiffness_matrix,
 		DVectord &external_force
 		)
@@ -113,13 +116,12 @@ namespace utopia {
 		vec_0.zero();
 
 		DenseVector<Real> vec_1(dim);
-		vec_1.zero();
-		vec_1(dim-1) = -0.1;
+		ff.fill(vec_1);
 
-		auto f_0 	= vec_coeff(vec_0);
-		auto f_1 	= vec_coeff(vec_1);
-		// auto l_form = integral(dot(f_0, u)) + integral(dot(f_1, u), 2);
-		auto l_form = integral(dot(f_1, u));
+		auto f_0 = vec_coeff(vec_0);
+		auto f_1 = vec_coeff(vec_1);
+		auto l_form = integral(dot(f_0, u)) + integral(dot(f_1, u), ff.block_id());
+		// auto l_form = integral(dot(f_1, u));
 
 		double t = 0.;
 		auto ass = make_assembly([&]() -> void {
@@ -155,7 +157,7 @@ namespace utopia {
 		ux.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		
-		assemble_elasticity(u,  *context_ptr, stiffness_matrix, external_force);
+		assemble_elasticity(u,  *context_ptr, *ff_ptr, stiffness_matrix, external_force);
 		assemble_mass_matrix(u, *context_ptr, mass_matrix);
 	}
 
@@ -176,7 +178,7 @@ namespace utopia {
 		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		uz.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 
-		assemble_elasticity(u,  *context_ptr, stiffness_matrix, external_force);
+		assemble_elasticity(u,  *context_ptr, *ff_ptr, stiffness_matrix, external_force);
 		assemble_mass_matrix(u, *context_ptr, mass_matrix);
 	}
 
@@ -415,7 +417,6 @@ namespace utopia {
 
 	void ContactProblem::apply_displacement(const DVectord &displacement_increment)
 	{	
-		//FIXME		
 		int sys_num = context_ptr->system.number();
 
 		if(!comm.is_alone()) {
@@ -441,18 +442,9 @@ namespace utopia {
 					}
 				}
 			}
-
+			
 			idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
-			DVectord out = local_zeros(idx.size());
-			IS is_in;
-			ISCreateGeneral(PETSC_COMM_WORLD, idx.size(), &idx[0], PETSC_USE_POINTER, &is_in);
-			VecScatter scatter_context;
-			VecScatterCreate(raw_type(displacement_increment), is_in, raw_type(out), nullptr, &scatter_context);
-			VecScatterBegin(scatter_context, raw_type(displacement_increment), raw_type(out), INSERT_VALUES, SCATTER_FORWARD);
-			VecScatterEnd(scatter_context, raw_type(displacement_increment), raw_type(out), INSERT_VALUES, SCATTER_FORWARD);
-			ISDestroy(&is_in);
-			VecScatterDestroy(&scatter_context);
-
+			DVectord out = displacement_increment.select(idx);
 			{
 				Read<DVectord> r_out(out);
 				auto range_out = range(out);
