@@ -303,8 +303,10 @@ namespace utopia {
 		Vec l = left.implementation();
 		Vec r = right.implementation();
 
+		MPI_Comm comm = PetscObjectComm((PetscObject)r);
+
 		IS is_in;
-		ISCreateGeneral(PETSC_COMM_WORLD, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
+		ISCreateGeneral(comm, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
 		VecScatter scatter_context;
 
 		VecType type;
@@ -317,6 +319,71 @@ namespace utopia {
 		VecScatterEnd(scatter_context, r, l, INSERT_VALUES, SCATTER_FORWARD);
 		ISDestroy(&is_in);
 		VecScatterDestroy(&scatter_context);
+	}
+
+
+	void PETScBackend::select(PETScMatrix &left,
+				const PETScMatrix &right,
+	      		const std::vector<PetscInt> &row_index,
+	      		const std::vector<PetscInt> &col_index)
+	{
+		if(col_index.empty()) {
+			PetscInt n_rows, n_cols;
+			MatGetSize(right.implementation(), &n_rows, &n_cols);
+			std::vector<PetscInt> all_index(n_cols);
+			for(PetscInt i = 0; i < n_cols; ++i) {
+				all_index[i] = i;
+			}
+
+			select_aux(left, right, row_index, all_index);
+
+		} else {
+			select_aux(left, right, row_index, col_index);
+		}
+
+	}
+
+	void PETScBackend::select_aux(PETScMatrix &left,
+				const PETScMatrix &right,
+	      		const std::vector<PetscInt> &row_index,
+	      		const std::vector<PetscInt> &col_index)
+	{
+		Mat r = right.implementation();
+
+		PetscInt min_col = col_index[0], max_col = col_index[1];
+		for(std::size_t i = 0; i < col_index.size(); ++i) {
+			min_col = std::min(min_col, col_index[i]);
+			max_col = std::max(max_col, col_index[i]);
+		}
+
+		MPI_Comm comm = PetscObjectComm((PetscObject)r);
+
+		int vals[2] = { min_col, -max_col };
+		MPI_Allreduce(MPI_IN_PLACE, vals, 2, MPI_INT, MPI_MIN, comm);
+		min_col =  vals[0];
+		max_col = -vals[1];
+
+		PetscInt global_cols = max_col - min_col + 1;
+		PetscInt local_cols = PETSC_DECIDE;
+		PetscSplitOwnership(comm, &local_cols, &global_cols);
+
+		unsigned long offsets_in = row_index.size();
+		unsigned long offset_out = 0;
+
+		MPI_Exscan(
+			&offsets_in,
+			&offset_out,
+			1, 
+			MPI_UNSIGNED_LONG ,
+			MPI_SUM,
+			comm);
+
+		offset_out += min_col;
+		par_assign_from_local_is(
+			row_index,
+			col_index, 
+			min_col,
+			Range(offset_out, offset_out + local_cols), right, left);
 	}
 
 
@@ -344,13 +411,14 @@ namespace utopia {
 			remote_cols.push_back(l_col);
 		}
 
-		par_assign_from_local_is(remote_rows, remote_cols, local_col_range, right, result);
+		par_assign_from_local_is(remote_rows, remote_cols, global_col_range.begin(), local_col_range, right, result);
 	}
 
 
 	void PETScBackend::par_assign_from_local_is(
 		const std::vector<PetscInt> &remote_rows,
 		const std::vector<PetscInt> &remote_cols,
+		const PetscInt global_col_offset,
 		const Range &local_col_range,
 		const PETScMatrix &right,
 		PETScMatrix &result)
@@ -408,7 +476,7 @@ namespace utopia {
 				MatGetRow(*l_ptr, row, &n_values, &cols, &values);
 
 				for(PetscInt i = 0; i < n_values; ++i) {
-					MatSetValue(l, rbegin + row, cols[i], values[i], INSERT_VALUES);
+					MatSetValue(l, rbegin + row, cols[i] - global_col_offset, values[i], INSERT_VALUES);
 				}
 
 				MatRestoreRow(*l_ptr, row, &n_values, &cols, &values);
