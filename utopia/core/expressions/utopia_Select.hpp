@@ -1,6 +1,7 @@
 #ifndef UTOPIA_SELECT_HPP
 #define UTOPIA_SELECT_HPP 
 
+#include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Utils.hpp"
 
 namespace utopia {

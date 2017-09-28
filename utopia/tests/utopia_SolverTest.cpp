@@ -1134,9 +1134,9 @@ namespace utopia
 		PETScSolverTest().run();
 #endif
 		
-#ifdef WITH_BLAS
-		SolverTest<Matrixd, Vectord, double>().run();
-#endif //WITH_BLAS
+// #ifdef WITH_BLAS
+// 		SolverTest<Matrixd, Vectord, double>().run();
+// #endif //WITH_BLAS
 		
 		UTOPIA_UNIT_TEST_END("SolverTest");
 	}

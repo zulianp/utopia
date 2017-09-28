@@ -1,0 +1,42 @@
+list(APPEND SOLVERS_MODULES
+	.
+	domain_decomposition
+	linear 
+	multilevel
+	smoothers
+	nonlinear
+	nonlinear/constrained
+	nonlinear/constrained/quadratic_programming
+	nonlinear/line_search
+	nonlinear/trust_region
+	nonlinear/hessian_approximations
+)
+
+find_project_files(CMAKE_CURRENT_SOURCE_DIR SOLVERS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
+
+foreach(MODULE ${SOLVER_MODULES})
+	include_directories(${MODULE})
+endforeach(MODULE)
+
+list(APPEND LOCAL_SOURCES utopia_solvers.cpp)
+add_library(utopia_solvers STATIC ${LOCAL_SOURCES})
+target_include_directories(utopia_solvers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+
+foreach(MODULE ${SOLVERS_MODULES})
+	target_include_directories(utopia_solvers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
+endforeach(MODULE)
+
+target_link_libraries(utopia_solvers utopia_utils)
+
+install(TARGETS utopia_solvers
+	RUNTIME DESTINATION bin 
+	LIBRARY DESTINATION lib 
+	ARCHIVE DESTINATION lib 
+	)
+
+install(FILES ${LOCAL_HEADERS} DESTINATION include)
+
+set(UTOPIA_LIBRARIES "${UTOPIA_LIBRARIES};utopia_solvers" PARENT_SCOPE)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ${UTOPIA_DEV_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${UTOPIA_SPECIAL_DEBUG_FLAGS}")

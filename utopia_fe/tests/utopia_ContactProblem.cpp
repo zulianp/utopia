@@ -106,8 +106,10 @@ namespace utopia {
 		// auto mu     = block_var(100., {{3, 10.}, {4, 150.}});
 		// auto lambda = block_var(100., {{3, 10.}, {4, 150.}});
 
-		double mu = 730;
-		double lambda = 376;
+		// double mu = 730;
+		// double lambda = 376;
+		double mu = 4;
+		double lambda = 4;
 
 		auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
 		auto b_form = integral((0.5 * mu) * dot(e, e) + lambda * dot(div(u), div(u)));
@@ -139,8 +141,7 @@ namespace utopia {
 		apply_boundary_conditions(u.get(0), stiffness_matrix, external_force);
 
 		std::cout << "done: (" << t << " seconds)" << std::endl; 
-
-		write("s.m", stiffness_matrix);
+		// write("s.m", stiffness_matrix);
 	}
 
 	void ContactProblem::init_material_2d()

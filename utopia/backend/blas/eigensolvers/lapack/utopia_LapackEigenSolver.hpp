@@ -3,7 +3,7 @@
 
 
 #include "utopia_BLASMatrix.hpp"
-#include "utopia_BLAS.hpp"
+#include "utopia_blas.hpp"
 
 namespace utopia {
 	class LapackEigenSolver {

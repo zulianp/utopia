@@ -1,0 +1,34 @@
+list(APPEND CORE_MODULES
+	.
+)
+
+find_project_files(CMAKE_CURRENT_SOURCE_DIR CORE_MODULES LOCAL_HEADERS LOCAL_SOURCES)
+
+add_library(utopia_utils STATIC ${LOCAL_SOURCES})
+target_include_directories(utopia_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+target_include_directories(utopia_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+find_package(MPI)
+
+if(MPI_FOUND)
+	list(APPEND UTOPIA_INCLUDES ${MPI_CXX_INCLUDE_PATH})
+	list(APPEND UTOPIA_LIBRARIES  ${MPI_CXX_LIBRARIES} )
+
+	target_include_directories(utopia_utils PUBLIC ${MPI_CXX_INCLUDE_PATH})
+	target_link_libraries(utopia_utils  ${MPI_CXX_LIBRARIES} )
+	
+	set(WITH_MPI TRUE PARENT_SCOPE)
+endif()
+
+install(TARGETS utopia_utils
+	RUNTIME DESTINATION bin 
+	LIBRARY DESTINATION lib 
+	ARCHIVE DESTINATION lib 
+	)
+
+install(FILES ${LOCAL_HEADERS} DESTINATION include)
+
+set(UTOPIA_LIBRARIES "${UTOPIA_LIBRARIES};utopia_utils" PARENT_SCOPE)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ${UTOPIA_DEV_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${UTOPIA_SPECIAL_DEBUG_FLAGS}")
