@@ -6,8 +6,6 @@
 #include <sstream>
 #include <ctime>
 
-#include "petscis.h"  
-
 using namespace std;
 
 

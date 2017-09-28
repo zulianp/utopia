@@ -104,8 +104,8 @@ namespace utopia {
 
 
 #ifdef __APPLE__
-		mpi_start_ = min(realtime_start_, other.realtime_start_);
-		mpi_end_   = max(realtime_end_, other.realtime_end_);
+		realtime_start_ = min(realtime_start_, other.realtime_start_);
+		realtime_end_   = max(realtime_end_, other.realtime_end_);
 		realtime_duration_ += other.realtime_duration_;
 #endif //__APPLE__
 
