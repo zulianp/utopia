@@ -3,17 +3,17 @@
 
 #include "utopia_petsc_LinearSolverFactory.hpp"
 #include "utopia_petsc_solvers.hpp"
-#include "utopia_PETScConvergedReason.hpp"
+#include "utopia_petsc_ConvergedReason.hpp"
 
 
-#include "utopia_PETScKSPTR.hpp"
+#include "utopia_petsc_KSPTR.hpp"
 
-#include "utopia_PETScCGSmoother.hpp"
-#include "utopia_PETScLinearGS.hpp"
+#include "utopia_petsc_CGSmoother.hpp"
+#include "utopia_petsc_LinearGS.hpp"
 
 
-#include "utopia_PETScNonLinearGS.hpp"
-#include "utopia_PETScFunction.hpp"
+#include "utopia_petsc_NonLinearGS.hpp"
+#include "utopia_petsc_Function.hpp"
 
-#include "utopia_PETScSemismoothNewton.hpp"
+#include "utopia_petsc_SemismoothNewton.hpp"
 #endif //UTOPIA_PETSC_SOLVERS_HPP
