@@ -2,12 +2,15 @@
 #define UTOPIA_BLAS_HPP
 
 #include "utopia_Base.hpp"
-#include "utopia_BLASBackend.hpp"
-#include "utopia_BLASMatrix.hpp"
-#include "utopia_BLASTraits.hpp"
-#include "utopia_BLASTypes.hpp"
-#include "utopia_CCSMatrix.hpp"
-#include "utopia_CRSMatrix.hpp"
+
+#include "utopia_blas_Backend.hpp"
+
+#include "utopia_blas_Matrix.hpp"
+#include "utopia_blas_CCSMatrix.hpp"
+#include "utopia_blas_CRSMatrix.hpp"
+
+#include "utopia_blas_Traits.hpp"
+#include "utopia_blas_Types.hpp"
 
 #include "utopia_blas_solvers.hpp"
 #include "utopia_blas_eigensolvers.hpp"

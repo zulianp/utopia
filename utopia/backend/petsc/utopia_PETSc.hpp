@@ -1,30 +1,30 @@
 #ifndef UTOPIA_PETSC_HPP
 #define UTOPIA_PETSC_HPP 
 
-#include "utopia_PETScBackend.hpp"
-#include "utopia_PETScError.hpp"
-#include "utopia_PETScForwardDeclaration.hpp"
-#include "utopia_PETScMatrix.hpp"
-#include "utopia_PETScSerialSparseMatrix.hpp"
-#include "utopia_PETScSerialVector.hpp"
-#include "utopia_PETScSparseMatrix.hpp"
-#include "utopia_PETScTraits.hpp"
-#include "utopia_PETScTypes.hpp"
-#include "utopia_PETScVector.hpp"
+#include "utopia_petsc_Backend.hpp"
+#include "utopia_petsc_Error.hpp"
+#include "utopia_petsc_ForwardDeclaration.hpp"
+#include "utopia_petsc_Matrix.hpp"
+#include "utopia_petsc_SerialSparseMatrix.hpp"
+#include "utopia_petsc_SerialVector.hpp"
+#include "utopia_petsc_SparseMatrix.hpp"
+#include "utopia_petsc_Traits.hpp"
+#include "utopia_petsc_Types.hpp"
+#include "utopia_petsc_Vector.hpp"
 
-#include "utopia_Eval_PETSc.hpp"
-#include "utopia_Eval_Inverse_PETSc.hpp"
+#include "utopia_petsc_Eval.hpp"
+#include "utopia_petsc_Eval_Inverse.hpp"
 #include "utopia_petsc_RowView.hpp"
 
 #include "utopia_petsc_LinearSolverFactory.hpp"
 #include "utopia_petsc_TrustRegionFactory.hpp"
 #include "utopia_petsc_solvers.hpp"
 
-#include "utopia_PETScLinearGS.hpp"
-#include "utopia_PETScCGSmoother.hpp"
-#include "utopia_PETScNonLinearGS.hpp"
-#include "utopia_PETScFunction.hpp"
+#include "utopia_petsc_LinearGS.hpp"
+#include "utopia_petsc_CGSmoother.hpp"
+#include "utopia_petsc_NonLinearGS.hpp"
+#include "utopia_petsc_Function.hpp"
 
-#include "utopia_PETScKSPTR.hpp"
+#include "utopia_petsc_KSPTR.hpp"
 
 #endif //UTOPIA_PETSC_HPP

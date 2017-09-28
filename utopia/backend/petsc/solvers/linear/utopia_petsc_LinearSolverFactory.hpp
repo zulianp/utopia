@@ -6,11 +6,11 @@
 #include "utopia_LinearSolverFactory.hpp"
 #include "utopia_ConjugateGradient.hpp"
 
-#include "utopia_PETScKSPSolver.hpp"
-#include "utopia_PETScKSPSolvers.hpp"
+#include "utopia_petsc_KSPSolver.hpp"
+#include "utopia_petsc_KSPSolvers.hpp"
 
-#include "utopia_PETScFactorization.hpp"
-#include "utopia_PETScFactorizations.hpp"
+#include "utopia_petsc_Factorization.hpp"
+#include "utopia_petsc_Factorizations.hpp"
 
 #include <map>
 #include <string>

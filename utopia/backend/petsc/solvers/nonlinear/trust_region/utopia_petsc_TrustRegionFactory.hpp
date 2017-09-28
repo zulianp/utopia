@@ -2,7 +2,7 @@
 #define UTOPIA_PETSC_TRUST_REGION_FACTORY_HPP 
 
 #include "utopia_TrustRegionFactory.hpp"
-#include "utopia_PETScKSPTR.hpp"
+#include "utopia_petsc_KSPTR.hpp"
 
 namespace utopia {
 	/**
