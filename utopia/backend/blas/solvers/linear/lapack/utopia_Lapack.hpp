@@ -5,8 +5,7 @@
 #ifndef UTOPIA_SOLVER_LAPACK_H
 #define UTOPIA_SOLVER_LAPACK_H
 
-#include "utopia_blas_Matrix.hpp"
-#include "utopia_blas.hpp"
+#include "utopia_blas_Types.hpp"
 
 #include "utopia_DirectSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
@@ -26,6 +25,5 @@ namespace utopia {
         }       
     };
 }
-
 
 #endif //UTOPIA_SOLVER_LAPACK_H
