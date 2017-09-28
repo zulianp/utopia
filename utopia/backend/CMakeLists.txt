@@ -1,6 +1,6 @@
 
 list(APPEND LOCAL_HEADERS 
-	utopia_Backend.hpp
+	utopia_Backends.hpp
 	utopia_ScalarBackend.hpp
 	)
 

@@ -17,6 +17,14 @@
 #include "utopia_petsc_RowView.hpp"
 
 #include "utopia_petsc_LinearSolverFactory.hpp"
+#include "utopia_petsc_TrustRegionFactory.hpp"
 #include "utopia_petsc_solvers.hpp"
+
+#include "utopia_PETScLinearGS.hpp"
+#include "utopia_PETScCGSmoother.hpp"
+#include "utopia_PETScNonLinearGS.hpp"
+#include "utopia_PETScFunction.hpp"
+
+#include "utopia_PETScKSPTR.hpp"
 
 #endif //UTOPIA_PETSC_HPP

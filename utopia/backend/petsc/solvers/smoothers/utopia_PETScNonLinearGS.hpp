@@ -12,17 +12,15 @@
 #include "utopia_Core.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NonLinearSmoother.hpp"
+#include "utopia_PETScFunction.hpp"
+
+#include <petsc/private/snesimpl.h>
+#include "petscsnes.h"  
 
 
-#ifdef WITH_PETSC
-    #include "utopia_PETScFunction.hpp"
-    #include <petsc/private/snesimpl.h>
-    #include "petscsnes.h"  
-#endif //WITH_PETSC
 
-
-namespace utopia 
-{
+namespace utopia {
+ //FIXME move it to utopia/solvers/smoothers
   template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
   class NonLinearGaussSeidel {};
 

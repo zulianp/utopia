@@ -17,9 +17,8 @@
 #include "utopia_Parameters.hpp"    
 #include "utopia_NumericalTollerance.hpp"
 
-namespace utopia 
-{
-    	template<class Matrix, class Vector>
+namespace utopia  {
+  template<class Matrix, class Vector>
       /**
        * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
        *             Design of class allows to provide different TR strategies in order to solve TR subproblem. 

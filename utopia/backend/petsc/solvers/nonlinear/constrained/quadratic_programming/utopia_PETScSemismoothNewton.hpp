@@ -10,7 +10,6 @@
 namespace utopia {
 
 	//FIXME and then add PETSC to the backend flag
-
 	static const int PETSC_EXPERIMENTAL = -1000;
 
 	template<class Matrix, class Vector>
@@ -32,8 +31,8 @@ namespace utopia {
 		bool solve(const Matrix &A, const Vector &b, Vector &x)  override
 		{
 			PetscErrorCode ierr = 0.;
-			DVectord f = local_zeros(local_size(b));
-			DSMatrixd J = A;
+			Vector f = local_zeros(local_size(b));
+			Matrix J = A;
 
 			SemismoothNewtonCtx ctx;
 			ctx.H = &A;
@@ -115,14 +114,14 @@ namespace utopia {
 		BoxConstraints                  constraints_;
 
 		typedef struct {
-			const DSMatrixd * H;
-			const DVectord  * g;
+			const Matrix * H;
+			const Vector  * g;
 		} SemismoothNewtonCtx; 
 
 		static PetscErrorCode Gradient(SNES snes, Vec x, Vec f, void*ctx)
 		{
 			SemismoothNewtonCtx * ssn_ctx = (SemismoothNewtonCtx *) ctx;
-			DVectord x_utopia, f_utopia;
+			Vector x_utopia, f_utopia;
 			convert(x, x_utopia);
 			f_utopia  = (*ssn_ctx->H) * x_utopia - (*ssn_ctx->g);
 			convert(f_utopia, f);
