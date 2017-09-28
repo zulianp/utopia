@@ -54,9 +54,6 @@ if(PETSC_FOUND)
 		)
 
 	find_project_files(CMAKE_CURRENT_SOURCE_DIR PETSC_MODULES LOCAL_HEADERS LOCAL_SOURCES)
-
-	message(STATUS "${LOCAL_SOURCES}")
-
 	add_library(utopia_petsc STATIC utopia_petsc.cpp ${LOCAL_SOURCES})
 
 	foreach(MODULE ${PETSC_MODULES})

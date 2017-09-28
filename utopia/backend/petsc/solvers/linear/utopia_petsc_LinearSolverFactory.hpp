@@ -18,7 +18,6 @@
 
 namespace utopia {
 
-	// -------------------------------------------PETSC------------------------------------------
 	template<typename Matrix, typename Vector>
 	class LinearSolverFactory<Matrix, Vector, PETSC> {
 	public: 

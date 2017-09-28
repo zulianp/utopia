@@ -23,6 +23,10 @@ if(TARGET utopia_blas)
 	target_link_libraries(utopia_tests utopia_blas)
 endif()
 
+if(TARGET utopia_cuda)
+	target_link_libraries(utopia_tests utopia_cuda)
+endif()
+
 install(TARGETS utopia_tests
 	RUNTIME DESTINATION bin 
 	LIBRARY DESTINATION lib 
