@@ -9,10 +9,11 @@
 #define UTOPIA_TR_STRATEGY_FACTORY_HPP
 
 #include "utopia_Core.hpp"
-
-#ifdef WITH_PETSC
-	#include "utopia_PETScKSPTR.hpp"
-#endif
+#include "utopia_Parameters.hpp"
+#include "utopia_Function.hpp"
+#include "utopia_FunctionNormalEq.hpp"
+#include "utopia_TRNormalEquation.hpp"
+#include "utopia_TrustRegion.hpp"
 
 namespace utopia 
 {
@@ -32,106 +33,6 @@ namespace utopia
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
 	class TRStrategyFactory;
-
-
-	/**
-	 * @brief      Front-end to create tr strategy objects.
-	 *
-	 * @tparam     Matrix  
-	 * @tparam     Vector  
-	 */
-	template<typename Matrix, typename Vector>
-	class TRStrategyFactory<Matrix, Vector, PETSC>
-	{
-		public: 
-			typedef std::shared_ptr< TRSubproblem<Matrix, Vector> > StrategyPtr;
-			std::map<std::string, StrategyPtr> strategies_;
-
-			inline static StrategyPtr new_trust_region_strategy(const std::string & tag)
-			{
-				auto it = instance().strategies_.find(tag);
-				if(it == instance().strategies_.end()) 
-				{
-					std::cout<<"Strategy not available, solving with SteihaugToint.  \n";  
-					return std::make_shared<utopia::SteihaugToint<Matrix, Vector> >(); 
-				} 
-				else 
-				{
-					return it->second;
-				}
-			}
-
-		private:
-			inline static const TRStrategyFactory &instance()
-			{
-				static TRStrategyFactory instance_;
-				instance_.init();
-				return instance_;
-
-			}
-
-			void init()
-			{	
-				strategies_[CAUCHYPOINT_TAG] 		= std::make_shared<utopia::CauchyPoint<Matrix, Vector> >(); 
-				strategies_[DOGLEG_TAG] 			= std::make_shared<utopia::Dogleg<Matrix, Vector> >(); 
-				#ifdef WITH_PETSC
-					strategies_[STEIHAUG_TOINT_TAG] = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg"); 
-					strategies_[TOINT_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("qcg"); 
-					strategies_[NASH_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("nash"); 
-					strategies_[LANCZOS_TAG] 		= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("gltr"); 
-					strategies_[CGNE_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("cgne"); 
-					strategies_[AUTO_TR_TAG] 		= std::make_shared<utopia::KSP_TR<Matrix, Vector> >(); 
-				#endif 	
-				
-			}
-	};
-
-
-	/**
-	 * @brief      Front-end to create tr strategy objects.
-	 *
-	 * @tparam     Matrix  
-	 * @tparam     Vector  
-	 */
-	template<typename Matrix, typename Vector>
-	class TRStrategyFactory<Matrix, Vector, BLAS>
-	{
-		public: 
-			typedef std::shared_ptr< TRSubproblem<Matrix, Vector> > StrategyPtr;
-			std::map<std::string, StrategyPtr> strategies_;
-
-			inline static StrategyPtr new_trust_region_strategy(const std::string & tag)
-			{
-				auto it = instance().strategies_.find(tag);
-				if(it == instance().strategies_.end()) 
-				{
-					std::cout<<"Strategy not available, solving with SteihaugToint.  \n";  
-					return std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();  
-				} 
-				else 
-				{
-					return it->second;
-				}
-			}
-
-		private:
-			inline static const TRStrategyFactory &instance()
-			{
-				static TRStrategyFactory instance_;
-				instance_.init();
-				return instance_;
-
-			}
-
-			void init()
-			{
-				strategies_[CAUCHYPOINT_TAG] 		= std::make_shared<utopia::CauchyPoint<Matrix, Vector> >(); 
-				strategies_[DOGLEG_TAG] 			= std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();  // THIS IS WRONG !!!!!!!
-				strategies_[STEIHAUG_TOINT_TAG] 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector> >(); 
-			}
-	};
-
-
 
 	template<class Matrix, class Vector>
 	typename TRStrategyFactory<Matrix, Vector>::StrategyPtr trust_region_strategy(const TRStrategyTag &tag = AUTO_TAG)
