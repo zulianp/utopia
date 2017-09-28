@@ -1,9 +1,7 @@
 #ifndef UTOPIA_LAPACK_EIGEN_SOLVER_HPP
 #define UTOPIA_LAPACK_EIGEN_SOLVER_HPP 
 
-
-#include "utopia_blas_Matrix.hpp"
-#include "utopia_blas.hpp"
+#include "utopia_blas_Types.hpp"
 
 namespace utopia {
 	class LapackEigenSolver {
