@@ -86,15 +86,14 @@ if(BLAS_FOUND OR OPEN_BLAS_FOUND)
 	add_definitions(${BLAS_DEFINITIONS})
 
 	if(LAPACK_FOUND)
-		target_include_directories(utopia_blas PUBLIC ${UMFPACK_INCLUDES})
+		target_include_directories(utopia_blas PUBLIC ${LAPACK_INCLUDE_DIR})
 		target_link_libraries(utopia_blas ${LAPACK_LIBRARIES})
 		add_definitions(${LAPACK_DEFINITIONS})
 	endif()
 
 	if(UMFPACK_FOUND)
-		target_include_directories(utopia_blas PUBLIC ${LAPACK_INCLUDE_DIR})
+		target_include_directories(utopia_blas PUBLIC ${UMFPACK_INCLUDES})
 		target_link_libraries(utopia_blas ${UMFPACK_LIBRARIES})
-		# add_definitions(${LAPACK_DEFINITIONS})
 	endif()
 
 	install(TARGETS utopia_blas
