@@ -5,6 +5,8 @@
 * @Last Modified time: 2017-01-21
 */
 #include "utopia_PETScKSPSolver.hpp"
+#include "utopia_PETScTypes.hpp"
+
 #include <petscksp.h>
 #include <petscpc.h>
 

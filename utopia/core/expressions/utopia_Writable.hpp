@@ -9,9 +9,9 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Config.hpp"
 
-#ifdef WITH_PETSC
-#include "utopia_PETScTraits.hpp"
-#endif //WITH_PETSC
+// #ifdef WITH_PETSC
+// #include "utopia_PETScTraits.hpp"
+// #endif //WITH_PETSC
 
 namespace utopia {
     template<class Implementation, class Derived, int Order>

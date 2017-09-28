@@ -245,10 +245,26 @@ with compile time decisions.
 * We will set-up a public repository soon complete with bugtracker.
 */
 
-#include "utopia_Solvers.hpp"
-#include "utopia_Backends.hpp"
-#include "utopia_Core.hpp"
+#include "utopia_Base.hpp"
 #include "utopia_Utils.hpp"
+#include "utopia_Core.hpp"
+#include "utopia_Solvers.hpp"
+
+#ifdef WITH_BLAS
+#include "utopia_blas.hpp"
+#endif //WITH_BLAS
+
+#ifdef WITH_PETSC
+#include "utopia_petsc.hpp"
+#endif //WITH_PETSC
+
+#ifdef WITH_CUDA
+#include "utopia_cuda.hpp"
+#endif //WITH_CUDA
+
+#ifdef WITH_UTOPIA_OPENCL
+#include "utopia_opencl.hpp"
+#endif //WITH_UTOPIA_OPENCL
 
 
 #endif //UTOPIA_HPP

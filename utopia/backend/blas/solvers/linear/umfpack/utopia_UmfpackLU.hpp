@@ -3,7 +3,7 @@
 #define UTOPIA_UTOPIA_UMFPACKLU_HPP
 
 #include "utopia_DirectSolver.hpp"
-#include "utopia_BLAS.hpp"
+#include "utopia_blas.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
 
 namespace utopia {

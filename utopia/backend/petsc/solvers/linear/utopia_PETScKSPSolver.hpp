@@ -7,18 +7,17 @@
 #ifndef UTOPIA_PETSC_KSP_H
 #define UTOPIA_PETSC_KSP_H
 
-#include "utopia_Core.hpp"
-#include "utopia_PETSc.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_PreconditionedSolver.hpp"
+
+#include "utopia_Core.hpp"
 
 #include <algorithm>
 #include <petscpc.h>
 #include <petscksp.h>
 #include <petscsys.h>
 
-namespace utopia 
-{
+namespace utopia {
 
 
     PetscErrorCode UtopiaPCApplyShell(PC pc, Vec x, Vec y);

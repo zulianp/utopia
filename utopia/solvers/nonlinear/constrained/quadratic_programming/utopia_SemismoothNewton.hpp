@@ -1,10 +1,14 @@
 #ifndef UTOPIA_SOLVER_SEMISMOOTH_NEWTON_HPP
 #define UTOPIA_SOLVER_SEMISMOOTH_NEWTON_HPP
 
-#include "utopia_Wrapper.hpp"
+
 #include "utopia_Function.hpp"
 #include "utopia_NonLinearSolver.hpp"
+#include "utopia_BoxConstraints.hpp"
+
+#include "utopia_Wrapper.hpp"
 #include "utopia_Core.hpp"
+
 #include <vector>
 #include <memory>
 

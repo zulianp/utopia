@@ -2,23 +2,25 @@
 #define UTOPIA_FACTORIZATION_HPP  
 
 #include "utopia_PETScKSPSolver.hpp"
+#include "utopia_DirectSolver.hpp"
 
 namespace utopia {
 
 	//FIXME
 	enum DirectSolverLib {
-	#ifdef WITH_PETSC
 		PETSC_TAG = 0,
-		#ifdef PETSC_HAVE_MUMPS
-			MUMPS_TAG = 1,
-		#endif //WITH_MUMPS   
-		#ifdef PETSC_HAVE_SUPERLU
-			SUPERLU_TAG = 2,
-		#endif //WITH_SUPERLU
-		#ifdef PETSC_HAVE_SUPERLU_DIST
-			SUPERLU_DIST_TAG = 3,
-		#endif //WITH_SUPERLU_DIST    	
-	#endif //WITH_PETSC    
+
+#ifdef PETSC_HAVE_MUMPS
+		MUMPS_TAG = 1,
+#endif //WITH_MUMPS   
+
+#ifdef PETSC_HAVE_SUPERLU
+		SUPERLU_TAG = 2,
+#endif //WITH_SUPERLU
+
+#ifdef PETSC_HAVE_SUPERLU_DIST
+		SUPERLU_DIST_TAG = 3,
+#endif //WITH_SUPERLU_DIST    	
 
 	};
 	

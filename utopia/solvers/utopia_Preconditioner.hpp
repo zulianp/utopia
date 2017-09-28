@@ -6,6 +6,10 @@
 #define UTOPIA_UTOPIA_PRECONDITIONER_HPP
 
 #include "utopia_Parameters.hpp"
+#include "utopia_StoreAs.hpp"
+#include "utopia_Expression.hpp"
+
+#include <memory>
 
 namespace utopia {
     template<class Vector>

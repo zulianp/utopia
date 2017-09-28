@@ -1,8 +1,3 @@
-
-#include "utopia_Base.hpp"
-
-#ifdef WITH_PETSC
-
 #ifndef UTOPIA_PETSC_HPP
 #define UTOPIA_PETSC_HPP 
 
@@ -17,5 +12,11 @@
 #include "utopia_PETScTypes.hpp"
 #include "utopia_PETScVector.hpp"
 
+#include "utopia_Eval_PETSc.hpp"
+#include "utopia_Eval_Inverse_PETSc.hpp"
+#include "utopia_petsc_RowView.hpp"
+
+#include "utopia_petsc_LinearSolverFactory.hpp"
+#include "utopia_petsc_solvers.hpp"
+
 #endif //UTOPIA_PETSC_HPP
-#endif //WITH_PETSC
