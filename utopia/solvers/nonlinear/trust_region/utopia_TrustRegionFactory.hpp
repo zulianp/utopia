@@ -32,7 +32,13 @@ namespace utopia
 
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-	class TRStrategyFactory;
+	class TRStrategyFactory {
+	public:
+		TRStrategyFactory()
+		{
+			static_assert(Backend < HOMEMADE, "TRStrategyFactory not implemented for this backend");
+		}
+	};
 
 	template<class Matrix, class Vector>
 	typename TRStrategyFactory<Matrix, Vector>::StrategyPtr trust_region_strategy(const TRStrategyTag &tag = AUTO_TAG)

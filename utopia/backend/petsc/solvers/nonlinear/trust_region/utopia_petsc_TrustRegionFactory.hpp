@@ -41,8 +41,8 @@ namespace utopia {
 
 		void init()
 		{	
-			strategies_[CAUCHYPOINT_TAG] 		= std::make_shared<utopia::CauchyPoint<Matrix, Vector> >(); 
-			strategies_[DOGLEG_TAG] 			= std::make_shared<utopia::Dogleg<Matrix, Vector> >(); 
+			strategies_[CAUCHYPOINT_TAG] 	= std::make_shared<utopia::CauchyPoint<Matrix, Vector> >(); 
+			strategies_[DOGLEG_TAG] 		= std::make_shared<utopia::Dogleg<Matrix, Vector> >(); 
 			strategies_[STEIHAUG_TOINT_TAG] = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg"); 
 			strategies_[TOINT_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("qcg"); 
 			strategies_[NASH_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("nash"); 
