@@ -115,6 +115,15 @@ namespace utopia {
         typedef typename Traits::SparseMatrix Type;
     };
 
+
+    template<class Traits, int Sparsity>
+    class TensorQuery<Traits, 4, Sparsity> {
+    public:
+        //FIXME dummy for 4th order tensor
+        typedef typename TensorQuery<Traits, 2, Sparsity>::Type Type;
+    };
+
+
     template<class Left, class Right>
     class MostDescriptive {
         public:

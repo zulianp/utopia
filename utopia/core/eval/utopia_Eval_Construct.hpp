@@ -10,6 +10,11 @@
 
 namespace utopia {
 
+    // [new backend map concept]
+    // [minimal] construct and assign can be merged to the same
+    // [optimized] backend (find out a way to provide user with better info about construction or assignment)
+
+
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Construct<Left, Right>, Traits, Backend> {
     public:

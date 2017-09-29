@@ -23,6 +23,9 @@ namespace utopia {
         	ASSERT(&cleft != &right && "should never happen");
         	const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), cleft); ASSERT(ok);
 
+            //[new backend map concept]
+            //[optimized][minimal] UTOPIA_BACKEND(Traits).apply(result, left, Multiplies, right); 
+
 			UTOPIA_LOG_END(expr);
         }
     };
@@ -48,6 +51,10 @@ namespace utopia {
         		const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), result);  ASSERT(ok);
         		cleft = result;
         	}
+
+            //[new backend map concept]
+            //[optimized][minimal] 
+            // UTOPIA_BACKEND(Traits).apply(result, left, Multiplies, right); 
 
             UTOPIA_LOG_END(expr);
         }
