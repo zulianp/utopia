@@ -248,7 +248,7 @@ namespace utopia {
 	void PetscBackend::size(const PETScMatrix &m, Size &size) 
 	{
 		PetscInt grows, gcols;
-		size.setDims(2);
+		size.set_dims(2);
 		MatGetSize(m.implementation(), &grows, &gcols);
 		size.set(0, grows);
 		size.set(1, gcols);
@@ -257,7 +257,7 @@ namespace utopia {
 	void PetscBackend::size(const PETScVector &m, Size &size) 
 	{
 		PetscInt n;
-		size.setDims(1);
+		size.set_dims(1);
 		VecGetSize(m.implementation(), &n);
 		size.set(0, n);
 	}
@@ -265,7 +265,7 @@ namespace utopia {
 	void PetscBackend::local_size(const PETScVector &m, Size &size) 
 	{
 		PetscInt n;
-		size.setDims(1);
+		size.set_dims(1);
 		VecGetLocalSize(m.implementation(), &n);
 		size.set(0, n);
 	}
@@ -273,7 +273,7 @@ namespace utopia {
 	void PetscBackend::local_size(const PETScMatrix &mat, Size &size)
 	{
 		PetscInt n, m;
-		size.setDims(2);
+		size.set_dims(2);
 		MatGetLocalSize(mat.implementation(), &n, &m);
 		size.set(0, n);
 		size.set(1, m);
@@ -740,19 +740,6 @@ namespace utopia {
 		VecAssemblyEnd(li);
 	}
 	
-	// void PetscBackend::scal(PETScMatrix &result, const Scalar alpha, const PETScMatrix &vec) {
-	// 	if(&result == &vec) {
-	// 		MatScale(result.implementation(), alpha);
-	// 	} else {
-	// 		assert(false); // FIXME
-	// 	}
-	// }
-	
-	// void PetscBackend::gemm(const Scalar /*alpha*/, const PETScMatrix &/*left*/, const PETScMatrix &/*right*/, const Scalar /* beta*/,
-	// 						PETScMatrix & /*result*/) {
-	// 	assert(false); //TODO
-	// }
-
 	void PetscBackend::gemm(
 		PETScMatrix &result,
 		const Scalar beta,
@@ -773,6 +760,7 @@ namespace utopia {
 		auto r = mat_pair.right();
 
 		MatDestroy( &result.implementation());
+
 		bool ok = false;
 		if(transpose_left && !transpose_right) {
 			ok = PETScError::Check(MatTransposeMatMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()));
@@ -788,6 +776,7 @@ namespace utopia {
 				ok = false;
 			} else {
 				assign_transposed(result, temp);
+				ok = true;
 			}
 		}
 

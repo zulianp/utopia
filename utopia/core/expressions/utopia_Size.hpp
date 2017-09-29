@@ -60,24 +60,11 @@ namespace utopia {
             copy(args.begin(), args.end(), _data.begin());
         }
 
-        void setDims(const SizeType n)
-        {
-            assert(n <= UTOPIA_MAX_TENSOR_ORDER);
-            _data.resize(n);
-        }
-
         void set_dims(const SizeType n)
         {
             assert(n <= UTOPIA_MAX_TENSOR_ORDER);
             _data.resize(n);
         }
-
-        
-        SizeType nDims() const
-        {
-            return n_dims();
-        }
-
 
         /**
          * @ingroup     size
@@ -107,9 +94,9 @@ namespace utopia {
 
         friend bool operator==(const Size &l, const Size &r)
         {
-            if(l.nDims() != r.nDims()) return false;
+            if(l.n_dims() != r.n_dims()) return false;
 
-            for(SizeType i = 0; i < l.nDims(); ++i) {
+            for(SizeType i = 0; i < l.n_dims(); ++i) {
                 if(l.get(i) != r.get(i)) return false;
             }
 
@@ -138,14 +125,14 @@ namespace utopia {
 
     inline Size kron_prod(const Size &left, const Size &right)
     {
-        Size ret(left.nDims() + right.nDims());
+        Size ret(left.n_dims() + right.n_dims());
 
-        for(Size::SizeType i = 0; i < left.nDims(); ++i) {
+        for(Size::SizeType i = 0; i < left.n_dims(); ++i) {
             ret.set(i, left.get(i));
         }
 
-        for(Size::SizeType i = 0; i < right.nDims(); ++i) {
-            ret.set(left.nDims() + i, right.get(i));
+        for(Size::SizeType i = 0; i < right.n_dims(); ++i) {
+            ret.set(left.n_dims() + i, right.get(i));
         }
 
         return ret;

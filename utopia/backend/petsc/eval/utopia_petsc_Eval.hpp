@@ -27,31 +27,11 @@ namespace utopia {
 		}
 	};
 
-	// template<class Left, class Right, class Traits>
-	// class Eval<MatrixPtAPProduct<Left, Right>, Traits, PETSC> {
-	// public:
-	// 	inline static EXPR_TYPE(Traits, Left) apply(const MatrixPtAPProduct<Left, Right> &expr)
-	// 	{
-	// 		EXPR_TYPE(Traits, Left) result;
-
-	// 		UTOPIA_LOG_BEGIN(expr);
-
-	// 		UTOPIA_BACKEND(Traits).triple_product_ptap(
-	// 			result,
-	// 			Eval<Left,  Traits>::apply(expr.left()),
-	// 			Eval<Right, Traits>::apply(expr.right()),
-	// 			);
-
-	// 		UTOPIA_LOG_END(expr);
-	// 		return result;
-	// 	}
-	// };
-
-	// general mat-mat-mat multiplication
+	// mat-mat-mat multiplication
 	template<class M1, class M2, class M3, class Traits>
-	class Eval< Multiply< Multiply< Wrapper<M1, 2 >, Wrapper<M2, 2 >>, Wrapper<M3, 2 > >,  Traits,  PETSC> {
+	class Eval< Multiply< Multiply< Wrapper<M1, 2>, Wrapper<M2, 2> >, Wrapper<M3, 2> >,  Traits,  PETSC> {
 		public:
-			typedef utopia::Multiply< Multiply< Wrapper<M1, 2 >, Wrapper<M2, 2 > >, Wrapper<M3, 2 > > Expr;
+			typedef utopia::Multiply< Multiply< Wrapper<M1, 2>, Wrapper<M2, 2> >, Wrapper<M3, 2> > Expr;
 
 			inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
 			{
@@ -105,17 +85,9 @@ namespace utopia {
 
 			} else {
 				//Perform general triple product
-				//Maybe map to L^T A R operation if available?
-				// UTOPIA_BACKEND(Traits).apply_binary(
-				// 	result,
-				// 	Eval<Multiply<Transposed<M1>, M2>, Traits>::apply(expr.left()),
-				// 	Multiplies(),
-				// 	Eval<M1, Traits>::apply(expr.right()),
-				// 	);
-
 				UTOPIA_BACKEND(Traits).triple_product(
 					result,
-					Eval<M1, Traits>::apply(expr.left().left()),
+					Eval<Transposed<M1>, Traits>::apply(expr.left().left()),
 					Eval<M2, Traits>::apply(expr.left().right()),
 					Eval<M1, Traits>::apply(expr.right())
 					);

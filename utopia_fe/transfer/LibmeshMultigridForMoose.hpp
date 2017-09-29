@@ -28,19 +28,11 @@
 #include <array>
 #include <vector>
 #include <algorithm>
+#include <numeric>
 
 namespace utopia {
     using namespace libMesh;
-    
-    template<typename T>
-    inline void Print(const std::vector<T> &v, std::ostream &os)
-    {
-        for(auto i : v) {
-            os << i << " ";
-        }
-        
-        os << "\n";
-    }
+
 
     template<int Dimension>
     class ElementAdapter : public moonolith::Serializable {

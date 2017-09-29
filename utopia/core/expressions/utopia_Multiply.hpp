@@ -52,7 +52,7 @@ namespace utopia {
         result.set(0, size(expr.left()).get(0));
 
         Size r_size = size(expr.right());
-        if(r_size.nDims() == 1) {
+        if(r_size.n_dims() == 1) {
             result.set(1, 1);
         } else {
             result.set(1, size(expr.right()).get(1));
