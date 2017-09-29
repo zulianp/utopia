@@ -41,7 +41,7 @@ namespace utopia {
 		}
 
 		template<typename VectorT>
-		bool apply(const Matrix &m, VectorT &&v, const Multiplies &, Vector &result)
+		bool apply_binary(Vector &result, const Matrix &m, const Multiplies &, VectorT &&v)
 		{
 			cuda_double::mat_vec_mul(m, v, result);
 			return true;

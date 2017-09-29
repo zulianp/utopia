@@ -384,6 +384,8 @@ namespace utopia {
 			gemv(result, 0.0, 1., transpose_left, left, right);
 		}
 
+	private:
+
 		static void gemm(
 			PETScMatrix &result,
 			const Scalar beta,
