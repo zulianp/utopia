@@ -19,40 +19,40 @@ namespace utopia {
                   std::initializer_list<SizeTypeT1> colptr,
                   std::initializer_list<SizeTypeT2> rowindex,
                   std::initializer_list<ScalarT> entries)
-                : _rows(rows), _cols(cols),
-                  _colptr(colptr.size()),
-                  _rowindex(rowindex.size()),
-                  _entries(entries.size()),
+                : rows_(rows), cols_(cols),
+                  colptr_(colptr.size()),
+                  rowindex_(rowindex.size()),
+                  entries_(entries.size()),
                   _editing(false)
         {
             using std::copy;
-            copy(colptr.begin(), colptr.end(), _colptr.begin());
-            copy(rowindex.begin(), rowindex.end(), _rowindex.begin());
-            copy(entries.begin(), entries.end(), _entries.begin());
+            copy(colptr.begin(), colptr.end(), colptr_.begin());
+            copy(rowindex.begin(), rowindex.end(), rowindex_.begin());
+            copy(entries.begin(), entries.end(), entries_.begin());
         }
 
         void initialize(const SizeType rows, const SizeType cols, const SizeType nnzXCol)
         {
             using std::fill;
-            _rows = rows;
-            _cols = cols;
+            rows_ = rows;
+            cols_ = cols;
 
             assert(nnzXCol>0);
 
-            _colptr.resize(_cols+1);
-            _rowindex.resize(_rows*nnzXCol);
-            _entries.resize(_rowindex.size());
+            colptr_.resize(cols_+1);
+            rowindex_.resize(rows_*nnzXCol);
+            entries_.resize(rowindex_.size());
 
-            fill(_entries.begin(), _entries.end(), 0);
+            fill(entries_.begin(), entries_.end(), 0);
 
-            _colptr[0] = 0;
-            for(SizeType i = 1; i < _colptr.size(); ++i) {
-                _colptr[i] = nnzXCol + _colptr[i-1];
+            colptr_[0] = 0;
+            for(SizeType i = 1; i < colptr_.size(); ++i) {
+                colptr_[i] = nnzXCol + colptr_[i-1];
             }
 
-            for(SizeType i = 0; i < _rows; ++i) {
+            for(SizeType i = 0; i < rows_; ++i) {
                 for(SizeType k = 0; k < nnzXCol; ++k) {
-                    _rowindex[i*nnzXCol+k] = k;
+                    rowindex_[i*nnzXCol+k] = k;
                 }
             }
 
@@ -66,72 +66,72 @@ namespace utopia {
                         std::initializer_list<ScalarT> entries)
         {
             using std::copy;
-            _rows = rows;
-            _cols = cols;
+            rows_ = rows;
+            cols_ = cols;
 
-            _colptr.resize(rows+1);
-            _rowindex.resize(rowindex.size());
-            _entries.resize(entries.size());
+            colptr_.resize(rows+1);
+            rowindex_.resize(rowindex.size());
+            entries_.resize(entries.size());
 
-            copy(colptr.begin(), colptr.end(), _colptr.begin());
-            copy(rowindex.begin(), rowindex.end(), _rowindex.begin());
-            copy(entries.begin(), entries.end(), _entries.begin());
+            copy(colptr.begin(), colptr.end(), colptr_.begin());
+            copy(rowindex.begin(), rowindex.end(), rowindex_.begin());
+            copy(entries.begin(), entries.end(), entries_.begin());
         }
 
         CCSMatrix(const SizeType rows, const SizeType cols, const SizeType nEntries)
-                : _rows(rows), _cols(cols), _colptr(rows+1, 0), _rowindex(nEntries, 0), _entries(nEntries, 0),  _editing(false)
+                : rows_(rows), cols_(cols), colptr_(rows+1, 0), rowindex_(nEntries, 0), entries_(nEntries, 0),  _editing(false)
         {}
 
         CCSMatrix()
-                : _rows(0), _cols(0), _editing(false)
+                : rows_(0), cols_(0), _editing(false)
         {}
 
         void clear() {
-            _rows = 0;
-            _cols = 0;
-            _colptr.clear();
-            _rowindex.clear();
-            _entries.clear();
+            rows_ = 0;
+            cols_ = 0;
+            colptr_.clear();
+            rowindex_.clear();
+            entries_.clear();
             _buffer.clear();
             _editing = false;
         }
 
-        SizeType getRows() const {
-            return _rows;
+        SizeType rows() const {
+            return rows_;
         }
 
-        SizeType getCols() const {
-            return _cols;
+        SizeType cols() const {
+            return cols_;
         }
 
         SizeType size() const {
-            return getRows() * getCols();
+            return rows() * cols();
         }
 
-        const Entries &getEntries() const {
-            return _entries;
+        const Entries &entries() const {
+            return entries_;
         }
 
         template<class EntriesT>
-        void setEntries(EntriesT &&entries) {
-            _entries = std::forward<EntriesT>(entries);
+        void set_entries(EntriesT &&entries) {
+            entries_ = std::forward<EntriesT>(entries);
         }
 
         inline Scalar &at(const SizeType index)
         {
             assert(!_editing);
-            assert(index < _entries.size());
-            return _entries[index];
+            assert(index < entries_.size());
+            return entries_[index];
         }
 
         inline const Scalar &at(const SizeType index) const
         {
             assert(!_editing);
-            assert(index < _entries.size());
-            return _entries[index];
+            assert(index < entries_.size());
+            return entries_[index];
         }
 
-        void assemblyBegin()
+        void assembly_begin()
         {
             _editing = true;
         }
@@ -140,43 +140,43 @@ namespace utopia {
         void resize(const SizeType rows, const SizeType cols)
         {
             clear();
-            this->_rows = rows;
-            this->_cols = cols;
+            this->rows_ = rows;
+            this->cols_ = cols;
         }
 
         void from(const MapMatrix &buffer)
         {
-            _colptr.resize(getRows()+1);
-            fill(_colptr.begin(), _colptr.end(), 0);
-            _rowindex.resize(buffer.size());
-            _entries.resize(buffer.size());
+            colptr_.resize(rows()+1);
+            fill(colptr_.begin(), colptr_.end(), 0);
+            rowindex_.resize(buffer.size());
+            entries_.resize(buffer.size());
 
 
             for(auto &e : buffer) {
-                ++_colptr[e.first.first+1];
+                ++colptr_[e.first.first+1];
             }
 
-            for(SizeType i = 0; i < getCols(); ++i) {
-                _colptr[i+1] += _colptr[i];
+            for(SizeType i = 0; i < cols(); ++i) {
+                colptr_[i+1] += colptr_[i];
             }
 
-            std::vector<SizeType> col_offsets(getCols());
+            std::vector<SizeType> col_offsets(cols());
             fill(col_offsets.begin(), col_offsets.end(), 0);
 
             for(auto &e : buffer) {
                 assert(e.first.first >= 0);
                 assert(e.first.second >= 0);
-                assert(e.first.first  < getCols());
-                assert(e.first.second < getRows());
+                assert(e.first.first  < cols());
+                assert(e.first.second < rows());
 
-                const SizeType index = _colptr[e.first.first] + col_offsets[e.first.first];
-                _rowindex[index] = e.first.second;
-                _entries[index] = e.second;
+                const SizeType index = colptr_[e.first.first] + col_offsets[e.first.first];
+                rowindex_[index] = e.first.second;
+                entries_[index] = e.second;
                 ++col_offsets[e.first.first];
             }
         }
 
-        void assemblyEnd()
+        void assembly_end()
         {
             using std::fill;
 
@@ -197,13 +197,13 @@ namespace utopia {
 
         void put(MapMatrix &mat, const bool map_transpose = false)
         {
-            for(SizeType c = 0; c != getRows(); ++c) {
-                for(SizeType k = _colptr[c]; k != _colptr[c+1]; ++k) {
-                    const SizeType r = _rowindex[k];
+            for(SizeType c = 0; c != rows(); ++c) {
+                for(SizeType k = colptr_[c]; k != colptr_[c+1]; ++k) {
+                    const SizeType r = rowindex_[k];
                     if(map_transpose) {
-                        mat[std::make_pair(r, c)] = _entries[k];
+                        mat[std::make_pair(r, c)] = entries_[k];
                     } else {
-                        mat[std::make_pair(c, r)] = _entries[k];
+                        mat[std::make_pair(c, r)] = entries_[k];
                     }
                 }
             }
@@ -211,8 +211,8 @@ namespace utopia {
 
 
         void set(const SizeType i, const SizeType j, const Scalar value) {
-            assert(i < getRows());
-            assert(j < getCols());
+            assert(i < rows());
+            assert(j < cols());
             assert(_editing);
 
             if(value == 0.0) return;
@@ -220,7 +220,7 @@ namespace utopia {
             const SizeType index = find_efficient(i, j);
             assert(find(i, j) == index);
             if(index != INVALID_INDEX) {
-                _entries[index] = value;
+                entries_[index] = value;
                 return;
             }
 
@@ -232,23 +232,23 @@ namespace utopia {
             using std::lower_bound;
             using std::distance;
 
-            if(_colptr.empty()) return INVALID_INDEX;
+            if(colptr_.empty()) return INVALID_INDEX;
 
-            if(_colptr[j+1] >= _rowindex.size()) {
+            if(colptr_[j+1] >= rowindex_.size()) {
                 return INVALID_INDEX;
             }
 
-            auto low = lower_bound(_rowindex.begin() + _colptr[j],  _rowindex.begin() + _colptr[j+1], j);
-            return (*low == i)? SizeType(distance(_rowindex.begin(), low)) : INVALID_INDEX;
+            auto low = lower_bound(rowindex_.begin() + colptr_[j],  rowindex_.begin() + colptr_[j+1], j);
+            return (*low == i)? SizeType(distance(rowindex_.begin(), low)) : INVALID_INDEX;
         }
 
 
         SizeType find(const SizeType i, const SizeType j)
         {
-            if(_colptr.empty()) return INVALID_INDEX;
+            if(colptr_.empty()) return INVALID_INDEX;
 
-            for(SizeType k = _colptr[j]; k != _colptr[j+1]; ++k) {
-                if(i == _rowindex[k]) {
+            for(SizeType k = colptr_[j]; k != colptr_[j+1]; ++k) {
+                if(i == rowindex_[k]) {
                     return k;
                 }
             }
@@ -258,9 +258,9 @@ namespace utopia {
 
         Scalar get(const SizeType i, const SizeType j) const {
             assert(!_editing);
-            for(SizeType k = _colptr[j]; k != _colptr[j+1]; ++k) {
-                if(i == _rowindex[k]) {
-                    return _entries[k];
+            for(SizeType k = colptr_[j]; k != colptr_[j+1]; ++k) {
+                if(i == rowindex_[k]) {
+                    return entries_[k];
                 }
             }
 
@@ -268,29 +268,29 @@ namespace utopia {
         }
 
         void setRows(SizeType rows) {
-            _rows = rows;
+            rows_ = rows;
         }
 
         void setCols(SizeType cols) {
-            _cols = cols;
+            cols_ = cols;
         }
 
         inline const std::vector<SizeType> &colptr() const {
-            return _colptr;
+            return colptr_;
         }
 
         inline const std::vector<SizeType> &rowindex() const {
-            return _rowindex;
+            return rowindex_;
         }
 
 
 
     private:
-        SizeType _rows;
-        SizeType _cols;
-        std::vector<SizeType> _colptr;
-        std::vector<SizeType> _rowindex;
-        std::vector<Scalar> _entries;
+        SizeType rows_;
+        SizeType cols_;
+        std::vector<SizeType> colptr_;
+        std::vector<SizeType> rowindex_;
+        std::vector<Scalar> entries_;
 
         MapMatrix _buffer;
         bool _editing;
@@ -301,13 +301,13 @@ namespace utopia {
     void disp(const Wrapper< CCSMatrix<T>, 2> &w, std::ostream &os)
     {
         os << "-------------------------------------------------------------------------\n";
-        os << w.implementation().getRows() << ", " << w.implementation().getCols() << "\n";
+        os << w.implementation().rows() << ", " << w.implementation().cols() << "\n";
         os << "colptr:\n";
         disp(w.implementation().colptr().begin(), w.implementation().colptr().end(), os);
         os << "\nrowindex:\n";
         disp(w.implementation().rowindex().begin(), w.implementation().rowindex().end(), os);
         os << "\nentries:\n";
-        disp(w.implementation().getEntries().begin(), w.implementation().getEntries().end(), os);
+        disp(w.implementation().entries().begin(), w.implementation().entries().end(), os);
         os << "-------------------------------------------------------------------------\n";
 
     }

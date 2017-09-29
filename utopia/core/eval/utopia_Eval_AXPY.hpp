@@ -18,18 +18,36 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            const bool ok = UTOPIA_BACKEND(Traits).zaxpy(
+            UTOPIA_BACKEND(Traits).assign(result, Eval<Left,  Traits>::apply(expr.left().right()) );
+            UTOPIA_BACKEND(Traits).axpy(
+                    result,
                     expr.left().left(),
-                    Eval<Left,  Traits>::apply(expr.left().right()),
-                    Eval<Right, Traits>::apply(expr.right()),
-                    result);
+                    Eval<Left, Traits>::apply(expr.left().right())
+                    );
+
+            UTOPIA_LOG_END(expr);
+            return result;
+        }
+    };
 
 
-            // [new backend map concept]
-            // UTOPIA_BACKEND(Traits).apply(result, y);
-            // UTOPIA_BACKEND(Traits).apply(result, PlusEqual, alpha, Multiplies, x);
+    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
+    class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Plus>, Traits, Backend> {
+    public:
+        inline static EXPR_TYPE(Traits, Right)
+        apply(const Binary< Binary<Left, Number<ScalarT>, Multiplies>, Right, Plus > &expr)
+        {
+            EXPR_TYPE(Traits, Right) result;
 
-            ASSERT(ok);
+            UTOPIA_LOG_BEGIN(expr);
+
+            UTOPIA_BACKEND(Traits).assign(result, Eval<Right,  Traits>::apply(expr.right()) );
+            UTOPIA_BACKEND(Traits).axpy(
+                    result,
+                    expr.left().right(),
+                    Eval<Left, Traits>::apply(expr.left().left())
+                    );
+
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -44,7 +62,7 @@ namespace utopia {
                      >,
                Traits, Backend> {
     public:
-        inline static bool apply(const Assign<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies> > &expr) {
+        inline static void apply(const Assign<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies> > &expr) {
             UTOPIA_LOG_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).build(
@@ -59,17 +77,7 @@ namespace utopia {
                     Eval<Left, Traits>::apply(expr.left())
             );
 
-            // [new backend map concept]
-            // [minimal] backend
-            // UTOPIA_BACKEND(Traits).apply(result, Identity);
-            // UTOPIA_BACKEND(Traits).apply(result, MultipliesEqual, alpha);
-
-            // [optimized] backend
-            // UTOPIA_BACKEND(Traits).apply(result, alpha, Multiplies, Identity);
-
-            //FIXME error handling
             UTOPIA_LOG_END(expr);
-            return true;
         }
     };
 
@@ -82,15 +90,8 @@ namespace utopia {
             UTOPIA_LOG_BEGIN(expr);
 
             typename TypeAndFill<Traits, Left>::Type result = Eval<Left, Traits>::apply(expr.left());
-            const bool ok = UTOPIA_BACKEND(Traits).mat_diag_shift(result, 1.0);
-            ASSERT(ok);
+            UTOPIA_BACKEND(Traits).mat_diag_shift(result, 1.0);
 
-            // [new backend map concept]
-            // [minimal] backend
-            //(REMOVE)
-
-            // [optimized] backend
-            // UTOPIA_BACKEND(Traits).apply(result, PlusEqual, 1., Multiplies, Identity);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -106,49 +107,14 @@ namespace utopia {
             UTOPIA_LOG_BEGIN(expr);
 
             EXPR_TYPE(Traits, Left) result = Eval<Left, Traits>::apply(expr.left());
-            const bool ok = UTOPIA_BACKEND(Traits).mat_diag_shift(result, expr.right().left());
-            ASSERT(ok);
-
-
-            // [new backend map concept]
-            // [minimal] backend
-            //(REMOVE)
-
-            // [optimized] backend
-            // UTOPIA_BACKEND(Traits).apply(result, PlusEqual, alpha, Multiplies, Identity);
+            UTOPIA_BACKEND(Traits).mat_diag_shift(result, expr.right().left());
 
             UTOPIA_LOG_END(expr);
             return result;
         }
     };
 
-    template<class Left, class Right, typename ScalarT, class Traits, int Backend>
-    class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Plus>, Traits, Backend> {
-    public:
-        inline static EXPR_TYPE(Traits, Right)
-        apply(const Binary< Binary<Left, Number<ScalarT>, Multiplies>, Right, Plus > &expr)
-        {
-            EXPR_TYPE(Traits, Right) result;
 
-            UTOPIA_LOG_BEGIN(expr);
-
-            const bool ok = UTOPIA_BACKEND(Traits).zaxpy(
-                    expr.left().right(),
-                    Eval<Left,  Traits>::apply(expr.left().left()),
-                    Eval<Right, Traits>::apply(expr.right()),
-                    result
-            );
-
-            ASSERT(ok);
-
-            // new backend map concept
-            // [minimal][optimized] backend
-            // UTOPIA_BACKEND(Traits).apply(result, right); 
-            // UTOPIA_BACKEND(Traits).apply(result, PlusEqual, alpha, Multiplies, left);
-            UTOPIA_LOG_END(expr);
-            return result;
-        }
-    };
 
 
     template<class Left, class Right, typename ScalarT, class Traits, int Backend>
@@ -161,19 +127,12 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            const bool ok = UTOPIA_BACKEND(Traits).zaxpy(
+            UTOPIA_BACKEND(Traits).zaxpy(
                     -expr.left().right(),
                      Eval<Left,  Traits>::apply(expr.left().left()),
                      Eval<Right, Traits>::apply(expr.right()),
                      result
             );
-
-            ASSERT(ok);
-
-            // new backend map concept
-            // [minimal][optimized] backend
-            // UTOPIA_BACKEND(Traits).apply(result, Minus, right); 
-            // UTOPIA_BACKEND(Traits).apply(result, PlusEqual, alpha, Multiplies, left);
 
             UTOPIA_LOG_END(expr);
             return result;

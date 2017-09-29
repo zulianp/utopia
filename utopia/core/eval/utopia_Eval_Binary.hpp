@@ -20,50 +20,17 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            const bool ok =UTOPIA_BACKEND(Traits).apply(
-                    expr.left(),
-                    Eval<Right, Traits>::apply(expr.right()),
-                    expr.operation(),
-                    result);
-
-            ASSERT(ok);
-
-
-            // [cleaup] This eval maybe can be removed completely
-            // [new backend map concept]
-            // [optimized][minimal] backend
-            // UTOPIA_BACKEND(Traits).apply(result, alpha, Operation, right);
+            UTOPIA_BACKEND(Traits).apply_binary(
+                result,
+                expr.left(),
+                expr.operation(),
+                Eval<Right, Traits>::apply(expr.right())
+                );
 
             UTOPIA_LOG_END(expr);
             return result;
         }
     };
-
-    template<class Left, class Right, class Traits, int Backend>
-    class Eval<OuterProduct<Left, Right>, Traits, Backend> {
-    public:
-        typedef utopia::OuterProduct<Left, Right> Expr;
-
-        inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr) {
-            EXPR_TYPE(Traits, Expr) result;
-
-            UTOPIA_LOG_BEGIN(expr);
-
-            UTOPIA_BACKEND(Traits).outer(
-                    Eval<Left, Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right()),
-                    result
-            );
-
-            // [new backend map concept]
-            // [optimized][minimal] backend
-            // UTOPIA_BACKEND(Traits).apply(result, left, Kron, right);
-
-            UTOPIA_LOG_END(expr);
-            return result;
-        }
-    };
-
 
     template<class Left, class Right, class Operation, class Traits, int Backend>
     class Eval<Binary<Left, Right, Operation>, Traits, Backend> {
@@ -75,18 +42,12 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            const bool ok = UTOPIA_BACKEND(Traits).apply(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right()),
-                    expr.operation(),
-                    result
-            );
-
-            ASSERT(ok);
-
-            // [new backend map concept]
-            // [optimized][minimal] backend
-            // UTOPIA_BACKEND(Traits).apply(result, left, Operation, right);
+            UTOPIA_BACKEND(Traits).apply_binary(
+                result,
+                Eval<Left,  Traits>::apply(expr.left()),
+                expr.operation(),
+                Eval<Right, Traits>::apply(expr.right())                 
+                );
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -104,23 +65,40 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            bool ok = UTOPIA_BACKEND(Traits).apply(
-                    expr.right(),
-                    Eval<Left, Traits>::apply(expr.left()),
-                    expr.operation(),
-                    result);
+            UTOPIA_BACKEND(Traits).apply_binary(
+                result,
+                expr.right(),
+                expr.operation(),
+                Eval<Left, Traits>::apply(expr.left())
+                );
 
-            ASSERT(ok);
-
-            // [cleaup] This eval maybe can be removed completely
-            // [new backend map concept]
-            // [optimized][minimal] backend
-            // UTOPIA_BACKEND(Traits).apply(result, alpha, Multiples, right);
-
-			UTOPIA_LOG_END(expr);
+            UTOPIA_LOG_END(expr);
             return result;
         }
     };
+
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<OuterProduct<Left, Right>, Traits, Backend> {
+    public:
+        typedef utopia::OuterProduct<Left, Right> Expr;
+
+        inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr) {
+            EXPR_TYPE(Traits, Expr) result;
+
+            UTOPIA_LOG_BEGIN(expr);
+
+            UTOPIA_BACKEND(Traits).kronecker_product(
+                result,
+                Eval<Left, Traits>::apply(expr.left()),
+                Eval<Right, Traits>::apply(expr.right())
+                );
+
+            UTOPIA_LOG_END(expr);
+            return result;
+        }
+    };
+
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_BINARY_HPP_HPP
