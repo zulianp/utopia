@@ -209,6 +209,16 @@ namespace utopia {
         assert(approxeq(m_exp, m1));
     }
 
+    void blas_axpy_test()
+    {
+        Vectord w1({1., 2., 3.});
+        Vectord w2({4., 5., 6.});
+        Vectord actual = w1 + 0.1 * w2;
+        Vectord expected({1.4, 2.5, 3.6});
+
+        assert(approxeq(expected, actual));
+    }
+
     void blas_norm_test() {
         Vectord w1({10.0, 3.0, 1.0});
         Vectord w2({20.0, 2.0, 3.0});
@@ -219,6 +229,7 @@ namespace utopia {
 
         wresult = twiceaxpy;
         Vectord wexp({-11.1, -2.93, -1.21});
+
         assert(approxeq(wexp, wresult));
 
         Real val = norm2(twiceaxpy);
@@ -304,6 +315,7 @@ namespace utopia {
 #ifdef WITH_BLAS
         UTOPIA_UNIT_TEST_BEGIN("BLASTest");
         UTOPIA_RUN_TEST(blas_test);
+        UTOPIA_RUN_TEST(blas_axpy_test);
         UTOPIA_RUN_TEST(blas_function_test);
         UTOPIA_RUN_TEST(blas_solver_test);
         UTOPIA_RUN_TEST(blas_inplace_test);

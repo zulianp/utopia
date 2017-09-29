@@ -183,6 +183,11 @@ namespace utopia {
         
         std::string getClass() const { return "Reciprocal"; }
 
+        template<typename T2>
+        inline T2 apply(const T2 &x) const {
+            return numerator_/x;
+        }
+
         Reciprocal(const T &numerator)
                 : numerator_(numerator)
         {}

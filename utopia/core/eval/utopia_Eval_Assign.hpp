@@ -18,8 +18,6 @@ namespace utopia {
             UTOPIA_BACKEND(Traits).assign(Eval<Left,  Traits>::apply(expr.left()),
                                           Eval<Right, Traits>::apply(expr.right()) );
 
-            //FIXME error handling
-
             UTOPIA_LOG_END(expr);
             return true;
         }
@@ -39,8 +37,6 @@ namespace utopia {
             UTOPIA_BACKEND(Traits).assign_to_range(Eval<Left,  Traits>::apply(expr.left().expr()),
                                                  Eval<Right, Traits>::apply(expr.right()),
                                                  rr, cr);
-            //FIXME error handling
-
             UTOPIA_LOG_END(expr);
             return true;
         }
