@@ -60,6 +60,7 @@ namespace utopia {
 		static void resize(PETScVector &mat, const Size &size);
 		static void resize(PETScVector &vec, const Size &s_local, const Size &s_global);
 		
+		//[io]
 		// read matrix
 		static bool read(const std::string &path, PETScMatrix &Mat_A);
 		// write matrix
@@ -118,6 +119,8 @@ namespace utopia {
 		static void set(PETScSparseMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
 		static void add(PETScMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
 		
+
+		//[host/device locks]
 		template<class Tensor>
 		static void read_lock(const Tensor &) {}
 		
@@ -259,9 +262,13 @@ namespace utopia {
 			write_unlock(result);
 		}
 
+		//[specialized]
 		static void mat_mult_add(PETScVector &result, const PETScMatrix &m, const PETScVector &right, const PETScVector &left);
-		static void mat_mult_t_add(PETScVector &result, const PETScMatrix &m, const PETScVector &right, const PETScVector &left);
-		
+		static void mat_mult_t_add(PETScVector &result, const PETScMatrix &m, const PETScVector &right, const PETScVector &left);		
+		static void triple_product_ptap(PETScMatrix &result, const PETScMatrix &, const PETScMatrix &); 
+		static void triple_product(PETScMatrix &result, const PETScMatrix &, const PETScMatrix &, const PETScMatrix &); 
+
+
 		static Scalar norm2(const PETScVector &v);
 		static Scalar norm2(const Matrix &m);
 		static Scalar norm1(const PETScVector &v);
@@ -325,9 +332,6 @@ namespace utopia {
 		// this is not very correct yet ...
 		static void build_local_diag_block(PETScSerialSparseMatrix &left, const PETScSparseMatrix &right);
 		static void build_local_redistribute(PETScVector &result, const PETScVector &, const PETScVector &); 
-
-		static void triple_product_ptap(PETScMatrix &result, const PETScMatrix &, const PETScMatrix &); 
-		static void triple_product(PETScMatrix &result, const PETScMatrix &, const PETScMatrix &, const PETScMatrix &); 
 
 		static bool is_nan_or_inf(const PETScVector &v); 
 		static bool is_nan_or_inf(const PETScMatrix &m); 
