@@ -4,10 +4,12 @@
 #include "utopia_Config.hpp"
 
 #ifdef WITH_PETSC
-
 #include "petscsys.h"
-
-#endif
+#else
+#ifdef WITH_MPI
+#include <mpi.h>
+#endif //WITH_MPI
+#endif //WITH_PETSC
 
 namespace utopia {
 
@@ -18,7 +20,11 @@ namespace utopia {
 
     PetscInitialize(&argc, &argv, (char *) 0, help);
 //        PetscInitializeNoArguments();
-#endif
+#else
+#ifdef WITH_MPI
+    MPI_Init(&argc, &argv);
+#endif //WITH_MPI
+#endif //WITH_PETSC
   }
 
 
@@ -29,7 +35,11 @@ namespace utopia {
 
 #ifdef WITH_PETSC
     PetscFinalize();
-#endif
+#else
+#ifdef WITH_MPI
+    return MPI_Finalize();
+#endif //WITH_MPI
+#endif //WITH_PETSC
 
     return 0;
   }
@@ -44,7 +54,6 @@ namespace utopia {
  {
   set("data_path", "../data");
   set("opencl_templates_path", "../backend/opencl/templates");
-
 }
 
 bool Utopia::verbose() const
