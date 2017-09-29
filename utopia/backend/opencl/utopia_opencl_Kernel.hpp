@@ -218,7 +218,7 @@ namespace utopia {
 				int arg_num_left  = env.new_arg(make_var_wrapper(node.left()));
 				int arg_num_right = env.new_arg(make_var_wrapper(node.right()));
 				int arg_num_rows  = env.new_arg(make_var_copy(Number<int>(s.get(0))));
-				int arg_num_cols  = env.new_arg(make_var_copy(Number<int>(s.nDims() == 1? 1 : s.get(1))));
+				int arg_num_cols  = env.new_arg(make_var_copy(Number<int>(s.n_dims() == 1? 1 : s.get(1))));
 				
 				std::string var_name_left  = "arg_" + std::to_string(arg_num_left);
 				std::string var_name_right = "arg_" + std::to_string(arg_num_right);
@@ -438,7 +438,7 @@ namespace utopia {
 				{
 					if(has_mat_mat_mul(expr.right())) {
 						Size s = size(expr.right());
-						for(SizeType i = 0; i < s.nDims(); ++i) {
+						for(SizeType i = 0; i < s.n_dims(); ++i) {
 							env_->new_arg(make_var_copy(utopia::Number<int>(s.get(i))));
 						}
 					}
@@ -473,7 +473,7 @@ namespace utopia {
 				void pre_order_visit(const Factory<Identity, Order> &factory)
 				{
 					Size s = size(factory);
-					assert(Order == s.nDims() && "must have consitend sizes and order");
+					assert(Order == s.n_dims() && "must have consitend sizes and order");
 					for(SizeType i = 0; i < Order; ++i) {
 						env_->new_arg(make_var_copy(utopia::Number<int>(s.get(i))));
 					}
@@ -484,7 +484,7 @@ namespace utopia {
 				{
 					Size s = size(expr.left());	
 					env_->new_arg(make_var_copy(utopia::Number<int>(s.get(0))));
-					env_->new_arg(make_var_copy(utopia::Number<int>(s.nDims() == 1? 1 : s.get(1))));
+					env_->new_arg(make_var_copy(utopia::Number<int>(s.n_dims() == 1? 1 : s.get(1))));
 					
 					if(utopia::order(expr) == 2) {
 						Size s_right = size(expr.right());
@@ -612,7 +612,7 @@ namespace utopia {
 				Size s = size(expr.expr());
 
 				int n_entries_to_reduce = s.get(0);
-				for(SizeType i = 1; i < s.nDims(); ++i) {
+				for(SizeType i = 1; i < s.n_dims(); ++i) {
 					n_entries_to_reduce *= s.get(i);
 				}
 				
@@ -718,7 +718,7 @@ namespace utopia {
 				// std::cout << "additional args: " << env_.args().size() << std::endl;
 
 				int n_entries = s.get(0);
-				for(SizeType i = 1; i < s.nDims(); ++i) {
+				for(SizeType i = 1; i < s.n_dims(); ++i) {
 					n_entries *= s.get(i);
 				}
 

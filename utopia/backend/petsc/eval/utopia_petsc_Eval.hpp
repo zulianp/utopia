@@ -14,50 +14,24 @@ namespace utopia {
 	class Eval<Construct<Left, LocalDiagBlock<Right> >, Traits, PETSC> {
 	public:
 
-		inline static bool apply(const Construct<Left, LocalDiagBlock<Right> > & expr)
+		inline static void apply(const Construct<Left, LocalDiagBlock<Right> > & expr)
 		{
 			UTOPIA_LOG_BEGIN(expr);
 
-			const bool ok = UTOPIA_BACKEND(Traits).build_local_diag_block(
+			UTOPIA_BACKEND(Traits).build_local_diag_block(
 				Eval<Left,  Traits>::apply(expr.left()),
 				Eval<Right, Traits>::apply(expr.right().expr())
 				);
 
-			ASSERT(ok);
-
 			UTOPIA_LOG_END(expr);
-			return ok;
 		}
 	};
 
-	template<class Left, class Right, class Traits>
-	class Eval<MatrixPtAPProduct<Left, Right>, Traits, PETSC> {
-	public:
-		inline static EXPR_TYPE(Traits, Left) apply(const MatrixPtAPProduct<Left, Right> &expr)
-		{
-			EXPR_TYPE(Traits, Left) result;
-
-			UTOPIA_LOG_BEGIN(expr);
-
-			const bool ok = UTOPIA_BACKEND(Traits).triple_product_PtAP(
-				Eval<Left,  Traits>::apply(expr.left()),
-				Eval<Right, Traits>::apply(expr.right()),
-				result
-				);
-
-			ASSERT(ok);
-
-			UTOPIA_LOG_END(expr);
-			return result;
-		}
-	};
-
-	// general mat-mat-mat multiplication
+	// mat-mat-mat multiplication
 	template<class M1, class M2, class M3, class Traits>
-	class Eval< Multiply< Multiply< Wrapper<M1, 2 >, Wrapper<M2, 2 >>, Wrapper<M3, 2 > >,  Traits,  PETSC>
-	{
+	class Eval< Multiply< Multiply< Wrapper<M1, 2>, Wrapper<M2, 2> >, Wrapper<M3, 2> >,  Traits,  PETSC> {
 		public:
-			typedef utopia::Multiply< Multiply< Wrapper<M1, 2 >, Wrapper<M2, 2 > >, Wrapper<M3, 2 > > Expr;
+			typedef utopia::Multiply< Multiply< Wrapper<M1, 2>, Wrapper<M2, 2> >, Wrapper<M3, 2> > Expr;
 
 			inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
 			{
@@ -65,15 +39,13 @@ namespace utopia {
 
 				UTOPIA_LOG_BEGIN(expr);
 
-				//Perform optimal triple product
-				const bool ok = UTOPIA_BACKEND(Traits).triple_product(
-					Eval<Wrapper<M1, 2 >, Traits>::apply(expr.left().left()),
-					Eval<Wrapper<M2, 2 >, Traits>::apply(expr.left().right()),
-					Eval<Wrapper<M3, 2 >, Traits>::apply(expr.right()),
-					result
+				//Performs optimal triple product
+				UTOPIA_BACKEND(Traits).triple_product(
+					result,
+					Eval<Wrapper<M1, 2>, Traits>::apply(expr.left().left()),
+					Eval<Wrapper<M2, 2>, Traits>::apply(expr.left().right()),
+					Eval<Wrapper<M3, 2>, Traits>::apply(expr.right())
 					);
-
-				ASSERT(ok);
 
 				UTOPIA_LOG_END(expr);
 				return result;
@@ -105,22 +77,20 @@ namespace utopia {
 			//Check if left and right operands are the same object
 			if(&expr.left().left().expr() == &expr.right()) {
 				//Perform optimal triple product
-				const bool ok = UTOPIA_BACKEND(Traits).triple_product_PtAP(
+				UTOPIA_BACKEND(Traits).triple_product_ptap(
+					result,
 					Eval<M1, Traits>::apply(expr.left().right()),
-					Eval<M2, Traits>::apply(expr.right()),
-					result
+					Eval<M2, Traits>::apply(expr.right())
 					);
-
-				ASSERT(ok);
 
 			} else {
 				//Perform general triple product
-				//Maybe map to L^T A R operation if available?
-				UTOPIA_BACKEND(Traits).apply(
-					Eval<Multiply<Transposed<M1>, M2>, Traits>::apply(expr.left()),
-					Eval<M1, Traits>::apply(expr.right()),
-					Multiplies(),
-					result);
+				UTOPIA_BACKEND(Traits).triple_product(
+					result,
+					Eval<Transposed<M1>, Traits>::apply(expr.left().left()),
+					Eval<M2, Traits>::apply(expr.left().right()),
+					Eval<M1, Traits>::apply(expr.right())
+					);
 			}
 
 			UTOPIA_LOG_END(expr);
@@ -140,13 +110,12 @@ namespace utopia {
 
 			UTOPIA_LOG_BEGIN(expr);
 
-			const bool ok = UTOPIA_BACKEND(Traits).build_local_redistribute(
+			UTOPIA_BACKEND(Traits).build_local_redistribute(
+				result,
 				Eval<Left,  Traits>::apply(expr.left()),
-				Eval<Right, Traits>::apply(expr.right()),
-				result
+				Eval<Right, Traits>::apply(expr.right())
 				);
 
-			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;
@@ -171,25 +140,21 @@ namespace utopia {
 
 	    inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr)
 	    {
-	        EXPR_TYPE(Traits, Expr) result;
+	        EXPR_TYPE(Traits, Expr) result = Eval<Right, Traits>::apply(expr.right().right());
 
 	        UTOPIA_LOG_BEGIN(expr);
 
-	        const bool ok = UTOPIA_BACKEND(Traits).waxpby(
+	        UTOPIA_BACKEND(Traits).axpby(
+	        		result,	
 	        		expr.left().left(),
 	        		Eval<Left,  Traits>::apply(expr.left().right()),
-	        		expr.right().left(),
-	        		Eval<Right, Traits>::apply(expr.right().right()),
-	                result
+	        		expr.right().left()
 	        );
-
-	        ASSERT(ok);
 
 	        UTOPIA_LOG_END(expr);
 	        return result;
 	    }
 	};
-
 
 	template<class M, class V1, class V2, class Traits>
 	class Eval<
@@ -205,21 +170,17 @@ namespace utopia {
 
 			UTOPIA_LOG_BEGIN(expr);
 
-			const bool ok = UTOPIA_BACKEND(Traits).mat_mult_add(
+			UTOPIA_BACKEND(Traits).mat_mult_add(
+				result,
 				Eval<Wrapper<M, 2>,  Traits>::apply(expr.left().left()),
 				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left().right()),
-				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right()),
-				result
+				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right())
 			);
-
-			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;
 		}
 	};
-
-
 
 	template<class M, class V1, class V2, class Traits>
 	class Eval<
@@ -235,21 +196,17 @@ namespace utopia {
 
 			UTOPIA_LOG_BEGIN(expr);
 
-			const bool ok = UTOPIA_BACKEND(Traits).mat_mult_add(
+			UTOPIA_BACKEND(Traits).mat_mult_add(
+				result,
 				Eval<Wrapper<M, 2>,  Traits>::apply(expr.right().left()),
 				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right().right()),
-				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left()),
-				result
+				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left())
 			);
-
-			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;
 		}
 	};
-
-
 
 	template<class M, class V1, class V2, class Traits>
 	class Eval<
@@ -265,21 +222,17 @@ namespace utopia {
 
 			UTOPIA_LOG_BEGIN(expr);
 
-			const bool ok = UTOPIA_BACKEND(Traits).mat_multT_add(
+			UTOPIA_BACKEND(Traits).mat_mult_t_add(
+				result,
 				Eval<Wrapper<M, 2>,  Traits>::apply(expr.left().left().expr()),
 				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left().right()),
-				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right()),
-				result
+				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right())
 			);
-
-			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;
 		}
 	};
-
-
 
 	template<class M, class V1, class V2, class Traits>
 	class Eval<
@@ -295,21 +248,17 @@ namespace utopia {
 
 			UTOPIA_LOG_BEGIN(expr);
 
-			const bool ok = UTOPIA_BACKEND(Traits).mat_multT_add(
+			UTOPIA_BACKEND(Traits).mat_mult_t_add(
+				result,
 				Eval<Wrapper<M, 2>,  Traits>::apply(expr.right().left().expr()),
 				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right().right()),
-				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left()),
-				result
+				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left())
 			);
-
-			ASSERT(ok);
 
 			UTOPIA_LOG_END(expr);
 			return result;
 		}
 	};
-
-	//for later PetscErrorCode MatGetRowMax(Mat mat,Vec v,PetscInt idx[]) c = min(mat, 1); r = min(mat, 0)
 }
 
 #endif //UTOPIA_EVAL_PETSC_HPP

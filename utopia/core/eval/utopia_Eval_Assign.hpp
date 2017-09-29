@@ -18,8 +18,6 @@ namespace utopia {
             UTOPIA_BACKEND(Traits).assign(Eval<Left,  Traits>::apply(expr.left()),
                                           Eval<Right, Traits>::apply(expr.right()) );
 
-            //FIXME error handling
-
             UTOPIA_LOG_END(expr);
             return true;
         }
@@ -36,11 +34,9 @@ namespace utopia {
             auto rr = row_range(left);
             auto cr = col_range(left);
 
-            UTOPIA_BACKEND(Traits).assignToRange(Eval<Left,  Traits>::apply(expr.left().expr()),
+            UTOPIA_BACKEND(Traits).assign_to_range(Eval<Left,  Traits>::apply(expr.left().expr()),
                                                  Eval<Right, Traits>::apply(expr.right()),
                                                  rr, cr);
-            //FIXME error handling
-
             UTOPIA_LOG_END(expr);
             return true;
         }
@@ -59,14 +55,9 @@ namespace utopia {
             auto rr = row_range(left);
             auto cr = col_range(left);
 
-            UTOPIA_BACKEND(Traits).assignToRange(Eval<LeftWrapper, Traits>::apply(expr.left().expr()),
+            UTOPIA_BACKEND(Traits).assign_to_range(Eval<LeftWrapper, Traits>::apply(expr.left().expr()),
                                                  Eval<Right, Traits>::apply(expr.right()),
                                                  rr, cr);
-
-
-            //[new backend map concept]
-            //UTOPIA_BACKEND(Traits).apply(row_range, col_range, lhs, rhs)
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
             return true;
@@ -80,15 +71,10 @@ namespace utopia {
         {
             UTOPIA_LOG_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assignTransposed(
+            UTOPIA_BACKEND(Traits).assign_transposed(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Wrapper<Right, 2>, Traits>::apply(expr.right().expr())
             );
-
-            //[new backend map concept]
-            //UTOPIA_BACKEND(Traits).apply(lhs, true, rhs)
-
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
             return true;
@@ -102,17 +88,12 @@ namespace utopia {
         {
             UTOPIA_LOG_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assignFromRange(
+            UTOPIA_BACKEND(Traits).assign_from_range(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right().expr()),
                     row_range(expr.right()),
                     col_range(expr.right())
             );
-
-            //[new backend map concept]
-            //UTOPIA_BACKEND(Traits).apply(lhs, row_range, col_range, rhs)
-
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
             return true;

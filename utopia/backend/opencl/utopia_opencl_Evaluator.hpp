@@ -52,14 +52,14 @@ namespace utopia {
 		template<class Tensor>
 		void eval(const Wrapper<Tensor, 1> &expr, Size &size)
 		{
-			size.setDims(1);
+			size.set_dims(1);
 		  	size.set(0, raw_type(expr).entries.size());
 		}
 
 		template<class Tensor>
 		void eval(const Wrapper<Tensor, 2> &expr, Size &size)
 		{
-			size.setDims(2);
+			size.set_dims(2);
 		  	size.set(0, raw_type(expr).rows);
 		  	size.set(1, raw_type(expr).cols);
 		}

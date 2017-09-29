@@ -17,14 +17,12 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-	        const bool ok = UTOPIA_BACKEND(Traits).apply_tensor_reduce(
+	        UTOPIA_BACKEND(Traits).apply_tensor_reduce(
+	        		result,
 	                Eval<Expr,  Traits>::apply(expr.expr()),
 	                expr.operation(),
-	                expr.dim(),
-	                result
+	                expr.dim()
 	        );
-
-	        ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
 	        return result;

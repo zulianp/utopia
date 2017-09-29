@@ -681,7 +681,7 @@ namespace utopia {
         });
     }
 
-    void petsc_test_mat_ptap_product()
+    void petsc_test_ptap()
     {
         const int n = mpi_world_size() * 3;
         DSMatrixd P = identity(n, n);
@@ -689,7 +689,7 @@ namespace utopia {
         DSMatrixd C = identity(n, n);
         DSMatrixd PtAP, ABC, PAPt;
 
-        //The next line is equivalent to this:  PtAP = mat_PtAP_product(P, A); since it is pattern matched
+        //The next line is equivalent to this:  PtAP = ptap(P, A); since it is pattern matched
         PtAP = transpose(P) * A * P;
         ABC = A * P * C;
 
@@ -1009,7 +1009,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_factory_and_operations_test);
         UTOPIA_RUN_TEST(petsc_each_sparse_matrix);
         UTOPIA_RUN_TEST(petsc_matrix_composition_test);
-        UTOPIA_RUN_TEST(petsc_test_mat_ptap_product);
+        UTOPIA_RUN_TEST(petsc_test_ptap);
         UTOPIA_RUN_TEST(petsc_new_eval_test);
         UTOPIA_RUN_TEST(petsc_tensor_reduction_test);
         UTOPIA_RUN_TEST(petsc_precond_test);

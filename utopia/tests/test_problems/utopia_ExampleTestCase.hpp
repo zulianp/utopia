@@ -41,8 +41,8 @@ namespace utopia
             A = sparse(N, N, 3);
             {
                 Write<Matrix> w(A);
-                Range rr = rowRange(A);
-                Range cr = colRange(A);
+                Range rr = row_range(A);
+                Range cr = col_range(A);
                 for (SizeType i = rr.begin(); i != rr.end(); i++) {
                     const SizeType ip1 = i+1;
                     const Scalar inv2h = (1 / (h * h));
@@ -82,7 +82,7 @@ namespace utopia
             B = identity(N, N);
             {
                 Write<Matrix> w (B);
-                Range B_range = rowRange(B);
+                Range B_range = row_range(B);
                 if(B_range.begin() == 0)    B.set(0,0, 0); 
                 if(B_range.end() == N)    B.set(N - 1, N - 1, 0);
             }

@@ -16,7 +16,8 @@ namespace utopia {
 	        auto & left   = Eval<Left, Traits>::apply(expr.left());
 	        auto && right = Eval<Right, Traits>::apply(expr.right().expr());
 
-	    	const bool ok = UTOPIA_BACKEND(Traits).inverse(right, left); ASSERT(ok);
+	    	UTOPIA_BACKEND(Traits).inverse(left, right);
+	    	
 			UTOPIA_LOG_END(expr);
 	    }
 	};
@@ -32,7 +33,8 @@ namespace utopia {
 	        auto & left   = Eval<Left, Traits>::apply(expr.left());
 	        auto && right = Eval<Right, Traits>::apply(expr.right().expr());
 
-	    	const bool ok = UTOPIA_BACKEND(Traits).inverse(right, left); ASSERT(ok);
+	    	UTOPIA_BACKEND(Traits).inverse(left, right);
+	    	
 			UTOPIA_LOG_END(expr);
 	    }
 	};

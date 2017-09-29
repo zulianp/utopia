@@ -24,6 +24,7 @@
 #include <cmath>
 #include <queue>
 #include <algorithm>
+#include <numeric>
 
 namespace utopia {
 	

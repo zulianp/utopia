@@ -20,11 +20,10 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(t);
 
-            bool ok = UTOPIA_BACKEND(Traits).transpose(
-                    Eval<Tensor, Traits>::apply(t.expr()),
-                    result);
-
-            ASSERT(ok);
+            UTOPIA_BACKEND(Traits).assign_transposed(
+                result,
+                Eval<Tensor, Traits>::apply(t.expr())
+                );
 
             UTOPIA_LOG_END(t);
             return result;

@@ -9,258 +9,231 @@
 #include "utopia_Base.hpp"
 #include "utopia_ScalarBackend.hpp"
 
+#include <utility>
 
-
-namespace utopia 
-{	
-	class PETScBackend : public ScalarBackend<PetscScalar>  
-	{
-			
+namespace utopia {	
+	class PetscBackend : public ScalarBackend<PetscScalar>  {
 	public:
 		typedef PetscScalar Scalar;
 		typedef PETScVector Vector;
 		typedef PETScMatrix Matrix;
 		
-
-		using ScalarBackend<PetscScalar>::apply;
-		using ScalarBackend<PetscScalar>::zaxpy;
+		using ScalarBackend<Scalar>::apply_binary;
+		using ScalarBackend<Scalar>::axpy;
 		
 		template<class LorRValueMatrix>
-		void assign(PETScMatrix &left, LorRValueMatrix &&right)
+		static void assign(PETScMatrix &left, LorRValueMatrix &&right)
 		{
 			left = std::forward<LorRValueMatrix>(right);
 		}
 		
 		template<class LorRValueVector>
-		void assign(PETScVector &left, LorRValueVector &&right)
+		static void assign(PETScVector &left, LorRValueVector &&right)
 		{
 			left = std::forward<LorRValueVector>(right);
 		}
-		
-		void clear(PETScMatrix &mat) const;
-		
-		//void structure(Vec vec, Structure &structure)
-		
-		bool convert(Vec vec, PETScVector &wrapper);
-		bool convert(Mat mat, PETScMatrix &wrapper);
-		bool convert(Mat mat, PETScSparseMatrix &wrapper);
-		bool convert(const PETScVector &wrapper, Vec vec);
-		bool convert(const PETScMatrix &wrapper, Mat mat);
-		bool convert(const PETScSparseMatrix &wrapper, Mat mat);
-		bool wrap(Mat mat, PETScSparseMatrix &wrapper);
-		bool wrap(Vec vec, PETScVector &wrapper);
-		
-		Range range(const PETScVector &v);
-		Range rowRange(const PETScMatrix &m);
-		Range colRange(const PETScMatrix &m);
-		
-		bool size(const PETScMatrix &m, Size &size) const;
-		bool size(const PETScVector &m, Size &size) const;
-		bool local_size(const PETScVector &m, Size &size) const;
-		bool local_size(const PETScMatrix &m, Size &size) const;
 
-		void resize(const Size &size, PETScMatrix &mat);
-		void resize(const Size &local_s, const Size &global_s, PETScMatrix &mat);
-		void resize(const Size &size, PETScVector &mat);
-		void resize(const Size &s_local, const Size &s_global, PETScVector &vec);
+		static void assign_transposed(PETScMatrix &left, const PETScMatrix &right);
 		
-		void assignFromRange(
-			PETScMatrix &left,
-			const PETScMatrix &right,
-			const Range &globalRowRange,
-			const Range &globalColRange);
-
-		static void par_assign_from_local_range(
-							const Range &local_row_range,
-							const Range &local_col_range,
-							const Range &global_col_range,
-							const PETScMatrix &right,
-							PETScMatrix &result);
-
-		void select(PETScVector &left,
-					const PETScVector &right,
-		      		const std::vector<PetscInt> &index);
-
-		void select(PETScMatrix &left,
-					const PETScMatrix &right,
-		      		const std::vector<PetscInt> &row_index,
-		      		const std::vector<PetscInt> &col_index);
-
-		void select_aux(PETScMatrix &left,
-					const PETScMatrix &right,
-		      		const std::vector<PetscInt> &row_index,
-		      		const std::vector<PetscInt> &col_index);
-
-		static void par_assign_from_local_is(
-			const std::vector<PetscInt> &remote_rows,
-			const std::vector<PetscInt> &remote_cols,
-			const PetscInt global_col_offset,
-			const Range &local_col_range,
-			const PETScMatrix &right,
-			PETScMatrix &result);
+		static void clear(PETScMatrix &mat);
+				
+		static void convert(Vec vec, PETScVector &wrapper);
+		static void convert(Mat mat, PETScMatrix &wrapper);
+		static void convert(Mat mat, PETScSparseMatrix &wrapper);
+		static void convert(const PETScVector &wrapper, Vec vec);
+		static void convert(const PETScMatrix &wrapper, Mat mat);
+		static void convert(const PETScSparseMatrix &wrapper, Mat mat);
+		static void wrap(Mat mat, PETScSparseMatrix &wrapper);
+		static void wrap(Vec vec, PETScVector &wrapper);
 		
+		static Range range(const PETScVector &v);
+		static Range row_range(const PETScMatrix &m);
+		static Range col_range(const PETScMatrix &m);
+		
+		static void size(const PETScMatrix &m, Size &size);
+		static void size(const PETScVector &m, Size &size);
+		static void local_size(const PETScVector &m, Size &size);
+		static void local_size(const PETScMatrix &m, Size &size);
+
+		static void resize(PETScMatrix &mat, const Size &size);
+		static void resize(PETScMatrix &mat, const Size &local_s, const Size &global_s);
+		static void resize(PETScVector &mat, const Size &size);
+		static void resize(PETScVector &vec, const Size &s_local, const Size &s_global);
+		
+		//[io]
 		// read matrix
-		bool read(const std::string &path, PETScMatrix &Mat_A);
+		static bool read(const std::string &path, PETScMatrix &Mat_A);
 		// write matrix
-		bool write(const std::string &path, const PETScMatrix &Mat_A);
+		static bool write(const std::string &path, const PETScMatrix &Mat_A);
 		
+		// read vector
+		static bool read(const std::string &path, PETScVector &Vec_A);
+
 		// write vector
-		bool write(const std::string &path, const PETScVector &Vec_A);
+		static bool write(const std::string &path, const PETScVector &Vec_A);
 		
 		// monitor for cyrill 
-		bool monitor(const long & it,  PETScMatrix &Mat_A); 
-		bool monitor(const long & it,  PETScVector &Vec_A); 
+		static void monitor(const long &it, PETScMatrix &Mat_A); 
+		static void monitor(const long &it, PETScVector &Vec_A); 
 
 
-		PetscScalar get_global_nnz(PETScMatrix &Mat_A); 
-		PetscScalar get_local_nnz(PETScMatrix &Mat_A); 
+		static Scalar get_global_nnz(PETScMatrix &Mat_A); 
+		static Scalar get_local_nnz(PETScMatrix &Mat_A); 
 
 		// call to MatZeroRows
-		bool set_zero_rows(PETScMatrix &Mat_A, const std::vector<int> &index); 
-		bool apply_BC_to_system(PETScMatrix & A, PETScVector& x, PETScVector& rhs, const std::vector<int> &index); 
+		static void set_zero_rows(PETScMatrix &Mat_A, const std::vector<int> &index); 
+		static void apply_BC_to_system(PETScMatrix & A, PETScVector& x, PETScVector& rhs, const std::vector<int> &index); 
 
-		// read vector
-		bool read(const std::string &path, PETScVector &Vec_A);
-		
-		void assignFromRange(PETScVector &left, const PETScVector &right, const Range &globalRowRange,
-							 const Range & /*globalColRange */);
-		
-		bool scal(const PetscScalar /*scaleFactor*/, const PETScMatrix & /*m*/, PETScMatrix &/*result*/);
-		// bool apply(const PetscScalar scaleFactor, const PETScMatrix &m, const Multiplies &, PETScMatrix &result)
-		// {
-		// 	return scal(scaleFactor, m, result);
-		// }
-	
-		template<class Tensor, class LorRValueTensor, class ResultTensor>
-		bool zaxpy(const PetscScalar scaleFactor, const Tensor &left, LorRValueTensor &&right, ResultTensor &result)
-		{
-			result = std::forward<LorRValueTensor>(right);
-			
-			if (result.implementation() == left.implementation()) {
-				//TODO
-				std::cerr << "[Error] axpy" << std::endl;
-			}
-			
-			return aux_zaxpy(scaleFactor, left, result);
-		}
-		
-		bool aux_zaxpy(const PetscScalar scaleFactor, const PETScVector &left,
-					   PETScVector &result);
-		
-		bool aux_zaxpy(const PetscScalar scaleFactor, const PETScMatrix &left,
-					   PETScMatrix &result);
-		
-		bool gemm(const PetscScalar /*alpha*/, const PETScMatrix &/*left*/, const PETScMatrix &/*right*/, const PetscScalar /* beta*/,
-				  PETScMatrix & /*result*/);
-		
-		bool gemm(const PetscScalar /*alpha*/, const PETScMatrix &/*left*/, const PETScMatrix &/*right*/,
-				  bool /*transpose_left*/, bool /*transpose_right*/, const PetscScalar /* beta*/, PETScMatrix &/*result*/);
-		
-		bool gemm(const PetscScalar /*alpha */, const PETScVector &/*left*/, const PETScMatrix &/*right*/,
-				  bool /*transpose_left*/, bool /*transpose_right*/, const PetscScalar /*beta*/, PETScMatrix &/*result*/);
-		
-		
-		template<class Left, class Right, class Result>
-		bool gem(const double /*scaleFactor*/, const Left &/*left*/, const Right &/*right*/, bool /*transpose_left*/,
-				 bool /*transpose_right*/, const double /*beta*/, Result &/*result*/);
 
-  		bool gemm(const double scaleFactor, const PETScMatrix &left, const Vector &right, bool transpose_left,  bool transpose_right, const double beta, Vector &result);
-  
-
-		bool transpose(const PETScMatrix &mat, PETScMatrix &result);
-		
-		bool scal(const PetscScalar /*scale_factor*/, const PETScVector &/*v*/, PETScVector &/*result */);
-		
-		void build(PETScMatrix &m, const Size &size, const Identity &);
-
-		// inline void init(PETScMatrix &mat)
-		// {
-
-		// }
-		
+		//[builders]
 		template<class Tensor>
-		void build(Tensor &t, const Size &s, const Resize &)
+		static void build(Tensor &t, const Size &s, const Resize &)
 		{
-			//FIXME switch with more efficient version without zeros
 			build(t, s, Zeros());
-			// resize(s, t);
 		}
 		
-		void build(PETScSparseMatrix &m, const Size &size, const Identity &);
+		static void build(PETScMatrix &m, const Size &size, const Identity &);
+		static void build(PETScSparseMatrix &m, const Size &size, const Identity &);
+		static void build(PETScMatrix &m, const Size &size, const LocalIdentity &);
+		static void build(PETScSparseMatrix &m, const Size &size, const LocalIdentity &);
+		static void build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz);
+		static void build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz);
+		static void build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz);
+		static void build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */);
+		static void build(PETScMatrix  &m, const Size &size, const NNZ<PetscInt> &/*nnz*/);
+		static void build(PETScMatrix &m, const Size &size, const Zeros &);
+		static void build(PETScVector &v, const Size &size, const Zeros &);
+		static void build(PETScMatrix &m, const Size &size, const LocalZeros &);
+		static void build(PETScVector &v, const Size &size, const LocalZeros &);
+		static void build(PETScMatrix &m, const Size &size, const Values<Scalar> &values);
+		static void build(PETScVector &v, const Size &local_size, const Size &&global_size, const Values<Scalar> &values);
+		static void build(PETScVector &v, const Size &size, const Values<Scalar> &values);
+		static void build(PETScMatrix &m, const Size &size, const LocalValues<Scalar> &values);
+		static void build(PETScVector &v, const Size &size, const LocalValues<Scalar> &values);
 		
-		void build(PETScMatrix &m, const Size &size, const LocalIdentity &);
+		static void set(PETScVector &v, const PetscInt index, Scalar value);
+		static void add(PETScVector &v, const PetscInt index, Scalar value);
 		
-		void build(PETScSparseMatrix &m, const Size &size, const LocalIdentity &);
+		static void set(PETScVector &v, const std::vector<PetscInt> indices, const std::vector<Scalar> values);
+		static void set(PETScMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
+		static void set(PETScSparseMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
+		static void add(PETScMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
 		
-		void build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz);
-		
-		void build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz);
-		void build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz);
-		/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
-		void build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */);
-		
-		/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
-		void build(PETScMatrix  &m, const Size &size, const NNZ<PetscInt> &/*nnz*/);
-		
-		void build(PETScMatrix &m, const Size &size, const Zeros &);
-		
-		void build(PETScVector &v, const Size &size, const Zeros &);
-		
-		void build(PETScMatrix &m, const Size &size, const LocalZeros &);
-		void build(PETScVector &v, const Size &size, const LocalZeros &);
-		
-		void build(PETScMatrix &m, const Size &size, const Values<PetscScalar> &values);
-		
-		void build(PETScVector &v, const Size &local_size, const Size &&global_size, const Values<PetscScalar> &values);
-		
-		void build(PETScVector &v, const Size &size, const Values<PetscScalar> &values);
-		
-		void build(PETScMatrix &m, const Size &size, const LocalValues<PetscScalar> &values);
-		
-		void build(PETScVector &v, const Size &size, const LocalValues<PetscScalar> &values);
-		
-		void set(PETScVector &v, const PetscInt index, PetscScalar value);
-		void add(PETScVector &v, const PetscInt index, PetscScalar value);
-		
-		void set(PETScVector &v, const std::vector<PetscInt> indices, const std::vector<PetscScalar> values);
-		void set(PETScMatrix &v, const PetscInt row, const PetscInt col, PetscScalar value);
-		void set(PETScSparseMatrix &v, const PetscInt row, const PetscInt col, PetscScalar value);
-		
-		void add(PETScMatrix &v, const PetscInt row, const PetscInt col, PetscScalar value);
+
+		//[host/device locks]
+		template<class Tensor>
+		static void read_lock(const Tensor &) {}
 		
 		template<class Tensor>
-		void readLock(const Tensor &) {}
+		static void read_unlock(const Tensor &) {}
 		
-		template<class Tensor>
-		void readUnlock(const Tensor &) {}
+		static void write_lock(PETScVector &vec);
+		static void write_unlock(PETScVector &vec);
+		static void write_lock(const PETScMatrix &mat);
+		static void write_unlock(const PETScMatrix &mat);
 		
-		void writeLock(PETScVector &vec);
-		void writeUnlock(PETScVector &vec);
-		void writeLock(const PETScMatrix &mat);
-		void writeUnlock(const PETScMatrix &mat);
+		static void write_lock(const PETScSparseMatrix &mat);
+		static void write_unlock(const PETScSparseMatrix &mat);
 		
-		void writeLock(const PETScSparseMatrix &mat);
-		void writeUnlock(const PETScSparseMatrix &mat);
-		
-		
-		void set(PETScMatrix &v, const std::vector<PetscInt> rows, const std::vector<PetscInt> cols, const std::vector<PetscScalar> values);
-		PetscScalar get(const PETScVector &v, const PetscInt index);
-		PetscScalar get(const PETScMatrix &v, const PetscInt row, const PetscInt col);
-		bool apply(const PETScMatrix &left, const PETScVector &right, const Multiplies &, PETScVector &result);
-		bool apply(const PETScMatrix &left, const PETScMatrix &right, const Multiplies &, PETScMatrix &result);
-		bool apply(const PETScVector &left, const PETScVector &right, const EMultiplies &, PETScVector &result);
-		bool apply(const PETScVector &left, const PETScVector &right, const Divides &, PETScVector &result);
-		bool apply(const PETScVector &left, const PETScVector &right, const Min &, PETScVector &result);
-		bool apply(const PETScVector &left, const PETScVector &right, const Max &, PETScVector &result);
-		
-		static void allocate_apply_vec(const PETScVector &left, const PETScVector &right, PETScVector &result);
+		static void set(PETScMatrix &v, const std::vector<PetscInt> rows, const std::vector<PetscInt> cols, const std::vector<Scalar> values);
+		static Scalar get(const PETScVector &v, const PetscInt index);
+		static Scalar get(const PETScMatrix &v, const PetscInt row, const PetscInt col);
+
+		//[unary]
+		static void apply_unary(Vector &result, const Abs &, const Vector &vec);
 
 		template<class Operation>
-		bool apply_binary_generic(const PETScVector &left, const PETScVector &right, const Operation &op, PETScVector &result)
+		static void apply_unary(Vector &result, const Operation &op, const Vector &v)
 		{
-			allocate_apply_vec(left, right, result);
+			Range r = range(v);
 
+			Size gs, ls;
+			size(v, gs);
+			local_size(v, ls);
 
+			VecType type;
+			VecGetType(v.implementation(), &type);
+			VecSetType(result.implementation(), type);
+			VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
+
+			write_lock(result);
+			read_lock(v);
+
+			for(PetscInt i = r.begin(); i < r.end(); ++i) {
+				Scalar value = get(v, i);
+				VecSetValue(result.implementation(), i, op.template apply<Scalar>(value), INSERT_VALUES);
+			}
+
+			write_unlock(result);
+			read_unlock(v);
+		}
+
+		static void apply_unary(Vector &result, const Vector &v, const Minus &)
+		{
+			Range r = range(v);
+
+			Size gs, ls;
+			size(v, gs);
+			local_size(v, ls);
+
+			VecType type;
+			VecGetType(v.implementation(), &type);
+			VecSetType(result.implementation(), type);
+			VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
+
+			write_lock(result);
+			read_lock(v);
+
+			for(PetscInt i = r.begin(); i < r.end(); ++i) {
+				Scalar value = get(v, i);
+				VecSetValue(result.implementation(), i, -value, INSERT_VALUES);
+			}
+
+			write_unlock(result);
+			read_unlock(v);
+		}
+
+		//[binary]
+		static void apply_binary(PETScVector &result, const Reciprocal<Scalar> &reciprocal, const PETScVector &vec);
+		static void apply_binary(Vector &result, const Scalar factor, const Multiplies &, const Vector &vec);
+		static void apply_binary(Matrix &result, const Scalar factor, const Multiplies &, const Matrix &mat);
+		static void apply_binary(PETScVector &result, const PETScMatrix &left, const Multiplies &, const PETScVector &right);
+		static void apply_binary(PETScMatrix &result, const PETScMatrix &left, const Multiplies &, const PETScMatrix &right);
+		static void apply_binary(PETScVector &result, const PETScVector &left, const EMultiplies &, const PETScVector &right);
+		static void apply_binary(PETScVector &result, const PETScVector &left, const Divides &, const PETScVector &right);
+		static void apply_binary(PETScVector &result, const PETScVector &left, const Min &, const PETScVector &right);
+		static void apply_binary(PETScVector &result, const PETScVector &left, const Max &, const PETScVector &right);
+
+		template<class LeftTensor, class RightTensor, class ResultTensor>
+		static void apply_binary(ResultTensor &result, LeftTensor &&left, const Plus &, RightTensor &&right) {
+			if(&result == &left) {
+				axpy(result, 1., right);
+				return;
+			}
+
+			if(&result == &right) {
+				axpy(result, 1., left);
+				return;
+			}
+
+			result = std::forward<RightTensor>(right);
+			axpy(result, 1., left);
+		}
+		
+		template<class LeftTensor, class ResultTensor, class RightTensor>
+		static void apply_binary(ResultTensor &result, LeftTensor &&left, const Minus &, RightTensor &&right) {
+			assert(&result != &right);
+
+			result = std::forward<LeftTensor>(left);
+			axpy(result, -1., right);
+		}
+
+		static void allocate_apply_vec(PETScVector &result, const PETScVector &left, const PETScVector &right);
+
+		template<class Operation>
+		static void apply_binary_generic(PETScVector &result, const PETScVector &left, const Operation &op, const PETScVector &right)
+		{
+			allocate_apply_vec(result, left, right);
 
 			const Vec &l = left.implementation();
 			const Vec &r = right.implementation();
@@ -272,183 +245,195 @@ namespace utopia
 			assert(ll.extent() == rr.extent());
 			assert(ll.begin() == rr.begin());
 
-			readLock(left);
-			readLock(right);
-			writeLock(result);
+			read_lock(left);
+			read_lock(right);
+			write_lock(result);
 
 			for(PetscInt i = ll.begin(); i < ll.end(); ++i) {
-				PetscScalar lv, rv;
+				Scalar lv, rv;
 				VecGetValues(l, 1, &i, &lv);
 				VecGetValues(r, 1, &i, &rv);
-				PetscScalar val = op.template apply<PetscScalar>(lv, rv);
+				Scalar val = op.template apply<Scalar>(lv, rv);
 				VecSetValues(out, 1, &i, &val, INSERT_VALUES);
 			}
 
-			readUnlock(left);
-			readUnlock(right);
-			writeUnlock(result);
-			return true;
+			read_unlock(left);
+			read_unlock(right);
+			write_unlock(result);
 		}
 
-		bool mat_mult_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result);
-		bool mat_multT_add(const PETScMatrix &m, const PETScVector &right, const PETScVector &left, PETScVector &result);
-		
-		// reciprocal
-		bool apply(const PETScVector &vec, const Reciprocal<double> &reciprocal, PETScVector &result);
-		PetscScalar norm2(const PETScVector &v);
-		PetscScalar norm2(const Matrix &m);
-		PetscScalar norm1(const PETScVector &v);
-		PetscScalar norm_infty(const PETScVector &v);
-		PetscScalar reduce(const PETScVector &vec, const Plus &);
-		PetscScalar reduce(const PETScMatrix &mat, const Plus &op);
-		PetscScalar reduce(const PETScVector &, const Min &);
-		PetscScalar reduce(const PETScMatrix &, const Min &);
-		PetscScalar reduce(const PETScVector &, const Max &);
-		PetscScalar reduce(const PETScMatrix &, const Max &);
+		//[specialized]
+		static void mat_mult_add(PETScVector &result, const PETScMatrix &m, const PETScVector &right, const PETScVector &left);
+		static void mat_mult_t_add(PETScVector &result, const PETScMatrix &m, const PETScVector &right, const PETScVector &left);		
+		static void triple_product_ptap(PETScMatrix &result, const PETScMatrix &, const PETScMatrix &); 
+		static void triple_product(PETScMatrix &result, const PETScMatrix &, const PETScMatrix &, const PETScMatrix &); 
+
+
+		static Scalar norm2(const PETScVector &v);
+		static Scalar norm2(const Matrix &m);
+		static Scalar norm1(const PETScVector &v);
+		static Scalar norm_infty(const PETScVector &v);
+		static Scalar reduce(const PETScVector &vec, const Plus &);
+		static Scalar reduce(const PETScMatrix &mat, const Plus &op);
+		static Scalar reduce(const PETScVector &, const Min &);
+		static Scalar reduce(const PETScMatrix &, const Min &);
+		static Scalar reduce(const PETScVector &, const Max &);
+		static Scalar reduce(const PETScMatrix &, const Max &);
+		static Scalar dot(const Vector &left, const Vector &right);
 		
 		// get diagonal of matrix as vector
-		bool diag(PETScVector &vec, const PETScMatrix &mat);
-		
-		bool diag(PETScSparseMatrix &mat, const PETScVector &vec);
-		bool diag(PETScMatrix &mat, const PETScVector &vec);
-		bool diag(PETScMatrix &out, const PETScMatrix &in);
-
-        bool mat_diag_shift(PETScMatrix &left, const PetscScalar diag_factor);
+		static void diag(PETScVector &vec, const PETScMatrix &mat);
+		static void diag(PETScSparseMatrix &mat, const PETScVector &vec);
+		static void diag(PETScMatrix &mat, const PETScVector &vec);
+		static void diag(PETScMatrix &out, const PETScMatrix &in);
+        static void mat_diag_shift(PETScMatrix &left, const Scalar diag_factor);
         
-		bool compare(const Vector &left, const Vector &right, const ApproxEqual &comp);
-		
-		bool compare(const Matrix &left, const Matrix &right, const ApproxEqual &comp);
-		
-		
-		bool apply(const PetscScalar factor, const Vector &vec, const Multiplies &, Vector &result);
-		bool apply(const PetscScalar factor, const Matrix &mat, const Multiplies &, Matrix &result);
 
-		bool apply(const Vector &vec, const Abs &, Vector &result);
-		// bool apply(const Matrix &mat, const Abs &, Matrix &result);
-		
-		PetscScalar dot(const Vector &left, const Vector &right) const;
+		static bool compare(const Vector &left, const Vector &right, const ApproxEqual &comp);
+		static bool compare(const Matrix &left, const Matrix &right, const ApproxEqual &comp);
 		
 		
-		bool mul(const PETScMatrix &left, const PETScMatrix &right, PETScMatrix &result);
+		static void kronecker_product(Matrix &result, const Vector &left, const Vector &right);
 		
-		bool outer(const Vector &left, const Vector &right, Matrix &result);
+		//[selection]
+		static void assign_from_range(PETScVector &left, const PETScVector &right, const Range &globalRowRange,
+							 const Range &global_col_range);
 		
-		void assignTransposed(PETScMatrix &left, const PETScMatrix &right);
+		static void assign_to_range(PETScMatrix &left, const PETScMatrix &right, const Range &global_row_range,
+						   const Range &global_col_range);
 		
-		void assignToRange(PETScMatrix & /*left*/, const PETScMatrix &/*right*/, const Range &/*globalRowRange*/,
-						   const Range &/*globalColRange*/);
+		static void assign_to_range( PETScMatrix &left, const Identity &, const Range &global_row_range,
+						   const Range &global_col_range);
 		
-		void assignToRange( PETScMatrix &/*left*/, const Identity &/**/, const Range &/*globalRowRange*/,
-						   const Range &/*globalColRange*/);
-		
-		void assignToRange( PETScVector &/*left*/, const PETScVector &/*right*/, const Range &/*globalRowRange*/,
-						   const Range &/*globalColRange*/);
-		
-		bool vec2mat(const Vector & v, Matrix & m , const bool  transpose );
-		bool gemv(  const PetscScalar /*alpha */, const PETScMatrix &/*left*/, const PETScVector &/*right*/,
-				  const PetscScalar/* beta*/, PETScVector &/*result*/);
-		
+		static void assign_to_range( PETScVector &left, const PETScVector &right, const Range &global_row_range,
+						   const Range &global_col_range);
+
+		static void assign_from_range(
+			PETScMatrix &left,
+			const PETScMatrix &right,
+			const Range &globalRowRange,
+			const Range &global_col_range);
+
+	
+
+		static void select(
+					PETScVector &left,
+					const PETScVector &right,
+		      		const std::vector<PetscInt> &index);
+
+		static void select(
+					PETScMatrix &left,
+					const PETScMatrix &right,
+		      		const std::vector<PetscInt> &row_index,
+		      		const std::vector<PetscInt> &col_index);
+
+
+	
 		// this is not very correct yet ...
-		bool build_local_diag_block(PETScSerialSparseMatrix &left, const PETScSparseMatrix &right);
-		bool build_local_redistribute(const PETScVector &, const PETScVector &, PETScVector &); 
+		static void build_local_diag_block(PETScSerialSparseMatrix &left, const PETScSparseMatrix &right);
+		static void build_local_redistribute(PETScVector &result, const PETScVector &, const PETScVector &); 
 
-		bool triple_product_PtAP(const PETScMatrix &, const PETScMatrix &, PETScMatrix &); 
-		bool triple_product(const PETScMatrix &, const PETScMatrix &, const PETScMatrix &, PETScMatrix &); 
-
-		bool is_nan_or_inf(const PETScVector &v); 
-		bool is_nan_or_inf(const PETScMatrix &m); 
+		static bool is_nan_or_inf(const PETScVector &v); 
+		static bool is_nan_or_inf(const PETScMatrix &m); 
 
 
 		template<class Tensor>
-		void readAndWriteLock(Tensor &t) {
-			writeLock(t);
+		static void read_and_write_lock(Tensor &t) {
+			write_lock(t);
 		}
 		
 		template<class Tensor>
-		void readAndWriteUnlock(Tensor &t){
-			writeUnlock(t);
-		}
-		
-		template<class LeftTensor, class RightTensor, class ResultTensor>
-		inline bool apply(LeftTensor &&left, RightTensor &&right, const Plus &, ResultTensor &result) {
-			return zaxpy(1.0, std::forward<LeftTensor>(left), std::forward<RightTensor>(right), result);
-		}
-		
-		template<class LeftTensor, class RightTensor, class ResultTensor>
-		inline bool apply(LeftTensor &&left, RightTensor &&right, const Minus &, ResultTensor &result) {
-			return zaxpy(-1.0, std::forward<RightTensor>(right), std::forward<LeftTensor>(left), result);
+		static void read_and_write_unlock(Tensor &t){
+			write_unlock(t);
 		}
 
-		bool diag_scale_right(const Matrix &m, const Vector &diag, Matrix &result);
-		bool diag_scale_left(const Vector &diag, const Matrix &m,  Matrix &result);
-		bool diag_scale_left(const Vector &diag, const Vector &m, Vector &result);
+		static void diag_scale_right(Matrix &result, const Matrix &m,    const Vector &diag);
+		static void diag_scale_left(Matrix &result,  const Vector &diag, const Matrix &m);
+		static void diag_scale_left(Vector &result,  const Vector &diag, const Vector &m);
 
-		template<class Operation>
-		bool apply(const Vector &v, const Operation &, Vector &result)
+		static Scalar trace(const Matrix &mat);
+		static void apply_tensor_reduce(Vector &result, const Matrix &mat, const Plus &, const int dim);
+		static void apply_tensor_reduce(Vector &result, const Matrix &mat, const Min &,  const int dim);
+		static void apply_tensor_reduce(Vector &result, const Matrix &mat, const Max &,  const int dim);
+		static void inverse(Matrix &result, const Matrix &mat);
+
+		static void axpy(PETScVector &y, const Scalar alpha, const PETScVector &x);
+		static void axpy(PETScMatrix &y, const Scalar alpha, const PETScMatrix &x);
+		static void axpby(Vector &y, const Scalar alpha, const Vector &x, const Scalar &beta);
+
+		inline static void multiply(
+			PETScMatrix &result,
+			bool transpose_left,
+			const PETScMatrix &left,
+			bool transpose_right,
+			const PETScMatrix &right)
 		{
-			Range r = range(v);
-
-			Size gs, ls;
-			size(v, gs);
-			local_size(v, ls);
-			VecSetType(result.implementation(), VECMPI);
-			VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
-
-			writeLock(result);
-			readLock(v);
-
-
-
-			for(PetscInt i = r.begin(); i < r.end(); ++i) {
-				PetscScalar value = get(v, i);
-				VecSetValue(result.implementation(), i, Operation::template apply<PetscScalar>(value), INSERT_VALUES);
-			}
-
-			writeUnlock(result);
-			readUnlock(v);
-			return true;
+			gemm(result, 0.0, 1., transpose_left, left, transpose_right, right);
 		}
 
-
-		bool apply(const Vector &v, const Minus &, Vector &result)
+		inline static void multiply(
+			Vector &result,
+			bool transpose_left,
+			const PETScMatrix &left,
+			bool transpose_right,
+			const Vector &right)
 		{
-			Range r = range(v);
-
-			Size gs, ls;
-			size(v, gs);
-			local_size(v, ls);
-			VecSetType(result.implementation(), VECMPI);
-			VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
-
-			writeLock(result);
-			readLock(v);
-
-			for(PetscInt i = r.begin(); i < r.end(); ++i) {
-				PetscScalar value = get(v, i);
-				VecSetValue(result.implementation(), i, -value, INSERT_VALUES);
-			}
-
-			writeUnlock(result);
-			readUnlock(v);
-			return true;
+			assert(!transpose_right); 
+			(void) transpose_right;
+			
+			gemv(result, 0.0, 1., transpose_left, left, right);
 		}
 
-		PetscScalar trace(const Matrix &mat);
+		static void gemm(
+			PETScMatrix &result,
+			const Scalar beta,
+			const Scalar alpha,
+			bool transpose_left,
+			const PETScMatrix &left,
+			bool transpose_right,
+			const PETScMatrix &right);
 
-		bool apply_tensor_reduce(const Matrix &mat, const Plus &, const int dim, Vector &result);
-		bool apply_tensor_reduce(const Matrix &mat, const Min &, const int dim, Vector &result);
-		bool apply_tensor_reduce(const Matrix &mat, const Max &, const int dim, Vector &result);
-		bool inverse(const Matrix &mat, Matrix &result);
+		static void gemv(
+			Vector &y, 
+			const Scalar beta,
+			const Scalar alpha,
+			bool transpose_A,
+			const PETScMatrix &A, 
+			const Vector &x);
+				
+		static void select_aux(PETScMatrix &left,
+					const PETScMatrix &right,
+		      		const std::vector<PetscInt> &row_index,
+		      		const std::vector<PetscInt> &col_index);
 
-		// bool gemm(const PetscScalar alpha, const Matrix &left, const Matrix &right, 
-		// 		  const bool transpose_left, const bool transpose_right, const PetscScalar beta, Matrix &result);
+		static void par_assign_from_local_is(
+			const std::vector<PetscInt> &remote_rows,
+			const std::vector<PetscInt> &remote_cols,
+			const PetscInt global_col_offset,
+			const Range &local_col_range,
+			const PETScMatrix &right,
+			PETScMatrix &result);
+
+		static void par_assign_from_local_range(
+							const Range &local_row_range,
+							const Range &local_col_range,
+							const Range &global_col_range,
+							const PETScMatrix &right,
+							PETScMatrix &result);
+
+		static void par_assign_from_global_range(
+		const Range &global_row_range,
+		const Range &global_col_range,
+		const PETScMatrix &right,
+		PETScMatrix &result);
 
 
-		bool waxpby(const PetscScalar a, const Vector &x, const PetscScalar &b, const Vector &y, Vector &result);
+		//unused
+		static void vec_to_mat(Matrix &m, const Vector &v, const bool transpose);
 	};
 	
 	template<>
-	class Backend<PetscScalar, PETSC> : public PETScBackend {
+	class Backend<PetscScalar, PETSC> : public PetscBackend {
 	public:
 		inline static Backend &Instance()
 		{
