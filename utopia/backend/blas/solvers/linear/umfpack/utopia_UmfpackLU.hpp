@@ -33,7 +33,7 @@ namespace utopia {
 
         inline const double * ptr(const CRSMatrixd &m) const
         {
-            return &m.implementation().getEntries()[0];
+            return &m.implementation().entries()[0];
         }
 
         virtual bool apply(const Vectord &rhs, Vectord &sol)

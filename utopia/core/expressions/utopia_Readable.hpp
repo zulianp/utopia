@@ -154,7 +154,7 @@ namespace utopia {
             _tensor.read_lock();
 #endif //NDEBUG
 
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().readLock(_tensor.implementation());
+            Backend<Scalar, Traits<Tensor>::Backend >::Instance().read_lock(_tensor.implementation());
         }
 
         ~Read()
@@ -162,7 +162,7 @@ namespace utopia {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.read_unlock();
 #endif //NDEBUG
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().readUnlock(_tensor.implementation());
+            Backend<Scalar, Traits<Tensor>::Backend >::Instance().read_unlock(_tensor.implementation());
         }
 
     private:
@@ -186,7 +186,7 @@ namespace utopia {
             _tensor.read_lock();
             _tensor.write_lock();
 #endif            
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().readAndWriteLock(_tensor.implementation());
+            Backend<Scalar, Traits<Tensor>::Backend >::Instance().read_and_write_lock(_tensor.implementation());
         }
 
         ~ReadAndWrite()
@@ -195,7 +195,7 @@ namespace utopia {
             _tensor.read_unlock();
             _tensor.write_unlock();
 #endif   
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().readAndWriteUnlock(_tensor.implementation());
+            Backend<Scalar, Traits<Tensor>::Backend >::Instance().read_and_write_unlock(_tensor.implementation());
         }
 
     private:

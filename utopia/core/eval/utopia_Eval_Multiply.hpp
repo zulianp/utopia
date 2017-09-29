@@ -19,14 +19,12 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            const bool ok = UTOPIA_BACKEND(Traits).apply(
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right()),
-                    Multiplies(),
-                    result
-            );
-
-            ASSERT(ok);
+            UTOPIA_BACKEND(Traits).apply_binary(
+                result,
+                Eval<Left,  Traits>::apply(expr.left()),
+                Multiplies(),
+                Eval<Right, Traits>::apply(expr.right())
+                );
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -36,23 +34,22 @@ namespace utopia {
     template<class Left, class Right, class Traits, int Backend>
     class Eval< Multiply<Transposed<Left>, Right>, Traits, Backend> {
     public:
-        typedef typename TypeAndFill<Traits, Multiply < Transposed < Left>, Right> >::Type Result;
+        typedef utopia::Multiply< Transposed<Left>, Right>  Expr;
 
-        inline static Result apply(const Multiply <Transposed<Left>, Right> &expr) {
+        typedef typename TypeAndFill<Traits, Expr>::Type Result;
+
+        inline static Result apply(const Expr &expr) {
             Result result;
 
             UTOPIA_LOG_BEGIN(expr);
 
-            const bool ok = UTOPIA_BACKEND(Traits).gemm(
-                    1.0,
-                    Eval<Left, Traits>::apply(expr.left().expr()),
-                    Eval<Right, Traits>::apply(expr.right()),
-                    true,
-                    false,
-                    0.0,
-                    result);
-
-            ASSERT(ok);
+            UTOPIA_BACKEND(Traits).multiply(
+                result,
+                true,
+                Eval<Left, Traits>::apply(expr.left().expr()),
+                false,
+                Eval<Right, Traits>::apply(expr.right())
+                );
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -69,16 +66,13 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            const bool ok = UTOPIA_BACKEND(Traits).gemm(
-                    1.0,
-                    Eval<Left,  Traits>::apply(expr.left()),
-                    Eval<Right, Traits>::apply(expr.right().expr()),
-                    false,
-                    true,
-                    0.0,
-                    result);
-
-            ASSERT(ok);
+            UTOPIA_BACKEND(Traits).multiply(
+                result,
+                false,
+                Eval<Left, Traits>::apply(expr.left()),
+                true,
+                Eval<Right, Traits>::apply(expr.right().expr())
+                );
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -96,16 +90,13 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            const bool ok = UTOPIA_BACKEND(Traits).gemm(
-                    1.0,
-                    Eval<Left,  Traits>::apply(expr.left().expr()),
-                    Eval<Right, Traits>::apply(expr.right().expr()),
-                    true,
-                    true,
-                    0.0,
-                    result);
-
-            ASSERT(ok);
+            UTOPIA_BACKEND(Traits).multiply(
+                result,
+                true,
+                Eval<Left,  Traits>::apply(expr.left().expr()),
+                true,
+                Eval<Right, Traits>::apply(expr.right().expr())
+                );
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -123,16 +114,13 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            bool ok = UTOPIA_BACKEND(Traits).gemm(
-                    1.0,
-                    Eval<Right, Traits>::apply(expr.expr().right()),
-                    Eval<Left, Traits>::apply(expr.expr().left()),
-                    true,
-                    true,
-                    0.0,
-                    result);
-
-            ASSERT(ok);
+            UTOPIA_BACKEND(Traits).multiply(
+                result, 
+                true,
+                Eval<Right, Traits>::apply(expr.expr().right()),
+                true,
+                Eval<Left, Traits>::apply(expr.expr().left())
+                );
 
             UTOPIA_LOG_END(expr);
             return result;

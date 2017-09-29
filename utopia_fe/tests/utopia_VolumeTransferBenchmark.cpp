@@ -113,7 +113,7 @@ namespace utopia {
 		const double vol = sum(B);
 		const double expected_vol = 1.8*1.8*1.8;
 		std::cout << "diff vol: " << std::abs(vol - expected_vol) << std::endl;
-		assert(utopia::approxeq(vol, expected_vol, 1e-8));
+		assert(utopia::approxeq(vol, expected_vol, 1e-6 * mpi_world_size()));
 
 		comm.barrier();
 		c.stop();

@@ -269,23 +269,6 @@ namespace utopia {
     } 
 
 
-  
-
-    ///@deprecated use row_range
-    template<class Tensor>
-    inline Range rowRange(const Wrapper<Tensor, 2> &v) {
-        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().rowRange(
-                v.implementation());
-    }
-    ///@deprecated use col_range
-    template<class Tensor>
-    inline Range colRange(const Wrapper<Tensor, 2> &v) {
-        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().colRange(
-                v.implementation());
-    }
-
-
-
     /** \addtogroup ranges
      * @ingroup read_write
      * @brief Ranges provide the necessary access information for distributed memory data structures such as vectors
@@ -314,7 +297,7 @@ namespace utopia {
      */
     template<class Tensor>
     inline Range row_range(const Wrapper<Tensor, 2> &v) {
-        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().rowRange(
+        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().row_range(
                 v.implementation());
     }
 
@@ -327,7 +310,7 @@ namespace utopia {
      */
     template<class Tensor>
     inline Range col_range(const Wrapper<Tensor, 2> &v) {
-        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().colRange(
+        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().col_range(
                 v.implementation());
     }
 
@@ -384,9 +367,9 @@ namespace utopia {
      * @param      t       Tensor to be monitored.
      */
     template<class Tensor, int Order>
-    inline bool monitor(const long &it, Wrapper<Tensor, Order> &t) 
+    inline void monitor(const long &it, Wrapper<Tensor, Order> &t) 
     {
-        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().monitor(it, t.implementation());
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().monitor(it, t.implementation());
     }
 
 
@@ -402,7 +385,6 @@ namespace utopia {
         return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().get_global_nnz(t.implementation());
     }
 
-
     /**
      * @ingroup    profiling
      * @brief      Gets number of local nnz.
@@ -415,8 +397,6 @@ namespace utopia {
         return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().get_local_nnz(t.implementation());
     }
 
-
-
     /**
      * @ingroup    interoperability
      * @brief      Converts backend-type tensor into utopia-wrapper specified type of tensor.
@@ -425,8 +405,8 @@ namespace utopia {
      * @param      t        Utopia tensor(wrapper). 
      */
     template<class RawType, class Tensor, int Order>
-    inline bool convert(RawType &rawType, Wrapper<Tensor, Order> &t) {
-        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().convert(rawType, t.implementation());
+    inline void convert(RawType &rawType, Wrapper<Tensor, Order> &t) {
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().convert(rawType, t.implementation());
     }
     
     /**
@@ -437,8 +417,8 @@ namespace utopia {
      * @param      rawType  The external library tensor (backend supported).
      */
     template<class Tensor, int Order, class RawType>
-    inline bool convert(Wrapper<Tensor, Order> &t, RawType &rawType) {
-        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().convert(t.implementation(), rawType);
+    inline void convert(Wrapper<Tensor, Order> &t, RawType &rawType) {
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().convert(t.implementation(), rawType);
     }
 
 
@@ -451,7 +431,6 @@ namespace utopia {
     {
         os << value << "\n";
     }
-
 
     inline void disp(const double value)
     {
@@ -555,10 +534,6 @@ namespace utopia {
         return s.get(0) == INVALID_INDEX;
     }
 
-
-
-
-
     /**
      * @ingroup    queries
      * @brief      Checks, if Tensor contains inf/nan. 
@@ -576,8 +551,6 @@ namespace utopia {
         // static_assert(Order == 1, "contains_nan_or_inf:: works just for vectors at the moment");
         return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().is_nan_or_inf(w.implementation());
     }
-
-
 
     template<class Derived>
     inline constexpr int order(const Expression<Derived> &)

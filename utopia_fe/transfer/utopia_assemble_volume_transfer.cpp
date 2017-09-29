@@ -29,6 +29,7 @@
 #include <queue>
 #include <algorithm>
 #include <sstream>
+#include <numeric>
 
 using namespace libMesh;
 

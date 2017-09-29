@@ -32,6 +32,17 @@ namespace utopia {
         }
     };
 
+    class PlusEqual {
+    public:
+        std::string getClass() const { return "PlusEqual"; }
+
+        template<typename T>
+        inline static T & apply(T &l, const T &r)
+        {
+            return l += r;
+        }
+    };
+
     class AbsPlus {
     public:
         std::string getClass() const { return "AbsPlus"; }
@@ -81,6 +92,16 @@ namespace utopia {
         inline static T apply(const T &left, const T &right) {
             return left * right;
         }
+    };
+
+    class KroneckerProduct {
+    public:
+        std::string getClass() const { return "KroneckerProduct"; }
+    };
+
+    class TraceOp {
+    public:
+        std::string getClass() const { return "TraceOp"; }
     };
 
     class ApproxEqual {
@@ -161,6 +182,11 @@ namespace utopia {
         typedef T Scalar;
         
         std::string getClass() const { return "Reciprocal"; }
+
+        template<typename T2>
+        inline T2 apply(const T2 &x) const {
+            return numerator_/x;
+        }
 
         Reciprocal(const T &numerator)
                 : numerator_(numerator)
