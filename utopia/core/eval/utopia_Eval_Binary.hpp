@@ -28,6 +28,12 @@ namespace utopia {
 
             ASSERT(ok);
 
+
+            // [cleaup] This eval maybe can be removed completely
+            // [new backend map concept]
+            // [optimized][minimal] backend
+            // UTOPIA_BACKEND(Traits).apply(result, alpha, Operation, right);
+
             UTOPIA_LOG_END(expr);
             return result;
         }
@@ -49,6 +55,10 @@ namespace utopia {
                     result
             );
 
+            // [new backend map concept]
+            // [optimized][minimal] backend
+            // UTOPIA_BACKEND(Traits).apply(result, left, Kron, right);
+
             UTOPIA_LOG_END(expr);
             return result;
         }
@@ -58,9 +68,9 @@ namespace utopia {
     template<class Left, class Right, class Operation, class Traits, int Backend>
     class Eval<Binary<Left, Right, Operation>, Traits, Backend> {
     public:
-        typedef typename utopia::TypeAndFill<Traits, Binary < Left, Right, Operation> >::Type Result;
+        typedef typename utopia::TypeAndFill<Traits, Binary<Left, Right, Operation> >::Type Result;
 
-        inline static Result apply(const Binary <Left, Right, Operation> &expr) {
+        inline static Result apply(const Binary<Left, Right, Operation> &expr) {
             Result result;
 
             UTOPIA_LOG_BEGIN(expr);
@@ -73,6 +83,10 @@ namespace utopia {
             );
 
             ASSERT(ok);
+
+            // [new backend map concept]
+            // [optimized][minimal] backend
+            // UTOPIA_BACKEND(Traits).apply(result, left, Operation, right);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -97,6 +111,11 @@ namespace utopia {
                     result);
 
             ASSERT(ok);
+
+            // [cleaup] This eval maybe can be removed completely
+            // [new backend map concept]
+            // [optimized][minimal] backend
+            // UTOPIA_BACKEND(Traits).apply(result, alpha, Multiples, right);
 
 			UTOPIA_LOG_END(expr);
             return result;

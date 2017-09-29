@@ -45,7 +45,9 @@ namespace utopia {
 	class AutoDiffUnary<InnerExpr, Pow2> {
 	public:
 		typedef typename InnerExpr::Scalar Scalar;
+		//[new backend concept]
 		typedef Diag< utopia::Binary< Number<Scalar>, InnerExpr, utopia::Multiplies> > Type;
+		// typedef Unary< utopia::Binary< Number<Scalar>, InnerExpr, utopia::Multiplies>, DiagOp> Type;
 		
 		static UTOPIA_STORE_CONST(Type) make(const InnerExpr &expr, const Pow2 &)
 		{

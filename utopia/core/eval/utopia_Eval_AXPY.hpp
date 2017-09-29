@@ -24,6 +24,11 @@ namespace utopia {
                     Eval<Right, Traits>::apply(expr.right()),
                     result);
 
+
+            // [new backend map concept]
+            // UTOPIA_BACKEND(Traits).apply(result, y);
+            // UTOPIA_BACKEND(Traits).apply(result, PlusEqual, alpha, Multiplies, x);
+
             ASSERT(ok);
 
             UTOPIA_LOG_END(expr);
@@ -54,8 +59,15 @@ namespace utopia {
                     Eval<Left, Traits>::apply(expr.left())
             );
 
-            //FIXME error handling
+            // [new backend map concept]
+            // [minimal] backend
+            // UTOPIA_BACKEND(Traits).apply(result, Identity);
+            // UTOPIA_BACKEND(Traits).apply(result, MultipliesEqual, alpha);
 
+            // [optimized] backend
+            // UTOPIA_BACKEND(Traits).apply(result, alpha, Multiplies, Identity);
+
+            //FIXME error handling
             UTOPIA_LOG_END(expr);
             return true;
         }
@@ -73,6 +85,13 @@ namespace utopia {
             const bool ok = UTOPIA_BACKEND(Traits).mat_diag_shift(result, 1.0);
             ASSERT(ok);
 
+            // [new backend map concept]
+            // [minimal] backend
+            //(REMOVE)
+
+            // [optimized] backend
+            // UTOPIA_BACKEND(Traits).apply(result, PlusEqual, 1., Multiplies, Identity);
+
             UTOPIA_LOG_END(expr);
             return result;
         }
@@ -89,6 +108,14 @@ namespace utopia {
             EXPR_TYPE(Traits, Left) result = Eval<Left, Traits>::apply(expr.left());
             const bool ok = UTOPIA_BACKEND(Traits).mat_diag_shift(result, expr.right().left());
             ASSERT(ok);
+
+
+            // [new backend map concept]
+            // [minimal] backend
+            //(REMOVE)
+
+            // [optimized] backend
+            // UTOPIA_BACKEND(Traits).apply(result, PlusEqual, alpha, Multiplies, Identity);
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -114,6 +141,10 @@ namespace utopia {
 
             ASSERT(ok);
 
+            // new backend map concept
+            // [minimal][optimized] backend
+            // UTOPIA_BACKEND(Traits).apply(result, right); 
+            // UTOPIA_BACKEND(Traits).apply(result, PlusEqual, alpha, Multiplies, left);
             UTOPIA_LOG_END(expr);
             return result;
         }
@@ -138,6 +169,11 @@ namespace utopia {
             );
 
             ASSERT(ok);
+
+            // new backend map concept
+            // [minimal][optimized] backend
+            // UTOPIA_BACKEND(Traits).apply(result, Minus, right); 
+            // UTOPIA_BACKEND(Traits).apply(result, PlusEqual, alpha, Multiplies, left);
 
             UTOPIA_LOG_END(expr);
             return result;
