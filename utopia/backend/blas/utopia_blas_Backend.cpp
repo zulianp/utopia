@@ -68,12 +68,12 @@ namespace utopia {
 	
 	void BLASBackend::dscal_wrapper(const int *n, const double *sa, const double *sx, const int *incx)
 	{
-		dscal_(n, sa, sx, incx); 
+		dscal_(n, sa, sx, incx);
 	}
 	
 	void BLASBackend::daxpy_wrapper(const int *n, const double *alpha, const double *x, const int *incx, double *y, const int *incy)
 	{
-		daxpy_(n, alpha, x, incx, y, incy); 
+		daxpy_(n, alpha, x, incx, y, incy);
 	}
 	
 	void BLASBackend::assign(Vector &left, Vector &&right)
@@ -277,15 +277,15 @@ namespace utopia {
 			   transpose_B ? &n : &k, &beta, C.ptr(), &m);
 	}
 	
-
+	
 	void BLASBackend::gemm(Matrix &C,
-                         const Scalar beta,
-                         const Scalar &alpha,
-                         const bool transpose_A,
-                         const Vector &A,
-                         const bool transpose_B,
-                         const Matrix &B)
-    {
+						   const Scalar beta,
+						   const Scalar &alpha,
+						   const bool transpose_A,
+						   const Vector &A,
+						   const bool transpose_B,
+						   const Matrix &B)
+	{
 		
 		const int k = transpose_A ? A.size() : 1;
 		assert(k == (transpose_B ? B.cols() : B.rows()));
@@ -307,11 +307,11 @@ namespace utopia {
 	}
 	
 	void BLASBackend::gemv(Vector &y,
-                         const Scalar beta,
-                         const Scalar &alpha,
-                         const bool transpose_A,
-                         const Matrix &A,
-                         const Vector &x)
+						   const Scalar beta,
+						   const Scalar &alpha,
+						   const bool transpose_A,
+						   const Matrix &A,
+						   const Vector &x)
 	{
 		const char t_A_flag = transpose_A ? 'T' : 'N';
 		
@@ -345,11 +345,11 @@ namespace utopia {
 	}
 	
 	void BLASBackend::gemv(Vector &y,
-                         const Scalar beta,
-                         const Scalar &alpha,
-                         const bool transpose_A,
-                         const CRSMatrix<Scalar> &A,
-                         const Vector &x)
+						   const Scalar beta,
+						   const Scalar &alpha,
+						   const bool transpose_A,
+						   const CRSMatrix<Scalar> &A,
+						   const Vector &x)
 	{
 		int y_size = transpose_A? A.rows() : A.cols();
 		
@@ -381,29 +381,29 @@ namespace utopia {
 				y[r] += alpha * A_x;
 			}
 		}
-	}   
-
+	}
+	
 	void BLASBackend::axpy(Vector &y, const Scalar &alpha, const Vector &x)
 	{
 		if(y.size() != x.size()) {
 			y.resize(x.size());
 			std::fill(y.begin(), y.end(), 0.);
 		}
-
+		
 		int n = x.size();
 		int incx = 1;
 		int incy = 1;
-
+		
 		daxpy_wrapper(&n, &alpha, ptr(x), &incx, ptr(y), &incy);
 	}
-
+	
 	void BLASBackend::axpy(Matrix &y, const Scalar &alpha, const Matrix &x)
 	{
 		if(y.rows() != x.rows() || y.cols() != x.cols()) {
 			y.resize(x.rows(), x.cols());
 			std::fill(y.entries().begin(), y.entries().end(), 0.);
 		}
-
+		
 		axpy(y.entries(), alpha, x.entries());
 	}
 	
@@ -593,7 +593,7 @@ namespace utopia {
 	}
 	
 	BLASBackend::Scalar BLASBackend::trace(const Matrix &in)
-	{           
+	{
 		const SizeType n = std::min(in.rows(), in.cols());
 		
 		BLASBackend::Scalar ret = 0;
@@ -603,61 +603,61 @@ namespace utopia {
 		
 		return ret;
 	}
-
-    void BLASBackend::apply_binary(Vector &result, const Vector &vec, const Multiplies &, const Scalar value)
-    {
-    	axpy(result, value, vec);
-    }
-
+	
+	void BLASBackend::apply_binary(Vector &result, const Vector &vec, const Multiplies &, const Scalar value)
+	{
+		axpy(result, value, vec);
+	}
+	
 	void BLASBackend::apply_binary(Vector &result, const Vector &vec, const Divides &, const Scalar value)
 	{
 		axpy(result, 1./value, vec);
 	}
-
+	
 	void BLASBackend::apply_binary(Vector &result, const Vector &left, const Minus &, const Vector &right)
 	{
 		result = left;
 		axpy(result, -1., right);
 	}
-
+	
 	void BLASBackend::apply_binary(Vector &result, const Vector &left, const Plus &, const Vector &right)
 	{
 		result = left;
 		axpy(result, 1., right);
 	}
-
+	
 	void BLASBackend::apply_binary(Vector &result, const Matrix &left, const Multiplies &, const Vector &right)
 	{
 		gemv(result, 0., 1., false, left, right);
 	}
-
-    void BLASBackend::apply_binary(Vector &result, const CRSMatrix<Scalar> &left, const Multiplies &, const Vector &right)
-    {
-    	gemv(result, 0., 1., false, left, right);
-    }
-
+	
+	void BLASBackend::apply_binary(Vector &result, const CRSMatrix<Scalar> &left, const Multiplies &, const Vector &right)
+	{
+		gemv(result, 0., 1., false, left, right);
+	}
+	
 	void BLASBackend::apply_binary(Matrix &result, const Matrix &left, const Plus &, const Matrix &right)
 	{
 		result = left;
 		axpy(result, 1., right);
 	}
-
+	
 	void BLASBackend::apply_binary(Matrix &result, const Matrix &left, const Minus &op, const Matrix &right)
 	{
 		result = left;
 		axpy(result, -1., right);
 	}
-
+	
 	void BLASBackend::apply_binary(Matrix &result, const Matrix &mat, const Multiplies &, const Scalar &value)
 	{
 		axpy(result, value, mat);
 	}
-
+	
 	void BLASBackend::apply_binary(Matrix &result, const Matrix &mat, const Divides &, const Scalar &value)
 	{
 		axpy(result, 1./value, mat);
 	}
-
+	
 	void BLASBackend::apply_binary(Matrix &result, const Matrix &left, const Multiplies &, const Matrix &right)
 	{
 		gemm(result, 0., 1, false, left, false, right);

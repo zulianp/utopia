@@ -12,37 +12,8 @@
 #include "utopia_StoreAs.hpp"
 #include <string>
 
-namespace utopia 
-{
-    template<class Left, class Right>
-    class MatrixPtAPProduct : public Expression< MatrixPtAPProduct<Left, Right> > 
-    {
-    public:
-        MatrixPtAPProduct(const Left &left, const Right &right)
-                : _left(left), _right(right)
-        {}
-
-        inline const Left &left() const 
-        {
-            return _left;
-        }
-
-        inline const Right &right() const 
-        {
-            return _right;
-        }
-
-        std::string getClass() const override
-        {
-            return "MatrixPtAPProduct<" + left().getClass() + ", " + right().getClass() + ">";
-        }
-
-
-    private:
-        UTOPIA_STORE_CONST(Left)  _left;
-        UTOPIA_STORE_CONST(Right) _right;
-    };
-
+namespace utopia {
+    
     /**
      * @defgroup   tensor_products Tensor Products
      * @ingroup     algebra
@@ -53,9 +24,9 @@ namespace utopia
      * @brief       Creates product \f$ P^T * A * P \f$ - the same exact procedure and performance can be achieved by calling \f$ P^T * A * P \f$ directly. \n
      */
     template<class Left, class Right>
-    inline MatrixPtAPProduct<Left, Right> mat_PtAP_product(const Expression<Left> &left, const Expression<Right> &shape_vector)
+    Multiply< Multiply<Transposed<Right>, Left>, Right> ptap(const Expression<Left> &A, const Expression<Right> &P) 
     {
-        return MatrixPtAPProduct<Left, Right>(left.derived(), shape_vector.derived());
+        return transpose(P) * A * P;
     }
 }
 

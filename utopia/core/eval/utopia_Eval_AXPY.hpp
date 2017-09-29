@@ -18,7 +18,7 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign(result, Eval<Left,  Traits>::apply(expr.left().right()) );
+            UTOPIA_BACKEND(Traits).assign(result, Eval<Right, Traits>::apply(expr.right()) );
             UTOPIA_BACKEND(Traits).axpy(
                     result,
                     expr.left().left(),
@@ -41,7 +41,7 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assign(result, Eval<Right,  Traits>::apply(expr.right()) );
+            UTOPIA_BACKEND(Traits).assign(result, Eval<Right, Traits>::apply(expr.right()) );
             UTOPIA_BACKEND(Traits).axpy(
                     result,
                     expr.left().right(),

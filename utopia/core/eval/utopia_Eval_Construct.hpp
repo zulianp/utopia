@@ -50,7 +50,7 @@ namespace utopia {
         {
             UTOPIA_LOG_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assignTransposed(
+            UTOPIA_BACKEND(Traits).assign_transposed(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Wrapper<Right, 2>, Traits>::apply(expr.right().expr())
             );
