@@ -363,6 +363,18 @@ namespace utopia {
 		// static void axpy(CRSMatrix<Scalar> &y, const Scalar &alpha, const CRSMatrix<Scalar> &x);
 		
 		//[blas 2]
+
+		inline static void multiply(Vector &y,
+						 const bool transpose_A,
+						 const Matrix &A,
+						 const bool transpose_X,
+						 const Vector &x)
+		{
+			assert(!transpose_X);
+			(void) transpose_X;
+			gemv(y, 0., 1., transpose_A, A, x);
+		}
+
 		///gemv: y = (y * beta) + alpha * A * x
 		static void gemv(Vector &y,
 						 const Scalar beta,
@@ -379,6 +391,24 @@ namespace utopia {
 						 const Vector &x);
 		
 		//[blas 3]
+
+		inline static void multiply(Matrix &C,
+						 const bool transpose_A,
+						 const Matrix &A,
+						 const bool transpose_B,
+						 const Matrix &B)
+		{
+			gemm(C, 0., 1., transpose_A, A, transpose_B, B);
+		}
+
+		inline static void multiply(Matrix &C,
+						 const bool transpose_A,
+						 const Vector &A,
+						 const bool transpose_B,
+						 const Matrix &B)
+		{
+			gemm(C, 0., 1., transpose_A, A, transpose_B, B);
+		}
 		
 		///gemm: C = beta * C + alpha * A * B
 		static void gemm(Matrix &C,

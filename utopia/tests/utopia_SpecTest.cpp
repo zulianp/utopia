@@ -430,27 +430,27 @@ namespace utopia {
             Size s;
             /* Test m1 */
             backend.size(m1, s);
-            assert(s.nDims() == 2);
+            assert(s.n_dims() == 2);
             assert(s.get(0) == _n && s.get(1) == _n);
 
             /* Test m2 */
             backend.size(m2, s);
-            assert(s.nDims() == 2);
+            assert(s.n_dims() == 2);
             assert(s.get(0) == 0 && s.get(1) == 0);
 
             /* Test m3 */
             backend.size(m3, s);
-            assert(s.nDims() == 2);
+            assert(s.n_dims() == 2);
             assert(s.get(0) == _n + 3 && s.get(1) == _n - 2);
 
             /* Test v1 */
             backend.size(v1, s);
-            assert(s.nDims() == 1);
+            assert(s.n_dims() == 1);
             assert(s.get(0) == _n);
 
             /* Test v2 */
             backend.size(v2, s);
-            assert(s.nDims() == 1);
+            assert(s.n_dims() == 1);
             assert(s.get(0) == 0);
         }
 

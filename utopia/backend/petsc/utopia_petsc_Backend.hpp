@@ -357,6 +357,29 @@ namespace utopia {
 		static void axpy(PETScMatrix &y, const Scalar alpha, const PETScMatrix &x);
 		static void axpby(Vector &y, const Scalar alpha, const Vector &x, const Scalar &beta);
 
+		inline static void multiply(
+			PETScMatrix &result,
+			bool transpose_left,
+			const PETScMatrix &left,
+			bool transpose_right,
+			const PETScMatrix &right)
+		{
+			gemm(result, 0.0, 1., transpose_left, left, transpose_right, right);
+		}
+
+		inline static void multiply(
+			Vector &result,
+			bool transpose_left,
+			const PETScMatrix &left,
+			bool transpose_right,
+			const Vector &right)
+		{
+			assert(!transpose_right); 
+			(void) transpose_right;
+			
+			gemv(result, 0.0, 1., transpose_left, left, right);
+		}
+
 		static void gemm(
 			PETScMatrix &result,
 			const Scalar beta,
