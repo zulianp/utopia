@@ -14,7 +14,7 @@ namespace utopia {
     namespace internals {
         bool lapack_dgesv_solve(const Matrixd::Implementation &A, const Vectord::Implementation &b, Vectord::Implementation &x) 
         {
-            const int n = A.getRows();
+            const int n = A.rows();
             const int nrhs = 1;
             const int lda = n;
             const int ldb = n;

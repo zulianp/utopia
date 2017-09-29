@@ -38,9 +38,9 @@ namespace utopia {
         typedef utopia::Backend<Scalar, Traits::Backend> BackendT;
 
         template<class Expr, int Order>
-        static bool eval(const Wrapper<Expr, Order> &expr, Size &size)
+        static void eval(const Wrapper<Expr, Order> &expr, Size &size)
         {
-            return BackendT::Instance().size(eval(expr), size);
+            BackendT::Instance().size(eval(expr), size);
         }
 
         template<class Derived>

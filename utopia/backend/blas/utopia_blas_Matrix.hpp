@@ -16,108 +16,111 @@ namespace utopia {
         typedef typename Entries::size_type SizeType;
 
     public:
-        Matrix(SizeType rows, SizeType cols) : rows(rows), cols(cols)
+        Matrix(SizeType rows, SizeType cols) : rows_(rows), cols_(cols)
         {
-            entries.resize(rows*cols);
+            entries_.resize(rows_*cols_);
         }
 
-        Matrix(SizeType rows, SizeType cols, T value) : rows(rows), cols(cols)
+        Matrix(SizeType rows, SizeType cols, T value) : rows_(rows), cols_(cols)
         {
-            setEntries(Entries(rows*cols, value));
+            set_entries(Entries(rows_ * cols_, value));
         }
 		
-		~Matrix()
-		{
-		}
+		~Matrix() { }
 
-        Matrix() : rows(0), cols(0) {}
+        Matrix() : rows_(0), cols_(0) {}
 
-        Matrix(SizeType rows, SizeType cols, std::initializer_list<T> args) : rows(rows), cols(cols)
+        Matrix(SizeType rows, SizeType cols, std::initializer_list<T> args) : rows_(rows), cols_(cols)
         {
-            entries.resize(rows*cols);
             using std::copy;
-            copy(args.begin(), args.end(), entries.begin());
+
+            entries_.resize(rows_*cols_);
+            copy(args.begin(), args.end(), entries_.begin());
         }
 
         Matrix(const Entries& e)
         {
-            rows = e.size();
-            cols = 1;
-            entries = e;
+            rows_ = e.size();
+            cols_ = 1;
+            entries_ = e;
 
         }
-
-        SizeType getRows() const {
-            return rows;
+        inline bool empty() const
+        {
+            return entries_.empty();
         }
 
-        SizeType getCols() const {
-            return cols;
+        SizeType rows() const {
+            return rows_;
+        }
+
+        SizeType cols() const {
+            return cols_;
         }
 
         SizeType size() const {
-            return getRows() * getCols();
+            return rows() * cols();
         }
 
-        const Entries &getEntries() const {
-            return entries;
+        const Entries &entries() const {
+            return entries_;
         }
 
-        Entries &getEntries() {
-            return entries;
+        Entries &entries() {
+            return entries_;
         }
 
         template<class EntriesT>
-        void setEntries(EntriesT &&entries) {
-            Matrix::entries = std::forward<EntriesT>(entries);
+        void set_entries(EntriesT &&entries) {
+            entries_ = std::forward<EntriesT>(entries);
         }
 		
 		inline T &at(const SizeType index)
 		{
-			assert(index < entries.size());
-			return entries[index];
+			assert(index < entries_.size());
+			return entries_[index];
 		}
 
 		inline const T &at(const SizeType index) const
 		{
-			assert(index < entries.size());
-			return entries[index];
+			assert(index < entries_.size());
+			return entries_[index];
 		}
         void set(SizeType i, SizeType j, T value) {
-            assert(i < getRows());
-            assert(j < getCols());
-            entries[ i + getRows() * j ] = value;
+            assert(i < rows());
+            assert(j < cols());
+            entries_[ i + rows() * j ] = value;
         }
 
         T get(SizeType i, SizeType j) const {
-            assert(i < getRows());
-            assert(j < getCols());
-            return at(i + getRows() * j);
+            assert(i < rows());
+            assert(j < cols());
+            return at(i + rows() * j);
         }
 
-        void setRows(SizeType rows) {
-            Matrix::rows = rows;
+        void set_rows(SizeType rows) {
+            rows_ = rows;
         }
 
-        void setCols(SizeType cols) {
-            Matrix::cols = cols;
+        void set_cols(SizeType cols) {
+            cols_ = cols;
         }
 
         void resize(const SizeType rows, const SizeType cols)
         {
-            this->rows = rows;
-            this->cols = cols;
-            this->entries.resize(rows*cols);
+            this->rows_ = rows;
+            this->cols_ = cols;
+            this->entries_.resize(rows_ * cols_);
         }
 
         T* ptr()
         {
-            return &entries[0];
+            return &entries_[0];
         }
 
         const T* ptr() const
         {
-            return &entries[0];
+            return &entries_[0];
         }
 
         void identity(const SizeType rows, const SizeType cols)
@@ -127,7 +130,7 @@ namespace utopia {
             using std::fill;
 
             resize(rows, cols);
-            fill(entries.begin(), entries.end(), T(0));
+            fill(entries_.begin(), entries_.end(), T(0));
 
             const SizeType n = min(rows, cols);
             for (SizeType i = 0; i < n; ++i)
@@ -141,35 +144,32 @@ namespace utopia {
             using std::fill;
 
             resize(rows, cols);
-            fill(entries.begin(), entries.end(), T(value));
+            fill(entries_.begin(), entries_.end(), T(value));
         }
 
     private:
-        Entries entries;
-        SizeType rows;
-        SizeType cols;
+        Entries entries_;
+        SizeType rows_;
+        SizeType cols_;
 
     };
-
 
     inline Wrapper<Matrix<double>, 2> mmake(int rows, int cols, std::initializer_list<double> args) {
         return Matrix<double>(rows, cols, args);
     }
 
-
-
     template<typename T>
     void disp(const Wrapper< Matrix<T>, 2> &w, std::ostream &os)
     {
-        for (SizeType i=0; i<w.implementation().getRows(); ++i)
+        for (SizeType i=0; i<w.implementation().rows(); ++i)
         {
-            for(SizeType j=0; j<w.implementation().getCols(); ++j)
+            for(SizeType j=0; j<w.implementation().cols(); ++j)
             {
                 os << w.implementation().get(i, j) << ' ';
             }
             os << '\n';
         }
-        //disp(w.implementation().getEntries().begin(), w.implementation().getEntries().end(), os);
+        //disp(w.implementation().entries().begin(), w.implementation().entries().end(), os);
     }
 
 }

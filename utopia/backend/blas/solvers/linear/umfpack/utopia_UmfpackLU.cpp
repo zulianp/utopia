@@ -54,7 +54,7 @@ namespace internals {
                                      mat.size().get(1),                          //1
                                      &mat.implementation().colptr()[0],          //2
                                      &mat.implementation().rowindex()[0],        //3
-                                     &mat.implementation().getEntries()[0],      //4
+                                     &mat.implementation().entries()[0],      //4
                                      &internal.symbolic, &control[0], &info[0]);       //5, 6, 7
 
         assert(status == UMFPACK_OK);
@@ -62,7 +62,7 @@ namespace internals {
 
         status = umfpack_di_numeric (&mat.implementation().colptr()[0],          //0
                                      &mat.implementation().rowindex()[0],        //1
-                                     &mat.implementation().getEntries()[0],      //2
+                                     &mat.implementation().entries()[0],      //2
                                      internal.symbolic, &internal.numeric, &control[0], &info[0]);     //4, 5, 6, 7
 
         assert(status == UMFPACK_OK);
@@ -81,7 +81,7 @@ namespace internals {
         int status = umfpack_di_solve (UMFPACK_A,
                                        &mat.implementation().colptr()[0],
                                        &mat.implementation().rowindex()[0],
-                                       &mat.implementation().getEntries()[0],
+                                       &mat.implementation().entries()[0],
                                        solution, rhs, internal.numeric,
                                        &internal.control[0],
                                        &internal.info[0]);

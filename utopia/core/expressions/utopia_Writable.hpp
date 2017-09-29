@@ -227,7 +227,7 @@ namespace utopia {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.write_lock();
 #endif //ENABLE_LOCK_CHECK            
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().writeLock(_tensor.implementation());
+            Backend<Scalar, Traits<Tensor>::Backend >::Instance().write_lock(_tensor.implementation());
         }
 
         ~Write()
@@ -235,7 +235,7 @@ namespace utopia {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.write_unlock();
 #endif //ENABLE_LOCK_CHECK   
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().writeUnlock(_tensor.implementation());
+            Backend<Scalar, Traits<Tensor>::Backend >::Instance().write_unlock(_tensor.implementation());
         }
     };
 }

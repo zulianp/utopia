@@ -6,53 +6,45 @@ namespace utopia {
 	template<typename Scalar>
 	class ScalarBackend {
 	public:
-		static inline bool apply(const Scalar left, const Scalar right, const Plus &op, Scalar &result)
+		static inline void apply_binary(Scalar &result, const Scalar left, const Plus &op, const Scalar right)
 		{
-			aux_apply(left, right, op, result);
-			return true;
+			aux_apply_binary(left, right, op, result);
 		}
 
-		static inline bool apply(const Scalar left, const Scalar right, const Minus &op, Scalar &result)
+		static inline void apply_binary(Scalar &result, const Scalar left, const Minus &op, const Scalar right)
 		{
-			aux_apply(left, right, op, result);
-			return true;
+			aux_apply_binary(left, right, op, result);
 		}
 
 
-		static inline bool apply(const Scalar left, const Scalar right, const Multiplies &op, Scalar &result)
+		static inline void apply_binary(Scalar &result, const Scalar left, const Multiplies &op, const Scalar right)
 		{
-			aux_apply(left, right, op, result);
-			return true;
+			aux_apply_binary(left, right, op, result);
 		}
 
-		static inline bool apply(const Scalar left, const Scalar right, const EMultiplies &op, Scalar &result)
+		static inline void apply_binary(Scalar &result, const Scalar left, const EMultiplies &op, const Scalar right)
 		{
-			aux_apply(left, right, op, result);
-			return true;
+			aux_apply_binary(left, right, op, result);
 		}
 
-		static inline bool apply(const Scalar left, const Scalar right, const Divides &op, Scalar &result)
+		static inline void apply_binary(Scalar &result, const Scalar left, const Divides &op, const Scalar right)
 		{
-			aux_apply(left, right, op, result);
-			return true;
+			aux_apply_binary(left, right, op, result);
 		}
 
-		static inline bool apply(const Scalar left, const Scalar right, const AbsPlus &op, Scalar &result)
+		static inline void apply_binary(Scalar &result, const Scalar left, const AbsPlus &op, const Scalar right)
 		{
-			aux_apply(left, right, op, result);
-			return true;
+			aux_apply_binary(left, right, op, result);
 		}
 
-		static inline bool apply(const Scalar left, const Scalar right, const ApproxEqual &op, bool &result)
+		static inline void apply_binary(bool &result, const Scalar left, const Scalar right, const ApproxEqual &op)
 		{
-			aux_apply(left, right, op, result);
-			return true;
+			aux_apply_binary(left, right, op, result);
 		}
 
-		static inline bool zaxpy(const Scalar alpha, const Scalar x, const Scalar y, Scalar &result)
+		static inline void axpy(Scalar &y, const Scalar alpha, const Scalar x)
 		{
-			result = alpha * x + y;
-			return true;
+			y += alpha * x;
 		}
 
 	protected:
@@ -60,7 +52,7 @@ namespace utopia {
 
 
 		template<typename Left, typename Right, typename Operation, typename Result>
-		static inline void aux_apply(const Left &left, const Right &right, const Operation &op, Result &result)
+		static inline void aux_apply_binary(const Left &left, const Right &right, const Operation &op, Result &result)
 		{
 			result = op.template apply<Right>(left, right);
 		}
