@@ -54,32 +54,32 @@ namespace utopia {
         }
     };
 
-    template<class Left, typename ScalarT, class Traits, int Backend>
-    class Eval<Assign<Left,
-                      Binary< Number<ScalarT>,
-                              Factory<Identity, 2>,
-                              Multiplies>
-                     >,
-               Traits, Backend> {
-    public:
-        inline static void apply(const Assign<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies> > &expr) {
-            UTOPIA_LOG_BEGIN(expr);
+    // template<class Left, typename ScalarT, class Traits, int Backend>
+    // class Eval<Assign<Left,
+    //                   Binary< Number<ScalarT>,
+    //                           Factory<Identity, 2>,
+    //                           Multiplies>
+    //                  >,
+    //            Traits, Backend> {
+    // public:
+    //     inline static void apply(const Assign<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies> > &expr) {
+    //         UTOPIA_LOG_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).build(
-                   Eval<Left, Traits>::apply(expr.left()),
-                   size(expr.right().right()),
-                   expr.right().right().type()
-            );
+    //         UTOPIA_BACKEND(Traits).build(
+    //                Eval<Left, Traits>::apply(expr.left()),
+    //                size(expr.right().right()),
+    //                expr.right().right().type()
+    //         );
 
-            UTOPIA_BACKEND(Traits).scal(
-                    expr.right().left(),
-                    Eval<Left, Traits>::apply(expr.left()),
-                    Eval<Left, Traits>::apply(expr.left())
-            );
+    //         UTOPIA_BACKEND(Traits).scal(
+    //                 expr.right().left(),
+    //                 Eval<Left, Traits>::apply(expr.left()),
+    //                 Eval<Left, Traits>::apply(expr.left())
+    //         );
 
-            UTOPIA_LOG_END(expr);
-        }
-    };
+    //         UTOPIA_LOG_END(expr);
+    //     }
+    // };
 
     template<class Left, class Traits, int Backend>
     class Eval<Binary<Left, Factory<Identity, 2>, Plus>, Traits, Backend> {
@@ -113,9 +113,6 @@ namespace utopia {
             return result;
         }
     };
-
-
-
 
     template<class Left, class Right, typename ScalarT, class Traits, int Backend>
     class Eval<Binary<Binary<Left, Number<ScalarT>, Multiplies>, Right, Minus>, Traits, Backend> {

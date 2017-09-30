@@ -29,7 +29,7 @@ namespace utopia {
 
 	// mat-mat-mat multiplication
 	template<class M1, class M2, class M3, class Traits>
-	class Eval< Multiply< Multiply< Wrapper<M1, 2>, Wrapper<M2, 2> >, Wrapper<M3, 2> >,  Traits,  PETSC> {
+	class Eval< Multiply< Multiply< Wrapper<M1, 2>, Wrapper<M2, 2> >, Wrapper<M3, 2> >, Traits, PETSC> {
 		public:
 			typedef utopia::Multiply< Multiply< Wrapper<M1, 2>, Wrapper<M2, 2> >, Wrapper<M3, 2> > Expr;
 
