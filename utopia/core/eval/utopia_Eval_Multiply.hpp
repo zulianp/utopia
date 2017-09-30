@@ -61,7 +61,7 @@ namespace utopia {
     public:
         typedef typename TypeAndFill<Traits, Multiply<Left, Transposed<Right> > >::Type Result;
 
-        inline static Result apply(const Multiply<Left, Transposed<Right> > &expr)         {
+        inline static Result apply(const Multiply<Left, Transposed<Right> > &expr) {
             Result result;
 
             UTOPIA_LOG_BEGIN(expr);

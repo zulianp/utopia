@@ -672,7 +672,6 @@ namespace utopia {
 		return info.nz_used; 
 	}
 
-
 	Scalar PetscBackend::get_local_nnz(PETScMatrix &Mat_A)
 	{	
 		MatInfo        info;
