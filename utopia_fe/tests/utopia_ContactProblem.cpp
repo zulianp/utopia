@@ -104,8 +104,8 @@ namespace utopia {
 		
 		const int dim = u.size();
 
-		auto mu     = block_var(1.5, {{3, 10.}, {4, 150.}});
-		auto lambda = block_var(1.5, {{3, 10.}, {4, 150.}});
+		auto mu     = block_var(2.5, {{3, 10.}, {4, 150.}});
+		auto lambda = block_var(2.5, {{3, 10.}, {4, 150.}});
 
 		// double mu = 730;
 		// double lambda = 376;
