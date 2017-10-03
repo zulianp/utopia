@@ -297,7 +297,7 @@ namespace utopia {
 			contact_flags = {{101, 102}, {103, 104}, {105, 106}};
 			// contact_flags = {{102, 101}, {103, 104}, {105, 106}};
 			dt = 0.05;
-			n_steps = 60;
+			n_steps = 100;
 		}
 
 		void set_up_m_coarse_t_dynamic()
@@ -376,6 +376,8 @@ namespace utopia {
 		mesh->read(e_problem->mesh_file);
 		MOONOLITH_EVENT_END("read_mesh");
 
+		utopia::Utopia::Instance().set("plot", "true");
+
 		p.init(init, mesh, e_problem, e_problem, e_problem->contact_flags, e_problem->search_radius);
 		p.set_dynamic_contact(e_problem->dynamic_contact);
 		p.is_inpulse(e_problem->is_inpulse);
@@ -384,6 +386,7 @@ namespace utopia {
 		double t = 0.0;
 		for(int i = 0; i < e_problem->n_steps; ++i) {
 			std::cout << "t: " << t << "/" << (e_problem->dt * e_problem->n_steps) << std::endl;
+
 			std::cout << std::flush;
 			t += e_problem->dt;
 			p.step(e_problem->dt);	
