@@ -28,6 +28,7 @@ namespace utopia {
 		DSMatrixd neumann_matrix;
 		DSMatrixd mass_matrix;
 		DSMatrixd internal_mass_matrix;
+		DSMatrixd constrained_mass_matrix;
 		DVectord external_force;
 		DVectord displacement_increment;
 		DVectord old_displacement_increment;
@@ -51,6 +52,7 @@ namespace utopia {
 		DVectord gap;
 		DSMatrixd boundary_mass_inv;
 		DVectord normal_stress;
+		DVectord new_internal_force;
 
 		double search_radius;
 		std::vector< std::pair<int, int> > contact_pair_tags;
@@ -64,6 +66,8 @@ namespace utopia {
 
 
 		std::vector<int> var_num_aux;
+
+
 
 		class ElasticityBoundaryConditions {
 		public:
@@ -91,6 +95,20 @@ namespace utopia {
 		std::shared_ptr<libMesh::Nemesis_IO> output;
 		// std::shared_ptr<libMesh::ExodusII_IO> output;
 
+		typedef struct {
+			double t;
+			double kinetic_energy;
+			double elastic_energy;
+			double potential_energy;
+			double contact_energy;
+		} Energy;
+
+		std::vector<Energy> energy;
+
+		void compute_energy(const double dt);
+		void save_energy(const std::string &path);
+
+
 		void step(const double dt = 1.0);
 
 		void init(
@@ -108,6 +126,11 @@ namespace utopia {
 			dynamic_contact = val;
 		}
 
+		void is_inpulse(const bool val)
+		{
+			is_inpulse_ = val;
+		}
+
 		ContactProblem();
 	private:
 		void compute_normal_stress(const double dt);
@@ -118,6 +141,14 @@ namespace utopia {
 		void init_material_3d();
 		void apply_displacement(const DVectord &displacement);
 		void init_aux_system();
+		void contact_stabilized_newmark(const double dt);
+		void implicity_euler(const double dt);
+		void classic_newmark(const double dt);
+		void classic_newmark_with_contact(const double dt);
+		void classic_newmark_beta(const double dt);
+		void contact_stabilized_newmark_monolithic(const double dt);
+
+		bool is_inpulse_;
 	};
 }
 

@@ -1056,7 +1056,7 @@ namespace utopia {
 			
 			{
 				for (auto it = rel_area_buffer.iter(); it; ++it) {
-					bool must_remove = *it < 1 - 1e-8;
+					bool must_remove = *it < (1 - 1e-8);
 					
 					if(!must_remove) {
 						const SizeType faceId = it.row();

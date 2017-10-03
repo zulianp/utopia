@@ -80,7 +80,7 @@ namespace utopia {
 	                bound_.static_bound()  += p_a;
 	                bound_.dynamic_bound() += p_a;
 	                p = c;
-	                n *= 0.1;
+	                n *= 0.5;
 	                p -=n;
 	                bound_.static_bound()  += p_a;
 	                bound_.dynamic_bound() += p_a;

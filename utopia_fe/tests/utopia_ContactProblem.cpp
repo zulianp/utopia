@@ -20,6 +20,7 @@ namespace utopia {
 	{
 		verbose = true;
 		dynamic_contact = false;
+		is_inpulse_ = false;
 	}
 
 	void ContactProblem::init(
@@ -103,13 +104,13 @@ namespace utopia {
 		
 		const int dim = u.size();
 
-		// auto mu     = block_var(100., {{3, 10.}, {4, 150.}});
-		// auto lambda = block_var(100., {{3, 10.}, {4, 150.}});
+		auto mu     = block_var(1.5, {{3, 10.}, {4, 150.}});
+		auto lambda = block_var(1.5, {{3, 10.}, {4, 150.}});
 
 		// double mu = 730;
 		// double lambda = 376;
-		double mu = 4;
-		double lambda = 4;
+		// double mu = 1;
+		// double lambda = 1;
 
 		auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
 		auto b_form = integral((0.5 * mu) * dot(e, e) + lambda * dot(div(u), div(u)));
@@ -231,6 +232,7 @@ namespace utopia {
 		}
 
 		old_displacement_increment = local_zeros(local_size(external_force));
+		displacement_increment =  local_zeros(local_size(external_force));
 
 		velocity = local_zeros(local_size(external_force));
 
@@ -240,6 +242,8 @@ namespace utopia {
 		DVectord selector = local_values(local_size(external_force).get(0), 1.);
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), selector);
 		internal_mass_matrix = diag(selector) * mass_matrix;
+		constrained_mass_matrix = mass_matrix;
+		set_identity_at_constraint_rows(spaces[0]->dof_map(), constrained_mass_matrix);
 
 		init_aux_system();
 	}
@@ -294,59 +298,11 @@ namespace utopia {
 		if(comm.is_alone()) plot_scaled_normal_field(*mesh, normals, gap, "time_series_r/r" + std::to_string(iteration));
 	}
 
-	void ContactProblem::step(const double dt)
+
+	void ContactProblem::implicity_euler(const double dt)
 	{
-
-		if(verbose) std::cout << "Contact problem: computing step" << std::endl;
-		
-		disp("n_dofs:");
-		disp(size(external_force));
-		const int dim = mesh->mesh_dimension();
-
-		if(iteration > 0) {
-			Read<DVectord> r_od(old_displacement_increment), r_v(velocity), r_td(total_displacement);
-
-			search_radius = 1e-8;
-			auto r = range(old_displacement_increment);
-			for(auto i = r.begin(); i < r.end(); i += dim) {
-				double length = 0.0;
-				double length_total_disp = 0.0;
-
-				for(int j = 0; j < dim; ++j) {
-					double v = old_displacement_increment.get(i + j) + (dt * dt) * velocity.get(i + j);
-					length += v * v;
-					length_total_disp += total_displacement.get(i + j) *  total_displacement.get(i + j);
-				}
-
-				search_radius = std::max(search_radius, std::min(1.1 * std::sqrt(length), std::sqrt(length_total_disp)));
-			}
-		}
-
-		search_radius += 1e-8;
-		comm.all_reduce(&search_radius, 1, moonolith::MPIMax());
-		disp("predicted search radius");
-		disp(search_radius);
-
-		compute_contact_conditions();
-
-		MOONOLITH_EVENT_BEGIN("solving_vi");
-
-		DVectord rhs;
-		DSMatrixd K;
-
-
-		if(dynamic_contact) {
-			//newmark scheme
-			//predictor step
-			DVectord displacement_increment_pred = dt * velocity;
-			DVectord displacement_increment_pred_nt = utopia::min(orthogonal_trafo * displacement_increment_pred, gap);
-			displacement_increment_pred = orthogonal_trafo * displacement_increment_pred_nt;
-			rhs = mass_matrix * displacement_increment_pred + (dt*dt/2.) * (external_force - internal_force);
-			K = internal_mass_matrix + (dt*dt/4.) * stiffness_matrix;
-		} else {
-			K = stiffness_matrix;
-			rhs = dt * (external_force - internal_force);
-		}
+		DSMatrixd &K = stiffness_matrix;
+		DVectord rhs = dt * (external_force - internal_force);
 
 		DVectord sol_c = local_zeros(local_size(external_force));
 		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
@@ -369,25 +325,314 @@ namespace utopia {
 		displacement_increment = transfer_operator * (orthogonal_trafo * sol_c);		
 		total_displacement += displacement_increment;
 
-		DVectord new_internal_force = stiffness_matrix * total_displacement;
+		new_internal_force = stiffness_matrix * total_displacement;
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
+	}
+
+	void ContactProblem::classic_newmark(const double dt)
+	{
+		DVectord &u_old = total_displacement;
+		DVectord u_older = u_old - old_displacement_increment;
+		DVectord rhs = 1./(dt*dt) * ( internal_mass_matrix * (u_old - u_older)) - (stiffness_matrix * (3./4. * u_old + 1./4. * u_older)) + external_force;
+		DSMatrixd K  = 1./(dt*dt) * internal_mass_matrix + stiffness_matrix;
+
+		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
+		newton.verbose(true);
+		newton.max_it(40);
+
+		DVectord dummy = local_values(local_size(rhs).get(0), 1000000);
+		newton.set_box_constraints(make_upper_bound_constraints(make_ref(dummy)));
+
+		displacement_increment = local_zeros(local_size(rhs));
+		newton.solve(K, rhs, displacement_increment);
+
+		total_displacement += displacement_increment;
+		new_internal_force = stiffness_matrix * total_displacement;
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
 
-		if(dynamic_contact) {
-			double dumping = 1.;
-			DVectord M_x_vel_inc = dumping * (dt * 0.5) * (2. * external_force - internal_force - new_internal_force);
-			apply_zero_boundary_conditions(spaces[0]->dof_map(), M_x_vel_inc);
+		velocity = (1/dt) * displacement_increment;
+	}
 
-			DVectord vel_inc = local_zeros(size(M_x_vel_inc));
-			solve(mass_matrix, M_x_vel_inc, vel_inc);
+	void ContactProblem::classic_newmark_with_contact(const double dt)
+	{
+		DVectord &u_old = total_displacement;
+		DVectord u_older = u_old - old_displacement_increment;
+		DVectord rhs = 1./(dt*dt) * ( internal_mass_matrix * (u_old - u_older)) - (stiffness_matrix * (3./4. * u_old + 1./4. * u_older)) + external_force;
+		DSMatrixd K  = 1./(dt*dt) * internal_mass_matrix + stiffness_matrix;
 
-			velocity += vel_inc;
+		DVectord sol_c = local_zeros(local_size(external_force));
+		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
+		DSMatrixd K_c  = transpose(orthogonal_trafo) *
+		DSMatrixd(
+			transpose(transfer_operator) * 
+			K * 
+			transfer_operator) * 
+		orthogonal_trafo;
+
+		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
+		newton.verbose(true);
+		newton.max_it(40);
+
+		newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
+		newton.solve(K_c, rhs_c, sol_c);
+
+		displacement_increment = transfer_operator * (orthogonal_trafo * sol_c);	
+
+		total_displacement += displacement_increment;
+		new_internal_force = stiffness_matrix * total_displacement;
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
+
+		velocity = (1./dt) * displacement_increment;
+	}
+
+	void ContactProblem::classic_newmark_beta(const double dt)
+	{
+
+	}
+
+	static void make_block_system(DSMatrixd &K_11, DSMatrixd &K_21, DSMatrixd &K_22, DSMatrixd &K,
+								  DVectord &rhs_1, DVectord &rhs_2, DVectord &rhs)
+	{
+		Size s = local_size(K_11);
+	 	K = local_sparse(s.get(0) * 2, s.get(1) * 2, 60);
+		Range rr = row_range(K_11);
+
+		rhs = local_zeros(s.get(0) * 2);
+
+		{
+			Read<DSMatrixd> r_11(K_11), r_21(K_21), r_22(K_22);
+			Write<DSMatrixd> w_K(K);
+
+			for(auto i = rr.begin(); i < rr.end(); ++i) {
+				RowView<DSMatrixd> rw_11(K_11, i);
+				for(auto j = 0; j < rw_11.n_values(); ++j) {
+					K.set(i, rw_11.get_col_at(j),  rw_11.get_value_at(j));
+				}
+
+				RowView<DSMatrixd> rw_21(K_21, i);
+				for(auto j = 0; j < rw_21.n_values(); ++j) {
+					K.set(i, rr.extent() + rw_21.get_col_at(j),  rw_21.get_value_at(j));
+				}
+
+				RowView<DSMatrixd> rw_22(K_22, i);
+				for(auto j = 0; j < rw_22.n_values(); ++j) {
+					K.set(rr.extent() + i, rr.extent() + rw_22.get_col_at(j), rw_22.get_value_at(j));
+				}
+			}
 		}
 
+		{
+			Read<DVectord> r_1(rhs_1), r_2(rhs_2);
+			Write<DVectord> w_K(rhs);
+
+			for(auto i = rr.begin(); i < rr.end(); ++i) {
+				rhs.set(i, rhs_1.get(i));
+				rhs.set(rr.extent() + i, rhs_2.get(i));
+			}
+		}
+	}
+
+	static void unmake_block_system(DVectord &sol, DVectord &sol_1, DVectord &sol_2)
+	{
+		auto rr = range(sol_1);
+
+		Read<DVectord> r_K(sol);
+		Write<DVectord> w_1(sol_1), w_2(sol_2);
+		
+		for(auto i = rr.begin(); i < rr.end(); ++i) {
+			sol_1.set(i, sol.get(i));
+			sol_2.set(i, sol.get(rr.extent() + i));
+		}
+	}
+
+	void ContactProblem::contact_stabilized_newmark_monolithic(const double dt)
+	{
+		DVectord displacement_increment_pred = dt * velocity;
+		DVectord displacement_increment_pred_nt = utopia::min(orthogonal_trafo * displacement_increment_pred, gap);
+		displacement_increment_pred = orthogonal_trafo * displacement_increment_pred_nt;
+		
+
+		DVectord rhs_1 = mass_matrix * displacement_increment_pred + (dt*dt/2.) * (external_force - internal_force);
+		DSMatrixd K_11 = internal_mass_matrix + (dt*dt/4.) * stiffness_matrix;
+		DSMatrixd K_21 = (dt*dt/2.) * stiffness_matrix;
+		DSMatrixd &K_22 = constrained_mass_matrix;
+
+		DVectord rhs_2 = internal_mass_matrix * velocity + dt/2. * (external_force - internal_force);
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), rhs_2);
+
+		DVectord sol_c_1 = local_zeros(local_size(external_force));
+		DVectord sol_c_2 = local_zeros(local_size(external_force));
+
+		// DVectord rhs_c_1 = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs_1;
+		// DVectord rhs_c_2 = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs_2;
+
+		// DSMatrixd K_c_11  = transpose(orthogonal_trafo) *
+		// DSMatrixd(
+		// 	transpose(transfer_operator) * 
+		// 	K_11 * 
+		// 	transfer_operator) * 
+		// orthogonal_trafo;
+
+
+		// DSMatrixd K_c_21  = transpose(orthogonal_trafo) *
+		// DSMatrixd(
+		// 	transpose(transfer_operator) * 
+		// 	K_21 * 
+		// 	transfer_operator) * 
+		// orthogonal_trafo;
+
+
+		// DSMatrixd K_c_22  = transpose(orthogonal_trafo) *
+		// DSMatrixd(
+		// 	transpose(transfer_operator) * 
+		// 	K_22 * 
+		// 	transfer_operator) * 
+		// orthogonal_trafo;
+
+
+		//end: not contact
+		DVectord &rhs_c_1 = rhs_1;
+		DVectord &rhs_c_2 = rhs_2;
+
+		DSMatrixd &K_11_c = K_11;
+		DSMatrixd &K_21_c = K_21;
+		DSMatrixd &K_22_c = K_22;
+		//end: not contact
+
+		DVectord rhs_c;
+		DSMatrixd K_c;
+		make_block_system(K_11_c, K_21_c, K_22_c, K_c, rhs_c_1, rhs_c_2, rhs_c);
+
+		// SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> newton(linear_solver);
+		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
+		newton.verbose(true);
+		newton.max_it(40);
+
+		DVectord dummy = local_values(local_size(rhs_1).get(0) + local_size(rhs_2).get(0), 1000000);
+		newton.set_box_constraints(make_upper_bound_constraints(make_ref(dummy)));
+		// newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
+
+		DVectord sol_c = local_zeros(local_size(rhs_c));
+		newton.solve(K_c, rhs_c, sol_c);
+
+
+		unmake_block_system(sol_c, sol_c_1, sol_c_2);
+
+		// displacement_increment = transfer_operator * (orthogonal_trafo * sol_c_1);		
+		// total_displacement += displacement_increment;
+		// velocity = orthogonal_trafo * sol_c_1;		
+
+		//begin: not contact
+		displacement_increment = sol_c_1;		
+		total_displacement += displacement_increment;
+		velocity = sol_c_1;	
+		//end: not contact
+
+
+		new_internal_force = stiffness_matrix * total_displacement;
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
+	}
+
+	void ContactProblem::contact_stabilized_newmark(const double dt)
+	{
+		//newmark scheme
+		//predictor step
+		DVectord displacement_increment_pred = dt * velocity;
+		DVectord displacement_increment_pred_nt = utopia::min(orthogonal_trafo * displacement_increment_pred, gap);
+		displacement_increment_pred = orthogonal_trafo * displacement_increment_pred_nt;
+		DVectord rhs = mass_matrix * displacement_increment_pred + (dt*dt/2.) * (external_force - internal_force);
+		DSMatrixd K  = internal_mass_matrix + (dt*dt/4.) * stiffness_matrix;
+
+
+		DVectord sol_c = local_zeros(local_size(external_force));
+		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
+		DSMatrixd K_c  = transpose(orthogonal_trafo) *
+		DSMatrixd(
+			transpose(transfer_operator) * 
+			K * 
+			transfer_operator) * 
+		orthogonal_trafo;
+
+
+		// SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> newton(linear_solver);
+		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
+		newton.verbose(true);
+		newton.max_it(40);
+
+		newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
+		newton.solve(K_c, rhs_c, sol_c);
+
+		displacement_increment = transfer_operator * (orthogonal_trafo * sol_c);		
+		total_displacement += displacement_increment;
+
+		new_internal_force = stiffness_matrix * total_displacement;
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
+
+		double dumping = 1.;
+		// DVectord M_x_vel_inc = dumping * (dt * 0.5) * (2. * external_force - internal_force - new_internal_force);
+		DVectord M_x_vel_inc = dumping * (dt/2.) * (2. * external_force - internal_force - new_internal_force);
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), M_x_vel_inc);
+
+		DVectord vel_inc = local_zeros(size(M_x_vel_inc));
+		solve(mass_matrix, M_x_vel_inc, vel_inc);
+		velocity += vel_inc;
+	}
+
+	void ContactProblem::step(const double dt)
+	{
+
+		if(verbose) std::cout << "Contact problem: computing step" << std::endl;
+		
+		disp("n_dofs:");
+		disp(size(external_force));
+		const int dim = mesh->mesh_dimension();
+
+		if(iteration > 0) {
+			Read<DVectord> r_od(old_displacement_increment), r_v(velocity), r_td(total_displacement);
+
+			search_radius = 2e-3;
+			auto r = range(old_displacement_increment);
+			for(auto i = r.begin(); i < r.end(); i += dim) {
+				double length = 0.0;
+				double length_total_disp = 0.0;
+
+				for(int j = 0; j < dim; ++j) {
+					double v = old_displacement_increment.get(i + j) + dt * velocity.get(i + j);
+					length += v * v;
+					length_total_disp += total_displacement.get(i + j) *  total_displacement.get(i + j);
+				}
+
+				search_radius = std::max(search_radius, std::min(1.1 * std::sqrt(length), std::sqrt(length_total_disp)));
+			}
+
+			if(is_inpulse_) {
+				external_force = zeros(size(external_force));
+			}
+		}
+
+		search_radius += 1e-3;
+		comm.all_reduce(&search_radius, 1, moonolith::MPIMax());
+		disp("predicted search radius");
+		disp(search_radius);
+
+		compute_contact_conditions();
+
+		MOONOLITH_EVENT_BEGIN("solving_vi");
+
+		if(dynamic_contact) {
+			classic_newmark_with_contact(dt);
+			// contact_stabilized_newmark(dt);
+			// contact_stabilized_newmark_monolithic(dt);
+		} else {
+			implicity_euler(dt);
+		}
+		
 		old_displacement_increment = displacement_increment;
 		internal_force = new_internal_force;
 
 		compute_normal_stress(dt);
 		apply_displacement(displacement_increment);
+		compute_energy(dt);
 		MOONOLITH_EVENT_END("solving_vi");
 		++iteration;
 	}
@@ -532,5 +777,35 @@ namespace utopia {
 		convert(total_displacement, *context_ptr->system.solution);
 		aux.solution->close();
 		output->write_timestep(output_dir + "/sol_" + std::to_string(comm.size()) + ".e", context_ptr->equation_systems, iteration + 1, dt*(iteration + 1));
+	}
+
+	void ContactProblem::compute_energy(const double dt)
+	{
+		Energy e;
+		e.t = dt * (iteration + 1);
+		e.kinetic_energy = 0.5 * dot(mass_matrix * velocity, velocity);
+		e.elastic_energy = 0.5 * dot(stiffness_matrix * total_displacement, total_displacement);
+		e.potential_energy = e.elastic_energy - dot(external_force,  total_displacement);
+		e.contact_energy = sum(mass_matrix * normal_stress);
+
+		energy.push_back(e);
+	}
+
+	void ContactProblem::save_energy(const std::string &path)
+	{
+		if(!comm.is_root()) return;
+
+		std::ofstream os(path.c_str());
+
+		if(!os.good()) {
+			std::cerr << "[Error] ContactProblem::save_energy: unable to write in file" << std::endl;
+			return;
+		}
+
+		for(auto &e : energy) {
+			os << e.t << " " << e.kinetic_energy << " "  << e.elastic_energy << " " << e.potential_energy << " " << e.contact_energy << "\n";
+		}
+
+		os.close();
 	}
 }

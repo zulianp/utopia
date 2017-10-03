@@ -47,6 +47,12 @@ namespace utopia {
 		double dt;
 		int n_steps;
 		bool dynamic_contact;
+		bool is_inpulse;
+
+		ExampleProblemBase()
+		{
+			is_inpulse = false;
+		}
 	};
 
 
@@ -170,8 +176,10 @@ namespace utopia {
 		}
 
 		void set_up_time_dependent_dynamic(){
+			set_up_adaptive();
 			set_up_time_dependent();
 			dynamic_contact = true;
+			n_steps = 100;
 		}
 
 		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
@@ -255,10 +263,20 @@ namespace utopia {
 		void set_up_dynamic()
 		{
 			mesh_file = "../data/coarse_contact_2d.e";
-			search_radius = 0.05;
-			dt = 0.05;
+			search_radius = 0.002;
+			dt = 0.1;
 			dynamic_contact = true;
-			n_steps = 60;
+			n_steps = 200;
+		}
+
+		void set_up_dynamic_with_impulse()
+		{
+			mesh_file = "../data/coarse_contact_2d.e";
+			search_radius = 0.002;
+			dt = 0.02;
+			dynamic_contact = true;
+			n_steps = 100;
+			is_inpulse = true;
 		}
 
 		void set_up_coarse_t()
@@ -268,6 +286,7 @@ namespace utopia {
 			contact_flags = {{101, 102}};
 			dt = 0.01;
 			n_steps = 100;
+			
 		}
 
 		void set_up_m_coarse_t()
@@ -310,7 +329,11 @@ namespace utopia {
 		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
 		{
 			if(dynamic_contact) {
-				v(1) = -0.1;
+				if(is_inpulse) {
+					v(1) = -25;
+				} else {
+					v(1) = -1.;
+				}
 			} else {
 				v.zero();
 			}
@@ -327,19 +350,26 @@ namespace utopia {
 		ContactProblem p;
 			
 		// ---------------------------------------------------
-		// auto e_problem = make_shared<ExampleProblem2D>();
+		auto e_problem = make_shared<ExampleProblem2D>();
+		e_problem->set_up_m_coarse_t_dynamic();
+
 		// e_problem->set_up_m_coarse_t();
-		auto e_problem = make_shared<Rocks>();
+		// auto e_problem = make_shared<Rocks>();
 		// e_problem->set_up_m_coarse_t_dynamic();
-		// e_problem->set_up_dynamic();
+		// e_problem->set_up_dynamic_with_impulse();
+		 
 		
 		// auto e_problem = make_shared<ExampleProblem3D>();
 		// auto e_problem = make_shared<QuasiHertz>();
+		
 		// auto e_problem = make_shared<QuasiSignorini>(); 
+		// e_problem->set_up_time_dependent_dynamic();
+
+
 		// e_problem->set_up_fine_res();
 		// e_problem->set_up_adaptive();
 		// e_problem->set_up_time_dependent();
-		// e_problem->set_up_time_dependent_dynamic();
+		
 		//---------------------------------------------------
 		
 		MOONOLITH_EVENT_BEGIN("read_mesh");
@@ -348,6 +378,7 @@ namespace utopia {
 
 		p.init(init, mesh, e_problem, e_problem, e_problem->contact_flags, e_problem->search_radius);
 		p.set_dynamic_contact(e_problem->dynamic_contact);
+		p.is_inpulse(e_problem->is_inpulse);
 		p.save(e_problem->dt);
 
 		double t = 0.0;
@@ -358,6 +389,8 @@ namespace utopia {
 			p.step(e_problem->dt);	
 			p.save(e_problem->dt);		
 		}
+
+		p.save_energy("energy.txt");
 	}
 }
 
