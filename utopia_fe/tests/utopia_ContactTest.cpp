@@ -65,18 +65,9 @@ namespace utopia {
 			contact_flags = {{12, 13}, {14, 13}};
 			is_multibody = true;
 			search_radius = 0.05;
-			dt = 1.;
-			dynamic_contact = false;
-
-			//---------------------------------------------------
-			// mesh->read("../data/hertz_530.e");
-			// mesh->read("../data/quasi_signorini_4593.e");
-			// mesh->read("../data/quasi_signorini_fine.e");
-			// mesh->read("../data/quasi_signorini_fine_surface_both.e");
-			// mesh->read("../data/quasi_signorini_ultra_fine_surface_both.e");
-			// mesh->read("../data/two_rocks_26653.e");
-			// mesh->read("../data/quasi_signorini_526.e");
-			// mesh->read("../data/quasi_signorini_248322.e");
+			dt = 0.05;
+			dynamic_contact = true;
+			n_steps = 20;
 		}
 
 		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
@@ -85,18 +76,40 @@ namespace utopia {
 		{
 			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uz == coeff(-0.3), {top_boundary_tag}) );
+			
+			if(dynamic_contact) {
+				strong_enforce( boundary_conditions(uz == coeff(0.0), {top_boundary_tag}) );
+			} else {
+				strong_enforce( boundary_conditions(uz == coeff(-0.3), {top_boundary_tag}) );
+			}
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uz == coeff(0.0), {bottom_boundar_tag}) );
 			
-			if(is_multibody) {
+			if(is_multibody && !dynamic_contact) {
 				strong_enforce( boundary_conditions(ux == coeff(0.),  {3, 4, 5}) );
 				strong_enforce( boundary_conditions(uy == coeff(0.),  {3, 4, 5}) );
 
 				strong_enforce( boundary_conditions(uz == coeff(-0.08), {4}) );
 				strong_enforce( boundary_conditions(uz == coeff(0.08), {5}) );
+			} else {
+				if(is_multibody && dynamic_contact) {
+					strong_enforce( boundary_conditions(ux == coeff(0.),  {3, 4, 5}) );
+					strong_enforce( boundary_conditions(uy == coeff(0.),  {3, 4, 5}) );
+
+					strong_enforce( boundary_conditions(uz == coeff(0.0), {4}) );
+					strong_enforce( boundary_conditions(uz == coeff(0.0), {5}) );
+				}
+			}
+		}
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			if(dynamic_contact) {
+				v(2) = -5.;
+			} else {
+				v.zero();
 			}
 		}
 
@@ -350,8 +363,8 @@ namespace utopia {
 		ContactProblem p;
 			
 		// ---------------------------------------------------
-		auto e_problem = make_shared<ExampleProblem2D>();
-		e_problem->set_up_m_coarse_t_dynamic();
+		// auto e_problem = make_shared<ExampleProblem2D>();
+		// e_problem->set_up_m_coarse_t_dynamic();
 
 		// e_problem->set_up_m_coarse_t();
 		// auto e_problem = make_shared<Rocks>();
@@ -359,7 +372,7 @@ namespace utopia {
 		// e_problem->set_up_dynamic_with_impulse();
 		 
 		
-		// auto e_problem = make_shared<ExampleProblem3D>();
+		auto e_problem = make_shared<ExampleProblem3D>();
 		// auto e_problem = make_shared<QuasiHertz>();
 		
 		// auto e_problem = make_shared<QuasiSignorini>(); 

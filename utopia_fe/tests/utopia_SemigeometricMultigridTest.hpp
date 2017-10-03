@@ -17,7 +17,7 @@ namespace utopia {
 		typedef utopia::LibMeshFEContext<libMesh::LinearImplicitSystem> FEContextT;
 		typedef std::shared_ptr<FEContextT> FEContextPtr;
 
-		std::shared_ptr<libMesh::Mesh> coarse_mesh, fine_mesh;
+		std::shared_ptr<libMesh::MeshBase> coarse_mesh, fine_mesh;
 		FESpacePtr coarse_space, fine_space;
 		FEContextPtr coarse_context, fine_context;
 		std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
