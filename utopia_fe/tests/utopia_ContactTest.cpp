@@ -107,7 +107,7 @@ namespace utopia {
 		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
 		{
 			if(dynamic_contact) {
-				v(2) = -5.;
+				v(2) = -1.;
 			} else {
 				v.zero();
 			}
@@ -257,6 +257,36 @@ namespace utopia {
 		}
 	};
 
+	class Balls : public ExampleProblemBase {
+	public:
+		Balls() {
+			mesh_file = "../data/balls.e";
+			fixed_boundary = 5;
+			contact_flags = {{1, 2}, {1, 3}, {1, 4}, 
+							 		 {2, 3}, {2, 4},
+							                 {3, 4} };
+			search_radius = 0.1;
+			dt = .01;
+			n_steps = 160;
+			dynamic_contact = true;
+
+		}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy)  override {
+			strong_enforce( boundary_conditions(ux == coeff(0.), {fixed_boundary}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.), {fixed_boundary}) );
+		}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override {}
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			v(1) = -1.;
+		}
+
+		int fixed_boundary;
+	};
+
 
 
 	class ExampleProblem2D : public ExampleProblemBase {
@@ -270,6 +300,7 @@ namespace utopia {
 			dt = 1.;
 			n_steps = 1;
 			dynamic_contact = false;
+			is_inpulse = false;
 
 		}
 
@@ -363,6 +394,7 @@ namespace utopia {
 		ContactProblem p;
 			
 		// ---------------------------------------------------
+		auto e_problem = make_shared<Balls>();
 		// auto e_problem = make_shared<ExampleProblem2D>();
 		// e_problem->set_up_m_coarse_t_dynamic();
 
@@ -372,7 +404,7 @@ namespace utopia {
 		// e_problem->set_up_dynamic_with_impulse();
 		 
 		
-		auto e_problem = make_shared<ExampleProblem3D>();
+		// auto e_problem = make_shared<ExampleProblem3D>();
 		// auto e_problem = make_shared<QuasiHertz>();
 		
 		// auto e_problem = make_shared<QuasiSignorini>(); 
