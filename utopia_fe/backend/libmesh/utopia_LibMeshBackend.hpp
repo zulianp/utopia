@@ -879,17 +879,12 @@ namespace utopia {
 		Matrix temp = mat;
 		
 		{
-			Write<Matrix> w_t(temp);
-			
-			each_read(mat, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
+			Write<Matrix> w_t(mat);
+			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
 				if(has_constaints && u.dof_map().is_constrained_dof(i)) {
-					temp.set(i, j, i == j);
+					mat.set(i, j, i == j);
 				}
 			});
-			
-			// 	// for(auto it = u.dof_map().constraint_rows_begin(); it != u.dof_map().constraint_rows_end(); ++it) {
-			
-			// 	// }
 		}
 		
 		{
@@ -901,25 +896,17 @@ namespace utopia {
 					auto valpos = rhs_values.find(i);
 					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
 				}
-			}
-			
+			}	
 		}
-		
-		mat = std::move(temp);
 	}
 	
 	template<class DofMap, class Vector>
 	void apply_zero_boundary_conditions(DofMap &dof_map, Vector &vec)
-	{
-		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-		// std::cout << dof_map.n_constrained_dofs() << std::endl;
-		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-		
+	{		
 		bool has_constaints = true;
 		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
 			std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
 			has_constaints = false;
-			// return;
 		}
 		
 		{
@@ -930,6 +917,29 @@ namespace utopia {
 					vec.set(i, 0.0);
 				}
 			}
+		}
+	}
+
+	template<class DofMap, class Matrix>
+	void set_identity_at_constraint_rows(DofMap &dof_map, Matrix &mat)
+	{
+		bool has_constaints = true;
+		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
+			std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
+			has_constaints = false;
+		}
+
+		Size s = size(mat);
+		Matrix temp = mat;
+		
+		{
+			Write<Matrix> w_t(mat);
+			
+			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
+					mat.set(i, j, i == j);
+				}
+			});
 		}
 	}
 	
