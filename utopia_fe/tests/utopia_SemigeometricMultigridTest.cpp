@@ -2,6 +2,7 @@
 #include "utopia.hpp"
 #include "moonolith_communicator.hpp"
 #include <memory>
+#include "libmesh/parallel_mesh.h"
 
 using namespace libMesh;
 
@@ -19,10 +20,10 @@ namespace utopia {
         const std::string fine_mesh_path   = data_path + "/fine_mesh.e";
         const std::string coarse_mesh_path = data_path + "/coarse_mesh.e";
         
-        p.fine_mesh = make_shared<Mesh>(init.comm());
+        p.fine_mesh = make_shared<DistributedMesh>(init.comm());
         p.fine_mesh->read(fine_mesh_path);
         
-        p.coarse_mesh = make_shared<Mesh>(init.comm());
+        p.coarse_mesh = make_shared<DistributedMesh>(init.comm());
         p.coarse_mesh->read(coarse_mesh_path);
         
         p.fine_context 	 = make_shared<MGTestProblem::FEContextT>(p.fine_mesh);
