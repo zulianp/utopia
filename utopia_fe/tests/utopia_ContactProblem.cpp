@@ -295,7 +295,9 @@ namespace utopia {
 		transfer_operator += local_identity(local_size(d).get(0), local_size(d).get(0));
 		gap = boundary_mass_inv * weighted_gap;
 
-		if(comm.is_alone()) plot_scaled_normal_field(*mesh, normals, gap, "time_series_r/r" + std::to_string(iteration));
+		if(comm.is_alone() && utopia::Utopia::Instance().get("plot") == "true") {
+			plot_scaled_normal_field(*mesh, normals, gap, "time_series_r/r" + std::to_string(iteration));
+		}
 	}
 
 
@@ -590,7 +592,7 @@ namespace utopia {
 		if(iteration > 0) {
 			Read<DVectord> r_od(old_displacement_increment), r_v(velocity), r_td(total_displacement);
 
-			search_radius = 2e-3;
+			search_radius = 1e-4;
 			auto r = range(old_displacement_increment);
 			for(auto i = r.begin(); i < r.end(); i += dim) {
 				double length = 0.0;
@@ -610,7 +612,7 @@ namespace utopia {
 			}
 		}
 
-		search_radius += 1e-3;
+		search_radius += 1e-4;
 		comm.all_reduce(&search_radius, 1, moonolith::MPIMax());
 		disp("predicted search radius");
 		disp(search_radius);
@@ -738,8 +740,18 @@ namespace utopia {
 
 		const int dim = mesh->mesh_dimension();
 
-		if(comm.is_alone()) {
-			plot_mesh(*mesh, "time_series_m/m" + std::to_string(iteration));
+		if(iteration > 0 && comm.is_alone() && utopia::Utopia::Instance().get("plot") == "true") {
+			std::vector<double> is_contact_node_x(local_size(is_contact_node).get(0)/dim, 0.);
+
+			{
+				Read<DVectord> r_icn(is_contact_node);
+				Range r = range(is_contact_node);
+				for(std::size_t i = 0; i < is_contact_node_x.size(); ++i) {
+					is_contact_node_x[i] = is_contact_node.get(r.begin() + i * dim);
+				}
+			}
+
+			plot_mesh_f(*mesh, &is_contact_node_x[0], "time_series_m/m" + std::to_string(iteration));
 		} 
 
 		auto &aux = context_ptr->equation_systems.get_system<libMesh::ExplicitSystem>("aux");

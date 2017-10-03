@@ -714,13 +714,16 @@ namespace utopia {
 						
 						// plot_polygon(2, 2, &side_polygon_master.get_values()[0], "master");
 						// plot_polygon(2, 2, &side_polygon_slave.get_values()[0], "slave");
-						
+
+						// if(utopia::Utopia::Instance().get("plot") == "true") {
+						// 	plot_polygon(2, 2, &isect_polygon_master.get_values()[0], utopia::Utopia::Instance().get("iter") + "/master/isect");
+						// 	plot_polygon(2, 2, &isect_polygon_slave.get_values()[0],  utopia::Utopia::Instance().get("iter") + "/slave/isect");
+						// }
 						
 					} else if(dim_slave == 3) {
 						make_polygon_3(*side_slave, side_polygon_slave);
 						
-						if(!project_3D(
-									   side_polygon_master,
+						if(!project_3D(side_polygon_master,
 									   side_polygon_slave,
 									   isect_polygon_master,
 									   isect_polygon_slave)) {
@@ -1056,7 +1059,7 @@ namespace utopia {
 			
 			{
 				for (auto it = rel_area_buffer.iter(); it; ++it) {
-					bool must_remove = *it < (1 - 1e-8);
+					bool must_remove = *it < (1 - 5e-2);
 					
 					if(!must_remove) {
 						const SizeType faceId = it.row();
