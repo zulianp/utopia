@@ -14,7 +14,7 @@ namespace utopia {
     }
 
     Log::Log() {
-        start_time_ = std::chrono::high_resolution_clock::now();
+        start_time_ = MPI_Wtime();
     }
 
     Log &Log::instance() {
@@ -32,11 +32,9 @@ namespace utopia {
             const Measurement &m = it.second;
             class_group[m.class_].push_back(m);
 
-            double timestamp = std::chrono::duration<double>(
-                m.start_time_ - start_time_).count();
+            double timestamp = m.start_time_ - start_time_;
 
-            f_detail << timestamp << ';' << std::chrono::duration<double>(
-                m.end_time_ - m.start_time_).count() << ';' << m.class_ << std::endl;
+            f_detail << timestamp << ';' << m.end_time_ - m.start_time_ << ';' << m.class_ << std::endl;
         }
 
         f_detail.close();
@@ -50,7 +48,7 @@ namespace utopia {
             values.reserve(it.second.size());
             std::transform(it.second.begin(), it.second.end(), std::back_inserter(values),
                 [](const Measurement &m) {
-                    return std::chrono::duration<double>(m.end_time_ - m.start_time_).count();
+                    return m.end_time_ - m.start_time_;
                 }
             );
 
@@ -74,7 +72,7 @@ namespace utopia {
 		f_memory << std::fixed << "Time (s);Memory used by pool\n";
 
 		for (const auto &it : memory_log_) {
-			double timestamp = std::chrono::duration<double>(it.first - start_time_).count();
+			double timestamp = it.first - start_time_;
 
 			f_memory << timestamp << ';' << it.second << std::endl;
 		}

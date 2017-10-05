@@ -32,11 +32,11 @@ namespace utopia {
 
     private:
         Log();
-        std::chrono::high_resolution_clock::time_point start_time_;
+        double start_time_;
         std::stack<MeasurementId> running_events_;
         std::map<MeasurementId, Measurement> event_map_;
 		std::forward_list<std::pair<
-				std::chrono::high_resolution_clock::time_point,
+				double,
 				long
 		> > memory_log_;
     };
@@ -58,11 +58,11 @@ namespace utopia {
         }
 
         inline void begin() {
-            start_time_ = std::chrono::high_resolution_clock::now();
+            start_time_ = MPI_Wtime();
         }
 
         inline void end() {
-            end_time_ = std::chrono::high_resolution_clock::now();
+            end_time_ = MPI_Wtime();
         }
 
         friend void Log::save_collected_log();
@@ -72,7 +72,7 @@ namespace utopia {
 
         MeasurementId id_;
         std::string class_;
-        std::chrono::high_resolution_clock::time_point start_time_, end_time_;
+        double start_time_, end_time_;
     };
 
     template<class T>
@@ -92,7 +92,7 @@ namespace utopia {
 
 	inline void Log::logMemory() {
 		memory_log_.push_front(std::make_pair(
-			std::chrono::high_resolution_clock::now(),
+			MPI_Wtime(),
 			MemoryPool::getInstance().usedMemory
 		));
 	}
