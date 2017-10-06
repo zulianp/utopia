@@ -122,7 +122,8 @@ namespace utopia {
 
 
     void runMiscTest() {
-        std::cout << "Begin: MiscTest" << std::endl;
+        // std::cout << "Begin: MiscTest" << std::endl;
+        UTOPIA_UNIT_TEST_BEGIN("MiscTest");
 
 #ifdef WITH_CUDA
             cuda_hello_world();
@@ -137,7 +138,7 @@ namespace utopia {
             test_lapack_eigen_solver();
 #endif
 #endif
+        UTOPIA_UNIT_TEST_END("MiscTest");
 
-        std::cout << "End:   MiscTest" << std::endl;
     }
 }

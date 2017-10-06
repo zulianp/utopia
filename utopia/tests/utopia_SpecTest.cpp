@@ -15,23 +15,23 @@ namespace utopia {
 
         void run() {
             /* Test vectors operation */
-            testVecOps();
+            UTOPIA_RUN_TEST(vec_ops_test);
             /* Test vector assignments */
-            testVecAssign(1);
+            UTOPIA_RUN_TEST(vec_assign_test);
             /* Test matrix assignments */
-            testMatrixAssign<Matrix>(1);
+            UTOPIA_RUN_TEST(matrix_assign_test);
             /* Test vector range */
-            testVectorRange();
+            UTOPIA_RUN_TEST(vector_range_test);
             /* Test Matrix range */
-            testMatrixRange<Matrix>();
+            UTOPIA_RUN_TEST(matrix_range_test);
 
 
 
             
             /* Test matrix transpose assignment */
-//            testMatrixAssignedTransposed();
+//            matrix_assigned_transposed_test();
 //            /* Test assignment from range */
-//            testAssignFromRange();
+//            assign_from_range_test();
 //            /* Test assignment to range */
 //            testAssignToRange();
 //            /* Test get size */
@@ -51,7 +51,7 @@ namespace utopia {
 //            testMatrixGEMM();
         }
 
-        void testVecOps() {
+        void vec_ops_test() {
             testVecOp<Minus>(1, 2, -1);
             testVecOp<Plus>(1, 2, 3);
             testVecOp<EMultiplies>(2, 2, 4);
@@ -74,7 +74,8 @@ namespace utopia {
             assert(backend.compare(expected, actual, ApproxEqual()));
         }
 
-        void testVecAssign(const Scalar value) {
+        void vec_assign_test() {
+            const Scalar value = 1.;
             Backend &backend = Backend::Instance();
             Vector left_lvalue, right, right_rvalue;
 
@@ -99,8 +100,9 @@ namespace utopia {
             assert(backend.compare(left_lvalue, right, ApproxEqual()));
         }
 
-        template<class Matrix>
-        void testMatrixAssign(const Scalar value) {
+
+        void matrix_assign_test() {
+            const Scalar value = 1.;
             Backend &backend = Backend::Instance();
             Matrix left_lvalue, right, right_rvalue;
 
@@ -125,7 +127,7 @@ namespace utopia {
             assert(backend.compare(left_lvalue, right, ApproxEqual()));
         }
 
-        void testVectorRange() {
+        void vector_range_test() {
             Backend &backend = Backend::Instance();
             Vector v0, v1;
 
@@ -153,8 +155,7 @@ namespace utopia {
                    backend.range(v1).end() == 0);
         }
 
-        template<class Matrix>
-        void testMatrixRange() {
+        void matrix_range_test() {
             Backend &backend = Backend::Instance();
             Matrix m0, m1, m2;
 
@@ -207,7 +208,7 @@ namespace utopia {
 
         }
 
-        void testMatrixAssignedTransposed() {
+        void matrix_assigned_transposed_test() {
             Backend &backend = Backend::Instance();
             Matrix left, right;
 
@@ -678,17 +679,16 @@ namespace utopia {
     };
 
 
-    void runSpecTest() {
-        std::cout << "Begin: SpecTest" << std::endl;
-        //For each backend add test here below
+    void runSpecTest() 
+    {
+        UTOPIA_UNIT_TEST_BEGIN("SpecTest");
 #ifdef WITH_BLAS        
-        SpecTest<Backend<double, BLAS> > blastest; blastest.run();
+        SpecTest<Backend<double, BLAS>>().run();
 #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
-        SpecTest< Backend<PetscScalar, PETSC> > petsctest;  petsctest.run();
+        SpecTest<Backend<PetscScalar, PETSC>>().run();
 #endif //WITH_PETSC
-
-        std::cout << "End:   SpecTest" << std::endl;
+        UTOPIA_UNIT_TEST_END("SpecTest");
     }
 }

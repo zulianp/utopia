@@ -1,6 +1,7 @@
 #ifndef UTOPIA_NON_LINEAR_HPP
 #define UTOPIA_NON_LINEAR_HPP 
 
+#include "utopia_Base.hpp"
 
 #include "utopia_Function.hpp"
 #include "utopia_ExtendedFunction.hpp"

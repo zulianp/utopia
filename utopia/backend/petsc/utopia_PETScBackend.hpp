@@ -43,9 +43,9 @@ namespace utopia
 		bool convert(Vec vec, PETScVector &wrapper);
 		bool convert(Mat mat, PETScMatrix &wrapper);
 		bool convert(Mat mat, PETScSparseMatrix &wrapper);
-		bool convert(PETScVector &wrapper, Vec vec);
-		bool convert(PETScMatrix &wrapper, Mat mat);
-		bool convert(PETScSparseMatrix &wrapper, Mat mat);
+		bool convert(const PETScVector &wrapper, Vec vec);
+		bool convert(const PETScMatrix &wrapper, Mat mat);
+		bool convert(const PETScSparseMatrix &wrapper, Mat mat);
 		bool wrap(Mat mat, PETScSparseMatrix &wrapper);
 		bool wrap(Vec vec, PETScVector &wrapper);
 		
@@ -105,7 +105,7 @@ namespace utopia
 			
 			if (result.implementation() == left.implementation()) {
 				//TODO
-				std::cerr << "axpy" << std::endl;
+				std::cerr << "[Error] axpy" << std::endl;
 			}
 			
 			return aux_zaxpy(scaleFactor, left, result);

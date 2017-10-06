@@ -199,7 +199,7 @@ namespace utopia {
 		{
 			// mesh_file = "../data/m_contact_2d.e";
 			mesh_file = "../data/m_contact_2d_ref.e";
-			search_radius = 0.01;
+			search_radius = 0.1;
 			// contact_flags = {{101, 102}, {103, 104}, {105, 106}};
 			contact_flags = {{102, 101}, {103, 104}, {105, 106}};
 			dt = 0.025;

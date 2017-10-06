@@ -8,7 +8,6 @@
 
 #include <memory>
 
-//using namespace std;
 using std::make_shared;
 using std::shared_ptr;
 
@@ -40,6 +39,8 @@ namespace utopia {
 		init_material();
 		iteration = 0;
 		linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+		// linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
+		// linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> >();
 		output = std::make_shared<Nemesis_IO>(*mesh);
 	}
 
@@ -251,14 +252,14 @@ namespace utopia {
 			search_radius = 1e-8;
 			auto r = range(old_displacement);
 			for(auto i = r.begin(); i < r.end(); i += dim) {
-				double lenght = 0.0;
+				double length = 0.0;
 
 				for(int j = 0; j < dim; ++j) {
-					auto v =  old_displacement.get(i + j);
-					lenght += v*v;
+					double v =  old_displacement.get(i + j);
+					length += v * v;
 				}
 
-				search_radius = std::max(search_radius, std::sqrt(lenght));
+				search_radius = std::max(search_radius, 1.1 * std::sqrt(length));
 			}
 		}
 
@@ -284,9 +285,8 @@ namespace utopia {
 		//DVectord addmissible_pred = min(displacement_pred_c, gap)
 		//DVectord pred = addmissible_pred - displacement_pred_c;
 
-		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
+		SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> newton(linear_solver);
 		newton.verbose(true);
-		newton.set_active_set_tol(1e-8);
 		newton.max_it(40);
 
 		newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
@@ -458,8 +458,8 @@ namespace utopia {
 		// 	convert(acceleration, *context_ptr->system.solution);
 		// 	ExodusII_IO(*mesh).write_equation_systems (output_dir + "/a_" + std::to_string(iteration) + ".e", context_ptr->equation_systems);
 		// } else {
-			convert(total_displacement, *context_ptr->system.solution);
-			output->write_timestep(output_dir + "/sol_" + std::to_string(comm.size()) + ".e", context_ptr->equation_systems, iteration + 1, iteration);
+		convert(total_displacement, *context_ptr->system.solution);
+		output->write_timestep(output_dir + "/sol_" + std::to_string(comm.size()) + ".e", context_ptr->equation_systems, iteration + 1, iteration);
 		// }
 	}
 }

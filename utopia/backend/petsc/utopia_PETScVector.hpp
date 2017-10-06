@@ -59,7 +59,7 @@ namespace utopia {
 
         // assign operator
         PETScVector &operator=(const PETScVector &other) {
-            //if(this == &other) return *this;
+            if(this == &other) return *this;
             // TODO
             //_wrapper = std::make_shared<PETScVectorWrapper>();
             //other._wrapper->copy(*_wrapper);
@@ -67,6 +67,21 @@ namespace utopia {
             PETScError::Check(VecDuplicate(other._vec, &_vec));
             PETScError::Check(VecCopy(other._vec, _vec));
             _comm = other._comm;
+
+            return *this;
+        }
+
+        PETScVector &operator=(PETScVector &&other) {
+            if(this == &other) return *this;
+            // TODO
+            //_wrapper = std::make_shared<PETScVectorWrapper>();
+            //other._wrapper->copy(*_wrapper);
+            destroy();
+            // PETScError::Check(VecDuplicate(other._vec, &_vec));
+            // PETScError::Check(VecCopy(other._vec, _vec));
+            _comm = other._comm;
+            _vec= other._vec;
+            other._vec = nullptr;
 
             return *this;
         }

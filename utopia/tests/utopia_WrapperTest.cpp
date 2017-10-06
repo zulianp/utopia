@@ -9,19 +9,19 @@ namespace utopia {
     public:
 
         void run() {
-            vectorTestFactory();
-            matrixTestFactory();
-            matrixAssemblyTest();
+            UTOPIA_RUN_TEST(vector_factory_test);
+            UTOPIA_RUN_TEST(matrix_factory_test);
+            UTOPIA_RUN_TEST(matrix_assembly_test);
         }
 
-        void matrixAssemblyTest() {
+        void matrix_assembly_test() {
             Matrix mat = values(_n, _n, 0);
 
             //Assemble 1D laplacian with dirichlet nodes at the boundary
             {
                 Write<Matrix> write(mat);
-                Range rr = rowRange(mat);
-                //Range cr = colRange(mat);
+                Range rr = row_range(mat);
+                //Range cr = col_range(mat);
 
                 //FIXME assumed row is owned by this proc completely.
                 int rbegin = rr.begin();
@@ -63,13 +63,13 @@ namespace utopia {
             assert(approxeq(expected, mat * vec));
         }
 
-        void matrixTestFactory() {
+        void matrix_factory_test() {
 
             Matrix mat = values(_n, _n, 0.1);
             {
                 Read<Matrix> read(mat);
-                Range rr = rowRange(mat);
-                Range cr = colRange(mat);
+                Range rr = row_range(mat);
+                Range cr = col_range(mat);
 
                 for (int i = rr.begin(); i != rr.end(); ++i) {
                     for (int j = cr.begin(); j != cr.end(); ++j) {
@@ -81,8 +81,8 @@ namespace utopia {
             mat = identity(_n, _n);
             {
                 Read<Matrix> read(mat);
-                Range rr = rowRange(mat);
-                Range cr = colRange(mat);
+                Range rr = row_range(mat);
+                Range cr = col_range(mat);
 
                 for (int i = rr.begin(); i != rr.end(); ++i) {
                     for (int j = cr.begin(); j != cr.end(); ++j) {
@@ -93,7 +93,7 @@ namespace utopia {
         }
 
 
-        void vectorTestFactory() {
+        void vector_factory_test() {
             Vector vec = values(_n, 0.2);
             {
                 Read<Vector> read(vec);
@@ -116,17 +116,15 @@ namespace utopia {
 
 
     void runWrapperTest() {
-        std::cout << "Begin: WrapperTest" << std::endl;
+        UTOPIA_UNIT_TEST_BEGIN("WrapperTest");
 #ifdef WITH_PETSC
-        WrapperTest<DMatrixd, DVectord, PetscScalar> petsc;
-        petsc.run();
+        WrapperTest<DMatrixd, DVectord, PetscScalar>().run();
 #endif
 
 #ifdef WITH_BLAS
-        WrapperTest<Matrixd, Vectord, double> blas;
-        blas.run();
-        std::cout << "End:   WrapperTest" << std::endl;
+        WrapperTest<Matrixd, Vectord, double>().run();
 #endif //WITH_BLAS        
+        UTOPIA_UNIT_TEST_END("WrapperTest");
     }
 }
 

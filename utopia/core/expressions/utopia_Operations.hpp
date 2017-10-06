@@ -15,6 +15,7 @@
 #include "utopia_Boolean.hpp"
 
 #include <limits>
+#include <cmath>
 
 namespace utopia {
     template<class Derived>
@@ -175,14 +176,14 @@ namespace utopia {
       * @param[in]  right  The right.
       * @param[in]  tol    The tolerance.
       */
-    inline bool approxeq(const double left, const double right, const double tol = std::numeric_limits<double>::epsilon())
+    inline bool approxeq(const double left, const double right, const double tol = 10. * std::numeric_limits<double>::epsilon())
     {
-        return fabs(left-right) < tol;
+        return std::abs(left-right) < tol;
     }
 
-   inline bool approxeq(const float left, const float right, const double tol = std::numeric_limits<float>::epsilon())
+   inline bool approxeq(const float left, const float right, const double tol = 10.f * std::numeric_limits<float>::epsilon())
     {
-        return fabs(left-right) < tol;
+        return std::abs(left-right) < tol;
     }
 
 

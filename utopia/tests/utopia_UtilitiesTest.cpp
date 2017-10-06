@@ -233,13 +233,13 @@ namespace utopia {
         }
 
         void run() {
-            factory_test();
-            wrapper_test();
-            range_test();
-            factory_and_operations_test();
-            simplify_test();
-            variable_test();
-            inline_eval_test();
+            UTOPIA_RUN_TEST(factory_test);
+            UTOPIA_RUN_TEST(wrapper_test);
+            UTOPIA_RUN_TEST(range_test);
+            UTOPIA_RUN_TEST(factory_and_operations_test);
+            UTOPIA_RUN_TEST(simplify_test);
+            UTOPIA_RUN_TEST(variable_test);
+            UTOPIA_RUN_TEST(inline_eval_test);
         }
     };
 
@@ -261,8 +261,7 @@ namespace utopia {
     // }
 
     void runUtilitiesTest() {
-        std::cout << "Begin: UtilitiesTest" << std::endl;
-
+        UTOPIA_UNIT_TEST_BEGIN("UtilitiesTest");
 #ifdef WITH_PETSC
         if(mpi_world_size() == 1) {
             UtilitiesTest<DMatrixd, DVectord>().run();
@@ -280,8 +279,6 @@ namespace utopia {
 #ifdef WITH_BLAS
         UtilitiesTest<Matrixd, Vectord>().run();
 #endif //WITH_BLAS
-        // wrapper_test_stdvector();  // doesnt compile on cluster - TODO: fix it
-
-        std::cout << "End:   UtilitiesTest" << std::endl;
+        UTOPIA_UNIT_TEST_END("UtilitiesTest");
     }
 }

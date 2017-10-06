@@ -133,18 +133,18 @@ namespace utopia {
     public:
         void run()
         {
-            norm_test();
-            dot_test();
-            dot_product_composition_test();
-            multiply_test();
-            determinant_test();
-            size_test();
+            UTOPIA_RUN_TEST(norm_test);
+            UTOPIA_RUN_TEST(dot_test);
+            UTOPIA_RUN_TEST(dot_product_composition_test);
+            UTOPIA_RUN_TEST(multiply_test);
+            UTOPIA_RUN_TEST(determinant_test);
+            UTOPIA_RUN_TEST(size_test);
         }
     };
 
     void runAlgebraTest()
     {
-        std::cout << "Begin: AlgebraTest" << std::endl;
+        UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
 
         #ifdef WITH_BLAS
             AlgebraTest<Matrixd, Vectord>().run();
@@ -154,6 +154,6 @@ namespace utopia {
             AlgebraTest<DMatrixd, DVectord>().run();
         #endif //WITH_PETSC
 
-        std::cout << "End:   AlgebraTest" << std::endl;
+        UTOPIA_UNIT_TEST_END("AlgebraTest");
     }
 }

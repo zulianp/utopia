@@ -36,46 +36,34 @@ namespace utopia
          */
         void assembly(SizeType N) 
         {
-            Scalar h = 1.0 / (N - 1);
+            const Scalar h = 1.0 / (N - 1);
             A = sparse(N, N, 3);
 
             {
                 Write<Matrix> w(A);
-                Range rr = rowRange(A);
-                Range cr = colRange(A);
+                Range rr = row_range(A);
+
                 for (SizeType i = rr.begin(); i != rr.end(); i++) {
-                    const SizeType ip1 = i+1;
-                    const Scalar inv2h = (1 / (h * h));
+                    if(i == 0 || i == N - 1) continue;
+
+                    const Scalar inv_2h = (1. / (h * h));
 
                     // diag 
-                    A.set(i, i, 2.0 * inv2h);
+                    A.set(i, i, 2.0 * inv_2h);
 
                     // upper diag
-                    if(ip1 < cr.end()) {
-                        A.set(i, i + 1, -1.0 * inv2h);
-                    }
+                    A.set(i, i + 1, -1.0 * inv_2h);
 
                     // lower diag
-                    if (ip1 < rr.end()) {
-                        A.set(i + 1, i, -1.0 * inv2h);
-                    }
+                    A.set(i, i - 1, -1.0 * inv_2h);
                 }
 
                 if(rr.begin() == 0) {
                     A.set(0, 0, 1.0);
-                    for (SizeType i = 1; i != cr.end(); i++) {
-                        A.set(0, i, 0);
-                    }
                 }
 
-                if(rr.inside(N-1)) {
-                    if(cr.inside(N-1)) {
-                        A.set(N - 1, N - 1, 1.0);
-                    }
-
-                    for (SizeType i = cr.begin(); i != N-1; i++) {
-                        A.set(N - 1, i, 0);
-                    }
+                if(rr.inside(N - 1)) {
+                    A.set(N - 1, N - 1, 1.0);
                 }
             }
 
@@ -84,7 +72,7 @@ namespace utopia
             Range rr = range(s);
             {
                 Write<Vector> w(s);
-                Scalar a = 0;
+                Scalar a = 0.;
                 for (SizeType i = rr.begin() + 1; i != rr.end(); i++) {
                     a += h;
                     s.set(i, a);
