@@ -13,6 +13,7 @@
 #include "utopia_PETScTest.hpp"
 #include "utopia_BLASTest.hpp"
 #include "utopia_MiscTest.hpp"
+#include "utopia_TrilinosTest.hpp"
 
 namespace utopia
 {
@@ -27,6 +28,7 @@ namespace utopia
         runPETScTest();
         runBLASTest();
         runMiscTest();
+        run_trilinos_test();
 
 
         //only works for serial
@@ -67,6 +69,8 @@ namespace utopia
                     runBLASTest();
                 else if (token == "misc")
                     runMiscTest();
+                else if (token == "trilinos")
+                    run_trilinos_test();
             }
         }
 
