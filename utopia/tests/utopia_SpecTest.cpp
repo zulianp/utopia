@@ -221,7 +221,7 @@ namespace utopia {
             /* Change entries of the matrix */
             {
                 /* Acquiring lock for writing */
-                backend.writeLock(right);
+                backend.write_lock(right);
 
                 Range rr = backend.row_range(right);
                 Range cr = backend.col_range(right);
