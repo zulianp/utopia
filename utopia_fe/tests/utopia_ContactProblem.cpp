@@ -6,6 +6,7 @@
 #include "libmesh/parameter_accessor.h"
 #include "libmesh/nemesis_io.h"
 #include "moonolith_profiler.hpp"
+#include "utopia_NormalTangentialCoordinateSystem.hpp"
 
 #include <memory>
 
@@ -104,8 +105,8 @@ namespace utopia {
 		
 		const int dim = u.size();
 
-		auto mu     = block_var(2.5, {{3, 10.}, {4, 150.}});
-		auto lambda = block_var(2.5, {{3, 10.}, {4, 150.}});
+		auto mu     = block_var(6., {{1, 10.}, {4, 5.}});
+		auto lambda = block_var(6., {{1, 10.}, {4, 5.}});
 
 		// double mu = 730;
 		// double lambda = 376;
@@ -217,6 +218,14 @@ namespace utopia {
 		if(dim > 2) 
 			var_num_aux.push_back( aux.add_variable("c_z", Order(1), LAGRANGE) );
 
+		var_num_aux.push_back( aux.add_variable("is_contact_boundary", Order(1), LAGRANGE) );
+
+		var_num_aux.push_back( aux.add_variable("rays_x", Order(1), LAGRANGE) );
+		var_num_aux.push_back( aux.add_variable("rays_y", Order(1), LAGRANGE) );
+
+		if(dim > 2) 
+			var_num_aux.push_back( aux.add_variable("rays_z", Order(1), LAGRANGE) );
+
 		aux.init();	
 		aux.update();
 
@@ -244,6 +253,11 @@ namespace utopia {
 		internal_mass_matrix = diag(selector) * mass_matrix;
 		constrained_mass_matrix = mass_matrix;
 		set_identity_at_constraint_rows(spaces[0]->dof_map(), constrained_mass_matrix);
+
+		is_contact_node =  local_zeros(local_size(external_force));
+		rays = local_zeros(local_size(external_force));
+		normals = local_zeros(local_size(external_force));
+		gap = local_zeros(local_size(external_force));
 
 		init_aux_system();
 	}
@@ -592,14 +606,14 @@ namespace utopia {
 		if(iteration > 0) {
 			Read<DVectord> r_od(old_displacement_increment), r_v(velocity), r_td(total_displacement);
 
-			search_radius = 1e-4;
+			search_radius = 1e-2;
 			auto r = range(old_displacement_increment);
 			for(auto i = r.begin(); i < r.end(); i += dim) {
 				double length = 0.0;
 				double length_total_disp = 0.0;
 
 				for(int j = 0; j < dim; ++j) {
-					double v = old_displacement_increment.get(i + j) + dt * velocity.get(i + j);
+					double v = old_displacement_increment.get(i + j) +  2. * dt * velocity.get(i + j);
 					length += v * v;
 					length_total_disp += total_displacement.get(i + j) *  total_displacement.get(i + j);
 				}
@@ -765,6 +779,8 @@ namespace utopia {
 		solve(mass_matrix, contact_stress, u_contact_stress);
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), u_contact_stress);
 
+		scale_normal_vector_with_gap(dim, normals, gap, rays);
+
 		{
 			Read<DVectord> r_d(total_displacement), r_v(velocity), r_f(internal_force), r_c(contact_stress);
 
@@ -782,6 +798,17 @@ namespace utopia {
 					aux.solution->set(dest_dof_vel, velocity.get(source_dof));
 					aux.solution->set(dest_dof_force, internal_force.get(source_dof));
 					aux.solution->set(dest_dof_contact_stress, u_contact_stress.get(source_dof));
+				}
+
+				unsigned int source_dof = node->dof_number(context_ptr->system.number(), 0, 0);
+				unsigned int dest_dof_is_contact = node->dof_number(aux.number(), var_num_aux[4*dim], 0);
+				aux.solution->set(dest_dof_is_contact, is_contact_node.get(source_dof));
+
+
+				for (unsigned int d = 0; d < dim; ++d) {
+					unsigned int source_dof = node->dof_number(context_ptr->system.number(), d, 0);
+					unsigned int dest_dof_ray = node->dof_number(aux.number(), var_num_aux[4*dim + 1 + d], 0);
+					aux.solution->set(dest_dof_ray, rays.get(source_dof));
 				}
 			}
 		}

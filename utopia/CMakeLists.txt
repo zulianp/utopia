@@ -13,7 +13,7 @@ option(TRY_WITH_CUDA "Allows to enable to try enabling the cuda backend" OFF)
 option(TRY_WITH_OPENCL "Allows to enable to try enabling the opencl backend" OFF)
 option(TRY_WITH_PETSC "Allows to enable to try enabling the petsc backend" ON)
 option(TRY_WITH_BLAS "Allows to enable to try enabling the blas backend" ON)
-option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" ON)
+option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
 option(UTOPIA_LOG "enables utopia logging facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
@@ -167,16 +167,6 @@ endfunction()
 
 set(WITH_CPP11 ON)
 
-#################################################################################
-
-
-if(TRY_WITH_EIGEN_3)
-	find_package(Eigen3)
-	if(EIGEN3_FOUND)
-		set(WITH_EIGEN_3 TRUE)
-		list(APPEND UTOPIA_INCLUDES ${EIGEN3_INCLUDE_DIR})
-	endif()
-endif()	
 
 #################################################################################
 #################################################################################
@@ -225,9 +215,6 @@ if(USE_SPIKE_SOLVERS)
 	list(APPEND UTOPIA_MODULES spike/solvers)
 endif()
 
-# config is created based on the successful backend compilations
-configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
-
 # test suite
 add_subdirectory(tests)
 
@@ -255,6 +242,9 @@ list(APPEND UTOPIA_SOURCES
 	utopia.cpp
 	utopia_Instance.cpp
 	)
+
+# config is created based on the successful backend compilations
+configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
 
 add_library(utopia STATIC utopia.cpp ${UTOPIA_SOURCES})
 target_link_libraries(utopia ${UTOPIA_COMPONENTS})

@@ -33,6 +33,7 @@ namespace utopia {
 		DVectord displacement_increment;
 		DVectord old_displacement_increment;
 		DVectord total_displacement;
+		DVectord rays;
 
 		DVectord velocity;
 		// DVectord old_velocity;

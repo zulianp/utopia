@@ -869,7 +869,7 @@ namespace utopia {
 		
 		const bool has_constaints = u.dof_map().constraint_rows_begin() != u.dof_map().constraint_rows_end();
 		if(!has_constaints) {
-			std::cerr << "[Warning] no boundary conditions to apply\n" << std::endl;
+			// std::cerr << "[Warning] no boundary conditions to apply\n" << std::endl;
 			// return;
 		}
 		
@@ -905,7 +905,7 @@ namespace utopia {
 	{		
 		bool has_constaints = true;
 		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
-			std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
+			// std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
 			has_constaints = false;
 		}
 		
@@ -925,7 +925,7 @@ namespace utopia {
 	{
 		bool has_constaints = true;
 		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
-			std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
+			// std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
 			has_constaints = false;
 		}
 
