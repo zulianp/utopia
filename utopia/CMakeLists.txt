@@ -251,16 +251,16 @@ target_link_libraries(utopia ${UTOPIA_COMPONENTS})
 target_link_libraries(utopia ${UTOPIA_LIBRARIES})
 
 if(NOT UTOPIA_ARCHIVE_ONLY)
-	add_library(utopia_dynamic SHARED utopia.cpp ${UTOPIA_SOURCES})
-	target_link_libraries(utopia_dynamic ${UTOPIA_COMPONENTS})
-	target_link_libraries(utopia_dynamic ${UTOPIA_LIBRARIES})
+	# add_library(utopia_dynamic SHARED utopia.cpp ${UTOPIA_SOURCES})
+	# target_link_libraries(utopia_dynamic ${UTOPIA_COMPONENTS})
+	# target_link_libraries(utopia_dynamic ${UTOPIA_LIBRARIES})
 	
 	add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
 	target_link_libraries(utopia_exec utopia)
 	target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
 	target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
 
-	install(TARGETS utopia utopia_exec utopia_dynamic 
+	install(TARGETS utopia utopia_exec #utopia_dynamic 
 		RUNTIME DESTINATION bin 
 		LIBRARY DESTINATION lib 
 		ARCHIVE DESTINATION lib 
