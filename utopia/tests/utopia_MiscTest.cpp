@@ -126,16 +126,16 @@ namespace utopia {
         UTOPIA_UNIT_TEST_BEGIN("MiscTest");
 
 #ifdef WITH_CUDA
-            cuda_hello_world();
+           UTOPIA_RUN_TEST(cuda_hello_world);
 #endif
 
 #ifdef WITH_UTOPIA_OPENCL
-            test_opencl_code();
+            UTOPIA_RUN_TEST(test_opencl_code);
 #endif
 
 #ifdef WITH_LAPACK
 #ifdef WITH_BLAS
-            test_lapack_eigen_solver();
+            UTOPIA_RUN_TEST(test_lapack_eigen_solver);
 #endif
 #endif
         UTOPIA_UNIT_TEST_END("MiscTest");

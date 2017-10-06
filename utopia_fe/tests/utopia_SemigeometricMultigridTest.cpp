@@ -2,6 +2,7 @@
 #include "utopia.hpp"
 #include "moonolith_communicator.hpp"
 #include <memory>
+#include "libmesh/parallel_mesh.h"
 
 using namespace libMesh;
 
@@ -19,10 +20,10 @@ namespace utopia {
         const std::string fine_mesh_path   = data_path + "/fine_mesh.e";
         const std::string coarse_mesh_path = data_path + "/coarse_mesh.e";
         
-        p.fine_mesh = make_shared<Mesh>(init.comm());
+        p.fine_mesh = make_shared<DistributedMesh>(init.comm());
         p.fine_mesh->read(fine_mesh_path);
         
-        p.coarse_mesh = make_shared<Mesh>(init.comm());
+        p.coarse_mesh = make_shared<DistributedMesh>(init.comm());
         p.coarse_mesh->read(coarse_mesh_path);
         
         p.fine_context 	 = make_shared<MGTestProblem::FEContextT>(p.fine_mesh);
@@ -40,10 +41,9 @@ namespace utopia {
         
         moonolith::Communicator comm(init.comm().get());
         DSMatrixd B;
-                  /* without volume tags*/
+        /* without volume tags*/
         
-//        if(!assemble_volume_transfer(
-//                                     comm,
+//        if(!assemble_volume_transfer(comm,
 //                                     p.coarse_mesh,
 //                                     p.fine_mesh,
 //                                     utopia::make_ref(p.coarse_space->dof_map()),
@@ -54,10 +54,8 @@ namespace utopia {
 //                                     1,
 //                                     B))
         
-                  /* with volume tags*/
-            
-//        if(!assemble_volume_transfer(
-//                                     comm,
+        /* with volume tags*/    
+//        if(!assemble_volume_transfer(comm,
 //                                     p.coarse_mesh,
 //                                     p.fine_mesh,
 //                                     utopia::make_ref(p.coarse_space->dof_map()),
@@ -69,10 +67,9 @@ namespace utopia {
 //                                     B,
 //                                     {{1,2}}))
         
-                  /* with volume tags and reverse operator*/
+        /* with volume tags and reverse operator*/
         DSMatrixd B_r;
-        if(!assemble_volume_transfer_r(
-                                       comm,
+        if(!assemble_volume_transfer_r(comm,
                                        p.coarse_mesh,
                                        p.fine_mesh,
                                        utopia::make_ref(p.coarse_space->dof_map()),
@@ -87,10 +84,8 @@ namespace utopia {
                                        1,
                                        1,
                                        B,
-                                       B_r,
-                                       {{1,2}}))
+                                       B_r))
         {
-            
             std::cerr << "No intersection" << std::endl;
             return;
         }
@@ -107,7 +102,7 @@ namespace utopia {
         });
         
         p.fine_context->system.attach_assemble_object(ass);
-        p.fine_context->equation_systems.print_info();
+        // p.fine_context->equation_systems.print_info();
         // p.fine_context->equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 1;
         //solve triggers the initialization and the assembly of the algebraic system (should be fixed at some point)
         p.fine_context->equation_systems.solve();
@@ -134,8 +129,6 @@ namespace utopia {
         
         convert(*p.fine_context->system.matrix, p.A);
         convert(*p.fine_context->system.rhs, 	p.rhs);
-        
-        // write("T.m", *T);
     }
     
     void run_semigeometric_multigrid_test(libMesh::LibMeshInit &init)
@@ -153,8 +146,11 @@ namespace utopia {
         multigrid.mg_type(2);
         
         // multigrid.max_it(1);
-        multigrid.verbose(true);
+        // multigrid.verbose(true);
         multigrid.solve(p.A, p.rhs, sol);
+
+        const double err = norm2(p.A * sol - p.rhs);
+        
         
         //CG with multigrid preconditioner
         // ConjugateGradient<DSMatrixd, DVectord> cg;
@@ -168,7 +164,6 @@ namespace utopia {
         
         convert(sol, *p.fine_context->system.solution);
         ExodusII_IO(*p.fine_mesh).write_equation_systems ("mg_solution_lapl.e", p.fine_context->equation_systems);
-        
-        
+        assert(err < 1e-7);
     }
 }

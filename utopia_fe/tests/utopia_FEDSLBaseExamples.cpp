@@ -44,35 +44,54 @@ namespace utopia {
 			-1., 1.,
 			QUAD9);
 
-		// UGXMeshReader reader;
-		// if(!reader.read("/Users/patrick/Downloads/ASCII_bone/fragment.ugx", *mesh)) {
-		// 	return;
-		// }
+		for(auto it = mesh->active_local_elements_begin(); it != mesh->active_local_elements_end(); ++it) {
+			auto &n = (*it)->node_ref(0);
 
-		// ExodusII_IO(*mesh).write("fragment_with_sidestes.e");
-		// return;
-
-
-		// mesh->read("/Users/patrick/Downloads/ASCII_bone/all_sidesets.e");
-
+			if(n(0) < -0.5) {
+				(*it)->subdomain_id() = 1;
+			} else if(n(0) < 0.5) {
+				(*it)->subdomain_id() = 2;
+			} else {
+				(*it)->subdomain_id() = 3;
+			}
+		}
 
 		LibMeshFEContext<LinearImplicitSystem> context(mesh);
 		auto Vh = fe_space(LAGRANGE, FIRST, context);
 		auto v  = fe_function(Vh);
 
-		strong_enforce( boundary_conditions(v == coeff(0), {1, 2}) );
-		// strong_enforce( boundary_conditions(v == coeff(1), {1}) );
-
+		strong_enforce( boundary_conditions(v == coeff(1), {2}) );
 		context.equation_systems.init();
 
 		const int dim = mesh->mesh_dimension();
 		v.set_quad_rule(make_shared<libMesh::QGauss>(dim, FIFTH));
 
-	//utopia Wrapper implemented with inliner
-		LMDenseMatrix A = identity(dim, dim);	
-		A.set(0, 0, 10);
-		A.set(1, 1, 0.1);
-		if(dim > 2) A.set(2, 2, 1);
+		//utopia Wrapper implemented with inliner
+		LMDenseMatrix A1 = identity(dim, dim);
+		{
+			Write<LMDenseMatrix> w_A(A1);
+			A1.set(0, 0, 10);
+			A1.set(1, 1, 0.1);
+			if(dim > 2) A1.set(2, 2, 1);
+		}
+
+		LMDenseMatrix A2 = identity(dim, dim);
+		{
+			Write<LMDenseMatrix> w_A(A2);
+			A2.set(0, 0, 0.1);
+			A2.set(1, 1, 10);
+			if(dim > 2) A2.set(2, 2, 1);
+		}
+
+		LMDenseMatrix A_default = identity(dim, dim);
+		{
+			Write<LMDenseMatrix> w_A(A_default);
+			A_default.set(0, 0, 1);
+			A_default.set(1, 1, 1);
+			if(dim > 2) A_default.set(2, 2, 1);
+		}
+
+		auto A = block_var(A_default, {{1, A1}, {2, A2}});
 
 		std::function<Real (const Point &)> f = [dim](const Point &p) {
 			return 10 * std::sqrt( p(0) * p(0) + p(1) * p(1) ) - 5.0;
@@ -85,13 +104,13 @@ namespace utopia {
 		});
 
 		context.system.attach_assemble_object(ass);
-		context.equation_systems.print_info();
+		// context.equation_systems.print_info();
 		context.equation_systems.solve();
 
 		DVectord u_sol;
 		convert(*context.system.solution, u_sol);
 
-	
+
 
 		ExodusII_IO(*mesh).write_equation_systems ("anisotropic_laplacian.e", context.equation_systems);
 
@@ -106,7 +125,7 @@ namespace utopia {
 
 		auto mesh = make_shared<Mesh>(init.comm());		
 		MeshTools::Generation::build_cube (*mesh,
-			20, 20, 20,
+			10, 10, 10,
 			-1., 1.,
 			-1., 1.,
 			-1., 1.,
@@ -158,7 +177,7 @@ namespace utopia {
 
 
 	context.system.attach_assemble_object(ass);
-	context.equation_systems.print_info();
+	// context.equation_systems.print_info();
 	context.equation_systems.solve();
 
 	ExodusII_IO(*mesh).write_equation_systems ("linear_elasticity.e", context.equation_systems);
@@ -167,13 +186,26 @@ namespace utopia {
 
 void nonlinear_laplace_eq(LibMeshInit &init)
 {
-	int n = 50;
+	int n = 15;
 	auto mesh = make_shared<Mesh>(init.comm());		
 	MeshTools::Generation::build_square (*mesh,
 		n, n,
 		-1., 1.,
 		-1., 1.,
 		QUAD9);
+
+
+	for(auto it = mesh->active_local_elements_begin(); it != mesh->active_local_elements_end(); ++it) {
+		auto &n = (*it)->node_ref(0);
+
+		// std::cout << (*it)->subdomain_id() << std::endl;
+
+		if(n(0) < 0.0) {
+			(*it)->subdomain_id() = 1;
+		} else {
+			(*it)->subdomain_id() = 2;
+		}
+	}
 
 	LibMeshFEContext<LinearImplicitSystem> context(mesh);
 	auto Vh = fe_space(LAGRANGE, FIRST, context);
@@ -186,7 +218,7 @@ void nonlinear_laplace_eq(LibMeshInit &init)
 	const int dim = mesh->mesh_dimension();
 	v.set_quad_rule(make_shared<libMesh::QGauss>(dim, FIFTH));
 
-	std::function<Real(const Point &p) > rhs_fun = [dim](const Point &p) -> Real {
+	std::function<Real(const Point &p)> rhs_fun_1 = [dim](const Point &p) -> Real {
 		Real center = 0;
 
 		Real ret = 0;
@@ -197,16 +229,24 @@ void nonlinear_laplace_eq(LibMeshInit &init)
 		return 10 * std::sqrt(ret) - 5;
 	};
 
-	auto c  = coeff(rhs_fun);
-	
-	LMDenseMatrix A = identity(dim, dim);	
-	A.set(0, 0, 2.);
-	A.set(1, 1, 0.5);
-	if(dim > 2) A.set(2, 2, 1);
+	std::function<Real(const Point &p)> rhs_fun_2 = [dim](const Point &) -> Real {
+		return 1;
+	};
+
+	auto c1 = coeff(rhs_fun_1);
+	auto c2 = coeff(rhs_fun_2);
+
+	LMDenseMatrix A = identity(dim, dim);
+	{	
+		Write<LMDenseMatrix> w_A(A);
+		A.set(0, 0, 2.);
+		A.set(1, 1, 0.5);
+		if(dim > 2) A.set(2, 2, 1);
+	}
 
 	auto v_k = interpolate(coeff(1.0), v, make_ref(*context.system.solution));
 	auto bf  = integral(dot(1./(pow2(v_k) + coeff(0.1)) * (A * grad(v)), grad(v)));	
-	auto lf  = integral(dot(c, v));
+	auto lf  = integral(dot(c1, v), 1) + integral(dot(c2, v), 2);
 
 	auto ass = make_assembly([&]() -> void {
 		std::cout << "assemble called, norm(u):" << context.system.solution->l2_norm() << std::endl;
@@ -214,7 +254,7 @@ void nonlinear_laplace_eq(LibMeshInit &init)
 	});
 
 	context.system.attach_assemble_object(ass);
-	context.equation_systems.print_info();
+	// context.equation_systems.print_info();
 
 	for(auto i = 0; i < 10; ++i) {
 		context.equation_systems.solve();
@@ -227,7 +267,7 @@ void boundary_conds(LibMeshInit &init)
 {
 	auto mesh = make_shared<Mesh>(init.comm());		
 	MeshTools::Generation::build_square (*mesh,
-		20, 20,
+		10, 10,
 		-1., 1.,
 		-1., 1.,
 		QUAD9);

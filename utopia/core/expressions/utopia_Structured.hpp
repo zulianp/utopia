@@ -23,7 +23,7 @@ namespace utopia {
 
         inline void resize(const Size &size)
         {
-            backend(this->derived()).resize(size, derived().implementation());
+            backend(this->derived()).resize(derived().implementation(), size);
         }
 
         // template<int FOrder>

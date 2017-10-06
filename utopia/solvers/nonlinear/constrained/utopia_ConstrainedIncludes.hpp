@@ -10,9 +10,5 @@
 #include "utopia_MPRGP.hpp"
 #include "utopia_SemismoothNewton.hpp"
 
-#ifdef WITH_PETSC
-#include "utopia_PETScSemismoothNewton.hpp"	
-#endif
-
 #endif //UTOPIA_CONSTRAINTED_HPP
 

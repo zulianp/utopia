@@ -5,22 +5,52 @@
 
 namespace utopia {
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-	class BiCGStab {};
+	class BiCGStab {
+	public:
+		BiCGStab() {
+			static_assert(Backend < HOMEMADE, "BiCGStab not implemented for this backend");
+		}	
+	};
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-	class GMRES {};
+	class GMRES {
+	public:
+		GMRES() {
+			static_assert(Backend < HOMEMADE, "GMRES not implemented for this backend");
+		}	
+	};
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-	class MINRES {};
+	class MINRES {
+	public:
+		MINRES() {
+			static_assert(Backend < HOMEMADE, "MINRES not implemented for this backend");
+		}	
+	};
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Vector>::Backend>
-	class Factorization;
+	class Factorization {
+	public:
+		Factorization() {
+			static_assert(Backend < HOMEMADE, "Factorization not implemented for this backend");
+		}	
+	};
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-	class LUDecomposition {};
+	class LUDecomposition {
+	public:
+		LUDecomposition() {
+			static_assert(Backend < HOMEMADE, "LUDecomposition not implemented for this backend");
+		}	
+	};
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-	class CholeskyDecomposition {};
+	class CholeskyDecomposition {
+	public:
+		CholeskyDecomposition() {
+			static_assert(Backend < HOMEMADE, "CholeskyDecomposition not implemented for this backend");
+		}	
+	};
 }
 
 #endif //UTOPIA_LINEAR_SOLVERS_INTERFACES_HPP

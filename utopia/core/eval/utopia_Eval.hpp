@@ -22,9 +22,6 @@
 #include "utopia_Eval_TensorReduce.hpp"
 #include "utopia_Eval_Construct_Multiply.hpp"
 #include "utopia_Eval_Determinant.hpp"
-#ifdef WITH_PETSC
-#include "utopia_Eval_PETSc.hpp"
-#include "utopia_Eval_Inverse_PETSc.hpp"
-#endif //WITH_PETSC
+#include "utopia_Eval_Select.hpp"
 
 #endif //UTOPIA_EVAL_HPP

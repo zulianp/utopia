@@ -4,11 +4,8 @@
 #include "utopia_Multilevel.hpp"
 #include "utopia_Linear.hpp"
 #include "utopia_Nonlinear.hpp"
-#include "utopia_Eig.hpp"
-
 #include "utopia_DomainDecomposition.hpp"
 #include "utopia_Parameters.hpp"
-
 
 /**
  * @defgroup   solving Solvers

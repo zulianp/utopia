@@ -9,9 +9,14 @@
 #define UTOPIA_LS_STRATEGY_FACTORY_HPP
 
 #include "utopia_Core.hpp"
+#include "utopia_LinearSolverFactory.hpp"
 
-namespace utopia 
-{
+#include <map>
+#include <string>
+#include <memory>
+#include "utopia_Parameters.hpp"
+
+namespace utopia {
 
 	typedef const char * LSStrategyTag;
 
@@ -90,10 +95,9 @@ namespace utopia
 	template<typename Matrix, typename Vector>
 	const Parameters line_search_solve(Function<Matrix, Vector> &fun, Vector &x, const Parameters params = Parameters())
 	{
-		auto lin_solver = linear_solver<Matrix, Vector>(params.lin_solver_type());
+		auto lin_solver = LinearSolverFactory<Matrix, Vector>::new_linear_solver(params.lin_solver_type());
 		Newton<Matrix, Vector> ls_solver(lin_solver);
 		
-
 		auto strategy = line_search_strategy<Matrix, Vector>(params.line_search_alg()); 
 		strategy->set_parameters(params);
 			

@@ -10,11 +10,11 @@
 namespace utopia {
     class BackendInfo {
     public:
-        const std::string &getName() const {
+        const std::string &get_name() const {
             return name_;
         }
 
-        void setName(const std::string &name) {
+        void set_name(const std::string &name) {
             this->name_ = name;
         }
 

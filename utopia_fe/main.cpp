@@ -22,8 +22,11 @@
 #include "utopia_GeometryTest.hpp"
 #include "utopia_Biomechanics.hpp"
 #include "utopia_UtopiaFETests.hpp"
+#include "utopia_VolumeTransferBenchmark.hpp"
+#include <functional>
 
-//#include "utopia_FEDSLBaseSolverExamples.hpp"
+#include "par_moonolith.hpp"
+
 using namespace utopia;
 using namespace std;
 using namespace libMesh;
@@ -33,25 +36,59 @@ int main(const int argc, char *argv[])
 {
 
 	Utopia::Init(argc, argv);
+	MOONOLITH_PROFILING_BEGIN();
 	
 	{
 		LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
-		// LibMeshInit init(argc, argv);
-		run_all_utopia_fe_tests(init);
 
-	
+		std::map<std::string, std::function<void(LibMeshInit &)> > runners;
+		runners["base"] = run_base_examples;
+		runners["time_diff"] = run_time_diff_examples;
+		runners["least_squares"] = run_least_squares_examples;
+		runners["mixed_fe_space"] = run_mixed_fe_space_example;
+	    runners["biomechanics"] = run_biomechanics_example;
+	    runners["geometry"] = run_geometry_test;
+	    runners["mortar"] = run_mortar_examples;
+	    runners["tests"] = run_all_utopia_fe_tests;
 
-	// run_base_examples(init);
-	// run_time_diff_examples(init);
-	
-	// run_least_squares_examples(init);
-	// run_mixed_fe_space_example(init);
-    //run_solver_ex(init);
-    // run_biomechanics_example(init);
-    // run_geometry_test(init);
-    // run_mortar_examples(init);
+	    //benchmarks
+	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
+	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
+
+		for(int i = 1; i < argc; ++i) {
+			if(argv[i] == std::string("-r")) {
+				const int ip1 = i+1;
+				if(ip1 < argc) {
+					auto it = runners.find(argv[ip1]);
+					if(it == runners.end()) {
+						std::cerr << "[Error] " << argv[ip1] << " not found" << std::endl;
+					} else {
+						std::cout << "--------------------------------------------" << std::endl;
+						std::cout << "[Status] Running: " << argv[ip1] << std::endl;
+						std::cout << "--------------------------------------------" << std::endl;
+						it->second(init);
+						std::cout << "--------------------------------------------" << std::endl;
+						std::cout << "--------------------------------------------" << std::endl;
+					}
+				} else {
+					std::cerr << "[Error] run requires an input string" << std::endl;
+				}
+			} else if(argv[i] == std::string("-h")) {
+				std::cout << "--------------------------------------------" << std::endl;
+				std::cout << "--------------------------------------------" << std::endl;
+				std::cout << "-r <runner name>\n";
+				std::cout << "Available runners:\n";
+
+				for(auto &r : runners) {
+					std::cout << "\t" << r.first << std::endl;
+				}
+
+				std::cout << "--------------------------------------------" << std::endl;
+				std::cout << "--------------------------------------------" << std::endl;
+			}
 		}
-    return Utopia::Finalize();
-	// return EXIT_SUCCESS;
-}
+	}
 
+	MOONOLITH_PROFILING_END();
+    return Utopia::Finalize();
+}

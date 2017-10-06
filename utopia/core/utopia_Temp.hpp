@@ -28,16 +28,16 @@ namespace utopia
 {
 
     template<class Tensor>
-    bool set_zero_rows(Wrapper<Tensor, 2> &w,  const std::vector<typename utopia::Traits<Tensor>::SizeType> & index)
+    void set_zero_rows(Wrapper<Tensor, 2> &w,  const std::vector<typename utopia::Traits<Tensor>::SizeType> & index)
     {
-        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().set_zero_rows(w.implementation(), index);
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().set_zero_rows(w.implementation(), index);
     }
 
     // not sure how to name this one 
     template<class MatTensor, class VectorTensor>
-    bool apply_BC_to_system(Wrapper<MatTensor, 2> &A, Wrapper<VectorTensor, 1> &x, Wrapper<VectorTensor, 1> &rhs,  const std::vector<typename utopia::Traits<VectorTensor>::SizeType> & index)
+    void apply_BC_to_system(Wrapper<MatTensor, 2> &A, Wrapper<VectorTensor, 1> &x, Wrapper<VectorTensor, 1> &rhs,  const std::vector<typename utopia::Traits<VectorTensor>::SizeType> & index)
     {
-        return Backend<typename Traits<MatTensor>::Scalar, Traits<MatTensor>::Backend>::Instance().apply_BC_to_system(A.implementation(), x.implementation(), rhs.implementation(), index);
+        Backend<typename Traits<MatTensor>::Scalar, Traits<MatTensor>::Backend>::Instance().apply_BC_to_system(A.implementation(), x.implementation(), rhs.implementation(), index);
     }
 
 }

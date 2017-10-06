@@ -115,6 +115,15 @@ namespace utopia {
         typedef typename Traits::SparseMatrix Type;
     };
 
+
+    template<class Traits, int Sparsity>
+    class TensorQuery<Traits, 4, Sparsity> {
+    public:
+        //FIXME dummy for 4th order tensor
+        typedef typename TensorQuery<Traits, 2, Sparsity>::Type Type;
+    };
+
+
     template<class Left, class Right>
     class MostDescriptive {
         public:
@@ -176,7 +185,54 @@ namespace utopia {
         // enum {
         //     FILL_TYPE = FillType::DENSE
         // };
+
+        enum {
+            Order = T::Order
+        };
     };
+
+    template<>
+    class Traits<double>  {
+    public:
+        typedef double Scalar;
+
+        enum {
+            Order = 0
+        };
+
+        enum {
+            FILL_TYPE = FillType::DELEGATE
+        };
+    };
+
+    template<>
+    class Traits<float>  {
+    public:
+        typedef float Scalar;
+
+        enum {
+            Order = 0
+        };
+
+        enum {
+            FILL_TYPE = FillType::DELEGATE
+        };
+    };
+
+    template<>
+    class Traits<int>  {
+    public:
+        typedef int Scalar;
+
+        enum {
+            Order = 0
+        };
+
+        enum {
+            FILL_TYPE = FillType::DELEGATE
+        };
+    };
+
 
     template<class Tensor, class TraitsT = Traits<Tensor> >
     struct is_sparse {

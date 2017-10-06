@@ -30,8 +30,45 @@ namespace utopia {
 
     private:
        UTOPIA_STORE_CONST(Expr) expr_;
-        // const Expr &expr_;
     };
+
+
+    //[new backend concept]
+    // class DiagOp {};
+
+    // template<class _Expr>
+    // class Unary<_Expr, DiagOp> : public Expression< Unary<_Expr, DiagOp> > {
+    // public:
+    //     typedef _Expr Expr;
+    //     typedef DiagOp Operation;
+    //     typedef typename Expr::Scalar Scalar;
+
+    //    enum {
+    //        Order = (Expr::Order == 1) ? 2 : 1
+    //    };
+
+
+    //     Unary(const Expr &expr, const Operation operation = Operation()) : expr_(expr), operation_(operation) { }
+    //     inline const Expr &expr() const { return expr_; }
+
+    //     virtual ~Unary() { }
+
+    //   std::string getClass() const {
+    //       return  "Diag<" + expr_.getClass() + ">";
+    //   }
+
+    //     inline const Operation &operation() const
+    //     {
+    //         return operation_;
+    //     }
+
+    // private:
+    //     UTOPIA_STORE_CONST(Expr) expr_;
+    //     Operation operation_;
+    // };
+
+    // template<class Expr>
+    // using Diag = Unary<Expr, DiagOp>;
 
     template<class Expr>
     class Traits< Diag<Expr> > : public Traits<Expr> {};

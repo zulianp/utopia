@@ -11,24 +11,24 @@ namespace utopia {
 
     template<class Tensor, typename Scalar, class Traits, int Backend>
     class Eval<Unary<
-            Wrapper<Tensor, 1>,
-            Reciprocal<Scalar> >,
-            Traits, Backend> {
+    Wrapper<Tensor, 1>,
+    Reciprocal<Scalar> >,
+    Traits, Backend> {
     public:
-
         inline static Tensor apply(const Unary<Wrapper<Tensor, 1>, Reciprocal<Scalar> > &expr)
         {
             Tensor result;
 
             UTOPIA_LOG_BEGIN(expr);
 
-            const bool ok = UTOPIA_BACKEND(Traits).apply(
-                    Eval<Wrapper<Tensor, 1>, Traits>::apply(expr.expr()),
-                    expr.operation(),
-                    result
-            );
+            //FIXME this is actually a binary thing
+            UTOPIA_BACKEND(Traits).apply_binary(
+                result,
+                expr.operation(),
+                Eval<Wrapper<Tensor, 1>, Traits>::apply(expr.expr())
 
-            ASSERT(ok);
+
+                );
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -46,13 +46,11 @@ namespace utopia {
 
             UTOPIA_LOG_BEGIN(expr);
 
-            const bool ok = UTOPIA_BACKEND(Traits).apply(
-                    Eval<Expr, Traits>::apply(expr.expr()),
-                    expr.operation(),
-                    result
-            );
-
-            ASSERT(ok);
+            UTOPIA_BACKEND(Traits).apply_unary(
+                result,
+                expr.operation(),
+                Eval<Expr, Traits>::apply(expr.expr())
+                );
 
             UTOPIA_LOG_END(expr);
             return result;

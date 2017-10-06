@@ -187,14 +187,34 @@ namespace utopia {
     }
 
 
-    template<class Left, class Right>
+    
     /**
      * @ingroup tensor_products
      * @brief   Pointwise multiplication. 
      */
+    template<class Left, class Right>
     inline Binary<Left, Right, EMultiplies> e_mul(const Expression<Left> &left, const Expression<Right> &right) {
         return Binary<Left, Right, EMultiplies>(left.derived(), 
                                                 right.derived());
+    }
+
+    /**
+     * @ingroup tensor_products
+     * @brief   Pointwise min. 
+     */
+    template<class Left, class Right>
+    inline Binary<Left, Right, Min> min(const Expression<Left> &left, const Expression<Right> &right) {
+        return Binary<Left, Right, Min>(left.derived(), right.derived());
+    }
+
+
+    /**
+     * @ingroup tensor_products
+     * @brief   Pointwise max. 
+     */
+    template<class Left, class Right>
+    inline Binary<Left, Right, Max> max(const Expression<Left> &left, const Expression<Right> &right) {
+        return Binary<Left, Right, Max>(left.derived(), right.derived());
     }
 
 

@@ -36,7 +36,7 @@ using std::shared_ptr;
 
 namespace utopia {
 
-	class ExampleProblemBase : public ContactProblem::ElasticityBoundaryConditions {
+	class ExampleProblemBase : public ContactProblem::ElasticityBoundaryConditions, public ContactProblem::ElasticityForcingFunction {
 	public:
 		virtual ~ExampleProblemBase() {}
 		std::string mesh_file;
@@ -46,6 +46,13 @@ namespace utopia {
 		double search_radius;
 		double dt;
 		int n_steps;
+		bool dynamic_contact;
+		bool is_inpulse;
+
+		ExampleProblemBase()
+		{
+			is_inpulse = false;
+		}
 	};
 
 
@@ -58,17 +65,9 @@ namespace utopia {
 			contact_flags = {{12, 13}, {14, 13}};
 			is_multibody = true;
 			search_radius = 0.05;
-			dt = 1.;
-
-			//---------------------------------------------------
-			// mesh->read("../data/hertz_530.e");
-			// mesh->read("../data/quasi_signorini_4593.e");
-			// mesh->read("../data/quasi_signorini_fine.e");
-			// mesh->read("../data/quasi_signorini_fine_surface_both.e");
-			// mesh->read("../data/quasi_signorini_ultra_fine_surface_both.e");
-			// mesh->read("../data/two_rocks_26653.e");
-			// mesh->read("../data/quasi_signorini_526.e");
-			// mesh->read("../data/quasi_signorini_248322.e");
+			dt = 0.05;
+			dynamic_contact = true;
+			n_steps = 20;
 		}
 
 		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
@@ -77,18 +76,40 @@ namespace utopia {
 		{
 			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uz == coeff(-dt*0.3), {top_boundary_tag}) );
+			
+			if(dynamic_contact) {
+				strong_enforce( boundary_conditions(uz == coeff(0.0), {top_boundary_tag}) );
+			} else {
+				strong_enforce( boundary_conditions(uz == coeff(-0.3), {top_boundary_tag}) );
+			}
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uz == coeff(0.0), {bottom_boundar_tag}) );
 			
-			if(is_multibody) {
+			if(is_multibody && !dynamic_contact) {
 				strong_enforce( boundary_conditions(ux == coeff(0.),  {3, 4, 5}) );
 				strong_enforce( boundary_conditions(uy == coeff(0.),  {3, 4, 5}) );
 
-				strong_enforce( boundary_conditions(uz == coeff(-dt*0.08), {4}) );
-				strong_enforce( boundary_conditions(uz == coeff(dt*0.08), {5}) );
+				strong_enforce( boundary_conditions(uz == coeff(-0.08), {4}) );
+				strong_enforce( boundary_conditions(uz == coeff(0.08), {5}) );
+			} else {
+				if(is_multibody && dynamic_contact) {
+					strong_enforce( boundary_conditions(ux == coeff(0.),  {3, 4, 5}) );
+					strong_enforce( boundary_conditions(uy == coeff(0.),  {3, 4, 5}) );
+
+					strong_enforce( boundary_conditions(uz == coeff(0.0), {4}) );
+					strong_enforce( boundary_conditions(uz == coeff(0.0), {5}) );
+				}
+			}
+		}
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			if(dynamic_contact) {
+				v(2) = -1.;
+			} else {
+				v.zero();
 			}
 		}
 
@@ -105,6 +126,7 @@ namespace utopia {
 			search_radius = 0.4;
 			dt = 1.;
 			n_steps = 1;
+			dynamic_contact = false;
 		}
 
 		void set_up_fine()
@@ -118,7 +140,7 @@ namespace utopia {
 		{
 			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uz == coeff(-dt*0.1), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(-0.1), {top_boundary_tag}) );
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
@@ -136,7 +158,14 @@ namespace utopia {
 			search_radius = 0.2;
 			dt = 1.;
 			n_steps = 1;
+			dynamic_contact = false;
 		}
+
+		int block_id() const override
+		{
+			return 1;
+		}
+
 
 		void set_up_middle_res()
 		{
@@ -154,9 +183,59 @@ namespace utopia {
 		}
 
 		void set_up_time_dependent(){
-			dt = 0.1;
+			dt = 0.3;
 			search_radius *= dt;
-			n_steps = 30;
+			n_steps = 10;
+		}
+
+		void set_up_time_dependent_dynamic(){
+			set_up_adaptive();
+			set_up_time_dependent();
+			dynamic_contact = true;
+			n_steps = 100;
+		}
+
+		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override
+		{
+			if(!dynamic_contact) {
+				strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
+				strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
+				strong_enforce( boundary_conditions(uz == coeff(-0.2), {top_boundary_tag}) );
+			}
+
+			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(0.0), {bottom_boundar_tag}) );
+		}
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			if(dynamic_contact) {
+				v(2) = -0.1;
+			} else {
+				v.zero();
+			}
+		}
+	};
+
+	class Rocks : public ExampleProblemBase {
+	public:
+		Rocks() {
+			mesh_file = "../data/two_rocks_2mm_8041.e";
+			top_boundary_tag = 2;
+			bottom_boundar_tag = 4;
+			contact_flags = {{3, 1}};
+			search_radius = 2.;
+			dt = 1.;
+			n_steps = 9;
+			dynamic_contact = false;
+		}
+
+		int block_id() const override
+		{
+			return 1;
 		}
 
 		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
@@ -165,13 +244,95 @@ namespace utopia {
 		{
 			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uz == coeff(-dt*0.2), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(-0.5), {top_boundary_tag}) );
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uz == coeff(0.0), {bottom_boundar_tag}) );
 		}
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			v.zero();
+		}
 	};
+
+	class Balls : public ExampleProblemBase {
+	public:
+		Balls() {
+			mesh_file = "../data/balls.e";
+			fixed_boundary = 5;
+			contact_flags = {{1, 2}, {1, 3}, {1, 4}, 
+							 		 {2, 3}, {2, 4},
+							                 {3, 4} };
+			search_radius = 0.1;
+			dt = .02;
+			n_steps = 1000;
+			dynamic_contact = true;
+			is_three_dim = false;
+
+
+		}
+
+		void three_dim()
+		{
+			mesh_file = "../data/balls_3d.e";
+			const int n_bodies = 11;
+			is_three_dim = true;
+
+			contact_flags.clear();
+			for(int i = 1; i <= n_bodies; i++) {
+				for(int j = i + 1; j <= n_bodies; j++) {
+					if(i == 4) {
+						contact_flags.push_back(std::pair<int, int>(j, i));
+					} else {
+						contact_flags.push_back(std::pair<int, int>(i, j));
+					}
+				}
+			}
+		}
+
+		void many()
+		{
+			mesh_file = "../data/balls_many_3.e";
+			const int n_bodies = 11;
+
+			contact_flags.clear();
+			for(int i = 1; i <= n_bodies; i++) {
+				for(int j = i + 1; j <= n_bodies; j++) {
+					if(i == 4) {
+						contact_flags.push_back(std::pair<int, int>(j, i));
+					} else {
+						contact_flags.push_back(std::pair<int, int>(i, j));
+					}
+				}
+			}
+		}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy)  override {
+			strong_enforce( boundary_conditions(ux == coeff(0.), {fixed_boundary}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.), {fixed_boundary}) );
+		}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override {
+			strong_enforce( boundary_conditions(ux == coeff(0.), {fixed_boundary}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.), {fixed_boundary}) );
+			strong_enforce( boundary_conditions(uz == coeff(0.), {fixed_boundary}) );
+		}
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			if(is_three_dim) {
+				v(2) = -1.;
+			} else {
+				v(1) = -1.;
+			}
+		}
+
+		int fixed_boundary;
+		bool is_three_dim;
+	};
+
 
 
 	class ExampleProblem2D : public ExampleProblemBase {
@@ -184,6 +345,28 @@ namespace utopia {
 			search_radius = 0.1;
 			dt = 1.;
 			n_steps = 1;
+			dynamic_contact = false;
+			is_inpulse = false;
+
+		}
+
+		void set_up_dynamic()
+		{
+			mesh_file = "../data/coarse_contact_2d.e";
+			search_radius = 0.002;
+			dt = 0.1;
+			dynamic_contact = true;
+			n_steps = 200;
+		}
+
+		void set_up_dynamic_with_impulse()
+		{
+			mesh_file = "../data/coarse_contact_2d.e";
+			search_radius = 0.002;
+			dt = 0.02;
+			dynamic_contact = true;
+			n_steps = 100;
+			is_inpulse = true;
 		}
 
 		void set_up_coarse_t()
@@ -193,6 +376,7 @@ namespace utopia {
 			contact_flags = {{101, 102}};
 			dt = 0.01;
 			n_steps = 100;
+			
 		}
 
 		void set_up_m_coarse_t()
@@ -200,12 +384,17 @@ namespace utopia {
 			// mesh_file = "../data/m_contact_2d.e";
 			mesh_file = "../data/m_contact_2d_ref.e";
 			search_radius = 0.1;
-			// contact_flags = {{101, 102}, {103, 104}, {105, 106}};
-			contact_flags = {{102, 101}, {103, 104}, {105, 106}};
-			dt = 0.025;
+			contact_flags = {{101, 102}, {103, 104}, {105, 106}};
+			// contact_flags = {{102, 101}, {103, 104}, {105, 106}};
+			dt = 0.05;
 			n_steps = 100;
 		}
 
+		void set_up_m_coarse_t_dynamic()
+		{
+			set_up_m_coarse_t();
+			dynamic_contact = true;
+		}
 
 		void set_up_coarse()
 		{
@@ -218,11 +407,26 @@ namespace utopia {
 
 		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy) override
 		{
-			strong_enforce( boundary_conditions(ux == coeff(0.),    	 {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uy == coeff(-dt * 0.15), {top_boundary_tag}) );
+			if(!dynamic_contact) {
+				strong_enforce( boundary_conditions(ux == coeff(0.),    	 {top_boundary_tag}) );
+				strong_enforce( boundary_conditions(uy == coeff(-0.15), 	 {top_boundary_tag}) );
+			}
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),    	 {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.0),   	 {bottom_boundar_tag}) );
+		}
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			if(dynamic_contact) {
+				if(is_inpulse) {
+					v(1) = -25;
+				} else {
+					v(1) = -1.;
+				}
+			} else {
+				v.zero();
+			}
 		}
 
 		void apply(LibMeshFEFunction &, LibMeshFEFunction &, LibMeshFEFunction &) override {}
@@ -235,40 +439,53 @@ namespace utopia {
 		// auto mesh = make_shared<Mesh>(init.comm());
 		ContactProblem p;
 			
-		//---------------------------------------------------
+		// ---------------------------------------------------
+		auto e_problem = make_shared<Balls>();
+		e_problem->three_dim();
 		// auto e_problem = make_shared<ExampleProblem2D>();
+		// e_problem->set_up_m_coarse_t_dynamic();
+
 		// e_problem->set_up_m_coarse_t();
+		// auto e_problem = make_shared<Rocks>();
+		// e_problem->set_up_m_coarse_t_dynamic();
+		// e_problem->set_up_dynamic_with_impulse();
+		 
 		
 		// auto e_problem = make_shared<ExampleProblem3D>();
 		// auto e_problem = make_shared<QuasiHertz>();
-		auto e_problem = make_shared<QuasiSignorini>(); 
+		
+		// auto e_problem = make_shared<QuasiSignorini>(); 
+		// e_problem->set_up_time_dependent_dynamic();
+
+
 		// e_problem->set_up_fine_res();
-		e_problem->set_up_adaptive();
-		e_problem->set_up_time_dependent();
+		// e_problem->set_up_adaptive();
+		// e_problem->set_up_time_dependent();
+		
 		//---------------------------------------------------
 		
-		std::cout << "reading mesh...." << std::flush;
-		// mesh->set_distributed();
-		// mesh->read(e_problem->mesh_file);
-		mesh->read(e_problem->mesh_file, nullptr, true);
-		// std::cout << "is_replicated: " << mesh->is_replicated() << std::endl;
-		// mesh->delete_remote_elements();
-		
-		std::cout << "done" << std::endl;
+		MOONOLITH_EVENT_BEGIN("read_mesh");
+		mesh->read(e_problem->mesh_file);
+		MOONOLITH_EVENT_END("read_mesh");
 
-		p.init(init, mesh, e_problem, e_problem->contact_flags, e_problem->search_radius);
-		
+		utopia::Utopia::Instance().set("plot", "true");
+
+		p.init(init, mesh, e_problem, e_problem, e_problem->contact_flags, e_problem->search_radius);
+		p.set_dynamic_contact(e_problem->dynamic_contact);
+		p.is_inpulse(e_problem->is_inpulse);
+		p.save(e_problem->dt);
 
 		double t = 0.0;
 		for(int i = 0; i < e_problem->n_steps; ++i) {
 			std::cout << "t: " << t << "/" << (e_problem->dt * e_problem->n_steps) << std::endl;
+
 			std::cout << std::flush;
 			t += e_problem->dt;
 			p.step(e_problem->dt);	
 			p.save(e_problem->dt);		
 		}
 
-		
+		p.save_energy("energy.txt");
 	}
 }
 

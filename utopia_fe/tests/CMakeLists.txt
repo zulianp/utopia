@@ -14,6 +14,7 @@ list(APPEND LOCAL_HEADERS
 	utopia_SemigeometricMultigridTest.hpp
 	utopia_TimeDiffExamples.hpp
 	utopia_UtopiaFETests.hpp
+	utopia_VolumeTransferBenchmark.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 
@@ -29,6 +30,7 @@ list(APPEND LOCAL_SOURCES
 	utopia_SemigeometricMultigridTest.cpp
 	utopia_TimeDiffExamples.cpp
 	utopia_UtopiaFETests.cpp
+	utopia_VolumeTransferBenchmark.cpp
 	)
 
 add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})

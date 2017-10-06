@@ -6,6 +6,7 @@ set(CMAKE_MACOSX_RPATH 1)
 
 option(ENABLE_SANITIZER "check for memory access problems" OFF)
 option(ENABLE_BOOST "enable boost features" OFF)
+option(ENABLE_MOONOLITH_PROFILER "enable moonolith profiling capabilities" OFF)
 
 #################################################################################
 #################################################################################
@@ -70,7 +71,11 @@ add_library(utopia_fe STATIC ${TOP_SOURCES} ${TOP_HEADERS})
 target_link_libraries(utopia_fe ${UTOPIA_LIBRARIES} ${UTOPIA_FE_LIBRARIES} ${TRANSFER_LIB})
 
 add_executable(utopia_fe_exec  main.cpp ${TOP_HEADERS})
-target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_LIBRARIES})
+# target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_LIBRARIES})
+# these next three lines fix some issues on linux
+target_link_libraries(utopia_fe_exec utopia_fe)
+target_link_libraries(utopia_fe_exec ${UTOPIA_FE_LIBRARIES})
+target_link_libraries(utopia_fe_exec ${UTOPIA_LIBRARIES})
 
 
 install(TARGETS utopia_fe

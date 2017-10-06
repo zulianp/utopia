@@ -14,6 +14,8 @@ namespace utopia {
         typedef typename Backend::Matrix Matrix;
 
         void run() {
+
+            print_backend_info();
             /* Test vectors operation */
             UTOPIA_RUN_TEST(vec_ops_test);
             /* Test vector assignments */
@@ -70,7 +72,7 @@ namespace utopia {
             backend.build(expected, Size({_n, 1}), Values<Scalar>(result));
 
             //OPERATION FUNCTIONS
-            backend.apply(left, right, Operation(), actual);
+            backend.apply_binary(actual, left, Operation(), right);
             assert(backend.compare(expected, actual, ApproxEqual()));
         }
 
@@ -139,7 +141,7 @@ namespace utopia {
             backend.build(v1, Size({0, 1}), Zeros());
 
             /* Check ranges */
-            if (backend.info().getName() != "petsc") {
+            if (backend.info().get_name() != "petsc") {
                 assert(backend.range(v0).begin() == 0 &&
                        backend.range(v0).extent() == comm_size * _n &&
                        backend.range(v0).end() == comm_size * _n);
@@ -168,43 +170,43 @@ namespace utopia {
             backend.build(m2, Size({_n * comm_size, _n}), Zeros());
 
             /* Check ranges */
-            if (backend.info().getName() != "petsc") {
-                assert(backend.rowRange(m0).begin() == 0 &&
-                       backend.rowRange(m0).extent() == _n * comm_size &&
-                       backend.rowRange(m0).end() == _n * comm_size);
+            if (backend.info().get_name() != "petsc") {
+                assert(backend.row_range(m0).begin() == 0 &&
+                       backend.row_range(m0).extent() == _n * comm_size &&
+                       backend.row_range(m0).end() == _n * comm_size);
 
-                assert(backend.rowRange(m2).begin() == 0 &&
-                       backend.rowRange(m2).extent() == _n * comm_size &&
-                       backend.rowRange(m2).end() == _n * comm_size);
+                assert(backend.row_range(m2).begin() == 0 &&
+                       backend.row_range(m2).extent() == _n * comm_size &&
+                       backend.row_range(m2).end() == _n * comm_size);
 
             } else {
                 int rank = mpi_world_rank();
 
-                assert(backend.rowRange(m0).begin() == rank * _n &&
-                       backend.rowRange(m0).extent() == _n &&
-                       backend.rowRange(m0).end() == (rank + 1) * _n);
+                assert(backend.row_range(m0).begin() == rank * _n &&
+                       backend.row_range(m0).extent() == _n &&
+                       backend.row_range(m0).end() == (rank + 1) * _n);
 
-                assert(backend.rowRange(m2).begin() == rank * _n &&
-                       backend.rowRange(m2).extent() == _n &&
-                       backend.rowRange(m2).end() == (rank + 1) * _n);
+                assert(backend.row_range(m2).begin() == rank * _n &&
+                       backend.row_range(m2).extent() == _n &&
+                       backend.row_range(m2).end() == (rank + 1) * _n);
             }
 
-            assert(backend.colRange(m0).begin() == 0 &&
-                   backend.colRange(m0).extent() == _n * comm_size &&
-                   backend.colRange(m0).end() == _n * comm_size);
+            assert(backend.col_range(m0).begin() == 0 &&
+                   backend.col_range(m0).extent() == _n * comm_size &&
+                   backend.col_range(m0).end() == _n * comm_size);
 
-            assert(backend.colRange(m2).begin() == 0 &&
-                   backend.colRange(m2).extent() == _n &&
-                   backend.colRange(m2).end() == _n);
+            assert(backend.col_range(m2).begin() == 0 &&
+                   backend.col_range(m2).extent() == _n &&
+                   backend.col_range(m2).end() == _n);
 
             // Check empty matrix
-            assert(backend.rowRange(m1).begin() == 0 &&
-                   backend.rowRange(m1).extent() == 0 &&
-                   backend.rowRange(m1).end() == 0);
+            assert(backend.row_range(m1).begin() == 0 &&
+                   backend.row_range(m1).extent() == 0 &&
+                   backend.row_range(m1).end() == 0);
 
-            assert(backend.colRange(m1).begin() == 0 &&
-                   backend.colRange(m1).extent() == 0 &&
-                   backend.colRange(m1).end() == 0);
+            assert(backend.col_range(m1).begin() == 0 &&
+                   backend.col_range(m1).extent() == 0 &&
+                   backend.col_range(m1).end() == 0);
 
         }
 
@@ -219,10 +221,10 @@ namespace utopia {
             /* Change entries of the matrix */
             {
                 /* Acquiring lock for writing */
-                backend.writeLock(right);
+                backend.write_lock(right);
 
-                Range rr = backend.rowRange(right);
-                Range cr = backend.colRange(right);
+                Range rr = backend.row_range(right);
+                Range cr = backend.col_range(right);
 
                 long rbegin = rr.begin();
                 long rend = rr.end();
@@ -237,19 +239,19 @@ namespace utopia {
                 }
 
                 /* Releasing lock for writing */
-                backend.writeUnlock(right);
+                backend.write_unlock(right);
             }
 
             /* Assign transposed matrix */
-            backend.assignTransposed(left, right);
+            backend.assign_transposed(left, right);
 
             /* Check result */
             {
                 /* Acquiring lock to read */
-                backend.readLock(left);
+                backend.read_lock(left);
 
-                Range rr = backend.rowRange(left);
-                Range cr = backend.colRange(left);
+                Range rr = backend.row_range(left);
+                Range cr = backend.col_range(left);
 
                 long rbegin = rr.begin();
                 long rend = rr.end();
@@ -264,7 +266,7 @@ namespace utopia {
                 }
 
                 /* Releasing lock for reading */
-                backend.readUnlock(left);
+                backend.read_unlock(left);
             }
         }
 
@@ -283,15 +285,15 @@ namespace utopia {
             backend.build(left, Size({_n, _n}), Zeros());
 
 
-            backend.assignFromRange(left, right, row_range, col_range);
+            backend.assign_from_range(left, right, row_range, col_range);
 
             /* Check operation result */
             {
                 /* Acquiring lock to read */
-                backend.readLock(left);
+                backend.read_lock(left);
 
-                Range rr = backend.rowRange(left);
-                Range cr = backend.colRange(left);
+                Range rr = backend.row_range(left);
+                Range cr = backend.col_range(left);
 
                 long rbegin = rr.begin();
                 long rend = rr.end();
@@ -310,7 +312,7 @@ namespace utopia {
                 }
 
                 /* Releasing lock for reading */
-                backend.readUnlock(left);
+                backend.read_unlock(left);
             }
 
             /* Vector test */
@@ -324,7 +326,7 @@ namespace utopia {
             backend.build(expected, Size({_n - 2, 1}), Values<Scalar>(2));
 
             /* Assign vector from range */
-            backend.assignFromRange(left_v, right_v, v_range, c_range);
+            backend.assign_from_range(left_v, right_v, v_range, c_range);
 
             /* Check result */
             assert(backend.compare(left_v, expected, ApproxEqual()));
@@ -345,16 +347,16 @@ namespace utopia {
             backend.build(right, Size({_n - 2, _n - 1}), Values<Scalar>(1));
             backend.build(left, Size({_n, _n}), Zeros());
 
-            if (backend.info().getName() != "petsc") { //FIXME
-                backend.assignToRange(left, right, row_range, col_range);
+            if (backend.info().get_name() != "petsc") { //FIXME
+                backend.assign_to_range(left, right, row_range, col_range);
 
                 /* Check operation result */
                 {
                     /* Acquiring lock to read */
-                    backend.readLock(left);
+                    backend.read_lock(left);
 
-                    Range rr = backend.rowRange(left);
-                    Range cr = backend.colRange(left);
+                    Range rr = backend.row_range(left);
+                    Range cr = backend.col_range(left);
 
                     long rbegin = rr.begin();
                     long rend = rr.end();
@@ -373,7 +375,7 @@ namespace utopia {
                     }
 
                     /* Releasing lock for reading */
-                    backend.readUnlock(left);
+                    backend.read_unlock(left);
                 }
             }
 
@@ -388,8 +390,8 @@ namespace utopia {
             backend.build(right_v, Size({_n, 1}), Values<Scalar>(1));
 
             /* Assign vector from range */
-            if (backend.info().getName() != "petsc") { //FIXME
-                backend.assignToRange(left_v, right_v, v_range, c_range);
+            if (backend.info().get_name() != "petsc") { //FIXME
+                backend.assign_to_range(left_v, right_v, v_range, c_range);
 
                 Range r = backend.range(left_v);
 
@@ -428,27 +430,27 @@ namespace utopia {
             Size s;
             /* Test m1 */
             backend.size(m1, s);
-            assert(s.nDims() == 2);
+            assert(s.n_dims() == 2);
             assert(s.get(0) == _n && s.get(1) == _n);
 
             /* Test m2 */
             backend.size(m2, s);
-            assert(s.nDims() == 2);
+            assert(s.n_dims() == 2);
             assert(s.get(0) == 0 && s.get(1) == 0);
 
             /* Test m3 */
             backend.size(m3, s);
-            assert(s.nDims() == 2);
+            assert(s.n_dims() == 2);
             assert(s.get(0) == _n + 3 && s.get(1) == _n - 2);
 
             /* Test v1 */
             backend.size(v1, s);
-            assert(s.nDims() == 1);
+            assert(s.n_dims() == 1);
             assert(s.get(0) == _n);
 
             /* Test v2 */
             backend.size(v2, s);
-            assert(s.nDims() == 1);
+            assert(s.n_dims() == 1);
             assert(s.get(0) == 0);
         }
 
@@ -467,7 +469,7 @@ namespace utopia {
             backend.build(expected1, Size({_n, 1}), Values<Scalar>(4));
             backend.build(expected2, Size({_n, 1}), Values<Scalar>(0));
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 /* Apply scaling */
                 backend.scal(2, v1, result);
 
@@ -521,7 +523,7 @@ namespace utopia {
             backend.build(m1, Size({_n, _n}), Zeros());
             backend.build(m2, Size({_n, _n}), Values<Scalar>(2));
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 /* Apply reduction */
                 Scalar m1_reduction = backend.reduce(m1, Plus());
                 Scalar m2_reduction = backend.reduce(m2, Plus());
@@ -576,7 +578,7 @@ namespace utopia {
             backend.build(right, Size({_n, _n}), Values<Scalar>(rvalue));
             backend.build(expected, Size({_n, _n}), Values<Scalar>(result));
 
-            backend.apply(left, right, Operation(), res);
+            backend.apply_binary(left, right, Operation(), res);
 
             /* Check result */
             assert( backend.compare(res, expected, ApproxEqual()));
@@ -590,7 +592,7 @@ namespace utopia {
             backend.build(m, Size({_n, _n}), Values<Scalar>(3));
             backend.build(expected, Size({_n, _n}), Values<Scalar>(9));
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 backend.scal(3, m, res);
 
                 assert(backend.compare(res, expected, ApproxEqual()));
@@ -609,7 +611,7 @@ namespace utopia {
             backend.build(y, Size({_n, 1}), Values<Scalar>(2));
             backend.build(expected, Size({_n, 1}), Values<Scalar>(4 * _n + 2));
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 /* Compute y = 2 * A * x + y */
                 backend.gemv(2, A, x, 1, y);
 
@@ -622,7 +624,7 @@ namespace utopia {
 
             Matrix A, B, C, expected;
 
-            if (backend.info().getName() != "petsc") { //FIXME
+            if (backend.info().get_name() != "petsc") { //FIXME
                 /* Create matrices */
                 backend.build(A, Size({_n - 1, _n}), Values<Scalar>(1));
                 backend.build(B, Size({_n, _n - 1}), Values<Scalar>(2));
@@ -672,6 +674,13 @@ namespace utopia {
 
         SpecTest()
                 : _n(10) { }
+
+        static void print_backend_info()
+        {
+            if(Utopia::Instance().verbose()) {
+                std::cout << "\nBackend: " << Backend::Instance().info().get_name() << std::endl;
+            }
+        }      
 
     private:
         int _n;

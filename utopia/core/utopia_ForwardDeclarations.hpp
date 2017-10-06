@@ -46,8 +46,11 @@ namespace utopia {
     template<class Expr>
     class View;
 
-    template<class Expr>
-    class Diag;
+    template<class Expr, typename SizeType, int Order>
+    class Select;
+
+    // template<class Expr>
+    // class Diag;
 
     template<class Expr>
     class LocalDiagBlock;

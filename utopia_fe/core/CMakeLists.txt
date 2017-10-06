@@ -3,6 +3,7 @@ list(APPEND LOCAL_HEADERS
 	utopia_MixedFESpace.hpp
 	utopia_fe_core.hpp
 	utopia_fe_lang.hpp
+	utopia_block_var.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 

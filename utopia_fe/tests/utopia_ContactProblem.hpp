@@ -27,16 +27,19 @@ namespace utopia {
 		DSMatrixd stiffness_matrix;
 		DSMatrixd neumann_matrix;
 		DSMatrixd mass_matrix;
-		DVectord force;
-		DVectord displacement;
-		DVectord old_displacement;
+		DSMatrixd internal_mass_matrix;
+		DSMatrixd constrained_mass_matrix;
+		DVectord external_force;
+		DVectord displacement_increment;
+		DVectord old_displacement_increment;
 		DVectord total_displacement;
+		DVectord rays;
 
 		DVectord velocity;
-		DVectord old_velocity;
+		// DVectord old_velocity;
 
-		DVectord acceleration;
-		DVectord old_acceleration;
+		// DVectord acceleration;
+		// DVectord old_acceleration;
 
 		DVectord internal_force;
 
@@ -50,6 +53,7 @@ namespace utopia {
 		DVectord gap;
 		DSMatrixd boundary_mass_inv;
 		DVectord normal_stress;
+		DVectord new_internal_force;
 
 		double search_radius;
 		std::vector< std::pair<int, int> > contact_pair_tags;
@@ -59,6 +63,12 @@ namespace utopia {
 
 		int iteration;
 		bool verbose;
+		bool dynamic_contact;
+
+
+		std::vector<int> var_num_aux;
+
+
 
 		class ElasticityBoundaryConditions {
 		public:
@@ -67,8 +77,38 @@ namespace utopia {
 			virtual void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) = 0;
 		};
 
+		class ElasticityForcingFunction {
+		public:
+			virtual ~ElasticityForcingFunction() {}
+			virtual int block_id() const
+			{
+				return -1;
+			}
+
+			virtual void fill(libMesh::DenseVector<libMesh::Real> &v) 
+			{
+				v.zero();
+			}
+		};
+
 		std::shared_ptr<ElasticityBoundaryConditions> bc_ptr;
+		std::shared_ptr<ElasticityForcingFunction> ff_ptr;
 		std::shared_ptr<libMesh::Nemesis_IO> output;
+		// std::shared_ptr<libMesh::ExodusII_IO> output;
+
+		typedef struct {
+			double t;
+			double kinetic_energy;
+			double elastic_energy;
+			double potential_energy;
+			double contact_energy;
+		} Energy;
+
+		std::vector<Energy> energy;
+
+		void compute_energy(const double dt);
+		void save_energy(const std::string &path);
+
 
 		void step(const double dt = 1.0);
 
@@ -76,21 +116,40 @@ namespace utopia {
 			const libMesh::LibMeshInit &init, 
 			const std::shared_ptr<libMesh::MeshBase> &mesh,
 			const std::shared_ptr< ElasticityBoundaryConditions > &bc_ptr,
+			const std::shared_ptr< ElasticityForcingFunction > &ff_ptr,
 			std::vector< std::pair<int, int> > contact_pair_tags,
 			double search_radius
 		);
 
 		void save(const double dt = 1.0, const std::string &output_dir = ".");
+		inline void set_dynamic_contact(const bool val)
+		{
+			dynamic_contact = val;
+		}
+
+		void is_inpulse(const bool val)
+		{
+			is_inpulse_ = val;
+		}
 
 		ContactProblem();
 	private:
-
+		void compute_normal_stress(const double dt);
 		void init_discretization();
 		void init_material();
 		void compute_contact_conditions();
 		void init_material_2d();
 		void init_material_3d();
 		void apply_displacement(const DVectord &displacement);
+		void init_aux_system();
+		void contact_stabilized_newmark(const double dt);
+		void implicity_euler(const double dt);
+		void classic_newmark(const double dt);
+		void classic_newmark_with_contact(const double dt);
+		void classic_newmark_beta(const double dt);
+		void contact_stabilized_newmark_monolithic(const double dt);
+
+		bool is_inpulse_;
 	};
 }
 
