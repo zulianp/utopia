@@ -266,10 +266,47 @@ namespace utopia {
 							 		 {2, 3}, {2, 4},
 							                 {3, 4} };
 			search_radius = 0.1;
-			dt = .01;
-			n_steps = 160;
+			dt = .02;
+			n_steps = 1000;
 			dynamic_contact = true;
+			is_three_dim = false;
 
+
+		}
+
+		void three_dim()
+		{
+			mesh_file = "../data/balls_3d.e";
+			const int n_bodies = 11;
+			is_three_dim = true;
+
+			contact_flags.clear();
+			for(int i = 1; i <= n_bodies; i++) {
+				for(int j = i + 1; j <= n_bodies; j++) {
+					if(i == 4) {
+						contact_flags.push_back(std::pair<int, int>(j, i));
+					} else {
+						contact_flags.push_back(std::pair<int, int>(i, j));
+					}
+				}
+			}
+		}
+
+		void many()
+		{
+			mesh_file = "../data/balls_many_3.e";
+			const int n_bodies = 11;
+
+			contact_flags.clear();
+			for(int i = 1; i <= n_bodies; i++) {
+				for(int j = i + 1; j <= n_bodies; j++) {
+					if(i == 4) {
+						contact_flags.push_back(std::pair<int, int>(j, i));
+					} else {
+						contact_flags.push_back(std::pair<int, int>(i, j));
+					}
+				}
+			}
 		}
 
 		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy)  override {
@@ -277,14 +314,23 @@ namespace utopia {
 			strong_enforce( boundary_conditions(uy == coeff(0.), {fixed_boundary}) );
 		}
 
-		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override {}
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override {
+			strong_enforce( boundary_conditions(ux == coeff(0.), {fixed_boundary}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.), {fixed_boundary}) );
+			strong_enforce( boundary_conditions(uz == coeff(0.), {fixed_boundary}) );
+		}
 
 		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
 		{
-			v(1) = -1.;
+			if(is_three_dim) {
+				v(2) = -1.;
+			} else {
+				v(1) = -1.;
+			}
 		}
 
 		int fixed_boundary;
+		bool is_three_dim;
 	};
 
 
@@ -395,6 +441,7 @@ namespace utopia {
 			
 		// ---------------------------------------------------
 		auto e_problem = make_shared<Balls>();
+		e_problem->three_dim();
 		// auto e_problem = make_shared<ExampleProblem2D>();
 		// e_problem->set_up_m_coarse_t_dynamic();
 

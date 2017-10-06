@@ -19,6 +19,39 @@
 #include <cmath>
 
 namespace utopia {
+    void scale_normal_vector_with_gap(const int dim, const DVectord &normals, const DVectord &gap, DVectord &out)
+    {
+        out = local_zeros(local_size(normals));
+
+        Read<DVectord> r_n(normals), r_g(gap);
+        Write<DVectord> w_o(out);
+
+        using namespace libMesh;
+
+        Range r = range(normals);
+
+        std::vector<double> n(dim);
+        for(auto i = r.begin(); i < r.end(); i += dim) {
+
+            double len = 0.;
+            for(int d = 0; d < dim; ++d) {
+                n[d] = normals.get(i + d);
+                len += n[d] * n[d];
+            }
+
+            len = std::sqrt(len);
+
+            if(len < 1e-8) {
+                continue;
+            }
+
+            double g = gap.get(i);
+            for(int d = 0; d < dim; ++d) {
+                out.set(i+d, n[d] * g);
+            }
+        }
+    }
+
     
     bool assemble_normal_tangential_transformation(const libMesh::MeshBase &mesh,
                                                    const libMesh::DofMap &dof_map,
