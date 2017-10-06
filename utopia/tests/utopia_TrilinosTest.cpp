@@ -8,7 +8,7 @@
 
 using namespace Teuchos;
 
-void example_test()
+void trilinos_example_test()
 {
 	RCP<const Comm<int> > comm = rcp(new MpiComm<int>(MPI_COMM_WORLD));
   if (comm->getRank () == 0) {
@@ -20,7 +20,9 @@ void example_test()
 namespace utopia {
 	void run_trilinos_test()
 	{
-		UTOPIA_RUN_TEST(example_test);
+		UTOPIA_UNIT_TEST_BEGIN("TrilinosTest");
+		UTOPIA_RUN_TEST(trilinos_example_test);
+		UTOPIA_UNIT_TEST_END("TrilinosTest");
 	}
 }
 
