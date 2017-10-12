@@ -12,9 +12,7 @@ namespace utopia {
     template<typename _Scalar>
     class Number : public Expression< Number<_Scalar> > {
     public:
-        enum {
-         Order = 0
-        };
+        static const int Order = 0;
 
          enum {
             StoreAs = UTOPIA_BY_VALUE
@@ -95,9 +93,7 @@ namespace utopia {
     public:
         typedef _Scalar Scalar;
 
-        enum {
-            Order = 0
-        };
+        static const int Order = 0;
 
         inline constexpr operator Scalar() const
         {

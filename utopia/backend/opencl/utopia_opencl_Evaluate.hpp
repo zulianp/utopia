@@ -14,9 +14,7 @@ namespace utopia {
 		typedef typename Expr::Scalar Scalar;
 		typedef EXPR_TYPE(CLTraits<Scalar>, Expr) TensorT;
 
-		enum {
-			Order = _Order
-		};
+		static const int Order = _Order;
 
 		enum {
 		    StoreAs = UTOPIA_DEFAULT_EXPRESSION_STORAGE
@@ -64,9 +62,7 @@ namespace utopia {
 		typedef typename Expr::Scalar Scalar;
 		typedef Scalar TensorT;
 
-		enum {
-			Order = 0
-		};
+		static const int Order = 0;
 
 		enum {
 		    StoreAs = UTOPIA_DEFAULT_EXPRESSION_STORAGE

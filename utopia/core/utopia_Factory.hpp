@@ -309,9 +309,7 @@ namespace utopia {
     template<class Type, int _Order>
     class Factory : public Expression< Factory<Type, _Order> > {
     public:
-        enum {
-            Order = _Order
-        };
+        static const int Order = _Order;
 
         enum {
             StoreAs = UTOPIA_BY_VALUE

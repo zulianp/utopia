@@ -25,10 +25,8 @@ namespace utopia {
 	template<class Expr>
 	class AutoDiffExpr<Expr, 0> {
 	public:
-		enum {
-			Order = Expr::Order
-		};
-		
+		static const int Order = Expr::Order;
+
 		typedef UTOPIA_SCALAR(Expr) Scalar;
 		typedef utopia::Factory<Zeros, Order> Type;
 		

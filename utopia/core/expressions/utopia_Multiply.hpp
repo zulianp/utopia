@@ -9,8 +9,7 @@
 #include "utopia_Size.hpp"
 #include "utopia_Castable.hpp"
 
-#define TENSOR_ORDER_MULTIPLY(Left_, Right_) (static_cast<long>(Left_::Order) < static_cast<long>(Right_::Order))? \
-		static_cast<long>(Left_::Order) : static_cast<long>(Right_::Order)
+#define TENSOR_ORDER_MULTIPLY(Left_, Right_) (Left_::Order < Right_::Order)? Left_::Order : Right_::Order
 
 namespace utopia {
     template<class _Left, class _Right>
@@ -23,9 +22,7 @@ namespace utopia {
         typedef _Right Right;
         typedef decltype(typename Left::Scalar() * typename Right::Scalar()) Scalar;
 
-        enum {
-            Order = TENSOR_ORDER_MULTIPLY(_Left, _Right)
-        };
+        static const int Order = TENSOR_ORDER_MULTIPLY(_Left, _Right);
 
         Multiply(const Left &left, const Right &right)
                 : _left(left), _right(right)

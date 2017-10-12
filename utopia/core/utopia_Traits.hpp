@@ -186,9 +186,7 @@ namespace utopia {
         //     FILL_TYPE = FillType::DENSE
         // };
 
-        enum {
-            Order = T::Order
-        };
+        static const int Order = T::Order;
     };
 
     template<>
@@ -196,9 +194,7 @@ namespace utopia {
     public:
         typedef double Scalar;
 
-        enum {
-            Order = 0
-        };
+        static const int Order = 0;
 
         enum {
             FILL_TYPE = FillType::DELEGATE
@@ -210,9 +206,7 @@ namespace utopia {
     public:
         typedef float Scalar;
 
-        enum {
-            Order = 0
-        };
+        static const int Order = 0;
 
         enum {
             FILL_TYPE = FillType::DELEGATE
@@ -224,9 +218,7 @@ namespace utopia {
     public:
         typedef int Scalar;
 
-        enum {
-            Order = 0
-        };
+        static const int Order = 0;
 
         enum {
             FILL_TYPE = FillType::DELEGATE

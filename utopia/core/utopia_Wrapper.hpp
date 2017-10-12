@@ -73,10 +73,7 @@ namespace utopia {
             FILL_TYPE = Traits<Implementation>::FILL_TYPE
         };
 
-
-        enum {
-            Order = _Order
-        };
+        static const int Order = _Order;
 
         enum {
             StoreAs = UTOPIA_BY_REFERENCE
@@ -154,9 +151,7 @@ namespace utopia {
             Backend = Traits<Implementation>::Backend
         };
 
-        enum {
-            Order = _Order
-        };
+        static const int Order = _Order;
 
         enum {
             StoreAs = UTOPIA_BY_REFERENCE
@@ -229,9 +224,7 @@ namespace utopia {
                 : _impl(impl) { }
 
 
-        enum {
-            Order = _Order
-        };
+        static const int Order = _Order;
 
         enum {
             FILL_TYPE = Traits<Implementation>::FILL_TYPE

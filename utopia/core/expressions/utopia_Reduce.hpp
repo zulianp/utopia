@@ -19,9 +19,7 @@ namespace utopia {
         typedef Expr_ Expr;
         typedef typename Expr::Scalar Scalar;
 
-        enum {
-            Order = 0
-        };
+        static const int Order = 0;
 
         inline Reduce(const Expr &expr, const Operation &operation = Operation())
                 : _expr(expr), _operation(operation) { }

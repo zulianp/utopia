@@ -12,8 +12,7 @@
 #include "utopia_Traits.hpp"
 #include "utopia_Castable.hpp"
 
-#define TENSOR_ORDER_BINARY(Left_, Right_) (static_cast<long>(Left_::Order) > static_cast<long>(Right_::Order))? \
-        static_cast<long>(Left_::Order) : static_cast<long>(Right_::Order)
+#define TENSOR_ORDER_BINARY(Left_, Right_) (Left_::Order > Right_::Order)? Left_::Order : Right_::Order
 
 namespace utopia {
 
@@ -27,9 +26,7 @@ namespace utopia {
         typedef _Operation Operation;
         typedef decltype(typename Left::Scalar() + typename Right::Scalar()) Scalar;
 
-        enum {
-            Order = TENSOR_ORDER_BINARY(_Left, _Right)
-        };
+        static const int Order = TENSOR_ORDER_BINARY(_Left, _Right);
 
         Binary(const Left &left, const Right &right, const Operation operation = Operation())
                 : _left(left), _right(right), _operation(operation)
@@ -58,7 +55,7 @@ namespace utopia {
     template<class Left, class Right, class Operation>
     Size size(const Binary<Left, Right, Operation> &expr)
     {
-        if(static_cast<long>(Left::Order) > static_cast<long>(Right::Order)) {
+        if(Left::Order > Right::Order) {
             return size(expr.left());
         } else {
             return size(expr.right());
