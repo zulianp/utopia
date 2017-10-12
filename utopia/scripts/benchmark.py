@@ -89,10 +89,13 @@ for i in range(2, iterations + 1):
             log_reader = csv.reader(csv_file, delimiter=';')
             next(log_reader, None)
             for row in log_reader:
-                data[p][row[CLASS]] = (
-                    data[p][row[CLASS]][0] + int(row[COUNT]),
-                    data[p][row[CLASS]][1] + (float(row[MEAN_TIME]) - data[p][row[CLASS]][1]) / i
-                )
+                try:
+                    data[p][row[CLASS]] = (
+                        data[p][row[CLASS]][0] + int(row[COUNT]),
+                        data[p][row[CLASS]][1] + (float(row[MEAN_TIME]) - data[p][row[CLASS]][1]) / i
+                    )
+                except KeyError:
+                    data[p][row[CLASS]] = (int(row[COUNT]), float(row[MEAN_TIME]))
 
 os.chdir(cwd)
 for p in range(mpi_n):
