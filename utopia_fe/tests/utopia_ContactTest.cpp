@@ -260,7 +260,8 @@ namespace utopia {
 	class Balls : public ExampleProblemBase {
 	public:
 		Balls() {
-			mesh_file = "../data/balls.e";
+			// mesh_file = "../data/balls.e";
+			mesh_file = "../data/solid_2.e";
 			fixed_boundary = 5;
 			contact_flags = {{1, 2}, {1, 3}, {1, 4}, 
 							 		 {2, 3}, {2, 4},
@@ -441,7 +442,7 @@ namespace utopia {
 			
 		// ---------------------------------------------------
 		auto e_problem = make_shared<Balls>();
-		e_problem->three_dim();
+		// e_problem->three_dim();
 		// auto e_problem = make_shared<ExampleProblem2D>();
 		// e_problem->set_up_m_coarse_t_dynamic();
 

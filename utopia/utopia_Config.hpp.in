@@ -12,6 +12,7 @@
 #cmakedefine WITH_CUDA
 #cmakedefine WITH_UTOPIA_OPENCL
 #cmakedefine WITH_EIGEN_3
+#cmakedefine UTOPIA_LOG_ENABLED
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR

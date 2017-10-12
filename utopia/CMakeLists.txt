@@ -23,6 +23,11 @@ option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
 #################################################################################
 #################################################################################
 
+
+if(UTOPIA_LOG)
+	set(UTOPIA_LOG_ENABLED ON)
+endif()
+
 IF(WIN32)
 	SET(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
@@ -218,9 +223,7 @@ endif()
 # test suite
 add_subdirectory(tests)
 
-if(UTOPIA_LOG)
-	add_definitions("-DUTOPIA_LOG_ENABLED")
-endif()
+
 
 add_definitions(${UTOPIA_DEFS})
 include_directories(${UTOPIA_INCLUDES})
