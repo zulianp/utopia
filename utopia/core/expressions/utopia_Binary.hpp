@@ -12,7 +12,8 @@
 #include "utopia_Traits.hpp"
 #include "utopia_Castable.hpp"
 
-#define TENSOR_ORDER_BINARY(Left_, Right_) (Left_::Order > Right_::Order)? Left_::Order : Right_::Order
+#define TENSOR_ORDER_BINARY(Left_, Right_) (static_cast<long>(Left_::Order) > static_cast<long>(Right_::Order))? \
+        static_cast<long>(Left_::Order) : static_cast<long>(Right_::Order)
 
 namespace utopia {
 
