@@ -18,7 +18,7 @@ int main(const int argc, char *argv[])
     std::string tests = "all";
     bool run_tests = true;
 
-    for (size_t i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         if (argv[i] == std::string("-data_path")) {
             if (++i >= argc)
                 break;

@@ -10,9 +10,7 @@ namespace utopia {
 	class Equality : public Expression< Equality<Left, Right> > {
 	public:
 
-		enum {
-			Order = Left::Order
-		};
+		static const int Order = Left::Order;
 
 		typedef typename Left::Scalar Scalar;
 

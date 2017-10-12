@@ -13,9 +13,7 @@ namespace utopia {
     class View : public Expression<View<Expr> >,
                  public Mutable<typename Expr::Implementation, View<Expr> > {
     public:
-        enum {
-            Order = Expr::Order
-        };
+        static const int Order = Expr::Order;
 
         template<class Derived>
         View &operator=(const Expression<Derived> &expr) {

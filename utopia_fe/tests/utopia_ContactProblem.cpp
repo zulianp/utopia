@@ -584,13 +584,10 @@ namespace utopia {
 		new_internal_force = stiffness_matrix * total_displacement;
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
 
-		double dumping = 1.;
-		// DVectord M_x_vel_inc = dumping * (dt * 0.5) * (2. * external_force - internal_force - new_internal_force);
-		DVectord M_x_vel_inc = dumping * (dt/2.) * (2. * external_force - internal_force - new_internal_force);
-		apply_zero_boundary_conditions(spaces[0]->dof_map(), M_x_vel_inc);
-
-		DVectord vel_inc = local_zeros(size(M_x_vel_inc));
-		solve(mass_matrix, M_x_vel_inc, vel_inc);
+		DVectord M_x_v_inc = (dt/2.) * (2. * external_force - internal_force - new_internal_force);
+		DVectord vel_inc = local_zeros(local_size(M_x_v_inc));
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), M_x_v_inc);
+		solve(mass_matrix, M_x_v_inc, vel_inc);
 		velocity += vel_inc;
 	}
 

@@ -18,9 +18,7 @@ namespace utopia {
 
         typedef typename Expr::Scalar Scalar;
 
-        enum {
-            Order = (Expr::Order == 1) ? 2 : 1
-        };
+        static const int Order = (Expr::Order == 1) ? 2 : 1;
 
         inline const Expr &expr() const { return expr_; }
 

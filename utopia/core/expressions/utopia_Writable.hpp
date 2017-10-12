@@ -44,8 +44,8 @@ namespace utopia {
         inline void set(const SizeType row, const SizeType col, const Scalar value)
         {
             assert_enabled(is_write_locked());
-            assert(row < size(derived()).get(0));
-            assert(col < size(derived()).get(1));
+            assert(row < (SizeType)size(derived()).get(0));
+            assert(col < (SizeType)size(derived()).get(1));
             
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), row, col, value);
         }
@@ -63,8 +63,8 @@ namespace utopia {
         inline void add(const SizeType row, const SizeType col, const Scalar value)
         {
             assert_enabled(is_write_locked());
-            assert(row < size(derived()).get(0));
-            assert(col < size(derived()).get(1));
+            assert(row < (SizeType)size(derived()).get(0));
+            assert(col < (SizeType)size(derived()).get(1));
 
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().add(derived().implementation(), row, col, value);
         }
@@ -145,7 +145,7 @@ namespace utopia {
         inline void set(const SizeType index, const Scalar value)
         {
             assert_enabled(is_write_locked());
-            assert(index < size(derived()).get(0));
+            assert(index < (SizeType)size(derived()).get(0));
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), index, value);
         }
 
@@ -160,7 +160,7 @@ namespace utopia {
         inline void add(const SizeType index, const Scalar value)
         {
             assert_enabled(is_write_locked());
-            assert(index < size(derived()).get(0));
+            assert(index < (SizeType)size(derived()).get(0));
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().add(derived().implementation(), index, value);
         }
 

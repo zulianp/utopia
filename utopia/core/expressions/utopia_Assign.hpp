@@ -14,9 +14,7 @@ namespace utopia {
     template<class Left, class Right>
     class Assign : public Expression< Assign<Left, Right> > {
     public:
-        enum {
-            Order = Left::Order
-        };
+        static const int Order = Left::Order;
 
         typedef typename Left::Scalar Scalar;
         
@@ -40,9 +38,7 @@ namespace utopia {
     template<class Left, class Right>
     class Construct : public Expression< Construct<Left, Right> > {
     public:
-        enum {
-            Order = Left::Order
-        };
+        static const int Order = Left::Order;
 
         typedef typename Left::Scalar Scalar;
 

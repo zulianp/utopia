@@ -14,10 +14,8 @@ namespace utopia {
 
 		typedef Expr_ Expr;
 		typedef typename Expr::Scalar Scalar;
-		
-		enum {
-		    Order = Expr::Order
-		};
+
+		static const int Order = Expr::Order;
 
 
 		inline explicit Select(const Expr &expr, const std::vector<SizeType> &index)
@@ -50,9 +48,7 @@ namespace utopia {
 		typedef Expr_ Expr;
 		typedef typename Expr::Scalar Scalar;
 
-		enum {
-		    Order = Expr::Order
-		};
+		static const int Order = Expr::Order;
 
 		inline explicit Select(const Expr &expr, const std::vector<SizeType> &row_index, const std::vector<SizeType> &col_index)
 		: expr_(expr),
