@@ -26,7 +26,7 @@ namespace utopia  {
 	static SolverTag LAPACK_TAG 	= "LAPACK";
 
 #ifdef WITH_UMFPACK
-	//static SolverTag UMFPACK_TAG 	= "UMFPACK";
+	static SolverTag UMFPACK_TAG 	= "UMFPACK";
 #endif //WITH_UMFPACK
 
 	/**
