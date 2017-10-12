@@ -37,7 +37,7 @@ namespace utopia
                 std::cout<<std::endl; 
                     
                 auto n = status_variables.size(); 
-                for(auto i = 0; i < n; i ++ )
+                for(size_t i = 0; i < n; i ++ )
                     std::cout << std::setw(27) << std::right << std::string(10, '-'); 
                 std::cout<<std::endl; 
             }

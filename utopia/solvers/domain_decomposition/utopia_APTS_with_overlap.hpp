@@ -98,12 +98,12 @@ namespace utopia
       // found out if there is a linear solution - or start with the newton step 
       // TODO:: finish convergence check 
       #ifdef LS_check
-        if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
+          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
             tr_subproblem->current_radius(9e9);  
 
-            fun.hessian(x_k, H);
-            this->linear_solve(H, g, p_N);
-            x_k1 = x_k + p_N; 
+          fun.hessian(x_k, H);
+          this->linear_solve(H, g, p_N);
+          x_k1 = x_k + p_N;
 
           fun.gradient(x_k1, g);
           if(norm2(g) < this->atol())

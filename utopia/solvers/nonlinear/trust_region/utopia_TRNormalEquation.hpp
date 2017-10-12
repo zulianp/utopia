@@ -161,8 +161,8 @@
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------
-        if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-          tr_subproblem->current_radius(delta);  
+          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
+            tr_subproblem->current_radius(delta);
 
           this->linear_solve(J_k, r_k, p_k);
           this->get_pred(g, H, p_k, pred); 
@@ -221,7 +221,7 @@
           delta_update(rho, p_k, delta); 
           it++; 
         }
-          return false;
+        return false;
       }
 
 

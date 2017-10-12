@@ -24,7 +24,7 @@ namespace utopia  {
 	static SolverTag KSP_TAG 		= "KSP";
 
 	static SolverTag LAPACK_TAG 	= "LAPACK";
-	static SolverTag UMFPACK_TAG 	= "UMFPACK";
+	//static SolverTag UMFPACK_TAG 	= "UMFPACK";
 	
 	/**
 	 * @brief      Front-end to create linear solver objects.

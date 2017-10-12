@@ -58,7 +58,7 @@ namespace utopia {
     template<class Left, class Right, class Operation>
     Size size(const Binary<Left, Right, Operation> &expr)
     {
-        if(Left::Order > Right::Order) {
+        if(static_cast<long>(Left::Order) > static_cast<long>(Right::Order)) {
             return size(expr.left());
         } else {
             return size(expr.right());
