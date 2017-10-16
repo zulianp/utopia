@@ -105,13 +105,13 @@ namespace utopia {
 		
 		const int dim = u.size();
 
-		auto mu     = block_var(6., {{1, 10.}, {4, 5.}});
-		auto lambda = block_var(6., {{1, 10.}, {4, 5.}});
+		// auto mu     = block_var(6., {{1, 10.}, {4, 5.}});
+		// auto lambda = block_var(6., {{1, 10.}, {4, 5.}});
 
 		// double mu = 730;
 		// double lambda = 376;
-		// double mu = 1;
-		// double lambda = 1;
+		double mu = 10;
+		double lambda = 10;
 
 		auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
 		auto b_form = integral((0.5 * mu) * dot(e, e) + lambda * dot(div(u), div(u)));
@@ -231,6 +231,29 @@ namespace utopia {
 
 	}
 
+	void ContactProblem::assemble_velocities()
+	{
+		Write<DVectord> w(velocity);
+
+		libMesh::DenseVector<libMesh::Real> v(mesh->mesh_dimension());
+
+		std::vector<libMesh::dof_id_type> indices;
+		for(auto e_it = mesh->active_local_elements_begin(); 
+			e_it != mesh->active_local_elements_end(); 
+			++e_it) {
+
+			spaces[0]->dof_map().dof_indices(*e_it, indices);
+			v.resize(indices.size());
+			v.zero();
+
+			iv_ptr->fill_velocity((*e_it)->subdomain_id(), v);
+			
+			for(uint i = 0; i < indices.size(); ++i) {
+				velocity.set(indices[i], v(i));
+			}
+		}
+	}
+
 	void ContactProblem::init_material()
 	{
 		const int dim = mesh->mesh_dimension();
@@ -244,6 +267,10 @@ namespace utopia {
 		displacement_increment =  local_zeros(local_size(external_force));
 
 		velocity = local_zeros(local_size(external_force));
+
+		if(iv_ptr) {
+			assemble_velocities();
+		}
 
 		internal_force = local_zeros(local_size(external_force));
 		total_displacement =  local_zeros(local_size(external_force));	
@@ -373,8 +400,42 @@ namespace utopia {
 	{
 		DVectord &u_old = total_displacement;
 		DVectord u_older = u_old - old_displacement_increment;
-		DVectord rhs = 1./(dt*dt) * ( internal_mass_matrix * (u_old - u_older)) - (stiffness_matrix * (3./4. * u_old + 1./4. * u_older)) + external_force;
+		DVectord rhs = 1./(dt) * ( internal_mass_matrix * velocity ) + (external_force - (stiffness_matrix * (3./4. * u_old + 1./4. * u_older)));
 		DSMatrixd K  = 1./(dt*dt) * internal_mass_matrix + stiffness_matrix;
+
+		DVectord sol_c = local_zeros(local_size(external_force));
+		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
+		DSMatrixd K_c  = transpose(orthogonal_trafo) *
+		DSMatrixd(
+			transpose(transfer_operator) * 
+			K * 
+			transfer_operator) * 
+		orthogonal_trafo;
+
+		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
+		newton.verbose(true);
+		newton.max_it(40);
+
+		newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
+		newton.solve(K_c, rhs_c, sol_c);
+
+		displacement_increment = transfer_operator * (orthogonal_trafo * sol_c);	
+
+		total_displacement += displacement_increment;
+		new_internal_force = stiffness_matrix * total_displacement;
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
+
+		velocity = (1./dt) * displacement_increment;
+	}
+
+
+	void ContactProblem::classic_newmark_with_contact_2(const double dt)
+	{
+		DVectord &u_old = total_displacement;
+		DVectord u_older = u_old - old_displacement_increment;
+		DVectord pred = orthogonal_trafo * utopia::min(orthogonal_trafo * (dt * velocity), gap);
+		DVectord rhs = (internal_mass_matrix * pred) + (dt*dt) * (external_force - stiffness_matrix * (3./4. * u_old + 1./4. * u_older));
+		DSMatrixd K  = internal_mass_matrix + (dt*dt) * stiffness_matrix;
 
 		DVectord sol_c = local_zeros(local_size(external_force));
 		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
@@ -551,14 +612,10 @@ namespace utopia {
 
 	void ContactProblem::contact_stabilized_newmark(const double dt)
 	{
-		//newmark scheme
 		//predictor step
-		DVectord displacement_increment_pred = dt * velocity;
-		DVectord displacement_increment_pred_nt = utopia::min(orthogonal_trafo * displacement_increment_pred, gap);
-		displacement_increment_pred = orthogonal_trafo * displacement_increment_pred_nt;
-		DVectord rhs = mass_matrix * displacement_increment_pred + (dt*dt/2.) * (external_force - internal_force);
-		DSMatrixd K  = internal_mass_matrix + (dt*dt/4.) * stiffness_matrix;
-
+		DVectord pred = orthogonal_trafo * utopia::min(orthogonal_trafo * (dt * velocity), gap);
+		DVectord rhs  = internal_mass_matrix * pred + (dt*dt/2.) * (external_force - internal_force);
+		DSMatrixd K   = internal_mass_matrix + (dt*dt/4.) * stiffness_matrix;
 
 		DVectord sol_c = local_zeros(local_size(external_force));
 		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
@@ -569,8 +626,6 @@ namespace utopia {
 			transfer_operator) * 
 		orthogonal_trafo;
 
-
-		// SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> newton(linear_solver);
 		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
 		newton.verbose(true);
 		newton.max_it(40);
@@ -584,10 +639,12 @@ namespace utopia {
 		new_internal_force = stiffness_matrix * total_displacement;
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
 
-		DVectord M_x_v_inc = (dt/2.) * (2. * external_force - internal_force - new_internal_force);
-		DVectord vel_inc = local_zeros(local_size(M_x_v_inc));
-		apply_zero_boundary_conditions(spaces[0]->dof_map(), M_x_v_inc);
-		solve(mass_matrix, M_x_v_inc, vel_inc);
+		//compute acceleration
+		DVectord dt_x_M_x_acc = (dt/2.) * (2. * external_force - internal_force - new_internal_force);
+		DVectord vel_inc = local_zeros(local_size(dt_x_M_x_acc));
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), dt_x_M_x_acc);
+		solve(mass_matrix, dt_x_M_x_acc, vel_inc);
+
 		velocity += vel_inc;
 	}
 
@@ -633,7 +690,8 @@ namespace utopia {
 		MOONOLITH_EVENT_BEGIN("solving_vi");
 
 		if(dynamic_contact) {
-			classic_newmark_with_contact(dt);
+			// classic_newmark_with_contact(dt);
+			classic_newmark_with_contact_2(dt);
 			// contact_stabilized_newmark(dt);
 			// contact_stabilized_newmark_monolithic(dt);
 		} else {

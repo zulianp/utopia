@@ -91,9 +91,18 @@ namespace utopia {
 			}
 		};
 
+		class ElasticityInitialVelocity {
+		public:
+			virtual void fill_velocity(const int block_id, libMesh::DenseVector<libMesh::Real> &v) 
+			{
+				v.zero();
+			}
+		};
+
 		std::shared_ptr<ElasticityBoundaryConditions> bc_ptr;
 		std::shared_ptr<ElasticityForcingFunction> ff_ptr;
 		std::shared_ptr<libMesh::Nemesis_IO> output;
+		std::shared_ptr<ElasticityInitialVelocity> iv_ptr;
 		// std::shared_ptr<libMesh::ExodusII_IO> output;
 
 		typedef struct {
@@ -121,6 +130,11 @@ namespace utopia {
 			double search_radius
 		);
 
+		void set_initial_velocity(const std::shared_ptr<ElasticityInitialVelocity> &ptr = nullptr)
+		{
+			iv_ptr = ptr;
+		}
+
 		void save(const double dt = 1.0, const std::string &output_dir = ".");
 		inline void set_dynamic_contact(const bool val)
 		{
@@ -146,8 +160,10 @@ namespace utopia {
 		void implicity_euler(const double dt);
 		void classic_newmark(const double dt);
 		void classic_newmark_with_contact(const double dt);
+		void classic_newmark_with_contact_2(const double dt);
 		void classic_newmark_beta(const double dt);
 		void contact_stabilized_newmark_monolithic(const double dt);
+		void assemble_velocities();
 
 		bool is_inpulse_;
 	};

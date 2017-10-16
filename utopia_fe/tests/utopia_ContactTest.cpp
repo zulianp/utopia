@@ -257,6 +257,54 @@ namespace utopia {
 		}
 	};
 
+	class Squares : public ExampleProblemBase, public ContactProblem::ElasticityInitialVelocity {
+	public:
+		Squares() {
+			mesh_file = "../data/squares.e";
+			contact_flags = {{1, 2}};
+			search_radius = 0.1;
+			dt = .0025;
+			n_steps = 80;
+			dynamic_contact = true;
+		}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy)  override { }
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override { }
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			v.zero();
+		}
+
+		virtual void fill_velocity(const int block_id, libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			double value = 0;
+			switch(block_id) {
+				case 1: {
+					value = -2;
+					break;
+				}
+
+				case 2: {
+					value = 2;
+					break;
+				}
+
+				default:
+				{
+					break;
+				}
+			}
+
+
+			for(int i = v.size()/2; i < v.size(); ++i) {
+				v(i) = value;
+			}
+		}
+
+	};
+
 	class Balls : public ExampleProblemBase {
 	public:
 		Balls() {
@@ -267,12 +315,16 @@ namespace utopia {
 							 		 {2, 3}, {2, 4},
 							                 {3, 4} };
 			search_radius = 0.1;
-			dt = .02;
-			n_steps = 1000;
+			dt = .01;
+			n_steps = 150;
 			dynamic_contact = true;
 			is_three_dim = false;
+		}
 
 
+		void set_up_dynamic_with_impulse()
+		{
+			is_inpulse = true;
 		}
 
 		void three_dim()
@@ -323,10 +375,16 @@ namespace utopia {
 
 		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
 		{
+			double value = -1.;
+
+			if(is_inpulse) {
+				value = -25;
+			}
+
 			if(is_three_dim) {
-				v(2) = -1.;
+				v(2) = value;
 			} else {
-				v(1) = -1.;
+				v(1) = value;
 			}
 		}
 
@@ -441,7 +499,8 @@ namespace utopia {
 		ContactProblem p;
 			
 		// ---------------------------------------------------
-		auto e_problem = make_shared<Balls>();
+		auto e_problem = make_shared<Squares>(); p.set_initial_velocity(e_problem);
+		// auto e_problem = make_shared<Balls>();
 		// e_problem->three_dim();
 		// auto e_problem = make_shared<ExampleProblem2D>();
 		// e_problem->set_up_m_coarse_t_dynamic();
@@ -450,6 +509,7 @@ namespace utopia {
 		// auto e_problem = make_shared<Rocks>();
 		// e_problem->set_up_m_coarse_t_dynamic();
 		// e_problem->set_up_dynamic_with_impulse();
+		// e_problem->many();
 		 
 		
 		// auto e_problem = make_shared<ExampleProblem3D>();

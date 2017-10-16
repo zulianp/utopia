@@ -1328,14 +1328,15 @@ namespace utopia {
 		assert( isector.polygon_area_2(poly1.m(),  &poly1.get_values()[0]) > 0 );
 		assert( isector.polygon_area_2(poly2.m(),  &poly2.get_values()[0]) > 0 );
 		
-		if(!isector.intersect_convex_polygons(
-											  poly1.m(),
-											  &poly1.get_values()[0],
-											  poly2.m(),
-											  &poly2.get_values()[0],
-											  &n_vertices_result,
-											  result_buffer,
-											  DEFAULT_TOLLERANCE)) {
+		if(!
+			// isector.
+			intersect_convex_polygons(poly1.m(),
+									  &poly1.get_values()[0],
+									  poly2.m(),
+									  &poly2.get_values()[0],
+									  &n_vertices_result,
+									  result_buffer,
+									  DEFAULT_TOLLERANCE)) {
 			return false;
 		}
 		

@@ -555,8 +555,8 @@ namespace utopia {
 		std::cout << "mortar_transfer_2D\n";
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
-		int n_master = 8;
-		int n_slave  = 3;
+		int n_master = 80;
+		int n_slave  = 30;
 
 		auto mesh_master = make_shared<Mesh>(init.comm());
 		MeshTools::Generation::build_square (*mesh_master,
@@ -937,7 +937,8 @@ namespace utopia {
 		
 		// mortar_transfer_2D(init);
 		// mortar_transfer_3D(init);
-		mortar_transfer_3D_monolithic(init);
+		// mortar_transfer_3D_monolithic(init);
+		mortar_transfer_2D(init);
 		// surface_mortar(init);
 		
 		//run_curved_poly_disc();

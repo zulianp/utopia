@@ -697,6 +697,7 @@ namespace utopia {
 						const Scalar weight = 1./area_slave;
 						
 						if(weight < 1e-15) continue;
+						if(area < 1e-15) continue;
 						
 						const int order = order_for_l2_integral(dim_master, el_master, approx_order, el_slave, approx_order);
 						
