@@ -25,7 +25,31 @@ namespace utopia {
 
 		using namespace ClipperLib;
 
-		const double cut_off = 1e12;
+		double min_x = polygon_1[0];
+		double min_y = polygon_1[1];
+		double max_x = polygon_1[0];
+		double max_y = polygon_1[1];
+
+		for(int i = 1; i < n_vertices_1; ++i) {
+			const int i2 = i * 2;
+			min_x = std::min(min_x, polygon_1[i2]);
+			max_x = std::max(max_x, polygon_1[i2]);
+
+			min_y = std::min(min_y, polygon_1[i2+1]);
+			max_y = std::max(max_y, polygon_1[i2+1]);
+		}
+
+		for(int i = 0; i < n_vertices_2; ++i) {
+			const int i2 = i * 2;
+			min_x = std::min(min_x, polygon_2[i2]);
+			max_x = std::max(max_x, polygon_2[i2]);
+
+			min_y = std::min(min_y, polygon_2[i2+1]);
+			max_y = std::max(max_y, polygon_2[i2+1]);
+		}
+
+
+		const double cut_off = 1e10/std::max(max_x - min_x, max_y - min_y); //1e18 is the max represented value 
 
 		Paths subj(1), clip(1), solution;
 
@@ -34,12 +58,12 @@ namespace utopia {
 
 		for(int i = 0; i < n_vertices_1; ++i) {
 			const int i2 = i * 2;
-			subj[0].push_back(IntPoint(polygon_1[i2] * cut_off, polygon_1[i2+1] * cut_off));
+			subj[0].push_back(IntPoint((polygon_1[i2] - min_x) * cut_off , (polygon_1[i2+1] - min_y) * cut_off));
 		}
 
 		for(int i = 0; i < n_vertices_2; ++i) {
 			const int i2 = i * 2;
-			clip[0].push_back(IntPoint(polygon_2[i2] * cut_off, polygon_2[i2+1] * cut_off));
+			clip[0].push_back(IntPoint((polygon_2[i2] - min_x) * cut_off, (polygon_2[i2+1] - min_y) * cut_off));
 		}
 
 	//perform intersection ...
@@ -56,8 +80,8 @@ namespace utopia {
 
 		for(std::size_t i = 0; i < solution[0].size(); ++i) {
 			const int i2 = i * 2;
-			result_buffer[i2] = solution[0][i].X/cut_off;
-			result_buffer[i2 + 1] = solution[0][i].Y/cut_off;
+			result_buffer[i2] = solution[0][i].X/cut_off + min_x;
+			result_buffer[i2 + 1] = solution[0][i].Y/cut_off + min_y;
 		}
 		
 		return solution[0].size() >= 3;
