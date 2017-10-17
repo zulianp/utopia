@@ -23,6 +23,7 @@
 #include "utopia_Biomechanics.hpp"
 #include "utopia_UtopiaFETests.hpp"
 #include "utopia_VolumeTransferBenchmark.hpp"
+#include "utopia_SemigeometricMultigridTest.hpp"
 #include <functional>
 
 #include "par_moonolith.hpp"
@@ -50,6 +51,7 @@ int main(const int argc, char *argv[])
 	    runners["geometry"] = run_geometry_test;
 	    runners["mortar"] = run_mortar_examples;
 	    runners["tests"] = run_all_utopia_fe_tests;
+	    runners["smg"] = run_semigeometric_multigrid_test;
 
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;

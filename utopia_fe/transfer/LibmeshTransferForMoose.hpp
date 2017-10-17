@@ -5,6 +5,8 @@
 #include "utopia_assemble_volume_transfer.hpp"
 #include "moonolith_communicator.hpp"
 
+#include <iostream>
+
 namespace utopia {
         
     inline bool AssembleMOOSE(moonolith::Communicator &comm,
@@ -17,6 +19,7 @@ namespace utopia {
                               bool  use_biorth_, int n_var, DSMatrixd &B)
     {
      
+        std::cerr << "[Warning] AssembleMOOSE will be deleted, use assemble_volume_transfer instead" << std::endl; 
         return assemble_volume_transfer(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, use_biorth_, n_var, B);
     }
     
@@ -32,6 +35,7 @@ namespace utopia {
                               bool  use_biorth_, int n_var, DSMatrixd &B,
                               const std::vector< std::pair<int, int> > &tags)
     {
+        std::cerr << "[Warning] AssembleMOOSE will be deleted, use assemble_volume_transfer instead" << std::endl;
         return assemble_volume_transfer(comm, master, slave, dof_master, dof_slave, _from_var_num, _to_var_num, use_biorth_, n_var, B, tags);
     }
 }

@@ -434,14 +434,20 @@ namespace utopia
 			
 			DVectord x_0 = 0 * x;
 			// auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-			auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+			// auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+			auto lsolver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+			// auto lsolver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+			lsolver->atol(1e-15);
+			lsolver->rtol(1e-15);
+			lsolver->stol(1e-15);
+
 			SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 			
 			nlsolver.set_box_constraints(box);
 			
-			// nlsolver.verbose(false);
+
 			nlsolver.max_it(200);
-			// nlsolver.verbose(true);
+			nlsolver.verbose(true);
 			nlsolver.solve(A, b, x_0);
 			
 			// if(!approxeq(x, x_0)) {
@@ -450,12 +456,12 @@ namespace utopia
 			double norm_x = norm2(x);
 			double norm_x0 = norm2(x_0);
 			
-			// if(mpi_world_rank() == 0) {
-			// 	std::cout << "diff: " << diff << std::endl;
-			// 	std::cout << "sum_A: " << sum_A << std::endl;
-			// 	std::cout <<  "nx/nx0 = " << norm_x << "/" << norm_x0 << std::endl;
-			// }
-			// }
+			if(mpi_world_rank() == 0) {
+				std::cout << "diff: " << diff << std::endl;
+				std::cout << "sum_A: " << sum_A << std::endl;
+				std::cout <<  "nx/nx0 = " << norm_x << "/" << norm_x0 << std::endl;
+			}
+
 			
 			assert(approxeq(x, x_0));
 		}

@@ -55,3 +55,6 @@ list(APPEND MOONOLITH_LIB
 	"-lpar_moonolith_tree"
 	"-lpar_moonolith_utils"
 	)
+
+
+set(MOONOLITH_LIBRARIES ${MOONOLITH_LIB})

@@ -4,10 +4,11 @@
 
 #include "utopia_intersector.hpp"
 
-// #define USE_CLIPPER
+#define USE_CLIPPER
 
 namespace utopia {
-	bool intersect_convex_polygons(const int n_vertices_1,
+	bool intersect_convex_polygons(
+		const int n_vertices_1,
 		const double * polygon_1,
 		const int n_vertices_2,
 		const double * polygon_2,
@@ -15,13 +16,13 @@ namespace utopia {
 		double *result_buffer,
 		double tol) {
 
-		static bool lib_msg = false;
+		// static bool lib_msg = false;
 
 #ifdef USE_CLIPPER
-		if(!lib_msg) {
-			std::cout << "using clipper" << std::endl;
-			lib_msg = true;
-		}
+		// if(!lib_msg) {
+		// 	std::cout << "using clipper" << std::endl;
+		// 	lib_msg = true;
+		// }
 
 		using namespace ClipperLib;
 
@@ -66,13 +67,13 @@ namespace utopia {
 			clip[0].push_back(IntPoint((polygon_2[i2] - min_x) * cut_off, (polygon_2[i2+1] - min_y) * cut_off));
 		}
 
-	//perform intersection ...
+		//perform intersection ...
 		Clipper c;
 		c.AddPaths(subj, ptSubject, true);
 		c.AddPaths(clip, ptClip, true);
 		c.Execute(ctIntersection, solution, pftNonZero, pftNonZero);
 
-		if(solution.empty()) return false;
+		if(solution.empty() || solution[0].size() < 3) return false;
 
 		assert(solution.size() == 1);
 
@@ -84,14 +85,14 @@ namespace utopia {
 			result_buffer[i2 + 1] = solution[0][i].Y/cut_off + min_y;
 		}
 		
-		return solution[0].size() >= 3;
+		return true;
 
 #else //USE_CLIPPER
 
-		if(!lib_msg) {
-			std::cout << "using homemade" << std::endl;
-			lib_msg = true;
-		}
+		// if(!lib_msg) {
+		// 	std::cout << "using homemade" << std::endl;
+		// 	lib_msg = true;
+		// }
 
 
 		Intersector isector;
