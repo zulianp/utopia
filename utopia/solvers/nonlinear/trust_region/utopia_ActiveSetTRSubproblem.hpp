@@ -16,7 +16,7 @@ namespace  utopia
     /**
      * @brief      Wrapper for Active set method to solve TR subproblems 
      */
-    template<class Matrix, typename Vector>
+    template<class Matrix, class Vector>
     class ActiveSetTRSubproblem : public TRBoxSubproblem<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
@@ -37,18 +37,18 @@ namespace  utopia
             virtual ~ActiveSetTRSubproblem( ){}
 
 
-            //virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const BoxConstraints<Vector> & up_constrain) override
-            //{
-            //    _active_set_solver->set_box_constraints(up_constrain); 
-            //    
-            //    // just for debugging
-            //    // _active_set_solver->verbose(false); 
+            virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const BoxConstraints<Vector> & up_constrain) override
+            {
+                _active_set_solver->set_box_constraints(up_constrain);
 
-            //    _active_set_solver->solve(H, g, p_k);
+                // just for debugging
+                // _active_set_solver->verbose(false);
 
-            //    p_k *=-1; 
-            //    return true;
-            //}
+                _active_set_solver->solve(H, g, p_k);
+
+                p_k *=-1;
+                return true;
+            };
 
 
 
