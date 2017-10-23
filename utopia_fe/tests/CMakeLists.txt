@@ -15,6 +15,7 @@ list(APPEND LOCAL_HEADERS
 	utopia_TimeDiffExamples.hpp
 	utopia_UtopiaFETests.hpp
 	utopia_VolumeTransferBenchmark.hpp
+	utopia_FormEvalTest.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 
@@ -31,6 +32,7 @@ list(APPEND LOCAL_SOURCES
 	utopia_TimeDiffExamples.cpp
 	utopia_UtopiaFETests.cpp
 	utopia_VolumeTransferBenchmark.cpp
+	utopia_FormEvalTest.cpp
 	)
 
 add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})

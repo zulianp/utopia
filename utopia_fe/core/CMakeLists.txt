@@ -4,6 +4,8 @@ list(APPEND LOCAL_HEADERS
 	utopia_fe_core.hpp
 	utopia_fe_lang.hpp
 	utopia_block_var.hpp
+	utopia_FormEvaluator.hpp
+	eval/utopia_Eval_Grad.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 
