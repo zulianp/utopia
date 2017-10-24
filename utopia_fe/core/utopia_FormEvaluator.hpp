@@ -1,7 +1,7 @@
 #ifndef UTOPIA_FE_FORM_EVALUATOR_HPP
 #define UTOPIA_FE_FORM_EVALUATOR_HPP
 
-#include "utopia_fe_function.hpp"
+#include "utopia_FormExpressions.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_fe_lang.hpp"
 
@@ -41,14 +41,14 @@ namespace utopia {
 			FormContext<BAKEND_FLAG> ctx;
 			ctx.init(expr);
 			ctx.init_tensor(tensor, reset_tensor);
-			FormEval<Form, BAKEND_FLAG>::apply(expr.derived(), tensor, ctx);
+			FormEval<Form, BAKEND_FLAG>::apply(expr, tensor, ctx);
 		}
 
 		template<class Tensor, int Order>
 		static void eval(const Integral<Form> &expr, Wrapper<Tensor, Order> &tensor, FormContext<BAKEND_FLAG> &ctx, const bool reset_tensor)
 		{	
 			ctx.init_tensor(tensor, reset_tensor);
-			FormEval<Form, BAKEND_FLAG>::apply(expr.derived(), tensor, ctx);
+			FormEval<Form, BAKEND_FLAG>::apply(expr, tensor, ctx);
 		}
 	};
 }

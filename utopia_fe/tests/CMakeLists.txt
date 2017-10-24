@@ -36,7 +36,7 @@ list(APPEND LOCAL_SOURCES
 	)
 
 add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})
-target_link_libraries(utopia_fe_tests transfer utopia_fe_visualization)
+target_link_libraries(utopia_fe_tests transfer utopia_fe_visualization utopia_fe_homemade)
 target_include_directories(utopia_fe_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) 
 
 
