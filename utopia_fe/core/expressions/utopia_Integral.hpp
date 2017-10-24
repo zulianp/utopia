@@ -4,11 +4,12 @@
 #include "utopia_Expression.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_FEExpression.hpp"
 
 namespace utopia {
 
 	template<class Expr_>
-	class Integral : public Expression< Integral<Expr_> > {
+	class Integral : public Expression< Integral<Expr_> >, public FEExpression {
 	public:
 		typedef Expr_ Expr;
 		static const int Order = Expr::Order;
@@ -16,7 +17,7 @@ namespace utopia {
 
 		typedef typename Expr::Scalar Scalar;
 
-		std::string getClass() const { return "Integral<" + expr_.getClass() + ">"; }
+		std::string getClass() const override { return "Integral<" + expr_.getClass() + ">"; }
 
 		Integral(const Expr &expr, const int block_id = -1)
 		: expr_(expr), block_id_(block_id)

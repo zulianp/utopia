@@ -45,6 +45,33 @@ namespace utopia {
 	{
 		return ProductFunctionSpace<FunctionSpace<Spaces>...>(spaces...);
 	}
+
+	template<class... Spaces>
+	class FormTraits< ProductFunctionSpace<Spaces...> > {
+	public:
+		template<class Space>
+		inline static constexpr int order()
+		{
+			return Traits<Space>::Order;
+		}
+
+		template<class First, class...Rest>
+		inline static constexpr int order()
+		{
+			return Traits<First>::Order + order<Rest...>();
+		}
+
+		template<class First, class...Rest>
+		class GetFirst {
+		public:
+			typedef First Type;
+		};
+
+		typedef typename GetFirst<Spaces...>::Type First;
+		typedef typename utopia::FormTraits<First>::Implementation Implementation;
+		typedef typename utopia::FormTraits<First>::Scalar Scalar;
+		const static int Order = order<Spaces...>();
+	};
 }
 
 #endif //UTOPIA_PRODUCT_FUNCTION_SPACE_HPP

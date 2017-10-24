@@ -15,7 +15,7 @@ namespace utopia {
 
 		typedef typename Expr::Scalar Scalar;
 
-		std::string getClass() const { return "Curl<" + expr_.getClass() + ">"; }
+		std::string getClass() const override { return "Curl<" + expr_.getClass() + ">"; }
 
 		inline const Expr &expr() const
 		{

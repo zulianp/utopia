@@ -16,7 +16,7 @@ namespace utopia {
 
 		typedef typename Expr::Scalar Scalar;
 
-		std::string getClass() const { return "Divergence<" + expr_.getClass() + ">"; }
+		std::string getClass() const override { return "Divergence<" + expr_.getClass() + ">"; }
 
 		inline const Expr &expr() const
 		{

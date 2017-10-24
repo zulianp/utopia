@@ -6,8 +6,22 @@
 #include "utopia_Base.hpp"
 #include "utopia_fe_core.hpp"
 #include "utopia_intersector.hpp"
+#include "utopia_FEBackend.hpp"
+#include "utopia_AssemblyContext.hpp"
+#include "utopia_FormEval.hpp"
+#include "utopia_FEEval.hpp"
+
+#include <memory>
 
 namespace utopia {
+
+	typedef utopia::Matrixd ElementMatrix;
+	typedef utopia::Vectord ElementVector;
+	typedef std::vector< std::vector<utopia::ElementVector> > HMGrad;
+	typedef std::vector< std::vector<double> > HMFun;
+
+	typedef std::vector<double> HMDx;
+
 
 	static const int EMPTY_BACKEND_FLAG = -3;
 
@@ -19,63 +33,290 @@ namespace utopia {
 		static const int Backend = EMPTY_BACKEND_FLAG;
 		static const int Order = 1;
 		typedef double Scalar;
+		typedef int SizeType;
+		typedef utopia::Empty Implementation;
 
 	};
-
 
 	class EmptyFunctionSpace : public FunctionSpace<EmptyFunctionSpace> {
 	public:
 	};
 
 	template<>
-	class FormTraits<EmptyFunctionSpace> : public Traits<Empty> {
+	class FormTraits<EmptyFunctionSpace> : public Traits<Empty> {};
+
+	class Mesh {
 	public:
-		typedef utopia::Empty Implementation;
+		typedef Intersector::Mesh MeshImpl;
+
+		std::shared_ptr<MeshImpl> impl;
+
+		void make_example_mesh()
+		{
+			impl = std::make_shared<MeshImpl>();
+
+			el_ptr.resize(2);
+			el_ptr[0] = 0;
+			el_ptr[1] = 3;
+
+			el_index.resize(3);
+			el_index[0] = 0;
+			el_index[1] = 1;
+			el_index[2] = 2;
+
+			el_type.resize(1);
+			el_type[0] = Intersector::ELEMENT_TYPE_TRIANGLE;
+
+			points.resize(3 * 2);
+			points[0] = 0.0;
+			points[1] = 0.0;
+
+			points[2] = 1.0;
+			points[3] = 0.0;
+
+			points[4] = 0.0;
+			points[5] = 1.0;
+
+			impl->n_elements = 1;
+			impl->n_nodes  = 3;
+			impl->n_dims   = 2;
+			impl->el_ptr   = &el_ptr[0];
+			impl->el_index = &el_index[0];
+			impl->el_type  = &el_type[0];
+			impl->meta     = nullptr;// &meta[0];
+			impl->points   = &points[0];
+		}
+
+		Mesh()
+		{
+			make_example_mesh();
+		}
+
+	private:
+		//memory
+		std::vector<int> el_ptr;
+		std::vector<int> el_index;
+		std::vector<int> el_type;
+		std::vector<int> meta;
+		std::vector<double> points;
 	};
 
-	template<typename T>
-	class Elem {
+	class HMFESpace : public FunctionSpace<HMFESpace> {
 	public:
-		//geom shapes
-		static const int TRIANGLE = 0;
-
-		T * points() { return nullptr; }
-		int n_nodes() { return 0; }
-		int type() { return TRIANGLE; }
+		Mesh mesh;
 	};
 
-	template<typename T>
+	template<>
+	class Traits<HMFESpace> {
+	public:
+		static const int Backend = HOMEMADE;
+		static const int Order = 1;
+		typedef double Scalar;
+		typedef utopia::HMFESpace Implementation;
+		typedef HMGrad GradType;
+	};
+
 	class Quadrature {
 	public:
-		T * points() { return nullptr; }
+		double * points() { return nullptr; }
 		int n_points() { return 0; }
 	};
 
-	template<typename T, int FEType, int FEOrder>
 	class FE {
 	public:
-		//fe types
-		static const int LAGRANGE = 0;
-
-		void init(Elem<T> &elem, Quadrature<T> &quad)
+		void init(const int current_element, Mesh &mesh, int quadrature_order)
 		{
-			switch(elem.type()) {
-				case Elem<T>::TRIANGLE:
-				{
-					isect.triangle_make_fe_object(elem.points(), quad.n_points(), quad.points(), &fe_);
-					break;
-				}
-				default: 
-				{
-					assert(false);
-					break;
+
+			// fe_backend.make_fe_object_from_quad_2(
+			// 	*mesh.impl, current_element, 3, quad_points, quad_weights, &fe_);
+			fe_backend.make_fe_object(*mesh.impl, current_element, quadrature_order, &fe_);
+
+			grad.resize(fe_.n_quad_points);
+			fun.resize(grad.size());
+			dx.resize(grad.size());
+
+			for(int q = 0; q < fe_.n_quad_points; ++q) {
+				grad[q].resize(fe_.n_shape_functions);
+				fun[q].resize(fe_.n_shape_functions);
+
+				dx[q] = fe_.dx[q];
+
+				for(int i = 0; i < fe_.n_shape_functions; ++i) {
+					grad[q][i] = zeros(fe_.n_dims);
+
+					Write<ElementVector> w(grad[q][i]);
+					fun[q][i] = fe_.fun[i][q];
+					
+					for(int k = 0; k < fe_.n_dims; ++k) {
+						grad[q][i].set(k, fe_.grad[i][q * fe_.n_dims + k]);
+					}
 				}
 			}
 		}
 
+		HMGrad grad;
+		HMFun fun;
+		HMDx dx;
+
+		inline int n_shape_functions() const
+		{
+			return fe_.n_shape_functions;
+		}
+
 	private:
-		Intersector isect;
+
+		Intersector fe_backend;
 		FEObject fe_;
+		
+	};
+
+	template<>
+	class AssemblyContext<HOMEMADE> {
+	public:
+
+		std::shared_ptr<FE> trial;
+		std::shared_ptr<FE> test;
+		long quadrature_order;
+		long current_element;
+
+		template<class Expr>
+		void init_bilinear(const Expr &expr) 
+		{		
+			auto trial_space_ptr = trial_space<HMFESpace>(expr);
+			auto test_space_ptr  = test_space<HMFESpace>(expr);
+
+			assert(trial_space_ptr.get());
+			assert(test_space_ptr.get());
+
+			if(!trial) {
+				trial = std::make_shared<FE>();
+			}
+
+			trial->init(current_element, trial_space_ptr->mesh, quadrature_order);
+
+			if(trial_space_ptr != test_space_ptr) {
+				if(!test) {
+					test = std::make_shared<FE>();
+				}
+
+				test->init(current_element, test_space_ptr->mesh, quadrature_order);
+			} else {
+				test = trial;
+			}
+		}
+
+		template<class Expr>
+		void init_linear(const Expr &expr) 
+		{		
+			auto test_space_ptr  = test_space<HMFESpace>(expr);
+			assert(test_space_ptr.get());
+
+			if(!test) {
+				test = std::make_shared<FE>();
+			}
+
+			test->init(current_element, test_space_ptr->mesh, quadrature_order);
+		}
+
+		void init_tensor(ElementVector &v, const bool reset) {
+			auto s = size(v);
+			if(reset || s.get(0) != 3) {
+				v = zeros(test->n_shape_functions());
+			}
+		}
+
+		void init_tensor(ElementMatrix &v, const bool reset) {
+			auto s = size(v);
+			if(reset || s.get(0) != test->n_shape_functions() || s.get(1) != trial->n_shape_functions()) {
+				v = zeros(test->n_shape_functions(), trial->n_shape_functions());
+			}
+		}
+
+		AssemblyContext()
+		: current_element(0), quadrature_order(2)
+		{}
+	};
+
+	template<>
+	class FEBackend<HOMEMADE> {
+	public:
+		static HMGrad &grad(const TrialFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			return ctx.trial->grad;
+		}
+
+		static HMGrad &grad(const TestFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			return ctx.test->grad;
+		}
+
+		static HMFun &fun(const TrialFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			return ctx.trial->fun;
+		}
+
+		static HMFun &fun(const TestFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			return ctx.test->fun;
+		}
+	};
+
+	inline static double inner(const double left, const double right)
+	{
+		return left * right;
+	}
+
+	template<class Form>
+	class FormEval<Form, HOMEMADE> {
+	public:
+
+		typedef utopia::Traits<HMFESpace> Traits;
+		FormEval() { }
+
+		template<class Expr, class Tensor>
+		static void apply(
+			const Integral<Expr> &expr, 
+			Tensor &mat, 
+			AssemblyContext<HOMEMADE> &ctx)
+		{
+			apply(expr.expr(), mat, ctx);
+		}
+
+		template<class Left, class Right, class Tensor>
+		static void apply(
+			const Reduce<Binary<Left, Right, EMultiplies>, Plus> &expr, 
+			Tensor &mat, 
+			AssemblyContext<HOMEMADE> &ctx)
+		{	
+			Write<Tensor> wt(mat);
+
+			auto && left  = FEEval<Left,  Traits, HOMEMADE>::apply(expr.expr().left(),  ctx);
+			auto && right = FEEval<Right, Traits, HOMEMADE>::apply(expr.expr().right(), ctx);
+			auto && dx    = ctx.test->dx;
+
+			bool left_is_test = is_test<HMFESpace>(expr.expr().left());
+			
+			uint n_quad_points = dx.size();
+			
+			if(left_is_test) {
+				for (uint qp = 0; qp < n_quad_points; qp++) {
+					for (uint i = 0; i < left[qp].size(); i++) {
+						for (uint j = 0; j < right[qp].size(); j++) {
+							mat.add(i, j,  inner( left[qp][i], right[qp][j] ) * dx[qp]);
+						}
+					}
+				}
+
+			} else {
+				for (uint qp = 0; qp < n_quad_points; qp++) {
+					for (uint i = 0; i < left[qp].size(); i++) {
+						for (uint j = 0; j < right[qp].size(); j++) {
+							mat.add(j, i,  inner( left[qp][i], right[qp][j] ) * dx[qp]);
+						}
+					}
+				}
+			}
+		}
 	};
 }
 

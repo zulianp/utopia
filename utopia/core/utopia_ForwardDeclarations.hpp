@@ -24,6 +24,8 @@ namespace utopia {
     template<typename T>
     class Number;
 
+    template<class Left, class Right>
+    class Multiply;
 
     template<class Implementation, int Order>
     class Wrapper;
