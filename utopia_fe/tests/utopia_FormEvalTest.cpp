@@ -8,6 +8,7 @@ namespace utopia {
 	void run_form_eval_test(libMesh::LibMeshInit &init)
 	{
 		typedef utopia::HMFESpace FunctionSpaceT;
+		static const int Backend = Traits<FunctionSpaceT>::Backend;
 
 		auto V = FunctionSpaceT();
 		auto u = trial(V);
@@ -15,22 +16,26 @@ namespace utopia {
 
 		auto laplacian = integral( dot(grad(u), grad(v)) );
 		auto mass = integral( dot(u, v) );
-		auto linear_form   = integral( dot(coeff(0.1), v)    );
+		auto linear_form  = integral( dot(coeff(0.1), v) );
 
 		ElementMatrix mat;
 		ElementVector vec;
 
-		FormEvaluator<HOMEMADE> eval;
-		eval.eval_bilinear(laplacian, mat, true);
+		FormEvaluator<Backend> eval;
+
+		//init context only once for highest order assembly
+		AssemblyContext<Backend> ctx;
+		ctx.init_bilinear(mass);
+
+		eval.eval(laplacian, mat, ctx, true);
 
 		disp(mat);
 
-		eval.eval_bilinear(mass, mat, true);
+		eval.eval(mass, mat, ctx, true);
 		disp(mat);
 
-		// eval.eval_linear(linear_form, vec, true);
-		// disp(vec);
-
+		eval.eval(linear_form, vec, ctx, true);
+		disp(vec);
 	}
 
 	// void run_mixed_form_eval_test()

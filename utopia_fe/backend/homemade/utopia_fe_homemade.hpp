@@ -282,13 +282,38 @@ namespace utopia {
 			apply(expr.expr(), mat, ctx);
 		}
 
+		template<typename T>
+		inline static const T &get(const std::vector<std::vector<T> > &v, const std::size_t qp, const std::size_t i)
+		{
+			return v[qp][i];
+		}
+
+		template<typename T, int Order>
+		inline static const T get(const ConstantCoefficient<T, Order> &c, const std::size_t qp, const std::size_t i)
+		{
+			return c[i];
+		}
+
+		template<typename T>
+		inline static void add(ElementMatrix &mat, const int i, const int j, const T value)
+		{
+			mat.add(i, j, value);
+		}
+
+		template<typename T>
+		inline static void add(ElementVector &vec, const int i, const int j, const T value)
+		{
+			assert(j == 0);
+			vec.add(i, value);
+		}
+
 		template<class Left, class Right, class Tensor>
 		static void apply(
 			const Reduce<Binary<Left, Right, EMultiplies>, Plus> &expr, 
-			Tensor &mat, 
+			Tensor &result, 
 			AssemblyContext<HOMEMADE> &ctx)
 		{	
-			Write<Tensor> wt(mat);
+			Write<Tensor> wt(result);
 
 			auto && left  = FEEval<Left,  Traits, HOMEMADE>::apply(expr.expr().left(),  ctx);
 			auto && right = FEEval<Right, Traits, HOMEMADE>::apply(expr.expr().right(), ctx);
@@ -297,21 +322,28 @@ namespace utopia {
 			bool left_is_test = is_test<HMFESpace>(expr.expr().left());
 			
 			uint n_quad_points = dx.size();
+
+			auto s = size(result);
+			
+			if(s.n_dims() == 1) {
+				s.set_dims(2);
+				s.set(1, 1);
+			}
 			
 			if(left_is_test) {
 				for (uint qp = 0; qp < n_quad_points; qp++) {
-					for (uint i = 0; i < left[qp].size(); i++) {
-						for (uint j = 0; j < right[qp].size(); j++) {
-							mat.add(i, j,  inner( left[qp][i], right[qp][j] ) * dx[qp]);
+					for (uint i = 0; i < s.get(0); i++) {
+						for (uint j = 0; j < s.get(1); j++) {
+							add(result, i, j,  inner( get(left, qp, i), get(right, qp, j) ) * dx[qp]);
 						}
 					}
 				}
 
 			} else {
 				for (uint qp = 0; qp < n_quad_points; qp++) {
-					for (uint i = 0; i < left[qp].size(); i++) {
-						for (uint j = 0; j < right[qp].size(); j++) {
-							mat.add(j, i,  inner( left[qp][i], right[qp][j] ) * dx[qp]);
+					for (uint i = 0; i < s.get(1); i++) {
+						for (uint j = 0; j < s.get(0); j++) {
+							add(result, j, i,  inner( get(left, qp, i), get(right, qp, j) ) * dx[qp]);
 						}
 					}
 				}

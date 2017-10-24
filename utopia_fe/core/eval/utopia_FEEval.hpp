@@ -6,5 +6,6 @@
 #include "utopia_FEEval_Gradient.hpp"
 #include "utopia_FEEval_TrialFunction.hpp"
 #include "utopia_FEEval_TestFunction.hpp"
+#include "utopia_FEEval_ConstantCoefficient.hpp"
 
 #endif //UTOPIA_FE_EVAL_HPP
