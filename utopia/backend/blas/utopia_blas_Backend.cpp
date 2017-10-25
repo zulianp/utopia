@@ -417,6 +417,17 @@ namespace utopia {
 		
 		return ddot_(&n, &left[0], &incx, &right[0], &incy);
 	}
+
+	BLASBackend::Scalar BLASBackend::dot(const Matrix &left, const Matrix &right)
+	{
+		const int n = left.size();
+		assert(n == right.size());
+		
+		const int incx = 1;
+		const int incy = 1;
+		
+		return ddot_(&n, &left.entries()[0], &incx, &right.entries()[0], &incy);
+	}
 	
 	BLASBackend::Scalar BLASBackend::norm2(const Vector vector)
 	{

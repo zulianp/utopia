@@ -18,6 +18,7 @@ namespace utopia {
 	typedef utopia::Matrixd ElementMatrix;
 	typedef utopia::Vectord ElementVector;
 	typedef std::vector< std::vector<utopia::ElementVector> > HMGrad;
+	typedef std::vector< std::vector<utopia::ElementMatrix> > HMJacobian;
 	typedef std::vector< std::vector<double> > HMFun;
 
 	typedef std::vector<double> HMDx;
@@ -113,7 +114,8 @@ namespace utopia {
 		static const int Order = 1;
 		typedef double Scalar;
 		typedef utopia::HMFESpace Implementation;
-		typedef HMGrad GradType;
+		typedef utopia::HMGrad GradientType;
+		typedef utopia::HMJacobian JacobianType;
 	};
 
 	class Quadrature {
@@ -319,8 +321,10 @@ namespace utopia {
 			auto && right = FEEval<Right, Traits, HOMEMADE>::apply(expr.expr().right(), ctx);
 			auto && dx    = ctx.test->dx;
 
-			bool left_is_test = is_test<HMFESpace>(expr.expr().left());
-			
+			// bool left_is_test = is_test<HMFESpace>(expr.expr().left());
+			const bool left_is_test = is_test(expr.expr().left());
+			assert( left_is_test != is_test(expr.expr().right()) );
+
 			uint n_quad_points = dx.size();
 
 			auto s = size(result);

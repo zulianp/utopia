@@ -339,6 +339,41 @@ namespace utopia {
 		const Expr * expr_;
 	};
 
+
+	template<template<class...> class Expr>
+	class TPLExpressionExists {
+	public:
+
+		template<class Any>
+		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
+		
+		template<class... Inner>
+		int visit(const Expr<Inner...> &expr)
+		{
+			found_ = true;
+			return TRAVERSE_STOP;
+		}
+
+		TPLExpressionExists()
+		: found_(false)
+		{}
+
+		inline bool found() const
+		{
+			return found_;
+		}
+
+
+		template<class ExprTree>
+		inline bool apply(const ExprTree &expr)
+		{
+			traverse(expr, *this);
+			return found();
+		}
+
+		bool found_;
+	};
+
 	template<class FunctionSpaceT, class ExprTree>
 	inline std::shared_ptr<FunctionSpaceT> trial_space(const ExprTree &tree)
 	{
@@ -356,12 +391,6 @@ namespace utopia {
 	}
 
 	template<class FunctionSpaceT, class ExprTree>
-	inline bool is_trial(const ExprTree &tree)
-	{
-		return trial_space<FunctionSpaceT>(tree) != nullptr;
-	}
-
-	template<class FunctionSpaceT, class ExprTree>
 	inline std::shared_ptr<FunctionSpaceT> test_space(const ExprTree &tree)
 	{
 		std::shared_ptr<FunctionSpaceT> ret = nullptr;
@@ -376,10 +405,18 @@ namespace utopia {
 		return ret;
 	}
 
-	template<class FunctionSpaceT, class ExprTree>
+	template<class ExprTree>
+	inline bool is_trial(const ExprTree &tree)
+	{
+		TPLExpressionExists<utopia::TrialFunction> f;
+		return f.apply(tree);
+	}
+
+	template<class ExprTree>
 	inline bool is_test(const ExprTree &tree)
 	{
-		return test_space<FunctionSpaceT>(tree) != nullptr;
+		TPLExpressionExists<utopia::TestFunction> f;
+		return f.apply(tree);
 	}
 }
 

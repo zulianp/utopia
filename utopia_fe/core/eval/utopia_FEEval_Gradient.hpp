@@ -11,13 +11,52 @@ namespace utopia {
 	class FEEval<Gradient<Tensor>, Traits, Backend> {
 	public:
 		typedef utopia::Gradient<Tensor> Expr;
+		typedef typename Traits::GradientType GradientT;
+		typedef typename Traits::JacobianType JacobianT;
 
+		template<template<class> class Function, class Space>
 	    inline static auto apply(
-	    	const Expr &expr,
-	    	AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::grad(expr.expr(), ctx) )
+	    	const Gradient< Function<Space> > &expr,
+	    	AssemblyContext<Backend> &ctx) -> GradientT
 	    {
 	    	return FEBackend<Backend>::grad(expr.expr(), ctx);
 	    } 
+
+	    class SubspaceVisitor {
+	    public:
+	    	template<class Subspace>
+	    	void operator()(const int i, const Subspace &space) 
+	    	{
+	    		std::cout << "visiting subspace: " << i << std::endl;
+	    	}
+	    };
+
+	    template<template<class> class Function, class... Spaces>
+	    inline static auto apply(
+	    	const Gradient< Function<ProductFunctionSpace<Spaces...> > > &expr,
+	    	AssemblyContext<Backend> &ctx) -> JacobianT
+	    {
+	    	const auto & space_ptr = expr.expr().space_ptr();
+	    	space_ptr->each(SubspaceVisitor());
+	    	return JacobianT();
+	    }
+
+
+	    // template<class... Spaces>
+	    // inline static auto apply(
+	    // 	const TrialFunction<ProductFunctionSpace<Spaces...> > &expr,
+	    // 	AssemblyContext<Backend> &ctx) -> Jacobian
+	    // {
+	    // 	return Jacobian();
+	    // }
+
+	    // template<class... Spaces>
+	    // inline static auto apply(
+	    // 	const TestFunction<ProductFunctionSpace<Spaces...> > &expr,
+	    // 	AssemblyContext<Backend> &ctx) -> Jacobian
+	    // {
+	    // 	return Jacobian();
+	    // }
 	};
 }
 

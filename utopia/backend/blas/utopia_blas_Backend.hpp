@@ -349,6 +349,7 @@ namespace utopia {
 		static Scalar trace(const Matrix &in);
 		static Scalar trace(const CCSMatrix<Scalar>  &in);
 		static Scalar dot(const Vector &left, const Vector &right);
+		static Scalar dot(const Matrix &left, const Matrix &right);
 		static Scalar norm2(const Vector vector);
 		static Scalar norm_infty(const Vector vector);
 		static Scalar reduce(const Vector &vec, const Plus &);

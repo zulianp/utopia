@@ -5,6 +5,36 @@
 #include "utopia_fe_homemade.hpp"
 
 namespace utopia {
+
+	void run_vector_form_eval_test()
+	{
+		typedef utopia::HMFESpace FunctionSpaceT;
+		static const int Backend = Traits<FunctionSpaceT>::Backend;
+		typedef utopia::Traits<HMFESpace> TraitsT;
+
+		auto Vx = FunctionSpaceT();
+		auto Vy = FunctionSpaceT();
+
+		auto V = Vx * Vy;
+		
+		auto u = trial(V);
+		auto v = test(V);
+
+		auto laplacian = integral( dot(grad(u), grad(v)) );
+
+		AssemblyContext<Backend> ctx;
+		// ctx.init_bilinear(laplacian);
+
+		ElementMatrix mat;
+
+		// FormEvaluator<Backend> eval;
+		// eval.eval(laplacian, mat, ctx, true);
+
+		FEEval<decltype(grad(u)), TraitsT, HOMEMADE>::apply(grad(u), ctx);
+
+	}
+
+
 	void run_form_eval_test(libMesh::LibMeshInit &init)
 	{
 		typedef utopia::HMFESpace FunctionSpaceT;
@@ -14,8 +44,8 @@ namespace utopia {
 		auto u = trial(V);
 		auto v = test(V);
 
-		auto laplacian = integral( dot(grad(u), grad(v)) );
-		auto mass = integral( dot(u, v) );
+		auto laplacian    = integral( dot(grad(u), grad(v)) );
+		auto mass         = integral( dot(u, v) );
 		auto linear_form  = integral( dot(coeff(0.1), v) );
 
 		ElementMatrix mat;
@@ -36,7 +66,11 @@ namespace utopia {
 
 		eval.eval(linear_form, vec, ctx, true);
 		disp(vec);
+
+		run_vector_form_eval_test();
 	}
+
+
 
 	// void run_mixed_form_eval_test()
 	// {
