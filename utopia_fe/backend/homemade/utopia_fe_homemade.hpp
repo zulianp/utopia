@@ -234,7 +234,7 @@ namespace utopia {
 
 				//just copy it three times for now
 				for(std::size_t i = 0; i < prod_test_space_ptr->n_subspaces(); ++i) {
-					test.push_back(trial_fe);
+					test.push_back(test_fe);
 				}
 			}
 		}
@@ -242,13 +242,29 @@ namespace utopia {
 		template<class Expr>
 		void init_linear(const Expr &expr) 
 		{		
-			auto test_space_ptr  = test_space<HMFESpace>(expr);
-			assert(test_space_ptr.get());
-
 			test.clear();
-			std::shared_ptr<FE> test_fe = std::make_shared<FE>();
-			test_fe->init(current_element, test_space_ptr->mesh, quadrature_order);
-			test.push_back(test_fe);
+			
+			auto test_space_ptr  = test_space<HMFESpace>(expr);
+			std::shared_ptr<FE> test_fe;
+
+			if(test_space_ptr) {
+				test_fe = std::make_shared<FE>();
+				test_fe->init(current_element, test_space_ptr->mesh, quadrature_order);
+				test.push_back(test_fe);
+			
+			} else {
+				//product space init
+				auto prod_test_space_ptr = test_space<ProductFunctionSpace<HMFESpace>>(expr);
+				assert(prod_test_space_ptr);
+
+				test_fe = std::make_shared<FE>();
+				test_fe->init(current_element, prod_test_space_ptr->subspace(0).mesh, quadrature_order);
+
+				//just copy it three times for now
+				for(std::size_t i = 0; i < prod_test_space_ptr->n_subspaces(); ++i) {
+					test.push_back(test_fe);
+				}
+			}
 		}
 
 		void init_tensor(ElementVector &v, const bool reset) {

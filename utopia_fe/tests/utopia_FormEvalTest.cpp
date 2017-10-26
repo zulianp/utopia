@@ -67,6 +67,7 @@ namespace utopia {
 		eval.eval(mass, mat, ctx, true);
 		disp(mat);
 
+		ctx.init_linear(linear_form);
 		eval.eval(linear_form, vec, ctx, true);
 		disp(vec);
 	}
