@@ -9,33 +9,36 @@ namespace utopia {
 	void run_vector_form_eval_test()
 	{
 		typedef utopia::HMFESpace FunctionSpaceT;
-		static const int Backend = Traits<FunctionSpaceT>::Backend;
 		typedef utopia::Traits<HMFESpace> TraitsT;
+		static const int Backend = TraitsT::Backend;
+		
 
 		auto Vx = FunctionSpaceT();
 		auto Vy = FunctionSpaceT();
+		auto Vz = FunctionSpaceT();
 
-		auto V = Vx * Vy;
+		auto V = Vx * Vy * Vz;
 		
 		auto u = trial(V);
 		auto v = test(V);
 
+		auto mass = integral( dot(u, v) );
 		auto laplacian = integral( dot(grad(u), grad(v)) );
 
 		AssemblyContext<Backend> ctx;
-		// ctx.init_bilinear(laplacian);
+		ctx.init_bilinear(mass);
 
 		ElementMatrix mat;
 
-		// FormEvaluator<Backend> eval;
-		// eval.eval(laplacian, mat, ctx, true);
+		FormEvaluator<Backend> eval;
+		eval.eval(mass, mat, ctx, true);
+		disp(mat);
 
-		FEEval<decltype(grad(u)), TraitsT, HOMEMADE>::apply(grad(u), ctx);
-
+		eval.eval(laplacian, mat, ctx, true);
+		disp(mat);
 	}
 
-
-	void run_form_eval_test(libMesh::LibMeshInit &init)
+	void run_scalar_form_eval_test()
 	{
 		typedef utopia::HMFESpace FunctionSpaceT;
 		static const int Backend = Traits<FunctionSpaceT>::Backend;
@@ -66,47 +69,41 @@ namespace utopia {
 
 		eval.eval(linear_form, vec, ctx, true);
 		disp(vec);
-
-		run_vector_form_eval_test();
 	}
 
+	void run_mixed_form_eval_test()
+	{
+		typedef utopia::HMFESpace FunctionSpaceT;
+		typedef utopia::Traits<HMFESpace> TraitsT;
+		static const int Backend = TraitsT::Backend;
 
+		//scalar
+		auto U = FunctionSpaceT();
+		
+		//vector
+		auto Vx = FunctionSpaceT();
+		auto Vy = FunctionSpaceT();
+		auto V  = Vx * Vy;
 
-	// void run_mixed_form_eval_test()
-	// {
-	// 	typedef utopia::HMFESpace FunctionSpaceT;
-	// 	// typedef utopia::EmptyFunctionSpace FunctionSpaceT;
+		auto u = trial(U);
+		auto v = test(V);
 
-	// 	//scalar function spaces
-	// 	auto V1 = FunctionSpaceT();
-	// 	auto V2 = FunctionSpaceT();
-	// 	auto V3 = FunctionSpaceT();
+		auto mixed = integral( dot(grad(u), v) );
 
-	// 	//vector function space
-	// 	auto V_vec = V1 * V2;
-	// 	auto V = kron_prod(V_vec, V3);
-	// 	auto &V_vec_ref    = V.get<0>();
-	// 	auto &V_scalar_ref = V.get<1>();
+		AssemblyContext<Backend> ctx;
+		ctx.init_bilinear(mixed);
 
-	// 	//vector fe
-	// 	auto uv = trial(V_vec_ref);
-	// 	auto vv = test(V_vec_ref);
+		ElementMatrix mat;
 
-	// 	//scalar fe
-	// 	auto us = trial(V_scalar_ref);
-	// 	auto vs = test(V_scalar_ref);		
+		FormEvaluator<Backend> eval;
+		eval.eval(mixed, mat, ctx, true);
+		disp(mat);
+	}
 
-	// 	Vectord r = values(2, 1.);
-
-	// 	//forms
-	// 	auto bilinear_form = integral( dot(grad(us), vv) );
-	// 	auto linear_form   = integral( dot(r, vs) );
-
-	// 	Matrixd mat;
-	// 	Vectord vec;
-
-	// 	FormEvaluator<HOMEMADE> eval;
-	// 	eval.eval_bilinear(bilinear_form, mat, true);
-	// 	eval.eval_linear(linear_form, vec, true);
-	// }
+	void run_form_eval_test(libMesh::LibMeshInit &init)
+	{
+		run_scalar_form_eval_test();
+		run_vector_form_eval_test();
+		run_mixed_form_eval_test();
+	}
 }

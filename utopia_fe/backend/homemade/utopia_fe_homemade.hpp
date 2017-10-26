@@ -17,9 +17,12 @@ namespace utopia {
 
 	typedef utopia::Matrixd ElementMatrix;
 	typedef utopia::Vectord ElementVector;
-	typedef std::vector< std::vector<utopia::ElementVector> > HMGrad;
+	typedef std::vector< std::vector<utopia::ElementVector> > HMDerivative;
 	typedef std::vector< std::vector<utopia::ElementMatrix> > HMJacobian;
 	typedef std::vector< std::vector<double> > HMFun;
+
+	typedef std::vector< std::vector<utopia::ElementVector> > HMVectorFEFun;
+	typedef std::vector< std::vector<utopia::ElementMatrix> > HMVectorFEDerivative;
 
 	typedef std::vector<double> HMDx;
 
@@ -114,7 +117,7 @@ namespace utopia {
 		static const int Order = 1;
 		typedef double Scalar;
 		typedef utopia::HMFESpace Implementation;
-		typedef utopia::HMGrad GradientType;
+		typedef utopia::HMDerivative GradientType;
 		typedef utopia::HMJacobian JacobianType;
 	};
 
@@ -156,7 +159,7 @@ namespace utopia {
 			}
 		}
 
-		HMGrad grad;
+		HMDerivative grad;
 		HMFun fun;
 		HMDx dx;
 
@@ -176,34 +179,63 @@ namespace utopia {
 	class AssemblyContext<HOMEMADE> {
 	public:
 
-		std::shared_ptr<FE> trial;
-		std::shared_ptr<FE> test;
+		std::vector< std::shared_ptr<FE> > trial;
+		std::vector< std::shared_ptr<FE> > test;
+
 		long quadrature_order;
 		long current_element;
 
 		template<class Expr>
 		void init_bilinear(const Expr &expr) 
 		{		
+			//clean up previous context
+			trial.clear();
+			test.clear();
+
+			std::shared_ptr<FE> trial_fe;
+			std::shared_ptr<FE> test_fe;
+
 			auto trial_space_ptr = trial_space<HMFESpace>(expr);
 			auto test_space_ptr  = test_space<HMFESpace>(expr);
 
-			assert(trial_space_ptr.get());
-			assert(test_space_ptr.get());
+			if(trial_space_ptr) {
+				trial_fe = std::make_shared<FE>();
+				trial_fe->init(current_element, trial_space_ptr->mesh, quadrature_order);
+				trial.push_back(trial_fe);
+			} else {
+				//product space init
+				auto prod_trial_space_ptr = trial_space<ProductFunctionSpace<HMFESpace>>(expr);
+				assert(prod_trial_space_ptr);
 
-			if(!trial) {
-				trial = std::make_shared<FE>();
+				trial_fe = std::make_shared<FE>();
+				trial_fe->init(current_element, prod_trial_space_ptr->subspace(0).mesh, quadrature_order);
+
+				//just copy it three times for now
+				for(std::size_t i = 0; i < prod_trial_space_ptr->n_subspaces(); ++i) {
+					trial.push_back(trial_fe);
+				}
 			}
 
-			trial->init(current_element, trial_space_ptr->mesh, quadrature_order);
-
-			if(trial_space_ptr != test_space_ptr) {
-				if(!test) {
-					test = std::make_shared<FE>();
+			if(test_space_ptr) {
+				if(trial_space_ptr != test_space_ptr) {
+					test_fe = std::make_shared<FE>();
+					test_fe->init(current_element, test_space_ptr->mesh, quadrature_order);
+					test.push_back(test_fe);
+				} else if(trial_space_ptr) {
+					test_fe = trial_fe;
 				}
-
-				test->init(current_element, test_space_ptr->mesh, quadrature_order);
 			} else {
-				test = trial;
+				//product space init
+				auto prod_test_space_ptr = test_space<ProductFunctionSpace<HMFESpace>>(expr);
+				assert(prod_test_space_ptr);
+
+				test_fe = std::make_shared<FE>();
+				test_fe->init(current_element, prod_test_space_ptr->subspace(0).mesh, quadrature_order);
+
+				//just copy it three times for now
+				for(std::size_t i = 0; i < prod_test_space_ptr->n_subspaces(); ++i) {
+					test.push_back(trial_fe);
+				}
 			}
 		}
 
@@ -213,25 +245,46 @@ namespace utopia {
 			auto test_space_ptr  = test_space<HMFESpace>(expr);
 			assert(test_space_ptr.get());
 
-			if(!test) {
-				test = std::make_shared<FE>();
-			}
-
-			test->init(current_element, test_space_ptr->mesh, quadrature_order);
+			test.clear();
+			std::shared_ptr<FE> test_fe = std::make_shared<FE>();
+			test_fe->init(current_element, test_space_ptr->mesh, quadrature_order);
+			test.push_back(test_fe);
 		}
 
 		void init_tensor(ElementVector &v, const bool reset) {
 			auto s = size(v);
-			if(reset || s.get(0) != 3) {
-				v = zeros(test->n_shape_functions());
+
+			int n_shape_functions = 0;
+			for(auto &t : test) {
+				n_shape_functions += t->n_shape_functions();
+			}
+
+			if(reset || s.get(0) != n_shape_functions) {
+				v = zeros(n_shape_functions);
 			}
 		}
 
 		void init_tensor(ElementMatrix &v, const bool reset) {
 			auto s = size(v);
-			if(reset || s.get(0) != test->n_shape_functions() || s.get(1) != trial->n_shape_functions()) {
-				v = zeros(test->n_shape_functions(), trial->n_shape_functions());
+
+			int n_trial_functions = 0;
+			for(auto &t : trial) {
+				n_trial_functions += t->n_shape_functions();
 			}
+
+			int n_test_functions = 0;
+			for(auto &t : test) {
+				n_test_functions += t->n_shape_functions();
+			}
+
+			if(reset || s.get(0) != n_test_functions || s.get(1) != n_trial_functions) {
+				v = zeros(n_test_functions, n_trial_functions);
+			}
+		}
+
+		const HMDx &dx() const
+		{
+			return test[0]->dx;
 		}
 
 		AssemblyContext()
@@ -242,25 +295,130 @@ namespace utopia {
 	template<>
 	class FEBackend<HOMEMADE> {
 	public:
-		static HMGrad &grad(const TrialFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
-		{
-			return ctx.trial->grad;
-		}
 
-		static HMGrad &grad(const TestFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
-		{
-			return ctx.test->grad;
-		}
-
+		//Function
+		// scalar fe functions
 		static HMFun &fun(const TrialFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
 		{
-			return ctx.trial->fun;
+			return ctx.trial[fun.space_ptr()->subspace_id()]->fun;
 		}
 
 		static HMFun &fun(const TestFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
 		{
-			return ctx.test->fun;
+			return ctx.test[fun.space_ptr()->subspace_id()]->fun;
 		}
+
+
+		// vector fe functions
+		static void fun_aux(
+			ProductFunctionSpace<HMFESpace> &space,
+			std::vector<std::shared_ptr<FE> > &fe_object,
+			AssemblyContext<HOMEMADE> &ctx,
+			HMVectorFEFun &ret)
+		{
+			ret.resize(fe_object[0]->fun.size()); 
+
+			int n_shape_functions = 0;
+			for(auto &t : fe_object) {
+				n_shape_functions += t->n_shape_functions();
+			}
+
+			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
+				ret[qp].resize(n_shape_functions, zeros(space.n_subspaces()));
+
+				int offset = 0;
+				space.each([&offset, &fe_object, &ret, qp](const int, const HMFESpace &s) {
+					auto fe = fe_object[s.subspace_id()];
+					
+					for(int j = 0; j < fe->n_shape_functions(); ++j) {
+						Write<Vectord> w(ret[qp][offset]);
+
+						ret[qp][offset++].set(s.subspace_id(), fe->fun[qp][j]);
+					}
+				});
+			}
+		}
+
+		static HMVectorFEFun fun(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto space_ptr = fun.space_ptr();
+			HMVectorFEFun ret;
+
+			fun_aux(*space_ptr, ctx.test, ctx, ret);
+			return ret;
+		}
+
+		static HMVectorFEFun fun(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto space_ptr = fun.space_ptr();
+			HMVectorFEFun ret;
+			fun_aux(*space_ptr, ctx.trial, ctx, ret);
+			return ret;
+		}
+
+
+		//Gradient
+		// scalar fe functions
+		static HMDerivative &grad(const TrialFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			return ctx.trial[fun.space_ptr()->subspace_id()]->grad;
+		}
+
+		static HMDerivative &grad(const TestFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			return ctx.test[fun.space_ptr()->subspace_id()]->grad;
+		}
+
+
+		// vector fe functions
+		static void grad_aux(
+			ProductFunctionSpace<HMFESpace> &space,
+			std::vector<std::shared_ptr<FE> > &fe_object,
+			AssemblyContext<HOMEMADE> &ctx,
+			HMVectorFEDerivative &ret)
+		{
+			ret.resize(fe_object[0]->fun.size()); 
+
+			int n_shape_functions = 0;
+			for(auto &t : fe_object) {
+				n_shape_functions += t->n_shape_functions();
+			}
+
+			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
+				ret[qp].resize(n_shape_functions, zeros(space.n_subspaces(), space[0].mesh.impl->n_dims));
+
+				int offset = 0;
+				space.each([&offset, &fe_object, &ret, &space, qp](const int, const HMFESpace &s) {
+					auto fe = fe_object[s.subspace_id()];
+					
+					for(int j = 0; j < fe->n_shape_functions(); ++j, offset++) {
+						Write<Matrixd> w(ret[qp][offset]);
+						Read<Vectord> r(fe->grad[qp][j]);
+
+						for(int d = 0; d < s.mesh.impl->n_dims; ++d) {
+							ret[qp][offset].set(s.subspace_id(), d, fe->grad[qp][j].get(d));
+						}
+					}
+				});
+			}
+		}
+
+		static HMVectorFEDerivative grad(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto space_ptr = fun.space_ptr();
+			HMVectorFEDerivative ret;
+			grad_aux(*space_ptr, ctx.trial, ctx, ret);
+			return ret;
+		}
+
+		static HMVectorFEDerivative grad(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto space_ptr = fun.space_ptr();
+			HMVectorFEDerivative ret;
+			grad_aux(*space_ptr, ctx.test, ctx, ret);
+			return ret;
+		}
+
 	};
 
 	inline static double inner(const double left, const double right)
@@ -319,9 +477,8 @@ namespace utopia {
 
 			auto && left  = FEEval<Left,  Traits, HOMEMADE>::apply(expr.expr().left(),  ctx);
 			auto && right = FEEval<Right, Traits, HOMEMADE>::apply(expr.expr().right(), ctx);
-			auto && dx    = ctx.test->dx;
+			auto && dx    = ctx.dx();
 
-			// bool left_is_test = is_test<HMFESpace>(expr.expr().left());
 			const bool left_is_test = is_test(expr.expr().left());
 			assert( left_is_test != is_test(expr.expr().right()) );
 
@@ -338,7 +495,7 @@ namespace utopia {
 				for (uint qp = 0; qp < n_quad_points; qp++) {
 					for (uint i = 0; i < s.get(0); i++) {
 						for (uint j = 0; j < s.get(1); j++) {
-							add(result, i, j,  inner( get(left, qp, i), get(right, qp, j) ) * dx[qp]);
+							add(result, i, j, inner( get(left, qp, i), get(right, qp, j) ) * dx[qp]);
 						}
 					}
 				}
@@ -347,7 +504,7 @@ namespace utopia {
 				for (uint qp = 0; qp < n_quad_points; qp++) {
 					for (uint i = 0; i < s.get(1); i++) {
 						for (uint j = 0; j < s.get(0); j++) {
-							add(result, j, i,  inner( get(left, qp, i), get(right, qp, j) ) * dx[qp]);
+							add(result, j, i, inner( get(left, qp, i), get(right, qp, j) ) * dx[qp]);
 						}
 					}
 				}

@@ -31,15 +31,25 @@ namespace utopia {
 	    	}
 	    };
 
-	    template<template<class> class Function, class... Spaces>
+	    // template<template<class> class Function, class... Spaces>
+	    // inline static auto apply(
+	    // 	const Gradient< Function<ProductFunctionSpace<Spaces...> > > &expr,
+	    // 	AssemblyContext<Backend> &ctx) -> JacobianT
+	    // {
+	    // 	const auto & space_ptr = expr.expr().space_ptr();
+	    // 	space_ptr->each(SubspaceVisitor());
+	    // 	return JacobianT();
+	    // }
+
+	    template<template<class> class Function, class Spaces>
 	    inline static auto apply(
-	    	const Gradient< Function<ProductFunctionSpace<Spaces...> > > &expr,
+	    	const Gradient< Function<ProductFunctionSpace<Spaces> > > &expr,
 	    	AssemblyContext<Backend> &ctx) -> JacobianT
 	    {
 	    	const auto & space_ptr = expr.expr().space_ptr();
-	    	space_ptr->each(SubspaceVisitor());
-	    	return JacobianT();
+	    	return FEBackend<Backend>::grad(expr.expr(), ctx);
 	    }
+
 
 
 	    // template<class... Spaces>

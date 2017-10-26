@@ -21,7 +21,8 @@ namespace utopia {
 
 	template<class, class> class Interpolate;
 	template<class, int> class TimeDerivative;
-	template<class...> class ProductFunctionSpace;
+	// template<class...> class ProductFunctionSpace;
+	template<class> class ProductFunctionSpace;
 	
 }
 
