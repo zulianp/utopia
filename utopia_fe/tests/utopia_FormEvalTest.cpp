@@ -22,6 +22,8 @@ namespace utopia {
 		auto u = trial(V);
 		auto v = test(V);
 
+		Matrixd A = identity(3, 3);
+
 		auto mass = integral( dot(u, v) );
 		auto laplacian = integral( dot(grad(u), grad(v)) );
 
@@ -47,9 +49,15 @@ namespace utopia {
 		auto u = trial(V);
 		auto v = test(V);
 
-		auto laplacian    = integral( dot(grad(u), grad(v)) );
-		auto mass         = integral( dot(u, v) );
-		auto linear_form  = integral( dot(coeff(0.1), v) );
+		Matrixd A = identity(2, 2);
+		{
+			Write<Matrixd> w(A);
+		 	A.set(0, 0, 0.1);
+		}
+
+		auto mass         = integral(dot(u, v));
+		auto laplacian    = 0.1 * (-abs(integral(1. * dot( (A  + transpose(A)) * grad(u), grad(v)) - 0.1 * mass, 0))) + 0.9 * integral( dot(2. * u, v), 2);
+		auto linear_form  = integral(0.5 * dot(coeff(0.1), v));
 
 		ElementMatrix mat;
 		ElementVector vec;

@@ -102,7 +102,7 @@ namespace utopia {
 		template<class Left, class Right, class Operation>
 		inline static Scalar eval_at(const Binary<Number<Left>, Right, Operation> &expr, const SizeType i, const SizeType j)
 		{
-			return Operation::template apply<Scalar>(expr.left(),  
+			return Operation::template apply<Scalar>(static_cast<Left>(expr.left()),  
 				eval_at(expr.right(), i, j) );
 		}
 
@@ -110,7 +110,7 @@ namespace utopia {
 		inline static Scalar eval_at(const Binary<Left, Number<Right>, Operation> &expr, const SizeType i, const SizeType j)
 		{
 			return Operation::template apply<Scalar>(eval_at(expr.left(), i, j),  
-				expr.right());
+				static_cast<Right>(expr.right()));
 		}
 
 		template<class InnerExpr, class Operation>

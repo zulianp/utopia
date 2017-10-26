@@ -25,7 +25,7 @@ namespace utopia {
 	class FormEvaluator {
 	public:
 		template<class Form, class Tensor, int Order>
-		static void eval_bilinear(const Integral<Form> &expr, Wrapper<Tensor, Order> &tensor, const bool reset_tensor)
+		static void eval_bilinear(const Form &expr, Wrapper<Tensor, Order> &tensor, const bool reset_tensor)
 		{	
 			AssemblyContext<BAKEND_FLAG> ctx;
 			ctx.init_bilinear(expr);
@@ -34,7 +34,7 @@ namespace utopia {
 		}
 
 		template<class Form, class Tensor, int Order>
-		static void eval_linear(const Integral<Form> &expr, Wrapper<Tensor, Order> &tensor, const bool reset_tensor)
+		static void eval_linear(const Form &expr, Wrapper<Tensor, Order> &tensor, const bool reset_tensor)
 		{	
 			AssemblyContext<BAKEND_FLAG> ctx;
 			ctx.init_linear(expr);
@@ -43,7 +43,7 @@ namespace utopia {
 		}
 
 		template<class Form, class Tensor, int Order>
-		static void eval(const Integral<Form> &expr, Wrapper<Tensor, Order> &tensor, AssemblyContext<BAKEND_FLAG> &ctx, const bool reset_tensor)
+		static void eval(const Form &expr, Wrapper<Tensor, Order> &tensor, AssemblyContext<BAKEND_FLAG> &ctx, const bool reset_tensor)
 		{	
 			ctx.init_tensor(tensor, reset_tensor);
 			FormEval<Form, BAKEND_FLAG>::apply(expr, tensor, ctx);

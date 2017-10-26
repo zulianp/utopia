@@ -458,6 +458,28 @@ namespace utopia {
 				result[i] = -vec[i];
 			}
 		}
+
+		template<class Operation>
+		static void apply_unary(Matrix &result, const Operation &op, const Matrix &mat) {
+			if(result.rows() != mat.rows() || result.cols() != mat.cols()) {
+				result.resize(mat.rows(), mat.cols());
+			}
+
+			for(SizeType i = 0; i < mat.size(); ++i) {
+				result.entries()[i] = op.template apply<Scalar>(mat.entries()[i]);
+			}
+		}
+
+		static void apply_unary(Matrix &result, const Minus &, const Matrix &mat) {
+			if(result.rows() != mat.rows() || result.cols() != mat.cols()) {
+				result.resize(mat.rows(), mat.cols());
+			}
+
+			for(SizeType i = 0; i < mat.size(); ++i) {
+				result.entries()[i] = mat.entries()[i];
+			}
+		}
+		
 		
 		//[binary]
 		template<class VectorT>

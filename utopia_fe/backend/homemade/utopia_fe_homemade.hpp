@@ -40,6 +40,7 @@ namespace utopia {
 		typedef int SizeType;
 		typedef utopia::Empty Implementation;
 
+
 	};
 
 	class EmptyFunctionSpace : public FunctionSpace<EmptyFunctionSpace> {
@@ -116,6 +117,9 @@ namespace utopia {
 		static const int Backend = HOMEMADE;
 		static const int Order = 1;
 		typedef double Scalar;
+		typedef utopia::Vectord Vector;
+		typedef utopia::Matrixd Matrix;
+
 		typedef utopia::HMFESpace Implementation;
 		typedef utopia::HMDerivative GradientType;
 		typedef utopia::HMJacobian JacobianType;
@@ -184,6 +188,7 @@ namespace utopia {
 
 		long quadrature_order;
 		long current_element;
+		int block_id_;
 
 		template<class Expr>
 		void init_bilinear(const Expr &expr) 
@@ -304,13 +309,63 @@ namespace utopia {
 		}
 
 		AssemblyContext()
-		: current_element(0), quadrature_order(2)
+		: current_element(0), quadrature_order(2), block_id_(0)
 		{}
+
+		inline int block_id() const
+		{
+			return block_id_;
+		}
 	};
 
 	template<>
 	class FEBackend<HOMEMADE> {
 	public:
+
+		template<class Op>
+		inline static HMFun apply_binary(const Number<double> &left, const TrialFunction<HMFESpace> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx)
+		{
+			HMFun ret = ctx.trial[right.space_ptr()->subspace_id()]->fun;
+
+			const double num = left;
+			for(auto &v : ret) {
+				for(auto &s : v) {
+					s = op.apply(num, s);
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Left>
+		inline static HMDerivative multiply(const Left &left, const Gradient<TrialFunction<HMFESpace> > &right,  AssemblyContext<HOMEMADE> &ctx)
+		{
+			HMDerivative ret = ctx.trial[right.expr().space_ptr()->subspace_id()]->grad;
+
+			for(auto &v : ret) {
+				for(auto &s : v) {
+					s = left * s;
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Op>
+		inline static HMFun apply_binary(const Number<double> &left, const TestFunction<HMFESpace> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx)
+		{
+			HMFun ret = ctx.test[right.space_ptr()->subspace_id()]->fun;
+			
+			const double num = left;
+			
+			for(auto &v : ret) {
+				for(auto &s : v) {
+					s = op.apply(num, s);
+				}
+			}
+
+			return ret;
+		}
 
 		//Function
 		// scalar fe functions
@@ -371,7 +426,6 @@ namespace utopia {
 			fun_aux(*space_ptr, ctx.trial, ctx, ret);
 			return ret;
 		}
-
 
 		//Gradient
 		// scalar fe functions
@@ -449,15 +503,6 @@ namespace utopia {
 		typedef utopia::Traits<HMFESpace> Traits;
 		FormEval() { }
 
-		template<class Expr, class Tensor>
-		static void apply(
-			const Integral<Expr> &expr, 
-			Tensor &mat, 
-			AssemblyContext<HOMEMADE> &ctx)
-		{
-			apply(expr.expr(), mat, ctx);
-		}
-
 		template<typename T>
 		inline static const T &get(const std::vector<std::vector<T> > &v, const std::size_t qp, const std::size_t i)
 		{
@@ -481,6 +526,104 @@ namespace utopia {
 		{
 			assert(j == 0);
 			vec.add(i, value);
+		}
+
+		/////////////////////////////////
+		//FIXME extract to "super-class"
+		template<class Left, class Right, class Tensor>
+		static void apply(
+			const Binary<Left, Right, Plus> &expr, 
+			Tensor &result, 
+			AssemblyContext<HOMEMADE> &ctx)
+		{	
+			apply(expr.left(),  result, ctx);
+
+			Tensor right = zeros(size(result));
+			apply(expr.right(), result, ctx);
+			result += right;
+		}
+
+		template<class Left, class Right, class Tensor>
+		static void apply(
+			const Binary<Number<Left>, Right, Multiplies> &expr, 
+			Tensor &result, 
+			AssemblyContext<HOMEMADE> &ctx)
+		{	
+			apply(expr.right(), result, ctx);
+			result *= expr.left();
+		}
+
+		template<class Left, class Right, class Tensor>
+		static void apply(
+			const Binary<Left, Right, Minus> &expr, 
+			Tensor &result, 
+			AssemblyContext<HOMEMADE> &ctx)
+		{	
+			apply(expr.left(), result, ctx);
+
+			Tensor right = zeros(size(result));
+			apply(expr.right(), result, ctx);	
+			result -= right;
+		}
+
+		template<class Left, class Right, class Op, class Tensor>
+		static void apply(
+			const Binary<Left, Right, Op> &expr, 
+			Tensor &result, 
+			AssemblyContext<HOMEMADE> &ctx)
+		{	
+			apply(expr.left(), result, ctx);
+
+			Tensor right = zeros(size(result));
+			apply(expr.right(), result, ctx);	
+			
+			result = expr.operation().apply(result, right);
+		}
+
+		template<class Expr, class Tensor>
+		static void apply(
+			const Unary<Expr, Minus> &expr, 
+			Tensor &result, 
+			AssemblyContext<HOMEMADE> &ctx)
+		{	
+			apply(expr.expr(), result, ctx);
+			result = -result;
+		}
+
+		template<class Expr, class Tensor>
+		static void apply(
+			const Unary<Expr, Abs> &expr, 
+			Tensor &result, 
+			AssemblyContext<HOMEMADE> &ctx)
+		{	
+			apply(expr.expr(), result, ctx);
+			result = abs(result);
+		}
+
+		template<class Expr, class Tensor>
+		static void apply(
+			const Unary<Expr, Sqrt> &expr, 
+			Tensor &result, 
+			AssemblyContext<HOMEMADE> &ctx)
+		{	
+			apply(expr.expr(), result, ctx);
+			result = sqrt(result);
+		}
+
+		/////////////////////////////////
+
+
+		template<class Expr, class Tensor>
+		static void apply(
+			const Integral<Expr> &expr, 
+			Tensor &mat, 
+			AssemblyContext<HOMEMADE> &ctx)
+		{
+			if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
+				return;
+			}
+
+			apply(expr.expr(), mat, ctx);
 		}
 
 		template<class Left, class Right, class Tensor>

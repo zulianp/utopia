@@ -68,8 +68,8 @@ namespace utopia {
     public:
         std::string getClass() const { return "Multiplies"; }
 
-        template<typename T>
-        inline static T apply(const T &left, const T &right) {
+        template<typename Left, typename Right>
+        inline static auto apply(const Left &left, const Right &right) -> decltype(left * right) {
             return left * right;
         }
     };
@@ -205,6 +205,7 @@ namespace utopia {
         template<typename T>
         inline static T apply(const T &left, const T &right) {
             using std::min;
+            
             return min(left, right);
         }
     };
