@@ -36,14 +36,14 @@
             assert(I);
 
             _I = I; 
-            _R = std::make_shared<Matrix>(transpose(*I)); 
-            _P = _R; 
+            _R = std::make_shared<Matrix>(transpose(*I));
+            _Pr = _R;
         }
 
         Transfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P):
                 _I(I),
                 _R(std::make_shared<Matrix>(transpose(*I))),
-                _P(P)
+                _Pr(P)
         {
             assert(I);
             assert(P);
@@ -161,7 +161,7 @@
         virtual bool P_init(const std::shared_ptr<Matrix> &P_in)
         {
             assert(P_in);
-            _P = P_in; 
+            _Pr = P_in;
             return true; 
         }
 
@@ -174,14 +174,14 @@
          */
         virtual bool project_down(const Vector &x, Vector &x_new)
         {
-            assert(_P);
-            x_new = *_P * x; 
+            assert(_Pr);
+            x_new = *_Pr * x;
             return true; 
         }
 
         protected:        
             std::shared_ptr<Matrix> _I, _R; // _P;  
-            std::shared_ptr<Matrix> _P;  
+            std::shared_ptr<Matrix> _Pr;
     };
 
 }
