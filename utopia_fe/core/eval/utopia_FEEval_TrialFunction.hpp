@@ -5,6 +5,7 @@
 #include "utopia_AssemblyContext.hpp"
 #include "utopia_FEBackend.hpp"
 
+
 namespace utopia {
 
 	template<class FunctionSpaceT, class Traits, int Backend>
@@ -19,6 +20,7 @@ namespace utopia {
 	    	return FEBackend<Backend>::fun(expr, ctx);
 	    } 
 	};
+
 }
 
 #endif //UTOPIA_FE_EVAL_TRIAL_FUNCTION_HPP

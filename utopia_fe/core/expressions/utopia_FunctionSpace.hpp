@@ -25,9 +25,17 @@ namespace utopia {
 		DERIVED_CRT(Derived);
 		CONST_DERIVED_CRT(Derived);
 
+		inline std::string getClass() const
+		{
+			return "FunctionSpace";
+		}
+
 	private:
 		int subspace_id_;
 	};
+
+	template<class Derived>
+	class Traits< FunctionSpace<Derived> > : public Traits<Derived> {};
 }
 
 #endif //UTOPIA_FUNCTION_SPACE_HPP

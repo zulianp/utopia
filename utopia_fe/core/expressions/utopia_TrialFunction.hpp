@@ -5,6 +5,7 @@
 #include "utopia_FunctionSpace.hpp"
 #include "utopia_Traverse.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_FunctionalTraits.hpp"
 
 #include <memory>
 
@@ -42,6 +43,14 @@ namespace utopia {
 
 	template<class FunctionSpaceT>
 	class Traits< TrialFunction<FunctionSpaceT> > : public Traits<FunctionSpaceT> {};
+
+
+	template<class Space, class AssemblyContext>
+	class FunctionalTraits<TrialFunction<Space>, AssemblyContext> : public FunctionalTraits<Space, AssemblyContext> {
+	public:
+		inline static int type(const TrialFunction<Space> &expr, const AssemblyContext &ctx)  { return FunctionalTraits<Space, AssemblyContext>::type(*expr.space_ptr(), ctx);  }
+		inline static int order(const TrialFunction<Space> &expr, const AssemblyContext &ctx) { return FunctionalTraits<Space, AssemblyContext>::order(*expr.space_ptr(), ctx); }
+	};
 }
 
 #endif //UTOPIA_TRIAL_FUNCTION_HPP

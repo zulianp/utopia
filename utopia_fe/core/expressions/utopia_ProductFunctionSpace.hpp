@@ -182,6 +182,14 @@ namespace utopia {
 			}
 		}
 
+		template<class Fun>
+		void each(Fun fun) const
+		{
+			for(std::size_t i = 0; i < spaces_.size(); ++i) {
+				fun(i, subspace(i));
+			}
+		}
+
 		inline void add_subspace(const std::shared_ptr<Space> &space)
 		{
 			space->set_subspace_id(spaces_.size());
@@ -208,12 +216,36 @@ namespace utopia {
 
 	//base case
 	template<class Space>
-	class Traits<ProductFunctionSpace<Space>> {
+	class Traits<ProductFunctionSpace<Space>> : public Traits<Space> {
 	public:
-		typedef typename utopia::FormTraits<Space>::Implementation Implementation;
-		typedef typename utopia::FormTraits<Space>::Scalar Scalar;
-		static const int Order   = utopia::FormTraits<Space>::Order;
-		static const int Backend = utopia::FormTraits<Space>::Backend;
+		// typedef typename utopia::FormTraits<Space>::Implementation Implementation;
+		// typedef typename utopia::FormTraits<Space>::Scalar Scalar;
+		// static const int Order   = utopia::FormTraits<Space>::Order;
+		// static const int Backend = utopia::FormTraits<Space>::Backend;
+	};
+
+	template<class Space, class AssemblyContext>
+	class FunctionalTraits<ProductFunctionSpace<Space>, AssemblyContext> {
+	public:
+		inline static int type(const ProductFunctionSpace<Space> &expr, const AssemblyContext &ctx)
+		{
+			int ret = 0;
+			expr.each([&ret, &ctx](const int i, const Space &s) {
+				ret = std::max(FunctionalTraits<Space, AssemblyContext>::type(s, ctx), ret);
+			});
+
+			return ret;
+		}
+		
+		inline static int order(const ProductFunctionSpace<Space> &expr, const AssemblyContext &ctx)
+		{
+			int ret = 0;
+			expr.each([&ret, &ctx](const int i, const Space &s) {
+				ret = std::max(FunctionalTraits<Space, AssemblyContext>::order(s, ctx), ret);
+			});
+
+			return ret;
+		}
 	};
 }
 

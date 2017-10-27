@@ -9,5 +9,7 @@
 #include "utopia_FEEval_ConstantCoefficient.hpp"
 #include "utopia_FEEval_Binary.hpp"
 #include "utopia_FEEval_Multiply.hpp"
+#include "utopia_FEEval_Reduce.hpp"
+
 
 #endif //UTOPIA_FE_EVAL_HPP

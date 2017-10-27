@@ -15,6 +15,7 @@ namespace utopia {
 		typedef EXPR_TYPE(Traits, Expr) Result;
 
 	    inline static Result apply(const Expr &expr, AssemblyContext<Backend> &ctx) {
+	    	assert(false);
 	    	return Result();
 	    }
 	};

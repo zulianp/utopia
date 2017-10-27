@@ -25,7 +25,7 @@ namespace utopia {
 		Matrixd A = identity(3, 3);
 
 		auto mass = integral( dot(u, v) );
-		auto laplacian = integral( dot(grad(u), grad(v)) );
+		auto laplacian = integral( dot(transpose(A) * grad(u), grad(v)) );
 
 		AssemblyContext<Backend> ctx;
 		ctx.init_bilinear(mass);
@@ -97,7 +97,13 @@ namespace utopia {
 		auto u = trial(U);
 		auto v = test(V);
 
-		auto mixed = integral( dot(grad(u), v) );
+		Matrixd A = identity(2, 2);
+		{
+			Write<Matrixd> w(A);
+		 	A.set(1, 1, 2.);
+		}
+
+		auto mixed = integral( dot(grad(u), 0.1 * A * v) );
 
 		AssemblyContext<Backend> ctx;
 		ctx.init_bilinear(mixed);

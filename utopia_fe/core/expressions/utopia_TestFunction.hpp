@@ -3,6 +3,7 @@
 
 #include "utopia_BasisFunction.hpp"
 #include "utopia_FunctionSpace.hpp"
+#include "utopia_FunctionalTraits.hpp"
 #include <memory>
 
 namespace utopia {
@@ -39,6 +40,14 @@ namespace utopia {
 
 	template<class FunctionSpaceT>
 	class Traits< TestFunction<FunctionSpaceT> > : public Traits<FunctionSpaceT> {};
+
+
+	template<class Space, class AssemblyContext>
+	class FunctionalTraits<TestFunction<Space>, AssemblyContext> : public FunctionalTraits<Space, AssemblyContext> {
+	public:
+		inline static int type(const TestFunction<Space> &expr, const AssemblyContext &ctx)  { return FunctionalTraits<Space, AssemblyContext>::type(*expr.space_ptr(), ctx);  }
+		inline static int order(const TestFunction<Space> &expr, const AssemblyContext &ctx) { return FunctionalTraits<Space, AssemblyContext>::order(*expr.space_ptr(), ctx); }
+	};
 }
 
 #endif //UTOPIA_TEST_FUNCTION_HPP

@@ -61,6 +61,13 @@ namespace utopia {
 			FILL_TYPE = utopia::FillType::DENSE
 		};
 	};
+
+	template<class Expr, class AssemblyContext>
+	class FunctionalTraits<Integral<Expr>, AssemblyContext>  {
+	public:
+		inline static int type(const Integral<Expr> &expr,  const AssemblyContext &ctx) { return FunctionalTraits<Expr, AssemblyContext>::type(expr.expr(), ctx);  }
+		inline static int order(const Integral<Expr> &expr, const AssemblyContext &ctx) { return FunctionalTraits<Expr, AssemblyContext>::order(expr.expr(), ctx); }
+	};
 }
 
 #endif //UTOPIA_INTEGRAL_HPP

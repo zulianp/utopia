@@ -23,6 +23,8 @@ namespace utopia {
 	template<class, int> class TimeDerivative;
 	// template<class...> class ProductFunctionSpace;
 	template<class> class ProductFunctionSpace;
+
+	template<int> class AssemblyContext;
 	
 }
 

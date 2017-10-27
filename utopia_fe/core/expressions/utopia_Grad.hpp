@@ -4,6 +4,7 @@
 #include "utopia_DifferentialOperator.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_FunctionalTraits.hpp"
 
 namespace utopia {
 	template<class Expr>
@@ -38,6 +39,13 @@ namespace utopia {
 		enum {
 			FILL_TYPE = utopia::FillType::DENSE
 		};
+	};
+
+	template<class Expr, class AssemblyContext>
+	class FunctionalTraits<Gradient<Expr>, AssemblyContext>  {
+	public:
+		inline static int type(const Gradient<Expr> &expr,  const AssemblyContext &ctx) { return FunctionalTraits<Expr, AssemblyContext>::type(expr.expr(), ctx);  }
+		inline static int order(const Gradient<Expr> &expr, const AssemblyContext &ctx) { return FunctionalTraits<Expr, AssemblyContext>::order(expr.expr(), ctx) - 1; }
 	};
 
 }

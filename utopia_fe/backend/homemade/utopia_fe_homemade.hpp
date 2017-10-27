@@ -39,6 +39,8 @@ namespace utopia {
 		typedef double Scalar;
 		typedef int SizeType;
 		typedef utopia::Empty Implementation;
+		static const int FILLE_TYPE = FillType::DENSE;
+
 
 
 	};
@@ -92,6 +94,20 @@ namespace utopia {
 			impl->points   = &points[0];
 		}
 
+		inline int element_order(const int element_index) const
+		{
+			switch(el_type[element_index]) {
+				case Intersector::ELEMENT_TYPE_TRIANGLE:
+				{
+					return 1;
+				}
+				default: 
+				{
+					return 0;
+				}
+			}
+		}
+
 		Mesh()
 		{
 			make_example_mesh();
@@ -116,6 +132,8 @@ namespace utopia {
 	public:
 		static const int Backend = HOMEMADE;
 		static const int Order = 1;
+		static const int FILLE_TYPE = FillType::DENSE;
+
 		typedef double Scalar;
 		typedef utopia::Vectord Vector;
 		typedef utopia::Matrixd Matrix;
@@ -179,6 +197,8 @@ namespace utopia {
 		
 	};
 
+
+
 	template<>
 	class AssemblyContext<HOMEMADE> {
 	public:
@@ -202,6 +222,13 @@ namespace utopia {
 
 			auto trial_space_ptr = trial_space<HMFESpace>(expr);
 			auto test_space_ptr  = test_space<HMFESpace>(expr);
+
+
+			quadrature_order = functional_order(expr, *this);
+
+			assert(functional_type(expr, *this) == POLYNOMIAL_FUNCTION);
+
+			std::cout << "quadrature_order: " << quadrature_order << std::endl;
 
 			if(trial_space_ptr) {
 				trial_fe = std::make_shared<FE>();
@@ -319,53 +346,22 @@ namespace utopia {
 	};
 
 	template<>
+	class FunctionalTraits<HMFESpace, AssemblyContext<HOMEMADE> > {
+	public:
+		inline static int type(const HMFESpace &space,  const AssemblyContext<HOMEMADE> &ctx)
+		{
+			return utopia::POLYNOMIAL_FUNCTION;
+		}
+
+		inline static int order(const HMFESpace &space, const AssemblyContext<HOMEMADE> &ctx)
+		{
+			return space.mesh.element_order(ctx.current_element);
+		}
+	};
+
+	template<>
 	class FEBackend<HOMEMADE> {
 	public:
-
-		template<class Op>
-		inline static HMFun apply_binary(const Number<double> &left, const TrialFunction<HMFESpace> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx)
-		{
-			HMFun ret = ctx.trial[right.space_ptr()->subspace_id()]->fun;
-
-			const double num = left;
-			for(auto &v : ret) {
-				for(auto &s : v) {
-					s = op.apply(num, s);
-				}
-			}
-
-			return ret;
-		}
-
-		template<class Left>
-		inline static HMDerivative multiply(const Left &left, const Gradient<TrialFunction<HMFESpace> > &right,  AssemblyContext<HOMEMADE> &ctx)
-		{
-			HMDerivative ret = ctx.trial[right.expr().space_ptr()->subspace_id()]->grad;
-
-			for(auto &v : ret) {
-				for(auto &s : v) {
-					s = left * s;
-				}
-			}
-
-			return ret;
-		}
-
-		template<class Op>
-		inline static HMFun apply_binary(const Number<double> &left, const TestFunction<HMFESpace> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx)
-		{
-			HMFun ret = ctx.test[right.space_ptr()->subspace_id()]->fun;
-			
-			const double num = left;
-			
-			for(auto &v : ret) {
-				for(auto &s : v) {
-					s = op.apply(num, s);
-				}
-			}
-
-			return ret;
-		}
 
 		//Function
 		// scalar fe functions
@@ -489,6 +485,117 @@ namespace utopia {
 			return ret;
 		}
 
+		template<class Space, class Op>
+		inline static auto apply_binary(const Number<double> &left, const TrialFunction<Space> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type 
+		{
+			typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
+
+			const double num = left;
+			for(auto &v : ret) {
+				for(auto &s : v) {
+					s = op.apply(num, s);
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Space, class Op>
+		inline static auto apply_binary(const Number<double> &left, const TestFunction<Space> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type 
+		{
+			typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
+
+			const double num = left;
+			for(auto &v : ret) {
+				for(auto &s : v) {
+					s = op.apply(num, s);
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Left, class Space>
+		inline static auto multiply(
+			const Left &left,
+			const Gradient<TrialFunction<Space> > &right, 
+			AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type 
+		{
+			// HMDerivative ret = ctx.trial[right.expr().space_ptr()->subspace_id()]->grad;
+			typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
+
+			for(auto &v : ret) {
+				for(auto &s : v) {
+					s = left * s;
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Left, class Space>
+		inline static auto multiply(
+			const Left &left,
+			const Gradient<TestFunction<Space> > &right, 
+			AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type 
+		{
+			// HMDerivative ret = ctx.trial[right.expr().space_ptr()->subspace_id()]->grad;
+			typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
+
+			for(auto &v : ret) {
+				for(auto &s : v) {
+					s = left * s;
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Left, class Space>
+		inline static auto multiply(const Left &left, const TrialFunction<Space> &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
+		{
+			typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
+
+			for(auto &v : ret) {
+				for(auto &s : v) {
+					s = left * s;
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Left, class Space>
+		inline static auto multiply(const Left &left, const TestFunction<Space> &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
+		{
+			typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
+
+			for(auto &v : ret) {
+				for(auto &s : v) {
+					s = left * s;
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Op>
+		inline static HMFun apply_binary(const Number<double> &left, const TestFunction<HMFESpace> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx)
+		{
+			HMFun ret = ctx.test[right.space_ptr()->subspace_id()]->fun;
+			
+			const double num = left;
+			
+			for(auto &v : ret) {
+				for(auto &s : v) {
+					s = op.apply(num, s);
+				}
+			}
+
+			return ret;
+		}
+
+		
 	};
 
 	inline static double inner(const double left, const double right)

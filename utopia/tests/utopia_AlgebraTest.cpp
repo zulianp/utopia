@@ -4,6 +4,7 @@
 */
 #include "utopia.hpp"
 #include "utopia_AlgebraTest.hpp"
+// #include "utopia_Collection.hpp"
 
 namespace utopia {
 
@@ -228,6 +229,19 @@ namespace utopia {
 
         }
 
+
+        // void multiply_collections()
+        // {
+        //     const int n = mpi_world_size() * 3;
+        //     Matrix m = 2 * identity(n, n);
+        //     auto rr = row_range(m);
+
+        //     Matrix m2 = values(n, n, 0.1);
+
+        //     std::vector<Matrix> matrices(2, m);
+        //     std::vector<Matrix> result = m2 * wrap(matrices);
+        // }
+
         static void print_backend_info()
         {
             if(Utopia::Instance().verbose()) {
@@ -248,6 +262,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(determinant_test);
             UTOPIA_RUN_TEST(size_test);
             UTOPIA_RUN_TEST(binary_min_max);
+            // UTOPIA_RUN_TEST(multiply_collections);
         }
     };
 
