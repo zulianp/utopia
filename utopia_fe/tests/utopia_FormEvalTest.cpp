@@ -6,7 +6,71 @@
 
 namespace utopia {
 
-	void run_vector_form_eval_test()
+	static void run_linear_elasticity()
+	{
+		typedef utopia::HMFESpace FunctionSpaceT;
+		typedef utopia::Traits<HMFESpace> TraitsT;
+		static const int Backend = TraitsT::Backend;
+
+		double mu = 1.;
+		double lambda = 1.;
+
+		auto Vx = FunctionSpaceT();
+		auto Vy = FunctionSpaceT();
+		auto V  = Vx * Vy;
+
+		auto u = trial(V);
+		auto v = test(V);
+
+		auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
+		auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
+
+		auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
+
+		AssemblyContext<Backend> ctx;
+		ctx.init_bilinear(b_form);
+
+		ElementMatrix mat;
+
+		FormEvaluator<Backend> eval;
+		eval.eval(b_form, mat, ctx, true);
+		disp(mat);
+	}
+
+	static void run_navier_stokes_test()
+	{
+		typedef utopia::HMFESpace FunctionSpaceT;
+		typedef utopia::Traits<HMFESpace> TraitsT;
+		static const int Backend = TraitsT::Backend;
+
+
+		auto Vx = FunctionSpaceT();
+		auto Vy = FunctionSpaceT();
+		auto V  = Vx * Vy;
+
+		auto Q =  FunctionSpaceT();
+
+		auto u = trial(V);
+		auto v = test(V);
+
+		auto p = trial(Q);
+		auto q = test(Q);
+
+		const double mu = 1.;
+		const double rho = 1.;
+		auto inc_cond = integral(inner(q, div(u)));
+		
+		// const int n_dofs = 3 * 2;
+		// DVector u_vector = zeros(n_dofs);
+		// auto uk = interpolate(u, u_vector);
+		// auto g_uk = grad(uk);
+		// auto e = 0.5 * (transpose(grad(u))+ grad(u));
+		// auto mom1 =  integral(inner(2. * mu * e, grad(v)) + rho * inner(g_uk * u, v);
+		// auto mom2 = -integral(inner(p, div(v)));
+ 			
+	}
+
+	static void run_vector_form_eval_test()
 	{
 		typedef utopia::HMFESpace FunctionSpaceT;
 		typedef utopia::Traits<HMFESpace> TraitsT;
@@ -40,7 +104,7 @@ namespace utopia {
 		disp(mat);
 	}
 
-	void run_scalar_form_eval_test()
+	static void run_scalar_form_eval_test()
 	{
 		typedef utopia::HMFESpace FunctionSpaceT;
 		static const int Backend = Traits<FunctionSpaceT>::Backend;
@@ -80,7 +144,7 @@ namespace utopia {
 		disp(vec);
 	}
 
-	void run_mixed_form_eval_test()
+	static void run_mixed_form_eval_test()
 	{
 		typedef utopia::HMFESpace FunctionSpaceT;
 		typedef utopia::Traits<HMFESpace> TraitsT;
@@ -120,5 +184,6 @@ namespace utopia {
 		run_scalar_form_eval_test();
 		run_vector_form_eval_test();
 		run_mixed_form_eval_test();
+		run_linear_elasticity();
 	}
 }

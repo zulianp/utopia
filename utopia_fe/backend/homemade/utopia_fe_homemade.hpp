@@ -140,6 +140,7 @@ namespace utopia {
 
 		typedef utopia::HMFESpace Implementation;
 		typedef utopia::HMDerivative GradientType;
+		typedef utopia::HMDerivative DivergenceType;
 		typedef utopia::HMJacobian JacobianType;
 	};
 
@@ -363,6 +364,8 @@ namespace utopia {
 	class FEBackend<HOMEMADE> {
 	public:
 
+		//////////////////////////////////////////////////////////////////////////////////////////
+
 		//Function
 		// scalar fe functions
 		static HMFun &fun(const TrialFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
@@ -422,6 +425,9 @@ namespace utopia {
 			fun_aux(*space_ptr, ctx.trial, ctx, ret);
 			return ret;
 		}
+
+
+		//////////////////////////////////////////////////////////////////////////////////////////
 
 		//Gradient
 		// scalar fe functions
@@ -485,6 +491,72 @@ namespace utopia {
 			return ret;
 		}
 
+
+		//////////////////////////////////////////////////////////////////////////////////////////
+
+		//Gradient
+		// scalar fe functions
+		// static HMDerivative &div(const TrialFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
+		// {
+		// 	return ctx.trial[fun.space_ptr()->subspace_id()]->div;
+		// }
+
+		// static HMDerivative &div(const TestFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
+		// {
+		// 	return ctx.test[fun.space_ptr()->subspace_id()]->div;
+		// }
+
+
+		// vector fe functions
+		static void div_aux(
+			ProductFunctionSpace<HMFESpace> &space,
+			std::vector<std::shared_ptr<FE> > &fe_object,
+			AssemblyContext<HOMEMADE> &ctx,
+			HMDerivative &ret)
+		{
+			ret.resize(fe_object[0]->fun.size()); 
+
+			int n_shape_functions = 0;
+			for(auto &t : fe_object) {
+				n_shape_functions += t->n_shape_functions();
+			}
+
+			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
+				ret[qp].resize(n_shape_functions, zeros(space.n_subspaces(), space[0].mesh.impl->n_dims));
+
+				int offset = 0;
+				space.each([&offset, &fe_object, &ret, &space, qp](const int, const HMFESpace &s) {
+					auto fe = fe_object[s.subspace_id()];
+					
+					for(int j = 0; j < fe->n_shape_functions(); ++j, offset++) {
+						auto &d = ret[qp][offset];
+						Write<Vectord> w(d);
+						Read<Vectord> r(fe->grad[qp][j]);
+						d.set(j, fe->grad[qp][j].get(s.subspace_id()) ); 
+					}
+				});
+			}
+		}
+
+		static HMDerivative div(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto space_ptr = fun.space_ptr();
+			HMDerivative ret;
+			div_aux(*space_ptr, ctx.trial, ctx, ret);
+			return ret;
+		}
+
+		static HMDerivative div(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto space_ptr = fun.space_ptr();
+			HMDerivative ret;
+			div_aux(*space_ptr, ctx.test, ctx, ret);
+			return ret;
+		}
+
+
+		//////////////////////////////////////////////////////////////////////////////////////////
+
 		template<class Space, class Op>
 		inline static auto apply_binary(const Number<double> &left, const TrialFunction<Space> &right, const Op &op, AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type 
 		{
@@ -514,6 +586,26 @@ namespace utopia {
 
 			return ret;
 		}
+
+		//alpha * (grad_t + grad)
+		template<class Left, class Right>
+		inline static HMVectorFEDerivative grad_t_plus_grad(const double scaling, const Left &left, const Right &right, AssemblyContext<HOMEMADE> &ctx)
+		{
+			HMVectorFEDerivative ret = grad(right, ctx);
+			auto && grad_left = grad(left, ctx);
+
+			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
+				for(std::size_t i = 0; i < ret[qp].size(); ++i) {
+					ret[qp][i] += transpose(grad_left[qp][i]);
+					ret[qp][i] *= scaling;
+				}
+			}
+
+			return ret;
+		}
+
+
+		//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		template<class Left, class Space>
 		inline static auto multiply(

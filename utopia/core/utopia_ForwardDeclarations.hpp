@@ -21,6 +21,9 @@ namespace utopia {
     template<class Expr, class Operation>
     class Unary;
 
+    template<class Expr>
+    class Transposed;
+
     template<typename T>
     class Number;
 

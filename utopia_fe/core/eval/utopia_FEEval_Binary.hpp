@@ -54,6 +54,65 @@ namespace utopia {
 	    } 
 	};
 
+	template<class Left, class Right, class Traits, int Backend>
+	class FEEval<Binary<Transposed< Gradient<Left> >, Gradient<Right>, Plus>, Traits, Backend> {
+	public:
+		typedef utopia::Binary<Transposed< Gradient<Left> >, Gradient<Right>, Plus> Expr;
+
+
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( 
+	    	    		FEBackend<Backend>::grad_t_plus_grad(1.0, expr.left().expr().expr(), expr.right().expr(), ctx)
+	    	    	)
+	    {
+	    	return FEBackend<Backend>::grad_t_plus_grad(1.0, expr.left().expr().expr(), expr.right().expr(), ctx);
+	    } 
+	};
+
+	template<typename T, class Left, class Right, class Traits, int Backend>
+	class FEEval< Binary<Number<T>, 
+						 Binary<Transposed< Gradient<Left> >, Gradient<Right>, Plus>,
+						 Multiplies>,
+				  Traits, Backend> {
+	public:
+		typedef utopia::Binary<Number<T>, 
+						 Binary<Transposed< Gradient<Left> >, Gradient<Right>, Plus>,
+						 Multiplies> Expr;
+
+
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( 
+	    	    		FEBackend<Backend>::grad_t_plus_grad(expr.left(), expr.right().left().expr().expr(), expr.right().right().expr(), ctx)
+	    	    	)
+	    {
+	    	return FEBackend<Backend>::grad_t_plus_grad(expr.left(), expr.right().left().expr().expr(), expr.right().right().expr(), ctx);
+	    } 
+	};
+
+
+
+	template<class Left, class Right, class Traits, int Backend>
+	class FEEval<Binary<Gradient<Left>, Transposed< Gradient<Right> >, Plus>, Traits, Backend> {
+	public:
+		typedef utopia::Binary<Gradient<Left>,Transposed< Gradient<Right> >, Plus> Expr;
+
+
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( 
+	    	    		FEBackend<Backend>::grad_t_plus_grad(expr.right(), expr.left().expr(), ctx)
+	    	    	)
+	    {
+	    	return FEBackend<Backend>::grad_t_plus_grad(expr.right(), expr.left().expr(), ctx);
+	    } 
+	};
+
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 	template<class Left, class Right, class Op, class AssemblyContext>
 	class FunctionalTraits<Binary<Left, Right, Op>, AssemblyContext> {

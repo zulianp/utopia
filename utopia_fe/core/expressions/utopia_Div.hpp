@@ -4,6 +4,7 @@
 #include "utopia_DifferentialOperator.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_FunctionalTraits.hpp"
 
 namespace utopia {
 
@@ -42,6 +43,13 @@ namespace utopia {
 		enum {
 			FILL_TYPE = utopia::FillType::DENSE
 		};
+	};
+
+	template<class Expr, class AssemblyContext>
+	class FunctionalTraits<Divergence<Expr>, AssemblyContext>  {
+	public:
+		inline static int type(const Divergence<Expr> &expr,  const AssemblyContext &ctx) { return FunctionalTraits<Expr, AssemblyContext>::type(expr.expr(), ctx);  }
+		inline static int order(const Divergence<Expr> &expr, const AssemblyContext &ctx) { return FunctionalTraits<Expr, AssemblyContext>::order(expr.expr(), ctx) - 1; }
 	};
 }
 

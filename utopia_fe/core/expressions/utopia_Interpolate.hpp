@@ -7,8 +7,8 @@
 
 namespace utopia {
 
-	template<class Coefficient, class FESpace>
-	class Interpolate : public Expression< Interpolate<Coefficient, FESpace> > {
+	template<class Coefficient, class Fun>
+	class Interpolate : public Expression< Interpolate<Coefficient, Fun> > {
 	public:
 
 		typedef typename Traits<Coefficient>::Scalar Scalar;
@@ -17,35 +17,35 @@ namespace utopia {
 			Order = Traits<Coefficient>::Order
 		};
 
-		Interpolate(const Coefficient &coeff, FESpace &fe)
-		: coeff_(coeff), fe_(fe)
+		Interpolate(const Coefficient &coeff, Fun &fun)
+		: coeff_(coeff), fun_(fun)
 		{}
 
 
 	private:
 		Coefficient coeff_;
-		UTOPIA_STORE(FESpace) fe_;	
+		UTOPIA_STORE(Fun) fun_;	
 	};
 
-	template<class Coefficient, class FESpace>
-	class Traits< Interpolate<Coefficient, FESpace> > : public Traits<Coefficient> {
+	template<class Coefficient, class Fun>
+	class Traits< Interpolate<Coefficient, Fun> > : public Traits<Coefficient> {
 	public:
 	
 	};
 
 		
 
-	template<class Coefficient, class FESpace>
-	inline Interpolate<Coefficient, FESpace> interpolate(const Coefficient &coeff, FESpace &fe)
+	template<class Coefficient, class Fun>
+	inline Interpolate<Coefficient, Fun> interpolate(const Coefficient &coeff, Fun &fun)
 	{
-		return Interpolate<Coefficient, FESpace>(coeff, fe);
+		return Interpolate<Coefficient, Fun>(coeff, fun);
 	}
 
 
-	template<class Coefficient, class FESpace, class Tensor>
-	inline Interpolate<Coefficient, FESpace> interpolate(const Coefficient &coeff, FESpace &fe, Tensor &&tensor)
+	template<class Coefficient, class Fun, class Tensor>
+	inline Interpolate<Coefficient, Fun> interpolate(const Coefficient &coeff, Fun &fun, Tensor &&tensor)
 	{
-		return Interpolate<Coefficient, FESpace>(coeff, fe, tensor);
+		return Interpolate<Coefficient, Fun>(coeff, fun, tensor);
 	}
 	
 }
