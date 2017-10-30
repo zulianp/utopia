@@ -108,6 +108,15 @@ namespace utopia {
 			}
 		}
 
+		inline void node_indices(const int elem, std::vector<int> &index)
+		{
+			std::size_t begin = impl->el_ptr[elem];
+			std::size_t end   = impl->el_ptr[elem+1];
+			std::size_t n_nodes = end - begin;
+			index.resize(n_nodes);
+			std::copy(&impl->el_index[begin], &impl->el_index[end], index.begin());
+		}
+
 		Mesh()
 		{
 			make_example_mesh();
@@ -132,7 +141,7 @@ namespace utopia {
 	public:
 		static const int Backend = HOMEMADE;
 		static const int Order = 1;
-		static const int FILLE_TYPE = FillType::DENSE;
+		static const int FILL_TYPE = FillType::DENSE;
 
 		typedef double Scalar;
 		typedef utopia::Vectord Vector;
@@ -140,7 +149,7 @@ namespace utopia {
 
 		typedef utopia::HMFESpace Implementation;
 		typedef utopia::HMDerivative GradientType;
-		typedef utopia::HMDerivative DivergenceType;
+		typedef utopia::HMFun DivergenceType;
 		typedef utopia::HMJacobian JacobianType;
 	};
 
@@ -378,7 +387,6 @@ namespace utopia {
 			return ctx.test[fun.space_ptr()->subspace_id()]->fun;
 		}
 
-
 		// vector fe functions
 		static void fun_aux(
 			ProductFunctionSpace<HMFESpace> &space,
@@ -425,7 +433,6 @@ namespace utopia {
 			fun_aux(*space_ptr, ctx.trial, ctx, ret);
 			return ret;
 		}
-
 
 		//////////////////////////////////////////////////////////////////////////////////////////
 
@@ -494,25 +501,13 @@ namespace utopia {
 
 		//////////////////////////////////////////////////////////////////////////////////////////
 
-		//Gradient
-		// scalar fe functions
-		// static HMDerivative &div(const TrialFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
-		// {
-		// 	return ctx.trial[fun.space_ptr()->subspace_id()]->div;
-		// }
-
-		// static HMDerivative &div(const TestFunction<HMFESpace> &fun, AssemblyContext<HOMEMADE> &ctx)
-		// {
-		// 	return ctx.test[fun.space_ptr()->subspace_id()]->div;
-		// }
-
-
+		//Divergence
 		// vector fe functions
 		static void div_aux(
 			ProductFunctionSpace<HMFESpace> &space,
 			std::vector<std::shared_ptr<FE> > &fe_object,
 			AssemblyContext<HOMEMADE> &ctx,
-			HMDerivative &ret)
+			HMFun &ret)
 		{
 			ret.resize(fe_object[0]->fun.size()); 
 
@@ -522,37 +517,181 @@ namespace utopia {
 			}
 
 			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
-				ret[qp].resize(n_shape_functions, zeros(space.n_subspaces(), space[0].mesh.impl->n_dims));
+				ret[qp].resize(n_shape_functions);
 
 				int offset = 0;
 				space.each([&offset, &fe_object, &ret, &space, qp](const int, const HMFESpace &s) {
 					auto fe = fe_object[s.subspace_id()];
 					
 					for(int j = 0; j < fe->n_shape_functions(); ++j, offset++) {
-						auto &d = ret[qp][offset];
-						Write<Vectord> w(d);
 						Read<Vectord> r(fe->grad[qp][j]);
-						d.set(j, fe->grad[qp][j].get(s.subspace_id()) ); 
+						ret[qp][offset] = fe->grad[qp][j].get(s.subspace_id()); 
 					}
 				});
 			}
 		}
 
-		static HMDerivative div(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+		static HMFun div(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
 		{
 			auto space_ptr = fun.space_ptr();
-			HMDerivative ret;
+			HMFun ret;
 			div_aux(*space_ptr, ctx.trial, ctx, ret);
 			return ret;
 		}
 
-		static HMDerivative div(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+		static HMFun div(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
 		{
 			auto space_ptr = fun.space_ptr();
-			HMDerivative ret;
+			HMFun ret;
 			div_aux(*space_ptr, ctx.test, ctx, ret);
 			return ret;
 		}
+
+		//////////////////////////////////////////////////////////////////////////////////////////
+		//Interpolate
+		template<class Tensor>
+		static void interp_values(
+			const Interpolate<Wrapper<Tensor, 1>, TrialFunction<HMFESpace> > &interp,
+			Vectord &element_values,
+			AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto &c   = interp.coefficient();
+			auto &f   = interp.fun();
+
+			auto space_ptr = f.space_ptr();
+
+			std::vector<int> indices;
+			space_ptr->mesh.node_indices(ctx.current_element, indices);
+
+			//compute offset
+			int n_funs = ctx.trial.size();
+			for(auto &i : indices) {
+			 	 i *= n_funs;
+			 	 i += space_ptr->subspace_id();
+			}
+			
+			element_values = zeros(indices.size());
+
+			Write<Vectord> w(element_values);
+			Read<Wrapper<Tensor, 1>> r(c);
+
+			for(std::size_t i = 0; i < indices.size(); ++i) {
+				element_values.set(i, c.get(indices[i]));
+			}
+		}
+
+
+
+
+		template<class Tensor, class Space>
+		static std::vector<double> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<Space> > &interp, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto &c  = interp.coefficient();
+			auto &f  = interp.fun();
+			auto &&g = fun(f, ctx);
+
+			Vectord element_values;
+			interp_values(interp, element_values, ctx);
+			
+			std::vector<double> ret(g.size(), 0.);
+			for(std::size_t qp = 0; qp < g.size(); ++qp) {
+				for(std::size_t i = 0; i < g[qp].size(); ++i) {
+					ret[qp] += element_values.get(i) * g[qp][i];
+				}
+			}
+
+			return ret;
+		}
+
+
+		template<class Tensor>
+		static std::vector<Vectord> grad(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<HMFESpace> > &interp, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto &c   = interp.coefficient();
+			auto &f   = interp.fun();
+			auto &&g = grad(f, ctx);
+
+			Vectord element_values;
+			interp_values(interp, element_values, ctx);
+			
+			auto dim = size(g[0][0]).get(0);
+			std::vector<Vectord> ret(g.size());
+			for(std::size_t qp = 0; qp < g.size(); ++qp) {
+				ret[qp] = zeros(dim);
+
+				for(std::size_t i = 0; i < g[qp].size(); ++i) {
+					ret[qp] += element_values.get(i) * g[qp][i];
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Tensor>
+		static std::vector<Matrixd> grad(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<HMFESpace> > > &interp, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto &c   = interp.coefficient();
+			auto &f   = interp.fun();
+			auto &&g = grad(f, ctx);
+
+			Vectord element_values;
+			interp_values(interp, element_values, ctx);
+			
+			auto s = size(g[0][0]);
+			std::vector<Matrixd> ret(g.size());
+			for(std::size_t qp = 0; qp < g.size(); ++qp) {
+				ret[qp] = zeros(s);
+
+				for(std::size_t i = 0; i < g[qp].size(); ++i) {
+					ret[qp] += element_values.get(i) * g[qp][i];
+				}
+			}
+
+			return ret;
+		}
+
+
+
+		template<class Tensor>
+		static void interp_values(
+			const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<HMFESpace>> > &interp,
+			Vectord &element_values,
+			AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto &c   = interp.coefficient();
+			auto &f   = interp.fun();
+
+			auto space_ptr = f.space_ptr();
+
+			std::vector<int> indices;
+			space_ptr->subspace(0).mesh.node_indices(ctx.current_element, indices);
+
+
+			std::vector<int> prod_indices;
+			prod_indices.reserve(indices.size() * space_ptr->n_subspaces());
+
+			//compute offset
+			int n_funs = ctx.trial.size();
+
+			space_ptr->each([&](const int sub_index, const HMFESpace &space) {
+				for(auto &i : indices) {
+					 int p_i = i;
+				 	 p_i *= n_funs;
+				 	 p_i += space.subspace_id();
+				 	 prod_indices.push_back(p_i);
+				}
+			});
+			
+			element_values = zeros(prod_indices.size());
+
+			Write<Vectord> w(element_values);
+			Read<Wrapper<Tensor, 1>> r(c);
+
+			for(std::size_t i = 0; i < prod_indices.size(); ++i) {
+				element_values.set(i, c.get(prod_indices[i]));
+			}
+		}
+
 
 
 		//////////////////////////////////////////////////////////////////////////////////////////
@@ -625,6 +764,30 @@ namespace utopia {
 			return ret;
 		}
 
+
+		template<class Space>
+		inline static auto multiply(
+			const std::vector<double> &left,
+			const Gradient<TrialFunction<Space> > &right, 
+			AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type 
+		{
+			typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
+
+			for(std::size_t i = 0; i < ret.size(); ++i) {
+				auto &v = ret[i];
+
+				for(auto &s : v) {
+					s = left[i] * s;
+				}
+			}
+
+			return ret;
+		}
+
+
+
+
+
 		template<class Left, class Space>
 		inline static auto multiply(
 			const Left &left,
@@ -637,6 +800,52 @@ namespace utopia {
 			for(auto &v : ret) {
 				for(auto &s : v) {
 					s = left * s;
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Space>
+		inline static auto multiply(const std::vector<double> &left, const TrialFunction<Space> &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
+		{
+			typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
+
+			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
+				auto &v = ret[qp];
+				for(auto &s : v) {
+					s = left[qp] * s;
+				}
+			}
+
+			return ret;
+		}
+
+
+		template<class Space>
+		inline static auto multiply(const std::vector<Matrixd> &left, const Gradient<TrialFunction<Space> > &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type
+		{
+			typename std::remove_reference<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
+
+			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
+				auto &v = ret[qp];
+				for(auto &s : v) {
+					s = left[qp] * s;
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Space>
+		inline static auto multiply(const std::vector<Matrixd> &left, const TrialFunction<Space> &right,  AssemblyContext<HOMEMADE> &ctx) -> typename std::remove_reference<decltype(fun(right, ctx))>::type
+		{
+			typename std::remove_reference<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
+
+			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
+				auto &v = ret[qp];
+				for(auto &s : v) {
+					s = left[qp] * s;
 				}
 			}
 

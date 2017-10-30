@@ -6,6 +6,75 @@
 
 namespace utopia {
 
+	static void run_interp_vec_test()
+	{
+		typedef utopia::HMFESpace FunctionSpaceT;
+		typedef utopia::Traits<HMFESpace> TraitsT;
+		static const int Backend = TraitsT::Backend;
+
+		auto Vx = FunctionSpaceT();
+		auto Vy = FunctionSpaceT();
+		auto V = Vx * Vy;
+
+		auto u = trial(V);
+		auto v = test(V);
+
+		DVectord c_uk = values(6, 1.);
+		{
+			Write<DVectord> w(c_uk);
+			c_uk.set(0, 1.0);
+			c_uk.set(1, 2.0);
+			c_uk.set(2, 3.0);
+			c_uk.set(3, 1.0);
+			c_uk.set(4, 2.0);
+			c_uk.set(5, 3.0);
+		}
+
+		auto uk = interpolate(c_uk, u);
+		auto b_form = integral( inner(grad(uk) * grad(u), grad(v)) );
+
+		AssemblyContext<Backend> ctx;
+		ctx.init_bilinear(b_form);
+
+		ElementMatrix mat;
+
+		FormEvaluator<Backend> eval;
+		eval.eval(b_form, mat, ctx, true);
+		disp(mat);
+	}
+
+	static void run_interp_test()
+	{
+		typedef utopia::HMFESpace FunctionSpaceT;
+		typedef utopia::Traits<HMFESpace> TraitsT;
+		static const int Backend = TraitsT::Backend;
+
+		auto V  = FunctionSpaceT();
+
+		auto u = trial(V);
+		auto v = test(V);
+
+		DVectord c_uk = values(3, 1.);
+		{
+			Write<DVectord> w(c_uk);
+			c_uk.set(0, 1.0);
+			c_uk.set(1, 2.0);
+			c_uk.set(2, 3.0);
+		}
+
+		auto uk = interpolate(c_uk, u);
+		auto b_form = integral(inner(uk * grad(u), grad(v)) );
+
+		AssemblyContext<Backend> ctx;
+		ctx.init_bilinear(b_form);
+
+		ElementMatrix mat;
+
+		FormEvaluator<Backend> eval;
+		eval.eval(b_form, mat, ctx, true);
+		disp(mat);
+	}
+
 	static void run_linear_elasticity()
 	{
 		typedef utopia::HMFESpace FunctionSpaceT;
@@ -58,16 +127,39 @@ namespace utopia {
 
 		const double mu = 1.;
 		const double rho = 1.;
-		auto inc_cond = integral(inner(q, div(u)));
 		
-		// const int n_dofs = 3 * 2;
-		// DVector u_vector = zeros(n_dofs);
-		// auto uk = interpolate(u, u_vector);
-		// auto g_uk = grad(uk);
-		// auto e = 0.5 * (transpose(grad(u))+ grad(u));
-		// auto mom1 =  integral(inner(2. * mu * e, grad(v)) + rho * inner(g_uk * u, v);
-		// auto mom2 = -integral(inner(p, div(v)));
- 			
+		const int n_dofs = 3 * 2;
+		Vectord u_vector = values(n_dofs, 0.1);
+		{
+			Write<Vectord> w(u_vector);
+			u_vector.set(1, 0.2);
+		}
+
+		auto uk = interpolate(u_vector, u);
+		auto g_uk = grad(uk);
+
+		auto e = mu * (transpose(grad(u))+ grad(u));
+		auto b_form_1 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
+		auto b_form_2 = integral(-inner(p, div(v)));
+		auto b_form_3 = integral(inner(div(u), q));
+
+		AssemblyContext<Backend> ctx;
+		ctx.init_bilinear(b_form_1);
+
+		ElementMatrix mat;
+
+		FormEvaluator<Backend> eval;
+		eval.eval(b_form_1, mat, ctx, true);
+		disp(mat);
+
+		ctx.init_bilinear(b_form_2);
+		eval.eval(b_form_2, mat, ctx, true);
+		disp(mat);
+
+
+		ctx.init_bilinear(b_form_3);
+		eval.eval(b_form_3, mat, ctx, true);
+		disp(mat);
 	}
 
 	static void run_vector_form_eval_test()
@@ -181,9 +273,19 @@ namespace utopia {
 
 	void run_form_eval_test(libMesh::LibMeshInit &init)
 	{
+		std::cout << "run_scalar_form_eval_test:" << std::endl;
 		run_scalar_form_eval_test();
+		std::cout << "run_vector_form_eval_test:" << std::endl;
 		run_vector_form_eval_test();
+		std::cout << "run_mixed_form_eval_test:" << std::endl;
 		run_mixed_form_eval_test();
+		std::cout << "run_linear_elasticity:" << std::endl;
 		run_linear_elasticity();
+		std::cout << "run_interp_test:" << std::endl;
+		run_interp_test();
+		std::cout << "run_interp_vec_test:" << std::endl;
+		run_interp_vec_test();
+		std::cout << "run_navier_stokes_test:" << std::endl;
+		run_navier_stokes_test();
 	}
 }

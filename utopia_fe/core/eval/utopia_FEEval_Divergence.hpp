@@ -5,7 +5,6 @@
 #include "utopia_AssemblyContext.hpp"
 #include "utopia_FEBackend.hpp"
 
-
 namespace utopia {
 
 	template<class Tensor, class Traits, int Backend>
@@ -13,23 +12,14 @@ namespace utopia {
 	public:
 		typedef utopia::Divergence<Tensor> Expr;
 		typedef typename Traits::DivergenceType DivergenceT;
-		typedef typename Traits::JacobianType JacobianT;
-
-		template<template<class> class Function, class Space>
-	    inline static auto apply(
-	    	const Divergence< Function<Space> > &expr,
-	    	AssemblyContext<Backend> &ctx) -> DivergenceT
-	    {
-	    	return FEBackend<Backend>::div(expr.expr(), ctx);
-	    } 
 
 	    template<template<class> class Function, class Spaces>
 	    inline static auto apply(
 	    	const Divergence< Function<ProductFunctionSpace<Spaces> > > &expr,
-	    	AssemblyContext<Backend> &ctx) -> JacobianT
+	    	AssemblyContext<Backend> &ctx) -> DivergenceT
 	    {
 	    	const auto & space_ptr = expr.expr().space_ptr();
-	    	return FEBackend<Backend>::grad(expr.expr(), ctx);
+	    	return FEBackend<Backend>::div(expr.expr(), ctx);
 	    }
 	};
 

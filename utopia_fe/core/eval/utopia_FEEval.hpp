@@ -12,6 +12,7 @@
 #include "utopia_FEEval_Multiply.hpp"
 #include "utopia_FEEval_Reduce.hpp"
 #include "utopia_FEEval_Transposed.hpp"
+#include "utopia_FEEval_Interpolate.hpp"
 
 
 #endif //UTOPIA_FE_EVAL_HPP

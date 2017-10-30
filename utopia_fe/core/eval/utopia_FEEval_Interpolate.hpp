@@ -9,13 +9,26 @@ namespace utopia {
 	template<class Coefficient, class Fun, class Traits, int Backend>
 	class FEEval<Interpolate<Coefficient, Fun>, Traits, Backend> {
 	public:
-		typedef utopia::Interpolate<TrialFunction<Fun> > Expr;
+		typedef utopia::Interpolate<Coefficient, Fun> Expr;
 
 	    inline static auto apply(
 	    	const Expr &expr,
-	    	AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::interpolate(expr, ctx) )
+	    	AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::fun(expr, ctx) )
 	    {
-	    	return FEBackend<Backend>::interpolate(expr, ctx);
+	    	return FEBackend<Backend>::fun(expr, ctx);
+	    } 
+	};
+
+	template<class Coefficient, class Fun, class Traits, int Backend>
+	class FEEval<Gradient<Interpolate<Coefficient, Fun>>, Traits, Backend> {
+	public:
+		typedef utopia::Gradient<Interpolate<Coefficient, Fun> > Expr;
+
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::grad(expr.expr(), ctx) )
+	    {
+	    	return FEBackend<Backend>::grad(expr.expr(), ctx);
 	    } 
 	};
 
@@ -24,12 +37,12 @@ namespace utopia {
 	public:
 		inline static int type(const Interpolate<Coefficient, Fun> &expr, const AssemblyContext &ctx)  
 		{ 
-			return FunctionalTraits<Fun, AssemblyContext>::type(expr.expr(), ctx);
+			return FunctionalTraits<Fun, AssemblyContext>::type(expr.fun(), ctx);
 		}
 
-		inline static int order(const Interpolate<Fun> &expr, const AssemblyContext &ctx) 
+		inline static int order(const Interpolate<Coefficient, Fun> &expr, const AssemblyContext &ctx) 
 		{
-			return FunctionalTraits<Fun, AssemblyContext>::order(expr.expr(), ctx);
+			return FunctionalTraits<Fun, AssemblyContext>::order(expr.fun(), ctx);
 		}
 	};
 }

@@ -21,6 +21,29 @@ namespace utopia {
 		: coeff_(coeff), fun_(fun)
 		{}
 
+		inline Fun &fun()
+		{
+			return fun_;
+		}
+
+		inline const Fun &fun() const
+		{
+			return fun_;
+		}
+
+		inline Coefficient &coefficient()
+		{
+			return coeff_;
+		}
+
+		inline const Coefficient &coefficient() const
+		{
+			return coeff_;
+		}
+
+		inline std::string getClass() const override {
+			return "Interpolate";
+		}
 
 	private:
 		Coefficient coeff_;
