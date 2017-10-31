@@ -37,7 +37,7 @@ namespace utopia {
 
 	void anisotropic_laplacian(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());		
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 		MeshTools::Generation::build_square (*mesh,
 			15, 15,
 			-1., 1.,
@@ -123,7 +123,7 @@ namespace utopia {
 	void linear_elasticity(LibMeshInit &init)
 	{
 
-		auto mesh = make_shared<Mesh>(init.comm());		
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 		MeshTools::Generation::build_cube (*mesh,
 			10, 10, 10,
 			-1., 1.,
@@ -187,7 +187,7 @@ namespace utopia {
 void nonlinear_laplace_eq(LibMeshInit &init)
 {
 	int n = 15;
-	auto mesh = make_shared<Mesh>(init.comm());		
+	auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 	MeshTools::Generation::build_square (*mesh,
 		n, n,
 		-1., 1.,
@@ -265,7 +265,7 @@ void nonlinear_laplace_eq(LibMeshInit &init)
 
 void boundary_conds(LibMeshInit &init)
 {
-	auto mesh = make_shared<Mesh>(init.comm());		
+	auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 	MeshTools::Generation::build_square (*mesh,
 		10, 10,
 		-1., 1.,

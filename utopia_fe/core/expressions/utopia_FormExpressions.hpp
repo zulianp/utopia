@@ -14,5 +14,6 @@
 #include "utopia_TestFunction.hpp"
 #include "utopia_TimeDerivative.hpp"
 #include "utopia_TrialFunction.hpp"
+#include "utopia_FEFunction.hpp"
 
 #endif //UTOPIA_FORM_EXPRESSIONS_HPP

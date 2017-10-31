@@ -112,7 +112,7 @@ namespace utopia {
 
 	void leastsquares_helmoholtz(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());		
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 		MeshTools::Generation::build_square (*mesh,
 			40, 40,
 			-1., 1.,
@@ -179,7 +179,7 @@ namespace utopia {
 
 	void mass_matrix_prod(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());		
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 		MeshTools::Generation::build_square (*mesh,
 			10, 10,
 			-1., 1.,
@@ -221,7 +221,7 @@ namespace utopia {
 
 	void matrix_fe_tensor_product_fe_2x2(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());		
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 		MeshTools::Generation::build_square (*mesh,
 			1, 1,
 			0., 1.,
@@ -288,7 +288,7 @@ namespace utopia {
 
 	void div_prod(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());		
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 		MeshTools::Generation::build_square (*mesh,
 			10, 10,
 			-1., 1.,
@@ -519,7 +519,7 @@ namespace utopia {
 
 	void least_squares_elasticity_2D(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());		
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 		MeshTools::Generation::build_square (*mesh,
 			10, 10,
 			0, 1.,
@@ -583,7 +583,7 @@ namespace utopia {
 
 	void least_squares_elasticity_3D(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());		
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 		MeshTools::Generation::build_cube (*mesh,
 			15, 15, 15,
 			-1., 1., 
@@ -642,7 +642,7 @@ namespace utopia {
 
 		ContactSimParams params = contact_least_squares_2;
 
-		auto mesh = make_shared<Mesh>(init.comm());		
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 		mesh->read(params.mesh_path);
 		plot_mesh(*mesh, "mesh");
 

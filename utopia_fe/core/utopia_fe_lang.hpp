@@ -21,28 +21,28 @@ namespace utopia {
 	};
 
 
-	template<typename Scalar_>
-	class FEFunction : public Expression< FEFunction<Scalar_> > {
-	public: 
-		enum {
-			Order = 0
-		};
+	// template<typename Scalar_>
+	// class FEFunction : public Expression< FEFunction<Scalar_> > {
+	// public: 
+	// 	enum {
+	// 		Order = 0
+	// 	};
 
-		typedef Scalar_ Scalar;
+	// 	typedef Scalar_ Scalar;
 
-		std::string getClass() const { return "FEFunction"; }
-	};
+	// 	std::string getClass() const { return "FEFunction"; }
+	// };
 
 
-	template<typename Scalar_>
-	class Traits< FEFunction<Scalar_> > {
-	public:
-		typedef Scalar_ Scalar;
+	// template<typename Scalar_>
+	// class Traits< FEFunction<Scalar_> > {
+	// public:
+	// 	typedef Scalar_ Scalar;
 
-		enum {
-			FILL_TYPE = utopia::FillType::DENSE
-		};
-	};
+	// 	enum {
+	// 		FILL_TYPE = utopia::FillType::DENSE
+	// 	};
+	// };
 
 
 

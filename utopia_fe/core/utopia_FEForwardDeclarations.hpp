@@ -6,6 +6,7 @@
 namespace utopia {
 
 	class FEExpression;
+	class Mesh;
 
 	template<class> class Coefficient;
 	template<class> class Curl;

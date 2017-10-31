@@ -84,6 +84,13 @@ namespace utopia {
 		double mu = 1.;
 		double lambda = 1.;
 
+		// std::function<double(const AssemblyContext<Backend> &ctx)> fun_mu = [](const AssemblyContext<Backend> &ctx) -> double
+		// {
+		// 	return 1.;
+		// };
+		
+		// auto mu = ctx_fun(fun_mu);
+
 		auto Vx = FunctionSpaceT();
 		auto Vy = FunctionSpaceT();
 		auto V  = Vx * Vy;
@@ -139,26 +146,26 @@ namespace utopia {
 		auto g_uk = grad(uk);
 
 		auto e = mu * (transpose(grad(u))+ grad(u));
-		auto b_form_1 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
-		auto b_form_2 = integral(-inner(p, div(v)));
-		auto b_form_3 = integral(inner(div(u), q));
+		auto b_form_11 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
+		auto b_form_12 = integral(-inner(p, div(v)));
+		auto b_form_21 = integral(inner(div(u), q));
 
 		AssemblyContext<Backend> ctx;
-		ctx.init_bilinear(b_form_1);
+		ctx.init_bilinear(b_form_11);
 
 		ElementMatrix mat;
 
 		FormEvaluator<Backend> eval;
-		eval.eval(b_form_1, mat, ctx, true);
+		eval.eval(b_form_11, mat, ctx, true);
 		disp(mat);
 
-		ctx.init_bilinear(b_form_2);
-		eval.eval(b_form_2, mat, ctx, true);
+		ctx.init_bilinear(b_form_12);
+		eval.eval(b_form_12, mat, ctx, true);
 		disp(mat);
 
 
-		ctx.init_bilinear(b_form_3);
-		eval.eval(b_form_3, mat, ctx, true);
+		ctx.init_bilinear(b_form_21);
+		eval.eval(b_form_21, mat, ctx, true);
 		disp(mat);
 	}
 

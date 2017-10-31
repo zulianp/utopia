@@ -397,7 +397,7 @@ void run_biomechanics_example(libMesh::LibMeshInit &init)
 		predicate->add(105, 10);
 	}
 	
-	auto mesh = make_shared<Mesh>(init.comm());
+	auto mesh = make_shared<libMesh::Mesh>(init.comm());
 	// moonolith::Communicator moonolith_comm(init.comm().get());
 	// mesh->read("/Users/patrick/Downloads/ASCII_bone/all_sidesets.e");
 	

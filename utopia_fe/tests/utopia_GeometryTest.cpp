@@ -20,7 +20,7 @@ namespace utopia {
 
 		const auto order_elem = FIRST;
 
-		auto mesh = make_shared<Mesh>(init.comm());
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());
 		mesh->read("/Users/patrick/Desktop/PostDOC/sccer_turbines/turbine.e");
 
 		LibMeshFEContext<LinearImplicitSystem> context(mesh);
