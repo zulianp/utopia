@@ -13,7 +13,7 @@ namespace utopia {
 	public:
 		class Impl;
 
-		void make_example_mesh();
+		void make_triangle();
 		int element_order(const int element_index) const;
 		void node_indices(const int elem, std::vector<int> &index);
 		int n_dims() const;

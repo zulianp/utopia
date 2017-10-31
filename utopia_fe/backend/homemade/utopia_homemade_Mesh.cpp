@@ -14,7 +14,7 @@ namespace utopia {
 		return impl_ptr->detail.n_dims;
 	}
 
-	void Mesh::make_example_mesh()
+	void Mesh::make_triangle()
 	{
 		el_ptr.resize(2);
 		el_ptr[0] = 0;
@@ -77,10 +77,7 @@ namespace utopia {
 	}
 
 	Mesh::Mesh()
-	: impl_ptr(new Impl())
-	{
-		make_example_mesh();
-	}
+	: impl_ptr(new Impl()) { }
 
 	Mesh::~Mesh() {}
 }

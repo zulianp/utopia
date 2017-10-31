@@ -187,7 +187,7 @@ namespace utopia {
 			}
 		}
 
-			///bilinear functional
+		///bilinear functional
 		template<class Left, class Right>
 		static Matrixd apply_bilinear(
 			const Reduce<Binary<Left, Right, EMultiplies>, Plus> &expr, 
@@ -200,7 +200,7 @@ namespace utopia {
 		}
 
 
-			///linear functional
+		///linear functional
 		template<class Left, class Right>
 		static Matrixd apply_linear(
 			const Reduce<Binary<Left, Right, EMultiplies>, Plus> &expr, 

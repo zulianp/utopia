@@ -12,8 +12,11 @@ namespace utopia {
 		typedef utopia::Traits<HMFESpace> TraitsT;
 		static const int Backend = TraitsT::Backend;
 
-		auto Vx = FunctionSpaceT();
-		auto Vy = FunctionSpaceT();
+		auto mesh = std::make_shared<Mesh>();
+		mesh->make_triangle();
+
+		auto Vx = FunctionSpaceT(mesh);
+		auto Vy = FunctionSpaceT(mesh);
 		auto V = Vx * Vy;
 
 		auto u = trial(V);
@@ -49,7 +52,10 @@ namespace utopia {
 		typedef utopia::Traits<HMFESpace> TraitsT;
 		static const int Backend = TraitsT::Backend;
 
-		auto V  = FunctionSpaceT();
+		auto mesh = std::make_shared<Mesh>();
+		mesh->make_triangle();
+
+		auto V  = FunctionSpaceT(mesh);
 
 		auto u = trial(V);
 		auto v = test(V);
@@ -88,11 +94,14 @@ namespace utopia {
 		// {
 		// 	return 1.;
 		// };
-		
+
 		// auto mu = ctx_fun(fun_mu);
 
-		auto Vx = FunctionSpaceT();
-		auto Vy = FunctionSpaceT();
+		auto mesh = std::make_shared<Mesh>();
+		mesh->make_triangle();
+
+		auto Vx = FunctionSpaceT(mesh);
+		auto Vy = FunctionSpaceT(mesh);
 		auto V  = Vx * Vy;
 
 		auto u = trial(V);
@@ -119,12 +128,15 @@ namespace utopia {
 		typedef utopia::Traits<HMFESpace> TraitsT;
 		static const int Backend = TraitsT::Backend;
 
+		auto mesh = std::make_shared<Mesh>();
+		mesh->make_triangle();
 
-		auto Vx = FunctionSpaceT();
-		auto Vy = FunctionSpaceT();
+
+		auto Vx = FunctionSpaceT(mesh);
+		auto Vy = FunctionSpaceT(mesh);
 		auto V  = Vx * Vy;
 
-		auto Q =  FunctionSpaceT();
+		auto Q =  FunctionSpaceT(mesh);
 
 		auto u = trial(V);
 		auto v = test(V);
@@ -174,11 +186,14 @@ namespace utopia {
 		typedef utopia::HMFESpace FunctionSpaceT;
 		typedef utopia::Traits<HMFESpace> TraitsT;
 		static const int Backend = TraitsT::Backend;
+
+		auto mesh = std::make_shared<Mesh>();
+		mesh->make_triangle();
 		
 
-		auto Vx = FunctionSpaceT();
-		auto Vy = FunctionSpaceT();
-		auto Vz = FunctionSpaceT();
+		auto Vx = FunctionSpaceT(mesh);
+		auto Vy = FunctionSpaceT(mesh);
+		auto Vz = FunctionSpaceT(mesh);
 
 		auto V = Vx * Vy * Vz;
 		
@@ -208,7 +223,10 @@ namespace utopia {
 		typedef utopia::HMFESpace FunctionSpaceT;
 		static const int Backend = Traits<FunctionSpaceT>::Backend;
 
-		auto V = FunctionSpaceT();
+		auto mesh = std::make_shared<Mesh>();
+		mesh->make_triangle();
+
+		auto V = FunctionSpaceT(mesh);
 		auto u = trial(V);
 		auto v = test(V);
 
@@ -249,12 +267,15 @@ namespace utopia {
 		typedef utopia::Traits<HMFESpace> TraitsT;
 		static const int Backend = TraitsT::Backend;
 
+		auto mesh = std::make_shared<Mesh>();
+		mesh->make_triangle();
+
 		//scalar
-		auto U = FunctionSpaceT();
+		auto U = FunctionSpaceT(mesh);
 		
 		//vector
-		auto Vx = FunctionSpaceT();
-		auto Vy = FunctionSpaceT();
+		auto Vx = FunctionSpaceT(mesh);
+		auto Vy = FunctionSpaceT(mesh);
 		auto V  = Vx * Vy;
 
 		auto u = trial(U);

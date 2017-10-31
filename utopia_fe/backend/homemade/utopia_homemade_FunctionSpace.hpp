@@ -14,6 +14,10 @@ namespace utopia {
 
 	class HMFESpace : public FunctionSpace<HMFESpace> {
 	public:
+		HMFESpace(const std::shared_ptr<Mesh> &mesh)
+		: mesh_(mesh)
+		{}
+
 		HMFESpace()
 		: mesh_(std::make_shared<Mesh>()) 
 		{}
