@@ -241,11 +241,14 @@ namespace utopia {
 		auto laplacian    = 0.1 * (-abs(integral(1. * dot( (A  + transpose(A)) * grad(u), grad(v)) - 0.1 * mass, 0))) + 0.9 * integral( dot(2. * u, v), 2);
 		auto linear_form  = integral(0.5 * dot(coeff(0.1), v));
 
-		assert( (IsSubTree<TrialFunction<utopia::Any>, decltype(mass)>::value) );
-		assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(mass)>::value) );
+		static_assert( (IsSubTree<TrialFunction<utopia::Any>, decltype(mass)>::value), "could not find function" );
+		static_assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(mass)>::value), "could not find function" );
 
-		assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(linear_form)>::value) );
-		assert( !(IsSubTree<TrialFunction<utopia::Any>,  decltype(linear_form)>::value) );
+		static_assert( (IsSubTree<TrialFunction<utopia::Any>, decltype(laplacian)>::value), "could not find function" );
+		static_assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(laplacian)>::value), "could not find function" );
+
+		static_assert( (IsSubTree<TestFunction<utopia::Any>,   decltype(linear_form)>::value), "could not find function" );
+		static_assert( !(IsSubTree<TrialFunction<utopia::Any>, decltype(linear_form)>::value), "should not find function" );
 
 		ElementMatrix mat;
 		ElementVector vec;
