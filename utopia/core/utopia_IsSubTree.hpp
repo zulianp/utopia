@@ -4,6 +4,7 @@
 #include "utopia_Traits.hpp"
 
 namespace utopia {
+	
 	//generic
 	template<class Expr, class Tree>
 	class IsSubTree {
@@ -221,36 +222,6 @@ namespace utopia {
 			return false;
 		}
 	};
-
-
-	// template<template<class...> class Expr, class Tree>
-	// class IsSubTreeTemplate {
-	// public:
-	// 	inline constexpr static bool value(const Expr &)
-	// 	{
-	// 		return false;
-	// 	}
-	// };
-
-
-	// template<template<class...> class Expr, class Left, class Right, class Op>
-	// class IsSubTreeTemplate<Expr, Binary<Left, Right, Op> > {
-	// public:
-	// 	inline constexpr static bool value(const Binary<Left, Right, Op> &expr)
-	// 	{
-	// 		return ExprQuery<Expr>::is_specialization(expr.left()) || ExprQuery<Expr>::is_specialization(expr.right());
-	// 	}
-	// };
-
-	// template<template<class...> class Expr, class Left, class Right>
-	// class IsSubTreeTemplate<Expr, Multiply<Left, Right> > {
-	// public:
-	// 	inline constexpr static bool value()
-	// 	{
-	// 		return ExprQuery<Expr>::is_specialization(Left()) || ExprQuery<Expr>::is_specialization(Right());
-	// 	}
-	// };
-
 
 }
 

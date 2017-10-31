@@ -3,6 +3,7 @@
 #include "utopia_fe_core.hpp"
 #include "utopia.hpp"
 #include "utopia_fe_homemade.hpp"
+#include "utopia_FEIsSubTree.hpp"
 
 namespace utopia {
 
@@ -157,7 +158,7 @@ namespace utopia {
 		auto uk = interpolate(u_vector, u);
 		auto g_uk = grad(uk);
 
-		auto e = mu * (transpose(grad(u))+ grad(u));
+		auto e = mu * (transpose(grad(u)) + grad(u));
 		auto b_form_11 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
 		auto b_form_12 = integral(-inner(p, div(v)));
 		auto b_form_21 = integral(inner(div(u), q));
@@ -239,6 +240,12 @@ namespace utopia {
 		auto mass         = integral(dot(u, v));
 		auto laplacian    = 0.1 * (-abs(integral(1. * dot( (A  + transpose(A)) * grad(u), grad(v)) - 0.1 * mass, 0))) + 0.9 * integral( dot(2. * u, v), 2);
 		auto linear_form  = integral(0.5 * dot(coeff(0.1), v));
+
+		assert( (IsSubTree<TrialFunction<utopia::Any>, decltype(mass)>::value) );
+		assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(mass)>::value) );
+
+		assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(linear_form)>::value) );
+		assert( !(IsSubTree<TrialFunction<utopia::Any>,  decltype(linear_form)>::value) );
 
 		ElementMatrix mat;
 		ElementVector vec;
