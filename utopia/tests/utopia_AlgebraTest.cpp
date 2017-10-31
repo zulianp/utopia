@@ -5,6 +5,7 @@
 #include "utopia.hpp"
 #include "utopia_AlgebraTest.hpp"
 // #include "utopia_Collection.hpp"
+#include "utopia_IsSubTree.hpp"
 
 namespace utopia {
 
@@ -229,6 +230,19 @@ namespace utopia {
 
         }
 
+        void is_subtree()
+        {
+            Vector v;
+            Matrix mat;
+
+            auto expr = -diag(0.1 * v +  mat * v);
+            static_assert( !(IsSubTree<Binary<Vector, Vector, Plus>, decltype(expr)>::value), "should be false" );
+            static_assert( (IsSubTree<Multiply<Matrix, Vector>, decltype(expr)>::value), "should be true" );
+            static_assert( (IsSubTree<Multiply<Matrix, Vector>, decltype(expr)>::value),  "should be true"  );
+            static_assert( (IsSubTree<Matrix, decltype(expr)>::value),  "should be true"  );
+            static_assert( (IsSubTree<Vector, decltype(expr)>::value),  "should be true"  ); 
+        }
+
 
         // void multiply_collections()
         // {
@@ -253,6 +267,7 @@ namespace utopia {
         void run()
         {
             print_backend_info();
+            UTOPIA_RUN_TEST(is_subtree);
             UTOPIA_RUN_TEST(vector_selection_test);
             UTOPIA_RUN_TEST(matrix_selection_test);
             UTOPIA_RUN_TEST(norm_test);
