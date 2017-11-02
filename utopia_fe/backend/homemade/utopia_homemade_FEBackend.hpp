@@ -203,7 +203,7 @@ namespace utopia {
 			auto space_ptr = f.space_ptr();
 
 			std::vector<int> indices;
-			space_ptr->mesh().node_indices(ctx.current_element, indices);
+			space_ptr->dof_indices(ctx.current_element, indices);
 
 			//compute offset
 			int n_funs = ctx.trial.size();
@@ -221,9 +221,6 @@ namespace utopia {
 				element_values.set(i, c.get(indices[i]));
 			}
 		}
-
-
-
 
 		template<class Tensor, class Space>
 		static std::vector<double> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<Space> > &interp, AssemblyContext<HOMEMADE> &ctx)
@@ -244,7 +241,6 @@ namespace utopia {
 
 			return ret;
 		}
-
 
 		template<class Tensor>
 		static std::vector<Vectord> grad(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<HMFESpace> > &interp, AssemblyContext<HOMEMADE> &ctx)
@@ -306,7 +302,7 @@ namespace utopia {
 			auto space_ptr = f.space_ptr();
 
 			std::vector<int> indices;
-			space_ptr->subspace(0).mesh().node_indices(ctx.current_element, indices);
+			space_ptr->subspace(0).dof_indices(ctx.current_element, indices);
 
 
 			std::vector<int> prod_indices;

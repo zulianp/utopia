@@ -14,57 +14,42 @@ namespace utopia {
 	template<class Traits>
 	class InnerProductType<Traits, 0> {
 	public:
-		typedef typename Traits::Scalar Scalar;
+		typedef typename Traits::Scalar Type;
 	};
 
 	template<class Traits>
 	class InnerProductType<Traits, 1> {
 	public:
-		typedef typename Traits::Vector Vector;
+		typedef typename Traits::Vector Type;
 	};
 
 	template<class Traits>
 	class InnerProductType<Traits, 2> {
 	public:
-		typedef typename Traits::Matrix Matrix;
+		typedef typename Traits::Matrix Type;
 	};
 
-	// template<class Left, class Right, class Traits, int Backend>
-	// class FEEval< Reduce< Binary<Left, Right, EMultiplies>, Plus> >, Traits, Backend> {
-	// public:
-	// 	typedef utopia::Reduce< Binary<Left, Right, EMultiplies>, Plus> > Expr;
+	template<class Left, class Right, class Traits, int Backend>
+	class FEEval< Reduce< Binary<Left, Right, EMultiplies>, Plus>, Traits, Backend> {
+	public:
+		typedef utopia::Reduce< Binary<Left, Right, EMultiplies>, Plus> Expr;
+		static const int has_trial = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
+		static const int has_test  = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
 		
-	// 	typedef typename InnerProductType<Traits, I
+		typedef typename InnerProductType<Traits, has_trial + has_test>::Type Result;
 
-	// 	template<template<class> class Function, class Space>
-	//     inline static auto apply(
-	//     	const Gradient< Function<Space> > &expr,
-	//     	AssemblyContext<Backend> &ctx) -> GradientT
-	//     {
-	//     	return FEBackend<Backend>::grad(expr.expr(), ctx);
-	//     } 
-
-	//     class SubspaceVisitor {
-	//     public:
-	//     	template<class Subspace>
-	//     	void operator()(const int i, const Subspace &space) 
-	//     	{
-	//     		std::cout << "visiting subspace: " << i << std::endl;
-	//     	}
-	//     };
-
-	//     template<template<class> class Function, class Spaces>
-	//     inline static auto apply(
-	//     	const Gradient< Function<ProductFunctionSpace<Spaces> > > &expr,
-	//     	AssemblyContext<Backend> &ctx) -> JacobianT
-	//     {
-	//     	const auto & space_ptr = expr.expr().space_ptr();
-	//     	return FEBackend<Backend>::grad(expr.expr(), ctx);
-	//     }
-
-	// };
-
-
+		template<template<class> class Function, class Space>
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> Result
+	    {
+	    	return FEBackend<Backend>::inner(
+	    			FEEval<Left,  Traits, Backend>::apply(expr.expr().left(),  ctx),
+	    			FEEval<Right, Traits, Backend>::apply(expr.expr().right(), ctx),
+	    			ctx
+	    		);
+	    } 
+	};
 
 	template<class Expr, class AssemblyContext>
 	class FunctionalTraits<Reduce<Expr, Plus>, AssemblyContext> {

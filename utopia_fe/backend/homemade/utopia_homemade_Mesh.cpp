@@ -14,7 +14,17 @@ namespace utopia {
 		return impl_ptr->detail.n_dims;
 	}
 
-	void Mesh::make_triangle()
+	std::size_t Mesh::n_nodes() const
+	{
+		return impl_ptr->detail.n_nodes;
+	}
+
+	std::size_t Mesh::n_elements() const
+	{
+		return el_ptr.size() - 1;
+	}
+
+	void Mesh::make_triangle(const int order)
 	{
 		el_ptr.resize(2);
 		el_ptr[0] = 0;
@@ -26,7 +36,27 @@ namespace utopia {
 		el_index[2] = 2;
 
 		el_type.resize(1);
-		el_type[0] = Intersector::ELEMENT_TYPE_TRIANGLE;
+		
+		switch(order) {
+			case 1: 
+			{
+				el_type[0] = Intersector::ELEMENT_TYPE_TRIANGLE;
+				break;		
+			}
+
+			case 2: 
+			{
+				el_type[0] = Intersector::ELEMENT_TYPE_TRIANGLE_ORDER_2;
+				break;		
+			}
+			
+			default:
+			{
+				assert(false);
+				break;
+			}
+		}
+		
 
 		points.resize(3 * 2);
 		points[0] = 0.0;
@@ -55,11 +85,20 @@ namespace utopia {
 			{
 				return 1;
 			}
+			case Intersector::ELEMENT_TYPE_TRIANGLE_ORDER_2:
+			{
+				return 2;
+			}
 			default: 
 			{
 				return 0;
 			}
 		}
+	}
+
+	int Mesh::element_type(const int element_index) const
+	{
+		return el_type[element_index];
 	}
 
 	void Mesh::node_indices(const int elem, std::vector<int> &index)

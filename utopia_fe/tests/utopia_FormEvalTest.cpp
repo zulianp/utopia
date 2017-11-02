@@ -224,10 +224,12 @@ namespace utopia {
 		typedef utopia::HMFESpace FunctionSpaceT;
 		static const int Backend = Traits<FunctionSpaceT>::Backend;
 
-		auto mesh = std::make_shared<Mesh>();
-		mesh->make_triangle();
+		const int order = 2;
 
-		auto V = FunctionSpaceT(mesh);
+		auto mesh = std::make_shared<Mesh>();
+		mesh->make_triangle(order);
+
+		auto V = FunctionSpaceT(mesh, order);
 		auto u = trial(V);
 		auto v = test(V);
 
@@ -238,14 +240,14 @@ namespace utopia {
 		}
 
 		auto mass         = integral(dot(u, v));
-		auto laplacian    = 0.1 * (-abs(integral(1. * dot( (A  + transpose(A)) * grad(u), grad(v)) - 0.1 * mass, 0))) + 0.9 * integral( dot(2. * u, v), 2);
+		auto diff_op    = 0.1 * (-abs(integral(1. * dot( (A  + transpose(A)) * grad(u), grad(v)) - 0.1 * mass, 0))) + 0.9 * integral( dot(2. * u, v), 2);
 		auto linear_form  = integral(0.5 * dot(coeff(0.1), v));
 
 		static_assert( (IsSubTree<TrialFunction<utopia::Any>, decltype(mass)>::value), "could not find function" );
 		static_assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(mass)>::value), "could not find function" );
 
-		static_assert( (IsSubTree<TrialFunction<utopia::Any>, decltype(laplacian)>::value), "could not find function" );
-		static_assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(laplacian)>::value), "could not find function" );
+		static_assert( (IsSubTree<TrialFunction<utopia::Any>, decltype(diff_op)>::value), "could not find function" );
+		static_assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(diff_op)>::value), "could not find function" );
 
 		static_assert( (IsSubTree<TestFunction<utopia::Any>,   decltype(linear_form)>::value), "could not find function" );
 		static_assert( !(IsSubTree<TrialFunction<utopia::Any>, decltype(linear_form)>::value), "should not find function" );
@@ -259,16 +261,20 @@ namespace utopia {
 		AssemblyContext<Backend> ctx;
 		ctx.init_bilinear(mass);
 
-		eval.eval(laplacian, mat, ctx, true);
+		eval.eval(diff_op, mat, ctx, true);
 
+		disp("----------------------");
 		disp(mat);
+		disp("----------------------");
 
 		eval.eval(mass, mat, ctx, true);
 		disp(mat);
+		disp("----------------------");
 
 		ctx.init_linear(linear_form);
 		eval.eval(linear_form, vec, ctx, true);
 		disp(vec);
+		disp("----------------------");
 	}
 
 	static void run_mixed_form_eval_test()

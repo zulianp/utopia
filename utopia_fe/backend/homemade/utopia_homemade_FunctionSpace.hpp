@@ -14,9 +14,11 @@ namespace utopia {
 
 	class HMFESpace : public FunctionSpace<HMFESpace> {
 	public:
-		HMFESpace(const std::shared_ptr<Mesh> &mesh)
-		: mesh_(mesh)
-		{}
+		HMFESpace(const std::shared_ptr<Mesh> &mesh, const int order = 1)
+		: mesh_(mesh), order_(order)
+		{
+			make_dof_map();
+		}
 
 		HMFESpace()
 		: mesh_(std::make_shared<Mesh>()) 
@@ -32,8 +34,14 @@ namespace utopia {
 			return *mesh_;
 		}
 
+		void dof_indices(const int element_index, std::vector<int> &indices);
+
+		void make_dof_map();
 
 		std::shared_ptr<Mesh> mesh_;
+		std::vector<int> dof_ptr;
+		std::vector<int> dof_index;
+		int order_;
 	};
 
 	template<>

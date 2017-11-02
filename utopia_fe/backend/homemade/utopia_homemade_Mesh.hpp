@@ -13,10 +13,16 @@ namespace utopia {
 	public:
 		class Impl;
 
-		void make_triangle();
+		void make_triangle(const int order = 1);
 		int element_order(const int element_index) const;
+		int element_type(const int element_index) const;
 		void node_indices(const int elem, std::vector<int> &index);
 		int n_dims() const;
+		
+		std::size_t n_nodes() const;
+		std::size_t n_elements() const;
+
+
 		Mesh();
 		~Mesh();
 
@@ -24,7 +30,7 @@ namespace utopia {
 		void *mesh_impl_ptr() const;
 
 
-	private:
+	
 		//memory
 		std::vector<int> el_ptr;
 		std::vector<int> el_index;
@@ -32,7 +38,7 @@ namespace utopia {
 		std::vector<int> meta;
 		std::vector<double> points;
 
-
+	private:
 		std::unique_ptr<Impl> impl_ptr;
 	};
 
