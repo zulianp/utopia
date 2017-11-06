@@ -5,6 +5,7 @@
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_FEExpression.hpp"
+#include "utopia_FEIsSubTree.hpp"
 
 namespace utopia {
 
@@ -46,11 +47,13 @@ namespace utopia {
 
 	template<class Derived>
 	inline Integral<Derived> integral(const Expression<Derived> &expr) {
+		static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
 		return Integral<Derived>(expr);
 	}
 
 	template<class Derived>
 	inline Integral<Derived> integral(const Expression<Derived> &expr, const int block_id) {
+		static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
 		return Integral<Derived>(expr, block_id);
 	}
 

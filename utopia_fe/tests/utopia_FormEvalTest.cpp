@@ -160,9 +160,7 @@ namespace utopia {
 		auto g_uk = grad(uk);
 
 		auto e = mu * (transpose(grad(u)) + grad(u));
-		auto b_form_11 = integral(inner(e, grad(v))) + rho * integral(inner(g_uk * u, v));
-		// auto b_form_11 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
-
+		auto b_form_11 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
 		auto b_form_12 = -integral(inner(p, div(v)));
 		auto b_form_21 = integral(inner(div(u), q));
 
@@ -301,7 +299,7 @@ namespace utopia {
 		 	A.set(0, 0, 0.1);
 		}
 
-		auto diff_op     = integral(inner(u, v) + inner(u, v));
+		auto diff_op = integral(inner(u, v) + inner(u, v));
 
 		ElementMatrix mat;
 		ElementVector vec;

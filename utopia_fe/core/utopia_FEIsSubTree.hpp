@@ -110,6 +110,13 @@ namespace utopia {
 		static const int value = IsSubTree<Expr, Inner>::value;
 	};
 
+
+	template<class Inner>
+	class IsSubTree< Integral<utopia::Any>, Integral<Inner> > {
+	public:
+		static const int value = 1;
+	};
+
 	///rest of specializations
 }
 
