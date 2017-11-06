@@ -5,6 +5,7 @@
 #include "utopia_fe_homemade.hpp"
 #include "utopia_FEIsSubTree.hpp"
 
+
 namespace utopia {
 
 	static void run_interp_vec_test()
@@ -111,7 +112,7 @@ namespace utopia {
 		auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
 		auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
-		auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
+		auto b_form = integral((2. * mu) * inner(e_u, e_v)) + integral(lambda * inner(div(u), div(v)));
 
 		AssemblyContext<Backend> ctx;
 		ctx.init_bilinear(b_form);
@@ -159,8 +160,10 @@ namespace utopia {
 		auto g_uk = grad(uk);
 
 		auto e = mu * (transpose(grad(u)) + grad(u));
-		auto b_form_11 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
-		auto b_form_12 = integral(-inner(p, div(v)));
+		auto b_form_11 = integral(inner(e, grad(v))) + rho * integral(inner(g_uk * u, v));
+		// auto b_form_11 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
+
+		auto b_form_12 = -integral(inner(p, div(v)));
 		auto b_form_21 = integral(inner(div(u), q));
 
 		AssemblyContext<Backend> ctx;
@@ -239,15 +242,15 @@ namespace utopia {
 		 	A.set(0, 0, 0.1);
 		}
 
-		auto mass         = integral(dot(u, v));
-		auto diff_op    = 0.1 * (-abs(integral(1. * dot( (A  + transpose(A)) * grad(u), grad(v)) - 0.1 * mass, 0))) + 0.9 * integral( dot(2. * u, v), 2);
-		auto linear_form  = integral(0.5 * dot(coeff(0.1), v));
+		auto mass        = integral(dot(u, v));
+		auto diff_op     = 0.1 * (-abs(integral(1. * dot( (A  + transpose(A)) * grad(u), grad(v)) , 0) - 0.1 * mass)) + 0.9 * integral( dot(2. * u, v), 2);
+		auto linear_form = integral(0.5 * dot(coeff(0.1), v));
 
-		static_assert( (IsSubTree<TrialFunction<utopia::Any>, decltype(mass)>::value), "could not find function" );
-		static_assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(mass)>::value), "could not find function" );
+		static_assert( (IsSubTree<TrialFunction<utopia::Any>,  decltype(mass)>::value), 	"could not find function" );
+		static_assert( (IsSubTree<TestFunction<utopia::Any>,   decltype(mass)>::value), 	"could not find function" );
 
-		static_assert( (IsSubTree<TrialFunction<utopia::Any>, decltype(diff_op)>::value), "could not find function" );
-		static_assert( (IsSubTree<TestFunction<utopia::Any>,  decltype(diff_op)>::value), "could not find function" );
+		static_assert( (IsSubTree<TrialFunction<utopia::Any>,  decltype(diff_op)>::value), 	"could not find function" );
+		static_assert( (IsSubTree<TestFunction<utopia::Any>,   decltype(diff_op)>::value), 	"could not find function" );
 
 		static_assert( (IsSubTree<TestFunction<utopia::Any>,   decltype(linear_form)>::value), "could not find function" );
 		static_assert( !(IsSubTree<TrialFunction<utopia::Any>, decltype(linear_form)>::value), "should not find function" );

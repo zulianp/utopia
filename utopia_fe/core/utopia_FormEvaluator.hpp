@@ -38,8 +38,10 @@ namespace utopia {
 		{	
 			AssemblyContext<BAKEND_FLAG> ctx;
 			ctx.init_linear(expr);
-			ctx.init_tensor(tensor, reset_tensor);
-			FormEval<Form, BAKEND_FLAG>::apply(expr, tensor, ctx);
+			// ctx.init_tensor(tensor, reset_tensor);
+			// FormEval<Form, BAKEND_FLAG>::apply(expr, tensor, ctx);
+
+			eval(expr, tensor, ctx, reset_tensor);
 		}
 
 		template<class Form, class Tensor, int Order>

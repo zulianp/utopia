@@ -6,6 +6,23 @@
 
 namespace utopia {
 
+	template<class Left, class Right, class Traits, int Backend>
+	class FEEval<Binary<Integral<Left>, Right, Plus>, Traits, Backend> {
+	public:
+		typedef utopia::Binary<Integral<Left>, Right, Plus> Expr;
+
+
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( 
+	    	FEEval<Integral<Left>, Traits, Backend>::apply(expr.left())
+	    	)
+	    {
+	    	return FEEval<Integral<Left>, Traits, Backend>::apply(expr.left()) + 
+	    		   FEEval<Right, Traits, Backend>::apply(expr.right());
+	    } 
+	};
+
 	template<class Left, class Space, class Op, class Traits, int Backend>
 	class FEEval<Binary<Left, TrialFunction<Space>, Op>, Traits, Backend> {
 	public:
@@ -110,7 +127,87 @@ namespace utopia {
 	};
 
 
+	template<class Left, class Right, class Traits, int Backend>
+	class FEEval<Binary<Integral<Left>, Integral<Right>, Plus>, Traits, Backend> {
+	public:
+		typedef utopia::Binary<Integral<Left>, Integral<Right>, Plus> Expr;
 
+
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( 
+	    	    		FEEval<Left, Traits, Backend>::apply(expr.left().expr(), ctx)
+	    	    	)
+	    {
+	    	return FEEval<Left, Traits, Backend>::apply(expr.left().expr(), ctx) + FEEval<Right, Traits, Backend>::apply(expr.right().expr(), ctx);
+	    } 
+	};
+
+	template<class Left, class Right, class Traits, int Backend>
+	class FEEval<Binary<Integral<Left>, Integral<Right>, Minus>, Traits, Backend> {
+	public:
+		typedef utopia::Binary<Integral<Left>, Integral<Right>, Minus> Expr;
+
+
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( 
+	    	    		FEEval<Left, Traits, Backend>::apply(expr.left().expr(), ctx)
+	    	    	)
+	    {
+	    	return FEEval<Left, Traits, Backend>::apply(expr.left().expr(), ctx) - FEEval<Right, Traits, Backend>::apply(expr.right().expr(), ctx);
+	    } 
+	};
+
+
+	template<class Left, class Right, class Traits, int Backend>
+	class FEEval<Binary<Number<Left>, Integral<Right>, Multiplies>, Traits, Backend> {
+	public:
+		typedef utopia::Binary<Number<Left>, Integral<Right>, Multiplies> Expr;
+
+
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( 
+	    	    		FEEval<Right, Traits, Backend>::apply(expr.right().expr(), ctx)
+	    	    	)
+	    {
+	    	return static_cast<Left>(expr.left()) * FEEval<Right, Traits, Backend>::apply(expr.right().expr(), ctx);
+	    } 
+	};
+
+
+	template<class Left, class Right, class Op, class Traits, int Backend>
+	class FEEval<Binary<Number<Left>, Reduce<Right, Op>, Multiplies>, Traits, Backend> {
+	public:
+		typedef utopia::Binary<Number<Left>, Reduce<Right, Op>, Multiplies> Expr;
+
+
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( 
+	    	    		FEEval<Reduce<Right, Op>, Traits, Backend>::apply(expr.right(), ctx)
+	    	    	)
+	    {
+	    	return static_cast<Left>(expr.left()) * FEEval<Reduce<Right, Op>, Traits, Backend>::apply(expr.right(), ctx);
+	    } 
+	};
+
+	template<class Left, class Right, class Traits, int Backend>
+	class FEEval<Binary<Integral<Left>, Number<Right>, Multiplies>, Traits, Backend> {
+	public:
+		typedef utopia::Binary<Integral<Left>, Number<Right>, Multiplies> Expr;
+
+
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( 
+	    	    		FEEval<Left, Traits, Backend>::apply(expr.left(), ctx)
+	    	    	)
+	    {
+	    	return FEEval<Left, Traits, Backend>::apply(expr.left(), ctx) * FEEval<Right, Traits, Backend>::apply(expr.right(), ctx);
+	    } 
+	};
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
 

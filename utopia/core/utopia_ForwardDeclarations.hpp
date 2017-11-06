@@ -22,6 +22,9 @@ namespace utopia {
     class Unary;
 
     template<class Expr>
+    class Negate;
+
+    template<class Expr>
     class Transposed;
 
     template<typename T>

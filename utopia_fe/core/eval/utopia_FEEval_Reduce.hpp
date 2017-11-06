@@ -9,24 +9,43 @@
 namespace utopia {
 
 	template<class Traits, int Order>
-	class InnerProductType {};
+	class InnerProduct {};
 
 	template<class Traits>
-	class InnerProductType<Traits, 0> {
+	class InnerProduct<Traits, 0> {
 	public:
 		typedef typename Traits::Scalar Type;
+
+		template<class Left, class Right>
+		inline static Type apply(const Left &left, const Right &right, AssemblyContext<Traits::Backend> &ctx)
+		{
+			return FEBackend<Traits::Backend>::inner(left, right, ctx);
+		}
 	};
 
 	template<class Traits>
-	class InnerProductType<Traits, 1> {
+	class InnerProduct<Traits, 1> {
 	public:
 		typedef typename Traits::Vector Type;
+
+
+		template<class Left, class Right>
+		inline static Type apply(const Left &left, const Right &right, AssemblyContext<Traits::Backend> &ctx)
+		{
+			return FEBackend<Traits::Backend>::linear_form(left, right, ctx);
+		}
 	};
 
 	template<class Traits>
-	class InnerProductType<Traits, 2> {
+	class InnerProduct<Traits, 2> {
 	public:
 		typedef typename Traits::Matrix Type;
+
+		template<class Left, class Right>
+		inline static Type apply(const Left &left, const Right &right, AssemblyContext<Traits::Backend> &ctx)
+		{
+			return FEBackend<Traits::Backend>::bilinear_form(left, right, ctx);
+		}
 	};
 
 	template<class Left, class Right, class Traits, int Backend>
@@ -36,19 +55,27 @@ namespace utopia {
 		static const int has_trial = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
 		static const int has_test  = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
 		
-		typedef typename InnerProductType<Traits, has_trial + has_test>::Type Result;
+		typedef utopia::InnerProduct<Traits, has_trial + has_test> InnerProductT;
+		typedef typename InnerProductT::Type Result;
 
-		template<template<class> class Function, class Space>
 	    inline static auto apply(
 	    	const Expr &expr,
 	    	AssemblyContext<Backend> &ctx) -> Result
 	    {
-	    	return FEBackend<Backend>::inner(
-	    			FEEval<Left,  Traits, Backend>::apply(expr.expr().left(),  ctx),
-	    			FEEval<Right, Traits, Backend>::apply(expr.expr().right(), ctx),
-	    			ctx
-	    		);
-	    } 
+	    	if(is_test(expr.expr().right())) {
+		    	return InnerProductT::apply(
+		    			FEEval<Left,  Traits, Backend>::apply(expr.expr().left(),  ctx),
+		    			FEEval<Right, Traits, Backend>::apply(expr.expr().right(), ctx),
+		    			ctx
+		    		);
+		    } else {
+		    	return InnerProductT::apply(
+		    			FEEval<Right, Traits, Backend>::apply(expr.expr().right(),  ctx),
+		    			FEEval<Left,  Traits, Backend>::apply(expr.expr().left(), ctx),
+		    			ctx
+		    		);
+		    }
+	    }  
 	};
 
 	template<class Expr, class AssemblyContext>

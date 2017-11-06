@@ -13,6 +13,7 @@
 #include "utopia_FEEval_Reduce.hpp"
 #include "utopia_FEEval_Transposed.hpp"
 #include "utopia_FEEval_Interpolate.hpp"
+#include "utopia_FEEval_Integral.hpp"
 #include "utopia_FEEval_ContextFunction.hpp"
 
 

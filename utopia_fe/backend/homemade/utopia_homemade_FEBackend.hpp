@@ -8,12 +8,43 @@
 #include "utopia_fe_core.hpp"
 
 #include "utopia_homemade_FunctionSpace.hpp"
+#include <vector>
 
 namespace utopia {
+
+
+	inline static double inner(const double left, const double right)
+	{
+		return left * right;
+	}
 
 	template<>
 	class FEBackend<HOMEMADE> {
 	public:
+		template<typename T>
+		inline static const T &get(const std::vector<std::vector<T> > &v, const std::size_t qp, const std::size_t i)
+		{
+			return v[qp][i];
+		}
+
+		template<typename T, int Order>
+		inline static const T get(const ConstantCoefficient<T, Order> &c, const std::size_t qp, const std::size_t i)
+		{
+			return c[i];
+		}
+
+		template<typename T>
+		inline static void add(ElementMatrix &mat, const int i, const int j, const T value)
+		{
+			mat.add(i, j, value);
+		}
+
+		template<typename T>
+		inline static void add(ElementVector &vec, const int i, const int j, const T value)
+		{
+			assert(j == 0);
+			vec.add(i, value);
+		}
 
 		//////////////////////////////////////////////////////////////////////////////////////////
 
@@ -534,13 +565,65 @@ namespace utopia {
 			return ret;
 		}
 
-		
+		template<class Trial, class Test>
+		static Matrixd bilinear_form(
+		 	Trial &&trial,
+			Test  &&test,
+			AssemblyContext<HOMEMADE> &ctx)
+		{	
+			Matrixd result;
+			ctx.init_tensor(result, true);
+			Write<Matrixd> wt(result);
+
+			auto && dx    = ctx.dx();
+
+
+			uint n_quad_points = dx.size();
+
+			auto s = size(result);
+
+			if(s.n_dims() == 1) {
+				s.set_dims(2);
+				s.set(1, 1);
+			}
+
+
+			for (uint qp = 0; qp < n_quad_points; qp++) {
+				for (uint i = 0; i < s.get(1); i++) {
+					for (uint j = 0; j < s.get(0); j++) {
+						add(result, j, i, inner( get(trial, qp, i), get(test, qp, j) ) * dx[qp]);
+					}
+				}
+			}
+
+			return result;
+		}
+
+		template<class Fun, class Test>
+		static Vectord linear_form(
+		 	Fun  &&fun,
+			Test &&test,
+			AssemblyContext<HOMEMADE> &ctx)
+		{	
+			Vectord result;
+			ctx.init_tensor(result, true);
+			Write<Vectord> wt(result);
+
+			auto && dx    = ctx.dx();
+			uint n_quad_points = dx.size();
+
+			auto s = size(result);
+			for (uint qp = 0; qp < n_quad_points; qp++) {
+				for (uint j = 0; j < s.get(0); j++) {
+					add(result, j, 0, inner( get(fun, qp, 0), get(test, qp, j) ) * dx[qp]);
+				}
+			}
+
+			return result;
+		}
+
 	};
 
-	inline static double inner(const double left, const double right)
-	{
-		return left * right;
-	}
 }
 
 #endif //UTOPIA_HOMEADE_FE_BACKEND_HPP
