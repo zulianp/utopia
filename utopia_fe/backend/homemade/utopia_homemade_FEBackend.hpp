@@ -220,6 +220,99 @@ namespace utopia {
 			return ret;
 		}
 
+
+		//////////////////////////////////////////////////////////////////////////////////////////
+		//Curl
+		static void curl_aux(
+			ProductFunctionSpace<HMFESpace> &space,
+			std::vector<std::shared_ptr<FE> > &fe_object,
+			AssemblyContext<HOMEMADE> &ctx,
+			HMDerivative &ret)
+		{
+			ret.resize(fe_object[0]->fun.size()); 
+
+
+			const int n_shape_x = fe_object[0]->n_shape_functions();
+
+			int n_shape_functions = 0;
+			for(auto &t : fe_object) {
+				assert(n_shape_x == t->n_shape_functions());
+				n_shape_functions += t->n_shape_functions();
+			}
+
+			const std::size_t n_subspaces = space.n_subspaces();
+			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
+				ret[qp].resize(n_shape_functions);
+
+				for(int j = 0; j < n_shape_x; ++j) {
+					
+					auto &ret_j = ret[qp][j];
+
+				
+
+					switch(n_subspaces) {
+						case 2:
+						{
+							ret_j = zeros(1);
+							Write<Vectord> w_v(ret_j);
+							const auto &grad_x = fe_object[0]->grad[qp][j];
+							const auto &grad_y = fe_object[1]->grad[qp][j];
+							Read<Vectord> r_x(grad_x);
+							Read<Vectord> r_y(grad_y);
+
+							//usually associated with the z dimension but in this case 
+							// we save space and save it in the x dimension
+							//TODO: check if there is the need to put it in the z.
+							ret_j.set(0, grad_y.get(0) - grad_x.get(1));
+							break;
+						}
+
+						case 3:
+						{
+							ret_j = zeros(3);
+							Write<Vectord> w_v(ret_j);
+
+							const auto &grad_x = fe_object[0]->grad[qp][j];
+							const auto &grad_y = fe_object[1]->grad[qp][j];
+							const auto &grad_z = fe_object[1]->grad[qp][j];
+
+							Read<Vectord> r_x(grad_x);
+							Read<Vectord> r_y(grad_y);
+							Read<Vectord> r_z(grad_z);
+
+							ret_j.set(0, grad_z.get(1) - grad_y.get(2));
+							ret_j.set(1, grad_x.get(2) - grad_z.get(0));
+							ret_j.set(2, grad_y.get(0) - grad_x.get(1));
+							break;
+						}
+
+						default :
+						{
+							assert(false);
+						}
+					}
+				}
+			}
+		}
+
+
+		static HMDerivative curl(const TrialFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto space_ptr = fun.space_ptr();
+			HMDerivative ret;
+			curl_aux(*space_ptr, ctx.trial, ctx, ret);
+			return ret;
+		}
+
+		static HMDerivative curl(const TestFunction< ProductFunctionSpace<HMFESpace> > &fun, AssemblyContext<HOMEMADE> &ctx)
+		{
+			auto space_ptr = fun.space_ptr();
+			HMDerivative ret;
+			curl_aux(*space_ptr, ctx.test, ctx, ret);
+			return ret;
+		}
+
+
 		//////////////////////////////////////////////////////////////////////////////////////////
 		//Interpolate
 		template<class Tensor>
@@ -239,8 +332,8 @@ namespace utopia {
 			//compute offset
 			int n_funs = ctx.trial.size();
 			for(auto &i : indices) {
-			 	 i *= n_funs;
-			 	 i += space_ptr->subspace_id();
+				i *= n_funs;
+				i += space_ptr->subspace_id();
 			}
 			
 			element_values = zeros(indices.size());
@@ -344,10 +437,10 @@ namespace utopia {
 
 			space_ptr->each([&](const int sub_index, const HMFESpace &space) {
 				for(auto &i : indices) {
-					 int p_i = i;
-				 	 p_i *= n_funs;
-				 	 p_i += space.subspace_id();
-				 	 prod_indices.push_back(p_i);
+					int p_i = i;
+					p_i *= n_funs;
+					p_i += space.subspace_id();
+					prod_indices.push_back(p_i);
 				}
 			});
 			
@@ -567,7 +660,7 @@ namespace utopia {
 
 		template<class Trial, class Test>
 		static Matrixd bilinear_form(
-		 	Trial &&trial,
+			Trial &&trial,
 			Test  &&test,
 			AssemblyContext<HOMEMADE> &ctx)
 		{	
@@ -601,7 +694,7 @@ namespace utopia {
 
 		template<class Fun, class Test>
 		static Vectord linear_form(
-		 	Fun  &&fun,
+			Fun  &&fun,
 			Test &&test,
 			AssemblyContext<HOMEMADE> &ctx)
 		{	

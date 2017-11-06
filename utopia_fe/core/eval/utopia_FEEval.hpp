@@ -5,6 +5,7 @@
 #include "utopia_FEEval_BasisFunction.hpp"
 #include "utopia_FEEval_Gradient.hpp"
 #include "utopia_FEEval_Divergence.hpp"
+#include "utopia_FEEval_Curl.hpp"
 #include "utopia_FEEval_TrialFunction.hpp"
 #include "utopia_FEEval_TestFunction.hpp"
 #include "utopia_FEEval_ConstantCoefficient.hpp"

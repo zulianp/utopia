@@ -59,6 +59,7 @@ namespace utopia {
 		typedef utopia::HMDerivative GradientType;
 		typedef utopia::HMFun DivergenceType;
 		typedef utopia::HMJacobian JacobianType;
+		typedef utopia::HMDerivative CurlType;
 	};
 
 	template<>

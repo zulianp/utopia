@@ -48,13 +48,13 @@ namespace utopia {
 	template<class Derived>
 	inline Integral<Derived> integral(const Expression<Derived> &expr) {
 		static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
-		return Integral<Derived>(expr);
+		return Integral<Derived>(expr.derived());
 	}
 
 	template<class Derived>
 	inline Integral<Derived> integral(const Expression<Derived> &expr, const int block_id) {
 		static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
-		return Integral<Derived>(expr, block_id);
+		return Integral<Derived>(expr.derived(), block_id);
 	}
 
 	template<class Expr>
