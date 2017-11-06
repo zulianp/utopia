@@ -112,7 +112,7 @@ namespace utopia {
 		auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
 		auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
-		auto b_form = integral((2. * mu) * inner(e_u, e_v)) + integral(lambda * inner(div(u), div(v)));
+		auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
 
 		AssemblyContext<Backend> ctx;
 		ctx.init_bilinear(b_form);
@@ -206,8 +206,8 @@ namespace utopia {
 
 		Matrixd A = identity(3, 3);
 
-		auto mass = integral( dot(u, v) );
-		auto laplacian = integral( dot(transpose(A) * grad(u), grad(v)) );
+		auto mass = integral( inner(u, v) );
+		auto laplacian = integral( inner(transpose(A) * grad(u), grad(v)) );
 
 		AssemblyContext<Backend> ctx;
 		ctx.init_bilinear(mass);
@@ -242,9 +242,9 @@ namespace utopia {
 		 	A.set(0, 0, 0.1);
 		}
 
-		auto mass        = integral(dot(u, v));
-		auto diff_op     = 0.1 * (-abs(integral(1. * dot( (A  + transpose(A)) * grad(u), grad(v)) , 0) - 0.1 * mass)) + 0.9 * integral( dot(2. * u, v), 2);
-		auto linear_form = integral(0.5 * dot(coeff(0.1), v));
+		auto mass        = integral(inner(u, v));
+		auto diff_op     = 0.1 * (-abs(integral(1. * inner( (A  + transpose(A)) * grad(u), grad(v)) , 0) - 0.1 * mass)) + 0.9 * integral( inner(2. * u, v), 2);
+		auto linear_form = integral(0.5 * inner(coeff(0.1), v));
 
 		static_assert( (IsSubTree<TrialFunction<utopia::Any>,  decltype(mass)>::value), 	"could not find function" );
 		static_assert( (IsSubTree<TestFunction<utopia::Any>,   decltype(mass)>::value), 	"could not find function" );
@@ -280,6 +280,44 @@ namespace utopia {
 		disp("----------------------");
 	}
 
+
+	static void run_scalar_form_sum_eval_test()
+	{
+		typedef utopia::HMFESpace FunctionSpaceT;
+		static const int Backend = Traits<FunctionSpaceT>::Backend;
+
+		const int order = 2;
+
+		auto mesh = std::make_shared<Mesh>();
+		mesh->make_triangle(order);
+
+		auto V = FunctionSpaceT(mesh, order);
+		auto u = trial(V);
+		auto v = test(V);
+
+		Matrixd A = identity(2, 2);
+		{
+			Write<Matrixd> w(A);
+		 	A.set(0, 0, 0.1);
+		}
+
+		auto diff_op     = integral(inner(u, v) + inner(u, v));
+
+		ElementMatrix mat;
+		ElementVector vec;
+
+		FormEvaluator<Backend> eval;
+
+		//init context only once for highest order assembly
+		AssemblyContext<Backend> ctx;
+		ctx.init_bilinear(diff_op);
+		eval.eval(diff_op, mat, ctx, true);
+
+		disp("----------------------");
+		disp(mat);
+		disp("----------------------");
+	}
+
 	static void run_mixed_form_eval_test()
 	{
 		typedef utopia::HMFESpace FunctionSpaceT;
@@ -306,7 +344,7 @@ namespace utopia {
 		 	A.set(1, 1, 2.);
 		}
 
-		auto mixed = integral( dot(grad(u), 0.1 * A * v) );
+		auto mixed = integral( inner(grad(u), 0.1 * A * v) );
 
 		AssemblyContext<Backend> ctx;
 		ctx.init_bilinear(mixed);
@@ -320,6 +358,8 @@ namespace utopia {
 
 	void run_form_eval_test(libMesh::LibMeshInit &init)
 	{
+		std::cout << "run_scalar_form_sum_eval_test:" << std::endl;
+		run_scalar_form_sum_eval_test();
 		std::cout << "run_scalar_form_eval_test:" << std::endl;
 		run_scalar_form_eval_test();
 		std::cout << "run_vector_form_eval_test:" << std::endl;

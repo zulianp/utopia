@@ -24,11 +24,11 @@ namespace utopia {
 					Tensor &t, 
 					AssemblyContext<HOMEMADE> &ctx)
 		{
-			auto &&r = FEEval<Integral<Expr>, Traits, HOMEMADE>::apply(expr, ctx);
+			if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
+				return;
+			}
 
-			// static_assert(std::is_same<typename std::remove_cv<Tensor>::type,
-			// 						   typename std::remove_cv<decltype(r)>::type>::value,
-			// 						   "result must be the same type");
+			auto &&r = FEEval<Integral<Expr>, Traits, HOMEMADE>::apply(expr, ctx);
 			t = r;
 		}
 
@@ -121,93 +121,6 @@ namespace utopia {
 			apply(expr.expr(), result, ctx);
 			result = sqrt(result);
 		}
-
-		// 	/////////////////////////////////
-
-
-		// template<class Expr, class Tensor>
-		// static void apply(
-		// 	const Integral<Expr> &expr, 
-		// 	Tensor &mat, 
-		// 	AssemblyContext<HOMEMADE> &ctx)
-		// {
-		// 	if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
-		// 		return;
-		// 	}
-
-		// 	apply(expr.expr(), mat, ctx);
-		// }
-
-
-
-		// template<class Left, class Right, class Tensor>
-		// static void apply(
-		// 	const Reduce<Binary<Left, Right, EMultiplies>, Plus> &expr, 
-		// 	Tensor &result, 
-		// 	AssemblyContext<HOMEMADE> &ctx)
-		// {	
-		// 	Write<Tensor> wt(result);
-
-		// 	auto && left  = FEEval<Left,  Traits, HOMEMADE>::apply(expr.expr().left(),  ctx);
-		// 	auto && right = FEEval<Right, Traits, HOMEMADE>::apply(expr.expr().right(), ctx);
-		// 	auto && dx    = ctx.dx();
-
-		// 	const bool left_is_test = is_test(expr.expr().left());
-		// 	assert( left_is_test != is_test(expr.expr().right()) );
-
-		// 	uint n_quad_points = dx.size();
-
-		// 	auto s = size(result);
-
-		// 	if(s.n_dims() == 1) {
-		// 		s.set_dims(2);
-		// 		s.set(1, 1);
-		// 	}
-
-		// 	if(left_is_test) {
-		// 		for (uint qp = 0; qp < n_quad_points; qp++) {
-		// 			for (uint i = 0; i < s.get(0); i++) {
-		// 				for (uint j = 0; j < s.get(1); j++) {
-		// 					add(result, i, j, inner( get(left, qp, i), get(right, qp, j) ) * dx[qp]);
-		// 				}
-		// 			}
-		// 		}
-
-		// 	} else {
-		// 		for (uint qp = 0; qp < n_quad_points; qp++) {
-		// 			for (uint i = 0; i < s.get(1); i++) {
-		// 				for (uint j = 0; j < s.get(0); j++) {
-		// 					add(result, j, i, inner( get(left, qp, i), get(right, qp, j) ) * dx[qp]);
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// }
-
-		// ///bilinear functional
-		// template<class Left, class Right>
-		// static Matrixd apply_bilinear(
-		// 	const Reduce<Binary<Left, Right, EMultiplies>, Plus> &expr, 
-		// 	AssemblyContext<HOMEMADE> &ctx)
-		// {
-		// 	Matrixd result;
-		// 	ctx.init_tensor(expr, result, true);
-		// 	apply(expr, result, ctx);
-		// 	return result;
-		// }
-
-
-		// ///linear functional
-		// template<class Left, class Right>
-		// static Matrixd apply_linear(
-		// 	const Reduce<Binary<Left, Right, EMultiplies>, Plus> &expr, 
-		// 	AssemblyContext<HOMEMADE> &ctx)
-		// {
-		// 	Vectord result;
-		// 	ctx.init_tensor(expr, result, true);
-		// 	apply(expr, result, ctx);
-		// 	return result;
-		// }
 	};
 }
 
