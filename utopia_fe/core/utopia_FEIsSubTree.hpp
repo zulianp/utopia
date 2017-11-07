@@ -58,6 +58,20 @@ namespace utopia {
 		static const int value = IsSubTree<Expr, Inner>::value;
 	};
 
+	//test gradient
+	template<class Space>
+	class IsSubTree<Gradient<TestFunction<utopia::Any>>, Gradient<TestFunction<Space>> > {
+	public:
+		static const int value = 1;
+	};
+
+	//trial gradient
+	template<class Space>
+	class IsSubTree<Gradient<TrialFunction<utopia::Any>>, Gradient<TrialFunction<Space>> > {
+	public:
+		static const int value = 1;
+	};
+
 	//divergence
 	template<class Inner>
 	class IsSubTree< Divergence<Inner>, Divergence<Inner> > {
@@ -71,6 +85,21 @@ namespace utopia {
 		static const int value = IsSubTree<Expr, Inner>::value;
 	};
 
+
+	//test divergence
+	template<class Space>
+	class IsSubTree<Divergence<TestFunction<utopia::Any>>, Divergence<TestFunction<Space>> > {
+	public:
+		static const int value = 1;
+	};
+
+	//trial divergence
+	template<class Space>
+	class IsSubTree<Divergence<TrialFunction<utopia::Any>>, Divergence<TrialFunction<Space>> > {
+	public:
+		static const int value = 1;
+	};
+
 	//curl
 	template<class Inner>
 	class IsSubTree< Curl<Inner>, Curl<Inner> > {
@@ -82,6 +111,20 @@ namespace utopia {
 	class IsSubTree< Expr, Curl<Inner> > {
 	public:
 		static const int value = IsSubTree<Expr, Inner>::value;
+	};
+
+	//test curl
+	template<class Space>
+	class IsSubTree<Curl<TestFunction<utopia::Any>>, Curl<TestFunction<Space>> > {
+	public:
+		static const int value = 1;
+	};
+
+	//trial curl
+	template<class Space>
+	class IsSubTree<Curl<TrialFunction<utopia::Any>>, Curl<TrialFunction<Space>> > {
+	public:
+		static const int value = 1;
 	};
 
 	//time-derivative
