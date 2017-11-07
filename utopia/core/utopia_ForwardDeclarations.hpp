@@ -91,6 +91,9 @@ namespace utopia {
     class Construct;
 
     template<class Left, class Right>
+    class Equality;
+
+    template<class Left, class Right>
     Construct<Left, Right> construct(Expression<Left> &, const Expression<Right> &);
 
     class Range;

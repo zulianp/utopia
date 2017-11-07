@@ -27,6 +27,10 @@ namespace utopia {
 		template<class Expr>
 		void init_bilinear(const Expr &expr) 
 		{		
+
+			static_assert( (IsSubTree<TrialFunction<utopia::Any>, Expr>::value), "could not find trial function" );
+			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
+
 			//clean up previous context
 			trial.clear();
 			test.clear();
@@ -88,6 +92,8 @@ namespace utopia {
 		template<class Expr>
 		void init_linear(const Expr &expr) 
 		{		
+			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), 	"could not find test function" );
+
 			test.clear();
 			
 			auto test_space_ptr  = test_space<HMFESpace>(expr);

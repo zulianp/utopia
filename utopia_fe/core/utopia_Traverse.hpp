@@ -12,7 +12,7 @@ namespace utopia {
 	template<class Expr, class Visitor>
 	inline static int traverse(const Expr &expr, Visitor &visitor)
 	{
-		std::cout << "[Error] Encountered unhandled expression: " << expr.getClass() << std::endl;
+		std::cout << "[Warning] Encountered unhandled expression: " << expr.getClass() << std::endl;
 		return TRAVERSE_CONTINUE;
 	}
 
@@ -230,7 +230,25 @@ namespace utopia {
 			}
 		}	
 	}
+
+	template<class T, int Order, class Visitor>
+	inline static int traverse(const Wrapper<T, Order> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
+
+	template<class T, class Visitor>
+	inline static int traverse(const Number<T> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
 	
+	template<class T, int Order, class Visitor>
+	inline static int traverse(const ConstantCoefficient<T, Order> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
+
 	template<class Left, class Right, class Operation, class Visitor>
 	inline static int traverse(const Binary<Left, Right, Operation> &expr, Visitor &visitor)
 	{
@@ -436,9 +454,10 @@ namespace utopia {
 		FindExpression< TrialFunction<FunctionSpaceT> > f;
 		if(f.apply(tree)) {
 			ret = f.get().space_ptr();
-		} else {
-			std::cerr << "[Warning] unable to find TrialFunction in " << (tree.getClass()) << std::endl; 
-		}
+		} 
+		// else {
+		// 	std::cerr << "[Warning] unable to find TrialFunction in " << (tree.getClass()) << std::endl; 
+		// }
 
 
 		return ret;
@@ -452,9 +471,10 @@ namespace utopia {
 		FindExpression< TestFunction<FunctionSpaceT> > f;
 		if(f.apply(tree)) {
 			ret = f.get().space_ptr();
-		} else {
-			std::cerr << "[Warning] unable to find TestFunction in " << (tree.getClass()) << std::endl; 
-		}
+		} 
+		// else {
+		// 	std::cerr << "[Warning] unable to find TestFunction in " << (tree.getClass()) << std::endl; 
+		// }
 
 		return ret;
 	}

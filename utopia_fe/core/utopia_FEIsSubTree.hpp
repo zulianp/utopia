@@ -97,6 +97,12 @@ namespace utopia {
 		static const int value = IsSubTree<Expr, Inner>::value;
 	};
 
+	template<class Inner, int Order>
+	class IsSubTree< TimeDerivative<utopia::Any, Order>, TimeDerivative<Inner, Order> > {
+	public:
+		static const int value = 1;
+	};
+
 	//integral
 	template<class Inner>
 	class IsSubTree< Integral<Inner>, Integral<Inner> > {
@@ -116,6 +122,28 @@ namespace utopia {
 	public:
 		static const int value = 1;
 	};
+
+
+	//equality
+	template<class Expr, class Left, class Right>
+	class IsSubTree< Expr, Equality<Left, Right> > {
+	public:
+		static const int value = IsSubTree<Expr, Left>::value || IsSubTree<Expr, Right>::value;
+	};
+
+	template<class Left, class Right>
+	class IsSubTree< Equality<Left, Right>, Equality<Left, Right> > {
+	public:
+		static const int value = 1;
+	};
+
+	template<class Left, class Right>
+	class IsSubTree< Equality<utopia::Any, utopia::Any>, Equality<Left, Right> > {
+	public:
+		static const int value = 1;
+	};
+
+
 
 	///rest of specializations
 }

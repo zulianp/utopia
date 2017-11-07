@@ -32,6 +32,19 @@ namespace utopia {
 			t = r;
 		}
 
+
+		template<class Left, class Right, class Matrix, class Vector>
+		static void apply(
+					const Equality<Left, Right> &expr, 
+					Wrapper<Matrix, 2> &mat,
+					Wrapper<Vector, 1> &vec, 
+					AssemblyContext<HOMEMADE> &ctx)
+		{
+			apply(expr.left(),  mat, ctx);
+			apply(expr.right(), vec, ctx);
+		}
+
+
 		template<class Left, class Right, class Tensor>
 		static void apply(
 			const Binary<Left, Right, Plus> &expr, 
