@@ -223,6 +223,44 @@ namespace utopia {
 
 		//////////////////////////////////////////////////////////////////////////////////////////
 		//Curl
+		static void eval_curl(const Matrixd &deriv, Vectord &result)
+		{	
+			Read<Matrixd> r_x(deriv);
+
+			auto s = size(deriv);
+			const int dims = s.get(1);
+			
+			switch(dims) {
+				case 2:
+				{
+					result = zeros(1);
+					Write<Vectord> w_v(result);
+					
+					//usually associated with the z dimension but in this case 
+					// we save space and save it in the x dimension
+					//TODO: check if there is the need to put it in the z.
+					result.set(0, deriv.get(1, 0) - deriv.get(0, 1));
+					break;
+				}
+
+				case 3:
+				{
+					result = zeros(3);
+					Write<Vectord> w_v(result);
+
+					result.set(0, deriv.get(2, 1) - deriv.get(1, 2));
+					result.set(1, deriv.get(0, 2) - deriv.get(2, 0));
+					result.set(2, deriv.get(1, 0) - deriv.get(0, 1));
+					break;
+				}
+
+				default :
+				{
+					assert(false);
+				}
+			}
+		}
+
 		static void curl_aux(
 			ProductFunctionSpace<HMFESpace> &space,
 			std::vector<std::shared_ptr<FE> > &fe_object,
@@ -232,6 +270,14 @@ namespace utopia {
 			ret.resize(fe_object[0]->fun.size()); 
 
 
+			HMVectorFEDerivative grads;
+			
+			grad_aux(
+				space,
+				fe_object,
+				ctx,
+				grads);
+			
 			const int n_shape_x = fe_object[0]->n_shape_functions();
 
 			int n_shape_functions = 0;
@@ -241,55 +287,17 @@ namespace utopia {
 			}
 
 			const std::size_t n_subspaces = space.n_subspaces();
+			
 			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
 				ret[qp].resize(n_shape_functions);
 
-				for(int j = 0; j < n_shape_x; ++j) {
-					
-					auto &ret_j = ret[qp][j];
+				int offset = 0;
+				for(int i = 0; i < n_subspaces; ++i) {
+					for(int j = 0; j < n_shape_x; ++j, ++offset) {
 
-				
-
-					switch(n_subspaces) {
-						case 2:
-						{
-							ret_j = zeros(1);
-							Write<Vectord> w_v(ret_j);
-							const auto &grad_x = fe_object[0]->grad[qp][j];
-							const auto &grad_y = fe_object[1]->grad[qp][j];
-							Read<Vectord> r_x(grad_x);
-							Read<Vectord> r_y(grad_y);
-
-							//usually associated with the z dimension but in this case 
-							// we save space and save it in the x dimension
-							//TODO: check if there is the need to put it in the z.
-							ret_j.set(0, grad_y.get(0) - grad_x.get(1));
-							break;
-						}
-
-						case 3:
-						{
-							ret_j = zeros(3);
-							Write<Vectord> w_v(ret_j);
-
-							const auto &grad_x = fe_object[0]->grad[qp][j];
-							const auto &grad_y = fe_object[1]->grad[qp][j];
-							const auto &grad_z = fe_object[1]->grad[qp][j];
-
-							Read<Vectord> r_x(grad_x);
-							Read<Vectord> r_y(grad_y);
-							Read<Vectord> r_z(grad_z);
-
-							ret_j.set(0, grad_z.get(1) - grad_y.get(2));
-							ret_j.set(1, grad_x.get(2) - grad_z.get(0));
-							ret_j.set(2, grad_y.get(0) - grad_x.get(1));
-							break;
-						}
-
-						default :
-						{
-							assert(false);
-						}
+						auto &ret_j  = ret[qp][offset];
+						auto &grad_j = grads[qp][offset];
+						eval_curl(grad_j, ret_j);
 					}
 				}
 			}

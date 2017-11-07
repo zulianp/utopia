@@ -354,23 +354,91 @@ namespace utopia {
 		disp(mat);
 	}
 
+	template<int Backend, class Form>
+	static void assemble_bilinear_and_print(const Form &form)
+	{
+		static_assert( (IsSubTree<TrialFunction<utopia::Any>, Form>::value), 	"could not find function" );
+		static_assert( (IsSubTree<TestFunction<utopia::Any>,  Form>::value), 	"could not find function" );
+
+		AssemblyContext<Backend> ctx;
+		ctx.init_bilinear(form);
+
+		ElementMatrix mat;
+
+		FormEvaluator<Backend> eval;
+		eval.eval(form, mat, ctx, true);
+		
+		std::cout << tree_format(form.getClass()) << std::endl;
+		disp(mat);
+	}
+
+
+	void leastsquares_helmoholtz()
+	{
+
+		typedef utopia::HMFESpace FunctionSpaceT;
+		typedef utopia::Traits<HMFESpace> TraitsT;
+		static const int Backend = TraitsT::Backend;
+
+		auto mesh = std::make_shared<Mesh>();
+		mesh->make_triangle();
+
+		//scalar
+		auto U = FunctionSpaceT(mesh);
+		
+		//vector
+		auto Vx = FunctionSpaceT(mesh);
+		auto Vy = FunctionSpaceT(mesh);
+		auto V  = Vx * Vy;
+
+		auto u = trial(U);
+		auto v = test(U);	
+
+		auto s = trial(V);
+		auto q = test(V);
+
+		// strong_enforce( boundary_conditions(u == coeff(0.0), {0, 1, 2, 3}) );
+
+		//bilinear forms
+		double c = -100.0;
+		double beta = 0.99;
+
+		auto eq_11 = integral((c*c) * inner(u, v) + inner(grad(u), grad(v)));
+		auto eq_12 = integral(c * inner(div(s), v) + inner(s, grad(v)));
+		auto eq_21 = integral(c * inner(u, div(q)) + inner(grad(u), q));
+		// auto eq_22 = integral(inner(s, q) + inner(div(s), div(q)) + beta * inner(curl(s), curl(q)));
+		auto eq_22 = integral(inner(curl(s), curl(q)));
+
+		//linear forms
+		auto f = coeff(1);
+		auto rhs_1 = integral(c * dot(f, v));
+		auto rhs_2 = integral(dot(f, div(u)));
+
+		assemble_bilinear_and_print<Backend>(eq_11);
+		assemble_bilinear_and_print<Backend>(eq_12);
+		assemble_bilinear_and_print<Backend>(eq_21);
+		assemble_bilinear_and_print<Backend>(eq_22);	
+	}
+
 	void run_form_eval_test(libMesh::LibMeshInit &init)
 	{
-		std::cout << "run_scalar_form_sum_eval_test:" << std::endl;
+		std::cout << "--------------- [run_scalar_form_sum_eval_test] ---------------:" << std::endl;
 		run_scalar_form_sum_eval_test();
-		std::cout << "run_scalar_form_eval_test:" << std::endl;
+		std::cout << "--------------- [run_scalar_form_eval_test] ---------------:" << std::endl;
 		run_scalar_form_eval_test();
-		std::cout << "run_vector_form_eval_test:" << std::endl;
+		std::cout << "--------------- [run_vector_form_eval_test] ---------------:" << std::endl;
 		run_vector_form_eval_test();
-		std::cout << "run_mixed_form_eval_test:" << std::endl;
+		std::cout << "--------------- [run_mixed_form_eval_test] ---------------:" << std::endl;
 		run_mixed_form_eval_test();
-		std::cout << "run_linear_elasticity:" << std::endl;
+		std::cout << "--------------- [run_linear_elasticity] ---------------:" << std::endl;
 		run_linear_elasticity();
-		std::cout << "run_interp_test:" << std::endl;
+		std::cout << "--------------- [run_interp_test] ---------------:" << std::endl;
 		run_interp_test();
-		std::cout << "run_interp_vec_test:" << std::endl;
+		std::cout << "--------------- [run_interp_vec_test] ---------------:" << std::endl;
 		run_interp_vec_test();
-		std::cout << "run_navier_stokes_test:" << std::endl;
+		std::cout << "--------------- [run_navier_stokes_test] ---------------:" << std::endl;
 		run_navier_stokes_test();
+		std::cout << "--------------- [leastsquares_helmoholtz] ---------------:" << std::endl;
+		leastsquares_helmoholtz();
 	}
 }
