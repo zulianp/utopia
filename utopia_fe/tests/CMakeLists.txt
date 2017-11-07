@@ -33,6 +33,7 @@ list(APPEND LOCAL_SOURCES
 	utopia_UtopiaFETests.cpp
 	utopia_VolumeTransferBenchmark.cpp
 	utopia_FormEvalTest.cpp
+	utopia_LibMeshbackendTest.cpp
 	)
 
 add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})

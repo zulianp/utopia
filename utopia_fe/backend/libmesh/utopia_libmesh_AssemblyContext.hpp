@@ -16,13 +16,6 @@ namespace utopia {
 		typedef utopia::LibMeshTraits::Vector Vector;
 		typedef utopia::LibMeshTraits::DxType DXType;
 
-		std::vector< std::unique_ptr<FE> > trial_;
-		std::vector< std::unique_ptr<FE> > test_;
-
-		long quadrature_order_;
-		long current_element_;
-		int block_id_;
-
 		inline std::vector< std::unique_ptr<FE> > &test()		
 		{
 			return test_;
@@ -52,8 +45,77 @@ namespace utopia {
 		void init_bilinear(const Expr &expr) 
 		{		
 			static_assert( (IsSubTree<TrialFunction<utopia::Any>, Expr>::value), "could not find trial function" );
-			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
+			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function"  );
 			//TODO
+		}
+
+		template<class Expr>
+		void init_linear(const Expr &expr) 
+		{		
+			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
+
+			quadrature_order_ = functional_order(expr, *this);
+
+			auto test_space_ptr = test_space<LibMeshFunctionSpace>(expr);
+
+			if(test_space_ptr) {
+				test_.resize(test_space_ptr->equation_system().n_vars());
+
+				const int dim = test_space_ptr->mesh().mesh_dimension();
+				const libMesh::Elem * elem = test_space_ptr->mesh().elem(current_element_);
+				set_up_quadrature(dim, quadrature_order_, elem);
+
+				auto test_fe = libMesh::FEBase::build(dim, test_space_ptr->type());
+				test_fe->attach_quadrature_rule(quad_test().get());
+				init_test_fe_flags(expr, *test_fe);
+				test_fe->reinit(elem);
+				
+				test_[test_space_ptr->subspace_id()] = std::move(test_fe);
+				block_id_ = elem->subdomain_id();
+			} else {
+				auto prod_test_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
+				assert(prod_test_space_ptr);
+			}
+		}
+
+		void init_tensor(Vector &v, const bool reset);
+		void init_tensor(Matrix &v, const bool reset);
+
+		const DXType &dx() const
+		{
+			return test()[0]->get_JxW();
+		}
+
+		inline int block_id() const
+		{
+			return block_id_;
+		}
+
+		AssemblyContext()
+		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true)
+		{}
+
+	private:
+		long quadrature_order_;
+		long current_element_;
+		int block_id_;
+		bool reset_quadrature_;
+
+		std::vector< std::unique_ptr<FE> > trial_;
+		std::vector< std::unique_ptr<FE> > test_;
+		std::shared_ptr<libMesh::QBase> quad_trial_;
+		std::shared_ptr<libMesh::QBase> quad_test_;
+
+		void set_up_quadrature(const int dim, const int quadrature_order, libMesh::Elem * elem)
+		{
+			if(reset_quadrature_) {
+				quad_test_  = std::make_shared<libMesh::QGauss>(dim, libMesh::Order(quadrature_order));
+				quad_trial_ = quad_test_;
+				reset_quadrature_ = false;
+			} else {
+				assert((static_cast<bool>(quad_trial_)));
+				assert((static_cast<bool>(quad_test_)));
+			}
 		}
 
 		template<class Expr>
@@ -98,69 +160,6 @@ namespace utopia {
 
 			if(IsSubTree<Curl<TrialFunction<utopia::Any>>, Expr>::value) {
 				trial_fe.get_curl_phi();
-			}
-		}
-
-		template<class Expr>
-		void init_linear(const Expr &expr) 
-		{		
-			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
-
-			quadrature_order_ = functional_order(expr, *this);
-
-			auto test_space_ptr = test_space<LibMeshFunctionSpace>(expr);
-
-			if(test_space_ptr) {
-				test_.resize(test_space_ptr->equation_system().n_vars());
-
-				const int dim = test_space_ptr->mesh().mesh_dimension();
-				const libMesh::Elem * elem = test_space_ptr->mesh().elem(current_element_);
-				set_up_quadrature(dim, quadrature_order_, elem);
-
-				auto test_fe = libMesh::FEBase::build(dim, test_space_ptr->type());
-				test_fe->attach_quadrature_rule(quad_test().get());
-				init_test_fe_flags(expr, *test_fe);
-				test_fe->reinit(elem);
-				
-				test_[test_space_ptr->subspace_id()] = std::move(test_fe);
-				block_id_ = elem->subdomain_id();
-			} else {
-				auto prod_test_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
-				assert(prod_test_space_ptr);
-			}
-		}
-
-		void init_tensor(Vector &v, const bool reset);
-		void init_tensor(Matrix &v, const bool reset);
-
-		const DXType &dx() const
-		{
-			return test[0]->get_JxW();
-		}
-
-		AssemblyContext()
-		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true)
-		{}
-
-		inline int block_id() const
-		{
-			return block_id_;
-		}
-
-		bool reset_quadrature_;
-		std::shared_ptr<libMesh::QGauss> quad_trial_;
-		std::shared_ptr<libMesh::QGauss> quad_test_;
-
-	private:
-		void set_up_quadrature(const int dim, const int quadrature_order, libMesh::Elem * elem)
-		{
-			if(reset_quadrature_) {
-				quad_test_  = std::make_shared<libMesh::QGauss>(dim, libMesh::Order(quadrature_order));
-				quad_trial_ = quad_test_;
-				reset_quadrature_ = false;
-			} else {
-				assert((static_cast<bool>(quad_trial_)));
-				assert((static_cast<bool>(quad_test_)));
 			}
 		}
 	};

@@ -1,11 +1,18 @@
 #ifndef UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP
 #define UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP
 
+#include "utopia_libmesh_FEForwardDeclarations.hpp"
+#include "utopia_FunctionSpace.hpp"
+
+#include "libmesh/equation_systems.h"
+#include "libmesh/dof_map.h"
+
+#include <memory>
+
 namespace utopia {
 
 	class LibMeshFunctionSpace : public FunctionSpace<LibMeshFunctionSpace> {
 	public:
-		typedef libMesh::Real Scalar;
 			
 		inline LibMeshFunctionSpace(
 			const std::shared_ptr<libMesh::EquationSystems> &equation_systems,
@@ -14,15 +21,15 @@ namespace utopia {
 		: equation_systems_(equation_systems),
 		  system_num_(system_num)
 		{
-			this->set_subspace_id(var_num);
+			this->set_subspace_id(subspace_id);
 		}
 		
-		inline libMesh::Order order()
+		inline libMesh::Order order(const int)
 		{
 			return dof_map().variable_order(this->subspace_id());
 		}
 
-		inline libMesh::Order type()
+		inline libMesh::FEType type()
 		{
 			return dof_map().variable_type(this->subspace_id());
 		}
@@ -90,7 +97,7 @@ namespace utopia {
 
 		inline static int order(const LibMeshFunctionSpace &space, const AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			return space.mesh().element_order(ctx.current_element);
+			return space.mesh().order(ctx.current_element);
 		}
 	};
 
