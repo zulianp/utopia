@@ -25,6 +25,8 @@ namespace utopia {
 
 		static void run_all_on(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "--------------- [run_linear_form_test] ---------------:" << std::endl;
+			run_linear_form_test(space_input);
 			std::cout << "--------------- [run_scalar_form_sum_eval_test] ---------------:" << std::endl;
 			run_scalar_form_sum_eval_test(space_input);
 			std::cout << "--------------- [run_scalar_form_eval_test] ---------------:" << std::endl;
@@ -368,8 +370,17 @@ namespace utopia {
 
 			auto v = std::get<0>(test_funs);
 			auto w = std::get<1>(test_funs);
+		}
 
-			
+		static void run_linear_form_test(const std::shared_ptr<SpaceInput> &space_input)
+		{
+
+			auto V = FunctionSpaceT(space_input);
+			auto u = trial(V);
+			auto v = test(V);
+
+			auto linear_form = integral(0.5 * inner(coeff(0.1), v));
+			assemble_linear_and_print(linear_form);
 		}
 	};
 
@@ -377,14 +388,19 @@ namespace utopia {
 	{
 
 		/////////////////////////////////////////////////////////////////////
+		//HOMEMADE
 
-		auto mesh = std::make_shared<utopia::Mesh>();
-		mesh->make_triangle();
+		// auto mesh = std::make_shared<utopia::Mesh>();
+		// mesh->make_triangle();
 
-		FormEvalTest<utopia::Mesh, utopia::HMFESpace>  test;
-		test.run_all_on(mesh);
+		// FormEvalTest<utopia::Mesh, utopia::HMFESpace>  test;
+		// test.run_all_on(mesh);
 
 		/////////////////////////////////////////////////////////////////////
+
+
+		/////////////////////////////////////////////////////////////////////
+		//LIBMESH
 
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
@@ -396,9 +412,13 @@ namespace utopia {
 			libMesh::TET4);
 
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*lm_mesh);
-		equation_systems->add_system<libMesh::LinearImplicitSystem>("FormEvalTest"); 
+		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("FormEvalTest"); 
+
+		assert(&equation_systems->get_system(0) == &sys);
 
 		FormEvalTest<libMesh::EquationSystems, utopia::LibMeshFunctionSpace> lm_test;
-		lm_test.run_all_on(equation_systems);	
+		lm_test.run_linear_form_test(equation_systems);	
+
+		/////////////////////////////////////////////////////////////////////
 	}
 }

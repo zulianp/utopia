@@ -11,7 +11,7 @@ list(APPEND LOCAL_SOURCES
 	utopia_LibMeshBackend.cpp
 	utopia_NormalTangentialCoordinateSystem.cpp
 	utopia_UGMeshReader.cpp
-	# utopia_libmesh_AssemblyContext.cpp
+	utopia_libmesh_AssemblyContext.cpp
 	)
 
 add_library(utopia_fe_libmesh_backend STATIC ${LOCAL_SOURCES})

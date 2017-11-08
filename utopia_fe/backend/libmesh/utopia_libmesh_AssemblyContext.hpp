@@ -76,11 +76,13 @@ namespace utopia {
 		{		
 			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
 
-			quadrature_order_ = functional_order(expr, *this);
+			
 
 			auto test_space_ptr = test_space<LibMeshFunctionSpace>(expr);
 
 			if(test_space_ptr) {
+				test_space_ptr->initialize();
+				quadrature_order_ = functional_order(expr, *this);
 				test_.resize(test_space_ptr->equation_system().n_vars());
 
 				const int dim = test_space_ptr->mesh().mesh_dimension();
@@ -100,8 +102,8 @@ namespace utopia {
 			}
 		}
 
-		void init_tensor(Vector &v, const bool reset) {}
-		void init_tensor(Matrix &v, const bool reset) {}
+		void init_tensor(Vector &v, const bool reset);
+		void init_tensor(Matrix &v, const bool reset);
 
 		const DXType &dx() const
 		{

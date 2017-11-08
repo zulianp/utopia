@@ -33,7 +33,22 @@ namespace utopia {
 			}
 
 			const int var_num = equation_system().add_variable(var_name_copy, order, type);
+
+			assert(equation_system().n_vars() > 0);
+			
 			this->set_subspace_id(var_num);
+		}
+
+		// inline bool is_initialized() const
+		// {
+		// 	return equation_system().is_initialized();
+		// }
+
+		inline void initialize()
+		{
+			if(!equation_system().is_initialized()) {
+				equation_system().init();
+			}
 		}
 		
 		inline libMesh::Order order(const int) const
@@ -79,7 +94,7 @@ namespace utopia {
 		static const int Order = 1;
 		static const int FILL_TYPE = FillType::DENSE;
 
-		// typedef double Scalar;
+		typedef double Scalar;
 		typedef utopia::LMDenseVector Vector;
 		typedef utopia::LMDenseMatrix Matrix;
 		typedef libMesh::TensorValue<Scalar> TensorValueT;
