@@ -5,10 +5,10 @@
 #include "utopia_FunctionSpace.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_libmesh_Types.hpp"
-// #include "utopia_libmesh_AssemblyContext.hpp"
 
 #include "libmesh/equation_systems.h"
 #include "libmesh/dof_map.h"
+#include "libmesh/reference_counter.h"
 
 #include <memory>
 
@@ -19,12 +19,21 @@ namespace utopia {
 			
 		inline LibMeshFunctionSpace(
 			const std::shared_ptr<libMesh::EquationSystems> &equation_systems,
-			const int system_num,
-			const int subspace_id)
+			const libMesh::FEFamily &type = libMesh::LAGRANGE,
+			const libMesh::Order &order = libMesh::FIRST,
+			const std::string &var_name = "",
+			const int system_num = 0)
 		: equation_systems_(equation_systems),
 		  system_num_(system_num)
 		{
-			this->set_subspace_id(subspace_id);
+			std::string var_name_copy = var_name;
+			
+			if(var_name_copy.empty()) {
+				var_name_copy = "var_" + std::to_string(equation_system().n_vars());
+			}
+
+			const int var_num = equation_system().add_variable(var_name_copy, order, type);
+			this->set_subspace_id(var_num);
 		}
 		
 		inline libMesh::Order order(const int) const
@@ -71,7 +80,7 @@ namespace utopia {
 		static const int FILL_TYPE = FillType::DENSE;
 
 		// typedef double Scalar;
-		typedef utopia::LMDenseMatrix Vector;
+		typedef utopia::LMDenseVector Vector;
 		typedef utopia::LMDenseMatrix Matrix;
 		typedef libMesh::TensorValue<Scalar> TensorValueT;
 

@@ -5,18 +5,13 @@
 #include "utopia_homemade_FEForwardDeclarations.hpp"
 
 #include "utopia_FEBackend.hpp"
+#include "utopia_FEBasicOverloads.hpp"
 #include "utopia_fe_core.hpp"
 
 #include "utopia_homemade_FunctionSpace.hpp"
 #include <vector>
 
 namespace utopia {
-
-
-	inline static double inner(const double left, const double right)
-	{
-		return left * right;
-	}
 
 	template<>
 	class FEBackend<HOMEMADE> {

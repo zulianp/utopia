@@ -100,8 +100,8 @@ namespace utopia {
 			}
 		}
 
-		// void init_tensor(Vector &v, const bool reset);
-		void init_tensor(Matrix &v, const bool reset);
+		void init_tensor(Vector &v, const bool reset) {}
+		void init_tensor(Matrix &v, const bool reset) {}
 
 		const DXType &dx() const
 		{
