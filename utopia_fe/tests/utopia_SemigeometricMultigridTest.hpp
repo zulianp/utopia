@@ -12,7 +12,7 @@ namespace utopia {
 
 	class MGTestProblem {
 	public:
-		typedef utopia::FESpace<LibMeshTraits<libMesh::Real> > FESpaceT;
+		typedef utopia::FESpace<LibMeshTraits> FESpaceT;
 		typedef std::shared_ptr<FESpaceT> FESpacePtr;
 		typedef utopia::LibMeshFEContext<libMesh::LinearImplicitSystem> FEContextT;
 		typedef std::shared_ptr<FEContextT> FEContextPtr;

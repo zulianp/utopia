@@ -3,6 +3,9 @@
 
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_FunctionSpace.hpp"
+#include "utopia_Traits.hpp"
+#include "utopia_libmesh_Types.hpp"
+// #include "utopia_libmesh_AssemblyContext.hpp"
 
 #include "libmesh/equation_systems.h"
 #include "libmesh/dof_map.h"
@@ -24,7 +27,7 @@ namespace utopia {
 			this->set_subspace_id(subspace_id);
 		}
 		
-		inline libMesh::Order order(const int)
+		inline libMesh::Order order(const int) const
 		{
 			return dof_map().variable_order(this->subspace_id());
 		}
@@ -61,15 +64,15 @@ namespace utopia {
 	};
 
 	template<>
-	class Traits<LibMeshFunctionSpace> {
+	class Traits<LibMeshFunctionSpace> : public LibMeshAlgebraTraits<double> {
 	public:
 		static const int Backend = LIBMESH_TAG;
 		static const int Order = 1;
 		static const int FILL_TYPE = FillType::DENSE;
 
-		typedef double Scalar;
+		// typedef double Scalar;
 		typedef utopia::LMDenseMatrix Vector;
-		typedef utopia::LMDenseVector Matrix;
+		typedef utopia::LMDenseMatrix Matrix;
 		typedef libMesh::TensorValue<Scalar> TensorValueT;
 
 		typedef utopia::LibMeshFunctionSpace Implementation;
@@ -86,21 +89,6 @@ namespace utopia {
 	};
 
 	typedef utopia::Traits<LibMeshFunctionSpace> LibMeshTraits;
-
-	template<>
-	class FunctionalTraits<LibMeshFunctionSpace, AssemblyContext<LIBMESH_TAG> > {
-	public:
-		inline static int type(const LibMeshFunctionSpace &space,  const AssemblyContext<LIBMESH_TAG> &ctx)
-		{
-			return utopia::POLYNOMIAL_FUNCTION;
-		}
-
-		inline static int order(const LibMeshFunctionSpace &space, const AssemblyContext<LIBMESH_TAG> &ctx)
-		{
-			return space.mesh().order(ctx.current_element);
-		}
-	};
-
 }
 
 #endif //UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP

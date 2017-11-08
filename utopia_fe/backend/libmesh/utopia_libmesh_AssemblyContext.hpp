@@ -5,16 +5,23 @@
 #include "utopia_Traits.hpp"
 #include "utopia_AssemblyContext.hpp"
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
+#include "utopia_libmesh_Types.hpp"
+#include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_fe_core.hpp"
+
+#include "libmesh/fe.h"
+#include "libmesh/elem.h"
+#include "libmesh/quadrature_gauss.h"
 
 namespace utopia {
 
 	class LibMeshAssemblyContext {
 	public:
-		typedef utopia::LibMeshTraits::FE FE; 
-		typedef utopia::LibMeshTraits::Matrix Matrix;
-		typedef utopia::LibMeshTraits::Vector Vector;
-		typedef utopia::LibMeshTraits::DxType DXType;
+		typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
+		typedef TraitsT::FE FE; 
+		typedef TraitsT::Matrix Matrix;
+		typedef TraitsT::Vector Vector;
+		typedef TraitsT::DXType DXType;
 
 		inline std::vector< std::unique_ptr<FE> > &test()		
 		{
@@ -31,12 +38,27 @@ namespace utopia {
 			}
 		}
 
-		inline std::shared_ptr<libMesh::QGauss> quad_test()
+		inline const std::vector< std::unique_ptr<FE> > &test()	const
+		{
+			return test_;
+		}
+
+		inline const std::vector< std::unique_ptr<FE> > &trial() const
+		{
+			if(trial_.empty()) {
+				//if space is symmetric
+				return test();
+			} else {
+				return trial_;
+			}
+		}
+
+		inline std::shared_ptr<libMesh::QBase> quad_test()
 		{
 			return quad_test_;
 		}
 
-		inline std::shared_ptr<libMesh::QGauss> quad_trial()
+		inline std::shared_ptr<libMesh::QBase> quad_trial()
 		{
 			return quad_trial_;
 		}
@@ -78,7 +100,7 @@ namespace utopia {
 			}
 		}
 
-		void init_tensor(Vector &v, const bool reset);
+		// void init_tensor(Vector &v, const bool reset);
 		void init_tensor(Matrix &v, const bool reset);
 
 		const DXType &dx() const
@@ -91,7 +113,12 @@ namespace utopia {
 			return block_id_;
 		}
 
-		AssemblyContext()
+		inline long current_element() const
+		{
+			return current_element_;
+		}
+
+		LibMeshAssemblyContext()
 		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true)
 		{}
 
@@ -106,7 +133,7 @@ namespace utopia {
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
 
-		void set_up_quadrature(const int dim, const int quadrature_order, libMesh::Elem * elem)
+		void set_up_quadrature(const int dim, const int quadrature_order, const libMesh::Elem * elem)
 		{
 			if(reset_quadrature_) {
 				quad_test_  = std::make_shared<libMesh::QGauss>(dim, libMesh::Order(quadrature_order));

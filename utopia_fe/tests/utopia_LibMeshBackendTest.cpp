@@ -1,5 +1,5 @@
 #include "utopia_LibMeshBackendTest.hpp"
-// #include "utopia_libmesh.hpp"
+#include "utopia_libmesh.hpp"
 
 namespace utopia 
 {
