@@ -11,6 +11,20 @@ namespace utopia {
 			return expr;
 		}
 	};
+
+	template<class T, int Order, class AssemblyContext>
+	class FunctionalTraits<ConstantCoefficient<T, Order>, AssemblyContext> {
+	public:
+		inline static int type(const ConstantCoefficient<T, Order> &expr, const AssemblyContext &)  
+		{ 
+			return CONSTANT_FUNCTION;
+		}
+
+		inline static int order(const ConstantCoefficient<T, Order> &expr, const AssemblyContext &) 
+		{
+			return 0;
+		}
+	};
 }
 
 #endif //UTOPIA_FE_EVAL_CONSTANT_COEFFICIENT_HPP

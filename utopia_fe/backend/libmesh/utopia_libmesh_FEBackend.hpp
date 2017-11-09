@@ -569,17 +569,17 @@ namespace utopia {
 			return ret;
 		}
 
-			//alpha * (grad_t + grad)
+		//alpha * (grad_t + grad)
 		template<class Left, class Right>
 		inline static JacobianType grad_t_plus_grad(const double scaling, const Left &left, const Right &right, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
 			JacobianType ret = grad(right, ctx);
 			auto && grad_left = grad(left, ctx);
 
-			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
-				for(std::size_t i = 0; i < ret[qp].size(); ++i) {
-					ret[qp][i] += grad_left[qp][i].transpose();
-					ret[qp][i] *= scaling;
+			for(std::size_t i = 0; i < ret.size(); ++i) {
+				for(std::size_t qp = 0; qp < ret[i].size(); ++qp) {
+					ret[i][qp] += grad_left[i][qp].transpose();
+					ret[i][qp] *= scaling;
 				}
 			}
 
@@ -674,11 +674,14 @@ namespace utopia {
 		{
 			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
 
-			for(std::size_t i = 0; i < ret.size(); ++i) {
-				auto &v = ret[i];
+			const std::size_t n_functions = right.size();
+			const std::size_t n_quad_points = right[0].size();
 
-				for(auto &s : v) {
-					s = left[i] * s;
+			assert(n_quad_points == left.size());
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] *= left[qp];
 				}
 			}
 
@@ -693,11 +696,15 @@ namespace utopia {
 		{
 			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
 
-			for(auto &v : ret) {
-				for(auto &s : v) {
-					s = left * s;
+			const std::size_t n_functions = right.size();
+			const std::size_t n_quad_points = right[0].size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] = left * ret[i][qp];
 				}
 			}
+
 
 			return ret;
 		}
@@ -707,10 +714,14 @@ namespace utopia {
 		{
 			typename remove_ref_and_const<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
-			for(std::size_t qp = 0; qp < ret.size(); ++qp) {
-				auto &v = ret[qp];
-				for(auto &s : v) {
-					s = left[qp] * s;
+			const std::size_t n_quad_points = left.size();
+			const std::size_t n_functions = right.size();
+
+			assert(n_quad_points == left.size());
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] *= left[qp];
 				}
 			}
 
@@ -722,12 +733,14 @@ namespace utopia {
 		{
 			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
 
-			// for(std::size_t qp = 0; qp < ret.size(); ++qp) {
-			// 	auto &v = ret[qp];
-			// 	for(auto &s : v) {
-			// 		s = left[qp] * s;
-			// 	}
-			// }
+			const std::size_t n_quad_points = left.size();
+			const std::size_t n_functions = right.size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] = left[qp] * ret[i][qp];
+				}
+			}
 
 			return ret;
 		}
@@ -737,12 +750,14 @@ namespace utopia {
 		{
 			typename remove_ref_and_const<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
-			// for(std::size_t qp = 0; qp < ret.size(); ++qp) {
-			// 	auto &v = ret[qp];
-			// 	for(auto &s : v) {
-			// 		s = left[qp] * s;
-			// 	}
-			// }
+			const std::size_t n_quad_points = left.size();
+			const std::size_t n_functions = right.size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] = left[qp] * ret[i][qp];
+				}
+			}
 
 			return ret;
 		}
@@ -766,11 +781,14 @@ namespace utopia {
 		{
 			typename remove_ref_and_const<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
-			// for(auto &v : ret) {
-			// 	for(auto &s : v) {
-			// 		s = left * s;
-			// 	}
-			// }
+			const std::size_t n_functions = right.size();
+			const std::size_t n_quad_points = right[0].size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] = left * ret[i][qp];
+				}
+			}
 
 			return ret;
 		}

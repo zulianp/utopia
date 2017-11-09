@@ -88,7 +88,6 @@ namespace utopia {
 		void init_test_fe(const Expr &expr)
 		{
 			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
-
 			auto test_space_ptr = test_space<LibMeshFunctionSpace>(expr);
 
 			if(test_space_ptr) {
@@ -119,8 +118,6 @@ namespace utopia {
 		void init_trial_fe(const Expr &expr)
 		{
 			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find trial function" );
-
-
 			trial_.clear();
 
 			auto trial_space_ptr = trial_space<LibMeshFunctionSpace>(expr);
@@ -130,12 +127,10 @@ namespace utopia {
 
 			if(trial_space_ptr) {
 				trial_space_ptr->initialize();
-				// quadrature_order_ = functional_order(expr, *this);
 				trial_.resize(trial_space_ptr->equation_system().n_vars());
 
 				const int dim = trial_space_ptr->mesh().mesh_dimension();
 				const libMesh::Elem * elem = trial_space_ptr->mesh().elem(current_element_);
-				// set_up_quadrature(dim, quadrature_order_, elem);
 
 				auto trial_fe = libMesh::FEBase::build(dim, trial_space_ptr->type());
 				trial_fe->attach_quadrature_rule(quad_trial().get());

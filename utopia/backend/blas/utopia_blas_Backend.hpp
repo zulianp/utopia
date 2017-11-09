@@ -476,7 +476,7 @@ namespace utopia {
 			}
 
 			for(SizeType i = 0; i < mat.size(); ++i) {
-				result.entries()[i] = mat.entries()[i];
+				result.entries()[i] = -mat.entries()[i];
 			}
 		}
 		

@@ -4,6 +4,7 @@
 #include <iostream>
 
 namespace utopia {
+	static const int CONSTANT_FUNCTION = -1;
 	static const int POLYNOMIAL_FUNCTION = 0;
 	static const int EXPONENTIAL_FUNCTION = 1;
 	static const int UNDEFINED_FUNCTION = 2;

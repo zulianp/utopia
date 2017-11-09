@@ -16,6 +16,9 @@
 #include "utopia_FEEval_Interpolate.hpp"
 #include "utopia_FEEval_Integral.hpp"
 #include "utopia_FEEval_ContextFunction.hpp"
+#include "utopia_FEEval_Unary.hpp"
+#include "utopia_FEEval_Number.hpp"
+#include "utopia_FEEval_Wrapper.hpp"
 
 
 #endif //UTOPIA_FE_EVAL_HPP

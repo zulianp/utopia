@@ -25,29 +25,17 @@ namespace utopia {
 
 		static void run_all_on(const std::shared_ptr<SpaceInput> &space_input)
 		{
-			std::cout << "--------------- [run_linear_form_test] ---------------:" << std::endl;
 			run_linear_form_test(space_input);
-			std::cout << "--------------- [run_bilinear_form_test] ---------------:" << std::endl;
 			run_bilinear_form_test(space_input);
-			std::cout << "--------------- [run_scalar_form_sum_eval_test] ---------------:" << std::endl;
 			run_scalar_form_sum_eval_test(space_input);
-			std::cout << "--------------- [run_scalar_form_eval_test] ---------------:" << std::endl;
 			run_scalar_form_eval_test(space_input);
-			std::cout << "--------------- [run_vector_form_eval_test] ---------------:" << std::endl;
 			run_vector_form_eval_test(space_input);
-			std::cout << "--------------- [run_mixed_form_eval_test] ---------------:" << std::endl;
 			run_mixed_form_eval_test(space_input);
-			std::cout << "--------------- [run_linear_elasticity] ---------------:" << std::endl;
 			run_linear_elasticity(space_input);
-			std::cout << "--------------- [run_interp_test] ---------------:" << std::endl;
 			run_interp_test(space_input);
-			std::cout << "--------------- [run_interp_vec_test] ---------------:" << std::endl;
 			run_interp_vec_test(space_input);
-			std::cout << "--------------- [run_navier_stokes_test] ---------------:" << std::endl;
 			run_navier_stokes_test(space_input);
-			std::cout << "--------------- [leastsquares_helmoholtz] ---------------:" << std::endl;
 			leastsquares_helmoholtz(space_input);
-			std::cout << "--------------- [run_eq_form_eval_test] ---------------:" << std::endl;
 			run_eq_form_eval_test(space_input);
 		}
 
@@ -79,12 +67,14 @@ namespace utopia {
 			FormEvaluator<Backend> eval;
 			eval.eval(form, vec, ctx, true);
 
-			std::cout << tree_format(form.getClass()) << std::endl;
+			// std::cout << tree_format(form.getClass()) << std::endl;
 			disp(vec);
 		}
 
 		static void run_interp_vec_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_interp_vec_test]" << std::endl;
+
 			auto Vx = FunctionSpaceT(space_input);
 			auto Vy = FunctionSpaceT(space_input);
 			auto V = Vx * Vy;
@@ -111,6 +101,8 @@ namespace utopia {
 
 		static void run_interp_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_interp_test]" << std::endl;
+
 			auto V  = FunctionSpaceT(space_input);
 
 			auto u = trial(V);
@@ -132,6 +124,8 @@ namespace utopia {
 
 		static void run_linear_elasticity(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_linear_elasticity]" << std::endl;
+
 			double mu = 1.;
 			double lambda = 1.;
 
@@ -152,6 +146,8 @@ namespace utopia {
 
 		static void run_navier_stokes_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_navier_stokes_test]" << std::endl;
+
 			auto Vx = FunctionSpaceT(space_input);
 			auto Vy = FunctionSpaceT(space_input);
 			auto V  = Vx * Vy;
@@ -189,6 +185,8 @@ namespace utopia {
 
 		static void run_vector_form_eval_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_vector_form_eval_test]" << std::endl;
+
 			auto Vx = FunctionSpaceT(space_input);
 			auto Vy = FunctionSpaceT(space_input);
 			auto Vz = FunctionSpaceT(space_input);
@@ -209,6 +207,8 @@ namespace utopia {
 
 		static void run_scalar_form_eval_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_scalar_form_eval_test]" << std::endl;
+
 			
 			auto V = FunctionSpaceT(space_input);
 			auto u = trial(V);
@@ -241,6 +241,8 @@ namespace utopia {
 
 		static void run_scalar_form_sum_eval_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_scalar_form_sum_eval_test]" << std::endl;
+
 			auto V = FunctionSpaceT(space_input);
 			auto u = trial(V);
 			auto v = test(V);
@@ -258,6 +260,8 @@ namespace utopia {
 
 		static void run_mixed_form_eval_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_mixed_form_eval_test]" << std::endl;
+
 			//scalar
 			auto U = FunctionSpaceT(space_input);
 
@@ -281,6 +285,8 @@ namespace utopia {
 
 		static void leastsquares_helmoholtz(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "leastsquares_helmoholtz" << std::endl;
+
 			//scalar
 			auto U = FunctionSpaceT(space_input);
 
@@ -320,6 +326,8 @@ namespace utopia {
 
 		static void run_eq_form_eval_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_eq_form_eval_test]" << std::endl;
+
 			auto V = FunctionSpaceT(space_input);
 
 			auto u = trial(V);
@@ -339,6 +347,8 @@ namespace utopia {
 
 		static void run_time_form_eval_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_time_form_eval_test]" << std::endl;
+
 			auto V = FunctionSpaceT(space_input);
 
 			auto u = trial(V);
@@ -352,6 +362,8 @@ namespace utopia {
 
 		static void run_mixed_fe_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_mixed_fe_test]" << std::endl;
+
 			auto V  = FunctionSpaceT(space_input);
 			auto Wx = FunctionSpaceT(space_input);
 			auto Wy = FunctionSpaceT(space_input);
@@ -378,6 +390,8 @@ namespace utopia {
 
 		static void run_linear_form_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_linear_form_test]" << std::endl;
+
 
 			auto V = FunctionSpaceT(space_input);
 			auto u = trial(V);
@@ -390,6 +404,8 @@ namespace utopia {
 
 		static void run_bilinear_form_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
+			std::cout << "[run_bilinear_form_test]" << std::endl;
+
 
 			auto V = FunctionSpaceT(space_input);
 			auto u = trial(V);
@@ -406,11 +422,13 @@ namespace utopia {
 		/////////////////////////////////////////////////////////////////////
 		//HOMEMADE
 
-		// auto mesh = std::make_shared<utopia::Mesh>();
-		// mesh->make_triangle();
+		auto mesh = std::make_shared<utopia::Mesh>();
+		mesh->make_triangle();
 
-		// FormEvalTest<utopia::Mesh, utopia::HMFESpace>  test;
+		FormEvalTest<utopia::Mesh, utopia::HMFESpace>  test;
 		// test.run_all_on(mesh);
+		test.run_scalar_form_eval_test(mesh);
+		
 
 		/////////////////////////////////////////////////////////////////////
 
@@ -420,26 +438,34 @@ namespace utopia {
 
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
-		libMesh::MeshTools::Generation::build_cube(*lm_mesh,
-			 2, 2, 2,
-			-1., 1.,
-			-1., 1.,
-			-1., 1.,
-			libMesh::TET4);
+		// libMesh::MeshTools::Generation::build_cube(*lm_mesh,
+		// 	 2, 2, 2,
+		// 	-1., 1.,
+		// 	-1., 1.,
+		// 	-1., 1.,
+		// 	libMesh::TET4);
+
+		libMesh::MeshTools::Generation::build_square(*lm_mesh,
+			1, 1,
+			0, 1.,
+			0, 1.,
+			libMesh::TRI3);
 
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*lm_mesh);
-		equation_systems->add_system<libMesh::LinearImplicitSystem>("FormEvalTest"); 
-
 		FormEvalTest<libMesh::EquationSystems, utopia::LibMeshFunctionSpace> lm_test;
 
-		equation_systems->add_system<libMesh::LinearImplicitSystem>("run_linear_form_test"); 
-		
-		lm_test.run_linear_form_test(equation_systems);	
-		
+		// equation_systems->add_system<libMesh::LinearImplicitSystem>("run_linear_form_test"); 
+		// lm_test.run_linear_form_test(equation_systems);	
+		// equation_systems->clear();
+
+		// equation_systems->add_system<libMesh::LinearImplicitSystem>("run_bilinear_form_test"); 
+		// lm_test.run_bilinear_form_test(equation_systems);
+		// equation_systems->clear();
+
+
+		equation_systems->add_system<libMesh::LinearImplicitSystem>("run_scalar_form_eval_test"); 
+		lm_test.run_scalar_form_eval_test(equation_systems);
 		equation_systems->clear();
-		equation_systems->add_system<libMesh::LinearImplicitSystem>("run_bilinear_form_test"); 
-		
-		lm_test.run_bilinear_form_test(equation_systems);
 
 		/////////////////////////////////////////////////////////////////////
 	}
