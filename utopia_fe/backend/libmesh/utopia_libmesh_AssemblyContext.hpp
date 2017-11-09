@@ -109,7 +109,7 @@ namespace utopia {
 				block_id_ = elem->subdomain_id();
 			} else {
 				auto prod_test_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
-				assert(prod_test_space_ptr);
+				assert(prod_test_space_ptr.get());
 
 
 				prod_test_space_ptr->each([](const int, LibMeshFunctionSpace &subspace) {
@@ -168,8 +168,8 @@ namespace utopia {
 
 				if(prod_trial_space_ptr == prod_test_space_ptr) return;
 
-				assert(prod_trial_space_ptr);
-			}
+				assert(prod_trial_space_ptr.get());
+			} 
 		}
 
 		void init_tensor(Vector &v, const bool reset);

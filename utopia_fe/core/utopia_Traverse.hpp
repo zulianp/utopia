@@ -68,7 +68,12 @@ namespace utopia {
 			}
 		}
 	}
-	
+
+	template<class Coefficient, class Function, class Visitor>
+	inline static int traverse(const Interpolate<Coefficient, Function> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
 	
 	template<class Expr, class Operation, class Visitor>
 	inline static int traverse(const Unary<Expr, Operation> &expr, Visitor &visitor)
@@ -373,6 +378,7 @@ namespace utopia {
 	{
 		return visitor.visit(expr);
 	}
+
 
 	template<class Expr>
 	class FindExpression {

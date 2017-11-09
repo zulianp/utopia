@@ -122,11 +122,13 @@ namespace utopia {
 		// scalar fe functions
 		static const FunctionType &fun(const TrialFunction<LibMeshFunctionSpace> &fun, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
+			assert(!ctx.trial().empty());
 			return ctx.trial()[fun.space_ptr()->subspace_id()]->get_phi();
 		}
 
 		static const FunctionType &fun(const TestFunction<LibMeshFunctionSpace> &fun, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
+			assert(!ctx.test().empty());
 			return ctx.test()[fun.space_ptr()->subspace_id()]->get_phi();
 		}
 
@@ -241,6 +243,8 @@ namespace utopia {
 
 		static JacobianType grad(const TrialFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
+			assert(!ctx.trial().empty());
+
 			auto space_ptr = fun.space_ptr();
 			JacobianType ret;
 			grad_aux(*space_ptr, ctx.trial(), ctx, ret);
@@ -249,6 +253,8 @@ namespace utopia {
 
 		static JacobianType grad(const TestFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
+			assert(!ctx.test().empty());
+
 			auto space_ptr = fun.space_ptr();
 			JacobianType ret;
 			grad_aux(*space_ptr, ctx.test(), ctx, ret);
@@ -414,154 +420,174 @@ namespace utopia {
 		}
 
 
-			//////////////////////////////////////////////////////////////////////////////////////////
-			//Interpolate
+		//////////////////////////////////////////////////////////////////////////////////////////
+		//Interpolate
 		template<class Tensor>
-		static void interp_values(
+		static void gather_interp_values(
 			const Interpolate<Wrapper<Tensor, 1>, TrialFunction<LibMeshFunctionSpace> > &interp,
 			Vector &element_values,
 			AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-				// auto &c   = interp.coefficient();
-				// auto &f   = interp.fun();
+			auto &c   = interp.coefficient();
+			auto &f   = interp.fun();
 
-				// auto space_ptr = f.space_ptr();
+			auto space_ptr = f.space_ptr();
+			const auto &mesh = space_ptr->mesh();
+			const auto &elem_ptr = mesh.elem(ctx.current_element());
+			const auto &dof_map = space_ptr->dof_map();
 
-				// std::vector<int> indices;
-				// space_ptr->dof_indices(ctx.current_element, indices);
+			std::vector<libMesh::dof_id_type> indices;
+			dof_map.dof_indices(elem_ptr, indices, space_ptr->subspace_id());
 
-				// //compute offset
-				// int n_funs = ctx.trial.size();
-				// for(auto &i : indices) {
-				// 	i *= n_funs;
-				// 	i += space_ptr->subspace_id();
-				// }
+			element_values = zeros(indices.size());
 
-				// element_values = zeros(indices.size());
+			Write<Vector> w(element_values);
+			Read<Wrapper<Tensor, 1>> r(c);
 
-				// Write<Vector> w(element_values);
-				// Read<Wrapper<Tensor, 1>> r(c);
-
-				// for(std::size_t i = 0; i < indices.size(); ++i) {
-				// 	element_values.set(i, c.get(indices[i]));
-				// }
+			for(std::size_t i = 0; i < indices.size(); ++i) {
+				element_values.set(i, c.get(indices[i]));
+			}
 		}
 
 		template<class Tensor, class Space>
 		static std::vector<Scalar> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<Space> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-				// auto &c  = interp.coefficient();
-				// auto &f  = interp.fun();
-				// auto &&g = fun(f, ctx);
+			auto &c  = interp.coefficient();
+			auto &f  = interp.fun();
+			auto &&g = fun(f, ctx);
 
-				// Vector element_values;
-				// interp_values(interp, element_values, ctx);
+			Vector element_values;
+			gather_interp_values(interp, element_values, ctx);
 
-				// std::vector<Scalar> ret(g.size(), 0.);
-				// for(std::size_t qp = 0; qp < g.size(); ++qp) {
-				// 	for(std::size_t i = 0; i < g[qp].size(); ++i) {
-				// 		ret[qp] += element_values.get(i) * g[qp][i];
-				// 	}
-				// }
+			const std::size_t n_shape_functions = g.size();
+			const std::size_t n_quad_points = g[0].size();
 
-				// return ret;
-			return std::vector<Scalar>();
+			std::vector<Scalar> ret(n_quad_points, 0.);
+
+			for(std::size_t i = 0; i < n_shape_functions; ++i) {
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					ret[qp] += element_values.get(i) * g[i][qp];
+				}
+			}
+
+			return ret;
 		}
 
 		template<class Tensor>
 		static std::vector<Vector> grad(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<LibMeshFunctionSpace> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-				// auto &c   = interp.coefficient();
-				// auto &f   = interp.fun();
-				// auto &&g = grad(f, ctx);
+			auto &c  = interp.coefficient();
+			auto &f  = interp.fun();
+			auto &&g = grad(f, ctx);
 
-				// Vector element_values;
-				// interp_values(interp, element_values, ctx);
+			Vector element_values;
+			gather_interp_values(interp, element_values, ctx);
 
-				// auto dim = size(g[0][0]).get(0);
-				// std::vector<Vector> ret(g.size());
-				// for(std::size_t qp = 0; qp < g.size(); ++qp) {
-				// 	ret[qp] = zeros(dim);
+			const std::size_t n_shape_functions = g.size();
+			const std::size_t n_quad_points = g[0].size();
 
-				// 	for(std::size_t i = 0; i < g[qp].size(); ++i) {
-				// 		ret[qp] += element_values.get(i) * g[qp][i];
-				// 	}
-				// }
+			std::vector<Vector> ret(n_quad_points);
 
-				// return ret;
+			const uint dim = f.space_ptr()->mesh().mesh_dimension();
+			
+			for(auto &r : ret) {
+				r = zeros(dim);
+			}
 
-			return std::vector<Vector>();
+			for(std::size_t i = 0; i < n_shape_functions; ++i) {
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					ret[qp] += element_values.get(i) * g[i][qp];
+				}
+			}
+
+			return ret;
+		}
+
+		static void add(Matrix &mat, const TensorValueT &t)
+		{
+			auto s = size(mat);
+			Write<Matrix> w_m(mat);
+
+			for(int i = 0; i < s.get(0); ++i) {
+				for(int j = 0; j < s.get(1); ++j) {
+					mat.add(i, j, t(i, j));
+				}
+			}
 		}
 
 		template<class Tensor>
 		static std::vector<Matrix> grad(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace> > > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-				// auto &c   = interp.coefficient();
-				// auto &f   = interp.fun();
-				// auto &&g = grad(f, ctx);
+			auto &c   = interp.coefficient();
+			auto &f   = interp.fun();
+			auto space_ptr = f.space_ptr();
 
-				// Vector element_values;
-				// interp_values(interp, element_values, ctx);
+			auto &&g  = grad(f, ctx);
 
-				// auto s = size(g[0][0]);
-				// std::vector<Matrix> ret(g.size());
-				// for(std::size_t qp = 0; qp < g.size(); ++qp) {
-				// 	ret[qp] = zeros(s);
 
-				// 	for(std::size_t i = 0; i < g[qp].size(); ++i) {
-				// 		ret[qp] += element_values.get(i) * g[qp][i];
-				// 	}
-				// }
 
-				// return ret;
-			return std::vector<Matrix>();
+			Vector element_values;
+			gather_interp_values(interp, element_values, ctx);
+
+			const SizeType rows = space_ptr->n_subspaces();
+			const SizeType cols = space_ptr->subspace(0).mesh().mesh_dimension();
+			Size s{rows, cols};
+
+			
+			const std::size_t n_shape_functions = g.size();
+			const std::size_t n_quad_points = g[0].size();
+
+			std::vector<Matrix> ret(n_quad_points);
+			
+			for(auto &r : ret) {
+				r = zeros(s);
+			}
+
+			for(std::size_t i = 0; i < n_shape_functions; ++i) {
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					add(ret[qp], element_values.get(i) * g[i][qp]);
+				}
+			}
+
+			return ret;
 		}
 
-
-
 		template<class Tensor>
-		static void interp_values(
+		static void gather_interp_values(
 			const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>> > &interp,
 			Vector &element_values,
 			AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-				// auto &c   = interp.coefficient();
-				// auto &f   = interp.fun();
+			auto &c   = interp.coefficient();
+			auto &f   = interp.fun();
 
-				// auto space_ptr = f.space_ptr();
+			auto space_ptr = f.space_ptr();
+			const auto &sub_0 = space_ptr->subspace(0);
+			const auto &mesh = sub_0.mesh();
+			const auto &dof_map  = sub_0.dof_map();
 
-				// std::vector<int> indices;
-				// space_ptr->subspace(0).dof_indices(ctx.current_element, indices);
+			const auto &elem_ptr = mesh.elem(ctx.current_element());
+			
+			std::vector<libMesh::dof_id_type> prod_indices;
+			std::vector<libMesh::dof_id_type> indices;
 
+			space_ptr->each([&](const int sub_index, const LibMeshFunctionSpace &space) {
+				dof_map.dof_indices(elem_ptr, indices, space_ptr->subspace_id());
+				prod_indices.insert(prod_indices.end(), indices.begin(), indices.end());
+			});
 
-				// std::vector<int> prod_indices;
-				// prod_indices.reserve(indices.size() * space_ptr->n_subspaces());
+			const std::size_t n_indices = prod_indices.size();
+			element_values = zeros(n_indices);
 
-				// //compute offset
-				// int n_funs = ctx.trial.size();
+			Write<Vector> w(element_values);
+			Read<Wrapper<Tensor, 1>> r(c);
 
-				// space_ptr->each([&](const int sub_index, const LibMeshFunctionSpace &space) {
-				// 	for(auto &i : indices) {
-				// 		int p_i = i;
-				// 		p_i *= n_funs;
-				// 		p_i += space.subspace_id();
-				// 		prod_indices.push_back(p_i);
-				// 	}
-				// });
-
-				// element_values = zeros(prod_indices.size());
-
-				// Write<Vector> w(element_values);
-				// Read<Wrapper<Tensor, 1>> r(c);
-
-				// for(std::size_t i = 0; i < prod_indices.size(); ++i) {
-				// 	element_values.set(i, c.get(prod_indices[i]));
-				// }
+			for(std::size_t i = 0; i < n_indices; ++i) {
+				element_values.set(i, c.get(prod_indices[i]));
+			}
 		}
 
-
-
-			//////////////////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////////////////////
 
 		template<class Space, class Op>
 		inline static auto apply_binary(const Number<double> &left, const TrialFunction<Space> &right, const Op &op, AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(fun(right, ctx))>::type 
@@ -659,6 +685,27 @@ namespace utopia {
 			return ret;
 		}
 
+		inline static void multiply(const LMDenseMatrix &left, const TensorValueT &right, TensorValueT &out)
+		{
+			Size s_l = size(left);
+			Read<LMDenseMatrix> r_l(left);
+
+			for(uint k = 0; k < LIBMESH_DIM; ++k) {
+				for(uint i = 0; i < s_l.get(0); ++i) {
+					out(i, k) = left.get(i, 0) * right(0, k);
+
+					for(uint j = 1; j < s_l.get(1); ++j) {
+						out(i, k) += left.get(i, j) * right(j, k);
+					}	
+				}
+			}
+		}
+
+		inline static void multiply(const LMDenseMatrix &left, const DenseVectorT &right, DenseVectorT &out)
+		{
+			left.implementation().vector_mult(out, right);
+		}
+
 		// template<class Space>
 		inline static auto multiply(
 			const LMDenseMatrix &left,
@@ -667,23 +714,14 @@ namespace utopia {
 		{
 			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
 
-			Read<LMDenseMatrix> r_l(left);
+			
 
-			Size s_l = size(left);
+			
 
 			for(auto &v : ret) {
 				for(auto &s : v) {
 					auto s_copy = s;
-
-					for(uint k = 0; k < LIBMESH_DIM; ++k) {
-						for(uint i = 0; i < s_l.get(0); ++i) {
-							s(i, k) = left.get(i, 0) * s_copy(0, k);
-
-							for(uint j = 1; j < s_l.get(1); ++j) {
-								s(i, k) += left.get(i, j) * s_copy(j, k);
-							}	
-						}
-					}
+					multiply(left, s_copy, s);
 				}
 			}
 
@@ -698,8 +736,8 @@ namespace utopia {
 		{
 			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
 
-			const std::size_t n_functions = right.size();
-			const std::size_t n_quad_points = right[0].size();
+			const std::size_t n_functions = ret.size();
+			const std::size_t n_quad_points = ret[0].size();
 
 			assert(n_quad_points == left.size());
 
@@ -758,11 +796,12 @@ namespace utopia {
 			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
 
 			const std::size_t n_quad_points = left.size();
-			const std::size_t n_functions = right.size();
+			const std::size_t n_functions = ret.size();
 
 			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 				for(std::size_t i = 0; i < n_functions; ++i) {
-					ret[i][qp] = left[qp] * ret[i][qp];
+					auto g = ret[i][qp];
+					multiply(left[qp], g, ret[i][qp]);
 				}
 			}
 
@@ -775,11 +814,12 @@ namespace utopia {
 			typename remove_ref_and_const<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
 			const std::size_t n_quad_points = left.size();
-			const std::size_t n_functions = right.size();
+			const std::size_t n_functions = ret.size();
 
 			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 				for(std::size_t i = 0; i < n_functions; ++i) {
-					ret[i][qp] = left[qp] * ret[i][qp];
+					auto v = ret[i][qp];
+					multiply(left[qp], v, ret[i][qp]);
 				}
 			}
 
@@ -801,16 +841,34 @@ namespace utopia {
 		}
 
 		template<class Left, class Space>
-		inline static auto multiply(const Left &left, const TestFunction<Space> &right,  AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(fun(right, ctx))>::type
+		inline static auto multiply(const Number<Left> &left, const TestFunction<Space> &right,  AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(fun(right, ctx))>::type
 		{
 			typename remove_ref_and_const<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
-			const std::size_t n_functions = right.size();
-			const std::size_t n_quad_points = right[0].size();
+			const std::size_t n_functions = ret.size();
+			const std::size_t n_quad_points = ret[0].size();
 
 			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 				for(std::size_t i = 0; i < n_functions; ++i) {
 					ret[i][qp] = left * ret[i][qp];
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Space>
+		inline static auto multiply(const Matrix &left, const TestFunction<ProductFunctionSpace<Space>> &right,  AssemblyContext<LIBMESH_TAG> &ctx) -> VectorFunctionType
+		{
+			VectorFunctionType ret = fun(right, ctx);
+
+			const std::size_t n_functions = ret.size();
+			const std::size_t n_quad_points = ret[0].size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					VectorFunctionType::value_type::value_type v = ret[i][qp];
+					left.implementation().vector_mult(ret[i][qp], v);
 				}
 			}
 
