@@ -7,6 +7,7 @@
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_libmesh_Types.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
+#include "utopia_libmesh_FunctionalTraits.hpp"
 #include "utopia_fe_core.hpp"
 
 #include "libmesh/fe.h"
@@ -60,6 +61,7 @@ namespace utopia {
 
 		inline std::shared_ptr<libMesh::QBase> quad_trial()
 		{
+			if(!quad_trial_) return quad_test_;
 			return quad_trial_;
 		}
 
@@ -68,21 +70,31 @@ namespace utopia {
 		{		
 			static_assert( (IsSubTree<TrialFunction<utopia::Any>, Expr>::value), "could not find trial function" );
 			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function"  );
-			//TODO
+
+			init_test_fe(expr);
+			init_trial_fe(expr);
+
+			std::cout << "init_bilinear: quadrature_order: " << quadrature_order_ << std::endl;
 		}
 
 		template<class Expr>
 		void init_linear(const Expr &expr) 
 		{		
-			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
+			init_test_fe(expr);
+			std::cout << "init_linear: quadrature_order: " << quadrature_order_ << std::endl;
+		}
 
-			
+		template<class Expr>
+		void init_test_fe(const Expr &expr)
+		{
+			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
 
 			auto test_space_ptr = test_space<LibMeshFunctionSpace>(expr);
 
 			if(test_space_ptr) {
 				test_space_ptr->initialize();
 				quadrature_order_ = functional_order(expr, *this);
+				
 				test_.resize(test_space_ptr->equation_system().n_vars());
 
 				const int dim = test_space_ptr->mesh().mesh_dimension();
@@ -99,6 +111,46 @@ namespace utopia {
 			} else {
 				auto prod_test_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
 				assert(prod_test_space_ptr);
+			}
+		}
+
+
+		template<class Expr>
+		void init_trial_fe(const Expr &expr)
+		{
+			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find trial function" );
+
+
+			trial_.clear();
+
+			auto trial_space_ptr = trial_space<LibMeshFunctionSpace>(expr);
+			auto test_space_ptr  = test_space<LibMeshFunctionSpace>(expr);
+
+			if(trial_space_ptr == test_space_ptr) return;
+
+			if(trial_space_ptr) {
+				trial_space_ptr->initialize();
+				// quadrature_order_ = functional_order(expr, *this);
+				trial_.resize(trial_space_ptr->equation_system().n_vars());
+
+				const int dim = trial_space_ptr->mesh().mesh_dimension();
+				const libMesh::Elem * elem = trial_space_ptr->mesh().elem(current_element_);
+				// set_up_quadrature(dim, quadrature_order_, elem);
+
+				auto trial_fe = libMesh::FEBase::build(dim, trial_space_ptr->type());
+				trial_fe->attach_quadrature_rule(quad_trial().get());
+				init_trial_fe_flags(expr, *trial_fe);
+				trial_fe->reinit(elem);
+				
+				trial_[trial_space_ptr->subspace_id()] = std::move(trial_fe);
+				block_id_ = elem->subdomain_id();
+			} else {
+				auto prod_trial_space_ptr = trial_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
+				auto prod_test_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
+
+				if(prod_trial_space_ptr == prod_test_space_ptr) return;
+
+				assert(prod_trial_space_ptr);
 			}
 		}
 
@@ -134,6 +186,27 @@ namespace utopia {
 		std::vector< std::unique_ptr<FE> > test_;
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
+
+
+		inline std::size_t n_trial_functions() const
+		{
+			std::size_t ret = 0;
+			for(auto &t_ptr : trial()) {
+				ret += t_ptr->n_shape_functions();
+			}
+
+			return ret;
+		}
+
+		inline std::size_t n_test_functions() const
+		{
+			std::size_t ret = 0;
+			for(auto &t_ptr : test()) {
+				ret += t_ptr->n_shape_functions();
+			}
+
+			return ret;
+		}
 
 		void set_up_quadrature(const int dim, const int quadrature_order, const libMesh::Elem * elem)
 		{

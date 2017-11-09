@@ -27,6 +27,8 @@ namespace utopia {
 		{
 			std::cout << "--------------- [run_linear_form_test] ---------------:" << std::endl;
 			run_linear_form_test(space_input);
+			std::cout << "--------------- [run_bilinear_form_test] ---------------:" << std::endl;
+			run_bilinear_form_test(space_input);
 			std::cout << "--------------- [run_scalar_form_sum_eval_test] ---------------:" << std::endl;
 			run_scalar_form_sum_eval_test(space_input);
 			std::cout << "--------------- [run_scalar_form_eval_test] ---------------:" << std::endl;
@@ -356,6 +358,8 @@ namespace utopia {
 			auto W  = Wx * Wy;
 
 			auto Q = FunctionSpaceT(space_input);
+			// auto T = TensorFunctionSpace(space_input);
+			// auto T = VectorFunctionSpace(space_input);
 
 			//create a mixed function space
 			auto M = mixed(V, W, Q);
@@ -381,6 +385,18 @@ namespace utopia {
 
 			auto linear_form = integral(0.5 * inner(coeff(0.1), v));
 			assemble_linear_and_print(linear_form);
+		}
+
+
+		static void run_bilinear_form_test(const std::shared_ptr<SpaceInput> &space_input)
+		{
+
+			auto V = FunctionSpaceT(space_input);
+			auto u = trial(V);
+			auto v = test(V);
+
+			auto bilinear_form = integral(inner(u, v));
+			assemble_bilinear_and_print(bilinear_form);
 		}
 	};
 
@@ -412,12 +428,18 @@ namespace utopia {
 			libMesh::TET4);
 
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*lm_mesh);
-		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("FormEvalTest"); 
-
-		assert(&equation_systems->get_system(0) == &sys);
+		equation_systems->add_system<libMesh::LinearImplicitSystem>("FormEvalTest"); 
 
 		FormEvalTest<libMesh::EquationSystems, utopia::LibMeshFunctionSpace> lm_test;
+
+		equation_systems->add_system<libMesh::LinearImplicitSystem>("run_linear_form_test"); 
+		
 		lm_test.run_linear_form_test(equation_systems);	
+		
+		equation_systems->clear();
+		equation_systems->add_system<libMesh::LinearImplicitSystem>("run_bilinear_form_test"); 
+		
+		lm_test.run_bilinear_form_test(equation_systems);
 
 		/////////////////////////////////////////////////////////////////////
 	}

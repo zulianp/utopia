@@ -232,6 +232,12 @@ namespace utopia {
 	{
 		mat.implementation().print(os);
 	}
+
+	inline void disp(const LMDenseVector &vec, std::ostream &os = std::cout)
+	{
+		vec.implementation().print(os);
+	}
+	
 	
 	
 	inline const libMesh::DenseMatrix<libMesh::Real> &raw_type(const Wrapper<libMesh::DenseMatrix<libMesh::Real>, 2> &utopiaType)

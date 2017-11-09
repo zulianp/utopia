@@ -82,6 +82,10 @@ namespace utopia {
 		inline libMesh::MeshBase &mesh() { return equation_systems_->get_mesh(); }
 		inline const libMesh::MeshBase &mesh() const { return equation_systems_->get_mesh(); }
 	
+		inline std::string getClass() const override {
+			return "LibMeshFunctionSpace";
+		}
+
 	private:
 		std::shared_ptr<libMesh::EquationSystems> equation_systems_;
 		int system_num_;
@@ -113,6 +117,21 @@ namespace utopia {
 	};
 
 	typedef utopia::Traits<LibMeshFunctionSpace> LibMeshTraits;
+
+
+	// template<>
+	// class FunctionalTraits<LibMeshFunctionSpace, AssemblyContext<LIBMESH_TAG> > {
+	// public:
+	// 	inline static int type(const LibMeshFunctionSpace &space,  const AssemblyContext<HOMEMADE> &ctx)
+	// 	{
+	// 		return utopia::POLYNOMIAL_FUNCTION;
+	// 	}
+
+	// 	inline static int order(const LibMeshFunctionSpace &space, const AssemblyContext<HOMEMADE> &ctx)
+	// 	{
+	// 		return space.mesh().element_order(ctx.current_element());
+	// 	}
+	// };
 }
 
 #endif //UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP

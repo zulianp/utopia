@@ -4,14 +4,22 @@ namespace utopia {
 
 	void LibMeshAssemblyContext::init_tensor(Vector &v, const bool reset)
 	{
-		std::cout << "ERRRORRRRR " << std::endl;
-		assert(false);
+		const auto nt = n_test_functions();
+		auto s = size(v);
+
+		if(reset || nt != v.get(0)) {
+			v = zeros(nt);
+		}
 	}
 
 	void LibMeshAssemblyContext::init_tensor(Matrix &v, const bool reset)
 	{
-		std::cout << "ERRRORRRRR " << std::endl;
-		assert(false);
+		auto s = size(v);
+		const auto n_test = n_test_functions();
+		const auto n_trial = n_trial_functions();
+
+		if(reset || n_test != s.get(0) || n_trial != s.get(1)) {
+			v = zeros(n_test, n_trial);
+		}
 	}
-	
 }

@@ -25,7 +25,7 @@ namespace utopia {
 		DERIVED_CRT(Derived);
 		CONST_DERIVED_CRT(Derived);
 
-		inline std::string getClass() const
+		virtual std::string getClass() const
 		{
 			return "FunctionSpace";
 		}

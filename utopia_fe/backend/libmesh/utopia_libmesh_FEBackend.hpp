@@ -94,7 +94,7 @@ namespace utopia {
 		template<typename T>
 		inline static const T &get(const std::vector<std::vector<T> > &v, const std::size_t qp, const std::size_t i)
 		{
-			return v[qp][i];
+			return v[i][qp];
 		}
 
 		template<typename T, int Order>
@@ -803,7 +803,6 @@ namespace utopia {
 
 			auto && dx    = ctx.dx();
 
-
 			uint n_quad_points = dx.size();
 
 			auto s = size(result);
@@ -813,10 +812,9 @@ namespace utopia {
 				s.set(1, 1);
 			}
 
-
-			for (uint qp = 0; qp < n_quad_points; qp++) {
-				for (uint i = 0; i < s.get(1); i++) {
-					for (uint j = 0; j < s.get(0); j++) {
+			for (uint i = 0; i < s.get(1); i++) {
+				for (uint j = 0; j < s.get(0); j++) {
+					for (uint qp = 0; qp < n_quad_points; qp++) {
 						add(result, j, i, inner( get(trial, qp, i), get(test, qp, j) ) * dx[qp]);
 					}
 				}
@@ -839,8 +837,8 @@ namespace utopia {
 			uint n_quad_points = dx.size();
 
 			auto s = size(result);
-			for (uint qp = 0; qp < n_quad_points; qp++) {
-				for (uint j = 0; j < s.get(0); j++) {
+			for (uint j = 0; j < s.get(0); j++) {
+				for (uint qp = 0; qp < n_quad_points; qp++) {
 					add(result, j, 0, inner( get(fun, qp, 0), get(test, qp, j) ) * dx[qp]);
 				}
 			}
