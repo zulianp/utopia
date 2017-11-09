@@ -110,6 +110,29 @@ namespace utopia {
 			} else {
 				auto prod_test_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
 				assert(prod_test_space_ptr);
+
+
+				prod_test_space_ptr->each([](const int, LibMeshFunctionSpace &subspace) {
+					subspace.initialize();
+				});
+
+				quadrature_order_ = functional_order(expr, *this);
+
+				//use sub0 for init geometric info
+				const auto &sub_0 = prod_test_space_ptr->subspace(0);
+				test_.resize(sub_0.equation_system().n_vars());
+				const int dim = sub_0.mesh().mesh_dimension();
+				const libMesh::Elem * elem = sub_0.mesh().elem(current_element_);
+				set_up_quadrature(dim, quadrature_order_, elem);
+				block_id_ = elem->subdomain_id();
+
+				prod_test_space_ptr->each([&](const int, LibMeshFunctionSpace &subspace) {
+					auto test_fe = libMesh::FEBase::build(dim, subspace.type());
+					test_fe->attach_quadrature_rule(quad_test().get());
+					init_test_fe_flags(expr, *test_fe);
+					test_fe->reinit(elem);
+					test_[subspace.subspace_id()] = std::move(test_fe);
+				});
 			}
 		}
 
@@ -141,7 +164,7 @@ namespace utopia {
 				block_id_ = elem->subdomain_id();
 			} else {
 				auto prod_trial_space_ptr = trial_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
-				auto prod_test_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
+				auto prod_test_space_ptr  = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
 
 				if(prod_trial_space_ptr == prod_test_space_ptr) return;
 

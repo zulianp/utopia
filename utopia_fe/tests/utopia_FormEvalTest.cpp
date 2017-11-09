@@ -51,7 +51,7 @@ namespace utopia {
 			FormEvaluator<Backend> eval;
 			eval.eval(form, mat, ctx, true);
 
-			std::cout << tree_format(form.getClass()) << std::endl;
+			// std::cout << tree_format(form.getClass()) << std::endl;
 			disp(mat);
 		}
 
@@ -164,9 +164,9 @@ namespace utopia {
 			const double rho = 1.;
 
 			const int n_dofs = 3 * 2;
-			Vectord u_vector = values(n_dofs, 0.1);
+			ElementVector u_vector = values(n_dofs, 0.1);
 			{
-				Write<Vectord> w(u_vector);
+				Write<ElementVector> w(u_vector);
 				u_vector.set(1, 0.2);
 			}
 
@@ -392,7 +392,6 @@ namespace utopia {
 		{
 			std::cout << "[run_linear_form_test]" << std::endl;
 
-
 			auto V = FunctionSpaceT(space_input);
 			auto u = trial(V);
 			auto v = test(V);
@@ -400,7 +399,6 @@ namespace utopia {
 			auto linear_form = integral(0.5 * inner(coeff(0.1), v));
 			assemble_linear_and_print(linear_form);
 		}
-
 
 		static void run_bilinear_form_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
@@ -416,35 +414,10 @@ namespace utopia {
 		}
 	};
 
-	void run_form_eval_test(libMesh::LibMeshInit &init)
+	void run_libmesh_eval_test(libMesh::LibMeshInit &init)
 	{
-
-		/////////////////////////////////////////////////////////////////////
-		//HOMEMADE
-
-		auto mesh = std::make_shared<utopia::Mesh>();
-		mesh->make_triangle();
-
-		FormEvalTest<utopia::Mesh, utopia::HMFESpace>  test;
-		// test.run_all_on(mesh);
-		test.run_scalar_form_eval_test(mesh);
-		
-
-		/////////////////////////////////////////////////////////////////////
-
-
-		/////////////////////////////////////////////////////////////////////
-		//LIBMESH
-
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
-		// libMesh::MeshTools::Generation::build_cube(*lm_mesh,
-		// 	 2, 2, 2,
-		// 	-1., 1.,
-		// 	-1., 1.,
-		// 	-1., 1.,
-		// 	libMesh::TET4);
-
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
 			1, 1,
 			0, 1.,
@@ -463,10 +436,43 @@ namespace utopia {
 		// equation_systems->clear();
 
 
-		equation_systems->add_system<libMesh::LinearImplicitSystem>("run_scalar_form_eval_test"); 
-		lm_test.run_scalar_form_eval_test(equation_systems);
+		// equation_systems->add_system<libMesh::LinearImplicitSystem>("run_scalar_form_eval_test"); 
+		// lm_test.run_scalar_form_eval_test(equation_systems);
+		// equation_systems->clear();
+
+		// equation_systems->add_system<libMesh::LinearImplicitSystem>("run_vector_form_eval_test"); 
+		// lm_test.run_vector_form_eval_test(equation_systems);
+		// equation_systems->clear();
+
+
+		equation_systems->add_system<libMesh::LinearImplicitSystem>("run_linear_elasticity"); 
+		lm_test.run_linear_elasticity(equation_systems);
 		equation_systems->clear();
+		/////////////////////////////////////////////////////////////////////
+
+	}
+
+	void run_form_eval_test(libMesh::LibMeshInit &init)
+	{
 
 		/////////////////////////////////////////////////////////////////////
+		//HOMEMADE
+
+		auto mesh = std::make_shared<utopia::Mesh>();
+		mesh->make_triangle();
+
+		FormEvalTest<utopia::Mesh, utopia::HMFESpace>  test;
+		// test.run_all_on(mesh);
+		test.run_linear_elasticity(mesh);
+		
+
+		/////////////////////////////////////////////////////////////////////
+
+
+		/////////////////////////////////////////////////////////////////////
+		//LIBMESH
+		run_libmesh_eval_test(init);
+
+		
 	}
 }

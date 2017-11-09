@@ -116,10 +116,10 @@ namespace utopia {
 			vec.add(i, value);
 		}
 
-			//////////////////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////////////////////
 
-			//Function
-			// scalar fe functions
+		//Function
+		// scalar fe functions
 		static const FunctionType &fun(const TrialFunction<LibMeshFunctionSpace> &fun, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
 			return ctx.trial()[fun.space_ptr()->subspace_id()]->get_phi();
@@ -130,34 +130,42 @@ namespace utopia {
 			return ctx.test()[fun.space_ptr()->subspace_id()]->get_phi();
 		}
 
-			// vector fe functions
+		// vector fe functions
 		static void fun_aux(
 			ProductFunctionSpace<LibMeshFunctionSpace> &space,
 			std::vector<std::unique_ptr<FE> > &fe_object,
 			AssemblyContext<LIBMESH_TAG> &ctx,
 			VectorFunctionType &ret)
 		{
-				// ret.resize(fe_object[0]->get_phi().size()); 
+			assert(!fe_object.empty());
+			const std::size_t n_quad_points = fe_object[0]->get_phi()[0].size();
 
-				// int n_shape_functions = 0;
-				// for(auto &t : fe_object) {
-				// 	n_shape_functions += t->n_shape_functions();
-				// }
+			int n_shape_functions = 0;
+			for(auto &t : fe_object) {
+				n_shape_functions += t->n_shape_functions();
+			}
 
-				// for(std::size_t qp = 0; qp < ret.size(); ++qp) {
-				// 	ret[qp].resize(n_shape_functions, zeros(space.n_subspaces()));
+			ret.resize(n_shape_functions); 
+			for(std::size_t i = 0; i < n_shape_functions; ++i) {
+				ret[i].resize(n_quad_points);
+				for(auto &r : ret[i]) {
+					r.resize(space.n_subspaces());
+					r.zero();
+				}
+			}
 
-				// 	int offset = 0;
-				// 	space.each([&offset, &fe_object, &ret, qp](const int, const LibMeshFunctionSpace &s) {
-				// 		auto fe = fe_object[s.subspace_id()];
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				int offset = 0;
+				space.each([&offset, &fe_object, &ret, qp](const int, const LibMeshFunctionSpace &s) {
+					const auto &fe = fe_object[s.subspace_id()];
+					const auto & fun = fe->get_phi();
+					uint n_shape_i = fe->n_shape_functions();
 
-				// 		for(int j = 0; j < fe->n_shape_functions(); ++j) {
-				// 			Write<Vector> w(ret[qp][offset]);
-
-				// 			ret[qp][offset++].set(s.subspace_id(), fe->fun[qp][j]);
-				// 		}
-				// 	});
-				// }
+					for(uint j = 0; j < n_shape_i; ++j) {
+						ret[offset++][qp](s.subspace_id()) = fun[j][qp];
+					}
+				});
+			}
 		}
 
 		static VectorFunctionType fun(const TestFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
@@ -177,10 +185,10 @@ namespace utopia {
 			return ret;
 		}
 
-			//////////////////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////////////////////
 
-			//Gradient
-			// scalar fe functions
+		//Gradient
+		// scalar fe functions
 		static const GradientType &grad(const TrialFunction<LibMeshFunctionSpace> &fun, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
 			return ctx.trial()[fun.space_ptr()->subspace_id()]->get_dphi();
@@ -191,37 +199,44 @@ namespace utopia {
 			return ctx.test()[fun.space_ptr()->subspace_id()]->get_dphi();
 		}
 
-			// vector fe functions
+		// vector fe functions
 		static void grad_aux(
 			ProductFunctionSpace<LibMeshFunctionSpace> &space,
 			std::vector<std::unique_ptr<FE> > &fe_object,
 			AssemblyContext<LIBMESH_TAG> &ctx,
 			JacobianType &ret)
 		{
-			ret.resize(fe_object[0]->get_phi().size()); 
 
-				// int n_shape_functions = 0;
-				// for(auto &t : fe_object) {
-				// 	n_shape_functions += t->n_shape_functions();
-				// }
+			assert(!fe_object.empty());
+			const std::size_t n_quad_points = fe_object[0]->get_phi()[0].size();
+			const uint dim = space[0].mesh().mesh_dimension();
 
-				// for(std::size_t qp = 0; qp < ret.size(); ++qp) {
-				// 	ret[qp].resize(n_shape_functions, zeros(space.n_subspaces(), space[0].mesh().n_dims()));
+			uint n_shape_functions = 0;
+			for(auto &t : fe_object) {
+				n_shape_functions += t->n_shape_functions();
+			}
 
-				// 	int offset = 0;
-				// 	space.each([&offset, &fe_object, &ret, &space, qp](const int, const LibMeshFunctionSpace &s) {
-				// 		auto fe = fe_object[s.subspace_id()];
+			ret.resize(n_shape_functions); 
+			for(std::size_t i = 0; i < n_shape_functions; ++i) {
+				ret[i].resize(n_quad_points);
+				//TensorValue is by default initialized to 0s
+			}
 
-				// 		for(int j = 0; j < fe->n_shape_functions(); ++j, offset++) {
-				// 			Write<Matrix> w(ret[qp][offset]);
-				// 			Read<Vector> r(fe->grad[qp][j]);
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				int offset = 0;
+				space.each([&offset, &fe_object, &ret, &space, qp, dim](const int, const LibMeshFunctionSpace &s) {
+					const auto &fe = fe_object[s.subspace_id()];	
+					const uint n_shape_i = fe->n_shape_functions();
+					
+					for(uint j = 0; j < n_shape_i; ++j, offset++) {
+						const auto &grad = fe->get_dphi()[j][qp];
 
-				// 			for(int d = 0; d < s.mesh().n_dims(); ++d) {
-				// 				ret[qp][offset].set(s.subspace_id(), d, fe->grad[qp][j].get(d));
-				// 			}
-				// 		}
-				// 	});
-				// }
+						for(uint d = 0; d < dim; ++d) {
+							ret[offset][qp](s.subspace_id(), d) = grad(d);
+						}
+					}
+				});
+			}
 		}
 
 		static JacobianType grad(const TrialFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
@@ -253,24 +268,33 @@ namespace utopia {
 		{
 			ret.resize(fe_object[0]->get_phi().size()); 
 
-				// int n_shape_functions = 0;
-				// for(auto &t : fe_object) {
-				// 	n_shape_functions += t->n_shape_functions();
-				// }
+			assert(!fe_object.empty());
+			const std::size_t n_quad_points = fe_object[0]->get_phi()[0].size();
+			const uint dim = space[0].mesh().mesh_dimension();
 
-				// for(std::size_t qp = 0; qp < ret.size(); ++qp) {
-				// 	ret[qp].resize(n_shape_functions);
+			uint n_shape_functions = 0;
+			for(auto &t : fe_object) {
+				n_shape_functions += t->n_shape_functions();
+			}
 
-				// 	int offset = 0;
-				// 	space.each([&offset, &fe_object, &ret, &space, qp](const int, const LibMeshFunctionSpace &s) {
-				// 		auto fe = fe_object[s.subspace_id()];
+			ret.resize(n_shape_functions); 
+			for(std::size_t i = 0; i < n_shape_functions; ++i) {
+				ret[i].resize(n_quad_points);
+				//TensorValue is by default initialized to 0s
+			}
 
-				// 		for(int j = 0; j < fe->n_shape_functions(); ++j, offset++) {
-				// 			Read<Vector> r(fe->grad[qp][j]);
-				// 			ret[qp][offset] = fe->grad[qp][j].get(s.subspace_id()); 
-				// 		}
-				// 	});
-				// }
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				int offset = 0;
+				space.each([&offset, &fe_object, &ret, &space, qp, dim](const int, const LibMeshFunctionSpace &s) {
+					const auto &fe = fe_object[s.subspace_id()];	
+					const uint n_shape_i = fe->n_shape_functions();
+					
+					for(uint j = 0; j < n_shape_i; ++j, offset++) {
+						const auto &grad = fe->get_dphi()[j][qp];
+						ret[offset][qp] = grad(s.subspace_id());
+					}
+				});
+			}
 		}
 
 		static FunctionType div(const TrialFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
