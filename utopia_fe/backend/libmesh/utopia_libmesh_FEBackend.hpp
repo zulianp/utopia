@@ -78,6 +78,7 @@ namespace utopia {
 		typedef TraitsT::Vector Vector;
 		typedef TraitsT::Matrix Matrix;
 		typedef TraitsT::TensorValueT TensorValueT;
+		typedef TraitsT::VectorValueT VectorValueT;
 		typedef TraitsT::FE FE;
 		typedef TraitsT::FunctionType FunctionType;
 		typedef TraitsT::GradientType GradientType;
@@ -144,7 +145,7 @@ namespace utopia {
 
 			int n_shape_functions = 0;
 			for(auto &t : fe_object) {
-				n_shape_functions += t->n_shape_functions();
+				if(t) n_shape_functions += t->n_shape_functions();
 			}
 
 			ret.resize(n_shape_functions); 
@@ -160,6 +161,7 @@ namespace utopia {
 				int offset = 0;
 				space.each([&offset, &fe_object, &ret, qp](const int, const LibMeshFunctionSpace &s) {
 					const auto &fe = fe_object[s.subspace_id()];
+					assert((static_cast<bool>(fe)));
 					const auto & fun = fe->get_phi();
 					uint n_shape_i = fe->n_shape_functions();
 
@@ -215,7 +217,7 @@ namespace utopia {
 
 			uint n_shape_functions = 0;
 			for(auto &t : fe_object) {
-				n_shape_functions += t->n_shape_functions();
+				if(t) n_shape_functions += t->n_shape_functions();
 			}
 
 			ret.resize(n_shape_functions); 
@@ -280,7 +282,7 @@ namespace utopia {
 
 			uint n_shape_functions = 0;
 			for(auto &t : fe_object) {
-				n_shape_functions += t->n_shape_functions();
+				if(t) n_shape_functions += t->n_shape_functions();
 			}
 
 			ret.resize(n_shape_functions); 
@@ -322,42 +324,29 @@ namespace utopia {
 
 			//////////////////////////////////////////////////////////////////////////////////////////
 			//Curl
-		static void eval_curl(const Matrix &deriv, Vector &result)
+		template<class CurlT>
+		static void eval_curl(const uint dim, const TensorValueT &deriv, CurlT &result)
 		{	
-				// Read<Matrix> r_x(deriv);
+			switch(dim) {
+				case 2:
+				{
+					result(2) = deriv(1, 0) - deriv(0, 1);
+					break;
+				}
 
-				// auto s = size(deriv);
-				// const int dims = s.get(1);
+				case 3:
+				{
+					result(0) = deriv(2, 1) - deriv(1, 2);
+					result(1) = deriv(0, 2) - deriv(2, 0);
+					result(2) = deriv(1, 0) - deriv(0, 1);
+					break;
+				}
 
-				// switch(dims) {
-				// 	case 2:
-				// 	{
-				// 		result = zeros(1);
-				// 		Write<Vector> w_v(result);
-
-				// 		//usually associated with the z dimension but in this case 
-				// 		// we save space and save it in the x dimension
-				// 		//TODO: check if there is the need to put it in the z.
-				// 		result.set(0, deriv.get(1, 0) - deriv.get(0, 1));
-				// 		break;
-				// 	}
-
-				// 	case 3:
-				// 	{
-				// 		result = zeros(3);
-				// 		Write<Vector> w_v(result);
-
-				// 		result.set(0, deriv.get(2, 1) - deriv.get(1, 2));
-				// 		result.set(1, deriv.get(0, 2) - deriv.get(2, 0));
-				// 		result.set(2, deriv.get(1, 0) - deriv.get(0, 1));
-				// 		break;
-				// 	}
-
-				// 	default :
-				// 	{
-				// 		assert(false);
-				// 	}
-				// }
+				default :
+				{
+					assert(false);
+				}
+			}
 		}
 
 		static void curl_aux(
@@ -366,40 +355,42 @@ namespace utopia {
 			AssemblyContext<LIBMESH_TAG> &ctx,
 			CurlType &ret)
 		{
-				// ret.resize(fe_object[0]->get_phi().size()); 
+				const auto &sub_0 = space[0];
+				JacobianType grads;
 
+				grad_aux(
+					space,
+					fe_object,
+					ctx,
+					grads);
 
-				// JacobianType grads;
+				const uint n_shape_x = fe_object[sub_0.subspace_id()]->n_shape_functions();
+				uint n_shape_functions = 0;
 
-				// grad_aux(
-				// 	space,
-				// 	fe_object,
-				// 	ctx,
-				// 	grads);
+				space.each([&n_shape_functions, &fe_object, &n_shape_x](const int, LibMeshFunctionSpace &subspace){
+					assert(n_shape_x == fe_object[subspace.subspace_id()]->n_shape_functions());
+					n_shape_functions += fe_object[subspace.subspace_id()]->n_shape_functions();
+				});
 
-				// const int n_shape_x = fe_object[0]->n_shape_functions();
+				const std::size_t n_subspaces = space.n_subspaces();
+				const std::size_t n_quad_points = grads[0].size();
+				const std::size_t dim = sub_0.mesh().mesh_dimension();
 
-				// int n_shape_functions = 0;
-				// for(auto &t : fe_object) {
-				// 	assert(n_shape_x == t->n_shape_functions());
-				// 	n_shape_functions += t->n_shape_functions();
-				// }
+				ret.resize(n_shape_functions); 
+				for(auto &r : ret) {
+					r.resize(n_quad_points);
+				}
 
-				// const std::size_t n_subspaces = space.n_subspaces();
-
-				// for(std::size_t qp = 0; qp < ret.size(); ++qp) {
-				// 	ret[qp].resize(n_shape_functions);
-
-				// 	int offset = 0;
-				// 	for(int i = 0; i < n_subspaces; ++i) {
-				// 		for(int j = 0; j < n_shape_x; ++j, ++offset) {
-
-				// 			auto &ret_j  = ret[qp][offset];
-				// 			auto &grad_j = grads[qp][offset];
-				// 			eval_curl(grad_j, ret_j);
-				// 		}
-				// 	}
-				// }
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					uint offset = 0;
+					for(uint i = 0; i < n_subspaces; ++i) {
+						for(uint j = 0; j < n_shape_x; ++j, ++offset) {
+							auto &ret_j  = ret[offset][qp];
+							auto &grad_j = grads[offset][qp];
+							eval_curl(dim, grad_j, ret_j);
+						}
+					}
+				}
 		}
 
 

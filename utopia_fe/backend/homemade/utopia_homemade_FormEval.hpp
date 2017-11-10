@@ -112,7 +112,7 @@ namespace utopia {
 			AssemblyContext<HOMEMADE> &ctx)
 		{	
 			apply(expr.expr(), result, ctx);
-			result *= -result;
+			result = -result;
 		}
 
 		template<class Expr, class Tensor>

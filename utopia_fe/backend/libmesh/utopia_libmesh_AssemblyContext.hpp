@@ -93,6 +93,7 @@ namespace utopia {
 			if(test_space_ptr) {
 				test_space_ptr->initialize();
 				quadrature_order_ = functional_order(expr, *this);
+				not_null_test_ = test_space_ptr->subspace_id();
 				
 				test_.resize(test_space_ptr->equation_system().n_vars());
 
@@ -120,6 +121,7 @@ namespace utopia {
 
 				//use sub0 for init geometric info
 				const auto &sub_0 = prod_test_space_ptr->subspace(0);
+				not_null_test_ = sub_0.subspace_id();
 				test_.resize(sub_0.equation_system().n_vars());
 				const int dim = sub_0.mesh().mesh_dimension();
 				const libMesh::Elem * elem = sub_0.mesh().elem(current_element_);
@@ -146,7 +148,7 @@ namespace utopia {
 			auto trial_space_ptr = trial_space<LibMeshFunctionSpace>(expr);
 			auto test_space_ptr  = test_space<LibMeshFunctionSpace>(expr);
 
-			if(trial_space_ptr == test_space_ptr) return;
+			if(trial_space_ptr && trial_space_ptr == test_space_ptr) return;
 
 			if(trial_space_ptr) {
 				trial_space_ptr->initialize();
@@ -169,6 +171,28 @@ namespace utopia {
 				if(prod_trial_space_ptr == prod_test_space_ptr) return;
 
 				assert(prod_trial_space_ptr.get());
+
+				prod_trial_space_ptr->each([](const int, LibMeshFunctionSpace &subspace) {
+					subspace.initialize();
+				});
+
+				quadrature_order_ = functional_order(expr, *this);
+
+				//use sub0 for init geometric info
+				const auto &sub_0 = prod_trial_space_ptr->subspace(0);
+				trial_.resize(sub_0.equation_system().n_vars());
+				const int dim = sub_0.mesh().mesh_dimension();
+				const libMesh::Elem * elem = sub_0.mesh().elem(current_element_);
+				set_up_quadrature(dim, quadrature_order_, elem);
+				block_id_ = elem->subdomain_id();
+
+				prod_trial_space_ptr->each([&](const int, LibMeshFunctionSpace &subspace) {
+					auto trial_fe = libMesh::FEBase::build(dim, subspace.type());
+					trial_fe->attach_quadrature_rule(quad_trial().get());
+					init_trial_fe_flags(expr, *trial_fe);
+					trial_fe->reinit(elem);
+					trial_[subspace.subspace_id()] = std::move(trial_fe);
+				});
 			} 
 		}
 
@@ -177,7 +201,7 @@ namespace utopia {
 
 		const DXType &dx() const
 		{
-			return test()[0]->get_JxW();
+			return test()[not_null_test_]->get_JxW();
 		}
 
 		inline int block_id() const
@@ -191,7 +215,7 @@ namespace utopia {
 		}
 
 		LibMeshAssemblyContext()
-		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true)
+		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true), not_null_test_(0)
 		{}
 
 	private:
@@ -199,6 +223,7 @@ namespace utopia {
 		long current_element_;
 		int block_id_;
 		bool reset_quadrature_;
+		int not_null_test_;
 
 		std::vector< std::unique_ptr<FE> > trial_;
 		std::vector< std::unique_ptr<FE> > test_;
@@ -210,7 +235,7 @@ namespace utopia {
 		{
 			std::size_t ret = 0;
 			for(auto &t_ptr : trial()) {
-				ret += t_ptr->n_shape_functions();
+				if(t_ptr) ret += t_ptr->n_shape_functions();
 			}
 
 			return ret;
@@ -220,7 +245,7 @@ namespace utopia {
 		{
 			std::size_t ret = 0;
 			for(auto &t_ptr : test()) {
-				ret += t_ptr->n_shape_functions();
+				if(t_ptr) ret += t_ptr->n_shape_functions();
 			}
 
 			return ret;
@@ -253,11 +278,13 @@ namespace utopia {
 			}
 
 			if(IsSubTree<Divergence<TestFunction<utopia::Any>>, Expr>::value) {
-				test_fe.get_div_phi();
+				// test_fe.get_div_phi();
+				test_fe.get_dphi();
 			}
 
 			if(IsSubTree<Curl<TestFunction<utopia::Any>>, Expr>::value) {
-				test_fe.get_curl_phi();
+				// test_fe.get_curl_phi();
+				test_fe.get_dphi();
 			}
 		}
 
@@ -275,11 +302,13 @@ namespace utopia {
 			}
 
 			if(IsSubTree<Divergence<TrialFunction<utopia::Any>>, Expr>::value) {
-				trial_fe.get_div_phi();
+				// trial_fe.get_div_phi();
+				trial_fe.get_dphi();
 			}
 
 			if(IsSubTree<Curl<TrialFunction<utopia::Any>>, Expr>::value) {
-				trial_fe.get_curl_phi();
+				// trial_fe.get_curl_phi();
+				trial_fe.get_dphi();
 			}
 		}
 	};

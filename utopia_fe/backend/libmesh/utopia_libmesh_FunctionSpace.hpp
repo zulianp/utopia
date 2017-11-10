@@ -102,6 +102,7 @@ namespace utopia {
 		typedef utopia::LMDenseVector Vector;
 		typedef utopia::LMDenseMatrix Matrix;
 		typedef libMesh::TensorValue<Scalar> TensorValueT;
+		typedef libMesh::VectorValue<Scalar> VectorValueT;
 
 		typedef utopia::LibMeshFunctionSpace Implementation;
 
@@ -111,7 +112,7 @@ namespace utopia {
 		typedef std::vector<std::vector<libMesh::FEBase::OutputGradient>> GradientType;
 		typedef std::vector<std::vector<libMesh::FEBase::OutputDivergence>> DivergenceType;
 		typedef std::vector<std::vector<TensorValueT>> JacobianType;
-		typedef std::vector<std::vector<Vector>> CurlType;
+		typedef std::vector<std::vector<VectorValueT>> CurlType;
 
 		typedef std::vector<libMesh::Real> DXType;
 	};

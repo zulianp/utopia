@@ -52,7 +52,7 @@ namespace utopia {
 			eval.eval(form, mat, ctx, true);
 
 			// std::cout << tree_format(form.getClass()) << std::endl;
-			disp(mat);
+			// disp(mat);
 		}
 
 
@@ -68,7 +68,7 @@ namespace utopia {
 			eval.eval(form, vec, ctx, true);
 
 			// std::cout << tree_format(form.getClass()) << std::endl;
-			disp(vec);
+			// disp(vec);
 		}
 
 		static void run_interp_vec_test(const std::shared_ptr<SpaceInput> &space_input)
@@ -163,7 +163,7 @@ namespace utopia {
 			const double mu  = 1.;
 			const double rho = 1.;
 
-			const int n_dofs = 3 * 2;
+			const int n_dofs = 3 * (2 + 1);
 			ElementVector u_vector = values(n_dofs, 0.1);
 			{
 				Write<ElementVector> w(u_vector);
@@ -285,7 +285,7 @@ namespace utopia {
 
 		static void leastsquares_helmoholtz(const std::shared_ptr<SpaceInput> &space_input)
 		{
-			std::cout << "leastsquares_helmoholtz" << std::endl;
+			std::cout << "[leastsquares_helmoholtz]" << std::endl;
 
 			//scalar
 			auto U = FunctionSpaceT(space_input);
@@ -341,8 +341,8 @@ namespace utopia {
 			FormEvaluator<Backend> eval;
 			eval.eval_equation(eq, mat, vec, true);
 
-			disp(mat);
-			disp(vec);
+			// disp(mat);
+			// disp(vec);
 		}
 
 		static void run_time_form_eval_test(const std::shared_ptr<SpaceInput> &space_input)
@@ -471,12 +471,12 @@ namespace utopia {
 			lm_test.run_vector_form_eval_test(es);
 		});
 
-		// run_libmesh_test(init,[](
-		// 	LibMeshFormEvalTest &lm_test,
-		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
-		// 	es->add_system<libMesh::LinearImplicitSystem>("run_mixed_form_eval_test");
-		// 	lm_test.run_mixed_form_eval_test(es);
-		// });
+		run_libmesh_test(init,[](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			es->add_system<libMesh::LinearImplicitSystem>("run_mixed_form_eval_test");
+			lm_test.run_mixed_form_eval_test(es);
+		});
 
 		run_libmesh_test(init,[](
 			LibMeshFormEvalTest &lm_test,
@@ -499,19 +499,19 @@ namespace utopia {
 			lm_test.run_interp_vec_test(es);
 		});
 
-		// run_libmesh_test(init,[](
-		// 	LibMeshFormEvalTest &lm_test,
-		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
-		// 	es->add_system<libMesh::LinearImplicitSystem>("run_navier_stokes_test");
-		// 	lm_test.run_navier_stokes_test(es);
-		// });
+		run_libmesh_test(init,[](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			es->add_system<libMesh::LinearImplicitSystem>("run_navier_stokes_test");
+			lm_test.run_navier_stokes_test(es);
+		});
 
-		// run_libmesh_test(init,[](
-		// 	LibMeshFormEvalTest &lm_test,
-		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
-		// 	es->add_system<libMesh::LinearImplicitSystem>("leastsquares_helmoholtz");
-		// 	lm_test.leastsquares_helmoholtz(es);
-		// });
+		run_libmesh_test(init,[](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			es->add_system<libMesh::LinearImplicitSystem>("leastsquares_helmoholtz");
+			lm_test.leastsquares_helmoholtz(es);
+		});
 
 		run_libmesh_test(init,[](
 			LibMeshFormEvalTest &lm_test,
@@ -530,7 +530,7 @@ namespace utopia {
 		auto mesh = std::make_shared<utopia::Mesh>();
 		mesh->make_triangle();
 		FormEvalTest<utopia::Mesh, utopia::HMFESpace>  test;
-		// test.run_all_on(mesh);
+		test.run_all_on(mesh);
 
 		/////////////////////////////////////////////////////////////////////
 
@@ -538,5 +538,6 @@ namespace utopia {
 		/////////////////////////////////////////////////////////////////////
 		//LIBMESH
 		run_libmesh_eval_test(init);
+
 	}
 }
