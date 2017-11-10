@@ -580,6 +580,11 @@ namespace utopia {
 
 		//////////////////////////////////////////////////////////////////////////////////////////
 
+		inline static auto apply_binary(const Number<double> &left, const Gradient<TrialFunction<LibMeshFunctionSpace> > &right, const Multiplies &op, AssemblyContext<LIBMESH_TAG> &ctx) -> GradientType
+		{
+			return multiply(static_cast<double>(left), right, ctx);
+		}
+
 		template<class Space, class Op>
 		inline static auto apply_binary(const Number<double> &left, const TrialFunction<Space> &right, const Op &op, AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(fun(right, ctx))>::type 
 		{

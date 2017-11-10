@@ -210,7 +210,9 @@ namespace utopia {
 
 		disp(mat);
 		disp(vec);
-		return solve(mat, vec, sol);
+
+		Factorization<DSMatrixd, DVectord> solver;
+		return solver.solve(mat, vec, sol);
 	}
 
 	template<class SpaceInput, class FunctionSpaceT>
@@ -759,11 +761,37 @@ namespace utopia {
 			auto v = test(V);
 
 			DVectord sol;
-			solve<LibMeshFunctionSpace>(
+			bool success = solve<LibMeshFunctionSpace>(
 				inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
 				sol);
+
+			/*
+				bool success = solve(
+					equations(
+						inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
+						...
+					),
+					constraints(
+						//dirichlet
+						boundary_conditions(u == 0., {1}),
+						boundary_conditions(u == 1., {2}),
+						//neumann (?)
+						boundary_conditions(inner(grad(u), normal_) == x_ * y_, {3}),
+						boundary_conditions(inner(grad(u), normal_) == inner(func, normal_), {3}),
+						//pseudo l2-projection
+						inner(u, biorth(v)) * dV({1}) == inner(w, biorth(v)) * dV({2})
+						//or
+						inner(u - w, biorth(v)) * dX == 0,
+						//contact
+						contact_conditions({{3, 4}}, search_radius)
+
+					),
+					sol
+				);
+			*/
 			
 
+			std::cout << "solved: " << (success ? "true" : "false") << std::endl;
 			disp(sol);
 		});
 
