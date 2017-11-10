@@ -60,6 +60,8 @@ namespace utopia {
 		typedef utopia::HMFun DivergenceType;
 		typedef utopia::HMJacobian JacobianType;
 		typedef utopia::HMDerivative CurlType;
+
+		typedef utopia::Mesh MeshType;
 	};
 
 	template<>

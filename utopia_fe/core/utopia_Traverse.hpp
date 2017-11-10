@@ -366,6 +366,35 @@ namespace utopia {
 			}
 		}
 	}
+
+	template<class Left, class Right, class Visitor>
+	inline static int traverse(const Equality<Left, Right> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				if(traverse(expr.left(), visitor) == TRAVERSE_CONTINUE) {
+					return traverse(expr.right(), visitor);
+				}
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
 	
 	template<class FunctionSpaceT, class Visitor>
 	inline static int traverse(const TrialFunction<FunctionSpaceT> &expr, Visitor &visitor)
@@ -461,11 +490,7 @@ namespace utopia {
 		if(f.apply(tree)) {
 			ret = f.get().space_ptr();
 		} 
-		// else {
-		// 	std::cerr << "[Warning] unable to find TrialFunction in " << (tree.getClass()) << std::endl; 
-		// }
-
-
+	
 		return ret;
 	}
 
@@ -478,9 +503,6 @@ namespace utopia {
 		if(f.apply(tree)) {
 			ret = f.get().space_ptr();
 		} 
-		// else {
-		// 	std::cerr << "[Warning] unable to find TestFunction in " << (tree.getClass()) << std::endl; 
-		// }
 
 		return ret;
 	}

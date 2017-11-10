@@ -47,7 +47,8 @@ namespace utopia {
 		inline void initialize()
 		{
 			if(!equation_system().is_initialized()) {
-				equation_system().init();
+				// equation_system().init();
+				equation_systems_->init();
 			}
 		}
 		
@@ -115,24 +116,20 @@ namespace utopia {
 		typedef std::vector<std::vector<VectorValueT>> CurlType;
 
 		typedef std::vector<libMesh::Real> DXType;
+		typedef libMesh::MeshBase MeshType;
 	};
 
 	typedef utopia::Traits<LibMeshFunctionSpace> LibMeshTraits;
 
+	inline auto elements_begin(const libMesh::MeshBase &m) -> decltype(m.active_local_elements_begin())
+	{
+		return m.active_local_elements_begin();
+	}
 
-	// template<>
-	// class FunctionalTraits<LibMeshFunctionSpace, AssemblyContext<LIBMESH_TAG> > {
-	// public:
-	// 	inline static int type(const LibMeshFunctionSpace &space,  const AssemblyContext<HOMEMADE> &ctx)
-	// 	{
-	// 		return utopia::POLYNOMIAL_FUNCTION;
-	// 	}
-
-	// 	inline static int order(const LibMeshFunctionSpace &space, const AssemblyContext<HOMEMADE> &ctx)
-	// 	{
-	// 		return space.mesh().element_order(ctx.current_element());
-	// 	}
-	// };
+	inline auto elements_end(const libMesh::MeshBase &m) -> decltype(m.active_local_elements_end())
+	{
+		return m.active_local_elements_end();
+	}
 }
 
 #endif //UTOPIA_LIBMESH_TAG_FUNCTION_SPACE_HPP

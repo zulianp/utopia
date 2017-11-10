@@ -38,6 +38,16 @@ namespace utopia {
 		std::vector<int> meta;
 		std::vector<double> points;
 
+		inline friend auto elements_begin(const Mesh &m) -> int
+		{
+			return 0;
+		}
+
+		inline friend auto elements_end(const Mesh &m) -> int
+		{
+			return m.n_elements();
+		}
+
 	private:
 		std::unique_ptr<Impl> impl_ptr;
 	};

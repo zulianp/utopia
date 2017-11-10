@@ -84,11 +84,30 @@ namespace utopia {
 			std::cout << "init_linear: quadrature_order: " << quadrature_order_ << std::endl;
 		}
 
+
+		static void collect_dof_indices(const libMesh::Elem * elem_ptr,
+									    const ProductFunctionSpace<LibMeshFunctionSpace> &space,
+									    std::vector<libMesh::dof_id_type> &prod_indices)
+		{
+			std::vector<libMesh::dof_id_type> indices;
+			prod_indices.clear();
+
+			const auto &sub_0 = space.subspace(0);
+			const auto &dof_map  = sub_0.dof_map();
+
+			space.each([&](const int sub_index, const LibMeshFunctionSpace &space) {
+				dof_map.dof_indices(elem_ptr, indices, space.subspace_id());
+				prod_indices.insert(prod_indices.end(), indices.begin(), indices.end());
+			});
+		}
+
 		template<class Expr>
 		void init_test_fe(const Expr &expr)
 		{
 			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
 			auto test_space_ptr = test_space<LibMeshFunctionSpace>(expr);
+
+
 
 			if(test_space_ptr) {
 				test_space_ptr->initialize();
@@ -108,6 +127,10 @@ namespace utopia {
 				
 				test_[test_space_ptr->subspace_id()] = std::move(test_fe);
 				block_id_ = elem->subdomain_id();
+
+				test_space_ptr->dof_map().dof_indices(elem, test_dof_indices);
+				// n_local_test_dofs = test_space_ptr->dof_map().n_local_dofs();
+
 			} else {
 				auto prod_test_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
 				assert(prod_test_space_ptr.get());
@@ -135,8 +158,12 @@ namespace utopia {
 					test_fe->reinit(elem);
 					test_[subspace.subspace_id()] = std::move(test_fe);
 				});
+
+				collect_dof_indices(elem, *prod_test_space_ptr, test_dof_indices);
+				// n_local_test_dofs = sub_0.dof_map().n_local_dofs();
 			}
 		}
+
 
 
 		template<class Expr>
@@ -164,6 +191,9 @@ namespace utopia {
 				
 				trial_[trial_space_ptr->subspace_id()] = std::move(trial_fe);
 				block_id_ = elem->subdomain_id();
+
+				trial_space_ptr->dof_map().dof_indices(elem, trial_dof_indices);
+				// n_local_trial_dofs = trial_space_ptr->dof_map().n_local_dofs();
 			} else {
 				auto prod_trial_space_ptr = trial_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
 				auto prod_test_space_ptr  = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
@@ -193,6 +223,10 @@ namespace utopia {
 					trial_fe->reinit(elem);
 					trial_[subspace.subspace_id()] = std::move(trial_fe);
 				});
+
+
+				collect_dof_indices(elem, *prod_trial_space_ptr, trial_dof_indices);
+				// n_local_trial_dofs = sub_0.dof_map().n_local_dofs();
 			} 
 		}
 
@@ -209,14 +243,25 @@ namespace utopia {
 			return block_id_;
 		}
 
+		inline void set_current_element(const long current_element)
+		{
+			current_element_ = current_element;
+		}
+
 		inline long current_element() const
 		{
 			return current_element_;
 		}
 
 		LibMeshAssemblyContext()
-		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true), not_null_test_(0)
+		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true), not_null_test_(0)//, n_local_trial_dofs(0), n_local_test_dofs(0)
 		{}
+
+		std::vector<libMesh::dof_id_type> trial_dof_indices;
+		std::vector<libMesh::dof_id_type> test_dof_indices;
+		
+		// libMesh::dof_id_type n_local_test_dofs;
+		// libMesh::dof_id_type n_local_trial_dofs;
 
 	private:
 		long quadrature_order_;
@@ -229,6 +274,8 @@ namespace utopia {
 		std::vector< std::unique_ptr<FE> > test_;
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
+
+		
 
 
 		inline std::size_t n_trial_functions() const

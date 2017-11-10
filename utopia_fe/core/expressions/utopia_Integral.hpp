@@ -45,6 +45,7 @@ namespace utopia {
 	};
 
 
+
 	template<class Derived>
 	inline Integral<Derived> integral(const Expression<Derived> &expr) {
 		static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
@@ -71,6 +72,27 @@ namespace utopia {
 		inline static int type(const Integral<Expr> &expr,  const AssemblyContext &ctx) { return FunctionalTraits<Expr, AssemblyContext>::type(expr.expr(), ctx);  }
 		inline static int order(const Integral<Expr> &expr, const AssemblyContext &ctx) { return FunctionalTraits<Expr, AssemblyContext>::order(expr.expr(), ctx); }
 	};
+
+
+	class Differential {
+	public:
+		constexpr Differential(const int block_id = -1) noexcept : block_id(block_id) {}
+		const int block_id;
+	};
+
+	 // inline constexpr Differential dV(const int block_id = -1) 
+	 // {
+	 // 	return Differential(block_id);
+	 // }
+
+	static const Differential dX;
+
+	 template<class Derived>
+	 inline Integral<Derived> operator *(const Expression<Derived> &expr, const Differential &d) {
+	 	static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
+	 	return Integral<Derived>(expr.derived(), d.block_id);
+	 }
+
 }
 
 #endif //UTOPIA_INTEGRAL_HPP

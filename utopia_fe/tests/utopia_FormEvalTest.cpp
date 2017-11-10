@@ -11,8 +11,207 @@
 #include "libmesh/mesh_generation.h"
 #include "libmesh/linear_implicit_system.h"
 
+#include "utopia_LibMeshBackend.hpp"
+
 
 namespace utopia {
+
+	/*
+		TODO list
+		- boundary conditions
+		- temporal derivative
+		- variational inequality
+		- projection
+		- blocks/side-sets/node-sets functions
+		- local-2-global
+		- multi-linear form
+	*/
+
+
+	template<class Space, class Expr>
+	class FindSpace {
+	public:
+		template<class Any>
+		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
+		
+		template<class T>
+		inline int visit(const TestFunction<T> &expr)
+		{
+			space_ = expr.space_ptr();
+			return TRAVERSE_STOP;
+		}
+
+		template<class T>
+		inline int visit(const TestFunction<ProductFunctionSpace<T>> &expr)
+		{
+			space_ = expr.space_ptr()->subspace_ptr(0);
+			return TRAVERSE_STOP;
+		}
+
+		FindSpace()
+		: space_(nullptr)
+		{}
+
+		inline bool found() const
+		{
+			return static_cast<bool>(space_);
+		}
+
+		template<class ExprTree>
+		inline std::shared_ptr<Space> apply(const ExprTree &expr)
+		{
+			space_ = nullptr;
+			traverse(expr, *this);
+			return space_;
+		}
+
+		std::shared_ptr<Space> space_;
+	};
+
+
+	template<class Mesh, class Expr>
+	class FindMesh {
+	public:
+		template<class Any>
+		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
+		
+		template<class T>
+		inline int visit(const TestFunction<T> &expr)
+		{
+			mesh_ = &expr.space_ptr()->mesh();
+			return TRAVERSE_STOP;
+		}
+
+		template<class T>
+		inline int visit(const TestFunction<ProductFunctionSpace<T>> &expr)
+		{
+			mesh_ = &expr.space_ptr()->subspace(0).mesh();
+			return TRAVERSE_STOP;
+		}
+
+		FindMesh()
+		: mesh_(nullptr)
+		{}
+
+		inline bool found() const
+		{
+			return mesh_;
+		}
+
+		template<class ExprTree>
+		inline Mesh * apply(const ExprTree &expr)
+		{
+			mesh_ = nullptr;
+			traverse(expr, *this);
+			return mesh_;
+		}
+
+		Mesh *mesh_;
+	};
+
+	template<class Space, class Expr>
+	inline auto find_space(const Expr &tree) -> Space &
+	{
+		FindSpace<Space, Expr> fm;
+		auto space_ptr = fm.apply(tree);
+		assert(space_ptr);
+		return *space_ptr;
+	}
+
+	template<class Mesh, class Expr>
+	inline auto find_mesh(const Expr &tree) -> const Mesh &
+	{
+		FindMesh<Mesh, Expr> fm;
+		auto mesh_ptr = fm.apply(tree);
+		assert(mesh_ptr);
+		return *mesh_ptr;
+	}
+
+	//libmesh
+	template<class FunctionSpaceT, class Left, class Right, class GlobalMatrix, class GlobalVector>
+	void element_assemble_equation_v(const libMesh::MeshBase::const_element_iterator &it, const Equality<Left, Right> &equation, GlobalMatrix &mat, GlobalVector &vec)
+	{
+		typedef utopia::Traits<FunctionSpaceT> TraitsT;
+		typedef typename TraitsT::Matrix ElementMatrix;
+		typedef typename TraitsT::Vector ElementVector;
+
+		static const int Backend = TraitsT::Backend;
+
+
+		AssemblyContext<Backend> ctx;
+		ctx.set_current_element((*it)->id());
+
+		auto &&bilinear_form = equation.left();
+		auto &&linear_form   = equation.right();
+
+		ElementMatrix el_mat;
+		ElementVector el_vec;
+
+		ctx.init_bilinear(bilinear_form);
+
+		FormEvaluator<Backend> eval;
+		eval.eval(bilinear_form, el_mat, ctx, true);
+
+		ctx.init_linear(linear_form);
+		eval.eval(linear_form, el_vec, ctx, true);
+
+		add_matrix(el_mat.implementation(), ctx.test_dof_indices, ctx.trial_dof_indices, mat);
+		add_vector(el_vec.implementation(), ctx.test_dof_indices, vec);
+	}
+
+	//homemade
+	template<class FunctionSpaceT, class Left, class Right, class Matrix, class Vector>
+	void element_assemble_equation_v(const int element_index, const Equality<Left, Right> &equation, Matrix &mat, Vector &rhs)
+	{
+		std::cout << element_index << std::endl;
+	}
+
+	template<class FunctionSpaceT, class Left, class Right, class Matrix, class Vector>
+	void assemble_equation_v(const Equality<Left, Right> &equation, Matrix &mat, Vector &vec)
+	{
+		auto &space = find_space<FunctionSpaceT>(equation);
+		space.initialize();
+
+		auto &m = space.mesh();
+		auto &dof_map = space.dof_map();
+
+
+
+		auto nnz_x_row = dof_map.n_local_dofs(); //FIXME
+		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+		vec = local_zeros(dof_map.n_local_dofs());
+
+		Write<Matrix> w_m(mat);
+		Write<Vector> w_v(vec);
+
+		for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+			element_assemble_equation_v<FunctionSpaceT>(it, equation, mat, vec);
+		}
+	}
+
+	template<class FunctionSpaceT, class Left, class Right>
+	bool solve(const Equality<Left, Right> &equation, DVectord &sol)
+	{
+		DSMatrixd mat;
+		DVectord vec;
+		assemble_equation_v<FunctionSpaceT>(equation, mat, vec);
+		sol = local_zeros(local_size(vec));
+
+		//FIXME hardcoded boundary conditions
+		{
+			Write<DSMatrixd> w_(mat);
+			mat.set(0, 0, 1.0);
+
+			Size s = size(mat);
+			for(uint i = 1; i < s.get(1); ++i) {
+				mat.set(0, i, 0.0);
+			}
+		}
+
+		disp(mat);
+		disp(vec);
+		return solve(mat, vec, sol);
+	}
 
 	template<class SpaceInput, class FunctionSpaceT>
 	class FormEvalTest {
@@ -37,6 +236,7 @@ namespace utopia {
 			run_navier_stokes_test(space_input);
 			leastsquares_helmoholtz(space_input);
 			run_eq_form_eval_test(space_input);
+			run_local_2_global_test(space_input);
 		}
 
 
@@ -411,6 +611,24 @@ namespace utopia {
 			auto bilinear_form = integral(inner(u, v));
 			assemble_bilinear_and_print(bilinear_form);
 		}
+
+		static void run_local_2_global_test(const std::shared_ptr<SpaceInput> &space_input)
+		{
+
+			// std::cout << "[run_local_2_global_test]" << std::endl;
+
+			// auto V = FunctionSpaceT(space_input);
+
+			// auto u = trial(V);
+			// auto v = test(V);
+			// auto bilinear_form = integral(inner(grad(u), grad(v)));
+			// auto linear_form   = integral(inner(coeff(1.), v));
+			// auto eq = bilinear_form == linear_form;
+
+			// DSMatrixd mat;
+			// DVectord vec;
+			// assemble_equation_v<FunctionSpaceT>(eq, mat, vec);
+		}
 	};
 
 	typedef FormEvalTest<libMesh::EquationSystems, utopia::LibMeshFunctionSpace> LibMeshFormEvalTest;
@@ -519,6 +737,37 @@ namespace utopia {
 			es->add_system<libMesh::LinearImplicitSystem>("run_eq_form_eval_test");
 			lm_test.run_eq_form_eval_test(es);
 		});
+
+		run_libmesh_test(init,[](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			es->add_system<libMesh::LinearImplicitSystem>("run_local_2_global_test");
+			lm_test.run_local_2_global_test(es);
+		});
+
+
+		run_libmesh_test(init,[](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			
+			//create system of equations
+			es->add_system<libMesh::LinearImplicitSystem>("run_local_2_global_test");
+
+			auto V = LibMeshFunctionSpace(es);
+
+			auto u = trial(V);
+			auto v = test(V);
+
+			DVectord sol;
+			solve<LibMeshFunctionSpace>(
+				inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
+				sol);
+			
+
+			disp(sol);
+		});
+
+
 		/////////////////////////////////////////////////////////////////////
 	}
 
