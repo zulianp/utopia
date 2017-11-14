@@ -12,7 +12,7 @@
 #include "libmesh/linear_implicit_system.h"
 
 #include "utopia_LibMeshBackend.hpp"
-
+#include "utopia_Equations.hpp"
 
 namespace utopia {
 
@@ -654,6 +654,16 @@ namespace utopia {
 
 	}
 
+
+	class EqPrinter {
+	public:
+		template<class Eq>
+		void operator()(const int index, const Eq &eq) {
+			std::cout << "equation: " << index << std::endl;
+			std::cout << tree_format(eq.getClass()) << std::endl;
+		}
+	};
+
 	void run_libmesh_eval_test(libMesh::LibMeshInit &init)
 	{
 		run_libmesh_test(init,[](
@@ -793,6 +803,36 @@ namespace utopia {
 
 			std::cout << "solved: " << (success ? "true" : "false") << std::endl;
 			disp(sol);
+		});
+
+		run_libmesh_test(init, [](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			
+			//create system of equations
+			es->add_system<libMesh::LinearImplicitSystem>("test_equations");
+
+			auto V = LibMeshFunctionSpace(es);
+
+			auto u = trial(V);
+			auto v = test(V);
+
+			auto W1 = LibMeshFunctionSpace(es);
+			auto W2 = LibMeshFunctionSpace(es);
+
+			auto W = W1 * W2;
+
+			auto q = trial(W);
+			auto w = test(W);
+
+			auto eqs = equations(
+				inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
+					  inner(q, grad(v)) * dX == inner(coeff(1.), v) * dX,
+					  inner(grad(u), w) * dX == inner(coeff(1.), w) * dX,
+					        inner(q, w) * dX == inner(coeff(1.), w) * dX
+				);
+
+			eqs.each(EqPrinter());
 		});
 
 
