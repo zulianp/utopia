@@ -11,10 +11,10 @@ namespace utopia {
 	template<class> class Coefficient;
 	template<class> class Curl;
 	template<class> class DifferentialOperator;
-	template<class> class Div;
+	template<class> class Divergence;
 	template<class> class FormExpressions;
 	template<class> class FunctionSpace;
-	template<class> class Grad;
+	template<class> class Gradient;
 	template<class> class Integral;
 	template<class> class TestFunction;
 	template<class> class TrialFunction;

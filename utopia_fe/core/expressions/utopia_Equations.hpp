@@ -62,6 +62,13 @@ namespace utopia {
 			iter.visit(fun);
 		}
 
+		template<class Fun>
+		void each(Fun fun) const
+		{
+			EquationIterator<const Equations, 0, n_equations> iter(*this);
+			iter.visit(fun);
+		}
+
 	private:
 		std::tuple<Equation...> eqs_;
 	};
@@ -100,11 +107,11 @@ namespace utopia {
 	// 		return Traits<First>::Order + order<Rest...>();
 	// 	}
 
-	// 	template<class First, class...Rest>
-	// 	class GetFirst {
-	// 	public:
-	// 		typedef First Type;
-	// 	};
+		template<class First, class...Rest>
+		class GetFirst {
+		public:
+			typedef First Type;
+		};
 
 	// 	typedef typename GetFirst<Equation...>::Type First;
 	// 	typedef typename utopia::FormTraits<First>::Implementation Implementation;

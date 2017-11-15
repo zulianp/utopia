@@ -274,6 +274,12 @@ namespace utopia {
 			return boundary_tags_;
 		}
 
+		inline std::string getClass() const 
+		{
+			return "DirichletBoundaryCondition<" + expr().getClass() + ">";
+		}
+
+
 	private:
 		Expr expr_;
 		std::set<int> boundary_tags_;

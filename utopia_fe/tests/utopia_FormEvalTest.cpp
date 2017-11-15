@@ -13,6 +13,7 @@
 
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_Equations.hpp"
+#include "utopia_FEConstraints.hpp"
 
 namespace utopia {
 
@@ -26,6 +27,17 @@ namespace utopia {
 		- local-2-global
 		- multi-linear form
 	*/
+
+
+
+	class EqPrinter {
+	public:
+		template<class Eq>
+		void operator()(const int index, const Eq &eq) const {
+			std::cout << "equation: " << index << std::endl;
+			std::cout << tree_format(eq.getClass()) << std::endl;
+		}
+	};
 
 
 	template<class Space, class Expr>
@@ -127,6 +139,10 @@ namespace utopia {
 		return *mesh_ptr;
 	}
 
+
+
+
+
 	//libmesh
 	template<class FunctionSpaceT, class Left, class Right, class GlobalMatrix, class GlobalVector>
 	void element_assemble_equation_v(const libMesh::MeshBase::const_element_iterator &it, const Equality<Left, Right> &equation, GlobalMatrix &mat, GlobalVector &vec)
@@ -214,6 +230,91 @@ namespace utopia {
 		Factorization<DSMatrixd, DVectord> solver;
 		return solver.solve(mat, vec, sol);
 	}
+
+
+	class EqAssembler {
+	public:
+		EqAssembler(const libMesh::Elem * elem, DSMatrixd &mat, DVectord &vec, AssemblyContext<LIBMESH_TAG> &ctx) 
+		: elem(elem), mat(mat), vec(vec), ctx(ctx)
+		{
+			ctx.set_current_element(elem->id());
+		}
+
+		template<class Eq>
+		void operator()(const int index, const Eq &eq) {
+			typedef typename FindFunctionSpace<Eq>::Type FunctionSpaceT;
+			typedef utopia::Traits<FunctionSpaceT> TraitsT;
+			typedef typename TraitsT::Matrix ElementMatrix;
+			typedef typename TraitsT::Vector ElementVector;
+
+			auto &space = find_space<FunctionSpaceT>(eq);
+
+			auto &&bilinear_form = eq.left();
+			auto &&linear_form   = eq.right();
+
+			ElementMatrix el_mat;
+			ElementVector el_vec;
+
+			ctx.init_bilinear(bilinear_form);
+
+			FormEvaluator<LIBMESH_TAG> eval;
+			eval.eval(bilinear_form, el_mat, ctx, true);
+
+			ctx.init_linear(linear_form);
+			eval.eval(linear_form, el_vec, ctx, true);
+
+			add_matrix(el_mat.implementation(), ctx.test_dof_indices, ctx.trial_dof_indices, mat);
+			add_vector(el_vec.implementation(), ctx.test_dof_indices, vec);
+		};
+
+		const libMesh::Elem * elem;
+		DSMatrixd &mat;
+		DVectord &vec;
+
+		AssemblyContext<LIBMESH_TAG> &ctx;
+	};
+
+
+	template<class... Eqs, class... Constr>
+	bool solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol)
+	{
+
+		//FIXME this stuff only works for the libmesh backend
+		typedef typename GetFirst<Eqs...>::Type Eq1Type;
+		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
+		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
+		
+		space.initialize();
+		auto &m = space.mesh();
+		auto &dof_map = space.dof_map();
+		auto nnz_x_row = dof_map.n_local_dofs(); //FIXME
+
+
+		DSMatrixd mat;
+		DVectord vec;
+
+		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+		vec = local_zeros(dof_map.n_local_dofs());
+
+		{
+			Write<DSMatrixd> w_m(mat);
+			Write<DVectord>  w_v(vec);
+
+			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+				AssemblyContext<LIBMESH_TAG> ctx;
+				EqAssembler eq_assembler(*it, mat, vec, ctx);
+				eqs.each(eq_assembler);
+			}
+		}	
+
+
+		disp(mat);
+		disp(vec);
+
+		return false;
+	}
+
+
 
 	template<class SpaceInput, class FunctionSpaceT>
 	class FormEvalTest {
@@ -654,16 +755,6 @@ namespace utopia {
 
 	}
 
-
-	class EqPrinter {
-	public:
-		template<class Eq>
-		void operator()(const int index, const Eq &eq) {
-			std::cout << "equation: " << index << std::endl;
-			std::cout << tree_format(eq.getClass()) << std::endl;
-		}
-	};
-
 	void run_libmesh_eval_test(libMesh::LibMeshInit &init)
 	{
 		run_libmesh_test(init,[](
@@ -812,27 +903,31 @@ namespace utopia {
 			//create system of equations
 			es->add_system<libMesh::LinearImplicitSystem>("test_equations");
 
+			//space for u
 			auto V = LibMeshFunctionSpace(es);
 
 			auto u = trial(V);
 			auto v = test(V);
 
-			auto W1 = LibMeshFunctionSpace(es);
-			auto W2 = LibMeshFunctionSpace(es);
+			//space for gradient of u
+			// auto W1 = LibMeshFunctionSpace(es);
+			// auto W2 = LibMeshFunctionSpace(es);
 
-			auto W = W1 * W2;
+			// auto W = W1 * W2;
 
-			auto q = trial(W);
-			auto w = test(W);
+			// auto q = trial(W);
+			// auto w = test(W);
 
-			auto eqs = equations(
-				inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
-					  inner(q, grad(v)) * dX == inner(coeff(1.), v) * dX,
-					  inner(grad(u), w) * dX == inner(coeff(1.), w) * dX,
-					        inner(q, w) * dX == inner(coeff(1.), w) * dX
-				);
-
-			eqs.each(EqPrinter());
+			DVectord sol;
+			const bool success = solve(
+				equations(
+					inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX
+				),
+				constraints(
+					boundary_conditions(u == coeff(-0.2), {1}),
+					boundary_conditions(u == coeff(0.2),  {2})
+				),
+				sol);
 		});
 
 
