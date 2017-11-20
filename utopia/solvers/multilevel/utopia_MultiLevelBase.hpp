@@ -15,8 +15,8 @@
 
 
 
-  namespace utopia 
-  {
+namespace utopia 
+{
 
     /**
      * @brief      Base class for all multilevel solvers. \n
@@ -28,35 +28,36 @@
      * @tparam     Vector 
      */
     template<class Matrix, class Vector>
-    class MultiLevelBase
+  class MultiLevelBase
+  {
+    typedef UTOPIA_SCALAR(Vector)    Scalar;
+    typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+    typedef utopia::Level<Matrix, Vector> Level;
+    typedef utopia::Transfer<Matrix, Vector> Transfer;
+
+
+  public:
+
+
+    MultiLevelBase(const Parameters params = Parameters())
+    : fix_semidefinite_operators_(false)
     {
-      typedef UTOPIA_SCALAR(Vector)    Scalar;
-      typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-      typedef utopia::Level<Matrix, Vector> Level;
-      typedef utopia::Transfer<Matrix, Vector> Transfer;
+      set_parameters(params); 
+    }
 
-  
-    public:
+
+    virtual ~MultiLevelBase(){}
+
+    virtual void set_parameters(const Parameters params)
+    {
+      _parameters = params; 
       
-
-      MultiLevelBase(const Parameters params = Parameters())
-      {
-        set_parameters(params); 
-      }
-
-
-      virtual ~MultiLevelBase(){}
-
-      virtual void set_parameters(const Parameters params)
-      {
-          _parameters = params; 
-      
-          _pre_smoothing_steps = params.pre_smoothing_steps(); 
-          _post_smoothing_steps = params.post_smoothing_steps(); 
-          _mg_type = params.mg_type(); 
-          _cycle_type = params.cycle_type(); 
+      _pre_smoothing_steps = params.pre_smoothing_steps(); 
+      _post_smoothing_steps = params.post_smoothing_steps(); 
+      _mg_type = params.mg_type(); 
+      _cycle_type = params.cycle_type(); 
           _v_cycle_repetition = 1;  // TODO:: create option in params for this 
-      }
+        }
 
 
 
@@ -70,8 +71,8 @@
        * @param[in]  operators                The restriction operators.
        *
        */
-      virtual bool init_transfer_from_coarse_to_fine(const std::vector<std::shared_ptr <Matrix> > & restriction_operators)
-      {
+        virtual bool init_transfer_from_coarse_to_fine(const std::vector<std::shared_ptr <Matrix> > & restriction_operators)
+        {
           _num_levels = restriction_operators.size() + 1; 
           _transfers.clear();
           
@@ -79,7 +80,7 @@
             _transfers.push_back(Transfer(*I));
 
           return true; 
-      }
+        }
 
 
 
@@ -92,8 +93,8 @@
        * @param[in]  operators                The restriction operators.
        *
        */
-      virtual bool init_transfer_from_fine_to_coarse(const std::vector<std::shared_ptr <Matrix> > & restriction_operators)
-      {
+        virtual bool init_transfer_from_fine_to_coarse(const std::vector<std::shared_ptr <Matrix> > & restriction_operators)
+        {
           _num_levels = restriction_operators.size() + 1; 
           _transfers.clear();
           
@@ -101,11 +102,11 @@
             _transfers.push_back(Transfer(*I));
 
           return true; 
-      }
+        }
 
 
 
-      
+
       /**
        * @brief 
        *        The function creates corser level operators by using Galerkin assembly. 
@@ -117,8 +118,8 @@
        * @param[in]  stifness matrix for finest level
        *
        */
-      virtual bool galerkin_assembly(const std::shared_ptr <const Matrix> & A)
-      {
+        virtual bool galerkin_assembly(const std::shared_ptr <const Matrix> & A)
+        {
           _levels.clear();
           SizeType t_s = _transfers.size(); 
           if(t_s <= 0)
@@ -132,6 +133,11 @@
             std::shared_ptr<Matrix> J_h = std::make_shared<Matrix>();     
             
             _transfers[t_s - i].restrict(_levels[i - 1].A(), *J_h); 
+
+            if(fix_semidefinite_operators_) {
+              fix_semidefinite_operator(*J_h);
+            }
+
             _levels.push_back(Level(J_h));         
 
 
@@ -139,8 +145,27 @@
           
           std::reverse(std::begin(_levels), std::end(_levels));
           return true; 
-      }
+        }
 
+
+        static void fix_semidefinite_operator(Matrix &A)
+        {
+
+          Vector d;
+
+          Size s = local_size(A);
+          d = values(s.get(0), 1.);
+
+          {
+            Write<Vector> w_d(d);
+
+            each_read(A,[&d](const SizeType i, const SizeType, const double) {
+              d.set(i, 0.);
+            });
+          }
+
+          A += Matrix(diag(d));
+        }
 
       /**
        * @brief 
@@ -149,12 +174,12 @@
        * @param[in]  stifness matrix for finest level
        *
        */
-      virtual bool assembly_linear_operators_from_coarse_to_fine(const std::vector<std::shared_ptr <const Matrix> >  & A)
-      {
+        virtual bool assembly_linear_operators_from_coarse_to_fine(const std::vector<std::shared_ptr <const Matrix> >  & A)
+        {
           _levels.clear();          
           _levels.insert(_levels.begin(), A.rbegin(), A.rend());
           return true; 
-      }
+        }
 
 
 
@@ -165,12 +190,12 @@
        * @param[in]  stifness matrix for finest level
        *
        */
-      virtual bool assembly_linear_operators_from_fine_to_coarse(const std::vector<std::shared_ptr <const Matrix> > & A)
-      {
+        virtual bool assembly_linear_operators_from_fine_to_coarse(const std::vector<std::shared_ptr <const Matrix> > & A)
+        {
           _levels.clear();
           _levels.insert(_levels.begin(), A.begin(), A.end());
           return true; 
-      }
+        }
 
 
 
@@ -189,8 +214,8 @@
          */
         bool cycle_type(const int & type_in)
         {
-            _cycle_type = type_in; 
-            return true; 
+          _cycle_type = type_in; 
+          return true; 
         }
 
         /**
@@ -198,8 +223,8 @@
          */
         bool v_cycle_repetition(const SizeType & v_cycle_repetition_in)
         {
-            _v_cycle_repetition = v_cycle_repetition_in; 
-            return true; 
+          _v_cycle_repetition = v_cycle_repetition_in; 
+          return true; 
         }
 
 
@@ -210,7 +235,7 @@
          */
         void pre_smoothing_steps(const SizeType & pre_smoothing_steps_in ) 
         { 
-            _pre_smoothing_steps = pre_smoothing_steps_in; 
+          _pre_smoothing_steps = pre_smoothing_steps_in; 
         }; 
 
         /**
@@ -220,7 +245,7 @@
          */
         void post_smoothing_steps(const SizeType & post_smoothing_steps_in )
         { 
-            _post_smoothing_steps = post_smoothing_steps_in; 
+          _post_smoothing_steps = post_smoothing_steps_in; 
         }; 
 
         /**
@@ -230,7 +255,7 @@
          */
         void mg_type(const bool & mg_type_in ) 
         { 
-            _mg_type = mg_type_in; 
+          _mg_type = mg_type_in; 
         }; 
 
         /**
@@ -238,7 +263,7 @@
          */
         SizeType  pre_smoothing_steps() const         
         { 
-            return _pre_smoothing_steps; 
+          return _pre_smoothing_steps; 
         } 
 
         /**
@@ -246,7 +271,7 @@
          */
         SizeType  post_smoothing_steps() const        
         { 
-            return _post_smoothing_steps; 
+          return _post_smoothing_steps; 
         } 
 
         /**
@@ -266,9 +291,14 @@
         SizeType v_cycle_repetition() const {return _v_cycle_repetition; }
 
 
+        void set_fix_semidefinite_operators(const bool val)
+        {
+          fix_semidefinite_operators_ = val;
+        }
 
 
-    protected:
+
+      protected:
         SizeType _num_levels;                             /*!< number of levels in ML   -n   */ 
         std::vector<Level>                  _levels;      /*!< vector of level operators     */
         std::vector<Transfer>               _transfers;   /*!< vector of transfer operators  */
@@ -281,9 +311,11 @@
 
         int                                  _cycle_type; 
         SizeType                            _v_cycle_repetition; 
-  };
 
-}
+        bool fix_semidefinite_operators_;
+      };
+
+    }
 
 #endif //UTOPIA_ML_BASE_HPP
 
