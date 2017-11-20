@@ -17,6 +17,7 @@ namespace utopia {
     static const int PETSC = 10;
     static const int CUDA = 100;
     static const int OPENCL_TAG = 1000;
+    static const int TRILINOS = 10000;
 
     class FillType {
     public:

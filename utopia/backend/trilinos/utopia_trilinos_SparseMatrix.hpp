@@ -1,0 +1,6 @@
+#ifndef UTOPIA_TPETRASPARSEAMTRIX_H
+#define UTOPIA_TPETRASPARSEMATRIX_H
+
+#include "utopia_trilinos.hpp"
+
+#endif //UTOPIA_TPETRASPARSEMATRIX_H

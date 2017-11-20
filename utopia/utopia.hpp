@@ -254,7 +254,7 @@ with compile time decisions.
 //Macros defined in a petsc header are conflicting with Enums defined in Trilinos
 //Trilinos inclusions should always preceed petsc inclusions
 #include "utopia_trilinos.hpp"
-#endif //WITH_PETSC
+#endif //WITH_TRILINOS
 
 #ifdef WITH_BLAS
 #include "utopia_blas.hpp"
