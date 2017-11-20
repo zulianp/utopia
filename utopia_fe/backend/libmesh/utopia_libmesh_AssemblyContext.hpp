@@ -13,6 +13,7 @@
 #include "libmesh/fe.h"
 #include "libmesh/elem.h"
 #include "libmesh/quadrature_gauss.h"
+#include "libmesh/fe_interface.h"
 
 namespace utopia {
 
@@ -102,6 +103,117 @@ namespace utopia {
 		}
 
 		template<class Expr>
+		static std::shared_ptr<LibMeshFunctionSpace> find_any_space(const Expr &expr)
+		{
+			std::shared_ptr<LibMeshFunctionSpace> space_ptr = test_space<LibMeshFunctionSpace>(expr);
+			if(!space_ptr) {
+				auto prod_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
+				space_ptr = prod_space_ptr->subspace_ptr(0);
+			}
+
+			return space_ptr;
+		}
+
+		template<class Expr>
+		void init_offsets(const Expr &expr) 
+		{
+			auto space_ptr = find_any_space(expr);
+
+			assert((static_cast<bool>(space_ptr)));
+
+			const std::size_t n_vars = space_ptr->equation_system().n_vars();
+			offset.resize(n_vars + 1);
+			offset[0] = 0;
+
+			const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
+
+			const libMesh::ElemType type = elem->type();
+			const unsigned int sys_num   = space_ptr->dof_map().sys_number();
+			const unsigned int dim       = elem->dim();
+
+			for(std::size_t i = 0; i < n_vars; ++i) {
+				const auto & var = space_ptr->dof_map().variable(i);
+				libMesh::FEType fe_type = var.type();
+				offset[i+1] = offset[i] + libMesh::FEInterface::n_shape_functions(dim, fe_type, type);
+			}
+		}
+
+		class FEInitializer {
+		public:
+			template<class Any>
+			inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
+			
+			template<class Expr>
+			int visit(const Integral<Expr> &expr)
+			{
+				//locate test and trial spaces
+				//check if subtree is available and init values
+				
+
+				// if(IsSubTree<Gradient<TestFunction<utopia::Any>>, Expr>::value) {
+				// 	test_fe.get_dphi();
+				// }
+
+				// if(IsSubTree<TestFunction<utopia::Any>, Expr>::value) {
+				// 	test_fe.get_phi();
+				// }
+
+				// if(IsSubTree<Divergence<TestFunction<utopia::Any>>, Expr>::value) {
+				// 	// test_fe.get_div_phi();
+				// 	test_fe.get_dphi();
+				// }
+
+				// if(IsSubTree<Curl<TestFunction<utopia::Any>>, Expr>::value) {
+				// 	// test_fe.get_curl_phi();
+				// 	test_fe.get_dphi();
+				// }
+
+				return TRAVERSE_CONTINUE;
+			}
+
+			// template<class T>
+			// inline int visit(const TestFunction<ProductFunctionSpace<T>> &expr)
+			// {
+
+			// 	return TRAVERSE_CONTINUE;
+			// }
+
+			// template<class T>
+			// int visit(const TrialFunction<T> &expr)
+			// {
+
+			// 	return TRAVERSE_CONTINUE;
+			// }
+
+			// template<class T>
+			// inline int visit(const TrialFunction<ProductFunctionSpace<T>> &expr)
+			// {
+
+			// 	return TRAVERSE_CONTINUE;
+			// }
+		};
+
+		template<class Expr>
+		void init_fe_from(const Expr &expr)
+		{
+			auto space_ptr = find_any_space(expr);
+			space_ptr->initialize();
+
+			quadrature_order_ = functional_order(expr, *this);
+			
+			const int dim = space_ptr->mesh().mesh_dimension();
+			const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
+			set_up_quadrature(dim, quadrature_order_, elem);
+
+			// auto fe = libMesh::FEBase::build(dim, space_ptr->type());
+			// init_trial_fe_flags(expr, *fe);
+			// init_test_fe_flags(expr, *fe);
+
+			const std::size_t n_vars = space_ptr->equation_system().n_vars();
+			fe_.resize(n_vars);
+		}
+
+		template<class Expr>
 		void init_test_fe(const Expr &expr)
 		{
 			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
@@ -162,6 +274,9 @@ namespace utopia {
 				collect_dof_indices(elem, *prod_test_space_ptr, test_dof_indices);
 				// n_local_test_dofs = sub_0.dof_map().n_local_dofs();
 			}
+
+
+			init_offsets(expr);
 		}
 
 
@@ -260,8 +375,17 @@ namespace utopia {
 		std::vector<libMesh::dof_id_type> trial_dof_indices;
 		std::vector<libMesh::dof_id_type> test_dof_indices;
 		
-		// libMesh::dof_id_type n_local_test_dofs;
-		// libMesh::dof_id_type n_local_trial_dofs;
+		//buffers and index sets
+
+		//x integral
+		// std::vector<Matrix> buff_matrix;
+		// std::vector<Vector> buff_vector;
+
+		//x basis function
+		std::vector<int> offset;
+
+		int n_trial_dofs;
+		int n_test_dofs;
 
 	private:
 		long quadrature_order_;
@@ -275,7 +399,10 @@ namespace utopia {
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
 
-		
+
+		std::vector< std::unique_ptr<FE> > fe_;
+
+
 
 
 		inline std::size_t n_trial_functions() const

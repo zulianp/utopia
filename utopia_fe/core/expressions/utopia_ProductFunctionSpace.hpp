@@ -87,6 +87,24 @@ namespace utopia {
 			spaces_.push_back(space);
 		}
 
+		bool is_valid(const bool verbose)
+		{
+			auto n = spaces_.size();
+			for(std::size_t i = 1; i < n; ++i) {
+				if(spaces_[i-1]->subspace_id() + 1 != spaces_[i]->subspace_id()) {
+					
+					if(verbose) {
+						std::cout << "subspace_" << (i-1) << " and subspace_" << (i) << "must have sequential ids" << std::endl;
+						std::cout << (spaces_[i-1]->subspace_id()) << " + 1 != " << (spaces_[i]->subspace_id()) << std::endl;
+					}
+
+					return false;
+				}
+			}
+
+			return true;
+		}
+
 	private:
 		std::vector< std::shared_ptr<Space> > spaces_;
 	};

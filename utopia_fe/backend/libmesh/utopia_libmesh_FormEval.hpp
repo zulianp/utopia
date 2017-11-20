@@ -12,6 +12,56 @@
 
 
 namespace utopia {
+	template<class Expr>
+	class OffsetFinder {
+	public:
+		template<class Any>
+		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
+		
+		template<class T>
+		inline int visit(const TestFunction<T> &expr)
+		{	
+			//TODO
+			return TRAVERSE_CONTINUE;
+		}
+
+		template<class T>
+		inline int visit(const TestFunction<ProductFunctionSpace<T>> &expr)
+		{
+			//TODO
+			return TRAVERSE_CONTINUE;
+		}
+
+		template<class T>
+		inline int visit(const TrialFunction<T> &expr)
+		{
+			//TODO
+			return TRAVERSE_CONTINUE;
+		}
+
+		template<class T>
+		inline int visit(const TrialFunction<ProductFunctionSpace<T>> &expr)
+		{
+			//TODO
+			return TRAVERSE_CONTINUE;
+		}
+
+		template<class ExprTree>
+		inline void apply(const ExprTree &expr)
+		{
+			traverse(expr, *this);
+		}
+
+		OffsetFinder(AssemblyContext<LIBMESH_TAG> &ctx)
+		: ctx(ctx), row_offset(0), col_offset(0)
+		{}
+
+		AssemblyContext<LIBMESH_TAG> &ctx;
+
+		int row_offset;
+		int col_offset;
+	};
+
 	template<class Form>
 	class FormEval<Form, LIBMESH_TAG> {
 	public:

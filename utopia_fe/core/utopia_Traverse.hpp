@@ -9,6 +9,409 @@ namespace utopia {
 	static const int TRAVERSE_STOP = 1;
 	static const int TRAVERSE_SKIP_SUBTREE = 2;
 
+
+	template<class Expr, class Visitor>
+	inline static int traverse(Expr &expr, Visitor &visitor)
+	{
+		std::cout << "[Warning] Encountered unhandled expression: " << expr.getClass() << std::endl;
+		return TRAVERSE_CONTINUE;
+	}
+
+		template<class Expr, class Visitor>
+	inline static int traverse(Integral<Expr> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.expr(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+
+		template<class Expr, class Visitor>
+	inline static int traverse(Negate<Expr> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr)) {
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.expr(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+
+		template<class Coefficient, class Function, class Visitor>
+	inline static int traverse(Interpolate<Coefficient, Function> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
+	
+		template<class Expr, class Operation, class Visitor>
+	inline static int traverse(Unary<Expr, Operation> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr)) {
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.expr(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+	
+		template<class Expr, class Operation, class Visitor>
+	inline static int traverse(Reduce<Expr, Operation> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.expr(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+	
+		template<class Expr, class Visitor>
+	inline static int traverse(Divergence<Expr> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.expr(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+
+		template<class Expr, class Visitor>
+	inline static int traverse(Transposed<Expr> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.expr(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+	
+		template<class Expr, class Visitor>
+	inline static int traverse(Gradient<Expr> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.expr(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+	
+		template<class Expr, class Visitor>
+	inline static int traverse(Curl<Expr> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.expr(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}	
+	}
+
+		template<class T, int Order, class Visitor>
+	inline static int traverse(Wrapper<T, Order> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
+
+		template<class T, class Visitor>
+	inline static int traverse(Number<T> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
+	
+		template<class T, int Order, class Visitor>
+	inline static int traverse(ConstantCoefficient<T, Order> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
+
+		template<class Left, class Right, class Operation, class Visitor>
+	inline static int traverse(Binary<Left, Right, Operation> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				if(traverse(expr.left(), visitor) == TRAVERSE_CONTINUE) {
+					return traverse(expr.right(), visitor);
+				}
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+		
+	}
+	
+		template<class Left, class Right, class Operation, class Visitor>
+	inline static int traverse(Binary<Left, Number<Right>, Operation> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.left(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+	
+		template<class Left, class Right, class Operation, class Visitor>
+	inline static int traverse(Binary<Left, BlockVar<Right>, Operation> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.left(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+	
+		template<class Left, class Right, class Visitor>
+	inline static int traverse(Multiply<Left, Right> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				if(traverse(expr.left(), visitor) == TRAVERSE_CONTINUE) {
+					return traverse(expr.right(), visitor);
+				}
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+
+		template<class Left, class Right, class Visitor>
+	inline static int traverse(Equality<Left, Right> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				if(traverse(expr.left(), visitor) == TRAVERSE_CONTINUE) {
+					return traverse(expr.right(), visitor);
+				}
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+	
+		template<class FunctionSpaceT, class Visitor>
+	inline static int traverse(TrialFunction<FunctionSpaceT> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
+
+		template<class FunctionSpaceT, class Visitor>
+	inline static int traverse(TestFunction<FunctionSpaceT> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
+
+
+	//const versions
+
 	template<class Expr, class Visitor>
 	inline static int traverse(const Expr &expr, Visitor &visitor)
 	{
@@ -490,7 +893,7 @@ namespace utopia {
 		if(f.apply(tree)) {
 			ret = f.get().space_ptr();
 		} 
-	
+		
 		return ret;
 	}
 

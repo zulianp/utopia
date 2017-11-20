@@ -21,7 +21,7 @@ namespace utopia {
 		std::string getClass() const override { return "Integral<" + expr_.getClass() + ">"; }
 
 		Integral(const Expr &expr, const int block_id = -1)
-		: expr_(expr), block_id_(block_id)
+		: expr_(expr), block_id_(block_id), integral_id_(-1)
 		{}
 
 		inline const Expr &expr() const
@@ -39,9 +39,20 @@ namespace utopia {
 			return block_id_ != -1;
 		}
 
+		inline bool has_integral_id() const
+		{
+			return integral_id_ != -1;
+		}
+
+		inline void set_integral_id(const int id)
+		{
+			integral_id_ = id;
+		}
+
 	private:
 		UTOPIA_STORE_CONST(Expr) expr_;
 		int block_id_;
+		int integral_id_;
 	};
 
 

@@ -28,6 +28,103 @@ namespace utopia {
 		- multi-linear form
 	*/
 
+	template<class Expr>
+	struct IsBilinearForm
+	{
+		static const int has_trial = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
+		static const int has_test  = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
+		static const int value = (has_trial + has_test) == 2;
+	};
+
+	template<class Expr>
+	struct IsLinearForm
+	{
+		static const int has_trial = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
+		static const int has_test  = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
+		static const int value = (has_trial + has_test) == 1;
+	};
+
+	class EqPreProcessor {
+	public:
+		EqPreProcessor()
+		: n_bilinear_forms(0), n_linear_forms(0)
+		{}
+
+		template<class Any>
+		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
+
+		template<class Expr>
+		inline int visit(Integral<Expr> &expr)
+		{
+			if(IsLinearForm<Expr>::value) {
+				expr.set_integral_id(n_linear_forms++);
+			} else if(IsBilinearForm<Expr>::value) {
+				expr.set_integral_id(n_bilinear_forms++);
+			}
+
+			return TRAVERSE_CONTINUE;
+		}
+
+		template<class ExprTree>
+		inline void apply(ExprTree &expr)
+		{
+			clear();
+			traverse(expr, *this);
+		}
+
+		void clear()
+		{
+			n_linear_forms = 0;
+			n_bilinear_forms = 0;
+		}
+
+	private:
+		int n_bilinear_forms;
+		int n_linear_forms;
+	};
+
+	template<int Backend>
+	class ContextInitializer {
+	public:
+		template<class ExprTree>
+		inline static void apply(const ExprTree &) {}
+	};
+
+	template<>
+	class ContextInitializer<LIBMESH_TAG> {
+	public:
+		ContextInitializer(AssemblyContext<LIBMESH_TAG> &ctx)
+		: ctx(ctx)
+		{}
+
+		template<class Any>
+		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
+
+		template<class Expr>
+		inline int visit(Integral<Expr> &expr)
+		{
+
+		}
+
+		template<class ExprTree>
+		inline void apply(ExprTree &expr)
+		{
+
+			EqPreProcessor eq_pp;
+			eq_pp.apply(expr);
+
+			clear();
+			traverse(expr, *this);
+		}
+
+		void clear()
+		{
+		}
+
+	private:
+		AssemblyContext<LIBMESH_TAG> &ctx;
+	};
+
 
 
 	class EqPrinter {
@@ -241,12 +338,13 @@ namespace utopia {
 		}
 
 		template<class Eq>
-		void operator()(const int index, const Eq &eq) {
+		void operator()(const int index, const Eq &eq_in) {
 			typedef typename FindFunctionSpace<Eq>::Type FunctionSpaceT;
 			typedef utopia::Traits<FunctionSpaceT> TraitsT;
 			typedef typename TraitsT::Matrix ElementMatrix;
 			typedef typename TraitsT::Vector ElementVector;
 
+			Eq eq = eq_in;
 			auto &space = find_space<FunctionSpaceT>(eq);
 
 			auto &&bilinear_form = eq.left();
@@ -256,6 +354,10 @@ namespace utopia {
 			ElementVector el_vec;
 
 			AssemblyContext<LIBMESH_TAG> ctx;
+
+			ContextInitializer<LIBMESH_TAG> ci(ctx);
+			ci.apply(eq);
+
 			ctx.set_current_element(elem->id());
 			ctx.init_bilinear(bilinear_form);
 
@@ -285,6 +387,8 @@ namespace utopia {
 		typedef typename GetFirst<Eqs...>::Type Eq1Type;
 		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
 		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
+
+
 		
 		space.initialize();
 		auto &m = space.mesh();
@@ -341,6 +445,13 @@ namespace utopia {
 			leastsquares_helmoholtz(space_input);
 			run_eq_form_eval_test(space_input);
 			run_local_2_global_test(space_input);
+		}
+
+		template<class Equations>
+		static void init_context(Equations &eqs)
+		{
+			EqPreProcessor preproc;
+
 		}
 
 
@@ -558,6 +669,8 @@ namespace utopia {
 			}
 
 			auto diff_op = integral(inner(u, v) + inner(u, v));
+
+
 
 			assemble_bilinear_and_print(diff_op);
 		}
