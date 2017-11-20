@@ -103,6 +103,11 @@ namespace utopia {
 		return ConstantCoefficient<T, 0>(expr);
 	}
 
+	template<class T, int Order>
+	inline ConstantCoefficient<Wrapper<T, Order> , Order> coeff(const Wrapper<T, Order> &expr) {
+		return ConstantCoefficient<Wrapper<T, Order>, Order>(expr);
+	}
+
 
 	template<class T>
 	inline ConstantCoefficient<T, 1> vec_coeff(const T &expr) {

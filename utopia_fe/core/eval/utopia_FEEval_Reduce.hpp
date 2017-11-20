@@ -62,6 +62,12 @@ namespace utopia {
 	    	const Expr &expr,
 	    	AssemblyContext<Backend> &ctx) -> Result
 	    {
+	    	//For handling multilinear forms:
+	    	//- is it a form or just a reduce? if reduce eval and return
+	    	//- identify if it is a simple form (use ctx to do that) and handle simple case first
+	    	//- if it is part of a composite equation then find out which "sub-block" (not necessarily contiguous) 
+	    	//  is this form about. create index sets and write entries in block (implement in backend only)
+
 	    	if(is_test(expr.expr().right())) {
 		    	return InnerProductT::apply(
 		    			FEEval<Left,  Traits, Backend>::apply(expr.expr().left(),  ctx),

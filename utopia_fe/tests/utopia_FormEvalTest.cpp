@@ -234,10 +234,10 @@ namespace utopia {
 
 	class EqAssembler {
 	public:
-		EqAssembler(const libMesh::Elem * elem, DSMatrixd &mat, DVectord &vec, AssemblyContext<LIBMESH_TAG> &ctx) 
-		: elem(elem), mat(mat), vec(vec), ctx(ctx)
+		EqAssembler(const libMesh::Elem * elem, DSMatrixd &mat, DVectord &vec) 
+		: elem(elem), mat(mat), vec(vec)
 		{
-			ctx.set_current_element(elem->id());
+			
 		}
 
 		template<class Eq>
@@ -255,6 +255,8 @@ namespace utopia {
 			ElementMatrix el_mat;
 			ElementVector el_vec;
 
+			AssemblyContext<LIBMESH_TAG> ctx;
+			ctx.set_current_element(elem->id());
 			ctx.init_bilinear(bilinear_form);
 
 			FormEvaluator<LIBMESH_TAG> eval;
@@ -271,7 +273,7 @@ namespace utopia {
 		DSMatrixd &mat;
 		DVectord &vec;
 
-		AssemblyContext<LIBMESH_TAG> &ctx;
+		
 	};
 
 
@@ -301,8 +303,7 @@ namespace utopia {
 			Write<DVectord>  w_v(vec);
 
 			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-				AssemblyContext<LIBMESH_TAG> ctx;
-				EqAssembler eq_assembler(*it, mat, vec, ctx);
+				EqAssembler eq_assembler(*it, mat, vec);
 				eqs.each(eq_assembler);
 			}
 		}	
@@ -910,18 +911,22 @@ namespace utopia {
 			auto v = test(V);
 
 			//space for gradient of u
-			// auto W1 = LibMeshFunctionSpace(es);
-			// auto W2 = LibMeshFunctionSpace(es);
+			auto W1 = LibMeshFunctionSpace(es);
+			auto W2 = LibMeshFunctionSpace(es);
 
-			// auto W = W1 * W2;
+			auto W = W1 * W2;
 
-			// auto q = trial(W);
-			// auto w = test(W);
+			auto q = trial(W);
+			auto w = test(W);
+
+			LMDenseVector rhs_w = values(2, 1.);
 
 			DVectord sol;
 			const bool success = solve(
 				equations(
-					inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX
+					inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
+					// inner(grad(u), w) * dX       == inner(coeff(rhs_w), v) * dX,
+					inner(q, w) * dX 			 == inner(coeff(rhs_w), w) * dX
 				),
 				constraints(
 					boundary_conditions(u == coeff(-0.2), {1}),
@@ -939,10 +944,10 @@ namespace utopia {
 
 		/////////////////////////////////////////////////////////////////////
 		//HOMEMADE
-		auto mesh = std::make_shared<utopia::Mesh>();
-		mesh->make_triangle();
-		FormEvalTest<utopia::Mesh, utopia::HMFESpace>  test;
-		test.run_all_on(mesh);
+		// auto mesh = std::make_shared<utopia::Mesh>();
+		// mesh->make_triangle();
+		// FormEvalTest<utopia::Mesh, utopia::HMFESpace>  test;
+		// test.run_all_on(mesh);
 
 		/////////////////////////////////////////////////////////////////////
 

@@ -20,10 +20,13 @@ namespace utopia {
 			init_subspace_ids();
 		}
 
+		//FIXME remove me
 		void init_subspace_ids()
 		{
 			this->each([](const int i, Space &space) {
-				space.set_subspace_id(i);
+				if(space.subspace_id() < 0) {
+					space.set_subspace_id(i);
+				}
 			});
 		}
 
@@ -76,7 +79,11 @@ namespace utopia {
 
 		inline void add_subspace(const std::shared_ptr<Space> &space)
 		{
-			space->set_subspace_id(spaces_.size());
+			//FIXME remove me
+			if(space->subspace_id() < 0) {
+				space->set_subspace_id(spaces_.size());
+			}
+
 			spaces_.push_back(space);
 		}
 

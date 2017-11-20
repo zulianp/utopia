@@ -17,6 +17,8 @@ namespace utopia {
 	    		FEEval<Inner, Traits, Backend>::apply(expr.expr(), ctx)
 	    	)
 	    {
+	    	//Check subtree properties
+	    	//TODO
 	    	return FEEval<Inner, Traits, Backend>::apply(expr.expr(), ctx);
 	    }  
 	};

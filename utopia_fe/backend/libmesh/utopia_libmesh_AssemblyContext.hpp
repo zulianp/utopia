@@ -128,7 +128,7 @@ namespace utopia {
 				test_[test_space_ptr->subspace_id()] = std::move(test_fe);
 				block_id_ = elem->subdomain_id();
 
-				test_space_ptr->dof_map().dof_indices(elem, test_dof_indices);
+				test_space_ptr->dof_map().dof_indices(elem, test_dof_indices, test_space_ptr->subspace_id());
 				// n_local_test_dofs = test_space_ptr->dof_map().n_local_dofs();
 
 			} else {
@@ -192,7 +192,7 @@ namespace utopia {
 				trial_[trial_space_ptr->subspace_id()] = std::move(trial_fe);
 				block_id_ = elem->subdomain_id();
 
-				trial_space_ptr->dof_map().dof_indices(elem, trial_dof_indices);
+				trial_space_ptr->dof_map().dof_indices(elem, trial_dof_indices, trial_space_ptr->subspace_id());
 				// n_local_trial_dofs = trial_space_ptr->dof_map().n_local_dofs();
 			} else {
 				auto prod_trial_space_ptr = trial_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);

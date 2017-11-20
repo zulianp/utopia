@@ -89,6 +89,9 @@ namespace utopia {
 		context.equation_systems.solve();
 
 		convert(*context.system.matrix, mass_matrix);
+		DVectord lumped = sum(mass_matrix, 1);
+		mass_matrix = diag(lumped);
+
 		std::cout << "done: (" << t << " seconds)" << std::endl; 
 	}
 
@@ -460,6 +463,26 @@ namespace utopia {
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
 
 		velocity = (1./dt) * displacement_increment;
+
+
+		// DVectord diff_vel = (1./dt) * displacement_increment;
+
+		// // //compute acceleration
+		// DVectord dt_x_M_x_acc = dt * (external_force - stiffness_matrix * (3./4. * total_displacement + 1./4. * u_old));
+		// DVectord vel_inc = local_zeros(local_size(dt_x_M_x_acc));
+		// apply_zero_boundary_conditions(spaces[0]->dof_map(), dt_x_M_x_acc);
+		// solve(mass_matrix, dt_x_M_x_acc, vel_inc);
+
+		// velocity += vel_inc;
+
+
+		// double d = norm2(velocity - diff_vel);
+		// std::cout << "diff vel: " << d << std::endl;
+
+		// 2.* ((_disp[_qp] - _disp_old[_qp]) / (_dt * _dt) - _vel_old[_qp] / _dt -
+		//                         accel_old * (0.5 - _beta));
+
+
 	}
 
 	void ContactProblem::classic_newmark_beta(const double dt)
@@ -646,6 +669,8 @@ namespace utopia {
 		solve(mass_matrix, dt_x_M_x_acc, vel_inc);
 
 		velocity += vel_inc;
+
+		// velocity = 1/dt * displacement_increment;
 	}
 
 	void ContactProblem::step(const double dt)

@@ -27,6 +27,8 @@ namespace utopia {
 		return left.dot(right);
 	}
 
+
+
 	template<typename T>
 	inline static T inner(const libMesh::DenseVector<T> &left, const libMesh::VectorValue<T> &right)
 	{
@@ -62,6 +64,31 @@ namespace utopia {
 		}
 
 		return result;
+	}
+
+	template<class Left, typename T>
+	inline static T inner(const Wrapper<Left, 1> &left, const libMesh::VectorValue<T> &right)
+	{
+		return inner(left.implementation(), right);
+	}
+
+	template<class Left, typename T>
+	inline static T inner(const Wrapper<Left, 1> &left, const libMesh::DenseVector<T> &right)
+	{
+		return inner(left.implementation(), right);
+	}
+
+
+	template<typename T, class Right>
+	inline static T inner(const libMesh::VectorValue<T> &left, const  Wrapper<Right, 1> &right)
+	{
+		return inner(right.implementation(), left);
+	}
+
+	template<typename T, class Right>
+	inline static T inner(const libMesh::DenseVector<T> &left, const Wrapper<Right, 1> &right)
+	{
+		return inner(right.implementation(), left);
 	}
 
 
@@ -141,7 +168,10 @@ namespace utopia {
 			VectorFunctionType &ret)
 		{
 			assert(!fe_object.empty());
-			const std::size_t n_quad_points = fe_object[0]->get_phi()[0].size();
+
+			const auto &sub_0 = space[0];
+
+			const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_phi()[0].size();
 
 			int n_shape_functions = 0;
 			for(auto &t : fe_object) {
@@ -159,14 +189,14 @@ namespace utopia {
 
 			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 				int offset = 0;
-				space.each([&offset, &fe_object, &ret, qp](const int, const LibMeshFunctionSpace &s) {
+				space.each([&offset, &fe_object, &ret, qp](const int sub_index, const LibMeshFunctionSpace &s) {
 					const auto &fe = fe_object[s.subspace_id()];
 					assert((static_cast<bool>(fe)));
 					const auto & fun = fe->get_phi();
 					uint n_shape_i = fe->n_shape_functions();
 
 					for(uint j = 0; j < n_shape_i; ++j) {
-						ret[offset++][qp](s.subspace_id()) = fun[j][qp];
+						ret[offset++][qp](sub_index) = fun[j][qp];
 					}
 				});
 			}
@@ -212,7 +242,8 @@ namespace utopia {
 		{
 
 			assert(!fe_object.empty());
-			const std::size_t n_quad_points = fe_object[0]->get_phi()[0].size();
+			const auto &sub_0 = space[0];
+			const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_phi()[0].size();
 			const uint dim = space[0].mesh().mesh_dimension();
 
 			uint n_shape_functions = 0;
@@ -228,7 +259,7 @@ namespace utopia {
 
 			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 				int offset = 0;
-				space.each([&offset, &fe_object, &ret, &space, qp, dim](const int, const LibMeshFunctionSpace &s) {
+				space.each([&offset, &fe_object, &ret, &space, qp, dim](const int sub_index, const LibMeshFunctionSpace &s) {
 					const auto &fe = fe_object[s.subspace_id()];	
 					const uint n_shape_i = fe->n_shape_functions();
 					
@@ -236,7 +267,7 @@ namespace utopia {
 						const auto &grad = fe->get_dphi()[j][qp];
 
 						for(uint d = 0; d < dim; ++d) {
-							ret[offset][qp](s.subspace_id(), d) = grad(d);
+							ret[offset][qp](sub_index, d) = grad(d);
 						}
 					}
 				});
@@ -274,10 +305,11 @@ namespace utopia {
 			AssemblyContext<LIBMESH_TAG> &ctx,
 			FunctionType &ret)
 		{
-			ret.resize(fe_object[0]->get_phi().size()); 
+			const auto &sub_0 = space[0];
+			ret.resize(fe_object[sub_0.subspace_id()]->get_phi().size()); 
 
 			assert(!fe_object.empty());
-			const std::size_t n_quad_points = fe_object[0]->get_phi()[0].size();
+			const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_phi()[0].size();
 			const uint dim = space[0].mesh().mesh_dimension();
 
 			uint n_shape_functions = 0;
@@ -293,13 +325,13 @@ namespace utopia {
 
 			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 				int offset = 0;
-				space.each([&offset, &fe_object, &ret, &space, qp, dim](const int, const LibMeshFunctionSpace &s) {
+				space.each([&offset, &fe_object, &ret, &space, qp, dim](const int sub_index, const LibMeshFunctionSpace &s) {
 					const auto &fe = fe_object[s.subspace_id()];	
 					const uint n_shape_i = fe->n_shape_functions();
 					
 					for(uint j = 0; j < n_shape_i; ++j, offset++) {
 						const auto &grad = fe->get_dphi()[j][qp];
-						ret[offset][qp] = grad(s.subspace_id());
+						ret[offset][qp] = grad(sub_index);
 					}
 				});
 			}
@@ -893,6 +925,18 @@ namespace utopia {
 			Test  &&test,
 			AssemblyContext<LIBMESH_TAG> &ctx)
 		{	
+			// If this is a subtree of a multilinear form
+			// find local indices of the bilinear form
+			// write offsetted entries in larger matrix
+			return bilinear_form_aux(trial, test, ctx);
+		}
+
+		template<class Trial, class Test>
+		static Matrix bilinear_form_aux(
+			Trial &&trial,
+			Test  &&test,
+			AssemblyContext<LIBMESH_TAG> &ctx)
+		{	
 			Matrix result;
 			ctx.init_tensor(result, true);
 			Write<Matrix> wt(result);
@@ -921,6 +965,18 @@ namespace utopia {
 
 		template<class Fun, class Test>
 		static Vector linear_form(
+			Fun  &&fun,
+			Test &&test,
+			AssemblyContext<LIBMESH_TAG> &ctx)
+		{	
+			// If this is a subtree of a multilinear form
+			// find local indices of linear form
+			// write offsetted entries in larger vector
+			return linear_form_aux(fun, test, ctx);
+		}
+
+		template<class Fun, class Test>
+		static Vector linear_form_aux(
 			Fun  &&fun,
 			Test &&test,
 			AssemblyContext<LIBMESH_TAG> &ctx)
