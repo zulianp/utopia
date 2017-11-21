@@ -4,17 +4,16 @@
 
 #include "utopia_intersector.hpp"
 
-#define USE_CLIPPER
+// #define USE_CLIPPER 1
 
 namespace utopia {
-	bool intersect_convex_polygons(
-		const int n_vertices_1,
-		const double * polygon_1,
-		const int n_vertices_2,
-		const double * polygon_2,
-		int *n_vertices_result,
-		double *result_buffer,
-		double tol) {
+	bool intersect_convex_polygons(const int n_vertices_1,
+								   const double * polygon_1,
+								   const int n_vertices_2,
+								   const double * polygon_2,
+								   int *n_vertices_result,
+								   double *result_buffer,
+								   double tol) {
 
 		// static bool lib_msg = false;
 

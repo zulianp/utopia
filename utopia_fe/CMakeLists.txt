@@ -41,14 +41,24 @@ endif()
 
 include_directories(rapidxml)
 
+# list(APPEND UTOPIA_FE_MODULES
+# 	rapidxml
+# 	core
+# 	intersection
+# 	backend/libmesh
+# 	visualization
+# 	transfer
+# 	tests
+#  )
+
 list(APPEND UTOPIA_FE_MODULES
-	rapidxml
-	core
-	intersection
-	backend/libmesh
-	visualization
-	transfer
 	tests
+	transfer
+	visualization
+	backend/libmesh
+	intersection
+	core
+	rapidxml
  )
 
 FOREACH(MODULE ${UTOPIA_FE_MODULES})
