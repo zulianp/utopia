@@ -614,7 +614,7 @@ namespace utopia {
 	{
 		//predictor step
 		DVectord pred = orthogonal_trafo * utopia::min(orthogonal_trafo * (dt * velocity), gap);
-		DVectord rhs  = internal_mass_matrix * pred + (dt*dt/2.) * (external_force - internal_force);
+		DVectord rhs  = internal_mass_matrix * pred + (dt*dt/4.) * (2.*external_force - internal_force);
 		DSMatrixd K   = internal_mass_matrix + (dt*dt/4.) * stiffness_matrix;
 
 		DVectord sol_c = local_zeros(local_size(external_force));
@@ -640,12 +640,14 @@ namespace utopia {
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
 
 		//compute acceleration
-		DVectord dt_x_M_x_acc = (dt/2.) * (2. * external_force - internal_force - new_internal_force);
-		DVectord vel_inc = local_zeros(local_size(dt_x_M_x_acc));
-		apply_zero_boundary_conditions(spaces[0]->dof_map(), dt_x_M_x_acc);
-		solve(mass_matrix, dt_x_M_x_acc, vel_inc);
+		// DVectord dt_x_M_x_acc = (dt/2.) * (2. * external_force - internal_force - new_internal_force);
+		// DVectord vel_inc = local_zeros(local_size(dt_x_M_x_acc));
+		// apply_zero_boundary_conditions(spaces[0]->dof_map(), dt_x_M_x_acc);
+		// solve(mass_matrix, dt_x_M_x_acc, vel_inc);
 
-		velocity += vel_inc;
+		// velocity += vel_inc;
+
+		velocity = 1./dt * displacement_increment;
 	}
 
 	void ContactProblem::step(const double dt)
