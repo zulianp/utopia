@@ -95,6 +95,16 @@ namespace utopia {
 		}
 
 
+		template<class... Eq, class Matrix, class Vector>
+		static void apply(
+			const Equations<Eq...> &eqs,
+			Wrapper<Matrix, 2> &mat,
+			Wrapper<Vector, 1> &vec, 
+			AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			FEBackend<LIBMESH_TAG>::init_context(eqs, ctx);
+		}
+
 		template<class Left, class Right, class Tensor>
 		static void apply(
 			const Binary<Left, Right, Plus> &expr, 
@@ -104,7 +114,7 @@ namespace utopia {
 			apply(expr.left(),  result, ctx);
 
 			Tensor right = zeros(size(result));
-			apply(expr.right(), result, ctx);
+			apply(expr.right(), right, ctx);
 			result += right;
 		}
 
@@ -127,7 +137,7 @@ namespace utopia {
 			apply(expr.left(), result, ctx);
 
 			Tensor right = zeros(size(result));
-			apply(expr.right(), result, ctx);	
+			apply(expr.right(), right, ctx);	
 			result -= right;
 		}
 

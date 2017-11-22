@@ -4,7 +4,7 @@
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_AssemblyContext.hpp"
 #include "utopia_FEBackend.hpp"
-
+#include "utopia_FindSpace.hpp"
 
 namespace utopia {
 
@@ -15,11 +15,16 @@ namespace utopia {
 	class InnerProduct<Traits, 0> {
 	public:
 		typedef typename Traits::Scalar Type;
+		typedef typename Traits::Implementation Space;
+		static const int Backend = Traits::Backend;
 
 		template<class Left, class Right>
 		inline static Type apply(const Left &left, const Right &right, AssemblyContext<Traits::Backend> &ctx)
 		{
-			return FEBackend<Traits::Backend>::inner(left, right, ctx);
+			return FEBackend<Traits::Backend>::inner(
+				FEEval<Left,  Traits, Backend>::apply(left, ctx),
+				FEEval<Right,  Traits, Backend>::apply(right, ctx), 
+				ctx);
 		}
 	};
 
@@ -27,12 +32,36 @@ namespace utopia {
 	class InnerProduct<Traits, 1> {
 	public:
 		typedef typename Traits::Vector Type;
+		typedef typename Traits::Implementation Space;
+		static const int Backend = Traits::Backend;
 
 
-		template<class Left, class Right>
-		inline static Type apply(const Left &left, const Right &right, AssemblyContext<Traits::Backend> &ctx)
+		template<class LeftExpr, class Test>
+		inline static Type apply(const LeftExpr &left, const Test &test, AssemblyContext<Traits::Backend> &ctx)
 		{
-			return FEBackend<Traits::Backend>::linear_form(left, right, ctx);
+			auto of = offset(test, ctx);
+			return FEBackend<Traits::Backend>::linear_form(
+				of,
+				FEEval<LeftExpr,  Traits, Backend>::apply(left, ctx),
+				FEEval<Test,  Traits, Backend>::apply(test, ctx), 
+				ctx);
+		}
+
+		template<class Test>
+		inline static Range offset(const Test &test, const AssemblyContext<Backend> &ctx)
+		{
+			FindTestSpace<Space, Test> f_test;
+			f_test.apply(test);
+
+			unsigned int n_shape_functions = 0;
+			if(f_test.prod_space()) {
+				n_shape_functions = FEBackend<Traits::Backend>::n_shape_functions(*f_test.prod_space(), ctx);
+			} else {
+				n_shape_functions = FEBackend<Traits::Backend>::n_shape_functions(*f_test.space(), ctx);
+			}
+
+			const unsigned int offset = FEBackend<Traits::Backend>::offset(*f_test.space(), ctx);
+			return Range(offset, offset + n_shape_functions);
 		}
 	};
 
@@ -40,12 +69,55 @@ namespace utopia {
 	class InnerProduct<Traits, 2> {
 	public:
 		typedef typename Traits::Matrix Type;
+		typedef typename Traits::Implementation Space;
+		static const int Backend = Traits::Backend;
 
-		template<class Left, class Right>
-		inline static Type apply(const Left &left, const Right &right, AssemblyContext<Traits::Backend> &ctx)
+		template<class Trial, class Test>
+		inline static Type apply(const Trial &trial, const Test &test, AssemblyContext<Traits::Backend> &ctx)
 		{
-			return FEBackend<Traits::Backend>::bilinear_form(left, right, ctx);
+			auto of = offsets(trial, test, ctx);
+			return FEBackend<Traits::Backend>::bilinear_form(
+				of.first,
+				of.second,
+				FEEval<Trial,  Traits, Backend>::apply(trial, ctx),
+				FEEval<Test,  Traits, Backend>::apply(test, ctx), 
+				ctx);
 		}
+
+
+		template<class Trial, class Test>
+		inline static std::pair<Range, Range> offsets(const Trial &trial, const Test &test, const AssemblyContext<Backend> &ctx)
+		{
+			FindTestSpace<Space, Test> f_test;
+			f_test.apply(test);
+
+			unsigned int n_test_functions = 0;
+			if(f_test.prod_space()) {
+				n_test_functions = FEBackend<Traits::Backend>::n_shape_functions(*f_test.prod_space(), ctx);
+			} else {
+				n_test_functions = FEBackend<Traits::Backend>::n_shape_functions(*f_test.space(), ctx);
+			}
+
+			const unsigned int test_offset = FEBackend<Traits::Backend>::offset(*f_test.space(), ctx);
+
+			FindTrialSpace<Space, Trial> f_trial;
+			f_trial.apply(trial);
+
+			unsigned int n_trial_functions = 0;
+			if(f_trial.prod_space()) {
+				n_trial_functions = FEBackend<Traits::Backend>::n_shape_functions(*f_trial.prod_space(), ctx);
+			} else {
+				n_trial_functions = FEBackend<Traits::Backend>::n_shape_functions(*f_trial.space(), ctx);
+			}
+
+			const unsigned int trial_offset = FEBackend<Traits::Backend>::offset(*f_trial.space(), ctx);
+
+			return { 
+				Range(trial_offset, trial_offset + n_trial_functions),
+				Range(test_offset,  test_offset  + n_test_functions)
+			};
+		}
+
 	};
 
 	template<class Left, class Right, class Traits, int Backend>
@@ -70,14 +142,14 @@ namespace utopia {
 
 	    	if(is_test(expr.expr().right())) {
 		    	return InnerProductT::apply(
-		    			FEEval<Left,  Traits, Backend>::apply(expr.expr().left(),  ctx),
-		    			FEEval<Right, Traits, Backend>::apply(expr.expr().right(), ctx),
+		    			expr.expr().left(),
+		    			expr.expr().right(),
 		    			ctx
 		    		);
 		    } else {
 		    	return InnerProductT::apply(
-		    			FEEval<Right, Traits, Backend>::apply(expr.expr().right(),  ctx),
-		    			FEEval<Left,  Traits, Backend>::apply(expr.expr().left(), ctx),
+		    			expr.expr().right(),
+		    			expr.expr().left(),
 		    			ctx
 		    		);
 		    }

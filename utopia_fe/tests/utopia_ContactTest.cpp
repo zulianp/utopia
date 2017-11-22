@@ -261,10 +261,11 @@ namespace utopia {
 	public:
 		Squares() {
 			mesh_file = "../data/squares.e";
-			contact_flags = {{1, 2}};
+			// contact_flags = {{1, 2}};
+			contact_flags = {{2, 1}};
 			search_radius = 0.1;
-			dt = .0025;
-			n_steps = 80;
+			dt = .0001;
+			n_steps = 300;
 			dynamic_contact = true;
 		}
 

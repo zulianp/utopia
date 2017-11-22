@@ -117,7 +117,35 @@ namespace utopia {
 		typedef libMesh::DenseVector<libMesh::Real> DenseVectorT;
 		typedef std::vector< std::vector<DenseVectorT> > VectorFunctionType;
 
-			//////////////////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////////////////////
+		
+		//system of equations
+		template<class... Eq>
+		static void init_context(const Equations<Eq...> &eqs, AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+
+		}
+
+		//single equations
+		template<class Left, class Right>
+		static void init_context(const Equality<Left, Right> &eq, AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			
+		}
+
+		//general expressions that might contain multilinear forms
+		template<class Expr>
+		static void init_context(const Expression<Expr> &expr, AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			
+		}
+
+		template<class Tensor, int Order>
+		static void init_tensor(Wrapper<Tensor, Order> &t, AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			ctx.init_tensor(t, true);
+		}
+
 
 		template<typename T>
 		inline static const T &get(const std::vector<std::vector<T> > &v, const std::size_t qp, const std::size_t i)
@@ -144,6 +172,28 @@ namespace utopia {
 			vec.add(i, value);
 		}
 
+		//////////////////////////////////////////////////////////////////////////////////////////
+		static inline unsigned int offset(const LibMeshFunctionSpace &space, const AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			return ctx.offset[space.subspace_id()];
+		}
+
+
+		static inline unsigned int n_shape_functions(const LibMeshFunctionSpace &space, const AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			return ctx.fe()[space.subspace_id()]->n_shape_functions();
+		}
+
+		static inline unsigned int n_shape_functions(const ProductFunctionSpace<LibMeshFunctionSpace> &space, const AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			unsigned int ret = 0;
+
+			space.each([&](const int, const LibMeshFunctionSpace &subspace) {
+				ret += ctx.fe()[subspace.subspace_id()]->n_shape_functions();
+			});
+
+			return ret;
+		}
 		//////////////////////////////////////////////////////////////////////////////////////////
 
 		//Function
@@ -247,9 +297,9 @@ namespace utopia {
 			const uint dim = space[0].mesh().mesh_dimension();
 
 			uint n_shape_functions = 0;
-			for(auto &t : fe_object) {
-				if(t) n_shape_functions += t->n_shape_functions();
-			}
+			space.each([&fe_object, &n_shape_functions](const int, const LibMeshFunctionSpace &subspace) {
+				n_shape_functions += fe_object[subspace.subspace_id()]->n_shape_functions();
+			});
 
 			ret.resize(n_shape_functions); 
 			for(std::size_t i = 0; i < n_shape_functions; ++i) {
@@ -921,26 +971,16 @@ namespace utopia {
 
 		template<class Trial, class Test>
 		static Matrix bilinear_form(
-			Trial &&trial,
-			Test  &&test,
-			AssemblyContext<LIBMESH_TAG> &ctx)
-		{	
-			// If this is a subtree of a multilinear form
-			// find local indices of the bilinear form
-			// write offsetted entries in larger matrix
-			return bilinear_form_aux(trial, test, ctx);
-		}
-
-		template<class Trial, class Test>
-		static Matrix bilinear_form_aux(
+			const Range &trial_range,
+			const Range &test_range,
 			Trial &&trial,
 			Test  &&test,
 			AssemblyContext<LIBMESH_TAG> &ctx)
 		{	
 			Matrix result;
-			ctx.init_tensor(result, true);
+			init_tensor(result, ctx);
+			
 			Write<Matrix> wt(result);
-
 			auto && dx    = ctx.dx();
 
 			uint n_quad_points = dx.size();
@@ -952,10 +992,13 @@ namespace utopia {
 				s.set(1, 1);
 			}
 
-			for (uint i = 0; i < s.get(1); i++) {
-				for (uint j = 0; j < s.get(0); j++) {
+			const unsigned int n_test = test_range.extent();
+			const unsigned int n_trial = trial_range.extent();
+
+			for (uint i = 0; i < n_trial; i++) {
+				for (uint j = 0; j < n_test; j++) {
 					for (uint qp = 0; qp < n_quad_points; qp++) {
-						add(result, j, i, inner( get(trial, qp, i), get(test, qp, j) ) * dx[qp]);
+						add(result, test_range.begin() + j, trial_range.begin() + i, inner( get(trial, qp, i), get(test, qp, j) ) * dx[qp]);
 					}
 				}
 			}
@@ -965,38 +1008,28 @@ namespace utopia {
 
 		template<class Fun, class Test>
 		static Vector linear_form(
-			Fun  &&fun,
-			Test &&test,
-			AssemblyContext<LIBMESH_TAG> &ctx)
-		{	
-			// If this is a subtree of a multilinear form
-			// find local indices of linear form
-			// write offsetted entries in larger vector
-			return linear_form_aux(fun, test, ctx);
-		}
-
-		template<class Fun, class Test>
-		static Vector linear_form_aux(
+			const Range &test_range,
 			Fun  &&fun,
 			Test &&test,
 			AssemblyContext<LIBMESH_TAG> &ctx)
 		{	
 			Vector result;
-			ctx.init_tensor(result, true);
+			init_tensor(result, ctx);
 			Write<Vector> wt(result);
 
 			auto && dx    = ctx.dx();
 			uint n_quad_points = dx.size();
 
-			auto s = size(result);
-			for (uint j = 0; j < s.get(0); j++) {
+			auto n_test = test_range.extent();
+			for (uint j = 0; j < n_test; j++) {
 				for (uint qp = 0; qp < n_quad_points; qp++) {
-					add(result, j, 0, inner( get(fun, qp, 0), get(test, qp, j) ) * dx[qp]);
+					add(result, test_range.begin() + j, 0, inner( get(fun, qp, 0), get(test, qp, j) ) * dx[qp]);
 				}
 			}
 
 			return result;
 		}
+
 	};
 }
 

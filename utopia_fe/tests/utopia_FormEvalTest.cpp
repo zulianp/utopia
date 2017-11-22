@@ -14,6 +14,9 @@
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_Equations.hpp"
 #include "utopia_FEConstraints.hpp"
+#include "utopia_FindSpace.hpp"
+#include "utopia_IsForm.hpp"
+
 
 namespace utopia {
 
@@ -27,22 +30,6 @@ namespace utopia {
 		- local-2-global
 		- multi-linear form
 	*/
-
-	template<class Expr>
-	struct IsBilinearForm
-	{
-		static const int has_trial = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
-		static const int has_test  = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
-		static const int value = (has_trial + has_test) == 2;
-	};
-
-	template<class Expr>
-	struct IsLinearForm
-	{
-		static const int has_trial = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
-		static const int has_test  = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
-		static const int value = (has_trial + has_test) == 1;
-	};
 
 	class EqPreProcessor {
 	public:
@@ -135,106 +122,6 @@ namespace utopia {
 			std::cout << tree_format(eq.getClass()) << std::endl;
 		}
 	};
-
-
-	template<class Space, class Expr>
-	class FindSpace {
-	public:
-		template<class Any>
-		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
-		
-		template<class T>
-		inline int visit(const TestFunction<T> &expr)
-		{
-			space_ = expr.space_ptr();
-			return TRAVERSE_STOP;
-		}
-
-		template<class T>
-		inline int visit(const TestFunction<ProductFunctionSpace<T>> &expr)
-		{
-			space_ = expr.space_ptr()->subspace_ptr(0);
-			return TRAVERSE_STOP;
-		}
-
-		FindSpace()
-		: space_(nullptr)
-		{}
-
-		inline bool found() const
-		{
-			return static_cast<bool>(space_);
-		}
-
-		template<class ExprTree>
-		inline std::shared_ptr<Space> apply(const ExprTree &expr)
-		{
-			space_ = nullptr;
-			traverse(expr, *this);
-			return space_;
-		}
-
-		std::shared_ptr<Space> space_;
-	};
-
-
-	template<class Mesh, class Expr>
-	class FindMesh {
-	public:
-		template<class Any>
-		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
-		
-		template<class T>
-		inline int visit(const TestFunction<T> &expr)
-		{
-			mesh_ = &expr.space_ptr()->mesh();
-			return TRAVERSE_STOP;
-		}
-
-		template<class T>
-		inline int visit(const TestFunction<ProductFunctionSpace<T>> &expr)
-		{
-			mesh_ = &expr.space_ptr()->subspace(0).mesh();
-			return TRAVERSE_STOP;
-		}
-
-		FindMesh()
-		: mesh_(nullptr)
-		{}
-
-		inline bool found() const
-		{
-			return mesh_;
-		}
-
-		template<class ExprTree>
-		inline Mesh * apply(const ExprTree &expr)
-		{
-			mesh_ = nullptr;
-			traverse(expr, *this);
-			return mesh_;
-		}
-
-		Mesh *mesh_;
-	};
-
-	template<class Space, class Expr>
-	inline auto find_space(const Expr &tree) -> Space &
-	{
-		FindSpace<Space, Expr> fm;
-		auto space_ptr = fm.apply(tree);
-		assert(space_ptr);
-		return *space_ptr;
-	}
-
-	template<class Mesh, class Expr>
-	inline auto find_mesh(const Expr &tree) -> const Mesh &
-	{
-		FindMesh<Mesh, Expr> fm;
-		auto mesh_ptr = fm.apply(tree);
-		assert(mesh_ptr);
-		return *mesh_ptr;
-	}
 
 
 
@@ -367,8 +254,11 @@ namespace utopia {
 			ctx.init_linear(linear_form);
 			eval.eval(linear_form, el_vec, ctx, true);
 
-			add_matrix(el_mat.implementation(), ctx.test_dof_indices, ctx.trial_dof_indices, mat);
-			add_vector(el_vec.implementation(), ctx.test_dof_indices, vec);
+			std::vector<libMesh::dof_id_type> dof_indices;
+			space.dof_map().dof_indices(elem, dof_indices);
+
+			add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+			add_vector(el_vec.implementation(), dof_indices, vec);
 		};
 
 		const libMesh::Elem * elem;
@@ -466,8 +356,8 @@ namespace utopia {
 			FormEvaluator<Backend> eval;
 			eval.eval(form, mat, ctx, true);
 
-			// std::cout << tree_format(form.getClass()) << std::endl;
-			// disp(mat);
+			std::cout << tree_format(form.getClass()) << std::endl;
+			disp(mat);
 		}
 
 
@@ -482,8 +372,8 @@ namespace utopia {
 			FormEvaluator<Backend> eval;
 			eval.eval(form, vec, ctx, true);
 
-			// std::cout << tree_format(form.getClass()) << std::endl;
-			// disp(vec);
+			std::cout << tree_format(form.getClass()) << std::endl;
+			disp(vec);
 		}
 
 		static void run_interp_vec_test(const std::shared_ptr<SpaceInput> &space_input)
@@ -578,7 +468,8 @@ namespace utopia {
 			const double mu  = 1.;
 			const double rho = 1.;
 
-			const int n_dofs = 3 * (2 + 1);
+			//2 elements with 3 nodes and 2+1 dofs per node
+			const int n_dofs = 2 * 3 * (2 + 1);
 			ElementVector u_vector = values(n_dofs, 0.1);
 			{
 				Write<ElementVector> w(u_vector);
@@ -593,9 +484,14 @@ namespace utopia {
 			auto b_form_12 = -integral(inner(p, div(v)));
 			auto b_form_21 = integral(inner(div(u), q));
 
-			assemble_bilinear_and_print(b_form_11);
-			assemble_bilinear_and_print(b_form_12);
-			assemble_bilinear_and_print(b_form_21);
+
+			ElementVector r_v = values(2, 1.);
+			auto l_form_1 =  integral(inner(coeff(1.), q));
+			auto l_form_2 =  integral(inner(coeff(r_v), v));
+
+			assemble_bilinear_and_print(b_form_11 + b_form_12 + b_form_21);
+			assemble_linear_and_print(l_form_1 + l_form_2);
+
 		}
 
 		static void run_vector_form_eval_test(const std::shared_ptr<SpaceInput> &space_input)
@@ -871,68 +767,68 @@ namespace utopia {
 
 	void run_libmesh_eval_test(libMesh::LibMeshInit &init)
 	{
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_linear_form_test");
-			lm_test.run_linear_form_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_linear_form_test");
+		// 	lm_test.run_linear_form_test(es);
+		// });
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_bilinear_form_test");
-			lm_test.run_bilinear_form_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_bilinear_form_test");
+		// 	lm_test.run_bilinear_form_test(es);
+		// });
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_scalar_form_sum_eval_test");
-			lm_test.run_scalar_form_sum_eval_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_scalar_form_sum_eval_test");
+		// 	lm_test.run_scalar_form_sum_eval_test(es);
+		// });
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_scalar_form_eval_test");
-			lm_test.run_scalar_form_eval_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_scalar_form_eval_test");
+		// 	lm_test.run_scalar_form_eval_test(es);
+		// });
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_vector_form_eval_test");
-			lm_test.run_vector_form_eval_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_vector_form_eval_test");
+		// 	lm_test.run_vector_form_eval_test(es);
+		// });
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_mixed_form_eval_test");
-			lm_test.run_mixed_form_eval_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_mixed_form_eval_test");
+		// 	lm_test.run_mixed_form_eval_test(es);
+		// });
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_linear_elasticity");
-			lm_test.run_linear_elasticity(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_linear_elasticity");
+		// 	lm_test.run_linear_elasticity(es);
+		// });
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_interp_test");
-			lm_test.run_interp_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_interp_test");
+		// 	lm_test.run_interp_test(es);
+		// });
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_interp_vec_test");
-			lm_test.run_interp_vec_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_interp_vec_test");
+		// 	lm_test.run_interp_vec_test(es);
+		// });
 
 		run_libmesh_test(init,[](
 			LibMeshFormEvalTest &lm_test,
@@ -941,112 +837,112 @@ namespace utopia {
 			lm_test.run_navier_stokes_test(es);
 		});
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("leastsquares_helmoholtz");
-			lm_test.leastsquares_helmoholtz(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("leastsquares_helmoholtz");
+		// 	lm_test.leastsquares_helmoholtz(es);
+		// });
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_eq_form_eval_test");
-			lm_test.run_eq_form_eval_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_eq_form_eval_test");
+		// 	lm_test.run_eq_form_eval_test(es);
+		// });
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_local_2_global_test");
-			lm_test.run_local_2_global_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_local_2_global_test");
+		// 	lm_test.run_local_2_global_test(es);
+		// });
 
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
 			
-			//create system of equations
-			es->add_system<libMesh::LinearImplicitSystem>("run_local_2_global_test");
+		// 	//create system of equations
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_local_2_global_test");
 
-			auto V = LibMeshFunctionSpace(es);
+		// 	auto V = LibMeshFunctionSpace(es);
 
-			auto u = trial(V);
-			auto v = test(V);
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
 
-			DVectord sol;
-			bool success = solve<LibMeshFunctionSpace>(
-				inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
-				sol);
+		// 	// DVectord sol;
+		// 	// bool success = solve<LibMeshFunctionSpace>(
+		// 	// 	inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
+		// 	// 	sol);
 
-			/*
-				bool success = solve(
-					equations(
-						inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
-						...
-					),
-					constraints(
-						//dirichlet
-						boundary_conditions(u == 0., {1}),
-						boundary_conditions(u == 1., {2}),
-						//neumann (?)
-						boundary_conditions(inner(grad(u), normal_) == x_ * y_, {3}),
-						boundary_conditions(inner(grad(u), normal_) == inner(func, normal_), {3}),
-						//pseudo l2-projection
-						inner(u, biorth(v)) * dV({1}) == inner(w, biorth(v)) * dV({2})
-						//or
-						inner(u - w, biorth(v)) * dX == 0,
-						//contact
-						contact_conditions({{3, 4}}, search_radius)
+		// 	/*
+		// 		bool success = solve(
+		// 			equations(
+		// 				inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
+		// 				...
+		// 			),
+		// 			constraints(
+		// 				//dirichlet
+		// 				boundary_conditions(u == 0., {1}),
+		// 				boundary_conditions(u == 1., {2}),
+		// 				//neumann (?)
+		// 				boundary_conditions(inner(grad(u), normal_) == x_ * y_, {3}),
+		// 				boundary_conditions(inner(grad(u), normal_) == inner(func, normal_), {3}),
+		// 				//pseudo l2-projection
+		// 				inner(u, biorth(v)) * dV({1}) == inner(w, biorth(v)) * dV({2})
+		// 				//or
+		// 				inner(u - w, biorth(v)) * dX == 0,
+		// 				//contact
+		// 				contact_conditions({{3, 4}}, search_radius)
 
-					),
-					sol
-				);
-			*/
+		// 			),
+		// 			sol
+		// 		);
+		// 	*/
 			
 
-			std::cout << "solved: " << (success ? "true" : "false") << std::endl;
-			disp(sol);
-		});
+		// 	// std::cout << "solved: " << (success ? "true" : "false") << std::endl;
+		// 	// disp(sol);
+		// });
 
-		run_libmesh_test(init, [](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// run_libmesh_test(init, [](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
 			
-			//create system of equations
-			es->add_system<libMesh::LinearImplicitSystem>("test_equations");
+		// 	//create system of equations
+		// 	es->add_system<libMesh::LinearImplicitSystem>("test_equations");
 
-			//space for u
-			auto V = LibMeshFunctionSpace(es);
+		// 	//space for u
+		// 	auto V = LibMeshFunctionSpace(es);
 
-			auto u = trial(V);
-			auto v = test(V);
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
 
-			//space for gradient of u
-			auto W1 = LibMeshFunctionSpace(es);
-			auto W2 = LibMeshFunctionSpace(es);
+		// 	//space for gradient of u
+		// 	auto W1 = LibMeshFunctionSpace(es);
+		// 	auto W2 = LibMeshFunctionSpace(es);
 
-			auto W = W1 * W2;
+		// 	auto W = W1 * W2;
 
-			auto q = trial(W);
-			auto w = test(W);
+		// 	auto q = trial(W);
+		// 	auto w = test(W);
 
-			LMDenseVector rhs_w = values(2, 1.);
+		// 	LMDenseVector rhs_w = values(2, 1.);
 
-			DVectord sol;
-			const bool success = solve(
-				equations(
-					inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
-					// inner(grad(u), w) * dX       == inner(coeff(rhs_w), v) * dX,
-					inner(q, w) * dX 			 == inner(coeff(rhs_w), w) * dX
-				),
-				constraints(
-					boundary_conditions(u == coeff(-0.2), {1}),
-					boundary_conditions(u == coeff(0.2),  {2})
-				),
-				sol);
-		});
+		// 	DVectord sol;
+		// 	const bool success = solve(
+		// 		equations(
+		// 			inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
+		// 			// inner(grad(u), w) * dX       == inner(coeff(rhs_w), v) * dX,
+		// 			inner(q, w) * dX 			 == inner(coeff(rhs_w), w) * dX
+		// 		),
+		// 		constraints(
+		// 			boundary_conditions(u == coeff(-0.2), {1}),
+		// 			boundary_conditions(u == coeff(0.2),  {2})
+		// 		),
+		// 		sol);
+		// });
 
 
 		/////////////////////////////////////////////////////////////////////

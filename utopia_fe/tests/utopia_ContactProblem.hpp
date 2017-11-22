@@ -29,6 +29,8 @@ namespace utopia {
 		DSMatrixd mass_matrix;
 		DSMatrixd internal_mass_matrix;
 		DSMatrixd constrained_mass_matrix;
+		DVectord inverse_mass_vector;
+
 		DVectord external_force;
 		DVectord displacement_increment;
 		DVectord old_displacement_increment;

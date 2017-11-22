@@ -68,7 +68,8 @@ namespace utopia {
 	void assemble_mass_matrix(
 		U &u, 
 		LibMeshFEContext<SystemType> &context,
-		DSMatrixd &mass_matrix)
+		DSMatrixd &mass_matrix,
+		DVectord &inverse_mass_vector)
 	{
 		std::cout << "Contact problem: assembling mass matrix..." << std::flush;
 		
@@ -92,6 +93,8 @@ namespace utopia {
 		DVectord lumped = sum(mass_matrix, 1);
 		mass_matrix = diag(lumped);
 
+		inverse_mass_vector = 1./lumped;
+
 		std::cout << "done: (" << t << " seconds)" << std::endl; 
 	}
 
@@ -111,10 +114,10 @@ namespace utopia {
 		// auto mu     = block_var(6., {{1, 10.}, {4, 5.}});
 		// auto lambda = block_var(6., {{1, 10.}, {4, 5.}});
 
-		// double mu = 730;
-		// double lambda = 376;
-		double mu = 10;
-		double lambda = 10;
+		double mu = 730;
+		double lambda = 376;
+		// double mu = 10;
+		// double lambda = 10;
 
 		auto e  = transpose(grad(u)) + grad(u); //0.5 moved below -> (2 * 0.5 * 0.5 = 0.5)
 		auto b_form = integral((0.5 * mu) * dot(e, e) + lambda * dot(div(u), div(u)));
@@ -165,7 +168,7 @@ namespace utopia {
 		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 		
 		assemble_elasticity(u,  *context_ptr, *ff_ptr, stiffness_matrix, external_force);
-		assemble_mass_matrix(u, *context_ptr, mass_matrix);
+		assemble_mass_matrix(u, *context_ptr, mass_matrix, inverse_mass_vector);
 	}
 
 	void ContactProblem::init_material_3d()
@@ -186,7 +189,7 @@ namespace utopia {
 		uz.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 
 		assemble_elasticity(u,  *context_ptr, *ff_ptr, stiffness_matrix, external_force);
-		assemble_mass_matrix(u, *context_ptr, mass_matrix);
+		assemble_mass_matrix(u, *context_ptr, mass_matrix, inverse_mass_vector);
 	}
 
 	void ContactProblem::init_aux_system()
@@ -379,8 +382,8 @@ namespace utopia {
 	{
 		DVectord &u_old = total_displacement;
 		DVectord u_older = u_old - old_displacement_increment;
-		DVectord rhs = 1./(dt*dt) * ( internal_mass_matrix * (u_old - u_older)) - (stiffness_matrix * (3./4. * u_old + 1./4. * u_older)) + external_force;
-		DSMatrixd K  = 1./(dt*dt) * internal_mass_matrix + stiffness_matrix;
+		DVectord rhs = 4. * ( 1./(dt*dt) * ( internal_mass_matrix * (u_old - u_older) ) + external_force - stiffness_matrix * (3./4. * u_old + 1./4. * u_older) );
+		DSMatrixd K  = 4./(dt*dt) * internal_mass_matrix + stiffness_matrix;
 
 		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
 		newton.verbose(true);
@@ -403,8 +406,8 @@ namespace utopia {
 	{
 		DVectord &u_old = total_displacement;
 		DVectord u_older = u_old - old_displacement_increment;
-		DVectord rhs = 1./(dt) * ( internal_mass_matrix * velocity ) + (external_force - (stiffness_matrix * (3./4. * u_old + 1./4. * u_older)));
-		DSMatrixd K  = 1./(dt*dt) * internal_mass_matrix + stiffness_matrix;
+		DVectord rhs = 4. * ( 1./(dt) * ( internal_mass_matrix * velocity ) + external_force - stiffness_matrix * (3./4. * u_old + 1./4. * u_older) );
+		DSMatrixd K  = 4./(dt*dt) * internal_mass_matrix + stiffness_matrix;
 
 		DVectord sol_c = local_zeros(local_size(external_force));
 		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
@@ -429,6 +432,15 @@ namespace utopia {
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
 
 		velocity = (1./dt) * displacement_increment;
+
+		//compute acceleration
+		// DVectord dt_x_M_x_acc = (dt/2.) * (2. * external_force - internal_force - new_internal_force);
+		// DVectord vel_inc = local_zeros(local_size(dt_x_M_x_acc));
+		// apply_zero_boundary_conditions(spaces[0]->dof_map(), dt_x_M_x_acc);
+		// // solve(mass_matrix, dt_x_M_x_acc, vel_inc);
+		// vel_inc = e_mul(inverse_mass_vector, dt_x_M_x_acc);
+
+		// velocity += vel_inc;
 	}
 
 
@@ -437,8 +449,9 @@ namespace utopia {
 		DVectord &u_old = total_displacement;
 		DVectord u_older = u_old - old_displacement_increment;
 		DVectord pred = orthogonal_trafo * utopia::min(orthogonal_trafo * (dt * velocity), gap);
-		DVectord rhs = (internal_mass_matrix * pred) + (dt*dt) * (external_force - stiffness_matrix * (3./4. * u_old + 1./4. * u_older));
-		DSMatrixd K  = internal_mass_matrix + (dt*dt) * stiffness_matrix;
+		
+		DVectord rhs = 4. * ( 1./(dt*dt) * ( internal_mass_matrix * pred ) + external_force - stiffness_matrix * (3./4. * u_old + 1./4. * u_older) );
+		DSMatrixd K  = 4./(dt*dt) * internal_mass_matrix + stiffness_matrix;
 
 		DVectord sol_c = local_zeros(local_size(external_force));
 		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
@@ -464,20 +477,6 @@ namespace utopia {
 
 		velocity = (1./dt) * displacement_increment;
 
-
-		// DVectord diff_vel = (1./dt) * displacement_increment;
-
-		// // //compute acceleration
-		// DVectord dt_x_M_x_acc = dt * (external_force - stiffness_matrix * (3./4. * total_displacement + 1./4. * u_old));
-		// DVectord vel_inc = local_zeros(local_size(dt_x_M_x_acc));
-		// apply_zero_boundary_conditions(spaces[0]->dof_map(), dt_x_M_x_acc);
-		// solve(mass_matrix, dt_x_M_x_acc, vel_inc);
-
-		// velocity += vel_inc;
-
-
-		// double d = norm2(velocity - diff_vel);
-		// std::cout << "diff vel: " << d << std::endl;
 
 		// 2.* ((_disp[_qp] - _disp_old[_qp]) / (_dt * _dt) - _vel_old[_qp] / _dt -
 		//                         accel_old * (0.5 - _beta));
@@ -637,7 +636,7 @@ namespace utopia {
 	{
 		//predictor step
 		DVectord pred = orthogonal_trafo * utopia::min(orthogonal_trafo * (dt * velocity), gap);
-		DVectord rhs  = internal_mass_matrix * pred + (dt*dt/2.) * (external_force - internal_force);
+		DVectord rhs  = internal_mass_matrix * pred + (dt*dt/2.) * (2. * external_force - internal_force);
 		DSMatrixd K   = internal_mass_matrix + (dt*dt/4.) * stiffness_matrix;
 
 		DVectord sol_c = local_zeros(local_size(external_force));
@@ -666,7 +665,8 @@ namespace utopia {
 		DVectord dt_x_M_x_acc = (dt/2.) * (2. * external_force - internal_force - new_internal_force);
 		DVectord vel_inc = local_zeros(local_size(dt_x_M_x_acc));
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), dt_x_M_x_acc);
-		solve(mass_matrix, dt_x_M_x_acc, vel_inc);
+		// solve(mass_matrix, dt_x_M_x_acc, vel_inc);
+		vel_inc = e_mul(inverse_mass_vector, dt_x_M_x_acc);
 
 		velocity += vel_inc;
 
@@ -716,8 +716,8 @@ namespace utopia {
 
 		if(dynamic_contact) {
 			// classic_newmark_with_contact(dt);
-			classic_newmark_with_contact_2(dt);
-			// contact_stabilized_newmark(dt);
+			// classic_newmark_with_contact_2(dt);
+			contact_stabilized_newmark(dt);
 			// contact_stabilized_newmark_monolithic(dt);
 		} else {
 			implicity_euler(dt);

@@ -26,6 +26,8 @@ namespace utopia {
 	template<class> class ProductFunctionSpace;
 
 	template<int> class AssemblyContext;
+
+	template<class ...> class Equations;
 	
 }
 
