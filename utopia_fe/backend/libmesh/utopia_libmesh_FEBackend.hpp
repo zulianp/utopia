@@ -4,8 +4,13 @@
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_libmesh_AssemblyContext.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
+#include "utopia_libmesh_LambdaFunction.hpp"
+
 #include "utopia_FEBackend.hpp"
 #include "utopia_FEBasicOverloads.hpp"
+
+
+#include "libmesh/const_function.h"
 
 namespace utopia {
 
@@ -144,6 +149,83 @@ namespace utopia {
 		static void init_tensor(Wrapper<Tensor, Order> &t, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
 			ctx.init_tensor(t, true);
+		}
+
+
+		class ConstraintsInitializer {
+		public:
+
+			template<class Constr>
+			inline void operator()(const int, const Constr &constr) const
+			{
+				std::cout << "unimplemented constraint exprassion" << std::endl;
+				assert(false);
+			}
+
+			template<class F, typename T>
+			inline void operator()(const int, const DirichletBoundaryCondition<
+																Equality<
+																	TrialFunction<LibMeshFunctionSpace>,
+											 						FunctionCoefficient<F, T, 0>
+											 						>
+											 					> &cond) const
+			{
+				std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().space_ptr()->subspace_id();
+				std::set<libMesh::boundary_id_type> bt;
+				bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
+				libMesh::DirichletBoundary d_bc(bt, vars, LibMeshLambdaFunction<libMesh::Real>(cond.expr().right().fun()) );
+				cond.expr().left().space_ptr()->dof_map().add_dirichlet_boundary(d_bc);
+			}
+
+			template<class T>
+			inline void operator()(const int, const DirichletBoundaryCondition<
+																Equality<TrialFunction<LibMeshFunctionSpace>,
+																		ConstantCoefficient<T, 0> >
+														> &&cond)
+			{
+				std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().space_ptr()->subspace_id();
+				std::set<libMesh::boundary_id_type> bt;
+				bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
+				libMesh::DirichletBoundary d_bc(bt, vars, libMesh::ConstFunction<libMesh::Real>(cond.expr().right()) );
+				cond.expr().left().space_ptr()->dof_map().add_dirichlet_boundary(d_bc);
+			}
+
+			template<class T>
+			void strong_enforce( DirichletBoundaryCondition<
+								Equality<TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>>,
+								ConstantCoefficient<T, 1> >
+								> &&cond)
+			{
+				std::cout << "unimplemented constraint exprassion" << std::endl;
+				assert(false);
+
+				// std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().space_ptr()->subspace_id();
+				// std::set<libMesh::boundary_id_type> bt;
+				// bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
+				// libMesh::DirichletBoundary d_bc(bt, vars, libMesh::ConstFunction<T>(cond.expr().right()) );
+				// cond.expr().left().space_ptr()->dof_map().add_dirichlet_boundary(d_bc);
+			}
+
+		};
+
+		template<class... Constr>
+		static void init_constraints(const FEConstraints<Constr...> &constr)
+		{
+
+			ConstraintsInitializer c_init;
+			constr.each(c_init);
+			/*
+				template<class Right, typename T>
+				void strong_enforce(const DirichletBoundaryCondition<
+									Equality<LibMeshFEFunction,
+									FunctionCoefficient<Right, T, 0> >
+									> &cond)
+				{
+				
+				}
+
+			*/
+
 		}
 
 

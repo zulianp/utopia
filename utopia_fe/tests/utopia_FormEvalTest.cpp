@@ -17,6 +17,7 @@
 #include "utopia_FindSpace.hpp"
 #include "utopia_IsForm.hpp"
 
+#include "libmesh/exodusII_io.h"
 
 namespace utopia {
 
@@ -68,6 +69,8 @@ namespace utopia {
 		std::vector<libMesh::dof_id_type> dof_indices;
 		dof_map.dof_indices(*it, dof_indices);
 
+		dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
+
 		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
 		add_vector(el_vec.implementation(), dof_indices, vec);
 	}
@@ -110,6 +113,8 @@ namespace utopia {
 		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
 		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
 
+		FEBackend<LIBMESH_TAG>::init_constraints(constr);
+
 
 		
 		space.initialize();
@@ -137,6 +142,17 @@ namespace utopia {
 
 		disp(mat);
 		disp(vec);
+
+		sol = local_zeros(local_size(vec));
+		if(!solve(mat, vec, sol)) {
+			return false;
+		}
+		
+
+		DVectord residual = mat * sol - vec;
+		double norm_r = norm2(residual);
+		std::cout << "norm_r: " << norm_r << std::endl;
+		disp(sol);
 		return false;
 	}
 
@@ -580,7 +596,7 @@ namespace utopia {
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
-			1, 1,
+			10, 10,
 			0, 1.,
 			0, 1.,
 			libMesh::TRI3);
@@ -736,37 +752,32 @@ namespace utopia {
 			const std::shared_ptr<libMesh::EquationSystems> &es) {
 			
 			//create system of equations
-			es->add_system<libMesh::LinearImplicitSystem>("test_equations");
+			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("test_equations");
 
 			//space for u
 			auto V = LibMeshFunctionSpace(es);
 
 			auto u = trial(V);
 			auto v = test(V);
-
-			//space for gradient of u
-			auto W1 = LibMeshFunctionSpace(es);
-			auto W2 = LibMeshFunctionSpace(es);
-
-			auto W = W1 * W2;
-
-			auto q = trial(W);
-			auto w = test(W);
-
-			LMDenseVector rhs_w = values(2, 1.);
-
 			DVectord sol;
 			const bool success = solve(
 				equations(
-					inner(grad(u), grad(v)) * dX == inner(coeff(1.), v) * dX,
-					inner(q, w) * dX + inner(grad(u), w) * dX == inner(coeff(rhs_w), w) * dX
+					inner(grad(u), grad(v)) * dX == inner(coeff(0.), v) * dX
 				),
 				constraints(
 					boundary_conditions(u == coeff(-0.2), {1}),
 					boundary_conditions(u == coeff(0.2),  {2})
 				),
 				sol);
+
+
+			//go back to libmesh
+			convert(sol, *sys.solution);
+			sys.solution->close();
+			libMesh::ExodusII_IO(V.mesh()).write_equation_systems ("test_equations.e", *es);
 		});
+
+
 
 
 		/////////////////////////////////////////////////////////////////////

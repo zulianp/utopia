@@ -28,6 +28,7 @@ namespace utopia {
 	template<int> class AssemblyContext;
 
 	template<class ...> class Equations;
+	template<class ...> class FEConstraints;
 	
 }
 
