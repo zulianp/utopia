@@ -34,7 +34,7 @@ namespace utopia {
 	};
 
 	template<class... Equation>
-	class Equations {
+	class Equations : public Expression< Equations<Equation...> > {
 	public:
 
 		static const int n_equations = std::tuple_size< std::tuple<Equation...> >::value;
@@ -69,6 +69,12 @@ namespace utopia {
 			iter.visit(fun);
 		}
 
+
+		inline std::string getClass() const override
+		{
+			return "Equations";
+		}
+
 	private:
 		std::tuple<Equation...> eqs_;
 	};
@@ -80,46 +86,59 @@ namespace utopia {
 		return Equations<Equation...>(eqs...);
 	}
 
-	// //base case
-	// template<class Left, class Right>
-	// class Traits<Equations<Left, Right>> {
-	// public:
-	// 	typedef typename utopia::FormTraits<Left>::Implementation Implementation;
-	// 	typedef typename utopia::FormTraits<Left>::Scalar Scalar;
+	template<class First, class...Rest>
+	class GetFirst {
+	public:
+		typedef First Type;
+	};
 
-	// 	static const int Order   = utopia::FormTraits<Left>::Order + FormTraits<Right>::Order;
-	// 	static const int Backend = utopia::FormTraits<Left>::Backend;
-	// };
+	template<class... Eqs, class AssemblyContext>
+	class FunctionalTraits<Equations<Eqs...>, AssemblyContext>  {
+	public:
 
-	// //variadic case
-	// template<class... Equation>
-	// class Traits< Equations<Equation...> > {
-	// public:
-	// 	template<class Eqs>
-	// 	inline static constexpr int order()
-	// 	{
-	// 		return Traits<Eqs>::Order;
-	// 	}
-
-	// 	template<class First, class...Rest>
-	// 	inline static constexpr int order()
-	// 	{
-	// 		return Traits<First>::Order + order<Rest...>();
-	// 	}
-
-		template<class First, class...Rest>
-		class GetFirst {
+		class FunctionalType {
 		public:
-			typedef First Type;
+			template<class Eq>
+			void operator()(const int index, const Eq &eq)
+			{
+				type = std::max(type, FunctionalTraits<Eq, AssemblyContext>::type(eq, ctx));
+			}
+
+			FunctionalType(const AssemblyContext &ctx) : ctx(ctx), type(0) {}
+
+			const AssemblyContext &ctx;
+			int type;
 		};
 
-	// 	typedef typename GetFirst<Equation...>::Type First;
-	// 	typedef typename utopia::FormTraits<First>::Implementation Implementation;
-	// 	typedef typename utopia::FormTraits<First>::Scalar Scalar;
+		class FunctionalOrder {
+		public:
+			
+			template<class Eq>
+			void operator()(const int index, const Eq &eq)
+			{
+				order = std::max(order,  FunctionalTraits<Eq, AssemblyContext>::order(eq, ctx));
+			}
 
-	// 	const static int Order = order<Equation...>();
-	// 	static const int Backend = utopia::FormTraits<First>::Backend;
-	// };
+			FunctionalOrder(const AssemblyContext &ctx) : ctx(ctx), order(0) {}
+
+			const AssemblyContext &ctx;
+			int order;
+		};
+
+		inline static int type(const Equations<Eqs...> &expr,  const AssemblyContext &ctx) 
+		{ 
+			FunctionalType ft(ctx);
+			expr.template each<FunctionalType &>(ft);
+			return ft.type;
+		}
+
+		inline static int order(const Equations<Eqs...> &expr, const AssemblyContext &ctx)
+		{
+			FunctionalOrder fo(ctx);
+			expr.template each<FunctionalOrder &>(fo);
+			return fo.order;
+		}
+	};
 }
 
 #endif //UTOPIA_EQUATIONS_HPP

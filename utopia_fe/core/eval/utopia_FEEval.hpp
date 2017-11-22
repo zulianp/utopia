@@ -19,6 +19,7 @@
 #include "utopia_FEEval_Unary.hpp"
 #include "utopia_FEEval_Number.hpp"
 #include "utopia_FEEval_Wrapper.hpp"
+#include "utopia_FEEval_Equality.hpp"
 
 
 #endif //UTOPIA_FE_EVAL_HPP

@@ -82,7 +82,6 @@ namespace utopia {
 			t = r;
 		}
 
-
 		template<class Left, class Right, class Matrix, class Vector>
 		static void apply(
 					const Equality<Left, Right> &expr, 
@@ -94,6 +93,31 @@ namespace utopia {
 			apply(expr.right(), vec, ctx);
 		}
 
+		template<class Matrix, class Vector>
+		class EquationAssembler {
+		public:
+			EquationAssembler(Matrix &mat, Vector &vec, AssemblyContext<LIBMESH_TAG> &ctx) 
+			: mat(mat), vec(vec), ctx(ctx) {}
+
+			template<class Eq>
+			void operator()(const int index, const Eq &eq) {
+				FormEval<Form, LIBMESH_TAG>::apply(eq, mat_buff, vec_buff, ctx); 
+				if(empty(mat)) {
+					mat = mat_buff;
+					vec = vec_buff;
+				} else {
+					mat += mat_buff;
+					vec += vec_buff;
+				}
+			};
+
+			Matrix &mat;
+			Vector &vec;
+
+			Matrix mat_buff;
+			Vector vec_buff;
+			AssemblyContext<LIBMESH_TAG> &ctx;
+		};
 
 		template<class... Eq, class Matrix, class Vector>
 		static void apply(
@@ -102,7 +126,9 @@ namespace utopia {
 			Wrapper<Vector, 1> &vec, 
 			AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			FEBackend<LIBMESH_TAG>::init_context(eqs, ctx);
+			// FEBackend<LIBMESH_TAG>::init_context(eqs, ctx);
+			EquationAssembler<Wrapper<Matrix, 2>, Wrapper<Vector, 1>> eq_ass(mat, vec, ctx);
+			eqs.each(eq_ass);
 		}
 
 		template<class Left, class Right, class Tensor>

@@ -186,7 +186,19 @@ namespace utopia {
 		static const int value = 1;
 	};
 
+	template<class Expr, class First, class... Rest>
+	class IsSubTree<Expr, Equations<First, Rest...>> {
+	public:
+		static const int first_value = IsSubTree<Expr, First>::value;
+		static const int rest_value  = IsSubTree<Expr, Equations<Rest...>>::value; 
+		static const int value =  (first_value > rest_value)? first_value : rest_value;
+	};
 
+	template<class Expr, class Eq>
+	class IsSubTree<Expr, Equations<Eq> > {
+	public:
+		static const int value = IsSubTree<Expr, Eq>::value;
+	};
 
 	///rest of specializations
 }

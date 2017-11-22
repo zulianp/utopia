@@ -36,7 +36,6 @@ namespace utopia {
 			return fe_;
 		}
 
-
 		inline std::vector< std::unique_ptr<FE> > &test()		
 		{
 			return fe_;
@@ -85,23 +84,6 @@ namespace utopia {
 			std::cout << "init_linear: quadrature_order: " << quadrature_order_ << std::endl;
 		}
 
-
-		// static void collect_dof_indices(const libMesh::Elem * elem_ptr,
-		// 							    const ProductFunctionSpace<LibMeshFunctionSpace> &space,
-		// 							    std::vector<libMesh::dof_id_type> &prod_indices)
-		// {
-		// 	std::vector<libMesh::dof_id_type> indices;
-		// 	prod_indices.clear();
-
-		// 	const auto &sub_0 = space.subspace(0);
-		// 	const auto &dof_map  = sub_0.dof_map();
-
-		// 	space.each([&](const int sub_index, const LibMeshFunctionSpace &space) {
-		// 		dof_map.dof_indices(elem_ptr, indices, space.subspace_id());
-		// 		prod_indices.insert(prod_indices.end(), indices.begin(), indices.end());
-		// 	});
-		// }
-
 		template<class Expr>
 		static std::shared_ptr<LibMeshFunctionSpace> find_any_space(const Expr &expr)
 		{
@@ -137,9 +119,6 @@ namespace utopia {
 				offset[i+1] = offset[i] + libMesh::FEInterface::n_shape_functions(dim, fe_type, type);
 			}
 		}
-
-	
-		
 
 		template<class Expr>		
 		void init_fe_flags(const Expr &expr)
@@ -179,138 +158,6 @@ namespace utopia {
 			}
 		}
 
-		// template<class Expr>
-		// void init_test_fe(const Expr &expr)
-		// {
-		// 	static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function" );
-		// 	auto test_space_ptr = test_space<LibMeshFunctionSpace>(expr);
-
-
-
-		// 	if(test_space_ptr) {
-		// 		test_space_ptr->initialize();
-		// 		quadrature_order_ = functional_order(expr, *this);
-		// 		not_null_test_ = test_space_ptr->subspace_id();
-				
-		// 		test_.resize(test_space_ptr->equation_system().n_vars());
-
-		// 		const int dim = test_space_ptr->mesh().mesh_dimension();
-		// 		const libMesh::Elem * elem = test_space_ptr->mesh().elem(current_element_);
-		// 		set_up_quadrature(dim, quadrature_order_, elem);
-
-		// 		auto test_fe = libMesh::FEBase::build(dim, test_space_ptr->type());
-		// 		test_fe->attach_quadrature_rule(quad_test().get());
-		// 		init_test_fe_flags(expr, *test_fe);
-		// 		test_fe->reinit(elem);
-				
-		// 		test_[test_space_ptr->subspace_id()] = std::move(test_fe);
-		// 		block_id_ = elem->subdomain_id();
-
-		// 		test_space_ptr->dof_map().dof_indices(elem, test_dof_indices, test_space_ptr->subspace_id());
-		// 		// n_local_test_dofs = test_space_ptr->dof_map().n_local_dofs();
-
-		// 	} else {
-		// 		auto prod_test_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
-		// 		assert(prod_test_space_ptr.get());
-
-
-		// 		prod_test_space_ptr->each([](const int, LibMeshFunctionSpace &subspace) {
-		// 			subspace.initialize();
-		// 		});
-
-		// 		quadrature_order_ = functional_order(expr, *this);
-
-		// 		//use sub0 for init geometric info
-		// 		const auto &sub_0 = prod_test_space_ptr->subspace(0);
-		// 		not_null_test_ = sub_0.subspace_id();
-		// 		test_.resize(sub_0.equation_system().n_vars());
-		// 		const int dim = sub_0.mesh().mesh_dimension();
-		// 		const libMesh::Elem * elem = sub_0.mesh().elem(current_element_);
-		// 		set_up_quadrature(dim, quadrature_order_, elem);
-		// 		block_id_ = elem->subdomain_id();
-
-		// 		prod_test_space_ptr->each([&](const int, LibMeshFunctionSpace &subspace) {
-		// 			auto test_fe = libMesh::FEBase::build(dim, subspace.type());
-		// 			test_fe->attach_quadrature_rule(quad_test().get());
-		// 			init_test_fe_flags(expr, *test_fe);
-		// 			test_fe->reinit(elem);
-		// 			test_[subspace.subspace_id()] = std::move(test_fe);
-		// 		});
-
-		// 		collect_dof_indices(elem, *prod_test_space_ptr, test_dof_indices);
-		// 		// n_local_test_dofs = sub_0.dof_map().n_local_dofs();
-		// 	}
-
-
-		// 	init_offsets(expr);
-		// }
-
-
-
-		// template<class Expr>
-		// void init_trial_fe(const Expr &expr)
-		// {
-		// 	static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find trial function" );
-		// 	trial_.clear();
-
-		// 	auto trial_space_ptr = trial_space<LibMeshFunctionSpace>(expr);
-		// 	auto test_space_ptr  = test_space<LibMeshFunctionSpace>(expr);
-
-		// 	if(trial_space_ptr && trial_space_ptr == test_space_ptr) return;
-
-		// 	if(trial_space_ptr) {
-		// 		trial_space_ptr->initialize();
-		// 		trial_.resize(trial_space_ptr->equation_system().n_vars());
-
-		// 		const int dim = trial_space_ptr->mesh().mesh_dimension();
-		// 		const libMesh::Elem * elem = trial_space_ptr->mesh().elem(current_element_);
-
-		// 		auto trial_fe = libMesh::FEBase::build(dim, trial_space_ptr->type());
-		// 		trial_fe->attach_quadrature_rule(quad_trial().get());
-		// 		init_trial_fe_flags(expr, *trial_fe);
-		// 		trial_fe->reinit(elem);
-				
-		// 		trial_[trial_space_ptr->subspace_id()] = std::move(trial_fe);
-		// 		block_id_ = elem->subdomain_id();
-
-		// 		trial_space_ptr->dof_map().dof_indices(elem, trial_dof_indices, trial_space_ptr->subspace_id());
-		// 		// n_local_trial_dofs = trial_space_ptr->dof_map().n_local_dofs();
-		// 	} else {
-		// 		auto prod_trial_space_ptr = trial_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
-		// 		auto prod_test_space_ptr  = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
-
-		// 		if(prod_trial_space_ptr == prod_test_space_ptr) return;
-
-		// 		assert(prod_trial_space_ptr.get());
-
-		// 		prod_trial_space_ptr->each([](const int, LibMeshFunctionSpace &subspace) {
-		// 			subspace.initialize();
-		// 		});
-
-		// 		quadrature_order_ = functional_order(expr, *this);
-
-		// 		//use sub0 for init geometric info
-		// 		const auto &sub_0 = prod_trial_space_ptr->subspace(0);
-		// 		trial_.resize(sub_0.equation_system().n_vars());
-		// 		const int dim = sub_0.mesh().mesh_dimension();
-		// 		const libMesh::Elem * elem = sub_0.mesh().elem(current_element_);
-		// 		set_up_quadrature(dim, quadrature_order_, elem);
-		// 		block_id_ = elem->subdomain_id();
-
-		// 		prod_trial_space_ptr->each([&](const int, LibMeshFunctionSpace &subspace) {
-		// 			auto trial_fe = libMesh::FEBase::build(dim, subspace.type());
-		// 			trial_fe->attach_quadrature_rule(quad_trial().get());
-		// 			init_trial_fe_flags(expr, *trial_fe);
-		// 			trial_fe->reinit(elem);
-		// 			trial_[subspace.subspace_id()] = std::move(trial_fe);
-		// 		});
-
-
-		// 		collect_dof_indices(elem, *prod_trial_space_ptr, trial_dof_indices);
-		// 		// n_local_trial_dofs = sub_0.dof_map().n_local_dofs();
-		// 	} 
-		// }
-
 		void init_tensor(Vector &v, const bool reset);
 		void init_tensor(Matrix &v, const bool reset);
 
@@ -345,14 +192,10 @@ namespace utopia {
 		long current_element_;
 		int block_id_;
 		bool reset_quadrature_;
-
-
+		
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
 		std::vector< std::unique_ptr<FE> > fe_;
-
-
-
 
 		inline std::size_t n_shape_functions() const
 		{
@@ -363,16 +206,6 @@ namespace utopia {
 
 			return ret;
 		}
-
-		// inline std::size_t n_test_functions() const
-		// {
-		// 	std::size_t ret = 0;
-		// 	for(auto &t_ptr : test()) {
-		// 		if(t_ptr) ret += t_ptr->n_shape_functions();
-		// 	}
-
-		// 	return ret;
-		// }
 
 		void set_up_quadrature(const int dim, const int quadrature_order, const libMesh::Elem * elem)
 		{
@@ -385,56 +218,6 @@ namespace utopia {
 				assert((static_cast<bool>(quad_test_)));
 			}
 		}
-
-		template<class Expr>
-		void init_test_fe_flags(const Expr &, FE &test_fe) {
-			//FIXME detect if necessary to compute
-			test_fe.get_xyz();
-			test_fe.get_JxW();
-
-			if(IsSubTree<Gradient<TestFunction<utopia::Any>>, Expr>::value) {
-				test_fe.get_dphi();
-			}
-
-			if(IsSubTree<TestFunction<utopia::Any>, Expr>::value) {
-				test_fe.get_phi();
-			}
-
-			if(IsSubTree<Divergence<TestFunction<utopia::Any>>, Expr>::value) {
-				// test_fe.get_div_phi();
-				test_fe.get_dphi();
-			}
-
-			if(IsSubTree<Curl<TestFunction<utopia::Any>>, Expr>::value) {
-				// test_fe.get_curl_phi();
-				test_fe.get_dphi();
-			}
-		}
-
-		template<class Expr>
-		void init_trial_fe_flags(const Expr &, FE &trial_fe) {
-			//FIXME detect if necessary to compute
-			// trial_fe.get_xyz();
-
-			if(IsSubTree<Gradient<TrialFunction<utopia::Any>>, Expr>::value) {
-				trial_fe.get_dphi();
-			}
-
-			if(IsSubTree<TrialFunction<utopia::Any>, Expr>::value) {
-				trial_fe.get_phi();
-			}
-
-			if(IsSubTree<Divergence<TrialFunction<utopia::Any>>, Expr>::value) {
-				// trial_fe.get_div_phi();
-				trial_fe.get_dphi();
-			}
-
-			if(IsSubTree<Curl<TrialFunction<utopia::Any>>, Expr>::value) {
-				// trial_fe.get_curl_phi();
-				trial_fe.get_dphi();
-			}
-		}
-
 
 		class FEInitializer {
 		public:

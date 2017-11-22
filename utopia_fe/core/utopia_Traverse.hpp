@@ -811,6 +811,57 @@ namespace utopia {
 		return visitor.visit(expr);
 	}
 
+	template<class Eq, class Visitor>
+	inline static int traverse(const Equations<Eq> &expr, Visitor &visitor)
+	{
+		const int ret = visitor.visit(expr);
+		switch(ret)
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.template get<0>(), visitor);
+			}
+			default: {
+				return ret;
+			}
+		}
+	}
+
+	template<class Visitor>
+	class EquationsTraverse {
+	public:
+		EquationsTraverse(Visitor &visitor)
+		: visitor(visitor), traverse_command(TRAVERSE_CONTINUE) {}
+
+		template<class Eq>
+		inline void operator()(const int, Eq &eq) {
+			if(traverse_command == TRAVERSE_STOP) return;
+			traverse_command = traverse(eq, visitor);
+		}
+
+		Visitor &visitor;
+		int traverse_command;
+	};
+
+	template<class... Eqs, class Visitor>
+	inline static int traverse(const Equations<Eqs...> &expr, Visitor &visitor)
+	{
+		const int ret = visitor.visit(expr);
+		switch(ret)
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				EquationsTraverse<Visitor> eq_traverse(visitor);
+				expr.each(eq_traverse);
+				return eq_traverse.traverse_command;
+			}
+			
+			default: 
+			{
+				return ret;
+			}
+		}
+	}
 
 	template<class Expr>
 	class FindExpression {

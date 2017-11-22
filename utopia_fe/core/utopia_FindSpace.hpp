@@ -180,7 +180,7 @@ namespace utopia {
 	template<class Space, class Expr>
 	inline auto find_space(const Expr &tree) -> Space &
 	{
-		return find_test_space(tree);
+		return find_test_space<Space>(tree);
 	}
 
 	template<class Mesh, class Expr>
