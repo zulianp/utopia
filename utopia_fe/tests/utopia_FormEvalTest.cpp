@@ -140,11 +140,12 @@ namespace utopia {
 		}	
 
 
-		disp(mat);
-		disp(vec);
+		// disp(mat);
+		// disp(vec);
 
 		sol = local_zeros(local_size(vec));
-		if(!solve(mat, vec, sol)) {
+		Factorization<DSMatrixd, DVectord> solver;
+		if(!solver.solve(mat, vec, sol)) {
 			return false;
 		}
 		
@@ -152,7 +153,9 @@ namespace utopia {
 		DVectord residual = mat * sol - vec;
 		double norm_r = norm2(residual);
 		std::cout << "norm_r: " << norm_r << std::endl;
-		disp(sol);
+		// disp(sol);
+
+		// write("u_matrix_new.m", mat);
 		return false;
 	}
 
@@ -596,7 +599,7 @@ namespace utopia {
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
-			10, 10,
+			25, 25,
 			0, 1.,
 			0, 1.,
 			libMesh::QUAD4);
@@ -606,7 +609,6 @@ namespace utopia {
 
 		equation_systems = std::make_shared<libMesh::EquationSystems>(*lm_mesh);
 		fun(lm_test, equation_systems);
-
 	}
 
 	void run_libmesh_eval_test(libMesh::LibMeshInit &init)
@@ -748,7 +750,10 @@ namespace utopia {
 			auto u = trial(V);
 			auto v = test(V);
 
+
+			//FIXME: treat different components separately: is there a nicer way?
 			auto uy = trial(Vy);
+			auto ux = trial(Vx);
 
 
 			const double mu = 1;
@@ -762,12 +767,13 @@ namespace utopia {
 			DVectord sol;
 			const bool success = solve(
 				equations(
-					// integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) == inner(coeff(z), v) * dX
-					inner(grad(u), grad(v)) * dX == inner(coeff(z), v) * dX
+					((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) * dX == inner(coeff(z), v) * dX
+
 				),
 				constraints(
-					boundary_conditions(uy == coeff(0.1),  {0}),
-					boundary_conditions(uy == coeff(-0.1), {2})
+					boundary_conditions(uy == coeff(0.2),  {0}),
+					boundary_conditions(uy == coeff(-0.2), {2}),
+					boundary_conditions(ux == coeff(0.0),  {0, 2})
 				),
 				sol);
 

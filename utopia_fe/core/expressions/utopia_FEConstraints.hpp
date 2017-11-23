@@ -44,6 +44,16 @@ namespace utopia {
 		std::tuple<Constraint...> eqs_;
 	};
 
+	template<>
+	class FEConstraints<> {
+	public:
+		template<class Fun>
+		void each(Fun fun) const
+		{
+
+		}
+	};
+
 	template<class... Constraint>
 	inline FEConstraints<Constraint...> constraints(const Constraint &... eqs)
 	{

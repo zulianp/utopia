@@ -8,6 +8,8 @@
 #include "utopia_libmesh_Types.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_libmesh_FunctionalTraits.hpp"
+#include "utopia_libmesh_Utils.hpp"
+
 #include "utopia_fe_core.hpp"
 
 #include "libmesh/fe.h"
@@ -73,7 +75,7 @@ namespace utopia {
 			static_assert( (IsSubTree<TrialFunction<utopia::Any>, Expr>::value), "could not find trial function" );
 			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function"  );
 			init_fe_from(expr);
-			std::cout << "init_bilinear: quadrature_order: " << quadrature_order_ << std::endl;
+			// std::cout << "init_bilinear: quadrature_order: " << quadrature_order_ << std::endl;
 		}
 
 		template<class Expr>
@@ -81,7 +83,7 @@ namespace utopia {
 		{	
 			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function"  );	
 			init_fe_from(expr);
-			std::cout << "init_linear: quadrature_order: " << quadrature_order_ << std::endl;
+			// std::cout << "init_linear: quadrature_order: " << quadrature_order_ << std::endl;
 		}
 
 		template<class Expr>
@@ -133,10 +135,20 @@ namespace utopia {
 			auto space_ptr = find_any_space(expr);
 			space_ptr->initialize();
 			quadrature_order_ = functional_order(expr, *this);
-			init_offsets(expr);
-			
 			const int dim = space_ptr->mesh().mesh_dimension();
 			const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
+
+			if(is_quad(elem->type())) {
+				const int temp = quadrature_order_/2;
+				quadrature_order_ = (temp + 1) * 2;
+			} else if(is_hex(elem->type())) {
+				const int temp = quadrature_order_/2;
+				quadrature_order_ = (temp + 2) * 2;
+			}
+
+			init_offsets(expr);
+			
+
 			set_up_quadrature(dim, quadrature_order_, elem);
 			block_id_ = elem->subdomain_id();
 

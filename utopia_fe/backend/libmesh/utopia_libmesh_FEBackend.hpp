@@ -444,10 +444,11 @@ namespace utopia {
 			const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_phi()[0].size();
 			const uint dim = space[0].mesh().mesh_dimension();
 
+
 			uint n_shape_functions = 0;
-			for(auto &t : fe_object) {
-				if(t) n_shape_functions += t->n_shape_functions();
-			}
+			space.each([&fe_object, &n_shape_functions](const int, const LibMeshFunctionSpace &subspace) {
+				n_shape_functions += fe_object[subspace.subspace_id()]->n_shape_functions();
+			});
 
 			ret.resize(n_shape_functions); 
 			for(std::size_t i = 0; i < n_shape_functions; ++i) {
@@ -783,8 +784,8 @@ namespace utopia {
 		template<class Left, class Right>
 		inline static JacobianType grad_t_plus_grad(const double scaling, const Left &left, const Right &right, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			JacobianType ret = grad(right, ctx);
-			auto && grad_left = grad(left, ctx);
+			JacobianType ret  = grad(right, ctx);
+			auto && grad_left = grad(left,  ctx);
 
 			for(std::size_t i = 0; i < ret.size(); ++i) {
 				for(std::size_t qp = 0; qp < ret[i].size(); ++qp) {
