@@ -500,66 +500,6 @@ namespace utopia {
 
      /** @}*/
 
-
-    //-----------------------------------------------------------------------------------------
-    //TOREMOVE all the functions below the line
-
-    inline Factory<LocalZeros, 2> localZeros(const Size::SizeType rows, const Size::SizeType cols)
-    {
-        return Factory<LocalZeros, 2>(Size({rows, cols}));
-    }
-
-    ///@deprecated
-    inline Factory<LocalZeros, 1> localZeros(const Size::SizeType n)
-    {
-        return Factory<LocalZeros, 1>(Size({n}));
-    }
-
-    ///@deprecated
-    inline Factory<LocalZeros, utopia::DYNAMIC> localZeros(const Size &size)
-    {
-        return Factory<LocalZeros, utopia::DYNAMIC>(size);
-    }
-
-    ///@deprecated
-    template<typename T>
-    inline Factory<LocalValues<T>, 2> localValues(const Size::SizeType rows, const Size::SizeType cols, T value)
-    {
-        return Factory<LocalValues<T>, 2>(Size({rows, cols}), LocalValues<T>(value));
-    }
-
-    ///@deprecated
-    template<typename T>
-    inline Factory<LocalValues<T>, 1> localValues(const Size::SizeType rows, T value)
-    {
-        return Factory<LocalValues<T>, 1>(Size({rows, 1}), LocalValues<T>(value));
-    }
-
-
-    ///@deprecated
-    inline Factory<LocalIdentity, 2> localIdentity(const Size::SizeType rows, const Size::SizeType cols)
-    {
-        return Factory<LocalIdentity, 2>(Size({rows, cols}));
-    }
-
-    ///@deprecated
-    inline Factory<LocalIdentity, 2> localIdentity(const Size &size)
-    {
-        return Factory<LocalIdentity, 2>(size);
-    }
-
-    ///nnzXRowOrCol depends if your using a row-major or col-major sparse storage
-    ///@deprecated use local_sparse
-    template<typename T>
-    inline Factory<LocalNNZ<T>, 2> localSparse(const Size::SizeType rows, const Size::SizeType cols, T nnzXRowOrCol)
-    {
-        return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnzXRowOrCol));
-    }
-
-
-
-
-
 }
 
 #endif //UTOPIA_UTOPIA_FACTORY_HPP

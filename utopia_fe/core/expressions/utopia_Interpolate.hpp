@@ -3,7 +3,10 @@
 
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_FEForwardDeclarations.hpp"
+#include "utopia_Any.hpp"
 
+#include <utility>
 
 namespace utopia {
 
@@ -17,8 +20,9 @@ namespace utopia {
 			Order = Traits<Coefficient>::Order
 		};
 
-		Interpolate(const Coefficient &coeff, Fun &fun)
-		: coeff_(coeff), fun_(fun)
+		template<class Coeff>
+		Interpolate(Coeff &&coeff, Fun &fun)
+		: coeff_(std::forward<Coeff>(coeff)), fun_(fun)
 		{}
 
 		inline Fun &fun()
@@ -46,9 +50,12 @@ namespace utopia {
 		}
 
 	private:
-		Coefficient coeff_;
+		UTOPIA_STORE(Coefficient) coeff_;
 		UTOPIA_STORE(Fun) fun_;	
 	};
+
+	template<>
+	class Interpolate<Any, Any> {};
 
 	template<class Coefficient, class Fun>
 	class Traits< Interpolate<Coefficient, Fun> > : public Traits<Coefficient> {
@@ -56,19 +63,25 @@ namespace utopia {
 	
 	};
 
-		
 
 	template<class Coefficient, class Fun>
-	inline Interpolate<Coefficient, Fun> interpolate(const Coefficient &coeff, Fun &fun)
+	inline Interpolate<Coefficient, Fun> interpolate(Coefficient &coeff, Fun &fun)
 	{
 		return Interpolate<Coefficient, Fun>(coeff, fun);
 	}
 
 
 	template<class Coefficient, class Fun, class Tensor>
-	inline Interpolate<Coefficient, Fun> interpolate(const Coefficient &coeff, Fun &fun, Tensor &&tensor)
+	inline Interpolate<Coefficient, Fun> interpolate(Coefficient &coeff, Fun &fun, Tensor &&tensor)
 	{
 		return Interpolate<Coefficient, Fun>(coeff, fun, tensor);
+	}
+
+	//FIXME: Deprecated remove once refactor is finished
+	template<class T, int Order, class Fun, class Tensor>
+	inline Interpolate<ConstantCoefficient<T, Order>, Fun> interpolate(const ConstantCoefficient<T, Order> &coeff, Fun &fun, Tensor &&tensor)
+	{
+		return Interpolate<ConstantCoefficient<T, Order>, Fun>(coeff, fun, tensor);
 	}
 	
 }

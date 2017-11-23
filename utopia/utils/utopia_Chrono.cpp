@@ -72,7 +72,7 @@ namespace utopia {
 		gettimeofday(&realtime_end_, NULL);
 		start_time_ms = (realtime_start_.tv_sec * 1000000.0) + realtime_start_.tv_usec;
 		end_time_ms   = (realtime_end_.tv_sec * 1000000.0) + realtime_end_.tv_usec;
-		realtime_duration_ = end_time_ms - start_time_ms;
+		realtime_duration_ = (end_time_ms - start_time_ms) * 1e-6;
 #endif //WIN32
 	}
 

@@ -235,6 +235,12 @@ namespace utopia {
 			return v[i][qp];
 		}
 
+		template<typename T>
+		inline static const T &get(const std::vector<T> &v, const std::size_t qp, const std::size_t)
+		{
+			return v[qp];
+		}
+
 		template<typename T, int Order>
 		inline static const T get(const ConstantCoefficient<T, Order> &c, const std::size_t qp, const std::size_t i)
 		{
@@ -652,7 +658,8 @@ namespace utopia {
 
 			for(std::size_t i = 0; i < n_shape_functions; ++i) {
 				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
-					ret[qp] += element_values.get(i) * g[i][qp];
+					// ret[qp] += element_values.get(i) * g[i][qp];
+					add(ret[qp], element_values.get(i) * g[i][qp]);
 				}
 			}
 
@@ -670,6 +677,17 @@ namespace utopia {
 				}
 			}
 		}
+
+		static void add(Vector &v, const VectorValueT &t)
+		{
+			auto s = size(v);
+			Write<Vector> w_v(v);
+
+			for(int i = 0; i < s.get(0); ++i) {
+					v.add(i, t(i));
+			}
+		}
+
 
 		template<class Tensor>
 		static std::vector<Matrix> grad(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace> > > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
@@ -969,6 +987,14 @@ namespace utopia {
 			return ret;
 		}
 
+		template<typename T1, typename T2>
+		inline static auto multiply(const std::vector<std::vector<T1>> &left, const std::vector<std::vector<T2>> &right, AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<std::vector<decltype(T1() * T2())>>
+		{
+			std::vector<std::vector<decltype(T1() * T2())>> ret(left.size());
+
+			return ret;
+		}
+
 		template<class Space>
 		inline static auto multiply(const std::vector<Matrix> &left, const TrialFunction<Space> &right, AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(fun(right, ctx))>::type
 		{
@@ -981,6 +1007,26 @@ namespace utopia {
 				for(std::size_t i = 0; i < n_functions; ++i) {
 					auto v = ret[i][qp];
 					multiply(left[qp], v, ret[i][qp]);
+				}
+			}
+
+			return ret;
+		}
+
+
+		inline static auto multiply(const std::vector<Vector> &left, const TrialFunction<LibMeshFunctionSpace> &right, AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<std::vector<Vector>> 
+		{
+			const auto &f = fun(right, ctx);
+			std::vector<std::vector<Vector>> ret(f.size());
+
+			const std::size_t n_quad_points = left.size();
+			const std::size_t n_functions = ret.size();
+			
+			for(std::size_t i = 0; i < n_functions; ++i) {
+				ret[i].resize(left.size());
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+						// multiply(left[qp], f[i][qp], ret[i][qp]);
+					ret[i][qp] = f[i][qp] * left[qp];
 				}
 			}
 

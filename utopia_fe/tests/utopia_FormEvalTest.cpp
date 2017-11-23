@@ -16,8 +16,10 @@
 #include "utopia_FEConstraints.hpp"
 #include "utopia_FindSpace.hpp"
 #include "utopia_IsForm.hpp"
+#include "utopia_NonLinearFEFunction.hpp"
 
 #include "libmesh/exodusII_io.h"
+#include <algorithm>
 
 namespace utopia {
 
@@ -91,7 +93,9 @@ namespace utopia {
 		auto &m = space.mesh();
 		auto &dof_map = space.dof_map();
 
-		auto nnz_x_row = dof_map.n_local_dofs(); //FIXME
+		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+								  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+
 		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 		vec = local_zeros(dof_map.n_local_dofs());
 
@@ -101,6 +105,95 @@ namespace utopia {
 		for(auto it = elements_begin(m); it != elements_end(m); ++it) {
 			element_assemble_expression_v<FunctionSpaceT>(it, equation, mat, vec);
 		}
+	}
+
+	template<class Matrix, class Vector, class Eqs>
+	class NonLinearFEFunction : public Function<Matrix, Vector> {
+	public:
+		DEF_UTOPIA_SCALAR(Matrix)
+
+		NonLinearFEFunction(const Eqs &eqs)
+		: eqs_(eqs), first_(true)
+		{}
+
+		virtual ~NonLinearFEFunction() { }
+
+		virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const 
+		{
+			assert(false && "not implemented");
+		    return 1.;
+		}
+
+		virtual bool gradient(const Vector &x, Vector &result) const
+		{
+			result = buff_mat * x - buff_vec;
+		    return true;
+		}
+
+
+		virtual bool hessian(const Vector &, Matrix &H) const
+		{
+			H = buff_mat;
+		    return true;
+		}
+
+		virtual bool update(const Vector &x) { 
+			typedef decltype(eqs_.template get<0>()) Eq1;
+			typedef typename FindFunctionSpace<Eq1>::Type FunctionSpaceT;
+			auto &space = find_space<FunctionSpaceT>(eqs_);
+
+			if(first_) {
+				auto &dof_map = space.dof_map();
+				auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+										  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+				
+				buff_mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+				buff_vec = local_zeros(dof_map.n_local_dofs());
+			} else {
+				buff_mat *= 0.;
+				buff_vec *= 0.;
+			}
+
+			{
+				Write<DSMatrixd> w_m(buff_mat);
+				Write<DVectord>  w_v(buff_vec);
+
+				auto &m = space.mesh();
+
+				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+					element_assemble_expression_v<FunctionSpaceT>(it, eqs_, buff_mat, buff_vec);
+				}
+			}	
+
+			return true;
+		};
+
+		bool first_;
+		Eqs eqs_;
+
+		Matrix buff_mat;
+		Vector buff_vec;
+	};
+
+
+	template<class... Eqs, class... Constr>
+	bool nl_solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol)
+	{
+		typedef typename GetFirst<Eqs...>::Type Eq1Type;
+		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
+		
+		
+		FEBackend<LIBMESH_TAG>::init_constraints(constr);
+
+		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
+		space.initialize();
+
+		sol = local_zeros(space.dof_map().n_local_dofs());
+
+		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs);
+		Newton<DSMatrixd, DVectord> solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
+		solver.verbose(true);
+		return solver.solve(nl_fun, sol);
 	}
 
 
@@ -120,8 +213,8 @@ namespace utopia {
 		space.initialize();
 		auto &m = space.mesh();
 		auto &dof_map = space.dof_map();
-		auto nnz_x_row = dof_map.n_local_dofs(); //FIXME
-
+		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+								  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
 		DSMatrixd mat;
 		DVectord vec;
@@ -148,6 +241,8 @@ namespace utopia {
 		if(!solver.solve(mat, vec, sol)) {
 			return false;
 		}
+
+		//if non-linear
 		
 
 		DVectord residual = mat * sol - vec;
@@ -338,9 +433,13 @@ namespace utopia {
 			auto l_form_1 =  integral(inner(coeff(1.), q));
 			auto l_form_2 =  integral(inner(coeff(r_v), v));
 
-			assemble_bilinear_and_print(b_form_11 + b_form_12 + b_form_21);
-			assemble_linear_and_print(l_form_1 + l_form_2);
+			auto lhs = b_form_11 + b_form_12 + b_form_21;
+			auto rhs = l_form_1 + l_form_2;
 
+			assemble_bilinear_and_print(lhs);
+			assemble_linear_and_print(rhs);
+
+			static_assert(IsSubTree<Interpolate<Any, Any>, decltype(lhs)>::value, "non-linear term not detected");
 		}
 
 		static void run_vector_form_eval_test(const std::shared_ptr<SpaceInput> &space_input)
@@ -599,7 +698,7 @@ namespace utopia {
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
-			25, 25,
+			10, 10,
 			0, 1.,
 			0, 1.,
 			libMesh::QUAD4);
@@ -750,11 +849,8 @@ namespace utopia {
 			auto u = trial(V);
 			auto v = test(V);
 
-
-			//FIXME: treat different components separately: is there a nicer way?
-			auto uy = trial(Vy);
-			auto ux = trial(Vx);
-
+			auto ux = u[0];
+			auto uy = u[1];
 
 			const double mu = 1;
 			const double lambda = 1;
@@ -784,6 +880,40 @@ namespace utopia {
 			libMesh::ExodusII_IO(Vx.mesh()).write_equation_systems ("test_elasticity.e", *es);
 		});
 
+
+		run_libmesh_test(init, [](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			
+			//create system of equations
+			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("non_linear_laplacian");
+
+			//space for u
+			auto V = LibMeshFunctionSpace(es);
+
+			auto u = trial(V);
+			auto v = test(V);
+			
+			DVectord sol;
+			auto uk = interpolate(sol, u);
+
+			if(nl_solve(
+				equations(
+					(inner(grad(u), grad(v)) + inner(grad(uk) * u, grad(v))) * dX == inner(coeff(0.0), v) * dX
+				),
+				constraints(
+					boundary_conditions(u == coeff(-0.2), {1}),
+					boundary_conditions(u == coeff(0.2),  {2})
+				),
+				sol)) {
+				//go back to libmesh
+				convert(sol, *sys.solution);
+				sys.solution->close();
+				libMesh::ExodusII_IO(V.mesh()).write_equation_systems ("non_linear_laplacian.e", *es);
+			} else {
+				std::cerr << "[Error] solver failed to converge" << std::endl;
+			}
+		});
 
 		/////////////////////////////////////////////////////////////////////
 	}

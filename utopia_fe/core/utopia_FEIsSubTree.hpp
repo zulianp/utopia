@@ -200,6 +200,14 @@ namespace utopia {
 		static const int value = IsSubTree<Expr, Eq>::value;
 	};
 
+	//interpolate
+	template<class T1, class T2>
+	class IsSubTree< Interpolate<utopia::Any, utopia::Any>, Interpolate<T1, T2> > {
+	public:
+		static const int value = 1;
+	};
+
+
 	///rest of specializations
 }
 
