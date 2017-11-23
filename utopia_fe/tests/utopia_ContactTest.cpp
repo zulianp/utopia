@@ -264,7 +264,7 @@ namespace utopia {
 			// contact_flags = {{1, 2}};
 			contact_flags = {{2, 1}};
 			search_radius = 0.1;
-			dt = .0001;
+			dt = .001;
 			n_steps = 300;
 			dynamic_contact = true;
 		}

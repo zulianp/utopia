@@ -658,16 +658,13 @@ namespace utopia {
 		displacement_increment = transfer_operator * (orthogonal_trafo * sol_c);		
 		total_displacement += displacement_increment;
 
+
 		new_internal_force = stiffness_matrix * total_displacement;
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
 
-		//compute acceleration
-		DVectord dt_x_M_x_acc = (dt/2.) * (2. * external_force - internal_force - new_internal_force);
-		DVectord vel_inc = local_zeros(local_size(dt_x_M_x_acc));
-		apply_zero_boundary_conditions(spaces[0]->dof_map(), dt_x_M_x_acc);
-		// solve(mass_matrix, dt_x_M_x_acc, vel_inc);
-		vel_inc = e_mul(inverse_mass_vector, dt_x_M_x_acc);
-
+		DVectord Fcon_m_F = (-2./dt) * (internal_mass_matrix * (pred - displacement_increment));
+		apply_zero_boundary_conditions(spaces[0]->dof_map(), Fcon_m_F);
+		DVectord vel_inc  = e_mul(inverse_mass_vector, Fcon_m_F);
 		velocity += vel_inc;
 
 		// velocity = 1/dt * displacement_increment;
