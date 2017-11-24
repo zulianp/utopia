@@ -79,6 +79,15 @@ namespace utopia {
 		{
 			return equation_systems_->get_system(system_num_);
 		}
+
+		inline libMesh::EquationSystems &equation_systems() {
+			return *equation_systems_;
+		}
+
+		inline const libMesh::EquationSystems &equation_systems() const
+		{
+			return *equation_systems_;
+		}
 		
 		inline libMesh::MeshBase &mesh() { return equation_systems_->get_mesh(); }
 		inline const libMesh::MeshBase &mesh() const { return equation_systems_->get_mesh(); }

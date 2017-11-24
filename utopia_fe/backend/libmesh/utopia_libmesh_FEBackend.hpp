@@ -612,31 +612,29 @@ namespace utopia {
 			}
 		}
 
-		// template<class Tensor, class Space>
-		// static std::vector<Scalar> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<Space> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
-		// {
-		// 	auto &c  = interp.coefficient();
-		// 	auto &f  = interp.fun();
-		// 	auto &&g = fun(f, ctx);
+		template<class Tensor, class Space>
+		static std::vector<Scalar> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<Space> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			auto &c  = interp.coefficient();
+			auto &f  = interp.fun();
+			auto &&g = fun(f, ctx);
 
-		// 	Vector element_values;
-		// 	gather_interp_values(interp, element_values, ctx);
+			Vector element_values;
+			gather_interp_values(interp, element_values, ctx);
 
-		// 	const std::size_t n_shape_functions = g.size();
-		// 	const std::size_t n_quad_points = g[0].size();
+			const std::size_t n_shape_functions = g.size();
+			const std::size_t n_quad_points = g[0].size();
 
-		// 	std::vector<Scalar> ret(n_quad_points, 0.);
+			std::vector<Scalar> ret(n_quad_points, 0.);
 
-		// 	for(std::size_t i = 0; i < n_shape_functions; ++i) {
-		// 		for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
-		// 			ret[qp] += g[i][qp] * element_values.get(i);
-		// 		}
-		// 	}
+			for(std::size_t i = 0; i < n_shape_functions; ++i) {
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					ret[qp] += g[i][qp] * element_values.get(i);
+				}
+			}
 
-		// 	return ret;
-		// }
-
-
+			return ret;
+		}
 	
 		template<class Tensor, class Space>
 		static std::vector<DenseVectorT> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<Space>> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)

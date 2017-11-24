@@ -197,6 +197,45 @@ namespace utopia {
 		return solver.solve(nl_fun, sol);
 	}
 
+	template<class... Eqs, class... Constr>
+	bool nl_implicit_euler(
+		const Equations<Eqs...> &eqs,
+		const FEConstraints<Constr...> &constr,
+		DVectord &old_sol,
+		DVectord &sol,
+		const double dt,
+		std::size_t n_ts = 10)
+	{
+		typedef typename GetFirst<Eqs...>::Type Eq1Type;
+		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
+		
+		
+		FEBackend<LIBMESH_TAG>::init_constraints(constr);
+
+		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
+		space.initialize();
+
+		sol = local_zeros(space.dof_map().n_local_dofs());
+		old_sol = local_zeros(space.dof_map().n_local_dofs());
+
+		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs);
+		Newton<DSMatrixd, DVectord> solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
+		solver.verbose(true);
+		
+		libMesh::ExodusII_IO io(space.mesh());
+		
+		for(std::size_t ts = 0; ts < n_ts; ++ts) {
+		 	if(!solver.solve(nl_fun, sol)) return false;
+		 	old_sol = sol;
+
+		 	convert(sol, *space.equation_system().solution);
+		 	space.equation_system().solution->close();
+		 	io.write_timestep(space.equation_system().name() + ".e", space.equation_systems(), ts + 1, ts * dt);
+		}
+
+		return true;
+	}
+
 
 	template<class... Eqs, class... Constr>
 	bool solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol)
@@ -698,8 +737,9 @@ namespace utopia {
 	{	
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
+		const unsigned int n = 30;
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
-			10, 10,
+			n, n,
 			0, 1.,
 			0, 1.,
 			libMesh::QUAD8);
@@ -917,64 +957,119 @@ namespace utopia {
 		// });
 
 
+		// run_libmesh_test(init, [](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+			
+		// 	//create system of equations
+		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("navier_stokes");
+
+	
+		// 	auto Vx = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_x");
+		// 	auto Vy = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_y");
+		// 	auto V  = Vx * Vy;
+
+		// 	auto Q =  LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "pressure");
+
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
+
+		// 	auto ux = u[0];
+		// 	auto uy = u[1];
+
+		// 	auto p = trial(Q);
+		// 	auto q = test(Q);
+
+
+
+
+		// 	const double mu  = 1.;
+		// 	const double rho = 1.;
+		// 	const double dt = 0.01;
+		// 	const std::size_t n_ts = 10;
+
+		// 	DVectord sol;
+		// 	DVectord sol_old;
+
+
+		// 	auto uk = interpolate(sol, u);
+		// 	auto uk_old = interpolate(sol_old, u);
+
+		// 	auto g_uk = grad(uk);
+
+		// 	auto e         = mu * (transpose(grad(u)) + grad(u));
+		// 	auto b_form_11 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
+		// 	auto b_form_12 = integral(inner(p, div(v)));
+		// 	auto b_form_21 = integral(inner(div(u), q));
+
+		// 	LMDenseVector r_v = zeros(2);
+		// 	auto l_form_1 =  integral(inner(coeff(0.), q));
+		// 	auto l_form_2 =  integral(inner(uk, v));
+
+		// 	auto lhs = b_form_11 + b_form_12 + b_form_21;
+		// 	auto rhs = l_form_1  + l_form_2;
+
+		// 	if(nl_solve(
+		// 		// nl_implicit_euler(
+		// 		equations(
+		// 			lhs == rhs
+		// 		),
+		// 		constraints(
+		// 			boundary_conditions(ux == coeff(0.), {0, 1, 3}),
+		// 			boundary_conditions(ux == coeff(0.1), {2}),
+		// 			boundary_conditions(uy == coeff(0.), {0, 1, 2, 3})
+		// 		),
+		// 		// sol_old,
+		// 		sol
+		// 		//, n_ts
+		// 		)) {
+		// 		//go back to libmesh
+		// 		convert(sol, *sys.solution);
+		// 		sys.solution->close();
+		// 		libMesh::ExodusII_IO(Q.mesh()).write_equation_systems ("navier_stokes.e", *es);
+		// 	} else {
+		// 		std::cerr << "[Error] solver failed to converge" << std::endl;
+		// 	}
+		// });
+
+
+
 		run_libmesh_test(init, [](
 			LibMeshFormEvalTest &lm_test,
 			const std::shared_ptr<libMesh::EquationSystems> &es) {
 			
 			//create system of equations
-			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("navier_stokes");
-
-	
-			auto Vx = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_x");
-			auto Vy = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_y");
-			auto V  = Vx * Vy;
-
-			auto Q =  LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "pressure");
-
+			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("reaction_diffusion");
+			auto V = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "u");
 			auto u = trial(V);
 			auto v = test(V);
 
-			auto ux = u[0];
-			auto uy = u[1];
-
-			auto p = trial(Q);
-			auto q = test(Q);
-
-			const double mu  = 1.;
-			const double rho = 1.;
+			const double dt = 0.001;
+			const std::size_t n_ts = 40;
 
 			DVectord sol;
+			DVectord sol_old;
+
 			auto uk = interpolate(sol, u);
-			auto g_uk = grad(uk);
+			auto uk_old = interpolate(sol_old, u);
 
-			auto e = mu * (transpose(grad(u)) + grad(u));
-			auto b_form_11 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
-			auto b_form_12 = integral(inner(p, div(v)));
-			auto b_form_21 = integral(inner(div(u), q));
-
-			LMDenseVector r_v = zeros(2);
-			auto l_form_1 =  integral(inner(coeff(0.), q));
-			auto l_form_2 =  integral(inner(uk, v));
-
-			auto lhs = b_form_11 + b_form_12 + b_form_21;
-			auto rhs = l_form_1  + l_form_2;
-
-
-
-			if(nl_solve(
+			if(nl_implicit_euler(
 				equations(
-					lhs == rhs
+					//inner(dt * (uk * u), v))
+					( inner(u, v) - inner( dt * grad(u), grad(v)) )  * dX == inner(uk_old, v) * dX
 				),
 				constraints(
-					boundary_conditions(ux == coeff(0.), {0, 1, 3}),
-					boundary_conditions(ux == coeff(1.), {2}),
-					boundary_conditions(uy == coeff(0.), {0, 1, 2, 3})
+					boundary_conditions(u == coeff(0.), {1, 3}),
+					boundary_conditions(u == coeff(-1.), {0}),
+					boundary_conditions(u == coeff(1.), {2})
 				),
-				sol)) {
-				//go back to libmesh
-				convert(sol, *sys.solution);
-				sys.solution->close();
-				libMesh::ExodusII_IO(Q.mesh()).write_equation_systems ("navier_stokes.e", *es);
+				sol_old,
+				sol, 
+				dt,
+				n_ts
+				)) 
+			{
+				//post process
 			} else {
 				std::cerr << "[Error] solver failed to converge" << std::endl;
 			}
