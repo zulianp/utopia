@@ -17,6 +17,7 @@
 #include "utopia_FindSpace.hpp"
 #include "utopia_IsForm.hpp"
 #include "utopia_NonLinearFEFunction.hpp"
+#include "utopia_FEKernel.hpp"
 
 #include "libmesh/exodusII_io.h"
 #include <algorithm>
@@ -701,7 +702,7 @@ namespace utopia {
 			10, 10,
 			0, 1.,
 			0, 1.,
-			libMesh::QUAD4);
+			libMesh::QUAD8);
 
 		std::shared_ptr<libMesh::EquationSystems> equation_systems;
 		LibMeshFormEvalTest lm_test;
@@ -803,48 +804,132 @@ namespace utopia {
 		// 	lm_test.run_local_2_global_test(es);
 		// });
 
+		// run_libmesh_test(init, [](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+			
+		// 	//create system of equations
+		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("test_equations");
+
+		// 	//space for u
+		// 	auto V = LibMeshFunctionSpace(es);
+
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
+		// 	DVectord sol;
+		// 	const bool success = solve(
+		// 		equations(
+		// 			inner(grad(u), grad(v)) * dX == inner(coeff(0.), v) * dX
+		// 		),
+		// 		constraints(
+		// 			boundary_conditions(u == coeff(-0.2), {1}),
+		// 			boundary_conditions(u == coeff(0.2),  {2})
+		// 		),
+		// 		sol);
+
+
+		// 	//go back to libmesh
+		// 	convert(sol, *sys.solution);
+		// 	sys.solution->close();
+		// 	libMesh::ExodusII_IO(V.mesh()).write_equation_systems ("test_equations.e", *es);
+		// });
+
+
+		// run_libmesh_test(init, [](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+			
+		// 	//create system of equations
+		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("test_elasticity");
+
+		// 	//space for u
+		// 	auto Vx = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "disp_x");
+		// 	auto Vy = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "disp_y");
+		// 	auto V = Vx * Vy;
+
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
+
+		// 	auto ux = u[0];
+		// 	auto uy = u[1];
+
+		// 	const double mu = 1;
+		// 	const double lambda = 1;
+
+		// 	auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
+		// 	auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
+
+		// 	LMDenseVector z = zeros(2);
+
+		// 	DVectord sol;
+		// 	const bool success = solve(
+		// 		equations(
+		// 			((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) * dX == inner(coeff(z), v) * dX
+
+		// 		),
+		// 		constraints(
+		// 			boundary_conditions(uy == coeff(0.2),  {0}),
+		// 			boundary_conditions(uy == coeff(-0.2), {2}),
+		// 			boundary_conditions(ux == coeff(0.0),  {0, 2})
+		// 		),
+		// 		sol);
+
+
+		// 	//go back to libmesh
+		// 	convert(sol, *sys.solution);
+		// 	sys.solution->close();
+		// 	libMesh::ExodusII_IO(Vx.mesh()).write_equation_systems ("test_elasticity.e", *es);
+		// });
+
+
+		// run_libmesh_test(init, [](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+			
+		// 	//create system of equations
+		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("non_linear_laplacian");
+
+		// 	//space for u
+		// 	auto V = LibMeshFunctionSpace(es);
+
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
+			
+		// 	DVectord sol;
+		// 	auto uk = interpolate(sol, u);
+
+		// 	if(nl_solve(
+		// 		equations(
+		// 			(inner(grad(u), grad(v)) + inner(grad(uk) * u, grad(v))) * dX == inner(coeff(0.0), v) * dX
+		// 		),
+		// 		constraints(
+		// 			boundary_conditions(u == coeff(-0.2), {1}),
+		// 			boundary_conditions(u == coeff(0.2),  {2})
+		// 		),
+		// 		sol)) {
+		// 		//go back to libmesh
+		// 		convert(sol, *sys.solution);
+		// 		sys.solution->close();
+		// 		libMesh::ExodusII_IO(V.mesh()).write_equation_systems ("non_linear_laplacian.e", *es);
+		// 	} else {
+		// 		std::cerr << "[Error] solver failed to converge" << std::endl;
+		// 	}
+		// });
+
+
 		run_libmesh_test(init, [](
 			LibMeshFormEvalTest &lm_test,
 			const std::shared_ptr<libMesh::EquationSystems> &es) {
 			
 			//create system of equations
-			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("test_equations");
+			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("navier_stokes");
 
-			//space for u
-			auto V = LibMeshFunctionSpace(es);
+	
+			auto Vx = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_x");
+			auto Vy = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_y");
+			auto V  = Vx * Vy;
 
-			auto u = trial(V);
-			auto v = test(V);
-			DVectord sol;
-			const bool success = solve(
-				equations(
-					inner(grad(u), grad(v)) * dX == inner(coeff(0.), v) * dX
-				),
-				constraints(
-					boundary_conditions(u == coeff(-0.2), {1}),
-					boundary_conditions(u == coeff(0.2),  {2})
-				),
-				sol);
-
-
-			//go back to libmesh
-			convert(sol, *sys.solution);
-			sys.solution->close();
-			libMesh::ExodusII_IO(V.mesh()).write_equation_systems ("test_equations.e", *es);
-		});
-
-
-		run_libmesh_test(init, [](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			
-			//create system of equations
-			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("test_elasticity");
-
-			//space for u
-			auto Vx = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "disp_x");
-			auto Vy = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "disp_y");
-			auto V = Vx * Vy;
+			auto Q =  LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "pressure");
 
 			auto u = trial(V);
 			auto v = test(V);
@@ -852,70 +937,89 @@ namespace utopia {
 			auto ux = u[0];
 			auto uy = u[1];
 
-			const double mu = 1;
-			const double lambda = 1;
+			auto p = trial(Q);
+			auto q = test(Q);
 
-			auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
-			auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
+			const double mu  = 1.;
+			const double rho = 1.;
 
-			LMDenseVector z = zeros(2);
-
-			DVectord sol;
-			const bool success = solve(
-				equations(
-					((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) * dX == inner(coeff(z), v) * dX
-
-				),
-				constraints(
-					boundary_conditions(uy == coeff(0.2),  {0}),
-					boundary_conditions(uy == coeff(-0.2), {2}),
-					boundary_conditions(ux == coeff(0.0),  {0, 2})
-				),
-				sol);
-
-
-			//go back to libmesh
-			convert(sol, *sys.solution);
-			sys.solution->close();
-			libMesh::ExodusII_IO(Vx.mesh()).write_equation_systems ("test_elasticity.e", *es);
-		});
-
-
-		run_libmesh_test(init, [](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			
-			//create system of equations
-			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("non_linear_laplacian");
-
-			//space for u
-			auto V = LibMeshFunctionSpace(es);
-
-			auto u = trial(V);
-			auto v = test(V);
-			
 			DVectord sol;
 			auto uk = interpolate(sol, u);
+			auto g_uk = grad(uk);
+
+			auto e = mu * (transpose(grad(u)) + grad(u));
+			auto b_form_11 = integral(inner(e, grad(v)) + rho * inner(g_uk * u, v));
+			auto b_form_12 = integral(inner(p, div(v)));
+			auto b_form_21 = integral(inner(div(u), q));
+
+			LMDenseVector r_v = zeros(2);
+			auto l_form_1 =  integral(inner(coeff(0.), q));
+			auto l_form_2 =  integral(inner(uk, v));
+
+			auto lhs = b_form_11 + b_form_12 + b_form_21;
+			auto rhs = l_form_1  + l_form_2;
+
+
 
 			if(nl_solve(
 				equations(
-					(inner(grad(u), grad(v)) + inner(grad(uk) * u, grad(v))) * dX == inner(coeff(0.0), v) * dX
+					lhs == rhs
 				),
 				constraints(
-					boundary_conditions(u == coeff(-0.2), {1}),
-					boundary_conditions(u == coeff(0.2),  {2})
+					boundary_conditions(ux == coeff(0.), {0, 1, 3}),
+					boundary_conditions(ux == coeff(1.), {2}),
+					boundary_conditions(uy == coeff(0.), {0, 1, 2, 3})
 				),
 				sol)) {
 				//go back to libmesh
 				convert(sol, *sys.solution);
 				sys.solution->close();
-				libMesh::ExodusII_IO(V.mesh()).write_equation_systems ("non_linear_laplacian.e", *es);
+				libMesh::ExodusII_IO(Q.mesh()).write_equation_systems ("navier_stokes.e", *es);
 			} else {
 				std::cerr << "[Error] solver failed to converge" << std::endl;
 			}
 		});
 
 		/////////////////////////////////////////////////////////////////////
+
+		// run_libmesh_test(init, [](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+			
+		// 	//create system of equations
+		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("test_user_kernel");
+
+		// 	//space for u
+		// 	auto V = LibMeshFunctionSpace(es);
+
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
+		// 	DVectord sol;
+		// 	const bool success = solve(
+		// 		equations(
+		// 			bilinear_kernel<double>(
+		// 				[](libMesh::FEBase &trial,
+		// 				   libMesh::FEBase &test, 
+		// 				   const unsigned int trial_index,
+		// 				   const unsigned int test_index,
+		// 				   const unsigned int qp) -> libMesh::Real {
+
+		// 				return (trial.get_dphi()[trial_index][qp] * test.get_dphi()[test_index][qp]) * trial.get_JxW()[qp];
+					
+		// 			}, 0) == inner(coeff(0.), v) * dX
+		// 		),
+		// 		constraints(
+		// 			boundary_conditions(u == coeff(-0.2), {1}),
+		// 			boundary_conditions(u == coeff(0.2),  {2})
+		// 		),
+		// 		sol);
+
+
+		// 	//go back to libmesh
+		// 	convert(sol, *sys.solution);
+		// 	sys.solution->close();
+		// 	libMesh::ExodusII_IO(V.mesh()).write_equation_systems ("test_user_kernel.e", *es);
+		// });
 	}
 
 	void run_form_eval_test(libMesh::LibMeshInit &init)

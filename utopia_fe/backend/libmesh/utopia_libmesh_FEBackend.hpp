@@ -11,6 +11,7 @@
 
 
 #include "libmesh/const_function.h"
+#include <type_traits>
 
 namespace utopia {
 
@@ -311,10 +312,10 @@ namespace utopia {
 
 			const std::size_t n_quad_points = fe_object[sub_0.subspace_id()]->get_phi()[0].size();
 
-			int n_shape_functions = 0;
-			for(auto &t : fe_object) {
-				if(t) n_shape_functions += t->n_shape_functions();
-			}
+			unsigned int n_shape_functions = 0;
+			space.each([&n_shape_functions, &fe_object](const int index, const LibMeshFunctionSpace &subspace) {
+				n_shape_functions += fe_object[subspace.subspace_id()]->n_shape_functions();
+			});
 
 			ret.resize(n_shape_functions); 
 			for(std::size_t i = 0; i < n_shape_functions; ++i) {
@@ -611,8 +612,34 @@ namespace utopia {
 			}
 		}
 
+		// template<class Tensor, class Space>
+		// static std::vector<Scalar> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<Space> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
+		// {
+		// 	auto &c  = interp.coefficient();
+		// 	auto &f  = interp.fun();
+		// 	auto &&g = fun(f, ctx);
+
+		// 	Vector element_values;
+		// 	gather_interp_values(interp, element_values, ctx);
+
+		// 	const std::size_t n_shape_functions = g.size();
+		// 	const std::size_t n_quad_points = g[0].size();
+
+		// 	std::vector<Scalar> ret(n_quad_points, 0.);
+
+		// 	for(std::size_t i = 0; i < n_shape_functions; ++i) {
+		// 		for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+		// 			ret[qp] += g[i][qp] * element_values.get(i);
+		// 		}
+		// 	}
+
+		// 	return ret;
+		// }
+
+
+	
 		template<class Tensor, class Space>
-		static std::vector<Scalar> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<Space> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
+		static std::vector<DenseVectorT> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<Space>> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
 			auto &c  = interp.coefficient();
 			auto &f  = interp.fun();
@@ -624,11 +651,21 @@ namespace utopia {
 			const std::size_t n_shape_functions = g.size();
 			const std::size_t n_quad_points = g[0].size();
 
-			std::vector<Scalar> ret(n_quad_points, 0.);
+			std::vector<DenseVectorT> ret(n_quad_points);
 
-			for(std::size_t i = 0; i < n_shape_functions; ++i) {
-				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
-					ret[qp] += element_values.get(i) * g[i][qp];
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				ret[qp].resize(f.codim());
+				ret[qp].zero();
+
+				for(std::size_t i = 0; i < n_shape_functions; ++i) {
+					if(std::is_rvalue_reference<decltype(g)>::value) {
+						g[i][qp] *= element_values.get(i);
+						ret[qp] += g[i][qp];
+					} else {
+						auto temp = g[i][qp];
+						temp *= element_values.get(i);
+						ret[qp] += temp;
+					}
 				}
 			}
 

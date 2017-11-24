@@ -62,7 +62,7 @@ namespace utopia {
 		}
 		std::size_t codim() const
 		{
-			return space_ptr()->n_subpspaces();
+			return space_ptr()->n_subspaces();
 		}
 
 	private:
