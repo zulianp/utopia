@@ -47,32 +47,37 @@ void trilinos_example_test()
   // Fill the sparse matrix, one row at a time.
   const scalar_type two    = static_cast<scalar_type> (2.0);
   const scalar_type negOne = static_cast<scalar_type> (-1.0);
+  Teuchos::RCP<const Teuchos::Comm<int> > comm2 = Teuchos::rcp (new Teuchos::MpiComm<int>(MPI_COMM_WORLD));
 
 
-  utopia::TpetraMatrix A_void();
+//  utopia::TpetraMatrix A_void2();
+  utopia::TpetraMatrix A_void(comm2);
   utopia::TpetraMatrix A_map(map);
+  utopia::TpetraMatrix A_mat(A_map);
 
   utopia::TpetraVector x_void();
   utopia::TpetraVector x_map(map);
 
-
+//size_t numMyElements_void = A_void2.getNodeNumElements();
 
  for (local_ordinal_type lclRow = 0; lclRow < static_cast<local_ordinal_type> (numMyElements); ++lclRow) { 
     const global_ordinal_type gblRow = map->getGlobalElement (lclRow);
-     A->insertGlobalValues (gblRow, gblRow, Teuchos::tuple<scalar_type> (two));
-     A_map->insertGlobalValues (gblRow, gblRow, Teuchos::tuple<scalar_type> (two));
+     A->insertGlobalValues (gblRow, Teuchos::tuple<global_ordinal_type> (gblRow, gblRow + 1), Teuchos::tuple<scalar_type> (two, negOne)); 
+     A_map.insertGlobalValues (gblRow, Teuchos::tuple<global_ordinal_type> (gblRow, gblRow + 1), Teuchos::tuple<scalar_type> (two, negOne));
   }
 
-const size_t numMyElements_void = A_void->_map->getNodeNumElements ();
+
+
+const size_t numMyElements_void = A_void.getNodeNumElements();
  for (local_ordinal_type lclRow = 0; lclRow < static_cast<local_ordinal_type> (numMyElements_void); ++lclRow) { 
-    const global_ordinal_type gblRow = A_void->_map->getGlobalElement (lclRow);
-     A_void->insertGlobalValues (gblRow, gblRow, Teuchos::tuple<scalar_type> (two));
+    const global_ordinal_type gblRow = A_void.getGlobalElement (lclRow);
+    A_void.insertGlobalValues (gblRow, Teuchos::tuple<global_ordinal_type> (gblRow, gblRow + 1), Teuchos::tuple<scalar_type> (two, negOne));
   }
 
   // Tell the sparse matrix that we are done adding entries to it.
-  A->fillComplete ();
-  A_void->fillComplete ();
-  A_map->fillComplete ();
+  A->fillComplete();
+  A_void.fillComplete();
+  A_map.fillComplete();
 
 
     // Run the power method and report the result.

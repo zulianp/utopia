@@ -12,15 +12,15 @@
 
 namespace utopia {
 
-    typedef Tpetra::Map<>                         map_type;
-    typedef Tpetra::Vector<>                      vector_type;
+    typedef Tpetra::Map<>                             map_type;
+    typedef Tpetra::Vector<>                          vector_type;
 
     typedef vector_type::global_ordinal_type            global_ordinal_type;
 
     typedef Teuchos::RCP<const Teuchos::Comm<int> >     rcp_comm_type;
     typedef Teuchos::RCP<const map_type>                rcp_map_type;
     typedef Teuchos::RCP<const vector_type>             rcp_vector_type;
-    typedef Tpetra::CrsMatrix<>             crs_matrix_type;
+    typedef Tpetra::CrsMatrix<>                         crs_matrix_type;
     typedef Teuchos::RCP<crs_matrix_type>               rcp_crs_matrix_type;
 
         typedef Tpetra::Vector<>::scalar_type         scalar_type;
@@ -40,7 +40,7 @@ namespace utopia {
             _vec.reset(new vector_type (_contigMap));
             _initialized = false; 
             _nLocalGhosts = 0;
-        }
+            }
 
         //copy constructor based on Trilinos vector
         TpetraVector(vector_type  vector)
@@ -60,7 +60,7 @@ namespace utopia {
             _vec.reset ( new vector_type (_contigMap));
             _initialized = false; 
             _nLocalGhosts = 0;
-        }
+            }
 
 /*        TpetraVector(const utopia::TpetraVector&  vector )
             {
