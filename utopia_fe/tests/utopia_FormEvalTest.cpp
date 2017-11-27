@@ -16,7 +16,7 @@
 #include "utopia_FEConstraints.hpp"
 #include "utopia_FindSpace.hpp"
 #include "utopia_IsForm.hpp"
-#include "utopia_NonLinearFEFunction.hpp"
+#include "utopia_libmesh_NonLinearFEFunction.hpp"
 #include "utopia_FEKernel.hpp"
 
 #include "libmesh/exodusII_io.h"
@@ -45,255 +45,7 @@ namespace utopia {
 		}
 	};
 
-	//libmesh
-	template<class FunctionSpaceT, class Expr, class GlobalMatrix, class GlobalVector>
-	void element_assemble_expression_v(const libMesh::MeshBase::const_element_iterator &it, const Expr &expr, GlobalMatrix &mat, GlobalVector &vec)
-	{
-		typedef utopia::Traits<FunctionSpaceT> TraitsT;
-		typedef typename TraitsT::Matrix ElementMatrix;
-		typedef typename TraitsT::Vector ElementVector;
-
-		static const int Backend = TraitsT::Backend;
-
-		const auto &space = find_space<FunctionSpaceT>(expr);
-		const auto &dof_map = space.dof_map();
-
-		AssemblyContext<Backend> ctx;
-		ctx.set_current_element((*it)->id());
-
-		ElementMatrix el_mat;
-		ElementVector el_vec;
-
-		ctx.init_bilinear(expr);
-
-		FormEvaluator<Backend> eval;
-		eval.eval(expr, el_mat, el_vec, ctx, true);
-
-		std::vector<libMesh::dof_id_type> dof_indices;
-		dof_map.dof_indices(*it, dof_indices);
-
-		dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
-
-		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
-		add_vector(el_vec.implementation(), dof_indices, vec);
-	}
-
-	//homemade
-	template<class FunctionSpaceT, class Left, class Right, class Matrix, class Vector>
-	void element_assemble_expression_v(const int element_index, const Equality<Left, Right> &equation, Matrix &mat, Vector &rhs)
-	{
-		std::cout << element_index << std::endl;
-	}
-
-	template<class FunctionSpaceT, class Left, class Right, class Matrix, class Vector>
-	void assemble_expression_v(const Equality<Left, Right> &equation, Matrix &mat, Vector &vec)
-	{
-		auto &space = find_space<FunctionSpaceT>(equation);
-		space.initialize();
-
-		auto &m = space.mesh();
-		auto &dof_map = space.dof_map();
-
-		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-								  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
-
-		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
-		vec = local_zeros(dof_map.n_local_dofs());
-
-		Write<Matrix> w_m(mat);
-		Write<Vector> w_v(vec);
-
-		for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-			element_assemble_expression_v<FunctionSpaceT>(it, equation, mat, vec);
-		}
-	}
-
-	template<class Matrix, class Vector, class Eqs>
-	class NonLinearFEFunction : public Function<Matrix, Vector> {
-	public:
-		DEF_UTOPIA_SCALAR(Matrix)
-
-		NonLinearFEFunction(const Eqs &eqs)
-		: eqs_(eqs), first_(true)
-		{}
-
-		virtual ~NonLinearFEFunction() { }
-
-		virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const 
-		{
-			assert(false && "not implemented");
-		    return 1.;
-		}
-
-		virtual bool gradient(const Vector &x, Vector &result) const
-		{
-			result = buff_mat * x - buff_vec;
-		    return true;
-		}
-
-
-		virtual bool hessian(const Vector &, Matrix &H) const
-		{
-			H = buff_mat;
-		    return true;
-		}
-
-		virtual bool update(const Vector &x) { 
-			typedef decltype(eqs_.template get<0>()) Eq1;
-			typedef typename FindFunctionSpace<Eq1>::Type FunctionSpaceT;
-			auto &space = find_space<FunctionSpaceT>(eqs_);
-
-			if(first_) {
-				auto &dof_map = space.dof_map();
-				auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-										  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
-				
-				buff_mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
-				buff_vec = local_zeros(dof_map.n_local_dofs());
-			} else {
-				buff_mat *= 0.;
-				buff_vec *= 0.;
-			}
-
-			{
-				Write<DSMatrixd> w_m(buff_mat);
-				Write<DVectord>  w_v(buff_vec);
-
-				auto &m = space.mesh();
-
-				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-					element_assemble_expression_v<FunctionSpaceT>(it, eqs_, buff_mat, buff_vec);
-				}
-			}	
-
-			return true;
-		};
-
-		bool first_;
-		Eqs eqs_;
-
-		Matrix buff_mat;
-		Vector buff_vec;
-	};
-
-
-	template<class... Eqs, class... Constr>
-	bool nl_solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol)
-	{
-		typedef typename GetFirst<Eqs...>::Type Eq1Type;
-		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
-		
-		
-		FEBackend<LIBMESH_TAG>::init_constraints(constr);
-
-		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
-		space.initialize();
-
-		sol = local_zeros(space.dof_map().n_local_dofs());
-
-		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs);
-		Newton<DSMatrixd, DVectord> solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
-		solver.verbose(true);
-		return solver.solve(nl_fun, sol);
-	}
-
-	template<class... Eqs, class... Constr>
-	bool nl_implicit_euler(
-		const Equations<Eqs...> &eqs,
-		const FEConstraints<Constr...> &constr,
-		DVectord &old_sol,
-		DVectord &sol,
-		const double dt,
-		std::size_t n_ts = 10)
-	{
-		typedef typename GetFirst<Eqs...>::Type Eq1Type;
-		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
-		
-		
-		FEBackend<LIBMESH_TAG>::init_constraints(constr);
-
-		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
-		space.initialize();
-
-		sol = local_zeros(space.dof_map().n_local_dofs());
-		old_sol = local_zeros(space.dof_map().n_local_dofs());
-
-		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs);
-		Newton<DSMatrixd, DVectord> solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
-		solver.verbose(true);
-		
-		libMesh::ExodusII_IO io(space.mesh());
-		
-		for(std::size_t ts = 0; ts < n_ts; ++ts) {
-		 	if(!solver.solve(nl_fun, sol)) return false;
-		 	old_sol = sol;
-
-		 	convert(sol, *space.equation_system().solution);
-		 	space.equation_system().solution->close();
-		 	io.write_timestep(space.equation_system().name() + ".e", space.equation_systems(), ts + 1, ts * dt);
-		}
-
-		return true;
-	}
-
-
-	template<class... Eqs, class... Constr>
-	bool solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol)
-	{
-
-		//FIXME this stuff only works for the libmesh backend
-		typedef typename GetFirst<Eqs...>::Type Eq1Type;
-		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
-		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
-
-		FEBackend<LIBMESH_TAG>::init_constraints(constr);
-
-
-		
-		space.initialize();
-		auto &m = space.mesh();
-		auto &dof_map = space.dof_map();
-		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-								  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
-
-		DSMatrixd mat;
-		DVectord vec;
-
-		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
-		vec = local_zeros(dof_map.n_local_dofs());
-
-		{
-			Write<DSMatrixd> w_m(mat);
-			Write<DVectord>  w_v(vec);
-
-
-			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-				element_assemble_expression_v<FunctionSpaceT>(it, eqs, mat, vec);
-			}
-		}	
-
-
-		// disp(mat);
-		// disp(vec);
-
-		sol = local_zeros(local_size(vec));
-		Factorization<DSMatrixd, DVectord> solver;
-		if(!solver.solve(mat, vec, sol)) {
-			return false;
-		}
-
-		//if non-linear
-		
-
-		DVectord residual = mat * sol - vec;
-		double norm_r = norm2(residual);
-		std::cout << "norm_r: " << norm_r << std::endl;
-		// disp(sol);
-
-		// write("u_matrix_new.m", mat);
-		return false;
-	}
-
+	
 
 
 	template<class SpaceInput, class FunctionSpaceT>
@@ -737,7 +489,7 @@ namespace utopia {
 	{	
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
-		const unsigned int n = 30;
+		const unsigned int n = 20;
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
 			n, n,
 			0, 1.,
@@ -1034,46 +786,45 @@ namespace utopia {
 
 
 
-		run_libmesh_test(init, [](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// run_libmesh_test(init, [](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
 			
-			//create system of equations
-			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("reaction_diffusion");
-			auto V = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "u");
-			auto u = trial(V);
-			auto v = test(V);
+		// 	//create system of equations
+		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("reaction_diffusion");
+		// 	auto V = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "u");
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
 
-			const double dt = 0.001;
-			const std::size_t n_ts = 40;
+		// 	const double dt = 0.01;
+		// 	const std::size_t n_ts = 40;
 
-			DVectord sol;
-			DVectord sol_old;
+		// 	DVectord sol;
+		// 	DVectord sol_old;
 
-			auto uk = interpolate(sol, u);
-			auto uk_old = interpolate(sol_old, u);
+		// 	auto uk = interpolate(sol, u);
+		// 	auto uk_old = interpolate(sol_old, u);
 
-			if(nl_implicit_euler(
-				equations(
-					//inner(dt * (uk * u), v))
-					( inner(u, v) - inner( dt * grad(u), grad(v)) )  * dX == inner(uk_old, v) * dX
-				),
-				constraints(
-					boundary_conditions(u == coeff(0.), {1, 3}),
-					boundary_conditions(u == coeff(-1.), {0}),
-					boundary_conditions(u == coeff(1.), {2})
-				),
-				sol_old,
-				sol, 
-				dt,
-				n_ts
-				)) 
-			{
-				//post process
-			} else {
-				std::cerr << "[Error] solver failed to converge" << std::endl;
-			}
-		});
+		// 	if(nl_implicit_euler(
+		// 		equations(
+		// 			( inner(u, v) - inner( dt * grad(u), grad(v)) ) * dX == inner(uk_old, v) * dX
+		// 		),
+		// 		constraints(
+		// 			boundary_conditions(u == coeff(0.), {1, 3}),
+		// 			boundary_conditions(u == coeff(-1.), {0}),
+		// 			boundary_conditions(u == coeff(1.), {2})
+		// 		),
+		// 		sol_old,
+		// 		sol, 
+		// 		dt,
+		// 		n_ts
+		// 		)) 
+		// 	{
+		// 		//post process
+		// 	} else {
+		// 		std::cerr << "[Error] solver failed to converge" << std::endl;
+		// 	}
+		// });
 
 		/////////////////////////////////////////////////////////////////////
 
@@ -1115,6 +866,78 @@ namespace utopia {
 		// 	sys.solution->close();
 		// 	libMesh::ExodusII_IO(V.mesh()).write_equation_systems ("test_user_kernel.e", *es);
 		// });
+
+
+		run_libmesh_test(init, [](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			
+			//create system of equations
+			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("transient_navier_stokes");
+
+		
+			auto Vx = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_x");
+			auto Vy = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_y");
+			auto V  = Vx * Vy;
+
+			auto Q =  LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "pressure");
+
+			auto u = trial(V);
+			auto v = test(V);
+
+			auto ux = u[0];
+			auto uy = u[1];
+
+			auto p = trial(Q);
+			auto q = test(Q);
+
+
+			const double mu  = 1.;
+			const double rho = 1.;
+			const double dt = 0.005;
+			const std::size_t n_ts = 40;
+
+			DVectord sol;
+			DVectord sol_old;
+
+
+			auto uk 	= interpolate(sol, u);
+			auto uk_old = interpolate(sol_old, u);
+
+			auto g_uk = grad(uk);
+
+			auto e         = mu * (transpose(grad(u)) + grad(u));
+			auto b_form_11 = integral(inner(u, v)) + dt * integral(inner(e, grad(v)) - (rho * dt) * inner(g_uk * u, v));
+			auto b_form_12 = dt * integral(inner(p, div(v)));
+			auto b_form_21 = integral(inner(div(u), q));
+
+			LMDenseVector r_v = zeros(2);
+			auto l_form_1 =  integral(inner(coeff(0.), q));
+			auto l_form_2 =  integral(inner(uk_old, v)); //zero forcing term
+
+			auto lhs = b_form_11 + b_form_12 + b_form_21;
+			auto rhs = l_form_1  + l_form_2;
+
+			if(nl_implicit_euler(
+				equations(
+					lhs == rhs
+				),
+				constraints(
+					boundary_conditions(ux == coeff(0.), {0, 1, 3}),
+					boundary_conditions(ux == coeff(0.1), {2}),
+					boundary_conditions(uy == coeff(0.), {0, 1, 2, 3})
+				),
+				sol_old,
+				sol,
+				dt,
+				n_ts
+				)) {
+				//....
+			} else {
+				std::cerr << "[Error] solver failed to converge" << std::endl;
+			}
+		});
+
 	}
 
 	void run_form_eval_test(libMesh::LibMeshInit &init)

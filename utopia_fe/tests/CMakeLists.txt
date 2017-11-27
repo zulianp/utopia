@@ -16,6 +16,7 @@ list(APPEND LOCAL_HEADERS
 	utopia_UtopiaFETests.hpp
 	utopia_VolumeTransferBenchmark.hpp
 	utopia_FormEvalTest.hpp
+	utopia_FSITest.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 
@@ -34,10 +35,11 @@ list(APPEND LOCAL_SOURCES
 	utopia_VolumeTransferBenchmark.cpp
 	utopia_FormEvalTest.cpp
 	utopia_LibMeshbackendTest.cpp
+	utopia_FSITest.cpp
 	)
 
 add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})
-target_link_libraries(utopia_fe_tests transfer utopia_fe_visualization utopia_fe_homemade)
+target_link_libraries(utopia_fe_tests transfer utopia_fe_visualization utopia_fe_homemade utopia_fe_libmesh_backend)
 target_include_directories(utopia_fe_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) 
 
 
