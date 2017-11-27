@@ -852,6 +852,22 @@ namespace utopia {
 
 			//////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		inline static auto multiply(
+			const std::vector<std::vector<double>> &left,
+			const std::vector<Scalar> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx
+			) -> std::vector<std::vector<double>> 
+		{
+			auto ret = left;
+			for(auto &r : ret) {
+				for(std::size_t i = 0; i < right.size(); ++i) {
+					r[i] *= right[i];
+				}
+			}
+
+			return ret;
+		}
+
 		template<class Space>
 		inline static auto multiply(
 			const Scalar &left,

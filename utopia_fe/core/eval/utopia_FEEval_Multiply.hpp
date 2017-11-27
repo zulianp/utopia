@@ -53,23 +53,23 @@ namespace utopia {
 	};
 
 
-	// template<class Left, class Right, class Traits, int Backend>
-	// class FEEval<Multiply<Left, Right>, Traits, Backend> {
-	// public:
-	// 	typedef utopia::Multiply<Left, Right> Expr;
+	template<class Left, class Right, class Traits, int Backend>
+	class FEEval<Multiply<Left, Right>, Traits, Backend> {
+	public:
+		typedef utopia::Multiply<Left, Right> Expr;
 
-	//     inline static auto apply(
-	//     	const Expr &expr,
-	//     	AssemblyContext<Backend> &ctx) -> decltype( 
-	//     	FEBackend<Backend>::multiply(
-	//     		FEEval<Left, Traits, Backend>::apply(expr.left(), ctx), 
-	//     		FEEval<Right, Traits, Backend>::apply(expr.right(), ctx)))
-	//     {
-	//     	return FEBackend<Backend>::multiply(
-	//     		FEEval<Left, Traits, Backend>::apply(expr.left(), ctx), 
-	//     		FEEval<Right, Traits, Backend>::apply(expr.right(), ctx) );
-	//     } 
-	// };
+	    inline static auto apply(
+	    	const Expr &expr,
+	    	AssemblyContext<Backend> &ctx) -> decltype( 
+	    	FEBackend<Backend>::multiply(
+	    		FEEval<Left, Traits, Backend>::apply(expr.left(), ctx), 
+	    		FEEval<Right, Traits, Backend>::apply(expr.right(), ctx), ctx))
+	    {
+	    	return FEBackend<Backend>::multiply(
+	    		FEEval<Left, Traits, Backend>::apply(expr.left(), ctx), 
+	    		FEEval<Right, Traits, Backend>::apply(expr.right(), ctx), ctx);
+	    } 
+	};
 
 
 	template<class Left, class Right, class AssemblyContext>

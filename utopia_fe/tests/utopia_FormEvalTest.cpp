@@ -80,7 +80,6 @@ namespace utopia {
 
 		}
 
-
 		template<class Form>
 		static void assemble_bilinear_and_print(const Form &form)
 		{
@@ -92,8 +91,8 @@ namespace utopia {
 			FormEvaluator<Backend> eval;
 			eval.eval(form, mat, ctx, true);
 
-			// std::cout << tree_format(form.getClass()) << std::endl;
-			// disp(mat);
+			std::cout << tree_format(form.getClass()) << std::endl;
+			disp(mat);
 		}
 
 
@@ -463,6 +462,32 @@ namespace utopia {
 			assemble_bilinear_and_print(bilinear_form);
 		}
 
+
+
+		static void run_nonlinear_form_test(const std::shared_ptr<SpaceInput> &space_input)
+		{
+			std::cout << "[run_nonlinear_form_test]" << std::endl;
+
+
+			auto V = FunctionSpaceT(space_input);
+			auto u = trial(V);
+			auto v = test(V);
+
+
+			DVectord sol;
+			auto uk = interpolate(sol, u);
+			auto alpha = coeff(0.1);
+			// auto R = u * alpha * (coeff(1.) - uk) * (uk - alpha);
+			// auto R = u * (coeff(1.) - uk);
+			auto R = u * uk;
+
+			V.initialize();
+			sol = local_values(V.dof_map().n_local_dofs(), 1.);
+
+			auto bilinear_form = integral(inner(R, v));
+			assemble_bilinear_and_print(bilinear_form);
+		}
+
 		static void run_local_2_global_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
 
@@ -492,7 +517,7 @@ namespace utopia {
 		const unsigned int n = 20;
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
 			n, n,
-			0, 1.,
+			-1.5, 1.5,
 			0, 1.,
 			libMesh::QUAD8);
 
@@ -595,6 +620,14 @@ namespace utopia {
 		// 	es->add_system<libMesh::LinearImplicitSystem>("run_local_2_global_test");
 		// 	lm_test.run_local_2_global_test(es);
 		// });
+
+
+		run_libmesh_test(init,[](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			es->add_system<libMesh::LinearImplicitSystem>("run_nonlinear_form_test");
+			lm_test.run_nonlinear_form_test(es);
+		});
 
 		// run_libmesh_test(init, [](
 		// 	LibMeshFormEvalTest &lm_test,
@@ -805,9 +838,12 @@ namespace utopia {
 		// 	auto uk = interpolate(sol, u);
 		// 	auto uk_old = interpolate(sol_old, u);
 
+		// 	auto alpha = coeff(0.1);
+		// 	auto R = u * alpha * (coeff(1.) - uk) * (uk - alpha);
+
 		// 	if(nl_implicit_euler(
 		// 		equations(
-		// 			( inner(u, v) - inner( dt * grad(u), grad(v)) ) * dX == inner(uk_old, v) * dX
+		// 			( inner(u, v) /*-dt * inner(R, v)*/ - inner( dt * grad(u), grad(v)) ) * dX == inner(uk_old, v) * dX
 		// 		),
 		// 		constraints(
 		// 			boundary_conditions(u == coeff(0.), {1, 3}),
@@ -923,9 +959,12 @@ namespace utopia {
 					lhs == rhs
 				),
 				constraints(
-					boundary_conditions(ux == coeff(0.), {0, 1, 3}),
-					boundary_conditions(ux == coeff(0.1), {2}),
-					boundary_conditions(uy == coeff(0.), {0, 1, 2, 3})
+					// boundary_conditions(ux == coeff(0.), {0, 1, 3}),
+					// boundary_conditions(ux == coeff(0.1), {2}),
+					// boundary_conditions(uy == coeff(0.), {0, 1, 2, 3})
+					boundary_conditions(uy == coeff(0.),   {0, 1, 2, 3}),
+					boundary_conditions(ux == coeff(0.),   {0, 2}),
+					boundary_conditions(ux == coeff(0.1),  {1, 3})
 				),
 				sol_old,
 				sol,

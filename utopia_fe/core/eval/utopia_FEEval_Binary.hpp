@@ -42,6 +42,7 @@ namespace utopia {
 			return FEBackend<Backend>::apply_binary(
 				FEEval<Left, Traits, Backend>::apply(expr.left(), ctx),
 				FEEval<Right, Traits, Backend>::apply(expr.right(), ctx),
+				expr.operation(),
 				ctx);
 		}
 	};
@@ -61,6 +62,7 @@ namespace utopia {
 			return FEBackend<Backend>::apply_binary(
 				FEEval<Left, Traits, Backend>::apply(expr.left(), ctx),
 				FEEval<Right, Traits, Backend>::apply(expr.right(), ctx),
+				expr.operation(),
 				ctx);
 		}
 	};
@@ -79,6 +81,7 @@ namespace utopia {
 			return FEBackend<Backend>::apply_binary(
 				FEEval<Left, Traits, Backend>::apply(expr.left(), ctx),
 				FEEval<Right, Traits, Backend>::apply(expr.right(), ctx),
+				expr.operation(),
 				ctx);
 		}
 	};
@@ -100,6 +103,7 @@ namespace utopia {
 			return FEBackend<Backend>::apply_binary(
 				FEEval<Left, Traits, Backend>::apply(expr.left(), ctx),
 				FEEval<Right, Traits, Backend>::apply(expr.right(), ctx),
+				expr.operation(),
 				ctx);
 		}
 	};
@@ -135,7 +139,7 @@ namespace utopia {
 		static auto apply(const BinExpr &expr, AssemblyContext<Backend> &ctx) -> Matrix
 		{
 			return 
-				FEEval<Left, Traits, Backend>::apply(expr.left(), ctx) +
+				FEEval<Left, Traits, Backend>::apply(expr.left(), ctx) -
 				FEEval<Right, Traits, Backend>::apply(expr.right(), ctx);
 		}
 	};
