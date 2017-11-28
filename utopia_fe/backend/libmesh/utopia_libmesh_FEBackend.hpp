@@ -833,6 +833,87 @@ namespace utopia {
 			return ret;
 		}
 
+		template<typename T, typename C>
+		inline static auto apply_binary(
+			const ConstantCoefficient<T, 0> &left,
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			const Multiplies &,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			auto &&f = fun(right, ctx);
+
+			for(auto &f_v : f) {
+				f_v *= left.expr();
+			}
+
+			return std::move(f);
+		}
+
+		template<typename T, typename C>
+		inline static auto apply_binary(
+			const ConstantCoefficient<T, 0> &left,
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			const Minus &,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			auto &&f = fun(right, ctx);
+
+			for(auto &f_v : f) {
+				f_v = left.expr() - f_v;
+			}
+
+			return std::move(f);
+		}
+
+		template<typename T, typename C>
+		inline static auto apply_binary(
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &left,
+			const ConstantCoefficient<T, 0> &right,
+			const Minus &,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			auto &&f = fun(left, ctx);
+
+			for(auto &f_v : f) {
+				f_v -= right.expr();
+			}
+
+			return std::move(f);
+		}
+
+
+		template<typename T, typename C>
+		inline static auto apply_binary(
+			const ConstantCoefficient<T, 0> &left,
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			const Plus &,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			auto &&f = fun(right, ctx);
+
+			for(auto &f_v : f) {
+				f_v += left.expr();
+			}
+
+			return std::move(f);
+		}
+
+		template<typename T, typename C>
+		inline static auto apply_binary(
+			const ConstantCoefficient<T, 0> &left,
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			const Divides &,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			auto &&f = fun(right, ctx);
+
+			for(auto &f_v : f) {
+				f_v = left.expr() / f_v;
+			}
+
+			return std::move(f);
+		}
+
 		//alpha * (grad_t + grad)
 		template<class Left, class Right>
 		inline static JacobianType grad_t_plus_grad(const double scaling, const Left &left, const Right &right, AssemblyContext<LIBMESH_TAG> &ctx)
@@ -852,6 +933,23 @@ namespace utopia {
 
 			//////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		template<typename T>
+		inline static auto multiply(
+			const std::vector<std::vector<double>> &left,
+			const ConstantCoefficient<T, 0> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx
+			) -> std::vector<std::vector<double>> 
+		{
+			auto ret = left;
+			for(auto &r : ret) {
+				for(auto &v : r) {
+					v *= right.expr();
+				}
+			}
+
+			return ret;
+		}
+
 		inline static auto multiply(
 			const std::vector<std::vector<double>> &left,
 			const std::vector<Scalar> &right,
@@ -867,6 +965,48 @@ namespace utopia {
 
 			return ret;
 		}
+
+		inline static auto multiply(
+			const std::vector<double> &left,
+			const std::vector<double> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx
+			) -> std::vector<double>
+		{
+			auto ret = left;
+			for(std::size_t i = 0; i < right.size(); ++i) {
+				ret[i] *= right[i];
+			}
+
+			return ret;
+		}
+
+		template<typename T>
+		inline static auto multiply(
+			const std::vector<double> &left,
+			const ConstantCoefficient<T, 0> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			auto ret = left;
+			for(auto &v : ret) {
+				v *= right.expr();
+			}
+
+			return ret;
+		}
+
+		// inline static auto multiply(
+		// 	std::vector<double> &&left,
+		// 	const std::vector<double> &right,
+		// 	const AssemblyContext<LIBMESH_TAG> &ctx
+		// 	) -> std::vector<double>
+		// {
+
+		// 	for(std::size_t i = 0; i < right.size(); ++i) {
+		// 		left[i] *= right[i];
+		// 	}
+
+		// 	return std::move(left);
+		// }
 
 		template<class Space>
 		inline static auto multiply(

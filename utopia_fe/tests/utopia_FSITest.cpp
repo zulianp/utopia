@@ -85,10 +85,10 @@ namespace utopia {
 	{
 		moonolith::Communicator comm(init.comm().get());
 
-		const unsigned int nx_fluid = 300;
-		const unsigned int ny_fluid = 100;
-		const unsigned int nx_solid = 10;
-		const unsigned int ny_solid = 40;
+		const unsigned int nx_fluid = 210;
+		const unsigned int ny_fluid = 70;
+		const unsigned int nx_solid = 20;
+		const unsigned int ny_solid = 80;
 
 		////////////////////////////////////////////////////////////////////////////////////
 		//Fluid discretization
@@ -151,9 +151,9 @@ namespace utopia {
 		const double mu_s  = 50.;
 		const double lambda_s = 50.;
 
-		const double dt = 0.005;
+		const double dt = 0.01;
 		
-		const std::size_t n_ts = 80;
+		const std::size_t n_ts = 100;
 
 		DVectord sol_f;
 		DVectord sol_fold;
@@ -307,6 +307,7 @@ namespace utopia {
 	    		}
 
 	    		reaction_force_s = rhs_s - mat_s * displacement_s;
+	    		// reaction_force_s = mat_s * displacement_s - rhs_s;
 	    		std::cout << "mag_f: " << double(norm2(reaction_force_s)) << std::endl;
 
 	    		//update the forcing term in the fluid

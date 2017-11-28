@@ -107,8 +107,8 @@ namespace utopia {
 			FormEvaluator<Backend> eval;
 			eval.eval(form, vec, ctx, true);
 
-			// std::cout << tree_format(form.getClass()) << std::endl;
-			// disp(vec);
+			std::cout << tree_format(form.getClass()) << std::endl;
+			disp(vec);
 		}
 
 		static void run_interp_vec_test(const std::shared_ptr<SpaceInput> &space_input)
@@ -122,7 +122,7 @@ namespace utopia {
 			auto u = trial(V);
 			auto v = test(V);
 
-			ElementVector c_uk = values(6, 1.);
+			ElementVector c_uk = values(27, 1.);
 			{
 				Write<ElementVector> w(c_uk);
 				c_uk.set(0, 1.0);
@@ -148,7 +148,11 @@ namespace utopia {
 			auto u = trial(V);
 			auto v = test(V);
 
-			ElementVector c_uk = values(3, 1.);
+			V.initialize();
+
+
+			//large enough vector
+			ElementVector c_uk = values(27, 1.);
 			{
 				Write<ElementVector> w(c_uk);
 				c_uk.set(0, 1.0);
@@ -476,16 +480,20 @@ namespace utopia {
 
 			DVectord sol;
 			auto uk = interpolate(sol, u);
-			auto alpha = coeff(0.1);
-			// auto R = u * alpha * (coeff(1.) - uk) * (uk - alpha);
-			// auto R = u * (coeff(1.) - uk);
-			auto R = u * uk;
+			auto alpha = coeff(0.5);
+			auto R = u * alpha * (coeff(1.) - uk) * (uk - alpha);
+			// auto R = u * alpha * (coeff(3.) - uk);
+			// auto R = u * (uk - alpha);
+			// auto R = u * uk;
 
 			V.initialize();
-			sol = local_values(V.dof_map().n_local_dofs(), 1.);
+			sol = local_values(V.dof_map().n_local_dofs(), 2.);
 
 			auto bilinear_form = integral(inner(R, v));
-			assemble_bilinear_and_print(bilinear_form);
+			// assemble_bilinear_and_print(bilinear_form);
+
+			auto linear_form = integral(inner(uk * alpha * (coeff(1.) - uk) * (uk - alpha), v));
+			assemble_linear_and_print(linear_form);
 		}
 
 		static void run_local_2_global_test(const std::shared_ptr<SpaceInput> &space_input)
@@ -514,10 +522,10 @@ namespace utopia {
 	{	
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
-		const unsigned int n = 20;
+		const unsigned int n = 50;
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
 			n, n,
-			-1.5, 1.5,
+			0, 1,
 			0, 1.,
 			libMesh::QUAD8);
 
@@ -622,12 +630,12 @@ namespace utopia {
 		// });
 
 
-		run_libmesh_test(init,[](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			es->add_system<libMesh::LinearImplicitSystem>("run_nonlinear_form_test");
-			lm_test.run_nonlinear_form_test(es);
-		});
+		// run_libmesh_test(init,[](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// 	es->add_system<libMesh::LinearImplicitSystem>("run_nonlinear_form_test");
+		// 	lm_test.run_nonlinear_form_test(es);
+		// });
 
 		// run_libmesh_test(init, [](
 		// 	LibMeshFormEvalTest &lm_test,
@@ -819,48 +827,51 @@ namespace utopia {
 
 
 
-		// run_libmesh_test(init, [](
-		// 	LibMeshFormEvalTest &lm_test,
-		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
+		run_libmesh_test(init, [](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
 			
-		// 	//create system of equations
-		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("reaction_diffusion");
-		// 	auto V = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "u");
-		// 	auto u = trial(V);
-		// 	auto v = test(V);
+			//create system of equations
+			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("reaction_diffusion");
+			auto V = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "u");
+			auto u = trial(V);
+			auto v = test(V);
 
-		// 	const double dt = 0.01;
-		// 	const std::size_t n_ts = 40;
+			const double dt = 0.01;
+			const std::size_t n_ts = 40;
 
-		// 	DVectord sol;
-		// 	DVectord sol_old;
+			DVectord sol;
+			DVectord sol_old;
 
-		// 	auto uk = interpolate(sol, u);
-		// 	auto uk_old = interpolate(sol_old, u);
+			auto uk = interpolate(sol, u);
+			auto uk_old = interpolate(sol_old, u);
 
-		// 	auto alpha = coeff(0.1);
-		// 	auto R = u * alpha * (coeff(1.) - uk) * (uk - alpha);
+			auto a = coeff(200.);
+			auto alpha = coeff(0.5);
+			auto R = uk_old * a * (coeff(1.) - uk_old) * (uk_old - alpha);
+			// auto R = coeff(0.);
 
-		// 	if(nl_implicit_euler(
-		// 		equations(
-		// 			( inner(u, v) /*-dt * inner(R, v)*/ - inner( dt * grad(u), grad(v)) ) * dX == inner(uk_old, v) * dX
-		// 		),
-		// 		constraints(
-		// 			boundary_conditions(u == coeff(0.), {1, 3}),
-		// 			boundary_conditions(u == coeff(-1.), {0}),
-		// 			boundary_conditions(u == coeff(1.), {2})
-		// 		),
-		// 		sol_old,
-		// 		sol, 
-		// 		dt,
-		// 		n_ts
-		// 		)) 
-		// 	{
-		// 		//post process
-		// 	} else {
-		// 		std::cerr << "[Error] solver failed to converge" << std::endl;
-		// 	}
-		// });
+			if(nl_implicit_euler(
+				equations(
+					( inner(u, v) + inner( dt * grad(u), grad(v)) ) * dX == ( dt * inner(R, v) + inner(uk_old, v) + dt * inner(coeff(20.), v)) * dX
+				),
+				constraints(
+					boundary_conditions(u == coeff(0.), {1, 3}),
+					boundary_conditions(u == coeff(-1.0), {0}),
+					boundary_conditions(u == coeff(1.0),  {2})
+				),
+				sol_old,
+				sol, 
+				dt,
+				n_ts
+				)) 
+			{
+				//post process
+			} else {
+				std::cerr << "[Error] solver failed to converge" << std::endl;
+			}
+		});
+
 
 		/////////////////////////////////////////////////////////////////////
 
@@ -904,78 +915,78 @@ namespace utopia {
 		// });
 
 
-		run_libmesh_test(init, [](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// run_libmesh_test(init, [](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
 			
-			//create system of equations
-			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("transient_navier_stokes");
+		// 	//create system of equations
+		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("transient_navier_stokes");
 
 		
-			auto Vx = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_x");
-			auto Vy = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_y");
-			auto V  = Vx * Vy;
+		// 	auto Vx = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_x");
+		// 	auto Vy = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_y");
+		// 	auto V  = Vx * Vy;
 
-			auto Q =  LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "pressure");
+		// 	auto Q =  LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "pressure");
 
-			auto u = trial(V);
-			auto v = test(V);
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
 
-			auto ux = u[0];
-			auto uy = u[1];
+		// 	auto ux = u[0];
+		// 	auto uy = u[1];
 
-			auto p = trial(Q);
-			auto q = test(Q);
-
-
-			const double mu  = 1.;
-			const double rho = 1.;
-			const double dt = 0.005;
-			const std::size_t n_ts = 40;
-
-			DVectord sol;
-			DVectord sol_old;
+		// 	auto p = trial(Q);
+		// 	auto q = test(Q);
 
 
-			auto uk 	= interpolate(sol, u);
-			auto uk_old = interpolate(sol_old, u);
+		// 	const double mu  = 1.;
+		// 	const double rho = 1.;
+		// 	const double dt = 0.005;
+		// 	const std::size_t n_ts = 40;
 
-			auto g_uk = grad(uk);
+		// 	DVectord sol;
+		// 	DVectord sol_old;
 
-			auto e         = mu * (transpose(grad(u)) + grad(u));
-			auto b_form_11 = integral(inner(u, v)) + dt * integral(inner(e, grad(v)) - (rho * dt) * inner(g_uk * u, v));
-			auto b_form_12 = dt * integral(inner(p, div(v)));
-			auto b_form_21 = integral(inner(div(u), q));
 
-			LMDenseVector r_v = zeros(2);
-			auto l_form_1 =  integral(inner(coeff(0.), q));
-			auto l_form_2 =  integral(inner(uk_old, v)); //zero forcing term
+		// 	auto uk 	= interpolate(sol, u);
+		// 	auto uk_old = interpolate(sol_old, u);
 
-			auto lhs = b_form_11 + b_form_12 + b_form_21;
-			auto rhs = l_form_1  + l_form_2;
+		// 	auto g_uk = grad(uk);
 
-			if(nl_implicit_euler(
-				equations(
-					lhs == rhs
-				),
-				constraints(
-					// boundary_conditions(ux == coeff(0.), {0, 1, 3}),
-					// boundary_conditions(ux == coeff(0.1), {2}),
-					// boundary_conditions(uy == coeff(0.), {0, 1, 2, 3})
-					boundary_conditions(uy == coeff(0.),   {0, 1, 2, 3}),
-					boundary_conditions(ux == coeff(0.),   {0, 2}),
-					boundary_conditions(ux == coeff(0.1),  {1, 3})
-				),
-				sol_old,
-				sol,
-				dt,
-				n_ts
-				)) {
-				//....
-			} else {
-				std::cerr << "[Error] solver failed to converge" << std::endl;
-			}
-		});
+		// 	auto e         = mu * (transpose(grad(u)) + grad(u));
+		// 	auto b_form_11 = integral(inner(u, v)) + dt * integral(inner(e, grad(v)) - (rho * dt) * inner(g_uk * u, v));
+		// 	auto b_form_12 = dt * integral(inner(p, div(v)));
+		// 	auto b_form_21 = integral(inner(div(u), q));
+
+		// 	LMDenseVector r_v = zeros(2);
+		// 	auto l_form_1 =  integral(inner(coeff(0.), q));
+		// 	auto l_form_2 =  integral(inner(uk_old, v)); //zero forcing term
+
+		// 	auto lhs = b_form_11 + b_form_12 + b_form_21;
+		// 	auto rhs = l_form_1  + l_form_2;
+
+		// 	if(nl_implicit_euler(
+		// 		equations(
+		// 			lhs == rhs
+		// 		),
+		// 		constraints(
+		// 			// boundary_conditions(ux == coeff(0.), {0, 1, 3}),
+		// 			// boundary_conditions(ux == coeff(0.1), {2}),
+		// 			// boundary_conditions(uy == coeff(0.), {0, 1, 2, 3})
+		// 			boundary_conditions(uy == coeff(0.),   {0, 1, 2, 3}),
+		// 			boundary_conditions(ux == coeff(0.),   {0, 2}),
+		// 			boundary_conditions(ux == coeff(0.1),  {1, 3})
+		// 		),
+		// 		sol_old,
+		// 		sol,
+		// 		dt,
+		// 		n_ts
+		// 		)) {
+		// 		//....
+		// 	} else {
+		// 		std::cerr << "[Error] solver failed to converge" << std::endl;
+		// 	}
+		// });
 
 	}
 

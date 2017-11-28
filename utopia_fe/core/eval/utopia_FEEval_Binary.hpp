@@ -6,11 +6,11 @@
 
 namespace utopia {
 
-	template<class BinExpr, int FormOrder>
+	template<class BinExpr, int FormOrder, class Traits>
 	class BinaryDelegate {};
 
-	template<class BinExpr>
-	class BinaryDelegate<BinExpr, 0> {
+	template<class BinExpr, class Traits>
+	class BinaryDelegate<BinExpr, 0, Traits> {
 	public:
 		// template<class AssemblyContextT>
 		// static auto apply(const BinExpr &expr, AssemblyContextT &) -> decltype( Eval<BinExpr>::apply(expr) )
@@ -28,12 +28,11 @@ namespace utopia {
 	//////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////
 
-	template<class Left, class Right, class Op>
-	class BinaryDelegate<Binary<Left, Right, Op>, 1> {
+	template<class Left, class Right, class Op, class Traits>
+	class BinaryDelegate<Binary<Left, Right, Op>, 1, Traits> {
 	public:
 		typedef utopia::Binary<Left, Right, Op> BinExpr;
 
-		typedef utopia::Traits<BinExpr> Traits;
 		static const int Backend = Traits::Backend;
 		typedef typename Traits::Vector Vector;
 
@@ -48,53 +47,57 @@ namespace utopia {
 	};
 
 
-	template<class Left, class Right>
-	class BinaryDelegate<Binary<Left, Right, Plus>, 1> {
+	template<class Left, class Right, class Traits>
+	class BinaryDelegate<Binary<Left, Right, Plus>, 1, Traits> {
 	public:
 		typedef utopia::Binary<Left, Right, Plus> BinExpr;
 
-		typedef utopia::Traits<BinExpr> Traits;
 		static const int Backend = Traits::Backend;
 		typedef typename Traits::Vector Vector;
 
 		static auto apply(const BinExpr &expr, AssemblyContext<Backend> &ctx) -> Vector
 		{
-			return FEBackend<Backend>::apply_binary(
-				FEEval<Left, Traits, Backend>::apply(expr.left(), ctx),
-				FEEval<Right, Traits, Backend>::apply(expr.right(), ctx),
-				expr.operation(),
-				ctx);
+			// return FEBackend<Backend>::apply_binary(
+			// 	FEEval<Left, Traits, Backend>::apply(expr.left(), ctx),
+			// 	FEEval<Right, Traits, Backend>::apply(expr.right(), ctx),
+			// 	expr.operation(),
+			// 	ctx);
+
+			return FEEval<Left, Traits, Backend>::apply(expr.left(), ctx)  +
+	   			   FEEval<Right, Traits, Backend>::apply(expr.right(), ctx);
 		}
 	};
 
-	template<class Left, class Right>
-	class BinaryDelegate<Binary<Left, Right, Minus>, 1> {
+	template<class Left, class Right, class Traits>
+	class BinaryDelegate<Binary<Left, Right, Minus>, 1, Traits> {
 	public:
 		typedef utopia::Binary<Left, Right, Minus> BinExpr;
 
-		typedef utopia::Traits<BinExpr> Traits;
 		static const int Backend = Traits::Backend;
 		typedef typename Traits::Vector Vector;
 
 		static auto apply(const BinExpr &expr, AssemblyContext<Backend> &ctx) -> Vector
 		{
-			return FEBackend<Backend>::apply_binary(
-				FEEval<Left, Traits, Backend>::apply(expr.left(), ctx),
-				FEEval<Right, Traits, Backend>::apply(expr.right(), ctx),
-				expr.operation(),
-				ctx);
+			// return FEBackend<Backend>::apply_binary(
+			// 	FEEval<Left, Traits, Backend>::apply(expr.left(), ctx),
+			// 	FEEval<Right, Traits, Backend>::apply(expr.right(), ctx),
+			// 	expr.operation(),
+			// 	ctx);
+
+			return 
+				FEEval<Left, Traits, Backend>::apply(expr.left(), ctx) -
+				FEEval<Right, Traits, Backend>::apply(expr.right(), ctx);
 		}
 	};
 
 	//////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////
 
-	template<class Left, class Right, class Op>
-	class BinaryDelegate<Binary<Left, Right, Op>, 2> {
+	template<class Left, class Right, class Op, class Traits>
+	class BinaryDelegate<Binary<Left, Right, Op>, 2, Traits> {
 	public:
 		typedef utopia::Binary<Left, Right, Op> BinExpr;
 
-		typedef utopia::Traits<BinExpr> Traits;
 		static const int Backend = Traits::Backend;
 		typedef typename Traits::Matrix Matrix;
 
@@ -109,12 +112,11 @@ namespace utopia {
 	};
 
 
-	template<class Left, class Right>
-	class BinaryDelegate<Binary<Left, Right, Plus>, 2> {
+	template<class Left, class Right, class Traits>
+	class BinaryDelegate<Binary<Left, Right, Plus>, 2, Traits> {
 	public:
 		typedef utopia::Binary<Left, Right, Plus> BinExpr;
 
-		typedef utopia::Traits<BinExpr> Traits;
 		static const int Backend = Traits::Backend;
 		typedef typename Traits::Matrix Matrix;
 
@@ -127,12 +129,11 @@ namespace utopia {
 	};
 
 
-	template<class Left, class Right>
-	class BinaryDelegate<Binary<Left, Right, Minus>, 2> {
+	template<class Left, class Right, class Traits>
+	class BinaryDelegate<Binary<Left, Right, Minus>, 2, Traits> {
 	public:
 		typedef utopia::Binary<Left, Right, Minus> BinExpr;
 
-		typedef utopia::Traits<BinExpr> Traits;
 		static const int Backend = Traits::Backend;
 		typedef typename Traits::Matrix Matrix;
 
@@ -150,7 +151,7 @@ namespace utopia {
 		typedef utopia::Binary<Left, Right, Op> Expr;
 		static const int has_trial = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
 		static const int has_test  = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
-		typedef utopia::BinaryDelegate<Expr, has_trial + has_test> DelegateT;
+		typedef utopia::BinaryDelegate<Expr, has_trial + has_test, Traits> DelegateT;
 
 		inline static auto apply(const Expr &expr, AssemblyContext<Backend> &ctx) -> decltype( DelegateT::apply(expr, ctx) )
 		{
@@ -361,13 +362,86 @@ namespace utopia {
 	    	return FEEval<Left, Traits, Backend>::apply(expr.left(), ctx) * FEEval<Right, Traits, Backend>::apply(expr.right(), ctx);
 	    } 
 	};
+
+
+	template<class T, int Order, class C, class F, class Op, class Traits, int Backend>
+	class FEEval<Binary<ConstantCoefficient<T, Order>, Interpolate<C, F>, Op>, Traits, Backend> {
+	public:
+		typedef utopia::ConstantCoefficient<T, Order> Left;
+		typedef utopia::Interpolate<C, F> Right;
+		typedef utopia::Binary<Left, Right, Op> Expr;
+
+		static auto apply(const Expr &expr, AssemblyContext<Backend> &ctx) -> decltype( FEEval<Right, Traits, Backend>::apply(expr.right(), ctx) )
+		{
+			return FEBackend<Backend>::apply_binary(
+				expr.left(),
+				expr.right(),
+				expr.operation(),
+				ctx);
+		}
+	};
+
+
+	template<class C, class F, class T, int Order, class Op, class Traits, int Backend>
+	class FEEval<Binary<Interpolate<C, F>, ConstantCoefficient<T, Order>, Op>, Traits, Backend> {
+	public:
+		typedef utopia::Interpolate<C, F> Left;
+		typedef utopia::ConstantCoefficient<T, Order> Right;
+		typedef utopia::Binary<Left, Right, Op> Expr;
+
+		static auto apply(const Expr &expr, AssemblyContext<Backend> &ctx) -> decltype( FEEval<Left, Traits, Backend>::apply(expr.left(), ctx) )
+		{
+			return FEBackend<Backend>::apply_binary(
+				expr.left(),
+				expr.right(),
+				expr.operation(),
+				ctx);
+		}
+	};
+
+
+
+	template<class T, int Order, class C, class F, class Traits, int Backend>
+	class FEEval<Binary<Interpolate<C, F>, ConstantCoefficient<T, Order>, Plus>, Traits, Backend> {
+	public:
+		typedef utopia::Interpolate<C, F> Left;
+		typedef utopia::ConstantCoefficient<T, Order> Right;
+		typedef utopia::Binary<Left, Right, Plus> Expr;
+
+		static auto apply(const Expr &expr, AssemblyContext<Backend> &ctx) -> decltype( FEEval<Left, Traits, Backend>::apply(expr.left(), ctx) )
+		{
+			return FEBackend<Backend>::apply_binary(
+				expr.right(),
+				expr.left(),
+				expr.operation(),
+				ctx);
+		}
+	};
+
+	template<class T, class C, class F, class Traits, int Backend>
+	class FEEval<Binary<Interpolate<C, F>, ConstantCoefficient<T, 0>, Multiplies>, Traits, Backend> {
+	public:
+		typedef utopia::Interpolate<C, F> Left;
+		typedef utopia::ConstantCoefficient<T, 0> Right;
+		typedef utopia::Binary<Left, Right, Multiplies> Expr;
+
+		static auto apply(const Expr &expr, AssemblyContext<Backend> &ctx) -> decltype( FEEval<Left, Traits, Backend>::apply(expr.left(), ctx) )
+		{
+			return FEBackend<Backend>::apply_binary(
+				expr.right(),
+				expr.left(),
+				expr.operation(),
+				ctx);
+		}
+	};
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 	template<class Left, class Right, class Op, class AssemblyContext>
 	class FunctionalTraits<Binary<Left, Right, Op>, AssemblyContext> {
 	public:
-		inline static int type(const Binary<Left, Right, Op> &expr, const AssemblyContext &ctx)  
+		inline static int type(const Binary<Left, Right, Op> &expr, AssemblyContext &ctx)  
 		{ 
 			return std::max(FunctionalTraits<Left, AssemblyContext>::type(expr.left(), ctx), 
 							FunctionalTraits<Right, AssemblyContext>::type(expr.right(), ctx));

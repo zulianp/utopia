@@ -10,9 +10,10 @@ namespace utopia {
 	{
 		// run_libmesh_backend_test(init);
 		// run_contact_test(init);
-		// run_form_eval_test(init);
-		run_fsi_test(init);
+		run_form_eval_test(init);
+		// run_fsi_test(init);
 		
 		// run_semigeometric_multigrid_test(init);
 	}
 }
+
