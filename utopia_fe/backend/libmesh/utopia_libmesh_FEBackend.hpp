@@ -5,6 +5,7 @@
 #include "utopia_libmesh_AssemblyContext.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_libmesh_LambdaFunction.hpp"
+#include "utopia_Reduce.hpp"
 
 #include "utopia_FEBackend.hpp"
 #include "utopia_FEBasicOverloads.hpp"
@@ -72,6 +73,22 @@ namespace utopia {
 		return result;
 	}
 
+	template<typename T>
+	inline static T inner(const libMesh::DenseMatrix<T> &left, const libMesh::TensorValue<T> &right)
+	{
+		std::size_t m = left.m();
+		std::size_t n = left.n();
+
+		T result = 0;
+		for(std::size_t i = 0; i < m; ++i) {
+			for(std::size_t j = 0; j < n; ++j) {
+				result += left(i, j) * right(i, j);
+			}
+		}
+
+		return result;
+	}
+
 	template<class Left, typename T>
 	inline static T inner(const Wrapper<Left, 1> &left, const libMesh::VectorValue<T> &right)
 	{
@@ -97,6 +114,35 @@ namespace utopia {
 		return inner(right.implementation(), left);
 	}
 
+	////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	template<class Left, typename T>
+	inline static T inner(const Wrapper<Left, 2> &left, const libMesh::TensorValue<T> &right)
+	{
+		return inner(left.implementation(), right);
+	}
+
+	template<class Left, typename T>
+	inline static T inner(const Wrapper<Left, 2> &left, const libMesh::DenseMatrix<T> &right)
+	{
+		return inner(left.implementation(), right);
+	}
+
+
+	template<typename T, class Right>
+	inline static T inner(const libMesh::TensorValue<T> &left, const  Wrapper<Right, 2> &right)
+	{
+		return inner(right.implementation(), left);
+	}
+
+	template<typename T, class Right>
+	inline static T inner(const libMesh::DenseMatrix<T> &left, const Wrapper<Right, 2> &right)
+	{
+		return inner(right.implementation(), left);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////
 
 	template<>
 	class FEBackend<LIBMESH_TAG> {
@@ -322,6 +368,30 @@ namespace utopia {
 			std::vector<Wrapper<T, 2>> ret(n);
 			for(std::size_t i = 0; i < n; ++i) {
 				ret[i] = utopia::inv(mats[i]);
+			}
+
+			return ret;
+		}
+
+		template<typename T>
+		static auto transpose(
+			const Wrapper<T, 2> &mat,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> Wrapper<T, 2>
+		{
+			//forward to algebra backend
+			return utopia::transpose(mat);
+		}
+
+
+		template<typename T>
+		static auto transpose(
+			const std::vector<Wrapper<T, 2>> &mats,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<Wrapper<T, 2>>
+		{
+			const auto n = mats.size();
+			std::vector<Wrapper<T, 2>> ret(n);
+			for(std::size_t i = 0; i < n; ++i) {
+				ret[i] = utopia::transpose(mats[i]);
 			}
 
 			return ret;
