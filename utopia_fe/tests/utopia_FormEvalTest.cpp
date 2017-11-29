@@ -188,6 +188,33 @@ namespace utopia {
 			assemble_bilinear_and_print(b_form);
 		}
 
+
+		static void run_nonlinear_elasticity(const std::shared_ptr<SpaceInput> &space_input)
+		{
+			double mu = 1.;
+			double lambda = 1.;
+
+			auto Vx = FunctionSpaceT(space_input);
+			auto Vy = FunctionSpaceT(space_input);
+			auto V  = Vx * Vy;
+
+			auto u = trial(V);
+			auto v = test(V);
+
+			DVectord sol = zeros(27);
+			each_write(sol, [](const SizeType i) -> double {
+				return 0.1 + i/27.;
+			});
+
+			auto uk = interpolate(sol, u);
+
+			auto F = identity() + grad(uk);
+			auto J = det(inv(F));
+
+			auto b_form = inner(logn(J) * u, v) * dX;
+			assemble_bilinear_and_print(b_form);
+		}
+
 		static void run_navier_stokes_test(const std::shared_ptr<SpaceInput> &space_input)
 		{
 			std::cout << "[run_navier_stokes_test]" << std::endl;
@@ -522,7 +549,7 @@ namespace utopia {
 	{	
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
-		const unsigned int n = 50;
+		const unsigned int n = 1;
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
 			n, n,
 			0, 1,
@@ -636,6 +663,13 @@ namespace utopia {
 		// 	es->add_system<libMesh::LinearImplicitSystem>("run_nonlinear_form_test");
 		// 	lm_test.run_nonlinear_form_test(es);
 		// });
+
+		run_libmesh_test(init,[](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			es->add_system<libMesh::LinearImplicitSystem>("run_nonlinear_elasticity");
+			lm_test.run_nonlinear_elasticity(es);
+		});
 
 		// run_libmesh_test(init, [](
 		// 	LibMeshFormEvalTest &lm_test,
@@ -827,50 +861,50 @@ namespace utopia {
 
 
 
-		run_libmesh_test(init, [](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// run_libmesh_test(init, [](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
 			
-			//create system of equations
-			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("reaction_diffusion");
-			auto V = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "u");
-			auto u = trial(V);
-			auto v = test(V);
+		// 	//create system of equations
+		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("reaction_diffusion");
+		// 	auto V = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "u");
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
 
-			const double dt = 0.01;
-			const std::size_t n_ts = 40;
+		// 	const double dt = 0.01;
+		// 	const std::size_t n_ts = 40;
 
-			DVectord sol;
-			DVectord sol_old;
+		// 	DVectord sol;
+		// 	DVectord sol_old;
 
-			auto uk = interpolate(sol, u);
-			auto uk_old = interpolate(sol_old, u);
+		// 	auto uk = interpolate(sol, u);
+		// 	auto uk_old = interpolate(sol_old, u);
 
-			auto a = coeff(200.);
-			auto alpha = coeff(0.5);
-			auto R = uk_old * a * (coeff(1.) - uk_old) * (uk_old - alpha);
-			// auto R = coeff(0.);
+		// 	auto a = coeff(200.);
+		// 	auto alpha = coeff(0.5);
+		// 	auto R = uk_old * a * (coeff(1.) - uk_old) * (uk_old - alpha);
+		// 	// auto R = coeff(0.);
 
-			if(nl_implicit_euler(
-				equations(
-					( inner(u, v) + inner( dt * grad(u), grad(v)) ) * dX == ( dt * inner(R, v) + inner(uk_old, v) + dt * inner(coeff(20.), v)) * dX
-				),
-				constraints(
-					boundary_conditions(u == coeff(0.), {1, 3}),
-					boundary_conditions(u == coeff(-1.0), {0}),
-					boundary_conditions(u == coeff(1.0),  {2})
-				),
-				sol_old,
-				sol, 
-				dt,
-				n_ts
-				)) 
-			{
-				//post process
-			} else {
-				std::cerr << "[Error] solver failed to converge" << std::endl;
-			}
-		});
+		// 	if(nl_implicit_euler(
+		// 		equations(
+		// 			( inner(u, v) + inner( dt * grad(u), grad(v)) ) * dX == ( dt * inner(R, v) + inner(uk_old, v) + dt * inner(coeff(20.), v)) * dX
+		// 		),
+		// 		constraints(
+		// 			boundary_conditions(u == coeff(0.), {1, 3}),
+		// 			boundary_conditions(u == coeff(-1.0), {0}),
+		// 			boundary_conditions(u == coeff(1.0),  {2})
+		// 		),
+		// 		sol_old,
+		// 		sol, 
+		// 		dt,
+		// 		n_ts
+		// 		)) 
+		// 	{
+		// 		//post process
+		// 	} else {
+		// 		std::cerr << "[Error] solver failed to converge" << std::endl;
+		// 	}
+		// });
 
 
 		/////////////////////////////////////////////////////////////////////

@@ -20,6 +20,8 @@
 #include "utopia_FEEval_Number.hpp"
 #include "utopia_FEEval_Wrapper.hpp"
 #include "utopia_FEEval_Equality.hpp"
+#include "utopia_FEEval_Determinant.hpp"
+#include "utopia_FEEval_Inverse.hpp"
 
 
 #endif //UTOPIA_FE_EVAL_HPP

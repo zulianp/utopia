@@ -299,6 +299,65 @@ namespace utopia {
 			return ctx.test()[fun.space_ptr()->subspace_id()]->get_phi();
 		}
 
+		template<typename T>
+		static auto determinant(
+			const std::vector<Wrapper<T, 2>> &mats,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			const auto n = mats.size();
+			std::vector<double> dets(n);
+			for(std::size_t i = 0; i < n; ++i) {
+				dets[i] = utopia::det(mats[i]);
+			}
+
+			return dets;
+		}
+
+		template<typename T>
+		static auto inverse(
+			const std::vector<Wrapper<T, 2>> &mats,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<Wrapper<T, 2>>
+		{
+			const auto n = mats.size();
+			std::vector<Wrapper<T, 2>> ret(n);
+			for(std::size_t i = 0; i < n; ++i) {
+				ret[i] = utopia::inv(mats[i]);
+			}
+
+			return ret;
+		}
+
+		template<typename T>
+		static auto apply_binary(
+			const SymbolicTensor<Identity, 2> &,
+			std::vector<Wrapper<T, 2>> &&mats,
+			const Plus &,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<Matrix> 
+		{
+			auto s = size(mats[0]);
+			for(auto &m : mats) {
+				m += identity(s);
+			}
+
+			return std::move(mats);
+		}
+
+
+		template<class Op>
+		static auto apply_unary(
+			std::vector<double> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<double>
+		{
+		
+			for(auto &v : vals) {
+				v = op.apply(v);
+			}
+
+			return std::move(vals);
+		}
+
+
 		// vector fe functions
 		static void fun_aux(
 			ProductFunctionSpace<LibMeshFunctionSpace> &space,
@@ -1147,7 +1206,7 @@ namespace utopia {
 			typename remove_ref_and_const<decltype(fun(right, ctx))>::type ret = fun(right, ctx);
 
 			const std::size_t n_quad_points = left.size();
-			const std::size_t n_functions = right.size();
+			const std::size_t n_functions = ret.size();
 
 			assert(n_quad_points == left.size());
 

@@ -153,6 +153,28 @@ namespace utopia {
         }
     };
 
+    class Log {
+    public:
+        std::string getClass() const { return "Log"; }
+
+        template<typename T>
+        inline static T apply(const T &x) {
+            using std::log;
+            return log(x);
+        }
+    };
+
+    class Exp {
+    public:
+        std::string getClass() const { return "Exp"; }
+
+        template<typename T>
+        inline static T apply(const T &x) {
+            using std::exp;
+            return exp(x);
+        }
+    };
+
     class Transpose {
     public:
         std::string getClass() const { return "Transpose"; }

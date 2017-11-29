@@ -14,7 +14,8 @@ namespace utopia {
     public:
         typedef _Expr Expr;
         typedef _Operation Operation;
-        typedef typename Expr::Scalar Scalar;
+        typedef typename utopia::Traits<Expr>::Scalar Scalar;
+
 
         static const int Order = Expr::Order;
 

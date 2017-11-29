@@ -307,7 +307,6 @@ namespace utopia {
 	    		}
 
 	    		reaction_force_s = rhs_s - mat_s * displacement_s;
-	    		// reaction_force_s = mat_s * displacement_s - rhs_s;
 	    		std::cout << "mag_f: " << double(norm2(reaction_force_s)) << std::endl;
 
 	    		//update the forcing term in the fluid

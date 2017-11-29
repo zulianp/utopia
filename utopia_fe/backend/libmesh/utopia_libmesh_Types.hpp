@@ -203,10 +203,28 @@ namespace utopia {
 	class Evaluator<Result, LIBMESH_TAG> {
 	public:
 		
+		template<class Left, class Right>
+		static void eval(const Construct<Left, Right> &expr)
+		{
+		    ExprInliner<Construct<Left, Right>>::eval(expr);
+		}
+
+		template<class Left, class Right>
+		static void eval(const Assign<Left, Right> &expr)
+		{
+		    ExprInliner<Assign<Left, Right>>::eval(expr);
+		}
+
+		template<class Left, class Right, class Operation>
+		static void eval(const InPlace<Left, Right, Operation> &expr)
+		{
+		    ExprInliner<InPlace<Left, Right, Operation>>::eval(expr);
+		}  
+
 		template<class Derived>
-		inline static bool eval(const Expression<Derived> &expr) {
-			ExprInliner<Derived>::eval(expr.derived());
-			return true;
+		static auto eval(const Expression<Derived> &expr) -> decltype( ExprInliner<Derived>::eval(expr.derived()) )
+		{
+		    return ExprInliner<Derived>::eval(expr.derived());
 		}
 		
 		template<class Tensor>

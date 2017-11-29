@@ -83,6 +83,15 @@ namespace utopia {
         return transform(expr, Pow2());
     }
 
+    template<class Derived>
+    auto logn(const Expression<Derived> &expr) -> decltype(transform(expr, Log())) {
+        return transform(expr, Log());
+    }
+
+    template<class Derived>
+    auto exp(const Expression<Derived> &expr) -> decltype(transform(expr, Exp())) {
+        return transform(expr, Exp());
+    }
 
     /**
      * @ingroup transforms

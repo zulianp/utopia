@@ -312,6 +312,35 @@ namespace utopia {
 				return TRAVERSE_CONTINUE;
 			}
 
+			template<class C, template<class> class Function>
+			inline int visit(const Gradient<Interpolate<C, Function<LibMeshFunctionSpace>> > &expr)
+			{
+				init_dphi(*expr.expr().fun().space_ptr());
+				return TRAVERSE_SKIP_SUBTREE;
+			}
+
+			template<class C, template<class> class Function>
+			inline int visit(const Gradient<Interpolate<C, Function<ProductFunctionSpace<LibMeshFunctionSpace>>> > &expr)
+			{
+				init_dphi(*expr.expr().fun().space_ptr());
+				return TRAVERSE_SKIP_SUBTREE;
+			}
+
+			template<class C, template<class> class Function>
+			inline int visit(const Interpolate<C, Function<LibMeshFunctionSpace>> &expr)
+			{
+				init_phi(*expr.expr().fun().space_ptr());
+				return TRAVERSE_CONTINUE;
+			}
+
+			template<class C, template<class> class Function>
+			inline int visit(const Interpolate<C, Function<ProductFunctionSpace<LibMeshFunctionSpace>>> &expr)
+			{
+				init_phi(*expr.fun().space_ptr());
+				return TRAVERSE_CONTINUE;
+			}
+
+
 			//Divergence
 			template<template<class> class Function>
 			inline int visit(const Divergence<Function<ProductFunctionSpace<LibMeshFunctionSpace>>> &expr)

@@ -11,6 +11,7 @@ namespace utopia {
 		static_assert(Expr::Order >= 2, "must be a 2nd order tensor or greater");
 
 		static const int Order = 0;
+		// typedef utopia::Traits<Expr>::Scalar Scalar;
 
 		inline const Expr &expr() const 
 		{

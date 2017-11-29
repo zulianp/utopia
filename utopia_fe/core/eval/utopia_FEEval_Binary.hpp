@@ -435,6 +435,22 @@ namespace utopia {
 		}
 	};
 
+	template<class Right, class Op, class Traits, int Backend>
+	class FEEval<Binary<SymbolicTensor<Identity, 2>, Gradient<Right>, Op>, Traits, Backend> {
+	public:
+		typedef utopia::SymbolicTensor<Identity, 2> Left;
+		typedef utopia::Binary<Left, Gradient<Right>, Op> Expr;
+
+		static auto apply(const Expr &expr, AssemblyContext<Backend> &ctx) -> decltype( FEEval<Gradient<Right>, Traits, Backend>::apply(expr.right(), ctx) )
+		{
+			return FEBackend<Backend>::apply_binary(
+				expr.left(),
+				FEEval<Gradient<Right>, Traits, Backend>::apply(expr.right(), ctx),
+				expr.operation(),
+				ctx);
+		}
+	};
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
 

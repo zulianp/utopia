@@ -16,6 +16,11 @@ namespace utopia {
 			return i == j;
 		}
 
+		inline static Scalar eval_at(const SymbolicTensor<Identity, 2> &, const SizeType i, const SizeType j)
+		{
+			return i == j;
+		}
+
 		inline static Scalar eval_at(const Factory<LocalIdentity, 2> &, const SizeType i, const SizeType j)
 		{
 			return i == j;
@@ -62,8 +67,23 @@ namespace utopia {
 		}
 
 		template<class Left, class Right>
+		inline static void eval(const Construct<Number<Left>, Determinant<Right>> &expr){
+			expr.left() = Eval<Determinant<Right>, Traits, Traits::Backend>::apply(expr);
+		}
+
+		template<class InnerExpr>
+		inline static Scalar eval(const Determinant<InnerExpr> &expr) {
+			return Eval<Determinant<InnerExpr>, Traits, Traits::Backend>::apply(expr);
+		}
+
+		template<class Left, class Right>
 		inline static void eval(const Assign<Left, Right> &expr){
 			eval(expr.right(), expr.left());
+		}
+
+		template<class Left, class Right>
+		inline static void eval(const Assign<Left, Inverse<Right>> &expr){
+			Eval<Inverse<Right>, Traits, Traits::Backend>::apply(expr.right(), expr.left());
 		}
 
 		template<class Left, class Right, class Operation>
