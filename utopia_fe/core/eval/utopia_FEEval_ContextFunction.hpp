@@ -7,14 +7,14 @@
 
 
 namespace utopia {
-	template<class Fun, class Traits, int Backend>
-	class FEEval<ContextFunction<Fun>, Traits, Backend> {
+	template<class Out, class Fun, class Traits, int Backend>
+	class FEEval<ContextFunction<Out, Fun>, Traits, Backend> {
 	public:
-		typedef utopia::ContextFunction<Fun> Expr;
+		typedef utopia::ContextFunction<Out, Fun> Expr;
 
 	    inline static auto apply(
 	    	const Expr &expr,
-	    	AssemblyContext<Backend> &ctx) -> decltype( expr.eval(ctx) )
+	    	AssemblyContext<Backend> &ctx) -> Out
 	    {
 	    	return expr.eval(ctx);
 	    } 

@@ -29,6 +29,7 @@ namespace utopia {
 
 	template<class ...> class Equations;
 	template<class ...> class FEConstraints;
+	template<class, class> class ContextFunction;
 	
 }
 

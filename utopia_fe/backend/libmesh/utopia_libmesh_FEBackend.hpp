@@ -413,6 +413,179 @@ namespace utopia {
 		}
 
 
+		template<typename T>
+		static auto apply_binary(
+			const double val,
+			std::vector<Wrapper<T, 2>> &&mats,
+			const Plus &,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<Matrix> 
+		{
+			for(auto &m : mats) {
+				m *= val;
+			}
+
+			return std::move(mats);
+		}
+
+		template<typename T>
+		static auto apply_binary(
+			const double val,
+			std::vector<T> &&vals,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T> 
+		{
+			for(auto &v : vals) {
+				v *= val;
+			}
+
+			return std::move(vals);
+		}
+
+
+		template<typename T>
+		static auto apply_binary(
+			const double val,
+			std::vector<std::vector<T>> &&vals,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<std::vector<T>>
+		{
+			for(auto &v : vals) {
+				for(auto &vk : v) {
+					vk *= val;
+				}
+			}
+
+			return std::move(vals);
+		}
+
+
+		template<typename T>
+		static auto apply_binary(
+			std::vector<T> &&left,
+			const std::vector<T> &right,
+			const Plus &,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T> 
+		{
+			std::size_t n = left.size();
+
+			for(std::size_t i = 0; i != n; ++i) {
+				left[i] += right[i];
+			}
+
+			return std::move(left);
+		}
+
+		template<typename T>
+		static auto apply_binary(
+			std::vector<T> &&left,
+			const std::vector<T> &right,
+			const Minus &,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T> 
+		{
+			std::size_t n = left.size();
+
+			for(std::size_t i = 0; i != n; ++i) {
+				left[i] -= right[i];
+			}
+
+			return std::move(left);
+		}
+
+
+		// template<typename T>
+		// static auto apply_binary(
+		// 	const double val,
+		// 	std::vector<libMesh::DenseVector<T>> &&vals,
+		// 	const Multiplies &,
+		// 	const AssemblyContext<LIBMESH_TAG> &) -> std::vector<libMesh::DenseVector<T>>
+		// {
+		// 	for(auto &v : vals) {
+		// 		v *= val;
+		// 	}
+
+		// 	return std::move(vals);
+		// }
+
+
+		template<typename T>
+		static auto apply_binary(
+			const double val,
+			const std::vector<T> &vals,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T> 
+		{
+			auto ret = vals;
+			for(auto &v : ret) {
+				v *= val;
+			}
+
+			return ret;
+		}
+
+		template<typename T>
+		static auto multiply(
+			const std::vector<double> &scale,
+			std::vector<T> &&vals,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T> 
+		{
+			std::size_t n = scale.size();
+
+			for(std::size_t i = 0; i != n; ++i) {
+				vals[i] *= scale[i];
+			}
+
+			return std::move(vals);
+		}
+
+		template<typename T>
+		static auto multiply(
+			const double val,
+			const std::vector<T> &vals,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T> 
+		{
+			auto ret = vals;
+			for(auto &v : ret) {
+				v *= val;
+			}
+
+			return ret;
+		}
+
+
+		template<typename T>
+		static auto apply_binary(
+			const double val,
+			const std::vector<std::vector<T>> &vals,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<std::vector<T>>
+		{
+			auto ret = vals;
+			for(auto &v_i : ret) {
+				for(auto &v_j : v_i) {
+					v_j *= val;
+				}
+			}
+
+			return ret;
+		}
+
+		// template<typename T>
+		// static auto apply_binary(
+		// 	const double val,
+		// 	const std::vector<T> vals,
+		// 	const Multiplies &,
+		// 	const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T> 
+		// {
+		// 	auto s = size(vals);
+		// 	for(auto &v : vals) {
+		// 		v *= val;
+		// 	}
+
+		// 	return std::move(vals);
+		// }
+
+
+
 		template<class Op>
 		static auto apply_unary(
 			std::vector<double> &&vals,

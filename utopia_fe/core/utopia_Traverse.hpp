@@ -17,7 +17,13 @@ namespace utopia {
 		return TRAVERSE_CONTINUE;
 	}
 
-		template<class Expr, class Visitor>
+	template<class Out, class F, class Visitor>
+	inline static int traverse(const ContextFunction<Out, F> &expr, Visitor &visitor)
+	{
+		return TRAVERSE_CONTINUE;
+	}
+
+	template<class Expr, class Visitor>
 	inline static int traverse(Integral<Expr> &expr, Visitor &visitor)
 	{
 		switch(visitor.visit(expr))

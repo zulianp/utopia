@@ -1,42 +1,43 @@
 #ifndef UTOPIA_FE_FUNCTION_HPP
 #define UTOPIA_FE_FUNCTION_HPP 
 
+#include "utopia_FEForwardDeclarations.hpp"
 #include <functional>
 
 namespace utopia {
 
-	template<class Fun>
-	class ContextFunction : public Expression< ContextFunction<Fun> > {
+	template<class Out, class Fun>
+	class ContextFunction : public Expression< ContextFunction<Out, Fun> > {
 	public:
-
-		typedef utopia::Traits<typename Fun::result_type> Traits;
-		typedef typename Traits::Scalar Scalar;
-		static const int Order = Traits::Order;
+		//FIXME
+		static const int Order = 0;
+		typedef double Scalar;
 
 		template<int Backend>
-		auto eval(const AssemblyContext<Backend> &ctx) -> decltype(fun_(ctx))
+		auto eval(const AssemblyContext<Backend> &ctx) const -> Out
 		{
-			return fun_(ctx);
+			return fun(ctx);
 		}
 
 		ContextFunction(Fun fun)
-		: fun_(fun)
+		: fun(fun)
 		{}
 
 		std::string getClass() const { return "ContextFunction"; }
 
 	private:
-		Fun fun_;
+		Fun fun;
 	};
 
 
-	template<class Fun>
-	class Traits< ContextFunction<Fun> > : public Traits<typename Fun::result_type> {};
+	//FIXME
+	template<class Out, class Fun>
+	class Traits< ContextFunction<Out, Fun> > : public Traits<double> {};
 
-	template<class Fun>
-	inline ContextFunction<Fun> ctx_fun(Fun f)
+	template<class Out, class Fun>
+	inline ContextFunction<Out, Fun> ctx_fun(Fun f)
 	{
-		return ContextFunction<Fun>(f);
+		return ContextFunction<Out, Fun>(f);
 	}
 }
 

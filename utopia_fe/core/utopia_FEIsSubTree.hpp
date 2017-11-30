@@ -4,6 +4,7 @@
 #include "utopia_FEForwardDeclarations.hpp"
 #include "utopia_IsSubTree.hpp"
 #include "utopia_Any.hpp"
+#include "utopia_Operators.hpp"
 
 namespace utopia {
 
@@ -153,19 +154,18 @@ namespace utopia {
 		static const int value = 1;
 	};
 
-	template<class Expr, class Inner>
-	class IsSubTree< Expr, Integral<Inner> > {
-	public:
-		static const int value = IsSubTree<Expr, Inner>::value;
-	};
-
-
 	template<class Inner>
 	class IsSubTree< Integral<utopia::Any>, Integral<Inner> > {
 	public:
 		static const int value = 1;
 	};
 
+
+	template<class Expr, class Inner>
+	class IsSubTree< Expr, Integral<Inner> > {
+	public:
+		static const int value = IsSubTree<Expr, Inner>::value;
+	};
 
 	//equality
 	template<class Expr, class Left, class Right>
@@ -207,6 +207,17 @@ namespace utopia {
 		static const int value = 1;
 	};
 
+
+	//to be moved in utopia
+
+	template<class Left, class Right>
+	class IsSubTree<
+			Reduce<Binary<Any, Any,    EMultiplies>, Plus>,
+			Reduce<Binary<Left, Right, EMultiplies>, Plus>
+			> {
+	public:
+		static const int value = 1;
+	};
 
 	///rest of specializations
 }

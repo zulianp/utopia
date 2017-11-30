@@ -6,20 +6,43 @@
 
 namespace utopia {
 	template<class Expr>
+	struct IsForm 
+	{	
+		typedef utopia::Reduce< Binary<utopia::Any, utopia::Any, EMultiplies>, Plus> Inner;
+
+		static const int has_inner_product = IsSubTree<Inner, Expr>::value;
+		static const int has_trial    	   = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
+		static const int has_test          = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
+		static const int has_fun           = has_trial || has_test;
+		static const int order             = has_inner_product * (has_trial + has_test);
+		static const int value             = has_inner_product && (has_fun);
+
+	};
+
+	template<class Expr>
 	struct IsBilinearForm
 	{
-		static const int has_trial = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
-		static const int has_test  = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
-		static const int value = (has_trial + has_test) == 2;
+		static const int value = IsForm<Expr>::order == 2;
 	};
 
 	template<class Expr>
 	struct IsLinearForm
 	{
-		static const int has_trial = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
-		static const int has_test  = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
-		static const int value = (has_trial + has_test) == 1;
+		static const int value = IsForm<Expr>::order == 2;
 	};
+
+
+	template<class Expr>
+	struct IsForm<const Expr> : IsForm<Expr> {};
+	
+	template<class Expr>
+	struct IsForm<const Expr &> : IsForm<Expr> {};
+
+	template<class Expr>
+	struct IsForm<Expr &> : IsForm<Expr> {};
+
+	template<class Expr>
+	struct IsForm<Expr &&> : IsForm<Expr> {};
 }
 
 #endif //UTOPIA_IS_FORM_HPP

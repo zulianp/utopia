@@ -4,6 +4,15 @@
 #include "utopia_FunctionalTraits.hpp"
 
 namespace utopia {
+	template<class T, class Traits, int Backend>
+	class FEEval<Number<T>, Traits, Backend> {
+	public:
+		template<class AssemblyContext>
+		inline static T apply(const Number<T> &v, const AssemblyContext &) {
+			return v;
+		}
+	};
+
 	template<class T, class AssemblyContext>
 	class FunctionalTraits<Number<T>, AssemblyContext> {
 	public:

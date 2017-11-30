@@ -42,7 +42,7 @@ namespace utopia {
 			auto of = offset(test, ctx);
 			return FEBackend<Traits::Backend>::linear_form(
 				of,
-				FEEval<LeftExpr,  Traits, Backend>::apply(left, ctx),
+				FEEval<LeftExpr, Traits, Backend>::apply(left, ctx),
 				FEEval<Test,  Traits, Backend>::apply(test, ctx), 
 				ctx);
 		}
@@ -155,6 +155,21 @@ namespace utopia {
 		    }
 	    }  
 	};
+
+	// template<class Left, class OpLeft, class Right, class OpRight, class Op, class Traits, int Backend>
+	// class FEEval< Binary< Reduce<Left, OpLeft>, Reduce<Right, OpRight>, Op>, Traits, Backend> {
+	// public:
+	// 	typedef utopia::Binary< Reduce<Left, OpLeft>, Reduce<Right, OpRight>, Op> Expr;
+
+	// 	inline static auto apply(
+	// 		const Expr &expr,
+	// 		AssemblyContext<Backend> &ctx) -> double
+	// 	{
+	// 		static_assert(Backend < 0, "not implemented");
+	// 		return 0.;
+	// 	}
+
+	// };
 
 	template<class Expr, class AssemblyContext>
 	class FunctionalTraits<Reduce<Expr, Plus>, AssemblyContext> {

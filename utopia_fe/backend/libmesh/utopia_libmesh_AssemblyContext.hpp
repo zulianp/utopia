@@ -58,12 +58,12 @@ namespace utopia {
 			return fe_;
 		}
 
-		inline std::shared_ptr<libMesh::QBase> quad_test()
+		inline std::shared_ptr<libMesh::QBase> quad_test() const
 		{
 			return quad_test_;
 		}
 
-		inline std::shared_ptr<libMesh::QBase> quad_trial()
+		inline std::shared_ptr<libMesh::QBase> quad_trial() const
 		{
 			if(!quad_trial_) return quad_test_;
 			return quad_trial_;

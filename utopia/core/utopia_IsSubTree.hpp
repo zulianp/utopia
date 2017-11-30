@@ -83,6 +83,7 @@ namespace utopia {
 		static const int value = IsSubTree<Expr, Inner>::value;
 	};
 
+
 	//tensor-reduce
 	template<class Inner, class Op>
 	class IsSubTree<TensorReduce<Inner, Op>, TensorReduce<Inner, Op>> {
