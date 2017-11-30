@@ -513,7 +513,7 @@ namespace utopia {
                 if(use_biorth_) {
                     mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
                     
-                    mortar_assemble_weighted_biorth(*slave_fe, *master_fe, biorth_weights, elemmat);
+                    mortar_assemble_weighted_biorth(*slave_fe, *master_fe, biorth_weights, elemmat_reverse);
                     
                 } else {
                     mortar_assemble(*master_fe, *slave_fe, elemmat);
