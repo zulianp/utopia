@@ -1,5 +1,5 @@
 #ifndef UTOPIA_TRILINOS_HPP
-#define UTOPIA_TRILINOS_HPP 
+#define UTOPIA_TRILINOS_HPP
 
 #ifdef WITH_TRILINOS
 #include <Tpetra_CrsMatrix.hpp>

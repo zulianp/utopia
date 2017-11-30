@@ -12,24 +12,24 @@
 
 #include "utopia_Base.hpp"
 
-namespace utopia 
+namespace utopia
 {
-    class TrilinosTraits 
+class TrilinosTraits
     {
     public:
         typedef double                           Scalar;
         typedef int                              SizeType;
         typedef utopia::TpetraMatrix             Matrix;
         typedef utopia::TpetraSparseMatrix       SparseMatrix;
-       //typedef utopia::TpetraSerialSparseMatrix SerialSparseMatrix; //local matrix
+        //typedef utopia::TpetraSerialSparseMatrix SerialSparseMatrix; //local matrix
 
-       typedef utopia::TpetraVector             Vector;
-       //typedef utopia::TpetraSerialVector SerialVector;
+        typedef utopia::TpetraVector             Vector;
+        //typedef utopia::TpetraSerialVector SerialVector;
 
-        enum 
-        {
-            Backend = TRILINOS 
-        };
+        enum
+            {
+            Backend = TRILINOS
+            };
     };
 }
 

@@ -13,27 +13,28 @@
 #include "utopia_Wrapper.hpp"
 
 
-namespace utopia {
+namespace utopia
+{
 
-    UTOPIA_MAKE_TRAITS_DENSE(TpetraMatrix, TrilinosTraits);
-    UTOPIA_MAKE_TRAITS_SPARSE(TpetraSparseMatrix, TrilinosTraits);
+UTOPIA_MAKE_TRAITS_DENSE(TpetraMatrix, TrilinosTraits);
+UTOPIA_MAKE_TRAITS_SPARSE(TpetraSparseMatrix, TrilinosTraits);
 //    UTOPIA_MAKE_TRAITS_SPARSE(TpetraSerialSparseMatrix, TpetraTraits);
 
-    UTOPIA_MAKE_TRAITS(TpetraVector, TrilinosTraits);
-    //UTOPIA_MAKE_TRAITS(TpetraSerialVector, TpetraTraits);
+UTOPIA_MAKE_TRAITS(TpetraVector, TrilinosTraits);
+//UTOPIA_MAKE_TRAITS(TpetraSerialVector, TpetraTraits);
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-    /*!
-     * @brief Dense matrix representation of the trilinos backend.
-     */
+/*!
+ * @brief Dense matrix representation of the trilinos backend.
+ */
 
 
-    typedef utopia::Wrapper<TpetraMatrix, 2>             DMatrixd;
-    typedef utopia::Wrapper<TpetraSparseMatrix, 2>       DSMatrixd;
+typedef utopia::Wrapper<TpetraMatrix, 2>             DMatrixd;
+typedef utopia::Wrapper<TpetraSparseMatrix, 2>       DSMatrixd;
 //    typedef utopia::Wrapper<TpetraSerialSparseMatrix, 2> SSMatrixd;
-    typedef utopia::Wrapper<TpetraVector, 1>             DVectord;
+typedef utopia::Wrapper<TpetraVector, 1>             DVectord;
 //    typedef utopia::Wrapper<TpetraSerialVector, 1>       SVectord;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -58,9 +59,9 @@ namespace utopia {
         w.implementation().describe()*/
 
 ///////////////////////////////////////////////////////////////////////////////
-    UTOPIA_MAKE_PARALLEL_TRAITS(DMatrixd);
-    UTOPIA_MAKE_PARALLEL_TRAITS(DVectord);
-    UTOPIA_MAKE_PARALLEL_TRAITS(DSMatrixd);
+UTOPIA_MAKE_PARALLEL_TRAITS(DMatrixd);
+UTOPIA_MAKE_PARALLEL_TRAITS(DVectord);
+UTOPIA_MAKE_PARALLEL_TRAITS(DSMatrixd);
 }
 
 #endif //UTOPIA_UTOPIA_TRILINOS_TYPES_HPP

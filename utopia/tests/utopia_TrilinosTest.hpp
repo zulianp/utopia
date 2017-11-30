@@ -3,8 +3,9 @@
 
 #include "utopia_trilinos.hpp"
 
-namespace utopia {
-    void run_trilinos_test();
+namespace utopia
+{
+void run_trilinos_test();
 }
 
 #endif //UTOPIA_TRILINOS_TEST_HPP
