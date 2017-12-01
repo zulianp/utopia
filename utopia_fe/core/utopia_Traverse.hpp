@@ -20,6 +20,7 @@ namespace utopia {
 	template<class Out, class F, class Visitor>
 	inline static int traverse(const ContextFunction<Out, F> &expr, Visitor &visitor)
 	{
+		visitor.visit(expr);
 		return TRAVERSE_CONTINUE;
 	}
 

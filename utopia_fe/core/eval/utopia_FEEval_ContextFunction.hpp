@@ -19,6 +19,22 @@ namespace utopia {
 	    	return expr.eval(ctx);
 	    } 
 	};
+
+
+
+	template<class Out, class Fun, class AssemblyContext>
+	class FunctionalTraits<ContextFunction<Out, Fun>, AssemblyContext> {
+	public:
+		inline static int type(const ContextFunction<Out, Fun> &expr, const AssemblyContext &ctx)  
+		{ 
+			return 0;
+		}
+
+		inline static int order(const ContextFunction<Out, Fun> &expr, const AssemblyContext &ctx) 
+		{
+			return 0;
+		}
+	};
 }
 
 

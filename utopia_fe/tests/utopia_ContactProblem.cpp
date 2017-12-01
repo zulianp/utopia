@@ -304,7 +304,7 @@ namespace utopia {
 
 		unsigned int variable_number = 0;
 
-		assemble_contact(
+		bool has_contact = assemble_contact(
 			comm,
 			mesh, 
 			utopia::make_ref(context_ptr->system.get_dof_map()), 
@@ -339,12 +339,18 @@ namespace utopia {
 
 		boundary_mass_inv = diag(d_inv);
 		transfer_operator = boundary_mass_inv * coupling;
+
 		transfer_operator += local_identity(local_size(d).get(0), local_size(d).get(0));
 		gap = boundary_mass_inv * weighted_gap;
 
 		if(comm.is_alone() && utopia::Utopia::Instance().get("plot") == "true") {
 			plot_scaled_normal_field(*mesh, normals, gap, "time_series_r/r" + std::to_string(iteration));
 		}
+
+		// if(has_contact) {
+		// 	write("T.m",transfer_operator);
+		// 	exit(0);
+		// }
 	}
 
 

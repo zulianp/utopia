@@ -429,6 +429,17 @@ namespace utopia {
 
 		template<typename T>
 		static auto apply_binary(
+			std::vector<T> &&vals,
+			const double val,
+			const Multiplies &op,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<T> 
+		{
+			return apply_binary(val, std::move(vals), op, ctx);
+		}
+
+
+		template<typename T>
+		static auto apply_binary(
 			const double val,
 			std::vector<T> &&vals,
 			const Multiplies &,

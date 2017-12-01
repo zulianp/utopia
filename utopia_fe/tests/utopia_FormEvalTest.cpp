@@ -917,15 +917,20 @@ namespace utopia {
 			DVectord sol;
 			DVectord sol_old;
 
-			auto uk = interpolate(sol, u);
+			//if_else(cond, val_if, val_else)
+
+			// auto uk     = interpolate(sol, in_block(u == 0.1, {1, 2}) || 
+										   // in_block(u == 0.,  {0, 3}) );
+
+			auto uk     = interpolate(sol, u);
 			auto uk_old = interpolate(sol_old, u);
 
-			auto a = coeff(1.);
+			auto a = 100.;
 			auto alpha = coeff(0.5);
-			auto R = uk_old * a * (coeff(1.) - uk_old) * (uk_old - alpha);
+			auto R = uk * a * (coeff(1.) - uk) * (uk - alpha);
 
-			auto f_rhs = ctx_fun< std::vector<double> >([](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
-				const auto &pts = ctx.quad_test()->get_points();
+			auto f_rhs = ctx_fun< std::vector<double> >([&u](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
+				const auto &pts = ctx.fe()[0]->get_xyz();
 
 				const auto n = pts.size();
 				std::vector<double> ret(n);
@@ -948,9 +953,9 @@ namespace utopia {
 					( inner(u, v) + inner( dt * grad(u), grad(v)) ) * dX == ( dt * inner(R, v) + inner(uk_old, v) + dt * inner(f_rhs, v)) * dX
 				),
 				constraints(
-					boundary_conditions(u == coeff(0.), {1, 3}),
-					boundary_conditions(u == coeff(0.), {0}),
-					boundary_conditions(u == coeff(0.0),  {2})
+					boundary_conditions(u == coeff(0.),  {1, 3}),
+					boundary_conditions(u == coeff(0.),  {0}),
+					boundary_conditions(u == coeff(0.0), {2})
 				),
 				sol_old,
 				sol, 

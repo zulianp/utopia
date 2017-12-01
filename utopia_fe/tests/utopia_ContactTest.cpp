@@ -238,6 +238,11 @@ namespace utopia {
 			return 1;
 		}
 
+		void id_rocks()
+		{
+			mesh_file = "../data/two_quasi_rocks_matching.e";
+		}
+
 		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
 
 		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override
@@ -501,7 +506,7 @@ namespace utopia {
 			
 		// ---------------------------------------------------
 		// auto e_problem = make_shared<Squares>(); p.set_initial_velocity(e_problem);
-		auto e_problem = make_shared<Balls>();
+		// auto e_problem = make_shared<Balls>();
 		// e_problem->three_dim();
 		// auto e_problem = make_shared<ExampleProblem2D>();
 		// e_problem->set_up_m_coarse_t_dynamic();
@@ -510,7 +515,7 @@ namespace utopia {
 		// auto e_problem = make_shared<Rocks>();
 		// e_problem->set_up_m_coarse_t_dynamic();
 		// e_problem->set_up_dynamic_with_impulse();
-		e_problem->many();
+		// e_problem->many();
 		 
 		
 		// auto e_problem = make_shared<ExampleProblem3D>();
@@ -523,6 +528,9 @@ namespace utopia {
 		// e_problem->set_up_fine_res();
 		// e_problem->set_up_adaptive();
 		// e_problem->set_up_time_dependent();
+
+		auto e_problem = make_shared<Rocks>();
+		e_problem->id_rocks();
 		
 		//---------------------------------------------------
 		

@@ -19,6 +19,7 @@
 #include "utopia_FindSpace.hpp"
 #include "utopia_IsForm.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
+#include "utopia_Projection.hpp"
 
 
 namespace utopia {
@@ -84,6 +85,19 @@ namespace utopia {
 		for(auto it = elements_begin(m); it != elements_end(m); ++it) {
 			element_assemble_expression_v<FunctionSpaceT>(it, equation, mat, vec, apply_constraints);
 		}
+	}
+
+
+	template<class From, class Tensor>
+	void apply(const Projection<From, Tensor> &expr)
+	{
+		typedef typename FindFunctionSpace<From>::Type FunctionSpaceT;
+		auto &space = find_space<FunctionSpaceT>(expr.from());
+
+		//init vector
+		//assemble weighted coeffs
+		//remove mass contrib
+
 	}
 
 	template<class Matrix, class Vector, class Eqs>

@@ -270,6 +270,12 @@ namespace utopia {
 				});
 			}
 
+			void init_xyz()
+			{
+				//FIXME
+				ctx.fe()[0]->get_xyz();
+			}
+
 			template<class T>
 			inline int visit(const TrialFunction<T> &expr)
 			{
@@ -368,6 +374,13 @@ namespace utopia {
 			inline int visit(const Curl<Function<LibMeshFunctionSpace>> &expr)
 			{
 				init_dphi(*expr.expr().space_ptr());
+				return TRAVERSE_CONTINUE;
+			}
+
+			template<class Out, class F>
+			inline int visit(const ContextFunction<Out, F> &expr)
+			{
+				init_xyz();
 				return TRAVERSE_CONTINUE;
 			}
 
