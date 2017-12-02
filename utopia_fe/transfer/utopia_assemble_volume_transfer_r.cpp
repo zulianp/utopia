@@ -28,6 +28,7 @@
 #include <cmath>
 #include <queue>
 #include <algorithm>
+#include <unordered_set>
 
 using namespace libMesh;
 
@@ -267,6 +268,7 @@ namespace utopia {
                   DSMatrixd &B, 
                   DSMatrixd &B_reverse, //bbecsek
                   const moonolith::SearchSettings &settings,
+                  std::unordered_set<utopia::SizeType> &particip_slave_dofs,
                   bool use_biorth_, 
                   int n_var, 
                   int n_var_r)
@@ -373,6 +375,9 @@ namespace utopia {
                 make_polygon(master_el,   master_pts);
                 make_polygon(slave_el, slave_pts);
                 
+                //for(unsigned int node = 0; node < slave_el.n_nodes(); ++node)
+                //  std::cout << slave_el.node_id(node) << std::endl; 
+
                 if(intersect_2D(master_pts, slave_pts, intersection2)) {
                     total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
                     
@@ -387,6 +392,18 @@ namespace utopia {
                     master_trans  = std::make_shared<AffineTransform2>(master_el);
                     slave_trans = std::make_shared<AffineTransform2>(slave_el);
                     pair_intersected = true;
+                    //debug
+             //       for(unsigned int node = 0; node < slave_el.n_nodes(); ++node){
+             //         auto &nodep = slave_el.node_ref(node);
+             //         auto x = nodep(0); 
+             //         auto y = nodep(1); 
+             //         auto z = nodep(2);
+             //         FILE *coords = fopen("candidate_coords.txt","a");
+             //         fprintf(coords, "%8.4E,%8.4E,%8.4E\n", x, y, z);
+             //         fclose(coords);  
+             //         if (slave_el.node_id(node) == 7046)
+             //           std::cout << "WTF!!!! This node should not be intersecting!!!! FTW\n";
+             //       }
                 }
             }
             else if(dim == 3) {
@@ -652,10 +669,13 @@ namespace utopia {
         
         
         // std::cout<< "modify the matrix  B"<<std::endl;
+        particip_slave_dofs.clear();
         utopia::Write<DSMatrixd> w_B(B);
         utopia::each_read(B_x, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
             for(utopia::SizeType d = 0; d < n_var; ++d) {
                 B.set(i+d, j+d, value);
+                particip_slave_dofs.emplace(i+d); // here we collect all dofs of the slave grid to be able to 
+                                                  // restrict our mass matrix
             }
         });
         
@@ -668,8 +688,11 @@ namespace utopia {
                 B_reverse.set(i+d, j+d, value);
             }
         });
-        
-        
+                
+        //int world_rank;
+        //MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+        //std::cout << "Participate size: " << particip_slave_dofs.size() << " on processor " << world_rank << std::endl;
+ 
         //disp(B_reverse.size());
         moonolith::root_describe("petsc assembly end", comm, std::cout);
         return true;
@@ -689,6 +712,7 @@ namespace utopia {
                                     const unsigned int & to_var_num,
                                     const unsigned int & from_var_num_r,
                                     const unsigned int & to_var_num_r,
+                                    std::unordered_set<utopia::SizeType> &particip_slave_dofs,
                                     bool  use_biorth_,
                                     int n_var,
                                     int n_var_r,
@@ -713,6 +737,7 @@ namespace utopia {
                                        B, 
                                        B_reverse,
                                        settings,
+                                       particip_slave_dofs,
                                        use_biorth_, 
                                        n_var, 
                                        n_var_r);
@@ -735,6 +760,7 @@ namespace utopia {
                                        B, 
                                        B_reverse,
                                        settings,
+                                       particip_slave_dofs,
                                        use_biorth_, 
                                        n_var, 
                                        n_var_r);
