@@ -4,6 +4,7 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <unordered_set>
 
 #include "utopia.hpp"
 #include "libmesh/libmesh_common.h"
@@ -30,12 +31,12 @@ namespace utopia {
             const unsigned int &to_var_num,
             const unsigned int &from_var_num_r,
             const unsigned int &to_var_num_r,
+            std::unordered_set<utopia::SizeType> &particip_slave_dofs,
             bool use_biorth,
             int n_var,
             int n_var_r,
             DSMatrixd &B,
-            DSMatrixd &B_reverse,
-            const std::vector< std::pair<int, int> > &tags=std::vector< std::pair<int, int> >());
+            DSMatrixd &B_reverse);
 
 }
 
