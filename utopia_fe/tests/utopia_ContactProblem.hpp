@@ -120,8 +120,10 @@ namespace utopia {
 		void compute_energy(const double dt);
 		void save_energy(const std::string &path);
 
-
+		void predict_search_radius(const double dt);
 		void step(const double dt = 1.0);
+		void solve_with_friction(const DSMatrixd &K, const DVectord &rhs, DVectord &sol);
+		void solve_without_friction(const DSMatrixd &K, const DVectord &rhs, DVectord &sol);
 
 		void init(
 			const libMesh::LibMeshInit &init, 
@@ -168,6 +170,8 @@ namespace utopia {
 		void assemble_velocities();
 
 		bool is_inpulse_;
+		bool has_friction_;
+		double friction_coeff_;
 	};
 }
 

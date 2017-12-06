@@ -58,7 +58,8 @@ namespace utopia
 			Vector x0;
 			newton.solve(fun, x0);
 		}
-		
+
+
 		void nl_solve_test()
 		{
 			//! [NL solve example]
@@ -328,6 +329,7 @@ namespace utopia
 		
 		void run()
 		{
+			UTOPIA_RUN_TEST(gss_newton_test);
 			UTOPIA_RUN_TEST(petsc_bicgstab_test);
 			UTOPIA_RUN_TEST(petsc_gmres_test);
 			UTOPIA_RUN_TEST(petsc_newton_test);
@@ -346,6 +348,47 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_mg_jacobi_test);
 		}
+
+		void gss_newton_test()
+		{
+			typedef std::function<void(const DSMatrixd &, const DVectord &, const DVectord &, DVectord &, DVectord &)> F;
+
+			const int n = mpi_world_size() * 4;
+			DVectord sol  = zeros(n);
+			DVectord upbo = values(n, 1.);
+			DSMatrixd A   = identity(n, n);
+			DVectord rhs  = values(n, 3.);
+
+			DVectord lambda, d;
+			F f = [&lambda, &d, &upbo](const DSMatrixd &H, const DVectord &g, const DVectord &x, DVectord &active, DVectord &value) 
+			{
+				lambda = (upbo - H * x);
+				d = lambda + (x - upbo);	
+
+				Read<DVectord> r_d(d);
+				Read<DVectord> r_u(upbo);
+				Write<DVectord> w_d(active);
+				Write<DVectord> w_v(value);
+
+				auto rr = range(x);
+				for (SizeType i = rr.begin(); i != rr.end(); i++) {
+					if (d.get(i) >= -1e-16) {
+						active.set(i, 1.0);
+						value.set(i, upbo.get(i));
+					} else {
+						active.set(i, 0.0);
+						value.set(i,  0.);
+					}
+				}
+			};
+
+			auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+			GenericSemismoothNewton<DSMatrixd, DVectord, F> solver(f, linear_solver);
+
+			solver.solve(A, rhs, sol);
+			disp(sol);
+		}
+		
 		
 		void petsc_mprgp_test()
 		{

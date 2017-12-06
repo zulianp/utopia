@@ -323,7 +323,7 @@ namespace utopia {
 			search_radius = 0.1;
 			dt = .01;
 			n_steps = 150;
-			dynamic_contact = true;
+			dynamic_contact = false;
 			is_three_dim = false;
 		}
 
@@ -396,6 +396,73 @@ namespace utopia {
 
 		int fixed_boundary;
 		bool is_three_dim;
+	};
+
+
+	class IroningProblem : public ExampleProblemBase, public ContactProblem::ElasticityInitialVelocity {
+	public:
+		IroningProblem() {
+			mesh_file = "../data/ironing.e";
+			contact_flags = {{2, 1}};
+			search_radius = 0.5;
+			dt = .01;
+			n_steps = 400;
+			// dynamic_contact = true;
+			dynamic_contact = false;
+		}
+
+		void finer()
+		{
+			mesh_file = "../data/ironing_finer.e";
+		}
+
+		void finest()
+		{
+			mesh_file = "../data/ironing_finest.e";
+		}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy)  override 
+		{
+			strong_enforce( boundary_conditions(ux == coeff(1.),   {3}) );
+			strong_enforce( boundary_conditions(ux == coeff(0.),   {4}) );
+
+			strong_enforce( boundary_conditions(uy == coeff(0.),   {3}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.),   {4}) );
+		}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override { }
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			v.zero();
+		}
+
+		virtual void fill_velocity(const int block_id, libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			// double value = 0;
+			// switch(block_id) {
+			// 	case 1: {
+			// 		value = -2;
+			// 		break;
+			// 	}
+
+			// 	case 2: {
+			// 		value = 2;
+			// 		break;
+			// 	}
+
+			// 	default:
+			// 	{
+			// 		break;
+			// 	}
+			// }
+
+
+			// for(int i = v.size()/2; i < v.size(); ++i) {
+			// 	v(i) = value;
+			// }
+			v.zero();
+		}
 	};
 
 
@@ -529,8 +596,9 @@ namespace utopia {
 		// e_problem->set_up_adaptive();
 		// e_problem->set_up_time_dependent();
 
-		auto e_problem = make_shared<Rocks>();
-		e_problem->id_rocks();
+		auto e_problem = make_shared<IroningProblem>();
+		e_problem->finest();
+		// e_problem->id_rocks();
 		
 		//---------------------------------------------------
 		

@@ -17,6 +17,8 @@ list(APPEND LOCAL_HEADERS
 	utopia_VolumeTransferBenchmark.hpp
 	utopia_FormEvalTest.hpp
 	utopia_FSITest.hpp
+	utopia_SDCTest.hpp
+	utopia_WearEstimator.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 
@@ -36,6 +38,8 @@ list(APPEND LOCAL_SOURCES
 	utopia_FormEvalTest.cpp
 	utopia_LibMeshbackendTest.cpp
 	utopia_FSITest.cpp
+	utopia_SDCTest.cpp
+	utopia_WearEstimator.cpp
 	)
 
 add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})

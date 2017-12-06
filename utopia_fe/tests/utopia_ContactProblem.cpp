@@ -22,6 +22,9 @@ namespace utopia {
 		verbose = true;
 		dynamic_contact = false;
 		is_inpulse_ = false;
+		has_friction_ = true;
+		friction_coeff_ = 0.05;
+		// friction_coeff_ = 0.0;
 	}
 
 	void ContactProblem::init(
@@ -111,11 +114,11 @@ namespace utopia {
 		
 		const int dim = u.size();
 
-		// auto mu     = block_var(6., {{1, 10.}, {4, 5.}});
-		// auto lambda = block_var(6., {{1, 10.}, {4, 5.}});
+		auto mu     = block_var(10., {{1, 20.}});
+		auto lambda = block_var(10., {{1, 20.}});
 
-		double mu = 730;
-		double lambda = 376;
+		// double mu = 50;
+		// double lambda = 50;
 		// double mu = 10;
 		// double lambda = 10;
 
@@ -164,8 +167,8 @@ namespace utopia {
 		bc_ptr->apply(ux, uy);
 
 		context_ptr->equation_systems.init();
-		ux.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
-		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
+		ux.set_quad_rule(make_shared<libMesh::QGauss>(dim, FOURTH));
+		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, FOURTH));
 		
 		assemble_elasticity(u,  *context_ptr, *ff_ptr, stiffness_matrix, external_force);
 		assemble_mass_matrix(u, *context_ptr, mass_matrix, inverse_mass_vector);
@@ -184,9 +187,9 @@ namespace utopia {
 		bc_ptr->apply(ux, uy, uz);
 
 		context_ptr->equation_systems.init();
-		ux.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
-		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
-		uz.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
+		ux.set_quad_rule(make_shared<libMesh::QGauss>(dim, SIXTH));
+		uy.set_quad_rule(make_shared<libMesh::QGauss>(dim, SIXTH));
+		uz.set_quad_rule(make_shared<libMesh::QGauss>(dim, SIXTH));
 
 		assemble_elasticity(u,  *context_ptr, *ff_ptr, stiffness_matrix, external_force);
 		assemble_mass_matrix(u, *context_ptr, mass_matrix, inverse_mass_vector);
@@ -357,7 +360,8 @@ namespace utopia {
 	void ContactProblem::implicity_euler(const double dt)
 	{
 		DSMatrixd &K = stiffness_matrix;
-		DVectord rhs = dt * (external_force - internal_force);
+		// DVectord rhs = dt * (external_force - internal_force);
+		DVectord rhs = dt * external_force - internal_force;
 
 		DVectord sol_c = local_zeros(local_size(external_force));
 		DVectord rhs_c = transpose(orthogonal_trafo) * transpose(transfer_operator) * rhs;
@@ -368,14 +372,11 @@ namespace utopia {
 			transfer_operator) * 
 		orthogonal_trafo;
 
-
-		// SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> newton(linear_solver);
-		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
-		newton.verbose(true);
-		newton.max_it(40);
-
-		newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
-		newton.solve(K_c, rhs_c, sol_c);
+		if(has_friction_) {
+			solve_with_friction(K_c, rhs_c, sol_c);
+		} else {
+			solve_without_friction(K_c, rhs_c, sol_c);
+		}
 
 		displacement_increment = transfer_operator * (orthogonal_trafo * sol_c);		
 		total_displacement += displacement_increment;
@@ -468,12 +469,22 @@ namespace utopia {
 			transfer_operator) * 
 		orthogonal_trafo;
 
-		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
-		newton.verbose(true);
-		newton.max_it(40);
+		// SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
+		// newton.verbose(true);
+		// newton.max_it(40);
 
-		newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
-		newton.solve(K_c, rhs_c, sol_c);
+		// newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
+		// newton.solve(K_c, rhs_c, sol_c);
+
+		auto u = fe_function(*spaces[0]);
+		apply_boundary_conditions(u, K_c, rhs_c);
+
+		if(has_friction_) {
+			solve_with_friction(K_c, rhs_c, sol_c);
+		} else {
+			solve_without_friction(K_c, rhs_c, sol_c);
+		}
+
 
 		displacement_increment = transfer_operator * (orthogonal_trafo * sol_c);	
 
@@ -654,12 +665,20 @@ namespace utopia {
 			transfer_operator) * 
 		orthogonal_trafo;
 
-		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
-		newton.verbose(true);
-		newton.max_it(40);
+		// SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
+		// newton.verbose(true);
+		// newton.max_it(40);
 
-		newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
-		newton.solve(K_c, rhs_c, sol_c);
+		// newton.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
+		// newton.solve(K_c, rhs_c, sol_c);
+		auto u = fe_function(*spaces[0]);
+		apply_boundary_conditions(u, K_c, rhs_c);
+
+		if(has_friction_) {
+			solve_with_friction(K_c, rhs_c, sol_c);
+		} else {
+			solve_without_friction(K_c, rhs_c, sol_c);
+		}
 
 		displacement_increment = transfer_operator * (orthogonal_trafo * sol_c);		
 		total_displacement += displacement_increment;
@@ -669,11 +688,120 @@ namespace utopia {
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), new_internal_force);
 
 		DVectord Fcon_m_F = (-2./dt) * (internal_mass_matrix * (pred - displacement_increment));
+		if(has_friction_) {
+			//TODO remove friction forces
+		}
+
 		apply_zero_boundary_conditions(spaces[0]->dof_map(), Fcon_m_F);
 		DVectord vel_inc  = e_mul(inverse_mass_vector, Fcon_m_F);
 		velocity += vel_inc;
 
 		// velocity = 1/dt * displacement_increment;
+	}
+
+	void ContactProblem::solve_without_friction(const DSMatrixd &K, const DVectord &rhs, DVectord &sol)
+	{
+		SemismoothNewton<DSMatrixd, DVectord> solver(linear_solver);
+		solver.verbose(true);
+		solver.max_it(40);
+
+		solver.set_box_constraints(make_upper_bound_constraints(make_ref(gap)));
+		solver.solve(K, rhs, sol);
+	}
+
+	void ContactProblem::solve_with_friction(const DSMatrixd &K, const DVectord &rhs, DVectord &sol)
+	{
+		typedef std::function<void(const DSMatrixd &, const DVectord &, const DVectord &, DVectord &, DVectord &)> F;
+
+		const int dim = mesh->mesh_dimension();
+
+		DVectord lambda, d;
+		F f = [&lambda, &d, dim, this](const DSMatrixd &H, const DVectord &g, const DVectord &x, DVectord &active, DVectord &value) 
+		{
+			lambda = (g - H * x);
+			lambda = e_mul(this->inverse_mass_vector, lambda);
+			apply_zero_boundary_conditions(this->spaces[0]->dof_map(), lambda);
+
+			d = lambda + (x - gap);	
+
+			Read<DVectord> r_d(d);
+			Read<DVectord> r_l(lambda);
+			Read<DVectord> r_u(this->gap);
+			
+			Write<DVectord> w_d(active);
+			Write<DVectord> w_v(value);
+
+			auto rr = range(x);
+			for (SizeType i = rr.begin(); i != rr.end(); i += dim) {
+				if (d.get(i) >= -1e-16) {
+					active.set(i, 1.0);
+					value.set(i, gap.get(i));
+
+					double n_s = lambda.get(i);
+					double t_s = 0.;
+
+					for(SizeType d = 1; d < dim; ++d) {
+						const double t_d = lambda.get(i + d);
+						t_s = t_d * t_d;
+					}
+
+					t_s = std::sqrt(t_s);
+
+					if(t_s < this->friction_coeff_ * n_s) {
+						for(SizeType d = 1; d < dim; ++d) {
+							active.set(i + d, 1.0);
+							value.set(i + d,  0.0);
+						}
+
+					} else {
+
+						for(SizeType d = 1; d < dim; ++d) {
+							active.set(i + d, 0.0);
+							value.set(i + d,  0.0);
+						}
+					}
+
+				} else {
+					for(SizeType d = 0; d < dim; ++d) {
+						active.set(i + d, 0.0);
+						value.set(i + d,  0.);
+					}
+				}
+			}
+		};
+
+		auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		GenericSemismoothNewton<DSMatrixd, DVectord, F> solver(f, linear_solver);
+		solver.verbose(true);
+		solver.max_it(20);
+		solver.solve(K, rhs, sol);
+	}
+
+	void ContactProblem::predict_search_radius(const double dt)
+	{
+		// const int dim = mesh->mesh_dimension();
+		// Read<DVectord> r_od(old_displacement_increment), r_v(velocity), r_td(total_displacement);
+
+		// search_radius = 1e-2;
+		// auto r = range(old_displacement_increment);
+		// for(auto i = r.begin(); i < r.end(); i += dim) {
+		// 	double length = 0.0;
+		// 	double length_total_disp = 0.0;
+
+		// 	for(int j = 0; j < dim; ++j) {
+		// 		double v = old_displacement_increment.get(i + j) +  2. * dt * velocity.get(i + j);
+		// 		length += v * v;
+		// 		length_total_disp += total_displacement.get(i + j) *  total_displacement.get(i + j);
+		// 	}
+
+		// 	search_radius = std::max(search_radius, std::min(1.1 * std::sqrt(length), std::sqrt(length_total_disp)));
+		// }
+
+
+		// search_radius += 1e-4;
+		// comm.all_reduce(&search_radius, 1, moonolith::MPIMax());
+		// disp("predicted search radius");
+		// disp(search_radius);
 	}
 
 	void ContactProblem::step(const double dt)
@@ -686,32 +814,12 @@ namespace utopia {
 		const int dim = mesh->mesh_dimension();
 
 		if(iteration > 0) {
-			Read<DVectord> r_od(old_displacement_increment), r_v(velocity), r_td(total_displacement);
-
-			search_radius = 1e-2;
-			auto r = range(old_displacement_increment);
-			for(auto i = r.begin(); i < r.end(); i += dim) {
-				double length = 0.0;
-				double length_total_disp = 0.0;
-
-				for(int j = 0; j < dim; ++j) {
-					double v = old_displacement_increment.get(i + j) +  2. * dt * velocity.get(i + j);
-					length += v * v;
-					length_total_disp += total_displacement.get(i + j) *  total_displacement.get(i + j);
-				}
-
-				search_radius = std::max(search_radius, std::min(1.1 * std::sqrt(length), std::sqrt(length_total_disp)));
-			}
-
+			predict_search_radius(dt);
 			if(is_inpulse_) {
 				external_force = zeros(size(external_force));
 			}
 		}
 
-		search_radius += 1e-4;
-		comm.all_reduce(&search_radius, 1, moonolith::MPIMax());
-		disp("predicted search radius");
-		disp(search_radius);
 
 		compute_contact_conditions();
 
