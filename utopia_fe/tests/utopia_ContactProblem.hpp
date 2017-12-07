@@ -6,10 +6,13 @@
 #include "utopia_LibMeshBackend.hpp"
 #include "moonolith_communicator.hpp"
 #include "utopia.hpp"
+#include "utopia_LameeParameters.hpp"
+#include "utopia_Contact.hpp"
 
 #include "libmesh/nemesis_io.h"
 
 namespace utopia {
+
 	class ContactProblem {
 	public:
 		typedef utopia::FESpace<LibMeshTraits> FESpaceT;
@@ -45,15 +48,8 @@ namespace utopia {
 
 		DVectord internal_force;
 
-		//contact quantities
-		DSMatrixd coupling;
-		DSMatrixd transfer_operator;
-		DSMatrixd orthogonal_trafo;
-		DVectord normals;
-		DVectord is_contact_node;
-		DVectord weighted_gap;
-		DVectord gap;
-		DSMatrixd boundary_mass_inv;
+
+
 		DVectord normal_stress;
 		DVectord new_internal_force;
 
@@ -61,12 +57,15 @@ namespace utopia {
 		std::vector< std::pair<int, int> > contact_pair_tags;
 
 		moonolith::Communicator comm;
+		const libMesh::Parallel::Communicator * lm_comm;
 		std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > linear_solver;
 
 		int iteration;
 		bool verbose;
 		bool dynamic_contact;
+		bool must_apply_displacement;
 
+		LameeParameters params;
 
 		std::vector<int> var_num_aux;
 
@@ -100,6 +99,8 @@ namespace utopia {
 				v.zero();
 			}
 		};
+
+		Contact contact_;
 
 		std::shared_ptr<ElasticityBoundaryConditions> bc_ptr;
 		std::shared_ptr<ElasticityForcingFunction> ff_ptr;
@@ -139,7 +140,10 @@ namespace utopia {
 			iv_ptr = ptr;
 		}
 
+
 		void save(const double dt = 1.0, const std::string &output_dir = ".");
+		void save(const double dt, const int iteration, const std::string &file_name);
+
 		inline void set_dynamic_contact(const bool val)
 		{
 			dynamic_contact = val;
@@ -149,6 +153,8 @@ namespace utopia {
 		{
 			is_inpulse_ = val;
 		}
+
+		bool has_friction;
 
 		ContactProblem();
 	private:
@@ -165,12 +171,10 @@ namespace utopia {
 		void classic_newmark(const double dt);
 		void classic_newmark_with_contact(const double dt);
 		void classic_newmark_with_contact_2(const double dt);
-		void classic_newmark_beta(const double dt);
-		void contact_stabilized_newmark_monolithic(const double dt);
 		void assemble_velocities();
 
 		bool is_inpulse_;
-		bool has_friction_;
+		
 		double friction_coeff_;
 	};
 }

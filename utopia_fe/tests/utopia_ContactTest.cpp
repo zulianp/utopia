@@ -49,6 +49,8 @@ namespace utopia {
 		bool dynamic_contact;
 		bool is_inpulse;
 
+		LameeParameters params;
+
 		ExampleProblemBase()
 		{
 			is_inpulse = false;
@@ -233,6 +235,11 @@ namespace utopia {
 			dynamic_contact = false;
 		}
 
+		void quasi_rocks()
+		{
+			mesh_file = "../data/two_quasi_rocks_cubes.e";
+		}
+
 		int block_id() const override
 		{
 			return 1;
@@ -249,7 +256,8 @@ namespace utopia {
 		{
 			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uz == coeff(-0.5), {top_boundary_tag}) );
+			// strong_enforce( boundary_conditions(uz == coeff(-0.5), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(-0.1), {top_boundary_tag}) );
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
@@ -596,9 +604,12 @@ namespace utopia {
 		// e_problem->set_up_adaptive();
 		// e_problem->set_up_time_dependent();
 
-		auto e_problem = make_shared<IroningProblem>();
-		e_problem->finest();
+		// auto e_problem = make_shared<IroningProblem>();
+		// e_problem->finest();
 		// e_problem->id_rocks();
+
+		auto e_problem = make_shared<Rocks>();
+		e_problem->quasi_rocks();
 		
 		//---------------------------------------------------
 		
@@ -608,6 +619,7 @@ namespace utopia {
 
 		utopia::Utopia::Instance().set("plot", "true");
 
+		p.params = e_problem->params;
 		p.init(init, mesh, e_problem, e_problem, e_problem->contact_flags, e_problem->search_radius);
 		p.set_dynamic_contact(e_problem->dynamic_contact);
 		p.is_inpulse(e_problem->is_inpulse);

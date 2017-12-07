@@ -14,6 +14,7 @@
 #include "utopia_Socket.hpp"
 #include "utopia_ContactSimParams.hpp"
 #include "utopia_UGMeshReader.hpp"
+#include "utopia_LameeParameters.hpp"
 #include "moonolith_communicator.hpp"
 
 
@@ -23,36 +24,7 @@ using namespace utopia;
 using namespace std;
 using namespace libMesh;
 
-class LameeParameters {
-public:
-	LameeParameters(const double default_mu, const double default_lambda)
-	: default_mu_(default_mu), default_lambda_(default_lambda)
-	{}
-	
-	double mu(const int id) const
-	{
-		auto it = mu_.find(id);
-		if(it == mu_.end()) {
-			return default_mu_;
-		}
-		
-		return it->second;
-	}
-	
-	double lambda(const int id) const
-	{
-		auto it = lambda_.find(id);
-		if(it == lambda_.end()) {
-			return default_lambda_;
-		}
-		
-		return it->second;
-	}
-	
-	double default_mu_, default_lambda_;
-	std::map<int, double> mu_;
-	std::map<int, double> lambda_;
-};
+
 
 double von_mises_stress_2(const double *stress)
 {

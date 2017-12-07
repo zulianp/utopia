@@ -550,7 +550,7 @@ namespace utopia {
 			//only works because there are not mixed elements
 			const int approx_order = local_fun_spaces_new->variable_order()[0];
 			
-			std::shared_ptr<Contact> surface_assemble;
+			std::shared_ptr<ContactAssembly> surface_assemble;
 			
 			const auto &side_id_master = master.dof_map_face();
 			const auto &side_id_slave  = slave.dof_map_face();
@@ -709,7 +709,7 @@ namespace utopia {
 						
 						pair_intersected = true;
 						
-						surface_assemble = std::make_shared<Contact>();
+						surface_assemble = std::make_shared<ContactAssembly>();
 						surface_assemble->isect_area	   = area;
 						surface_assemble->relative_area    = relative_area;
 						
@@ -750,7 +750,7 @@ namespace utopia {
 						
 						pair_intersected = true;
 						
-						surface_assemble = std::make_shared<Contact>();
+						surface_assemble = std::make_shared<ContactAssembly>();
 						surface_assemble->isect_area	= area;
 						surface_assemble->relative_area = relative_area;
 						

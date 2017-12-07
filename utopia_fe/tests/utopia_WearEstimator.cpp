@@ -21,6 +21,7 @@
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 #include "utopia_FEKernel.hpp"
 #include "utopia_Socket.hpp"
+#include "utopia_ContactProblem.hpp"
 
 #include "libmesh/exodusII_io.h"
 #include <algorithm>
@@ -32,17 +33,7 @@
 
 namespace utopia {
 
-	class ModelParamters {
-	public:	
-		//lamee paramters
-		double mu, lambda;
 
-		static ModelParamters convert_to_lamee_params(const double young_modulus, double poisson_ratio)
-		{	
-			ModelParamters ret;
-			return ret;
-		}
-	};
 
 	class SubdomainAffineTransform {
 	public:
@@ -161,16 +152,108 @@ namespace utopia {
 	class GaitCycle {
 	public:
 
-		std::vector<std::shared_ptr<SubdomainCompositeTransform>> transform;
+		class SetUp : 
+			public ContactProblem::ElasticityBoundaryConditions,
+			public ContactProblem::ElasticityForcingFunction {
+
+		public:
+
+			SetUp() {
+				contact_flags = {{2, 1}};
+				search_radius = 0.1;
+				dt = .01;
+				
+				params.set_mu(1, 2.0);
+				params.set_lambda(1, 2.0);
+
+				params.set_mu(2, 5.0);
+				params.set_lambda(2, 5.0);
+
+				wear_coefficient = 7e-3; //mild-steel
+			}
+
+			void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy) override 
+			{
+				strong_enforce( boundary_conditions(ux == coeff(0.), {3}) );
+				strong_enforce( boundary_conditions(uy == coeff(0.), {3}) );
+
+				strong_enforce( boundary_conditions(ux == coeff(0.),  {4}) );
+				strong_enforce( boundary_conditions(uy == coeff(0.1), {4}) );
+			}
+
+			void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override
+			{
+				strong_enforce( boundary_conditions(ux == coeff(0.), {3}) );
+				strong_enforce( boundary_conditions(uy == coeff(0.), {3}) );
+				strong_enforce( boundary_conditions(uz == coeff(0.), {3}) );
+
+				strong_enforce( boundary_conditions(ux == coeff(0.), {4}) );
+				strong_enforce( boundary_conditions(uz == coeff(0.), {4}) );
+			}
+
+			int block_id() const override
+			{
+				return 2;
+			}
+
+			virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+			{
+				v.zero();
+				// v(1) = 0.1;
+			}
+
+			LameeParameters params;
+			std::vector<std::pair<int, int> > contact_flags;
+			double search_radius;
+			double dt;
+			double wear_coefficient;
+		};
+
+		std::shared_ptr<libMesh::MeshBase> mesh;
+		SubdomainAffineTransform transform;
 		DSMatrixd mass_matrix;
 		DSMatrixd stiffness_matrix;
-	};
+		ContactProblem contact_problem;
 
+		void apply(libMesh::LibMeshInit &init, const std::size_t n_configurations)
+		{
+			auto set_up = std::make_shared<SetUp>();
+			ContactProblem p;
+			p.has_friction = false;
+
+			for(std::size_t i = 0; i < n_configurations; ++i) {
+				transform.apply(*mesh);
+				plot_mesh(*mesh, "mesh");
+				p.params = set_up->params;
+				p.must_apply_displacement = false;
+				p.init(init, mesh, set_up, set_up, set_up->contact_flags, set_up->search_radius);
+				p.step(set_up->dt);
+				p.save(set_up->dt, i, "wear_simulation" + std::to_string(i) + ".e");	
+			}
+		}
+	};
 
 	class WearEstimator {
 	public:
 
+		void run(libMesh::LibMeshInit &init, const std::shared_ptr<libMesh::MeshBase> &mesh) {
+			GaitCycle gait_cycle;
+			gait_cycle.mesh = mesh;
 
+			const int dim = mesh->mesh_dimension();
+
+			const int n_configurations = 2;
+			const double d_angle = 60. * (M_PI/180.) / n_configurations;
+
+			auto &t = gait_cycle.transform;
+			t.make_rotation(dim, d_angle, 'y');
+			t.subdomain_id = 1;
+
+			// m1 = LameeParamters::convert_to_lamee_params(220., 0.31);
+			// m2 = LameeParamters::convert_to_lamee_params(1.1, 0.42);
+
+			gait_cycle.apply(init, n_configurations);
+		}
 	};
 
 	void run_wear_test(libMesh::LibMeshInit &init)
@@ -181,32 +264,7 @@ namespace utopia {
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
 		mesh->read("../data/wear_2.e");
 
-		// const unsigned int n = 10;
-		// libMesh::MeshTools::Generation::build_square(*mesh,
-		// 	n, n,
-		// 	0, 1,
-		// 	0, 1.,
-		// 	libMesh::TRI3);
-
-		const int dim = mesh->mesh_dimension();
-
-		GaitCycle gc;
-		gc.transform.push_back(std::make_shared<SubdomainCompositeTransform>());
-		auto &t = *gc.transform.back();
-
-
-
-		t.sub_transforms.emplace_back();
-		t.sub_transforms.back().make_rotation(dim, 0.2, 'y');
-		t.sub_transforms.back().subdomain_id = 1;
-		t.apply(*mesh);
-
-
-		ModelParamters m1, m2;
-		m1 = ModelParamters::convert_to_lamee_params(220., 0.31);
-		m2 = ModelParamters::convert_to_lamee_params(1.1, 0.42);
-
-		plot_mesh(*mesh, "mesh");
-
+		WearEstimator we;
+		we.run(init, mesh);
 	}
 }

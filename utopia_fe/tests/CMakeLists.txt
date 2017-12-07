@@ -19,6 +19,7 @@ list(APPEND LOCAL_HEADERS
 	utopia_FSITest.hpp
 	utopia_SDCTest.hpp
 	utopia_WearEstimator.hpp
+	utopia_Contact.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 
@@ -40,6 +41,7 @@ list(APPEND LOCAL_SOURCES
 	utopia_FSITest.cpp
 	utopia_SDCTest.cpp
 	utopia_WearEstimator.cpp
+	utopia_Contact.cpp
 	)
 
 add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})
