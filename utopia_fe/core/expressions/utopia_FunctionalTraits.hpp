@@ -52,6 +52,12 @@ namespace utopia {
 		typedef Left Type;
 	};
 
+	template<>
+	class SelectFunctionSpace<None, None> {
+	public:
+		typedef utopia::None Type;
+	};
+
 	template<class Any>
 	class FindFunctionSpace {
 	public:
@@ -161,6 +167,12 @@ namespace utopia {
 	class FindFunctionSpace< Interpolate<Coeff, Fun> > {
 	public:
 		typedef typename FindFunctionSpace<Fun>::Type Type;
+	};
+
+	template<class T>
+	class FindFunctionSpace< BlockVar<T> > {
+	public:
+		typedef utopia::None Type;
 	};
 
 	template<class Derived, class AssemblyContext>

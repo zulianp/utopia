@@ -26,6 +26,7 @@
 #include "utopia_SemigeometricMultigridTest.hpp"
 #include "utopia_SDCTest.hpp"
 #include "utopia_WearEstimator.hpp"
+#include "utopia_MechTest.hpp"
 
 #include <functional>
 
@@ -57,6 +58,7 @@ int main(const int argc, char *argv[])
 	    runners["smg"] = run_semigeometric_multigrid_test;
 	    runners["sdc"] = run_sdc_test;
 	    runners["wear"] = run_wear_test;
+	    runners["mech"] = run_mech_test;
 
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;

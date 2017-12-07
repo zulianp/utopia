@@ -1,7 +1,10 @@
 #ifndef UTOPIA_LAMEE_PARAMETERS_HPP
 #define UTOPIA_LAMEE_PARAMETERS_HPP 
 
+#include "utopia_block_var.hpp"
 #include <map>
+#include <vector>
+#include <utility>
 
 namespace utopia {
 	class LameeParameters {

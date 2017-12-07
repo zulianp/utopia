@@ -57,6 +57,64 @@ namespace utopia {
 		add_vector(el_vec.implementation(), dof_indices, vec);
 	}
 
+
+	//libmesh
+	template<class FunctionSpaceT, class Expr, class GlobalMatrix>
+	void element_assemble_expression_v(const libMesh::MeshBase::const_element_iterator &it, const Expr &expr, Wrapper<GlobalMatrix, 2> &mat)
+	{
+		typedef utopia::Traits<FunctionSpaceT> TraitsT;
+		typedef typename TraitsT::Matrix ElementMatrix;
+
+
+		static const int Backend = TraitsT::Backend;
+
+		const auto &space = find_space<FunctionSpaceT>(expr);
+		const auto &dof_map = space.dof_map();
+
+		AssemblyContext<Backend> ctx;
+		ctx.set_current_element((*it)->id());
+
+		ElementMatrix el_mat;
+		ctx.init_bilinear(expr);
+
+		FormEvaluator<Backend> eval;
+		eval.eval(expr, el_mat, ctx, true);
+
+		std::vector<libMesh::dof_id_type> dof_indices;
+		dof_map.dof_indices(*it, dof_indices);
+
+		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+	}
+
+
+	template<class FunctionSpaceT, class Expr, class GlobalVector>
+	void element_assemble_expression_v(const libMesh::MeshBase::const_element_iterator &it, const Expr &expr, Wrapper<GlobalVector, 1> &vec)
+	{
+		typedef utopia::Traits<FunctionSpaceT> TraitsT;
+		typedef typename TraitsT::Matrix ElementMatrix;
+		typedef typename TraitsT::Vector ElementVector;
+
+		static const int Backend = TraitsT::Backend;
+
+		const auto &space = find_space<FunctionSpaceT>(expr);
+		const auto &dof_map = space.dof_map();
+
+		AssemblyContext<Backend> ctx;
+		ctx.set_current_element((*it)->id());
+
+		ElementVector el_vec;
+
+		ctx.init_linear(expr);
+
+		FormEvaluator<Backend> eval;
+		eval.eval(expr, el_vec, ctx, true);
+
+		std::vector<libMesh::dof_id_type> dof_indices;
+		dof_map.dof_indices(*it, dof_indices);
+
+		add_vector(el_vec.implementation(), dof_indices, vec);
+	}
+
 	//homemade
 	template<class FunctionSpaceT, class Left, class Right, class Matrix, class Vector>
 	void element_assemble_expression_v(const int element_index, const Equality<Left, Right> &equation, Matrix &mat, Vector &rhs, const bool apply_constraints = true)
@@ -85,6 +143,68 @@ namespace utopia {
 		for(auto it = elements_begin(m); it != elements_end(m); ++it) {
 			element_assemble_expression_v<FunctionSpaceT>(it, equation, mat, vec, apply_constraints);
 		}
+	}
+
+	template<class Expr>
+	 bool assemble(
+	 	const Expr &expr,
+	 	DSMatrixd &mat,
+	 	const bool first = true)
+	 { 
+		typedef typename FindFunctionSpace<Expr>::Type FunctionSpaceT;
+		auto &space = find_space<FunctionSpaceT>(expr);
+
+		if(first) {
+			auto &dof_map  = space.dof_map();
+			auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+									  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+			
+			mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+		} else {
+			mat *= 0.;
+		}
+
+		{
+			Write<DSMatrixd> w_m(mat);
+
+			auto &m = space.mesh();
+
+			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+				element_assemble_expression_v<FunctionSpaceT>(it, expr, mat);
+			}
+		}	
+
+		return true;
+	}
+
+
+	template<class Expr>
+	 bool assemble(
+	 	const Expr &expr,
+	 	DVectord &vec,
+	 	const bool first = true)
+	 { 
+		typedef typename FindFunctionSpace<Expr>::Type FunctionSpaceT;
+		auto &space = find_space<FunctionSpaceT>(expr);
+
+		if(first) {
+			auto &dof_map  = space.dof_map();
+			vec = local_zeros(dof_map.n_local_dofs());
+		} else {
+			vec *= 0.;
+		}
+
+		{
+			Write<DVectord> w_v(vec);
+
+			auto &m = space.mesh();
+
+			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+				element_assemble_expression_v<FunctionSpaceT>(it, expr, vec);
+			}
+		}	
+
+		return true;
 	}
 
 
@@ -160,7 +280,7 @@ namespace utopia {
 			}	
 
 			return true;
-		};
+		}
 
 		bool first_;
 		Eqs eqs_;

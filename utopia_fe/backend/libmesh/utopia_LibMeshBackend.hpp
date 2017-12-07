@@ -653,23 +653,22 @@ namespace utopia {
 	// }
 	
 	// void constrained_face_selector
-	
-	template<class FEFunction, class Matrix, class Vector>
-	void apply_boundary_conditions(FEFunction &u, Matrix &mat, Vector &vec)
+
+
+	template<class Matrix, class Vector>
+	void apply_boundary_conditions(libMesh::DofMap &dof_map, Matrix &mat, Vector &vec)
 	{
-		
-		auto &dof_map = u.dof_map();
 		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
 		// std::cout << dof_map.n_constrained_dofs() << std::endl;
 		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
 		
-		const bool has_constaints = u.dof_map().constraint_rows_begin() != u.dof_map().constraint_rows_end();
+		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 		if(!has_constaints) {
 			// std::cerr << "[Warning] no boundary conditions to apply\n" << std::endl;
 			// return;
 		}
 		
-		libMesh::DofConstraintValueMap &rhs_values = u.dof_map().get_primal_constraint_values();
+		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 		
 		Size s = size(mat);
 		Matrix temp = mat;
@@ -677,7 +676,7 @@ namespace utopia {
 		{
 			Write<Matrix> w_t(mat);
 			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
-				if(has_constaints && u.dof_map().is_constrained_dof(i)) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					mat.set(i, j, i == j);
 				}
 			});
@@ -688,13 +687,20 @@ namespace utopia {
 			
 			Range r = range(vec);
 			for(SizeType i = r.begin(); i < r.end(); ++i) {
-				if(has_constaints && u.dof_map().is_constrained_dof(i)) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					auto valpos = rhs_values.find(i);
 					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
 				}
 			}	
 		}
 	}
+
+	template<class FEFunction, class Matrix, class Vector>
+	void apply_boundary_conditions(FEFunction &u, Matrix &mat, Vector &vec)
+	{
+		apply_boundary_conditions(u.dof_map(), mat, vec);
+	}
+	
 	
 	template<class DofMap, class Vector>
 	void apply_zero_boundary_conditions(DofMap &dof_map, Vector &vec)

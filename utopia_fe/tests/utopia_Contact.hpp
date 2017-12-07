@@ -15,8 +15,28 @@ namespace libMesh {
 }
 
 namespace utopia {
+	class ContactParams {
+	public:
+		ContactParams()
+		: search_radius(0.1), variable_number(0)
+		{}
+
+		double search_radius;
+		std::vector<std::pair<int, int> > contact_pair_tags;
+		unsigned int variable_number;
+	};
+
 	class Contact {
 	public:
+		inline bool init(
+			const libMesh::Parallel::Communicator &lm_comm,
+			const std::shared_ptr<libMesh::MeshBase> &mesh,
+			const std::shared_ptr<libMesh::DofMap> &dof_map,
+			const ContactParams &params)
+		{
+			return init(lm_comm, mesh, dof_map, params.search_radius, params.contact_pair_tags, params.variable_number);
+		}
+
 		bool init(const libMesh::Parallel::Communicator &lm_comm,
 				  const std::shared_ptr<libMesh::MeshBase> &mesh,
 				  const std::shared_ptr<libMesh::DofMap> &dof_map,

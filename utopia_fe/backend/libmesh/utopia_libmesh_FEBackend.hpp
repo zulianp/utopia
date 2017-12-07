@@ -346,6 +346,12 @@ namespace utopia {
 		}
 
 		template<typename T>
+		static T apply(const BlockVar<T> &var, const AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			return var.get(ctx.block_id());
+		}
+
+		template<typename T>
 		static auto determinant(
 			const std::vector<Wrapper<T, 2>> &mats,
 			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
@@ -402,7 +408,7 @@ namespace utopia {
 			const SymbolicTensor<Identity, 2> &,
 			std::vector<Wrapper<T, 2>> &&mats,
 			const Plus &,
-			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<Matrix> 
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<Wrapper<T, 2>> 
 		{
 			auto s = size(mats[0]);
 			for(auto &m : mats) {
@@ -410,6 +416,17 @@ namespace utopia {
 			}
 
 			return std::move(mats);
+		}
+
+		template<typename T>
+		static auto apply_binary(
+			const double val,
+			Wrapper<T, 2> &&mat,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> Wrapper<T, 2>
+		{
+			mat *= val;
+			return std::move(mat);
 		}
 
 

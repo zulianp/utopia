@@ -22,6 +22,7 @@
 #include "utopia_FEEval_Equality.hpp"
 #include "utopia_FEEval_Determinant.hpp"
 #include "utopia_FEEval_Inverse.hpp"
+#include "utopia_FEEval_BlockVar.hpp"
 
 
 #endif //UTOPIA_FE_EVAL_HPP

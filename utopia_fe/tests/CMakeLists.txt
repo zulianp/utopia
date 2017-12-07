@@ -20,6 +20,9 @@ list(APPEND LOCAL_HEADERS
 	utopia_SDCTest.hpp
 	utopia_WearEstimator.hpp
 	utopia_Contact.hpp
+	utopia_ElasticMaterial.hpp
+	utopia_MechTest.hpp
+	utopia_Mechanics.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 
@@ -42,6 +45,9 @@ list(APPEND LOCAL_SOURCES
 	utopia_SDCTest.cpp
 	utopia_WearEstimator.cpp
 	utopia_Contact.cpp
+	utopia_ElasticMaterial.cpp
+	utopia_MechTest.cpp
+	utopia_Mechanics.cpp
 	)
 
 add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})

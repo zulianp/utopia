@@ -13,7 +13,7 @@ namespace utopia {
 	template<class Expr, class Visitor>
 	inline static int traverse(Expr &expr, Visitor &visitor)
 	{
-		std::cout << "[Warning] Encountered unhandled expression: " << expr.getClass() << std::endl;
+		std::cout << "[Warning] Traverse: encountered unhandled expression: " << expr.getClass() << std::endl;
 		return TRAVERSE_CONTINUE;
 	}
 
@@ -471,6 +471,12 @@ namespace utopia {
 
 
 	//const versions
+
+	template<class T, class Visitor>
+	inline static int traverse(const BlockVar<T> &expr, Visitor &visitor)
+	{
+		return visitor.visit(expr);
+	}
 
 
 	template<class Expr, class Visitor>
