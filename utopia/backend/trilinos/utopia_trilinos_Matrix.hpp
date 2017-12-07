@@ -51,10 +51,10 @@ class TpetraMatrix
             }
 
         template <class LocalOrdinal, class GlobalOrdinal, class Node>
-        TpetraMatrix (Tpetra::global_size_t numGlobalElements, size_t numLocalElem, GlobalOrdinal indexBase, const rcp_comm_type &comm, const Teuchos::RCP<Node> &node)
+        TpetraMatrix (Tpetra::global_size_t numGlobalElem, size_t numLocalElem, GlobalOrdinal indexBase, const rcp_comm_type &comm, const Teuchos::RCP<Node> &node)
             : _comm(comm), _owner(true)
             {
-            rcp_map_type _map (new Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> (numGlobalElem, numLocalElements, indexBase, &comm, &node));
+            rcp_map_type _map (new Tpetra::Map<LocalOrdinal,GlobalOrdinal,Node> (numGlobalElem, numLocalElem, indexBase, &comm, &node));
             rcp_crs_matrix_type _mat (new crs_matrix_type (_map, 0));
             }
 

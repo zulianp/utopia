@@ -1,5 +1,4 @@
 #ifndef UTOPIA_TRILINOS_HPP
-<<<<<<< HEAD
 #define UTOPIA_TRILINOS_HPP
 
 #ifdef WITH_TRILINOS
