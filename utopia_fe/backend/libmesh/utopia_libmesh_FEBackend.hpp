@@ -13,6 +13,8 @@
 
 #include "libmesh/const_function.h"
 #include <type_traits>
+#include <functional>
+#include <array>
 
 namespace utopia {
 
@@ -207,6 +209,60 @@ namespace utopia {
 			{
 				std::cout << "unimplemented constraint exprassion" << std::endl;
 				assert(false);
+			}
+
+			template<typename T, std::size_t N>
+			static STL2LibMeshLambdaFunction<T, N> make_lambda(std::function<std::array<T, N>(const std::array<T, N> &)> f)
+			{
+				return STL2LibMeshLambdaFunction<T, N>(f);
+			}
+
+			template<typename T, std::size_t N>
+			static STL2LibMeshLambdaFunction<T, N> make_lambda(std::function<T(const std::array<T, N> &)> f)
+			{
+				return STL2LibMeshLambdaFunction<T, N>(f);
+			}
+
+			static void make_vars(const TrialFunction<LibMeshFunctionSpace> &f, std::vector<unsigned int> &vars)
+			{
+				vars.resize(1);
+				vars[0] = f.space_ptr()->subspace_id();
+			}
+
+			static void make_vars(const TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>> &f, std::vector<unsigned int> &vars)
+			{
+				vars.resize(f.space_ptr()->n_subspaces());
+				
+				f.space_ptr()->each([&vars](const int i, const LibMeshFunctionSpace &ss) {
+					vars[i] = ss.subspace_id();
+				});
+			}
+
+			static libMesh::DofMap & get_dof_map(LibMeshFunctionSpace &s)
+			{
+				return s.dof_map();
+			}
+
+			static libMesh::DofMap & get_dof_map(ProductFunctionSpace<LibMeshFunctionSpace> &s)
+			{
+				return s[0].dof_map();
+			}
+
+			template<class F, class S, typename T, int Order>
+			inline void operator()(const int, const DirichletBoundaryCondition<
+																Equality<
+																	TrialFunction<S>,
+											 						FunctionCoefficient<F, T, Order>
+											 						>
+											 					> &cond) const
+			{
+				std::vector<unsigned int> vars; 
+				make_vars(cond.expr().left(), vars);
+
+				std::set<libMesh::boundary_id_type> bt;
+				bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
+				libMesh::DirichletBoundary d_bc(bt, vars, make_lambda( cond.expr().right().fun()) );
+				get_dof_map(*cond.expr().left().space_ptr()).add_dirichlet_boundary(d_bc);
 			}
 
 			template<class F, typename T>

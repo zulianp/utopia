@@ -46,7 +46,7 @@ namespace utopia {
 	class Friction {
 	public:
 		Friction()
-		: friction_coefficient(0)
+		: friction_coefficient(0.)
 		{}
 
 		//FIXME
@@ -79,8 +79,8 @@ namespace utopia {
 		virtual void apply(
 			const double dt,
 			const MechanicsContext &mech_ctx,
-			Contact  &contact,
-			Friction &friction,
+			const Contact  &contact,
+			const Friction &friction,
 			const MechanicsState &old,
 			MechanicsState &current) = 0;
 
@@ -116,8 +116,8 @@ namespace utopia {
 		void apply(
 			const double dt,
 			const MechanicsContext &mech_ctx,
-			Contact  &contact,
-			Friction &friction,
+			const Contact  &contact,
+			const Friction &friction,
 			const MechanicsState &old,
 			MechanicsState &current) override;
 	};
@@ -125,12 +125,12 @@ namespace utopia {
 	class ExternalForce {
 	public:
 		virtual ~ExternalForce() {}
-		virtual void update(const double t, DVectord &result) = 0;
+		virtual void eval(const double t, DVectord &result) = 0;
 	};
 
 	class ConstantExternalForce : public ExternalForce {
 	public:
-		inline void update(const double, DVectord &result) override
+		inline void eval(const double, DVectord &result) override
 		{
 			result = value;
 		}

@@ -285,6 +285,13 @@ namespace utopia {
 		return fun;
 	}
 
+
+
+	template<class T, int N>
+	inline FunctionCoefficient<std::function<std::array<T, N>(const std::array<T, N> &)>, T, 1> coeff(std::function<std::array<T, N>(const std::array<T, N> &)> fun) {
+		return fun;
+	}
+
 	template<class Point, class T>
 	inline FunctionCoefficient<void (*)(const Point&, T &), T, 1> vec_coeff(void (*fun)(const Point&, T &)) {
 		return fun;

@@ -148,8 +148,8 @@ namespace utopia {
 	void ImplicitEuler::apply(
 		const double dt,
 		const MechanicsContext &mech_ctx,
-		Contact  &contact,
-		Friction &friction,
+		const Contact  &contact,
+		const Friction &friction,
 		const MechanicsState &old,
 		MechanicsState &current)
 	{
@@ -164,7 +164,7 @@ namespace utopia {
 		DVectord rhs_c = transpose(T) * rhs;
 		DSMatrixd K_c  = transpose(T) * K * T;
 
-		bool solved = solve(K, mech_ctx.inverse_mass_vector, rhs, contact.gap, friction, sol_c);
+		bool solved = solve(K_c, mech_ctx.inverse_mass_vector, rhs_c, contact.gap, friction, sol_c);
 		assert(solved);
 
 		current.displacement_increment = T * sol_c;		

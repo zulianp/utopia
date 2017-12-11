@@ -431,7 +431,7 @@ namespace utopia {
 
 		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy)  override 
 		{
-			strong_enforce( boundary_conditions(ux == coeff(1.),   {3}) );
+			strong_enforce( boundary_conditions(ux == coeff(0.),   {3}) );
 			strong_enforce( boundary_conditions(ux == coeff(0.),   {4}) );
 
 			strong_enforce( boundary_conditions(uy == coeff(0.),   {3}) );
