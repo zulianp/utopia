@@ -259,9 +259,12 @@ namespace utopia {
 				std::vector<unsigned int> vars; 
 				make_vars(cond.expr().left(), vars);
 
+				auto lambda = make_lambda( cond.expr().right().fun());
+				// lambda.set_is_time_dependent(true);
+
 				std::set<libMesh::boundary_id_type> bt;
 				bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
-				libMesh::DirichletBoundary d_bc(bt, vars, make_lambda( cond.expr().right().fun()) );
+				libMesh::DirichletBoundary d_bc(bt, vars, lambda);
 				get_dof_map(*cond.expr().left().space_ptr()).add_dirichlet_boundary(d_bc);
 			}
 

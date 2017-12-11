@@ -35,6 +35,16 @@ namespace utopia {
 		DSMatrixd &stiffness_matrix,
 		DVectord  &internal_stress)
 	{
+		if(!assemble_hessian(V, params, displacement0, stiffness_matrix)) return false;
+		return update(displacement0, stiffness_matrix, internal_stress);
+	}
+
+	bool LinearElasticity::assemble_hessian(
+		const FunctionSpaceT &V,
+		const LameeParameters &params,
+		const DVectord &displacement,
+		DSMatrixd &stiffness_matrix)
+	{
 		auto u = trial(V);
 		auto v = test(V);
 
@@ -45,9 +55,7 @@ namespace utopia {
 		auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
 		auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
-
-		if(!assemble(b_form, stiffness_matrix)) return false;
-		return update(displacement0, stiffness_matrix, internal_stress);
+		return assemble(b_form, stiffness_matrix);
 	}
 
 	bool LinearElasticity::update(

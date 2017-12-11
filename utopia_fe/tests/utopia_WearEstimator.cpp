@@ -1,4 +1,4 @@
-#include "utopia_WearEstimator.hpp"
+#include "utopia_MechTest.hpp"
 
 #include "utopia_FormEvalTest.hpp"
 #include "utopia_FormEvaluator.hpp"
@@ -9,9 +9,6 @@
 #include "utopia_MixedFunctionSpace.hpp"
 
 #include "utopia_libmesh.hpp"
-#include "libmesh/parallel_mesh.h"
-#include "libmesh/mesh_generation.h"
-#include "libmesh/linear_implicit_system.h"
 
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_Equations.hpp"
@@ -20,251 +17,435 @@
 #include "utopia_IsForm.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 #include "utopia_FEKernel.hpp"
-#include "utopia_Socket.hpp"
-#include "utopia_ContactProblem.hpp"
+#include "utopia_ElasticMaterial.hpp"
+#include "utopia_Mechanics.hpp"
+#include "utopia_AffineTransform.hpp"
+#include "utopia_Contact.hpp"
+
+#include "moonolith_communicator.hpp"
 
 #include "libmesh/exodusII_io.h"
+#include "libmesh/nemesis_io.h"
+#include "libmesh/parallel_mesh.h"
+#include "libmesh/mesh_generation.h"
+#include "libmesh/linear_implicit_system.h"
+#include "libmesh/reference_counted_object.h"
+
 #include <algorithm>
-
-
 #include <memory>
-#include <unordered_set>
+#include <array>
 
+typedef std::array<double, 2> Point2d;
+typedef std::array<double, 3> Point3d;
+typedef std::function<std::array<double, 2>(const std::array<double, 2> &p)> Fun2d;
 
 namespace utopia {
 
+	static void apply_displacement(
+		const DVectord &displacement_increment,
+		const libMesh::DofMap &dof_map,
+		libMesh::MeshBase &mesh)
+	{	
+		//FIXME
+		int sys_num = 0;
 
+		moonolith::Communicator comm(mesh.comm().get());
 
-	class SubdomainAffineTransform {
-	public:
-		libMesh::TensorValue<double> linear_transformation;
-		libMesh::VectorValue<double> translation;
-		int subdomain_id;
-
-		SubdomainAffineTransform()
-		: subdomain_id(0)
-		{}
-
-		void apply(libMesh::MeshBase &mesh) const
-		{
-			// for(auto n_it = mesh.local_nodes_begin(); n_it != mesh.local_nodes_end(); ++n_it) { 
-			// 	auto &node = **n_it;
-			// 	node = linear_transformation * node;
-			// 	node += translation;
-			// }
-
-
-			std::unordered_set<libMesh::dof_id_type> transformed;
+		if(!comm.is_alone()) {
+			auto r = range(displacement_increment);
+			Read<DVectord> r_d(displacement_increment);
 
 			auto m_begin = mesh.active_local_elements_begin();
 			auto m_end   = mesh.active_local_elements_end();
 
+			std::vector<PetscInt> idx;
+			std::set<PetscInt> unique_idx;
+			std::map<libMesh::dof_id_type, double> idx_to_value;
+			std::vector<libMesh::dof_id_type> dof_indices;
+			
+			for(auto m_it = m_begin; m_it != m_end; ++m_it) { 
+				dof_map.dof_indices(*m_it, dof_indices);
+				for(auto dof_id : dof_indices) {
+					if(r.inside(dof_id)) {
+						idx_to_value[dof_id] = displacement_increment.get(dof_id);
+					} else {
+						unique_idx.insert(dof_id);
+					}
+				}
+			}
+
+			idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
+			DVectord out = displacement_increment.select(idx);
+			{
+				Read<DVectord> r_out(out);
+				auto range_out = range(out);
+
+				for(std::size_t i = 0; i < idx.size(); ++i) {
+					idx_to_value[idx[i]] = out.get(range_out.begin() + i);
+				}
+			}	
+
 			for(auto m_it = m_begin; m_it != m_end; ++m_it) { 
 				auto &e = **m_it;
-
-				if(e.subdomain_id() != subdomain_id) continue;
-
 				for(int i = 0; i < e.n_nodes(); ++i) {
 					auto &node = e.node_ref(i);
-					auto ret = transformed.insert(node.id());
 
-					if(ret.second) {
-						node = linear_transformation * node;
-						node += translation;
+					for(unsigned int c = 0; c < mesh.mesh_dimension(); ++c) {
+						const int dof_id = node.dof_number(sys_num, c, 0);
+						assert(idx_to_value.find(dof_id) != idx_to_value.end());
+						double &val = idx_to_value[dof_id];
+						node(c) += val;
+						val = 0.;
 					}
 				}
 			}
-		}
 
-		void make_rotation(const int dim, const double angle, const char axis)
-		{
-			translation.zero();
+		} else {
 
-			switch(dim) {
-				case 2:
-				{	
-					assert(axis == 'y' || axis == 'Y');
-					make_rotation_2(angle, linear_transformation);
-					return;	
-				}
-				case 3:
-				{
-					make_rotation_3(angle, axis, linear_transformation);
-					return;
-				}
-				default: 
-				{
-					assert(false);
-					return;
+			Read<DVectord> r_d(displacement_increment);
+
+			auto m_it  = mesh.local_nodes_begin();
+			auto m_end = mesh.local_nodes_end();
+
+
+			for(; m_it != m_end; ++m_it) { 
+				for(unsigned int c = 0; c < mesh.mesh_dimension(); ++c) {
+					const int dof_id = (*m_it)->dof_number(sys_num, c, 0);
+					(**m_it)(c) += displacement_increment.get(dof_id);
 				}
 			}
 		}
+	}
 
-		static void make_rotation_3(const double angle, const char axis, libMesh::TensorValue<double> &result)  
-		{
-
-			result(0, 0) = result(1, 1) = result(2, 2) = 1.;
-
-			if ((axis == 'x') || (axis == 'X')) {
-				result(1, 1) =  cos(angle);   
-				result(1, 2) = -sin(angle);   			
-				result(2, 1) =  sin(angle);   		
-				result(2, 2) =  cos(angle);   			
-			} else
-				// set rotation around y axis:
-				if ((axis == 'y') || (axis == 'Y')) {
-					result(0, 0) =  cos(angle);   
-					result(0, 2) =  sin(angle);   
-					result(2, 0) = -sin(angle);   
-					result(2, 2) =  cos(angle);   
-				} else
-					// set rotation around z axis:
-					if ((axis == 'z') || (axis == 'Z')) {
-						result(0, 0) =  cos(angle);   
-						result(0, 1) = -sin(angle);   
-						result(1, 0) =  sin(angle);   
-						result(1, 1) =  cos(angle);   
-					}
-		}
-
-		static void make_rotation_2(const double angle, libMesh::TensorValue<double> &result)
-		{
-			result(0, 0) = cos(angle);
-			result(0, 1) = -sin(angle);
-			result(1, 0) = sin(angle);
-			result(1, 1) = cos(angle);
-		}
-
-	};
-
-	class SubdomainCompositeTransform {
-	public:
-		void apply(libMesh::MeshBase &mesh) const
-		{
-			for(const auto &t : sub_transforms) {
-				t.apply(mesh);
-			}
-		}
-
-		std::vector<SubdomainAffineTransform> sub_transforms;
-	};
 
 	class GaitCycle {
 	public:
 
-		class SetUp : 
-			public ContactProblem::ElasticityBoundaryConditions,
-			public ContactProblem::ElasticityForcingFunction {
-
-		public:
-
-			SetUp() {
-				contact_flags = {{2, 1}};
-				search_radius = 0.1;
-				dt = .01;
-				
-				params.set_mu(1, 2.0);
-				params.set_lambda(1, 2.0);
-
-				params.set_mu(2, 5.0);
-				params.set_lambda(2, 5.0);
-
-				wear_coefficient = 7e-3; //mild-steel
-			}
-
-			void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy) override 
-			{
-				strong_enforce( boundary_conditions(ux == coeff(0.), {3}) );
-				strong_enforce( boundary_conditions(uy == coeff(0.), {3}) );
-
-				strong_enforce( boundary_conditions(ux == coeff(0.),  {4}) );
-				strong_enforce( boundary_conditions(uy == coeff(0.1), {4}) );
-			}
-
-			void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override
-			{
-				strong_enforce( boundary_conditions(ux == coeff(0.), {3}) );
-				strong_enforce( boundary_conditions(uy == coeff(0.), {3}) );
-				strong_enforce( boundary_conditions(uz == coeff(0.), {3}) );
-
-				strong_enforce( boundary_conditions(ux == coeff(0.), {4}) );
-				strong_enforce( boundary_conditions(uz == coeff(0.), {4}) );
-			}
-
-			int block_id() const override
-			{
-				return 2;
-			}
-
-			virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
-			{
-				v.zero();
-				// v(1) = 0.1;
-			}
-
-			LameeParameters params;
-			std::vector<std::pair<int, int> > contact_flags;
-			double search_radius;
-			double dt;
-			double wear_coefficient;
-		};
-
-		std::shared_ptr<libMesh::MeshBase> mesh;
-		SubdomainAffineTransform transform;
-		DSMatrixd mass_matrix;
-		DSMatrixd stiffness_matrix;
-		ContactProblem contact_problem;
-
-		void apply(libMesh::LibMeshInit &init, const std::size_t n_configurations)
+		GaitCycle()
 		{
-			auto set_up = std::make_shared<SetUp>();
-			ContactProblem p;
-			p.has_friction = false;
+			init();
+		}
 
-			for(std::size_t i = 0; i < n_configurations; ++i) {
-				transform.apply(*mesh);
-				plot_mesh(*mesh, "mesh");
-				p.params = set_up->params;
-				p.must_apply_displacement = false;
-				p.init(init, mesh, set_up, set_up, set_up->contact_flags, set_up->search_radius);
-				p.step(set_up->dt);
-				p.save(set_up->dt, i, "wear_simulation" + std::to_string(i) + ".e");	
+		void set_time_step(const std::size_t time_step)
+		{
+			t = time_step * dt;
+			if(time_step > n_time_steps/2) {
+				negative_dir = true;
 			}
 		}
+
+		void toggle_dir()
+		{
+			negative_dir = !negative_dir;
+		}
+
+		void init()
+		{
+			n_time_steps = 100;
+			dt = 0.1;
+			t = 0.;
+			max_angle = 60.;
+			angle = (max_angle/180 * M_PI);
+			d_angle = angle/(n_time_steps - 1);
+			negative_dir = false;
+
+			rotate2 = [this](const Point2d &p) -> Point2d {
+				AffineTransform trafo;
+
+				if(this->negative_dir) {
+					trafo.make_rotation(2, -this->d_angle, 'y');
+				} else {
+					trafo.make_rotation(2, this->d_angle, 'y');
+				}
+
+				trafo.translation[0] = -p[0];
+				trafo.translation[1] = -p[1];
+				return trafo.apply(p);
+			};
+
+			translate2_y = [this](const Point2d &p) -> Point2d {
+				if(this->t > 2*this->dt) {
+					return {0., 0.};
+				} else {
+					return {0., dt*0.1};
+				}
+			};
+
+
+			translate2_x = [this](const Point2d &p) -> Point2d {
+				if(negative_dir) {
+					return {-dt*0.1, 0.};
+				} else {
+					return {dt*0.1, 0.};
+				}
+			};
+
+		}
+
+
+		std::size_t n_time_steps;
+		double dt;
+		double t;
+		double angle;
+		double d_angle;
+		double max_angle;
+		Fun2d rotate2;
+		Fun2d translate2_y;
+		Fun2d translate2_x;
+		bool negative_dir;
 	};
 
 	class WearEstimator {
 	public:
 
-		void run(libMesh::LibMeshInit &init, const std::shared_ptr<libMesh::MeshBase> &mesh) {
-			GaitCycle gait_cycle;
-			gait_cycle.mesh = mesh;
+		static void update_wear(
+			const double dt,
+			const double wear_coefficient,
+			const DVectord &sliding_distance,
+			const DVectord &normal_stress,
+			DVectord &wear
+			)
+		{	
+			wear += (dt * wear_coefficient) * e_mul(sliding_distance, normal_stress);
+		}
+
+		void update_aux_system(
+			const int main_system_number,
+			const MechanicsContext &mech_ctx,
+			const MechanicsState &state,
+			const Contact &contact,
+			libMesh::EquationSystems &es)
+		{
+			using libMesh::MeshBase;
+			auto &main = es.get_system(main_system_number);
+			auto &aux = es.get_system("aux");
+			const auto &mesh = es.get_mesh();
+			const int dim = mesh.mesh_dimension();
+
+			DVectord normal_stress = local_zeros(local_size(state.displacement));
+			DVectord sliding_distance = local_zeros(local_size(state.displacement)); 
+
+			if(contact.initialized) {
+				DVectord stress = e_mul(mech_ctx.inverse_mass_vector, (state.external_force - state.internal_force));
+				apply_zero_boundary_conditions(main.get_dof_map(), stress);
+
+				normal_stress = contact.orthogonal_trafo * stress;
+
+				DVectord tangential_velocity = contact.orthogonal_trafo * state.velocity;
+				sliding_distance = local_zeros(local_size(state.displacement));
+
+				{	
+					Read<DVectord>   r_v(tangential_velocity);
+					Write<DVectord> w_s(sliding_distance);
+
+					Range r = range(tangential_velocity);
+
+					for(auto i = r.begin(); i < r.end(); i += dim) {
+
+						double dist = 0.;
+						for(uint d = 1; d < dim; ++d) {
+							auto val = tangential_velocity.get(i + d);
+							dist = val*val;
+						}
+
+						dist = std::sqrt(dist);
+						sliding_distance.set(i, dist);
+					}
+				}
+
+				update_wear(gait_cycle.dt, wear_coefficient, sliding_distance, normal_stress, wear);
+				sliding_distance = e_mul(contact.is_contact_node, sliding_distance);
+				normal_stress = e_mul(contact.is_contact_node, contact.orthogonal_trafo * stress);
+			}
+
+			{
+				Read<DVectord> r_d(state.displacement), r_v(state.velocity);
+				Read<DVectord> r_f(state.internal_force), r_ef(state.external_force), r_ns(normal_stress);
+				
+				auto nd 	= mesh.local_nodes_begin();
+				auto nd_end = mesh.local_nodes_end();
+
+				for (; nd != nd_end; ++nd) {
+					const libMesh::Node * node = *nd;
+
+					for (unsigned int d = 0; d < dim; ++d) {
+						unsigned int source_dof = node->dof_number(main_system_number, d, 0);
+
+						auto dest_dof_disp 	= node->dof_number(aux.number(), var_num_aux[d], 0);
+						auto dest_dof_vel 	= node->dof_number(aux.number(), var_num_aux[dim + d], 0);
+						auto dest_dof_force = node->dof_number(aux.number(), var_num_aux[2 * dim + d], 0);
+						auto dest_dof_ext_force = node->dof_number(aux.number(), var_num_aux[3 * dim + d], 0);
+
+						aux.solution->set(dest_dof_disp,  state.displacement_increment.get(source_dof));
+						aux.solution->set(dest_dof_vel,   state.velocity.get(source_dof));
+						aux.solution->set(dest_dof_force, state.internal_force.get(source_dof));
+						aux.solution->set(dest_dof_ext_force, state.external_force.get(source_dof));
+					}
+
+					unsigned int source_dof = node->dof_number(main_system_number, 0, 0);
+					unsigned int dest_dof_normal_stress = node->dof_number(aux.number(), var_num_aux[4 * dim], 0);
+					aux.solution->set(dest_dof_normal_stress, normal_stress.get(source_dof));
+
+					unsigned int dest_dof_sliding_dist = node->dof_number(aux.number(), var_num_aux[4 * dim + 1], 0);
+					aux.solution->set(dest_dof_sliding_dist, sliding_distance.get(source_dof));
+
+					unsigned int dest_dof_wear = node->dof_number(aux.number(), var_num_aux[4 * dim + 2], 0);
+					aux.solution->set(dest_dof_wear, wear.get(source_dof));
+				}
+			}
+
+			aux.solution->close();
+		}
+
+
+		void init_aux_system(
+			libMesh::EquationSystems &es,
+			const int order = 1)
+		{
+			//init aux system for plotting
+			auto &aux = es.add_system<libMesh::LinearImplicitSystem>("aux");
+			
+			var_num_aux.push_back( aux.add_variable("inc_x", libMesh::Order(order), libMesh::LAGRANGE) );
+			var_num_aux.push_back( aux.add_variable("inc_y", libMesh::Order(order), libMesh::LAGRANGE) );
+
+			const int dim = es.get_mesh().mesh_dimension();
+
+			if(dim > 2) 
+				var_num_aux.push_back( aux.add_variable("disp_z", libMesh::Order(order), libMesh::LAGRANGE) );
+
+			var_num_aux.push_back( aux.add_variable("vel_x", libMesh::Order(order), libMesh::LAGRANGE) );
+			var_num_aux.push_back( aux.add_variable("vel_y", libMesh::Order(order), libMesh::LAGRANGE) );
+
+			if(dim > 2) 
+				var_num_aux.push_back( aux.add_variable("vel_z", libMesh::Order(order), libMesh::LAGRANGE) );
+
+			var_num_aux.push_back( aux.add_variable("f_x", libMesh::Order(order), libMesh::LAGRANGE) );
+			var_num_aux.push_back( aux.add_variable("f_y", libMesh::Order(order), libMesh::LAGRANGE) );
+
+			if(dim > 2) 
+				var_num_aux.push_back( aux.add_variable("f_z", libMesh::Order(order), libMesh::LAGRANGE) );
+
+			var_num_aux.push_back( aux.add_variable("fext_x", libMesh::Order(order), libMesh::LAGRANGE) );
+			var_num_aux.push_back( aux.add_variable("fext_y", libMesh::Order(order), libMesh::LAGRANGE) );
+
+			if(dim > 2) 
+				var_num_aux.push_back( aux.add_variable("fext_z", libMesh::Order(order), libMesh::LAGRANGE) );
+
+			var_num_aux.push_back( aux.add_variable("normalstress", libMesh::Order(order), libMesh::LAGRANGE) );
+			var_num_aux.push_back( aux.add_variable("slidingdistance", libMesh::Order(order), libMesh::LAGRANGE) );
+			var_num_aux.push_back( aux.add_variable("wear", libMesh::Order(order), libMesh::LAGRANGE) );
+
+			aux.init();	
+			aux.update();
+		}
+
+		void run(const std::shared_ptr<libMesh::MeshBase> &mesh)
+		{
+			auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
+			auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("wear_test");
+
+			auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "disp_x");
+			auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "disp_y");
+			auto V  = Vx * Vy;
+
+			auto u  = trial(V);
+			auto ux = trial(Vx);
+			auto uy = trial(Vy);
+			auto vx = test(Vx);
+			auto vy = test(Vy);
 
 			const int dim = mesh->mesh_dimension();
 
-			const int n_configurations = 2;
-			const double d_angle = 60. * (M_PI/180.) / n_configurations;
+			auto constr = constraints(
+				boundary_conditions(u == coeff(gait_cycle.translate2_y), {4}),
+				boundary_conditions(u == coeff(gait_cycle.translate2_x), {3})
+			);
 
-			auto &t = gait_cycle.transform;
-			t.make_rotation(dim, d_angle, 'y');
-			t.subdomain_id = 1;
+			FEBackend<LIBMESH_TAG>::init_constraints(constr);
+			Vx.initialize();
 
-			// m1 = LameeParamters::convert_to_lamee_params(220., 0.31);
-			// m2 = LameeParamters::convert_to_lamee_params(1.1, 0.42);
+			init_aux_system(*equation_systems, 1);
 
-			gait_cycle.apply(init, n_configurations);
+			MechanicsContext mech_ctx;
+			mech_ctx.init_mass_matrix(V);
+
+			Size gs({Vx.dof_map().n_dofs()});
+			Size ls({Vx.dof_map().n_local_dofs()});
+			std::vector<MechanicsState> state(gait_cycle.n_time_steps);
+			state[0].init(ls, gs);
+
+			wear = local_zeros(ls);
+
+			auto elast = std::make_shared<LinearElasticity>();
+			elast->init(V, params, state[0].displacement, mech_ctx.stiffness_matrix, state[0].internal_force);
+			apply_zero_boundary_conditions(Vx.dof_map(), state[0].external_force);
+
+			auto ef = std::make_shared<ConstantExternalForce>();
+			ef->init((inner(coeff(0.), vx) + inner(coeff(0.), vy)) * dX);
+			ef->eval(state[0].t, state[0].external_force);
+			apply_boundary_conditions(Vx.dof_map(), mech_ctx.stiffness_matrix, state[0].external_force);
+
+			auto integrator = std::make_shared<ImplicitEuler>(dim, Vx.dof_map());
+
+			Contact contact;
+			ContactParams contact_params;
+			contact_params.contact_pair_tags = {{2, 1}};
+			contact_params.search_radius = 0.2;
+
+			// libMesh::ExodusII_IO io(*mesh);
+			libMesh::Nemesis_IO io(*mesh);
+
+			convert(state[0].displacement, *sys.solution);
+			sys.solution->close();
+			update_aux_system(0, mech_ctx, state[0], contact, *equation_systems);
+			io.write_timestep("mech_test.e", *equation_systems, 1, gait_cycle.t);
+
+			
+			for(std::size_t i = 1; i < gait_cycle.n_time_steps; ++i) {
+				gait_cycle.set_time_step(i);
+				state[i].init(ls, gs);
+				
+				//displace mesh
+				apply_displacement(state[i-1].displacement_increment, Vx.dof_map(), *mesh);
+
+				//update boundary conditions				
+				if(!contact.init(mesh, make_ref(Vx.dof_map()), contact_params)) {
+					std::cerr << "[Error] contact failed" << std::endl;
+				}
+
+				state[i].t = gait_cycle.t;				
+				ef->eval(state[i].t, state[i].external_force);
+
+				Vx.dof_map().create_dof_constraints(*mesh, gait_cycle.t);
+				apply_boundary_conditions(Vx.dof_map(), mech_ctx.stiffness_matrix, state[i].external_force);
+
+				integrator->apply(gait_cycle.dt, mech_ctx, contact, Friction(), state[i-1], state[i]);
+				state[i].velocity = (1./gait_cycle.dt) * state[i].displacement_increment;
+
+				convert(state[i].displacement, *sys.solution);
+				sys.solution->close();
+				update_aux_system(0, mech_ctx, state[i], contact, *equation_systems);
+				io.write_timestep("mech_test.e", *equation_systems, i + 1, gait_cycle.t);
+			}
 		}
+
+
+		WearEstimator()
+		: wear_coefficient(7e-3)
+		{}
+
+		GaitCycle gait_cycle;
+		LameeParameters params;
+		std::vector<int> var_num_aux;
+		DVectord wear;
+		double wear_coefficient;
 	};
 
 	void run_wear_test(libMesh::LibMeshInit &init)
 	{
-
-		std::cout << "[run_wear_test]" << std::endl;
-
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		mesh->read("../data/wear_2.e");
-
 		WearEstimator we;
-		we.run(init, mesh);
+		we.run(mesh);
 	}
 }

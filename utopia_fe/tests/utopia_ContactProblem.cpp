@@ -308,7 +308,6 @@ namespace utopia {
 		unsigned int variable_number = 0;
 
 		bool has_contact = contact_.init(
-			*lm_comm,
 			mesh,
 			utopia::make_ref(context_ptr->system.get_dof_map()),
 			search_radius,

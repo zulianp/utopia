@@ -134,10 +134,10 @@ namespace utopia {
 		MechanicsState &current)
 	{
 		const DSMatrixd &K = mech_ctx.stiffness_matrix;
-		DVectord rhs = dt * current.external_force - old.internal_force;
+		DVectord rhs = current.external_force - old.internal_force;
 
 		linear_solver->solve(K, rhs, current.displacement_increment);
-		current.displacement += current.displacement_increment;
+		current.displacement = old.displacement + current.displacement_increment;
 		current.internal_force = K * current.displacement;
 		current.t = old.t + dt;
 
@@ -156,9 +156,8 @@ namespace utopia {
 		auto s = local_size(old.internal_force);
 
 		const DSMatrixd &T = contact.complete_transformation;
-
 		const DSMatrixd &K = mech_ctx.stiffness_matrix;
-		DVectord rhs = dt * current.external_force - old.internal_force;
+		const DVectord rhs = current.external_force - old.internal_force;
 
 		DVectord sol_c = local_zeros(s);
 		DVectord rhs_c = transpose(T) * rhs;
@@ -168,7 +167,7 @@ namespace utopia {
 		assert(solved);
 
 		current.displacement_increment = T * sol_c;		
-		current.displacement += current.displacement_increment;
+		current.displacement = old.displacement + current.displacement_increment;
 		current.internal_force = K * current.displacement;
 		current.t = old.t + dt;
 

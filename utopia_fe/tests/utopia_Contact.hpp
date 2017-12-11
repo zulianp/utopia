@@ -28,17 +28,19 @@ namespace utopia {
 
 	class Contact {
 	public:
+		Contact()
+		: initialized(false)
+		{}
+
 		inline bool init(
-			const libMesh::Parallel::Communicator &lm_comm,
 			const std::shared_ptr<libMesh::MeshBase> &mesh,
 			const std::shared_ptr<libMesh::DofMap> &dof_map,
 			const ContactParams &params)
 		{
-			return init(lm_comm, mesh, dof_map, params.search_radius, params.contact_pair_tags, params.variable_number);
+			return init(mesh, dof_map, params.search_radius, params.contact_pair_tags, params.variable_number);
 		}
 
-		bool init(const libMesh::Parallel::Communicator &lm_comm,
-				  const std::shared_ptr<libMesh::MeshBase> &mesh,
+		bool init(const std::shared_ptr<libMesh::MeshBase> &mesh,
 				  const std::shared_ptr<libMesh::DofMap> &dof_map,
 				  const double search_radius,
 				  const std::vector<std::pair<int, int> > &contact_pair_tags,
@@ -56,6 +58,7 @@ namespace utopia {
 		DSMatrixd orthogonal_trafo;
 
 		DSMatrixd complete_transformation;
+		bool initialized;
 	};
 }
 

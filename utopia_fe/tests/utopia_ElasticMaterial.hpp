@@ -38,6 +38,13 @@ namespace utopia {
 			const DVectord &displacement,
 			DSMatrixd &stiffness_matrix,
 			DVectord  &internal_stress) override;
+
+
+		bool assemble_hessian(
+			const FunctionSpaceT &V,
+			const LameeParameters &params,
+			const DVectord &displacement,
+			DSMatrixd &stiffness_matrix);
 	};
 
 }

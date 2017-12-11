@@ -110,15 +110,17 @@ namespace utopia {
 			}
 		}
 
-		inline libMesh::Real component (unsigned int i, const Point &p, libMesh::Real time) override
+		inline libMesh::Real component(unsigned int var_cmp, const Point &p, libMesh::Real time) override
 		{
+			assert(var_cmp < N);
+			
 			ArrayT in, out;
 			for(std::size_t i = 0; i < N; ++i) {
 				in[i] = p(i);
 			}
 
 			out = vector_fun_(in);
-			return out[i];
+			return out[var_cmp];
 
 		}
 

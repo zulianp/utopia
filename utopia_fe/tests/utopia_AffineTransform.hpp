@@ -28,6 +28,7 @@ namespace utopia {
 		void make_rotation(const int dim, const double angle, const char axis)
 		{
 			std::fill(begin(translation), end(translation), 0.0);
+			std::fill(begin(linear_transformation), end(linear_transformation), 0.);
 
 			switch(dim) {
 				case 2:
@@ -84,12 +85,10 @@ namespace utopia {
 
 		static void make_rotation_2(const double angle, std::array<double, 9> &result)
 		{
-			std::fill(begin(result), end(result), 0.);
-
-			set(0, 0, cos(angle), result);
+			set(0, 0, cos(angle),  result);
 			set(0, 1, -sin(angle), result);
-			set(1, 0, sin(angle), result);
-			set(1, 1, cos(angle), result);
+			set(1, 0, sin(angle),  result);
+			set(1, 1, cos(angle),  result);
 		}
 
 		inline static void set(
@@ -98,7 +97,7 @@ namespace utopia {
 			const double value,
 			std::array<double, 9> &mat)
 		{
-			mat[i*3+j] = value;
+			mat[i * 3 + j] = value;
 		}
 
 		inline static double get(
@@ -106,7 +105,7 @@ namespace utopia {
 			const std::size_t j,
 			const std::array<double, 9> &mat)
 		{
-			return mat[i*3+j];
+			return mat[i * 3 + j];
 		}
 
 	};
