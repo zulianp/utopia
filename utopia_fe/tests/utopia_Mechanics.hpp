@@ -40,6 +40,8 @@ namespace utopia {
 		DSMatrixd mass_matrix;
 		DVectord  inverse_mass_vector;
 
+		DVectord dirichlet_selector;
+
 		void init_mass_matrix(const ProductFunctionSpace<LibMeshFunctionSpace> &V);
 	};
 
@@ -74,6 +76,7 @@ namespace utopia {
 		: dim(dim), dof_map(dof_map) 
 		{
 			linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+			// linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
 		}
 
 		virtual void apply(

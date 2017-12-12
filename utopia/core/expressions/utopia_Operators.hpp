@@ -19,6 +19,12 @@ namespace utopia {
         {
             return l - r;
         }
+
+        template<typename T>
+        inline static T apply(const T &expr)
+        {
+            return -expr;
+        }
     };
 
     class Plus {
