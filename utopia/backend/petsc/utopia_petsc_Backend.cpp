@@ -853,7 +853,11 @@ namespace utopia {
 		MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols, 1, PETSC_NULL,
 					 1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
 		
-		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+		// MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+
+		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
+		MatSetOption(m.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
+		MatSetOption(m.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
 		
 		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		
@@ -920,7 +924,10 @@ namespace utopia {
 		MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL,
 					 1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
 		
-		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+		// MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
+		MatSetOption(m.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
+		MatSetOption(m.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
 		
 		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		
@@ -962,9 +969,11 @@ namespace utopia {
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
 					 &m.implementation());
-		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-		
-		
+
+		// MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
+		MatSetOption(m.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
+		MatSetOption(m.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
 	}
 	
 	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz) {
@@ -982,8 +991,11 @@ namespace utopia {
 					 &m.implementation());
 		
 		
-		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
-		
+		// MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+			
+		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
+		MatSetOption(m.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
+		MatSetOption(m.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
 	}
 	
 	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz)
@@ -1000,7 +1012,10 @@ namespace utopia {
 					 &m.implementation());
 		
 		
-		MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+		// MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
+		MatSetOption(m.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
+		MatSetOption(m.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
 	}
 	
 	/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
@@ -1563,7 +1578,7 @@ namespace utopia {
 		MPI_Comm comm = mat.communicator();
 		MatDestroy(&mat.implementation());
 		MatCreate(comm, &mat.implementation());
-		
+
 		PetscInt local_size, global_size;
 		VecGetLocalSize(vec.implementation(), &local_size);
 		VecGetSize(vec.implementation(), &global_size);
@@ -1578,6 +1593,10 @@ namespace utopia {
 			MatSetType(mat.implementation(), MATMPIAIJ);
 			MatSetSizes(mat.implementation(), local_size, local_size, global_size, global_size);
 			MatMPIAIJSetPreallocation(mat.implementation(), 1, NULL, 0, NULL);
+
+			MatSetOption(mat.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
+			MatSetOption(mat.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
+			MatSetOption(mat.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
 		}
 		
 		

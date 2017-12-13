@@ -47,8 +47,8 @@ namespace utopia {
 		inline void initialize()
 		{
 			if(!equation_system().is_initialized()) {
-				// equation_system().init();
-				equation_systems_->init();
+				equation_system().init();
+				// equation_systems_->init();
 			}
 		}
 		

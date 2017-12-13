@@ -32,6 +32,7 @@
 #include "libmesh/reference_counted_object.h"
 
 #include "utopia_Socket.hpp"
+#include "utopia_NormalTangentialCoordinateSystem.cpp"
 
 #include <algorithm>
 #include <memory>
@@ -42,6 +43,51 @@ typedef std::array<double, 3> Point3d;
 typedef std::function<std::array<double, 2>(const std::array<double, 2> &p)> Fun2d;
 
 namespace utopia {
+
+	// static bool assemble_normals_on_linear_surface(
+	// 	const libMesh::MeshBase &mesh,
+	// 	const libMesh::DofMap &dof_map,
+	// 	const std::vector<int> &boundary_tags,
+	// 	DVectord &is_normal_component,
+	// 	DVectord &normals)
+	// {
+	//     const SizeType n_local_dofs = dof_map.n_local_dofs();
+	//     const unsigned int dim = mesh.mesh_dimension();
+
+	//     DVectord normals_buff = local_zeros(n_local_dofs);
+
+
+	//     QGauss quad(dim-1, SECOND);
+	//     std::unique_ptr<FEBase> fe = FEBase::build(n_dims, FIRST);
+	//     const auto & phi = fe->get_phi();
+	//     const auto & JxW = fe->get_JxW();
+
+	//     Point normal;
+	//     std::vector<dof_id_type> dof_indices;
+
+	//     for(auto e_it = mesh.active_local_elements_begin();
+	//         e_it != mesh.active_local_elements_end(); ++e_it)
+	//     {
+	//         const auto &e = **e_it;
+	//         dof_map.dof_indices(&e, dof_indices);
+
+	//         for(uint side = 0; side < e.n_sides(); ++side) {
+	//             if(e.neighbor_ptr(side) != nullptr) { continue; }
+	//              compute_side_normal(dim, *side, normal);
+
+
+	//              for(uint i = 0; i < n_test; ++i) {
+	//              	for(uint qp = 0; qp < n_qp; ++qp) {
+
+	//              		for(uint d = 0; d < dim; ++d) {
+	//              			normal_vec(i, d) += phi[i][qp] * normal(d) * JxW[qp];
+	//              		}
+	//              	}
+	//              }
+
+	//         }
+	//     }
+	// }
 
 
 
@@ -127,6 +173,9 @@ namespace utopia {
 
 		GaitCycle()
 		{
+			n_time_steps = 50;
+			t_end = 10.;
+			angle_degree = 60.;
 			init();
 		}
 
@@ -145,12 +194,8 @@ namespace utopia {
 
 		void init()
 		{
-			n_time_steps = 100;
 			t = 0.;
-			t_end = 10.;
-			dt = (t_end - t)/(n_time_steps - 1);
-
-			angle_degree = 60.;
+			dt = (t_end - t)/(n_time_steps - 1);	
 			angle_radian = (angle_degree/180 * M_PI);
 			d_angle = angle_radian/(t_end - t);
 			negative_dir = false;
@@ -168,15 +213,7 @@ namespace utopia {
 			};
 
 			translate2_y = [this](const Point2d &p) -> Point2d {
-				// return {0., std::min(this->t, 2*this->dt)*0.1};
-
-				// if(this->t > 2*this->dt) {
-				// 	return {0., 0.};
-				// } else {
-				// 	return {0., this->t*0.1};
-				// }
-
-				return {0., 2*this->dt*0.1};
+				return {0., std::min(2*this->dt*0.1, 0.02) };
 			};
 		}
 
@@ -247,6 +284,68 @@ namespace utopia {
 			)
 		{	
 			wear += (dt * wear_coefficient) * abs(e_mul(sliding_distance, normal_stress));
+		}
+
+		void modify_geometry_with_wear(
+			ProductFunctionSpace<LibMeshFunctionSpace> &V,
+			const std::vector<int> &boundary_tags)
+		{
+			libMesh::MeshBase &mesh = V[0].mesh();
+			libMesh::DofMap &dof_map = V[0].dof_map();
+			auto dim = mesh.mesh_dimension();
+
+			//compute surface normals
+			DVectord is_normal_component;
+			DVectord normals;
+			DSMatrixd trafo;
+
+			//why this does not work????
+			assemble_normal_tangential_transformation(mesh, dof_map, boundary_tags, is_normal_component, normals, trafo);
+
+			//compute surface displacement
+			DVectord wear_induced_displacement = local_zeros(local_size(wear));
+			{
+				auto r = range(wear);
+				Write<DVectord> w_w(wear_induced_displacement);
+				Read<DVectord> r_w(wear), r_n(normals), r_i(is_normal_component);
+
+				for(auto i = r.begin(); i != r.end(); i+= dim) {
+					if(is_normal_component.get(i) > 0) {
+						for(unsigned int d = 0; d < dim; ++d) {
+							wear_induced_displacement.set(i + d, normals.get(i + d) * (-extrapolation_factor) * wear.get(i));
+							// wear_induced_displacement.set(i + d, normals.get(i + d) * 0.1);
+						}
+					}
+				}
+			}
+			
+			// the interior using linear elasticity or laplacian
+			// use dirichlet conditions on the whole boundary and warp
+			auto u = trial(V);
+			auto v = test(V);
+
+			DSMatrixd lapl_mat;
+			auto lapl = inner(grad(u), grad(v)) * dX;
+			assemble(lapl, lapl_mat);			
+			DVectord warped_displacement = local_zeros(local_size(wear_induced_displacement));
+
+			//FIXME warped_displacement passed as dummy
+			set_identity_at_constraint_rows(dof_map, lapl_mat);
+
+			Factorization<DSMatrixd, DVectord> solver;
+			solver.solve(lapl_mat, wear_induced_displacement, warped_displacement);
+
+			//displace mesh
+			apply_displacement(warped_displacement, dof_map, mesh);
+			convert(warped_displacement, *V[0].equation_system().solution);
+			// convert(wear_induced_displacement, *V[0].equation_system().solution);
+			V[0].equation_system().solution->close();
+
+			double wear_magnitude = norm2(wear_induced_displacement);
+			std::cout << "wear_magnitude: " << wear_magnitude << std::endl;
+
+			double param_magn = norm2(warped_displacement);
+			std::cout << "param_magn: " << param_magn << std::endl;
 		}
 
 		void update_aux_system(
@@ -337,6 +436,12 @@ namespace utopia {
 			aux.solution->close();
 		}
 
+		void init_volume_param_system(libMesh::EquationSystems &es)
+		{
+			auto &p_sys = es.add_system<libMesh::LinearImplicitSystem>("param");
+			param_sys_number = p_sys.number();
+		}
+
 
 		void init_aux_system(
 			libMesh::EquationSystems &es,
@@ -407,6 +512,26 @@ namespace utopia {
 			Vx.initialize();
 
 			init_aux_system(*equation_systems, 1);
+			
+			//begin: init volume parametrization system
+			init_volume_param_system(*equation_systems);
+
+			auto Px = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_x", param_sys_number);
+			auto Py = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_y", param_sys_number);
+			auto P = Px * Py;
+
+			auto p_constr = constraints(
+				boundary_conditions(trial(P) == coeff(gait_cycle.zero2), {1, 2, 3, 4})
+			);
+
+			FEBackend<LIBMESH_TAG>::init_constraints(p_constr);
+			Px.initialize();
+			Px.equation_system().update();
+
+			Px.equation_system().solution->zero();
+			Px.equation_system().solution->close();
+
+			//end: init volume parametrization system
 
 			MechanicsContext mech_ctx;
 			mech_ctx.init_mass_matrix(V);
@@ -483,7 +608,7 @@ namespace utopia {
 				integrator->apply(gait_cycle.dt, mech_ctx, contact, Friction(), state[i-1], state[i]);
 				// integrator->apply(gait_cycle.dt, mech_ctx, state[i-1], state[i]);
 
-				plot_mesh(*mesh, "rot/t_" + std::to_string(i));
+				// plot_mesh(*mesh, "rot/t_" + std::to_string(i));
 				apply_displacement(-overriden_displacement, Vx.dof_map(), *mesh);
 
 				if(override_each_time_step) {
@@ -500,11 +625,16 @@ namespace utopia {
 				update_aux_system(0, mech_ctx, state[i], contact, *equation_systems);
 				io.write_timestep("wear_test.e", *equation_systems, i + 1, gait_cycle.t);
 			}
+
+			modify_geometry_with_wear(P, {1});
+			io.write_timestep("wear_test.e", *equation_systems, gait_cycle.n_time_steps, gait_cycle.t);
+			plot_mesh(*mesh, "worn_geometry");
+
 		}
 
 
 		WearEstimator()
-		: wear_coefficient(7e-3)
+		: wear_coefficient(7e-3), extrapolation_factor(10.)
 		{}
 
 		GaitCycle gait_cycle;
@@ -512,17 +642,31 @@ namespace utopia {
 		std::vector<int> var_num_aux;
 		DVectord wear;
 		double wear_coefficient;
+		double extrapolation_factor;
+		unsigned int param_sys_number;
+
 	};
 
 	void run_wear_test(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		mesh->read("../data/wear_2.e");
-		WearEstimator we;
-		we.params = LameeParameters(10., 10.);
+		// mesh->read("../data/wear_tri_2.e");
+
 		
+		WearEstimator we;
+		
+		//Wear estimator parameters
+		we.params = LameeParameters(10., 10.);
 		we.params.set_mu(2, 1.);
 		we.params.set_lambda(2, 1.);
+		we.extrapolation_factor = 10.;
+
+		//gait cycle parameters
+		we.gait_cycle.n_time_steps = 100;
+		// we.gait_cycle.angle_degree = 10;
+		we.gait_cycle.init();
+
 		we.run(mesh);
 	}
 }
