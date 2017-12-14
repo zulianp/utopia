@@ -453,7 +453,7 @@ namespace utopia {
 			const PetscInt * cols;
 			const Scalar * values;
 
-			MatAssemblyBegin(l, MAT_FINAL_ASSEMBLY);
+			
 
 			for(PetscInt row = 0; row < n_rows; ++row) {
 
@@ -466,6 +466,7 @@ namespace utopia {
 				MatRestoreRow(*l_ptr, row, &n_values, &cols, &values);
 			}
 
+			MatAssemblyBegin(l, MAT_FINAL_ASSEMBLY);
 			MatAssemblyEnd(l, MAT_FINAL_ASSEMBLY);
 
 			MatDestroy(l_ptr);
@@ -728,7 +729,7 @@ namespace utopia {
 		// set vector size
 		VecSetSizes(li, PETSC_DECIDE, rr.extent());
 		
-		VecAssemblyBegin(li);
+		
 		
 		PetscInt r = 0;
 		for (PetscInt rIt = rr.begin(); rIt < rr.end(); ++rIt) {
@@ -736,6 +737,7 @@ namespace utopia {
 			set(left, r, get(right, rIt));
 		}
 		
+		VecAssemblyBegin(li);
 		VecAssemblyEnd(li);
 	}
 	
@@ -828,15 +830,12 @@ namespace utopia {
 		PetscInt grows, gcols;
 		MatGetSize(m.implementation(), &grows, &gcols);
 		
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		
-		
 		rend = PetscMin(rend, gcols);
 		for (PetscInt i = rbegin; i < rend; ++i) {
 			MatSetValue(m.implementation(), i, i, 1, INSERT_VALUES);
 		}
 		
+		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
@@ -854,9 +853,7 @@ namespace utopia {
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
 		MatSetOption(m.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
 		MatSetOption(m.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		
+
 		PetscInt grows, gcols;
 		MatGetSize(m.implementation(), &grows, &gcols);
 		
@@ -870,6 +867,7 @@ namespace utopia {
 			MatSetValues(m.implementation(), 1, &offset, 1, &offset, &val, INSERT_VALUES);
 		}
 		
+		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
@@ -894,17 +892,13 @@ namespace utopia {
 		MPI_Exscan(&send_buffer, &receive_buffer, 1, MPI_UNSIGNED_LONG ,
 				   MPI_SUM, m.communicator());
 		
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		
-		
 		PetscInt extent = PetscMin(rend-rbegin, PetscMin(grows, gcols));
-		
 		
 		for (PetscInt i = 0; i < extent; ++i) {
 			MatSetValue(m.implementation(), rbegin+i, receive_buffer + i, 1, INSERT_VALUES);
 		}
 		
+		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
@@ -918,16 +912,10 @@ namespace utopia {
 		MatCreateAIJ(comm, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE, 1, PETSC_NULL,
 					 1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
 		
-		// MatSetOption(m.implementation(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
 		MatSetOption(m.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
 		MatSetOption(m.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		
-		//PetscInt grows, gcols;
-		//MatGetSize(m.implementation(), &grows, &gcols);
-		
+
 		unsigned long send_buffer = cols;
 		unsigned long receive_buffer = 0;
 		
@@ -946,9 +934,8 @@ namespace utopia {
 			MatSetValues(m.implementation(), 1, &row_offset, 1, &col_offset, &val, INSERT_VALUES);
 		}
 		
+		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
-		
-		
 	}
 	
 	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz) {
@@ -1055,7 +1042,7 @@ namespace utopia {
 		MatGetSize(m.implementation(), &grows, &gcols);
 		
 		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
+		
 		
 		const Scalar v = values.value();
 		for (PetscInt i = rbegin; i < rend; ++i) {
@@ -1064,6 +1051,7 @@ namespace utopia {
 			}
 		}
 		
+		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
@@ -1109,7 +1097,7 @@ namespace utopia {
 		MatGetSize(m.implementation(), &grows, &gcols);
 		
 		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
+		
 		
 		
 		const Scalar v = values.value();
@@ -1119,6 +1107,7 @@ namespace utopia {
 			}
 		}
 		
+		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
@@ -1754,7 +1743,7 @@ namespace utopia {
 		MatCreateDense(comm, l_range.extent(), PETSC_DECIDE, result_size.get(0), result_size.get(1), NULL,
 					   &result.implementation());
 		
-		MatAssemblyBegin(result.implementation(), MAT_FINAL_ASSEMBLY);
+		
 		for(SizeType i = l_range.begin(); i != l_range.end(); ++i) {
 			const Scalar l_value = left_array[i-l_range.begin()];
 			
@@ -1765,6 +1754,7 @@ namespace utopia {
 			}
 		}
 		
+		MatAssemblyBegin(result.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(result.implementation(), MAT_FINAL_ASSEMBLY);
 		VecRestoreArrayRead(left.implementation(), &left_array);
 	}
@@ -1799,7 +1789,7 @@ namespace utopia {
 		Matrix &work = transpose ? mtr : m;
 		build(work, Size({n, 1}), Values<Scalar>(0));
 		
-		MatAssemblyBegin(work.implementation(), MAT_FINAL_ASSEMBLY);
+		
 		
 		Scalar zero = 0;
 		for (PetscInt i = r.begin(); i < r.end(); ++i) {
@@ -1807,6 +1797,7 @@ namespace utopia {
 			set(work, i, zero, val);
 		}
 		
+		MatAssemblyBegin(work.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(work.implementation(), MAT_FINAL_ASSEMBLY);
 		
 		if (transpose) {
@@ -1994,7 +1985,7 @@ namespace utopia {
 
 		VecDestroy(&result.implementation());
 		VecCreateMPI(mat.communicator(), local_r, global_r, &result.implementation());
-		VecAssemblyBegin(result.implementation());
+		
 
 		// auto fun = Operation::template Fun<Scalar>();
 
@@ -2016,6 +2007,7 @@ namespace utopia {
 			VecSetValues(result.implementation(), 1, &row, &x, INSERT_VALUES);
 		}
 
+		VecAssemblyBegin(result.implementation());
 		VecAssemblyEnd(result.implementation());
 	}
 
