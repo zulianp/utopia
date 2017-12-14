@@ -563,8 +563,8 @@ namespace utopia {
 			contact_params.contact_pair_tags = {{2, 1}};
 			contact_params.search_radius = 1.;
 
-			libMesh::ExodusII_IO io(*mesh);
-			// libMesh::Nemesis_IO io(*mesh);
+			// libMesh::ExodusII_IO io(*mesh);
+			libMesh::Nemesis_IO io(*mesh);
 
 			convert(state[0].displacement, *sys.solution);
 			sys.solution->close();

@@ -86,6 +86,13 @@ namespace utopia {
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), rows, columns, values);
         }
 
+        template<typename Ordinal>
+        inline void add_matrix(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
+        {
+            assert_enabled(is_write_locked());
+            Backend<Scalar, Traits<Implementation>::Backend >::Instance().add_matrix(derived().implementation(), rows, columns, values);
+        }
+
         template<typename RowT, typename ColT, typename ScalarT>
         inline void set(std::initializer_list<RowT> rows, std::initializer_list<ColT> cols, std::initializer_list<ScalarT> values)
         {

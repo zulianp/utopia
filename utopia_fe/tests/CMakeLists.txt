@@ -23,6 +23,7 @@ list(APPEND LOCAL_HEADERS
 	utopia_ElasticMaterial.hpp
 	utopia_MechTest.hpp
 	utopia_Mechanics.hpp
+	utopia_AssemblyTest.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 
@@ -48,6 +49,7 @@ list(APPEND LOCAL_SOURCES
 	utopia_ElasticMaterial.cpp
 	utopia_MechTest.cpp
 	utopia_Mechanics.cpp
+	utopia_AssemblyTest.cpp
 	)
 
 

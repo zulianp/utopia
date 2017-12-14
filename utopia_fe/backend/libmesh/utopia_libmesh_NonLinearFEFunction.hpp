@@ -86,6 +86,33 @@ namespace utopia {
 		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
 	}
 
+	template<class FunctionSpaceT, class Expr, typename T>
+	void element_assemble_expression_v(const libMesh::MeshBase::const_element_iterator &it, const Expr &expr, libMesh::SparseMatrix<T> &mat)
+	{
+		typedef utopia::Traits<FunctionSpaceT> TraitsT;
+		typedef typename TraitsT::Matrix ElementMatrix;
+
+
+		static const int Backend = TraitsT::Backend;
+
+		const auto &space = find_space<FunctionSpaceT>(expr);
+		const auto &dof_map = space.dof_map();
+
+		AssemblyContext<Backend> ctx;
+		ctx.set_current_element((*it)->id());
+
+		ElementMatrix el_mat;
+		ctx.init_bilinear(expr);
+
+		FormEvaluator<Backend> eval;
+		eval.eval(expr, el_mat, ctx, true);
+
+		std::vector<libMesh::dof_id_type> dof_indices;
+		dof_map.dof_indices(*it, dof_indices);
+
+		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+	}
+
 
 	template<class FunctionSpaceT, class Expr, class GlobalVector>
 	void element_assemble_expression_v(const libMesh::MeshBase::const_element_iterator &it, const Expr &expr, Wrapper<GlobalVector, 1> &vec)
@@ -169,6 +196,30 @@ namespace utopia {
 
 			auto &m = space.mesh();
 
+			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+				element_assemble_expression_v<FunctionSpaceT>(it, expr, mat);
+			}
+		}	
+
+		return true;
+	}
+
+
+	template<class Expr, typename T>
+	 bool assemble(
+	 	const Expr &expr,
+	 	libMesh::SparseMatrix<T> &mat,
+	 	const bool first = true)
+	 { 
+		typedef typename FindFunctionSpace<Expr>::Type FunctionSpaceT;
+		auto &space = find_space<FunctionSpaceT>(expr);
+
+		if(!first) {
+			mat.zero();
+		}
+
+		{
+			auto &m = space.mesh();
 			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
 				element_assemble_expression_v<FunctionSpaceT>(it, expr, mat);
 			}
