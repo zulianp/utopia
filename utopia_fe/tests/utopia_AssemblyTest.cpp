@@ -1,6 +1,5 @@
 #include "utopia_libmesh.hpp"
 #include "libmesh/mesh_generation.h"
-#include "libmesh/linear_partitioner.h"
 
 namespace utopia {
 	void run_assembly_test(libMesh::LibMeshInit &init)
@@ -9,9 +8,6 @@ namespace utopia {
 		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
-		// const std::string data_path = Utopia::Instance().get("data_path");
-		// const std::string mesh_path = data_path + "/fine_mesh.e";
-		// mesh->read(mesh_path);
 
 		const unsigned int n = 2;
 		libMesh::MeshTools::Generation::build_cube(*mesh,
@@ -21,26 +17,31 @@ namespace utopia {
 			0, 1.,
 			libMesh::TET4);
 
-
 		auto es = std::make_shared<libMesh::EquationSystems>(*mesh);
-		auto &sys =es->add_system<libMesh::LinearImplicitSystem>("lapl");
-		auto V = FunctionSpaceT(es);
-		V.initialize();
+		es->add_system<libMesh::LinearImplicitSystem>("lapl");
+		
+		auto V = FunctionSpaceT(es); 
 
 		auto u = trial(V);
 		auto v = test(V);
 
-		const double alpha = 1.;
-		auto laplacian = inner(alpha * grad(u), grad(v)) * dX;
 
-		DSMatrixd mat, lm_mat;
-		assemble(laplacian, mat);
-		assemble(laplacian, *sys.matrix);
-		sys.matrix->close();
-		convert(*sys.matrix, lm_mat);
+		//set-up boundary conditions
+		//...
+		//... add boundary conditions to system
+
+		V.initialize();
+
+		const double alpha = 1.;
+		DSMatrixd laplacian, mass_matrix;
 		
-		double sum_lm_mat = norm2(lm_mat);
-		double sum_mat = norm2(mat);
-		std::cout << "sum_mat: " << sum_lm_mat << " == " << sum_mat << std::endl;
+		assemble(inner(alpha * grad(u), grad(v)) * dX, laplacian);
+		assemble(inner(u, v) * dX, mass_matrix);
+		
+		const double norm_laplacian   = norm2(laplacian);
+		const double norm_mass_matrix = norm2(mass_matrix);
+
+		assert(approxeq(9.60035,   norm_laplacian, 1e-5));
+		assert(approxeq(0.0660453, norm_mass_matrix, 1e-5));
 	}
 }
