@@ -386,7 +386,6 @@ namespace utopia
 			GenericSemismoothNewton<DSMatrixd, DVectord, F> solver(f, linear_solver);
 
 			solver.solve(A, rhs, sol);
-			disp(sol);
 		}
 		
 		
@@ -448,7 +447,7 @@ namespace utopia
 						b.set(i, -50);
 					}
 					
-					if(i ==0 || i == rhs_range.end()-1) {
+					if(i ==0 || i == n-1) {
 						b.set(i, 0);
 					}
 				}
@@ -475,7 +474,8 @@ namespace utopia
 			mprgp.solve(A, b, x);
 			
 			
-			DVectord x_0 = 0 * x;
+			DVectord x_0 = 0. * x;
+
 			// auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
 			// auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
 			auto lsolver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
@@ -485,27 +485,10 @@ namespace utopia
 			lsolver->stol(1e-15);
 
 			SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
-			
 			nlsolver.set_box_constraints(box);
-			
 
 			nlsolver.max_it(200);
-			nlsolver.verbose(true);
-			nlsolver.solve(A, b, x_0);
-			
-			// if(!approxeq(x, x_0)) {
-			double diff = norm2(x - x_0);
-			double sum_A = sum(A);
-			double norm_x = norm2(x);
-			double norm_x0 = norm2(x_0);
-			
-			if(mpi_world_rank() == 0) {
-				std::cout << "diff: " << diff << std::endl;
-				std::cout << "sum_A: " << sum_A << std::endl;
-				std::cout <<  "nx/nx0 = " << norm_x << "/" << norm_x0 << std::endl;
-			}
-
-			
+			nlsolver.solve(A, b, x_0);			
 			assert(approxeq(x, x_0));
 		}
 		
