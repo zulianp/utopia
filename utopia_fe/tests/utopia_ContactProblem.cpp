@@ -573,14 +573,15 @@ namespace utopia {
 				length_total_disp += total_displacement.get(i + j) *  total_displacement.get(i + j);
 			}
 
+
 			search_radius = std::max(search_radius, std::min(1.1 * std::sqrt(length), std::sqrt(length_total_disp)));
 		}
-
 
 		search_radius += 1e-4;
 		comm.all_reduce(&search_radius, 1, moonolith::MPIMax());
 		disp("predicted search radius");
 		disp(search_radius);
+
 	}
 
 	void ContactProblem::step(const double dt)

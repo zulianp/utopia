@@ -1,5 +1,8 @@
 #include "utopia_Chrono.hpp"
 
+#include <algorithm>
+#include <iostream>
+
 #ifdef WITH_MPI
 #include "mpi.h"
 #include "utopia_MPI.hpp"
@@ -110,7 +113,7 @@ namespace utopia {
 #endif //__APPLE__
 
 #ifdef WIN32
-		static const bool not_impl_msg = true;
+		static bool not_impl_msg = true;
 		if(not_impl_msg) {
 			std::cerr << "[Warning] Chrono &Chrono::operator+=(const Chrono &other) not implemented for windows" << std::endl;
 			not_impl_msg = false;
@@ -131,7 +134,7 @@ namespace utopia {
 #endif //__APPLE__
 
 #ifdef WIN32
-		static const bool not_impl_msg = true;
+		static bool not_impl_msg = true;
 		if(not_impl_msg) {
 			std::cerr << "[Warning] void Chrono::rescale_duration(const double factor) not implemented for windows" << std::endl;
 			not_impl_msg = false;

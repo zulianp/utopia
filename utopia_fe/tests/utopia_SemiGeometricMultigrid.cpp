@@ -1,9 +1,10 @@
 #include "utopia_SemiGeometricMultigrid.hpp"
 
 #include "utopia_libmesh.hpp"
-
+#include "utopia_Socket.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
 #include "moonolith_communicator.hpp"
+
 
 #include "libmesh/mesh_tools.h"
 #include "libmesh/explicit_system.h"
@@ -25,6 +26,8 @@ namespace utopia {
 		const auto &mesh = es.get_mesh();
 		const auto &dof_map = es.get_system(system_number).get_dof_map();
 		const auto dim = mesh.mesh_dimension();
+
+		mg.set_fix_semidefinite_operators(true);
 
 		libMesh::BoundingBox bb = libMesh::MeshTools::create_bounding_box(mesh);
 		auto r = bb.max() - bb.min();
@@ -52,6 +55,8 @@ namespace utopia {
 				meshes[0] = m;
 				equation_systems[0] = std::make_shared<libMesh::EquationSystems>(*m);
 
+				// plot_mesh(*m, "mg/l_" + std::to_string(0));
+
 				//use refinement instead
 				for(std::size_t i = 1; i < n_levels-1; ++i) {
 					auto m_i = std::make_shared<libMesh::DistributedMesh>(*meshes[i-1]);
@@ -64,6 +69,8 @@ namespace utopia {
 
 					equation_systems[i] = std::make_shared<libMesh::EquationSystems>(*m_i);
 					meshes[i] = m_i;
+
+					// plot_mesh(*m_i, "mg/l_" + std::to_string(i));
 				}
 
 				break;
@@ -75,6 +82,8 @@ namespace utopia {
 				break;
 			}
 		}
+
+		// plot_mesh(mesh, "mg/L");
 
 		for(std::size_t i = 0; i < n_levels-1; ++i) {
 			auto &sys = equation_systems[i]->add_system<libMesh::LinearImplicitSystem>(es.get_system(system_number).name());
@@ -121,6 +130,14 @@ namespace utopia {
 			dof_map.n_variables(),
 			*interpolators[n_coarse_spaces-1]
 			); assert(success);
+
+		if(mg.verbose()) {
+			for(const auto &e : equation_systems) {
+				std::cout << "dofs: " << e->get_system(0).get_dof_map().n_dofs() << std::endl;
+			}
+
+			std::cout << "dofs: " << es.get_system(0).get_dof_map().n_dofs() << std::endl;
+		}
 
 		mg.init_transfer_from_fine_to_coarse(std::move(interpolators));
 		//FIXME naming is wrong

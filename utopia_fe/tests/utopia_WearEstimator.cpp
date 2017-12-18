@@ -215,7 +215,7 @@ namespace utopia {
 			};
 
 			translate2_y = [this](const Point2d &p) -> Point2d {
-				return {0., std::min(2*this->dt*0.1, 0.02) };
+				return {0., std::min(0.5 + 2*this->dt*0.1, 0.52) };
 			};
 		}
 
@@ -561,10 +561,13 @@ namespace utopia {
 			apply_boundary_conditions(Vx.dof_map(), mech_ctx.stiffness_matrix, state[0].external_force);
 
 			auto integrator = std::make_shared<ImplicitEuler>(dim, Vx.dof_map());
-			auto smg = std::make_shared<SemiGeometricMultigrid>();
-			smg->verbose(true);
-			smg->init(Vx, 5);
-			integrator->set_linear_solver(smg);
+			
+			//begin: set-up semi-geometric multigrid
+			// auto smg = std::make_shared<SemiGeometricMultigrid>();
+			// smg->verbose(true);
+			// smg->init(Vx, 5);
+			// integrator->set_linear_solver(smg);
+			//end: set-up semi-geometric multigrid
 
 			Contact contact;
 			ContactParams contact_params;
@@ -658,7 +661,7 @@ namespace utopia {
 	void run_wear_test(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
-		mesh->read("../data/wear_2.e");
+		mesh->read("../data/wear_2_far.e");
 		// mesh->read("../data/wear_tri_2.e");
 
 		// unsigned int n_refine = 1;

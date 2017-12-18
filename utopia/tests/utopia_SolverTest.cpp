@@ -893,6 +893,7 @@ namespace utopia
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 			
 			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+			multigrid.set_fix_semidefinite_operators(true);
 			multigrid.galerkin_assembly(make_ref(A));
 			
 			DVectord x_0 = zeros(A.size().get(0));

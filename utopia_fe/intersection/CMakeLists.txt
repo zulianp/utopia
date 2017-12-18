@@ -23,12 +23,12 @@ find_package(ParMoonolith)
 add_library(utopia_fe_intersection STATIC ${LOCAL_SOURCES})
 add_dependencies(utopia_fe_intersection par_moonolith)
 target_include_directories(utopia_fe_intersection PUBLIC ${MOONOLITH_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/clipper)
-target_link_libraries(utopia_fe_intersection ${MOONOLITH_LIB})
-target_link_libraries(utopia_fe_intersection ${MOONOLITH_LIB})
+target_link_libraries(utopia_fe_intersection ${MOONOLITH_LIBRARIES})
+target_link_libraries(utopia_fe_intersection ${MOONOLITH_LIBRARIES})
 
 set(UTOPIA_FE_LIBRARIES "${UTOPIA_FE_LIBRARIES};utopia_fe_intersection" PARENT_SCOPE)
 
-set(MOONOLITH_LIB ${MOONOLITH_LIB} PARENT_SCOPE)
+set(MOONOLITH_LIBRARIES ${MOONOLITH_LIBRARIES} PARENT_SCOPE)
 set(MOONOLITH_INCLUDES ${MOONOLITH_INCLUDES} PARENT_SCOPE)
 
 install(TARGETS utopia_fe_intersection

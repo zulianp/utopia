@@ -41,6 +41,7 @@ endif()
 
 include_directories(rapidxml)
 
+
 ########################################################################
 function(find_project_files rootPath dirPaths headers sources)
 	SET(verbose TRUE)
@@ -72,14 +73,14 @@ endfunction()
 
 
 list(APPEND UTOPIA_FE_MODULES
-	rapidxml
-	core
-	intersection
+	tests
+	transfer
+	visualization
 	backend/libmesh
 	backend/homemade
-	visualization
-	transfer
-	tests
+	intersection
+	core
+	rapidxml
  )
 
 FOREACH(MODULE ${UTOPIA_FE_MODULES})
@@ -206,7 +207,7 @@ append_list_to_string_for_makefile(CONFIG_CONTENT "" "\n" "-I" "${MOONOLITH_INCL
 
 append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_FE_LIBRARIES=-L${CMAKE_INSTALL_PREFIX}/lib -lutopia_fe ${LIBMESH_LIBRARIES} " " " "-l" "${UTOPIA_FE_LIBRARIES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${UTOPIA_LIBRARIES}")
-append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${MOONOLITH_LIB}")
+append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${MOONOLITH_LIBRARIES}")
 
 set(CONFIG_CONTENT "${CONFIG_CONTENT}\n")
 append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_FE_DEFS=" "\n" "" "${UTOPIA_DEFS}")
@@ -223,7 +224,7 @@ append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_FE_INCLUDES\n
 append_list_to_string_for_cmake(CONFIG_CONTENT "" "" "${LIBMESH_INCLUDE_DIR}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "" ")\n\n"  ${MOONOLITH_INCLUDES})
 append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "LIST(APPEND UTOPIA_FE_LIBRARIES\n\t-L${CMAKE_INSTALL_PREFIX}/lib" "" "\n\t\"-l" "\"" "${UTOPIA_FE_LIBRARIES}")
-append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "\n\t-L${CMAKE_INSTALL_PREFIX}/lib" "" "\n\t\"" "\"" "${MOONOLITH_LIB}")
+append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "\n\t-L${CMAKE_INSTALL_PREFIX}/lib" "" "\n\t\"" "\"" "${MOONOLITH_LIBRARIES}")
 append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "" "" "\n\t\"" "\"" "${LIBMESH_LIBRARIES}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "\n" "\n)\n\n" "${UTOPIA_LIBRARIES}")
 

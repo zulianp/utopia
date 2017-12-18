@@ -25,7 +25,7 @@ namespace utopia {
 		
 		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
 						 const Parameters params                         = Parameters() ) :
-		linear_solver_(linear_solver), active_set_tol_(1e-15)
+		linear_solver_(linear_solver), active_set_tol_(1e-15), linear_solve_zero_initial_guess_(true)
 		{
 			set_parameters(params);
 		}
@@ -73,6 +73,16 @@ namespace utopia {
 		{
 			box = constraints_;
 			return true;
+		}
+
+		inline void set_linear_solve_zero_initial_guess(const bool val)
+		{
+			linear_solve_zero_initial_guess_ = val;
+		}
+
+		inline bool linear_solve_zero_initial_guess() const
+		{
+			return linear_solve_zero_initial_guess_;
 		}
 		
 	private:
@@ -240,6 +250,10 @@ namespace utopia {
 
 				assert(!has_nan_or_inf(H));
 				assert(!has_nan_or_inf(g));
+
+				if(this->linear_solve_zero_initial_guess()) {
+					x_new *= 0.;
+				}
 				
 				if(!linear_solver_->solve(H, sub_g, x_new)) {
 					std::cerr << "[Error] linear solver did not manage to solve the linear system" << std::endl;
@@ -430,6 +444,7 @@ namespace utopia {
 		std::shared_ptr <Solver>        linear_solver_;
 		BoxConstraints                  constraints_;
 		Scalar active_set_tol_;
+		bool linear_solve_zero_initial_guess_;
 	};
 	
 }
