@@ -247,6 +247,10 @@ namespace utopia {
 				}
 
 				if(has_nan_or_inf(x_new)) {
+					write("H.m", H);
+					write("s.m", sub_g);
+					write("x.m", x_new);
+					
 					assert(!has_nan_or_inf(x_new));
 					std::cerr << "[Error] nan/inf entries in the solution vector" << std::endl;
 					converged = false;
@@ -257,6 +261,11 @@ namespace utopia {
 					assert(check_zero(H * x_new - sub_g));
 					std::cerr << "[Error] non-zero residual returned by linear-solver" << std::endl;
 					converged = false;
+
+					write("H.m", H);
+					write("s.m", sub_g);
+					write("x.m", x_new);
+					
 					break;
 				}
 

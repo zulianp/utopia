@@ -476,13 +476,14 @@ namespace utopia
 			
 			DVectord x_0 = 0. * x;
 
-			// auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+			auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
 			// auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-			auto lsolver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+			// auto lsolver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
 			// auto lsolver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
 			lsolver->atol(1e-15);
 			lsolver->rtol(1e-15);
 			lsolver->stol(1e-15);
+			// lsolver->verbose(true);
 
 			SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.set_box_constraints(box);

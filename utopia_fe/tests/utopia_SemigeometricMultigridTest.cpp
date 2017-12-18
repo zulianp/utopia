@@ -4,6 +4,9 @@
 #include <memory>
 #include "libmesh/parallel_mesh.h"
 
+#include "utopia_SemiGeometricMultigrid.hpp"
+#include "utopia_libmesh_NonLinearFEFunction.hpp"
+
 using namespace libMesh;
 
 namespace utopia {
@@ -131,7 +134,7 @@ namespace utopia {
         convert(*p.fine_context->system.rhs, 	p.rhs);
     }
     
-    void run_semigeometric_multigrid_test(libMesh::LibMeshInit &init)
+    void run_semigeometric_multigrid_test_old(libMesh::LibMeshInit &init)
     {
         MGTestProblem p;
         init_mg_test_problem(init, p);
@@ -165,5 +168,58 @@ namespace utopia {
         convert(sol, *p.fine_context->system.solution);
         ExodusII_IO(*p.fine_mesh).write_equation_systems ("mg_solution_lapl.e", p.fine_context->equation_systems);
         assert(err < 1e-7);
+    }
+
+    void run_semigeometric_multigrid_test(libMesh::LibMeshInit &init)
+    {
+        auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
+        
+        const unsigned int n = 16;
+        libMesh::MeshTools::Generation::build_square(*lm_mesh,
+            n, n,
+            0, 1,
+            0, 1.,
+            libMesh::QUAD8);
+
+        auto equation_systems = std::make_shared<libMesh::EquationSystems>(*lm_mesh);
+        equation_systems->add_system<libMesh::LinearImplicitSystem>("smg");
+
+        auto V = LibMeshFunctionSpace(equation_systems);
+        auto u = trial(V);
+        auto v = test(V);
+
+        auto lapl = inner(grad(u), grad(v)) * dX;
+        auto f = inner(coeff(1.), v) * dX;
+
+        auto constr = constraints(
+            boundary_conditions(u == coeff(0.),  {1, 3}),
+            boundary_conditions(u == coeff(0.),  {0}),
+            boundary_conditions(u == coeff(0.0), {2})
+        );
+
+        DSMatrixd lapl_mat;
+        DVectord rhs;
+
+        init_constraints(constr);
+        equation_systems->init();
+     
+        assemble(lapl, lapl_mat);
+        assemble(f, rhs);     
+
+        set_identity_at_constraint_rows(V.dof_map(), lapl_mat);
+
+
+        SemiGeometricMultigrid mg;
+        mg.verbose(true);
+        mg.init(V, 3);
+        mg.update(make_ref(lapl_mat));
+
+        DVectord sol = local_zeros(local_size(rhs));
+        mg.apply(rhs, sol);
+
+        double err = norm2(lapl_mat * sol - rhs);
+
+        disp("error:");
+        disp(err);
     }
 }

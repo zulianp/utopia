@@ -926,6 +926,8 @@ namespace utopia {
 		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
 		
 		PetscInt extent = PetscMin(rend-rbegin, PetscMin(rows, cols));
+
+		PETScError::Check( MatZeroEntries(m.implementation()) );
 		
 		for (PetscInt i = 0; i < extent; ++i) {
 			const PetscInt row_offset = rbegin+i;
@@ -955,6 +957,8 @@ namespace utopia {
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
 		MatSetOption(m.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
 		MatSetOption(m.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
+
+		PETScError::Check( MatZeroEntries(m.implementation()) );
 	}
 	
 	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz) {
@@ -975,6 +979,8 @@ namespace utopia {
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
 		MatSetOption(m.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
 		MatSetOption(m.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
+
+		PETScError::Check( MatZeroEntries(m.implementation()) );
 	}
 	
 	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz)
@@ -993,6 +999,8 @@ namespace utopia {
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
 		MatSetOption(m.implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
 		MatSetOption(m.implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
+
+		PETScError::Check( MatZeroEntries(m.implementation()) );
 	}
 	
 	/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
@@ -1040,7 +1048,7 @@ namespace utopia {
 		
 		PetscInt grows, gcols;
 		MatGetSize(m.implementation(), &grows, &gcols);
-		
+		PETScError::Check( MatZeroEntries(m.implementation()) );
 		
 		
 		

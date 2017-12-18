@@ -136,16 +136,13 @@ namespace utopia {
                 }
             }
         } //synch-block end
-
-        //disp(global_normal_vec);
         
-        mat = local_sparse(local_dofs, local_dofs, n_dims);
-        
+        mat = local_sparse(local_dofs, local_dofs, n_dims);        
         auto r = range(global_normal_vec);
         
         std::vector<Real> H(n_dims*n_dims, 0);
         
-        is_normal_component = local_zeros(local_dofs * n_dims);
+        is_normal_component = local_zeros(local_dofs);
         
         SizeType n_detecetd_normals = 0;
         { //synch-block begin

@@ -4,15 +4,11 @@
 #include "utopia_FormEvaluator.hpp"
 #include "utopia_fe_core.hpp"
 #include "utopia.hpp"
+
+
 #include "utopia_fe_homemade.hpp"
 #include "utopia_FEIsSubTree.hpp"
 #include "utopia_MixedFunctionSpace.hpp"
-
-#include "utopia_libmesh.hpp"
-#include "libmesh/parallel_mesh.h"
-#include "libmesh/mesh_generation.h"
-#include "libmesh/linear_implicit_system.h"
-
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_Equations.hpp"
 #include "utopia_FEConstraints.hpp"
@@ -24,11 +20,14 @@
 #include "utopia_Mechanics.hpp"
 #include "utopia_AffineTransform.hpp"
 #include "utopia_Contact.hpp"
+#include "utopia_libmesh.hpp"
 
 #include "libmesh/exodusII_io.h"
+#include "libmesh/parallel_mesh.h"
+#include "libmesh/mesh_generation.h"
+#include "libmesh/linear_implicit_system.h"
+
 #include <algorithm>
-
-
 #include <memory>
 #include <array>
 

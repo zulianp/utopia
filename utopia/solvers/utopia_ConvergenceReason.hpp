@@ -11,7 +11,8 @@
 
 #include <iomanip>
 #include <limits> 
-#include <chrono>   
+#include <chrono> 
+#include <string>  
     
 namespace utopia 
 {
@@ -47,7 +48,7 @@ namespace utopia
             }
             else if(convergence_reason < 0)
             {
-                std::cerr << "\033[1;31m [Error] LinearSolver stopped at iteration " << num_it << " . \033[0m\n";
+                std::cerr << "\033[1;31m [Error] LinearSolver diverged at iteration " << num_it << " reason = " << diverged_reason_string(convergence_reason) << ". \033[0m\n";
             }
             else
             {
@@ -103,6 +104,31 @@ namespace utopia
         static const int DIVERGED_LOCAL_MIN           = -8;  /* || J^T b || is small, implies converged to local minimum of F() */
         static const int CONVERGED_ITERATING          =  0;
 
+        static std::string diverged_reason_string(const int reason)
+        {
+            if(reason >= 12) {
+                return "UNDEFINED";
+            }
+
+
+            static const std::string string_reason[12] =
+            {
+                "KSP_CONVERGED_ITERATING",
+                "UNDEFINED",
+                "KSP_DIVERGED_NULL",
+                "KSP_DIVERGED_ITS",
+                "KSP_DIVERGED_DTOL",
+                "KSP_DIVERGED_BREAKDOWN",
+                "KSP_DIVERGED_BREAKDOWN_BICG",
+                "KSP_DIVERGED_NONSYMMETRIC",
+                "KSP_DIVERGED_INDEFINITE_PC",
+                "KSP_DIVERGED_NANORINF",
+                "KSP_DIVERGED_INDEFINITE_MAT",
+                "KSP_DIVERGED_PCSETUP_FAILED"
+            };   
+
+            return string_reason[std::abs(reason)];
+        }
 
     private: 
         ConvergenceReason()

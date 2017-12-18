@@ -24,6 +24,7 @@ list(APPEND LOCAL_HEADERS
 	utopia_MechTest.hpp
 	utopia_Mechanics.hpp
 	utopia_AssemblyTest.hpp
+	utopia_SemiGeometricMultigrid.hpp
 	)
 
 list(APPEND LOCAL_SOURCES 
@@ -50,6 +51,7 @@ list(APPEND LOCAL_SOURCES
 	utopia_MechTest.cpp
 	utopia_Mechanics.cpp
 	utopia_AssemblyTest.cpp
+	utopia_SemiGeometricMultigrid.cpp
 	)
 
 
@@ -58,13 +60,6 @@ add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})
 target_link_libraries(utopia_fe_tests transfer utopia_fe_visualization utopia_fe_homemade utopia_fe_libmesh_backend)
 target_include_directories(utopia_fe_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) 
 
-find_package(LIBMESH)
-
-if(LIBMESH_FOUND)
-	target_link_libraries(utopia_fe_tests ${LIBMESH_LIBRARIES})
-else()
-	message(FATAL_ERROR "could not find LibMesh")
-endif()
 
 install(TARGETS utopia_fe_tests
 	RUNTIME DESTINATION bin 

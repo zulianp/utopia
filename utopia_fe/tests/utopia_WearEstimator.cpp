@@ -29,10 +29,12 @@
 #include "libmesh/parallel_mesh.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/linear_implicit_system.h"
-#include "libmesh/reference_counted_object.h"
+#include "libmesh/mesh_refinement.h"
+
 
 #include "utopia_Socket.hpp"
 #include "utopia_NormalTangentialCoordinateSystem.cpp"
+#include "utopia_SemiGeometricMultigrid.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -300,8 +302,11 @@ namespace utopia {
 			DSMatrixd trafo;
 
 			//why this does not work????
+		
+
 			assemble_normal_tangential_transformation(mesh, dof_map, boundary_tags, is_normal_component, normals, trafo);
 
+		
 			//compute surface displacement
 			DVectord wear_induced_displacement = local_zeros(local_size(wear));
 			{
@@ -309,16 +314,15 @@ namespace utopia {
 				Write<DVectord> w_w(wear_induced_displacement);
 				Read<DVectord> r_w(wear), r_n(normals), r_i(is_normal_component);
 
-				for(auto i = r.begin(); i != r.end(); i+= dim) {
+				for(auto i = r.begin(); i < r.end(); i += dim) {
 					if(is_normal_component.get(i) > 0) {
 						for(unsigned int d = 0; d < dim; ++d) {
 							wear_induced_displacement.set(i + d, normals.get(i + d) * (-extrapolation_factor) * wear.get(i));
-							// wear_induced_displacement.set(i + d, normals.get(i + d) * 0.1);
 						}
 					}
 				}
 			}
-			
+
 			// the interior using linear elasticity or laplacian
 			// use dirichlet conditions on the whole boundary and warp
 			auto u = trial(V);
@@ -523,8 +527,8 @@ namespace utopia {
 			auto p_constr = constraints(
 				boundary_conditions(trial(P) == coeff(gait_cycle.zero2), {1, 2, 3, 4})
 			);
-
-			FEBackend<LIBMESH_TAG>::init_constraints(p_constr);
+			//FEBackend<LIBMESH_TAG>::
+			init_constraints(p_constr);
 			Px.initialize();
 			Px.equation_system().update();
 
@@ -557,6 +561,10 @@ namespace utopia {
 			apply_boundary_conditions(Vx.dof_map(), mech_ctx.stiffness_matrix, state[0].external_force);
 
 			auto integrator = std::make_shared<ImplicitEuler>(dim, Vx.dof_map());
+			auto smg = std::make_shared<SemiGeometricMultigrid>();
+			smg->verbose(true);
+			smg->init(Vx, 5);
+			integrator->set_linear_solver(smg);
 
 			Contact contact;
 			ContactParams contact_params;
@@ -653,6 +661,11 @@ namespace utopia {
 		mesh->read("../data/wear_2.e");
 		// mesh->read("../data/wear_tri_2.e");
 
+		// unsigned int n_refine = 1;
+		// libMesh::MeshRefinement mesh_refinement(*mesh);
+		// mesh_refinement.make_flags_parallel_consistent();
+		// mesh_refinement.uniformly_refine(n_refine);
+
 		
 		WearEstimator we;
 		
@@ -664,7 +677,7 @@ namespace utopia {
 
 		//gait cycle parameters
 		we.gait_cycle.n_time_steps = 100;
-		// we.gait_cycle.angle_degree = 10;
+		// we.gait_cycle.angle_degree = 3;
 		we.gait_cycle.init();
 
 		we.run(mesh);

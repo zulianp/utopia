@@ -15,6 +15,7 @@
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 
 #include "utopia_libmesh.hpp"
+#include <cmath>
 
 namespace utopia {
 
@@ -41,6 +42,26 @@ namespace utopia {
 
 		stress = local_zeros(local_size);
 		t = 0.;
+	}
+
+
+	MechWithContactIntegrationScheme::MechWithContactIntegrationScheme(
+		const unsigned int dim,
+		libMesh::DofMap &dof_map)
+	: dim(dim), dof_map(dof_map) 
+	{
+		// linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		// auto temp =  std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+		// auto temp =  std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+		auto temp =  std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+
+		temp->atol(1e-10);
+		temp->stol(1e-10);
+		temp->rtol(1e-10);
+		// temp->verbose(true);
+		temp->max_it(std::max(long(2), long(dof_map.n_dofs()/2)));
+
+		linear_solver =  temp;
 	}
 
 	bool MechWithContactIntegrationScheme::solve(
@@ -119,6 +140,8 @@ namespace utopia {
 					}
 				}
 			};
+
+		
 
 			GenericSemismoothNewton<DSMatrixd, DVectord, F> solver(f, linear_solver);
 			solver.verbose(true);

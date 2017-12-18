@@ -72,11 +72,11 @@ namespace utopia {
 
 		MechWithContactIntegrationScheme(
 			const unsigned int dim,
-			libMesh::DofMap &dof_map)
-		: dim(dim), dof_map(dof_map) 
+			libMesh::DofMap &dof_map);
+
+		void set_linear_solver(const std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > &solver)
 		{
-			linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-			// linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+			this->linear_solver = solver;
 		}
 
 		virtual void apply(

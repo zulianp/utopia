@@ -259,6 +259,14 @@ namespace utopia {
 	}
 
 
+
+	template<class Expr>
+	void init_constraints(const Expr &expr) 
+	{
+		FEBackend<LIBMESH_TAG>::init_constraints(expr);
+	}
+
+
 	template<class From, class Tensor>
 	void apply(const Projection<From, Tensor> &expr)
 	{
