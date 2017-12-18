@@ -48,7 +48,7 @@
 #include "libmesh/analytic_function.h"
 
 #include "libmesh/string_to_enum.h"
-#include "libmesh/getpot.h"
+//#include "libmesh/getpot.h"
 
 #include "libmesh/const_function.h"
 

@@ -281,15 +281,27 @@ namespace utopia {
 	
 	void transform_to_reference(const Transform &trans, const int type, const QMortar &global_ir, QMortar &ref_ir);
 	void transform_to_reference_surf(const Transform &trans, const int type, const QMortar &global_ir, QMortar &ref_ir);
-	
-	
-	void mortar_assemble(const libMesh::FEBase &trial_fe,
-						 const libMesh::FEBase &test_fe,
-						 libMesh::DenseMatrix<libMesh::Real> &elmat);
-	
-	void mortar_assemble(const libMesh::FEVectorBase &trial_fe,
-						 const libMesh::FEVectorBase &test_fe,
-						 libMesh::DenseMatrix<libMesh::Real> &elmat);
+
+  void mortar_assemble(const libMesh::FEBase &trial_fe,
+                       const libMesh::FEBase &test_fe,
+                       libMesh::DenseMatrix<libMesh::Real> &elmat);
+  
+  void mortar_assemble(const libMesh::FEVectorBase &trial_fe,
+                       const libMesh::FEVectorBase &test_fe,
+                       libMesh::DenseMatrix<libMesh::Real> &elmat);
+  
+	void mortar_assemble(const double &master_frac,
+                       const double &slave_frac,
+                       const libMesh::FEBase &trial_fe,
+                       const libMesh::FEBase &test_fe,
+                       libMesh::DenseMatrix<libMesh::Real> &elmat);
+  
+	void mortar_assemble(const double &master_frac,
+                       const double &slave_frac,
+                       const libMesh::FEVectorBase &trial_fe,
+                       const libMesh::FEVectorBase &test_fe,
+                       libMesh::DenseMatrix<libMesh::Real> &elmat);
+  
 	
 	void mortar_normal_and_gap_assemble(const libMesh::FEBase &test_fe,
 										const libMesh::DenseVector<libMesh::Real> &surf_normal,
@@ -401,7 +413,6 @@ namespace utopia {
 								const int type,
 								libMesh::DenseMatrix<libMesh::Real> &elmat);
 	
-	
 	void mortar_assemble_biorth(
 								const int dim,
 								const libMesh::FEBase &trial_fe,
@@ -432,7 +443,21 @@ namespace utopia {
 										 const libMesh::FEVectorBase &test_fe,
 										 const libMesh::DenseMatrix<libMesh::Real> &weights,
 										 libMesh::DenseMatrix<libMesh::Real> &elmat);
-	
+
+  void mortar_assemble_weighted_biorth(const double &master_frac,
+                                       const double &slave_frac,
+                                       const libMesh::FEBase &trial_fe,
+                                       const libMesh::FEBase &test_fe,
+                                       const libMesh::DenseMatrix<libMesh::Real> &weights,
+                                       libMesh::DenseMatrix<libMesh::Real> &elmat);
+  
+  void mortar_assemble_weighted_biorth(const double &master_frac,
+                                       const double &slave_frac,
+                                       const libMesh::FEVectorBase &trial_fe,
+                                       const libMesh::FEVectorBase &test_fe,
+                                       const libMesh::DenseMatrix<libMesh::Real> &weights,
+                                       libMesh::DenseMatrix<libMesh::Real> &elmat);
+
 	void mortar_normal_and_gap_assemble_weighted_biorth(
 														const libMesh::FEVectorBase &test_fe,
 														const int dim,

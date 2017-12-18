@@ -21,7 +21,8 @@ list(APPEND LOCAL_HEADERS
   utopia_VElementAdapter.hpp
   utopia_VTree.hpp
   utopia_assemble_contact.hpp
-  utopia_assemble_volume_transfer.hpp
+  utopia_assemble_volume_transfer.hpp 
+  utopia_assemble_volume_transfer_xfem.hpp
   utopia_assemble_volume_transfer_r.hpp
   utopia_copy_dofmap.hpp
   )
@@ -39,6 +40,7 @@ list(APPEND LOCAL_SOURCES
   utopia_FESpacesRAdapter.cpp
   utopia_assemble_contact.cpp
   utopia_assemble_volume_transfer.cpp
+  utopia_assemble_volume_transfer_xfem.cpp
   utopia_assemble_volume_transfer_r.cpp
   utopia_copy_dofmap.cpp
   )
