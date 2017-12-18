@@ -37,7 +37,8 @@ namespace utopia {
 	
 	
 	template<int Dimensions, class Fun>
-	static bool Assemble(moonolith::Communicator &comm,
+  static bool Assemble(
+             moonolith::Communicator &comm,
 						 const std::shared_ptr<MeshBase> &master,
 						 const std::shared_ptr<MeshBase> &slave,
 						 const std::shared_ptr<DofMap> &dof_master,
@@ -80,7 +81,6 @@ namespace utopia {
 			predicate->add(0, 1);
 		}
 		else{
-			
 			for(auto t : tags)
 			{   predicate->add(t.first, t.second);
 				//                std::cout<<"t.first==>"<<t.first<<std::endl;
@@ -326,7 +326,8 @@ namespace utopia {
 	}
 	
 	template<int Dimensions>
-	bool Assemble(moonolith::Communicator &comm,
+  bool Assemble(
+          moonolith::Communicator &comm,
 				  const std::shared_ptr<MeshBase> &master,
 				  const std::shared_ptr<MeshBase> &slave,
 				  const std::shared_ptr<DofMap> &dof_master,
@@ -379,23 +380,18 @@ namespace utopia {
 					   const VElementAdapter<Dimensions> &slave) -> bool {
 			
 			long n_intersections = 0;
-			
 			bool pair_intersected = false;
-			
-			const auto &src_mesh  = master.space();;
-			
+      
+			const auto &src_mesh  = master.space();
 			const auto &dest_mesh = slave.space();
 			
 			const int src_index  = master.element();
-			
 			const int dest_index = slave.element();
 			
 			auto &src_el  = *src_mesh.elem(src_index);
-			
 			auto &dest_el = *dest_mesh.elem(dest_index);
 			
 			const int dim = src_mesh.mesh_dimension();
-			
 			
 			std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
 			
@@ -415,7 +411,8 @@ namespace utopia {
 				if(intersect_2D(src_pts, dest_pts, intersection2)) {
 					total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
 					const libMesh::Real weight = isector.polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
-					make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
+
+          make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
 					
 					src_trans  = std::make_shared<AffineTransform2>(src_el);
 					dest_trans = std::make_shared<AffineTransform2>(dest_el);
@@ -429,7 +426,8 @@ namespace utopia {
 				if(intersect_3D(src_poly, dest_poly, intersection3)) {
 					total_intersection_volume += isector.p_mesh_volume_3(intersection3);
 					const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
-					make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
+
+          make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
 					
 					src_trans  = std::make_shared<AffineTransform3>(src_el);
 					dest_trans = std::make_shared<AffineTransform3>(dest_el);
@@ -445,25 +443,18 @@ namespace utopia {
 			const auto &slave_dofs  = slave.dof_map();
 			
 			if(pair_intersected) {
-				
-				
 				transform_to_reference(*src_trans,  src_el.type(),  composite_ir,  src_ir);
 				transform_to_reference(*dest_trans, dest_el.type(), composite_ir,  dest_ir);
-				
 				
 				assert(!master_dofs.empty());
 				assert(!slave_dofs.empty());
 				
 				master_fe->attach_quadrature_rule(&src_ir);
-				
 				const std::vector<std::vector<Real>> & phi_master  = master_fe->get_phi();
 				
 				master_fe->reinit(&src_el);
-				
 				slave_fe->attach_quadrature_rule(&dest_ir);
-				
 				const std::vector<std::vector<Real>> & phi_slave = slave_fe->get_phi();
-				
 				const std::vector<Real> & JxW_slave = slave_fe->get_JxW();
 				
 				slave_fe->reinit(&dest_el);
@@ -488,24 +479,16 @@ namespace utopia {
 				
 				
 				for(int i = 0; i < slave_dofs.size(); ++i) {
-					
 					const long dof_I = slave_dofs[i];
-					
 					for(int j = 0; j < master_dofs.size(); ++j) {
-						
 						const long dof_J = master_dofs[j];
-						
 						mat_buffer.add(dof_I, dof_J, elemmat(i, j));
 					}
 				}
-				
 				return true;
-				
 			} else {
-				
 				return false;
 			}
-			
 		};
 		
 		if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, from_var_num, to_var_num, fun, settings, use_biorth, tags, n_var)) {
@@ -513,17 +496,12 @@ namespace utopia {
 		}
 		
 		double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };
-		
 		comm.all_reduce(volumes, 2, moonolith::MPISum());
 		
 		const processor_id_type master_proc_id  = master->processor_id();
-		
 		const dof_id_type n_dofs_on_proc_master = dof_master->n_local_dofs();
-		
 		const processor_id_type slave_proc_id   = slave->processor_id();
-		
 		const dof_id_type n_dofs_on_proc_slave  =dof_slave->n_local_dofs();
-		
 		const int n_dofs_on_proc_print  = dof_slave->n_local_dofs();
 		
 		if(comm.is_root()) {
@@ -542,35 +520,27 @@ namespace utopia {
 		std::partial_sum(ownershipRangesMaster.begin(), ownershipRangesMaster.end(), ownershipRangesMaster.begin());
 		std::partial_sum(ownershipRangesSlave.begin(), ownershipRangesSlave.end(), ownershipRangesSlave.begin());
 		
-		
 		int dim = master->mesh_dimension();
 		
 		moonolith::Redistribute< moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
-		
 		redist.apply(ownershipRangesSlave, mat_buffer, moonolith::AddAssign<double>());
-		
 		assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
 		
 		SizeType  mMaxRowEntries = mat_buffer.local_max_entries_x_col();
-		
 		comm.all_reduce(&mMaxRowEntries, 1, moonolith::MPIMax());
 		
 		const SizeType local_range_slave_range  = ownershipRangesSlave [comm.rank()+1] - ownershipRangesSlave [comm.rank()];
 		const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
 		
 		DSMatrixd B_x = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
-		
 		{
 			utopia::Write<utopia::DSMatrixd> write(B_x);
 			for (auto it = mat_buffer.iter(); it; ++it) {
 				B_x.set(it.row(), it.col(), *it);
-				
 			}
 		}
 		
-		
 		auto s_B_x = local_size(B_x);
-		
 		B = local_sparse(s_B_x.get(0), s_B_x.get(1), n_var * mMaxRowEntries);
 		
 		utopia::Write<DSMatrixd> w_B(B);
@@ -579,60 +549,58 @@ namespace utopia {
 				B.set(i+d, j+d, value);
 			}
 		});
-		
 		return true;
 	}
 	
-	
-	
-	bool assemble_volume_transfer(moonolith::Communicator &comm,
-								  const std::shared_ptr<MeshBase> &master,
-								  const std::shared_ptr<MeshBase> &slave,
-								  const std::shared_ptr<DofMap> &dof_master,
-								  const std::shared_ptr<DofMap> &dof_slave,
-								  const unsigned int &from_var_num,
-								  const unsigned int &to_var_num,
-								  bool use_biorth,
-								  int n_var, DSMatrixd &B,
-								  const std::vector< std::pair<int, int> > &tags)
-	{
-		///////////////////////////
-		if(Utopia::Instance().verbose()) {
-			moonolith::root_describe("---------------------------------------\n"
-									 "begin: utopia::assemble_volume_transfer",
-									 comm, std::cout);
-		}
-		
-		Chrono c;
-		c.start();
-		///////////////////////////
-		
-		moonolith::SearchSettings settings;
-		
-		bool ok = false;
-		if(master->mesh_dimension() == 2) {
-			ok = utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, from_var_num,  to_var_num, B, settings,use_biorth, tags, n_var);
-		} else if(master->mesh_dimension() == 3) {
-			ok = utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, from_var_num,  to_var_num, B, settings,use_biorth, tags, n_var);
-		} else {
-			assert(false && "Dimension not supported!");
-		}
-		
-		///////////////////////////
-		c.stop();
-		
-		if(Utopia::Instance().verbose()) {
-			std::stringstream ss;
-			ss << "end: utopia::assemble_volume_transfer\n";
-			ss << c;
-			ss << "---------------------------------------";
-			moonolith::root_describe(ss.str(), comm, std::cout);
-		}
-		///////////////////////////
-		
-		return ok;
-	}
+  bool assemble_volume_transfer(moonolith::Communicator &comm,
+                                const std::shared_ptr<MeshBase> &master,
+                                const std::shared_ptr<MeshBase> &slave,
+                                const std::shared_ptr<DofMap> &dof_master,
+                                const std::shared_ptr<DofMap> &dof_slave,
+                                const unsigned int &from_var_num,
+                                const unsigned int &to_var_num,
+                                bool use_biorth,
+                                int n_var, DSMatrixd &B,
+                                const std::vector< std::pair<int, int> > &tags)
+  {
+    ///////////////////////////
+    if(Utopia::Instance().verbose()) {
+      moonolith::root_describe("---------------------------------------\n"
+                               "begin: utopia::assemble_volume_transfer",
+                               comm, std::cout);
+    }
+    
+    Chrono c;
+    c.start();
+    ///////////////////////////
+    
+    moonolith::SearchSettings settings;
+    
+    bool ok = false;
+    if(master->mesh_dimension() == 2) {
+      ok = utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, from_var_num,  to_var_num, B, settings,use_biorth, tags, n_var);
+    } else if(master->mesh_dimension() == 3) {
+      ok = utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, from_var_num,  to_var_num, B, settings,use_biorth, tags, n_var);
+    } else {
+      assert(false && "Dimension not supported!");
+    }
+    
+    ///////////////////////////
+    c.stop();
+    
+    if(Utopia::Instance().verbose()) {
+      std::stringstream ss;
+      ss << "end: utopia::assemble_volume_transfer\n";
+      ss << c;
+      ss << "---------------------------------------";
+      moonolith::root_describe(ss.str(), comm, std::cout);
+    }
+    ///////////////////////////
+    
+    return ok;
+  }
 }
+
 
 
 
