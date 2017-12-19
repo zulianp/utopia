@@ -17,7 +17,7 @@ namespace utopia {
 	class LibMeshFunctionSpace : public FunctionSpace<LibMeshFunctionSpace> {
 	public:
 			
-		inline LibMeshFunctionSpace(
+		inline explicit LibMeshFunctionSpace(
 			const std::shared_ptr<libMesh::EquationSystems> &equation_systems,
 			const libMesh::FEFamily &type = libMesh::LAGRANGE,
 			const libMesh::Order &order = libMesh::FIRST,

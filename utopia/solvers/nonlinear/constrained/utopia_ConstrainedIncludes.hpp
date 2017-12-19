@@ -10,6 +10,7 @@
 #include "utopia_MPRGP.hpp"
 #include "utopia_SemismoothNewton.hpp"
 #include "utopia_GenericSemismoothNewton.hpp"
+#include "utopia_ProjectedGaussSeidel.hpp"
 
 #endif //UTOPIA_CONSTRAINTED_HPP
 

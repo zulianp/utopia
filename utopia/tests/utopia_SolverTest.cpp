@@ -10,6 +10,33 @@
 
 namespace utopia
 {
+
+
+	template<class Matrix>
+	void assemble_laplacian_1D(const utopia::SizeType n, Matrix &m)
+	{
+	    using namespace utopia;
+
+	    // n x n matrix with maximum 3 entries x row        
+	    {
+	        Write<Matrix> w(m);
+	        Range r = row_range(m);
+
+	        //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
+	        for(SizeType i = r.begin(); i != r.end(); ++i) {
+	            if(i > 0) {    
+	                m.add(i, i - 1, -1.0);    
+	            }
+
+	            if(i < n-1) {
+	                m.add(i, i + 1, -1.0);
+	            }
+
+	            m.add(i, i, 2.0);
+	        }
+	    }
+	}
+
 	/**
 	 * @brief      Class to test our nonlinear solvers.
 	 *
@@ -38,6 +65,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(tr_test);
 			UTOPIA_RUN_TEST(ls_test);
 			UTOPIA_RUN_TEST(nl_solve_test);
+			
 		}
 		
 		class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
@@ -47,6 +75,8 @@ namespace utopia
 			bool value(const Vector &, Scalar &val) const {}
 			bool update(const Vector &) { }
 		};
+
+		
 		
 		void ls_normal_eq()
 		{
@@ -329,7 +359,8 @@ namespace utopia
 		
 		void run()
 		{
-			UTOPIA_RUN_TEST(gss_newton_test);
+			UTOPIA_RUN_TEST(petsc_ngs_test);
+			UTOPIA_RUN_TEST(petsc_gss_newton_test);
 			UTOPIA_RUN_TEST(petsc_bicgstab_test);
 			UTOPIA_RUN_TEST(petsc_gmres_test);
 			UTOPIA_RUN_TEST(petsc_newton_test);
@@ -349,7 +380,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mg_jacobi_test);
 		}
 
-		void gss_newton_test()
+		void petsc_gss_newton_test()
 		{
 			typedef std::function<void(const DSMatrixd &, const DVectord &, const DVectord &, DVectord &, DVectord &)> F;
 
@@ -1143,11 +1174,57 @@ namespace utopia
 			assert(approxeq(expected, actual));
 			// // std::cout << "         End: petsc_newton_petsc_cg_test" << std::endl;
 		}
-		
-		
-		
-		
-		
+
+
+
+		void petsc_ngs_test()
+		{
+			typedef utopia::DSMatrixd Matrix;
+			typedef utopia::DVectord Vector;
+			
+			const SizeType n = 40;
+
+			Matrix m = zeros(n, n);
+			assemble_laplacian_1D(n, m);
+			{
+			    Range r = row_range(m);
+			    Write<Matrix> w(m);
+			    if(r.begin() == 0) {
+			        m.set(0, 0, 1.);
+			        m.set(0, 1, 0);
+			    }
+
+			    if(r.end() == n) {
+			        m.set(n-1, n-1, 1.);
+			        m.set(n-1, n-2, 0);
+			    }
+			}
+
+			Vector rhs = values(n, 1.);
+			{ 
+			    //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
+			    Range r = range(rhs);
+			    Write<Vector> w(rhs);
+
+			    if(r.begin() == 0) {
+			        rhs.set(0, 0);
+			    }
+
+			    if(r.end() == n) {
+			        rhs.set(n-1, 0.);
+			    }
+			}
+
+			Vector upper_bound = values(n, 100.0);
+			Vector solution    = zeros(n);
+
+			ProjectedGaussSeidel<Matrix, Vector> pgs;
+			//super slow convergence
+			pgs.max_it(n*40);
+			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+			pgs.solve(m, rhs, solution);
+		}
+
 		PETScSolverTest()
 		: _n(10) { }
 		

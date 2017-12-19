@@ -7,6 +7,7 @@
 
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Expression.hpp"
+
 namespace utopia {
     template<class Left, class Right, class Operation>
     class InPlace : public Expression< InPlace<Left, Right, Operation> > {
@@ -25,7 +26,7 @@ namespace utopia {
 
     private:
         Left &_left;
-        Right _right;
+        UTOPIA_STORE_CONST(Right) _right;
         Operation _operation;
     };
 

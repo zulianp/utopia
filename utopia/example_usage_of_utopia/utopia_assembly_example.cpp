@@ -1,111 +1,5 @@
 #include <utopia.hpp>
 
-
-
-//only serial
-template<class Matrix, class Vector>
-void nl_gauss_seidel_step(const Matrix &mat, const Vector &diag, const Vector &rhs, const Vector &upper_bound, Vector &solution)
-{
-    using namespace utopia;
-    typedef double Scalar;
-
-    Read<Vector> r_rhs(rhs);
-    Read<Vector> r_diag(diag);
-    
-    Range rr = row_range(mat);
-    SizeType offset = rr.begin();
-
-    std::vector<double> sol(rr.extent());
-
-    each_read(solution, [&](const SizeType i, const Scalar value) {
-        assert(i - offset >= 0);
-        sol[i - offset] = value;
-    });
-
-    Scalar sum = 0.;
-    Scalar sol_value = 0.0;
-    Scalar upper_bound_i = 0.0;
-    SizeType prev_I = rr.begin();
-
-    each_read(mat, [&](const SizeType i, const SizeType j, const Scalar value) {
-        // std::cout << i << ", " << j << " -> " << value << std::endl;
-    
-        if(i != prev_I) {
-            sol_value = (rhs.get(prev_I) - sum)/diag.get(prev_I);
-
-            upper_bound_i = upper_bound.get(prev_I);
-            
-            if(sol_value > upper_bound_i) {
-                sol_value = upper_bound_i;
-            }
-
-            sol[prev_I - offset] = sol_value;
-
-            prev_I = i;
-            sum = 0.;
-        }
-
-        if(i != j) {
-            sum += value * sol[j - offset] ;
-        }
-
-    });
-
-    sol_value =  (rhs.get(prev_I) - sum)/diag.get(prev_I);;
-    upper_bound_i = upper_bound.get(prev_I);
-    
-    if(sol_value > upper_bound_i) {
-        sol_value = upper_bound_i;
-    }
-
-    sol[prev_I - rr.begin()] = sol_value;
-    solution.set(prev_I, sol_value);
-
-    // std::cout << "HERE:\n";
-    each_write(solution, [&](const SizeType i) -> Scalar {
-        assert(i - offset >= 0);
-        // std::cout << sol[i - offset] << "\t";
-        return sol[i - offset];
-    });
-
-    // std::cout << "\nTHERE:\n";
-}
-
-//only serial
-template<class Matrix, class Vector>
-bool nl_gauss_seidel_solve(const Matrix &mat, const Vector &rhs, const Vector &upper_bound, Vector &solution, const int max_iterations = 1000)
-{   
-    using namespace utopia;
-    int check_residual_each = 1;
-
-    Vector diag          = utopia::diag(mat);
-    Vector prev_solution = zeros(size(solution));
-
-    disp(diag);
-
-    for(int k = 0; k < max_iterations; ++k) {
-        nl_gauss_seidel_step(mat, diag, rhs, upper_bound, solution);
-    
-        if((k + 1) % check_residual_each == 0) {
-            double diff  = norm2(prev_solution - solution);
-            double res   = norm2(mat * solution - rhs);
-
-            std::cout << "iter: " << k << " change in the solution: " << diff <<  " residual: " << res << std::endl;
-            if(diff < 1e-14) {
-                return true;
-            }
-
-            prev_solution = solution;
-        }  
-
-        if(k == 0) {
-            prev_solution = solution;
-        }
-    }
-
-    return false;
-}
-
 template<class Matrix>
 void assemble_laplacian_1D(const utopia::SizeType n, Matrix &m)
 {
@@ -137,7 +31,7 @@ void solve_constrained_poisson_problem()
 {
     using namespace utopia;
 
-    const SizeType n   = 10;
+    const SizeType n = 40;
 
     Matrix m = zeros(n, n);
     assemble_laplacian_1D(n, m);
@@ -170,13 +64,16 @@ void solve_constrained_poisson_problem()
         }
     }
 
-    Vector upper_bound = values(n, 9.0);
+    Vector upper_bound = values(n, 100.0);
     Vector solution    = zeros(n);
-    nl_gauss_seidel_solve(m, rhs, upper_bound, solution);
-    disp(solution);
-    disp(m);
-    disp(rhs);
 
+    ProjectedGaussSeidel<Matrix, Vector> pgs;
+    pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+    pgs.solve(m, rhs, solution);
+
+    write("U.m", solution);
+    write("M.m", m);
+    write("R.m", rhs);
 }
 
 //use "make run_assemble" to compile and run this example 
@@ -265,10 +162,10 @@ int main(int argc, char** argv)
                 });
             }
 
-            disp(f);
+            // disp(f);
         }
     }
 
-    solve_constrained_poisson_problem<Matrixd, Vectord>();
+    solve_constrained_poisson_problem<DSMatrixd, DVectord>();
     return Utopia::Finalize();
 }

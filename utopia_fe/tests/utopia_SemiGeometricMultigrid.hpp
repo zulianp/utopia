@@ -28,6 +28,10 @@ namespace utopia {
 			mg.verbose(val);
 		}
 
+		inline void max_it(const unsigned int it) {
+			mg.max_it(it);
+		}
+
 		SemiGeometricMultigrid();
 
 	private:

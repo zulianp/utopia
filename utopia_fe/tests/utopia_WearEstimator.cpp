@@ -43,55 +43,9 @@
 typedef std::array<double, 2> Point2d;
 typedef std::array<double, 3> Point3d;
 typedef std::function<std::array<double, 2>(const std::array<double, 2> &p)> Fun2d;
+typedef std::function<std::array<double, 3>(const std::array<double, 3> &p)> Fun3d;
 
 namespace utopia {
-
-	// static bool assemble_normals_on_linear_surface(
-	// 	const libMesh::MeshBase &mesh,
-	// 	const libMesh::DofMap &dof_map,
-	// 	const std::vector<int> &boundary_tags,
-	// 	DVectord &is_normal_component,
-	// 	DVectord &normals)
-	// {
-	//     const SizeType n_local_dofs = dof_map.n_local_dofs();
-	//     const unsigned int dim = mesh.mesh_dimension();
-
-	//     DVectord normals_buff = local_zeros(n_local_dofs);
-
-
-	//     QGauss quad(dim-1, SECOND);
-	//     std::unique_ptr<FEBase> fe = FEBase::build(n_dims, FIRST);
-	//     const auto & phi = fe->get_phi();
-	//     const auto & JxW = fe->get_JxW();
-
-	//     Point normal;
-	//     std::vector<dof_id_type> dof_indices;
-
-	//     for(auto e_it = mesh.active_local_elements_begin();
-	//         e_it != mesh.active_local_elements_end(); ++e_it)
-	//     {
-	//         const auto &e = **e_it;
-	//         dof_map.dof_indices(&e, dof_indices);
-
-	//         for(uint side = 0; side < e.n_sides(); ++side) {
-	//             if(e.neighbor_ptr(side) != nullptr) { continue; }
-	//              compute_side_normal(dim, *side, normal);
-
-
-	//              for(uint i = 0; i < n_test; ++i) {
-	//              	for(uint qp = 0; qp < n_qp; ++qp) {
-
-	//              		for(uint d = 0; d < dim; ++d) {
-	//              			normal_vec(i, d) += phi[i][qp] * normal(d) * JxW[qp];
-	//              		}
-	//              	}
-	//              }
-
-	//         }
-	//     }
-	// }
-
-
 
 	static void apply_displacement(
 		const DVectord &displacement_increment,
@@ -561,6 +515,9 @@ namespace utopia {
 			apply_boundary_conditions(Vx.dof_map(), mech_ctx.stiffness_matrix, state[0].external_force);
 
 			auto integrator = std::make_shared<ImplicitEuler>(dim, Vx.dof_map());
+			// auto cg = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+			// cg->verbose(true);
+			// integrator->set_linear_solver(cg);
 			
 			//begin: set-up semi-geometric multigrid
 			// auto smg = std::make_shared<SemiGeometricMultigrid>();
@@ -585,6 +542,8 @@ namespace utopia {
 			
 			DVectord overriden_displacement;
 			for(std::size_t i = 1; i < gait_cycle.n_time_steps; ++i) {
+				std::cout << i << "/" << gait_cycle.n_time_steps << std::endl;
+				
 				overriden_displacement = state[i-1].displacement;
 
 				if(override_each_time_step) {
@@ -616,6 +575,7 @@ namespace utopia {
 				}
 
 				apply_boundary_conditions(Vx.dof_map(), mech_ctx.stiffness_matrix, state[i].external_force);
+				state[i].displacement_increment =  e_mul(mech_ctx.dirichlet_selector, state[i].external_force);
 				integrator->apply(gait_cycle.dt, mech_ctx, contact, Friction(), state[i-1], state[i]);
 				// integrator->apply(gait_cycle.dt, mech_ctx, state[i-1], state[i]);
 

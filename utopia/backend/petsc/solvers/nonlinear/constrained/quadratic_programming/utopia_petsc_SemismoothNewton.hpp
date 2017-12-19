@@ -85,6 +85,10 @@ namespace utopia {
 			//
 			ierr = KSPSetTolerances(ksp, this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
 
+			SNESLineSearch linesearch;
+			SNESGetLineSearch(snes, &linesearch);
+			SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC);
+
 			SNESSetFromOptions(snes);
 			SNESSolve(snes, nullptr, raw_type(x));
 
