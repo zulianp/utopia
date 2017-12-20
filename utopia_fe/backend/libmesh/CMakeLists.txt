@@ -1,18 +1,9 @@
+list(APPEND LIBMESH_BACKEND_MODULES
+	.
+)
 
-list(APPEND LOCAL_HEADERS 
-	utopia_LibMeshBackend.hpp
-	utopia_LibMeshContext.hpp
-	utopia_LibMeshLambdaAssembly.hpp
-	utopia_NormalTangentialCoordinateSystem.hpp
-	utopia_UGMeshReader.hpp
-	)
+find_project_files(CMAKE_CURRENT_SOURCE_DIR LIBMESH_BACKEND_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
-list(APPEND LOCAL_SOURCES 
-	utopia_LibMeshBackend.cpp
-	utopia_NormalTangentialCoordinateSystem.cpp
-	utopia_UGMeshReader.cpp
-	utopia_libmesh_AssemblyContext.cpp
-	)
 
 add_library(utopia_fe_libmesh_backend STATIC ${LOCAL_SOURCES})
 target_link_libraries(utopia_fe_libmesh_backend utopia_fe_core utopia_fe_intersection)

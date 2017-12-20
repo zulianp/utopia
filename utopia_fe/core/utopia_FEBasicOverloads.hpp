@@ -4,6 +4,7 @@
 #include <type_traits>
 
 namespace utopia {
+	
 	inline static double inner(const double left, const double right)
 	{
 		return left * right;
@@ -18,6 +19,7 @@ namespace utopia {
 	{
 		return left * right;
 	}
+
 	template<class T>
 	struct remove_ref_and_const {
 		typedef typename std::remove_const< typename std::remove_reference<T>::type >::type type;

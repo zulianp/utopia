@@ -1,5 +1,6 @@
 #include "utopia_homemade_FE.hpp"
 #include "utopia_homemade_Mesh.hpp"
+#include "utopia_intersector.hpp"
 
 namespace utopia {
 
@@ -56,5 +57,4 @@ namespace utopia {
 	}
 
 	FE::~FE() {}
-
 }

@@ -22,7 +22,6 @@ namespace utopia {
 
 	template<class, class> class Interpolate;
 	template<class, int> class TimeDerivative;
-	// template<class...> class ProductFunctionSpace;
 	template<class> class ProductFunctionSpace;
 
 	template<int> class AssemblyContext;
@@ -30,6 +29,7 @@ namespace utopia {
 	template<class ...> class Equations;
 	template<class ...> class FEConstraints;
 	template<class, class> class ContextFunction;
+	template<typename,int> class ConstantCoefficient;
 	
 }
 

@@ -1,6 +1,8 @@
 #ifndef UTOPIA_FE_BACKEND_HPP
 #define UTOPIA_FE_BACKEND_HPP 
 
+#include "utopia_Traits.hpp"
+
 namespace utopia {
 
     template<int BackendType>
