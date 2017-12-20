@@ -9,6 +9,8 @@
 #include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_libmesh_FunctionalTraits.hpp"
 #include "utopia_libmesh_Utils.hpp"
+#include "utopia_FEIsSubTree.hpp"
+#include "utopia_Traverse.hpp"
 
 #include "utopia_fe_core.hpp"
 
