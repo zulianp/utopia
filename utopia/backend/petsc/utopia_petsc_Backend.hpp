@@ -398,6 +398,9 @@ namespace utopia {
 			gemv(result, 0.0, 1., transpose_left, left, right);
 		}
 
+		static void scale(Vector &result, const Scalar scale_factor);
+		static void scale(Matrix &result, const Scalar scale_factor);
+
 	private:
 
 		static void gemm(

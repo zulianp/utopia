@@ -76,11 +76,11 @@ namespace utopia {
 		DVectord non_const_gap = gap;
 
 		if(friction.friction_coefficient == 0.) {
-			// SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> solver(linear_solver);
-			// solver.max_it(40);
+			SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> solver(linear_solver);
+			solver.max_it(40);
 
-			ProjectedGaussSeidel<DSMatrixd, DVectord> solver;
-			solver.max_it(size(rhs).get(0) * 40);
+			// ProjectedGaussSeidel<DSMatrixd, DVectord> solver;
+			// solver.max_it(size(rhs).get(0) * 40);
 			
 			solver.verbose(true);
 			solver.set_box_constraints(make_upper_bound_constraints(make_ref(non_const_gap)));

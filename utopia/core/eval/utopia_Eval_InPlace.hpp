@@ -55,26 +55,81 @@ namespace utopia {
         }
     };
 
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<InPlace<Left, Right, Minus>, Traits, Backend> {
+    public:
 
-
-    // template<class Left, class Right, class Traits, int Backend>
-    // class Eval<InPlace<Left, Right, Minus>, Traits, Backend> {
-    // public:
-
-    //     inline static bool apply(const InPlace<Left, Right, Minus> &expr)
-    //     {
-    //         UTOPIA_LOG_BEGIN(expr);
+        inline static bool apply(const InPlace<Left, Right, Minus> &expr)
+        {
+            UTOPIA_LOG_BEGIN(expr);
             
-    //         UTOPIA_BACKEND(Traits).axpy(
-    //               Eval<Left, Traits>::apply(expr.left()),
-    //               -1.,
-    //               Eval<Right, Traits>::apply(expr.right())
-    //               );
+            UTOPIA_BACKEND(Traits).axpy(
+                  Eval<Left, Traits>::apply(expr.left()),
+                  -1.,
+                  Eval<Right, Traits>::apply(expr.right())
+                  );
 
-    //         UTOPIA_LOG_END(expr);
-    //         return true;
-    //     }
-    // };
+            UTOPIA_LOG_END(expr);
+            return true;
+        }
+    };
+
+    template<class Left, typename T, class Right, class Traits, int Backend>
+    class Eval<InPlace<Left, Binary<Number<T>, Right, Multiplies>, Plus>, Traits, Backend> {
+    public:
+        typedef utopia::InPlace<Left, Binary<Number<T>, Right, Multiplies>, Plus> Expr;
+
+        inline static bool apply(const Expr &expr)
+        {
+            UTOPIA_LOG_BEGIN(expr);
+            
+            UTOPIA_BACKEND(Traits).axpy(
+                  Eval<Left, Traits>::apply(expr.left()),
+                  static_cast<T>(expr.right().left()),
+                  Eval<Right, Traits>::apply(expr.right().right())
+                  );
+
+            UTOPIA_LOG_END(expr);
+            return true;
+        }
+    };
+
+    template<class Left, typename T, class Right, class Traits, int Backend>
+    class Eval<InPlace<Left, Binary<Number<T>, Right, Multiplies>, Minus>, Traits, Backend> {
+    public:
+        typedef utopia::InPlace<Left, Binary<Number<T>, Right, Multiplies>, Minus> Expr;
+
+        inline static bool apply(const Expr &expr)
+        {
+            UTOPIA_LOG_BEGIN(expr);
+            
+            UTOPIA_BACKEND(Traits).axpy(
+                  Eval<Left, Traits>::apply(expr.left()),
+                  -static_cast<T>(expr.right().left()),
+                  Eval<Right, Traits>::apply(expr.right().right())
+                  );
+
+            UTOPIA_LOG_END(expr);
+            return true;
+        }
+    };
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<InPlace<Left, Number<Right>, Multiplies>, Traits, Backend> {
+    public:
+        inline static bool apply(const InPlace<Left, Number<Right>, Multiplies> &expr)
+        {
+            UTOPIA_LOG_BEGIN(expr);
+
+            UTOPIA_BACKEND(Traits).scale(
+                Eval<Left, Traits>::apply(expr.left()),
+                static_cast<Right>(expr.right())
+            );
+
+            UTOPIA_LOG_END(expr);
+            return true;
+        }
+    };
 
 }
 

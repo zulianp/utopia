@@ -263,14 +263,14 @@ namespace utopia
 				Vector expected = values(x1.size().get(0), 0.468919);
 				
 				Parameters params ;
-				params.atol(1e-11);
-				params.rtol(1e-11);
-				params.stol(1e-11);
+				params.atol(1e-10);
+				params.rtol(1e-10);
+				params.stol(1e-10);
 				params.verbose(false);
 				params.linear_solver_verbose(false);
 				params.line_search_inner_verbose(false);
 				
-				auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector, -1> >();
+				auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector, HOMEMADE> >();
 				Newton<Matrix, Vector> nlsolver1(lsolver);
 				Newton<Matrix, Vector> nlsolver2(lsolver);
 				

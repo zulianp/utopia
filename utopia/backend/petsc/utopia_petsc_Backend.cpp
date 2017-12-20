@@ -1678,7 +1678,17 @@ namespace utopia {
 		result = mat;
 		MatScale(result.implementation(), factor);
 	}
-	
+
+	void PetscBackend::scale(Vector &result, const Scalar scale_factor)
+	{
+		VecScale(result.implementation(), scale_factor);
+	}
+
+	void PetscBackend::scale(Matrix &result, const Scalar scale_factor)
+	{
+		MatScale(result.implementation(), scale_factor);
+	}
+
 	Scalar PetscBackend::dot(const Vector &left, const Vector &right) {
 		Scalar result;
 		VecDot(left.implementation(), right.implementation(), &result);

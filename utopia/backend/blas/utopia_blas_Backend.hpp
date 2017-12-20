@@ -359,6 +359,10 @@ namespace utopia {
 		static void axpy(Vector &y, const Scalar &alpha, const Vector &x);
 		static void axpy(Matrix &y, const Scalar &alpha, const Matrix &x);
 
+
+		//scale
+		static void scale(Vector &result, const Scalar scale_factor);
+		static void scale(Matrix &result, const Scalar scale_factor);
         //TODO
 		// static void axpy(CCSMatrix<Scalar> &y, const Scalar &alpha, const CCSMatrix<Scalar> &x);
 		// static void axpy(CRSMatrix<Scalar> &y, const Scalar &alpha, const CRSMatrix<Scalar> &x);

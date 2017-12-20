@@ -87,43 +87,6 @@ namespace utopia {
             return *this;
         }
 
-////        PETScVector(const PetscInt nLocal, MPI_Comm comm = PETSC_COMM_WORLD)
-////                : _initialized(true), _nLocalGhosts(0)
-////        {
-////            _wrapper = std::make_shared<PETScVectorWrapper>(comm);
-////
-////            long nGlobal = nLocal;
-////            MPI_Allreduce(MPI_IN_PLACE, &nGlobal, 1, MPI_LONG, MPI_SUM, _wrapper->communicator());
-////            VecCreateMPI(comm, nLocal, nGlobal, &implementation());
-////        }
-
-        // initialize vector
-        bool initialize(const PetscInt nLocal, const PetscInt nGlobal) {
-            // FIXME Error check?
-            PETScError::Check(VecCreateMPI(_comm, nLocal, nGlobal, &_vec));
-            return true;
-        }
-
-        const std::vector<PetscInt> &ghosts() const {
-            return _ghosts;
-        }
-
-        bool initializeWithGhosts(const PetscInt nLocal, const PetscInt nGlobal, const std::vector<PetscInt> &ghosts) {
-            // FIXME Error check?
-            PETScError::Check(VecCreate(PETSC_COMM_WORLD, &_vec));
-            PETScError::Check(VecSetType(_vec, VECMPI));
-            PETScError::Check(VecSetSizes(_vec, nLocal, nGlobal));
-
-            if (!ghosts.empty()) {
-                VecMPISetGhost(_vec, ghosts.size(), &ghosts[0]);
-                _nLocalGhosts = ghosts.size();
-                _ghosts = ghosts;
-                updateGhosts();
-            }
-
-            return true;
-        }
-
         // destroy vector
         void destroy() {
             VecDestroy(&_vec);
@@ -145,41 +108,6 @@ namespace utopia {
             PETScError::Check(VecAssemblyEnd(_vec));
         }
 
-        void finalize() {
-            assemblyBegin();
-            assemblyEnd();
-        }
-
-        void setGlobalValue(const PetscInt i, const PetscReal value) {
-            PETScError::Check(VecSetValues(_vec, 1, &i, &value, INSERT_VALUES));
-        }
-
-        void setLocalValue(const PetscInt row, const PetscReal value) {
-            PETScError::Check(VecSetValueLocal(_vec, row, value, INSERT_VALUES));
-        }
-
-        PetscReal getGlobalValue(const PetscInt i) const {
-            PetscReal temp;
-            VecGetValues(_vec, 1, &i, &temp);
-            return temp;
-        }
-
-        PetscReal getGlobalValueWithGhosts(const PetscInt i) const {
-
-            Vec lx;
-            VecGhostGetLocalForm(_vec, &lx);
-
-            PetscReal temp;
-            VecGetValues(lx, 1, &i, &temp);
-
-            VecGhostRestoreLocalForm(_vec, &lx);
-            return temp;
-        }
-
-        void addValueGlobal(const PetscInt i, const PetscReal value) {
-            VecSetValues(_vec, 1, &i, &value, ADD_VALUES);
-        }
-
         Vec &implementation() {
             return _vec;
         }
@@ -192,59 +120,7 @@ namespace utopia {
             VecView(_vec, PETSC_VIEWER_STDOUT_WORLD);
         }
 
-
-        void updateGhosts(InsertMode insertmode = INSERT_VALUES) {
-            VecGhostUpdateBegin(_vec, insertmode, SCATTER_FORWARD);
-            VecGhostUpdateEnd(_vec, insertmode, SCATTER_FORWARD);
-        }
-
-        bool hasGhosts() {
-            return _nLocalGhosts != 0;
-        }
-
-
-        void describeWithGhosts() {
-            Vec lx;
-            VecGhostGetLocalForm(_vec, &lx);
-
-            PetscInt n = localSize();
-            PetscScalar *array = NULL;
-            VecGetArray(lx, &array);
-
-            for (PetscInt i = 0; i < n + _nLocalGhosts; i++) {
-                PetscSynchronizedPrintf(_comm, "%D %g\n", i, (double) PetscRealPart(array[i]));
-            }
-
-            PetscSynchronizedPrintf(_comm, "\n");
-         //   PetscSynchronizedFlush(_comm, PETSC_STDOUT);
-
-
-            VecRestoreArray(lx, &array);
-            VecGhostRestoreLocalForm(_vec, &lx);
-        }
-
-        // global size
-        PetscInt globalSize() const {
-            PetscInt size;
-            VecGetSize(_vec, &size);
-            return size;
-        }
-
-        // local size
-        PetscInt localSize() const {
-            PetscInt size;
-            VecGetLocalSize(_vec, &size);
-            return size;
-        }
-
-        // global range of the vector
-        Range globalRange() const {
-            int start, end;
-            VecGetOwnershipRange(_vec, &start, &end);
-            return Range(start, end);
-        }
-
-        // Check if vector is initialized
+        // // Check if vector is initialized
         inline bool isInitialized() const {
             return _initialized;
         }

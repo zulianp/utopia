@@ -75,6 +75,22 @@ namespace utopia {
 	{
 		daxpy_(n, alpha, x, incx, y, incy);
 	}
+
+
+	void BLASBackend::scale(Vector &result, const Scalar scale_factor)
+	{
+		const int n = result.size();
+		const int incx = 1;
+		assert(!result.empty());
+		dscal_wrapper(&n, &scale_factor, &result[0], &incx);
+	}
+
+	void BLASBackend::scale(Matrix &result, const Scalar scale_factor)
+	{
+		const int n = result.rows() * result.cols();
+		const int incx = 1;
+		dscal_wrapper(&n, &scale_factor, result.ptr(), &incx);
+	}
 	
 	void BLASBackend::assign(Vector &left, Vector &&right)
 	{

@@ -44,7 +44,7 @@ namespace utopia {
 				if(this->verbose())
 				    PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff}); 
 
-				converged = this->check_convergence(iteration, diff, 1, 1);
+				converged = this->check_convergence(iteration, 1, 1, diff);
 
 
 				++iteration;
