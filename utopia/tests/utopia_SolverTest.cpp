@@ -263,9 +263,9 @@ namespace utopia
 				Vector expected = values(x1.size().get(0), 0.468919);
 				
 				Parameters params ;
-				params.atol(1e-10);
-				params.rtol(1e-10);
-				params.stol(1e-10);
+				params.atol(1e-11);
+				params.rtol(1e-11);
+				params.stol(1e-11);
 				params.verbose(false);
 				params.linear_solver_verbose(false);
 				params.line_search_inner_verbose(false);
