@@ -3,6 +3,7 @@
 
 #include "utopia_FEForwardDeclarations.hpp"
 #include <iostream>
+#include <memory>
 
 namespace utopia {
 	static const int TRAVERSE_CONTINUE = 0;

@@ -11,8 +11,6 @@ find_package(ParMoonolith)
 #----------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------
 
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
 add_library(utopia_fe_intersection STATIC ${LOCAL_SOURCES})
 add_dependencies(utopia_fe_intersection par_moonolith)
 target_include_directories(utopia_fe_intersection PUBLIC ${MOONOLITH_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/clipper)
