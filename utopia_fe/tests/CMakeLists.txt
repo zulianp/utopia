@@ -42,7 +42,7 @@ list(APPEND LOCAL_SOURCES
 	utopia_UtopiaFETests.cpp
 	utopia_VolumeTransferBenchmark.cpp
 	utopia_FormEvalTest.cpp
-	utopia_LibMeshbackendTest.cpp
+	utopia_LibMeshBackendTest.cpp
 	utopia_FSITest.cpp
 	utopia_SDCTest.cpp
 	utopia_WearEstimator.cpp
