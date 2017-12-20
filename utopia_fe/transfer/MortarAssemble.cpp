@@ -1328,7 +1328,7 @@ namespace utopia {
 		assert( isector.polygon_area_2(poly2.m(),  &poly2.get_values()[0]) > 0 );
 		
 		if(!
-			// isector.
+			isector.
 			intersect_convex_polygons(poly1.m(),
 									  &poly1.get_values()[0],
 									  poly2.m(),

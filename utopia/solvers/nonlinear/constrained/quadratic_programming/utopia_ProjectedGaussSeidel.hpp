@@ -11,7 +11,7 @@ namespace utopia {
 	class ProjectedGaussSeidel : public IterativeSolver<Matrix, Vector> {
 	public:
 		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
-		DEF_UTOPIA_SCALAR(Matrix);
+		DEF_UTOPIA_SCALAR(Matrix)
 
 		virtual bool set_box_constraints(const BoxConstraints & box)
 		{

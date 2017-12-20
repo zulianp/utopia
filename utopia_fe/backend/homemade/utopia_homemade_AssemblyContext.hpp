@@ -5,9 +5,14 @@
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_AssemblyContext.hpp"
+#include "utopia_FEIsSubTree.hpp"
+#include "utopia_Traverse.hpp"
+#include "utopia_ProductFunctionSpace.hpp"
+
 
 #include "utopia_homemade_FEForwardDeclarations.hpp"
 #include "utopia_homemade_FE.hpp"
+
 
 #include "utopia_fe_core.hpp"
 
