@@ -9,6 +9,7 @@
 #include "utopia_fe_core.hpp"
 #include "utopia_FEIsSubTree.hpp"
 #include "utopia_Traverse.hpp"
+#include "utopia_FormExpressions.hpp"
 
 #include "utopia_homemade_FunctionSpace.hpp"
 #include <vector>

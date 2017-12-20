@@ -3,6 +3,8 @@
 
 #include "utopia_FormTraits.hpp"
 #include "utopia_FunctionSpace.hpp"
+#include "utopia_FunctionalTraits.hpp"
+
 #include <utility>
 // #include <tuple>
 #include <memory>
