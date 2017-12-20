@@ -32,8 +32,8 @@ using namespace libMesh;
 
 namespace utopia {
 	
-	void mortar_transfer_aux(const std::shared_ptr<Mesh> &mesh_master,
-		const std::shared_ptr<Mesh> &mesh_slave,
+	void mortar_transfer_aux(const std::shared_ptr<libMesh::Mesh> &mesh_master,
+		const std::shared_ptr<libMesh::Mesh> &mesh_slave,
 		const libMesh::Order order_elem = FIRST,
 		const bool use_biorthogonal_mults = true)
 	{
@@ -158,7 +158,7 @@ namespace utopia {
 	
 	
 	
-	void mixed_par_mortar_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm, const std::shared_ptr<Mesh> &mesh_master, const std::shared_ptr<Mesh> &mesh_slave, const bool use_biorthogonal_mults = true)
+	void mixed_par_mortar_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm, const std::shared_ptr<libMesh::Mesh> &mesh_master, const std::shared_ptr<libMesh::Mesh> &mesh_slave, const bool use_biorthogonal_mults = true)
 	{
 		//         MOONOLITH_EVENT_BEGIN("spaces");
 		//
@@ -498,7 +498,7 @@ namespace utopia {
 
 	void mortar_transfer_2D_monolithic(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());
 		MOONOLITH_EVENT_BEGIN("set_up");
 		//mesh->partitioner().reset(new LinearPartitioner());
 		mesh->read("../data/master_slave2D_new2.e");
@@ -515,7 +515,7 @@ namespace utopia {
 		int n_master = 80;
 		int n_slave  = 30;
 
-		auto mesh_master = make_shared<Mesh>(init.comm());
+		auto mesh_master = make_shared<libMesh::Mesh>(init.comm());
 		MeshTools::Generation::build_square (*mesh_master,
 			n_master, n_master,
 			0, 1,
@@ -525,7 +525,7 @@ namespace utopia {
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
 
-		auto mesh_slave = make_shared<Mesh>(init.comm());
+		auto mesh_slave = make_shared<libMesh::Mesh>(init.comm());
 		MeshTools::Generation::build_square (*mesh_slave,
 			n_slave, n_slave,
 			0.3, 0.8,
@@ -579,7 +579,7 @@ namespace utopia {
 	{
 
 		MOONOLITH_EVENT_BEGIN("set_up");
-		auto mesh = make_shared<Mesh>(init.comm());
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());
 
 		//mesh->partitioner().reset(new LinearPartitioner());
 		// Read the mesh file. Here the file lshape.unv contains
@@ -622,7 +622,7 @@ namespace utopia {
 		int n_master = 3;
 		int n_slave  = 6;
 
-		auto mesh_master = make_shared<Mesh>(init.comm());
+		auto mesh_master = make_shared<libMesh::Mesh>(init.comm());
 
 		//mesh_master->partitioner().reset(new SFCPartitioner());
 
@@ -641,7 +641,7 @@ namespace utopia {
 
 
 
-		auto mesh_slave = make_shared<Mesh>(init.comm());
+		auto mesh_slave = make_shared<libMesh::Mesh>(init.comm());
 
 		//mesh_slave->partitioner().reset(new SFCPartitioner());
 
@@ -685,7 +685,7 @@ namespace utopia {
 		// ContactSimParams params = multi_contact_3D;
 
 
-		auto mesh = make_shared<Mesh>(init.comm());
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());
 		mesh->read(params.mesh_path);
 //		plot_mesh(*mesh, "mesh");
 //		

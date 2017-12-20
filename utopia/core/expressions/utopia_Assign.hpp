@@ -89,6 +89,13 @@ namespace utopia {
 
     template<class Left, class Right>
     class Traits< Assign<Left, Right> >    : public Traits<Left> {};
+
+
+    template<class Left, class Right>
+    class Traits< Construct<Number<Left>, Right> > : public Traits<Right> {};
+
+    template<class Left, class Right>
+    class Traits< Assign<Number<Left>, Right> >    : public Traits<Right> {};
 }
 
 #endif //utopia_utopia_ASSIGN_HPP

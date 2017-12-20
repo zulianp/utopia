@@ -293,7 +293,7 @@ namespace utopia {
 	}
 
 
-	void Contact::finalize()
+	void ContactAssembly::finalize()
 	{
 		//Compute average gap
 		const auto &v = gap.get_values();
@@ -349,7 +349,7 @@ namespace utopia {
 		}
 	}
 
-	void build_dag(std::vector< std::shared_ptr<Contact> > &contacts, std::vector< std::vector<long> > &dag, std::vector<long> &ordering)
+	void build_dag(std::vector< std::shared_ptr<ContactAssembly> > &contacts, std::vector< std::vector<long> > &dag, std::vector<long> &ordering)
 	{
 		long max_side_id = 0;
 		for(auto c_ptr : contacts) {
@@ -372,7 +372,7 @@ namespace utopia {
 			}
 		}
 
-		std::sort(contacts.begin(), contacts.end(), [](const std::shared_ptr<Contact> &left, const std::shared_ptr<Contact> &right) -> bool {
+		std::sort(contacts.begin(), contacts.end(), [](const std::shared_ptr<ContactAssembly> &left, const std::shared_ptr<ContactAssembly> &right) -> bool {
 			return *left < *right;
 		});
 
@@ -506,7 +506,7 @@ namespace utopia {
 	bool find_contacts(	SpaceT &space,
 		const std::unique_ptr<FEBaseT> &master_fe, 
 		const std::unique_ptr<FEBaseT> &slave_fe, 
-		std::vector< std::shared_ptr<Contact> > &contacts,
+		std::vector< std::shared_ptr<ContactAssembly> > &contacts,
 		const libMesh::Real search_radius, const bool strict_gap_policy,
 		const std::shared_ptr<moonolith::Predicate> &predicate)
 	{
@@ -577,7 +577,7 @@ namespace utopia {
 
 		contacts.reserve(pairs.size());
 
-		std::shared_ptr<Contact> current_contact;
+		std::shared_ptr<ContactAssembly> current_contact;
 
 		for(auto it = pairs.begin(); it != pairs.end(); /*inside*/) {
 		const auto index_1  = *it++;
@@ -692,7 +692,7 @@ namespace utopia {
 			++n_projections;
 
 
-			current_contact = std::make_shared<Contact>();
+			current_contact = std::make_shared<ContactAssembly>();
 			current_contact->isect_area	   = area;
 			current_contact->relative_area = relative_area;
 
@@ -723,7 +723,7 @@ namespace utopia {
 			++n_projections;
 
 
-			current_contact = std::make_shared<Contact>();
+			current_contact = std::make_shared<ContactAssembly>();
 			current_contact->isect_area	   = area;
 			current_contact->relative_area = relative_area;
 
@@ -905,7 +905,7 @@ bool assemble_aux(
 	const MeshBase &mesh = space.mesh();
 	const int dim = mesh.mesh_dimension();
 
-	std::vector< std::shared_ptr<Contact> > contacts;
+	std::vector< std::shared_ptr<ContactAssembly> > contacts;
 	if(!find_contacts(space, master_fe, slave_fe, contacts, search_radius, strict_gap_policy, predicate)) return false;
 
 	

@@ -19,9 +19,11 @@
 #include "utopia_Eval_Number.hpp"
 #include "utopia_Eval_InPlace.hpp"
 #include "utopia_Eval_Unary.hpp"
+#include "utopia_Eval_Negate.hpp"
 #include "utopia_Eval_TensorReduce.hpp"
 #include "utopia_Eval_Construct_Multiply.hpp"
 #include "utopia_Eval_Determinant.hpp"
 #include "utopia_Eval_Select.hpp"
+#include "utopia_Eval_Inverse.hpp"
 
 #endif //UTOPIA_EVAL_HPP

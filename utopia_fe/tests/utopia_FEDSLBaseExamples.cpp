@@ -37,7 +37,7 @@ namespace utopia {
 
 	void anisotropic_laplacian(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());		
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 		MeshTools::Generation::build_square (*mesh,
 			15, 15,
 			-1., 1.,
@@ -123,28 +123,34 @@ namespace utopia {
 	void linear_elasticity(LibMeshInit &init)
 	{
 
-		auto mesh = make_shared<Mesh>(init.comm());		
-		MeshTools::Generation::build_cube (*mesh,
-			10, 10, 10,
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
+		// MeshTools::Generation::build_cube (*mesh,
+		// 	10, 10, 10,
+		// 	-1., 1.,
+		// 	-1., 1.,
+		// 	-1., 1.,
+		// 	HEX27);
+
+		MeshTools::Generation::build_square (*mesh,
+			 1,  1,
 			-1., 1.,
 			-1., 1.,
-			-1., 1.,
-			HEX27);
+			QUAD4);
 
 		const int dim = mesh->mesh_dimension();
 
 		LibMeshFEContext<LinearImplicitSystem> context(mesh);
-		auto Uh = vector_fe_space("disp_", LAGRANGE_VEC, SECOND, context);
+		auto Uh = vector_fe_space("disp_", LAGRANGE_VEC, FIRST, context);
 		auto u  = fe_function(Uh);	
 
-		strong_enforce( boundary_conditions(u == vec_coeff(upper_boundary_cond), {3}) );
-		strong_enforce( boundary_conditions(u == vec_coeff(lower_boundary_cond), {1}) );
+		// strong_enforce( boundary_conditions(u == vec_coeff(upper_boundary_cond), {3}) );
+		// strong_enforce( boundary_conditions(u == vec_coeff(lower_boundary_cond), {1}) );
 
 	//system initialized
 		context.equation_systems.init();
 
 	//FIXME to be moved in the assembly loop
-		u.set_quad_rule(make_shared<libMesh::QGauss>(dim, FIFTH));
+		u.set_quad_rule(make_shared<libMesh::QGauss>(dim, FIRST));
 
 	//bilinear forms
 	double mu = 1.0, lambda = 1.0;
@@ -153,7 +159,7 @@ namespace utopia {
 
 	DenseVector<Real> vec(dim);
 	vec.zero();
-	vec(2) = -0.8;
+	// vec(2) = -0;
 
 	//linear forms
 	auto f 	    = vec_coeff(vec);
@@ -176,18 +182,30 @@ namespace utopia {
 
 
 
+
+
 	context.system.attach_assemble_object(ass);
 	// context.equation_systems.print_info();
 	context.equation_systems.solve();
 
 	ExodusII_IO(*mesh).write_equation_systems ("linear_elasticity.e", context.equation_systems);
 
+
+	DSMatrixd u_matrix = sparse(8, 8, 8);
+
+	{
+		Write<DSMatrixd> w_m(u_matrix);
+		convert(matrix, u_matrix);
+	}
+
+	disp(u_matrix);
+	write("u_matrix.m", u_matrix);
 }
 
 void nonlinear_laplace_eq(LibMeshInit &init)
 {
 	int n = 15;
-	auto mesh = make_shared<Mesh>(init.comm());		
+	auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 	MeshTools::Generation::build_square (*mesh,
 		n, n,
 		-1., 1.,
@@ -265,7 +283,7 @@ void nonlinear_laplace_eq(LibMeshInit &init)
 
 void boundary_conds(LibMeshInit &init)
 {
-	auto mesh = make_shared<Mesh>(init.comm());		
+	auto mesh = make_shared<libMesh::Mesh>(init.comm());		
 	MeshTools::Generation::build_square (*mesh,
 		10, 10,
 		-1., 1.,

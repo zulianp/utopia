@@ -4,10 +4,13 @@
 #include <memory>
 #include "libmesh/parallel_mesh.h"
 
+#include "utopia_SemiGeometricMultigrid.hpp"
+#include "utopia_libmesh_NonLinearFEFunction.hpp"
+
 using namespace libMesh;
 
 namespace utopia {
-    
+
     void init_mg_test_problem(libMesh::LibMeshInit &init, MGTestProblem &p)
     {
         using std::make_shared;
@@ -70,21 +73,21 @@ namespace utopia {
         /* with volume tags and reverse operator*/
         DSMatrixd B_r;
         if(!assemble_volume_transfer_r(comm,
-                                       p.coarse_mesh,
-                                       p.fine_mesh,
-                                       utopia::make_ref(p.coarse_space->dof_map()),
-                                       utopia::make_ref(p.fine_space->dof_map()),
-                                       utopia::make_ref(p.coarse_space->dof_map()),
-                                       utopia::make_ref(p.fine_space->dof_map()),
-                                       0,
-                                       0,
-                                       0,
-                                       0,
-                                       true,
-                                       1,
-                                       1,
-                                       B,
-                                       B_r))
+         p.coarse_mesh,
+         p.fine_mesh,
+         utopia::make_ref(p.coarse_space->dof_map()),
+         utopia::make_ref(p.fine_space->dof_map()),
+         utopia::make_ref(p.coarse_space->dof_map()),
+         utopia::make_ref(p.fine_space->dof_map()),
+         0,
+         0,
+         0,
+         0,
+         true,
+         1,
+         1,
+         B,
+         B_r))
         {
             std::cerr << "No intersection" << std::endl;
             return;
@@ -131,7 +134,7 @@ namespace utopia {
         convert(*p.fine_context->system.rhs, 	p.rhs);
     }
     
-    void run_semigeometric_multigrid_test(libMesh::LibMeshInit &init)
+    void run_semigeometric_multigrid_test_old(libMesh::LibMeshInit &init)
     {
         MGTestProblem p;
         init_mg_test_problem(init, p);
@@ -166,4 +169,132 @@ namespace utopia {
         ExodusII_IO(*p.fine_mesh).write_equation_systems ("mg_solution_lapl.e", p.fine_context->equation_systems);
         assert(err < 1e-7);
     }
+
+    //not working properly
+    void run_semigeometric_multigrid_elast(libMesh::LibMeshInit &init)
+    {
+        auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
+        
+        const unsigned int n = 16;
+        libMesh::MeshTools::Generation::build_square(*lm_mesh,
+            n, n,
+            0, 1,
+            0, 1.,
+            libMesh::QUAD8);
+
+        auto equation_systems = std::make_shared<libMesh::EquationSystems>(*lm_mesh);
+        auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("smg_elast");
+
+        auto Vx = LibMeshFunctionSpace(equation_systems);
+        auto Vy = LibMeshFunctionSpace(equation_systems);
+        auto V = Vx * Vy;
+
+        auto u = trial(V);
+        auto v = test(V);
+
+        auto ux = u[0];
+        auto uy = u[1];
+
+        const double mu = 1;
+        const double lambda = 1;
+
+        auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
+        auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
+
+        LMDenseVector z = zeros(2);
+        auto elast_op = ((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) * dX;
+        auto f = inner(coeff(z), v) * dX;
+
+        auto constr = constraints(
+            boundary_conditions(uy == coeff(0.2),  {0}),
+            boundary_conditions(uy == coeff(-0.2), {2}),
+            boundary_conditions(ux == coeff(0.0),  {0, 2})
+            );
+
+        init_constraints(constr);
+        equation_systems->init();
+
+        DSMatrixd stiffness_mat;
+        DVectord rhs;
+        assemble(elast_op, stiffness_mat);
+        assemble(f, rhs);     
+        apply_boundary_conditions(Vx.dof_map(), stiffness_mat, rhs);
+
+        SemiGeometricMultigrid mg;
+        mg.init(*equation_systems, 3);
+        // mg.max_it(1);
+
+        DVectord sol = local_zeros(local_size(rhs));
+        mg.solve(stiffness_mat, rhs, sol);
+
+
+        //CG with multigrid preconditioner
+        // ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> cg;
+        // BiCGStab<DSMatrixd, DVectord> cg;
+        // cg.verbose(true);
+        // cg.set_preconditioner(make_ref(mg));
+        // cg.solve(stiffness_mat, rhs, sol);
+
+        const double err = norm2(stiffness_mat * sol - rhs);
+        // convert(sol, *sys.solution);
+        // sys.solution->close();
+        // ExodusII_IO(*lm_mesh).write_equation_systems("elast_mg.e", *equation_systems);
+        assert(err < 1e-6);
+    }
+
+    void run_semigeometric_multigrid_poisson(libMesh::LibMeshInit &init)
+    {
+        auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
+        
+        const unsigned int n = 10;
+        libMesh::MeshTools::Generation::build_square(*lm_mesh,
+            n, n,
+            0, 1,
+            0, 1.,
+            libMesh::QUAD8);
+
+        auto equation_systems = std::make_shared<libMesh::EquationSystems>(*lm_mesh);
+        equation_systems->add_system<libMesh::LinearImplicitSystem>("smg");
+
+        auto V = LibMeshFunctionSpace(equation_systems);
+        auto u = trial(V);
+        auto v = test(V);
+
+        auto lapl = inner(grad(u), grad(v)) * dX;
+        auto f = inner(coeff(1.), v) * dX;
+
+        auto constr = constraints(
+            boundary_conditions(u == coeff(0.),  {1, 3}),
+            boundary_conditions(u == coeff(0.),  {0}),
+            boundary_conditions(u == coeff(0.0), {2})
+            );
+
+        DSMatrixd lapl_mat;
+        DVectord rhs;
+
+        init_constraints(constr);
+        equation_systems->init();
+
+        assemble(lapl, lapl_mat);
+        assemble(f, rhs);
+
+        apply_boundary_conditions(V.dof_map(), lapl_mat, rhs);
+
+        SemiGeometricMultigrid mg;
+        mg.init(V, 2);
+        mg.update(make_ref(lapl_mat));
+
+        DVectord sol = local_zeros(local_size(rhs));
+        mg.apply(rhs, sol);
+
+        const double err = norm2(lapl_mat * sol - rhs);
+        assert(err < 1e-6);
+    }
+
+    void run_semigeometric_multigrid_test(libMesh::LibMeshInit &init)
+    {
+        run_semigeometric_multigrid_poisson(init);
+        run_semigeometric_multigrid_elast(init);
+    }
+
 }

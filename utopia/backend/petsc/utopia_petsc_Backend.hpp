@@ -114,10 +114,10 @@ namespace utopia {
 		static void set(PETScVector &v, const PetscInt index, Scalar value);
 		static void add(PETScVector &v, const PetscInt index, Scalar value);
 		
-		static void set(PETScVector &v, const std::vector<PetscInt> indices, const std::vector<Scalar> values);
+		static void set(PETScVector &v, const std::vector<PetscInt> &indices, const std::vector<Scalar> &values);
 		static void set(PETScMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
 		static void set(PETScSparseMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
-		static void add(PETScMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
+		static void add(PETScMatrix &m, const PetscInt row, const PetscInt col, Scalar value);
 		
 
 		//[host/device locks]
@@ -135,7 +135,21 @@ namespace utopia {
 		static void write_lock(const PETScSparseMatrix &mat);
 		static void write_unlock(const PETScSparseMatrix &mat);
 		
-		static void set(PETScMatrix &v, const std::vector<PetscInt> rows, const std::vector<PetscInt> cols, const std::vector<Scalar> values);
+		static void set(PETScMatrix &v, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
+		
+		template<typename T>
+		static void add_matrix(PETScMatrix &m, const std::vector<T> &rows, const std::vector<T> &cols, const std::vector<Scalar> &values)
+		{
+			std::vector<PetscInt> petsc_rows, petsc_cols;
+			petsc_rows.insert(petsc_rows.end(), rows.begin(), rows.end());
+			petsc_cols.insert(petsc_cols.end(), cols.begin(), cols.end());
+			PetscBackend::add_matrix(m, petsc_rows, petsc_cols, values);
+		}
+
+
+		static void add_matrix(PETScMatrix &v, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
+		static void add_matrix(PETScSparseMatrix &v, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
+
 		static Scalar get(const PETScVector &v, const PetscInt index);
 		static Scalar get(const PETScMatrix &v, const PetscInt row, const PetscInt col);
 
@@ -383,6 +397,9 @@ namespace utopia {
 			
 			gemv(result, 0.0, 1., transpose_left, left, right);
 		}
+
+		static void scale(Vector &result, const Scalar scale_factor);
+		static void scale(Matrix &result, const Scalar scale_factor);
 
 	private:
 

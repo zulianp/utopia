@@ -16,19 +16,19 @@ namespace utopia {
     class Measurement;
     typedef long MeasurementId;
 
-    class Log {
+    class Logger {
     public:
         template<class T>
         inline MeasurementId apply_begin(const Expression<T> &expr);
 
         inline void apply_end();
 
-        static Log &instance();
+        static Logger &instance();
 
         void save_collected_log();
 
     private:
-        Log();
+        Logger();
         std::chrono::high_resolution_clock::time_point start_time_;
         std::stack<MeasurementId> running_events_;
         std::map<MeasurementId, Measurement> event_map_;
@@ -58,7 +58,7 @@ namespace utopia {
             end_time_ = std::chrono::high_resolution_clock::now();
         }
 
-        friend void Log::save_collected_log();
+        friend void Logger::save_collected_log();
 
     private:
         MeasurementId generate_unique_id();
@@ -69,7 +69,7 @@ namespace utopia {
     };
 
     template<class T>
-    inline MeasurementId Log::apply_begin(const Expression<T> &expr) {
+    inline MeasurementId Logger::apply_begin(const Expression<T> &expr) {
         Measurement m(expr);
         running_events_.push(m.get_id());
         event_map_.insert(std::make_pair(m.get_id(), m));
@@ -77,7 +77,7 @@ namespace utopia {
         return m.get_id();
     }
 
-    inline void Log::apply_end() {
+    inline void Logger::apply_end() {
         const MeasurementId &id = running_events_.top();
         event_map_.at(id).end();
         running_events_.pop();
@@ -85,8 +85,8 @@ namespace utopia {
 
 }
 
-#define UTOPIA_LOG_BEGIN(expr)  utopia::Log::instance().apply_begin(expr)
-#define UTOPIA_LOG_END(expr)    utopia::Log::instance().apply_end()
+#define UTOPIA_LOG_BEGIN(expr)  utopia::Logger::instance().apply_begin(expr)
+#define UTOPIA_LOG_END(expr)    utopia::Logger::instance().apply_end()
 
 
 #else  //UTOPIA_LOG_ENABLED

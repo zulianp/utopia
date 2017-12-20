@@ -41,21 +41,43 @@ endif()
 
 include_directories(rapidxml)
 
-# list(APPEND UTOPIA_FE_MODULES
-# 	rapidxml
-# 	core
-# 	intersection
-# 	backend/libmesh
-# 	visualization
-# 	transfer
-# 	tests
-#  )
+
+########################################################################
+function(find_project_files rootPath dirPaths headers sources)
+	SET(verbose TRUE)
+
+	SET(theaders ${${headers}})
+	SET(tsources ${${sources}})
+
+	SET(ROOT_PATH ${${rootPath}})
+	SET(DIR_PATHS ${${dirPaths}})
+
+	FOREACH(INCLUDE_PATH ${DIR_PATHS})
+		INCLUDE_DIRECTORIES(${ROOT_PATH}/${INCLUDE_PATH})
+
+		file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )   
+		file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )    
+		file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
+		file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
+		
+		SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
+		
+		SET(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
+		SET(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR}) 
+	ENDFOREACH(INCLUDE_PATH)  
+
+	SET(${headers} ${theaders} PARENT_SCOPE)
+	SET(${sources} ${tsources} PARENT_SCOPE)
+endfunction()
+########################################################################
+
 
 list(APPEND UTOPIA_FE_MODULES
 	tests
 	transfer
 	visualization
 	backend/libmesh
+	backend/homemade
 	intersection
 	core
 	rapidxml

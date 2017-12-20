@@ -14,7 +14,8 @@ namespace utopia {
     public:
         typedef _Expr Expr;
         typedef _Operation Operation;
-        typedef typename Expr::Scalar Scalar;
+        typedef typename utopia::Traits<Expr>::Scalar Scalar;
+
 
         static const int Order = Expr::Order;
 
@@ -23,7 +24,7 @@ namespace utopia {
 
         virtual ~Unary() { }
 
-        std::string getClass() const {
+        virtual std::string getClass() const {
             return _operation.getClass() + "<" + _expr.getClass() + ">";
         }
 

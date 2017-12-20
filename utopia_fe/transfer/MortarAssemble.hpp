@@ -15,6 +15,7 @@
 #include <libmesh/sparse_matrix.h>
 
 #include "utopia_intersector.hpp"
+#include "utopia_libmesh_Utils.hpp"
 
 #include <memory>
 #include <math.h>
@@ -22,35 +23,7 @@
 
 namespace utopia {
 	
-	inline bool is_hex(const int type)
-	{
-		return type == static_cast<int>(libMesh::HEX8) || type == static_cast<int>(libMesh::HEX20) ||
-		type == static_cast<int>(libMesh::HEX27);
-	}
-	
-	inline bool is_quad(const int type)
-	{
-		return type == static_cast<int>(libMesh::QUAD4) || type == static_cast<int>(libMesh::QUADSHELL4) ||
-		type == static_cast<int>(libMesh::QUAD8) || type == static_cast<int>(libMesh::QUAD9);
-	}
-	
-	inline bool is_tri(const int type)
-	{
-		return type == static_cast<int>(libMesh::TRI3)  || type == static_cast<int>(libMesh::TRISHELL3) ||
-		type == static_cast<int>(libMesh::TRI6);
-	}
-	
-	inline bool is_tet(const int type)
-	{
-		return type == static_cast<int>(libMesh::TET4) || type == static_cast<int>(libMesh::TET10);
-	}
-	
-	inline bool is_valid_elem_type(const int type)
-	{
-		return type < static_cast<int>(libMesh::INVALID_ELEM);
-	}
-	
-	
+
 	int order_for_l2_integral(const int dim,
 							  const libMesh::Elem &master_el,
 							  const int master_order,

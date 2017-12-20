@@ -38,6 +38,12 @@ namespace utopia {
 			return it->second;
 		}
 
+
+		inline std::string getClass() const override
+		{
+			return "BlockVar";
+		}
+
 		Tensor default_value_;
 		std::unordered_map<int, Tensor> values_;
 	};

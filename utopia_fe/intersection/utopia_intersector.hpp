@@ -21,6 +21,7 @@ namespace utopia {
 	};
 
 	typedef utopia::Intersector::PMesh Polyhedron;
+	typedef utopia::Intersector::FEObject FEObject;
 
 	bool intersect_convex_polygons(const int n_vertices_1,
 								   const double * polygon_1,

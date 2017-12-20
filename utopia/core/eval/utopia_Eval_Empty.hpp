@@ -63,6 +63,7 @@ namespace utopia {
             return expr.implementation();
         }
     };
+
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_EMPTY_HPP_HPP

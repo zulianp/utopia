@@ -1,15 +1,8 @@
-
-set(LOCAL_SOURCES 
-  utopia_triangulate.cpp
-  utopia_intersector.cpp
-  clipper/clipper.cpp
-  )
-
-set(LOCAL_HEADERS
-  utopia_triangulate.hpp
-  utopia_intersector.hpp
-  clipper/clipper.hpp
+list(APPEND INTERSECTION_MODULES
+  .
 )
+
+find_project_files(CMAKE_CURRENT_SOURCE_DIR INTERSECTION_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 #----------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------
@@ -17,8 +10,6 @@ set(LOCAL_HEADERS
 find_package(ParMoonolith)
 #----------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------
-
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(utopia_fe_intersection STATIC ${LOCAL_SOURCES})
 add_dependencies(utopia_fe_intersection par_moonolith)

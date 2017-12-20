@@ -349,6 +349,7 @@ namespace utopia {
 		static Scalar trace(const Matrix &in);
 		static Scalar trace(const CCSMatrix<Scalar>  &in);
 		static Scalar dot(const Vector &left, const Vector &right);
+		static Scalar dot(const Matrix &left, const Matrix &right);
 		static Scalar norm2(const Vector vector);
 		static Scalar norm_infty(const Vector vector);
 		static Scalar reduce(const Vector &vec, const Plus &);
@@ -358,6 +359,10 @@ namespace utopia {
 		static void axpy(Vector &y, const Scalar &alpha, const Vector &x);
 		static void axpy(Matrix &y, const Scalar &alpha, const Matrix &x);
 
+
+		//scale
+		static void scale(Vector &result, const Scalar scale_factor);
+		static void scale(Matrix &result, const Scalar scale_factor);
         //TODO
 		// static void axpy(CCSMatrix<Scalar> &y, const Scalar &alpha, const CCSMatrix<Scalar> &x);
 		// static void axpy(CRSMatrix<Scalar> &y, const Scalar &alpha, const CRSMatrix<Scalar> &x);
@@ -457,6 +462,28 @@ namespace utopia {
 				result[i] = -vec[i];
 			}
 		}
+
+		template<class Operation>
+		static void apply_unary(Matrix &result, const Operation &op, const Matrix &mat) {
+			if(result.rows() != mat.rows() || result.cols() != mat.cols()) {
+				result.resize(mat.rows(), mat.cols());
+			}
+
+			for(SizeType i = 0; i < mat.size(); ++i) {
+				result.entries()[i] = op.template apply<Scalar>(mat.entries()[i]);
+			}
+		}
+
+		static void apply_unary(Matrix &result, const Minus &, const Matrix &mat) {
+			if(result.rows() != mat.rows() || result.cols() != mat.cols()) {
+				result.resize(mat.rows(), mat.cols());
+			}
+
+			for(SizeType i = 0; i < mat.size(); ++i) {
+				result.entries()[i] = -mat.entries()[i];
+			}
+		}
+		
 		
 		//[binary]
 		template<class VectorT>

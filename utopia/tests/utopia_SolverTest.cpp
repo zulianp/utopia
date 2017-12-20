@@ -10,6 +10,33 @@
 
 namespace utopia
 {
+
+
+	template<class Matrix>
+	void assemble_laplacian_1D(const utopia::SizeType n, Matrix &m)
+	{
+	    using namespace utopia;
+
+	    // n x n matrix with maximum 3 entries x row        
+	    {
+	        Write<Matrix> w(m);
+	        Range r = row_range(m);
+
+	        //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
+	        for(SizeType i = r.begin(); i != r.end(); ++i) {
+	            if(i > 0) {    
+	                m.add(i, i - 1, -1.0);    
+	            }
+
+	            if(i < n-1) {
+	                m.add(i, i + 1, -1.0);
+	            }
+
+	            m.add(i, i, 2.0);
+	        }
+	    }
+	}
+
 	/**
 	 * @brief      Class to test our nonlinear solvers.
 	 *
@@ -38,6 +65,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(tr_test);
 			UTOPIA_RUN_TEST(ls_test);
 			UTOPIA_RUN_TEST(nl_solve_test);
+			
 		}
 		
 		class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
@@ -47,6 +75,8 @@ namespace utopia
 			bool value(const Vector &, Scalar &val) const {}
 			bool update(const Vector &) { }
 		};
+
+		
 		
 		void ls_normal_eq()
 		{
@@ -58,7 +88,8 @@ namespace utopia
 			Vector x0;
 			newton.solve(fun, x0);
 		}
-		
+
+
 		void nl_solve_test()
 		{
 			//! [NL solve example]
@@ -239,7 +270,7 @@ namespace utopia
 				params.linear_solver_verbose(false);
 				params.line_search_inner_verbose(false);
 				
-				auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector, -1> >();
+				auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector, HOMEMADE> >();
 				Newton<Matrix, Vector> nlsolver1(lsolver);
 				Newton<Matrix, Vector> nlsolver2(lsolver);
 				
@@ -328,6 +359,8 @@ namespace utopia
 		
 		void run()
 		{
+			UTOPIA_RUN_TEST(petsc_ngs_test);
+			UTOPIA_RUN_TEST(petsc_gss_newton_test);
 			UTOPIA_RUN_TEST(petsc_bicgstab_test);
 			UTOPIA_RUN_TEST(petsc_gmres_test);
 			UTOPIA_RUN_TEST(petsc_newton_test);
@@ -346,6 +379,46 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_mg_jacobi_test);
 		}
+
+		void petsc_gss_newton_test()
+		{
+			typedef std::function<void(const DSMatrixd &, const DVectord &, const DVectord &, DVectord &, DVectord &)> F;
+
+			const int n = mpi_world_size() * 4;
+			DVectord sol  = zeros(n);
+			DVectord upbo = values(n, 1.);
+			DSMatrixd A   = identity(n, n);
+			DVectord rhs  = values(n, 3.);
+
+			DVectord lambda, d;
+			F f = [&lambda, &d, &upbo](const DSMatrixd &H, const DVectord &g, const DVectord &x, DVectord &active, DVectord &value) 
+			{
+				lambda = (upbo - H * x);
+				d = lambda + (x - upbo);	
+
+				Read<DVectord> r_d(d);
+				Read<DVectord> r_u(upbo);
+				Write<DVectord> w_d(active);
+				Write<DVectord> w_v(value);
+
+				auto rr = range(x);
+				for (SizeType i = rr.begin(); i != rr.end(); i++) {
+					if (d.get(i) >= -1e-16) {
+						active.set(i, 1.0);
+						value.set(i, upbo.get(i));
+					} else {
+						active.set(i, 0.0);
+						value.set(i,  0.);
+					}
+				}
+			};
+
+			auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+			GenericSemismoothNewton<DSMatrixd, DVectord, F> solver(f, linear_solver);
+
+			solver.solve(A, rhs, sol);
+		}
+		
 		
 		void petsc_mprgp_test()
 		{
@@ -405,7 +478,7 @@ namespace utopia
 						b.set(i, -50);
 					}
 					
-					if(i ==0 || i == rhs_range.end()-1) {
+					if(i ==0 || i == n-1) {
 						b.set(i, 0);
 					}
 				}
@@ -432,37 +505,22 @@ namespace utopia
 			mprgp.solve(A, b, x);
 			
 			
-			DVectord x_0 = 0 * x;
-			// auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+			DVectord x_0 = 0. * x;
+
+			auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
 			// auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-			auto lsolver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+			// auto lsolver = std::make_shared<GMRES<DSMatrixd, DVectord>>();
 			// auto lsolver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
 			lsolver->atol(1e-15);
 			lsolver->rtol(1e-15);
 			lsolver->stol(1e-15);
+			// lsolver->verbose(true);
 
 			SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
-			
 			nlsolver.set_box_constraints(box);
-			
 
 			nlsolver.max_it(200);
-			nlsolver.verbose(true);
-			nlsolver.solve(A, b, x_0);
-			
-			// if(!approxeq(x, x_0)) {
-			double diff = norm2(x - x_0);
-			double sum_A = sum(A);
-			double norm_x = norm2(x);
-			double norm_x0 = norm2(x_0);
-			
-			if(mpi_world_rank() == 0) {
-				std::cout << "diff: " << diff << std::endl;
-				std::cout << "sum_A: " << sum_A << std::endl;
-				std::cout <<  "nx/nx0 = " << norm_x << "/" << norm_x0 << std::endl;
-			}
-
-			
+			nlsolver.solve(A, b, x_0);			
 			assert(approxeq(x, x_0));
 		}
 		
@@ -1116,11 +1174,58 @@ namespace utopia
 			assert(approxeq(expected, actual));
 			// // std::cout << "         End: petsc_newton_petsc_cg_test" << std::endl;
 		}
-		
-		
-		
-		
-		
+
+
+
+		void petsc_ngs_test()
+		{
+			typedef utopia::DSMatrixd Matrix;
+			typedef utopia::DVectord Vector;
+			
+			const SizeType n = 40;
+
+			Matrix m = zeros(n, n);
+			assemble_laplacian_1D(n, m);
+			{
+			    Range r = row_range(m);
+			    Write<Matrix> w(m);
+			    if(r.begin() == 0) {
+			        m.set(0, 0, 1.);
+			        m.set(0, 1, 0);
+			    }
+
+			    if(r.end() == n) {
+			        m.set(n-1, n-1, 1.);
+			        m.set(n-1, n-2, 0);
+			    }
+			}
+
+			Vector rhs = values(n, 1.);
+			{ 
+			    //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
+			    Range r = range(rhs);
+			    Write<Vector> w(rhs);
+
+			    if(r.begin() == 0) {
+			        rhs.set(0, 0);
+			    }
+
+			    if(r.end() == n) {
+			        rhs.set(n-1, 0.);
+			    }
+			}
+
+			Vector upper_bound = values(n, 100.0);
+			Vector solution    = zeros(n);
+
+			ProjectedGaussSeidel<Matrix, Vector> pgs;
+			//super slow convergence
+			pgs.max_it(n*40);
+			pgs.verbose(true);
+			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+			pgs.solve(m, rhs, solution);
+		}
+
 		PETScSolverTest()
 		: _n(10) { }
 		

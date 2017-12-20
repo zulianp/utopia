@@ -3,8 +3,7 @@
 #include "utopia_triangulate.hpp"
 #include "MortarAssemble.hpp"
 #include "utopia_Polygon.hpp"
-// #include "utopia_Socket.hpp"
-
+#include "utopia_intersector.hpp"
 
 #include <memory>
 #include <assert.h>

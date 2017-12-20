@@ -204,7 +204,7 @@ public:
         assert(b.size().get(0) == x.size().get(0));
 
 
-        const Matrix A = *this->get_operator(); 
+        const Matrix &A = *this->get_operator(); 
 
 
         PreconditionedSolver::init_solver("UTOPIA::PETSc KSP", {}); 
