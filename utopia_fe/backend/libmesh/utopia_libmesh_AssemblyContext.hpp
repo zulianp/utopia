@@ -11,6 +11,7 @@
 #include "utopia_libmesh_Utils.hpp"
 #include "utopia_FEIsSubTree.hpp"
 #include "utopia_Traverse.hpp"
+#include "utopia_ProductFunctionSpace.hpp"
 
 #include "utopia_fe_core.hpp"
 
