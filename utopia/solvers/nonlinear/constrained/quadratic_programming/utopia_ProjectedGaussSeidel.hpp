@@ -55,6 +55,19 @@ namespace utopia {
 			return converged;
 		}
 
+		void non_linear_jacobi_step(const Matrix &A, const Vector &b, Vector &x)
+		{
+			r = b - A * x;
+			const auto &g = *constraints_.upper_bound();
+
+			Range rr = row_range(A);
+			ReadAndWrite<Vector> rw_x(x);
+			for(auto i = rr.begin(); i != rr.end(); ++i) {
+				auto s = x.get(i) + d_inv.get(i) * r.get(i);
+				x.set(i, std::min(s, g.get(i)) );
+			}
+		}
+
 		bool step(const Matrix &A, const Vector &b, Vector &x)
 		{
 			r = b - A * x;
@@ -73,11 +86,11 @@ namespace utopia {
 					auto s = r.get(i);
 
 					for(auto index = 0; index < row_view.n_values(); ++index) {
-						const auto j   = row_view.get_col_at(index);
-						const auto val = row_view.get_value_at(index);
+						const auto j    = row_view.get_col_at(index);
+						const auto a_ij = row_view.get_value_at(index);
 
 						if(rr.inside(j) && i != j) {
-							s -= val * c.get(j);
+							s -= a_ij * c.get(j);
 						}
 					}
 
@@ -87,6 +100,7 @@ namespace utopia {
 			}
 
 			x += c;
+			non_linear_jacobi_step(A, b, x);
 			return true;
 		}
 

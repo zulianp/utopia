@@ -20,38 +20,6 @@ namespace utopia {
 
 	};
 
-
-	// template<typename Scalar_>
-	// class FEFunction : public Expression< FEFunction<Scalar_> > {
-	// public: 
-	// 	enum {
-	// 		Order = 0
-	// 	};
-
-	// 	typedef Scalar_ Scalar;
-
-	// 	std::string getClass() const { return "FEFunction"; }
-	// };
-
-
-	// template<typename Scalar_>
-	// class Traits< FEFunction<Scalar_> > {
-	// public:
-	// 	typedef Scalar_ Scalar;
-
-	// 	enum {
-	// 		FILL_TYPE = utopia::FillType::DENSE
-	// 	};
-	// };
-
-
-
-
-
-
-
-
-
 	template<class FEFun, int N>
 	class VectorFE : public Expression< VectorFE<FEFun, N> > {
 	public:
