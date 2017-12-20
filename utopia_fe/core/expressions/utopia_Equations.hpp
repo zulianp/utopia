@@ -21,12 +21,12 @@ namespace utopia {
 	};
 
 	template<class Eqs, int Begin>
-	class EquationIterator<Eqs, Begin, Begin + 1> {
+	class EquationIterator<Eqs, Begin, Begin> {
 	public:
 		template<class Fun>
-		void visit(Fun fun)
+		void visit(Fun)
 		{
-			fun(Begin, eqs.template get<Begin>());
+			// fun(Begin, eqs.template get<Begin>());
 		}
 
 		EquationIterator(Eqs &eqs) : eqs(eqs) {}
