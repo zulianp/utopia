@@ -816,11 +816,10 @@ namespace utopia {
 	}
 		
 	void PetscBackend::build(PETScMatrix &m, const Size &size, const Identity &) {
-		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 
 		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],Scalar diag,Vec x,Vec b)
-		MatCreateDense(comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
+		MatCreateDense(default_communicator(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
 					   &m.implementation());
 		
 		PetscInt rbegin, rend;
@@ -843,10 +842,9 @@ namespace utopia {
 		PetscInt rows = size.get(0);
 		PetscInt cols = size.get(1);
 
-		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 		
-		MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols, 1, PETSC_NULL,
+		MatCreateAIJ(default_communicator(), PETSC_DECIDE, PETSC_DECIDE, rows, cols, 1, PETSC_NULL,
 					 1 /*Only because otherwise petsc crashes*/, PETSC_NULL, &m.implementation());
 		
 		MatSetOption(m.implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE);
@@ -871,11 +869,10 @@ namespace utopia {
 	}
 	
 	void PetscBackend::build(PETScMatrix &m, const Size &size, const LocalIdentity &) {
-		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 
 		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],Scalar diag,Vec x,Vec b)
-		MatCreateDense(comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, NULL,
+		MatCreateDense(default_communicator(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, NULL,
 					   &m.implementation());
 		
 		
@@ -943,11 +940,9 @@ namespace utopia {
 		
 		PetscInt rows = size.get(0);
 		PetscInt cols = size.get(1);
-
-		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 		
-		MatCreateAIJ(comm, PETSC_DECIDE, PETSC_DECIDE, rows, cols,
+		MatCreateAIJ(default_communicator(), PETSC_DECIDE, PETSC_DECIDE, rows, cols,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/,  PETSC_NULL,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
 					 &m.implementation());
@@ -964,11 +959,10 @@ namespace utopia {
 		PetscInt rows = size.get(0);
 		PetscInt cols = size.get(1);
 
-		MPI_Comm comm = m.communicator();
 		Mat &mat = m.implementation();
 
 		MatDestroy(&mat);
-		MatCreate(comm, &mat);
+		MatCreate(default_communicator(), &mat);
 		MatSetSizes(mat, rows, cols, PETSC_DETERMINE, PETSC_DETERMINE);
 		
 		PETScError::Check( MatSetType(mat, MATAIJ) );
@@ -987,10 +981,9 @@ namespace utopia {
 		PetscInt rows = size.get(0);
 		PetscInt cols = size.get(1);
 
-		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 		
-		MatCreateAIJ(comm, rows, PETSC_DECIDE, PETSC_DETERMINE, cols,
+		MatCreateAIJ(default_communicator(), rows, PETSC_DECIDE, PETSC_DETERMINE, cols,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to local entries*/, PETSC_NULL,
 					 PetscMax(nnz.nnz(), 1) /*n DOF connected to remote entries*/, PETSC_NULL,
 					 &m.implementation());

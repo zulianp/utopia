@@ -16,17 +16,16 @@ namespace utopia {
     class PETScMatWrapper {
     public:
         PETScMatWrapper(const MPI_Comm comm = PETSC_COMM_WORLD)
-                : _comm(comm), owner_(true) {
-            MatCreate(_comm, &_mat);
+        : owner_(true)
+        {
+            MatCreate(comm, &_mat);
         }
 
         PETScMatWrapper(Mat &mat, const bool owner = false)
-        : _mat(mat), owner_(owner)
-        {
-            PetscObjectGetComm((PetscObject)_mat,&_comm);
-        }
+        : _mat(mat), owner_(owner) { }
 
-        ~PETScMatWrapper() {
+        ~PETScMatWrapper()
+        {
             if(owner_) {
                 MatDestroy(&_mat);
             }
@@ -47,27 +46,11 @@ namespace utopia {
             }
 
             PETScError::Check(MatDuplicate(_mat, opt, &other._mat));
-            other._comm = _comm;
-        }
-
-        inline void copy(PETScMatWrapper &other, MatStructure opt = DIFFERENT_NONZERO_PATTERN) const {
-            //DOES NOT WORK
-            assert(false);
-            PetscInt rows, cols, grows, gcols;
-
-            MatGetSize(_mat, &grows, &gcols);
-            MatGetLocalSize(_mat, &rows, &cols);
-
-            MatSetSizes(other._mat, rows, cols, grows, gcols);
-
-            PETScError::Check(MatCopy(_mat, other._mat, opt));
-            other._comm = _comm;
         }
 
         inline void convert(PETScMatWrapper &other, MatType newtype) {
             //MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
             PETScError::Check(MatConvert(_mat, newtype, MAT_INITIAL_MATRIX, &other._mat));
-            other._comm = _comm;
         }
 
         inline void convert(MatType newtype) {
@@ -76,15 +59,16 @@ namespace utopia {
         }
 
         PETScMatWrapper(const PETScMatWrapper &other)
-                : _comm(other._comm) {
-            //MatStructure str = SAME_NONZERO_PATTERN or DIFFERENT_NONZERO_PATTERN
-
+        : owner_(true)
+        {
             PETScError::Check(MatCopy(other._mat, _mat, SAME_NONZERO_PATTERN));
         }
 
-        MPI_Comm &communicator() {
-            return _comm;
-        }
+       inline MPI_Comm communicator() const {
+           MPI_Comm comm = PetscObjectComm((PetscObject) implementation());
+           assert(comm != MPI_COMM_NULL);
+           return comm;
+       }
 
         void set_owner(const bool owner)
         {
@@ -92,7 +76,6 @@ namespace utopia {
         }
 
     private:
-        MPI_Comm _comm;
         Mat _mat;
         bool owner_;
     };
@@ -139,16 +122,11 @@ namespace utopia {
             return *this;
         }
 
-        void describe() const {
-
+        inline void describe() const {
             MatView(_wrapper->implementation(), PETSC_VIEWER_STDOUT_WORLD);
         }
 
-        MPI_Comm &communicator() {
-            return _wrapper->communicator();
-        }
-
-        const MPI_Comm &communicator() const {
+        inline MPI_Comm communicator() const {
             return _wrapper->communicator();
         }
 
