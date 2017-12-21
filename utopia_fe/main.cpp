@@ -28,6 +28,7 @@
 #include "utopia_WearEstimator.hpp"
 #include "utopia_MechTest.hpp"
 #include "utopia_AssemblyTest.hpp"
+#include "utopia_FSITest.hpp"
 
 #include <functional>
 
@@ -61,6 +62,8 @@ int main(const int argc, char *argv[])
 	    runners["wear"] = run_wear_test;
 	    runners["mech"] = run_mech_test;
 	    runners["asm"] = run_assembly_test;
+	    runners["fsi"] = run_fsi_test;
+
 
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;

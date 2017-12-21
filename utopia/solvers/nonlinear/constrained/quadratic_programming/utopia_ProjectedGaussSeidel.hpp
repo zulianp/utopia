@@ -64,7 +64,7 @@ namespace utopia {
 			ReadAndWrite<Vector> rw_x(x);
 			for(auto i = rr.begin(); i != rr.end(); ++i) {
 				auto s = x.get(i) + d_inv.get(i) * r.get(i);
-				x.set(i, std::min(s, g.get(i)) );
+				x.set(i, std::min(s, g.get(i)));
 			}
 		}
 

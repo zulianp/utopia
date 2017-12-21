@@ -218,8 +218,8 @@ namespace utopia {
 
 
 	    //FIXME should be hidden
-	    FEBackend<LIBMESH_TAG>::init_constraints(constr_f);
-	    FEBackend<LIBMESH_TAG>::init_constraints(constr_s);
+	    init_constraints(constr_f);
+	    init_constraints(constr_s);
 	   
 	    V_fx.initialize();
 	    V_sx.initialize();

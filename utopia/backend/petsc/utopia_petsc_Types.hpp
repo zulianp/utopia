@@ -119,12 +119,12 @@ namespace utopia {
 
     inline bool empty(const Wrapper<PETScVector, 1> &w)
     {
-        return !w.implementation().isInitialized();
+        return !w.implementation().initialized();
     }
 
     inline bool empty(const Wrapper<PETScSerialVector, 1> &w)
     {
-        return !w.implementation().isInitialized();
+        return !w.implementation().initialized();
     }
 
     inline void convert(const Vec &petsc_vec, Wrapper<PETScVector, 1> &utopia_vec)

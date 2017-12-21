@@ -118,7 +118,7 @@ namespace utopia {
 		Vec &v = vec.implementation();
 		PetscInt n;
 
-		if(vec.isInitialized()) {
+		if(vec.initialized()) {
 			VecGetSize(v,  &n);
 			if(n == s.get(0)) {
 				return;
@@ -130,13 +130,12 @@ namespace utopia {
 		VecCreateMPI(comm, PETSC_DECIDE, s.get(0), &v);
 	}
 
-
 	void PetscBackend::resize(PETScVector &vec, const Size &s_local, const Size &s_global)
 	{
 		Vec &v = vec.implementation();
 		PetscInt n, N;
 
-		if(vec.isInitialized()) {
+		if(vec.initialized()) {
 			VecGetSize(v, &N);
 			VecGetLocalSize(v,  &n);
 			if(n == s_local.get(0) && N == s_global.get(0)) {
@@ -1036,10 +1035,9 @@ namespace utopia {
 	}
 	
 	void PetscBackend::build(PETScMatrix &m, const Size &size, const Values<Scalar> &values) {
-		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 
-		MatCreateDense(comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
+		MatCreateDense(default_communicator(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
 					   &m.implementation());
 		
 		
@@ -1066,13 +1064,13 @@ namespace utopia {
 	void PetscBackend::build(PETScVector &v, const Size &in_local_size, const Size &&in_global_size, const Values<Scalar> &values)
 	{
 		Size v_local_size;
-		if(v.isInitialized()) {
+		if(v.initialized()) {
 			local_size(v, v_local_size);
 		}	
 
-		if(!v.isInitialized() || v_local_size.get(0) != in_local_size.get(0)) {
+		if(!v.initialized() || v_local_size.get(0) != in_local_size.get(0)) {
 			VecDestroy(&v.implementation());
-			VecCreateMPI(v.communicator(), in_local_size.get(0), in_global_size.get(0), &v.implementation());
+			VecCreateMPI(default_communicator(), in_local_size.get(0), in_global_size.get(0), &v.implementation());
 		}
  
 		VecSet(v.implementation(), values.value());
@@ -1083,7 +1081,7 @@ namespace utopia {
 	void PetscBackend::build(PETScVector &v, const Size &size, const Values<Scalar> &values) {
 
 		VecDestroy(&v.implementation());
-		VecCreateMPI(v.communicator(), PETSC_DECIDE, size.get(0), &v.implementation());
+		VecCreateMPI(default_communicator(), PETSC_DECIDE, size.get(0), &v.implementation());
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
@@ -1120,10 +1118,9 @@ namespace utopia {
 	}
 	
 	void PetscBackend::build(PETScVector &v, const Size &size, const LocalValues<Scalar> &values) {
-		MPI_Comm comm = v.communicator();
 		VecDestroy(&v.implementation());
 
-		VecCreateMPI(comm, size.get(0), PETSC_DETERMINE, &v.implementation());
+		VecCreateMPI(default_communicator(), size.get(0), PETSC_DETERMINE, &v.implementation());
 		
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
@@ -1158,11 +1155,12 @@ namespace utopia {
 		MatSetValues(v.implementation(), 1, &row, 1, &col, &value, INSERT_VALUES);
 	}
 	
-	void PetscBackend::write_lock(PETScVector &vec) {}
+	void PetscBackend::write_lock(PETScVector &) {}
 	
 	void PetscBackend::write_unlock(PETScVector &vec) {
-		vec.assemblyBegin();
-		vec.assemblyEnd();
+		VecAssemblyBegin(vec.implementation());
+		VecAssemblyEnd(vec.implementation());
+		vec.set_initialized(true);
 	}
 	
 	void PetscBackend::write_lock(const PETScMatrix &) { }
@@ -1228,9 +1226,7 @@ namespace utopia {
 		
 		PetscInt rows, cols;
 		MatGetLocalSize(left.implementation(), &rows, &cols);
-		
-		result.setCommunicator(left.communicator());
-		
+				
 		VecDestroy(&result.implementation());
 		VecCreateMPI(right.communicator(), rows, grows, &result.implementation());
 		VecAssemblyBegin(result.implementation());
@@ -1294,8 +1290,6 @@ namespace utopia {
 		VecGetSize(right.implementation(), &gsize);
 		VecGetLocalSize(right.implementation(), &size);
 
-		result.setCommunicator(right.communicator());
-
 		VecDestroy(&result.implementation());
 		VecCreateMPI(right.communicator(), size, gsize, &result.implementation());
 		VecAssemblyBegin(result.implementation());
@@ -1313,8 +1307,6 @@ namespace utopia {
 		PetscInt size, gsize;
 		VecGetSize(right.implementation(), &gsize);
 		VecGetLocalSize(right.implementation(), &size);
-
-		result.setCommunicator(right.communicator());
 
 		VecDestroy(&result.implementation());
 		VecCreateMPI(right.communicator(), size, gsize, &result.implementation());
@@ -1356,7 +1348,7 @@ namespace utopia {
 			// if(n != n_wanted) {
 				PetscInt n_global;
 				VecGetSize(right.implementation(), &n_global);
-				result.setCommunicator(left.communicator());
+				// result.setCommunicator(left.communicator());
 
 				VecDestroy(&result.implementation());
 				VecCreateMPI(PetscObjectComm((PetscObject)right.implementation()), n_wanted, n_global, &result.implementation());
@@ -1436,7 +1428,7 @@ namespace utopia {
 	}
 	
 	Scalar PetscBackend::reduce(const PETScVector &vec, const Plus &) {
-		//if(!vec.isInitialized()) return 0; // FIXME
+		//if(!vec.initialized()) return 0; // FIXME
 		
 		Scalar result = 0;
 		VecSum(vec.implementation(), &result);
