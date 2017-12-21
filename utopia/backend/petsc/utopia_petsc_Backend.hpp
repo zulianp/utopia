@@ -17,6 +17,37 @@ namespace utopia {
 		typedef PetscScalar Scalar;
 		typedef PETScVector Vector;
 		typedef PETScMatrix Matrix;
+
+		class PetscArgs {
+		public: 
+			MPI_Comm comm;
+
+			template<class... Args>
+			void parse(const Optional<Args...> &args)
+			{
+				args.each(*this);
+			}
+
+			template<class Any>
+			inline static void parse_arg(const Any &) {}
+
+			void parse_arg(const MPI_Comm &comm)
+			{
+				this->comm = comm;
+			}
+
+			PetscArgs()
+			: comm(PetscBackend::default_communicator())
+			{}
+		};
+
+		template<class... Args>
+		PetscArgs parse_args(const Optional<Args...> &opts)
+		{
+			PetscArgs args;
+			args.parse(opts);
+			return args;
+		}
 		
 		using ScalarBackend<Scalar>::apply_binary;
 		using ScalarBackend<Scalar>::axpy;
@@ -87,28 +118,28 @@ namespace utopia {
 
 		//[builders]
 		template<class Tensor>
-		static void build(Tensor &t, const Size &s, const Resize &)
+		static void build(Tensor &t, const Size &s, const Resize &, const PetscArgs &opts = PetscArgs())
 		{
-			build(t, s, Zeros());
+			build(t, s, Zeros(), opts);
 		}
 		
-		static void build(PETScMatrix &m, const Size &size, const Identity &);
-		static void build(PETScSparseMatrix &m, const Size &size, const Identity &);
-		static void build(PETScMatrix &m, const Size &size, const LocalIdentity &);
-		static void build(PETScSparseMatrix &m, const Size &size, const LocalIdentity &);
-		static void build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz);
-		static void build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz);
-		static void build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */);
-		static void build(PETScMatrix  &m, const Size &size, const NNZ<PetscInt> &/*nnz*/);
-		static void build(PETScMatrix &m, const Size &size, const Zeros &);
-		static void build(PETScVector &v, const Size &size, const Zeros &);
-		static void build(PETScMatrix &m, const Size &size, const LocalZeros &);
-		static void build(PETScVector &v, const Size &size, const LocalZeros &);
-		static void build(PETScMatrix &m, const Size &size, const Values<Scalar> &values);
-		static void build(PETScVector &v, const Size &local_size, const Size &&global_size, const Values<Scalar> &values);
-		static void build(PETScVector &v, const Size &size, const Values<Scalar> &values);
-		static void build(PETScMatrix &m, const Size &size, const LocalValues<Scalar> &values);
-		static void build(PETScVector &v, const Size &size, const LocalValues<Scalar> &values);
+		static void build(PETScMatrix &m, const Size &size, const Identity &, const PetscArgs &opts = PetscArgs());
+		static void build(PETScSparseMatrix &m, const Size &size, const Identity &, const PetscArgs &opts = PetscArgs());
+		static void build(PETScMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts = PetscArgs());
+		static void build(PETScSparseMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts = PetscArgs());
+		static void build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz, const PetscArgs &opts = PetscArgs());
+		static void build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz, const PetscArgs &opts = PetscArgs());
+		static void build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */, const PetscArgs &opts = PetscArgs());
+		static void build(PETScMatrix  &m, const Size &size, const NNZ<PetscInt> &/*nnz*/, const PetscArgs &opts = PetscArgs());
+		static void build(PETScMatrix &m, const Size &size, const Zeros &, const PetscArgs &opts = PetscArgs());
+		static void build(PETScVector &v, const Size &size, const Zeros &, const PetscArgs &opts = PetscArgs());
+		static void build(PETScMatrix &m, const Size &size, const LocalZeros &, const PetscArgs &opts = PetscArgs());
+		static void build(PETScVector &v, const Size &size, const LocalZeros &, const PetscArgs &opts = PetscArgs());
+		static void build(PETScMatrix &m, const Size &size, const Values<Scalar> &values, const PetscArgs &opts = PetscArgs());
+		static void build(PETScVector &v, const Size &local_size, const Size &&global_size, const Values<Scalar> &values, const PetscArgs &opts = PetscArgs());
+		static void build(PETScVector &v, const Size &size, const Values<Scalar> &values, const PetscArgs &opts = PetscArgs());
+		static void build(PETScMatrix &m, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts = PetscArgs());
+		static void build(PETScVector &v, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts = PetscArgs());
 		
 		static void set(PETScVector &v, const PetscInt index, Scalar value);
 		static void add(PETScVector &v, const PetscInt index, Scalar value);

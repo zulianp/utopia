@@ -7,6 +7,7 @@
 
 #include "utopia_Expression.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Optional.hpp"
 
 namespace utopia {
 
@@ -302,6 +303,43 @@ namespace utopia {
         Type _type;
     };
 
+    template<class Factory, class Options>
+    class Build : public Expression< Build<Factory, Options> > {
+    public:
+        static const int Order = Factory::Order;
+
+        enum {
+            StoreAs = UTOPIA_BY_VALUE
+        };
+
+        typedef typename Factory::Scalar Scalar;
+
+        Build(const Factory &factory, const Options &opts)
+        : factory_(factory), opts_(opts)
+        {}
+
+        inline std::string getClass() const override
+        {
+            return factory_.getClass();
+        }
+
+        virtual ~Build() {}
+
+        const Options & opts() const
+        {
+            return opts_;
+        }
+
+        const Factory &factory() const
+        {
+            return factory_;
+        }
+
+    private:
+        Factory factory_;
+        Options opts_;
+    };
+
     template<class Type, int Order_>
     class SymbolicTensor : public Expression< SymbolicTensor<Type, Order_> > {
     public:
@@ -398,11 +436,11 @@ namespace utopia {
         return Factory<Zeros, utopia::DYNAMIC>(size);
     }
 
-    ///nnzXRowOrCol depends if your using a row-major or col-major sparse storage
+    ///nnz_x_row_or_col depends if your using a row-major or col-major sparse storage
     template<typename T>
-    inline Factory<NNZ<T>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, T nnzXRowOrCol)
+    inline Factory<NNZ<T>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
-        return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnzXRowOrCol));
+        return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnz_x_row_or_col));
     }
 
 
@@ -482,18 +520,22 @@ namespace utopia {
 
 
 
-    ///nnzXRowOrCol depends if your using a row-major or col-major sparse storage
+    ///nnz_x_row_or_col depends if your using a row-major or col-major sparse storage
     template<typename T>
-    inline Factory<LocalNNZ<T>, 2> local_sparse(const Size::SizeType rows, const Size::SizeType cols, T nnzXRowOrCol)
+    inline Factory<LocalNNZ<T>, 2> local_sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
-        return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnzXRowOrCol));
+        return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnz_x_row_or_col));
     }
 
-    // template<typename T>
-    // inline Factory<LocalRowNNZ<T>, 2> local_row_sparse(const Size::SizeType local_rows, const Size::SizeType global_cols, T nnzXRowOrCol)
-    // {
-    //     return Factory<LocalRowNNZ<T>, 2>(Size({local_rows, global_cols}), LocalRowNNZ<T>(nnzXRowOrCol));
-    // }
+    template<typename T, class... Args>
+    inline auto local_sparse(
+        const Size::SizeType rows,
+        const Size::SizeType cols,
+        T nnz_x_row_or_col,
+        Args &&... opts) -> Build< Factory<LocalNNZ<T>, 2>, decltype(options(opts...))>
+    {
+        return Build<Factory<LocalNNZ<T>, 2>, decltype(options(opts...))>(local_sparse(rows, cols, nnz_x_row_or_col), options(opts...));
+    }
 
      /** @}*/
 

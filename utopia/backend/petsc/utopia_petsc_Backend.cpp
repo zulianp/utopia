@@ -416,10 +416,10 @@ namespace utopia {
 		}
 
 		IS isrow;
-		PetscErrorCode ierr = ISCreateGeneral(PETSC_COMM_WORLD, remote_rows.size(), &remote_rows[0], PETSC_USE_POINTER, &isrow);
+		PetscErrorCode ierr = ISCreateGeneral(right.communicator(), remote_rows.size(), &remote_rows[0], PETSC_USE_POINTER, &isrow);
 
 		IS iscol;
-		ierr = ISCreateGeneral(PETSC_COMM_WORLD, remote_cols.size(), &remote_cols[0], PETSC_USE_POINTER, &iscol);
+		ierr = ISCreateGeneral(right.communicator(), remote_cols.size(), &remote_cols[0], PETSC_USE_POINTER, &iscol);
 
 		MPI_Comm comm = PetscObjectComm((PetscObject)r);
 		int size;
@@ -546,8 +546,8 @@ namespace utopia {
 		Mat &A = Mat_A.implementation();
 		MatDestroy(&A);
 		PetscViewer fd;
-		PetscViewerBinaryOpen(PETSC_COMM_WORLD, path.c_str(), FILE_MODE_READ, &fd);
-		MatCreate(PETSC_COMM_WORLD,&A);
+		PetscViewerBinaryOpen(default_communicator(), path.c_str(), FILE_MODE_READ, &fd);
+		MatCreate(default_communicator(), &A);
 		bool status;
 		status =  check_error( MatLoad(A,fd) );
 		PetscViewerDestroy(&fd);
@@ -578,14 +578,14 @@ namespace utopia {
 
 			PetscErrorCode ierr;
 			PetscViewer fd;
-			ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,path.c_str(), &fd); //CHKERRV(ierr);
+			ierr = PetscViewerASCIIOpen(default_communicator(),path.c_str(), &fd); //CHKERRV(ierr);
 			ierr = PetscViewerPushFormat(fd,PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
 			ierr = MatView(A, fd); //CHKERRV(ierr);
 			PetscViewerDestroy(&fd);
 			return check_error(ierr);
 		} else {
 			PetscViewer fd;
-			PetscViewerBinaryOpen(PETSC_COMM_WORLD, path.c_str(), FILE_MODE_WRITE, &fd);
+			PetscViewerBinaryOpen(default_communicator(), path.c_str(), FILE_MODE_WRITE, &fd);
 			bool status;
 			status =  check_error( MatView(A,fd));
 			PetscViewerDestroy(&fd);
@@ -604,14 +604,14 @@ namespace utopia {
 
 			PetscErrorCode ierr;
 			PetscViewer fd;
-			ierr = PetscViewerASCIIOpen(PETSC_COMM_WORLD,path.c_str(), &fd); //CHKERRV(ierr);
+			ierr = PetscViewerASCIIOpen(default_communicator(),path.c_str(), &fd); //CHKERRV(ierr);
 			ierr = PetscViewerPushFormat(fd,PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
 			ierr = VecView(A, fd); //CHKERRV(ierr);
 			PetscViewerDestroy(&fd);
 			return check_error(ierr);
 		} else {
 			PetscViewer fd;
-			PetscViewerBinaryOpen(PETSC_COMM_WORLD, path.c_str(), FILE_MODE_WRITE, &fd);
+			PetscViewerBinaryOpen(default_communicator(), path.c_str(), FILE_MODE_WRITE, &fd);
 			bool status;
 			status =  check_error( VecView(A,fd));
 			PetscViewerDestroy(&fd);
@@ -628,7 +628,7 @@ namespace utopia {
 		if(it==0)
 		{
           	// log stifness
-			PetscViewerASCIIOpen(PETSC_COMM_WORLD, "log_hessian.m" ,&viewer_hessian);  
+			PetscViewerASCIIOpen(default_communicator(), "log_hessian.m" ,&viewer_hessian);  
 			PetscViewerPushFormat(viewer_hessian,PETSC_VIEWER_ASCII_MATLAB); 
 		}   
 
@@ -649,7 +649,7 @@ namespace utopia {
 		if(it==0)
 		{
           	// log iterates
-			PetscViewerASCIIOpen(PETSC_COMM_WORLD, "log_iterate.m", &viewer_iterates);  
+			PetscViewerASCIIOpen(default_communicator(), "log_iterate.m", &viewer_iterates);  
 			PetscViewerPushFormat(viewer_iterates,PETSC_VIEWER_ASCII_MATLAB); 
 		}
 
@@ -721,12 +721,10 @@ namespace utopia {
 		// create vector
 		//VecCreate(left.communicator(), &li);
 		// TODO Check VecCreate on already exisiting vec
-		VecSetType(li, VECMPI);
+		VecSetType(li, parallel_vector_type());
 		
 		// set vector size
 		VecSetSizes(li, PETSC_DECIDE, rr.extent());
-		
-		
 		
 		PetscInt r = 0;
 		for (PetscInt rIt = rr.begin(); rIt < rr.end(); ++rIt) {
@@ -813,11 +811,11 @@ namespace utopia {
 		}
 	}
 
-	void PetscBackend::build(PETScMatrix &m, const Size &size, const Identity &) {
+	void PetscBackend::build(PETScMatrix &m, const Size &size, const Identity &, const PetscArgs &opts) {
 		MatDestroy(&m.implementation());
 
 		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],Scalar diag,Vec x,Vec b)
-		MatCreateDense(default_communicator(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
+		MatCreateDense(opts.comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
 			&m.implementation());
 		
 		PetscInt rbegin, rend;
@@ -835,7 +833,7 @@ namespace utopia {
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
-	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const Identity &) {
+	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const Identity &, const PetscArgs &opts) {
 		//Sparse id
 		PetscInt rows = size.get(0);
 		PetscInt cols = size.get(1);
@@ -843,7 +841,7 @@ namespace utopia {
 		MatDestroy(&m.implementation());
 		
 		sparse_mat_create_parallel(
-			default_communicator(),
+			opts.comm,
 			PETSC_DECIDE,
 			PETSC_DECIDE,
 			rows,
@@ -869,11 +867,11 @@ namespace utopia {
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
-	void PetscBackend::build(PETScMatrix &m, const Size &size, const LocalIdentity &) {
+	void PetscBackend::build(PETScMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts) {
 		MatDestroy(&m.implementation());
 
 		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],Scalar diag,Vec x,Vec b)
-		MatCreateDense(default_communicator(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, NULL,
+		MatCreateDense(opts.comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, NULL,
 			&m.implementation());
 		
 		
@@ -899,7 +897,7 @@ namespace utopia {
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
-	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const LocalIdentity &) {
+	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts) {
 		//Sparse id
 		PetscInt rows = size.get(0);
 		PetscInt cols = size.get(1);
@@ -907,7 +905,7 @@ namespace utopia {
 		MatDestroy(&m.implementation());
 		
 		sparse_mat_create_parallel(
-			default_communicator(),
+			opts.comm,
 			rows,
 			cols,
 			PETSC_DETERMINE,
@@ -940,14 +938,14 @@ namespace utopia {
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
-	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz) {
+	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz, const PetscArgs &opts) {
 		
 		PetscInt rows = size.get(0);
 		PetscInt cols = size.get(1);
 		MatDestroy(&m.implementation());
 
 		sparse_mat_create_parallel(
-			default_communicator(),
+			opts.comm,
 			PETSC_DECIDE,
 			PETSC_DECIDE,
 			rows,
@@ -957,12 +955,12 @@ namespace utopia {
 			&m.implementation());
 	}
 	
-	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz) {
+	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz, const PetscArgs &opts) {
 		PetscInt rows = size.get(0);
 		PetscInt cols = size.get(1);
 
 		sparse_mat_create_parallel(
-			default_communicator(),
+			opts.comm,
 			rows,
 			cols,
 			PETSC_DETERMINE,
@@ -973,41 +971,41 @@ namespace utopia {
 	}
 	
 	/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
-	void PetscBackend::build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */)
+	void PetscBackend::build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> &, const PetscArgs &opts)
 	{
 		build(m, size, LocalValues<Scalar>(0));
 	}
 	
 	/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
-	void PetscBackend::build(PETScMatrix  &m, const Size &size, const NNZ<PetscInt> &/*nnz*/)
+	void PetscBackend::build(PETScMatrix  &m, const Size &size, const NNZ<PetscInt> &, const PetscArgs &opts)
 	{
 		build(m, size, Zeros());
 	}
 	
-	void PetscBackend::build(PETScMatrix &m, const Size &size, const Zeros &)
+	void PetscBackend::build(PETScMatrix &m, const Size &size, const Zeros &, const PetscArgs &opts)
 	{
 		build(m, size, Values<Scalar>(0));
 	}
 	
-	void PetscBackend::build(PETScVector &v, const Size &size, const Zeros &)
+	void PetscBackend::build(PETScVector &v, const Size &size, const Zeros &, const PetscArgs &opts)
 	{
 		build(v, size, Values<Scalar>(0));
 	}
 	
-	void PetscBackend::build(PETScMatrix &m, const Size &size, const LocalZeros &)
+	void PetscBackend::build(PETScMatrix &m, const Size &size, const LocalZeros &, const PetscArgs &opts)
 	{
 		build(m, size, LocalValues<Scalar>(0));
 	}
 	
-	void PetscBackend::build(PETScVector &v, const Size &size, const LocalZeros &)
+	void PetscBackend::build(PETScVector &v, const Size &size, const LocalZeros &, const PetscArgs &opts)
 	{
 		build(v, size, LocalValues<Scalar>(0));
 	}
 	
-	void PetscBackend::build(PETScMatrix &m, const Size &size, const Values<Scalar> &values) {
+	void PetscBackend::build(PETScMatrix &m, const Size &size, const Values<Scalar> &values, const PetscArgs &opts) {
 		MatDestroy(&m.implementation());
 
-		MatCreateDense(default_communicator(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
+		MatCreateDense(opts.comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
 			&m.implementation());
 		
 		
@@ -1031,7 +1029,7 @@ namespace utopia {
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
-	void PetscBackend::build(PETScVector &v, const Size &in_local_size, const Size &&in_global_size, const Values<Scalar> &values)
+	void PetscBackend::build(PETScVector &v, const Size &in_local_size, const Size &&in_global_size, const Values<Scalar> &values, const PetscArgs &opts)
 	{
 		Size v_local_size;
 		if(v.initialized()) {
@@ -1040,7 +1038,7 @@ namespace utopia {
 
 		if(!v.initialized() || v_local_size.get(0) != in_local_size.get(0)) {
 			VecDestroy(&v.implementation());
-			vec_create_parallel(default_communicator(), in_local_size.get(0), in_global_size.get(0), &v.implementation());
+			vec_create_parallel(opts.comm, in_local_size.get(0), in_global_size.get(0), &v.implementation());
 		}
 
 		VecSet(v.implementation(), values.value());
@@ -1048,16 +1046,16 @@ namespace utopia {
 		VecAssemblyEnd(v.implementation());
 	}
 	
-	void PetscBackend::build(PETScVector &v, const Size &size, const Values<Scalar> &values) {
+	void PetscBackend::build(PETScVector &v, const Size &size, const Values<Scalar> &values, const PetscArgs &opts) {
 
 		VecDestroy(&v.implementation());
-		vec_create_parallel(default_communicator(), PETSC_DECIDE, size.get(0), &v.implementation());
+		vec_create_parallel(opts.comm, PETSC_DECIDE, size.get(0), &v.implementation());
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
 	}
 	
-	void PetscBackend::build(PETScMatrix &m, const Size &size, const LocalValues<Scalar> &values) {
+	void PetscBackend::build(PETScMatrix &m, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts) {
 		MPI_Comm comm = m.communicator();
 		MatDestroy(&m.implementation());
 
@@ -1087,10 +1085,10 @@ namespace utopia {
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 	}
 	
-	void PetscBackend::build(PETScVector &v, const Size &size, const LocalValues<Scalar> &values) {
+	void PetscBackend::build(PETScVector &v, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts) {
 		VecDestroy(&v.implementation());
 
-		vec_create_parallel(default_communicator(), size.get(0), PETSC_DETERMINE, &v.implementation());
+		vec_create_parallel(opts.comm, size.get(0), PETSC_DETERMINE, &v.implementation());
 		
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());

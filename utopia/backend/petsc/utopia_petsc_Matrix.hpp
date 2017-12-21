@@ -122,7 +122,7 @@ namespace utopia {
         }
 
         inline void describe() const {
-            MatView(_wrapper->implementation(), PETSC_VIEWER_STDOUT_WORLD);
+            MatView(_wrapper->implementation(), PETSC_VIEWER_STDOUT_(communicator()));
         }
 
         inline MPI_Comm communicator() const {

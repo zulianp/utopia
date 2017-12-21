@@ -11,6 +11,11 @@ namespace utopia {
     template<class Matrix, class Vector>
     class UtilitiesTest {
     private:
+        void optional_test()
+        {
+            // Matrix m = local_sparse(2, 2, 1, options(PETSC_COMM_WORLD));
+        }
+
         void factory_test() {
             Matrix m = identity(2, 2);
             auto size = m.size();
@@ -241,6 +246,7 @@ namespace utopia {
 
         void run() {
             print_backend_info();
+            UTOPIA_RUN_TEST(optional_test);
             UTOPIA_RUN_TEST(factory_test);
             UTOPIA_RUN_TEST(wrapper_test);
             UTOPIA_RUN_TEST(range_test);

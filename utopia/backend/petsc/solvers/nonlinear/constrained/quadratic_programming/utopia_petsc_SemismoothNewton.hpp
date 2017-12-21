@@ -58,7 +58,7 @@ namespace utopia {
 			linear_solver_->update(make_ref(A));
 
 			SNES snes;
-			SNESCreate(PETSC_COMM_WORLD, &snes);
+			SNESCreate(A.implementation().communicator(), &snes);
 			SNESSetType(snes, SNESVINEWTONSSLS);
 			SNESSetFunction(snes, raw_type(f), SemismoothNewton::Gradient, &ctx);
 			SNESSetJacobian(snes, raw_type(J), raw_type(J), SemismoothNewton::Hessian, &ctx);

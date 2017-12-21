@@ -10,6 +10,34 @@ namespace utopia {
 
 #ifdef WITH_PETSC
 
+    void petc_optional_test()
+    {
+        MPI_Comm sub_comm;
+        MPI_Comm_split(
+            PETSC_COMM_WORLD,
+            mpi_world_rank() % 2 == 1,
+            mpi_world_rank(),
+            &sub_comm);
+
+        int rank;
+        MPI_Comm_rank(sub_comm, &rank);
+
+        //only works for this builder at the moment
+        DSMatrixd m = local_sparse(10, 10, 1, sub_comm);
+
+        auto r = row_range(m);
+
+        {
+            Write<DSMatrixd> w_m(m);
+            for(auto i = r.begin(); i != r.end(); ++i) {
+                m.set(i, i, rank);
+            }
+        }
+
+        MPI_Comm_free(&sub_comm);
+    }
+
+
     void petsc_reciprocal_test() {
         // test also  diag
         DSMatrixd A = values(4, 4, 1.0);
@@ -37,7 +65,7 @@ namespace utopia {
     }
 
     void petsc_axpy_test() {
-       
+
         {
             //! [axpy (petsc)]
             int n = 10;
@@ -66,7 +94,7 @@ namespace utopia {
         }
 
         ///////////////////////////////////   
-       
+
         {
             const int m = mpi_world_size() * 3;
             const int n = mpi_world_size() * 2;
@@ -972,10 +1000,10 @@ namespace utopia {
         
         assert(approxeq(one, actual_min));
         assert(approxeq(two, actual_max));
-    
+
         actual_min = min(two, values(n, 1.));
         actual_max = max(values(n, 2.), one);
-    
+
         assert(approxeq(one, actual_min));
         assert(approxeq(two, actual_max));
     }
@@ -986,6 +1014,7 @@ namespace utopia {
 #ifdef WITH_PETSC
         UTOPIA_UNIT_TEST_BEGIN("PETScTest");
         
+        UTOPIA_RUN_TEST(petc_optional_test);
         UTOPIA_RUN_TEST(petsc_view_test);                
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate_test);
         UTOPIA_RUN_TEST(petsc_harcoded_cg_test);

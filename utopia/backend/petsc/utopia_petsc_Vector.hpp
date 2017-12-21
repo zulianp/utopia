@@ -71,7 +71,7 @@ namespace utopia {
         }
 
         inline void describe() const {
-            VecView(_vec, PETSC_VIEWER_STDOUT_WORLD);
+            VecView(_vec, PETSC_VIEWER_STDOUT_(communicator()));
         }
 
         inline bool initialized() const {

@@ -24,13 +24,9 @@ namespace utopia {
 	class EquationIterator<Eqs, Begin, Begin> {
 	public:
 		template<class Fun>
-		void visit(Fun)
-		{
-			// fun(Begin, eqs.template get<Begin>());
-		}
+		void visit(Fun) {}
 
-		EquationIterator(Eqs &eqs) : eqs(eqs) {}
-		Eqs &eqs;
+		EquationIterator(const Eqs &){}
 	};
 
 	template<class... Equation>
