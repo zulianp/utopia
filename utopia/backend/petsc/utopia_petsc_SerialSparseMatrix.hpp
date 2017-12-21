@@ -5,7 +5,11 @@
 #include "utopia_petsc_SparseMatrix.hpp"
 
 namespace utopia {
-	class PETScSerialSparseMatrix : public PETScSparseMatrix{};
+	class PETScSerialSparseMatrix : public PETScSparseMatrix {
+	public:
+		using PETScSparseMatrix::PETScSparseMatrix;
+		using PETScSparseMatrix::operator=;
+	};
 
 }
 

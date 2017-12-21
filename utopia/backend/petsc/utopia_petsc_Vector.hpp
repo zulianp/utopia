@@ -41,7 +41,7 @@ namespace utopia {
         }
 
         // assign operator
-       inline  PETScVector &operator=(const PETScVector &other) {
+       inline PETScVector &operator=(const PETScVector &other) {
             if(this == &other) return *this;
             destroy();
             PETScError::Check(VecDuplicate(other._vec, &_vec));

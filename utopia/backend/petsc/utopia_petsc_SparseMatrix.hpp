@@ -9,10 +9,9 @@ namespace utopia{
 
 	class PETScSparseMatrix : public PETScMatrix {
 	public:
+		using PETScMatrix::PETScMatrix;
+		using PETScMatrix::operator=;
 		virtual ~PETScSparseMatrix() {}
-
-		//FIXME is this really necessary???
-		std::map<std::pair<PetscInt, PetscInt>, PetscScalar> buffer;
 	};
 
 }

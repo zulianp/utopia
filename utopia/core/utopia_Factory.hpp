@@ -232,7 +232,6 @@ namespace utopia {
         T _nnz;
     };
 
-
     template<typename _Scalar>
     class FactoryTraits< LocalNNZ<_Scalar> > {
     public:
@@ -248,47 +247,7 @@ namespace utopia {
         };
     };
 
-    template<typename T>
-    class LocalRowNNZ {
-    public:
-     
-        LocalRowNNZ()  {};
-        LocalRowNNZ(T nnz) : _nnz(nnz) {};
-        template<typename OtherT>
-        LocalRowNNZ(const LocalRowNNZ<OtherT>& other) {_nnz = other.nnz();}
-
-        inline const T &nnz() const
-        {
-            return _nnz;
-        }
-        inline void setSparse(T nnz)
-        {
-            _nnz = nnz;
-        }
-
-    private:
-        T _nnz;
-    };
-
-    
-    template<typename _Scalar>
-    class FactoryTraits< LocalRowNNZ<_Scalar> > {
-    public:
-        typedef _Scalar Scalar;
-
-        static constexpr const char * getClass()
-        {
-            return "LocalRowNNZ";
-        }
-
-        enum {
-            FILL_TYPE = FillType::SPARSE
-        };
-    };
-
-
     class Resize { };
-
 
     template<>
     class FactoryTraits<Resize> {
@@ -530,11 +489,11 @@ namespace utopia {
         return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnzXRowOrCol));
     }
 
-    template<typename T>
-    inline Factory<LocalRowNNZ<T>, 2> local_row_sparse(const Size::SizeType local_rows, const Size::SizeType global_cols, T nnzXRowOrCol)
-    {
-        return Factory<LocalRowNNZ<T>, 2>(Size({local_rows, global_cols}), LocalRowNNZ<T>(nnzXRowOrCol));
-    }
+    // template<typename T>
+    // inline Factory<LocalRowNNZ<T>, 2> local_row_sparse(const Size::SizeType local_rows, const Size::SizeType global_cols, T nnzXRowOrCol)
+    // {
+    //     return Factory<LocalRowNNZ<T>, 2>(Size({local_rows, global_cols}), LocalRowNNZ<T>(nnzXRowOrCol));
+    // }
 
      /** @}*/
 

@@ -98,7 +98,6 @@ namespace utopia {
 		static void build(PETScSparseMatrix &m, const Size &size, const LocalIdentity &);
 		static void build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz);
 		static void build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz);
-		static void build(PETScSparseMatrix &m, const Size &size, const LocalRowNNZ<PetscInt> &nnz);
 		static void build(PETScMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */);
 		static void build(PETScMatrix  &m, const Size &size, const NNZ<PetscInt> &/*nnz*/);
 		static void build(PETScMatrix &m, const Size &size, const Zeros &);
@@ -400,6 +399,47 @@ namespace utopia {
 
 		static void scale(Vector &result, const Scalar scale_factor);
 		static void scale(Matrix &result, const Scalar scale_factor);
+
+		static void vec_create_parallel(MPI_Comm comm, PetscInt n_local, PetscInt n_global, Vec *vec);
+
+		static void sparse_mat_create_parallel(
+				MPI_Comm comm,
+				PetscInt rows_local,
+				PetscInt cols_local,
+				PetscInt rows_global,
+				PetscInt cols_global,
+				PetscInt d_nnz,
+				PetscInt o_nnz,
+				Mat *mat);
+
+
+		static void dense_mat_create_parallel(
+				MPI_Comm comm,
+				PetscInt rows_local,
+				PetscInt cols_local,
+				PetscInt rows_global,
+				PetscInt cols_global,
+				Mat *mat);
+
+		inline static bool check_error(const PetscInt err) 
+		{
+			return PETScError::Check(err);
+		}
+
+		inline static MatType parallel_sparse_matrix_type()
+		{
+			return MATAIJ;
+		}
+
+		inline static MatType parallel_dense_matrix_type()
+		{
+			return MATDENSE;
+		}
+
+		inline static VecType parallel_vector_type()
+		{
+			return VECSTANDARD;
+		}
 
 	private:
 

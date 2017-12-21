@@ -12,19 +12,18 @@
 #include <memory>
 
 namespace utopia {
-
-    class PETScMatWrapper {
+    class PetscMatrixMemory {
     public:
-        PETScMatWrapper(const MPI_Comm comm = PETSC_COMM_WORLD)
+        PetscMatrixMemory(const MPI_Comm comm = PETSC_COMM_WORLD)
         : owner_(true)
         {
             MatCreate(comm, &_mat);
         }
 
-        PETScMatWrapper(Mat &mat, const bool owner = false)
+        PetscMatrixMemory(Mat &mat, const bool owner = false)
         : _mat(mat), owner_(owner) { }
 
-        ~PETScMatWrapper()
+        ~PetscMatrixMemory()
         {
             if(owner_) {
                 MatDestroy(&_mat);
@@ -40,7 +39,7 @@ namespace utopia {
         }
 
         //MAT_DO_NOT_COPY_VALUES or MAT_COPY_VALUES, cause it to copy the numerical values in the matrix MAT_SHARE_NONZERO_PATTERN
-        inline void duplicate(PETScMatWrapper &other, MatDuplicateOption opt = MAT_COPY_VALUES) const {
+        inline void duplicate(PetscMatrixMemory &other, MatDuplicateOption opt = MAT_COPY_VALUES) const {
             if(other.owner_) {
                 MatDestroy(&other._mat);
             }
@@ -48,7 +47,7 @@ namespace utopia {
             PETScError::Check(MatDuplicate(_mat, opt, &other._mat));
         }
 
-        inline void convert(PETScMatWrapper &other, MatType newtype) {
+        inline void convert(PetscMatrixMemory &other, MatType newtype) {
             //MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
             PETScError::Check(MatConvert(_mat, newtype, MAT_INITIAL_MATRIX, &other._mat));
         }
@@ -58,7 +57,7 @@ namespace utopia {
             PETScError::Check(MatConvert(_mat, newtype, MAT_REUSE_MATRIX, &_mat));
         }
 
-        PETScMatWrapper(const PETScMatWrapper &other)
+        PetscMatrixMemory(const PetscMatrixMemory &other)
         : owner_(true)
         {
             PETScError::Check(MatCopy(other._mat, _mat, SAME_NONZERO_PATTERN));
@@ -88,7 +87,7 @@ namespace utopia {
 
         void wrap(Mat &mat)
         {
-           _wrapper = std::make_shared<PETScMatWrapper>(mat, false);
+           _wrapper = std::make_shared<PetscMatrixMemory>(mat, false);
         }
 
         const Mat &implementation() const {
@@ -97,19 +96,19 @@ namespace utopia {
 
         PETScMatrix(const MPI_Comm comm = PETSC_COMM_WORLD) {
             using std::make_shared;
-            _wrapper = make_shared<PETScMatWrapper>(comm);
+            _wrapper = make_shared<PetscMatrixMemory>(comm);
         }
 
         PETScMatrix(const PETScMatrix &other) {
             using std::make_shared;
-            _wrapper = make_shared<PETScMatWrapper>();
+            _wrapper = make_shared<PetscMatrixMemory>();
             other._wrapper->duplicate(*_wrapper);
         }
 
         PETScMatrix &operator=(const PETScMatrix &other) {
             if(_wrapper == other._wrapper) return *this;
 
-            _wrapper = std::make_shared<PETScMatWrapper>();
+            _wrapper = std::make_shared<PetscMatrixMemory>();
             other._wrapper->duplicate(*_wrapper);
             return *this;
         }
@@ -131,7 +130,7 @@ namespace utopia {
         }
 
     private:
-        std::shared_ptr<PETScMatWrapper> _wrapper;
+        std::shared_ptr<PetscMatrixMemory> _wrapper;
     };
 }
 
