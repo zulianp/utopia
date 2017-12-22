@@ -53,7 +53,7 @@ namespace utopia {
 		init_material();
 		iteration = 0;
 		linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-		// linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
+		// linear_solver = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
 		// linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> >();
 
 		output = std::make_shared<Nemesis_IO>(*mesh);
@@ -549,7 +549,7 @@ namespace utopia {
 			}
 		};
 
-		auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
 		GenericSemismoothNewton<DSMatrixd, DVectord, F> solver(f, linear_solver);
 		solver.verbose(true);
 		solver.max_it(20);

@@ -450,11 +450,10 @@ namespace utopia {
         //! [Global views]
     }
 
-
     void petsc_mat_tests()
     {
         PetscBool assembled;
-        DSMatrixd M = zeros(5,5);
+        DSMatrixd M = zeros(5, 5);
         MatAssembled(raw_type(M), &assembled);
         assert(!empty(M));
 
@@ -462,7 +461,15 @@ namespace utopia {
         assert(empty(A));
     }
 
+    void petsc_vec_tests()
+    {
+        PetscBool assembled;
+        DVectord v = zeros(5);
+        assert(!empty(v));
 
+        DVectord e;
+        assert(empty(e));
+    }
 
     void petsc_read_and_write_test()
     {
@@ -1035,6 +1042,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_matlab_connection_test);
         UTOPIA_RUN_TEST(petsc_matrix_composite_test);
         UTOPIA_RUN_TEST(petsc_mat_tests);
+        UTOPIA_RUN_TEST(petsc_vec_tests);
         UTOPIA_RUN_TEST(petsc_read_and_write_test);
         UTOPIA_RUN_TEST(petsc_to_blas_test);
         UTOPIA_RUN_TEST(petsc_is_nan_or_inf_test); 

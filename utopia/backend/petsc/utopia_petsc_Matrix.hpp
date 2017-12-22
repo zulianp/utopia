@@ -5,6 +5,7 @@
 #include "utopia_petsc_Error.hpp"
 #include "utopia_petsc_Vector.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_Size.hpp"
 
 #include "petscsys.h"
 #include "petscmat.h"
@@ -74,6 +75,8 @@ namespace utopia {
             owner_ = owner;
         }
 
+     
+
     private:
         Mat _mat;
         bool owner_;
@@ -127,6 +130,20 @@ namespace utopia {
 
         inline MPI_Comm communicator() const {
             return _wrapper->communicator();
+        }
+
+        inline Size size() const
+        {
+            PetscInt rows, cols;
+            MatGetSize(implementation(), &rows, &cols);
+            return {rows, cols};
+        }
+
+        inline Size local_size() const
+        {
+            PetscInt rows, cols;
+            MatGetLocalSize(implementation(), &rows, &cols);
+            return {rows, cols};
         }
 
     private:

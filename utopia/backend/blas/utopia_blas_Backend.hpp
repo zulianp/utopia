@@ -553,8 +553,7 @@ namespace utopia {
 		static void diag_scale_right(Matrix &result, const Matrix &m, const Vector &diag)
 		{
 			result.resize(m.rows(), m.cols());
-			const SizeType n = diag.size();
-			ASSERT(n == m.cols() && "sizes are not compatible");
+			ASSERT(diag.size() == m.cols() && "sizes are not compatible");
 			
 			for(SizeType i = 0; i < m.rows(); ++i) {
 				for(SizeType j = 0; j < m.cols(); ++j) {

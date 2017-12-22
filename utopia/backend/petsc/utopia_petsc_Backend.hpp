@@ -201,6 +201,13 @@ namespace utopia {
 			size(v, gs);
 			local_size(v, ls);
 
+			if(result.is_null()) {
+				VecCreate(v.communicator(), &result.implementation());
+			} else if(result.communicator() != v.communicator()) {
+				VecDestroy(&result.implementation());
+				VecCreate(v.communicator(), &result.implementation());
+			}
+
 			VecType type;
 			VecGetType(v.implementation(), &type);
 			VecSetType(result.implementation(), type);
@@ -225,6 +232,13 @@ namespace utopia {
 			Size gs, ls;
 			size(v, gs);
 			local_size(v, ls);
+
+			if(result.is_null()) {
+				VecCreate(v.communicator(), &result.implementation());
+			} else if(result.communicator() != v.communicator()) {
+				VecDestroy(&result.implementation());
+				VecCreate(v.communicator(), &result.implementation());
+			}
 
 			VecType type;
 			VecGetType(v.implementation(), &type);
@@ -290,10 +304,9 @@ namespace utopia {
 			Vec &out = result.implementation();
 
 			auto ll = range(left);
-			auto rr = range(right);
 
-			assert(ll.extent() == rr.extent());
-			assert(ll.begin() == rr.begin());
+			assert(ll.extent() == range(right).extent());
+			assert(ll.begin()  == range(right).begin());
 
 			read_lock(left);
 			read_lock(right);
@@ -438,6 +451,7 @@ namespace utopia {
 		static void scale(Matrix &result, const Scalar scale_factor);
 
 		static void vec_create_parallel(MPI_Comm comm, PetscInt n_local, PetscInt n_global, Vec *vec);
+		static void vec_repurpose(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global, Vec *vec);
 
 		static void sparse_mat_create_parallel(
 				MPI_Comm comm,
