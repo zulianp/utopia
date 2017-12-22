@@ -772,6 +772,11 @@ namespace utopia {
 		const Mat &A_im = A.implementation();
 		Vec &y_im = y.implementation();
 		const Vec &x_im = x.implementation();
+
+		if(y.communicator() != x.communicator()) {
+			VecDestroy(&y_im);
+			VecCreate(x.communicator(), &y_im);
+		}
 		
 		Size gs, ls;
 		size(A, gs);
@@ -1204,46 +1209,14 @@ namespace utopia {
 	{
 		if(&right.implementation() != &result.implementation() || &left.implementation() !=  &result.implementation()) {
 			MatDestroy(&result.implementation());
+			MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
 		} else {
-			assert(false);
+			PETScMatrix temp;
+			MatDestroy(&temp.implementation());
+			MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation());
+			result = std::move(temp);
 		}
-
-		MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
 	}
-
-	// void PetscBackend::apply_binary(PETScMatrix &result, const PETScMatrix &left, const Multiplies &, const PETScMatrix &right) {
-	// 	Size lsize, rsize;
-	// 	size(left, lsize);
-	// 	size(right, rsize);
-
-	// 	result.initGlobal(lsize.get(0), rsize.get(1));
-
-	// 	MatType type;
-	// 	MatGetType(right.implementation(), &type);
-
-	// 	//            //FIXME: When petsc is fixed for MATMPIDENSE remove branch
-	// 	//            if (std::string(MATMPIDENSE) == type) {
-	// 	//                Mat sparseleft, sparseright, sparseresult;
-	// 	//                MatConvert(left.implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &sparseleft);
-	// 	//                MatConvert(right.implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &sparseright);
-	// 	//                if (!check_error(
-	// 	//                        MatMatMult(sparseleft, sparseright, MAT_INITIAL_MATRIX,
-	// 	//                                   PETSC_DEFAULT, &sparseresult))) {
-	// 	//                    return false;
-	// 	//                }
-	// 	//
-	// 	//                MatConvert(sparseresult, MATMPIDENSE, MAT_INITIAL_MATRIX, &result.implementation());
-	// 	//                return true;
-	// 	//
-	// 	//            }
-
-	// 	check_error( 
-	// 		MatMatMult(left.implementation(),
-	// 				   right.implementation(),
-	// 				   MAT_INITIAL_MATRIX,
-	// 				   PETSC_DEFAULT,
-	// 				   &result.implementation()));
-	// }
 
 	void PetscBackend::mat_mult_add(PETScVector &result, const PETScMatrix &m, const PETScVector &right, const PETScVector &left)
 	{

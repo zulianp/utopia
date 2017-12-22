@@ -39,7 +39,7 @@ namespace utopia {
 
 			void parse_arg(const std::string &name)
 			{
-				std::cout << "name: " << name << std::endl;
+				//std::cout << "name: " << name << std::endl;
 				this->name = name;
 			}
 

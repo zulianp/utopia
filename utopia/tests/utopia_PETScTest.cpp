@@ -27,7 +27,6 @@ namespace utopia {
 	        DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"));
 
 	        auto r = row_range(m);
-
 	        {
 	            Write<DSMatrixd> w_m(m);
 	            for(auto i = r.begin(); i != r.end(); ++i) {
