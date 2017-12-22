@@ -328,6 +328,12 @@ namespace utopia {
         return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().read(path, t.implementation());
     }
 
+    template<class Tensor, int Order, class... Args>
+    inline bool read(const std::string &path, Wrapper<Tensor, Order> &t, Args &&...args) {
+    	auto &backend = Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance();
+        return backend.read(path, t.implementation(), backend.parse_args(options(args...)));
+    }
+
     /**
      * @ingroup    io
      * @brief      Writes and saves tensor into file.

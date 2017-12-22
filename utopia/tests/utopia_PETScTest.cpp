@@ -22,19 +22,26 @@ namespace utopia {
         int rank;
         MPI_Comm_rank(sub_comm, &rank);
 
-        //only works for this builder at the moment
-        DSMatrixd m = local_sparse(10, 10, 1, sub_comm);
-
-        auto r = row_range(m);
-
         {
-            Write<DSMatrixd> w_m(m);
-            for(auto i = r.begin(); i != r.end(); ++i) {
-                m.set(i, i, rank);
-            }
-        }
+	        //optionals only work for this builder at the moment
+	        DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"));
 
-        MPI_Comm_free(&sub_comm);
+	        auto r = row_range(m);
+
+	        {
+	            Write<DSMatrixd> w_m(m);
+	            for(auto i = r.begin(); i != r.end(); ++i) {
+	                m.set(i, i, rank);
+	            }
+	        }
+
+	        
+	       DVectord vec;
+	       std::string path = Utopia::Instance().get("data_path");
+	       read(path + "/RHS_10x10x10_hexa_3D", vec, sub_comm, str("my_vec"));
+   		}
+
+       MPI_Comm_free(&sub_comm);
     }
 
 

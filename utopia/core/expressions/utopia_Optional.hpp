@@ -16,8 +16,8 @@ namespace utopia {
 			next.visit(fun);
 		}
 
-		OptionalIterator(Args &args) : args(args) {}
-		Args &args;
+		OptionalIterator(const Args &args) : args(args) {}
+		const Args &args;
 	};
 
 	template<class Args, int Begin>
@@ -28,34 +28,19 @@ namespace utopia {
 		OptionalIterator(const Args &){}
 	};
 
-	//concept
 	template<class... Args>
 	class Optional {
 	public:
 		static const int n_args = std::tuple_size< std::tuple<Args...> >::value;
 
 		Optional(const Args &...args)
-		: opts(std::make_tuple(args...))
+		: opts(args...)
 		{}
-
-		template<int Index>
-		inline auto get() -> typename std::tuple_element<Index, std::tuple<Args...>>::type
-		{
-			return std::get<Index>(opts);
-		}
 
 		template<int Index>
 		inline auto get() const -> const typename std::tuple_element<Index, std::tuple<Args...>>::type
 		{
 			return std::get<Index>(opts);
-		}
-
-
-		template<class Fun>
-		void each(Fun &fun)
-		{
-			OptionalIterator<Optional, 0, n_args> iter(*this);
-			iter.visit(fun);
 		}
 
 		template<class Fun>
@@ -69,9 +54,9 @@ namespace utopia {
 	};
 
 	template<class... Args>
-	Optional<typename std::remove_reference<Args>::type...> options(Args &&...args)
+	Optional<Args...> options(const Args &...args)
 	{
-		return Optional<typename std::remove_reference<Args>::type...>(std::forward<Args...>(args...));
+		return Optional<Args...>(args...);
 	} 
 }
 

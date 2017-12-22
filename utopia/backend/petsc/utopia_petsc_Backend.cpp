@@ -538,19 +538,18 @@ namespace utopia {
 			left);
 	}
 	
-	
-	// read matrix
-	bool PetscBackend::read(const std::string &path, PETScMatrix &Mat_A)
-	{
 
-		Mat &A = Mat_A.implementation();
-		MatDestroy(&A);
+	// read matrix
+	bool PetscBackend::read(const std::string &path, PETScMatrix &mat, const PetscArgs &args)
+	{
+		MatDestroy(&mat.implementation());
 		PetscViewer fd;
-		PetscViewerBinaryOpen(default_communicator(), path.c_str(), FILE_MODE_READ, &fd);
-		MatCreate(default_communicator(), &A);
-		bool status;
-		status =  check_error( MatLoad(A,fd) );
+		PetscViewerBinaryOpen(args.comm, path.c_str(), FILE_MODE_READ, &fd);
+		MatCreate(args.comm, &mat.implementation());
+		const bool status = check_error( MatLoad(mat.implementation(), fd) );
 		PetscViewerDestroy(&fd);
+
+		apply_args(args, mat);
 		return status;
 	}
 
@@ -567,25 +566,23 @@ namespace utopia {
 	}
 	
 	// write matrix
-	bool PetscBackend::write(const std::string &path, const PETScMatrix &Mat_A)
+	bool PetscBackend::write(const std::string &path, const PETScMatrix &m)
 	{
-		const Mat &A = Mat_A.implementation();
+		const Mat &A = m.implementation();
 
 		const bool is_matlab = is_matlab_file(path);
 
 		if(is_matlab) {
-			PetscObjectSetName((PetscObject)A, "matrix");
-
 			PetscErrorCode ierr;
 			PetscViewer fd;
-			ierr = PetscViewerASCIIOpen(default_communicator(),path.c_str(), &fd); //CHKERRV(ierr);
-			ierr = PetscViewerPushFormat(fd,PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
+			ierr = PetscViewerASCIIOpen(m.communicator(),path.c_str(), &fd); //CHKERRV(ierr);
+			ierr = PetscViewerPushFormat(fd, PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
 			ierr = MatView(A, fd); //CHKERRV(ierr);
 			PetscViewerDestroy(&fd);
 			return check_error(ierr);
 		} else {
 			PetscViewer fd;
-			PetscViewerBinaryOpen(default_communicator(), path.c_str(), FILE_MODE_WRITE, &fd);
+			PetscViewerBinaryOpen(m.communicator(), path.c_str(), FILE_MODE_WRITE, &fd);
 			bool status;
 			status =  check_error( MatView(A,fd));
 			PetscViewerDestroy(&fd);
@@ -594,24 +591,22 @@ namespace utopia {
 	}
 	
 	// write vector
-	bool PetscBackend::write(const std::string &path, const PETScVector &Vec_A)
+	bool PetscBackend::write(const std::string &path, const PETScVector &v)
 	{
-		const Vec &A = Vec_A.implementation();
+		const Vec &A = v.implementation();
 
 		bool is_matlab = is_matlab_file(path);
 		if(is_matlab) {
-			PetscObjectSetName((PetscObject)A, "vector");
-
 			PetscErrorCode ierr;
 			PetscViewer fd;
-			ierr = PetscViewerASCIIOpen(default_communicator(),path.c_str(), &fd); //CHKERRV(ierr);
-			ierr = PetscViewerPushFormat(fd,PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
+			ierr = PetscViewerASCIIOpen(v.communicator(), path.c_str(), &fd); //CHKERRV(ierr);
+			ierr = PetscViewerPushFormat(fd, PETSC_VIEWER_ASCII_MATLAB); //CHKERRV(ierr);
 			ierr = VecView(A, fd); //CHKERRV(ierr);
 			PetscViewerDestroy(&fd);
 			return check_error(ierr);
 		} else {
 			PetscViewer fd;
-			PetscViewerBinaryOpen(default_communicator(), path.c_str(), FILE_MODE_WRITE, &fd);
+			PetscViewerBinaryOpen(v.communicator(), path.c_str(), FILE_MODE_WRITE, &fd);
 			bool status;
 			status =  check_error( VecView(A,fd));
 			PetscViewerDestroy(&fd);
@@ -619,61 +614,48 @@ namespace utopia {
 		}
 	}
 	
-
-
-	// monitor for cyrill  - maybe u need to adjust something here ...
-	void PetscBackend::monitor(const long & it, PETScMatrix &Mat_A)
+	void PetscBackend::monitor(const long &iteration, PETScMatrix &m)
 	{
-		PetscViewer viewer_hessian = nullptr;
-		if(it==0)
-		{
-          	// log stifness
-			PetscViewerASCIIOpen(default_communicator(), "log_hessian.m" ,&viewer_hessian);  
-			PetscViewerPushFormat(viewer_hessian,PETSC_VIEWER_ASCII_MATLAB); 
-		}   
+		PetscViewer viewer = nullptr;
 
-        //FIXME why are you duplicating and then copying?
-		Mat A; 
-		MatDuplicate(Mat_A.implementation(), MAT_COPY_VALUES,  &A); 
-		MatCopy(Mat_A.implementation(), A, SAME_NONZERO_PATTERN); 
+		PetscViewerASCIIOpen(m.communicator(), "log_hessian.m", &viewer);  
+		PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB); 
 
-		PetscObjectSetName((PetscObject)A, "H");
-		MatView(A, viewer_hessian); 
-		//PetscViewerDestroy(&viewer_hessian);
+		const char *name;
+		PetscObjectGetName((PetscObject)m.implementation(), &name);
+		PetscObjectSetName((PetscObject)m.implementation(), ("H_" + std::to_string(iteration)).c_str());
+		MatView(m.implementation(), viewer); 
+
+		PetscViewerDestroy(&viewer);
+		PetscObjectSetName((PetscObject)m.implementation(), name);
 	}
 	
-	// monitor for cyrill  - maybe u need to adjust something here ...
-	void PetscBackend::monitor(const long & it, PETScVector &Vec_A)
+	void PetscBackend::monitor(const long &iteration, PETScVector &v)
 	{
-		PetscViewer viewer_iterates = nullptr;
-		if(it==0)
-		{
-          	// log iterates
-			PetscViewerASCIIOpen(default_communicator(), "log_iterate.m", &viewer_iterates);  
-			PetscViewerPushFormat(viewer_iterates,PETSC_VIEWER_ASCII_MATLAB); 
-		}
+		PetscViewer viewer = nullptr;
+        
+		PetscViewerASCIIOpen(v.communicator(), "log_iterate.m", &viewer);  
+		PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
 
-        //FIXME why are you duplicating and then copying?
-		Vec iterates; 	        
-		VecDuplicate(Vec_A.implementation(), &iterates);
-		VecCopy(Vec_A.implementation(),iterates);
-		PetscObjectSetName((PetscObject)iterates,"it");
-		VecView(iterates, viewer_iterates); 
-
-      	//PetscViewerDestroy(&viewer_iterates);
+		const char *name;
+		PetscObjectGetName((PetscObject)v.implementation(), &name);
+		PetscObjectSetName((PetscObject)v.implementation(), ("it_" + std::to_string(iteration)).c_str());
+		VecView(v.implementation(), viewer); 
+		PetscViewerDestroy(&viewer);
+		PetscObjectSetName((PetscObject)v.implementation(), name);
 	}
 
-	Scalar PetscBackend::get_global_nnz(PETScMatrix &Mat_A)
+	Scalar PetscBackend::get_global_nnz(PETScMatrix &m)
 	{	
 		MatInfo        info;
-		MatGetInfo(Mat_A.implementation(), MAT_GLOBAL_SUM, &info); 
+		MatGetInfo(m.implementation(), MAT_GLOBAL_SUM, &info); 
 		return info.nz_used; 
 	}
 
-	Scalar PetscBackend::get_local_nnz(PETScMatrix &Mat_A)
+	Scalar PetscBackend::get_local_nnz(PETScMatrix &m)
 	{	
 		MatInfo        info;
-		MatGetInfo(Mat_A.implementation(), MAT_LOCAL, &info); 
+		MatGetInfo(m.implementation(), MAT_LOCAL, &info); 
 		return info.nz_used; 
 	}
 
@@ -688,19 +670,16 @@ namespace utopia {
 	}
 
 	// read vector
-	bool PetscBackend::read(const std::string &path, PETScVector &Vec_A)
+	bool PetscBackend::read(const std::string &path, PETScVector &vec, const PetscArgs &args)
 	{
-		MPI_Comm comm = Vec_A.communicator();
-
-		Vec &A = Vec_A.implementation();
-		VecDestroy(&A);
-
+		VecDestroy(&vec.implementation());
 		PetscViewer fd;
-		PetscViewerBinaryOpen(comm, path.c_str(), FILE_MODE_READ, &fd);
-		VecCreate(comm, &A);
-		bool status;
-		status =  check_error( VecLoad(A, fd));
+		PetscViewerBinaryOpen(args.comm, path.c_str(), FILE_MODE_READ, &fd);
+		VecCreate(args.comm, &vec.implementation());
+		const bool status = check_error( VecLoad(vec.implementation(), fd));
 		PetscViewerDestroy(&fd);
+
+		apply_args(args, vec);
 		return status;
 	}
 	
@@ -831,6 +810,8 @@ namespace utopia {
 		
 		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
+
+		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const Identity &, const PetscArgs &opts) {
@@ -865,6 +846,8 @@ namespace utopia {
 		
 		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
+
+		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PETScMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts) {
@@ -895,6 +878,8 @@ namespace utopia {
 		
 		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
+
+		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts) {
@@ -936,6 +921,8 @@ namespace utopia {
 		
 		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
+
+		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz, const PetscArgs &opts) {
@@ -953,6 +940,8 @@ namespace utopia {
 			1,
 			1,
 			&m.implementation());
+
+		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PETScSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz, const PetscArgs &opts) {
@@ -968,6 +957,8 @@ namespace utopia {
 			1,
 			1,
 			&m.implementation());
+
+		apply_args(opts, m);
 	}
 	
 	/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
@@ -1027,6 +1018,8 @@ namespace utopia {
 		
 		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
+
+		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PETScVector &v, const Size &in_local_size, const Size &&in_global_size, const Values<Scalar> &values, const PetscArgs &opts)
@@ -1044,6 +1037,8 @@ namespace utopia {
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
+
+		apply_args(opts, v);
 	}
 	
 	void PetscBackend::build(PETScVector &v, const Size &size, const Values<Scalar> &values, const PetscArgs &opts) {
@@ -1053,6 +1048,8 @@ namespace utopia {
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
+
+		apply_args(opts, v);
 	}
 	
 	void PetscBackend::build(PETScMatrix &m, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts) {
@@ -1070,10 +1067,6 @@ namespace utopia {
 		PetscInt grows, gcols;
 		MatGetSize(m.implementation(), &grows, &gcols);
 		
-		
-		
-		
-		
 		const Scalar v = values.value();
 		for (PetscInt i = rbegin; i < rend; ++i) {
 			for (PetscInt j = 0; j < gcols; ++j) {
@@ -1083,6 +1076,8 @@ namespace utopia {
 		
 		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
+
+		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PETScVector &v, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts) {
@@ -1093,6 +1088,8 @@ namespace utopia {
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
+
+		apply_args(opts, v);
 	}
 	
 	void PetscBackend::add(PETScVector &v, const PetscInt index, Scalar value)
@@ -2110,5 +2107,20 @@ namespace utopia {
 		check_error( MatSetOption(*mat, MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
 		check_error( MatSetOption(*mat, MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
 	}
+
+	void PetscBackend::apply_args(const PetscArgs &args, Matrix &m)
+	{
+		if(!args.name.empty()) {
+			PetscObjectSetName((PetscObject)m.implementation(), args.name.c_str());
+		}
+	}
+
+	void PetscBackend::apply_args(const PetscArgs &args, Vector &v)
+	{
+		if(!args.name.empty()) {
+			PetscObjectSetName((PetscObject)v.implementation(), args.name.c_str());
+		}
+	}
+
 }
 

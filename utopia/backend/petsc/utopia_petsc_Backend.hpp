@@ -21,6 +21,7 @@ namespace utopia {
 		class PetscArgs {
 		public: 
 			MPI_Comm comm;
+			std::string name;
 
 			template<class... Args>
 			void parse(const Optional<Args...> &args)
@@ -36,8 +37,14 @@ namespace utopia {
 				this->comm = comm;
 			}
 
+			void parse_arg(const std::string &name)
+			{
+				std::cout << "name: " << name << std::endl;
+				this->name = name;
+			}
+
 			PetscArgs()
-			: comm(PetscBackend::default_communicator())
+			: comm(PetscBackend::default_communicator()), name()
 			{}
 		};
 
@@ -93,20 +100,19 @@ namespace utopia {
 		
 		//[io]
 		// read matrix
-		static bool read(const std::string &path, PETScMatrix &Mat_A);
+		static bool read(const std::string &path, PETScMatrix &Mat_A, const PetscArgs &args = PetscArgs());
 		// write matrix
 		static bool write(const std::string &path, const PETScMatrix &Mat_A);
 		
 		// read vector
-		static bool read(const std::string &path, PETScVector &Vec_A);
+		static bool read(const std::string &path, PETScVector &Vec_A, const PetscArgs &args = PetscArgs());
 
 		// write vector
 		static bool write(const std::string &path, const PETScVector &Vec_A);
 		
-		// monitor for cyrill 
-		static void monitor(const long &it, PETScMatrix &Mat_A); 
-		static void monitor(const long &it, PETScVector &Vec_A); 
-
+		// monitoring functions for iterative solvers (Cyrill)
+		static void monitor(const long &iteration, PETScMatrix &m); 
+		static void monitor(const long &iteration, PETScVector &v); 
 
 		static Scalar get_global_nnz(PETScMatrix &Mat_A); 
 		static Scalar get_local_nnz(PETScMatrix &Mat_A); 
@@ -524,6 +530,9 @@ namespace utopia {
 		inline static MPI_Comm default_communicator() {
 			return PETSC_COMM_WORLD;
 		}
+
+		static void apply_args(const PetscArgs &args, Matrix &m);
+		static void apply_args(const PetscArgs &args, Vector &m);
 	};
 	
 	template<>
