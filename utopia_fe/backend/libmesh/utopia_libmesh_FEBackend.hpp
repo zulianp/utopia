@@ -1182,9 +1182,11 @@ namespace utopia {
 			Write<Vector> w(element_values);
 			Read<Wrapper<Tensor, 1>> r(c);
 
-			for(std::size_t i = 0; i < n_indices; ++i) {
-				element_values.set(i, c.get(prod_indices[i]));
-			}
+			// for(std::size_t i = 0; i < n_indices; ++i) {
+			// 	element_values.set(i, c.get(prod_indices[i]));
+			// }
+
+			c.get(prod_indices, element_values.implementation().get_values());
 		}
 
 		//////////////////////////////////////////////////////////////////////////////////////////

@@ -238,7 +238,8 @@ namespace utopia {
 	    // sol_f    = local_zeros(V_fx.dof_map().n_local_dofs());
 	    // sol_fold = local_zeros(V_fx.dof_map().n_local_dofs());
 
-	    const auto &dof_map = V_fx.dof_map();
+	    auto &dof_map = V_fx.dof_map();
+	    dof_map.prepare_send_list();
 	    sol_f    = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 	    sol_fold = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 
@@ -338,6 +339,9 @@ namespace utopia {
 	     			std::cerr << "FAILED TO SOLVE NONLINEAR SYSTEM" << std::endl;
 	     			break;
 	     		}
+
+				comm.barrier();
+	     		std::cout << "Here" << std::endl;
 
 	     		double mean_pressure = 0.;
 	     		
