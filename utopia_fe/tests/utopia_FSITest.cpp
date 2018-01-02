@@ -85,10 +85,20 @@ namespace utopia {
 	{
 		moonolith::Communicator comm(init.comm().get());
 
-		const unsigned int nx_fluid = 210;
-		const unsigned int ny_fluid = 70;
-		const unsigned int nx_solid = 20;
-		const unsigned int ny_solid = 80;
+		// const unsigned int nx_fluid = 210;
+		// const unsigned int ny_fluid = 70;
+		// const unsigned int nx_solid = 20;
+		// const unsigned int ny_solid = 80;
+
+		// const unsigned int nx_fluid = 105;
+		// const unsigned int ny_fluid = 35;
+		// const unsigned int nx_solid = 10;
+		// const unsigned int ny_solid = 40;
+
+		const unsigned int nx_fluid = 50;
+		const unsigned int ny_fluid = 15;
+		const unsigned int nx_solid = 5;
+		const unsigned int ny_solid = 20;
 
 		////////////////////////////////////////////////////////////////////////////////////
 		//Fluid discretization
@@ -225,8 +235,13 @@ namespace utopia {
 	    V_sx.initialize();
 	    //
 
-	    sol_f    = local_zeros(V_fx.dof_map().n_local_dofs());
-	    sol_fold = local_zeros(V_fx.dof_map().n_local_dofs());
+	    // sol_f    = local_zeros(V_fx.dof_map().n_local_dofs());
+	    // sol_fold = local_zeros(V_fx.dof_map().n_local_dofs());
+
+	    const auto &dof_map = V_fx.dof_map();
+	    sol_f    = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+	    sol_fold = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+
 	    fsi_forcing_term_f = local_zeros(V_fx.dof_map().n_local_dofs());
 	    displacement_s = local_zeros(V_sx.dof_map().n_local_dofs());
 

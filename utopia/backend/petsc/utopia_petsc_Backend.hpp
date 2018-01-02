@@ -190,6 +190,25 @@ namespace utopia {
 		static Scalar get(const PETScMatrix &v, const PetscInt row, const PetscInt col);
 		static void get(const PETScVector &v, const std::vector<PetscInt> &index, std::vector<PetscScalar> &values);
 
+		template<typename I>
+		inline static void get(const PETScVector &v, const std::vector<I> &index, std::vector<PetscScalar> &values)
+		{
+			get(v, convert_to_petsc(index), values);
+		}
+
+		template<typename I>
+		inline static std::vector<PetscInt> convert_to_petsc(const std::vector<I> &index)
+		{
+			std::vector<PetscInt> petsc_index(index.size());
+			std::copy(index.begin(), index.end(), petsc_index.begin());
+			return petsc_index;
+		}
+
+		inline static const std::vector<PetscInt> & convert_to_petsc(const std::vector<PetscInt> &index)
+		{
+			return index;
+		}
+
 		//[unary]
 		static void apply_unary(Vector &result, const Abs &, const Vector &vec);
 
@@ -493,13 +512,24 @@ namespace utopia {
 			return VECSTANDARD;
 		}
 
-		void build_ghosts(
+		static void build_ghosts(
 			const PetscInt &local_size,
 			const PetscInt &size,
 			const std::vector<PetscInt> &index,
 			PETScVector &vec);
 
-		void update_ghosts(PETScVector &vec);
+		template<typename I>
+		inline static void build_ghosts(
+			const PetscInt &local_size,
+			const PetscInt &size,
+			const std::vector<I> &index,
+			PETScVector &vec)
+		{
+			build_ghosts(local_size, size, convert_to_petsc(index), vec);
+		}
+
+
+		static void update_ghosts(PETScVector &vec);
 
 	private:
 

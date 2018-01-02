@@ -996,9 +996,11 @@ namespace utopia {
 			Write<Vector> w(element_values);
 			Read<Wrapper<Tensor, 1>> r(c);
 
-			for(std::size_t i = 0; i < indices.size(); ++i) {
-				element_values.set(i, c.get(indices[i]));
-			}
+			// for(std::size_t i = 0; i < indices.size(); ++i) {
+			// 	element_values.set(i, c.get(indices[i]));
+			// }
+
+			c.get(indices, element_values.implementation().get_values());
 		}
 
 		template<class Tensor, class Space>

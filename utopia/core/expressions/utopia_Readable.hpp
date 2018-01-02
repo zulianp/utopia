@@ -107,7 +107,7 @@ namespace utopia {
         }
 
         template<typename I, typename  T>
-        inline void get(const std::vector<I> &index, std::vector<T> &values)
+        inline void get(const std::vector<I> &index, std::vector<T> &values) const
         {
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().get(derived().implementation(), index, values);
         }
