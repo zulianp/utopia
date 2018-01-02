@@ -106,6 +106,12 @@ namespace utopia {
             return Backend<Scalar, Traits<Implementation>::Backend >::Instance().get(derived().implementation(), index);
         }
 
+        template<typename I, typename  T>
+        inline void get(const std::vector<I> &index, std::vector<T> &values)
+        {
+            Backend<Scalar, Traits<Implementation>::Backend >::Instance().get(derived().implementation(), index, values);
+        }
+
 #ifdef ENABLE_LOCK_CHECK
         Readable()
         : lock_active_(false)

@@ -48,7 +48,6 @@ namespace utopia {
     class LocalZeros {};
 
 
-
     template<>
     class FactoryTraits<LocalIdentity> {
     public:
@@ -362,6 +361,51 @@ namespace utopia {
         }
     };
 
+    template<class Index>
+    class Ghosts : public Expression< Ghosts<Index> > {
+    public:
+
+        static const int Order = 1;
+
+        Ghosts(const Size::SizeType &local_size, const Size::SizeType &global_size, const Index &index)
+        : local_size_(local_size), global_size_(global_size), index_(index)
+        {}
+
+        // Ghosts(const Size::SizeType &local_size, const Size::SizeType &global_size, Index &&index)
+        // : local_size_(local_size), global_size_(global_size), index_(std::move(index))
+        // {}
+
+        const Index &index() const
+        {
+            return index_;
+        }
+
+        const Size::SizeType &local_size() const
+        {
+            return local_size_;
+        }
+
+        const Size::SizeType &global_size() const
+        {
+            return global_size_;
+        }
+
+    private:
+        Size::SizeType local_size_;
+        Size::SizeType global_size_;
+        Index index_;
+    };
+
+    template<class Index>
+    class Traits< Ghosts<Index> > {
+    public:
+        typedef double Scalar;
+
+        enum {
+            FILL_TYPE = FillType::DENSE
+        };
+    };
+
     template<class Type, int Order>
     class Traits< SymbolicTensor<Type, Order> > {
     public:
@@ -539,6 +583,14 @@ namespace utopia {
 
      /** @}*/
 
+    template<class Index>
+    inline Ghosts<Index> ghosted(
+        const Size::SizeType &local_size,
+        const Size::SizeType &global_size,
+        Index &&index)
+    {
+        return Ghosts<Index>(local_size, global_size, std::forward<Index>(index));
+    }
 }
 
 #endif //UTOPIA_UTOPIA_FACTORY_HPP

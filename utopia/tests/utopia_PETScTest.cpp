@@ -1021,12 +1021,40 @@ namespace utopia {
         assert(approxeq(two, actual_max));
     }
 
+    void petsc_ghosted()
+    {
+        const int n = mpi_world_size() * 2;
+        const int off = mpi_world_rank() * 2;
+
+        std::vector<PetscInt> ghosts{ (off + 3) % n };
+        DVectord v = ghosted(2, n, ghosts);
+
+        auto r = range(v);
+
+        {
+            Write<DVectord> w_v(v);
+            for(auto i = r.begin(); i != r.end(); ++i) {
+                v.set(i, i);
+            }
+        }
+
+        {
+            Read<DVectord> r_v(v);
+            std::vector<PetscInt> index{(off + 3) % n};
+            std::vector<PetscScalar> values;
+            v.get(index, values);
+            assert(index[0] == PetscInt(values[0]));
+        }
+
+    }
+
     #endif //WITH_PETSC;
 
     void runPETScTest() {
 #ifdef WITH_PETSC
         UTOPIA_UNIT_TEST_BEGIN("PETScTest");
         
+        UTOPIA_RUN_TEST(petsc_ghosted);
         UTOPIA_RUN_TEST(petc_optional_test);
         UTOPIA_RUN_TEST(petsc_view_test);                
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate_test);
@@ -1057,6 +1085,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_tensor_reduction_test);
         UTOPIA_RUN_TEST(petsc_precond_test);
         UTOPIA_RUN_TEST(petsc_binary_min_max);
+        
 
         //serial tests
         UTOPIA_RUN_TEST(petsc_inverse_test);

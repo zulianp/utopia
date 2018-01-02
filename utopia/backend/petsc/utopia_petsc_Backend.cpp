@@ -1153,6 +1153,7 @@ namespace utopia {
 		VecAssemblyBegin(vec.implementation());
 		VecAssemblyEnd(vec.implementation());
 		vec.set_initialized(true);
+		vec.update_ghosts();
 	}
 	
 	void PetscBackend::write_lock(const PETScMatrix &) { }
@@ -1209,6 +1210,11 @@ namespace utopia {
 		Scalar value;
 		MatGetValues(v.implementation(), 1, &row, 1, &col, &value);
 		return value;
+	}
+
+	void PetscBackend::get(const PETScVector &v, const std::vector<PetscInt> &index, std::vector<PetscScalar> &values)
+	{
+		v.get_values(index, values);
 	}
 	
 	void PetscBackend::apply_binary(PETScVector &result, const PETScMatrix &left, const Multiplies &, const PETScVector &right) {
@@ -2106,6 +2112,35 @@ namespace utopia {
 		if(!args.name.empty()) {
 			PetscObjectSetName((PetscObject)v.implementation(), args.name.c_str());
 		}
+	}
+
+	void PetscBackend::build_ghosts(
+		const PetscInt &local_size,
+		const PetscInt &global_size,
+		const std::vector<PetscInt> &index,
+		PETScVector &vec)
+	{
+		VecDestroy(&vec.implementation());	
+		vec.set_initialized(false);
+
+		check_error(
+			VecCreateGhost(
+				default_communicator(), 
+				local_size,
+				global_size,
+				static_cast<PetscInt>(index.size()),
+				&index[0],
+				&vec.implementation())
+		);
+
+		vec.init_ghost_index(index);
+
+		VecZeroEntries(vec.implementation());
+	}
+
+	void PetscBackend::update_ghosts(PETScVector &vec)
+	{
+		vec.update_ghosts();
 	}
 
 }

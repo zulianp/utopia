@@ -11,6 +11,8 @@
 #include "petscvec.h"
 
 #include <memory>
+#include <map>
+#include <vector>
 
 namespace utopia {
 
@@ -32,6 +34,7 @@ namespace utopia {
                 PETScError::Check(VecDuplicate(other.vec_, &vec_));
                 PETScError::Check(VecCopy(other.vec_, vec_));
                 initialized_ = other.initialized_;
+                ghost_index = other.ghost_index;
             } else {
                 vec_ = nullptr;
                 initialized_ = false;
@@ -75,6 +78,8 @@ namespace utopia {
             if(other.vec_) {
                 PETScError::Check(VecDuplicate(other.vec_, &vec_));
                 PETScError::Check(VecCopy(other.vec_, vec_));
+
+                ghost_index = other.ghost_index;
             }
 
             return *this;
@@ -86,6 +91,7 @@ namespace utopia {
 
             vec_ = other.vec_;
             other.vec_ = nullptr;
+            ghost_index = std::move(other.ghost_index);
             return *this;
         }
 
@@ -96,6 +102,7 @@ namespace utopia {
             }
 
             initialized_ = false;
+            ghost_index.clear();
         }
 
         inline Vec &implementation() {
@@ -126,84 +133,87 @@ namespace utopia {
             initialized_ = val;
         }
 
+        inline PetscInt global_to_local(const PetscInt g_index) const
+        {
+            PetscInt begin, end;
+            VecGetOwnershipRange(vec_, &begin, &end);
+
+            if(ghost_index.empty() || (g_index >= begin && g_index < end)) {
+                return g_index - begin;
+            }
+
+            auto it = ghost_index.find(g_index);
+            
+            if(it == ghost_index.end()) {
+                std::cerr << "[Error] index not present in ghosted vector" << std::endl;
+                return begin;
+            }
+
+            return it->second;
+        }
+
+        inline void init_ghost_index(const std::vector<PetscInt> &index)
+        {
+            const std::size_t n = index.size();
+            const std::size_t n_local = local_size();
+            for(std::size_t i = 0; i < n; ++i) {
+                ghost_index[index[i]] = n_local+i;
+            }
+        }
+
+        inline void get_values(
+            const std::vector<PetscInt> &index,
+            std::vector<PetscScalar> &values) const
+        {
+            std::size_t n = index.size();
+
+            values.resize(n);
+
+            if(ghost_index.empty()) {
+
+                VecGetValues(
+                    vec_,
+                    static_cast<PetscInt>(index.size()),
+                    &index[0],
+                    &values[0]
+                );
+
+            } else {
+
+                const PetscScalar *array;
+                Vec local_form;
+
+                VecGhostGetLocalForm(vec_, &local_form);
+                VecGetArrayRead(local_form, &array);
+
+                assert(local_form != nullptr);
+
+                for(std::size_t i = 0; i < n; ++i) {
+                    auto li = global_to_local(index[i]);
+                    values[i] = array[li];
+                }
+
+                VecRestoreArrayRead(local_form, &array);
+                VecGhostRestoreLocalForm(vec_, &local_form);
+            }
+        }
+
+        void update_ghosts()
+        {
+            if(ghost_index.empty()) return;
+            
+            VecGhostUpdateBegin(vec_, INSERT_VALUES, SCATTER_FORWARD);
+            VecGhostUpdateEnd(vec_,   INSERT_VALUES, SCATTER_FORWARD);
+        }
+
     private:
         Vec vec_;
         bool initialized_;
+
+        //ghosted
+        std::map<PetscInt, PetscInt> ghost_index;
     };
 
-    // class PETScVector {
-    // public:
-    //     inline PETScVector(MPI_Comm comm = PETSC_COMM_WORLD)
-    //     : initialized_(false)
-    //     {
-    //         PETScError::Check(VecCreate(comm, &vec_));
-    //     }
-
-    //     inline ~PETScVector()
-    //     {
-    //         destroy();
-    //     }
-
-    //     PETScVector(const PETScVector &other)
-    //     {
-    //         PETScError::Check(VecDuplicate(other.vec_, &vec_));
-    //         PETScError::Check(VecCopy(other.vec_, vec_));
-    //         initialized_ = other.initialized_;
-    //     }
-
-    //     inline MPI_Comm communicator() const {
-    //         MPI_Comm comm = PetscObjectComm((PetscObject) implementation());
-    //         assert(comm != MPI_COMM_NULL);
-    //         return comm;
-    //     }
-
-    //     // assign operator
-    //    inline PETScVector &operator=(const PETScVector &other) {
-    //         if(this == &other) return *this;
-    //         destroy();
-    //         PETScError::Check(VecDuplicate(other.vec_, &vec_));
-    //         PETScError::Check(VecCopy(other.vec_, vec_));
-    //         return *this;
-    //     }
-
-    //     inline PETScVector &operator=(PETScVector &&other) {
-    //         if(this == &other) return *this;
-    //         destroy();
-    //         vec_ = other.vec_;
-    //         other.vec_ = nullptr;
-    //         return *this;
-    //     }
-
-    //     inline void destroy() {
-    //         VecDestroy(&vec_);
-    //         initialized_ = false;
-    //     }
-
-    //     inline Vec &implementation() {
-    //         return vec_;
-    //     }
-
-    //     inline const Vec &implementation() const {
-    //         return vec_;
-    //     }
-
-    //     inline void describe() const {
-    //         VecView(vec_, PETSC_VIEWER_STDOUT_(communicator()));
-    //     }
-
-    //     inline bool initialized() const {
-    //         return initialized_;
-    //     }
-
-    //     inline void set_initialized(const bool val) 
-    //     {
-    //         initialized_ = val;
-    //     }
-
-    // private:
-    //     Vec vec_;
-    //     bool initialized_;
-    // };
 }
 
 #endif //UTOPIA_UTOPIA_PETSCVECTOR_H

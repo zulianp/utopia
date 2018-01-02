@@ -188,6 +188,7 @@ namespace utopia {
 
 		static Scalar get(const PETScVector &v, const PetscInt index);
 		static Scalar get(const PETScMatrix &v, const PetscInt row, const PetscInt col);
+		static void get(const PETScVector &v, const std::vector<PetscInt> &index, std::vector<PetscScalar> &values);
 
 		//[unary]
 		static void apply_unary(Vector &result, const Abs &, const Vector &vec);
@@ -491,6 +492,14 @@ namespace utopia {
 		{
 			return VECSTANDARD;
 		}
+
+		void build_ghosts(
+			const PetscInt &local_size,
+			const PetscInt &size,
+			const std::vector<PetscInt> &index,
+			PETScVector &vec);
+
+		void update_ghosts(PETScVector &vec);
 
 	private:
 
