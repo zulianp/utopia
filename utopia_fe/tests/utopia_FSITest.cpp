@@ -297,6 +297,7 @@ namespace utopia {
 	    	assert(sol_fold.implementation().has_ghosts() || mpi_world_size() == 1);
 	    	sol_fold = sol_f;
 	    	assert(sol_fold.implementation().has_ghosts() || mpi_world_size() == 1);
+	    	sol_fold.implementation().update_ghosts();
 
 	    	std::vector<libMesh::dof_id_type> pressure_index;
 	    	Q_f.dof_map().local_variable_indices(pressure_index, Q_f.mesh(), Q_f.subspace_id());
@@ -338,6 +339,8 @@ namespace utopia {
 
 	    		//preserves ghost information and copies the entries
 	    		fsi_forcing_term_f = sol_temp;
+	    		//FIXME
+	    		fsi_forcing_term_f.implementation().update_ghosts();
 
 	    		const double mag_fsi = norm2(fsi_forcing_term_f);
 	    		std::cout << "mag_fsi: " << mag_fsi << std::endl;

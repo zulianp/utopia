@@ -7,7 +7,7 @@
 #include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
 
-#include "petscmat.h"
+// #include "petscmat.h"
 #include "petscvec.h"
 
 #include <memory>
@@ -17,7 +17,64 @@
 namespace utopia {
 
     class PETScVector {
+    private:
+        class GhostValues {
+        public:
+            GhostValues()
+            : has_ghosts_(false)
+            {}
+
+            void update(Vec &vec)
+            {
+                if(!has_ghosts()) return;
+               
+                VecGhostUpdateBegin(vec, INSERT_VALUES, SCATTER_FORWARD);
+                VecGhostUpdateEnd(vec,   INSERT_VALUES, SCATTER_FORWARD);
+            }
+
+            inline bool has_ghosts() const
+            {
+                return has_ghosts_;
+            }
+
+            inline void init_index(
+                const PetscInt n_local,
+                const std::vector<PetscInt> &index)
+            {
+                has_ghosts_ = true;
+                const PetscInt n = index.size();
+               
+                for(PetscInt i = 0; i < n; ++i) {
+                    ghost_index_[index[i]] = n_local + i;
+                }
+            }
+
+            inline PetscInt get_index(const PetscInt &g_index) const
+            {
+                auto it = ghost_index_.find(g_index);
+                
+                if(it == ghost_index_.end()) {
+                    std::cerr << "[Error] index not present in ghosted vector" << std::endl;
+                    assert(false);
+                    return -1;
+                }
+
+                return it->second;
+            }
+
+            inline void clear()
+            {
+                has_ghosts_ = false;
+                ghost_index_.clear();
+            }
+
+            std::map<PetscInt, PetscInt> ghost_index_;
+            bool has_ghosts_;
+        };
+
     public:
+
+
         inline PETScVector()
         : vec_(nullptr), initialized_(false)
         {
@@ -37,7 +94,7 @@ namespace utopia {
                 PETScError::Check(VecDuplicate(other.vec_, &vec_));
                 PETScError::Check(VecCopy(other.vec_, vec_));
                 initialized_ = other.initialized_;
-                ghost_index = other.ghost_index;
+                ghost_values_ = other.ghost_values_;
             } else {
                 vec_ = nullptr;
                 initialized_ = false;
@@ -88,7 +145,7 @@ namespace utopia {
             immutable_ = other.immutable_;
 #endif 
 
-            if(!is_null() && size() == other.size() && other.ghost_index.empty()) {
+            if(!is_null() && size() == other.size() && !other.has_ghosts()) {
                 assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
                 PETScError::Check(VecCopy(other.vec_, vec_));
                 return *this;
@@ -99,7 +156,7 @@ namespace utopia {
             if(other.vec_) {
                 PETScError::Check(VecDuplicate(other.vec_, &vec_));
                 PETScError::Check(VecCopy(other.vec_, vec_));
-                ghost_index = other.ghost_index;
+                ghost_values_ = other.ghost_values_;
             }
 
             return *this;
@@ -118,7 +175,7 @@ namespace utopia {
 #endif  
             vec_ = other.vec_;
             other.vec_ = nullptr;
-            ghost_index = std::move(other.ghost_index);
+            ghost_values_ = std::move(other.ghost_values_);
             other.initialized_ = false;
 
 #ifndef NDEBUG
@@ -134,7 +191,7 @@ namespace utopia {
             }
 
             initialized_ = false;
-            ghost_index.clear();
+            ghost_values_.clear();
         }
 
         inline Vec &implementation() {
@@ -170,27 +227,16 @@ namespace utopia {
             PetscInt begin, end;
             VecGetOwnershipRange(vec_, &begin, &end);
 
-            if(ghost_index.empty() || (g_index >= begin && g_index < end)) {
+            if(!ghost_values_.has_ghosts() || (g_index >= begin && g_index < end)) {
                 return g_index - begin;
             }
 
-            auto it = ghost_index.find(g_index);
-            
-            if(it == ghost_index.end()) {
-                std::cerr << "[Error] index not present in ghosted vector" << std::endl;
-                return begin;
-            }
-
-            return it->second;
+            return ghost_values_.get_index(g_index);
         }
 
         inline void init_ghost_index(const std::vector<PetscInt> &index)
         {
-            const std::size_t n = index.size();
-            const std::size_t n_local = local_size();
-            for(std::size_t i = 0; i < n; ++i) {
-                ghost_index[index[i]] = n_local+i;
-            }
+            ghost_values_.init_index(local_size(), index);
         }
 
         inline void get_values(
@@ -201,7 +247,7 @@ namespace utopia {
 
             values.resize(n);
 
-            if(ghost_index.empty()) {
+            if(!ghost_values_.has_ghosts()) {
 
                 VecGetValues(
                     vec_,
@@ -232,15 +278,12 @@ namespace utopia {
 
         inline bool has_ghosts() const
         {
-            return !ghost_index.empty();
+            return !ghost_values_.has_ghosts();
         }
 
         inline void update_ghosts()
         {
-            if(ghost_index.empty()) return;
-            
-            VecGhostUpdateBegin(vec_, INSERT_VALUES, SCATTER_FORWARD);
-            VecGhostUpdateEnd(vec_,   INSERT_VALUES, SCATTER_FORWARD);
+            ghost_values_.update(vec_);
         }
         
 #ifndef NDEBUG
@@ -250,18 +293,44 @@ namespace utopia {
         }
 #endif
 
+        //builders
+        void repurpose(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global);
+        inline void zeros(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global)
+        {
+            repurpose(comm, type, n_local, n_global);
+            VecZeroEntries(vec_);
+        }
+
+        void init(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global);
+        void ghosted(MPI_Comm comm, PetscInt local_size, PetscInt global_size, const std::vector<PetscInt> &index);
+
+        //ops
+        ///this is y
+       inline void axpy(const PetscScalar &alpha, const PETScVector &x)
+       {
+         check_error( VecAXPY(implementation(), alpha, x.implementation()) );
+       }
+
+       ///this is y
+       inline void axpby(const Scalar alpha, const Vector &x, const Scalar &beta)
+       {
+         check_error( VecAXPBY(vec_, alpha, beta, x.implementation()) );
+       }
+
     private:
         Vec vec_;
         bool initialized_;
 
-        //ghosted
-        std::map<PetscInt, PetscInt> ghost_index;
-
+        GhostValues ghost_values_;
 
         //debug
 #ifndef NDEBUG
         bool immutable_;
-#endif //NDEBUG        
+#endif //NDEBUG     
+
+        inline bool check_error(const PetscInt err) {
+            return PETScError::Check(err);
+        }   
     };
 
 }

@@ -290,27 +290,27 @@ namespace utopia {
 
 		virtual ~NonLinearFEFunction() { }
 
-		virtual bool value(const Vector &x, Scalar &value) const 
+		virtual bool value(const Vector &x, Scalar &value) const override
 		{
 			// assert(false && "not implemented");
 			value = dot(x, buff_mat * x) - dot(x, buff_vec);
 		    return true;
 		}
 
-		virtual bool gradient(const Vector &x, Vector &result) const
+		virtual bool gradient(const Vector &x, Vector &result) const override
 		{
 			result = buff_mat * x - buff_vec;
 		    return true;
 		}
 
 
-		virtual bool hessian(const Vector &, Matrix &H) const
+		virtual bool hessian(const Vector &, Matrix &H) const override
 		{
 			H = buff_mat;
 		    return true;
 		}
 
-		virtual bool update(const Vector &x) { 
+		virtual bool update(const Vector &x) override { 
 			typedef decltype(eqs_.template get<0>()) Eq1;
 			typedef typename FindFunctionSpace<Eq1>::Type FunctionSpaceT;
 			auto &space = find_space<FunctionSpaceT>(eqs_);
@@ -332,6 +332,10 @@ namespace utopia {
 				Write<DVectord>  w_v(buff_vec);
 
 				auto &m = space.mesh();
+
+
+				//FIXME
+				const_cast<Vector &>(x).implementation().update_ghosts();
 
 				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
 					element_assemble_expression_v<FunctionSpaceT>(it, eqs_, buff_mat, buff_vec);
