@@ -21,6 +21,9 @@ namespace utopia {
         inline PETScVector()
         : vec_(nullptr), initialized_(false)
         {
+#ifndef NDEBUG
+            immutable_ = false;
+#endif            
         }
 
         inline ~PETScVector()
@@ -39,6 +42,10 @@ namespace utopia {
                 vec_ = nullptr;
                 initialized_ = false;
             }
+
+#ifndef NDEBUG
+            immutable_ = other.immutable_;
+#endif 
         }
 
         inline VecType type() const
@@ -73,6 +80,8 @@ namespace utopia {
         // assign operator
        inline PETScVector &operator=(const PETScVector &other) {
             if(this == &other) return *this;
+            assert(!immutable_);
+
             destroy();
 
             if(other.vec_) {
@@ -82,16 +91,30 @@ namespace utopia {
                 ghost_index = other.ghost_index;
             }
 
+#ifndef NDEBUG
+            immutable_ = other.immutable_;
+#endif 
+
             return *this;
         }
 
         inline PETScVector &operator=(PETScVector &&other) {
             if(this == &other) return *this;
+            assert(!immutable_);
+
             destroy();
+
+#ifndef NDEBUG
+            immutable_ = other.immutable_;
+#endif  
 
             vec_ = other.vec_;
             other.vec_ = nullptr;
             ghost_index = std::move(other.ghost_index);
+
+#ifndef NDEBUG
+            other.immutable_ = false;
+#endif 
             return *this;
         }
 
@@ -198,13 +221,20 @@ namespace utopia {
             }
         }
 
-        void update_ghosts()
+        inline void update_ghosts()
         {
             if(ghost_index.empty()) return;
             
             VecGhostUpdateBegin(vec_, INSERT_VALUES, SCATTER_FORWARD);
             VecGhostUpdateEnd(vec_,   INSERT_VALUES, SCATTER_FORWARD);
         }
+        
+#ifndef NDEBUG
+        inline void make_immutable()
+        {
+            immutable_ = true;
+        }
+#endif
 
     private:
         Vec vec_;
@@ -212,6 +242,12 @@ namespace utopia {
 
         //ghosted
         std::map<PetscInt, PetscInt> ghost_index;
+
+
+        //debug
+#ifndef NDEBUG
+        bool immutable_;
+#endif //NDEBUG        
     };
 
 }

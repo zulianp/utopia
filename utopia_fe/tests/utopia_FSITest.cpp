@@ -85,20 +85,16 @@ namespace utopia {
 	{
 		moonolith::Communicator comm(init.comm().get());
 
-		// const unsigned int nx_fluid = 210;
-		// const unsigned int ny_fluid = 70;
-		// const unsigned int nx_solid = 20;
-		// const unsigned int ny_solid = 80;
+		// const unsigned int nx_fluid = 30;
+		// const unsigned int ny_fluid = 10;
+		// const unsigned int nx_solid = 3;
+		// const unsigned int ny_solid = 10;
 
-		// const unsigned int nx_fluid = 105;
-		// const unsigned int ny_fluid = 35;
-		// const unsigned int nx_solid = 10;
-		// const unsigned int ny_solid = 40;
 
-		const unsigned int nx_fluid = 50;
-		const unsigned int ny_fluid = 15;
-		const unsigned int nx_solid = 5;
-		const unsigned int ny_solid = 20;
+		const unsigned int nx_fluid = 2*30;
+		const unsigned int ny_fluid = 2*10;
+		const unsigned int nx_solid = 2*1;
+		const unsigned int ny_solid = 2*3;
 
 		////////////////////////////////////////////////////////////////////////////////////
 		//Fluid discretization
@@ -233,15 +229,24 @@ namespace utopia {
 	   
 	    V_fx.initialize();
 	    V_sx.initialize();
-	    //
 
-	    // sol_f    = local_zeros(V_fx.dof_map().n_local_dofs());
-	    // sol_fold = local_zeros(V_fx.dof_map().n_local_dofs());
+	    auto &dof_map_f = V_fx.dof_map();
+	    auto &dof_map_s = V_sx.dof_map();
 
-	    auto &dof_map = V_fx.dof_map();
-	    dof_map.prepare_send_list();
-	    sol_f    = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
-	    sol_fold = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+	    dof_map_f.prepare_send_list();
+	    sol_f    = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), dof_map_f.get_send_list());
+	    sol_fold = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), dof_map_f.get_send_list());
+
+	    // sol_f    = local_zeros(dof_map_f.n_local_dofs());
+	    // sol_fold = local_zeros(dof_map_f.n_local_dofs());
+
+#ifndef NDEBUG
+	    sol_f.implementation().make_immutable();
+#endif //NDEBUG
+
+
+	    std::cout << "n_dofs_fluid: " << dof_map_f.n_dofs() << std::endl;
+	    std::cout << "n_dofs_solid: " << dof_map_s.n_dofs() << std::endl;
 
 	    fsi_forcing_term_f = local_zeros(V_fx.dof_map().n_local_dofs());
 	    displacement_s = local_zeros(V_sx.dof_map().n_local_dofs());

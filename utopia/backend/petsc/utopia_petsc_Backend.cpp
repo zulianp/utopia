@@ -964,8 +964,8 @@ namespace utopia {
 			PETSC_DECIDE,
 			rows,
 			cols,
-			1,
-			1,
+			nnz.nnz(),
+			nnz.nnz(),
 			&m.implementation());
 
 		apply_args(opts, m);
@@ -981,8 +981,8 @@ namespace utopia {
 			cols,
 			PETSC_DETERMINE,
 			PETSC_DETERMINE,
-			1,
-			1,
+			nnz.nnz(),
+			nnz.nnz(),
 			&m.implementation());
 
 		apply_args(opts, m);
