@@ -3,6 +3,8 @@
 #include "utopia_assemble_volume_transfer.hpp"
 #include "moonolith_communicator.hpp"
 
+#include "libmesh/nemesis_io.h"
+
 namespace utopia {
 
 	static void apply_displacement(
@@ -85,16 +87,15 @@ namespace utopia {
 	{
 		moonolith::Communicator comm(init.comm().get());
 
-		// const unsigned int nx_fluid = 30;
-		// const unsigned int ny_fluid = 10;
+		const unsigned int nx_fluid = 3 * 45;
+		const unsigned int ny_fluid = 3 * 15;
+		const unsigned int nx_solid = 4 * 4;
+		const unsigned int ny_solid = 4 * 12;
+
+		// const unsigned int nx_fluid = 9;
+		// const unsigned int ny_fluid = 3;
 		// const unsigned int nx_solid = 3;
-		// const unsigned int ny_solid = 10;
-
-
-		const unsigned int nx_fluid = 2*30;
-		const unsigned int ny_fluid = 2*10;
-		const unsigned int nx_solid = 2*1;
-		const unsigned int ny_solid = 2*3;
+		// const unsigned int ny_solid = 9;
 
 		////////////////////////////////////////////////////////////////////////////////////
 		//Fluid discretization
@@ -222,7 +223,6 @@ namespace utopia {
 	    		boundary_conditions(u_sy == coeff(0.), {0})
 	    	);
 
-
 	    //FIXME should be hidden
 	    init_constraints(constr_f);
 	    init_constraints(constr_s);
@@ -237,19 +237,13 @@ namespace utopia {
 	    sol_f    = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), dof_map_f.get_send_list());
 	    sol_fold = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), dof_map_f.get_send_list());
 
-	    // sol_f    = local_zeros(dof_map_f.n_local_dofs());
-	    // sol_fold = local_zeros(dof_map_f.n_local_dofs());
-
-#ifndef NDEBUG
-	    sol_f.implementation().make_immutable();
-#endif //NDEBUG
-
+	    assert(sol_f.implementation().has_ghosts() || mpi_world_size() == 1);
 
 	    std::cout << "n_dofs_fluid: " << dof_map_f.n_dofs() << std::endl;
 	    std::cout << "n_dofs_solid: " << dof_map_s.n_dofs() << std::endl;
 
-	    fsi_forcing_term_f = local_zeros(V_fx.dof_map().n_local_dofs());
-	    displacement_s = local_zeros(V_sx.dof_map().n_local_dofs());
+	    fsi_forcing_term_f = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), dof_map_f.get_send_list());
+	    displacement_s     = ghosted(dof_map_s.n_local_dofs(), dof_map_s.n_dofs(), dof_map_s.get_send_list());
 
 	    DSMatrixd mat_s, mass_mat_s, mass_mat_f;
 	    DVectord rhs_s,  mass_vec_s, mass_vec_f;
@@ -264,8 +258,11 @@ namespace utopia {
 	    Newton<DSMatrixd, DVectord> solver(linear_solver);
 	    solver.verbose(true);
 	    
-	    libMesh::ExodusII_IO io_fluid(*fluid_mesh);
-	    libMesh::ExodusII_IO io_solid(*solid_mesh);
+	    // libMesh::ExodusII_IO io_fluid(*fluid_mesh);
+	    // libMesh::ExodusII_IO io_solid(*solid_mesh);
+
+	    libMesh::Nemesis_IO io_fluid(*fluid_mesh);
+	    libMesh::Nemesis_IO io_solid(*solid_mesh);
 	    	
 	    for(std::size_t ts = 0; ts < n_ts; ++ts) {
 	    	std::cout << "----------------------------\n";
@@ -296,7 +293,10 @@ namespace utopia {
 
  			fsi_velocity_s = local_zeros(local_size(displacement_s));
 	    	old_displacement_s = displacement_s;
+
+	    	assert(sol_fold.implementation().has_ghosts() || mpi_world_size() == 1);
 	    	sol_fold = sol_f;
+	    	assert(sol_fold.implementation().has_ghosts() || mpi_world_size() == 1);
 
 	    	std::vector<libMesh::dof_id_type> pressure_index;
 	    	Q_f.dof_map().local_variable_indices(pressure_index, Q_f.mesh(), Q_f.subspace_id());
@@ -321,7 +321,7 @@ namespace utopia {
 	    		const double diff = norm2(displacement_prev - displacement_s);
 	    		std::cout << "diff: " << diff << std::endl;
 
-	    		//FIXMe
+	    		//FIXME
 	    		if(outer_iter > 0) {
 	    			converged = diff < 1e-5;
 	    			if(converged) break;
@@ -333,20 +333,27 @@ namespace utopia {
 	    		//update the forcing term in the fluid
 	    		linear_solver->solve(mass_mat_s, reaction_force_s, temp_s);
 	    		DVectord temp_f = transpose(B) * temp_s;
-	    		linear_solver->solve(mass_mat_f, temp_f, fsi_forcing_term_f);
+	    		DVectord sol_temp = local_zeros(local_size(fsi_forcing_term_f));
+	    		linear_solver->solve(mass_mat_f, temp_f, sol_temp);
+
+	    		//preserves ghost information and copies the entries
+	    		fsi_forcing_term_f = sol_temp;
 
 	    		const double mag_fsi = norm2(fsi_forcing_term_f);
 	    		std::cout << "mag_fsi: " << mag_fsi << std::endl;
 	    		
 	    		DVectord temp = sol_f;
 
+	    		assert(sol_f.implementation().has_ghosts() || mpi_world_size() == 1);
+
+	    		// std::cout << raw_type(sol_f) << std::endl;
+
 	     		if(!solver.solve(nl_fun, sol_f)) {
 	     			std::cerr << "FAILED TO SOLVE NONLINEAR SYSTEM" << std::endl;
 	     			break;
 	     		}
 
-				comm.barrier();
-	     		std::cout << "Here" << std::endl;
+	     		assert(sol_f.implementation().has_ghosts() || mpi_world_size() == 1);
 
 	     		double mean_pressure = 0.;
 	     		

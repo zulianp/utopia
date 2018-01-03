@@ -82,18 +82,25 @@ namespace utopia {
             if(this == &other) return *this;
             assert(!immutable_);
 
+            initialized_ = other.initialized_;
+
+#ifndef NDEBUG
+            immutable_ = other.immutable_;
+#endif 
+
+            if(!is_null() && size() == other.size() && other.ghost_index.empty()) {
+                assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
+                PETScError::Check(VecCopy(other.vec_, vec_));
+                return *this;
+            }
+
             destroy();
 
             if(other.vec_) {
                 PETScError::Check(VecDuplicate(other.vec_, &vec_));
                 PETScError::Check(VecCopy(other.vec_, vec_));
-
                 ghost_index = other.ghost_index;
             }
-
-#ifndef NDEBUG
-            immutable_ = other.immutable_;
-#endif 
 
             return *this;
         }
@@ -104,13 +111,15 @@ namespace utopia {
 
             destroy();
 
+            initialized_ = other.initialized_;
+
 #ifndef NDEBUG
             immutable_ = other.immutable_;
 #endif  
-
             vec_ = other.vec_;
             other.vec_ = nullptr;
             ghost_index = std::move(other.ghost_index);
+            other.initialized_ = false;
 
 #ifndef NDEBUG
             other.immutable_ = false;
@@ -219,6 +228,11 @@ namespace utopia {
                 VecRestoreArrayRead(local_form, &array);
                 VecGhostRestoreLocalForm(vec_, &local_form);
             }
+        }
+
+        inline bool has_ghosts() const
+        {
+            return !ghost_index.empty();
         }
 
         inline void update_ghosts()

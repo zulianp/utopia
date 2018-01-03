@@ -1065,6 +1065,8 @@ namespace utopia {
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
 
+		v.set_initialized(true);
+
 		apply_args(opts, v);
 	}
 	
@@ -1075,6 +1077,8 @@ namespace utopia {
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
+
+		v.set_initialized(true);
 
 		apply_args(opts, v);
 	}
@@ -1115,6 +1119,8 @@ namespace utopia {
 		VecSet(v.implementation(), values.value());
 		VecAssemblyBegin(v.implementation());
 		VecAssemblyEnd(v.implementation());
+
+		v.set_initialized(true);
 
 		apply_args(opts, v);
 	}
