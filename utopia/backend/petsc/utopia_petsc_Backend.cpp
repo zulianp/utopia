@@ -1220,7 +1220,7 @@ namespace utopia {
 
 	void PetscBackend::get(const PETScVector &v, const std::vector<PetscInt> &index, std::vector<PetscScalar> &values)
 	{
-		v.get_values(index, values);
+		v.get(index, values);
 	}
 	
 	void PetscBackend::apply_binary(PETScVector &result, const PETScMatrix &left, const Multiplies &, const PETScVector &right) {
