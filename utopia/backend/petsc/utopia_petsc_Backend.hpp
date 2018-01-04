@@ -165,11 +165,11 @@ namespace utopia {
 		
 		static void write_lock(PetscVector &vec);
 		static void write_unlock(PetscVector &vec);
-		static void write_lock(const PetscMatrix &mat);
-		static void write_unlock(const PetscMatrix &mat);
+		static void write_lock(PetscMatrix &mat);
+		static void write_unlock(PetscMatrix &mat);
 		
-		static void write_lock(const PetscSparseMatrix &mat);
-		static void write_unlock(const PetscSparseMatrix &mat);
+		// static void write_lock(PetscSparseMatrix &mat);
+		// static void write_unlock(PetscSparseMatrix &mat);
 		
 		static void set(PetscMatrix &v, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
 		

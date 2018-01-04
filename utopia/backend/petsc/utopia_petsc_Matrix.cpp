@@ -687,7 +687,6 @@ namespace utopia {
 
 	void PetscMatrix::row_sum(PetscVector &col) const
 	{
-
 		MPI_Comm comm = communicator();
 		
 		if(col.is_null() || col.size() != size().get(0)) {
@@ -756,6 +755,52 @@ namespace utopia {
 				utopia::Min()
 			);
 		}
+	}
+
+	void PetscMatrix::mult(const PetscVector &vec, PetscVector &result) const
+	{
+		if(vec.implementation() == result.implementation()) {
+			assert(false && "handle me");
+		}
+
+		MPI_Comm comm = vec.communicator();
+
+		if(result.is_null()) {
+			MatCreateVecs(implementation(), nullptr, &result.implementation());
+		} else if(comm != result.communicator()) {
+			result.destroy();
+			MatCreateVecs(implementation(), nullptr, &result.implementation());
+		} else {
+			Size gs = size();
+			Size ls = local_size();
+			VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
+		}
+
+		check_error( MatMult(implementation(), vec.implementation(), result.implementation() ) );
+		result.set_initialized(true);
+	}
+
+	void PetscMatrix::mult_t(const PetscVector &vec, PetscVector &result) const
+	{
+		if(vec.implementation() == result.implementation()) {
+			assert(false && "handle me");
+		}
+
+		MPI_Comm comm = vec.communicator();
+
+		if(result.is_null()) {
+			MatCreateVecs(implementation(), &result.implementation(), nullptr);
+		} else if(comm != result.communicator()) {
+			result.destroy();
+			MatCreateVecs(implementation(), &result.implementation(), nullptr);
+		} else {
+			Size gs = size();
+			Size ls = local_size();
+			VecSetSizes(result.implementation(), ls.get(1), gs.get(1));
+		}
+
+		check_error( MatMultTranspose(implementation(), vec.implementation(), result.implementation() ) );
+		result.set_initialized(true);
 	}
 
 }

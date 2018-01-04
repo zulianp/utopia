@@ -194,7 +194,7 @@ namespace utopia {
 		
 		inline void write_unlock() {
 			check_error( MatAssemblyBegin(implementation(), MAT_FINAL_ASSEMBLY) );
-			check_error( MatAssemblyEnd(implementation(), MAT_FINAL_ASSEMBLY) );
+			check_error( MatAssemblyEnd(implementation(),   MAT_FINAL_ASSEMBLY) );
 		}
 		
 		inline void read_lock() { }
@@ -269,7 +269,8 @@ namespace utopia {
         void row_max(PetscVector &col) const;
         void row_min(PetscVector &col) const;
 
-        inline PetscReal norm2() const {
+        inline PetscReal norm2() const
+        {
         	PetscReal val;
         	MatNorm(implementation(), NORM_FROBENIUS, &val);
         	return val;
@@ -282,7 +283,7 @@ namespace utopia {
         void get_diag(PetscVector &result) const;
         void get_diag(PetscMatrix &result) const;
 
-        void dense_init_diag(MatType dense_type,   const PetscVector &diag);
+        void dense_init_diag(MatType dense_type, const PetscVector &diag);
         void matij_init_diag(const PetscVector &diag);
 
         void matij_init(
@@ -292,7 +293,8 @@ namespace utopia {
         	PetscInt rows_global,
         	PetscInt cols_global,
         	PetscInt d_nnz,
-        	PetscInt o_nnz);
+        	PetscInt o_nnz
+        );
         
 		inline void destroy()
 		{
@@ -301,10 +303,14 @@ namespace utopia {
 
 		void inverse(PetscMatrix &result) const;
 
+		void mult(const PetscVector &vec, PetscVector &result) const;
+		void mult_t(const PetscVector &vec, PetscVector &result) const;
+
 	private:
 		std::shared_ptr<PetscMatrixMemory> wrapper_;
 		
-		inline static bool check_error(const PetscInt err) {
+		inline static bool check_error(const PetscInt err)
+		{
 			return PetscError::Check(err);
 		}
 

@@ -448,35 +448,13 @@ namespace utopia {
 	{
 		assert(fabs(beta) < 1e-16);
 		assert(fabs(alpha - 1.) < 1e-16);
-
-		const Mat &A_im = A.implementation();
-		Vec &y_im = y.implementation();
-		const Vec &x_im = x.implementation();
-
-		if(y.is_null()) {
-			VecCreate(x.communicator(), &y_im);
-		} else if(y.communicator() != x.communicator()) {
-			VecDestroy(&y_im);
-			VecCreate(x.communicator(), &y_im);
+		
+		if(transpose_A) {
+			A.mult_t(x, y);
+		} else {
+			A.mult(x, y);
 		}
 		
-		Size gs, ls;
-		size(A, gs);
-		local_size(A, ls);
-
-		VecType type;
-		VecGetType(x_im, &type);
-		VecSetType(y_im, type);
-
-		if(transpose_A) {
-			VecSetSizes(y_im, ls.get(1), gs.get(1));
-			check_error( MatMultTranspose(A_im, x_im, y_im) );
-		} else {
-			VecSetSizes(y_im, ls.get(0), gs.get(0));
-			check_error( MatMult(A_im, x_im, y_im) );
-		}
-
-		y.set_initialized(true);
 	}
 
 	void PetscBackend::build(PetscMatrix &m, const Size &size, const Identity &, const PetscArgs &opts) {
@@ -814,26 +792,24 @@ namespace utopia {
 		MatSetValues(v.implementation(), 1, &row, 1, &col, &value, INSERT_VALUES);
 	}
 	
-	void PetscBackend::write_lock(PetscVector &vec) {
+	void PetscBackend::write_lock(PetscVector &vec)
+	{
 		vec.write_lock();
 	}
 	
-	void PetscBackend::write_unlock(PetscVector &vec) {
+	void PetscBackend::write_unlock(PetscVector &vec)
+	{
 		vec.write_unlock();
 	}
 	
-	void PetscBackend::write_lock(const PetscMatrix &) { }
-	
-	void PetscBackend::write_unlock(const PetscMatrix &mat) {
-		MatAssemblyBegin(mat.implementation(), MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(mat.implementation(), MAT_FINAL_ASSEMBLY);
+	void PetscBackend::write_lock(PetscMatrix &mat) 
+	{
+		mat.write_lock();
 	}
 	
-	void PetscBackend::write_lock(const PetscSparseMatrix &) { }
-	
-	void PetscBackend::write_unlock(const PetscSparseMatrix &mat) {
-		MatAssemblyBegin(mat.implementation(), MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(mat.implementation(), MAT_FINAL_ASSEMBLY);
+	void PetscBackend::write_unlock(PetscMatrix &mat)
+	{
+		mat.write_unlock();
 	}
 	
 	void PetscBackend::set(
@@ -941,16 +917,14 @@ namespace utopia {
 		}
 	}
 	
-	void PetscBackend::apply_binary(PetscVector &result, const PetscVector &left, const EMultiplies &, const PetscVector &right) {
-		allocate_apply_vec(result, left, right);
-		check_error(VecPointwiseMult(result.implementation(), left.implementation(), right.implementation()));
-		result.set_initialized(true);
+	void PetscBackend::apply_binary(PetscVector &result, const PetscVector &left, const EMultiplies &, const PetscVector &right)
+	{
+		left.e_mul(right, result);
 	}
 	
-	void PetscBackend::apply_binary(PetscVector &result, const PetscVector &left, const Divides &, const PetscVector &right) {
-		allocate_apply_vec(result, left, right);
-		check_error(VecPointwiseDivide(result.implementation(), left.implementation(), right.implementation()));
-		result.set_initialized(true);
+	void PetscBackend::apply_binary(PetscVector &result, const PetscVector &left, const Divides &, const PetscVector &right)
+	{
+		left.e_div(right, result);
 	}
 
 	void PetscBackend::apply_binary(PetscVector &result, const PetscVector &left, const Min &op, const PetscVector &right)
@@ -1041,7 +1015,7 @@ namespace utopia {
 
 	void PetscBackend::mat_diag_shift(PetscMatrix &left, const Scalar diag_factor)
 	{
-		check_error(MatShift(left.implementation(), diag_factor));
+		check_error( MatShift(left.implementation(), diag_factor) );
 	}
 	
 	bool PetscBackend::compare(const Vector &left, const Vector &right, const ApproxEqual &comp) {
