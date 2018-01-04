@@ -3,7 +3,7 @@
 * @Date:   2016-11-15
 */
 #include "utopia.hpp"
-#include "utopia_PETScTest.hpp"
+#include "utopia_PetscTest.hpp"
 #include "test_problems/utopia_TestFunctionsND.hpp"
 
 namespace utopia {
@@ -1050,9 +1050,9 @@ namespace utopia {
 
     #endif //WITH_PETSC;
 
-    void runPETScTest() {
+    void runPetscTest() {
 #ifdef WITH_PETSC
-        UTOPIA_UNIT_TEST_BEGIN("PETScTest");
+        UTOPIA_UNIT_TEST_BEGIN("PetscTest");
         
         UTOPIA_RUN_TEST(petsc_ghosted);
         UTOPIA_RUN_TEST(petc_optional_test);
@@ -1097,7 +1097,7 @@ namespace utopia {
         //  maria_test();
         //  //local_diag_block_test();              // TODO:: assert fails in parallel
         
-        UTOPIA_UNIT_TEST_END("PETScTest");
+        UTOPIA_UNIT_TEST_END("PetscTest");
         #endif // WITH_PETSC
     }
 }

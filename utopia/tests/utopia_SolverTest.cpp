@@ -354,7 +354,7 @@ namespace utopia
 	};
 	
 #ifdef WITH_PETSC
-	class PETScSolverTest {
+	class PetscSolverTest {
 	public:
 		
 		void run()
@@ -1226,7 +1226,7 @@ namespace utopia
 			pgs.solve(m, rhs, solution);
 		}
 
-		PETScSolverTest()
+		PetscSolverTest()
 		: _n(10) { }
 		
 	private:
@@ -1240,7 +1240,7 @@ namespace utopia
 		UTOPIA_UNIT_TEST_BEGIN("SolverTest");
 #ifdef WITH_PETSC
 		SolverTest<DMatrixd, DVectord, PetscScalar>().run();
-		PETScSolverTest().run();
+		PetscSolverTest().run();
 #endif
 		
 #ifdef WITH_BLAS

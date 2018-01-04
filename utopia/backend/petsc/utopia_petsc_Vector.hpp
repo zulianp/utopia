@@ -13,7 +13,7 @@
 
 namespace utopia {
 	
-	class PETScVector {
+	class PetscVector {
 	private:
 		class GhostValues {
 		public:
@@ -71,7 +71,7 @@ namespace utopia {
 		
 	public:
 		
-		inline PETScVector()
+		inline PetscVector()
 		: vec_(nullptr), initialized_(false)
 		{
 #ifndef NDEBUG
@@ -79,16 +79,16 @@ namespace utopia {
 #endif            
 		}
 		
-		inline ~PETScVector()
+		inline ~PetscVector()
 		{
 			destroy();
 		}
 		
-		PETScVector(const PETScVector &other)
+		PetscVector(const PetscVector &other)
 		{
 			if(other.vec_) {
-				PETScError::Check(VecDuplicate(other.vec_, &vec_));
-				PETScError::Check(VecCopy(other.vec_, vec_));
+				PetscError::Check(VecDuplicate(other.vec_, &vec_));
+				PetscError::Check(VecCopy(other.vec_, vec_));
 				initialized_ = other.initialized_;
 				ghost_values_ = other.ghost_values_;
 			} else {
@@ -128,13 +128,13 @@ namespace utopia {
 			return comm;
 		}
 
-		inline bool is_compatible(const PETScVector &other) const
+		inline bool is_compatible(const PetscVector &other) const
 		{
 			return !is_null() && !other.is_null() && size() == other.size() && type() == other.type();
 		}
 		
 		// assign operator
-		inline PETScVector &operator=(const PETScVector &other) {
+		inline PetscVector &operator=(const PetscVector &other) {
 			if(this == &other) return *this;
 			assert(!immutable_);
 			
@@ -146,22 +146,22 @@ namespace utopia {
 			
 			if(is_compatible(other) && !other.has_ghosts()) {
 				assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
-				PETScError::Check(VecCopy(other.vec_, vec_));
+				PetscError::Check(VecCopy(other.vec_, vec_));
 				return *this;
 			}
 			
 			destroy();
 			
 			if(other.vec_) {
-				PETScError::Check(VecDuplicate(other.vec_, &vec_));
-				PETScError::Check(VecCopy(other.vec_, vec_));
+				PetscError::Check(VecDuplicate(other.vec_, &vec_));
+				PetscError::Check(VecCopy(other.vec_, vec_));
 				ghost_values_ = other.ghost_values_;
 			}
 			
 			return *this;
 		}
 		
-		inline PETScVector &operator=(PETScVector &&other) {
+		inline PetscVector &operator=(PetscVector &&other) {
 			if(this == &other) return *this;
 			assert(!immutable_);
 			
@@ -337,13 +337,13 @@ namespace utopia {
 		
 		//ops
 		///this is y
-		inline void axpy(const PetscScalar &alpha, const PETScVector &x)
+		inline void axpy(const PetscScalar &alpha, const PetscVector &x)
 		{
 			check_error( VecAXPY(implementation(), alpha, x.implementation()) );
 		}
 		
 		///this is y
-		inline void axpby(const PetscScalar alpha, const PETScVector &x, const PetscScalar &beta)
+		inline void axpby(const PetscScalar alpha, const PetscVector &x, const PetscScalar &beta)
 		{
 			check_error( VecAXPBY(implementation(), alpha, beta, x.implementation()) );
 		}
@@ -391,7 +391,7 @@ namespace utopia {
 			return result;
 		}
 
-		inline void e_mul(const PETScVector &other, PETScVector &result) const
+		inline void e_mul(const PetscVector &other, PetscVector &result) const
 		{
 			if(implementation() != result.vec_ && other.implementation() != result.vec_) {
 				//if result is compatibe should not trigger a reallocation
@@ -401,14 +401,14 @@ namespace utopia {
 			check_error( VecPointwiseMult(result.implementation(), implementation(), other.implementation()) );
 		}
 
-		inline PetscScalar dot(const PETScVector &other) const
+		inline PetscScalar dot(const PetscVector &other) const
 		{
 			PetscScalar result;
 			check_error( VecDot(implementation(), other.implementation(), &result) );
 			return result;
 		}
 
-		inline void e_div(const PETScVector &other, PETScVector &result) const
+		inline void e_div(const PetscVector &other, PetscVector &result) const
 		{
 			if(implementation() != result.vec_ && other.implementation() != result.vec_) {
 				//if result is compatibe should not trigger a reallocation
@@ -469,7 +469,7 @@ namespace utopia {
 #endif //NDEBUG     
 		
 		inline static bool check_error(const PetscInt err) {
-			return PETScError::Check(err);
+			return PetscError::Check(err);
 		}
 	};
 	

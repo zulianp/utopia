@@ -28,37 +28,37 @@
 
 // namespace utopia {
 
-//     class PETScMatrix {
+//     class PetscMatrix {
 //     public:
-//         inline PETScMatrix(const MPI_Comm comm = PETSC_COMM_WORLD)
+//         inline PetscMatrix(const MPI_Comm comm = PETSC_COMM_WORLD)
 //         : owner_(true)
 //         {
 //             MatCreate(comm, &mat_);
 //         }
 
-//         PETScMatrix(const PETScMatrix &other)
+//         PetscMatrix(const PetscMatrix &other)
 //         : owner_(true)
 //         {
-//             PETScError::Check(MatDuplicate(other.mat_, MAT_COPY_VALUES, &mat_));
+//             PetscError::Check(MatDuplicate(other.mat_, MAT_COPY_VALUES, &mat_));
 //         }
 
-//         inline PETScMatrix(PETScMatrix &&other) 
+//         inline PetscMatrix(PetscMatrix &&other) 
 //         : mat_(other.mat_), owner_(other.owner_)
 //         {
 //             other.owner_ = false;
 //             other.mat_ = nullptr;
 //         }
 
-//         inline PETScMatrix(Mat &mat, const bool owner = false)
+//         inline PetscMatrix(Mat &mat, const bool owner = false)
 //         : mat_(mat), owner_(owner) { }
 
-//         inline PETScMatrix &operator=(const PETScMatrix &other) {
+//         inline PetscMatrix &operator=(const PetscMatrix &other) {
 //             if(this->mat_ == other.mat_) return *this;
 //             other.duplicate(*this);
 //             return *this;
 //         }
 
-//         inline PETScMatrix &operator=(PETScMatrix &&other) {
+//         inline PetscMatrix &operator=(PetscMatrix &&other) {
 //             if(this->mat_ == other.mat_) return *this;
 
 //             mat_ = other.mat_;
@@ -69,14 +69,14 @@
 //             return *this;
 //         }
 
-//         inline PETScMatrix &operator=(const PETScMatrix &&other) {
+//         inline PetscMatrix &operator=(const PetscMatrix &&other) {
 //             if(this->mat_ == other.mat_) return *this;
 
 //             assert(false);
 //             return *this;
 //         }
 
-//         ~PETScMatrix()
+//         ~PetscMatrix()
 //         {
 //             destroy();
 //         }
@@ -104,12 +104,12 @@
 //             return mat_;
 //         }
 
-//         inline void convert(PETScMatrix &other, MatType newtype) {
-//             PETScError::Check(MatConvert(mat_, newtype, MAT_INITIAL_MATRIX, &other.mat_));
+//         inline void convert(PetscMatrix &other, MatType newtype) {
+//             PetscError::Check(MatConvert(mat_, newtype, MAT_INITIAL_MATRIX, &other.mat_));
 //         }
 
 //         inline void convert(MatType newtype) {
-//             PETScError::Check(MatConvert(mat_, newtype, MAT_REUSE_MATRIX, &mat_));
+//             PetscError::Check(MatConvert(mat_, newtype, MAT_REUSE_MATRIX, &mat_));
 //         }
 
 //         inline MPI_Comm communicator() const {
@@ -128,9 +128,9 @@
 //         }
 
 //     private:
-//         inline void duplicate(PETScMatrix &other, MatDuplicateOption opt = MAT_COPY_VALUES) const {
+//         inline void duplicate(PetscMatrix &other, MatDuplicateOption opt = MAT_COPY_VALUES) const {
 //             other.destroy();
-//             PETScError::Check(MatDuplicate(mat_, opt, &other.mat_));
+//             PetscError::Check(MatDuplicate(mat_, opt, &other.mat_));
 //         }
 
 //         Mat mat_;

@@ -52,7 +52,7 @@ namespace utopia {
         }
 
         /**
-         * @brief      Smoothing of GS from PETSc. Currently we are using symmetric block GS (builds block jacobi and on blocks calls GS). 
+         * @brief      Smoothing of GS from Petsc. Currently we are using symmetric block GS (builds block jacobi and on blocks calls GS). 
          *
          * @param[in]  A     The stiffness matrix. 
          * @param[in]  rhs   The right hand side. 

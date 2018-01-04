@@ -68,7 +68,7 @@ namespace utopia {
             });
 
             #ifdef WITH_PETSC
-                //NOTE(eric): range assignment is NYI in PETSc backend
+                //NOTE(eric): range assignment is NYI in Petsc backend
             if (std::is_same<Matrix, DMatrixd>::value) return;
             #endif
 

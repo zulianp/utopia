@@ -14,43 +14,43 @@
 
 namespace utopia {
 
-    UTOPIA_MAKE_TRAITS_DENSE(PETScMatrix, PETScTraits);
-    UTOPIA_MAKE_TRAITS_SPARSE(PETScSparseMatrix, PETScTraits);
-    UTOPIA_MAKE_TRAITS_SPARSE(PETScSerialSparseMatrix, PETScTraits);
+    UTOPIA_MAKE_TRAITS_DENSE(PetscMatrix, PetscTraits);
+    UTOPIA_MAKE_TRAITS_SPARSE(PetscSparseMatrix, PetscTraits);
+    UTOPIA_MAKE_TRAITS_SPARSE(PetscSerialSparseMatrix, PetscTraits);
 
-    UTOPIA_MAKE_TRAITS(PETScVector, PETScTraits);
-    UTOPIA_MAKE_TRAITS(PETScSerialVector, PETScTraits);
+    UTOPIA_MAKE_TRAITS(PetscVector, PetscTraits);
+    UTOPIA_MAKE_TRAITS(PetscSerialVector, PetscTraits);
 
 ///////////////////////////////////////////////////////////////////////////////
 
     /*!
      * @brief Dense matrix representation of the petsc backend.
      */
-    typedef utopia::Wrapper<PETScMatrix, 2>             DMatrixd;
-    typedef utopia::Wrapper<PETScSparseMatrix, 2>       DSMatrixd;
-    typedef utopia::Wrapper<PETScSerialSparseMatrix, 2> SSMatrixd;
-    typedef utopia::Wrapper<PETScVector, 1>             DVectord;
-    typedef utopia::Wrapper<PETScSerialVector, 1>       SVectord;
+    typedef utopia::Wrapper<PetscMatrix, 2>             DMatrixd;
+    typedef utopia::Wrapper<PetscSparseMatrix, 2>       DSMatrixd;
+    typedef utopia::Wrapper<PetscSerialSparseMatrix, 2> SSMatrixd;
+    typedef utopia::Wrapper<PetscVector, 1>             DVectord;
+    typedef utopia::Wrapper<PetscSerialVector, 1>       SVectord;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-    inline void disp(const Wrapper<PETScMatrix, 2> &w) {
+    inline void disp(const Wrapper<PetscMatrix, 2> &w) {
         w.implementation().describe();
     }
 
-    inline void disp(const Wrapper<PETScSparseMatrix, 2> &w) {
+    inline void disp(const Wrapper<PetscSparseMatrix, 2> &w) {
         w.implementation().describe();
     }
 
-    inline void disp(const Wrapper<PETScSerialSparseMatrix, 2> &w) {
+    inline void disp(const Wrapper<PetscSerialSparseMatrix, 2> &w) {
         w.implementation().describe();
     }
 
-    inline void disp(const Wrapper<PETScVector, 1> &w) {
+    inline void disp(const Wrapper<PetscVector, 1> &w) {
         w.implementation().describe();
     }
 
-    inline void disp(const Wrapper<PETScSerialVector, 1> &w) {
+    inline void disp(const Wrapper<PetscSerialVector, 1> &w) {
         w.implementation().describe();
     }
 
@@ -63,91 +63,91 @@ namespace utopia {
      *
      * @param      utopiaType  The wrapped/utopia type of tensor.
      */
-    inline Mat &raw_type(Wrapper<PETScMatrix, 2> &utopiaType)
+    inline Mat &raw_type(Wrapper<PetscMatrix, 2> &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
 
-    inline Mat &raw_type(Wrapper<PETScSparseMatrix, 2> &utopiaType)
+    inline Mat &raw_type(Wrapper<PetscSparseMatrix, 2> &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
 
 
-    inline Mat &raw_type(Wrapper<PETScSerialSparseMatrix, 2> &utopiaType)
+    inline Mat &raw_type(Wrapper<PetscSerialSparseMatrix, 2> &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
 
-    inline Vec &raw_type(Wrapper<PETScVector, 1> &utopiaType)
+    inline Vec &raw_type(Wrapper<PetscVector, 1> &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
 
-    inline Vec &raw_type(Wrapper<PETScSerialVector, 1> &utopiaType)
+    inline Vec &raw_type(Wrapper<PetscSerialVector, 1> &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-    inline const Mat &raw_type(const Wrapper<PETScSparseMatrix, 2> &utopiaType)
+    inline const Mat &raw_type(const Wrapper<PetscSparseMatrix, 2> &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
 
-    inline const Mat &raw_type(const Wrapper<PETScSerialSparseMatrix, 2> &utopiaType)
+    inline const Mat &raw_type(const Wrapper<PetscSerialSparseMatrix, 2> &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
 
-    inline const Mat &raw_type(const Wrapper<PETScMatrix, 2> &utopiaType)
+    inline const Mat &raw_type(const Wrapper<PetscMatrix, 2> &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
 
-    inline const Vec &raw_type(const Wrapper<PETScVector, 1> &utopiaType)
+    inline const Vec &raw_type(const Wrapper<PetscVector, 1> &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
 
-    inline const Vec &raw_type(const Wrapper<PETScSerialVector, 1> &utopiaType)
+    inline const Vec &raw_type(const Wrapper<PetscSerialVector, 1> &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
 
 
-    inline bool empty(const Wrapper<PETScVector, 1> &w)
+    inline bool empty(const Wrapper<PetscVector, 1> &w)
     {
         return !w.implementation().initialized();
     }
 
-    inline bool empty(const Wrapper<PETScSerialVector, 1> &w)
+    inline bool empty(const Wrapper<PetscSerialVector, 1> &w)
     {
         return !w.implementation().initialized();
     }
 
-    inline void convert(const Vec &petsc_vec, Wrapper<PETScVector, 1> &utopia_vec)
+    inline void convert(const Vec &petsc_vec, Wrapper<PetscVector, 1> &utopia_vec)
     {
         Backend<PetscScalar, PETSC>::Instance().convert(petsc_vec, utopia_vec.implementation());
     }
 
-    inline void convert(const Wrapper<PETScVector, 1> &utopia_vec, Vec &petsc_vec)
+    inline void convert(const Wrapper<PetscVector, 1> &utopia_vec, Vec &petsc_vec)
     {
         Backend<PetscScalar, PETSC>::Instance().convert(utopia_vec.implementation(), petsc_vec);
     }
 
-    inline void convert(const Mat &petsc_mat, Wrapper<PETScMatrix, 2> &utopia_mat)
+    inline void convert(const Mat &petsc_mat, Wrapper<PetscMatrix, 2> &utopia_mat)
     {
         Backend<PetscScalar, PETSC>::Instance().convert(petsc_mat, utopia_mat.implementation());
     }
 
-    inline void convert(const Wrapper<PETScSparseMatrix, 2> &utopia_mat, Mat &petsc_mat)
+    inline void convert(const Wrapper<PetscSparseMatrix, 2> &utopia_mat, Mat &petsc_mat)
     {
         Backend<PetscScalar, PETSC>::Instance().convert(utopia_mat.implementation(), petsc_mat);
     }
 
-    inline void convert(const Mat &petsc_mat, Wrapper<PETScSparseMatrix, 2> &utopia_mat)
+    inline void convert(const Mat &petsc_mat, Wrapper<PetscSparseMatrix, 2> &utopia_mat)
     {
         Backend<PetscScalar, PETSC>::Instance().convert(petsc_mat, utopia_mat.implementation());
     }

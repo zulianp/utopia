@@ -7,11 +7,11 @@
 
 namespace utopia{
 
-	class PETScSparseMatrix : public PETScMatrix {
+	class PetscSparseMatrix : public PetscMatrix {
 	public:
-		using PETScMatrix::PETScMatrix;
-		using PETScMatrix::operator=;
-		virtual ~PETScSparseMatrix() {}
+		using PetscMatrix::PetscMatrix;
+		using PetscMatrix::operator=;
+		virtual ~PetscSparseMatrix() {}
 	};
 
 }

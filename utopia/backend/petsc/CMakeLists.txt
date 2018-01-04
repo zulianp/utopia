@@ -1,6 +1,6 @@
 # find dependencies
 set(PETSC_TEST_RUNS TRUE)
-find_package(PETSc)
+find_package(Petsc)
 
 if(PETSC_FOUND)
 	list(APPEND UTOPIA_INCLUDES ${PETSC_INCLUDES})
@@ -32,7 +32,7 @@ if(PETSC_FOUND)
 
     set(WITH_PETSC TRUE)
 else()
-    message(WARNING "[Warning] PETSc not found")
+    message(WARNING "[Warning] Petsc not found")
     set(WITH_PETSC FALSE)
 endif()
 

@@ -67,7 +67,7 @@ namespace utopia {
 			strategy_.set_type(SUPERLU_DIST_TAG, LU_DECOMPOSITION_TAG);			
 #elif PETSC_HAVE_SUPERLU
 			strategy_.set_type(SUPERLU_TAG, LU_DECOMPOSITION_TAG);			 // FIXME: runs just with serial matrices 
-			                                                      			 // seems that PETSc's also
+			                                                      			 // seems that Petsc's also
 #else
 			strategy_.set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
 #endif			

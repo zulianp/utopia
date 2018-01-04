@@ -4,10 +4,10 @@
 #include "utopia_petsc_Vector.hpp"
 
 namespace utopia {
-	class PETScSerialVector : public PETScVector {
+	class PetscSerialVector : public PetscVector {
 	public:
-		using PETScVector::PETScVector;
-		using PETScVector::operator=;
+		using PetscVector::PetscVector;
+		using PetscVector::operator=;
 	};
 }
 

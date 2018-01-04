@@ -2,7 +2,7 @@
 
 namespace utopia {
 	
-	void PETScVector::repurpose(MPI_Comm comm,
+	void PetscVector::repurpose(MPI_Comm comm,
 								VecType type,
 								PetscInt n_local,
 								PetscInt n_global)
@@ -44,7 +44,7 @@ namespace utopia {
 		initialized_ = true;
 	}
 	
-	void PETScVector::init(MPI_Comm comm,
+	void PetscVector::init(MPI_Comm comm,
 						   VecType type,
 						   PetscInt n_local,
 						   PetscInt n_global)
@@ -61,7 +61,7 @@ namespace utopia {
 		initialized_ = true;
 	}
 	
-	void PETScVector::ghosted(MPI_Comm comm,
+	void PetscVector::ghosted(MPI_Comm comm,
 							  PetscInt local_size,
 							  PetscInt global_size,
 							  const std::vector<PetscInt> &index)

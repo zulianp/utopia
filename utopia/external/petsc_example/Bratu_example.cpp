@@ -162,7 +162,7 @@ int main(int argc,char **argv)
   
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-     Free work space.  All PETSc objects should be destroyed when they
+     Free work space.  All Petsc objects should be destroyed when they
      are no longer needed.
    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   ierr = SNESDestroy(&snes);CHKERRQ(ierr);
@@ -200,7 +200,7 @@ PetscErrorCode FormInitialGuess(DM da,AppCtx *user,Vec X)
 
   /*
      Get a pointer to vector data.
-       - For default PETSc vectors, VecGetArray() returns a pointer to
+       - For default Petsc vectors, VecGetArray() returns a pointer to
          the data array.  Otherwise, the routine is implementation dependent.
        - You MUST call VecRestoreArray() when you no longer need access to
          the array.
@@ -368,7 +368,7 @@ PetscErrorCode FormJacobianLocal(DMDALocalInfo *info,PetscScalar **x,Mat jac,Mat
 
   /*
      Compute entries for the locally owned part of the Jacobian.
-      - Currently, all PETSc parallel matrix formats are partitioned by
+      - Currently, all Petsc parallel matrix formats are partitioned by
         contiguous chunks of rows across the processors.
       - Each processor needs to insert only elements that it owns
         locally (but any non-local elements will be sent to the
