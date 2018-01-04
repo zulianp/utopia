@@ -550,31 +550,31 @@ namespace utopia {
 			const PetscMatrix &A, 
 			const Vector &x);
 				
-		static void select_aux(PetscMatrix &left,
-					const PetscMatrix &right,
-		      		const std::vector<PetscInt> &row_index,
-		      		const std::vector<PetscInt> &col_index);
+		// static void select_aux(PetscMatrix &left,
+		// 			const PetscMatrix &right,
+		//       		const std::vector<PetscInt> &row_index,
+		//       		const std::vector<PetscInt> &col_index);
 
-		static void par_assign_from_local_is(
-			const std::vector<PetscInt> &remote_rows,
-			const std::vector<PetscInt> &remote_cols,
-			const PetscInt global_col_offset,
-			const Range &local_col_range,
-			const PetscMatrix &right,
-			PetscMatrix &result);
+		// static void par_assign_from_local_is(
+		// 	const std::vector<PetscInt> &remote_rows,
+		// 	const std::vector<PetscInt> &remote_cols,
+		// 	const PetscInt global_col_offset,
+		// 	const Range &local_col_range,
+		// 	const PetscMatrix &right,
+		// 	PetscMatrix &result);
 
-		static void par_assign_from_local_range(
-							const Range &local_row_range,
-							const Range &local_col_range,
-							const Range &global_col_range,
-							const PetscMatrix &right,
-							PetscMatrix &result);
+		// static void par_assign_from_local_range(
+		// 					const Range &local_row_range,
+		// 					const Range &local_col_range,
+		// 					const Range &global_col_range,
+		// 					const PetscMatrix &right,
+		// 					PetscMatrix &result);
 
-		static void par_assign_from_global_range(
-		const Range &global_row_range,
-		const Range &global_col_range,
-		const PetscMatrix &right,
-		PetscMatrix &result);
+		// static void par_assign_from_global_range(
+		// const Range &global_row_range,
+		// const Range &global_col_range,
+		// const PetscMatrix &right,
+		// PetscMatrix &result);
 
 
 		//unused

@@ -5,11 +5,13 @@
 
 #include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_Range.hpp"
 
 #include "petscvec.h"
 
 #include <map>
 #include <vector>
+#include <limits>
 
 namespace utopia {
 	
@@ -100,7 +102,19 @@ namespace utopia {
 			immutable_ = other.immutable_;
 #endif 
 		}
-		
+
+		inline std::string name() const
+		{
+			const char *name;
+			PetscObjectGetName((PetscObject)implementation(), &name);
+			return name;
+		}
+
+		inline void set_name(const std::string &name)
+		{
+			PetscObjectSetName((PetscObject)implementation(), name.c_str());
+		}
+
 		inline VecType type() const
 		{
 			VecType ret;
@@ -121,6 +135,13 @@ namespace utopia {
 			VecGetSize(implementation(), &ret);
 			return ret;
 		}
+
+		inline Range range() const
+		{
+			PetscInt r_begin, r_end;
+			VecGetOwnershipRange(implementation(), &r_begin, &r_end);
+			return Range(r_begin, r_end);
+		}
 		
 		inline MPI_Comm communicator() const {
 			MPI_Comm comm = PetscObjectComm((PetscObject) implementation());
@@ -130,7 +151,7 @@ namespace utopia {
 
 		inline bool is_compatible(const PetscVector &other) const
 		{
-			return !is_null() && !other.is_null() && size() == other.size() && type() == other.type();
+			return !is_null() && !other.is_null() && size() == other.size();
 		}
 		
 		// assign operator
@@ -145,6 +166,7 @@ namespace utopia {
 #endif 
 			
 			if(is_compatible(other) && !other.has_ghosts()) {
+				assert( std::string(type()) == std::string(other.type()) && "Inconsistent matrix types. Handle types properly before copying" );
 				assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
 				PetscError::Check(VecCopy(other.vec_, vec_));
 				return *this;
@@ -380,13 +402,13 @@ namespace utopia {
 		}
 
 		inline PetscScalar min() const {
-			PetscScalar result = 0;
+			PetscScalar result = std::numeric_limits<PetscScalar>::max();
 			check_error( VecMin(implementation(), nullptr, &result) );
 			return result;
 		}
 
 		inline PetscScalar max() const {
-			PetscScalar result = 0;
+			PetscScalar result = -std::numeric_limits<PetscScalar>::max();
 			check_error( VecMax(implementation(), nullptr, &result) );
 			return result;
 		}
@@ -456,6 +478,27 @@ namespace utopia {
 			set_initialized(true);
 			update_ghosts();
 		}
+
+		bool is_nan_or_inf() const;
+		bool is_mpi() const;
+
+		void resize(PetscInt local_size, PetscInt global_size);
+
+
+		void select(
+			const std::vector<PetscInt> &index,
+			PetscVector &result) const;
+
+		void select(const Range &global_range, PetscVector &result) const;
+
+
+		void copy_from(Vec vec);
+
+		bool read(MPI_Comm comm, const std::string &path);
+
+		bool write(const std::string &path) const;
+		bool write_matlab(const std::string &path) const;
+
 		
 	private:
 		Vec vec_;

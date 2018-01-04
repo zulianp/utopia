@@ -3,7 +3,7 @@
 
 #include "utopia_petsc_Backend.hpp"
 #include "utopia_petsc_Error.hpp"
-#include "utopia_petsc_ForwardDeclaration.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_SerialSparseMatrix.hpp"
 #include "utopia_petsc_SerialVector.hpp"
