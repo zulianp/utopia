@@ -353,6 +353,12 @@ namespace utopia {
 			repurpose(comm, type, n_local, n_global);
 			check_error( VecZeroEntries(implementation()) );
 		}
+
+		inline void values(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global, PetscScalar value)
+		{
+			repurpose(comm, type, n_local, n_global);
+			check_error( VecSet(implementation(), value) );
+		}
 		
 		void init(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global);
 		void ghosted(MPI_Comm comm, PetscInt local_size, PetscInt global_size, const std::vector<PetscInt> &index);
@@ -363,7 +369,7 @@ namespace utopia {
 		{
 			check_error( VecAXPY(implementation(), alpha, x.implementation()) );
 		}
-		
+
 		///this is y
 		inline void axpby(const PetscScalar alpha, const PetscVector &x, const PetscScalar &beta)
 		{

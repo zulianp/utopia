@@ -548,7 +548,6 @@ namespace utopia {
 		check_error( MatDiagonalSet( result.implementation(), vec.implementation(), INSERT_VALUES ) );
 	}
 
-
 	void PetscMatrix::dense_init_values(
         	MPI_Comm comm,
         	MatType dense_type,
@@ -726,7 +725,7 @@ namespace utopia {
 		    gs.get(1)
 		);
 
-		MatZeroEntries(result.implementation());
+		check_error( MatZeroEntries(result.implementation()) );
 
 		IS isr, isc;
 		MatFactorInfo info;
@@ -739,7 +738,6 @@ namespace utopia {
 		check_error( ISDestroy(&isr) );
 		check_error( ISDestroy(&isc) );
 	}
-
 
 	template<class Operation>
 	inline static void reduce_rows(
@@ -902,4 +900,71 @@ namespace utopia {
 		result.set_initialized(true);
 	}
 
+	void PetscMatrix::mult(const PetscMatrix &mat, PetscMatrix &result) const
+	{
+		if(mat.implementation() != result.implementation() && implementation() != result.implementation()) {
+			result.destroy();
+			MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
+		} else {
+			PetscMatrix temp;
+			temp.destroy();
+
+			MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation());
+			result = std::move(temp);
+		}
+	}
+
+	void PetscMatrix::mult_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const
+	{
+		if (v1.implementation() == result.implementation() || v2.implementation() == result.implementation()) {
+			PetscVector temp;	
+			temp.repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size());
+			MatMultAdd(implementation(), v1.implementation(), v2.implementation(), temp.implementation());
+			result = std::move(temp);
+		} else {
+			result.repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size());
+			MatMultAdd(implementation(), v1.implementation(), v2.implementation(), result.implementation());
+		}
+	}
+
+	void PetscMatrix::mult_t_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const
+	{
+		if (v1.implementation() == result.implementation() || v2.implementation() == result.implementation()) {
+			PetscVector temp;	
+			temp.repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size());
+			MatMultTransposeAdd(implementation(), v1.implementation(), v2.implementation(), temp.implementation());
+			result = std::move(temp);
+		} else {
+			result.repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size());
+			MatMultTransposeAdd(implementation(), v1.implementation(), v2.implementation(), result.implementation());
+		}
+	}
+
+	void PetscMatrix::mult_t(const PetscMatrix &mat, PetscMatrix &result) const
+	{
+		if(mat.implementation() != result.implementation() && implementation() != result.implementation()) {
+			result.destroy();
+			check_error( MatTransposeMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) );
+		} else {
+			PetscMatrix temp; temp.destroy();
+			check_error( MatTransposeMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation()) );
+			result = std::move(temp);
+		}
+	}
+
+	void PetscMatrix::mult_mat_t(const PetscMatrix &mat, PetscMatrix &result) const
+	{
+		if(mat.implementation() != result.implementation() && implementation() != result.implementation()) {
+			result.destroy();
+			check_error( MatMatTransposeMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) );
+		} else {
+			PetscMatrix temp; temp.destroy();
+			check_error( MatMatTransposeMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation()) );
+			result = std::move(temp);
+		}
+	}
+
+	void PetscMatrix::axpy(const PetscScalar alpha, const PetscMatrix &x) {
+		check_error( MatAXPY(implementation(), alpha, x.implementation(), DIFFERENT_NONZERO_PATTERN) );
+	}
 }

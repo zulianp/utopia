@@ -181,6 +181,10 @@ namespace utopia {
 		inline void set(const PetscInt row, const PetscInt col, PetscScalar value) {
 			check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, INSERT_VALUES) );
 		}
+
+		inline void add(const PetscInt row, const PetscInt col, PetscScalar value) {
+			check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, ADD_VALUES) );
+		}
 		
 		void add_matrix(const std::vector<PetscInt> &rows,
 						const std::vector<PetscInt> &cols,
@@ -332,6 +336,17 @@ namespace utopia {
 
 		void mult(const PetscVector &vec, PetscVector &result) const;
 		void mult_t(const PetscVector &vec, PetscVector &result) const;
+		void mult(const PetscMatrix &mat, PetscMatrix &result) const;
+		void mult_t(const PetscMatrix &mat, PetscMatrix &result) const;
+		void mult_mat_t(const PetscMatrix &mat, PetscMatrix &result) const;
+
+		///result = v2 + this * v1
+		void mult_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const;
+		void mult_t_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const;
+
+
+		///this is y
+		void axpy(const PetscScalar alpha, const PetscMatrix &x);
 
 	private:
 		std::shared_ptr<PetscMatrixMemory> wrapper_;

@@ -165,9 +165,6 @@ namespace utopia {
 	
 	void PetscBackend::clear(PetscMatrix &mat)
 	{
-		// MPI_Comm comm = mat.communicator();
-		// MatDestroy(&mat.implementation());
-		// MatCreate(comm, &mat.implementation());
 		mat.clear();
 	}
 	
@@ -222,13 +219,17 @@ namespace utopia {
 	{
 		return m.row_range();
 	}
-	
+		
+
+	//FIXME reinterpret meaning in dsl
 	Range PetscBackend::col_range(const PetscMatrix &m) 
 	{
 		//FIXME do not use col_range to iterate
-		PetscInt grows, gcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		return Range(0, gcols);
+		// PetscInt grows, gcols;
+		// MatGetSize(m.implementation(), &grows, &gcols);
+
+		auto s = m.size();
+		return Range(0, s.get(1));
 	}
 	
 	void PetscBackend::size(const PetscMatrix &m, Size &size) 
@@ -395,6 +396,7 @@ namespace utopia {
 		right.select(global_row_range, left);
 	}
 	
+	//remove me and make blas specialization
 	void PetscBackend::gemm(
 		PetscMatrix &result,
 		const Scalar beta,
@@ -404,6 +406,10 @@ namespace utopia {
 		bool transpose_right,
 		const PetscMatrix &right) 
 	{
+
+		//TODO
+
+
 		//FIXME only works for beta == 0 for the moment
 		assert(fabs(beta) < 1e-16);
 		
@@ -414,7 +420,8 @@ namespace utopia {
 		auto l = mat_pair.left();
 		auto r = mat_pair.right();
 
-		MatDestroy( &result.implementation());
+		// MatDestroy( &result.implementation());
+		result.destroy();
 
 		bool ok = false;
 		if(transpose_left && !transpose_right) {
@@ -438,6 +445,7 @@ namespace utopia {
 		assert(ok);
 	}
 
+	//remove me and make blas specialization
 	void PetscBackend::gemv(
 		Vector &y, 
 		const Scalar beta,
@@ -457,49 +465,32 @@ namespace utopia {
 		
 	}
 
-	void PetscBackend::build(PetscMatrix &m, const Size &size, const Identity &, const PetscArgs &opts) {
-		MatDestroy(&m.implementation());
-
-		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],Scalar diag,Vec x,Vec b)
-		MatCreateDense(opts.comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
-			&m.implementation());
-		
-		PetscInt rbegin, rend;
-		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
-		
-		PetscInt grows, gcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		
-		rend = PetscMin(rend, gcols);
-		for (PetscInt i = rbegin; i < rend; ++i) {
-			MatSetValue(m.implementation(), i, i, 1, INSERT_VALUES);
-		}
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
-
-		// m.dense_init_identity(opts.comm, parallel_dense_matrix_type(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), 1.);
-
+	void PetscBackend::build(PetscMatrix &m, const Size &size, const Identity &, const PetscArgs &opts)
+	{
+		m.dense_init_identity(opts.comm, parallel_dense_matrix_type(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), 1.);
 		apply_args(opts, m);
 	}
 	
-	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const Identity &, const PetscArgs &opts) {
+	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const Identity &, const PetscArgs &opts)
+	{
 		m.matij_init_identity(opts.comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), 1.);
-
 		apply_args(opts, m);
 	}
 	
-	void PetscBackend::build(PetscMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts) {
+	void PetscBackend::build(PetscMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts)
+	{
 		m.dense_init_identity(opts.comm, parallel_dense_matrix_type(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, 1.);
 		apply_args(opts, m);
 	}
 	
-	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts) {
+	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts)
+	{
 		m.matij_init_identity(opts.comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, 1.);
 		apply_args(opts, m);
 	}
 	
-	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz, const PetscArgs &opts) {
+	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz, const PetscArgs &opts)
+	{
 		m.matij_init(
         	opts.comm,
         	PETSC_DECIDE,
@@ -513,7 +504,8 @@ namespace utopia {
 		apply_args(opts, m);
 	}
 	
-	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz, const PetscArgs &opts) {
+	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz, const PetscArgs &opts)
+	{
 		m.matij_init(
         	opts.comm,
         	size.get(0),
@@ -563,7 +555,6 @@ namespace utopia {
 		m.dense_init_values(opts.comm, parallel_dense_matrix_type(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), values.value());
 		apply_args(opts, m);
 	}
-
 	
 	void PetscBackend::build(PetscMatrix &m, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts) {
 		m.dense_init_values(opts.comm, parallel_dense_matrix_type(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, values.value());
@@ -572,77 +563,50 @@ namespace utopia {
 
 	void PetscBackend::build(PetscVector &v, const Size &in_local_size, const Size &&in_global_size, const Values<Scalar> &values, const PetscArgs &opts)
 	{
-		Size v_local_size;
-		if(v.initialized()) {
-			local_size(v, v_local_size);
-		}	
-
-		if(!v.initialized() || v_local_size.get(0) != in_local_size.get(0)) {
-			VecDestroy(&v.implementation());
-			vec_create_parallel(opts.comm, in_local_size.get(0), in_global_size.get(0), &v.implementation());
-		}
-
-		VecSet(v.implementation(), values.value());
-		VecAssemblyBegin(v.implementation());
-		VecAssemblyEnd(v.implementation());
-
-		v.set_initialized(true);
-
+		v.values(opts.comm, parallel_vector_type(), in_local_size.get(0), in_global_size.get(0), values.value());
 		apply_args(opts, v);
 	}
 	
-	void PetscBackend::build(PetscVector &v, const Size &size, const Values<Scalar> &values, const PetscArgs &opts) {
-
-		VecDestroy(&v.implementation());
-		vec_create_parallel(opts.comm, PETSC_DECIDE, size.get(0), &v.implementation());
-		VecSet(v.implementation(), values.value());
-		VecAssemblyBegin(v.implementation());
-		VecAssemblyEnd(v.implementation());
-
-		v.set_initialized(true);
-
+	void PetscBackend::build(PetscVector &v, const Size &size, const Values<Scalar> &values, const PetscArgs &opts)
+	{
+		v.values(opts.comm, parallel_vector_type(), PETSC_DECIDE, size.get(0), values.value());
 		apply_args(opts, v);
 	}
 	
-	void PetscBackend::build(PetscVector &v, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts) {
-		VecDestroy(&v.implementation());
-
-		vec_create_parallel(opts.comm, size.get(0), PETSC_DETERMINE, &v.implementation());
-		
-		VecSet(v.implementation(), values.value());
-		VecAssemblyBegin(v.implementation());
-		VecAssemblyEnd(v.implementation());
-
-		v.set_initialized(true);
-
+	void PetscBackend::build(PetscVector &v, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts)
+	{
+		v.values(opts.comm, parallel_vector_type(), size.get(0), PETSC_DETERMINE, values.value());
 		apply_args(opts, v);
 	}
 	
 	void PetscBackend::add(PetscVector &v, const PetscInt index, Scalar value)
 	{
-		VecSetValues(v.implementation(), 1, &index, &value, ADD_VALUES);
+		v.add(index, value);
 	}
 	
 	void PetscBackend::add(PetscMatrix &m, const PetscInt row, const PetscInt col, Scalar value)
 	{
-		MatSetValues(m.implementation(), 1, &row, 1, &col, &value, ADD_VALUES);
+		m.add(row, col, value);
 	}
 	
-	void PetscBackend::set(PetscVector &v, const PetscInt index, Scalar value) {
-		VecSetValues(v.implementation(), 1, &index, &value, INSERT_VALUES);
+	void PetscBackend::set(PetscVector &v, const PetscInt index, Scalar value)
+	{
+		v.set(index, value);
 	}
 	
-	void PetscBackend::set(PetscVector &v, const std::vector<PetscInt> &indices, const std::vector<Scalar> &values) {
-		assert(indices.size() == values.size());
-		VecSetValues(v.implementation(), indices.size(), &indices[0], &values[0], INSERT_VALUES);
+	void PetscBackend::set(PetscVector &v, const std::vector<PetscInt> &indices, const std::vector<Scalar> &values)
+	{	
+		v.set(indices, values);
 	}
 	
-	void PetscBackend::set(PetscMatrix &v, const PetscInt row, const PetscInt col, Scalar value) {
-		MatSetValues(v.implementation(), 1, &row, 1, &col, &value, INSERT_VALUES);
+	void PetscBackend::set(PetscMatrix &m, const PetscInt row, const PetscInt col, Scalar value)
+	{
+		m.set(row, col, value);
 	}
 	
-	void PetscBackend::set(PetscSparseMatrix &v, const PetscInt row, const PetscInt col, Scalar value) {
-		MatSetValues(v.implementation(), 1, &row, 1, &col, &value, INSERT_VALUES);
+	void PetscBackend::set(PetscSparseMatrix &m, const PetscInt row, const PetscInt col, Scalar value)
+	{
+		m.set(row, col, value);
 	}
 	
 	void PetscBackend::write_lock(PetscVector &vec)
@@ -665,6 +629,7 @@ namespace utopia {
 		mat.write_unlock();
 	}
 	
+	//FIXME remove method from dsl
 	void PetscBackend::set(
 		PetscMatrix &m,
 		const std::vector<PetscInt> &rows,
@@ -701,54 +666,24 @@ namespace utopia {
 		v.get(index, values);
 	}
 	
-	void PetscBackend::apply_binary(PetscVector &result, const PetscMatrix &left, const Multiplies &, const PetscVector &right) {
-		auto sl = left.local_size();
-		auto sg = left.size();
-
-		vec_repurpose(right.communicator(), right.type(), sl.get(0), sg.get(0), &result.implementation());
-		MatMult(left.implementation(), right.implementation(), result.implementation());
-		result.set_initialized(true);
+	void PetscBackend::apply_binary(PetscVector &result, const PetscMatrix &left, const Multiplies &, const PetscVector &right)
+	{
+		left.mult(right, result);
 	}
 	
 	void PetscBackend::apply_binary(PetscMatrix &result, const PetscMatrix &left, const Multiplies &, const PetscMatrix &right)
 	{
-		if(right.implementation() != result.implementation() || left.implementation() != result.implementation()) {
-			MatDestroy(&result.implementation());
-			MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
-		} else {
-			PetscMatrix temp;
-			MatDestroy(&temp.implementation());
-			MatMatMult(left.implementation(), right.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation());
-			result = std::move(temp);
-		}
+		left.mult(right, result);
 	}
 
 	void PetscBackend::mat_mult_add(PetscVector &result, const PetscMatrix &m, const PetscVector &v1, const PetscVector &v2)
 	{
-		if (v1.implementation() == result.implementation() || v2.implementation() == result.implementation()) {
-			PetscVector temp;	
-			vec_repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size(), &temp.implementation());
-			MatMultAdd(m.implementation(), v1.implementation(), v2.implementation(), temp.implementation());
-			result = std::move(temp);
-		} else {
-			vec_repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size(), &result.implementation());
-			MatMultAdd(m.implementation(), v1.implementation(), v2.implementation(), result.implementation());
-		}
+		m.mult_add(v1, v2, result);
 	}
 
 	void PetscBackend::mat_mult_t_add(PetscVector &result, const PetscMatrix &m, const PetscVector &v1, const PetscVector &v2)
 	{
-		if (v1.implementation() == result.implementation() || v2.implementation() == result.implementation()) {
-			PetscVector temp;	
-			vec_repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size(), &temp.implementation());
-			MatMultTransposeAdd(m.implementation(), v1.implementation(), v2.implementation(), temp.implementation());
-			result = std::move(temp);
-		} else {
-			vec_repurpose(v1.communicator(), v1.type(), v1.local_size(), v1.size(), &result.implementation());
-			MatMultTransposeAdd(m.implementation(), v1.implementation(), v2.implementation(), result.implementation());
-		}
-
-		result.set_initialized(true);
+		m.mult_t_add(v1, v2, result);
 	}
 
 	void PetscBackend::apply_unary(Vector &result, const Abs &, const Vector &vec)
@@ -1112,35 +1047,28 @@ namespace utopia {
 
 	void PetscBackend::axpy(PetscMatrix &y, const Scalar alpha, const PetscMatrix &x)
 	{
-		check_error( MatAXPY(y.implementation(), alpha, x.implementation(), DIFFERENT_NONZERO_PATTERN) );
+		y.axpy(alpha, x);
 	}
 
 	void PetscBackend::axpby(Vector &y, const Scalar alpha, const Vector &x, const Scalar &beta)
 	{
-		check_error( VecAXPBY(y.implementation(), alpha, beta, x.implementation()) );
+		y.axpby(alpha, x, beta);
 	}
 	
 	void PetscBackend::diag_scale_right(Matrix &result, const Matrix &m, const Vector &diag)
 	{
-		assign(result, m);
+		result = m;
 		check_error( MatDiagonalScale(result.implementation(), nullptr, diag.implementation()) );
 	}
 
 	void PetscBackend::diag_scale_left(Matrix &result, const Vector &diag, const Matrix &m)
 	{
-		assign(result, m);
+		result = m;
 		check_error( MatDiagonalScale(result.implementation(), diag.implementation(), nullptr) );
 	}
 
 	void PetscBackend::diag_scale_left(Vector &result, const Vector &diag, const Vector &m)
 	{
-		// if(result.implementation() != diag.implementation() && result.implementation() != m.implementation()) {
-		// 	vec_repurpose(diag.communicator(), diag.type(), diag.local_size(), diag.size(), &result.implementation());
-		// }
-
-		// check_error( VecPointwiseMult(diag.implementation(), m.implementation(), result.implementation()) );
-		// result.set_initialized(true);
-
 		diag.e_mul(m, result);
 	}
 
