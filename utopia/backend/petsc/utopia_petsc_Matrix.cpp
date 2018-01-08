@@ -49,6 +49,8 @@ namespace utopia {
 		PetscInt rows_global,
 		PetscInt cols_global)
 	{
+		destroy();
+
 		check_error( MatCreate(comm, &implementation()) );
 		check_error( MatSetType(implementation(), dense_type) );
 		check_error( MatSetSizes(implementation(), rows_local, cols_local, rows_global, cols_global) );
@@ -461,6 +463,8 @@ namespace utopia {
 	{			
 		auto gs = size();
 
+		result.destroy();
+
 		if(gs.get(0) < gs.get(1)) {
 			MatCreateVecs(implementation(), nullptr, &result.implementation());
 		} else {
@@ -488,6 +492,7 @@ namespace utopia {
 			global_size
 		);
 
+		check_error( MatZeroEntries(implementation()) );
 		check_error( MatDiagonalSet( implementation(), diag.implementation(), INSERT_VALUES) );
 	}
 
@@ -507,6 +512,7 @@ namespace utopia {
 			1,
 			0);
 
+		check_error( MatZeroEntries(implementation()) );
 		check_error( MatDiagonalSet( implementation(), diag.implementation(), INSERT_VALUES) );
 	}
 
@@ -537,8 +543,99 @@ namespace utopia {
 		check_error( MatSeqAIJSetPreallocation(result.implementation(), 1, PETSC_NULL) );
 		check_error( MatMPIAIJSetPreallocation(result.implementation(), 1, PETSC_NULL, 0, PETSC_NULL) );
 		check_error( MatSetUp(result.implementation()) );
+		check_error( MatZeroEntries(result.implementation()) );
 	
 		check_error( MatDiagonalSet( result.implementation(), vec.implementation(), INSERT_VALUES ) );
+	}
+
+
+	void PetscMatrix::dense_init_values(
+        	MPI_Comm comm,
+        	MatType dense_type,
+        	PetscInt local_rows,
+        	PetscInt local_cols,
+        	PetscInt global_rows,
+        	PetscInt global_cols,
+        	PetscScalar value
+        )
+	{
+		dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+	
+		const auto r = row_range();
+		const PetscInt r_begin = r.begin();
+		const PetscInt r_end   = r.end();
+
+		for (PetscInt i = r_begin; i < r_end; ++i) {
+			for (PetscInt j = 0; j < global_cols; ++j) {
+				MatSetValue(implementation(), i, j, value, INSERT_VALUES);
+			}
+		}
+		
+		MatAssemblyBegin(implementation(), MAT_FINAL_ASSEMBLY);
+		MatAssemblyEnd(implementation(), MAT_FINAL_ASSEMBLY);
+	}
+
+	void PetscMatrix::dense_init_identity(
+		MPI_Comm comm,
+		MatType dense_type,
+		PetscInt local_rows,
+		PetscInt local_cols,
+		PetscInt global_rows,
+		PetscInt global_cols,
+		PetscScalar scale_factor)
+	{
+		dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+
+		check_error( MatZeroEntries(implementation()) );
+
+		write_lock();
+
+		const auto r = row_range();
+		const PetscInt r_begin = r.begin();
+		const PetscInt r_end = PetscMin(r.end(), global_cols);
+
+		for(PetscInt i = r_begin; i < r_end; ++i) {
+			set(i, i, scale_factor);
+		}
+
+		write_unlock();	
+	}
+
+	void PetscMatrix::matij_init_identity(
+		MPI_Comm comm,
+		PetscInt local_rows,
+		PetscInt local_cols,
+		PetscInt global_rows,
+		PetscInt global_cols,
+		PetscScalar scale_factor)
+	{
+		matij_init(
+			comm,
+			local_rows,
+			local_cols,
+			global_rows,
+			global_cols,
+			1,
+			0
+		);
+
+		MatZeroEntries(implementation());
+
+		write_lock();
+
+		const auto r = row_range();
+		const auto gs = size();
+
+		const PetscInt r_begin = r.begin();
+		const PetscInt r_end = PetscMin(r.end(), gs.get(1));
+
+		for(PetscInt i = r_begin; i < r_end; ++i) {
+			set(i, i, scale_factor);
+		}
+
+		write_unlock();
+
+		// MatShift(implementation(), scale_factor);
 	}
 
 	void PetscMatrix::matij_init(
@@ -550,6 +647,8 @@ namespace utopia {
 		PetscInt d_nnz,
 		PetscInt o_nnz)
 	{
+		destroy();
+
 		check_error( MatCreate(comm, &implementation()) );
 		check_error( MatSetSizes(implementation(), rows_local, cols_local, rows_global, cols_global) );
 		

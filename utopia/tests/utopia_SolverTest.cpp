@@ -518,9 +518,13 @@ namespace utopia
 
 			SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.set_box_constraints(box);
+			// nlsolver.verbose(true);
 
 			nlsolver.max_it(200);
-			nlsolver.solve(A, b, x_0);			
+			nlsolver.solve(A, b, x_0);		
+
+			// disp(l);
+			// disp(u);	
 			assert(approxeq(x, x_0));
 		}
 		

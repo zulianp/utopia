@@ -478,152 +478,51 @@ namespace utopia {
 		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
 		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
 
+		// m.dense_init_identity(opts.comm, parallel_dense_matrix_type(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), 1.);
+
 		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const Identity &, const PetscArgs &opts) {
-		//Sparse id
-		PetscInt rows = size.get(0);
-		PetscInt cols = size.get(1);
-
-		MatDestroy(&m.implementation());
-		
-		sparse_mat_create_parallel(
-			opts.comm,
-			PETSC_DECIDE,
-			PETSC_DECIDE,
-			rows,
-			cols,
-			1,
-			1,
-			&m.implementation());
-
-		PetscInt grows, gcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		
-		PetscInt rbegin, rend;
-		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
-		rend = PetscMin(rend, gcols);
-		
-		for (PetscInt i = rbegin; i < rend; ++i) {
-			const PetscInt offset = i;
-			const Scalar val = 1;
-			MatSetValues(m.implementation(), 1, &offset, 1, &offset, &val, INSERT_VALUES);
-		}
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
+		m.matij_init_identity(opts.comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), 1.);
 
 		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PetscMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts) {
-		MatDestroy(&m.implementation());
-
-		//FIXME use this: MatZeroRows(Mat mat,PetscInt numRows,const PetscInt rows[],Scalar diag,Vec x,Vec b)
-		MatCreateDense(opts.comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, NULL,
-			&m.implementation());
-		
-		
-		PetscInt rbegin, rend;
-		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
-		
-		PetscInt grows = size.get(0);
-		PetscInt gcols = size.get(1);
-		
-		unsigned long send_buffer = gcols;
-		unsigned long receive_buffer = 0;
-		
-		MPI_Exscan(&send_buffer, &receive_buffer, 1, MPI_UNSIGNED_LONG ,
-			MPI_SUM, m.communicator());
-		
-		PetscInt extent = PetscMin(rend-rbegin, PetscMin(grows, gcols));
-		
-		for (PetscInt i = 0; i < extent; ++i) {
-			MatSetValue(m.implementation(), rbegin+i, receive_buffer + i, 1, INSERT_VALUES);
-		}
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
-
+		m.dense_init_identity(opts.comm, parallel_dense_matrix_type(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, 1.);
 		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts) {
-		//Sparse id
-		PetscInt rows = size.get(0);
-		PetscInt cols = size.get(1);
-
-		MatDestroy(&m.implementation());
-		
-		sparse_mat_create_parallel(
-			opts.comm,
-			rows,
-			cols,
-			PETSC_DETERMINE,
-			PETSC_DETERMINE,
-			1,
-			1,
-			&m.implementation());
-
-		unsigned long send_buffer = cols;
-		unsigned long receive_buffer = 0;
-		
-		MPI_Exscan(&send_buffer, &receive_buffer, 1, MPI_UNSIGNED_LONG ,
-			MPI_SUM, m.communicator());
-		
-		PetscInt rbegin, rend;
-		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
-		
-		PetscInt extent = PetscMin(rend-rbegin, PetscMin(rows, cols));
-
-		check_error( MatZeroEntries(m.implementation()) );
-		
-		for (PetscInt i = 0; i < extent; ++i) {
-			const PetscInt row_offset = rbegin+i;
-			const PetscInt col_offset = receive_buffer+i;
-			const Scalar val = 1;
-			MatSetValues(m.implementation(), 1, &row_offset, 1, &col_offset, &val, INSERT_VALUES);
-		}
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
-
+		m.matij_init_identity(opts.comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, 1.);
 		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz, const PetscArgs &opts) {
-		
-		PetscInt rows = size.get(0);
-		PetscInt cols = size.get(1);
-		MatDestroy(&m.implementation());
-
-		sparse_mat_create_parallel(
-			opts.comm,
-			PETSC_DECIDE,
-			PETSC_DECIDE,
-			rows,
-			cols,
-			nnz.nnz(),
-			nnz.nnz(),
-			&m.implementation());
+		m.matij_init(
+        	opts.comm,
+        	PETSC_DECIDE,
+        	PETSC_DECIDE,
+        	size.get(0),
+        	size.get(1),
+        	nnz.nnz(),
+        	nnz.nnz()
+        );
 
 		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz, const PetscArgs &opts) {
-		PetscInt rows = size.get(0);
-		PetscInt cols = size.get(1);
-
-		sparse_mat_create_parallel(
-			opts.comm,
-			rows,
-			cols,
-			PETSC_DETERMINE,
-			PETSC_DETERMINE,
-			nnz.nnz(),
-			nnz.nnz(),
-			&m.implementation());
+		m.matij_init(
+        	opts.comm,
+        	size.get(0),
+        	size.get(1),
+        	PETSC_DETERMINE,
+        	PETSC_DETERMINE,
+        	nnz.nnz(),
+        	nnz.nnz()
+        );
 
 		apply_args(opts, m);
 	}
@@ -661,34 +560,16 @@ namespace utopia {
 	}
 	
 	void PetscBackend::build(PetscMatrix &m, const Size &size, const Values<Scalar> &values, const PetscArgs &opts) {
-		MatDestroy(&m.implementation());
-
-		MatCreateDense(opts.comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), NULL,
-			&m.implementation());
-		
-		
-		PetscInt rbegin, rend;
-		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
-		
-		PetscInt grows, gcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		check_error( MatZeroEntries(m.implementation()) );
-		
-		
-		
-		const Scalar v = values.value();
-		for (PetscInt i = rbegin; i < rend; ++i) {
-			for (PetscInt j = 0; j < gcols; ++j) {
-				MatSetValue(m.implementation(), i, j, v, INSERT_VALUES);
-			}
-		}
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
-
+		m.dense_init_values(opts.comm, parallel_dense_matrix_type(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), values.value());
 		apply_args(opts, m);
 	}
+
 	
+	void PetscBackend::build(PetscMatrix &m, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts) {
+		m.dense_init_values(opts.comm, parallel_dense_matrix_type(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, values.value());
+		apply_args(opts, m);
+	}
+
 	void PetscBackend::build(PetscVector &v, const Size &in_local_size, const Size &&in_global_size, const Values<Scalar> &values, const PetscArgs &opts)
 	{
 		Size v_local_size;
@@ -721,34 +602,6 @@ namespace utopia {
 		v.set_initialized(true);
 
 		apply_args(opts, v);
-	}
-	
-	void PetscBackend::build(PetscMatrix &m, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts) {
-		MPI_Comm comm = m.communicator();
-		MatDestroy(&m.implementation());
-
-		MatCreateDense(comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, NULL,
-			&m.implementation());
-		
-		//TODO check if it can be simplified using known information.
-		
-		PetscInt rbegin, rend;
-		MatGetOwnershipRange(m.implementation(), &rbegin, &rend);
-		
-		PetscInt grows, gcols;
-		MatGetSize(m.implementation(), &grows, &gcols);
-		
-		const Scalar v = values.value();
-		for (PetscInt i = rbegin; i < rend; ++i) {
-			for (PetscInt j = 0; j < gcols; ++j) {
-				MatSetValue(m.implementation(), i, j, v, INSERT_VALUES);
-			}
-		}
-		
-		MatAssemblyBegin(m.implementation(), MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(m.implementation(), MAT_FINAL_ASSEMBLY);
-
-		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PetscVector &v, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts) {

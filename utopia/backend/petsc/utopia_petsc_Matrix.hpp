@@ -286,6 +286,33 @@ namespace utopia {
         void dense_init_diag(MatType dense_type, const PetscVector &diag);
         void matij_init_diag(const PetscVector &diag);
 
+        void dense_init_values(
+        	MPI_Comm comm,
+        	MatType dense_type,
+        	PetscInt local_rows,
+        	PetscInt local_cols,
+        	PetscInt global_rows,
+        	PetscInt global_cols,
+        	PetscScalar value
+        );
+       
+        void dense_init_identity(
+        	MPI_Comm comm,
+        	MatType dense_type,
+        	PetscInt local_rows,
+        	PetscInt local_cols,
+        	PetscInt global_rows,
+        	PetscInt global_cols,
+        	PetscScalar scale_factor);
+
+        void matij_init_identity(
+        	MPI_Comm comm,
+        	PetscInt local_rows,
+        	PetscInt local_cols,
+        	PetscInt global_rows,
+        	PetscInt global_cols,
+        	PetscScalar scale_factor);
+
         void matij_init(
         	MPI_Comm comm,
         	PetscInt rows_local,
