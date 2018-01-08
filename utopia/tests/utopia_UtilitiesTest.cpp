@@ -175,7 +175,7 @@ namespace utopia {
         {
             int n = 10;
             Vector v = values(n, 1.0);
-            Vector res;
+            Vector res = zeros(n);
 
             {
                 Read<Vector> r_v(v);

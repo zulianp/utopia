@@ -283,9 +283,20 @@ namespace utopia {
         bool is_mpi() const;
         bool is_nan_or_inf() const;
 
+
+        inline void scale(const PetscScalar factor)
+        {
+        	check_error( MatScale(implementation(), factor) );
+        }
+
         //petsc says that it is correct only for square matrices
         void get_diag(PetscVector &result) const;
         void get_diag(PetscMatrix &result) const;
+
+        inline void diag_shift(const PetscScalar factor)
+        {
+        	check_error( MatShift(implementation(), factor) );
+        }
 
         void dense_init_diag(MatType dense_type, const PetscVector &diag);
         void matij_init_diag(const PetscVector &diag);

@@ -95,6 +95,7 @@ namespace utopia {
 		initialized_ = true;
 	}
 
+
 	bool PetscVector::is_mpi() const
 	{
 		static const std::string seq = "seq";
@@ -131,17 +132,16 @@ namespace utopia {
 	{
 		assert(!is_null());
 
-		if(initialized()) {
-			VecSetSizes(implementation(), local_size, global_size);
-		} else {
-			MPI_Comm comm = communicator();
-			VecType type  = this->type();
+		// if(initialized()) {
+		// 	VecSetSizes(implementation(), local_size, global_size);
+		// } else {
+		MPI_Comm comm = communicator();
+		VecType type  = this->type();
 
-			destroy();
+		destroy();
 
-			init(comm, type, local_size, global_size);
-			initialized_ = true;
-		}
+		init(comm, type, local_size, global_size);
+		// }
 	}
 
 	void PetscVector::select(

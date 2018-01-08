@@ -115,47 +115,16 @@ namespace utopia {
 
 	void PetscBackend::resize(PetscVector &vec, const Size &s)
 	{
-		Vec &v = vec.implementation();
-		PetscInt n;
-
-		if(vec.initialized()) {
-			VecGetSize(v,  &n);
-			
-			if(n == s.get(0)) {
-				return;
-			}
-		}
-
-		MPI_Comm comm; 
-		if(!vec.is_null()) {
-			comm = PetscObjectComm((PetscObject) vec.implementation());
-			VecDestroy(&v);	
+		if(vec.is_null()) {
+			vec.init(default_communicator(), parallel_vector_type(), PETSC_DECIDE, s.get(0));
 		} else {
-			comm = default_communicator();
+			vec.resize(PETSC_DECIDE, s.get(0));
 		}
-
-		vec_create_parallel(comm, PETSC_DECIDE, s.get(0), &v);
 	}
 
 	void PetscBackend::resize(PetscVector &vec, const Size &s_local, const Size &s_global)
 	{
-		Vec &v = vec.implementation();
-		PetscInt n, N;
-
-		if(vec.initialized()) {
-			VecSetSizes(v, s_local.get(0), s_global.get(0));
-			return;
-		}
-
-		MPI_Comm comm; 
-		if(!vec.is_null()) {
-			comm = PetscObjectComm((PetscObject) vec.implementation());
-			VecDestroy(&v);	
-		} else {
-			comm = default_communicator();
-		}
-		
-		vec_create_parallel(comm, s_local.get(0), s_global.get(0), &v);
+		vec.resize(s_local.get(0), s_global.get(1));
 	}
 
 	void PetscBackend::assign_transposed(PetscMatrix &left, const PetscMatrix &right)
@@ -180,7 +149,7 @@ namespace utopia {
 	
 	void PetscBackend::convert(Mat mat, PetscSparseMatrix &wrapper)
 	{
-		MatDestroy(&wrapper.implementation());
+		wrapper.destroy();
 		MatDuplicate(mat, MAT_COPY_VALUES, &wrapper.implementation());
 	}
 	
@@ -225,9 +194,6 @@ namespace utopia {
 	Range PetscBackend::col_range(const PetscMatrix &m) 
 	{
 		//FIXME do not use col_range to iterate
-		// PetscInt grows, gcols;
-		// MatGetSize(m.implementation(), &grows, &gcols);
-
 		auto s = m.size();
 		return Range(0, s.get(1));
 	}
@@ -803,7 +769,7 @@ namespace utopia {
 
 	void PetscBackend::mat_diag_shift(PetscMatrix &left, const Scalar diag_factor)
 	{
-		check_error( MatShift(left.implementation(), diag_factor) );
+		left.diag_shift(diag_factor);
 	}
 	
 	bool PetscBackend::compare(const Vector &left, const Vector &right, const ApproxEqual &comp) {
@@ -825,7 +791,8 @@ namespace utopia {
 	
 	void PetscBackend::apply_binary(Matrix &result, const Scalar factor, const Multiplies &, const Matrix &mat) {
 		result = mat;
-		MatScale(result.implementation(), factor);
+		// MatScale(result.implementation(), factor);
+		result.scale(factor);
 	}
 
 	void PetscBackend::scale(Vector &result, const Scalar scale_factor)
@@ -835,7 +802,8 @@ namespace utopia {
 
 	void PetscBackend::scale(Matrix &result, const Scalar scale_factor)
 	{
-		MatScale(result.implementation(), scale_factor);
+		// MatScale(result.implementation(), scale_factor);
+		result.scale(scale_factor);
 	}
 
 	Scalar PetscBackend::dot(const Vector &left, const Vector &right) {
@@ -902,17 +870,15 @@ namespace utopia {
 		
 		err = VecRestoreArrayRead(right.implementation(), &right_array);
 		
-		MatDestroy(&result.implementation());
-
-		dense_mat_create_parallel(
+		result.dense_init(
 			comm,
+			parallel_dense_matrix_type(),
 			l_range.extent(),
 			PETSC_DECIDE,
 			result_size.get(0),
-			result_size.get(1),
-			&result.implementation()
+			result_size.get(1)
 		);
-		
+
 		write_lock(result);
 		
 		for(SizeType i = l_range.begin(); i != l_range.end(); ++i) {
@@ -950,26 +916,21 @@ namespace utopia {
 	}
 	
 	void PetscBackend::vec_to_mat(Matrix &m, const Vector &v, const bool transpose) {
-		Matrix temp_transpose;
-		Matrix &work = transpose ? temp_transpose : m;
-
-		MatDestroy(&m.implementation());
-		MatDestroy(&work.implementation());
-
-		dense_mat_create_parallel(v.communicator(), v.local_size(), 1, v.size(), 1, &work.implementation());
+		m.dense_init(v.communicator(), parallel_dense_matrix_type(), v.local_size(), 1, v.size(), 1);
 		
 		Range r = range(v);
+
+		m.write_lock();
+
 		for (auto i = r.begin(); i < r.end(); ++i) {
-			set(work, i, 0, get(v, i));
-		}
-		
-		MatAssemblyBegin(work.implementation(), MAT_FINAL_ASSEMBLY);
-		MatAssemblyEnd(work.implementation(), MAT_FINAL_ASSEMBLY);
-		
-		if (transpose) {
-			check_error( MatTranspose(temp_transpose.implementation(), MAT_INITIAL_MATRIX, &m.implementation()) );
+			m.set(i, 0, v.get(i));
 		}
 
+		m.write_unlock();
+		
+		if(transpose) {
+			m.transpose();
+		}
 	}
 	
 	// this is not very correct yet ...
