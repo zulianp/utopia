@@ -7,7 +7,7 @@
 
 namespace utopia
 {
-    void runPETScTest();
+    void runPetscTest();
 }
 
 #endif //UTOPIA_PETSC_TEST_HPP

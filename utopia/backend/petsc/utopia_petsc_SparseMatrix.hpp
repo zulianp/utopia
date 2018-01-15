@@ -7,12 +7,11 @@
 
 namespace utopia{
 
-	class PETScSparseMatrix : public PETScMatrix {
+	class PetscSparseMatrix : public PetscMatrix {
 	public:
-		virtual ~PETScSparseMatrix() {}
-
-		//FIXME is this really necessary???
-		std::map<std::pair<PetscInt, PetscInt>, PetscScalar> buffer;
+		using PetscMatrix::PetscMatrix;
+		using PetscMatrix::operator=;
+		virtual ~PetscSparseMatrix() {}
 	};
 
 }

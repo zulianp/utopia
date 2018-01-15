@@ -3,12 +3,46 @@
 * @Date:   2016-11-15
 */
 #include "utopia.hpp"
-#include "utopia_PETScTest.hpp"
+#include "utopia_PetscTest.hpp"
 #include "test_problems/utopia_TestFunctionsND.hpp"
 
 namespace utopia {
 
 #ifdef WITH_PETSC
+
+    void petc_optional_test()
+    {
+        MPI_Comm sub_comm;
+        MPI_Comm_split(
+            PETSC_COMM_WORLD,
+            mpi_world_rank() % 2 == 1,
+            mpi_world_rank(),
+            &sub_comm);
+
+        int rank;
+        MPI_Comm_rank(sub_comm, &rank);
+
+        {
+	        //optionals only work for this builder at the moment
+	        DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"));
+
+	        auto r = row_range(m);
+	        {
+	            Write<DSMatrixd> w_m(m);
+	            for(auto i = r.begin(); i != r.end(); ++i) {
+	                m.set(i, i, rank);
+	            }
+	        }
+
+	        
+	       DVectord vec;
+	       std::string path = Utopia::Instance().get("data_path");
+	       read(path + "/RHS_10x10x10_hexa_3D", vec, sub_comm, str("my_vec"));
+   		}
+
+       MPI_Comm_free(&sub_comm);
+    }
+
 
     void petsc_reciprocal_test() {
         // test also  diag
@@ -37,7 +71,7 @@ namespace utopia {
     }
 
     void petsc_axpy_test() {
-       
+
         {
             //! [axpy (petsc)]
             int n = 10;
@@ -66,7 +100,7 @@ namespace utopia {
         }
 
         ///////////////////////////////////   
-       
+
         {
             const int m = mpi_world_size() * 3;
             const int n = mpi_world_size() * 2;
@@ -416,11 +450,10 @@ namespace utopia {
         //! [Global views]
     }
 
-
     void petsc_mat_tests()
     {
         PetscBool assembled;
-        DSMatrixd M = zeros(5,5);
+        DSMatrixd M = zeros(5, 5);
         MatAssembled(raw_type(M), &assembled);
         assert(!empty(M));
 
@@ -428,7 +461,15 @@ namespace utopia {
         assert(empty(A));
     }
 
+    void petsc_vec_tests()
+    {
+        PetscBool assembled;
+        DVectord v = zeros(5);
+        assert(!empty(v));
 
+        DVectord e;
+        assert(empty(e));
+    }
 
     void petsc_read_and_write_test()
     {
@@ -972,20 +1013,49 @@ namespace utopia {
         
         assert(approxeq(one, actual_min));
         assert(approxeq(two, actual_max));
-    
+
         actual_min = min(two, values(n, 1.));
         actual_max = max(values(n, 2.), one);
-    
+
         assert(approxeq(one, actual_min));
         assert(approxeq(two, actual_max));
     }
 
+    void petsc_ghosted()
+    {
+        const int n = mpi_world_size() * 2;
+        const int off = mpi_world_rank() * 2;
+
+        std::vector<PetscInt> ghosts{ (off + 3) % n };
+        DVectord v = ghosted(2, n, ghosts);
+
+        auto r = range(v);
+
+        {
+            Write<DVectord> w_v(v);
+            for(auto i = r.begin(); i != r.end(); ++i) {
+                v.set(i, i);
+            }
+        }
+
+        {
+            Read<DVectord> r_v(v);
+            std::vector<PetscInt> index{(off + 3) % n};
+            std::vector<PetscScalar> values;
+            v.get(index, values);
+            assert(index[0] == PetscInt(values[0]));
+        }
+
+    }
+
     #endif //WITH_PETSC;
 
-    void runPETScTest() {
+    void runPetscTest() {
 #ifdef WITH_PETSC
-        UTOPIA_UNIT_TEST_BEGIN("PETScTest");
+        UTOPIA_UNIT_TEST_BEGIN("PetscTest");
         
+        UTOPIA_RUN_TEST(petsc_ghosted);
+        UTOPIA_RUN_TEST(petc_optional_test);
         UTOPIA_RUN_TEST(petsc_view_test);                
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate_test);
         UTOPIA_RUN_TEST(petsc_harcoded_cg_test);
@@ -1000,6 +1070,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_matlab_connection_test);
         UTOPIA_RUN_TEST(petsc_matrix_composite_test);
         UTOPIA_RUN_TEST(petsc_mat_tests);
+        UTOPIA_RUN_TEST(petsc_vec_tests);
         UTOPIA_RUN_TEST(petsc_read_and_write_test);
         UTOPIA_RUN_TEST(petsc_to_blas_test);
         UTOPIA_RUN_TEST(petsc_is_nan_or_inf_test); 
@@ -1014,6 +1085,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_tensor_reduction_test);
         UTOPIA_RUN_TEST(petsc_precond_test);
         UTOPIA_RUN_TEST(petsc_binary_min_max);
+        
 
         //serial tests
         UTOPIA_RUN_TEST(petsc_inverse_test);
@@ -1025,7 +1097,7 @@ namespace utopia {
         //  maria_test();
         //  //local_diag_block_test();              // TODO:: assert fails in parallel
         
-        UTOPIA_UNIT_TEST_END("PETScTest");
+        UTOPIA_UNIT_TEST_END("PetscTest");
         #endif // WITH_PETSC
     }
 }

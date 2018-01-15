@@ -10,6 +10,16 @@
 
 namespace utopia 
 {
+	inline std::string str(const char *char_array)
+	{
+		return std::string(char_array);
+	}
+
+	template<typename T>
+	inline std::string str(const T &val)
+	{
+		return std::to_string(val);
+	}
 
 	bool read(const std::string &path, std::string &str);
 	bool write(const std::string &path, const std::string &str);

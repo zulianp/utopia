@@ -7,6 +7,7 @@
 
 #include "utopia_Expression.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Optional.hpp"
 
 namespace utopia {
 
@@ -45,7 +46,6 @@ namespace utopia {
     class LocalIdentity {};
     class Zeros {};
     class LocalZeros {};
-
 
 
     template<>
@@ -232,7 +232,6 @@ namespace utopia {
         T _nnz;
     };
 
-
     template<typename _Scalar>
     class FactoryTraits< LocalNNZ<_Scalar> > {
     public:
@@ -248,47 +247,7 @@ namespace utopia {
         };
     };
 
-    template<typename T>
-    class LocalRowNNZ {
-    public:
-     
-        LocalRowNNZ()  {};
-        LocalRowNNZ(T nnz) : _nnz(nnz) {};
-        template<typename OtherT>
-        LocalRowNNZ(const LocalRowNNZ<OtherT>& other) {_nnz = other.nnz();}
-
-        inline const T &nnz() const
-        {
-            return _nnz;
-        }
-        inline void setSparse(T nnz)
-        {
-            _nnz = nnz;
-        }
-
-    private:
-        T _nnz;
-    };
-
-    
-    template<typename _Scalar>
-    class FactoryTraits< LocalRowNNZ<_Scalar> > {
-    public:
-        typedef _Scalar Scalar;
-
-        static constexpr const char * getClass()
-        {
-            return "LocalRowNNZ";
-        }
-
-        enum {
-            FILL_TYPE = FillType::SPARSE
-        };
-    };
-
-
     class Resize { };
-
 
     template<>
     class FactoryTraits<Resize> {
@@ -343,6 +302,43 @@ namespace utopia {
         Type _type;
     };
 
+    template<class Factory, class Options>
+    class Build : public Expression< Build<Factory, Options> > {
+    public:
+        static const int Order = Factory::Order;
+
+        enum {
+            StoreAs = UTOPIA_BY_VALUE
+        };
+
+        typedef typename Factory::Scalar Scalar;
+
+        Build(const Factory &factory, const Options &opts)
+        : factory_(factory), opts_(opts)
+        {}
+
+        inline std::string getClass() const override
+        {
+            return factory_.getClass();
+        }
+
+        virtual ~Build() {}
+
+        const Options & opts() const
+        {
+            return opts_;
+        }
+
+        const Factory &factory() const
+        {
+            return factory_;
+        }
+
+    private:
+        Factory factory_;
+        Options opts_;
+    };
+
     template<class Type, int Order_>
     class SymbolicTensor : public Expression< SymbolicTensor<Type, Order_> > {
     public:
@@ -363,6 +359,51 @@ namespace utopia {
         {
             return "SymbolicTensor(" + std::string(FactoryTraits<Type>::getClass()) + ")";
         }
+    };
+
+    template<class Index>
+    class Ghosts : public Expression< Ghosts<Index> > {
+    public:
+
+        static const int Order = 1;
+
+        Ghosts(const Size::SizeType &local_size, const Size::SizeType &global_size, const Index &index)
+        : local_size_(local_size), global_size_(global_size), index_(index)
+        {}
+
+        // Ghosts(const Size::SizeType &local_size, const Size::SizeType &global_size, Index &&index)
+        // : local_size_(local_size), global_size_(global_size), index_(std::move(index))
+        // {}
+
+        const Index &index() const
+        {
+            return index_;
+        }
+
+        const Size::SizeType &local_size() const
+        {
+            return local_size_;
+        }
+
+        const Size::SizeType &global_size() const
+        {
+            return global_size_;
+        }
+
+    private:
+        Size::SizeType local_size_;
+        Size::SizeType global_size_;
+        Index index_;
+    };
+
+    template<class Index>
+    class Traits< Ghosts<Index> > {
+    public:
+        typedef double Scalar;
+
+        enum {
+            FILL_TYPE = FillType::DENSE
+        };
     };
 
     template<class Type, int Order>
@@ -439,11 +480,11 @@ namespace utopia {
         return Factory<Zeros, utopia::DYNAMIC>(size);
     }
 
-    ///nnzXRowOrCol depends if your using a row-major or col-major sparse storage
+    ///nnz_x_row_or_col depends if your using a row-major or col-major sparse storage
     template<typename T>
-    inline Factory<NNZ<T>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, T nnzXRowOrCol)
+    inline Factory<NNZ<T>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
-        return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnzXRowOrCol));
+        return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnz_x_row_or_col));
     }
 
 
@@ -523,21 +564,33 @@ namespace utopia {
 
 
 
-    ///nnzXRowOrCol depends if your using a row-major or col-major sparse storage
+    ///nnz_x_row_or_col depends if your using a row-major or col-major sparse storage
     template<typename T>
-    inline Factory<LocalNNZ<T>, 2> local_sparse(const Size::SizeType rows, const Size::SizeType cols, T nnzXRowOrCol)
+    inline Factory<LocalNNZ<T>, 2> local_sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
-        return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnzXRowOrCol));
+        return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnz_x_row_or_col));
     }
 
-    template<typename T>
-    inline Factory<LocalRowNNZ<T>, 2> local_row_sparse(const Size::SizeType local_rows, const Size::SizeType global_cols, T nnzXRowOrCol)
+    template<typename T, class... Args>
+    inline auto local_sparse(
+        const Size::SizeType rows,
+        const Size::SizeType cols,
+        T nnz_x_row_or_col,
+        Args &&... opts) -> Build< Factory<LocalNNZ<T>, 2>, decltype(options(opts...))>
     {
-        return Factory<LocalRowNNZ<T>, 2>(Size({local_rows, global_cols}), LocalRowNNZ<T>(nnzXRowOrCol));
+        return Build<Factory<LocalNNZ<T>, 2>, decltype(options(opts...))>(local_sparse(rows, cols, nnz_x_row_or_col), options(opts...));
     }
 
      /** @}*/
 
+    template<class Index>
+    inline Ghosts<Index> ghosted(
+        const Size::SizeType &local_size,
+        const Size::SizeType &global_size,
+        Index &&index)
+    {
+        return Ghosts<Index>(local_size, global_size, std::forward<Index>(index));
+    }
 }
 
 #endif //UTOPIA_UTOPIA_FACTORY_HPP

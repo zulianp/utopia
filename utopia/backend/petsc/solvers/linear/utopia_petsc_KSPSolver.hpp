@@ -33,13 +33,13 @@ namespace utopia {
     
     /**@ingroup     Linear 
      * @brief       Class provides interface to Petsc KSP solvers \n
-     *              For setting up basic parameters, one can use classic PETSc runtime options, e.g. 
+     *              For setting up basic parameters, one can use classic Petsc runtime options, e.g. 
      *              To see all possibilities, please refer to: 
      *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/PC/PCType.html">preconditioner types</a> 
      *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/KSP/KSPType.html#KSPType">solver types</a>
      *              
      *              Setting own/utopia preconditioner, can be done as following: 
-     *              \snippet tests/utopia_SolverTest.cpp PETScKSPSolver solve example1
+     *              \snippet tests/utopia_SolverTest.cpp PetscKSPSolver solve example1
      *              Detailed information about preconditioners, can be found in  \ref precondotioners.
      */
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
@@ -207,7 +207,7 @@ public:
         const Matrix &A = *this->get_operator(); 
 
 
-        PreconditionedSolver::init_solver("UTOPIA::PETSc KSP", {}); 
+        PreconditionedSolver::init_solver("UTOPIA::Petsc KSP", {}); 
           
         KSPConvergedReason  reason;
         // PetscReal           r_norm;

@@ -58,14 +58,7 @@ namespace utopia {
 		void non_linear_jacobi_step(const Matrix &A, const Vector &b, Vector &x)
 		{
 			r = b - A * x;
-			const auto &g = *constraints_.upper_bound();
-
-			Range rr = row_range(A);
-			ReadAndWrite<Vector> rw_x(x);
-			for(auto i = rr.begin(); i != rr.end(); ++i) {
-				auto s = x.get(i) + d_inv.get(i) * r.get(i);
-				x.set(i, std::min(s, g.get(i)) );
-			}
+			x = min(x + e_mul(d_inv, r), *constraints_.upper_bound());
 		}
 
 		bool step(const Matrix &A, const Vector &b, Vector &x)

@@ -28,6 +28,8 @@
 #include "utopia_WearEstimator.hpp"
 #include "utopia_MechTest.hpp"
 #include "utopia_AssemblyTest.hpp"
+#include "utopia_FSITest.hpp"
+#include "utopia_MSHReaderTest.hpp"
 
 #include <functional>
 
@@ -61,10 +63,13 @@ int main(const int argc, char *argv[])
 	    runners["wear"] = run_wear_test;
 	    runners["mech"] = run_mech_test;
 	    runners["asm"] = run_assembly_test;
+	    runners["fsi"] = run_fsi_test;
+
 
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
+	    runners["test_msh_reader"] = test_msh_reader;
 
 		for(int i = 1; i < argc; ++i) {
 			if(argv[i] == std::string("-r")) {

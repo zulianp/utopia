@@ -354,7 +354,7 @@ namespace utopia
 	};
 	
 #ifdef WITH_PETSC
-	class PETScSolverTest {
+	class PetscSolverTest {
 	public:
 		
 		void run()
@@ -518,9 +518,13 @@ namespace utopia
 
 			SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.set_box_constraints(box);
+			// nlsolver.verbose(true);
 
 			nlsolver.max_it(200);
-			nlsolver.solve(A, b, x_0);			
+			nlsolver.solve(A, b, x_0);		
+
+			// disp(l);
+			// disp(u);	
 			assert(approxeq(x, x_0));
 		}
 		
@@ -1221,12 +1225,12 @@ namespace utopia
 			ProjectedGaussSeidel<Matrix, Vector> pgs;
 			//super slow convergence
 			pgs.max_it(n*40);
-			pgs.verbose(true);
+			// pgs.verbose(true);
 			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 			pgs.solve(m, rhs, solution);
 		}
 
-		PETScSolverTest()
+		PetscSolverTest()
 		: _n(10) { }
 		
 	private:
@@ -1240,7 +1244,7 @@ namespace utopia
 		UTOPIA_UNIT_TEST_BEGIN("SolverTest");
 #ifdef WITH_PETSC
 		SolverTest<DMatrixd, DVectord, PetscScalar>().run();
-		PETScSolverTest().run();
+		PetscSolverTest().run();
 #endif
 		
 #ifdef WITH_BLAS

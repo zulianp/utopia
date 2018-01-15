@@ -39,7 +39,7 @@ namespace utopia {
     public:
         // Calls to size(expr.derived()) can cause compilation errors even if we check if there is a
         // version of size that takes T, because that can be a recusive call that can fail later
-        // (example: Wrapper<PETScSerialSparseMatrix>). Size logging has been removed.
+        // (example: Wrapper<PetscSerialSparseMatrix>). Size logging has been removed.
         template<class T>
         Measurement(const Expression<T> &expr) {
             id_ = generate_unique_id();

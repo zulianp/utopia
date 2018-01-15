@@ -164,12 +164,30 @@ namespace utopia {
 				return trafo.apply(p);
 			};
 
+			rotate3 = [this](const Point3d &p) -> Point3d {
+				AffineTransform trafo;
+				trafo.make_rotation(3, this->t * this->d_angle, 'y');
+				trafo.translation[0] = -p[0];
+				trafo.translation[1] = -p[1];
+				trafo.translation[2] = -p[2];
+
+				return trafo.apply(p);
+			};
+
 			zero2 = [](const Point2d &p) -> Point2d {
 				return {0., 0.};
 			};
 
+			zero3  = [](const Point3d &p) -> Point3d {
+				return {0., 0., 0.};
+			};
+
 			translate2_y = [this](const Point2d &p) -> Point2d {
 				return {0., std::min(0.5 + 2*this->dt*0.1, 0.52) };
+			};
+
+			translate3_z = [this](const Point3d &p) -> Point3d {
+				return {0., 0., std::min(0.5 + 2*this->dt*0.1, 0.52) };
 			};
 		}
 
@@ -185,6 +203,7 @@ namespace utopia {
 			// displacement = local_zeros(dof_map.n_local_dofs());
 
 			const auto dim = mesh.mesh_dimension();
+			const bool is_3d = dim == 3;
 
 			auto r = range(displacement);
 			Write<DVectord> w_d(displacement);
@@ -199,9 +218,17 @@ namespace utopia {
 					Point2d p{ node(0), node(1) };
 
 					if(e.subdomain_id() == block_id_rot){
-						p = rotate2(p);
+						if(is_3d) {
+							// p = rotate3(p);
+						} else {
+							p = rotate2(p);
+						}
 					} else if(e.subdomain_id() == block_id_trasl) {
-						p = translate2_y(p);
+						if(is_3d) {
+							// p = translate3_y(p);
+						} else {
+							p = translate2_y(p);
+						}
 					}
 
 					for(unsigned int d = 0; d < dim; ++d) {
@@ -223,8 +250,11 @@ namespace utopia {
 		double angle_radian;
 		double d_angle;
 		Fun2d rotate2;
+		Fun3d rotate3;
 		Fun2d translate2_y;
+		Fun3d translate3_z;
 		Fun2d zero2;
+		Fun3d zero3;
 		bool negative_dir;
 	};
 
@@ -445,6 +475,7 @@ namespace utopia {
 		void run(const std::shared_ptr<libMesh::MeshBase> &mesh)
 		{
 			const bool override_each_time_step = true;
+			const bool is_3d = mesh->mesh_dimension() == 3;
 
 			auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
 			auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("wear_test");
@@ -453,20 +484,36 @@ namespace utopia {
 			auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "disp_y");
 			auto V  = Vx * Vy;
 
+			if(is_3d) {
+				V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "disp_z");
+			}
+
 			auto u  = trial(V);
 			auto ux = trial(Vx);
 			auto uy = trial(Vy);
 			auto vx = test(Vx);
 			auto vy = test(Vy);
 
+			auto v = test(V);
+
 			const int dim = mesh->mesh_dimension();
 
-			auto constr = constraints(
-				// boundary_conditions(u == coeff(gait_cycle.translate2_y), {4}),
-				boundary_conditions(u == coeff(gait_cycle.zero2),        {3, 4})
-			);
 
-			FEBackend<LIBMESH_TAG>::init_constraints(constr);
+			if(is_3d) {
+				auto constr = constraints(
+					boundary_conditions(u == coeff(gait_cycle.zero3), {3, 4})
+				);
+
+				init_constraints(constr);
+
+			} else {
+				auto constr = constraints(
+					boundary_conditions(u == coeff(gait_cycle.zero2), {3, 4})
+				);
+
+				init_constraints(constr);
+			}
+
 			Vx.initialize();
 
 			init_aux_system(*equation_systems, 1);
@@ -478,11 +525,22 @@ namespace utopia {
 			auto Py = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_y", param_sys_number);
 			auto P = Px * Py;
 
-			auto p_constr = constraints(
-				boundary_conditions(trial(P) == coeff(gait_cycle.zero2), {1, 2, 3, 4})
-			);
-			//FEBackend<LIBMESH_TAG>::
-			init_constraints(p_constr);
+			if(is_3d) {
+				P *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_z", param_sys_number);
+
+				auto p_constr = constraints(
+					boundary_conditions(trial(P) == coeff(gait_cycle.zero3), {3, 4})
+				);
+
+				init_constraints(p_constr);
+			} else {
+				auto p_constr = constraints(
+					boundary_conditions(trial(P) == coeff(gait_cycle.zero2), {3, 4})
+				);
+
+				init_constraints(p_constr);
+			}
+
 			Px.initialize();
 			Px.equation_system().update();
 
@@ -510,7 +568,12 @@ namespace utopia {
 			apply_zero_boundary_conditions(Vx.dof_map(), state[0].external_force);
 
 			auto ef = std::make_shared<ConstantExternalForce>();
-			ef->init((inner(coeff(0.), vx) + inner(coeff(0.), vy)) * dX);
+
+			if(is_3d) {
+				ef->init((inner(coeff(0.), vx) + inner(coeff(0.), vy) + inner(coeff(0.), v[2])) * dX);
+			} else {
+				ef->init((inner(coeff(0.), vx) + inner(coeff(0.), vy)) * dX);
+			}
 			ef->eval(state[0].t, state[0].external_force);
 			apply_boundary_conditions(Vx.dof_map(), mech_ctx.stiffness_matrix, state[0].external_force);
 

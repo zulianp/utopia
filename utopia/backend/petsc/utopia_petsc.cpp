@@ -2,6 +2,6 @@
 
 //explicit instantiations
 namespace utopia {
- // template class Wrapper<PETScSparseMatrix, 2>;
+ // template class Wrapper<PetscSparseMatrix, 2>;
 }
 

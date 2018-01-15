@@ -136,6 +136,9 @@ namespace utopia {
     template<class Type, int Order>
     class Factory;
 
+    template<class Index>
+    class Ghosts;
+
     template<class Type, int Order>
     class SymbolicTensor;
 

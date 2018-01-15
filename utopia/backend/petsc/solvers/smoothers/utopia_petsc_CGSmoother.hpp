@@ -22,7 +22,7 @@
     namespace utopia 
     {
         /**
-         * @brief     Wrapper for PETSc CG to be used as smoother. 
+         * @brief     Wrapper for Petsc CG to be used as smoother. 
          *  
          * @tparam     Matrix  
          * @tparam     Vector  

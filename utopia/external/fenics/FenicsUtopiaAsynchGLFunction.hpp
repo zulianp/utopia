@@ -54,15 +54,15 @@ class FenicsUtopiaAsynchGLFunction : public utopia::GLFunction<GlobalMatrix, Glo
         bool gradient(const GlobalVector &x, GlobalVector &g) const override
         {
 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             x_wrap.update_ghost_values();
             (*_u->vector()) = x_wrap;
 
-            dolfin::PETScVector b;
+            dolfin::PetscVector b;
             dolfin::SystemAssembler assembler(_H, _g, _bcs);
             assembler.assemble(b, *_u->vector());
 
-            // dolfin::PETScMatrix A;
+            // dolfin::PetscMatrix A;
             // assemble_system(A, b, *_H, *_g, _bcs);
 
 
@@ -78,16 +78,16 @@ class FenicsUtopiaAsynchGLFunction : public utopia::GLFunction<GlobalMatrix, Glo
         {
 
             // this is changing u in lin and bil. forms 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             (*_u->vector()) = x_wrap;
 
-            dolfin::PETScMatrix A;
+            dolfin::PetscMatrix A;
             dolfin::SystemAssembler assembler(_H, _g, _bcs);
             assembler.assemble(A);
 
 
-            // dolfin::PETScVector b;
-            // dolfin::PETScMatrix A;
+            // dolfin::PetscVector b;
+            // dolfin::PetscMatrix A;
             // assemble_system(A, b, *_H, *_g, _bcs);
 
             Mat Ap = A.mat(); 
@@ -109,7 +109,7 @@ class FenicsUtopiaAsynchGLFunction : public utopia::GLFunction<GlobalMatrix, Glo
         bool value(const GlobalVector &x, typename GlobalVector::Scalar &f) const override 
         {
             // this is changing u in lin and bil. forms 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             (*_u->vector()) = x_wrap;
 
             dolfin::Scalar global_energy;
@@ -133,7 +133,7 @@ class FenicsUtopiaAsynchGLFunction : public utopia::GLFunction<GlobalMatrix, Glo
             this->interpolate(x_k, x);
 
             // this is changing u in lin and bil. forms 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             (*_u->vector()) = x_wrap;
 
 

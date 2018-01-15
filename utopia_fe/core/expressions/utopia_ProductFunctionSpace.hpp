@@ -89,6 +89,12 @@ namespace utopia {
 			spaces_.push_back(space);
 		}
 
+		inline ProductFunctionSpace & operator*=(const FunctionSpace<Space> &right)
+		{
+			add_subspace(std::make_shared<Space>(right.derived()));
+			return *this;
+		}
+
 		bool is_valid(const bool verbose)
 		{
 			auto n = spaces_.size();

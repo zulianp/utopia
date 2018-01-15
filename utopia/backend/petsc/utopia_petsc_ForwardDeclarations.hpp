@@ -4,12 +4,12 @@
 
 namespace utopia 
 {
-    class PETScMatrix;
-    class PETScSparseMatrix;
-    class PETScSerialSparseMatrix;
+    class PetscMatrix;
+    class PetscSparseMatrix;
+    class PetscSerialSparseMatrix;
 
-    class PETScVector;
-    class PETScSerialVector;
+    class PetscVector;
+    class PetscSerialVector;
 }
 
 #endif //UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP

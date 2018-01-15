@@ -996,9 +996,12 @@ namespace utopia {
 			Write<Vector> w(element_values);
 			Read<Wrapper<Tensor, 1>> r(c);
 
-			for(std::size_t i = 0; i < indices.size(); ++i) {
-				element_values.set(i, c.get(indices[i]));
-			}
+			// for(std::size_t i = 0; i < indices.size(); ++i) {
+			// 	element_values.set(i, c.get(indices[i]));
+			// }
+			// std::cout << raw_type(c) << std::endl;
+			assert( c.implementation().has_ghosts() || mpi_world_size() == 1);
+			c.get(indices, element_values.implementation().get_values());
 		}
 
 		template<class Tensor, class Space>
@@ -1180,9 +1183,14 @@ namespace utopia {
 			Write<Vector> w(element_values);
 			Read<Wrapper<Tensor, 1>> r(c);
 
-			for(std::size_t i = 0; i < n_indices; ++i) {
-				element_values.set(i, c.get(prod_indices[i]));
-			}
+			// for(std::size_t i = 0; i < n_indices; ++i) {
+			// 	element_values.set(i, c.get(prod_indices[i]));
+			// }
+
+			// std::cout << raw_type(c) << std::endl;
+			assert( c.implementation().has_ghosts() || mpi_world_size() == 1);
+
+			c.get(prod_indices, element_values.implementation().get_values());
 		}
 
 		//////////////////////////////////////////////////////////////////////////////////////////

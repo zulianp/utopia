@@ -68,7 +68,7 @@ namespace utopia {
             });
 
             #ifdef WITH_PETSC
-                //NOTE(eric): range assignment is NYI in PETSc backend
+                //NOTE(eric): range assignment is NYI in Petsc backend
             if (std::is_same<Matrix, DMatrixd>::value) return;
             #endif
 
@@ -175,7 +175,7 @@ namespace utopia {
         {
             int n = 10;
             Vector v = values(n, 1.0);
-            Vector res;
+            Vector res = zeros(n);
 
             {
                 Read<Vector> r_v(v);

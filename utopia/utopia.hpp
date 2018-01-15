@@ -37,14 +37,14 @@ with compile time decisions.
 * 
 * The class in the Utopia library responsible to dispatch expressions or composite expressions to back-end calls is called @em Evaluator.
 * 
-* In this category of back-ends falls a PETSc based back-end which is currently the most developed in Utopia. However, Utopia also has a custom made back-end based on the STL, blas, and lapack which is mostly available for learning purposes.
+* In this category of back-ends falls a Petsc based back-end which is currently the most developed in Utopia. However, Utopia also has a custom made back-end based on the STL, blas, and lapack which is mostly available for learning purposes.
 * 
 * @section codegen Code generation
 * We are currently developing an evaluator/code-generator which generates OpenCL programs, compiles, and runs them following a just-in-time (JIT) approach (see also ViennaCL). It is still in an experimental state but it aims at very fast in-lined computations. Statically typed expressions allows generating and compiling specific expression subtrees only once for each runtime.
 * 
 * @section edsl Utopia EDSL and memory access
 * The design of Utopia EDSL is inspired by MatLAB and Eigen and strives for simplicity. However, due to the fact that Utopia also targets large scale computations, some specific aspects need to be explicitly handled. 
-* The main aspect is memory location. Although, Utopia provides a certain degree of transparency (as in PETSc) it requires that things are handled in a memory conscious manner. Independent of which back-end is being used objects and functions handling ranges and access have to be used always. Ranges allow to iterate over elements of matrices or vectors which are available in current host address space. For instance, a supercomputer has multiple compute nodes with dedicated memory (which means that is distributed), hence parts of the data accessible to one node is not directly accessible to another one. For this example ranges allow to iterate exclusively over the elements that are available within each node separately. 
+* The main aspect is memory location. Although, Utopia provides a certain degree of transparency (as in Petsc) it requires that things are handled in a memory conscious manner. Independent of which back-end is being used objects and functions handling ranges and access have to be used always. Ranges allow to iterate over elements of matrices or vectors which are available in current host address space. For instance, a supercomputer has multiple compute nodes with dedicated memory (which means that is distributed), hence parts of the data accessible to one node is not directly accessible to another one. For this example ranges allow to iterate exclusively over the elements that are available within each node separately. 
 * 
 * For a vector @em v its range can be accessed as @em range(v).
 * For a matrix @em m its ranges can be accessed as @em row_range(m) and @em col_range(m).
@@ -77,7 +77,7 @@ with compile time decisions.
 * In this section we illustrate the basic usage of the utopia EDSL. The examples are not back-end specific hence we use generic type names for matrices 
 * (i.e, @em SparseMatrix and @em DenseMatrix) and vectors (i.e, @em Vector) 
 * which can be directly replaced by specific types 
-* (e.g., utopia::DSMatrixd, utopia::DMatrixd and utopia::DVectord for using the PETSc back-end) or used in a generic way for algorithms that are not back-end specific.
+* (e.g., utopia::DSMatrixd, utopia::DMatrixd and utopia::DVectord for using the Petsc back-end) or used in a generic way for algorithms that are not back-end specific.
 * 
 * 
 * @code
@@ -232,7 +232,7 @@ with compile time decisions.
 * @endcode
 * This particular operation can be optimized by considering it as a whole for a specific backend, the petsc backend. We can catch such operations by 
 * matching the pattern of the expression-tree and by performing some simple checks as follow:
-* \snippet core/eval/petsc/utopia_Eval_PETSc.hpp pattern matching and optimizations
+* \snippet core/eval/petsc/utopia_Eval_Petsc.hpp pattern matching and optimizations
 * If you want to contribute to utopia or you have some functionality that you want to add (e.g., implemented with pestc types)
 * write us at  <a href="mailto:patrick.zulian@gmail.com"> patrick.zulian@gmail.com </a>.
 *

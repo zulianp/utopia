@@ -131,8 +131,8 @@ int main()
 
   // {
   //   std::vector<std::shared_ptr<const dolfin::DirichletBC> > bcs_ptrs = {{ bcl, bcr }};
-  //   dolfin::PETScMatrix A; 
-  //   dolfin::PETScVector b;
+  //   dolfin::PetscMatrix A; 
+  //   dolfin::PetscVector b;
   //   dolfin::SystemAssembler assembler(a, L, bcs_ptrs);
   //   assembler.assemble(b);
   
