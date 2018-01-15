@@ -26,7 +26,7 @@ namespace utopia {
 		return false;
 	}
 
-	static bool read_element(const std::string &node_string, const std::size_t node_id_offset, libMesh::MeshBase &mesh)
+	static bool read_element(const std::string &node_string, const std::size_t node_id_offset, const MeshReaderOpts &opts, libMesh::MeshBase &mesh)
 	{
 		std::istringstream ss(node_string);
 
@@ -79,6 +79,8 @@ namespace utopia {
 			elem->set_node(i) = mesh.node_ptr(node_id_offset + nodes[i]);
 		}
 
+
+		elem->subdomain_id() = opts.subdomain_id;
 		mesh.add_elem(elem.release());			
 		return true;
 	}
@@ -101,8 +103,6 @@ namespace utopia {
 
 		static const std::string elements_end_marker = "$EndElements";
 		static const auto elements_end_marker_size = elements_end_marker.size();
-
-
 
 
 		std::size_t node_id_offset = 0;
@@ -153,8 +153,9 @@ namespace utopia {
 					}
 
 					if(!read_point(line, node_id, xyz)) {
-						std::cerr << "[Error] Bad node format" << std::endl;
+						std::cerr << "[Error] Bad node format. Line: " << std::endl;
 						std::cerr << line << std::endl;
+						return false;
 						continue;
 					}
 
@@ -187,9 +188,10 @@ namespace utopia {
 						break;
 					}
 
-					if(!read_element(line, node_id_offset, mesh)) {
-						std::cerr << "[Error] Bad element format" << std::endl;
-						continue;
+					if(!read_element(line, node_id_offset, opts, mesh)) {
+						std::cerr << "[Error] Bad element format. Line: " << std::endl;
+						std::cerr << line << std::endl;
+						return false;
 					}
 
 				}

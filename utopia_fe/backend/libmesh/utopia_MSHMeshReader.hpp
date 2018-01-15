@@ -40,7 +40,7 @@ namespace utopia {
 				return false;
 			}
 
-			if(!read(file, mesh)) {
+			if(!read(file, mesh, opts)) {
 				file.close();
 				return false;
 			}
