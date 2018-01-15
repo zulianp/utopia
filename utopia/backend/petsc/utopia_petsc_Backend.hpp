@@ -494,7 +494,7 @@ namespace utopia {
 
 		inline static bool check_error(const PetscInt err) 
 		{
-			return PetscError::Check(err);
+			return PetscErrorHandler::Check(err);
 		}
 
 		inline static MatType parallel_sparse_matrix_type()
