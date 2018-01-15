@@ -918,7 +918,7 @@ namespace utopia {
 	void PetscBackend::vec_to_mat(Matrix &m, const Vector &v, const bool transpose) {
 		m.dense_init(v.communicator(), parallel_dense_matrix_type(), v.local_size(), 1, v.size(), 1);
 		
-		Range r = range(v);
+		Range r = v.range();
 
 		m.write_lock();
 

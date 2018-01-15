@@ -331,7 +331,7 @@ namespace utopia {
 		
 		inline bool has_ghosts() const
 		{
-			return !ghost_values_.has_ghosts();
+			return ghost_values_.has_ghosts();
 		}
 		
 		inline void update_ghosts()

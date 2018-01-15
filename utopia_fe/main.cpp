@@ -29,6 +29,7 @@
 #include "utopia_MechTest.hpp"
 #include "utopia_AssemblyTest.hpp"
 #include "utopia_FSITest.hpp"
+#include "utopia_MSHReaderTest.hpp"
 
 #include <functional>
 
@@ -68,6 +69,7 @@ int main(const int argc, char *argv[])
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
+	    runners["test_msh_reader"] = test_msh_reader;
 
 		for(int i = 1; i < argc; ++i) {
 			if(argv[i] == std::string("-r")) {
