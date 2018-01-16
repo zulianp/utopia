@@ -116,11 +116,11 @@ namespace utopia {
 
 				assert(alpha > 0);
 
-				Scalar n_inactive = sum(inactive_set_);
+				// Scalar n_inactive = sum(inactive_set_);
 
-				if(this->verbose() && mpi_world_rank() == 0) {
-					std::cout << "alpha: " << alpha << " n_inactive " << n_inactive << std::endl;
-				}
+				// if(this->verbose() && mpi_world_rank() == 0) {
+				// 	std::cout << "alpha: " << alpha << " n_inactive " << n_inactive << std::endl;
+				// }
 
 				// alpha = std::min(alpha, static_cast<Scalar>(1.));
 			}
