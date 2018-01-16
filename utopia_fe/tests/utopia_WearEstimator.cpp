@@ -161,12 +161,13 @@ namespace utopia {
 				trafo.make_rotation(2, this->t * this->d_angle, 'y');
 				trafo.translation[0] = -p[0];
 				trafo.translation[1] = -p[1];
+
 				return trafo.apply(p);
 			};
 
 			rotate3 = [this](const Point3d &p) -> Point3d {
 				AffineTransform trafo;
-				trafo.make_rotation(3, this->t * this->d_angle, 'y');
+				trafo.make_rotation(3, this->t * this->d_angle, 'x');
 				trafo.translation[0] = -p[0];
 				trafo.translation[1] = -p[1];
 				trafo.translation[2] = -p[2];
@@ -187,7 +188,12 @@ namespace utopia {
 			};
 
 			translate3_z = [this](const Point3d &p) -> Point3d {
-				return {0., 0., std::min(0.5 + 2*this->dt*0.1, 0.52) };
+				// return { 0., 0., 1.8 - 1.8 * this->t/this->t_end };
+				return {0.,0.,0.};
+			};
+
+			bc34 = [this](const Point3d &p) -> Point3d {
+				return { 0., 0., 1.8 };
 			};
 		}
 
@@ -215,19 +221,20 @@ namespace utopia {
 				for(std::size_t i = 0; i < e.n_nodes(); ++i) {
 					const auto &node = e.node_ref(i);
 
-					Point2d p{ node(0), node(1) };
+					Point2d p2{ node(0), node(1) };
+					Point3d p3{ node(0), node(1), node(2) };
 
 					if(e.subdomain_id() == block_id_rot){
 						if(is_3d) {
-							// p = rotate3(p);
+							p3 = rotate3(p3);
 						} else {
-							p = rotate2(p);
+							p2 = rotate2(p2);
 						}
 					} else if(e.subdomain_id() == block_id_trasl) {
 						if(is_3d) {
-							// p = translate3_y(p);
+							p3 = translate3_z(p3);
 						} else {
-							p = translate2_y(p);
+							p2 = translate2_y(p2);
 						}
 					}
 
@@ -235,7 +242,11 @@ namespace utopia {
 						unsigned int dof = node.dof_number(main_system_number, d, 0);
 
 						if(r.inside(dof)) {
-							displacement.set(dof, p[d]);
+							if(is_3d) {
+								displacement.set(dof, p3[d]);
+							} else {
+								displacement.set(dof, p2[d]);
+							}
 						}
 					}
 				}
@@ -255,6 +266,7 @@ namespace utopia {
 		Fun3d translate3_z;
 		Fun2d zero2;
 		Fun3d zero3;
+		Fun3d bc34;
 		bool negative_dir;
 	};
 
@@ -444,7 +456,7 @@ namespace utopia {
 			const int dim = es.get_mesh().mesh_dimension();
 
 			if(dim > 2) 
-				var_num_aux.push_back( aux.add_variable("disp_z", libMesh::Order(order), libMesh::LAGRANGE) );
+				var_num_aux.push_back( aux.add_variable("inc_z", libMesh::Order(order), libMesh::LAGRANGE) );
 
 			var_num_aux.push_back( aux.add_variable("vel_x", libMesh::Order(order), libMesh::LAGRANGE) );
 			var_num_aux.push_back( aux.add_variable("vel_y", libMesh::Order(order), libMesh::LAGRANGE) );
@@ -501,7 +513,8 @@ namespace utopia {
 
 			if(is_3d) {
 				auto constr = constraints(
-					boundary_conditions(u == coeff(gait_cycle.zero3), {3, 4})
+					boundary_conditions(u == coeff(gait_cycle.zero3), {3}),
+					boundary_conditions(u == coeff(gait_cycle.bc34),  {4})
 				);
 
 				init_constraints(constr);
@@ -524,18 +537,19 @@ namespace utopia {
 			auto Px = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_x", param_sys_number);
 			auto Py = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_y", param_sys_number);
 			auto P = Px * Py;
+			auto p = trial(P);
 
 			if(is_3d) {
 				P *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_z", param_sys_number);
 
 				auto p_constr = constraints(
-					boundary_conditions(trial(P) == coeff(gait_cycle.zero3), {3, 4})
+					boundary_conditions(p == coeff(gait_cycle.zero3), {3, 4})
 				);
 
 				init_constraints(p_constr);
 			} else {
 				auto p_constr = constraints(
-					boundary_conditions(trial(P) == coeff(gait_cycle.zero2), {3, 4})
+					boundary_conditions(p == coeff(gait_cycle.zero2), {3, 4})
 				);
 
 				init_constraints(p_constr);
@@ -592,7 +606,7 @@ namespace utopia {
 			Contact contact;
 			ContactParams contact_params;
 			contact_params.contact_pair_tags = {{2, 1}};
-			contact_params.search_radius = 1.;
+			contact_params.search_radius = 5.;
 
 			// libMesh::ExodusII_IO io(*mesh);
 			libMesh::Nemesis_IO io(*mesh);
@@ -639,6 +653,9 @@ namespace utopia {
 
 				apply_boundary_conditions(Vx.dof_map(), mech_ctx.stiffness_matrix, state[i].external_force);
 				state[i].displacement_increment =  e_mul(mech_ctx.dirichlet_selector, state[i].external_force);
+
+				std::cout << "norm(F_e) = " << double(norm2(state[i].external_force)) << std::endl;
+
 				integrator->apply(gait_cycle.dt, mech_ctx, contact, Friction(), state[i-1], state[i]);
 				// integrator->apply(gait_cycle.dt, mech_ctx, state[i-1], state[i]);
 
@@ -684,7 +701,9 @@ namespace utopia {
 	void run_wear_test(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
-		mesh->read("../data/wear_2_far.e");
+		// mesh->read("../data/wear_2_far.e");
+		mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/wear_geoms_2.e");
+
 		// mesh->read("../data/wear_tri_2.e");
 
 		// unsigned int n_refine = 1;

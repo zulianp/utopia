@@ -1225,7 +1225,7 @@ namespace utopia
 			ProjectedGaussSeidel<Matrix, Vector> pgs;
 			//super slow convergence
 			pgs.max_it(n*40);
-			// pgs.verbose(true);
+			pgs.verbose(true);
 			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 			pgs.solve(m, rhs, solution);
 		}
