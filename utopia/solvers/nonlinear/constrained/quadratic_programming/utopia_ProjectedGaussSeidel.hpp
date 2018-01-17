@@ -115,14 +115,6 @@ namespace utopia {
 				alpha = rho/dot(A * is_c_, is_c_);
 
 				assert(alpha > 0);
-
-				// Scalar n_inactive = sum(inactive_set_);
-
-				// if(this->verbose() && mpi_world_rank() == 0) {
-				// 	std::cout << "alpha: " << alpha << " n_inactive " << n_inactive << std::endl;
-				// }
-
-				// alpha = std::min(alpha, static_cast<Scalar>(1.));
 			}
 
 			x += alpha * c;

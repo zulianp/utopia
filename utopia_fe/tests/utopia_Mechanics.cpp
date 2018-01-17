@@ -50,18 +50,18 @@ namespace utopia {
 		libMesh::DofMap &dof_map)
 	: dim(dim), dof_map(dof_map) 
 	{
-		// linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
 		// auto temp =  std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
 		// auto temp =  std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-		auto temp =  std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+		// auto temp =  std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
 
-		temp->atol(1e-10);
-		temp->stol(1e-10);
-		temp->rtol(1e-10);
-		// temp->verbose(true);
-		temp->max_it(std::max(long(2), long(dof_map.n_dofs()/2)));
+		// temp->atol(1e-10);
+		// temp->stol(1e-10);
+		// temp->rtol(1e-10);
+		// // temp->verbose(true);
+		// temp->max_it(std::max(long(2), long(dof_map.n_dofs()/2)));
 
-		linear_solver =  temp;
+		// linear_solver =  temp;
 	}
 
 	bool MechWithContactIntegrationScheme::solve(
@@ -77,7 +77,7 @@ namespace utopia {
 
 		if(friction.friction_coefficient == 0.) {
 			SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> solver(linear_solver);
-			solver.max_it(40);
+			solver.max_it(100);
 
 			// ProjectedGaussSeidel<DSMatrixd, DVectord> solver;
 			// solver.max_it(size(rhs).get(0) * 40);
@@ -190,6 +190,11 @@ namespace utopia {
 		DSMatrixd K_c  = transpose(T) * K * T;
 
 		bool solved = solve(K_c, mech_ctx.inverse_mass_vector, rhs_c, contact.gap, friction, sol_c);
+		
+		if(!solved) {
+			std::cerr << "[Error] unable to solve non-linear system" << std::endl;
+		}
+
 		assert(solved);
 
 		current.displacement_increment = T * sol_c;		
