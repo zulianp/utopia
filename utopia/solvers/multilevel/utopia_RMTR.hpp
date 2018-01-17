@@ -5,6 +5,7 @@
 * @Last Modified time: 2017-07-04
 */
 
+
 #ifndef UTOPIA_RMTR_HPP
 #define UTOPIA_RMTR_HPP
 #include "utopia_NonLinearSmoother.hpp"
@@ -22,6 +23,7 @@
 #include "utopia_TRBase.hpp"
 
 #include "utopia_MultiLevelEvaluations.hpp"
+
 
 namespace utopia 
 {

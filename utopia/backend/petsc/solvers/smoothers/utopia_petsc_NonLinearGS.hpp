@@ -74,7 +74,7 @@ namespace utopia {
 
                 SNESLineSearch linesearch; 
                 SNESGetLineSearch(snes, &linesearch);
-                SNESLineSearchSetType(linesearch, SNESLINESEARCHL2); 
+                SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC); 
 
                 SNESSolve(snes, raw_type(rhs), raw_type(x)); 
                 snes->vec_rhs =  NULL; 
