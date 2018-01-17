@@ -92,8 +92,32 @@ namespace utopia {
 				}
 			}
 
-			x += c;
-			non_linear_jacobi_step(A, b, x);
+			Scalar alpha = 1.;
+			
+			if(use_line_search_) {
+				inactive_set_ *= 0.;
+
+				{
+					Read<Vector> r_c(c), r_g(g);
+					Write<Vector> w_a(inactive_set_);
+
+					for(auto i = rr.begin(); i != rr.end(); ++i) {
+						if(c.get(i) < g.get(i)) {
+							inactive_set_.set(i, 1.);
+						}
+					}
+				}
+
+				is_r_ = e_mul(r, inactive_set_);
+				is_c_ = e_mul(c, inactive_set_);
+
+				const Scalar rho = dot(is_c_, is_r_);
+				alpha = rho/dot(A * is_c_, is_c_);
+
+				assert(alpha > 0);
+			}
+
+			x += alpha * c;
 			return true;
 		}
 
@@ -102,11 +126,23 @@ namespace utopia {
 			d = diag(A);
 			d_inv = 1./d;
 			c = local_zeros(local_size(A).get(0));
+
+			if(use_line_search_) {
+				inactive_set_ = local_zeros(local_size(c));
+			}
 		}
+
+		ProjectedGaussSeidel()
+		: use_line_search_(true)
+		{}
 		
 	private:
 		BoxConstraints constraints_;	
 		Vector r, d, g, c, d_inv, x_old;
+		bool use_line_search_;
+		Vector inactive_set_;
+		Vector is_r_;
+		Vector is_c_;
 	};
 }
 

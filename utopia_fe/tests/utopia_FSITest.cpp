@@ -218,7 +218,7 @@ namespace utopia {
 				);
 
 		//constraints solid
-	    auto constr_s =  constraints(
+	    auto constr_s = constraints(
 	    		boundary_conditions(u_sx == coeff(0.), {0}),
 	    		boundary_conditions(u_sy == coeff(0.), {0})
 	    	);

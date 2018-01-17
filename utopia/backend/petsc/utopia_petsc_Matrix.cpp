@@ -771,7 +771,7 @@ namespace utopia {
 				x = op.template apply<PetscScalar>(x, values[i]);
 			}
 
-			if(n_values < local_c) {
+			if(n_values < global_c) {
 				x = op.template apply<PetscScalar>(x, 0.);
 			}
 
@@ -801,7 +801,7 @@ namespace utopia {
 				col,
 				*this, 
 				0.,
-				utopia::Max()
+				utopia::Plus()
 			);
 		}
 	}
