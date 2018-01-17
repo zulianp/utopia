@@ -82,7 +82,7 @@ namespace utopia
                 PrintInfo::print_init("SIMPLE_BACKTRACKING_LS_INNER_ITERATIONS", {" it. ", "|| E_k1 ||"}); 
 
             // Wolfe conditions                        
-            while( E_k1 < (E_k + c1_ * alpha_k * g_p) && it < max_it_  && alpha_k > 1e-6)
+            while( E_k1 >(E_k + c1_ * alpha_k * g_p) && it < max_it_  && alpha_k > 1e-6)
             {
 
                 x_k = x_0 + alpha_k * p_k;
