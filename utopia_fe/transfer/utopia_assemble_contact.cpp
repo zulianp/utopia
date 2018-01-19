@@ -847,6 +847,12 @@ namespace utopia {
 						
 						const libMesh::Point pp = side_master->point(0);
 						const Real plane_offset = n_master.contract(pp);
+
+// #define HACK_OVERRIDE_N_SLAVE_Z
+// #ifdef  HACK_OVERRIDE_N_SLAVE_Z
+// 						n_slave(0) = n_slave(1) = 0.;
+// 						n_slave(2) = 1;
+// #endif //HACK_OVERRIDE_N_SLAVE_Z
 						
 						
 						if(use_biorth) {

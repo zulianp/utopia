@@ -39,6 +39,6 @@ namespace utopia {
 
 
 		libMesh::ExodusII_IO io(*mesh);
-		io.write("/Users/zulianp/Desktop/algo4u/wearsim/exodus/temp.e");
+		io.write("/Users/zulianp/Desktop/algo4u/wearsim/exodus/tibia_insert.e");
 	}
 }

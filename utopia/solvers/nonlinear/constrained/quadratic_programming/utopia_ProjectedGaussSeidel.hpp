@@ -4,11 +4,13 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_IterativeSolver.hpp"
+#include "utopia_Smoother.hpp"
+
 
 namespace utopia {
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedGaussSeidel : public IterativeSolver<Matrix, Vector> {
+	class ProjectedGaussSeidel : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
 	public:
 		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
 		DEF_UTOPIA_SCALAR(Matrix)
