@@ -1,3 +1,3 @@
 # Utopia #
 
-We will soon upload the library here.
+Base EDSL primitives and parallel linear and non-linear algebra.

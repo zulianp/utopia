@@ -134,7 +134,7 @@ namespace utopia {
 		{
 			n_time_steps = 50;
 			t_end = 10.;
-			angle_degree = 45.;
+			angle_degree = 4.;
 			start_angle_degree = -5.;
 			init();
 		}
@@ -174,8 +174,8 @@ namespace utopia {
 				AffineTransform trafo;
 				trafo.make_rotation(3, this->start_angle_radian + this->t * this->d_angle, 'x');
 				trafo.translation[0] = -p[0];
-				trafo.translation[1] = -p[1] + 1.;
-				trafo.translation[2] = -p[2];
+				trafo.translation[1] = -p[1] + 2.;
+				trafo.translation[2] = -p[2] + this->t * 0.1;
 
 				return trafo.apply(p);
 			};
@@ -197,7 +197,7 @@ namespace utopia {
 			};
 
 			bc34 = [this](const Point3d &p) -> Point3d {
-				return { 0., 0., 1.8 };
+				return { 0., 0., 2.2 };
 			};
 		}
 
@@ -826,7 +826,8 @@ namespace utopia {
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		// mesh->read("../data/wear_2_far.e");
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/wear_geoms.e");
-		mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/knee.e");
+		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/knee.e");
+		mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/knee_fine.e");
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy.e");
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_fine.e");
 		
@@ -845,11 +846,11 @@ namespace utopia {
 		we.params = LameeParameters(10., 10.);
 		we.params.set_mu(2, 10.);
 		we.params.set_lambda(2, 10.);
-		we.extrapolation_factor = 10.;
+		we.extrapolation_factor = 1.;
 
 		//gait cycle parameters
 		we.gait_cycle.n_time_steps = 100;
-		we.gait_cycle.angle_degree = 45;
+		// we.gait_cycle.angle_degree = 45;
 
 		we.gait_cycle.init();
 
