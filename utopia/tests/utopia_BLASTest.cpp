@@ -13,11 +13,25 @@ namespace utopia {
 
 #ifdef WITH_BLAS
 
+    Matrixd hm_matrix(const SizeType rows, const SizeType cols, const std::vector<Real> &values)
+    {
+        Matrixd mat = zeros(rows, cols);
+        mat.implementation().entries() = values;
+        return mat;
+    }
+
+    Vectord hm_vector(const std::vector<Real> &values)
+    {
+        Vectord vec = zeros(values.size());
+        vec.implementation() = values;
+        return vec;
+    }
+
     void blas_test() {
         //variables
-        Matrixd m1(2, 2, {1, 0, 0, 1});
-        Matrixd m2(2, 2, {1, 2, 3, 4});
-        Vectord v({1.0, 10.0});
+        Matrixd m1{ hm_matrix(2, 2, {1, 0, 0, 1}) };
+        Matrixd m2{ hm_matrix(2, 2, {1, 2, 3, 4}) };
+        Vectord v{ hm_vector({1.0, 10.0}) };
 
         { //BLAS 2 + 3
             Vectord vresult;
@@ -29,7 +43,7 @@ namespace utopia {
             assert(approxeq(vexp, vresult));
         }
 
-        Matrixd mexp(2, 2, {1, 3, 2, 4});
+        Matrixd mexp{ hm_matrix(2, 2, {1, 3, 2, 4}) };
 
         { //BLAS 3
             Matrixd mresult;
@@ -64,109 +78,52 @@ namespace utopia {
         Vectord::Scalar val_exp = 169.0;
         assert(approxeq(val_exp, fun_value));
 
-        Vectord g_exp({-10.0, 48.0});
+        Vectord g_exp{ hm_vector({-10.0, 48.0}) };
         assert(approxeq(g_exp, g));
 
-        Matrixd H_exp(2, 2, {4.0, 0.0, 0.0, 8.0});
+        Matrixd H_exp{ hm_matrix(2, 2, {4.0, 0.0, 0.0, 8.0}) };
         assert(approxeq(H_exp, H));
     }
 
     void blas_solver_test() {
-    #ifdef WITH_LAPACK
-    //    Matrixd A(5, 5,
-    //              {6.80, -2.11, 5.66, 5.97, 8.23,
-    //               -6.05, -3.30, 5.36, -4.44, 1.08,
-    //               -0.45, 2.58, -2.70, 0.27, 9.04,
-    //               8.32, 2.71, 4.35, -7.17, 2.14,
-    //               -9.67, -5.14, -7.26, 6.08, -6.87});
-    //    Vectord b({4.02, 6.19, -8.22, -7.57, -3.03});
-    //    Vectord x({0, 0, 0, 0, 0});
-    //
+#ifdef WITH_LAPACK
         auto lapackSolver = std::make_shared< LUDecomposition<Matrixd, Vectord> >();
-    //
-    //    lapackSolver->solve(A.implementation(), b.implementation(), x.implementation());
-    //    disp(x);
-    //
-    //    const SimpleQuadraticFunction<Matrixd, Vectord> fun;
         Vectord x0({3.0, -2.0});
-    //
+
         Newton<Matrixd, Vectord> newtonSolver(lapackSolver);
         newtonSolver.enable_differentiation_control(false);
 
-    //
-    //    disp(x0);
-    //
-        // TrustRegion<Matrixd, Vectord> trustRegionSolver(lapackSolver);
-        // trustRegionSolver.enable_differentiation_control(false);
-    //    Vectord x1({-1.0, -2.0});
-    //
         TestFunctionND_1<Matrixd, Vectord> fun2(10);
-    //
+
         x0 = values(10, 2.0);
-    //    APTS_2Domains<Matrixd, Vectord> APTSSolver(lapackSolver);
-    //    APTSSolver.solve(fun2, x0);
-
         newtonSolver.solve(fun2, x0);
+#endif //WITH_LAPACK
 
-    //
-    //    disp(x0);
-    //    std::cout << fun2.value(x0) << std::endl;
-    //
-    //    const Rosenbrock<Matrixd, Vectord> rosenbrock;
-    //    trustRegionSolver.solve(rosenbrock, x1);
-    //    disp(x1);
-
-    //    x0 = values(10, 2.0);
-    //    trustRegionSolver.solve(fun2, x0);
-    //    disp(x0);
-
-
-    //    const unsigned FE_nodes = 7;
-    //
-    //    NeoHookean1D<Matrixd, Vectord> fun3(FE_nodes, 1, 1);
-    //
-    //    Vectord x3;
-    //    x3 = values(FE_nodes, 0.0);
-    //    trustRegionSolver.solve(fun3, x3);
-    //
-    //    disp(x3);
-    //    disp(fun3.value(x3));
-    //
-    //    APTS2<Matrixd, Vectord> APTSSolver2(lapackSolver);
-    //    x3 = values(FE_nodes, 0.0);
-    //    x3.set(0, 0.0);
-    //    APTSSolver2.solve(fun3, x3);
-    //
-    //    disp(x3);
-    //    disp(fun3.value(x3));
-    #endif //WITH_LAPACK
     }
 
     void blas_inplace_test() {
-        //! [in place operations (blas)]
-
-        Vectord v1({4.0, 3.0, 2.0, 1.0});
-        Vectord v2({1.0, 2.0, 3.0, 4.0});
-        Matrixd m1(2, 2, {2.0, 2.0, 2.0, 2.0});
+        Vectord v1{ hm_vector({4.0, 3.0, 2.0, 1.0}) };
+        Vectord v2{ hm_vector({1.0, 2.0, 3.0, 4.0}) };
+        Matrixd m1{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
         // Matrixd m2(2, 2, {2.0, 1.0, 1.0, 1.0});
 
+        //! [in place operations (blas)]
         v1 -= v2;
         m1 *= m1;
+        //! [in place operations (blas)]
 
-        Vectord v_exp({3.0, 1.0, -1.0, -3.0});
+        Vectord v_exp{ hm_vector({3.0, 1.0, -1.0, -3.0}) };
         assert(approxeq(v_exp, v1));
 
-        Matrixd m_exp(2, 2, {8.0, 8.0, 8.0, 8.0});
+        Matrixd m_exp{ hm_matrix(2, 2, {8.0, 8.0, 8.0, 8.0}) };
         assert(approxeq(m_exp, m1));
-
-        //! [in place operations (blas)]
     }
 
     void blas_accessors_test() {
-        Vectord v1({0.0, 0.0});
-        Vectord v2({1.0, 1.0});
-        Matrixd m1(2, 2, {2.0, 2.0, 2.0, 2.0});
-        Matrixd m2(2, 2, {0.0, 0.0, 0.0, 0.0});
+        Vectord v1{ hm_vector({0.0, 0.0}) };
+        Vectord v2{ hm_vector({1.0, 1.0}) };
+        Matrixd m1{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
+        Matrixd m2{ hm_matrix(2, 2, {0.0, 0.0, 0.0, 0.0}) };
 
         {
             Write<Vectord> w_v1(v1);
@@ -185,10 +142,10 @@ namespace utopia {
         v1 -= v2;
         m1 *= m2;
 
-        Vectord v_exp({0.0, 1.0});
+        Vectord v_exp{ hm_vector({0.0, 1.0}) };
         assert(approxeq(v_exp, v1));
 
-        Matrixd m_exp(2, 2, {2.0, 2.0, 2.0, 2.0});
+        Matrixd m_exp{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
         assert(approxeq(m_exp, m1));
     }
 
@@ -196,39 +153,42 @@ namespace utopia {
     void blas_set_values_test() {
         Matrixd m1 = identity(3, 3);
 
-        std::vector<int> rows{0, 1, 2};
-        std::vector<int> cols{0, 1, 2};
-        std::vector<double> vals{100, 101, 102};
+        std::vector<SizeType> rows{0, 1, 2};
+        std::vector<SizeType> cols{0, 1, 2};
+        std::vector<double> vals{
+            100, 0, 0, 
+            0, 101, 0,
+            0, 0, 102};
 
         {
             Write<Matrixd> w_m1(m1);
-            m1.set(rows, cols, vals);
+            m1.set_matrix(rows, cols, vals);
         }
 
-        Matrixd m_exp(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0});
+        Matrixd m_exp{ hm_matrix(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0}) };
         assert(approxeq(m_exp, m1));
     }
 
     void blas_axpy_test()
     {
-        Vectord w1({1., 2., 3.});
-        Vectord w2({4., 5., 6.});
+        Vectord w1{ hm_vector({1., 2., 3.}) };
+        Vectord w2{ hm_vector({4., 5., 6.}) };
         Vectord actual = w1 + 0.1 * w2;
-        Vectord expected({1.4, 2.5, 3.6});
+        Vectord expected{ hm_vector({1.4, 2.5, 3.6}) };
 
         assert(approxeq(expected, actual));
     }
 
     void blas_norm_test() {
-        Vectord w1({10.0, 3.0, 1.0});
-        Vectord w2({20.0, 2.0, 3.0});
-        Vectord w3({-30.0, -5.0, -4.0});
+        Vectord w1{ hm_vector({10.0, 3.0, 1.0}) };
+        Vectord w2{ hm_vector({20.0, 2.0, 3.0}) };
+        Vectord w3{ hm_vector({-30.0, -5.0, -4.0}) };
         Vectord wresult;
 
         auto twiceaxpy = 0.9 * (w1 * 0.1 + w2) + w3; //axpy twice
 
         wresult = twiceaxpy;
-        Vectord wexp({-11.1, -2.93, -1.21});
+        Vectord wexp{ hm_vector({-11.1, -2.93, -1.21}) };
 
         assert(approxeq(wexp, wresult));
 
@@ -239,9 +199,9 @@ namespace utopia {
     }
 
     void blas_composite_test() {
-        Vectord w1({10.0, 3.0, 1.0});
-        Vectord w2({20.0, 2.0, 3.0});
-        Vectord w3({-30.0, -5.0, -4.0});
+        Vectord w1{ hm_vector({10.0, 3.0, 1.0}) };
+        Vectord w2{ hm_vector({20.0, 2.0, 3.0}) };
+        Vectord w3{ hm_vector({-30.0, -5.0, -4.0}) };
         Vectord wresult;
         //advanced (To make it work for all backends)
         auto twiceaxpy = 0.9 * (w1 * 0.1 + w2) + w3; //axpy twice
@@ -254,7 +214,7 @@ namespace utopia {
 
         //Evaluate and verify value of the expression
         wresult = expr;
-        Vectord wexp({-24.311, -7.2893, -2.4321});
+        Vectord wexp{ hm_vector({-24.311, -7.2893, -2.4321}) };
         assert(approxeq(wexp, wresult));
     }
 
@@ -275,10 +235,12 @@ namespace utopia {
 
         {
             Write<CRSMatrixd> write(mat);
-            mat.set({0, 1, 2}, {0, 1, 2}, {2, 2, 2});
+            mat.set(0, 0, 2);
+            mat.set(1, 1, 2);
+            mat.set(2, 2, 2);
         }
 
-        Vectord v1({2, 2, 2});
+        Vectord v1{ hm_vector({2, 2, 2}) };
         Vectord v2 = mat * v1;
         assert(approxeq(2 * v1, v2));
 

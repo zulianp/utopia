@@ -168,9 +168,6 @@ namespace utopia {
 		static void write_lock(PetscMatrix &mat);
 		static void write_unlock(PetscMatrix &mat);
 		
-		// static void write_lock(PetscSparseMatrix &mat);
-		// static void write_unlock(PetscSparseMatrix &mat);
-		
 		static void set(PetscMatrix &v, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
 		
 		template<typename T>
@@ -182,9 +179,19 @@ namespace utopia {
 			PetscBackend::add_matrix(m, petsc_rows, petsc_cols, values);
 		}
 
+		template<typename T>
+		static void set_matrix(PetscMatrix &m, const std::vector<T> &rows, const std::vector<T> &cols, const std::vector<Scalar> &values)
+		{
+			std::vector<PetscInt> petsc_rows, petsc_cols;
+			petsc_rows.insert(petsc_rows.end(), rows.begin(), rows.end());
+			petsc_cols.insert(petsc_cols.end(), cols.begin(), cols.end());
+			PetscBackend::set_matrix(m, petsc_rows, petsc_cols, values);
+		}
 
-		static void add_matrix(PetscMatrix &v, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
-		static void add_matrix(PetscSparseMatrix &v, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
+		static void add_matrix(PetscMatrix &m, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
+		static void add_matrix(PetscSparseMatrix &m, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
+
+		static void set_matrix(PetscMatrix &m, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
 
 		static Scalar get(const PetscVector &v, const PetscInt index);
 		static Scalar get(const PetscMatrix &v, const PetscInt row, const PetscInt col);

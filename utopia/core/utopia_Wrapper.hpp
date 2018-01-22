@@ -94,10 +94,10 @@ namespace utopia {
             return *this;
         }
 
-        Wrapper(const int rows, const int cols, std::initializer_list<Scalar> list)
-        : _impl(rows, cols, list)
-        {
-        }
+        // Wrapper(const int rows, const int cols, std::initializer_list<Scalar> list)
+        // : _impl(rows, cols, list)
+        // {
+        // }
         
         Wrapper() { }
 

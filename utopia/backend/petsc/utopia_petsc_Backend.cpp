@@ -619,6 +619,15 @@ namespace utopia {
 		m.add_matrix(rows, cols, values);
 	}
 
+	void PetscBackend::set_matrix(
+		PetscMatrix &m,
+		const std::vector<PetscInt> &rows,
+		const std::vector<PetscInt> &cols,
+		const std::vector<Scalar> &values)
+	{
+		m.set_matrix(rows, cols, values);
+	}
+
 	Scalar PetscBackend::get(const PetscVector &v, const PetscInt index) {
 		return v.get(index);
 	}

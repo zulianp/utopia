@@ -71,18 +71,26 @@ namespace utopia {
 
 	void Contact::print_debug_info()
 	{
-		const double norm_T  = norm2(transfer_operator);
+		const double sum_T  = sum(transfer_operator);
 		const double norm_g  = norm2(gap);
 		const double norm_B  = norm2(coupling);
 		const double norm_O  = norm2(orthogonal_trafo);
 		const double norm_im = norm2(inv_mass_vector);
 
 		std::stringstream ss;
-		ss << "norm_T:  " << norm_T  << "\n";
+		ss << "sum_T:   " << sum_T   << "\n";
 		ss << "norm_g:  " << norm_g  << "\n";
 		ss << "norm_B:  " << norm_B  << "\n";
 		ss << "norm_O:  " << norm_O  << "\n";
 		ss << "norm_im: " << norm_im << "\n";
+
+		// static bool is_first = true;
+
+		// if(is_first) {
+		// 	DVectord t = sum(transfer_operator, 1);
+		// 	write("t.m", t);
+		// 	is_first = false;
+		// }
 
 		moonolith::Communicator comm;
 		moonolith::root_describe(ss.str(), comm, std::cout);

@@ -3,6 +3,7 @@
 
 #include "utopia_LinearSolverInterfaces.hpp"
 #include "utopia_petsc_KSPSolver.hpp"
+#include "utopia_petsc_ConjugateGradient.hpp"
 
 namespace utopia {
 //FIXME use superclass IterativeSolver instead of KSPSolver and compose with it
@@ -40,32 +41,32 @@ namespace utopia {
   };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-  template<typename Matrix, typename Vector> 
-  class ConjugateGradient<Matrix, Vector, PETSC> : public KSPSolver<Matrix, Vector, PETSC> {
-  public:
-    ConjugateGradient(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-    : KSPSolver<Matrix, Vector, PETSC>(params), preconditioner_(preconditioner)
-    {
-      this->pc_type(preconditioner_);
-      this->ksp_type("cg");
-    }
+  // template<typename Matrix, typename Vector> 
+  // class ConjugateGradient<Matrix, Vector, PETSC> : public KSPSolver<Matrix, Vector, PETSC> {
+  // public:
+  //   ConjugateGradient(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
+  //   : KSPSolver<Matrix, Vector, PETSC>(params), preconditioner_(preconditioner)
+  //   {
+  //     this->pc_type(preconditioner_);
+  //     this->ksp_type("cg");
+  //   }
 
-    void set_parameters(const Parameters params) override {
-      Parameters params_copy = params;
-      params_copy.lin_solver_type("cg");
-      params_copy.preconditioner_type(preconditioner_.c_str());
-      KSPSolver<Matrix, Vector, PETSC>::set_parameters(params_copy);
-    }
+  //   void set_parameters(const Parameters params) override {
+  //     Parameters params_copy = params;
+  //     params_copy.lin_solver_type("cg");
+  //     params_copy.preconditioner_type(preconditioner_.c_str());
+  //     KSPSolver<Matrix, Vector, PETSC>::set_parameters(params_copy);
+  //   }
 
-    inline void pc_type(const std::string & preconditioner) override
-    {
-      preconditioner_ = preconditioner;
-      KSPSolver<Matrix, Vector, PETSC>::pc_type(preconditioner_);
-    }
+  //   inline void pc_type(const std::string & preconditioner) override
+  //   {
+  //     preconditioner_ = preconditioner;
+  //     KSPSolver<Matrix, Vector, PETSC>::pc_type(preconditioner_);
+  //   }
 
-  private:
-    std::string preconditioner_;
-  };
+  // private:
+  //   std::string preconditioner_;
+  // };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
   template<typename Matrix, typename Vector> 
