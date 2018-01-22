@@ -9,8 +9,8 @@ namespace utopia{
 
 	class PetscSparseMatrix : public PetscMatrix {
 	public:
-		using PetscMatrix::PetscMatrix;
-		using PetscMatrix::operator=;
+		// using PetscMatrix::PetscMatrix;
+		// using PetscMatrix::operator=;
 		virtual ~PetscSparseMatrix() {}
 	};
 
