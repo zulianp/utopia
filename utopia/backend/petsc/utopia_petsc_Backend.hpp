@@ -254,34 +254,8 @@ namespace utopia {
 
 		static void apply_unary(Vector &result, const Vector &v, const Minus &)
 		{
-			Range r = range(v);
-
-			Size gs, ls;
-			size(v, gs);
-			local_size(v, ls);
-
-			if(result.is_null()) {
-				VecCreate(v.communicator(), &result.implementation());
-			} else if(result.communicator() != v.communicator()) {
-				VecDestroy(&result.implementation());
-				VecCreate(v.communicator(), &result.implementation());
-			}
-
-			VecType type;
-			VecGetType(v.implementation(), &type);
-			VecSetType(result.implementation(), type);
-			VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
-
-			write_lock(result);
-			read_lock(v);
-
-			for(PetscInt i = r.begin(); i < r.end(); ++i) {
-				Scalar value = get(v, i);
-				VecSetValue(result.implementation(), i, -value, INSERT_VALUES);
-			}
-
-			write_unlock(result);
-			read_unlock(v);
+			result = v;
+			result.scale(-1.);
 		}
 
 		//[binary]
@@ -557,32 +531,6 @@ namespace utopia {
 			const PetscMatrix &A, 
 			const Vector &x);
 				
-		// static void select_aux(PetscMatrix &left,
-		// 			const PetscMatrix &right,
-		//       		const std::vector<PetscInt> &row_index,
-		//       		const std::vector<PetscInt> &col_index);
-
-		// static void par_assign_from_local_is(
-		// 	const std::vector<PetscInt> &remote_rows,
-		// 	const std::vector<PetscInt> &remote_cols,
-		// 	const PetscInt global_col_offset,
-		// 	const Range &local_col_range,
-		// 	const PetscMatrix &right,
-		// 	PetscMatrix &result);
-
-		// static void par_assign_from_local_range(
-		// 					const Range &local_row_range,
-		// 					const Range &local_col_range,
-		// 					const Range &global_col_range,
-		// 					const PetscMatrix &right,
-		// 					PetscMatrix &result);
-
-		// static void par_assign_from_global_range(
-		// const Range &global_row_range,
-		// const Range &global_col_range,
-		// const PetscMatrix &right,
-		// PetscMatrix &result);
-
 
 		//unused
 		static void vec_to_mat(Matrix &m, const Vector &v, const bool transpose);
