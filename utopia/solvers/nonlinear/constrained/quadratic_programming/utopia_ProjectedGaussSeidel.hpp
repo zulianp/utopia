@@ -30,7 +30,6 @@ namespace utopia {
 		{
 			init(A);
 			std::size_t it = 0;
-
 			if(constraints_.has_bound()) {
 				while(step(A, b, x) && it++ < this->sweeps()) {}
 			} else {
@@ -92,8 +91,8 @@ namespace utopia {
 					auto s = r.get(i);
 
 					for(auto index = 0; index < row_view.n_values(); ++index) {
-						const auto j    = row_view.get_col_at(index);
-						const auto a_ij = row_view.get_value_at(index);
+						const auto j    = row_view.col(index);
+						const auto a_ij = row_view.get(index);
 
 						if(rr.inside(j) && i != j) {
 							s -= a_ij * c.get(j);
@@ -136,8 +135,8 @@ namespace utopia {
 					auto s = r.get(i);
 
 					for(auto index = 0; index < row_view.n_values(); ++index) {
-						const auto j    = row_view.get_col_at(index);
-						const auto a_ij = row_view.get_value_at(index);
+						const auto j    = row_view.col(index);
+						const auto a_ij = row_view.get(index);
 
 						if(rr.inside(j) && i != j) {
 							s -= a_ij * c.get(j);

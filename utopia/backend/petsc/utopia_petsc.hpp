@@ -21,10 +21,10 @@
 #include "utopia_petsc_TrustRegionFactory.hpp"
 #include "utopia_petsc_solvers.hpp"
 
-#include "utopia_petsc_LinearGS.hpp"
-#include "utopia_petsc_CGSmoother.hpp"
-#include "utopia_petsc_NonLinearGS.hpp"
-#include "utopia_petsc_Function.hpp"
+// #include "utopia_petsc_LinearGS.hpp"
+// #include "utopia_petsc_CGSmoother.hpp"
+// #include "utopia_petsc_NonLinearGS.hpp"
+// #include "utopia_petsc_Function.hpp"
 
 #include "utopia_petsc_KSPTR.hpp"
 

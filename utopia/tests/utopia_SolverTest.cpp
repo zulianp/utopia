@@ -924,7 +924,8 @@ namespace utopia
 #endif //PETSC_HAVE_MUMPS
 			
 			// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
-			auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
+			// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
+			auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
 			// auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 
@@ -939,7 +940,7 @@ namespace utopia
 			params.linear_solver_verbose(false);
 			multigrid.set_parameters(params);
 			
-			multigrid.verbose(true);
+			// multigrid.verbose(true);
 			multigrid.solve(rhs, x_0);
 			
 			x_0 = zeros(A.size().get(0));
