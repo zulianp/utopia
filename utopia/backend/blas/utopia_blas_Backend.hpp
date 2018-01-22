@@ -156,17 +156,34 @@ namespace utopia {
 				set(v, indices[i], values[i]);
 		}
 		
+		// template<typename Ordinal>
+		// inline static void set(
+		// 					   Matrix &m,
+		// 					   const std::vector<Ordinal> &rows,
+		// 					   const std::vector<Ordinal> &columns,
+		// 					   const std::vector<Scalar> &values)
+		// {
+		// 	assert(rows.size() == columns.size() && rows.size() == values.size());
+			
+		// 	for (typename std::vector<Ordinal>::size_type i = 0; i < rows.size(); ++i)
+		// 		set(m, rows[i], columns[i], values[i]);
+		// }
+
 		template<typename Ordinal>
-		inline static void set(
-							   Matrix &m,
+		void set_matrix(Matrix &m,
 							   const std::vector<Ordinal> &rows,
-							   const std::vector<Ordinal> &columns,
+							   const std::vector<Ordinal> &cols,
 							   const std::vector<Scalar> &values)
 		{
-			assert(rows.size() == columns.size() && rows.size() == values.size());
-			
-			for (typename std::vector<Ordinal>::size_type i = 0; i < rows.size(); ++i)
-				set(m, rows[i], columns[i], values[i]);
+
+			const auto n_rows = rows.size();
+			const auto n_cols = cols.size();
+
+			for(std::size_t i = 0; i < n_rows; ++i) {
+				for(std::size_t j = 0; j < n_cols; ++j) {
+					set(m, rows[i], cols[j], values[i * n_rows + j]);
+				}
+			}
 		}
 		
 		template<typename Ordinal>

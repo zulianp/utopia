@@ -2,7 +2,9 @@
 
 //explicit instantiations
 namespace utopia {
- // template class Wrapper<PetscSparseMatrix, 2>;
+ 	template class Wrapper<PetscSparseMatrix, 2>;
+	template class Wrapper<PetscMatrix, 2>;
+	template class Wrapper<PetscVector, 1>;
 
 	//petsc linear solvers and smoothers
 	template class KSPSolver<DSMatrixd, DVectord>;

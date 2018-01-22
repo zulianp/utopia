@@ -13,11 +13,25 @@ namespace utopia {
 
 #ifdef WITH_BLAS
 
+    Matrixd make_matrix(const SizeType rows, const SizeType cols, const std::vector<Real> &values)
+    {
+        Matrixd mat = zeros(rows, cols);
+        mat.implementation().entries() = values;
+        return mat;
+    }
+
+    Vectord make_vector(const std::vector<Real> &values)
+    {
+        Vectord vec = zeros(values.size());
+        vec.implementation() = values;
+        return vec;
+    }
+
     void blas_test() {
         //variables
-        Matrixd m1(2, 2, {1, 0, 0, 1});
-        Matrixd m2(2, 2, {1, 2, 3, 4});
-        Vectord v({1.0, 10.0});
+        Matrixd m1{ make_matrix(2, 2, {1, 0, 0, 1}) };
+        Matrixd m2{ make_matrix(2, 2, {1, 2, 3, 4}) };
+        Vectord v{ make_vector({1.0, 10.0}) };
 
         { //BLAS 2 + 3
             Vectord vresult;
@@ -29,7 +43,7 @@ namespace utopia {
             assert(approxeq(vexp, vresult));
         }
 
-        Matrixd mexp(2, 2, {1, 3, 2, 4});
+        Matrixd mexp{ make_matrix(2, 2, {1, 3, 2, 4}) };
 
         { //BLAS 3
             Matrixd mresult;
@@ -64,10 +78,10 @@ namespace utopia {
         Vectord::Scalar val_exp = 169.0;
         assert(approxeq(val_exp, fun_value));
 
-        Vectord g_exp({-10.0, 48.0});
+        Vectord g_exp{ make_vector({-10.0, 48.0}) };
         assert(approxeq(g_exp, g));
 
-        Matrixd H_exp(2, 2, {4.0, 0.0, 0.0, 8.0});
+        Matrixd H_exp{ make_matrix(2, 2, {4.0, 0.0, 0.0, 8.0}) };
         assert(approxeq(H_exp, H));
     }
 
@@ -145,28 +159,28 @@ namespace utopia {
     void blas_inplace_test() {
         //! [in place operations (blas)]
 
-        Vectord v1({4.0, 3.0, 2.0, 1.0});
-        Vectord v2({1.0, 2.0, 3.0, 4.0});
-        Matrixd m1(2, 2, {2.0, 2.0, 2.0, 2.0});
+        Vectord v1{ make_vector({4.0, 3.0, 2.0, 1.0}) };
+        Vectord v2{ make_vector({1.0, 2.0, 3.0, 4.0}) };
+        Matrixd m1{ make_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
         // Matrixd m2(2, 2, {2.0, 1.0, 1.0, 1.0});
 
         v1 -= v2;
         m1 *= m1;
 
-        Vectord v_exp({3.0, 1.0, -1.0, -3.0});
+        Vectord v_exp{ make_vector({3.0, 1.0, -1.0, -3.0}) };
         assert(approxeq(v_exp, v1));
 
-        Matrixd m_exp(2, 2, {8.0, 8.0, 8.0, 8.0});
+        Matrixd m_exp{ make_matrix(2, 2, {8.0, 8.0, 8.0, 8.0}) };
         assert(approxeq(m_exp, m1));
 
         //! [in place operations (blas)]
     }
 
     void blas_accessors_test() {
-        Vectord v1({0.0, 0.0});
-        Vectord v2({1.0, 1.0});
-        Matrixd m1(2, 2, {2.0, 2.0, 2.0, 2.0});
-        Matrixd m2(2, 2, {0.0, 0.0, 0.0, 0.0});
+        Vectord v1{ make_vector({0.0, 0.0}) };
+        Vectord v2{ make_vector({1.0, 1.0}) };
+        Matrixd m1{ make_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
+        Matrixd m2{ make_matrix(2, 2, {0.0, 0.0, 0.0, 0.0}) };
 
         {
             Write<Vectord> w_v1(v1);
@@ -185,10 +199,10 @@ namespace utopia {
         v1 -= v2;
         m1 *= m2;
 
-        Vectord v_exp({0.0, 1.0});
+        Vectord v_exp{ make_vector({0.0, 1.0}) };
         assert(approxeq(v_exp, v1));
 
-        Matrixd m_exp(2, 2, {2.0, 2.0, 2.0, 2.0});
+        Matrixd m_exp{ make_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
         assert(approxeq(m_exp, m1));
     }
 
@@ -196,39 +210,42 @@ namespace utopia {
     void blas_set_values_test() {
         Matrixd m1 = identity(3, 3);
 
-        std::vector<int> rows{0, 1, 2};
-        std::vector<int> cols{0, 1, 2};
-        std::vector<double> vals{100, 101, 102};
+        std::vector<SizeType> rows{0, 1, 2};
+        std::vector<SizeType> cols{0, 1, 2};
+        std::vector<double> vals{
+            100, 0, 0, 
+            0, 101, 0,
+            0, 0, 102};
 
         {
             Write<Matrixd> w_m1(m1);
-            m1.set(rows, cols, vals);
+            m1.set_matrix(rows, cols, vals);
         }
 
-        Matrixd m_exp(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0});
+        Matrixd m_exp{ make_matrix(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0}) };
         assert(approxeq(m_exp, m1));
     }
 
     void blas_axpy_test()
     {
-        Vectord w1({1., 2., 3.});
-        Vectord w2({4., 5., 6.});
+        Vectord w1{ make_vector({1., 2., 3.}) };
+        Vectord w2{ make_vector({4., 5., 6.}) };
         Vectord actual = w1 + 0.1 * w2;
-        Vectord expected({1.4, 2.5, 3.6});
+        Vectord expected{ make_vector({1.4, 2.5, 3.6}) };
 
         assert(approxeq(expected, actual));
     }
 
     void blas_norm_test() {
-        Vectord w1({10.0, 3.0, 1.0});
-        Vectord w2({20.0, 2.0, 3.0});
-        Vectord w3({-30.0, -5.0, -4.0});
+        Vectord w1{ make_vector({10.0, 3.0, 1.0}) };
+        Vectord w2{ make_vector({20.0, 2.0, 3.0}) };
+        Vectord w3{ make_vector({-30.0, -5.0, -4.0}) };
         Vectord wresult;
 
         auto twiceaxpy = 0.9 * (w1 * 0.1 + w2) + w3; //axpy twice
 
         wresult = twiceaxpy;
-        Vectord wexp({-11.1, -2.93, -1.21});
+        Vectord wexp{ make_vector({-11.1, -2.93, -1.21}) };
 
         assert(approxeq(wexp, wresult));
 
@@ -239,9 +256,9 @@ namespace utopia {
     }
 
     void blas_composite_test() {
-        Vectord w1({10.0, 3.0, 1.0});
-        Vectord w2({20.0, 2.0, 3.0});
-        Vectord w3({-30.0, -5.0, -4.0});
+        Vectord w1{ make_vector({10.0, 3.0, 1.0}) };
+        Vectord w2{ make_vector({20.0, 2.0, 3.0}) };
+        Vectord w3{ make_vector({-30.0, -5.0, -4.0}) };
         Vectord wresult;
         //advanced (To make it work for all backends)
         auto twiceaxpy = 0.9 * (w1 * 0.1 + w2) + w3; //axpy twice
@@ -254,7 +271,7 @@ namespace utopia {
 
         //Evaluate and verify value of the expression
         wresult = expr;
-        Vectord wexp({-24.311, -7.2893, -2.4321});
+        Vectord wexp{ make_vector({-24.311, -7.2893, -2.4321}) };
         assert(approxeq(wexp, wresult));
     }
 
@@ -275,10 +292,12 @@ namespace utopia {
 
         {
             Write<CRSMatrixd> write(mat);
-            mat.set({0, 1, 2}, {0, 1, 2}, {2, 2, 2});
+            mat.set(0, 0, 2);
+            mat.set(1, 1, 2);
+            mat.set(2, 2, 2);
         }
 
-        Vectord v1({2, 2, 2});
+        Vectord v1{ make_vector({2, 2, 2}) };
         Vectord v2 = mat * v1;
         assert(approxeq(2 * v1, v2));
 

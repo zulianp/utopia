@@ -189,19 +189,19 @@ with compile time decisions.
 * @subsection exbasic Basic operations
 * 
 * Setting and getting entries from tensors.
-* \snippet main.cpp Read write matrix
+* \snippet tests/utopia_PetscTest.cpp Read write matrix
 *
 * In place operations (in this case we are using blas types, but it is the same with petsc types).
-* \snippet main.cpp in place operations (blas)
+* \snippet tests/utopia_BlasTest.cpp in place operations (blas)
 * 
 * Example with axpy operation and norms (using petsc types).
-* \snippet main.cpp axpy (petsc)
+* \snippet tests/utopia_PetscTest.cpp axpy (petsc)
 *
 * Example of input/output operations (using petsc types)
-* \snippet main.cpp Input and output (petsc) 
+* \snippet tests/utopia_PetscTest.cpp Input and output (petsc) 
 *
 * Views and copy/redistribute a global block of a matrix (using petsc types).
-* \snippet main.cpp Global views
+* \snippet tests/utopia_PetscTest.cpp Global views
 * 
 *
 * @subsection exsolve Solving systems
