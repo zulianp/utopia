@@ -173,6 +173,8 @@ namespace utopia
          */
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
         {   
+            std::cout<<"coarse solver:    \n";
+            _coarse_solver->verbose(true);
             _coarse_solver->solve(fun, x, rhs); 
             return true; 
         }

@@ -42,8 +42,7 @@ namespace  utopia
                 _active_set_solver->set_box_constraints(up_constrain);
 
                 // just for debugging
-                // _active_set_solver->verbose(false);
-
+                _active_set_solver->verbose(true);
                 _active_set_solver->solve(H, g, p_k);
 
                 p_k *=-1;
