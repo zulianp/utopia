@@ -126,6 +126,10 @@ namespace utopia {
 			using std::make_shared;
 			wrapper_ = make_shared<PetscMatrixMemory>(comm);
 		}
+
+		PetscMatrix(PetscMatrix &&other) 
+		: wrapper_(std::move(other.wrapper_))	
+		{}
 		
 		PetscMatrix(const PetscMatrix &other) {
 			using std::make_shared;
