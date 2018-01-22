@@ -24,8 +24,8 @@ namespace utopia {
 		auto u = trial(V);
 		auto v = test(V);
 
-		assemble(inner(u, v) * dX, mass_matrix);
-		DVectord lumped_mass_vector = sum(mass_matrix, 1);
+		assemble(inner(u, v) * dX, non_lumped_mass_matrix);
+		DVectord lumped_mass_vector = sum(non_lumped_mass_matrix, 1);
 		mass_matrix = diag(lumped_mass_vector);
 		inverse_mass_vector = 1./lumped_mass_vector;
 	}
@@ -50,18 +50,18 @@ namespace utopia {
 		libMesh::DofMap &dof_map)
 	: dim(dim), dof_map(dof_map) 
 	{
-		// linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
 		// auto temp =  std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
 		// auto temp =  std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-		auto temp =  std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+		// auto temp =  std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
 
-		temp->atol(1e-10);
-		temp->stol(1e-10);
-		temp->rtol(1e-10);
-		// temp->verbose(true);
-		temp->max_it(std::max(long(2), long(dof_map.n_dofs()/2)));
+		// temp->atol(1e-10);
+		// temp->stol(1e-10);
+		// temp->rtol(1e-10);
+		// // temp->verbose(true);
+		// temp->max_it(std::max(long(2), long(dof_map.n_dofs()/2)));
 
-		linear_solver =  temp;
+		// linear_solver =  temp;
 	}
 
 	bool MechWithContactIntegrationScheme::solve(
@@ -76,15 +76,24 @@ namespace utopia {
 		DVectord non_const_gap = gap;
 
 		if(friction.friction_coefficient == 0.) {
-			SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> solver(linear_solver);
-			solver.max_it(40);
+			if(mpi_world_size() == 1) {
+				SemismoothNewton<DSMatrixd, DVectord> solver(linear_solver);
+				solver.max_it(100);
+				solver.verbose(true);
+				solver.set_box_constraints(make_upper_bound_constraints(make_ref(non_const_gap)));
+				return solver.solve(K, rhs, sol);
 
-			// ProjectedGaussSeidel<DSMatrixd, DVectord> solver;
-			// solver.max_it(size(rhs).get(0) * 40);
-			
-			solver.verbose(true);
-			solver.set_box_constraints(make_upper_bound_constraints(make_ref(non_const_gap)));
-			return solver.solve(K, rhs, sol);
+			} else {
+				SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> solver(linear_solver);
+				solver.max_it(100);
+
+				// ProjectedGaussSeidel<DSMatrixd, DVectord> solver;
+				// solver.max_it(size(rhs).get(0) * 40);
+				
+				solver.verbose(true);
+				solver.set_box_constraints(make_upper_bound_constraints(make_ref(non_const_gap)));
+				return solver.solve(K, rhs, sol);
+			}
 
 		} else {
 			typedef std::function<void(const DSMatrixd &, const DVectord &, const DVectord &, DVectord &, DVectord &)> F;
@@ -183,21 +192,32 @@ namespace utopia {
 
 		const DSMatrixd &T = contact.complete_transformation;
 		const DSMatrixd &K = mech_ctx.stiffness_matrix;
-		const DVectord rhs = current.external_force - old.internal_force;
+		const DVectord rhs = current.external_force;// - old.internal_force;
 
 		DVectord sol_c = local_zeros(s);
 		DVectord rhs_c = transpose(T) * rhs;
 		DSMatrixd K_c  = transpose(T) * K * T;
 
 		bool solved = solve(K_c, mech_ctx.inverse_mass_vector, rhs_c, contact.gap, friction, sol_c);
+		
+		if(!solved) {
+			std::cerr << "[Error] unable to solve non-linear system" << std::endl;
+		}
+
 		assert(solved);
 
 		current.displacement_increment = T * sol_c;		
 		current.displacement = old.displacement + current.displacement_increment;
-		current.internal_force = K * current.displacement;
+		current.internal_force = K * current.displacement_increment;
 		current.t = old.t + dt;
+
+		// current.stress = e_mul(mech_ctx.inverse_mass_vector, T * (rhs_c - K_c * sol_c));
+		// current.stress = T * (rhs_c - K_c * sol_c);
+		
+		current.stress = e_mul(contact.inv_mass_vector, (current.external_force - current.internal_force));
 
 		//FIXME find other way
 		apply_zero_boundary_conditions(dof_map, current.internal_force); 
+		apply_zero_boundary_conditions(dof_map, current.stress);
 	}
 }

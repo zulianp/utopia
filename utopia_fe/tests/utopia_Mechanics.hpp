@@ -36,6 +36,7 @@ namespace utopia {
 		//stiffness matrix
 		DSMatrixd stiffness_matrix;
 
+		DSMatrixd non_lumped_mass_matrix;
 		//lumped mass matrix
 		DSMatrixd mass_matrix;
 		DVectord  inverse_mass_vector;

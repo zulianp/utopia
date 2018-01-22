@@ -218,15 +218,8 @@ namespace utopia {
     //    //The use of Read/Write locks is important for universal compatibility with all (parallel) backends
         { //scoped write lock
             Write<DMatrixd> writing(x);
-            //usual way
             x.set(xb, 0, -1);
             x.set(xb + 9, 0, -1);
-    //
-    //        //the petsc way
-            std::vector <PetscScalar> values{10., 10., 10};
-            std::vector <PetscInt> rowIndex{xb + 2, xb + 3, xb + 4};
-            std::vector <PetscInt> colIndex{0, 0, 0};
-            x.set(rowIndex, colIndex, values);
         }
 
         { //scoped read lock
@@ -252,13 +245,6 @@ namespace utopia {
 
         // Petsc matrix does not support ReadAndWrite only separate Read and Write
         // The use of Read/Write locks is important for universal compatibility with all (parallel) backends
-        {
-            Write<DSMatrixd> w(x);
-            x.set({xb, xb + 1, xb + 2, xb + 3, xb + 4, xb + 9, xb + 9},
-              {0, 1, 0, 0, 0, 0, 1},
-              {0, 3, 4, 6, 8, 18, 19});
-        }
-
         {
             Write<DSMatrixd> w(y);
             y.set(xb, 0, 0);

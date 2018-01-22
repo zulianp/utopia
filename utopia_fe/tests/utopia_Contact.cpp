@@ -4,6 +4,9 @@
 #include "libmesh/parallel.h"
 #include "libmesh/mesh_base.h"
 #include "moonolith_communicator.hpp"
+#include "moonolith_synched_describable.hpp"
+
+#include <sstream>
 
 namespace utopia {
 	bool Contact::init(
@@ -64,5 +67,32 @@ namespace utopia {
 
 		initialized = true;
 		return true;
+	}
+
+	void Contact::print_debug_info()
+	{
+		const double sum_T  = sum(transfer_operator);
+		const double norm_g  = norm2(gap);
+		const double norm_B  = norm2(coupling);
+		const double norm_O  = norm2(orthogonal_trafo);
+		const double norm_im = norm2(inv_mass_vector);
+
+		std::stringstream ss;
+		ss << "sum_T:   " << sum_T   << "\n";
+		ss << "norm_g:  " << norm_g  << "\n";
+		ss << "norm_B:  " << norm_B  << "\n";
+		ss << "norm_O:  " << norm_O  << "\n";
+		ss << "norm_im: " << norm_im << "\n";
+
+		// static bool is_first = true;
+
+		// if(is_first) {
+		// 	DVectord t = sum(transfer_operator, 1);
+		// 	write("t.m", t);
+		// 	is_first = false;
+		// }
+
+		moonolith::Communicator comm;
+		moonolith::root_describe(ss.str(), comm, std::cout);
 	}
 }

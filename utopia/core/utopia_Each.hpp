@@ -95,7 +95,7 @@ namespace utopia {
 			for(auto i = r.begin(); i != r.end(); ++i) {
 				RowView<const Tensor> row_view(m, i);
 				for(auto index = 0; index < row_view.n_values(); ++index) {
-					fun(i, row_view.get_col_at(index), row_view.get_value_at(index));
+					fun(i, row_view.col(index), row_view.get(index));
 				}
 			}
 		}

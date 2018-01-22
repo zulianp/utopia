@@ -59,6 +59,9 @@ namespace utopia {
 
 		DSMatrixd complete_transformation;
 		bool initialized;
+
+
+		void print_debug_info();
 	};
 }
 
