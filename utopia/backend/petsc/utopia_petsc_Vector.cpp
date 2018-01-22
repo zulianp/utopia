@@ -11,15 +11,24 @@ namespace utopia {
 								PetscInt n_global)
 	{
 
+		//PetscObjectTypeCompare
+	// 	 PetscBool      match;
+
+ // 38:   PetscObjectTypeCompare((PetscObject) vec, method, &match);
+ // 39:   if (match) return(0);
+
 #ifndef NDEBUG
 		assert(!immutable_);
 #endif
 
-		if(vec_ == nullptr) {
+		const std::string type_copy = type;
+
+		if(is_null()) {
 			VecCreate(comm, &vec_);
 		} else {
 			if(comm != PetscObjectComm((PetscObject)vec_) || std::strcmp(this->type(), type) != 0) {
-				check_error( VecDestroy(&vec_) );
+				destroy();
+				
 				check_error( VecCreate(comm, &vec_) );
 			} else {
 				PetscInt old_n_global;
@@ -36,7 +45,7 @@ namespace utopia {
 			}
 		}
 		
-		check_error( VecSetType(vec_, type) );
+		check_error( VecSetType(vec_, type_copy.c_str()) );
 
 		check_error( VecSetFromOptions(vec_) );
 
@@ -136,11 +145,11 @@ namespace utopia {
 		// 	VecSetSizes(implementation(), local_size, global_size);
 		// } else {
 		MPI_Comm comm = communicator();
-		VecType type  = this->type();
+		const std::string type = this->type();
 
 		destroy();
 
-		init(comm, type, local_size, global_size);
+		init(comm, type.c_str(), local_size, global_size);
 		// }
 	}
 
