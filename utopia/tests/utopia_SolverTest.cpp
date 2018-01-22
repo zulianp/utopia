@@ -923,9 +923,11 @@ namespace utopia
 			direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
 #endif //PETSC_HAVE_MUMPS
 			
-			auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+			// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+			auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
 			// auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
+
 			
 			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
 			multigrid.set_fix_semidefinite_operators(true);
@@ -937,6 +939,7 @@ namespace utopia
 			params.linear_solver_verbose(false);
 			multigrid.set_parameters(params);
 			
+			multigrid.verbose(true);
 			multigrid.solve(rhs, x_0);
 			
 			x_0 = zeros(A.size().get(0));
@@ -1223,9 +1226,7 @@ namespace utopia
 			Vector solution    = zeros(n);
 
 			ProjectedGaussSeidel<Matrix, Vector> pgs;
-			//super slow convergence
-			pgs.max_it(n*40);
-			// pgs.verbose(true);
+			pgs.max_it(n);
 			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 			pgs.solve(m, rhs, solution);
 		}

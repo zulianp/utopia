@@ -45,6 +45,11 @@ namespace utopia {
 			return static_cast<bool>(upper_bound_); 
 		}
 
+		inline bool has_bound() const
+		{
+			return has_lower_bound() || has_upper_bound();
+		}
+
 	private:
 		std::shared_ptr<Vector> lower_bound_;
 		std::shared_ptr<Vector> upper_bound_;		
