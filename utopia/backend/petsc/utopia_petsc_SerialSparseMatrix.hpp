@@ -7,8 +7,8 @@
 namespace utopia {
 	class PetscSerialSparseMatrix : public PetscSparseMatrix {
 	public:
-		using PetscSparseMatrix::PetscSparseMatrix;
-		using PetscSparseMatrix::operator=;
+		// using PetscSparseMatrix::PetscSparseMatrix;
+		// using PetscSparseMatrix::operator=;
 	};
 
 }

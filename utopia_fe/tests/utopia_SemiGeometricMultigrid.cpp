@@ -9,6 +9,7 @@
 #include "libmesh/mesh_tools.h"
 #include "libmesh/explicit_system.h"
 #include "libmesh/mesh_refinement.h"
+#include "libmesh/libmesh_version.h"
 
 #include <cmath>
 
@@ -29,7 +30,12 @@ namespace utopia {
 
 		mg.set_fix_semidefinite_operators(true);
 
-		libMesh::BoundingBox bb = libMesh::MeshTools::create_bounding_box(mesh);
+#if LIBMESH_VERSION_LESS_THAN(1, 0, 3)
+		libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(mesh);
+#else
+		libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(mesh);
+#endif
+
 		auto r = bb.max() - bb.min();
 
 		const std::size_t n_coarse_spaces = n_levels - 1;

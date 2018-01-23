@@ -23,7 +23,8 @@ namespace utopia {
                   rowptr_(rowptr.size()),
                   colindex_(colindex.size()),
                   entries_(entries.size()),
-                  editing_(false)
+                  editing_(false),
+                  clear_(false)
         {
             using std::copy;
             copy(rowptr.begin(), rowptr.end(), rowptr_.begin());
@@ -48,14 +49,15 @@ namespace utopia {
             copy(rowptr.begin(), rowptr.end(), rowptr_.begin());
             copy(colindex.begin(), colindex.end(), colindex_.begin());
             copy(entries.begin(), entries.end(), entries_.begin());
+            clear_ = false;
         }
 
         CRSMatrix(const SizeType rows, const SizeType cols, const SizeType nEntries)
-        : rows_(rows), cols_(cols), rowptr_(rows+1, 0), colindex_(nEntries, 0), entries_(nEntries, 0),  editing_(false)
+        : rows_(rows), cols_(cols), rowptr_(rows+1, 0), colindex_(nEntries, 0), entries_(nEntries, 0),  editing_(false), clear_(true)
         {}
 
         CRSMatrix()
-        : rows_(0), cols_(0), editing_(false)
+        : rows_(0), cols_(0), editing_(false), clear_(true)
         {}
 
 
@@ -80,11 +82,12 @@ namespace utopia {
 
             for(SizeType i = 0; i < cols_; ++i) {
                 for(SizeType k = 0; k < nnzXRow; ++k) {
-                    colindex_[i*nnzXRow+k] = k;
+                    colindex_[i*nnzXRow+k] = INVALID_INDEX;
                 }
             }
 
             editing_ = false;
+            clear_ = true;
         }
 
         void clear() {
@@ -161,10 +164,12 @@ namespace utopia {
             if(buffer_.empty())
                 return;
 
-            put(buffer_);
+            if(!clear_) {
+                put(buffer_);
+            }
 
             rowptr_.resize(rows()+1);
-           fill(rowptr_.begin(), rowptr_.end(), 0);
+            fill(rowptr_.begin(), rowptr_.end(), 0);
             colindex_.resize(buffer_.size());
             entries_.resize(buffer_.size());
 
@@ -194,6 +199,7 @@ namespace utopia {
 
             buffer_.clear();
             editing_ = false;
+            clear_ = false;
         }
 
         void put(MapMatrix &mat, const bool map_transpose = false) const
@@ -203,6 +209,8 @@ namespace utopia {
             for(SizeType r = 0; r < rows(); ++r) {
                 for(SizeType k = rowptr_[r]; k != rowptr_[r+1]; ++k) {
                     const SizeType c = colindex_[k];
+                    if(c == INVALID_INDEX) continue;
+                    
                     if(map_transpose) {
                         mat[std::make_pair(c, r)] = entries_[k];
                     } else {
@@ -218,7 +226,7 @@ namespace utopia {
             assert(j < cols());
             assert(editing_);
 
-            if(value == 0.0) return;
+            // if(value == 0.0) return;
 
 //            const SizeType index = find(i, j);
             const SizeType index = find_efficient(i, j);
@@ -288,8 +296,6 @@ namespace utopia {
             return colindex_;
         }
 
-
-
     private:
         SizeType rows_;
         SizeType cols_;
@@ -299,6 +305,7 @@ namespace utopia {
 
         MapMatrix buffer_;
         bool editing_;
+        bool clear_;
     };
 
 

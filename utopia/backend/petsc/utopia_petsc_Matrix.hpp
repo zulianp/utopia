@@ -53,23 +53,23 @@ namespace utopia {
 
 			other.destroy();
 			
-			PetscError::Check(MatDuplicate(_mat, opt, &other._mat));
+			PetscErrorHandler::Check(MatDuplicate(_mat, opt, &other._mat));
 		}
 		
 		inline void convert(PetscMatrixMemory &other, MatType newtype) {
 			//MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
-			PetscError::Check(MatConvert(_mat, newtype, MAT_INITIAL_MATRIX, &other._mat));
+			PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_INITIAL_MATRIX, &other._mat));
 		}
 		
 		inline void convert(MatType newtype) {
 			//MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
-			PetscError::Check(MatConvert(_mat, newtype, MAT_REUSE_MATRIX, &_mat));
+			PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_REUSE_MATRIX, &_mat));
 		}
 		
 		PetscMatrixMemory(const PetscMatrixMemory &other)
 		: owner_(true)
 		{
-			PetscError::Check(MatCopy(other._mat, _mat, SAME_NONZERO_PATTERN));
+			PetscErrorHandler::Check(MatCopy(other._mat, _mat, SAME_NONZERO_PATTERN));
 		}
 		
 		inline MPI_Comm communicator() const {
@@ -126,6 +126,10 @@ namespace utopia {
 			using std::make_shared;
 			wrapper_ = make_shared<PetscMatrixMemory>(comm);
 		}
+
+		PetscMatrix(PetscMatrix &&other) 
+		: wrapper_(std::move(other.wrapper_))	
+		{}
 		
 		PetscMatrix(const PetscMatrix &other) {
 			using std::make_shared;
@@ -364,7 +368,7 @@ namespace utopia {
 		
 		inline static bool check_error(const PetscInt err)
 		{
-			return PetscError::Check(err);
+			return PetscErrorHandler::Check(err);
 		}
 
         void select_aux(const std::vector<PetscInt> &row_index,

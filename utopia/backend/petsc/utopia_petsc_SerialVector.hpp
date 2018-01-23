@@ -6,8 +6,8 @@
 namespace utopia {
 	class PetscSerialVector : public PetscVector {
 	public:
-		using PetscVector::PetscVector;
-		using PetscVector::operator=;
+		// using PetscVector::PetscVector;
+		// using PetscVector::operator=;
 	};
 }
 

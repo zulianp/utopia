@@ -5,6 +5,7 @@
 * @Last Modified time: 2017-07-04
 */
 
+
 #ifndef UTOPIA_RMTR_HPP
 #define UTOPIA_RMTR_HPP
 #include "utopia_NonLinearSmoother.hpp"
@@ -22,6 +23,7 @@
 #include "utopia_TRBase.hpp"
 
 #include "utopia_MultiLevelEvaluations.hpp"
+
 
 namespace utopia 
 {
@@ -272,7 +274,7 @@ namespace utopia
             //----------------------------------------------------------------------------
 
             // if grad is not smooth enoguh, we proceed to Taylor iterations, no recursion anymore
-            if(level == 2 || this->grad_smoothess_termination(g_restricted, g_coarse))
+            if(level == 2 || this->grad_smoothess_termination(g_restricted, g_fine))
             {
                 SizeType l_new = level - 1; 
                 coarse_reduction = this->local_tr_solve(levels(level-2), u_2l, l_new); 

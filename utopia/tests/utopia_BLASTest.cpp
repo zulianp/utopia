@@ -27,6 +27,33 @@ namespace utopia {
         return vec;
     }
 
+    void blas_gemm_test()
+    {
+        Matrixd A{ hm_matrix(2, 2, {1, 1, 1, 1}) };
+        Matrixd B{ hm_matrix(2, 2, {2, 2, 2, 2}) };
+        Matrixd C{ hm_matrix(2, 2, {4, 0, 0, 4}) };
+        Matrixd res;
+
+        //specialization 1
+        res = 0.1 * A * B;
+        Matrixd expected = values(2, 2, 0.4);
+
+        assert(approxeq(expected, res));
+
+        res *= -.6;
+        
+        //specialization 2
+        res = 0.1 * A * B + 0.2 * C;
+
+        {
+            Write<Matrixd> w_r(expected);
+            expected.set(0, 0, 1.2);
+            expected.set(1, 1, 1.2);
+        }
+
+        assert(approxeq(expected, res));
+    }
+
     void blas_test() {
         //variables
         Matrixd m1{ hm_matrix(2, 2, {1, 0, 0, 1}) };
@@ -218,6 +245,55 @@ namespace utopia {
         assert(approxeq(wexp, wresult));
     }
 
+    void blas_row_view_test()
+    {
+        CRSMatrixd mat = sparse(3, 3, 1);
+
+        {
+            Write<CRSMatrixd> write(mat);
+            mat.set(0, 0, 2);
+            mat.set(1, 1, 2);
+            mat.set(2, 2, 2);
+        }
+
+        //controlled way
+        {
+            Read<CRSMatrixd> r_m(mat);
+
+            Size s = size(mat);
+            Range r = row_range(mat);
+            for(auto i = r.begin(); i != r.end(); ++i) {
+                RowView<const CRSMatrixd> row_view(mat, i);
+
+                assert(row_view.n_values() == 1);
+
+                for(auto k = 0; k < row_view.n_values(); ++k) {
+                    auto c = row_view.col(k);
+                    auto v = row_view.get(k);
+
+                    assert(approxeq(2., v));
+                    assert(c == i);
+                }
+            } 
+        }
+
+        //simple way
+        each_read(mat, [](const SizeType i, const SizeType j, const double v) {
+            assert(i == j);
+            assert(approxeq(2., v));
+        });
+
+        Matrixd d_mat = values(3, 3, 2.);
+
+        SizeType n_vals = 0;
+        each_read(d_mat, [&n_vals](const SizeType i, const SizeType j, const double v) {
+            assert(approxeq(2., v));
+            ++n_vals;
+        });
+
+        assert(n_vals == 3 * 3);
+    }
+
 
     template<typename SizeType, typename Scalar>
     utopia::CRSMatrixd crs(const SizeType rows, const SizeType cols,
@@ -276,6 +352,8 @@ namespace utopia {
     void runBLASTest() {
 #ifdef WITH_BLAS
         UTOPIA_UNIT_TEST_BEGIN("BLASTest");
+        UTOPIA_RUN_TEST(blas_gemm_test);
+        UTOPIA_RUN_TEST(blas_row_view_test);
         UTOPIA_RUN_TEST(blas_test);
         UTOPIA_RUN_TEST(blas_axpy_test);
         UTOPIA_RUN_TEST(blas_function_test);

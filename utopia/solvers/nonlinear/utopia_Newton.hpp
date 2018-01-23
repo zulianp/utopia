@@ -78,10 +78,10 @@ namespace utopia
 
                 if(this->has_preconditioned_solver() && fun.has_preconditioner()) {
                     fun.hessian(x, hessian, preconditioner);
-                    this->linear_solve(hessian, preconditioner, -1*grad, step);
+                    this->linear_solve(hessian, preconditioner, -grad, step);
                 } else {
                     fun.hessian(x, hessian);
-                    this->linear_solve(hessian, -1*grad, step);
+                    this->linear_solve(hessian, -grad, step);
                 }
 
                 if(ls_strategy_) {

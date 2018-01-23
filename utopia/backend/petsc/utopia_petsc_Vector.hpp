@@ -89,8 +89,8 @@ namespace utopia {
 		PetscVector(const PetscVector &other)
 		{
 			if(other.vec_) {
-				PetscError::Check(VecDuplicate(other.vec_, &vec_));
-				PetscError::Check(VecCopy(other.vec_, vec_));
+				PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
+				PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
 				initialized_ = other.initialized_;
 				ghost_values_ = other.ghost_values_;
 			} else {
@@ -121,7 +121,11 @@ namespace utopia {
 			VecGetType(implementation(), &ret);
 			return ret;
 		}
-		
+
+		bool has_type(VecType type) const;
+
+	 	bool same_type(const PetscVector &other) const;
+
 		inline PetscInt local_size() const
 		{
 			PetscInt ret;
@@ -166,17 +170,17 @@ namespace utopia {
 #endif 
 			
 			if(is_compatible(other) && !other.has_ghosts()) {
-				assert( std::string(type()) == std::string(other.type()) && "Inconsistent matrix types. Handle types properly before copying" );
+				assert( same_type(other) && "Inconsistent matrix types. Handle types properly before copying" );
 				assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
-				PetscError::Check(VecCopy(other.vec_, vec_));
+				PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
 				return *this;
 			}
 			
 			destroy();
 			
 			if(other.vec_) {
-				PetscError::Check(VecDuplicate(other.vec_, &vec_));
-				PetscError::Check(VecCopy(other.vec_, vec_));
+				PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
+				PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
 				ghost_values_ = other.ghost_values_;
 			}
 			
@@ -520,7 +524,7 @@ namespace utopia {
 #endif //NDEBUG     
 		
 		inline static bool check_error(const PetscInt err) {
-			return PetscError::Check(err);
+			return PetscErrorHandler::Check(err);
 		}
 	};
 	
