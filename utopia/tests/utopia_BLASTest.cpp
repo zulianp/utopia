@@ -39,6 +39,8 @@ namespace utopia {
         Matrixd expected = values(2, 2, 0.4);
 
         assert(approxeq(expected, res));
+
+        res *= -.6;
         
         //specialization 2
         res = 0.1 * A * B + 0.2 * C;
