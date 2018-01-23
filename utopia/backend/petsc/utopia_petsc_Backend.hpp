@@ -425,28 +425,19 @@ namespace utopia {
 		static void axpy(PetscMatrix &y, const Scalar alpha, const PetscMatrix &x);
 		static void axpby(Vector &y, const Scalar alpha, const Vector &x, const Scalar &beta);
 
-		inline static void multiply(
+		static void multiply(
 			PetscMatrix &result,
 			bool transpose_left,
 			const PetscMatrix &left,
 			bool transpose_right,
-			const PetscMatrix &right)
-		{
-			gemm(result, 0.0, 1., transpose_left, left, transpose_right, right);
-		}
+			const PetscMatrix &right);
 
-		inline static void multiply(
+		static void multiply(
 			Vector &result,
 			bool transpose_left,
 			const PetscMatrix &left,
 			bool transpose_right,
-			const Vector &right)
-		{
-			assert(!transpose_right); 
-			(void) transpose_right;
-			
-			gemv(result, 0.0, 1., transpose_left, left, right);
-		}
+			const Vector &right);
 
 		static void scale(Vector &result, const Scalar scale_factor);
 		static void scale(Matrix &result, const Scalar scale_factor);
@@ -514,22 +505,22 @@ namespace utopia {
 
 	private:
 
-		static void gemm(
-			PetscMatrix &result,
-			const Scalar beta,
-			const Scalar alpha,
-			bool transpose_left,
-			const PetscMatrix &left,
-			bool transpose_right,
-			const PetscMatrix &right);
+		// static void gemm(
+		// 	PetscMatrix &result,
+		// 	const Scalar beta,
+		// 	const Scalar alpha,
+		// 	bool transpose_left,
+		// 	const PetscMatrix &left,
+		// 	bool transpose_right,
+		// 	const PetscMatrix &right);
 
-		static void gemv(
-			Vector &y, 
-			const Scalar beta,
-			const Scalar alpha,
-			bool transpose_A,
-			const PetscMatrix &A, 
-			const Vector &x);
+		// static void gemv(
+		// 	Vector &y, 
+		// 	const Scalar beta,
+		// 	const Scalar alpha,
+		// 	bool transpose_A,
+		// 	const PetscMatrix &A, 
+		// 	const Vector &x);
 				
 
 		//unused

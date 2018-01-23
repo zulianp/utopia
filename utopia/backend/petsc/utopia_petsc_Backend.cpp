@@ -362,31 +362,17 @@ namespace utopia {
 		right.select(global_row_range, left);
 	}
 	
-	//remove me and make blas specialization
-	void PetscBackend::gemm(
+	void PetscBackend::multiply(
 		PetscMatrix &result,
-		const Scalar beta,
-		const Scalar alpha,
 		bool transpose_left,
 		const PetscMatrix &left,
 		bool transpose_right,
 		const PetscMatrix &right) 
 	{
-
-		//TODO
-
-
-		//FIXME only works for beta == 0 for the moment
-		assert(fabs(beta) < 1e-16);
-		
-		//FIXME only works for alpha == 1 for the moment
-		assert(fabs(alpha - 1) < 1e-16);
-
 		CompatibleMatPair mat_pair(left.communicator(), left.implementation(), right.implementation());
 		auto l = mat_pair.left();
 		auto r = mat_pair.right();
 
-		// MatDestroy( &result.implementation());
 		result.destroy();
 
 		bool ok = false;
@@ -411,24 +397,20 @@ namespace utopia {
 		assert(ok);
 	}
 
-	//remove me and make blas specialization
-	void PetscBackend::gemv(
+	void PetscBackend::multiply(
 		Vector &y, 
-		const Scalar beta,
-		const Scalar alpha,
 		bool transpose_A,
 		const PetscMatrix &A, 
+		bool transpose_X,
 		const Vector &x)
 	{
-		assert(fabs(beta) < 1e-16);
-		assert(fabs(alpha - 1.) < 1e-16);
-		
+		assert(!transpose_X);
+
 		if(transpose_A) {
 			A.mult_t(x, y);
 		} else {
 			A.mult(x, y);
 		}
-		
 	}
 
 	void PetscBackend::build(PetscMatrix &m, const Size &size, const Identity &, const PetscArgs &opts)

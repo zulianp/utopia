@@ -4,18 +4,24 @@
 #include <cstring>
 
 namespace utopia {
-	
+
+	bool  PetscVector::has_type(VecType type) const
+	{
+		PetscBool match = PETSC_FALSE;
+		PetscObjectTypeCompare((PetscObject) implementation(), type, &match);
+		return match;
+	}
+
+	bool PetscVector::same_type(const PetscVector &other) const
+	{
+		return has_type(other.type());
+	}
+		
 	void PetscVector::repurpose(MPI_Comm comm,
 								VecType type,
 								PetscInt n_local,
 								PetscInt n_global)
 	{
-
-		//PetscObjectTypeCompare
-	// 	 PetscBool      match;
-
- // 38:   PetscObjectTypeCompare((PetscObject) vec, method, &match);
- // 39:   if (match) return(0);
 
 #ifndef NDEBUG
 		assert(!immutable_);
@@ -26,9 +32,9 @@ namespace utopia {
 		if(is_null()) {
 			VecCreate(comm, &vec_);
 		} else {
-			if(comm != PetscObjectComm((PetscObject)vec_) || std::strcmp(this->type(), type) != 0) {
+			if(comm != PetscObjectComm((PetscObject)vec_) || has_type(type)) {
 				destroy();
-				
+
 				check_error( VecCreate(comm, &vec_) );
 			} else {
 				PetscInt old_n_global;
