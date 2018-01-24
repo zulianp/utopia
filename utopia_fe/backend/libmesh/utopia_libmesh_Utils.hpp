@@ -2,6 +2,7 @@
 #define UTOPIA_LIBMESH_UTILS_HPP 
 
 #include "libmesh/enum_elem_type.h"
+#include "libmesh/libmesh_version.h"
 
 namespace utopia {
 	inline bool is_hex(const int type)
@@ -16,8 +17,11 @@ namespace utopia {
 		return 	type == static_cast<int>(libMesh::QUAD4)      ||
 				type == static_cast<int>(libMesh::QUAD8) 	  ||
 				type == static_cast<int>(libMesh::QUAD9)	  ||
-				type == static_cast<int>(libMesh::QUADSHELL4) ||
-				type == static_cast<int>(libMesh::QUADSHELL8);
+				type == static_cast<int>(libMesh::QUADSHELL4) 
+#if !(LIBMESH_VERSION_LESS_THAN(1, 0, 3))
+				|| type == static_cast<int>(libMesh::QUADSHELL8)
+#endif 
+			;
 	}
 	
 	inline bool is_tri(const int type)
@@ -46,7 +50,9 @@ namespace utopia {
 			case QUAD4: 	 return EDGE2;
 			case QUAD8: 	 return EDGE3;
 			case QUADSHELL4: return EDGE2;
+#if !(LIBMESH_VERSION_LESS_THAN(1, 0, 3))
 			case QUADSHELL8: return EDGE3;
+#endif 
 			case TRI3:  	 return EDGE2;
 			case TRI6:  	 return EDGE3;
 			case TET4:  	 return TRI3;
