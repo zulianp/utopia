@@ -1,16 +1,18 @@
+list(APPEND CORE_MODULES
+	.
+	eval
+	expressions
+)
 
-list(APPEND LOCAL_HEADERS 
-	utopia_MixedFESpace.hpp
-	utopia_fe_core.hpp
-	utopia_fe_lang.hpp
-	)
-
-list(APPEND LOCAL_SOURCES 
-	utopia_fe_core.cpp
-	)
+find_project_files(CMAKE_CURRENT_SOURCE_DIR CORE_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 add_library(utopia_fe_core STATIC ${LOCAL_SOURCES})
 target_include_directories(utopia_fe_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+foreach(MODULE ${CORE_MODULES})
+	target_include_directories(utopia_fe_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
+endforeach(MODULE)
+
 
 install(TARGETS utopia_fe_core
 	RUNTIME DESTINATION bin 

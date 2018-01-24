@@ -13,15 +13,15 @@ namespace utopia {
         typedef typename TypeAndFill<Traits, CLeft>::Type Result;
 
         inline static void apply(const Expr &expr) {
-
             UTOPIA_LOG_BEGIN(expr);
 
-            auto & cleft       = Eval<CLeft, Traits>::apply(expr.left());
+            auto & result      = Eval<CLeft, Traits>::apply(expr.left());
             const auto & left  = expr.right().left().implementation();
             auto && right      = Eval<Right, Traits>::apply(expr.right().right());
 
-        	ASSERT(&cleft != &right && "should never happen");
-        	const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), cleft); ASSERT(ok);
+        	ASSERT(&result != &right && "should never happen");
+
+        	UTOPIA_BACKEND(Traits).apply_binary(result, left, Multiplies(), right);
 
 			UTOPIA_LOG_END(expr);
         }
@@ -34,19 +34,18 @@ namespace utopia {
         typedef typename TypeAndFill<Traits, CLeft>::Type Result;
 
         inline static void apply(const Expr &expr) {
-
             UTOPIA_LOG_BEGIN(expr);
 
-            auto & cleft       = Eval<CLeft, Traits>::apply(expr.left());
+            auto & result       = Eval<CLeft, Traits>::apply(expr.left());
             const auto & left  = expr.right().left().implementation();
             auto && right      = Eval<Right, Traits>::apply(expr.right().right());
 
-        	if(&cleft != &right) {
-        		const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), cleft);  ASSERT(ok);
+        	if(&result != &right) {
+        		UTOPIA_BACKEND(Traits).apply_binary(result, left, Multiplies(), right);
         	} else {
-        		Result result;
-        		const bool ok = UTOPIA_BACKEND(Traits).apply(left, right, Multiplies(), result);  ASSERT(ok);
-        		cleft = result;
+        		Result temp;
+        		UTOPIA_BACKEND(Traits).apply_binary(temp, left, Multiplies(),right);
+                result = temp;
         	}
 
             UTOPIA_LOG_END(expr);

@@ -15,8 +15,15 @@ namespace utopia {
         std::string getClass() const { return "Minus"; }
 
         template<typename T>
-        inline static std::minus<T> Fun() {
-            return std::minus<T>();
+        inline static T apply(const T &l, const T &r)
+        {
+            return l - r;
+        }
+
+        template<typename T>
+        inline static T apply(const T &expr)
+        {
+            return -expr;
         }
     };
 
@@ -25,8 +32,20 @@ namespace utopia {
         std::string getClass() const { return "Plus"; }
 
         template<typename T>
-        inline static std::plus<T> Fun() {
-            return std::plus<T>();
+        inline static T apply(const T &l, const T &r)
+        {
+            return l + r;
+        }
+    };
+
+    class PlusEqual {
+    public:
+        std::string getClass() const { return "PlusEqual"; }
+
+        template<typename T>
+        inline static T & apply(T &l, const T &r)
+        {
+            return l += r;
         }
     };
 
@@ -35,19 +54,10 @@ namespace utopia {
         std::string getClass() const { return "AbsPlus"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &left, const T &right) const {
-                using std::abs;
-                return abs(left) + abs(right);
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &left, const T &right) {
+            using std::abs;
+            return abs(left) + abs(right);
         }
-
     };
 
     class And {
@@ -55,28 +65,18 @@ namespace utopia {
         std::string getClass() const { return "And"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &left, const T &right) const {
-                return left && right;
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &left, const T &right) {
+            return left && right;
         }
-
     };
-
 
     class Multiplies {
     public:
         std::string getClass() const { return "Multiplies"; }
 
-        template<typename T>
-        inline static std::multiplies<T> Fun() {
-            return std::multiplies<T>();
+        template<typename Left, typename Right>
+        inline static auto apply(const Left &left, const Right &right) -> decltype(left * right) {
+            return left * right;
         }
     };
 
@@ -85,21 +85,29 @@ namespace utopia {
         std::string getClass() const { return "Divides"; }
 
         template<typename T>
-        inline static std::divides<T> Fun() {
-            return std::divides<T>();
+        inline static T apply(const T &left, const T &right) {
+            return left / right;
         }
     };
-
-
 
     class EMultiplies {
     public:
         std::string getClass() const { return "EMultiplies"; }
 
         template<typename T>
-        inline static std::multiplies<T> Fun() {
-            return std::multiplies<T>();
+        inline static T apply(const T &left, const T &right) {
+            return left * right;
         }
+    };
+
+    class KroneckerProduct {
+    public:
+        std::string getClass() const { return "KroneckerProduct"; }
+    };
+
+    class TraceOp {
+    public:
+        std::string getClass() const { return "TraceOp"; }
     };
 
     class ApproxEqual {
@@ -115,8 +123,14 @@ namespace utopia {
         ApproxEqual(const double tol = 1e-8)
                 : _tol(tol) { }
 
-        double getTol() const {
+        inline double tol() const {
             return _tol;
+        }
+
+        template<typename T>
+        inline bool apply(const T &left, const T &right) const {
+            using std::abs;
+            return abs(left - right) < tol();
         }
 
     private:
@@ -129,17 +143,9 @@ namespace utopia {
         std::string getClass() const { return "Sqrt"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &x) const {
-                using std::sqrt;
-                return sqrt(x);
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &x) {
+            using std::sqrt;
+            return sqrt(x);
         }
     };
 
@@ -148,16 +154,30 @@ namespace utopia {
         std::string getClass() const { return "Pow2"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &x) const {
-                return x * x;
-            }
-        };
+        inline static T apply(const T &x) {
+            return x * x;
+        }
+    };
+
+    class Log {
+    public:
+        std::string getClass() const { return "Log"; }
 
         template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &x) {
+            using std::log;
+            return log(x);
+        }
+    };
+
+    class Exp {
+    public:
+        std::string getClass() const { return "Exp"; }
+
+        template<typename T>
+        inline static T apply(const T &x) {
+            using std::exp;
+            return exp(x);
         }
     };
 
@@ -171,17 +191,9 @@ namespace utopia {
         std::string getClass() const { return "Abs"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &x) const {
-                using std::abs;
-                return abs(x);
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &x) {
+            using std::abs;
+            return abs(x);
         }
     };
 
@@ -191,7 +203,6 @@ namespace utopia {
         return Expr().getClass();
     }
 
-
     //Special (FIND A NAME)
     template<typename  T>
     class Reciprocal {
@@ -199,6 +210,11 @@ namespace utopia {
         typedef T Scalar;
         
         std::string getClass() const { return "Reciprocal"; }
+
+        template<typename T2>
+        inline T2 apply(const T2 &x) const {
+            return numerator_/x;
+        }
 
         Reciprocal(const T &numerator)
                 : numerator_(numerator)
@@ -215,17 +231,10 @@ namespace utopia {
         std::string getClass() const { return "Min"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &left, const T &right) const {
-                using std::min;
-                return min(left, right);
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &left, const T &right) {
+            using std::min;
+            
+            return min(left, right);
         }
     };
 
@@ -234,17 +243,9 @@ namespace utopia {
         std::string getClass() const { return "Max"; }
 
         template<typename T>
-        class Function {
-        public:
-            inline T operator()(const T &left, const T &right) const {
-                using std::max;
-                return max(left, right);
-            }
-        };
-
-        template<typename T>
-        inline static Function<T> Fun() {
-            return Function<T>();
+        inline static T apply(const T &left, const T &right) {
+            using std::max;
+            return max(left, right);
         }
     };
 }

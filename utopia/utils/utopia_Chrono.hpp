@@ -33,6 +33,9 @@ namespace utopia {
 			return os;
 		}
 
+		Chrono &operator+=(const Chrono &other);
+		void rescale_duration(const double factor);
+
 	private:
 		typedef std::chrono::high_resolution_clock::time_point TimePoint;
 		typedef std::chrono::duration<double, std::milli> DurationMillis;

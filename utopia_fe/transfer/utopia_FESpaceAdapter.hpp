@@ -144,6 +144,7 @@ namespace utopia {
 		{
 			return side_set_id_tag_;
 		}
+        
 
 		inline std::vector<moonolith::Integer> &ownershipRangesFaceID()
 		{
@@ -177,10 +178,11 @@ namespace utopia {
 		std::vector<long> var_order_;
 
 
-		std::vector<ElementDofMap> subdomain_id_;
+	
 
 		std::vector<ElementDofMap> side_set_id_;
 		std::vector<ElementDofMap> face_set_id_global_;
+       	std::vector<ElementDofMap> subdomain_id_;
 		std::vector<ElementDofMap> side_set_id_tag_;
 		std::vector<ElementDofMap> n_face_nodes_;
 		std::vector<moonolith::Integer> ownershipRangesFaceID_;	    
@@ -343,8 +345,9 @@ namespace utopia {
 		//WRITE 11
 		os << variable_number.at(0);
 		
-		//WRITE 12
+		//WRITE 13
 		os << variable_order.at(0);
+
 		
 	}
 	
@@ -422,6 +425,7 @@ namespace utopia {
 		face_set_id_global.resize(n_elements);
 		
 		face_set_id_global.resize(n_elements);
+        
 		handle_to_element_id.resize(n_elements);
 		
 		
@@ -473,7 +477,7 @@ namespace utopia {
 			is >> side_set_tag;
 			
 			is >> face_set_id_global.at(i);
-			
+            
 			//std::cout <<"read value"<< face_set_id_global[i].global.at(0)<<std::endl;
 			
 			side_set_id[i].global.insert(side_set_id[i].global.end(),side_set_tag);

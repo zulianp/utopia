@@ -5,13 +5,13 @@
 // * @Last Modified time: 2016-10-11
 // */
 
-#ifndef UTOPIA_UTOPIA_LINEAR_SOLVER_FACTORY2_HPP
-#define UTOPIA_UTOPIA_LINEAR_SOLVER_FACTORY2_HPP
+#ifndef UTOPIA_LINEAR_SOLVER_FACTORY_HPP
+#define UTOPIA_LINEAR_SOLVER_FACTORY_HPP
 
 #include "utopia_Core.hpp"
+#include "utopia_Parameters.hpp"
 
-namespace utopia 
-{
+namespace utopia  {
 
 	typedef const char * SolverTag;
 	static SolverTag AUTO_TAG 		= "AUTO";
@@ -24,8 +24,10 @@ namespace utopia
 	static SolverTag KSP_TAG 		= "KSP";
 
 	static SolverTag LAPACK_TAG 	= "LAPACK";
+
+#ifdef WITH_UMFPACK
 	static SolverTag UMFPACK_TAG 	= "UMFPACK";
-	
+#endif //WITH_UMFPACK
 
 	/**
 	 * @brief      Front-end to create linear solver objects.
@@ -35,107 +37,12 @@ namespace utopia
 	 * @tparam     Backend  
 	 */
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-	class LinearSolverFactory;
-
-// -------------------------------------------PETSC------------------------------------------
-	template<typename Matrix, typename Vector>
-	class LinearSolverFactory<Matrix, Vector, PETSC>
-	{
-		public: 
-			typedef std::shared_ptr< LinearSolver<Matrix, Vector> >  LinearSolverPtr;
-			std::map<std::string, LinearSolverPtr> solvers_;
-
-			inline static LinearSolverPtr new_linear_solver(const SolverTag &tag)
-			{
-				auto it = instance().solvers_.find(tag);
-				if(it == instance().solvers_.end()) 
-				{
-					// std::cout<<"LinearSolver not available, solving with utopia_CG.  \n";  //TODO:: fix tests and put back
-					return std::make_shared<ConjugateGradient<Matrix, Vector> >();
-				} 
-				else 
-				{
-					return it->second;
-				}
-			}
-
-		private:
-
-			inline static const LinearSolverFactory &instance()
-			{
-				static LinearSolverFactory instance_;
-				instance_.init();
-				return instance_;
-
-			}
-
-			void init()
-			{
-				#ifdef WITH_PETSC
-					solvers_[UTOPIA_CG_TAG] = std::make_shared< ConjugateGradient<Matrix, Vector, HOMEMADE> >();
-					solvers_[AUTO_TAG] 		= std::make_shared< BiCGStab<Matrix, Vector> >();
-					solvers_[CG_TAG] 		= std::make_shared< ConjugateGradient<Matrix, Vector> >();
-					solvers_[BICGSTAB_TAG] 	= std::make_shared< BiCGStab<Matrix, Vector> >();
-					solvers_[KSP_TAG] 		= std::make_shared< KSPSolver<Matrix, Vector> >();
-					solvers_[DIRECT_TAG] 	= std::make_shared< Factorization<Matrix, Vector> >();
-				#endif // WITH_PETSC
-			}
+	class LinearSolverFactory {
+	public:
+		LinearSolverFactory() {
+			static_assert(Backend < HOMEMADE, "LinearSolverFactory not available for Backend");
+		}
 	};
-
-
-// -------------------------------------------BLAS------------------------------------------
-	template<typename Matrix, typename Vector>
-	class LinearSolverFactory<Matrix, Vector, BLAS>
-	{
-
-		public: 
-			typedef std::shared_ptr< LinearSolver<Matrix, Vector> >  LinearSolverPtr;
-			std::map<std::string, LinearSolverPtr> solvers_;
-
-			inline static LinearSolverPtr new_linear_solver(const SolverTag &tag)
-			{
-				auto it = instance().solvers_.find(tag);
-				if(it == instance().solvers_.end()) 
-				{
-					//std::cout<<"LinearSolver not avaialble, solve with CG.  \n";   // TODO fix tests and put back
-					return std::make_shared<ConjugateGradient<Matrix, Vector> >();
-				} 
-				else 
-				{
-					return it->second;
-				}
-			}
-
-		private:
-
-			inline static const LinearSolverFactory &instance()
-			{
-				static LinearSolverFactory instance_;
-				instance_.init();
-				return instance_;
-
-			}
-
-			
-			void init()
-			{
-#ifdef WITH_LAPACK
-					//FIXME
-					solvers_[LAPACK_TAG] = std::make_shared< LUDecomposition<Matrix, Vector> >();
-					solvers_[AUTO_TAG]   = std::make_shared< LUDecomposition<Matrix, Vector> >();
-#endif //WITH_LAPACK
-	
-
-//FIXME does not work for dense matrices				
-				// #ifdef WITH_UMFPACK
-				// 	solvers_[UMFPACK_TAG] = std::make_shared<UmfpackLU>();
-				// #endif //WITH_UMFPACK
-			}
-
-
-
-	};
-
 
 
 	/**
@@ -185,8 +92,6 @@ namespace utopia
 	}
 
 	/** @}*/
-
 }
 
-
-#endif //UTOPIA_UTOPIA_LINEAR_SOLVER_FACTORY2_HPP
+#endif //UTOPIA_LINEAR_SOLVER_FACTORY_HPP

@@ -11,6 +11,8 @@ namespace libMesh {
 
 namespace utopia {
 	
+	void scale_normal_vector_with_gap(const int dim, const DVectord &normals, const DVectord &gap, DVectord &out);
+	
 	bool assemble_normal_tangential_transformation(
 		const libMesh::MeshBase &mesh, 
 		const libMesh::DofMap &dof_map,

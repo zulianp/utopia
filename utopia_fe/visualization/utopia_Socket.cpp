@@ -480,6 +480,8 @@ namespace utopia {
 		const std::string &name)
 	{
 
+		Read<DVectord> r_n(normals), r_s(scale);
+
 		using namespace libMesh;
 		int mesh_dim = mesh.mesh_dimension();
 
@@ -505,11 +507,13 @@ namespace utopia {
 			get_vector(normals, node_dof_ids, local_normal);
 			get_vector(scale,   node_dof_ids, local_scale);
 
+			if(local_normal.l2_norm() < 1e-16) continue;
+
 			for(int d = 0; d < mesh_dim; ++d) {
 				local_normal(d) *= local_scale(0);
 			}
 
-			if(local_normal.l2_norm() < 1e-16) continue;
+			
 
 			all_points.insert(all_points.end(),
 				point.begin(),

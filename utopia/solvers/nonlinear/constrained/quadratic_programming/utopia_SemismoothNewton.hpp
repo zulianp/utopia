@@ -1,10 +1,14 @@
 #ifndef UTOPIA_SOLVER_SEMISMOOTH_NEWTON_HPP
 #define UTOPIA_SOLVER_SEMISMOOTH_NEWTON_HPP
 
-#include "utopia_Wrapper.hpp"
+
 #include "utopia_Function.hpp"
 #include "utopia_NonLinearSolver.hpp"
+#include "utopia_BoxConstraints.hpp"
+
+#include "utopia_Wrapper.hpp"
 #include "utopia_Core.hpp"
+
 #include <vector>
 #include <memory>
 
@@ -21,7 +25,7 @@ namespace utopia {
 		
 		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
 						 const Parameters params                         = Parameters() ) :
-		linear_solver_(linear_solver), active_set_tol_(1e-15)
+		linear_solver_(linear_solver), active_set_tol_(1e-15), linear_solve_zero_initial_guess_(true)
 		{
 			set_parameters(params);
 		}
@@ -69,6 +73,16 @@ namespace utopia {
 		{
 			box = constraints_;
 			return true;
+		}
+
+		inline void set_linear_solve_zero_initial_guess(const bool val)
+		{
+			linear_solve_zero_initial_guess_ = val;
+		}
+
+		inline bool linear_solve_zero_initial_guess() const
+		{
+			return linear_solve_zero_initial_guess_;
 		}
 		
 	private:
@@ -236,6 +250,10 @@ namespace utopia {
 
 				assert(!has_nan_or_inf(H));
 				assert(!has_nan_or_inf(g));
+
+				if(this->linear_solve_zero_initial_guess()) {
+					x_new *= 0.;
+				}
 				
 				if(!linear_solver_->solve(H, sub_g, x_new)) {
 					std::cerr << "[Error] linear solver did not manage to solve the linear system" << std::endl;
@@ -243,6 +261,10 @@ namespace utopia {
 				}
 
 				if(has_nan_or_inf(x_new)) {
+					write("H.m", H);
+					write("s.m", sub_g);
+					write("x.m", x_new);
+					
 					assert(!has_nan_or_inf(x_new));
 					std::cerr << "[Error] nan/inf entries in the solution vector" << std::endl;
 					converged = false;
@@ -253,6 +275,11 @@ namespace utopia {
 					assert(check_zero(H * x_new - sub_g));
 					std::cerr << "[Error] non-zero residual returned by linear-solver" << std::endl;
 					converged = false;
+
+					write("H.m", H);
+					write("s.m", sub_g);
+					write("x.m", x_new);
+					
 					break;
 				}
 
@@ -417,6 +444,7 @@ namespace utopia {
 		std::shared_ptr <Solver>        linear_solver_;
 		BoxConstraints                  constraints_;
 		Scalar active_set_tol_;
+		bool linear_solve_zero_initial_guess_;
 	};
 	
 }

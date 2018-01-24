@@ -12,9 +12,7 @@ namespace utopia {
     template<class Left, class Right>
     class OuterProduct : public Expression< OuterProduct<Left, Right> > {
     public:
-        enum {
-            Order =  Left::Order + Right::Order
-        };
+        static const int Order =  Left::Order + Right::Order;
 
         enum {
             StoreAs = UTOPIA_BY_VALUE

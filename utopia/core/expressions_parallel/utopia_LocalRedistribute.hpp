@@ -5,7 +5,6 @@
 * @Last Modified time: 2016-07-29
 */
 
-#ifdef WITH_PETSC
 #ifndef UTOPIA_UTOPIA_LOCAL_REDISTRIBUTE_HPP
 #define UTOPIA_UTOPIA_LOCAL_REDISTRIBUTE_HPP
 
@@ -13,9 +12,7 @@
 #include "utopia_StoreAs.hpp"
 #include <string>
 
-
-namespace utopia 
-{   
+namespace utopia {   
     /**
      * @brief  
      *
@@ -82,4 +79,4 @@ namespace utopia
 }
 
 #endif //UTOPIA_UTOPIA_LOCAL_REDISTRIBUTE_HPP
-#endif //WITH_PETSC
+

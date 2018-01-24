@@ -9,9 +9,17 @@
 #include "utopia_Size.hpp"
 #include "utopia_Castable.hpp"
 
-#define TENSOR_ORDER_MULTIPLY(Left_, Right_) (Left_::Order < Right_::Order)? Left_::Order : Right_::Order
+// #define TENSOR_ORDER_MULTIPLY(Left_, Right_) (Left_::Order < Right_::Order)? Left_::Order : Right_::Order
 
 namespace utopia {
+    template<class Left, class Right>
+    class MultiplyTensorOrder {
+    public:
+        static const int Order = (Left::Order < Right::Order)? Left::Order : Right::Order;
+    };
+
+    #define TENSOR_ORDER_MULTIPLY(Left_, Right_) (MultiplyTensorOrder<Left_, Right_>::Order)
+
     template<class _Left, class _Right>
     class Multiply : public Expression< Multiply<_Left, _Right> >, 
                      public Castable< Multiply<_Left, _Right>,
@@ -20,11 +28,9 @@ namespace utopia {
     public:
         typedef _Left Left;
         typedef _Right Right;
-        typedef decltype(typename Left::Scalar() * typename Right::Scalar()) Scalar;
+        typedef decltype(typename Traits<Left>::Scalar() * typename Traits<Right>::Scalar()) Scalar;
 
-        enum {
-            Order = TENSOR_ORDER_MULTIPLY(_Left, _Right)
-        };
+        static const int Order = TENSOR_ORDER_MULTIPLY(_Left, _Right);
 
         Multiply(const Left &left, const Right &right)
                 : _left(left), _right(right)
@@ -52,7 +58,7 @@ namespace utopia {
         result.set(0, size(expr.left()).get(0));
 
         Size r_size = size(expr.right());
-        if(r_size.nDims() == 1) {
+        if(r_size.n_dims() == 1) {
             result.set(1, 1);
         } else {
             result.set(1, size(expr.right()).get(1));

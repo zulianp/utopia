@@ -10,7 +10,7 @@
 #include "utopia_PerformanceTest.hpp"
 #include "utopia_AlgebraTest.hpp"
 #include "utopia_UtilitiesTest.hpp"
-#include "utopia_PETScTest.hpp"
+#include "utopia_PetscTest.hpp"
 #include "utopia_BLASTest.hpp"
 #include "utopia_MiscTest.hpp"
 
@@ -24,7 +24,7 @@ namespace utopia
         runSolversTest();
         runAlgebraTest();
         runUtilitiesTest();
-        runPETScTest();
+        runPetscTest();
         runBLASTest();
         runMiscTest();
 
@@ -62,7 +62,7 @@ namespace utopia
                 else if (token == "utilities")
                     runUtilitiesTest();
                 else if (token == "petsc")
-                    runPETScTest();
+                    runPetscTest();
                 else if (token == "blas")
                     runBLASTest();
                 else if (token == "misc")

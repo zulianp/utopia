@@ -4,6 +4,11 @@
 #include "utopia_Eval_Empty.hpp"
 
 namespace utopia {
+
+	//[implementors guidelines]
+	//[minimal] this provides a cross-backen implementation of the determinant computation for n <= 3
+	//[optimized] provide a backend specific implementation by specializing the templa
+
 	///backend generic det for small matrices
 	template<class Tensor, class Traits, int Backend>
 	class Eval<Determinant< Wrapper<Tensor, 2> >, Traits, Backend> {

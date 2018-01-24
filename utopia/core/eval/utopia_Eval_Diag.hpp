@@ -38,9 +38,9 @@ namespace utopia {
             UTOPIA_LOG_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).diag_scale_left(
+                    result,
                     Eval<Left,  Traits>::apply(expr.left().expr()),
-                    Eval<Right, Traits>::apply(expr.right()),
-                    result);
+                    Eval<Right, Traits>::apply(expr.right()));
 
             UTOPIA_LOG_END(expr);
             return result;
@@ -63,8 +63,6 @@ namespace utopia {
                     Eval<Right, Traits>::apply(expr.right().expr())
             );
 
-            //FIXME error handling
-
             UTOPIA_LOG_END(expr);
             return true;
         }
@@ -82,8 +80,6 @@ namespace utopia {
                     Eval<Right, Traits>::apply(expr.right().expr().expr())
             );
 
-            //FIXME error handling
-
             UTOPIA_LOG_END(expr);
             return true;
         }
@@ -100,7 +96,6 @@ namespace utopia {
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Left,  Traits>::apply(expr.right().expr().expr()));
 
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
             return true;
@@ -123,8 +118,6 @@ namespace utopia {
                     Eval<Right, Traits>::apply(expr.right().expr())
             );
 
-            //FIXME error handling
-
             UTOPIA_LOG_END(expr);
             return true;
         }
@@ -141,11 +134,8 @@ namespace utopia {
 
             UTOPIA_BACKEND(Traits).diag(
                     Eval<WLeft,  Traits>::apply(expr.left()),
-                    // Eval<Right, Traits>::apply(expr.right().expr().expr())
                     Eval<Diag<Right>, Traits>::apply(expr.right().expr())
             );
-
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
             return true;
@@ -162,8 +152,6 @@ namespace utopia {
             UTOPIA_BACKEND(Traits).assign(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Left,  Traits>::apply(expr.right().expr().expr()));
-
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
             return true;
@@ -192,6 +180,7 @@ namespace utopia {
             return result;
         }
     };
+
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_DIAG_HPP

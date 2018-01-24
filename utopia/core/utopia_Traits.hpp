@@ -12,6 +12,7 @@
 
 
 namespace utopia {
+    static const int INVALID_BACKEND = -100;
     static const int HOMEMADE = -1;
     static const int BLAS = 1;
     static const int PETSC = 10;
@@ -115,6 +116,15 @@ namespace utopia {
         typedef typename Traits::SparseMatrix Type;
     };
 
+
+    template<class Traits, int Sparsity>
+    class TensorQuery<Traits, 4, Sparsity> {
+    public:
+        //FIXME dummy for 4th order tensor
+        typedef typename TensorQuery<Traits, 2, Sparsity>::Type Type;
+    };
+
+
     template<class Left, class Right>
     class MostDescriptive {
         public:
@@ -160,8 +170,13 @@ namespace utopia {
     public:
         typedef Right Type;
     };
-    
-    
+
+    template<typename Left, typename Right>
+    class MostDescriptive<Number<Left>, Number<Right> > {
+    public:
+        typedef decltype(Left(0) + Right(0)) Type;
+    };
+
 
     // #define WRAPPER_TYPE(Traits, Expr) utopia::Wrapper<typename utopia::TensorQuery<Traits, Expr::Order, FillTypeQuery<Expr>::value>::Type, Expr::Order>
 
@@ -176,7 +191,53 @@ namespace utopia {
         // enum {
         //     FILL_TYPE = FillType::DENSE
         // };
+
+        static const int Order = T::Order;
     };
+
+    template<typename T>
+    class Traits< Number<T> > : public Traits<T> {};
+
+
+    template<>
+    class Traits<double>  {
+    public:
+        typedef double Scalar;
+
+        static const int Backend = INVALID_BACKEND;
+        static const int Order = 0;
+
+        enum {
+            FILL_TYPE = FillType::DELEGATE
+        };
+    };
+
+    template<>
+    class Traits<float>  {
+    public:
+        typedef float Scalar;
+
+        static const int Backend = INVALID_BACKEND;
+        static const int Order = 0;
+
+        enum {
+            FILL_TYPE = FillType::DELEGATE
+        };
+    };
+
+    template<>
+    class Traits<int>  {
+    public:
+        typedef int Scalar;
+
+        static const int Backend = INVALID_BACKEND;
+        static const int Order = 0;
+
+        enum {
+            FILL_TYPE = FillType::DELEGATE
+        };
+    };
+
 
     template<class Tensor, class TraitsT = Traits<Tensor> >
     struct is_sparse {

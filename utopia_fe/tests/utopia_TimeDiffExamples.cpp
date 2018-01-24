@@ -59,8 +59,6 @@ namespace utopia {
 		}
 	};
 
-
-
 	template<class Left, class Right, class Context>
 	void integrate(const Equality<Left, Right> &eq, const double t0, const double delta_t, const double t_end, Context &context)
 	{
@@ -68,7 +66,7 @@ namespace utopia {
 		auto &v = trafo.get_test_fun(eq);
 		auto uf = trafo.get_update_function(eq);
 
-		std::cout << tree_format(uf.getClass()) << std::endl;
+		ExodusII_IO io(v.mesh());
 		
 		auto mass 	= uf.left().expr();
 		auto l_form = uf.right();
@@ -81,27 +79,12 @@ namespace utopia {
 		{	
 			Write<DSMatrixd> w_m(m);
 			Write<DVectord>  w_g(g);
-			assemble(v, v, mass, m);
-			assemble(v, l_form,  g);
+			assemble(v, v, mass, m, false);
+			assemble(v, l_form,  g, false);
 		}
-
-		// disp(g);
-		// disp(m);
 
 		DVectord Minvg = zeros(s);
 		solve(m, g, Minvg);
-
-		// disp("g: -------------------");
-		// disp(g);
-		// disp("-------------------");
-		
-		// disp("M: -------------------");
-		// disp(m);
-		// disp("-------------------");
-
-		// disp("Minvg: -------------------");
-		// disp(Minvg);
-		// disp("-------------------");
 
 		auto &sol = trafo.get_solution(eq);
 		DVectord u_sol = zeros(s);
@@ -110,23 +93,16 @@ namespace utopia {
 		u_sol += delta_t * Minvg;
 		apply_boundary_conditions(v, boundary_matrix, u_sol);
 
-		
 		double t_range = t_end - t0;
 		uint T = (t_range)/delta_t;
-		uint fillers = ceil(log10(T));
 
-		std::stringstream ss;
-		ss << "heat_equation_" << setfill('0') << setw(fillers) << "0" << ".e";
-		ExodusII_IO(v.mesh()).write_equation_systems (ss.str(), context.equation_systems);
-
-		int sim_index = 0;
+		int write_iteration = 1;
 		for(uint t = 1; t < T; ++t) {
 
 			convert(u_sol, sol.vector());
 			if(t % 20 == 0) {
 				std::stringstream ss;
-				ss << "heat_equation_" << setfill('0') << setw(fillers) << std::to_string(sim_index++) << ".e";
-			 	ExodusII_IO(v.mesh()).write_equation_systems (ss.str(), context.equation_systems);
+			 	io.write_timestep("heat_equation.e", context.equation_systems, write_iteration++, t);
 			}
 			{	
 				Write<DVectord> w_g(g);
@@ -135,40 +111,24 @@ namespace utopia {
 
 			solve(m, g, Minvg);
 			u_sol += delta_t * Minvg;
-
-			// double lenMinvg = norm2(Minvg);
-			// disp(lenMinvg);
-		
-
-			if(t % 20 == 0) {
-				disp(std::to_string(t*delta_t));
-				double *arr;
-				VecGetArray(raw_type(u_sol), &arr);
-				plot_mesh_f(v.mesh(), arr, "heat_equation_" + std::to_string(t));
-				VecRestoreArray(raw_type(u_sol), &arr);
-			}
 		}
 	}
 
 	void run_time_diff_examples(libMesh::LibMeshInit &init)
 	{
-		// auto mesh = make_shared<Mesh>(init.comm());		
-		// MeshTools::Generation::build_square (*mesh,
-		// 	10, 10,
-		// 	-1., 1.,
-		// 	-1., 1.,
-		// 	QUAD4);
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());		
+		MeshTools::Generation::build_square (*mesh,
+			10, 10,
+			-1., 1.,
+			-1., 1.,
+			QUAD4);
 
-		auto mesh = make_shared<Mesh>(init.comm());		
-		mesh->read("mesh_nice.e");
-
-		// LibMeshFEContext<LinearImplicitSystem> context(mesh);
 		LibMeshFEContext<LinearImplicitSystem> context(mesh);
 		auto Vh = fe_space(LAGRANGE, FIRST, context);
 		auto v  = fe_function(Vh);
 
-		strong_enforce( boundary_conditions(v == coeff(.0),   {1}) );
-		// strong_enforce( boundary_conditions(v == coeff(1.0),  {2}) );
+		strong_enforce( boundary_conditions(v == coeff(.0), {1, 2}) );
+
 
 		const int dim = mesh->mesh_dimension();
 		std::function<Real(const Point &p) > rhs_fun = [dim](const Point &p) -> Real {
@@ -184,7 +144,7 @@ namespace utopia {
 
 		context.equation_systems.init();
 
-		v.set_quad_rule(make_shared<libMesh::QGauss>(dim, FIFTH));
+		v.set_quad_rule(make_shared<libMesh::QGauss>(dim, SECOND));
 
 		auto v_k = interpolate(coeff(.5), v, make_ref(*context.system.solution));
 		auto eq  = integral(dot(dt(v_k), v)) == integral(dot(coeff(rhs_fun), v) -  0.1 * dot(grad(v_k), grad(v)));
@@ -197,9 +157,9 @@ namespace utopia {
 		context.equation_systems.print_info();
 		context.equation_systems.parameters.set<unsigned int>("linear solver maximum iterations") = 0;
 		context.equation_systems.solve();
-
-		integrate(eq, 0, 0.001, 1, context); 		
+		integrate(eq, 0, 0.001, 2, context); 		
 	}
+
 #else
 	void run_time_diff_examples(libMesh::LibMeshInit &init) {}
 #endif	

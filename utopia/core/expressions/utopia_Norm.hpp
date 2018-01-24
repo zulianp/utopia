@@ -15,9 +15,7 @@ namespace utopia {
     class Norm : public Expression<Norm<Expr, Type> > {
     public:
         typedef typename Expr::Scalar Scalar;
-        enum {
-            Order = 0
-        };
+        static const int Order = 0;
 
         Norm(const Expr &expr)
                 : _expr(expr)

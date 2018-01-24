@@ -4,6 +4,7 @@
 
 #include "utopia_fe_core.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
+#include "utopia_assemble_volume_transfer_r.hpp"
 #include "utopia_LibMeshBackend.hpp"
 
 
@@ -11,12 +12,12 @@ namespace utopia {
 
 	class MGTestProblem {
 	public:
-		typedef utopia::FESpace<LibMeshTraits<libMesh::Real> > FESpaceT;
+		typedef utopia::FESpace<LibMeshTraits> FESpaceT;
 		typedef std::shared_ptr<FESpaceT> FESpacePtr;
 		typedef utopia::LibMeshFEContext<libMesh::LinearImplicitSystem> FEContextT;
 		typedef std::shared_ptr<FEContextT> FEContextPtr;
 
-		std::shared_ptr<libMesh::Mesh> coarse_mesh, fine_mesh;
+		std::shared_ptr<libMesh::MeshBase> coarse_mesh, fine_mesh;
 		FESpacePtr coarse_space, fine_space;
 		FEContextPtr coarse_context, fine_context;
 		std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;

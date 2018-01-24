@@ -25,10 +25,8 @@ namespace utopia {
 	template<class Expr>
 	class AutoDiffExpr<Expr, 0> {
 	public:
-		enum {
-			Order = Expr::Order
-		};
-		
+		static const int Order = Expr::Order;
+
 		typedef UTOPIA_SCALAR(Expr) Scalar;
 		typedef utopia::Factory<Zeros, Order> Type;
 		
@@ -45,7 +43,9 @@ namespace utopia {
 	class AutoDiffUnary<InnerExpr, Pow2> {
 	public:
 		typedef typename InnerExpr::Scalar Scalar;
+		//[new backend concept]
 		typedef Diag< utopia::Binary< Number<Scalar>, InnerExpr, utopia::Multiplies> > Type;
+		// typedef Unary< utopia::Binary< Number<Scalar>, InnerExpr, utopia::Multiplies>, DiagOp> Type;
 		
 		static UTOPIA_STORE_CONST(Type) make(const InnerExpr &expr, const Pow2 &)
 		{

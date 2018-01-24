@@ -88,7 +88,7 @@ int main()
   std::vector<std::shared_ptr<const dolfin::DirichletBC>> _bcs = {bc};
 
   //  form initial guess 
-  PETScVector uu; 
+  PetscVector uu; 
   assemble(uu, *F); 
   utopia::DVectord x_0; 
   convert(uu.vec(), x_0); 

@@ -1,8 +1,10 @@
-API reduction:
+1) API reduction:
 Fix parameters with undefined default values to avoid overwritting the existing ones memory mangement of petsc tensors sucks (shared_ptr not consitently used)
 
+2) The classes using Parameters need to be better designed. There are diamond-like hierarchies which is really bad.
 
 
+3)
 // Line 18 doesnt work 
 {
     Vector v = zeros(2);

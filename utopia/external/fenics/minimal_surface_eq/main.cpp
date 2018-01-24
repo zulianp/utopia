@@ -121,7 +121,7 @@ int main()
 
 
   // form initial guess 
-  PETScVector uu; 
+  PetscVector uu; 
   assemble(uu, *F); 
   utopia::DVectord x_0;
   uu = (*u->vector()); 
@@ -206,7 +206,7 @@ int main()
 
 
 //   // local initial guess 
-//   dolfin::PETScVector uu_loc; 
+//   dolfin::PetscVector uu_loc; 
 //   assemble(uu_loc, *F_loc); 
 //   info(uu_loc); 
 //   info(*u_loc->vector()); 
@@ -235,7 +235,7 @@ int main()
 
 
 //   // dolfin::TensorLayout tv(MPI_COMM_SELF,{}, 0, {}, {}); 
-//   // dolfin::PETScVector uu_gl; 
+//   // dolfin::PetscVector uu_gl; 
 //   // uu_gl.init(tv); 
 //   // assemble(uu_gl, *F_loc); 
 

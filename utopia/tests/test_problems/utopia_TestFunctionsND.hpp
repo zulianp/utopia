@@ -58,8 +58,8 @@ namespace utopia {
 
             const Scalar s = dot(point, A * point);
 
-            const Range rr = rowRange(temp);
-            const Range cr = colRange(temp);
+            const Range rr = row_range(temp);
+            const Range cr = col_range(temp);
 
             assert(rr.begin() == range(point).begin());
             assert(rr.end() == range(point).end());

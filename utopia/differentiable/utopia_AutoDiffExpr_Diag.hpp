@@ -13,7 +13,10 @@ namespace utopia {
 	template<class Inner>
 	class AutoDiffExprDiag<Inner, 2> {
 	public:
+		//[new backend concept]
 		typedef utopia::Diag<typename AutoDiffExpr<Inner>::Type> Type;
+		// typedef utopia::Unary<typename AutoDiffExpr<Inner>::Type, DiagOp> Type;
+
 
 		inline static UTOPIA_STORE_CONST(Type) make(const Inner &expr)
 		{
@@ -31,7 +34,11 @@ namespace utopia {
 	template<class Inner>
 	class AutoDiffExpr< Diag<Inner>, 1>  {
 	public:
+		//[new backend concept]
 		typedef utopia::Diag<Inner> Expr;
+		// typedef utopia::Unary<Inner, DiagOp> Expr;
+
+
 		typedef typename AutoDiffExprDiag<Inner>::Type Type;
 					   
 		inline static UTOPIA_STORE_CONST(Type) make(const Expr &expr)

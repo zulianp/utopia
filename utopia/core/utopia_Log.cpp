@@ -13,16 +13,16 @@ namespace utopia {
         return l += mpi_world_size();
     }
 
-    Log::Log() {
+    Logger::Logger() {
         start_time_ = std::chrono::high_resolution_clock::now();
     }
 
-    Log &Log::instance() {
-        static Log instance;
+    Logger &Logger::instance() {
+        static Logger instance;
         return instance;
     }
 
-    void Log::save_collected_log() {
+    void Logger::save_collected_log() {
         std::map<std::string, std::vector<Measurement>> class_group;
 
         std::ofstream f_detail("log." + std::to_string(mpi_world_rank()) + ".csv");

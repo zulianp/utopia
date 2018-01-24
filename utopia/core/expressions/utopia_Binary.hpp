@@ -26,9 +26,7 @@ namespace utopia {
         typedef _Operation Operation;
         typedef decltype(typename Left::Scalar() + typename Right::Scalar()) Scalar;
 
-        enum {
-            Order = TENSOR_ORDER_BINARY(_Left, _Right)
-        };
+        static const int Order = TENSOR_ORDER_BINARY(_Left, _Right);
 
         Binary(const Left &left, const Right &right, const Operation operation = Operation())
                 : _left(left), _right(right), _operation(operation)
@@ -63,7 +61,7 @@ namespace utopia {
             return size(expr.right());
         }
     }
-};
+}
 
 #undef TENSOR_ORDER_BINARY
 

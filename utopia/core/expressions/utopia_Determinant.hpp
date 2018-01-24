@@ -10,9 +10,8 @@ namespace utopia {
 	public:
 		static_assert(Expr::Order >= 2, "must be a 2nd order tensor or greater");
 
-		enum {
-			Order = 0
-		};
+		static const int Order = 0;
+		// typedef utopia::Traits<Expr>::Scalar Scalar;
 
 		inline const Expr &expr() const 
 		{

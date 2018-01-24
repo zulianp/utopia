@@ -12,44 +12,39 @@ namespace utopia {
     template<class Left, class Right, int Order, class Traits, int Backend>
     class Eval< Assign<View<Left>, Factory<Right, Order> >, Traits, Backend> {
     public:
-        inline static bool apply(const Assign<View<Left>, Factory<Right, Order> > &expr)
+        inline static void apply(const Assign<View<Left>, Factory<Right, Order> > &expr)
         {
             UTOPIA_LOG_BEGIN(expr);
 
             const auto &left = expr.left();
-            UTOPIA_BACKEND(Traits).assignToRange(
+            UTOPIA_BACKEND(Traits).assign_to_range(
                     Eval<Left, Traits>::apply(left.expr()),
                     expr.right().type(),
                     row_range(left),
                     col_range(left)
             );
 
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
-            return true;
         }
     };
 
     template<class Left, class Right, int Order, class Traits, int Backend>
     class Eval< Construct<View<Left>, Factory<Right, Order> >, Traits, Backend> {
     public:
-        inline static bool apply(const Construct<View<Left>, Factory<Right, Order> > &expr)
+        inline static void apply(const Construct<View<Left>, Factory<Right, Order> > &expr)
         {
             UTOPIA_LOG_BEGIN(expr);
 
             const auto &left = expr.left();
-            UTOPIA_BACKEND(Traits).assignToRange(
+            UTOPIA_BACKEND(Traits).assign_to_range(
                     Eval<Left, Traits>::apply(left.expr()),
                     expr.right().type(),
                     row_range(left),
                     col_range(left)
             );
 
-            //FIXME error handling
-
             UTOPIA_LOG_END(expr);
-            return true;
         }
     };
 
@@ -59,7 +54,7 @@ namespace utopia {
     template<class Left, class Right, int Order, class Traits, int Backend>
     class Eval<Assign<Left, Factory<Right, Order> >, Traits, Backend> {
     public:
-        inline static bool apply(const Assign<Left, Factory<Right, Order> > &expr)
+        inline static void apply(const Assign<Left, Factory<Right, Order> > &expr)
         {
             UTOPIA_LOG_BEGIN(expr);
 
@@ -69,17 +64,15 @@ namespace utopia {
                     expr.right().type()
             );
 
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
-            return true;
         }
     };
 
     template<class Left, class Right, int Order, class Traits, int Backend>
     class Eval<Construct<Left, Factory<Right, Order> >, Traits, Backend> {
     public:
-        inline static bool apply(const Construct<Left, Factory<Right, Order> > &expr)
+        inline static void apply(const Construct<Left, Factory<Right, Order> > &expr)
         {
             UTOPIA_LOG_BEGIN(expr);
 
@@ -89,10 +82,29 @@ namespace utopia {
                     expr.right().type()
             );
 
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
-            return true;
+        }
+    };
+
+    template<class Left, class Right, int Order, class Options, class Traits, int Backend>
+    class Eval<Construct<Left, Build<Factory<Right, Order>, Options> >, Traits, Backend> {
+    public:
+        typedef utopia::Construct<Left, Build<Factory<Right, Order>, Options> > Expr;
+
+        inline static void apply(const Expr &expr)
+        {
+            UTOPIA_LOG_BEGIN(expr);
+
+            UTOPIA_BACKEND(Traits).build(
+                    Eval<Left, Traits>::apply(expr.left()),
+                    expr.right().factory().size(),
+                    expr.right().factory().type(),
+                    UTOPIA_BACKEND(Traits).parse_args(expr.right().opts())
+            );
+
+
+            UTOPIA_LOG_END(expr);
         }
     };
 

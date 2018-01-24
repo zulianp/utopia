@@ -1,6 +1,7 @@
 #ifndef UTOPIA_EXPRESSIONS_HPP
 #define UTOPIA_EXPRESSIONS_HPP
 
+
 #include "utopia_Binary.hpp"
 #include "utopia_Boolean.hpp"
 #include "utopia_Conversions.hpp"
@@ -15,6 +16,7 @@
 #include "utopia_Norm.hpp"
 #include "utopia_Operations.hpp"
 #include "utopia_Operators.hpp"
+#include "utopia_Optional.hpp"
 #include "utopia_OuterProduct.hpp"
 #include "utopia_Range.hpp"
 #include "utopia_Ranged.hpp"

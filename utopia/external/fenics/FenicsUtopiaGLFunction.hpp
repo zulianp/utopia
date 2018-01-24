@@ -54,11 +54,11 @@ class FenicsUtopiaGLFunction : public utopia::GLFunction<GlobalMatrix, GlobalVec
         bool gradient(const GlobalVector &x, GlobalVector &g) const override
         {
 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             x_wrap.update_ghost_values();
             (*_u->vector()) = x_wrap;
 
-            dolfin::PETScVector b;
+            dolfin::PetscVector b;
             dolfin::SystemAssembler assembler(_H, _g, _bcs);
             assembler.assemble(b, *_u->vector());
 
@@ -73,10 +73,10 @@ class FenicsUtopiaGLFunction : public utopia::GLFunction<GlobalMatrix, GlobalVec
         {
 
             // this is changing u in lin and bil. forms 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             (*_u->vector()) = x_wrap;
 
-            dolfin::PETScMatrix A;
+            dolfin::PetscMatrix A;
             dolfin::SystemAssembler assembler(_H, _g, _bcs);
             assembler.assemble(A);
 
@@ -91,7 +91,7 @@ class FenicsUtopiaGLFunction : public utopia::GLFunction<GlobalMatrix, GlobalVec
         bool value(const GlobalVector &x, typename GlobalVector::Scalar &f) const override 
         {
             // this is changing u in lin and bil. forms 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             (*_u->vector()) = x_wrap;
 
             dolfin::Scalar global_energy;
@@ -115,7 +115,7 @@ class FenicsUtopiaGLFunction : public utopia::GLFunction<GlobalMatrix, GlobalVec
             this->interpolate(x_k, x);
 
             // this is changing u in lin and bil. forms 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             (*_u->vector()) = x_wrap;
 
 

@@ -7,6 +7,7 @@ Utopia is a C++ embedded domain specific language designed for parallel non-line
 - Alena Kopanicakova (Linear and non-linear solvers, Fenics and MOOSE interoperability)
 - Dr. Maria Giuseppina Chiara Nestola (Integration of parallel transfer for libmesh and MOOSE using Moonolith) 
 - Dr. Teseo Schneider (Visualization tool)
+- Eric Botter (Memory pool)
 
 Developed at the Institute of Computational Science, USI, Lugano, Switzerland (https://www.ics.usi.ch).
 
@@ -66,6 +67,30 @@ If you are using utopia\_fe with 'cmake' you can use the utopia_fe_config.cmake 
 in the example in the file utopia/utopia\_fe/example\_usage\_of\_utopia\_fe/cmake\_example/CMakeLists.txt
 
 The FindUtopia.cmake and FindUtopiaFE.cmake can be found in utopia/utopia\_fe/cmake and they can be copied to your project when needed.
+
+## Compiling utopia on Windows
+
+The suggested environment for compiling utopia on Windows is Cygwin.
+
+By using the Cygwin setup utility, install the following packages and their dependencies:
+- `gcc-core`
+- `gcc-fortran`
+- `gcc-g++`
+- `gdb`
+- `make`
+- `cmake`
+- `openmpi`
+- `libopenmpi-devel`
+- `libopenblas`
+- `liblapack-devel`
+
+If you want to use PETSc, we suggest to disable its shared libraries to avoid having to tinker with the PATH environment variable. Here is an example configuration:
+```
+./configure --download-mumps --download-scalapack --with-shared-libraries=0
+```
+You can also specify a custom install directory for PETSc by using `--prefix`, as normal.
+
+Follow the steps above (Compiling utopia) to compile utopia itself.
 
 ## Extras
 - -DUTOPIA_ARCHIVE_ONLY=ON Allows to compile only the archive file utopia.a (or .lib for windows)

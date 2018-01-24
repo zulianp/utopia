@@ -68,7 +68,7 @@ namespace utopia {
             });
 
             #ifdef WITH_PETSC
-                //NOTE(eric): range assignment is NYI in PETSc backend
+                //NOTE(eric): range assignment is NYI in Petsc backend
             if (std::is_same<Matrix, DMatrixd>::value) return;
             #endif
 
@@ -124,7 +124,7 @@ namespace utopia {
             // std::cout << tree_format((ab * m * m + ab * m).getClass()) << std::endl;
 
             //Useful when applying automatic diff to remove unwanted expressions such as Id and 0
-            //For now only works for trees with with certain trees:  Id * (m + 0) * v + 0 *v -> m * v
+            //For now only works for trees with with certain sub-trees:  Id * (m + 0) * v + 0 *v -> m * v
             //Bug: Id is removed even if it is not in R^(n x n)
             auto expr   = identity(n, n) * (m + zeros(n, n)) * v + zeros(n, n) * v;
             auto s_expr = simplify(expr);
@@ -175,7 +175,7 @@ namespace utopia {
         {
             int n = 10;
             Vector v = values(n, 1.0);
-            Vector res;
+            Vector res = zeros(n);
 
             {
                 Read<Vector> r_v(v);
@@ -232,7 +232,15 @@ namespace utopia {
             assert(approxeq(28.001, num));
         }
 
+        static void print_backend_info()
+        {
+            if(Utopia::Instance().verbose()) {
+                std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+            }
+        }
+
         void run() {
+            print_backend_info();
             UTOPIA_RUN_TEST(factory_test);
             UTOPIA_RUN_TEST(wrapper_test);
             UTOPIA_RUN_TEST(range_test);

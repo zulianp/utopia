@@ -8,7 +8,7 @@
 #include <iostream>
 
 namespace libMesh {
-	class Mesh;
+	class MeshBase;
 }
 
 namespace utopia {
@@ -16,10 +16,10 @@ namespace utopia {
 	class UGXMeshReader {
 	public:
 		typedef std::vector<std::string> StringVector;
-		typedef libMesh::Mesh Mesh;
+
 		
 
-		virtual bool read(const std::string &path, Mesh &mesh) 
+		virtual bool read(const std::string &path, libMesh::MeshBase &mesh) 
 		{
 			std::ifstream file(path.c_str(), std::ifstream::in);
 			if(!file.good()) {
@@ -36,7 +36,7 @@ namespace utopia {
 			return true;
 		}
 
-		bool read(std::istream &is, Mesh &mesh);
+		bool read(std::istream &is, libMesh::MeshBase &mesh);
 	};
 }
 

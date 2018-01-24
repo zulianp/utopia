@@ -188,7 +188,7 @@ int main()
   Pi->T = T;
 
   // form initial guess 
-  PETScVector uu; 
+  PetscVector uu; 
   dolfin::assemble(uu, *F); 
   uu = 0.0;
   Vec u_petsc = uu.vec();

@@ -7,7 +7,7 @@
 
 namespace utopia {
 
-    // Currently works for PETSc for global and Blas for local.
+    // Currently works for Petsc for global and Blas for local.
     template<class GlobalMatrix, class GlobalVector, class LocalMatrix, class LocalVector>
     class GlobalAndLocalNeoHookean1D  : public GLFunction<GlobalMatrix, GlobalVector, LocalMatrix, LocalVector> {
 

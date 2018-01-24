@@ -83,6 +83,15 @@ namespace utopia {
         return transform(expr, Pow2());
     }
 
+    template<class Derived>
+    auto logn(const Expression<Derived> &expr) -> decltype(transform(expr, Log())) {
+        return transform(expr, Log());
+    }
+
+    template<class Derived>
+    auto exp(const Expression<Derived> &expr) -> decltype(transform(expr, Exp())) {
+        return transform(expr, Exp());
+    }
 
     /**
      * @ingroup transforms
@@ -187,14 +196,34 @@ namespace utopia {
     }
 
 
-    template<class Left, class Right>
+    
     /**
      * @ingroup tensor_products
      * @brief   Pointwise multiplication. 
      */
+    template<class Left, class Right>
     inline Binary<Left, Right, EMultiplies> e_mul(const Expression<Left> &left, const Expression<Right> &right) {
         return Binary<Left, Right, EMultiplies>(left.derived(), 
                                                 right.derived());
+    }
+
+    /**
+     * @ingroup tensor_products
+     * @brief   Pointwise min. 
+     */
+    template<class Left, class Right>
+    inline Binary<Left, Right, Min> min(const Expression<Left> &left, const Expression<Right> &right) {
+        return Binary<Left, Right, Min>(left.derived(), right.derived());
+    }
+
+
+    /**
+     * @ingroup tensor_products
+     * @brief   Pointwise max. 
+     */
+    template<class Left, class Right>
+    inline Binary<Left, Right, Max> max(const Expression<Left> &left, const Expression<Right> &right) {
+        return Binary<Left, Right, Max>(left.derived(), right.derived());
     }
 
 

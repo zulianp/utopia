@@ -1,7 +1,6 @@
 #ifndef UTOPIA_TR_INCLUDES_HPP
 #define UTOPIA_TR_INCLUDES_HPP
 
-
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_CauchyPoint.hpp"
 #include "utopia_Dogleg.hpp"
@@ -12,15 +11,6 @@
 #include "utopia_TrustRegionVariableBound.hpp"
 #include "utopia_ActiveSetTRSubproblem.hpp"
 #include "utopia_TrustRegion.hpp"
-
-
-
-
-#include "utopia_TRFactory.hpp"
-
-
-#ifdef WITH_PETSC
-	#include "utopia_PETScKSPTR.hpp"
-#endif
+#include "utopia_TrustRegionFactory.hpp"
 
 #endif //UTOPIA_TR_INCLUDES_HPP

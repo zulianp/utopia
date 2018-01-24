@@ -1,5 +1,8 @@
 #include "utopia_Chrono.hpp"
 
+#include <algorithm>
+#include <iostream>
+
 #ifdef WITH_MPI
 #include "mpi.h"
 #include "utopia_MPI.hpp"
@@ -72,7 +75,7 @@ namespace utopia {
 		gettimeofday(&realtime_end_, NULL);
 		start_time_ms = (realtime_start_.tv_sec * 1000000.0) + realtime_start_.tv_usec;
 		end_time_ms   = (realtime_end_.tv_sec * 1000000.0) + realtime_end_.tv_usec;
-		realtime_duration_ = end_time_ms - start_time_ms;
+		realtime_duration_ = (end_time_ms - start_time_ms) * 1e-6;
 #endif //WIN32
 	}
 
@@ -88,6 +91,55 @@ namespace utopia {
 			os << "MPI_Wtime: " << mpi_duration_ <<  " seconds.\n";
 		}
 #endif //WITH_MPI		
+	}
+
+
+	Chrono &Chrono::operator+=(const Chrono &other)
+	{
+		using std::min;
+		using std::max;
+
+#ifdef WITH_MPI
+		mpi_start_ = min(mpi_start_, other.mpi_start_);
+		mpi_end_   = max(mpi_end_, other.mpi_end_);
+		mpi_duration_ +=  other.mpi_duration_;
+#endif //WITH_MPI	
+
+
+#ifdef __APPLE__
+		realtime_start_ = min(realtime_start_, other.realtime_start_);
+		realtime_end_   = max(realtime_end_, other.realtime_end_);
+		realtime_duration_ += other.realtime_duration_;
+#endif //__APPLE__
+
+#ifdef WIN32
+		static bool not_impl_msg = true;
+		if(not_impl_msg) {
+			std::cerr << "[Warning] Chrono &Chrono::operator+=(const Chrono &other) not implemented for windows" << std::endl;
+			not_impl_msg = false;
+		}
+#endif
+
+		return *this;
+	}
+
+	void Chrono::rescale_duration(const double factor)
+	{
+#ifdef WITH_MPI	
+		mpi_duration_ *= factor;
+#endif //WITH_MPI
+
+#ifdef __APPLE__
+		realtime_duration_ *= factor;
+#endif //__APPLE__
+
+#ifdef WIN32
+		static bool not_impl_msg = true;
+		if(not_impl_msg) {
+			std::cerr << "[Warning] void Chrono::rescale_duration(const double factor) not implemented for windows" << std::endl;
+			not_impl_msg = false;
+		}
+#endif
 	}
 
 }

@@ -18,6 +18,7 @@
 #include <cmath>
 #include <queue>
 #include <algorithm>
+#include <numeric>
 
 // #include "LibMeshCutlibppAdapters.hpp"
 #include "utopia_ElementDofMap.hpp"
@@ -1272,7 +1273,7 @@ namespace utopia {
             std::vector<long> src_order = local_fun_spaces->variable_order()[0].global;
             const int approx_order=src_order[0];
             
-            std::shared_ptr<Contact> surface_assemble;
+            std::shared_ptr<ContactAssembly> surface_assemble;
 
   
             
@@ -1401,7 +1402,7 @@ namespace utopia {
                         
                         pair_intersected = true;
    
-                        surface_assemble = std::make_shared<Contact>();
+                        surface_assemble = std::make_shared<ContactAssembly>();
                         surface_assemble->isect_area	   = area;
                         surface_assemble->relative_area    = weight;
                         
@@ -1429,7 +1430,7 @@ namespace utopia {
                         
                         pair_intersected = true;
            
-                        surface_assemble = std::make_shared<Contact>();
+                        surface_assemble = std::make_shared<ContactAssembly>();
                         surface_assemble->isect_area	= area;
                         surface_assemble->relative_area = weight;
 
@@ -2112,7 +2113,7 @@ namespace utopia {
 //                            ++n_intersections;
 //                            
 //                            
-//                            //                            current_contact = std::make_shared<Contact>();
+//                            //                            current_contact = std::make_shared<ContactAssembly>();
 //                            //                            current_contact->isect_area	   = area;
 //                            //                            current_contact->relative_area = weight;
 //                        } else if(dim_src == 3) {
@@ -2142,7 +2143,7 @@ namespace utopia {
 //                            ++n_intersections;
 //                            
 //                            //
-//                            //                            current_contact = std::make_shared<Contact>();
+//                            //                            current_contact = std::make_shared<ContactAssembly>();
 //                            //                            current_contact->isect_area	   = area;
 //                            //                            current_contact->relative_area = weight;
 //                        } else {
@@ -2185,7 +2186,7 @@ namespace utopia {
 //            //                            ++n_projections;
 //            //
 //            //
-//            //                            current_contact = std::make_shared<Contact>();
+//            //                            current_contact = std::make_shared<ContactAssembly>();
 //            //                            current_contact->isect_area	   = area;
 //            //                            current_contact->relative_area = weight;
 //            //
@@ -2215,7 +2216,7 @@ namespace utopia {
 //            //                            ++n_projections;
 //            //
 //            //
-//            //                            current_contact = std::make_shared<Contact>();
+//            //                            current_contact = std::make_shared<ContactAssembly>();
 //            //                            current_contact->isect_area	   = area;
 //            //                            current_contact->relative_area = weight;
 //            

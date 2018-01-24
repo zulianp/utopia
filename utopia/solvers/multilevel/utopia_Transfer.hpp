@@ -36,14 +36,14 @@
             assert(I);
 
             _I = I; 
-            _R = std::make_shared<Matrix>(transpose(*I)); 
-            _P = _R; 
+            _R = std::make_shared<Matrix>(transpose(*I));
+            _Pr = _R;
         }
 
         Transfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P):
                 _I(I),
                 _R(std::make_shared<Matrix>(transpose(*I))),
-                _P(P)
+                _Pr(P)
         {
             assert(I);
             assert(P);
@@ -123,34 +123,6 @@
         }
         
         /**
-         * @brief      Interpolation of matrix. 
-         *             \f$  M_{new} = I * M  * I^{T}  \f$
-         *
-         * @param[in]  M     
-         * @param      M_new 
-         *
-         */
-        // virtual bool interpolate(const std::shared_pt < Matrix> &M, std::shared_ptr<Matrix> &M_new)
-        // {            
-        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
-        //     return true; 
-        // }
-
-        /**
-         * @brief      Interpolation of matrix. 
-         *             \f$  M_{new} = I * M  * I^{T}  \f$
-         *
-         * @param[in]  M     
-         * @param      M_new 
-         *
-         */
-        // virtual bool interpolate(const std::shared_ptr<const Matrix> &M, std::shared_ptr<Matrix> &M_new)
-        // {            
-        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_R)); 
-        //     return true; 
-        // }
-
-        /**
          * @brief      Restriction of vector. 
          *            \f$  x_{new} = R * x  \f$
          * @param[in]  x     
@@ -173,39 +145,10 @@
          * @param      M_new 
          *
          */
-        // virtual bool restrict(const std::shared_pt < Matrix> &M,  std::shared_ptr<Matrix> &M_new)
-        // {
-        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
-        //     return true; 
-        // }
-
-        /**
-         * @brief      Restriction of matrix.
-         *             
-         *             \f$  M_{new} = I^{T} * M  * I  \f$
-         * @param[in]  M     
-         * @param      M_new 
-         *
-         */
-        // virtual bool restrict(const std::shared_ptr<const  Matrix> &M,  std::shared_pt <  Matrix> &M_new)
-        // {
-        //     M_new =  std::make_shared<Matrix>(mat_PtAP_product(*M, *_I));  
-        //     return true; 
-        // }
-
-
-        /**
-         * @brief      Restriction of matrix.
-         *             
-         *             \f$  M_{new} = I^{T} * M  * I  \f$
-         * @param[in]  M     
-         * @param      M_new 
-         *
-         */
         virtual bool restrict(const Matrix &M, Matrix &M_new) const
         {
             assert(_I);
-            M_new =  mat_PtAP_product(M, *_I);  
+            M_new =  utopia::ptap(M, *_I);  
             return true; 
         }
 
@@ -218,7 +161,7 @@
         virtual bool P_init(const std::shared_ptr<Matrix> &P_in)
         {
             assert(P_in);
-            _P = P_in; 
+            _Pr = P_in;
             return true; 
         }
 
@@ -231,14 +174,14 @@
          */
         virtual bool project_down(const Vector &x, Vector &x_new)
         {
-            assert(_P);
-            x_new = *_P * x; 
+            assert(_Pr);
+            x_new = *_Pr * x;
             return true; 
         }
 
         protected:        
             std::shared_ptr<Matrix> _I, _R; // _P;  
-            std::shared_ptr<Matrix> _P;  
+            std::shared_ptr<Matrix> _Pr;
     };
 
 }

@@ -21,9 +21,20 @@ namespace utopia {
     template<class Expr, class Operation>
     class Unary;
 
+    template<class Expr>
+    class Negate;
+
+    template<class Expr>
+    class Inverse;
+
+    template<class Expr>
+    class Transposed;
+
     template<typename T>
     class Number;
 
+    template<class Left, class Right>
+    class Multiply;
 
     template<class Implementation, int Order>
     class Wrapper;
@@ -45,6 +56,9 @@ namespace utopia {
 
     template<class Expr>
     class View;
+
+    template<class Expr, typename SizeType, int Order>
+    class Select;
 
     template<class Expr>
     class Diag;
@@ -75,6 +89,9 @@ namespace utopia {
 
     template<class Left, class Right>
     class Construct;
+
+    template<class Left, class Right>
+    class Equality;
 
     template<class Left, class Right>
     Construct<Left, Right> construct(Expression<Left> &, const Expression<Right> &);
@@ -118,6 +135,12 @@ namespace utopia {
 
     template<class Type, int Order>
     class Factory;
+
+    template<class Index>
+    class Ghosts;
+
+    template<class Type, int Order>
+    class SymbolicTensor;
 
     class Resize;
 

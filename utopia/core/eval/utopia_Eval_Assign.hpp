@@ -9,6 +9,24 @@
 
 
 namespace utopia {
+    template<class Left, class Right, int Order, class Traits, int Backend>
+    class Eval<Assign<Wrapper<Left, Order>, Wrapper<Right, Order> >, Traits, Backend> {
+    public:
+        typedef utopia::Wrapper<Left, Order> LeftExpr;
+        typedef utopia::Wrapper<Right, Order> RightExpr;
+        typedef utopia::Assign<LeftExpr, RightExpr> Expr;
+
+        inline static bool apply(const Expr &expr) {
+            UTOPIA_LOG_BEGIN(expr);
+
+            UTOPIA_BACKEND(Traits).assign(Eval<LeftExpr,  Traits>::apply(expr.left()),
+                                          Eval<RightExpr, Traits>::apply(expr.right()) );
+
+            UTOPIA_LOG_END(expr);
+            return true;
+        }
+    };
+
 
     template<class Left, class Right, class Traits, int Backend>
     class Eval<Assign<Left, Right>, Traits, Backend> {
@@ -18,12 +36,44 @@ namespace utopia {
             UTOPIA_BACKEND(Traits).assign(Eval<Left,  Traits>::apply(expr.left()),
                                           Eval<Right, Traits>::apply(expr.right()) );
 
-            //FIXME error handling
+            UTOPIA_LOG_END(expr);
+            return true;
+        }
+    };
+
+    template<class Left, class Right, class Traits, int Backend>
+    class Eval<Assign<Left, Unary<Right, Abs> >, Traits, Backend> {
+    public:
+        typedef utopia::Assign<Left, Unary<Right, Abs> > Expr;
+
+        inline static bool apply(const Expr &expr) {
+            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_BACKEND(Traits).apply_unary(Eval<Left,  Traits>::apply(expr.left()),
+                                               expr.right().operation(),
+                                               Eval<Right, Traits>::apply( expr.right().expr()) );
 
             UTOPIA_LOG_END(expr);
             return true;
         }
     };
+
+
+    //saves vector allocations but it is slower ???
+    // template<class Left, class Right, class Op, class Traits, int Backend>
+    // class Eval<Assign<Left, Unary<Right, Op> >, Traits, Backend> {
+    // public:
+    //     typedef utopia::Assign<Left, Unary<Right, Op> > Expr;
+
+    //     inline static bool apply(const Expr &expr) {
+    //         UTOPIA_LOG_BEGIN(expr);
+    //         UTOPIA_BACKEND(Traits).apply_unary(Eval<Left,  Traits>::apply(expr.left()),
+    //                                            expr.right().operation(),
+    //                                            Eval<Right, Traits>::apply( expr.right().expr()) );
+
+    //         UTOPIA_LOG_END(expr);
+    //         return true;
+    //     }
+    // };
 
     template<class Left, class Right, class Traits, int Backend>
     class Eval< Assign< View<Left>, Right>, Traits, Backend> {
@@ -36,11 +86,9 @@ namespace utopia {
             auto rr = row_range(left);
             auto cr = col_range(left);
 
-            UTOPIA_BACKEND(Traits).assignToRange(Eval<Left,  Traits>::apply(expr.left().expr()),
-                                                 Eval<Right, Traits>::apply(expr.right()),
-                                                 rr, cr);
-            //FIXME error handling
-
+            UTOPIA_BACKEND(Traits).assign_to_range(Eval<Left,  Traits>::apply(expr.left().expr()),
+                                                   Eval<Right, Traits>::apply(expr.right()),
+                                                   rr, cr);
             UTOPIA_LOG_END(expr);
             return true;
         }
@@ -59,10 +107,9 @@ namespace utopia {
             auto rr = row_range(left);
             auto cr = col_range(left);
 
-            UTOPIA_BACKEND(Traits).assignToRange(Eval<LeftWrapper, Traits>::apply(expr.left().expr()),
-                                                 Eval<Right, Traits>::apply(expr.right()),
-                                                 rr, cr);
-            //FIXME error handling
+            UTOPIA_BACKEND(Traits).assign_to_range(Eval<LeftWrapper, Traits>::apply(expr.left().expr()),
+                                                   Eval<Right, Traits>::apply(expr.right()),
+                                                   rr, cr);
 
             UTOPIA_LOG_END(expr);
             return true;
@@ -76,12 +123,10 @@ namespace utopia {
         {
             UTOPIA_LOG_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assignTransposed(
+            UTOPIA_BACKEND(Traits).assign_transposed(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Wrapper<Right, 2>, Traits>::apply(expr.right().expr())
             );
-
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
             return true;
@@ -95,15 +140,12 @@ namespace utopia {
         {
             UTOPIA_LOG_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).assignFromRange(
+            UTOPIA_BACKEND(Traits).assign_from_range(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right().expr()),
                     row_range(expr.right()),
                     col_range(expr.right())
             );
-
-
-            //FIXME error handling
 
             UTOPIA_LOG_END(expr);
             return true;

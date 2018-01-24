@@ -9,10 +9,6 @@
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_Config.hpp"
 
-#ifdef WITH_PETSC
-#include "utopia_PETScTraits.hpp"
-#endif //WITH_PETSC
-
 namespace utopia {
     template<class Implementation, class Derived, int Order>
     class Writeable;
@@ -48,8 +44,8 @@ namespace utopia {
         inline void set(const SizeType row, const SizeType col, const Scalar value)
         {
             assert_enabled(is_write_locked());
-            assert(row < size(derived()).get(0));
-            assert(col < size(derived()).get(1));
+            assert(row < (SizeType)size(derived()).get(0));
+            assert(col < (SizeType)size(derived()).get(1));
             
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), row, col, value);
         }
@@ -67,8 +63,8 @@ namespace utopia {
         inline void add(const SizeType row, const SizeType col, const Scalar value)
         {
             assert_enabled(is_write_locked());
-            assert(row < size(derived()).get(0));
-            assert(col < size(derived()).get(1));
+            assert(row < (SizeType)size(derived()).get(0));
+            assert(col < (SizeType)size(derived()).get(1));
 
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().add(derived().implementation(), row, col, value);
         }
@@ -83,15 +79,35 @@ namespace utopia {
          * @param[in]  col      The set of column indices. 
          * @param[in]  value    The value.
          */
+        // template<typename Ordinal>
+        // inline void set(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
+        // {
+        //     assert_enabled(is_write_locked());
+        //     Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), rows, columns, values);
+        // }
+
         template<typename Ordinal>
-        inline void set(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
+        inline void add_matrix(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
         {
             assert_enabled(is_write_locked());
-            Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), rows, columns, values);
+            Backend<Scalar, Traits<Implementation>::Backend >::Instance().add_matrix(derived().implementation(), rows, columns, values);
+        }
+
+        inline void set_matrix(const std::vector<SizeType> &rows, const std::vector<SizeType> &columns, const std::vector<Scalar> &values)
+        {
+            assert_enabled(is_write_locked());
+            Backend<Scalar, Traits<Implementation>::Backend >::Instance().set_matrix(derived().implementation(), rows, columns, values);
+        }
+
+        template<typename Ordinal>
+        inline void set_matrix(const std::vector<Ordinal> &rows, const std::vector<Ordinal> &columns, const std::vector<Scalar> &values)
+        {
+            assert_enabled(is_write_locked());
+            Backend<Scalar, Traits<Implementation>::Backend >::Instance().set_matrix(derived().implementation(), rows, columns, values);
         }
 
         template<typename RowT, typename ColT, typename ScalarT>
-        inline void set(std::initializer_list<RowT> rows, std::initializer_list<ColT> cols, std::initializer_list<ScalarT> values)
+        inline void set_matrix(std::initializer_list<RowT> rows, std::initializer_list<ColT> cols, std::initializer_list<ScalarT> values)
         {
             assert_enabled(is_write_locked());
 
@@ -102,7 +118,7 @@ namespace utopia {
             copy(cols.begin(), cols.end(), vcols.begin());
             copy(values.begin(), values.end(), vvalues.begin());
 
-            set(vrows, vcols, vvalues);
+            set_matrix(vrows, vcols, vvalues);
         }
 
 #ifdef ENABLE_LOCK_CHECK
@@ -149,7 +165,7 @@ namespace utopia {
         inline void set(const SizeType index, const Scalar value)
         {
             assert_enabled(is_write_locked());
-            assert(index < size(derived()).get(0));
+            assert(index < (SizeType)size(derived()).get(0));
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), index, value);
         }
 
@@ -164,7 +180,7 @@ namespace utopia {
         inline void add(const SizeType index, const Scalar value)
         {
             assert_enabled(is_write_locked());
-            assert(index < size(derived()).get(0));
+            assert(index < (SizeType)size(derived()).get(0));
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().add(derived().implementation(), index, value);
         }
 
@@ -231,7 +247,7 @@ namespace utopia {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.write_lock();
 #endif //ENABLE_LOCK_CHECK            
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().writeLock(_tensor.implementation());
+            Backend<Scalar, Traits<Tensor>::Backend >::Instance().write_lock(_tensor.implementation());
         }
 
         ~Write()
@@ -239,7 +255,7 @@ namespace utopia {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.write_unlock();
 #endif //ENABLE_LOCK_CHECK   
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().writeUnlock(_tensor.implementation());
+            Backend<Scalar, Traits<Tensor>::Backend >::Instance().write_unlock(_tensor.implementation());
         }
     };
 }

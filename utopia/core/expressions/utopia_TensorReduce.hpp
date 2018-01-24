@@ -21,9 +21,7 @@ namespace utopia {
 
         static_assert(Expr::Order == 2, "only supported for matrices");
 
-        enum {
-            Order = Expr::Order - 1
-        };
+        static const int Order = Expr::Order - 1;
 
         inline const Expr &expr() const { return expr_; }
 
