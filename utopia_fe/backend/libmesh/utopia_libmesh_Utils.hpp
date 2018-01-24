@@ -18,9 +18,7 @@ namespace utopia {
 				type == static_cast<int>(libMesh::QUAD8) 	  ||
 				type == static_cast<int>(libMesh::QUAD9)	  ||
 				type == static_cast<int>(libMesh::QUADSHELL4) 
-#if !(LIBMESH_VERSION_LESS_THAN(1, 0, 3))
-				|| type == static_cast<int>(libMesh::QUADSHELL8)
-#endif 
+				// || type == static_cast<int>(libMesh::QUADSHELL8)
 			;
 	}
 	
@@ -50,9 +48,7 @@ namespace utopia {
 			case QUAD4: 	 return EDGE2;
 			case QUAD8: 	 return EDGE3;
 			case QUADSHELL4: return EDGE2;
-#if !(LIBMESH_VERSION_LESS_THAN(1, 0, 3))
-			case QUADSHELL8: return EDGE3;
-#endif 
+			// case QUADSHELL8: return EDGE3;
 			case TRI3:  	 return EDGE2;
 			case TRI6:  	 return EDGE3;
 			case TET4:  	 return TRI3;
