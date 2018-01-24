@@ -195,8 +195,9 @@ public:
         PetscErrorCode ierr;
 
         Size ls = local_size(b);
+        Size gs = size(b);
 
-        if(empty(x)) 
+        if(empty(x) || gs.get(0) != size(x).get(0)) 
         {
             x = local_zeros(ls.get(0));
         }
