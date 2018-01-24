@@ -35,7 +35,6 @@ namespace utopia {
 	
 	void Transform2::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
 	{
-		
 		ref = libMesh::FE<2, libMesh::LAGRANGE>::inverse_map(&elem_, world, 1e-10);
 		assert( (libMesh::FE<2, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-3)) );
 		assert( (libMesh::FE<2, libMesh::LAGRANGE>::map(&elem_, ref).absolute_fuzzy_equals(world, 1e-8)) );
@@ -312,6 +311,7 @@ namespace utopia {
 		std::vector<int> tri;
 		//triangulate_polygon(polygon.m(), &polygon.get_values()[0], tri);
 		//make_composite_quadrature_2D_from_tri_mesh(tri, polygon, weight, order, c_ir);
+		assert(false);
 	}
 	
 	
@@ -568,7 +568,12 @@ namespace utopia {
 		
 		Intersector isector;
 		libMesh::QGauss ir(2, libMesh::Order(order));
-		ir.init(libMesh::TRI3);
+
+		if(order <= 2) {
+			ir.init(libMesh::TRI3);
+		} else {
+			ir.init(libMesh::TRI6);
+		}
 		
 		// std::cout << "ref quad " << std::endl;
 		// ir.print_info();
@@ -1478,7 +1483,7 @@ namespace utopia {
 			case 6:
 			{
 				if(e.has_affine_map()) {
-					make_polygon_from_tri6(e,polygon);
+					make_polygon_from_tri3(e, polygon);
 				} else {
 					make_polygon_from_curved_tri6(e, polygon);
 				}
@@ -1488,7 +1493,7 @@ namespace utopia {
 			case 8:
 			{
 				if(e.has_affine_map()) {
-					make_polygon_from_quad8(e, polygon);
+					make_polygon_from_quad4(e, polygon);
 				} else {
 					make_polygon_from_curved_quad8(e, polygon);
 				}
@@ -1505,9 +1510,21 @@ namespace utopia {
 	
 	void make_polygon_3(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
 	{
-		polygon.resize(e.n_nodes(), 3);
+		auto n_nodes = e.n_nodes();
+
+		if(e.has_affine_map()) {
+			if(is_tri(e.type())) {
+				n_nodes = 3;
+			} else if(is_quad(e.type())) {
+				n_nodes = 4;
+			} else {
+				assert(false && "handle special case");
+			}
+		} 
+
+		polygon.resize(n_nodes, 3);
 		
-		for(int i = 0; i < e.n_nodes(); ++i) {
+		for(int i = 0; i < n_nodes; ++i) {
 			for(int j = 0; j < 3; ++j) {
 				polygon(i, j) = e.point(i)(j);
 			}

@@ -149,7 +149,7 @@ namespace utopia
 
 
                 #ifdef CHECK_NUM_PRECISION_mode
-                    if(has_nan_or_inf(x_0) == 1)
+                    if(has_nan_or_inf(x_0))
                     {
                         x_0 = local_zeros(local_size(x_0));
                         return true; 

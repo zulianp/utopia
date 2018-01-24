@@ -199,7 +199,7 @@ namespace utopia {
 		Point o, u, v;
 
 		if(dim == 2) {
-			assert(side.n_nodes() == 2);
+			assert(side.n_nodes() >= 2);
 			o = side.point(0);
 			u = side.point(1);
 			u -= o;
@@ -207,7 +207,7 @@ namespace utopia {
 			n(1) = -u(0);
 			
 		} else {
-			assert(dim == 3);
+			assert(dim >= 3);
 			o = side.point(0);
 			u = side.point(1);
 			v = side.point(2);	
