@@ -651,6 +651,9 @@ namespace utopia {
 			Px.equation_system().solution->zero();
 			Px.equation_system().solution->close();
 
+
+			moonolith::root_describe("DONE", comm, std::cout);
+			
 			//end: init volume parametrization system
 
 			MechanicsContext mech_ctx;
@@ -714,7 +717,7 @@ namespace utopia {
 			io.write_timestep("wear_test.e", *equation_systems, 1, gait_cycle.t);
 
 			
-			moonolith::root_describe("DONE", comm, std::cout);
+			
 
 			DVectord overriden_displacement;
 			for(std::size_t i = 1; i < gait_cycle.n_time_steps; ++i) {
@@ -831,7 +834,8 @@ namespace utopia {
 	void run_wear_test(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
-		// mesh->read("../data/wear_2_far.e");
+		
+
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/wear_geoms.e");
 
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/knee.e");
@@ -839,6 +843,7 @@ namespace utopia {
 
 		moonolith::Communicator comm(init.comm().get());
 		moonolith::root_describe("reading mesh...", comm, std::cout);
+		// mesh->read("../data/wear_2_far.e"); //mesh->all_second_order(false);
 		mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_coarse.e"); mesh->all_second_order(true);
 		moonolith::root_describe("DONE", comm, std::cout);
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_fine.e");
