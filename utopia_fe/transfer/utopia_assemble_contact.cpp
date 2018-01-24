@@ -132,6 +132,13 @@ namespace utopia {
 				assert(n_bound == 2);
 				return n_bound == 2;
 			}
+			case TRI6:
+			case QUAD8:
+			case QUADSHELL8:
+			{
+				assert(n_bound == 3);
+				return n_bound == 3;
+			}
 				
 			case TET4:
 			{
@@ -582,13 +589,9 @@ namespace utopia {
 			master_fe_hack = libMesh::FEBase::build(master_mesh.mesh_dimension(), libMesh::Order(approx_order));
 			slave_fe_hack  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  libMesh::Order(approx_order));
 			
-			libMesh::QGauss ir_hack(dim-1, libMesh::Order(1));
+			libMesh::QGauss ir_hack(dim - 1, libMesh::Order(approx_order));
+			ir_hack.init(side_type(el_slave.type()));
 			
-			if(dim == 2) {
-				ir_hack.init(libMesh::EDGE2);
-			} else {
-				ir_hack.init(libMesh::TRI6);
-			}
 			
 			master_fe_hack->get_phi();
 			slave_fe_hack->get_phi();
