@@ -30,6 +30,7 @@
 #include "utopia_AssemblyTest.hpp"
 #include "utopia_FSITest.hpp"
 #include "utopia_MSHReaderTest.hpp"
+#include "utopia_BoundaryIntegralTest.hpp"
 
 #include <functional>
 
@@ -64,6 +65,7 @@ int main(const int argc, char *argv[])
 	    runners["mech"] = run_mech_test;
 	    runners["asm"] = run_assembly_test;
 	    runners["fsi"] = run_fsi_test;
+	    runners["bit"] = run_boundary_integral_test;
 
 
 	    //benchmarks

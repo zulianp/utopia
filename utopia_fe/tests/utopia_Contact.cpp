@@ -14,7 +14,8 @@ namespace utopia {
 			  const std::shared_ptr<libMesh::DofMap> &dof_map,
 			  const double search_radius,
 			  const std::vector<std::pair<int, int> > &contact_pair_tags,
-			  unsigned int variable_number)
+			  unsigned int variable_number,
+			  const bool use_biorthogonal_basis)
 	{
 
 		moonolith::Communicator comm(mesh->comm().get());
@@ -31,7 +32,8 @@ namespace utopia {
 			is_contact_node, 
 			search_radius,
 			contact_pair_tags,
-			true))
+			use_biorthogonal_basis,
+			false))
 		 {
 
 		 	//something failed

@@ -75,8 +75,9 @@ namespace utopia {
 		
 		for(std::size_t i = 0; i < f.size(); ++i) {
 			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
-				if(f[i][qp] > 1e-16) {
+				if(std::abs(f[i][qp]) > 1e-15) {
 					result[i] = true;
+					break;
 				}
 			}
 		}
@@ -87,7 +88,7 @@ namespace utopia {
 		auto &f = fe.get_phi();
 		for(std::size_t i = 0; i < node_is_boundary.size(); ++i) {
 			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
-				if(f[i][qp] > 1e-8) {
+				if(std::abs(f[i][qp]) > 1e-8) {
 					assert(node_is_boundary[i]);
 					if(!node_is_boundary[i]) return false;
 				}
@@ -136,6 +137,12 @@ namespace utopia {
 			{
 				assert(n_bound == 3);
 				return n_bound == 3;
+			}
+
+			case TET10:
+			{
+				assert(n_bound == 6);
+				return n_bound == 6;
 			}
 				
 			default:
@@ -806,8 +813,8 @@ namespace utopia {
 							slave_fe_hack->reinit(&el_slave, side_index_slave);
 						}
 						
-						assert( check_positive_funs(*slave_fe) );
-						assert( check_positive_funs(*master_fe) );
+						assert( approx_order > 1 || check_positive_funs(*slave_fe) );
+						assert( approx_order > 1 || check_positive_funs(*master_fe) );
 						
 						
 						//prepare result

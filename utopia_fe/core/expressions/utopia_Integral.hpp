@@ -20,8 +20,8 @@ namespace utopia {
 
 		std::string getClass() const override { return "Integral<" + expr_.getClass() + ">"; }
 
-		Integral(const Expr &expr, const int block_id = -1)
-		: expr_(expr), block_id_(block_id), integral_id_(-1)
+		Integral(const Expr &expr, const int block_id = -1, const bool is_surface = false)
+		: expr_(expr), block_id_(block_id), integral_id_(-1), is_surface_(is_surface)
 		{}
 
 		inline const Expr &expr() const
@@ -49,10 +49,21 @@ namespace utopia {
 			integral_id_ = id;
 		}
 
+		inline bool is_surface() const
+		{
+			return is_surface_;
+		}
+
+		inline bool is_volume() const
+		{
+			return !is_surface_;
+		}
+
 	private:
 		UTOPIA_STORE_CONST(Expr) expr_;
 		int block_id_;
 		int integral_id_;
+		bool is_surface_;
 	};
 
 
@@ -91,12 +102,25 @@ namespace utopia {
 		const int block_id;
 	};
 
+	class SurfaceDifferential {
+	public:
+		constexpr SurfaceDifferential(const int side_set_id = -1) noexcept : side_set_id(side_set_id) {}
+		const int side_set_id;
+	};
+
+	template<class Derived>
+	inline Integral<Derived> surface_integral(const Expression<Derived> &expr, const int side_set_id) {
+		static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
+		return Integral<Derived>(expr.derived(), side_set_id, true);
+	}
+
 	 // inline constexpr Differential dV(const int block_id = -1) 
 	 // {
 	 // 	return Differential(block_id);
 	 // }
 
 	static const Differential dX;
+	static const SurfaceDifferential dS;
 
 	 template<class Derived>
 	 inline Integral<Derived> operator *(const Expression<Derived> &expr, const Differential &d) {
@@ -104,6 +128,11 @@ namespace utopia {
 	 	return Integral<Derived>(expr.derived(), d.block_id);
 	 }
 
+	 template<class Derived>
+	 inline Integral<Derived> operator *(const Expression<Derived> &expr, const SurfaceDifferential &d) {
+	 	static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
+	 	return Integral<Derived>(expr.derived(), d.side_set_id, true);
+	 }
 }
 
 #endif //UTOPIA_INTEGRAL_HPP
