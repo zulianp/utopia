@@ -95,7 +95,10 @@ namespace utopia {
 			Write<DSMatrixd> w_b(boundary_mass_matrix);
 
 			libMesh::DenseMatrix<libMesh::Real> elemat;
-			for(const auto & elem : mesh->active_local_element_ptr_range()) {
+			
+			// for(const auto & elem : mesh->active_local_element_ptr_range()) {
+			for(auto e_it = mesh->active_local_elements_begin(); e_it != mesh->active_local_elements_end(); ++e_it) {
+				auto elem = *e_it;
 
 				dof_map.dof_indices(elem, dof_indices);
 				elemat.resize(dof_indices.size(), dof_indices.size());
@@ -104,7 +107,8 @@ namespace utopia {
 
 				bool has_assembled = false;
 				
-				for(auto side : elem->side_index_range()) {
+				// for(auto side : elem->side_index_range()) {
+				for(auto side = 0; side < elem->n_sides(); ++side) {
 					if((elem->neighbor_ptr(side) != libmesh_nullptr)) { continue; }
 
 					fe->attach_quadrature_rule(&q_gauss);
