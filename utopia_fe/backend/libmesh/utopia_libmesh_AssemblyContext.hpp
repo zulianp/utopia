@@ -196,8 +196,18 @@ namespace utopia {
 			return current_element_;
 		}
 
+		void surface_integral_begin()
+		{
+			is_surface_ = true;
+		}
+
+		void surface_integral_end()
+		{
+			is_surface_ = false;
+		}
+
 		LibMeshAssemblyContext()
-		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true)
+		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true), is_surface_(false)
 		{}
 
 		//x basis function
@@ -207,6 +217,7 @@ namespace utopia {
 		long current_element_;
 		int block_id_;
 		bool reset_quadrature_;
+		bool is_surface_;
 		
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;

@@ -38,7 +38,8 @@ namespace utopia {
 		const unsigned int ny = 6;
 		const unsigned int nz = 7;
 
-		auto elem_order = libMesh::SECOND;
+		// auto elem_order = libMesh::SECOND;
+		auto elem_order = libMesh::FIRST;
 
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 
@@ -53,7 +54,10 @@ namespace utopia {
 			0, 1,
 			0, 1.,
 			0, 1.,
-			libMesh::TET10);
+			// libMesh::TET10);
+			libMesh::TET4);
+
+		mesh->all_second_order(true);
 
 		auto dim = mesh->mesh_dimension();
 
@@ -97,9 +101,11 @@ namespace utopia {
 				elemat.resize(dof_indices.size(), dof_indices.size());
 
 				elemat.zero();
+
+				bool has_assembled = false;
 				
-				for (auto side : elem->side_index_range()) {
-					if ((elem->neighbor_ptr(side) != libmesh_nullptr)) { continue; }
+				for(auto side : elem->side_index_range()) {
+					if((elem->neighbor_ptr(side) != libmesh_nullptr)) { continue; }
 
 					fe->attach_quadrature_rule(&q_gauss);
 					fe->reinit(elem, side);
@@ -110,15 +116,19 @@ namespace utopia {
 					for(std::size_t i = 0; i < dof_indices.size(); ++i) {
 						for(std::size_t j = 0; j < dof_indices.size(); ++j) {
 							for(std::size_t qp = 0; qp < JxW.size(); ++qp) {
-								elemat(i, qp) += phi[i][qp] * phi[j][qp] * JxW[qp];
+								elemat(i, j) += phi[i][qp] * phi[j][qp] * JxW[qp];
 							}
 						}
 					}
+
+
+					has_assembled = true;
 				}
 
-				add_matrix(elemat, dof_indices, dof_indices, boundary_mass_matrix);
-
-				mat_sum += std::accumulate(begin(elemat.get_values()), end(elemat.get_values()), 0.);
+				if(has_assembled) {
+					add_matrix(elemat, dof_indices, dof_indices, boundary_mass_matrix);
+					mat_sum += std::accumulate(begin(elemat.get_values()), end(elemat.get_values()), 0.);
+				}
 			}
 		}
 

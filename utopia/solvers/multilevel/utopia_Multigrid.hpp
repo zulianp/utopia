@@ -315,7 +315,7 @@ namespace utopia
             transfers(l-2).restrict(r_h, r_H); 
 
             // prepare correction 
-            c_H = zeros(r_H.size().get(0));        
+            c_H = local_zeros(local_size(r_H).get(0));        
 
             if(l == 2)
             {

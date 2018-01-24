@@ -78,8 +78,16 @@ namespace utopia {
 				return;
 			}
 
+			if(expr.is_surface()) {
+				ctx.surface_integral_begin();
+			}
+
 			auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);
 			t = r;
+
+			if(expr.is_surface()) {
+				ctx.surface_integral_end();
+			}
 		}
 
 		template<class Left, class Right, class Matrix, class Vector>

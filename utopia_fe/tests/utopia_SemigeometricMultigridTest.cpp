@@ -246,7 +246,7 @@ namespace utopia {
     {
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
-        const unsigned int n = 10;
+        const unsigned int n = 16;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,
