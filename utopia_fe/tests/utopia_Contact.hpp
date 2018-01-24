@@ -18,12 +18,13 @@ namespace utopia {
 	class ContactParams {
 	public:
 		ContactParams()
-		: search_radius(0.1), variable_number(0)
+		: search_radius(0.1), variable_number(0), use_biorthogonal_basis(true)
 		{}
 
 		double search_radius;
 		std::vector<std::pair<int, int> > contact_pair_tags;
 		unsigned int variable_number;
+		bool use_biorthogonal_basis;
 	};
 
 	class Contact {
@@ -37,14 +38,15 @@ namespace utopia {
 			const std::shared_ptr<libMesh::DofMap> &dof_map,
 			const ContactParams &params)
 		{
-			return init(mesh, dof_map, params.search_radius, params.contact_pair_tags, params.variable_number);
+			return init(mesh, dof_map, params.search_radius, params.contact_pair_tags, params.variable_number, params.use_biorthogonal_basis);
 		}
 
 		bool init(const std::shared_ptr<libMesh::MeshBase> &mesh,
 				  const std::shared_ptr<libMesh::DofMap> &dof_map,
 				  const double search_radius,
 				  const std::vector<std::pair<int, int> > &contact_pair_tags,
-				  unsigned int variable_number = 0);
+				  unsigned int variable_number = 0,
+				  const bool use_biorthogonal_basis = true);
 
 		DVectord gap;
 		DVectord weighted_gap;

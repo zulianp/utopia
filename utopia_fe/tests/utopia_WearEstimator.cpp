@@ -512,7 +512,7 @@ namespace utopia {
 
 		void init_aux_system(
 			libMesh::EquationSystems &es,
-			const int order = 1)
+			libMesh::Order order)
 		{
 			//init aux system for plotting
 			auto &aux = es.add_system<libMesh::LinearImplicitSystem>("aux");
@@ -569,8 +569,9 @@ namespace utopia {
 
 		void run(const std::shared_ptr<libMesh::MeshBase> &mesh)
 		{
-
 			moonolith::Communicator comm(mesh->comm().get());
+			moonolith::root_describe("creating systems....", comm, std::cout);
+
 
 			const bool override_each_time_step = true;
 			const bool is_3d = mesh->mesh_dimension() == 3;
@@ -578,12 +579,15 @@ namespace utopia {
 			auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
 			auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("wear_test");
 
-			auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "disp_x");
-			auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "disp_y");
+			auto elem_order = libMesh::FIRST;
+			// auto elem_order = libMesh::SECOND;
+
+			auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
+			auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
 			auto V  = Vx * Vy;
 
 			if(is_3d) {
-				V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "disp_z");
+				V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
 			}
 
 			auto u  = trial(V);
@@ -615,18 +619,18 @@ namespace utopia {
 
 			Vx.initialize();
 
-			init_aux_system(*equation_systems, 1);
+			init_aux_system(*equation_systems, elem_order);
 			
 			//begin: init volume parametrization system
 			init_volume_param_system(*equation_systems);
 
-			auto Px = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_x", param_sys_number);
-			auto Py = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_y", param_sys_number);
+			auto Px = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "u_x", param_sys_number);
+			auto Py = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "u_y", param_sys_number);
 			auto P = Px * Py;
 			auto p = trial(P);
 
 			if(is_3d) {
-				P *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_z", param_sys_number);
+				P *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "u_z", param_sys_number);
 
 				auto p_constr = constraints(
 					boundary_conditions(p == coeff(gait_cycle.zero3), {3, 4})
@@ -698,6 +702,7 @@ namespace utopia {
 			// contact_params.contact_pair_tags = {{2, 1}};
 			contact_params.contact_pair_tags = {{1, 2}};
 			contact_params.search_radius = 1.7;
+			contact_params.use_biorthogonal_basis = static_cast<int>(elem_order) <= 1;
 
 			// libMesh::ExodusII_IO io(*mesh);
 			libMesh::Nemesis_IO io(*mesh);
@@ -709,6 +714,8 @@ namespace utopia {
 			io.write_timestep("wear_test.e", *equation_systems, 1, gait_cycle.t);
 
 			
+			moonolith::root_describe("DONE", comm, std::cout);
+
 			DVectord overriden_displacement;
 			for(std::size_t i = 1; i < gait_cycle.n_time_steps; ++i) {
 				std::cout << i << "/" << gait_cycle.n_time_steps << " t = " << gait_cycle.t << std::endl;
@@ -826,9 +833,15 @@ namespace utopia {
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		// mesh->read("../data/wear_2_far.e");
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/wear_geoms.e");
+
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/knee.e");
-		mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/knee_fine.e");
-		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy.e");
+		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/knee_fine.e");
+
+		moonolith::Communicator comm(init.comm().get());
+		moonolith::root_describe("reading mesh...", comm, std::cout);
+		mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_coarse.e");
+		// mesh->all_second_order(true);
+		moonolith::root_describe("DONE", comm, std::cout);
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_fine.e");
 		
 
@@ -854,6 +867,10 @@ namespace utopia {
 
 		we.gait_cycle.init();
 
+
+		moonolith::root_describe("running wear simulation....", comm, std::cout);
 		we.run(mesh);
+
+		moonolith::root_describe("DONE", comm, std::cout);
 	}
 }

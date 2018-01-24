@@ -32,7 +32,10 @@ namespace utopia {
 			mg.max_it(it);
 		}
 
-		SemiGeometricMultigrid();
+		SemiGeometricMultigrid(
+			const std::shared_ptr<Smoother<DSMatrixd, DVectord> > &smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
+			const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>()
+		);
 
 	private:
 		Multigrid<DSMatrixd, DVectord> mg;
