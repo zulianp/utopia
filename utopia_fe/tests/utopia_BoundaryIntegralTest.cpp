@@ -144,5 +144,10 @@ namespace utopia {
 		assemble(surface_integral(inner(u, v), 1) + surface_integral(inner(u, v), 2), side_mass_matrix_12);
 		const double side_area_12 = sum(side_mass_matrix_12);
 		assert(approxeq(side_area_12, 2., 1e-10));
+
+		DSMatrixd boundary_lapl;
+		assemble(surface_integral(inner(grad(u), grad(v))), boundary_lapl);
+		const double sum_lapl = sum(boundary_lapl);
+		assert(approxeq(sum_lapl, 0., 1e-10));
 	}
 }
