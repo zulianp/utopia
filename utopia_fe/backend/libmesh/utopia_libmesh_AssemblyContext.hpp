@@ -98,7 +98,7 @@ namespace utopia {
 			offset.resize(n_vars + 1);
 			offset[0] = 0;
 
-			const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
+			const libMesh::Elem * elem = space_ptr->mesh().elem(active_values().current_element());
 
 			const libMesh::ElemType type = elem->type();
 			const unsigned int sys_num   = space_ptr->dof_map().sys_number();
@@ -140,13 +140,12 @@ namespace utopia {
 
 		inline void set_current_element(const long current_element)
 		{
-			// current_element_ = current_element;
 			active_values().set_current_element(current_element);
 		}
 
 		inline long current_element() const
 		{
-			return current_element_;
+			return active_values().current_element();
 		}
 
 		void surface_integral_begin()
@@ -160,18 +159,15 @@ namespace utopia {
 		}
 
 		LibMeshAssemblyContext()
-		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true), is_surface_(false)
+		: is_surface_(false)
 		{
 			active_values_ = std::make_shared<LibMeshAssemblyValues>();
 		}
 
 		//x basis function
 		std::vector<int> offset;
+
 	private:
-		long quadrature_order_;
-		long current_element_;
-		int block_id_;
-		bool reset_quadrature_;
 		bool is_surface_;
 		
 		std::shared_ptr<libMesh::QBase> quad_trial_;
@@ -181,11 +177,13 @@ namespace utopia {
 
 		inline LibMeshAssemblyValues &active_values()
 		{
+			assert(active_values_);
 			return *active_values_;
 		}
 
 		inline const LibMeshAssemblyValues &active_values() const
 		{
+			assert(active_values_);
 			return *active_values_;
 		}
 

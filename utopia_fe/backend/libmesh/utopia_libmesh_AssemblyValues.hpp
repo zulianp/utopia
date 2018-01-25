@@ -71,19 +71,7 @@ namespace utopia {
 			if(!quad_trial_) return quad_test_;
 			return quad_trial_;
 		}
-
-		template<class Expr>
-		static std::shared_ptr<LibMeshFunctionSpace> find_any_space(const Expr &expr)
-		{
-			std::shared_ptr<LibMeshFunctionSpace> space_ptr = test_space<LibMeshFunctionSpace>(expr);
-			if(!space_ptr) {
-				auto prod_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
-				space_ptr = prod_space_ptr->subspace_ptr(0);
-			}
-
-			return space_ptr;
-		}
-
+		
 		template<class Expr>
 		void init_fe_from(const Expr &expr)
 		{
