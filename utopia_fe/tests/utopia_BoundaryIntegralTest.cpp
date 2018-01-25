@@ -28,43 +28,32 @@ namespace utopia {
 	{
 		moonolith::Communicator comm(init.comm().get());
 
-		const unsigned int nx = 2;
-		const unsigned int ny = 2;
-		const unsigned int nz = 2;
+		const unsigned int nx = 6;
+		const unsigned int ny = 6;
+		const unsigned int nz = 6;
 
-		// auto elem_order = libMesh::SECOND;
-		auto elem_order = libMesh::FIRST;
-
+		auto elem_order = libMesh::SECOND;
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
-
-		// libMesh::MeshTools::Generation::build_square(*mesh,
-		// 	nx, ny,
-		// 	0, 1,
-		// 	0, 1.,
-		// 	libMesh::QUAD8);
 
 		libMesh::MeshTools::Generation::build_cube(*mesh,
 			nx, ny, nz,
 			0, 1,
 			0, 1.,
 			0, 1.,
-			// libMesh::TET10);
 			libMesh::TET4);
 
-		// mesh->all_second_order(true);
+		mesh->all_second_order(true);
 
 		auto dim = mesh->mesh_dimension();
 
 		auto sys = std::make_shared<libMesh::EquationSystems>(*mesh);	
 		sys->add_system<libMesh::LinearImplicitSystem>("bit");
 
-		
 		auto V = LibMeshFunctionSpace(sys, libMesh::LAGRANGE, elem_order, "u");
 		V.initialize();
 
 		auto u = trial(V);
 		auto v = test(V);
-
 
 		libMesh::QGauss q_gauss(dim-1, libMesh::FOURTH);
 		q_gauss.init(libMesh::TRI6);
@@ -77,9 +66,10 @@ namespace utopia {
 
 		std::vector<libMesh::dof_id_type> dof_indices;
 
-		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
-
+		auto nnz_x_row = std::max(
+			*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end())
+		);
 
 		DSMatrixd boundary_mass_matrix = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 
@@ -87,7 +77,6 @@ namespace utopia {
 		
 		{
 			Write<DSMatrixd> w_b(boundary_mass_matrix);
-
 			libMesh::DenseMatrix<libMesh::Real> elemat;
 			
 			// for(const auto & elem : mesh->active_local_element_ptr_range()) {
@@ -119,7 +108,6 @@ namespace utopia {
 						}
 					}
 
-
 					has_assembled = true;
 				}
 
@@ -144,14 +132,17 @@ namespace utopia {
 
 		assert(approxeq(diff_norm, 0.));
 
-
 		DSMatrixd side_mass_matrix;
 		assemble(surface_integral(inner(u, v), 1), side_mass_matrix);
-
 
 		DVectord side_mass_vec = sum(side_mass_matrix, 1);
 
 		const double side_area_1 = sum(side_mass_matrix);
 		assert(approxeq(side_area_1, 1., 1e-10));
+
+		DSMatrixd side_mass_matrix_12;
+		assemble(surface_integral(inner(u, v), 1) + surface_integral(inner(u, v), 2), side_mass_matrix_12);
+		const double side_area_12 = sum(side_mass_matrix_12);
+		assert(approxeq(side_area_12, 2., 1e-10));
 	}
 }

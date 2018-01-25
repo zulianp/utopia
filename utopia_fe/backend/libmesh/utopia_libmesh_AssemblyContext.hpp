@@ -199,13 +199,6 @@ namespace utopia {
 			init_all_side_fe_from(expr);
 		}
 
-		// template<class Expr>
-		// void init_side_fe_from(const Expr &expr, const int side)
-		// {
-		// 	active_values().init_side_fe_from(expr, side);
-		// 	init_offsets(expr);
-		// }
-
 		void init_tensor(Vector &v, const bool reset);
 		void init_tensor(Matrix &v, const bool reset);
 
@@ -256,8 +249,6 @@ namespace utopia {
 		std::vector<int> offset;
 
 	private:
-
-		
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
 		std::vector< std::unique_ptr<FE> > fe_;
@@ -281,7 +272,6 @@ namespace utopia {
 		{
 			return active_values().n_shape_functions();
 		}
-
 	};
 
 	template<>
