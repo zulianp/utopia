@@ -79,15 +79,28 @@ namespace utopia {
 			}
 
 			if(expr.is_surface()) {
-				ctx.surface_integral_begin();
+
+				if(ctx.n_sides() != 0) {
+					ctx.surface_integral_begin();
+
+					ctx.set_side(0);
+					auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);
+					t = r;
+
+					for(std::size_t i = 1; i < ctx.n_sides(); ++i) {
+						ctx.set_side(i);
+						t += FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);;
+					}
+
+					ctx.surface_integral_end();
+				} 
+
+			} else {
+
+				auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);
+				t = r;
 			}
 
-			auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);
-			t = r;
-
-			if(expr.is_surface()) {
-				ctx.surface_integral_end();
-			}
 		}
 
 		template<class Left, class Right, class Matrix, class Vector>

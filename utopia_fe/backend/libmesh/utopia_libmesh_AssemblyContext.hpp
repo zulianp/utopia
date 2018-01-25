@@ -24,6 +24,44 @@
 
 namespace utopia {
 
+	class HasSurfaceIntegral {
+	public:
+
+		HasSurfaceIntegral()
+		: has_surface_integral(false)
+		{}
+
+		template<class Any>
+		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
+		
+		template<class Expr>
+		inline int visit(const Integral<Expr> &expr) 
+		{
+			if(expr.is_surface()) {
+				has_surface_integral = true;
+				return TRAVERSE_STOP;
+			} else {
+				return TRAVERSE_CONTINUE;
+			}
+		}
+
+		template<class Expr>
+		void apply(const Expr &expr)
+		{
+			traverse(expr, *this);
+		}
+
+		bool has_surface_integral;
+	};
+
+	template<class Expr>
+	bool has_surface_integral(const Expr &expr)
+	{
+		HasSurfaceIntegral action;
+		action.apply(expr);
+		return action.has_surface_integral;
+	}
+
 	class LibMeshAssemblyContext {
 	public:
 		typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
@@ -111,19 +149,62 @@ namespace utopia {
 			}
 		}
 
+		static inline std::size_t n_boundary_sides(const libMesh::Elem * elem)
+		{
+			std::size_t ret = 0;
+			for(std::size_t side = 0; side < elem->n_sides(); ++side) {
+				if((elem->neighbor_ptr(side) != libmesh_nullptr)) { continue; }
+				++ret;
+			}
+
+			return ret;
+		}
+
+		template<class Expr>
+		void init_all_side_fe_from(const Expr &expr)
+		{
+			if(!has_surface_integral(expr)) {
+				return;
+			}
+
+			auto space_ptr = find_any_space(expr);
+			const libMesh::Elem * elem = space_ptr->mesh().elem(active_values().current_element());
+
+			auto n = n_boundary_sides(elem);
+
+			surface_values_.resize(n);
+
+			std::size_t index = 0;
+			for(std::size_t side = 0; side < elem->n_sides(); ++side) {
+				if((elem->neighbor_ptr(side) != libmesh_nullptr)) { continue; }
+
+				auto &values_ptr = surface_values_[index];
+				
+				if(!values_ptr) {
+					values_ptr = std::make_shared<LibMeshAssemblyValues>();
+				}
+
+				values_ptr->set_current_element(active_values().current_element());
+				values_ptr->init_side_fe_from(expr, side);
+			}
+
+		}
+
 		template<class Expr>
 		void init_fe_from(const Expr &expr)
 		{
 			active_values().init_fe_from(expr);
 			init_offsets(expr);
+
+			init_all_side_fe_from(expr);
 		}
 
-		template<class Expr>
-		void init_side_fe_from(const Expr &expr, const int side)
-		{
-			active_values().init_side_fe_from(expr, side);
-			init_offsets(expr);
-		}
+		// template<class Expr>
+		// void init_side_fe_from(const Expr &expr, const int side)
+		// {
+		// 	active_values().init_side_fe_from(expr, side);
+		// 	init_offsets(expr);
+		// }
 
 		void init_tensor(Vector &v, const bool reset);
 		void init_tensor(Matrix &v, const bool reset);
@@ -150,16 +231,26 @@ namespace utopia {
 
 		void surface_integral_begin()
 		{
-			is_surface_ = true;
+
 		}
 
 		void surface_integral_end()
 		{
-			is_surface_ = false;
+			active_values_ = volume_values_;
+		}
+
+		void set_side(const std::size_t i)
+		{
+			assert(surface_values_[i]);
+			active_values_ = surface_values_[i];
+		}
+
+		std::size_t n_sides()
+		{
+			return surface_values_.size();
 		}
 
 		LibMeshAssemblyContext()
-		: is_surface_(false)
 		{
 			active_values_ = std::make_shared<LibMeshAssemblyValues>();
 		}
@@ -168,12 +259,14 @@ namespace utopia {
 		std::vector<int> offset;
 
 	private:
-		bool is_surface_;
+
 		
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
 		std::vector< std::unique_ptr<FE> > fe_;
 		std::shared_ptr<LibMeshAssemblyValues> active_values_;
+		std::shared_ptr<LibMeshAssemblyValues> volume_values_;
+		std::vector< std::shared_ptr<LibMeshAssemblyValues> > surface_values_;
 
 		inline LibMeshAssemblyValues &active_values()
 		{

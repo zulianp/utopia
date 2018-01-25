@@ -4,15 +4,8 @@
 
 //fe extension
 #include "utopia_fe_core.hpp"
-#include "MortarAssembler.hpp"
-#include "ParMortarAssembler.hpp"
 #include "utopia_Socket.hpp"
 #include "utopia_ContactSimParams.hpp"
-#include "utopia_Polygon.hpp"
-#include "utopia_NormalTangentialCoordinateSystem.hpp"
-#include "utopia_ContactProblem.hpp"
-#include "utopia_assemble_contact.hpp"
-
 #include "moonolith_profiler.hpp"
 
 #include <libmesh/mesh.h>
@@ -22,11 +15,10 @@
 #include <libmesh/mesh_modification.h>
 #include <libmesh/parallel_mesh.h>
 #include "libmesh/linear_partitioner.h"
-#include "LibmeshContactForMoose.hpp"
-#include "LibmeshTransferForMoose.hpp"
-#include "LibmeshTransferForMooseReverse.hpp"
-#include <libmesh/mesh_base.h>
 
+#include "utopia_libmesh_NonLinearFEFunction.hpp"
+
+#include <libmesh/mesh_base.h>
 #include <iostream>
 
 namespace utopia {
@@ -34,9 +26,9 @@ namespace utopia {
 	{
 		moonolith::Communicator comm(init.comm().get());
 
-		const unsigned int nx = 5;
-		const unsigned int ny = 6;
-		const unsigned int nz = 7;
+		const unsigned int nx = 2;
+		const unsigned int ny = 2;
+		const unsigned int nz = 2;
 
 		// auto elem_order = libMesh::SECOND;
 		auto elem_order = libMesh::FIRST;
@@ -68,8 +60,8 @@ namespace utopia {
 		auto V = LibMeshFunctionSpace(sys, libMesh::LAGRANGE, elem_order, "u");
 		V.initialize();
 
-		// auto u = trial(V);
-		// auto v = test(V);
+		auto u = trial(V);
+		auto v = test(V);
 
 
 		libMesh::QGauss q_gauss(dim-1, libMesh::FOURTH);
@@ -136,12 +128,19 @@ namespace utopia {
 			}
 		}
 
-		//assemble((inner(u, v) * dS, boundary_mass_matrix));
+		DSMatrixd boundary_mass_matrix_2;
+		assemble(inner(u, v) * dS, boundary_mass_matrix_2);
 
-		double surface_area = sum(boundary_mass_matrix);
-		disp(surface_area);
-		disp(mat_sum);
+		double surface_area   = sum(boundary_mass_matrix);
+		double surface_area_2 = sum(boundary_mass_matrix_2);
 
-		assert(approxeq(surface_area, 6., 1e-10));
+		assert(approxeq(surface_area,   6., 1e-10));
+		assert(approxeq(surface_area_2, 6., 1e-10));
+
+		DSMatrixd diff_mm = boundary_mass_matrix - boundary_mass_matrix_2;
+		const double diff_norm = norm2(diff_mm);
+
+		assert(approxeq(diff_norm, 0.));
+
 	}
 }
