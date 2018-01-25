@@ -1476,14 +1476,14 @@ namespace utopia {
 				
 			case 4:
 			{
-				make_polygon_from_quad4(e,polygon);
+				make_polygon_from_quad4(e, polygon);
 				break;
 			}
 				
 			case 6:
 			{
 				if(e.has_affine_map()) {
-					make_polygon_from_tri6(e,polygon);
+					make_polygon_from_tri6(e, polygon);
 					// make_polygon_from_tri3(e, polygon);
 				} else {
 					make_polygon_from_curved_tri6(e, polygon);
