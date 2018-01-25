@@ -843,8 +843,8 @@ namespace utopia {
 
 		moonolith::Communicator comm(init.comm().get());
 		moonolith::root_describe("reading mesh...", comm, std::cout);
-		// mesh->read("../data/wear_2_far.e"); //mesh->all_second_order(false);
-		mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_coarse.e"); mesh->all_second_order(true);
+		mesh->read("../data/wear_2_far.e"); mesh->all_second_order(false);
+		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_coarse.e"); mesh->all_second_order(true);
 		moonolith::root_describe("DONE", comm, std::cout);
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_fine.e");
 		

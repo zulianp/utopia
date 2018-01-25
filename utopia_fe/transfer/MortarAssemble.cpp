@@ -1483,7 +1483,8 @@ namespace utopia {
 			case 6:
 			{
 				if(e.has_affine_map()) {
-					make_polygon_from_tri3(e, polygon);
+					make_polygon_from_tri6(e,polygon);
+					// make_polygon_from_tri3(e, polygon);
 				} else {
 					make_polygon_from_curved_tri6(e, polygon);
 				}
@@ -1493,7 +1494,8 @@ namespace utopia {
 			case 8:
 			{
 				if(e.has_affine_map()) {
-					make_polygon_from_quad4(e, polygon);
+					make_polygon_from_quad8(e, polygon);
+					// make_polygon_from_quad4(e, polygon);
 				} else {
 					make_polygon_from_curved_quad8(e, polygon);
 				}
