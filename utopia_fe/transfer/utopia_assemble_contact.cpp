@@ -75,8 +75,9 @@ namespace utopia {
 		
 		for(std::size_t i = 0; i < f.size(); ++i) {
 			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
-				if(f[i][qp] > 1e-16) {
+				if(std::abs(f[i][qp]) > 1e-15) {
 					result[i] = true;
+					break;
 				}
 			}
 		}
@@ -87,7 +88,7 @@ namespace utopia {
 		auto &f = fe.get_phi();
 		for(std::size_t i = 0; i < node_is_boundary.size(); ++i) {
 			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
-				if(f[i][qp] > 1e-8) {
+				if(std::abs(f[i][qp]) > 1e-8) {
 					assert(node_is_boundary[i]);
 					if(!node_is_boundary[i]) return false;
 				}
@@ -131,11 +132,24 @@ namespace utopia {
 				assert(n_bound == 2);
 				return n_bound == 2;
 			}
+			case TRI6:
+			case QUAD8:
+			// case QUADSHELL8:
+			{
+				assert(n_bound == 3);
+				return n_bound == 3;
+			}
 				
 			case TET4:
 			{
 				assert(n_bound == 3);
 				return n_bound == 3;
+			}
+
+			case TET10:
+			{
+				assert(n_bound == 6);
+				return n_bound == 6;
 			}
 				
 			default:
@@ -575,13 +589,9 @@ namespace utopia {
 			master_fe_hack = libMesh::FEBase::build(master_mesh.mesh_dimension(), libMesh::Order(approx_order));
 			slave_fe_hack  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  libMesh::Order(approx_order));
 			
-			libMesh::QGauss ir_hack(dim-1, libMesh::Order(1));
+			libMesh::QGauss ir_hack(dim - 1, libMesh::Order(approx_order));
+			ir_hack.init(side_type(el_slave.type()));
 			
-			if(dim == 2) {
-				ir_hack.init(libMesh::EDGE2);
-			} else {
-				ir_hack.init(libMesh::TRI6);
-			}
 			
 			master_fe_hack->get_phi();
 			slave_fe_hack->get_phi();
@@ -806,8 +816,8 @@ namespace utopia {
 							slave_fe_hack->reinit(&el_slave, side_index_slave);
 						}
 						
-						assert( check_positive_funs(*slave_fe) );
-						assert( check_positive_funs(*master_fe) );
+						assert( approx_order > 1 || check_positive_funs(*slave_fe) );
+						assert( approx_order > 1 || check_positive_funs(*master_fe) );
 						
 						
 						//prepare result

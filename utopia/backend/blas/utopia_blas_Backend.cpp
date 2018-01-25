@@ -445,14 +445,35 @@ namespace utopia {
 		return ddot_(&n, &left.entries()[0], &incx, &right.entries()[0], &incy);
 	}
 	
-	BLASBackend::Scalar BLASBackend::norm2(const Vector vector)
+	BLASBackend::Scalar BLASBackend::norm2(const Vector &vector)
 	{
 		const int n = vector.size();
 		const int incx = 1;
 		return dnrm2_(&n, &vector[0], &incx);
 	}
-	
-	BLASBackend::Scalar BLASBackend::norm_infty(const Vector vector)
+
+	BLASBackend::Scalar BLASBackend::norm2(const Matrix &mat)
+	{
+		const int n = mat.entries().size();
+		const int incx = 1;
+		return dnrm2_(&n, &mat.entries()[0], &incx);
+	}
+
+	BLASBackend::Scalar BLASBackend::norm2(const CRSMatrix<Scalar> &mat)
+	{
+		const int n = mat.entries().size();
+		const int incx = 1;
+		return dnrm2_(&n, &mat.entries()[0], &incx);
+	}
+
+	BLASBackend::Scalar BLASBackend::norm2(const CCSMatrix<Scalar> &mat)
+	{
+		const int n = mat.entries().size();
+		const int incx = 1;
+		return dnrm2_(&n, &mat.entries()[0], &incx);
+	}
+
+	BLASBackend::Scalar BLASBackend::norm_infty(const Vector &vector)
 	{
 		using std::max_element;
 		if(vector.empty()) return 0.;

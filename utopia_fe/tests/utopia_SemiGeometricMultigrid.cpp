@@ -14,11 +14,10 @@
 #include <cmath>
 
 namespace utopia {
-	SemiGeometricMultigrid::SemiGeometricMultigrid()
-	: mg(
-		std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
-		std::make_shared<Factorization<DSMatrixd, DVectord>>()
-		)
+	SemiGeometricMultigrid::SemiGeometricMultigrid(
+		const std::shared_ptr<Smoother<DSMatrixd, DVectord> > &smoother,
+		const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver)
+	: mg(smoother, linear_solver)
 	{ }
 
 	void SemiGeometricMultigrid::init(const libMesh::EquationSystems &es, const std::size_t n_levels)

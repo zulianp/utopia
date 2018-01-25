@@ -49,10 +49,12 @@ namespace utopia {
 		PetscInt rows_global,
 		PetscInt cols_global)
 	{
+
+		const std::string type_copy = dense_type;
 		destroy();
 
 		check_error( MatCreate(comm, &implementation()) );
-		check_error( MatSetType(implementation(), dense_type) );
+		check_error( MatSetType(implementation(), type_copy.c_str()) );
 		check_error( MatSetSizes(implementation(), rows_local, cols_local, rows_global, cols_global) );
 		check_error( MatSetUp(implementation()) );
 

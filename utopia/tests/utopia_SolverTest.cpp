@@ -1,9 +1,3 @@
-/*
- * @Author: alenakopanicakova
- * @Date:   2016-07-15
- * @Last Modified by:   Alena Kopanicakova
- * @Last Modified time: 2017-07-03
- */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
@@ -60,6 +54,7 @@ namespace utopia
 		void run()
 		{
 			print_backend_info();
+			UTOPIA_RUN_TEST(ngs_test);
 			UTOPIA_RUN_TEST(newton_cg_test);
 			UTOPIA_RUN_TEST(solver_from_params_test);
 			UTOPIA_RUN_TEST(tr_test);
@@ -344,6 +339,50 @@ namespace utopia
 			
 			// std::cout << "         End: ls_test" << std::endl;
 		}
+
+		void ngs_test()
+		{			
+			const SizeType n = 40;
+
+			Matrix m = zeros(n, n);
+			assemble_laplacian_1D(n, m);
+			{
+			    Range r = row_range(m);
+			    Write<Matrix> w(m);
+			    if(r.begin() == 0) {
+			        m.set(0, 0, 1.);
+			        m.set(0, 1, 0);
+			    }
+
+			    if(r.end() == n) {
+			        m.set(n-1, n-1, 1.);
+			        m.set(n-1, n-2, 0);
+			    }
+			}
+
+			Vector rhs = values(n, 1.);
+			{ 
+			    //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
+			    Range r = range(rhs);
+			    Write<Vector> w(rhs);
+
+			    if(r.begin() == 0) {
+			        rhs.set(0, 0);
+			    }
+
+			    if(r.end() == n) {
+			        rhs.set(n-1, 0.);
+			    }
+			}
+
+			Vector upper_bound = values(n, 100.0);
+			Vector solution    = zeros(n);
+
+			ProjectedGaussSeidel<Matrix, Vector> pgs;
+			pgs.max_it(n*20);
+			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+			pgs.solve(m, rhs, solution);
+		}
 		
 		SolverTest()
 		: _n(10) { }
@@ -359,7 +398,6 @@ namespace utopia
 		
 		void run()
 		{
-			UTOPIA_RUN_TEST(petsc_ngs_test);
 			UTOPIA_RUN_TEST(petsc_gss_newton_test);
 			UTOPIA_RUN_TEST(petsc_bicgstab_test);
 			UTOPIA_RUN_TEST(petsc_gmres_test);
@@ -1181,55 +1219,6 @@ namespace utopia
 			newton_solver.solve(fun, actual);
 			assert(approxeq(expected, actual));
 			// // std::cout << "         End: petsc_newton_petsc_cg_test" << std::endl;
-		}
-
-
-
-		void petsc_ngs_test()
-		{
-			typedef utopia::DSMatrixd Matrix;
-			typedef utopia::DVectord Vector;
-			
-			const SizeType n = 40;
-
-			Matrix m = zeros(n, n);
-			assemble_laplacian_1D(n, m);
-			{
-			    Range r = row_range(m);
-			    Write<Matrix> w(m);
-			    if(r.begin() == 0) {
-			        m.set(0, 0, 1.);
-			        m.set(0, 1, 0);
-			    }
-
-			    if(r.end() == n) {
-			        m.set(n-1, n-1, 1.);
-			        m.set(n-1, n-2, 0);
-			    }
-			}
-
-			Vector rhs = values(n, 1.);
-			{ 
-			    //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
-			    Range r = range(rhs);
-			    Write<Vector> w(rhs);
-
-			    if(r.begin() == 0) {
-			        rhs.set(0, 0);
-			    }
-
-			    if(r.end() == n) {
-			        rhs.set(n-1, 0.);
-			    }
-			}
-
-			Vector upper_bound = values(n, 100.0);
-			Vector solution    = zeros(n);
-
-			ProjectedGaussSeidel<Matrix, Vector> pgs;
-			pgs.max_it(n);
-			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
-			pgs.solve(m, rhs, solution);
 		}
 
 		PetscSolverTest()

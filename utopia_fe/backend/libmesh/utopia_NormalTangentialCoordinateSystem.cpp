@@ -67,7 +67,7 @@ namespace utopia {
         Intersector isector;
         
         const uint n_dims = mesh.mesh_dimension();
-        std::unique_ptr<FEBase> fe = FEBase::build(n_dims, FIRST);
+        std::unique_ptr<FEBase> fe = FEBase::build(n_dims, dof_map.variable_order(0));
         fe->get_normals();
         fe->get_phi();
         fe->get_JxW();

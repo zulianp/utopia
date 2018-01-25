@@ -4,7 +4,19 @@
 #include <cstring>
 
 namespace utopia {
-	
+
+	bool  PetscVector::has_type(VecType type) const
+	{
+		PetscBool match = PETSC_FALSE;
+		PetscObjectTypeCompare((PetscObject) implementation(), type, &match);
+		return match;
+	}
+
+	bool PetscVector::same_type(const PetscVector &other) const
+	{
+		return has_type(other.type());
+	}
+		
 	void PetscVector::repurpose(MPI_Comm comm,
 								VecType type,
 								PetscInt n_local,
@@ -15,11 +27,14 @@ namespace utopia {
 		assert(!immutable_);
 #endif
 
-		if(vec_ == nullptr) {
+		const std::string type_copy = type;
+
+		if(is_null()) {
 			VecCreate(comm, &vec_);
 		} else {
-			if(comm != PetscObjectComm((PetscObject)vec_) || std::strcmp(this->type(), type) != 0) {
-				check_error( VecDestroy(&vec_) );
+			if(comm != PetscObjectComm((PetscObject)vec_) || has_type(type)) {
+				destroy();
+
 				check_error( VecCreate(comm, &vec_) );
 			} else {
 				PetscInt old_n_global;
@@ -36,7 +51,7 @@ namespace utopia {
 			}
 		}
 		
-		check_error( VecSetType(vec_, type) );
+		check_error( VecSetType(vec_, type_copy.c_str()) );
 
 		check_error( VecSetFromOptions(vec_) );
 
@@ -136,11 +151,11 @@ namespace utopia {
 		// 	VecSetSizes(implementation(), local_size, global_size);
 		// } else {
 		MPI_Comm comm = communicator();
-		VecType type  = this->type();
+		const std::string type = this->type();
 
 		destroy();
 
-		init(comm, type, local_size, global_size);
+		init(comm, type.c_str(), local_size, global_size);
 		// }
 	}
 

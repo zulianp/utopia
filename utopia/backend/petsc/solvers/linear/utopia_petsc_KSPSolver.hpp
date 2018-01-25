@@ -194,15 +194,16 @@ public:
     {
         PetscErrorCode ierr;
 
-        Size localSize = local_size(b);
+        Size ls = local_size(b);
+        Size gs = size(b);
 
-        if(empty(x) || local_size(x).get(0) != localSize.get(0)) 
+        if(empty(x) || gs.get(0) != size(x).get(0)) 
         {
-            x = local_zeros(localSize.get(0));
+            x = local_zeros(ls.get(0));
         }
 
-        assert(b.size().get(0) == x.size().get(0));
-
+        assert(size(b).get(0) == size(x).get(0));
+        assert(local_size(b).get(0) == local_size(x).get(0));
 
         const Matrix &A = *this->get_operator(); 
 

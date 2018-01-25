@@ -54,6 +54,7 @@ if(BLAS_FOUND OR OPEN_BLAS_FOUND)
 		.
 		solvers
 		eigensolvers
+		eval
 	)
 
 	if(LAPACK_FOUND)

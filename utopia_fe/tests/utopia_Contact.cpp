@@ -10,16 +10,17 @@
 
 namespace utopia {
 	bool Contact::init(
-			  const std::shared_ptr<libMesh::MeshBase> &mesh,
-			  const std::shared_ptr<libMesh::DofMap> &dof_map,
-			  const double search_radius,
-			  const std::vector<std::pair<int, int> > &contact_pair_tags,
-			  unsigned int variable_number)
+		const std::shared_ptr<libMesh::MeshBase> &mesh,
+		const std::shared_ptr<libMesh::DofMap> &dof_map,
+		const double search_radius,
+		const std::vector<std::pair<int, int> > &contact_pair_tags,
+		unsigned int variable_number,
+		const bool use_biorthogonal_basis)
 	{
 
 		moonolith::Communicator comm(mesh->comm().get());
 
-		 if(!assemble_contact(
+		if(!assemble_contact(
 			comm,
 			mesh, 
 			dof_map, 
@@ -31,37 +32,48 @@ namespace utopia {
 			is_contact_node, 
 			search_radius,
 			contact_pair_tags,
-			true))
-		 {
+			use_biorthogonal_basis,
+			false))
+		{
 
 		 	//something failed
-		 	return false;
-		 }
-
-		DVectord d = sum(coupling, 1);
-		
-		inv_mass_vector = local_zeros(local_size(d));
-
-		{
-			Write<DVectord> w_(inv_mass_vector);
-
-			each_read(d, [this](const SizeType i, const double value) {
-				if(value < -1e-8) {
-					std::cerr << "negative el for " << i << std::endl;
-				}
-
-				if(std::abs(value) > 1e-15) {
-					this->inv_mass_vector.set(i, 1./value);
-				} else {
-					this->inv_mass_vector.set(i, 1.);
-				}
-			});
+			return false;
 		}
 
-		inv_mass_matrix = diag(inv_mass_vector);
+		if(use_biorthogonal_basis) {
+
+			DVectord d = sum(coupling, 1);
+
+			inv_mass_vector = local_zeros(local_size(d));
+
+			{
+				Write<DVectord> w_(inv_mass_vector);
+
+				each_read(d, [this](const SizeType i, const double value) {
+					if(value < -1e-8) {
+						std::cerr << "negative el for " << i << std::endl;
+					}
+
+					if(std::abs(value) > 1e-15) {
+						this->inv_mass_vector.set(i, 1./value);
+					} else {
+						this->inv_mass_vector.set(i, 1.);
+					}
+				});
+			}
+
+
+			inv_mass_matrix = diag(inv_mass_vector);
+		} else {
+			assert(false && "implement me");
+
+			// inv_mass_matrix = inv(boundary_mass_matrix);
+		}
+
+
 		transfer_operator = inv_mass_matrix * coupling;
 
-		transfer_operator += local_identity(local_size(d).get(0), local_size(d).get(0));
+		transfer_operator += local_identity(local_size(transfer_operator));
 		gap = inv_mass_matrix * weighted_gap;
 		complete_transformation = transfer_operator * orthogonal_trafo;
 

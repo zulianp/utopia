@@ -121,7 +121,11 @@ namespace utopia {
 			VecGetType(implementation(), &ret);
 			return ret;
 		}
-		
+
+		bool has_type(VecType type) const;
+
+	 	bool same_type(const PetscVector &other) const;
+
 		inline PetscInt local_size() const
 		{
 			PetscInt ret;
@@ -166,7 +170,7 @@ namespace utopia {
 #endif 
 			
 			if(is_compatible(other) && !other.has_ghosts()) {
-				assert( std::string(type()) == std::string(other.type()) && "Inconsistent matrix types. Handle types properly before copying" );
+				assert( same_type(other) && "Inconsistent matrix types. Handle types properly before copying" );
 				assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
 				PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
 				return *this;
