@@ -20,37 +20,61 @@ namespace utopia
         typedef utopia::NonLinearSolver<Matrix, Vector>     NonlinearSolver;
 
     public:
-       AlternateMinimization(   const std::shared_ptr<NonlinearSolver> &nl_solver1 = std::shared_ptr<NonlinearSolver>(),
-                                const std::shared_ptr<NonlinearSolver> &nl_solver2 = std::shared_ptr<NonlinearSolver>()):
-                            _nl_solver1(nl_solver1), 
-                            _nl_solver2(nl_solver2) 
+       AlternateMinimization(   const std::shared_ptr<NonlinearSolver> &nl_solver_master = std::shared_ptr<NonlinearSolver>(),
+                                const std::shared_ptr<NonlinearSolver> &nl_solver_slave = std::shared_ptr<NonlinearSolver>(), 
+                                const Parameters params                                 = Parameters()):
+                            _nl_solver_master(nl_solver_master), 
+                            _nl_solver_slave(nl_solver_slave) 
         {
-            //set_parameters(params);
+            set_parameters(params); 
         }
 
-        bool solve(Function<Matrix, Vector> &fun, Vector &x) override
+
+
+
+        bool solve( Function<Matrix, Vector> &fun_master, Function<Matrix, Vector> &fun_slave, 
+                    Vector &x_master, Vector &x_slave, 
+                    std::function<void(const Vector &)> multiapp_transfer_from_master, 
+                    std::function<void(const Vector &)> multiapp_transfer_to_master) 
         {
            using namespace utopia;
 
-         
-           std::cout<<"-------- alternate minimization solve ----------- \n"; 
+           for(auto it=0; it < _num_alternate_steps; it++)
+           {
+               _nl_solver_master->solve(fun_master, x_master); 
+               multiapp_transfer_from_master(x_master); 
 
+
+               _nl_solver_slave->solve(fun_slave, x_slave); 
+               multiapp_transfer_to_master(x_slave); 
+           }
 
             return true;
         }
 
-        // virtual void set_parameters(const Parameters params) override
-        // {
-        //     NonLinearSolver<Matrix, Vector>::set_parameters(params);
-        //     alpha_ = params.alpha();
 
-        // }
+        virtual void set_parameters(const Parameters params)
+        {
+            _num_alternate_steps = params.num_alternate_steps();
+        }
+
+        virtual void set_num_alternate_steps(const SizeType & num_alternate_steps_in)
+        {
+            _num_alternate_steps = num_alternate_steps_in; 
+        }
+
+        virtual SizeType set_num_alternate_steps()
+        {
+            return _num_alternate_steps;
+        }
 
 
     private:
 
-        std::shared_ptr<NonlinearSolver>             _nl_solver1;  
-        std::shared_ptr<NonlinearSolver>             _nl_solver2;  
+        SizeType _num_alternate_steps; 
+
+        std::shared_ptr<NonlinearSolver>             _nl_solver_master;  
+        std::shared_ptr<NonlinearSolver>             _nl_solver_slave;  
 
     };
 

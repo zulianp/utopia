@@ -123,6 +123,11 @@ namespace utopia
           log_system_         = false; 
           log_norms_          = false; 
 
+
+        /* ---------- stag. scheme -------------- */
+
+          num_alternate_steps_ = 1; 
+
           stay_quiet();
         }
 
@@ -219,6 +224,10 @@ namespace utopia
     SizeType    max_smoothing_it() const          { return max_smoothing_it_; } 
 
 
+    /*---------------------------------------------- stag. shceme  ------------------------------*/
+    SizeType    num_alternate_steps() const          { return num_alternate_steps_; } 
+
+
 
     // -------------------------------------------------------------------------------//
     /* --------------------------------  SETTERS  ------------------------------------*/
@@ -309,6 +318,11 @@ namespace utopia
     void    max_smoothing_it(const SizeType & max_smoothing_it)                     {  max_smoothing_it_ = max_smoothing_it ; } 
 
   
+  /*---------------------------------------------- stag. shceme  ------------------------------*/
+    void    num_alternate_steps(const Scalar & num_alternate_steps)             {  num_alternate_steps_ = num_alternate_steps; } 
+    
+
+
 
     protected: 
           bool verbose_; 
@@ -390,6 +404,10 @@ namespace utopia
 
           Scalar          hessian_update_delta_; 
           Scalar          hessian_update_eta_; 
+
+
+
+          Scalar          num_alternate_steps_; 
 
     };
 
