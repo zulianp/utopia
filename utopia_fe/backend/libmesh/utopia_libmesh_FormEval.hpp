@@ -74,21 +74,17 @@ namespace utopia {
 					Tensor &t, 
 					AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
-				return;
-			}
-
+		
 			if(expr.is_surface()) {
 
 				if(ctx.n_sides() != 0) {
 					ctx.surface_integral_begin();
 
-					ctx.set_side(0);
-					auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);
-					t = r;
-
-					for(std::size_t i = 1; i < ctx.n_sides(); ++i) {
+					for(std::size_t i = 0; i < ctx.n_sides(); ++i) {
 						ctx.set_side(i);
+						
+						if(expr.has_block_id() && ctx.block_id() != expr.block_id()) continue;
+
 						t += FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);;
 					}
 
@@ -96,6 +92,10 @@ namespace utopia {
 				} 
 
 			} else {
+
+				if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
+					return;
+				}
 
 				auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);
 				t = r;

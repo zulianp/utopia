@@ -71,7 +71,7 @@ namespace utopia {
 			if(!quad_trial_) return quad_test_;
 			return quad_trial_;
 		}
-		
+
 		template<class Expr>
 		void init_fe_from(const Expr &expr)
 		{
@@ -130,7 +130,8 @@ namespace utopia {
 			}
 			
 			set_up_quadrature(dim-1, quadrature_order_);
-			block_id_ = elem->subdomain_id();
+			// block_id_ = elem->side_ptr(side)->subdomain_id();
+			block_id_ = space_ptr->mesh().get_boundary_info().boundary_id(elem, side);
 
 			const auto &eq_sys = space_ptr->equation_system();
 			const std::size_t n_vars = eq_sys.n_vars();

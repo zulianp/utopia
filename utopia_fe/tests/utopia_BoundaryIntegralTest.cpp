@@ -18,7 +18,9 @@
 
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 
-#include <libmesh/mesh_base.h>
+#include "libmesh/mesh_base.h"
+#include "libmesh/nemesis_io.h"
+
 #include <iostream>
 
 namespace utopia {
@@ -49,7 +51,7 @@ namespace utopia {
 			// libMesh::TET10);
 			libMesh::TET4);
 
-		mesh->all_second_order(true);
+		// mesh->all_second_order(true);
 
 		auto dim = mesh->mesh_dimension();
 
@@ -142,5 +144,14 @@ namespace utopia {
 
 		assert(approxeq(diff_norm, 0.));
 
+
+		DSMatrixd side_mass_matrix;
+		assemble(surface_integral(inner(u, v), 1), side_mass_matrix);
+
+
+		DVectord side_mass_vec = sum(side_mass_matrix, 1);
+
+		const double side_area_1 = sum(side_mass_matrix);
+		assert(approxeq(side_area_1, 1., 1e-10));
 	}
 }

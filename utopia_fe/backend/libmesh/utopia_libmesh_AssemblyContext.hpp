@@ -178,7 +178,7 @@ namespace utopia {
 			for(std::size_t side = 0; side < elem->n_sides(); ++side) {
 				if((elem->neighbor_ptr(side) != libmesh_nullptr)) { continue; }
 
-				auto &values_ptr = surface_values_[index];
+				auto &values_ptr = surface_values_[index++];
 				
 				if(!values_ptr) {
 					values_ptr = std::make_shared<LibMeshAssemblyValues>();
@@ -229,10 +229,7 @@ namespace utopia {
 			return active_values().current_element();
 		}
 
-		void surface_integral_begin()
-		{
-
-		}
+		void surface_integral_begin() {}
 
 		void surface_integral_end()
 		{
