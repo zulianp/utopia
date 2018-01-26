@@ -5,6 +5,11 @@
 #include "utopia_Eval.hpp"
 
 namespace utopia {
+	// typedef int EXPR_CTX;
+	static const int EXPR_TERMINAL 	   = 0;
+	static const int EXPR_NON_TERMINAL = 1;
+
+
 	template<class Expr, class Traits, int Backend>
 	class FEEval : public Eval<Expr, Traits, Backend> { 
 	public:
@@ -24,6 +29,12 @@ namespace utopia {
 			return expr;
 		}
 	};
-}
+
+
+	// template<class Expr, class Traits, int Backend>
+	// class NonTerminalFEEval : public FEEval<Expr, Traits, Backend> {};
+	
+
+}	
 
 #endif //UTOPIA_FE_EVAL_EMPTY_HPP

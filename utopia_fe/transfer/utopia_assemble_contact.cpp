@@ -134,7 +134,7 @@ namespace utopia {
 			}
 			case TRI6:
 			case QUAD8:
-			// case QUADSHELL8:
+			case QUADSHELL8:
 			{
 				assert(n_bound == 3);
 				return n_bound == 3;

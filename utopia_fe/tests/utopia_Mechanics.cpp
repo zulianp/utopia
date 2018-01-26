@@ -214,7 +214,8 @@ namespace utopia {
 		// current.stress = e_mul(mech_ctx.inverse_mass_vector, T * (rhs_c - K_c * sol_c));
 		// current.stress = T * (rhs_c - K_c * sol_c);
 		
-		current.stress = e_mul(contact.inv_mass_vector, (current.external_force - current.internal_force));
+		// current.stress = e_mul(contact.inv_mass_vector, (current.external_force - current.internal_force));
+		current.stress = contact.inv_mass_matrix * (current.external_force - current.internal_force);
 
 		//FIXME find other way
 		apply_zero_boundary_conditions(dof_map, current.internal_force); 

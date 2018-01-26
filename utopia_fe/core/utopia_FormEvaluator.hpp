@@ -10,8 +10,8 @@
 namespace utopia {
 
 	// Compile-time member detection flags.
-	class FeatureYes { char c[1]; };
-	class FeatureNo  { char c[2]; };
+	class FeatureYes { public: char c[1]; };
+	class FeatureNo  { public: char c[2]; };
 
 	template<class T>
 	FeatureYes DetectIsFE(decltype(&T::is_fe));

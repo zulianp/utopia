@@ -156,6 +156,28 @@ namespace utopia {
 	    }  
 	};
 
+
+	// template<class Left, class Right, class Traits, int Backend>
+	// class NonTerminalFEEval< Reduce< Binary<Left, Right, EMultiplies>, Plus>, Traits, Backend> {
+	// public:
+	// 	typedef utopia::Reduce< Binary<Left, Right, EMultiplies>, Plus> Expr;
+		
+	//     inline static auto apply(
+	//     	const Expr &expr,
+	//     	AssemblyContext<Backend> &ctx) -> decltype(
+	//     		FEBackend<Traits::Backend>::inner(
+	//     			    	FEEval<Left,  Traits, Backend>::apply(expr.expr().left(), ctx),
+	//     			    	FEEval<Right,  Traits, Backend>::apply(expr.expr().right(), ctx), 
+	//     			    	ctx)
+	//     	)
+	//     {
+	// 	    return FEBackend<Traits::Backend>::inner(
+	// 	    	FEEval<Left,  Traits, Backend>::apply(expr.expr().left(), ctx),
+	// 	    	FEEval<Right,  Traits, Backend>::apply(expr.expr().right(), ctx), 
+	// 	    	ctx);
+	//     }  
+	// };
+
 	// template<class Left, class OpLeft, class Right, class OpRight, class Op, class Traits, int Backend>
 	// class FEEval< Binary< Reduce<Left, OpLeft>, Reduce<Right, OpRight>, Op>, Traits, Backend> {
 	// public:

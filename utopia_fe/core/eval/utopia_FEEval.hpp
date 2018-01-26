@@ -13,6 +13,7 @@
 #include "utopia_FEEval_Equality.hpp"
 #include "utopia_FEEval_FEKernel.hpp"
 #include "utopia_FEEval_Gradient.hpp"
+#include "utopia_FEEval_Inner.hpp"
 #include "utopia_FEEval_Integral.hpp"
 #include "utopia_FEEval_Interpolate.hpp"
 #include "utopia_FEEval_Inverse.hpp"
@@ -24,5 +25,6 @@
 #include "utopia_FEEval_TrialFunction.hpp"
 #include "utopia_FEEval_Unary.hpp"
 #include "utopia_FEEval_Wrapper.hpp"
+
 
 #endif //UTOPIA_FE_EVAL_HPP

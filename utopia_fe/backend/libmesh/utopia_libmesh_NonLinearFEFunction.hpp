@@ -38,6 +38,7 @@ namespace utopia {
 
 		AssemblyContext<Backend> ctx;
 		ctx.set_current_element((*it)->id());
+		ctx.set_has_assembled(false);
 
 		ElementMatrix el_mat;
 		ElementVector el_vec;
@@ -50,11 +51,13 @@ namespace utopia {
 		std::vector<libMesh::dof_id_type> dof_indices;
 		dof_map.dof_indices(*it, dof_indices);
 
-		if(apply_constraints)
-			dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
+		if(ctx.has_assembled()) {
+			if(apply_constraints)
+				dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
 
-		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
-		add_vector(el_vec.implementation(), dof_indices, vec);
+			add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+			add_vector(el_vec.implementation(), dof_indices, vec);
+		}
 	}
 
 
@@ -73,6 +76,7 @@ namespace utopia {
 
 		AssemblyContext<Backend> ctx;
 		ctx.set_current_element((*it)->id());
+		ctx.set_has_assembled(false);
 
 		ElementMatrix el_mat;
 		ctx.init_bilinear(expr);
@@ -80,10 +84,12 @@ namespace utopia {
 		FormEvaluator<Backend> eval;
 		eval.eval(expr, el_mat, ctx, true);
 
-		std::vector<libMesh::dof_id_type> dof_indices;
-		dof_map.dof_indices(*it, dof_indices);
+		if(ctx.has_assembled()) {
+			std::vector<libMesh::dof_id_type> dof_indices;
+			dof_map.dof_indices(*it, dof_indices);
 
-		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+			add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+		}
 	}
 
 	template<class FunctionSpaceT, class Expr, typename T>
@@ -100,6 +106,7 @@ namespace utopia {
 
 		AssemblyContext<Backend> ctx;
 		ctx.set_current_element((*it)->id());
+		ctx.set_has_assembled(false);
 
 		ElementMatrix el_mat;
 		ctx.init_bilinear(expr);
@@ -107,10 +114,13 @@ namespace utopia {
 		FormEvaluator<Backend> eval;
 		eval.eval(expr, el_mat, ctx, true);
 
-		std::vector<libMesh::dof_id_type> dof_indices;
-		dof_map.dof_indices(*it, dof_indices);
 
-		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+		if(ctx.has_assembled()) {
+			std::vector<libMesh::dof_id_type> dof_indices;
+			dof_map.dof_indices(*it, dof_indices);
+
+			add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+		}
 	}
 
 

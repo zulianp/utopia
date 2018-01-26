@@ -241,12 +241,23 @@ namespace utopia {
 		}
 
 		LibMeshAssemblyContext()
+		: has_assembled_(false)
 		{
 			active_values_ = std::make_shared<LibMeshAssemblyValues>();
 		}
 
 		//x basis function
 		std::vector<int> offset;
+
+		inline void set_has_assembled(const bool val)
+		{
+			has_assembled_ = val;
+		}
+
+		inline bool has_assembled() const
+		{
+			return has_assembled_;
+		}
 
 	private:
 		std::shared_ptr<libMesh::QBase> quad_trial_;
@@ -255,6 +266,7 @@ namespace utopia {
 		std::shared_ptr<LibMeshAssemblyValues> active_values_;
 		std::shared_ptr<LibMeshAssemblyValues> volume_values_;
 		std::vector< std::shared_ptr<LibMeshAssemblyValues> > surface_values_;
+		bool has_assembled_;
 
 		inline LibMeshAssemblyValues &active_values()
 		{

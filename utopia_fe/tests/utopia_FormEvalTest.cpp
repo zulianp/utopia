@@ -240,6 +240,9 @@ namespace utopia {
 			// 	 		    + lambda * inner(F_inv_t, grad(u)) * inner(F_inv_t, grad(v))
 			// 	 		  ) * dX;
 
+			// auto b_form = (inner(F, grad(u)) * inner(F, grad(v))) * dX;
+
+
 			
 			// auto b_form = ( 
 			// 				inner(uk, u) * inner(uk, v)
@@ -589,7 +592,7 @@ namespace utopia {
 	{	
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
-		const unsigned int n = 60;
+		const unsigned int n = 10;
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
 			n, n,
 			0, 1,
@@ -704,12 +707,12 @@ namespace utopia {
 		// 	lm_test.run_nonlinear_form_test(es);
 		// });
 
-		// run_libmesh_test(init,[](
-		// 	LibMeshFormEvalTest &lm_test,
-		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
-		// 	es->add_system<libMesh::LinearImplicitSystem>("run_nonlinear_elasticity");
-		// 	lm_test.run_nonlinear_elasticity(es);
-		// });
+		run_libmesh_test(init,[](
+			LibMeshFormEvalTest &lm_test,
+			const std::shared_ptr<libMesh::EquationSystems> &es) {
+			es->add_system<libMesh::LinearImplicitSystem>("run_nonlinear_elasticity");
+			lm_test.run_nonlinear_elasticity(es);
+		});
 
 		// run_libmesh_test(init, [](
 		// 	LibMeshFormEvalTest &lm_test,
@@ -901,73 +904,73 @@ namespace utopia {
 
 
 
-		run_libmesh_test(init, [](
-			LibMeshFormEvalTest &lm_test,
-			const std::shared_ptr<libMesh::EquationSystems> &es) {
+		// run_libmesh_test(init, [](
+		// 	LibMeshFormEvalTest &lm_test,
+		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
 			
-			//create system of equations
-			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("reaction_diffusion");
-			auto V = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "u");
-			auto u = trial(V);
-			auto v = test(V);
+		// 	//create system of equations
+		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("reaction_diffusion");
+		// 	auto V = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "u");
+		// 	auto u = trial(V);
+		// 	auto v = test(V);
 
-			const double dt = 0.01;
-			const std::size_t n_ts = 40;
+		// 	const double dt = 0.01;
+		// 	const std::size_t n_ts = 40;
 
-			DVectord sol;
-			DVectord sol_old;
+		// 	DVectord sol;
+		// 	DVectord sol_old;
 
-			//if_else(cond, val_if, val_else)
+		// 	//if_else(cond, val_if, val_else)
 
-			// auto uk     = interpolate(sol, in_block(u == 0.1, {1, 2}) || 
-										   // in_block(u == 0.,  {0, 3}) );
+		// 	// auto uk     = interpolate(sol, in_block(u == 0.1, {1, 2}) || 
+		// 								   // in_block(u == 0.,  {0, 3}) );
 
-			auto uk     = interpolate(sol, u);
-			auto uk_old = interpolate(sol_old, u);
+		// 	auto uk     = interpolate(sol, u);
+		// 	auto uk_old = interpolate(sol_old, u);
 
-			auto a = 100.;
-			auto alpha = coeff(0.5);
-			auto R = uk * a * (coeff(1.) - uk) * (uk - alpha);
+		// 	auto a = 100.;
+		// 	auto alpha = coeff(0.5);
+		// 	auto R = uk * a * (coeff(1.) - uk) * (uk - alpha);
 
-			auto f_rhs = ctx_fun< std::vector<double> >([&u](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
-				const auto &pts = ctx.fe()[0]->get_xyz();
+		// 	auto f_rhs = ctx_fun< std::vector<double> >([&u](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
+		// 		const auto &pts = ctx.fe()[0]->get_xyz();
 
-				const auto n = pts.size();
-				std::vector<double> ret(n);
+		// 		const auto n = pts.size();
+		// 		std::vector<double> ret(n);
 				
-				for(std::size_t i = 0; i != n; ++i) {
-					double x = (pts[i](0) - 0.5);
-					double y = (pts[i](1) - 0.5);
-					double dist = std::sqrt(x*x + y*y);
-					if(dist < 0.2)
-						ret[i] = 2;
-					else
-						ret[i] = 0.;
-				}
+		// 		for(std::size_t i = 0; i != n; ++i) {
+		// 			double x = (pts[i](0) - 0.5);
+		// 			double y = (pts[i](1) - 0.5);
+		// 			double dist = std::sqrt(x*x + y*y);
+		// 			if(dist < 0.2)
+		// 				ret[i] = 2;
+		// 			else
+		// 				ret[i] = 0.;
+		// 		}
 
-			 	return ret;
-			});
+		// 	 	return ret;
+		// 	});
 
-			if(nl_implicit_euler(
-				equations(
-					( inner(u, v) + inner( dt * grad(u), grad(v)) ) * dX == ( dt * inner(R, v) + inner(uk_old, v) + dt * inner(f_rhs, v)) * dX
-				),
-				constraints(
-					boundary_conditions(u == coeff(0.),  {1, 3}),
-					boundary_conditions(u == coeff(0.),  {0}),
-					boundary_conditions(u == coeff(0.0), {2})
-				),
-				sol_old,
-				sol, 
-				dt,
-				n_ts
-				)) 
-			{
-				//post process
-			} else {
-				std::cerr << "[Error] solver failed to converge" << std::endl;
-			}
-		});
+		// 	if(nl_implicit_euler(
+		// 		equations(
+		// 			( inner(u, v) + inner( dt * grad(u), grad(v)) ) * dX == ( dt * inner(R, v) + inner(uk_old, v) + dt * inner(f_rhs, v)) * dX
+		// 		),
+		// 		constraints(
+		// 			boundary_conditions(u == coeff(0.),  {1, 3}),
+		// 			boundary_conditions(u == coeff(0.),  {0}),
+		// 			boundary_conditions(u == coeff(0.0), {2})
+		// 		),
+		// 		sol_old,
+		// 		sol, 
+		// 		dt,
+		// 		n_ts
+		// 		)) 
+		// 	{
+		// 		//post process
+		// 	} else {
+		// 		std::cerr << "[Error] solver failed to converge" << std::endl;
+		// 	}
+		// });
 
 
 		/////////////////////////////////////////////////////////////////////

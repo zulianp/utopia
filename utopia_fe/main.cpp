@@ -31,6 +31,7 @@
 #include "utopia_FSITest.hpp"
 #include "utopia_MSHReaderTest.hpp"
 #include "utopia_BoundaryIntegralTest.hpp"
+#include "utopia_FormEvalTest.hpp"
 
 #include <functional>
 
@@ -66,7 +67,7 @@ int main(const int argc, char *argv[])
 	    runners["asm"] = run_assembly_test;
 	    runners["fsi"] = run_fsi_test;
 	    runners["bit"] = run_boundary_integral_test;
-
+	    runners["fet"] = run_form_eval_test;
 
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;

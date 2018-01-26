@@ -5,12 +5,16 @@
 #include "utopia_FEIsSubTree.hpp"
 
 namespace utopia {
+	///gives false positives
 	template<class Expr>
 	struct IsForm 
 	{	
 		typedef utopia::Reduce< Binary<utopia::Any, utopia::Any, EMultiplies>, Plus> Inner;
+		typedef Binary<utopia::Any, utopia::Any, Multiplies> Inner2;
 
 		static const int has_inner_product = IsSubTree<Inner, Expr>::value;
+		static const int has_scalar_inner_product = IsSubTree<Inner2, Expr>::value;
+
 		static const int has_trial    	   = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
 		static const int has_test          = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
 		static const int has_fun           = has_trial || has_test;

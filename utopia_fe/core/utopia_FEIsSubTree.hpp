@@ -219,6 +219,15 @@ namespace utopia {
 		static const int value = 1;
 	};
 
+	template<class Left, class Right>
+	class IsSubTree<
+			Binary<Any, Any,    Multiplies>,
+			Binary<Left, Right, Multiplies>
+			> {
+	public:
+		static const int value = 1;
+	};
+
 	///rest of specializations
 }
 
