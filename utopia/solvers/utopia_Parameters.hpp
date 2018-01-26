@@ -127,6 +127,7 @@ namespace utopia
         /* ---------- stag. scheme -------------- */
 
           num_alternate_steps_ = 1; 
+          energy_slope_tol_    = 10; 
 
           stay_quiet();
         }
@@ -226,6 +227,7 @@ namespace utopia
 
     /*---------------------------------------------- stag. shceme  ------------------------------*/
     SizeType    num_alternate_steps() const          { return num_alternate_steps_; } 
+    Scalar      energy_slope_tol() const             { return energy_slope_tol_; }
 
 
 
@@ -319,8 +321,8 @@ namespace utopia
 
   
   /*---------------------------------------------- stag. shceme  ------------------------------*/
-    void    num_alternate_steps(const Scalar & num_alternate_steps)             {  num_alternate_steps_ = num_alternate_steps; } 
-    
+    void    num_alternate_steps(const SizeType & num_alternate_steps)           {   num_alternate_steps_ = num_alternate_steps; } 
+    void    energy_slope_tol(const Scalar & energy_slope_tol)                   {   energy_slope_tol_ = energy_slope_tol; }
 
 
 
@@ -407,7 +409,8 @@ namespace utopia
 
 
 
-          Scalar          num_alternate_steps_; 
+          SizeType        num_alternate_steps_; 
+          Scalar          energy_slope_tol_; 
 
     };
 
