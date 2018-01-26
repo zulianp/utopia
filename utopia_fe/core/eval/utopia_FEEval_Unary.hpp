@@ -2,18 +2,18 @@
 #define UTOPIA_FE_EVAL_UNARY_HPP 
 
 namespace utopia {
-	template<class Inner, class Op, class Traits, int Backend>
-	class FEEval< Unary<Inner, Op>, Traits, Backend> {
+	template<class Inner, class Op, class Traits, int Backend, int IsQuadData>
+	class FEEval< Unary<Inner, Op>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::Unary<Inner, Op> Expr;
 		
 	    inline static auto apply(
 	    	const Expr &expr,
 	    	AssemblyContext<Backend> &ctx) -> decltype(
-	    		FEBackend<Backend>::apply_unary(FEEval<Inner, Traits, Backend>::apply(expr.expr(), ctx), expr.operation(), ctx)
+	    		FEBackend<Backend>::apply_unary(FEEval<Inner, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), expr.operation(), ctx)
 	    	)
 	    {
-	    	return FEBackend<Backend>::apply_unary(FEEval<Inner, Traits, Backend>::apply(expr.expr(), ctx), expr.operation(), ctx);
+	    	return FEBackend<Backend>::apply_unary(FEEval<Inner, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), expr.operation(), ctx);
 	    }  
 	};
 

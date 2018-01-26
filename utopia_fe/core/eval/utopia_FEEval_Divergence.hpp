@@ -7,8 +7,8 @@
 
 namespace utopia {
 
-	template<class Tensor, class Traits, int Backend>
-	class FEEval<Divergence<Tensor>, Traits, Backend> {
+	template<class Tensor, class Traits, int Backend, int IsQuadData>
+	class FEEval<Divergence<Tensor>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::Divergence<Tensor> Expr;
 		typedef typename Traits::DivergenceType DivergenceT;

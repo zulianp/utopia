@@ -91,6 +91,14 @@ namespace utopia {
 		return result;
 	}
 
+
+	template<class Left, typename T>
+	inline static T inner(const Wrapper<Left, 2> &left, const libMesh::VectorValue<T> &right)
+	{
+		return inner(left.implementation(), right);
+	}
+
+
 	template<class Left, typename T>
 	inline static T inner(const Wrapper<Left, 1> &left, const libMesh::VectorValue<T> &right)
 	{
@@ -1686,6 +1694,47 @@ namespace utopia {
 			return ret;
 		}
 
+		template<class Left, class Right>
+		static auto inner(const std::vector<Left> &left, const std::vector<Right> &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			assert(left.size() == right.size());
+			const std::size_t n = left.size();
+
+			std::vector<double> ret(n);
+			for(std::size_t i = 0; i < n; ++i) {
+				ret[i] = utopia::inner(left[i], right[i]);
+			}
+
+			return ret;
+		}
+
+		template<class Left, class Right>
+		static auto inner(const std::vector<Left> &left, const std::vector<std::vector<Right>> &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<std::vector<double>>
+		{
+			assert(left.size() == right[0].size());
+
+			const std::size_t n_quad_points = left.size();
+			const std::size_t n_funs = right.size();
+
+			std::vector<std::vector<double>> ret(n_funs);
+
+			for(std::size_t i = 0; i < n_funs; ++i) {
+				ret[i].resize(n_quad_points);
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					ret[i][qp] = utopia::inner(left[qp], right[i][qp]);
+				}
+			}
+
+			return ret;
+		}
+
+		// template<class Left, class Right>
+		// static auto inner(const Left &left, const Right &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		// {
+		// 	assert(false);
+		// 	return std::vector<double>();
+		// }
+
 		template<class Trial, class Test>
 		static Matrix bilinear_form(
 			const Range &trial_range,
@@ -1715,7 +1764,7 @@ namespace utopia {
 			for (uint i = 0; i < n_trial; i++) {
 				for (uint j = 0; j < n_test; j++) {
 					for (uint qp = 0; qp < n_quad_points; qp++) {
-						add(result, test_range.begin() + j, trial_range.begin() + i, inner( get(trial, qp, i), get(test, qp, j) ) * dx[qp]);
+						add(result, test_range.begin() + j, trial_range.begin() + i, utopia::inner( get(trial, qp, i), get(test, qp, j) ) * dx[qp]);
 					}
 				}
 			}
@@ -1740,7 +1789,7 @@ namespace utopia {
 			auto n_test = test_range.extent();
 			for (uint j = 0; j < n_test; j++) {
 				for (uint qp = 0; qp < n_quad_points; qp++) {
-					add(result, test_range.begin() + j, 0, inner( get(fun, qp, 0), get(test, qp, j) ) * dx[qp]);
+					add(result, test_range.begin() + j, 0, utopia::inner( get(fun, qp, 0), get(test, qp, j) ) * dx[qp]);
 				}
 			}
 

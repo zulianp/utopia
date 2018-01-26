@@ -85,7 +85,7 @@ namespace utopia {
 						
 						if(expr.has_block_id() && ctx.block_id() != expr.block_id()) continue;
 
-						t += FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);
+						t += FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx);
 						ctx.set_has_assembled(true);
 					}
 
@@ -98,7 +98,7 @@ namespace utopia {
 					return;
 				}
 
-				auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);
+				auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx);
 				t = r;
 				ctx.set_has_assembled(true);
 			}

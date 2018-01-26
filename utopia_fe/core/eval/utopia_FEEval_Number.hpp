@@ -4,8 +4,8 @@
 #include "utopia_FunctionalTraits.hpp"
 
 namespace utopia {
-	template<class T, class Traits, int Backend>
-	class FEEval<Number<T>, Traits, Backend> {
+	template<class T, class Traits, int Backend, int IsQuadData>
+	class FEEval<Number<T>, Traits, Backend, IsQuadData> {
 	public:
 		template<class AssemblyContext>
 		inline static T apply(const Number<T> &v, const AssemblyContext &) {

@@ -6,8 +6,8 @@
 #include "utopia_FEBackend.hpp"
 
 namespace utopia {
-	template<class Coefficient, class Fun, class Traits, int Backend>
-	class FEEval<Interpolate<Coefficient, Fun>, Traits, Backend> {
+	template<class Coefficient, class Fun, class Traits, int Backend, int IsQuadData>
+	class FEEval<Interpolate<Coefficient, Fun>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::Interpolate<Coefficient, Fun> Expr;
 
@@ -19,8 +19,8 @@ namespace utopia {
 	    } 
 	};
 
-	template<class Coefficient, class Fun, class Traits, int Backend>
-	class FEEval<Gradient<Interpolate<Coefficient, Fun>>, Traits, Backend> {
+	template<class Coefficient, class Fun, class Traits, int Backend, int IsQuadData>
+	class FEEval<Gradient<Interpolate<Coefficient, Fun>>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::Gradient<Interpolate<Coefficient, Fun> > Expr;
 

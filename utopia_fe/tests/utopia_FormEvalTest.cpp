@@ -240,20 +240,16 @@ namespace utopia {
 			// 	 		    + lambda * inner(F_inv_t, grad(u)) * inner(F_inv_t, grad(v))
 			// 	 		  ) * dX;
 
-			// auto b_form = (inner(F, grad(u)) * inner(F, grad(v))) * dX;
+			auto b_form = (inner(P, grad(u)) * inner(P, grad(v))) * dX;
+		
 
-
-			
-			// auto b_form = ( 
-			// 				inner(uk, u) * inner(uk, v)
-			// 	 		  ) * dX;
 
 			static_assert(IsForm<decltype(l_form)>::value,      "must be a form");
 			static_assert(IsForm<decltype(l_form)>::order == 1, "must be a form");
 
 
 			assemble_linear_and_print(l_form);
-			// assemble_bilinear_and_print(b_form);
+			assemble_bilinear_and_print(b_form);
 		}
 
 		static void run_navier_stokes_test(const std::shared_ptr<SpaceInput> &space_input)

@@ -8,17 +8,17 @@
 
 namespace utopia {
 
-	template<class InnerExpr, class Traits, int Backend>
-	class FEEval< Determinant<InnerExpr>, Traits, Backend> {
+	template<class InnerExpr, class Traits, int Backend, int IsQuadData>
+	class FEEval< Determinant<InnerExpr>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::Determinant<InnerExpr> Expr;
 
 	    inline static auto apply(
 	    	const Expr &expr,
 	    	AssemblyContext<Backend> &ctx) -> decltype( 
-	    	FEBackend<Backend>::determinant( FEEval<InnerExpr, Traits, Backend>::apply(expr.expr(), ctx), ctx) )
+	    	FEBackend<Backend>::determinant( FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx) )
 	    {
-	    	return FEBackend<Backend>::determinant( FEEval<InnerExpr, Traits, Backend>::apply(expr.expr(), ctx), ctx);
+	    	return FEBackend<Backend>::determinant( FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx);
 	    } 
 	};
 

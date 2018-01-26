@@ -6,11 +6,11 @@
 
 namespace utopia {
 	// typedef int EXPR_CTX;
-	static const int EXPR_TERMINAL 	   = 0;
-	static const int EXPR_NON_TERMINAL = 1;
+	static const int QUAD_DATA_YES = 1;
+	static const int QUAD_DATA_NO = 0;
 
 
-	template<class Expr, class Traits, int Backend>
+	template<class Expr, class Traits, int Backend, int IsQuadData>
 	class FEEval : public Eval<Expr, Traits, Backend> { 
 	public:
 		//default fallback on eval if does not exists
@@ -20,8 +20,8 @@ namespace utopia {
 		}
 	};
 
-	template<class Tensor, int Order, class Traits, int Backend>
-	class FEEval< Wrapper<Tensor, Order>, Traits, Backend> { 
+	template<class Tensor, int Order, class Traits, int Backend, int IsQuadData>
+	class FEEval< Wrapper<Tensor, Order>, Traits, Backend, IsQuadData> { 
 	public:
 		//default fallback on eval if does not exists
 		inline static const Wrapper<Tensor, Order> &apply(const Wrapper<Tensor, Order> &expr, const AssemblyContext<Backend> &)
@@ -31,8 +31,8 @@ namespace utopia {
 	};
 
 
-	// template<class Expr, class Traits, int Backend>
-	// class NonTerminalFEEval : public FEEval<Expr, Traits, Backend> {};
+	// template<class Expr, class Traits, int Backend, int IsQuadData>
+	// class NonTerminalFEEval : public FEEval<Expr, Traits, Backend, IsQuadData> {};
 	
 
 }	
