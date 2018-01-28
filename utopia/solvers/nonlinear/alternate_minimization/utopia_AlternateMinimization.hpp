@@ -1,3 +1,9 @@
+/*
+* @Author: Alena Kopanicakova
+* @Date:   2018-01-25
+* @Last Modified by:   Alena Kopanicakova
+* @Last Modified time: 2018-01-28
+*/
 #ifndef UTOPIA_SOLVER_ALTERNATE_MINIMIZATION_HPP
 #define UTOPIA_SOLVER_ALTERNATE_MINIMIZATION_HPP
 
