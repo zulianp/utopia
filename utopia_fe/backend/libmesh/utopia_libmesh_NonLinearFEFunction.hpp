@@ -449,6 +449,10 @@ namespace utopia {
 		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 		vec = local_zeros(dof_map.n_local_dofs());
 
+		if(empty(sol)) {
+			sol = local_zeros(local_size(vec));
+		}
+
 		{
 			Write<DSMatrixd> w_m(mat);
 			Write<DVectord>  w_v(vec);
@@ -463,7 +467,6 @@ namespace utopia {
 		// disp(mat);
 		// disp(vec);
 
-		sol = local_zeros(local_size(vec));
 		Factorization<DSMatrixd, DVectord> solver;
 		if(!solver.solve(mat, vec, sol)) {
 			return false;

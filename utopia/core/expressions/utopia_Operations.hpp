@@ -18,6 +18,18 @@
 #include <cmath>
 
 namespace utopia {
+    template<class Expr>
+    Binary<Expr, Number<double>, Minus> operator-(const Expression<Expr> &left, const double &right)
+    {
+        return Binary<Expr, Number<double>, Minus>(left, right); 
+    }
+
+    template<class Expr>
+    double operator-(const Number<double> &left, const Number<double> &right)
+    {
+        return static_cast<double>(left) - static_cast<double>(right);
+    }
+
     template<class Derived>
     Negate<Derived> operator-(const Expression<Derived> &expr) {
         return Negate<Derived>(expr.derived());

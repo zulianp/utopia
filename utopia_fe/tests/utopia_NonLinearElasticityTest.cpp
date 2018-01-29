@@ -24,17 +24,6 @@
 #include <algorithm>
 
 namespace utopia {
-	template<class Expr>
-	Binary<Expr, Number<double>, Minus> operator-(const Expression<Expr> &left, const double &right)
-	{
-		return Binary<Expr, Number<double>, Minus>(left, right); 
-	}
-
-	template<class Expr>
-	double operator-(const Number<double> &left, const Number<double> &right)
-	{
-		return static_cast<double>(left) - static_cast<double>(right);
-	}
 
 	void run_non_linear_elasticity_test(libMesh::LibMeshInit &init)
 	{
@@ -52,10 +41,13 @@ namespace utopia {
 		const double mu = 1.;
 		const double lambda = 1.;
 
+		// auto elem_order = libMesh::FIRST;
+		auto elem_order = libMesh::SECOND;
+
 		////////////////////////////////////////////
 
-		auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::SECOND, "disp_x");
-		auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::SECOND, "disp_y");
+		auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
+		auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
 		auto V = Vx * Vy;
 
 		auto u = trial(V);
@@ -65,49 +57,53 @@ namespace utopia {
 		auto uy = u[1];
 
 		////////////////////////////////////////////
-
 		DVectord sol;
 		auto uk = interpolate(sol, u);
 
 		auto F 		 = identity() + grad(uk);
 		auto F_inv   = inv(F);
 		auto F_inv_t = transpose(F_inv);
-		auto g_uk    = grad(uk);
-
 		auto J = det(F);
-		auto C = F + transpose(F);
-		auto t = trace(C);
 		
-		auto P = mu * (F - F_inv_t) + lambda * logn(J) * F_inv_t;
+		auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 		
 		//compressible neo-hookean
 		auto l_form = inner(P, grad(v)) * dX;
 		auto b_form = (
 			mu * inner(grad(u), grad(v))
-			- inner((lambda * logn(J) - mu) * transpose(F_inv * grad(u)), F_inv * grad(v))
+			- inner((lambda * logn(J) - mu) * transpose(F_inv * grad(u)), F_inv_t * grad(v))
 			+ inner(lambda * F_inv_t, grad(u)) * inner(F_inv_t, grad(v))
 			) * dX;
 
 		////////////////////////////////////////////
 
-		if(nl_solve(
+		libMesh::ExodusII_IO io(*mesh);
+
+		// if(nl_solve(
+		// if(
+
+
+		for(auto t = 1; t < 10; ++t) {
+			solve(
 			equations(
 				b_form == l_form
 				),
 			constraints(
-				boundary_conditions(ux == coeff(0.), {1, 3}),
-				boundary_conditions(uy == coeff(-0.1), {1}),
-				boundary_conditions(uy == coeff(0.1),  {3})
+				boundary_conditions(ux == coeff(0.), {0, 2}),
+				boundary_conditions(uy == coeff(0.05), {0}),
+				boundary_conditions(uy == coeff(-0.05),  {2})
 				),
-			sol)) {
+			sol);
+			// ) {
 
 			convert(sol, *sys.solution);
 			sys.solution->close();
-			libMesh::ExodusII_IO(*mesh).write_equation_systems("neo-hookean.e", *equation_systems);
-	} else {
-		std::cerr << "[Error] solver failed to converge" << std::endl;
+			// io.write_equation_systems("neo-hookean.e", *equation_systems);
+			io.write_timestep("neo-hookean.e", *equation_systems, t, t*0.1);
+		}
+		// } else {
+		// 	std::cerr << "[Error] solver failed to converge" << std::endl;
+		// }
 	}
-
-}
 
 }
