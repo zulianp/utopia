@@ -620,6 +620,23 @@ namespace utopia {
 		}
 
 
+		template<typename T>
+		static auto apply_binary(
+			std::vector<T> &&left,
+			const T &val,
+			const Minus &,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T> 
+		{
+			std::size_t n = left.size();
+
+			for(std::size_t i = 0; i != n; ++i) {
+				left[i] -= val;
+			}
+
+			return std::move(left);
+		}
+
+
 		// template<typename T>
 		// static auto apply_binary(
 		// 	const double val,
@@ -660,6 +677,24 @@ namespace utopia {
 
 			for(std::size_t i = 0; i != n; ++i) {
 				vals[i] *= scale[i];
+			}
+
+			return std::move(vals);
+		}
+
+		template<typename T>
+		static auto multiply(
+			const std::vector<double> &scale,
+			std::vector<std::vector<T>> &&vals,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<std::vector<T>>
+		{
+			std::size_t n_quad_points = scale.size();
+			std::size_t n_funs = vals.size();
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					vals[i][qp] *= scale[qp];
+				}
 			}
 
 			return std::move(vals);
