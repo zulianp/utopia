@@ -1,6 +1,9 @@
 #ifndef UTOPIA_FE_EVAL_UNARY_HPP
 #define UTOPIA_FE_EVAL_UNARY_HPP 
 
+#include "utopia_Eval_Empty.hpp"
+#include "utopia_AssemblyContext.hpp"
+
 namespace utopia {
 	template<class Inner, class Op, class Traits, int Backend, int IsQuadData>
 	class FEEval< Unary<Inner, Op>, Traits, Backend, IsQuadData> {

@@ -25,6 +25,7 @@
 #include "utopia_FEEval_TrialFunction.hpp"
 #include "utopia_FEEval_Unary.hpp"
 #include "utopia_FEEval_Wrapper.hpp"
+#include "utopia_FEEval_SymbolicTensor.hpp"
 
 
 #endif //UTOPIA_FE_EVAL_HPP
