@@ -240,7 +240,9 @@ namespace utopia {
 			// 	 		    + lambda * inner(F_inv_t, grad(u)) * inner(F_inv_t, grad(v))
 			// 	 		  ) * dX;
 
-			auto b_form = (inner(P, grad(u)) * inner(P, grad(v))) * dX;
+			// auto b_form = (inner(P, grad(u)) * inner(P, grad(v))) * dX;
+			auto b_form = inner(transpose(F_inv * grad(u)), F_inv * grad(v)) * dX;
+			// auto b_form = ((lambda * logn(J) - mu) * inner(grad(u), grad(v))) * dX;
 		
 
 

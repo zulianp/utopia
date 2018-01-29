@@ -179,6 +179,12 @@ namespace utopia {
 		typedef libMesh::DenseVector<libMesh::Real> DenseVectorT;
 		typedef std::vector< std::vector<DenseVectorT> > VectorFunctionType;
 
+		template<typename T>
+		using QIJValues = std::vector<std::vector<T>>;
+
+		template<typename T>
+		using QValues = std::vector<T>;
+
 		//////////////////////////////////////////////////////////////////////////////////////////
 		
 		//system of equations
@@ -258,11 +264,11 @@ namespace utopia {
 
 			template<class F, class S, typename T, int Order>
 			inline void operator()(const int, const DirichletBoundaryCondition<
-																Equality<
-																	TrialFunction<S>,
-											 						FunctionCoefficient<F, T, Order>
-											 						>
-											 					> &cond) const
+				Equality<
+				TrialFunction<S>,
+				FunctionCoefficient<F, T, Order>
+				>
+				> &cond) const
 			{
 				std::vector<unsigned int> vars; 
 				make_vars(cond.expr().left(), vars);
@@ -278,11 +284,11 @@ namespace utopia {
 
 			template<class F, typename T>
 			inline void operator()(const int, const DirichletBoundaryCondition<
-																Equality<
-																	TrialFunction<LibMeshFunctionSpace>,
-											 						FunctionCoefficient<F, T, 0>
-											 						>
-											 					> &cond) const
+				Equality<
+				TrialFunction<LibMeshFunctionSpace>,
+				FunctionCoefficient<F, T, 0>
+				>
+				> &cond) const
 			{
 				std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().space_ptr()->subspace_id();
 				std::set<libMesh::boundary_id_type> bt;
@@ -293,9 +299,9 @@ namespace utopia {
 
 			template<class T>
 			inline void operator()(const int, const DirichletBoundaryCondition<
-																Equality<TrialFunction<LibMeshFunctionSpace>,
-																		ConstantCoefficient<T, 0> >
-														> &&cond)
+				Equality<TrialFunction<LibMeshFunctionSpace>,
+				ConstantCoefficient<T, 0> >
+				> &&cond)
 			{
 				std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().space_ptr()->subspace_id();
 				std::set<libMesh::boundary_id_type> bt;
@@ -306,9 +312,9 @@ namespace utopia {
 
 			template<class T>
 			void strong_enforce( DirichletBoundaryCondition<
-								Equality<TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>>,
-								ConstantCoefficient<T, 1> >
-								> &&cond)
+				Equality<TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>>,
+				ConstantCoefficient<T, 1> >
+				> &&cond)
 			{
 				std::cout << "unimplemented constraint exprassion" << std::endl;
 				assert(false);
@@ -455,6 +461,15 @@ namespace utopia {
 			return utopia::transpose(mat);
 		}
 
+		template<typename T>
+		static auto transpose(
+			const libMesh::TensorValue<T> &mat,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> Wrapper<T, 2>
+		{
+			//forward to libmesh backend
+			return mat.transpose();
+		}
+
 
 		template<typename T>
 		static auto transpose(
@@ -465,6 +480,24 @@ namespace utopia {
 			std::vector<Wrapper<T, 2>> ret(n);
 			for(std::size_t i = 0; i < n; ++i) {
 				ret[i] = utopia::transpose(mats[i]);
+			}
+
+			return ret;
+		}
+
+		template<typename T>
+		static auto transpose(
+			std::vector<std::vector<libMesh::TensorValue<T>>> &&mats,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<std::vector<libMesh::TensorValue<T>>>
+		{
+			const auto n = mats.size();
+			std::vector<std::vector<libMesh::TensorValue<T>>> ret = std::forward< std::vector<std::vector<libMesh::TensorValue<T>>> >(mats);
+			for(std::size_t i = 0; i < n; ++i) {
+				ret[i].resize(ret[i].size());
+
+				for(std::size_t qp = 0; qp < ret[i].size(); ++qp) {
+					ret[i][qp] = ret[i][qp].transpose();
+				}
 			}
 
 			return ret;
@@ -518,7 +551,7 @@ namespace utopia {
 			const Multiplies &op,
 			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<T> 
 		{
-			return apply_binary(val, std::move(vals), op, ctx);
+			return apply_binary(val, std::forward<std::vector<T>>(vals), op, ctx);
 		}
 
 
@@ -687,7 +720,7 @@ namespace utopia {
 			const Op &op,
 			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<double>
 		{
-		
+
 			for(auto &v : vals) {
 				v = op.apply(v);
 			}
@@ -924,42 +957,42 @@ namespace utopia {
 			AssemblyContext<LIBMESH_TAG> &ctx,
 			CurlType &ret)
 		{
-				const auto &sub_0 = space[0];
-				JacobianType grads;
+			const auto &sub_0 = space[0];
+			JacobianType grads;
 
-				grad_aux(
-					space,
-					fe_object,
-					ctx,
-					grads);
+			grad_aux(
+				space,
+				fe_object,
+				ctx,
+				grads);
 
-				const uint n_shape_x = fe_object[sub_0.subspace_id()]->n_shape_functions();
-				uint n_shape_functions = 0;
+			const uint n_shape_x = fe_object[sub_0.subspace_id()]->n_shape_functions();
+			uint n_shape_functions = 0;
 
-				space.each([&n_shape_functions, &fe_object, &n_shape_x](const int, LibMeshFunctionSpace &subspace){
-					assert(n_shape_x == fe_object[subspace.subspace_id()]->n_shape_functions());
-					n_shape_functions += fe_object[subspace.subspace_id()]->n_shape_functions();
-				});
+			space.each([&n_shape_functions, &fe_object, &n_shape_x](const int, LibMeshFunctionSpace &subspace){
+				assert(n_shape_x == fe_object[subspace.subspace_id()]->n_shape_functions());
+				n_shape_functions += fe_object[subspace.subspace_id()]->n_shape_functions();
+			});
 
-				const std::size_t n_subspaces = space.n_subspaces();
-				const std::size_t n_quad_points = grads[0].size();
-				const std::size_t dim = sub_0.mesh().mesh_dimension();
+			const std::size_t n_subspaces = space.n_subspaces();
+			const std::size_t n_quad_points = grads[0].size();
+			const std::size_t dim = sub_0.mesh().mesh_dimension();
 
-				ret.resize(n_shape_functions); 
-				for(auto &r : ret) {
-					r.resize(n_quad_points);
-				}
+			ret.resize(n_shape_functions); 
+			for(auto &r : ret) {
+				r.resize(n_quad_points);
+			}
 
-				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
-					uint offset = 0;
-					for(uint i = 0; i < n_subspaces; ++i) {
-						for(uint j = 0; j < n_shape_x; ++j, ++offset) {
-							auto &ret_j  = ret[offset][qp];
-							auto &grad_j = grads[offset][qp];
-							eval_curl(dim, grad_j, ret_j);
-						}
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				uint offset = 0;
+				for(uint i = 0; i < n_subspaces; ++i) {
+					for(uint j = 0; j < n_shape_x; ++j, ++offset) {
+						auto &ret_j  = ret[offset][qp];
+						auto &grad_j = grads[offset][qp];
+						eval_curl(dim, grad_j, ret_j);
 					}
 				}
+			}
 		}
 
 
@@ -1035,7 +1068,7 @@ namespace utopia {
 
 			return ret;
 		}
-	
+
 		template<class Tensor, class Space>
 		static std::vector<DenseVectorT> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<Space>> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
@@ -1119,7 +1152,7 @@ namespace utopia {
 			Write<Vector> w_v(v);
 
 			for(int i = 0; i < s.get(0); ++i) {
-					v.add(i, t(i));
+				v.add(i, t(i));
 			}
 		}
 
@@ -1533,12 +1566,74 @@ namespace utopia {
 		{
 			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
 
-			const std::size_t n_functions = right.size();
-			const std::size_t n_quad_points = right[0].size();
+			const std::size_t n_functions = ret.size();
+			const std::size_t n_quad_points = ret[0].size();
 
 			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 				for(std::size_t i = 0; i < n_functions; ++i) {
 					ret[i][qp] = left * ret[i][qp];
+				}
+			}
+
+
+			return ret;
+		}
+
+		template<class Left, class Space>
+		inline static auto multiply(
+			const std::vector<std::vector<Left>> &left,
+			const Gradient<TestFunction<Space> > &right, 
+			AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type 
+		{
+			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
+
+			const std::size_t n_functions = ret.size();
+			const std::size_t n_quad_points = ret[0].size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] = left[i][qp] * ret[i][qp];
+				}
+			}
+
+
+			return ret;
+		}
+
+		template<class T1, typename T2, typename T3>
+		void multiply(const Wrapper<T1, 2> &left, const libMesh::TensorValue<T2> &right, libMesh::TensorValue<T3> &result)
+		{
+			auto s = size(left);
+			result.zero();
+
+			Read<Wrapper<T1, 2>> r_l(left);
+
+			for(SizeType i = 0; i < s.get(0); ++i) {
+				for(SizeType j = 0; j < s.get(1); ++j) {
+					for(SizeType k = 0; k < LIBMESH_DIM; ++k) {
+						result(i, k) += left.get(i, j) * right(j, k);
+					}
+				}
+			}
+		}
+
+		template<class Left, class Space>
+		inline static auto multiply(
+			const std::vector<Left> &left,
+			const Gradient<TestFunction<Space> > &right, 
+			AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type 
+		{
+			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
+
+			const std::size_t n_functions = ret.size();
+			const std::size_t n_quad_points = ret[0].size();
+
+			auto temp = ret[0][0];
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					temp = ret[i][qp];
+					multiply(left[qp], temp, ret[i][qp]);
 				}
 			}
 
