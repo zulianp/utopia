@@ -71,7 +71,7 @@ namespace utopia {
 //                                     {{1,2}}))
         
         /* with volume tags and reverse operator*/
-        DSMatrixd B_r;
+ /*     DSMatrixd B_r;
         if(!assemble_volume_transfer_r(comm,
          p.coarse_mesh,
          p.fine_mesh,
@@ -88,6 +88,7 @@ namespace utopia {
          1,
          B,
          B_r))
+*/
         {
             std::cerr << "No intersection" << std::endl;
             return;
