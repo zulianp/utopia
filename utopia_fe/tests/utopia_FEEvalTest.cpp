@@ -140,10 +140,6 @@ namespace utopia {
 		Tensor F_inv_t = F.inverse().transpose();
 		const double J = F.det();
 		return mu * H - (1.0 * lambda * std::log(J) - 1.0 * mu) * F_inv_t * H.transpose() * F_inv_t + lambda * F_inv_t.contract(H) * F_inv_t;
-
-		// return mu * H 
-		// 	 // - (1.0 * lambda * std::log(J) - 1.0 * mu) * F_inv_t * H.transpose() * F_inv_t
-		// + lambda * F_inv_t.contract(H) * F_inv_t;
 	}
 
 	std::vector<std::vector<libMesh::TensorValue<double>>> neohookean_linearized(const double mu, const double lambda, const std::vector<std::vector<libMesh::TensorValue<double>>> &H, const std::vector<LMDenseMatrix> &F)
@@ -280,10 +276,6 @@ namespace utopia {
 			auto stress_lin = mu * grad(u) 
 			-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
 			+ inner(lambda * F_inv_t, grad(u)) * F_inv_t;
-
-			// auto stress_lin = mu * grad(u) 
-			// -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
-			// + inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
 			//evaluate 
 			auto eval_grad    = eval(grad(u), ctx);

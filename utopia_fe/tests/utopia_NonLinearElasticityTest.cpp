@@ -63,17 +63,12 @@ namespace utopia {
 		auto F 		 = identity() + grad(uk);
 		auto F_inv   = inv(F);
 		auto F_inv_t = transpose(F_inv);
-		auto J = det(F);
+		auto J       = det(F);
 		
-		auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
+		auto P = -mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 		
 		//compressible neo-hookean
 		auto l_form = inner(P, grad(v)) * dX;
-		// auto b_form = (
-		// 	mu * inner(grad(u), grad(v))
-		// 	- inner((lambda * logn(J) - mu) * transpose(F_inv * grad(u)), F_inv_t * grad(v))
-		// 	+ inner(lambda * F_inv_t, grad(u)) * inner(F_inv_t, grad(v))
-		// 	) * dX;
 
 		auto stress_lin = mu * grad(u) 
 		-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
@@ -88,8 +83,11 @@ namespace utopia {
 		// if(nl_solve(
 		// if(
 
+		DVectord old_sol;
 
-		for(auto t = 1; t < 10; ++t) {
+		for(auto t = 1; t < 100; ++t) {
+			std::cout << "iteration " << t << std::endl;
+			
 			solve(
 			equations(
 				b_form == l_form
@@ -102,10 +100,26 @@ namespace utopia {
 			sol);
 			// ) {
 
+
+
 			convert(sol, *sys.solution);
 			sys.solution->close();
-			// io.write_equation_systems("neo-hookean.e", *equation_systems);
-			io.write_timestep("neo-hookean.e", *equation_systems, t, t*0.1);
+			io.write_timestep("neo-hookean.e", *equation_systems, t, t * 0.1);
+
+			if(!empty(old_sol)) {
+				double diff = norm2(old_sol - sol);
+				if(diff < 1e-8) {
+					break;
+				}
+
+				disp("diff_sol:");
+				disp(diff);
+			} 
+			// else {
+			// 	old_sol = local_zeros(local_size(sol));
+			// }
+
+			old_sol = sol;
 		}
 		// } else {
 		// 	std::cerr << "[Error] solver failed to converge" << std::endl;
