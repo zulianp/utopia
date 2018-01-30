@@ -40,32 +40,32 @@ namespace utopia {
 	}
 
 	template<typename T>
-	void disp(const libMesh::TensorValue<T> &t)
+	void disp(const libMesh::TensorValue<T> &t, std::ostream &os = std::cout)
 	{
 		for(auto i = 0; i < LIBMESH_DIM; ++i) {
 			for(auto j = 0; j < LIBMESH_DIM; ++j) {
-				std::cout << t(i, j) << ", ";
+				os << t(i, j) << ", ";
 			}
 
-			std::cout << "\n";
+			os << "\n";
 		}
 	}
 
 	template<typename T>	
-	void disp(const std::vector<std::vector<T>> &data) {
+	void disp(const std::vector<std::vector<T>> &data, std::ostream &os = std::cout) {
 		for(std::size_t i = 0; i < data.size(); ++i) {
 			for(std::size_t qp = 0; qp < data.size(); ++qp) {
 				std::cout << "[" << i << ", " << qp << "]:\n";
-				disp(data[i][qp]);
+				disp(data[i][qp], os);
 			}
 		}
 	}
 
 	template<typename T>	
-	void disp(const std::vector<T> &data) {
+	void disp(const std::vector<T> &data, std::ostream &os = std::cout) {
 		for(std::size_t qp = 0; qp < data.size(); ++qp) {
 			std::cout << "[" << qp << "]:\n";
-			disp(data[qp]);
+			disp(data[qp], os);
 		}
 	}
 
@@ -117,12 +117,70 @@ namespace utopia {
 		return ret;
 	}
 
-	template<class Tensor>
-	Tensor neohookean_linearized(const double mu, const double lambda, const Tensor &F)
+	libMesh::TensorValue<double> neohookean_first_piola(const double mu, const double lambda, const libMesh::TensorValue<double> &F)
 	{
-		Tensor F_inv_t = transpose(inv(F));
-		const double J = det(F);
+		libMesh::TensorValue<double> F_inv_t = F.inverse().transpose();
+		const double J = F.det();
 		return mu * (F - F_inv_t) + lambda * std::log(J) * F_inv_t;
+	}
+
+	template<class Tensor>
+	Tensor neohookean_linearized(const double mu, const double lambda, const Tensor &H, const Tensor &F)
+	{
+		Tensor F_inv_t = F.inverse().transpose();
+		const double J = F.det();
+		return mu * H - (1.0 * lambda * std::log(J) - 1.0 * mu) * F_inv_t * H.transpose() * F_inv_t + lambda * F_inv_t.contract(H) * F_inv_t;
+	}
+
+	std::vector<std::vector<libMesh::TensorValue<double>>> neohookean_linearized(const double mu, const double lambda, const std::vector<std::vector<libMesh::TensorValue<double>>> &H, const std::vector<LMDenseMatrix> &F)
+	{
+		std::vector<std::vector<libMesh::TensorValue<double>>> ret;
+
+		ret.resize(H.size());
+
+		for(std::size_t i = 0; i < H.size(); ++i) {
+			ret[i].resize(F.size());
+
+			for(std::size_t qp = 0; qp < F.size(); ++qp) {
+				auto F_qp   = make_tensor_value(F[qp]);
+
+				if(size(F[i]).get(0) < 3) {
+					F_qp(2, 2) = 1;
+				}
+
+				auto ret_iqp = neohookean_linearized(mu, lambda, H[i][qp], F_qp);
+				
+				if(size(F[i]).get(0) < 3) {
+					ret_iqp(2, 2) = 0;
+				}
+
+				ret[i][qp] = ret_iqp;
+			}
+		}
+
+		return ret;
+	}
+
+	template<class T>
+	void check_equal(const std::vector<T> &left, const std::vector<T> &right)
+	{
+		for(std::size_t i = 0; i < left.size(); ++i) {
+			libMesh::DenseMatrix<double> mat = left[i].implementation();
+			mat.add(-1., right[i].implementation());
+			assert(approxeq(mat.linfty_norm(), 0.));
+		}
+	}
+
+	void check_equal(
+		const std::vector<std::vector<libMesh::TensorValue<double>>> &left,
+		const std::vector<std::vector<libMesh::TensorValue<double>>> &right)
+	{
+		for(std::size_t i = 0; i < left.size(); ++i) {
+			for(std::size_t qp = 0; qp < left.size(); ++qp) {
+				auto diff = left[i][qp] - right[i][qp];
+				assert(approxeq(diff.norm_sq(), 0.));
+			}
+		}
 	}
 
 	void run_fe_eval_test(libMesh::LibMeshInit &init)
@@ -161,7 +219,6 @@ namespace utopia {
 			sol.set(range(sol).begin(), .0);
 		}
 
-		//
 		AssemblyContext<LIBMESH_TAG> ctx;
 		ctx.set_current_element(0);
 		ctx.set_has_assembled(false);
@@ -182,6 +239,7 @@ namespace utopia {
 		+ inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
 		//evaluate 
+		auto eval_grad    = eval(grad(u), ctx);
 		auto eval_uk 	  = eval(uk, ctx);
 		auto eval_g_uk	  = eval(g_uk, ctx);
 		auto eval_F 	  = eval(F, ctx);
@@ -193,15 +251,10 @@ namespace utopia {
 		auto eval_P = quad_eval(P, ctx);
 		auto eval_P_expected = neohookean_first_piola(mu, lambda, eval_F);
 
-		for(std::size_t i = 0; i < eval_P.size(); ++i) {
-			libMesh::DenseMatrix<double> mat = eval_P[i].implementation();
-			mat.add(-1., eval_P_expected[i].implementation());
-			assert(approxeq(mat.linfty_norm(), 0.));
-		}
+		check_equal(eval_P, eval_P_expected);
 
 		auto eval_stress = quad_eval(stress_lin, ctx);
-
-		disp(eval_stress);
-
+		auto eval_stress_expected = neohookean_linearized(mu, lambda, eval_grad, eval_F);
+		check_equal(eval_stress, eval_stress_expected);
 	}
 }
