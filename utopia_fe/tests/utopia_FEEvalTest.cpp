@@ -51,10 +51,20 @@ namespace utopia {
 		}
 	}
 
+	template<typename T>
+	void disp(const libMesh::VectorValue<T> &t, std::ostream &os = std::cout)
+	{
+		for(auto i = 0; i < LIBMESH_DIM; ++i) {
+			os << t(i) << ", ";
+		}
+
+		os << "\n";
+	}
+
 	template<typename T>	
 	void disp(const std::vector<std::vector<T>> &data, std::ostream &os = std::cout) {
 		for(std::size_t i = 0; i < data.size(); ++i) {
-			for(std::size_t qp = 0; qp < data.size(); ++qp) {
+			for(std::size_t qp = 0; qp < data[i].size(); ++qp) {
 				std::cout << "[" << i << ", " << qp << "]:\n";
 				disp(data[i][qp], os);
 			}
@@ -130,6 +140,10 @@ namespace utopia {
 		Tensor F_inv_t = F.inverse().transpose();
 		const double J = F.det();
 		return mu * H - (1.0 * lambda * std::log(J) - 1.0 * mu) * F_inv_t * H.transpose() * F_inv_t + lambda * F_inv_t.contract(H) * F_inv_t;
+
+		// return mu * H 
+		// 	 // - (1.0 * lambda * std::log(J) - 1.0 * mu) * F_inv_t * H.transpose() * F_inv_t
+		// + lambda * F_inv_t.contract(H) * F_inv_t;
 	}
 
 	std::vector<std::vector<libMesh::TensorValue<double>>> neohookean_linearized(const double mu, const double lambda, const std::vector<std::vector<libMesh::TensorValue<double>>> &H, const std::vector<LMDenseMatrix> &F)
@@ -138,20 +152,28 @@ namespace utopia {
 
 		ret.resize(H.size());
 
+		const auto dim = size(F[0]).get(0);
+
 		for(std::size_t i = 0; i < H.size(); ++i) {
 			ret[i].resize(F.size());
 
-			for(std::size_t qp = 0; qp < F.size(); ++qp) {
-				auto F_qp   = make_tensor_value(F[qp]);
+			assert(H[i].size() == F.size());
 
-				if(size(F[i]).get(0) < 3) {
+			for(std::size_t qp = 0; qp < F.size(); ++qp) {
+				auto F_qp = make_tensor_value(F[qp]);
+
+				if(dim < 3) {
 					F_qp(2, 2) = 1;
 				}
 
 				auto ret_iqp = neohookean_linearized(mu, lambda, H[i][qp], F_qp);
 				
-				if(size(F[i]).get(0) < 3) {
+				if(dim < 3) {
 					ret_iqp(2, 2) = 0;
+					ret_iqp(2, 0) = 0;
+					ret_iqp(2, 1) = 0;
+					ret_iqp(0, 2) = 0;
+					ret_iqp(1, 2) = 0;
 				}
 
 				ret[i][qp] = ret_iqp;
@@ -175,10 +197,28 @@ namespace utopia {
 		const std::vector<std::vector<libMesh::TensorValue<double>>> &left,
 		const std::vector<std::vector<libMesh::TensorValue<double>>> &right)
 	{
+		assert(left.size() == right.size());
+
 		for(std::size_t i = 0; i < left.size(); ++i) {
-			for(std::size_t qp = 0; qp < left.size(); ++qp) {
-				auto diff = left[i][qp] - right[i][qp];
-				assert(approxeq(diff.norm_sq(), 0.));
+			assert(left[i].size() == right[i].size());
+
+			for(std::size_t qp = 0; qp < left[i].size(); ++qp) {
+				auto l = left[i][qp];
+				auto r = right[i][qp];
+				
+				auto diff = l - r;
+
+				const bool ok = approxeq(diff.norm_sq(), 0.);
+
+				if(!ok) {
+					disp("----------------");
+					disp(l);
+					disp("----------------");
+					disp(r);
+					disp("----------------");
+
+				}
+				assert(ok);
 			}
 		}
 	}
@@ -188,10 +228,12 @@ namespace utopia {
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 
 		libMesh::MeshTools::Generation::build_square(*mesh,
-			1, 1,
+			10, 10,
 			0, 1,
 			0, 1.,
-			libMesh::QUAD4);
+			libMesh::QUAD4
+			// libMesh::TRI3
+			);
 
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("eval-test");
@@ -219,42 +261,54 @@ namespace utopia {
 			sol.set(range(sol).begin(), .0);
 		}
 
-		AssemblyContext<LIBMESH_TAG> ctx;
-		ctx.set_current_element(0);
-		ctx.set_has_assembled(false);
-		ctx.init_bilinear( inner(u, v) * dX + inner(grad(u), grad(v)) * dX );
+		for(auto e_it = mesh->active_local_elements_begin(); e_it != mesh->active_local_elements_end(); ++e_it) {
+			AssemblyContext<LIBMESH_TAG> ctx;
+			ctx.set_current_element((*e_it)->id());
+			ctx.set_has_assembled(false);
+			ctx.init_bilinear( inner(u, v) * dX + inner(grad(u), grad(v)) * dX );
 
-		//symbolic expressions
-		auto uk 	 = interpolate(sol, u);
-		auto g_uk    = grad(uk);
-		auto F 		 = identity() + g_uk;
-		auto F_inv   = inv(F);
-		auto F_inv_t = transpose(F_inv);
-		auto J 		 = det(F);
+			//symbolic expressions
+			auto uk 	 = interpolate(sol, u);
+			auto g_uk    = grad(uk);
+			auto F 		 = identity() + g_uk;
+			auto F_inv   = inv(F);
+			auto F_inv_t = transpose(F_inv);
+			auto J 		 = det(F);
 
-		auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
+			auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 
-		auto stress_lin = mu * grad(u) 
-		-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
-		+ inner(lambda * F_inv_t, grad(u)) * F_inv_t;
+			auto stress_lin = mu * grad(u) 
+			-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
+			+ inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
-		//evaluate 
-		auto eval_grad    = eval(grad(u), ctx);
-		auto eval_uk 	  = eval(uk, ctx);
-		auto eval_g_uk	  = eval(g_uk, ctx);
-		auto eval_F 	  = eval(F, ctx);
-		auto eval_F_inv   = eval(F_inv, ctx);
-		auto eval_F_inv_t = eval(F_inv_t, ctx);
-		auto eval_J       = eval(J, ctx);
+			// auto stress_lin = mu * grad(u) 
+			// -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
+			// + inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
-		
-		auto eval_P = quad_eval(P, ctx);
-		auto eval_P_expected = neohookean_first_piola(mu, lambda, eval_F);
+			//evaluate 
+			auto eval_grad    = eval(grad(u), ctx);
+			auto eval_uk 	  = eval(uk, ctx);
+			auto eval_g_uk	  = eval(g_uk, ctx);
+			auto eval_F 	  = eval(F, ctx);
+			auto eval_F_inv   = eval(F_inv, ctx);
+			auto eval_F_inv_t = eval(F_inv_t, ctx);
+			auto eval_J       = eval(J, ctx);
+			auto eval_log_J   = eval(logn(J), ctx);
 
-		check_equal(eval_P, eval_P_expected);
+			// disp("-----------------------------------");
+			// disp(eval_grad);
+			// disp("-----------------------------------");
+			// disp(ctx.fe()[0]->get_dphi());
+			// disp("-----------------------------------");
 
-		auto eval_stress = quad_eval(stress_lin, ctx);
-		auto eval_stress_expected = neohookean_linearized(mu, lambda, eval_grad, eval_F);
-		check_equal(eval_stress, eval_stress_expected);
+			auto eval_P = quad_eval(P, ctx);
+			auto eval_P_expected = neohookean_first_piola(mu, lambda, eval_F);
+
+			check_equal(eval_P, eval_P_expected);
+
+			auto eval_stress = quad_eval(stress_lin, ctx);
+			auto eval_stress_expected = neohookean_linearized(mu, lambda, eval_grad, eval_F);
+			check_equal(eval_stress, eval_stress_expected);
+		}
 	}
 }
