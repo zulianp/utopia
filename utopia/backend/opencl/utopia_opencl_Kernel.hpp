@@ -798,6 +798,7 @@ namespace utopia {
 
 						kernel_ = cl::Kernel(program, get_name().c_str());
 						is_callable_ = true;
+						return is_callable_;
 					}
 
 				private:

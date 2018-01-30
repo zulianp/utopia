@@ -361,6 +361,18 @@ namespace utopia {
         }
     };
 
+    template<class SType, int Order, class Right>
+    class MostDescriptive<SymbolicTensor<SType, Order>, Right > {
+    public:
+        typedef Right Type;
+    };
+
+    template<class Left, class SType, int Order>
+    class MostDescriptive<Left, SymbolicTensor<SType, Order>> {
+    public:
+        typedef Left Type;
+    };
+
     template<class Index>
     class Ghosts : public Expression< Ghosts<Index> > {
     public:

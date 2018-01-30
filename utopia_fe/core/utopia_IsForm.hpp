@@ -33,6 +33,7 @@ namespace utopia {
 		//check if right has a fe function
 		static const int right_has_trial = IsSubTree<TrialFunction<utopia::Any>, Right>::value;
 		static const int right_has_test  = IsSubTree<TestFunction<utopia::Any>,  Right>::value;
+		static const int has_test = left_has_test | right_has_test;
 
 		static const bool is_linear = (right_has_test || left_has_test) && (!left_has_trial && !right_has_trial);
 		static const bool value = (left_has_trial && right_has_test) || (right_has_trial && left_has_test);

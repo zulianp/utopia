@@ -180,7 +180,7 @@ namespace utopia {
 		typedef std::vector< std::vector<DenseVectorT> > VectorFunctionType;
 
 		template<typename T>
-		using QIJValues = std::vector<std::vector<T>>;
+		using IQValues = std::vector<std::vector<T>>;
 
 		template<typename T>
 		using QValues = std::vector<T>;
@@ -617,6 +617,110 @@ namespace utopia {
 			}
 
 			return std::move(left);
+		}
+
+
+		template<typename T1, typename T2, class Op>
+		static auto apply_binary(
+			const IQValues<T1> &left,
+			const QValues<T2>  &right,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> IQValues<T1>
+		{
+			auto ret = left;
+			std::size_t n_funs = left.size();
+			std::size_t n_quad_points = left[0].size();
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					ret[i][qp] = apply_binary(left[i][qp], right[qp], op, ctx);
+				}
+			}
+
+			return ret;
+		}
+
+		template<typename T1, typename T2, class Op>
+		static auto apply_binary(
+			const IQValues<T1> &left,
+			const IQValues<T2> &right,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> IQValues<T1>
+		{
+			auto ret = left;
+			std::size_t n_funs = left.size();
+			std::size_t n_quad_points = left[0].size();
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					ret[i][qp] = apply_binary(left[i][qp], right[i][qp], op, ctx);
+				}
+			}
+
+			return ret;
+		}
+
+		template<typename T1, typename T2, class Op>
+		static auto apply_binary(
+			const QValues<T1> &left,
+			const IQValues<T2> &right,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> IQValues<T1>
+		{
+			IQValues<T1> ret;
+			std::size_t n_funs = right.size();
+			std::size_t n_quad_points = right[0].size();
+
+			ret.resize(n_funs);
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				ret[i].resize(n_quad_points);
+
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					ret[i][qp] = apply_binary(left[qp], right[i][qp], op, ctx);
+				}
+			}
+
+			return ret;
+		}
+
+		template<typename Tensor, class Op>
+		static Wrapper<Tensor, 2> apply_binary(const Wrapper<Tensor, 2> &left, const TensorValueT &right, const Op &op, const AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			Wrapper<Tensor, 2> ret = left;
+
+			Write< Wrapper<Tensor, 2> > w_r(ret);
+			each_read(left, [&right, &op, &ret](const SizeType i, const SizeType j, const double value) {
+				ret.set(i, j, op.apply(value, right(i, j)));
+			});
+
+			return ret;
+		}
+
+		template<typename Tensor, class Op>
+		static TensorValueT apply_binary(const TensorValueT &left, const Wrapper<Tensor, 2> &right, const Op &op, const AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			TensorValueT ret;
+
+			each_read(right, [&left, &op, &ret](const SizeType i, const SizeType j, const double value) {
+				ret(i, j) = op.apply(left(i, j), value);
+			});
+
+			return ret;
+		}
+
+		template<typename Tensor, class Op>
+		static Wrapper<Tensor, 2> apply_binary(const Wrapper<Tensor, 2> &left, const Wrapper<Tensor, 2> &right, const Op &op, const AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			Wrapper<Tensor, 2> ret = left;
+
+			Write< Wrapper<Tensor, 2> > w_(ret);
+			Read< Wrapper<Tensor, 2> > r_(right);
+			each_read(left, [&right, &op, &ret](const SizeType i, const SizeType j, const double value) {
+				ret.set(i, j, op.apply(value, right.get(i, j)));
+			});
+
+			return ret;
 		}
 
 
@@ -1439,6 +1543,107 @@ namespace utopia {
 			return ret;
 		}
 
+		template<class Tensor, int Order>
+		inline static auto multiply(
+			const std::vector<std::vector<double>> &left,
+			const std::vector<Wrapper<Tensor, Order>> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx
+			) -> std::vector<std::vector<Wrapper<Tensor, Order>>>
+		{
+			std::vector< std::vector<Wrapper<Tensor, Order> > > ret(left.size());
+
+			for(std::size_t i = 0; i < left.size(); ++i) {
+				ret[i].resize(left[i].size());
+
+				for(std::size_t qp = 0; qp < right.size(); ++qp) {
+					ret[i][qp] = left[i][qp] * right[qp];
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Tensor, int Order>
+		inline static auto multiply(
+			const IQValues<libMesh::TensorValue<double>> &left,
+			const QValues<Wrapper<Tensor, Order>> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx
+			) -> IQValues<Wrapper<Tensor, Order>>
+		{
+			IQValues<Wrapper<Tensor, Order>> ret(left.size());
+
+			for(std::size_t i = 0; i < left.size(); ++i) {
+				ret[i].resize(left[i].size());
+
+				for(std::size_t qp = 0; qp < right.size(); ++qp) {
+					multiply(left[i][qp], right[qp], ret[i][qp]);
+				}
+			}
+
+			return ret;
+		}
+
+
+		template<class Tensor, int Order>
+		inline static auto multiply(
+			const IQValues<Wrapper<Tensor, Order>> &left,
+			const QValues<Wrapper<Tensor, Order>> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx
+			) -> IQValues<Wrapper<Tensor, Order>>
+		{
+			IQValues<Wrapper<Tensor, Order>> ret(left.size());
+
+			for(std::size_t i = 0; i < left.size(); ++i) {
+				ret[i].resize(left[i].size());
+
+				for(std::size_t qp = 0; qp < right.size(); ++qp) {
+					multiply(left[i][qp], right[qp], ret[i][qp]);
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Tensor, int Order>
+		inline static auto multiply(
+			const QValues<Wrapper<Tensor, Order>> &left,
+			const IQValues<Wrapper<Tensor, Order>> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx
+			) -> IQValues<Wrapper<Tensor, Order>>
+		{
+			IQValues<Wrapper<Tensor, Order>> ret(right.size());
+
+			for(std::size_t i = 0; i < right.size(); ++i) {
+				ret[i].resize(right[i].size());
+
+				for(std::size_t qp = 0; qp < left.size(); ++qp) {
+					multiply(left[qp], right[i][qp], ret[i][qp]);
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Tensor, int Order>
+		inline static auto multiply(
+			const QValues<Wrapper<Tensor, Order>> &left,
+			const IQValues<TensorValueT> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx
+			) -> IQValues<TensorValueT>
+		{
+			IQValues<TensorValueT> ret(right.size());
+
+			for(std::size_t i = 0; i < right.size(); ++i) {
+				ret[i].resize(right[i].size());
+
+				for(std::size_t qp = 0; qp < left.size(); ++qp) {
+					multiply(left[qp], right[i][qp], ret[i][qp]);
+				}
+			}
+
+			return ret;
+		}
+
 		inline static auto multiply(
 			const std::vector<double> &left,
 			const std::vector<double> &right,
@@ -1467,19 +1672,6 @@ namespace utopia {
 			return ret;
 		}
 
-		// inline static auto multiply(
-		// 	std::vector<double> &&left,
-		// 	const std::vector<double> &right,
-		// 	const AssemblyContext<LIBMESH_TAG> &ctx
-		// 	) -> std::vector<double>
-		// {
-
-		// 	for(std::size_t i = 0; i < right.size(); ++i) {
-		// 		left[i] *= right[i];
-		// 	}
-
-		// 	return std::move(left);
-		// }
 
 		template<class Space>
 		inline static auto multiply(
@@ -1539,6 +1731,24 @@ namespace utopia {
 
 					for(uint j = 1; j < s_l.get(1); ++j) {
 						out(i, k) += left.get(i, j) * right(j, k);
+					}	
+				}
+			}
+		}
+
+		inline static void multiply(const TensorValueT &left, const LMDenseMatrix &right, LMDenseMatrix &out)
+		{
+			Size s_l = size(right);
+			Read<LMDenseMatrix> r_l(right);
+
+			out = zeros(size(right));
+
+			for(uint k = 0; k < s_l.get(0); ++k) {
+				for(uint i = 0; i < s_l.get(0); ++i) {
+					out.set(i, k, left(i, 0) * right.get(0, k));
+
+					for(uint j = 1; j < s_l.get(1); ++j) {
+						out.add(i, k, left(i, j) * right.get(j, k));
 					}	
 				}
 			}

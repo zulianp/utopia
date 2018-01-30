@@ -75,6 +75,12 @@ namespace utopia {
 			+ inner(lambda * F_inv_t, grad(u)) * inner(F_inv_t, grad(v))
 			) * dX;
 
+		// auto stress_lin = mu * grad(u) 
+		// 				-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
+		// 				+ lambda * inner(F_inv_t, grad(u)) * F_inv_t;
+		
+		// auto b_form = inner(stress_lin, grad(v)) * dX;
+
 		////////////////////////////////////////////
 
 		libMesh::ExodusII_IO io(*mesh);

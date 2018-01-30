@@ -150,6 +150,8 @@ namespace utopia {
 		typedef utopia::InnerProduct<Traits, IsSplit::order> InnerProductT;
 		typedef typename InnerProductT::Type Result;
 
+		static_assert(IsSplit::order == 0 || IsSplit::has_test, "If it is a form it must have a test function");
+
 	    inline static auto apply(
 	    	const Expr &expr,
 	    	AssemblyContext<Backend> &ctx) -> Result

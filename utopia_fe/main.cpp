@@ -33,6 +33,7 @@
 #include "utopia_BoundaryIntegralTest.hpp"
 #include "utopia_FormEvalTest.hpp"
 #include "utopia_NonLinearElasticityTest.hpp"
+#include "utopia_FEEvalTest.hpp"
 
 #include <functional>
 
@@ -71,6 +72,7 @@ int main(const int argc, char *argv[])
 	    runners["fet"] = run_form_eval_test;
 	    runners["nle_test"] = run_non_linear_elasticity_test;
 	    runners["test_msh_reader"] = test_msh_reader;
+	    runners["fe_test"] = run_fe_eval_test;
 
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
