@@ -166,8 +166,8 @@ namespace utopia {
 			n, n,
 			0, 1,
 			0, 1.,
-			libMesh::QUAD4
-			// libMesh::TRI3
+			// libMesh::QUAD4
+			libMesh::TRI3
 			);
 
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
@@ -193,11 +193,9 @@ namespace utopia {
 		
 		{
 			Write<DVectord> w_sol(sol);
-			// sol.set(range(sol).begin(), .0);
-
 			auto r = range(sol);
 			for(auto i = r.begin(); i != r.end(); ++i) {
-				sol.set(i, i);
+				sol.set(i, i + (i%3)*1.5);
 			}
 		}
 
@@ -238,6 +236,8 @@ namespace utopia {
 			disp(eval_uk);
 			disp("-----------------------------------");
 			disp(eval_grad);
+			disp("-----------------------------------");
+			disp(eval_g_uk);
 			disp("-----------------------------------");
 			disp(eval_F);
 			disp("-----------------------------------");
