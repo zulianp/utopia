@@ -163,16 +163,17 @@ namespace utopia {
 			if(this == &other) return *this;
 			assert(!immutable_);
 			
-			initialized_ = other.initialized_;
-			
-#ifndef NDEBUG
-			immutable_ = other.immutable_;
-#endif 
+
 			
 			if(is_compatible(other) && !other.has_ghosts()) {
 				assert((same_type(other) || this->has_ghosts()) && "Inconsistent vector types. Handle types properly before copying" );
 				assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
 				PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
+				initialized_ = other.initialized_;
+							
+#ifndef NDEBUG
+				immutable_ = other.immutable_;
+#endif 
 				return *this;
 			}
 			
@@ -182,6 +183,14 @@ namespace utopia {
 				PetscErrorHandler::Check(VecDuplicate(other.vec_, &vec_));
 				PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
 				ghost_values_ = other.ghost_values_;
+
+				initialized_ = other.initialized_;
+							
+#ifndef NDEBUG
+				immutable_ = other.immutable_;
+#endif 
+			} else {
+				initialized_ = false;
 			}
 			
 			return *this;

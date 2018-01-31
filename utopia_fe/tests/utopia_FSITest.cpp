@@ -155,8 +155,8 @@ namespace utopia {
 
 		const double mu_f  = 1.;
 		const double rho_f = 0.1;
-		const double mu_s  = 50.;
-		const double lambda_s = 50.;
+		const double mu_s  = 1.;
+		const double lambda_s = 10.;
 
 		const double dt = 0.01;
 		
@@ -324,7 +324,7 @@ namespace utopia {
 
 	    		//FIXME
 	    		if(outer_iter > 0) {
-	    			converged = diff < 1e-5;
+	    			converged = diff < 1e-7;
 	    			if(converged) break;
 	    		}
 
@@ -382,7 +382,7 @@ namespace utopia {
 	     	
 	     		// converged = true;
 	     		++outer_iter;
-	     		if(outer_iter > 10) break;
+	     		if(outer_iter > 20) break;
 	     	}
 
 	     	

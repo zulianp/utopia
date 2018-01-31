@@ -244,6 +244,20 @@ namespace utopia {
 			result = sqrt(result);
 		}
 	};
+
+	template<class Derived, int Backend>
+	static auto eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
+	-> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
+	{
+		return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx);
+	}
+
+	template<class Derived, int Backend>
+	static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
+	-> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx) )
+	{
+		return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx);
+	}
 }
 
 #endif //UTOPIA_LIBMESH_LINEAR_FORM_EVAL_HPP

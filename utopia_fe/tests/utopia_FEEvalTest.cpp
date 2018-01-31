@@ -25,60 +25,6 @@
 
 namespace utopia {
 
-	template<class Derived, int Backend>
-	static auto eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
-	-> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
-	{
-		return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx);
-	}
-
-	template<class Derived, int Backend>
-	static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
-	-> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx) )
-	{
-		return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx);
-	}
-
-	template<typename T>
-	void disp(const libMesh::TensorValue<T> &t, std::ostream &os = std::cout)
-	{
-		for(auto i = 0; i < LIBMESH_DIM; ++i) {
-			for(auto j = 0; j < LIBMESH_DIM; ++j) {
-				os << t(i, j) << ", ";
-			}
-
-			os << "\n";
-		}
-	}
-
-	template<typename T>
-	void disp(const libMesh::VectorValue<T> &t, std::ostream &os = std::cout)
-	{
-		for(auto i = 0; i < LIBMESH_DIM; ++i) {
-			os << t(i) << ", ";
-		}
-
-		os << "\n";
-	}
-
-	template<typename T>	
-	void disp(const std::vector<std::vector<T>> &data, std::ostream &os = std::cout) {
-		for(std::size_t i = 0; i < data.size(); ++i) {
-			for(std::size_t qp = 0; qp < data[i].size(); ++qp) {
-				std::cout << "[" << i << ", " << qp << "]:\n";
-				disp(data[i][qp], os);
-			}
-		}
-	}
-
-	template<typename T>	
-	void disp(const std::vector<T> &data, std::ostream &os = std::cout) {
-		for(std::size_t qp = 0; qp < data.size(); ++qp) {
-			std::cout << "[" << qp << "]:\n";
-			disp(data[qp], os);
-		}
-	}
-
 	libMesh::TensorValue<double> make_tensor_value(const LMDenseMatrix &in)
 	{
 		libMesh::TensorValue<double> ret;
@@ -99,22 +45,21 @@ namespace utopia {
 		return ret;
 	}
 
+	libMesh::TensorValue<double> neohookean_first_piola(const double mu, const double lambda, const libMesh::TensorValue<double> &F)
+	{
+		libMesh::TensorValue<double> F_inv_t = F.inverse().transpose();
+		return mu * (F - F_inv_t) + (lambda * std::log(F.det())) * F_inv_t;
+	}
 
 	LMDenseMatrix neohookean_first_piola(const double mu, const double lambda, const LMDenseMatrix &F_in)
 	{
 		libMesh::TensorValue<double> F = make_tensor_value(F_in);
-		
 		if(size(F_in).get(0) < 3) {
 			F(2, 2) = 1;
 		}
 
-		libMesh::TensorValue<double> F_inv_t = F.inverse().transpose();
-		const double J = F.det();
-
-		libMesh::TensorValue<double>  P = mu * (F - F_inv_t) + (lambda * std::log(J)) * F_inv_t;
-		return make_wrapper(size(F_in).get(0), P);
+		return make_wrapper(size(F_in).get(0), neohookean_first_piola(mu, lambda, F));
 	}
-
 
 	std::vector<LMDenseMatrix> neohookean_first_piola(const double mu, const double lambda, const std::vector<LMDenseMatrix> &F)
 	{
@@ -125,13 +70,6 @@ namespace utopia {
 		}
 
 		return ret;
-	}
-
-	libMesh::TensorValue<double> neohookean_first_piola(const double mu, const double lambda, const libMesh::TensorValue<double> &F)
-	{
-		libMesh::TensorValue<double> F_inv_t = F.inverse().transpose();
-		const double J = F.det();
-		return mu * (F - F_inv_t) + lambda * std::log(J) * F_inv_t;
 	}
 
 	template<class Tensor>
@@ -223,8 +161,9 @@ namespace utopia {
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 
+		const int n = 1;
 		libMesh::MeshTools::Generation::build_square(*mesh,
-			10, 10,
+			n, n,
 			0, 1,
 			0, 1.,
 			libMesh::QUAD4
@@ -254,15 +193,18 @@ namespace utopia {
 		
 		{
 			Write<DVectord> w_sol(sol);
-			sol.set(range(sol).begin(), .0);
+			// sol.set(range(sol).begin(), .0);
+
+			auto r = range(sol);
+			for(auto i = r.begin(); i != r.end(); ++i) {
+				sol.set(i, i);
+			}
 		}
 
-		for(auto e_it = mesh->active_local_elements_begin(); e_it != mesh->active_local_elements_end(); ++e_it) {
-			AssemblyContext<LIBMESH_TAG> ctx;
-			ctx.set_current_element((*e_it)->id());
-			ctx.set_has_assembled(false);
-			ctx.init_bilinear( inner(u, v) * dX + inner(grad(u), grad(v)) * dX );
+		disp(sol);
 
+		AssemblyContext<LIBMESH_TAG> ctx;
+		for(auto e_it = mesh->active_local_elements_begin(); e_it != mesh->active_local_elements_end(); ++e_it) {
 			//symbolic expressions
 			auto uk 	 = interpolate(sol, u);
 			auto g_uk    = grad(uk);
@@ -277,6 +219,10 @@ namespace utopia {
 			-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
 			+ inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
+			ctx.set_current_element((*e_it)->id());
+			ctx.set_has_assembled(false);
+			ctx.init( inner(stress_lin, grad(v)) * dX == inner(P, grad(v)) );
+
 			//evaluate 
 			auto eval_grad    = eval(grad(u), ctx);
 			auto eval_uk 	  = eval(uk, ctx);
@@ -287,11 +233,14 @@ namespace utopia {
 			auto eval_J       = eval(J, ctx);
 			auto eval_log_J   = eval(logn(J), ctx);
 
-			// disp("-----------------------------------");
-			// disp(eval_grad);
-			// disp("-----------------------------------");
-			// disp(ctx.fe()[0]->get_dphi());
-			// disp("-----------------------------------");
+			disp("-----------------------------------");
+			disp("-----------------------------------");
+			disp(eval_uk);
+			disp("-----------------------------------");
+			disp(eval_grad);
+			disp("-----------------------------------");
+			disp(eval_F);
+			disp("-----------------------------------");
 
 			auto eval_P = quad_eval(P, ctx);
 			auto eval_P_expected = neohookean_first_piola(mu, lambda, eval_F);

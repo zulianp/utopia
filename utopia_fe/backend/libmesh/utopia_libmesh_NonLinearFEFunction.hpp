@@ -169,7 +169,7 @@ namespace utopia {
 		auto &dof_map = space.dof_map();
 
 		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-								  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
 		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 		vec = local_zeros(dof_map.n_local_dofs());
@@ -183,18 +183,18 @@ namespace utopia {
 	}
 
 	template<class Expr>
-	 bool assemble(
-	 	const Expr &expr,
-	 	DSMatrixd &mat,
-	 	const bool first = true)
-	 { 
+	bool assemble(
+		const Expr &expr,
+		DSMatrixd &mat,
+		const bool first = true)
+	{ 
 		typedef typename FindFunctionSpace<Expr>::Type FunctionSpaceT;
 		auto &space = find_space<FunctionSpaceT>(expr);
 
 		if(first) {
 			auto &dof_map  = space.dof_map();
 			auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-									  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+				*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 			
 			mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 		} else {
@@ -216,11 +216,11 @@ namespace utopia {
 
 
 	template<class Expr, typename T>
-	 bool assemble(
-	 	const Expr &expr,
-	 	libMesh::SparseMatrix<T> &mat,
-	 	const bool first = true)
-	 { 
+	bool assemble(
+		const Expr &expr,
+		libMesh::SparseMatrix<T> &mat,
+		const bool first = true)
+	{ 
 		typedef typename FindFunctionSpace<Expr>::Type FunctionSpaceT;
 		auto &space = find_space<FunctionSpaceT>(expr);
 
@@ -240,11 +240,11 @@ namespace utopia {
 
 
 	template<class Expr>
-	 bool assemble(
-	 	const Expr &expr,
-	 	DVectord &vec,
-	 	const bool first = true)
-	 { 
+	bool assemble(
+		const Expr &expr,
+		DVectord &vec,
+		const bool first = true)
+	{ 
 		typedef typename FindFunctionSpace<Expr>::Type FunctionSpaceT;
 		auto &space = find_space<FunctionSpaceT>(expr);
 
@@ -304,20 +304,20 @@ namespace utopia {
 		{
 			// assert(false && "not implemented");
 			value = dot(x, buff_mat * x) - dot(x, buff_vec);
-		    return true;
+			return true;
 		}
 
 		virtual bool gradient(const Vector &x, Vector &result) const override
 		{
 			result = buff_mat * x - buff_vec;
-		    return true;
+			return true;
 		}
 
 
 		virtual bool hessian(const Vector &, Matrix &H) const override
 		{
 			H = buff_mat;
-		    return true;
+			return true;
 		}
 
 		virtual bool update(const Vector &x) override { 
@@ -328,7 +328,7 @@ namespace utopia {
 			if(first_) {
 				auto &dof_map = space.dof_map();
 				auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-										  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+					*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 				
 				buff_mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 				buff_vec = local_zeros(dof_map.n_local_dofs());
@@ -348,10 +348,12 @@ namespace utopia {
 				const_cast<Vector &>(x).implementation().update_ghosts();
 
 				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-					element_assemble_expression_v<FunctionSpaceT>(it, eqs_, buff_mat, buff_vec);
+					element_assemble_expression_v<FunctionSpaceT>(it, eqs_, buff_mat, buff_vec, false);
 				}
 			}	
 
+			apply_boundary_conditions(space.dof_map(), buff_mat, buff_vec);
+			first_ = false;
 			return true;
 		}
 
@@ -412,12 +414,12 @@ namespace utopia {
 		libMesh::ExodusII_IO io(space.mesh());
 		
 		for(std::size_t ts = 0; ts < n_ts; ++ts) {
-		 	if(!solver.solve(nl_fun, sol)) return false;
-		 	old_sol = sol;
+			if(!solver.solve(nl_fun, sol)) return false;
+			old_sol = sol;
 
-		 	convert(sol, *space.equation_system().solution);
-		 	space.equation_system().solution->close();
-		 	io.write_timestep(space.equation_system().name() + ".e", space.equation_systems(), ts + 1, ts * dt);
+			convert(sol, *space.equation_system().solution);
+			space.equation_system().solution->close();
+			io.write_timestep(space.equation_system().name() + ".e", space.equation_systems(), ts + 1, ts * dt);
 		}
 
 		return true;
@@ -441,7 +443,7 @@ namespace utopia {
 		auto &m = space.mesh();
 		auto &dof_map = space.dof_map();
 		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-								  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
 		DSMatrixd mat;
 		DVectord vec;
@@ -459,10 +461,11 @@ namespace utopia {
 
 
 			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-				element_assemble_expression_v<FunctionSpaceT>(it, eqs, mat, vec);
+				element_assemble_expression_v<FunctionSpaceT>(it, eqs, mat, vec, false);
 			}
 		}	
 
+		apply_boundary_conditions(dof_map, mat, vec);
 
 		// disp(mat);
 		// disp(vec);

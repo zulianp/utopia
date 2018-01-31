@@ -111,6 +111,13 @@ namespace utopia {
 		}
 
 		template<class Expr>
+		void init(const Expr &expr) 
+		{		
+			init_fe_from(expr);
+		}
+
+
+		template<class Expr>
 		void init_bilinear(const Expr &expr) 
 		{		
 			static_assert( (IsSubTree<TrialFunction<utopia::Any>, Expr>::value), "could not find trial function" );

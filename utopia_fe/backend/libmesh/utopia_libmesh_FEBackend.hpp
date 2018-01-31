@@ -19,6 +19,46 @@
 namespace utopia {
 
 	template<typename T>
+	void disp(const libMesh::TensorValue<T> &t, std::ostream &os = std::cout)
+	{
+		for(auto i = 0; i < LIBMESH_DIM; ++i) {
+			for(auto j = 0; j < LIBMESH_DIM; ++j) {
+				os << t(i, j) << ", ";
+			}
+
+			os << "\n";
+		}
+	}
+
+	template<typename T>
+	void disp(const libMesh::VectorValue<T> &t, std::ostream &os = std::cout)
+	{
+		for(auto i = 0; i < LIBMESH_DIM; ++i) {
+			os << t(i) << ", ";
+		}
+
+		os << "\n";
+	}
+
+	template<typename T>	
+	void disp(const std::vector<std::vector<T>> &data, std::ostream &os = std::cout) {
+		for(std::size_t i = 0; i < data.size(); ++i) {
+			for(std::size_t qp = 0; qp < data[i].size(); ++qp) {
+				std::cout << "[" << i << ", " << qp << "]:\n";
+				disp(data[i][qp], os);
+			}
+		}
+	}
+
+	template<typename T>	
+	void disp(const std::vector<T> &data, std::ostream &os = std::cout) {
+		for(std::size_t qp = 0; qp < data.size(); ++qp) {
+			std::cout << "[" << qp << "]:\n";
+			disp(data[qp], os);
+		}
+	}
+
+	template<typename T>
 	inline static T inner(const libMesh::VectorValue<T> &left, const libMesh::VectorValue<T> &right)
 	{
 		return left * right;
@@ -868,6 +908,47 @@ namespace utopia {
 		}
 
 
+		template<class T, int Order>
+		static auto apply_unary(
+			std::vector<Wrapper<T, Order>> &&vals,
+			const Minus &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<Wrapper<T, Order>>
+		{
+			for(auto &v : vals) {
+				v *= -1.;
+			}
+
+			return std::move(vals);
+		}
+
+
+		static auto apply_unary(
+			std::vector<TensorValueT> &&vals,
+			const Minus &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<TensorValueT>
+		{
+			for(auto &v : vals) {
+				v *= -1.;
+			}
+
+			return std::move(vals);
+		}
+
+		static auto apply_unary(
+			std::vector<std::vector<TensorValueT>> &&vals,
+			const Minus &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<std::vector<TensorValueT>>
+		{
+			for(auto &v : vals) {
+				for(auto &vv : v) {
+				 	vv *= -1.;
+				 }
+			}
+
+			return std::move(vals);
+		}
+
+
 		// vector fe functions
 		static void fun_aux(
 			ProductFunctionSpace<LibMeshFunctionSpace> &space,
@@ -1353,7 +1434,7 @@ namespace utopia {
 			std::vector<libMesh::dof_id_type> indices;
 
 			space_ptr->each([&](const int sub_index, const LibMeshFunctionSpace &space) {
-				dof_map.dof_indices(elem_ptr, indices, space_ptr->subspace_id());
+				dof_map.dof_indices(elem_ptr, indices, space.subspace_id());
 				prod_indices.insert(prod_indices.end(), indices.begin(), indices.end());
 			});
 

@@ -35,20 +35,33 @@ namespace utopia {
 			0, 1.,
 			libMesh::QUAD8);
 
+		// libMesh::MeshTools::Generation::build_cube(*mesh,
+		// 	5, 5, 5,
+		// 	0, 1,
+		// 	0, 1.,
+		// 	0, 1.,
+		// 	libMesh::HEX27);
+
+		const auto dim = mesh->mesh_dimension();
+
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("neo-hookean");
 
 		const double mu = 1.;
 		const double lambda = 1.;
 
-		// auto elem_order = libMesh::FIRST;
-		auto elem_order = libMesh::SECOND;
+		auto elem_order = libMesh::FIRST;
+		// auto elem_order = libMesh::SECOND;
 
 		////////////////////////////////////////////
 
 		auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
 		auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
 		auto V = Vx * Vy;
+
+		if(dim == 3) {
+			V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
+		}
 
 		auto u = trial(V);
 		auto v = test(V);
@@ -65,7 +78,7 @@ namespace utopia {
 		auto F_inv_t = transpose(F_inv);
 		auto J       = det(F);
 		
-		auto P = -mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
+		auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 		
 		//compressible neo-hookean
 		auto l_form = inner(P, grad(v)) * dX;
@@ -80,27 +93,37 @@ namespace utopia {
 
 		libMesh::ExodusII_IO io(*mesh);
 
-		// if(nl_solve(
-		// if(
-
 		DVectord old_sol;
-
 		for(auto t = 1; t < 100; ++t) {
 			std::cout << "iteration " << t << std::endl;
 			
-			solve(
-			equations(
-				b_form == l_form
-				),
-			constraints(
-				boundary_conditions(ux == coeff(0.), {0, 2}),
-				boundary_conditions(uy == coeff(0.05), {0}),
-				boundary_conditions(uy == coeff(-0.05),  {2})
-				),
-			sol);
-			// ) {
+			if(dim == 3) {
+				auto uz = u[2];
 
+				solve(
+					equations(
+						b_form == l_form
+						),
+					constraints(
+						boundary_conditions(ux == coeff(0.),    {1, 3}),
+						boundary_conditions(uz == coeff(0.),    {1, 3}),
+						boundary_conditions(uy == coeff(0.05),  {1}),
+						boundary_conditions(uy == coeff(-0.05), {3})
+						),
+					sol);
+			} else {
 
+				solve(
+					equations(
+						b_form == l_form
+						),
+					constraints(
+						boundary_conditions(ux == coeff(0.),    {0, 2}),
+						boundary_conditions(uy == coeff(0.05),  {0}),
+						boundary_conditions(uy == coeff(-0.05), {2})
+						),
+					sol);
+			}
 
 			convert(sol, *sys.solution);
 			sys.solution->close();
@@ -115,15 +138,9 @@ namespace utopia {
 				disp("diff_sol:");
 				disp(diff);
 			} 
-			// else {
-			// 	old_sol = local_zeros(local_size(sol));
-			// }
 
 			old_sol = sol;
 		}
-		// } else {
-		// 	std::cerr << "[Error] solver failed to converge" << std::endl;
-		// }
 	}
 
 }
