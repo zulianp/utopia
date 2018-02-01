@@ -1,13 +1,13 @@
 /*
 * @Author: Alena Kopanicakova
-* @Date:   2018-01-25
-* @Last Modified by:   Alena Kopanicakova
+* @Date:    2018-01-25
+* @Last Modified by:   kopanicakova
 * @Last Modified time: 2018-01-28
 */
 #ifndef UTOPIA_SOLVER_ALTERNATE_MINIMIZATION_HPP
 #define UTOPIA_SOLVER_ALTERNATE_MINIMIZATION_HPP
 
-#include "utopia_Core.hpp"
+#include "utopia_Core.hpp" 
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_NonLinearSolver.hpp"
@@ -52,9 +52,10 @@ namespace utopia
             energy_0 = energy_1 + energy_2; 
             energy_prev = energy_0; 
 
-            // CSVWriter writer; 
-            // writer.open_file("alternate_output_test.csv"); 
-            // writer.write_table_header({"it", "beta"}); 
+            CSVWriter writer; 
+            writer.open_file("/Users/alenakopanicakova/Desktop/tex_files/papers/multilevel_for_PF/results/alternate_2D_tension_beta_test.csv"); 
+            // writer.open_file("alternate_2D_tension_beta_test.csv"); 
+            // writer.write_table_row<std::string>({"it", "beta"}); 
 
             Scalar beta    = 9e9; 
             SizeType it     = 1; 
@@ -80,7 +81,8 @@ namespace utopia
                 it++; 
             }
 
-            // writer.close_file(); 
+            writer.write_table_row<SizeType>({(it-1)}); 
+            writer.close_file(); 
             return true;
         }
 

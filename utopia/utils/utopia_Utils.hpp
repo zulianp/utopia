@@ -130,41 +130,8 @@ namespace utopia
     	 		pFile = fopen(file_name.c_str(), "ab+");
     	 	}
 
-
-    	 	void write_table_header(const std::vector<std::string> & variables)
-    	 	{
-    	 		if (pFile!=NULL)
-    	 		{
-	    	 		for(auto i = 0;  i < variables.size(); i++ )
-	    	 		{
-	    	 			if(i < variables.size() -1)
-	    	 				fprintf (pFile,"%s,", (variables[i]).c_str());
-	    	 			else
-	    	 				fprintf (pFile,"%s", (variables[i]).c_str());
-
-	    	 		}
-
-	    	 		fprintf (pFile, "\n");
-	    	 	}
-    	 	}
-
     	 	template<class T>
-    	 	void write_table_row(const std::vector<T> vars)
-    	 	{
-    	 		if (pFile!=NULL)
-    	 		{
-	    	 		for(auto i = 0;  i < vars.size(); i++ )
-	    	 		{
-	    	 			if(i < vars.size() -1)
-	    	 				fprintf (pFile,"%f,", vars[i]);
-	    	 			else
-	    	 				fprintf (pFile,"%f", vars[i]);
-	    	 		}
-
-	    	 		fprintf (pFile, "\n");
-	    	 	}
-
-    	 	}
+    	 	void write_table_row(const std::vector<T> vars); 
 
     	 	void close_file()
     	 	{

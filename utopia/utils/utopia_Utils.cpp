@@ -1,3 +1,9 @@
+/*
+* @Author: kopanicakova
+* @Date:   2017-07-04 00:18:50
+* @Last Modified by:   kopanicakova
+* @Last Modified time: 2018-01-28 22:03:10
+*/
 #include "utopia_Utils.hpp"
 
 #include <string>
@@ -86,6 +92,73 @@ namespace utopia
 	        v.push_back(s);
 	    return v;
 	}
+
+
+	template<>
+ 	void CSVWriter::write_table_row(const std::vector<double> vars)
+ 	{
+ 		if (pFile!=NULL && mpi_world_rank() == 0)
+ 		{
+	 		for(auto i = 0;  i < vars.size(); i++ )
+	 		{
+	 			if(i < vars.size() -1)
+	 				fprintf (pFile,"%f,", vars[i]);
+	 			else
+	 				fprintf (pFile,"%f", vars[i]);
+	 		}
+	 		fprintf (pFile, "\n");
+	 	}
+ 	}
+
+ 	template<>
+ 	void CSVWriter::write_table_row(const std::vector<int> vars)
+ 	{
+ 		if (pFile!=NULL && mpi_world_rank() == 0)
+ 		{
+	 		for(auto i = 0;  i < vars.size(); i++ )
+	 		{	
+	 			if(i < vars.size() -1)
+	 				fprintf (pFile,"%d,", vars[i]);
+	 			else
+	 				fprintf (pFile,"%d", vars[i]);
+	 		}
+	 		fprintf (pFile, "\n");
+	 	}
+ 	}
+
+ 	template<>
+ 	void CSVWriter::write_table_row(const std::vector<char> vars)
+ 	{
+ 			if (pFile!=NULL && mpi_world_rank() == 0)
+ 		{
+	 		for(auto i = 0;  i < vars.size(); i++ )
+	 		{	
+	 			if(i < vars.size() -1)
+	 				fprintf (pFile,"%c,", vars[i]);
+	 			else
+	 				fprintf (pFile,"%c", vars[i]);
+	 		}
+	 		fprintf (pFile, "\n");
+	 	}
+
+ 	}
+
+ 	template<>
+ 	void CSVWriter::write_table_row(const std::vector<std::string> vars)
+ 	{
+ 			if (pFile!=NULL && mpi_world_rank() == 0)
+ 		{
+	 		for(auto i = 0;  i < vars.size(); i++ )
+	 		{	
+	 			if(i < vars.size() -1)
+	 				fprintf (pFile,"%s,", vars[i].c_str());
+	 			else
+	 				fprintf (pFile,"%s", vars[i].c_str());
+	 		}
+	 		fprintf (pFile, "\n");
+	 	}
+
+ 	}
 
 
 }
