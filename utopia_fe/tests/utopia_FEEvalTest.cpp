@@ -203,10 +203,12 @@ namespace utopia {
 
 		AssemblyContext<LIBMESH_TAG> ctx;
 		for(auto e_it = mesh->active_local_elements_begin(); e_it != mesh->active_local_elements_end(); ++e_it) {
+			//NEOHOOKEAN---------------------------------------------------
 			//symbolic expressions
 			auto uk 	 = interpolate(sol, u);
 			auto g_uk    = grad(uk);
 			auto F 		 = identity() + g_uk;
+			auto F_t 	 = transpose(F);
 			auto F_inv   = inv(F);
 			auto F_inv_t = transpose(F_inv);
 			auto J 		 = det(F);
@@ -250,6 +252,34 @@ namespace utopia {
 			auto eval_stress = quad_eval(stress_lin, ctx);
 			auto eval_stress_expected = neohookean_linearized(mu, lambda, eval_grad, eval_F);
 			check_equal(eval_stress, eval_stress_expected);
+
+
+			//////////////////////////////////////////////////////////////
+
+			auto C = F_t * F;
+			auto E = 0.5 * (C - identity());
+			auto S = 2.0 * mu * E + lambda * (trace(E) * identity());
+			auto C_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
+
+			auto stress_lin_2 = //F * 
+				(
+				(2.0 * mu) * C_lin + lambda * (trace(C_lin) * identity())
+				);// + grad(u) * S;
+
+			auto eval_C = eval(C, ctx);
+			auto eval_E = eval(E, ctx);
+			auto eval_trace_ExI = eval(trace(E) * identity(), ctx);
+			auto eval_S = eval(S, ctx);
+			auto eval_C_lin = eval(C_lin, ctx);
+			// auto eval_stress_lin_2 = eval(stress_lin_2, ctx);
+
+			// auto ccc = quad_eval((2.0 * mu) * C_lin + (trace(C_lin) * identity()), ctx);
+
+
+
+			// disp(eval_stress_lin_2);
+
+
 		}
 	}
 }

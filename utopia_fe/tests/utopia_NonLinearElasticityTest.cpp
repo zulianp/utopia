@@ -49,7 +49,7 @@ namespace utopia {
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("neo-hookean");
 
-		const double mu = 5.;
+		const double mu = 1.;
 		const double lambda = 1.;
 
 		auto elem_order = libMesh::FIRST;
@@ -100,6 +100,9 @@ namespace utopia {
 		// 	2.0 * mu * strain_lin + lambda * (trace(strain_lin) * identity())
 		// 	) + grad(u) * S;
 
+
+		/////////////////////////////
+
 		auto l_form = inner(P, grad(v)) * dX;
 		auto b_form = inner(stress_lin, grad(v)) * dX;
 
@@ -132,9 +135,9 @@ namespace utopia {
 						b_form == l_form
 						),
 					constraints(
-						boundary_conditions(ux == coeff(0.),    {0, 2}),
-						boundary_conditions(uy == coeff(0.00),  {0}),
-						boundary_conditions(uy == coeff(0.1), {2})
+						boundary_conditions(ux == coeff(0.),  {0, 2}),
+						boundary_conditions(uy == coeff(0.1), {0}),
+						boundary_conditions(uy == coeff(-0.1), {2})
 						),
 					sol);
 			}

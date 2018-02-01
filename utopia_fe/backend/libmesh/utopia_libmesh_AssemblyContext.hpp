@@ -139,6 +139,8 @@ namespace utopia {
 
 			assert((static_cast<bool>(space_ptr)));
 
+			mesh_dimension_ = space_ptr->mesh().mesh_dimension();
+
 			const std::size_t n_vars = space_ptr->equation_system().n_vars();
 			offset.resize(n_vars + 1);
 			offset[0] = 0;
@@ -248,7 +250,7 @@ namespace utopia {
 		}
 
 		LibMeshAssemblyContext()
-		: has_assembled_(false)
+		: has_assembled_(false), mesh_dimension_(-1)
 		{
 			active_values_ = std::make_shared<LibMeshAssemblyValues>();
 		}
@@ -266,6 +268,12 @@ namespace utopia {
 			return has_assembled_;
 		}
 
+
+		inline unsigned int mesh_dimension() const
+		{
+			return mesh_dimension_;
+		}
+
 	private:
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
@@ -274,6 +282,7 @@ namespace utopia {
 		std::shared_ptr<LibMeshAssemblyValues> volume_values_;
 		std::vector< std::shared_ptr<LibMeshAssemblyValues> > surface_values_;
 		bool has_assembled_;
+		unsigned int mesh_dimension_;
 
 		inline LibMeshAssemblyValues &active_values()
 		{

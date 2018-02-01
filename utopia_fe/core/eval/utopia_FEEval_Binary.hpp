@@ -360,6 +360,23 @@ namespace utopia {
 		}
 	};
 
+
+	template<class Left, class Op, class Traits, int Backend, int IsQuadData>
+	class FEEval<Binary<Left, SymbolicTensor<Identity, 2>, Op>, Traits, Backend, IsQuadData> {
+	public:
+		typedef utopia::SymbolicTensor<Identity, 2> Right;
+		typedef utopia::Binary<Left, Right, Op> Expr;
+
+		static auto apply(const Expr &expr, AssemblyContext<Backend> &ctx) -> decltype( FEEval<Left, Traits, Backend, IsQuadData>::apply(expr.left(), ctx) )
+		{
+			return FEBackend<Backend>::apply_binary(
+				FEEval<Left, Traits, Backend, IsQuadData>::apply(expr.left(), ctx),
+				expr.right(),
+				expr.operation(),
+				ctx);
+		}
+	};
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
 

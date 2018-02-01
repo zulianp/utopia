@@ -21,6 +21,7 @@
 #include "utopia_FEEval_Number.hpp"
 #include "utopia_FEEval_Reduce.hpp"
 #include "utopia_FEEval_TestFunction.hpp"
+#include "utopia_FEEval_Trace.hpp"
 #include "utopia_FEEval_Transposed.hpp"
 #include "utopia_FEEval_TrialFunction.hpp"
 #include "utopia_FEEval_Unary.hpp"
