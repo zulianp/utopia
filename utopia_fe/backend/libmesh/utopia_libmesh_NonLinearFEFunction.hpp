@@ -465,8 +465,11 @@ namespace utopia {
 			}
 		}	
 
+		double norm_rhs  = norm2(vec);
+		
 		apply_boundary_conditions(dof_map, mat, vec);
 
+		// double norm_grad = norm2(mat * sol - vec);
 		// disp(mat);
 		// disp(vec);
 
@@ -476,14 +479,17 @@ namespace utopia {
 		}
 
 		//if non-linear
+
+		// write("mat.m", mat);
+		// write("vec.m", vec);
 		
 
 		DVectord residual = mat * sol - vec;
 		double norm_r = norm2(residual);
-		std::cout << "norm_r: " << norm_r << std::endl;
-		// disp(sol);
 
-		// write("u_matrix_new.m", mat);
+		std::cout << "norm_r:    " << norm_r << std::endl;
+		std::cout << "norm_rhs:  " << norm_rhs << std::endl;
+		// std::cout << "norm_grad: " << norm_grad << std::endl;
 		return true;
 	}
 

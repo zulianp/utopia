@@ -1785,12 +1785,12 @@ namespace utopia {
 
 		template<class Tensor, int Order>
 		inline static auto multiply(
-			const std::vector<std::vector<double>> &left,
+			const FQValues<double> &left,
 			const std::vector<Wrapper<Tensor, Order>> &right,
 			const AssemblyContext<LIBMESH_TAG> &ctx
-			) -> std::vector<std::vector<Wrapper<Tensor, Order>>>
+			) -> FQValues<Wrapper<Tensor, Order>>
 		{
-			std::vector< std::vector<Wrapper<Tensor, Order> > > ret(left.size());
+			FQValues<Wrapper<Tensor, Order>> ret(left.size());
 
 			for(std::size_t i = 0; i < left.size(); ++i) {
 				ret[i].resize(left[i].size());
@@ -1905,10 +1905,10 @@ namespace utopia {
 		}
 
 		inline static auto multiply(
-			const std::vector<double> &left,
-			const std::vector<double> &right,
+			const QValues<double> &left,
+			const QValues<double> &right,
 			const AssemblyContext<LIBMESH_TAG> &ctx
-			) -> std::vector<double>
+			) -> QValues<double>
 		{
 			auto ret = left;
 			for(std::size_t i = 0; i < right.size(); ++i) {
@@ -1920,9 +1920,9 @@ namespace utopia {
 
 		template<typename T>
 		inline static auto multiply(
-			const std::vector<double> &left,
+			const QValues<double> &left,
 			const ConstantCoefficient<T, 0> &right,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<double>
 		{
 			auto ret = left;
 			for(auto &v : ret) {

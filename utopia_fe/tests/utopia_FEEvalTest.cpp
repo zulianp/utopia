@@ -189,17 +189,24 @@ namespace utopia {
 
 		Vx.initialize();
 		DVectord sol = ghosted(Vx.dof_map().n_local_dofs(), Vx.dof_map().n_dofs(), Vx.dof_map().get_send_list());
-		sol = local_values(local_size(sol).get(0), 1.);
+		sol = local_values(local_size(sol).get(0), 0.);
 		
 		{
 			Write<DVectord> w_sol(sol);
 			auto r = range(sol);
-			for(auto i = r.begin(); i != r.end(); ++i) {
-				sol.set(i, i + (i%3)*1.5);
-			}
+			// for(auto i = r.begin(); i != r.end(); ++i) {
+			// 	sol.set(i, i + (i%3)*1.5);
+			// }
+
+			sol.set(2, .5);
 		}
 
 		disp(sol);
+
+		libMesh::ExodusII_IO io(*mesh);
+		convert(sol, *sys.solution);
+		sys.solution->close();
+		io.write_equation_systems("m.e", *equation_systems);
 
 		AssemblyContext<LIBMESH_TAG> ctx;
 		for(auto e_it = mesh->active_local_elements_begin(); e_it != mesh->active_local_elements_end(); ++e_it) {
@@ -235,14 +242,17 @@ namespace utopia {
 
 			disp("-----------------------------------");
 			disp("-----------------------------------");
-			disp(eval_uk);
-			disp("-----------------------------------");
-			disp(eval_grad);
-			disp("-----------------------------------");
-			disp(eval_g_uk);
-			disp("-----------------------------------");
-			disp(eval_F);
-			disp("-----------------------------------");
+			// disp(eval_uk);
+			// disp("-----------------------------------");
+			// disp(eval_grad);
+			// disp("-----------------------------------");
+			// disp(eval_g_uk);
+			// disp("-----------------------------------");
+			// disp(eval_F);
+			// disp("-----------------------------------");
+
+			// disp(eval_F_inv);
+			// disp("-----------------------------------");
 
 			auto eval_P = quad_eval(P, ctx);
 			auto eval_P_expected = neohookean_first_piola(mu, lambda, eval_F);
@@ -254,6 +264,13 @@ namespace utopia {
 			check_equal(eval_stress, eval_stress_expected);
 
 
+			auto g = eval(inner(P, grad(v)) * dX, ctx);
+			disp(g);
+			disp("-----------------------------------");
+			auto H = eval(inner(stress_lin, grad(v)) * dX, ctx);
+			disp(H);
+
+
 			//////////////////////////////////////////////////////////////
 
 			auto C = F_t * F;
@@ -261,10 +278,7 @@ namespace utopia {
 			auto S = 2.0 * mu * E + lambda * (trace(E) * identity());
 			auto C_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
 
-			auto stress_lin_2 = //F * 
-				(
-				(2.0 * mu) * C_lin + lambda * (trace(C_lin) * identity())
-				);// + grad(u) * S;
+			auto stress_lin_2 = F * ( (2.0 * mu) * C_lin + lambda * (trace(C_lin) * identity()) ) + grad(u) * S;
 
 			auto eval_C = eval(C, ctx);
 			auto eval_E = eval(E, ctx);
@@ -272,28 +286,8 @@ namespace utopia {
 			auto eval_S = eval(S, ctx);
 			auto eval_C_lin = eval(C_lin, ctx);
 			auto eval_stress_lin_2 = eval(stress_lin_2, ctx);
-
-			// auto l = (2.0 * mu) * C_lin;
-			// auto r = lambda * (trace(C_lin) * identity());
-
-
-
-			// auto eval_l = quad_eval(l, ctx);
-			// auto eval_r = quad_eval(r, ctx);
-
-			// disp("xxxxxxxxxxxxxxxxxxxxxxxx");
-			// disp(eval_l);
-			// disp("xxxxxxxxxxxxxxxxxxxxxxxx");
-			// disp(eval_r);
-			// disp("xxxxxxxxxxxxxxxxxxxxxxxx");
-
-			// auto ccc = quad_eval(l + r, ctx);
-
-
-
-			disp(eval_stress_lin_2);
-
-
 		}
+
+	
 	}
 }
