@@ -82,23 +82,23 @@ namespace utopia {
 		auto J       = det(F);
 		
 		//compressible neo-hookean
-		auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
+		// auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 
-		auto stress_lin = mu * grad(u) 
-		-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
-		+ inner(lambda * F_inv_t, grad(u)) * F_inv_t;
+		// auto stress_lin = mu * grad(u) 
+		// -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
+		// + inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
 
 		//saint-venant kirchoff
-		// auto C = F_t * F;
-		// auto E = 0.5 * (C - identity());
-		// auto S = 2.0 * mu * E + lambda * (trace(E) * identity());
-		// auto P = F * S;
+		auto C = F_t * F;
+		auto E = 0.5 * (C - identity());
+		auto S = 2.0 * mu * E + lambda * (trace(E) * identity());
+		auto P = F * S;
 
-		// auto strain_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
-		// auto stress_lin = F * (
-		// 	2.0 * mu * strain_lin + lambda * (trace(strain_lin) * identity())
-		// 	) + grad(u) * S;
+		auto strain_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
+		auto stress_lin = F * (
+			2.0 * mu * strain_lin + lambda * (trace(strain_lin) * identity())
+			) + grad(u) * S;
 
 
 		/////////////////////////////

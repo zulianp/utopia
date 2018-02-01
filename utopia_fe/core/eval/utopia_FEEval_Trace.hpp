@@ -19,6 +19,20 @@ namespace utopia {
 			return FEBackend<Backend>::trace(FEEval<InnerExpr, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx);
 		}  
 	};
+
+	template<class Inner, class AssemblyContext>
+	class FunctionalTraits<Trace<Inner>, AssemblyContext> {
+	public:
+		inline static int type(const Trace<Inner> &expr, const AssemblyContext &ctx)  
+		{ 
+			return FunctionalTraits<Inner, AssemblyContext>::type(expr.expr(), ctx);
+		}
+
+		inline static int order(const Trace<Inner> &expr, const AssemblyContext &ctx) 
+		{
+			return FunctionalTraits<Inner, AssemblyContext>::order(expr.expr(), ctx);
+		}
+	};
 }
 
 #endif //UTOPIA_FE_EVAL_TRACE_HPP

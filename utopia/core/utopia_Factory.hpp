@@ -373,6 +373,28 @@ namespace utopia {
         typedef Left Type;
     };
 
+    template<class SType,
+             int Order,
+             class Right,
+             class Default,
+             int SparsityLeft, 
+             int SparsityRight>
+    class ChooseType<SymbolicTensor<SType, Order>, Right, Default, SparsityLeft, SparsityRight> {
+    public:
+        typedef Right Type;
+    };
+
+    template<class SType,
+             int Order,
+             class Left,
+             class Default,
+             int SparsityLeft, 
+             int SparsityRight>
+    class ChooseType<Left, SymbolicTensor<SType, Order>, Default, SparsityLeft, SparsityRight> {
+    public:
+        typedef Left Type;
+    };
+
     template<class Index>
     class Ghosts : public Expression< Ghosts<Index> > {
     public:

@@ -220,7 +220,7 @@ namespace utopia {
 		typedef std::vector< std::vector<DenseVectorT> > VectorFunctionType;
 
 		template<typename T>
-		using IQValues = std::vector<std::vector<T>>;
+		using FQValues = std::vector<std::vector<T>>;
 
 		template<typename T>
 		using QValues = std::vector<T>;
@@ -466,8 +466,8 @@ namespace utopia {
 
 		template<typename T>
 		static auto determinant(
-			const std::vector<Wrapper<T, 2>> &mats,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+			const QValues<Wrapper<T, 2>> &mats,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<double>
 		{
 			const auto n = mats.size();
 			std::vector<double> dets(n);
@@ -535,7 +535,8 @@ namespace utopia {
 			QValues<TensorValueT> ret(mats.size());
 			QValues<double> traces = trace(mats, ctx);
 
-			TensorValueT id(1., 0., 0., 0., 1., 0., 0., 0., 1.);
+			//FIXME
+			TensorValueT id(1., 0., 0., 0., 1., 0., 0., 0., ctx.mesh_dimension() > 2? 1. : 0.);
 
 			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 				ret[qp] = traces[qp] * id;
@@ -545,10 +546,10 @@ namespace utopia {
 		}
 
 		template<typename Tensor>
-		static auto trace_times_identity(const IQValues<Tensor> &mats, const AssemblyContext<LIBMESH_TAG> &ctx) -> IQValues<TensorValueT>
+		static auto trace_times_identity(const FQValues<Tensor> &mats, const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<Tensor>
 		{
 			auto n_funs = mats.size();
-			IQValues<Tensor> ret(n_funs);
+			FQValues<Tensor> ret(n_funs);
 			for(std::size_t i = 0; i < n_funs; ++i) {
 				ret[i] = trace_times_identity(mats[i], ctx);
 			}
@@ -593,8 +594,8 @@ namespace utopia {
 
 		template<typename T>
 		static auto transpose(
-			const std::vector<Wrapper<T, 2>> &mats,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<Wrapper<T, 2>>
+			const QValues<Wrapper<T, 2>> &mats,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<Wrapper<T, 2>>
 		{
 			const auto n = mats.size();
 			std::vector<Wrapper<T, 2>> ret(n);
@@ -607,8 +608,8 @@ namespace utopia {
 
 		template<typename T>
 		static auto transpose(
-			const std::vector<TensorValueT> &mats,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<TensorValueT>
+			const QValues<TensorValueT> &mats,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<TensorValueT>
 		{
 			const auto n = mats.size();
 			std::vector<TensorValueT> ret(n);
@@ -621,11 +622,11 @@ namespace utopia {
 
 		template<typename T>
 		static auto transpose(
-			std::vector<std::vector<libMesh::TensorValue<T>>> &&mats,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<std::vector<libMesh::TensorValue<T>>>
+			FQValues<libMesh::TensorValue<T>> &&mats,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<libMesh::TensorValue<T>>
 		{
 			const auto n = mats.size();
-			std::vector<std::vector<libMesh::TensorValue<T>>> ret = std::forward< std::vector<std::vector<libMesh::TensorValue<T>>> >(mats);
+			FQValues<libMesh::TensorValue<T>> ret = std::forward< FQValues<libMesh::TensorValue<T>> >(mats);
 			for(std::size_t i = 0; i < n; ++i) {
 				ret[i].resize(ret[i].size());
 
@@ -640,9 +641,9 @@ namespace utopia {
 		template<typename T>
 		static auto apply_binary(
 			const SymbolicTensor<Identity, 2> &,
-			std::vector<Wrapper<T, 2>> &&mats,
+			QValues<Wrapper<T, 2>> &&mats,
 			const Plus &,
-			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<Wrapper<T, 2>> 
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<Wrapper<T, 2>> 
 		{
 			auto s = size(mats[0]);
 			for(auto &m : mats) {
@@ -654,10 +655,10 @@ namespace utopia {
 
 		template<typename T>
 		static auto apply_binary(
-			std::vector<Wrapper<T, 2>> &&mats,
+			QValues<Wrapper<T, 2>> &&mats,
 			const SymbolicTensor<Identity, 2> &,
 			const Minus &,
-			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<Wrapper<T, 2>> 
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<Wrapper<T, 2>> 
 		{
 			auto s = size(mats[0]);
 			for(auto &m : mats) {
@@ -682,9 +683,9 @@ namespace utopia {
 		template<typename T>
 		static auto apply_binary(
 			const double val,
-			std::vector<Wrapper<T, 2>> &&mats,
+			QValues<Wrapper<T, 2>> &&mats,
 			const Plus &,
-			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<Matrix> 
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<Matrix> 
 		{
 			for(auto &m : mats) {
 				m *= val;
@@ -695,21 +696,21 @@ namespace utopia {
 
 		template<typename T>
 		static auto apply_binary(
-			std::vector<T> &&vals,
+			QValues<T> &&vals,
 			const double val,
 			const Multiplies &op,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<T> 
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<T> 
 		{
-			return apply_binary(val, std::forward<std::vector<T>>(vals), op, ctx);
+			return apply_binary(val, std::forward<QValues<T>>(vals), op, ctx);
 		}
 
 
 		template<typename T>
 		static auto apply_binary(
 			const double val,
-			std::vector<T> &&vals,
+			QValues<T> &&vals,
 			const Multiplies &,
-			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<T> 
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<T> 
 		{
 			for(auto &v : vals) {
 				v *= val;
@@ -722,9 +723,9 @@ namespace utopia {
 		template<typename T>
 		static auto apply_binary(
 			const double val,
-			IQValues<T> &&vals,
+			FQValues<T> &&vals,
 			const Multiplies &,
-			const AssemblyContext<LIBMESH_TAG> &) -> IQValues<T>
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<T>
 		{
 			for(auto &v : vals) {
 				for(auto &vk : v) {
@@ -737,10 +738,10 @@ namespace utopia {
 
 		template<typename T, class Op>
 		static auto apply_binary(
-			IQValues<T> &&left,
-			const IQValues<T> &right,
+			FQValues<T> &&left,
+			const FQValues<T> &right,
 			const Op &op,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> IQValues<T> 
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<T> 
 		{
 			std::size_t n = left.size();
 
@@ -787,10 +788,10 @@ namespace utopia {
 
 		template<typename T1, typename T2, class Op>
 		static auto apply_binary(
-			const IQValues<T1> &left,
+			const FQValues<T1> &left,
 			const QValues<T2>  &right,
 			const Op &op,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> IQValues<T1>
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<T1>
 		{
 			auto ret = left;
 			std::size_t n_funs = left.size();
@@ -807,10 +808,10 @@ namespace utopia {
 
 		template<typename T1, typename T2, class Op>
 		static auto apply_binary(
-			const IQValues<T1> &left,
-			const IQValues<T2> &right,
+			const FQValues<T1> &left,
+			const FQValues<T2> &right,
 			const Op &op,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> IQValues<T1>
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<T1>
 		{
 			auto ret = left;
 			std::size_t n_funs = left.size();
@@ -825,14 +826,54 @@ namespace utopia {
 			return ret;
 		}
 
+		template<typename T>
+		static auto apply_binary(
+			const FQValues<Wrapper<T, 2>> &left,
+			const FQValues<Wrapper<T, 2>> &right,
+			const Plus &op,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<Wrapper<T, 2>>
+		{
+			auto ret = left;
+			std::size_t n_funs = left.size();
+			std::size_t n_quad_points = left[0].size();
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					ret[i][qp] = apply_binary(left[i][qp], right[i][qp], op, ctx);
+				}
+			}
+
+			return ret;
+		}
+
+
+		static auto apply_binary(
+			FQValues<TensorValueT> &&left,
+			const FQValues<TensorValueT> &right,
+			const Plus &op,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<TensorValueT>
+		{
+			auto ret = left;
+			std::size_t n_funs = left.size();
+			std::size_t n_quad_points = left[0].size();
+
+			for(std::size_t i = 0; i != n_funs; ++i) {
+				for(std::size_t qp = 0; qp != n_quad_points; ++qp) {
+					ret[i][qp] += right[i][qp];
+				}
+			}
+
+			return ret;
+		}
+
 		template<typename T1, typename T2, class Op>
 		static auto apply_binary(
 			const QValues<T1> &left,
-			const IQValues<T2> &right,
+			const FQValues<T2> &right,
 			const Op &op,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> IQValues<T1>
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<T1>
 		{
-			IQValues<T1> ret;
+			FQValues<T1> ret;
 			std::size_t n_funs = right.size();
 			std::size_t n_quad_points = right[0].size();
 
@@ -1764,12 +1805,12 @@ namespace utopia {
 
 		template<class Tensor, int Order>
 		inline static auto multiply(
-			const IQValues<libMesh::TensorValue<double>> &left,
+			const FQValues<libMesh::TensorValue<double>> &left,
 			const QValues<Wrapper<Tensor, Order>> &right,
 			const AssemblyContext<LIBMESH_TAG> &ctx
-			) -> IQValues<Wrapper<Tensor, Order>>
+			) -> FQValues<Wrapper<Tensor, Order>>
 		{
-			IQValues<Wrapper<Tensor, Order>> ret(left.size());
+			FQValues<Wrapper<Tensor, Order>> ret(left.size());
 
 			for(std::size_t i = 0; i < left.size(); ++i) {
 				ret[i].resize(left[i].size());
@@ -1785,12 +1826,12 @@ namespace utopia {
 
 		template<class Tensor, int Order>
 		inline static auto multiply(
-			const IQValues<Wrapper<Tensor, Order>> &left,
+			const FQValues<Wrapper<Tensor, Order>> &left,
 			const QValues<Wrapper<Tensor, Order>> &right,
 			const AssemblyContext<LIBMESH_TAG> &ctx
-			) -> IQValues<Wrapper<Tensor, Order>>
+			) -> FQValues<Wrapper<Tensor, Order>>
 		{
-			IQValues<Wrapper<Tensor, Order>> ret(left.size());
+			FQValues<Wrapper<Tensor, Order>> ret(left.size());
 
 			for(std::size_t i = 0; i < left.size(); ++i) {
 				ret[i].resize(left[i].size());
@@ -1806,11 +1847,11 @@ namespace utopia {
 		template<class Tensor, int Order>
 		inline static auto multiply(
 			const QValues<Wrapper<Tensor, Order>> &left,
-			const IQValues<Wrapper<Tensor, Order>> &right,
+			const FQValues<Wrapper<Tensor, Order>> &right,
 			const AssemblyContext<LIBMESH_TAG> &ctx
-			) -> IQValues<Wrapper<Tensor, Order>>
+			) -> FQValues<Wrapper<Tensor, Order>>
 		{
-			IQValues<Wrapper<Tensor, Order>> ret(right.size());
+			FQValues<Wrapper<Tensor, Order>> ret(right.size());
 
 			for(std::size_t i = 0; i < right.size(); ++i) {
 				ret[i].resize(right[i].size());
@@ -1826,11 +1867,11 @@ namespace utopia {
 		template<class Tensor, int Order>
 		inline static auto multiply(
 			const QValues<Wrapper<Tensor, Order>> &left,
-			const IQValues<TensorValueT> &right,
+			const FQValues<TensorValueT> &right,
 			const AssemblyContext<LIBMESH_TAG> &ctx
-			) -> IQValues<TensorValueT>
+			) -> FQValues<TensorValueT>
 		{
-			IQValues<TensorValueT> ret(right.size());
+			FQValues<TensorValueT> ret(right.size());
 
 			for(std::size_t i = 0; i < right.size(); ++i) {
 				ret[i].resize(right[i].size());

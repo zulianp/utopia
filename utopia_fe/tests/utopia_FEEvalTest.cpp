@@ -271,13 +271,27 @@ namespace utopia {
 			auto eval_trace_ExI = eval(trace(E) * identity(), ctx);
 			auto eval_S = eval(S, ctx);
 			auto eval_C_lin = eval(C_lin, ctx);
-			// auto eval_stress_lin_2 = eval(stress_lin_2, ctx);
+			auto eval_stress_lin_2 = eval(stress_lin_2, ctx);
 
-			// auto ccc = quad_eval((2.0 * mu) * C_lin + (trace(C_lin) * identity()), ctx);
+			// auto l = (2.0 * mu) * C_lin;
+			// auto r = lambda * (trace(C_lin) * identity());
 
 
 
-			// disp(eval_stress_lin_2);
+			// auto eval_l = quad_eval(l, ctx);
+			// auto eval_r = quad_eval(r, ctx);
+
+			// disp("xxxxxxxxxxxxxxxxxxxxxxxx");
+			// disp(eval_l);
+			// disp("xxxxxxxxxxxxxxxxxxxxxxxx");
+			// disp(eval_r);
+			// disp("xxxxxxxxxxxxxxxxxxxxxxxx");
+
+			// auto ccc = quad_eval(l + r, ctx);
+
+
+
+			disp(eval_stress_lin_2);
 
 
 		}
