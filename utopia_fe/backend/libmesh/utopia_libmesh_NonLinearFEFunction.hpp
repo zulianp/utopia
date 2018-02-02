@@ -480,9 +480,10 @@ namespace utopia {
 
 		//if non-linear
 
-		// write("mat.m", mat);
-		// write("vec.m", vec);
-		
+		// static int iter = 0;
+		// write("mat" + std::to_string(iter) + ".m", mat);
+		// write("vec" + std::to_string(iter) + ".m", vec);
+		// ++iter;
 
 		DVectord residual = mat * sol - vec;
 		double norm_r = norm2(residual);

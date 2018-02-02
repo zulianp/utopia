@@ -112,7 +112,7 @@ namespace utopia {
 
 
 		DVectord old_sol;
-		for(auto t = 1; t < 50; ++t) {
+		for(auto t = 1; t < 10; ++t) {
 			std::cout << "iteration " << t << std::endl;
 			
 			if(dim == 3) {
