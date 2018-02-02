@@ -116,7 +116,7 @@ namespace utopia
         }
 
 
-    private:
+    protected:
 
         SizeType _num_alternate_steps; 
         Scalar   _energy_slope_tol;                 // in degrees 
