@@ -19,9 +19,19 @@
 
 namespace utopia
 {
+    enum IterationStatus  { VERY_SUCCESSFUL = 2, 
+                            SUCCESSFUL      = 1, 
+                            UN_SUCCESSFUL   = 0};
+
+
+    enum IterationType  {   MONOLITHIC  = 0, 
+                            STAG_1      = 1, 
+                            STAG_2      = 2};
+
+
+
     template<class Matrix, class Vector, class FunctionType>
-    class AutoAdaptiveAlternateMin :    /*public AlternateMinimization<Matrix, Vector>*/
-                                        public TrustRegionBase<Matrix, Vector>, 
+    class AutoAdaptiveAlternateMin :    public TrustRegionBase<Matrix, Vector>, 
                                         public NonLinearSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -61,43 +71,116 @@ namespace utopia
 
             NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-            SizeType global_it = 0; 
+            SizeType global_it = 0, stag1_it = 0; 
             Scalar ared, pred, rho, E_mono_old, E_mono_new; 
             Scalar g_norm, g0_norm, r_norm, s_norm; 
             Scalar global_delta = this->delta0(); 
-            std::cout<<"global_delta: "<< global_delta << " \n";  
 
+            IterationStatus iteration_status = VERY_SUCCESSFUL; 
+            IterationType   iteration_type   = MONOLITHIC; 
 
+            Vector x_trial_mono = x_mono; 
 
             Vector g_mono = local_zeros(local_size(x_mono)); 
             Vector s_mono = local_zeros(local_size(x_mono)); 
             level.fun_monolithic().gradient(x_mono, g_mono); 
 
             Matrix H_mono; 
-            this->init_solver("AutoAdaptiveAlternateMin", {" it. ", "|| g ||", "J_k", "J_{k+1}", "rho", "delta_k"}); 
+            this->init_solver("AutoAdaptiveAlternateMin", {" it. ", "|| g ||", "J_k", "J_{k+1}", "ared", "pred", "rho", "delta_k", "it_satus", "it_type"}); 
 
-            
+
             while(!converged)
             {
-
                 level.fun_monolithic().value(x_mono, E_mono_old); 
                 level.fun_monolithic().hessian(x_mono, H_mono); 
 
                 //----------------------------------------------------------------------------
                 //     new step p_k w.r. ||p_k|| <= delta. - monolithic one 
                 //----------------------------------------------------------------------------      
-                if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-                    tr_subproblem->current_radius(global_delta);  
+                
+                if(iteration_type == MONOLITHIC)
+                {
+                    if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
+                        tr_subproblem->current_radius(global_delta);  
 
-                this->linear_solve(H_mono, g_mono, s_mono);
-                this->get_pred(g_mono, H_mono, s_mono, pred); 
+                    this->linear_solve(H_mono, g_mono, s_mono);
+                    this->get_pred(g_mono, H_mono, s_mono, pred); 
+
+                    x_trial_mono = x_mono + s_mono; 
+
+                    stag1_it = 0; 
+                }
+                else if (iteration_type == STAG_1)
+                {
+                    //  transfer ...
+                    level.transfer_from_monolithic_to_stag1(x_mono, x_stag1); 
+                    level.transfer_from_monolithic_to_stag2(x_mono, x_stag2); 
+                    level.transfer_from_stag2_to_stag1(x_stag2);  // transfer to aux 
+
+                    Vector g_stag1 = local_zeros(local_size(x_stag1)); 
+                    Vector s_stag1 = local_zeros(local_size(x_stag1)); 
+                    Matrix H_stag1; 
+
+                    level.fun_stag1().hessian(x_stag1, H_stag1); 
+                    level.fun_stag1().gradient(x_stag1, g_stag1); 
+
+                    if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
+                        tr_subproblem->current_radius(global_delta);  
+
+                    this->linear_solve(H_stag1, g_stag1, s_stag1);
+
+                    // local trial step 
+                    Vector x_trial_stag = x_stag1 + s_stag1; 
+
+                    // interpolate to global... 
+                    level.transfer_from_stag1_to_monolithic(x_trial_stag, x_trial_mono); 
+                    s_mono = x_trial_mono - x_mono; 
+
+                    this->get_pred(g_mono, H_mono, s_mono, pred); 
+
+                    std::cout<<"stag1_it: "<< stag1_it << "  \n"; 
+                    stag1_it++; 
+
+                }
+                else if (iteration_type == STAG_2)
+                {
+                    level.transfer_from_monolithic_to_stag1(x_mono, x_stag1); 
+                    level.transfer_from_monolithic_to_stag2(x_mono, x_stag2); 
+                    level.transfer_from_stag1_to_stag2(x_stag1);  // transfer to aux 
+
+
+                    Vector g_stag2 = local_zeros(local_size(x_stag2)); 
+                    Vector s_stag2 = local_zeros(local_size(x_stag2)); 
+                    Matrix H_stag2; 
+
+                    level.fun_stag2().hessian(x_stag2, H_stag2); 
+                    level.fun_stag2().gradient(x_stag2, g_stag2); 
+
+                    if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
+                        tr_subproblem->current_radius(global_delta);  
+
+                    this->linear_solve(H_stag2, g_stag2, s_stag2);
+
+                    // s_stag2 *= -1.0; 
+
+                    // local trial step 
+                    Vector x_trial_stag = x_stag2 + s_stag2; 
+
+
+                    // interpolate to global... 
+                    level.transfer_from_stag2_to_monolithic(x_trial_stag, x_trial_mono); 
+                    s_mono = x_trial_mono - x_mono; 
+
+                    this->get_pred(g_mono, H_mono, s_mono, pred); 
+                    stag1_it = 0; 
+                }
 
 
                 //----------------------------------------------------------------------------
                 //     acceptance of trial point 
                 //----------------------------------------------------------------------------
-
-                level.fun_monolithic().value(x_mono + s_mono, E_mono_new);
+                // this->get_pred(g_mono, H_mono, s_mono, pred); 
+                level.fun_monolithic().value(x_trial_mono, E_mono_new);
 
                 // decrease ratio 
                 ared = E_mono_old - E_mono_new;             // reduction observed on objective function
@@ -105,8 +188,9 @@ namespace utopia
 
 
                 if(rho >= this->rho_tol())
-                    x_mono += s_mono; 
-
+                    x_mono = x_trial_mono; 
+                else if(iteration_type==STAG_2)
+                    x_mono = x_trial_mono; 
 
                 //----------------------------------------------------------------------------
                 //    convergence check 
@@ -115,102 +199,55 @@ namespace utopia
                 level.fun_monolithic().gradient(x_mono, g_mono); 
                 g_norm = norm2(g_mono); 
                 global_it++; 
+                PrintInfo::print_iter_status(global_it, {g_norm, E_mono_old,  E_mono_new, ared, pred,  rho, global_delta, iteration_status, iteration_type}); 
+
                 converged = TrustRegionBase::check_convergence(*this, tol, this->max_it(), global_it, g_norm, 9e9, 9e9, global_delta); 
-
-
-
-                PrintInfo::print_iter_status(global_it, {g_norm, E_mono_old,  E_mono_new, rho, global_delta}); 
-
-
 
                 //----------------------------------------------------------------------------
                 //      tr. radius update 
                 //----------------------------------------------------------------------------
                 if(rho < this->eta1())
+                {
                     global_delta *= this->gamma1();
+                    iteration_status = UN_SUCCESSFUL; 
+                }
                 else if(rho > this->eta2())
+                {
                     global_delta = std::min(this->gamma2() * global_delta, this->delta_max()); 
+                    iteration_status = VERY_SUCCESSFUL; 
+                }
+                else
+                {
+                    iteration_status = SUCCESSFUL; 
+                }
 
 
+                // TODO:: 
+                // let's start simple ... 
+                if(iteration_status==VERY_SUCCESSFUL && iteration_type==MONOLITHIC)
+                    iteration_type = MONOLITHIC; 
+                if(iteration_status!=VERY_SUCCESSFUL && iteration_type==MONOLITHIC)
+                    iteration_type = STAG_1;                 
+                else if (iteration_type==STAG_1 && stag1_it > 2)
+                    iteration_type = STAG_2; 
+                else if (iteration_type==STAG_2)
+                    iteration_type = MONOLITHIC; 
 
             }
 
 
-
-
-
-
-
-            // Vector x_mono_test = x_mono; 
-            // this->_nl_solver_master->solve(level.fun_monolithic(), x_mono_test); 
-
-
-
-
-            // // ------------------------ staggered --------------------
-            // std::cout<<"------------- staggered ---------------------- \n"; 
-            // Scalar energy_0, energy_prev, energy_cur; 
-
-            // level.fun_stag1().value(x_stag1, energy_0); 
-            // energy_prev = energy_0; 
-
-
-            // Scalar beta    = 9e9; 
-            // SizeType it     = 1; 
-
-            // while(beta > this->get_energy_slope_tol() && it < this->get_num_alternate_steps() )
-            // {
-            //     this->_nl_solver_master->max_it(1); 
-            //     this->_nl_solver_master->solve(level.fun_stag1(), x_stag1); 
-            //     level.transfer_from_stag1_to_stag2(x_stag1); 
-
-            //     this->_nl_solver_slave->solve(level.fun_stag2(), x_stag2); 
-            //     level.transfer_from_stag2_to_stag1(x_stag2); 
-
-
-            //     level.fun_stag1().value(x_stag1, energy_cur); 
-
-            //     Scalar val = ((energy_prev - energy_cur)/ (energy_0 - energy_cur)) * it; 
-            //     beta = std::atan (val) * 180.0 / M_PI;
-
-            //     energy_prev = energy_cur; 
-            //     it++; 
-
-
-            //     level.transfer_from_stag1_to_monolithic(x_stag1, x_mono); 
-            //     level.transfer_from_stag2_to_monolithic(x_stag2, x_mono); 
-
-            //     // ------------------------ monolithic  --------------------
-            //     std::cout<<"------------- monolithic ---------------------- \n"; 
-            //     x_mono_test = x_mono; 
-            //     this->_nl_solver_master->max_it(50); 
-            //     this->_nl_solver_master->solve(level.fun_monolithic(), x_mono_test); 
-
-            //     // from monolithic to staggered ... 
-
-            // }
-
-
-            // level.transfer_from_stag1_to_monolithic(x_stag1, x_mono); 
-            // level.transfer_from_stag2_to_monolithic(x_stag2, x_mono); 
-
-
-
-
+            // just to have nice pictures on each ts ... 
+            level.set_transfer_from_monolithic_to_stag1(x_mono, x_stag1); 
+            level.set_transfer_from_monolithic_to_stag2(x_mono, x_stag2); 
             return true;
         }
 
 
         virtual void set_parameters(const Parameters params)
         {
-            // AlternateMinimization<Matrix, Vector>::set_parameters(params);
             NonlinearSolver::set_parameters(params);
             TrustRegionBase::set_parameters(params);
         }
-
-
-
-
 
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x_k) override 
@@ -218,9 +255,6 @@ namespace utopia
             std::cerr<<"-------AutoAdaptiveAlternateMin::solve not implemented ---------  \n"; 
             return false; 
         }
-
-
-
 
 
     private: 
