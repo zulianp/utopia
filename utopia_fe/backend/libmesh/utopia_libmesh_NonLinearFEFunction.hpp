@@ -353,6 +353,12 @@ namespace utopia {
 			}	
 
 			apply_boundary_conditions(space.dof_map(), buff_mat, buff_vec);
+
+
+			// static int n = 0;
+			// write("mat" + std::to_string(n) + ".m", buff_mat);
+			// write("vec" + std::to_string(n++) + ".m", buff_vec);
+
 			first_ = false;
 			return true;
 		}
@@ -427,7 +433,7 @@ namespace utopia {
 
 
 	template<class... Eqs, class... Constr>
-	bool solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol)
+	bool solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol, const bool first = true)
 	{
 
 		//FIXME this stuff only works for the libmesh backend
@@ -435,7 +441,7 @@ namespace utopia {
 		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
 		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
 
-		FEBackend<LIBMESH_TAG>::init_constraints(constr);
+		init_constraints(constr);
 
 
 		
@@ -453,11 +459,13 @@ namespace utopia {
 
 		if(empty(sol)) {
 			sol = local_zeros(local_size(vec));
+			std::cout << "[Warning] empty solution vector initializing to zero" << std::endl;
 		}
 
 		{
 			Write<DSMatrixd> w_m(mat);
 			Write<DVectord>  w_v(vec);
+			Read<DVectord> r_s(sol);
 
 
 			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
@@ -465,32 +473,22 @@ namespace utopia {
 			}
 		}	
 
-		double norm_rhs  = norm2(vec);
-		
 		apply_boundary_conditions(dof_map, mat, vec);
 
-		// double norm_grad = norm2(mat * sol - vec);
-		// disp(mat);
-		// disp(vec);
+		if(!first) {
+			apply_zero_boundary_conditions(dof_map, vec);
+		}
 
+		DVectord inc = local_zeros(local_size(sol));
 		Factorization<DSMatrixd, DVectord> solver;
-		if(!solver.solve(mat, vec, sol)) {
+		if(!solver.solve(mat, vec, inc)) {
 			return false;
 		}
 
-		//if non-linear
+		sol += inc;
 
-		// static int iter = 0;
-		// write("mat" + std::to_string(iter) + ".m", mat);
-		// write("vec" + std::to_string(iter) + ".m", vec);
-		// ++iter;
-
-		DVectord residual = mat * sol - vec;
-		double norm_r = norm2(residual);
-
-		std::cout << "norm_r:    " << norm_r << std::endl;
-		std::cout << "norm_rhs:  " << norm_rhs << std::endl;
-		// std::cout << "norm_grad: " << norm_grad << std::endl;
+		double norm_r = norm2(inc);
+		std::cout << "norm(inc): " << norm_r << std::endl;
 		return true;
 	}
 

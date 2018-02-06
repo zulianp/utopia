@@ -28,13 +28,14 @@ namespace utopia {
 	void run_non_linear_elasticity_test(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		// auto mesh = std::make_shared<libMesh::Mesh>(init.comm());
 
 		libMesh::MeshTools::Generation::build_square(*mesh,
 			10, 10,
 			0, 1,
 			0, 1.,
-			// libMesh::QUAD8
-			libMesh::TRI3
+			libMesh::QUAD8
+			// libMesh::TRI6
 			);
 
 		// libMesh::MeshTools::Generation::build_cube(*mesh,
@@ -52,8 +53,8 @@ namespace utopia {
 		const double mu = 1.;
 		const double lambda = 1.;
 
-		auto elem_order = libMesh::FIRST;
-		// auto elem_order = libMesh::SECOND;
+		// auto elem_order = libMesh::FIRST;
+		auto elem_order = libMesh::SECOND;
 
 		////////////////////////////////////////////
 
@@ -103,7 +104,7 @@ namespace utopia {
 
 		/////////////////////////////
 
-		auto l_form = inner(P, grad(v)) * dX;
+		auto l_form = inner(-P, grad(v)) * dX;
 		auto b_form = inner(stress_lin, grad(v)) * dX;
 
 		////////////////////////////////////////////
@@ -112,7 +113,7 @@ namespace utopia {
 
 
 		DVectord old_sol;
-		for(auto t = 1; t < 10; ++t) {
+		for(auto t = 1; t < 100; ++t) {
 			std::cout << "iteration " << t << std::endl;
 			
 			if(dim == 3) {
@@ -128,7 +129,8 @@ namespace utopia {
 						boundary_conditions(uy == coeff(0.05),  {1}),
 						boundary_conditions(uy == coeff(-0.05), {3})
 						),
-					sol);
+					sol,
+					t < 2);
 			} else {
 
 				solve(
@@ -140,7 +142,8 @@ namespace utopia {
 						boundary_conditions(uy == coeff(0.1), {0}),
 						boundary_conditions(uy == coeff(-0.1), {2})
 						),
-					sol);
+					sol,
+					t < 2);
 			}
 
 			convert(sol, *sys.solution);

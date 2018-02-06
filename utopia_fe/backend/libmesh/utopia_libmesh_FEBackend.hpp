@@ -650,6 +650,10 @@ namespace utopia {
 				m += identity(s);
 			}
 
+
+			// std::cout << "-----------------------" << std::endl;
+			// disp(mats);
+
 			return std::move(mats);
 		}
 
@@ -664,6 +668,7 @@ namespace utopia {
 			for(auto &m : mats) {
 				m -= identity(s);
 			}
+
 
 			return std::move(mats);
 		}
@@ -2406,6 +2411,8 @@ namespace utopia {
 
 			auto && dx    = ctx.dx();
 			uint n_quad_points = dx.size();
+
+			// disp(fun);
 
 			auto n_test = test_range.extent();
 			for (uint j = 0; j < n_test; j++) {
