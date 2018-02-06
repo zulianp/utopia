@@ -218,7 +218,8 @@ namespace utopia  {
         radius = gamma1_ * radius; 
       }
 
-      else if (rho > eta2_ && (norm2(p_k) > ((1 - eps_) * radius ) ))
+      // else if (rho > eta2_ && (norm2(p_k) > ((1 - eps_) * radius ) ))
+      else if (rho > eta2_ )
       {
         radius = std::min(gamma2_ * radius, delta_max_); 
       }      

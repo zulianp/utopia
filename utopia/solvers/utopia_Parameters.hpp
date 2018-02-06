@@ -126,8 +126,8 @@ namespace utopia
 
         /* ---------- stag. scheme -------------- */
 
-          num_alternate_steps_ = 1; 
-          energy_slope_tol_    = 10; 
+          num_alternate_steps_ = 10; 
+          energy_slope_tol_    = 1; 
 
           stay_quiet();
         }

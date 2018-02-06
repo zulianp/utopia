@@ -121,9 +121,20 @@ namespace utopia
 	     */
 	    virtual void set_ksp_options(KSP & ksp) override 
 	    {
+	    	
+	    	std::cout<<"--------- this options called --------- \n"; 
+	    	// KSPSetFromOptions(ksp); 
+
 	        PetscErrorCode ierr;
 	        ierr = KSPSetType(ksp, this->ksp_type().c_str()); 
 	        ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+
+
+	        // // TODO:: to be fixed .... 
+	        // PC pc; 
+	         //    ierr = KSPGetPC(ksp, &pc);
+	         //    ierr = PCSetType(pc, "lu");
+
 
 			if(this->ksp_type() == "qcg")
 				ierr = KSPQCGSetTrustRegionRadius(ksp, this->current_radius()); 
