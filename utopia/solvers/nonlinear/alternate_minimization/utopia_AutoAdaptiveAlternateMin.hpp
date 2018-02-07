@@ -85,8 +85,14 @@ namespace utopia
             Vector s_mono = local_zeros(local_size(x_mono)); 
             level.fun_monolithic().gradient(x_mono, g_mono); 
 
+
+            Scalar it_scaled=0.0; 
+
+            Scalar eta_inex=0.0, rho_inex =0.0; 
+
+
             Matrix H_mono; 
-            this->init_solver("AutoAdaptiveAlternateMin", {" it. ", "|| g ||", "J_k", "J_{k+1}", "ared", "pred", "rho", "delta_k", "it_satus", "it_type"}); 
+            this->init_solver("AutoAdaptiveAlternateMin", {" it. ", "|| g ||", "J_k", "J_{k+1}", "ared", "pred", "rho", "delta_k", "it_satus", "it_type", "eta_l", "rho_l"}); 
 
 
             while(!converged)
@@ -109,6 +115,8 @@ namespace utopia
                     x_trial_mono = x_mono + s_mono; 
 
                     stag1_it = 0; 
+
+                    it_scaled++; 
                 }
                 else if (iteration_type == STAG_1)
                 {
@@ -138,8 +146,10 @@ namespace utopia
 
                     this->get_pred(g_mono, H_mono, s_mono, pred); 
 
-                    std::cout<<"stag1_it: "<< stag1_it << "  \n"; 
+                    // std::cout<<"stag1_it: "<< stag1_it << "  \n"; 
                     stag1_it++; 
+
+                    it_scaled += 0.666666666; 
 
                 }
                 else if (iteration_type == STAG_2)
@@ -153,6 +163,9 @@ namespace utopia
                     Vector s_stag2 = local_zeros(local_size(x_stag2)); 
                     Matrix H_stag2; 
 
+                    Scalar energy_old_local, energy_new_local; 
+                    level.fun_stag2().value(x_stag2, energy_old_local); 
+
                     level.fun_stag2().hessian(x_stag2, H_stag2); 
                     level.fun_stag2().gradient(x_stag2, g_stag2); 
 
@@ -161,11 +174,12 @@ namespace utopia
 
                     this->linear_solve(H_stag2, g_stag2, s_stag2);
 
-                    // s_stag2 *= -1.0; 
-
                     // local trial step 
                     Vector x_trial_stag = x_stag2 + s_stag2; 
 
+                    level.fun_stag2().value(x_trial_stag, energy_new_local); 
+
+                    //std::cout<<"E_old: "<< energy_old_local << "  E_new: "<< energy_new_local <<"     ared: "<< energy_old_local - energy_new_local <<  "  \n"; 
 
                     // interpolate to global... 
                     level.transfer_from_stag2_to_monolithic(x_trial_stag, x_trial_mono); 
@@ -173,8 +187,9 @@ namespace utopia
 
                     this->get_pred(g_mono, H_mono, s_mono, pred); 
                     stag1_it = 0; 
-                }
 
+                    it_scaled += 0.33333333333; 
+                }
 
                 //----------------------------------------------------------------------------
                 //     acceptance of trial point 
@@ -189,17 +204,30 @@ namespace utopia
 
                 if(rho >= this->rho_tol())
                     x_mono = x_trial_mono; 
-                else if(iteration_type==STAG_2)
-                    x_mono = x_trial_mono; 
+                // else if(iteration_type==STAG_2)
+                //     x_mono = x_trial_mono; 
 
                 //----------------------------------------------------------------------------
                 //    convergence check 
                 //----------------------------------------------------------------------------
 
+
+                Vector Hs = H_mono * s_mono; 
+                Hs += g_mono; 
+
                 level.fun_monolithic().gradient(x_mono, g_mono); 
+                Scalar g_norm_old = g_norm; 
+
                 g_norm = norm2(g_mono); 
+                
+                Scalar Hs_norm = norm2(Hs);
+
+                eta_inex = (g_norm - Hs_norm)/ g_norm_old; 
+                rho_inex = (g_norm_old - g_norm)/ (g_norm_old - Hs_norm); 
+
+
                 global_it++; 
-                PrintInfo::print_iter_status(global_it, {g_norm, E_mono_old,  E_mono_new, ared, pred,  rho, global_delta, iteration_status, iteration_type}); 
+                PrintInfo::print_iter_status(global_it, {g_norm, E_mono_old,  E_mono_new, ared, pred,  rho, global_delta, iteration_status, iteration_type, eta_inex, rho_inex}); 
 
                 converged = TrustRegionBase::check_convergence(*this, tol, this->max_it(), global_it, g_norm, 9e9, 9e9, global_delta); 
 
@@ -222,23 +250,56 @@ namespace utopia
                 }
 
 
-                // TODO:: 
+                // --------------------------- TODO -----------------------------
                 // let's start simple ... 
-                if(iteration_status==VERY_SUCCESSFUL && iteration_type==MONOLITHIC)
+                // if(iteration_status==VERY_SUCCESSFUL && iteration_type==MONOLITHIC)
+                //     iteration_type = MONOLITHIC; 
+                // if(iteration_status!=VERY_SUCCESSFUL && iteration_type==MONOLITHIC)
+                //     iteration_type = STAG_1;                 
+                // else if (iteration_type==STAG_1 && stag1_it > 2)
+                //     iteration_type = STAG_2; 
+                // else if (iteration_type==STAG_2)
+                //     iteration_type = MONOLITHIC; 
+
+
+                // let's try alternation 
+                // if(iteration_type==MONOLITHIC)
+                //     iteration_type = STAG_2;                
+                // // else if (iteration_type==STAG_1 && stag1_it >= 10)
+                // //     iteration_type = STAG_2; 
+                // else if (iteration_type==STAG_2)
+                //     iteration_type = MONOLITHIC; 
+                //     
+                
+
+                if(rho_inex > 0.8)
                     iteration_type = MONOLITHIC; 
-                if(iteration_status!=VERY_SUCCESSFUL && iteration_type==MONOLITHIC)
-                    iteration_type = STAG_1;                 
-                else if (iteration_type==STAG_1 && stag1_it > 2)
-                    iteration_type = STAG_2; 
-                else if (iteration_type==STAG_2)
-                    iteration_type = MONOLITHIC; 
+                else if(rho_inex < 0.8 && (iteration_type == STAG_2 || iteration_type == MONOLITHIC))
+                    iteration_type = STAG_1; 
+                else 
+                    iteration_type = STAG_2;
+
+                // alternate 
+                // if(iteration_type==STAG_1)  
+                //     iteration_type = STAG_2;                
+                // else if (iteration_type==STAG_2)
+                //     iteration_type = STAG_1; 
 
             }
 
 
+            // CSVWriter writer; 
+            // writer.open_file("/Users/alenakopanicakova/Desktop/tex_files/papers/multilevel_for_PF/results/test_monolithic_2D/lulu_criterium.txt"); 
+
+            // writer.write_table_row<Scalar>({(it_scaled)}); 
+            // writer.close_file(); 
+
+
             // just to have nice pictures on each ts ... 
-            level.set_transfer_from_monolithic_to_stag1(x_mono, x_stag1); 
-            level.set_transfer_from_monolithic_to_stag2(x_mono, x_stag2); 
+            level.transfer_from_monolithic_to_stag1(x_mono, x_stag1); 
+            level.transfer_from_monolithic_to_stag2(x_mono, x_stag2); 
+
+
             return true;
         }
 

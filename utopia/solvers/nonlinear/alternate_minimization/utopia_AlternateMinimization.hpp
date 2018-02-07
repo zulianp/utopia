@@ -52,8 +52,8 @@ namespace utopia
             energy_0 = energy_1 + energy_2; 
             energy_prev = energy_0; 
 
-            CSVWriter writer; 
-            writer.open_file("/Users/alenakopanicakova/Desktop/tex_files/papers/multilevel_for_PF/results/alternate_2D_tension_beta_test.csv"); 
+            // CSVWriter writer; 
+            // writer.open_file("/Users/alenakopanicakova/Desktop/tex_files/papers/multilevel_for_PF/results/alternate_2D_tension_beta_test.csv"); 
             // writer.open_file("alternate_2D_tension_beta_test.csv"); 
             // writer.write_table_row<std::string>({"it", "beta"}); 
 
@@ -81,8 +81,8 @@ namespace utopia
                 it++; 
             }
 
-            writer.write_table_row<SizeType>({(it-1)}); 
-            writer.close_file(); 
+            // writer.write_table_row<SizeType>({(it-1)}); 
+            // writer.close_file(); 
             return true;
         }
 

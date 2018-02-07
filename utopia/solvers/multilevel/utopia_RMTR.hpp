@@ -92,6 +92,24 @@ namespace utopia
         virtual std::string name_id() override { return "RMTR";  }
         
 
+        void set_eps_grad_termination(const Scalar & eps_grad_termination)
+        {
+            _eps_grad_termination = eps_grad_termination; 
+        }
+
+
+        void set_max_coarse_it(const SizeType & max_coarse_it)
+        {
+            _max_coarse_it = max_coarse_it; 
+        }
+
+
+        void set_max_smoothing_it(const SizeType & max_smoothing_it)
+        {
+            _max_smoothing_it = max_smoothing_it; 
+        }
+
+
         /**
          * @brief      The solve function for multigrid method. 
          *
@@ -170,9 +188,19 @@ namespace utopia
 
                 // check convergence and print interation info
                 converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(_it_global, r_norm, rel_norm, 1); 
+
+                converged = (converged==true || this->get_delta(l-1) < 1e-14) ? true : false; 
+
                 _it_global++; 
             
             }
+
+            CSVWriter writer; 
+            writer.open_file("/Users/alenakopanicakova/Desktop/tex_files/papers/multilevel_for_PF/results/test_monolithic_2D/3grid_tension_5_smoother.txt"); 
+
+            writer.write_table_row<SizeType>({(_it_global)}); 
+            writer.close_file(); 
+
 
             return true; 
         }
@@ -273,8 +301,10 @@ namespace utopia
             //               recursion  / Taylor correction
             //----------------------------------------------------------------------------
 
+            // TODO:: is this correct??? 
             // if grad is not smooth enoguh, we proceed to Taylor iterations, no recursion anymore
-            if(level == 2 || this->grad_smoothess_termination(g_restricted, g_fine))
+            // if(level == 2 || this->grad_smoothess_termination(g_restricted, g_fine))
+            if(level == 2 )
             {
                 SizeType l_new = level - 1; 
                 coarse_reduction = this->local_tr_solve(levels(level-2), u_2l, l_new); 
@@ -491,11 +521,11 @@ namespace utopia
 
             if(rho < this->eta1())
             {   
-                 intermediate_delta = this->gamma1() * this->get_delta(level-1); 
+                 intermediate_delta = std::max(this->gamma1() * this->get_delta(level-1), 1e-15); 
             }
             else if (rho > this->eta2() )
             {
-                 intermediate_delta = this->gamma2() * this->get_delta(level-1); 
+                 intermediate_delta = std::min(this->gamma2() * this->get_delta(level-1), 1e15); 
             }
             else
             {
@@ -881,12 +911,16 @@ namespace utopia
             if(level == 1)
             {
                 _coarse_tr_subproblem->current_radius(get_delta(level-1));  
+                _coarse_tr_subproblem->atol(1e-16); 
                 _coarse_tr_subproblem->tr_constrained_solve(H, g, s); 
             }
             else
             {
                 _smoother_tr_subproblem->current_radius(get_delta(level-1));  
+                _smoother_tr_subproblem->atol(1e-16); 
+                _smoother_tr_subproblem->max_it(5);
                 _smoother_tr_subproblem->tr_constrained_solve(H, g, s); 
+
             }
 
             return true; 
