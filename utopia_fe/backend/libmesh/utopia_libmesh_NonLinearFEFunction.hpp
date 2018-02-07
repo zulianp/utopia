@@ -268,6 +268,40 @@ namespace utopia {
 		return true;
 	}
 
+	template<class... Eqs>
+	bool assemble(const Equations<Eqs...> &eqs, DSMatrixd &mat, DVectord &vec)
+	{
+		typedef typename GetFirst<Eqs...>::Type Eq1Type;
+		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
+		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
+
+		space.initialize();
+		auto &m = space.mesh();
+		auto &dof_map = space.dof_map();
+		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+
+
+		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+		vec = local_zeros(dof_map.n_local_dofs());
+
+		{
+			Write<DSMatrixd> w_m(mat);
+			Write<DVectord>  w_v(vec);
+
+			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+				element_assemble_expression_v<FunctionSpaceT>(it, eqs, mat, vec, false);
+			}
+		}	
+
+		return true;
+	}
+
+	template<class Left, class Right>
+	bool assemble(const Equality<Left, Right> &equation, DSMatrixd &mat, DVectord &vec)
+	{
+		return assemble(equations(equation), mat, vec);
+	}
 
 
 	template<class Expr>

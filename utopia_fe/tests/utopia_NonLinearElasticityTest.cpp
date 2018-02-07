@@ -48,6 +48,22 @@ namespace utopia {
 		return mesh;
 	}
 
+		//saint-venant kirchoff
+		// auto C = F_t * F;
+		// auto E = 0.5 * (C - identity());
+		// auto S = 2.0 * mu * E + lambda * (trace(E) * identity());
+		// auto P = F * S;
+
+		// auto strain_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
+		// auto stress_lin = F * (
+		// 	2.0 * mu * strain_lin + lambda * (trace(strain_lin) * identity())
+		// 	) + grad(u) * S;
+
+		/////////////////////////////
+
+
+
+
 	void run_non_linear_elasticity_test(libMesh::LibMeshInit &init)
 	{
 		auto mesh = square(init.comm(), 20, 20, 0., 1., 0., 1., libMesh::QUAD8);
@@ -95,19 +111,6 @@ namespace utopia {
 		-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
 		+ inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
-		//saint-venant kirchoff
-		// auto C = F_t * F;
-		// auto E = 0.5 * (C - identity());
-		// auto S = 2.0 * mu * E + lambda * (trace(E) * identity());
-		// auto P = F * S;
-
-		// auto strain_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
-		// auto stress_lin = F * (
-		// 	2.0 * mu * strain_lin + lambda * (trace(strain_lin) * identity())
-		// 	) + grad(u) * S;
-
-		/////////////////////////////
-
 		auto l_form = inner(P, grad(v)) * dX;
 		auto b_form = inner(stress_lin, grad(v)) * dX;
 		auto eq = b_form == l_form;
@@ -145,6 +148,8 @@ namespace utopia {
 				sol
 				);
 		}
+
+
 
 		convert(sol, *sys.solution);
 		sys.solution->close();

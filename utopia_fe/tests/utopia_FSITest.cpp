@@ -87,10 +87,12 @@ namespace utopia {
 	{
 		moonolith::Communicator comm(init.comm().get());
 
-		const unsigned int nx_fluid = 3 * 45;
-		const unsigned int ny_fluid = 3 * 15;
-		const unsigned int nx_solid = 4 * 4;
-		const unsigned int ny_solid = 4 * 12;
+		const double prop = 2.;
+
+		const unsigned int nx_fluid = prop * (3 * 45);
+		const unsigned int ny_fluid = prop * (3 * 15);
+		const unsigned int nx_solid = prop * (4 * 4);
+		const unsigned int ny_solid = prop * (4 * 12);
 
 		// const unsigned int nx_fluid = 9;
 		// const unsigned int ny_fluid = 3;
@@ -155,12 +157,12 @@ namespace utopia {
 
 		const double mu_f  = 1.;
 		const double rho_f = 0.1;
-		const double mu_s  = 1.;
-		const double lambda_s = 10.;
+		const double mu_s  = 50.;
+		const double lambda_s = 50.;
 
-		const double dt = 0.01;
+		const double dt = 0.0005;
 		
-		const std::size_t n_ts = 100;
+		const std::size_t n_ts = 3000;
 
 		DVectord sol_f;
 		DVectord sol_fold;
@@ -383,7 +385,7 @@ namespace utopia {
 	     	
 	     		// converged = true;
 	     		++outer_iter;
-	     		if(outer_iter > 20) break;
+	     		if(outer_iter > 60) break;
 	     	}
 
 	     	
