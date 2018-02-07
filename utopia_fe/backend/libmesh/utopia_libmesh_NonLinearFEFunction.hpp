@@ -286,7 +286,6 @@ namespace utopia {
 		//init vector
 		//assemble weighted coeffs
 		//remove mass contrib
-
 	}
 
 	template<class Matrix, class Vector, class Eqs>
@@ -294,25 +293,28 @@ namespace utopia {
 	public:
 		DEF_UTOPIA_SCALAR(Matrix)
 
-		NonLinearFEFunction(const Eqs &eqs)
-		: eqs_(eqs), first_(true)
+		NonLinearFEFunction(const Eqs &eqs, const bool compute_linear_residual = false)
+		: eqs_(eqs), first_(true), compute_linear_residual_(compute_linear_residual)
 		{}
 
 		virtual ~NonLinearFEFunction() { }
 
 		virtual bool value(const Vector &x, Scalar &value) const override
 		{
-			// assert(false && "not implemented");
 			value = dot(x, buff_mat * x) - dot(x, buff_vec);
 			return true;
 		}
 
 		virtual bool gradient(const Vector &x, Vector &result) const override
 		{
-			result = buff_mat * x - buff_vec;
+			if(compute_linear_residual_) {
+				result = buff_mat * x - buff_vec;
+			} else {
+				result = buff_vec;
+			}
+
 			return true;
 		}
-
 
 		virtual bool hessian(const Vector &, Matrix &H) const override
 		{
@@ -324,6 +326,9 @@ namespace utopia {
 			typedef decltype(eqs_.template get<0>()) Eq1;
 			typedef typename FindFunctionSpace<Eq1>::Type FunctionSpaceT;
 			auto &space = find_space<FunctionSpaceT>(eqs_);
+
+			//FIXME
+			auto &x_mutable = const_cast<Vector &>(x);
 
 			if(first_) {
 				auto &dof_map = space.dof_map();
@@ -343,24 +348,32 @@ namespace utopia {
 
 				auto &m = space.mesh();
 
-
-				//FIXME
-				const_cast<Vector &>(x).implementation().update_ghosts();
+				x_mutable.implementation().update_ghosts();
 
 				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
 					element_assemble_expression_v<FunctionSpaceT>(it, eqs_, buff_mat, buff_vec, false);
 				}
 			}	
 
-			apply_boundary_conditions(space.dof_map(), buff_mat, buff_vec);
+			if(first_ && !compute_linear_residual_) {
+				buff_vec *= -1.;
+				apply_boundary_conditions(space.dof_map(), buff_mat, buff_vec);
+				buff_vec *= -1.;
+			} else {
+				apply_boundary_conditions(space.dof_map(), buff_mat, buff_vec);
+			}
 
-
-			// static int n = 0;
-			// write("mat" + std::to_string(n) + ".m", buff_mat);
-			// write("vec" + std::to_string(n++) + ".m", buff_vec);
+			if(!first_ && !compute_linear_residual_) {
+				apply_zero_boundary_conditions(space.dof_map(), buff_vec);
+			} 
 
 			first_ = false;
 			return true;
+		}
+
+		void reset()
+		{
+			first_ = true;
 		}
 
 		bool first_;
@@ -368,6 +381,8 @@ namespace utopia {
 
 		Matrix buff_mat;
 		Vector buff_vec;
+
+		bool compute_linear_residual_;
 	};
 
 
@@ -383,7 +398,7 @@ namespace utopia {
 		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
 		space.initialize();
 
-		sol = local_zeros(space.dof_map().n_local_dofs());
+		sol = ghosted(space.dof_map().n_local_dofs(), space.dof_map().n_dofs(), space.dof_map().get_send_list());
 
 		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs);
 		Newton<DSMatrixd, DVectord> solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
@@ -410,16 +425,18 @@ namespace utopia {
 		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
 		space.initialize();
 
-		sol = local_zeros(space.dof_map().n_local_dofs());
-		old_sol = local_zeros(space.dof_map().n_local_dofs());
+		auto &dof_map = space.dof_map();
+		sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+		old_sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 
-		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs);
+		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs, true);
 		Newton<DSMatrixd, DVectord> solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
 		solver.verbose(true);
 		
 		libMesh::ExodusII_IO io(space.mesh());
 		
 		for(std::size_t ts = 0; ts < n_ts; ++ts) {
+			nl_fun.reset();
 			if(!solver.solve(nl_fun, sol)) return false;
 			old_sol = sol;
 
@@ -435,7 +452,6 @@ namespace utopia {
 	template<class... Eqs, class... Constr>
 	bool solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol, const bool first = true)
 	{
-
 		//FIXME this stuff only works for the libmesh backend
 		typedef typename GetFirst<Eqs...>::Type Eq1Type;
 		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;

@@ -21,29 +21,36 @@
 #include "utopia_FEKernel.hpp"
 
 #include "libmesh/exodusII_io.h"
+#include "libmesh/nemesis_io.h"
 #include <algorithm>
 
 namespace utopia {
 
-	void run_non_linear_elasticity_test(libMesh::LibMeshInit &init)
+	std::shared_ptr<libMesh::DistributedMesh> square(
+		libMesh::Parallel::Communicator &comm,
+		const unsigned int nx,
+		const unsigned int ny,
+		const double x_left,
+		const double x_right,
+		const double y_bottom,
+		const double y_top,
+		const libMesh::ElemType &elem_type)
 	{
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		// auto mesh = std::make_shared<libMesh::Mesh>(init.comm());
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(comm);
 
 		libMesh::MeshTools::Generation::build_square(*mesh,
-			10, 10,
-			0, 1,
-			0, 1.,
-			libMesh::QUAD8
-			// libMesh::TRI6
+			nx, ny,
+			x_left, x_right,
+			y_bottom, y_top,
+			elem_type
 			);
 
-		// libMesh::MeshTools::Generation::build_cube(*mesh,
-		// 	5, 5, 5,
-		// 	0, 1,
-		// 	0, 1.,
-		// 	0, 1.,
-		// 	libMesh::HEX27);
+		return mesh;
+	}
+
+	void run_non_linear_elasticity_test(libMesh::LibMeshInit &init)
+	{
+		auto mesh = square(init.comm(), 20, 20, 0., 1., 0., 1., libMesh::QUAD8);
 
 		const auto dim = mesh->mesh_dimension();
 
@@ -53,7 +60,6 @@ namespace utopia {
 		const double mu = 1.;
 		const double lambda = 1.;
 
-		// auto elem_order = libMesh::FIRST;
 		auto elem_order = libMesh::SECOND;
 
 		////////////////////////////////////////////
@@ -89,7 +95,6 @@ namespace utopia {
 		-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
 		+ inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
-
 		//saint-venant kirchoff
 		// auto C = F_t * F;
 		// auto E = 0.5 * (C - identity());
@@ -101,67 +106,48 @@ namespace utopia {
 		// 	2.0 * mu * strain_lin + lambda * (trace(strain_lin) * identity())
 		// 	) + grad(u) * S;
 
-
 		/////////////////////////////
 
-		auto l_form = inner(-P, grad(v)) * dX;
+		auto l_form = inner(P, grad(v)) * dX;
 		auto b_form = inner(stress_lin, grad(v)) * dX;
+		auto eq = b_form == l_form;
 
 		////////////////////////////////////////////
 
-		libMesh::ExodusII_IO io(*mesh);
+		libMesh::Nemesis_IO io(*mesh);
 
+		if(dim == 3) {
+			auto uz = u[2];
 
-		DVectord old_sol;
-		for(auto t = 1; t < 100; ++t) {
-			std::cout << "iteration " << t << std::endl;
-			
-			if(dim == 3) {
-				auto uz = u[2];
+			nl_solve(
+				equations(
+						eq
+					),
+				constraints(
+					boundary_conditions(ux == coeff(0.),    {1, 3}),
+					boundary_conditions(uz == coeff(0.),    {1, 3}),
+					boundary_conditions(uy == coeff(0.05),  {1}),
+					boundary_conditions(uy == coeff(-0.05), {3})
+					),
+				sol
+				);
+		} else {
 
-				solve(
-					equations(
-						b_form == l_form
-						),
-					constraints(
-						boundary_conditions(ux == coeff(0.),    {1, 3}),
-						boundary_conditions(uz == coeff(0.),    {1, 3}),
-						boundary_conditions(uy == coeff(0.05),  {1}),
-						boundary_conditions(uy == coeff(-0.05), {3})
-						),
-					sol,
-					t < 2);
-			} else {
-
-				solve(
-					equations(
-						b_form == l_form
-						),
-					constraints(
-						boundary_conditions(ux == coeff(0.),  {0, 2}),
-						boundary_conditions(uy == coeff(0.1), {0}),
-						boundary_conditions(uy == coeff(-0.1), {2})
-						),
-					sol,
-					t < 2);
-			}
-
-			convert(sol, *sys.solution);
-			sys.solution->close();
-			io.write_timestep("neo-hookean.e", *equation_systems, t, t * 0.1);
-
-			if(!empty(old_sol)) {
-				double diff = norm2(old_sol - sol);
-				if(diff < 1e-8) {
-					break;
-				}
-
-				disp("diff_sol:");
-				disp(diff);
-			} 
-
-			old_sol = sol;
+			nl_solve(
+				equations(
+					 eq
+					),
+				constraints(
+					boundary_conditions(ux == coeff(0.),  {0, 2}),
+					boundary_conditions(uy == coeff(0.1), {0}),
+					boundary_conditions(uy == coeff(-0.1), {2})
+					),
+				sol
+				);
 		}
-	}
 
+		convert(sol, *sys.solution);
+		sys.solution->close();
+		io.write_equation_systems("hyper-elasticity.e", *equation_systems);
+	}
 }

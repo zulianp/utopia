@@ -252,7 +252,7 @@ namespace utopia {
 	    assemble_expression_v<LibMeshFunctionSpace>(mass_f == mass_rhs_f, mass_mat_f,  mass_vec_f, false);
 	    assemble_expression_v<LibMeshFunctionSpace>(mass_s == mass_rhs_s, mass_mat_s,  mass_vec_s, false);
 
-	    NonLinearFEFunction<DSMatrixd, DVectord, decltype(eq_fluid)> nl_fun(eq_fluid);
+	    NonLinearFEFunction<DSMatrixd, DVectord, decltype(eq_fluid)> nl_fun(eq_fluid, true);
 
 	    auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
 	    Newton<DSMatrixd, DVectord> solver(linear_solver);
@@ -351,6 +351,7 @@ namespace utopia {
 
 	    		// std::cout << raw_type(sol_f) << std::endl;
 
+	    		nl_fun.reset();
 	     		if(!solver.solve(nl_fun, sol_f)) {
 	     			std::cerr << "FAILED TO SOLVE NONLINEAR SYSTEM" << std::endl;
 	     			break;
