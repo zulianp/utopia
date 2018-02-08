@@ -229,7 +229,7 @@
           this->delta_update(rho, p_k, delta); 
           it++; 
         }
-          return false;
+          return true;
       }
   };
 

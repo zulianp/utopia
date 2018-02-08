@@ -5,6 +5,8 @@
 #include <vector>
 #include <memory>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "utopia_MPI.hpp"
 #include "utopia_Chrono.hpp"
@@ -137,6 +139,14 @@ namespace utopia
     	 		if (pFile!=NULL)
                 	fclose (pFile);
     	 	}
+
+
+    	 	inline bool file_exists(const std::string& file_name) 
+    	 	{
+			  struct stat buffer;   
+			  return (stat (file_name.c_str(), &buffer) == 0); 
+			}
+
 
     	 private:
     	 	FILE *pFile; 

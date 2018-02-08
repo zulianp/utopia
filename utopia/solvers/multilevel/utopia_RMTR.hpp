@@ -195,11 +195,23 @@ namespace utopia
             
             }
 
-            CSVWriter writer; 
-            writer.open_file("/Users/alenakopanicakova/Desktop/tex_files/papers/multilevel_for_PF/results/test_monolithic_2D/3grid_tension_5_smoother.txt"); 
+            // ---------------------------- benchmarking ----------------------------
+            auto rmtr_data_path = Utopia::Instance().get("rmtr_data_path");
+            if(!rmtr_data_path.empty())
+            {
+                CSVWriter writer; 
 
-            writer.write_table_row<SizeType>({(_it_global)}); 
-            writer.close_file(); 
+                if(!writer.file_exists(rmtr_data_path))
+                {
+                    writer.open_file(rmtr_data_path); 
+                    writer.write_table_row<std::string>({("v_cycles")}); 
+                }
+                else
+                    writer.open_file(rmtr_data_path); 
+
+                writer.write_table_row<SizeType>({(_it_global)}); 
+                writer.close_file(); 
+            }
 
 
             return true; 
@@ -304,7 +316,7 @@ namespace utopia
             // TODO:: is this correct??? 
             // if grad is not smooth enoguh, we proceed to Taylor iterations, no recursion anymore
             // if(level == 2 || this->grad_smoothess_termination(g_restricted, g_fine))
-            if(level == 2 )
+            if(level == 2)
             {
                 SizeType l_new = level - 1; 
                 coarse_reduction = this->local_tr_solve(levels(level-2), u_2l, l_new); 
@@ -315,7 +327,8 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = level - 1; 
-                                                        // check g_diff here !!!!!!!!!!!!!!!!!!!!!!!
+                    
+                    // coarse_reduction is missing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
                     this->multiplicative_cycle(levels(level-2), u_2l, g_diff, l_new); 
                 }
             }
