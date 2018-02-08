@@ -31,7 +31,12 @@ namespace utopia {
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 			output_path_ = "steady_contact.e";
-			linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
+			// linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
+			auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
+			// iterative_solver->verbose(true);
+			linear_solver_ = iterative_solver;
+
+
 			n_exports = 0;
 		}
 
@@ -58,14 +63,19 @@ namespace utopia {
 			auto search_radius = params_.search_radius;
 			const int max_outer_loops = 20;
 			Vector old_sol = x_;
+
 			for(int i = 0; i < max_outer_loops; ++i) {
 				contact_is_outdated_ = true;
 				solve_contact_in_current_configuration();
 				
 				const double diff = norm2(old_sol - x_);
 
+				convert(x_, *V_->subspace(0).equation_system().solution);
+				io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+				++n_exports;
+
 				std::cout << "outer_loop: " << i << " diff: " << diff << std::endl;
-				if(diff < 1e-8) {
+				if(diff < 1e-6) {
 					break;
 				}
 
@@ -90,13 +100,8 @@ namespace utopia {
 				const double norm_inc = norm2(inc_c_);
 				converged = norm_inc < tol_;
 
-				convert(x_, *V_->subspace(0).equation_system().solution);
-				io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
-
 				std::cout << "iteration: " << iteration << " norm_inc: " << norm_inc << std::endl;
-				
 				++iteration;
-				++n_exports;
 
 				if(max_iteration <= iteration) {
 					std::cerr << "[Error] solver did not converge" << std::endl;
@@ -124,6 +129,7 @@ namespace utopia {
 			const auto &T = contact_.complete_transformation;
 
 			gc_ = transpose(T) * g_; 
+			//change sign to negative gradient
 			gc_ *= -1.;
 			Hc_ = transpose(T) * H_ * T;
 
@@ -140,13 +146,13 @@ namespace utopia {
 
 			{
 				Range r = range(xc_);
-				Read<Vector>  r_gap(contact_.gap), r_l(lagrange_multiplier_), r_x(xc_), r_i(contact_.is_contact_node);
+				Read<Vector>  r_gap(contact_.gap), r_l(lagrange_multiplier_), r_x(xc_);
 				Write<Vector> w_i(inactive_set_), w_a(active_set_);
 
 				for(auto i = r.begin(); i != r.end(); ++i) {
 					const auto d = lagrange_multiplier_.get(i) + (xc_.get(i) - contact_.gap.get(i));
 
-					if(d >= -1e-15) {
+					if(d >= -1e-12) {
 						inactive_set_.set(i, 0.);
 						active_set_.set(i, 1.);
 					}
