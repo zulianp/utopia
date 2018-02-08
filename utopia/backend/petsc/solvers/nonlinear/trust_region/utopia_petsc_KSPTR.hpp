@@ -132,8 +132,6 @@ namespace utopia
 	            PC pc; 
 	            ierr = KSPGetPC(ksp, &pc);
 	            ierr = PCSetType(pc, this->pc_type().c_str());
-
-	            std::cout<<"his->pc_type().c_str(): "	<< this->pc_type().c_str() << " \n"; 
 	        }
 
 			if(this->ksp_type() == "qcg")
@@ -144,14 +142,8 @@ namespace utopia
 		        ierr = KSPNASHSetRadius(ksp, this->current_radius()); 
 			else
 		        ierr = KSPSTCGSetRadius(ksp, this->current_radius()); 
-		    // std::cout<<"KSPSolver::max_it(): "<< KSPSolver::max_it() << "  \n"; 
-		    // std::cout<<"TRSubproblem::max_it(): "<< TRSubproblem::max_it() << "  \n"; 
 
-		    // std::cout<<"KSPSolver::atol(): "<< KSPSolver::atol() << "  \n"; 
-		    // std::cout<<"TRSubproblem::rtol(): "<< TRSubproblem::atol() << "  \n"; 
-
-
-
+		    
 	        ierr = KSPSetTolerances(ksp, KSPSolver::rtol(), KSPSolver::atol(), PETSC_DEFAULT,  TRSubproblem::max_it());
 	    }
 

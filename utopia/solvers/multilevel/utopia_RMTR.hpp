@@ -2,9 +2,8 @@
 * @Author: alenakopanicakova
 * @Date:   2017-04-19
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-04
+* @Last Modified time: 2018-02-08
 */
-
 
 #ifndef UTOPIA_RMTR_HPP
 #define UTOPIA_RMTR_HPP
@@ -27,7 +26,6 @@
 
 namespace utopia 
 {
-
     /**
      * @brief      The class for Nonlinear Multigrid solver. 
      *
@@ -46,7 +44,6 @@ namespace utopia
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
 
-    
     public:
 
        /**
@@ -85,7 +82,21 @@ namespace utopia
             _hessian_update_delta       = params.hessian_update_delta();
             _hessian_update_eta         = params.hessian_update_eta();
 
+            _verbosity_level           = params.verbosity_level(); 
+
         }
+
+
+        VerbosityLevel verbosity_level() const 
+        {
+            return _verbosity_level; 
+        }
+
+        void verbosity_level(const VerbosityLevel & level )
+        {
+            _verbosity_level = level; 
+        }
+
 
         using NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::solve; 
 
@@ -152,13 +163,26 @@ namespace utopia
                 init_delta_hessians(); 
             //----------------------------------------------
 
+            if(this->verbose())
+            {
+                ColorModifier red(FG_LIGHT_MAGENTA);
+                ColorModifier def(FG_DEFAULT);
+                std::cout << red; 
+
+                if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL)
+                    this->init_solver("RMTR OUTER SOLVE", {" it. ", "|| g_norm ||", "   E "}); 
+
+                PrintInfo::print_iter_status(_it_global, {r0_norm, energy}); 
+                std::cout << def; 
+            }
+
 
             while(!converged)
             {            
-                if(this->cycle_type() ==MULTIPLICATIVE_CYCLE)
+                if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
                     this->multiplicative_cycle(fine_fun, x_h, rhs, l); 
                 else{
-                    std::cout<<"ERROR::UTOPIA_RMTR<< unknown cycle type, solving in multiplicative manner ... \n"; 
+                    std::cout<<"ERROR::UTOPIA_RMTR << unknown cycle type, solving in multiplicative manner ... \n"; 
                     this->multiplicative_cycle(fine_fun, x_h, rhs, l); 
                 }
 
@@ -182,36 +206,24 @@ namespace utopia
                     ColorModifier red(FG_LIGHT_MAGENTA);
                     ColorModifier def(FG_DEFAULT);
                     std::cout << red; 
-                    std::cout<<"outer loop, it: "<< _it_global <<  "     ||g||:    "<< r_norm << "  energy: "<< energy << "   \n"; 
+
+                    if(verbosity_level() > VERBOSITY_LEVEL_NORMAL)
+                        this->init_solver("RMTR OUTER SOLVE", {" it. ", "|| g_norm ||", "   E "}); 
+
+                    PrintInfo::print_iter_status(_it_global, {r_norm, energy}); 
                     std::cout << def; 
                 }
 
                 // check convergence and print interation info
                 converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(_it_global, r_norm, rel_norm, 1); 
-
                 converged = (converged==true || this->get_delta(l-1) < 1e-14) ? true : false; 
 
                 _it_global++; 
             
             }
 
-            // ---------------------------- benchmarking ----------------------------
-            auto rmtr_data_path = Utopia::Instance().get("rmtr_data_path");
-            if(!rmtr_data_path.empty())
-            {
-                CSVWriter writer; 
-
-                if(!writer.file_exists(rmtr_data_path))
-                {
-                    writer.open_file(rmtr_data_path); 
-                    writer.write_table_row<std::string>({("v_cycles")}); 
-                }
-                else
-                    writer.open_file(rmtr_data_path); 
-
-                writer.write_table_row<SizeType>({(_it_global)}); 
-                writer.close_file(); 
-            }
+            // benchmarking
+            print_statistics(); 
 
 
             return true; 
@@ -363,7 +375,7 @@ namespace utopia
             if(rho > this->rho_tol())
                 u_l = u_t; 
             else{
-                if(this->verbose())
+                if(this->verbose() &&  verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
                     std::cout<<"RMTR:: not taking trial point... \n"; 
             }
 
@@ -372,12 +384,12 @@ namespace utopia
             //----------------------------------------------------------------------------
             this->delta_update(rho, level, s_global, converged); 
             if(converged==true && level == this->num_levels()){
-                if(this->verbose())
+                if(this->verbose() &&  verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
                     std::cout<<"YEs, second one ....... \n"; 
                 return true; 
             }
 
-            if(this->verbose())
+            if(this->verbose() &&  verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
                 // just to see what is being printed 
                 this->init_solver("RMTR_coarse_corr_stat", {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta "}); 
@@ -431,7 +443,7 @@ namespace utopia
             energy_old = this->get_multilevel_energy(fun,  x,  g_diff,  H_diff, s_global, level); 
             g_norm = norm2(g); 
             
-            if(this->verbose())
+            if(this->verbose() &&  verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
                 this->print_level_info(level); 
                 PrintInfo::print_iter_status(0, {g_norm, energy_old, ared, pred, rho, get_delta(level-1) }); 
@@ -500,13 +512,13 @@ namespace utopia
 
                 converged  = (converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, get_delta(level-1)); 
                 
-                if(this->verbose())
+                if(this->verbose() &&  verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
                     PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
                 it++; 
 
             }
 
-            if(this->verbose())
+            if(this->verbose() &&  verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
                 ColorModifier color_def(FG_DEFAULT);
                 std::cout<< color_def; 
@@ -890,21 +902,21 @@ namespace utopia
         virtual void print_level_info(const SizeType & level)
         {
             ColorModifier color_out(FG_LIGHT_YELLOW);
-            if(this->verbose())
+            if(this->verbose() &&  verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
                 if(level == 1)
                 {
                     std::cout << color_out; 
-                    this->init_solver("COARSE SOLVE", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
+                    std::string solver_type = "COARSE SOLVE:: " + std::to_string(level); 
+                    this->init_solver(solver_type, {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
                 }
                 else
                 {
                     color_out.set_color_code(FG_LIGHT_GREEN); 
                     std::cout << color_out; 
-                    this->init_solver("SMOOTHER", {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
+                    std::string solver_type = "SMOOTHER:  " + std::to_string(level); 
+                    this->init_solver(solver_type, {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
                 }
-
-                std::cout<<"LEVEL: "<< level << "   \n"; 
             }
         }
 
@@ -1029,6 +1041,29 @@ namespace utopia
 
 
 
+
+        virtual void print_statistics() const 
+        {
+            auto rmtr_data_path = Utopia::Instance().get("rmtr_data_path");
+            if(!rmtr_data_path.empty())
+            {
+                CSVWriter writer; 
+                if(!writer.file_exists(rmtr_data_path))
+                {
+                    writer.open_file(rmtr_data_path); 
+                    writer.write_table_row<std::string>({("v_cycles")}); 
+                }
+                else
+                    writer.open_file(rmtr_data_path); 
+
+                writer.write_table_row<SizeType>({(_it_global)}); 
+                writer.close_file(); 
+            }
+        }
+
+
+
+
     protected:   
         SizeType                            _it_global;                 /** * global iterate counter  */
         std::vector<Scalar>                 _deltas;                    /** * deltas on given level  */
@@ -1062,6 +1097,9 @@ namespace utopia
 
         Scalar                         _hessian_update_delta;       /** * tolerance used for updating hessians */
         Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
+
+
+        VerbosityLevel                  _verbosity_level; 
 
 
     };
