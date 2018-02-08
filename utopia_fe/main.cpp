@@ -35,6 +35,7 @@
 #include "utopia_NonLinearElasticityTest.hpp"
 #include "utopia_FEEvalTest.hpp"
 #include "utopia_LeastSquaresHelmholtz.hpp"
+#include "utopia_SteadyContact.hpp"
 
 #include <functional>
 
@@ -75,6 +76,7 @@ int main(const int argc, char *argv[])
 	    runners["test_msh_reader"] = test_msh_reader;
 	    runners["fe_test"] = run_fe_eval_test;
 	    runners["helm"] = run_form_least_squares_helmholtz;
+	    runners["contact_steady"] = run_steady_contact;
 
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
