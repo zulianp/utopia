@@ -1,10 +1,13 @@
 #include "utopia_SteadyContact.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
+#include "utopia_Newmark.hpp"
+#include "utopia_LibMeshBackend.hpp"
 
 namespace utopia {
 	template class ContactSolver<DSMatrixd, DVectord>;
-	typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
 
+	// typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
+	typedef utopia::Newmark<DSMatrixd, DVectord> ContactSolverT;
 
 	void run_steady_contact(libMesh::LibMeshInit &init)
 	{
@@ -16,8 +19,11 @@ namespace utopia {
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("steady-contact");
 
-		const double mu = 1.;
-		const double lambda = 1.;
+		const double dt = 0.1;
+		LameeParameters lamee_params(10., 20.);
+		lamee_params.set_mu(2, 50.);
+		lamee_params.set_lambda(2, 100.);
+
 
 		auto elem_order = libMesh::FIRST;
 
@@ -38,8 +44,8 @@ namespace utopia {
 
 
 		auto constr = constraints(
-			boundary_conditions(uy == coeff(0.32),  {4}),
-			boundary_conditions(uy == coeff(-0.28), {3}),
+			boundary_conditions(uy == coeff(dt*0.32),  {4}),
+			boundary_conditions(uy == coeff(-dt*0.28), {3}),
 			boundary_conditions(ux == coeff(0.),    {3, 4})
 		);
 
@@ -47,18 +53,21 @@ namespace utopia {
 		Vx.initialize();
 
 
-		// auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, mu, LameeParameters(mu, lambda));
-		// auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, LameeParameters(mu, lambda));
-		auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, LameeParameters(mu, lambda));
+		auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		// auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		// auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 
 		
 		ContactParams contact_params;
-		contact_params.contact_pair_tags = {{1, 2}};
-		// contact_params.contact_pair_tags = {{2, 1}};
-		contact_params.search_radius = 1.7;
+		// contact_params.contact_pair_tags = {{1, 2}};
+		contact_params.contact_pair_tags = {{2, 1}};
+		contact_params.search_radius = 0.3;
 
-		ContactSolverT sc(make_ref(V), material, contact_params);
-		sc.solve();
+		ContactSolverT sc(make_ref(V), material, dt, contact_params); sc.initial_condition();
+		// ContactSolverT sc(make_ref(V), material, contact_params);
+		
+		sc.solve_dynamic(20);
+		// sc.solve_steady();
 
 	}
 }

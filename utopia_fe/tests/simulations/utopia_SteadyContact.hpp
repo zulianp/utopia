@@ -27,10 +27,10 @@ namespace utopia {
 			const std::shared_ptr<FunctionSpaceT> &V,
 			const std::shared_ptr<ElasticMaterial<Matrix, Vector>> &material,
 			const ContactParams &params)
-		: V_(V), material_(material), params_(params), first_(true), tol_(1e-10)
+		: V_(V), material_(material), params_(params), first_(true), tol_(1e-10), debug_output_(false)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
-			output_path_ = "steady_contact.e";
+			output_path_ = "contact_sol.e";
 			linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
 			// auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
 			// iterative_solver->atol(1e-14);
@@ -57,12 +57,44 @@ namespace utopia {
 			deform_mesh(V_0.mesh(), V_0.dof_map(), -x);
 		}
 
-		bool solve()
+		bool solve_steady()
+		{
+			initialize();
+			if(!solve_contact()) return false;
+
+			convert(x_, *V_->subspace(0).equation_system().solution);
+			io_->write_equation_systems(output_path_, V_->subspace(0).equation_systems());
+
+			finalize();
+			return true;
+		}
+
+		bool solve_dynamic(const int n_time_steps)
 		{
 			initialize();
 
+			n_exports = 0;
 
-			auto search_radius = params_.search_radius;
+			convert(x_, *V_->subspace(0).equation_system().solution);
+			io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+
+			++n_exports;
+			for(int t = 0; t < n_time_steps; ++t) {
+				first_ = true;
+				if(!solve_contact()) return false;
+
+				convert(x_, *V_->subspace(0).equation_system().solution);
+				io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+
+				++n_exports;
+			}
+
+			finalize();
+			return true;
+		}
+
+		bool solve_contact()
+		{
 			const int max_outer_loops = 20;
 			Vector old_sol = x_;
 
@@ -72,8 +104,11 @@ namespace utopia {
 				
 				const double diff = norm2(old_sol - x_);
 
-				convert(x_, *V_->subspace(0).equation_system().solution);
-				io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+				if(debug_output_) {
+					convert(x_, *V_->subspace(0).equation_system().solution);
+					io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+				}
+
 				++n_exports;
 
 				std::cout << "outer_loop: " << i << " diff: " << diff << std::endl;
@@ -82,11 +117,8 @@ namespace utopia {
 				}
 
 				old_sol = x_;
-				params_.search_radius = 0.5 * search_radius + 1e-6;
 			}
 
-			params_.search_radius = search_radius;
-			finalize();
 			return true;
 		}
 
@@ -197,7 +229,7 @@ namespace utopia {
 			n_exports = 0;
 		}
 
-		void initialize()
+		virtual void initialize()
 		{
 			reset();
 			auto &dof_map = V_->subspace(0).dof_map();
@@ -233,12 +265,28 @@ namespace utopia {
 			return *V_;
 		}
 
+		const Vector &displacement() const
+		{
+			return x_;
+		}
+
+		Vector &displacement()
+		{
+			return x_;
+		}
+
+		void debug_output(const bool val)
+		{
+			debug_output_ = val;
+		}
+
 	private:
 		std::shared_ptr<FunctionSpaceT> V_;
 		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
 		ContactParams params_;
 		bool first_;
 		bool contact_is_outdated_;
+		
 		Scalar tol_;
 
 		std::shared_ptr<LinearSolver<Matrix, Vector> > linear_solver_;
@@ -269,6 +317,7 @@ namespace utopia {
 		int n_exports;
 
 		std::string output_path_;
+		bool debug_output_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);
