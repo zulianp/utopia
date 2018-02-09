@@ -21,6 +21,7 @@
 #include "utopia_AffineTransform.hpp"
 #include "utopia_Contact.hpp"
 #include "utopia_libmesh.hpp"
+#include "utopia_LinearElasticity.hpp"
 
 #include "libmesh/exodusII_io.h"
 #include "libmesh/parallel_mesh.h"
@@ -99,10 +100,9 @@ namespace utopia {
 		old.init(ls, gs);
 		current.init(ls, gs);
 
-		auto elast = std::make_shared<LinearElasticity>();
-
 		LameeParameters params;
-		elast->init(V, params, old.displacement, mech_ctx.stiffness_matrix, old.internal_force);
+		auto elast = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, params);
+		elast->assemble_hessian_and_gradient(old.displacement, mech_ctx.stiffness_matrix, old.internal_force);
 
 		auto vx = test(Vx);
 		auto vy = test(Vy);

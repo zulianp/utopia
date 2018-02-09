@@ -16,29 +16,31 @@
 namespace utopia {
 
 	template<class Matrix, class Vector>
-	class SteadyContact {
+	class ContactSolver {
 	public:
 		DEF_UTOPIA_SCALAR(Matrix)
 		typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
 		// typedef libMesh::Nemesis_IO Exporter;
 		typedef libMesh::ExodusII_IO Exporter;
 
-		SteadyContact(
+		ContactSolver(
 			const std::shared_ptr<FunctionSpaceT> &V,
-			const std::shared_ptr<HyperElasticMaterial<Matrix, Vector>> &material,
+			const std::shared_ptr<ElasticMaterial<Matrix, Vector>> &material,
 			const ContactParams &params)
 		: V_(V), material_(material), params_(params), first_(true), tol_(1e-10)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 			output_path_ = "steady_contact.e";
-			// linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
-			auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
-			// iterative_solver->verbose(true);
-			linear_solver_ = iterative_solver;
-
-
+			linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
+			// auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
+			// iterative_solver->atol(1e-14);
+			// iterative_solver->stol(1e-14);
+			// iterative_solver->rtol(1e-14);
+			// linear_solver_ = iterative_solver;
 			n_exports = 0;
 		}
+
+		virtual ~ContactSolver() {}
 
 		void update_contact(const Vector &x)
 		{
@@ -112,6 +114,11 @@ namespace utopia {
 			return true;
 		}
 
+		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
+		{
+			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
+		}
+
 		bool step() 
 		{ 
 			x_.implementation().update_ghosts();
@@ -123,7 +130,9 @@ namespace utopia {
 				contact_is_outdated_ = false;
 			}
 
-			material_->assemble_hessian_and_gradient(x_, H_, g_);
+			if(!assemble_hessian_and_gradient(x_, H_, g_)) {
+				return false;
+			}
 
 			//handle transformations
 			const auto &T = contact_.complete_transformation;
@@ -198,14 +207,35 @@ namespace utopia {
 			lagrange_multiplier_ = local_zeros(local_size(x_));
 		}
 
-		void finalize()
+		virtual void finalize()
 		{
 
 		}
 
+		const Contact &contact() const
+		{
+			return contact_;
+		}
+
+		ElasticMaterial<Matrix, Vector> &material()
+		{
+			return *material_;
+		}
+
+
+		FunctionSpaceT &space()
+		{
+			return *V_;
+		}
+	
+		const FunctionSpaceT &space() const
+		{
+			return *V_;
+		}
+
 	private:
 		std::shared_ptr<FunctionSpaceT> V_;
-		std::shared_ptr<HyperElasticMaterial<Matrix, Vector>> material_;
+		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
 		ContactParams params_;
 		bool first_;
 		bool contact_is_outdated_;
@@ -232,12 +262,7 @@ namespace utopia {
 
 		Vector lagrange_multiplier_;
 
-		//states
-		MechanicsState current_state;
-		MechanicsState previous_state;
-
 		//additional vectors
-		DVectord Fcon_m_F_;
 		DSMatrixd internal_mass_matrix_;
 
 		std::shared_ptr<Exporter> io_;

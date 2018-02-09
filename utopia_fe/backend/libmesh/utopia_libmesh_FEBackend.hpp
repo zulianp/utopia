@@ -1029,6 +1029,21 @@ namespace utopia {
 			return ret;
 		}
 
+		template<typename T>
+		static auto multiply(
+			const double val,
+			FQValues<T> &&vals,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<T>
+		{
+			for(auto &v : vals) {
+				for(auto &v_i : v) {
+					v_i *= val;
+				}
+			}
+
+			return std::move(vals);
+		}
+
 
 		template<typename T>
 		static auto apply_binary(

@@ -11,13 +11,16 @@ namespace utopia {
 	class NeoHookean : public HyperElasticMaterial<Matrix, Vector> {
 	public:
 
-		NeoHookean(FunctionSpace &V, const double mu, const double lambda)
-		: V_(V), mu_(mu), lambda_(lambda)
+		NeoHookean(FunctionSpace &V, const LameeParameters &params)
+		: V_(V), params_(params)
 		{}
 
 		bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
 		{
 			Vector x_copy = x;
+
+			auto mu = params_.var_mu();
+			auto lambda = params_.var_lambda();
 
 			auto u = trial(V_);
 			auto v = test(V_);
@@ -29,11 +32,11 @@ namespace utopia {
 			auto F_inv_t = transpose(F_inv);
 			auto J       = det(F);
 			
-			auto P = mu_ * (F - F_inv_t) + (lambda_ * logn(J)) * F_inv_t;
+			auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 
-			auto stress_lin = mu_ * grad(u) 
-			-(lambda_ * logn(J) - mu_) * F_inv_t * transpose(grad(u)) * F_inv_t 
-			+ inner(lambda_ * F_inv_t, grad(u)) * F_inv_t;
+			auto stress_lin = mu * grad(u) 
+			-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
+			+ inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
 			auto l_form = inner(P, grad(v)) * dX;
 			auto b_form = inner(stress_lin, grad(v)) * dX;
@@ -43,7 +46,7 @@ namespace utopia {
 
 	private:
 		FunctionSpace &V_;
-		double mu_, lambda_;
+		LameeParameters params_;
 	};
 }
 

@@ -11,14 +11,16 @@ namespace utopia {
 	template<class FunctionSpace, class Matrix, class Vector>
 	class SaintVenantKirchoff : public HyperElasticMaterial<Matrix, Vector> {
 	public:
-
-		SaintVenantKirchoff(FunctionSpace &V, const double mu, const double lambda)
-		: V_(V), mu_(mu), lambda_(lambda)
+		SaintVenantKirchoff(FunctionSpace &V, const LameeParameters &params)
+		: V_(V), params_(params)
 		{}
 
 		bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
 		{
 			Vector x_copy = x;
+
+			auto mu = params_.var_mu();
+			auto lambda = params_.var_lambda();
 
 			auto u = trial(V_);
 			auto v = test(V_);
@@ -32,12 +34,12 @@ namespace utopia {
 			
 			auto C = F_t * F;
 			auto E = 0.5 * (C - identity());
-			auto S = 2.0 * mu_ * E + lambda_ * (trace(E) * identity());
+			auto S = 2.0 * mu * E + lambda * (trace(E) * identity());
 			auto P = F * S;
 
 			auto strain_lin = 0.5 * (F_t * grad(u) + transpose(grad(u)) * F);
 			auto stress_lin = F * (
-				2.0 * mu_ * strain_lin + lambda_ * (trace(strain_lin) * identity())
+				2.0 * mu * strain_lin + lambda * (trace(strain_lin) * identity())
 				) + grad(u) * S;
 
 
@@ -49,7 +51,7 @@ namespace utopia {
 
 	private:
 		FunctionSpace &V_;
-		double mu_, lambda_;
+		LameeParameters params_;
 	};
 }
 

@@ -2,8 +2,8 @@
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 
 namespace utopia {
-	template class SteadyContact<DSMatrixd, DVectord>;
-	typedef utopia::SteadyContact<DSMatrixd, DVectord> SteadyContactT;
+	template class ContactSolver<DSMatrixd, DVectord>;
+	typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
 
 
 	void run_steady_contact(libMesh::LibMeshInit &init)
@@ -47,15 +47,17 @@ namespace utopia {
 		Vx.initialize();
 
 
-		// auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, mu, lambda);
-		auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, mu, lambda);
+		// auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, mu, LameeParameters(mu, lambda));
+		// auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, LameeParameters(mu, lambda));
+		auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, LameeParameters(mu, lambda));
+
 		
 		ContactParams contact_params;
-		// contact_params.contact_pair_tags = {{1, 2}};
-		contact_params.contact_pair_tags = {{2, 1}};
+		contact_params.contact_pair_tags = {{1, 2}};
+		// contact_params.contact_pair_tags = {{2, 1}};
 		contact_params.search_radius = 1.7;
 
-		SteadyContactT sc(make_ref(V), material, contact_params);
+		ContactSolverT sc(make_ref(V), material, contact_params);
 		sc.solve();
 
 	}
