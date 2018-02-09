@@ -23,8 +23,8 @@ namespace utopia {
 
 		////////////////////////////////////////////
 
-		auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "u_x");
-		auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "u_y");
+		auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
+		auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
 		auto V = Vx * Vy;
 
 		// if(dim == 3) {
@@ -47,9 +47,12 @@ namespace utopia {
 		Vx.initialize();
 
 
-		auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, mu, lambda);
+		// auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, mu, lambda);
+		auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, mu, lambda);
+		
 		ContactParams contact_params;
-		contact_params.contact_pair_tags = {{1, 2}};
+		// contact_params.contact_pair_tags = {{1, 2}};
+		contact_params.contact_pair_tags = {{2, 1}};
 		contact_params.search_radius = 1.7;
 
 		SteadyContactT sc(make_ref(V), material, contact_params);

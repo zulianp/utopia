@@ -18,9 +18,11 @@ namespace utopia {
 
 		bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
 		{
+			Vector x_copy = x;
+
 			auto u = trial(V_);
 			auto v = test(V_);
-			auto uk = interpolate(x, u);
+			auto uk = interpolate(x_copy, u);
 
 			auto F 		 = identity() + grad(uk);
 			auto F_t 	 = transpose(F);
@@ -42,7 +44,7 @@ namespace utopia {
 			auto l_form = inner(P, grad(v)) * dX;
 			auto b_form = inner(stress_lin, grad(v)) * dX;
 		
-			assemble(b_form == l_form, hessian, gradient);
+			return assemble(b_form == l_form, hessian, gradient);
 		}
 
 	private:

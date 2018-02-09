@@ -142,7 +142,7 @@ namespace utopia {
 			inactive_set_ = local_values(local_size(x_).get(0), 1.);
 			active_set_   = local_zeros(local_size(x_));
 
-			lagrange_multiplier_ = transpose(T) * lagrange_multiplier_;
+			lagrange_multiplier_ = (gc_ - Hc_ * xc_);
 
 			{
 				Range r = range(xc_);
@@ -177,8 +177,6 @@ namespace utopia {
 
 			xc_ += inc_c_;
 			x_ += T * inc_c_;
-
-			lagrange_multiplier_ = T * (gc_ - Hc_ * inc_c_);
 
 			first_ = false;
 			return true;
