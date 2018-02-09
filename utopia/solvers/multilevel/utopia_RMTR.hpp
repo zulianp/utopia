@@ -139,17 +139,11 @@ namespace utopia
             SizeType l = this->num_levels(); 
             Scalar r_norm, r0_norm, rel_norm;
             
-
-            std::cout<<"---------- 0 ------------ \n"; 
-
             Matrix hessian; 
             fine_fun.hessian(x_h, hessian); 
-            std::cout<<"---------- 0.3 ------------ \n"; 
 
             fine_fun.gradient(x_h, F_h); 
             r0_norm = norm2(F_h); 
-
-            std::cout<<"---------- 0.5 ------------ \n"; 
 
             this->make_iterate_feasible(fine_fun, x_h); 
             Scalar energy; 
@@ -157,30 +151,25 @@ namespace utopia
 
             _it_global = 0; 
 
-            std::cout<<"---------- 1 ------------ \n"; 
             //-------------- INITIALIZATIONS ---------------
             init_deltas(); 
-            std::cout<<"---------- 2 ------------ \n"; 
-            init_delta_gradients(); 
-            std::cout<<"---------- 3 ------------ \n"; 
+            init_delta_gradients();  
             init_x_initials(); 
-            std::cout<<"---------- 4 ------------ \n"; 
+            
 
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
                 init_delta_hessians(); 
-            std::cout<<"---------- 5 ------------ \n"; 
+            
             //----------------------------------------------
 
-            if(this->verbose())
+            if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL)
             {
                 ColorModifier red(FG_LIGHT_MAGENTA);
                 ColorModifier def(FG_DEFAULT);
                 std::cout << red;
 
                 std::string name_id = this->name_id() + "     Number of levels: " + std::to_string(l); 
-
-                if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL)
-                    this->init_solver(name_id, {" it. ", "|| g_norm ||", "   E "}); 
+                this->init_solver(name_id, {" it. ", "|| g_norm ||", "   E "}); 
 
                 PrintInfo::print_iter_status(_it_global, {r0_norm, energy}); 
                 std::cout << def; 
@@ -213,10 +202,6 @@ namespace utopia
 
                 _it_global++; 
 
-                // check convergence and print interation info
-                converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(_it_global, r_norm, rel_norm, 1); 
-                converged = (converged==true || this->get_delta(l-1) < 1e-14) ? true : false; 
-
                 if(this->verbose())
                 {
                     ColorModifier red(FG_LIGHT_MAGENTA);
@@ -229,6 +214,11 @@ namespace utopia
                     PrintInfo::print_iter_status(_it_global, {r_norm, energy}); 
                     std::cout << def; 
                 }
+
+
+                // check convergence and print interation info
+                converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(_it_global, r_norm, rel_norm, 1); 
+                converged = (converged==true || this->get_delta(l-1) < 1e-14) ? true : false; 
                 
             }
 
@@ -276,6 +266,10 @@ namespace utopia
             // PRE-SMOOTHING 
             this->local_tr_solve(fine_fun, u_l, level); 
 //--------------------------------------------------------------------------------------------------------------------------------------------
+            
+            if(level < this->num_levels())
+                s_global = u_l - this->get_x_initial(level - 1);
+            
             this->get_multilevel_gradient(fine_fun, u_l, g_fine, s_global, level); 
 
             if(level == this->num_levels())
@@ -326,21 +320,16 @@ namespace utopia
             this->set_delta_zero(level-2, get_delta(level-1)); 
         
             s_coarse = 0*u_2l; 
-            coarse_reduction = this->get_multilevel_energy(levels(level-2),  this->get_x_initial(level - 2),  s_coarse, level-1); 
+            coarse_reduction = this->get_multilevel_energy(levels(level-2),  u_2l,  s_coarse, level-1); 
 
 
             //----------------------------------------------------------------------------
             //               recursion  / Taylor correction
             //----------------------------------------------------------------------------
-
-            // TODO:: is this correct??? 
-            // if grad is not smooth enoguh, we proceed to Taylor iterations, no recursion anymore
-            // if(level == 2 || this->grad_smoothess_termination(g_restricted, g_fine))
-            if(level == 2)
+            if(level == 2 || !grad_smoothess_termination(g_restricted, g_fine))
             {
                 SizeType l_new = level - 1; 
-                //coarse_reduction = 
-                this->local_tr_solve(levels(level-2), u_2l, l_new); 
+                this->local_tr_solve(levels(level-2), u_2l, l_new, true); 
             }
             else
             {
@@ -348,7 +337,6 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = level - 1; 
-                    // coarse_reduction is missing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
                     this->multiplicative_cycle(levels(level-2), u_2l, g_diff, l_new); 
                 }
             }
@@ -377,7 +365,7 @@ namespace utopia
 
             if(level < this->num_levels())
                 s_global = u_t - this->get_x_initial(level - 1);      
-            
+
             E_new = this->get_multilevel_energy(fine_fun,  u_t,  s_global, level); 
             
             //----------------------------------------------------------------------------
@@ -435,7 +423,7 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual void local_tr_solve(FunctionType &fun, Vector & x, const SizeType & level)
+        virtual void local_tr_solve(FunctionType &fun, Vector & x, const SizeType & level, const bool & exact_solve_flg = false)
         {   
             Vector s_global, g; 
             Matrix  H; 
@@ -447,7 +435,9 @@ namespace utopia
 
 
             Vector s = local_zeros(local_size(x)); 
-            s_global = s; 
+            
+            if(level < this->num_levels())
+                    s_global = x - get_x_initial(level - 1);       
 
 
             this->get_multilevel_gradient(fun, x, g, s_global, level); 
@@ -464,6 +454,8 @@ namespace utopia
 
             while(!converged)
             {
+                if(level < this->num_levels())
+                    s_global = x - get_x_initial(level - 1);
                 
                 this->get_multilevel_hessian(fun, x, H, level); 
                 energy_old = this->get_multilevel_energy(fun,  x, s_global, level); 
@@ -473,7 +465,7 @@ namespace utopia
             //----------------------------------------------------------------------------
                 // correction needs to get prepared 
                 s = 0 * x;
-                this->solve_qp_subproblem(H, g, s, level); 
+                this->solve_qp_subproblem(H, g, s, level, exact_solve_flg); 
 
                 TrustRegionBase<Matrix, Vector>::get_pred(g, H, s, pred); 
                 Vector tp = x + s;  
@@ -496,7 +488,6 @@ namespace utopia
                 if (rho >= this->rho_tol())
                 {
                     x = tp; 
-                    //reduction += ared; 
                     it_success++; 
                     make_grad_updates =  true; 
                 }
@@ -510,7 +501,8 @@ namespace utopia
             //----------------------------------------------------------------------------
             //     trust region update 
             //----------------------------------------------------------------------------
-           
+                
+                // TODO:: check this out 
                 this->delta_update(rho, level, s_global, converged); 
 
                 if(make_grad_updates)
@@ -687,16 +679,7 @@ namespace utopia
         {
             Scalar Rg_norm = norm2(g_restricted); 
             Scalar g_norm = norm2(g_coarse);
-            // return (Rg_norm >= _grad_smoothess_termination g_norm) ? true : false;   
-            
-            if(Rg_norm >= _grad_smoothess_termination * g_norm)
-            {
-                std::cout<<"grad is not smooth enough............... => NO RECURSION ANYMORE ....  \n"; 
-                return true; 
-            }
-            else
-                return false; 
-
+            return (Rg_norm >= _grad_smoothess_termination * g_norm) ? true : false;   
         }
 
 
@@ -945,9 +928,9 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool solve_qp_subproblem(const Matrix & H, const Vector & g, Vector & s, const SizeType & level)
+        virtual bool solve_qp_subproblem(const Matrix & H, const Vector & g, Vector & s, const SizeType & level, const bool & flg)
         {
-            if(level == 1)
+            if(flg)
             {
                 _coarse_tr_subproblem->current_radius(get_delta(level-1));  
                 _coarse_tr_subproblem->atol(1e-16); 
