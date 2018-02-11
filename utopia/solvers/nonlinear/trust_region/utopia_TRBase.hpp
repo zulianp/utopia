@@ -66,15 +66,15 @@ namespace utopia  {
     Scalar eps()        const  { return eps_; } 
 
 
-    void delta_max(const bool & delta_max_in ) { delta_max_ = delta_max_in; }; 
-    void delta_min(const bool & delta_min_in ) { delta_min_ = delta_min_in; }; 
-    void delta0(const bool & delta0_in ) { delta0_ = delta0_in; }; 
-    void gamma1(const bool & gamma1_in ) { gamma1_ = gamma1_in; }; 
-    void gamma2(const bool & gamma2_in ) { gamma2_ = gamma2_in; }; 
-    void eta1(const bool & eta1_in ) { eta1_ = eta1_in; }; 
-    void eta2(const bool & eta2_in ) { eta2_ = eta2_in; }; 
-    void rho_tol(const bool & rho_tol_in ) { rho_tol_ = rho_tol_in; }; 
-    void eps(const bool & eps_in ) { eps_ = eps_in; }; 
+    void delta_max(const Scalar & delta_max_in ) { delta_max_ = delta_max_in; }; 
+    void delta_min(const Scalar & delta_min_in ) { delta_min_ = delta_min_in; }; 
+    void delta0(const Scalar & delta0_in ) { delta0_ = delta0_in; }; 
+    void gamma1(const Scalar & gamma1_in ) { gamma1_ = gamma1_in; }; 
+    void gamma2(const Scalar & gamma2_in ) { gamma2_ = gamma2_in; }; 
+    void eta1(const Scalar & eta1_in ) { eta1_ = eta1_in; }; 
+    void eta2(const Scalar & eta2_in ) { eta2_ = eta2_in; }; 
+    void rho_tol(const Scalar & rho_tol_in ) { rho_tol_ = rho_tol_in; }; 
+    void eps(const Scalar & eps_in ) { eps_ = eps_in; }; 
 
   protected:
 

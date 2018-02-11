@@ -72,11 +72,9 @@ namespace utopia
             _it_global                  = 0;          
             _parameters                 = params; 
 
-            _delta_init                 = params.delta0(); 
             _max_coarse_it              = params.max_coarse_it();
             _max_smoothing_it           = params.max_smoothing_it();
             _eps_delta_termination      = params.eps_delta_termination();
-            _delta_min                  = params.delta_min();
             _grad_smoothess_termination = params.grad_smoothess_termination();
             _eps_grad_termination       = params.eps_grad_termination();
             _hessian_update_delta       = params.hessian_update_delta();
@@ -252,9 +250,12 @@ namespace utopia
 
 //--------------------------------------------------------------------------------------------------------------------------------------------
             // PRE-SMOOTHING 
-            this->local_tr_solve(fine_fun, u_l, level); 
+            converged = this->local_tr_solve(fine_fun, u_l, level); 
+
+            // making sure that correction does not exceed tr radius ... 
+            if(converged)
+                return true; 
 //--------------------------------------------------------------------------------------------------------------------------------------------
-            
             compute_s_global(u_l, level, s_global); 
             this->get_multilevel_gradient(fine_fun, u_l, g_fine, s_global, level); 
 
@@ -301,7 +302,7 @@ namespace utopia
             this->set_delta_gradient(level-2, g_diff); 
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
                 this->set_delta_hessian(level-2, H_diff); 
-            
+
             this->set_x_initial(level-2, u_2l); 
             
         
@@ -370,12 +371,11 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                                  trust region update 
             //----------------------------------------------------------------------------
-            this->delta_update(rho, level, s_global, converged); 
-            if(converged==true && level == this->num_levels()){
-                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
-                    std::cout<<"YEs, second one ....... \n"; 
+            converged = delta_update(rho, level, s_global); 
+            
+            // terminate, since TR rad. does not allow to take more corrections on given level 
+            if(converged==true) 
                 return true; 
-            }
 
             if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
@@ -403,14 +403,14 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual void local_tr_solve(FunctionType &fun, Vector & x, const SizeType & level, const bool & exact_solve_flg = false)
+        virtual bool local_tr_solve(FunctionType &fun, Vector & x, const SizeType & level, const bool & exact_solve_flg = false)
         {   
             Vector s_global, g; 
             Matrix  H; 
 
             SizeType it_success = 0, it = 0; 
             Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0; //, reduction = 0.0; 
-            bool make_grad_updates = true, make_hess_updates = true, converged = false; 
+            bool make_grad_updates = true, make_hess_updates = true, converged = false, delta_converged = false; 
 
 
             Vector s = local_zeros(local_size(x)); 
@@ -475,8 +475,7 @@ namespace utopia
                 // TODO:: can be done more efficiently 
                 compute_s_global(x, level, s_global); 
 
-                // TODO:: check this out 
-                this->delta_update(rho, level, s_global, converged); 
+                delta_converged = delta_update(rho, level, s_global); 
 
                 if(make_grad_updates)
                 {
@@ -486,7 +485,7 @@ namespace utopia
                     make_hess_updates =  this->update_hessian(g, g_old, s, H, rho, g_norm); 
                 }
 
-                converged  = (converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, get_delta(level-1)); 
+                converged  = (delta_converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, get_delta(level-1)); 
                 
                 if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
                     PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
@@ -494,16 +493,15 @@ namespace utopia
 
             }
 
-            std::cout<<"local solve terminating with: "<< it_success << "  \n"; 
-
             if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
                 ColorModifier color_def(FG_DEFAULT);
                 std::cout<< color_def; 
             }
+
+            return delta_converged; 
+
         }
-
-
 
 
 
@@ -518,46 +516,43 @@ namespace utopia
          * @param[in]  s_global   Sum of all corrections on given level 
          * @param      converged  convergence flag
          */
-        virtual void delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global, bool & converged)
+        virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global)
         {
             Scalar intermediate_delta; 
 
             if(rho < this->eta1())
-            {   
                  intermediate_delta = std::max(this->gamma1() * this->get_delta(level-1), 1e-15); 
-            }
             else if (rho > this->eta2() )
-            {
                  intermediate_delta = std::min(this->gamma2() * this->get_delta(level-1), 1e15); 
-            }
             else
-            {
                 intermediate_delta = this->get_delta(level-1); 
-            }      
+
 
             // on the finest level we work just with one radius 
             if(level==this->num_levels())
             {
                 this->set_delta(level-1, intermediate_delta); 
+                return false; 
             }
             else
             {
                 Scalar corr_norm = this->level_dependent_norm(s_global, level); 
-                converged = this->delta_termination(corr_norm, level); 
-                if(converged)
-                {
-                    std::cout<<"termination  due to small radius for given level ... \n"; 
-                    return; 
-                }
+                bool converged = this->delta_termination(corr_norm, level); 
+                
+                if(converged && verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+                    std::cout<<"termination  due to small radius on level: "<< level << ". \n"; 
 
                 corr_norm = this->get_delta(level) - corr_norm; 
                 corr_norm = std::min(intermediate_delta, corr_norm); 
 
+
                 // TODO:: check this out, since this should never happen 
-                if(corr_norm <= 0)
-                    corr_norm = 0; 
+                if(corr_norm <= 0.0)
+                    corr_norm = 0.0; 
 
                 this->set_delta(level-1, std::min(intermediate_delta, corr_norm)); 
+
+                return converged; 
             }
         }
 
@@ -586,16 +581,12 @@ namespace utopia
 
 
 
-
-
-// ---------------------------------- convergence checks -------------------------------
-       
-
+    // ---------------------------------- convergence checks -------------------------------
         virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta)
         {   
             bool converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(it, r_norm, rel_norm, 1); 
 
-            if(delta < _delta_min)
+            if(delta < this->delta_min())
             {
                 converged = true; 
                 this->exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
@@ -622,7 +613,7 @@ namespace utopia
             else if (level > 1 && it_success >= _max_smoothing_it)
                 return true; 
 
-            if(delta < _delta_min)
+            if(delta < this->delta_min())
                 return true; 
 
             return this->criticality_measure_termination(g_norm); 
@@ -637,7 +628,7 @@ namespace utopia
          */
         virtual bool delta_termination(const Scalar & corr_norm, const SizeType & level)
         {   
-            return (corr_norm > (1 - _eps_delta_termination) * get_delta(level-1)) ? true : false; 
+            return (corr_norm > (1.0 - _eps_delta_termination) * get_delta(level)) ? true : false; 
         }
 
 
@@ -732,7 +723,7 @@ namespace utopia
         virtual bool init_deltas()
         {
             for(Scalar i = 0; i < this->num_levels(); i ++)
-                _deltas.push_back(_delta_init); 
+                _deltas.push_back(this->delta0()); 
 
             return true; 
         }
@@ -1052,13 +1043,11 @@ namespace utopia
         // ----------------------- PARAMETERS ----------------------
         Parameters                      _parameters; 
 
-        
-        Scalar                          _delta_init;                /** * delta zero  */
+    
         SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
         SizeType                        _max_smoothing_it;          /** * max smoothing iterations  */
 
         Scalar                         _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level corection stays inside fine level radius  */
-        Scalar                         _delta_min;                  /** * minimum delta allowed by algorithm   */
 
         Scalar                         _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to coarse level at all  */
         Scalar                         _eps_grad_termination;       /** * tolerance on grad  */
