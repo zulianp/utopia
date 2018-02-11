@@ -250,15 +250,12 @@ namespace utopia
             Scalar E_old, E_new; 
             bool converged = false; 
 
-
 //--------------------------------------------------------------------------------------------------------------------------------------------
             // PRE-SMOOTHING 
             this->local_tr_solve(fine_fun, u_l, level); 
 //--------------------------------------------------------------------------------------------------------------------------------------------
             
-            if(level < this->num_levels())
-                s_global = u_l - this->get_x_initial(level - 1);
-            
+            compute_s_global(u_l, level, s_global); 
             this->get_multilevel_gradient(fine_fun, u_l, g_fine, s_global, level); 
 
             if(level == this->num_levels())
@@ -297,16 +294,16 @@ namespace utopia
 
 
             //----------------------------------------------------------------------------
-            //                   initializing levels 
+            //                   initializing coarse level
             //----------------------------------------------------------------------------
             this->set_delta(level-2, get_delta(level-1)); 
-            this->set_delta_gradient(level-2, g_diff); 
 
+            this->set_delta_gradient(level-2, g_diff); 
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
                 this->set_delta_hessian(level-2, H_diff); 
-
+            
             this->set_x_initial(level-2, u_2l); 
-            this->set_delta_zero(level-2, get_delta(level-1)); 
+            
         
             s_coarse = 0*u_2l; 
             coarse_reduction = this->get_multilevel_energy(levels(level-2),  u_2l,  s_coarse, level-1); 
@@ -333,7 +330,6 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                       building trial point 
             //----------------------------------------------------------------------------
-
             s_coarse = u_2l - this->get_x_initial(level - 2);
             transfers(level-2).interpolate(s_coarse, s_fine);
             this->zero_correction_related_to_equality_constrain(fine_fun, s_fine); 
@@ -341,10 +337,7 @@ namespace utopia
             Vector u_t = u_l + s_fine; 
 
             
-            if(level < this->num_levels())
-                s_global = u_l - this->get_x_initial(level - 1);                  
-
-
+            compute_s_global(u_l, level, s_global);                               
 
             coarse_reduction -= this->get_multilevel_energy(levels(level-2),  u_2l,  s_coarse, level-1); 
 
@@ -352,9 +345,7 @@ namespace utopia
             E_old = this->get_multilevel_energy(fine_fun,  u_l,  s_global, level); 
 
 
-            if(level < this->num_levels())
-                s_global = u_t - this->get_x_initial(level - 1);      
-
+            compute_s_global(u_t, level, s_global);     
             E_new = this->get_multilevel_energy(fine_fun,  u_t,  s_global, level); 
             
             //----------------------------------------------------------------------------
@@ -373,6 +364,8 @@ namespace utopia
                 coarse_corr_taken = 1; 
             }
 
+            // TODO:: could be done more efficiently 
+            compute_s_global(u_l, level, s_global);
 
             //----------------------------------------------------------------------------
             //                                  trust region update 
@@ -422,9 +415,8 @@ namespace utopia
 
             Vector s = local_zeros(local_size(x)); 
             
-            if(level < this->num_levels())
-                    s_global = x - get_x_initial(level - 1);       
 
+            compute_s_global(x, level, s_global);  
             this->get_multilevel_gradient(fun, x, g, s_global, level); 
             energy_old = this->get_multilevel_energy(fun,  x, s_global, level); 
             g_norm = norm2(g); 
@@ -439,9 +431,7 @@ namespace utopia
 
             while(!converged)
             {
-                if(level < this->num_levels())
-                    s_global = x - get_x_initial(level - 1);
-                
+                compute_s_global(x, level, s_global);
                 this->get_multilevel_hessian(fun, x, H, level); 
                 energy_old = this->get_multilevel_energy(fun,  x, s_global, level); 
 
@@ -455,9 +445,7 @@ namespace utopia
                 TrustRegionBase<Matrix, Vector>::get_pred(g, H, s, pred); 
                 Vector tp = x + s;  
                 
-                if(level < this->num_levels())
-                    s_global = tp - get_x_initial(level - 1);                  
-
+                compute_s_global(tp, level, s_global); 
 
                 energy_new = this->get_multilevel_energy(fun,  tp, s_global, level); 
                 ared = energy_old - energy_new; 
@@ -484,9 +472,8 @@ namespace utopia
             //     trust region update 
             //----------------------------------------------------------------------------
                 
-                if(level < this->num_levels())
-                    s_global = x - get_x_initial(level - 1);      
-
+                // TODO:: can be done more efficiently 
+                compute_s_global(x, level, s_global); 
 
                 // TODO:: check this out 
                 this->delta_update(rho, level, s_global, converged); 
@@ -563,9 +550,10 @@ namespace utopia
                     return; 
                 }
 
-                corr_norm = this->get_delta_zero(level-1) - corr_norm; 
+                corr_norm = this->get_delta(level) - corr_norm; 
                 corr_norm = std::min(intermediate_delta, corr_norm); 
 
+                // TODO:: check this out, since this should never happen 
                 if(corr_norm <= 0)
                     corr_norm = 0; 
 
@@ -590,7 +578,6 @@ namespace utopia
             else
             {
                 Vector s = u; // carries over prolongated correction
-         
                 for(SizeType i = current_l; i < this->num_levels(); i++)
                     transfers(i-1).interpolate(s, s); 
                 return norm2(s); 
@@ -739,33 +726,6 @@ namespace utopia
 
 
         /**
-         * @brief      Sets the delta zero.
-         *
-         * @param[in]  level   The level
-         * @param[in]  radius  The radius
-         *
-         */
-        virtual bool set_delta_zero(const SizeType & level, const Scalar & radius)
-        {
-            _deltas_zero[level] = radius; 
-            return true; 
-        }
-
-
-        /**
-         * @brief      Gets the delta zero.
-         *
-         * @param[in]  level  The level
-         *
-         * @return     The delta zero.
-         */
-        virtual Scalar get_delta_zero(const SizeType & level) const 
-        {
-            return _deltas_zero[level]; 
-        }
-
-
-        /**
          * @brief      Initializes tr radius on eaxh level. Organized from coarsest => delta[0] =  coarsest level
          *
          */
@@ -773,9 +733,6 @@ namespace utopia
         {
             for(Scalar i = 0; i < this->num_levels(); i ++)
                 _deltas.push_back(_delta_init); 
-
-            for(Scalar i = 0; i < this->num_levels()-1; i ++)
-                _deltas_zero.push_back(0); 
 
             return true; 
         }
@@ -1019,6 +976,12 @@ namespace utopia
         }
 
 
+        virtual void compute_s_global(const Vector & x, const SizeType & level, Vector & s_global)
+        {
+            if(level < this->num_levels())
+                s_global = x - this->get_x_initial(level - 1);         
+        }
+
 
 //----------------------------------------- printouts helpers -------------------------------------------
 
@@ -1075,9 +1038,6 @@ namespace utopia
     protected:   
         SizeType                            _it_global;                 /** * global iterate counter  */
         std::vector<Scalar>                 _deltas;                    /** * deltas on given level  */
-        std::vector<Scalar>                 _deltas_zero;               /** * initial deltas on given level  */
-
-        
 
 
         std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem;     /** * solver used to solve coarse level TR subproblems  */
