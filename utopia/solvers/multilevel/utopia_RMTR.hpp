@@ -131,24 +131,17 @@ namespace utopia
          */
         virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) override
         {
-            
-            Vector F_h  = local_zeros(local_size(x_h)); 
-
-
             bool converged = false; 
             SizeType l = this->num_levels(); 
-            Scalar r_norm, r0_norm, rel_norm;
-            
-            Matrix hessian; 
-            fine_fun.hessian(x_h, hessian); 
+            Scalar r_norm, r0_norm, rel_norm, energy;
 
-            fine_fun.gradient(x_h, F_h); 
-            r0_norm = norm2(F_h); 
-
+            Vector g_finest  = local_zeros(local_size(x_h)); 
             this->make_iterate_feasible(fine_fun, x_h); 
-            Scalar energy; 
+
+            fine_fun.gradient(x_h, g_finest); 
             fine_fun.value(x_h, energy); 
 
+            r0_norm = norm2(g_finest); 
             _it_global = 0; 
 
             //-------------- INITIALIZATIONS ---------------
@@ -194,10 +187,10 @@ namespace utopia
                     }
                 #endif    
 
-                fine_fun.gradient(x_h, F_h); 
+                fine_fun.gradient(x_h, g_finest); 
                 fine_fun.value(x_h, energy); 
                 
-                r_norm = norm2(F_h);
+                r_norm = norm2(g_finest);
                 rel_norm = r_norm/r0_norm; 
 
                 _it_global++; 
@@ -209,22 +202,18 @@ namespace utopia
                     std::cout << red; 
 
                     if(verbosity_level() > VERBOSITY_LEVEL_NORMAL)
-                        this->init_solver("RMTR OUTER SOLVE", {" it. ", "|| g_norm ||", "   E "}); 
+                        this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g_norm ||", "   E "}); 
 
                     PrintInfo::print_iter_status(_it_global, {r_norm, energy}); 
                     std::cout << def; 
                 }
 
-
-                // check convergence and print interation info
-                converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(_it_global, r_norm, rel_norm, 1); 
-                converged = (converged==true || this->get_delta(l-1) < 1e-14) ? true : false; 
-                
+                // check convergence
+                converged = check_global_convergence(_it_global, r_norm, rel_norm, this->get_delta(l-1)); 
             }
 
             // benchmarking
             print_statistics(); 
-
             return true; 
         }
 
@@ -399,16 +388,14 @@ namespace utopia
             {
                 // just to see what is being printed 
                 std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level); 
-                this->init_solver(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"}); 
+                this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"}); 
                 PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, get_delta(level-1), coarse_corr_taken }); 
             }
-
 
     //--------------------------------------------------------------------------------------------------------------------------------------------
             // POST-SMOOTHING 
             this->local_tr_solve(fine_fun, u_l, level); 
     //--------------------------------------------------------------------------------------------------------------------------------------------
-
 
             return true; 
         }
@@ -428,7 +415,6 @@ namespace utopia
             Vector s_global, g; 
             Matrix  H; 
 
-
             SizeType it_success = 0, it = 0; 
             Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0; //, reduction = 0.0; 
             bool make_grad_updates = true, make_hess_updates = true, converged = false; 
@@ -439,11 +425,10 @@ namespace utopia
             if(level < this->num_levels())
                     s_global = x - get_x_initial(level - 1);       
 
-
             this->get_multilevel_gradient(fun, x, g, s_global, level); 
             energy_old = this->get_multilevel_energy(fun,  x, s_global, level); 
             g_norm = norm2(g); 
-            
+
             if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
                 this->print_level_info(level); 
@@ -473,11 +458,12 @@ namespace utopia
                 if(level < this->num_levels())
                     s_global = tp - get_x_initial(level - 1);                  
 
+
                 energy_new = this->get_multilevel_energy(fun,  tp, s_global, level); 
                 ared = energy_old - energy_new; 
 
-                // choice for the moment  - check for nans !!! 
-                rho = ared/pred; 
+                
+                rho = (ared < 0) ? 0.0 : ared/pred; 
                 rho = (rho != rho) ? 0.0 : rho; 
 
             //----------------------------------------------------------------------------
@@ -492,16 +478,16 @@ namespace utopia
                     make_grad_updates =  true; 
                 }
                 else
-                {
-                    // since point was not taken 
-                    s_global -= s; 
                     make_grad_updates =  false; 
-                }
 
             //----------------------------------------------------------------------------
             //     trust region update 
             //----------------------------------------------------------------------------
                 
+                if(level < this->num_levels())
+                    s_global = x - get_x_initial(level - 1);      
+
+
                 // TODO:: check this out 
                 this->delta_update(rho, level, s_global, converged); 
 
@@ -521,6 +507,8 @@ namespace utopia
 
             }
 
+            std::cout<<"local solve terminating with: "<< it_success << "  \n"; 
+
             if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
                 ColorModifier color_def(FG_DEFAULT);
@@ -534,7 +522,7 @@ namespace utopia
 
     protected:
 
-// -------------------------- tr radius managment ---------------------------------------------        
+        // -------------------------- tr radius managment ---------------------------------------------        
         /**
          * @brief      Updates delta on given level 
          *
@@ -559,7 +547,6 @@ namespace utopia
             {
                 intermediate_delta = this->get_delta(level-1); 
             }      
-
 
             // on the finest level we work just with one radius 
             if(level==this->num_levels())
@@ -615,6 +602,21 @@ namespace utopia
 
 
 // ---------------------------------- convergence checks -------------------------------
+       
+
+        virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta)
+        {   
+            bool converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(it, r_norm, rel_norm, 1); 
+
+            if(delta < _delta_min)
+            {
+                converged = true; 
+                this->exit_solver(it, ConvergenceReason::CONVERGED_TR_DELTA);
+            }
+
+            return converged; 
+        }
+
         /**
          * @brief      Checks for termination
          *
@@ -662,8 +664,6 @@ namespace utopia
          */
         virtual bool criticality_measure_termination(const Scalar & g_norm)
         {
-            // this should be fancier based on Graffon paper, but it is quite boring to work with so many mesh informations
-            // Scalar _eps_grad_termination = std::min(0.001, eps_grad_termination[level]/ psi); 
             return (g_norm < _eps_grad_termination) ? true : false;    
         }
 
@@ -1036,14 +1036,14 @@ namespace utopia
                 {
                     std::cout << color_out; 
                     std::string solver_type = "COARSE SOLVE:: " + std::to_string(level); 
-                    this->init_solver(solver_type, {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
+                    this->print_init_message(solver_type, {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
                 }
                 else
                 {
                     color_out.set_color_code(FG_LIGHT_GREEN); 
                     std::cout << color_out; 
                     std::string solver_type = "SMOOTHER:  " + std::to_string(level); 
-                    this->init_solver(solver_type, {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
+                    this->print_init_message(solver_type, {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
                 }
             }
         }

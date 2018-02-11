@@ -70,9 +70,9 @@ namespace utopia
 
         /*----------  TR  ----------*/
           trust_region_alg_ = "STEIHAUG_TOINT"; 
-          delta_max_  = 1e8; 
-          delta_min_  = 1e-10; 
-          delta0_ = 1e5; 
+          delta_max_  = 1e14; 
+          delta_min_  = 1e-14; 
+          delta0_ = 1; 
 
           gamma1_ = 0.2; 
           gamma2_ = 2.0; 
