@@ -241,21 +241,22 @@ namespace utopia
          */
         virtual bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &/*f*/, const SizeType & level) override
         {
-            Vector g_fine, g_coarse, g_diff, g_restricted, u_2l, s_coarse, s_fine, s_global; 
-            Matrix H_fine, H_restricted, H_coarse, H_diff; 
+            Vector g_fine, g_coarse, g_diff, u_2l, s_coarse, s_fine, s_global; 
+            Matrix H_fine, H_coarse, H_diff; 
 
             Scalar ared=0.0, coarse_reduction=0.0, rho=0.0; 
             Scalar E_old, E_new; 
-            bool converged = false; 
+            bool converged = false, smoothness_flg=true; 
 
-//--------------------------------------------------------------------------------------------------------------------------------------------
-            // PRE-SMOOTHING 
+            //----------------------------------------------------------------------------
+            //                   presmoothing
+            //----------------------------------------------------------------------------
             converged = this->local_tr_solve(fine_fun, u_l, level); 
 
             // making sure that correction does not exceed tr radius ... 
             if(converged)
                 return true; 
-//--------------------------------------------------------------------------------------------------------------------------------------------
+
             compute_s_global(u_l, level, s_global); 
             this->get_multilevel_gradient(fine_fun, u_l, g_fine, s_global, level); 
 
@@ -266,37 +267,39 @@ namespace utopia
                     return true; 
             }
 
-            transfers(level-2).restrict(g_fine, g_restricted);
+            transfers(level-2).restrict(g_fine, g_diff);
             transfers(level-2).project_down(u_l, u_2l); 
 
             this->make_iterate_feasible(levels(level-2), u_2l); 
 
-            // here, grad should be zero by default on places where are BC conditions             
-            levels(level-2).gradient(u_2l, g_coarse); 
+            //----------------------------------------------------------------------------
+            //                   first order coarse level objective managment
+            //----------------------------------------------------------------------------            
+            if(CONSISTENCY_LEVEL != GALERKIN)
+            {             
+                levels(level-2).gradient(u_2l, g_coarse); 
+                this->zero_correction_related_to_equality_constrain(levels(level-2), g_diff); 
+            }
 
+            smoothness_flg = grad_smoothess_termination(g_diff, g_fine); 
 
             if(CONSISTENCY_LEVEL != GALERKIN)
-                this->zero_correction_related_to_equality_constrain(levels(level-2), g_restricted); 
+                g_diff -= g_coarse; 
 
-            if(CONSISTENCY_LEVEL != GALERKIN)
-                g_diff = g_restricted - g_coarse;  // tau correction 
-            else
-                g_diff = g_restricted; 
-
+            //----------------------------------------------------------------------------
+            //                   second order coarse level objective managment
+            //----------------------------------------------------------------------------            
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
             {
                 this->get_multilevel_hessian(fine_fun, u_l, H_fine, level); 
-                transfers(level-2).restrict(H_fine, H_restricted);
+                transfers(level-2).restrict(H_fine, H_diff);
                 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
-                    this->zero_correction_related_to_equality_constrain_mat(levels(level-2), H_restricted); 
-
-                levels(level-2).hessian(u_2l, H_coarse); 
-
-                if(CONSISTENCY_LEVEL != GALERKIN)
-                    H_diff = H_restricted - H_coarse; 
-                else
-                    H_diff = H_restricted; 
+                {
+                    this->zero_correction_related_to_equality_constrain_mat(levels(level-2), H_diff); 
+                    levels(level-2).hessian(u_2l, H_coarse); 
+                    H_diff -=  H_coarse; 
+                }
             }
 
 
@@ -319,12 +322,12 @@ namespace utopia
             //----------------------------------------------------------------------------
             //               recursion  / Taylor correction
             //----------------------------------------------------------------------------
-            if(level == 2 || !grad_smoothess_termination(g_restricted, g_fine))
+            if(level == 2 && smoothness_flg)
             {
                 SizeType l_new = level - 1; 
                 this->local_tr_solve(levels(level-2), u_2l, l_new, true); 
             }
-            else
+            else if(smoothness_flg)
             {
                 // recursive call into RMTR 
                 for(SizeType k = 0; k < this->mg_type(); k++)
@@ -333,69 +336,71 @@ namespace utopia
                     this->multiplicative_cycle(levels(level-2), u_2l, g_diff, l_new); 
                 }
             }
-
-            //----------------------------------------------------------------------------
-            //                       building trial point 
-            //----------------------------------------------------------------------------
-            s_coarse = u_2l - this->get_x_initial(level - 2);
-            transfers(level-2).interpolate(s_coarse, s_fine);
-            this->zero_correction_related_to_equality_constrain(fine_fun, s_fine); 
-
-            Vector u_t = u_l + s_fine; 
-
             
-            compute_s_global(u_l, level, s_global);                               
+            if(smoothness_flg)
+            {                
+                //----------------------------------------------------------------------------
+                //                       building trial point from coarse level 
+                //----------------------------------------------------------------------------
+                s_coarse = u_2l - this->get_x_initial(level - 2);
+                coarse_reduction -= this->get_multilevel_energy(levels(level-2),  u_2l,  s_coarse, level-1);
 
-            coarse_reduction -= this->get_multilevel_energy(levels(level-2),  u_2l,  s_coarse, level-1); 
+
+                transfers(level-2).interpolate(s_coarse, s_fine);
+                this->zero_correction_related_to_equality_constrain(fine_fun, s_fine); 
+
+                Vector u_t = u_l + s_fine; 
+
+                
+                compute_s_global(u_l, level, s_global);                               
+                E_old = this->get_multilevel_energy(fine_fun,  u_l,  s_global, level); 
 
 
-            E_old = this->get_multilevel_energy(fine_fun,  u_l,  s_global, level); 
+                compute_s_global(u_t, level, s_global);     
+                E_new = this->get_multilevel_energy(fine_fun,  u_t,  s_global, level); 
+                
+                //----------------------------------------------------------------------------
+                //                        trial point acceptance  
+                //----------------------------------------------------------------------------
 
+                ared = E_old - E_new; 
+                rho = ared / coarse_reduction; 
+                if(coarse_reduction<=0)
+                    rho = 0; 
 
-            compute_s_global(u_t, level, s_global);     
-            E_new = this->get_multilevel_energy(fine_fun,  u_t,  s_global, level); 
-            
-            //----------------------------------------------------------------------------
-            //                        trial point acceptance  
-            //----------------------------------------------------------------------------
+                Scalar coarse_corr_taken = 0; 
+                if(rho > this->rho_tol())
+                {
+                    u_l = u_t; 
+                    coarse_corr_taken = 1; 
+                }
 
-            ared = E_old - E_new; 
-            rho = ared / coarse_reduction; 
-            if(coarse_reduction<=0)
-                rho = 0; 
+                // TODO:: could be done more efficiently 
+                compute_s_global(u_l, level, s_global);
 
-            Scalar coarse_corr_taken = 0; 
-            if(rho > this->rho_tol())
-            {
-                u_l = u_t; 
-                coarse_corr_taken = 1; 
+                //----------------------------------------------------------------------------
+                //                                  trust region update 
+                //----------------------------------------------------------------------------
+                converged = delta_update(rho, level, s_global); 
+                
+                // terminate, since TR rad. does not allow to take more corrections on given level 
+                if(converged==true) 
+                    return true; 
+
+                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+                {
+                    // just to see what is being printed 
+                    std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level); 
+                    this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"}); 
+                    PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, get_delta(level-1), coarse_corr_taken }); 
+                }
             }
 
-            // TODO:: could be done more efficiently 
-            compute_s_global(u_l, level, s_global);
-
             //----------------------------------------------------------------------------
-            //                                  trust region update 
+            //                        postsmoothing   
             //----------------------------------------------------------------------------
-            converged = delta_update(rho, level, s_global); 
-            
-            // terminate, since TR rad. does not allow to take more corrections on given level 
-            if(converged==true) 
-                return true; 
-
-            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
-            {
-                // just to see what is being printed 
-                std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level); 
-                this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"}); 
-                PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, get_delta(level-1), coarse_corr_taken }); 
-            }
-
-    //--------------------------------------------------------------------------------------------------------------------------------------------
-            // POST-SMOOTHING 
-            this->local_tr_solve(fine_fun, u_l, level); 
-    //--------------------------------------------------------------------------------------------------------------------------------------------
-
+            this->local_tr_solve(fine_fun, u_l, level, !smoothness_flg); 
+    
             return true; 
         }
 
@@ -415,7 +420,7 @@ namespace utopia
             Matrix  H; 
 
             SizeType it_success = 0, it = 0; 
-            Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0; //, reduction = 0.0; 
+            Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0; 
             bool make_grad_updates = true, make_hess_updates = true, converged = false, delta_converged = false; 
 
 
@@ -437,9 +442,7 @@ namespace utopia
 
             while(!converged)
             {
-                compute_s_global(x, level, s_global);
                 this->get_multilevel_hessian(fun, x, H, level); 
-                energy_old = this->get_multilevel_energy(fun,  x, s_global, level); 
 
             //----------------------------------------------------------------------------
             //     solving constrained system to get correction and  building trial point 
@@ -448,14 +451,15 @@ namespace utopia
                 s = 0 * x;
                 this->solve_qp_subproblem(H, g, s, level, exact_solve_flg); 
 
+                // predicted reduction based on model 
                 TrustRegionBase<Matrix, Vector>::get_pred(g, H, s, pred); 
-                Vector tp = x + s;  
+
+                // building trial point 
+                x += s;  
                 
-                compute_s_global(tp, level, s_global); 
-
-                energy_new = this->get_multilevel_energy(fun,  tp, s_global, level); 
+                compute_s_global(x, level, s_global); 
+                energy_new = this->get_multilevel_energy(fun,  x, s_global, level); 
                 ared = energy_old - energy_new; 
-
                 
                 rho = (ared < 0) ? 0.0 : ared/pred; 
                 rho = (rho != rho) ? 0.0 : rho; 
@@ -467,20 +471,20 @@ namespace utopia
                 // good reduction, accept trial point 
                 if (rho >= this->rho_tol())
                 {
-                    x = tp; 
                     it_success++; 
                     make_grad_updates =  true; 
+                    energy_old = energy_new; 
                 }
                 else
+                {   
+                    x -= s; // return iterate into initial state 
+                    compute_s_global(x, level, s_global); 
                     make_grad_updates =  false; 
+                }
 
             //----------------------------------------------------------------------------
             //     trust region update 
             //----------------------------------------------------------------------------
-                
-                // TODO:: can be done more efficiently 
-                compute_s_global(x, level, s_global); 
-
                 delta_converged = delta_update(rho, level, s_global); 
 
                 if(make_grad_updates)
@@ -551,18 +555,13 @@ namespace utopia
                 corr_norm = this->get_delta(level) - corr_norm; 
                 corr_norm = std::min(intermediate_delta, corr_norm); 
 
-
-                // TODO:: check this out, since this should never happen 
                 if(corr_norm <= 0.0)
                     corr_norm = 0.0; 
 
                 this->set_delta(level-1, std::min(intermediate_delta, corr_norm)); 
-
                 return converged; 
             }
         }
-
-
 
 
         /**
@@ -888,6 +887,7 @@ namespace utopia
             {
                 _coarse_tr_subproblem->current_radius(get_delta(level-1));  
                 _coarse_tr_subproblem->atol(1e-16); 
+                _coarse_tr_subproblem->max_it(5000); 
                 _coarse_tr_subproblem->tr_constrained_solve(H, g, s); 
             }
             else
