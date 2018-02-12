@@ -82,9 +82,12 @@ namespace utopia {
 			for(int t = 0; t < n_time_steps; ++t) {
 				first_ = true;
 				if(!solve_contact()) return false;
+				next_step();
 
 				convert(x_, *V_->subspace(0).equation_system().solution);
 				io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);
+
+
 
 				++n_exports;
 			}
@@ -151,6 +154,79 @@ namespace utopia {
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
 
+		// bool step() 
+		// { 
+		// 	x_.implementation().update_ghosts();
+
+		// 	if(contact_is_outdated_) {
+		// 		update_contact(x_);
+		// 		xc_ *= 0.;
+		// 		lagrange_multiplier_ *= 0.;
+		// 		contact_is_outdated_ = false;
+		// 	}
+
+		// 	if(!assemble_hessian_and_gradient(x_, H_, g_)) {
+		// 		return false;
+		// 	}
+
+		// 	//handle transformations
+		// 	const auto &T = contact_.complete_transformation;
+
+		// 	gc_ = transpose(T) * g_; 
+		// 	//change sign to negative gradient
+		// 	gc_ *= -1.;
+		// 	Hc_ = transpose(T) * H_ * T;
+
+		// 	apply_boundary_conditions(V_->subspace(0).dof_map(), Hc_, gc_);
+
+		// 	if(!first_) {
+		// 		apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
+		// 	} 
+
+		// 	inactive_set_ = local_values(local_size(x_).get(0), 1.);
+		// 	active_set_   = local_zeros(local_size(x_));
+
+		// 	lagrange_multiplier_ = (gc_ - Hc_ * xc_);
+
+		// 	{
+		// 		Range r = range(xc_);
+		// 		Read<Vector>  r_gap(contact_.gap), r_l(lagrange_multiplier_), r_x(xc_);
+		// 		Write<Vector> w_i(inactive_set_), w_a(active_set_);
+
+		// 		for(auto i = r.begin(); i != r.end(); ++i) {
+		// 			const auto d = lagrange_multiplier_.get(i) + (xc_.get(i) - contact_.gap.get(i));
+
+		// 			if(d >= -1e-10) {
+		// 				inactive_set_.set(i, 0.);
+		// 				active_set_.set(i, 1.);
+		// 			}
+		// 		}
+		// 	}
+
+		// 	const double n_active = sum(active_set_);
+		// 	const double is_contact = sum(contact_.is_contact_node);
+		// 	std::cout << "n_active: " << (n_active) << "/" << is_contact << std::endl;
+
+		// 	A_ = diag(active_set_);
+		// 	I_ = diag(inactive_set_);
+
+		// 	inc_c_ *= 0.;			
+		// 	rhs_ = e_mul(inactive_set_, gc_) + e_mul(active_set_, contact_.gap - xc_);
+
+		// 	linear_solver_->solve(
+		// 		I_ * Hc_ + A_,
+		// 		rhs_,
+		// 		inc_c_
+		// 	);
+
+		// 	xc_ += inc_c_;
+		// 	x_ += T * inc_c_;
+
+		// 	first_ = false;
+		// 	return true;
+		// }
+
+
 		bool step() 
 		{ 
 			x_.implementation().update_ghosts();
@@ -180,42 +256,13 @@ namespace utopia {
 				apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
 			} 
 
-			inactive_set_ = local_values(local_size(x_).get(0), 1.);
-			active_set_   = local_zeros(local_size(x_));
-
-			lagrange_multiplier_ = (gc_ - Hc_ * xc_);
-
-			{
-				Range r = range(xc_);
-				Read<Vector>  r_gap(contact_.gap), r_l(lagrange_multiplier_), r_x(xc_);
-				Write<Vector> w_i(inactive_set_), w_a(active_set_);
-
-				for(auto i = r.begin(); i != r.end(); ++i) {
-					const auto d = lagrange_multiplier_.get(i) + (xc_.get(i) - contact_.gap.get(i));
-
-					if(d >= -1e-12) {
-						inactive_set_.set(i, 0.);
-						active_set_.set(i, 1.);
-					}
-				}
-			}
-
-			const double n_active = sum(active_set_);
-			const double is_contact = sum(contact_.is_contact_node);
-			std::cout << "n_active: " << (n_active) << "/" << is_contact << std::endl;
-
-			A_ = diag(active_set_);
-			I_ = diag(inactive_set_);
-
-			inc_c_ *= 0.;			
-			rhs_ = e_mul(inactive_set_, gc_) + e_mul(active_set_, contact_.gap - xc_);
-
-			linear_solver_->solve(
-				I_ * Hc_ + A_,
-				rhs_,
-				inc_c_
-			);
-
+			SemismoothNewton<Matrix, Vector> newton(linear_solver_);
+			newton.verbose(true);
+			newton.max_it(40);
+			newton.set_box_constraints(make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap - xc_)));
+			inc_c_ *= 0.;
+			newton.solve(Hc_, gc_, inc_c_);
+			
 			xc_ += inc_c_;
 			x_ += T * inc_c_;
 
@@ -280,9 +327,27 @@ namespace utopia {
 			debug_output_ = val;
 		}
 
+
+		virtual void next_step()
+		{
+
+		}
+
+
+		inline const std::shared_ptr<ExternalForce> &external_force_fun() const
+		{
+			return external_force_fun_;
+		}
+
+		inline void set_external_force_fun(const std::shared_ptr<ExternalForce> &external_force_fun) 
+		{
+			external_force_fun_ = external_force_fun;
+		}
+
 	private:
 		std::shared_ptr<FunctionSpaceT> V_;
 		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
+		std::shared_ptr<ExternalForce> external_force_fun_;
 		ContactParams params_;
 		bool first_;
 		bool contact_is_outdated_;
