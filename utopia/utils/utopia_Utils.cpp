@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2017-07-04 00:18:50
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-01-28 22:03:10
+* @Last Modified time: 2018-02-12 16:21:50
 */
 #include "utopia_Utils.hpp"
 
@@ -121,6 +121,22 @@ namespace utopia
 	 				fprintf (pFile,"%d,", vars[i]);
 	 			else
 	 				fprintf (pFile,"%d", vars[i]);
+	 		}
+	 		fprintf (pFile, "\n");
+	 	}
+ 	}
+
+ 	template<>
+ 	void CSVWriter::write_table_row(const std::vector<unsigned long> vars)
+ 	{
+ 		if (pFile!=NULL && mpi_world_rank() == 0)
+ 		{
+	 		for(auto i = 0;  i < vars.size(); i++ )
+	 		{	
+	 			if(i < vars.size() -1)
+	 				fprintf (pFile,"%lu,", vars[i]);
+	 			else
+	 				fprintf (pFile,"%lu", vars[i]);
 	 		}
 	 		fprintf (pFile, "\n");
 	 	}

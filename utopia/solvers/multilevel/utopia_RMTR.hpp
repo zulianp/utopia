@@ -1010,22 +1010,25 @@ namespace utopia
 
 
 
-        virtual void print_statistics() const 
+        virtual void print_statistics() 
         {
             auto rmtr_data_path = Utopia::Instance().get("rmtr_data_path");
             if(!rmtr_data_path.empty())
             {
                 CSVWriter writer; 
-                if(!writer.file_exists(rmtr_data_path))
+                if (mpi_world_rank() == 0)
                 {
-                    writer.open_file(rmtr_data_path); 
-                    writer.write_table_row<std::string>({("v_cycles")}); 
-                }
-                else
-                    writer.open_file(rmtr_data_path); 
+                    if(!writer.file_exists(rmtr_data_path))
+                    {
+                        writer.open_file(rmtr_data_path); 
+                        writer.write_table_row<std::string>({"v_cycles", "time"}); 
+                    }
+                    else
+                        writer.open_file(rmtr_data_path); 
 
-                writer.write_table_row<SizeType>({(_it_global)}); 
-                writer.close_file(); 
+                    writer.write_table_row<Scalar>({Scalar(_it_global), this->get_time()}); 
+                    writer.close_file(); 
+                }
             }
         }
 

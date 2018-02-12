@@ -239,6 +239,7 @@
         void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 
 
 
+        Scalar get_time() { return _time.get_seconds();  }
 
 protected:
           /**

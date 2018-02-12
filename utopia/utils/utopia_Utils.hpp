@@ -136,7 +136,7 @@ namespace utopia
 
     	 	void close_file()
     	 	{
-    	 		if (pFile!=NULL)
+    	 		if (pFile!=NULL && mpi_world_rank() == 0)
                 	fclose (pFile);
     	 	}
 
