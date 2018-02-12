@@ -20,7 +20,8 @@ namespace utopia {
 		: ContactSolver<Matrix, Vector>(V, material, params), dt_(dt)
 		{}
 
-		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
+		// virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
+		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) override
 		{
 			if(!this->material().assemble_hessian_and_gradient(x, stiffness_matrix_, internal_force_)) {
 				return false;
@@ -46,7 +47,7 @@ namespace utopia {
 			Vector mass_vector = sum(internal_mass_matrix_, 1);
 			internal_mass_matrix_ = diag(mass_vector);
 
-			auto n_local 		  = size(internal_mass_matrix_).get(0);
+			auto n_local 		  = local_size(internal_mass_matrix_).get(0);
 			external_force_		  = local_zeros(n_local);
 			internal_force_old_   = local_zeros(n_local);
 			internal_force_older_ = local_zeros(n_local);
@@ -70,7 +71,7 @@ namespace utopia {
 			internal_force_older_ = internal_force_old_;
 			internal_force_old_   = internal_force_;
 
-			forcing_term_ = (4./(dt_*dt_) ) * ( 
+			forcing_term_ = ( 4./(dt_*dt_) ) * ( 
 				internal_mass_matrix_ * ( 2. * x_old_ - x_older_ )
 				) 
 			- 2. * internal_force_old_ - internal_force_older_ + (4. * external_force_);

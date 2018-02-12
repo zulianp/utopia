@@ -20,7 +20,8 @@ namespace utopia {
 		: ContactSolver<Matrix, Vector>(V, material, params), dt_(dt), is_new_time_step_(true)
 		{}
 
-		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
+		// virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
+		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) override
 		{
 			if(!this->material().assemble_hessian_and_gradient(x, stiffness_matrix_, internal_force_)) {
 				return false;
@@ -28,7 +29,7 @@ namespace utopia {
 
 			if(is_new_time_step_) {
 				auto &O = this->contact().orthogonal_trafo;
-				pred_ = O * utopia::min(O * (dt_ * velocity_), this->contact().gap);
+				pred_ = O * utopia::min(O * (dt_ * velocity_old_), this->contact().gap);
 				is_new_time_step_ = false;
 			}
 
@@ -53,13 +54,14 @@ namespace utopia {
 			internal_mass_matrix_ = diag(mass_vector);
 			inverse_mass_vector_ = 1./mass_vector;
 
-			auto n_local 		  = size(internal_mass_matrix_).get(0);
-			external_force_		  = local_zeros(n_local);
-			internal_force_old_   = local_zeros(n_local);
+			auto n_local 		= local_size(internal_mass_matrix_).get(0);
+			external_force_		= local_zeros(n_local);
+			internal_force_old_ = local_zeros(n_local);
 
 			x_old_        = local_zeros(n_local);
 			forcing_term_ = local_zeros(n_local);
 			velocity_     = local_zeros(n_local);
+			velocity_old_ = local_zeros(n_local);
 
 			t_ = 0.;
 
@@ -68,16 +70,25 @@ namespace utopia {
 			}
 		}
 
-		void next_step() override
-		{	
-			//update velocity
+		inline const Vector &velocity() const
+		{
+			return velocity_;
+		}
+
+		void update_velocity()
+		{
 			velocity_inc_ = (-2./dt_) * (internal_mass_matrix_ * (x_old_ -  this->displacement() + pred_));
 			apply_zero_boundary_conditions(this->space()[0].dof_map(), velocity_inc_);			
-			velocity_ += e_mul(inverse_mass_vector_, velocity_inc_);
+			velocity_ = velocity_old_ + e_mul(inverse_mass_vector_, velocity_inc_);
+		}
+
+		void next_step() override
+		{	
+			update_velocity();
 
 			x_old_ = this->displacement();
 			internal_force_old_ = internal_force_;
-
+			velocity_old_ = velocity_;
 
 			//external_force_ = (external_force_old + external_force_current)/2
 			forcing_term_ = internal_mass_matrix_ * x_old_ + (dt_*dt_/4.) * (2. * external_force_ - internal_force_old_);
@@ -102,6 +113,7 @@ namespace utopia {
 		Vector x_old_;
 
 		Vector velocity_;
+		Vector velocity_old_;
 
 
 		//forces

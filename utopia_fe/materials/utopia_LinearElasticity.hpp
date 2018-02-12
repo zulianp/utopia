@@ -29,7 +29,8 @@ namespace utopia {
 			return initialized_;
 		}
 
-		bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
+		// bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
+		bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) override
 		{
 			if(!init(hessian)) {
 				return false;

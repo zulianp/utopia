@@ -22,7 +22,7 @@ namespace utopia {
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("steady-contact");
 
 		const double dt = 0.1;
-		LameeParameters lamee_params(10., 10.);
+		LameeParameters lamee_params(20., 20.);
 		// lamee_params.set_mu(2, 50.);
 		// lamee_params.set_lambda(2, 100.);
 
@@ -46,9 +46,6 @@ namespace utopia {
 
 
 		auto constr = constraints(
-			// boundary_conditions(uy == coeff(dt*0.32),  {4}),
-			// boundary_conditions(uy == coeff(-dt*0.28), {3}),
-			// boundary_conditions(ux == coeff(0.),    {3, 4})
 			boundary_conditions(ux == coeff(0.),    {4}),
 			boundary_conditions(uy == coeff(0.),    {4})
 		);
@@ -65,9 +62,9 @@ namespace utopia {
 		ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy), 1));
 		// ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy)));
 
-		// auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 		// auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-		auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		// auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 
 		ContactParams contact_params;
 		// contact_params.contact_pair_tags = {{2, 1}};
@@ -77,6 +74,6 @@ namespace utopia {
 		ContactSolverT sc(make_ref(V), material, dt, contact_params); 
 		sc.set_external_force_fun(ef);		
 		sc.initial_condition();
-		sc.solve_dynamic(150);
+		sc.solve_dynamic(200);
 	}
 }

@@ -15,16 +15,15 @@ namespace utopia {
 		: V_(V), params_(params)
 		{}
 
-		bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
+		// bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
+		bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) override
 		{
-			Vector x_copy = x;
-
 			auto mu = params_.var_mu();
 			auto lambda = params_.var_lambda();
 
 			auto u = trial(V_);
 			auto v = test(V_);
-			auto uk = interpolate(x_copy, u);
+			auto uk = interpolate(x, u);
 
 			auto F 		 = identity() + grad(uk);
 			auto F_t 	 = transpose(F);

@@ -20,8 +20,8 @@ namespace utopia {
 	public:
 		DEF_UTOPIA_SCALAR(Matrix)
 		typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> FunctionSpaceT;
-		// typedef libMesh::Nemesis_IO Exporter;
-		typedef libMesh::ExodusII_IO Exporter;
+		typedef libMesh::Nemesis_IO Exporter;
+		// typedef libMesh::ExodusII_IO Exporter;
 
 		ContactSolver(
 			const std::shared_ptr<FunctionSpaceT> &V,
@@ -149,86 +149,15 @@ namespace utopia {
 			return true;
 		}
 
-		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
+		// virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
+		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient)
 		{
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
 
-		// bool step() 
-		// { 
-		// 	x_.implementation().update_ghosts();
-
-		// 	if(contact_is_outdated_) {
-		// 		update_contact(x_);
-		// 		xc_ *= 0.;
-		// 		lagrange_multiplier_ *= 0.;
-		// 		contact_is_outdated_ = false;
-		// 	}
-
-		// 	if(!assemble_hessian_and_gradient(x_, H_, g_)) {
-		// 		return false;
-		// 	}
-
-		// 	//handle transformations
-		// 	const auto &T = contact_.complete_transformation;
-
-		// 	gc_ = transpose(T) * g_; 
-		// 	//change sign to negative gradient
-		// 	gc_ *= -1.;
-		// 	Hc_ = transpose(T) * H_ * T;
-
-		// 	apply_boundary_conditions(V_->subspace(0).dof_map(), Hc_, gc_);
-
-		// 	if(!first_) {
-		// 		apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
-		// 	} 
-
-		// 	inactive_set_ = local_values(local_size(x_).get(0), 1.);
-		// 	active_set_   = local_zeros(local_size(x_));
-
-		// 	lagrange_multiplier_ = (gc_ - Hc_ * xc_);
-
-		// 	{
-		// 		Range r = range(xc_);
-		// 		Read<Vector>  r_gap(contact_.gap), r_l(lagrange_multiplier_), r_x(xc_);
-		// 		Write<Vector> w_i(inactive_set_), w_a(active_set_);
-
-		// 		for(auto i = r.begin(); i != r.end(); ++i) {
-		// 			const auto d = lagrange_multiplier_.get(i) + (xc_.get(i) - contact_.gap.get(i));
-
-		// 			if(d >= -1e-10) {
-		// 				inactive_set_.set(i, 0.);
-		// 				active_set_.set(i, 1.);
-		// 			}
-		// 		}
-		// 	}
-
-		// 	const double n_active = sum(active_set_);
-		// 	const double is_contact = sum(contact_.is_contact_node);
-		// 	std::cout << "n_active: " << (n_active) << "/" << is_contact << std::endl;
-
-		// 	A_ = diag(active_set_);
-		// 	I_ = diag(inactive_set_);
-
-		// 	inc_c_ *= 0.;			
-		// 	rhs_ = e_mul(inactive_set_, gc_) + e_mul(active_set_, contact_.gap - xc_);
-
-		// 	linear_solver_->solve(
-		// 		I_ * Hc_ + A_,
-		// 		rhs_,
-		// 		inc_c_
-		// 	);
-
-		// 	xc_ += inc_c_;
-		// 	x_ += T * inc_c_;
-
-		// 	first_ = false;
-		// 	return true;
-		// }
-
-
 		bool step() 
 		{ 
+			assert(x_.implementation().has_ghosts());
 			x_.implementation().update_ghosts();
 
 			if(contact_is_outdated_) {
