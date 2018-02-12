@@ -278,8 +278,10 @@ namespace utopia
             if(CONSISTENCY_LEVEL != GALERKIN)
                 this->zero_correction_related_to_equality_constrain(levels(level-2), g_restricted); 
 
-            g_diff = g_restricted - g_coarse;  // tau correction 
-
+            if(CONSISTENCY_LEVEL != GALERKIN)
+                g_diff = g_restricted - g_coarse;  // tau correction 
+            else
+                g_diff = g_restricted; 
 
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
             {
@@ -290,7 +292,11 @@ namespace utopia
                     this->zero_correction_related_to_equality_constrain_mat(levels(level-2), H_restricted); 
 
                 levels(level-2).hessian(u_2l, H_coarse); 
-                H_diff = H_restricted - H_coarse; 
+
+                if(CONSISTENCY_LEVEL != GALERKIN)
+                    H_diff = H_restricted - H_coarse; 
+                else
+                    H_diff = H_restricted; 
             }
 
 

@@ -343,12 +343,14 @@ protected:
          */
         virtual bool make_iterate_feasible(FunctionType & fun, Vector & x)
         {
-
           Vector bc_values; 
           fun.get_eq_constrains_values(bc_values); 
 
           Vector bc_ids; 
           fun.get_eq_constrains_flg(bc_ids); 
+
+          if(local_size(bc_ids).get(0) != local_size(bc_values).get(0) || local_size(bc_ids).get(0) != local_size(x).get(0))
+            std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: local sizes do not match... \n"; 
 
             {
                 Write<Vector> w(x);
@@ -362,12 +364,10 @@ protected:
                     Scalar value = bc_values.get(i);
                     
                     if(id == 1)
-                    {
                       x.set(i, value);
-                    }
                 }
             }
-          
+
           return true; 
         }
 
@@ -390,13 +390,8 @@ protected:
             Range range_w = range(c);
             for (SizeType i = range_w.begin(); i != range_w.end(); i++) 
             {
-                Scalar value = bc.get(i);
-                if(value == 1)
+                if(bc.get(i) == 1)
                   c.set(i, 0);
-
-                // test for assigning just some corrections 
-                // if((i + 1) % 3 == 0)
-                //   c.set(i, 0);
             }
           }
           return true; 
