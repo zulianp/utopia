@@ -94,6 +94,10 @@ namespace utopia {
     auto pow2(const Expression<Derived> &expr) -> decltype(transform(expr, Pow2())) {
         return transform(expr, Pow2());
     }
+    template<class Derived>
+    auto power(const Expression<Derived> &expr, const double &a) -> decltype(transform(expr, Pow(a))) {
+        return transform(expr, Pow(a));
+    }
 
     template<class Derived>
     auto logn(const Expression<Derived> &expr) -> decltype(transform(expr, Log())) {
