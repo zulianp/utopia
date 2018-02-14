@@ -89,6 +89,23 @@ namespace utopia {
     }
 
 
+    void blas_pow_test() {
+        //variables
+
+        Vectord v{ hm_vector({2.0, 10.0}) };
+
+        // int a=8;
+
+        utopia::Vectord res=power(v,4.0);
+
+        //auto res2=powAB(2.0);
+
+        //disp(res2);
+    }
+
+
+
+
     void blas_function_test() {
         Vectord point({1.0, -1.0});
 
@@ -364,6 +381,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(blas_norm_test);
         UTOPIA_RUN_TEST(blas_composite_test);
         UTOPIA_RUN_TEST(blas_sparse_matrix_test);
+        UTOPIA_RUN_TEST(blas_pow_test);
         UTOPIA_UNIT_TEST_END("BLASTest");
 #endif // WITH_BLAS
     }

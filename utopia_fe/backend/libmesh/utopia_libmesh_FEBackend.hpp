@@ -478,10 +478,27 @@ namespace utopia {
 			return dets;
 		}
 
+		static Matrix build(const Size &s, const Identity &, const AssemblyContext<LIBMESH_TAG> &) {
+			return identity(s);
+		}
+        
+        // template<typename T>
+        // static auto power(const QValues<Wrapper<T, 1>> &vec, const double &a,
+        //                         const AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<double>
+        // {
+        //     const auto n = vec.size();
+        //     std::vector<double> vec_pow(n);
+
+        //     vec_pow = utopia::power(vec,a);
+
+            
+        //     return vec_pow;
+        // }
+
 		template<typename T>
 		static auto inverse(
 			const QValues<Wrapper<T, 2>> &mats,
-			const AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<Wrapper<T, 2>>
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<Wrapper<T, 2>>
 		{
 			const auto n = mats.size();
 			QValues<Wrapper<T, 2>> ret(n);
@@ -1950,6 +1967,16 @@ namespace utopia {
 			}
 
 			return ret;
+		}
+
+		template<class T>
+		inline static auto multiply(
+			const double scale,
+			Wrapper<T, 2> &&tensor,
+			const AssemblyContext<LIBMESH_TAG> &) -> Wrapper<T, 2>
+		{
+			tensor *= scale;
+			return std::move(tensor);
 		}
 
 

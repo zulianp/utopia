@@ -160,6 +160,7 @@ namespace utopia {
 	void run_fe_eval_test(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto dim = mesh->mesh_dimension();
 
 		const int n = 1;
 		libMesh::MeshTools::Generation::build_square(*mesh,
@@ -286,6 +287,13 @@ namespace utopia {
 			auto eval_S = eval(S, ctx);
 			auto eval_C_lin = eval(C_lin, ctx);
 			auto eval_stress_lin_2 = eval(stress_lin_2, ctx);
+
+
+			///////////////////////////////////////////////////////////////////
+
+			// auto S_bar = mu * identity(dim, dim);
+			// auto eval_S_bar = quad_eval(grad(uk) * S_bar, ctx);
+			// disp(eval_S_bar);
 		}
 
 	

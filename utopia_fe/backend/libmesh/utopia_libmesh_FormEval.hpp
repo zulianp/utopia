@@ -132,7 +132,7 @@ namespace utopia {
 					mat += mat_buff;
 					vec += vec_buff;
 				}
-			};
+			}
 
 			Matrix &mat;
 			Vector &vec;

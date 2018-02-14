@@ -1,5 +1,5 @@
-#ifndef UTOPIA_NEOOHOOKEAN_HPP
-#define UTOPIA_NEOOHOOKEAN_HPP
+#ifndef UTOPIA_NEOHOOKEAN_HPP
+#define UTOPIA_NEOHOOKEAN_HPP
 
 #include "utopia.hpp"
 #include "utopia_fe_core.hpp"
@@ -40,7 +40,7 @@ namespace utopia {
 			auto l_form = inner(P, grad(v)) * dX;
 			auto b_form = inner(stress_lin, grad(v)) * dX;
 		
-			return assemble(b_form == l_form, hessian, gradient);
+            return assemble(b_form == l_form, hessian, gradient);
 		}
 
 	private:
