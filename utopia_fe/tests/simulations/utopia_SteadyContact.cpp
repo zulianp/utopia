@@ -74,6 +74,6 @@ namespace utopia {
 		ContactSolverT sc(make_ref(V), material, dt, contact_params); 
 		sc.set_external_force_fun(ef);		
 		sc.initial_condition();
-		sc.solve_dynamic(200);
+		sc.solve_dynamic(400);
 	}
 }

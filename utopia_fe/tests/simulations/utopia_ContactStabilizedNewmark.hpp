@@ -34,7 +34,7 @@ namespace utopia {
 			}
 
 			hessian  = internal_mass_matrix_ + ((dt_*dt_)/4.) * stiffness_matrix_;
-			gradient = ((dt_*dt_)/4.) * internal_force_ + (internal_mass_matrix_ * (this->displacement() - pred_)) - forcing_term_;
+			gradient = ((dt_*dt_)/4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) - forcing_term_;
 			return true;
 		}
 
