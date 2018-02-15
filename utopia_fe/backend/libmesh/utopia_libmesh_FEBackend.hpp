@@ -115,6 +115,11 @@ namespace utopia {
 		return result;
 	}
 
+	inline static double inner(const LMDenseMatrix &left, const LMDenseMatrix &right)
+	{
+		return inner(left.implementation(), right.implementation());
+	}
+
 	template<typename T>
 	inline static T inner(const libMesh::DenseMatrix<T> &left, const libMesh::TensorValue<T> &right)
 	{
@@ -2456,6 +2461,43 @@ namespace utopia {
 				ret[i].resize(n_quad_points);
 				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 					ret[i][qp] = utopia::inner(left[qp], right[i][qp]);
+				}
+			}
+
+			return ret;
+		}
+
+		template<class Left, int Order, class Right>
+		static auto inner(
+			const Wrapper<Left, Order> &left,
+			const QValues<Right> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<double>
+		{
+			auto n_quad_points = right.size();
+			QValues<double> ret(n_quad_points);
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				ret[qp] = utopia::inner(left, right[qp]);
+			}
+
+			return ret;
+		}	
+
+		template<class Left, int Order, class Right>
+		static auto inner(
+			const Wrapper<Left, Order> &left,
+			const FQValues<Right> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<double>
+		{
+			auto n_functions = right.size();
+			auto n_quad_points = right[0].size();
+
+			FQValues<double> ret(n_functions);
+
+			for(std::size_t i = 0; i < n_functions; ++i) {
+				ret[i].resize(right[i].size());
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					ret[qp] = utopia::inner(left, right[i][qp]);
 				}
 			}
 

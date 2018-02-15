@@ -245,18 +245,32 @@ namespace utopia {
 		}
 	};
 
-	template<class Derived, int Backend>
-	static auto eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
-	-> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
+	// template<class Derived, int Backend>
+	// static auto eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
+	// -> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
+	// {
+	// 	return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx);
+	// }
+
+	// template<class Derived, int Backend>
+	// static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
+	// -> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx) )
+	// {
+	// 	return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx);
+	// }
+
+	template<class Derived>
+	static auto eval(const Expression<Derived> &expr, AssemblyContext<LIBMESH_TAG> &ctx) 
+	-> decltype( FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
 	{
-		return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx);
+		return FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr.derived(), ctx);
 	}
 
-	template<class Derived, int Backend>
-	static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
-	-> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx) )
+	template<class Derived>
+	static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<LIBMESH_TAG> &ctx) 
+	-> decltype( FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_YES>::apply(expr.derived(), ctx) )
 	{
-		return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx);
+		return FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_YES>::apply(expr.derived(), ctx);
 	}
 }
 

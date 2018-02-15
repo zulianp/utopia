@@ -32,6 +32,14 @@ namespace utopia {
 		return TRAVERSE_CONTINUE;
 	}
 
+
+	template<class Type, int Order, class Visitor>
+	inline static int traverse(const Factory<Type, Order> &expr, Visitor &visitor)
+	{
+		visitor.visit(expr);
+		return TRAVERSE_CONTINUE;
+	}
+
 	template<class Expr, class Visitor>
 	inline static int traverse(Integral<Expr> &expr, Visitor &visitor)
 	{

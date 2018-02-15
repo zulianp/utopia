@@ -43,11 +43,9 @@ namespace utopia {
 
             auto J_23 = power(J, -2.0/d); // to do
             
-            auto S_iso = ((-1.0 / d) * inner(S_bar, C) * C_inv) + S_bar;
+            auto S_iso = S_bar + inner((-1.0 / d) * S_bar, C) * C_inv;
 
-            auto P1 = F * S_iso;
-
-            auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
+            auto P1 = J_23 * (F * S_iso);
 
             auto stress_lin = mu * grad(u)
             -(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t
@@ -55,16 +53,12 @@ namespace utopia {
 
             auto C_lin = (F_t * grad(u) + transpose(grad(u)) * F);
 
-            auto stress_lin1  = -1.0 /d * inner(C_inv,P) * P1 + grad(u) * S_iso +
-                                 F * (-1.0 / d * inner(S_bar,C_lin) * C_inv +
-                                 1.0 / d * inner(S_bar,C) * C_inv * C_lin * C_inv);
+            auto stress_lin1 = -1.0 /d * inner(C_inv, C_lin) * P1 + grad(u) * S_iso +
+                                J_23 * F * ((-1.0 / d ) * inner(S_bar, C_lin) * C_inv +
+                                 (1.0 / d) * inner(S_bar,C) * C_inv * C_lin * C_inv);
             
-            auto l_form = inner(P, grad(v)) * dX;
-            auto b_form = inner(stress_lin, grad(v)) * dX;
-
-            // auto l_form = inner(grad(uk) * S_bar, grad(v));
-
-            
+            auto l_form = inner(P1, grad(v)) * dX;
+            auto b_form = inner(stress_lin, grad(v)) * dX;            
             return assemble(b_form == l_form, hessian, gradient);
         }
 
