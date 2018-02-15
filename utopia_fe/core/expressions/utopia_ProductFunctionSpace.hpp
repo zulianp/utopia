@@ -14,6 +14,7 @@ namespace utopia {
 	template<class Space>
 	class ProductFunctionSpace : public FunctionSpace<ProductFunctionSpace<Space> > {
 	public:
+		ProductFunctionSpace() {}
 
 		ProductFunctionSpace(std::initializer_list<std::shared_ptr<Space> > spaces)
 		: spaces_(spaces.size())

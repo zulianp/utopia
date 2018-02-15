@@ -170,10 +170,7 @@ namespace utopia {
 			return current_element_;
 		}
 
-		LibMeshAssemblyValues()
-		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true)
-		{}
-
+		
 		inline std::size_t n_shape_functions() const
 		{
 			std::size_t ret = 0;
@@ -196,9 +193,14 @@ namespace utopia {
 			}
 		}
 
+		LibMeshAssemblyValues()
+		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true)
+		{}
+
+
 	private:
-		long quadrature_order_;
 		long current_element_;
+		long quadrature_order_;
 		int block_id_;
 		bool reset_quadrature_;
 
