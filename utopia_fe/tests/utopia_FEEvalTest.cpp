@@ -160,7 +160,7 @@ namespace utopia {
 	void run_fe_eval_test(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		auto dim = mesh->mesh_dimension();
+		
 
 		const int n = 1;
 		libMesh::MeshTools::Generation::build_square(*mesh,
@@ -171,11 +171,13 @@ namespace utopia {
 			libMesh::TRI3
 			);
 
+		auto dim = mesh->mesh_dimension();
+
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("eval-test");
 
-		const double mu = 1.;
-		const double lambda = 1.;
+		const double mu = 0.1;
+		const double lambda = 0.1;
 
 		auto elem_order = libMesh::FIRST;
 
@@ -266,10 +268,10 @@ namespace utopia {
 
 
 			auto g = eval(inner(P, grad(v)) * dX, ctx);
-			disp(g);
+			// disp(g);
 			disp("-----------------------------------");
 			auto H = eval(inner(stress_lin, grad(v)) * dX, ctx);
-			disp(H);
+			// disp(H);
 
 
 			//////////////////////////////////////////////////////////////
@@ -291,9 +293,16 @@ namespace utopia {
 
 			///////////////////////////////////////////////////////////////////
 
-			// auto S_bar = mu * identity(dim, dim);
-			// auto eval_S_bar = quad_eval(grad(uk) * S_bar, ctx);
-			// disp(eval_S_bar);
+			auto S_bar = mu * identity(dim, dim);
+			auto eval_S_bar = quad_eval(S_bar * F, ctx);
+			disp(eval_S_bar);
+
+			// auto sum_SF = F - S_bar;
+			// auto sum_SF = S_bar + F;
+			// auto sum_SF = mu * identity() - F;
+			// auto eval_sum_SF = quad_eval(sum_SF, ctx);
+			// MostDescriptive<decltype(S_bar), decltype(F)>::Type desc;
+			// std::cout << 
 		}
 
 	

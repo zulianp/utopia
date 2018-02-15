@@ -6,5 +6,6 @@
 #include "utopia_SaintVenantKirchoff.hpp"
 #include "utopia_LinearElasticity.hpp"
 #include "utopia_Deformation.hpp"
+#include "utopia_FunctionMaterial.hpp"
 
 #endif //UTOPIA_MATERIALS_HPP

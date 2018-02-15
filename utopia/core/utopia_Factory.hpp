@@ -302,6 +302,31 @@ namespace utopia {
         Type _type;
     };
 
+    template<class SType, int Order, class Right>
+    class MostDescriptive<Factory<SType, Order>, Right> {
+    public:
+        typedef Right Type;
+    };
+
+    template<class Left, class SType, int Order>
+    class MostDescriptive<Left, Factory<SType, Order>> {
+    public:
+        typedef Left Type;
+    };
+
+
+    template<class SType, int Order, class Right>
+    class MostDescriptive<Factory<SType, Order>, Number<Right> > {
+    public:
+        typedef utopia::Factory<SType, Order> Type;
+    };
+
+    template<class Left, class SType, int Order>
+    class MostDescriptive<Number<Left>, Factory<SType, Order>> {
+    public:
+        typedef utopia::Factory<SType, Order> Type;
+    };
+
     template<class Factory, class Options>
     class Build : public Expression< Build<Factory, Options> > {
     public:
@@ -339,6 +364,8 @@ namespace utopia {
         Options opts_;
     };
 
+
+
     template<class Type, int Order_>
     class SymbolicTensor : public Expression< SymbolicTensor<Type, Order_> > {
     public:
@@ -373,6 +400,19 @@ namespace utopia {
         typedef Left Type;
     };
 
+
+    template<class SType, int Order, class Right>
+    class MostDescriptive<SymbolicTensor<SType, Order>, Number<Right> > {
+    public:
+        typedef utopia::SymbolicTensor<SType, Order> Type;
+    };
+
+    template<class Left, class SType, int Order>
+    class MostDescriptive<Number<Left>, SymbolicTensor<SType, Order>> {
+    public:
+        typedef utopia::SymbolicTensor<SType, Order> Type;
+    };
+
     template<class SType,
              int Order,
              class Right,
@@ -391,6 +431,29 @@ namespace utopia {
              int SparsityLeft, 
              int SparsityRight>
     class ChooseType<Left, SymbolicTensor<SType, Order>, Default, SparsityLeft, SparsityRight> {
+    public:
+        typedef Left Type;
+    };
+
+
+    template<class SType,
+             int Order,
+             class Right,
+             class Default,
+             int SparsityLeft, 
+             int SparsityRight>
+    class ChooseType<Factory<SType, Order>, Right, Default, SparsityLeft, SparsityRight> {
+    public:
+        typedef Right Type;
+    };
+
+    template<class SType,
+             int Order,
+             class Left,
+             class Default,
+             int SparsityLeft, 
+             int SparsityRight>
+    class ChooseType<Left, Factory<SType, Order>, Default, SparsityLeft, SparsityRight> {
     public:
         typedef Left Type;
     };

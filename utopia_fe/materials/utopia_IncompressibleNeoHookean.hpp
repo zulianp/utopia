@@ -41,9 +41,9 @@ namespace utopia {
             
             double d = mesh_dimension;
 
-            auto J_23 = power(J,-2.0/d); // to do
+            auto J_23 = power(J, -2.0/d); // to do
             
-            auto S_iso = (S_bar - (1.0 / d) * inner(S_bar, C) * C_inv);
+            auto S_iso = ((-1.0 / d) * inner(S_bar, C) * C_inv) + S_bar;
 
             auto P1 = F * S_iso;
 

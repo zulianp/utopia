@@ -676,6 +676,37 @@ namespace utopia {
 
 		template<typename T>
 		static auto apply_binary(
+			const Wrapper<T, 2> &mat,
+			QValues<Wrapper<T, 2>> &&mats,
+			const Minus &,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<Wrapper<T, 2>> 
+		{
+			auto s = size(mats[0]);
+			for(auto &m : mats) {
+				m = mat - m;
+			}
+
+			return std::move(mats);
+		}
+
+		template<typename T>
+		static auto apply_binary(
+			const Wrapper<T, 2> &mat,
+			QValues<Wrapper<T, 2>> &&mats,
+			const Plus &,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<Wrapper<T, 2>> 
+		{
+			auto s = size(mats[0]);
+			for(auto &m : mats) {
+				m += mat;
+			}
+
+			return std::move(mats);
+		}
+
+
+		template<typename T>
+		static auto apply_binary(
 			QValues<Wrapper<T, 2>> &&mats,
 			const SymbolicTensor<Identity, 2> &,
 			const Minus &,
@@ -1041,6 +1072,22 @@ namespace utopia {
 			auto ret = vals;
 			for(auto &v : ret) {
 				v *= val;
+			}
+
+			return ret;
+		}
+
+
+		template<typename T>
+		static auto multiply(
+			const Matrix &left,
+			const QValues<T> &vals,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<T>
+		{
+			auto ret = vals;
+			auto n = vals.size();
+			for(std::size_t i = 0; i < n; ++i) {
+				multiply(left, vals[i], ret[i]);
 			}
 
 			return ret;
@@ -2038,6 +2085,25 @@ namespace utopia {
 
 					for(uint j = 1; j < s_l.get(1); ++j) {
 						out(i, k) += left.get(i, j) * right(j, k);
+					}	
+				}
+			}
+		}
+
+		inline static void multiply(const LMDenseMatrix &left, const TensorValueT &right, LMDenseMatrix &out)
+		{
+			Size s_l = size(left);
+			out = zeros(s_l.get(0), LIBMESH_DIM);
+
+			Read<LMDenseMatrix> r_l(left);
+			Write<LMDenseMatrix> w_o(out);
+
+			for(uint k = 0; k < LIBMESH_DIM; ++k) {
+				for(uint i = 0; i < s_l.get(0); ++i) {
+					out.set(i, k, left.get(i, 0) * right(0, k));
+
+					for(uint j = 1; j < s_l.get(1); ++j) {
+						out.add(i, k, left.get(i, j) * right(j, k));
 					}	
 				}
 			}

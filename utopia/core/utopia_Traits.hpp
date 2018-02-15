@@ -127,7 +127,7 @@ namespace utopia {
 
     template<class Left, class Right>
     class MostDescriptive {
-        public:
+    public:
         typedef Left Type;
     };
 
