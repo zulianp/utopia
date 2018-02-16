@@ -100,25 +100,10 @@ namespace utopia {
 
         Vectord e;
 
-
         bool ok;
-
-
         ok = spd_geig_small(A, B, 0.3, e, V); assert(ok);
-
-        // disp("e:");
-        // disp(e);
-        // disp("v:");
-        // disp(V);
-
-        // std::cout << "---------------------" << std::endl;
-
-        ok = spd_geig(A, B, e, V); assert(ok);
-
-        // disp("e:");
-        // disp(e);
-        // disp("v:");
-        // disp(V);
+        ok = spd_geig(A, B, e, V);            assert(ok);
+        ok = spd_eig(A, e, V);                assert(ok);
     }
 
 #endif //WITH_BLAS

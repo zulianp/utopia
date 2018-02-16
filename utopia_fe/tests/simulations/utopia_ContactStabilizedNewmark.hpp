@@ -8,7 +8,7 @@ namespace utopia {
 	template<class Matrix, class Vector>
 	class ContactStabilizedNewmark : public ContactSolver<Matrix, Vector> {
 	public:
-		DEF_UTOPIA_SCALAR(Matrix);
+		DEF_UTOPIA_SCALAR(Matrix)
 		typedef typename ContactSolver<Matrix, Vector>::FunctionSpaceT FunctionSpaceT;
 
 		ContactStabilizedNewmark(
