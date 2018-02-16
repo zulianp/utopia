@@ -62,6 +62,9 @@ namespace utopia {
 			forcing_term_ = local_zeros(n_local);
 			velocity_     = local_zeros(n_local);
 			velocity_old_ = local_zeros(n_local);
+			velocity_inc_ = local_zeros(n_local);
+			pred_ = local_zeros(n_local);
+
 
 			t_ = 0.;
 
