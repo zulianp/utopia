@@ -50,6 +50,7 @@ namespace utopia {
 			auto v = test(V);
 
 			utopia::assemble(inner(u, v) * dX, internal_mass_matrix_);
+			
 			Vector mass_vector = sum(internal_mass_matrix_, 1);
 			internal_mass_matrix_ = diag(mass_vector);
 			inverse_mass_vector_ = 1./mass_vector;
@@ -63,7 +64,7 @@ namespace utopia {
 			velocity_     = local_zeros(n_local);
 			velocity_old_ = local_zeros(n_local);
 			velocity_inc_ = local_zeros(n_local);
-			pred_ = local_zeros(n_local);
+			pred_ 		  = local_zeros(n_local);
 
 
 			t_ = 0.;

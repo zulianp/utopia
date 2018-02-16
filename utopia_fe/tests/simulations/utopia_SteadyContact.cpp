@@ -19,7 +19,7 @@ namespace utopia {
 		const auto dim = mesh->mesh_dimension();
 
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
-		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("steady-contact");
+		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("dynamic-contact");
 
 		const double dt = 0.1;
 		LameeParameters lamee_params(20., 20.);

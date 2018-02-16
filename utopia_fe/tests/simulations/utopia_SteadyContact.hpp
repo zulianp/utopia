@@ -40,6 +40,11 @@ namespace utopia {
 			n_exports = 0;
 		}
 
+		void set_material(const std::shared_ptr< ElasticMaterial<Matrix, Vector> > &material)
+		{
+			material_ = material;
+		}
+
 		virtual ~ContactSolver() {}
 
 		void update_contact(const Vector &x)
