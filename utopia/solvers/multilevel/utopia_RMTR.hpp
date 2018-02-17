@@ -97,6 +97,12 @@ namespace utopia
         }
 
 
+        void set_grad_smoothess_termination(const Scalar & grad_smoothess_termination)
+        {
+            _grad_smoothess_termination = grad_smoothess_termination; 
+        }
+
+
         using NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::solve; 
 
         virtual std::string name_id() override { return "RMTR";  }
@@ -394,6 +400,10 @@ namespace utopia
                     this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"}); 
                     PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, get_delta(level-1), coarse_corr_taken }); 
                 }
+            }
+            else
+            {
+                std::cout<< "-------------------------------------- GRAD NOT SMOOTH ENOUGH ----------------------------------- \n"; 
             }
 
             //----------------------------------------------------------------------------
