@@ -30,6 +30,7 @@ namespace utopia {
 		typedef TraitsT::Matrix Matrix;
 		typedef TraitsT::Vector Vector;
 		typedef TraitsT::DXType DXType;
+		typedef TraitsT::JacobianType JacobianType;
 
 		inline std::vector< std::unique_ptr<FE> > &fe()		
 		{
@@ -111,6 +112,21 @@ namespace utopia {
 		}
 
 		template<class Expr>
+		void reinit_fe_from(const Expr &expr)
+		{
+			auto space_ptr = find_any_space(expr);
+			const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
+			block_id_ = elem->subdomain_id();
+
+			const auto &eq_sys = space_ptr->equation_system();
+			const std::size_t n_vars = eq_sys.n_vars();
+
+			for(std::size_t i = 0; i < n_vars; ++i) {
+				fe_[i]->reinit(elem);
+			}
+		}
+
+		template<class Expr>
 		void init_side_fe_from(const Expr &expr, const int side)
 		{
 			auto space_ptr = find_any_space(expr);
@@ -144,6 +160,23 @@ namespace utopia {
 			}
 
 			init_fe_flags(expr);
+
+			for(std::size_t i = 0; i < n_vars; ++i) {
+				fe_[i]->reinit(elem, side);
+			}
+		}
+
+		template<class Expr>
+		void reinit_side_fe_from(const Expr &expr, const int side)
+		{
+			auto space_ptr = find_any_space(expr);
+			const int dim = space_ptr->mesh().mesh_dimension();
+			const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
+
+			block_id_ = space_ptr->mesh().get_boundary_info().boundary_id(elem, side);
+
+			const auto &eq_sys = space_ptr->equation_system();
+			const std::size_t n_vars = eq_sys.n_vars();
 
 			for(std::size_t i = 0; i < n_vars; ++i) {
 				fe_[i]->reinit(elem, side);
@@ -207,6 +240,9 @@ namespace utopia {
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
 		std::vector< std::unique_ptr<FE> > fe_;
+
+		//additional precomputed values
+		std::vector<std::shared_ptr<JacobianType>> vector_fe_grad;
 
 
 		class FEInitializer {
@@ -279,6 +315,16 @@ namespace utopia {
 				s.each([&](const int, const LibMeshFunctionSpace &space) {
 					ctx.fe()[space.subspace_id()]->get_dphi();
 				});
+
+				const std::size_t s_id = s.subspace(0).subspace_id();
+				if(ctx.vector_fe_grad.size() <= s_id) {
+					ctx.vector_fe_grad.resize(s_id + 1);
+				}
+
+				if(!ctx.vector_fe_grad[s_id]) {
+					ctx.vector_fe_grad[s_id] = std::make_shared<JacobianType>();
+				}
+
 			}
 
 			//Gradient

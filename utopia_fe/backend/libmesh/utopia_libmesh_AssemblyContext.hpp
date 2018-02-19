@@ -116,6 +116,13 @@ namespace utopia {
 			init_fe_from(expr);
 		}
 
+		template<class Expr>
+		void reinit(const Expr &expr)
+		{
+			active_values().reinit_fe_from(expr);
+			init_all_side_fe_from(expr);
+		}
+
 
 		template<class Expr>
 		void init_bilinear(const Expr &expr) 
