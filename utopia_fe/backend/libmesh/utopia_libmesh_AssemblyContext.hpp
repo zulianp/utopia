@@ -80,6 +80,18 @@ namespace utopia {
 			return active_values().fe();
 		}
 
+		inline std::vector< std::shared_ptr<VectorElement> > &vector_fe()		
+		{
+			return active_values().vector_fe();
+		}
+
+		inline const std::vector< std::shared_ptr<VectorElement> > &vector_fe() const
+		{
+			return active_values().vector_fe();
+		}
+
+
+
 		inline std::vector< std::unique_ptr<FE> > &test()		
 		{
 			return active_values().test();

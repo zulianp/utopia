@@ -59,7 +59,7 @@ namespace utopia {
 			return spaces_[index];
 		}
 
-		inline std::size_t n_subspaces() 
+		inline std::size_t n_subspaces() const
 		{
 			return spaces_.size();
 		}

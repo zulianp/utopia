@@ -1318,24 +1318,34 @@ namespace utopia {
 			}
 		}
 
-		static JacobianType grad(const TrialFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
-		{
-			assert(!ctx.trial().empty());
+		// static JacobianType grad(const TrialFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
+		// {
+		// 	assert(!ctx.trial().empty());
 
-			auto space_ptr = fun.space_ptr();
-			JacobianType ret;
-			grad_aux(*space_ptr, ctx.trial(), ctx, ret);
-			return ret;
+		// 	auto space_ptr = fun.space_ptr();
+		// 	JacobianType ret;
+		// 	grad_aux(*space_ptr, ctx.trial(), ctx, ret);
+		// 	return ret;
+		// }
+
+		// static JacobianType grad(const TestFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
+		// {
+		// 	assert(!ctx.test().empty());
+
+		// 	auto space_ptr = fun.space_ptr();
+		// 	JacobianType ret;
+		// 	grad_aux(*space_ptr, ctx.test(), ctx, ret);
+		// 	return ret;
+		// }
+
+		static const JacobianType &grad(const TrialFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			return ctx.vector_fe()[fun.space_ptr()->subspace(0).subspace_id()]->grad;
 		}
 
-		static JacobianType grad(const TestFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
+		static const JacobianType &grad(const TestFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			assert(!ctx.test().empty());
-
-			auto space_ptr = fun.space_ptr();
-			JacobianType ret;
-			grad_aux(*space_ptr, ctx.test(), ctx, ret);
-			return ret;
+			return ctx.vector_fe()[fun.space_ptr()->subspace(0).subspace_id()]->grad;
 		}
 
 

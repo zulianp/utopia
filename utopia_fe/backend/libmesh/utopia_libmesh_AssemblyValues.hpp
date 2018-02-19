@@ -21,6 +21,8 @@
 #include "libmesh/quadrature_gauss.h"
 #include "libmesh/fe_interface.h"
 
+#include "utopia_libmesh_VectorElement.hpp"
+
 namespace utopia {
 
 	class LibMeshAssemblyValues {
@@ -40,6 +42,16 @@ namespace utopia {
 		inline const std::vector< std::unique_ptr<FE> > &fe() const
 		{
 			return fe_;
+		}
+
+		inline const std::vector< std::shared_ptr<VectorElement> > &vector_fe() const
+		{
+			return vector_fe_;
+		}
+
+		inline std::vector< std::shared_ptr<VectorElement> > &vector_fe()
+		{
+			return vector_fe_;
 		}
 
 		inline std::vector< std::unique_ptr<FE> > &test()		
@@ -109,6 +121,12 @@ namespace utopia {
 			for(std::size_t i = 0; i < n_vars; ++i) {
 				fe_[i]->reinit(elem);
 			}
+
+			for(auto &v_fe_ptr : vector_fe_) {
+				if(v_fe_ptr) {
+					v_fe_ptr->init(fe_);
+				}
+			}
 		}
 
 		template<class Expr>
@@ -123,6 +141,12 @@ namespace utopia {
 
 			for(std::size_t i = 0; i < n_vars; ++i) {
 				fe_[i]->reinit(elem);
+			}
+
+			for(auto &v_fe_ptr : vector_fe_) {
+				if(v_fe_ptr) {
+					v_fe_ptr->reinit(fe_);
+				}
 			}
 		}
 
@@ -164,6 +188,12 @@ namespace utopia {
 			for(std::size_t i = 0; i < n_vars; ++i) {
 				fe_[i]->reinit(elem, side);
 			}
+
+			for(auto &v_fe_ptr : vector_fe_) {
+				if(v_fe_ptr) {
+					v_fe_ptr->init(fe_);
+				}
+			}
 		}
 
 		template<class Expr>
@@ -180,6 +210,12 @@ namespace utopia {
 
 			for(std::size_t i = 0; i < n_vars; ++i) {
 				fe_[i]->reinit(elem, side);
+			}
+
+			for(auto &v_fe_ptr : vector_fe_) {
+				if(v_fe_ptr) {
+					v_fe_ptr->reinit(fe_);
+				}
 			}
 		}
 
@@ -242,7 +278,7 @@ namespace utopia {
 		std::vector< std::unique_ptr<FE> > fe_;
 
 		//additional precomputed values
-		std::vector<std::shared_ptr<JacobianType>> vector_fe_grad;
+		std::vector<std::shared_ptr<VectorElement>> vector_fe_;
 
 
 		class FEInitializer {
@@ -317,14 +353,18 @@ namespace utopia {
 				});
 
 				const std::size_t s_id = s.subspace(0).subspace_id();
-				if(ctx.vector_fe_grad.size() <= s_id) {
-					ctx.vector_fe_grad.resize(s_id + 1);
+				if(ctx.vector_fe().size() <= s_id) {
+					ctx.vector_fe().resize(s_id + 1);
 				}
 
-				if(!ctx.vector_fe_grad[s_id]) {
-					ctx.vector_fe_grad[s_id] = std::make_shared<JacobianType>();
+				if(!ctx.vector_fe()[s_id]) {
+					ctx.vector_fe()[s_id] = std::make_shared<VectorElement>();
+					ctx.vector_fe()[s_id]->dim = s.subspace(0).mesh().mesh_dimension();
+					ctx.vector_fe()[s_id]->n_vars = s.n_subspaces();
+					ctx.vector_fe()[s_id]->start_var = s_id;
 				}
 
+				ctx.vector_fe()[s_id]->grad_flag = true;
 			}
 
 			//Gradient

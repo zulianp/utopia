@@ -298,31 +298,34 @@ namespace utopia {
 
 			//FIXME
 			auto &x_mutable = const_cast<Vector &>(x);
+			x_mutable.implementation().update_ghosts();
 
-			if(first_) {
-				auto &dof_map = space.dof_map();
-				auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-					*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+			LibMeshAssembler().assemble(eqs_, buff_mat, buff_vec);
+
+			// if(first_) {
+			// 	auto &dof_map = space.dof_map();
+			// 	auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+			// 		*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 				
-				buff_mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
-				buff_vec = local_zeros(dof_map.n_local_dofs());
-			} else {
-				buff_mat *= 0.;
-				buff_vec *= 0.;
-			}
+			// 	buff_mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+			// 	buff_vec = local_zeros(dof_map.n_local_dofs());
+			// } else {
+			// 	buff_mat *= 0.;
+			// 	buff_vec *= 0.;
+			// }
 
-			{
-				Write<DSMatrixd> w_m(buff_mat);
-				Write<DVectord>  w_v(buff_vec);
+			// {
+			// 	Write<DSMatrixd> w_m(buff_mat);
+			// 	Write<DVectord>  w_v(buff_vec);
 
-				auto &m = space.mesh();
+			// 	auto &m = space.mesh();
 
-				x_mutable.implementation().update_ghosts();
+				
 
-				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-					element_assemble_expression_v<FunctionSpaceT>(it, eqs_, buff_mat, buff_vec, false);
-				}
-			}	
+			// 	for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+			// 		element_assemble_expression_v<FunctionSpaceT>(it, eqs_, buff_mat, buff_vec, false);
+			// 	}
+			// }	
 
 			if(first_ && !compute_linear_residual_) {
 				buff_vec *= -1.;

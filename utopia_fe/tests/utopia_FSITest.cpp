@@ -260,7 +260,7 @@ namespace utopia {
 	    auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
 	    // auto linear_solver = std::make_shared<GMRES<DSMatrixd, DVectord>>(); linear_solver->verbose(true);
 	    Newton<DSMatrixd, DVectord> solver(linear_solver);
-	    solver.verbose(true);
+	    // solver.verbose(true);
 	    
 	    // libMesh::ExodusII_IO io_fluid(*fluid_mesh);
 	    // libMesh::ExodusII_IO io_solid(*solid_mesh);
