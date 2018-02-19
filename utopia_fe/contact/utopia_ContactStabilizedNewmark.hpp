@@ -1,7 +1,8 @@
 #ifndef UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP
 #define UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP 
 
-#include "utopia_SteadyContact.hpp"
+#include "utopia_ContactSolver.hpp"
+#include "utopia_ContactSystem.hpp"
 
 namespace utopia {
 
@@ -18,7 +19,9 @@ namespace utopia {
 			const ContactParams &params
 		)
 		: ContactSolver<Matrix, Vector>(V, material, params), dt_(dt), is_new_time_step_(true)
-		{}
+		{
+			// c_sys_ = std::make_shared<ContactSystem>(V->subspace(0).equation_systems_ptr(), V->subspace(0).equation_system().number());
+		}
 
 		// virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
 		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) override
@@ -89,6 +92,7 @@ namespace utopia {
 		void next_step() override
 		{	
 			update_velocity();
+			update_contact_system();
 
 			x_old_ = this->displacement();
 			internal_force_old_ = internal_force_;
@@ -97,6 +101,24 @@ namespace utopia {
 			//external_force_ = (external_force_old + external_force_current)/2
 			forcing_term_ = internal_mass_matrix_ * x_old_ + (dt_*dt_/4.) * (2. * external_force_ - internal_force_old_);
 			is_new_time_step_ = true;
+
+			
+		}
+		void update_contact_system()
+		{
+			if(!c_sys_) return;
+			
+			MechanicsState state;
+			state.displacement = this->displacement();
+			state.displacement_increment = this->displacement() - x_old_;
+			
+			state.velocity = velocity_;
+			
+			state.internal_force = internal_force_;
+			state.external_force = external_force_;
+
+			state.stress = external_force_ - internal_force_;
+			c_sys_->update(state, this->contact(), dt_);
 		}
 
 		virtual void finalize() override
@@ -130,6 +152,8 @@ namespace utopia {
 
 		Vector pred_;
 		bool is_new_time_step_;
+
+		std::shared_ptr<ContactSystem> c_sys_;
 
 	};
 

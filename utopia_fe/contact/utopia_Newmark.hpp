@@ -1,7 +1,7 @@
 #ifndef UTOPIA_NEWMARK_HPP
 #define UTOPIA_NEWMARK_HPP 
 
-#include "utopia_SteadyContact.hpp"
+#include "utopia_ContactSolver.hpp"
 
 namespace utopia {
 

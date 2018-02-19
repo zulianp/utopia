@@ -6,6 +6,7 @@
 #include "utopia_Contact.hpp"
 #include "utopia_Mechanics.hpp"
 
+
 #include "utopia_libmesh.hpp"
 
 #include "libmesh/nemesis_io.h"
@@ -79,6 +80,8 @@ namespace utopia {
 			initialize();
 
 			n_exports = 0;
+
+			
 
 			convert(x_, *V_->subspace(0).equation_system().solution);
 			io_->write_timestep(output_path_, V_->subspace(0).equation_systems(), n_exports + 1, n_exports);

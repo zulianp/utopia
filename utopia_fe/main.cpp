@@ -35,7 +35,7 @@
 #include "utopia_NonLinearElasticityTest.hpp"
 #include "utopia_FEEvalTest.hpp"
 #include "utopia_LeastSquaresHelmholtz.hpp"
-#include "utopia_SteadyContact.hpp"
+#include "utopia_ContactSolver.hpp"
 #include "utopia_ContactTest.hpp"
 
 #include <functional>

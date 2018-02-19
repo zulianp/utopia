@@ -96,6 +96,11 @@ namespace utopia {
 		{
 			return *equation_systems_;
 		}
+
+		inline const std::shared_ptr<libMesh::EquationSystems> &equation_systems_ptr() const
+		{
+			return equation_systems_;
+		}
 		
 		inline libMesh::MeshBase &mesh() { return equation_systems_->get_mesh(); }
 		inline const libMesh::MeshBase &mesh() const { return equation_systems_->get_mesh(); }
