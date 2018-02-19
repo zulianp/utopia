@@ -87,7 +87,8 @@ namespace utopia {
 	{
 		moonolith::Communicator comm(init.comm().get());
 
-		const double prop = 1.;
+		// const double prop = 1.;
+		const double prop = 0.5;
 
 		const unsigned int nx_fluid = prop * (3 * 45);
 		const unsigned int ny_fluid = prop * (3 * 15);
@@ -216,8 +217,8 @@ namespace utopia {
 			constraints(
 				boundary_conditions(u_fy == coeff(0.),   {0, 1, 2, 3}),
 				boundary_conditions(u_fx == coeff(0.),   {0, 2}),
-				boundary_conditions(u_fx == coeff(0.1),  {1, 3}),
-				boundary_conditions(p_f == coeff(1.),    {0})
+				boundary_conditions(u_fx == coeff(0.1),  {1, 3})//,
+				// boundary_conditions(p_f == coeff(1.),    {0})
 				);
 
 		//constraints solid

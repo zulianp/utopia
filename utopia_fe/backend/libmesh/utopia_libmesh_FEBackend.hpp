@@ -1338,11 +1338,14 @@ namespace utopia {
 		// 	return ret;
 		// }
 
+
+		//vfe
 		static const JacobianType &grad(const TrialFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
 			return ctx.vector_fe()[fun.space_ptr()->subspace(0).subspace_id()]->grad;
 		}
 
+		//vfe
 		static const JacobianType &grad(const TestFunction< ProductFunctionSpace<LibMeshFunctionSpace> > &fun, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
 			return ctx.vector_fe()[fun.space_ptr()->subspace(0).subspace_id()]->grad;

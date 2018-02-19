@@ -122,6 +122,7 @@ namespace utopia {
 				fe_[i]->reinit(elem);
 			}
 
+			//vfe
 			for(auto &v_fe_ptr : vector_fe_) {
 				if(v_fe_ptr) {
 					v_fe_ptr->init(fe_);
@@ -143,6 +144,7 @@ namespace utopia {
 				fe_[i]->reinit(elem);
 			}
 
+			//vfe
 			for(auto &v_fe_ptr : vector_fe_) {
 				if(v_fe_ptr) {
 					v_fe_ptr->reinit(fe_);
@@ -189,6 +191,7 @@ namespace utopia {
 				fe_[i]->reinit(elem, side);
 			}
 
+			//vfe
 			for(auto &v_fe_ptr : vector_fe_) {
 				if(v_fe_ptr) {
 					v_fe_ptr->init(fe_);
@@ -212,6 +215,7 @@ namespace utopia {
 				fe_[i]->reinit(elem, side);
 			}
 
+			//vfe
 			for(auto &v_fe_ptr : vector_fe_) {
 				if(v_fe_ptr) {
 					v_fe_ptr->reinit(fe_);
@@ -352,6 +356,8 @@ namespace utopia {
 					ctx.fe()[space.subspace_id()]->get_dphi();
 				});
 
+
+				//vfe
 				const std::size_t s_id = s.subspace(0).subspace_id();
 				if(ctx.vector_fe().size() <= s_id) {
 					ctx.vector_fe().resize(s_id + 1);

@@ -12,8 +12,9 @@ namespace utopia {
 		template<class Expr>
 		bool assemble(const Expr &expr, GlobalMatrix &mat, GlobalVector &vec, const bool apply_constraints = false)
 		{
-			Chrono c;
-			c.start();
+			//perf
+			// Chrono c;
+			// c.start();
 
 			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
 			typedef typename TraitsT::Matrix ElementMatrix;
@@ -56,18 +57,19 @@ namespace utopia {
 						reinit_context_on(expr, (*it)->id());
 					}
 
-					// el_mat.implementation().zero();
-					// el_vec.implementation().zero();
+					el_mat.implementation().zero();
+					el_vec.implementation().zero();
 
 					FormEvaluator<LIBMESH_TAG> eval;
-					eval.eval(expr, el_mat, el_vec, ctx_, true);
+					eval.eval(expr, el_mat, el_vec, ctx_);
 
 					std::vector<libMesh::dof_id_type> dof_indices;
 					dof_map.dof_indices(*it, dof_indices);
 
 					if(ctx_.has_assembled()) {
-						if(apply_constraints)
+						if(apply_constraints) {
 							dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
+						}
 
 						add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
 						add_vector(el_vec.implementation(), dof_indices, vec);
@@ -75,9 +77,10 @@ namespace utopia {
 				}
 			}
 
-			c.stop();
-			std::cout << "assemble: lhs == rhs" << std::endl;
-			std::cout << c << std::endl;
+			//perf
+			// c.stop();
+			// std::cout << "assemble: lhs == rhs" << std::endl;
+			// std::cout << c << std::endl;
 			return true;
 		}
 
@@ -85,8 +88,9 @@ namespace utopia {
 		template<class Expr>
 		bool assemble(const Expr &expr, GlobalMatrix &mat)
 		{
-			Chrono c;
-			c.start();
+			//perf
+			// Chrono c;
+			// c.start();
 
 			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
 			typedef typename TraitsT::Matrix ElementMatrix;
@@ -120,7 +124,7 @@ namespace utopia {
 						reinit_context_on(expr, (*it)->id());
 					}
 
-					// el_mat.implementation().zero();
+					el_mat.implementation().zero();
 
 					FormEvaluator<LIBMESH_TAG> eval;
 					eval.eval(expr, el_mat, ctx_, true);
@@ -134,9 +138,10 @@ namespace utopia {
 				}
 			}
 
-			c.stop();
-			std::cout << "assemble: lhs" << std::endl;
-			std::cout << c << std::endl;
+			//perf
+			// c.stop();
+			// std::cout << "assemble: lhs" << std::endl;
+			// std::cout << c << std::endl;
 			return true;
 		}
 
@@ -144,8 +149,10 @@ namespace utopia {
 		template<class Expr>
 		bool assemble(const Expr &expr, GlobalVector &vec, const bool apply_constraints = false)
 		{
-			Chrono c;
-			c.start();
+
+			//perf
+			// Chrono c;
+			// c.start();
 
 			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
 			typedef typename TraitsT::Vector ElementVector;
@@ -173,7 +180,7 @@ namespace utopia {
 						reinit_context_on(expr, (*it)->id());
 					}
 
-					// el_vec.implementation().zero();
+					el_vec.implementation().zero();
 
 					FormEvaluator<LIBMESH_TAG> eval;
 					eval.eval(expr, el_vec, ctx_, true);
@@ -187,9 +194,11 @@ namespace utopia {
 				}
 			}
 
-			c.stop();
-			std::cout << "assemble: rhs" << std::endl;
-			std::cout << c << std::endl;
+
+			//perf
+			// c.stop();
+			// std::cout << "assemble: rhs" << std::endl;
+			// std::cout << c << std::endl;
 			return true;
 		}
 

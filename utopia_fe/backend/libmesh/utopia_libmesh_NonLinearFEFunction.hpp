@@ -46,14 +46,15 @@ namespace utopia {
 		ctx.init_bilinear(expr);
 
 		FormEvaluator<Backend> eval;
-		eval.eval(expr, el_mat, el_vec, ctx, true);
+		eval.eval(expr, el_mat, el_vec, ctx);
 
 		std::vector<libMesh::dof_id_type> dof_indices;
 		dof_map.dof_indices(*it, dof_indices);
 
 		if(ctx.has_assembled()) {
-			if(apply_constraints)
+			if(apply_constraints) {
 				dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
+			}
 
 			add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
 			add_vector(el_vec.implementation(), dof_indices, vec);

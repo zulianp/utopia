@@ -64,8 +64,7 @@ namespace utopia {
 			const Expr &expr,
 			Wrapper<Matrix, 2> &mat,
 			Wrapper<Vector, 1> &vec,
-			AssemblyContext<BAKEND_FLAG> &ctx,
-			const bool reset_tensors)
+			AssemblyContext<BAKEND_FLAG> &ctx)
 		{	
 			FormEval<Expr, BAKEND_FLAG>::apply(expr, mat, vec, ctx);
 		}
