@@ -350,7 +350,7 @@ protected:
           Vector bc_ids; 
           fun.get_eq_constrains_flg(bc_ids); 
 
-          if(local_size(bc_ids).get(0) != local_size(bc_values).get(0) || local_size(bc_ids).get(0) != local_size(x).get(0))
+          if(local_size(bc_ids).get(0) != local_size(bc_values).get(0))
             std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: local sizes do not match... \n"; 
 
             {
