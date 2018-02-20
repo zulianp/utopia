@@ -1476,7 +1476,7 @@ namespace utopia {
 				
 			case 4:
 			{
-				make_polygon_from_quad4(e,polygon);
+				make_polygon_from_quad4(e, polygon);
 				break;
 			}
 				

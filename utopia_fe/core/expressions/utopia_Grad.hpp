@@ -5,10 +5,11 @@
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_FunctionalTraits.hpp"
+// #include "utopia_Val.hpp"
 
 namespace utopia {
 	template<class Expr>
-	class Gradient : public DifferentialOperator< Gradient<Expr> > {
+	class Gradient : public DifferentialOperator< Gradient<Expr> >/*, public Val< Gradient<Expr> >*/ {
 	public:
 		static const int Order = Expr::Order + 1;
 		typedef typename Expr::Scalar Scalar;

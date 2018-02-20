@@ -87,10 +87,13 @@ namespace utopia {
 	{
 		moonolith::Communicator comm(init.comm().get());
 
-		const unsigned int nx_fluid = 3 * 45;
-		const unsigned int ny_fluid = 3 * 15;
-		const unsigned int nx_solid = 4 * 4;
-		const unsigned int ny_solid = 4 * 12;
+		// const double prop = 1.;
+		const double prop = 0.5;
+
+		const unsigned int nx_fluid = prop * (3 * 45);
+		const unsigned int ny_fluid = prop * (3 * 15);
+		const unsigned int nx_solid = prop * (4 * 4);
+		const unsigned int ny_solid = prop * (4 * 12);
 
 		// const unsigned int nx_fluid = 9;
 		// const unsigned int ny_fluid = 3;
@@ -155,12 +158,12 @@ namespace utopia {
 
 		const double mu_f  = 1.;
 		const double rho_f = 0.1;
-		const double mu_s  = 50.;
-		const double lambda_s = 50.;
+		const double mu_s  = 10.;
+		const double lambda_s = 10.;
 
-		const double dt = 0.01;
+		const double dt = 0.0005;
 		
-		const std::size_t n_ts = 100;
+		const std::size_t n_ts = 3000;
 
 		DVectord sol_f;
 		DVectord sol_fold;
@@ -190,8 +193,8 @@ namespace utopia {
 						+ dt * integral(inner(p_f, div(v_f)))
 						+ integral(inner(div(u_f), q_f));
 
-		auto l_form_f = integral(inner(coeff(0.), q_f))
-						+ integral(inner(uk_fold, v_f))
+		auto l_form_f = //integral(inner(coeff(0.), q_f)) + 
+						integral(inner(uk_fold, v_f))
 						+ integral(dt * inner(fk_f, v_f)); 
 
 
@@ -214,7 +217,8 @@ namespace utopia {
 			constraints(
 				boundary_conditions(u_fy == coeff(0.),   {0, 1, 2, 3}),
 				boundary_conditions(u_fx == coeff(0.),   {0, 2}),
-				boundary_conditions(u_fx == coeff(0.1),  {1, 3})
+				boundary_conditions(u_fx == coeff(0.1),  {1, 3})//,
+				// boundary_conditions(p_f == coeff(1.),    {0})
 				);
 
 		//constraints solid
@@ -252,11 +256,12 @@ namespace utopia {
 	    assemble_expression_v<LibMeshFunctionSpace>(mass_f == mass_rhs_f, mass_mat_f,  mass_vec_f, false);
 	    assemble_expression_v<LibMeshFunctionSpace>(mass_s == mass_rhs_s, mass_mat_s,  mass_vec_s, false);
 
-	    NonLinearFEFunction<DSMatrixd, DVectord, decltype(eq_fluid)> nl_fun(eq_fluid);
+	    NonLinearFEFunction<DSMatrixd, DVectord, decltype(eq_fluid)> nl_fun(eq_fluid, true);
 
 	    auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+	    // auto linear_solver = std::make_shared<GMRES<DSMatrixd, DVectord>>(); linear_solver->verbose(true);
 	    Newton<DSMatrixd, DVectord> solver(linear_solver);
-	    solver.verbose(true);
+	    // solver.verbose(true);
 	    
 	    // libMesh::ExodusII_IO io_fluid(*fluid_mesh);
 	    // libMesh::ExodusII_IO io_solid(*solid_mesh);
@@ -324,7 +329,7 @@ namespace utopia {
 
 	    		//FIXME
 	    		if(outer_iter > 0) {
-	    			converged = diff < 1e-5;
+	    			converged = diff < 1e-7;
 	    			if(converged) break;
 	    		}
 
@@ -351,6 +356,7 @@ namespace utopia {
 
 	    		// std::cout << raw_type(sol_f) << std::endl;
 
+	    		nl_fun.reset();
 	     		if(!solver.solve(nl_fun, sol_f)) {
 	     			std::cerr << "FAILED TO SOLVE NONLINEAR SYSTEM" << std::endl;
 	     			break;
@@ -382,7 +388,7 @@ namespace utopia {
 	     	
 	     		// converged = true;
 	     		++outer_iter;
-	     		if(outer_iter > 10) break;
+	     		if(outer_iter > 60) break;
 	     	}
 
 	     	

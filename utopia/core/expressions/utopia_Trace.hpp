@@ -23,6 +23,11 @@ namespace utopia {
 		    return eval.eval(*this);
 		}
 
+		inline std::string getClass() const override
+		{
+			return "Trace<" + expr().getClass() + ">";
+		}
+
 		Trace(const Expr &expr) : expr_(expr) {}
 
 	private:

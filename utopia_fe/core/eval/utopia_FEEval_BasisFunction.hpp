@@ -8,8 +8,8 @@
 
 namespace utopia {
 
-	template<class Derived, class FunctionSpaceT, class Traits, int Backend>
-	class FEEval<BasisFunction<Derived, FunctionSpaceT>, Traits, Backend> {
+	template<class Derived, class FunctionSpaceT, class Traits, int Backend, int IsQuadData>
+	class FEEval<BasisFunction<Derived, FunctionSpaceT>, Traits, Backend, IsQuadData> {
 	public:
 		typedef BasisFunction<Derived, FunctionSpaceT> Expr;
 		typedef EXPR_TYPE(Traits, Expr) Result;

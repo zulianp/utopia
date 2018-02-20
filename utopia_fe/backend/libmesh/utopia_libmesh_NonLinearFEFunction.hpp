@@ -20,7 +20,7 @@
 #include "utopia_IsForm.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 #include "utopia_Projection.hpp"
-
+#include "utopia_libmesh_Assembler.hpp"
 
 namespace utopia {
 	//libmesh
@@ -38,6 +38,7 @@ namespace utopia {
 
 		AssemblyContext<Backend> ctx;
 		ctx.set_current_element((*it)->id());
+		ctx.set_has_assembled(false);
 
 		ElementMatrix el_mat;
 		ElementVector el_vec;
@@ -45,16 +46,19 @@ namespace utopia {
 		ctx.init_bilinear(expr);
 
 		FormEvaluator<Backend> eval;
-		eval.eval(expr, el_mat, el_vec, ctx, true);
+		eval.eval(expr, el_mat, el_vec, ctx);
 
 		std::vector<libMesh::dof_id_type> dof_indices;
 		dof_map.dof_indices(*it, dof_indices);
 
-		if(apply_constraints)
-			dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
+		if(ctx.has_assembled()) {
+			if(apply_constraints) {
+				dof_map.heterogenously_constrain_element_matrix_and_vector(el_mat.implementation(), el_vec.implementation(), dof_indices);
+			}
 
-		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
-		add_vector(el_vec.implementation(), dof_indices, vec);
+			add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+			add_vector(el_vec.implementation(), dof_indices, vec);
+		}
 	}
 
 
@@ -73,6 +77,7 @@ namespace utopia {
 
 		AssemblyContext<Backend> ctx;
 		ctx.set_current_element((*it)->id());
+		ctx.set_has_assembled(false);
 
 		ElementMatrix el_mat;
 		ctx.init_bilinear(expr);
@@ -80,10 +85,12 @@ namespace utopia {
 		FormEvaluator<Backend> eval;
 		eval.eval(expr, el_mat, ctx, true);
 
-		std::vector<libMesh::dof_id_type> dof_indices;
-		dof_map.dof_indices(*it, dof_indices);
+		if(ctx.has_assembled()) {
+			std::vector<libMesh::dof_id_type> dof_indices;
+			dof_map.dof_indices(*it, dof_indices);
 
-		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+			add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+		}
 	}
 
 	template<class FunctionSpaceT, class Expr, typename T>
@@ -100,6 +107,7 @@ namespace utopia {
 
 		AssemblyContext<Backend> ctx;
 		ctx.set_current_element((*it)->id());
+		ctx.set_has_assembled(false);
 
 		ElementMatrix el_mat;
 		ctx.init_bilinear(expr);
@@ -107,10 +115,13 @@ namespace utopia {
 		FormEvaluator<Backend> eval;
 		eval.eval(expr, el_mat, ctx, true);
 
-		std::vector<libMesh::dof_id_type> dof_indices;
-		dof_map.dof_indices(*it, dof_indices);
 
-		add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+		if(ctx.has_assembled()) {
+			std::vector<libMesh::dof_id_type> dof_indices;
+			dof_map.dof_indices(*it, dof_indices);
+
+			add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+		}
 	}
 
 
@@ -159,7 +170,7 @@ namespace utopia {
 		auto &dof_map = space.dof_map();
 
 		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-								  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
 		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 		vec = local_zeros(dof_map.n_local_dofs());
@@ -173,44 +184,21 @@ namespace utopia {
 	}
 
 	template<class Expr>
-	 bool assemble(
-	 	const Expr &expr,
-	 	DSMatrixd &mat,
-	 	const bool first = true)
-	 { 
-		typedef typename FindFunctionSpace<Expr>::Type FunctionSpaceT;
-		auto &space = find_space<FunctionSpaceT>(expr);
-
-		if(first) {
-			auto &dof_map  = space.dof_map();
-			auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-									  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
-			
-			mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
-		} else {
-			mat *= 0.;
-		}
-
-		{
-			Write<DSMatrixd> w_m(mat);
-
-			auto &m = space.mesh();
-
-			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-				element_assemble_expression_v<FunctionSpaceT>(it, expr, mat);
-			}
-		}	
-
-		return true;
+	bool assemble(
+		const Expr &expr,
+		DSMatrixd &mat,
+		const bool first = true)
+	{ 
+		return LibMeshAssembler().assemble(expr, mat);
 	}
 
 
 	template<class Expr, typename T>
-	 bool assemble(
-	 	const Expr &expr,
-	 	libMesh::SparseMatrix<T> &mat,
-	 	const bool first = true)
-	 { 
+	bool assemble(
+		const Expr &expr,
+		libMesh::SparseMatrix<T> &mat,
+		const bool first = true)
+	{ 
 		typedef typename FindFunctionSpace<Expr>::Type FunctionSpaceT;
 		auto &space = find_space<FunctionSpaceT>(expr);
 
@@ -230,34 +218,26 @@ namespace utopia {
 
 
 	template<class Expr>
-	 bool assemble(
-	 	const Expr &expr,
-	 	DVectord &vec,
-	 	const bool first = true)
-	 { 
-		typedef typename FindFunctionSpace<Expr>::Type FunctionSpaceT;
-		auto &space = find_space<FunctionSpaceT>(expr);
-
-		if(first) {
-			auto &dof_map  = space.dof_map();
-			vec = local_zeros(dof_map.n_local_dofs());
-		} else {
-			vec *= 0.;
-		}
-
-		{
-			Write<DVectord> w_v(vec);
-
-			auto &m = space.mesh();
-
-			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-				element_assemble_expression_v<FunctionSpaceT>(it, expr, vec);
-			}
-		}	
-
-		return true;
+	bool assemble(
+		const Expr &expr,
+		DVectord &vec,
+		const bool first = true)
+	{ 
+		return LibMeshAssembler().assemble(expr, vec);
 	}
 
+	template<class... Eqs>
+	bool assemble(const Equations<Eqs...> &eqs, DSMatrixd &mat, DVectord &vec)
+	{
+
+		return LibMeshAssembler().assemble(eqs, mat, vec);
+	}
+
+	template<class Left, class Right>
+	bool assemble(const Equality<Left, Right> &equation, DSMatrixd &mat, DVectord &vec)
+	{
+		return assemble(equations(equation), mat, vec);
+	}
 
 
 	template<class Expr>
@@ -276,7 +256,6 @@ namespace utopia {
 		//init vector
 		//assemble weighted coeffs
 		//remove mass contrib
-
 	}
 
 	template<class Matrix, class Vector, class Eqs>
@@ -284,30 +263,33 @@ namespace utopia {
 	public:
 		DEF_UTOPIA_SCALAR(Matrix)
 
-		NonLinearFEFunction(const Eqs &eqs)
-		: eqs_(eqs), first_(true)
+		NonLinearFEFunction(const Eqs &eqs, const bool compute_linear_residual = false)
+		: eqs_(eqs), first_(true), compute_linear_residual_(compute_linear_residual)
 		{}
 
 		virtual ~NonLinearFEFunction() { }
 
 		virtual bool value(const Vector &x, Scalar &value) const override
 		{
-			// assert(false && "not implemented");
 			value = dot(x, buff_mat * x) - dot(x, buff_vec);
-		    return true;
+			return true;
 		}
 
 		virtual bool gradient(const Vector &x, Vector &result) const override
 		{
-			result = buff_mat * x - buff_vec;
-		    return true;
-		}
+			if(compute_linear_residual_) {
+				result = buff_mat * x - buff_vec;
+			} else {
+				result = buff_vec;
+			}
 
+			return true;
+		}
 
 		virtual bool hessian(const Vector &, Matrix &H) const override
 		{
 			H = buff_mat;
-		    return true;
+			return true;
 		}
 
 		virtual bool update(const Vector &x) override { 
@@ -315,34 +297,56 @@ namespace utopia {
 			typedef typename FindFunctionSpace<Eq1>::Type FunctionSpaceT;
 			auto &space = find_space<FunctionSpaceT>(eqs_);
 
-			if(first_) {
-				auto &dof_map = space.dof_map();
-				auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-										  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+			//FIXME
+			auto &x_mutable = const_cast<Vector &>(x);
+			x_mutable.implementation().update_ghosts();
+
+			LibMeshAssembler().assemble(eqs_, buff_mat, buff_vec);
+
+			// if(first_) {
+			// 	auto &dof_map = space.dof_map();
+			// 	auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+			// 		*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 				
-				buff_mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
-				buff_vec = local_zeros(dof_map.n_local_dofs());
+			// 	buff_mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+			// 	buff_vec = local_zeros(dof_map.n_local_dofs());
+			// } else {
+			// 	buff_mat *= 0.;
+			// 	buff_vec *= 0.;
+			// }
+
+			// {
+			// 	Write<DSMatrixd> w_m(buff_mat);
+			// 	Write<DVectord>  w_v(buff_vec);
+
+			// 	auto &m = space.mesh();
+
+				
+
+			// 	for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+			// 		element_assemble_expression_v<FunctionSpaceT>(it, eqs_, buff_mat, buff_vec, false);
+			// 	}
+			// }	
+
+			if(first_ && !compute_linear_residual_) {
+				buff_vec *= -1.;
+				apply_boundary_conditions(space.dof_map(), buff_mat, buff_vec);
+				buff_vec *= -1.;
 			} else {
-				buff_mat *= 0.;
-				buff_vec *= 0.;
+				apply_boundary_conditions(space.dof_map(), buff_mat, buff_vec);
 			}
 
-			{
-				Write<DSMatrixd> w_m(buff_mat);
-				Write<DVectord>  w_v(buff_vec);
+			if(!first_ && !compute_linear_residual_) {
+				apply_zero_boundary_conditions(space.dof_map(), buff_vec);
+			} 
 
-				auto &m = space.mesh();
-
-
-				//FIXME
-				const_cast<Vector &>(x).implementation().update_ghosts();
-
-				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-					element_assemble_expression_v<FunctionSpaceT>(it, eqs_, buff_mat, buff_vec);
-				}
-			}	
-
+			first_ = false;
 			return true;
+		}
+
+		void reset()
+		{
+			first_ = true;
 		}
 
 		bool first_;
@@ -350,6 +354,8 @@ namespace utopia {
 
 		Matrix buff_mat;
 		Vector buff_vec;
+
+		bool compute_linear_residual_;
 	};
 
 
@@ -365,7 +371,7 @@ namespace utopia {
 		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
 		space.initialize();
 
-		sol = local_zeros(space.dof_map().n_local_dofs());
+		sol = ghosted(space.dof_map().n_local_dofs(), space.dof_map().n_dofs(), space.dof_map().get_send_list());
 
 		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs);
 		Newton<DSMatrixd, DVectord> solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
@@ -392,22 +398,24 @@ namespace utopia {
 		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
 		space.initialize();
 
-		sol = local_zeros(space.dof_map().n_local_dofs());
-		old_sol = local_zeros(space.dof_map().n_local_dofs());
+		auto &dof_map = space.dof_map();
+		sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+		old_sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 
-		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs);
+		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs, true);
 		Newton<DSMatrixd, DVectord> solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
 		solver.verbose(true);
 		
 		libMesh::ExodusII_IO io(space.mesh());
 		
 		for(std::size_t ts = 0; ts < n_ts; ++ts) {
-		 	if(!solver.solve(nl_fun, sol)) return false;
-		 	old_sol = sol;
+			nl_fun.reset();
+			if(!solver.solve(nl_fun, sol)) return false;
+			old_sol = sol;
 
-		 	convert(sol, *space.equation_system().solution);
-		 	space.equation_system().solution->close();
-		 	io.write_timestep(space.equation_system().name() + ".e", space.equation_systems(), ts + 1, ts * dt);
+			convert(sol, *space.equation_system().solution);
+			space.equation_system().solution->close();
+			io.write_timestep(space.equation_system().name() + ".e", space.equation_systems(), ts + 1, ts * dt);
 		}
 
 		return true;
@@ -415,15 +423,14 @@ namespace utopia {
 
 
 	template<class... Eqs, class... Constr>
-	bool solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol)
+	bool solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol, const bool first = true)
 	{
-
 		//FIXME this stuff only works for the libmesh backend
 		typedef typename GetFirst<Eqs...>::Type Eq1Type;
 		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
 		auto &space = find_space<FunctionSpaceT>(eqs.template get<0>());
 
-		FEBackend<LIBMESH_TAG>::init_constraints(constr);
+		init_constraints(constr);
 
 
 		
@@ -431,7 +438,7 @@ namespace utopia {
 		auto &m = space.mesh();
 		auto &dof_map = space.dof_map();
 		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-								  *std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
 		DSMatrixd mat;
 		DVectord vec;
@@ -439,36 +446,39 @@ namespace utopia {
 		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 		vec = local_zeros(dof_map.n_local_dofs());
 
+		if(empty(sol)) {
+			sol = local_zeros(local_size(vec));
+			std::cout << "[Warning] empty solution vector initializing to zero" << std::endl;
+		}
+
 		{
 			Write<DSMatrixd> w_m(mat);
 			Write<DVectord>  w_v(vec);
+			Read<DVectord> r_s(sol);
 
 
 			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-				element_assemble_expression_v<FunctionSpaceT>(it, eqs, mat, vec);
+				element_assemble_expression_v<FunctionSpaceT>(it, eqs, mat, vec, false);
 			}
 		}	
 
+		apply_boundary_conditions(dof_map, mat, vec);
 
-		// disp(mat);
-		// disp(vec);
+		if(!first) {
+			apply_zero_boundary_conditions(dof_map, vec);
+		}
 
-		sol = local_zeros(local_size(vec));
+		DVectord inc = local_zeros(local_size(sol));
 		Factorization<DSMatrixd, DVectord> solver;
-		if(!solver.solve(mat, vec, sol)) {
+		if(!solver.solve(mat, vec, inc)) {
 			return false;
 		}
 
-		//if non-linear
-		
+		sol += inc;
 
-		DVectord residual = mat * sol - vec;
-		double norm_r = norm2(residual);
-		std::cout << "norm_r: " << norm_r << std::endl;
-		// disp(sol);
-
-		// write("u_matrix_new.m", mat);
-		return false;
+		double norm_r = norm2(inc);
+		std::cout << "norm(inc): " << norm_r << std::endl;
+		return true;
 	}
 
 }

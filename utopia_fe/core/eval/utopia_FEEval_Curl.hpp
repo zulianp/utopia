@@ -7,8 +7,8 @@
 
 namespace utopia {
 
-	template<class Tensor, class Traits, int Backend>
-	class FEEval<Curl<Tensor>, Traits, Backend> {
+	template<class Tensor, class Traits, int Backend, int IsQuadData>
+	class FEEval<Curl<Tensor>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::Curl<Tensor> Expr;
 		typedef typename Traits::CurlType CurlT;

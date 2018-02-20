@@ -6,20 +6,20 @@
 #include "utopia_FEBackend.hpp"
 
 namespace utopia {
-	template<class Inner, class Traits, int Backend>
-	class FEEval< Integral<Inner>, Traits, Backend> {
+	template<class Inner, class Traits, int Backend, int IsQuadData>
+	class FEEval< Integral<Inner>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::Integral<Inner> Expr;
 		
 	    inline static auto apply(
 	    	const Expr &expr,
 	    	AssemblyContext<Backend> &ctx) -> decltype(
-	    		FEEval<Inner, Traits, Backend>::apply(expr.expr(), ctx)
+	    		FEEval<Inner, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx)
 	    	)
 	    {
 	    	//Check subtree properties
 	    	//TODO
-	    	return FEEval<Inner, Traits, Backend>::apply(expr.expr(), ctx);
+	    	return FEEval<Inner, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx);
 	    }  
 	};
 }

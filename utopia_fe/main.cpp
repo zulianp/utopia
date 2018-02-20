@@ -31,6 +31,12 @@
 #include "utopia_FSITest.hpp"
 #include "utopia_MSHReaderTest.hpp"
 #include "utopia_BoundaryIntegralTest.hpp"
+#include "utopia_FormEvalTest.hpp"
+#include "utopia_NonLinearElasticityTest.hpp"
+#include "utopia_FEEvalTest.hpp"
+#include "utopia_LeastSquaresHelmholtz.hpp"
+#include "utopia_ContactSolver.hpp"
+#include "utopia_ContactTest.hpp"
 
 #include <functional>
 
@@ -66,12 +72,19 @@ int main(const int argc, char *argv[])
 	    runners["asm"] = run_assembly_test;
 	    runners["fsi"] = run_fsi_test;
 	    runners["bit"] = run_boundary_integral_test;
-
+	    runners["fet"] = run_form_eval_test;
+	    runners["nle_test"] = run_non_linear_elasticity_test;
+	    runners["test_msh_reader"] = test_msh_reader;
+	    runners["fe_test"] = run_fe_eval_test;
+	    runners["helm"] = run_form_least_squares_helmholtz;
+	    runners["contact_steady"] = run_steady_contact;
+	    runners["ct"] = run_contact_test;
 
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
-	    runners["test_msh_reader"] = test_msh_reader;
+	    
+
 
 		for(int i = 1; i < argc; ++i) {
 			if(argv[i] == std::string("-r")) {

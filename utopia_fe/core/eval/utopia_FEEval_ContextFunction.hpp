@@ -7,8 +7,8 @@
 
 
 namespace utopia {
-	template<class Out, class Fun, class Traits, int Backend>
-	class FEEval<ContextFunction<Out, Fun>, Traits, Backend> {
+	template<class Out, class Fun, class Traits, int Backend, int IsQuadData>
+	class FEEval<ContextFunction<Out, Fun>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::ContextFunction<Out, Fun> Expr;
 

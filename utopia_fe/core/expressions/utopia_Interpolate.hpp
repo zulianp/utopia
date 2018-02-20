@@ -58,9 +58,9 @@ namespace utopia {
 	class Interpolate<Any, Any> {};
 
 	template<class Coefficient, class Fun>
-	class Traits< Interpolate<Coefficient, Fun> > : public Traits<Coefficient> {
+	class Traits< Interpolate<Coefficient, Fun> > : public Traits<Fun> {
 	public:
-	
+		static const int FILL_TYPE = FillType::DENSE;
 	};
 
 

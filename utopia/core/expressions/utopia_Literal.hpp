@@ -22,33 +22,38 @@ namespace utopia {
         typedef _Scalar Scalar;
         // inline operator Scalar() const
         // {
-        //     return _value;
+        //     return value_;
         // }
 
         inline operator Scalar &()
         {
-            return _value;
+            return value_;
         }
 
         inline constexpr operator const Scalar &() const
         {
-            return _value;
+            return value_;
         }
 
         // template<typename TOther>
         // inline constexpr Number &operator=(const Number<TOther> &other)
         // {
-        //     _value = other._value;
+        //     value_ = other.value_;
         //     return *this;
         // }
 
         // inline constexpr Number &operator=(const Scalar &other)
         // {
-        //     _value = other;
+        //     value_ = other;
         //     return *this;
         // }
 
-        inline constexpr Number(const Scalar &value)  : _value(value)
+        inline Scalar get() const
+        {
+            return value_;
+        }
+
+        inline constexpr Number(const Scalar &value)  : value_(value)
         {}
 
         std::string getClass() const
@@ -58,16 +63,16 @@ namespace utopia {
 
         template<typename OtherScalar>
         constexpr Number(const Number<OtherScalar> &other)
-        : _value(other._value)
+        : value_(other.value_)
         {}
 
         template<class Derived>
         Number(const Expression<Derived> &expr)
-        : _value(scalar_cast<Scalar>(expr))
+        : value_(scalar_cast<Scalar>(expr))
         {}
 
     private:
-        Scalar _value;
+        Scalar value_;
     };
 
     template<typename T>
