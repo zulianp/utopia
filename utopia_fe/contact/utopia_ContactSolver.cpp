@@ -31,9 +31,9 @@ namespace utopia {
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("dynamic-contact");
 
-		const double dt = 0.1;
+		const double dt = 0.001;
 		// LameeParameters lamee_params(20., 20.);
-		LameeParameters lamee_params(10., 10.);
+		LameeParameters lamee_params(1., 1.);
 		// lamee_params.set_mu(2, 50.);
 		// lamee_params.set_lambda(2, 100.);
 
@@ -71,11 +71,12 @@ namespace utopia {
 
 		auto ef = std::make_shared<ConstantExternalForce>();
 
-		// auto vx = test(Vx);
+		auto vx = test(Vx);
 		auto vy = test(Vy);
 
 		// ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy), 1));
-		ef->init(integral(inner(coeff(-.2), vy)));
+		// ef->init(integral(inner(coeff(-.2), vy)));
+		ef->init(integral(inner(coeff(7.), vx)));
 
 		// auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 		// auto material = std::make_shared<IncompressibleNeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
@@ -85,7 +86,7 @@ namespace utopia {
 		ContactParams contact_params;
 		// contact_params.contact_pair_tags = {{2, 1}};
 		contact_params.contact_pair_tags = {{1, 2}, {1, 3}, {2, 3}};
-		contact_params.search_radius = 0.001;
+		contact_params.search_radius = 0.0005;
 
 		ContactSolverT sc(make_ref(V), material, dt, contact_params); 
 		sc.set_external_force_fun(ef);		
