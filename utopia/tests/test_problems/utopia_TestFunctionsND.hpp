@@ -27,7 +27,7 @@ namespace utopia {
         }
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override {
-            result =  0.5 * pow(dot(point, A * point) + 1, 2.0) - dot(b, point);
+            result =  0.5 * std::pow(dot(point, A * point) + 1, 2.0) - dot(b, point);
             return true;
         }
 

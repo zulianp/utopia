@@ -6,18 +6,18 @@
 #include "utopia_FEBackend.hpp"
 
 namespace utopia {
-	template<class Inner, class Traits, int Backend>
-	class FEEval<Transposed<Inner>, Traits, Backend> {
+	template<class Inner, class Traits, int Backend, int IsQuadData>
+	class FEEval<Transposed<Inner>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::Transposed<Inner> Expr;
 
 	    inline static auto apply(
 	    	const Expr &expr,
 	    	AssemblyContext<Backend> &ctx) -> decltype(
-	    		FEBackend<Backend>::transpose(FEEval<Inner, Traits, Backend>::apply(expr.expr(), ctx), ctx)
+	    		FEBackend<Backend>::transpose(FEEval<Inner, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx)
 	    	)
 	    {
-	    	return FEBackend<Backend>::transpose(FEEval<Inner, Traits, Backend>::apply(expr.expr(), ctx), ctx);
+	    	return FEBackend<Backend>::transpose(FEEval<Inner, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx), ctx);
 	    } 
 	};
 

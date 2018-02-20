@@ -105,7 +105,7 @@
 
          Scalar delta, product, ared, pred, rho, E, E_k, E_k1; 
 
-         SizeType it = 0; 
+         SizeType it = 0, it_successful=0; 
          Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
 
          bool rad_flg = false; 
@@ -139,7 +139,7 @@
         #else
           if(this->verbose_)
           {
-            this->nonlinear_solve_init("TRUST_REGION_BASE", {" it. ", "|| g ||", "r_norm", "J_k", "J_{k+1}", "rho", "delta_k", "|| p_k ||"}); 
+            this->init_solver("TRUST_REGION_BASE", {" it. ", "|| g ||", "r_norm", "J_k", "J_{k+1}", "rho", "delta_k", "|| p_k ||"}); 
             PrintInfo::print_iter_status(it, {g_norm}); 
           }
         #endif
@@ -204,6 +204,9 @@
             rho = 1; 
           } 
 
+          if (rho >= this->rho_tol())
+            it_successful++; 
+
           this->trial_point_acceptance(rho, E, E_k, E_k1, p_k, x_k, x_k1);
     //----------------------------------------------------------------------------
     //    convergence check 
@@ -229,7 +232,29 @@
           this->delta_update(rho, p_k, delta); 
           it++; 
         }
-          return false;
+
+        // some benchmarking 
+        auto data_path = Utopia::Instance().get("tr_data_path");
+        if(!data_path.empty())
+        {
+            CSVWriter writer; 
+            if (mpi_world_rank() == 0)
+            {
+              if(!writer.file_exists(data_path))
+              {
+                  writer.open_file(data_path); 
+                  writer.write_table_row<std::string>({("it"), "it_successful", "time"}); 
+              }
+              else
+                  writer.open_file(data_path); 
+              
+              writer.write_table_row<Scalar>({Scalar(it-1), Scalar(it_successful), this->get_time() }); 
+              writer.close_file(); 
+            }
+        }
+
+
+          return true;
       }
   };
 

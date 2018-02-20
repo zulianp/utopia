@@ -21,6 +21,7 @@
 #include "utopia_Mechanics.hpp"
 #include "utopia_AffineTransform.hpp"
 #include "utopia_Contact.hpp"
+#include "utopia_LinearElasticity.hpp"
 
 #include "moonolith_communicator.hpp"
 #include "moonolith_describe.hpp"
@@ -671,8 +672,8 @@ namespace utopia {
 			apply_zero_boundary_conditions(Vx.dof_map(), mech_ctx.dirichlet_selector);
 			mech_ctx.dirichlet_selector = local_values(ls.get(0), 1.) - mech_ctx.dirichlet_selector;
 
-			auto elast = std::make_shared<LinearElasticity>();
-			elast->init(V, params, state[0].displacement, mech_ctx.stiffness_matrix, state[0].internal_force);
+			auto elast = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, params);
+			elast->assemble_hessian_and_gradient(state[0].displacement, mech_ctx.stiffness_matrix, state[0].internal_force);
 			apply_zero_boundary_conditions(Vx.dof_map(), state[0].external_force);
 
 			auto ef = std::make_shared<ConstantExternalForce>();
@@ -752,7 +753,8 @@ namespace utopia {
 				//boundary conditions for increment
 				// state[i].external_force = e_mul(mech_ctx.dirichlet_selector, state[i].external_force)- e_mul(mech_ctx.dirichlet_selector, state[i-1].displacement);
 				if(override_each_time_step) {
-					elast->assemble_hessian(V, params, state[i-1].displacement, mech_ctx.stiffness_matrix);
+					DVectord dummy;
+					elast->assemble_hessian_and_gradient(state[i-1].displacement, mech_ctx.stiffness_matrix, dummy);
 					double sum_mat = norm2(mech_ctx.stiffness_matrix);
 					moonolith::root_describe("stiff_mat_sum: " + std::to_string(sum_mat), comm, std::cout);
 				}
@@ -843,8 +845,8 @@ namespace utopia {
 
 		moonolith::Communicator comm(init.comm().get());
 		moonolith::root_describe("reading mesh...", comm, std::cout);
-		// mesh->read("../data/wear_2_far.e"); //mesh->all_second_order(false);
-		mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_coarse.e"); mesh->all_second_order(true);
+		mesh->read("../data/wear_2_far.e"); mesh->all_second_order(false);
+		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_coarse.e"); mesh->all_second_order(true);
 		moonolith::root_describe("DONE", comm, std::cout);
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_fine.e");
 		

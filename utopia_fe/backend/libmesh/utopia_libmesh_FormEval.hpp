@@ -74,20 +74,35 @@ namespace utopia {
 					Tensor &t, 
 					AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
-				return;
-			}
-
+		
 			if(expr.is_surface()) {
-				ctx.surface_integral_begin();
+
+				if(ctx.n_sides() != 0) {
+					ctx.surface_integral_begin();
+
+					for(std::size_t i = 0; i < ctx.n_sides(); ++i) {
+						ctx.set_side(i);
+						
+						if(expr.has_block_id() && ctx.block_id() != expr.block_id()) continue;
+
+						t += FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx);
+						ctx.set_has_assembled(true);
+					}
+
+					ctx.surface_integral_end();
+				} 
+
+			} else {
+
+				if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
+					return;
+				}
+
+				auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx);
+				t = r;
+				ctx.set_has_assembled(true);
 			}
 
-			auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG>::apply(expr, ctx);
-			t = r;
-
-			if(expr.is_surface()) {
-				ctx.surface_integral_end();
-			}
 		}
 
 		template<class Left, class Right, class Matrix, class Vector>
@@ -117,7 +132,7 @@ namespace utopia {
 					mat += mat_buff;
 					vec += vec_buff;
 				}
-			};
+			}
 
 			Matrix &mat;
 			Vector &vec;
@@ -229,6 +244,34 @@ namespace utopia {
 			result = sqrt(result);
 		}
 	};
+
+	// template<class Derived, int Backend>
+	// static auto eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
+	// -> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
+	// {
+	// 	return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx);
+	// }
+
+	// template<class Derived, int Backend>
+	// static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
+	// -> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx) )
+	// {
+	// 	return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx);
+	// }
+
+	template<class Derived>
+	static auto eval(const Expression<Derived> &expr, AssemblyContext<LIBMESH_TAG> &ctx) 
+	-> decltype( FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
+	{
+		return FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr.derived(), ctx);
+	}
+
+	template<class Derived>
+	static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<LIBMESH_TAG> &ctx) 
+	-> decltype( FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_YES>::apply(expr.derived(), ctx) )
+	{
+		return FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_YES>::apply(expr.derived(), ctx);
+	}
 }
 
 #endif //UTOPIA_LIBMESH_LINEAR_FORM_EVAL_HPP

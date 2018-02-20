@@ -22,8 +22,8 @@ namespace utopia {
 		inline static Type apply(const Left &left, const Right &right, AssemblyContext<Traits::Backend> &ctx)
 		{
 			return FEBackend<Traits::Backend>::inner(
-				FEEval<Left,  Traits, Backend>::apply(left, ctx),
-				FEEval<Right,  Traits, Backend>::apply(right, ctx), 
+				FEEval<Left,  Traits, Backend, QUAD_DATA_NO>::apply(left, ctx),
+				FEEval<Right, Traits, Backend, QUAD_DATA_NO>::apply(right, ctx), 
 				ctx);
 		}
 	};
@@ -42,8 +42,8 @@ namespace utopia {
 			auto of = offset(test, ctx);
 			return FEBackend<Traits::Backend>::linear_form(
 				of,
-				FEEval<LeftExpr, Traits, Backend>::apply(left, ctx),
-				FEEval<Test,  Traits, Backend>::apply(test, ctx), 
+				FEEval<LeftExpr, Traits, Backend, QUAD_DATA_YES>::apply(left, ctx),
+				FEEval<Test,     Traits, Backend, QUAD_DATA_YES>::apply(test, ctx), 
 				ctx);
 		}
 
@@ -79,8 +79,8 @@ namespace utopia {
 			return FEBackend<Traits::Backend>::bilinear_form(
 				of.first,
 				of.second,
-				FEEval<Trial,  Traits, Backend>::apply(trial, ctx),
-				FEEval<Test,  Traits, Backend>::apply(test, ctx), 
+				FEEval<Trial, Traits, Backend, QUAD_DATA_YES>::apply(trial, ctx),
+				FEEval<Test,  Traits, Backend, QUAD_DATA_YES>::apply(test, ctx), 
 				ctx);
 		}
 
@@ -121,14 +121,36 @@ namespace utopia {
 	};
 
 	template<class Left, class Right, class Traits, int Backend>
-	class FEEval< Reduce< Binary<Left, Right, EMultiplies>, Plus>, Traits, Backend> {
+	class FEEval< Reduce< Binary<Left, Right, EMultiplies>, Plus>, Traits, Backend, QUAD_DATA_YES> {
 	public:
 		typedef utopia::Reduce< Binary<Left, Right, EMultiplies>, Plus> Expr;
-		static const int has_trial = IsSubTree<TrialFunction<utopia::Any>, Expr>::value;
-		static const int has_test  = IsSubTree<TestFunction<utopia::Any>,  Expr>::value;
-		
-		typedef utopia::InnerProduct<Traits, has_trial + has_test> InnerProductT;
+
+		inline static auto apply(
+			const Expr &expr,
+			AssemblyContext<Backend> &ctx) -> decltype( 
+				FEBackend<Traits::Backend>::inner(
+					FEEval<Left,  Traits, Backend, QUAD_DATA_YES>::apply(expr.expr().left(),  ctx),
+					FEEval<Right, Traits, Backend, QUAD_DATA_YES>::apply(expr.expr().right(), ctx), 
+					ctx)
+			)
+		{	
+			return FEBackend<Traits::Backend>::inner(
+					FEEval<Left,  Traits, Backend, QUAD_DATA_YES>::apply(expr.expr().left(),  ctx),
+					FEEval<Right, Traits, Backend, QUAD_DATA_YES>::apply(expr.expr().right(), ctx), 
+					ctx);
+		}
+	};
+
+	template<class Left, class Right, class Traits, int Backend>
+	class FEEval< Reduce< Binary<Left, Right, EMultiplies>, Plus>, Traits, Backend, QUAD_DATA_NO> {
+	public:
+		typedef utopia::Reduce< Binary<Left, Right, EMultiplies>, Plus> Expr;		
+		typedef utopia::IsBilinearFormSplit<Left, Right> IsSplit;
+
+		typedef utopia::InnerProduct<Traits, IsSplit::order> InnerProductT;
 		typedef typename InnerProductT::Type Result;
+
+		static_assert(IsSplit::order == 0 || IsSplit::has_test, "If it is a form it must have a test function");
 
 	    inline static auto apply(
 	    	const Expr &expr,
@@ -140,7 +162,7 @@ namespace utopia {
 	    	//- if it is part of a composite equation then find out which "sub-block" (not necessarily contiguous) 
 	    	//  is this form about. create index sets and write entries in block (implement in backend only)
 
-	    	if(is_test(expr.expr().right())) {
+	    	if(IsSplit::right_has_test) {
 		    	return InnerProductT::apply(
 		    			expr.expr().left(),
 		    			expr.expr().right(),
@@ -156,20 +178,6 @@ namespace utopia {
 	    }  
 	};
 
-	// template<class Left, class OpLeft, class Right, class OpRight, class Op, class Traits, int Backend>
-	// class FEEval< Binary< Reduce<Left, OpLeft>, Reduce<Right, OpRight>, Op>, Traits, Backend> {
-	// public:
-	// 	typedef utopia::Binary< Reduce<Left, OpLeft>, Reduce<Right, OpRight>, Op> Expr;
-
-	// 	inline static auto apply(
-	// 		const Expr &expr,
-	// 		AssemblyContext<Backend> &ctx) -> double
-	// 	{
-	// 		static_assert(Backend < 0, "not implemented");
-	// 		return 0.;
-	// 	}
-
-	// };
 
 	template<class Expr, class AssemblyContext>
 	class FunctionalTraits<Reduce<Expr, Plus>, AssemblyContext> {

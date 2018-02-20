@@ -247,6 +247,9 @@ public:
         void log_iterates(const bool & log_iterates) { log_iterates_  = log_iterates; }; 
         void log_system(const bool & log_system) { log_system_  = log_system; }; 
 
+
+        Scalar get_time() { return _time.get_seconds();  }
+
     protected:
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)
         {

@@ -25,6 +25,21 @@ namespace utopia {
 		return TRAVERSE_CONTINUE;
 	}
 
+	template<class Type, int Order, class Visitor>
+	inline static int traverse(const SymbolicTensor<Type, Order> &expr, Visitor &visitor)
+	{
+		visitor.visit(expr);
+		return TRAVERSE_CONTINUE;
+	}
+
+
+	template<class Type, int Order, class Visitor>
+	inline static int traverse(const Factory<Type, Order> &expr, Visitor &visitor)
+	{
+		visitor.visit(expr);
+		return TRAVERSE_CONTINUE;
+	}
+
 	template<class Expr, class Visitor>
 	inline static int traverse(Integral<Expr> &expr, Visitor &visitor)
 	{
@@ -51,6 +66,34 @@ namespace utopia {
 			}
 		}
 	}
+
+	template<class Expr, class Visitor>
+	inline static int traverse(Trace<Expr> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.expr(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+
 
 		template<class Expr, class Visitor>
 	inline static int traverse(Negate<Expr> &expr, Visitor &visitor)
@@ -541,6 +584,34 @@ namespace utopia {
 
 	template<class Expr, class Visitor>
 	inline static int traverse(const Integral<Expr> &expr, Visitor &visitor)
+	{
+		switch(visitor.visit(expr))
+		{
+			case TRAVERSE_CONTINUE:
+			{
+				return traverse(expr.expr(), visitor);
+			}
+
+			case TRAVERSE_STOP:
+			{
+				return TRAVERSE_STOP;
+			}
+
+			case TRAVERSE_SKIP_SUBTREE:
+			{
+				return TRAVERSE_CONTINUE;
+			}
+
+			default: {
+				std::cout << "[Error] INVALID RETURN VALUE: stopping traversal" << std::endl;
+				return TRAVERSE_STOP;
+			}
+		}
+	}
+
+
+	template<class Expr, class Visitor>
+	inline static int traverse(const Trace<Expr> &expr, Visitor &visitor)
 	{
 		switch(visitor.visit(expr))
 		{

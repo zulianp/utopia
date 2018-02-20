@@ -348,7 +348,9 @@ namespace utopia {
 	{
 		DVectord &u_old = total_displacement;
 		DVectord u_older = u_old - old_displacement_increment;
-		DVectord rhs = 4. * ( 1./(dt*dt) * ( internal_mass_matrix * (u_old - u_older) ) + external_force - stiffness_matrix * (3./4. * u_old + 1./4. * u_older) );
+		DVectord rhs = 4. * ( 1./(dt*dt) * ( internal_mass_matrix * (u_old - u_older) ) 
+			+ external_force - stiffness_matrix * (3./4. * u_old + 1./4. * u_older) );
+		
 		DSMatrixd K  = 4./(dt*dt) * internal_mass_matrix + stiffness_matrix;
 
 		SemismoothNewton<DSMatrixd, DVectord> newton(linear_solver);
@@ -606,6 +608,7 @@ namespace utopia {
 
 		if(dynamic_contact) {
 			contact_stabilized_newmark(dt);
+			// classic_newmark_with_contact_2(dt);
 		} else {
 			implicity_euler(dt);
 		}

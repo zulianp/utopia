@@ -18,6 +18,18 @@
 #include <cmath>
 
 namespace utopia {
+    template<class Expr>
+    Binary<Expr, Number<double>, Minus> operator-(const Expression<Expr> &left, const double &right)
+    {
+        return Binary<Expr, Number<double>, Minus>(left, right); 
+    }
+
+    template<class Expr>
+    double operator-(const Number<double> &left, const Number<double> &right)
+    {
+        return static_cast<double>(left) - static_cast<double>(right);
+    }
+
     template<class Derived>
     Negate<Derived> operator-(const Expression<Derived> &expr) {
         return Negate<Derived>(expr.derived());
@@ -81,6 +93,10 @@ namespace utopia {
     template<class Derived>
     auto pow2(const Expression<Derived> &expr) -> decltype(transform(expr, Pow2())) {
         return transform(expr, Pow2());
+    }
+    template<class Derived>
+    auto power(const Expression<Derived> &expr, const double &a) -> decltype(transform(expr, Pow(a))) {
+        return transform(expr, Pow(a));
     }
 
     template<class Derived>

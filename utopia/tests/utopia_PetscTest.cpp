@@ -68,6 +68,19 @@ namespace utopia {
         DVectord result_petsc = 5 / diag_A;
         v_expected = values(4, 5.0/9.0);
         assert(approxeq(v_expected, result_petsc));
+
+        DVectord v_expected_test= values(4.0, 1.0);
+
+        {
+            Write<DVectord> w(v_expected_test);
+            Range rr=range(v_expected_test);
+            for (auto ii=rr.begin(); ii<rr.end(); ++ii){
+                 v_expected_test.set(ii,2*ii);
+        }
+           
+        }
+    
+        DVectord p = power(v_expected_test, 3.0);
     }
 
     void petsc_axpy_test() {

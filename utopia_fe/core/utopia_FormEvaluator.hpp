@@ -10,8 +10,8 @@
 namespace utopia {
 
 	// Compile-time member detection flags.
-	class FeatureYes { char c[1]; };
-	class FeatureNo  { char c[2]; };
+	class FeatureYes { public: char c[1]; };
+	class FeatureNo  { public: char c[2]; };
 
 	template<class T>
 	FeatureYes DetectIsFE(decltype(&T::is_fe));
@@ -64,8 +64,7 @@ namespace utopia {
 			const Expr &expr,
 			Wrapper<Matrix, 2> &mat,
 			Wrapper<Vector, 1> &vec,
-			AssemblyContext<BAKEND_FLAG> &ctx,
-			const bool reset_tensors)
+			AssemblyContext<BAKEND_FLAG> &ctx)
 		{	
 			FormEval<Expr, BAKEND_FLAG>::apply(expr, mat, vec, ctx);
 		}

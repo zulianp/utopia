@@ -32,7 +32,6 @@ namespace utopia
             
             }
 
-
             bool gradient(const Vector &x, Vector &gradient) const override
             {
                 if(first_grad == 0) 

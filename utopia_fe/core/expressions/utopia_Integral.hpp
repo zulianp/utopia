@@ -109,7 +109,7 @@ namespace utopia {
 	};
 
 	template<class Derived>
-	inline Integral<Derived> surface_integral(const Expression<Derived> &expr, const int side_set_id) {
+	inline Integral<Derived> surface_integral(const Expression<Derived> &expr, const int side_set_id = -1) {
 		static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
 		return Integral<Derived>(expr.derived(), side_set_id, true);
 	}

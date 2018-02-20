@@ -173,6 +173,8 @@ namespace utopia {
     //not working properly
     void run_semigeometric_multigrid_elast(libMesh::LibMeshInit &init)
     {
+        std::cout << "[run_semigeometric_multigrid_elast]" << std::endl;
+
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
         const unsigned int n = 16;
@@ -220,6 +222,8 @@ namespace utopia {
         assemble(f, rhs);     
         apply_boundary_conditions(Vx.dof_map(), stiffness_mat, rhs);
 
+        std::cout << "assembly complete" << std::endl;
+
         SemiGeometricMultigrid mg;
         mg.init(*equation_systems, 3);
         // mg.max_it(1);
@@ -244,6 +248,8 @@ namespace utopia {
 
     void run_semigeometric_multigrid_poisson(libMesh::LibMeshInit &init)
     {
+        std::cout << "[run_semigeometric_multigrid_poisson]" << std::endl;
+
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
         const unsigned int n = 16;

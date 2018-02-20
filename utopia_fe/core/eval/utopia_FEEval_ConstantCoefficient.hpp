@@ -2,8 +2,8 @@
 #define UTOPIA_FE_EVAL_CONSTANT_COEFFICIENT_HPP
 
 namespace utopia {
-	template<typename T, int Order, class Traits, int Backend>
-	class FEEval<ConstantCoefficient<T, Order>, Traits, Backend> { 
+	template<typename T, int Order, class Traits, int Backend, int IsQuadData>
+	class FEEval<ConstantCoefficient<T, Order>, Traits, Backend, IsQuadData> { 
 	public:
 		typedef utopia::ConstantCoefficient<T, Order> Expr;
 

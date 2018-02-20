@@ -23,7 +23,6 @@
 #include <algorithm>
 
 namespace utopia {
-
 	/*
 		TODO list
 		- boundary conditions
@@ -200,6 +199,10 @@ namespace utopia {
 		}
 
 
+
+
+
+
 		static void run_nonlinear_elasticity(const std::shared_ptr<SpaceInput> &space_input)
 		{
 
@@ -232,25 +235,21 @@ namespace utopia {
 			auto t = trace(C);
 			
 			auto P = mu * (F - F_inv_t) + lambda * logn(J) * F_inv_t;
+			
 			//compressible neo-hookean
 			auto l_form = inner(P, grad(v)) * dX;
-			// auto b_form = (
-			// 				mu * inner(grad(u), grad(v))
-			// 	 		    - (lambda * logn(J) - mu) * inner(transpose(F_inv * grad(u)), F_inv * grad(v))
-			// 	 		    + lambda * inner(F_inv_t, grad(u)) * inner(F_inv_t, grad(v))
-			// 	 		  ) * dX;
-
-			
-			// auto b_form = ( 
-			// 				inner(uk, u) * inner(uk, v)
-			// 	 		  ) * dX;
-
+			auto b_form = (
+							mu * inner(grad(u), grad(v))
+				 		    - inner((lambda * logn(J) - mu) * transpose(F_inv * grad(u)), F_inv * grad(v))
+				 		    + inner(lambda * F_inv_t, grad(u)) * inner(F_inv_t, grad(v))
+				 		  ) * dX;
+		
 			static_assert(IsForm<decltype(l_form)>::value,      "must be a form");
 			static_assert(IsForm<decltype(l_form)>::order == 1, "must be a form");
 
 
 			assemble_linear_and_print(l_form);
-			// assemble_bilinear_and_print(b_form);
+			assemble_bilinear_and_print(b_form);
 		}
 
 		static void run_navier_stokes_test(const std::shared_ptr<SpaceInput> &space_input)
@@ -589,7 +588,7 @@ namespace utopia {
 	{	
 		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
 		
-		const unsigned int n = 60;
+		const unsigned int n = 10;
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
 			n, n,
 			0, 1,

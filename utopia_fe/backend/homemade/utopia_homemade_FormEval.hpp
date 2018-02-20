@@ -28,7 +28,7 @@ namespace utopia {
 				return;
 			}
 
-			auto &&r = FEEval<Integral<Expr>, Traits, HOMEMADE>::apply(expr, ctx);
+			auto &&r = FEEval<Integral<Expr>, Traits, HOMEMADE, QUAD_DATA_NO>::apply(expr, ctx);
 			t = r;
 		}
 
