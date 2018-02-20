@@ -242,8 +242,6 @@ namespace utopia
             level.transfer_from_monolithic_to_stag2(x_mono, x_stag2); 
 
 
-
-
             // some benchmarking 
             auto data_path = Utopia::Instance().get("auto_adaptive_path");
             if(!data_path.empty())
