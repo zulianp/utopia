@@ -4,6 +4,8 @@
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_ContactStabilizedNewmark.hpp"
 
+#include "libmesh/mesh_refinement.h"
+
 namespace utopia {
 	template class ContactSolver<DSMatrixd, DVectord>;
 
@@ -14,7 +16,15 @@ namespace utopia {
 	void run_steady_contact(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		mesh->read("../data/wear_2_far.e");
+		// mesh->read("../data/wear_2_far.e");
+		// mesh->read("../data/channel_2d.e");
+		mesh->read("../data/leaves_3d.e");
+
+		// {
+		// 	libMesh::MeshRefinement mesh_refinement(*mesh);
+		// 	mesh_refinement.make_flags_parallel_consistent();
+		// 	mesh_refinement.uniformly_refine(1);
+		// }
 
 		const auto dim = mesh->mesh_dimension();
 
@@ -22,7 +32,8 @@ namespace utopia {
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("dynamic-contact");
 
 		const double dt = 0.1;
-		LameeParameters lamee_params(20., 20.);
+		// LameeParameters lamee_params(20., 20.);
+		LameeParameters lamee_params(10., 10.);
 		// lamee_params.set_mu(2, 50.);
 		// lamee_params.set_lambda(2, 100.);
 
@@ -35,42 +46,46 @@ namespace utopia {
 		auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
 		auto V = Vx * Vy;
 
-		// if(dim == 3) {
-		// 	V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
-		// }
-
+		if(dim == 3) {
+			V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
+		}
 
 		auto u = trial(V);
 		auto ux = u[0];
 		auto uy = u[1];
 
-
 		auto constr = constraints(
-			boundary_conditions(ux == coeff(0.),    {4}),
-			boundary_conditions(uy == coeff(0.),    {4})
+			boundary_conditions(ux == coeff(0.), {4}),
+			boundary_conditions(uy == coeff(0.), {4})
 		);
 
-		init_constraints(constr);
-		Vx.initialize();
+		if(dim == 3) {
+			auto uz = u[2];
+			auto constr3 = constr + boundary_conditions(uz == coeff(0.), {4});
+			init_constraints(constr3);
+		} else {
+			init_constraints(constr);
+		}
 
+		Vx.initialize();
 
 		auto ef = std::make_shared<ConstantExternalForce>();
 
-		auto vx = test(Vx);
+		// auto vx = test(Vx);
 		auto vy = test(Vy);
 
-		ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy), 1));
-		// ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy)));
+		// ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy), 1));
+		ef->init(integral(inner(coeff(-.2), vy)));
 
-		auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		// auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 		// auto material = std::make_shared<IncompressibleNeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 		// auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-		// auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 
 		ContactParams contact_params;
 		// contact_params.contact_pair_tags = {{2, 1}};
-		contact_params.contact_pair_tags = {{1, 2}};
-		contact_params.search_radius = 0.3;
+		contact_params.contact_pair_tags = {{1, 2}, {1, 3}, {2, 3}};
+		contact_params.search_radius = 0.001;
 
 		ContactSolverT sc(make_ref(V), material, dt, contact_params); 
 		sc.set_external_force_fun(ef);		

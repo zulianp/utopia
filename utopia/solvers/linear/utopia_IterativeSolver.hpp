@@ -182,7 +182,7 @@ namespace  utopia
             }
 
             // check number of iterations
-            if( it > max_it_)
+            if( it >= max_it_)
             {
                 exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
                 return true; 

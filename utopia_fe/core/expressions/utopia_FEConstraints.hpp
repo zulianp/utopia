@@ -14,6 +14,10 @@ namespace utopia {
 		: eqs_(eqs...)
 		{ }
 
+		FEConstraints(const std::tuple<Constraint...> &eqs)
+		: eqs_(eqs)
+		{}
+
 		template<int Index>
 		inline auto get() const -> const typename std::tuple_element<Index, std::tuple<Constraint...>>::type
 		{
@@ -40,6 +44,11 @@ namespace utopia {
 			iter.visit(fun);
 		}
 
+		const std::tuple<Constraint...> &equations() const
+		{
+			return eqs_;
+		}
+
 	private:
 		std::tuple<Constraint...> eqs_;
 	};
@@ -58,6 +67,12 @@ namespace utopia {
 	inline FEConstraints<Constraint...> constraints(const Constraint &... eqs)
 	{
 		return FEConstraints<Constraint...>(eqs...);
+	}
+
+	template<class... Constraint, class Appended>
+	FEConstraints<Constraint..., Appended> operator+(const FEConstraints<Constraint...> &constr, const Appended &eq)
+	{
+		return FEConstraints<Constraint..., Appended>(std::tuple_cat(constr.equations(), std::make_tuple(eq)));
 	}
 }
 
