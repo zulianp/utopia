@@ -13,8 +13,8 @@ namespace utopia {
 		bool assemble(const Expr &expr, GlobalMatrix &mat, GlobalVector &vec, const bool apply_constraints = false)
 		{
 			//perf
-			// Chrono c;
-			// c.start();
+			Chrono c;
+			c.start();
 
 			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
 			typedef typename TraitsT::Matrix ElementMatrix;
@@ -78,9 +78,9 @@ namespace utopia {
 			}
 
 			//perf
-			// c.stop();
-			// std::cout << "assemble: lhs == rhs" << std::endl;
-			// std::cout << c << std::endl;
+			c.stop();
+			std::cout << "assemble: lhs == rhs" << std::endl;
+			std::cout << c << std::endl;
 			return true;
 		}
 
@@ -89,8 +89,8 @@ namespace utopia {
 		bool assemble(const Expr &expr, GlobalMatrix &mat)
 		{
 			//perf
-			// Chrono c;
-			// c.start();
+			Chrono c;
+			c.start();
 
 			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
 			typedef typename TraitsT::Matrix ElementMatrix;
@@ -139,9 +139,9 @@ namespace utopia {
 			}
 
 			//perf
-			// c.stop();
-			// std::cout << "assemble: lhs" << std::endl;
-			// std::cout << c << std::endl;
+			c.stop();
+			std::cout << "assemble: lhs" << std::endl;
+			std::cout << c << std::endl;
 			return true;
 		}
 
@@ -151,8 +151,8 @@ namespace utopia {
 		{
 
 			//perf
-			// Chrono c;
-			// c.start();
+			Chrono c;
+			c.start();
 
 			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
 			typedef typename TraitsT::Vector ElementVector;
@@ -196,9 +196,9 @@ namespace utopia {
 
 
 			//perf
-			// c.stop();
-			// std::cout << "assemble: rhs" << std::endl;
-			// std::cout << c << std::endl;
+			c.stop();
+			std::cout << "assemble: rhs" << std::endl;
+			std::cout << c << std::endl;
 			return true;
 		}
 
