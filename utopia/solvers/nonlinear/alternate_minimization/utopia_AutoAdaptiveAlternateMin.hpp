@@ -229,9 +229,9 @@ namespace utopia
                     iteration_status = SUCCESSFUL; 
 
                 // complete alternation 
-                if(rho_inex > 0.8)
+                if(rho_inex > 0.8 || iteration_type==STAG_1)
                     iteration_type = MONOLITHIC; 
-                else if(rho_inex < 0.8 && (iteration_type == STAG_2 || iteration_type == MONOLITHIC))
+                else if(rho_inex < 0.8 && iteration_type == MONOLITHIC)
                     iteration_type = STAG_1; 
                 else 
                     iteration_type = STAG_2;
@@ -240,6 +240,30 @@ namespace utopia
             // just to have nice pictures on each ts ... 
             level.transfer_from_monolithic_to_stag1(x_mono, x_stag1); 
             level.transfer_from_monolithic_to_stag2(x_mono, x_stag2); 
+
+
+
+
+            // some benchmarking 
+            auto data_path = Utopia::Instance().get("auto_adaptive_path");
+            if(!data_path.empty())
+            {
+                CSVWriter writer; 
+                if (mpi_world_rank() == 0)
+                {
+                  if(!writer.file_exists(data_path))
+                  {
+                      writer.open_file(data_path); 
+                      writer.write_table_row<std::string>({("global_it"), "it_scaled"}); 
+                  }
+                  else
+                      writer.open_file(data_path); 
+                  
+                  writer.write_table_row<Scalar>({Scalar(global_it), Scalar(it_scaled)}); 
+                  writer.close_file(); 
+                }
+            }
+
 
 
             return true;
