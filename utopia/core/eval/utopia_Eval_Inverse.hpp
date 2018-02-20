@@ -17,7 +17,7 @@ namespace utopia {
 			{
 	            UTOPIA_LOG_BEGIN(expr);
 				Tensor2 ret;
-				iapply(expr, ret);
+				apply(expr, ret);
 				return ret.implementation();
 			}
 

@@ -8,8 +8,8 @@
 
 namespace utopia {
 
-	template<class FunctionSpaceT, class Traits, int Backend>
-	class FEEval<TrialFunction<FunctionSpaceT>, Traits, Backend> {
+	template<class FunctionSpaceT, class Traits, int Backend, int IsQuadData>
+	class FEEval<TrialFunction<FunctionSpaceT>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::TrialFunction<FunctionSpaceT> Expr;
 

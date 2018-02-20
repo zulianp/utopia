@@ -8,8 +8,8 @@
 
 namespace utopia {
 
-	template<class Tensor, class Traits, int Backend>
-	class FEEval<Gradient<Tensor>, Traits, Backend> {
+	template<class Tensor, class Traits, int Backend, int IsQuadData>
+	class FEEval<Gradient<Tensor>, Traits, Backend, IsQuadData> {
 	public:
 		typedef utopia::Gradient<Tensor> Expr;
 		typedef typename Traits::GradientType GradientT;

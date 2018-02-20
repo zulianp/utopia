@@ -158,6 +158,21 @@ namespace utopia {
             return x * x;
         }
     };
+    
+    
+    class Pow {
+    public:
+        std::string getClass() const { return "Pow"; }
+        
+        template<typename T>
+        inline T apply(const T &x) const {
+            return std::pow(x,a_);
+        }
+
+       Pow(const double &a):a_(a){}
+       double a_;
+
+    };
 
     class Log {
     public:

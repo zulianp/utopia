@@ -490,6 +490,19 @@ namespace utopia {
 
 		}
 
+		void set_up_wear_test()
+		{
+			mesh_file = "../data/wear_2_far.e";
+			search_radius = 0.1;
+			dt = 0.1;
+			dynamic_contact = true;
+			n_steps = 200;
+			top_boundary_tag = 3;
+			bottom_boundar_tag = 4;
+			contact_flags = {{1, 2}};
+			params = LameeParameters(10., 10.);
+		}
+
 		void set_up_dynamic()
 		{
 			mesh_file = "../data/coarse_contact_2d.e";
@@ -583,8 +596,9 @@ namespace utopia {
 		// auto e_problem = make_shared<Squares>(); p.set_initial_velocity(e_problem);
 		// auto e_problem = make_shared<Balls>();
 		// e_problem->three_dim();
-		// auto e_problem = make_shared<ExampleProblem2D>();
+		auto e_problem = make_shared<ExampleProblem2D>();
 		// e_problem->set_up_m_coarse_t_dynamic();
+		e_problem->set_up_wear_test();
 
 		// e_problem->set_up_m_coarse_t();
 		// auto e_problem = make_shared<Rocks>();
@@ -608,8 +622,8 @@ namespace utopia {
 		// e_problem->finest();
 		// e_problem->id_rocks();
 
-		auto e_problem = make_shared<Rocks>();
-		e_problem->quasi_rocks();
+		// auto e_problem = make_shared<Rocks>();
+		// e_problem->quasi_rocks();
 		
 		//---------------------------------------------------
 		

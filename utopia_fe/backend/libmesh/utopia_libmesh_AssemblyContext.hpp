@@ -12,6 +12,8 @@
 #include "utopia_FEIsSubTree.hpp"
 #include "utopia_Traverse.hpp"
 #include "utopia_ProductFunctionSpace.hpp"
+#include "utopia_libmesh_AssemblyValues.hpp"
+#include "utopia_libmesh_TreeNavigator.hpp"
 
 #include "utopia_fe_core.hpp"
 
@@ -21,6 +23,44 @@
 #include "libmesh/fe_interface.h"
 
 namespace utopia {
+
+	class HasSurfaceIntegral {
+	public:
+
+		HasSurfaceIntegral()
+		: has_surface_integral(false)
+		{}
+
+		template<class Any>
+		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
+		
+		template<class Expr>
+		inline int visit(const Integral<Expr> &expr) 
+		{
+			if(expr.is_surface()) {
+				has_surface_integral = true;
+				return TRAVERSE_STOP;
+			} else {
+				return TRAVERSE_CONTINUE;
+			}
+		}
+
+		template<class Expr>
+		void apply(const Expr &expr)
+		{
+			traverse(expr, *this);
+		}
+
+		bool has_surface_integral;
+	};
+
+	template<class Expr>
+	bool has_surface_integral(const Expr &expr)
+	{
+		HasSurfaceIntegral action;
+		action.apply(expr);
+		return action.has_surface_integral;
+	}
 
 	class LibMeshAssemblyContext {
 	public:
@@ -32,45 +72,69 @@ namespace utopia {
 
 		inline std::vector< std::unique_ptr<FE> > &fe()		
 		{
-			return fe_;
+			return active_values().fe();
 		}
-
 
 		inline const std::vector< std::unique_ptr<FE> > &fe() const
 		{
-			return fe_;
+			return active_values().fe();
 		}
+
+		inline std::vector< std::shared_ptr<VectorElement> > &vector_fe()		
+		{
+			return active_values().vector_fe();
+		}
+
+		inline const std::vector< std::shared_ptr<VectorElement> > &vector_fe() const
+		{
+			return active_values().vector_fe();
+		}
+
+
 
 		inline std::vector< std::unique_ptr<FE> > &test()		
 		{
-			return fe_;
+			return active_values().test();
 		}
 
 		inline std::vector< std::unique_ptr<FE> > &trial()
 		{
-			return fe_;
+			return active_values().trial();
 		}
 
 		inline const std::vector< std::unique_ptr<FE> > &test()	const
 		{
-			return fe_;
+			return active_values().test();
 		}
 
 		inline const std::vector< std::unique_ptr<FE> > &trial() const
 		{
-			return fe_;
+			return active_values().trial();
 		}
 
 		inline std::shared_ptr<libMesh::QBase> quad_test() const
 		{
-			return quad_test_;
+			return active_values().quad_test();
 		}
 
 		inline std::shared_ptr<libMesh::QBase> quad_trial() const
 		{
-			if(!quad_trial_) return quad_test_;
-			return quad_trial_;
+			return active_values().quad_trial();
 		}
+
+		template<class Expr>
+		void init(const Expr &expr) 
+		{		
+			init_fe_from(expr);
+		}
+
+		template<class Expr>
+		void reinit(const Expr &expr)
+		{
+			active_values().reinit_fe_from(expr);
+			init_all_side_fe_from(expr);
+		}
+
 
 		template<class Expr>
 		void init_bilinear(const Expr &expr) 
@@ -78,7 +142,6 @@ namespace utopia {
 			static_assert( (IsSubTree<TrialFunction<utopia::Any>, Expr>::value), "could not find trial function" );
 			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function"  );
 			init_fe_from(expr);
-			// std::cout << "init_bilinear: quadrature_order: " << quadrature_order_ << std::endl;
 		}
 
 		template<class Expr>
@@ -86,19 +149,6 @@ namespace utopia {
 		{	
 			static_assert( (IsSubTree<TestFunction<utopia::Any>,  Expr>::value), "could not find test function"  );	
 			init_fe_from(expr);
-			// std::cout << "init_linear: quadrature_order: " << quadrature_order_ << std::endl;
-		}
-
-		template<class Expr>
-		static std::shared_ptr<LibMeshFunctionSpace> find_any_space(const Expr &expr)
-		{
-			std::shared_ptr<LibMeshFunctionSpace> space_ptr = test_space<LibMeshFunctionSpace>(expr);
-			if(!space_ptr) {
-				auto prod_space_ptr = test_space<ProductFunctionSpace<LibMeshFunctionSpace>>(expr);
-				space_ptr = prod_space_ptr->subspace_ptr(0);
-			}
-
-			return space_ptr;
 		}
 
 		template<class Expr>
@@ -108,11 +158,13 @@ namespace utopia {
 
 			assert((static_cast<bool>(space_ptr)));
 
+			mesh_dimension_ = space_ptr->mesh().mesh_dimension();
+
 			const std::size_t n_vars = space_ptr->equation_system().n_vars();
 			offset.resize(n_vars + 1);
 			offset[0] = 0;
 
-			const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
+			const libMesh::Elem * elem = space_ptr->mesh().elem(active_values().current_element());
 
 			const libMesh::ElemType type = elem->type();
 			const unsigned int sys_num   = space_ptr->dof_map().sys_number();
@@ -125,52 +177,54 @@ namespace utopia {
 			}
 		}
 
-		template<class Expr>		
-		void init_fe_flags(const Expr &expr)
+		static inline std::size_t n_boundary_sides(const libMesh::Elem * elem)
 		{
-			FEInitializer fe_init(*this);
-			fe_init.apply(expr);
+			std::size_t ret = 0;
+			for(std::size_t side = 0; side < elem->n_sides(); ++side) {
+				if((elem->neighbor_ptr(side) != libmesh_nullptr)) { continue; }
+				++ret;
+			}
+
+			return ret;
+		}
+
+		template<class Expr>
+		void init_all_side_fe_from(const Expr &expr)
+		{
+			if(!has_surface_integral(expr)) {
+				return;
+			}
+
+			auto space_ptr = find_any_space(expr);
+			const libMesh::Elem * elem = space_ptr->mesh().elem(active_values().current_element());
+
+			auto n = n_boundary_sides(elem);
+
+			surface_values_.resize(n);
+
+			std::size_t index = 0;
+			for(std::size_t side = 0; side < elem->n_sides(); ++side) {
+				if((elem->neighbor_ptr(side) != libmesh_nullptr)) { continue; }
+
+				auto &values_ptr = surface_values_[index++];
+				
+				if(!values_ptr) {
+					values_ptr = std::make_shared<LibMeshAssemblyValues>();
+				}
+
+				values_ptr->set_current_element(active_values().current_element());
+				values_ptr->init_side_fe_from(expr, side);
+			}
+
 		}
 
 		template<class Expr>
 		void init_fe_from(const Expr &expr)
 		{
-			auto space_ptr = find_any_space(expr);
-			space_ptr->initialize();
-			quadrature_order_ = functional_order(expr, *this);
-			const int dim = space_ptr->mesh().mesh_dimension();
-			const libMesh::Elem * elem = space_ptr->mesh().elem(current_element_);
-
-			if(is_quad(elem->type())) {
-				const int temp = quadrature_order_/2;
-				quadrature_order_ = (temp + 1) * 2;
-			} else if(is_hex(elem->type())) {
-				const int temp = quadrature_order_/2;
-				quadrature_order_ = (temp + 2) * 2;
-			}
-
+			active_values().init_fe_from(expr);
 			init_offsets(expr);
-			
 
-			set_up_quadrature(dim, quadrature_order_, elem);
-			block_id_ = elem->subdomain_id();
-
-			const auto &eq_sys = space_ptr->equation_system();
-			const std::size_t n_vars = eq_sys.n_vars();
-			fe_.resize(n_vars);
-
-			for(std::size_t i = 0; i < n_vars; ++i) {
-				auto fe = libMesh::FEBase::build(dim, eq_sys.get_dof_map().variable_type(i));
-				fe->attach_quadrature_rule(quad_test().get());
-				fe_[i] = std::move(fe);
-						
-			}
-
-			init_fe_flags(expr);
-
-			for(std::size_t i = 0; i < n_vars; ++i) {
-				fe_[i]->reinit(elem);
-			}
+			init_all_side_fe_from(expr);
 		}
 
 		void init_tensor(Vector &v, const bool reset);
@@ -183,229 +237,88 @@ namespace utopia {
 
 		inline int block_id() const
 		{
-			return block_id_;
+			return active_values().block_id();
 		}
 
 		inline void set_current_element(const long current_element)
 		{
-			current_element_ = current_element;
+			active_values().set_current_element(current_element);
 		}
 
 		inline long current_element() const
 		{
-			return current_element_;
+			return active_values().current_element();
 		}
 
-		void surface_integral_begin()
-		{
-			is_surface_ = true;
-		}
+		void surface_integral_begin() {}
 
 		void surface_integral_end()
 		{
-			is_surface_ = false;
+			active_values_ = volume_values_;
+		}
+
+		void set_side(const std::size_t i)
+		{
+			assert(surface_values_[i]);
+			active_values_ = surface_values_[i];
+		}
+
+		std::size_t n_sides()
+		{
+			return surface_values_.size();
 		}
 
 		LibMeshAssemblyContext()
-		: current_element_(0), quadrature_order_(2), block_id_(0), reset_quadrature_(true), is_surface_(false)
-		{}
+		: has_assembled_(false), mesh_dimension_(-1)
+		{
+			active_values_ = std::make_shared<LibMeshAssemblyValues>();
+		}
 
 		//x basis function
 		std::vector<int> offset;
+
+		inline void set_has_assembled(const bool val)
+		{
+			has_assembled_ = val;
+		}
+
+		inline bool has_assembled() const
+		{
+			return has_assembled_;
+		}
+
+
+		inline unsigned int mesh_dimension() const
+		{
+			return mesh_dimension_;
+		}
+
 	private:
-		long quadrature_order_;
-		long current_element_;
-		int block_id_;
-		bool reset_quadrature_;
-		bool is_surface_;
-		
 		std::shared_ptr<libMesh::QBase> quad_trial_;
 		std::shared_ptr<libMesh::QBase> quad_test_;
 		std::vector< std::unique_ptr<FE> > fe_;
+		std::shared_ptr<LibMeshAssemblyValues> active_values_;
+		std::shared_ptr<LibMeshAssemblyValues> volume_values_;
+		std::vector< std::shared_ptr<LibMeshAssemblyValues> > surface_values_;
+		bool has_assembled_;
+		unsigned int mesh_dimension_;
+
+		inline LibMeshAssemblyValues &active_values()
+		{
+			assert(active_values_);
+			return *active_values_;
+		}
+
+		inline const LibMeshAssemblyValues &active_values() const
+		{
+			assert(active_values_);
+			return *active_values_;
+		}
 
 		inline std::size_t n_shape_functions() const
 		{
-			std::size_t ret = 0;
-			for(auto &f_ptr : fe()) {
-				if(f_ptr) ret += f_ptr->n_shape_functions();
-			}
-
-			return ret;
+			return active_values().n_shape_functions();
 		}
-
-		void set_up_quadrature(const int dim, const int quadrature_order, const libMesh::Elem * elem)
-		{
-			if(reset_quadrature_) {
-				quad_test_  = std::make_shared<libMesh::QGauss>(dim, libMesh::Order(quadrature_order));
-				quad_trial_ = quad_test_;
-				reset_quadrature_ = false;
-			} else {
-				assert((static_cast<bool>(quad_trial_)));
-				assert((static_cast<bool>(quad_test_)));
-			}
-		}
-
-		class FEInitializer {
-		public:
-
-			FEInitializer(LibMeshAssemblyContext &ctx)
-			: ctx(ctx)
-			{}
-
-			template<class Any>
-			inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
-			
-
-			void init_phi(const LibMeshFunctionSpace &s)
-			{
-				ctx.fe()[s.subspace_id()]->get_phi();
-			}
-
-			void init_phi(const ProductFunctionSpace<LibMeshFunctionSpace> &s)
-			{
-				s.each([&](const int, const LibMeshFunctionSpace &space) {
-					ctx.fe()[space.subspace_id()]->get_phi();
-				});
-			}
-
-
-			void init_JxW(const LibMeshFunctionSpace &s)
-			{
-				if(s.subspace_id() == 0) {
-					//FIXME
-					ctx.fe()[s.subspace_id()]->get_JxW();
-				}
-			}
-
-			void init_JxW(const ProductFunctionSpace<LibMeshFunctionSpace> &s)
-			{
-				s.each([&](const int, const LibMeshFunctionSpace &space) {
-					ctx.fe()[space.subspace_id()]->get_JxW();
-				});
-			}
-
-			void init_xyz()
-			{
-				//FIXME
-				ctx.fe()[0]->get_xyz();
-			}
-
-			template<class T>
-			inline int visit(const TrialFunction<T> &expr)
-			{
-				init_phi(*expr.space_ptr());
-				return TRAVERSE_CONTINUE;
-			}
-
-			template<class T>
-			inline int visit(const TestFunction<T> &expr)
-			{
-				init_JxW(*expr.space_ptr());
-				init_phi(*expr.space_ptr());
-				return TRAVERSE_CONTINUE;
-			}
-
-			void init_dphi(const LibMeshFunctionSpace &s)
-			{
-				ctx.fe()[s.subspace_id()]->get_dphi();
-			}
-
-			void init_dphi(const ProductFunctionSpace<LibMeshFunctionSpace> &s)
-			{
-				s.each([&](const int, const LibMeshFunctionSpace &space) {
-					ctx.fe()[space.subspace_id()]->get_dphi();
-				});
-			}
-
-			//Gradient
-			template<template<class> class Function>
-			inline int visit(const Gradient<Function<ProductFunctionSpace<LibMeshFunctionSpace>>> &expr)
-			{
-				init_dphi(*expr.expr().space_ptr());
-				return TRAVERSE_CONTINUE;
-			}
-
-			template<template<class> class Function>
-			inline int visit(const Gradient<Function<LibMeshFunctionSpace>> &expr)
-			{
-				init_dphi(*expr.expr().space_ptr());
-				return TRAVERSE_CONTINUE;
-			}
-
-			template<class C, template<class> class Function>
-			inline int visit(const Gradient<Interpolate<C, Function<LibMeshFunctionSpace>> > &expr)
-			{
-				init_dphi(*expr.expr().fun().space_ptr());
-				return TRAVERSE_SKIP_SUBTREE;
-			}
-
-			template<class C, template<class> class Function>
-			inline int visit(const Gradient<Interpolate<C, Function<ProductFunctionSpace<LibMeshFunctionSpace>>> > &expr)
-			{
-				init_dphi(*expr.expr().fun().space_ptr());
-				return TRAVERSE_SKIP_SUBTREE;
-			}
-
-			template<class C, template<class> class Function>
-			inline int visit(const Interpolate<C, Function<LibMeshFunctionSpace>> &expr)
-			{
-				init_phi(*expr.fun().space_ptr());
-				return TRAVERSE_CONTINUE;
-			}
-
-			template<class C, template<class> class Function>
-			inline int visit(const Interpolate<C, Function<ProductFunctionSpace<LibMeshFunctionSpace>>> &expr)
-			{
-				init_phi(*expr.fun().space_ptr());
-				return TRAVERSE_CONTINUE;
-			}
-
-
-			//Divergence
-			template<template<class> class Function>
-			inline int visit(const Divergence<Function<ProductFunctionSpace<LibMeshFunctionSpace>>> &expr)
-			{
-				init_dphi(*expr.expr().space_ptr());
-				return TRAVERSE_CONTINUE;
-			}
-
-			template<template<class> class Function>
-			inline int visit(const Divergence<Function<LibMeshFunctionSpace>> &expr)
-			{
-				init_dphi(*expr.expr().space_ptr());
-				return TRAVERSE_CONTINUE;
-			}
-
-			//Curl
-			template<template<class> class Function>
-			inline int visit(const Curl<Function<ProductFunctionSpace<LibMeshFunctionSpace>>> &expr)
-			{
-				init_dphi(*expr.expr().space_ptr());
-				return TRAVERSE_CONTINUE;
-			}
-
-			template<template<class> class Function>
-			inline int visit(const Curl<Function<LibMeshFunctionSpace>> &expr)
-			{
-				init_dphi(*expr.expr().space_ptr());
-				return TRAVERSE_CONTINUE;
-			}
-
-			template<class Out, class F>
-			inline int visit(const ContextFunction<Out, F> &expr)
-			{
-				init_xyz();
-				return TRAVERSE_CONTINUE;
-			}
-
-			template<class Expr>
-			void apply(const Expr &expr)
-			{
-				traverse(expr, *this);
-			}
-
-			LibMeshAssemblyContext &ctx;
-		};
 	};
 
 	template<>

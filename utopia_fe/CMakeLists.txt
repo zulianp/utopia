@@ -78,6 +78,8 @@ list(APPEND UTOPIA_FE_MODULES
 	backend/libmesh
 	backend/homemade
 	intersection
+	contact
+	materials
 	core
 	rapidxml
  )
