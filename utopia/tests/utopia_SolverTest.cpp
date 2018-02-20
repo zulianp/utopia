@@ -1,3 +1,9 @@
+/*
+* @Author: kopanicakova
+* @Date:   2018-02-06 17:47:26
+* @Last Modified by:   kopanicakova
+* @Last Modified time: 2018-02-06 17:55:18
+*/
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
@@ -630,7 +636,7 @@ namespace utopia
 		{
 			using namespace utopia;
 			
-			// std::cout << "         Begin: BICGSTAB_test" << std::endl;
+			// std::cout << "         Begin: GMRES_test" << std::endl;
 			DMatrixd mat = identity(_n, _n);
 			DVectord rhs = zeros(_n);
 			DVectord sol = zeros(_n);
@@ -640,7 +646,7 @@ namespace utopia
 			
 			DVectord expected = zeros(_n);
 			assert(approxeq(expected, sol));
-			// std::cout << "         End: BICGSTAB_test" << std::endl;
+			// std::cout << "         End: GMRES_test" << std::endl;
 		}
 		
 		void petsc_newton_test_out_info()
@@ -669,7 +675,7 @@ namespace utopia
 		{
 			using namespace utopia;
 			
-			// std::cout << "         Begin: petsc_sparse_newton_test" << std::endl;
+			//std::cout << "         Begin: petsc_sparse_newton_test" << std::endl;
 			auto lsolver = std::make_shared< BiCGStab<DSMatrixd, DVectord> >();
 			Newton<DSMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.enable_differentiation_control(false);
@@ -686,7 +692,7 @@ namespace utopia
 			
 			nlsolver.solve(fun, x);
 			assert(approxeq(expected, x));
-			// std::cout << "         End: petsc_sparse_newton_test" << std::endl;
+			//std::cout << "         End: petsc_sparse_newton_test" << std::endl;
 		}
 		
 		void petsc_newton_test()

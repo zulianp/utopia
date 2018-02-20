@@ -27,6 +27,8 @@ namespace utopia {
     {
         Vec x_k_1;       
         Vec x_k_2;       
+
+        PetscBool compute_cond_number; 
     }
     UTOPIA_LOG;
 
@@ -54,7 +56,6 @@ namespace utopia {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::Preconditioner<Vector> Preconditioner;
-        // typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver; 
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
 
@@ -69,7 +70,8 @@ namespace utopia {
 
                 KSP_types(ksp_types),
                 PC_types(pc_types),
-                Solver_packages(pc_packages)
+                Solver_packages(pc_packages), 
+                compute_cond_number(PETSC_FALSE)
 
         {
             set_parameters(params); 
@@ -105,7 +107,6 @@ namespace utopia {
         char           name_[1024]; 
         PetscBool      flg;
 
-
         #if UTOPIA_PETSC_VERSION_LESS_THAN(3,7,0)
              PetscOptionsGetString(NULL, "-ksp_type", name_, 1024, &flg);
             if(flg)
@@ -132,6 +133,7 @@ namespace utopia {
                 solver_package(name_);
             
         #endif
+ 
     }
 
 
@@ -251,6 +253,8 @@ public:
         VecDuplicate(raw_type(x), &(ut_log.x_k_2));
         VecDuplicate(raw_type(x), &(ut_log.x_k_1));
 
+        ut_log.compute_cond_number = compute_cond_number; 
+
         ierr = KSPSetUp(ksp);
         ierr = KSPSolve(ksp, raw_type(b), raw_type(x));
           
@@ -284,14 +288,20 @@ private:
      */
     virtual void set_ksp_options(KSP & ksp)
     {
-
         PetscErrorCode ierr;
 
         // check if our options overwrite this 
         KSPSetFromOptions(ksp); 
 
+        // TODO:: extend to other supported types... 
+        compute_cond_number = ( (   KSP_type_ == "bcgs" || KSP_type_ == "cg"  || 
+                                    KSP_type_ == "gmres") && (this->verbose() )) ? PETSC_TRUE : PETSC_FALSE; 
+
         if(this->verbose())
             KSPMonitorSet(ksp, MyKSPMonitor, &ut_log, 0);
+
+        if(compute_cond_number)
+            ierr = KSPSetComputeSingularValues(ksp, PETSC_TRUE); 
         
         ierr = KSPSetType(ksp, KSP_type_.c_str());
 
@@ -319,6 +329,7 @@ private:
 protected:
     KSP                 ksp;
     UTOPIA_LOG          ut_log; 
+    PetscBool           compute_cond_number;  
 
     };
     
