@@ -324,6 +324,11 @@ namespace utopia {
 			check_error( VecSetValues(implementation(), indices.size(), &indices[0], &values[0], INSERT_VALUES) );
 		}
 
+		inline void set(const PetscScalar value)
+		{
+			check_error( VecSet(implementation(), value) );
+		}
+
 		inline void add_vector(
 			const std::vector<PetscInt> &indices,
 			const std::vector<PetscScalar> &values) 

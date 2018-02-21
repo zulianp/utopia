@@ -16,8 +16,7 @@ namespace utopia {
 		: V_(V), params_(params)
 		{}
 
-		// bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
-		bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) override
+		bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
 		{
             int mesh_dimension = V_.subspace(0).mesh().mesh_dimension();
 

@@ -158,7 +158,7 @@ namespace utopia {
 		}
 
 		// virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
-		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient)
+		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
 		{
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
@@ -193,7 +193,7 @@ namespace utopia {
 				apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
 			} 
 
-			SemismoothNewton<Matrix, Vector> newton(linear_solver_);
+			SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
 			newton.verbose(true);
 			newton.max_it(40);
 			newton.set_box_constraints(make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap - xc_)));

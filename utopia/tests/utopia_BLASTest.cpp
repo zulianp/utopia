@@ -191,6 +191,10 @@ namespace utopia {
 
         Matrixd m_exp{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
         assert(approxeq(m_exp, m1));
+
+
+
+        v1.set(6.);
     }
 
 

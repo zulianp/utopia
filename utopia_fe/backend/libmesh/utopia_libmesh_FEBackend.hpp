@@ -1505,12 +1505,13 @@ namespace utopia {
 		//Interpolate
 		template<class Tensor>
 		static void gather_interp_values(
-			const Interpolate<Wrapper<Tensor, 1>, TrialFunction<LibMeshFunctionSpace> > &interp,
+			const Wrapper<Tensor, 1> &c,
+			const TrialFunction<LibMeshFunctionSpace> &f,
 			Vector &element_values,
 			AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			auto &c   = interp.coefficient();
-			auto &f   = interp.fun();
+			// auto &c   = interp.coefficient();
+			// auto &f   = interp.fun();
 
 			auto space_ptr = f.space_ptr();
 			const auto &mesh = space_ptr->mesh();
@@ -1534,14 +1535,17 @@ namespace utopia {
 		}
 
 		template<class Tensor, class Space>
-		static std::vector<Scalar> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<Space> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
+		static std::vector<Scalar> fun(
+			const Wrapper<Tensor, 1> &c,
+			const TrialFunction<Space> &f,
+			AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			auto &c  = interp.coefficient();
-			auto &f  = interp.fun();
+			// auto &c  = interp.coefficient();
+			// auto &f  = interp.fun();
 			auto &&g = fun(f, ctx);
 
 			Vector element_values;
-			gather_interp_values(interp, element_values, ctx);
+			gather_interp_values(c, f, element_values, ctx);
 
 			const std::size_t n_shape_functions = g.size();
 			const std::size_t n_quad_points = g[0].size();
@@ -1558,14 +1562,17 @@ namespace utopia {
 		}
 
 		template<class Tensor, class Space>
-		static std::vector<DenseVectorT> fun(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<Space>> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
+		static std::vector<DenseVectorT> fun(
+			const Wrapper<Tensor, 1> &c,
+			const TrialFunction<ProductFunctionSpace<Space>> &f,
+			AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			auto &c  = interp.coefficient();
-			auto &f  = interp.fun();
+			// auto &c  = interp.coefficient();
+			// auto &f  = interp.fun();
 			auto &&g = fun(f, ctx);
 
 			Vector element_values;
-			gather_interp_values(interp, element_values, ctx);
+			gather_interp_values(c, f, element_values, ctx);
 
 			const std::size_t n_shape_functions = g.size();
 			const std::size_t n_quad_points = g[0].size();
@@ -1592,14 +1599,17 @@ namespace utopia {
 		}
 
 		template<class Tensor>
-		static std::vector<Vector> grad(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<LibMeshFunctionSpace> > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
+		static std::vector<Vector> grad(
+			const Wrapper<Tensor, 1> &c,
+			const TrialFunction<LibMeshFunctionSpace> &f,
+			AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			auto &c  = interp.coefficient();
-			auto &f  = interp.fun();
+			// auto &c  = interp.coefficient();
+			// auto &f  = interp.fun();
 			auto &&g = grad(f, ctx);
 
 			Vector element_values;
-			gather_interp_values(interp, element_values, ctx);
+			gather_interp_values(c, f, element_values, ctx);
 
 			const std::size_t n_shape_functions = g.size();
 			const std::size_t n_quad_points = g[0].size();
@@ -1646,10 +1656,10 @@ namespace utopia {
 
 
 		template<class Tensor>
-		static std::vector<Matrix> grad(const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace> > > &interp, AssemblyContext<LIBMESH_TAG> &ctx)
+		static std::vector<Matrix> grad(const Wrapper<Tensor, 1> &c, const TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace> > &f, AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			auto &c   = interp.coefficient();
-			auto &f   = interp.fun();
+			// auto &c   = interp.coefficient();
+			// auto &f   = interp.fun();
 			auto space_ptr = f.space_ptr();
 
 			auto &&g  = grad(f, ctx);
@@ -1657,7 +1667,7 @@ namespace utopia {
 
 
 			Vector element_values;
-			gather_interp_values(interp, element_values, ctx);
+			gather_interp_values(c, f, element_values, ctx);
 
 			const SizeType rows = space_ptr->n_subspaces();
 			const SizeType cols = space_ptr->subspace(0).mesh().mesh_dimension();
@@ -1684,12 +1694,13 @@ namespace utopia {
 
 		template<class Tensor>
 		static void gather_interp_values(
-			const Interpolate<Wrapper<Tensor, 1>, TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>> > &interp,
+			const Wrapper<Tensor, 1> &c,
+			const TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>> &f,
 			Vector &element_values,
 			AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-			auto &c   = interp.coefficient();
-			auto &f   = interp.fun();
+			// auto &c   = interp.coefficient();
+			// auto &f   = interp.fun();
 
 			auto space_ptr = f.space_ptr();
 			const auto &sub_0 = space_ptr->subspace(0);
@@ -1775,7 +1786,7 @@ namespace utopia {
 			const Minus &,
 			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
 		{
-			auto &&f = fun(right, ctx);
+			auto &&f = fun(right.coefficient(), right.fun(), ctx);
 
 			for(auto &f_v : f) {
 				f_v = left.expr() - f_v;
@@ -1791,7 +1802,7 @@ namespace utopia {
 			const Minus &,
 			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
 		{
-			auto &&f = fun(left, ctx);
+			auto &&f = fun(left.coefficient(), left.fun(), ctx);
 
 			for(auto &f_v : f) {
 				f_v -= right.expr();
@@ -1808,7 +1819,7 @@ namespace utopia {
 			const Plus &,
 			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
 		{
-			auto &&f = fun(right, ctx);
+			auto &&f = fun(right.coefficient(), right.fun(), ctx);
 
 			for(auto &f_v : f) {
 				f_v += left.expr();
@@ -1824,7 +1835,7 @@ namespace utopia {
 			const Divides &,
 			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
 		{
-			auto &&f = fun(right, ctx);
+			auto &&f = fun(right.coefficient(), right.fun(), ctx);
 
 			for(auto &f_v : f) {
 				f_v = left.expr() / f_v;

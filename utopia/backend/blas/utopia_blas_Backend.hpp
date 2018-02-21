@@ -155,6 +155,12 @@ namespace utopia {
 			for (typename std::vector<Ordinal>::size_type i = 0; i < indices.size(); ++i)
 				set(v, indices[i], values[i]);
 		}
+
+
+		static void set(Vector &v, Scalar value)
+		{
+			std::fill(v.begin(), v.end(), value);
+		}
 		
 		// template<typename Ordinal>
 		// inline static void set(

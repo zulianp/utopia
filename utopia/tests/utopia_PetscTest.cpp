@@ -210,6 +210,9 @@ namespace utopia {
             }
         });
 
+
+        x.set(0.);
+
         // std::cout << "end: petsc_vector_accessors_test" << std::endl;
     }
 

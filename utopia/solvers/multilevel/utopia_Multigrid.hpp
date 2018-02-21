@@ -40,21 +40,25 @@ namespace utopia
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
 
-        
+        typedef struct 
+        {
+            std::vector<Vector> r_h, r_H, c_H, c_h; 
 
-        // typedef struct 
-        // {
-        //     std::vector<Vector> r_h, r_H, c_H, c_h; 
+            void init(const int num_levels)
+            {
+                r_h.resize(num_levels);
+                r_H.resize(num_levels);
+                c_H.resize(num_levels);
+                c_h.resize(num_levels);
+            }
 
-        //     void init(const int num_levels)
-        //     {
-        //         r_h.resize(num_levels);
-        //         //..
-        //     }
+            inline bool valid(const std::size_t num_levels) const {
+                return r_h.size() == num_levels;
+            }
 
-        // } LevelMemory;
+        } LevelMemory;
 
-        // LevelMemory memory;
+        LevelMemory memory;
 
 
     // #define BENCHMARKING_mode
@@ -70,9 +74,9 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        Multigrid(  const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
-                    const std::shared_ptr<Solver> &direct_solver = std::shared_ptr<Solver>(),
-                    const Parameters params = Parameters())
+        Multigrid(const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
+                  const std::shared_ptr<Solver> &direct_solver = std::shared_ptr<Solver>(),
+                  const Parameters params = Parameters())
         : _smoother(smoother), _direct_solver(direct_solver) 
         {
             set_parameters(params); 
@@ -109,10 +113,12 @@ namespace utopia
          * @param      x_0   The initial guess. 
          *
          */
-        virtual bool solve(const Vector &rhs, Vector & x_0)
+        virtual bool solve(const Vector &rhs, Vector &x_0)
         {
             Vector r, D_inv; 
             SizeType l = this->num_levels(); 
+
+            memory.init(l);
 
             Scalar r_norm, r0_norm, rel_norm;
             SizeType it = 0; 
@@ -131,9 +137,9 @@ namespace utopia
                 PrintInfo::print_iter_status(it, {r_norm, 1}); 
             it++; 
 
-            #ifdef BENCHMARKING_mode
+#ifdef BENCHMARKING_mode
                 this->atol(1e-15); 
-            #endif
+#endif
 
             if(this->cycle_type() == FULL_CYCLE)
                 this->max_it(1); 
@@ -148,13 +154,13 @@ namespace utopia
                     std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n"; 
 
 
-                #ifdef CHECK_NUM_PRECISION_mode
+#ifdef CHECK_NUM_PRECISION_mode
                     if(has_nan_or_inf(x_0))
                     {
                         x_0 = local_zeros(local_size(x_0));
                         return true; 
                     }
-                #endif    
+#endif    
 
                 r = rhs - levels(l-1).A() * x_0; 
                 r_norm = norm2(r);
@@ -171,16 +177,16 @@ namespace utopia
             }
 
 
-            #ifdef BENCHMARKING_mode
+#ifdef BENCHMARKING_mode
                 this->verbose(true); 
                 it = 0; 
                 converged = false; 
                 r_norm = 1e11; 
                 Scalar dr_norm, rho, rho_L2, e_norm, energy, corr, grid_complexity = 0.0, operator_complexity = 0.0, nnz_o = 0.0, nnz_g = 0.0; 
                 Vector x_exact = x_0, e, Dr, x_k1, x_k01; 
-                x_0 = 0 * x_exact; 
+                x_0 = 0. * x_exact; 
                 D_inv = diag(levels(l-1).A()); 
-                D_inv = 1/ D_inv; 
+                D_inv = 1./D_inv; 
                 
                 Matrix A            =  levels(l-1).A(); 
                 Matrix P            =  transfers(l-2).I(); 
@@ -244,11 +250,10 @@ namespace utopia
                     it++; 
                 
                 }
-            #endif
+#endif
 
             return true; 
         }
-
 
         /**
          * @brief      The solve function for linear MG. 
@@ -281,7 +286,6 @@ namespace utopia
             return this->_transfers[l]; 
         }
 
-
         /**
          * @brief      Function implements multiplicative multigrid cycle. 
          *
@@ -290,22 +294,24 @@ namespace utopia
          * @param      x_0   The current iterate. 
          *
          */
-        virtual bool multiplicative_cycle(const Vector &rhs, const SizeType & l, Vector & x_0)
-        {
+        virtual bool multiplicative_cycle(const Vector &rhs, const SizeType &l, Vector &x_0)
+        {            
+            assert(memory.valid(this->num_levels()) && l <= this->num_levels());
+           
+            Vector &r_h = memory.r_h[l-1];
+            Vector &r_H = memory.r_H[l-1];
+            Vector &c_H = memory.c_H[l-1];
+            Vector &c_h = memory.c_h[l-1];
 
-            Vector r_h, r_H, c_H, c_h;  // original 
-            
-            // Vector &r_h = memory.r_h[l];
-            // Vector &r_H = memory.r_H[l];
-            // Vector &c_H = memory.c_H[l];
-            // Vector &c_h = memory.c_h[l];
+            if(local_size(x_0).get(0) != local_size(rhs).get(0)) {
+               assert( local_size(x_0).get(0) != local_size(rhs).get(0) );
+               std::cerr << "wrong local size for x_0 (if needed use redistribute_as(x_0, rhs)." << std::endl;
+            }
 
-            // static Vector r_h, r_H, c_H, c_h; 
-
-
-
-            if(this->num_levels() > 2) 
-                x_0 = redistribute_as(x_0, rhs); 
+            //SHOULD NOT BE NECEASSARY HERE
+            // if(this->num_levels() > 2) {
+            //     x_0 = redistribute_as(x_0, rhs); 
+            // }
 
             // presmoothing 
             smoothing(levels(l-1).A(), rhs, x_0, this->pre_smoothing_steps()); 
@@ -315,19 +321,19 @@ namespace utopia
             transfers(l-2).restrict(r_h, r_H); 
 
             // prepare correction 
-            c_H = local_zeros(local_size(r_H).get(0));        
+            if(empty(c_H) || size(c_H).get(0) != size(r_H).get(0)) {
+                c_H = local_zeros(local_size(r_H).get(0));        
+            } else {
+                c_H.set(0.);
+            }
 
-            if(l == 2)
-            {
+            if(l == 2) {
                 // coarse solve 
                 coarse_solve(levels(l-2).A(), r_H, c_H);         
 
-            }
-            else
-            {
+            } else {
                 // recursive call into mg
-                for(SizeType k = 0; k < this->mg_type(); k++)
-                {   
+                for(SizeType k = 0; k < this->mg_type(); k++) {   
                     SizeType l_new = l - 1; 
                     multiplicative_cycle(r_H, l_new, c_H); 
                 }
@@ -339,10 +345,8 @@ namespace utopia
 
             // postsmoothing 
             smoothing(levels(l-1).A(), rhs, x_0, this->post_smoothing_steps()); 
-            
             return true; 
         }
-
 
         /**
          * @brief      Function implements full multigrid cycle. 
@@ -355,11 +359,11 @@ namespace utopia
          * @param      x_0   The current iterate. 
          *
          */
-        virtual bool full_cycle(const Vector &rhs, const SizeType & l, Vector & x_0)
+        virtual bool full_cycle(const Vector &rhs, const SizeType &l, Vector &x_0)
         {
             Vector rhs_h = rhs; 
             std::vector<Vector> rhss; 
-            rhss.push_back(std::move(rhs));
+            rhss.push_back(rhs);
 
             for(SizeType i = l-2; i >=0; i--)
             {
@@ -372,16 +376,19 @@ namespace utopia
 
             for(SizeType i = 1; i <l-1; i++)
             {
-                for(SizeType j = 0; j < this->v_cycle_repetition(); j++)
+                for(SizeType j = 0; j < this->v_cycle_repetition(); j++) {
                     multiplicative_cycle(rhss[i], i+1, x_0);  
+                }
+
                 transfers(i).interpolate(x_0, x_0); 
             }
 
-            for(SizeType i = 0; i < this->v_cycle_repetition(); i++)
+            for(SizeType i = 0; i < this->v_cycle_repetition(); i++) {
                 multiplicative_cycle(rhss[0], l, x_0);
+            }
+
             return true; 
         }
-
 
         /**
          * @brief      The function invokes smoothing. 
@@ -393,14 +400,13 @@ namespace utopia
          *
          * @return   
          */
-        bool smoothing(const Matrix &A, const Vector &rhs, Vector &x, const SizeType & nu = 1)
+        bool smoothing(const Matrix &A, const Vector &rhs, Vector &x, const SizeType &nu = 1)
         {
             _smoother->sweeps(nu); 
             _smoother->smooth(A, rhs, x);
 
             return true; 
         }
-
 
         /**
          * @brief      The functions invokes coarse solve. 
@@ -446,7 +452,6 @@ namespace utopia
             _smoother->set_parameters(_parameters); 
             return true; 
         }
-
 
     protected:   
         std::shared_ptr<Smoother>           _smoother;

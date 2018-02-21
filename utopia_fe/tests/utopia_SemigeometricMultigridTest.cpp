@@ -177,7 +177,7 @@ namespace utopia {
 
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
-        const unsigned int n = 16;
+        const unsigned int n = 100;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,
@@ -224,12 +224,29 @@ namespace utopia {
 
         std::cout << "assembly complete" << std::endl;
 
-        SemiGeometricMultigrid mg;
-        mg.init(*equation_systems, 3);
+        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+        // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+        auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+
+        // linear_solver->verbose(true);
+        SemiGeometricMultigrid mg(std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(), linear_solver);
+        mg.verbose(true);
+                                     
+
+        mg.init(*equation_systems, 4);
         // mg.max_it(1);
 
         DVectord sol = local_zeros(local_size(rhs));
+
+        Chrono c;
+        c.start();
         mg.solve(stiffness_mat, rhs, sol);
+        c.stop();
+        
+        if(mpi_world_rank() == 0) {
+            std::cout << "multigrid solver:\n" << c << std::endl;
+        }
 
 
         //CG with multigrid preconditioner
@@ -252,7 +269,7 @@ namespace utopia {
 
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
-        const unsigned int n = 16;
+        const unsigned int n = 100;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,
@@ -286,12 +303,26 @@ namespace utopia {
 
         apply_boundary_conditions(V.dof_map(), lapl_mat, rhs);
 
-        SemiGeometricMultigrid mg;
-        mg.init(V, 2);
+         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+        // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>());
+        auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+
+        // linear_solver->verbose(true);
+        SemiGeometricMultigrid mg(std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(), linear_solver);
+        mg.verbose(true);
+        mg.init(V, 4);
         mg.update(make_ref(lapl_mat));
 
         DVectord sol = local_zeros(local_size(rhs));
+
+        Chrono c;
+        c.start();
         mg.apply(rhs, sol);
+        c.stop();
+
+        if(mpi_world_rank() == 0) {
+            std::cout << "multigrid solver:\n" << c << std::endl;
+        }
 
         const double err = norm2(lapl_mat * sol - rhs);
         assert(err < 1e-6);
