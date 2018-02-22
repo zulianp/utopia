@@ -14,10 +14,23 @@
 #include <cmath>
 
 namespace utopia {
+	static void make_d(const DSMatrixd &mat, DVectord &res)
+	{
+		res = sum(mat, 1);
+
+		ReadAndWrite<DVectord> rw_(res);
+		auto r = range(res);
+		for(auto k = r.begin(); k != r.end(); ++k) {
+			if(approxeq(res.get(k), 0.0, 1e-14)) {
+				res.set(k, 1.);
+			}
+		}
+	}
+
 	SemiGeometricMultigrid::SemiGeometricMultigrid(
 		const std::shared_ptr<Smoother<DSMatrixd, DVectord> > &smoother,
 		const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver)
-	: mg(smoother, linear_solver)
+	: mg(smoother, linear_solver), is_block_solver_(false)
 	{ }
 
 	void SemiGeometricMultigrid::init(const libMesh::EquationSystems &es, const std::size_t n_levels)
@@ -104,6 +117,8 @@ namespace utopia {
 
 		std::vector<std::shared_ptr<DSMatrixd>> interpolators(n_coarse_spaces);
 		moonolith::Communicator comm(mesh.comm().get());
+
+		DVectord d_diag;
 		
 		for(std::size_t i = 1; i < n_coarse_spaces; ++i) {
 			interpolators[i-1] = std::make_shared<DSMatrixd>();
@@ -120,6 +135,12 @@ namespace utopia {
 				dof_map.n_variables(),
 				*interpolators[i-1]
 				); assert(success);
+
+			DVectord d_diag;
+
+			make_d(*interpolators[i-1], d_diag);
+			*interpolators[i-1] = diag(1./d_diag) * *interpolators[i-1];
+
 		}
 
 		interpolators[n_coarse_spaces-1] = std::make_shared<DSMatrixd>();
@@ -135,6 +156,12 @@ namespace utopia {
 			dof_map.n_variables(),
 			*interpolators[n_coarse_spaces-1]
 			); assert(success);
+
+
+		make_d(*interpolators[n_coarse_spaces-1], d_diag);
+		*interpolators[n_coarse_spaces-1] = diag(1./d_diag) * *interpolators[n_coarse_spaces-1];
+
+		write("T.m", *interpolators[n_coarse_spaces-1]);
 
 		if(mg.verbose()) {
 			for(const auto &e : equation_systems) {
@@ -152,6 +179,14 @@ namespace utopia {
 	void SemiGeometricMultigrid::update(const std::shared_ptr<const DSMatrixd> &op)
 	{
 		mg.galerkin_assembly(op);
+
+		//hacky
+		if(is_block_solver_) {
+			for(SizeType i = 0; i < mg.num_levels(); ++i) {
+				const_cast<DSMatrixd &>(mg.level(i).A()).implementation().make_block_ij(meshes[0]->mesh_dimension());
+			}
+		}
+
 	}
 
 	bool SemiGeometricMultigrid::apply(const DVectord &rhs, DVectord &sol)

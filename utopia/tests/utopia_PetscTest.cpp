@@ -1050,12 +1050,27 @@ namespace utopia {
 
     }
 
+
+    void petsc_block_mat_test()
+    {
+        DSMatrixd mat = sparse(10, 10, 3);
+        {
+            Write<DSMatrixd> w_m(mat);
+
+            mat.set(0, 0, 1.);
+            mat.set(1, 1, 1.);
+        }
+
+        mat.implementation().make_block_ij(2);
+        disp(mat);
+    }
+
     #endif //WITH_PETSC;
 
     void runPetscTest() {
 #ifdef WITH_PETSC
         UTOPIA_UNIT_TEST_BEGIN("PetscTest");
-        
+        UTOPIA_RUN_TEST(petsc_block_mat_test);
         UTOPIA_RUN_TEST(petsc_ghosted);
         UTOPIA_RUN_TEST(petc_optional_test);
         UTOPIA_RUN_TEST(petsc_view_test);                

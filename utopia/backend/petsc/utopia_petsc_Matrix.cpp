@@ -969,4 +969,9 @@ namespace utopia {
 	void PetscMatrix::axpy(const PetscScalar alpha, const PetscMatrix &x) {
 		check_error( MatAXPY(implementation(), alpha, x.implementation(), DIFFERENT_NONZERO_PATTERN) );
 	}
+
+	void PetscMatrix::make_block_ij(const PetscInt block_size)
+	{
+		check_error(  MatConvert(implementation(), MATBAIJ,  MAT_INPLACE_MATRIX, &implementation()) );
+	}
 }

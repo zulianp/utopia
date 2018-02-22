@@ -363,6 +363,7 @@ namespace utopia {
 		///this is y
 		void axpy(const PetscScalar alpha, const PetscMatrix &x);
 
+		void make_block_ij(const PetscInt block_size);
 	private:
 		std::shared_ptr<PetscMatrixMemory> wrapper_;
 		

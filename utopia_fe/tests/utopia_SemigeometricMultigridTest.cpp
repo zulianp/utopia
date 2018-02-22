@@ -184,6 +184,8 @@ namespace utopia {
             0, 1.,
             libMesh::QUAD8);
 
+        int dim = lm_mesh->mesh_dimension();
+
         auto equation_systems = std::make_shared<libMesh::EquationSystems>(*lm_mesh);
         auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("smg_elast");
 
@@ -228,12 +230,13 @@ namespace utopia {
         // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
         auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+        auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+        // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
 
         // linear_solver->verbose(true);
-        SemiGeometricMultigrid mg(std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(), linear_solver);
+        SemiGeometricMultigrid mg(smoother, linear_solver);
+        // mg.convert_to_block_solver();
         mg.verbose(true);
-                                     
-
         mg.init(*equation_systems, 4);
         // mg.max_it(1);
 
@@ -306,9 +309,11 @@ namespace utopia {
          // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
         // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>());
         auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+        auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+        // auto smoother = linear_solver;
 
         // linear_solver->verbose(true);
-        SemiGeometricMultigrid mg(std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(), linear_solver);
+        SemiGeometricMultigrid mg(smoother, linear_solver);
         mg.verbose(true);
         mg.init(V, 4);
         mg.update(make_ref(lapl_mat));

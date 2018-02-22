@@ -125,7 +125,7 @@ namespace utopia
 
             bool converged = false; 
 
-            r = rhs - levels(l-1).A() * x_0; 
+            r = rhs - level(l-1).A() * x_0; 
 
             r_norm = norm2(r); 
             r0_norm = r_norm; 
@@ -162,7 +162,7 @@ namespace utopia
                     }
 #endif    
 
-                r = rhs - levels(l-1).A() * x_0; 
+                r = rhs - level(l-1).A() * x_0; 
                 r_norm = norm2(r);
                 rel_norm = r_norm/r0_norm; 
 
@@ -185,10 +185,10 @@ namespace utopia
                 Scalar dr_norm, rho, rho_L2, e_norm, energy, corr, grid_complexity = 0.0, operator_complexity = 0.0, nnz_o = 0.0, nnz_g = 0.0; 
                 Vector x_exact = x_0, e, Dr, x_k1, x_k01; 
                 x_0 = 0. * x_exact; 
-                D_inv = diag(levels(l-1).A()); 
+                D_inv = diag(level(l-1).A()); 
                 D_inv = 1./D_inv; 
                 
-                Matrix A            =  levels(l-1).A(); 
+                Matrix A            =  level(l-1).A(); 
                 Matrix P            =  transfers(l-2).I(); 
                 
                 grid_complexity     = get_global_nnz(P); 
@@ -199,7 +199,7 @@ namespace utopia
 
                 for(SizeType i = (l-2); i >= 0 ; i --)
                 {                    
-                    A =  levels(i).A(); 
+                    A =  level(i).A(); 
                     operator_complexity += get_global_nnz(A); 
                     
                     if(i <= l-3)
@@ -224,13 +224,13 @@ namespace utopia
 
                     multiplicative_cycle(rhs, l, x_0); 
 
-                    r = rhs - levels(l-1).A() * x_0; 
+                    r = rhs - level(l-1).A() * x_0; 
                     r_norm = norm2(r);
                     rel_norm = r_norm/r0_norm; 
                     dr_norm = dot(D_inv, r);
                     e = x_exact - x_0; 
                     e_norm  = norm2(e); 
-                    energy = 0.5 * dot(e, levels(l-1).A() *e)  + dot(e,x_0); 
+                    energy = 0.5 * dot(e, level(l-1).A() *e)  + dot(e,x_0); 
 
                     if(it>1)
                     {
@@ -238,7 +238,7 @@ namespace utopia
                         Vector prev = x_k01 - x_0;
 
                         rho_L2      =  Scalar(norm2(next))/ Scalar(norm2(prev)); 
-                        rho         =  dot(next, levels(l-1).A() *next)/ dot(prev, levels(l-1).A() *prev); 
+                        rho         =  dot(next, level(l-1).A() *next)/ dot(prev, level(l-1).A() *prev); 
                         x_k01 = x_k1; 
                     }
 
@@ -273,13 +273,15 @@ namespace utopia
             return true; 
         }
 
-/*=======================================================================================================================================        =
-=========================================================================================================================================*/
-    private:
-        inline Level &levels(const SizeType &l)
+        inline Level &level(const SizeType &l)
         {
             return this->_levels[l]; 
         }
+
+/*=======================================================================================================================================        =
+=========================================================================================================================================*/
+    private:
+      
 
         inline Transfer &transfers(const SizeType & l)
         {
@@ -314,10 +316,10 @@ namespace utopia
             // }
 
             // presmoothing 
-            smoothing(levels(l-1).A(), rhs, x_0, this->pre_smoothing_steps()); 
+            smoothing(level(l-1).A(), rhs, x_0, this->pre_smoothing_steps()); 
 
             // residual transfer 
-            r_h = rhs - levels(l-1).A() * x_0; 
+            r_h = rhs - level(l-1).A() * x_0; 
             transfers(l-2).restrict(r_h, r_H); 
 
             // prepare correction 
@@ -329,7 +331,7 @@ namespace utopia
 
             if(l == 2) {
                 // coarse solve 
-                coarse_solve(levels(l-2).A(), r_H, c_H);         
+                coarse_solve(level(l-2).A(), r_H, c_H);         
 
             } else {
                 // recursive call into mg
@@ -344,7 +346,7 @@ namespace utopia
             x_0 += c_h; 
 
             // postsmoothing 
-            smoothing(levels(l-1).A(), rhs, x_0, this->post_smoothing_steps()); 
+            smoothing(level(l-1).A(), rhs, x_0, this->post_smoothing_steps()); 
             return true; 
         }
 
@@ -371,7 +373,7 @@ namespace utopia
                 rhss.push_back(std::move(rhs_h));
             }
 
-            coarse_solve(levels(0).A(), rhss[l-1], x_0);    
+            coarse_solve(level(0).A(), rhss[l-1], x_0);    
             transfers(0).interpolate(x_0, x_0); 
 
             for(SizeType i = 1; i <l-1; i++)
