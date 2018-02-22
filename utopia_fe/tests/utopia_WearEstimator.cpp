@@ -580,8 +580,8 @@ namespace utopia {
 			auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
 			auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("wear_test");
 
-			// auto elem_order = libMesh::FIRST;
-			auto elem_order = libMesh::SECOND;
+			auto elem_order = libMesh::FIRST;
+			// auto elem_order = libMesh::SECOND;
 
 			auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
 			auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
@@ -697,7 +697,7 @@ namespace utopia {
 			//begin: set-up semi-geometric multigrid
 			// auto smg = std::make_shared<SemiGeometricMultigrid>();
 			// smg->verbose(true);
-			// smg->init(Vx, 5);
+			// smg->init(Vx, 3);
 			// integrator->set_linear_solver(smg);
 			//end: set-up semi-geometric multigrid
 
@@ -845,7 +845,7 @@ namespace utopia {
 
 		moonolith::Communicator comm(init.comm().get());
 		moonolith::root_describe("reading mesh...", comm, std::cout);
-		mesh->read("../data/wear_2_far.e"); mesh->all_second_order(false);
+		mesh->read("../data/wear_2_far.e");// mesh->all_second_order(false);
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_coarse.e"); mesh->all_second_order(true);
 		moonolith::root_describe("DONE", comm, std::cout);
 		// mesh->read("/Users/zulianp/Desktop/algo4u/wearsim/exodus/toy_fine.e");

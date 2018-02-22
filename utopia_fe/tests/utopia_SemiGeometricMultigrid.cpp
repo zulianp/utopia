@@ -109,7 +109,7 @@ namespace utopia {
 			for(unsigned int v = 0; v < dof_map.n_variables(); ++v) {
 				const auto &var = dof_map.variable(v);
 				//FIXME
-				sys.add_variable(var.name(), dof_map.variable_order(v), libMesh::LAGRANGE);
+				sys.add_variable(var.name(), libMesh::FIRST, libMesh::LAGRANGE);
 			}
 
 			sys.init();
@@ -161,7 +161,7 @@ namespace utopia {
 		make_d(*interpolators[n_coarse_spaces-1], d_diag);
 		*interpolators[n_coarse_spaces-1] = diag(1./d_diag) * *interpolators[n_coarse_spaces-1];
 
-		write("T.m", *interpolators[n_coarse_spaces-1]);
+		// write("T.m", *interpolators[n_coarse_spaces-1]);
 
 		if(mg.verbose()) {
 			for(const auto &e : equation_systems) {
