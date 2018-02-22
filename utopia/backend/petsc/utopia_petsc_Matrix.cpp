@@ -664,6 +664,35 @@ namespace utopia {
 		check_error( MatZeroEntries(implementation()) );
 	}
 
+
+	  void PetscMatrix::mat_baij_init(
+        	MPI_Comm comm,
+        	PetscInt rows_local,
+        	PetscInt cols_local,
+        	PetscInt rows_global,
+        	PetscInt cols_global,
+        	PetscInt d_nnz,
+        	PetscInt o_nnz,
+        	PetscInt block_size
+        )
+	  {
+	  	destroy();
+
+	  	check_error( MatCreate(comm, &implementation()) );
+		check_error( MatSetSizes(implementation(), rows_local, cols_local, rows_global, cols_global) );
+		check_error( MatSetBlockSize(implementation(), block_size));
+
+		check_error( MatSetType(implementation(), MATBAIJ) );
+		check_error( MatSeqBAIJSetPreallocation(implementation(), block_size, PetscMax(d_nnz, 1), PETSC_NULL) );
+		check_error( MatMPIBAIJSetPreallocation(implementation(), block_size, PetscMax(d_nnz, 1), PETSC_NULL, PetscMax(o_nnz, 1), PETSC_NULL) ); 
+
+		check_error( MatSetOption(implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE) );
+		check_error( MatSetOption(implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
+		check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
+
+		check_error( MatZeroEntries(implementation()) );
+	  }
+
 	bool PetscMatrix::is_nan_or_inf() const
 	{
 		int has_nan = 0;
@@ -970,8 +999,25 @@ namespace utopia {
 		check_error( MatAXPY(implementation(), alpha, x.implementation(), DIFFERENT_NONZERO_PATTERN) );
 	}
 
-	void PetscMatrix::make_block_ij(const PetscInt block_size)
+	void PetscMatrix::convert_to_mat_baij(const PetscInt block_size)
 	{
-		check_error(  MatConvert(implementation(), MATBAIJ,  MAT_INPLACE_MATRIX, &implementation()) );
+		auto ls = local_size();
+		auto gs = size();
+
+		PetscMatrix temp;
+		temp.mat_baij_init(
+			communicator(),
+        	ls.get(0),
+        	ls.get(1),
+        	gs.get(0),
+        	gs.get(1),
+        	PETSC_DEFAULT,
+        	PETSC_DEFAULT,
+        	block_size
+        );
+
+		check_error( MatCopy(implementation(), temp.implementation(), DIFFERENT_NONZERO_PATTERN) );
+
+		*this = std::move(temp);
 	}
 }

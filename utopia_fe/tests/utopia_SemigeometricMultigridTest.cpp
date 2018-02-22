@@ -277,12 +277,12 @@ namespace utopia {
             n, n,
             0, 1,
             0, 1.,
-            libMesh::QUAD8);
+            libMesh::QUAD4);
 
         auto equation_systems = std::make_shared<libMesh::EquationSystems>(*lm_mesh);
         equation_systems->add_system<libMesh::LinearImplicitSystem>("smg");
 
-        auto V = LibMeshFunctionSpace(equation_systems);
+        auto V = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u");
         auto u = trial(V);
         auto v = test(V);
 

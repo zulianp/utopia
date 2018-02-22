@@ -183,7 +183,7 @@ namespace utopia {
 		//hacky
 		if(is_block_solver_) {
 			for(SizeType i = 0; i < mg.num_levels(); ++i) {
-				const_cast<DSMatrixd &>(mg.level(i).A()).implementation().make_block_ij(meshes[0]->mesh_dimension());
+				const_cast<DSMatrixd &>(mg.level(i).A()).implementation().convert_to_mat_baij(meshes[0]->mesh_dimension());
 			}
 		}
 

@@ -1061,7 +1061,7 @@ namespace utopia {
             mat.set(1, 1, 1.);
         }
 
-        mat.implementation().make_block_ij(2);
+        mat.implementation().convert_to_mat_baij(2);
         disp(mat);
     }
 
