@@ -44,6 +44,7 @@ if(PETSC_FOUND)
 	list(APPEND PETSC_MODULES
 		.
 		eval
+		external
 		solvers 
 		solvers/linear
 		solvers/nonlinear

@@ -404,6 +404,7 @@ namespace utopia
 		
 		void run()
 		{
+			UTOPIA_RUN_TEST(petsc_ngs_test);
 			UTOPIA_RUN_TEST(petsc_gss_newton_test);
 			UTOPIA_RUN_TEST(petsc_bicgstab_test);
 			UTOPIA_RUN_TEST(petsc_gmres_test);
@@ -422,6 +423,11 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_mg_jacobi_test);
+		}
+
+		void petsc_ngs_test()
+		{
+			SolverTest<DSMatrixd, DVectord, PetscScalar>().ngs_test();
 		}
 
 		void petsc_gss_newton_test()
