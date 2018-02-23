@@ -1062,7 +1062,6 @@ namespace utopia {
         }
 
         mat.implementation().convert_to_mat_baij(2);
-        disp(mat);
     }
 
     #endif //WITH_PETSC;

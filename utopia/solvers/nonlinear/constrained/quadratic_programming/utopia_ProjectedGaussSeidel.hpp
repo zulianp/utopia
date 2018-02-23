@@ -60,7 +60,6 @@ namespace utopia {
 
 				converged = this->check_convergence(iteration, 1, 1, diff);
 
-
 				++iteration;
 				if(converged) break;
 				x_old = x;
@@ -191,6 +190,11 @@ namespace utopia {
 		ProjectedGaussSeidel()
 		: use_line_search_(true)
 		{}
+
+		void set_use_line_search(const bool val) 
+		{
+			use_line_search_ = val;
+		}
 		
 	private:
 		BoxConstraints constraints_;	

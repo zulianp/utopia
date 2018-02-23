@@ -348,7 +348,7 @@ namespace utopia
 
 		void ngs_test()
 		{			
-			const SizeType n = 40;
+			const SizeType n = 400;
 
 			Matrix m = zeros(n, n);
 			assemble_laplacian_1D(n, m);
@@ -386,8 +386,15 @@ namespace utopia
 
 			ProjectedGaussSeidel<Matrix, Vector> pgs;
 			pgs.max_it(n*20);
+			// pgs.verbose(true);
 			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+
+			// Chrono c;
+			// c.start();
 			pgs.solve(m, rhs, solution);
+			// c.stop();
+
+			// std::cout << c << std::endl;
 		}
 		
 		SolverTest()
@@ -427,7 +434,76 @@ namespace utopia
 
 		void petsc_ngs_test()
 		{
-			SolverTest<DSMatrixd, DVectord, PetscScalar>().ngs_test();
+			const int n = 1000;
+			DSMatrixd m = sparse(n, n, 3);
+			assemble_laplacian_1D(n, m);
+		
+			{
+			    Range r = row_range(m);
+			    Write<DSMatrixd> w(m);
+			    if(r.begin() == 0) {
+			        m.set(0, 0, 1.);
+			        m.set(0, 1, 0);
+			    }
+
+			    if(r.end() == n) {
+			        m.set(n-1, n-1, 1.);
+			        m.set(n-1, n-2, 0);
+			    }
+			}
+
+			DVectord rhs = values(n, 1.);
+			{ 
+			    //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
+			    Range r = range(rhs);
+			    Write<DVectord> w(rhs);
+
+			    if(r.begin() == 0) {
+			        rhs.set(0, 0);
+			    }
+
+			    if(r.end() == n) {
+			        rhs.set(n-1, 0.);
+			    }
+			}
+
+			DVectord upper_bound = values(n, 100.0);
+			DVectord solution    = zeros(n);
+
+			ProjectedGaussSeidel<DSMatrixd, DVectord> pgs;
+			pgs.max_it(n);
+			// pgs.verbose(true);
+			pgs.set_use_line_search(false);
+			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+
+			// Chrono c;
+			// c.start();
+			
+			pgs.solve(m, rhs, solution);
+			
+			// c.stop();
+			// std::cout << c << std::endl;
+
+
+			DVectord solution_u = zeros(n);
+			ProjectedGaussSeidel<DSMatrixd, DVectord, -1> pgs_u;
+			// pgs_u.verbose(true);
+			pgs_u.set_use_line_search(false);
+			pgs_u.max_it(n);
+
+			pgs_u.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
+
+			// c.start();
+			
+			pgs_u.solve(m, rhs, solution_u);
+			
+			// c.stop();
+			// std::cout << c << std::endl;
+
+
+			double diff = norm2(solution_u - solution);
+			assert(approxeq(solution_u, solution));
+
 		}
 
 		void petsc_gss_newton_test()
