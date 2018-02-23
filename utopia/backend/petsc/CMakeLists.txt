@@ -44,7 +44,6 @@ if(PETSC_FOUND)
 	list(APPEND PETSC_MODULES
 		.
 		eval
-		external
 		solvers 
 		solvers/linear
 		solvers/nonlinear
@@ -54,6 +53,12 @@ if(PETSC_FOUND)
 		solvers/nonlinear/trust_region
 		solvers/nonlinear/line_search
 		)
+
+	if(ENABLE_PASSO_EXTENSIONS)
+		list(APPEND PETSC_MODULES
+				external
+			)
+	endif()
 
 	find_project_files(CMAKE_CURRENT_SOURCE_DIR PETSC_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 	add_library(utopia_petsc STATIC utopia_petsc.cpp ${LOCAL_SOURCES})

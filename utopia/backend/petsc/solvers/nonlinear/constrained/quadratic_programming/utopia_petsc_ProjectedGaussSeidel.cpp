@@ -1,4 +1,7 @@
 #include "utopia_petsc_ProjectedGaussSeidel.hpp"
+
+#ifdef WITH_PASSO_EXTENSIONS
+
 #include "utopia_petsc_external.hpp"
 
 extern PetscErrorCode constrain_box(MatScalar * diag, PetscScalar * t, PetscScalar * x,
@@ -116,3 +119,5 @@ namespace utopia {
 		}
 	}
 }
+
+#endif //WITH_PASSO_EXTENSIONS

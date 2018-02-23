@@ -1,6 +1,10 @@
 #ifndef UTOPIA_PETSC_PROJECTED_GAUSS_SEIDEL_HPP
 #define UTOPIA_PETSC_PROJECTED_GAUSS_SEIDEL_HPP 
 
+#include "utopia_Base.hpp"
+
+#ifdef WITH_PASSO_EXTENSIONS
+
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_IterativeSolver.hpp"
@@ -74,4 +78,5 @@ namespace utopia {
 	};
 }
 
+#endif //WITH_PASSO_EXTENSIONS
 #endif //UTOPIA_PETSC_PROJECTED_GAUSS_SEIDEL_HPP
