@@ -476,13 +476,13 @@ namespace utopia
 			pgs.set_use_line_search(false);
 			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
-			// Chrono c;
-			// c.start();
+			Chrono c;
+			c.start();
 			
 			pgs.solve(m, rhs, solution);
 			
-			// c.stop();
-			// std::cout << c << std::endl;
+			c.stop();
+			std::cout << c << std::endl;
 
 
 			DVectord solution_u = zeros(n);
@@ -493,12 +493,12 @@ namespace utopia
 
 			pgs_u.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
-			// c.start();
+			c.start();
 			
 			pgs_u.solve(m, rhs, solution_u);
 			
-			// c.stop();
-			// std::cout << c << std::endl;
+			c.stop();
+			std::cout << c << std::endl;
 
 
 			double diff = norm2(solution_u - solution);

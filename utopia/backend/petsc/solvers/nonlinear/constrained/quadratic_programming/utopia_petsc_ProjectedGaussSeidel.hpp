@@ -33,7 +33,7 @@ namespace utopia {
 		}
 
 		bool smooth(const Matrix &A, const Vector &b, Vector &x) override;
-		bool solve(const Matrix &A, const Vector &b, Vector &x) override;
+		bool apply(const Vector &b, Vector &x) override;
 
 		void set_block_size(const PetscInt block_size)
 		{
@@ -41,7 +41,7 @@ namespace utopia {
 		}
 
 		ProjectedGaussSeidel()
-		: block_size_(1)
+		: block_size_(1), use_line_search_(true)
 		{}
 
 		~ProjectedGaussSeidel();
@@ -52,19 +52,25 @@ namespace utopia {
 		{
 			use_line_search_ = val;
 		}
+
+		virtual void update(const std::shared_ptr<const Matrix> &op) override
+		{
+		    IterativeSolver<Matrix, Vector>::update(op);
+		    init(*op);
+		}
 		
 	private:
-		BoxConstraints constraints_;
 		PetscInt block_size_;
-		std::shared_ptr<void> ctx_;
+		bool use_line_search_;
 
+		BoxConstraints constraints_;
 
-		// Matrix d_inv_;
 		Vector active_set_;
 		Vector prev_active_set_;
 		Vector changed_;
 		Vector old_x_;
-		bool use_line_search_;
+		
+		std::shared_ptr<void> ctx_;
 	};
 }
 

@@ -38,10 +38,12 @@ namespace utopia {
 			return it == this->sweeps() - 1;
 		}
 
-		bool solve(const Matrix &A, const Vector &b, Vector &x) override
+		bool apply(const Vector &b, Vector &x) override
 		{ 
 			if(this->verbose())
 				this->init_solver("utopia ProjectedGaussSeidel", {" it. ", "|| u - u_old ||"});
+
+			const Matrix &A = *this->get_operator();
 
 			//TODO generic version
 			assert( constraints_.has_upper_bound() && !constraints_.has_lower_bound() );
@@ -185,6 +187,13 @@ namespace utopia {
 			if(use_line_search_) {
 				inactive_set_ = local_zeros(local_size(c));
 			}
+		}
+
+
+		virtual void update(const std::shared_ptr<const Matrix> &op) override
+		{
+		    IterativeSolver<Matrix, Vector>::update(op);
+		    init(*op);
 		}
 
 		ProjectedGaussSeidel()
