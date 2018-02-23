@@ -228,10 +228,10 @@ namespace utopia {
 
 
 
-				is_r_ = e_mul(r, inactive_set_);
+				// is_r_ = e_mul(r, inactive_set_);
 				is_c_ = e_mul(c, inactive_set_);
 
-				const Scalar rho = dot(is_c_, is_r_);
+				const Scalar rho = dot(is_c_, r);
 				alpha = rho/dot(A * is_c_, is_c_);
 
 				// double n_inactive = sum(inactive_set_);
@@ -304,7 +304,7 @@ namespace utopia {
 
 		Vector r, d, g, c, d_inv, x_old;
 		Vector inactive_set_;
-		Vector is_r_;
+		// Vector is_r_;
 		Vector is_c_;
 	};
 }
