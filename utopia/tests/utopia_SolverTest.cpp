@@ -348,7 +348,7 @@ namespace utopia
 
 		void ngs_test()
 		{			
-			const SizeType n = 400;
+			const SizeType n = 30;
 
 			Matrix m = zeros(n, n);
 			assemble_laplacian_1D(n, m);
@@ -385,14 +385,14 @@ namespace utopia
 			Vector solution    = zeros(n);
 
 			ProjectedGaussSeidel<Matrix, Vector> pgs;
-			pgs.max_it(n*20);
+			pgs.max_it(n*2);
 			// pgs.verbose(true);
 			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
-			// Chrono c;
-			// c.start();
+			Chrono c;
+			c.start();
 			pgs.solve(m, rhs, solution);
-			// c.stop();
+			c.stop();
 
 			// std::cout << c << std::endl;
 		}
@@ -434,9 +434,16 @@ namespace utopia
 
 		void petsc_ngs_test()
 		{
-			const int n = 10000;
+			const int n = 500;
 			DSMatrixd m = sparse(n, n, 3);
 			assemble_laplacian_1D(n, m);
+			// const double ub = 100.0;
+			const double ub = 1.;
+			const bool use_line_search = true;
+			// const bool use_line_search = false;
+			const int max_it = n * 60;
+			const bool verbose = false;
+			const int n_local_sweeps = 3;
 		
 			{
 			    Range r = row_range(m);
@@ -453,6 +460,8 @@ namespace utopia
 			}
 
 			DVectord rhs = values(n, 1.);
+			rhs *= 1./(n-1);
+
 			{ 
 			    //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
 			    Range r = range(rhs);
@@ -467,13 +476,14 @@ namespace utopia
 			    }
 			}
 
-			DVectord upper_bound = values(n, 100.0);
+			DVectord upper_bound = values(n, ub);
 			DVectord solution    = zeros(n);
 
 			ProjectedGaussSeidel<DSMatrixd, DVectord> pgs;
-			pgs.max_it(n);
-			// pgs.verbose(true);
-			pgs.set_use_line_search(true);
+			pgs.max_it(max_it);
+			pgs.verbose(verbose);
+			// pgs.set_n_local_sweeps(n_local_sweeps);
+			pgs.set_use_line_search(use_line_search);
 			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
 			Chrono c;
@@ -487,9 +497,11 @@ namespace utopia
 
 			DVectord solution_u = zeros(n);
 			ProjectedGaussSeidel<DSMatrixd, DVectord, -1> pgs_u;
-			pgs_u.verbose(true);
-			pgs_u.set_use_line_search(true);
-			pgs_u.max_it(n);
+			pgs_u.verbose(verbose);
+			pgs_u.set_n_local_sweeps(1);
+			pgs_u.set_use_line_search(use_line_search);
+			pgs_u.set_use_symmetric_sweep(false);
+			pgs_u.max_it(max_it);
 
 			pgs_u.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
@@ -501,18 +513,40 @@ namespace utopia
 			if(mpi_world_rank() == 0) std::cout << c << std::endl;
 
 			double diff = norm2(solution_u - solution);
+			double res_norm = norm2(m * solution_u - rhs);
 
-			if(diff > 1e-8) {
-				std::cerr << "[Error] different implementations of pgs gives different results" << std::endl;
+			// disp(res_norm);
+
+			if(diff > 1e-5) {
+				std::cerr << "[Error] different implementations of pgs gives different results, diff: " << diff << std::endl;
 			}
 
-			// solution_u.implementation().set_name("uu");
-			// write("vuu.m", solution_u);
+			assert(approxeq(solution_u, solution, 1e-5));
 
-			// solution.implementation().set_name("u");
-			// write("vu.m", solution);
+			//standard gs with MatSOR
+			// GaussSeidel<DSMatrixd, DVectord> gs;
+			// gs.verbose(verbose);
+			// gs.max_it(max_it);
+			// // gs.sweeps(1);
+			// solution.set(0.);
+			
+			// c.start();
+			
+			// gs.solve(m, rhs, solution);
 
-			assert(approxeq(solution_u, solution));
+			// c.stop();
+
+			// if(mpi_world_rank() == 0) std::cout << c << std::endl;
+
+			// double res_norm_ref = norm2(m * solution - rhs);
+
+			// // disp(res_norm_ref);
+
+			// if(diff > 1e-5) {
+			// 	std::cerr << "[Error] different implementations of pgs gives different results, diff: " << diff << std::endl;
+			// }
+
+			// assert(approxeq(solution_u, solution, 1e-5));
 		}
 
 		void petsc_gss_newton_test()

@@ -91,22 +91,44 @@ namespace utopia {
 				ReadAndWrite<Vector> rw_c(c);
 				Read<Vector> r_r(r), r_d_inv(d_inv);
 
-				for(auto i = rr.begin(); i != rr.end(); ++i) {
-					RowView<const Matrix> row_view(A, i);
+				for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
+					for(auto i = rr.begin(); i != rr.end(); ++i) {
+						RowView<const Matrix> row_view(A, i);
 
-					auto s = r.get(i);
+						auto s = r.get(i);
 
-					for(auto index = 0; index < row_view.n_values(); ++index) {
-						const auto j    = row_view.col(index);
-						const auto a_ij = row_view.get(index);
+						for(auto index = 0; index < row_view.n_values(); ++index) {
+							const auto j    = row_view.col(index);
+							const auto a_ij = row_view.get(index);
 
-						if(rr.inside(j) && i != j) {
-							s -= a_ij * c.get(j);
+							if(rr.inside(j) && i != j) {
+								s -= a_ij * c.get(j);
+							}
 						}
+
+						//update correction
+						c.set(i, d_inv.get(i) * s );
 					}
 
-					//update correction
-					c.set(i, d_inv.get(i) * s );
+					if(use_symmetric_sweep_) {
+						for(auto i = rr.end()-1; i >= rr.begin(); --i) {
+							RowView<const Matrix> row_view(A, i);
+
+							auto s = r.get(i);
+
+							for(auto index = 0; index < row_view.n_values(); ++index) {
+								const auto j    = row_view.col(index);
+								const auto a_ij = row_view.get(index);
+
+								if(rr.inside(j) && i != j) {
+									s -= a_ij * c.get(j);
+								}
+							}
+
+							//update correction
+							c.set(i, d_inv.get(i) * s);
+						}
+					}
 				}
 			}
 
@@ -146,22 +168,45 @@ namespace utopia {
 				ReadAndWrite<Vector> rw_c(c);
 				Read<Vector> r_r(r), r_d_inv(d_inv), r_g(g);
 
-				for(auto i = rr.begin(); i != rr.end(); ++i) {
-					RowView<const Matrix> row_view(A, i);
+				for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
 
-					auto s = r.get(i);
+					for(auto i = rr.begin(); i != rr.end(); ++i) {
+						RowView<const Matrix> row_view(A, i);
 
-					for(auto index = 0; index < row_view.n_values(); ++index) {
-						const auto j    = row_view.col(index);
-						const auto a_ij = row_view.get(index);
+						auto s = r.get(i);
 
-						if(rr.inside(j) && i != j) {
-							s -= a_ij * c.get(j);
+						for(auto index = 0; index < row_view.n_values(); ++index) {
+							const auto j    = row_view.col(index);
+							const auto a_ij = row_view.get(index);
+
+							if(rr.inside(j) && i != j) {
+								s -= a_ij * c.get(j);
+							}
+						}
+
+						//update correction
+						c.set(i, std::min( d_inv.get(i) * s, g.get(i)) );
+					}
+				
+					if(use_symmetric_sweep_) {
+						for(auto i = rr.end()-1; i >= rr.begin(); --i) {
+							RowView<const Matrix> row_view(A, i);
+
+							auto s = r.get(i);
+
+							for(auto index = 0; index < row_view.n_values(); ++index) {
+								const auto j    = row_view.col(index);
+								const auto a_ij = row_view.get(index);
+
+								if(rr.inside(j) && i != j) {
+									s -= a_ij * c.get(j);
+								}
+							}
+
+							//update correction
+							c.set(i, std::min( d_inv.get(i) * s, g.get(i)) );
 						}
 					}
-
-					//update correction
-					c.set(i, std::min( d_inv.get(i) * s, g.get(i)) );
 				}
 			}
 
@@ -225,18 +270,39 @@ namespace utopia {
 		}
 
 		ProjectedGaussSeidel()
-		: use_line_search_(true)
+		: use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)
 		{}
 
 		void set_use_line_search(const bool val) 
 		{
 			use_line_search_ = val;
 		}
+
+		inline SizeType n_local_sweeps() const
+		{
+			return n_local_sweeps_;
+		}
+
+		inline void set_n_local_sweeps(const SizeType n_local_sweeps)
+		{
+			n_local_sweeps_ = n_local_sweeps;
+		}
+
+		inline void set_use_symmetric_sweep(const bool use_symmetric_sweep)
+		{
+			use_symmetric_sweep_ = use_symmetric_sweep;
+		}
+
+
 		
 	private:
-		BoxConstraints constraints_;	
-		Vector r, d, g, c, d_inv, x_old;
 		bool use_line_search_;
+		bool use_symmetric_sweep_;
+		SizeType n_local_sweeps_;
+
+		BoxConstraints constraints_;	
+
+		Vector r, d, g, c, d_inv, x_old;
 		Vector inactive_set_;
 		Vector is_r_;
 		Vector is_c_;
