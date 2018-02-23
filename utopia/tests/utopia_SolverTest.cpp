@@ -482,7 +482,7 @@ namespace utopia
 			pgs.solve(m, rhs, solution);
 			
 			c.stop();
-			std::cout << c << std::endl;
+			// std::cout << c << std::endl;
 
 
 			DVectord solution_u = zeros(n);
@@ -498,7 +498,7 @@ namespace utopia
 			pgs_u.solve(m, rhs, solution_u);
 			
 			c.stop();
-			std::cout << c << std::endl;
+			// std::cout << c << std::endl;
 
 
 			double diff = norm2(solution_u - solution);
@@ -1237,7 +1237,6 @@ namespace utopia
 			
 			//! [KSPSolver solve example1]
 			KSPSolver<DSMatrixd, DVectord> utopia_ksp;
-			//            GMRES<DSMatrixd, DVectord> utopia_ksp;
 			auto precond = std::make_shared< InvDiagPreconditioner<DSMatrixd, DVectord> >();
 			// utopia_ksp.set_preconditioner(precond);
 			utopia_ksp.verbose(verbose);
