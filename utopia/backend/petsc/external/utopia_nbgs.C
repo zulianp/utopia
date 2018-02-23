@@ -1,6 +1,5 @@
 
-#include <utopia_nbgs.h>
-
+#include "utopia_nbgs.h"
 #include <math.h>
 #include <petsc/private/kernels/blockinvert.h>
 #include <stdio.h>
@@ -8,7 +7,6 @@
 #include <aij.h>
 #include <petscsys.h>
 
-#include <iostream>
 /*
  
  Placeholder for box constraints
@@ -28,11 +26,13 @@ PetscErrorCode  constrain_box(MatScalar * diag, PetscScalar * t, PetscScalar * x
             PetscPrintf(PETSC_COMM_WORLD, "Constraints not well-defined: Lower boundary bigger than upper boundary \n");
             PetscFunctionReturn(0);
         }
-        if (x[row + i] < lb[row + i] + NBGS_TOL){
+        // if (x[row + i] < lb[row + i] + NBGS_TOL){
+        if (x[row + i] <= lb[row + i]){
             x[row + i] = lb[row + i];
             constrained[i] = PETSC_TRUE;
         }
-        if (x[row + i] > ub[row + i] + NBGS_TOL){
+        // if (x[row + i] > ub[row + i] + NBGS_TOL){
+        if (x[row + i] >= ub[row + i]){
             x[row + i] = ub[row + i];
             constrained[i] = PETSC_TRUE;
         }
@@ -494,127 +494,96 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
 };
 
 #undef __FUNCT__
-#define __FUNCT__ "NBGS"
+#define __FUNCT__ "NBGSStep"
 // This does:
 //  x = x + \sum_j B_j^1*(b_j- A_j*x_j), under lb <= x <= ub, where j is the number of blocks
-PetscErrorCode  NBGS(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec _lb, Vec _ub ,PetscInt _blocksize){
+PetscErrorCode  NBGSStep(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec _lb, Vec _ub ,PetscInt _blocksize){
     
     PetscFunctionBegin;
     PetscErrorCode ierr;
-    PetscInt m, M, n, N, size, rank;
     
-    Mat loc_A; // holds the local diagonal part of A
-    Vec res, u, lb_u, ub_u, loc_res, loc_x, loc_u, loc_lb, loc_ub;
-    
-    MPI_Comm_size(PETSC_COMM_WORLD,&size);
-    MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
-
+    //    Mat loc_A; // holds the local diagonal part of A
+    //    Vec res, u, lb_u, ub_u, loc_res, loc_x, loc_u, loc_lb, loc_ub;
     if (nbgs == NULL){
-        PetscPrintf(PETSC_COMM_WORLD, "NBGS(...) ad-hoc initialization \n");
-        NBGS_CTX nbgs_tmp;
-        nbgs_tmp.constrained = PETSC_FALSE;
-        nbgs_tmp.blocksize = _blocksize;
-        nbgs_tmp.lb = _lb;
-        nbgs_tmp.ub = _ub;
-        nbgs = &nbgs_tmp;
+        PetscPrintf(PETSC_COMM_WORLD, "NBGS(...) nbgs struct not set up. Exiting. \n");
+        exit(0);
     }
-    
+    if (nbgs->initialized == PETSC_FALSE){
+        PetscPrintf(PETSC_COMM_WORLD, "NBGS(...) nbgs not initialized. Exiting. \n");
+        exit(0);
+    }
+
     if (_lb || _ub){
-        ierr = VecScale(nbgs->changed_coordinates, 0);CHKERRQ(ierr);
+        ierr = VecSet(nbgs->changed_coordinates, 0);CHKERRQ(ierr);
     }
-    
-    ierr = MatGetSize(A, &M, &N ); CHKERRQ(ierr);
-    ierr = MatGetLocalSize(A, &m, &n); CHKERRQ(ierr);
-    
-    ierr = VecDuplicate(x, &res); CHKERRQ(ierr);
-    ierr = VecDuplicate(x, &u); CHKERRQ(ierr);
-    ierr = VecDuplicate(x, &lb_u); CHKERRQ(ierr);
-    ierr = VecDuplicate(x, &ub_u); CHKERRQ(ierr);
-    
-    ierr = VecCreate(PETSC_COMM_SELF,&loc_res); CHKERRQ(ierr);
-    ierr = VecSetSizes(loc_res,m,PETSC_DECIDE); CHKERRQ(ierr);
-    ierr = VecSetFromOptions(loc_res); CHKERRQ(ierr);
-    ierr = VecAssemblyBegin(loc_res); CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(loc_res); CHKERRQ(ierr);
-    ierr = VecDuplicate(loc_res, &loc_u); CHKERRQ(ierr);
-    
+
     { // global communication of error: res = b - A*x
         VecScale(x, -1);
-        ierr = MatMultAdd(A, x, b, res); CHKERRQ(ierr);
+        ierr = MatMultAdd(A, x, b, nbgs->res); CHKERRQ(ierr);
         VecScale(x, -1);
     }
 
-    ierr = MatGetDiagonalBlock(A, &loc_A); CHKERRQ(ierr);
-    ierr = VecGetLocalVector(res, loc_res);CHKERRQ(ierr);
-    ierr = VecGetLocalVector(u, loc_u);CHKERRQ(ierr);
+
+    ierr = VecGetLocalVector(nbgs->res, nbgs->loc_res);CHKERRQ(ierr);
+    ierr = VecGetLocalVector(nbgs->u, nbgs->loc_u);CHKERRQ(ierr);
     
     if (nbgs->constrained){
-        ierr = VecDuplicate(loc_res, &loc_x); CHKERRQ(ierr);
-        ierr = VecGetLocalVector(x, loc_x); CHKERRQ(ierr);
-        
-        ierr = VecWAXPY(lb_u, -1, x, _lb); CHKERRQ(ierr);
-        ierr = VecDuplicate(loc_res, &loc_lb); CHKERRQ(ierr);
-        ierr = VecGetLocalVector(lb_u, loc_lb); CHKERRQ(ierr);
-        
-        ierr = VecWAXPY(ub_u, -1, x, _ub); CHKERRQ(ierr);
-        ierr = VecDuplicate(loc_res, &loc_ub); CHKERRQ(ierr);
-        ierr = VecGetLocalVector(ub_u, loc_ub); CHKERRQ(ierr);
-        
-        local_inode_nbgs(nbgs, loc_A, loc_res, loc_u, loc_lb, loc_ub, _blocksize, 1);
+
+        ierr = VecWAXPY(nbgs->lb_u, -1, x, _lb); CHKERRQ(ierr);
+        ierr = VecGetLocalVector(nbgs->lb_u, nbgs->loc_lb); CHKERRQ(ierr);
+        ierr = VecWAXPY(nbgs->ub_u, -1, x, nbgs->ub); CHKERRQ(ierr);
+        ierr = VecGetLocalVector(nbgs->ub_u, nbgs->loc_ub); CHKERRQ(ierr);
+
+        local_inode_nbgs(nbgs, nbgs->loc_A, nbgs->loc_res, nbgs->loc_u, nbgs->loc_lb, nbgs->loc_ub, _blocksize, 1);
+
+        ierr = VecSum(nbgs->active_coordinates, &nbgs->num_active_coordinates); CHKERRQ(ierr);
+        ierr = VecAXPBYPCZ(nbgs->changed_coordinates, 1,-1,0,nbgs->active_coordinates, nbgs->prev_active_coordinates);CHKERRQ(ierr);
+        ierr = VecSum(nbgs->changed_coordinates, &nbgs->num_changed_coordinates); CHKERRQ(ierr);
+        ierr = VecCopy(nbgs->active_coordinates, nbgs->prev_active_coordinates); CHKERRQ(ierr);
+
     }else{
-        // ierr = MatSOR(loc_A,loc_res,1.0,SOR_FORWARD_SWEEP,0,1,1,loc_u);CHKERRQ(ierr);
-        local_inode_nbgs(nbgs, loc_A, loc_res, loc_u, NULL, NULL, _blocksize, 1);
+        //        ierr = MatSOR(loc_A,loc_res,1.0,SOR_FORWARD_SWEEP,0,1,1,loc_u);CHKERRQ(ierr);
+        local_inode_nbgs(nbgs, nbgs->loc_A, nbgs->loc_res, nbgs->loc_u, NULL, NULL, _blocksize, 1);
     }
 
-    ierr = VecRestoreLocalVector(res, loc_res); CHKERRQ(ierr);
-    ierr = VecRestoreLocalVector(u, loc_u); CHKERRQ(ierr);
+    ierr = VecRestoreLocalVector(nbgs->res, nbgs->loc_res); CHKERRQ(ierr);
+    ierr = VecRestoreLocalVector(nbgs->u, nbgs->loc_u); CHKERRQ(ierr);
 
     if (nbgs->constrained){
-        ierr = VecRestoreLocalVector(_lb, loc_lb); CHKERRQ(ierr);
-        ierr = VecRestoreLocalVector(_ub, loc_ub); CHKERRQ(ierr);
-        ierr = VecRestoreLocalVector(x, loc_x); CHKERRQ(ierr);
-        ierr = VecDestroy(&loc_lb); CHKERRQ(ierr);
-        ierr = VecDestroy(&loc_ub); CHKERRQ(ierr);
-        ierr = VecDestroy(&loc_x); CHKERRQ(ierr);
+        ierr = VecRestoreLocalVector(_lb, nbgs->loc_lb); CHKERRQ(ierr);
+        ierr = VecRestoreLocalVector(_ub, nbgs->loc_ub); CHKERRQ(ierr);
     }
 
-    if (nbgs->with_linesearch){
-        Vec c, Ac, mask;
+    if (nbgs->with_ls){
         PetscScalar nom, ctAc;
-
         {   // determine inactive nodes
-            ierr = VecDuplicate(nbgs->active_coordinates, &mask); CHKERRQ(ierr);
-            ierr = VecScale(mask, 0); CHKERRQ(ierr);
+            ierr = VecSet(nbgs->mask, 0); CHKERRQ(ierr);
             PetscScalar * active_coord_vals, * mask_vals;
             ierr = VecGetArray(nbgs->active_coordinates, &active_coord_vals); CHKERRQ(ierr);
-            ierr = VecGetArray(mask, &mask_vals); CHKERRQ(ierr);
-            for (int i=0;i<n;i++){
+            ierr = VecGetArray(nbgs->mask, &mask_vals); CHKERRQ(ierr);
+            for (int i=0;i<nbgs->n;i++){
                 if (active_coord_vals[i] == 0){
                     mask_vals[i] = 1;
                 }
             }
             ierr = VecRestoreArray(nbgs->active_coordinates, &active_coord_vals); CHKERRQ(ierr);
-            ierr = VecRestoreArray(mask, &mask_vals); CHKERRQ(ierr);
+            ierr = VecRestoreArray(nbgs->mask, &mask_vals); CHKERRQ(ierr);
         }
 
         // compute step length: alpha = (res,c) / (c,c)_A
-        ierr = VecDuplicate(u, &c); CHKERRQ(ierr);
-        ierr = VecPointwiseMult(c, u, mask); CHKERRQ(ierr);
-        ierr = VecDuplicate(u, &Ac); CHKERRQ(ierr);
-        ierr = MatMult(A, c, Ac); CHKERRQ(ierr);
-        ierr = VecDot(res, c, &nom); CHKERRQ(ierr);
-        ierr = VecDot(c, Ac, &ctAc); CHKERRQ(ierr);
+        ierr = VecPointwiseMult(nbgs->c, nbgs->u, nbgs->mask); CHKERRQ(ierr);
+        ierr = MatMult(A, nbgs->c, nbgs->Ac); CHKERRQ(ierr);
+        ierr = VecDot(nbgs->res, nbgs->c, &nom); CHKERRQ(ierr);
+        ierr = VecDot(nbgs->c, nbgs->Ac, &ctAc); CHKERRQ(ierr);
 
         nbgs->alpha = nom/ctAc;
+
+        // printf("%g\n", nbgs->alpha);
         // put a max() here for numerical reasons or a warning ...
         if (nbgs->alpha <= 0) {
             PetscPrintf(PETSC_COMM_WORLD, "nbgs: combined correction does not reduce energy! alpha = %2.12e . Setting alpha to 1e-10; \n" , nbgs->alpha);
             nbgs->alpha = 1e-10;
         }
-
-        ierr = VecDestroy(&Ac); CHKERRQ(ierr);
-        ierr = VecDestroy(&mask); CHKERRQ(ierr);
-        ierr = VecDestroy(&c); CHKERRQ(ierr);
 
     }else{
         // nothing implemented here yet
@@ -624,15 +593,90 @@ PetscErrorCode  NBGS(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec _lb, Vec _ub ,Pet
     if (nbgs->alpha <= 0)
         PetscPrintf(PETSC_COMM_WORLD, "NBGS(...): Are you sure you want omega to be <= zero?  \n");
 
-    ierr = VecAXPY(x,nbgs->alpha,u); CHKERRQ(ierr); //x^(k+1) = x^k + omega * B^(-1)*r^k
+    ierr = VecAXPY(x,nbgs->alpha,nbgs->u); CHKERRQ(ierr); //x^(k+1) = x^k + omega * B^(-1)*r^k
+    ierr = VecSet(nbgs->active_coordinates, 0);
 
-    ierr = VecDestroy(&u); CHKERRQ(ierr);
-    ierr = VecDestroy(&res); CHKERRQ(ierr);
-    ierr = VecDestroy(&lb_u); CHKERRQ(ierr);
-    ierr = VecDestroy(&ub_u); CHKERRQ(ierr);
-    ierr = VecDestroy(&loc_u); CHKERRQ(ierr);
-    ierr = VecDestroy(&loc_res); CHKERRQ(ierr);
-    
     PetscFunctionReturn(0);
 };
 #undef __FUNCT__
+
+
+#undef __FUNCT__
+#define __FUNCT__ "NBGSDestroy"
+PetscErrorCode  NBGSDestroy(NBGS_CTX * nbgs){
+
+    PetscErrorCode ierr;
+    PetscFunctionBegin;
+
+    ierr = VecDestroy(&nbgs->Ac); CHKERRQ(ierr);
+    ierr = VecDestroy(&nbgs->mask); CHKERRQ(ierr);
+    ierr = VecDestroy(&nbgs->c); CHKERRQ(ierr);
+    ierr = VecDestroy(&nbgs->u); CHKERRQ(ierr);
+    ierr = VecDestroy(&nbgs->res); CHKERRQ(ierr);
+    ierr = VecDestroy(&nbgs->loc_u); CHKERRQ(ierr);
+    ierr = VecDestroy(&nbgs->loc_res); CHKERRQ(ierr);
+    ierr = VecDestroy(&nbgs->prev_active_coordinates); CHKERRQ(ierr);
+    ierr = VecDestroy(&nbgs->active_coordinates); CHKERRQ(ierr);
+    ierr = VecDestroy(&nbgs->changed_coordinates); CHKERRQ(ierr);
+
+    if (nbgs->constrained){
+        ierr = VecDestroy(&nbgs->lb_u); CHKERRQ(ierr);
+        ierr = VecDestroy(&nbgs->ub_u); CHKERRQ(ierr);
+        ierr = VecDestroy(&nbgs->loc_lb); CHKERRQ(ierr);
+        ierr = VecDestroy(&nbgs->loc_ub); CHKERRQ(ierr);
+    }
+
+    PetscFunctionReturn(0);
+}
+
+#undef __FUNCT__
+#define __FUNCT__ "NBGSCreate"
+extern PetscErrorCode NBGSCreate(NBGS_CTX * nbgs, Mat _A, Vec _x, Vec _lb, Vec _ub, PetscInt _blocksize, PetscBool _with_ls, PetscBool _constrained, PetscErrorCode (*constrain)(MatScalar * diag, PetscScalar * t, PetscScalar * x,PetscScalar * lb, PetscScalar * ub, int row, int bs, PetscBool * constrained)){
+
+    PetscErrorCode ierr;
+    PetscFunctionBegin;
+
+    MPI_Comm_size(PETSC_COMM_WORLD,&nbgs->size);
+    MPI_Comm_rank(PETSC_COMM_WORLD,&nbgs->rank);
+    nbgs->blocksize = _blocksize;
+    nbgs->with_ls = _with_ls;
+    nbgs->constrained = _constrained;
+    nbgs->lb = _lb;
+    nbgs->ub = _ub;
+    nbgs->constrain = constrain;
+    
+    ierr = MatGetSize(_A, &nbgs->M, &nbgs->N ); CHKERRQ(ierr);
+    ierr = MatGetLocalSize(_A, &nbgs->m, &nbgs->n); CHKERRQ(ierr);
+    ierr = MatGetDiagonalBlock(_A, &nbgs->loc_A); CHKERRQ(ierr);
+
+    ierr = VecCreate(PETSC_COMM_SELF,&nbgs->loc_res); CHKERRQ(ierr);
+    ierr = VecSetSizes(nbgs->loc_res,nbgs->m,PETSC_DECIDE); CHKERRQ(ierr);
+    ierr = VecSetFromOptions(nbgs->loc_res); CHKERRQ(ierr);
+    ierr = VecAssemblyBegin(nbgs->loc_res); CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(nbgs->loc_res); CHKERRQ(ierr);
+    ierr = VecDuplicate(nbgs->loc_res, &nbgs->loc_u); CHKERRQ(ierr);
+
+    ierr = VecDuplicate(_x, &nbgs->res); CHKERRQ(ierr);
+    ierr = VecDuplicate(_x, &nbgs->u); CHKERRQ(ierr);
+    ierr = VecDuplicate(_x, &nbgs->c); CHKERRQ(ierr);
+    ierr = VecDuplicate(_x, &nbgs->Ac); CHKERRQ(ierr);
+    ierr = VecDuplicate(_x, &nbgs->prev_active_coordinates); CHKERRQ(ierr); //
+    ierr = VecDuplicate(_x, &nbgs->active_coordinates); CHKERRQ(ierr); //
+    ierr = VecDuplicate(_x, &nbgs->changed_coordinates); CHKERRQ(ierr); //
+    ierr = VecDuplicate(_x, &nbgs->mask); CHKERRQ(ierr); //
+
+    if (nbgs->constrained){
+        ierr = VecDuplicate(_x, &nbgs->lb_u); CHKERRQ(ierr); //
+        ierr = VecDuplicate(_x, &nbgs->ub_u); CHKERRQ(ierr); //
+        ierr = VecDuplicate(nbgs->loc_res, &nbgs->loc_lb); CHKERRQ(ierr); //
+        ierr = VecDuplicate(nbgs->loc_res, &nbgs->loc_ub); CHKERRQ(ierr); //
+    }
+
+    ierr = VecSet(nbgs->active_coordinates, 0); CHKERRQ(ierr);
+    ierr = VecSet(nbgs->prev_active_coordinates, 0); CHKERRQ(ierr);
+    ierr = VecSet(nbgs->changed_coordinates, 0); CHKERRQ(ierr);
+
+    nbgs->initialized = PETSC_TRUE;
+
+    PetscFunctionReturn(0);
+}

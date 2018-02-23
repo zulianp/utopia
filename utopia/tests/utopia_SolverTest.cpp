@@ -434,7 +434,7 @@ namespace utopia
 
 		void petsc_ngs_test()
 		{
-			const int n = 1000;
+			const int n = 10000;
 			DSMatrixd m = sparse(n, n, 3);
 			assemble_laplacian_1D(n, m);
 		
@@ -473,7 +473,7 @@ namespace utopia
 			ProjectedGaussSeidel<DSMatrixd, DVectord> pgs;
 			pgs.max_it(n);
 			// pgs.verbose(true);
-			pgs.set_use_line_search(false);
+			pgs.set_use_line_search(true);
 			pgs.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
 			Chrono c;
@@ -482,13 +482,13 @@ namespace utopia
 			pgs.solve(m, rhs, solution);
 			
 			c.stop();
-			// std::cout << c << std::endl;
+			if(mpi_world_rank() == 0) std::cout << c << std::endl;
 
 
 			DVectord solution_u = zeros(n);
 			ProjectedGaussSeidel<DSMatrixd, DVectord, -1> pgs_u;
-			// pgs_u.verbose(true);
-			pgs_u.set_use_line_search(false);
+			pgs_u.verbose(true);
+			pgs_u.set_use_line_search(true);
 			pgs_u.max_it(n);
 
 			pgs_u.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
@@ -498,12 +498,21 @@ namespace utopia
 			pgs_u.solve(m, rhs, solution_u);
 			
 			c.stop();
-			// std::cout << c << std::endl;
-
+			if(mpi_world_rank() == 0) std::cout << c << std::endl;
 
 			double diff = norm2(solution_u - solution);
-			assert(approxeq(solution_u, solution));
 
+			if(diff > 1e-8) {
+				std::cerr << "[Error] different implementations of pgs gives different results" << std::endl;
+			}
+
+			// solution_u.implementation().set_name("uu");
+			// write("vuu.m", solution_u);
+
+			// solution.implementation().set_name("u");
+			// write("vu.m", solution);
+
+			assert(approxeq(solution_u, solution));
 		}
 
 		void petsc_gss_newton_test()

@@ -574,6 +574,9 @@ namespace utopia {
 		static void diag(Matrix &left, const Vector &right);
 		static void diag(Vector &left, const Matrix &right);
 		static void diag(Matrix &left, const Matrix &right);
+
+		// static void diag(CRSMatrix<Scalar> &left, const Vector &right);
+		static void diag(Vector &left, const CRSMatrix<Scalar>  &right);
 		
 		static void mat_diag_shift(Matrix &left, const Scalar diag_factor);
 		static void diag_scale_right(Matrix &result, const Matrix &m, const Vector &diag)

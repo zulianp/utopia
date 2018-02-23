@@ -46,7 +46,7 @@ namespace utopia {
 			const Matrix &A = *this->get_operator();
 
 			//TODO generic version
-			assert( constraints_.has_upper_bound() && !constraints_.has_lower_bound() );
+			assert(!constraints_.has_lower_bound() );
 			init(A);
 
 			x_old = x;
@@ -54,7 +54,12 @@ namespace utopia {
 
 			int iteration = 0;
 			while(!converged) {
-				step(A, b, x);
+				if(constraints_.has_bound()) {
+					step(A, b, x);
+				} else {
+					unconstrained_step(A, b, x);
+				}
+
 				const Scalar diff = norm2(x_old - x);
 
 				if(this->verbose())
@@ -109,12 +114,23 @@ namespace utopia {
 			
 			if(use_line_search_) {
 				const Scalar rho = dot(c, r);
-				alpha = rho/dot(A * c, c);
+				const Scalar denom = dot(A * c, c);
+
+				if(denom == 0.) return true;
+
+				alpha = rho/denom;
 
 				assert(alpha > 0);
+
+				if(alpha <= 0) {
+					std::cerr << "[Warning] negative alpha" << std::endl;
+					alpha = 1.;
+					c = utopia::min(r, g);
+				}
 			}
 
-			x += alpha * c;
+			// x += alpha * c;
+			x += utopia::min(alpha * c, g);
 			return true;
 		}
 
@@ -165,16 +181,28 @@ namespace utopia {
 					}
 				}
 
+
+
 				is_r_ = e_mul(r, inactive_set_);
 				is_c_ = e_mul(c, inactive_set_);
 
 				const Scalar rho = dot(is_c_, is_r_);
 				alpha = rho/dot(A * is_c_, is_c_);
 
+				// double n_inactive = sum(inactive_set_);
+				// std::cout << "na: " << (size(r).get(0) - n_inactive) << ", " << alpha << std::endl;
+				// alpha = std::min(alpha, 1.);
+
 				assert(alpha > 0);
+				
+				if(alpha <= 0) {
+					std::cerr << "[Warning] negative alpha" << std::endl;
+					alpha = 1.;
+					c = utopia::min(r, g);
+				}
 			}
 
-			x += alpha * c;
+			x += utopia::min(alpha * c, g);
 			return true;
 		}
 
