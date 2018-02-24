@@ -155,6 +155,12 @@ namespace utopia {
 			for (typename std::vector<Ordinal>::size_type i = 0; i < indices.size(); ++i)
 				set(v, indices[i], values[i]);
 		}
+
+
+		static void set(Vector &v, Scalar value)
+		{
+			std::fill(v.begin(), v.end(), value);
+		}
 		
 		// template<typename Ordinal>
 		// inline static void set(
@@ -568,6 +574,9 @@ namespace utopia {
 		static void diag(Matrix &left, const Vector &right);
 		static void diag(Vector &left, const Matrix &right);
 		static void diag(Matrix &left, const Matrix &right);
+
+		// static void diag(CRSMatrix<Scalar> &left, const Vector &right);
+		static void diag(Vector &left, const CRSMatrix<Scalar>  &right);
 		
 		static void mat_diag_shift(Matrix &left, const Scalar diag_factor);
 		static void diag_scale_right(Matrix &result, const Matrix &m, const Vector &diag)

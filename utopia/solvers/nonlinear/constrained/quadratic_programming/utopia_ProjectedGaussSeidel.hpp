@@ -38,13 +38,15 @@ namespace utopia {
 			return it == this->sweeps() - 1;
 		}
 
-		bool solve(const Matrix &A, const Vector &b, Vector &x) override
+		bool apply(const Vector &b, Vector &x) override
 		{ 
 			if(this->verbose())
 				this->init_solver("utopia ProjectedGaussSeidel", {" it. ", "|| u - u_old ||"});
 
+			const Matrix &A = *this->get_operator();
+
 			//TODO generic version
-			assert( constraints_.has_upper_bound() && !constraints_.has_lower_bound() );
+			assert(!constraints_.has_lower_bound() );
 			init(A);
 
 			x_old = x;
@@ -52,14 +54,18 @@ namespace utopia {
 
 			int iteration = 0;
 			while(!converged) {
-				step(A, b, x);
+				if(constraints_.has_bound()) {
+					step(A, b, x);
+				} else {
+					unconstrained_step(A, b, x);
+				}
+
 				const Scalar diff = norm2(x_old - x);
 
 				if(this->verbose())
 				    PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff}); 
 
 				converged = this->check_convergence(iteration, 1, 1, diff);
-
 
 				++iteration;
 				if(converged) break;
@@ -85,22 +91,44 @@ namespace utopia {
 				ReadAndWrite<Vector> rw_c(c);
 				Read<Vector> r_r(r), r_d_inv(d_inv);
 
-				for(auto i = rr.begin(); i != rr.end(); ++i) {
-					RowView<const Matrix> row_view(A, i);
+				for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
+					for(auto i = rr.begin(); i != rr.end(); ++i) {
+						RowView<const Matrix> row_view(A, i);
 
-					auto s = r.get(i);
+						auto s = r.get(i);
 
-					for(auto index = 0; index < row_view.n_values(); ++index) {
-						const auto j    = row_view.col(index);
-						const auto a_ij = row_view.get(index);
+						for(auto index = 0; index < row_view.n_values(); ++index) {
+							const auto j    = row_view.col(index);
+							const auto a_ij = row_view.get(index);
 
-						if(rr.inside(j) && i != j) {
-							s -= a_ij * c.get(j);
+							if(rr.inside(j) && i != j) {
+								s -= a_ij * c.get(j);
+							}
 						}
+
+						//update correction
+						c.set(i, d_inv.get(i) * s );
 					}
 
-					//update correction
-					c.set(i, d_inv.get(i) * s );
+					if(use_symmetric_sweep_) {
+						for(auto i = rr.end()-1; i >= rr.begin(); --i) {
+							RowView<const Matrix> row_view(A, i);
+
+							auto s = r.get(i);
+
+							for(auto index = 0; index < row_view.n_values(); ++index) {
+								const auto j    = row_view.col(index);
+								const auto a_ij = row_view.get(index);
+
+								if(rr.inside(j) && i != j) {
+									s -= a_ij * c.get(j);
+								}
+							}
+
+							//update correction
+							c.set(i, d_inv.get(i) * s);
+						}
+					}
 				}
 			}
 
@@ -108,12 +136,23 @@ namespace utopia {
 			
 			if(use_line_search_) {
 				const Scalar rho = dot(c, r);
-				alpha = rho/dot(A * c, c);
+				const Scalar denom = dot(A * c, c);
+
+				if(denom == 0.) return true;
+
+				alpha = rho/denom;
 
 				assert(alpha > 0);
+
+				if(alpha <= 0) {
+					std::cerr << "[Warning] negative alpha" << std::endl;
+					alpha = 1.;
+					c = utopia::min(r, g);
+				}
 			}
 
-			x += alpha * c;
+			// x += alpha * c;
+			x += utopia::min(alpha * c, g);
 			return true;
 		}
 
@@ -129,22 +168,45 @@ namespace utopia {
 				ReadAndWrite<Vector> rw_c(c);
 				Read<Vector> r_r(r), r_d_inv(d_inv), r_g(g);
 
-				for(auto i = rr.begin(); i != rr.end(); ++i) {
-					RowView<const Matrix> row_view(A, i);
+				for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
 
-					auto s = r.get(i);
+					for(auto i = rr.begin(); i != rr.end(); ++i) {
+						RowView<const Matrix> row_view(A, i);
 
-					for(auto index = 0; index < row_view.n_values(); ++index) {
-						const auto j    = row_view.col(index);
-						const auto a_ij = row_view.get(index);
+						auto s = r.get(i);
 
-						if(rr.inside(j) && i != j) {
-							s -= a_ij * c.get(j);
+						for(auto index = 0; index < row_view.n_values(); ++index) {
+							const auto j    = row_view.col(index);
+							const auto a_ij = row_view.get(index);
+
+							if(rr.inside(j) && i != j) {
+								s -= a_ij * c.get(j);
+							}
+						}
+
+						//update correction
+						c.set(i, std::min( d_inv.get(i) * s, g.get(i)) );
+					}
+				
+					if(use_symmetric_sweep_) {
+						for(auto i = rr.end()-1; i >= rr.begin(); --i) {
+							RowView<const Matrix> row_view(A, i);
+
+							auto s = r.get(i);
+
+							for(auto index = 0; index < row_view.n_values(); ++index) {
+								const auto j    = row_view.col(index);
+								const auto a_ij = row_view.get(index);
+
+								if(rr.inside(j) && i != j) {
+									s -= a_ij * c.get(j);
+								}
+							}
+
+							//update correction
+							c.set(i, std::min( d_inv.get(i) * s, g.get(i)) );
 						}
 					}
-
-					//update correction
-					c.set(i, std::min( d_inv.get(i) * s, g.get(i)) );
 				}
 			}
 
@@ -164,16 +226,28 @@ namespace utopia {
 					}
 				}
 
-				is_r_ = e_mul(r, inactive_set_);
+
+
+				// is_r_ = e_mul(r, inactive_set_);
 				is_c_ = e_mul(c, inactive_set_);
 
-				const Scalar rho = dot(is_c_, is_r_);
+				const Scalar rho = dot(is_c_, r);
 				alpha = rho/dot(A * is_c_, is_c_);
 
+				// double n_inactive = sum(inactive_set_);
+				// std::cout << "na: " << (size(r).get(0) - n_inactive) << ", " << alpha << std::endl;
+				// alpha = std::min(alpha, 1.);
+
 				assert(alpha > 0);
+				
+				if(alpha <= 0) {
+					std::cerr << "[Warning] negative alpha" << std::endl;
+					alpha = 1.;
+					c = utopia::min(r, g);
+				}
 			}
 
-			x += alpha * c;
+			x += utopia::min(alpha * c, g);
 			return true;
 		}
 
@@ -188,16 +262,49 @@ namespace utopia {
 			}
 		}
 
+
+		virtual void update(const std::shared_ptr<const Matrix> &op) override
+		{
+		    IterativeSolver<Matrix, Vector>::update(op);
+		    init(*op);
+		}
+
 		ProjectedGaussSeidel()
-		: use_line_search_(true)
+		: use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)
 		{}
+
+		void set_use_line_search(const bool val) 
+		{
+			use_line_search_ = val;
+		}
+
+		inline SizeType n_local_sweeps() const
+		{
+			return n_local_sweeps_;
+		}
+
+		inline void set_n_local_sweeps(const SizeType n_local_sweeps)
+		{
+			n_local_sweeps_ = n_local_sweeps;
+		}
+
+		inline void set_use_symmetric_sweep(const bool use_symmetric_sweep)
+		{
+			use_symmetric_sweep_ = use_symmetric_sweep;
+		}
+
+
 		
 	private:
-		BoxConstraints constraints_;	
-		Vector r, d, g, c, d_inv, x_old;
 		bool use_line_search_;
+		bool use_symmetric_sweep_;
+		SizeType n_local_sweeps_;
+
+		BoxConstraints constraints_;	
+
+		Vector r, d, g, c, d_inv, x_old;
 		Vector inactive_set_;
-		Vector is_r_;
+		// Vector is_r_;
 		Vector is_c_;
 	};
 }

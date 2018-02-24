@@ -24,7 +24,7 @@
 
 namespace utopia {
       template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-      class GaussSeidel {};
+  class GaussSeidel {};
 
 
 
@@ -37,19 +37,19 @@ namespace utopia {
          * @tparam     Vector  
          */
         template<class Matrix, class Vector>
-        class GaussSeidel<Matrix, Vector, PETSC> : public IterativeSolver<Matrix, Vector>, 
-                                                   public Smoother<Matrix, Vector>
-        {
-            typedef UTOPIA_SCALAR(Vector)                   Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
-            typedef utopia::IterativeSolver<Matrix, Vector> Solver;
-            typedef utopia::Smoother<Matrix, Vector>        Smoother;
+  class GaussSeidel<Matrix, Vector, PETSC> : public IterativeSolver<Matrix, Vector>, 
+  public Smoother<Matrix, Vector>
+  {
+    typedef UTOPIA_SCALAR(Vector)                   Scalar;
+    typedef UTOPIA_SIZE_TYPE(Vector)                SizeType;
+    typedef utopia::IterativeSolver<Matrix, Vector> Solver;
+    typedef utopia::Smoother<Matrix, Vector>        Smoother;
 
-        public:
-        GaussSeidel(const Parameters params = Parameters()) 
-        { 
-            set_parameters(params); 
-        }
+public:
+    GaussSeidel(const Parameters params = Parameters()) 
+    { 
+        set_parameters(params); 
+    }
 
         /**
          * @brief      Smoothing of GS from Petsc. Currently we are using symmetric block GS (builds block jacobi and on blocks calls GS). 
@@ -58,20 +58,20 @@ namespace utopia {
          * @param[in]  rhs   The right hand side. 
          * @param      x     The solution. 
          */
-        bool smooth(const Matrix &A, const Vector &rhs, Vector &x) override
-        {        
-            MatSOR( raw_type(A), 
-                    raw_type(rhs), 
-                    1, 
+    bool smooth(const Matrix &A, const Vector &rhs, Vector &x) override
+    {        
+        MatSOR( raw_type(A), 
+            raw_type(rhs), 
+            1, 
                     //  SOR_FORWARD_SWEEP,
-                    SOR_LOCAL_SYMMETRIC_SWEEP,  
-                    0, 
-                    this->sweeps(), 
-                    this->sweeps(), 
-                    raw_type(x)); 
+            SOR_LOCAL_SYMMETRIC_SWEEP,  
+            0, 
+            this->sweeps(), 
+            this->sweeps(), 
+            raw_type(x)); 
 
-            return true; 
-        }
+        return true; 
+    }
 
         /**
          * @brief      Solving system with Gauss-Seidel method. 
@@ -80,36 +80,41 @@ namespace utopia {
          * @param[in]  rhs   The right hand side.
          * @param      x     The solution. 
          */
-        bool solve(const Matrix &A, const Vector &rhs, Vector &x) override
-        {
-            SizeType it = 0; 
-            Scalar r_norm = 9999; 
-            this->init_solver("Petsc Gauss-Seidel", {"it. ", "||r||" }); 
+    bool solve(const Matrix &A, const Vector &rhs, Vector &x) override
+    {
+        SizeType it = 0; 
+        Scalar r_norm = 9999; 
+        this->init_solver("Petsc Gauss-Seidel", {"it. ", "||r||" }); 
 
-            while(it++ < this->max_it() && r_norm > this->rtol())
-            {
-                MatSOR( raw_type(A), 
+        while(it < this->max_it() && r_norm > this->rtol()) {
+            MatSOR(
+                raw_type(A), 
                 raw_type(rhs), 
                 1, 
-                //  SOR_FORWARD_SWEEP,
+                // SOR_FORWARD_SWEEP,
                 SOR_LOCAL_SYMMETRIC_SWEEP,    // parallel implementation - builds block jacobi and on blocks it calls GS 
                 0, 
                 this->sweeps(), 
                 this->sweeps(), 
                 raw_type(x)); 
-                if(this->verbose())
-                    PrintInfo::print_iter_status(it, {r_norm}); 
-            }
 
-            return true; 
+            r_norm = norm2(A*x - rhs);
+
+            it += this->sweeps();
+
+            if(this->verbose())
+                PrintInfo::print_iter_status(it, {r_norm}); 
         }
 
+        return true; 
+    }
 
-        void set_parameters(const Parameters params) override
-        {
-            Smoother::set_parameters(params); 
-            Solver::set_parameters(params); 
-        }
+
+    void set_parameters(const Parameters params) override
+    {
+        Smoother::set_parameters(params); 
+        Solver::set_parameters(params); 
+    }
 
 
 
@@ -126,7 +131,7 @@ namespace utopia {
          */
         // bool nonlinear_smooth(const Matrix &A, const Vector &rhs, const Vector& ub, const Vector& lb, Vector &x, std::vector<SizeType>& active_set) override
         // {
-            
+
         //     smooth(A, rhs, x);
         //     project_constraints(ub, lb, x, active_set); 
         //     return true; 
@@ -134,7 +139,7 @@ namespace utopia {
         // }
 
 
-    private:
+private:
         /**
          * @brief      Function projects constraints, such that \f$ lb < x < ub \f$
          *
@@ -144,25 +149,25 @@ namespace utopia {
          * @param      active_set   The vector containing indices of active set. 
          * !!!! THIS DOES NOT GIVE CORRECT RESULTS IN A SIMULATION THE PROJECTION CANNOT HAPPEN OUTSIDE A GS STEP
          */
-        bool project_constraints(const Vector& ub, const Vector& lb, Vector &x, std::vector<SizeType>& active_set)
+    bool project_constraints(const Vector& ub, const Vector& lb, Vector &x, std::vector<SizeType>& active_set)
+    {
+        Vector x_0 = x; 
         {
-            Vector x_0 = x; 
-            {
-                Read<Vector> r_ub(ub), r_lb(lb);
-                each_transform(x_0, x, [&ub, &lb, &active_set](const SizeType i, const Scalar entry) -> double  
-                { 
-                    Scalar ui = ub.get(i), li = lb.get(i); 
-                    if(entry > ui && entry < li)
-                    {
-                        active_set.push_back(i);
-                        return (std::max(li, std::min(ui, entry)));
-                    }
-                    else
-                        return entry;   
-                }    );
-            }
-            return true;
+            Read<Vector> r_ub(ub), r_lb(lb);
+            each_transform(x_0, x, [&ub, &lb, &active_set](const SizeType i, const Scalar entry) -> double  
+            { 
+                Scalar ui = ub.get(i), li = lb.get(i); 
+                if(entry > ui && entry < li)
+                {
+                    active_set.push_back(i);
+                    return (std::max(li, std::min(ui, entry)));
+                }
+                else
+                    return entry;   
+            }    );
         }
+        return true;
+    }
 
 };
 

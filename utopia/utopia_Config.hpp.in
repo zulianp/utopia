@@ -13,6 +13,7 @@
 #cmakedefine WITH_UTOPIA_OPENCL
 #cmakedefine WITH_EIGEN_3
 #cmakedefine UTOPIA_LOG_ENABLED
+#cmakedefine WITH_PASSO_EXTENSIONS
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR

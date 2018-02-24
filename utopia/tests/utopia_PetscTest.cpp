@@ -210,6 +210,9 @@ namespace utopia {
             }
         });
 
+
+        x.set(0.);
+
         // std::cout << "end: petsc_vector_accessors_test" << std::endl;
     }
 
@@ -1047,12 +1050,26 @@ namespace utopia {
 
     }
 
+
+    void petsc_block_mat_test()
+    {
+        DSMatrixd mat = sparse(10, 10, 3);
+        {
+            Write<DSMatrixd> w_m(mat);
+
+            mat.set(0, 0, 1.);
+            mat.set(1, 1, 1.);
+        }
+
+        mat.implementation().convert_to_mat_baij(2);
+    }
+
     #endif //WITH_PETSC;
 
     void runPetscTest() {
 #ifdef WITH_PETSC
         UTOPIA_UNIT_TEST_BEGIN("PetscTest");
-        
+        UTOPIA_RUN_TEST(petsc_block_mat_test);
         UTOPIA_RUN_TEST(petsc_ghosted);
         UTOPIA_RUN_TEST(petc_optional_test);
         UTOPIA_RUN_TEST(petsc_view_test);                

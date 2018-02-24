@@ -341,6 +341,17 @@ namespace utopia {
         	PetscInt d_nnz,
         	PetscInt o_nnz
         );
+
+         void mat_baij_init(
+        	MPI_Comm comm,
+        	PetscInt rows_local,
+        	PetscInt cols_local,
+        	PetscInt rows_global,
+        	PetscInt cols_global,
+        	PetscInt d_nnz,
+        	PetscInt o_nnz,
+        	PetscInt block_size
+        );
         
 		inline void destroy()
 		{
@@ -363,6 +374,7 @@ namespace utopia {
 		///this is y
 		void axpy(const PetscScalar alpha, const PetscMatrix &x);
 
+		void convert_to_mat_baij(const PetscInt block_size);
 	private:
 		std::shared_ptr<PetscMatrixMemory> wrapper_;
 		

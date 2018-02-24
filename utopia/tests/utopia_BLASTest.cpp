@@ -191,6 +191,10 @@ namespace utopia {
 
         Matrixd m_exp{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
         assert(approxeq(m_exp, m1));
+
+
+
+        v1.set(6.);
     }
 
 
@@ -364,11 +368,31 @@ namespace utopia {
 #endif //WITH_UMFPACK
     }
 
+    void blas_pgs_test()
+    {
+        int n = 3;
+        CRSMatrixd A = sparse(n, n, 1);
+
+        {
+            Write<CRSMatrixd> w_A(A);
+            A.set(0, 0, 1);
+            A.set(1, 1, 1);
+            A.set(2, 2, 1);
+        }
+
+        Vectord rhs = values(n, 2.);
+        Vectord x   = zeros(n);
+
+        ProjectedGaussSeidel<CRSMatrixd, Vectord> pgs;
+        pgs.solve(A, rhs, x);
+    }
+
 #endif //WITH_BLAS
 
     void runBLASTest() {
 #ifdef WITH_BLAS
         UTOPIA_UNIT_TEST_BEGIN("BLASTest");
+        UTOPIA_RUN_TEST(blas_pgs_test);
         UTOPIA_RUN_TEST(blas_gemm_test);
         UTOPIA_RUN_TEST(blas_row_view_test);
         UTOPIA_RUN_TEST(blas_test);

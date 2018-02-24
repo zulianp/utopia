@@ -21,7 +21,7 @@ namespace utopia {
 		{}
 
 		// virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
-		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) override
+		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
 		{
 			if(!this->material().assemble_hessian_and_gradient(x, stiffness_matrix_, internal_force_)) {
 				return false;

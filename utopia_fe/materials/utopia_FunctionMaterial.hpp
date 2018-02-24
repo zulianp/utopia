@@ -14,7 +14,7 @@ namespace utopia {
 
 		virtual ~FunctionMaterial() {}
 
-		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient)
+		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
 		{
 			bool ok = fun_->gradient(x, gradient);
 			ok 	   &= fun_->hessian(x, hessian);

@@ -169,6 +169,11 @@ namespace utopia {
             Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), index, value);
         }
 
+        inline void set(const Scalar value)
+        {
+            Backend<Scalar, Traits<Implementation>::Backend >::Instance().set(derived().implementation(), value);
+        }
+
         /**
          * @ingroup     element_acess
          * @brief       Adds prescribed value to the value of the element on the index i.

@@ -52,6 +52,7 @@ namespace utopia {
 			case libMesh::QUAD8:
 			case libMesh::TRISHELL3:
 			case libMesh::QUADSHELL4:
+			// case libMesh::QUADSHELL8:
 			{
 				
 				A_inv.resize(2,2);

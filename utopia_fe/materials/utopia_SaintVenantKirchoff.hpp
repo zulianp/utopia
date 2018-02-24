@@ -16,7 +16,7 @@ namespace utopia {
 		{}
 
 		// bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
-		bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) override
+		bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
 		{
 			auto mu = params_.var_mu();
 			auto lambda = params_.var_lambda();

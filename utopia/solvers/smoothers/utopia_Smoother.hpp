@@ -27,6 +27,7 @@
          * @brief      Base class for smoothers. 
          */
         Smoother() 
+        : _sweeps(1), _relaxation_parameter(1.)
         {
 
         }
@@ -71,10 +72,9 @@
          *
          * @return    
          */
-        virtual bool sweeps(const SizeType & sweeps_in)
+        virtual void sweeps(const SizeType & sweeps_in)
         {
             _sweeps = sweeps_in;
-            return true; 
         }
 
 

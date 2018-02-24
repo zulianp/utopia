@@ -149,6 +149,10 @@ namespace utopia {
 		
 		static void set(PetscVector &v, const PetscInt index, Scalar value);
 		static void add(PetscVector &v, const PetscInt index, Scalar value);
+		static void set(PetscVector &v, Scalar value)
+		{
+			v.set(value);
+		}
 		
 		static void set(PetscVector &v, const std::vector<PetscInt> &indices, const std::vector<Scalar> &values);
 		static void set(PetscMatrix &v, const PetscInt row, const PetscInt col, Scalar value);
