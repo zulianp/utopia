@@ -90,6 +90,7 @@ namespace utopia {
 			{
 				ReadAndWrite<Vector> rw_c(c);
 				Read<Vector> r_r(r), r_d_inv(d_inv);
+				Read<Matrix> r_A(A);
 
 				for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
 					for(auto i = rr.begin(); i != rr.end(); ++i) {
@@ -147,12 +148,11 @@ namespace utopia {
 				if(alpha <= 0) {
 					std::cerr << "[Warning] negative alpha" << std::endl;
 					alpha = 1.;
-					c = utopia::min(r, g);
+					c = r;
 				}
 			}
 
-			// x += alpha * c;
-			x += utopia::min(alpha * c, g);
+			x += alpha * c;
 			return true;
 		}
 
@@ -167,6 +167,7 @@ namespace utopia {
 			{
 				ReadAndWrite<Vector> rw_c(c);
 				Read<Vector> r_r(r), r_d_inv(d_inv), r_g(g);
+				Read<Matrix> r_A(A);
 
 				for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
 
@@ -243,7 +244,7 @@ namespace utopia {
 				if(alpha <= 0) {
 					std::cerr << "[Warning] negative alpha" << std::endl;
 					alpha = 1.;
-					c = utopia::min(r, g);
+					c = r;
 				}
 			}
 
