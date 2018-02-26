@@ -442,7 +442,7 @@ namespace utopia
 			const bool use_line_search = true;
 			// const bool use_line_search = false;
 			const int max_it = n * 60;
-			const bool verbose = false;
+			const bool verbose = true;
 			const int n_local_sweeps = 3;
 		
 			{

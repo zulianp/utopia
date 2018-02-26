@@ -1,10 +1,11 @@
-
-#include "utopia_nbgs.h"
 #include <math.h>
+#include <utopia_nbgs.h>
 #include <petsc/private/kernels/blockinvert.h>
 #include <stdio.h>
 #include <petscmat.h>
-#include <aij.h>
+//#include <aij.h>
+
+#include "aij.h"
 #include <petscsys.h>
 
 /*
@@ -14,25 +15,22 @@
  */
 #undef __FUNCT__
 #define __FUNCT__ "constrain_box"
-PetscErrorCode  constrain_box(MatScalar * diag, PetscScalar * t, PetscScalar * x,
+PetscErrorCode  constrain_box(BLOCKSOLVER * blocksolver, MatScalar * diag, PetscScalar * t, PetscScalar * x,
                               PetscScalar * lb, PetscScalar * ub, int row,
                               int bs, PetscBool * constrained){
     PetscFunctionBegin;
-    
-    
+
     for(int i = 0; i<bs;i++){
         constrained[i] = PETSC_FALSE;
         if (lb[row + i]> ub[row + i]){
             PetscPrintf(PETSC_COMM_WORLD, "Constraints not well-defined: Lower boundary bigger than upper boundary \n");
             PetscFunctionReturn(0);
         }
-        // if (x[row + i] < lb[row + i] + NBGS_TOL){
-        if (x[row + i] <= lb[row + i]){
+        if (x[row + i] < lb[row + i] + NBGS_TOL){
             x[row + i] = lb[row + i];
             constrained[i] = PETSC_TRUE;
         }
-        // if (x[row + i] > ub[row + i] + NBGS_TOL){
-        if (x[row + i] >= ub[row + i]){
+        if (x[row + i] > ub[row + i] + NBGS_TOL){
             x[row + i] = ub[row + i];
             constrained[i] = PETSC_TRUE;
         }
@@ -40,26 +38,137 @@ PetscErrorCode  constrain_box(MatScalar * diag, PetscScalar * t, PetscScalar * x
     PetscFunctionReturn(0);
 };
 
+#undef __FUNCT__
+#define __FUNCT__ "constrain_blocknd_ub"
+PetscErrorCode  constrain_blocknd_ub(BLOCKSOLVER * blocksolver, MatScalar * diag, PetscScalar * t, PetscScalar * x,
+                                  PetscScalar * lb, PetscScalar * ub, int row,
+                                  int bs, PetscBool * constrained){
+    PetscFunctionBegin;
+    PetscErrorCode ierr;
+
+//    MatScalar * diag_constrained;
+    PetscBool allowzeropivot=PETSC_TRUE,zeropivotdetected=PETSC_FALSE;
+
+//    PetscMalloc1(bs*bs, &blocksolver->diag_constrained);
+
+    for(int i = 0; i<bs;i++){
+        constrained[i] = PETSC_FALSE;
+        for(int j = 0; j<bs;j++){
+            blocksolver->diag_constrained[i*bs+j] = diag[i*bs+j];
+        }
+    }
+
+    for(int i = 0; i<bs;i++){
+        if (x[row + i] > ub[row + i]+ NBGS_TOL){
+            for (int j=0;j<bs;j++){
+                blocksolver->diag_constrained[j*bs+i] = 0;
+            }
+            constrained[i] = PETSC_TRUE;
+            blocksolver->diag_constrained[i*bs+i] = 1;
+            t[row+i]=ub[row+i];
+
+            if (bs == 2){
+                ierr = PetscKernel_A_gets_inverse_A_2(blocksolver->diag_constrained,0,allowzeropivot,&zeropivotdetected);
+
+                x[row] = t[row]*blocksolver->diag_constrained[0] + t[row+1]*blocksolver->diag_constrained[2];
+                x[row+1] = t[row]*blocksolver->diag_constrained[1] + t[row+1]*blocksolver->diag_constrained[3] ;
+            }
+            else if (bs == 3){
+                ierr = PetscKernel_A_gets_inverse_A_3(blocksolver->diag_constrained,0,allowzeropivot,&zeropivotdetected);
+
+                x[row] = t[row]*blocksolver->diag_constrained[0] + t[row+1]*blocksolver->diag_constrained[3] + t[row+2]*blocksolver->diag_constrained[6];
+                x[row+1] = t[row]*blocksolver->diag_constrained[1] + t[row+1]*blocksolver->diag_constrained[4] + t[row+2]*blocksolver->diag_constrained[7];
+                x[row+2] = t[row]*blocksolver->diag_constrained[2] + t[row+1]*blocksolver->diag_constrained[5] + t[row+2]*blocksolver->diag_constrained[8];
+
+            }else if (bs == 1){
+                x[row] = t[row]/blocksolver->diag_constrained[0];
+            }else{
+                PetscPrintf(PETSC_COMM_WORLD, "NBGS: Blocksize %i is not supported. Exiting. \n", bs);
+                return(0);
+            }
+        };
+    };
+
+
+    PetscFunctionReturn(0);
+}
+
+#undef __FUNCT__
+#define __FUNCT__ "constrain_blocknd_lb"
+PetscErrorCode  constrain_blocknd_lb(BLOCKSOLVER * blocksolver, MatScalar * diag, PetscScalar * t, PetscScalar * x,
+                                  PetscScalar * lb, PetscScalar * ub, int row,
+                                  int bs, PetscBool * constrained){
+    PetscFunctionBegin;
+
+    PetscErrorCode ierr;
+
+//    MatScalar * diag_constrained;
+    PetscBool allowzeropivot=PETSC_TRUE,zeropivotdetected=PETSC_FALSE;
+
+//    PetscMalloc1(bs*bs, &blocksolver->diag_constrained);
+
+    for(int i = 0; i<bs;i++){
+        constrained[i] = PETSC_FALSE;
+        for(int j = 0; j<bs;j++){
+            blocksolver->diag_constrained[i*bs+j] = diag[i*bs+j];
+        }
+    }
+
+    for(int i = 0; i<bs;i++){
+        if (x[row + i] < lb[row + i]+NBGS_TOL){
+            for (int j=0;j<bs;j++){
+                blocksolver->diag_constrained[j*bs+i] = 0;
+            }
+            constrained[i] = PETSC_TRUE;
+            blocksolver->diag_constrained[i*bs+i] = 1;
+            t[row+i]=lb[row+i];
+
+            if (bs == 2){
+                ierr = PetscKernel_A_gets_inverse_A_2(blocksolver->diag_constrained,0,allowzeropivot,&zeropivotdetected);
+
+                x[row] = t[row]*blocksolver->diag_constrained[0] + t[row+1]*blocksolver->diag_constrained[2];
+                x[row+1] = t[row]*blocksolver->diag_constrained[1] + t[row+1]*blocksolver->diag_constrained[3] ;
+            }
+            else if (bs == 3){
+                ierr = PetscKernel_A_gets_inverse_A_3(blocksolver->diag_constrained,0,allowzeropivot,&zeropivotdetected);
+
+                x[row] = t[row]*blocksolver->diag_constrained[0] + t[row+1]*blocksolver->diag_constrained[3] + t[row+2]*blocksolver->diag_constrained[6];
+                x[row+1] = t[row]*blocksolver->diag_constrained[1] + t[row+1]*blocksolver->diag_constrained[4] + t[row+2]*blocksolver->diag_constrained[7];
+                x[row+2] = t[row]*blocksolver->diag_constrained[2] + t[row+1]*blocksolver->diag_constrained[5] + t[row+2]*blocksolver->diag_constrained[8];
+
+            }else if (bs == 1){
+                x[row] = t[row]/blocksolver->diag_constrained[0];
+            } else {
+                x[row] = t[row]/diag[0];
+                PetscPrintf(PETSC_COMM_WORLD, "NBGS: Blocksize %i is not supported. Exiting. \n", bs);
+                return(0);
+            }
+        };
+    };
+//    PetscFree(diag_constrained);
+    PetscFunctionReturn(0);
+}
+
 
 
 #undef __FUNCT__
 #define __FUNCT__ "constrain_blocknd"
-PetscErrorCode  constrain_blocknd(MatScalar * diag, PetscScalar * t, PetscScalar * x,
+PetscErrorCode  constrain_blocknd(BLOCKSOLVER * blocksolver, MatScalar * diag, PetscScalar * t, PetscScalar * x,
                                   PetscScalar * lb, PetscScalar * ub, int row,
                                   int bs, PetscBool * constrained){
     PetscFunctionBegin;
     
     PetscErrorCode ierr;
     
-    MatScalar * diag_constrained;
+//    MatScalar * diag_constrained;
     PetscBool allowzeropivot=PETSC_TRUE,zeropivotdetected=PETSC_FALSE;
     
-    PetscMalloc1(bs*bs, &diag_constrained);
-    
+//    PetscMalloc1(bs*bs, &blocksolver->diag_constrained);
+
     for(int i = 0; i<bs;i++){
         constrained[i] = PETSC_FALSE;
         for(int j = 0; j<bs;j++){
-            diag_constrained[i*bs+j] = diag[i*bs+j];
+            blocksolver->diag_constrained[i*bs+j] = diag[i*bs+j];
         }
         if (lb[row + i]> ub[row + i]){
             PetscPrintf(PETSC_COMM_WORLD, "Constraints not well-defined: Lower boundary bigger than upper boundary \n");
@@ -70,27 +179,27 @@ PetscErrorCode  constrain_blocknd(MatScalar * diag, PetscScalar * t, PetscScalar
     for(int i = 0; i<bs;i++){
         if (x[row + i] < lb[row + i]+NBGS_TOL){
             for (int j=0;j<bs;j++){
-                diag_constrained[j*bs+i] = 0;
+                blocksolver->diag_constrained[j*bs+i] = 0;
             }
             constrained[i] = PETSC_TRUE;
-            diag_constrained[i*bs+i] = 1;
+            blocksolver->diag_constrained[i*bs+i] = 1;
             t[row+i]=lb[row+i];
-            
+
             if (bs == 2){
-                ierr = PetscKernel_A_gets_inverse_A_2(diag_constrained,0,allowzeropivot,&zeropivotdetected);
-                
-                x[row] = t[row]*diag_constrained[0] + t[row+1]*diag_constrained[2];
-                x[row+1] = t[row]*diag_constrained[1] + t[row+1]*diag_constrained[3] ;
+                ierr = PetscKernel_A_gets_inverse_A_2(blocksolver->diag_constrained,0,allowzeropivot,&zeropivotdetected);
+
+                x[row] = t[row]*blocksolver->diag_constrained[0] + t[row+1]*blocksolver->diag_constrained[2];
+                x[row+1] = t[row]*blocksolver->diag_constrained[1] + t[row+1]*blocksolver->diag_constrained[3] ;
             }
             else if (bs == 3){
-                ierr = PetscKernel_A_gets_inverse_A_3(diag_constrained,0,allowzeropivot,&zeropivotdetected);
-                
-                x[row] = t[row]*diag_constrained[0] + t[row+1]*diag_constrained[3] + t[row+2]*diag_constrained[6];
-                x[row+1] = t[row]*diag_constrained[1] + t[row+1]*diag_constrained[4] + t[row+2]*diag_constrained[7];
-                x[row+2] = t[row]*diag_constrained[2] + t[row+1]*diag_constrained[5] + t[row+2]*diag_constrained[8];
-                
+                ierr = PetscKernel_A_gets_inverse_A_3(blocksolver->diag_constrained,0,allowzeropivot,&zeropivotdetected);
+
+                x[row] = t[row]*blocksolver->diag_constrained[0] + t[row+1]*blocksolver->diag_constrained[3] + t[row+2]*blocksolver->diag_constrained[6];
+                x[row+1] = t[row]*blocksolver->diag_constrained[1] + t[row+1]*blocksolver->diag_constrained[4] + t[row+2]*blocksolver->diag_constrained[7];
+                x[row+2] = t[row]*blocksolver->diag_constrained[2] + t[row+1]*blocksolver->diag_constrained[5] + t[row+2]*blocksolver->diag_constrained[8];
+
             }else if (bs == 1){
-                x[row] = t[row]/diag_constrained[0];
+                x[row] = t[row]/blocksolver->diag_constrained[0];
             } else {
                 x[row] = t[row]/diag[0];
                 PetscPrintf(PETSC_COMM_WORLD, "NBGS: Blocksize %i is not supported. Exiting. \n", bs);
@@ -98,37 +207,37 @@ PetscErrorCode  constrain_blocknd(MatScalar * diag, PetscScalar * t, PetscScalar
             }
         };
     };
-    
+
     for(int i = 0; i<bs;i++){
         if (x[row + i] > ub[row + i]+ NBGS_TOL){
             for (int j=0;j<bs;j++){
-                diag_constrained[j*bs+i] = 0;
+                blocksolver->diag_constrained[j*bs+i] = 0;
             }
             constrained[i] = PETSC_TRUE;
-            diag_constrained[i*bs+i] = 1;
+            blocksolver->diag_constrained[i*bs+i] = 1;
             t[row+i]=ub[row+i];
-            
+
             if (bs == 2){
-                ierr = PetscKernel_A_gets_inverse_A_2(diag_constrained,0,allowzeropivot,&zeropivotdetected);
-                
-                x[row] = t[row]*diag_constrained[0] + t[row+1]*diag_constrained[2];
-                x[row+1] = t[row]*diag_constrained[1] + t[row+1]*diag_constrained[3] ;
+                ierr = PetscKernel_A_gets_inverse_A_2(blocksolver->diag_constrained,0,allowzeropivot,&zeropivotdetected);
+
+                x[row] = t[row]*blocksolver->diag_constrained[0] + t[row+1]*blocksolver->diag_constrained[2];
+                x[row+1] = t[row]*blocksolver->diag_constrained[1] + t[row+1]*blocksolver->diag_constrained[3] ;
             }
             else if (bs == 3){
-                ierr = PetscKernel_A_gets_inverse_A_3(diag_constrained,0,allowzeropivot,&zeropivotdetected);
-                
-                x[row] = t[row]*diag_constrained[0] + t[row+1]*diag_constrained[3] + t[row+2]*diag_constrained[6];
-                x[row+1] = t[row]*diag_constrained[1] + t[row+1]*diag_constrained[4] + t[row+2]*diag_constrained[7];
-                x[row+2] = t[row]*diag_constrained[2] + t[row+1]*diag_constrained[5] + t[row+2]*diag_constrained[8];
-                
+                ierr = PetscKernel_A_gets_inverse_A_3(blocksolver->diag_constrained,0,allowzeropivot,&zeropivotdetected);
+
+                x[row] = t[row]*blocksolver->diag_constrained[0] + t[row+1]*blocksolver->diag_constrained[3] + t[row+2]*blocksolver->diag_constrained[6];
+                x[row+1] = t[row]*blocksolver->diag_constrained[1] + t[row+1]*blocksolver->diag_constrained[4] + t[row+2]*blocksolver->diag_constrained[7];
+                x[row+2] = t[row]*blocksolver->diag_constrained[2] + t[row+1]*blocksolver->diag_constrained[5] + t[row+2]*blocksolver->diag_constrained[8];
+
             }else{
                 PetscPrintf(PETSC_COMM_WORLD, "NBGS: Blocksize %i is not supported. Exiting. \n", bs);
                 return(0);
             }
         };
     };
-    
-    PetscFree(diag_constrained);
+
+//    PetscFree(diag_constrained);
     PetscFunctionReturn(0);
 }
 
@@ -152,8 +261,8 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
     PetscBool         allowzeropivot,zeropivotdetected=PETSC_FALSE;
     PetscBool         *constrained_nodal_coords;
     
-    Vec loc_active_indices;
-    
+    //    Vec loc_active_indices;
+
     PetscFunctionBegin;
     
     ierr = PetscMalloc(bs, &constrained_nodal_coords);CHKERRQ(ierr);
@@ -170,10 +279,10 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
     }
     
     if (nbgs->constrained && nbgs->active_coordinates){
-        ierr = VecDuplicate(xx, &loc_active_indices); CHKERRQ(ierr);
-        ierr = VecGetLocalVector(nbgs->active_coordinates, loc_active_indices); CHKERRQ(ierr);
+        //        ierr = VecDuplicate(xx, &loc_active_indices); CHKERRQ(ierr);
+        ierr = VecGetLocalVector(nbgs->active_coordinates, nbgs->loc_active_indices); CHKERRQ(ierr);
     }
-    
+
     if (!a->inode.ibdiagvalid) {
         if (!a->inode.ibdiag) {
             /* calculate space needed for diagonal blocks */
@@ -266,12 +375,13 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                 x[row++] = sum1*(*ibdiag++);
                 
                 if (nbgs->constrained){
-                    nbgs->constrain(bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
+                    nbgs->constrain(&nbgs->blocksolver, bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
                     for (int j=0;j<bs;j++){
                         if(constrained_nodal_coords[j]){
-                            ierr = VecSetValue(loc_active_indices,(i*bs), 1, INSERT_VALUES); CHKERRQ(ierr);
-                            ierr = VecAssemblyBegin(loc_active_indices);CHKERRQ(ierr);
-                            ierr = VecAssemblyEnd(loc_active_indices);CHKERRQ(ierr);
+                            ierr = VecSetValue(nbgs->loc_active_indices,(i*bs), 1, INSERT_VALUES); CHKERRQ(ierr);
+
+//                            ierr = VecAssemblyBegin(nbgs->loc_active_indices);CHKERRQ(ierr);
+//                            ierr = VecAssemblyEnd(nbgs->loc_active_indices);CHKERRQ(ierr);
                         }
                     }
                 }
@@ -303,12 +413,12 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                 
                 
                 if (nbgs->constrained){
-                    nbgs->constrain(bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
+                    nbgs->constrain(&nbgs->blocksolver, bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
                     for (int j=0;j<bs;j++){
                         if(constrained_nodal_coords[j]){
-                            ierr = VecSetValue(loc_active_indices,(i*bs), 1, INSERT_VALUES); CHKERRQ(ierr);
-                            ierr = VecAssemblyBegin(loc_active_indices);CHKERRQ(ierr);
-                            ierr = VecAssemblyEnd(loc_active_indices);CHKERRQ(ierr);
+                            ierr = VecSetValue(nbgs->loc_active_indices,(i*bs), 1, INSERT_VALUES); CHKERRQ(ierr);
+//                            ierr = VecAssemblyBegin(nbgs->loc_active_indices);CHKERRQ(ierr);
+//                            ierr = VecAssemblyEnd(nbgs->loc_active_indices);CHKERRQ(ierr);
                         }
                     }
                 }
@@ -348,12 +458,12 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                 x[row++] = sum1*ibdiag[2] + sum2*ibdiag[5] + sum3*ibdiag[8];
                 
                 if (nbgs->constrained){
-                    nbgs->constrain(bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
+                    nbgs->constrain(&nbgs->blocksolver,  bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
                     for (int j=0;j<bs;j++){
                         if(constrained_nodal_coords[j]){
-                            ierr = VecSetValue(loc_active_indices,(i*bs +j), 1, INSERT_VALUES); CHKERRQ(ierr);
-                            ierr = VecAssemblyBegin(loc_active_indices);CHKERRQ(ierr);
-                            ierr = VecAssemblyEnd(loc_active_indices);CHKERRQ(ierr);
+                            ierr = VecSetValue(nbgs->loc_active_indices,(i*bs +j), 1, INSERT_VALUES); CHKERRQ(ierr);
+//                            ierr = VecAssemblyBegin(nbgs->loc_active_indices);CHKERRQ(ierr);
+//                            ierr = VecAssemblyEnd(nbgs->loc_active_indices);CHKERRQ(ierr);
                         }
                     }
                 }
@@ -397,12 +507,12 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                 x[row++] = sum1*ibdiag[3] + sum2*ibdiag[7] + sum3*ibdiag[11] + sum4*ibdiag[15];
                 
                 if (nbgs->constrained){
-                    nbgs->constrain(bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
+                    nbgs->constrain(&nbgs->blocksolver, bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
                     for (int j=0;j<bs;j++){
                         if(constrained_nodal_coords[j]){
-                            ierr = VecSetValue(loc_active_indices,(i*bs), 1, INSERT_VALUES); CHKERRQ(ierr);
-                            ierr = VecAssemblyBegin(loc_active_indices);CHKERRQ(ierr);
-                            ierr = VecAssemblyEnd(loc_active_indices);CHKERRQ(ierr);
+                            ierr = VecSetValue(nbgs->loc_active_indices,(i*bs), 1, INSERT_VALUES); CHKERRQ(ierr);
+//                            ierr = VecAssemblyBegin(nbgs->loc_active_indices);CHKERRQ(ierr);
+//                            ierr = VecAssemblyEnd(nbgs->loc_active_indices);CHKERRQ(ierr);
                         }
                     }
                 }
@@ -453,12 +563,12 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
                 x[row++] = sum1*ibdiag[4] + sum2*ibdiag[9] + sum3*ibdiag[14] + sum4*ibdiag[19] + sum5*ibdiag[24];
                 
                 if (nbgs->constrained){
-                    nbgs->constrain(bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
+                    nbgs->constrain(&nbgs->blocksolver, bdiag, t, x, lb, ub, (i*bs), bs, constrained_nodal_coords);
                     for (int j=0;j<bs;j++){
                         if(constrained_nodal_coords[j]){
-                            ierr = VecSetValue(loc_active_indices,(i*bs), 1, INSERT_VALUES); CHKERRQ(ierr);
-                            ierr = VecAssemblyBegin(loc_active_indices);CHKERRQ(ierr);
-                            ierr = VecAssemblyEnd(loc_active_indices);CHKERRQ(ierr);
+                            ierr = VecSetValue(nbgs->loc_active_indices,(i*bs), 1, INSERT_VALUES); CHKERRQ(ierr);
+//                            ierr = VecAssemblyBegin(nbgs->loc_active_indices);CHKERRQ(ierr);
+//                            ierr = VecAssemblyEnd(nbgs->loc_active_indices);CHKERRQ(ierr);
                         }
                     }
                 }
@@ -477,16 +587,18 @@ PetscErrorCode local_inode_nbgs(NBGS_CTX * nbgs, Mat A,Vec bb, Vec xx, Vec lblb,
     
     ierr = VecRestoreArray(xx,&x);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(bb,&b);CHKERRQ(ierr);
+
     if (nbgs->constrained && nbgs->active_coordinates){
-        ierr = VecRestoreLocalVector(nbgs->active_coordinates, loc_active_indices); CHKERRQ(ierr);
-        ierr = VecDestroy(&loc_active_indices); CHKERRQ(ierr);
+        ierr = VecAssemblyBegin(nbgs->loc_active_indices);CHKERRQ(ierr);
+        ierr = VecAssemblyEnd(nbgs->loc_active_indices);CHKERRQ(ierr);
+        ierr = VecRestoreLocalVector(nbgs->active_coordinates, nbgs->loc_active_indices); CHKERRQ(ierr);
+        //        ierr = VecDestroy(&nbgs->loc_active_indices); CHKERRQ(ierr);
     }
     
     if (nbgs->constrained) {
         ierr = VecRestoreArray(lblb,&lb);CHKERRQ(ierr);
         ierr = VecRestoreArray(ubub,&ub);CHKERRQ(ierr);
     }
-    
     
     //    ierr = PetscFree3(a->inode.ibdiag,a->inode.bdiag,a->inode.ssor_work);CHKERRQ(ierr);
     ierr = PetscFree(constrained_nodal_coords); CHKERRQ(ierr);
@@ -523,7 +635,6 @@ PetscErrorCode  NBGSStep(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec _lb, Vec _ub 
         VecScale(x, -1);
     }
 
-
     ierr = VecGetLocalVector(nbgs->res, nbgs->loc_res);CHKERRQ(ierr);
     ierr = VecGetLocalVector(nbgs->u, nbgs->loc_u);CHKERRQ(ierr);
     
@@ -537,7 +648,7 @@ PetscErrorCode  NBGSStep(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec _lb, Vec _ub 
         local_inode_nbgs(nbgs, nbgs->loc_A, nbgs->loc_res, nbgs->loc_u, nbgs->loc_lb, nbgs->loc_ub, _blocksize, 1);
 
         ierr = VecSum(nbgs->active_coordinates, &nbgs->num_active_coordinates); CHKERRQ(ierr);
-        ierr = VecAXPBYPCZ(nbgs->changed_coordinates, 1,-1,0,nbgs->active_coordinates, nbgs->prev_active_coordinates);CHKERRQ(ierr);
+        ierr = VecWAXPY(nbgs->changed_coordinates, -1, nbgs->active_coordinates, nbgs->prev_active_coordinates); CHKERRQ(ierr);
         ierr = VecSum(nbgs->changed_coordinates, &nbgs->num_changed_coordinates); CHKERRQ(ierr);
         ierr = VecCopy(nbgs->active_coordinates, nbgs->prev_active_coordinates); CHKERRQ(ierr);
 
@@ -577,14 +688,11 @@ PetscErrorCode  NBGSStep(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec _lb, Vec _ub 
         ierr = VecDot(nbgs->c, nbgs->Ac, &ctAc); CHKERRQ(ierr);
 
         nbgs->alpha = nom/ctAc;
-
-        // printf("%g\n", nbgs->alpha);
         // put a max() here for numerical reasons or a warning ...
         if (nbgs->alpha <= 0) {
             PetscPrintf(PETSC_COMM_WORLD, "nbgs: combined correction does not reduce energy! alpha = %2.12e . Setting alpha to 1e-10; \n" , nbgs->alpha);
             nbgs->alpha = 1e-10;
         }
-
     }else{
         // nothing implemented here yet
         nbgs->alpha = 1;
@@ -594,7 +702,7 @@ PetscErrorCode  NBGSStep(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec _lb, Vec _ub 
         PetscPrintf(PETSC_COMM_WORLD, "NBGS(...): Are you sure you want omega to be <= zero?  \n");
 
     ierr = VecAXPY(x,nbgs->alpha,nbgs->u); CHKERRQ(ierr); //x^(k+1) = x^k + omega * B^(-1)*r^k
-    ierr = VecSet(nbgs->active_coordinates, 0);
+    ierr  = VecSet(nbgs->active_coordinates,0); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 };
@@ -604,7 +712,6 @@ PetscErrorCode  NBGSStep(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec _lb, Vec _ub 
 #undef __FUNCT__
 #define __FUNCT__ "NBGSDestroy"
 PetscErrorCode  NBGSDestroy(NBGS_CTX * nbgs){
-
     PetscErrorCode ierr;
     PetscFunctionBegin;
 
@@ -622,16 +729,19 @@ PetscErrorCode  NBGSDestroy(NBGS_CTX * nbgs){
     if (nbgs->constrained){
         ierr = VecDestroy(&nbgs->lb_u); CHKERRQ(ierr);
         ierr = VecDestroy(&nbgs->ub_u); CHKERRQ(ierr);
+        ierr = VecDestroy(&nbgs->loc_active_indices); CHKERRQ(ierr);
         ierr = VecDestroy(&nbgs->loc_lb); CHKERRQ(ierr);
         ierr = VecDestroy(&nbgs->loc_ub); CHKERRQ(ierr);
+        PetscFree(nbgs->blocksolver.diag_constrained);
     }
+
 
     PetscFunctionReturn(0);
 }
 
 #undef __FUNCT__
 #define __FUNCT__ "NBGSCreate"
-extern PetscErrorCode NBGSCreate(NBGS_CTX * nbgs, Mat _A, Vec _x, Vec _lb, Vec _ub, PetscInt _blocksize, PetscBool _with_ls, PetscBool _constrained, PetscErrorCode (*constrain)(MatScalar * diag, PetscScalar * t, PetscScalar * x,PetscScalar * lb, PetscScalar * ub, int row, int bs, PetscBool * constrained)){
+extern PetscErrorCode NBGSCreate(NBGS_CTX * nbgs, Mat _A, Vec _x, Vec _lb, Vec _ub, PetscInt _blocksize, PetscBool _with_ls, PetscBool _constrained, PetscErrorCode (*constrain)(BLOCKSOLVER * blocksolver, MatScalar * diag, PetscScalar * t, PetscScalar * x,PetscScalar * lb, PetscScalar * ub, int row, int bs, PetscBool * constrained)){
 
     PetscErrorCode ierr;
     PetscFunctionBegin;
@@ -660,16 +770,18 @@ extern PetscErrorCode NBGSCreate(NBGS_CTX * nbgs, Mat _A, Vec _x, Vec _lb, Vec _
     ierr = VecDuplicate(_x, &nbgs->u); CHKERRQ(ierr);
     ierr = VecDuplicate(_x, &nbgs->c); CHKERRQ(ierr);
     ierr = VecDuplicate(_x, &nbgs->Ac); CHKERRQ(ierr);
-    ierr = VecDuplicate(_x, &nbgs->prev_active_coordinates); CHKERRQ(ierr); //
-    ierr = VecDuplicate(_x, &nbgs->active_coordinates); CHKERRQ(ierr); //
-    ierr = VecDuplicate(_x, &nbgs->changed_coordinates); CHKERRQ(ierr); //
-    ierr = VecDuplicate(_x, &nbgs->mask); CHKERRQ(ierr); //
+    ierr = VecDuplicate(_x, &nbgs->prev_active_coordinates); CHKERRQ(ierr);
+    ierr = VecDuplicate(_x, &nbgs->active_coordinates); CHKERRQ(ierr);
+    ierr = VecDuplicate(_x, &nbgs->changed_coordinates); CHKERRQ(ierr);
+    ierr = VecDuplicate(_x, &nbgs->mask); CHKERRQ(ierr);
 
     if (nbgs->constrained){
-        ierr = VecDuplicate(_x, &nbgs->lb_u); CHKERRQ(ierr); //
-        ierr = VecDuplicate(_x, &nbgs->ub_u); CHKERRQ(ierr); //
-        ierr = VecDuplicate(nbgs->loc_res, &nbgs->loc_lb); CHKERRQ(ierr); //
-        ierr = VecDuplicate(nbgs->loc_res, &nbgs->loc_ub); CHKERRQ(ierr); //
+        ierr = VecDuplicate(_x, &nbgs->lb_u); CHKERRQ(ierr);
+        ierr = VecDuplicate(_x, &nbgs->ub_u); CHKERRQ(ierr);
+        ierr = VecDuplicate(_x, &nbgs->loc_active_indices); CHKERRQ(ierr);
+        ierr = VecDuplicate(nbgs->loc_res, &nbgs->loc_lb); CHKERRQ(ierr);
+        ierr = VecDuplicate(nbgs->loc_res, &nbgs->loc_ub); CHKERRQ(ierr);
+        PetscMalloc1(_blocksize*_blocksize, &nbgs->blocksolver.diag_constrained);
     }
 
     ierr = VecSet(nbgs->active_coordinates, 0); CHKERRQ(ierr);
