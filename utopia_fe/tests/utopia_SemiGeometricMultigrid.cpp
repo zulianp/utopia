@@ -178,7 +178,7 @@ namespace utopia {
 
 	void SemiGeometricMultigrid::update(const std::shared_ptr<const DSMatrixd> &op)
 	{
-		mg.galerkin_assembly(op);
+		mg.update(op);
 
 		//hacky
 		if(is_block_solver_) {
@@ -191,7 +191,7 @@ namespace utopia {
 
 	bool SemiGeometricMultigrid::apply(const DVectord &rhs, DVectord &sol)
 	{
-		return mg.solve(rhs, sol);
+		return mg.apply(rhs, sol);
 	}
 
 }

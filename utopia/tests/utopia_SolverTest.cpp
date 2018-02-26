@@ -452,14 +452,14 @@ namespace utopia
 			interpolation_operators.push_back(make_ref(I_3));
 
 			Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
-			multigrid.init_interpolators_from_coarse_to_fine(std::move(interpolation_operators));
-	
+			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+		
 			DVectord x = zeros(A.size().get(0));
 			multigrid.verbose(true);
 			multigrid.solve(A, rhs, x);
 
 			const double err = norm2(A*x - rhs);
-			disp(err);
+			assert(err < 1e-6);
 		}
 
 		void petsc_ngs_test()

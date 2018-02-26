@@ -272,6 +272,21 @@ namespace utopia
 		{
 			fix_semidefinite_operators_ = val;
 		}
+
+		inline Transfer &transfer(const SizeType level)
+		{
+			return _transfers[level];
+		}
+
+		inline const Transfer &transfer(const SizeType level) const
+		{
+			return _transfers[level];
+		}
+
+		inline const Level &level(const SizeType l) const
+		{
+			return _levels[l];
+		}
 		
 	protected:
 		SizeType _num_levels;                             /*!< number of levels in ML   -n   */
