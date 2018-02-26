@@ -141,10 +141,11 @@ namespace utopia {
         DVectord sol = local_zeros(local_size(p.rhs));
         
         //set up multigrid
-        auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+        // auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+        auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
         auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
         
-        Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
+        Multigrid<DSMatrixd, DVectord> multigrid(smoother, linear_solver);
         multigrid.init_transfer_from_coarse_to_fine(p.interpolation_operators);
         multigrid.mg_type(2);
         
@@ -182,7 +183,7 @@ namespace utopia {
             n, n,
             0, 1,
             0, 1.,
-            libMesh::QUAD8);
+            libMesh::QUAD4);
 
         int dim = lm_mesh->mesh_dimension();
 
@@ -228,8 +229,8 @@ namespace utopia {
 
         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
         // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+        auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+        // auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
         auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
         // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
 

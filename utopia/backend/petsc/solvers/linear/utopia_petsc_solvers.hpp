@@ -16,4 +16,6 @@
 #include "utopia_petsc_SemismoothNewton.hpp"
 #include "utopia_petsc_ProjectedGaussSeidel.hpp"
 
+#include "utopia_petsc_Multigrid.hpp"
+
 #endif //UTOPIA_PETSC_SOLVERS_HPP

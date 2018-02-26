@@ -15,6 +15,7 @@
 #include "utopia_PrintInfo.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_Level.hpp"
+#include "utopia_MultiLevelBase.hpp"
 #include <ctime>
 
 
@@ -26,8 +27,7 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    // template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    template<class Matrix, class Vector>
+    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Multigrid : public MultiLevelBase<Matrix, Vector>, 
                       public IterativeSolver<Matrix, Vector>
     {
@@ -267,10 +267,8 @@ namespace utopia
          */
         virtual bool solve(const Matrix &A, const Vector &b, Vector &x0) override
         {   
-            this->galerkin_assembly(make_ref(A));
-            solve(b, x0); 
-
-            return true; 
+            update(make_ref(A));
+            return solve(b, x0); 
         }
 
         inline Level &level(const SizeType &l)

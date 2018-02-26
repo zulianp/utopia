@@ -179,6 +179,11 @@
             return true; 
         }
 
+        const Matrix &I() const
+        {
+            return *_I;
+        }
+
         protected:        
             std::shared_ptr<Matrix> _I, _R; // _P;  
             std::shared_ptr<Matrix> _Pr;

@@ -15,26 +15,26 @@ namespace utopia
 	template<class Matrix>
 	void assemble_laplacian_1D(const utopia::SizeType n, Matrix &m)
 	{
-	    using namespace utopia;
+		using namespace utopia;
 
 	    // n x n matrix with maximum 3 entries x row        
-	    {
-	        Write<Matrix> w(m);
-	        Range r = row_range(m);
+		{
+			Write<Matrix> w(m);
+			Range r = row_range(m);
 
 	        //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
-	        for(SizeType i = r.begin(); i != r.end(); ++i) {
-	            if(i > 0) {    
-	                m.add(i, i - 1, -1.0);    
-	            }
+			for(SizeType i = r.begin(); i != r.end(); ++i) {
+				if(i > 0) {    
+					m.add(i, i - 1, -1.0);    
+				}
 
-	            if(i < n-1) {
-	                m.add(i, i + 1, -1.0);
-	            }
+				if(i < n-1) {
+					m.add(i, i + 1, -1.0);
+				}
 
-	            m.add(i, i, 2.0);
-	        }
-	    }
+				m.add(i, i, 2.0);
+			}
+		}
 	}
 
 	/**
@@ -52,9 +52,9 @@ namespace utopia
 	public:
 		static void print_backend_info()
 		{
-		    if(Utopia::Instance().verbose()) {
-		        std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
-		    }
+			if(Utopia::Instance().verbose()) {
+				std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
+			}
 		}
 		
 		void run()
@@ -353,32 +353,32 @@ namespace utopia
 			Matrix m = zeros(n, n);
 			assemble_laplacian_1D(n, m);
 			{
-			    Range r = row_range(m);
-			    Write<Matrix> w(m);
-			    if(r.begin() == 0) {
-			        m.set(0, 0, 1.);
-			        m.set(0, 1, 0);
-			    }
+				Range r = row_range(m);
+				Write<Matrix> w(m);
+				if(r.begin() == 0) {
+					m.set(0, 0, 1.);
+					m.set(0, 1, 0);
+				}
 
-			    if(r.end() == n) {
-			        m.set(n-1, n-1, 1.);
-			        m.set(n-1, n-2, 0);
-			    }
+				if(r.end() == n) {
+					m.set(n-1, n-1, 1.);
+					m.set(n-1, n-2, 0);
+				}
 			}
 
 			Vector rhs = values(n, 1.);
 			{ 
 			    //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
-			    Range r = range(rhs);
-			    Write<Vector> w(rhs);
+				Range r = range(rhs);
+				Write<Vector> w(rhs);
 
-			    if(r.begin() == 0) {
-			        rhs.set(0, 0);
-			    }
+				if(r.begin() == 0) {
+					rhs.set(0, 0);
+				}
 
-			    if(r.end() == n) {
-			        rhs.set(n-1, 0.);
-			    }
+				if(r.end() == n) {
+					rhs.set(n-1, 0.);
+				}
 			}
 
 			Vector upper_bound = values(n, 100.0);
@@ -411,6 +411,7 @@ namespace utopia
 		
 		void run()
 		{
+			UTOPIA_RUN_TEST(petsc_mg_exp_test);
 			UTOPIA_RUN_TEST(petsc_ngs_test);
 			UTOPIA_RUN_TEST(petsc_gss_newton_test);
 			UTOPIA_RUN_TEST(petsc_bicgstab_test);
@@ -432,9 +433,38 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mg_jacobi_test);
 		}
 
+		void petsc_mg_exp_test()
+		{
+			using namespace utopia;
+
+			DVectord rhs;
+			DSMatrixd A, I_1, I_2, I_3;
+
+			const std::string data_path = Utopia::Instance().get("data_path");
+
+			read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
+			read(data_path + "/laplace/matrices_for_petsc/f_A", A);
+			read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
+			read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
+
+			std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
+			interpolation_operators.push_back(make_ref(I_2));
+			interpolation_operators.push_back(make_ref(I_3));
+
+			Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
+			multigrid.init_interpolators_from_coarse_to_fine(std::move(interpolation_operators));
+	
+			DVectord x = zeros(A.size().get(0));
+			multigrid.verbose(true);
+			multigrid.solve(A, rhs, x);
+
+			const double err = norm2(A*x - rhs);
+			disp(err);
+		}
+
 		void petsc_ngs_test()
 		{
-			const int n = 500;
+			const int n = 50;
 			DSMatrixd m = sparse(n, n, 3);
 			assemble_laplacian_1D(n, m);
 			// const double ub = 100.0;
@@ -442,21 +472,21 @@ namespace utopia
 			const bool use_line_search = true;
 			// const bool use_line_search = false;
 			const int max_it = n * 60;
-			const bool verbose = true;
+			const bool verbose = false;
 			const int n_local_sweeps = 3;
-		
-			{
-			    Range r = row_range(m);
-			    Write<DSMatrixd> w(m);
-			    if(r.begin() == 0) {
-			        m.set(0, 0, 1.);
-			        m.set(0, 1, 0);
-			    }
 
-			    if(r.end() == n) {
-			        m.set(n-1, n-1, 1.);
-			        m.set(n-1, n-2, 0);
-			    }
+			{
+				Range r = row_range(m);
+				Write<DSMatrixd> w(m);
+				if(r.begin() == 0) {
+					m.set(0, 0, 1.);
+					m.set(0, 1, 0);
+				}
+
+				if(r.end() == n) {
+					m.set(n-1, n-1, 1.);
+					m.set(n-1, n-2, 0);
+				}
 			}
 
 			DVectord rhs = values(n, 1.);
@@ -464,16 +494,16 @@ namespace utopia
 
 			{ 
 			    //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
-			    Range r = range(rhs);
-			    Write<DVectord> w(rhs);
+				Range r = range(rhs);
+				Write<DVectord> w(rhs);
 
-			    if(r.begin() == 0) {
-			        rhs.set(0, 0);
-			    }
+				if(r.begin() == 0) {
+					rhs.set(0, 0);
+				}
 
-			    if(r.end() == n) {
-			        rhs.set(n-1, 0.);
-			    }
+				if(r.end() == n) {
+					rhs.set(n-1, 0.);
+				}
 			}
 
 			DVectord upper_bound = values(n, ub);

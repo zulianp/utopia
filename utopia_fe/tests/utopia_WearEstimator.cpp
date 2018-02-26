@@ -695,7 +695,9 @@ namespace utopia {
 			// integrator->set_linear_solver(cg);
 			
 			//begin: set-up semi-geometric multigrid
-			// auto smg = std::make_shared<SemiGeometricMultigrid>();
+			// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+			// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
+			// auto smg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
 			// smg->verbose(true);
 			// smg->init(Vx, 3);
 			// integrator->set_linear_solver(smg);

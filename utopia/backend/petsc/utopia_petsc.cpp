@@ -16,5 +16,6 @@ namespace utopia {
 	template class NonLinearGaussSeidel<DSMatrixd, DVectord>;
 	template class SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL>;
 
+	template class Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL>;
 }
 
