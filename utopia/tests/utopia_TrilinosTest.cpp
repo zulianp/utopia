@@ -29,6 +29,9 @@ void trilinos_example_test()
 
     Teuchos::RCP<const Comm<int> > comm = rcp(new MpiComm<int>(MPI_COMM_WORLD));
 
+    // Make an empty new parameter list.
+    Teuchos::RCP<Teuchos::ParameterList> solverParams = parameterList();
+
     if (comm->getRank () == 0)
         {
         // On (MPI) Process 0, print out the Tpetra software version.
@@ -40,9 +43,9 @@ void trilinos_example_test()
     const size_t numMyElements = map->getNodeNumElements ();
 
 
-    std::cout<< "Creating the sparse matrix" << std::endl;
+    std::cout<< "Creating the sparse matrix **" << std::endl;
     // Create a Tpetra sparse matrix whose rows have distribution given by the Map.
-    Teuchos::RCP<crs_matrix_type> A (new crs_matrix_type (map, 0));
+    //Teuchos::RCP<crs_matrix_type> A (new crs_matrix_type (map, indexBase));
 
     std::cout<< "1" << std::endl;
     // Fill the sparse matrix, one row at a time.
@@ -51,7 +54,7 @@ void trilinos_example_test()
     Teuchos::RCP<const Teuchos::Comm<int> > comm2 = Teuchos::rcp (new Teuchos::MpiComm<int>(MPI_COMM_WORLD));
 
     std::cout<< "2" << std::endl;
-//  utopia::TpetraMatrix A_void2();
+    utopia::TpetraMatrix A_void2();
     utopia::TpetraMatrix A_void(comm2);
     utopia::TpetraMatrix A_map(map);
     utopia::TpetraMatrix A_mat(A_map);
@@ -64,7 +67,7 @@ void trilinos_example_test()
     for (local_ordinal_type lclRow = 0; lclRow < static_cast<local_ordinal_type> (numMyElements); ++lclRow)
         {
         const global_ordinal_type gblRow = map->getGlobalElement (lclRow);
-        A->insertGlobalValues (gblRow, Teuchos::tuple<global_ordinal_type> (gblRow, gblRow + 1), Teuchos::tuple<scalar_type> (two, negOne));
+        //A->insertGlobalValues (gblRow, Teuchos::tuple<global_ordinal_type> (gblRow, gblRow + 1), Teuchos::tuple<scalar_type> (two, negOne));
         A_map.insertGlobalValues (gblRow, Teuchos::tuple<global_ordinal_type> (gblRow, gblRow + 1), Teuchos::tuple<scalar_type> (two, negOne));
         }
 
@@ -83,7 +86,7 @@ void trilinos_example_test()
         }
     std::cout<< "6" << std::endl;
     // Tell the sparse matrix that we are done adding entries to it.
-    A->fillComplete();
+    //A->fillComplete();
     std::cout<< "7" << std::endl;
     A_void.fillComplete();
     std::cout<< "8" << std::endl;

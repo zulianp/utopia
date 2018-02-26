@@ -8,8 +8,6 @@
 #include "utopia_BackendInfo.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_ScalarBackend.hpp"
-//#include "utopia_trilinos_Vector.hpp"
-//#include "utopia_trilinos_Matrix.hpp"
 
 #include <utility>
 

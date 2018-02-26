@@ -3,11 +3,9 @@
 #define UTOPIA_TRILINOS_TYPES_HPP
 
 #include "utopia_trilinos_Traits.hpp"
-#include "utopia_trilinos_Matrix.hpp"
-//#include "utopia_trilinos_SparseMatrix.hpp"
-//#include "utopia_trilinos_SerialSparseMatrix.hpp"
-#include "utopia_trilinos_Vector.hpp"
-//#include "utopia_trilinos_SerialVector.hpp"
+#include "utopia_Tpetra_Matrix.hpp"
+#include "utopia_Tpetra_SparseMatrix.hpp"
+#include "utopia_Tpetra_Vector.hpp"
 #include "utopia_trilinos_Backend.hpp"
 
 #include "utopia_Wrapper.hpp"

@@ -19,6 +19,11 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <BelosTpetraAdapter.hpp>
+#include <BelosSolverFactory.hpp>
+
+#include <Ifpack2_Factory.hpp>
+
 #include "utopia_trilinos_ForwardDeclaration.hpp"
 #include "utopia_trilinos_Traits.hpp"
 #include "utopia_trilinos_Types.hpp"
