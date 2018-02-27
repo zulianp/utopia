@@ -519,7 +519,7 @@ namespace utopia
 			DVectord upper_bound = values(n, ub);
 			DVectord solution    = zeros(n);
 
-			ProjectedGaussSeidel<DSMatrixd, DVectord> pgs;
+			ProjectedGaussSeidel<DSMatrixd, DVectord, -1> pgs;
 			pgs.max_it(max_it);
 			pgs.verbose(verbose);
 			pgs.set_use_line_search(use_line_search);

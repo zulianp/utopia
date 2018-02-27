@@ -83,16 +83,16 @@ namespace utopia {
 			if(casted) {
 			// if(false) {
 				// KSPSetType(ksp, casted->ksp_type().c_str());
-				PC pc; 
-				KSPGetPC(ksp, &pc);
+				// PC pc; 
+				// KSPGetPC(ksp, &pc);
 
-				PCType pc_type;
-				PCGetType(pc, &pc_type);
+				// PCType pc_type;
+				// PCGetType(pc, &pc_type);
 
-				KSPType ksp_type;
-				KSPGetType(ksp, &ksp_type);
+				// KSPType ksp_type;
+				// KSPGetType(ksp, &ksp_type);
 
-				std::cout << ksp_type << ", " << pc_type << std::endl;
+				// std::cout << ksp_type << ", " << pc_type << std::endl;
 
 				// if(!casted->get_preconditioner()) {
 				//     PCSetType(pc, casted->pc_type().c_str());
