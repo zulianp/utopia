@@ -38,7 +38,8 @@ namespace utopia {
 
 		virtual bool apply(const Vector &rhs, Vector &x) override
 		{
-			this->init_solver("utopia/petsc Multigrid",  {" it.", "|| Au - b||"});
+			if(this->verbose())
+				this->init_solver("utopia/petsc Multigrid",  {" it.", "|| Au - b||"});
 
 			KSPSolve(*ksp_, raw_type(rhs), raw_type(x));
 			
@@ -47,7 +48,8 @@ namespace utopia {
 			KSPGetConvergedReason(*ksp_, &reason);
 			KSPGetIterationNumber(*ksp_, &its);
 			
-			this->exit_solver(its, reason); 
+			if(this->verbose())
+				this->exit_solver(its, reason); 
 			//FIXME
 			return true;
 		}
