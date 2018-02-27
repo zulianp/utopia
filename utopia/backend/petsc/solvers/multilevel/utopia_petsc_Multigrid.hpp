@@ -78,36 +78,45 @@ namespace utopia {
 		template<class Solver>
 		bool set_solver(Solver &solver, KSP &ksp)
 		{
-			// auto * casted = dynamic_cast< KSPSolver<Matrix, Vector> *>(&solver);
+			auto * casted = dynamic_cast< KSPSolver<Matrix, Vector> *>(&solver);
 
-			// if(casted) {
-			// 	KSPSetType(ksp, casted->ksp_type().c_str());
-			// 	KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+			if(casted) {
+			// if(false) {
+				// KSPSetType(ksp, casted->ksp_type().c_str());
+				PC pc; 
+				KSPGetPC(ksp, &pc);
 
-			// 	PC pc; 
-			// 	KSPGetPC(ksp, &pc);
+				PCType pc_type;
+				PCGetType(pc, &pc_type);
 
-			// 	if(!casted->get_preconditioner()) {
-			// 	    PCSetType(pc, casted->pc_type().c_str());
-			// 	} else {
-			// 		PCSetType(pc, PCSOR);
-			// 	}
+				KSPType ksp_type;
+				KSPGetType(ksp, &ksp_type);
 
-			// 	return true;
+				std::cout << ksp_type << ", " << pc_type << std::endl;
 
-			// } else {
-			// 	// auto * factor = dynamic_cast< Factorization<Matrix, Vector> *>(&solver);
+				// if(!casted->get_preconditioner()) {
+				//     PCSetType(pc, casted->pc_type().c_str());
+				// } else {
+				// 	//FIXME use PCShell
+				// 	PCSetType(pc, PCSOR);
+				// }
+
+				return false;
+				// return true;
+
+			} else {
+				auto * factor = dynamic_cast< Factorization<Matrix, Vector> *>(&solver);
 				
-			// 	// if(factor) {
-			// 	// 	factor->strategy().set_ksp_options(ksp);
-			// 	// 	KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
-			// 	// 	return true;
-			// 	// } 
+				if(factor) {
+					factor->strategy().set_ksp_options(ksp);
+					KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
+					return true;
+				} 
 
-			// 	// else {
-			// 	// 	return false;
-			// 	// }
-			// }
+				// else {
+				// 	return false;
+				// }
+			}
 
 			return false;
 		}
@@ -115,7 +124,7 @@ namespace utopia {
 		void init_ksp(const std::shared_ptr<const Matrix> &op)
 		{
 			auto comm = op->implementation().communicator();
-			ksp_ = std::shared_ptr<KSP>(new KSP, [](KSP *ksp) { KSPDestroy(ksp); delete ksp; ksp = nullptr; });
+			ksp_ = std::shared_ptr<KSP>(new KSP, [](KSP *&ksp) { KSPDestroy(ksp); delete ksp; ksp = nullptr; });
 
 			KSPCreate(comm, ksp_.get());
 			KSPSetFromOptions(*ksp_);
@@ -137,14 +146,12 @@ namespace utopia {
 
 				bool user_solver = false;
 
-				if(i > 0 && smoother_) {
+				if(smoother_) {
 					user_solver = set_solver(*smoother_, smoother);
-				} else if(linear_solver_) {
-					user_solver = set_solver(*linear_solver_, smoother);
 				} 
 
 				if(!user_solver) {
-					std::cerr << "[Warning] not using user solvers" << std::endl;
+					std::cerr << "[Warning] not using user smoother" << std::endl;
 					
 					KSPSetType(smoother, KSPRICHARDSON);
 					KSPGetPC(smoother, &sm);
@@ -155,6 +162,16 @@ namespace utopia {
 
 				Mat I = raw_type(this->transfer(i).I());
 				PCMGSetInterpolation(pc, i + 1, I);
+
+				if(linear_solver_) {
+					KSP coarse_solver;
+					PCMGGetCoarseSolve(pc, &coarse_solver);
+					bool user_solver = set_solver(*linear_solver_, coarse_solver);
+
+					if(!user_solver) {
+						std::cerr << "[Warning] not using user linear_solver" << std::endl;
+					}
+				}
 			}
 
 			PCMGSetNumberSmoothUp(pc,   this->post_smoothing_steps());
@@ -165,7 +182,7 @@ namespace utopia {
 			if(this->verbose()) {
 				KSPMonitorSet(
 				*ksp_,
-				[](KSP, PetscInt iter, PetscReal res, void*) -> PetscErrorCode{
+				[](KSP, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
 					PrintInfo::print_iter_status({static_cast<Scalar>(iter), res}); 
 					return 0;
 				},

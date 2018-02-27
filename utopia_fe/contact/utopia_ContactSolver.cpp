@@ -8,6 +8,7 @@
 
 namespace utopia {
 	template class ContactSolver<DSMatrixd, DVectord>;
+	typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> VectorFunctionSpace;
 
 	// typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
 	// typedef utopia::Newmark<DSMatrixd, DVectord> ContactSolverT;
@@ -48,6 +49,8 @@ namespace utopia {
 		auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
 		auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
 		auto V = Vx * Vy;
+
+		// auto W = VectorFunctionSpace(dim, equation_systems, libMesh::LAGRANGE, elem_order);
 
 		if(dim == 3) {
 			V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");

@@ -77,7 +77,7 @@ namespace utopia
         Multigrid(const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                   const std::shared_ptr<Solver> &direct_solver = std::shared_ptr<Solver>(),
                   const Parameters params = Parameters())
-        : _smoother(smoother), _direct_solver(direct_solver) 
+        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true)
         {
             set_parameters(params); 
         }
@@ -97,7 +97,9 @@ namespace utopia
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
             IterativeSolver::update(op);
-            this->galerkin_assembly(op);
+            if(perform_galerkin_assembly_) {
+                this->galerkin_assembly(op);
+            }
         }
 
 
@@ -453,12 +455,18 @@ namespace utopia
             return true; 
         }
 
+        void set_perform_galerkin_assembly(const bool val)
+        {
+            perform_galerkin_assembly_ = val;   
+        }
+
     protected:   
         std::shared_ptr<Smoother>           _smoother;
         std::shared_ptr<Solver>             _direct_solver;
 
     private:
-        Parameters                          _parameters; 
+        Parameters                          _parameters;
+        bool perform_galerkin_assembly_;
 
     };
 

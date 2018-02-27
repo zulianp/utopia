@@ -23,6 +23,17 @@ namespace utopia {
 			init_subspace_ids();
 		}
 
+		template<class... Args>
+		ProductFunctionSpace(const int n_subspaces, Args &&...args)
+		{
+			spaces_.resize(n_subspaces);
+
+			for(auto &s_ptr : spaces_) {
+				s_ptr = std::make_shared<Space>(args...);
+			}
+		}
+
+
 		//FIXME remove me
 		void init_subspace_ids()
 		{

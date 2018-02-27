@@ -130,6 +130,16 @@ namespace utopia
 			std::reverse(std::begin(_levels), std::end(_levels));
 			return true;
 		}
+
+		void add_level(Level &&level)
+		{
+			_levels.push_back(std::move(level));
+		}
+
+		void add_level(const Level &level)
+		{
+			_levels.push_back(level);
+		}
 		
 		static void fix_semidefinite_operator(Matrix &A)
 		{
