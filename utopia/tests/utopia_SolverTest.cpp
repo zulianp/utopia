@@ -451,9 +451,18 @@ namespace utopia
 			interpolation_operators.push_back(make_ref(I_2));
 			interpolation_operators.push_back(make_ref(I_3));
 
+			// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+			// auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+			// linear_solver->verbose(true);
+			// Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid(smoother, linear_solver);
+			
 			Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
 			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
-		
+			multigrid.max_it(20);
+			multigrid.atol(1e-15);
+			multigrid.stol(1e-15);
+			multigrid.rtol(1e-15);
+
 			DVectord x = zeros(A.size().get(0));
 			multigrid.verbose(true);
 			multigrid.solve(A, rhs, x);

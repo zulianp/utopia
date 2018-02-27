@@ -171,18 +171,18 @@ namespace utopia {
     /**
      * @brief      Returns type of direct solver. 
      */
-    std::string pc_type() { return PC_type_;}; 
+    const std::string &pc_type() const { return PC_type_;}; 
 
     /**
      * @brief      Returns ksp package type 
      */
-    std::string ksp_type() { return KSP_type_; }; 
+    const std::string &ksp_type() const { return KSP_type_; }; 
 
 
     /**
      * @brief      Returns type of solver package. 
      */
-    std::string solver_package() { return solver_package_; }; 
+    const std::string &solver_package() const { return solver_package_; }; 
 
 
 
