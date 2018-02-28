@@ -42,7 +42,8 @@ namespace utopia
             {
                 Write<Matrix> w(A);
                 Range rr = row_range(A);
-                Range cr = col_range(A);
+
+                
                 for (SizeType i = rr.begin(); i != rr.end(); i++) {
                     const SizeType ip1 = i+1;
                     const Scalar inv2h = (1 / (h * h));
@@ -51,7 +52,7 @@ namespace utopia
                     A.set(i, i, 2.0 * inv2h);
 
                     // upper diag
-                    if(ip1 < cr.end()) {
+                    if(ip1 < N) {
                         A.set(i, i + 1, -1.0 * inv2h);
                     }
 
@@ -63,17 +64,14 @@ namespace utopia
 
                 if(rr.begin() == 0) {
                     A.set(0, 0, 1.0);
-                    for (SizeType i = cr.begin(); i != cr.end(); i++) {
+                    for (SizeType i = 0; i != N; i++) {
                         A.set(0, i, 0);
                     }
                 }
 
                 if(rr.inside(N-1)) {
-                    if(cr.inside(N-1)) {
-                        A.set(N - 1, N - 1, 1.0);
-                    }
-
-                    for (SizeType i = cr.begin(); i != cr.end(); i++) {
+                    A.set(N - 1, N - 1, 1.0);
+                    for (SizeType i = 0; i != N; i++) {
                         A.set(N - 1, i, 0);
                     }
                 }

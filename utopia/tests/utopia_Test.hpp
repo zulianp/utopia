@@ -2,7 +2,6 @@
 #define UTOPIA_UTOPIA_TEST_HPP
 
 #include <sstream>
-#include "utopia_SpecTest.hpp"
 #include "utopia_WrapperTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "utopia_AutoDiffTest.hpp"
@@ -19,7 +18,6 @@ namespace utopia
     inline static void runAllTests()
     {
         runWrapperTest();
-        runSpecTest();
         run_autodiff_test();
         runSolversTest();
         runAlgebraTest();
@@ -49,8 +47,6 @@ namespace utopia
             while (std::getline(iss, token, ',')) {
                 if (token == "wrapper")
                     runWrapperTest();
-                else if (token == "spec")
-                    runSpecTest();
                 else if (token == "autodiff")
                     run_autodiff_test();
                 else if (token == "solvers")

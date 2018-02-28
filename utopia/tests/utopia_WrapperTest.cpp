@@ -21,7 +21,6 @@ namespace utopia {
             {
                 Write<Matrix> write(mat);
                 Range rr = row_range(mat);
-                //Range cr = col_range(mat);
 
                 //FIXME assumed row is owned by this proc completely.
                 int rbegin = rr.begin();
@@ -69,10 +68,9 @@ namespace utopia {
             {
                 Read<Matrix> read(mat);
                 Range rr = row_range(mat);
-                Range cr = col_range(mat);
 
                 for (int i = rr.begin(); i != rr.end(); ++i) {
-                    for (int j = cr.begin(); j != cr.end(); ++j) {
+                    for (int j = 0; j != _n; ++j) {
                         assert(approxeq(mat.get(i, j), 0.1));
                     }
                 }
@@ -82,10 +80,9 @@ namespace utopia {
             {
                 Read<Matrix> read(mat);
                 Range rr = row_range(mat);
-                Range cr = col_range(mat);
 
                 for (int i = rr.begin(); i != rr.end(); ++i) {
-                    for (int j = cr.begin(); j != cr.end(); ++j) {
+                    for (int j = 0; j != _n; ++j) {
                         assert(approxeq(mat.get(i, j), i == j));
                     }
                 }
