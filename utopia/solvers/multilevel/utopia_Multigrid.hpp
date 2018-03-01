@@ -15,6 +15,7 @@
 #include "utopia_PrintInfo.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_Level.hpp"
+#include "utopia_MultiLevelBase.hpp"
 #include <ctime>
 
 
@@ -26,8 +27,7 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    // template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    template<class Matrix, class Vector>
+    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Multigrid : public MultiLevelBase<Matrix, Vector>, 
                       public IterativeSolver<Matrix, Vector>
     {
@@ -77,7 +77,7 @@ namespace utopia
         Multigrid(const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                   const std::shared_ptr<Solver> &direct_solver = std::shared_ptr<Solver>(),
                   const Parameters params = Parameters())
-        : _smoother(smoother), _direct_solver(direct_solver) 
+        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true)
         {
             set_parameters(params); 
         }
@@ -97,7 +97,9 @@ namespace utopia
         virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
             IterativeSolver::update(op);
-            this->galerkin_assembly(op);
+            if(perform_galerkin_assembly_) {
+                this->galerkin_assembly(op);
+            }
         }
 
 
@@ -267,10 +269,8 @@ namespace utopia
          */
         virtual bool solve(const Matrix &A, const Vector &b, Vector &x0) override
         {   
-            this->galerkin_assembly(make_ref(A));
-            solve(b, x0); 
-
-            return true; 
+            update(make_ref(A));
+            return solve(b, x0); 
         }
 
         inline Level &level(const SizeType &l)
@@ -455,12 +455,18 @@ namespace utopia
             return true; 
         }
 
+        void set_perform_galerkin_assembly(const bool val)
+        {
+            perform_galerkin_assembly_ = val;   
+        }
+
     protected:   
         std::shared_ptr<Smoother>           _smoother;
         std::shared_ptr<Solver>             _direct_solver;
 
     private:
-        Parameters                          _parameters; 
+        Parameters                          _parameters;
+        bool perform_galerkin_assembly_;
 
     };
 

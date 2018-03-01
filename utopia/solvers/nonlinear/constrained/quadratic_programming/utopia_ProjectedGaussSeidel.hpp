@@ -90,6 +90,7 @@ namespace utopia {
 			{
 				ReadAndWrite<Vector> rw_c(c);
 				Read<Vector> r_r(r), r_d_inv(d_inv);
+				Read<Matrix> r_A(A);
 
 				for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
 					for(auto i = rr.begin(); i != rr.end(); ++i) {
@@ -133,7 +134,7 @@ namespace utopia {
 			}
 
 			Scalar alpha = 1.;
-			
+
 			if(use_line_search_) {
 				const Scalar rho = dot(c, r);
 				const Scalar denom = dot(A * c, c);
@@ -147,12 +148,11 @@ namespace utopia {
 				if(alpha <= 0) {
 					std::cerr << "[Warning] negative alpha" << std::endl;
 					alpha = 1.;
-					c = utopia::min(r, g);
+					c = r;
 				}
 			}
 
-			// x += alpha * c;
-			x += utopia::min(alpha * c, g);
+			x += alpha * c;
 			return true;
 		}
 
@@ -167,6 +167,7 @@ namespace utopia {
 			{
 				ReadAndWrite<Vector> rw_c(c);
 				Read<Vector> r_r(r), r_d_inv(d_inv), r_g(g);
+				Read<Matrix> r_A(A);
 
 				for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
 
@@ -226,28 +227,23 @@ namespace utopia {
 					}
 				}
 
-
-
-				// is_r_ = e_mul(r, inactive_set_);
 				is_c_ = e_mul(c, inactive_set_);
 
 				const Scalar rho = dot(is_c_, r);
 				alpha = rho/dot(A * is_c_, is_c_);
-
-				// double n_inactive = sum(inactive_set_);
-				// std::cout << "na: " << (size(r).get(0) - n_inactive) << ", " << alpha << std::endl;
-				// alpha = std::min(alpha, 1.);
 
 				assert(alpha > 0);
 				
 				if(alpha <= 0) {
 					std::cerr << "[Warning] negative alpha" << std::endl;
 					alpha = 1.;
-					c = utopia::min(r, g);
+					descent_dir = r;
+				} else {
+					descent_dir = alpha * c;
 				}
 			}
 
-			x += utopia::min(alpha * c, g);
+			x += utopia::min(descent_dir, g);
 			return true;
 		}
 
@@ -302,9 +298,8 @@ namespace utopia {
 
 		BoxConstraints constraints_;	
 
-		Vector r, d, g, c, d_inv, x_old;
+		Vector r, d, g, c, d_inv, x_old, descent_dir;
 		Vector inactive_set_;
-		// Vector is_r_;
 		Vector is_c_;
 	};
 }

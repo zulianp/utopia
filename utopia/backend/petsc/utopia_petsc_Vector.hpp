@@ -76,9 +76,7 @@ namespace utopia {
 		inline PetscVector()
 		: vec_(nullptr), initialized_(false)
 		{
-#ifndef NDEBUG
-			immutable_ = false;
-#endif            
+			immutable_ = false;         
 		}
 		
 		inline ~PetscVector()
@@ -98,9 +96,7 @@ namespace utopia {
 				initialized_ = false;
 			}
 			
-#ifndef NDEBUG
 			immutable_ = other.immutable_;
-#endif 
 		}
 
 		inline std::string name() const
@@ -170,10 +166,7 @@ namespace utopia {
 				assert(local_size() == other.local_size() && "Inconsistent local sizes. Handle local sizes properly before copying.");
 				PetscErrorHandler::Check(VecCopy(other.vec_, vec_));
 				initialized_ = other.initialized_;
-							
-#ifndef NDEBUG
 				immutable_ = other.immutable_;
-#endif 
 				return *this;
 			}
 			
@@ -185,10 +178,7 @@ namespace utopia {
 				ghost_values_ = other.ghost_values_;
 
 				initialized_ = other.initialized_;
-							
-#ifndef NDEBUG
 				immutable_ = other.immutable_;
-#endif 
 			} else {
 				initialized_ = false;
 			}
@@ -203,18 +193,13 @@ namespace utopia {
 			destroy();
 			
 			initialized_ = other.initialized_;
-			
-#ifndef NDEBUG
 			immutable_ = other.immutable_;
-#endif  
 			vec_ = other.vec_;
 			other.vec_ = nullptr;
 			ghost_values_ = std::move(other.ghost_values_);
-			other.initialized_ = false;
 			
-#ifndef NDEBUG
+			other.initialized_ = false;
 			other.immutable_ = false;
-#endif 
 			return *this;
 		}
 		
@@ -357,12 +342,10 @@ namespace utopia {
 			ghost_values_.update(vec_);
 		}
 		
-#ifndef NDEBUG
 		inline void make_immutable()
 		{
 			immutable_ = true;
 		}
-#endif
 		
 		//builders
 		void repurpose(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global);
@@ -533,9 +516,7 @@ namespace utopia {
 		GhostValues ghost_values_;
 		
 		//debug
-#ifndef NDEBUG
-		bool immutable_;
-#endif //NDEBUG     
+		bool immutable_;     
 		
 		inline static bool check_error(const PetscInt err) {
 			return PetscErrorHandler::Check(err);

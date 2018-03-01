@@ -43,7 +43,8 @@ namespace utopia {
 		);
 
 	private:
-		Multigrid<DSMatrixd, DVectord> mg;
+		Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> mg;
+		// Multigrid<DSMatrixd, DVectord> mg;
 		std::vector<std::shared_ptr<libMesh::UnstructuredMesh>> meshes;
 		std::vector<std::shared_ptr<libMesh::EquationSystems>> equation_systems;
 		bool is_block_solver_;

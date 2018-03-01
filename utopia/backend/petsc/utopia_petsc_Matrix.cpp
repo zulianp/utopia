@@ -665,6 +665,32 @@ namespace utopia {
 	}
 
 
+	void PetscMatrix::matij_init(
+		MPI_Comm comm,
+		PetscInt rows_local,
+		PetscInt cols_local,
+		PetscInt rows_global,
+		PetscInt cols_global,
+		const std::vector<PetscInt> &d_nnz,
+		const std::vector<PetscInt> &o_nnz)
+	{
+		destroy();
+
+		check_error( MatCreate(comm, &implementation()) );
+		check_error( MatSetSizes(implementation(), rows_local, cols_local, rows_global, cols_global) );
+		
+		check_error( MatSetType(implementation(), MATAIJ) );
+		check_error( MatSeqAIJSetPreallocation(implementation(), PETSC_NULL, &d_nnz[0]) );
+		check_error( MatMPIAIJSetPreallocation(implementation(), PETSC_NULL, &d_nnz[0], PETSC_NULL, &o_nnz[0]) ); 
+
+		check_error( MatSetOption(implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE) );
+		check_error( MatSetOption(implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
+		check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
+
+		check_error( MatZeroEntries(implementation()) );
+	}
+
+
 	  void PetscMatrix::mat_baij_init(
         	MPI_Comm comm,
         	PetscInt rows_local,

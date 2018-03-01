@@ -4,11 +4,11 @@
 
 #include "utopia_petsc_external.hpp"
 
-extern PetscErrorCode constrain_box(MatScalar * diag, PetscScalar * t, PetscScalar * x,
+extern PetscErrorCode constrain_box(BLOCKSOLVER * blocksolver, MatScalar * diag, PetscScalar * t, PetscScalar * x,
 	PetscScalar * lb, PetscScalar * ub, int row,
 	int bs, PetscBool * constrained);
 
-extern PetscErrorCode constrain_blocknd(MatScalar * diag, PetscScalar * t, PetscScalar * x,
+extern PetscErrorCode constrain_blocknd(BLOCKSOLVER * blocksolver, MatScalar * diag, PetscScalar * t, PetscScalar * x,
 	PetscScalar * lb, PetscScalar * ub, int row,
 	int bs, PetscBool * constrained);
 

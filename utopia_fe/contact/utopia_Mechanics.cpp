@@ -84,8 +84,8 @@ namespace utopia {
 				return solver.solve(K, rhs, sol);
 
 			} else {
-				SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> solver(linear_solver);
-				// SemismoothNewton<DSMatrixd, DVectord> solver(linear_solver);
+				// SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> solver(linear_solver);
+				SemismoothNewton<DSMatrixd, DVectord> solver(linear_solver);
 				solver.max_it(100);
 
 				// ProjectedGaussSeidel<DSMatrixd, DVectord, -1> solver;

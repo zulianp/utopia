@@ -57,7 +57,7 @@
          *
          * @return     The stifness on given level.
          */
-        const Matrix &A()
+        const Matrix &A() const
         {
             assert(_A);
             return *_A; 

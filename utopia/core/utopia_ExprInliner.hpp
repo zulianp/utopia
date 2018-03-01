@@ -114,10 +114,8 @@ namespace utopia {
 			Write< Wrapper<Tensor, 2> > w(result);
 
 			Range rr = row_range(result);
-			Range cr = col_range(result);
-
 			for(SizeType i = rr.begin(); i < rr.end(); ++i) {
-				for(SizeType j = cr.begin(); j < cr.end(); ++j) {
+				for(SizeType j = 0; j < s.get(1); ++j) {
 					result.set(i, j, eval_at(expr, i, j));
 				}
 			}

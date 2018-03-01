@@ -23,4 +23,8 @@
 
 #include "utopia_petsc_KSPTR.hpp"
 
+namespace utopia {
+	void optimize_nnz(DSMatrixd &A);
+}
+
 #endif //UTOPIA_PETSC_HPP

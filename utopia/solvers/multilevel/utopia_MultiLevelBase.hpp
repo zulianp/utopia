@@ -130,6 +130,16 @@ namespace utopia
 			std::reverse(std::begin(_levels), std::end(_levels));
 			return true;
 		}
+
+		void add_level(Level &&level)
+		{
+			_levels.push_back(std::move(level));
+		}
+
+		void add_level(const Level &level)
+		{
+			_levels.push_back(level);
+		}
 		
 		static void fix_semidefinite_operator(Matrix &A)
 		{
@@ -271,6 +281,21 @@ namespace utopia
 		void set_fix_semidefinite_operators(const bool val)
 		{
 			fix_semidefinite_operators_ = val;
+		}
+
+		inline Transfer &transfer(const SizeType level)
+		{
+			return _transfers[level];
+		}
+
+		inline const Transfer &transfer(const SizeType level) const
+		{
+			return _transfers[level];
+		}
+
+		inline const Level &level(const SizeType l) const
+		{
+			return _levels[l];
 		}
 		
 	protected:

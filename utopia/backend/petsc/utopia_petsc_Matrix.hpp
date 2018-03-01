@@ -342,6 +342,16 @@ namespace utopia {
         	PetscInt o_nnz
         );
 
+       void matij_init(
+    		MPI_Comm comm,
+    		PetscInt rows_local,
+    		PetscInt cols_local,
+    		PetscInt rows_global,
+    		PetscInt cols_global,
+    		const std::vector<PetscInt> &d_nnz,
+    		const std::vector<PetscInt> &o_nnz
+    	);
+
          void mat_baij_init(
         	MPI_Comm comm,
         	PetscInt rows_local,

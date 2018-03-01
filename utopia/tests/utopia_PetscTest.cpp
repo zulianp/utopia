@@ -516,24 +516,26 @@ namespace utopia {
 
     void petsc_to_blas_test()
     {
-    #ifdef WITH_BLAS
-        DVectord x = zeros(16);
+#ifdef WITH_BLAS
 
-        Range xr = range(x);
-        const PetscInt xb = xr.begin();
+    DVectord x = zeros(16);
 
-        Vectord y = values(xr.extent(), 2.0);
+    Range xr = range(x);
+    const PetscInt xb = xr.begin();
 
-        {
-            Read<Vectord> r_y(y);
-            Write<DVectord> w_x(x);
-            for (SizeType i = xb; i < xb + xr.extent(); ++i)
-                x.set(i, y.get(i - xb));
-        }
+    Vectord y = values(xr.extent(), 2.0);
 
-        DVectord expected = values(16, 2.0);
-        assert(approxeq(expected, x));
-    #endif //WITH_BLAS
+    {
+        Read<Vectord> r_y(y);
+        Write<DVectord> w_x(x);
+        for (SizeType i = 0; i < xr.extent(); ++i)
+            x.set(xb + i, y.get(i));
+    }
+
+    DVectord expected = values(16, 2.0);
+    assert(approxeq(expected, x));
+
+#endif //WITH_BLAS
     }
 
 
@@ -1053,10 +1055,10 @@ namespace utopia {
 
     void petsc_block_mat_test()
     {
-        DSMatrixd mat = sparse(10, 10, 3);
+        const SizeType n = mpi_world_size() * 2;
+        DSMatrixd mat = sparse(n, n, 3);
         {
             Write<DSMatrixd> w_m(mat);
-
             mat.set(0, 0, 1.);
             mat.set(1, 1, 1.);
         }

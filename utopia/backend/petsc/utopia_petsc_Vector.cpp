@@ -23,9 +23,8 @@ namespace utopia {
 								PetscInt n_global)
 	{
 
-#ifndef NDEBUG
 		assert(!immutable_);
-#endif
+
 
 		const std::string type_copy = type;
 
@@ -85,9 +84,7 @@ namespace utopia {
 							  const std::vector<PetscInt> &index)
 	{
 
-#ifndef NDEBUG
 		assert(!immutable_);
-#endif
 
 		destroy();
 		

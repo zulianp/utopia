@@ -22,6 +22,12 @@
 
 #define  NBGS_TOL 1e-18
 
+typedef struct{
+
+    MatScalar * diag_constrained;
+
+}BLOCKSOLVER;
+
 typedef struct
 {
 
@@ -43,6 +49,7 @@ typedef struct
     Vec active_coordinates;  // contains the indivdual coordinate indices of dirichlet nodes (also includes the nodes in contact)
     Vec prev_active_coordinates;
     Vec changed_coordinates;
+    Vec loc_active_indices;
 
     IS is_nodes;
     IS is_inactive_nodes;
@@ -50,17 +57,20 @@ typedef struct
     Vec ub = nullptr;
     Vec lb = nullptr;
 
-    PetscErrorCode (*constrain)(MatScalar * diag, PetscScalar * t, PetscScalar * x,
+    PetscErrorCode (*constrain)(BLOCKSOLVER * blocksolver, MatScalar * diag, PetscScalar * t, PetscScalar * x,
                                 PetscScalar * lb, PetscScalar * ub, int row, int bs, PetscBool * constrained);
-
+    BLOCKSOLVER blocksolver;
     PetscBool initialized;
 
 } NBGS_CTX;
 
+
+
+
 #endif
 
 extern PetscErrorCode NBGSDestroy(NBGS_CTX * nbgs);
-extern PetscErrorCode NBGSCreate(NBGS_CTX * nbgs, Mat _A, Vec _x, Vec _ub, Vec _lb, PetscInt _blocksize, PetscBool _with_ls, PetscBool _constrained, PetscErrorCode (*constrain)(MatScalar * diag, PetscScalar * t, PetscScalar * x,PetscScalar * lb, PetscScalar * ub, int row, int bs, PetscBool * constrained));
+extern PetscErrorCode NBGSCreate(NBGS_CTX * nbgs, Mat _A, Vec _x, Vec _lb, Vec _ub, PetscInt _blocksize, PetscBool _with_ls, PetscBool _constrained, PetscErrorCode (*constrain)(BLOCKSOLVER * blocksolver, MatScalar * diag, PetscScalar * t, PetscScalar * x,PetscScalar * lb, PetscScalar * ub, int row, int bs, PetscBool * constrained));
 extern PetscErrorCode NBGSStep(NBGS_CTX * nbgs, Mat A, Vec b, Vec x, Vec lb, Vec ub ,PetscInt _blocksize);
 
 

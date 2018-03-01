@@ -46,6 +46,7 @@ if(PETSC_FOUND)
 		eval
 		solvers 
 		solvers/linear
+		solvers/multilevel
 		solvers/nonlinear
 		solvers/smoothers
 		solvers/nonlinear/constrained
