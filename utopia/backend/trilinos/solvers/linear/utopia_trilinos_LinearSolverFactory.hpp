@@ -5,7 +5,6 @@
 #include "utopia_Traits.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_LinearSolverFactory.hpp"
-//#include "utopia_ConjugateGradient.hpp"
 
 #include "utopia_DirectSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
@@ -17,93 +16,51 @@
 namespace utopia
 {
 
-class Belos : virtual public DirectSolver<CRSMatrixd, Vectord>,
-    virtual public DirectSolver<CCSMatrixd, Vectord>
+template<typename Matrix, typename Vector>
+class LinearSolverFactory<Matrix, Vector, TRILINOS>
     {
     public:
+        typedef std::shared_ptr< LinearSolver<Matrix, Vector> >  LinearSolverPtr;
+        std::map<std::string, LinearSolverPtr> solvers_;
 
-        Belos()
-            {}
 
-        ~Belos();
-
-        bool solve(const CCSMatrixd &mat, const Vectord &rhs, Vectord &solution);
-        bool solve(const CRSMatrixd &matrix, const Vectord &rhs, Vectord &solution);
-
-        inline const double * ptr(const Vectord &v) const
+        inline static LinearSolverPtr new_linear_solver(const SolverTag &tag)
             {
-            return &v.implementation()[0];
-            }
-
-        inline double * ptr(Vectord &v) const
-            {
-            return &v.implementation()[0];
-            }
-
-        inline const double * ptr(const CRSMatrixd &m) const
-            {
-            return &m.implementation().entries()[0];
-            }
-
-        virtual bool apply(const Vectord &rhs, Vectord &sol)
-            {
-            //deal with multiple inheritance
-            if(DirectSolver<CRSMatrixd, Vectord>::has_operator())
+            auto it = instance().solvers_.find(tag);
+            if(it == instance().solvers_.end())
                 {
-                return DirectSolver<CRSMatrixd, Vectord>::apply(rhs, sol);
+                //std::cout<<"LinearSolver not avaialble, solve with CG.  \n";   // TODO fix tests and put back
+                return std::make_shared<ConjugateGradient<Matrix, Vector> >();
                 }
             else
                 {
-                return DirectSolver<CCSMatrixd, Vectord>::apply(rhs, sol);
+                return it->second;
                 }
             }
 
+
     private:
 
-        class Internal
+        inline static const LinearSolverFactory &instance()
             {
-            public:
-                void * symbolic, * numeric;
-                std::vector<double> control;
-                std::vector<double> info;
+            static LinearSolverFactory instance_;
+            //   instance_.init();
+            return instance_;
 
-                Internal()
-                    : symbolic(NULL), numeric(NULL)
-                    {}
-            };
+            }
 
-        bool init(const CCSMatrixd &mat, Internal &internal) const;
-        void cleanUp(Internal &internal) const;
 
-        bool solve(const CCSMatrixd &mat, Internal &internal, const double * rhs, double * solution);
+        void init()
+            {
+//TODO
+            }
+
+        /*        virtual bool apply(const Vectord &rhs, Vectord &sol)
+                    {
+        //TODO
+                    }*/
+
     };
 }
-
-template<>
-class LUDecomposition<CRSMatrixd, Vectord, BLAS> : public DirectSolver<CRSMatrixd, Vectord>
-    {
-    public:
-        inline bool apply(const Vectord &rhs, Vectord &sol)
-            {
-            return strategy_.apply(rhs, sol);
-            }
-
-    private:
-        internals::UmfpackLU strategy_;
-    };
-
-template<>
-class LUDecomposition<CCSMatrixd, Vectord, BLAS> : public DirectSolver<CCSMatrixd, Vectord>
-    {
-    public:
-        inline bool apply(const Vectord &rhs, Vectord &sol)
-            {
-            return strategy_.apply(rhs, sol);
-            }
-
-    private:
-        UmfpackLU strategy_;
-    }
-
 #endif //UTOPIA_TRILINOS_LINEAR_SOLVER_FACTORY_HPP
 

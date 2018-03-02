@@ -16,10 +16,8 @@ namespace utopia
 
 UTOPIA_MAKE_TRAITS_DENSE(TpetraMatrix, TrilinosTraits);
 UTOPIA_MAKE_TRAITS_SPARSE(TpetraSparseMatrix, TrilinosTraits);
-//    UTOPIA_MAKE_TRAITS_SPARSE(TpetraSerialSparseMatrix, TpetraTraits);
 
 UTOPIA_MAKE_TRAITS(TpetraVector, TrilinosTraits);
-//UTOPIA_MAKE_TRAITS(TpetraSerialVector, TpetraTraits);
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -29,11 +27,9 @@ UTOPIA_MAKE_TRAITS(TpetraVector, TrilinosTraits);
  */
 
 
-typedef utopia::Wrapper<TpetraMatrix, 2>             DMatrixd;
-typedef utopia::Wrapper<TpetraSparseMatrix, 2>       DSMatrixd;
-//    typedef utopia::Wrapper<TpetraSerialSparseMatrix, 2> SSMatrixd;
-typedef utopia::Wrapper<TpetraVector, 1>             DVectord;
-//    typedef utopia::Wrapper<TpetraSerialVector, 1>       SVectord;
+typedef Wrapper<TpetraMatrix, 2>             DMatrixd;
+typedef Wrapper<TpetraSparseMatrix, 2>       DSMatrixd;
+typedef Wrapper<TpetraVector, 1>             DVectord;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -2,9 +2,11 @@
 #ifndef UTOPIA_TPETRAMATRIX_H
 #define UTOPIA_TPETRAMATRIX_H
 
-#include "utopia_trilinos.hpp"
+//#include "utopia_trilinos.hpp"
 
-#include "utopia_Base.hpp"
+#include "utopia_Tpetra_Vector.hpp"
+
+//#include "utopia_Base.hpp"
 
 namespace utopia
 {

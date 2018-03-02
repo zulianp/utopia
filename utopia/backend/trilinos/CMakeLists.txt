@@ -54,6 +54,9 @@ if(TRILINOS_FOUND)
 
 	list(APPEND TRILINOS_MODULES
 		.
+		solvers
+		solvers/linear
+		preconditioners
 		)
 
 	find_project_files(CMAKE_CURRENT_SOURCE_DIR TRILINOS_MODULES LOCAL_HEADERS LOCAL_SOURCES)

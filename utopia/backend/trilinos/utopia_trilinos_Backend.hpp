@@ -2,11 +2,9 @@
 #define UTOPIA_TRILINOSCBACKEND_HPP
 
 #include "utopia_trilinos_Traits.hpp"
-
 #include "utopia_Core.hpp"
 #include "utopia_Factory.hpp"
-#include "utopia_BackendInfo.hpp"
-#include "utopia_Base.hpp"
+//#include "utopia_Base.hpp"
 #include "utopia_ScalarBackend.hpp"
 
 #include <utility>
@@ -19,6 +17,7 @@ class TrilinosBackend : public ScalarBackend<double>
         typedef double Scalar;
         typedef TpetraVector Vector;
         typedef TpetraMatrix Matrix;
+        typedef TpetraSparseMatrix SparseMatrix;
 
         /*		using ScalarBackend<Scalar>::apply_binary;
         		using ScalarBackend<Scalar>::axpy;
@@ -46,9 +45,9 @@ class TrilinosBackend : public ScalarBackend<double>
         		static void convert(const TpetraMatrix &wrapper, Mat mat);
         		static void convert(const PETScSparseMatrix &wrapper, Mat mat);
         		static void wrap(Mat mat, PETScSparseMatrix &wrapper);
-        		static void wrap(Vec vec, TpetraVector &wrapper);
+        		static void wrap(Vec vec, TpetraVector &wrapper);i*/
 
-        		static Range range(const TpetraVector &v);*/
+        static Range range(const TpetraVector &v);
         static Range row_range(const TpetraMatrix &m);
         static Range col_range(const TpetraMatrix &m);
 
@@ -443,7 +442,7 @@ class TrilinosBackend : public ScalarBackend<double>
     };
 
 template<>
-class Backend<double,TRILINOS> : public TrilinosBackend    //TODO Trilinos second template parameter
+class Backend< double , TRILINOS > : public TrilinosBackend
     {
     public:
         inline static Backend &Instance()
@@ -468,4 +467,3 @@ class Backend<double,TRILINOS> : public TrilinosBackend    //TODO Trilinos secon
 }
 
 #endif //UTOPIA_TRILINOSBACKEND_HPP
-
