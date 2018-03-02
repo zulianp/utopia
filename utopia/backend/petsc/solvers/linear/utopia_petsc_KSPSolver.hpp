@@ -9,6 +9,7 @@
 
 #include "utopia_Preconditioner.hpp"
 #include "utopia_PreconditionedSolver.hpp"
+#include "utopia_Smoother.hpp"
 
 #include "utopia_Core.hpp"
 
@@ -49,7 +50,7 @@ namespace utopia {
 
 
     template<typename Matrix, typename Vector>
-    class KSPSolver<Matrix, Vector, PETSC> : virtual public PreconditionedSolver<Matrix, Vector>
+    class KSPSolver<Matrix, Vector, PETSC> : virtual public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
     {
 
     public:
@@ -271,6 +272,40 @@ public:
     }
 
 
+    bool smooth(const Matrix &A, const Vector &rhs, Vector &x) override
+    {
+        KSP solver;
+        KSPCreate(A.implementation().communicator(), &solver);
+        KSPSetFromOptions(solver); 
+        KSPSetType(solver, KSP_type_.c_str());
+        KSPSetInitialGuessNonzero(solver, PETSC_TRUE);
+        KSPSetTolerances(solver, 0., 0., PETSC_DEFAULT, this->sweeps());
+
+        KSPSetOperators(solver, raw_type(A), raw_type(A));
+
+        if(!this->get_preconditioner()) 
+        {
+            PC pc; 
+            KSPGetPC(solver, &pc);
+            PCSetType(pc, PC_type_.c_str());
+        }
+        
+        if(this->verbose()) {
+            KSPMonitorSet(
+                solver,
+                [](KSP, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
+                    PrintInfo::print_iter_status({static_cast<PetscReal>(iter), res}); 
+                    return 0;
+                },
+                nullptr,
+                nullptr);
+        }
+        
+        KSPSetUp(solver);
+        KSPSolve(solver, raw_type(rhs), raw_type(x));
+        KSPDestroy(&solver);
+        return true;
+    }
 
 private: 
 
@@ -279,7 +314,7 @@ private:
         return std::find(array.begin(), array.end(), value) != array.end();
     }
 
-
+protected:
     /**
      * @brief      Sets the default options for PETSC KSP solver. \n
      *             Default: BiCGstab

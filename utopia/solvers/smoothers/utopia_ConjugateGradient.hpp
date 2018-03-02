@@ -10,6 +10,7 @@
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Parameters.hpp"
 #include "utopia_Preconditioner.hpp"
+#include "utopia_Smoother.hpp"
 
 #include <memory>
 
@@ -22,7 +23,7 @@ namespace utopia
      * @tparam     Vector  
      */
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ConjugateGradient : public IterativeSolver<Matrix, Vector>
+	class ConjugateGradient : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
 	{
 		typedef UTOPIA_SCALAR(Vector) 	 Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -87,6 +88,15 @@ namespace utopia
              }
          }
 
+         bool smooth(const Matrix &A, const Vector &rhs, Vector &x) override
+         {
+            SizeType temp = this->max_it();
+            this->max_it(this->sweeps());
+            unpreconditioned_solve(A, rhs, x);
+            this->max_it(temp);
+            return true;
+         }
+
      private:
         bool unpreconditioned_solve(const Matrix &A, const Vector &b, Vector &x)
         {
@@ -95,12 +105,11 @@ namespace utopia
         	Scalar rho, rho_1, beta, alpha, r_norm = 9e9; 
         	Vector r, p, q; 
 
-        	if(/* empty(x) || */ local_size(x).get(0) != local_size(b).get(0)) {
-                // x = zeros(size(b));
+        	if(empty(x) || size(x).get(0) != size(b).get(0)) {
                 x = local_zeros(local_size(b));
-
                 r = b;
             } else {
+                assert(local_size(x).get(0) == local_size(b).get(0));
                 r = b - A *x; 
             }
 
@@ -137,7 +146,7 @@ namespace utopia
                 it++; 
         	}
 
-        	return true; 
+        	return converged; 
         }
 
         bool preconditioned_solve(const Matrix &A, const Vector &b, Vector &x)
@@ -150,12 +159,12 @@ namespace utopia
             Vector z     = local_zeros(local_size(x)); 
             Vector z_new = local_zeros(local_size(x)); 
 
-            if(/* empty(x) || */ local_size(x).get(0) != local_size(b).get(0)) {
-                // x = zeros(size(b));
+            if(empty(x) || size(x).get(0) != size(b).get(0)) {
                 x = local_zeros(local_size(b));
                 r = b;
             } else {
-                r = b - A *x; 
+                assert(local_size(x).get(0) == local_size(b).get(0));
+                r = b - A * x; 
             }
 
             precond_->apply(r, z);
