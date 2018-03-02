@@ -297,6 +297,17 @@ namespace utopia
 		{
 			return _levels[l];
 		}
+
+		virtual void describe(std::ostream &os = std::cout) const
+		{
+			SizeType i = 0;
+			for(const auto &l : _levels) {
+				const auto &A = l.A();
+				auto s = size(A);
+
+				os << "level: " << ++i << ", n_dofs: " << s.get(0) << std::endl;
+			}
+		}
 		
 	protected:
 		SizeType _num_levels;                             /*!< number of levels in ML   -n   */
