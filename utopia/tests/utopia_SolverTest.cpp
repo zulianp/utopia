@@ -1131,10 +1131,14 @@ namespace utopia
 			direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
 #endif //PETSC_HAVE_MUMPS
 			
-			auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+			// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
 			// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
+			// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
 			// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
 			// auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
+			auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+			// smoother->verbose(true);
+
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 
 			
@@ -1162,11 +1166,12 @@ namespace utopia
 			multigrid.apply(rhs, x_0);
 			
 			multigrid.max_it(1);
+			multigrid.cycle_type(MULTIPLICATIVE_CYCLE);
 			auto gmres = std::make_shared<GMRES<DSMatrixd, DVectord>>();
-			// gmres->set_preconditioner(make_ref(multigrid));
-			gmres->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
+			gmres->set_preconditioner(make_ref(multigrid));
+			// gmres->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
 			x_0.set(0.);
-			gmres->verbose(true);
+			// gmres->verbose(true);
 			gmres->solve(A, rhs, x_0);
 		}
 		

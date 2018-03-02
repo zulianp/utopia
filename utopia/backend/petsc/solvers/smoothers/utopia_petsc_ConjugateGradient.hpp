@@ -8,7 +8,7 @@
 #ifndef UTOPIA_PETSC_CG_SMOOTHER_HPP
 #define UTOPIA_PETSC_CG_SMOOTHER_HPP
 
-#include "utopia_Smoother.hpp"
+
 #include "utopia_Core.hpp"
 #include "utopia_petsc_KSPSolver.hpp"
 
@@ -28,7 +28,7 @@ namespace utopia  {
      */
     
     template<typename Matrix, typename Vector>
-    class ConjugateGradient<Matrix, Vector, PETSC> : public Smoother<Matrix, Vector>, public KSPSolver<Matrix, Vector, PETSC> {
+    class ConjugateGradient<Matrix, Vector, PETSC> : /*public Smoother<Matrix, Vector>,*/ public KSPSolver<Matrix, Vector, PETSC> {
     public:
         ConjugateGradient(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
         : KSPSolver<Matrix, Vector, PETSC>(params), preconditioner_(preconditioner)
@@ -53,23 +53,33 @@ namespace utopia  {
         }
         
         //FIXME use parameters from KSPSolver
-        bool smooth(const Matrix &A, const Vector &rhs, Vector &x) override
-        {
-            KSP solver;
-            KSPCreate(A.implementation().communicator(), &solver);
-            KSPSetOperators(solver, raw_type(A), raw_type(A));
+        // bool smooth(const Matrix &A, const Vector &rhs, Vector &x) override
+        // {
+        //     KSP solver;
+        //     KSPCreate(A.implementation().communicator(), &solver);
+        //     KSPSetFromOptions(solver); 
+        //     KSPSetType(solver, KSPCG);
+        //     KSPSetInitialGuessNonzero(solver, PETSC_TRUE);
+        //     KSPSetTolerances(solver, 0., 0., PETSC_DEFAULT, this->sweeps());
+
+        //     KSPSetOperators(solver, raw_type(A), raw_type(A));
             
-            // KSPSetType(solver, KSPCGS);
-            KSPSetType(solver, KSPBCGS);
-            KSPSetInitialGuessNonzero(solver, PETSC_TRUE);
+        //     if(this->verbose()) {
+        //         KSPMonitorSet(
+        //         solver,
+        //         [](KSP, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
+        //             PrintInfo::print_iter_status({static_cast<PetscReal>(iter), res}); 
+        //             return 0;
+        //         },
+        //         nullptr,
+        //         nullptr);
+        //     }
             
-            KSPSetUp(solver);
-            KSPSetTolerances(solver, this->rtol(), this->atol(), this->stol(), this->sweeps());
-            KSPSolve(solver, raw_type(rhs), raw_type(x));
-            
-            KSPDestroy(&solver);
-            return true;
-        }
+        //     KSPSetUp(solver);
+        //     KSPSolve(solver, raw_type(rhs), raw_type(x));
+        //     KSPDestroy(&solver);
+        //     return true;
+        // }
         
     private:
         std::string preconditioner_;
