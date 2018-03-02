@@ -17,5 +17,6 @@
 #include "utopia_petsc_ProjectedGaussSeidel.hpp"
 
 #include "utopia_petsc_Multigrid.hpp"
+#include "utopia_petsc_GMRES.hpp"
 
 #endif //UTOPIA_PETSC_SOLVERS_HPP

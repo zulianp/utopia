@@ -1131,16 +1131,16 @@ namespace utopia
 			direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
 #endif //PETSC_HAVE_MUMPS
 			
-			// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+			auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
 			// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
-			auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+			// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
 			// auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 
 			
 			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
 			multigrid.set_fix_semidefinite_operators(true);
-			multigrid.galerkin_assembly(make_ref(A));
+			multigrid.update(make_ref(A));
 			
 			DVectord x_0 = zeros(A.size().get(0));
 			
@@ -1149,20 +1149,25 @@ namespace utopia
 			multigrid.set_parameters(params);
 			
 			// multigrid.verbose(true);
-			multigrid.solve(rhs, x_0);
+			multigrid.apply(rhs, x_0);
 			
 			x_0 = zeros(A.size().get(0));
 			multigrid.cycle_type(FULL_CYCLE);
-			multigrid.solve(rhs, x_0);
+			multigrid.apply(rhs, x_0);
 			
 			x_0 = zeros(A.size().get(0));
 			multigrid.cycle_type(FULL_CYCLE);
 			multigrid.v_cycle_repetition(2);
 			
-			multigrid.solve(rhs, x_0);
+			multigrid.apply(rhs, x_0);
 			
-			
-			//  std::cout << "         End: petsc_mg_test" << std::endl;
+			multigrid.max_it(1);
+			auto gmres = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+			// gmres->set_preconditioner(make_ref(multigrid));
+			gmres->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
+			x_0.set(0.);
+			gmres->verbose(true);
+			gmres->solve(A, rhs, x_0);
 		}
 		
 		
@@ -1260,7 +1265,7 @@ namespace utopia
 			auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 			multigrid.init_transfer_from_fine_to_coarse(interpolation_operators);
-			multigrid.galerkin_assembly(make_ref(A));
+			multigrid.update(make_ref(A));
 			multigrid.solve(rhs, x);
 			
 			// std::cout << "end: petsc_mg_jacobi_test" << std::endl;
@@ -1310,7 +1315,7 @@ namespace utopia
 			auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
-			multigrid.galerkin_assembly(make_ref(A));
+			multigrid.update(make_ref(A));
 			
 			multigrid.max_it(1);
 			multigrid.mg_type(2);

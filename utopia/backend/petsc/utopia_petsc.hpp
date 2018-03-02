@@ -25,6 +25,7 @@
 
 namespace utopia {
 	void optimize_nnz(DSMatrixd &A);
+	bool is_diagonally_dominant(const DSMatrixd &A);
 }
 
 #endif //UTOPIA_PETSC_HPP

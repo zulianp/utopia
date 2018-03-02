@@ -60,5 +60,24 @@ namespace utopia {
 
 		A = std::move(A_opt);
 	}
+
+	bool is_diagonally_dominant(const DSMatrixd &A)
+	{
+		DVectord d = diag(A);
+		DVectord o = local_zeros(local_size(d));
+
+		{
+			Write<DVectord> w_o(o);
+			each_read(A,[&o](const SizeType i, const SizeType j, const PetscScalar val) {
+				if(i != j) {
+					o.add(i, std::abs(val));
+				}
+			});
+		}
+
+		DVectord diff = d - o;
+		PetscScalar m = min(diff);
+		return m > 0.;
+	}
 }
 
