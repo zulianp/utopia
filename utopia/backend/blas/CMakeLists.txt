@@ -54,6 +54,7 @@ if(BLAS_FOUND OR OPEN_BLAS_FOUND)
 		.
 		solvers
 		eigensolvers
+		eval
 	)
 
 	if(LAPACK_FOUND)
@@ -70,6 +71,7 @@ if(BLAS_FOUND OR OPEN_BLAS_FOUND)
 
 
 	find_project_files(CMAKE_CURRENT_SOURCE_DIR BLAS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
+
 
 	add_library(utopia_blas STATIC ${LOCAL_SOURCES})
 

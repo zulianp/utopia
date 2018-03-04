@@ -12,8 +12,7 @@
 #include <iomanip>
 
 
-     namespace utopia 
-     {
+     namespace utopia {
         template<class Matrix, class Vector>
         class Smoother
         {
@@ -28,6 +27,7 @@
          * @brief      Base class for smoothers. 
          */
         Smoother() 
+        : _sweeps(1), _relaxation_parameter(1.)
         {
 
         }
@@ -52,7 +52,7 @@
         /**
          * @brief      Quick interface for smoothing with projecting constraints.  
          */
-        virtual bool nonlinear_smooth(const Matrix &/*A*/, const Vector &/*rhs*/, const Vector& /*ub*/, const Vector& /*lb*/, Vector &/*x*/, std::vector<SizeType>& /*zero_rows*/){ return 0; }
+        // virtual bool nonlinear_smooth(const Matrix &/*A*/, const Vector &/*rhs*/, const Vector& /*ub*/, const Vector& /*lb*/, Vector &/*x*/, std::vector<SizeType>& /*zero_rows*/){ return 0; }
 
         /**
          * @brief      Get number of sweeps.
@@ -72,10 +72,9 @@
          *
          * @return    
          */
-        virtual bool sweeps(const SizeType & sweeps_in)
+        virtual void sweeps(const SizeType & sweeps_in)
         {
             _sweeps = sweeps_in;
-            return true; 
         }
 
 

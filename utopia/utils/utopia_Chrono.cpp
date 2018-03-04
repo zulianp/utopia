@@ -1,5 +1,8 @@
 #include "utopia_Chrono.hpp"
 
+#include <algorithm>
+#include <iostream>
+
 #ifdef WITH_MPI
 #include "mpi.h"
 #include "utopia_MPI.hpp"
@@ -72,7 +75,7 @@ namespace utopia {
 		gettimeofday(&realtime_end_, NULL);
 		start_time_ms = (realtime_start_.tv_sec * 1000000.0) + realtime_start_.tv_usec;
 		end_time_ms   = (realtime_end_.tv_sec * 1000000.0) + realtime_end_.tv_usec;
-		realtime_duration_ = end_time_ms - start_time_ms;
+		realtime_duration_ = (end_time_ms - start_time_ms) * 1e-6;
 #endif //WIN32
 	}
 
@@ -110,7 +113,7 @@ namespace utopia {
 #endif //__APPLE__
 
 #ifdef WIN32
-		static const bool not_impl_msg = true;
+		static bool not_impl_msg = true;
 		if(not_impl_msg) {
 			std::cerr << "[Warning] Chrono &Chrono::operator+=(const Chrono &other) not implemented for windows" << std::endl;
 			not_impl_msg = false;
@@ -131,7 +134,7 @@ namespace utopia {
 #endif //__APPLE__
 
 #ifdef WIN32
-		static const bool not_impl_msg = true;
+		static bool not_impl_msg = true;
 		if(not_impl_msg) {
 			std::cerr << "[Warning] void Chrono::rescale_duration(const double factor) not implemented for windows" << std::endl;
 			not_impl_msg = false;

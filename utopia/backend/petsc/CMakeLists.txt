@@ -1,6 +1,6 @@
 # find dependencies
 set(PETSC_TEST_RUNS TRUE)
-find_package(PETSc)
+find_package(Petsc)
 
 if(PETSC_FOUND)
 	list(APPEND UTOPIA_INCLUDES ${PETSC_INCLUDES})
@@ -32,7 +32,7 @@ if(PETSC_FOUND)
 
     set(WITH_PETSC TRUE)
 else()
-    message(WARNING "[Warning] PETSc not found")
+    message(WARNING "[Warning] Petsc not found")
     set(WITH_PETSC FALSE)
 endif()
 
@@ -46,6 +46,7 @@ if(PETSC_FOUND)
 		eval
 		solvers 
 		solvers/linear
+		solvers/multilevel
 		solvers/nonlinear
 		solvers/smoothers
 		solvers/nonlinear/constrained
@@ -53,6 +54,12 @@ if(PETSC_FOUND)
 		solvers/nonlinear/trust_region
 		solvers/nonlinear/line_search
 		)
+
+	if(ENABLE_PASSO_EXTENSIONS)
+		list(APPEND PETSC_MODULES
+				external
+			)
+	endif()
 
 	find_project_files(CMAKE_CURRENT_SOURCE_DIR PETSC_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 	add_library(utopia_petsc STATIC utopia_petsc.cpp ${LOCAL_SOURCES})

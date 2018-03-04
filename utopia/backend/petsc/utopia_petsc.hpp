@@ -3,7 +3,7 @@
 
 #include "utopia_petsc_Backend.hpp"
 #include "utopia_petsc_Error.hpp"
-#include "utopia_petsc_ForwardDeclaration.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_SerialSparseMatrix.hpp"
 #include "utopia_petsc_SerialVector.hpp"
@@ -14,17 +14,18 @@
 
 #include "utopia_petsc_Eval.hpp"
 #include "utopia_petsc_Eval_Inverse.hpp"
+#include "utopia_petsc_Eval_Factory.hpp"
 #include "utopia_petsc_RowView.hpp"
 
 #include "utopia_petsc_LinearSolverFactory.hpp"
 #include "utopia_petsc_TrustRegionFactory.hpp"
 #include "utopia_petsc_solvers.hpp"
 
-#include "utopia_petsc_LinearGS.hpp"
-#include "utopia_petsc_CGSmoother.hpp"
-#include "utopia_petsc_NonLinearGS.hpp"
-#include "utopia_petsc_Function.hpp"
-
 #include "utopia_petsc_KSPTR.hpp"
+
+namespace utopia {
+	void optimize_nnz(DSMatrixd &A);
+	bool is_diagonally_dominant(const DSMatrixd &A);
+}
 
 #endif //UTOPIA_PETSC_HPP

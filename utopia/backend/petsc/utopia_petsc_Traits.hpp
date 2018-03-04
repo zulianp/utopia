@@ -16,20 +16,18 @@
 #include "petscsys.h"
 #include "petscmat.h"
 
-namespace utopia 
-{
-    class PETScTraits 
-    {
+namespace utopia {
+    class PetscTraits {
     public:
         typedef PetscScalar Scalar;
         typedef PetscInt SizeType;
 
-        typedef utopia::PETScMatrix Matrix;
-        typedef utopia::PETScSparseMatrix SparseMatrix;
-        typedef utopia::PETScSerialSparseMatrix SerialSparseMatrix;
+        typedef utopia::PetscMatrix Matrix;
+        typedef utopia::PetscSparseMatrix SparseMatrix;
+        typedef utopia::PetscSerialSparseMatrix SerialSparseMatrix;
 
-        typedef utopia::PETScVector Vector;
-        typedef utopia::PETScSerialVector SerialVector;
+        typedef utopia::PetscVector Vector;
+        typedef utopia::PetscSerialVector SerialVector;
 
         enum 
         {

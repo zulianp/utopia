@@ -27,7 +27,7 @@ namespace utopia {
         }
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override {
-            result =  0.5 * pow(dot(point, A * point) + 1, 2.0) - dot(b, point);
+            result =  0.5 * std::pow(dot(point, A * point) + 1, 2.0) - dot(b, point);
             return true;
         }
 
@@ -59,7 +59,8 @@ namespace utopia {
             const Scalar s = dot(point, A * point);
 
             const Range rr = row_range(temp);
-            const Range cr = col_range(temp);
+            const auto n = size(point).get(0);
+
 
             assert(rr.begin() == range(point).begin());
             assert(rr.end() == range(point).end());
@@ -71,7 +72,7 @@ namespace utopia {
                 const Write<Matrix> write(result);
 
                 for (SizeType i = rr.begin(); i != rr.end(); ++i) {
-                    for (SizeType j = cr.begin(); j != cr.end(); ++j) {
+                    for (SizeType j = 0; j != n; ++j) {
                         result.set(i, j, 4.0 * temp.get(i, j) + (i == j) * (identityScaleFactor));
                     }
                 }

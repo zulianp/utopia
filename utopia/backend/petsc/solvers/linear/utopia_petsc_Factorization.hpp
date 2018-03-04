@@ -85,6 +85,9 @@ namespace utopia {
 			strategy_.set_parameters(params);
 		}                                           
 
+
+	
+
 	private:
 
 		class Strategy : public KSPSolver<Matrix, Vector> {
@@ -108,6 +111,12 @@ namespace utopia {
 		};
 
 		Strategy strategy_;
+	
+	public:
+		inline Strategy &strategy()
+		{
+			return strategy_;
+		}
 	};
 }
 

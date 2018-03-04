@@ -87,6 +87,27 @@ namespace utopia {
         }
     };
 
+    template<class Left, class Right, int Order, class Options, class Traits, int Backend>
+    class Eval<Construct<Left, Build<Factory<Right, Order>, Options> >, Traits, Backend> {
+    public:
+        typedef utopia::Construct<Left, Build<Factory<Right, Order>, Options> > Expr;
+
+        inline static void apply(const Expr &expr)
+        {
+            UTOPIA_LOG_BEGIN(expr);
+
+            UTOPIA_BACKEND(Traits).build(
+                    Eval<Left, Traits>::apply(expr.left()),
+                    expr.right().factory().size(),
+                    expr.right().factory().type(),
+                    UTOPIA_BACKEND(Traits).parse_args(expr.right().opts())
+            );
+
+
+            UTOPIA_LOG_END(expr);
+        }
+    };
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 

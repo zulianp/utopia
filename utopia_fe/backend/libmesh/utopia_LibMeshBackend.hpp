@@ -30,10 +30,7 @@
 
 // Define useful datatypes for finite element
 // matrix and vector components.
-#include "libmesh/sparse_matrix.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/dense_matrix.h"
-#include "libmesh/dense_vector.h"
+
 
 // Define the PerfLog, a performance logging utility.
 // It is useful for timing events in a code and giving
@@ -48,219 +45,18 @@
 #include "libmesh/analytic_function.h"
 
 #include "libmesh/string_to_enum.h"
-#include "libmesh/getpot.h"
+// #include "libmesh/getpot.h"
 
 #include "libmesh/const_function.h"
 
 #include "utopia.hpp"
+#include "utopia_libmesh_FEForwardDeclarations.hpp"
+#include "utopia_libmesh_Types.hpp"
+#include "utopia_libmesh_FunctionSpace.hpp"
+#include "utopia_libmesh_LambdaFunction.hpp"
 
 namespace utopia {
-	
-	template<class It>
-	void print_vector(const It &begin, const It &end, std::ostream &os = std::cout)
-	{
-		for(It it = begin; it != end; ++it) {
-			os << *it << " ";
-		}
-		
-		os << "\n";
-	}
-	
-	static const int LIBMESH_TAG = 1001;
-	
-	
-	template<typename T>
-	class LibMeshTraits {
-	public:
-		typedef T Scalar;
-		typedef libMesh::dof_id_type SizeType;
-		
-		enum {
-			Backend = LIBMESH_TAG
-		};
-	};
-	
-	UTOPIA_MAKE_TRAITS_DENSE_TPL_1(libMesh::DenseMatrix, LibMeshTraits);
-	UTOPIA_MAKE_TRAITS_DENSE_TPL_1(libMesh::DenseVector, LibMeshTraits);
-	
-	
-	
-	inline static void add_matrix(const libMesh::DenseMatrix<libMesh::Real> &block,
-								  const std::vector<libMesh::dof_id_type> &row_dofs,
-								  const std::vector<libMesh::dof_id_type> &col_dofs,
-								  libMesh::SparseMatrix<libMesh::Real> &mat)
-	{
-		mat.add_matrix(block, row_dofs, col_dofs);
-	}
-	
-	inline static void add_vector(const libMesh::DenseVector<libMesh::Real> &block, const std::vector<libMesh::dof_id_type> &dofs, libMesh::NumericVector<libMesh::Real> &vec)
-	{
-		assert(block.size() == dofs.size());
-		vec.add_vector(block, dofs);
-	}
-	
-	
-	inline static void get_vector(const DVectord &vec, const std::vector<libMesh::dof_id_type> &dofs, libMesh::DenseVector<libMesh::Real> &el_vec)
-	{
-		el_vec.resize(dofs.size());
-		int i = 0;
-		for(auto test : dofs) {
-			el_vec(i++) = vec.get(test);
-		}
-	}
-	
-	inline static void add_matrix(const libMesh::DenseMatrix<libMesh::Real> &block,
-								  const std::vector<libMesh::dof_id_type> &row_dofs,
-								  const std::vector<libMesh::dof_id_type> &col_dofs,
-								  DSMatrixd &mat)
-	{
-		Size s = size(mat);
-		for(uint i = 0; i < row_dofs.size(); ++i) {
-			for(uint j = 0; j < col_dofs.size(); ++j) {
-				const libMesh::Real val = block(i, j);
-				if(val != 0.0) {
-					assert(row_dofs[i] < s.get(0));
-					assert(col_dofs[j] < s.get(1));
-					
-					mat.add(row_dofs[i], col_dofs[j], val);
-				}
-			}
-		}
-	}
-	
-	inline static void add_vector(const libMesh::DenseVector<libMesh::Real> &block, const std::vector<libMesh::dof_id_type> &dofs, DVectord &vec)
-	{
-		assert(block.size() == dofs.size());
-		for(uint i = 0; i < dofs.size(); ++i) {
-			vec.add(dofs[i], block(i));
-		}
-	}
-	
-	template<typename Scalar>
-	class Backend<Scalar, LIBMESH_TAG> {
-	public:
-		typedef libMesh::dof_id_type SizeType;
-		
-		inline static Backend &Instance()
-		{
-			static Backend instance_;
-			return instance_;
-		}
-		
-		template<typename T>
-		inline static void write_lock(T &) {}
-		
-		template<typename T>
-		inline static void write_unlock(T &) {}
-		
-		template<typename T>
-		inline static void read_lock(T &) {}
-		
-		template<typename T>
-		inline static void read_unlock(T &) {}
-		
-		template<class Tensor>
-		inline static void set(Tensor &t, const SizeType row, const SizeType col, const Scalar value)
-		{
-			t(row, col) = value;
-		}
-		
-		template<class Tensor>
-		inline static Scalar get(Tensor &t, const SizeType row, const SizeType col)
-		{
-			return t(row, col);
-		}
-		
-		template<typename T>
-		void build(libMesh::DenseMatrix<T> &m, const Size &size, const Zeros & /*values*/) {
-			m.resize(size.get(0), size.get(1));
-			m.zero();
-		}
-		
-		template<typename T>
-		inline static Range range(const libMesh::DenseVector<T> &v) {
-			return Range(0, v.size());
-		}
-		
-		template<typename T>
-		inline static Range row_range(const libMesh::DenseMatrix<T> &m) {
-			return Range(0, m.m());
-		}
-		
-		template<typename T>
-		inline static Range col_range(const libMesh::DenseMatrix<T> &m) {
-			return Range(0, m.n());
-		}
-		
-		template<typename T>
-		void resize(libMesh::DenseMatrix<T> &mat, const Size &size)
-		{
-			if(mat.m() != size.get(0) && mat.n() != size.get(1)) {
-				mat.resize(size.get(0), size.get(1));
-			}
-		}
-		
-		template<typename T>
-		void resize(libMesh::DenseVector<T> &vec, const Size &size)
-		{
-			if(vec.size() != size.get(0)) {
-				vec.resize(size.get(0));
-			}
-		}
-		
-	private:
-		Backend() {}
-		
-	};
-	
-	template<typename Result>
-	class Evaluator<Result, LIBMESH_TAG> {
-	public:
-		
-		template<class Derived>
-		inline static bool eval(const Expression<Derived> &expr) {
-			ExprInliner<Derived>::eval(expr.derived());
-			return true;
-		}
-		
-		template<class Tensor>
-		inline static void eval(const Wrapper<Tensor, 2> &t, Size &size)
-		{
-			size.set_dims(2);
-			size.set(0, t.implementation().m());
-			size.set(1, t.implementation().n());
-		}
-	};
-	
-	
-	
-	class LMDenseMatrix : public Wrapper<libMesh::DenseMatrix<libMesh::Real>, 2> {
-	public:
-		typedef libMesh::Real Scalar;
-		typedef utopia::Wrapper<libMesh::DenseMatrix<libMesh::Real>, 2> super;
-		
-		using super::super;
-		using super::operator=;
-	};
-	
-	
-	inline void disp(const LMDenseMatrix &mat, std::ostream &os = std::cout)
-	{
-		mat.implementation().print(os);
-	}
-	
-	
-	inline const libMesh::DenseMatrix<libMesh::Real> &raw_type(const Wrapper<libMesh::DenseMatrix<libMesh::Real>, 2> &utopiaType)
-	{
-		return utopiaType.implementation();
-	}
-	
-	
-	inline libMesh::DenseMatrix<libMesh::Real> &raw_type(Wrapper<libMesh::DenseMatrix<libMesh::Real>, 2> &utopiaType)
-	{
-		return utopiaType.implementation();
-	}
-	
+
 	class LibMeshFESpaceBase {
 	public:
 		typedef libMesh::Real Scalar;
@@ -347,63 +143,63 @@ namespace utopia {
 	class LibMeshVecFEFunction;
 	
 	
-	template<typename T>
-	class FESpace< LibMeshTraits<T>, LIBMESH_TAG> : public LibMeshFESpaceBase {
+	template<>
+	class FESpace< LibMeshTraits, LIBMESH_TAG> : public LibMeshFESpaceBase {
 	public:
 		using LibMeshFESpaceBase::LibMeshFESpaceBase;
 		typedef utopia::LibMeshFEFunction Function;
 		inline bool is_vector() { return false; }
 	};
 	
-	typedef utopia::FESpace< LibMeshTraits<libMesh::Real> > LibMeshFESpaceReal;
-	typedef utopia::FESpace< LibMeshTraits<libMesh::Real> > LMFESpace;
+	typedef utopia::FESpace< LibMeshTraits > LibMeshFESpaceReal;
+	typedef utopia::FESpace< LibMeshTraits > LMFESpace;
 	
 	
-	template<typename T>
-	class VectorFESpace< LibMeshTraits<T>, LIBMESH_TAG> : public LibMeshFESpaceBase {
+	template<>
+	class VectorFESpace< LibMeshTraits, LIBMESH_TAG> : public LibMeshFESpaceBase {
 	public:
 		using LibMeshFESpaceBase::LibMeshFESpaceBase;
 		typedef utopia::LibMeshVecFEFunction Function;
 		inline bool is_vector() { return true; }
 	};
 	
-	typedef utopia::VectorFESpace< LibMeshTraits<libMesh::Real> > LMVecFESpace;
+	typedef utopia::VectorFESpace< LibMeshTraits > LMVecFESpace;
 	
 	template<class SystemType>
-	FESpace<LibMeshTraits<libMesh::Real> > fe_space(
-													const libMesh::FEFamily &type,
-													const libMesh::Order &order,
-													LibMeshFEContext<SystemType> &context)
+	FESpace<LibMeshTraits> fe_space(
+		const libMesh::FEFamily &type,
+		const libMesh::Order &order,
+		LibMeshFEContext<SystemType> &context)
 	{
-		return FESpace<LibMeshTraits<libMesh::Real> >(type, order, context);
+		return FESpace<LibMeshTraits >(type, order, context);
 	}
 	
 	template<class SystemType>
-	VectorFESpace<LibMeshTraits<libMesh::Real> > vector_fe_space(
+	VectorFESpace<LibMeshTraits > vector_fe_space(
 																 const libMesh::FEFamily &type,
 																 const libMesh::Order &order,
 																 LibMeshFEContext<SystemType> &context)
 	{
-		return VectorFESpace<LibMeshTraits<libMesh::Real> >(type, order, context);
+		return VectorFESpace<LibMeshTraits >(type, order, context);
 	}
 	
 	template<int ROWS, int COLS, class SystemType>
-	TensorProductFESpace< FESpace<LibMeshTraits<libMesh::Real> >, ROWS, COLS > fe_tensor_product_space(const libMesh::FEFamily &type,
+	TensorProductFESpace< FESpace<LibMeshTraits >, ROWS, COLS > fe_tensor_product_space(const libMesh::FEFamily &type,
 																									   const libMesh::Order &order,
 																									   LibMeshFEContext<SystemType> &context)
 	{
-		return TensorProductFESpace< FESpace<LibMeshTraits<libMesh::Real> >, ROWS, COLS >(type, order, context);
+		return TensorProductFESpace< FESpace<LibMeshTraits >, ROWS, COLS >(type, order, context);
 	}
 	
 	
 	template<class SystemType>
-	VectorFESpace<LibMeshTraits<libMesh::Real> > vector_fe_space(
+	VectorFESpace<LibMeshTraits > vector_fe_space(
 																 const std::string &name,
 																 const libMesh::FEFamily &type,
 																 const libMesh::Order &order,
 																 LibMeshFEContext<SystemType> &context)
 	{
-		return VectorFESpace<LibMeshTraits<libMesh::Real> >(name, type, order, context);
+		return VectorFESpace<LibMeshTraits >(name, type, order, context);
 	}
 	
 	
@@ -484,7 +280,7 @@ namespace utopia {
 			std::copy(dof_indices_.begin(), dof_indices_.end(), v.begin());
 		}
 		
-		LibMeshFEFunction(const FESpace<LibMeshTraits<libMesh::Real> > &fe)
+		LibMeshFEFunction(const FESpace<LibMeshTraits > &fe)
 		: mesh_(fe.mesh_ptr()),
 		var_num_(fe.var_num()),
 		dof_map_(fe.dof_map_ptr())
@@ -595,7 +391,7 @@ namespace utopia {
 		inline libMesh::DofMap &dof_map() { return *dof_map_; }
 		inline const libMesh::DofMap &dof_map() const { return *dof_map_; }
 		
-		LibMeshVecFEFunction(const VectorFESpace< LibMeshTraits<libMesh::Real> > &fe)
+		LibMeshVecFEFunction(const VectorFESpace< LibMeshTraits > &fe)
 		: mesh_(fe.mesh_ptr()),
 		var_num_(fe.var_num()),
 		dof_map_(fe.dof_map_ptr())
@@ -609,12 +405,12 @@ namespace utopia {
 		std::shared_ptr<libMesh::QGauss> qrule_;
 	};
 	
-	inline LibMeshVecFEFunction fe_function(const VectorFESpace< LibMeshTraits<libMesh::Real> > &fe)
+	inline LibMeshVecFEFunction fe_function(const VectorFESpace< LibMeshTraits > &fe)
 	{
 		return LibMeshVecFEFunction(fe);
 	}
 	
-	inline LibMeshFEFunction fe_function(const FESpace< LibMeshTraits<libMesh::Real> > &fe)
+	inline LibMeshFEFunction fe_function(const FESpace< LibMeshTraits > &fe)
 	{
 		return LibMeshFEFunction(fe);
 	}
@@ -857,23 +653,22 @@ namespace utopia {
 	// }
 	
 	// void constrained_face_selector
-	
-	template<class FEFunction, class Matrix, class Vector>
-	void apply_boundary_conditions(FEFunction &u, Matrix &mat, Vector &vec)
+
+
+	template<class Matrix, class Vector>
+	void apply_boundary_conditions(libMesh::DofMap &dof_map, Matrix &mat, Vector &vec)
 	{
-		
-		auto &dof_map = u.dof_map();
 		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
 		// std::cout << dof_map.n_constrained_dofs() << std::endl;
 		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
 		
-		const bool has_constaints = u.dof_map().constraint_rows_begin() != u.dof_map().constraint_rows_end();
+		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 		if(!has_constaints) {
 			// std::cerr << "[Warning] no boundary conditions to apply\n" << std::endl;
 			// return;
 		}
 		
-		libMesh::DofConstraintValueMap &rhs_values = u.dof_map().get_primal_constraint_values();
+		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 		
 		Size s = size(mat);
 		Matrix temp = mat;
@@ -881,7 +676,7 @@ namespace utopia {
 		{
 			Write<Matrix> w_t(mat);
 			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
-				if(has_constaints && u.dof_map().is_constrained_dof(i)) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					mat.set(i, j, i == j);
 				}
 			});
@@ -892,13 +687,20 @@ namespace utopia {
 			
 			Range r = range(vec);
 			for(SizeType i = r.begin(); i < r.end(); ++i) {
-				if(has_constaints && u.dof_map().is_constrained_dof(i)) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					auto valpos = rhs_values.find(i);
 					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
 				}
 			}	
 		}
 	}
+
+	template<class FEFunction, class Matrix, class Vector>
+	void apply_boundary_conditions(FEFunction &u, Matrix &mat, Vector &vec)
+	{
+		apply_boundary_conditions(u.dof_map(), mat, vec);
+	}
+	
 	
 	template<class DofMap, class Vector>
 	void apply_zero_boundary_conditions(DofMap &dof_map, Vector &vec)
@@ -944,53 +746,7 @@ namespace utopia {
 	}
 	
 	
-	
-	template<typename Output>
-	class LibMeshLambdaFunction : public libMesh::FunctionBase<Output> {
-	public:
-		typedef libMesh::Real Scalar;
-		typedef libMesh::Point Point;
-		
-		typedef std::function<Scalar(const Point &)> ScalarFunction;
-		typedef std::function<void(const Point &, libMesh::DenseVector<Output> &output)> VectorFunction;
-		
-		LibMeshLambdaFunction(const VectorFunction fun)
-		: vector_fun_(fun)
-		{}
-		
-		LibMeshLambdaFunction(const ScalarFunction fun)
-		: scalar_fun_(fun)
-		{}
-		
-		
-		void init() override {}
-		void clear() override {}
-		
-		libMesh::UniquePtr<libMesh::FunctionBase<Output> > clone() const override
-		{
-			//#ifdef LIBMESH_HAVE_CXX14_MAKE_UNIQUE
-			//			using libMesh::make_unique;
-			//			return make_unique< LibMeshLambdaFunction<Output> >(*this);
-			//#else
-			return libMesh::UniquePtr<libMesh::FunctionBase<Output> >( new LibMeshLambdaFunction<Output>(*this));
-			//#endif
-		}
-		
-		Output operator() (const Point &p, const Scalar time = 0.) override
-		{
-			return scalar_fun_(p);
-		}
-		
-		void operator()(const Point &p, const Scalar time, libMesh::DenseVector<Output> &output) override
-		{
-			vector_fun_(p, output);
-		}
-		
-	private:
-		
-		VectorFunction vector_fun_;
-		ScalarFunction scalar_fun_;
-	};
+
 	
 	template<class Right, typename T>
 	void strong_enforce(const DirichletBoundaryCondition<

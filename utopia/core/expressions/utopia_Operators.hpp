@@ -19,6 +19,12 @@ namespace utopia {
         {
             return l - r;
         }
+
+        template<typename T>
+        inline static T apply(const T &expr)
+        {
+            return -expr;
+        }
     };
 
     class Plus {
@@ -68,8 +74,8 @@ namespace utopia {
     public:
         std::string getClass() const { return "Multiplies"; }
 
-        template<typename T>
-        inline static T apply(const T &left, const T &right) {
+        template<typename Left, typename Right>
+        inline static auto apply(const Left &left, const Right &right) -> decltype(left * right) {
             return left * right;
         }
     };
@@ -152,6 +158,43 @@ namespace utopia {
             return x * x;
         }
     };
+    
+    
+    class Pow {
+    public:
+        std::string getClass() const { return "Pow"; }
+        
+        template<typename T>
+        inline T apply(const T &x) const {
+            return std::pow(x,a_);
+        }
+
+       Pow(const double &a):a_(a){}
+       double a_;
+
+    };
+
+    class Log {
+    public:
+        std::string getClass() const { return "Log"; }
+
+        template<typename T>
+        inline static T apply(const T &x) {
+            using std::log;
+            return log(x);
+        }
+    };
+
+    class Exp {
+    public:
+        std::string getClass() const { return "Exp"; }
+
+        template<typename T>
+        inline static T apply(const T &x) {
+            using std::exp;
+            return exp(x);
+        }
+    };
 
     class Transpose {
     public:
@@ -205,6 +248,7 @@ namespace utopia {
         template<typename T>
         inline static T apply(const T &left, const T &right) {
             using std::min;
+            
             return min(left, right);
         }
     };

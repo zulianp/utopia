@@ -32,8 +32,8 @@ using namespace libMesh;
 
 namespace utopia {
 	
-	void mortar_transfer_aux(const std::shared_ptr<Mesh> &mesh_master,
-		const std::shared_ptr<Mesh> &mesh_slave,
+	void mortar_transfer_aux(const std::shared_ptr<libMesh::Mesh> &mesh_master,
+		const std::shared_ptr<libMesh::Mesh> &mesh_slave,
 		const libMesh::Order order_elem = FIRST,
 		const bool use_biorthogonal_mults = true)
 	{
@@ -158,7 +158,7 @@ namespace utopia {
 	
 	
 	
-	void mixed_par_mortar_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm, const std::shared_ptr<Mesh> &mesh_master, const std::shared_ptr<Mesh> &mesh_slave, const bool use_biorthogonal_mults = true)
+	void mixed_par_mortar_transfer_aux(libMesh::Parallel::Communicator &libmesh_comm, const std::shared_ptr<libMesh::Mesh> &mesh_master, const std::shared_ptr<libMesh::Mesh> &mesh_slave, const bool use_biorthogonal_mults = true)
 	{
 		//         MOONOLITH_EVENT_BEGIN("spaces");
 		//
@@ -183,12 +183,12 @@ namespace utopia {
 
 		DSMatrixd B, B_r;
 
-		AssembleMOOSE(
+		assemble_volume_transfer(
 			moonolith_comm,
 			mesh_master,
 			mesh_slave,
-			utopia::make_ref(master_context.system.get_dof_map()),
-			utopia::make_ref(slave_context.system.get_dof_map()),
+			make_ref(master_context.system.get_dof_map()),
+			make_ref(slave_context.system.get_dof_map()),
 			var_num,
 			var_num,
 			false,
@@ -197,7 +197,7 @@ namespace utopia {
 
 
 
-		// AssembleMOOSEReverse(moonolith_comm,
+		// assemble_volume_transfer_r(moonolith_comm,
 		//               mesh_master,
 		//               mesh_slave,
 		//               utopia::make_ref(master_context.system.get_dof_map()),
@@ -430,16 +430,7 @@ namespace utopia {
 		
 		DVectord D_inv_gap = D_inv * gap;
 
-		// write("T_" + std::to_string(moonolith_comm.size()) + ".m", T);
 		T += local_identity(local_size(d).get(0), local_size(d).get(0));
-		
-		// write("O_" + std::to_string(moonolith_comm.size()) + ".m", orthogonal_trafos);
-		// write("B_" + std::to_string(moonolith_comm.size()) + ".m", B);
-		// write("d_" + std::to_string(moonolith_comm.size()) + ".m", d);
-		// write("D_inv_" + std::to_string(moonolith_comm.size()) + ".m", D_inv);
-		// write("g_" + std::to_string(moonolith_comm.size()) + ".m", gap);
-		// write("c_" + std::to_string(moonolith_comm.size()) + ".m", is_contact_node);
-		// write("T_" + std::to_string(moonolith_comm.size()) + ".m", T);
 		
 		if(moonolith_comm.is_alone()) plot_scaled_normal_field(*master_slave_context.mesh, normals_vec, D_inv_gap);
 				
@@ -492,56 +483,22 @@ namespace utopia {
 			
 			newton.set_box_constraints(make_upper_bound_constraints(make_ref(D_inv_gap)));
 			newton.solve(K_c, rhs_c, sol_c);
-			
-			// if(moonolith_comm.is_alone()) plot_scaled_normal_field(*context.mesh, normals, gap_c);
-			
+						
 			//Change back to original basis
 			DVectord sol = T * (orthogonal_trafos * sol_c);
 			convert(sol, *master_slave_context.system.solution);
-
-
-			// auto s_K = local_size(K);
-			// DSMatrixd mass_matrix = local_sparse(s_K.get(0), s_K.get(1), 20);
-		
-			// DVectord residual = (K * sol - rhs);
-
-			// DVectord dummy = local_zeros(local_size(rhs));
-
-			// {
-			// 	Write<DSMatrixd> w_mm(mass_matrix);
-			// 	assemble(u, u, integral(dot(u, u)), l_form, mass_matrix, dummy);
-			// }
-
-			// contact_stress = local_zeros(local_size(rhs));
-			// solve(mass_matrix, residual, contact_stress);
 		}
 
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("sol.e", master_slave_context.equation_systems);
 
-		// convert(contact_stress, *master_slave_context.system.solution);
-		// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("contact_stress.e", master_slave_context.equation_systems);
-
 		convert(is_contact_node, *master_slave_context.system.solution);
 		ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("is_c_node.e", master_slave_context.equation_systems);
-		
-		// convert(gap, *master_slave_context.system.solution);
-		// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("gap.e", master_slave_context.equation_systems);
-		
-		// convert(normals_vec, *master_slave_context.system.solution);
-		// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("normals.e", master_slave_context.equation_systems);
-		
-		// convert(d, *master_slave_context.system.solution);
-		// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("d.e", master_slave_context.equation_systems);
-
-		// normals_vec = orthogonal_trafos * normals_vec;
-		// convert(normals_vec, *master_slave_context.system.solution);
-		// ExodusII_IO(*master_slave_context.mesh).write_equation_systems ("H_n.e", master_slave_context.equation_systems);
 	}
 
 
 	void mortar_transfer_2D_monolithic(LibMeshInit &init)
 	{
-		auto mesh = make_shared<Mesh>(init.comm());
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());
 		MOONOLITH_EVENT_BEGIN("set_up");
 		//mesh->partitioner().reset(new LinearPartitioner());
 		mesh->read("../data/master_slave2D_new2.e");
@@ -555,10 +512,10 @@ namespace utopia {
 		std::cout << "mortar_transfer_2D\n";
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
-		int n_master = 8;
-		int n_slave  = 3;
+		int n_master = 80;
+		int n_slave  = 30;
 
-		auto mesh_master = make_shared<Mesh>(init.comm());
+		auto mesh_master = make_shared<libMesh::Mesh>(init.comm());
 		MeshTools::Generation::build_square (*mesh_master,
 			n_master, n_master,
 			0, 1,
@@ -568,7 +525,7 @@ namespace utopia {
 		//////////////////////////////////////////////////
 		//////////////////////////////////////////////////
 
-		auto mesh_slave = make_shared<Mesh>(init.comm());
+		auto mesh_slave = make_shared<libMesh::Mesh>(init.comm());
 		MeshTools::Generation::build_square (*mesh_slave,
 			n_slave, n_slave,
 			0.3, 0.8,
@@ -622,7 +579,7 @@ namespace utopia {
 	{
 
 		MOONOLITH_EVENT_BEGIN("set_up");
-		auto mesh = make_shared<Mesh>(init.comm());
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());
 
 		//mesh->partitioner().reset(new LinearPartitioner());
 		// Read the mesh file. Here the file lshape.unv contains
@@ -665,7 +622,7 @@ namespace utopia {
 		int n_master = 3;
 		int n_slave  = 6;
 
-		auto mesh_master = make_shared<Mesh>(init.comm());
+		auto mesh_master = make_shared<libMesh::Mesh>(init.comm());
 
 		//mesh_master->partitioner().reset(new SFCPartitioner());
 
@@ -684,7 +641,7 @@ namespace utopia {
 
 
 
-		auto mesh_slave = make_shared<Mesh>(init.comm());
+		auto mesh_slave = make_shared<libMesh::Mesh>(init.comm());
 
 		//mesh_slave->partitioner().reset(new SFCPartitioner());
 
@@ -728,7 +685,7 @@ namespace utopia {
 		// ContactSimParams params = multi_contact_3D;
 
 
-		auto mesh = make_shared<Mesh>(init.comm());
+		auto mesh = make_shared<libMesh::Mesh>(init.comm());
 		mesh->read(params.mesh_path);
 //		plot_mesh(*mesh, "mesh");
 //		
@@ -937,7 +894,8 @@ namespace utopia {
 		
 		// mortar_transfer_2D(init);
 		// mortar_transfer_3D(init);
-		mortar_transfer_3D_monolithic(init);
+		// mortar_transfer_3D_monolithic(init);
+		mortar_transfer_2D(init);
 		// surface_mortar(init);
 		
 		//run_curved_poly_disc();

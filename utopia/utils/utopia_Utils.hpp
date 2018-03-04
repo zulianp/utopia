@@ -4,12 +4,25 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "utopia_MPI.hpp"
 #include "utopia_Chrono.hpp"
 
 namespace utopia 
 {
+	inline std::string str(const char *char_array)
+	{
+		return std::string(char_array);
+	}
+
+	template<typename T>
+	inline std::string str(const T &val)
+	{
+		return std::to_string(val);
+	}
 
 	bool read(const std::string &path, std::string &str);
 	bool write(const std::string &path, const std::string &str);
@@ -69,8 +82,6 @@ namespace utopia
 
 
 
-
-
     enum ColorCode {
         FG_RED      		= 31,
         FG_GREEN    		= 32,
@@ -111,7 +122,36 @@ namespace utopia
     };
 
 
+    class CSVWriter
+    {
+    	 public:
 
+    	 	void open_file(const std::string & file_name)
+    	 	{
+    	 		pFile = fopen(file_name.c_str(), "ab+");
+    	 	}
+
+    	 	template<class T>
+    	 	void write_table_row(const std::vector<T> vars); 
+
+    	 	void close_file()
+    	 	{
+    	 		if (pFile!=NULL && mpi_world_rank() == 0)
+                	fclose (pFile);
+    	 	}
+
+
+    	 	inline bool file_exists(const std::string& file_name) 
+    	 	{
+			  struct stat buffer;   
+			  return (stat (file_name.c_str(), &buffer) == 0); 
+			}
+
+
+    	 private:
+    	 	FILE *pFile; 
+
+    }; 
 
 	  /** @}*/
 }

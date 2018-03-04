@@ -10,9 +10,7 @@ namespace utopia {
 	template<class Expr, int Number>
 	class Variable : public Expression< Variable<Expr, Number> > {
 	public:
-		enum  {
-			Order = Expr::Order
-		};
+		static const int Order = Expr::Order;
 
 		typedef typename Expr::Scalar Scalar;
 

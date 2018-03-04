@@ -15,7 +15,7 @@ namespace utopia {
 
 		BoxConstraints() {}
 
-		inline std::shared_ptr<Vector> upper_bound()
+		inline std::shared_ptr<Vector> &upper_bound()
 		{
 			return upper_bound_;
 		}
@@ -25,7 +25,7 @@ namespace utopia {
 			return upper_bound_;
 		}
 
-		inline std::shared_ptr<Vector> lower_bound()
+		inline std::shared_ptr<Vector> &lower_bound()
 		{
 			return lower_bound_;
 		}
@@ -43,6 +43,11 @@ namespace utopia {
 		inline bool has_upper_bound() const 
 		{
 			return static_cast<bool>(upper_bound_); 
+		}
+
+		inline bool has_bound() const
+		{
+			return has_lower_bound() || has_upper_bound();
 		}
 
 	private:

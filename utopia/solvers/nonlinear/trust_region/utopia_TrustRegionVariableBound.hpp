@@ -124,7 +124,11 @@
             tr_subproblem->prepare_tr_box_solve( delta, x_k, box_constraints_, ub, lb); 
             
             auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+            
+            std::cout<<"--------- constrained solve ---------- \n"; 
             tr_subproblem->tr_constrained_solve(H, g, p_k, box);
+            std::cout<<"--------- constrained solve end---------- \n"; 
+
           }
 
           this->get_pred(g, H, p_k, pred); 

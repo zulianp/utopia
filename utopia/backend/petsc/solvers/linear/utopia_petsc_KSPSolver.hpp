@@ -9,6 +9,7 @@
 
 #include "utopia_Preconditioner.hpp"
 #include "utopia_PreconditionedSolver.hpp"
+#include "utopia_Smoother.hpp"
 
 #include "utopia_Core.hpp"
 
@@ -27,19 +28,21 @@ namespace utopia {
     {
         Vec x_k_1;       
         Vec x_k_2;       
+
+        PetscBool compute_cond_number; 
     }
     UTOPIA_LOG;
 
     
     /**@ingroup     Linear 
      * @brief       Class provides interface to Petsc KSP solvers \n
-     *              For setting up basic parameters, one can use classic PETSc runtime options, e.g. 
+     *              For setting up basic parameters, one can use classic Petsc runtime options, e.g. 
      *              To see all possibilities, please refer to: 
      *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/PC/PCType.html">preconditioner types</a> 
      *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/KSP/KSPType.html#KSPType">solver types</a>
      *              
      *              Setting own/utopia preconditioner, can be done as following: 
-     *              \snippet tests/utopia_SolverTest.cpp PETScKSPSolver solve example1
+     *              \snippet tests/utopia_SolverTest.cpp PetscKSPSolver solve example1
      *              Detailed information about preconditioners, can be found in  \ref precondotioners.
      */
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
@@ -47,14 +50,13 @@ namespace utopia {
 
 
     template<typename Matrix, typename Vector>
-    class KSPSolver<Matrix, Vector, PETSC> : virtual public PreconditionedSolver<Matrix, Vector>
+    class KSPSolver<Matrix, Vector, PETSC> : virtual public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
     {
 
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::Preconditioner<Vector> Preconditioner;
-        // typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver; 
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
 
@@ -69,7 +71,8 @@ namespace utopia {
 
                 KSP_types(ksp_types),
                 PC_types(pc_types),
-                Solver_packages(pc_packages)
+                Solver_packages(pc_packages), 
+                compute_cond_number(PETSC_FALSE)
 
         {
             set_parameters(params); 
@@ -105,7 +108,6 @@ namespace utopia {
         char           name_[1024]; 
         PetscBool      flg;
 
-
         #if UTOPIA_PETSC_VERSION_LESS_THAN(3,7,0)
              PetscOptionsGetString(NULL, "-ksp_type", name_, 1024, &flg);
             if(flg)
@@ -132,6 +134,7 @@ namespace utopia {
                 solver_package(name_);
             
         #endif
+ 
     }
 
 
@@ -169,18 +172,18 @@ namespace utopia {
     /**
      * @brief      Returns type of direct solver. 
      */
-    std::string pc_type() { return PC_type_;}; 
+    const std::string &pc_type() const { return PC_type_;}; 
 
     /**
      * @brief      Returns ksp package type 
      */
-    std::string ksp_type() { return KSP_type_; }; 
+    const std::string &ksp_type() const { return KSP_type_; }; 
 
 
     /**
      * @brief      Returns type of solver package. 
      */
-    std::string solver_package() { return solver_package_; }; 
+    const std::string &solver_package() const { return solver_package_; }; 
 
 
 
@@ -194,20 +197,21 @@ public:
     {
         PetscErrorCode ierr;
 
-        Size localSize = local_size(b);
+        Size ls = local_size(b);
+        Size gs = size(b);
 
-        if(empty(x) || local_size(x).get(0) != localSize.get(0)) 
+        if(empty(x) || gs.get(0) != size(x).get(0)) 
         {
-            x = local_zeros(localSize.get(0));
+            x = local_zeros(ls.get(0));
         }
 
-        assert(b.size().get(0) == x.size().get(0));
+        assert(size(b).get(0) == size(x).get(0));
+        assert(local_size(b).get(0) == local_size(x).get(0));
+
+        const Matrix &A = *this->get_operator(); 
 
 
-        const Matrix A = *this->get_operator(); 
-
-
-        PreconditionedSolver::init_solver("UTOPIA::PETSc KSP", {}); 
+        PreconditionedSolver::init_solver("UTOPIA::Petsc KSP", {}); 
           
         KSPConvergedReason  reason;
         // PetscReal           r_norm;
@@ -250,6 +254,8 @@ public:
         VecDuplicate(raw_type(x), &(ut_log.x_k_2));
         VecDuplicate(raw_type(x), &(ut_log.x_k_1));
 
+        ut_log.compute_cond_number = compute_cond_number; 
+
         ierr = KSPSetUp(ksp);
         ierr = KSPSolve(ksp, raw_type(b), raw_type(x));
           
@@ -266,6 +272,40 @@ public:
     }
 
 
+    bool smooth(const Matrix &A, const Vector &rhs, Vector &x) override
+    {
+        KSP solver;
+        KSPCreate(A.implementation().communicator(), &solver);
+        KSPSetFromOptions(solver); 
+        KSPSetType(solver, KSP_type_.c_str());
+        KSPSetInitialGuessNonzero(solver, PETSC_TRUE);
+        KSPSetTolerances(solver, 0., 0., PETSC_DEFAULT, this->sweeps());
+
+        KSPSetOperators(solver, raw_type(A), raw_type(A));
+
+        if(!this->get_preconditioner()) 
+        {
+            PC pc; 
+            KSPGetPC(solver, &pc);
+            PCSetType(pc, PC_type_.c_str());
+        }
+        
+        if(this->verbose()) {
+            KSPMonitorSet(
+                solver,
+                [](KSP, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
+                    PrintInfo::print_iter_status({static_cast<PetscReal>(iter), res}); 
+                    return 0;
+                },
+                nullptr,
+                nullptr);
+        }
+        
+        KSPSetUp(solver);
+        KSPSolve(solver, raw_type(rhs), raw_type(x));
+        KSPDestroy(&solver);
+        return true;
+    }
 
 private: 
 
@@ -274,7 +314,7 @@ private:
         return std::find(array.begin(), array.end(), value) != array.end();
     }
 
-
+protected:
     /**
      * @brief      Sets the default options for PETSC KSP solver. \n
      *             Default: BiCGstab
@@ -283,14 +323,20 @@ private:
      */
     virtual void set_ksp_options(KSP & ksp)
     {
-
         PetscErrorCode ierr;
 
         // check if our options overwrite this 
         KSPSetFromOptions(ksp); 
 
+        // TODO:: extend to other supported types... 
+        compute_cond_number = ( (   KSP_type_ == "bcgs" || KSP_type_ == "cg"  || 
+                                    KSP_type_ == "gmres") && (this->verbose() )) ? PETSC_TRUE : PETSC_FALSE; 
+
         if(this->verbose())
             KSPMonitorSet(ksp, MyKSPMonitor, &ut_log, 0);
+
+        if(compute_cond_number)
+            ierr = KSPSetComputeSingularValues(ksp, PETSC_TRUE); 
         
         ierr = KSPSetType(ksp, KSP_type_.c_str());
 
@@ -318,6 +364,7 @@ private:
 protected:
     KSP                 ksp;
     UTOPIA_LOG          ut_log; 
+    PetscBool           compute_cond_number;  
 
     };
     

@@ -1,5 +1,4 @@
 UTOPIA_INSTALLATION_PATH=$(UTOPIA_DIR)
-# UTOPIA_INSTALLATION_PATH=/Users/alenakopanicakova/MOOSE/moonolith/utopia_installation
 
 include $(UTOPIA_INSTALLATION_PATH)/config/utopia_config.makefile
 

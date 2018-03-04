@@ -12,9 +12,7 @@ namespace utopia {
 		typedef Expr_ Expr;
 		typedef typename Expr::Scalar Scalar;
 
-		enum {
-		    Order = Expr::Order
-		};
+		static const int Order = Expr::Order;
 
 		// static_assert(Order == 2, "Only works for matrices");
 

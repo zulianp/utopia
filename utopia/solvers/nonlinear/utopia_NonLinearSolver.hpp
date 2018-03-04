@@ -130,7 +130,6 @@ protected:
          */
         virtual bool solver_monitor(const SizeType& it, Vector & x, Matrix & H) override
         {
-        
             if(log_iterates_)
             {
                 monitor(it, x);
@@ -139,6 +138,7 @@ protected:
             {
                 monitor(it, H); 
             }
+
             return true; 
         }
 
@@ -194,7 +194,6 @@ protected:
           */
         virtual bool check_convergence(const SizeType &it, const Scalar & g_norm, const Scalar & r_norm, const Scalar & s_norm) override
         {   
-
             // termination because norm of grad is down
             if(g_norm < atol_)
             {
@@ -247,6 +246,9 @@ public:
         void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 
         void log_iterates(const bool & log_iterates) { log_iterates_  = log_iterates; }; 
         void log_system(const bool & log_system) { log_system_  = log_system; }; 
+
+
+        Scalar get_time() { return _time.get_seconds();  }
 
     protected:
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)

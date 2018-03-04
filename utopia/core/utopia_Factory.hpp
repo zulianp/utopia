@@ -7,6 +7,7 @@
 
 #include "utopia_Expression.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Optional.hpp"
 
 namespace utopia {
 
@@ -45,7 +46,6 @@ namespace utopia {
     class LocalIdentity {};
     class Zeros {};
     class LocalZeros {};
-
 
 
     template<>
@@ -232,7 +232,6 @@ namespace utopia {
         T _nnz;
     };
 
-
     template<typename _Scalar>
     class FactoryTraits< LocalNNZ<_Scalar> > {
     public:
@@ -248,47 +247,7 @@ namespace utopia {
         };
     };
 
-    template<typename T>
-    class LocalRowNNZ {
-    public:
-     
-        LocalRowNNZ()  {};
-        LocalRowNNZ(T nnz) : _nnz(nnz) {};
-        template<typename OtherT>
-        LocalRowNNZ(const LocalRowNNZ<OtherT>& other) {_nnz = other.nnz();}
-
-        inline const T &nnz() const
-        {
-            return _nnz;
-        }
-        inline void setSparse(T nnz)
-        {
-            _nnz = nnz;
-        }
-
-    private:
-        T _nnz;
-    };
-
-    
-    template<typename _Scalar>
-    class FactoryTraits< LocalRowNNZ<_Scalar> > {
-    public:
-        typedef _Scalar Scalar;
-
-        static constexpr const char * getClass()
-        {
-            return "LocalRowNNZ";
-        }
-
-        enum {
-            FILL_TYPE = FillType::SPARSE
-        };
-    };
-
-
     class Resize { };
-
 
     template<>
     class FactoryTraits<Resize> {
@@ -309,9 +268,7 @@ namespace utopia {
     template<class Type, int _Order>
     class Factory : public Expression< Factory<Type, _Order> > {
     public:
-        enum {
-            Order = _Order
-        };
+        static const int Order = _Order;
 
         enum {
             StoreAs = UTOPIA_BY_VALUE
@@ -332,7 +289,7 @@ namespace utopia {
                 : _size(size), _type(type)
         {}
 
-        inline std::string getClass() const
+        inline std::string getClass() const override
         {
             return "Factory(" + std::string(FactoryTraits<Type>::getClass()) + ")";
         }
@@ -345,6 +302,216 @@ namespace utopia {
         Type _type;
     };
 
+    template<class SType, int Order, class Right>
+    class MostDescriptive<Factory<SType, Order>, Right> {
+    public:
+        typedef Right Type;
+    };
+
+    template<class Left, class SType, int Order>
+    class MostDescriptive<Left, Factory<SType, Order>> {
+    public:
+        typedef Left Type;
+    };
+
+
+    template<class SType, int Order, class Right>
+    class MostDescriptive<Factory<SType, Order>, Number<Right> > {
+    public:
+        typedef utopia::Factory<SType, Order> Type;
+    };
+
+    template<class Left, class SType, int Order>
+    class MostDescriptive<Number<Left>, Factory<SType, Order>> {
+    public:
+        typedef utopia::Factory<SType, Order> Type;
+    };
+
+    template<class Factory, class Options>
+    class Build : public Expression< Build<Factory, Options> > {
+    public:
+        static const int Order = Factory::Order;
+
+        enum {
+            StoreAs = UTOPIA_BY_VALUE
+        };
+
+        typedef typename Factory::Scalar Scalar;
+
+        Build(const Factory &factory, const Options &opts)
+        : factory_(factory), opts_(opts)
+        {}
+
+        inline std::string getClass() const override
+        {
+            return factory_.getClass();
+        }
+
+        virtual ~Build() {}
+
+        const Options & opts() const
+        {
+            return opts_;
+        }
+
+        const Factory &factory() const
+        {
+            return factory_;
+        }
+
+    private:
+        Factory factory_;
+        Options opts_;
+    };
+
+
+
+    template<class Type, int Order_>
+    class SymbolicTensor : public Expression< SymbolicTensor<Type, Order_> > {
+    public:
+        static const int Order = Order_;
+
+        enum {
+            StoreAs = UTOPIA_BY_VALUE
+        };
+
+        typedef typename FactoryTraits<Type>::Scalar Scalar;
+
+        static inline Type type()
+        {
+            return Type();
+        }
+
+        inline std::string getClass() const override
+        {
+            return "SymbolicTensor(" + std::string(FactoryTraits<Type>::getClass()) + ")";
+        }
+    };
+
+    template<class SType, int Order, class Right>
+    class MostDescriptive<SymbolicTensor<SType, Order>, Right > {
+    public:
+        typedef Right Type;
+    };
+
+    template<class Left, class SType, int Order>
+    class MostDescriptive<Left, SymbolicTensor<SType, Order>> {
+    public:
+        typedef Left Type;
+    };
+
+
+    template<class SType, int Order, class Right>
+    class MostDescriptive<SymbolicTensor<SType, Order>, Number<Right> > {
+    public:
+        typedef utopia::SymbolicTensor<SType, Order> Type;
+    };
+
+    template<class Left, class SType, int Order>
+    class MostDescriptive<Number<Left>, SymbolicTensor<SType, Order>> {
+    public:
+        typedef utopia::SymbolicTensor<SType, Order> Type;
+    };
+
+    template<class SType,
+             int Order,
+             class Right,
+             class Default,
+             int SparsityLeft, 
+             int SparsityRight>
+    class ChooseType<SymbolicTensor<SType, Order>, Right, Default, SparsityLeft, SparsityRight> {
+    public:
+        typedef Right Type;
+    };
+
+    template<class SType,
+             int Order,
+             class Left,
+             class Default,
+             int SparsityLeft, 
+             int SparsityRight>
+    class ChooseType<Left, SymbolicTensor<SType, Order>, Default, SparsityLeft, SparsityRight> {
+    public:
+        typedef Left Type;
+    };
+
+
+    template<class SType,
+             int Order,
+             class Right,
+             class Default,
+             int SparsityLeft, 
+             int SparsityRight>
+    class ChooseType<Factory<SType, Order>, Right, Default, SparsityLeft, SparsityRight> {
+    public:
+        typedef Right Type;
+    };
+
+    template<class SType,
+             int Order,
+             class Left,
+             class Default,
+             int SparsityLeft, 
+             int SparsityRight>
+    class ChooseType<Left, Factory<SType, Order>, Default, SparsityLeft, SparsityRight> {
+    public:
+        typedef Left Type;
+    };
+
+    template<class Index>
+    class Ghosts : public Expression< Ghosts<Index> > {
+    public:
+
+        static const int Order = 1;
+
+        Ghosts(const Size::SizeType &local_size, const Size::SizeType &global_size, const Index &index)
+        : local_size_(local_size), global_size_(global_size), index_(index)
+        {}
+
+        // Ghosts(const Size::SizeType &local_size, const Size::SizeType &global_size, Index &&index)
+        // : local_size_(local_size), global_size_(global_size), index_(std::move(index))
+        // {}
+
+        const Index &index() const
+        {
+            return index_;
+        }
+
+        const Size::SizeType &local_size() const
+        {
+            return local_size_;
+        }
+
+        const Size::SizeType &global_size() const
+        {
+            return global_size_;
+        }
+
+    private:
+        Size::SizeType local_size_;
+        Size::SizeType global_size_;
+        Index index_;
+    };
+
+    template<class Index>
+    class Traits< Ghosts<Index> > {
+    public:
+        typedef double Scalar;
+
+        enum {
+            FILL_TYPE = FillType::DENSE
+        };
+    };
+
+    template<class Type, int Order>
+    class Traits< SymbolicTensor<Type, Order> > {
+    public:
+        typedef typename utopia::FactoryTraits<Type>::Scalar Scalar;
+
+        enum {
+            FILL_TYPE = FactoryTraits<Type>::FILL_TYPE
+        };
+    };
 
     template<class Type, int Order>
     class Traits< Factory<Type, Order> > {
@@ -355,6 +522,7 @@ namespace utopia {
             FILL_TYPE = FactoryTraits<Type>::FILL_TYPE
         };
     };
+
 
     template<class Type, int Order>
     inline const Size &size(const Factory<Type, Order> &expr)
@@ -385,6 +553,12 @@ namespace utopia {
         return Factory<Identity, 2>(size);
     }
 
+    /// Returns identity matrix  \f$ I^{row \times cols}  \f$. 
+    inline constexpr SymbolicTensor<Identity, 2> identity()
+    {   
+        return SymbolicTensor<Identity, 2>();
+    }
+
     /// Returns global \f$ 0^{rows \times rows}  \f$. 
     inline Factory<Zeros, 2> zeros(const Size::SizeType rows, const Size::SizeType cols)
     {
@@ -403,11 +577,11 @@ namespace utopia {
         return Factory<Zeros, utopia::DYNAMIC>(size);
     }
 
-    ///nnzXRowOrCol depends if your using a row-major or col-major sparse storage
+    ///nnz_x_row_or_col depends if your using a row-major or col-major sparse storage
     template<typename T>
-    inline Factory<NNZ<T>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, T nnzXRowOrCol)
+    inline Factory<NNZ<T>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
-        return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnzXRowOrCol));
+        return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnz_x_row_or_col));
     }
 
 
@@ -487,81 +661,33 @@ namespace utopia {
 
 
 
-    ///nnzXRowOrCol depends if your using a row-major or col-major sparse storage
+    ///nnz_x_row_or_col depends if your using a row-major or col-major sparse storage
     template<typename T>
-    inline Factory<LocalNNZ<T>, 2> local_sparse(const Size::SizeType rows, const Size::SizeType cols, T nnzXRowOrCol)
+    inline Factory<LocalNNZ<T>, 2> local_sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
-        return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnzXRowOrCol));
+        return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnz_x_row_or_col));
     }
 
-    template<typename T>
-    inline Factory<LocalRowNNZ<T>, 2> local_row_sparse(const Size::SizeType local_rows, const Size::SizeType global_cols, T nnzXRowOrCol)
+    template<typename T, class... Args>
+    inline auto local_sparse(
+        const Size::SizeType rows,
+        const Size::SizeType cols,
+        T nnz_x_row_or_col,
+        Args &&... opts) -> Build< Factory<LocalNNZ<T>, 2>, decltype(options(opts...))>
     {
-        return Factory<LocalRowNNZ<T>, 2>(Size({local_rows, global_cols}), LocalRowNNZ<T>(nnzXRowOrCol));
+        return Build<Factory<LocalNNZ<T>, 2>, decltype(options(opts...))>(local_sparse(rows, cols, nnz_x_row_or_col), options(opts...));
     }
 
      /** @}*/
 
-
-    //-----------------------------------------------------------------------------------------
-    //TOREMOVE all the functions below the line
-
-    inline Factory<LocalZeros, 2> localZeros(const Size::SizeType rows, const Size::SizeType cols)
+    template<class Index>
+    inline Ghosts<Index> ghosted(
+        const Size::SizeType &local_size,
+        const Size::SizeType &global_size,
+        Index &&index)
     {
-        return Factory<LocalZeros, 2>(Size({rows, cols}));
+        return Ghosts<Index>(local_size, global_size, std::forward<Index>(index));
     }
-
-    ///@deprecated
-    inline Factory<LocalZeros, 1> localZeros(const Size::SizeType n)
-    {
-        return Factory<LocalZeros, 1>(Size({n}));
-    }
-
-    ///@deprecated
-    inline Factory<LocalZeros, utopia::DYNAMIC> localZeros(const Size &size)
-    {
-        return Factory<LocalZeros, utopia::DYNAMIC>(size);
-    }
-
-    ///@deprecated
-    template<typename T>
-    inline Factory<LocalValues<T>, 2> localValues(const Size::SizeType rows, const Size::SizeType cols, T value)
-    {
-        return Factory<LocalValues<T>, 2>(Size({rows, cols}), LocalValues<T>(value));
-    }
-
-    ///@deprecated
-    template<typename T>
-    inline Factory<LocalValues<T>, 1> localValues(const Size::SizeType rows, T value)
-    {
-        return Factory<LocalValues<T>, 1>(Size({rows, 1}), LocalValues<T>(value));
-    }
-
-
-    ///@deprecated
-    inline Factory<LocalIdentity, 2> localIdentity(const Size::SizeType rows, const Size::SizeType cols)
-    {
-        return Factory<LocalIdentity, 2>(Size({rows, cols}));
-    }
-
-    ///@deprecated
-    inline Factory<LocalIdentity, 2> localIdentity(const Size &size)
-    {
-        return Factory<LocalIdentity, 2>(size);
-    }
-
-    ///nnzXRowOrCol depends if your using a row-major or col-major sparse storage
-    ///@deprecated use local_sparse
-    template<typename T>
-    inline Factory<LocalNNZ<T>, 2> localSparse(const Size::SizeType rows, const Size::SizeType cols, T nnzXRowOrCol)
-    {
-        return Factory<LocalNNZ<T>, 2>(Size({rows, cols}), LocalNNZ<T>(nnzXRowOrCol));
-    }
-
-
-
-
-
 }
 
 #endif //UTOPIA_UTOPIA_FACTORY_HPP

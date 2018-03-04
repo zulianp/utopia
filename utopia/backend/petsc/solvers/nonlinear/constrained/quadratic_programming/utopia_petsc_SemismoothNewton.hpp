@@ -58,7 +58,7 @@ namespace utopia {
 			linear_solver_->update(make_ref(A));
 
 			SNES snes;
-			SNESCreate(PETSC_COMM_WORLD, &snes);
+			SNESCreate(A.implementation().communicator(), &snes);
 			SNESSetType(snes, SNESVINEWTONSSLS);
 			SNESSetFunction(snes, raw_type(f), SemismoothNewton::Gradient, &ctx);
 			SNESSetJacobian(snes, raw_type(J), raw_type(J), SemismoothNewton::Hessian, &ctx);
@@ -84,6 +84,10 @@ namespace utopia {
 
 			//
 			ierr = KSPSetTolerances(ksp, this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
+
+			SNESLineSearch linesearch;
+			SNESGetLineSearch(snes, &linesearch);
+			SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC);
 
 			SNESSetFromOptions(snes);
 			SNESSolve(snes, nullptr, raw_type(x));

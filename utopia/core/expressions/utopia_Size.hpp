@@ -33,7 +33,7 @@ namespace utopia {
          */
         inline SizeType get(SizeType index) const 
         {
-            assert(index < _data.size());
+            assert(index < (SizeType)_data.size());
             return _data[index];
         }
 
@@ -84,7 +84,7 @@ namespace utopia {
 
         void set(const SizeType index, const SizeType value)
         {
-            assert(index < _data.size());
+            assert(index < (SizeType)_data.size());
             _data[index] = value;
         }
 

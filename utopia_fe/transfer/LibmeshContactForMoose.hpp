@@ -4,6 +4,8 @@
 #include "utopia_assemble_contact.hpp"
 #include "moonolith_communicator.hpp"
 
+#include <iostream>
+
 namespace utopia {
 
    inline bool MooseSurfaceAssemble(moonolith::Communicator &comm,

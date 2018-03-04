@@ -10,9 +10,7 @@ namespace utopia {
 	public:
 		static_assert(Expr::Order >= 2, "must be a 2nd order tensor or greater");
 
-		enum {
-			Order = 0
-		};
+		static const int Order = 0;
 
 		inline const Expr &expr() const 
 		{
@@ -23,6 +21,11 @@ namespace utopia {
 		{
 		    Evaluator<typename Traits<Trace>::Vector, Traits<Trace>::Backend> eval;
 		    return eval.eval(*this);
+		}
+
+		inline std::string getClass() const override
+		{
+			return "Trace<" + expr().getClass() + ">";
 		}
 
 		Trace(const Expr &expr) : expr_(expr) {}

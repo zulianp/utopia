@@ -8,7 +8,7 @@
 #include <petscsys.h>
 
 namespace utopia {
-    class PETScError {
+    class PetscErrorHandler {
     public:
         static bool Check(PetscErrorCode err) {
             if (err) std::cout << "PetscErrorCode=" << err << std::endl;

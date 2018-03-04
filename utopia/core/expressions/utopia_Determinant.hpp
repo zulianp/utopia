@@ -9,17 +9,17 @@ namespace utopia {
 	class Determinant : public Expression< Determinant<Expr> > {
 	public:
 		static_assert(Expr::Order >= 2, "must be a 2nd order tensor or greater");
+		typedef typename Traits<Determinant>::Scalar Scalar;
 
-		enum {
-			Order = 0
-		};
+		static const int Order = 0;
+		// typedef utopia::Traits<Expr>::Scalar Scalar;
 
 		inline const Expr &expr() const 
 		{
 			return expr_;
 		}
 
-		operator typename Traits<Determinant>::Scalar() const
+		operator Scalar() const
 		{
 		    Evaluator<typename Traits<Determinant>::Vector, Traits<Determinant>::Backend> eval;
 		    return eval.eval(*this);

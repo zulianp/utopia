@@ -37,7 +37,7 @@ namespace utopia {
 	static const ushort UNASSIGNED = 0;
 	static const ushort REMOVED    = 3;
 
-	class Contact {
+	class ContactAssembly {
 	public:
 		typedef libMesh::Real RealT;
 
@@ -60,7 +60,7 @@ namespace utopia {
 
 		bool is_valid; 
 
-		friend bool operator<(const Contact &left, const Contact &right) {
+		friend bool operator<(const ContactAssembly &left, const ContactAssembly &right) {
 			if(!left.is_valid) {
 				return false;
 			}
@@ -109,7 +109,7 @@ namespace utopia {
 		void finalize();
 	};
 
-	static void build_dag(std::vector< std::shared_ptr<Contact> > &contacts, std::vector< std::vector<long> > &dag, std::vector<long> &ordering);
+	static void build_dag(std::vector< std::shared_ptr<ContactAssembly> > &contacts, std::vector< std::vector<long> > &dag, std::vector<long> &ordering);
 	static void assign_master_and_slave_roles(const std::vector< std::vector<long> > &dag, const std::vector<long> &ordering, const std::vector< std::vector<long> > &adj_list, std::vector<ushort> &role);
 
 	class MortarContactAssembler {

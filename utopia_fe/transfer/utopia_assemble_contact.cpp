@@ -75,8 +75,9 @@ namespace utopia {
 		
 		for(std::size_t i = 0; i < f.size(); ++i) {
 			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
-				if(f[i][qp] > 1e-16) {
+				if(std::abs(f[i][qp]) > 1e-15) {
 					result[i] = true;
+					break;
 				}
 			}
 		}
@@ -87,7 +88,7 @@ namespace utopia {
 		auto &f = fe.get_phi();
 		for(std::size_t i = 0; i < node_is_boundary.size(); ++i) {
 			for(std::size_t qp = 0; qp < f[i].size(); ++qp) {
-				if(f[i][qp] > 1e-8) {
+				if(std::abs(f[i][qp]) > 1e-8) {
 					assert(node_is_boundary[i]);
 					if(!node_is_boundary[i]) return false;
 				}
@@ -131,11 +132,24 @@ namespace utopia {
 				assert(n_bound == 2);
 				return n_bound == 2;
 			}
+			case TRI6:
+			case QUAD8:
+			// case QUADSHELL8:
+			{
+				assert(n_bound == 3);
+				return n_bound == 3;
+			}
 				
 			case TET4:
 			{
 				assert(n_bound == 3);
 				return n_bound == 3;
+			}
+
+			case TET10:
+			{
+				assert(n_bound == 6);
+				return n_bound == 6;
 			}
 				
 			default:
@@ -550,7 +564,7 @@ namespace utopia {
 			//only works because there are not mixed elements
 			const int approx_order = local_fun_spaces_new->variable_order()[0];
 			
-			std::shared_ptr<Contact> surface_assemble;
+			std::shared_ptr<ContactAssembly> surface_assemble;
 			
 			const auto &side_id_master = master.dof_map_face();
 			const auto &side_id_slave  = slave.dof_map_face();
@@ -575,13 +589,9 @@ namespace utopia {
 			master_fe_hack = libMesh::FEBase::build(master_mesh.mesh_dimension(), libMesh::Order(approx_order));
 			slave_fe_hack  = libMesh::FEBase::build(slave_mesh.mesh_dimension(),  libMesh::Order(approx_order));
 			
-			libMesh::QGauss ir_hack(dim-1, libMesh::Order(1));
+			libMesh::QGauss ir_hack(dim - 1, libMesh::Order(approx_order));
+			ir_hack.init(side_type(el_slave.type()));
 			
-			if(dim == 2) {
-				ir_hack.init(libMesh::EDGE2);
-			} else {
-				ir_hack.init(libMesh::TRI6);
-			}
 			
 			master_fe_hack->get_phi();
 			slave_fe_hack->get_phi();
@@ -697,6 +707,7 @@ namespace utopia {
 						const Scalar weight = 1./area_slave;
 						
 						if(weight < 1e-15) continue;
+						if(area < 1e-15) continue;
 						
 						const int order = order_for_l2_integral(dim_master, el_master, approx_order, el_slave, approx_order);
 						
@@ -708,7 +719,7 @@ namespace utopia {
 						
 						pair_intersected = true;
 						
-						surface_assemble = std::make_shared<Contact>();
+						surface_assemble = std::make_shared<ContactAssembly>();
 						surface_assemble->isect_area	   = area;
 						surface_assemble->relative_area    = relative_area;
 						
@@ -749,7 +760,7 @@ namespace utopia {
 						
 						pair_intersected = true;
 						
-						surface_assemble = std::make_shared<Contact>();
+						surface_assemble = std::make_shared<ContactAssembly>();
 						surface_assemble->isect_area	= area;
 						surface_assemble->relative_area = relative_area;
 						
@@ -805,8 +816,8 @@ namespace utopia {
 							slave_fe_hack->reinit(&el_slave, side_index_slave);
 						}
 						
-						assert( check_positive_funs(*slave_fe) );
-						assert( check_positive_funs(*master_fe) );
+						assert( approx_order > 1 || check_positive_funs(*slave_fe) );
+						assert( approx_order > 1 || check_positive_funs(*master_fe) );
 						
 						
 						//prepare result
@@ -846,6 +857,12 @@ namespace utopia {
 						
 						const libMesh::Point pp = side_master->point(0);
 						const Real plane_offset = n_master.contract(pp);
+
+// #define HACK_OVERRIDE_N_SLAVE_Z
+// #ifdef  HACK_OVERRIDE_N_SLAVE_Z
+// 						n_slave(0) = n_slave(1) = 0.;
+// 						n_slave(2) = 1;
+// #endif //HACK_OVERRIDE_N_SLAVE_Z
 						
 						
 						if(use_biorth) {

@@ -30,7 +30,7 @@ namespace utopia {
 
   int Utopia::Finalize() {
 #ifdef UTOPIA_LOG_ENABLED
-    Log::instance().save_collected_log();
+    Logger::instance().save_collected_log();
 #endif
 
 #ifdef WITH_PETSC

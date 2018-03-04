@@ -25,10 +25,10 @@ namespace utopia {
 
         Derived &derived() { return static_cast<Derived &>(*this); }
 
-        virtual ~Expression() { }
+        // virtual ~Expression() { }
 
         ///@return itself as its Derived type
-        inline const Derived &derived() const { 
+        inline constexpr const Derived &derived() const { 
             return static_cast<const Derived &>(*this); 
         }
 
@@ -38,7 +38,7 @@ namespace utopia {
         }
 
         ///@return itself as its Derived type
-        inline operator const Derived &() const {
+        inline constexpr  operator const Derived &() const {
             return derived();
         }
 

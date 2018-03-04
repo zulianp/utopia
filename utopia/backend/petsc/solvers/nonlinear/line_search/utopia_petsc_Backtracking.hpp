@@ -2,7 +2,7 @@
 #define UTOPIA_PETSC_BACKTRACKING_HPP
 
 #include "utopia_Backtracking.hpp"
-#include "utopia_PETScFunction.hpp"
+#include "utopia_PetscFunction.hpp"
 
 namespace utopia {
 

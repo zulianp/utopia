@@ -22,7 +22,6 @@ if (ENABLE_SANITIZER AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	endif()
 endif()
 
-# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
 ################################## Include cmake functions and find modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_FE_ROOT_PATH}/cmake")
 file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils" )
@@ -41,14 +40,48 @@ endif()
 
 include_directories(rapidxml)
 
+
+########################################################################
+function(find_project_files rootPath dirPaths headers sources)
+	SET(verbose TRUE)
+
+	SET(theaders ${${headers}})
+	SET(tsources ${${sources}})
+
+	SET(ROOT_PATH ${${rootPath}})
+	SET(DIR_PATHS ${${dirPaths}})
+
+	FOREACH(INCLUDE_PATH ${DIR_PATHS})
+		INCLUDE_DIRECTORIES(${ROOT_PATH}/${INCLUDE_PATH})
+
+		file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )   
+		file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )    
+		file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
+		file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
+		
+		SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
+		
+		SET(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
+		SET(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR}) 
+	ENDFOREACH(INCLUDE_PATH)  
+
+	SET(${headers} ${theaders} PARENT_SCOPE)
+	SET(${sources} ${tsources} PARENT_SCOPE)
+endfunction()
+########################################################################
+
+
 list(APPEND UTOPIA_FE_MODULES
-	rapidxml
-	core
-	intersection
-	backend/libmesh
-	visualization
-	transfer
 	tests
+	transfer
+	visualization
+	backend/libmesh
+	backend/homemade
+	intersection
+	contact
+	materials
+	core
+	rapidxml
  )
 
 FOREACH(MODULE ${UTOPIA_FE_MODULES})
@@ -175,7 +208,7 @@ append_list_to_string_for_makefile(CONFIG_CONTENT "" "\n" "-I" "${MOONOLITH_INCL
 
 append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_FE_LIBRARIES=-L${CMAKE_INSTALL_PREFIX}/lib -lutopia_fe ${LIBMESH_LIBRARIES} " " " "-l" "${UTOPIA_FE_LIBRARIES}")
 append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${UTOPIA_LIBRARIES}")
-append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${MOONOLITH_LIB}")
+append_list_to_string_for_makefile(CONFIG_CONTENT "" " " "" "${MOONOLITH_LIBRARIES}")
 
 set(CONFIG_CONTENT "${CONFIG_CONTENT}\n")
 append_list_to_string_for_makefile(CONFIG_CONTENT "UTOPIA_FE_DEFS=" "\n" "" "${UTOPIA_DEFS}")
@@ -192,7 +225,7 @@ append_list_to_string_for_cmake(CONFIG_CONTENT "LIST(APPEND UTOPIA_FE_INCLUDES\n
 append_list_to_string_for_cmake(CONFIG_CONTENT "" "" "${LIBMESH_INCLUDE_DIR}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "" ")\n\n"  ${MOONOLITH_INCLUDES})
 append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "LIST(APPEND UTOPIA_FE_LIBRARIES\n\t-L${CMAKE_INSTALL_PREFIX}/lib" "" "\n\t\"-l" "\"" "${UTOPIA_FE_LIBRARIES}")
-append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "\n\t-L${CMAKE_INSTALL_PREFIX}/lib" "" "\n\t\"" "\"" "${MOONOLITH_LIB}")
+append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "\n\t-L${CMAKE_INSTALL_PREFIX}/lib" "" "\n\t\"" "\"" "${MOONOLITH_LIBRARIES}")
 append_list_to_string_for_makefile_with_postfix(CONFIG_CONTENT "" "" "\n\t\"" "\"" "${LIBMESH_LIBRARIES}")
 append_list_to_string_for_cmake(CONFIG_CONTENT "\n" "\n)\n\n" "${UTOPIA_LIBRARIES}")
 

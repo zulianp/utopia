@@ -19,10 +19,20 @@ option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentati
 option(UTOPIA_LOG "enables utopia logging facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
+option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
 
 #################################################################################
 #################################################################################
 #################################################################################
+
+
+if(UTOPIA_LOG)
+	set(UTOPIA_LOG_ENABLED ON)
+endif()
+
+if(ENABLE_PASSO_EXTENSIONS)
+	set(WITH_PASSO_EXTENSIONS TRUE)
+endif()
 
 IF(WIN32)
 	SET(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -MP -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
@@ -225,9 +235,7 @@ endif()
 # test suite
 add_subdirectory(tests)
 
-if(UTOPIA_LOG)
-	add_definitions("-DUTOPIA_LOG_ENABLED")
-endif()
+
 
 add_definitions(${UTOPIA_DEFS})
 include_directories(${UTOPIA_INCLUDES})

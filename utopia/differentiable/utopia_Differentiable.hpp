@@ -11,9 +11,7 @@ namespace utopia {
 	public:
 		typedef typename Expr::Scalar Scalar;
 
-		enum {
-			Order = Expr::Order
-		};
+		static const int Order = Expr::Order;
 
 		Differentiable(const Expr &expr)
 		: expr_(expr)

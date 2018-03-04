@@ -12,6 +12,7 @@
 
 
 namespace utopia {
+    static const int INVALID_BACKEND = -100;
     static const int HOMEMADE = -1;
     static const int BLAS = 1;
     static const int PETSC = 10;
@@ -127,7 +128,7 @@ namespace utopia {
 
     template<class Left, class Right>
     class MostDescriptive {
-        public:
+    public:
         typedef Left Type;
     };
 
@@ -170,8 +171,13 @@ namespace utopia {
     public:
         typedef Right Type;
     };
-    
-    
+
+    template<typename Left, typename Right>
+    class MostDescriptive<Number<Left>, Number<Right> > {
+    public:
+        typedef decltype(Left(0) + Right(0)) Type;
+    };
+
 
     // #define WRAPPER_TYPE(Traits, Expr) utopia::Wrapper<typename utopia::TensorQuery<Traits, Expr::Order, FillTypeQuery<Expr>::value>::Type, Expr::Order>
 
@@ -187,19 +193,20 @@ namespace utopia {
         //     FILL_TYPE = FillType::DENSE
         // };
 
-        enum {
-            Order = T::Order
-        };
+        static const int Order = T::Order;
     };
+
+    template<typename T>
+    class Traits< Number<T> > : public Traits<T> {};
+
 
     template<>
     class Traits<double>  {
     public:
         typedef double Scalar;
 
-        enum {
-            Order = 0
-        };
+        static const int Backend = INVALID_BACKEND;
+        static const int Order = 0;
 
         enum {
             FILL_TYPE = FillType::DELEGATE
@@ -211,9 +218,8 @@ namespace utopia {
     public:
         typedef float Scalar;
 
-        enum {
-            Order = 0
-        };
+        static const int Backend = INVALID_BACKEND;
+        static const int Order = 0;
 
         enum {
             FILL_TYPE = FillType::DELEGATE
@@ -225,9 +231,8 @@ namespace utopia {
     public:
         typedef int Scalar;
 
-        enum {
-            Order = 0
-        };
+        static const int Backend = INVALID_BACKEND;
+        static const int Order = 0;
 
         enum {
             FILL_TYPE = FillType::DELEGATE

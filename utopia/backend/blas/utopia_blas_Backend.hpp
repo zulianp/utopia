@@ -155,18 +155,41 @@ namespace utopia {
 			for (typename std::vector<Ordinal>::size_type i = 0; i < indices.size(); ++i)
 				set(v, indices[i], values[i]);
 		}
+
+
+		static void set(Vector &v, Scalar value)
+		{
+			std::fill(v.begin(), v.end(), value);
+		}
 		
+		// template<typename Ordinal>
+		// inline static void set(
+		// 					   Matrix &m,
+		// 					   const std::vector<Ordinal> &rows,
+		// 					   const std::vector<Ordinal> &columns,
+		// 					   const std::vector<Scalar> &values)
+		// {
+		// 	assert(rows.size() == columns.size() && rows.size() == values.size());
+			
+		// 	for (typename std::vector<Ordinal>::size_type i = 0; i < rows.size(); ++i)
+		// 		set(m, rows[i], columns[i], values[i]);
+		// }
+
 		template<typename Ordinal>
-		inline static void set(
-							   Matrix &m,
+		void set_matrix(Matrix &m,
 							   const std::vector<Ordinal> &rows,
-							   const std::vector<Ordinal> &columns,
+							   const std::vector<Ordinal> &cols,
 							   const std::vector<Scalar> &values)
 		{
-			assert(rows.size() == columns.size() && rows.size() == values.size());
-			
-			for (typename std::vector<Ordinal>::size_type i = 0; i < rows.size(); ++i)
-				set(m, rows[i], columns[i], values[i]);
+
+			const auto n_rows = rows.size();
+			const auto n_cols = cols.size();
+
+			for(std::size_t i = 0; i < n_rows; ++i) {
+				for(std::size_t j = 0; j < n_cols; ++j) {
+					set(m, rows[i], cols[j], values[i * n_rows + j]);
+				}
+			}
 		}
 		
 		template<typename Ordinal>
@@ -349,8 +372,12 @@ namespace utopia {
 		static Scalar trace(const Matrix &in);
 		static Scalar trace(const CCSMatrix<Scalar>  &in);
 		static Scalar dot(const Vector &left, const Vector &right);
-		static Scalar norm2(const Vector vector);
-		static Scalar norm_infty(const Vector vector);
+		static Scalar dot(const Matrix &left, const Matrix &right);
+		static Scalar norm2(const Vector &vector);
+		static Scalar norm2(const Matrix &mat);
+		static Scalar norm2(const CRSMatrix<Scalar> &mat);
+		static Scalar norm2(const CCSMatrix<Scalar> &mat);
+		static Scalar norm_infty(const Vector &vector);
 		static Scalar reduce(const Vector &vec, const Plus &);
 		static Scalar reduce(const Matrix &m,   const Plus &);
 		
@@ -358,6 +385,10 @@ namespace utopia {
 		static void axpy(Vector &y, const Scalar &alpha, const Vector &x);
 		static void axpy(Matrix &y, const Scalar &alpha, const Matrix &x);
 
+
+		//scale
+		static void scale(Vector &result, const Scalar scale_factor);
+		static void scale(Matrix &result, const Scalar scale_factor);
         //TODO
 		// static void axpy(CCSMatrix<Scalar> &y, const Scalar &alpha, const CCSMatrix<Scalar> &x);
 		// static void axpy(CRSMatrix<Scalar> &y, const Scalar &alpha, const CRSMatrix<Scalar> &x);
@@ -457,6 +488,28 @@ namespace utopia {
 				result[i] = -vec[i];
 			}
 		}
+
+		template<class Operation>
+		static void apply_unary(Matrix &result, const Operation &op, const Matrix &mat) {
+			if(result.rows() != mat.rows() || result.cols() != mat.cols()) {
+				result.resize(mat.rows(), mat.cols());
+			}
+
+			for(SizeType i = 0; i < mat.size(); ++i) {
+				result.entries()[i] = op.template apply<Scalar>(mat.entries()[i]);
+			}
+		}
+
+		static void apply_unary(Matrix &result, const Minus &, const Matrix &mat) {
+			if(result.rows() != mat.rows() || result.cols() != mat.cols()) {
+				result.resize(mat.rows(), mat.cols());
+			}
+
+			for(SizeType i = 0; i < mat.size(); ++i) {
+				result.entries()[i] = -mat.entries()[i];
+			}
+		}
+		
 		
 		//[binary]
 		template<class VectorT>
@@ -521,13 +574,15 @@ namespace utopia {
 		static void diag(Matrix &left, const Vector &right);
 		static void diag(Vector &left, const Matrix &right);
 		static void diag(Matrix &left, const Matrix &right);
+
+		// static void diag(CRSMatrix<Scalar> &left, const Vector &right);
+		static void diag(Vector &left, const CRSMatrix<Scalar>  &right);
 		
 		static void mat_diag_shift(Matrix &left, const Scalar diag_factor);
 		static void diag_scale_right(Matrix &result, const Matrix &m, const Vector &diag)
 		{
 			result.resize(m.rows(), m.cols());
-			const SizeType n = diag.size();
-			ASSERT(n == m.cols() && "sizes are not compatible");
+			ASSERT(diag.size() == m.cols() && "sizes are not compatible");
 			
 			for(SizeType i = 0; i < m.rows(); ++i) {
 				for(SizeType j = 0; j < m.cols(); ++j) {

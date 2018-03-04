@@ -127,6 +127,23 @@ namespace utopia {
         }
     };
 
+
+    // template<class Left, class Right, class Traits, int Backend>
+    // class Eval<Multiply<std::vector<Left>, Right>, Traits, Backend> {
+    // public:
+    //     typedef typename TypeAndFill<Traits, Multiply<Left, Right> >::Type ResultElement;
+
+    //     inline static std::vector<ResultElement> apply(const Multiply<std::vector<Left>, Right> &expr)
+    //     {
+    //         std::vector<ResultElement> result(expr.left().size());
+    //         for(std::size_t i = 0; i < result.size(); ++i) {
+    //             result[i] = Eval<Multiply<Left, Right>>::apply(expr.left()[i], expr.right());
+    //         }
+
+    //         return result;
+    //     }
+    // };
+
 }
 
 #endif //UTOPIA_UTOPIA_EVAL_MULTIPLY_HPP

@@ -1,10 +1,11 @@
-
 #ifndef UTOPIA_UTOPIA_PETSCMATRIX_H
 #define UTOPIA_UTOPIA_PETSCMATRIX_H
 
 #include "utopia_petsc_Error.hpp"
-#include "utopia_petsc_Vector.hpp"
+#include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_Size.hpp"
+#include "utopia_Range.hpp"
 
 #include "petscsys.h"
 #include "petscmat.h"
@@ -12,394 +13,399 @@
 #include <memory>
 
 namespace utopia {
+	class PetscMatrixMemory {
+	public:
+		PetscMatrixMemory(const MPI_Comm comm = PETSC_COMM_WORLD)
+		: owner_(true)
+		{
+			MatCreate(comm, &_mat);
+		}
+		
+		PetscMatrixMemory(Mat &mat, const bool owner = false)
+		: _mat(mat), owner_(owner) { }
+		
+		~PetscMatrixMemory()
+		{
+			destroy();
+		}
 
+		inline void destroy()
+		{
+			if(owner_) {
+				MatDestroy(&_mat);
+			}
+		}
+		
+		inline Mat &implementation() {
+			return _mat;
+		}
+		
+		inline const Mat &implementation() const {
+            assert(_mat != nullptr);
+			return _mat;
+		}
+		
+		//MAT_DO_NOT_COPY_VALUES or MAT_COPY_VALUES, cause it to copy the numerical values in the matrix MAT_SHARE_NONZERO_PATTERN
+		inline void duplicate(PetscMatrixMemory &other, MatDuplicateOption opt = MAT_COPY_VALUES) const {
+			// if(other.owner_) {
+				// MatDestroy(&other._mat);
+			// }
 
-    class PETScMatrixMeta {
-    public:
-        void setLocalSize(const PetscInt localRows, const PetscInt localColumns) {
-            _localRows = localRows;
-            _localColumns = localColumns;
-        }
+			other.destroy();
+			
+			PetscErrorHandler::Check(MatDuplicate(_mat, opt, &other._mat));
+		}
+		
+		inline void convert(PetscMatrixMemory &other, MatType newtype) {
+			//MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
+			PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_INITIAL_MATRIX, &other._mat));
+		}
+		
+		inline void convert(MatType newtype) {
+			//MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
+			PetscErrorHandler::Check(MatConvert(_mat, newtype, MAT_REUSE_MATRIX, &_mat));
+		}
+		
+		PetscMatrixMemory(const PetscMatrixMemory &other)
+		: owner_(true)
+		{
+			PetscErrorHandler::Check(MatCopy(other._mat, _mat, SAME_NONZERO_PATTERN));
+		}
+		
+		inline MPI_Comm communicator() const {
+			MPI_Comm comm = PetscObjectComm((PetscObject) implementation());
+			assert(comm != MPI_COMM_NULL);
+			return comm;
+		}
+		
+		void set_owner(const bool owner)
+		{
+			owner_ = owner;
+		}
+		
+	private:
+		Mat _mat;
+		bool owner_;
+	};
+	
+	class PetscMatrix {
+	public:
+		Mat &implementation() {
+			return wrapper_->implementation();
+		}
 
-        void setGlobalSize(const PetscInt globalRows, const PetscInt globalColumns) {
-            _globalRows = globalRows;
-            _globalColumns = globalColumns;
-        }
-
-        void setInsertMode(InsertMode insertMode) {
-            _insertMode = insertMode;
-        }
-
-        std::vector<PetscInt> &nnzXRow() {
-            return _nnzXrow;
-        }
-
-        const std::vector<PetscInt> &nnzXRow() const {
-            return _nnzXrow;
-        }
-
-        inline PetscInt getGlobalRows() const {
-            return _globalRows;
-        }
-
-        inline PetscInt getGlobalColumns() const {
-            return _globalColumns;
-        }
-
-
-        inline PetscInt getLocalRows() const {
-            return _localRows;
-        }
-
-        inline PetscInt getLocalColumns() const {
-            return _localColumns;
-        }
-
-        inline InsertMode getInsertMode() const {
-            return _insertMode;
-        }
-
-        PETScMatrixMeta()
-                : _globalRows(PETSC_DETERMINE), _globalColumns(PETSC_DETERMINE),
-                  _localRows(PETSC_DECIDE), _localColumns(PETSC_DECIDE),
-                  _insertMode(INSERT_VALUES) { }
-
-        void describe(std::ostream &os, MPI_Comm comm = PETSC_COMM_WORLD) {
-
-            int rank;
-            int size;
-
-            MPI_Comm_rank(comm, &rank);
-            MPI_Comm_size(comm, &size);
-
-            MPI_Barrier(comm);
-
-            for (int r = 0; r < size; ++r) {
-                if (r == rank) {
-                    os << "On rank " << rank << "\n";
-                    os << "Global size " << _globalRows << " x " << _globalColumns << "\n";
-                    os << "Local size " << _localRows << " x " << _localColumns << "\n";
-                    os << "Nnz x row\n";
-                    disp(_nnzXrow.begin(), _nnzXrow.end(), os);
-
-                }
-
-                MPI_Barrier(comm);
-            }
-        }
-
-    private:
-        PetscInt _globalRows, _globalColumns;
-        PetscInt _localRows, _localColumns;
-        std::vector<PetscInt> _nnzXrow;
-        InsertMode _insertMode;
-
-    };
-
-    class PETScMatWrapper {
-    public:
-        PETScMatWrapper(const MPI_Comm comm = PETSC_COMM_WORLD)
-                : _comm(comm), owner_(true) {
-            MatCreate(_comm, &_mat);
-        }
-
-        PETScMatWrapper(Mat &mat, const bool owner = false)
-        : _mat(mat), owner_(owner)
+        inline MatType type() const
         {
-            PetscObjectGetComm((PetscObject)_mat,&_comm);
+            MatType type;
+            MatGetType(implementation(), &type);
+            return type;
         }
 
-        ~PETScMatWrapper() {
-            if(owner_) {
-                MatDestroy(&_mat);
-            }
-        }
-
-        inline Mat &implementation() {
-            return _mat;
-        }
-
-        inline const Mat &implementation() const {
-            return _mat;
-        }
-
-        //MAT_DO_NOT_COPY_VALUES or MAT_COPY_VALUES, cause it to copy the numerical values in the matrix MAT_SHARE_NONZERO_PATTERN
-        inline void duplicate(PETScMatWrapper &other, MatDuplicateOption opt = MAT_COPY_VALUES) const {
-            if(other.owner_) {
-                MatDestroy(&other._mat);
-            }
-
-            PETScError::Check(MatDuplicate(_mat, opt, &other._mat));
-            other._comm = _comm;
-        }
-
-        inline void copy(PETScMatWrapper &other, MatStructure opt = DIFFERENT_NONZERO_PATTERN) const {
-            //DOES NOT WORK
-            assert(false);
-            PetscInt rows, cols, grows, gcols;
-
-            MatGetSize(_mat, &grows, &gcols);
-            MatGetLocalSize(_mat, &rows, &cols);
-
-            MatSetSizes(other._mat, rows, cols, grows, gcols);
-
-            PETScError::Check(MatCopy(_mat, other._mat, opt));
-            other._comm = _comm;
-        }
-
-        inline void convert(PETScMatWrapper &other, MatType newtype) {
-            //MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
-            PETScError::Check(MatConvert(_mat, newtype, MAT_INITIAL_MATRIX, &other._mat));
-            other._comm = _comm;
-        }
-
-        inline void convert(MatType newtype) {
-            //MAT_REUSE_MATRIX is only supported for inplace conversion, otherwise use MAT_INITIAL_MATRIX.
-            PETScError::Check(MatConvert(_mat, newtype, MAT_REUSE_MATRIX, &_mat));
-        }
-
-        PETScMatWrapper(const PETScMatWrapper &other)
-                : _comm(other._comm) {
-            //MatStructure str = SAME_NONZERO_PATTERN or DIFFERENT_NONZERO_PATTERN
-
-            PETScError::Check(MatCopy(other._mat, _mat, SAME_NONZERO_PATTERN));
-        }
-
-        MPI_Comm &communicator() {
-            return _comm;
-        }
-
-        void set_owner(const bool owner)
+        inline std::string name() const
         {
-            owner_ = owner;
+            const char *name;
+            PetscObjectGetName((PetscObject)implementation(), &name);
+            return name;
         }
 
-    private:
-        MPI_Comm _comm;
-        Mat _mat;
-        bool owner_;
-    };
-
-    class PETScMatrix {
-    public:
-        Mat &implementation() {
-            return _wrapper->implementation();
-        }
-
-        void wrap(Mat &mat)
+        inline void set_name(const std::string &name)
         {
-           _wrapper = std::make_shared<PETScMatWrapper>(mat, false);
+            PetscObjectSetName((PetscObject)implementation(), name.c_str());
         }
+		
+		void wrap(Mat &mat)
+		{
+			wrapper_ = std::make_shared<PetscMatrixMemory>(mat, false);
+		}
+		
+		const Mat &implementation() const {
+			return wrapper_->implementation();
+		}
+		
+		PetscMatrix(const MPI_Comm comm = PETSC_COMM_WORLD) {
+			using std::make_shared;
+			wrapper_ = make_shared<PetscMatrixMemory>(comm);
+		}
 
-        const Mat &implementation() const {
-            return _wrapper->implementation();
-        }
+		PetscMatrix(PetscMatrix &&other) 
+		: wrapper_(std::move(other.wrapper_))	
+		{}
+		
+		PetscMatrix(const PetscMatrix &other) {
+			using std::make_shared;
+			wrapper_ = make_shared<PetscMatrixMemory>();
+			other.wrapper_->duplicate(*wrapper_);
+		}
+		
+		PetscMatrix &operator=(const PetscMatrix &other) {
+			if(wrapper_ == other.wrapper_) return *this;
+			
+			wrapper_ = std::make_shared<PetscMatrixMemory>();
+			other.wrapper_->duplicate(*wrapper_);
+			return *this;
+		}
+		
+		PetscMatrix &operator=(PetscMatrix &&other) {
+			if(wrapper_ == other.wrapper_) return *this;
+			
+			this->wrapper_ = other.wrapper_;
+			other.wrapper_ = nullptr;
+			return *this;
+		}
+		
+		inline void describe() const {
+			MatView(wrapper_->implementation(), PETSC_VIEWER_STDOUT_(communicator()));
+		}
+		
+		inline MPI_Comm communicator() const {
+			return wrapper_->communicator();
+		}
+		
+		inline Size size() const
+		{
+			PetscInt rows, cols;
+			check_error( MatGetSize(implementation(), &rows, &cols) );
+			return {rows, cols};
+		}
+		
+		inline Size local_size() const
+		{
+			PetscInt rows, cols;
+			check_error( MatGetLocalSize(implementation(), &rows, &cols) );
+			return {rows, cols};
+		}
+		
+		inline PetscScalar get(const PetscInt row, const PetscInt col) const
+		{
+			PetscScalar value;
+			check_error( MatGetValues(implementation(), 1, &row, 1, &col, &value) );
+			return value;
+		}
+		
+		inline void set(const PetscInt row, const PetscInt col, PetscScalar value) {
+			check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, INSERT_VALUES) );
+		}
 
-        bool scaleByDiagonalMatrixFromLeft(PETScVector &vector)
+		inline void add(const PetscInt row, const PetscInt col, PetscScalar value) {
+			check_error( MatSetValues(implementation(), 1, &row, 1, &col, &value, ADD_VALUES) );
+		}
+		
+		void add_matrix(const std::vector<PetscInt> &rows,
+						const std::vector<PetscInt> &cols,
+						const std::vector<PetscScalar> &values);
+		
+		void set_matrix(const std::vector<PetscInt> &rows,
+						const std::vector<PetscInt> &cols,
+						const std::vector<PetscScalar> &values);
+		
+		inline void write_lock() { }
+		
+		inline void write_unlock() {
+			check_error( MatAssemblyBegin(implementation(), MAT_FINAL_ASSEMBLY) );
+			check_error( MatAssemblyEnd(implementation(),   MAT_FINAL_ASSEMBLY) );
+		}
+		
+		inline void read_lock() { }
+		inline void read_unlock() { }
+
+        void dense_init(
+            MPI_Comm comm,
+            MatType dense_type,
+            PetscInt rows_local,
+            PetscInt cols_local,
+            PetscInt rows_global,
+            PetscInt cols_global);
+
+
+        bool write(const std::string &path) const;
+        bool write_matlab(const std::string &path) const;
+
+        bool read(MPI_Comm comm, const std::string &path);
+        void copy_from(Mat mat);
+        void copy_to(Mat mat);
+        void copy_to(Mat *mat);
+
+        inline Range row_range() const
         {
-            return PETScError::Check( MatDiagonalScale(_wrapper->implementation(), vector.implementation(), NULL) );
+            PetscInt r_begin, r_end;
+            MatGetOwnershipRange(implementation(), &r_begin, &r_end);
+            assert(Range(r_begin, r_end).valid());
+            return Range(r_begin, r_end);
         }
 
-        bool mul(PETScMatrix &rhs, PETScMatrix &result) {
-            return PETScError::Check(
-                    MatMatMult(_wrapper->implementation(), rhs._wrapper->implementation(), MAT_INITIAL_MATRIX,
-                               PETSC_DEFAULT, &result._wrapper->implementation()));
+        inline Range col_range() const
+        {
+            PetscInt r_begin, r_end;
+            MatGetOwnershipRangeColumn(implementation(), &r_begin, &r_end);
+            assert(Range(r_begin, r_end).valid());
+            return Range(r_begin, r_end);
         }
 
-        bool mul(PETScVector &rhs, PETScVector &result) {
-            if (!result.hasGhosts()) {
+        void transpose();
+        void transpose(PetscMatrix &result) const;
 
-                PetscInt globalRows, globalColumns;
-                MatGetSize(_wrapper->implementation(), &globalRows, &globalColumns);
-                PetscInt localRows, localColumns;
-                MatGetLocalSize(_wrapper->implementation(), &localRows, &localColumns);
+        void clear();
+        bool is_sparse() const;
 
-                result.initialize(localRows, globalRows);
-            }
+        void select(const std::vector<PetscInt> &row_index,
+                    const std::vector<PetscInt> &col_index,
+                    PetscMatrix &result) const;
 
-            MatMult(_wrapper->implementation(), rhs.implementation(), result.implementation());
-            return true;
+        void local_select(
+                const Range &local_row_range,
+                const Range &local_col_range,
+                const Range &global_col_range,
+                PetscMatrix &result) const;
+
+        void select(
+                const Range &global_row_range,
+                const Range &global_col_range,
+                PetscMatrix &result) const;
+
+        inline PetscScalar trace() const
+        {
+        	PetscScalar ret;
+        	check_error( MatGetTrace(implementation(), &ret) );
+        	return ret;
         }
 
-        inline Range ownershipRange() const {
-            PetscInt globalBegin, globalEnd;
-            MatGetOwnershipRange(_wrapper->implementation(), &globalBegin, &globalEnd);
-            return Range(globalBegin, globalEnd);
+        PetscScalar sum() const;
+        PetscScalar max() const;
+        PetscScalar min() const;
+
+        void row_sum(PetscVector &col) const;
+        void row_max(PetscVector &col) const;
+        void row_min(PetscVector &col) const;
+
+        inline PetscReal norm2() const
+        {
+        	PetscReal val;
+        	MatNorm(implementation(), NORM_FROBENIUS, &val);
+        	return val;
         }
 
-        PETScMatrix(const MPI_Comm comm = PETSC_COMM_WORLD) {
-            using std::make_shared;
-            _wrapper = make_shared<PETScMatWrapper>(comm);
+        bool is_mpi() const;
+        bool is_nan_or_inf() const;
+
+
+        inline void scale(const PetscScalar factor)
+        {
+        	check_error( MatScale(implementation(), factor) );
         }
 
-        PETScMatrix(const PETScMatrix &other) {
-            using std::make_shared;
-            _wrapper = make_shared<PETScMatWrapper>();
-            other._wrapper->duplicate(*_wrapper);
+        //petsc says that it is correct only for square matrices
+        void get_diag(PetscVector &result) const;
+        void get_diag(PetscMatrix &result) const;
+
+        inline void diag_shift(const PetscScalar factor)
+        {
+        	check_error( MatShift(implementation(), factor) );
         }
 
-        PETScMatrix &operator=(const PETScMatrix &other) {
-            if(_wrapper == other._wrapper) return *this;
+        void dense_init_diag(MatType dense_type, const PetscVector &diag);
+        void matij_init_diag(const PetscVector &diag);
 
-            _wrapper = std::make_shared<PETScMatWrapper>();
-            other._wrapper->duplicate(*_wrapper);
-            return *this;
-        }
+        void dense_init_values(
+        	MPI_Comm comm,
+        	MatType dense_type,
+        	PetscInt local_rows,
+        	PetscInt local_cols,
+        	PetscInt global_rows,
+        	PetscInt global_cols,
+        	PetscScalar value
+        );
+       
+        void dense_init_identity(
+        	MPI_Comm comm,
+        	MatType dense_type,
+        	PetscInt local_rows,
+        	PetscInt local_cols,
+        	PetscInt global_rows,
+        	PetscInt global_cols,
+        	PetscScalar scale_factor);
 
-        PETScMatrix &operator=(PETScMatrix &&other) {
-            if(_wrapper == other._wrapper) return *this;
+        void matij_init_identity(
+        	MPI_Comm comm,
+        	PetscInt local_rows,
+        	PetscInt local_cols,
+        	PetscInt global_rows,
+        	PetscInt global_cols,
+        	PetscScalar scale_factor);
 
-            this->_wrapper = other._wrapper;
-            other._wrapper = nullptr;
-            // _wrapper = std::make_shared<PETScMatWrapper>();
-            // other._wrapper->duplicate(*_wrapper);
-            return *this;
-        }
+        void matij_init(
+        	MPI_Comm comm,
+        	PetscInt rows_local,
+        	PetscInt cols_local,
+        	PetscInt rows_global,
+        	PetscInt cols_global,
+        	PetscInt d_nnz,
+        	PetscInt o_nnz
+        );
 
-        bool get(const std::vector<PetscInt> &rowIndex, const std::vector<PetscInt> &colIndex,
-                 std::vector<PetscReal> &values) {
-            values.resize(rowIndex.size());
-            return PETScError::Check(
-                    MatGetValues(_wrapper->implementation(), rowIndex.size(), &rowIndex[0], colIndex.size(),
-                                 &colIndex[0], &values[0]));
-        }
+       void matij_init(
+    		MPI_Comm comm,
+    		PetscInt rows_local,
+    		PetscInt cols_local,
+    		PetscInt rows_global,
+    		PetscInt cols_global,
+    		const std::vector<PetscInt> &d_nnz,
+    		const std::vector<PetscInt> &o_nnz
+    	);
 
-        inline bool set(const std::vector<PetscInt> &rowIndex,
-                        const std::vector<PetscInt> &colIndex,
-                        const std::vector<PetscReal> &values) {
-            return insert(rowIndex, colIndex, values, INSERT_VALUES);
-        }
+         void mat_baij_init(
+        	MPI_Comm comm,
+        	PetscInt rows_local,
+        	PetscInt cols_local,
+        	PetscInt rows_global,
+        	PetscInt cols_global,
+        	PetscInt d_nnz,
+        	PetscInt o_nnz,
+        	PetscInt block_size
+        );
+        
+		inline void destroy()
+		{
+			wrapper_->destroy();
+		}
 
-        inline bool add(const std::vector<PetscInt> &rowIndex,
-                        const std::vector<PetscInt> &colIndex,
-                        const std::vector<PetscReal> &values) {
-            return insert(rowIndex, colIndex, values, ADD_VALUES);
-        }
+		void inverse(PetscMatrix &result) const;
 
-        void describe() const {
+		void mult(const PetscVector &vec, PetscVector &result) const;
+		void mult_t(const PetscVector &vec, PetscVector &result) const;
+		void mult(const PetscMatrix &mat, PetscMatrix &result) const;
+		void mult_t(const PetscMatrix &mat, PetscMatrix &result) const;
+		void mult_mat_t(const PetscMatrix &mat, PetscMatrix &result) const;
 
-            MatView(_wrapper->implementation(), PETSC_VIEWER_STDOUT_WORLD);
-        }
-
-        bool diag(PETScVector &vec) {
-            using std::max;
-            PetscInt globalRows, globalColumns;
-            MatGetSize(_wrapper->implementation(), &globalRows, &globalColumns);
-            PetscInt localRows, localColumns;
-            MatGetLocalSize(_wrapper->implementation(), &localRows, &localColumns);
-
-            PetscInt lenGlobal = max(globalRows, globalColumns);
-            PetscInt lenLocal = max(localRows, localColumns);
-            vec.resize(lenLocal, lenGlobal);
-            return PETScError::Check(MatGetDiagonal(_wrapper->implementation(), vec.implementation()));
-        }
-
-        // bool setDiag(PETScVector &vec)
-        // {
-        // 	return PETScError::Check( MatSetDiagonal(_wrapper->implementation(), vec.implementation() ) );
-        // }
-
-
-        void save(const std::string &path) {
-            PetscViewer viewer;
-
-            PetscViewerCreate(_wrapper->communicator(), &viewer);
-            PetscViewerSetType(viewer, PETSCVIEWERASCII);
-            PetscViewerFileSetMode(viewer, FILE_MODE_WRITE);
-            PetscViewerFileSetName(viewer, path.c_str());
-            PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
-            MatView(_wrapper->implementation(), viewer);
-            PetscViewerDestroy(&viewer);
-        }
-
-        void setName(const std::string &name) {
-            PetscObjectSetName((PetscObject) _wrapper->implementation(), name.c_str());
-        }
-
-//        inline Structure localStructure() const
-//        {
-//            PetscInt localRows, localColumns;
-//            MatGetLocalSize(_wrapper->implementation(), &localRows, &localColumns);
-//            return Structure(localRows, localColumns);
-//        }
-//
-//        inline Structure globalStructure() const
-//        {
-//            PetscInt globalRows, globalColumns;
-//            MatGetSize(_wrapper->implementation(), &globalRows, &globalColumns);
-//            return Structure(globalRows, globalColumns);
-//        }
-
-        MPI_Comm &communicator() {
-            return _wrapper->communicator();
-        }
-
-        const MPI_Comm &communicator() const {
-            return _wrapper->communicator();
-        }
-
-//    private:
-        bool finalize() {
-            bool ok = PETScError::Check(MatAssemblyBegin(_wrapper->implementation(), MAT_FINAL_ASSEMBLY));
-            ok &= PETScError::Check(MatAssemblyEnd(_wrapper->implementation(), MAT_FINAL_ASSEMBLY));
-            return ok;
-        }
-
-        inline bool insert(const std::vector<PetscInt> &rowIndex,
-                           const std::vector<PetscInt> &colIndex,
-                           const std::vector<PetscReal> &values,
-                           InsertMode addv) {
-            // std::cout << "Inserting:\n r:" << rowIndex << "\n c:" << colIndex << "\n v:" << values << std::endl;
-            assert(rowIndex.size() * colIndex.size() == values.size());
-            assert(rowIndex.size() >= 1);
-            assert(colIndex.size() >= 1);
-
-            return PETScError::Check(MatSetValues(_wrapper->implementation(), rowIndex.size(), &rowIndex[0],
-                                                  colIndex.size(), &colIndex[0], &values[0],
-                                                  addv));
-        }
-
-        inline bool initialize(const PetscInt localRows, const PetscInt localColumns,
-                               const PetscInt /*nDiags */,
-                               std::vector<PetscInt> &nnzXrow,
-                               std::vector<PetscInt> &rowIndex,
-                               std::vector<PetscInt> &colIndex,
-                               std::vector<PetscReal> &values,
-                               InsertMode addv = INSERT_VALUES) {
-            // MatMPIAIJSetPreallocation(_wrapper->implementation(), values.size(), NULL, 5,NULL);
-            initLocal(localRows, localColumns);
-            MatSetType(_wrapper->implementation(), MATMPIAIJ);
-            // MatSetUp(_wrapper->implementation());//, PETSC_DEFAULT, NULL, values.size(), NULL);/
-
-            // MatCreateAIJ(_wrapper->communicator(), localRows, localColumns, PETSC_DETERMINE, PETSC_DETERMINE, nDiags, NULL, values.size(), NULL, &_wrapper->implementation());
-            MatSeqAIJSetPreallocation(_wrapper->implementation(), PETSC_DEFAULT, &nnzXrow[0]);
-            
-            // MatMPIAIJSetPreallocation(_wrapper->implementation(), nDiags, NULL, values.size()-nDiags, NULL);
-            MatMPIAIJSetPreallocation(_wrapper->implementation(), PETSC_DEFAULT, NULL, PETSC_DEFAULT, NULL);
-
-            // initLocal(localRows, localColumns);
-            bool ok = PETScError::Check(MatAssemblyBegin(_wrapper->implementation(), MAT_FLUSH_ASSEMBLY));
-            ok &= PETScError::Check(
-                    MatSetValues(_wrapper->implementation(), rowIndex.size(), &rowIndex[0], colIndex.size(),
-                                 &colIndex[0], &values[0], addv));
-            ok &= PETScError::Check(MatAssemblyEnd(_wrapper->implementation(), MAT_FLUSH_ASSEMBLY));
-
-            return finalize();
-        }
+		///result = v2 + this * v1
+		void mult_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const;
+		void mult_t_add(const PetscVector &v1, const PetscVector &v2, PetscVector &result) const;
 
 
-        void initGlobal(const PetscInt globalRows, const PetscInt globalColumns) {
-            MatSetSizes(_wrapper->implementation(), PETSC_DECIDE, PETSC_DECIDE, globalRows, globalColumns);
-        }
+		///this is y
+		void axpy(const PetscScalar alpha, const PetscMatrix &x);
 
-        void initLocal(const PetscInt localRows, const PetscInt localColumns) {
-            MatSetSizes(_wrapper->implementation(), localRows, localColumns, PETSC_DETERMINE, PETSC_DETERMINE);
-        }
+		void convert_to_mat_baij(const PetscInt block_size);
+	private:
+		std::shared_ptr<PetscMatrixMemory> wrapper_;
+		
+		inline static bool check_error(const PetscInt err)
+		{
+			return PetscErrorHandler::Check(err);
+		}
 
-    private:
-        std::shared_ptr<PETScMatWrapper> _wrapper;
+        void select_aux(const std::vector<PetscInt> &row_index,
+                        const std::vector<PetscInt> &col_index,
+                        PetscMatrix &result) const;
 
-    };
+        void par_assign_from_local_is(
+                const std::vector<PetscInt> &remote_rows,
+                const std::vector<PetscInt> &remote_cols,
+                const PetscInt global_col_offset,
+                const Range &local_col_range,
+                PetscMatrix &result) const;
+
+      
+	};
 }
 
 #endif //UTOPIA_UTOPIA_PETSCMATRIX_H

@@ -75,6 +75,22 @@ namespace utopia {
 	{
 		daxpy_(n, alpha, x, incx, y, incy);
 	}
+
+
+	void BLASBackend::scale(Vector &result, const Scalar scale_factor)
+	{
+		const int n = result.size();
+		const int incx = 1;
+		assert(!result.empty());
+		dscal_wrapper(&n, &scale_factor, &result[0], &incx);
+	}
+
+	void BLASBackend::scale(Matrix &result, const Scalar scale_factor)
+	{
+		const int n = result.rows() * result.cols();
+		const int incx = 1;
+		dscal_wrapper(&n, &scale_factor, result.ptr(), &incx);
+	}
 	
 	void BLASBackend::assign(Vector &left, Vector &&right)
 	{
@@ -417,15 +433,47 @@ namespace utopia {
 		
 		return ddot_(&n, &left[0], &incx, &right[0], &incy);
 	}
+
+	BLASBackend::Scalar BLASBackend::dot(const Matrix &left, const Matrix &right)
+	{
+		const int n = left.size();
+		assert(n == right.size());
+		
+		const int incx = 1;
+		const int incy = 1;
+		
+		return ddot_(&n, &left.entries()[0], &incx, &right.entries()[0], &incy);
+	}
 	
-	BLASBackend::Scalar BLASBackend::norm2(const Vector vector)
+	BLASBackend::Scalar BLASBackend::norm2(const Vector &vector)
 	{
 		const int n = vector.size();
 		const int incx = 1;
 		return dnrm2_(&n, &vector[0], &incx);
 	}
-	
-	BLASBackend::Scalar BLASBackend::norm_infty(const Vector vector)
+
+	BLASBackend::Scalar BLASBackend::norm2(const Matrix &mat)
+	{
+		const int n = mat.entries().size();
+		const int incx = 1;
+		return dnrm2_(&n, &mat.entries()[0], &incx);
+	}
+
+	BLASBackend::Scalar BLASBackend::norm2(const CRSMatrix<Scalar> &mat)
+	{
+		const int n = mat.entries().size();
+		const int incx = 1;
+		return dnrm2_(&n, &mat.entries()[0], &incx);
+	}
+
+	BLASBackend::Scalar BLASBackend::norm2(const CCSMatrix<Scalar> &mat)
+	{
+		const int n = mat.entries().size();
+		const int incx = 1;
+		return dnrm2_(&n, &mat.entries()[0], &incx);
+	}
+
+	BLASBackend::Scalar BLASBackend::norm_infty(const Vector &vector)
 	{
 		using std::max_element;
 		if(vector.empty()) return 0.;
@@ -539,7 +587,28 @@ namespace utopia {
 			left.set(i, i,right[i]);
 		}
 	}
-	
+
+	void BLASBackend::diag(Vector &left, const CRSMatrix<Scalar>  &right)
+	{
+		const SizeType n = std::min(right.rows(), right.cols());
+		left.resize(n);
+
+		for (SizeType r = 0; r < n; ++r) {
+			const SizeType begin = right.rowptr()[r];
+			const SizeType end   = right.rowptr()[r + 1];
+
+			left[r] = 0.;
+
+			for (SizeType ind = begin; ind != end; ++ind) {
+				const SizeType c = right.colindex()[ind];
+				if(c == r) {
+					left[r] = right.entries()[ind];
+					break;
+				}
+			}
+		}
+	}
+
 	void BLASBackend::diag(Vector &left, const Matrix &right)
 	{
 		const SizeType n = std::min(right.rows(), right.cols());

@@ -48,6 +48,18 @@ namespace utopia {
 
         }
 
+        inline std::vector< std::shared_ptr<libMesh::MeshBase> > &meshes()
+        {
+            return spaces_;
+
+        }
+
+        inline const std::vector< std::shared_ptr<libMesh::MeshBase> > &meshes() const
+        {
+            return spaces_;
+
+        }
+
         inline long n_elements() const
         {
             long ret = 0;

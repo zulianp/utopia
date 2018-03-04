@@ -49,6 +49,8 @@ namespace utopia {
 		bool dynamic_contact;
 		bool is_inpulse;
 
+		LameeParameters params;
+
 		ExampleProblemBase()
 		{
 			is_inpulse = false;
@@ -233,9 +235,19 @@ namespace utopia {
 			dynamic_contact = false;
 		}
 
+		void quasi_rocks()
+		{
+			mesh_file = "../data/two_quasi_rocks_cubes.e";
+		}
+
 		int block_id() const override
 		{
 			return 1;
+		}
+
+		void id_rocks()
+		{
+			mesh_file = "../data/two_quasi_rocks_matching.e";
 		}
 
 		void apply(LibMeshFEFunction &, LibMeshFEFunction &)  override {}
@@ -244,7 +256,8 @@ namespace utopia {
 		{
 			strong_enforce( boundary_conditions(ux == coeff(0.), {top_boundary_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.), {top_boundary_tag}) );
-			strong_enforce( boundary_conditions(uz == coeff(-0.5), {top_boundary_tag}) );
+			// strong_enforce( boundary_conditions(uz == coeff(-0.5), {top_boundary_tag}) );
+			strong_enforce( boundary_conditions(uz == coeff(-0.1), {top_boundary_tag}) );
 
 			strong_enforce( boundary_conditions(ux == coeff(0.),  {bottom_boundar_tag}) );
 			strong_enforce( boundary_conditions(uy == coeff(0.),  {bottom_boundar_tag}) );
@@ -257,21 +270,75 @@ namespace utopia {
 		}
 	};
 
+	class Squares : public ExampleProblemBase, public ContactProblem::ElasticityInitialVelocity {
+	public:
+		Squares() {
+			mesh_file = "../data/squares.e";
+			// contact_flags = {{1, 2}};
+			contact_flags = {{2, 1}};
+			search_radius = 0.1;
+			dt = .001;
+			n_steps = 300;
+			dynamic_contact = true;
+		}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy)  override { }
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override { }
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			v.zero();
+		}
+
+		virtual void fill_velocity(const int block_id, libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			double value = 0;
+			switch(block_id) {
+				case 1: {
+					value = -2;
+					break;
+				}
+
+				case 2: {
+					value = 2;
+					break;
+				}
+
+				default:
+				{
+					break;
+				}
+			}
+
+
+			for(int i = v.size()/2; i < v.size(); ++i) {
+				v(i) = value;
+			}
+		}
+
+	};
+
 	class Balls : public ExampleProblemBase {
 	public:
 		Balls() {
-			mesh_file = "../data/balls.e";
+			// mesh_file = "../data/balls.e";
+			mesh_file = "../data/solid_2.e";
 			fixed_boundary = 5;
 			contact_flags = {{1, 2}, {1, 3}, {1, 4}, 
 							 		 {2, 3}, {2, 4},
 							                 {3, 4} };
 			search_radius = 0.1;
-			dt = .02;
-			n_steps = 1000;
-			dynamic_contact = true;
+			dt = .01;
+			n_steps = 150;
+			dynamic_contact = false;
 			is_three_dim = false;
+		}
 
 
+		void set_up_dynamic_with_impulse()
+		{
+			is_inpulse = true;
 		}
 
 		void three_dim()
@@ -322,15 +389,88 @@ namespace utopia {
 
 		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
 		{
+			double value = -1.;
+
+			if(is_inpulse) {
+				value = -25;
+			}
+
 			if(is_three_dim) {
-				v(2) = -1.;
+				v(2) = value;
 			} else {
-				v(1) = -1.;
+				v(1) = value;
 			}
 		}
 
 		int fixed_boundary;
 		bool is_three_dim;
+	};
+
+
+	class IroningProblem : public ExampleProblemBase, public ContactProblem::ElasticityInitialVelocity {
+	public:
+		IroningProblem() {
+			mesh_file = "../data/ironing.e";
+			contact_flags = {{2, 1}};
+			search_radius = 0.5;
+			dt = .01;
+			n_steps = 400;
+			// dynamic_contact = true;
+			dynamic_contact = false;
+		}
+
+		void finer()
+		{
+			mesh_file = "../data/ironing_finer.e";
+		}
+
+		void finest()
+		{
+			mesh_file = "../data/ironing_finest.e";
+		}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy)  override 
+		{
+			strong_enforce( boundary_conditions(ux == coeff(0.),   {3}) );
+			strong_enforce( boundary_conditions(ux == coeff(0.),   {4}) );
+
+			strong_enforce( boundary_conditions(uy == coeff(0.),   {3}) );
+			strong_enforce( boundary_conditions(uy == coeff(0.),   {4}) );
+		}
+
+		void apply(LibMeshFEFunction &ux, LibMeshFEFunction &uy, LibMeshFEFunction &uz) override { }
+
+		virtual void fill(libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			v.zero();
+		}
+
+		virtual void fill_velocity(const int block_id, libMesh::DenseVector<libMesh::Real> &v) override
+		{
+			// double value = 0;
+			// switch(block_id) {
+			// 	case 1: {
+			// 		value = -2;
+			// 		break;
+			// 	}
+
+			// 	case 2: {
+			// 		value = 2;
+			// 		break;
+			// 	}
+
+			// 	default:
+			// 	{
+			// 		break;
+			// 	}
+			// }
+
+
+			// for(int i = v.size()/2; i < v.size(); ++i) {
+			// 	v(i) = value;
+			// }
+			v.zero();
+		}
 	};
 
 
@@ -348,6 +488,19 @@ namespace utopia {
 			dynamic_contact = false;
 			is_inpulse = false;
 
+		}
+
+		void set_up_wear_test()
+		{
+			mesh_file = "../data/wear_2_far.e";
+			search_radius = 0.1;
+			dt = 0.1;
+			dynamic_contact = true;
+			n_steps = 200;
+			top_boundary_tag = 3;
+			bottom_boundar_tag = 4;
+			contact_flags = {{1, 2}};
+			params = LameeParameters(10., 10.);
 		}
 
 		void set_up_dynamic()
@@ -440,15 +593,18 @@ namespace utopia {
 		ContactProblem p;
 			
 		// ---------------------------------------------------
-		auto e_problem = make_shared<Balls>();
-		e_problem->three_dim();
-		// auto e_problem = make_shared<ExampleProblem2D>();
+		// auto e_problem = make_shared<Squares>(); p.set_initial_velocity(e_problem);
+		// auto e_problem = make_shared<Balls>();
+		// e_problem->three_dim();
+		auto e_problem = make_shared<ExampleProblem2D>();
 		// e_problem->set_up_m_coarse_t_dynamic();
+		e_problem->set_up_wear_test();
 
 		// e_problem->set_up_m_coarse_t();
 		// auto e_problem = make_shared<Rocks>();
 		// e_problem->set_up_m_coarse_t_dynamic();
 		// e_problem->set_up_dynamic_with_impulse();
+		// e_problem->many();
 		 
 		
 		// auto e_problem = make_shared<ExampleProblem3D>();
@@ -461,6 +617,13 @@ namespace utopia {
 		// e_problem->set_up_fine_res();
 		// e_problem->set_up_adaptive();
 		// e_problem->set_up_time_dependent();
+
+		// auto e_problem = make_shared<IroningProblem>();
+		// e_problem->finest();
+		// e_problem->id_rocks();
+
+		// auto e_problem = make_shared<Rocks>();
+		// e_problem->quasi_rocks();
 		
 		//---------------------------------------------------
 		
@@ -470,6 +633,7 @@ namespace utopia {
 
 		utopia::Utopia::Instance().set("plot", "true");
 
+		p.params = e_problem->params;
 		p.init(init, mesh, e_problem, e_problem, e_problem->contact_flags, e_problem->search_radius);
 		p.set_dynamic_contact(e_problem->dynamic_contact);
 		p.is_inpulse(e_problem->is_inpulse);

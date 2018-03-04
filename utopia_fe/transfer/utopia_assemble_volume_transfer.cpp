@@ -294,28 +294,45 @@ namespace utopia {
 		
 		return true;
 	}
-	
-	static void assemble_biorth_weights_from_space(const std::shared_ptr<MeshBase> &mesh,
-												   const std::shared_ptr<DofMap> &dof_map,
-												   const int var_num,
-												   libMesh::DenseMatrix<libMesh::Real> &weights)
+
+
+	static void assemble_biorth_weights(const Elem &el,
+									    const int dim,
+									    const libMesh::FEType &var_type,
+									    const int el_order,
+									    libMesh::DenseMatrix<libMesh::Real> &weights)
 	{
-		const int dim = mesh->mesh_dimension();
-		std::unique_ptr<libMesh::FEBase> biorth_elem =
-		libMesh::FEBase::build(dim,
-							   dof_map->variable_type(var_num));
-		
-		auto &el = **mesh->active_local_elements_begin();
-		
-		const int order = order_for_l2_integral(dim,
-												el, dof_map->variable(var_num).type().order,
-												el, dof_map->variable(var_num).type().order);
+		std::unique_ptr<libMesh::FEBase> biorth_elem = libMesh::FEBase::build(dim, var_type);
+				
+		const int order = order_for_l2_integral(dim, el, el_order, el, el_order);
 		
 		libMesh::QGauss qg(dim, libMesh::Order(order));
 		biorth_elem->attach_quadrature_rule(&qg);
 		biorth_elem->reinit(&el);
 		mortar_assemble_weights(*biorth_elem, weights);
 	}
+	
+	// static void assemble_biorth_weights(const std::shared_ptr<MeshBase> &mesh,
+	// 											   const std::shared_ptr<DofMap> &dof_map,
+	// 											   const int var_num,
+	// 											   libMesh::DenseMatrix<libMesh::Real> &weights)
+	// {
+	// 	const int dim = mesh->mesh_dimension();
+	// 	std::unique_ptr<libMesh::FEBase> biorth_elem =
+	// 	libMesh::FEBase::build(dim,
+	// 						   dof_map->variable_type(var_num));
+		
+	// 	auto &el = **mesh->active_local_elements_begin();
+		
+	// 	const int order = order_for_l2_integral(dim,
+	// 											el, dof_map->variable(var_num).type().order,
+	// 											el, dof_map->variable(var_num).type().order);
+		
+	// 	libMesh::QGauss qg(dim, libMesh::Order(order));
+	// 	biorth_elem->attach_quadrature_rule(&qg);
+	// 	biorth_elem->reinit(&el);
+	// 	mortar_assemble_weights(*biorth_elem, weights);
+	// }
 	
 	static void scale_polyhedron(const double scaling, Polyhedron &poly)
 	{
@@ -368,11 +385,16 @@ namespace utopia {
 		
 		libMesh::DenseMatrix<libMesh::Real> biorth_weights;
 		
-		if(use_biorth) {
-			assemble_biorth_weights_from_space(slave_space,
-											   dof_slave,
-											   var_num_slave,
-											   biorth_weights);
+		bool must_compute_biorth = use_biorth;
+		if(must_compute_biorth && slave_space->active_local_elements_begin() != slave_space->active_local_elements_end()) {
+			assemble_biorth_weights(**slave_space->active_local_elements_begin(),
+									slave_space->mesh_dimension(),
+									dof_slave->variable_type(to_var_num),
+									dof_slave->variable(to_var_num).type().order,
+									biorth_weights);
+
+
+			must_compute_biorth = false;
 		}
 		
 		auto fun = [&](const VElementAdapter<Dimensions> &master,
@@ -395,6 +417,16 @@ namespace utopia {
 			auto &dest_el = *dest_mesh.elem(dest_index);
 			
 			const int dim = src_mesh.mesh_dimension();
+
+			if(must_compute_biorth) {
+				assemble_biorth_weights(dest_el,
+									    dim,
+									    dest_el.type(),
+									    dof_slave->variable(0).type().order,
+									    biorth_weights);
+
+				must_compute_biorth = false;
+			}
 			
 			
 			std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
@@ -406,7 +438,7 @@ namespace utopia {
 			QMortar src_ir(dim);
 			QMortar dest_ir(dim);
 			
-			const int order = order_for_l2_integral(dim, src_el, dof_master->variable(0).type().order , dest_el,dof_slave->variable(0).type().order);
+			const int order = order_for_l2_integral(dim, src_el, dof_master->variable(0).type().order , dest_el, dof_slave->variable(0).type().order);
 			
 			if(dim == 2)  {
 				make_polygon(src_el,   src_pts);

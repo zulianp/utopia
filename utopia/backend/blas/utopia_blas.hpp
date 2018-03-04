@@ -16,4 +16,7 @@
 #include "utopia_blas_eigensolvers.hpp"
 #include "utopia_blas_TrustRegionFactory.hpp"
 
+#include "utopia_blas_RowView.hpp"
+#include "utopia_blas_Eval.hpp"
+
 #endif //UTOPIA_BLAS_HPP

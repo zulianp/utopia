@@ -33,6 +33,18 @@ namespace utopia {
     };
 
     template<class Left, class Right, class Operation, class Traits, int Backend>
+    class Eval<Binary<Number<Left>, Number<Right>, Operation>, Traits, Backend> {
+    public:
+
+        inline static auto apply(const Binary<Number<Left>, Number<Right>, Operation> &expr) -> decltype(Left() + Right())
+        {
+            Left l = expr.left();
+            Right r = expr.right();
+            return expr.operation().apply(l, r);
+        }
+    };
+
+    template<class Left, class Right, class Operation, class Traits, int Backend>
     class Eval<Binary<Left, Right, Operation>, Traits, Backend> {
     public:
         typedef typename utopia::TypeAndFill<Traits, Binary<Left, Right, Operation> >::Type Result;

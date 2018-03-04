@@ -41,11 +41,11 @@ class FenicsUtopiaFunction : public utopia::Function<Matrix, Vector>
         {
 
             // this is changing u in lin and bil. forms 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             x_wrap.update_ghost_values();
             (*_u->vector()) = x_wrap;
 
-            dolfin::PETScVector b;
+            dolfin::PetscVector b;
             dolfin::SystemAssembler assembler(_H, _g, _bcs);
             assembler.assemble(b, *_u->vector());
 
@@ -61,10 +61,10 @@ class FenicsUtopiaFunction : public utopia::Function<Matrix, Vector>
         {
 
             // this is changing u in lin and bil. forms 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             x_wrap.update_ghost_values();
 
-            dolfin::PETScMatrix A;
+            dolfin::PetscMatrix A;
             dolfin::SystemAssembler assembler(_H, _g, _bcs);
             assembler.assemble(A);
 
@@ -81,7 +81,7 @@ class FenicsUtopiaFunction : public utopia::Function<Matrix, Vector>
         bool value(const Vector &x, typename Vector::Scalar &f) const override 
         {
             // this is changing u in lin and bil. forms 
-            dolfin::PETScVector x_wrap(utopia::raw_type(x)); 
+            dolfin::PetscVector x_wrap(utopia::raw_type(x)); 
             (*_u->vector()) = x_wrap;
 
             dolfin::Scalar global_energy;

@@ -86,12 +86,12 @@ namespace utopia
 	public:
 	    void atol(const Scalar & atol_in )  {  KSPSolver::atol(atol_in); }; 
         void rtol(const Scalar & rtol_in )  {  KSPSolver::rtol(rtol_in);  }; 
-        void stol(const Scalar & stol_in ) { KSPSolver::stol(stol_in);; }; 	   	
-
-        Scalar      atol() const               { return KSPSolver::atol(); } 
-        Scalar      rtol()  const              { return KSPSolver::rtol(); } 
-        Scalar      stol()  const              { return KSPSolver::stol(); }
-
+        void stol(const Scalar & stol_in ) { KSPSolver::stol(stol_in); }; 	   	
+        
+        Scalar      atol() const               	{ return KSPSolver::atol(); } 
+        Scalar      rtol()  const              	{ return KSPSolver::rtol(); } 
+        Scalar      stol()  const              	{ return KSPSolver::stol(); }
+        
 
 	protected:
 
@@ -121,9 +121,18 @@ namespace utopia
 	     */
 	    virtual void set_ksp_options(KSP & ksp) override 
 	    {
-	        PetscErrorCode ierr;
+	    	PetscErrorCode ierr;
+
+	    	ierr = KSPSetFromOptions(ksp); 
 	        ierr = KSPSetType(ksp, this->ksp_type().c_str()); 
 	        ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+
+	        if(!this->get_preconditioner()) 
+	        {
+	            PC pc; 
+	            ierr = KSPGetPC(ksp, &pc);
+	            ierr = PCSetType(pc, this->pc_type().c_str());
+	        }
 
 			if(this->ksp_type() == "qcg")
 				ierr = KSPQCGSetTrustRegionRadius(ksp, this->current_radius()); 
@@ -134,7 +143,8 @@ namespace utopia
 			else
 		        ierr = KSPSTCGSetRadius(ksp, this->current_radius()); 
 
-	        ierr = KSPSetTolerances(ksp, KSPSolver::rtol(), KSPSolver::atol(), PETSC_DEFAULT,  KSPSolver::max_it());
+		    
+	        ierr = KSPSetTolerances(ksp, KSPSolver::rtol(), KSPSolver::atol(), PETSC_DEFAULT,  TRSubproblem::max_it());
 	    }
 
     };

@@ -12,33 +12,48 @@ namespace utopia {
     template<typename _Scalar>
     class Number : public Expression< Number<_Scalar> > {
     public:
+        static const int Order = 0; 
+        // static const int  StoreAs = UTOPIA_BY_VALUE;
+
         enum {
-         Order = 0
+             StoreAs = UTOPIA_BY_VALUE
         };
-
-         enum {
-            StoreAs = UTOPIA_BY_VALUE
-        };
-
 
         typedef _Scalar Scalar;
         // inline operator Scalar() const
         // {
-        //     return _value;
+        //     return value_;
         // }
 
         inline operator Scalar &()
         {
-            return _value;
+            return value_;
         }
 
-        inline operator const Scalar &() const
+        inline constexpr operator const Scalar &() const
         {
-            return _value;
+            return value_;
         }
 
+        // template<typename TOther>
+        // inline constexpr Number &operator=(const Number<TOther> &other)
+        // {
+        //     value_ = other.value_;
+        //     return *this;
+        // }
 
-        inline Number(const Scalar &value)  : _value(value)
+        // inline constexpr Number &operator=(const Scalar &other)
+        // {
+        //     value_ = other;
+        //     return *this;
+        // }
+
+        inline Scalar get() const
+        {
+            return value_;
+        }
+
+        inline constexpr Number(const Scalar &value)  : value_(value)
         {}
 
         std::string getClass() const
@@ -47,17 +62,17 @@ namespace utopia {
         }
 
         template<typename OtherScalar>
-        Number(const Number<OtherScalar> &other)
-        : _value(other._value)
+        constexpr Number(const Number<OtherScalar> &other)
+        : value_(other.value_)
         {}
 
         template<class Derived>
         Number(const Expression<Derived> &expr)
-        : _value(scalar_cast<Scalar>(expr))
+        : value_(scalar_cast<Scalar>(expr))
         {}
 
     private:
-        Scalar _value;
+        Scalar value_;
     };
 
     template<typename T>
@@ -95,9 +110,7 @@ namespace utopia {
     public:
         typedef _Scalar Scalar;
 
-        enum {
-            Order = 0
-        };
+        static const int Order = 0;
 
         inline constexpr operator Scalar() const
         {

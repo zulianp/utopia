@@ -25,6 +25,16 @@ namespace utopia
       static const int FULL_CYCLE           = 3;
       static const int NESTED_ITERATION     = 4;
 
+
+
+
+    enum VerbosityLevel  {  VERBOSITY_LEVEL_QUIET         =-1,
+                            VERBOSITY_LEVEL_NORMAL        = 0,
+                            VERBOSITY_LEVEL_VERY_VERBOSE  = 1,
+                            VERBOSITY_LEVEL_DEBUG         = 2 };
+
+
+
     /**
      * @brief      This class keeps track on all parameters, that we have in linear and nonlinear solvers.
      *             It provides default choice of params and routines to set user-defined preferences. 
@@ -60,9 +70,9 @@ namespace utopia
 
         /*----------  TR  ----------*/
           trust_region_alg_ = "STEIHAUG_TOINT"; 
-          delta_max_  = 1e8; 
-          delta_min_  = 1e-10; 
-          delta0_ = 1e5; 
+          delta_max_  = 1e14; 
+          delta_min_  = 1e-14; 
+          delta0_ = 1; 
 
           gamma1_ = 0.2; 
           gamma2_ = 2.0; 
@@ -122,6 +132,13 @@ namespace utopia
           log_iterates_       = false; 
           log_system_         = false; 
           log_norms_          = false; 
+          verbosity_level_    = VERBOSITY_LEVEL_NORMAL; 
+
+
+        /* ---------- stag. scheme -------------- */
+
+          num_alternate_steps_ = 10; 
+          energy_slope_tol_    = 1; 
 
           stay_quiet();
         }
@@ -219,6 +236,11 @@ namespace utopia
     SizeType    max_smoothing_it() const          { return max_smoothing_it_; } 
 
 
+    /*---------------------------------------------- stag. shceme  ------------------------------*/
+    SizeType    num_alternate_steps() const          { return num_alternate_steps_; } 
+    Scalar      energy_slope_tol() const             { return energy_slope_tol_; }
+
+    VerbosityLevel verbosity_level() const            {return verbosity_level_; }
 
     // -------------------------------------------------------------------------------//
     /* --------------------------------  SETTERS  ------------------------------------*/
@@ -309,6 +331,12 @@ namespace utopia
     void    max_smoothing_it(const SizeType & max_smoothing_it)                     {  max_smoothing_it_ = max_smoothing_it ; } 
 
   
+  /*---------------------------------------------- stag. shceme  ------------------------------*/
+    void    num_alternate_steps(const SizeType & num_alternate_steps)           {   num_alternate_steps_ = num_alternate_steps; } 
+    void    energy_slope_tol(const Scalar & energy_slope_tol)                   {   energy_slope_tol_ = energy_slope_tol; }
+
+    void    verbosity_level(const VerbosityLevel & verbosity_level)             {verbosity_level_ = verbosity_level; }
+
 
     protected: 
           bool verbose_; 
@@ -376,6 +404,7 @@ namespace utopia
           bool log_system_; 
           bool log_norms_;
 
+          VerbosityLevel verbosity_level_; 
 
 
           // RMTR parameters
@@ -390,6 +419,11 @@ namespace utopia
 
           Scalar          hessian_update_delta_; 
           Scalar          hessian_update_eta_; 
+
+
+
+          SizeType        num_alternate_steps_; 
+          Scalar          energy_slope_tol_; 
 
     };
 

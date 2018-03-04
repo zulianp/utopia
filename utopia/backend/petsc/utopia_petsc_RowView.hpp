@@ -24,13 +24,13 @@ namespace utopia {
 			return n_values_;
 		}
 
-		inline PetscInt get_col_at(const PetscInt index) const
+		inline PetscInt col(const PetscInt index) const
 		{
 			assert(index < n_values_);
 			return cols_[index];
 		}
 
-		inline PetscScalar get_value_at(const PetscInt index) const
+		inline PetscScalar get(const PetscInt index) const
 		{
 			assert(index < n_values_);
 			return values_[index];
