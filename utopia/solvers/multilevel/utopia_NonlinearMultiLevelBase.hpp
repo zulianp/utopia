@@ -18,6 +18,9 @@
 
 namespace utopia 
 {
+
+    #define CHECK_NUM_PRECISION_mode
+
     /**
      * @brief      Base class for all nonlinear multilevel solvers. \n
      *             Takes care of inializing multilevel hierarchy - calls into assembly routines on each level. \n
@@ -135,6 +138,13 @@ namespace utopia
             }
 
             this->print_statistics(it); 
+
+            #ifdef CHECK_NUM_PRECISION_mode
+                if(has_nan_or_inf(x_h) == 1)
+                    exit(0); 
+            #endif
+
+
             return true;
         }
         
