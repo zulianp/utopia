@@ -1,7 +1,7 @@
 #ifndef UTOPIA_TRILINOS_TEST_HPP
 #define UTOPIA_TRILINOS_TEST_HPP
 
-#include "utopia_trilinos.hpp"
+
 
 namespace utopia
 {

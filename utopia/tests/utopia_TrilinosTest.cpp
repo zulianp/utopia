@@ -3,6 +3,7 @@
 #ifdef WITH_TRILINOS
 #include "utopia_TrilinosTest.hpp"
 #include "utopia.hpp"
+#include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
 #include <iostream>
 

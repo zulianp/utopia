@@ -27,9 +27,9 @@ UTOPIA_MAKE_TRAITS(TpetraVector, TrilinosTraits);
  */
 
 
-typedef Wrapper<TpetraMatrix, 2>             DMatrixd;
-typedef Wrapper<TpetraSparseMatrix, 2>       DSMatrixd;
-typedef Wrapper<TpetraVector, 1>             DVectord;
+typedef Wrapper<TpetraMatrix, 2>             TMatrixd;
+typedef Wrapper<TpetraSparseMatrix, 2>       TSMatrixd;
+typedef Wrapper<TpetraVector, 1>             TVectord;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -53,9 +53,9 @@ typedef Wrapper<TpetraVector, 1>             DVectord;
         w.implementation().describe()*/
 
 ///////////////////////////////////////////////////////////////////////////////
-UTOPIA_MAKE_PARALLEL_TRAITS(DMatrixd);
-UTOPIA_MAKE_PARALLEL_TRAITS(DVectord);
-UTOPIA_MAKE_PARALLEL_TRAITS(DSMatrixd);
+UTOPIA_MAKE_PARALLEL_TRAITS(TMatrixd);
+UTOPIA_MAKE_PARALLEL_TRAITS(TVectord);
+UTOPIA_MAKE_PARALLEL_TRAITS(TSMatrixd);
 }
 
 #endif //UTOPIA_UTOPIA_TRILINOS_TYPES_HPP

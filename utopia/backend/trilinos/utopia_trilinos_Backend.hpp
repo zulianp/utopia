@@ -1,5 +1,5 @@
-#ifndef UTOPIA_TRILINOSBACKEND_HPP
-#define UTOPIA_TRILINOSCBACKEND_HPP
+#ifndef UTOPIA_TRILINOS_BACKEND_HPP
+#define UTOPIA_TRILINOS_BACKEND_HPP
 
 #include "utopia_trilinos_Traits.hpp"
 #include "utopia_Core.hpp"
@@ -240,9 +240,9 @@ class TrilinosBackend : public ScalarBackend<double>
             {
             allocate_apply_vec(result, left, right);
 
-            const vector_type &l ;//= left.implementation();
-            const vector_type &r ;//= right.implementation();
-            vector_type &out ;//= result.implementation();
+            // const vector_type &l= left.implementation();
+            // const vector_type &r= right.implementation();
+            // vector_type &out= result.implementation();
 
             /*auto ll = range(left);  TODO
             auto rr = range(right);*/
@@ -466,4 +466,4 @@ class Backend< double , TRILINOS > : public TrilinosBackend
     };
 }
 
-#endif //UTOPIA_TRILINOSBACKEND_HPP
+#endif //UTOPIA_TRILINOS_BACKEND_HPP

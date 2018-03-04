@@ -22,7 +22,7 @@
 #include <BelosTpetraAdapter.hpp>
 #include <BelosSolverFactory.hpp>
 
-#include <Ifpack2_Factory.hpp>
+// #include <Ifpack2_Factory.hpp>
 
 #include "utopia_trilinos_ForwardDeclaration.hpp"
 #include "utopia_trilinos_Traits.hpp"
