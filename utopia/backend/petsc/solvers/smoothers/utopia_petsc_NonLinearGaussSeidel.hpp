@@ -54,6 +54,10 @@ namespace utopia {
         virtual bool nonlinear_smooth(Function & fun,  Vector &x, const Vector &rhs) override
         {
 
+            std::cerr<<"------- utopia_petsc_NonLinearGaussSeidl::nonlinear_smooth:: there is something wrong int this function -------------- \n"; 
+            // TODO:: understand problem on snes side... 
+
+
             if(dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun))
             {
                 PETSCUtopiaNonlinearFunction<Matrix, Vector> * fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);

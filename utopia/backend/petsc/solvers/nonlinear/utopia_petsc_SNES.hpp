@@ -175,6 +175,9 @@ namespace utopia
 
             SNESSetFromOptions(snes);
             KSPSetFromOptions(ksp);
+
+
+            SNESSetType(snes, SNESNEWTONTR);
          
             SNESSolve(snes, NULL, raw_type(x));
             
