@@ -23,6 +23,11 @@
 
 #include "utopia_petsc_KSPTR.hpp"
 
+
+// very much experimental 
+#include "utopia_petsc_SNES.hpp"
+
+
 namespace utopia {
 	void optimize_nnz(DSMatrixd &A);
 	bool is_diagonally_dominant(const DSMatrixd &A);

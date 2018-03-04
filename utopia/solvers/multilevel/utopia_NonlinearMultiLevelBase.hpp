@@ -85,6 +85,7 @@ namespace utopia
             Vector g  = local_zeros(local_size(x_h));
             fine_fun.gradient(x_h, g);
             r0_norm = norm2(g);
+            r_norm = r0_norm; 
             
             fine_fun.value(x_h, energy);
             
@@ -132,6 +133,8 @@ namespace utopia
                 converged = this->check_convergence(it, r_norm, rel_norm, 1);
                 it++;
             }
+
+            this->print_statistics(it); 
             return true;
         }
         
@@ -221,6 +224,39 @@ namespace utopia
             return true;
         }
         
+
+
+
+        virtual void print_statistics(const SizeType & it_global) 
+        {
+            std::string path = this->name_id() + "_data_path"; 
+            std::cout<<"string data path: "<< path << " \n"; 
+
+            auto non_data_path = Utopia::Instance().get(path);
+            std::cout<<"non_data_path: "<< non_data_path << "  \n"; 
+            if(!non_data_path.empty())
+            {
+                CSVWriter writer; 
+                if (mpi_world_rank() == 0)
+                {
+                    if(!writer.file_exists(non_data_path))
+                    {
+                        writer.open_file(non_data_path); 
+                        writer.write_table_row<std::string>({"v_cycles", "time"}); 
+                    }
+                    else
+                        writer.open_file(non_data_path); 
+
+                    writer.write_table_row<Scalar>({Scalar(it_global), this->get_time()}); 
+                    writer.close_file(); 
+                }
+            }
+        }
+
+
+
+
+
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Scalar      atol() const               { return atol_; }
@@ -275,7 +311,7 @@ namespace utopia
             _time.stop();
             params_.convergence_reason(convergence_reason);
             params_.num_it(num_it);
-            
+        
             if(verbose_)
             {
                 ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);

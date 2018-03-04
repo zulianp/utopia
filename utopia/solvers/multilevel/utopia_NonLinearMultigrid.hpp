@@ -265,7 +265,6 @@ namespace utopia
                                  
             if(l == 2)
             {
-                this->make_iterate_feasible(levels(0), u_2l); 
                 coarse_solve(levels(0), u_2l, g_coarse); 
             }
             else

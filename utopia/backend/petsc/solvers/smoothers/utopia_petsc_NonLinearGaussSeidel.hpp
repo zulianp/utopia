@@ -39,6 +39,7 @@ namespace utopia {
         typedef utopia::NonLinearSmoother<Matrix, Vector>       Smoother;
         typedef utopia::Function<Matrix, Vector>                Function;
 
+
         public:
         NonLinearGaussSeidel(const Parameters params = Parameters()) 
         { 
@@ -57,19 +58,35 @@ namespace utopia {
             {
                 PETSCUtopiaNonlinearFunction<Matrix, Vector> * fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
                 
-                SNES snes; 
+                SNES snes;
                 fun_petsc->getSNES(snes); 
 
                 SNESSetFromOptions(snes); 
-                SNESSetType(snes, SNESNRICHARDSON);
+
+                // weird .......
+                // SNESSetType(snes, SNESNRICHARDSON);
+                
+
+                SNESType type; 
+                SNESGetType(snes, &type); 
+
+                std::cout<<"snes - type : "<< type << "      --- \n"; 
+
+                Vector y = x;  
 
                 SNESComputeJacobian(snes, raw_type(x), snes->jacobian,  snes->jacobian_pre);
+                SNESComputeFunction(snes, raw_type(x), raw_type(y)); 
+
 
                 // SNES pc; 
-                if(!this->verbose())
-                    SNESMonitorCancel(snes);
-                
-                SNESSetType(snes, SNESNGS);
+                // if(!this->verbose())
+                //     SNESMonitorCancel(snes);
+                                    
+                                // SNESNRICHARDSON
+                                // SNESNGS
+                                // SNESNGMRES 
+                                // SNESNCG
+                SNESSetType(snes, SNESNGS );
                 SNESSetTolerances(snes, 0.0, 0.0, 0.0, this->sweeps(), PETSC_DEFAULT);
 
                 SNESLineSearch linesearch; 
