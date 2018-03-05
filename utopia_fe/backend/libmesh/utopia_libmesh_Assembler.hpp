@@ -40,7 +40,7 @@ namespace utopia {
 			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs()) {
 				vec = local_zeros(dof_map.n_local_dofs());
 			} else {
-				vec *= 0.;
+				vec.set(0.);
 			}
 
 			{

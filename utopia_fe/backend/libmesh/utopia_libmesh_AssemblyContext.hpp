@@ -131,7 +131,9 @@ namespace utopia {
 		template<class Expr>
 		void reinit(const Expr &expr)
 		{
-			active_values().reinit_fe_from(expr);
+			if(active_values_)
+				active_values().reinit_fe_from(expr);
+
 			init_all_side_fe_from(expr);
 		}
 
@@ -221,7 +223,8 @@ namespace utopia {
 		template<class Expr>
 		void init_fe_from(const Expr &expr)
 		{
-			active_values().init_fe_from(expr);
+			if(active_values_)
+				active_values().init_fe_from(expr);
 			init_offsets(expr);
 
 			init_all_side_fe_from(expr);
@@ -271,7 +274,8 @@ namespace utopia {
 		LibMeshAssemblyContext()
 		: has_assembled_(false), mesh_dimension_(-1)
 		{
-			active_values_ = std::make_shared<LibMeshAssemblyValues>();
+			volume_values_ = std::make_shared<LibMeshAssemblyValues>();
+			active_values_ = volume_values_;
 		}
 
 		//x basis function
