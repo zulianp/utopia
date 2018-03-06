@@ -298,7 +298,11 @@ class TpetraMatrix
             }
 
     protected:
-        rcp_crs_matrix_type &operator= (const rcp_crs_matrix_type &matrix) { }
+        rcp_crs_matrix_type &operator= (const rcp_crs_matrix_type &matrix) 
+	{ 
+//TODO
+		return _mat;
+	}
 
     private:
         rcp_comm_type        _comm;

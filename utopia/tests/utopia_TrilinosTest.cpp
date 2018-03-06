@@ -119,8 +119,8 @@ void trilinos_example_test()
     std::cout<< "9" << std::endl;
 
     // Run the power method and report the result.
-    scalar_type lambda;// = PowerMethod<crs_matrix_type>::run (*A_map, niters, tolerance, out);
-
+    scalar_type lambda = 0;// = PowerMethod<crs_matrix_type>::run (*A_map, niters, tolerance, out);
+   
     std::cout << "Estimated max eigenvalue: " << lambda << std::endl;
 //////////////////////////////////////////////////////////////////////////////////////
 
