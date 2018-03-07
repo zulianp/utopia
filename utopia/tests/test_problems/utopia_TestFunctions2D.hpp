@@ -68,7 +68,7 @@ namespace utopia
     class Rosenbrock : public Function<Matrix, Vector> 
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         Rosenbrock() {
             //FIXME find a way to implement generic Rosenbrock in parallel

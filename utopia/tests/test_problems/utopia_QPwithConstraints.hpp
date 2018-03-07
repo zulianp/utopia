@@ -22,7 +22,7 @@ namespace utopia
     class QPwithConstraints : public FunctionBoxConstrained<Matrix, Vector> 
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
         
         ~QPwithConstraints(){} 
 

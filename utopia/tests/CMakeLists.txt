@@ -16,7 +16,6 @@ if(TRY_WITH_EIGEN_3)
 	if(EIGEN3_FOUND)
 		set(WITH_EIGEN_3 ON)
 		set(WITH_EIGEN_3 ON PARENT_SCOPE)
-		message(STATUS "HERE ${WITH_EIGEN_3}")
 		target_include_directories(utopia_tests PRIVATE ${EIGEN3_INCLUDE_DIR})
 	endif()
 endif()	
@@ -35,6 +34,10 @@ endif()
 
 if(TARGET utopia_cuda)
 	target_link_libraries(utopia_tests utopia_cuda)
+endif()
+
+if(TARGET utopia_trilinos)
+	target_link_libraries(utopia_tests utopia_trilinos)
 endif()
 
 install(TARGETS utopia_tests

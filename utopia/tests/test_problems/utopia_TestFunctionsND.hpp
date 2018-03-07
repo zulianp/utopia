@@ -16,7 +16,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class TestFunctionND_1 : public Function<Matrix, Vector> {
 
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
 
     public:
@@ -105,7 +105,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class SimpleQuadraticFunction : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         virtual bool value(const Vector &point, Scalar &result) const override {
             const Scalar val = norm2(point);
@@ -133,7 +133,7 @@ namespace utopia {
     // Quadratic function class
     class QuadraticFunction : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
             Scalar val = dot(point, A * point);
@@ -162,7 +162,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class QuadraticFunctionBoundary : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
             Scalar val = dot(point, A * point);
@@ -194,7 +194,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class QuadraticFunctionConstrained : public FunctionBoxConstrained<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         QuadraticFunctionConstrained(Vector & b, Matrix & H, Matrix & B, Vector & ub):
                                                                         b_(b),
@@ -246,7 +246,7 @@ namespace utopia {
     {
     public:
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         RosenbrockGeneric() { }
 
