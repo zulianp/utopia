@@ -239,17 +239,9 @@ public:
         set_ksp_options(ksp); 
 
         //  Set the user-defined routine for applying the preconditioner 
-        if(this->get_preconditioner() && !skip_set_operators) 
-        {
-            PC pc; 
-            ierr = KSPGetPC(ksp,&pc);
-            ierr = PCSetType(pc, PCSHELL);  
-            ierr = PCShellSetApply(pc, UtopiaPCApplyShell);
-  
-            auto shell_ptr = dynamic_cast<LinearSolver *>(this->get_preconditioner().get());
-            ierr = PCShellSetContext(pc, shell_ptr);
-            ierr = PCShellSetName(pc,"Utopia Preconditioner");
-        }
+        if(!skip_set_operators)
+            attach_preconditioner(ksp); 
+
 
         VecDuplicate(raw_type(x), &(ut_log.x_k_2));
         VecDuplicate(raw_type(x), &(ut_log.x_k_1));
@@ -308,7 +300,24 @@ public:
     }
 
 
-protected:
+    virtual void attach_preconditioner(KSP & ksp)
+    {
+        PetscErrorCode ierr;
+        if(this->get_preconditioner()) 
+        {
+            PC pc; 
+            ierr = KSPGetPC(ksp,&pc);
+            ierr = PCSetType(pc, PCSHELL);  
+            ierr = PCShellSetApply(pc, UtopiaPCApplyShell);
+  
+            auto shell_ptr = dynamic_cast<LinearSolver *>(this->get_preconditioner().get());
+            ierr = PCShellSetContext(pc, shell_ptr);
+            ierr = PCShellSetName(pc,"Utopia Preconditioner");
+        }
+    }
+
+
+
     /**
      * @brief      Sets the default options for PETSC KSP solver. \n
      *             Default: BiCGstab
@@ -346,6 +355,8 @@ protected:
     }
 
 
+protected:
+
     std::string KSP_type_;                                  /*!< Choice of preconditioner types. */  
     const std::vector<std::string> KSP_types;              /*!< Valid options for direct solver types. */  
 
@@ -355,7 +366,6 @@ protected:
     std::string solver_package_;                            /*!< Choice of direct solver. */     
     const std::vector<std::string> Solver_packages;       /*!< Valid options for Solver packages types. */
 
-protected:
     KSP                 ksp;
     UTOPIA_LOG          ut_log; 
     PetscBool           compute_cond_number;  

@@ -102,21 +102,26 @@ namespace utopia
 
     virtual void set_ksp(SNES & snes)
     {
-        KSP            ksp; 
-        PC             pc; 
 
-        SNESGetKSP(snes,&ksp);
+        if (dynamic_cast<KSPSolver<Matrix, Vector>*>(this->linear_solver_.get()) != nullptr)
+        {
+
+          auto utopia_ksp = dynamic_cast<KSPSolver<Matrix, Vector> *>(this->linear_solver_.get()); 
+
+          KSP            ksp; 
+          SNESGetKSP(snes,&ksp);
         
-        KSPSetType(ksp, KSPGMRES ); 
+          utopia_ksp->set_ksp_options(ksp); 
+          utopia_ksp->attach_preconditioner(ksp); 
+        }
+        else
+        {
+          // create KSP utopia 
 
-        KSPGetPC(ksp, &pc); 
-        PCSetType(pc, PCLU); 
+          // to be done ... 
+          // KSPSetTolerances(ksp,1e-11, 1e-11, PETSC_DEFAULT, 50000); 
 
-        KSPSetFromOptions(ksp);
-
-
-        // to be done ... 
-        KSPSetTolerances(ksp,1e-11, 1e-11, PETSC_DEFAULT, 50000); 
+        }
 
     }
 
@@ -250,10 +255,9 @@ namespace utopia
 // - ksp utopia
 // - inserting mat 
 // - ksp set 
+// 
 // - prepare jacobian global mat - preallocation ... 
 // - convert functions 
-// - nicer represnetation of printout
-// - exit solver
 // - allocation of hessian 
 
     };
