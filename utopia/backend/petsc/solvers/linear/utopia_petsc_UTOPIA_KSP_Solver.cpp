@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-03-08 22:57:34
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-09 00:46:04
+* @Last Modified time: 2018-03-09 02:03:34
 */
 
 
@@ -23,7 +23,7 @@ static PetscErrorCode KSPSolve_UTOPIA(KSP ksp)
   PetscFunctionBegin;
   PetscErrorCode ierr;
  
-  
+  // TODO:: take Pmat into account... 
   Mat            Amat, Pmat;
 
   // TODO:: set PC matrix ... 
@@ -35,13 +35,12 @@ static PetscErrorCode KSPSolve_UTOPIA(KSP ksp)
   KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
   
 
-
+  utopia_ls->utopia_set_tolerances(ksp->rtol, ksp->abstol, ksp->divtol, ksp->max_it); 
   utopia_ls->utopia_solve_routine(Amat, B, X); 
 
+  // preconditioner ... 
 
-
-  // TODO:: set-up proper reason ... 
-  ksp->reason = KSP_CONVERGED_ATOL;
+  utopia_ls->get_convergence_reason(ksp->its, ksp->reason); 
 
   PetscFunctionReturn(0);
 }
@@ -59,6 +58,29 @@ PetscErrorCode  KSPSetSolveRoutine_UTOPIA(KSP ksp, std::function< void(const Mat
 
 
 
+
+PetscErrorCode KSPSetTolerances_UTOPIA(KSP ksp, std::function< void(const PetscReal &, const PetscReal &, const PetscReal &, const PetscInt &) > set_tolerances)
+{
+  PetscFunctionBegin;
+
+  KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
+  utopia_ls->utopia_set_tolerances = set_tolerances;
+
+  PetscFunctionReturn(0);
+}
+
+PetscErrorCode KSPSetGetConvergenceReason_UTOPIA(KSP ksp, std::function< void(PetscInt &,  KSPConvergedReason&) > convergence_reason)
+{
+  PetscFunctionBegin;
+
+  KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
+  utopia_ls->get_convergence_reason = convergence_reason;
+
+  PetscFunctionReturn(0);
+}
+
+
+
 PetscErrorCode KSPDestroy_UTOPIA(KSP ksp)
 {
   PetscFunctionBegin;
@@ -66,6 +88,9 @@ PetscErrorCode KSPDestroy_UTOPIA(KSP ksp)
 
   KSPDestroyDefault(ksp);
   PetscObjectComposeFunction((PetscObject)ksp, "KSPUTOPIASetSolveRoutine_C",NULL);
+  PetscObjectComposeFunction((PetscObject)ksp, "KSPSetTolerancesRoutine_C",NULL);
+  PetscObjectComposeFunction((PetscObject)ksp, "KSPSetGetConvergenceReason_C",NULL);
+
 
   PetscFunctionReturn(0);
 }
@@ -108,7 +133,9 @@ PETSC_EXTERN PetscErrorCode KSPCreate_UTOPIA(KSP ksp)
   ksp->ops->buildsolution  = KSPBuildSolutionDefault;
   ksp->ops->buildresidual  = KSPBuildResidualDefault;
 
-  ierr = PetscObjectComposeFunction((PetscObject)ksp,"KSPUTOPIASetSolveRoutine_C",KSPSetSolveRoutine_UTOPIA);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)ksp, "KSPUTOPIASetSolveRoutine_C", KSPSetSolveRoutine_UTOPIA);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)ksp, "KSPSetTolerancesRoutine_C", KSPSetTolerances_UTOPIA);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)ksp, "KSPSetGetConvergenceReason_C", KSPSetGetConvergenceReason_UTOPIA);CHKERRQ(ierr);
 
   PetscFunctionReturn(0);
 }

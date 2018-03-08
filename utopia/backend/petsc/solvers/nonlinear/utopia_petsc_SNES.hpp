@@ -114,62 +114,30 @@ namespace utopia
         }
         else
         {
-
-
           // check if our options overwrite this 
           KSPSetFromOptions(ksp); 
           KSPSetType(ksp, KSPUTOPIA); 
               
+          KSPSetSolveRoutine_UTOPIA(ksp, get_ksp_solve_routine()); 
+          KSPSetTolerances_UTOPIA(ksp, get_ksp_tol_routine()); 
+          KSPSetGetConvergenceReason_UTOPIA(ksp, get_ksp_convergence_routine()); 
 
-          std::function<void(const Mat &, const Vec &, Vec &)> test_fun = [this](const Mat &A, const Vec &b, Vec & x)
+
           {
-            Matrix A_ut; 
-            Vector x_ut, b_ut; 
+            PC pc; 
+            KSPGetPC(ksp, &pc);
 
-            // we need to get some better way how to do this
-            convert(x, x_ut); 
-            convert(b, b_ut); 
-            convert(A, A_ut); 
+            PCType pc_type; 
+            PCGetType(pc, &pc_type); 
 
-            // utopia style 
-            this->linear_solver_->solve(A_ut, b_ut, x_ut); 
-
-
-            convert(x_ut, x); 
+            // - just for the moment ... 
+            // - TO BE DONE WITH UTOPIA - preconditiner ... 
+            PCSetType(pc, "none");
+          }
 
 
-          };
-
-
-          KSPSetSolveRoutine_UTOPIA(ksp, test_fun); 
-
-
-
-
-        // if(!this->get_preconditioner()) 
-        // {
-        //     PC pc; 
-        //     ierr = KSPGetPC(ksp, &pc);
-        //     ierr = PCSetType(pc, PC_type_.c_str());
-        // }
-
-        // ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
-        // ierr = KSPSetTolerances(ksp, PreconditionedSolver::rtol(), PreconditionedSolver::atol(), PETSC_DEFAULT,  PreconditionedSolver::max_it());
-
-
-
-          PC pc; 
-          KSPGetPC(ksp, &pc); 
-          PCSetType(pc, "none"); 
-
-
-
-
-          // create KSP utopia 
-
-          // to be done ... 
-          // KSPSetTolerances(ksp,1e-11, 1e-11, PETSC_DEFAULT, 50000); 
-
+          KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+        
         }
 
     }
@@ -296,6 +264,95 @@ namespace utopia
       const std::vector<std::string> SNES_types;              /*!< Valid options for SNES solver types. */  
 
 
+
+
+    private: 
+
+      std::function< void(PetscInt &,  KSPConvergedReason&) > get_ksp_convergence_routine()
+      {
+        std::function< void(PetscInt &,  KSPConvergedReason&) > fun = [this](PetscInt & max_it,  KSPConvergedReason & reason)
+        {
+          if (dynamic_cast<IterativeSolver<Matrix, Vector>*>(this->linear_solver_.get()) != nullptr)
+          {
+            auto ls = dynamic_cast<IterativeSolver<Matrix, Vector> *>(this->linear_solver_.get()); 
+            max_it = ls->get_num_it(); 
+
+            switch (ls->get_convergence_reason() )
+            {
+                // sucess
+                case ConvergenceReason::CONVERGED_FNORM_ABS:
+                    reason = KSP_CONVERGED_ATOL;
+                    break;
+                    
+                case ConvergenceReason::CONVERGED_FNORM_RELATIVE:
+                    reason = KSP_CONVERGED_RTOL;
+                    break;
+                    
+                case ConvergenceReason::CONVERGED_SNORM_RELATIVE:
+                    reason = KSP_CONVERGED_STEP_LENGTH;
+                    break;
+                        
+                // fail
+                case ConvergenceReason::DIVERGED_MAX_IT :
+                    reason = KSP_DIVERGED_ITS;
+                    break;
+                    
+                default :
+                    reason = KSP_CONVERGED_RTOL_NORMAL;
+            }
+          }
+          else
+          {
+            std::cout<<"get convergence reason is not configured for direct solvers yet... \n"; 
+          }
+        }; 
+        return fun; 
+      }
+
+
+    std::function< void(const PetscReal &, const PetscReal &,  const PetscReal &,  const PetscInt &) > get_ksp_tol_routine()
+    {
+      std::function< void(const PetscReal &, const PetscReal &, 
+                          const PetscReal &, const PetscInt &) > fun = [this](const PetscReal & rtol, 
+                                                                              const PetscReal & abstol, 
+                                                                              const PetscReal & dtol, 
+                                                                              const PetscInt & maxits)
+      {
+        if (dynamic_cast<IterativeSolver<Matrix, Vector>*>(this->linear_solver_.get()) != nullptr)
+        {
+          auto ls = dynamic_cast<IterativeSolver<Matrix, Vector> *>(this->linear_solver_.get()); 
+          ls->atol(abstol); 
+          ls->rtol(rtol); 
+          ls->max_it(maxits); 
+        }
+        else
+        {
+          std::cout<<"set tol is not configured for direct solvers yet... \n"; 
+        }
+      };
+      return fun; 
+    }
+
+
+    std::function<void(const Mat &, const Vec &, Vec &)> get_ksp_solve_routine()
+    {
+      std::function<void(const Mat &, const Vec &, Vec &)> fun = [this](const Mat &A, const Vec &b, Vec & x)
+      {
+        Matrix A_ut; 
+        Vector x_ut, b_ut; 
+
+        // we need to get some better way how to do this
+        convert(x, x_ut); 
+        convert(b, b_ut); 
+        convert(A, A_ut); 
+
+        // utopia style 
+        this->linear_solver_->solve(A_ut, b_ut, x_ut); 
+
+        convert(x_ut, x); 
+      };
+      return fun; 
+    }
 
 
 
