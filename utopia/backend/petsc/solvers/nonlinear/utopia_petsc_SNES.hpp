@@ -62,7 +62,6 @@ namespace utopia
         }
 
 
-
     // TODO:: 
     virtual void set_parameters(const Parameters params) override
     {
@@ -72,9 +71,8 @@ namespace utopia
 
     virtual void set_snes_type(const std::string & type)
     {
-      SNES_type_ = type; 
+      SNES_type_ = in_array(type, SNES_types) ? type : SNES_types.at(0);
     }
-
 
 
     virtual void set_snes_options(SNES & snes)
@@ -86,7 +84,6 @@ namespace utopia
 
       
         if(this->verbose())
-          // lets also print other stuff, like energy and so on...let's make it more utopia based .. 
            SNESMonitorSet(
                snes,
                [](SNES snes, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
@@ -95,9 +92,8 @@ namespace utopia
                },
                nullptr,
                nullptr);
-
-
         
+
         ierr = SNESSetType(snes, SNES_type_.c_str());
         ierr = SNESSetTolerances(snes, NonLinearSolver::atol(), NonLinearSolver::rtol(), NonLinearSolver::stol(), NonLinearSolver::max_it(), PETSC_DEFAULT); 
     }
@@ -125,116 +121,120 @@ namespace utopia
     }
 
 
+      bool solve(Function<Matrix, Vector> &fun, Vector &x) override
+      {
+        using namespace utopia;
+
+        SNES            snes;
+        MPI_Comm        comm;
+
+        PetscObjectGetComm((PetscObject)raw_type(x), &comm);
+
+        
+        std::string method = "SNES_INTERFACE"; 
+        this->init_solver(method, {"it", "|g|"}); 
 
 
+        // residual 
+        Vector residual = local_zeros(local_size(x));  
+      
+        SNESCreate(comm, &snes);
 
-
-
-        bool solve(Function<Matrix, Vector> &fun, Vector &x) override
-        {
-          using namespace utopia;
-
-          SNES           snes;
-
-          // residual 
-          Vector residual = local_zeros(local_size(x)); 
-
-          SNESCreate(PETSC_COMM_WORLD,&snes);
-
-
-          // energy 
-          SNESSetObjective(   snes, 
-                                // FormObjective, 
-                                [](SNES /*snes*/, Vec x, PetscReal * energy, void * ctx) -> PetscErrorCode 
-                                {
-                                    Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
-                                    Vector x_ut;
-                                    utopia::convert(x, x_ut); 
-                                    fun->value(x_ut, *energy);
-
-                                 return 0;
-                                },
-
-                                &fun);
-
-
-
-          // gradient 
-          SNESSetFunction(    snes, 
-                                raw_type(residual), 
-                                // FormGradient, 
-                                [](SNES snes, Vec x, Vec res, void *ctx)-> PetscErrorCode 
-                                {
-                                    Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
-                                      
-                                    Vector x_ut, res_ut; 
-                                    utopia::convert(x, x_ut); 
-
-                                    fun->gradient(x_ut, res_ut); 
-                                    utopia::convert(res_ut, res);
-                              
-                                    return 0;
-                                },
-                                &fun);
-
-
-
-          // hessian 
-          SNESSetJacobian(    snes, 
-                                snes->jacobian, 
-                                snes->jacobian_pre, 
-                                // FormHessian, 
-                                [](SNES snes, Vec x, Mat jac, Mat prec, void *ctx)-> PetscErrorCode 
-                                {
+        // energy 
+        SNESSetObjective(   snes, 
+                              // FormObjective, 
+                              [](SNES /*snes*/, Vec x, PetscReal * energy, void * ctx) -> PetscErrorCode 
+                              {
                                   Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
-
                                   Vector x_ut;
+
                                   utopia::convert(x, x_ut); 
 
-                                  // this is horrible copying of mats - should be fixed 
-                                  Matrix jac_ut; // = sparse_mref(jac);  // because solver test is using dense matrix ... 
+                                  fun->value(x_ut, *energy);
 
-                                  fun->hessian(x_ut, jac_ut); 
+                               return 0;
+                              },
 
-
-                                    MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &jac); 
-                                    MatCopy(raw_type(jac_ut), jac, SAME_NONZERO_PATTERN ); 
-
-                                    MatDuplicate(jac, MAT_COPY_VALUES,  &prec); 
-                                    MatCopy(jac, prec, SAME_NONZERO_PATTERN ); 
+                              &fun);
 
 
-                                    //  interesting....
-                                    snes->jacobian = jac; 
-                                    snes->jacobian_pre = prec; 
 
+        // gradient 
+        SNESSetFunction(    snes, 
+                              raw_type(residual), 
+                              // FormGradient, 
+                              [](SNES snes, Vec x, Vec res, void *ctx)-> PetscErrorCode 
+                              {
+                                  Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
+                                    
+                                  Vector x_ut, res_ut; 
+                                  utopia::convert(x, x_ut); 
+
+                                  fun->gradient(x_ut, res_ut); 
+                                  utopia::convert(res_ut, res);
+                            
                                   return 0;
-                                },
-                                &fun);
+                              },
+                              &fun);
 
 
 
-            set_snes_options(snes); 
-            set_ksp(snes); 
+        // hessian 
+        SNESSetJacobian(    snes, 
+                              snes->jacobian, 
+                              snes->jacobian_pre, 
+                              // FormHessian, 
+                              [](SNES snes, Vec x, Mat jac, Mat prec, void *ctx)-> PetscErrorCode 
+                              {
+                                Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
 
-         
-            SNESSolve(snes, NULL, raw_type(x));
-            
+                                Vector x_ut;
+                                utopia::convert(x, x_ut); 
 
-
-            // exit solver 
-            PetscInt nonl_its; 
-            SNESGetIterationNumber(snes, &nonl_its);
-
-
-            SNESDestroy(&snes);
-
-            std::cout<<"number of nonlinear iterations: "<< nonl_its << " \n"; 
-
-           return true; 
-       }
+                                // this is horrible copying of mats - should be fixed 
+                                Matrix jac_ut; // = sparse_mref(snes->jacobian);  // because solver test is using dense matrix ... 
 
 
+
+                                fun->hessian(x_ut, jac_ut); 
+
+
+                                // STUPID 
+                                MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &jac); 
+                                MatCopy(raw_type(jac_ut), jac, SAME_NONZERO_PATTERN ); 
+
+                                MatDuplicate(jac, MAT_COPY_VALUES,  &prec); 
+                                MatCopy(jac, prec, SAME_NONZERO_PATTERN ); 
+
+
+                                  //  interesting....
+                                  snes->jacobian = jac; 
+                                  snes->jacobian_pre = prec; 
+
+                                return 0;
+                              },
+                              &fun);
+
+
+          set_snes_options(snes); 
+          set_ksp(snes); 
+       
+          SNESSolve(snes, NULL, raw_type(x));
+          
+          // exit solver 
+          PetscInt nonl_its; 
+          SNESGetIterationNumber(snes, &nonl_its);
+
+          SNESConvergedReason reason; 
+          SNESGetConvergedReason(snes, &reason); 
+
+          this->exit_solver(nonl_its, reason); 
+
+          // cleaning
+          SNESDestroy(&snes);
+
+         return true; 
+     }
 
 
      protected: 
@@ -243,10 +243,14 @@ namespace utopia
 
 
 
+
+
+
 //TO BE DONE:
 // - ksp utopia
 // - inserting mat 
 // - ksp set 
+// - prepare jacobian global mat - preallocation ... 
 // - convert functions 
 // - nicer represnetation of printout
 // - exit solver
