@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-08 15:24:12
+* @Last Modified time: 2018-03-09 00:30:01
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -1442,6 +1442,23 @@ namespace utopia
 
 			expected_rosenbrock -= x0_ros; 
 			std::cout<<"diff rosenbrock: "<< norm2(expected_rosenbrock) << "   \n"; 
+
+
+			std::cout<<"--------------------------------------------------- \n"; 
+			auto cg_home = std::make_shared<ConjugateGradient<DMatrixd, DVectord, HOMEMADE>>();
+			cg_home->verbose(true); 
+			
+			SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver2(cg_home); 
+			nonlinear_solver2.verbose(true); 
+
+			// reset IG  
+			x0_ros   		= values(2, 1.5);
+			nonlinear_solver2.solve(rosenbrock, x0_ros);
+
+
+			expected_rosenbrock -= x0_ros; 
+			std::cout<<"diff rosenbrock2: "<< norm2(expected_rosenbrock) << "   \n"; 
+
 
 
 			

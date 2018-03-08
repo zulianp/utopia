@@ -14,6 +14,9 @@
 #include "utopia_petsc.hpp"
 
 
+#include "utopia_petsc_UTOPIA_KSP_Solver.hpp"
+
+
 #include <algorithm>
 #include <petscpc.h>
 #include <petscksp.h>
@@ -40,9 +43,6 @@ namespace utopia
         typedef typename NonLinearSolver<Matrix, Vector>::Solver LinearSolver;
 
         typedef NonLinearSolver<Matrix, Vector> NonLinearSolver;
-
-
-        // static_assert(Traits<Matrix>::Backend == utopia::PETSC_EXPERIMENTAL, "only works with petsc types");
 
 
         SNESSolver( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
@@ -103,19 +103,68 @@ namespace utopia
     virtual void set_ksp(SNES & snes)
     {
 
+        KSP            ksp; 
+        SNESGetKSP(snes,&ksp);
+
         if (dynamic_cast<KSPSolver<Matrix, Vector>*>(this->linear_solver_.get()) != nullptr)
         {
-
           auto utopia_ksp = dynamic_cast<KSPSolver<Matrix, Vector> *>(this->linear_solver_.get()); 
-
-          KSP            ksp; 
-          SNESGetKSP(snes,&ksp);
-        
           utopia_ksp->set_ksp_options(ksp); 
           utopia_ksp->attach_preconditioner(ksp); 
         }
         else
         {
+
+
+          // check if our options overwrite this 
+          KSPSetFromOptions(ksp); 
+          KSPSetType(ksp, KSPUTOPIA); 
+              
+
+          std::function<void(const Mat &, const Vec &, Vec &)> test_fun = [this](const Mat &A, const Vec &b, Vec & x)
+          {
+            Matrix A_ut; 
+            Vector x_ut, b_ut; 
+
+            // we need to get some better way how to do this
+            convert(x, x_ut); 
+            convert(b, b_ut); 
+            convert(A, A_ut); 
+
+            // utopia style 
+            this->linear_solver_->solve(A_ut, b_ut, x_ut); 
+
+
+            convert(x_ut, x); 
+
+
+          };
+
+
+          KSPSetSolveRoutine_UTOPIA(ksp, test_fun); 
+
+
+
+
+        // if(!this->get_preconditioner()) 
+        // {
+        //     PC pc; 
+        //     ierr = KSPGetPC(ksp, &pc);
+        //     ierr = PCSetType(pc, PC_type_.c_str());
+        // }
+
+        // ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+        // ierr = KSPSetTolerances(ksp, PreconditionedSolver::rtol(), PreconditionedSolver::atol(), PETSC_DEFAULT,  PreconditionedSolver::max_it());
+
+
+
+          PC pc; 
+          KSPGetPC(ksp, &pc); 
+          PCSetType(pc, "none"); 
+
+
+
+
           // create KSP utopia 
 
           // to be done ... 
@@ -225,7 +274,7 @@ namespace utopia
           set_ksp(snes); 
        
           SNESSolve(snes, NULL, raw_type(x));
-          
+
           // exit solver 
           PetscInt nonl_its; 
           SNESGetIterationNumber(snes, &nonl_its);
@@ -255,10 +304,12 @@ namespace utopia
 // - ksp utopia
 // - inserting mat 
 // - ksp set 
+// - also preconditioner
 // 
 // - prepare jacobian global mat - preallocation ... 
 // - convert functions 
 // - allocation of hessian 
+
 
     };
     
