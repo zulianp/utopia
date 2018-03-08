@@ -39,15 +39,20 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef typename NonLinearSolver<Matrix, Vector>::Solver LinearSolver;
 
+        typedef NonLinearSolver<Matrix, Vector> NonLinearSolver;
+
 
         // static_assert(Traits<Matrix>::Backend == utopia::PETSC_EXPERIMENTAL, "only works with petsc types");
 
 
         SNESSolver( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
-                    const Parameters params                       = Parameters() ):
-                    NonLinearSolver<Matrix, Vector>(linear_solver, params)
+                    const Parameters params = Parameters(), 
+                    const std::vector<std::string> snes_types    = {"newtonls", "newtontr", "nrichardson", "ksponly", "vinewtonrsls", "vinewtonssls", "ngmres", "qn", "shell", "ngs", "ncg", "fas", "ms", "anderson"}):
+                    NonLinearSolver(linear_solver, params), 
+                    SNES_types(snes_types)
         {
-
+          SNES_type_       = SNES_types.at(0); 
+          set_parameters(params); 
         }
 
 
@@ -58,28 +63,87 @@ namespace utopia
 
 
 
+    // TODO:: 
+    virtual void set_parameters(const Parameters params) override
+    {
+      NonLinearSolver::set_parameters(params); 
+    }
+
+
+    virtual void set_snes_type(const std::string & type)
+    {
+      SNES_type_ = type; 
+    }
+
+
+
+    virtual void set_snes_options(SNES & snes)
+    {
+        PetscErrorCode ierr;
+
+        
+        SNESSetFromOptions(snes);
+
+      
+        if(this->verbose())
+          // lets also print other stuff, like energy and so on...let's make it more utopia based .. 
+           SNESMonitorSet(
+               snes,
+               [](SNES snes, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
+                   PrintInfo::print_iter_status({static_cast<PetscReal>(iter), res}); 
+                   return 0;
+               },
+               nullptr,
+               nullptr);
+
+
+        
+        ierr = SNESSetType(snes, SNES_type_.c_str());
+        ierr = SNESSetTolerances(snes, NonLinearSolver::atol(), NonLinearSolver::rtol(), NonLinearSolver::stol(), NonLinearSolver::max_it(), PETSC_DEFAULT); 
+    }
+
+
+
+    virtual void set_ksp(SNES & snes)
+    {
+        KSP            ksp; 
+        PC             pc; 
+
+        SNESGetKSP(snes,&ksp);
+        
+        KSPSetType(ksp, KSPGMRES ); 
+
+        KSPGetPC(ksp, &pc); 
+        PCSetType(pc, PCLU); 
+
+        KSPSetFromOptions(ksp);
+
+
+        // to be done ... 
+        KSPSetTolerances(ksp,1e-11, 1e-11, PETSC_DEFAULT, 50000); 
+
+    }
+
+
+
+
+
+
 
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
         {
-           using namespace utopia;
+          using namespace utopia;
 
-           std::cout<<"I am inside of solve function .......... \n"; 
+          SNES           snes;
 
+          // residual 
+          Vector residual = local_zeros(local_size(x)); 
 
-           SNES           snes;
-           KSP            ksp; 
-           PC             pc; 
-
-
-           // residual 
-           Vector residual = local_zeros(local_size(x)); 
+          SNESCreate(PETSC_COMM_WORLD,&snes);
 
 
-            SNESCreate(PETSC_COMM_WORLD,&snes);
-
-
-            // enrgy 
-            SNESSetObjective(   snes, 
+          // energy 
+          SNESSetObjective(   snes, 
                                 // FormObjective, 
                                 [](SNES /*snes*/, Vec x, PetscReal * energy, void * ctx) -> PetscErrorCode 
                                 {
@@ -95,8 +159,8 @@ namespace utopia
 
 
 
-            // gradient 
-            SNESSetFunction(    snes, 
+          // gradient 
+          SNESSetFunction(    snes, 
                                 raw_type(residual), 
                                 // FormGradient, 
                                 [](SNES snes, Vec x, Vec res, void *ctx)-> PetscErrorCode 
@@ -115,8 +179,8 @@ namespace utopia
 
 
 
-            // hessian 
-            SNESSetJacobian(    snes, 
+          // hessian 
+          SNESSetJacobian(    snes, 
                                 snes->jacobian, 
                                 snes->jacobian_pre, 
                                 // FormHessian, 
@@ -126,8 +190,6 @@ namespace utopia
 
                                   Vector x_ut;
                                   utopia::convert(x, x_ut); 
-
-                                  // disp(x_ut); 
 
                                   // this is horrible copying of mats - should be fixed 
                                   Matrix jac_ut; // = sparse_mref(jac);  // because solver test is using dense matrix ... 
@@ -151,36 +213,16 @@ namespace utopia
                                 &fun);
 
 
-            // // needs to be changed 
-            // // also take into account utopia LS and PCs 
-            SNESGetKSP(snes,&ksp);
-            KSPSetType(ksp, KSPGMRES); 
 
-            KSPGetPC(ksp,&pc);
-            PCSetType(pc,PCLU);
+            set_snes_options(snes); 
+            set_ksp(snes); 
 
-            KSPSetTolerances(ksp,1e-11, 1e-11, PETSC_DEFAULT, 50000); 
-            SNESSetTolerances(snes, 1e-11, 1e-11, 1e-11, 1000, 500000); 
-            
-            // lets also print other stuff, like energy and so on...
-             SNESMonitorSet(
-                 snes,
-                 [](SNES snes, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
-                     PrintInfo::print_iter_status({static_cast<PetscReal>(iter), res}); 
-                     return 0;
-                 },
-                 nullptr,
-                 nullptr);
-
-
-            SNESSetFromOptions(snes);
-            KSPSetFromOptions(ksp);
-
-
-            SNESSetType(snes, SNESNEWTONTR);
          
             SNESSolve(snes, NULL, raw_type(x));
             
+
+
+            // exit solver 
             PetscInt nonl_its; 
             SNESGetIterationNumber(snes, &nonl_its);
 
@@ -195,23 +237,20 @@ namespace utopia
 
 
 
+     protected: 
+      std::string SNES_type_;                                  /*!< Choice of snes types. */  
+      const std::vector<std::string> SNES_types;              /*!< Valid options for SNES solver types. */  
+
+
 
 //TO BE DONE:
 // - ksp utopia
-// - params
-// - set type 
-// - preconditioner 
+// - inserting mat 
+// - ksp set 
 // - convert functions 
 // - nicer represnetation of printout
 // - exit solver
 // - allocation of hessian 
-//  - proper types inside of fun... 
-// - utopia_DM ??? yes/no?? maybe?? 
-// - nullspaces ?? near-nullspaces?? - maybe just libmesh based people ...
-// 
-
-
-
 
     };
     

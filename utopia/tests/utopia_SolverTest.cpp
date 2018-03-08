@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-04 13:59:45
+* @Last Modified time: 2018-03-08 15:03:29
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -1417,6 +1417,9 @@ namespace utopia
 			auto linear_solver  = make_shared< KSPSolver<DMatrixd, DVectord> >();
 
 			SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver(linear_solver); 
+			nonlinear_solver.verbose(true); 
+
+
 
 			DVectord actual   = values(_n, 2.);
 			DVectord expected = values(_n, 0.468919);
@@ -1427,18 +1430,18 @@ namespace utopia
 			assert(approxeq(expected, actual));
 
 			expected -= actual; 
-			std::cout<<"diff: "<< norm2(expected); 
+			std::cout<<"diff: "<< norm2(expected) << "   \n"; 
 
 
 			Rosenbrock<DMatrixd, DVectord> rosenbrock;
 			DVectord expected_rosenbrock = values(2, 1.0);
-			DVectord x0_ros   		= values(2, 2.0);
+			DVectord x0_ros   		= values(2, 1.5);
 
 			nonlinear_solver.solve(rosenbrock, x0_ros);
 
 
 			expected_rosenbrock -= x0_ros; 
-			std::cout<<"diff rosenbrock: "<< norm2(expected_rosenbrock); 
+			std::cout<<"diff rosenbrock: "<< norm2(expected_rosenbrock) << "   \n"; 
 
 
 			
