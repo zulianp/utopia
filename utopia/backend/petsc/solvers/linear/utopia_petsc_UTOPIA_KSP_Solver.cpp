@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-03-08 22:57:34
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-09 02:03:34
+* @Last Modified time: 2018-03-09 12:25:25
 */
 
 
@@ -23,22 +23,17 @@ static PetscErrorCode KSPSolve_UTOPIA(KSP ksp)
   PetscFunctionBegin;
   PetscErrorCode ierr;
  
-  // TODO:: take Pmat into account... 
   Mat            Amat, Pmat;
 
-  // TODO:: set PC matrix ... 
   PCGetOperators(ksp->pc, &Amat, &Pmat);
-
-  Vec X             = ksp->vec_sol;
-  Vec B             = ksp->vec_rhs;
 
   KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
   
-
   utopia_ls->utopia_set_tolerances(ksp->rtol, ksp->abstol, ksp->divtol, ksp->max_it); 
-  utopia_ls->utopia_solve_routine(Amat, B, X); 
+  utopia_ls->utopia_solve_routine(Amat, Pmat,  ksp->vec_rhs, ksp->vec_sol); 
 
   // preconditioner ... 
+  // - utopia one, petsc combined into utopia... 
 
   utopia_ls->get_convergence_reason(ksp->its, ksp->reason); 
 
@@ -46,7 +41,7 @@ static PetscErrorCode KSPSolve_UTOPIA(KSP ksp)
 }
 
 
-PetscErrorCode  KSPSetSolveRoutine_UTOPIA(KSP ksp, std::function< void(const Mat &, const Vec &, Vec &) > solve_routine)
+PetscErrorCode  KSPSetSolveRoutine_UTOPIA(KSP ksp, std::function< void(const Mat &, const Mat &, const Vec &, Vec &) > solve_routine)
 {
   PetscFunctionBegin;
 
@@ -55,8 +50,6 @@ PetscErrorCode  KSPSetSolveRoutine_UTOPIA(KSP ksp, std::function< void(const Mat
 
   PetscFunctionReturn(0);
 }
-
-
 
 
 PetscErrorCode KSPSetTolerances_UTOPIA(KSP ksp, std::function< void(const PetscReal &, const PetscReal &, const PetscReal &, const PetscInt &) > set_tolerances)
@@ -87,10 +80,10 @@ PetscErrorCode KSPDestroy_UTOPIA(KSP ksp)
   KSP_UTOPIA         *utopia = (KSP_UTOPIA*)ksp->data;
 
   KSPDestroyDefault(ksp);
+
   PetscObjectComposeFunction((PetscObject)ksp, "KSPUTOPIASetSolveRoutine_C",NULL);
   PetscObjectComposeFunction((PetscObject)ksp, "KSPSetTolerancesRoutine_C",NULL);
   PetscObjectComposeFunction((PetscObject)ksp, "KSPSetGetConvergenceReason_C",NULL);
-
 
   PetscFunctionReturn(0);
 }
@@ -98,7 +91,15 @@ PetscErrorCode KSPDestroy_UTOPIA(KSP ksp)
 
 PetscErrorCode KSPView_UTOPIA(KSP ksp,PetscViewer viewer)
 {
+
   PetscFunctionBegin;
+
+
+  PetscBool      iascii;
+  PetscObjectTypeCompare((PetscObject)viewer,PETSCVIEWERASCII,&iascii);
+  KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
+
+  // maybe som future printouts ... 
 
   PetscFunctionReturn(0);
 }
@@ -108,6 +109,8 @@ PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems *PetscOptionsObject,KSP
 {
   PetscFunctionBegin;
   PetscErrorCode ierr;
+
+  // not much to add so far... 
 
   PetscFunctionReturn(0);
 }

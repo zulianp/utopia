@@ -102,10 +102,8 @@ namespace utopia
 
     virtual void set_ksp(SNES & snes)
     {
-
         KSP            ksp; 
         SNESGetKSP(snes,&ksp);
-
         if (dynamic_cast<KSPSolver<Matrix, Vector>*>(this->linear_solver_.get()) != nullptr)
         {
           auto utopia_ksp = dynamic_cast<KSPSolver<Matrix, Vector> *>(this->linear_solver_.get()); 
@@ -137,9 +135,7 @@ namespace utopia
 
 
           KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
-        
         }
-
     }
 
 
@@ -334,19 +330,22 @@ namespace utopia
     }
 
 
-    std::function<void(const Mat &, const Vec &, Vec &)> get_ksp_solve_routine()
+    std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> get_ksp_solve_routine()
     {
-      std::function<void(const Mat &, const Vec &, Vec &)> fun = [this](const Mat &A, const Vec &b, Vec & x)
+      std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> fun = [this](const Mat &A, const Mat & P, const Vec &b, Vec & x)
       {
-        Matrix A_ut; 
-        Vector x_ut, b_ut; 
 
+        Vector x_ut, b_ut; 
+        
         // we need to get some better way how to do this
         convert(x, x_ut); 
         convert(b, b_ut); 
-        convert(A, A_ut); 
 
-        // utopia style 
+        const Matrix A_ut = sparse_mref(A); 
+
+        // PreconditionedSolver - maybe in future ... 
+        // this->linear_solver_->solve(A_ut, P_ut, b_ut, x_ut); 
+
         this->linear_solver_->solve(A_ut, b_ut, x_ut); 
 
         convert(x_ut, x); 
@@ -355,21 +354,13 @@ namespace utopia
     }
 
 
-
-
-//TO BE DONE:
-// - ksp utopia
-// - inserting mat 
-// - ksp set 
-// - also preconditioner
-// 
-// - prepare jacobian global mat - preallocation ... 
-// - convert functions 
-// - allocation of hessian 
+  //TO BE DONE:
+  // - prepare jacobian global mat - preallocation ... 
+  // - convert functions 
+  // - allocation of hessian 
 
 
     };
-    
 }
 
 #endif // UTOPIA_SNES_HPP  
