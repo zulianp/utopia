@@ -210,8 +210,7 @@ namespace utopia
                                 utopia::convert(x, x_ut); 
 
                                 // this is horrible copying of mats - should be fixed 
-                                Matrix jac_ut; // = sparse_mref(snes->jacobian);  // because solver test is using dense matrix ... 
-
+                                Matrix jac_ut; // = sparse_mref(snes->jacobian);  
 
 
                                 fun->hessian(x_ut, jac_ut); 
@@ -335,8 +334,8 @@ namespace utopia
       std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> fun = [this](const Mat &A, const Mat & P, const Vec &b, Vec & x)
       {
 
-        Vector x_ut, b_ut; 
-        
+        Vector  b_ut, x_ut; 
+
         // we need to get some better way how to do this
         convert(x, x_ut); 
         convert(b, b_ut); 
@@ -354,9 +353,11 @@ namespace utopia
     }
 
 
+
+
   //TO BE DONE:
   // - prepare jacobian global mat - preallocation ... 
-  // - convert functions 
+  // - convert functions could be more efficient ...
   // - allocation of hessian 
 
 
