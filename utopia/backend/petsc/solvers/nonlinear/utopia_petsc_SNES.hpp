@@ -209,24 +209,37 @@ namespace utopia
                                 Vector x_ut;
                                 utopia::convert(x, x_ut); 
 
-                                // this is horrible copying of mats - should be fixed 
-                                Matrix jac_ut; // = sparse_mref(snes->jacobian);  
+                                PetscBool  assembled; 
+                                MatAssembled(snes->jacobian, &assembled); 
 
+                                Matrix jac_ut; 
 
-                                fun->hessian(x_ut, jac_ut); 
+                                if(assembled)
+                                  jac_ut = sparse_mref(snes->jacobian);  
 
+                                Matrix jac_ut_prec; 
+                                MatAssembled(snes->jacobian_pre, &assembled); 
 
+                                if(assembled)
+                                  jac_ut_prec = sparse_mref(snes->jacobian_pre);  
+
+                                bool flg = fun->hessian(x_ut, jac_ut, jac_ut_prec); 
+
+                                if(!flg)
+                                {
+                                  fun->hessian(x_ut, jac_ut); 
+                                  MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &snes->jacobian_pre); 
+                                  MatCopy(raw_type(jac_ut), snes->jacobian_pre, SAME_NONZERO_PATTERN); 
+                                }
+                                else
+                                {
+                                  MatDuplicate(raw_type(jac_ut_prec), MAT_COPY_VALUES,  &snes->jacobian_pre); 
+                                  MatCopy(raw_type(jac_ut_prec), snes->jacobian_pre, SAME_NONZERO_PATTERN); 
+                                }
+                                
                                 // STUPID 
-                                MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &jac); 
-                                MatCopy(raw_type(jac_ut), jac, SAME_NONZERO_PATTERN ); 
-
-                                MatDuplicate(jac, MAT_COPY_VALUES,  &prec); 
-                                MatCopy(jac, prec, SAME_NONZERO_PATTERN ); 
-
-
-                                  //  interesting....
-                                  snes->jacobian = jac; 
-                                  snes->jacobian_pre = prec; 
+                                MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &snes->jacobian); 
+                                MatCopy(raw_type(jac_ut), snes->jacobian, SAME_NONZERO_PATTERN );                                 
 
                                 return 0;
                               },
