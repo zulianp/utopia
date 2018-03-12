@@ -57,7 +57,7 @@ namespace utopia {
 		Multigrid(const std::shared_ptr<Smoother> &smoother    = nullptr,
 		          const std::shared_ptr<Solver> &linear_solver = nullptr,
 		          const Parameters params = Parameters())
-		: smoother_(smoother), linear_solver_(linear_solver) 
+		: smoother_(smoother), linear_solver_(linear_solver), default_ksp_type_(KSPRICHARDSON), default_pc_type_(PCSOR)
 		{
 		    set_parameters(params); 
 		}
@@ -68,6 +68,16 @@ namespace utopia {
 		    MultiLevelBase<Matrix, Vector>::set_parameters(params); 
 		}
 
+		inline void set_default_ksp_type(const KSPType &ksp_type)
+		{
+			default_ksp_type_ = ksp_type;
+		}
+
+		inline void set_default_pc_type(const PCType &pc_type)
+		{
+			default_pc_type_ = pc_type;
+		}
+
 	private:
 		std::shared_ptr<Smoother> smoother_;
 		std::shared_ptr<Solver>   linear_solver_;
@@ -75,34 +85,50 @@ namespace utopia {
 		std::shared_ptr<KSP> ksp_;
 		std::vector<Level> levels_;
 
+		KSPType default_ksp_type_;
+		PCType default_pc_type_;
+
 		template<class Solver>
 		bool set_solver(Solver &solver, KSP &ksp)
 		{
 			auto * casted = dynamic_cast< KSPSolver<Matrix, Vector> *>(&solver);
 
 			if(casted) {
-			// if(false) {
-				// KSPSetType(ksp, casted->ksp_type().c_str());
-				// PC pc; 
-				// KSPGetPC(ksp, &pc);
+				// if(casted->ksp_type() == KSPCG || casted->ksp_type() == KSPFCG) {
+				// 	KSPSetType(ksp, KSPFCG);	
+				// } else 
+				if(casted->ksp_type() == KSPGMRES || casted->ksp_type() == KSPFGMRES) {
+					KSPSetType(ksp, KSPFGMRES);	
+				} else {
+					if(casted->ksp_type() != default_ksp_type_) {
+						std::cerr << "[Warning] " << casted->ksp_type() << " not supported by petsc PCMG using fallback option KSPRICHARDSON" << std::endl;
+					}
 
-				// PCType pc_type;
-				// PCGetType(pc, &pc_type);
+					KSPSetType(ksp, default_ksp_type_);
+				}
+				
+				PC pc; 
+				KSPGetPC(ksp, &pc);
 
-				// KSPType ksp_type;
-				// KSPGetType(ksp, &ksp_type);
-
-				// std::cout << ksp_type << ", " << pc_type << std::endl;
-
-				// if(!casted->get_preconditioner()) {
-				//     PCSetType(pc, casted->pc_type().c_str());
-				// } else {
+				if(!casted->get_preconditioner()) {
+				    PCSetType(pc, casted->pc_type().c_str());
+				} else {
 				// 	//FIXME use PCShell
-				// 	PCSetType(pc, PCSOR);
-				// }
+					PCSetType(pc, default_pc_type_);
+				}
 
-				return false;
-				// return true;
+				{
+					PCType pc_type;
+					PCGetType(pc, &pc_type);
+
+					KSPType ksp_type;
+					KSPGetType(ksp, &ksp_type);
+
+					std::cout << ksp_type << ", " << pc_type << std::endl;
+				}
+
+				// return false;
+				return true;
 
 			} else {
 				auto * factor = dynamic_cast< Factorization<Matrix, Vector> *>(&solver);
@@ -148,14 +174,16 @@ namespace utopia {
 
 				if(smoother_) {
 					user_solver = set_solver(*smoother_, smoother);
+					if(!user_solver) {
+						std::cerr << "[Warning] not using user smoother" << std::endl;
+					}
 				} 
 
 				if(!user_solver) {
-					std::cerr << "[Warning] not using user smoother" << std::endl;
-					
-					KSPSetType(smoother, KSPRICHARDSON);
+					// KSPFGMRES, KSPGCG, or KSPRICHARDSON 
+					KSPSetType(smoother, default_ksp_type_);
 					KSPGetPC(smoother, &sm);
-					PCSetType(sm, PCSOR);
+					PCSetType(sm, default_pc_type_);
 
 					// KSPSetInitialGuessNonzero(smoother, PETSC_TRUE);
 				}
