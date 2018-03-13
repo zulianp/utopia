@@ -8,7 +8,6 @@
 
 namespace utopia
 {
-// creare oggetto nel back-end di rilinos che copia in un oggetto teuchos i paramteri di Parameter
 
 /**
 * @brief      This class keeps track on all parameters, that we have in linear solvers, it is derived from the utopia_Parameters class.

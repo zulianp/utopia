@@ -61,12 +61,11 @@ namespace utopia
         }
 
 
-        /*apply(const Vector &rhs, Vector &sol)
-            {
-
+        bool apply(const Vector &rhs, Vector &sol) override
+	{
             problem.apply(*rhs, *sol);
-            }
-*/
+        }
+
 
 
         /**
