@@ -10,9 +10,28 @@ namespace utopia {
 		}
 
 		//Parallel benchmarks
-		BenchmarkBlas1<DSMatrixd, DVectord> petsc_b1;
-		petsc_b1.run();
+#ifdef WITH_PETSC
+		{
+			if(mpi_world_rank() == 0) {
+				std::cout << "> petsc" <<std::endl; 
+			}
 
+			BenchmarkBlas1<DSMatrixd, DVectord> petsc_b1;
+			petsc_b1.run();
+		}
+#endif //WITH_PETSC
+
+#ifdef WITH_TRILINOS
+		{
+			if(mpi_world_rank() == 0) {
+				std::cout << "> trilinos" <<std::endl; 
+			}
+			
+			// BenchmarkBlas1<TSMatrixd, TVectord> trilinos_b1;
+			// trilinos_b1.run();
+		}
+
+#endif //WITH_TRILINOS
 
 		//Serial benchmarks
 		if(mpi_world_size() == 1) {

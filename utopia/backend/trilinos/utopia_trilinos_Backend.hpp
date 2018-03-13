@@ -9,10 +9,8 @@
 
 #include <utility>
 
-namespace utopia
-{
-class TrilinosBackend : public ScalarBackend<double>
-    {
+namespace utopia {
+    class TrilinosBackend : public ScalarBackend<double> {
     public:
         typedef double Scalar;
         typedef TpetraVector Vector;
@@ -89,9 +87,9 @@ class TrilinosBackend : public ScalarBackend<double>
         //[builders]
         template<class Tensor>
         static void build(Tensor &t, const Size &s, const Resize &)
-            {
+        {
             build(t, s, Zeros());
-            }
+        }
 
         static void build(TpetraMatrix &m, const Size &size, const Identity &);
         //static void build(PETScSparseMatrix &m, const Size &size, const Identity &);
@@ -110,7 +108,11 @@ class TrilinosBackend : public ScalarBackend<double>
         static void build(TpetraVector &v, const Size &local_size, const Size &&global_size, const Values<Scalar> &values);
         static void build(TpetraVector &v, const Size &size, const Values<Scalar> &values);
         static void build(TpetraMatrix &m, const Size &size, const LocalValues<Scalar> &values);
-        static void build(TpetraVector &v, const Size &size, const LocalValues<Scalar> &values);
+        
+        inline static void build(TpetraVector &v, const Size &size, const LocalValues<Scalar> &values)
+        {
+            v.values(default_communicator(), size.get(0), Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), values.value());
+        }
 
         static void set(TpetraVector &v, const int index, Scalar value);
         static void add(TpetraVector &v, const int index, Scalar value);
@@ -145,7 +147,7 @@ class TrilinosBackend : public ScalarBackend<double>
 
         template<class Operation>
         static void apply_unary(Vector &result, const Operation &op, const Vector &v)
-            {
+        {
             //Range r = range(v); //TODO
 
             Size gs, ls;
@@ -167,10 +169,10 @@ class TrilinosBackend : public ScalarBackend<double>
 
             write_unlock(result);
             read_unlock(v);
-            }
+        }
 
         static void apply_unary(Vector &result, const Vector &v, const Minus &)
-            {
+        {
             //Range r = range(v);
 
             Size gs, ls;
@@ -192,7 +194,7 @@ class TrilinosBackend : public ScalarBackend<double>
 
             write_unlock(result);
             read_unlock(v);
-            }
+        }
 
         //[binary]
         static void apply_binary(TpetraVector &result, const Reciprocal<Scalar> &reciprocal, const TpetraVector &vec);
@@ -207,37 +209,37 @@ class TrilinosBackend : public ScalarBackend<double>
 
         template<class LeftTensor, class RightTensor, class ResultTensor>
         static void apply_binary(ResultTensor &result, LeftTensor &&left, const Plus &, RightTensor &&right)
-            {
+        {
             if(&result == &left)
-                {
+            {
                 axpy(result, 1., right);
                 return;
-                }
+            }
 
             if(&result == &right)
-                {
+            {
                 axpy(result, 1., left);
                 return;
-                }
+            }
 
             result = std::forward<RightTensor>(right);
             axpy(result, 1., left);
-            }
+        }
 
         template<class LeftTensor, class ResultTensor, class RightTensor>
         static void apply_binary(ResultTensor &result, LeftTensor &&left, const Minus &, RightTensor &&right)
-            {
+        {
             assert(&result != &right);
 
             result = std::forward<LeftTensor>(left);
             axpy(result, -1., right);
-            }
+        }
 
         static void allocate_apply_vec(TpetraVector &result, const TpetraVector &left, const TpetraVector &right);
 
         template<class Operation>
         static void apply_binary_generic(TpetraVector &result, const TpetraVector &left, const Operation &op, const TpetraVector &right)
-            {
+        {
             allocate_apply_vec(result, left, right);
 
             // const vector_type &l= left.implementation();
@@ -265,7 +267,7 @@ class TrilinosBackend : public ScalarBackend<double>
             read_unlock(left);
             read_unlock(right);
             write_unlock(result);
-            }
+        }
 
         //[specialized]
         static void mat_mult_add(TpetraVector &result, const TpetraMatrix &m, const TpetraVector &right, const TpetraVector &left);
@@ -302,16 +304,16 @@ class TrilinosBackend : public ScalarBackend<double>
 
         //[selection]
         static void assign_from_range(TpetraVector &left, const TpetraVector &right, const Range &globalRowRange,
-                                      const Range &global_col_range);
+          const Range &global_col_range);
 
         static void assign_to_range(TpetraMatrix &left, const TpetraMatrix &right, const Range &global_row_range,
-                                    const Range &global_col_range);
+            const Range &global_col_range);
 
         static void assign_to_range( TpetraMatrix &left, const Identity &, const Range &global_row_range,
-                                     const Range &global_col_range);
+           const Range &global_col_range);
 
         static void assign_to_range( TpetraVector &left, const TpetraVector &right, const Range &global_row_range,
-                                     const Range &global_col_range);
+           const Range &global_col_range);
 
         static void assign_from_range(
             TpetraMatrix &left,
@@ -344,15 +346,15 @@ class TrilinosBackend : public ScalarBackend<double>
 
         template<class Tensor>
         static void read_and_write_lock(Tensor &t)
-            {
+        {
             write_lock(t);
-            }
+        }
 
         template<class Tensor>
         static void read_and_write_unlock(Tensor &t)
-            {
+        {
             write_unlock(t);
-            }
+        }
 
         static void diag_scale_right(Matrix &result, const Matrix &m,    const Vector &diag);
         static void diag_scale_left(Matrix &result,  const Vector &diag, const Matrix &m);
@@ -364,7 +366,11 @@ class TrilinosBackend : public ScalarBackend<double>
         static void apply_tensor_reduce(Vector &result, const Matrix &mat, const Max &,  const int dim);
         static void inverse(Matrix &result, const Matrix &mat);
 
-        static void axpy(TpetraVector &y, const Scalar alpha, const TpetraVector &x);
+        inline static void axpy(TpetraVector &y, const Scalar alpha, const TpetraVector &x)
+        {
+            y.axpy(alpha, x);
+        }
+
         static void axpy(TpetraMatrix &y, const Scalar alpha, const TpetraMatrix &x);
         static void axpby(Vector &y, const Scalar alpha, const Vector &x, const Scalar &beta);
 
@@ -374,9 +380,9 @@ class TrilinosBackend : public ScalarBackend<double>
             const TpetraMatrix &left,
             bool transpose_right,
             const TpetraMatrix &right)
-            {
+        {
             gemm(result, 0.0, 1., transpose_left, left, transpose_right, right);
-            }
+        }
 
         inline static void multiply(
             Vector &result,
@@ -384,12 +390,12 @@ class TrilinosBackend : public ScalarBackend<double>
             const TpetraMatrix &left,
             bool transpose_right,
             const Vector &right)
-            {
+        {
             assert(!transpose_right);
             (void) transpose_right;
 
             gemv(result, 0.0, 1., transpose_left, left, right);
-            }
+        }
 
     private:
 
@@ -411,9 +417,9 @@ class TrilinosBackend : public ScalarBackend<double>
             const Vector &x);
 
         static void select_aux(TpetraMatrix &left,
-                               const TpetraMatrix &right,
-                               const std::vector<int> &row_index,
-                               const std::vector<int> &col_index);
+         const TpetraMatrix &right,
+         const std::vector<int> &row_index,
+         const std::vector<int> &col_index);
 
         static void par_assign_from_local_is(
             const std::vector<int> &remote_rows,
@@ -439,30 +445,35 @@ class TrilinosBackend : public ScalarBackend<double>
 
         //unused
         static void vec_to_mat(Matrix &m, const Vector &v, const bool transpose);
+
+        inline static auto default_communicator() -> decltype( Tpetra::DefaultPlatform::getDefaultPlatform().getComm() )
+        {
+            return Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
+        }
     };
 
 template<>
-class Backend< double , TRILINOS > : public TrilinosBackend
+    class Backend< double , TRILINOS > : public TrilinosBackend
     {
     public:
         inline static Backend &Instance()
-            {
+        {
             static Backend instance;
             return instance;
-            }
+        }
 
         BackendInfo &info()
-            {
+        {
             return info_;
-            }
+        }
 
     private:
         BackendInfo info_;
 
         Backend()
-            {
+        {
             info_.set_name("trilinos");
-            }
+        }
     };
 }
 

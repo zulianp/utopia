@@ -21,7 +21,7 @@ namespace utopia {
 
 		void initialize() override
 		{
-			const SizeType base_n = 2 * mpi_world_size();
+			const SizeType base_n = 200 * mpi_world_size();
 			const SizeType n_instances = 10;
 
 			for(SizeType i = 0; i < n_instances; ++i) {

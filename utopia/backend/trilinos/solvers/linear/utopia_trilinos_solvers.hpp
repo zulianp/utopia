@@ -26,12 +26,12 @@ namespace utopia
  * @brief       Class provides interface to Trilinos Belos solvers \n
  *              For setting up basic parameters, one can use classic Belos runtime options
  */
-template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
-class BelosSolver {};
+    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+    class BelosSolver {};
 
 
-template<typename Matrix, typename Vector>
-class BelosSolver<Matrix, Vector, TRILINOS> : virtual public PreconditionedSolver<Matrix, Vector>
+    template<typename Matrix, typename Vector>
+    class BelosSolver<Matrix, Vector, TRILINOS> : virtual public PreconditionedSolver<Matrix, Vector>
     {
         typedef double                           ST;
         typedef Teuchos::ScalarTraits<ST>        SCT;
@@ -57,8 +57,8 @@ class BelosSolver<Matrix, Vector, TRILINOS> : virtual public PreconditionedSolve
 
 
         virtual ~BelosSolver()
-            {
-            }
+        {
+        }
 
 
         /*apply(const Vector &rhs, Vector &sol)
@@ -75,10 +75,11 @@ class BelosSolver<Matrix, Vector, TRILINOS> : virtual public PreconditionedSolve
          * @param[in]  params  The parameters
          */
         virtual void set_parameters(const Parameters params) override
-            {
+        {
             PreconditionedSolver::set_parameters(params);
-            }
+        }
 
     };
+}
 
 #endif //UTOPIA_TRILINOS_SOLVERS_HPP

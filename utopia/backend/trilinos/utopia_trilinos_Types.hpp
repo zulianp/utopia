@@ -33,24 +33,25 @@ typedef Wrapper<TpetraVector, 1>             TVectord;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*    inline void disp(const Wrapper<TpetraMatrix, 2> &w) {
+    // inline void disp(const Wrapper<TpetraMatrix, 2> &w) {
+    //     w.implementation().describe();
+    // }
+
+    // inline void disp(const Wrapper<TpetraSparseMatrix, 2> &w) {
+    //     w.implementation().describe();
+    // }
+
+    // inline void disp(const Wrapper<TpetraSerialSparseMatrix, 2> &w) {
+    //     w.implementation().describe();
+    // }
+
+    inline void disp(const TVectord &w) {
         w.implementation().describe();
     }
 
-    inline void disp(const Wrapper<TpetraSparseMatrix, 2> &w) {
-        w.implementation().describe();
-    }
-
-    inline void disp(const Wrapper<TpetraSerialSparseMatrix, 2> &w) {
-        w.implementation().describe();
-    }
-
-    inline void disp(const Wrapper<TpetraVector, 1> &w) {
-        w.implementation().describe();
-    }
-
-    inline void disp(const Wrapper<TpetraSerialVector, 1> &w) {
-        w.implementation().describe()*/
+    // inline void disp(const Wrapper<TpetraSerialVector, 1> &w) {
+    //     w.implementation().describe()
+    // }
 
 ///////////////////////////////////////////////////////////////////////////////
 UTOPIA_MAKE_PARALLEL_TRAITS(TMatrixd);
