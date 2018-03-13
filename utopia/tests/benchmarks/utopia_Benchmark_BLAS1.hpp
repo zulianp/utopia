@@ -36,10 +36,8 @@ namespace utopia {
 						Vector y = local_values(n, 2.);
 						
 						y += alpha * x;
-						y = y + alpha * x;
 						y = alpha * x + y;
-
-						const Vector z = alpha * x + y;
+						y = y + alpha * x;
 					}
 				);
 

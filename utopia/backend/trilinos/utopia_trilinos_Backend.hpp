@@ -10,12 +10,27 @@
 #include <utility>
 
 namespace utopia {
-    class TrilinosBackend : public ScalarBackend<double> {
+    class TrilinosBackend : public ScalarBackend<TpetraVector::Scalar> {
     public:
-        typedef double Scalar;
+        typedef TpetraVector::Scalar Scalar;
         typedef TpetraVector Vector;
         typedef TpetraMatrix Matrix;
         typedef TpetraSparseMatrix SparseMatrix;
+
+        using ScalarBackend<Scalar>::apply_binary;
+        using ScalarBackend<Scalar>::axpy;
+
+        template<class LorRValueMatrix>
+        static void assign(TpetraMatrix &left, LorRValueMatrix &&right)
+        {
+            left = std::forward<LorRValueMatrix>(right);
+        }
+        
+        template<class LorRValueVector>
+        static void assign(TpetraVector &left, LorRValueVector &&right)
+        {
+            left = std::forward<LorRValueVector>(right);
+        }
 
         static Range range(const TpetraVector &v)
         {

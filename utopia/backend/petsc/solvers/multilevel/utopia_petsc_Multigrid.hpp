@@ -131,7 +131,7 @@ namespace utopia {
 				return true;
 
 			} else {
-				auto * factor = dynamic_cast< Factorization<Matrix, Vector> *>(&solver);
+				auto * factor = dynamic_cast< Factorization<Matrix, Vector, PETSC> *>(&solver);
 				
 				if(factor) {
 					factor->strategy().set_ksp_options(ksp);
