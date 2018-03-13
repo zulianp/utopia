@@ -27,7 +27,7 @@ namespace utopia {
             Range r = range(v);
             Write<TVectord> w_v(v);
             
-            //set first and last entries of each process are to be 0
+            //set first and last entries of each process, are to be 0
             v.set(r.begin(), 0.);
             v.add(r.end() - 1, -10.);
         }
