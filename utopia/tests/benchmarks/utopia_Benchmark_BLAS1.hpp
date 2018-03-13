@@ -21,11 +21,11 @@ namespace utopia {
 
 		void initialize() override
 		{
-			const SizeType base_n = 200 * mpi_world_size();
+			const SizeType base_n = 500;
 			const SizeType n_instances = 10;
 
 			for(SizeType i = 0; i < n_instances; ++i) {
-				const SizeType n = base_n * n_instances;
+				const SizeType n = base_n * (i + 1);
 
 				//axpy
 				this->register_experiment(
