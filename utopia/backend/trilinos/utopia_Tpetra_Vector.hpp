@@ -79,8 +79,69 @@ namespace utopia {
         inline void describe(std::ostream &os = std::cout) const
         {
             auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
-            vec_->describe(*out,  Teuchos::EVerbosityLevel::VERB_EXTREME);
+            vec_->describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
         }
+
+        inline void set(const global_ordinal_type i, const Scalar value)
+        {
+            vec_->replaceGlobalValue(i, value);
+        }
+
+        inline void add(const global_ordinal_type i, const Scalar value)
+        {
+            vec_->sumIntoGlobalValue(i, value);
+        }
+
+        inline void read_lock()
+        {
+            //TODO?
+        }
+
+        inline void read_unlock()
+        {
+            //TODO?
+        }
+
+        inline void write_lock()
+        {
+            //TODO?
+        }
+
+        inline void write_unlock()
+        {
+            //TODO?
+        }
+
+        inline Range range() const
+        {
+            return { vec_->getMap()->getMinGlobalIndex(), vec_->getMap()->getMaxGlobalIndex() + 1 };
+        }
+
+        inline Size size() const
+        {
+            return { vec_->getMap()->getGlobalNumElements() };
+        }
+
+        inline Size local_size() const
+        {
+            return { vec_->getMap()->getNodeNumElements() };
+        }
+
+        inline Scalar norm2() const {
+           return vec_->norm2();
+        }
+        
+        inline Scalar norm1() const {
+           return vec_->norm1();
+        }
+        
+        inline Scalar norm_infty() const {
+          return vec_->normInf();
+        }
+
+        // inline Scalar sum() const {
+        //     return what?
+        // }
 
     private:
         rcpvector_type vec_;
