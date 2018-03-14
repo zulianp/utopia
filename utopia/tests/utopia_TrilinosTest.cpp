@@ -18,9 +18,9 @@ namespace utopia {
         Range r = row_range(m);
         Size s = size(m);
 
-        for(auto i = r.begin(); i != r.end(); ++i) {
+        for(auto i = r.begin(); i < r.end(); ++i) {
             if(i > 0) {
-                m.set(i, i-1, -1.);
+                m.set(i, i - 1, -1.);
                 m.set(i, i, 1.);
             } else if(i + 1 < s.get(1)) {
                 m.set(i, i + 1, -1.);

@@ -5,6 +5,7 @@
 #include "utopia_materials.hpp"
 #include "utopia_Contact.hpp"
 #include "utopia_Mechanics.hpp"
+#include "utopia_SemiGeometricMultigrid.hpp"
 
 
 #include "utopia_libmesh.hpp"
@@ -41,6 +42,11 @@ namespace utopia {
 			n_exports = 0;
 		}
 
+		void set_tol(const Scalar tol)
+		{
+			tol_ = tol;
+		}
+
 		void set_material(const std::shared_ptr< ElasticMaterial<Matrix, Vector> > &material)
 		{
 			material_ = material;
@@ -61,6 +67,12 @@ namespace utopia {
 			);
 
 			deform_mesh(V_0.mesh(), V_0.dof_map(), -x);
+
+			auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
+			
+			if(mg) {
+				mg->update_contact(contact_);
+			}
 		}
 
 		bool solve_steady()
@@ -163,6 +175,16 @@ namespace utopia {
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
 
+		void qp_solve(const Matrix &lhs, const Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
+		{
+			// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
+			SemismoothNewton<Matrix, Vector> newton(linear_solver_);
+			newton.verbose(true);
+			newton.max_it(40);
+			newton.set_box_constraints(box_c);
+			newton.solve(lhs, rhs, inc_c);
+		}
+
 		bool step() 
 		{ 
 			assert(x_.implementation().has_ghosts());
@@ -193,12 +215,8 @@ namespace utopia {
 				apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
 			} 
 
-			SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
-			newton.verbose(true);
-			newton.max_it(40);
-			newton.set_box_constraints(make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap - xc_)));
 			inc_c_ *= 0.;
-			newton.solve(Hc_, gc_, inc_c_);
+			qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap - xc_)), inc_c_);
 			
 			xc_ += inc_c_;
 			x_ += T * inc_c_;
@@ -279,6 +297,11 @@ namespace utopia {
 		inline void set_external_force_fun(const std::shared_ptr<ExternalForce> &external_force_fun) 
 		{
 			external_force_fun_ = external_force_fun;
+		}
+
+		void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &linear_solver)
+		{
+			linear_solver_ = linear_solver;
 		}
 
 	private:

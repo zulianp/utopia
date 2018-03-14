@@ -73,6 +73,7 @@ endfunction()
 
 list(APPEND UTOPIA_FE_MODULES
 	tests
+	multigrid
 	transfer
 	visualization
 	backend/libmesh
