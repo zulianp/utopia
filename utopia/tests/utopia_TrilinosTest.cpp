@@ -8,6 +8,28 @@
 #include "utopia_trilinos_solvers.hpp"
 
 namespace utopia {   
+
+    template<class Matrix>
+    static void build_laplacian(const int n, Matrix &m)
+    {
+        m = local_sparse(n, n, 3);
+
+        Write<TSMatrixd> w_m(m);
+        Range r = row_range(m);
+        Size s = size(m);
+
+        for(auto i = r.begin(); i != r.end(); ++i) {
+            if(i > 0) {
+                m.set(i, i-1, -1.);
+                m.set(i, i, 1.);
+            } else if(i + 1 < s.get(1)) {
+                m.set(i, i + 1, -1.);
+                m.set(i, i, 1.);
+            } else {
+                m.set(i, i, 2.);
+            }
+        }
+    }
     
     void trilinos_build_test()
     {
@@ -16,6 +38,12 @@ namespace utopia {
         
         //FIXME replace this with an actual test
         // disp(v);
+
+        TSMatrixd m;
+        build_laplacian(n, m);
+
+        //FIXME replace this with an actual test
+        // disp(m);
     }
     
     void trilinos_accessors_test()
@@ -56,6 +84,19 @@ namespace utopia {
         //FIXME replace this with an actual test
         // disp(y);
     }
+
+    void trilinos_mult_test()
+    {
+        auto n = 10;
+        TVectord x = local_values(n, 5.);
+        TSMatrixd m;
+        build_laplacian(n, m);
+
+        TVectord y = m * x;
+
+        const double val = norm2(y);
+        assert(approxeq(val, 0.));
+    }
     
     void run_trilinos_test()
     {
@@ -63,6 +104,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_build_test);
         UTOPIA_RUN_TEST(trilinos_accessors_test);
         UTOPIA_RUN_TEST(trilinos_axpy_test);
+        UTOPIA_RUN_TEST(trilinos_mult_test);
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
 }

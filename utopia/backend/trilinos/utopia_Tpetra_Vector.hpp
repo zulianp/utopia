@@ -4,6 +4,10 @@
 
 #include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
+#include "utopia_Size.hpp"
+
+#include <Tpetra_Map_decl.hpp>
+#include <Tpetra_Vector_decl.hpp>
 
 #include <memory>
 
@@ -69,6 +73,11 @@ namespace utopia {
             auto map = Teuchos::rcp(new map_type(n_global, n_local, 0, comm));
             vec_ = Teuchos::rcp(new vector_type(map));
             vec_->putScalar(value);
+        }
+
+        inline void init(const rcp_map_type &map)
+        {
+            vec_ = Teuchos::rcp(new vector_type(map));
         }
 
         inline void axpy(const Scalar &alpha, const TpetraVector &x)
@@ -137,6 +146,21 @@ namespace utopia {
         
         inline Scalar norm_infty() const {
           return vec_->normInf();
+        }
+
+        inline vector_type &implementation()
+        {
+            return *vec_;
+        }
+
+        inline const vector_type &implementation() const
+        {
+            return *vec_;
+        }
+
+        inline bool is_null() const
+        {
+            return vec_.is_null();
         }
 
         // inline Scalar sum() const {

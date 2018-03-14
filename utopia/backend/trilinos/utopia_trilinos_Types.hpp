@@ -33,13 +33,13 @@ typedef Wrapper<TpetraVector, 1>             TVectord;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-    // inline void disp(const Wrapper<TpetraMatrix, 2> &w) {
-    //     w.implementation().describe();
-    // }
+    inline void disp(const Wrapper<TpetraMatrix, 2> &w) {
+        w.implementation().describe();
+    }
 
-    // inline void disp(const Wrapper<TpetraSparseMatrix, 2> &w) {
-    //     w.implementation().describe();
-    // }
+    inline void disp(const Wrapper<TpetraSparseMatrix, 2> &w) {
+        w.implementation().describe();
+    }
 
     // inline void disp(const Wrapper<TpetraSerialSparseMatrix, 2> &w) {
     //     w.implementation().describe();

@@ -37,8 +37,15 @@ namespace utopia {
             return v.range();
         }
 
-        static Range row_range(const TpetraMatrix &m);
-        static Range col_range(const TpetraMatrix &m);
+        static Range row_range(const TpetraMatrix &m)
+        {
+            return m.row_range();
+        }
+
+        // static Range col_range(const TpetraMatrix &m)
+        // {
+        //     return m.col_range();
+        // }
 
         static void size(const TpetraVector &v, Size &size)
         {
@@ -50,8 +57,15 @@ namespace utopia {
             size = v.local_size();
         }
 
-        // static void size(const TpetraMatrix &m, Size &size); 
-        // static void local_size(const TpetraMatrix &m, Size &size);
+        static void size(const TpetraMatrix &m, Size &size)
+        {
+            size = m.size();
+        }
+
+        static void local_size(const TpetraMatrix &m, Size &size)
+        {
+            size = m.local_size();
+        }
 
 
         //[io]
@@ -72,6 +86,16 @@ namespace utopia {
             v.values(default_communicator(), size.get(0), Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), values.value());
         }
 
+        static void build(TpetraSparseMatrix &m, const Size &size, const LocalNNZ<std::size_t> &nnz)
+        {
+            m.crs_init(default_communicator(),
+              size.get(0),
+              size.get(1),
+              Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+              Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+              nnz.nnz());
+        }
+
         inline static void set(TpetraVector &v, const int index, Scalar value)
         {
             v.set(index, value);
@@ -80,6 +104,16 @@ namespace utopia {
         inline static void add(TpetraVector &v, const int index, Scalar value)
         {
             v.add(index, value);
+        }
+
+        inline static void set(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
+        {
+            m.set(row, col, value);
+        }
+
+        inline static void add(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
+        {
+            m.add(row, col, value);
         }
 
         //[host/device locks]
@@ -99,15 +133,15 @@ namespace utopia {
             vec.write_unlock();
         }
 
-        static void write_lock(const TpetraMatrix &mat);
-        // {
-        //     mat.write_lock();
-        // }
+        static void write_lock(TpetraMatrix &mat)
+        {
+            mat.write_lock();
+        }
 
-        static void write_unlock(const TpetraMatrix &mat);
-        // {
-        //     mat.write_unlock();
-        // }
+        static void write_unlock(TpetraMatrix &mat)
+        {
+            mat.write_unlock();
+        }
 
         // reductions
         // static Scalar norm2(const TpetraMatrix &m);
@@ -133,6 +167,30 @@ namespace utopia {
             y.axpy(alpha, x);
         }
 
+
+        //blas 2
+        static void multiply(
+            TpetraVector &result,
+            bool transpose_left,
+            const TpetraMatrix &left,
+            bool transpose_right,
+            const Vector &right)
+        {
+            assert(!transpose_right);
+
+
+
+            assert(!transpose_left);
+            //TODO implement transpoe left
+
+            left.mult(right, result);
+        }
+
+        inline static void apply_binary(TpetraVector &result, const TpetraMatrix &left, const Multiplies &, const TpetraVector &right)
+        {
+            left.mult(right, result);
+        }
+
     private:
 
         inline static auto default_communicator() -> decltype( Tpetra::DefaultPlatform::getDefaultPlatform().getComm() )
@@ -142,7 +200,7 @@ namespace utopia {
     };
 
     template<>
-    class Backend< double , TRILINOS > : public TrilinosBackend {
+    class Backend<TpetraVector::Scalar, TRILINOS> : public TrilinosBackend {
     public:
         inline static Backend &Instance()
         {
