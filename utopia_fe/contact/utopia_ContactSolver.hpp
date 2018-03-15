@@ -29,7 +29,7 @@ namespace utopia {
 			const std::shared_ptr<FunctionSpaceT> &V,
 			const std::shared_ptr<ElasticMaterial<Matrix, Vector>> &material,
 			const ContactParams &params)
-		: V_(V), material_(material), params_(params), first_(true), tol_(1e-10), debug_output_(false)
+		: V_(V), material_(material), params_(params), first_(true), tol_(1e-10), debug_output_(false), force_direct_solver_(true)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 			output_path_ = "contact_sol.e";
@@ -177,12 +177,22 @@ namespace utopia {
 
 		void qp_solve(const Matrix &lhs, const Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
 		{
-			// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
-			SemismoothNewton<Matrix, Vector> newton(linear_solver_);
-			newton.verbose(true);
-			newton.max_it(40);
-			newton.set_box_constraints(box_c);
-			newton.solve(lhs, rhs, inc_c);
+			auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
+			if(!force_direct_solver_ && mg) {
+				SemismoothNewton<Matrix, Vector> newton(linear_solver_);
+				newton.verbose(true);
+				newton.max_it(40);
+				newton.set_box_constraints(box_c);
+				newton.solve(lhs, rhs, inc_c);
+			} else {
+				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
+				newton.verbose(true);
+				newton.max_it(40);
+				newton.set_box_constraints(box_c);
+				newton.solve(lhs, rhs, inc_c);
+
+				force_direct_solver_ = false;
+			}
 		}
 
 		bool step() 
@@ -343,6 +353,7 @@ namespace utopia {
 
 		std::string output_path_;
 		bool debug_output_;
+		bool force_direct_solver_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);

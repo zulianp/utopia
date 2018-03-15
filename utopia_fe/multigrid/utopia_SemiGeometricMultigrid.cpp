@@ -61,12 +61,15 @@ namespace utopia {
 		switch(dim) {
 			case 2: 
 			{
-				const int n_segments = std::max(2, int( ceil( std::sqrt(mesh.n_active_elem() / std::pow(4, n_coarse_spaces)) ) ) );
-				const double aspect_ratio = r(0)/r(1);
-				const int nx = std::max(int(ceil(n_segments * aspect_ratio)), 2);
-				const int ny = std::max(n_segments, 2);
+				const int n_segments = std::max(2, int( std::round( std::sqrt(mesh.n_nodes() / std::pow(4, n_coarse_spaces)) ) ) );
+				const double max_r = std::max(r(0), r(1));
 
-				
+				const double aspect_ratio_x = r(0)/max_r;
+				const double aspect_ratio_y = r(1)/max_r;
+
+				const int nx = std::max(int(std::round(n_segments * aspect_ratio_x)), 2);
+				const int ny = std::max(int(std::round(n_segments * aspect_ratio_y)), 2);
+
 				libMesh::MeshTools::Generation::build_square (
 					*m,
 					nx, ny,
@@ -79,13 +82,17 @@ namespace utopia {
 
 			case 3:
 			{
-				const int n_segments = std::max(2, int( ceil( std::cbrt(mesh.n_active_elem() / std::pow(8, n_coarse_spaces)) ) ) );
-				const double aspect_ratio_x = r(0)/r(2);
-				const double aspect_ratio_y = r(1)/r(2);
+				const int n_segments = std::max(2, int( std::round( std::cbrt(mesh.n_nodes() / std::pow(8, n_coarse_spaces)) ) ) );
+				
+				const double max_r = std::max(r(0), std::max(r(1), r(2)));
+				
+				const double aspect_ratio_x = r(0)/max_r;
+				const double aspect_ratio_y = r(1)/max_r;
+				const double aspect_ratio_z = r(2)/max_r;
 
-				const int nx = std::max(int(ceil(n_segments * aspect_ratio_x)), 2);
-				const int ny = std::max(int(ceil(n_segments * aspect_ratio_y)), 2);
-				const int nz = std::max(n_segments, 2);
+				const int nx = std::max(int(std::round(n_segments * aspect_ratio_x)), 2);
+				const int ny = std::max(int(std::round(n_segments * aspect_ratio_y)), 2);
+				const int nz = std::max(int(std::round(n_segments * aspect_ratio_z)), 2);
 
 				libMesh::MeshTools::Generation::build_cube (
 					*m,
@@ -224,7 +231,7 @@ namespace utopia {
 		const auto last_interp = mg.num_levels() - 2;
 		auto c_I = std::make_shared<DSMatrixd>();
 		*c_I = transpose(contact.complete_transformation) * *interpolators_[last_interp];
-		mg.transfer(last_interp) = Transfer<DSMatrixd, DVectord>(c_I);
+		mg.update_transfer(last_interp, Transfer<DSMatrixd, DVectord>(c_I));
 	}
 
 }
