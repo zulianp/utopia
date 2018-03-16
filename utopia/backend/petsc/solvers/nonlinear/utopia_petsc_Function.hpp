@@ -79,9 +79,9 @@ namespace utopia
                 return true; 
             }
 
-            virtual SNES & getSNES(SNES &snes)
+            virtual void  getSNES(SNES &snes)
             {
-                return snes_; 
+                snes = snes_; 
             }
 
 
