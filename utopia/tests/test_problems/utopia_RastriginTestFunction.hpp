@@ -27,7 +27,7 @@ namespace utopia
     class Rastrigin : public Function<Matrix, Vector> 
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         Rastrigin():
                     pi(3.141592) 

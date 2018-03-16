@@ -47,6 +47,7 @@ namespace utopia {
 		switch(type) {
 			case QUAD4: 	 return EDGE2;
 			case QUAD8: 	 return EDGE3;
+			case QUAD9:	     return EDGE3;
 			case QUADSHELL4: return EDGE2;
 			// case QUADSHELL8: return EDGE3;
 			case TRI3:  	 return EDGE2;

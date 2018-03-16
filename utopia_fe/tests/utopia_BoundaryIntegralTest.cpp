@@ -149,5 +149,8 @@ namespace utopia {
 		assemble(surface_integral(inner(grad(u), grad(v))), boundary_lapl);
 		const double sum_lapl = sum(boundary_lapl);
 		assert(approxeq(sum_lapl, 0., 1e-10));
+
+		DVectord b_fun;
+		assemble(surface_integral(inner(coeff(1.), v), 1), b_fun);
 	}
 }

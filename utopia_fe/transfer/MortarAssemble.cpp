@@ -50,6 +50,7 @@ namespace utopia {
 			case libMesh::TRI6:
 			case libMesh::QUAD4:
 			case libMesh::QUAD8:
+			case libMesh::QUAD9:
 			case libMesh::TRISHELL3:
 			case libMesh::QUADSHELL4:
 			// case libMesh::QUADSHELL8:
@@ -1366,11 +1367,23 @@ namespace utopia {
 	}
 	
 	
-	void make_polygon_from_quad8(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
-	{
-		polygon.resize(e.n_nodes()/2, 2);
+	// void make_polygon_from_quad8(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+	// {
+	// 	polygon.resize(e.n_nodes()/2, 2);
 		
-		for(int i = 0; i < e.n_nodes()/2; ++i) {
+	// 	for(int i = 0; i < e.n_nodes()/2; ++i) {
+	// 		for(int j = 0; j < 2; ++j) {
+	// 			polygon(i, j) = e.point(i)(j);
+	// 			// std::cout<<" polygon("<<i<<","<<j<<") = "<< polygon(i, j) <<std::endl;
+	// 		}
+	// 	}
+	// }
+
+	void make_polygon_from_high_order_quad(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
+	{
+		polygon.resize(4, 2);
+		
+		for(int i = 0; i < 4; ++i) {
 			for(int j = 0; j < 2; ++j) {
 				polygon(i, j) = e.point(i)(j);
 				// std::cout<<" polygon("<<i<<","<<j<<") = "<< polygon(i, j) <<std::endl;
@@ -1495,11 +1508,22 @@ namespace utopia {
 			case 8:
 			{
 				if(e.has_affine_map()) {
-					make_polygon_from_quad8(e, polygon);
+					make_polygon_from_high_order_quad(e, polygon);
 					// make_polygon_from_quad4(e, polygon);
 				} else {
 					make_polygon_from_curved_quad8(e, polygon);
 				}
+				break;
+			}
+
+			case 9:
+			{
+				// if(e.has_affine_map()) {
+					make_polygon_from_high_order_quad(e, polygon);
+					// make_polygon_from_quad4(e, polygon);
+				// } else {
+				// 	make_polygon_from_curved_quad8(e, polygon);
+				// }
 				break;
 			}
 				

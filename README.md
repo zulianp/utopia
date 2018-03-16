@@ -19,7 +19,7 @@ Developed at the Institute of Computational Science, USI, Lugano, Switzerland (h
 
 ## Compiling utopia
 Define the utopia path (you can also add it to your .bash_profile)
-export UTOPIA\_DIR=<The aboslute path of where you want to install utopia>
+export UTOPIA\_DIR=<The absolute path of where you want to install utopia>
 
 Go to the folder utopia/utopia:
 

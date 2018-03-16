@@ -299,7 +299,6 @@ public:
         return true;
     }
 
-
     virtual void attach_preconditioner(KSP & ksp)
     {
         PetscErrorCode ierr;
@@ -315,8 +314,6 @@ public:
             ierr = PCShellSetName(pc,"Utopia Preconditioner");
         }
     }
-
-
 
     /**
      * @brief      Sets the default options for PETSC KSP solver. \n
@@ -352,6 +349,13 @@ public:
 
         ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
         ierr = KSPSetTolerances(ksp, PreconditionedSolver::rtol(), PreconditionedSolver::atol(), PETSC_DEFAULT,  PreconditionedSolver::max_it());
+    }
+
+private: 
+
+    virtual bool in_array(const std::string &value, const std::vector<std::string> &array)
+    {
+        return std::find(array.begin(), array.end(), value) != array.end();
     }
 
 

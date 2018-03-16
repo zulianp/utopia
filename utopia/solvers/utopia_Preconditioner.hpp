@@ -29,7 +29,7 @@ namespace utopia {
         bool apply(const Vector &rhs, Vector &sol) override
         {
             sol = expr_ * rhs;
-            std::cout<< "expresion thing ... \n"; 
+            std::cout<< "expression thing ... \n"; 
             return true;
         }
 

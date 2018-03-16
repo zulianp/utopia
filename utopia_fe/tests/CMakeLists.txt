@@ -14,7 +14,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 
 add_library(utopia_fe_tests STATIC ${LOCAL_SOURCES})
-target_link_libraries(utopia_fe_tests transfer utopia_fe_visualization utopia_fe_homemade utopia_fe_libmesh_backend utopia_fe_contact utopia_fe_materials)
+target_link_libraries(utopia_fe_tests transfer utopia_fe_visualization utopia_fe_homemade utopia_fe_libmesh_backend utopia_fe_contact utopia_fe_materials utopia_fe_multigrid)
 target_include_directories(utopia_fe_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/simulations) 
 
 

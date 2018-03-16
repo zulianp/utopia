@@ -308,6 +308,16 @@ namespace utopia
 				os << "level: " << ++i << ", n_dofs: " << s.get(0) << std::endl;
 			}
 		}
+
+		virtual void update_transfer(const SizeType level, Transfer &&t)
+		{
+			_transfers[level] = std::move(t);
+		}
+
+		virtual void update_transfer(const SizeType level, const Transfer &t)
+		{
+			_transfers[level] = t;
+		}
 		
 	protected:
 		SizeType _num_levels;                             /*!< number of levels in ML   -n   */

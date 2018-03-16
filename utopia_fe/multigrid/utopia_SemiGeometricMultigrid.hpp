@@ -6,8 +6,13 @@
 #include "utopia_libmesh_FunctionSpace.hpp"
 
 namespace utopia {
+	class Contact;
+	
 	class SemiGeometricMultigrid : public LinearSolver<DSMatrixd, DVectord> {
     public:
+    	typedef utopia::Multigrid<DSMatrixd, DVectord> MultigridT;
+    	// typedef utopia::Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> MultigridT;
+
 		void init(const LibMeshFunctionSpace &space, const std::size_t n_levels)
 		{
 			init(space.equation_systems(), n_levels);
@@ -15,6 +20,7 @@ namespace utopia {
 
 		void init(const libMesh::EquationSystems &es, const std::size_t n_levels);
 
+		void update_contact(Contact &contact);
 		void update(const std::shared_ptr<const DSMatrixd> &op);
 		bool apply(const DVectord &rhs, DVectord &sol);
 		
@@ -42,11 +48,18 @@ namespace utopia {
 			const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>()
 		);
 
+		inline MultigridT &algebraic()
+		{
+			return mg;
+		}
+
 	private:
-		Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> mg;
-		// Multigrid<DSMatrixd, DVectord> mg;
+		MultigridT mg;
+		
 		std::vector<std::shared_ptr<libMesh::UnstructuredMesh>> meshes;
 		std::vector<std::shared_ptr<libMesh::EquationSystems>> equation_systems;
+
+		std::vector<std::shared_ptr<DSMatrixd>> interpolators_;
 		bool is_block_solver_;
 	};
 }

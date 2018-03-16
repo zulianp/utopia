@@ -3,9 +3,11 @@
 
 #include "utopia_Multigrid.hpp"
 #include "utopia_IterativeSolver.hpp"
+#include "utopia_petsc.hpp"
 
 namespace utopia {
 
+	
 	template<class Matrix, class Vector>
 	class Multigrid<Matrix, Vector, PETSC_EXPERIMENTAL> : public IterativeSolver<Matrix, Vector>, public MultiLevelBase<Matrix, Vector> {
 		typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -20,7 +22,7 @@ namespace utopia {
 		void update(const std::shared_ptr<const Matrix> &op) override
 		{
 			if(!ksp_) {
-				init_ksp(op);
+				init_ksp(op->implementation().communicator());
 			}
 
 			this->galerkin_assembly(op);
@@ -57,7 +59,7 @@ namespace utopia {
 		Multigrid(const std::shared_ptr<Smoother> &smoother    = nullptr,
 		          const std::shared_ptr<Solver> &linear_solver = nullptr,
 		          const Parameters params = Parameters())
-		: smoother_(smoother), linear_solver_(linear_solver) 
+		: smoother_(smoother), linear_solver_(linear_solver), default_ksp_type_(KSPRICHARDSON), default_pc_type_(PCSOR)
 		{
 		    set_parameters(params); 
 		}
@@ -68,6 +70,29 @@ namespace utopia {
 		    MultiLevelBase<Matrix, Vector>::set_parameters(params); 
 		}
 
+		inline void set_default_ksp_type(const KSPType &ksp_type)
+		{
+			default_ksp_type_ = ksp_type;
+		}
+
+		inline void set_default_pc_type(const PCType &pc_type)
+		{
+			default_pc_type_ = pc_type;
+		}
+
+
+		virtual void update_transfer(const SizeType level, Transfer &&t) override
+		{
+			MultiLevelBase<Matrix, Vector>::update_transfer(level, std::move(t));
+			aux_update_transfer(level);
+		}
+
+		virtual void update_transfer(const SizeType level, const Transfer &t) override
+		{
+			MultiLevelBase<Matrix, Vector>::update_transfer(level, t);
+			aux_update_transfer(level);
+		}
+
 	private:
 		std::shared_ptr<Smoother> smoother_;
 		std::shared_ptr<Solver>   linear_solver_;
@@ -75,37 +100,70 @@ namespace utopia {
 		std::shared_ptr<KSP> ksp_;
 		std::vector<Level> levels_;
 
+		KSPType default_ksp_type_;
+		PCType default_pc_type_;
+
+		void aux_update_transfer(const SizeType level)
+		{
+			if(!ksp_) {
+				init_ksp(this->transfer(level).I().implementation().communicator());
+			} else {
+				PC pc;
+				KSPGetPC(*ksp_, &pc);
+				Mat I = raw_type(this->transfer(level).I());
+				PCMGSetInterpolation(pc, level + 1, I);
+
+				Mat R = raw_type(this->transfer(level).R());
+				PCMGSetRestriction(pc, level + 1, R);
+
+				PCSetUp(pc);
+			}
+		}
+
 		template<class Solver>
 		bool set_solver(Solver &solver, KSP &ksp)
 		{
 			auto * casted = dynamic_cast< KSPSolver<Matrix, Vector> *>(&solver);
 
 			if(casted) {
-			// if(false) {
-				// KSPSetType(ksp, casted->ksp_type().c_str());
-				// PC pc; 
-				// KSPGetPC(ksp, &pc);
+				// if(casted->ksp_type() == KSPCG || casted->ksp_type() == KSPFCG) {
+				// 	KSPSetType(ksp, KSPFCG);	
+				// } else 
+				if(casted->ksp_type() == KSPGMRES || casted->ksp_type() == KSPFGMRES) {
+					KSPSetType(ksp, KSPFGMRES);	
+				} else {
+					if(casted->ksp_type() != default_ksp_type_) {
+						std::cerr << "[Warning] " << casted->ksp_type() << " not supported by petsc PCMG using fallback option KSPRICHARDSON" << std::endl;
+					}
 
-				// PCType pc_type;
-				// PCGetType(pc, &pc_type);
+					KSPSetType(ksp, default_ksp_type_);
+				}
+				
+				PC pc; 
+				KSPGetPC(ksp, &pc);
 
-				// KSPType ksp_type;
-				// KSPGetType(ksp, &ksp_type);
-
-				// std::cout << ksp_type << ", " << pc_type << std::endl;
-
-				// if(!casted->get_preconditioner()) {
-				//     PCSetType(pc, casted->pc_type().c_str());
-				// } else {
+				if(!casted->get_preconditioner()) {
+				    PCSetType(pc, casted->pc_type().c_str());
+				} else {
 				// 	//FIXME use PCShell
-				// 	PCSetType(pc, PCSOR);
-				// }
+					PCSetType(pc, default_pc_type_);
+				}
 
-				return false;
-				// return true;
+				{
+					PCType pc_type;
+					PCGetType(pc, &pc_type);
+
+					KSPType ksp_type;
+					KSPGetType(ksp, &ksp_type);
+
+					std::cout << ksp_type << ", " << pc_type << std::endl;
+				}
+
+				// return false;
+				return true;
 
 			} else {
-				auto * factor = dynamic_cast< Factorization<Matrix, Vector> *>(&solver);
+				auto * factor = dynamic_cast< Factorization<Matrix, Vector, PETSC> *>(&solver);
 				
 				if(factor) {
 					factor->strategy().set_ksp_options(ksp);
@@ -121,9 +179,8 @@ namespace utopia {
 			return false;
 		}
 
-		void init_ksp(const std::shared_ptr<const Matrix> &op)
+		void init_ksp(MPI_Comm comm)
 		{
-			auto comm = op->implementation().communicator();
 			ksp_ = std::shared_ptr<KSP>(new KSP, [](KSP *&ksp) { KSPDestroy(ksp); delete ksp; ksp = nullptr; });
 
 			KSPCreate(comm, ksp_.get());
@@ -148,20 +205,25 @@ namespace utopia {
 
 				if(smoother_) {
 					user_solver = set_solver(*smoother_, smoother);
+					if(!user_solver) {
+						std::cerr << "[Warning] not using user smoother" << std::endl;
+					}
 				} 
 
 				if(!user_solver) {
-					std::cerr << "[Warning] not using user smoother" << std::endl;
-					
-					KSPSetType(smoother, KSPRICHARDSON);
+					// KSPFGMRES, KSPGCG, or KSPRICHARDSON 
+					KSPSetType(smoother, default_ksp_type_);
 					KSPGetPC(smoother, &sm);
-					PCSetType(sm, PCSOR);
+					PCSetType(sm, default_pc_type_);
 
 					// KSPSetInitialGuessNonzero(smoother, PETSC_TRUE);
 				}
 
 				Mat I = raw_type(this->transfer(i).I());
 				PCMGSetInterpolation(pc, i + 1, I);
+
+				Mat R = raw_type(this->transfer(i).R());
+				PCMGSetRestriction(pc, i + 1, R);
 
 				if(linear_solver_) {
 					KSP coarse_solver;

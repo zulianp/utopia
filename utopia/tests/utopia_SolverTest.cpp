@@ -452,11 +452,13 @@ namespace utopia
 			interpolation_operators.push_back(make_ref(I_2));
 			interpolation_operators.push_back(make_ref(I_3));
 
-			auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-			// auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-			auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+			auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+			auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+			// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
 			// linear_solver->verbose(true);
-			Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid(smoother, linear_solver);
+			Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;//(smoother, linear_solver);
+			// multigrid.set_default_pc_type(PCILU);
+			// multigrid.set_default_ksp_type(KSPFGMRES);
 			
 			// Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
 			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
@@ -1005,7 +1007,8 @@ namespace utopia
 			DSMatrixd A;
 			DVectord b, ub;
 			
-			SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
+			// SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
+			SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> nlsolver(lsolver); // nlsolver.verbose(true);
 			
 			// initial guess
 			DVectord x_0 = values(_n, 0.0);
@@ -1016,8 +1019,6 @@ namespace utopia
 			
 			auto box = make_upper_bound_constraints(make_ref(ub));
 			nlsolver.set_box_constraints(box);
-			
-			nlsolver.verbose(false);
 			nlsolver.solve(A, b, x_0);
 			
 			// std::cout << "         End: petsc_sparse_semismooth_newton_test" << std::endl;
