@@ -71,7 +71,8 @@ namespace  utopia
 
 
     template<class Matrix, class Vector>
-    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector> {
+    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector> 
+    {
     public:
         virtual bool apply(const Vector &rhs, Vector &sol) override
         {

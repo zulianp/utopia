@@ -1,3 +1,9 @@
+/*
+* @Author: kopanicakova
+* @Date:   2018-03-11 18:04:53
+* @Last Modified by:   kopanicakova
+* @Last Modified time: 2018-03-11 18:04:56
+*/
 #include <iostream>
 
 #include "par_moonolith.hpp"

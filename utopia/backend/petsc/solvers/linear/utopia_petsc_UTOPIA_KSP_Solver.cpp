@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-03-08 22:57:34
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-09 12:25:25
+* @Last Modified time: 2018-03-13 22:11:02
 */
 
 
@@ -32,9 +32,7 @@ static PetscErrorCode KSPSolve_UTOPIA(KSP ksp)
   utopia_ls->utopia_set_tolerances(ksp->rtol, ksp->abstol, ksp->divtol, ksp->max_it); 
   utopia_ls->utopia_solve_routine(Amat, Pmat,  ksp->vec_rhs, ksp->vec_sol); 
 
-  // preconditioner ... 
-  // - utopia one, petsc combined into utopia... 
-
+  // petsc preconditioner combined with utopia solver ... 
   utopia_ls->get_convergence_reason(ksp->its, ksp->reason); 
 
   PetscFunctionReturn(0);
@@ -100,7 +98,6 @@ PetscErrorCode KSPView_UTOPIA(KSP ksp,PetscViewer viewer)
   KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
 
   // maybe som future printouts ... 
-
   PetscFunctionReturn(0);
 }
 
@@ -111,7 +108,6 @@ PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems *PetscOptionsObject,KSP
   PetscErrorCode ierr;
 
   // not much to add so far... 
-
   PetscFunctionReturn(0);
 }
 

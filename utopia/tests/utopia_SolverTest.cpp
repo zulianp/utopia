@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-09 02:03:54
+* @Last Modified time: 2018-03-11 17:25:16
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -1460,6 +1460,23 @@ namespace utopia
 			expected_rosenbrock -= x0_ros; 
 			std::cout<<"diff rosenbrock2: "<< norm2(expected_rosenbrock) << "   \n"; 
 
+
+			std::cout<<"------------------ utopia-precond test --------------------------------- \n"; 
+
+			auto preconditioner = make_shared< InvDiagPreconditioner<DMatrixd, DVectord> >();
+			cg_home->set_preconditioner(preconditioner);
+
+			SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver3(cg_home); 
+			nonlinear_solver3.verbose(true); 
+
+			// reset IG  
+			x0_ros   		= values(2, 1.5);
+			expected_rosenbrock = values(2, 1.0);
+			nonlinear_solver3.solve(rosenbrock, x0_ros);
+
+
+			expected_rosenbrock -= x0_ros; 
+			std::cout<<"diff rosenbrock3: "<< norm2(expected_rosenbrock) << "   \n"; 
 
 
 			
