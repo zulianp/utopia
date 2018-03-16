@@ -34,6 +34,10 @@ namespace utopia {
 			Vector f = local_zeros(local_size(b));
 			Matrix J = A;
 
+			if(empty(x)) {
+				x = local_zeros(local_size(b));
+			}
+
 			SemismoothNewtonCtx ctx;
 			ctx.H = &A;
 			ctx.g = &b;
@@ -86,7 +90,7 @@ namespace utopia {
 			}
 
 			if(!has_linear_solver) {
-				std::cout << "Non-petsc linear solvers not supported yet: falling-back to mumps/lu" << std::endl;
+				std::cerr << "Non-petsc linear solvers not supported yet: falling-back to mumps/lu" << std::endl;
 				KSPSetType(ksp, KSPPREONLY);
 				PCSetType(pc, "lu");
 				PCFactorSetMatSolverPackage(pc, "mumps");

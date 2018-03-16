@@ -50,6 +50,7 @@ namespace utopia {
 			case libMesh::TRI6:
 			case libMesh::QUAD4:
 			case libMesh::QUAD8:
+			case libMesh::QUAD9:
 			case libMesh::TRISHELL3:
 			case libMesh::QUADSHELL4:
 			// case libMesh::QUADSHELL8:
