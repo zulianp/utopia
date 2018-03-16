@@ -153,6 +153,12 @@ namespace utopia
 
     }; 
 
+    template<typename data_type>
+    bool in_array(const std::string &value, const std::vector<data_type> &array)
+    {
+        return std::find(array.begin(), array.end(), value) != array.end();
+    }
+
 	  /** @}*/
 }
 

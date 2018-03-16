@@ -3,9 +3,11 @@
 
 #include "utopia_Multigrid.hpp"
 #include "utopia_IterativeSolver.hpp"
+#include "utopia_petsc.hpp"
 
 namespace utopia {
 
+	
 	template<class Matrix, class Vector>
 	class Multigrid<Matrix, Vector, PETSC_EXPERIMENTAL> : public IterativeSolver<Matrix, Vector>, public MultiLevelBase<Matrix, Vector> {
 		typedef UTOPIA_SCALAR(Vector)    Scalar;

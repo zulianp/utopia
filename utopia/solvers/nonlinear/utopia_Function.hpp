@@ -2,6 +2,7 @@
 #define UTOPIA_SOLVER_FUNCTION_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_Core.hpp"
 
 namespace utopia 
 {
@@ -17,7 +18,7 @@ namespace utopia
     class Function 
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix); 
 
         virtual ~Function() { }
 

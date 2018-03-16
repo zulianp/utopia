@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-02-06 17:55:18
+* @Last Modified time: 2018-03-11 17:25:16
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -431,6 +431,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_mg_jacobi_test);
+			UTOPIA_RUN_TEST(petsc_snes_test); 
 		}
 
 		void petsc_mg_exp_test()
@@ -1400,6 +1401,94 @@ namespace utopia
 			assert(approxeq(expected, actual));
 			// // std::cout << "         End: petsc_newton_petsc_cg_test" << std::endl;
 		}
+
+
+
+
+
+
+		void petsc_snes_test()
+		{
+			using namespace utopia;
+			using namespace std;
+			
+			std::cout << "         Begin: petsc_snes_test" << std::endl;
+			
+			// TODO:: not being taken into account 
+			auto linear_solver  = make_shared< KSPSolver<DMatrixd, DVectord> >();
+
+			SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver(linear_solver); 
+			nonlinear_solver.verbose(true); 
+
+
+
+			DVectord actual   = values(_n, 2.);
+			DVectord expected = values(_n, 0.468919);
+			
+			TestFunctionND_1<DMatrixd, DVectord> fun(_n);
+			
+			nonlinear_solver.solve(fun, actual);
+			assert(approxeq(expected, actual));
+
+			expected -= actual; 
+			std::cout<<"diff: "<< norm2(expected) << "   \n"; 
+
+
+			Rosenbrock<DMatrixd, DVectord> rosenbrock;
+			DVectord expected_rosenbrock = values(2, 1.0);
+			DVectord x0_ros   		= values(2, 1.5);
+
+			nonlinear_solver.solve(rosenbrock, x0_ros);
+
+
+			expected_rosenbrock -= x0_ros; 
+			std::cout<<"diff rosenbrock: "<< norm2(expected_rosenbrock) << "   \n"; 
+
+
+			std::cout<<"--------------------------------------------------- \n"; 
+			auto cg_home = std::make_shared<ConjugateGradient<DMatrixd, DVectord, HOMEMADE>>();
+			cg_home->verbose(true); 
+
+			SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver2(cg_home); 
+			nonlinear_solver2.verbose(true); 
+
+			// reset IG  
+			x0_ros   		= values(2, 1.5);
+			expected_rosenbrock = values(2, 1.0);
+			nonlinear_solver2.solve(rosenbrock, x0_ros);
+
+
+			expected_rosenbrock -= x0_ros; 
+			std::cout<<"diff rosenbrock2: "<< norm2(expected_rosenbrock) << "   \n"; 
+
+
+			std::cout<<"------------------ utopia-precond test --------------------------------- \n"; 
+
+			auto preconditioner = make_shared< InvDiagPreconditioner<DMatrixd, DVectord> >();
+			cg_home->set_preconditioner(preconditioner);
+
+			SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver3(cg_home); 
+			nonlinear_solver3.verbose(true); 
+
+			// reset IG  
+			x0_ros   		= values(2, 1.5);
+			expected_rosenbrock = values(2, 1.0);
+			nonlinear_solver3.solve(rosenbrock, x0_ros);
+
+
+			expected_rosenbrock -= x0_ros; 
+			std::cout<<"diff rosenbrock3: "<< norm2(expected_rosenbrock) << "   \n"; 
+
+
+			
+			std::cout << "         End: petsc_snes_test" << std::endl;
+		}
+
+
+
+
+
+
 
 		PetscSolverTest()
 		: _n(10) { }

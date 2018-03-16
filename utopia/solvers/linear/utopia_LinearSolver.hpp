@@ -44,6 +44,8 @@ namespace  utopia
             return apply(b, x0);
         } 
 
+ 
+
         /*! @brief if overriden the subclass has to also call this one first
          */
         virtual void update(const std::shared_ptr<const Matrix> &op)
@@ -69,7 +71,8 @@ namespace  utopia
 
 
     template<class Matrix, class Vector>
-    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector> {
+    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector> 
+    {
     public:
         virtual bool apply(const Vector &rhs, Vector &sol) override
         {
