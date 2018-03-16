@@ -27,8 +27,8 @@ namespace utopia {
 				std::cout << "> trilinos" <<std::endl; 
 			}
 			
-			// BenchmarkBlas1<TSMatrixd, TVectord> trilinos_b1;
-			// trilinos_b1.run();
+			BenchmarkBlas1<TSMatrixd, TVectord> trilinos_b1;
+			trilinos_b1.run();
 		}
 
 #endif //WITH_TRILINOS

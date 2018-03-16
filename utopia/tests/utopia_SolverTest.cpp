@@ -467,7 +467,7 @@ namespace utopia
 			multigrid.rtol(1e-15);
 
 			DVectord x = zeros(A.size().get(0));
-			multigrid.verbose(true);
+			// multigrid.verbose(true);
 			multigrid.solve(A, rhs, x);
 
 			const double err = norm2(A*x - rhs);

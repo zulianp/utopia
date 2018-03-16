@@ -8,7 +8,7 @@
 #include <string>
 
 namespace utopia {
-	
+	//http://www.netlib.org/blas/#_level_1
 	template<class Matrix, class Vector>
 	class BenchmarkBlas1 : public Benchmark {
 	public:
@@ -21,28 +21,36 @@ namespace utopia {
 
 		void initialize() override
 		{
-			const SizeType base_n = 200 * mpi_world_size();
+			const SizeType base_n = 7000;
 			const SizeType n_instances = 10;
 
 			for(SizeType i = 0; i < n_instances; ++i) {
-				const SizeType n = base_n * n_instances;
-
+				const SizeType n = base_n * (i + 1);
+				
+				
 				//axpy
 				this->register_experiment(
 					"axpy_" + std::to_string(i),
 					[n]() {
-						const Scalar alpha = 0.1;
 						const Vector x = local_values(n, 1.);
 						Vector y = local_values(n, 2.);
-						
+						const Scalar alpha = 0.1;
 						y += alpha * x;
-						y = y + alpha * x;
 						y = alpha * x + y;
-
-						const Vector z = alpha * x + y;
+						y = y + alpha * x;
 					}
 				);
 
+				//norms
+				this->register_experiment(
+					"norms_" + std::to_string(i),
+					[n]() {
+						const Vector x = local_values(n, 1.);
+						const Scalar norm2_x = norm2(x);
+						const Scalar norm1_x = norm1(x);
+						const Scalar norm_infty_x = norm_infty(x);
+					}
+				);
 
 				//...
 			}

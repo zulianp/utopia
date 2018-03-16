@@ -20,7 +20,7 @@ namespace utopia {
 		void update(const std::shared_ptr<const Matrix> &op) override
 		{
 			if(!ksp_) {
-				init_ksp(op);
+				init_ksp(op->implementation().communicator());
 			}
 
 			this->galerkin_assembly(op);
@@ -78,6 +78,19 @@ namespace utopia {
 			default_pc_type_ = pc_type;
 		}
 
+
+		virtual void update_transfer(const SizeType level, Transfer &&t) override
+		{
+			MultiLevelBase<Matrix, Vector>::update_transfer(level, std::move(t));
+			aux_update_transfer(level);
+		}
+
+		virtual void update_transfer(const SizeType level, const Transfer &t) override
+		{
+			MultiLevelBase<Matrix, Vector>::update_transfer(level, t);
+			aux_update_transfer(level);
+		}
+
 	private:
 		std::shared_ptr<Smoother> smoother_;
 		std::shared_ptr<Solver>   linear_solver_;
@@ -87,6 +100,23 @@ namespace utopia {
 
 		KSPType default_ksp_type_;
 		PCType default_pc_type_;
+
+		void aux_update_transfer(const SizeType level)
+		{
+			if(!ksp_) {
+				init_ksp(this->transfer(level).I().implementation().communicator());
+			} else {
+				PC pc;
+				KSPGetPC(*ksp_, &pc);
+				Mat I = raw_type(this->transfer(level).I());
+				PCMGSetInterpolation(pc, level + 1, I);
+
+				Mat R = raw_type(this->transfer(level).R());
+				PCMGSetRestriction(pc, level + 1, R);
+
+				PCSetUp(pc);
+			}
+		}
 
 		template<class Solver>
 		bool set_solver(Solver &solver, KSP &ksp)
@@ -131,7 +161,7 @@ namespace utopia {
 				return true;
 
 			} else {
-				auto * factor = dynamic_cast< Factorization<Matrix, Vector> *>(&solver);
+				auto * factor = dynamic_cast< Factorization<Matrix, Vector, PETSC> *>(&solver);
 				
 				if(factor) {
 					factor->strategy().set_ksp_options(ksp);
@@ -147,9 +177,8 @@ namespace utopia {
 			return false;
 		}
 
-		void init_ksp(const std::shared_ptr<const Matrix> &op)
+		void init_ksp(MPI_Comm comm)
 		{
-			auto comm = op->implementation().communicator();
 			ksp_ = std::shared_ptr<KSP>(new KSP, [](KSP *&ksp) { KSPDestroy(ksp); delete ksp; ksp = nullptr; });
 
 			KSPCreate(comm, ksp_.get());
@@ -190,6 +219,9 @@ namespace utopia {
 
 				Mat I = raw_type(this->transfer(i).I());
 				PCMGSetInterpolation(pc, i + 1, I);
+
+				Mat R = raw_type(this->transfer(i).R());
+				PCMGSetRestriction(pc, i + 1, R);
 
 				if(linear_solver_) {
 					KSP coarse_solver;
