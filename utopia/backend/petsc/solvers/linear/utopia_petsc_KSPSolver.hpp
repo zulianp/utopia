@@ -307,14 +307,6 @@ public:
         return true;
     }
 
-private: 
-
-    virtual bool in_array(const std::string &value, const std::vector<std::string> &array)
-    {
-        return std::find(array.begin(), array.end(), value) != array.end();
-    }
-
-protected:
     /**
      * @brief      Sets the default options for PETSC KSP solver. \n
      *             Default: BiCGstab
@@ -350,6 +342,16 @@ protected:
         ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
         ierr = KSPSetTolerances(ksp, PreconditionedSolver::rtol(), PreconditionedSolver::atol(), PETSC_DEFAULT,  PreconditionedSolver::max_it());
     }
+
+private: 
+
+    virtual bool in_array(const std::string &value, const std::vector<std::string> &array)
+    {
+        return std::find(array.begin(), array.end(), value) != array.end();
+    }
+
+protected:
+    
 
 
     std::string KSP_type_;                                  /*!< Choice of preconditioner types. */  

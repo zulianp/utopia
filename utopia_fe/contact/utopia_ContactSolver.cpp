@@ -18,9 +18,9 @@ namespace utopia {
 	void run_steady_contact(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		mesh->read("../data/wear_2_far.e");
+		// mesh->read("../data/wear_2_far.e");
 		// mesh->read("../data/channel_2d.e");
-		// mesh->read("../data/leaves_3d.e");
+		mesh->read("../data/leaves_3d.e");
 
 		// {
 		// 	libMesh::MeshRefinement mesh_refinement(*mesh);
@@ -42,7 +42,7 @@ namespace utopia {
 		// lamee_params.set_mu(2, 10.);
 		// lamee_params.set_lambda(2, 10.);
 
-		LameeParameters lamee_params(5., 5.);
+		LameeParameters lamee_params(50., 50.);
 
 		auto elem_order = libMesh::FIRST;
 
@@ -85,7 +85,7 @@ namespace utopia {
 		// ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy), 1));
 		
 		if(dim == 3) {
-			ef->init(integral(inner(coeff(7.), vx)));
+			ef->init(integral(inner(coeff(70.), vx)));
 		} else {
 			ef->init(integral(inner(coeff(-.2), vy)));	
 		}
@@ -110,16 +110,18 @@ namespace utopia {
 		sc.set_tol(5e-6);
 		
 		//begin: multigrid
-		// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-		auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
-		auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
+		auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		// auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+		// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+		auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
+		// auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
+		// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
 		auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
 		mg->verbose(true);
-		mg->init(Vx, 6);
+		mg->init(Vx, 5);
 		
-		mg->algebraic().atol(1e-15);
-		mg->algebraic().rtol(1e-15);
+		mg->algebraic().atol(1e-14);
+		mg->algebraic().rtol(1e-14);
 		mg->algebraic().stol(1e-13);
 
 		sc.set_linear_solver(mg);

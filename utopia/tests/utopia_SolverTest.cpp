@@ -1006,7 +1006,8 @@ namespace utopia
 			DSMatrixd A;
 			DVectord b, ub;
 			
-			SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
+			// SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
+			SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> nlsolver(lsolver); // nlsolver.verbose(true);
 			
 			// initial guess
 			DVectord x_0 = values(_n, 0.0);
@@ -1017,8 +1018,6 @@ namespace utopia
 			
 			auto box = make_upper_bound_constraints(make_ref(ub));
 			nlsolver.set_box_constraints(box);
-			
-			nlsolver.verbose(false);
 			nlsolver.solve(A, b, x_0);
 			
 			// std::cout << "         End: petsc_sparse_semismooth_newton_test" << std::endl;
