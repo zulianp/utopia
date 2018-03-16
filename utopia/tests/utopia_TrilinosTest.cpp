@@ -21,10 +21,14 @@ namespace utopia {
         for(auto i = r.begin(); i < r.end(); ++i) {
             if(i > 0) {
                 m.set(i, i - 1, -1.);
-                m.set(i, i, 1.);
-            } else if(i + 1 < s.get(1)) {
+            }  
+
+            if(i + 1 < s.get(1)) {
                 m.set(i, i + 1, -1.);
-                m.set(i, i, 1.);
+            }
+
+            if(i == 0 || i == n - 1) {
+                m.set(i, i, 1);
             } else {
                 m.set(i, i, 2.);
             }
