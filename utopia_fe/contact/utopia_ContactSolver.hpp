@@ -29,7 +29,15 @@ namespace utopia {
 			const std::shared_ptr<FunctionSpaceT> &V,
 			const std::shared_ptr<ElasticMaterial<Matrix, Vector>> &material,
 			const ContactParams &params)
-		: V_(V), material_(material), params_(params), first_(true), tol_(1e-10), debug_output_(false), force_direct_solver_(true)
+		: V_(V),
+		  material_(material),
+		  params_(params),
+		  first_(true),
+		  tol_(1e-10),
+		  debug_output_(false),
+		  force_direct_solver_(false),
+		  bypass_contact_(false),
+		  max_outer_loops_(40)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 			output_path_ = "contact_sol.e";
@@ -57,6 +65,16 @@ namespace utopia {
 		void update_contact(const Vector &x)
 		{
 			auto &V_0 = V_->subspace(0);
+
+			if(bypass_contact_) {
+				if(!contact_.initialized) {
+					contact_.init_no_contact(
+						utopia::make_ref(V_0.mesh()),
+				    	utopia::make_ref(V_0.dof_map()));
+				} 
+
+				return;
+			}
 
 			deform_mesh(V_0.mesh(), V_0.dof_map(), x);
 
@@ -118,10 +136,10 @@ namespace utopia {
 
 		bool solve_contact()
 		{
-			const int max_outer_loops = 20;
+		
 			Vector old_sol = x_;
 
-			for(int i = 0; i < max_outer_loops; ++i) {
+			for(int i = 0; i < max_outer_loops_; ++i) {
 				contact_is_outdated_ = true;
 				solve_contact_in_current_configuration();
 				
@@ -314,6 +332,15 @@ namespace utopia {
 			linear_solver_ = linear_solver;
 		}
 
+		void set_bypass_contact(const bool val)
+		{
+			bypass_contact_ = val;
+		}
+		void set_max_outer_loops(const int val)
+		{
+			max_outer_loops_ = val;
+		}
+
 	private:
 		std::shared_ptr<FunctionSpaceT> V_;
 		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
@@ -354,6 +381,9 @@ namespace utopia {
 		std::string output_path_;
 		bool debug_output_;
 		bool force_direct_solver_;
+		bool bypass_contact_;
+
+		int max_outer_loops_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);

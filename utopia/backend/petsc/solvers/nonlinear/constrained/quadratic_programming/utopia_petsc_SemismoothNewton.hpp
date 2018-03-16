@@ -62,6 +62,7 @@ namespace utopia {
 
 			SNES snes;
 			SNESCreate(A.implementation().communicator(), &snes);
+			SNESSetFromOptions(snes);
 			SNESSetType(snes, SNESVINEWTONSSLS);
 			SNESSetFunction(snes, raw_type(f), SemismoothNewton::Gradient, &ctx);
 			SNESSetJacobian(snes, raw_type(J), raw_type(J), SemismoothNewton::Hessian, &ctx);
@@ -79,6 +80,17 @@ namespace utopia {
 			
 			if(ksp_solver_ptr) {
 				ksp_solver_ptr->set_ksp_options(ksp);
+
+				if(ksp_solver_ptr->verbose()) {
+				    KSPMonitorSet(ksp,
+								[](KSP, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
+									PrintInfo::print_iter_status({static_cast<Scalar>(iter), res}); 
+									return 0;
+								},
+								nullptr,
+								nullptr);
+				}
+
 				has_linear_solver = true;
 
 			} else {
@@ -96,10 +108,7 @@ namespace utopia {
 				PCFactorSetMatSolverPackage(pc, "mumps");
 				KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
 			}
-
 			
-
-
 			if(this->verbose()) {
 				SNESMonitorSet(
 				snes,
@@ -121,13 +130,13 @@ namespace utopia {
 			// ierr = PCShellSetName(pc, "Utopia Linear Solver");
 
 			//
-			ierr = KSPSetTolerances(ksp, this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
+			SNESSetTolerances(snes, this->atol(), this->atol(), this->stol(), this->max_it(), 1000);
 
 			SNESLineSearch linesearch;
 			SNESGetLineSearch(snes, &linesearch);
 			SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC);
 
-			SNESSetFromOptions(snes);
+			
 
 			if(this->verbose()) {
 				this->init_solver("utopia/petsc SemismoothNewton",  {" it.", "|| Au - b||"});

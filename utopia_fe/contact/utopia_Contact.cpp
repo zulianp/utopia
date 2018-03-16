@@ -3,6 +3,7 @@
 #include "utopia_assemble_contact.hpp"
 #include "libmesh/parallel.h"
 #include "libmesh/mesh_base.h"
+#include "libmesh/dof_map.h"
 #include "moonolith_communicator.hpp"
 #include "moonolith_synched_describable.hpp"
 
@@ -77,6 +78,28 @@ namespace utopia {
 		gap = inv_mass_matrix * weighted_gap;
 		complete_transformation = transfer_operator * orthogonal_trafo;
 
+		initialized = true;
+		return true;
+	}
+
+	bool Contact::init_no_contact(
+		const std::shared_ptr<libMesh::MeshBase> &mesh,
+		const std::shared_ptr<libMesh::DofMap> &dof_map)
+	{
+		auto n_local_dofs = dof_map->n_local_dofs();
+
+		gap = local_values(n_local_dofs, 100000000);
+		weighted_gap = gap;
+		normals = local_zeros(n_local_dofs);
+
+		inv_mass_vector = local_values(n_local_dofs, 1.);
+		is_contact_node = local_zeros(n_local_dofs);
+
+		coupling = local_identity(n_local_dofs, n_local_dofs);
+		inv_mass_matrix = local_identity(n_local_dofs, n_local_dofs);
+		transfer_operator = local_identity(n_local_dofs, n_local_dofs);
+		orthogonal_trafo  = local_identity(n_local_dofs, n_local_dofs);
+		complete_transformation = local_identity(n_local_dofs, n_local_dofs);
 		initialized = true;
 		return true;
 	}

@@ -18,9 +18,9 @@ namespace utopia {
 	void run_steady_contact(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		mesh->read("../data/wear_2_far.e");
+		// mesh->read("../data/wear_2_far.e");
 		// mesh->read("../data/channel_2d.e");
-		// mesh->read("../data/leaves_3d.e");
+		mesh->read("../data/leaves_3d.e");
 
 		// {
 		// 	libMesh::MeshRefinement mesh_refinement(*mesh);
@@ -35,7 +35,8 @@ namespace utopia {
 
 		double dt = 0.05;
 		if(dim == 3) {
-			dt = 0.001;
+			// dt = 0.001;
+			dt = 0.01;
 		}
 		
 		// LameeParameters lamee_params(20., 20.);
@@ -90,10 +91,10 @@ namespace utopia {
 			ef->init(integral(inner(coeff(-.2), vy)));	
 		}
 
-		auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		// auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 		// auto material = std::make_shared<IncompressibleNeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 		// auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-		// auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 
 		ContactParams contact_params;
 		// contact_params.contact_pair_tags = {{2, 1}};
@@ -110,26 +111,33 @@ namespace utopia {
 		sc.set_tol(5e-6);
 
 		// auto ls = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-		// ls->verbose(true);
+		// auto ls = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+		// ls->atol(1e-15);
+		// ls->rtol(1e-15);
+		// ls->stol(1e-15);
+		// ls->max_it(1000);
+		// // ls->verbose(true);
 		// sc.set_linear_solver(ls);
+		// sc.set_bypass_contact(true);
+		// sc.set_max_outer_loops(1);
 		
-		//begin: multigrid
-		// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-		// // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		// // auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-		// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
-		// // auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
-		// // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
-		// auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
-		// mg->verbose(true);
-		// mg->init(Vx, 5);
+		// begin: multigrid
+		auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		// auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+		// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+		auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
+		// auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
+		// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
+		auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
+		mg->verbose(true);
+		mg->init(Vx, 5);
 		
-		// mg->algebraic().atol(1e-14);
-		// mg->algebraic().rtol(1e-14);
-		// mg->algebraic().stol(1e-13);
+		mg->algebraic().atol(1e-15);
+		mg->algebraic().rtol(1e-15);
+		mg->algebraic().stol(1e-13);
 
-		// sc.set_linear_solver(mg);
-		//end: multigrid
+		sc.set_linear_solver(mg);
+		// end: multigrid
 
 
 

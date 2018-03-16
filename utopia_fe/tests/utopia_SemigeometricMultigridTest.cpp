@@ -3,6 +3,7 @@
 #include "moonolith_communicator.hpp"
 #include <memory>
 #include "libmesh/parallel_mesh.h"
+#include "libmesh/nemesis_io.h"
 
 #include "utopia_SemiGeometricMultigrid.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
@@ -200,19 +201,20 @@ namespace utopia {
         auto ux = u[0];
         auto uy = u[1];
 
-        const double mu = 1;
-        const double lambda = 1;
+        const double mu = 4000;
+        const double lambda = 1000;
 
         auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
         auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
-        LMDenseVector z = zeros(2);
+        // LMDenseVector z = zeros(2);
+        LMDenseVector z = values(2, -2000.);
         auto elast_op = ((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) * dX;
         auto f = inner(coeff(z), v) * dX;
 
         auto constr = constraints(
-            boundary_conditions(uy == coeff(0.2),  {0}),
-            boundary_conditions(uy == coeff(-0.2), {2}),
+            // boundary_conditions(uy == coeff(0.2),  {0}),
+            boundary_conditions(uy == coeff(0.0), {2}),
             boundary_conditions(ux == coeff(0.0),  {0, 2})
             );
 
@@ -229,13 +231,17 @@ namespace utopia {
 
         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
         // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-        auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        // auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+        auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
         auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
         // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
 
         // linear_solver->verbose(true);
         SemiGeometricMultigrid mg(smoother, linear_solver);
+        mg.algebraic().rtol(1e-16);
+        mg.algebraic().atol(1e-16);
+        mg.algebraic().max_it(400);
+
         // mg.convert_to_block_solver();
         mg.verbose(true);
         mg.init(*equation_systems, 4);
@@ -261,9 +267,9 @@ namespace utopia {
         // cg.solve(stiffness_mat, rhs, sol);
 
         const double err = norm2(stiffness_mat * sol - rhs);
-        // convert(sol, *sys.solution);
-        // sys.solution->close();
-        // ExodusII_IO(*lm_mesh).write_equation_systems("elast_mg.e", *equation_systems);
+        convert(sol, *sys.solution);
+        sys.solution->close();
+        Nemesis_IO(*lm_mesh).write_equation_systems("elast_mg.e", *equation_systems);
         assert(err < 1e-6);
     }
 
