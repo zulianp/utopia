@@ -18,9 +18,9 @@ namespace utopia {
 	void run_steady_contact(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		// mesh->read("../data/wear_2_far.e");
+		mesh->read("../data/wear_2_far.e");
 		// mesh->read("../data/channel_2d.e");
-		mesh->read("../data/leaves_3d.e");
+		// mesh->read("../data/leaves_3d.e");
 
 		// {
 		// 	libMesh::MeshRefinement mesh_refinement(*mesh);
@@ -108,23 +108,27 @@ namespace utopia {
 		
 		ContactSolverT sc(make_ref(V), material, dt, contact_params); 
 		sc.set_tol(5e-6);
+
+		// auto ls = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		// ls->verbose(true);
+		// sc.set_linear_solver(ls);
 		
 		//begin: multigrid
-		auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-		// auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-		auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
-		// auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
-		// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
-		auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
-		mg->verbose(true);
-		mg->init(Vx, 5);
+		// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		// // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+		// // auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+		// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
+		// // auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
+		// // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
+		// auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
+		// mg->verbose(true);
+		// mg->init(Vx, 5);
 		
-		mg->algebraic().atol(1e-14);
-		mg->algebraic().rtol(1e-14);
-		mg->algebraic().stol(1e-13);
+		// mg->algebraic().atol(1e-14);
+		// mg->algebraic().rtol(1e-14);
+		// mg->algebraic().stol(1e-13);
 
-		sc.set_linear_solver(mg);
+		// sc.set_linear_solver(mg);
 		//end: multigrid
 
 

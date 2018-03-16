@@ -81,6 +81,7 @@ namespace utopia {
 			if(ksp_solver_ptr) {
 				ksp_solver_ptr->set_ksp_options(ksp);
 				has_linear_solver = true;
+
 			} else {
 				auto factor_solver_ptr = std::dynamic_pointer_cast< Factorization<Matrix, Vector, PETSC> >(linear_solver_);
 				if(factor_solver_ptr) {
@@ -94,9 +95,10 @@ namespace utopia {
 				KSPSetType(ksp, KSPPREONLY);
 				PCSetType(pc, "lu");
 				PCFactorSetMatSolverPackage(pc, "mumps");
+				KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
 			}
 
-			KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+			
 
 
 			if(this->verbose()) {
@@ -128,8 +130,9 @@ namespace utopia {
 
 			SNESSetFromOptions(snes);
 
-			if(this->verbose())
+			if(this->verbose()) {
 				this->init_solver("utopia/petsc SemismoothNewton",  {" it.", "|| Au - b||"});
+			}
 
 			SNESSolve(snes, nullptr, raw_type(x));
 
