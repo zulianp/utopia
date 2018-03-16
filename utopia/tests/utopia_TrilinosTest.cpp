@@ -27,7 +27,7 @@ namespace utopia {
                 m.set(i, i + 1, -1.);
             }
 
-            if(i == 0 || i == n - 1) {
+            if(i == 0 || i == s.get(1) - 1) {
                 m.set(i, i, 1);
             } else {
                 m.set(i, i, 2.);

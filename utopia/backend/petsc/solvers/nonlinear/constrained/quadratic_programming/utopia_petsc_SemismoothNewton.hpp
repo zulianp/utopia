@@ -55,7 +55,7 @@ namespace utopia {
 				lobo = raw_type(dummy_lobo);
 			}
 
-			linear_solver_->update(make_ref(A));
+			// linear_solver_->update(make_ref(A));
 
 			SNES snes;
 			SNESCreate(A.implementation().communicator(), &snes);
@@ -66,12 +66,45 @@ namespace utopia {
 
 			KSP ksp;
 			PC pc; 
+
 			SNESGetKSP(snes, &ksp);
-			KSPSetType(ksp, KSPPREONLY);		
 			KSPGetPC(ksp, &pc);
 
-			PCSetType(pc, "lu");
-			PCFactorSetMatSolverPackage(pc, "mumps");
+			auto ksp_solver_ptr = std::dynamic_pointer_cast<KSPSolver<DSMatrixd, DVectord> >(linear_solver_);
+			
+			bool has_linear_solver = false;
+			
+			if(ksp_solver_ptr) {
+				ksp_solver_ptr->set_ksp_options(ksp);
+				has_linear_solver = true;
+			} else {
+				auto factor_solver_ptr = std::dynamic_pointer_cast< Factorization<Matrix, Vector, PETSC> >(linear_solver_);
+				if(factor_solver_ptr) {
+					factor_solver_ptr->strategy().set_ksp_options(ksp);
+					has_linear_solver = true;
+				}
+			}
+
+			if(!has_linear_solver) {
+				std::cout << "Non-petsc linear solvers not supported yet: falling-back to mumps/lu" << std::endl;
+				KSPSetType(ksp, KSPPREONLY);
+				PCSetType(pc, "lu");
+				PCFactorSetMatSolverPackage(pc, "mumps");
+			}
+
+			KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+
+
+			if(this->verbose()) {
+				SNESMonitorSet(
+				snes,
+				[](SNES, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
+					PrintInfo::print_iter_status({static_cast<Scalar>(iter), res}); 
+					return 0;
+				},
+				nullptr,
+				nullptr);
+			}
 
 
 			//FIXME use utopia linear solvers
@@ -90,7 +123,20 @@ namespace utopia {
 			SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC);
 
 			SNESSetFromOptions(snes);
+
+			if(this->verbose())
+				this->init_solver("utopia/petsc SemismoothNewton",  {" it.", "|| Au - b||"});
+
 			SNESSolve(snes, nullptr, raw_type(x));
+
+			if(this->verbose()) {
+				SNESConvergedReason  reason;
+				PetscInt            its; 
+				SNESGetConvergedReason(snes, &reason);
+				SNESGetIterationNumber(snes, &its);
+
+				this->exit_solver(its, reason); 
+			}
 
 			SNESDestroy(&snes);
 			return true;
@@ -111,6 +157,11 @@ namespace utopia {
 		{
 			box = constraints_;
 			return true;
+		}
+
+		void init_snes(SNES &snes)
+		{
+
 		}
 		
 	private:	
