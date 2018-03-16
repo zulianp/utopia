@@ -117,10 +117,75 @@ namespace utopia
         } 
 
 
+        void verbose(const bool & verbose)
+        {
+            verbose_ = verbose; 
+        }
+
+
+        bool verbose()
+        {
+            return verbose_; 
+        }
+
+
+
+        void c1(const Scalar  & c1_in)
+        {
+            c1_ = c1_in; 
+        }
+
+
+        Scalar c1()
+        {
+            return c1_; 
+        }
+
+
+        void rho(const Scalar  & rho_in)
+        {
+            rho_ = rho_in; 
+        }
+
+
+        Scalar rho()
+        {
+            return rho_; 
+        }
+
+
+
+        void alpha_min(const Scalar  & alpha_min)
+        {
+            alpha_min_ = alpha_min; 
+        }
+
+
+        Scalar alpha_min()
+        {
+            return alpha_min_; 
+        }
+
+
+
+        void max_it(const SizeType  & max_it)
+        {
+            max_it_ = max_it; 
+        }
+
+
+        SizeType max_it()
+        {
+            return max_it_; 
+        }
+
+
+
+
     private:
         bool verbose_;      /*!< Verbose inside of LS strategy.  */  
         Scalar c1_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */  
-        Scalar max_it_;     /*!< Maximum of the iterations inside of LS strategy.  */  
+        SizeType max_it_;     /*!< Maximum of the iterations inside of LS strategy.  */  
         Scalar rho_;        /*!< Contraction factor.   */  
         Scalar alpha_min_;  /*!< Minimum allowed step-size.   */  
 

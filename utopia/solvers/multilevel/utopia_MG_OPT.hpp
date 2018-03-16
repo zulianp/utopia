@@ -76,7 +76,7 @@ namespace utopia
 
         bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
-           Vector g_fine, g_coarse, u_2l, e, u_init; 
+           Vector g_fine, g_restricted,  g_coarse, u_2l, s_coarse, s_fine, u_init; 
            Scalar alpha; 
 
            this->make_iterate_feasible(fine_fun, u_l); 
@@ -87,20 +87,20 @@ namespace utopia
 
             g_fine -= f; 
 
-            transfers(l-2).restrict(g_fine, g_fine); 
+            transfers(l-2).restrict(g_fine, g_restricted); 
             transfers(l-2).project_down(u_l, u_2l); 
 
             this->make_iterate_feasible(levels(l-2), u_2l); 
-            this->zero_correction_related_to_equality_constrain(levels(l-2), g_fine); 
+            this->zero_correction_related_to_equality_constrain(levels(l-2), g_restricted); 
 
             levels(l-2).gradient(u_2l, g_coarse); 
 
             u_init = u_2l; 
-            g_coarse -= g_fine;  // tau correction 
+            g_coarse -= g_restricted;  // tau correction - g_diff in rmtr 
                                  
+
             if(l == 2)
             {
-                this->make_iterate_feasible(levels(0), u_2l); 
                 coarse_solve(levels(0), u_2l, g_coarse); 
             }
             else
@@ -113,14 +113,17 @@ namespace utopia
                 }
             }
 
-            e = u_2l - u_init; 
-            transfers(l-2).interpolate(e, e);
-            this->zero_correction_related_to_equality_constrain(fine_fun, e); 
+            s_coarse = u_2l - u_init; 
+            transfers(l-2).interpolate(s_coarse, s_fine);
+            this->zero_correction_related_to_equality_constrain(fine_fun, s_fine); 
             
-            _ls_strategy->get_alpha(fine_fun, g_fine, u_l, e, alpha);
-            // std::cout<<"l:   "<< l << "   alpha:   "<< alpha << " <g_k, e_h>:   "<< dot(L_l, e_h) << "  \n"; 
 
-            u_l += alpha * e; 
+            // TODO:: check which gradient: with/without tau correction  ...
+            // TODO::  put  energy checks ... 
+
+
+            _ls_strategy->get_alpha(fine_fun, g_fine, u_l, s_fine, alpha);
+            u_l += alpha * s_fine; 
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
@@ -139,10 +142,12 @@ namespace utopia
          *
          * @return   
          */
-        bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs, const SizeType & nu = 1)
+        bool smoothing(FunctionType &fun,  Vector &x, const Vector &rhs, const SizeType & nu = 1)
         {
-            _smoother->max_it(nu); 
+            _smoother->max_it(1); 
+            _smoother->verbose(true); 
             _smoother->solve(fun, x, rhs); 
+
             return true; 
         }
 
@@ -158,6 +163,7 @@ namespace utopia
          */
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
         {
+            _coarse_solver->verbose(true); 
             _coarse_solver->solve(fun, x, rhs); 
             return true; 
         }

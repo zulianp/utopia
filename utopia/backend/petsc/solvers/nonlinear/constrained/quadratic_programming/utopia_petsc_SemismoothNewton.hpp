@@ -3,14 +3,13 @@
 
 #include "utopia_SemismoothNewton.hpp"
 #include "utopia_petsc_KSPSolver.hpp"
+#include <petscsnes.h>
+#include "utopia_petsc.hpp"
 
 // PetscErrorCode  KSPRegister(const char sname[],PetscErrorCode (*function)(KSP))
 // KSPRegister("my_solver",MySolverCreate);
 
 namespace utopia {
-
-	//FIXME and then add PETSC to the backend flag
-	static const int PETSC_EXPERIMENTAL = -1000;
 
 	template<class Matrix, class Vector>
 	class SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> : public IterativeSolver<Matrix, Vector> {

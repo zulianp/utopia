@@ -1,3 +1,9 @@
+/*
+* @Author: kopanicakova
+* @Date:   2018-02-20 22:35:43
+* @Last Modified by:   kopanicakova
+* @Last Modified time: 2018-03-08 23:18:07
+*/
 #include "utopia_Instance.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Log.hpp"
@@ -5,6 +11,7 @@
 
 #ifdef WITH_PETSC
 #include "petscsys.h"
+#include "utopia_petsc_UTOPIA_KSP_Solver.hpp"
 #else
 #ifdef WITH_MPI
 #include <mpi.h>
@@ -19,6 +26,10 @@ namespace utopia {
     static char help[] = "initializing utopia environment through petsc";
 
     PetscInitialize(&argc, &argv, (char *) 0, help);
+
+    // is this proper place for doing this ??? 
+    KSPRegister("utopia", KSPCreate_UTOPIA);
+
 //        PetscInitializeNoArguments();
 #else
 #ifdef WITH_MPI

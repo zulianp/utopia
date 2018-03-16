@@ -351,19 +351,17 @@ namespace utopia
                 s_coarse = u_2l - this->get_x_initial(level - 2);
                 coarse_reduction -= this->get_multilevel_energy(levels(level-2),  u_2l,  s_coarse, level-1);
 
-
                 transfers(level-2).interpolate(s_coarse, s_fine);
                 this->zero_correction_related_to_equality_constrain(fine_fun, s_fine); 
 
-                Vector u_t = u_l + s_fine; 
-
-                
                 compute_s_global(u_l, level, s_global);                               
                 E_old = this->get_multilevel_energy(fine_fun,  u_l,  s_global, level); 
 
+                // new test for dbg mode 
+                u_l += s_fine; 
 
-                compute_s_global(u_t, level, s_global);     
-                E_new = this->get_multilevel_energy(fine_fun,  u_t,  s_global, level); 
+                compute_s_global(u_l, level, s_global);     
+                E_new = this->get_multilevel_energy(fine_fun,  u_l,  s_global, level); 
                 
                 //----------------------------------------------------------------------------
                 //                        trial point acceptance  
@@ -377,12 +375,13 @@ namespace utopia
                 Scalar coarse_corr_taken = 0; 
                 if(rho > this->rho_tol())
                 {
-                    u_l = u_t; 
                     coarse_corr_taken = 1; 
                 }
-
-                // TODO:: could be done more efficiently 
-                compute_s_global(u_l, level, s_global);
+                else
+                {
+                    u_l -= s_fine; 
+                    compute_s_global(u_l, level, s_global);
+                }
 
                 //----------------------------------------------------------------------------
                 //                                  trust region update 
@@ -568,7 +567,7 @@ namespace utopia
                 if(corr_norm <= 0.0)
                     corr_norm = 0.0; 
 
-                this->set_delta(level-1, std::min(intermediate_delta, corr_norm)); 
+                this->set_delta(level-1, corr_norm); 
                 return converged; 
             }
         }
@@ -590,6 +589,7 @@ namespace utopia
                 Vector s = u; // carries over prolongated correction
                 for(SizeType i = current_l; i < this->num_levels(); i++)
                     transfers(i-1).interpolate(s, s); 
+                
                 return norm2(s); 
             }    
         }
