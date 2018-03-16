@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-11 17:25:16
+* @Last Modified time: 2018-03-16 14:07:21
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -1414,8 +1414,7 @@ namespace utopia
 			
 			std::cout << "         Begin: petsc_snes_test" << std::endl;
 			
-			// TODO:: not being taken into account 
-			auto linear_solver  = make_shared< KSPSolver<DMatrixd, DVectord> >();
+			auto linear_solver  = make_shared< ConjugateGradient<DMatrixd, DVectord> >();
 
 			SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver(linear_solver); 
 			nonlinear_solver.verbose(true); 
@@ -1434,54 +1433,58 @@ namespace utopia
 			std::cout<<"diff: "<< norm2(expected) << "   \n"; 
 
 
-			Rosenbrock<DMatrixd, DVectord> rosenbrock;
-			DVectord expected_rosenbrock = values(2, 1.0);
-			DVectord x0_ros   		= values(2, 1.5);
+			if(mpi_world_size() == 1)
+			{
 
-			nonlinear_solver.solve(rosenbrock, x0_ros);
+				Rosenbrock<DMatrixd, DVectord> rosenbrock;
+				DVectord expected_rosenbrock = values(2, 1.0);
+				DVectord x0_ros   		= values(2, 1.5);
 
-
-			expected_rosenbrock -= x0_ros; 
-			std::cout<<"diff rosenbrock: "<< norm2(expected_rosenbrock) << "   \n"; 
-
-
-			std::cout<<"--------------------------------------------------- \n"; 
-			auto cg_home = std::make_shared<ConjugateGradient<DMatrixd, DVectord, HOMEMADE>>();
-			cg_home->verbose(true); 
-
-			SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver2(cg_home); 
-			nonlinear_solver2.verbose(true); 
-
-			// reset IG  
-			x0_ros   		= values(2, 1.5);
-			expected_rosenbrock = values(2, 1.0);
-			nonlinear_solver2.solve(rosenbrock, x0_ros);
+				nonlinear_solver.solve(rosenbrock, x0_ros);
 
 
-			expected_rosenbrock -= x0_ros; 
-			std::cout<<"diff rosenbrock2: "<< norm2(expected_rosenbrock) << "   \n"; 
+				expected_rosenbrock -= x0_ros; 
+				std::cout<<"diff rosenbrock: "<< norm2(expected_rosenbrock) << "   \n"; 
 
 
-			std::cout<<"------------------ utopia-precond test --------------------------------- \n"; 
+				std::cout<<"--------------------------------------------------- \n"; 
+				auto cg_home = std::make_shared<ConjugateGradient<DMatrixd, DVectord, HOMEMADE>>();
+				cg_home->verbose(true); 
 
-			auto preconditioner = make_shared< InvDiagPreconditioner<DMatrixd, DVectord> >();
-			cg_home->set_preconditioner(preconditioner);
+				SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver2(cg_home); 
+				nonlinear_solver2.verbose(true); 
 
-			SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver3(cg_home); 
-			nonlinear_solver3.verbose(true); 
-
-			// reset IG  
-			x0_ros   		= values(2, 1.5);
-			expected_rosenbrock = values(2, 1.0);
-			nonlinear_solver3.solve(rosenbrock, x0_ros);
-
-
-			expected_rosenbrock -= x0_ros; 
-			std::cout<<"diff rosenbrock3: "<< norm2(expected_rosenbrock) << "   \n"; 
+				// reset IG  
+				x0_ros   		= values(2, 1.5);
+				expected_rosenbrock = values(2, 1.0);
+				nonlinear_solver2.solve(rosenbrock, x0_ros);
 
 
-			
-			std::cout << "         End: petsc_snes_test" << std::endl;
+				expected_rosenbrock -= x0_ros; 
+				std::cout<<"diff rosenbrock2: "<< norm2(expected_rosenbrock) << "   \n"; 
+
+
+				std::cout<<"------------------ utopia-precond test --------------------------------- \n"; 
+
+				auto preconditioner = make_shared< InvDiagPreconditioner<DMatrixd, DVectord> >();
+				cg_home->set_preconditioner(preconditioner);
+
+				SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver3(cg_home); 
+				nonlinear_solver3.verbose(true); 
+
+				// reset IG  
+				x0_ros   		= values(2, 1.5);
+				expected_rosenbrock = values(2, 1.0);
+				nonlinear_solver3.solve(rosenbrock, x0_ros);
+
+
+				expected_rosenbrock -= x0_ros; 
+				std::cout<<"diff rosenbrock3: "<< norm2(expected_rosenbrock) << "   \n"; 
+
+
+				
+				std::cout << "         End: petsc_snes_test" << std::endl;
+			}
 		}
 
 
