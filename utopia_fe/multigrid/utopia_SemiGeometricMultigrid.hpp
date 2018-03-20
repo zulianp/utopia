@@ -10,8 +10,8 @@ namespace utopia {
 	
 	class SemiGeometricMultigrid : public LinearSolver<DSMatrixd, DVectord> {
     public:
-    	typedef utopia::Multigrid<DSMatrixd, DVectord> MultigridT;
-    	// typedef utopia::Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> MultigridT;
+    	// typedef utopia::Multigrid<DSMatrixd, DVectord> MultigridT;
+    	typedef utopia::Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> MultigridT;
 
 		void init(const LibMeshFunctionSpace &space, const std::size_t n_levels)
 		{
@@ -53,6 +53,11 @@ namespace utopia {
 			return mg;
 		}
 
+		void set_separate_subdomains(const bool val)
+		{
+			separate_subdomains_ = val;
+		}
+
 	private:
 		MultigridT mg;
 		
@@ -61,6 +66,7 @@ namespace utopia {
 
 		std::vector<std::shared_ptr<DSMatrixd>> interpolators_;
 		bool is_block_solver_;
+		bool separate_subdomains_;
 	};
 }
 

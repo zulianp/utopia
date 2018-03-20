@@ -18,20 +18,20 @@ namespace utopia {
 	void run_steady_contact(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		mesh->read("../data/wear_2_far.e");
+		// mesh->read("../data/wear_2_far.e");
 		// mesh->read("../data/channel_2d.e");
-		// mesh->read("../data/leaves_3d.e");
+		mesh->read("../data/leaves_3d_b.e");
 
 	
 
 		const auto dim = mesh->mesh_dimension();
 
-		if(dim == 2)
-		{
-			libMesh::MeshRefinement mesh_refinement(*mesh);
-			mesh_refinement.make_flags_parallel_consistent();
-			mesh_refinement.uniformly_refine(1);
-		}
+		// if(dim == 2)
+		// {
+		// 	libMesh::MeshRefinement mesh_refinement(*mesh);
+		// 	mesh_refinement.make_flags_parallel_consistent();
+		// 	mesh_refinement.uniformly_refine(1);
+		// }
 
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("dynamic-contact");
@@ -46,7 +46,7 @@ namespace utopia {
 		// lamee_params.set_mu(2, 10.);
 		// lamee_params.set_lambda(2, 10.);
 
-		LameeParameters lamee_params(600., 300.);
+		LameeParameters lamee_params(100., 50.);
 
 		auto elem_order = libMesh::FIRST;
 
@@ -106,7 +106,7 @@ namespace utopia {
 		if(dim == 3) {
 			contact_params.search_radius = 0.001;
 		} else {
-			contact_params.search_radius = 0.1;
+			contact_params.search_radius = 0.01;
 		}
 
 		
@@ -136,7 +136,8 @@ namespace utopia {
 		// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
 		auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
 		mg->verbose(true);
-		mg->init(Vx, 5);
+		// mg->set_separate_subdomains(true);
+		mg->init(Vx, 2);
 		
 		mg->algebraic().atol(1e-15);
 		mg->algebraic().rtol(1e-15);
