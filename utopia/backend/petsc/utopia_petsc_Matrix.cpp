@@ -1,9 +1,3 @@
-/*
-* @Author: kopanicakova
-* @Date:   2018-03-21 14:07:02
-* @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-21 18:26:27
-*/
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
 #include "utopia_Operators.hpp"
