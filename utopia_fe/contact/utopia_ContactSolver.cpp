@@ -38,8 +38,8 @@ namespace utopia {
 
 		double dt = 0.05;
 		if(dim == 3) {
-			// dt = 0.001;
-			dt = 0.01;
+			dt = 0.001;
+			// dt = 0.01;
 		}
 		
 		// LameeParameters lamee_params(20., 20.);
@@ -110,7 +110,7 @@ namespace utopia {
 		}
 
 		
-		auto stabilized_material = std::make_shared<StabilizedMaterial<decltype(V), DSMatrixd, DVectord> >(V, 1e-4, material);
+		auto stabilized_material = std::make_shared<StabilizedMaterial<decltype(V), DSMatrixd, DVectord> >(V, 1e-2, material);
 		ContactSolverT sc(make_ref(V), stabilized_material, dt, contact_params); 
 
 		// ContactSolverT sc(make_ref(V), material, dt, contact_params);
@@ -124,7 +124,7 @@ namespace utopia {
 		// ls->max_it(1000);
 		// // ls->verbose(true);
 		// sc.set_linear_solver(ls);
-		// sc.set_bypass_contact(true);
+		sc.set_bypass_contact(true);
 		// sc.set_max_outer_loops(1);
 		
 		// begin: multigrid
@@ -136,7 +136,7 @@ namespace utopia {
 		// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
 		auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
 		mg->verbose(true);
-		// mg->set_separate_subdomains(true);
+		mg->set_separate_subdomains(true);
 		mg->init(Vx, 2);
 		
 		mg->algebraic().atol(1e-15);

@@ -41,7 +41,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef typename NonLinearSolver<Matrix, Vector>::Solver LinearSolver;
 
-        typedef NonLinearSolver<Matrix, Vector> NonLinearSolver;
+        typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
 
 
         SNESSolver( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
