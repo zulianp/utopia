@@ -38,12 +38,12 @@ namespace utopia {
 		{
 			std::array<double, Dimension> p_a;
 			for (libMesh::dof_id_type i = 0; i < e.n_nodes(); ++i) {
-			    const libMesh::Point &p = mesh.node(e.node(i));
-			    for(int d = 0; d < Dimension; ++d) {
-			        p_a[d] = p(d);
-			    }
+				const libMesh::Point &p = mesh.node(e.node(i));
+				for(int d = 0; d < Dimension; ++d) {
+					p_a[d] = p(d);
+				}
 
-			    box += p_a;
+				box += p_a;
 			}
 		}
 
@@ -183,6 +183,80 @@ namespace utopia {
 				libMesh::HEX8);
 		}
 
+		static void concatenate_distributed_meshes(
+			std::vector<std::shared_ptr<libMesh::UnstructuredMesh> > &sub_meshes,
+			const int tag_id_offset, 
+			libMesh::MeshBase &coarse_mesh)
+		{
+			coarse_mesh.clear();
+			coarse_mesh.set_mesh_dimension(sub_meshes.front()->mesh_dimension());
+			coarse_mesh.set_spatial_dimension(sub_meshes.front()->mesh_dimension());
+
+			std::vector<long> node_offsets(sub_meshes.size() + 1, 0);
+			std::vector<long> element_offsets(sub_meshes.size() + 1, 0);
+
+			{
+				std::size_t i = 0;
+				for(auto &m_ptr : sub_meshes) {
+					node_offsets   [i + 1] = m_ptr->n_nodes()       + node_offsets[i];
+					element_offsets[i + 1] = m_ptr->n_active_elem() + element_offsets[i];
+					++i;
+				}
+			}
+
+			moonolith::Communicator comm(coarse_mesh.comm().get());
+			for(int i = 0; i < comm.size(); ++i) {
+				comm.barrier();
+				if(i != comm.rank()) continue;
+
+				std::size_t sub_index = 0;
+				for(auto m_ptr : sub_meshes) {
+
+					std::cout << moonolith::Communicator() << "\n------------------------------" << std::endl;
+
+					// for(auto n_it = m_ptr->local_nodes_begin(); n_it != m_ptr->local_nodes_end(); ++n_it) {
+					for(auto n_it = m_ptr->active_nodes_begin(); n_it != m_ptr->active_nodes_end(); ++n_it) {
+						auto n_ptr = coarse_mesh.add_point(**n_it, node_offsets[sub_index] + (*n_it)->id(), (*n_it)->processor_id());
+						n_ptr->set_unique_id() = (node_offsets[sub_index] + (*n_it)->unique_id());
+
+						std::cout << "node : " << (*n_it)->id() << " -> " << n_ptr->id() << std::endl;
+					}
+
+					std::cout << "-----------------------------" << std::endl;
+
+					for(auto e_it = m_ptr->active_local_elements_begin(); e_it != m_ptr->active_local_elements_end(); ++e_it) {
+						auto &e = **e_it;
+						auto elem = libMesh::Elem::build(libMesh::ElemType(e.type())).release();
+
+						for(int ii = 0; ii != e.n_nodes(); ++ii) {
+							elem->set_node(ii) = coarse_mesh.node_ptr(e.node(ii) + node_offsets[sub_index]);
+						}
+
+						// elem->set_id(e.id() + element_offsets[sub_index]);
+						elem->subdomain_id()  = e.subdomain_id() + tag_id_offset;
+						elem->processor_id()  = e.processor_id();
+						elem->set_unique_id() = element_offsets[sub_index] + e.unique_id();
+
+
+						// std::cout << moonolith::Communicator() << " ";
+						
+						coarse_mesh.add_elem(elem);
+
+						std::cout << e.unique_id() << " " << elem->id() << "( " << e.id() << " ) : " << elem->subdomain_id() << "->" << (e.subdomain_id()) << std::endl;
+					}
+
+				// node_id_offset += node_count;
+					++sub_index;
+
+					std::cout << "-----------------------------" << std::endl;
+				}
+			}
+
+			comm.barrier();
+
+			coarse_mesh.prepare_for_use(/*skip_renumber =*/ false);
+		}
+
 		static void concatenate_meshes(
 			std::vector<std::shared_ptr<libMesh::UnstructuredMesh> > &sub_meshes,
 			const int tag_id_offset, 
@@ -192,17 +266,17 @@ namespace utopia {
 			coarse_mesh.set_mesh_dimension(sub_meshes.front()->mesh_dimension());
 			coarse_mesh.set_spatial_dimension(sub_meshes.front()->mesh_dimension());
 
-			// moonolith::Communicator comm(coarse_mesh.comm().get());
+			moonolith::Communicator comm(coarse_mesh.comm().get());
 
-			// for(int i = 0; i < comm.size(); ++i) {
-			// 	comm.barrier();
-			// 	if(i != comm.rank()) continue;
+			for(int i = 0; i < comm.size(); ++i) {
+				comm.barrier();
+				if(i != comm.rank()) continue;
 
 				auto node_id_offset = 0;
 				std::size_t element_id = 0;
 				for(auto m_ptr : sub_meshes) {
 
-					// std::cout << moonolith::Communicator() << "\n------------------------------" << std::endl;
+					std::cout << moonolith::Communicator() << "\n------------------------------" << std::endl;
 
 					std::size_t node_count = 0;
 					for(auto n_it = m_ptr->active_nodes_begin(); n_it != m_ptr->active_nodes_end(); ++n_it) {
@@ -213,7 +287,7 @@ namespace utopia {
 					for(auto e_it = m_ptr->active_elements_begin(); e_it != m_ptr->active_elements_end(); ++e_it) {
 						auto &e = **e_it;
 						auto elem = libMesh::Elem::build(libMesh::ElemType(e.type())).release();
-						
+
 						for(int ii = 0; ii != e.n_nodes(); ++ii) {
 							elem->set_node(ii) = coarse_mesh.node_ptr(e.node(ii) + node_id_offset);
 						}
@@ -222,13 +296,15 @@ namespace utopia {
 						elem->subdomain_id() = e.subdomain_id() + tag_id_offset;
 
 						// std::cout << moonolith::Communicator() << " ";
-						// std::cout << e.unique_id() << " " << elem->id() << "( " << e.id() << " ) : " << elem->subdomain_id() << "->" << (e.subdomain_id()) << std::endl;
+						std::cout << e.unique_id() << " " << elem->id() << "( " << e.id() << " ) : " << elem->subdomain_id() << "->" << (e.subdomain_id()) << std::endl;
 						coarse_mesh.add_elem(elem);
 					}
 
 					node_id_offset += node_count;
 				}
-			// }
+
+				std::cout << "\n------------------------------" << std::endl;
+			}
 
 
 			coarse_mesh.prepare_for_use(/*skip_renumber =*/ false);
@@ -296,7 +372,7 @@ namespace utopia {
 				coarse_mesh = sub_meshes.front();
 			} else {
 				coarse_mesh = std::make_shared<libMesh::DistributedMesh>(mesh.comm());
-				concatenate_meshes(sub_meshes, tag_id_offset, *coarse_mesh);
+				concatenate_distributed_meshes(sub_meshes, tag_id_offset, *coarse_mesh);
 			}
 
 			return true;

@@ -12,15 +12,15 @@ namespace utopia {
 		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
-		mesh->read("../data/leaves_3d_b.e");
-		// mesh->read("../data/wear_2_far.e");
+		// mesh->read("../data/leaves_3d_b.e");
+		mesh->read("../data/wear_2_far.e");
 
 		if(mpi_world_size() == 1) {
 			plot_mesh(*mesh, "mesh/fine");
 		}
 
 		BoundingBoxCoarsener bb_coarsener;
-		bb_coarsener.init(1, *mesh);
+		bb_coarsener.init(4, *mesh);
 		bb_coarsener.describe();
 
 		libMesh::ExodusII_IO(*bb_coarsener.get_mesh()).write("prova.e");
