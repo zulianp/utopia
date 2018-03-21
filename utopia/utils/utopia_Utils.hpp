@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
