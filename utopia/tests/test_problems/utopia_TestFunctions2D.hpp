@@ -109,7 +109,6 @@ namespace utopia
         {
             assert(point.size().get(0) == 2);
 
-
             result = zeros(2, 2);
 
             const Read<Vector> read(point);

@@ -175,7 +175,6 @@ namespace utopia
                             },
                             &fun);
 
-
           // hessian 
           SNESSetJacobian( snes,  snes->jacobian,  snes->jacobian_pre, 
                           // FormHessian, 
@@ -192,34 +191,36 @@ namespace utopia
                             Matrix jac_ut; 
 
                             if(assembled1)
-                              jac_ut = sparse_mref(snes->jacobian);  
+                              jac_ut.implementation().wrap(snes->jacobian);  
 
                             Matrix jac_ut_prec; 
                             MatAssembled(snes->jacobian_pre, &assembled2); 
 
                             if(assembled2)
-                              jac_ut_prec = sparse_mref(snes->jacobian_pre);  
+                              jac_ut_prec.implementation().wrap(snes->jacobian_pre); 
+
 
                             bool flg = fun->hessian(x_ut, jac_ut, jac_ut_prec); 
 
                             if(!flg)
-                            {
+                            { 
                               fun->hessian(x_ut, jac_ut); 
+
                               MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &snes->jacobian_pre); 
                               MatCopy(raw_type(jac_ut), snes->jacobian_pre, SAME_NONZERO_PATTERN); 
                             }
-                            else
+
+                            if(!assembled1)
                             {
-                              MatDuplicate(raw_type(jac_ut_prec), MAT_COPY_VALUES,  &snes->jacobian_pre); 
-                              MatCopy(raw_type(jac_ut_prec), snes->jacobian_pre, SAME_NONZERO_PATTERN); 
-                            }
-                            
-                            // if(!assembled1)
-                            // {
-                              // STUPID
                               MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &snes->jacobian); 
                               MatCopy(raw_type(jac_ut), snes->jacobian, SAME_NONZERO_PATTERN );                                 
-                            // }
+                            }
+
+                            if(!assembled2 || flg)
+                            {
+                              MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &snes->jacobian_pre); 
+                              MatCopy(raw_type(jac_ut), snes->jacobian_pre, SAME_NONZERO_PATTERN );                                 
+                            }
 
                             return 0;
                           },
@@ -246,15 +247,12 @@ namespace utopia
        return true; 
      }
 
-
      protected: 
       std::string SNES_type_;                                  /*!< Choice of snes types. */  
       const std::vector<std::string> SNES_types;              /*!< Valid options for SNES solver types. */  
 
   //TO BE DONE:
-  // - prepare jacobian global mat - preallocation ... 
   // - convert functions could be more efficient ...
-  // - params
   // - store snes and destroy only when needed 
 
     };

@@ -6,6 +6,7 @@
 #define UTOPIA_UTOPIA_EVAL_CONSTRUCT_HPP_HPP
 
 #include "utopia_Eval_Empty.hpp"
+#include "utopia_Log.hpp"
 
 
 namespace utopia {
@@ -19,12 +20,13 @@ namespace utopia {
     class Eval<Construct<Left, Right>, Traits, Backend> {
     public:
         inline static bool apply(const Construct<Left, Right> &expr) {
-            UTOPIA_LOG_BEGIN(expr);
+            //FIXME
+            // UTOPIA_LOG_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).assign(Eval<Left,  Traits>::apply(expr.left()),
                                           Eval<Right, Traits>::apply(expr.right()) );
 
-            UTOPIA_LOG_END(expr);
+            // UTOPIA_LOG_END(expr);
             return true;
         }
     };
