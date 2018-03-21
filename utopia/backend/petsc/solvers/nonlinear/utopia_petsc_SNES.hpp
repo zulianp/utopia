@@ -186,18 +186,18 @@ namespace utopia
                             Vector x_ut;
                             utopia::convert(x, x_ut); 
 
-                            PetscBool  assembled; 
-                            MatAssembled(snes->jacobian, &assembled); 
+                            PetscBool  assembled1, assembled2; 
+                            MatAssembled(snes->jacobian, &assembled1); 
 
                             Matrix jac_ut; 
 
-                            if(assembled)
+                            if(assembled1)
                               jac_ut = sparse_mref(snes->jacobian);  
 
                             Matrix jac_ut_prec; 
-                            MatAssembled(snes->jacobian_pre, &assembled); 
+                            MatAssembled(snes->jacobian_pre, &assembled2); 
 
-                            if(assembled)
+                            if(assembled2)
                               jac_ut_prec = sparse_mref(snes->jacobian_pre);  
 
                             bool flg = fun->hessian(x_ut, jac_ut, jac_ut_prec); 
@@ -214,9 +214,12 @@ namespace utopia
                               MatCopy(raw_type(jac_ut_prec), snes->jacobian_pre, SAME_NONZERO_PATTERN); 
                             }
                             
-                            // STUPID
-                            MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &snes->jacobian); 
-                            MatCopy(raw_type(jac_ut), snes->jacobian, SAME_NONZERO_PATTERN );                                 
+                            // if(!assembled1)
+                            // {
+                              // STUPID
+                              MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &snes->jacobian); 
+                              MatCopy(raw_type(jac_ut), snes->jacobian, SAME_NONZERO_PATTERN );                                 
+                            // }
 
                             return 0;
                           },

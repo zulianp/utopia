@@ -108,6 +108,8 @@ namespace utopia
         bool hessian(const Vector &point, Matrix &result) const override 
         {
             assert(point.size().get(0) == 2);
+
+
             result = zeros(2, 2);
 
             const Read<Vector> read(point);
