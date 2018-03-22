@@ -1557,22 +1557,18 @@ namespace utopia {
 			}
 		}
 	}
-	
-	void make_polyhedron_from_tet4(const libMesh::Elem &e, Polyhedron &polyhedron)
-	{
-		const int dim = 3;
-		assert(e.dim() == 3);
-		assert(e.n_nodes() == 4);
-		
+
+
+	static void make_polyhedron_from_generic_tet(const libMesh::Elem &e, Polyhedron &polyhedron)
+	{		
 		polyhedron.n_elements = 4;
 		polyhedron.n_nodes 	  = 4;
 		polyhedron.n_dims	  = 3;
-		
-		
-		for(int i = 0; i < e.n_nodes(); ++i) {
-			const int offset = i * dim;
+
+		for(int i = 0; i < 4; ++i) {
+			const int offset = i * 3;
 			
-			for(int j = 0; j < dim; ++j) {
+			for(int j = 0; j < 3; ++j) {
 				polyhedron.points[offset + j] = e.point(i)(j);
 			}
 		}
@@ -1604,190 +1600,101 @@ namespace utopia {
 		polyhedron.el_index[11] = 0;
 	}
 	
-	
-	
-	
+	void make_polyhedron_from_tet4(const libMesh::Elem &e, Polyhedron &polyhedron)
+	{
+		assert(e.dim() == 3);
+		assert(e.n_nodes() == 4);
+
+		make_polyhedron_from_generic_tet(e, polyhedron);
+	}
 	
 	void make_polyhedron_from_tet10(const libMesh::Elem &e, Polyhedron &polyhedron)
 	{
-		
-		const int dim = 3;
 		assert(e.dim() == 3);
 		assert(e.n_nodes() == 10);
 		
-		polyhedron.n_elements = 4;
-		polyhedron.n_nodes 	  = 4;
+		make_polyhedron_from_generic_tet(e, polyhedron);
+	}
+
+	static void make_polyhedron_from_generic_hex(const libMesh::Elem &e, Polyhedron &polyhedron)
+	{
+		polyhedron.n_elements = 6;
+		polyhedron.n_nodes 	  = 8;
 		polyhedron.n_dims	  = 3;
 		
 		
-		for(int i = 0; i < (e.n_nodes()/2-1); ++i) {
-			const int offset = i * dim;
+		for(int i = 0; i < 8; ++i) {
+			const int offset = i * 3;
 			
-			for(int j = 0; j < dim; ++j) {
+			for(int j = 0; j < 3; ++j) {
 				polyhedron.points[offset + j] = e.point(i)(j);
-				
 			}
 		}
 		
 		polyhedron.el_ptr[0] = 0;
-		polyhedron.el_ptr[1] = 3;
-		polyhedron.el_ptr[2] = 6;
-		polyhedron.el_ptr[3] = 9;
-		polyhedron.el_ptr[4] = 12;
+		polyhedron.el_ptr[1] = 4;
+		polyhedron.el_ptr[2] = 8;
+		polyhedron.el_ptr[3] = 12;
+		polyhedron.el_ptr[4] = 16;
+		polyhedron.el_ptr[5] = 20;
+		polyhedron.el_ptr[6] = 24;
 		
 		//face 0
 		polyhedron.el_index[0] = 0;
 		polyhedron.el_index[1] = 1;
-		polyhedron.el_index[2] = 3;
+		polyhedron.el_index[2] = 5;
+		polyhedron.el_index[3] = 4;
 		
 		//face 1
-		polyhedron.el_index[3] = 1;
-		polyhedron.el_index[4] = 2;
-		polyhedron.el_index[5] = 3;
+		polyhedron.el_index[4] = 1;
+		polyhedron.el_index[5] = 2;
+		polyhedron.el_index[6] = 6;
+		polyhedron.el_index[7] = 5;
 		
 		//face 2
-		polyhedron.el_index[6] = 0;
-		polyhedron.el_index[7] = 3;
-		polyhedron.el_index[8] = 2;
+		polyhedron.el_index[8]  = 3;
+		polyhedron.el_index[9]  = 7;
+		polyhedron.el_index[10] = 6;
+		polyhedron.el_index[11] = 2;
 		
 		//face 3
-		polyhedron.el_index[9]  = 1;
-		polyhedron.el_index[10] = 2;
-		polyhedron.el_index[11] = 0;
+		polyhedron.el_index[12] = 0;
+		polyhedron.el_index[13] = 4;
+		polyhedron.el_index[14] = 7;
+		polyhedron.el_index[15] = 3;
 		
+		//face 4
+		polyhedron.el_index[16] = 2;
+		polyhedron.el_index[17] = 1;
+		polyhedron.el_index[18] = 0;
+		polyhedron.el_index[19] = 3;
 		
+		//face 5
+		polyhedron.el_index[20] = 6;
+		polyhedron.el_index[21] = 7;
+		polyhedron.el_index[22] = 4;
+		polyhedron.el_index[23] = 5;
 	}
 	
 	
 	//FIXME between -1, 1 ?
 	void make_polyhedron_from_hex8(const libMesh::Elem &e, Polyhedron &polyhedron)
 	{
-		const int dim = 3;
 		assert(e.dim() == 3);
 		assert(e.n_nodes() == 8);
 		
-		polyhedron.n_elements = 6;
-		polyhedron.n_nodes 	  = 8;
-		polyhedron.n_dims	  = 3;
+		make_polyhedron_from_generic_hex(e, polyhedron);
 		
-		
-		for(int i = 0; i < e.n_nodes(); ++i) {
-			const int offset = i * dim;
-			
-			for(int j = 0; j < dim; ++j) {
-				polyhedron.points[offset + j] = e.point(i)(j);
-			}
-		}
-		
-		polyhedron.el_ptr[0] = 0;
-		polyhedron.el_ptr[1] = 4;
-		polyhedron.el_ptr[2] = 8;
-		polyhedron.el_ptr[3] = 12;
-		polyhedron.el_ptr[4] = 16;
-		polyhedron.el_ptr[5] = 20;
-		polyhedron.el_ptr[6] = 24;
-		
-		//face 0
-		polyhedron.el_index[0] = 0;
-		polyhedron.el_index[1] = 1;
-		polyhedron.el_index[2] = 5;
-		polyhedron.el_index[3] = 4;
-		
-		//face 1
-		polyhedron.el_index[4] = 1;
-		polyhedron.el_index[5] = 2;
-		polyhedron.el_index[6] = 6;
-		polyhedron.el_index[7] = 5;
-		
-		//face 2
-		polyhedron.el_index[8]  = 3;
-		polyhedron.el_index[9]  = 7;
-		polyhedron.el_index[10] = 6;
-		polyhedron.el_index[11] = 2;
-		
-		//face 3
-		polyhedron.el_index[12] = 0;
-		polyhedron.el_index[13] = 4;
-		polyhedron.el_index[14] = 7;
-		polyhedron.el_index[15] = 3;
-		
-		//face 4
-		polyhedron.el_index[16] = 2;
-		polyhedron.el_index[17] = 1;
-		polyhedron.el_index[18] = 0;
-		polyhedron.el_index[19] = 3;
-		
-		//face 5
-		polyhedron.el_index[20] = 6;
-		polyhedron.el_index[21] = 7;
-		polyhedron.el_index[22] = 4;
-		polyhedron.el_index[23] = 5;
 	}
 	
 	
 	//FIXME between -1, 1 ?
 	void make_polyhedron_from_hex27(const libMesh::Elem &e, Polyhedron &polyhedron)
 	{
-		const int dim = 3;
 		assert(e.dim() == 3);
 		assert(e.n_nodes() == 27);
 		
-		polyhedron.n_elements = 6;
-		polyhedron.n_nodes 	  = 8;
-		polyhedron.n_dims	  = 3;
-		
-		
-		for(int i = 0; i < e.n_nodes()/3; ++i) {
-			const int offset = i * dim;
-			
-			for(int j = 0; j < dim; ++j) {
-				polyhedron.points[offset + j] = e.point(i)(j);
-			}
-		}
-		
-		polyhedron.el_ptr[0] = 0;
-		polyhedron.el_ptr[1] = 4;
-		polyhedron.el_ptr[2] = 8;
-		polyhedron.el_ptr[3] = 12;
-		polyhedron.el_ptr[4] = 16;
-		polyhedron.el_ptr[5] = 20;
-		polyhedron.el_ptr[6] = 24;
-		
-		//face 0
-		polyhedron.el_index[0] = 0;
-		polyhedron.el_index[1] = 1;
-		polyhedron.el_index[2] = 5;
-		polyhedron.el_index[3] = 4;
-		
-		//face 1
-		polyhedron.el_index[4] = 1;
-		polyhedron.el_index[5] = 2;
-		polyhedron.el_index[6] = 6;
-		polyhedron.el_index[7] = 5;
-		
-		//face 2
-		polyhedron.el_index[8]  = 3;
-		polyhedron.el_index[9]  = 7;
-		polyhedron.el_index[10] = 6;
-		polyhedron.el_index[11] = 2;
-		
-		//face 3
-		polyhedron.el_index[12] = 0;
-		polyhedron.el_index[13] = 4;
-		polyhedron.el_index[14] = 7;
-		polyhedron.el_index[15] = 3;
-		
-		//face 4
-		polyhedron.el_index[16] = 2;
-		polyhedron.el_index[17] = 1;
-		polyhedron.el_index[18] = 0;
-		polyhedron.el_index[19] = 3;
-		
-		//face 5
-		polyhedron.el_index[20] = 6;
-		polyhedron.el_index[21] = 7;
-		polyhedron.el_index[22] = 4;
-		polyhedron.el_index[23] = 5;
+		make_polyhedron_from_generic_hex(e, polyhedron);
 	}
 	
 	void make_polyhedron(const libMesh::Elem &e, Polyhedron &polyhedron)
@@ -1809,6 +1716,12 @@ namespace utopia {
 			case 10:
 			{
 				make_polyhedron_from_tet10(e, polyhedron);
+				break;
+			}
+
+			case 20:
+			{
+				make_polyhedron_from_generic_hex(e, polyhedron);
 				break;
 			}
 				

@@ -29,7 +29,6 @@ namespace utopia {
 				
 		bool solve(const Matrix &A, const Vector &b, Vector &x)  override
 		{
-			// PetscErrorCode ierr = 0.;
 			Vector f = local_zeros(local_size(b));
 			Matrix J = A;
 
@@ -57,8 +56,6 @@ namespace utopia {
 				dummy_lobo = local_values(local_size(b).get(0), PETSC_NINFINITY);
 				lobo = raw_type(dummy_lobo);
 			}
-
-			// linear_solver_->update(make_ref(A));
 
 			SNES snes;
 			SNESCreate(A.implementation().communicator(), &snes);
@@ -120,24 +117,12 @@ namespace utopia {
 				nullptr);
 			}
 
-
-			//FIXME use utopia linear solvers
-			// auto shell_ptr = linear_solver_.get();
-			// assert(shell_ptr);
-			// ierr = PCSetType(pc, PCSHELL);  
-			// ierr = PCShellSetApply(pc, UtopiaPCApplyShell);
-			// ierr = PCShellSetContext(pc, shell_ptr);
-			// ierr = PCShellSetName(pc, "Utopia Linear Solver");
-
-			//
-			SNESSetTolerances(snes, this->atol(), this->atol(), this->stol(), this->max_it(), 1000);
+			SNESSetTolerances(snes, this->atol(), this->rtol(), this->stol(), this->max_it(), 1000);
 
 			SNESLineSearch linesearch;
 			SNESGetLineSearch(snes, &linesearch);
 			SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC);
-
 			
-
 			if(this->verbose()) {
 				this->init_solver("utopia/petsc SemismoothNewton",  {" it.", "|| Au - b||"});
 			}
@@ -175,9 +160,7 @@ namespace utopia {
 		}
 
 		void init_snes(SNES &snes)
-		{
-
-		}
+		{ }
 		
 	private:	
 		std::shared_ptr <Solver>        linear_solver_;

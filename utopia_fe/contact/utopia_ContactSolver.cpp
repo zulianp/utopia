@@ -18,9 +18,9 @@ namespace utopia {
 	void run_steady_contact(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		mesh->read("../data/wear_2_far.e");
+		// mesh->read("../data/wear_2_far.e");
 		// mesh->read("../data/channel_2d.e");
-		// mesh->read("../data/leaves_3d_b.e");
+		mesh->read("../data/leaves_3d_b.e");
 
 	
 
@@ -28,9 +28,9 @@ namespace utopia {
 
 		// if(dim == 2)
 		// {
-			// libMesh::MeshRefinement mesh_refinement(*mesh);
-			// mesh_refinement.make_flags_parallel_consistent();
-			// mesh_refinement.uniformly_refine(1);
+		// 	libMesh::MeshRefinement mesh_refinement(*mesh);
+		// 	mesh_refinement.make_flags_parallel_consistent();
+		// 	mesh_refinement.uniformly_refine(1);
 		// }
 
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
@@ -38,15 +38,17 @@ namespace utopia {
 
 		double dt = 0.05;
 		if(dim == 3) {
-			dt = 0.001;
-			// dt = 0.01;
+			// dt = 0.001;
+			dt = 0.01;
 		}
 		
 		// LameeParameters lamee_params(20., 20.);
 		// lamee_params.set_mu(2, 10.);
 		// lamee_params.set_lambda(2, 10.);
 
-		LameeParameters lamee_params(100., 50.);
+		LameeParameters lamee_params(3000., 7000.);
+		// 	lamee_params.set_mu(2, 10000.);
+		// lamee_params.set_lambda(2, 10000.);
 
 		auto elem_order = libMesh::FIRST;
 
@@ -89,7 +91,7 @@ namespace utopia {
 		// ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy), 1));
 		
 		if(dim == 3) {
-			ef->init(integral(inner(coeff(7.), vx)));
+			ef->init(integral(inner(coeff(10000.), vx)));
 		} else {
 			ef->init(integral(inner(coeff(-.2), vy)));	
 		}
@@ -104,7 +106,7 @@ namespace utopia {
 		contact_params.contact_pair_tags = {{1, 2}, {1, 3}, {2, 3}};
 
 		if(dim == 3) {
-			contact_params.search_radius = 0.001;
+			contact_params.search_radius = 0.0005;
 		} else {
 			contact_params.search_radius = 0.01;
 		}
@@ -124,26 +126,26 @@ namespace utopia {
 		// ls->max_it(1000);
 		// // ls->verbose(true);
 		// sc.set_linear_solver(ls);
-		sc.set_bypass_contact(true);
+		// sc.set_bypass_contact(true);
 		// sc.set_max_outer_loops(1);
 		
 		// begin: multigrid
-		auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-		// auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-		auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
-		// auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
-		// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
-		auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
-		mg->verbose(true);
-		mg->set_separate_subdomains(true);
-		mg->init(Vx, 2);
+		// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		// // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+		// // auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+		// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
+		// // auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
+		// // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
+		// auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
+		// mg->verbose(true);
+		// mg->set_separate_subdomains(true);
+		// mg->init(Vx, 2);
 		
-		mg->algebraic().atol(1e-15);
-		mg->algebraic().rtol(1e-15);
-		mg->algebraic().stol(1e-13);
+		// mg->algebraic().atol(1e-15);
+		// mg->algebraic().rtol(1e-15);
+		// mg->algebraic().stol(1e-13);
 
-		sc.set_linear_solver(mg);
+		// sc.set_linear_solver(mg);
 		// end: multigrid
 
 
