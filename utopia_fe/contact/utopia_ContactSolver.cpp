@@ -38,15 +38,15 @@ namespace utopia {
 
 		double dt = 0.05;
 		if(dim == 3) {
-			// dt = 0.001;
-			dt = 0.01;
+			dt = 0.001;
+			// dt = 0.01;
 		}
 		
 		// LameeParameters lamee_params(20., 20.);
 		// lamee_params.set_mu(2, 10.);
 		// lamee_params.set_lambda(2, 10.);
 
-		LameeParameters lamee_params(3000., 7000.);
+		LameeParameters lamee_params(300., 700.);
 		// 	lamee_params.set_mu(2, 10000.);
 		// lamee_params.set_lambda(2, 10000.);
 
@@ -91,7 +91,7 @@ namespace utopia {
 		// ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy), 1));
 		
 		if(dim == 3) {
-			ef->init(integral(inner(coeff(10000.), vx)));
+			ef->init(integral(inner(coeff(2000.), vx)));
 		} else {
 			ef->init(integral(inner(coeff(-.2), vy)));	
 		}
@@ -106,7 +106,7 @@ namespace utopia {
 		contact_params.contact_pair_tags = {{1, 2}, {1, 3}, {2, 3}};
 
 		if(dim == 3) {
-			contact_params.search_radius = 0.0005;
+			contact_params.search_radius = 0.0001;
 		} else {
 			contact_params.search_radius = 0.01;
 		}

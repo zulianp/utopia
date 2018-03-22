@@ -22,7 +22,7 @@ namespace utopia {
 		
 		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
 						 const Parameters params                         = Parameters() ) :
-		linear_solver_(linear_solver)
+		linear_solver_(linear_solver), line_search_type_(SNESLINESEARCHBASIC)
 		{
 			set_parameters(params);
 		}
@@ -121,7 +121,7 @@ namespace utopia {
 
 			SNESLineSearch linesearch;
 			SNESGetLineSearch(snes, &linesearch);
-			SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC);
+			SNESLineSearchSetType(linesearch, line_search_type_);
 			
 			if(this->verbose()) {
 				this->init_solver("utopia/petsc SemismoothNewton",  {" it.", "|| Au - b||"});
@@ -161,10 +161,16 @@ namespace utopia {
 
 		void init_snes(SNES &snes)
 		{ }
+
+		void set_line_search_type(SNESLineSearchType line_search_type)
+		{
+			line_search_type_ = line_search_type;
+		}
 		
 	private:	
 		std::shared_ptr <Solver>        linear_solver_;
 		BoxConstraints                  constraints_;
+		SNESLineSearchType line_search_type_;
 
 		typedef struct {
 			const Matrix * H;

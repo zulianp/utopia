@@ -206,10 +206,10 @@ namespace utopia {
 				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
 				newton.verbose(true);
 				newton.max_it(40);
-				newton.atol(1e-14);
-				newton.rtol(1e-14);
-				newton.stol(1e-14);
-				
+				newton.atol(1e-15);
+				newton.rtol(1e-15);
+				newton.stol(1e-15);
+
 				newton.set_box_constraints(box_c);
 				newton.solve(lhs, rhs, inc_c);
 
