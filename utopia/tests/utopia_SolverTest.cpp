@@ -1142,6 +1142,7 @@ namespace utopia
 			// smoother->verbose(true);
 
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
+			multigrid.set_use_linear_search(true);
 
 			
 			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
@@ -1218,8 +1219,9 @@ namespace utopia
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
 			multigrid.max_it(1);
-			multigrid.mg_type(2);
-			
+			multigrid.mg_type(1);
+			// multigrid.verbose(true);
+			// multigrid.set_use_linear_search(true);
 			
 			ConjugateGradient<DSMatrixd, DVectord> cg;
 			cg.verbose(verbose);
@@ -1273,6 +1275,9 @@ namespace utopia
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 			multigrid.init_transfer_from_fine_to_coarse(interpolation_operators);
 			multigrid.update(make_ref(A));
+
+			multigrid.verbose(true);
+			// multigrid.set_use_linear_search(true);
 			multigrid.solve(rhs, x);
 			
 			// std::cout << "end: petsc_mg_jacobi_test" << std::endl;

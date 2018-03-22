@@ -207,7 +207,7 @@ namespace utopia {
 				SemismoothNewton<Matrix, Vector> newton(linear_solver_);
 				newton.verbose(true);
 				newton.max_it(40);
-				newton.atol(1e-15);
+				newton.atol(1e-16);
 				newton.rtol(1e-15);
 				newton.stol(1e-15);
 
