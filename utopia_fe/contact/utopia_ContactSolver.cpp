@@ -38,7 +38,7 @@ namespace utopia {
 
 		double dt = 0.05;
 		if(dim == 3) {
-			dt = 0.001;
+			dt = 0.0001;
 			// dt = 0.01;
 		}
 		
@@ -46,7 +46,7 @@ namespace utopia {
 		// lamee_params.set_mu(2, 10.);
 		// lamee_params.set_lambda(2, 10.);
 
-		LameeParameters lamee_params(300., 700.);
+		LameeParameters lamee_params(100., 400.);
 		// 	lamee_params.set_mu(2, 10000.);
 		// lamee_params.set_lambda(2, 10000.);
 
@@ -91,15 +91,15 @@ namespace utopia {
 		// ef->init(integral(inner(coeff(0.), vx) + inner(coeff(-.2), vy), 1));
 		
 		if(dim == 3) {
-			ef->init(integral(inner(coeff(2000.), vx)));
+			ef->init(integral(inner(coeff(4000.), vx)));
 		} else {
 			ef->init(integral(inner(coeff(-.2), vy)));	
 		}
 
-		// auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 		// auto material = std::make_shared<IncompressibleNeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 		// auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-		auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		// auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
 
 		ContactParams contact_params;
 		// contact_params.contact_pair_tags = {{2, 1}};
@@ -127,7 +127,7 @@ namespace utopia {
 		// // ls->verbose(true);
 		// sc.set_linear_solver(ls);
 		// sc.set_bypass_contact(true);
-		// sc.set_max_outer_loops(1);
+		sc.set_max_outer_loops(10);
 		
 		// begin: multigrid
 		// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();

@@ -856,7 +856,7 @@ namespace utopia {
         }   
     }
 
-    void petsc_harcoded_cg_test()
+    void petsc_hardcoded_cg_test()
     {
         const int n = mpi_world_size() * 2;
         const int i_max = 2;
@@ -1076,7 +1076,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petc_optional_test);
         UTOPIA_RUN_TEST(petsc_view_test);                
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate_test);
-        UTOPIA_RUN_TEST(petsc_harcoded_cg_test);
+        UTOPIA_RUN_TEST(petsc_hardcoded_cg_test);
         UTOPIA_RUN_TEST(petsc_reciprocal_test);
         UTOPIA_RUN_TEST(petsc_axpy_test);
         UTOPIA_RUN_TEST(petsc_vector_accessors_test);
