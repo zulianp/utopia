@@ -77,7 +77,7 @@ namespace utopia
         Multigrid(const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                   const std::shared_ptr<Solver> &direct_solver = std::shared_ptr<Solver>(),
                   const Parameters params = Parameters())
-        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true), use_linear_search_(false)
+        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true), use_line_search_(false)
         {
             set_parameters(params); 
         }
@@ -344,7 +344,7 @@ namespace utopia
             // correction transfer
             transfers(l-2).interpolate(c_H, c_h); 
 
-            if(use_linear_search_) {
+            if(use_line_search_) {
                 const Scalar nom = dot(c_h, r_h);
                 const Scalar denom = dot(level(l-1).A() * c_h, c_h);
                 const Scalar alpha = (nom/denom);
@@ -476,9 +476,9 @@ namespace utopia
             perform_galerkin_assembly_ = val;   
         }
 
-        void set_use_linear_search(const bool val)
+        void set_use_line_search(const bool val)
         {
-            use_linear_search_ = val;
+            use_line_search_ = val;
         }
 
     protected:   
@@ -488,7 +488,7 @@ namespace utopia
     private:
         Parameters                          _parameters;
         bool perform_galerkin_assembly_;
-        bool use_linear_search_;
+        bool use_line_search_;
 
     };
 

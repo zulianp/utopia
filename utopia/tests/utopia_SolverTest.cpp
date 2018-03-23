@@ -1142,7 +1142,7 @@ namespace utopia
 			// smoother->verbose(true);
 
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-			multigrid.set_use_linear_search(true);
+			multigrid.set_use_line_search(true);
 
 			
 			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
