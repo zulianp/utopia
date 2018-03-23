@@ -15,7 +15,7 @@ namespace utopia {
         }
 
         void matrix_assembly_test() {
-            Matrix mat = values(_n, _n, 0);
+            Matrix mat = values(n_dofs, n_dofs, 0);
 
             //Assemble 1D laplacian with dirichlet nodes at the boundary
             {
@@ -32,7 +32,7 @@ namespace utopia {
                 }
 
                 if (rend == mat.size().get(0)) {
-                    mat.set(_n - 1, _n - 1, 1);
+                    mat.set(n_dofs - 1, n_dofs - 1, 1);
                     rend -= 1;
                 }
 
@@ -43,7 +43,7 @@ namespace utopia {
                 }
             }
 
-            Vector expected = values(_n, 0.);
+            Vector expected = values(n_dofs, 0.);
 
             //Assemble expected result
             {
@@ -58,31 +58,31 @@ namespace utopia {
                 }
             }
 
-            Vector vec = values(_n, 10);
+            Vector vec = values(n_dofs, 10);
             assert(approxeq(expected, mat * vec));
         }
 
         void matrix_factory_test() {
 
-            Matrix mat = values(_n, _n, 0.1);
+            Matrix mat = values(n_dofs, n_dofs, 0.1);
             {
                 Read<Matrix> read(mat);
                 Range rr = row_range(mat);
 
                 for (int i = rr.begin(); i != rr.end(); ++i) {
-                    for (int j = 0; j != _n; ++j) {
+                    for (int j = 0; j != n_dofs; ++j) {
                         assert(approxeq(mat.get(i, j), 0.1));
                     }
                 }
             }
 
-            mat = identity(_n, _n);
+            mat = identity(n_dofs, n_dofs);
             {
                 Read<Matrix> read(mat);
                 Range rr = row_range(mat);
 
                 for (int i = rr.begin(); i != rr.end(); ++i) {
-                    for (int j = 0; j != _n; ++j) {
+                    for (int j = 0; j != n_dofs; ++j) {
                         assert(approxeq(mat.get(i, j), i == j));
                     }
                 }
@@ -91,7 +91,7 @@ namespace utopia {
 
 
         void vector_factory_test() {
-            Vector vec = values(_n, 0.2);
+            Vector vec = values(n_dofs, 0.2);
             {
                 Read<Vector> read(vec);
                 Range r = range(vec);
@@ -104,10 +104,10 @@ namespace utopia {
 
 
         WrapperTest()
-                : _n(10) { }
+                : n_dofs(100) { }
 
     private:
-        int _n;
+        int n_dofs;
 
     };
 

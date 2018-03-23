@@ -345,11 +345,9 @@ namespace utopia
             transfers(l-2).interpolate(c_H, c_h); 
 
             if(use_line_search_) {
-                const Scalar nom = dot(c_h, r_h);
-                const Scalar denom = dot(level(l-1).A() * c_h, c_h);
-                const Scalar alpha = (nom/denom);
+                const Scalar alpha = dot(c_h, r_h)/dot(level(l-1).A() * c_h, c_h);
 
-                if(denom == 0. || alpha < 0.) {
+                if(alpha <= 0.) {
                     // std::cerr << l << " zero grid correction" << std::endl;
                     x_0 += c_h;
                 } else {

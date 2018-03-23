@@ -10,12 +10,9 @@
 
 namespace utopia
 {
-
-
 	template<class Matrix>
 	void assemble_laplacian_1D(const utopia::SizeType n, Matrix &m)
 	{
-		using namespace utopia;
 
 	    // n x n matrix with maximum 3 entries x row        
 		{
@@ -94,7 +91,6 @@ namespace utopia
 		void nl_solve_test()
 		{
 			//! [NL solve example]
-			using namespace utopia;
 			
 			//set-up problem
 			int n = 10;
@@ -113,7 +109,6 @@ namespace utopia
 		void newton_cg_test()
 		{
 			//! [Newton CG example]
-			using namespace utopia;
 			using namespace std;
 			
 			//CG with diagonal preconditioner
@@ -139,8 +134,6 @@ namespace utopia
 		
 		void solver_from_params_test()
 		{
-			using namespace utopia;
-			// std::cout << "         Begin: solver_from_params_test" << std::endl;
 			Vector x = values(10, 2.0);
 			Vector expected = values(x.size().get(0), 0.468919);
 			TestFunctionND_1<Matrix, Vector> fun2(x.size().get(0));
@@ -160,8 +153,6 @@ namespace utopia
 			// monitor(i, H);
 			// Matrixd blas_mat  = identity(3,3);
 			// monitor(i, blas_mat);
-			
-			// std::cout << "         End: solver_from_params_test" << std::endl;
 		}
 		
 		void tr_test()
@@ -169,7 +160,6 @@ namespace utopia
 			// rosenbrock test
 			if(mpi_world_size() == 1)
 			{
-				// std::cout << "         Begin: tr_test" << std::endl;
 				Vector x = values(10, 2);
 				TestFunctionND_1<Matrix, Vector> fun2(x.size().get(0));
 				Vector expected = values(x.size().get(0), 0.468919);
@@ -243,20 +233,12 @@ namespace utopia
 				params.trust_region_alg(STEIHAUG_TOINT_TAG);
 				trust_region_solve(rosenbrock, x0, params);
 				assert(approxeq(expected_rosenbrock, x0));
-				
-				
-				
 			}
-			
-			// std::cout << "         End: tr_test" << std::endl;
-			
 		}
 		
 		void ls_test()
 		{
-			
 			if(mpi_world_size() == 1) {
-				// std::cout << "         Begin: ls_test" << std::endl;
 				Vector x1 = values(10, 2);
 				Vector x2 = values(10, 2);
 				TestFunctionND_1<Matrix, Vector> fun2(x1.size().get(0));
@@ -342,8 +324,6 @@ namespace utopia
 				params.linear_solver_verbose(false);
 				line_search_solve(rosenbrock_fun, x01, params);
 			}
-			
-			// std::cout << "         End: ls_test" << std::endl;
 		}
 
 		void ngs_test()
@@ -436,7 +416,6 @@ namespace utopia
 
 		void petsc_mg_exp_test()
 		{
-			using namespace utopia;
 
 			DVectord rhs;
 			DSMatrixd A, I_1, I_2, I_3;
@@ -633,7 +612,6 @@ namespace utopia
 		
 		void petsc_mprgp_test()
 		{
-			// std::cout << "         Begin: petsc_mprgp_test" << std::endl;
 			const SizeType n = 50;
 			const PetscScalar h = 1.0/(n-1);
 			
@@ -744,7 +722,6 @@ namespace utopia
 			// rosenbrock test
 			if(mpi_world_size() == 1)
 			{
-				// std::cout << "         Begin: tr_test_KSP" << std::endl;
 				DVectord x = values(10, 2);
 				TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
 				DVectord expected = values(x.size().get(0), 0.468919);
@@ -777,16 +754,11 @@ namespace utopia
 				trust_region_solve(fun2, x, params);
 				
 			}
-			// std::cout << "         End: tr_test_KSP" << std::endl;
 		}
-		
-		
-		
+
 		void petsc_bicgstab_test()
 		{
-			using namespace utopia;
 			
-			// std::cout << "         Begin: BICGSTAB_test" << std::endl;
 			DMatrixd mat = identity(_n, _n);
 			DVectord rhs = zeros(_n);
 			DVectord sol = zeros(_n);
@@ -796,14 +768,11 @@ namespace utopia
 			
 			DVectord expected = zeros(_n);
 			assert(approxeq(expected, sol));
-			// std::cout << "         End: BICGSTAB_test" << std::endl;
 		}
 		
 		void petsc_gmres_test()
 		{
-			using namespace utopia;
 			
-			// std::cout << "         Begin: GMRES_test" << std::endl;
 			DMatrixd mat = identity(_n, _n);
 			DVectord rhs = zeros(_n);
 			DVectord sol = zeros(_n);
@@ -813,14 +782,12 @@ namespace utopia
 			
 			DVectord expected = zeros(_n);
 			assert(approxeq(expected, sol));
-			// std::cout << "         End: GMRES_test" << std::endl;
 		}
 		
 		void petsc_newton_test_out_info()
 		{
-			using namespace utopia;
+			if(mpi_world_size() > 10) return;
 			
-			// std::cout << "         Begin: petsc_newton_test_out_info" << std::endl;
 			auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
 			Newton<DMatrixd, DVectord> nlsolver(lsolver);
 			
@@ -835,14 +802,12 @@ namespace utopia
 			DVectord expected = values(x.size().get(0), 0.468919);
 			nlsolver.solve(fun2, x);
 			assert(approxeq(expected, x));
-			// std::cout << "         End: petsc_newton_test_out_info" << std::endl;
 		}
 		
 		void petsc_sparse_newton_test()
 		{
-			using namespace utopia;
+			if(mpi_world_size() > 10) return;
 			
-			//std::cout << "         Begin: petsc_sparse_newton_test" << std::endl;
 			auto lsolver = std::make_shared< BiCGStab<DSMatrixd, DVectord> >();
 			Newton<DSMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.enable_differentiation_control(false);
@@ -859,14 +824,12 @@ namespace utopia
 			
 			nlsolver.solve(fun, x);
 			assert(approxeq(expected, x));
-			//std::cout << "         End: petsc_sparse_newton_test" << std::endl;
 		}
 		
 		void petsc_newton_test()
 		{
-			using namespace utopia;
+			if(mpi_world_size() > 10) return;
 			
-			// std::cout << "         Begin: PETSC_NEWTON_test" << std::endl;
 			auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
 			Newton<DMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.enable_differentiation_control(false);
@@ -880,29 +843,23 @@ namespace utopia
 			
 			SimpleQuadraticFunction<DMatrixd, DVectord> fun;
 			
-			DVectord x = values(_n, 2.);
+			DVectord x = values(10, 2.);
 			DVectord expected = zeros(x.size());
 			
 			nlsolver.solve(fun, x);
 			assert(approxeq(expected, x));
 			
-			x = values(_n, 2.0);
+			x = values(10, 2.0);
 			TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
 			
 			expected = values(x.size().get(0), 0.468919);
 			nlsolver.solve(fun2, x);
 			assert(approxeq(expected, x));
-			
-			// std::cout << "         End: PETSC_NEWTON_test" << std::endl;
-			
 		}
-		
-		
-		
+
 		void petsc_inexact_newton_test()
 		{
-			using namespace utopia;
-			//  std::cout << "         Begin: petsc_inexact_newton_test" << std::endl;
+			if(mpi_world_size() > 10) return;
 			
 			Parameters params;
 			params.atol(1e-15);
@@ -920,15 +877,14 @@ namespace utopia
 			
 			SimpleQuadraticFunction<DMatrixd, DVectord> fun;
 			
-			DVectord x = values(_n, 2.);
+			DVectord x = values(10, 2.);
 			DVectord expected_1 = zeros(x.size());
 			
 			nlsolver.solve(fun, x);
 			assert(approxeq(expected_1, x));
 			
-			
 			TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
-			x = values(_n, 2.0);
+			x = values(10, 2.0);
 			DVectord expected_2 = values(x.size().get(0), 0.468919);
 			nlsolver.solve(fun2, x);
 			assert(approxeq(expected_2, x));
@@ -937,26 +893,17 @@ namespace utopia
 			auto hess_approx_SR1    = std::make_shared<SR1<DMatrixd, DVectord> >();
 			nlsolver.set_hessian_approximation_strategy(hess_approx_SR1);
 			
-			x = values(_n, 2.);
+			x = values(10, 2.);
 			nlsolver.solve(fun, x);
 			assert(approxeq(expected_1, x));
 			
-			
-			x = values(_n, 2.0);
+			x = values(10, 2.0);
 			nlsolver.solve(fun2, x);
-			assert(approxeq(expected_2, x));
-			
-			
-			// std::cout << "         End: petsc_inexact_newton_test" << std::endl;
-			
+			assert(approxeq(expected_2, x));			
 		}
-		
-		
-		
+
 		void petsc_newton_rosenbrock_test()
 		{
-			using namespace utopia;
-			
 			auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
 			Newton<DMatrixd, DVectord> nlsolver(lsolver);
 			nlsolver.enable_differentiation_control(false);
@@ -998,17 +945,12 @@ namespace utopia
 		
 		void petsc_sparse_semismooth_newton_test()
 		{
-			using namespace utopia;
-			
-			// std::cout << "         Begin: petsc_sparse_semismooth_newton_test" << std::endl;
 			auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-			// auto lsolver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-			// auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord>>();
+
 			DSMatrixd A;
 			DVectord b, ub;
 			
-			// SemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
-			SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> nlsolver(lsolver); // nlsolver.verbose(true);
+			SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> nlsolver(lsolver);
 			
 			// initial guess
 			DVectord x_0 = values(_n, 0.0);
@@ -1016,21 +958,13 @@ namespace utopia
 			ExampleTestCase2<DSMatrixd, DVectord> example;
 			example.getOperators(_n, A, b, ub);
 			
-			
 			auto box = make_upper_bound_constraints(make_ref(ub));
 			nlsolver.set_box_constraints(box);
-			nlsolver.solve(A, b, x_0);
-			
-			// std::cout << "         End: petsc_sparse_semismooth_newton_test" << std::endl;
-			
+			nlsolver.solve(A, b, x_0);			
 		}
 		
 		void petsc_sparse_nonlinear_semismooth_newton_test()
 		{
-			using namespace utopia;
-			
-			// std::cout << "         Begin: petsc_sparse_nonlinear_semismooth_newton_test" << std::endl;
-			// auto lsolver = std::make_shared< ConjugateGradient<DSMatrixd, DVectord> >();
 			auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
 			
 			NonlinSemismoothNewton<DSMatrixd, DVectord> nlsolver(lsolver);
@@ -1049,9 +983,8 @@ namespace utopia
 			{
 				Write<DVectord> w(rhs);
 				Range rhs_range = range(rhs);
-				if (rhs_range.begin() == 0) rhs.set(0, 0);
-				if (rhs_range.end() == _n) rhs.set(_n - 1, 0);
-				
+				if(rhs_range.begin() == 0) rhs.set(0, 0);
+				if(rhs_range.end() == _n) rhs.set(_n - 1, 0);
 			}
 			
 			QuadraticFunctionConstrained<DSMatrixd, DVectord> funn(rhs, A, B, upbo);
@@ -1060,15 +993,10 @@ namespace utopia
 			nlsolver.set_box_constraints(make_ref(box));
 			
 			nlsolver.solve(funn, rhs);
-			// std::cout << "         End: petsc_sparse_nonlinear_semismooth_newton_test" << std::endl;
-			
 		}
 		
 		void petsc_direct_solver_newton_test()
 		{
-			using namespace utopia;
-			
-			// std::cout << "         Begin: petsc_direct_solver_newton_test" << std::endl;
 			auto lsolver = std::make_shared< Factorization<DSMatrixd, DVectord> >();
 			
 #ifdef PETSC_HAVE_MUMPS
@@ -1097,15 +1025,10 @@ namespace utopia
 			x = values(_n, 2.);
 			nlsolver.solve(fun, x);
 			assert(approxeq(expected, x));
-			// std::cout << "         End: petsc_direct_solver_newton_test" << std::endl;
 		}
 		
 		void petsc_mg_test()
 		{
-			
-			using namespace utopia;
-			// std::cout << "         Begin: petsc_mg_test" << std::endl;
-			
 			// reading data from outside
 			DVectord rhs;
 			DSMatrixd A, I_1, I_2, I_3;
@@ -1118,9 +1041,7 @@ namespace utopia
 			read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
 			read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
 			
-			
-			std::vector<std::shared_ptr <DSMatrixd> > interpolation_operators;
-			
+			std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
 			
 			// from coarse to fine
 			// interpolation_operators.push_back(std::move(I_1));
@@ -1132,14 +1053,8 @@ namespace utopia
 #ifdef PETSC_HAVE_MUMPS
 			direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
 #endif //PETSC_HAVE_MUMPS
-			
-			// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
-			// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
-			// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-			// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-			// auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
-			auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord>>();
-			// smoother->verbose(true);
+
+			auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
 
 			Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
 			multigrid.set_use_line_search(true);
@@ -1172,7 +1087,6 @@ namespace utopia
 			multigrid.cycle_type(MULTIPLICATIVE_CYCLE);
 			auto gmres = std::make_shared<GMRES<DSMatrixd, DVectord>>();
 			gmres->set_preconditioner(make_ref(multigrid));
-			// gmres->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
 			x_0.set(0.);
 			// gmres->verbose(true);
 			gmres->solve(A, rhs, x_0);
@@ -1181,11 +1095,7 @@ namespace utopia
 		
 		void petsc_cg_mg_test()
 		{
-			// std::cout << "         Begin: petsc_cg_mg_test" << std::endl;
-			
 			//! [MG solve example]
-			using namespace utopia;
-			
 			const bool verbose = false;
 			
 			DVectord rhs;
@@ -1199,7 +1109,7 @@ namespace utopia
 			read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
 			read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
 			
-			std::vector<std::shared_ptr <DSMatrixd> > interpolation_operators;
+			std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
 			
 			//interpolation operators from coarse to fine
 			interpolation_operators.push_back(make_ref(I_1));
@@ -1220,8 +1130,8 @@ namespace utopia
 			multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
 			multigrid.max_it(1);
 			multigrid.mg_type(1);
-			// multigrid.verbose(true);
-			// multigrid.set_use_linear_search(true);
+			multigrid.verbose(verbose);
+			// multigrid.set_use_line_search(true);
 			
 			ConjugateGradient<DSMatrixd, DVectord> cg;
 			cg.verbose(verbose);
@@ -1243,15 +1153,11 @@ namespace utopia
 			// multigrid.verbose(verbose);
 			// multigrid.solve(rhs, x_0);
 			
-			//! [MG solve example]
-			
-			
-			// std::cout << "         End: petsc_cg_mg_test" << std::endl;
+			//! [MG solve example]	
 		}
 		
 		void petsc_mg_jacobi_test()
 		{
-			// std::cout << "begin: petsc_mg_jacobi_test" << std::endl;
 			const std::string data_path = Utopia::Instance().get("data_path");
 			DSMatrixd A, I_1, I_2, I_3;
 			DVectord rhs;
@@ -1279,14 +1185,10 @@ namespace utopia
 			// multigrid.verbose(true);
 			multigrid.set_use_line_search(true);
 			multigrid.solve(rhs, x);
-			
-			// std::cout << "end: petsc_mg_jacobi_test" << std::endl;
 		}
 		
 		void petsc_superlu_cg_mg_test()
 		{
-			using namespace utopia;
-			
 			const bool verbose = false;
 			DVectord rhs;
 			DSMatrixd A, I_1, I_2, I_3;
@@ -1304,7 +1206,7 @@ namespace utopia
 				disp(size(rhs));
 			}
 			
-			std::vector<std::shared_ptr <DSMatrixd> > interpolation_operators;
+			std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
 			
 			// from coarse to fine
 			interpolation_operators.push_back(make_ref(I_1));
@@ -1352,13 +1254,10 @@ namespace utopia
 			utopia_ksp.solve(A, rhs, x_0);
 		}
 		
-		
 		void petsc_newton_petsc_cg_test()
 		{
-			using namespace utopia;
 			using namespace std;
 			
-			// std::cout << "         Begin: petsc_newton_petsc_cg_test" << std::endl;
 			
 			//CG with diagonal preconditioner
 			auto linear_solver  = make_shared< KSPSolver<DMatrixd, DVectord> >();
@@ -1377,13 +1276,10 @@ namespace utopia
 			
 			newton_solver.solve(fun, actual);
 			assert(approxeq(expected, actual));
-			// // std::cout << "         End: petsc_newton_petsc_cg_test" << std::endl;
 		}
-		
 		
 		void petsc_newton_inexact_newton_with_KSP_test()
 		{
-			using namespace utopia;
 			using namespace std;
 			
 			const bool verbose = false;
@@ -1404,30 +1300,25 @@ namespace utopia
 			
 			newton_solver.solve(fun, actual);
 			assert(approxeq(expected, actual));
-			// // std::cout << "         End: petsc_newton_petsc_cg_test" << std::endl;
 		}
-
-
-
-
-
 
 		void petsc_snes_test()
 		{
-			using namespace utopia;
 			using namespace std;
 
 			const static bool verbose = false;
-						
-			auto linear_solver  = make_shared< ConjugateGradient<DMatrixd, DVectord> >();
 
-			SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver(linear_solver); 
+			if(mpi_world_size() >= 10) return;
+						
+			auto linear_solver = make_shared< ConjugateGradient<DMatrixd, DVectord> >();
+
+			SNESSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> nonlinear_solver(linear_solver); 
 			nonlinear_solver.verbose(verbose); 
 
-			DVectord actual   = values(_n, 2.);
-			DVectord expected = values(_n, 0.468919);
+			DVectord actual   = values(10, 2.);
+			DVectord expected = values(10, 0.468919);
 			
-			TestFunctionND_1<DMatrixd, DVectord> fun(_n);
+			TestFunctionND_1<DMatrixd, DVectord> fun(10);
 			
 			nonlinear_solver.solve(fun, actual);
 			assert(approxeq(expected, actual));
@@ -1438,10 +1329,9 @@ namespace utopia
 
 			if(mpi_world_size() == 1)
 			{
-
 				Rosenbrock<DMatrixd, DVectord> rosenbrock;
 				DVectord expected_rosenbrock = values(2, 1.0);
-				DVectord x0_ros   		= values(2, 1.5);
+				DVectord x0_ros   			 = values(2, 1.5);
 
 				nonlinear_solver.solve(rosenbrock, x0_ros);
 
@@ -1482,26 +1372,19 @@ namespace utopia
 				expected_rosenbrock = values(2, 1.0);
 				nonlinear_solver3.solve(rosenbrock, x0_ros);
 
-
 				expected_rosenbrock -= x0_ros; 
 				diff_rb = norm2(expected_rosenbrock);
 				assert(approxeq(diff_rb, 0., 1e-6));
 			}
 		}
 
-
-
-
-
-
-
 		PetscSolverTest()
-		: _n(10) { }
+		: _n(100) { }
 		
 	private:
 		int _n;
-		
 	};
+
 #endif //WITH_PETSC
 	
 	void runSolversTest()

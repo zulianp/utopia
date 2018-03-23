@@ -57,7 +57,7 @@ namespace utopia {
 				result_num = vals[0];
 				result_denom = vals[1];
 			} else { 
-				ierr  = VecDotBegin(x1.implementation(), x2.implementation(), &result_num); assert(ierr == 0);
+				ierr = VecDotBegin(x1.implementation(), x2.implementation(), &result_num); assert(ierr == 0);
 				ierr = VecDotBegin(x3.implementation(), x4.implementation(), &result_denom); assert(ierr == 0);
 
 				ierr = VecDotEnd(x1.implementation(), x2.implementation(), &result_num); assert(ierr == 0);

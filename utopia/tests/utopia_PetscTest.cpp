@@ -904,6 +904,8 @@ namespace utopia {
     void petsc_ksp_precond_delegate_test()
     {
         const int n = 10;
+        if(mpi_world_size() > n) return;
+
         TestFunctionND_1<DMatrixd, DVectord> fun(n);
 
         ConjugateGradient<DMatrixd, DVectord> cg;
@@ -927,6 +929,8 @@ namespace utopia {
     void petsc_is_nan_or_inf_test()
     {
         const int n     = 10; 
+        if(mpi_world_size() > n) return;
+
         DVectord denom  = zeros(n);
         DVectord nom    = values(n, 1.0);
 
@@ -941,7 +945,6 @@ namespace utopia {
         assert(has_nan_or_inf(denom) == 0);
 
     }
-
 
     void petsc_mat_mul_add_test()
     {
@@ -970,7 +973,6 @@ namespace utopia {
             assert(approxeq(expected, r3));
         }
     }
-
 
     void petsc_min_test()
     {
