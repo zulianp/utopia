@@ -15,6 +15,8 @@
 #include "utopia_petsc_Eval.hpp"
 #include "utopia_petsc_Eval_Inverse.hpp"
 #include "utopia_petsc_Eval_Factory.hpp"
+#include "utopia_petsc_Eval_Residual.hpp"
+#include "utopia_petsc_Eval_DotDivDot.hpp"
 #include "utopia_petsc_RowView.hpp"
 
 #include "utopia_petsc_LinearSolverFactory.hpp"

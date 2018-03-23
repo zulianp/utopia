@@ -1066,11 +1066,40 @@ namespace utopia {
         mat.implementation().convert_to_mat_baij(2);
     }
 
+
+    void petsc_line_search_test()
+    {
+        auto n = 10;
+        DVectord v = local_values(n, 1.);
+        DSMatrixd m = local_identity(n, n);
+
+        auto expr = dot(v, v)/dot(m * v, v);
+        // std::cout << tree_format(expr.getClass()) << std::endl;
+
+        double s = expr;
+        assert(approxeq(1., s));
+    }
+
+    void petsc_residual_test()
+    {
+        auto n = 10;
+        DVectord x = local_values(n, 1.);
+        DSMatrixd A = local_identity(n, n);
+        DVectord  b = local_values(n, 2.);
+       
+        DVectord res = b - A * x;
+        // disp(res);
+        double s = sum(res);
+        assert(approxeq(n * mpi_world_size(), s));
+    }
+
     #endif //WITH_PETSC;
 
     void runPetscTest() {
 #ifdef WITH_PETSC
         UTOPIA_UNIT_TEST_BEGIN("PetscTest");
+        UTOPIA_RUN_TEST(petsc_line_search_test);
+        UTOPIA_RUN_TEST(petsc_residual_test);
         UTOPIA_RUN_TEST(petsc_block_mat_test);
         UTOPIA_RUN_TEST(petsc_ghosted);
         UTOPIA_RUN_TEST(petc_optional_test);

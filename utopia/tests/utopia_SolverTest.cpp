@@ -1276,8 +1276,8 @@ namespace utopia
 			multigrid.init_transfer_from_fine_to_coarse(interpolation_operators);
 			multigrid.update(make_ref(A));
 
-			multigrid.verbose(true);
-			// multigrid.set_use_linear_search(true);
+			// multigrid.verbose(true);
+			multigrid.set_use_line_search(true);
 			multigrid.solve(rhs, x);
 			
 			// std::cout << "end: petsc_mg_jacobi_test" << std::endl;
