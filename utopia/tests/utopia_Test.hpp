@@ -28,7 +28,6 @@ namespace utopia
         runMiscTest();
         run_trilinos_test();
 
-
         //only works for serial
         if(mpi_world_size() == 1) {
             run_performance_test();
@@ -40,6 +39,9 @@ namespace utopia
         if(mpi_world_rank() == 0) {
             std::cout << "[Begin testing]" << std::endl;
         }
+
+        Chrono c;
+        c.start();
 
         if (tests == "all") {
             runAllTests();
@@ -72,6 +74,12 @@ namespace utopia
 
         if(mpi_world_rank() == 0) {
             std::cout << "[End testing]" << std::endl;
+        }
+
+        mpi_world_barrier();
+        c.stop();
+        if(utopia::Utopia::Instance().verbose() && mpi_world_rank() == 0) {
+            std::cout << c << std::endl;
         }
     }
 }
