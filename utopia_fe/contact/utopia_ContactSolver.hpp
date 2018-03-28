@@ -203,13 +203,20 @@ namespace utopia {
 				newton.set_box_constraints(box_c);
 				newton.solve(lhs, rhs, inc_c);
 			} else {
-				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
-				// SemismoothNewton<Matrix, Vector> newton(linear_solver_);
+				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
+				SemismoothNewton<Matrix, Vector> newton(linear_solver_);
 				newton.verbose(true);
 				newton.max_it(40);
-				newton.atol(1e-20);
-				newton.rtol(1e-18);
-				newton.stol(1e-20);
+				newton.atol(1e-18);
+				newton.rtol(1e-6);
+				newton.stol(1e-18);
+
+				// auto scale_factor = 1.0e8;
+
+				// auto scaled_box = make_upper_bound_constraints(std::make_shared<Vector>(*box_c.upper_bound() * scale_factor));
+				// newton.set_box_constraints(scaled_box);
+				// newton.solve(scale_factor * lhs, scale_factor * rhs, inc_c);
+				// inc_c_ *= 1./scale_factor;
 
 				newton.set_box_constraints(box_c);
 				newton.solve(lhs, rhs, inc_c);

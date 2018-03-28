@@ -945,12 +945,13 @@ namespace utopia
 		
 		void petsc_sparse_semismooth_newton_test()
 		{
-			auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+			auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
 
 			DSMatrixd A;
 			DVectord b, ub;
 			
-			SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> nlsolver(lsolver);
+			SemismoothNewton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> petsc_ss_newton(lsolver);
+			SemismoothNewton<DSMatrixd, DVectord, HOMEMADE> homemade_ss_newton(lsolver);
 			
 			// initial guess
 			DVectord x_0 = values(_n, 0.0);
@@ -959,8 +960,24 @@ namespace utopia
 			example.getOperators(_n, A, b, ub);
 			
 			auto box = make_upper_bound_constraints(make_ref(ub));
-			nlsolver.set_box_constraints(box);
-			nlsolver.solve(A, b, x_0);			
+			petsc_ss_newton.set_box_constraints(box);
+			petsc_ss_newton.solve(A, b, x_0);
+			// petsc_ss_newton.atol(1e-15);
+			// petsc_ss_newton.rtol(1e-15);
+			// petsc_ss_newton.stol(1e-15);
+
+			DVectord hm_x_0 = values(_n, 0.0);
+			homemade_ss_newton.set_box_constraints(box);
+			homemade_ss_newton.solve(A, b, hm_x_0);
+
+			// if(!approxeq(x_0, hm_x_0, 1e-10)) {
+			// 	DVectord diff = hm_x_0 - x_0;
+			// 	disp(diff);
+			// 	double norm_diff = norm2(diff)/double(norm2(hm_x_0));
+			// 	std::cout << "norm_diff: " << norm_diff << std::endl;
+			// }
+
+			assert(approxeq(x_0, hm_x_0, 1e-8));
 		}
 		
 		void petsc_sparse_nonlinear_semismooth_newton_test()

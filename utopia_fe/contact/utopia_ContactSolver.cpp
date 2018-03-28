@@ -22,7 +22,6 @@ namespace utopia {
 		// mesh->read("../data/channel_2d.e");
 		mesh->read("../data/leaves_3d_b.e");
 
-	
 
 		const auto dim = mesh->mesh_dimension();
 
@@ -39,7 +38,7 @@ namespace utopia {
 		double dt = 0.05;
 		if(dim == 3) {
 			dt = 0.0001;
-			// dt = 0.01;
+			dt = 0.01;
 		}
 		
 		// LameeParameters lamee_params(20., 20.);
