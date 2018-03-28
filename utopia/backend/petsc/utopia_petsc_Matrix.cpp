@@ -246,8 +246,12 @@ namespace utopia {
 
 		if(has_off_proc_entries) {
 			Mat * l_ptr;
-			//MatCreateSubMatrices
+			
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0) 
 			ierr = MatGetSubMatrices(r, 1, &isrow, &iscol, MAT_INITIAL_MATRIX, &l_ptr);
+#else
+			ierr = MatCreateSubMatrices(r, 1, &isrow, &iscol, MAT_INITIAL_MATRIX, &l_ptr);
+#endif
 
 			MatType type;
 			MatGetType(r, &type);
@@ -283,7 +287,11 @@ namespace utopia {
 
 		} else {
 			result.destroy();
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
 			ierr = MatGetSubMatrix(r, isrow, iscol, MAT_INITIAL_MATRIX, &l);
+#else
+			ierr = MatCreateSubMatrix(r, isrow, iscol, MAT_INITIAL_MATRIX, &l);
+#endif //UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
 		}
 
 		ISDestroy(&isrow);

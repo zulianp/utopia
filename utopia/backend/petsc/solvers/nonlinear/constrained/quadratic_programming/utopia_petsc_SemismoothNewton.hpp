@@ -99,6 +99,8 @@ namespace utopia {
 				if(factor_solver_ptr) {
 					factor_solver_ptr->strategy().set_ksp_options(ksp);
 					has_linear_solver = true;
+
+					KSPSetTolerances(ksp, 0, 0, PETSC_DEFAULT, 1);
 				}
 			}
 
@@ -108,6 +110,7 @@ namespace utopia {
 				PCSetType(pc, "lu");
 				PCFactorSetMatSolverPackage(pc, "mumps");
 				KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
+				KSPSetTolerances(ksp, 0, 0, PETSC_DEFAULT, 1);
 			}
 			
 			if(this->verbose()) {
@@ -125,6 +128,7 @@ namespace utopia {
 
 			SNESLineSearch linesearch;
 			SNESGetLineSearch(snes, &linesearch);
+			SNESLineSearchSetFromOptions(linesearch);
 			SNESLineSearchSetType(linesearch, line_search_type_);
 			
 			if(this->verbose()) {
@@ -188,9 +192,9 @@ namespace utopia {
 			convert(x, x_utopia);
 			f_utopia  = (*ssn_ctx->H) * x_utopia - (*ssn_ctx->g);
 			convert(f_utopia, f);
-			PetscReal mag_f = 0.;
-			VecNorm(f, NORM_2, &mag_f);
-			std::cout << "mag_f: " << mag_f << std::endl;
+			// PetscReal mag_f = 0.;
+			// VecNorm(f, NORM_2, &mag_f);
+			// std::cout << "mag_f: " << mag_f << std::endl;
 			return 0;
 		}
 
