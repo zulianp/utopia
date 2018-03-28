@@ -134,6 +134,7 @@ namespace utopia
 	            ierr = PCSetType(pc, this->pc_type().c_str());
 	        }
 
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0) 
 			if(this->ksp_type() == "qcg")
 				ierr = KSPQCGSetTrustRegionRadius(ksp, this->current_radius()); 
 		    else if(this->ksp_type() == "gltr")    
@@ -142,6 +143,10 @@ namespace utopia
 		        ierr = KSPNASHSetRadius(ksp, this->current_radius()); 
 			else
 		        ierr = KSPSTCGSetRadius(ksp, this->current_radius()); 
+
+#else
+		    KSPCGSetRadius(ksp, this->current_radius());
+#endif
 
 		    
 	        ierr = KSPSetTolerances(ksp, KSPSolver::rtol(), KSPSolver::atol(), PETSC_DEFAULT,  TRSubproblem::max_it());

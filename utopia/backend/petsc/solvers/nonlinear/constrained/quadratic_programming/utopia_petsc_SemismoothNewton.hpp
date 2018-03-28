@@ -64,6 +64,10 @@ namespace utopia {
 			SNESSetFunction(snes, raw_type(f), SemismoothNewton::Gradient, &ctx);
 			SNESSetJacobian(snes, raw_type(J), raw_type(J), SemismoothNewton::Hessian, &ctx);
 			SNESVISetVariableBounds(snes, lobo, upbo);
+#if !UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
+			// asdf
+			SNESSetForceIteration(snes, PETSC_TRUE);
+#endif
 
 			KSP ksp;
 			PC pc; 

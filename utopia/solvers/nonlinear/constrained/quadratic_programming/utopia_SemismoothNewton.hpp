@@ -185,7 +185,7 @@ namespace utopia {
 			Scalar f_norm = 9e9;
 			
 			if(this->verbose())
-				this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "|| g ||"});
+				this->init_solver("SEMISMOOTH NEWTON METHOD", {" it. ", "|| u_new - u_old ||"});
 			
 			while(!converged)
 			{
@@ -293,7 +293,7 @@ namespace utopia {
 					PrintInfo::print_iter_status(iterations, {f_norm});
 				}
 				
-				converged = this->check_convergence(iterations, f_norm, 1, 1);
+				converged = this->check_convergence(iterations, 1, 1, f_norm);
 				
 				x_old = x_new;
 				iterations++;
