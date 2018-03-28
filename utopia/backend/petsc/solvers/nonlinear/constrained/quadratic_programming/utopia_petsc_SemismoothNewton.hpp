@@ -188,6 +188,9 @@ namespace utopia {
 			convert(x, x_utopia);
 			f_utopia  = (*ssn_ctx->H) * x_utopia - (*ssn_ctx->g);
 			convert(f_utopia, f);
+			PetscReal mag_f = 0.;
+			VecNorm(f, NORM_2, &mag_f);
+			std::cout << "mag_f: " << mag_f << std::endl;
 			return 0;
 		}
 

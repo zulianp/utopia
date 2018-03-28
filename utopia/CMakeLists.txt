@@ -21,7 +21,7 @@ option(UTOPIA_LOG "enables utopia logging facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
-
+option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
 
 
 #################################################################################
@@ -264,6 +264,29 @@ list(APPEND UTOPIA_SOURCES
 
 # config is created based on the successful backend compilations
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
+
+
+#########################################################
+include(WriteCompilerDetectionHeader)
+
+write_compiler_detection_header(
+  FILE utopia_compiler_features.hpp
+  PREFIX UTOPIA
+  COMPILERS GNU Clang MSVC Intel AppleClang
+  FEATURES 
+  		   # cxx_final #already in c++11
+  		   # cxx_noexcept #already in c++11
+  		   cxx_attribute_deprecated # in c++14
+  ALLOW_UNKNOWN_COMPILERS
+)
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
+  DESTINATION include
+)
+
+##########################################################
+
 
 add_library(utopia STATIC utopia.cpp ${UTOPIA_SOURCES})
 target_link_libraries(utopia ${UTOPIA_COMPONENTS})

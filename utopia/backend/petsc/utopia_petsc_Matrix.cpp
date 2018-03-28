@@ -246,6 +246,7 @@ namespace utopia {
 
 		if(has_off_proc_entries) {
 			Mat * l_ptr;
+			//MatCreateSubMatrices
 			ierr = MatGetSubMatrices(r, 1, &isrow, &iscol, MAT_INITIAL_MATRIX, &l_ptr);
 
 			MatType type;
@@ -680,8 +681,8 @@ namespace utopia {
 		check_error( MatSetSizes(implementation(), rows_local, cols_local, rows_global, cols_global) );
 		
 		check_error( MatSetType(implementation(), MATAIJ) );
-		check_error( MatSeqAIJSetPreallocation(implementation(), PETSC_NULL, &d_nnz[0]) );
-		check_error( MatMPIAIJSetPreallocation(implementation(), PETSC_NULL, &d_nnz[0], PETSC_NULL, &o_nnz[0]) ); 
+		check_error( MatSeqAIJSetPreallocation(implementation(), PETSC_DEFAULT , &d_nnz[0]) );
+		check_error( MatMPIAIJSetPreallocation(implementation(), PETSC_DEFAULT , &d_nnz[0], PETSC_DEFAULT, &o_nnz[0]) ); 
 
 		check_error( MatSetOption(implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE) );
 		check_error( MatSetOption(implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );

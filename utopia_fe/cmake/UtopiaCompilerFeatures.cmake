@@ -1,6 +1,12 @@
 
 macro (set_utopia_compiler_features target_)
-target_compile_features(${target_} PUBLIC cxx_std_11)
+
+if(ENABLE_CXX14_FEATURES)
+	# message(STATUS "[Utopia] enabling cxx14 features")
+	target_compile_features(${target_} PUBLIC cxx_std_14)
+else()
+	target_compile_features(${target_} PUBLIC cxx_std_11)
+endif()
 # target_compile_features(${target_} PUBLIC cxx_constexpr)
 # target_compile_features(${target_} PUBLIC cxx_aggregate_default_initializers)
 # target_compile_features(${target_} PUBLIC cxx_alias_templates)

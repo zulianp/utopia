@@ -30,6 +30,7 @@ namespace utopia {
 			set_parameters(params);
 		}
 		
+		UTOPIA_DEPRECATED_MSG("SemismoothNewton: use the new box constraint interface")
 		bool solve(Vector &x, const Matrix &A, const Vector &b, const Vector &g)
 		{
 			std::cerr << "[Warning][Deprecated] SemismoothNewton: use the new box constraint interface. This method will be removed shortly" << std::endl;

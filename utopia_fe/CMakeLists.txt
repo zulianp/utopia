@@ -7,6 +7,7 @@ set(CMAKE_MACOSX_RPATH 1)
 option(ENABLE_SANITIZER "check for memory access problems" OFF)
 option(ENABLE_BOOST "enable boost features" OFF)
 option(ENABLE_MOONOLITH_PROFILER "enable moonolith profiling capabilities" OFF)
+option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
 
 #################################################################################
 #################################################################################
@@ -24,6 +25,8 @@ endif()
 
 ################################## Include cmake functions and find modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_FE_ROOT_PATH}/cmake")
+include(${UTOPIA_FE_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
+
 file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils" )
 foreach(funcLib ${FUNC_LIB})
 	include(${funcLib})
@@ -31,7 +34,6 @@ endforeach(funcLib)
 
 find_package(Utopia)
 if(UTOPIA_FOUND)
-    list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
     include_directories(${UTOPIA_INCLUDES})
     add_definitions(${UTOPIA_DEFS})
 else()
