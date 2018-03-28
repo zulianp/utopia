@@ -1304,10 +1304,6 @@ namespace utopia
 
 		void petsc_snes_test()
 		{
-#if !UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
-			std::cerr << "[Error] FIXME: petsc_snes_test does not work with petsc version > 3.8.0" << std::endl;
-			return;
-#endif			
 			using namespace std;
 
 			const static bool verbose = false;

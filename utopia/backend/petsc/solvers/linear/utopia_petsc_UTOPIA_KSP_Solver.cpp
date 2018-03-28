@@ -136,5 +136,16 @@ PETSC_EXTERN PetscErrorCode KSPCreate_UTOPIA(KSP ksp)
   ierr = PetscObjectComposeFunction((PetscObject)ksp, "KSPSetTolerancesRoutine_C", KSPSetTolerances_UTOPIA);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)ksp, "KSPSetGetConvergenceReason_C", KSPSetGetConvergenceReason_UTOPIA);CHKERRQ(ierr);
 
+  static bool message_given = false;
+
+  if(!message_given) {
+    //http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/KSP/KSPSetSupportedNorm.html
+    std::cerr << "[Warning] FIXME: setting KSPSetSupportedNorm(ksp, KSP_NORM_NATURAL, PC_RIGHT, 1)" << std::endl;
+    message_given = true;
+  }
+
+  
+  ierr = KSPSetSupportedNorm(ksp, KSP_NORM_NATURAL, PC_RIGHT, 1); CHKERRQ(ierr);
+
   PetscFunctionReturn(0);
 }

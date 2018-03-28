@@ -14,6 +14,7 @@ foreach(MODULE ${CORE_MODULES})
 endforeach(MODULE)
 
 target_link_libraries(utopia_core utopia_utils)
+set_utopia_compiler_features(utopia_core)
 
 install(TARGETS utopia_core
 	RUNTIME DESTINATION bin 
@@ -25,5 +26,5 @@ install(FILES ${LOCAL_HEADERS} DESTINATION include)
 
 set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS};utopia_core" PARENT_SCOPE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ${UTOPIA_DEV_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${UTOPIA_SPECIAL_DEBUG_FLAGS}")
