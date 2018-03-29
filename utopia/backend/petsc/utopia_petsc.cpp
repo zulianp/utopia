@@ -15,7 +15,7 @@ namespace utopia {
 	
 
 	//petsc non-linear solvers
-	template class NonLinearGaussSeidel<DSMatrixd, DVectord>;
+	// template class NonLinearGaussSeidel<DSMatrixd, DVectord>;
 	
 
 	template class Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL>;
