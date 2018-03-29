@@ -22,8 +22,9 @@
 #include "utopia_petsc_LinearSolverFactory.hpp"
 #include "utopia_petsc_TrustRegionFactory.hpp"
 #include "utopia_petsc_solvers.hpp"
+#include "utopia_petsc_solvers.hpp"
 
-#include "utopia_petsc_KSPTR.hpp"
+#include "utopia_petsc_Function.hpp"
 
 
 // very much experimental files for the moment 

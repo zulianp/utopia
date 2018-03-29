@@ -14,7 +14,7 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector>
+    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Function 
     {
     public:

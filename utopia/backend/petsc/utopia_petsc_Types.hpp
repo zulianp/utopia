@@ -26,11 +26,11 @@ namespace utopia {
     /*!
      * @brief Dense matrix representation of the petsc backend.
      */
-    typedef utopia::Wrapper<PetscMatrix, 2>             DMatrixd;
-    typedef utopia::Wrapper<PetscSparseMatrix, 2>       DSMatrixd;
-    typedef utopia::Wrapper<PetscSerialSparseMatrix, 2> SSMatrixd;
-    typedef utopia::Wrapper<PetscVector, 1>             DVectord;
-    typedef utopia::Wrapper<PetscSerialVector, 1>       SVectord;
+    using DMatrixd  = utopia::Wrapper<PetscMatrix, 2>;
+    using DSMatrixd = utopia::Wrapper<PetscSparseMatrix, 2>;
+    using SSMatrixd = utopia::Wrapper<PetscSerialSparseMatrix, 2>;
+    using DVectord  = utopia::Wrapper<PetscVector, 1>;
+    using SVectord  = utopia::Wrapper<PetscSerialVector, 1>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
