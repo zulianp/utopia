@@ -121,7 +121,7 @@ namespace utopia {
 			return !constrain_violated;
 		}
 
-		bool check_non_negative(const Vector &lambda, const bool verbose) const
+		static bool check_non_negative(const Vector &lambda, const bool verbose)
 		{
 			bool is_non_negative = true;
 			each_read(lambda, [&is_non_negative, verbose](const SizeType i, const Scalar value) {
@@ -136,7 +136,7 @@ namespace utopia {
 			return is_non_negative;
 		}
 
-		bool check_zero(const Vector &r) const
+		static bool check_zero(const Vector &r)
 		{
 			const Scalar r_norm = norm2(r);
 
@@ -146,6 +146,21 @@ namespace utopia {
 			}
 
 			return true;
+		}
+
+		static bool is_sane(const Matrix &A)
+		{
+			Vector d = diag(A);
+
+			bool ret = true;
+			each_read(d, [&ret](const SizeType i, const Scalar val) {
+				if(std::abs(val) < 1e-16) {
+					ret = false;
+					std::cerr << "[Error] zero element on diagonal" << std::endl;
+				}
+			});
+
+			return ret;
 		}
 
 		// We separate cases with 1 and 2 constraints in order to avoid usless computations in single constraint case
@@ -251,6 +266,7 @@ namespace utopia {
 
 				assert(!has_nan_or_inf(H));
 				assert(!has_nan_or_inf(g));
+				assert(is_sane(H));
 
 				if(this->linear_solve_zero_initial_guess()) {
 					x_new *= 0.;

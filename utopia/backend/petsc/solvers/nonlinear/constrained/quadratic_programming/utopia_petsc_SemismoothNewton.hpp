@@ -124,6 +124,7 @@ namespace utopia {
 				nullptr);
 			}
 
+			// printf("%g %g %g %d\n", this->atol(), this->rtol(), this->stol(), this->max_it());
 			SNESSetTolerances(snes, this->atol(), this->rtol(), this->stol(), this->max_it(), 1000);
 
 			SNESLineSearch linesearch;
@@ -131,11 +132,12 @@ namespace utopia {
 			SNESLineSearchSetFromOptions(linesearch);
 			SNESLineSearchSetType(linesearch, line_search_type_);
 
-// #if !UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
+#if !UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
+			SNESLineSearchSetTolerances(linesearch, PETSC_DEFAULT, PETSC_DEFAULT, this->rtol(), this->atol(), PETSC_DEFAULT, 20);
 // 			if(std::string(SNESLINESEARCHBASIC) == line_search_type_) {
 // 				SNESLineSearchSetComputeNorms(linesearch, PETSC_FALSE);
 // 			}
-// #endif
+#endif
 			
 			if(this->verbose()) {
 				this->init_solver("utopia/petsc SemismoothNewton",  {" it.", "|| Au - b||"});

@@ -958,24 +958,44 @@ namespace utopia
 			
 			ExampleTestCase2<DSMatrixd, DVectord> example;
 			example.getOperators(_n, A, b, ub);
+
+			const double scale_factor = 1;
+			A *= scale_factor;
+			b *= scale_factor;
+			ub *= scale_factor;
 			
 			auto box = make_upper_bound_constraints(make_ref(ub));
 			petsc_ss_newton.set_box_constraints(box);
+			petsc_ss_newton.atol(1e-18);
+			petsc_ss_newton.rtol(1e-15);
+			petsc_ss_newton.stol(1e-16);
+			petsc_ss_newton.max_it(400);
 			petsc_ss_newton.solve(A, b, x_0);
-			// petsc_ss_newton.atol(1e-15);
-			// petsc_ss_newton.rtol(1e-15);
-			// petsc_ss_newton.stol(1e-15);
+		
 
 			DVectord hm_x_0 = values(_n, 0.0);
 			homemade_ss_newton.set_box_constraints(box);
+			homemade_ss_newton.stol(1e-16);
+			// homemade_ss_newton.verbose(true);
 			homemade_ss_newton.solve(A, b, hm_x_0);
 
-			// if(!approxeq(x_0, hm_x_0, 1e-10)) {
-			// 	DVectord diff = hm_x_0 - x_0;
+
+			// x_0.implementation().set_name("x");
+			// hm_x_0.implementation().set_name("y");
+		
+
+			x_0 *= 1./scale_factor;
+			hm_x_0 *= 1./scale_factor;
+
+			// write("x_p.m", x_0);
+			// write("x_u.m", hm_x_0);
+
+			if(!approxeq(x_0, hm_x_0, 1e-14)) {
+				DVectord diff = hm_x_0 - x_0;
 			// 	disp(diff);
-			// 	double norm_diff = norm2(diff)/double(norm2(hm_x_0));
-			// 	std::cout << "norm_diff: " << norm_diff << std::endl;
-			// }
+				double norm_diff = norm2(diff)/double(norm2(hm_x_0));
+				std::cout << "norm_diff: " << norm_diff << std::endl;
+			}
 
 			assert(approxeq(x_0, hm_x_0, 1e-8));
 		}
