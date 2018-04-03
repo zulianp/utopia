@@ -1341,7 +1341,6 @@ namespace utopia
 
 		void petsc_snes_test()
 		{
-<<<<<<< HEAD
 			using namespace utopia;
 			using namespace std;
 		
@@ -1367,9 +1366,7 @@ namespace utopia
 			// 	nonlinear_solver.solve(rosenbrock, x0_ros);
 
 			// using namespace std;
-=======
-			using namespace std;
->>>>>>> 25fe21859cdbe17704216f0344a3b077099ac679
+
 
 			const static bool verbose = false;
 
@@ -1432,7 +1429,6 @@ namespace utopia
 				SNESSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> nonlinear_solver3(cg_home); 
 				nonlinear_solver3.verbose(verbose); 
 
-<<<<<<< HEAD
 				
 			// 	// reset IG  
 			// 	x0_ros   		    = values(2, 1.5);
@@ -1442,19 +1438,7 @@ namespace utopia
 			// 	expected_rosenbrock -= x0_ros; 
 			// 	diff_rb = norm2(expected_rosenbrock);
 			// 	assert(approxeq(diff_rb, 0., 1e-6));
-			// }
-
-=======
-				// reset IG  
-				x0_ros   		    = values(2, 1.5);
-				expected_rosenbrock = values(2, 1.0);
-				nonlinear_solver3.solve(rosenbrock, x0_ros);
-
-				expected_rosenbrock -= x0_ros; 
-				diff_rb = norm2(expected_rosenbrock);
-				assert(approxeq(diff_rb, 0., 1e-6));
 			}
->>>>>>> 25fe21859cdbe17704216f0344a3b077099ac679
 		}
 
 		PetscSolverTest()
