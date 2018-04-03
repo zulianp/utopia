@@ -83,6 +83,7 @@ list(APPEND UTOPIA_FE_MODULES
 	intersection
 	contact
 	materials
+	functions
 	core
 	rapidxml
  )
