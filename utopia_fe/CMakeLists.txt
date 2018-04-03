@@ -105,6 +105,7 @@ list(APPEND TOP_SOURCES utopia_fe.cpp)
 
 add_library(utopia_fe STATIC ${TOP_SOURCES} ${TOP_HEADERS})
 target_link_libraries(utopia_fe ${UTOPIA_LIBRARIES} ${UTOPIA_FE_LIBRARIES} ${TRANSFER_LIB})
+set_utopia_compiler_features(utopia_fe)
 
 add_executable(utopia_fe_exec  main.cpp ${TOP_HEADERS})
 # target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_LIBRARIES})
