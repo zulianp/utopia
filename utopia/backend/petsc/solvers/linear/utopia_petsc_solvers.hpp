@@ -10,7 +10,7 @@
 #include "utopia_petsc_ConjugateGradient.hpp"
 #include "utopia_petsc_GaussSeidel.hpp"
 
-#include "utopia_petsc_NonLinearGaussSeidel.hpp"
+// #include "utopia_petsc_NonLinearGaussSeidel.hpp"
 #include "utopia_petsc_Function.hpp"
 
 #include "utopia_petsc_SemismoothNewton.hpp"

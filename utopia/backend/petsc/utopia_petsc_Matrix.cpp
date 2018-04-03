@@ -246,7 +246,12 @@ namespace utopia {
 
 		if(has_off_proc_entries) {
 			Mat * l_ptr;
+			
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0) 
 			ierr = MatGetSubMatrices(r, 1, &isrow, &iscol, MAT_INITIAL_MATRIX, &l_ptr);
+#else
+			ierr = MatCreateSubMatrices(r, 1, &isrow, &iscol, MAT_INITIAL_MATRIX, &l_ptr);
+#endif
 
 			MatType type;
 			MatGetType(r, &type);
@@ -282,7 +287,11 @@ namespace utopia {
 
 		} else {
 			result.destroy();
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
 			ierr = MatGetSubMatrix(r, isrow, iscol, MAT_INITIAL_MATRIX, &l);
+#else
+			ierr = MatCreateSubMatrix(r, isrow, iscol, MAT_INITIAL_MATRIX, &l);
+#endif //UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
 		}
 
 		ISDestroy(&isrow);
@@ -716,8 +725,8 @@ namespace utopia {
 		check_error( MatSetSizes(implementation(), rows_local, cols_local, rows_global, cols_global) );
 		
 		check_error( MatSetType(implementation(), MATAIJ) );
-		check_error( MatSeqAIJSetPreallocation(implementation(), PETSC_NULL, &d_nnz[0]) );
-		check_error( MatMPIAIJSetPreallocation(implementation(), PETSC_NULL, &d_nnz[0], PETSC_NULL, &o_nnz[0]) ); 
+		check_error( MatSeqAIJSetPreallocation(implementation(), PETSC_DEFAULT , &d_nnz[0]) );
+		check_error( MatMPIAIJSetPreallocation(implementation(), PETSC_DEFAULT , &d_nnz[0], PETSC_DEFAULT, &o_nnz[0]) ); 
 
 		check_error( MatSetOption(implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE) );
 		check_error( MatSetOption(implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );

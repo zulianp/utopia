@@ -77,7 +77,7 @@ namespace utopia
         Multigrid(const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                   const std::shared_ptr<Solver> &direct_solver = std::shared_ptr<Solver>(),
                   const Parameters params = Parameters())
-        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true)
+        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true), use_line_search_(false)
         {
             set_parameters(params); 
         }
@@ -343,7 +343,21 @@ namespace utopia
 
             // correction transfer
             transfers(l-2).interpolate(c_H, c_h); 
-            x_0 += c_h; 
+
+            if(use_line_search_) {
+                const Scalar alpha = dot(c_h, r_h)/dot(level(l-1).A() * c_h, c_h);
+
+                if(alpha <= 0.) {
+                    // std::cerr << l << " zero grid correction" << std::endl;
+                    x_0 += c_h;
+                } else {
+                    // std::cout << l << " : " << alpha << std::endl;
+                    x_0 += alpha * c_h;
+                }
+
+            } else {
+                x_0 += c_h; 
+            }
 
             // postsmoothing 
             smoothing(level(l-1).A(), rhs, x_0, this->post_smoothing_steps()); 
@@ -460,6 +474,11 @@ namespace utopia
             perform_galerkin_assembly_ = val;   
         }
 
+        void set_use_line_search(const bool val)
+        {
+            use_line_search_ = val;
+        }
+
     protected:   
         std::shared_ptr<Smoother>           _smoother;
         std::shared_ptr<Solver>             _direct_solver;
@@ -467,6 +486,7 @@ namespace utopia
     private:
         Parameters                          _parameters;
         bool perform_galerkin_assembly_;
+        bool use_line_search_;
 
     };
 

@@ -37,7 +37,7 @@ namespace utopia {
 		  debug_output_(false),
 		  force_direct_solver_(false),
 		  bypass_contact_(false),
-		  max_outer_loops_(40)
+		  max_outer_loops_(20)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 			output_path_ = "contact_sol.e";
@@ -203,9 +203,21 @@ namespace utopia {
 				newton.set_box_constraints(box_c);
 				newton.solve(lhs, rhs, inc_c);
 			} else {
-				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
+				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
+				SemismoothNewton<Matrix, Vector> newton(linear_solver_);
 				newton.verbose(true);
 				newton.max_it(40);
+				newton.atol(1e-18);
+				newton.rtol(1e-6);
+				newton.stol(1e-18);
+
+				// auto scale_factor = 1.0e8;
+
+				// auto scaled_box = make_upper_bound_constraints(std::make_shared<Vector>(*box_c.upper_bound() * scale_factor));
+				// newton.set_box_constraints(scaled_box);
+				// newton.solve(scale_factor * lhs, scale_factor * rhs, inc_c);
+				// inc_c_ *= 1./scale_factor;
+
 				newton.set_box_constraints(box_c);
 				newton.solve(lhs, rhs, inc_c);
 

@@ -84,6 +84,12 @@ namespace utopia {
         return Reduce<Derived, Max>(expr.derived());
     }
 
+
+
+
+    template<class L, class R>
+    using Dot = utopia::Reduce<Binary<L, R, utopia::EMultiplies>, utopia::Plus>;
+
     /**
      * @ingroup     reductions
      * @brief       \f$  <x, y> \f$

@@ -856,7 +856,7 @@ namespace utopia {
         }   
     }
 
-    void petsc_harcoded_cg_test()
+    void petsc_hardcoded_cg_test()
     {
         const int n = mpi_world_size() * 2;
         const int i_max = 2;
@@ -904,6 +904,8 @@ namespace utopia {
     void petsc_ksp_precond_delegate_test()
     {
         const int n = 10;
+        if(mpi_world_size() > n) return;
+
         TestFunctionND_1<DMatrixd, DVectord> fun(n);
 
         ConjugateGradient<DMatrixd, DVectord> cg;
@@ -927,6 +929,8 @@ namespace utopia {
     void petsc_is_nan_or_inf_test()
     {
         const int n     = 10; 
+        if(mpi_world_size() > n) return;
+
         DVectord denom  = zeros(n);
         DVectord nom    = values(n, 1.0);
 
@@ -941,7 +945,6 @@ namespace utopia {
         assert(has_nan_or_inf(denom) == 0);
 
     }
-
 
     void petsc_mat_mul_add_test()
     {
@@ -970,7 +973,6 @@ namespace utopia {
             assert(approxeq(expected, r3));
         }
     }
-
 
     void petsc_min_test()
     {
@@ -1066,17 +1068,46 @@ namespace utopia {
         mat.implementation().convert_to_mat_baij(2);
     }
 
+
+    void petsc_line_search_test()
+    {
+        auto n = 10;
+        DVectord v = local_values(n, 1.);
+        DSMatrixd m = local_identity(n, n);
+
+        auto expr = dot(v, v)/dot(m * v, v);
+        // std::cout << tree_format(expr.getClass()) << std::endl;
+
+        double s = expr;
+        assert(approxeq(1., s));
+    }
+
+    void petsc_residual_test()
+    {
+        auto n = 10;
+        DVectord x = local_values(n, 1.);
+        DSMatrixd A = local_identity(n, n);
+        DVectord  b = local_values(n, 2.);
+       
+        DVectord res = b - A * x;
+        // disp(res);
+        double s = sum(res);
+        assert(approxeq(n * mpi_world_size(), s));
+    }
+
     #endif //WITH_PETSC;
 
     void runPetscTest() {
 #ifdef WITH_PETSC
         UTOPIA_UNIT_TEST_BEGIN("PetscTest");
+        UTOPIA_RUN_TEST(petsc_line_search_test);
+        UTOPIA_RUN_TEST(petsc_residual_test);
         UTOPIA_RUN_TEST(petsc_block_mat_test);
         UTOPIA_RUN_TEST(petsc_ghosted);
         UTOPIA_RUN_TEST(petc_optional_test);
         UTOPIA_RUN_TEST(petsc_view_test);                
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate_test);
-        UTOPIA_RUN_TEST(petsc_harcoded_cg_test);
+        UTOPIA_RUN_TEST(petsc_hardcoded_cg_test);
         UTOPIA_RUN_TEST(petsc_reciprocal_test);
         UTOPIA_RUN_TEST(petsc_axpy_test);
         UTOPIA_RUN_TEST(petsc_vector_accessors_test);

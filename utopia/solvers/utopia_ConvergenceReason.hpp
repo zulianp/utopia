@@ -30,6 +30,10 @@ namespace utopia
         static void exitMessage(const long &num_it, const int &convergence_reason)
         {
             std::cout << std::endl;
+            if(convergence_reason == CONVERGED_ITERATING)
+            {
+                std::cout << "\033[1;32m  LinearSolver converged in " << num_it << " iterations.\033[0m\n";
+            }
             if(convergence_reason == DIVERGED_MAX_IT )
             {
                 std::cerr << "\033[1;31m [Error] Maximum number of iteration reached (" << num_it << "). \033[0m\n"; 
@@ -52,14 +56,18 @@ namespace utopia
             }
             else
             {
-                std::cout << "\033[1;32m  LinearSolver converged in " << num_it << " iterations.\033[0m\n";
+                std::cerr << "\033[1;31m LinearSolver converged at iteration " << num_it << " for reason = " << convergence_reason << " \033[0m\n";
             }
         }
 
         static void exitMessage_nonlinear(const long &num_it, const int &convergence_reason)
         {
             std::cout << std::endl;
-            if(convergence_reason == DIVERGED_MAX_IT )
+            if(convergence_reason == CONVERGED_ITERATING)
+            {
+                std::cout << "\033[1;32m  NonlinearSolver converged in " << num_it << " iterations.\033[0m\n";
+            }
+            else if(convergence_reason == DIVERGED_MAX_IT )
             {
                 std::cerr << "\033[1;31m [Error] Nonlinear solver: Maximum number of iteration reached (" << num_it << "). \033[0m\n"; 
             }
@@ -81,11 +89,10 @@ namespace utopia
             }
             else
             {
-                std::cout << "\033[1;32m  NonlinearSolver converged in " << num_it << " iterations.\033[0m\n";
+                 std::cerr << "\033[1;31m NonlinearSolver converged at iteration " << num_it << " for reason = " << convergence_reason << " \033[0m\n";
             }
         }
 
-    
         // success 
         static const int CONVERGED_FNORM_ABS          = 2;   /* ||g|| < atol */
         static const int CONVERGED_FNORM_RELATIVE     = 3;   /* ||g|| < rtol*||g_0|| */

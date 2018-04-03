@@ -10,8 +10,8 @@ namespace utopia {
 	
 	class SemiGeometricMultigrid : public LinearSolver<DSMatrixd, DVectord> {
     public:
-    	// typedef utopia::Multigrid<DSMatrixd, DVectord> MultigridT;
-    	typedef utopia::Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> MultigridT;
+    	typedef utopia::Multigrid<DSMatrixd, DVectord> MultigridT;
+    	// typedef utopia::Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> MultigridT;
 
 		void init(const LibMeshFunctionSpace &space, const std::size_t n_levels)
 		{

@@ -192,7 +192,11 @@ namespace utopia {
 
 			PCMGSetLevels(pc, this->num_levels(), nullptr);
 			// PCMGSetGalerkin(pc, PETSC_TRUE);
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
 			PCMGSetGalerkin(pc, PETSC_FALSE);
+#else
+			PCMGSetGalerkin(pc, PC_MG_GALERKIN_NONE);
+#endif
 			KSPSetInitialGuessNonzero(*ksp_, PETSC_TRUE);
 
 			for (std::size_t i = 0; i < this->num_levels()-1; i++)

@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 3.1.3)
+
 project(utopia)
 
 #To kill the policy warning  (maybe not a good idea yet)
@@ -20,6 +21,8 @@ option(UTOPIA_LOG "enables utopia logging facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
+option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
+
 
 #################################################################################
 #################################################################################
@@ -61,6 +64,7 @@ set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
 
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
+include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 
 if( CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND NOT MSVC_IDE )
     message(FATAL_ERROR
@@ -244,7 +248,7 @@ include_directories(${UTOPIA_MODULES})
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(.)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall ")# -Wextra -pedantic")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall ")# -Wextra -pedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 list(APPEND UTOPIA_HEADERS 
@@ -260,6 +264,29 @@ list(APPEND UTOPIA_SOURCES
 
 # config is created based on the successful backend compilations
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
+
+
+#########################################################
+include(WriteCompilerDetectionHeader)
+
+write_compiler_detection_header(
+  FILE utopia_compiler_features.hpp
+  PREFIX UTOPIA
+  COMPILERS GNU Clang MSVC Intel AppleClang
+  FEATURES 
+  		   # cxx_final #already in c++11
+  		   # cxx_noexcept #already in c++11
+  		   cxx_attribute_deprecated # in c++14
+  ALLOW_UNKNOWN_COMPILERS
+)
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
+  DESTINATION include
+)
+
+##########################################################
+
 
 add_library(utopia STATIC utopia.cpp ${UTOPIA_SOURCES})
 target_link_libraries(utopia ${UTOPIA_COMPONENTS})

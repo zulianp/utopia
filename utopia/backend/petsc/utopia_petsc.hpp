@@ -15,17 +15,20 @@
 #include "utopia_petsc_Eval.hpp"
 #include "utopia_petsc_Eval_Inverse.hpp"
 #include "utopia_petsc_Eval_Factory.hpp"
+#include "utopia_petsc_Eval_Residual.hpp"
+#include "utopia_petsc_Eval_DotDivDot.hpp"
 #include "utopia_petsc_RowView.hpp"
 
 #include "utopia_petsc_LinearSolverFactory.hpp"
 #include "utopia_petsc_TrustRegionFactory.hpp"
 #include "utopia_petsc_solvers.hpp"
+#include "utopia_petsc_solvers.hpp"
 
-#include "utopia_petsc_KSPTR.hpp"
+#include "utopia_petsc_Function.hpp"
 
 
 // very much experimental files for the moment 
-#include "utopia_petsc_SNES.hpp"
+// #include "utopia_petsc_SNES.hpp"
 #include "utopia_petsc_UTOPIA_KSP_Solver.hpp"
 
 

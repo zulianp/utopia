@@ -77,11 +77,8 @@ namespace utopia
     virtual void set_snes_options(SNES & snes)
     {
         PetscErrorCode ierr;
-
-        
         SNESSetFromOptions(snes);
 
-      
         if(this->verbose())
            SNESMonitorSet(
                snes,
@@ -146,13 +143,13 @@ namespace utopia
                             // FormObjective, 
                             [](SNES /*snes*/, Vec x, PetscReal * energy, void * ctx) -> PetscErrorCode 
                             {
-                                Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
-                                Vector x_ut;
+                              Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
+                              Vector x_ut;
 
-                                utopia::convert(x, x_ut); 
-                                fun->value(x_ut, *energy);
+                              utopia::convert(x, x_ut); 
+                              fun->value(x_ut, *energy);
 
-                             return 0;
+                              return 0;
                             },
 
                             &fun);
@@ -163,15 +160,14 @@ namespace utopia
                             // FormGradient, 
                             [](SNES snes, Vec x, Vec res, void *ctx)-> PetscErrorCode 
                             {
-                                Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
-                                  
-                                Vector x_ut, res_ut; 
-                                utopia::convert(x, x_ut); 
-
-                                fun->gradient(x_ut, res_ut); 
-                                utopia::convert(res_ut, res);
-                          
-                                return 0;
+                              Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
+                                
+                              Vector x_ut, res_ut; 
+                              utopia::convert(x, x_ut); 
+                              fun->gradient(x_ut, res_ut); 
+                              utopia::convert(res_ut, res);
+                        
+                              return 0;
                             },
                             &fun);
 
@@ -251,7 +247,7 @@ namespace utopia
       std::string SNES_type_;                                  /*!< Choice of snes types. */  
       const std::vector<std::string> SNES_types;              /*!< Valid options for SNES solver types. */  
 
-  //TO BE DONE:
+  // TO BE DONE:
   // - convert functions could be more efficient ...
   // - store snes and destroy only when needed 
 

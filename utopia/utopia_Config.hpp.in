@@ -70,4 +70,6 @@
 #define assert_enabled(expr_)    
 #endif //NDEBUG
 
+#include "utopia_compiler_features.hpp"
+
 #endif //UTOPIA_CONFIG_HPP

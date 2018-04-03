@@ -13,7 +13,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NonLinearSmoother.hpp"
 
-#include "utopia_petsc_Function.hpp"
+#include "utopia_petsc_SNESFunction.hpp"
 
 #include <petsc/private/snesimpl.h>
 #include "petscsnes.h"  
