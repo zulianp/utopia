@@ -28,7 +28,7 @@
 
 
 // very much experimental files for the moment 
-// #include "utopia_petsc_SNES.hpp"
+#include "utopia_petsc_SNES.hpp"
 #include "utopia_petsc_UTOPIA_KSP_Solver.hpp"
 
 
