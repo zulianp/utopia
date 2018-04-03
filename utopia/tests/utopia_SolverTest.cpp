@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-03 10:49:17
+* @Last Modified time: 2018-04-03 13:42:59
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -1344,30 +1344,6 @@ namespace utopia
 			using namespace utopia;
 			using namespace std;
 		
-			// if(mpi_world_size() == 1)
-			// {
-
-			// 	auto linear_solver  = make_shared< ConjugateGradient<DMatrixd, DVectord> >();
-
-			// 	SNESSolver<DMatrixd, DVectord,  PETSC_EXPERIMENTAL> nonlinear_solver(linear_solver); 
-			// 	nonlinear_solver.verbose(true); 
-
-			// 	DVectord actual   = values(1000, 1.1);
-			// 	RosenbrockGeneric<DMatrixd, DVectord> fun;
-				
-			// 	nonlinear_solver.solve(fun, actual);
-
-
-			// 	Rosenbrock<DMatrixd, DVectord> rosenbrock;
-			// 	DVectord expected_rosenbrock = values(2, 1.0);
-			// 	DVectord x0_ros   		= values(2, 1.5);
-
-			// 	nonlinear_solver.max_it(15); 
-			// 	nonlinear_solver.solve(rosenbrock, x0_ros);
-
-			// using namespace std;
-
-
 			const static bool verbose = false;
 
 			if(mpi_world_size() >= 10) return;
@@ -1376,18 +1352,6 @@ namespace utopia
 
 			SNESSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> nonlinear_solver(linear_solver); 
 			nonlinear_solver.verbose(verbose); 
-
-			DVectord actual   = values(10, 2.);
-			DVectord expected = values(10, 0.468919);
-			
-			TestFunctionND_1<DMatrixd, DVectord> fun(10);
-			
-			nonlinear_solver.solve(fun, actual);
-			assert(approxeq(expected, actual));
-
-			expected -= actual; 
-			const double diff = norm2(expected);
-			assert(approxeq(diff, 0., 1e-6));
 
 			if(mpi_world_size() == 1)
 			{
@@ -1429,15 +1393,6 @@ namespace utopia
 				SNESSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> nonlinear_solver3(cg_home); 
 				nonlinear_solver3.verbose(verbose); 
 
-				
-			// 	// reset IG  
-			// 	x0_ros   		    = values(2, 1.5);
-			// 	expected_rosenbrock = values(2, 1.0);
-			// 	nonlinear_solver3.solve(rosenbrock, x0_ros);
-
-			// 	expected_rosenbrock -= x0_ros; 
-			// 	diff_rb = norm2(expected_rosenbrock);
-			// 	assert(approxeq(diff_rb, 0., 1e-6));
 			}
 		}
 

@@ -201,20 +201,16 @@ namespace utopia
                             if(!flg)
                             { 
                               fun->hessian(x_ut, jac_ut); 
-
-                              MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &snes->jacobian_pre); 
                               MatCopy(raw_type(jac_ut), snes->jacobian_pre, SAME_NONZERO_PATTERN); 
                             }
 
                             if(!assembled1)
                             {
-                              MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &snes->jacobian); 
                               MatCopy(raw_type(jac_ut), snes->jacobian, SAME_NONZERO_PATTERN );                                 
                             }
 
                             if(!assembled2 || flg)
                             {
-                              MatDuplicate(raw_type(jac_ut), MAT_COPY_VALUES,  &snes->jacobian_pre); 
                               MatCopy(raw_type(jac_ut), snes->jacobian_pre, SAME_NONZERO_PATTERN );                                 
                             }
 
