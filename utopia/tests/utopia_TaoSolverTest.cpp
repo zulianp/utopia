@@ -22,54 +22,36 @@ namespace utopia {
 
 	void petsc_tao_solve_vi()
 	{
-		const SizeType n = 10;
+		const SizeType n = 100;
 
-		DSMatrixd m = zeros(n, n);
-		assemble_laplacian_1D(n, m);
-
-		{
-			Range r = row_range(m);
-			Write<DSMatrixd> w(m);
-			if(r.begin() == 0) {
-				m.set(0, 0, 1.);
-				m.set(0, 1, 0);
-			}
-
-			if(r.end() == n) {
-				m.set(n-1, n-1, 1.);
-				m.set(n-1, n-2, 0);
-			}
-		}
-
-		DVectord rhs = values(n, 1.);
-		{ 
-			Range r = range(rhs);
-			Write<DVectord> w(rhs);
-
-			if(r.inside(0)) {
-				rhs.set(0, 0);
-			}
-
-			if(r.inside(n-1)) {
-				rhs.set(n-1, 0.);
-			}
-		}
-
-		DVectord upper_bound = values(n, 100.0);
+		DSMatrixd m;
+		DVectord rhs, upper_bound;
+		ExampleTestCase2<DSMatrixd, DVectord> example;
+		example.getOperators(n, m, rhs, upper_bound);
 		DVectord x = zeros(n);
+
+		const double scale_factor = 1e-1;
+		m *= scale_factor;
+		rhs *= scale_factor;
+		upper_bound *= scale_factor;
 
 		auto box = make_upper_bound_constraints(make_ref(upper_bound));
 
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(m), make_ref(rhs));
 		TaoSolver<DSMatrixd, DVectord> tao(std::make_shared<Factorization<DSMatrixd, DVectord>>());
-		// tao.set_box_constraints(box);
+		tao.set_box_constraints(box);
 		tao.solve(fun, x);
+
+		// disp(x);
+		x *= 1./scale_factor;
+		x.implementation().set_name("v");
+		write("x.m", x);
 	}
 
 	void run_tao_solver_test()
 	{
 		UTOPIA_RUN_TEST(petsc_tao_solve_simple);
-		// UTOPIA_RUN_TEST(petsc_tao_solve_vi);
+		UTOPIA_RUN_TEST(petsc_tao_solve_vi);
 	}
 }
 

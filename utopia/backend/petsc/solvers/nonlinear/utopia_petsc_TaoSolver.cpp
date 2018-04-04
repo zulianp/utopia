@@ -52,7 +52,6 @@ namespace utopia {
 	template<class Matrix, class Vector>
 	static PetscErrorCode UtopiaTaoFormHessian(Tao tao, Vec x, Mat H, Mat Hpre, void *ctx)
 	{
-		std::cout << "UtopiaTaoFormHessian" << std::endl;
 		PetscErrorCode ierr = 0;
 		Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
 		assert(fun);
@@ -71,14 +70,16 @@ namespace utopia {
 				std::cerr << "[Error] Failed to assemble Hessian." << std::endl;
 				return 1;
 			} 
-			
+
 		} else {
 			if(raw_type(utopia_Hpre) != Hpre) {
+				//FIXME maybe add optimization options
 				MatCopy(raw_type(utopia_Hpre), Hpre, DIFFERENT_NONZERO_PATTERN);
 			}
 		}
 
 		if(raw_type(utopia_H) != H) {
+			//FIXME maybe add optimization options
 			MatCopy(raw_type(utopia_H), H, DIFFERENT_NONZERO_PATTERN);
 		}
 
@@ -138,26 +139,26 @@ namespace utopia {
 		UtopiaTaoSetUp(*tao, fun);
 	}
 
-	// template<>
-	// void TaoSolverWrapper::set_function<DMatrixd, DVectord>(Function<DSMatrixd, DVectord> &fun)
-	// {
-	// 	auto tao = (Tao *) &data_;
-	// 	UtopiaTaoSetUp(tao, fun);
-	// }
-
-	// UtopiaTaoSetHessianRoutine(
-	// 	Tao tao,
-	// 	Mat H,
-	// 	Mat Hpre,
-	// 	PetscErrorCode (*FormHessian)(Tao,Vec,Mat,Mat,
-	// void*), void *user);
-
 	bool TaoSolverWrapper::init(MPI_Comm comm)
 	{
 		auto tao = (Tao *) &data_;
 		PetscErrorCode ierr = 0;
-		ierr = TaoCreate(comm, tao);    U_CHECKERR(ierr);
-		ierr = TaoSetFromOptions(*tao); U_CHECKERR(ierr);
+		ierr = TaoCreate(comm, tao);     U_CHECKERR(ierr);
+		ierr = TaoSetType(*tao, TAOIPM); U_CHECKERR(ierr);
+		ierr = TaoSetTolerances(*tao, 1e-19, 1e-12, 1e-19); U_CHECKERR(ierr);
+
+		KSP ksp;
+		PC pc;
+		ierr = TaoGetKSP(*tao, &ksp); U_CHECKERR(ierr);
+		ierr = KSPSetType(ksp, KSPPREONLY); U_CHECKERR(ierr);
+
+		ierr = KSPGetPC(ksp, &pc); U_CHECKERR(ierr);
+		ierr = PCSetType(pc, "lu"); U_CHECKERR(ierr);
+
+		ierr = PCFactorSetMatSolverPackage(pc, "mumps"); U_CHECKERR(ierr);
+		ierr = KSPSetInitialGuessNonzero(ksp, PETSC_FALSE); U_CHECKERR(ierr);
+
+		ierr = TaoSetFromOptions(*tao);  U_CHECKERR(ierr);
 		return true;
 	}
 
@@ -183,8 +184,8 @@ namespace utopia {
 		auto tao = static_cast<Tao>(data_);
 
 		PetscErrorCode ierr = 0; 
-		ierr = TaoSetInequalityBounds(tao, lb.implementation(), ub.implementation()); U_CHECKERR(ierr);
-
+		// ierr = TaoSetInequalityBounds(tao, lb.implementation(), ub.implementation()); U_CHECKERR(ierr);
+		ierr = TaoSetVariableBounds(tao, lb.implementation(), ub.implementation()); U_CHECKERR(ierr);
 		return true;
 	}
 
@@ -205,13 +206,17 @@ namespace utopia {
 		TaoGetSolutionStatus(tao, &iterate, &f, &gnorm, &cnorm, &xdiff, &reason);
 
 		// if(this->verbose()) {
-		// 	std::cout << "iterate: " << iterate << std::endl;
-		// 	std::cout << "f: " << f << std::endl;
-		// 	std::cout << "gnorm: " << gnorm << std::endl;
-		// 	std::cout << "cnorm: " << cnorm << std::endl;
-		// 	std::cout << "xdiff: " << xdiff << std::endl;
-		// 	std::cout << "reason: " << reason << std::endl;
+			// std::cout << "iterate: " << iterate << std::endl;
+			// std::cout << "f: " << f << std::endl;
+			// std::cout << "gnorm: " << gnorm << std::endl;
+			// std::cout << "cnorm: " << cnorm << std::endl;
+			// std::cout << "xdiff: " << xdiff << std::endl;
+			// std::cout << "reason: " << reason << std::endl;
 		// }
+
+		if(reason < 0) {
+			std::cerr << "[Error] failed to converge" << std::endl;
+		}
 
 		return reason >= 0;
 	}

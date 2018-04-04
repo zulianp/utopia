@@ -5,7 +5,7 @@
 
 namespace utopia {
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class QuadraticFunction : public Function<Matrix, Vector, Backend> {
+    class QuadraticFunction final : public Function<Matrix, Vector, Backend> {
     public:
         DEF_UTOPIA_SCALAR(Matrix); 
 
@@ -16,6 +16,12 @@ namespace utopia {
             assert(rhs);
             
             this->data()->H = H;
+        }
+
+        virtual bool initialize_hessian(Matrix &H, Matrix &/*H_pre*/) const override
+        {
+            H = *this->data()->H;
+            return true;
         }
 
         virtual ~QuadraticFunction() { }

@@ -32,14 +32,14 @@ namespace utopia {
             H_pre = values(N, N, 0.);
             return true;
         }
-        
+
         bool value(const Vector &point, typename Vector::Scalar &result) const override {
             result =  0.5 * std::pow(dot(point, A * point) + 1, 2.0) - dot(b, point);
             return true;
         }
 
         bool gradient(const Vector &point, Vector &result) const override {
-            if(empty(result)) {
+            if(empty(result) || size(point).get(0) != size(result).get(0)) {
                 result = values(point.size().get(0), 0.0);
             }
 
@@ -64,7 +64,7 @@ namespace utopia {
         {
             Matrix temp = outer(point, point);
             
-            if(empty(result)) {
+            if(empty(result) || size(result) != size(temp)) {
                 result = temp;
             }
 
