@@ -25,7 +25,6 @@
 namespace utopia 
 {
 
-
     // this should be potentially nonlinear solver .... 
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
     class SNESSolver {};
@@ -33,15 +32,17 @@ namespace utopia
 
 
     template<typename Matrix, typename Vector>
-    class SNESSolver<Matrix, Vector, PETSC_EXPERIMENTAL> : virtual public NonLinearSolver<Matrix, Vector>
+    class SNESSolver<Matrix, Vector, PETSC> : public NonLinearSolver<Matrix, Vector>, public NonLinearSmoother<Matrix, Vector>
     {
 
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-        typedef typename NonLinearSolver<Matrix, Vector>::Solver LinearSolver;
 
-        typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
+        typedef typename NonLinearSolver<Matrix, Vector>::Solver  LinearSolver;
+        typedef utopia::NonLinearSmoother<Matrix, Vector>         Smoother;
+        typedef utopia::NonLinearSolver<Matrix, Vector>           NonLinearSolver;
+        typedef utopia::Function<Matrix, Vector>                  Function;
 
 
         SNESSolver( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
@@ -61,11 +62,12 @@ namespace utopia
         }
 
 
-    // TODO:: 
-    virtual void set_parameters(const Parameters params) override
-    {
-      NonLinearSolver::set_parameters(params); 
-    }
+      // TODO:: 
+      virtual void set_parameters(const Parameters params) override
+      {
+        NonLinearSolver::set_parameters(params); 
+        Smoother::set_parameters(params); 
+      }
 
 
     virtual void set_snes_type(const std::string & type)
@@ -74,46 +76,20 @@ namespace utopia
     }
 
 
-    virtual void set_snes_options(SNES & snes)
+    virtual bool verbose() override
     {
-        PetscErrorCode ierr;
-        SNESSetFromOptions(snes);
-
-        if(this->verbose())
-           SNESMonitorSet(
-               snes,
-               [](SNES snes, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
-                   PrintInfo::print_iter_status({static_cast<PetscReal>(iter), res}); 
-                   return 0;
-               },
-               nullptr,
-               nullptr);
-        
-
-        ierr = SNESSetType(snes, SNES_type_.c_str());
-        ierr = SNESSetTolerances(snes, NonLinearSolver::atol(), NonLinearSolver::rtol(), NonLinearSolver::stol(), NonLinearSolver::max_it(), PETSC_DEFAULT); 
+      return NonLinearSolver::verbose(); 
     }
 
 
-
-    virtual void set_ksp(SNES & snes)
+    virtual void verbose(const bool & verbose) override
     {
-        KSP            ksp; 
-        SNESGetKSP(snes,&ksp);
-        if (dynamic_cast<KSPSolver<Matrix, Vector>*>(this->linear_solver_.get()) != nullptr)
-        {
-          auto utopia_ksp = dynamic_cast<KSPSolver<Matrix, Vector> *>(this->linear_solver_.get()); 
-          utopia_ksp->set_ksp_options(ksp); 
-          utopia_ksp->attach_preconditioner(ksp); 
-        }
-        else
-        {
-          configure_KSP_utopia(this->linear_solver_, ksp); 
-        }
+       NonLinearSolver::verbose(verbose); 
+       Smoother::verbose(verbose); 
     }
 
 
-      bool solve(Function<Matrix, Vector> &fun, Vector &x) override
+      bool solve(Function &fun, Vector &x) override
       {
         using namespace utopia;
 
@@ -129,7 +105,122 @@ namespace utopia
           fun_petsc->getSNES(snes); 
         }
         else
+          setup_assembly_routines(snes, fun, x); 
+
+        set_snes_options(snes); 
+        set_ksp(snes); 
+     
+        SNESSolve(snes, NULL, raw_type(x));
+
+        // exit solver 
+        PetscInt nonl_its; 
+        SNESGetIterationNumber(snes, &nonl_its);
+
+        SNESConvergedReason reason; 
+        SNESGetConvergedReason(snes, &reason); 
+
+        this->exit_solver(nonl_its, reason); 
+
+       if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) == nullptr)
+          SNESDestroy(&snes);
+
+       return true; 
+    }
+
+
+
+
+    virtual bool nonlinear_smooth(Function & fun,  Vector &x, const Vector &rhs) override
+    {
+      using namespace utopia;
+
+        SNES            snes;
+
+        if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) != nullptr)
         {
+          PETSCUtopiaNonlinearFunction<Matrix, Vector> * fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
+          fun_petsc->getSNES(snes); 
+        }
+        else
+          setup_assembly_routines(snes, fun, x); 
+     
+
+        set_snes_options(snes, 0.0, 0.0, 0.0, this->sweeps()); 
+        set_ksp(snes); 
+
+        SNESSolve(snes, raw_type(rhs), raw_type(x));
+
+        // needs to be reseted for use on other levels ... 
+        snes->vec_rhs =  NULL; 
+
+        if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) == nullptr)
+          SNESDestroy(&snes);
+ 
+
+        return true; 
+
+    }
+
+
+
+   protected: 
+      virtual void set_snes_options(SNES & snes,  const Scalar & atol     = NonLinearSolver::atol(), 
+                                                  const Scalar & rtol     = NonLinearSolver::rtol(), 
+                                                  const Scalar & stol     = NonLinearSolver::stol(), 
+                                                  const SizeType & max_it = NonLinearSolver::max_it())
+      {
+        PetscErrorCode ierr;
+        SNESSetFromOptions(snes);
+
+        if(verbose())
+           SNESMonitorSet(
+               snes,
+               [](SNES snes, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
+                   PrintInfo::print_iter_status({static_cast<PetscReal>(iter), res}); 
+                   return 0;
+               },
+               nullptr,
+               nullptr);
+        
+        ierr = SNESSetType(snes, SNES_type_.c_str());
+        ierr = SNESSetTolerances(snes, atol, rtol, stol, max_it, PETSC_DEFAULT); 
+      }
+
+
+
+      virtual void set_ksp(SNES & snes)
+      {
+
+        if(!snes->usesksp)
+          return; 
+
+          KSP            ksp; 
+          SNESGetKSP(snes,&ksp);
+
+          if (dynamic_cast<KSPSolver<Matrix, Vector>*>(this->linear_solver_.get()) != nullptr)
+          {
+            auto utopia_ksp = dynamic_cast<KSPSolver<Matrix, Vector> *>(this->linear_solver_.get()); 
+            utopia_ksp->set_ksp_options(ksp); 
+            utopia_ksp->attach_preconditioner(ksp); 
+          }
+          else
+          {
+            if(!this->linear_solver_)
+            {
+              std::cout<<"utopia::SNES:: linear solver missing, setting to DEFAULT... \n"; 
+              const auto utopia_ksp = std::make_shared<KSPSolver<Matrix, Vector> >();
+              this->set_linear_solver(utopia_ksp); 
+            }
+            configure_KSP_utopia(this->linear_solver_, ksp); 
+          }
+      }
+
+
+
+
+    private: 
+      void setup_assembly_routines(SNES & snes, Function & fun, const Vector &x)
+      {
           MPI_Comm        comm;
           PetscObjectGetComm((PetscObject)raw_type(x), &comm);
 
@@ -143,7 +234,7 @@ namespace utopia
                             // FormObjective, 
                             [](SNES /*snes*/, Vec x, PetscReal * energy, void * ctx) -> PetscErrorCode 
                             {
-                              Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
+                              Function * fun = static_cast<Function*>(ctx);
                               Vector x_ut;
 
                               utopia::convert(x, x_ut); 
@@ -160,7 +251,7 @@ namespace utopia
                             // FormGradient, 
                             [](SNES snes, Vec x, Vec res, void *ctx)-> PetscErrorCode 
                             {
-                              Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
+                              Function * fun = static_cast<Function *>(ctx);
                                 
                               Vector x_ut, res_ut; 
                               utopia::convert(x, x_ut); 
@@ -176,7 +267,7 @@ namespace utopia
                           // FormHessian, 
                           [](SNES snes, Vec x, Mat jac, Mat prec, void *ctx)-> PetscErrorCode 
                           {
-                            Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
+                            Function * fun = static_cast<Function *>(ctx);
 
                             Vector x_ut;
                             utopia::convert(x, x_ut); 
@@ -217,35 +308,13 @@ namespace utopia
                             return 0;
                           },
                           &fun);
-        }
+      }
 
-        set_snes_options(snes); 
-        set_ksp(snes); 
-     
-        SNESSolve(snes, NULL, raw_type(x));
-
-        // exit solver 
-        PetscInt nonl_its; 
-        SNESGetIterationNumber(snes, &nonl_its);
-
-        SNESConvergedReason reason; 
-        SNESGetConvergedReason(snes, &reason); 
-
-        this->exit_solver(nonl_its, reason); 
-
-        // cleaning
-        SNESDestroy(&snes);
-
-       return true; 
-     }
 
      protected: 
       std::string SNES_type_;                                  /*!< Choice of snes types. */  
       const std::vector<std::string> SNES_types;              /*!< Valid options for SNES solver types. */  
 
-  // TO BE DONE:
-  // - convert functions could be more efficient ...
-  // - store snes and destroy only when needed 
 
     };
 }

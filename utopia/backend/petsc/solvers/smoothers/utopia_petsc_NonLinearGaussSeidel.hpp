@@ -14,6 +14,7 @@
 #include "utopia_NonLinearSmoother.hpp"
 
 #include "utopia_petsc_SNESFunction.hpp"
+#include "utopia_petsc_SNES.hpp"
 
 #include <petsc/private/snesimpl.h>
 #include "petscsnes.h"  
@@ -26,88 +27,50 @@ namespace utopia {
   class NonLinearGaussSeidel {};
 
 
-        /**
-         * @brief      Wrapper for PETSC implementation of NGS. 
-         * @tparam     Matrix  
-         * @tparam     Vector  
-         */
+
+
     template<class Matrix, class Vector>
-    class NonLinearGaussSeidel<Matrix, Vector, PETSC> : public NonLinearSmoother<Matrix, Vector> 
+    class NonLinearGaussSeidel<Matrix, Vector, PETSC> : public SNESSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
-        typedef utopia::NonLinearSmoother<Matrix, Vector>       Smoother;
-        typedef utopia::Function<Matrix, Vector>                Function;
+
+        typedef utopia::SNESSolver<Matrix, Vector>                  SNESSolver;
+        typedef utopia::Function<Matrix, Vector>                    Function;
+        typedef typename NonLinearSolver<Matrix, Vector>::Solver    LinearSolver;
 
 
         public:
-        NonLinearGaussSeidel(const Parameters params = Parameters()) 
+        NonLinearGaussSeidel(   const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
+                                const Parameters params = Parameters()) 
+                                : SNESSolver(linear_solver, params)
         { 
             set_parameters(params); 
+            this->set_snes_type("ngs"); 
+
         }
 
         virtual void set_parameters(const Parameters params) override
         {
-            Smoother::set_parameters(params); 
+            SNESSolver::set_parameters(params); 
         }
 
-        virtual bool nonlinear_smooth(Function & fun,  Vector &x, const Vector &rhs) override
+    protected: 
+        virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
+                                                    const Scalar & rtol     = SNESSolver::rtol(), 
+                                                    const Scalar & stol     = SNESSolver::stol(), 
+                                                    const SizeType & max_it = SNESSolver::max_it()) override 
         {
+            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
 
-            std::cerr<<"------- utopia_petsc_NonLinearGaussSeidl::nonlinear_smooth:: there is something wrong int this function -------------- \n"; 
-            // TODO:: understand problem on snes side... 
+            // we need to allocate hessian for coloring computation
+            SNESComputeJacobian(snes, snes->vec_sol, snes->jacobian,  snes->jacobian_pre);
 
-
-            if(dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun))
-            {
-                PETSCUtopiaNonlinearFunction<Matrix, Vector> * fun_petsc = dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun);
-                
-                SNES snes;
-                fun_petsc->getSNES(snes); 
-
-                SNESSetFromOptions(snes); 
-
-                // weird .......
-                // SNESSetType(snes, SNESNRICHARDSON);
-                
-
-                SNESType type; 
-                SNESGetType(snes, &type); 
-
-                std::cout<<"snes - type : "<< type << "      --- \n"; 
-
-                Vector y = x;  
-
-                SNESComputeJacobian(snes, raw_type(x), snes->jacobian,  snes->jacobian_pre);
-                SNESComputeFunction(snes, raw_type(x), raw_type(y)); 
-
-
-                // SNES pc; 
-                // if(!this->verbose())
-                //     SNESMonitorCancel(snes);
-                                    
-                                // SNESNRICHARDSON
-                                // SNESNGS
-                                // SNESNGMRES 
-                                // SNESNCG
-                SNESSetType(snes, SNESNGS );
-                SNESSetTolerances(snes, 0.0, 0.0, 0.0, this->sweeps(), PETSC_DEFAULT);
-
-                SNESLineSearch linesearch; 
-                SNESGetLineSearch(snes, &linesearch);
-                SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC); 
-
-                SNESSolve(snes, raw_type(rhs), raw_type(x)); 
-                snes->vec_rhs =  NULL; 
-                
-            }
-            else
-            {
-                std::cout<<"utopia:: PETSC NONLINEAR GS works just with PETSC function.... \n"; 
-                exit(1);
-            }
-            return true; 
+            SNESLineSearch linesearch; 
+            SNESGetLineSearch(snes, &linesearch);
+            SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC); 
         }
+
     };
 
 }

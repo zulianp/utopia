@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-04 14:35:48
+* @Last Modified time: 2018-04-04 15:40:45
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -349,16 +349,11 @@ namespace utopia
 		}
 		
 
-
-
 		void petsc_cholesky_test()
 		{
-
-			std::cout<<"------- cholesky test --------------- \n"; 
 			DVectord rhs, x; 
-
-
 			DSMatrixd A = zeros(_n, _n);
+
 			assemble_laplacian_1D(_n, A);
 			{
 				Range r = row_range(A);
@@ -374,40 +369,14 @@ namespace utopia
 				}
 			}
 
-
 			x 	= local_zeros(local_size(A).get(0)); 
 			rhs = local_values(local_size(A).get(0), 13.0); 
 
 			auto cholesky_factorization = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-
-			#ifdef PETSC_HAVE_MUMPS
-				cholesky_factorization->set_type(PETSC_TAG, CHOLESKY_DECOMPOSITION_TAG);
-			#else
-						if(mpi_world_size() > 1) {
-							if(mpi_world_rank() == 0) {
-								std::cerr << "[Error] Direct solver does not work in parallel compile with SuperLU" << std::endl;
-							}
-							return;
-						}
-			#endif //PETSC_HAVE_MUMPS
-			
+			cholesky_factorization->set_type(PETSC_TAG, CHOLESKY_DECOMPOSITION_TAG);
 
 			cholesky_factorization->solve(A, rhs, x); 
-
-
-			// disp(A); 
-			// disp(rhs); 
-			// disp(x); 
-
-
-			std::cout<<"------- cholesky test end --------------- \n"; 
-
 		}
-
-
-
-
-
 
 
 		PetscLinearSolverTest()

@@ -90,8 +90,6 @@ namespace utopia {
 			LinearSolver<Matrix, Vector>::set_parameters(params);
 			strategy_.set_parameters(params);
 		}                                           
-
-
 	
 
 	private:

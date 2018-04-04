@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-04 14:06:58
+* @Last Modified time: 2018-04-04 18:52:03
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -700,7 +700,7 @@ namespace utopia
 						
 			auto linear_solver = make_shared< ConjugateGradient<DMatrixd, DVectord> >();
 
-			SNESSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> nonlinear_solver(linear_solver); 
+			SNESSolver<DMatrixd, DVectord, PETSC> nonlinear_solver(linear_solver); 
 			nonlinear_solver.verbose(verbose); 
 
 			if(mpi_world_size() == 1)
@@ -721,7 +721,7 @@ namespace utopia
 				auto cg_home = std::make_shared<ConjugateGradient<DMatrixd, DVectord, HOMEMADE>>();
 				cg_home->verbose(verbose); 
 
-				SNESSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> nonlinear_solver2(cg_home); 
+				SNESSolver<DMatrixd, DVectord, PETSC> nonlinear_solver2(cg_home); 
 				nonlinear_solver2.verbose(verbose); 
 
 				// reset IG  
@@ -740,11 +740,12 @@ namespace utopia
 				auto preconditioner = make_shared< InvDiagPreconditioner<DMatrixd, DVectord> >();
 				cg_home->set_preconditioner(preconditioner);
 
-				SNESSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> nonlinear_solver3(cg_home); 
+				SNESSolver<DMatrixd, DVectord, PETSC> nonlinear_solver3(cg_home); 
 				nonlinear_solver3.verbose(verbose); 
 
 			}
 		}
+
 
 		PetscNonlinearSolverTest()
 		: _n(100) { }
