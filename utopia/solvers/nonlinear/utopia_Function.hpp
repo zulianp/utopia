@@ -36,6 +36,10 @@ namespace utopia
         }
 
         virtual bool update(const Vector &/*point*/) { return true; }
+        virtual bool initialize_hessian(Matrix &/*H*/, Matrix &H_pre) const
+        {
+            return false;
+        }
 
         /**
          * @brief Allows to solvers to reuse allocated vectors and matrices

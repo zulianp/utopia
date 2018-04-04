@@ -69,7 +69,7 @@ namespace utopia {
 	void run_tao_solver_test()
 	{
 		UTOPIA_RUN_TEST(petsc_tao_solve_simple);
-		UTOPIA_RUN_TEST(petsc_tao_solve_vi);
+		// UTOPIA_RUN_TEST(petsc_tao_solve_vi);
 	}
 }
 

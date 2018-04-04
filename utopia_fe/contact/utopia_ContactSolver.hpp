@@ -40,7 +40,14 @@ namespace utopia {
 		  max_outer_loops_(20)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
-			output_path_ = "contact_sol.e";
+			
+			output_path_ = utopia::Utopia::Instance().get("output_path");
+			
+			if(!output_path_.empty()) {
+				output_path_ += "/";
+			}
+
+			output_path_ += "contact_sol.e";
 			linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
 			// auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
 			// iterative_solver->atol(1e-14);

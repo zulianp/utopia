@@ -53,6 +53,7 @@ namespace utopia {
 	static PetscErrorCode UtopiaTaoFormHessian(Tao tao, Vec x, Mat H, Mat Hpre, void *ctx)
 	{
 		std::cout << "UtopiaTaoFormHessian" << std::endl;
+		PetscErrorCode ierr = 0;
 		Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
 		assert(fun);
 
@@ -67,38 +68,36 @@ namespace utopia {
 
 		if(!fun->hessian(utopia_x, utopia_H, utopia_Hpre)) {
 			if(!fun->hessian(utopia_x, utopia_H)) {
-				std::cerr << "HERERE" << std::endl;
+				std::cerr << "[Error] Failed to assemble Hessian." << std::endl;
 				return 1;
 			} 
-			// else {
-			// 	PetscBool assembled = PETSC_FALSE;
-			// 	PetscErrorCode ierr = MatAssembled(Hpre, &assembled); CHKERRQ(ierr);
-
-			// 	if(!assembled) {
-			// 		std::cerr << "[Error] Handle outside!" << std::endl;
-			// 	}
-
-			// 	MatCopy(H, Hpre, SAME_NONZERO_PATTERN); 
-			// }
+			
+		} else {
+			if(raw_type(utopia_Hpre) != Hpre) {
+				MatCopy(raw_type(utopia_Hpre), Hpre, DIFFERENT_NONZERO_PATTERN);
+			}
 		}
-#ifndef NDEBUG
-		else {
-			assert(raw_type(utopia_Hpre) == Hpre);
+
+		if(raw_type(utopia_H) != H) {
+			MatCopy(raw_type(utopia_H), H, DIFFERENT_NONZERO_PATTERN);
 		}
-#endif
 
-
-		assert(raw_type(utopia_H) == H);
 		return 0;
 	}
 
 	template<class Matrix, class Vector>
 	bool UtopiaTaoSetUp(Tao tao, Function<Matrix, Vector> &fun)
 	{
+		fun.data()->init();
+		if(!fun.initialize_hessian(*fun.data()->H, *fun.data()->H_pre)) {
+			std::cerr << "[Error] TaoSolver requires Function::initialize_hessian to be implemented" << std::endl;
+			assert(false);
+			return false;
+		}
+
 		PetscErrorCode ierr = 0;
 		if(fun.has_preconditioner()) 
 		{
-			fun.data()->init();
 			ierr = TaoSetHessianRoutine(
 				tao,
 				raw_type(*fun.data()->H),
@@ -107,7 +106,6 @@ namespace utopia {
 			    static_cast<void *>(&fun)); U_CHECKERR(ierr);
 
 		} else {
-			fun.data()->init();
 			ierr = TaoSetHessianRoutine(
 				tao,
 				raw_type(*fun.data()->H),
@@ -214,7 +212,7 @@ namespace utopia {
 		// 	std::cout << "xdiff: " << xdiff << std::endl;
 		// 	std::cout << "reason: " << reason << std::endl;
 		// }
-		
+
 		return reason >= 0;
 	}
 }

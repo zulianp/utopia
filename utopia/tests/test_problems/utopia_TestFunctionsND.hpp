@@ -14,7 +14,7 @@
 namespace utopia {
 
     template<class Matrix, class Vector>
-    class TestFunctionND_1 : public Function<Matrix, Vector> {
+    class TestFunctionND_1 final : public Function<Matrix, Vector> {
 
         DEF_UTOPIA_SCALAR(Matrix)
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
@@ -26,13 +26,22 @@ namespace utopia {
             static_assert(Matrix::FILL_TYPE == FillType::DENSE, "This function has a dense hessian do not use sparse implementations");
         }
 
+        inline bool initialize_hessian(Matrix &H, Matrix &H_pre) const override
+        {
+            H = values(N, N, 0.);
+            H_pre = values(N, N, 0.);
+            return true;
+        }
+        
         bool value(const Vector &point, typename Vector::Scalar &result) const override {
             result =  0.5 * std::pow(dot(point, A * point) + 1, 2.0) - dot(b, point);
             return true;
         }
 
         bool gradient(const Vector &point, Vector &result) const override {
-            result = values(point.size().get(0), 0.0);
+            if(empty(result)) {
+                result = values(point.size().get(0), 0.0);
+            }
 
             const Scalar s = dot(point, A * point);
             const Range r = range(point);
@@ -53,14 +62,15 @@ namespace utopia {
 
         bool hessian(const Vector &point, Matrix &result) const override
         {
-            result = outer(point, point);
-            Matrix temp = result;
+            Matrix temp = outer(point, point);
+            
+            if(empty(result)) {
+                result = temp;
+            }
 
             const Scalar s = dot(point, A * point);
-
             const Range rr = row_range(temp);
-            const auto n = size(point).get(0);
-
+            const auto n   = size(point).get(0);
 
             assert(rr.begin() == range(point).begin());
             assert(rr.end() == range(point).end());
@@ -89,7 +99,24 @@ namespace utopia {
         bool hessian(const Vector &point, Matrix &H, Matrix &precond) const override
         {
             if(!hessian(point, H)) return false;
-            precond = diag(diag(H));
+
+            if(empty(precond)) {
+                precond = diag(diag(H));
+            } else {
+                Vector d = diag(H);
+                precond *= 0.;
+
+                Write<Matrix> w_p(precond);
+                Read<Vector>  r_d(d);
+
+                auto r = row_range(precond);
+
+                for(auto i = r.begin(); i != r.end(); ++i) {
+                    precond.set(i, i, d.get(i));
+                }
+
+            }
+
             return true;
         }
 
