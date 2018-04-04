@@ -1,16 +1,26 @@
 #ifndef UTOPIA_BOX_CONSTRAINTS_HPP
 #define UTOPIA_BOX_CONSTRAINTS_HPP 
 
+#include "utopia_Base.hpp"
+#include "utopia_Traits.hpp"
+#include "utopia_Factory.hpp"
+
 #include <memory>
+#include <limits>
 
 namespace utopia {
 
 	template<class Vector>
 	class BoxConstraints {
 	public:
+		DEF_UTOPIA_SCALAR(Vector); 
+
 		BoxConstraints(const std::shared_ptr<Vector> &lower_bound,
 					   const std::shared_ptr<Vector> &upper_bound)
-		: lower_bound_(lower_bound), upper_bound_(upper_bound)
+		: lower_bound_(lower_bound),
+		  upper_bound_(upper_bound),
+		  min_val_(-std::numeric_limits<Scalar>::max()),
+		  max_val_(std::numeric_limits<Scalar>::max())
 		{}
 
 		BoxConstraints() {}
@@ -50,9 +60,26 @@ namespace utopia {
 			return has_lower_bound() || has_upper_bound();
 		}
 
+		inline void fill_empty_bounds()
+		{
+			if(lower_bound_ == nullptr && upper_bound_ == nullptr) {
+				return;
+			}
+
+			if(!lower_bound_) {
+				lower_bound_ = std::make_shared<Vector>(local_values(local_size(*upper_bound_).get(0), min_val_));
+			} 
+
+			if(!upper_bound_) {
+				upper_bound_ = std::make_shared<Vector>(local_values(local_size(*lower_bound_).get(0), max_val_));
+			}
+		}
+
 	private:
 		std::shared_ptr<Vector> lower_bound_;
-		std::shared_ptr<Vector> upper_bound_;		
+		std::shared_ptr<Vector> upper_bound_;	
+		Scalar min_val_;
+		Scalar max_val_;	
 	};
 
 	template<class Vector>

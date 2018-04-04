@@ -35,7 +35,35 @@ namespace utopia
             return false;
         }
 
-        virtual bool update(const Vector &/*point*/) { return true; };
+        virtual bool update(const Vector &/*point*/) { return true; }
+
+        /**
+         * @brief Allows to solvers to reuse allocated vectors and matrices
+         */
+        class Data {
+        public:
+            std::shared_ptr<Matrix> H;
+            std::shared_ptr<Matrix> H_pre;
+            std::shared_ptr<Vector> g;
+
+            void init()
+            {
+                if(!H) { H = std::make_shared<Matrix>(); }
+                if(!H_pre) { H_pre = std::make_shared<Matrix>(); }
+                if(!g) { g = std::make_shared<Vector>(); }
+            }
+        };
+        
+        inline std::shared_ptr<Data> data() const {
+            return data_;
+        }
+
+        Function()
+        : data_(std::make_shared<Data>())
+        {}
+
+    private:
+        std::shared_ptr<Data> data_;
 
     };
 }

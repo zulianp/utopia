@@ -5,6 +5,7 @@
 #include "utopia.hpp"
 #include "utopia_PetscTest.hpp"
 #include "test_problems/utopia_TestFunctionsND.hpp"
+#include "utopia_QuadraticFunction.hpp"
 
 namespace utopia {
 
@@ -401,7 +402,7 @@ namespace utopia {
 
         // since case is lin. - QP minimization
         // std::cout << "Running FEM 3D poisson example using Newton solver \n";
-        QuadraticFunction<DSMatrixd, DVectord> funn(rhs, K);
+        QuadraticFunction<DSMatrixd, DVectord> funn(make_ref(K), make_ref(rhs));
         newton.solve(funn, rhs);
 
         // write sol to the file

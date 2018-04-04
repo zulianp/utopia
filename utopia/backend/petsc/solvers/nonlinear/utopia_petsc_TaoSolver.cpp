@@ -31,7 +31,6 @@ namespace utopia {
 		return 0;
 	}
 
-
 	template<class Matrix, class Vector>
 	static PetscErrorCode UtopiaTaoEvaluateGradient(Tao tao, Vec x, Vec g, void *ctx)
 	{ 
@@ -53,6 +52,7 @@ namespace utopia {
 	template<class Matrix, class Vector>
 	static PetscErrorCode UtopiaTaoFormHessian(Tao tao, Vec x, Mat H, Mat Hpre, void *ctx)
 	{
+		std::cout << "UtopiaTaoFormHessian" << std::endl;
 		Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
 		assert(fun);
 
@@ -67,6 +67,7 @@ namespace utopia {
 
 		if(!fun->hessian(utopia_x, utopia_H, utopia_Hpre)) {
 			if(!fun->hessian(utopia_x, utopia_H)) {
+				std::cerr << "HERERE" << std::endl;
 				return 1;
 			} 
 			// else {
@@ -80,6 +81,12 @@ namespace utopia {
 			// 	MatCopy(H, Hpre, SAME_NONZERO_PATTERN); 
 			// }
 		}
+#ifndef NDEBUG
+		else {
+			assert(raw_type(utopia_Hpre) == Hpre);
+		}
+#endif
+
 
 		assert(raw_type(utopia_H) == H);
 		return 0;
@@ -91,12 +98,20 @@ namespace utopia {
 		PetscErrorCode ierr = 0;
 		if(fun.has_preconditioner()) 
 		{
-
-		} else {
+			fun.data()->init();
 			ierr = TaoSetHessianRoutine(
 				tao,
-				raw_type(fun.data()->H),
-				raw_type(fun.data()->H),
+				raw_type(*fun.data()->H),
+				raw_type(*fun.data()->H_pre),
+				UtopiaTaoFormHessian<Matrix, Vector>,
+			    static_cast<void *>(&fun)); U_CHECKERR(ierr);
+
+		} else {
+			fun.data()->init();
+			ierr = TaoSetHessianRoutine(
+				tao,
+				raw_type(*fun.data()->H),
+				raw_type(*fun.data()->H),
 				UtopiaTaoFormHessian<Matrix, Vector>,
 			    static_cast<void *>(&fun)); U_CHECKERR(ierr);
 		}
@@ -191,13 +206,16 @@ namespace utopia {
 		TaoConvergedReason reason;
 		TaoGetSolutionStatus(tao, &iterate, &f, &gnorm, &cnorm, &xdiff, &reason);
 
-		std::cout << "iterate: " << iterate << std::endl;
-		std::cout << "f: " << f << std::endl;
-		std::cout << "gnorm: " << gnorm << std::endl;
-		std::cout << "cnorm: " << cnorm << std::endl;
-		std::cout << "xdiff: " << xdiff << std::endl;
-		std::cout << "reason: " << reason << std::endl;
-		return true;
+		// if(this->verbose()) {
+		// 	std::cout << "iterate: " << iterate << std::endl;
+		// 	std::cout << "f: " << f << std::endl;
+		// 	std::cout << "gnorm: " << gnorm << std::endl;
+		// 	std::cout << "cnorm: " << cnorm << std::endl;
+		// 	std::cout << "xdiff: " << xdiff << std::endl;
+		// 	std::cout << "reason: " << reason << std::endl;
+		// }
+		
+		return reason >= 0;
 	}
 }
 

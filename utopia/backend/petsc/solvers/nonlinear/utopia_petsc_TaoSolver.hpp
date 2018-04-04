@@ -5,7 +5,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Types.hpp"
-#include "utopia_petsc_Function.hpp"
+#include "utopia_Function.hpp"
 #include <mpi.h>
 
 namespace utopia {
@@ -40,6 +40,7 @@ namespace utopia {
 			impl_.init(x.implementation().communicator());
 			
 			if(box_constraints_.has_bound()) {
+				box_constraints_.fill_empty_bounds();
 				impl_.set_bounds(
 					box_constraints_.lower_bound()->implementation(),
 					box_constraints_.upper_bound()->implementation()
@@ -48,6 +49,12 @@ namespace utopia {
 
 			impl_.set_function(fun);
 			return impl_.solve(x.implementation());
+		}
+
+		virtual bool set_box_constraints(const BoxConstraints &box_constraints)
+		{
+			box_constraints_ = box_constraints;
+			return true;
 		}
 
 	private:

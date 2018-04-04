@@ -4,6 +4,7 @@
 #include "utopia_Base.hpp"
 
 #include "utopia_Function.hpp"
+#include "utopia_QuadraticFunction.hpp"
 #include "utopia_ExtendedFunction.hpp"
 
 #include "utopia_GLFunction.hpp"

@@ -128,35 +128,34 @@ namespace utopia {
         SimpleQuadraticFunction() { }
     };
 
-    template<class Matrix, class Vector>
-
+    // template<class Matrix, class Vector>
     // Quadratic function class
-    class QuadraticFunction : public Function<Matrix, Vector> {
-    public:
-        DEF_UTOPIA_SCALAR(Matrix)
+    // class QuadraticFunction : public Function<Matrix, Vector> {
+    // public:
+    //     DEF_UTOPIA_SCALAR(Matrix)
 
-        virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
-            Scalar val = dot(point, A * point);
-            Scalar val2 = dot(point, b);
-            result = 0.5 * val - val2;
-            return true;
-        }
+    //     virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
+    //         Scalar val = dot(point, A * point);
+    //         Scalar val2 = dot(point, b);
+    //         result = 0.5 * val - val2;
+    //         return true;
+    //     }
 
-        virtual bool gradient(const Vector &point, Vector &result) const override {
-            result = (A * point - b);
-            return true;
-        }
+    //     virtual bool gradient(const Vector &point, Vector &result) const override {
+    //         result = (A * point - b);
+    //         return true;
+    //     }
 
-        virtual bool hessian(const Vector &point, Matrix &result) const override {
-            result = A;
-            return true;
-        }
+    //     virtual bool hessian(const Vector &point, Matrix &result) const override {
+    //         result = A;
+    //         return true;
+    //     }
 
-        QuadraticFunction(Vector b, Matrix H): b(b), A(H) { }
-        private:
-            Vector b; /*!< Rhs */
-            Matrix A; /*!< Hessian */
-    };
+    //     QuadraticFunction(Vector b, Matrix H): b(b), A(H) { }
+    //     private:
+    //         Vector b; /*!< Rhs */
+    //         Matrix A; /*!< Hessian */
+    // };
 
     // Quadratic function class
     template<class Matrix, class Vector>
