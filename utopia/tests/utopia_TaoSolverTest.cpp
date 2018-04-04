@@ -30,10 +30,10 @@ namespace utopia {
 		example.getOperators(n, m, rhs, upper_bound);
 		DVectord x = zeros(n);
 
-		//-tao_type blmvm, gpcg seem to deliver the correct result
+		//-tao_type <type> for finding strategy for solving what we need
 		//TODO try lcl with TaoSetStateIS
 		//-tao_type test is usefull for checking correctness of gradient
-		const double scale_factor = 1e-8;
+		const double scale_factor = 1e-2;
 		m *= scale_factor;
 		rhs *= scale_factor;
 		upper_bound *= scale_factor;
