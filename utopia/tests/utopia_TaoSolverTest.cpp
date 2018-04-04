@@ -22,7 +22,7 @@ namespace utopia {
 
 	void petsc_tao_solve_vi()
 	{
-		const SizeType n = 100;
+		const SizeType n = 50;
 
 		DSMatrixd m;
 		DVectord rhs, upper_bound;
@@ -30,7 +30,10 @@ namespace utopia {
 		example.getOperators(n, m, rhs, upper_bound);
 		DVectord x = zeros(n);
 
-		const double scale_factor = 1e-1;
+		//-tao_type blmvm, gpcg seem to deliver the correct result
+		//TODO try lcl with TaoSetStateIS
+		//-tao_type test is usefull for checking correctness of gradient
+		const double scale_factor = 1e-8;
 		m *= scale_factor;
 		rhs *= scale_factor;
 		upper_bound *= scale_factor;
@@ -44,8 +47,8 @@ namespace utopia {
 
 		// disp(x);
 		x *= 1./scale_factor;
-		x.implementation().set_name("v");
-		write("x.m", x);
+		// x.implementation().set_name("v");
+		// write("x.m", x);
 	}
 
 	void run_tao_solver_test()
