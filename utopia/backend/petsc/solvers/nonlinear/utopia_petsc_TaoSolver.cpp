@@ -8,6 +8,30 @@
 
 namespace utopia {
 
+	template class TaoSolver<DSMatrixd, DVectord>;
+	template class TaoSolver<DMatrixd, DVectord>;
+
+	template<class Matrix, class Vector>
+	static PetscErrorCode UtopiaTaoEvaluateObjective(Tao tao, Vec x, PetscReal *ret, void *ctx)
+	{
+		using Scalar = typename Function<Matrix, Vector>::Scalar;
+
+		Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
+		assert(fun);
+
+		Vector utopia_x;
+		convert(x, utopia_x);
+
+		Scalar utopia_value = 0.;
+		if(!fun->value(utopia_x, utopia_value)) {
+			return 1;
+		}
+
+		*ret = utopia_value;
+		return 0;
+	}
+
+
 	template<class Matrix, class Vector>
 	static PetscErrorCode UtopiaTaoEvaluateGradient(Tao tao, Vec x, Vec g, void *ctx)
 	{ 
@@ -33,6 +57,7 @@ namespace utopia {
 		assert(fun);
 
 		Vector utopia_x;
+
 		Matrix utopia_H;
 		Matrix utopia_Hpre;
 		
@@ -40,49 +65,50 @@ namespace utopia {
 		utopia_H.implementation().wrap(H);
 		utopia_Hpre.implementation().wrap(Hpre);
 
-		if(!fun->hessian(utopia_x, H, utopia_Hpre)) {
+		if(!fun->hessian(utopia_x, utopia_H, utopia_Hpre)) {
 			if(!fun->hessian(utopia_x, utopia_H)) {
 				return 1;
-			} else {
-				PetscBool assembled = PETSC_FALSE;
-				PetscErrorCode ierr = MatAssembled(Hpre, &assembled); CHKERRQ(ierr);
+			} 
+			// else {
+			// 	PetscBool assembled = PETSC_FALSE;
+			// 	PetscErrorCode ierr = MatAssembled(Hpre, &assembled); CHKERRQ(ierr);
 
-				if(!assembled) {
-					std::cerr << "[Error] Handle outside!" << std::endl;
-				}
+			// 	if(!assembled) {
+			// 		std::cerr << "[Error] Handle outside!" << std::endl;
+			// 	}
 
-				MatCopy(H, Hpre, SAME_NONZERO_PATTERN); 
-			}
+			// 	MatCopy(H, Hpre, SAME_NONZERO_PATTERN); 
+			// }
 		}
 
-		return 0;
-	}
-
-	template<class Matrix, class Vector>
-	static PetscErrorCode UtopiaTaoEvaluateObjective(Tao tao, Vec x, PetscReal *val, void *ctx)
-	{
-		Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
-		assert(fun);
-
-		Vector utopia_x;
-		convert(x, utopia_x);
-		if(!fun->value(utopia_x, *val)) {
-			return 1;
-		}
-
+		assert(raw_type(utopia_H) == H);
 		return 0;
 	}
 
 	template<class Matrix, class Vector>
 	bool UtopiaTaoSetUp(Tao tao, Function<Matrix, Vector> &fun)
 	{
-		// if(fun.has_preconditioner()) 
-		// {
+		PetscErrorCode ierr = 0;
+		if(fun.has_preconditioner()) 
+		{
 
-		// } else {
-		// 	TaoSetHessianRoutine(tao, Mat H, Mat Hpre, UtopiaTaoFormHessian<Matrix, Vector>, &fun);
-		// }
+		} else {
+			ierr = TaoSetHessianRoutine(
+				tao,
+				raw_type(fun.data()->H),
+				raw_type(fun.data()->H),
+				UtopiaTaoFormHessian<Matrix, Vector>,
+			    static_cast<void *>(&fun)); U_CHECKERR(ierr);
+		}
 
+		ierr = TaoSetObjectiveRoutine(tao,
+			UtopiaTaoEvaluateObjective<Matrix, Vector>,
+			static_cast<void *>(&fun)); U_CHECKERR(ierr);
+
+		ierr = TaoSetGradientRoutine(
+			tao,
+			UtopiaTaoEvaluateGradient<Matrix, Vector>,
+			static_cast<void *>(&fun)); U_CHECKERR(ierr);
 
 		return false;
 	} 
@@ -149,11 +175,12 @@ namespace utopia {
 		return true;
 	}
 
-	bool TaoSolverWrapper::solve()
+	bool TaoSolverWrapper::solve(PetscVector &x)
 	{
 		auto tao = static_cast<Tao>(data_);
 
 		PetscErrorCode ierr = 0; 
+		TaoSetInitialVector(tao, x.implementation());
 		ierr = TaoSolve(tao); U_CHECKERR(ierr);
 
 		PetscInt iterate;

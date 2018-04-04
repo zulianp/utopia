@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.8.1)
 project(utopia_fe)
 
 #To kill the policy warning  (maybe not a good idea yet)
@@ -8,6 +8,7 @@ option(ENABLE_SANITIZER "check for memory access problems" OFF)
 option(ENABLE_BOOST "enable boost features" OFF)
 option(ENABLE_MOONOLITH_PROFILER "enable moonolith profiling capabilities" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
+option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
 
 #################################################################################
 #################################################################################
@@ -83,6 +84,7 @@ list(APPEND UTOPIA_FE_MODULES
 	intersection
 	contact
 	materials
+	functions
 	core
 	rapidxml
  )
