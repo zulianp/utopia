@@ -37,7 +37,7 @@ namespace utopia {
 
 	        
 	       DVectord vec;
-	       std::string path = Utopia::Instance().get("data_path");
+	       std::string path = Utopia::instance().get("data_path");
 	       read(path + "/RHS_10x10x10_hexa_3D", vec, sub_comm, str("my_vec"));
    		}
 
@@ -383,7 +383,7 @@ namespace utopia {
         DSMatrixd K, M;
 
         // with 2 double-dots works
-        std::string path = Utopia::Instance().get("data_path");
+        std::string path = Utopia::instance().get("data_path");
 
         read(path + "/RHS_10x10x10_hexa_3D", rhs);
         read(path + "/K_hexa_10x10x10_3D", K);
@@ -652,7 +652,7 @@ namespace utopia {
             25, 20
         };
 
-        const std::string data_path = Utopia::Instance().get("data_path") + "/master_and_slave";
+        const std::string data_path = Utopia::instance().get("data_path") + "/master_and_slave";
 
         const auto r = mpi_world_rank();
 

@@ -243,7 +243,7 @@ namespace utopia
 
 
             // some benchmarking 
-            auto data_path = Utopia::Instance().get("auto_adaptive_path");
+            auto data_path = Utopia::instance().get("auto_adaptive_path");
             if(!data_path.empty())
             {
                 CSVWriter writer; 

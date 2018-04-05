@@ -27,7 +27,7 @@ namespace utopia
 	public:
 		static void print_backend_info()
 		{
-			if(Utopia::Instance().verbose() && mpi_world_rank() == 0) {
+			if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
 				std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
 			}
 		}
@@ -398,7 +398,7 @@ namespace utopia
 			DVectord rhs;
 			DSMatrixd A, I_1, I_2, I_3;
 
-			const std::string data_path = Utopia::Instance().get("data_path");
+			const std::string data_path = Utopia::instance().get("data_path");
 
 			read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
 			read(data_path + "/laplace/matrices_for_petsc/f_A", A);
@@ -1047,7 +1047,7 @@ namespace utopia
 			DVectord rhs;
 			DSMatrixd A, I_1, I_2, I_3;
 			
-			const std::string data_path = Utopia::Instance().get("data_path");
+			const std::string data_path = Utopia::instance().get("data_path");
 			
 			read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
 			read(data_path + "/laplace/matrices_for_petsc/f_A", A);
@@ -1116,7 +1116,7 @@ namespace utopia
 			DSMatrixd A, I_1, I_2, I_3;
 			
 			//reading data from disk
-			const std::string data_path = Utopia::Instance().get("data_path");
+			const std::string data_path = Utopia::instance().get("data_path");
 			read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
 			read(data_path + "/laplace/matrices_for_petsc/f_A", A);
 			read(data_path + "/laplace/matrices_for_petsc/I_1", I_1);
@@ -1172,7 +1172,7 @@ namespace utopia
 		
 		void petsc_mg_jacobi_test()
 		{
-			const std::string data_path = Utopia::Instance().get("data_path");
+			const std::string data_path = Utopia::instance().get("data_path");
 			DSMatrixd A, I_1, I_2, I_3;
 			DVectord rhs;
 			
@@ -1207,7 +1207,7 @@ namespace utopia
 			DVectord rhs;
 			DSMatrixd A, I_1, I_2, I_3;
 			
-			const std::string data_path = Utopia::Instance().get("data_path");
+			const std::string data_path = Utopia::instance().get("data_path");
 			
 			read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
 			read(data_path + "/laplace/matrices_for_petsc/f_A", A);

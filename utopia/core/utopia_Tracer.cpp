@@ -1,10 +1,10 @@
-#include "utopia_Log.hpp"
+#include "utopia_Tracer.hpp"
 #include "utopia_Core.hpp"
 
 #include <numeric>
 #include <fstream>
 
-#ifdef UTOPIA_LOG_ENABLED
+#ifdef UTOPIA_TRACE_ENABLED
 
 namespace utopia {
 
@@ -13,16 +13,16 @@ namespace utopia {
         return l += mpi_world_size();
     }
 
-    Logger::Logger() {
+    Tracer::Tracer() {
         start_time_ = std::chrono::high_resolution_clock::now();
     }
 
-    Logger &Logger::instance() {
-        static Logger instance;
+    Tracer &Tracer::instance() {
+        static Tracer instance;
         return instance;
     }
 
-    void Logger::save_collected_log() {
+    void Tracer::save_collected_log() {
         std::map<std::string, std::vector<Measurement>> class_group;
 
         std::ofstream f_detail("log." + std::to_string(mpi_world_rank()) + ".csv");
@@ -72,4 +72,4 @@ namespace utopia {
     }
 }
 
-#endif  //UTOPIA_LOG_ENABLED
+#endif  //UTOPIA_TRACE_ENABLED

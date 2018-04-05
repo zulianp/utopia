@@ -41,7 +41,7 @@ namespace utopia {
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 			
-			output_path_ = utopia::Utopia::Instance().get("output_path");
+			output_path_ = utopia::Utopia::instance().get("output_path");
 			
 			if(!output_path_.empty()) {
 				output_path_ += "/";

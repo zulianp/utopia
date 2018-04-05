@@ -19,7 +19,7 @@ namespace utopia {
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 		// mesh->read("../data/wear_2_far.e");
-		// mesh->read(utopia::Utopia::Instance().get("data_path") + "/input_file.e");
+		// mesh->read(utopia::Utopia::instance().get("data_path") + "/input_file.e");
 		// mesh->read("../data/channel_2d.e");
 		mesh->read("../data/leaves_3d_b.e");
 
@@ -46,7 +46,7 @@ namespace utopia {
 		// lamee_params.set_mu(2, 10.);
 		// lamee_params.set_lambda(2, 10.);
 
-		LameeParameters lamee_params(100., 400.);
+		LameeParameters lamee_params(200., 200.);
 		// 	lamee_params.set_mu(2, 10000.);
 		// lamee_params.set_lambda(2, 10000.);
 

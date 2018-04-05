@@ -18,7 +18,7 @@ namespace utopia {
         {
             Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).apply_binary(
                 result,
@@ -27,7 +27,7 @@ namespace utopia {
                 Eval<Right, Traits>::apply(expr.right())
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -52,7 +52,7 @@ namespace utopia {
         inline static Result apply(const Binary<Left, Right, Operation> &expr) {
             Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).apply_binary(
                 result,
@@ -61,7 +61,7 @@ namespace utopia {
                 Eval<Right, Traits>::apply(expr.right())                 
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -75,7 +75,7 @@ namespace utopia {
         {
             Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).apply_binary(
                 result,
@@ -84,7 +84,7 @@ namespace utopia {
                 Eval<Left, Traits>::apply(expr.left())
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -98,7 +98,7 @@ namespace utopia {
         inline static EXPR_TYPE(Traits, Expr) apply(const Expr &expr) {
             EXPR_TYPE(Traits, Expr) result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).kronecker_product(
                 result,
@@ -106,7 +106,7 @@ namespace utopia {
                 Eval<Right, Traits>::apply(expr.right())
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };

@@ -31,7 +31,7 @@ namespace utopia {
 
         PetscBool compute_cond_number; 
     }
-    UTOPIA_LOG;
+    UTOPIA_TRACE;
 
     
     /**@ingroup     Linear 
@@ -371,7 +371,7 @@ protected:
     const std::vector<std::string> Solver_packages;       /*!< Valid options for Solver packages types. */
 
     KSP                 ksp;
-    UTOPIA_LOG          ut_log; 
+    UTOPIA_TRACE          ut_log; 
     PetscBool           compute_cond_number;  
 
     };

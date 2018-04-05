@@ -32,7 +32,7 @@ namespace utopia {
 	    typedef typename Traits::Scalar Scalar;
 
 	    inline static Scalar apply(const Expr &expr) {
-			UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_TRACE_BEGIN(expr);
 
 			const auto &x1 = expr.left().expr().left().implementation();
 			const auto &x2 = expr.left().expr().right().implementation();
@@ -69,7 +69,7 @@ namespace utopia {
 				r = 0.;
 			}
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 			return r;
 	    }
 	};

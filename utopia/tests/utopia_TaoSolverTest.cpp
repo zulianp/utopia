@@ -42,8 +42,8 @@ namespace utopia {
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(m), make_ref(rhs));
 		TaoSolver<DSMatrixd, DVectord> tao(lsolver);
 		tao.set_box_constraints(box);
-		tao.set_type("tron");
-		tao.set_type("gpcg");
+		// tao.set_type("tron");
+		// tao.set_type("gpcg");
 		tao.solve(fun, x);
 
 		x *= 1./scale_factor;
@@ -56,7 +56,7 @@ namespace utopia {
 		ssnewton.stol(1e-18);
 		ssnewton.atol(1e-18);
 		ssnewton.rtol(1e-18);
-		ssnewton.verbose(true);
+		// ssnewton.verbose(true);
 		ssnewton.solve(m, rhs, xssn);
 
 		xssn *= 1./scale_factor;
@@ -70,9 +70,11 @@ namespace utopia {
 
 	void run_tao_solver_test()
 	{
+		UTOPIA_UNIT_TEST_BEGIN("PetscTaoTest");
 		//does not work yet missing ksp for dense matrix
 		// UTOPIA_RUN_TEST(petsc_tao_solve_simple);
 		UTOPIA_RUN_TEST(petsc_tao_solve_vi);
+		UTOPIA_UNIT_TEST_END("PetscTaoTest");
 	}
 }
 

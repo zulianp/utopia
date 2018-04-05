@@ -37,8 +37,8 @@ namespace utopia
   PetscErrorCode MyKSPMonitor(KSP ksp,PetscInt it,PetscReal rnorm,void *ctx)
   {
 
-    UTOPIA_LOG * ut_log;
-    ut_log = (UTOPIA_LOG *) ctx;
+    UTOPIA_TRACE * ut_log;
+    ut_log = (UTOPIA_TRACE *) ctx;
 
 
     Vec            x;

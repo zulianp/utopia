@@ -17,14 +17,14 @@ namespace utopia {
         inline static Scalar apply(const Reduce<Expr, Operation> &expr)
         {
             Scalar result;
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             result = UTOPIA_BACKEND(Traits).reduce(
                     Eval<Expr, Traits>::apply(expr.expr()),
                     expr.operation()
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -37,14 +37,14 @@ namespace utopia {
         inline static Scalar apply(const Reduce<Binary<Left, Right, EMultiplies>, Plus> &expr)
         {
             Scalar result;
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             result = UTOPIA_BACKEND(Traits).dot(
                     Eval<Left,  Traits>::apply(expr.expr().left()),
                     Eval<Right, Traits>::apply(expr.expr().right())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -57,13 +57,13 @@ namespace utopia {
         inline static Scalar apply(const Norm<Expr, 2> &expr)
         {
             Scalar result;
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             result = UTOPIA_BACKEND(Traits).norm2(
                     Eval<Expr, Traits>::apply(expr.expr())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -75,13 +75,13 @@ namespace utopia {
 
         inline static Scalar apply(const Norm<Expr, 1> &expr) {
             Scalar result;
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             result = UTOPIA_BACKEND(Traits).norm1(
                     Eval<Expr, Traits>::apply(expr.expr())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -93,13 +93,13 @@ namespace utopia {
 
         inline static Scalar apply(const Norm<Expr, INFINITY_NORM_TAG> &expr) {
             Scalar result;
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             result = UTOPIA_BACKEND(Traits).norm_infty(
                     Eval<Expr, Traits>::apply(expr.expr())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -109,14 +109,14 @@ namespace utopia {
     public:
         inline static bool apply(const Reduce<Binary<Left, Right, ApproxEqual>, And> &expr) {
             bool result;
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             result = UTOPIA_BACKEND(Traits).compare(
                     Eval<Left,  Traits>::apply(expr.expr().left()),
                     Eval<Right, Traits>::apply(expr.expr().right()),
                     expr.expr().operation());
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -128,13 +128,13 @@ namespace utopia {
         inline static Scalar apply(const Reduce< Diag<Expr>, Plus> &expr)
         {
             Scalar result;
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             result = UTOPIA_BACKEND(Traits).trace(
                     Eval<Expr, Traits>::apply(expr.expr().expr())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -147,13 +147,13 @@ namespace utopia {
         inline static Scalar apply(const Trace<Expr> &expr)
         {
             Scalar result;
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             result = UTOPIA_BACKEND(Traits).trace(
                     Eval<Expr, Traits>::apply(expr.expr())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };

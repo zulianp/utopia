@@ -234,7 +234,7 @@
         }
 
         // some benchmarking 
-        auto data_path = Utopia::Instance().get("tr_data_path");
+        auto data_path = Utopia::instance().get("tr_data_path");
         if(!data_path.empty())
         {
             CSVWriter writer; 

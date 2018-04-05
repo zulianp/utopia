@@ -17,7 +17,7 @@ namespace utopia {
         inline static Result apply(const Multiply<Left, Right> &expr) {
             Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).apply_binary(
                 result,
@@ -26,7 +26,7 @@ namespace utopia {
                 Eval<Right, Traits>::apply(expr.right())
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -41,7 +41,7 @@ namespace utopia {
         inline static Result apply(const Expr &expr) {
             Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).multiply(
                 result,
@@ -51,7 +51,7 @@ namespace utopia {
                 Eval<Right, Traits>::apply(expr.right())
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -64,7 +64,7 @@ namespace utopia {
         inline static Result apply(const Multiply<Left, Transposed<Right> > &expr) {
             Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).multiply(
                 result,
@@ -74,7 +74,7 @@ namespace utopia {
                 Eval<Right, Traits>::apply(expr.right().expr())
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -88,7 +88,7 @@ namespace utopia {
         {
             Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).multiply(
                 result,
@@ -98,7 +98,7 @@ namespace utopia {
                 Eval<Right, Traits>::apply(expr.right().expr())
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -112,7 +112,7 @@ namespace utopia {
         {
             Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).multiply(
                 result, 
@@ -122,7 +122,7 @@ namespace utopia {
                 Eval<Left, Traits>::apply(expr.expr().left())
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };

@@ -17,7 +17,7 @@ option(TRY_WITH_TRILINOS "Enable the Trilinos backend" OFF)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
 option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
-option(UTOPIA_LOG "enables utopia logging facilities" OFF)
+option(ENABLE_TRACE "enables utopia logging facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
@@ -30,8 +30,8 @@ option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON
 #################################################################################
 
 
-if(UTOPIA_LOG)
-	set(UTOPIA_LOG_ENABLED ON)
+if(ENABLE_TRACE)
+	set(UTOPIA_TRACE_ENABLED ON)
 endif()
 
 if(ENABLE_PASSO_EXTENSIONS)
@@ -203,12 +203,7 @@ add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${UTOPIA_ROOT_PATH}/bin/Dox
 #################################################################################
 #################################################################################
 
-# core modules
-set(UTOPIA_MODULES core backend solvers utils differentiable)
 
-foreach(MODULE ${UTOPIA_MODULES})
-	add_subdirectory(${MODULE})
-endforeach(MODULE)
 
 # backend modules
 if(TRY_WITH_BLAS)
@@ -239,6 +234,14 @@ endif()
 
 # test suite
 add_subdirectory(tests)
+
+
+# core modules
+set(UTOPIA_MODULES backend solvers differentiable core utils)
+
+foreach(MODULE ${UTOPIA_MODULES})
+	add_subdirectory(${MODULE})
+endforeach(MODULE)
 
 
 

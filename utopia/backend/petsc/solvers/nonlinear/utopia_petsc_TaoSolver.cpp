@@ -67,7 +67,8 @@ namespace utopia {
 
 		if(!fun->hessian(utopia_x, utopia_H, utopia_Hpre)) {
 			if(!fun->hessian(utopia_x, utopia_H)) {
-				std::cerr << "[Error] Failed to assemble Hessian." << std::endl;
+				utopia_error("[Error] Failed to assemble Hessian.");
+				assert(false);
 				return 1;
 			} 
 
@@ -91,7 +92,7 @@ namespace utopia {
 	{
 		fun.data()->init();
 		if(!fun.initialize_hessian(*fun.data()->H, *fun.data()->H_pre)) {
-			std::cerr << "[Error] TaoSolver requires Function::initialize_hessian to be implemented" << std::endl;
+			utopia_error("TaoSolver requires Function::initialize_hessian to be implemented.");
 			assert(false);
 			return false;
 		}
@@ -139,19 +140,27 @@ namespace utopia {
 		UtopiaTaoSetUp(*tao, fun);
 	}
 
-	bool TaoSolverWrapper::init(MPI_Comm comm, const std::string &type)
+	bool TaoSolverWrapper::init(
+		MPI_Comm comm,
+		const std::string &type,
+		const PetscReal gatol,
+		const PetscReal grtol,
+		const PetscReal gttol,
+		const PetscInt maxits)
 	{
 		auto tao = (Tao *) &data_;
 		PetscErrorCode ierr = 0;
 		ierr = TaoCreate(comm, tao);   U_CHECKERR(ierr);
 		
 		if(type.empty()) {
-			ierr = TaoSetType(*tao, TAOIPM); U_CHECKERR(ierr);
+			ierr = TaoSetType(*tao, TAOTRON); U_CHECKERR(ierr);
 		} else {
 			ierr = TaoSetType(*tao, type.c_str()); U_CHECKERR(ierr);
 		}
 
-		ierr = TaoSetTolerances(*tao, 1e-19, 1e-12, 1e-19); U_CHECKERR(ierr);
+		ierr = TaoSetTolerances(*tao, gatol, grtol, gttol); U_CHECKERR(ierr);
+		ierr = TaoSetMaximumIterations(*tao, maxits); U_CHECKERR(ierr);
+
 
 		KSP ksp;
 		PC pc;
@@ -160,6 +169,7 @@ namespace utopia {
 
 		if(ksp) {
 			ierr = KSPSetType(ksp, KSPPREONLY); U_CHECKERR(ierr);
+			m_utopia_warning_once("> FIXME: KSP cannot be set from outside yet in TaoSolver");
 
 			ierr = KSPGetPC(ksp, &pc); U_CHECKERR(ierr);
 			ierr = PCSetType(pc, "lu"); U_CHECKERR(ierr);
@@ -167,7 +177,9 @@ namespace utopia {
 			ierr = PCFactorSetMatSolverPackage(pc, "mumps"); U_CHECKERR(ierr);
 			ierr = KSPSetInitialGuessNonzero(ksp, PETSC_FALSE); U_CHECKERR(ierr);
 		} else {
-			std::cerr << "[Warning] strategy does not have a ksp" << std::endl;
+			utopia_error("Tao does not have a ksp");
+			assert(false);
+			return false;
 		}
 
 		ierr = TaoSetFromOptions(*tao);  U_CHECKERR(ierr);
@@ -227,7 +239,7 @@ namespace utopia {
 		// }
 
 		if(reason < 0) {
-			std::cerr << "[Error] failed to converge" << std::endl;
+			utopia_error("[Error] failed to converge");
 		}
 
 		return reason >= 0;

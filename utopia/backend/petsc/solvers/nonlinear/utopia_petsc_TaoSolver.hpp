@@ -15,7 +15,14 @@ namespace utopia {
 		TaoSolverWrapper();
 		~TaoSolverWrapper();
 		void destroy();
-		bool init(MPI_Comm comm, const std::string &type);
+		
+		bool init(MPI_Comm comm,
+				  const std::string &type,
+				  const PetscReal gatol,
+				  const PetscReal grtol,
+				  const PetscReal gttol,
+				  const PetscInt  maxits);
+
 		bool set_bounds(const PetscVector &lb, const PetscVector &ub);
 		bool solve(PetscVector &x);
 
@@ -35,7 +42,11 @@ namespace utopia {
 
 		TaoSolver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &linear_solver)
 		: NonLinearSolver<Matrix, Vector>(linear_solver)
-		{}
+		{
+			this->atol(1e-19);
+			this->rtol(1e-12); 
+			this->stol(1e-19);
+		}
 
 		void set_type(const std::string &type)
 		{
@@ -44,7 +55,14 @@ namespace utopia {
 
 		bool solve(Function<Matrix, Vector> &fun, Vector &x)
 		{			
-			impl_.init(x.implementation().communicator(), type_);
+			impl_.init(
+				x.implementation().communicator(),
+				type_,
+				this->atol(),
+				this->rtol(), 
+				this->stol(),
+				this->max_it()
+			);
 			
 			if(box_constraints_.has_bound()) {
 				box_constraints_.fill_empty_bounds();
