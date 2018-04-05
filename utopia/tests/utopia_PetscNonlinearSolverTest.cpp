@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-05 11:40:39
+* @Last Modified time: 2018-04-05 17:56:05
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -55,7 +55,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
-			UTOPIA_RUN_TEST(petsc_init_smoother_test); 
+			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
 		}
 
 		void petsc_ngs_test()
@@ -749,27 +749,39 @@ namespace utopia
 
 
 
-
-
-
-
-
-
-
-		void petsc_init_smoother_test()
+		void petsc_sparse_newton_snes_test()
 		{
+			if(mpi_world_size() > 10) return;
+			
+			auto lsolver = std::make_shared< BiCGStab<DSMatrixd, DVectord> >();
+			Newton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> nlsolver(lsolver);
+			
+			Parameters params;
+			params.verbose(false);
+			params.linear_solver_verbose(false);
+			nlsolver.set_parameters(params);
+			
+			SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
+			
+			DVectord x = values(10, 2.);
+			DVectord expected = zeros(x.size());
+			
+			nlsolver.solve(fun, x);
+			assert(approxeq(expected, x));
 
-			using namespace utopia;
-			using namespace std;
+			Rosenbrock<DSMatrixd, DVectord> rosenbrock;
+			DVectord expected_rosenbrock = values(2, 1.0);
+			DVectord x0_ros   			 = values(2, 1.5);
 
-			auto nonlinear_gs  = std::make_shared<NonLinearConjugateGradient<DSMatrixd, DVectord> >(); 
+			nlsolver.set_line_search_type("cp"); 
+			nlsolver.set_line_search_order(3); 
+			nlsolver.max_it(1000); 
+			nlsolver.solve(rosenbrock, x0_ros); 
 
+			expected_rosenbrock -= x0_ros; 
+			double diff_rb = norm2(expected_rosenbrock);
+			assert(approxeq(diff_rb, 0., 1e-6));
 		}
-
-
-
-
-
 
 
 		PetscNonlinearSolverTest()

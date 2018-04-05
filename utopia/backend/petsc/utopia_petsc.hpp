@@ -25,6 +25,7 @@
 #include "utopia_petsc_solvers.hpp"
 
 #include "utopia_petsc_Function.hpp"
+#include "utopia_petsc_Newton.hpp"
 
 
 // very much experimental files for the moment 

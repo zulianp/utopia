@@ -30,7 +30,6 @@ namespace utopia
     class SNESSolver {};
 
 
-
     template<typename Matrix, typename Vector>
     class SNESSolver<Matrix, Vector, PETSC> : public NonLinearSolver<Matrix, Vector>, public NonLinearSmoother<Matrix, Vector>
     {
@@ -109,6 +108,7 @@ namespace utopia
           set_snes_options(snes); 
           set_ksp(snes); 
        
+
           SNESSolve(snes, NULL, raw_type(x));
 
           // exit solver 
@@ -153,7 +153,12 @@ namespace utopia
           snes->vec_rhs =  NULL; 
 
           if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) == nullptr)
+          {
+            MatDestroy(&snes->jacobian); 
+            MatDestroy(&snes->jacobian_pre); 
+            
             SNESDestroy(&snes);
+          }
    
 
           return true; 
@@ -219,6 +224,9 @@ namespace utopia
 
 
     private: 
+
+      // this function is expensive - wrt to convert
+      // however, in utopia is not ready for pure wrap implementation 
       void setup_assembly_routines(SNES & snes, Function & fun, const Vector &x)
       {
           MPI_Comm        comm;
@@ -272,38 +280,20 @@ namespace utopia
                             Vector x_ut;
                             utopia::convert(x, x_ut); 
 
-                            PetscBool  assembled1, assembled2; 
-                            MatAssembled(snes->jacobian, &assembled1); 
-
-                            Matrix jac_ut; 
-
-                            if(assembled1)
-                              jac_ut.implementation().wrap(snes->jacobian);  
-
-                            Matrix jac_ut_prec; 
-                            MatAssembled(snes->jacobian_pre, &assembled2); 
-
-                            if(assembled2)
-                              jac_ut_prec.implementation().wrap(snes->jacobian_pre); 
-
+                            Matrix jac_ut, jac_ut_prec; 
 
                             bool flg = fun->hessian(x_ut, jac_ut, jac_ut_prec); 
-
+                            
                             if(!flg)
                             { 
                               fun->hessian(x_ut, jac_ut); 
-                              MatCopy(raw_type(jac_ut), snes->jacobian_pre, SAME_NONZERO_PATTERN); 
+                              convert(jac_ut, snes->jacobian_pre); 
                             }
+                            else
+                              convert(jac_ut_prec, snes->jacobian_pre); 
 
-                            if(!assembled1)
-                            {
-                              MatCopy(raw_type(jac_ut), snes->jacobian, SAME_NONZERO_PATTERN );                                 
-                            }
 
-                            if(!assembled2 || flg)
-                            {
-                              MatCopy(raw_type(jac_ut), snes->jacobian_pre, SAME_NONZERO_PATTERN );                                 
-                            }
+                            convert(jac_ut, snes->jacobian); 
 
                             return 0;
                           },

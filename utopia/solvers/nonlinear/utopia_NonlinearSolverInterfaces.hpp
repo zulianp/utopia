@@ -61,29 +61,6 @@ namespace utopia
   	};
 
 
-  	// line-search version
-  	// template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-  	// class Newton
-  	// {
-  	// 	public: 
-  	// 		Newton()
-  	// 		{
-  	// 			static_assert(Backend < HOMEMADE, "NonLinearAnderson not implemented for this backend");
-  	// 		}
-  	// };
-
-
-   //  template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-  	// class TrustRegion
-  	// {
-  	// 	public: 
-	  // 		TrustRegion()
-	  // 		{
-	  // 			static_assert(Backend < HOMEMADE, "NonLinearAnderson not implemented for this backend");
-	  // 		}
-  	// };
-
-
 }
 
 #endif //UTOPIA_NONLINEAR_SOLVERS_INTERFACES_HPP
