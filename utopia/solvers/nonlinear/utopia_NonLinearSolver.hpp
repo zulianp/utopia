@@ -28,10 +28,10 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
 
-        NonLinearSolver(const std::shared_ptr<Solver> &linear_solver  = std::shared_ptr<Solver>(),
-                        const Parameters params                       = Parameters())   : 
-                                                                        linear_solver_(linear_solver),
-                                                                        params_(std::move(params))
+        NonLinearSolver(const std::shared_ptr<Solver> &linear_solver = std::shared_ptr<Solver>(),
+                        const Parameters &params = Parameters())
+        : linear_solver_(linear_solver),
+          params_(params)
         {
             set_parameters(params);        
         }
@@ -81,9 +81,9 @@ namespace utopia
         /**
          * @brief      Getter for parameters. 
          */
-        virtual const Parameters parameters()
+        Parameters parameters()
         {
-            return std::move(params_);
+            return params_;
         }
 
         /**

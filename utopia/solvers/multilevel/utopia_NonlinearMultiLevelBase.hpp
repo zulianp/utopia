@@ -243,7 +243,7 @@ namespace utopia
             std::string path = this->name_id() + "_data_path"; 
             std::cout<<"string data path: "<< path << " \n"; 
 
-            auto non_data_path = Utopia::Instance().get(path);
+            auto non_data_path = Utopia::instance().get(path);
             std::cout<<"non_data_path: "<< non_data_path << "  \n"; 
             if(!non_data_path.empty())
             {

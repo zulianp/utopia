@@ -6,7 +6,7 @@
 #include "utopia_Contact.hpp"
 #include "utopia_Mechanics.hpp"
 #include "utopia_SemiGeometricMultigrid.hpp"
-
+#include "utopia_petsc_TaoSolver.hpp"
 
 #include "utopia_libmesh.hpp"
 
@@ -40,7 +40,14 @@ namespace utopia {
 		  max_outer_loops_(20)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
-			output_path_ = "contact_sol.e";
+			
+			output_path_ = utopia::Utopia::instance().get("output_path");
+			
+			if(!output_path_.empty()) {
+				output_path_ += "/";
+			}
+
+			output_path_ += "contact_sol.e";
 			linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
 			// auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
 			// iterative_solver->atol(1e-14);
@@ -193,7 +200,7 @@ namespace utopia {
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
 
-		void qp_solve(const Matrix &lhs, const Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
+		void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
 		{
 			auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
 			if(!force_direct_solver_ && mg) {
@@ -204,12 +211,12 @@ namespace utopia {
 				newton.solve(lhs, rhs, inc_c);
 			} else {
 				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
-				SemismoothNewton<Matrix, Vector> newton(linear_solver_);
-				newton.verbose(true);
-				newton.max_it(40);
-				newton.atol(1e-18);
-				newton.rtol(1e-6);
-				newton.stol(1e-18);
+				// SemismoothNewton<Matrix, Vector> newton(linear_solver_);
+				// newton.verbose(true);
+				// newton.max_it(40);
+				// newton.atol(1e-18);
+				// newton.rtol(1e-6);
+				// newton.stol(1e-18);
 
 				// auto scale_factor = 1.0e8;
 
@@ -218,8 +225,16 @@ namespace utopia {
 				// newton.solve(scale_factor * lhs, scale_factor * rhs, inc_c);
 				// inc_c_ *= 1./scale_factor;
 
-				newton.set_box_constraints(box_c);
-				newton.solve(lhs, rhs, inc_c);
+				// newton.set_box_constraints(box_c);
+				// newton.solve(lhs, rhs, inc_c);
+
+
+				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
+				TaoSolver<Matrix, Vector> tao(linear_solver_);
+				tao.set_box_constraints(box_c);
+				tao.set_type("tron");
+				// tao.set_type("gpcg");
+				tao.solve(fun, inc_c);
 
 				force_direct_solver_ = false;
 			}

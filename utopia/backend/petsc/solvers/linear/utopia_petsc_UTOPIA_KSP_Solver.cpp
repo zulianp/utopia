@@ -7,6 +7,7 @@
 
 
 #include "utopia_petsc_UTOPIA_KSP_Solver.hpp"
+#include "utopia_Instance.hpp"
 
 static PetscErrorCode KSPSetUp_UTOPIA(KSP ksp)
 {
@@ -136,13 +137,14 @@ PETSC_EXTERN PetscErrorCode KSPCreate_UTOPIA(KSP ksp)
   ierr = PetscObjectComposeFunction((PetscObject)ksp, "KSPSetTolerancesRoutine_C", KSPSetTolerances_UTOPIA);CHKERRQ(ierr);
   ierr = PetscObjectComposeFunction((PetscObject)ksp, "KSPSetGetConvergenceReason_C", KSPSetGetConvergenceReason_UTOPIA);CHKERRQ(ierr);
 
-  static bool message_given = false;
+  // static bool message_given = false;
 
-  if(!message_given) {
-    //http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/KSP/KSPSetSupportedNorm.html
-    std::cerr << "[Warning] FIXME: setting KSPSetSupportedNorm(ksp, KSP_NORM_NATURAL, PC_RIGHT, 1)" << std::endl;
-    message_given = true;
-  }
+  // if(!message_given) {
+  m_utopia_warning_once("> FIXME: setting KSPSetSupportedNorm(ksp, KSP_NORM_NATURAL, PC_RIGHT, 1) see:\n"
+                        "  http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/KSP/KSPSetSupportedNorm.html");
+    
+  //   message_given = true;
+  // }
 
   
   ierr = KSPSetSupportedNorm(ksp, KSP_NORM_NATURAL, PC_RIGHT, 1); CHKERRQ(ierr);

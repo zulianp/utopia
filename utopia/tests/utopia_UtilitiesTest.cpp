@@ -235,7 +235,7 @@ namespace utopia {
         static void print_backend_info()
         {
             mpi_world_barrier();
-            if(Utopia::Instance().verbose() && mpi_world_rank() == 0) {
+            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
                 std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
             mpi_world_barrier();

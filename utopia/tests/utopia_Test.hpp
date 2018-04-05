@@ -83,7 +83,7 @@ namespace utopia
 
         mpi_world_barrier();
         c.stop();
-        if(utopia::Utopia::Instance().verbose() && mpi_world_rank() == 0) {
+        if(utopia::Utopia::instance().verbose() && mpi_world_rank() == 0) {
             std::cout << c << std::endl;
         }
     }

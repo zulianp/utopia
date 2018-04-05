@@ -18,7 +18,7 @@ namespace utopia {
             typedef utopia::Binary<Left, Right, Operation> TransformedExpr;
             typedef utopia::Assign<Left, TransformedExpr> AssignExpr;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
             
             bool out = Eval<AssignExpr, Traits>::apply(
                     AssignExpr(
@@ -31,7 +31,7 @@ namespace utopia {
                     )
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return out;
         }
     };
@@ -42,7 +42,7 @@ namespace utopia {
 
         inline static bool apply(const InPlace<Left, Right, Plus> &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
             
             UTOPIA_BACKEND(Traits).axpy(
                   Eval<Left, Traits>::apply(expr.left()),
@@ -50,7 +50,7 @@ namespace utopia {
                   Eval<Right, Traits>::apply(expr.right())
                   );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -61,7 +61,7 @@ namespace utopia {
 
         inline static bool apply(const InPlace<Left, Right, Minus> &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
             
             UTOPIA_BACKEND(Traits).axpy(
                   Eval<Left, Traits>::apply(expr.left()),
@@ -69,7 +69,7 @@ namespace utopia {
                   Eval<Right, Traits>::apply(expr.right())
                   );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -81,7 +81,7 @@ namespace utopia {
 
         inline static bool apply(const Expr &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
             
             UTOPIA_BACKEND(Traits).axpy(
                   Eval<Left, Traits>::apply(expr.left()),
@@ -89,7 +89,7 @@ namespace utopia {
                   Eval<Right, Traits>::apply(expr.right().right())
                   );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -101,7 +101,7 @@ namespace utopia {
 
         inline static bool apply(const Expr &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
             
             UTOPIA_BACKEND(Traits).axpy(
                   Eval<Left, Traits>::apply(expr.left()),
@@ -109,7 +109,7 @@ namespace utopia {
                   Eval<Right, Traits>::apply(expr.right().right())
                   );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -119,14 +119,14 @@ namespace utopia {
     public:
         inline static bool apply(const InPlace<Left, Number<Right>, Multiplies> &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).scale(
                 Eval<Left, Traits>::apply(expr.left()),
                 static_cast<Right>(expr.right())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };

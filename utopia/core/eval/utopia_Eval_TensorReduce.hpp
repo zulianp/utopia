@@ -15,7 +15,7 @@ namespace utopia {
 	    inline static Result apply(const TensorReduce<Expr, Operation> &expr) {
 	        Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).apply_tensor_reduce(
 	        		result,
@@ -24,7 +24,7 @@ namespace utopia {
 	                expr.dim()
 	        );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
 	        return result;
 	    }
 	};

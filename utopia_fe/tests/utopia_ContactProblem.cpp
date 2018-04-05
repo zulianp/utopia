@@ -314,7 +314,7 @@ namespace utopia {
 			contact_pair_tags,
 			variable_number);
 
-		if(comm.is_alone() && utopia::Utopia::Instance().get("plot") == "true") {
+		if(comm.is_alone() && utopia::Utopia::instance().get("plot") == "true") {
 			plot_scaled_normal_field(*mesh, contact_.normals, contact_.gap, "time_series_r/r" + std::to_string(iteration));
 		}
 	}
@@ -732,7 +732,7 @@ namespace utopia {
 
 		const int dim = mesh->mesh_dimension();
 
-		if(iteration > 0 && comm.is_alone() && utopia::Utopia::Instance().get("plot") == "true") {
+		if(iteration > 0 && comm.is_alone() && utopia::Utopia::instance().get("plot") == "true") {
 			std::vector<double> is_contact_node_x(local_size(is_contact_node).get(0)/dim, 0.);
 
 			{

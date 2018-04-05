@@ -10,11 +10,11 @@ namespace utopia {
 	    inline static Return apply(const Ghosts<Index> &expr) {
 	        Return ret;
 
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).build_ghosts(expr.local_size(), expr.global_size(), expr.index(), ret);
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return ret;
 	    }
 	};
@@ -26,7 +26,7 @@ namespace utopia {
 		typedef utopia::Construct<Left, Ghosts<Index> > Expr;
 
 	    inline static void apply(const Expr &expr) {
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).build_ghosts(
 	        	expr.right().local_size(),
@@ -35,7 +35,7 @@ namespace utopia {
 	        	Eval<Left, Traits, PETSC>::apply(expr.left())
 	        );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	    }
 	};
 
@@ -46,7 +46,7 @@ namespace utopia {
 		typedef utopia::Assign<Left, Ghosts<Index> > Expr;
 
 	    inline static void apply(const Expr &expr) {
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).build_ghosts(
 	        	expr.right().local_size(),
@@ -55,7 +55,7 @@ namespace utopia {
 	        	Eval<Left, Traits, PETSC>::apply(expr.left())
 	        );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	    }
 	};
 }

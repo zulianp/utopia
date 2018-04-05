@@ -16,7 +16,7 @@ namespace utopia {
         apply(const Binary<Binary<Number<ScalarT>, Left, Multiplies>, Right, Plus> &expr) {
             EXPR_TYPE(Traits, Right) result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).assign(result, Eval<Right, Traits>::apply(expr.right()) );
             UTOPIA_BACKEND(Traits).axpy(
@@ -25,7 +25,7 @@ namespace utopia {
                     Eval<Left, Traits>::apply(expr.left().right())
                     );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -39,7 +39,7 @@ namespace utopia {
         {
             EXPR_TYPE(Traits, Right) result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).assign(result, Eval<Right, Traits>::apply(expr.right()) );
             UTOPIA_BACKEND(Traits).axpy(
@@ -49,7 +49,7 @@ namespace utopia {
                     );
 
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -67,7 +67,7 @@ namespace utopia {
         {
             EXPR_TYPE(Traits, Left) result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).assign(result, Eval<Left, Traits>::apply(expr.left()) );
             UTOPIA_BACKEND(Traits).axpy(
@@ -77,7 +77,7 @@ namespace utopia {
                     );
 
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -95,7 +95,7 @@ namespace utopia {
         {
             EXPR_TYPE(Traits, Left) result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).assign(result, Eval<Left, Traits>::apply(expr.left()) );
             UTOPIA_BACKEND(Traits).axpy(
@@ -105,7 +105,7 @@ namespace utopia {
                     );
 
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -119,7 +119,7 @@ namespace utopia {
     //            Traits, Backend> {
     // public:
     //     inline static void apply(const Assign<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies> > &expr) {
-    //         UTOPIA_LOG_BEGIN(expr);
+    //         UTOPIA_TRACE_BEGIN(expr);
 
     //         UTOPIA_BACKEND(Traits).build(
     //                Eval<Left, Traits>::apply(expr.left()),
@@ -133,7 +133,7 @@ namespace utopia {
     //                 Eval<Left, Traits>::apply(expr.left())
     //         );
 
-    //         UTOPIA_LOG_END(expr);
+    //         UTOPIA_TRACE_END(expr);
     //     }
     // };
 
@@ -143,13 +143,13 @@ namespace utopia {
         inline static typename TypeAndFill<Traits, Left>::Type apply(const Binary<Left, Factory<Identity, 2>, Plus> &expr) {
             static_assert(Left::Order == 2, "can only be instantiated for 2nd order tensors");
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             typename TypeAndFill<Traits, Left>::Type result = Eval<Left, Traits>::apply(expr.left());
             UTOPIA_BACKEND(Traits).mat_diag_shift(result, 1.0);
 
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -160,12 +160,12 @@ namespace utopia {
         inline static EXPR_TYPE(Traits, Left)
         apply(const Binary<Left, Binary<Number<ScalarT>, Factory<Identity, 2>, Multiplies>, Plus> &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             EXPR_TYPE(Traits, Left) result = Eval<Left, Traits>::apply(expr.left());
             UTOPIA_BACKEND(Traits).mat_diag_shift(result, expr.right().left());
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -178,7 +178,7 @@ namespace utopia {
         {
             EXPR_TYPE(Traits, Right) result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).zaxpy(
                     -expr.left().right(),
@@ -187,7 +187,7 @@ namespace utopia {
                      result
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -209,7 +209,7 @@ namespace utopia {
 
         inline static bool apply(const Expr &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             if(&expr.left() == &expr.right().left()) {
                 auto &&l = Eval<Left, Traits, Backend>::apply(expr.left());
@@ -238,7 +238,7 @@ namespace utopia {
                 }
             }
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -260,7 +260,7 @@ namespace utopia {
 
         inline static bool apply(const Expr &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             if(&expr.left() == &expr.right().right()) {
                 auto &&l = Eval<Left, Traits, Backend>::apply(expr.left());
@@ -289,7 +289,7 @@ namespace utopia {
                 }
             }
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };

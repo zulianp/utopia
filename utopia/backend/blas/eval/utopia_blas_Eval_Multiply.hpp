@@ -21,7 +21,7 @@ namespace utopia {
 	    inline static C apply(const Expr &expr) {
 	        C c;
 
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).gemm(
 	        	//C
@@ -40,7 +40,7 @@ namespace utopia {
 	            Eval<Wrapper<B, 2>, Traits>::apply(expr.right())
 	        );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return c;
 	    }
 	};
@@ -83,7 +83,7 @@ namespace utopia {
 	    inline static Result apply(const Expr &expr) {
 	        Result result = Eval<Wrapper<C, 2>, Traits>::apply(expr.right().right());
 
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).gemm(
 	        	//Result
@@ -104,7 +104,7 @@ namespace utopia {
 
 	        // std::cout << tree_format(expr.getClass()) << std::endl;
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return result;
 	    }
 	};

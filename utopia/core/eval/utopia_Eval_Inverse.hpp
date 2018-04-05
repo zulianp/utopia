@@ -15,7 +15,7 @@ namespace utopia {
 
 			inline static Tensor apply(const Expr &expr)
 			{
-	            UTOPIA_LOG_BEGIN(expr);
+	            UTOPIA_TRACE_BEGIN(expr);
 				Tensor2 ret;
 				apply(expr, ret);
 				return ret.implementation();
@@ -23,7 +23,7 @@ namespace utopia {
 
 			inline static bool apply(const Expr &expr, Tensor2 &result)
 			{
-	            UTOPIA_LOG_BEGIN(expr);
+	            UTOPIA_TRACE_BEGIN(expr);
 
 	            const auto &m = expr.expr();
 				auto s = size(m);
@@ -43,7 +43,7 @@ namespace utopia {
 				Write<Tensor2> w(result);
 				inverse(m, d, result);
 
-				UTOPIA_LOG_END(expr);
+				UTOPIA_TRACE_END(expr);
 				return true;
 			}
 

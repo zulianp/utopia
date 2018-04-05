@@ -12,7 +12,7 @@ namespace utopia {
 	    typedef X Result;
 
 	    inline static Result apply(const Expr &expr) {
-			UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_TRACE_BEGIN(expr);
 
 			Result r;
 			const auto &a = expr.right().left().implementation();
@@ -22,7 +22,7 @@ namespace utopia {
 			r.init(x.communicator(), x.type(), x.local_size(), x.size());
 			auto ierr = MatResidual(a.implementation(), b.implementation(), x.implementation(), r.implementation()); assert(ierr == 0);
 	    	
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 			return r;
 	    }
 	};

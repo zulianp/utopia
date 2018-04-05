@@ -6,8 +6,6 @@
 #define UTOPIA_UTOPIA_EVAL_CONSTRUCT_HPP_HPP
 
 #include "utopia_Eval_Empty.hpp"
-#include "utopia_Log.hpp"
-
 
 namespace utopia {
 
@@ -20,13 +18,12 @@ namespace utopia {
     class Eval<Construct<Left, Right>, Traits, Backend> {
     public:
         inline static bool apply(const Construct<Left, Right> &expr) {
-            //FIXME
-            // UTOPIA_LOG_BEGIN(expr);
 
+            UTOPIA_TRACE_BEGIN(expr);
             UTOPIA_BACKEND(Traits).assign(Eval<Left,  Traits>::apply(expr.left()),
                                           Eval<Right, Traits>::apply(expr.right()) );
 
-            // UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -36,11 +33,11 @@ namespace utopia {
     public:
         inline static bool apply(const Construct< Number<Left>, Right> &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             expr.left() = Eval<Right, Traits>::apply(expr.right());
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -50,14 +47,14 @@ namespace utopia {
     public:
         inline static bool apply(const Construct<Left, Transposed <Wrapper<Right, 2> > > &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).assign_transposed(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Wrapper<Right, 2>, Traits>::apply(expr.right().expr())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -67,7 +64,7 @@ namespace utopia {
     public:
         inline static bool apply(const Construct<View<Left>, Right> &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             const auto &left = expr.left();
             auto rr = row_range(left);
@@ -77,7 +74,7 @@ namespace utopia {
                                                  Eval<Right, Traits>::apply(expr.right()),
                                                  rr, cr);
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -89,7 +86,7 @@ namespace utopia {
 
         inline static bool apply(const Construct<View<LeftWrapper>, Right> &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             const auto &left = expr.left();
             auto rr = row_range(left);
@@ -99,7 +96,7 @@ namespace utopia {
                                                  Eval<Right, Traits>::apply(expr.right()),
                                                  rr, cr);
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -110,7 +107,7 @@ namespace utopia {
     public:
         inline static bool apply(const Construct<Left, View<Right> > &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).assign_from_range(
                     Eval<Left,  Traits>::apply(expr.left()),
@@ -119,7 +116,7 @@ namespace utopia {
                     col_range(expr.right())
             );
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
             return true;
         }
     };

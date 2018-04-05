@@ -16,14 +16,14 @@ namespace utopia {
 
 		inline static void apply(const Construct<Left, LocalDiagBlock<Right> > & expr)
 		{
-			UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_TRACE_BEGIN(expr);
 
 			UTOPIA_BACKEND(Traits).build_local_diag_block(
 				Eval<Left,  Traits>::apply(expr.left()),
 				Eval<Right, Traits>::apply(expr.right().expr())
 				);
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 		}
 	};
 
@@ -37,7 +37,7 @@ namespace utopia {
 			{
 				EXPR_TYPE(Traits, Expr) result;
 
-				UTOPIA_LOG_BEGIN(expr);
+				UTOPIA_TRACE_BEGIN(expr);
 
 				//Performs optimal triple product
 				UTOPIA_BACKEND(Traits).triple_product(
@@ -47,7 +47,7 @@ namespace utopia {
 					Eval<Wrapper<M3, 2>, Traits>::apply(expr.right())
 					);
 
-				UTOPIA_LOG_END(expr);
+				UTOPIA_TRACE_END(expr);
 				return result;
 			}
 	};
@@ -72,7 +72,7 @@ namespace utopia {
 		{
 			EXPR_TYPE(Traits, Expr) result;
 
-			UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_TRACE_BEGIN(expr);
 
 			//Check if left and right operands are the same object
 			if(&expr.left().left().expr() == &expr.right()) {
@@ -93,7 +93,7 @@ namespace utopia {
 					);
 			}
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 			return result;
 		}
 	};
@@ -108,7 +108,7 @@ namespace utopia {
 		{
 			EXPR_TYPE(Traits, Left) result;
 
-			UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_TRACE_BEGIN(expr);
 
 			UTOPIA_BACKEND(Traits).build_local_redistribute(
 				result,
@@ -117,7 +117,7 @@ namespace utopia {
 				);
 
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 			return result;
 		}
 	};
@@ -142,7 +142,7 @@ namespace utopia {
 	    {
 	        EXPR_TYPE(Traits, Expr) result = Eval<Right, Traits>::apply(expr.right().right());
 
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).axpby(
 	        		result,	
@@ -151,7 +151,7 @@ namespace utopia {
 	        		expr.right().left()
 	        );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return result;
 	    }
 	};
@@ -168,7 +168,7 @@ namespace utopia {
 		{
 			EXPR_TYPE(Traits, Expr) result;
 
-			UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_TRACE_BEGIN(expr);
 
 			UTOPIA_BACKEND(Traits).mat_mult_add(
 				result,
@@ -177,7 +177,7 @@ namespace utopia {
 				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right())
 			);
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 			return result;
 		}
 	};
@@ -194,7 +194,7 @@ namespace utopia {
 		{
 			EXPR_TYPE(Traits, Expr) result;
 
-			UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_TRACE_BEGIN(expr);
 
 			UTOPIA_BACKEND(Traits).mat_mult_add(
 				result,
@@ -203,7 +203,7 @@ namespace utopia {
 				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left())
 			);
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 			return result;
 		}
 	};
@@ -220,7 +220,7 @@ namespace utopia {
 		{
 			EXPR_TYPE(Traits, Expr) result;
 
-			UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_TRACE_BEGIN(expr);
 
 			UTOPIA_BACKEND(Traits).mat_mult_t_add(
 				result,
@@ -229,7 +229,7 @@ namespace utopia {
 				Eval<Wrapper<V2, 1>, Traits>::apply(expr.right())
 			);
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 			return result;
 		}
 	};
@@ -246,7 +246,7 @@ namespace utopia {
 		{
 			EXPR_TYPE(Traits, Expr) result;
 
-			UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_TRACE_BEGIN(expr);
 
 			UTOPIA_BACKEND(Traits).mat_mult_t_add(
 				result,
@@ -255,7 +255,7 @@ namespace utopia {
 				Eval<Wrapper<V1, 1>, Traits>::apply(expr.left())
 			);
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 			return result;
 		}
 	};

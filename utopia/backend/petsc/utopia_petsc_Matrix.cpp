@@ -5,6 +5,8 @@
 #include <algorithm> 
 #include <set>
 
+//PetscObjectTypeCompare((PetscObject)mat,newtype,&sametype);
+
 namespace utopia {
 
 	void PetscMatrix::add_matrix(

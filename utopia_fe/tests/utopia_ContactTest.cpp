@@ -631,7 +631,7 @@ namespace utopia {
 		mesh->read(e_problem->mesh_file);
 		MOONOLITH_EVENT_END("read_mesh");
 
-		utopia::Utopia::Instance().set("plot", "true");
+		utopia::Utopia::instance().set("plot", "true");
 
 		p.params = e_problem->params;
 		p.init(init, mesh, e_problem, e_problem, e_problem->contact_flags, e_problem->search_radius);

@@ -18,14 +18,14 @@ namespace utopia {
         {
             Result result;
 
-            UTOPIA_LOG_BEGIN(t);
+            UTOPIA_TRACE_BEGIN(t);
 
             UTOPIA_BACKEND(Traits).assign_transposed(
                 result,
                 Eval<Tensor, Traits>::apply(t.expr())
                 );
 
-            UTOPIA_LOG_END(t);
+            UTOPIA_TRACE_END(t);
             return result;
         }
     };

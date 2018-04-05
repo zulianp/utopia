@@ -5,8 +5,9 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_petsc_Types.hpp"
-#include "utopia_petsc_Function.hpp"
+#include "utopia_Function.hpp"
 #include <mpi.h>
+#include <string>
 
 namespace utopia {
 	class TaoSolverWrapper {
@@ -14,12 +15,20 @@ namespace utopia {
 		TaoSolverWrapper();
 		~TaoSolverWrapper();
 		void destroy();
-		bool init(MPI_Comm comm);
+		
+		bool init(MPI_Comm comm,
+				  const std::string &type,
+				  const PetscReal gatol,
+				  const PetscReal grtol,
+				  const PetscReal gttol,
+				  const PetscInt  maxits);
+
 		bool set_bounds(const PetscVector &lb, const PetscVector &ub);
 		bool solve(PetscVector &x);
 
 		void set_function(Function<DMatrixd, DVectord> &fun);
 		void set_function(Function<DSMatrixd, DVectord> &fun);
+
 		
 	private:
 		void * data_;
@@ -33,13 +42,30 @@ namespace utopia {
 
 		TaoSolver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &linear_solver)
 		: NonLinearSolver<Matrix, Vector>(linear_solver)
-		{}
-
-		virtual bool solve(Function<Matrix, Vector> &fun, Vector &x)
 		{
-			impl_.init(x.implementation().communicator());
+			this->atol(1e-19);
+			this->rtol(1e-12); 
+			this->stol(1e-19);
+		}
+
+		void set_type(const std::string &type)
+		{
+			type_ = type;
+		}
+
+		bool solve(Function<Matrix, Vector> &fun, Vector &x)
+		{			
+			impl_.init(
+				x.implementation().communicator(),
+				type_,
+				this->atol(),
+				this->rtol(), 
+				this->stol(),
+				this->max_it()
+			);
 			
 			if(box_constraints_.has_bound()) {
+				box_constraints_.fill_empty_bounds();
 				impl_.set_bounds(
 					box_constraints_.lower_bound()->implementation(),
 					box_constraints_.upper_bound()->implementation()
@@ -50,9 +76,16 @@ namespace utopia {
 			return impl_.solve(x.implementation());
 		}
 
+		bool set_box_constraints(const BoxConstraints &box_constraints)
+		{
+			box_constraints_ = box_constraints;
+			return true;
+		}
+
 	private:
 		TaoSolverWrapper impl_;
 		BoxConstraints box_constraints_;
+		std::string type_;
 	};
 }
 

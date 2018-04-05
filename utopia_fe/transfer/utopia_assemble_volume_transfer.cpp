@@ -629,7 +629,7 @@ namespace utopia {
 								  const std::vector< std::pair<int, int> > &tags)
 	{
 		///////////////////////////
-		if(Utopia::Instance().verbose()) {
+		if(Utopia::instance().verbose()) {
 			moonolith::root_describe("---------------------------------------\n"
 									 "begin: utopia::assemble_volume_transfer",
 									 comm, std::cout);
@@ -653,7 +653,7 @@ namespace utopia {
 		///////////////////////////
 		c.stop();
 		
-		if(Utopia::Instance().verbose()) {
+		if(Utopia::instance().verbose()) {
 			std::stringstream ss;
 			ss << "end: utopia::assemble_volume_transfer\n";
 			ss << c;

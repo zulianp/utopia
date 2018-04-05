@@ -284,8 +284,6 @@ namespace utopia
         {
             SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
 
-
-            
             SNESLineSearch linesearch; 
             SNESGetLineSearch(snes, &linesearch);
             SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   ); 
@@ -298,8 +296,6 @@ namespace utopia
         Scalar alpha_; 
 
     };
-
-
 
 
 }

@@ -222,7 +222,6 @@ namespace utopia
       }
 
 
-
     private: 
 
       // this function is expensive - wrt to convert
@@ -292,9 +291,8 @@ namespace utopia
                             else
                               convert(jac_ut_prec, snes->jacobian_pre); 
 
-
                             convert(jac_ut, snes->jacobian); 
-
+                            
                             return 0;
                           },
                           &fun);

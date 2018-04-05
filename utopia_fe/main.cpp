@@ -96,8 +96,9 @@ int main(const int argc, char *argv[])
 
 
 		for(int i = 1; i < argc; ++i) {
+			const int ip1 = i+1;
+			
 			if(argv[i] == std::string("-r")) {
-				const int ip1 = i+1;
 				if(ip1 < argc) {
 					auto it = runners.find(argv[ip1]);
 					if(it == runners.end()) {
@@ -125,6 +126,12 @@ int main(const int argc, char *argv[])
 
 				std::cout << "--------------------------------------------" << std::endl;
 				std::cout << "--------------------------------------------" << std::endl;
+			} else if(argv[i] == std::string("-output_path")) {
+				utopia::Utopia::instance().set("output_path", argv[ip1]);
+				std::cout << "setting output_path to: " << argv[ip1] << std::endl;
+			} else if(argv[i] == std::string("-data_path")) {
+				utopia::Utopia::instance().set("data_path", argv[ip1]);
+				std::cout << "setting data_path to: " << argv[ip1] << std::endl;
 			}
 		}
 	}

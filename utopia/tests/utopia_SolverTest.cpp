@@ -2,37 +2,15 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-04 14:12:40
+* @Last Modified time: 2018-04-05 18:03:30
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
+#include "test_problems/utopia_assemble_laplacian_1D.hpp"
 
 namespace utopia
 {
-	template<class Matrix>
-	void assemble_laplacian_1D(const utopia::SizeType n, Matrix &m)
-	{
-
-	    // n x n matrix with maximum 3 entries x row        
-		{
-			Write<Matrix> w(m);
-			Range r = row_range(m);
-
-	        //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
-			for(SizeType i = r.begin(); i != r.end(); ++i) {
-				if(i > 0) {    
-					m.add(i, i - 1, -1.0);    
-				}
-
-				if(i < n-1) {
-					m.add(i, i + 1, -1.0);
-				}
-
-				m.add(i, i, 2.0);
-			}
-		}
-	}
 
 	/**
 	 * @brief      Class to test our nonlinear solvers.
@@ -49,7 +27,7 @@ namespace utopia
 	public:
 		static void print_backend_info()
 		{
-			if(Utopia::Instance().verbose() && mpi_world_rank() == 0) {
+			if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
 				std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
 			}
 		}
@@ -384,8 +362,7 @@ namespace utopia
 		int _n;
 		
 	};
-	
-	
+		
 	void runGenericSolversTest()
 	{
 		UTOPIA_UNIT_TEST_BEGIN("SolversTest");
@@ -399,9 +376,6 @@ namespace utopia
 		
 		UTOPIA_UNIT_TEST_END("SolversTest");
 	}
-
-
-
 
 
     void runSolversTest()

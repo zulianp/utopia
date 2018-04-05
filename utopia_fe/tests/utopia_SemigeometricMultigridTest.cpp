@@ -20,7 +20,7 @@ namespace utopia {
         Order order_elem_coarse   = FIRST;
         Order order_of_quadrature = Order(int(order_elem_fine) + int(order_elem_coarse));
         
-        const std::string data_path = Utopia::Instance().get("data_path");
+        const std::string data_path = Utopia::instance().get("data_path");
         const std::string fine_mesh_path   = data_path + "/fine_mesh.e";
         const std::string coarse_mesh_path = data_path + "/coarse_mesh.e";
         

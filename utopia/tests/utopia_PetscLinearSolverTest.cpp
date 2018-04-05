@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-04 15:40:45
+* @Last Modified time: 2018-04-05 18:12:49
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -57,7 +57,7 @@ namespace utopia
 			DVectord rhs;
 			DSMatrixd A, I_1, I_2, I_3;
 
-			const std::string data_path = Utopia::Instance().get("data_path");
+			const std::string data_path = Utopia::instance().get("data_path");
 
 			read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
 			read(data_path + "/laplace/matrices_for_petsc/f_A", A);
@@ -127,7 +127,7 @@ namespace utopia
 			DVectord rhs;
 			DSMatrixd A, I_1, I_2, I_3;
 			
-			const std::string data_path = Utopia::Instance().get("data_path");
+			const std::string data_path = Utopia::instance().get("data_path");
 			
 			read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
 			read(data_path + "/laplace/matrices_for_petsc/f_A", A);
@@ -196,7 +196,7 @@ namespace utopia
 			DSMatrixd A, I_1, I_2, I_3;
 			
 			//reading data from disk
-			const std::string data_path = Utopia::Instance().get("data_path");
+			const std::string data_path = Utopia::instance().get("data_path");
 			read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
 			read(data_path + "/laplace/matrices_for_petsc/f_A", A);
 			read(data_path + "/laplace/matrices_for_petsc/I_1", I_1);
@@ -252,7 +252,7 @@ namespace utopia
 		
 		void petsc_mg_jacobi_test()
 		{
-			const std::string data_path = Utopia::Instance().get("data_path");
+			const std::string data_path = Utopia::instance().get("data_path");
 			DSMatrixd A, I_1, I_2, I_3;
 			DVectord rhs;
 			
@@ -287,7 +287,7 @@ namespace utopia
 			DVectord rhs;
 			DSMatrixd A, I_1, I_2, I_3;
 			
-			const std::string data_path = Utopia::Instance().get("data_path");
+			const std::string data_path = Utopia::instance().get("data_path");
 			
 			read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
 			read(data_path + "/laplace/matrices_for_petsc/f_A", A);

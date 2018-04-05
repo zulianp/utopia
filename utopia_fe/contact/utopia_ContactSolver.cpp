@@ -19,6 +19,7 @@ namespace utopia {
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 		// mesh->read("../data/wear_2_far.e");
+		// mesh->read(utopia::Utopia::instance().get("data_path") + "/input_file.e");
 		// mesh->read("../data/channel_2d.e");
 		mesh->read("../data/leaves_3d_b.e");
 
@@ -38,14 +39,14 @@ namespace utopia {
 		double dt = 0.05;
 		if(dim == 3) {
 			dt = 0.0001;
-			dt = 0.01;
+			// dt = 0.01;
 		}
 		
 		// LameeParameters lamee_params(20., 20.);
 		// lamee_params.set_mu(2, 10.);
 		// lamee_params.set_lambda(2, 10.);
 
-		LameeParameters lamee_params(100., 400.);
+		LameeParameters lamee_params(200., 200.);
 		// 	lamee_params.set_mu(2, 10000.);
 		// lamee_params.set_lambda(2, 10000.);
 
@@ -105,7 +106,7 @@ namespace utopia {
 		contact_params.contact_pair_tags = {{1, 2}, {1, 3}, {2, 3}};
 
 		if(dim == 3) {
-			contact_params.search_radius = 0.0001;
+			contact_params.search_radius = 0.0005;
 		} else {
 			contact_params.search_radius = 0.01;
 		}

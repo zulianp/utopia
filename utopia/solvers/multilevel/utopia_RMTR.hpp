@@ -1022,7 +1022,7 @@ namespace utopia
 
         virtual void print_statistics() 
         {
-            auto rmtr_data_path = Utopia::Instance().get("rmtr_data_path");
+            auto rmtr_data_path = Utopia::instance().get("rmtr_data_path");
             if(!rmtr_data_path.empty())
             {
                 CSVWriter writer; 

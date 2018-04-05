@@ -54,7 +54,7 @@ namespace utopia {
 
 	static const bool performance_test_verbose()
 	{
-		return Utopia::Instance().get("performance_test_verbose") == "true";
+		return Utopia::instance().get("performance_test_verbose") == "true";
 	}
 
 	template<class Matrix, class Vector>

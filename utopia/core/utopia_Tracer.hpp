@@ -1,5 +1,5 @@
-#ifndef UTOPIA_UTOPIA_LOG_HPP
-#define UTOPIA_UTOPIA_LOG_HPP
+#ifndef UTOPIA_TRACER_HPP
+#define UTOPIA_TRACER_HPP
 
 #include <iomanip>
 #include <iostream>
@@ -7,28 +7,27 @@
 #include <stack>
 #include <chrono>
 
+#include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
 
-#ifdef UTOPIA_LOG_ENABLED
+#ifdef UTOPIA_TRACE_ENABLED
 
 namespace utopia {
 
     class Measurement;
     typedef long MeasurementId;
 
-    class Logger {
+    class Tracer {
     public:
         template<class T>
-        inline MeasurementId apply_begin(const Expression<T> &expr);
-
-        inline void apply_end();
-
-        static Logger &instance();
+        MeasurementId apply_begin(const Expression<T> &expr);
+        void apply_end();
+        static Tracer &instance();
 
         void save_collected_log();
 
     private:
-        Logger();
+        Tracer();
         std::chrono::high_resolution_clock::time_point start_time_;
         std::stack<MeasurementId> running_events_;
         std::map<MeasurementId, Measurement> event_map_;
@@ -58,7 +57,7 @@ namespace utopia {
             end_time_ = std::chrono::high_resolution_clock::now();
         }
 
-        friend void Logger::save_collected_log();
+        friend void Tracer::save_collected_log();
 
     private:
         MeasurementId generate_unique_id();
@@ -69,7 +68,7 @@ namespace utopia {
     };
 
     template<class T>
-    inline MeasurementId Logger::apply_begin(const Expression<T> &expr) {
+    inline MeasurementId Tracer::apply_begin(const Expression<T> &expr) {
         Measurement m(expr);
         running_events_.push(m.get_id());
         event_map_.insert(std::make_pair(m.get_id(), m));
@@ -77,7 +76,7 @@ namespace utopia {
         return m.get_id();
     }
 
-    inline void Logger::apply_end() {
+    inline void Tracer::apply_end() {
         const MeasurementId &id = running_events_.top();
         event_map_.at(id).end();
         running_events_.pop();
@@ -85,16 +84,16 @@ namespace utopia {
 
 }
 
-#define UTOPIA_LOG_BEGIN(expr)  utopia::Logger::instance().apply_begin(expr)
-#define UTOPIA_LOG_END(expr)    utopia::Logger::instance().apply_end()
+#define UTOPIA_TRACE_BEGIN(expr)  utopia::Tracer::instance().apply_begin(expr)
+#define UTOPIA_TRACE_END(expr)    utopia::Tracer::instance().apply_end()
 
 
-#else  //UTOPIA_LOG_ENABLED
+#else  //UTOPIA_TRACE_ENABLED
 
-#define UTOPIA_LOG_BEGIN(...)   ((void)0)
-#define UTOPIA_LOG_END(...)     ((void)0)
+#define UTOPIA_TRACE_BEGIN(...)   ((void)0)
+#define UTOPIA_TRACE_END(...)     ((void)0)
 
-#endif  //UTOPIA_LOG_ENABLED
+#endif  //UTOPIA_TRACE_ENABLED
 
 
-#endif //UTOPIA_UTOPIA_LOG_HPP
+#endif //UTOPIA_TRACER_HPP
