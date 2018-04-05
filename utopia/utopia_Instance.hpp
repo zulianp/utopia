@@ -1,9 +1,11 @@
 #ifndef UTOPIA_UTOPIA_INSTANCE_HPP
 #define UTOPIA_UTOPIA_INSTANCE_HPP
 
+#include "utopia_Logger.hpp"
+
 #include <map>
 #include <string>
-#include "utopia_Logger.hpp"
+#include <cassert>
 
 namespace utopia {
     class Utopia final {
