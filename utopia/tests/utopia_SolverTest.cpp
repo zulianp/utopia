@@ -938,7 +938,6 @@ namespace utopia
 			example.getOperators(_n, A, b, ub);
 
 			const double scale_factor = 1;
-			A *= scale_factor;
 			b *= scale_factor;
 			ub *= scale_factor;
 			

@@ -139,24 +139,36 @@ namespace utopia {
 		UtopiaTaoSetUp(*tao, fun);
 	}
 
-	bool TaoSolverWrapper::init(MPI_Comm comm)
+	bool TaoSolverWrapper::init(MPI_Comm comm, const std::string &type)
 	{
 		auto tao = (Tao *) &data_;
 		PetscErrorCode ierr = 0;
-		ierr = TaoCreate(comm, tao);     U_CHECKERR(ierr);
-		ierr = TaoSetType(*tao, TAOIPM); U_CHECKERR(ierr);
+		ierr = TaoCreate(comm, tao);   U_CHECKERR(ierr);
+		
+		if(type.empty()) {
+			ierr = TaoSetType(*tao, TAOIPM); U_CHECKERR(ierr);
+		} else {
+			ierr = TaoSetType(*tao, type.c_str()); U_CHECKERR(ierr);
+		}
+
 		ierr = TaoSetTolerances(*tao, 1e-19, 1e-12, 1e-19); U_CHECKERR(ierr);
 
 		KSP ksp;
 		PC pc;
+
 		ierr = TaoGetKSP(*tao, &ksp); U_CHECKERR(ierr);
-		ierr = KSPSetType(ksp, KSPPREONLY); U_CHECKERR(ierr);
 
-		ierr = KSPGetPC(ksp, &pc); U_CHECKERR(ierr);
-		ierr = PCSetType(pc, "lu"); U_CHECKERR(ierr);
+		if(ksp) {
+			ierr = KSPSetType(ksp, KSPPREONLY); U_CHECKERR(ierr);
 
-		ierr = PCFactorSetMatSolverPackage(pc, "mumps"); U_CHECKERR(ierr);
-		ierr = KSPSetInitialGuessNonzero(ksp, PETSC_FALSE); U_CHECKERR(ierr);
+			ierr = KSPGetPC(ksp, &pc); U_CHECKERR(ierr);
+			ierr = PCSetType(pc, "lu"); U_CHECKERR(ierr);
+
+			ierr = PCFactorSetMatSolverPackage(pc, "mumps"); U_CHECKERR(ierr);
+			ierr = KSPSetInitialGuessNonzero(ksp, PETSC_FALSE); U_CHECKERR(ierr);
+		} else {
+			std::cerr << "[Warning] strategy does not have a ksp" << std::endl;
+		}
 
 		ierr = TaoSetFromOptions(*tao);  U_CHECKERR(ierr);
 		return true;

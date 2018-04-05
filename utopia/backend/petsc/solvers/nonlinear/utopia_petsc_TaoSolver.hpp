@@ -7,6 +7,7 @@
 #include "utopia_petsc_Types.hpp"
 #include "utopia_Function.hpp"
 #include <mpi.h>
+#include <string>
 
 namespace utopia {
 	class TaoSolverWrapper {
@@ -14,12 +15,13 @@ namespace utopia {
 		TaoSolverWrapper();
 		~TaoSolverWrapper();
 		void destroy();
-		bool init(MPI_Comm comm);
+		bool init(MPI_Comm comm, const std::string &type);
 		bool set_bounds(const PetscVector &lb, const PetscVector &ub);
 		bool solve(PetscVector &x);
 
 		void set_function(Function<DMatrixd, DVectord> &fun);
 		void set_function(Function<DSMatrixd, DVectord> &fun);
+
 		
 	private:
 		void * data_;
@@ -35,9 +37,14 @@ namespace utopia {
 		: NonLinearSolver<Matrix, Vector>(linear_solver)
 		{}
 
-		virtual bool solve(Function<Matrix, Vector> &fun, Vector &x)
+		void set_type(const std::string &type)
 		{
-			impl_.init(x.implementation().communicator());
+			type_ = type;
+		}
+
+		bool solve(Function<Matrix, Vector> &fun, Vector &x)
+		{			
+			impl_.init(x.implementation().communicator(), type_);
 			
 			if(box_constraints_.has_bound()) {
 				box_constraints_.fill_empty_bounds();
@@ -51,7 +58,7 @@ namespace utopia {
 			return impl_.solve(x.implementation());
 		}
 
-		virtual bool set_box_constraints(const BoxConstraints &box_constraints)
+		bool set_box_constraints(const BoxConstraints &box_constraints)
 		{
 			box_constraints_ = box_constraints;
 			return true;
@@ -60,6 +67,7 @@ namespace utopia {
 	private:
 		TaoSolverWrapper impl_;
 		BoxConstraints box_constraints_;
+		std::string type_;
 	};
 }
 
