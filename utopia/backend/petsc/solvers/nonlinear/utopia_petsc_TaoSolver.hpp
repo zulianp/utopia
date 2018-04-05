@@ -29,9 +29,12 @@ namespace utopia {
 		void set_function(Function<DMatrixd, DVectord> &fun);
 		void set_function(Function<DSMatrixd, DVectord> &fun);
 
-		
+		void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package);
 	private:
 		void * data_;
+		std::string ksp_type_;
+		std::string pc_type_;
+		std::string solver_package_;
 	};
 
 
@@ -53,8 +56,14 @@ namespace utopia {
 			type_ = type;
 		}
 
+		inline void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package)
+		{
+			impl_.set_ksp_types(ksp, pc, solver_package);
+		}
+
 		bool solve(Function<Matrix, Vector> &fun, Vector &x)
-		{			
+		{	
+			// auto factorization = std::dynamic_pointer_cast<Factorization<Matrix, Vector>>()
 			impl_.init(
 				x.implementation().communicator(),
 				type_,
