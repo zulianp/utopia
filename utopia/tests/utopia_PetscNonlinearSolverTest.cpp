@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-04 18:52:03
+* @Last Modified time: 2018-04-05 11:40:39
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -55,6 +55,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
+			UTOPIA_RUN_TEST(petsc_init_smoother_test); 
 		}
 
 		void petsc_ngs_test()
@@ -745,6 +746,30 @@ namespace utopia
 
 			}
 		}
+
+
+
+
+
+
+
+
+
+
+		void petsc_init_smoother_test()
+		{
+
+			using namespace utopia;
+			using namespace std;
+
+			auto nonlinear_gs  = std::make_shared<NonLinearConjugateGradient<DSMatrixd, DVectord> >(); 
+
+		}
+
+
+
+
+
 
 
 		PetscNonlinearSolverTest()

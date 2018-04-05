@@ -351,13 +351,6 @@ public:
         ierr = KSPSetTolerances(ksp, PreconditionedSolver::rtol(), PreconditionedSolver::atol(), PETSC_DEFAULT,  PreconditionedSolver::max_it());
     }
 
-private: 
-
-    virtual bool in_array(const std::string &value, const std::vector<std::string> &array)
-    {
-        return std::find(array.begin(), array.end(), value) != array.end();
-    }
-
 
 protected:
 
