@@ -106,7 +106,7 @@ namespace utopia {
 		contact_params.contact_pair_tags = {{1, 2}, {1, 3}, {2, 3}};
 
 		if(dim == 3) {
-			contact_params.search_radius = 0.0001;
+			contact_params.search_radius = 0.0005;
 		} else {
 			contact_params.search_radius = 0.01;
 		}
