@@ -233,6 +233,7 @@ namespace utopia {
 				TaoSolver<Matrix, Vector> tao(linear_solver_);
 				tao.set_box_constraints(box_c);
 				tao.set_type("tron");
+				tao.set_ksp_types("bcgs", "jacobi", " ");
 				// tao.set_type("gpcg");
 				tao.solve(fun, inc_c);
 

@@ -161,20 +161,19 @@ namespace utopia {
 		ierr = TaoSetTolerances(*tao, gatol, grtol, gttol); U_CHECKERR(ierr);
 		ierr = TaoSetMaximumIterations(*tao, maxits); U_CHECKERR(ierr);
 
-
 		KSP ksp;
 		PC pc;
 
 		ierr = TaoGetKSP(*tao, &ksp); U_CHECKERR(ierr);
 
 		if(ksp) {
-			ierr = KSPSetType(ksp, KSPPREONLY); U_CHECKERR(ierr);
-			m_utopia_warning_once("> FIXME: KSP cannot be set from outside yet in TaoSolver");
+			ierr = KSPSetType(ksp, ksp_type_.c_str()); U_CHECKERR(ierr);
+			m_utopia_warning_once("> FIXME (TaoSolver): KSP cannot be set from outside with utopia classes yet");
 
 			ierr = KSPGetPC(ksp, &pc); U_CHECKERR(ierr);
-			ierr = PCSetType(pc, "lu"); U_CHECKERR(ierr);
+			ierr = PCSetType(pc, pc_type_.c_str()); U_CHECKERR(ierr);
 
-			ierr = PCFactorSetMatSolverPackage(pc, "mumps"); U_CHECKERR(ierr);
+			ierr = PCFactorSetMatSolverPackage(pc, solver_package_.c_str()); U_CHECKERR(ierr);
 			ierr = KSPSetInitialGuessNonzero(ksp, PETSC_FALSE); U_CHECKERR(ierr);
 		} else {
 			utopia_error("Tao does not have a ksp");
@@ -195,12 +194,19 @@ namespace utopia {
 	}
 
 	TaoSolverWrapper::TaoSolverWrapper()
-	: data_(nullptr)
+	: data_(nullptr), ksp_type_(KSPPREONLY), pc_type_(PCLU), solver_package_("mumps")
 	{}
 
 	TaoSolverWrapper::~TaoSolverWrapper()
 	{
 		destroy();
+	}
+
+	void TaoSolverWrapper::set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package)
+	{
+		ksp_type_ = ksp;
+		pc_type_ = pc;
+		solver_package_ = solver_package;
 	}
 
 	bool TaoSolverWrapper::set_bounds(const PetscVector &lb, const PetscVector &ub)

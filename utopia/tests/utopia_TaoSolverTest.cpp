@@ -41,6 +41,7 @@ namespace utopia {
 
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(m), make_ref(rhs));
 		TaoSolver<DSMatrixd, DVectord> tao(lsolver);
+		tao.set_ksp_types("bcgs", "jacobi", " ");
 		tao.set_box_constraints(box);
 		// tao.set_type("tron");
 		// tao.set_type("gpcg");
