@@ -12,6 +12,8 @@
 #endif //WITH_MPI
 #endif //WITH_PETSC
 
+#include <cassert>
+
 namespace utopia {
     
     void Utopia::Init(int argc, char *argv[]) {
