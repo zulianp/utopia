@@ -61,7 +61,7 @@ namespace utopia
   	};
 
 
-  	// // line-search version
+  	// line-search version
   	// template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
   	// class Newton
   	// {

@@ -149,11 +149,155 @@ namespace utopia
 
 
 
+    // TODO:: put more options 
+    template<class Matrix, class Vector>
+    class NonLinearGMRES<Matrix, Vector, PETSC> : public SNESSolver<Matrix, Vector>
+    {
+        typedef UTOPIA_SCALAR(Vector)                           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+
+        typedef utopia::SNESSolver<Matrix, Vector>                  SNESSolver;
+        typedef typename NonLinearSolver<Matrix, Vector>::Solver    LinearSolver;
+
+
+        public:
+        NonLinearGMRES( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
+                                    const Parameters params = Parameters()) 
+                                    :   SNESSolver(linear_solver, params)
+        { 
+            set_parameters(params); 
+            this->set_snes_type("ngmres"); 
+        }
+
+        virtual void set_parameters(const Parameters params) override
+        {
+            SNESSolver::set_parameters(params); 
+        }
+
+
+    protected: 
+        virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
+                                                    const Scalar & rtol     = SNESSolver::rtol(), 
+                                                    const Scalar & stol     = SNESSolver::stol(), 
+                                                    const SizeType & max_it = SNESSolver::max_it()) override 
+        {
+            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
+
+            // error oriented LS seems to work the best ... 
+            SNESLineSearch linesearch; 
+            SNESGetLineSearch(snes, &linesearch);
+            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   ); 
+        }
+
+
+    };
 
 
 
 
+    // TODO:: put more options 
+    template<class Matrix, class Vector>
+    class NonLinearAnderson<Matrix, Vector, PETSC> : public SNESSolver<Matrix, Vector>
+    {
+        typedef UTOPIA_SCALAR(Vector)                           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
 
+        typedef utopia::SNESSolver<Matrix, Vector>                  SNESSolver;
+        typedef typename NonLinearSolver<Matrix, Vector>::Solver    LinearSolver;
+
+
+        public:
+        NonLinearAnderson( const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
+                                    const Parameters params = Parameters()) 
+                                    :   SNESSolver(linear_solver, params)
+        { 
+            set_parameters(params); 
+            this->set_snes_type("anderson"); 
+        }
+
+        virtual void set_parameters(const Parameters params) override
+        {
+            SNESSolver::set_parameters(params); 
+        }
+
+
+    protected: 
+        virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
+                                                    const Scalar & rtol     = SNESSolver::rtol(), 
+                                                    const Scalar & stol     = SNESSolver::stol(), 
+                                                    const SizeType & max_it = SNESSolver::max_it()) override 
+        {
+            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
+
+            // error oriented LS seems to work the best ... 
+            SNESLineSearch linesearch; 
+            SNESGetLineSearch(snes, &linesearch);
+            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   ); 
+        }
+
+
+    };
+
+
+    // TODO:: put more options 
+    template<class Matrix, class Vector>
+    class NonLinearRichardson<Matrix, Vector, PETSC> : public SNESSolver<Matrix, Vector>
+    {
+        typedef UTOPIA_SCALAR(Vector)                           Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+
+        typedef utopia::SNESSolver<Matrix, Vector>                  SNESSolver;
+        typedef typename NonLinearSolver<Matrix, Vector>::Solver    LinearSolver;
+
+
+        public:
+        NonLinearRichardson(const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
+                            const Parameters params = Parameters(), const Scalar & alpha = 1.0) :   
+                            SNESSolver(linear_solver, params), alpha_(alpha)
+        { 
+            set_parameters(params); 
+            this->set_snes_type("nrichardson"); 
+        }
+
+        virtual void set_parameters(const Parameters params) override
+        {
+            SNESSolver::set_parameters(params); 
+        }
+
+
+        virtual void set_dumping_parameter(const Scalar & alpha)
+        {
+            alpha_ = alpha; 
+        }
+
+        Scalar get_dumping_parameter()
+        {
+            return alpha_; 
+        }
+
+
+    protected: 
+        virtual void set_snes_options(SNES & snes,  const Scalar & atol     = SNESSolver::atol(), 
+                                                    const Scalar & rtol     = SNESSolver::rtol(), 
+                                                    const Scalar & stol     = SNESSolver::stol(), 
+                                                    const SizeType & max_it = SNESSolver::max_it()) override 
+        {
+            SNESSolver::set_snes_options(snes, atol, rtol, stol, max_it); 
+
+
+            
+            SNESLineSearch linesearch; 
+            SNESGetLineSearch(snes, &linesearch);
+            SNESLineSearchSetType(linesearch,   SNESLINESEARCHCP   ); 
+
+            // set damping 
+            SNESLineSearchSetDamping(linesearch, alpha_); 
+        }
+
+    private: 
+        Scalar alpha_; 
+
+    };
 
 
 
