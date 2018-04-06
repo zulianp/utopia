@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-05 17:56:05
+* @Last Modified time: 2018-04-06 15:23:00
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -56,6 +56,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
+			UTOPIA_RUN_TEST(petsc_slepc_test); 
 		}
 
 		void petsc_ngs_test()
@@ -782,6 +783,26 @@ namespace utopia
 			double diff_rb = norm2(expected_rosenbrock);
 			assert(approxeq(diff_rb, 0., 1e-6));
 		}
+
+
+
+
+
+
+		void petsc_slepc_test()
+		{
+
+			DSMatrixd A = sparse(_n, _n, 3);
+			assemble_laplacian_1D(_n, A);
+
+			Slepc<DSMatrixd, DVectord> slepc; 
+			slepc.bla(A); 
+		}
+
+
+
+
+
 
 
 		PetscNonlinearSolverTest()

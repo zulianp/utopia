@@ -1,3 +1,9 @@
+/*
+* @Author: kopanicakova
+* @Date:   2018-04-05 17:59:33
+* @Last Modified by:   kopanicakova
+* @Last Modified time: 2018-04-06 15:45:05
+*/
 #include "utopia_Instance.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Tracer.hpp"
@@ -20,9 +26,13 @@ namespace utopia {
         
 #ifdef WITH_PETSC
         static char help[] = "initializing utopia environment through petsc";
-        
+    
+    #ifdef WITH_SLEPC
+        SlepcInitialize(&argc,&argv,(char*)0, help); // calls PetscInitialize inside
+    #else        
         PetscInitialize(&argc, &argv, (char *) 0, help);
-        
+    #endif    //WITH_SLEPC
+
         // is this proper place for doing this ???
         KSPRegister("utopia", KSPCreate_UTOPIA);
         
@@ -41,7 +51,12 @@ namespace utopia {
 #endif
         
 #ifdef WITH_PETSC
-        PetscFinalize();
+        #ifdef WITH_SLEPC
+            SlepcFinalize(); // calls PetscFinalize inside 
+        #else        
+            PetscFinalize();
+        #endif    //WITH_SLEPC
+        
 #else
 #ifdef WITH_MPI
         return MPI_Finalize();

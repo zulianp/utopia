@@ -26,6 +26,12 @@
 
 #include "utopia_petsc_Newton.hpp"
 
+
+#ifdef WITH_SLEPC
+	#include "utopia_petsc_Slepc.hpp"
+#endif
+
+
 // very much experimental files for the moment 
 #include "utopia_petsc_SNES.hpp"
 #include "utopia_petsc_UTOPIA_KSP_Solver.hpp"
