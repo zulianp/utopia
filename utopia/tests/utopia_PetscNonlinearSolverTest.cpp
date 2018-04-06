@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-06 15:23:00
+* @Last Modified time: 2018-04-06 18:40:21
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -56,7 +56,6 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
-			UTOPIA_RUN_TEST(petsc_slepc_test); 
 		}
 
 		void petsc_ngs_test()
@@ -785,7 +784,28 @@ namespace utopia
 		}
 
 
+		PetscNonlinearSolverTest()
+		: _n(100) { }
+		
+	private:
+		int _n;
+	};
 
+#endif //WITH_PETSC
+	
+
+
+
+
+
+#ifdef  WITH_SLEPC
+	class SlepcsSolverTest {
+	public:
+		
+		void run()
+		{
+			UTOPIA_RUN_TEST(petsc_slepc_test); 
+		}
 
 
 
@@ -800,27 +820,30 @@ namespace utopia
 		}
 
 
-
-
-
-
-
-		PetscNonlinearSolverTest()
+		SlepcsSolverTest()
 		: _n(100) { }
 		
 	private:
 		int _n;
 	};
 
-#endif //WITH_PETSC
-	
+#endif //WITH_SLEPC
+
+
+
 	void runPetscNonlinearSolversTest()
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runPetscNonlinearSolverTest");
-#ifdef WITH_PETSC
-		PetscNonlinearSolverTest().run();
-#endif
-		
-		UTOPIA_UNIT_TEST_END("runPetscNonlinearSolverTest");
+		#ifdef WITH_PETSC
+				PetscNonlinearSolverTest().run();
+		#endif
+		UTOPIA_UNIT_TEST_END("runPetscNonlinearSolverTest");				
+
+
+		UTOPIA_UNIT_TEST_BEGIN("runSlepcsSolverTest");
+		#ifdef  WITH_SLEPC
+				SlepcsSolverTest().run();
+		#endif		
+		UTOPIA_UNIT_TEST_END("runSlepcsSolverTest");				
 	}
 }
