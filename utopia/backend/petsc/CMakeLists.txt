@@ -47,7 +47,7 @@ if(PETSC_FOUND)
 		set(WITH_SLEPC TRUE)
 	else()
 	    message(WARNING "[Warning] Slepc not found")
-	    set(WITH_SLEPC OFF)
+	    set(WITH_SLEPC FALSE)
 	endif()
 endif()
 
