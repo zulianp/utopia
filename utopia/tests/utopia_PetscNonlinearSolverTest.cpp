@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-06 18:40:21
+* @Last Modified time: 2018-04-07 18:35:34
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -815,13 +815,28 @@ namespace utopia
 			DSMatrixd A = sparse(_n, _n, 3);
 			assemble_laplacian_1D(_n, A);
 
-			Slepc<DSMatrixd, DVectord> slepc; 
-			slepc.bla(A); 
+			EigenvelueProblemSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
+			slepc.solve(A); 
+			slepc.print_eigenpairs(); 
+
+			PetscScalar iegr, eigi; 
+			DVectord vr, vi; 
+
+			slepc.get_eigenpairs(0, iegr, eigi, vr, vi); 
+
+			std::cout<<"eigenvalues: "<< iegr << "  " << eigi << " \n"; 
+			std::cout<<"eigenvector:   \n"; 
+			disp(vr); 
+
+			slepc.get_real_eigenpair(1, iegr, vr); 
+			std::cout<<"eigenvalue: "<< iegr << " \n"; 
+			std::cout<<"eigenvector:   \n"; 
+			disp(vr); 
 		}
 
 
 		SlepcsSolverTest()
-		: _n(100) { }
+		: _n(10) { }
 		
 	private:
 		int _n;
