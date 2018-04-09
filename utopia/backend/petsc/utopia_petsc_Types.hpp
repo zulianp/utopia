@@ -154,13 +154,13 @@ namespace utopia {
 
     inline DSMatrixd sparse_mref(Mat &m) {
         DSMatrixd ret;
-        Backend<PetscScalar, PETSC>::Instance().wrap(m, ret.implementation());
+        ret.implementation().wrap(m);
         return ret;
     }
 
-    inline const DSMatrixd sparse_mref(const Mat &m) {
+    inline DSMatrixd sparse_mref(const Mat &m) {
         DSMatrixd ret;
-        Backend<PetscScalar, PETSC>::Instance().wrap(m, ret.implementation());
+        ret.implementation().wrap(const_cast<Mat &>(m));
         return ret;
     }
 

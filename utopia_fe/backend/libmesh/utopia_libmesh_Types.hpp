@@ -160,7 +160,7 @@ namespace utopia {
 		}
 
 		template<typename T>
-		void build(libMesh::DenseMatrix<T> &m, const Size &size, const Zeros & /*values*/) {
+		inline static void build(libMesh::DenseMatrix<T> &m, const Size &size, const Zeros & /*values*/) {
 			m.resize(size.get(0), size.get(1));
 			m.zero();
 		}
@@ -181,7 +181,7 @@ namespace utopia {
 		}
 		
 		template<typename T>
-		void resize(libMesh::DenseMatrix<T> &mat, const Size &size)
+		inline static void resize(libMesh::DenseMatrix<T> &mat, const Size &size)
 		{
 			if(mat.m() != size.get(0) && mat.n() != size.get(1)) {
 				mat.resize(size.get(0), size.get(1));
@@ -189,11 +189,16 @@ namespace utopia {
 		}
 		
 		template<typename T>
-		void resize(libMesh::DenseVector<T> &vec, const Size &size)
+		inline static void resize(libMesh::DenseVector<T> &vec, const Size &size)
 		{
 			if(vec.size() != size.get(0)) {
 				vec.resize(size.get(0));
 			}
+		}
+
+		template<class L, class R>
+		inline static void assign(L &left, R &&right) {
+			left = std::forward<R>(right);
 		}
 		
 	private:

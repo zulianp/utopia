@@ -7,7 +7,6 @@
 
 #include "utopia_Eval_Empty.hpp"
 
-
 namespace utopia {
 
     // [new backend map concept]
@@ -19,8 +18,8 @@ namespace utopia {
     class Eval<Construct<Left, Right>, Traits, Backend> {
     public:
         inline static bool apply(const Construct<Left, Right> &expr) {
-            UTOPIA_TRACE_BEGIN(expr);
 
+            UTOPIA_TRACE_BEGIN(expr);
             UTOPIA_BACKEND(Traits).assign(Eval<Left,  Traits>::apply(expr.left()),
                                           Eval<Right, Traits>::apply(expr.right()) );
 

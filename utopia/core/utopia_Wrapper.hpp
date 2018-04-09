@@ -17,6 +17,7 @@
 #include "utopia_Ranged.hpp"
 #include "utopia_Select.hpp"
 
+
 #include <iostream>
 #include <type_traits>
 
@@ -79,9 +80,7 @@ namespace utopia {
             StoreAs = UTOPIA_BY_REFERENCE
         };
 
-        virtual ~Wrapper()
-				{
-				}
+        virtual ~Wrapper() {}
 
         template<class Derived>
         Wrapper(const Expression<Derived> &expr) {
@@ -94,10 +93,22 @@ namespace utopia {
             return *this;
         }
 
-        // Wrapper(const int rows, const int cols, std::initializer_list<Scalar> list)
-        // : _impl(rows, cols, list)
-        // {
-        // }
+        Wrapper & operator=(Wrapper &&other) {
+             utopia::Backend<Scalar, Traits<Implementation>::Backend>::Instance().assign(_impl, std::move(other._impl));
+            return *this;
+        }
+
+        Wrapper & operator=(const Wrapper &other) {
+            utopia::Backend<Scalar, Traits<Implementation>::Backend>::Instance().assign(_impl, other._impl);
+            return *this;
+        }
+
+
+        Wrapper(const Wrapper &expr) {
+            // evaluator().eval(Construct<Wrapper, Wrapper>(*this, expr));
+            //FIXME
+            _impl = expr._impl;
+        }
         
         Wrapper() { }
 

@@ -83,6 +83,14 @@ namespace utopia
             {
                 std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it << ", no more energy reduction. \033[0m\n";
             }
+            else if(convergence_reason == CONVERGED_FNORM_RELATIVE)
+            {
+                std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it << ", (|| F ||/|| F_0|| < atol). \033[0m\n";
+            }            
+            else if(convergence_reason == CONVERGED_FNORM_ABS)
+            {
+                std::cout << "\033[1;32m  NonlinearSolver terminated at iteration " << num_it << ", (|| F || < atol). \033[0m\n";
+            }                        
             else if(convergence_reason < 0)
             {
                 std::cerr << "\033[1;31m [Error] NonlinearSolver stopped at iteration " << num_it << " . \033[0m\n";

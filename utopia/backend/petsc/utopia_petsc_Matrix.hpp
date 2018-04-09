@@ -82,6 +82,11 @@ namespace utopia {
 		{
 			owner_ = owner;
 		}
+
+		inline bool is_owner() const
+		{
+			return owner_;
+		}
 		
 	private:
 		Mat _mat;
@@ -286,6 +291,15 @@ namespace utopia {
 
         bool is_mpi() const;
         bool is_nan_or_inf() const;
+        
+        inline bool is_owner() const
+        {
+        	if(wrapper_) {
+        		return wrapper_->is_owner();
+        	} else {
+        		return false;
+        	}
+        }
 
 
         inline void scale(const PetscScalar factor)
@@ -385,6 +399,10 @@ namespace utopia {
 		void axpy(const PetscScalar alpha, const PetscMatrix &x);
 
 		void convert_to_mat_baij(const PetscInt block_size);
+
+		PetscBool is_initialized_as( MPI_Comm comm, MatType dense_type, PetscInt local_rows, PetscInt local_cols, PetscInt global_rows, PetscInt global_cols); 
+
+
 	private:
 		std::shared_ptr<PetscMatrixMemory> wrapper_;
 		

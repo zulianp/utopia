@@ -1,9 +1,3 @@
-/*
-* @Author: kopanicakova
-* @Date:   2018-03-09 12:33:23
-* @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-09 13:14:13
-*/
 
 #include "utopia_petsc_Backend.hpp"
 
@@ -481,7 +475,7 @@ namespace utopia {
 	
 	/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
 	void PetscBackend::build(PetscMatrix  &m, const Size &size, const NNZ<PetscInt> &, const PetscArgs &opts)
-	{
+	{	
 		build(m, size, Zeros());
 	}
 	

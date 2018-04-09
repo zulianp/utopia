@@ -105,7 +105,11 @@ namespace utopia
             log_system_         = params.log_system(); 
             check_diff_         = params.differentiation_control(); 
 
-            linear_solver_->set_parameters(params); 
+
+            if(linear_solver_)
+                linear_solver_->set_parameters(params); 
+            else
+                std::cout<<"WARNING:: NonLinearSolver::linear_solver_ - empty \n";
         }
 
 
