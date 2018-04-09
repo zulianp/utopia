@@ -177,7 +177,6 @@ namespace utopia {
 
 		if(ksp) {
 			ierr = KSPSetType(ksp, ksp_type_.c_str()); U_CHECKERR(ierr);
-			m_utopia_warning_once("> FIXME (TaoSolver): KSP cannot be set from outside with utopia classes yet");
 
 			ierr = KSPGetPC(ksp, &pc); U_CHECKERR(ierr);
 			ierr = PCSetType(pc, pc_type_.c_str()); U_CHECKERR(ierr);

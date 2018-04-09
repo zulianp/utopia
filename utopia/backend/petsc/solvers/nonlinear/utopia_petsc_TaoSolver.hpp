@@ -78,8 +78,7 @@ namespace utopia {
 
 			if(ksp_solver) {
 				set_ksp_types(ksp_solver->ksp_type(), ksp_solver->pc_type(), ksp_solver->solver_package());
-			} else {
-				m_utopia_warning_once("> FIXME TaoSolver does not support non KSP based linear solvers");
+				m_utopia_warning_once("> FIXME TaoSolver does not consider the ksp tollerances");
 			}
 
 			impl_.init(
