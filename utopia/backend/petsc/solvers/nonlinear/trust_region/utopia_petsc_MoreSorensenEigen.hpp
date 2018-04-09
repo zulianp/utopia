@@ -71,8 +71,11 @@ protected:
 	        		return true; 
 	        	else
 	        	{
-	        		std::cerr<<"we can not handle hard case  yet ......... \n"; 	
-	        		return false; 
+	        		// we are in hard case, let's find solution on boundary, which is orthogonal to E_1
+	        		//                     because eigenvector is normalized
+	        		Scalar alpha = quadratic_function(1.0, 2.0 * dot(s_k, eigenvector), dot(s_k, s_k) - (this->current_radius() * this->current_radius())); 
+	        		s_k += alpha * eigenvector;  
+	        		return true; 
 	        	}
 	        }
 
@@ -81,12 +84,8 @@ protected:
 
 	        for(auto it = 0; it < max_it_; it++)
 	        {
-
 		        if( std::abs(s_norm - this->current_radius()) <= kappa_easy_ *  this->current_radius())
-		        {
-		        	// std::cout<<"we found approximate minimizer after: "<< it << "  iterations. \n"; 
 		        	return true; 
-		        }
 
 	        	Vector grad_s_lambda = 0 * s_k; 
 	        	linear_solver_->solve(H_lambda, -1 * s_k, grad_s_lambda); 
@@ -94,12 +93,12 @@ protected:
 	        	Scalar grad 	= 1.0/s_norm - 1.0/ this->current_radius(); 
 	        	Scalar hessian 	= -1.0 * dot(s_k, grad_s_lambda)/ std::pow(s_norm, 3); 
 
-	        	// new iterate 
+	        	
 	        	lambda -=  grad/hessian; 
 		        it++; 
 
 		        // H should be H + \lambda I 
-		        // TODO:: investigate why it does not work with mat multiply... 
+		        // TODO:: investigate why it does not work with mat multiply... something is wrong with mat allocations... 
 		        H_lambda = H;
 		        {
 					Write<Matrix> w(H_lambda);
@@ -128,6 +127,22 @@ protected:
 
 
 
+
+   private: 
+
+   	// TODO:: find out if lower better than upper
+   	Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
+   	{
+   		Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c); 
+
+		Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a); 
+		Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a); 
+
+   		return lower; 
+   	}
+
+
+
     private: 
      	std::shared_ptr<LinearSolver> linear_solver_;     
      	std::shared_ptr<EigenSolver> eigen_solver_;     
@@ -136,6 +151,14 @@ protected:
      	Scalar kappa_easy_; 
      	SizeType max_it_; 
      	Scalar lambda_eps_; 
+
+
+
+
+
+
+
+
 
 
     };
