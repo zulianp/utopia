@@ -4,6 +4,7 @@
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
+#include "utopia_petsc_KSPSolver.hpp"
 #include "utopia_petsc_Types.hpp"
 #include "utopia_Function.hpp"
 #include <mpi.h>
@@ -51,6 +52,14 @@ namespace utopia {
 			this->stol(1e-19);
 		}
 
+		TaoSolver()
+		: NonLinearSolver<Matrix, Vector>(nullptr)
+		{
+			this->atol(1e-19);
+			this->rtol(1e-12); 
+			this->stol(1e-19);
+		}
+
 		void set_type(const std::string &type)
 		{
 			type_ = type;
@@ -63,7 +72,15 @@ namespace utopia {
 
 		bool solve(Function<Matrix, Vector> &fun, Vector &x)
 		{	
-			// auto factorization = std::dynamic_pointer_cast<Factorization<Matrix, Vector>>()
+			if(this->linear_solver()) {
+				auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector>>(this->linear_solver());
+				if(ksp_solver) {
+					set_ksp_types(ksp_solver->ksp_type(), ksp_solver->pc_type(), ksp_solver->solver_package());
+				} else {
+					m_utopia_warning_once("> FIXME TaoSolver does not support non KSP based linear solvers");
+				}
+			}
+
 			impl_.init(
 				x.implementation().communicator(),
 				type_,
