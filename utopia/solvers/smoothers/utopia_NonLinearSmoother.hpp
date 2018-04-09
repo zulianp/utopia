@@ -97,7 +97,7 @@ namespace utopia {
          * @brief      verbose ? 
          *
          */
-        virtual void verbose(const SizeType & verbose)
+        virtual void verbose(const bool & verbose)
         {
             _verbose = verbose;
         }

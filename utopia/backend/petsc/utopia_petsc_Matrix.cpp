@@ -561,6 +561,38 @@ namespace utopia {
 		check_error( MatDiagonalSet( result.implementation(), vec.implementation(), INSERT_VALUES ) );
 	}
 
+
+
+	PetscBool PetscMatrix::is_initialized_as( 	MPI_Comm comm,
+								        	MatType dense_type,
+								        	PetscInt local_rows,
+								        	PetscInt local_cols,
+								        	PetscInt global_rows,
+								        	PetscInt global_cols)
+	{
+
+		// TODO:: check type and comm
+
+		PetscBool initialized; 
+		MatAssembled(implementation(), &initialized); 
+
+		if(initialized && (local_rows > 0 && global_cols > 0))
+		{
+			PetscInt m, n; 
+			MatGetLocalSize(implementation(), &m, &n); 
+			initialized = (m==local_rows && n == local_cols) ? PETSC_TRUE : PETSC_FALSE; 
+		}
+
+		if(initialized)
+		{
+			PetscInt m, n; 
+			MatGetSize(implementation(), &m, &n); 
+			initialized = (m==global_rows && n == global_cols) ? PETSC_TRUE : PETSC_FALSE; 
+		}
+
+		return initialized; 
+	}
+
 	void PetscMatrix::dense_init_values(
         	MPI_Comm comm,
         	MatType dense_type,
@@ -571,7 +603,8 @@ namespace utopia {
         	PetscScalar value
         )
 	{
-		dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+		if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
+			dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
 	
 		const auto r = row_range();
 		const PetscInt r_begin = r.begin();
@@ -587,6 +620,7 @@ namespace utopia {
 		MatAssemblyEnd(implementation(), MAT_FINAL_ASSEMBLY);
 	}
 
+
 	void PetscMatrix::dense_init_identity(
 		MPI_Comm comm,
 		MatType dense_type,
@@ -596,7 +630,8 @@ namespace utopia {
 		PetscInt global_cols,
 		PetscScalar scale_factor)
 	{
-		dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+		if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
+			dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
 
 		check_error( MatZeroEntries(implementation()) );
 
@@ -621,15 +656,16 @@ namespace utopia {
 		PetscInt global_cols,
 		PetscScalar scale_factor)
 	{
-		matij_init(
-			comm,
-			local_rows,
-			local_cols,
-			global_rows,
-			global_cols,
-			1,
-			0
-		);
+		if(!is_initialized_as(comm, MATAIJ, local_rows, local_cols, global_rows, global_cols))
+			matij_init(
+				comm,
+				local_rows,
+				local_cols,
+				global_rows,
+				global_cols,
+				1,
+				0
+			);
 
 		MatZeroEntries(implementation());
 

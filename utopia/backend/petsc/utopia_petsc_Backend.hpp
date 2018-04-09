@@ -82,6 +82,7 @@ namespace utopia {
 		static void convert(const PetscMatrix &wrapper, Mat mat);
 		static void convert(const PetscSparseMatrix &wrapper, Mat mat);
 		static void wrap(Mat mat, PetscSparseMatrix &wrapper);
+
 		static void wrap(Vec vec, PetscVector &wrapper);
 		
 		static Range range(const PetscVector &v);

@@ -22,11 +22,13 @@
 #include "utopia_petsc_LinearSolverFactory.hpp"
 #include "utopia_petsc_TrustRegionFactory.hpp"
 #include "utopia_petsc_solvers.hpp"
-#include "utopia_petsc_solvers.hpp"
+
+
+#include "utopia_petsc_Newton.hpp"
 
 // very much experimental files for the moment 
 #include "utopia_petsc_SNES.hpp"
-#include "utopia_petsc_UTOPIA_KSP_Solver.hpp"
+#include "utopia_petsc_build_ksp.hpp"
 
 
 namespace utopia {

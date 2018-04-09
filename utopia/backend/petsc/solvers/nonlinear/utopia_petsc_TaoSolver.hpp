@@ -7,6 +7,7 @@
 #include "utopia_petsc_KSPSolver.hpp"
 #include "utopia_petsc_Types.hpp"
 #include "utopia_Function.hpp"
+#include "utopia_petsc_build_ksp.hpp"
 #include <mpi.h>
 #include <string>
 
@@ -31,6 +32,7 @@ namespace utopia {
 		void set_function(Function<DSMatrixd, DVectord> &fun);
 
 		void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package);
+		bool get_ksp(KSP *ksp);
 	private:
 		void * data_;
 		std::string ksp_type_;
@@ -72,13 +74,12 @@ namespace utopia {
 
 		bool solve(Function<Matrix, Vector> &fun, Vector &x)
 		{	
-			if(this->linear_solver()) {
-				auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector>>(this->linear_solver());
-				if(ksp_solver) {
-					set_ksp_types(ksp_solver->ksp_type(), ksp_solver->pc_type(), ksp_solver->solver_package());
-				} else {
-					m_utopia_warning_once("> FIXME TaoSolver does not support non KSP based linear solvers");
-				}
+			auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector>>(this->linear_solver());
+
+			if(ksp_solver) {
+				set_ksp_types(ksp_solver->ksp_type(), ksp_solver->pc_type(), ksp_solver->solver_package());
+			} else {
+				m_utopia_warning_once("> FIXME TaoSolver does not support non KSP based linear solvers");
 			}
 
 			impl_.init(
@@ -89,6 +90,12 @@ namespace utopia {
 				this->stol(),
 				this->max_it()
 			);
+
+			if(this->linear_solver() && !ksp_solver) {
+				KSP ksp;
+				impl_.get_ksp(&ksp);
+				build_ksp(this->linear_solver(), ksp);
+			}
 			
 			if(box_constraints_.has_bound()) {
 				box_constraints_.fill_empty_bounds();

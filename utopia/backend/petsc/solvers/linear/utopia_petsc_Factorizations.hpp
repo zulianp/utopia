@@ -25,6 +25,11 @@ namespace utopia {
 		    strategy_.set_parameters(params);
 		} 
 
+		void set_library_type(const DirectSolverLib & TAG)
+		{
+			strategy_.set_type(TAG, CHOLESKY_DECOMPOSITION_TAG); 
+		}
+
 		CholeskyDecomposition()
 		{
 #ifdef PETSC_HAVE_MUMPS			
@@ -58,6 +63,12 @@ namespace utopia {
 		    LinearSolver<Matrix, Vector>::set_parameters(params);
 		    strategy_.set_parameters(params);
 		} 
+
+		void set_library_type(const DirectSolverLib & TAG)
+		{
+			strategy_.set_type(TAG, LU_DECOMPOSITION_TAG); 
+		}
+
 
 		LUDecomposition()
 		{

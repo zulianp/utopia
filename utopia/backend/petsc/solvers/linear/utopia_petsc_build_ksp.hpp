@@ -1,11 +1,5 @@
-/*
-* @Author: Alena Kopanicakova
-* @Date:   2018-03-3
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2018-03-3
-*/
-#ifndef UTOPIA_UTOPIA_KSP_HPP
-#define UTOPIA_UTOPIA_KSP_HPP
+#ifndef UTOPIA_PETSC_BUILD_KSP_HPP
+#define UTOPIA_PETSC_BUILD_KSP_HPP
 
 #include "utopia_Core.hpp"
 #include "utopia_LinearSolver.hpp"
@@ -21,7 +15,6 @@
 */
 #include <petsc/private/kspimpl.h>
 #include <iostream>
-
 
 PETSC_EXTERN PetscErrorCode KSPCreate_UTOPIA(KSP);
 PETSC_INTERN PetscErrorCode KSPDestroy_UTOPIA(KSP);
@@ -42,11 +35,9 @@ typedef struct
 } KSP_UTOPIA;
 
 
-namespace utopia
-{
-
+namespace utopia {
 	template<typename Matrix, typename Vector>
-	void configure_KSP_utopia(const std::shared_ptr<utopia::LinearSolver<Matrix, Vector> > & lin_solver, KSP & ksp)
+	void build_ksp(const std::shared_ptr<utopia::LinearSolver<Matrix, Vector> > & lin_solver, KSP &ksp)
 	{
 		using namespace utopia; 
 

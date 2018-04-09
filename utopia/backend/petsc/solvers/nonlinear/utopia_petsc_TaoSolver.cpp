@@ -140,6 +140,15 @@ namespace utopia {
 		UtopiaTaoSetUp(*tao, fun);
 	}
 
+	bool TaoSolverWrapper::get_ksp(KSP *ksp)
+	{
+		if(!data_) return false;
+
+		auto tao = (Tao *) &data_;
+		PetscErrorCode ierr = TaoGetKSP(*tao, ksp); U_CHECKERR(ierr);
+		return true;
+	}
+
 	bool TaoSolverWrapper::init(
 		MPI_Comm comm,
 		const std::string &type,

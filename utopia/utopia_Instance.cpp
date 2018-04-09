@@ -5,7 +5,7 @@
 
 #ifdef WITH_PETSC
 #include "petscsys.h"
-#include "utopia_petsc_UTOPIA_KSP_Solver.hpp"
+#include "utopia_petsc_build_ksp.hpp"
 #else
 #ifdef WITH_MPI
 #include <mpi.h>
