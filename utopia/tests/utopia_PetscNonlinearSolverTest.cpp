@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-09 10:38:56
+* @Last Modified time: 2018-04-09 11:34:25
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -815,12 +815,12 @@ namespace utopia
 			DSMatrixd A = sparse(_n, _n, 3);
 			assemble_laplacian_1D(_n, A);
 
+			bool verbose = false; 
+
 			EigenvelueProblemSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
 
-
 			slepc.portion_of_spectrum("smallest_real"); 
-
-
+			slepc.verbose(verbose); 
 			slepc.solve(A); 
 			slepc.print_eigenpairs(); 
 
@@ -829,14 +829,8 @@ namespace utopia
 
 			slepc.get_eigenpairs(0, iegr, eigi, vr, vi); 
 
-			std::cout<<"eigenvalues: "<< iegr << "  " << eigi << " \n"; 
-			std::cout<<"eigenvector:   \n"; 
-			disp(vr); 
-
 			slepc.get_real_eigenpair(1, iegr, vr); 
-			std::cout<<"eigenvalue: "<< iegr << " \n"; 
-			std::cout<<"eigenvector:   \n"; 
-			disp(vr); 
+
 		}
 
 

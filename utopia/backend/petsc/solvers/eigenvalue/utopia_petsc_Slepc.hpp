@@ -48,6 +48,9 @@ namespace utopia
             problem_type_           = problem_types_.at(0); 
             portion_of_spectrum_    = portions_of_spectrum_.at(0);
             solver_type_            = solver_types_.at(0); 
+
+
+            verbose_                = params.verbose();
         }   
 
 
@@ -125,6 +128,17 @@ namespace utopia
         }
 
 
+        virtual const bool & verbose() const 
+        {
+            return verbose_; 
+        }
+
+
+        virtual void verbose(const bool & verbose)  
+        {
+            verbose_ = verbose; 
+        }
+
 
         virtual bool solve(const Matrix & A)
         {
@@ -144,17 +158,16 @@ namespace utopia
             EPSConvergedReason convergence_reason; 
             EPSGetConvergedReason(eps_, &convergence_reason); 
 
-            PetscInt its; 
-            EPSGetIterationNumber(eps_, &its);
-
-            std::cout<<"it:  "<< its << "  \n"; 
+            // PetscInt its; 
+            // EPSGetIterationNumber(eps_, &its);
+            // std::cout<<"it:  "<< its << "  \n"; 
 
 
 
             if(convergence_reason > 0)
                 solved_ = true; 
             else
-                std::cout<<"Solver did not converge... \n"; 
+                std::cout<<"EigenSolver did not converge... \n"; 
 
             return true; 
         }
@@ -162,6 +175,10 @@ namespace utopia
 
         virtual bool print_eigenpairs()
         {
+
+            if(!verbose())
+                return false; 
+
             if(!solved_)
             {
                 std::cerr<<"You need to solve before query eigenpairs.... \n"; 
@@ -346,6 +363,8 @@ namespace utopia
 
         SizeType max_it_; 
         Scalar tol_; 
+
+        bool verbose_; 
 
 
     };
