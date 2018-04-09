@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-09 14:07:38
+* @Last Modified time: 2018-04-09 17:45:16
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -809,6 +809,7 @@ namespace utopia
 		{
 			UTOPIA_RUN_TEST(petsc_slepc_test); 
 			UTOPIA_RUN_TEST(nested_mat_test); 
+			UTOPIA_RUN_TEST(tr_more_sorensen_eigen_test); 
 		}
 
 
@@ -821,7 +822,7 @@ namespace utopia
 
 			bool verbose = false; 
 
-			EigenvelueProblemSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
+			EigenValueSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
 
 			slepc.portion_of_spectrum("smallest_real"); 
 			slepc.verbose(verbose); 
@@ -841,8 +842,6 @@ namespace utopia
 
     void nested_mat_test()
     {
-        std::cout<<"begin: nested_mat_test   \n"; 
-
         DSMatrixd merged_mat; 
         DVectord merged_vec; 
 
@@ -869,12 +868,10 @@ namespace utopia
         x[1] = raw_type(x2); 
         
         VecCreateNest(PETSC_COMM_WORLD, 2, NULL, x, & raw_type(merged_vec)); 
-
         DVectord result = merged_mat * merged_vec; 
-        // disp(result); 
 
-        bool verbose = true; 
-        EigenvelueProblemSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
+        bool verbose = false; 
+        EigenValueSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
 
         slepc.portion_of_spectrum("smallest_real"); 
         slepc.number_of_eigenvalues(1); 
@@ -888,10 +885,81 @@ namespace utopia
 
         VecDestroy(& raw_type(merged_vec)); 
         MatDestroy(& raw_type(merged_mat)); 
-
-
-        std::cout<<"end: nested_mat_test   \n"; 
     }
+
+
+
+    void tr_more_sorensen_eigen_test()
+    {
+        std::cout<<"begin: tr_more_sorensen_eigen_test   \n"; 
+
+       	DVectord x_w1  = values(4, 10);
+		DVectord expected_woods = values(4, 1);
+		Woods<DMatrixd, DVectord> fun_woods;
+
+
+		{
+			Write<DVectord> w1(x_w1);
+			x_w1.set(0, -3);
+			x_w1.set(1, -1);
+			x_w1.set(2, -3);
+			x_w1.set(3, -1);
+		}
+				
+
+		auto subproblem = std::make_shared<utopia::KSP_TR<DMatrixd, DVectord> >();
+		subproblem->atol(1e-14); 
+		subproblem->rtol(1e-14); 
+
+
+		TrustRegion<DMatrixd, DVectord> tr_solver(subproblem);
+		tr_solver.verbose(true);
+		tr_solver.max_it(500); 
+		tr_solver.atol(1e-11); 
+		tr_solver.rtol(1e-14); 
+		tr_solver.stol(1e-12); 
+		tr_solver.solve(fun_woods, x_w1);				
+		
+
+
+		auto eigen_solver = std::make_shared<EigenValueSlover<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+		// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+		auto linear_solver = std::make_shared<BiCGStab<DMatrixd, DVectord>>();
+		linear_solver->atol(1e-14); 
+
+		auto ms_subproblem = std::make_shared<utopia::MoreSorensenEigen<DMatrixd, DVectord> >(linear_solver, eigen_solver);
+
+
+		// reset initial guess
+		{
+			Write<DVectord> w1(x_w1);
+			x_w1.set(0, -3);
+			x_w1.set(1, -1);
+			x_w1.set(2, -3);
+			x_w1.set(3, -1);
+		}
+
+
+		TrustRegion<DMatrixd, DVectord> tr_solver2(ms_subproblem);
+		tr_solver2.verbose(true);
+		tr_solver2.max_it(500); 
+		tr_solver2.atol(1e-11); 
+		tr_solver2.rtol(1e-14); 
+		tr_solver2.stol(1e-15); 
+		tr_solver2.solve(fun_woods, x_w1);				
+		
+
+
+
+
+
+
+        std::cout<<"end: tr_more_sorensen_eigen_test   \n"; 
+    }
+
+
+
+
 
 
 		SlepcsSolverTest()

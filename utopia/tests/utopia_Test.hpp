@@ -28,7 +28,7 @@ namespace utopia
         runBLASTest();
         runMiscTest();
         run_trilinos_test();
-        // run_tao_solver_test();
+        run_tao_solver_test();
 
         //only works for serial
         if(mpi_world_size() == 1) {
