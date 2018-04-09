@@ -1,4 +1,10 @@
 /*
+* @Author: kopanicakova
+* @Date:   2018-04-05 17:59:33
+* @Last Modified by:   kopanicakova
+* @Last Modified time: 2018-04-09 12:40:40
+*/
+/*
 * @Author: Eric Botter
 * @Date:   2016-11-15
 */
@@ -1096,6 +1102,8 @@ namespace utopia {
         assert(approxeq(n * mpi_world_size(), s));
     }
 
+
+
     #endif //WITH_PETSC;
 
     void runPetscTest() {
@@ -1135,7 +1143,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_tensor_reduction_test);
         UTOPIA_RUN_TEST(petsc_precond_test);
         UTOPIA_RUN_TEST(petsc_binary_min_max);
-        
+    
 
         //serial tests
         UTOPIA_RUN_TEST(petsc_inverse_test);

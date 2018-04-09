@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-09 11:34:25
+* @Last Modified time: 2018-04-09 12:47:06
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -805,6 +805,7 @@ namespace utopia
 		void run()
 		{
 			UTOPIA_RUN_TEST(petsc_slepc_test); 
+			UTOPIA_RUN_TEST(nested_mat_test); 
 		}
 
 
@@ -834,6 +835,63 @@ namespace utopia
 		}
 
 
+
+    void nested_mat_test()
+    {
+        std::cout<<"begin: nested_mat_test   \n"; 
+
+        DSMatrixd M00 = local_identity(2, 2);
+        DSMatrixd M01 = 2* local_identity(2, 3);
+        DSMatrixd M10 = 3* local_identity(3, 2);
+        DSMatrixd M11 = 4 *local_identity(3, 3);
+
+        DSMatrixd merged_mat; 
+
+        Mat matrices[4]; 
+
+        matrices[0] = raw_type(M00); 
+        matrices[1] = raw_type(M01); 
+        matrices[2] = raw_type(M10); 
+        matrices[3] = raw_type(M11); 
+
+        MatCreateNest(PETSC_COMM_WORLD, 2, NULL, 2, NULL, matrices, &raw_type(merged_mat));
+
+        disp(merged_mat); 
+
+        Vec x[2]; 
+
+        DVectord x1 = local_values(2, 3.0); 
+        DVectord x2 = local_values(3, 10.0); 
+
+        x[0] = raw_type(x1); 
+        x[1] = raw_type(x2); 
+
+
+        DVectord merged_vec; 
+        VecCreateNest(PETSC_COMM_WORLD, 2, NULL, x, & raw_type(merged_vec)); 
+
+
+        disp(merged_vec); 
+        DVectord result = merged_mat * merged_vec; 
+        disp(result); 
+
+        bool verbose = true; 
+        EigenvelueProblemSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
+
+        slepc.portion_of_spectrum("smallest_real"); 
+        slepc.number_of_eigenvalues(1); 
+        slepc.solver_type("arnoldi"); 
+
+        slepc.verbose(verbose); 
+        slepc.tol(1e-12); 
+        slepc.solve(merged_mat); 
+        slepc.print_eigenpairs(); 
+
+
+        std::cout<<"end: nested_mat_test   \n"; 
+    }
+
+
 		SlepcsSolverTest()
 		: _n(10) { }
 		
@@ -842,7 +900,6 @@ namespace utopia
 	};
 
 #endif //WITH_SLEPC
-
 
 
 	void runPetscNonlinearSolversTest()

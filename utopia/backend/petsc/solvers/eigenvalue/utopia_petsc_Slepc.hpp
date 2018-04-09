@@ -163,7 +163,6 @@ namespace utopia
             // std::cout<<"it:  "<< its << "  \n"; 
 
 
-
             if(convergence_reason > 0)
                 solved_ = true; 
             else
