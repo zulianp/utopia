@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-09 12:47:06
+* @Last Modified time: 2018-04-09 14:07:38
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -769,18 +769,21 @@ namespace utopia
 			nlsolver.solve(fun, x);
 			assert(approxeq(expected, x));
 
-			Rosenbrock<DSMatrixd, DVectord> rosenbrock;
-			DVectord expected_rosenbrock = values(2, 1.0);
-			DVectord x0_ros   			 = values(2, 1.5);
+			if(mpi_world_size() == 1)
+			{
+				Rosenbrock<DSMatrixd, DVectord> rosenbrock;
+				DVectord expected_rosenbrock = values(2, 1.0);
+				DVectord x0_ros   			 = values(2, 1.5);
 
-			nlsolver.set_line_search_type("cp"); 
-			nlsolver.set_line_search_order(3); 
-			nlsolver.max_it(1000); 
-			nlsolver.solve(rosenbrock, x0_ros); 
+				nlsolver.set_line_search_type("cp"); 
+				nlsolver.set_line_search_order(3); 
+				nlsolver.max_it(1000); 
+				nlsolver.solve(rosenbrock, x0_ros); 
 
-			expected_rosenbrock -= x0_ros; 
-			double diff_rb = norm2(expected_rosenbrock);
-			assert(approxeq(diff_rb, 0., 1e-6));
+				expected_rosenbrock -= x0_ros; 
+				double diff_rb = norm2(expected_rosenbrock);
+				assert(approxeq(diff_rb, 0., 1e-6));
+			}
 		}
 
 
@@ -840,40 +843,35 @@ namespace utopia
     {
         std::cout<<"begin: nested_mat_test   \n"; 
 
-        DSMatrixd M00 = local_identity(2, 2);
-        DSMatrixd M01 = 2* local_identity(2, 3);
-        DSMatrixd M10 = 3* local_identity(3, 2);
-        DSMatrixd M11 = 4 *local_identity(3, 3);
-
         DSMatrixd merged_mat; 
+        DVectord merged_vec; 
+
+        DSMatrixd M00 = local_identity(20, 20);
+        DSMatrixd M01 = 2* local_identity(20, 30);
+        DSMatrixd M10 = 3* local_identity(30, 20);
+        DSMatrixd M11 = 4 *local_identity(30, 30);
 
         Mat matrices[4]; 
-
         matrices[0] = raw_type(M00); 
         matrices[1] = raw_type(M01); 
         matrices[2] = raw_type(M10); 
         matrices[3] = raw_type(M11); 
 
-        MatCreateNest(PETSC_COMM_WORLD, 2, NULL, 2, NULL, matrices, &raw_type(merged_mat));
-
-        disp(merged_mat); 
+        MatDestroy(&raw_type(merged_mat)); 
+       	MatCreateNest(PETSC_COMM_WORLD, 2, NULL, 2, NULL, matrices, &raw_type(merged_mat));
 
         Vec x[2]; 
 
-        DVectord x1 = local_values(2, 3.0); 
-        DVectord x2 = local_values(3, 10.0); 
+        DVectord x1 = local_values(20, 3.0); 
+        DVectord x2 = local_values(30, 10.0); 
 
         x[0] = raw_type(x1); 
         x[1] = raw_type(x2); 
-
-
-        DVectord merged_vec; 
+        
         VecCreateNest(PETSC_COMM_WORLD, 2, NULL, x, & raw_type(merged_vec)); 
 
-
-        disp(merged_vec); 
         DVectord result = merged_mat * merged_vec; 
-        disp(result); 
+        // disp(result); 
 
         bool verbose = true; 
         EigenvelueProblemSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
@@ -886,6 +884,10 @@ namespace utopia
         slepc.tol(1e-12); 
         slepc.solve(merged_mat); 
         slepc.print_eigenpairs(); 
+
+
+        VecDestroy(& raw_type(merged_vec)); 
+        MatDestroy(& raw_type(merged_mat)); 
 
 
         std::cout<<"end: nested_mat_test   \n"; 

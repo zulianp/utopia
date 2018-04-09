@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-05 18:12:49
+* @Last Modified time: 2018-04-09 14:03:17
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -351,6 +351,10 @@ namespace utopia
 
 		void petsc_cholesky_test()
 		{
+
+			if(mpi_world_size() > 1)
+				return; 
+			
 			DVectord rhs, x; 
 			DSMatrixd A = zeros(_n, _n);
 
