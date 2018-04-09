@@ -30,7 +30,8 @@ namespace utopia {
 		ExampleTestCase2<DSMatrixd, DVectord> example;
 		example.getOperators(n, m, rhs, upper_bound);
 		DVectord x = zeros(n);
-		auto lsolver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+		auto lsolver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+		
 
 		//-tao_type <type> for finding strategy for solving what we need
 		const double scale_factor = 1e-10;
@@ -41,6 +42,8 @@ namespace utopia {
 
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(m), make_ref(rhs));
 		TaoSolver<DSMatrixd, DVectord> tao(lsolver);
+		// tao.linear_solver()->verbose(true);
+		// lsolver->verbose(true);
 		// tao.set_ksp_types("bcgs", "jacobi", " ");
 		tao.set_box_constraints(box);
 		// tao.set_type("tron");
@@ -52,7 +55,7 @@ namespace utopia {
 		// write("x.m", x);
 
 		DVectord xssn = zeros(n);
-		SemismoothNewton<DSMatrixd, DVectord, HOMEMADE> ssnewton(lsolver);
+		SemismoothNewton<DSMatrixd, DVectord, HOMEMADE> ssnewton(std::make_shared<Factorization<DSMatrixd, DVectord>>());
 		ssnewton.set_box_constraints(box);
 		ssnewton.stol(1e-18);
 		ssnewton.atol(1e-18);

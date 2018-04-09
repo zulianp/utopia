@@ -253,6 +253,11 @@ public:
 
         Scalar get_time() { return _time.get_seconds();  }
 
+        inline std::shared_ptr<Solver> linear_solver() const
+        {
+            return linear_solver_;
+        }
+
     protected:
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)
         {
@@ -272,10 +277,7 @@ public:
             return linear_solver_->apply(rhs, sol);
         }
 
-        inline std::shared_ptr<Solver> linear_solver() const
-        {
-            return linear_solver_;
-        }
+     
 
         std::shared_ptr<Solver> linear_solver_;     /*!< Linear solver parameters. */  
         Parameters params_;        /*!< Solver parameters. */  
