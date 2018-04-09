@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-07 18:35:34
+* @Last Modified time: 2018-04-09 10:38:56
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -816,6 +816,11 @@ namespace utopia
 			assemble_laplacian_1D(_n, A);
 
 			EigenvelueProblemSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
+
+
+			slepc.portion_of_spectrum("smallest_real"); 
+
+
 			slepc.solve(A); 
 			slepc.print_eigenpairs(); 
 

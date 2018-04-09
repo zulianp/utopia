@@ -31,13 +31,24 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
 
-        EigenvelueProblemSlover( ): 
+        EigenvelueProblemSlover(    const Parameters params = Parameters(), 
+                                    const std::vector<std::string> problem_types    = {"hermitian", "non_hermitian", "generalized_hermitian", "generalized_non_hermitian", "generalized_hermitian_SPD_B", "generalized_hermitian_indefinite"}, 
+                                    const std::vector<std::string> portions_of_spectrum    = {"largest_magnitude", "smallest_magnitude", "largest_real", "smallest_real", "largest_imaginary", "smallest_imaginary", "closest_to_target", "closest_to_target_real", "closest_to_target_imaginary", "all_in_region"},
+                                    const std::vector<std::string> solver_types    = {"krylovschur", "power", "subspace", "arnoldi", "lanczos", "gd", "jd", "rqcg", "lobpcg", "ciss", "lapack", "arpack", "blzpack", "trlan", "blopex", "primme", "feast"}): 
                                     initialized_(false), 
-                                    solved_(false)
+                                    solved_(false), 
+                                    number_of_eigenvalues_(1),
+                                    problem_types_(problem_types), 
+                                    portions_of_spectrum_(portions_of_spectrum), 
+                                    solver_types_(solver_types), 
+                                    max_it_(1000), 
+                                    tol_(1e-12)
 
         {
-
-        }
+            problem_type_           = problem_types_.at(0); 
+            portion_of_spectrum_    = portions_of_spectrum_.at(0);
+            solver_type_            = solver_types_.at(0); 
+        }   
 
 
         virtual ~EigenvelueProblemSlover()
@@ -45,6 +56,74 @@ namespace utopia
             if (initialized_)
                 EPSDestroy(&eps_);
         }
+
+
+        virtual void problem_type(const std::string & type)
+        {
+          problem_type_ = in_array(type, problem_types_) ? type : problem_types_.at(0);
+        }
+
+
+        virtual const std::string & problem_type() const 
+        {
+          return problem_type_; 
+        }
+
+
+        virtual void solver_type(const std::string & type)
+        {
+          solver_type_ = in_array(type, solver_types_) ? type : solver_types_.at(0);
+        }
+
+
+        virtual const std::string & solver_type() const 
+        {
+          return solver_type_; 
+        }        
+
+
+        virtual void portion_of_spectrum(const std::string & type)
+        {
+          portion_of_spectrum_ = in_array(type, portions_of_spectrum_) ? type : portions_of_spectrum_.at(0);
+        }
+
+
+        virtual const std::string &  portion_of_spectrum() const 
+        {
+          return portion_of_spectrum_; 
+        }
+
+
+        virtual void number_of_eigenvalues(const SizeType & number_of_eigenvalues)
+        {
+            number_of_eigenvalues_ = number_of_eigenvalues; 
+        }
+
+        virtual const SizeType & number_of_eigenvalues() const 
+        {
+            return number_of_eigenvalues_; 
+        }
+
+        virtual void max_it(const SizeType & max_it)
+        {
+            max_it_ = max_it; 
+        }
+
+        virtual const SizeType & max_it() const 
+        {
+            return max_it_; 
+        }
+
+        virtual void tol(const Scalar & tol)
+        {
+            tol_ = tol; 
+        }
+
+        virtual const Scalar & tol() const 
+        {
+            return tol_; 
+        }
+
 
 
         virtual bool solve(const Matrix & A)
@@ -57,16 +136,25 @@ namespace utopia
             else
                 initialize(comm); 
 
+
             EPSSetOperators(eps_, raw_type(A), NULL);
+
             EPSSolve(eps_); 
 
             EPSConvergedReason convergence_reason; 
             EPSGetConvergedReason(eps_, &convergence_reason); 
 
+            PetscInt its; 
+            EPSGetIterationNumber(eps_, &its);
+
+            std::cout<<"it:  "<< its << "  \n"; 
+
+
+
             if(convergence_reason > 0)
                 solved_ = true; 
             else
-                std::cout<<"Convergence was not successful... \n"; 
+                std::cout<<"Solver did not converge... \n"; 
 
             return true; 
         }
@@ -181,7 +269,49 @@ namespace utopia
         {
 
             EPSCreate(comm, &eps_);
-            EPSSetProblemType(eps_, EPS_HEP);
+
+            if(problem_type_ == "largest_magnitude")
+                EPSSetProblemType(eps_, EPS_HEP);
+            else if(problem_type_ == "generalized_hermitian")
+                EPSSetProblemType(eps_, EPS_GHEP);
+            else if(problem_type_ == "non_hermitian")
+                EPSSetProblemType(eps_, EPS_NHEP);                            
+            else if(problem_type_ == "generalized_non_hermitian")
+                EPSSetProblemType(eps_, EPS_GNHEP);
+            else if(problem_type_ == "generalized_hermitian_SPD_B")
+                EPSSetProblemType(eps_, EPS_PGNHEP);
+            else
+                EPSSetProblemType(eps_, EPS_GHIEP);            
+
+
+            if(portion_of_spectrum_ == "largest_magnitude")
+                EPSSetWhichEigenpairs(eps_, EPS_LARGEST_MAGNITUDE );
+            else if(portion_of_spectrum_ == "smallest_magnitude")
+                EPSSetWhichEigenpairs(eps_, EPS_SMALLEST_MAGNITUDE   );
+            else if(portion_of_spectrum_ == "largest_real")
+                EPSSetWhichEigenpairs(eps_,  EPS_LARGEST_REAL );
+            else if(portion_of_spectrum_ == "smallest_real")
+                EPSSetWhichEigenpairs(eps_, EPS_SMALLEST_REAL );
+            else if(portion_of_spectrum_ == "largest_imaginary")
+                EPSSetWhichEigenpairs(eps_, EPS_LARGEST_IMAGINARY );
+            else if(portion_of_spectrum_ == "smallest_imaginary")
+                EPSSetWhichEigenpairs(eps_, EPS_SMALLEST_IMAGINARY );
+            else if(portion_of_spectrum_ == "closest_to_target")
+                EPSSetWhichEigenpairs(eps_, EPS_TARGET_MAGNITUDE );            
+            else if(portion_of_spectrum_ == "closest_to_target_real")
+                EPSSetWhichEigenpairs(eps_, EPS_TARGET_REAL );            
+            else if(portion_of_spectrum_ == "closest_to_target_imaginary")
+                EPSSetWhichEigenpairs(eps_, EPS_TARGET_IMAGINARY );            
+            else if(portion_of_spectrum_ == "all_in_region")
+                EPSSetWhichEigenpairs(eps_, EPS_ALL );                                                        
+
+
+            EPSSetType(eps_, solver_type_.c_str()); 
+            EPSSetTolerances(eps_, tol_, max_it_); 
+
+            // could be done more sophisticated... 
+            EPSSetDimensions(eps_, number_of_eigenvalues_, PETSC_DEFAULT,  PETSC_DEFAULT); 
+
 
             EPSSetFromOptions(eps_);
 
@@ -202,8 +332,20 @@ namespace utopia
         bool initialized_; 
         bool solved_; 
 
+        SizeType number_of_eigenvalues_; 
+        const std::vector<std::string> problem_types_; 
+        const std::vector<std::string> portions_of_spectrum_; 
+        const std::vector<std::string> solver_types_; 
+
+
+        std::string portion_of_spectrum_;
         std::string eps_type_; 
         std::string problem_type_; 
+        std::string solver_type_; 
+
+
+        SizeType max_it_; 
+        Scalar tol_; 
 
 
     };
