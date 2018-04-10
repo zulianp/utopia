@@ -6,7 +6,7 @@ namespace utopia {
 #ifdef WITH_PETSC
     void petsc_cuda_init()
     {
-
+    	//DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"), device::gpu);
     }
 
 #endif //WITH_PETSC;

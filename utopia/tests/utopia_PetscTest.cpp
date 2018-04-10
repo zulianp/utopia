@@ -22,7 +22,7 @@ namespace utopia {
 
         {
 	        //optionals only work for this builder at the moment
-	        DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"), device::gpu);
+	        DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"));
 
 	        auto r = row_range(m);
 	        {
