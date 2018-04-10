@@ -107,7 +107,7 @@ namespace utopia
             if(linear_solver_)
                 linear_solver_->set_parameters(params); 
             else {
-                utopia_warning("NonLinearSolver::linear_solver_ - empty \n");
+                m_utopia_warning_once("NonLinearSolver::linear_solver_ - nullptr might not be handled correctly yet\n");
             }
         }
 
