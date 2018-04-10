@@ -74,11 +74,14 @@ namespace utopia {
 
 		bool solve(Function<Matrix, Vector> &fun, Vector &x)
 		{	
+
+			bool linear_solver_is_set = false;
 			auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector>>(this->linear_solver());
 
 			if(ksp_solver) {
 				set_ksp_types(ksp_solver->ksp_type(), ksp_solver->pc_type(), ksp_solver->solver_package());
 				m_utopia_warning_once("> FIXME TaoSolver does not consider the ksp tollerances");
+				linear_solver_is_set = true;
 			}
 
 			impl_.init(
@@ -90,7 +93,17 @@ namespace utopia {
 				this->max_it()
 			);
 
-			if(this->linear_solver() && !ksp_solver) {
+			if(!linear_solver_is_set) {
+				auto factorization = std::dynamic_pointer_cast<Factorization<Matrix, Vector>>(this->linear_solver());
+				if(factorization) {
+					KSP ksp;
+					impl_.get_ksp(&ksp);
+					factorization->strategy().set_ksp_options(ksp);
+					linear_solver_is_set = true;
+				}
+			}
+
+			if(this->linear_solver() && !linear_solver_is_set) {
 				KSP ksp;
 				impl_.get_ksp(&ksp);
 				build_ksp(this->linear_solver(), ksp);
