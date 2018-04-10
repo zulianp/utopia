@@ -30,7 +30,7 @@ namespace utopia {
 		ExampleTestCase2<DSMatrixd, DVectord> example;
 		example.getOperators(n, m, rhs, upper_bound);
 		DVectord x = zeros(n);
-		auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		auto lsolver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
 
 		const double scale_factor = 1e-10;
 		rhs *= scale_factor;
