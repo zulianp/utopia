@@ -156,6 +156,6 @@ namespace utopia {
 
 		sc.set_external_force_fun(ef);		
 		sc.initial_condition();
-		sc.solve_dynamic(10);
+		sc.solve_dynamic(400);
 	}
 }

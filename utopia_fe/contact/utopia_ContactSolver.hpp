@@ -125,6 +125,9 @@ namespace utopia {
 
 			++n_exports;
 			for(int t = 0; t < n_time_steps; ++t) {
+				std::cout << "-------------------------------------"<< std::endl;
+				std::cout << "time_step: " << t << std::endl;
+
 				first_ = true;
 				if(!solve_contact()) return false;
 				next_step();
@@ -135,6 +138,7 @@ namespace utopia {
 
 
 				++n_exports;
+				std::cout << "-------------------------------------"<< std::endl;
 			}
 
 			finalize();
