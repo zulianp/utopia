@@ -180,8 +180,12 @@ namespace utopia {
 
 			ierr = KSPGetPC(ksp, &pc); U_CHECKERR(ierr);
 			ierr = PCSetType(pc, pc_type_.c_str()); U_CHECKERR(ierr);
-
+	
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 			ierr = PCFactorSetMatSolverPackage(pc, solver_package_.c_str()); U_CHECKERR(ierr);
+#else
+			m_utopia_error("PCFactorSetMatSolverPackage not avaialbe in petsc 3.9.0 find equivalent");
+#endif 
 			ierr = KSPSetInitialGuessNonzero(ksp, PETSC_FALSE); U_CHECKERR(ierr);
 		} else {
 			utopia_error("Tao does not have a ksp");
