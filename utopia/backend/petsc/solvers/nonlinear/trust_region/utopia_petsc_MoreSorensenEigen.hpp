@@ -12,7 +12,11 @@ namespace utopia
 
 
 	/**
-	 * @brief      Class for More Sorensen minimization algorithm. Initialization of lambda_0 is based on eigensolution 
+	 * @brief      Class for More Sorensen minimization algorithm. Initialization of lambda_0 is based on eigensolution, 
+	 * 
+	 * 			   WARNING:: 	computation of direction could be more efficient by using cholesky decomposition and store just factors, 
+	 * 			   				but it is a bit anoying to do so with petsc => we solve system 2 \times, which is less efficient, 
+	 * 			   				but ok as this is just proof of concept solver
 	 */
 	template<class Matrix, class Vector>
     class MoreSorensenEigen<Matrix, Vector, PETSC> : public TRSubproblem<Matrix, Vector>
@@ -38,10 +42,40 @@ namespace utopia
         virtual ~MoreSorensenEigen(){}
 
 protected:
-        bool unpreconditioned_solve(const Matrix &H, const Vector &g, Vector &s_k) override
+        bool unpreconditioned_solve(const Matrix &Hessian, const Vector &grad, Vector &s_k) override
         {
         	Scalar lambda, s_norm; 
         	Vector eigenvector; 
+
+
+
+        	Vector d = 1.0/ diag(Hessian); 
+	        Matrix P = diag(d); 
+        	
+	        // let's start with identity 
+	        {
+				Write<Matrix> w(P);
+				Read<Matrix> read(Hessian);
+
+				Range r = row_range(P);
+				Range c = col_range(P);
+
+		        //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
+				for(SizeType i = r.begin(); i != r.end(); ++i) 
+					for(SizeType j = r.begin(); j != r.end(); ++j) 
+						// P.add(i, j, std::abs(Hessian.get(i,j)));
+						P.add(i, j, 1.0);
+			}
+
+
+
+
+
+	        Matrix H = transpose(P) * Hessian * P; 
+	        Vector g = transpose(P) * grad; 
+
+
+
 
         	// init vector... 
         	s_k = 0.0 * g; 
@@ -55,37 +89,58 @@ protected:
 
 	        eigen_solver_->get_real_eigenpair(0, lambda, eigenvector); 
 
-
         	// 	decide if PD case or not
 	        lambda = (lambda > 0.0) ? 0.0 : - 1.0 * (lambda - lambda_eps_); 
 
 
-	        linear_solver_->solve(H, -1 * g, s_k); 
-	        s_norm = norm2(s_k); 
 
+
+	        Matrix H_lambda = H; 
+
+	        if(lambda != 0.0)
+	        {
+				Write<Matrix> w(H_lambda);
+				Range r = row_range(H_lambda);
+
+		        //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
+				for(SizeType i = r.begin(); i != r.end(); ++i) 
+					H_lambda.add(i, i, lambda);
+			}
+
+
+	        linear_solver_->solve(H_lambda, -1 * g, s_k); 
+	        s_norm = norm2(s_k); 
 
 	        if(s_norm <= this->current_radius())
 	        {
 
 	        	if(lambda == 0.0 || s_norm == this->current_radius())
-	        		return true; 
+	        	{
+
+	        		s_k = P * s_k; 
+	        		return true;
+	        	}
 	        	else
 	        	{
 	        		// we are in hard case, let's find solution on boundary, which is orthogonal to E_1
 	        		//                     because eigenvector is normalized
 	        		Scalar alpha = quadratic_function(1.0, 2.0 * dot(s_k, eigenvector), dot(s_k, s_k) - (this->current_radius() * this->current_radius())); 
 	        		s_k += alpha * eigenvector;  
+
+	        		s_k = P * s_k;
+
 	        		return true; 
 	        	}
 	        }
 
 
-	        Matrix H_lambda = H; 
-
 	        for(auto it = 0; it < max_it_; it++)
 	        {
 		        if( std::abs(s_norm - this->current_radius()) <= kappa_easy_ *  this->current_radius())
+		        {
+		        	s_k = P * s_k;
 		        	return true; 
+		        }
 
 	        	Vector grad_s_lambda = 0 * s_k; 
 	        	linear_solver_->solve(H_lambda, -1 * s_k, grad_s_lambda); 
@@ -112,8 +167,9 @@ protected:
 				s_k *= 0.0; 
 		       	linear_solver_->solve(H_lambda, -1 * g, s_k); 
 	        	s_norm = norm2(s_k); 
-
 		    }
+
+		    s_k = P * s_k;
 
         	return true; 
         }
@@ -127,39 +183,26 @@ protected:
 
 
 
-
    private: 
 
-   	// TODO:: find out if lower better than upper
-   	Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
-   	{
-   		Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c); 
+	   	// TODO:: find out if lower better than upper
+	   	Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
+	   	{
+	   		Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c); 
 
-		Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a); 
-		Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a); 
+			Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a); 
+			Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a); 
 
-   		return lower; 
-   	}
-
-
+	   		return lower; 
+	   	}
 
     private: 
      	std::shared_ptr<LinearSolver> linear_solver_;     
      	std::shared_ptr<EigenSolver> eigen_solver_;     
 
-
      	Scalar kappa_easy_; 
      	SizeType max_it_; 
      	Scalar lambda_eps_; 
-
-
-
-
-
-
-
-
-
 
     };
 

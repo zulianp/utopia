@@ -172,6 +172,44 @@ namespace utopia
         }
 
 
+
+
+        virtual bool solve(const Matrix & A, const Matrix & B)
+        {
+            MPI_Comm            comm; 
+            PetscObjectGetComm((PetscObject)raw_type(A), &comm);
+
+            if (initialized_)
+                reinitialize(comm);
+            else
+                initialize(comm); 
+
+
+            EPSSetOperators(eps_, raw_type(A), raw_type(B));
+
+            EPSSolve(eps_); 
+
+            EPSConvergedReason convergence_reason; 
+            EPSGetConvergedReason(eps_, &convergence_reason); 
+
+            // PetscInt its; 
+            // EPSGetIterationNumber(eps_, &its);
+            // std::cout<<"it:  "<< its << "  \n"; 
+
+
+            // std::cout<<"convergence_reason: " << convergence_reason << "  \n"; 
+            
+
+            if(convergence_reason > 0)
+                solved_ = true; 
+            else
+                std::cout<<"EigenSolver did not converge... \n"; 
+
+            return true; 
+        }
+
+
+
         virtual bool print_eigenpairs()
         {
 
@@ -286,7 +324,7 @@ namespace utopia
 
             EPSCreate(comm, &eps_);
 
-            if(problem_type_ == "largest_magnitude")
+            if(problem_type_ == "hermitian")
                 EPSSetProblemType(eps_, EPS_HEP);
             else if(problem_type_ == "generalized_hermitian")
                 EPSSetProblemType(eps_, EPS_GHEP);

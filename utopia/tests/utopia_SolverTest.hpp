@@ -12,9 +12,7 @@ namespace utopia
     void runGenericSolversTest();
     void runPetscNonlinearSolversTest(); 
     void runPetscLinearSolversTest(); 
-
-
-
+    void runPetscSlepcSolversTest(); 
     void runSolversTest(); 
 
 }

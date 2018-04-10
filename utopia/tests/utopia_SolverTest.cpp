@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-05 18:03:30
+* @Last Modified time: 2018-04-10 11:02:22
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -383,6 +383,7 @@ namespace utopia
     	runGenericSolversTest(); 
     	runPetscNonlinearSolversTest(); 
     	runPetscLinearSolversTest(); 
+    	runPetscSlepcSolversTest(); 
     }
 
 
