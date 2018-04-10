@@ -1,11 +1,8 @@
-/*
-* @Author: Eric Botter
-* @Date:   2016-11-15
-*/
 #include "utopia.hpp"
 #include "utopia_PetscTest.hpp"
 #include "test_problems/utopia_TestFunctionsND.hpp"
 #include "utopia_QuadraticFunction.hpp"
+#include "utopia_Device.hpp"
 
 namespace utopia {
 
@@ -25,7 +22,7 @@ namespace utopia {
 
         {
 	        //optionals only work for this builder at the moment
-	        DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"));
+	        DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"), device::gpu);
 
 	        auto r = row_range(m);
 	        {
