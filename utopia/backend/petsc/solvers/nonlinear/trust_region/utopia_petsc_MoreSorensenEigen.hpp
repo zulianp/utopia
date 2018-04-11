@@ -3,13 +3,11 @@
 #include "utopia_TRSubproblem.hpp"
 
 
-
 namespace utopia 
 {
 
 	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
     class MoreSorensenEigen {};
-
 
 	/**
 	 * @brief      Class for More Sorensen minimization algorithm. Initialization of lambda_0 is based on eigensolution, 
@@ -27,34 +25,51 @@ namespace utopia
 
 
     public:
-
     	MoreSorensenEigen(	const std::shared_ptr<LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
     						const std::shared_ptr<EigenSolver> & eigen_solver = std::shared_ptr<EigenSolver>(), 
     						const Parameters params = Parameters()): 
     						TRSubproblem<Matrix, Vector>(params), 
     						linear_solver_(linear_solver), 
     						eigen_solver_(eigen_solver), 
-    						kappa_easy_(1e-12), 
+    						kappa_easy_(1e-10), 
     						max_it_(1000), 
     						lambda_eps_(1e-5)
         {  };
 
         virtual ~MoreSorensenEigen(){}
 
-protected:
+        void kappa_easy(const Scalar & kappa)
+        {
+        	kappa_easy_ = kappa; 
+        }
+
+        Scalar kappa_easy()
+        {
+        	return kappa_easy_; 
+        }
+
+        void lambda_eps(const Scalar & lambda_eps)
+        {
+        	lambda_eps_ = lambda_eps; 
+        }
+
+        Scalar lambda_eps()
+        {
+        	return lambda_eps_; 
+        }
+
+
+	protected:
         bool unpreconditioned_solve(const Matrix &H, const Vector &g, Vector &s_k) override
         {
         	Scalar lambda, s_norm; 
         	Vector eigenvector; 
-
         	// init vector... 
         	s_k = 0.0 * g; 
 
         	// ---------------------- initialization  of lambda_0 ------------------------
         	eigen_solver_->portion_of_spectrum("smallest_real"); 
 	        eigen_solver_->number_of_eigenvalues(1); 
-	        eigen_solver_->solver_type("arnoldi");
-	        eigen_solver_->tol(1e-14); 
 	        eigen_solver_->solve(H); 
 
 	        eigen_solver_->get_real_eigenpair(0, lambda, eigenvector); 
@@ -64,13 +79,11 @@ protected:
 
 
 	        Matrix H_lambda = H; 
-
 	        if(lambda != 0.0)
 	        {
 				Write<Matrix> w(H_lambda);
 				Range r = row_range(H_lambda);
 
-		        //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
 				for(SizeType i = r.begin(); i != r.end(); ++i) 
 					H_lambda.add(i, i, lambda);
 			}
@@ -81,6 +94,7 @@ protected:
 
 	        if(s_norm <= this->current_radius())
 	        {
+
 	        	if(lambda == 0.0 || s_norm == this->current_radius())
 	        		return true;
 	        	else
@@ -93,14 +107,10 @@ protected:
 	        	}
 	        }
 
-
 	        for(auto it = 0; it < max_it_; it++)
 	        {
 		        if( std::abs(s_norm - this->current_radius()) <= kappa_easy_ *  this->current_radius())
-		        {
-		        	std::cout<<"converged after: "<< it << "  \n"; 
 		        	return true; 
-		        }
 
 	        	Vector grad_s_lambda = 0 * s_k; 
 	        	linear_solver_->solve(H_lambda, -1 * s_k, grad_s_lambda); 
@@ -126,11 +136,6 @@ protected:
 				s_k *= 0.0; 
 		       	linear_solver_->solve(H_lambda, -1 * g, s_k); 
 	        	s_norm = norm2(s_k); 
-
-	        	
-
-	        	std::cout<<"it "<< it << "  grad_norm: "<<  grad  << "  \n"; 
-
 		    }
 
         	return true; 
@@ -142,7 +147,6 @@ protected:
         	std::cout<<"MoreSorensenEigen:: preconditioned solve not imlemented yet ... \n"; 
         	return false; 
         }
-
 
 
    private: 
