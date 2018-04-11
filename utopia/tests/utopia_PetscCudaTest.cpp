@@ -4,46 +4,52 @@
 
 namespace utopia {
 
-#ifdef WITH_PETSC_CUDA
+//#ifdef WITH_PETSC_CUDA
     void petsc_cuda_init()
     {
     	//DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"), device::gpu);
 
-    	Size ls{10, 10};
-    	Size gs{ls.get(0) * mpi_world_size(), ls.get(1) * mpi_world_size() };
+    	Size ls{ 10, 10 };
+    	Size gs{ ls.get(0) * mpi_world_size(), ls.get(1) * mpi_world_size() };
 
-    	DSMatrixd m;
-    	m.implementation().mat_aij_cusparse_init(
-    		PETSC_COMM_WORLD, ls.get(0), ls.get(1), gs.get(0), gs.get(1), 3, 3
-    	);
+    	CuSMatrixd m = local_sparse(ls.get(0), ls.get(1), 3);
+    	// m.implementation().mat_aij_cusparse_init(
+    	// 	PETSC_COMM_WORLD, ls.get(0), ls.get(1), gs.get(0), gs.get(1), 3, 3
+    	// );
 
     	assemble_laplacian_1D(size(m).get(0), m);
 
-    	disp(m);
+    	// disp(m);
 
-    	DVectord x;
-    	x.implementation().values(
-    		PETSC_COMM_WORLD, VECMPICUDA, ls.get(1), gs.get(1), 1.
-    	);
+     //    // auto cuda_type = VECCUDA;
+
+    	// CuVectord x = local_values(ls.get(0), 1.);
+    	// // x.implementation().values(
+    	// // 	PETSC_COMM_WORLD, cuda_type, ls.get(1), gs.get(1), 1.
+    	// // );
 
 
-    	DVectord y;
-    	y.implementation().values(
-    		PETSC_COMM_WORLD, VECMPICUDA, ls.get(0), gs.get(0), 2.
-    	);
+    	// DVectord y;
+    	// // y.implementation().values(
+    	// // 	PETSC_COMM_WORLD, cuda_type, ls.get(0), gs.get(0), 2.
+    	// // );
 
-    	y = m * x;
+    	// y = m * x;
 
-    	disp(y);
+    	// disp(y);
+
+     //    CuVectord z = 0.1 * x - y;
+
+     //    disp(z);
     }
 
-#endif //WITH_PETSC_CUDA;
+//#endif //WITH_PETSC_CUDA;
 
     void run_petsc_cuda_test() {
-#ifdef WITH_PETSC_CUDA
+//#ifdef WITH_PETSC_CUDA
         UTOPIA_UNIT_TEST_BEGIN("PetscCudaTest");
         UTOPIA_RUN_TEST(petsc_cuda_init);
         UTOPIA_UNIT_TEST_END("PetscCudaTest");
-#endif // WITH_PETSC_CUDA
+//#endif // WITH_PETSC_CUDA
     }
 }

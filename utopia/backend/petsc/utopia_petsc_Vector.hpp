@@ -118,6 +118,11 @@ namespace utopia {
 			return ret;
 		}
 
+		virtual VecType type_override() const
+		{
+			return VECSTANDARD;
+		}
+
 		bool has_type(VecType type) const;
 
 	 	bool same_type(const PetscVector &other) const;

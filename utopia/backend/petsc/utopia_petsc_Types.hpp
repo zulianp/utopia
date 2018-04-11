@@ -17,9 +17,11 @@ namespace utopia {
     UTOPIA_MAKE_TRAITS_DENSE(PetscMatrix, PetscTraits);
     UTOPIA_MAKE_TRAITS_SPARSE(PetscSparseMatrix, PetscTraits);
     UTOPIA_MAKE_TRAITS_SPARSE(PetscSerialSparseMatrix, PetscTraits);
+    UTOPIA_MAKE_TRAITS_SPARSE(PetscCuSparseMatrix, PetscTraits);
 
     UTOPIA_MAKE_TRAITS(PetscVector, PetscTraits);
     UTOPIA_MAKE_TRAITS(PetscSerialVector, PetscTraits);
+    UTOPIA_MAKE_TRAITS(PetscCuVector, PetscTraits);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -31,6 +33,8 @@ namespace utopia {
     using SSMatrixd = utopia::Wrapper<PetscSerialSparseMatrix, 2>;
     using DVectord  = utopia::Wrapper<PetscVector, 1>;
     using SVectord  = utopia::Wrapper<PetscSerialVector, 1>;
+    using CuSMatrixd = utopia::Wrapper<PetscCuSparseMatrix, 2>;
+    using CuVectord  = utopia::Wrapper<PetscCuVector, 1>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -46,11 +50,19 @@ namespace utopia {
         w.implementation().describe();
     }
 
+    inline void disp(const CuSMatrixd &m) {
+        m.implementation().describe();
+    }
+
     inline void disp(const Wrapper<PetscVector, 1> &w) {
         w.implementation().describe();
     }
 
     inline void disp(const Wrapper<PetscSerialVector, 1> &w) {
+        w.implementation().describe();
+    }
+
+    inline void disp(const CuVectord &w) {
         w.implementation().describe();
     }
 
@@ -69,6 +81,11 @@ namespace utopia {
     }
 
     inline Mat &raw_type(Wrapper<PetscSparseMatrix, 2> &utopiaType)
+    {
+        return utopiaType.implementation().implementation();
+    }
+
+    inline Mat &raw_type(CuSMatrixd &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }
@@ -102,6 +119,11 @@ namespace utopia {
     }
 
     inline const Mat &raw_type(const Wrapper<PetscMatrix, 2> &utopiaType)
+    {
+        return utopiaType.implementation().implementation();
+    }
+
+    inline const Mat &raw_type(const CuSMatrixd &utopiaType)
     {
         return utopiaType.implementation().implementation();
     }

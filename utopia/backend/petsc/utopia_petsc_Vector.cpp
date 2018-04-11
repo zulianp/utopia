@@ -49,10 +49,10 @@ namespace utopia {
 				}
 			}
 		}
-		
-		check_error( VecSetType(vec_, type_copy.c_str()) );
 
 		check_error( VecSetFromOptions(vec_) );
+		
+		check_error( VecSetType(vec_, type_copy.c_str()) );
 
 		check_error( VecSetSizes(vec_, n_local, n_global) );
 		
