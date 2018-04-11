@@ -17,11 +17,11 @@ namespace utopia {
     UTOPIA_MAKE_TRAITS_DENSE(PetscMatrix, PetscTraits);
     UTOPIA_MAKE_TRAITS_SPARSE(PetscSparseMatrix, PetscTraits);
     UTOPIA_MAKE_TRAITS_SPARSE(PetscSerialSparseMatrix, PetscTraits);
-    UTOPIA_MAKE_TRAITS_SPARSE(PetscCuSparseMatrix, PetscTraits);
+    UTOPIA_MAKE_TRAITS_SPARSE(PetscCuSparseMatrix, PetscCudaTraits);
 
     UTOPIA_MAKE_TRAITS(PetscVector, PetscTraits);
     UTOPIA_MAKE_TRAITS(PetscSerialVector, PetscTraits);
-    UTOPIA_MAKE_TRAITS(PetscCuVector, PetscTraits);
+    UTOPIA_MAKE_TRAITS(PetscCuVector, PetscCudaTraits);
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -474,6 +474,22 @@ namespace utopia {
 	{
 		build(m, size, LocalValues<Scalar>(0));
 	}
+
+	void PetscBackend::build(PetscCuSparseMatrix  &m, const Size &size, const LocalNNZ<PetscInt> &nnz, const PetscArgs &opts)
+	{
+		m.matij_init(
+        	opts.comm,
+        	m.type_override(),
+        	size.get(0),
+        	size.get(1),
+        	PETSC_DETERMINE,
+        	PETSC_DETERMINE,
+        	nnz.nnz(),
+        	nnz.nnz()
+        );
+
+		apply_args(opts, m);
+	}
 	
 	/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
 	void PetscBackend::build(PetscMatrix  &m, const Size &size, const NNZ<PetscInt> &, const PetscArgs &opts)

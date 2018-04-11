@@ -7,40 +7,26 @@ namespace utopia {
 //#ifdef WITH_PETSC_CUDA
     void petsc_cuda_init()
     {
-    	//DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"), device::gpu);
-
     	Size ls{ 10, 10 };
     	Size gs{ ls.get(0) * mpi_world_size(), ls.get(1) * mpi_world_size() };
 
     	CuSMatrixd m = local_sparse(ls.get(0), ls.get(1), 3);
-    	// m.implementation().mat_aij_cusparse_init(
-    	// 	PETSC_COMM_WORLD, ls.get(0), ls.get(1), gs.get(0), gs.get(1), 3, 3
-    	// );
-
     	assemble_laplacian_1D(size(m).get(0), m);
+    	disp(m);
 
-    	// disp(m);
+    	CuVectord x = local_values(ls.get(0), 1.);
+    	CuVectord y;
+    	y = m * x;
 
-     //    // auto cuda_type = VECCUDA;
+    	disp(y);
 
-    	// CuVectord x = local_values(ls.get(0), 1.);
-    	// // x.implementation().values(
-    	// // 	PETSC_COMM_WORLD, cuda_type, ls.get(1), gs.get(1), 1.
-    	// // );
+        CuVectord sol = local_zeros(local_size(y).get(0));
 
+        ConjugateGradient<CuSMatrixd, CuVectord, HOMEMADE>  cg;
+        cg.verbose(true);
+        cg.solve(m, y, sol);
 
-    	// DVectord y;
-    	// // y.implementation().values(
-    	// // 	PETSC_COMM_WORLD, cuda_type, ls.get(0), gs.get(0), 2.
-    	// // );
-
-    	// y = m * x;
-
-    	// disp(y);
-
-     //    CuVectord z = 0.1 * x - y;
-
-     //    disp(z);
+        disp(sol);
     }
 
 //#endif //WITH_PETSC_CUDA;

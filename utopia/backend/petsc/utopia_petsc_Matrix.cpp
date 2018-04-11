@@ -1203,5 +1203,7 @@ namespace utopia {
 
         	MatCreateVecs(implementation(), x, y);
         // }
+
+        return true;
     }
 }

@@ -137,6 +137,8 @@ namespace utopia {
 		static void build(PetscSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz, const PetscArgs &opts = PetscArgs());
 		static void build(PetscSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz, const PetscArgs &opts = PetscArgs());
 		static void build(PetscMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */, const PetscArgs &opts = PetscArgs());
+		static void build(PetscCuSparseMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */, const PetscArgs &opts = PetscArgs());
+		
 		static void build(PetscMatrix  &m, const Size &size, const NNZ<PetscInt> &/*nnz*/, const PetscArgs &opts = PetscArgs());
 		static void build(PetscMatrix &m, const Size &size, const Zeros &, const PetscArgs &opts = PetscArgs());
 		static void build(PetscVector &v, const Size &size, const Zeros &, const PetscArgs &opts = PetscArgs());
