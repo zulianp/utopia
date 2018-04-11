@@ -69,9 +69,8 @@ namespace utopia {
 		assert(vec_ == nullptr);
 		
 		check_error( VecCreate(comm, &vec_) );
-		check_error( VecSetType(vec_, type) );
-
 		check_error( VecSetFromOptions(vec_) );
+		check_error( VecSetType(vec_, type) );
 
 		check_error( VecSetSizes(vec_, n_local, n_global) );
 		
