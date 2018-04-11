@@ -23,17 +23,15 @@ namespace utopia {
         CuVectord sol = local_zeros(local_size(y).get(0));
 
         //test mat-redisual
-        // CuVectord r = y - m * sol; 
-
-        CuVectord r = sol;
-
-        MatResidual(m.implementation().implementation(), y.implementation().implementation(), sol.implementation().implementation(), r.implementation().implementation());
-
-        // ConjugateGradient<CuSMatrixd, CuVectord, HOMEMADE>  cg;
-        // cg.verbose(true);
-        // cg.solve(m, y, sol);
+        CuVectord r = y - m * sol; 
 
         disp(r);
+
+        ConjugateGradient<CuSMatrixd, CuVectord, HOMEMADE>  cg;
+        cg.verbose(true);
+        cg.solve(m, y, sol);
+
+        disp(sol);
     }
 
 //#endif //WITH_PETSC_CUDA;
