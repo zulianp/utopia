@@ -521,6 +521,8 @@ namespace utopia {
 		inline static bool check_error(const PetscInt err) {
 			return PetscErrorHandler::Check(err);
 		}
+
+		bool is_cuda() const;
 	};
 	
 }

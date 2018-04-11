@@ -13,4 +13,4 @@
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 #srun ../bin/utopia_exec
 #ddt --connect utopia_exec
-srun ./utopia_exec -on_error_abort
+srun ./utopia_exec -on_error_abort -verbose -test solvers

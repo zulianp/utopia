@@ -737,6 +737,26 @@ namespace utopia {
 		check_error( MatZeroEntries(implementation()) );
 	}
 
+	void PetscMatrix::mat_aij_cusparse_init(
+	 	MPI_Comm comm,
+	 	PetscInt rows_local,
+	 	PetscInt cols_local,
+	 	PetscInt rows_global,
+	 	PetscInt cols_global,
+	 	PetscInt d_nnz,
+	 	PetscInt o_nnz
+	)
+	{
+		destroy();
+
+		check_error( MatCreateAIJCUSPARSE(PETSC_COMM_WORLD, rows_local, cols_local, rows_global, cols_global, d_nnz, nullptr, o_nnz, nullptr, &implementation()) );
+		check_error( MatSetOption(implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE) );
+		check_error( MatSetOption(implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
+		check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
+
+		check_error( MatZeroEntries(implementation()) );
+	}
+
 
 	  void PetscMatrix::mat_baij_init(
         	MPI_Comm comm,
@@ -977,6 +997,7 @@ namespace utopia {
 			VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
 		}
 
+		std::cout << "TYPE: " << vec.type() << std::endl;
 		check_error( MatMult(implementation(), vec.implementation(), result.implementation() ) );
 		result.set_initialized(true);
 	}
@@ -1092,5 +1113,37 @@ namespace utopia {
 		check_error( MatCopy(implementation(), temp.implementation(), DIFFERENT_NONZERO_PATTERN) );
 
 		*this = std::move(temp);
+	}
+
+	//testing MATAIJCUSPARSE,MATSEQAIJCUSPARSE
+	bool PetscMatrix::PetscMatrix::is_cuda() const
+	{
+		PetscBool match = PETSC_FALSE;
+		PetscObjectTypeCompare((PetscObject) implementation(), MATAIJCUSPARSE, &match);
+		if(match == PETSC_TRUE) return true;
+
+		PetscObjectTypeCompare((PetscObject) implementation(), MATSEQAIJCUSPARSE, &match);
+		return match == PETSC_TRUE;
+	}
+
+	// VecType PetscMatrix::compatible_cuda_vec_type()
+	// {
+
+	// }
+
+	bool PetscMatrix::create_vecs(Vec *x, Vec *y) const
+	{
+		if(is_cuda()) {
+			if(x) {
+
+			}
+
+			if(y) {
+
+			}
+
+		} else {
+			MatCreateVecs(implementation(), x, y);
+		}
 	}
 }

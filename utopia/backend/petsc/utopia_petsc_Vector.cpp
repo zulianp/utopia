@@ -245,4 +245,15 @@ namespace utopia {
 		
 		result.write_unlock();
 	}
+	
+	//testing VECSEQCUDA,VECMPICUDA
+	bool PetscVector::is_cuda() const
+	{
+		PetscBool match = PETSC_FALSE;
+		PetscObjectTypeCompare((PetscObject) implementation(), VECSEQCUDA, &match);
+		if(match == PETSC_TRUE) return true;
+
+		PetscObjectTypeCompare((PetscObject) implementation(), VECMPICUDA, &match);
+		return match == PETSC_TRUE;
+	}
 }
