@@ -4,7 +4,7 @@
 
 namespace utopia {
 
-#ifdef WITH_PETSC
+#ifdef WITH_PETSC_CUDA
     void petsc_cuda_init()
     {
     	//DSMatrixd m = local_sparse(10, 10, 1, sub_comm, str("my_mat"), device::gpu);
@@ -37,13 +37,13 @@ namespace utopia {
     	disp(y);
     }
 
-#endif //WITH_PETSC;
+#endif //WITH_PETSC_CUDA;
 
     void run_petsc_cuda_test() {
-#ifdef WITH_PETSC
+#ifdef WITH_PETSC_CUDA
         UTOPIA_UNIT_TEST_BEGIN("PetscCudaTest");
         UTOPIA_RUN_TEST(petsc_cuda_init);
         UTOPIA_UNIT_TEST_END("PetscCudaTest");
-#endif // WITH_PETSC
+#endif // WITH_PETSC_CUDA
     }
 }

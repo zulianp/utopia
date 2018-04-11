@@ -1,6 +1,8 @@
 #include "utopia_petsc_Matrix.hpp"
 #include "utopia_petsc_Vector.hpp"
 #include "utopia_Operators.hpp"
+#include "utopia_Logger.hpp"
+#include "utopia_Instance.hpp"
 
 #include <algorithm> 
 #include <set>
@@ -747,6 +749,7 @@ namespace utopia {
 	 	PetscInt o_nnz
 	)
 	{
+#ifdef WITH_PETSC_CUDA
 		destroy();
 
 		check_error( MatCreateAIJCUSPARSE(PETSC_COMM_WORLD, rows_local, cols_local, rows_global, cols_global, d_nnz, nullptr, o_nnz, nullptr, &implementation()) );
@@ -755,6 +758,9 @@ namespace utopia {
 		check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
 
 		check_error( MatZeroEntries(implementation()) );
+#else
+		utopia_error("not compiled with WITH_PETSC_CUDA");
+#endif //WITH_PETSC_CUDA
 	}
 
 
@@ -1133,17 +1139,21 @@ namespace utopia {
 
 	bool PetscMatrix::create_vecs(Vec *x, Vec *y) const
 	{
-		if(is_cuda()) {
-			if(x) {
+		//TODO
+		assert(false);
+		utopia_error("create_vecs not implemented");
+		return false;
+		// if(is_cuda()) {
+		// 	if(x) {
 
-			}
+		// 	}
 
-			if(y) {
+		// 	if(y) {
 
-			}
+		// 	}
 
-		} else {
-			MatCreateVecs(implementation(), x, y);
-		}
+		// } else {
+		// 	MatCreateVecs(implementation(), x, y);
+		// }
 	}
 }
