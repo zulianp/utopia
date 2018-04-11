@@ -34,7 +34,7 @@ namespace utopia
     						TRSubproblem<Matrix, Vector>(params), 
     						linear_solver_(linear_solver), 
     						eigen_solver_(eigen_solver), 
-    						kappa_easy_(0.0001), 
+    						kappa_easy_(1e-12), 
     						max_it_(1000), 
     						lambda_eps_(1e-5)
         {  };
@@ -42,40 +42,10 @@ namespace utopia
         virtual ~MoreSorensenEigen(){}
 
 protected:
-        bool unpreconditioned_solve(const Matrix &Hessian, const Vector &grad, Vector &s_k) override
+        bool unpreconditioned_solve(const Matrix &H, const Vector &g, Vector &s_k) override
         {
         	Scalar lambda, s_norm; 
         	Vector eigenvector; 
-
-
-
-        	Vector d = 1.0/ diag(Hessian); 
-	        Matrix P = diag(d); 
-        	
-	        // let's start with identity 
-	        {
-				Write<Matrix> w(P);
-				Read<Matrix> read(Hessian);
-
-				Range r = row_range(P);
-				Range c = col_range(P);
-
-		        //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
-				for(SizeType i = r.begin(); i != r.end(); ++i) 
-					for(SizeType j = r.begin(); j != r.end(); ++j) 
-						// P.add(i, j, std::abs(Hessian.get(i,j)));
-						P.add(i, j, 1.0);
-			}
-
-
-
-
-
-	        Matrix H = transpose(P) * Hessian * P; 
-	        Vector g = transpose(P) * grad; 
-
-
-
 
         	// init vector... 
         	s_k = 0.0 * g; 
@@ -91,8 +61,6 @@ protected:
 
         	// 	decide if PD case or not
 	        lambda = (lambda > 0.0) ? 0.0 : - 1.0 * (lambda - lambda_eps_); 
-
-
 
 
 	        Matrix H_lambda = H; 
@@ -113,22 +81,14 @@ protected:
 
 	        if(s_norm <= this->current_radius())
 	        {
-
 	        	if(lambda == 0.0 || s_norm == this->current_radius())
-	        	{
-
-	        		s_k = P * s_k; 
 	        		return true;
-	        	}
 	        	else
 	        	{
 	        		// we are in hard case, let's find solution on boundary, which is orthogonal to E_1
 	        		//                     because eigenvector is normalized
 	        		Scalar alpha = quadratic_function(1.0, 2.0 * dot(s_k, eigenvector), dot(s_k, s_k) - (this->current_radius() * this->current_radius())); 
 	        		s_k += alpha * eigenvector;  
-
-	        		s_k = P * s_k;
-
 	        		return true; 
 	        	}
 	        }
@@ -138,7 +98,7 @@ protected:
 	        {
 		        if( std::abs(s_norm - this->current_radius()) <= kappa_easy_ *  this->current_radius())
 		        {
-		        	s_k = P * s_k;
+		        	std::cout<<"converged after: "<< it << "  \n"; 
 		        	return true; 
 		        }
 
@@ -150,7 +110,6 @@ protected:
 
 	        	
 	        	lambda -=  grad/hessian; 
-		        it++; 
 
 		        // H should be H + \lambda I 
 		        // TODO:: investigate why it does not work with mat multiply... something is wrong with mat allocations... 
@@ -167,9 +126,12 @@ protected:
 				s_k *= 0.0; 
 		       	linear_solver_->solve(H_lambda, -1 * g, s_k); 
 	        	s_norm = norm2(s_k); 
-		    }
 
-		    s_k = P * s_k;
+	        	
+
+	        	std::cout<<"it "<< it << "  grad_norm: "<<  grad  << "  \n"; 
+
+		    }
 
         	return true; 
         }
