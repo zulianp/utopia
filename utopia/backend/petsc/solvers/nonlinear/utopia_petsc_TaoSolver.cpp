@@ -140,6 +140,15 @@ namespace utopia {
 		UtopiaTaoSetUp(*tao, fun);
 	}
 
+	bool TaoSolverWrapper::get_ksp(KSP *ksp)
+	{
+		if(!data_) return false;
+
+		auto tao = (Tao *) &data_;
+		PetscErrorCode ierr = TaoGetKSP(*tao, ksp); U_CHECKERR(ierr);
+		return true;
+	}
+
 	bool TaoSolverWrapper::init(
 		MPI_Comm comm,
 		const std::string &type,
@@ -168,12 +177,15 @@ namespace utopia {
 
 		if(ksp) {
 			ierr = KSPSetType(ksp, ksp_type_.c_str()); U_CHECKERR(ierr);
-			m_utopia_warning_once("> FIXME (TaoSolver): KSP cannot be set from outside with utopia classes yet");
 
 			ierr = KSPGetPC(ksp, &pc); U_CHECKERR(ierr);
 			ierr = PCSetType(pc, pc_type_.c_str()); U_CHECKERR(ierr);
-
+	
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 			ierr = PCFactorSetMatSolverPackage(pc, solver_package_.c_str()); U_CHECKERR(ierr);
+#else
+			m_utopia_error("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent");
+#endif 
 			ierr = KSPSetInitialGuessNonzero(ksp, PETSC_FALSE); U_CHECKERR(ierr);
 		} else {
 			utopia_error("Tao does not have a ksp");
@@ -245,7 +257,7 @@ namespace utopia {
 		// }
 
 		if(reason < 0) {
-			utopia_error("[Error] failed to converge");
+			utopia_error("> Failed to converge");
 		}
 
 		return reason >= 0;

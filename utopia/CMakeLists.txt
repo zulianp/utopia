@@ -353,3 +353,13 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_config.cmake 	 DESTINATION config)
 
 print_dependency_table()
 
+
+
+
+
+
+
+#############################
+### petsc-cuda stuff 
+
+link_directories(${CMAKE_CURRENT_BINARY_DIR})

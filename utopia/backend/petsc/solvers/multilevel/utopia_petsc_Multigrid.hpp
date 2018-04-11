@@ -240,8 +240,12 @@ namespace utopia {
 				}
 			}
 
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 			PCMGSetNumberSmoothUp(pc,   this->post_smoothing_steps());
 			PCMGSetNumberSmoothDown(pc, this->pre_smoothing_steps());
+#else
+			m_utopia_error("PCMGSetNumberSmooth{Up,Down} not available in petsc 3.9.0 find equivalent");
+#endif 
 
 			KSPSetTolerances(*ksp_, this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
 

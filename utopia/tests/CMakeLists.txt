@@ -33,8 +33,8 @@ if(TARGET utopia_blas)
 	target_link_libraries(utopia_tests utopia_blas)
 endif()
 
-if(TARGET utopia_cuda)
-	target_link_libraries(utopia_tests utopia_cuda)
+if(TARGET utopia_cuda_cxx)
+	target_link_libraries(utopia_tests utopia_cuda_cxx)
 endif()
 
 if(TARGET utopia_trilinos)

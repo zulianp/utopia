@@ -109,7 +109,13 @@ namespace utopia {
 				ierr = KSPGetPC(ksp,&pc);
 
 				ierr = PCSetType(pc, this->pc_type().c_str());
+				
+
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 				ierr = PCFactorSetMatSolverPackage(pc, this->solver_package().c_str());
+#else
+				m_utopia_error("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent");
+#endif 
 				ierr = KSPSetTolerances(ksp, IterativeSolver::rtol(), IterativeSolver::atol(), PETSC_DEFAULT,  IterativeSolver::max_it());
 			}
 		};

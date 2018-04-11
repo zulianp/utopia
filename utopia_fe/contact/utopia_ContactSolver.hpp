@@ -125,6 +125,9 @@ namespace utopia {
 
 			++n_exports;
 			for(int t = 0; t < n_time_steps; ++t) {
+				std::cout << "-------------------------------------"<< std::endl;
+				std::cout << "time_step: " << t << std::endl;
+
 				first_ = true;
 				if(!solve_contact()) return false;
 				next_step();
@@ -135,6 +138,7 @@ namespace utopia {
 
 
 				++n_exports;
+				std::cout << "-------------------------------------"<< std::endl;
 			}
 
 			finalize();
@@ -227,10 +231,11 @@ namespace utopia {
 
 				// newton.set_box_constraints(box_c);
 				// newton.solve(lhs, rhs, inc_c);
-
+				Chrono c;
+				c.start();
 
 				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
-				TaoSolver<Matrix, Vector> tao(linear_solver_);
+				TaoSolver<Matrix, Vector> tao;//(linear_solver_);
 				tao.set_box_constraints(box_c);
 				tao.set_type("tron");
 				tao.set_ksp_types("bcgs", "jacobi", " ");
@@ -238,6 +243,10 @@ namespace utopia {
 				tao.solve(fun, inc_c);
 
 				force_direct_solver_ = false;
+
+				c.stop();
+
+				std::cout << "Solve " << c << std::endl;
 			}
 		}
 

@@ -4,8 +4,10 @@
 #include "utopia_BoxConstraints.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_petsc_ForwardDeclarations.hpp"
+#include "utopia_petsc_KSPSolver.hpp"
 #include "utopia_petsc_Types.hpp"
 #include "utopia_Function.hpp"
+#include "utopia_petsc_build_ksp.hpp"
 #include <mpi.h>
 #include <string>
 
@@ -30,6 +32,7 @@ namespace utopia {
 		void set_function(Function<DSMatrixd, DVectord> &fun);
 
 		void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package);
+		bool get_ksp(KSP *ksp);
 	private:
 		void * data_;
 		std::string ksp_type_;
@@ -51,6 +54,14 @@ namespace utopia {
 			this->stol(1e-19);
 		}
 
+		TaoSolver()
+		: NonLinearSolver<Matrix, Vector>(nullptr)
+		{
+			this->atol(1e-19);
+			this->rtol(1e-12); 
+			this->stol(1e-19);
+		}
+
 		void set_type(const std::string &type)
 		{
 			type_ = type;
@@ -63,7 +74,15 @@ namespace utopia {
 
 		bool solve(Function<Matrix, Vector> &fun, Vector &x)
 		{	
-			// auto factorization = std::dynamic_pointer_cast<Factorization<Matrix, Vector>>()
+			bool linear_solver_is_set = false;
+			auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector>>(this->linear_solver());
+
+			if(ksp_solver) {
+				set_ksp_types(ksp_solver->ksp_type(), ksp_solver->pc_type(), ksp_solver->solver_package());
+				m_utopia_warning_once("> FIXME TaoSolver does not consider the ksp tollerances");
+				linear_solver_is_set = true;
+			}
+
 			impl_.init(
 				x.implementation().communicator(),
 				type_,
@@ -72,6 +91,22 @@ namespace utopia {
 				this->stol(),
 				this->max_it()
 			);
+
+			if(!linear_solver_is_set) {
+				auto factorization = std::dynamic_pointer_cast<Factorization<Matrix, Vector>>(this->linear_solver());
+				if(factorization) {
+					KSP ksp;
+					impl_.get_ksp(&ksp);
+					factorization->strategy().set_ksp_options(ksp);
+					linear_solver_is_set = true;
+				}
+			}
+
+			if(this->linear_solver() && !linear_solver_is_set) {
+				KSP ksp;
+				impl_.get_ksp(&ksp);
+				build_ksp(this->linear_solver(), ksp);
+			}
 			
 			if(box_constraints_.has_bound()) {
 				box_constraints_.fill_empty_bounds();

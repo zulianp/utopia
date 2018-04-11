@@ -28,14 +28,13 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
 
-        NonLinearSolver(const std::shared_ptr<Solver> &linear_solver = std::shared_ptr<Solver>(),
+        NonLinearSolver(const std::shared_ptr<Solver> &linear_solver,
                         const Parameters &params = Parameters())
         : linear_solver_(linear_solver),
           params_(params)
         {
             set_parameters(params);        
         }
-
 
         virtual ~NonLinearSolver() {}
 
@@ -105,11 +104,11 @@ namespace utopia
             log_system_         = params.log_system(); 
             check_diff_         = params.differentiation_control(); 
 
-
             if(linear_solver_)
                 linear_solver_->set_parameters(params); 
-            else
-                std::cout<<"WARNING:: NonLinearSolver::linear_solver_ - empty \n";
+            else {
+                m_utopia_warning_once("NonLinearSolver::linear_solver_ - nullptr might not be handled correctly yet\n");
+            }
         }
 
 
@@ -254,6 +253,11 @@ public:
 
         Scalar get_time() { return _time.get_seconds();  }
 
+        inline std::shared_ptr<Solver> linear_solver() const
+        {
+            return linear_solver_;
+        }
+
     protected:
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)
         {
@@ -273,6 +277,7 @@ public:
             return linear_solver_->apply(rhs, sol);
         }
 
+     
 
         std::shared_ptr<Solver> linear_solver_;     /*!< Linear solver parameters. */  
         Parameters params_;        /*!< Solver parameters. */  

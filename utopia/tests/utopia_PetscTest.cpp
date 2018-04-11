@@ -1,17 +1,8 @@
-/*
-* @Author: kopanicakova
-* @Date:   2018-04-05 17:59:33
-* @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-09 12:40:40
-*/
-/*
-* @Author: Eric Botter
-* @Date:   2016-11-15
-*/
 #include "utopia.hpp"
 #include "utopia_PetscTest.hpp"
 #include "test_problems/utopia_TestFunctionsND.hpp"
 #include "utopia_QuadraticFunction.hpp"
+#include "utopia_Device.hpp"
 
 namespace utopia {
 
