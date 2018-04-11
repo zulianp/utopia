@@ -10,9 +10,9 @@ namespace utopia
     class MoreSorensenEigen {};
 
 	/**
-	 * @brief      Class for More Sorensen minimization algorithm. Initialization of lambda_0 is based on eigensolution, 
+	 * @brief      Class for More Sorensen minimization algorithm, where initialization of lambda_0 is based on eigen sol. 
 	 * 
-	 * 			   WARNING:: 	computation of direction could be more efficient by using cholesky decomposition and store just factors, 
+	 * 			   WARNING:: 	Computation of direction could be more efficient by using cholesky decomposition and store just factors, 
 	 * 			   				but it is a bit anoying to do so with petsc => we solve system 2 \times, which is less efficient, 
 	 * 			   				but ok as this is just proof of concept solver
 	 */
