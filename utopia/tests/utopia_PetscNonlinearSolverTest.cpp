@@ -751,7 +751,7 @@ namespace utopia
 
 		void petsc_sparse_newton_snes_test()
 		{
-			if(mpi_world_size() > 10) return;
+			if(mpi_world_size() > 1) return;
 			
 			auto lsolver = std::make_shared< BiCGStab<DSMatrixd, DVectord> >();
 			Newton<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> nlsolver(lsolver);

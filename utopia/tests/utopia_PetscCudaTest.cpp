@@ -4,7 +4,8 @@
 
 namespace utopia {
 
-//#ifdef WITH_PETSC_CUDA
+#ifdef PETSC_HAVE_CUDA
+
     void petsc_cuda_init()
     {
         SizeType n = 1000;
@@ -23,9 +24,7 @@ namespace utopia {
 
         CuVectord sol = local_zeros(local_size(y).get(0));
 
-            //test mat-residual
-        
-
+        //test mat-residual
         ConjugateGradient<CuSMatrixd, CuVectord, HOMEMADE>  cg;
         cg.verbose(true);
         cg.max_it(n);
@@ -35,7 +34,6 @@ namespace utopia {
         double err = norm2(r);
         assert(err < 1e-10);
     }
-
 
     void petsc_cuda_mg()
     {
@@ -77,14 +75,15 @@ namespace utopia {
         assert(err < 1e-6);
     }
 
-//#endif //WITH_PETSC_CUDA;
+#endif //PETSC_HAVE_CUDA
+
 
     void run_petsc_cuda_test() {
-//#ifdef WITH_PETSC_CUDA
+#ifdef PETSC_HAVE_CUDA
         UTOPIA_UNIT_TEST_BEGIN("PetscCudaTest");
         UTOPIA_RUN_TEST(petsc_cuda_init);
         UTOPIA_RUN_TEST(petsc_cuda_mg);
         UTOPIA_UNIT_TEST_END("PetscCudaTest");
-//#endif // WITH_PETSC_CUDA
+#endif //PETSC_HAVE_CUDA
     }
 }

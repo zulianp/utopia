@@ -1039,8 +1039,9 @@ namespace utopia {
         
         check_error( MatMult(implementation(), vec.implementation(), result.implementation() ) );
 
-        assert(result.implementation() != nullptr);
         result.set_initialized(true);
+
+        assert(result.implementation() != nullptr);
         assert(result.is_consistent());
         assert(result.same_type(vec));
     }
