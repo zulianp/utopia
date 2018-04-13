@@ -356,7 +356,7 @@ namespace utopia
 			multigrid.pre_smoothing_steps(1);
 			multigrid.post_smoothing_steps(1);
 			utopia_ksp.set_preconditioner(make_ref(multigrid));
-			utopia_ksp.verbose(true);
+			// utopia_ksp.verbose(true);
 			
 			utopia_ksp.atol(1e-16);
 			utopia_ksp.rtol(1e-16);

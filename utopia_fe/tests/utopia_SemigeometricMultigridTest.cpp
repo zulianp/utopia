@@ -276,10 +276,9 @@ namespace utopia {
     void run_semigeometric_multigrid_poisson(libMesh::LibMeshInit &init)
     {
         std::cout << "[run_semigeometric_multigrid_poisson]" << std::endl;
-
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
-        const unsigned int n = 100;
+        const unsigned int n = 200;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,
@@ -349,5 +348,4 @@ namespace utopia {
         run_semigeometric_multigrid_poisson(init);
         run_semigeometric_multigrid_elast(init);
     }
-
 }
