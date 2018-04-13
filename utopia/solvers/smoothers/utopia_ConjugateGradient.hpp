@@ -104,12 +104,14 @@ namespace utopia
         	Scalar rho, rho_1, beta, alpha, r_norm = 9e9; 
         	Vector r, p, q; 
 
+            assert(!empty(b));
+
         	if(empty(x) || size(x).get(0) != size(b).get(0)) {
                 x = local_zeros(local_size(b));
                 r = b;
             } else {
                 assert(local_size(x).get(0) == local_size(b).get(0));
-                r = b - A *x; 
+                r = b - A * x; 
             }
 
             this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||" }); 
@@ -117,7 +119,7 @@ namespace utopia
 
         	while(!converged)
         	{
-        		rho = dot(r,r); 
+        		rho = dot(r, r); 
         		if(it > 0)
         		{
         			beta = rho/rho_1;
@@ -154,8 +156,8 @@ namespace utopia
             Scalar beta, alpha, r_norm = 9e9; 
             Vector r, p, Ap, r_new; 
 
-            Vector z     = local_zeros(local_size(x)); 
-            Vector z_new = local_zeros(local_size(x)); 
+            Vector z     = local_zeros(local_size(b)); 
+            Vector z_new = local_zeros(local_size(b)); 
 
             if(empty(x) || size(x).get(0) != size(b).get(0)) {
                 x = local_zeros(local_size(b));

@@ -82,6 +82,7 @@ namespace utopia {
         
         bool err = check_error( PetscViewerBinaryOpen(comm, path.c_str(), FILE_MODE_READ, &fd) );
         err = err && check_error( MatCreate(comm, &implementation()) );
+        err = err && check_error( MatSetType(implementation(), type_override()) );
         err = err && check_error( MatLoad(implementation(), fd) );
         
         check_error( PetscViewerDestroy(&fd) );
@@ -1036,6 +1037,8 @@ namespace utopia {
         }
         
         check_error( MatMult(implementation(), vec.implementation(), result.implementation() ) );
+
+        assert(result.implementation() != nullptr);
         result.set_initialized(true);
     }
     
@@ -1059,6 +1062,7 @@ namespace utopia {
         }
         
         check_error( MatMultTranspose(implementation(), vec.implementation(), result.implementation() ) );
+        assert(result.implementation() != nullptr);
         result.set_initialized(true);
     }
     

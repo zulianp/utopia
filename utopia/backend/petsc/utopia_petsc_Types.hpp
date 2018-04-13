@@ -144,6 +144,12 @@ namespace utopia {
         return !w.implementation().initialized();
     }
 
+    inline bool empty(const CuVectord &w)
+    {
+        return !w.implementation().initialized();
+    }
+
+
     inline bool empty(const Wrapper<PetscSerialVector, 1> &w)
     {
         return !w.implementation().initialized();

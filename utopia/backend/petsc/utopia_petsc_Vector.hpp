@@ -228,6 +228,12 @@ namespace utopia {
 		}
 		
 		inline void describe() const {
+
+			if(is_root()) {
+				std::cout << "is_null    : " << is_null() << "\n";
+				std::cout << "initialized: " << initialized() << "\n";
+			}
+
 			VecView(implementation(), PETSC_VIEWER_STDOUT_(communicator()));
 		}
 		
@@ -358,12 +364,16 @@ namespace utopia {
 		{
 			repurpose(comm, type, n_local, n_global);
 			check_error( VecZeroEntries(implementation()) );
+
+			assert(is_consistent());			
 		}
 
 		inline void values(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global, PetscScalar value)
 		{
 			repurpose(comm, type, n_local, n_global);
 			check_error( VecSet(implementation(), value) );
+
+			assert(is_consistent());
 		}
 		
 		void init(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global);
@@ -375,12 +385,18 @@ namespace utopia {
 		///this is y
 		inline void axpy(const PetscScalar &alpha, const PetscVector &x)
 		{
+			assert(is_consistent());
+			assert(x.is_consistent());
+			
 			check_error( VecAXPY(implementation(), alpha, x.implementation()) );
 		}
 
 		///this is y
 		inline void axpby(const PetscScalar alpha, const PetscVector &x, const PetscScalar &beta)
 		{
+			assert(is_consistent());
+			assert(x.is_consistent());
+
 			check_error( VecAXPBY(implementation(), alpha, beta, x.implementation()) );
 		}
 		
@@ -429,16 +445,23 @@ namespace utopia {
 
 		inline void e_mul(const PetscVector &other, PetscVector &result) const
 		{
+			assert(is_consistent());
+			
 			if(implementation() != result.vec_ && other.implementation() != result.vec_) {
 				//if result is compatibe should not trigger a reallocation
 				result.repurpose(communicator(), type(), local_size(), size());
 			}
 
 			check_error( VecPointwiseMult(result.implementation(), implementation(), other.implementation()) );
+
+			assert(other.is_consistent());
 		}
 
 		inline PetscScalar dot(const PetscVector &other) const
 		{
+			assert(is_consistent());
+			assert(other.is_consistent());
+
 			PetscScalar result;
 			check_error( VecDot(implementation(), other.implementation(), &result) );
 			return result;
@@ -528,6 +551,11 @@ namespace utopia {
 		}
 
 		bool is_cuda() const;
+		
+		bool is_consistent() const;
+
+	 	bool is_root() const;
+
 	};
 	
 }
