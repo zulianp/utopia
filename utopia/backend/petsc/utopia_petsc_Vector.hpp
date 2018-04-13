@@ -227,15 +227,7 @@ namespace utopia {
 			return vec_;
 		}
 		
-		inline void describe() const {
-
-			if(is_root()) {
-				std::cout << "is_null    : " << is_null() << "\n";
-				std::cout << "initialized: " << initialized() << "\n";
-			}
-
-			VecView(implementation(), PETSC_VIEWER_STDOUT_(communicator()));
-		}
+		void describe() const;
 		
 		inline bool is_null() const
 		{
