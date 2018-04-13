@@ -87,8 +87,6 @@
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
         // delta = 10;        // testing 
 
-
-        
         g0_norm = norm2(g);
         g_norm = g0_norm;
         
@@ -121,13 +119,11 @@
             tr_subproblem->current_radius(delta);  
 
             Vector ub, lb; 
-            tr_subproblem->prepare_tr_box_solve( delta, x_k, box_constraints_, ub, lb); 
+            merge_tr_with_pointwise_constrains(x_k, delta, ub, lb); 
             
             auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
             
-            std::cout<<"--------- constrained solve ---------- \n"; 
             tr_subproblem->tr_constrained_solve(H, g, p_k, box);
-            std::cout<<"--------- constrained solve end---------- \n"; 
 
           }
 
@@ -268,10 +264,47 @@
       }
 
 
+      virtual bool merge_tr_with_pointwise_constrains(const Vector & x_k, const Scalar & radius,Vector & u_f, Vector & l_f)
+      {
+          if(box_constraints_.has_upper_bound())
+          {
+              Vector u =  *box_constraints_.upper_bound() - x_k; 
+              u_f = local_zeros(local_size(x_k).get(0)); 
+              {   
+                  Read<Vector> rv(u); 
+                  Write<Vector> wv(u_f); 
+
+                  each_write(u_f, [radius, u](const SizeType i) -> double { 
+                      return  (u.get(i) <= radius)  ? u.get(i) : radius; }   );
+              }
+          }
+          else
+              u_f = radius * local_values(local_size(x_k).get(0), 1.0); ; 
+
+
+          if(box_constraints_.has_lower_bound())
+          {
+              Vector l = *(box_constraints_.lower_bound()) - x_k; 
+              l_f = local_zeros(local_size(x_k).get(0)); 
+
+              {   
+                  Read<Vector> rv(l); 
+                  Write<Vector> wv(l_f); 
+
+                  each_write(l_f, [radius, l](const SizeType i) -> double { 
+                      return  (l.get(i) >= -1*radius)  ? l.get(i) : -1 * radius;  }   );
+              }
+          }
+          else
+              l_f = -1 * radius * local_values(local_size(x_k).get(0), 1.0); ;         
+
+          return true; 
+      }
+
+
 
     protected: 
       BoxConstraints box_constraints_; 
-
 
   };
 

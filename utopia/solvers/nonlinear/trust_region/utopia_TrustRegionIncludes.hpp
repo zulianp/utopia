@@ -13,4 +13,11 @@
 #include "utopia_TrustRegion.hpp"
 #include "utopia_TrustRegionFactory.hpp"
 
+
+// there is some problem with includes inside of petsc 
+#ifdef WITH_PETSC
+	#include "utopia_petsc_TaoTRQP.hpp"
+#endif
+
+
 #endif //UTOPIA_TR_INCLUDES_HPP

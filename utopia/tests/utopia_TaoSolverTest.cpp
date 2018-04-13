@@ -61,6 +61,7 @@ namespace utopia {
 		double n_diff = norm2(xssn - x);
 		assert(n_diff < 1e-10);
 
+
 	}
 
 	void run_tao_solver_test()

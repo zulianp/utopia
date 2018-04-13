@@ -23,7 +23,6 @@
 #include "utopia_petsc_TrustRegionFactory.hpp"
 #include "utopia_petsc_solvers.hpp"
 
-
 #include "utopia_petsc_Newton.hpp"
 
 
