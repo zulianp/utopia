@@ -958,16 +958,30 @@ namespace utopia {
 			std::cerr << "[Error] not handled case in triple_product_ptap" << std::endl;
 		}
 
-		check_error( MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) ); 
+		assert(A.same_type(P));
+
+		if(A.is_cuda()) {
+			m_utopia_status_once("MatPtAP does not work properly with the cusparse backend. Workaround implemented.");
+			Mat temp;
+			check_error( MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp) ); 
+			check_error( MatConvert(temp, A.type(), MAT_INITIAL_MATRIX, &result.implementation()) );
+			MatDestroy(&temp);
+		} else {
+			check_error( MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) ); 
+		}
+
+		assert(result.same_type(A));
 	}
 	
-	void PetscBackend::triple_product(PetscMatrix & result, const PetscMatrix &A, const PetscMatrix &B, const PetscMatrix &C)
+	void PetscBackend::triple_product(PetscMatrix &result, const PetscMatrix &A, const PetscMatrix &B, const PetscMatrix &C)
 	{
 		if(result.implementation() != A.implementation() && result.implementation() != B.implementation() && result.implementation() != C.implementation()) {
 			result.destroy();
 		}
 		
 		check_error( MatMatMatMult(A.implementation(), B.implementation(), C.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) );
+		
+		assert(result.same_type(A));
 	}
 
 	bool PetscBackend::is_nan_or_inf(const PetscVector &X)

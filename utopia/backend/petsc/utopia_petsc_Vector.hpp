@@ -457,15 +457,7 @@ namespace utopia {
 			assert(other.is_consistent());
 		}
 
-		inline PetscScalar dot(const PetscVector &other) const
-		{
-			assert(is_consistent());
-			assert(other.is_consistent());
-
-			PetscScalar result;
-			check_error( VecDot(implementation(), other.implementation(), &result) );
-			return result;
-		}
+		PetscScalar dot(const PetscVector &other) const;
 
 		inline void e_div(const PetscVector &other, PetscVector &result) const
 		{
@@ -536,6 +528,7 @@ namespace utopia {
 		bool write(const std::string &path) const;
 		bool write_matlab(const std::string &path) const;
 
+		bool is_consistent() const;
 		
 	private:
 		Vec vec_;
@@ -552,7 +545,7 @@ namespace utopia {
 
 		bool is_cuda() const;
 		
-		bool is_consistent() const;
+		
 
 	 	bool is_root() const;
 

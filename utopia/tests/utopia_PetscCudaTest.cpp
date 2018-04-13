@@ -53,13 +53,13 @@ namespace utopia {
         interpolation_operators.push_back(make_ref(I_2));
         interpolation_operators.push_back(make_ref(I_3));
 
-        auto smoother = std::make_shared<ConjugateGradient<CuSMatrixd, CuVectord, HOMEMADE>>();
+        auto smoother      = std::make_shared<ConjugateGradient<CuSMatrixd, CuVectord, HOMEMADE>>();
         auto linear_solver = std::make_shared<ConjugateGradient<CuSMatrixd, CuVectord, HOMEMADE>>();
 
         Multigrid<CuSMatrixd, CuVectord> multigrid(smoother, linear_solver);
 
-        smoother->verbose(true);
-        linear_solver->verbose(true);
+        // smoother->verbose(true);
+        // linear_solver->verbose(true);
 
         multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
         multigrid.max_it(20);

@@ -70,8 +70,6 @@ namespace utopia {
         
         check_error( MatSetOption(implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
         check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
-        
-        
     }
     
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path)
@@ -1020,6 +1018,9 @@ namespace utopia {
         if(vec.implementation() == result.implementation()) {
             assert(false && "handle me");
         }
+
+        assert(vec.is_consistent());
+        assert(result.is_consistent());
         
         MPI_Comm comm = vec.communicator();
         
@@ -1040,6 +1041,8 @@ namespace utopia {
 
         assert(result.implementation() != nullptr);
         result.set_initialized(true);
+        assert(result.is_consistent());
+        assert(result.same_type(vec));
     }
     
     void PetscMatrix::mult_t(const PetscVector &vec, PetscVector &result) const
@@ -1209,5 +1212,17 @@ namespace utopia {
         // }
 
         return true;
+    }
+
+    bool PetscMatrix::has_type(VecType type) const
+    {
+        PetscBool match = PETSC_FALSE;
+        PetscObjectTypeCompare((PetscObject) implementation(), type, &match);
+        return match == PETSC_TRUE;
+    }
+
+    bool PetscMatrix::same_type(const PetscMatrix &other) const
+    {
+        return has_type(other.type());
     }
 }

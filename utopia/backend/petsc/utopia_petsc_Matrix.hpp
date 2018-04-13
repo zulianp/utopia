@@ -446,6 +446,9 @@ namespace utopia {
 		PetscBool is_initialized_as( MPI_Comm comm, MatType dense_type, PetscInt local_rows, PetscInt local_cols, PetscInt global_rows, PetscInt global_cols); 
         bool empty() const;
 
+        bool has_type(VecType type) const;
+        bool same_type(const PetscMatrix &other) const;
+        bool is_cuda() const;
 	private:
 		std::shared_ptr<PetscMatrixMemory> wrapper_;
 		
@@ -465,7 +468,7 @@ namespace utopia {
                 const Range &local_col_range,
                 PetscMatrix &result) const;
 
-      	bool is_cuda() const;
+      	
       	VecType compatible_cuda_vec_type() const;
 
       	//y = A * x;

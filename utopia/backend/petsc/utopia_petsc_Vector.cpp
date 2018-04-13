@@ -5,16 +5,30 @@
 
 namespace utopia {
 
-	bool  PetscVector::has_type(VecType type) const
+	bool PetscVector::has_type(VecType type) const
 	{
 		PetscBool match = PETSC_FALSE;
 		PetscObjectTypeCompare((PetscObject) implementation(), type, &match);
-		return match;
+		return match == PETSC_TRUE;
 	}
 
 	bool PetscVector::same_type(const PetscVector &other) const
 	{
 		return has_type(other.type());
+	}
+
+	PetscScalar PetscVector::dot(const PetscVector &other) const
+	{
+		assert(is_consistent());
+		assert(other.is_consistent());
+
+		if(!same_type(other)) {
+			other.describe();
+		}
+
+		PetscScalar result;
+		check_error( VecDot(implementation(), other.implementation(), &result) );
+		return result;
 	}
 
 	void PetscVector::repurpose(MPI_Comm comm,
@@ -62,7 +76,7 @@ namespace utopia {
 		initialized_ = true;
 
 		if(!is_consistent()) {
-			std::cout << "type copy: " << type_copy << " != " << type_override() << std::endl;
+			std::cout << "type copy: " << type_copy << " != " << type_override() << "!=" << this->type() << std::endl;
 		}
 
 		assert(is_consistent());
@@ -295,6 +309,7 @@ namespace utopia {
 			return true;
 		}
 
-		return has_type(type_override());
+		//TODO add additional checks
+		return true;
 	}
 }

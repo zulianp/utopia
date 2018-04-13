@@ -131,7 +131,7 @@ namespace utopia
         		}
 
         		q = A * p; 
-        		alpha = rho / dot(p,q); 
+        		alpha = rho / dot(p, q); 
 
         		x += alpha * p; 
         		r -= alpha * q; 
