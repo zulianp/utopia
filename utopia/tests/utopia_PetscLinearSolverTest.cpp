@@ -184,6 +184,8 @@ namespace utopia
 			x_0.set(0.);
 			// gmres->verbose(true);
 			gmres->solve(A, rhs, x_0);
+
+			assert( approxeq(A*x_0, rhs, 1e-6) );
 		}
 		
 		
@@ -225,7 +227,7 @@ namespace utopia
 			multigrid.max_it(1);
 			multigrid.mg_type(1);
 			multigrid.verbose(verbose);
-			// multigrid.set_use_line_search(true);
+			multigrid.set_use_line_search(true);
 			
 			ConjugateGradient<DSMatrixd, DVectord> cg;
 			cg.verbose(verbose);
@@ -239,7 +241,13 @@ namespace utopia
 			//CG with multigrid preconditioner
 			x_0 = zeros(A.size().get(0));
 			cg.set_preconditioner(make_ref(multigrid));
+			cg.atol(1e-15);
+			cg.rtol(1e-15);
+			cg.stol(1e-15);
+			
 			cg.solve(A, rhs, x_0);
+
+			assert( approxeq(A*x_0, rhs, 1e-6) );
 			
 			//Multigrid only
 			// x_0 = zeros(A.size().get(0));
@@ -279,6 +287,8 @@ namespace utopia
 			// multigrid.verbose(true);
 			multigrid.set_use_line_search(true);
 			multigrid.solve(rhs, x);
+
+			assert( approxeq(A*x, rhs, 1e-6) );
 		}
 		
 		void petsc_superlu_cg_mg_test()
@@ -336,6 +346,7 @@ namespace utopia
 			// utopia_ksp.set_preconditioner(precond);
 			utopia_ksp.verbose(verbose);
 			utopia_ksp.solve(A, rhs, x_0);
+			assert( approxeq(A*x_0, rhs, 1e-6) );
 			//! [KSPSolver solve example1]
 			
 			x_0 = zeros(A.size().get(0));
@@ -345,37 +356,53 @@ namespace utopia
 			multigrid.pre_smoothing_steps(1);
 			multigrid.post_smoothing_steps(1);
 			utopia_ksp.set_preconditioner(make_ref(multigrid));
+			// utopia_ksp.verbose(true);
+			
+			utopia_ksp.atol(1e-16);
+			utopia_ksp.rtol(1e-16);
+			utopia_ksp.stol(1e-16);
+
 			utopia_ksp.solve(A, rhs, x_0);
+
+			double diff = norm2(rhs - A * x_0);
+			assert( diff < 1e-6 );
 		}
 		
 
 		void petsc_cholesky_test()
 		{
-			DVectord rhs, x; 
-			DSMatrixd A = zeros(_n, _n);
+			if(mpi_world_size() == 1) {
+				DVectord rhs, x; 
+				DSMatrixd A = zeros(_n, _n);
 
-			assemble_laplacian_1D(_n, A);
-			{
-				Range r = row_range(A);
-				Write<DSMatrixd> w(A);
-				if(r.begin() == 0) {
-					A.set(0, 0, 1.);
-					A.set(0, 1, 0);
+				assemble_laplacian_1D(_n, A);
+				{
+					Range r = row_range(A);
+					Write<DSMatrixd> w(A);
+					if(r.begin() == 0) {
+						A.set(0, 0, 1.);
+						A.set(0, 1, 0);
+					}
+
+					if(r.end() == _n) {
+						A.set(_n-1, _n-1, 1.);
+						A.set(_n-1, _n-2, 0);
+					}
 				}
 
-				if(r.end() == _n) {
-					A.set(_n-1, _n-1, 1.);
-					A.set(_n-1, _n-2, 0);
+				x 	= local_zeros(local_size(A).get(0)); 
+				rhs = local_values(local_size(A).get(0), 13.0); 
+
+				auto cholesky_factorization = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+				cholesky_factorization->set_type(PETSC_TAG, CHOLESKY_DECOMPOSITION_TAG);
+				
+				if(!cholesky_factorization->solve(A, rhs, x)) {
+					assert(false && "failed to solve");
 				}
+
+				double diff = norm2(rhs - A * x);
+				assert( approxeq(A * x, rhs, 1e-6) );
 			}
-
-			x 	= local_zeros(local_size(A).get(0)); 
-			rhs = local_values(local_size(A).get(0), 13.0); 
-
-			auto cholesky_factorization = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-			cholesky_factorization->set_type(PETSC_TAG, CHOLESKY_DECOMPOSITION_TAG);
-
-			cholesky_factorization->solve(A, rhs, x); 
 		}
 
 

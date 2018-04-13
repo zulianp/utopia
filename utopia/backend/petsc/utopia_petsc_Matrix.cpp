@@ -10,62 +10,66 @@
 //PetscObjectTypeCompare((PetscObject)mat,newtype,&sametype);
 
 namespace utopia {
-    
+
+    MatType PetscMatrix::type_override() const
+    {
+        return MATDENSE;
+    }
+
     void PetscMatrix::add_matrix(
-                                 const std::vector<PetscInt> &rows,
-                                 const std::vector<PetscInt> &cols,
-                                 const std::vector<PetscScalar> &values)
+       const std::vector<PetscInt> &rows,
+       const std::vector<PetscInt> &cols,
+       const std::vector<PetscScalar> &values)
     {
         assert(rows.size() * cols.size() == values.size());
         
         check_error(
-                    MatSetValues(
-                                 implementation(),
-                                 static_cast<PetscInt>(rows.size()), &rows[0],
-                                 static_cast<PetscInt>(cols.size()), &cols[0],
-                                 &values[0],
-                                 ADD_VALUES)
-                    );
+            MatSetValues(
+               implementation(),
+               static_cast<PetscInt>(rows.size()), &rows[0],
+               static_cast<PetscInt>(cols.size()), &cols[0],
+               &values[0],
+               ADD_VALUES)
+            );
     }
     
     void PetscMatrix::set_matrix(
-                                 const std::vector<PetscInt> &rows,
-                                 const std::vector<PetscInt> &cols,
-                                 const std::vector<PetscScalar> &values)
+       const std::vector<PetscInt> &rows,
+       const std::vector<PetscInt> &cols,
+       const std::vector<PetscScalar> &values)
     {
         assert(rows.size() * cols.size() == values.size());
         
         check_error(
-                    MatSetValues(
-                                 implementation(),
-                                 static_cast<PetscInt>(rows.size()), &rows[0],
-                                 static_cast<PetscInt>(cols.size()), &cols[0],
-                                 &values[0],
-                                 INSERT_VALUES)
-                    );
+            MatSetValues(
+               implementation(),
+               static_cast<PetscInt>(rows.size()), &rows[0],
+               static_cast<PetscInt>(cols.size()), &cols[0],
+               &values[0],
+               INSERT_VALUES)
+            );
     }
     
     void PetscMatrix::dense_init(
-                                 MPI_Comm comm,
-                                 MatType dense_type,
-                                 PetscInt rows_local,
-                                 PetscInt cols_local,
-                                 PetscInt rows_global,
-                                 PetscInt cols_global)
+       MPI_Comm comm,
+       MatType dense_type,
+       PetscInt rows_local,
+       PetscInt cols_local,
+       PetscInt rows_global,
+       PetscInt cols_global)
     {
-        
+
         const std::string type_copy = dense_type;
         destroy();
         
         check_error( MatCreate(comm, &implementation()) );
+        check_error( MatSetFromOptions(implementation()) );
         check_error( MatSetType(implementation(), type_copy.c_str()) );
         check_error( MatSetSizes(implementation(), rows_local, cols_local, rows_global, cols_global) );
         check_error( MatSetUp(implementation()) );
         
         check_error( MatSetOption(implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
         check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
-        
-        check_error( MatSetFromOptions(implementation()) );
     }
     
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path)
@@ -76,6 +80,7 @@ namespace utopia {
         
         bool err = check_error( PetscViewerBinaryOpen(comm, path.c_str(), FILE_MODE_READ, &fd) );
         err = err && check_error( MatCreate(comm, &implementation()) );
+        err = err && check_error( MatSetType(implementation(), type_override()) );
         err = err && check_error( MatLoad(implementation(), fd) );
         
         check_error( PetscViewerDestroy(&fd) );
@@ -152,9 +157,9 @@ namespace utopia {
     }
     
     void PetscMatrix::select(
-                             const std::vector<PetscInt> &row_index,
-                             const std::vector<PetscInt> &col_index,
-                             PetscMatrix &result) const
+       const std::vector<PetscInt> &row_index,
+       const std::vector<PetscInt> &col_index,
+       PetscMatrix &result) const
     {
         if(col_index.empty()) {
             PetscInt n_rows, n_cols;
@@ -172,8 +177,8 @@ namespace utopia {
     }
     
     void PetscMatrix::select_aux(const std::vector<PetscInt> &row_index,
-                                 const std::vector<PetscInt> &col_index,
-                                 PetscMatrix &result) const
+       const std::vector<PetscInt> &col_index,
+       PetscMatrix &result) const
     {
         Mat r = implementation();
         MPI_Comm comm = communicator();
@@ -197,28 +202,28 @@ namespace utopia {
         unsigned long offset_out = 0;
         
         MPI_Exscan(
-                   &offsets_in,
-                   &offset_out,
-                   1,
-                   MPI_UNSIGNED_LONG ,
-                   MPI_SUM,
-                   comm);
+         &offsets_in,
+         &offset_out,
+         1,
+         MPI_UNSIGNED_LONG ,
+         MPI_SUM,
+         comm);
         
         offset_out += min_col;
         
         par_assign_from_local_is(
-                                 row_index,
-                                 col_index,
-                                 min_col,
-                                 Range(offset_out, offset_out + local_cols),
-                                 result);
+           row_index,
+           col_index,
+           min_col,
+           Range(offset_out, offset_out + local_cols),
+           result);
     }
     
     void PetscMatrix::par_assign_from_local_is(const std::vector<PetscInt> &remote_rows,
-                                               const std::vector<PetscInt> &remote_cols,
-                                               const PetscInt global_col_offset,
-                                               const Range &local_col_range,
-                                               PetscMatrix &result) const
+     const std::vector<PetscInt> &remote_cols,
+     const PetscInt global_col_offset,
+     const Range &local_col_range,
+     PetscMatrix &result) const
     {
         MPI_Comm comm = communicator();
         Mat &l = result.implementation();
@@ -272,7 +277,7 @@ namespace utopia {
             
             
             for(PetscInt row = 0; row < n_rows; ++row) {
-                
+
                 MatGetRow(*l_ptr, row, &n_values, &cols, &values);
                 
                 for(PetscInt i = 0; i < n_values; ++i) {
@@ -301,9 +306,9 @@ namespace utopia {
     }
     
     void PetscMatrix::local_select(const Range &local_row_range,
-                                   const Range &local_col_range,
-                                   const Range &global_col_range,
-                                   PetscMatrix &result) const
+     const Range &local_col_range,
+     const Range &global_col_range,
+     PetscMatrix &result) const
     {
         PetscErrorCode ierr = 0;
         
@@ -326,10 +331,10 @@ namespace utopia {
     }
     
     void PetscMatrix::select(const Range &global_row_range,
-                             const Range &global_col_range,
-                             PetscMatrix &result) const
+       const Range &global_col_range,
+       PetscMatrix &result) const
     {
-        
+
         const Mat r = implementation();
         PetscInt global_rows = global_row_range.extent();
         PetscInt local_rows  = PETSC_DECIDE;
@@ -352,21 +357,21 @@ namespace utopia {
         };
         
         MPI_Exscan(
-                   &offsets_in,
-                   &offset_out,
-                   2,
-                   MPI_UNSIGNED_LONG ,
-                   MPI_SUM,
-                   comm);
+         &offsets_in,
+         &offset_out,
+         2,
+         MPI_UNSIGNED_LONG ,
+         MPI_SUM,
+         comm);
         
         offset_out[0] += global_row_range.begin();
         offset_out[1] += global_col_range.begin();
         
         local_select(
-                     Range(offset_out[0], offset_out[0] + local_rows),
-                     Range(offset_out[1], offset_out[1] + local_cols),
-                     global_col_range,
-                     result);
+           Range(offset_out[0], offset_out[0] + local_rows),
+           Range(offset_out[1], offset_out[1] + local_cols),
+           global_col_range,
+           result);
     }
     
     PetscScalar PetscMatrix::sum() const
@@ -400,7 +405,7 @@ namespace utopia {
         MatGetOwnershipRange(m.implementation(), &r_begin, &r_end);
         
         for(PetscInt row = r_begin; row < r_end; ++row) {
-            
+
             MatGetRow(m.implementation(), row, &n_values, &cols, &values);
             
             if(n_values < local_c) {
@@ -495,13 +500,13 @@ namespace utopia {
         destroy();
         
         dense_init(
-                   comm,
-                   dense_type,
-                   local_size,
-                   local_size,
-                   global_size,
-                   global_size
-                   );
+         comm,
+         dense_type,
+         local_size,
+         local_size,
+         global_size,
+         global_size
+         );
         
         check_error( MatZeroEntries(implementation()) );
         check_error( MatDiagonalSet( implementation(), diag.implementation(), INSERT_VALUES) );
@@ -515,13 +520,14 @@ namespace utopia {
         destroy();
         
         matij_init(
-                   diag.communicator(),
-                   local_size,
-                   local_size,
-                   global_size,
-                   global_size,
-                   1,
-                   0);
+         diag.communicator(),
+         type_override(),
+         local_size,
+         local_size,
+         global_size,
+         global_size,
+         1,
+         0);
         
         check_error( MatZeroEntries(implementation()) );
         check_error( MatDiagonalSet( implementation(), diag.implementation(), INSERT_VALUES) );
@@ -559,18 +565,26 @@ namespace utopia {
         check_error( MatDiagonalSet( result.implementation(), vec.implementation(), INSERT_VALUES ) );
     }
     
-    
+    bool PetscMatrix::empty() const
+    {
+        Size s = size();
+        if(s.get(0) <= 0) return true;
+        return false;
+    }
     
     PetscBool PetscMatrix::is_initialized_as(MPI_Comm comm,
-                                             MatType dense_type,
-                                             PetscInt local_rows,
-                                             PetscInt local_cols,
-                                             PetscInt global_rows,
-                                             PetscInt global_cols)
+       MatType dense_type,
+       PetscInt local_rows,
+       PetscInt local_cols,
+       PetscInt global_rows,
+       PetscInt global_cols)
     {
-        
+        if(empty()) {
+            return PETSC_FALSE;
+        }
+
         // TODO:: check type and comm
-        
+
         PetscBool initialized;
         MatAssembled(implementation(), &initialized);
         
@@ -592,16 +606,16 @@ namespace utopia {
     }
     
     void PetscMatrix::dense_init_values(MPI_Comm comm,
-                                        MatType dense_type,
-                                        PetscInt local_rows,
-                                        PetscInt local_cols,
-                                        PetscInt global_rows,
-                                        PetscInt global_cols,
-                                        PetscScalar value
-                                        )
+        MatType dense_type,
+        PetscInt local_rows,
+        PetscInt local_cols,
+        PetscInt global_rows,
+        PetscInt global_cols,
+        PetscScalar value
+        )
     {
         if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
-        dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+            dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
         
         const auto r = row_range();
         const PetscInt r_begin = r.begin();
@@ -619,15 +633,15 @@ namespace utopia {
     
     
     void PetscMatrix::dense_init_identity(MPI_Comm comm,
-                                          MatType dense_type,
-                                          PetscInt local_rows,
-                                          PetscInt local_cols,
-                                          PetscInt global_rows,
-                                          PetscInt global_cols,
-                                          PetscScalar scale_factor)
+      MatType dense_type,
+      PetscInt local_rows,
+      PetscInt local_cols,
+      PetscInt global_rows,
+      PetscInt global_cols,
+      PetscScalar scale_factor)
     {
         if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
-        dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+            dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
         
         check_error( MatZeroEntries(implementation()) );
         
@@ -644,23 +658,37 @@ namespace utopia {
         write_unlock();
     }
     
-    void PetscMatrix::matij_init_identity(MPI_Comm comm,
-                                          PetscInt local_rows,
-                                          PetscInt local_cols,
-                                          PetscInt global_rows,
-                                          PetscInt global_cols,
-                                          PetscScalar scale_factor)
+    // void PetscMatrix::matij_init_identity(
+    //   MPI_Comm comm,
+    //   PetscInt local_rows,
+    //   PetscInt local_cols,
+    //   PetscInt global_rows,
+    //   PetscInt global_cols,
+    //   PetscScalar scale_factor)
+    // {
+    //     matij_init_identity(comm, MATAIJ, local_rows, local_cols, global_rows, global_cols, scale_factor);
+    // }
+    
+    void PetscMatrix::matij_init_identity(
+      MPI_Comm comm,
+      MatType sparse_type,
+      PetscInt local_rows,
+      PetscInt local_cols,
+      PetscInt global_rows,
+      PetscInt global_cols,
+      PetscScalar scale_factor)
     {
-        if(!is_initialized_as(comm, MATAIJ, local_rows, local_cols, global_rows, global_cols))
-        matij_init(
-                   comm,
-                   local_rows,
-                   local_cols,
-                   global_rows,
-                   global_cols,
-                   1,
-                   0
-                   );
+        if(!is_initialized_as(comm, sparse_type, local_rows, local_cols, global_rows, global_cols))
+            matij_init(
+             comm,
+             sparse_type,
+             local_rows,
+             local_cols,
+             global_rows,
+             global_cols,
+             1,
+             0
+             );
         
         MatZeroEntries(implementation());
         
@@ -681,25 +709,25 @@ namespace utopia {
         // MatShift(implementation(), scale_factor);
     }
     
-    void PetscMatrix::matij_init(MPI_Comm comm,
-                                 PetscInt rows_local,
-                                 PetscInt cols_local,
-                                 PetscInt rows_global,
-                                 PetscInt cols_global,
-                                 PetscInt d_nnz,
-                                 PetscInt o_nnz)
-    {
-        matij_init(comm, MATAIJ, rows_local, cols_local, rows_global, cols_global, d_nnz, o_nnz);
-    }
+    // void PetscMatrix::matij_init(MPI_Comm comm,
+    //    PetscInt rows_local,
+    //    PetscInt cols_local,
+    //    PetscInt rows_global,
+    //    PetscInt cols_global,
+    //    PetscInt d_nnz,
+    //    PetscInt o_nnz)
+    // {
+    //     matij_init(comm, MATAIJ, rows_local, cols_local, rows_global, cols_global, d_nnz, o_nnz);
+    // }
     
     void PetscMatrix::matij_init(MPI_Comm comm,
-                                 MatType type,
-                                 PetscInt rows_local,
-                                 PetscInt cols_local,
-                                 PetscInt rows_global,
-                                 PetscInt cols_global,
-                                 PetscInt d_nnz,
-                                 PetscInt o_nnz)
+       MatType type,
+       PetscInt rows_local,
+       PetscInt cols_local,
+       PetscInt rows_global,
+       PetscInt cols_global,
+       PetscInt d_nnz,
+       PetscInt o_nnz)
     {
         destroy();
         
@@ -718,26 +746,26 @@ namespace utopia {
     }
     
     
-    void PetscMatrix::matij_init(MPI_Comm comm,
-                                 PetscInt rows_local,
-                                 PetscInt cols_local,
-                                 PetscInt rows_global,
-                                 PetscInt cols_global,
-                                 const std::vector<PetscInt> &d_nnz,
-                                 const std::vector<PetscInt> &o_nnz)
-    {
-        matij_init(comm, MATAIJ, rows_local, cols_local, rows_global, cols_global, d_nnz, o_nnz);
-    }
+    // void PetscMatrix::matij_init(MPI_Comm comm,
+    //    PetscInt rows_local,
+    //    PetscInt cols_local,
+    //    PetscInt rows_global,
+    //    PetscInt cols_global,
+    //    const std::vector<PetscInt> &d_nnz,
+    //    const std::vector<PetscInt> &o_nnz)
+    // {
+    //     matij_init(comm, MATAIJ, rows_local, cols_local, rows_global, cols_global, d_nnz, o_nnz);
+    // }
     
     
     void PetscMatrix::matij_init(MPI_Comm comm,
-                                 MatType type,
-                                 PetscInt rows_local,
-                                 PetscInt cols_local,
-                                 PetscInt rows_global,
-                                 PetscInt cols_global,
-                                 const std::vector<PetscInt> &d_nnz,
-                                 const std::vector<PetscInt> &o_nnz)
+       MatType type,
+       PetscInt rows_local,
+       PetscInt cols_local,
+       PetscInt rows_global,
+       PetscInt cols_global,
+       const std::vector<PetscInt> &d_nnz,
+       const std::vector<PetscInt> &o_nnz)
     {
         destroy();
         
@@ -755,35 +783,27 @@ namespace utopia {
         check_error( MatZeroEntries(implementation()) );
     }
     
-    void PetscMatrix::mat_aij_cusparse_init(MPI_Comm comm,
-                                            PetscInt rows_local,
-                                            PetscInt cols_local,
-                                            PetscInt rows_global,
-                                            PetscInt cols_global,
-                                            PetscInt d_nnz,
-                                            PetscInt o_nnz
-                                            )
-    {
-        // destroy();
-        
-        // check_error( MatCreateAIJCUSPARSE(PETSC_COMM_WORLD, rows_local, cols_local, rows_global, cols_global, d_nnz, nullptr, o_nnz, nullptr, &implementation()) );
-        // check_error( MatSetOption(implementation(), MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE) );
-        // check_error( MatSetOption(implementation(), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
-        // check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
-        
-        // check_error( MatZeroEntries(implementation()) );
-        matij_init(comm, MATAIJCUSPARSE, rows_local, cols_local, rows_global, cols_global, d_nnz, o_nnz);
-    }
+    // void PetscMatrix::mat_aij_cusparse_init(MPI_Comm comm,
+    //     PetscInt rows_local,
+    //     PetscInt cols_local,
+    //     PetscInt rows_global,
+    //     PetscInt cols_global,
+    //     PetscInt d_nnz,
+    //     PetscInt o_nnz
+    //     )
+    // {
+    //     matij_init(comm, MATAIJCUSPARSE, rows_local, cols_local, rows_global, cols_global, d_nnz, o_nnz);
+    // }
     
     void PetscMatrix::mat_baij_init(MPI_Comm comm,
-                                    PetscInt rows_local,
-                                    PetscInt cols_local,
-                                    PetscInt rows_global,
-                                    PetscInt cols_global,
-                                    PetscInt d_nnz,
-                                    PetscInt o_nnz,
-                                    PetscInt block_size
-                                    )
+        PetscInt rows_local,
+        PetscInt cols_local,
+        PetscInt rows_global,
+        PetscInt cols_global,
+        PetscInt d_nnz,
+        PetscInt o_nnz,
+        PetscInt block_size
+        )
     {
         destroy();
         
@@ -816,7 +836,7 @@ namespace utopia {
         MatGetOwnershipRange(implementation(), &r_begin, &r_end);
         
         for(PetscInt row = r_begin; row < r_end; ++row) {
-            
+
             MatGetRow(implementation(), row, &n_values, &cols, &values);
             
             for(PetscInt i = 0; i < n_values; ++i) {
@@ -845,25 +865,25 @@ namespace utopia {
         Size ls = local_size();
         
         I.dense_init(
-                     communicator(),
-                     type(),
-                     ls.get(0),
-                     ls.get(1),
-                     gs.get(0),
-                     gs.get(1)
-                     );
+           communicator(),
+           type(),
+           ls.get(0),
+           ls.get(1),
+           gs.get(0),
+           gs.get(1)
+           );
         
         check_error( MatZeroEntries(I.implementation()) );
         check_error( MatShift(I.implementation(), 1.) );
         
         result.dense_init(
-                          communicator(),
-                          type(),
-                          ls.get(0),
-                          ls.get(1),
-                          gs.get(0),
-                          gs.get(1)
-                          );
+          communicator(),
+          type(),
+          ls.get(0),
+          ls.get(1),
+          gs.get(0),
+          gs.get(1)
+          );
         
         check_error( MatZeroEntries(result.implementation()) );
         
@@ -881,10 +901,10 @@ namespace utopia {
     
     template<class Operation>
     inline static void reduce_rows(PetscVector &result,
-                                   const PetscMatrix &mat,
-                                   const PetscScalar &init_value,
-                                   const Operation &op
-                                   )
+     const PetscMatrix &mat,
+     const PetscScalar &init_value,
+     const Operation &op
+     )
     {
         assert(!result.is_null());
         
@@ -937,11 +957,11 @@ namespace utopia {
             MatGetRowSum(implementation(), col.implementation());
         } else {
             reduce_rows(
-                        col,
-                        *this,
-                        0.,
-                        utopia::Plus()
-                        );
+                col,
+                *this,
+                0.,
+                utopia::Plus()
+                );
         }
     }
     
@@ -961,11 +981,11 @@ namespace utopia {
             MatGetRowMax(implementation(), col.implementation(), nullptr);
         } else {
             reduce_rows(
-                        col,
-                        *this,
-                        -std::numeric_limits<PetscScalar>::max(),
-                        utopia::Max()
-                        );
+                col,
+                *this,
+                -std::numeric_limits<PetscScalar>::max(),
+                utopia::Max()
+                );
         }
     }
     
@@ -985,11 +1005,11 @@ namespace utopia {
             MatGetRowMin(implementation(), col.implementation(), nullptr);
         } else {
             reduce_rows(
-                        col,
-                        *this,
-                        std::numeric_limits<PetscScalar>::max(),
-                        utopia::Min()
-                        );
+                col,
+                *this,
+                std::numeric_limits<PetscScalar>::max(),
+                utopia::Min()
+                );
         }
     }
     
@@ -998,14 +1018,19 @@ namespace utopia {
         if(vec.implementation() == result.implementation()) {
             assert(false && "handle me");
         }
+
+        assert(vec.is_consistent());
+        assert(result.is_consistent());
         
         MPI_Comm comm = vec.communicator();
         
         if(result.is_null()) {
-            MatCreateVecs(implementation(), nullptr, &result.implementation());
+            // MatCreateVecs(implementation(), nullptr, &result.implementation());
+            create_vecs(nullptr, &result.implementation());
         } else if(comm != result.communicator()) {
             result.destroy();
-            MatCreateVecs(implementation(), nullptr, &result.implementation());
+            // MatCreateVecs(implementation(), nullptr, &result.implementation());
+            create_vecs(nullptr, &result.implementation());
         } else {
             Size gs = size();
             Size ls = local_size();
@@ -1013,7 +1038,12 @@ namespace utopia {
         }
         
         check_error( MatMult(implementation(), vec.implementation(), result.implementation() ) );
+
         result.set_initialized(true);
+
+        assert(result.implementation() != nullptr);
+        assert(result.is_consistent());
+        assert(result.same_type(vec));
     }
     
     void PetscMatrix::mult_t(const PetscVector &vec, PetscVector &result) const
@@ -1036,6 +1066,7 @@ namespace utopia {
         }
         
         check_error( MatMultTranspose(implementation(), vec.implementation(), result.implementation() ) );
+        assert(result.implementation() != nullptr);
         result.set_initialized(true);
     }
     
@@ -1114,15 +1145,15 @@ namespace utopia {
         
         PetscMatrix temp;
         temp.mat_baij_init(
-                           communicator(),
-                           ls.get(0),
-                           ls.get(1),
-                           gs.get(0),
-                           gs.get(1),
-                           PETSC_DEFAULT,
-                           PETSC_DEFAULT,
-                           block_size
-                           );
+         communicator(),
+         ls.get(0),
+         ls.get(1),
+         gs.get(0),
+         gs.get(1),
+         PETSC_DEFAULT,
+         PETSC_DEFAULT,
+         block_size
+         );
         
         check_error( MatCopy(implementation(), temp.implementation(), DIFFERENT_NONZERO_PATTERN) );
         
@@ -1140,28 +1171,59 @@ namespace utopia {
         return match == PETSC_TRUE;
     }
     
-    // VecType PetscMatrix::compatible_cuda_vec_type()
-    // {
-    
-    // }
+    VecType PetscMatrix::compatible_cuda_vec_type() const
+    {
+        PetscBool match = PETSC_FALSE;
+        PetscObjectTypeCompare((PetscObject) implementation(), MATAIJCUSPARSE, &match);
+
+        if(match) {
+            return VECMPICUDA;
+        } else {
+            return VECSEQCUDA;
+        }
+    }
     
     bool PetscMatrix::create_vecs(Vec *x, Vec *y) const
     {
-        //TODO
-        assert(false);
-        utopia_error("create_vecs not implemented");
-        return false;
         // if(is_cuda()) {
+        //     auto vec_type = compatible_cuda_vec_type();
+        //     Size s = size();
+        //     Size ls = local_size();
+
+        //     MPI_Comm comm = communicator();
+
         // 	if(x) {
-        
+        //         check_error( VecCreate(comm, x) );
+        //         check_error( VecSetFromOptions(*x) );
+        //         check_error( VecSetType(*x, vec_type) );
+                
+        //         check_error( VecSetSizes(*x, ls.get(1), s.get(1)) );
         // 	}
-        
+
         // 	if(y) {
-        
+        //         check_error( VecCreate(comm, y) );
+        //         check_error( VecSetFromOptions(*y) );
+        //         check_error( VecSetType(*y, vec_type) );
+        //         check_error( VecSetSizes(*y, ls.get(0), s.get(0)) );
         // 	}
-        
+
         // } else {
-        // 	MatCreateVecs(implementation(), x, y);
+
+        	MatCreateVecs(implementation(), x, y);
         // }
+
+        return true;
+    }
+
+    bool PetscMatrix::has_type(VecType type) const
+    {
+        PetscBool match = PETSC_FALSE;
+        PetscObjectTypeCompare((PetscObject) implementation(), type, &match);
+        return match == PETSC_TRUE;
+    }
+
+    bool PetscMatrix::same_type(const PetscMatrix &other) const
+    {
+        return has_type(other.type());
     }
 }
