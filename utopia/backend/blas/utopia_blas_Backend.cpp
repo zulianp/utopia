@@ -42,6 +42,7 @@ namespace utopia {
 					const int *incy);
 		
 		double dnrm2_(const int *n, const double *x, const int *incx);
+		double dasum_(const int *n, const double *x, const int *incx);
 		
 		double ddot_(const int *n, const double *sx, const int *incx, const double *sy, const int *incy);
 		
@@ -450,6 +451,13 @@ namespace utopia {
 		const int n = vector.size();
 		const int incx = 1;
 		return dnrm2_(&n, &vector[0], &incx);
+	}
+
+	BLASBackend::Scalar BLASBackend::norm1(const Vector &vector)
+	{
+		const int n = vector.size();
+		const int incx = 1;
+		return dasum_(&n, &vector[0], &incx);
 	}
 
 	BLASBackend::Scalar BLASBackend::norm2(const Matrix &mat)

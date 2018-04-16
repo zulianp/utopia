@@ -21,12 +21,20 @@ namespace utopia {
 
 		void initialize() override
 		{
-			const SizeType base_n = 7000;
+			const SizeType base_n = 9000;
 			const SizeType n_instances = 10;
 
 			for(SizeType i = 0; i < n_instances; ++i) {
 				const SizeType n = base_n * (i + 1);
-				
+					
+				//measure allocation time of two vectors
+				this->register_experiment(
+					"allocation_" + std::to_string(i),
+					[n]() {
+						Vector x = local_values(n, 1.);
+						Vector y = local_values(n, 2.);
+					}
+				);
 				
 				//axpy
 				this->register_experiment(

@@ -46,6 +46,18 @@ namespace utopia {
 
 #endif //WITH_TRILINOS
 
+
+#ifdef WITH_BLAS
+		{
+			if(mpi_world_rank() == 0) {
+				std::cout << "> homemade" <<std::endl; 
+			}
+			
+			BenchmarkBlas1<CRSMatrixd, Vectord> trilinos_b1;
+			trilinos_b1.run();
+		}
+#endif	
+
 		//Serial benchmarks
 		if(mpi_world_size() == 1) {
 			// BenchmarkBlas1<Matrixd, Vectord> blas_b1;
