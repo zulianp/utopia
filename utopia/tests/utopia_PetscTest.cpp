@@ -1093,6 +1093,8 @@ namespace utopia {
         assert(approxeq(n * mpi_world_size(), s));
     }
 
+
+
     #endif //WITH_PETSC;
 
     void runPetscTest() {
@@ -1132,7 +1134,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_tensor_reduction_test);
         UTOPIA_RUN_TEST(petsc_precond_test);
         UTOPIA_RUN_TEST(petsc_binary_min_max);
-        
+    
 
         //serial tests
         UTOPIA_RUN_TEST(petsc_inverse_test);

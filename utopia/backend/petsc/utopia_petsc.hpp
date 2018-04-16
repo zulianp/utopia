@@ -26,6 +26,13 @@
 
 #include "utopia_petsc_Newton.hpp"
 
+
+#ifdef WITH_SLEPC
+	#include "utopia_petsc_Slepc.hpp"
+	#include "utopia_petsc_MoreSorensenEigen.hpp"
+#endif
+
+
 // very much experimental files for the moment 
 #include "utopia_petsc_SNES.hpp"
 #include "utopia_petsc_build_ksp.hpp"

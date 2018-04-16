@@ -4,6 +4,7 @@
 #cmakedefine WITH_BLAS
 #cmakedefine WITH_LAPACK
 #cmakedefine WITH_PETSC
+#cmakedefine WITH_SLEPC
 #cmakedefine WITH_TRILINOS
 #cmakedefine WITH_CPP11
 #cmakedefine WITH_UMFPACK

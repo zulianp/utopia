@@ -2,7 +2,7 @@
 * @Author: kopanicakova
 * @Date:   2018-02-06 17:47:26
 * @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-05 17:56:05
+* @Last Modified time: 2018-04-10 11:00:58
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
@@ -769,18 +769,21 @@ namespace utopia
 			nlsolver.solve(fun, x);
 			assert(approxeq(expected, x));
 
-			Rosenbrock<DSMatrixd, DVectord> rosenbrock;
-			DVectord expected_rosenbrock = values(2, 1.0);
-			DVectord x0_ros   			 = values(2, 1.5);
+			if(mpi_world_size() == 1)
+			{
+				Rosenbrock<DSMatrixd, DVectord> rosenbrock;
+				DVectord expected_rosenbrock = values(2, 1.0);
+				DVectord x0_ros   			 = values(2, 1.5);
 
-			nlsolver.set_line_search_type("cp"); 
-			nlsolver.set_line_search_order(3); 
-			nlsolver.max_it(1000); 
-			nlsolver.solve(rosenbrock, x0_ros); 
+				nlsolver.set_line_search_type("cp"); 
+				nlsolver.set_line_search_order(3); 
+				nlsolver.max_it(1000); 
+				nlsolver.solve(rosenbrock, x0_ros); 
 
-			expected_rosenbrock -= x0_ros; 
-			double diff_rb = norm2(expected_rosenbrock);
-			assert(approxeq(diff_rb, 0., 1e-6));
+				expected_rosenbrock -= x0_ros; 
+				double diff_rb = norm2(expected_rosenbrock);
+				assert(approxeq(diff_rb, 0., 1e-6));
+			}
 		}
 
 
@@ -793,13 +796,13 @@ namespace utopia
 
 #endif //WITH_PETSC
 	
+
 	void runPetscNonlinearSolversTest()
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runPetscNonlinearSolverTest");
-#ifdef WITH_PETSC
-		PetscNonlinearSolverTest().run();
-#endif
-		
-		UTOPIA_UNIT_TEST_END("runPetscNonlinearSolverTest");
+		#ifdef WITH_PETSC
+				PetscNonlinearSolverTest().run();
+		#endif
+		UTOPIA_UNIT_TEST_END("runPetscNonlinearSolverTest");					
 	}
 }
