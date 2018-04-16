@@ -14,6 +14,14 @@ option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON
 #################################################################################
 #################################################################################
 
+if(UNIX AND NOT APPLE)
+       set(LINUX TRUE)
+endif()
+
+if(LINUX)
+	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
 set(UTOPIA_FE_ROOT_PATH ${CMAKE_SOURCE_DIR})
 set(UTOPIA_FE_CMAKES_PATH ${UTOPIA_FE_ROOT_PATH}/libcmake)
 

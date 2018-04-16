@@ -29,6 +29,15 @@ option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON
 #################################################################################
 #################################################################################
 
+if(UNIX AND NOT APPLE)
+       set(LINUX TRUE)
+endif()
+
+if(LINUX)
+	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
+
 
 if(ENABLE_TRACE)
 	set(UTOPIA_TRACE_ENABLED ON)
