@@ -11,7 +11,6 @@
 
 #include "utopia_MPI.hpp"
 #include "utopia_Chrono.hpp"
-#include "utopia_Logger.hpp"
 
 namespace utopia 
 {
