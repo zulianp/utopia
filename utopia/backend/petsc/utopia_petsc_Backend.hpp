@@ -137,6 +137,8 @@ namespace utopia {
 		static void build(PetscSparseMatrix &m, const Size &size, const NNZ<PetscInt> &nnz, const PetscArgs &opts = PetscArgs());
 		static void build(PetscSparseMatrix &m, const Size &size, const LocalNNZ<PetscInt> &nnz, const PetscArgs &opts = PetscArgs());
 		static void build(PetscMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */, const PetscArgs &opts = PetscArgs());
+		static void build(PetscCuSparseMatrix  &m, const Size &size, const LocalNNZ<PetscInt> & /*nnz */, const PetscArgs &opts = PetscArgs());
+		
 		static void build(PetscMatrix  &m, const Size &size, const NNZ<PetscInt> &/*nnz*/, const PetscArgs &opts = PetscArgs());
 		static void build(PetscMatrix &m, const Size &size, const Zeros &, const PetscArgs &opts = PetscArgs());
 		static void build(PetscVector &v, const Size &size, const Zeros &, const PetscArgs &opts = PetscArgs());
@@ -450,44 +452,49 @@ namespace utopia {
 		static void vec_create_parallel(MPI_Comm comm, PetscInt n_local, PetscInt n_global, Vec *vec);
 		static void vec_repurpose(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global, Vec *vec);
 
-		static void sparse_mat_create_parallel(
-				MPI_Comm comm,
-				PetscInt rows_local,
-				PetscInt cols_local,
-				PetscInt rows_global,
-				PetscInt cols_global,
-				PetscInt d_nnz,
-				PetscInt o_nnz,
-				Mat *mat);
+		// static void sparse_mat_create_parallel(
+		// 		MPI_Comm comm,
+		// 		PetscInt rows_local,
+		// 		PetscInt cols_local,
+		// 		PetscInt rows_global,
+		// 		PetscInt cols_global,
+		// 		PetscInt d_nnz,
+		// 		PetscInt o_nnz,
+		// 		Mat *mat);
 
 
-		static void dense_mat_create_parallel(
-				MPI_Comm comm,
-				PetscInt rows_local,
-				PetscInt cols_local,
-				PetscInt rows_global,
-				PetscInt cols_global,
-				Mat *mat);
+		// static void dense_mat_create_parallel(
+		// 		MPI_Comm comm,
+		// 		PetscInt rows_local,
+		// 		PetscInt cols_local,
+		// 		PetscInt rows_global,
+		// 		PetscInt cols_global,
+		// 		Mat *mat);
 
 		inline static bool check_error(const PetscInt err) 
 		{
 			return PetscErrorHandler::Check(err);
 		}
 
-		inline static MatType parallel_sparse_matrix_type()
-		{
-			return MATAIJ;
-		}
+		// inline static MatType parallel_sparse_matrix_type()
+		// {
+		// 	return MATAIJ;
+		// }
 
-		inline static MatType parallel_dense_matrix_type()
-		{
-			return MATDENSE;
-		}
+		// inline static MatType cusparse_matrix_type()
+		// {
+		// 	return MATAIJCUSPARSE;
+		// }
 
-		inline static VecType parallel_vector_type()
-		{
-			return VECSTANDARD;
-		}
+		// inline static MatType parallel_dense_matrix_type()
+		// {
+		// 	return MATDENSE;
+		// }
+
+		// inline static VecType parallel_vector_type()
+		// {
+		// 	return VECSTANDARD;
+		// }
 
 		static void build_ghosts(
 			const PetscInt &local_size,

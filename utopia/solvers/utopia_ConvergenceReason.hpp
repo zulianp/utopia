@@ -56,7 +56,7 @@ namespace utopia
             }
             else
             {
-                std::cerr << "\033[1;31m LinearSolver converged at iteration " << num_it << " for reason = " << convergence_reason << " \033[0m\n";
+                std::cerr << "\033[1;32m LinearSolver converged at iteration " << num_it << ", convergence reason = " << convergence_reason << " \033[0m\n";
             }
         }
 

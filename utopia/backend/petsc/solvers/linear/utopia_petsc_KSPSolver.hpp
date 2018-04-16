@@ -260,6 +260,7 @@ public:
         VecDestroy(&(ut_log.x_k_2)); 
 
         KSPDestroy(&ksp);
+
         return true;
     }
 
@@ -325,6 +326,7 @@ public:
     {
         PetscErrorCode ierr;
 
+
         // check if our options overwrite this 
         KSPSetFromOptions(ksp); 
 
@@ -339,6 +341,10 @@ public:
             ierr = KSPSetComputeSingularValues(ksp, PETSC_TRUE); 
         
         ierr = KSPSetType(ksp, KSP_type_.c_str());
+
+
+        // KSP_NORM_PRECONDITIONED  is default in petsc
+        // ierr = KSPSetNormType(ksp, KSP_NORM_UNPRECONDITIONED); 
 
         if(!this->get_preconditioner()) 
         {
