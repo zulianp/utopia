@@ -2,6 +2,18 @@
 #include "utopia_Benchmark_BLAS1.hpp"
 
 namespace utopia {
+
+	template<class Matrix, class Vector>
+	void run_all_benchmarks(const std::string &backend_name)
+	{
+		if(mpi_world_rank() == 0) {
+			std::cout << "> " << backend_name <<std::endl; 
+		}
+
+		BenchmarkBlas1<Matrix, Vector> blas1;
+		blas1.run();
+	}
+
 	void run_benchmarks()
 	{
 		mpi_world_barrier();
@@ -11,58 +23,22 @@ namespace utopia {
 
 		//Parallel benchmarks
 #ifdef WITH_PETSC
-		{
-			if(mpi_world_rank() == 0) {
-				std::cout << "> petsc" <<std::endl; 
-			}
-
-			BenchmarkBlas1<DSMatrixd, DVectord> petsc_b1;
-			petsc_b1.run();
-		}
-
+		run_all_benchmarks<DSMatrixd, Vectord>("petsc");
 #ifdef PETSC_HAVE_CUDA
-		{
-			if(mpi_world_rank() == 0) {
-				std::cout << "> petsc+cuda" <<std::endl; 
-			}
-
-			BenchmarkBlas1<CuSMatrixd, CuVectord> petsc_b1;
-			petsc_b1.run();
-		}
-
+		run_all_benchmarks<CuSMatrixd, CuVectord>("petsc+cuda");
 #endif //PETSC_HAVE_CUDA
-
 #endif //WITH_PETSC
 
 #ifdef WITH_TRILINOS
-		{
-			if(mpi_world_rank() == 0) {
-				std::cout << "> trilinos" <<std::endl; 
-			}
-			
-			BenchmarkBlas1<TSMatrixd, TVectord> trilinos_b1;
-			trilinos_b1.run();
-		}
-
+		run_all_benchmarks<TSMatrixd, TVectord>("trilinos");
 #endif //WITH_TRILINOS
 
-
+		//Serial benchmarks
 #ifdef WITH_BLAS
-		{
-			if(mpi_world_rank() == 0) {
-				std::cout << "> homemade" <<std::endl; 
-			}
-			
-			BenchmarkBlas1<CRSMatrixd, Vectord> trilinos_b1;
-			trilinos_b1.run();
+		if(mpi_world_size() == 1) {
+			run_all_benchmarks<CRSMatrixd, Vectord>("homemade");
 		}
 #endif	
-
-		//Serial benchmarks
-		if(mpi_world_size() == 1) {
-			// BenchmarkBlas1<Matrixd, Vectord> blas_b1;
-			// blas_b1.run();
-		}
 
 		mpi_world_barrier();
 		if(mpi_world_rank() == 0) {
