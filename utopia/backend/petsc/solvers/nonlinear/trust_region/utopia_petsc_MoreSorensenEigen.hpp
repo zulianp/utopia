@@ -21,7 +21,7 @@ namespace utopia
     {
 		typedef UTOPIA_SCALAR(Vector) Scalar;
 		typedef utopia::LinearSolver<Matrix, Vector> 		LinearSolver;
-		typedef utopia::EigenValueSlover<Matrix, Vector, PETSC_EXPERIMENTAL> 	EigenSolver;
+		typedef utopia::EigenSolver<Matrix, Vector, PETSC_EXPERIMENTAL> 	EigenSolver;
 
 
     public:

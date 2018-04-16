@@ -20,10 +20,10 @@ namespace utopia
 
 
     template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
-    class EigenValueSlover; 
+    class EigenSolver; 
 
     template<typename Matrix, typename Vector>
-    class EigenValueSlover<Matrix, Vector, PETSC_EXPERIMENTAL>
+    class EigenSolver<Matrix, Vector, PETSC_EXPERIMENTAL>
     {
 
     public:
@@ -31,7 +31,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
 
-        EigenValueSlover(    const Parameters params = Parameters(), 
+        EigenSolver(    const Parameters params = Parameters(), 
                                     const std::vector<std::string> problem_types    = {"hermitian", "non_hermitian", "generalized_hermitian", "generalized_non_hermitian", "generalized_hermitian_SPD_B", "generalized_hermitian_indefinite"}, 
                                     const std::vector<std::string> portions_of_spectrum    = {"largest_magnitude", "smallest_magnitude", "largest_real", "smallest_real", "largest_imaginary", "smallest_imaginary", "closest_to_target", "closest_to_target_real", "closest_to_target_imaginary", "all_in_region"},
                                     const std::vector<std::string> solver_types    = {"krylovschur", "power", "subspace", "arnoldi", "lanczos", "gd", "jd", "rqcg", "lobpcg", "ciss", "lapack", "arpack", "blzpack", "trlan", "blopex", "primme", "feast"}): 
@@ -54,7 +54,7 @@ namespace utopia
         }   
 
 
-        virtual ~EigenValueSlover()
+        virtual ~EigenSolver()
         { 
             if (initialized_)
                 EPSDestroy(&eps_);

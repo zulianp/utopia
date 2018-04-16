@@ -60,7 +60,7 @@ namespace utopia
 
 			bool verbose = false; 
 
-			EigenValueSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
+			EigenSolver<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
 
 			slepc.portion_of_spectrum("smallest_real"); 
 			slepc.verbose(verbose); 
@@ -84,7 +84,7 @@ namespace utopia
 			DSMatrixd B = 99 * local_identity(local_size(A)); 
 			bool verbose = false; 
 
-			EigenValueSlover<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
+			EigenSolver<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> slepc; 
 
 			slepc.portion_of_spectrum("largest_real"); 
 			slepc.verbose(verbose); 
@@ -182,7 +182,7 @@ namespace utopia
 			tr_solver.stol(1e-12); 
 			tr_solver.solve(fun_woods, x_w1);				
 
-			auto eigen_solver = std::make_shared<EigenValueSlover<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
+			auto eigen_solver = std::make_shared<EigenSolver<DMatrixd, DVectord, PETSC_EXPERIMENTAL> >();
 			eigen_solver->solver_type("arpack");
 			
 			auto linear_solver = std::make_shared<LUDecomposition<DMatrixd, DVectord> >();
