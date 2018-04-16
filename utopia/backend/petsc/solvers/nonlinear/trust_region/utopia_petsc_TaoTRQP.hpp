@@ -46,8 +46,7 @@ namespace  utopia
 
                 
                 //  just for debugging
-                
-                //  options working nicely: gpcg, BQPIP, pgd,  ----- BNCG - to be checked from rmtr ... 
+                // suitable options: gpcg, BQPIP, pgd,  ----- BNCG - to be checked from rmtr ... 
                 solver_->verbose(false);
                 solver_->set_type("gpcg");
                 solver_->solve(fun, p_k);

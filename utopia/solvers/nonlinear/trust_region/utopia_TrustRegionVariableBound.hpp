@@ -54,7 +54,6 @@
       }
 
 
-
       /**
        * @brief      Trust region solve. 
        *
@@ -235,7 +234,6 @@
       }
 
 
-
       /**
        * @brief      Projection onto feasible set
        *
@@ -263,7 +261,6 @@
           return true;
       }
 
-
       virtual bool merge_tr_with_pointwise_constrains(const Vector & x_k, const Scalar & radius,Vector & u_f, Vector & l_f)
       {
           if(box_constraints_.has_upper_bound())
@@ -273,7 +270,6 @@
               {   
                   Read<Vector> rv(u); 
                   Write<Vector> wv(u_f); 
-
                   each_write(u_f, [radius, u](const SizeType i) -> double { 
                       return  (u.get(i) <= radius)  ? u.get(i) : radius; }   );
               }
@@ -290,7 +286,6 @@
               {   
                   Read<Vector> rv(l); 
                   Write<Vector> wv(l_f); 
-
                   each_write(l_f, [radius, l](const SizeType i) -> double { 
                       return  (l.get(i) >= -1*radius)  ? l.get(i) : -1 * radius;  }   );
               }
@@ -300,7 +295,6 @@
 
           return true; 
       }
-
 
 
     protected: 
