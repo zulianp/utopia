@@ -19,6 +19,19 @@ namespace utopia {
 			BenchmarkBlas1<DSMatrixd, DVectord> petsc_b1;
 			petsc_b1.run();
 		}
+
+#ifdef PETSC_HAVE_CUDA
+		{
+			if(mpi_world_rank() == 0) {
+				std::cout << "> petsc+cuda" <<std::endl; 
+			}
+
+			BenchmarkBlas1<CuSMatrixd, CuVectord> petsc_b1;
+			petsc_b1.run();
+		}
+
+#endif //PETSC_HAVE_CUDA
+
 #endif //WITH_PETSC
 
 #ifdef WITH_TRILINOS
