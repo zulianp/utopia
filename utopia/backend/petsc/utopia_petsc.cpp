@@ -43,6 +43,7 @@ namespace utopia {
 
 		A_opt.implementation().matij_init(
 			A.implementation().communicator(),
+			A.implementation().type_override(),
 			ls.get(0),
 			ls.get(1),
 			gs.get(0),

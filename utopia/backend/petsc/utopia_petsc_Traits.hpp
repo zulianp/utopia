@@ -34,6 +34,24 @@ namespace utopia {
             Backend = PETSC
         };
     };
+
+
+    class PetscCudaTraits {
+    public:
+        typedef PetscScalar Scalar;
+        typedef PetscInt SizeType;
+
+        typedef utopia::PetscCuSparseMatrix Matrix;
+        typedef utopia::PetscCuSparseMatrix SparseMatrix;
+
+        typedef utopia::PetscCuVector Vector;
+        typedef utopia::PetscCuVector SerialVector;
+
+        enum 
+        {
+            Backend = PETSC
+        };
+    };
 }
 
 #endif //UTOPIA_UTOPIA_PETSCTRAITS_HPP

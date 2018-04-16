@@ -106,6 +106,8 @@ namespace utopia {
             return type;
         }
 
+        virtual MatType type_override() const;
+
         inline std::string name() const
         {
             const char *name;
@@ -340,21 +342,30 @@ namespace utopia {
 
         void matij_init_identity(
         	MPI_Comm comm,
+        	MatType sparse_type,
         	PetscInt local_rows,
         	PetscInt local_cols,
         	PetscInt global_rows,
         	PetscInt global_cols,
         	PetscScalar scale_factor);
 
-        void matij_init(
-        	MPI_Comm comm,
-        	PetscInt rows_local,
-        	PetscInt cols_local,
-        	PetscInt rows_global,
-        	PetscInt cols_global,
-        	PetscInt d_nnz,
-        	PetscInt o_nnz
-        );
+        // void matij_init_identity(
+        // 	MPI_Comm comm,
+        // 	PetscInt local_rows,
+        // 	PetscInt local_cols,
+        // 	PetscInt global_rows,
+        // 	PetscInt global_cols,
+        // 	PetscScalar scale_factor);
+
+        // void matij_init(
+        // 	MPI_Comm comm,
+        // 	PetscInt rows_local,
+        // 	PetscInt cols_local,
+        // 	PetscInt rows_global,
+        // 	PetscInt cols_global,
+        // 	PetscInt d_nnz,
+        // 	PetscInt o_nnz
+        // );
 
         void matij_init(
         	MPI_Comm comm,
@@ -367,15 +378,15 @@ namespace utopia {
         	PetscInt o_nnz
         );
 
-        void matij_init(
-    		MPI_Comm comm,
-    		PetscInt rows_local,
-    		PetscInt cols_local,
-    		PetscInt rows_global,
-    		PetscInt cols_global,
-    		const std::vector<PetscInt> &d_nnz,
-    		const std::vector<PetscInt> &o_nnz
-    	);
+     //    void matij_init(
+    	// 	MPI_Comm comm,
+    	// 	PetscInt rows_local,
+    	// 	PetscInt cols_local,
+    	// 	PetscInt rows_global,
+    	// 	PetscInt cols_global,
+    	// 	const std::vector<PetscInt> &d_nnz,
+    	// 	const std::vector<PetscInt> &o_nnz
+    	// );
 
         void matij_init(
        		MPI_Comm comm,
@@ -399,15 +410,15 @@ namespace utopia {
         	PetscInt block_size
         );
 
-        void mat_aij_cusparse_init(
-         	MPI_Comm comm,
-         	PetscInt rows_local,
-         	PetscInt cols_local,
-         	PetscInt rows_global,
-         	PetscInt cols_global,
-         	PetscInt d_nnz,
-         	PetscInt o_nnz
-        );
+        // void mat_aij_cusparse_init(
+        //  	MPI_Comm comm,
+        //  	PetscInt rows_local,
+        //  	PetscInt cols_local,
+        //  	PetscInt rows_global,
+        //  	PetscInt cols_global,
+        //  	PetscInt d_nnz,
+        //  	PetscInt o_nnz
+        // );
         
 		inline void destroy()
 		{
@@ -433,8 +444,11 @@ namespace utopia {
 		void convert_to_mat_baij(const PetscInt block_size);
 
 		PetscBool is_initialized_as( MPI_Comm comm, MatType dense_type, PetscInt local_rows, PetscInt local_cols, PetscInt global_rows, PetscInt global_cols); 
+        bool empty() const;
 
-
+        bool has_type(VecType type) const;
+        bool same_type(const PetscMatrix &other) const;
+        bool is_cuda() const;
 	private:
 		std::shared_ptr<PetscMatrixMemory> wrapper_;
 		
@@ -454,7 +468,8 @@ namespace utopia {
                 const Range &local_col_range,
                 PetscMatrix &result) const;
 
-      	bool is_cuda() const;
+      	
+      	VecType compatible_cuda_vec_type() const;
 
       	//y = A * x;
       	bool create_vecs(Vec *x, Vec *y) const;

@@ -48,6 +48,7 @@ namespace utopia {
 					);
 
 				UTOPIA_TRACE_END(expr);
+				// assert(result.same_type(Eval<Wrapper<M3, 2>, Traits>::apply(expr.right())));
 				return result;
 			}
 	};
@@ -93,6 +94,7 @@ namespace utopia {
 					);
 			}
 
+			// assert( result.same_type(Eval<M1, Traits>::apply(expr.right())) );
 			UTOPIA_TRACE_END(expr);
 			return result;
 		}

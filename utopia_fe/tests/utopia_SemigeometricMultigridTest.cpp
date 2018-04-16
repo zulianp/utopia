@@ -201,20 +201,20 @@ namespace utopia {
         auto ux = u[0];
         auto uy = u[1];
 
-        const double mu = 4000;
-        const double lambda = 1000;
+        const double mu = 1;
+        const double lambda = 1;
 
         auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
         auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
         // LMDenseVector z = zeros(2);
-        LMDenseVector z = values(2, -2000.);
+        LMDenseVector z = values(2, -0.2);
         auto elast_op = ((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) * dX;
         auto f = inner(coeff(z), v) * dX;
 
         auto constr = constraints(
-            // boundary_conditions(uy == coeff(0.2),  {0}),
-            boundary_conditions(uy == coeff(0.0), {2}),
+            boundary_conditions(uy == coeff(0.2),  {0}),
+            boundary_conditions(uy == coeff(0.0),  {2}),
             boundary_conditions(ux == coeff(0.0),  {0, 2})
             );
 
@@ -229,13 +229,13 @@ namespace utopia {
 
         std::cout << "assembly complete" << std::endl;
 
-        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+        auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
         // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-        auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+        // auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+        // auto smoother      = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
         // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
-
+        auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
         // linear_solver->verbose(true);
         SemiGeometricMultigrid mg(smoother, linear_solver);
         mg.algebraic().rtol(1e-16);
@@ -276,10 +276,9 @@ namespace utopia {
     void run_semigeometric_multigrid_poisson(libMesh::LibMeshInit &init)
     {
         std::cout << "[run_semigeometric_multigrid_poisson]" << std::endl;
-
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
-        const unsigned int n = 100;
+        const unsigned int n = 200;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,
@@ -349,5 +348,4 @@ namespace utopia {
         run_semigeometric_multigrid_poisson(init);
         run_semigeometric_multigrid_elast(init);
     }
-
 }
