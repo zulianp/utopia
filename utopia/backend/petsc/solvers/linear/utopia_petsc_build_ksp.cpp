@@ -142,5 +142,8 @@ PETSC_EXTERN PetscErrorCode KSPCreate_UTOPIA(KSP ksp)
     
   ierr = KSPSetSupportedNorm(ksp, KSP_NORM_NATURAL, PC_RIGHT, 1); CHKERRQ(ierr);
 
+  //Maybe use this?
+  // ierr = KSPSetSupportedNorm(ksp, KSP_NORM_UNPRECONDITIONED, 1); CHKERRQ(ierr);
+
   PetscFunctionReturn(0);
 }

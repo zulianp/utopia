@@ -345,7 +345,8 @@ namespace utopia {
         DSMatrixd m = identity(2, 2);
         auto expected_ptr = raw_type(m);
         Mat pmat = raw_type(m);
-        DSMatrixd wmat = sparse_mref(pmat);
+        DSMatrixd wmat;
+        wrap(pmat, wmat);
         assert( raw_type(wmat) == expected_ptr );
 
         // std::cout << "end: petsc_wrapper_test" << std::endl;

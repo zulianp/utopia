@@ -74,7 +74,25 @@ namespace utopia {
 		static void assign_transposed(PetscMatrix &left, const PetscMatrix &right);
 		
 		static void clear(PetscMatrix &mat);
-				
+
+		template<class Tensor>
+		inline static void disp(const Tensor &t)
+		{
+			t.describe();
+		}
+
+		template<class Tensor>
+		inline static auto raw_type(Tensor &t) -> decltype(t.implementation()) &
+		{
+			return t.implementation();
+		}
+
+		template<class Tensor>
+		inline static auto raw_type(const Tensor &t) -> decltype(t.implementation()) &
+		{
+			return t.implementation();
+		}
+		
 		static void convert(Vec vec, PetscVector &wrapper);
 		static void convert(Mat mat, PetscMatrix &wrapper);
 		static void convert(Mat mat, PetscSparseMatrix &wrapper);

@@ -437,15 +437,15 @@ namespace utopia {
         disp(w.implementation().begin(), w.implementation().end(), os);
     }
 
-    inline void disp(const double value, std::ostream &os)
+    inline void disp(const double value, std::ostream &os = std::cout)
     {
         os << value << "\n";
     }
 
-    inline void disp(const double value)
-    {
-        disp(value, std::cout);
-    }
+    // inline void disp(const double value)
+    // {
+    //     disp(value, std::cout);
+    // }
 
     template<class VectorT>
     Wrapper<VectorT, 1> vmake() {
@@ -522,7 +522,8 @@ namespace utopia {
     template<class Impl, int Order>
     void disp(const Wrapper<Impl, Order> &w)
     {
-        disp(w, std::cout);
+        // disp(w, std::cout);
+        return Backend<typename Traits<Impl>::Scalar, Traits<Impl>::Backend>::Instance().disp(w.implementation());
     }
 
     /**
@@ -566,6 +567,22 @@ namespace utopia {
     inline constexpr int order(const Expression<Derived> &)
     {
         return Derived::Order;
+    }
+
+    template<class Tensor, int Order>
+    inline auto raw_type(const Wrapper<Tensor, Order> &w) -> decltype( 
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation()) 
+        ) &
+    {
+        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation());
+    }
+
+    template<class Tensor, int Order>
+    inline auto raw_type(Wrapper<Tensor, Order> &w) -> decltype( 
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation())
+        ) &
+    {
+        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation());
     }
 }
 

@@ -136,6 +136,10 @@ namespace utopia {
 		
 		inline PetscInt size() const
 		{
+			if(!initialized()) {
+				return utopia::INVALID_INDEX;
+			}
+			
 			PetscInt ret;
 			VecGetSize(implementation(), &ret);
 			return ret;

@@ -53,8 +53,7 @@ namespace utopia
             virtual bool hessian(const Vector &x, Matrix &hessian) const override
             {
                 SNESComputeJacobian(snes_, raw_type(x), snes_->jacobian,  snes_->jacobian_pre);
-                hessian = sparse_mref(snes_->jacobian); 
-
+                wrap(snes_->jacobian, hessian);
                 return true; 
             }
 
