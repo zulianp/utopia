@@ -27,7 +27,7 @@ foreach(MODULE ${SOLVERS_MODULES})
 	target_include_directories(utopia_solvers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
 endforeach(MODULE)
 
-target_link_libraries(utopia_solvers utopia_utils)
+target_link_libraries(utopia_solvers utopia_utils utopia_core)
 
 install(TARGETS utopia_solvers
 	RUNTIME DESTINATION bin 
