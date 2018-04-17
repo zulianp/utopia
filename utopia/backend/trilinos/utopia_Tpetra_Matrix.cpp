@@ -18,8 +18,9 @@ namespace utopia {
 		if(result.is_null()) {
 			auto s = size();
 			auto ls = local_size();
-			auto row_map = Teuchos::rcp(new map_type(s.get(0), ls.get(0), 0, communicator()));
-			result.mat_  = Teuchos::rcp(new crs_matrix_type(row_map, 0, Tpetra::DynamicProfile));
+			// auto row_map = Teuchos::rcp(new map_type(s.get(0), ls.get(0), 0, communicator()));
+			// result.mat_  = Teuchos::rcp(new crs_matrix_type(row_map, 0, Tpetra::DynamicProfile));
+			result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRowMap(), 0, Tpetra::DynamicProfile));
 		}
 
 		Tpetra::MatrixMatrix::Multiply(
@@ -29,6 +30,21 @@ namespace utopia {
 			false,
 			result.implementation()
 		);
+	}
+
+	void TpetraMatrix::axpy(const Scalar alpha, const TpetraMatrix &x)
+	{
+		// write_lock();
+		
+		Tpetra::MatrixMatrix::Add(
+			x.implementation(),
+			false,
+			alpha,
+			implementation(),
+			1.
+		);
+
+		// write_unlock();
 	}
 
 	void TpetraMatrix::crs_init(
@@ -41,16 +57,25 @@ namespace utopia {
 	{
 		//Trilinos has more distribution options than petsc and it does not require to have 
 		//a column operator structure as petsc
-		if(cols_global == Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()) {
-			Tpetra::global_size_t send_buff = cols_local;
-			cols_global = 0;
-			Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &send_buff, &cols_global);
+
+		rcp_map_type row_map;
+
+		if(rows_local == INVALID_INDEX) {
+			row_map = Teuchos::rcp(new map_type(rows_global, 0, comm));
+		} else {
+			if(cols_global == Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()) {
+				Tpetra::global_size_t send_buff = cols_local;
+				cols_global = 0;
+				Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &send_buff, &cols_global);
+			}
+
+			row_map = Teuchos::rcp(new map_type(rows_global, rows_local, 0, comm));
 		}
 
-	    owner_ = true;
-	    auto row_map = Teuchos::rcp(new map_type(rows_global, rows_local, 0, comm));
 	    auto col_map = Teuchos::rcp(new map_type(cols_global, 0, comm, Tpetra::LocallyReplicated));
 	    mat_ = Teuchos::rcp(new crs_matrix_type(row_map, nnz_x_row, Tpetra::DynamicProfile));
 	    mat_->replaceColMap(col_map);
+
+	    owner_ = true;
 	}
 }

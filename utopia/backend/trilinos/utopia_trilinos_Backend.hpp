@@ -67,7 +67,6 @@ namespace utopia {
             size = m.local_size();
         }
 
-
         //[io]
         // read matrix
         static bool read(const std::string &path, TpetraMatrix &m);
@@ -86,6 +85,23 @@ namespace utopia {
             v.values(default_communicator(), size.get(0), Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), values.value());
         }
 
+        inline static void build(TpetraVector &v, const Size &size, const Values<Scalar> &values)
+        {
+            v.values(default_communicator(), INVALID_INDEX, size.get(0), values.value());
+        }
+
+        inline static void build(TpetraVector &v, const Size &size, const LocalZeros &)
+        {
+            m_utopia_status_once("> Build zeros is using build values");
+            v.values(default_communicator(), size.get(0), Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), 0.);
+        }
+
+        inline static void build(TpetraVector &v, const Size &size, const Zeros &)
+        {
+            m_utopia_status_once("> Build zeros is using build values");
+            v.values(default_communicator(), INVALID_INDEX, size.get(0), 0.);
+        }
+
         static void build(TpetraSparseMatrix &m, const Size &size, const LocalNNZ<std::size_t> &nnz)
         {
             m.crs_init(default_communicator(),
@@ -93,6 +109,16 @@ namespace utopia {
               size.get(1),
               Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
               Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+              nnz.nnz());
+        }
+
+        static void build(TpetraSparseMatrix &m, const Size &size, const NNZ<std::size_t> &nnz)
+        {
+            m.crs_init(default_communicator(),
+              INVALID_INDEX,
+              INVALID_INDEX,
+              size.get(0),
+              size.get(1),
               nnz.nnz());
         }
 
@@ -172,6 +198,11 @@ namespace utopia {
             x.scale(alpha);
         }
 
+        inline static void scale(TpetraMatrix &x, const Scalar alpha)
+        {
+            x.scale(alpha);
+        }
+
         inline static Scalar dot(const TpetraVector &x, const TpetraVector &y)
         {
             return x.dot(y);
@@ -187,9 +218,6 @@ namespace utopia {
             const Vector &right)
         {
             assert(!transpose_right);
-
-
-
             assert(!transpose_left);
             //TODO implement transpoe left
 
@@ -204,6 +232,57 @@ namespace utopia {
         inline static void apply_binary(TpetraMatrix &result, const TpetraMatrix &left, const Multiplies &, const TpetraMatrix &right)
         {
             left.mult(right, result);
+        }
+
+        inline static void apply_binary(TpetraVector &result, const TpetraVector &left, const Plus &, const TpetraVector &right)
+        {
+            result = left;
+            result.axpy(1., right);
+        }
+
+        inline static void apply_binary(TpetraVector &result, const TpetraVector &left, const Minus &, const TpetraVector &right)
+        {
+            result = left;
+            result.axpy(-1., right);
+        }
+
+        inline static void apply_binary(TpetraMatrix &result, const TpetraMatrix &left, const Plus &, const TpetraMatrix &right)
+        {
+            result = left;
+            result.axpy(1., right);
+        }
+
+        inline static void apply_binary(TpetraMatrix &result, const TpetraMatrix &left, const Minus &, const TpetraMatrix &right)
+        {
+            result = left;
+            result.axpy(-1., right);
+        }
+
+        static void apply_binary(TpetraMatrix &result, const Scalar factor, const Multiplies &, const TpetraMatrix &mat)
+        {
+            result = mat;
+            result.scale(factor);
+        }
+
+        static void apply_binary(TpetraVector &result, const Scalar factor, const Multiplies &, const TpetraVector &vec)
+        {
+            result = vec;
+            result.scale(factor);
+        }
+
+        inline static bool compare(const TpetraVector &left, const TpetraVector &right, const ApproxEqual &comp) {
+            TpetraVector diff;
+            apply_binary(diff, left, Minus(), right);
+            return norm_infty(diff) <= comp.tol();
+        }
+        
+
+        // monitoring functions for iterative solvers (Cyrill)
+        // UTOPIA_DEPRECATED_MSG("Remove me")
+        template<class Tensor>
+        static void monitor(const long &, Tensor &)
+        {
+            m_utopia_status_once("Remove the monitor interface plz");
         }
 
     private:

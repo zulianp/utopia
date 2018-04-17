@@ -4,6 +4,7 @@
 #include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Logger.hpp"
 
 #include "utopia_Tpetra_Vector.hpp"
 
@@ -96,6 +97,7 @@ namespace utopia {
         inline void write_lock()
         {
             //TODO?
+            implementation().resumeFill();
         }
         
         inline void write_unlock()
@@ -111,6 +113,7 @@ namespace utopia {
         
         inline void set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
         {
+            // m_utopia_warning_once("> TpetraMatrix::set does not do what is supposed to do. set should set not add");
             implementation().insertGlobalValues(row, 1, &value, &col);
         }
         
@@ -121,7 +124,11 @@ namespace utopia {
 
         void mult(const TpetraVector &vec, TpetraVector &result) const;
         void mult(const TpetraMatrix &right, TpetraMatrix &result) const;
-
+        void axpy(const Scalar alpha, const TpetraMatrix &x);
+        inline void scale(const Scalar alpha)
+        {
+            implementation().scale(alpha);
+        }
 
         inline crs_matrix_type &implementation()
         {
