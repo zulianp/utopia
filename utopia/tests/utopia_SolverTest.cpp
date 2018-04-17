@@ -309,7 +309,7 @@ namespace utopia
 			const SizeType n = 30;
 
 			Matrix m = zeros(n, n);
-			assemble_laplacian_1D(n, m);
+			assemble_laplacian_1D(m);
 			{
 				Range r = row_range(m);
 				Write<Matrix> w(m);

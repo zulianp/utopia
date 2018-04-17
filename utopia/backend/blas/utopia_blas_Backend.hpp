@@ -123,6 +123,17 @@ namespace utopia {
 			build(v, size, Values<Scalar>(values.value()));
 		}
 
+		static void build(CRSMatrix<Scalar> &m, const Size &size, const LocalNNZ<int> &nnz)
+		{
+			build(m, size, NNZ<int>(nnz.nnz()));
+		}
+
+		static void build(CCSMatrix<Scalar> &m, const Size &size, const LocalNNZ<int> &nnz)
+		{
+			build(m, size, NNZ<int>(nnz.nnz()));
+		}
+
+
 		//[accessors]
 		inline static Scalar get(const Vector &vec, const SizeType index)
 		{

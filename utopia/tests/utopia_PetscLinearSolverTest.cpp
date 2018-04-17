@@ -229,6 +229,7 @@ namespace utopia
             multigrid.verbose(verbose);
             multigrid.set_use_line_search(true);
             
+            // ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> cg; //with the HOMEMADE works in parallel
             ConjugateGradient<DSMatrixd, DVectord> cg;
             cg.verbose(verbose);
             

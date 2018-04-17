@@ -567,12 +567,12 @@ namespace utopia
 			// write("x_p.m", x_0);
 			// write("x_u.m", hm_x_0);
 
-			if(!approxeq(x_0, hm_x_0, 1e-14)) {
-				DVectord diff = hm_x_0 - x_0;
-			// 	disp(diff);
-				double norm_diff = norm2(diff)/double(norm2(hm_x_0));
-				std::cout << "norm_diff: " << norm_diff << std::endl;
-			}
+			// if(!approxeq(x_0, hm_x_0, 1e-14)) {
+			// 	DVectord diff = hm_x_0 - x_0;
+			// // 	disp(diff);
+			// 	double norm_diff = norm2(diff)/double(norm2(hm_x_0));
+			// 	std::cout << "norm_diff: " << norm_diff << std::endl;
+			// }
 
 			assert(approxeq(x_0, hm_x_0, 1e-8));
 		}

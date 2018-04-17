@@ -16,7 +16,7 @@ namespace utopia {
 
 		virtual std::string name() override
 		{
-			return "blas1";
+			return "BLAS 1";
 		}
 
 		void initialize() override
@@ -59,6 +59,29 @@ namespace utopia {
 						const Scalar norm_infty_x = norm_infty(x);
 					}
 				);
+
+
+				//scale
+				this->register_experiment(
+					"scale_" + std::to_string(i),
+					[n]() {
+						Vector x = local_values(n, 1.);
+						x *= 0.1;
+						// x = x * 0.1;
+					}
+				);
+
+
+				//dot
+				this->register_experiment(
+					"dot_" + std::to_string(i),
+					[n]() {
+						const Vector x = local_values(n, 1.);
+						const Vector y = local_values(n, 2.);
+						const Scalar d = dot(x, y);
+					}
+				);
+				
 
 				//...
 			}

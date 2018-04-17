@@ -167,6 +167,16 @@ namespace utopia {
             y.axpy(alpha, x);
         }
 
+        inline static void scale(TpetraVector &x, const Scalar alpha)
+        {
+            x.scale(alpha);
+        }
+
+        inline static Scalar dot(const TpetraVector &x, const TpetraVector &y)
+        {
+            return x.dot(y);
+        }
+
 
         //blas 2
         static void multiply(
@@ -187,6 +197,11 @@ namespace utopia {
         }
 
         inline static void apply_binary(TpetraVector &result, const TpetraMatrix &left, const Multiplies &, const TpetraVector &right)
+        {
+            left.mult(right, result);
+        }
+
+        inline static void apply_binary(TpetraMatrix &result, const TpetraMatrix &left, const Multiplies &, const TpetraMatrix &right)
         {
             left.mult(right, result);
         }

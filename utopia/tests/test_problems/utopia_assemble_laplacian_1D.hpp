@@ -8,25 +8,25 @@
 namespace utopia {
 
 	template<class Matrix>
-	void assemble_laplacian_1D(const utopia::SizeType n, Matrix &m)
+	void assemble_laplacian_1D(Matrix &m)
 	{
-
 	    // n x n matrix with maximum 3 entries x row        
 		{
 			Write<Matrix> w(m);
 			Range r = row_range(m);
+			auto n = size(m).get(0);
 
 	        //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
 			for(SizeType i = r.begin(); i != r.end(); ++i) {
 				if(i > 0) {    
-					m.add(i, i - 1, -1.0);    
+					m.set(i, i - 1, -1.0);    
 				}
 
 				if(i < n-1) {
-					m.add(i, i + 1, -1.0);
+					m.set(i, i + 1, -1.0);
 				}
 
-				m.add(i, i, 2.0);
+				m.set(i, i, 2.0);
 			}
 		}
 	}

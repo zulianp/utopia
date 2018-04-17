@@ -8,15 +8,16 @@ set(CMAKE_MACOSX_RPATH 1)
 #################################################################################
 #################################################################################
 #################################################################################
+
 option(UTOPIA_ARCHIVE_ONLY "Allows to compile only the archive file. Suitable for linux" OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY "Allows to restrict the linking to static libraries" OFF)
+
 option(TRY_WITH_CUDA "Enable the cuda backend" OFF)
 option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_WITH_PETSC "Enable the petsc backend" ON)
-option(TRY_WITH_TRILINOS "Enable the Trilinos backend" OFF)
+option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
-option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
-option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
+
 option(ENABLE_TRACE "enables utopia logging facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
@@ -24,6 +25,8 @@ option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in t
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
 
+option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
+option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
 
 #################################################################################
 #################################################################################

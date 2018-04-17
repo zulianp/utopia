@@ -43,12 +43,12 @@ namespace utopia {
 
         rcp_comm_type communicator()
         {
-            return vec_->getMap()->getComm();
+            return implementation().getMap()->getComm();
         }
 
         const rcp_comm_type communicator() const
         {
-            return vec_->getMap()->getComm();
+            return implementation().getMap()->getComm();
         }
 
         TpetraVector &operator=(const TpetraVector &other)
@@ -72,7 +72,7 @@ namespace utopia {
         {
             auto map = Teuchos::rcp(new map_type(n_global, n_local, 0, comm));
             vec_ = Teuchos::rcp(new vector_type(map));
-            vec_->putScalar(value);
+            implementation().putScalar(value);
         }
 
         inline void init(const rcp_map_type &map)
@@ -82,23 +82,23 @@ namespace utopia {
 
         inline void axpy(const Scalar &alpha, const TpetraVector &x)
         {
-            vec_->update(alpha, *x.vec_, 1.);
+            implementation().update(alpha, *x.vec_, 1.);
         }
 
         inline void describe(std::ostream &os = std::cout) const
         {
             auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
-            vec_->describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
+            implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
         }
 
         inline void set(const global_ordinal_type i, const Scalar value)
         {
-            vec_->replaceGlobalValue(i, value);
+            implementation().replaceGlobalValue(i, value);
         }
 
         inline void add(const global_ordinal_type i, const Scalar value)
         {
-            vec_->sumIntoGlobalValue(i, value);
+            implementation().sumIntoGlobalValue(i, value);
         }
 
         inline void read_lock()
@@ -123,29 +123,39 @@ namespace utopia {
 
         inline Range range() const
         {
-            return { vec_->getMap()->getMinGlobalIndex(), vec_->getMap()->getMaxGlobalIndex() + 1 };
+            return { implementation().getMap()->getMinGlobalIndex(), implementation().getMap()->getMaxGlobalIndex() + 1 };
         }
 
         inline Size size() const
         {
-            return { vec_->getMap()->getGlobalNumElements() };
+            return { implementation().getMap()->getGlobalNumElements() };
         }
 
         inline Size local_size() const
         {
-            return { vec_->getMap()->getNodeNumElements() };
+            return { implementation().getMap()->getNodeNumElements() };
         }
 
         inline Scalar norm2() const {
-           return vec_->norm2();
+           return implementation().norm2();
         }
         
         inline Scalar norm1() const {
-           return vec_->norm1();
+           return implementation().norm1();
         }
         
         inline Scalar norm_infty() const {
-          return vec_->normInf();
+          return implementation().normInf();
+        }
+
+        inline void scale(const Scalar alpha)
+        {
+            implementation().scale(alpha);
+        }
+
+        inline Scalar dot(const TpetraVector &other) const
+        {
+            return implementation().dot(other.implementation());
         }
 
         inline vector_type &implementation()
