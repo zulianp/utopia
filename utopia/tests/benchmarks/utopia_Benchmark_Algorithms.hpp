@@ -1,0 +1,71 @@
+#ifndef UTOPIA_BENCHMARK_ALGORITHMS_HPP
+#define UTOPIA_BENCHMARK_ALGORITHMS_HPP
+
+#include "utopia_Chrono.hpp"
+#include "utopia_MPI.hpp"
+#include "utopia.hpp"
+#include "utopia_Benchmark.hpp"
+#include "test_problems/utopia_assemble_laplacian_1D.hpp"
+
+#include <string>
+#include <cassert>
+
+namespace utopia {
+
+	template<class Matrix, class Vector>
+	class BenchmarkAlgorithms : public Benchmark {
+	public:
+		DEF_UTOPIA_SCALAR(Vector)
+
+		virtual std::string name() override
+		{
+			return "Algorithms";
+		}
+
+		void initialize() override
+		{
+			const SizeType base_n = 1000;
+			const SizeType n_instances = 5;
+
+			for(SizeType i = 0; i < n_instances; ++i) {
+				const SizeType n = base_n * (i + 1);
+					
+				//Conjugate gradients method
+				this->register_experiment(
+					"cg_" + std::to_string(i),
+					[n]() {
+						Matrix A = local_sparse(n, n, 3); 
+						Vector b = local_values(n, 1.);
+						Vector x = local_values(n, 0.);
+
+						assemble_laplacian_1D(A, true);
+
+						auto N = size(A).get(0);
+						{
+							Range r = row_range(A);
+							Write<Vector> w_b(b);
+							
+							if(r.begin() == 0) {
+								b.set(0, 0.);
+							}
+
+							if(r.end() == N) {
+								b.set(N-1, 0.);
+							}
+						}
+
+						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+						cg.max_it(N);
+						cg.solve(A, b, x);
+
+						double err = norm2(b - A * x);
+						assert(approxeq(A * x, b, 1e-6));
+					}
+				);	
+			}
+		}
+
+	};
+}
+
+#endif //UTOPIA_BENCHMARK_ALGORITHMS_HPP
