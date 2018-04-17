@@ -7,5 +7,6 @@
 #include "utopia_LinearElasticity.hpp"
 #include "utopia_Deformation.hpp"
 #include "utopia_FunctionMaterial.hpp"
+#include "utopia_StabilizedMaterial.hpp"
 
 #endif //UTOPIA_MATERIALS_HPP

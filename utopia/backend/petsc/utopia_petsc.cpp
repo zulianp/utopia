@@ -1,3 +1,6 @@
+//https://fossies.org/diffs/petsc/3.7.7_vs_3.8.0/
+//https://www.mcs.anl.gov/petsc/documentation/changes/39.html
+
 #include "utopia_petsc.hpp"
 
 //explicit instantiations
@@ -40,6 +43,7 @@ namespace utopia {
 
 		A_opt.implementation().matij_init(
 			A.implementation().communicator(),
+			A.implementation().type_override(),
 			ls.get(0),
 			ls.get(1),
 			gs.get(0),

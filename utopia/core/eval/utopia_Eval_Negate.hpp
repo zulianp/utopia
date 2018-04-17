@@ -14,7 +14,7 @@ namespace utopia {
 	    {
 	        Result result;
 
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).apply_unary(
 	            result,
@@ -22,7 +22,7 @@ namespace utopia {
 	            Eval<DelegateT, Traits>::apply(expr.expr())
 	            );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return result;
 	    }
 	};

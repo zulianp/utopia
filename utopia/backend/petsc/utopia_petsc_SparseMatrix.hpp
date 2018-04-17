@@ -4,14 +4,28 @@
 
 #include "utopia_petsc_Matrix.hpp"
 #include <map>
+#include "petscmat.h"
 
 namespace utopia{
 
 	class PetscSparseMatrix : public PetscMatrix {
 	public:
-		// using PetscMatrix::PetscMatrix;
-		// using PetscMatrix::operator=;
+		virtual MatType type_override() const override
+		{
+		    return MATAIJ;
+		}
+
 		virtual ~PetscSparseMatrix() {}
+	};
+
+	class PetscCuSparseMatrix : public PetscMatrix {
+	public:
+		virtual MatType type_override() const override
+		{
+		    return MATAIJCUSPARSE;
+		}
+		
+		virtual ~PetscCuSparseMatrix() {}
 	};
 
 }

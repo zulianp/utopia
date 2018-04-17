@@ -77,7 +77,7 @@ namespace utopia
         Multigrid(const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                   const std::shared_ptr<Solver> &direct_solver = std::shared_ptr<Solver>(),
                   const Parameters params = Parameters())
-        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true)
+        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true), use_line_search_(false)
         {
             set_parameters(params); 
         }
@@ -145,6 +145,7 @@ namespace utopia
 
             if(this->cycle_type() == FULL_CYCLE)
                 this->max_it(1); 
+
 
             while(!converged)
             {            
@@ -305,10 +306,12 @@ namespace utopia
             Vector &c_H = memory.c_H[l-1];
             Vector &c_h = memory.c_h[l-1];
 
+
             if(local_size(x_0).get(0) != local_size(rhs).get(0)) {
                assert( local_size(x_0).get(0) != local_size(rhs).get(0) );
                std::cerr << "wrong local size for x_0 (if needed use redistribute_as(x_0, rhs)." << std::endl;
             }
+
 
             //SHOULD NOT BE NECEASSARY HERE
             // if(this->num_levels() > 2) {
@@ -318,22 +321,26 @@ namespace utopia
             // presmoothing 
             smoothing(level(l-1).A(), rhs, x_0, this->pre_smoothing_steps()); 
 
+
             // residual transfer 
             r_h = rhs - level(l-1).A() * x_0; 
             transfers(l-2).restrict(r_h, r_H); 
 
+            assert(!empty(r_H));
+
             // prepare correction 
             if(empty(c_H) || size(c_H).get(0) != size(r_H).get(0)) {
+                assert(!empty(r_H));
                 c_H = local_zeros(local_size(r_H).get(0));        
             } else {
                 c_H.set(0.);
             }
 
             if(l == 2) {
-                // coarse solve 
-                coarse_solve(level(l-2).A(), r_H, c_H);         
-
+                // coarse solve                 
+                coarse_solve(level(l-2).A(), r_H, c_H); 
             } else {
+
                 // recursive call into mg
                 for(SizeType k = 0; k < this->mg_type(); k++) {   
                     SizeType l_new = l - 1; 
@@ -341,9 +348,25 @@ namespace utopia
                 }
             }
 
+
             // correction transfer
             transfers(l-2).interpolate(c_H, c_h); 
-            x_0 += c_h; 
+
+
+            if(use_line_search_) {
+                const Scalar alpha = dot(c_h, r_h)/dot(level(l-1).A() * c_h, c_h);
+
+                if(alpha <= 0.) {
+                    // std::cerr << l << " zero grid correction" << std::endl;
+                    x_0 += c_h;
+                } else {
+                    // std::cout << l << " : " << alpha << std::endl;
+                    x_0 += alpha * c_h;
+                }
+
+            } else {
+                x_0 += c_h; 
+            }
 
             // postsmoothing 
             smoothing(level(l-1).A(), rhs, x_0, this->post_smoothing_steps()); 
@@ -460,6 +483,11 @@ namespace utopia
             perform_galerkin_assembly_ = val;   
         }
 
+        void set_use_line_search(const bool val)
+        {
+            use_line_search_ = val;
+        }
+
     protected:   
         std::shared_ptr<Smoother>           _smoother;
         std::shared_ptr<Solver>             _direct_solver;
@@ -467,6 +495,7 @@ namespace utopia
     private:
         Parameters                          _parameters;
         bool perform_galerkin_assembly_;
+        bool use_line_search_;
 
     };
 

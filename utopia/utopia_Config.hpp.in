@@ -4,6 +4,7 @@
 #cmakedefine WITH_BLAS
 #cmakedefine WITH_LAPACK
 #cmakedefine WITH_PETSC
+#cmakedefine WITH_SLEPC
 #cmakedefine WITH_TRILINOS
 #cmakedefine WITH_CPP11
 #cmakedefine WITH_UMFPACK
@@ -13,7 +14,7 @@
 #cmakedefine WITH_CUDA
 #cmakedefine WITH_UTOPIA_OPENCL
 #cmakedefine WITH_EIGEN_3
-#cmakedefine UTOPIA_LOG_ENABLED
+#cmakedefine UTOPIA_TRACE_ENABLED
 #cmakedefine WITH_PASSO_EXTENSIONS
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
@@ -69,5 +70,7 @@
 #else 
 #define assert_enabled(expr_)    
 #endif //NDEBUG
+
+#include "utopia_compiler_features.hpp"
 
 #endif //UTOPIA_CONFIG_HPP

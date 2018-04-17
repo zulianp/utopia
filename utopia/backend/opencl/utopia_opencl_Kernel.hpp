@@ -548,7 +548,7 @@ namespace utopia {
 				KernelCodeGenerator gen;
 				
 				std::string code_template;
-				bool ok = read(utopia::Utopia::Instance().get("opencl_templates_path") + get_template_path(expr), code_template); assert(ok);
+				bool ok = read(utopia::Utopia::instance().get("opencl_templates_path") + get_template_path(expr), code_template); assert(ok);
 				
 				name_ = KernelNameGenerator::instance().next_name();
 				

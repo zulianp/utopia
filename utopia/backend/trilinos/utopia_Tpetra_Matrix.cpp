@@ -1,4 +1,5 @@
 #include "utopia_Tpetra_Matrix.hpp"
+#include <TpetraExt_MatrixMatrix_def.hpp>
 
 namespace utopia {
 	void TpetraMatrix::mult(const TpetraVector &vec, TpetraVector &result) const
@@ -10,6 +11,24 @@ namespace utopia {
 		}
 
 		mat_->apply(vec.implementation(), result.implementation());
+	}
+
+	void TpetraMatrix::mult(const TpetraMatrix &right, TpetraMatrix &result) const
+	{
+		if(result.is_null()) {
+			auto s = size();
+			auto ls = local_size();
+			auto row_map = Teuchos::rcp(new map_type(s.get(0), ls.get(0), 0, communicator()));
+			result.mat_  = Teuchos::rcp(new crs_matrix_type(row_map, 0, Tpetra::DynamicProfile));
+		}
+
+		Tpetra::MatrixMatrix::Multiply(
+			this->implementation(),
+			false,
+			right.implementation(),
+			false,
+			result.implementation()
+		);
 	}
 
 	void TpetraMatrix::crs_init(

@@ -18,6 +18,9 @@
 
 namespace utopia 
 {
+
+    #define CHECK_NUM_PRECISION_mode
+
     /**
      * @brief      Base class for all nonlinear multilevel solvers. \n
      *             Takes care of inializing multilevel hierarchy - calls into assembly routines on each level. \n
@@ -85,6 +88,7 @@ namespace utopia
             Vector g  = local_zeros(local_size(x_h));
             fine_fun.gradient(x_h, g);
             r0_norm = norm2(g);
+            r_norm = r0_norm; 
             
             fine_fun.value(x_h, energy);
             
@@ -132,8 +136,18 @@ namespace utopia
                 converged = this->check_convergence(it, r_norm, rel_norm, 1);
                 it++;
             }
+
+            this->print_statistics(it); 
+
+            #ifdef CHECK_NUM_PRECISION_mode
+                if(has_nan_or_inf(x_h) == 1)
+                    exit(0); 
+            #endif
+
+
             return true;
         }
+        
         
         /**
          * @brief      The solve function for nonlinear multilevel solvers.
@@ -221,6 +235,39 @@ namespace utopia
             return true;
         }
         
+
+
+
+        virtual void print_statistics(const SizeType & it_global) 
+        {
+            std::string path = this->name_id() + "_data_path"; 
+            std::cout<<"string data path: "<< path << " \n"; 
+
+            auto non_data_path = Utopia::instance().get(path);
+            std::cout<<"non_data_path: "<< non_data_path << "  \n"; 
+            if(!non_data_path.empty())
+            {
+                CSVWriter writer; 
+                if (mpi_world_rank() == 0)
+                {
+                    if(!writer.file_exists(non_data_path))
+                    {
+                        writer.open_file(non_data_path); 
+                        writer.write_table_row<std::string>({"v_cycles", "time"}); 
+                    }
+                    else
+                        writer.open_file(non_data_path); 
+
+                    writer.write_table_row<Scalar>({Scalar(it_global), this->get_time()}); 
+                    writer.close_file(); 
+                }
+            }
+        }
+
+
+
+
+
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Scalar      atol() const               { return atol_; }
@@ -275,7 +322,7 @@ namespace utopia
             _time.stop();
             params_.convergence_reason(convergence_reason);
             params_.num_it(num_it);
-            
+        
             if(verbose_)
             {
                 ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);
@@ -344,16 +391,14 @@ namespace utopia
          */
         virtual bool make_iterate_feasible(FunctionType & fun, Vector & x)
         {
-            Vector bc_values;
-            fun.get_eq_constrains_values(bc_values);
-            
-            Vector bc_ids;
-            fun.get_eq_constrains_flg(bc_ids);
-            
-            if(local_size(bc_ids).get(0) != local_size(bc_values).get(0) || local_size(bc_ids).get(0) != local_size(x).get(0)) {
-                std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: local sizes do not match... \n";
-            }
-            
+          Vector bc_values; 
+          fun.get_eq_constrains_values(bc_values); 
+
+          Vector bc_ids; 
+          fun.get_eq_constrains_flg(bc_ids); 
+
+          if(local_size(bc_ids).get(0) != local_size(bc_values).get(0))
+            std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: local sizes do not match... \n"; 
             {
                 Write<Vector> w(x);
                 Read<Vector>  r_id(bc_ids);

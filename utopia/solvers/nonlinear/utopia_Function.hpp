@@ -2,6 +2,7 @@
 #define UTOPIA_SOLVER_FUNCTION_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_Core.hpp"
 
 namespace utopia 
 {
@@ -13,11 +14,11 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector>
+    template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Function 
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix)
+        DEF_UTOPIA_SCALAR(Matrix); 
 
         virtual ~Function() { }
 
@@ -34,7 +35,39 @@ namespace utopia
             return false;
         }
 
-        virtual bool update(const Vector &/*point*/) { return true; };
+        virtual bool update(const Vector &/*point*/) { return true; }
+        virtual bool initialize_hessian(Matrix &/*H*/, Matrix &H_pre) const
+        {
+            return false;
+        }
+
+        /**
+         * @brief Allows to solvers to reuse allocated vectors and matrices
+         */
+        class Data {
+        public:
+            std::shared_ptr<Matrix> H;
+            std::shared_ptr<Matrix> H_pre;
+            std::shared_ptr<Vector> g;
+
+            void init()
+            {
+                if(!H) { H = std::make_shared<Matrix>(); }
+                if(!H_pre) { H_pre = std::make_shared<Matrix>(); }
+                if(!g) { g = std::make_shared<Vector>(); }
+            }
+        };
+        
+        inline std::shared_ptr<Data> data() const {
+            return data_;
+        }
+
+        Function()
+        : data_(std::make_shared<Data>())
+        {}
+
+    private:
+        std::shared_ptr<Data> data_;
 
     };
 }

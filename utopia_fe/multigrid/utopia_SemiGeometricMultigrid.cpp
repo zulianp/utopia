@@ -4,6 +4,7 @@
 #include "utopia_Socket.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
 #include "utopia_Contact.hpp"
+#include "utopia_BoundingBoxCoarsener.hpp"
 
 #include "moonolith_communicator.hpp"
 
@@ -32,7 +33,7 @@ namespace utopia {
 	SemiGeometricMultigrid::SemiGeometricMultigrid(
 		const std::shared_ptr<Smoother<DSMatrixd, DVectord> > &smoother,
 		const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver)
-	: mg(smoother, linear_solver), is_block_solver_(false)
+	: mg(smoother, linear_solver), is_block_solver_(false), separate_subdomains_(false)
 	{ }
 
 	void SemiGeometricMultigrid::init(const libMesh::EquationSystems &es, const std::size_t n_levels)
@@ -56,60 +57,71 @@ namespace utopia {
 		meshes.resize(n_coarse_spaces);
 		equation_systems.resize(n_coarse_spaces);
 
-		auto m = std::make_shared<libMesh::DistributedMesh>(mesh.comm());
+		std::shared_ptr<libMesh::UnstructuredMesh> m = std::make_shared<libMesh::DistributedMesh>(mesh.comm());
 
-		switch(dim) {
-			case 2: 
-			{
-				const int n_segments = std::max(2, int( std::round( std::sqrt(mesh.n_nodes() / std::pow(4, n_coarse_spaces)) ) ) );
-				const double max_r = std::max(r(0), r(1));
+		std::vector< std::vector< std::pair<int, int> > > tags(n_coarse_spaces);
 
-				const double aspect_ratio_x = r(0)/max_r;
-				const double aspect_ratio_y = r(1)/max_r;
+		if(!separate_subdomains_) {
 
-				const int nx = std::max(int(std::round(n_segments * aspect_ratio_x)), 2);
-				const int ny = std::max(int(std::round(n_segments * aspect_ratio_y)), 2);
+			switch(dim) {
+				case 2: 
+				{
+					const int n_segments = std::max(2, int( std::round( std::sqrt(mesh.n_nodes() / std::pow(4, n_coarse_spaces)) ) ) );
+					const double max_r = std::max(r(0), r(1));
 
-				libMesh::MeshTools::Generation::build_square (
-					*m,
-					nx, ny,
-					bb.min()(0), bb.max()(0),
-					bb.min()(1), bb.max()(1),
-					libMesh::QUAD4);
-				
-				break;
+					const double aspect_ratio_x = r(0)/max_r;
+					const double aspect_ratio_y = r(1)/max_r;
+
+					const int nx = std::max(int(std::round(n_segments * aspect_ratio_x)), 2);
+					const int ny = std::max(int(std::round(n_segments * aspect_ratio_y)), 2);
+
+					libMesh::MeshTools::Generation::build_square (
+						*m,
+						nx, ny,
+						bb.min()(0), bb.max()(0),
+						bb.min()(1), bb.max()(1),
+						libMesh::QUAD4);
+
+					break;
+				}
+
+				case 3:
+				{
+					const int n_segments = std::max(2, int( std::round( std::cbrt(mesh.n_nodes() / std::pow(8, n_coarse_spaces)) ) ) );
+
+					const double max_r = std::max(r(0), std::max(r(1), r(2)));
+
+					const double aspect_ratio_x = r(0)/max_r;
+					const double aspect_ratio_y = r(1)/max_r;
+					const double aspect_ratio_z = r(2)/max_r;
+
+					const int nx = std::max(int(std::round(n_segments * aspect_ratio_x)), 2);
+					const int ny = std::max(int(std::round(n_segments * aspect_ratio_y)), 2);
+					const int nz = std::max(int(std::round(n_segments * aspect_ratio_z)), 2);
+
+					libMesh::MeshTools::Generation::build_cube (
+						*m,
+						nx, ny, nz,
+						bb.min()(0), bb.max()(0),
+						bb.min()(1), bb.max()(1),
+						bb.min()(2), bb.max()(2),
+						libMesh::HEX8);
+
+					break;
+				} 
+
+				default:
+				{	
+					assert(false && "implement me");
+					break;
+				}
 			}
-
-			case 3:
-			{
-				const int n_segments = std::max(2, int( std::round( std::cbrt(mesh.n_nodes() / std::pow(8, n_coarse_spaces)) ) ) );
-				
-				const double max_r = std::max(r(0), std::max(r(1), r(2)));
-				
-				const double aspect_ratio_x = r(0)/max_r;
-				const double aspect_ratio_y = r(1)/max_r;
-				const double aspect_ratio_z = r(2)/max_r;
-
-				const int nx = std::max(int(std::round(n_segments * aspect_ratio_x)), 2);
-				const int ny = std::max(int(std::round(n_segments * aspect_ratio_y)), 2);
-				const int nz = std::max(int(std::round(n_segments * aspect_ratio_z)), 2);
-
-				libMesh::MeshTools::Generation::build_cube (
-					*m,
-					nx, ny, nz,
-					bb.min()(0), bb.max()(0),
-					bb.min()(1), bb.max()(1),
-					bb.min()(2), bb.max()(2),
-					libMesh::HEX8);
-
-				break;
-			} 
-
-			default:
-			{	
-				assert(false && "implement me");
-				break;
-			}
+		} else {
+			BoundingBoxCoarsener bb_coarsener;
+			bb_coarsener.init(n_coarse_spaces, mesh);
+			bb_coarsener.describe();
+			m = bb_coarsener.get_mesh();
+			tags[n_coarse_spaces-1] = bb_coarsener.get_tags();
 		}
 
 		meshes[0] = m;
@@ -186,7 +198,8 @@ namespace utopia {
 			0,
 			true,
 			dof_map.n_variables(),
-			*interpolators_[n_coarse_spaces-1]
+			*interpolators_[n_coarse_spaces-1],
+			tags[n_coarse_spaces-1]
 			); assert(success);
 
 

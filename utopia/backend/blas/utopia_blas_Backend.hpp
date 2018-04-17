@@ -110,7 +110,30 @@ namespace utopia {
 		static void build(Vector &m, const Size &size, const Zeros & /*values*/);
 		static void build(Vector &m, const Size &size, const LocalZeros & /*values*/);
 		static void build(Vector &v, const Size &size, const Values<Scalar> &values);
-		
+
+
+		///For compatiblity parallel expressions are treated as serial ones:
+		static void build(Matrix &m, const Size &size, const LocalValues<Scalar> &values)
+		{
+			build(m, size, Values<Scalar>(values.value()));
+		}
+
+		static void build(Vector &v, const Size &size, const LocalValues<Scalar> &values)
+		{
+			build(v, size, Values<Scalar>(values.value()));
+		}
+
+		static void build(CRSMatrix<Scalar> &m, const Size &size, const LocalNNZ<int> &nnz)
+		{
+			build(m, size, NNZ<int>(nnz.nnz()));
+		}
+
+		static void build(CCSMatrix<Scalar> &m, const Size &size, const LocalNNZ<int> &nnz)
+		{
+			build(m, size, NNZ<int>(nnz.nnz()));
+		}
+
+
 		//[accessors]
 		inline static Scalar get(const Vector &vec, const SizeType index)
 		{
@@ -373,6 +396,7 @@ namespace utopia {
 		static Scalar trace(const CCSMatrix<Scalar>  &in);
 		static Scalar dot(const Vector &left, const Vector &right);
 		static Scalar dot(const Matrix &left, const Matrix &right);
+		static Scalar norm1(const Vector &vector);
 		static Scalar norm2(const Vector &vector);
 		static Scalar norm2(const Matrix &mat);
 		static Scalar norm2(const CRSMatrix<Scalar> &mat);

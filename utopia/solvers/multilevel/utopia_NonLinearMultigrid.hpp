@@ -51,6 +51,7 @@ namespace utopia
             set_parameters(params); 
         }
 
+
         virtual ~NonLinearMultigrid(){} 
         
 
@@ -68,7 +69,7 @@ namespace utopia
 
         virtual std::string name_id()  override
         {
-            return "Nonlinear Multigrid"; 
+            return "NMG"; 
         }
 
 
@@ -153,7 +154,7 @@ namespace utopia
 
 
 
-        // TODO:: make this nicer ! 
+        // !!!!!!! TODO:: make this nicer ! 
         bool nested_iteration_cycle(Vector & u_l, const Vector &/*f*/, const SizeType & l, std::vector<Vector> & rhss, std::vector<Vector> & initial_iterates)
         {
             for(SizeType i = l-2; i >=0; i--)
@@ -219,7 +220,7 @@ namespace utopia
                 }
             }
 
-            e_2h = 1/s * (u_2l - initial_iterates[l-2]); 
+            e_2h = 1.0/s * (u_2l - initial_iterates[l-2]); 
             transfers(l-2).interpolate(e_2h, e_h);
 
             this->zero_correction_related_to_equality_constrain(fine_fun, e_h); 
@@ -265,7 +266,6 @@ namespace utopia
                                  
             if(l == 2)
             {
-                this->make_iterate_feasible(levels(0), u_2l); 
                 coarse_solve(levels(0), u_2l, g_coarse); 
             }
             else
@@ -282,7 +282,7 @@ namespace utopia
             transfers(l-2).interpolate(e, e);
             this->zero_correction_related_to_equality_constrain(fine_fun, e); 
             
-            u_l += 1/s * e; 
+            u_l += 1.0/s * e; 
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 

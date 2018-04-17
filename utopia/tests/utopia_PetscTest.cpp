@@ -1,10 +1,8 @@
-/*
-* @Author: Eric Botter
-* @Date:   2016-11-15
-*/
 #include "utopia.hpp"
 #include "utopia_PetscTest.hpp"
 #include "test_problems/utopia_TestFunctionsND.hpp"
+#include "utopia_QuadraticFunction.hpp"
+#include "utopia_Device.hpp"
 
 namespace utopia {
 
@@ -36,7 +34,7 @@ namespace utopia {
 
 	        
 	       DVectord vec;
-	       std::string path = Utopia::Instance().get("data_path");
+	       std::string path = Utopia::instance().get("data_path");
 	       read(path + "/RHS_10x10x10_hexa_3D", vec, sub_comm, str("my_vec"));
    		}
 
@@ -347,7 +345,8 @@ namespace utopia {
         DSMatrixd m = identity(2, 2);
         auto expected_ptr = raw_type(m);
         Mat pmat = raw_type(m);
-        DSMatrixd wmat = sparse_mref(pmat);
+        DSMatrixd wmat;
+        wrap(pmat, wmat);
         assert( raw_type(wmat) == expected_ptr );
 
         // std::cout << "end: petsc_wrapper_test" << std::endl;
@@ -382,7 +381,7 @@ namespace utopia {
         DSMatrixd K, M;
 
         // with 2 double-dots works
-        std::string path = Utopia::Instance().get("data_path");
+        std::string path = Utopia::instance().get("data_path");
 
         read(path + "/RHS_10x10x10_hexa_3D", rhs);
         read(path + "/K_hexa_10x10x10_3D", K);
@@ -401,7 +400,7 @@ namespace utopia {
 
         // since case is lin. - QP minimization
         // std::cout << "Running FEM 3D poisson example using Newton solver \n";
-        QuadraticFunction<DSMatrixd, DVectord> funn(rhs, K);
+        QuadraticFunction<DSMatrixd, DVectord> funn(make_ref(K), make_ref(rhs));
         newton.solve(funn, rhs);
 
         // write sol to the file
@@ -651,7 +650,7 @@ namespace utopia {
             25, 20
         };
 
-        const std::string data_path = Utopia::Instance().get("data_path") + "/master_and_slave";
+        const std::string data_path = Utopia::instance().get("data_path") + "/master_and_slave";
 
         const auto r = mpi_world_rank();
 
@@ -856,7 +855,7 @@ namespace utopia {
         }   
     }
 
-    void petsc_harcoded_cg_test()
+    void petsc_hardcoded_cg_test()
     {
         const int n = mpi_world_size() * 2;
         const int i_max = 2;
@@ -904,6 +903,8 @@ namespace utopia {
     void petsc_ksp_precond_delegate_test()
     {
         const int n = 10;
+        if(mpi_world_size() > n) return;
+
         TestFunctionND_1<DMatrixd, DVectord> fun(n);
 
         ConjugateGradient<DMatrixd, DVectord> cg;
@@ -927,6 +928,8 @@ namespace utopia {
     void petsc_is_nan_or_inf_test()
     {
         const int n     = 10; 
+        if(mpi_world_size() > n) return;
+
         DVectord denom  = zeros(n);
         DVectord nom    = values(n, 1.0);
 
@@ -941,7 +944,6 @@ namespace utopia {
         assert(has_nan_or_inf(denom) == 0);
 
     }
-
 
     void petsc_mat_mul_add_test()
     {
@@ -970,7 +972,6 @@ namespace utopia {
             assert(approxeq(expected, r3));
         }
     }
-
 
     void petsc_min_test()
     {
@@ -1066,17 +1067,48 @@ namespace utopia {
         mat.implementation().convert_to_mat_baij(2);
     }
 
+
+    void petsc_line_search_test()
+    {
+        auto n = 10;
+        DVectord v = local_values(n, 1.);
+        DSMatrixd m = local_identity(n, n);
+
+        auto expr = dot(v, v)/dot(m * v, v);
+        // std::cout << tree_format(expr.getClass()) << std::endl;
+
+        double s = expr;
+        assert(approxeq(1., s));
+    }
+
+    void petsc_residual_test()
+    {
+        auto n = 10;
+        DVectord x = local_values(n, 1.);
+        DSMatrixd A = local_identity(n, n);
+        DVectord  b = local_values(n, 2.);
+       
+        DVectord res = b - A * x;
+        // disp(res);
+        double s = sum(res);
+        assert(approxeq(n * mpi_world_size(), s));
+    }
+
+
+
     #endif //WITH_PETSC;
 
     void runPetscTest() {
 #ifdef WITH_PETSC
         UTOPIA_UNIT_TEST_BEGIN("PetscTest");
+        UTOPIA_RUN_TEST(petsc_line_search_test);
+        UTOPIA_RUN_TEST(petsc_residual_test);
         UTOPIA_RUN_TEST(petsc_block_mat_test);
         UTOPIA_RUN_TEST(petsc_ghosted);
         UTOPIA_RUN_TEST(petc_optional_test);
         UTOPIA_RUN_TEST(petsc_view_test);                
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate_test);
-        UTOPIA_RUN_TEST(petsc_harcoded_cg_test);
+        UTOPIA_RUN_TEST(petsc_hardcoded_cg_test);
         UTOPIA_RUN_TEST(petsc_reciprocal_test);
         UTOPIA_RUN_TEST(petsc_axpy_test);
         UTOPIA_RUN_TEST(petsc_vector_accessors_test);
@@ -1103,7 +1135,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_tensor_reduction_test);
         UTOPIA_RUN_TEST(petsc_precond_test);
         UTOPIA_RUN_TEST(petsc_binary_min_max);
-        
+    
 
         //serial tests
         UTOPIA_RUN_TEST(petsc_inverse_test);

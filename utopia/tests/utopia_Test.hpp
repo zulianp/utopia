@@ -13,6 +13,8 @@
 #include "utopia_BLASTest.hpp"
 #include "utopia_MiscTest.hpp"
 #include "utopia_TrilinosTest.hpp"
+#include "utopia_TaoSolverTest.hpp"
+#include "utopia_PetscCudaTest.hpp"
 
 namespace utopia
 {
@@ -27,7 +29,8 @@ namespace utopia
         runBLASTest();
         runMiscTest();
         run_trilinos_test();
-
+        run_tao_solver_test();
+        run_petsc_cuda_test();
 
         //only works for serial
         if(mpi_world_size() == 1) {
@@ -40,6 +43,9 @@ namespace utopia
         if(mpi_world_rank() == 0) {
             std::cout << "[Begin testing]" << std::endl;
         }
+
+        Chrono c;
+        c.start();
 
         if (tests == "all") {
             runAllTests();
@@ -67,11 +73,22 @@ namespace utopia
                     runMiscTest();
                 else if (token == "trilinos")
                     run_trilinos_test();
+                else if(token == "tao") {
+                    run_tao_solver_test();
+                } else if(token == "petsc_cuda") {
+                    run_petsc_cuda_test();
+                }
             }
         }
 
         if(mpi_world_rank() == 0) {
             std::cout << "[End testing]" << std::endl;
+        }
+
+        mpi_world_barrier();
+        c.stop();
+        if(utopia::Utopia::instance().verbose() && mpi_world_rank() == 0) {
+            std::cout << c << std::endl;
         }
     }
 }

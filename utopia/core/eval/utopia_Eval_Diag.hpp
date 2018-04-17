@@ -16,14 +16,14 @@ namespace utopia {
             static_assert(Right::Order == 1, "Right has to be a vector");
             EXPR_TYPE(Traits, Left) result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).diag_scale_right(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right().expr()),
                     result);
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -35,14 +35,14 @@ namespace utopia {
         {
             EXPR_TYPE(Traits, Right) result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).diag_scale_left(
                     result,
                     Eval<Left,  Traits>::apply(expr.left().expr()),
                     Eval<Right, Traits>::apply(expr.right()));
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -56,14 +56,14 @@ namespace utopia {
     public:
         inline static bool apply(const Assign<Left, Diag<Right> > &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).diag(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right().expr())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -73,14 +73,14 @@ namespace utopia {
     public:
         inline static bool apply(const Assign<Wrapper<Left, 2>, Diag< Diag<Right> > > &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).diag(
                     Eval<Wrapper<Left, 2>,  Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right().expr().expr())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -90,14 +90,14 @@ namespace utopia {
     public:
         inline static bool apply(const Assign<Wrapper<Left, 1>, Diag< Diag<Right> > > &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).assign(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Left,  Traits>::apply(expr.right().expr().expr()));
 
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -111,14 +111,14 @@ namespace utopia {
     public:
         inline static bool apply(const Construct<Left, Diag<Right> > &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).diag(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Right, Traits>::apply(expr.right().expr())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -130,14 +130,14 @@ namespace utopia {
 
         inline static bool apply(const Construct<WLeft, Diag< Diag<Right> > > &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).diag(
                     Eval<WLeft,  Traits>::apply(expr.left()),
                     Eval<Diag<Right>, Traits>::apply(expr.right().expr())
             );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -147,13 +147,13 @@ namespace utopia {
     public:
         inline static bool apply(const Construct<Wrapper<Left, 1>, Diag< Diag<Right> > > &expr)
         {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).assign(
                     Eval<Left,  Traits>::apply(expr.left()),
                     Eval<Left,  Traits>::apply(expr.right().expr().expr()));
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return true;
         }
     };
@@ -169,14 +169,14 @@ namespace utopia {
         {
             Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).diag(
                     result,
                     Eval<WTensor,  Traits>::apply(expr.expr())
                     );
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
             return result;
         }
     };

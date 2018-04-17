@@ -118,6 +118,11 @@ namespace utopia {
 			return ret;
 		}
 
+		virtual VecType type_override() const
+		{
+			return VECSTANDARD;
+		}
+
 		bool has_type(VecType type) const;
 
 	 	bool same_type(const PetscVector &other) const;
@@ -131,6 +136,10 @@ namespace utopia {
 		
 		inline PetscInt size() const
 		{
+			if(!initialized()) {
+				return utopia::INVALID_INDEX;
+			}
+			
 			PetscInt ret;
 			VecGetSize(implementation(), &ret);
 			return ret;
@@ -222,9 +231,7 @@ namespace utopia {
 			return vec_;
 		}
 		
-		inline void describe() const {
-			VecView(implementation(), PETSC_VIEWER_STDOUT_(communicator()));
-		}
+		void describe() const;
 		
 		inline bool is_null() const
 		{
@@ -353,12 +360,16 @@ namespace utopia {
 		{
 			repurpose(comm, type, n_local, n_global);
 			check_error( VecZeroEntries(implementation()) );
+
+			assert(is_consistent());			
 		}
 
 		inline void values(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global, PetscScalar value)
 		{
 			repurpose(comm, type, n_local, n_global);
 			check_error( VecSet(implementation(), value) );
+
+			assert(is_consistent());
 		}
 		
 		void init(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global);
@@ -370,12 +381,18 @@ namespace utopia {
 		///this is y
 		inline void axpy(const PetscScalar &alpha, const PetscVector &x)
 		{
+			assert(is_consistent());
+			assert(x.is_consistent());
+			
 			check_error( VecAXPY(implementation(), alpha, x.implementation()) );
 		}
 
 		///this is y
 		inline void axpby(const PetscScalar alpha, const PetscVector &x, const PetscScalar &beta)
 		{
+			assert(is_consistent());
+			assert(x.is_consistent());
+
 			check_error( VecAXPBY(implementation(), alpha, beta, x.implementation()) );
 		}
 		
@@ -424,20 +441,19 @@ namespace utopia {
 
 		inline void e_mul(const PetscVector &other, PetscVector &result) const
 		{
+			assert(is_consistent());
+			
 			if(implementation() != result.vec_ && other.implementation() != result.vec_) {
 				//if result is compatibe should not trigger a reallocation
 				result.repurpose(communicator(), type(), local_size(), size());
 			}
 
 			check_error( VecPointwiseMult(result.implementation(), implementation(), other.implementation()) );
+
+			assert(other.is_consistent());
 		}
 
-		inline PetscScalar dot(const PetscVector &other) const
-		{
-			PetscScalar result;
-			check_error( VecDot(implementation(), other.implementation(), &result) );
-			return result;
-		}
+		PetscScalar dot(const PetscVector &other) const;
 
 		inline void e_div(const PetscVector &other, PetscVector &result) const
 		{
@@ -508,6 +524,7 @@ namespace utopia {
 		bool write(const std::string &path) const;
 		bool write_matlab(const std::string &path) const;
 
+		bool is_consistent() const;
 		
 	private:
 		Vec vec_;
@@ -521,6 +538,13 @@ namespace utopia {
 		inline static bool check_error(const PetscInt err) {
 			return PetscErrorHandler::Check(err);
 		}
+
+		bool is_cuda() const;
+		
+		
+
+	 	bool is_root() const;
+
 	};
 	
 }

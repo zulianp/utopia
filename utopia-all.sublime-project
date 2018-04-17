@@ -1,0 +1,10 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+			 "folder_exclude_patterns": ["build", "bin", ".idea", "xcode", "doc/api", "build_*", "bin_*", "utopia_installation"],
+			 "file_exclude_patterns": ["*.sublime-workspace", "*.DS_Store"]
+		}
+	]
+}

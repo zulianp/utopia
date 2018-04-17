@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -152,6 +153,12 @@ namespace utopia
     	 	FILE *pFile; 
 
     }; 
+
+    template<typename data_type>
+    bool in_array(const std::string &value, const std::vector<data_type> &array)
+    {
+        return std::find(array.begin(), array.end(), value) != array.end();
+    }
 
 	  /** @}*/
 }

@@ -27,7 +27,7 @@ foreach(MODULE ${SOLVERS_MODULES})
 	target_include_directories(utopia_solvers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
 endforeach(MODULE)
 
-target_link_libraries(utopia_solvers utopia_utils)
+target_link_libraries(utopia_solvers utopia_utils utopia_core)
 
 install(TARGETS utopia_solvers
 	RUNTIME DESTINATION bin 
@@ -39,5 +39,6 @@ install(FILES ${LOCAL_HEADERS} DESTINATION include)
 
 set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS};utopia_solvers" PARENT_SCOPE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ${UTOPIA_DEV_FLAGS}")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ${UTOPIA_DEV_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${UTOPIA_SPECIAL_DEBUG_FLAGS}")

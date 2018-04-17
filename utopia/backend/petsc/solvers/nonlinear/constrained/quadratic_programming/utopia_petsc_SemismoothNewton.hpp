@@ -3,14 +3,13 @@
 
 #include "utopia_SemismoothNewton.hpp"
 #include "utopia_petsc_KSPSolver.hpp"
+#include <petscsnes.h>
+#include "utopia_petsc.hpp"
 
 // PetscErrorCode  KSPRegister(const char sname[],PetscErrorCode (*function)(KSP))
 // KSPRegister("my_solver",MySolverCreate);
 
 namespace utopia {
-
-	//FIXME and then add PETSC to the backend flag
-	static const int PETSC_EXPERIMENTAL = -1000;
 
 	template<class Matrix, class Vector>
 	class SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> : public IterativeSolver<Matrix, Vector> {
@@ -23,16 +22,19 @@ namespace utopia {
 		
 		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
 						 const Parameters params                         = Parameters() ) :
-		linear_solver_(linear_solver)
+		linear_solver_(linear_solver), line_search_type_(SNESLINESEARCHBASIC)
 		{
 			set_parameters(params);
 		}
 				
 		bool solve(const Matrix &A, const Vector &b, Vector &x)  override
 		{
-			PetscErrorCode ierr = 0.;
 			Vector f = local_zeros(local_size(b));
 			Matrix J = A;
+
+			if(empty(x)) {
+				x = local_zeros(local_size(b));
+			}
 
 			SemismoothNewtonCtx ctx;
 			ctx.H = &A;
@@ -55,14 +57,17 @@ namespace utopia {
 				lobo = raw_type(dummy_lobo);
 			}
 
-			// linear_solver_->update(make_ref(A));
-
 			SNES snes;
 			SNESCreate(A.implementation().communicator(), &snes);
+			SNESSetFromOptions(snes);
 			SNESSetType(snes, SNESVINEWTONSSLS);
 			SNESSetFunction(snes, raw_type(f), SemismoothNewton::Gradient, &ctx);
 			SNESSetJacobian(snes, raw_type(J), raw_type(J), SemismoothNewton::Hessian, &ctx);
 			SNESVISetVariableBounds(snes, lobo, upbo);
+#if !UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
+			// asdf
+			SNESSetForceIteration(snes, PETSC_TRUE);
+#endif
 
 			KSP ksp;
 			PC pc; 
@@ -76,25 +81,42 @@ namespace utopia {
 			
 			if(ksp_solver_ptr) {
 				ksp_solver_ptr->set_ksp_options(ksp);
+
+				if(ksp_solver_ptr->verbose()) {
+				    KSPMonitorSet(ksp,
+								[](KSP, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
+									PrintInfo::print_iter_status({static_cast<Scalar>(iter), res}); 
+									return 0;
+								},
+								nullptr,
+								nullptr);
+				}
+
 				has_linear_solver = true;
+
 			} else {
 				auto factor_solver_ptr = std::dynamic_pointer_cast< Factorization<Matrix, Vector, PETSC> >(linear_solver_);
 				if(factor_solver_ptr) {
 					factor_solver_ptr->strategy().set_ksp_options(ksp);
 					has_linear_solver = true;
+
+					KSPSetTolerances(ksp, 0, 0, PETSC_DEFAULT, 1);
 				}
 			}
 
 			if(!has_linear_solver) {
-				std::cout << "Non-petsc linear solvers not supported yet: falling-back to mumps/lu" << std::endl;
+				std::cerr << "Non-petsc linear solvers not supported yet: falling-back to mumps/lu" << std::endl;
 				KSPSetType(ksp, KSPPREONLY);
 				PCSetType(pc, "lu");
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 				PCFactorSetMatSolverPackage(pc, "mumps");
+#else
+				m_utopia_error("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent");
+#endif 
+				KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
+				KSPSetTolerances(ksp, 0, 0, PETSC_DEFAULT, 1);
 			}
-
-			KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
-
-
+			
 			if(this->verbose()) {
 				SNESMonitorSet(
 				snes,
@@ -106,26 +128,24 @@ namespace utopia {
 				nullptr);
 			}
 
-
-			//FIXME use utopia linear solvers
-			// auto shell_ptr = linear_solver_.get();
-			// assert(shell_ptr);
-			// ierr = PCSetType(pc, PCSHELL);  
-			// ierr = PCShellSetApply(pc, UtopiaPCApplyShell);
-			// ierr = PCShellSetContext(pc, shell_ptr);
-			// ierr = PCShellSetName(pc, "Utopia Linear Solver");
-
-			//
-			ierr = KSPSetTolerances(ksp, this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
+			// printf("%g %g %g %d\n", this->atol(), this->rtol(), this->stol(), this->max_it());
+			SNESSetTolerances(snes, this->atol(), this->rtol(), this->stol(), this->max_it(), 1000);
 
 			SNESLineSearch linesearch;
 			SNESGetLineSearch(snes, &linesearch);
-			SNESLineSearchSetType(linesearch, SNESLINESEARCHBASIC);
+			SNESLineSearchSetFromOptions(linesearch);
+			SNESLineSearchSetType(linesearch, line_search_type_);
 
-			SNESSetFromOptions(snes);
-
-			if(this->verbose())
+#if !UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
+			SNESLineSearchSetTolerances(linesearch, PETSC_DEFAULT, PETSC_DEFAULT, this->rtol(), this->atol(), PETSC_DEFAULT, 20);
+// 			if(std::string(SNESLINESEARCHBASIC) == line_search_type_) {
+// 				SNESLineSearchSetComputeNorms(linesearch, PETSC_FALSE);
+// 			}
+#endif
+			
+			if(this->verbose()) {
 				this->init_solver("utopia/petsc SemismoothNewton",  {" it.", "|| Au - b||"});
+			}
 
 			SNESSolve(snes, nullptr, raw_type(x));
 
@@ -160,13 +180,17 @@ namespace utopia {
 		}
 
 		void init_snes(SNES &snes)
-		{
+		{ }
 
+		void set_line_search_type(SNESLineSearchType line_search_type)
+		{
+			line_search_type_ = line_search_type;
 		}
 		
 	private:	
 		std::shared_ptr <Solver>        linear_solver_;
 		BoxConstraints                  constraints_;
+		SNESLineSearchType line_search_type_;
 
 		typedef struct {
 			const Matrix * H;
@@ -180,6 +204,9 @@ namespace utopia {
 			convert(x, x_utopia);
 			f_utopia  = (*ssn_ctx->H) * x_utopia - (*ssn_ctx->g);
 			convert(f_utopia, f);
+			// PetscReal mag_f = 0.;
+			// VecNorm(f, NORM_2, &mag_f);
+			// std::cout << "mag_f: " << mag_f << std::endl;
 			return 0;
 		}
 

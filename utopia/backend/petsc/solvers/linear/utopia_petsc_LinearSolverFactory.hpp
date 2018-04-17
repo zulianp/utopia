@@ -58,6 +58,7 @@ namespace utopia {
 			add_solver(DIRECT_TAG,     std::make_shared< Factorization<Matrix, Vector> >());
 		}
 	};
+
 }
 
 #endif //UTOPIA_PETSC_LINEAR_SOLVER_FACTORY_HPP

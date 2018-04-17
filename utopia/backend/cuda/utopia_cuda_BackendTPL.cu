@@ -120,7 +120,7 @@ namespace utopia {
 				thrust::raw_pointer_cast(&result.values[0])
 				);
 
-			CUDAError::CheckLastError();
+			//CUDAError::CheckLastError();
 		}
 	}
 }

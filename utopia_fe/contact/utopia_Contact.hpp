@@ -33,6 +33,10 @@ namespace utopia {
 		: initialized(false)
 		{}
 
+		bool init_no_contact(
+			const std::shared_ptr<libMesh::MeshBase> &mesh,
+			const std::shared_ptr<libMesh::DofMap> &dof_map);
+
 		inline bool init(
 			const std::shared_ptr<libMesh::MeshBase> &mesh,
 			const std::shared_ptr<libMesh::DofMap> &dof_map,

@@ -18,7 +18,7 @@ namespace utopia {
 
 		inline static Scalar apply(const Determinant<Tensor2> &expr)
 		{
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
 			auto &t = expr.expr();
 			auto s = size(t);
@@ -62,12 +62,12 @@ namespace utopia {
 				{
 					assert(false && "not implemented");
 					std::cerr << "det not implemented for matrices with n > 3" << std::endl;
-					UTOPIA_LOG_END(expr);
+					UTOPIA_TRACE_END(expr);
 					return -1;
 				}
 			}
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 			return out;
 		}
 	};

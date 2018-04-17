@@ -726,9 +726,9 @@ namespace utopia {
 						// plot_polygon(2, 2, &side_polygon_master.get_values()[0], "master");
 						// plot_polygon(2, 2, &side_polygon_slave.get_values()[0], "slave");
 
-						// if(utopia::Utopia::Instance().get("plot") == "true") {
-						// 	plot_polygon(2, 2, &isect_polygon_master.get_values()[0], utopia::Utopia::Instance().get("iter") + "/master/isect");
-						// 	plot_polygon(2, 2, &isect_polygon_slave.get_values()[0],  utopia::Utopia::Instance().get("iter") + "/slave/isect");
+						// if(utopia::Utopia::instance().get("plot") == "true") {
+						// 	plot_polygon(2, 2, &isect_polygon_master.get_values()[0], utopia::Utopia::instance().get("iter") + "/master/isect");
+						// 	plot_polygon(2, 2, &isect_polygon_slave.get_values()[0],  utopia::Utopia::instance().get("iter") + "/slave/isect");
 						// }
 						
 					} else if(dim_slave == 3) {
@@ -1401,7 +1401,7 @@ namespace utopia {
 		
 		
 		///////////////////////////
-		if(Utopia::Instance().verbose()) {
+		if(Utopia::instance().verbose()) {
 			moonolith::root_describe("---------------------------------------\n"
 									 "begin: utopia::assemble_contact",
 									 comm, std::cout);
@@ -1427,7 +1427,7 @@ namespace utopia {
 		///////////////////////////
 		c.stop();
 		
-		if(Utopia::Instance().verbose()) {
+		if(Utopia::instance().verbose()) {
 			
 			std::stringstream ss;
 			ss << "end: utopia::assemble_contact\n";

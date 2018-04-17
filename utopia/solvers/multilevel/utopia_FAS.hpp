@@ -97,8 +97,11 @@ namespace utopia
 
            this->make_iterate_feasible(fine_fun, u_l); 
 
+
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
+
+
             fine_fun.gradient(u_l, g_fine);             
 
             g_fine -= f; 
@@ -116,7 +119,6 @@ namespace utopia
                                  
             if(l == 2)
             {
-                this->make_iterate_feasible(levels(0), u_2l); 
                 coarse_solve(levels(0), u_2l, g_coarse); 
             }
             else
@@ -173,8 +175,6 @@ namespace utopia
          */
         bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
         {   
-            std::cout<<"coarse solver:    \n";
-            _coarse_solver->verbose(true);
             _coarse_solver->solve(fun, x, rhs); 
             return true; 
         }

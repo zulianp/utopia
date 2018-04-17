@@ -137,12 +137,15 @@ namespace  utopia
         virtual void exit_solver(const SizeType &num_it, const Scalar & convergence_reason) override
          {            
             _time.stop();
+            
+            num_it_ = num_it; 
+            conv_reason_ = convergence_reason; 
 
             if(verbose_)
             {
-                ConvergenceReason::exitMessage(num_it, convergence_reason);
-                if(mpi_world_rank() == 0)
-                    std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
+              ConvergenceReason::exitMessage(num_it, convergence_reason);
+              if(mpi_world_rank() == 0)
+                std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
             }
          }
 
@@ -217,7 +220,9 @@ namespace  utopia
         void log_iterates(const bool & log_iterates_in ) { log_iterates_ = log_iterates_in; }; 
         void log_system(const bool & log_system_in ) { log_system_ = log_system_in; }; 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+        
+        SizeType get_convergence_reason(){ return conv_reason_;  }
+        SizeType get_num_it() { return num_it_;  }
 
     private:
         
@@ -235,6 +240,11 @@ namespace  utopia
 
         bool log_iterates_;
         bool log_system_; 
+
+        // to be passed out 
+        SizeType num_it_; 
+        SizeType  conv_reason_; 
+
 
         Chrono _time;                 /*!<Timing of solver. */
     };

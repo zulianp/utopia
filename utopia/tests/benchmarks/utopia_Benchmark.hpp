@@ -11,7 +11,7 @@ namespace utopia {
 	class Benchmark {
 	public:
 		Benchmark()
-		: initialized_(false)
+		: initialized_(false), verbosity_level_(1)
 		{}
 
 		virtual ~Benchmark() {}
@@ -29,7 +29,7 @@ namespace utopia {
 
 			if(mpi_world_rank() == 0) {
 				std::cout << "---------------------\n";
-				std::cout << name() << "\n";
+				std::cout << "[" << name() << "]" << "\n";
 				std::cout << "---------------------\n";
 				to_csv(std::cout);
 				std::cout << "---------------------\n";
@@ -65,14 +65,21 @@ namespace utopia {
 
 		inline void to_csv(std::ostream &os) const
 		{
-			os << "name,seconds\n";
+			if(verbosity_level_ > 1) {
+				os << "name,seconds\n";
 
-			for(auto &m : measurements_)
-			{
-				os << m.first << "," << m.second << "\n";
+				for(auto &m : measurements_)
+				{
+					os << m.first << "," << m.second << "\n";
+				}
 			}
 
 			os << "overall," << chrono_all_.get_seconds() << std::endl;
+		}
+
+		inline void set_verbosity_level(const int verbosity_level)
+		{
+			verbosity_level_ = verbosity_level;
 		}
 
 	private:
@@ -96,6 +103,7 @@ namespace utopia {
 
 		std::map<std::string, std::function<void()> > experiments_;
 		bool initialized_;
+		int verbosity_level_;
 	};
 
 

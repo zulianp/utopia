@@ -6,6 +6,7 @@
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Smoother.hpp"
 
+#include <cmath>
 
 namespace utopia {
 	//slow and innefficient implementation just for testing
@@ -136,14 +137,16 @@ namespace utopia {
 			Scalar alpha = 1.;
 
 			if(use_line_search_) {
-				const Scalar rho = dot(c, r);
-				const Scalar denom = dot(A * c, c);
 
-				if(denom == 0.) return true;
+				alpha = dot(c, r)/dot(A * c, c);
 
-				alpha = rho/denom;
+				if(std::isinf(alpha)) {
+					return true;
+				}
 
-				assert(alpha > 0);
+				if(std::isnan(alpha)) {
+					return false;
+				}
 
 				if(alpha <= 0) {
 					std::cerr << "[Warning] negative alpha" << std::endl;
@@ -229,8 +232,15 @@ namespace utopia {
 
 				is_c_ = e_mul(c, inactive_set_);
 
-				const Scalar rho = dot(is_c_, r);
-				alpha = rho/dot(A * is_c_, is_c_);
+				Scalar alpha = dot(is_c_, r)/dot(A * is_c_, is_c_);
+				
+				if(std::isinf(alpha)) {
+					return true;
+				}
+
+				if(std::isnan(alpha)) {
+					return false;
+				}
 
 				assert(alpha > 0);
 				

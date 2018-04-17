@@ -407,7 +407,7 @@ namespace utopia {
 				// std::cout << "-------------------------------------------" << std::endl;
 				// std::cout << "compiling program" << std::endl;
 			
-				std::string flags = " -I" + utopia::Utopia::Instance().get("opencl_templates_path") + "/../kernels/ ";
+				std::string flags = " -I" + utopia::Utopia::instance().get("opencl_templates_path") + "/../kernels/ ";
 				// std::cout << flags << std::endl;
 
 				compile_opencl_programs(sources, program_, flags);

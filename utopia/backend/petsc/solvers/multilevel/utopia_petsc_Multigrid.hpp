@@ -3,9 +3,11 @@
 
 #include "utopia_Multigrid.hpp"
 #include "utopia_IterativeSolver.hpp"
+#include "utopia_petsc.hpp"
 
 namespace utopia {
 
+	
 	template<class Matrix, class Vector>
 	class Multigrid<Matrix, Vector, PETSC_EXPERIMENTAL> : public IterativeSolver<Matrix, Vector>, public MultiLevelBase<Matrix, Vector> {
 		typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -190,7 +192,11 @@ namespace utopia {
 
 			PCMGSetLevels(pc, this->num_levels(), nullptr);
 			// PCMGSetGalerkin(pc, PETSC_TRUE);
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
 			PCMGSetGalerkin(pc, PETSC_FALSE);
+#else
+			PCMGSetGalerkin(pc, PC_MG_GALERKIN_NONE);
+#endif
 			KSPSetInitialGuessNonzero(*ksp_, PETSC_TRUE);
 
 			for (std::size_t i = 0; i < this->num_levels()-1; i++)
@@ -234,8 +240,12 @@ namespace utopia {
 				}
 			}
 
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 			PCMGSetNumberSmoothUp(pc,   this->post_smoothing_steps());
 			PCMGSetNumberSmoothDown(pc, this->pre_smoothing_steps());
+#else
+			m_utopia_error("PCMGSetNumberSmooth{Up,Down} not available in petsc 3.9.0 find equivalent");
+#endif 
 
 			KSPSetTolerances(*ksp_, this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
 

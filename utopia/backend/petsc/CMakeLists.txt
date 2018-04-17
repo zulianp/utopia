@@ -36,6 +36,28 @@ else()
     set(WITH_PETSC FALSE)
 endif()
 
+
+
+if(PETSC_FOUND)
+	find_package(SLEPc)
+	if(SLEPC_FOUND)
+		list(APPEND UTOPIA_INCLUDES ${SLEPC_INCLUDES})
+		list(APPEND UTOPIA_LIBRARIES ${SLEPC_LIBRARIES})
+		message(STATUS "Slepc FOUND")
+		set(WITH_SLEPC TRUE)
+	else()
+	    message(WARNING "[Warning] Slepc not found")
+	    set(WITH_SLEPC FALSE)
+	endif()
+endif()
+
+
+if(SLEPC_FOUND)
+	set(WITH_SLEPC ON PARENT_SCOPE)
+	set(UTOPIA_SLEPC TRUE PARENT_SCOPE)
+endif()
+
+
 # set-up module
 if(PETSC_FOUND)
 	set(UTOPIA_PETSC TRUE PARENT_SCOPE)
@@ -45,6 +67,7 @@ if(PETSC_FOUND)
 		.
 		eval
 		solvers 
+		solvers/eigenvalue
 		solvers/linear
 		solvers/multilevel
 		solvers/nonlinear
@@ -75,6 +98,12 @@ if(PETSC_FOUND)
 	target_link_libraries(utopia_petsc ${PETSC_LIBRARIES})
 	add_definitions(${PETSC_DEFINITIONS})
 
+	if(SLEPC_FOUND)
+		target_include_directories(utopia_petsc PUBLIC ${SLEPC_INCLUDES})
+		target_link_libraries(utopia_petsc ${SLEPC_LIBRARIES})
+		add_definitions(${SLEPC_LIB_SLEPC})	
+	endif()
+
 
 	install(TARGETS utopia_petsc
 		RUNTIME DESTINATION bin 
@@ -86,7 +115,8 @@ if(PETSC_FOUND)
 
 	set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS};utopia_petsc" PARENT_SCOPE)
 
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ${UTOPIA_DEV_FLAGS}")
+	# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ${UTOPIA_DEV_FLAGS}")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${UTOPIA_SPECIAL_DEBUG_FLAGS}")
 
 
@@ -94,3 +124,6 @@ if(PETSC_FOUND)
 	set(UTOPIA_LIBRARIES ${UTOPIA_LIBRARIES} PARENT_SCOPE)
 	set(UTOPIA_DEFS ${UTOPIA_DEFS} PARENT_SCOPE)
 endif()
+
+
+

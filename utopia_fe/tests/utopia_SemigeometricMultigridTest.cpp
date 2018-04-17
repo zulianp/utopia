@@ -3,6 +3,7 @@
 #include "moonolith_communicator.hpp"
 #include <memory>
 #include "libmesh/parallel_mesh.h"
+#include "libmesh/nemesis_io.h"
 
 #include "utopia_SemiGeometricMultigrid.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
@@ -19,7 +20,7 @@ namespace utopia {
         Order order_elem_coarse   = FIRST;
         Order order_of_quadrature = Order(int(order_elem_fine) + int(order_elem_coarse));
         
-        const std::string data_path = Utopia::Instance().get("data_path");
+        const std::string data_path = Utopia::instance().get("data_path");
         const std::string fine_mesh_path   = data_path + "/fine_mesh.e";
         const std::string coarse_mesh_path = data_path + "/coarse_mesh.e";
         
@@ -206,13 +207,14 @@ namespace utopia {
         auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
         auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
-        LMDenseVector z = zeros(2);
+        // LMDenseVector z = zeros(2);
+        LMDenseVector z = values(2, -0.2);
         auto elast_op = ((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) * dX;
         auto f = inner(coeff(z), v) * dX;
 
         auto constr = constraints(
             boundary_conditions(uy == coeff(0.2),  {0}),
-            boundary_conditions(uy == coeff(-0.2), {2}),
+            boundary_conditions(uy == coeff(0.0),  {2}),
             boundary_conditions(ux == coeff(0.0),  {0, 2})
             );
 
@@ -227,15 +229,19 @@ namespace utopia {
 
         std::cout << "assembly complete" << std::endl;
 
-        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+        auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
         // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-        auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
         // auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-        auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+        // auto smoother      = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
         // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
-
+        auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
         // linear_solver->verbose(true);
         SemiGeometricMultigrid mg(smoother, linear_solver);
+        mg.algebraic().rtol(1e-16);
+        mg.algebraic().atol(1e-16);
+        mg.algebraic().max_it(400);
+
         // mg.convert_to_block_solver();
         mg.verbose(true);
         mg.init(*equation_systems, 4);
@@ -261,19 +267,18 @@ namespace utopia {
         // cg.solve(stiffness_mat, rhs, sol);
 
         const double err = norm2(stiffness_mat * sol - rhs);
-        // convert(sol, *sys.solution);
-        // sys.solution->close();
-        // ExodusII_IO(*lm_mesh).write_equation_systems("elast_mg.e", *equation_systems);
+        convert(sol, *sys.solution);
+        sys.solution->close();
+        Nemesis_IO(*lm_mesh).write_equation_systems("elast_mg.e", *equation_systems);
         assert(err < 1e-6);
     }
 
     void run_semigeometric_multigrid_poisson(libMesh::LibMeshInit &init)
     {
         std::cout << "[run_semigeometric_multigrid_poisson]" << std::endl;
-
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
-        const unsigned int n = 100;
+        const unsigned int n = 200;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,
@@ -343,5 +348,4 @@ namespace utopia {
         run_semigeometric_multigrid_poisson(init);
         run_semigeometric_multigrid_elast(init);
     }
-
 }

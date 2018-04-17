@@ -9,7 +9,7 @@ namespace utopia {
 	public:
 	    inline static bool apply(const Assign<Left, Select<Right, SizeType, 1> > &expr)
 	    {
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).select(
 	                Eval<Left,  Traits>::apply(expr.left()),
@@ -17,7 +17,7 @@ namespace utopia {
 	                expr.right().index()
 	        );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return true;
 	    }
 	};
@@ -28,7 +28,7 @@ namespace utopia {
 	public:
 	    inline static bool apply(const Construct<Left, Select<Right, SizeType, 1> > &expr)
 	    {
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).select(
 	                Eval<Left,  Traits>::apply(expr.left()),
@@ -36,7 +36,7 @@ namespace utopia {
 	                expr.right().index()
 	        );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return true;
 	    }
 	};
@@ -48,7 +48,7 @@ namespace utopia {
 
 	    inline static Result apply(const Select<Expr, SizeType, 1> &expr)
 	    {
-	       UTOPIA_LOG_BEGIN(expr);
+	       UTOPIA_TRACE_BEGIN(expr);
 	       Result result;
 	       
 	       UTOPIA_BACKEND(Traits).select(
@@ -57,7 +57,7 @@ namespace utopia {
 	               expr.index()
 	       );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return result;
 	    }
 	};
@@ -68,7 +68,7 @@ namespace utopia {
 	public:
 	    inline static bool apply(const Assign<Left, Select<Right, SizeType, 2> > &expr)
 	    {
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	        UTOPIA_BACKEND(Traits).select(
 	                Eval<Left,  Traits>::apply(expr.left()),
@@ -77,7 +77,7 @@ namespace utopia {
 	                expr.right().col_index()
 	        );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return true;
 	    }
 	};
@@ -88,7 +88,7 @@ namespace utopia {
 	public:
 	    inline static bool apply(const Construct<Left, Select<Right, SizeType, 2> > &expr)
 	    {
-	        UTOPIA_LOG_BEGIN(expr);
+	        UTOPIA_TRACE_BEGIN(expr);
 
 	       UTOPIA_BACKEND(Traits).select(
 	               Eval<Left,  Traits>::apply(expr.left()),
@@ -97,7 +97,7 @@ namespace utopia {
 	               expr.right().col_index()
 	       );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return true;
 	    }
 	};
@@ -110,7 +110,7 @@ namespace utopia {
 
 	    inline static Result apply(const Select<Expr, SizeType, 2> &expr)
 	    {
-	       UTOPIA_LOG_BEGIN(expr);
+	       UTOPIA_TRACE_BEGIN(expr);
 	       Result result;
 
 	       UTOPIA_BACKEND(Traits).select(
@@ -120,7 +120,7 @@ namespace utopia {
 	               expr.col_index()
 	       );
 
-	        UTOPIA_LOG_END(expr);
+	        UTOPIA_TRACE_END(expr);
 	        return result;
 	    }
 	};
