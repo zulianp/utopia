@@ -13,7 +13,7 @@ namespace utopia {
         Size gs{ ls.get(0) * mpi_world_size(), ls.get(1) * mpi_world_size() };
 
         CuSMatrixd m = local_sparse(ls.get(0), ls.get(1), 3);
-        assemble_laplacian_1D(size(m).get(0), m);
+        assemble_laplacian_1D(m);
         // disp(m);
 
         CuVectord x = local_values(ls.get(0), 1.);
@@ -41,7 +41,7 @@ namespace utopia {
         Size gs{ ls.get(0) * mpi_world_size(), ls.get(1) * mpi_world_size() };
 
         Matrix m = local_sparse(ls.get(0), ls.get(1), 3);
-        assemble_laplacian_1D(size(m).get(0), m);
+        assemble_laplacian_1D(m);
 
         Vector x = local_values(ls.get(0), 0.);
         Vector b = local_values(ls.get(0), 1.);
