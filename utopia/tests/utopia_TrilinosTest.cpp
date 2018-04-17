@@ -48,6 +48,10 @@ namespace utopia {
 
         //FIXME replace this with an actual test
         // disp(m);
+
+        TVectord z = m * v;
+        double nz = norm2(z);
+        assert(approxeq(nz, 0.));
     }
     
     void trilinos_accessors_test()

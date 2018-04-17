@@ -1,6 +1,6 @@
 
-#ifndef UTOPIA_TPETRAVECTOR_H
-#define UTOPIA_TPETRAVECTOR_H
+#ifndef UTOPIA_TPETRA_VECTOR_HPP
+#define UTOPIA_TPETRA_VECTOR_HPP
 
 #include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
@@ -38,7 +38,7 @@ namespace utopia {
         { }
 
         TpetraVector(const TpetraVector &other)
-        : vec_(Teuchos::rcp(new vector_type(*other.vec_)))
+        : vec_(Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy)))
         { }
 
         rcp_comm_type communicator()
@@ -54,7 +54,7 @@ namespace utopia {
         TpetraVector &operator=(const TpetraVector &other)
         {
             if(this == &other) return *this;
-            vec_ = Teuchos::rcp(new vector_type(*other.vec_));
+            vec_ = Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy));
             return *this;
         }
 
@@ -65,12 +65,20 @@ namespace utopia {
             return *this;
         }
 
+
         //////////////////////////////////////////
         //API functions
         //////////////////////////////////////////
         inline void values(const rcp_comm_type &comm, std::size_t n_local, Tpetra::global_size_t n_global, Scalar value)
         {
-            auto map = Teuchos::rcp(new map_type(n_global, n_local, 0, comm));
+            rcp_map_type map;
+
+            if(n_local == INVALID_INDEX) {
+                map = Teuchos::rcp(new map_type(n_global, 0, comm));
+            } else {
+                map = Teuchos::rcp(new map_type(n_global, n_local, 0, comm));
+            }
+
             vec_ = Teuchos::rcp(new vector_type(map));
             implementation().putScalar(value);
         }
@@ -182,4 +190,4 @@ namespace utopia {
     };
 }
 
-#endif //UTOPIA_UTOPIA_PETSCVECTOR_H
+#endif //UTOPIA_TPETRA_VECTOR_HPP

@@ -15,6 +15,7 @@
 #include "utopia_TrilinosTest.hpp"
 #include "utopia_TaoSolverTest.hpp"
 #include "utopia_PetscCudaTest.hpp"
+#include "utopia_SelectionTest.hpp"
 
 namespace utopia
 {
@@ -31,6 +32,7 @@ namespace utopia
         run_trilinos_test();
         run_tao_solver_test();
         run_petsc_cuda_test();
+        run_selection_test();
 
         //only works for serial
         if(mpi_world_size() == 1) {
@@ -77,6 +79,8 @@ namespace utopia
                     run_tao_solver_test();
                 } else if(token == "petsc_cuda") {
                     run_petsc_cuda_test();
+                } else if(token == "selection") {
+                    run_selection_test();
                 }
             }
         }
