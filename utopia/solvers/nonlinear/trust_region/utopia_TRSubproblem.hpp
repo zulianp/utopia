@@ -103,12 +103,12 @@ namespace  utopia
 
 
         
-            virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k)
-            {
-                update(make_ref(H));
-                apply(g, p_k); 
-                return true; 
-            }
+        virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k)
+        {
+            update(make_ref(H));
+            apply(g, p_k); 
+            return true; 
+        }
 
         /**
          * @brief                Solution routine for CG. 

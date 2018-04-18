@@ -40,7 +40,7 @@ namespace utopia
     // - inherit from RMTR - l2 later... 
     template<class Matrix, class Vector, class FunctionType, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER >
     class RMTR_inf :    public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>,
-                        public TrustRegionVariableBound<Matrix, Vector>
+                        public TrustRegionBoxBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -466,7 +466,7 @@ namespace utopia
             //----------------------------------------------------------------------------
                 // correction needs to get prepared 
                 s = 0 * x;
-                this->solve_qp_subproblem(H, g, s, level, exact_solve_flg); 
+                this->solve_qp_subproblem(x, H, g, s, level, exact_solve_flg); 
 
                 // predicted reduction based on model 
                 TrustRegionBase<Matrix, Vector>::get_pred(g, H, s, pred); 
@@ -899,21 +899,38 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool solve_qp_subproblem(const Matrix & H, const Vector & g, Vector & s, const SizeType & level, const bool & flg)
+        virtual bool solve_qp_subproblem(const Vector & x_k, const Matrix & H, const Vector & g, Vector & s, const SizeType & level, const bool & flg)
         {
             if(flg)
             {
-                _coarse_tr_subproblem->current_radius(get_delta(level-1));  
-                _coarse_tr_subproblem->atol(1e-16); 
-                _coarse_tr_subproblem->max_it(5000); 
-                _coarse_tr_subproblem->tr_constrained_solve(H, g, s); 
+                // _coarse_tr_subproblem->current_radius(get_delta(level-1));  
+                // _coarse_tr_subproblem->atol(1e-16); 
+                // _coarse_tr_subproblem->max_it(5000); 
+                // _coarse_tr_subproblem->tr_constrained_solve(H, g, s); 
+                
+
+                // TODO:: tolerances
+                Vector ub, lb; 
+                this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
+                
+                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, box);
+
             }
             else
             {
-                _smoother_tr_subproblem->current_radius(get_delta(level-1));  
-                _smoother_tr_subproblem->atol(1e-16); 
-                _smoother_tr_subproblem->max_it(5);
-                _smoother_tr_subproblem->tr_constrained_solve(H, g, s); 
+                // _smoother_tr_subproblem->current_radius(get_delta(level-1));  
+                // _smoother_tr_subproblem->atol(1e-16); 
+                // _smoother_tr_subproblem->max_it(5);
+                // _smoother_tr_subproblem->tr_constrained_solve(H, g, s); 
+                
+
+                // TODO:: tolerances
+                Vector ub, lb; 
+                this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
+                
+                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, box);
 
             }
 

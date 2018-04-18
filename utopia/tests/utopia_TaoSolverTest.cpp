@@ -75,7 +75,6 @@ namespace utopia {
 		ExampleTestCase2<DSMatrixd, DVectord> example;
 		example.getOperators(n, m, rhs, upper_bound);
 		DVectord x = zeros(n);
-		
 
 		const double scale_factor = 1e-10;
 		rhs *= scale_factor;
@@ -83,29 +82,16 @@ namespace utopia {
 
 		auto box = make_upper_bound_constraints(make_ref(upper_bound));
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(m), make_ref(rhs));
-		// TaoSolver<DSMatrixd, DVectord> tao(lsolver);
-		// // tao.set_ksp_types("bcgs", "jacobi", " ");
-		// tao.set_box_constraints(box);
-		// // tao.set_type("tron");
-		// // tao.set_type("gpcg");
-		// tao.solve(fun, x);
-
-
 
 		auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
         auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
 
         TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver); 
         tr_solver.set_box_constraints(box); 
-        tr_solver.verbose(true); 
+        tr_solver.verbose(false); 
         tr_solver.solve(fun, x); 
 
 		x *= 1./scale_factor;
-
-
-
-
-
 
 		DVectord xssn = zeros(n);
 		SemismoothNewton<DSMatrixd, DVectord, HOMEMADE> ssnewton(std::make_shared<Factorization<DSMatrixd, DVectord>>());
@@ -119,11 +105,7 @@ namespace utopia {
 		double n_diff = norm2(xssn - x);
 		assert(n_diff < 1e-10);
 
-
 	}
-
-
-
 
 
 
