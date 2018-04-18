@@ -41,6 +41,11 @@ namespace utopia {
         : vec_(Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy)))
         { }
 
+
+        TpetraVector(TpetraVector &&other)
+        : vec_(std::move(other.vec_))
+        { }
+
         rcp_comm_type communicator()
         {
             return implementation().getMap()->getComm();
