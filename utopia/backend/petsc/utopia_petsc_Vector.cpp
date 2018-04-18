@@ -289,12 +289,13 @@ namespace utopia {
 
 	void PetscVector::describe() const {
 
-		if(is_root()) {
-			std::cout << "is_null    : " << is_null() << "\n";
-			std::cout << "initialized: " << initialized() << "\n";
-		}
+		// who is calling this??? and why??? 
+		// if(is_root()) {
+		// 	std::cout << "is_null    : " << is_null() << "\n";
+		// 	std::cout << "initialized: " << initialized() << "\n";
+		// }
 
-		VecView(implementation(), PETSC_VIEWER_STDOUT_(communicator()));
+		// VecView(implementation(), PETSC_VIEWER_STDOUT_(communicator()));
 	}
 
 	bool PetscVector::is_root() const

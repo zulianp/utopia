@@ -214,7 +214,7 @@ namespace utopia
                     std::cout << red; 
 
                     if(verbosity_level() > VERBOSITY_LEVEL_NORMAL)
-                        this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g_norm ||", "   E "}); 
+                        this->print_init_message("RMTR_inf OUTER SOLVE", {" it. ", "|| g_norm ||", "   E "}); 
 
                     PrintInfo::print_iter_status(_it_global, {r_norm, energy}); 
                     std::cout << def; 
@@ -469,7 +469,7 @@ namespace utopia
                 this->solve_qp_subproblem(x, H, g, s, level, exact_solve_flg); 
 
                 // predicted reduction based on model 
-                TrustRegionBase<Matrix, Vector>::get_pred(g, H, s, pred); 
+                this->get_pred(g, H, s, pred); 
 
                 // building trial point 
                 x += s;  
@@ -903,12 +903,6 @@ namespace utopia
         {
             if(flg)
             {
-                // _coarse_tr_subproblem->current_radius(get_delta(level-1));  
-                // _coarse_tr_subproblem->atol(1e-16); 
-                // _coarse_tr_subproblem->max_it(5000); 
-                // _coarse_tr_subproblem->tr_constrained_solve(H, g, s); 
-                
-
                 // TODO:: tolerances
                 Vector ub, lb; 
                 this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
@@ -919,18 +913,13 @@ namespace utopia
             }
             else
             {
-                // _smoother_tr_subproblem->current_radius(get_delta(level-1));  
-                // _smoother_tr_subproblem->atol(1e-16); 
-                // _smoother_tr_subproblem->max_it(5);
-                // _smoother_tr_subproblem->tr_constrained_solve(H, g, s); 
-                
-
                 // TODO:: tolerances
                 Vector ub, lb; 
                 this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
                 
                 auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
                 _smoother_tr_subproblem->tr_constrained_solve(H, g, s, box);
+
 
             }
 
@@ -1066,6 +1055,20 @@ namespace utopia
                 }
             }
         }
+
+
+
+
+protected: 
+
+    // todo: check TR_bound ... 
+    virtual bool get_pred(const Vector & g, const Matrix & B, const Vector & p_k, Scalar &pred) override
+    {
+      Scalar l_term = dot(g, p_k);
+      Scalar qp_term = dot(p_k, B * p_k);
+      pred =  l_term - 0.5 * qp_term; 
+      return true; 
+    }
 
 
 
