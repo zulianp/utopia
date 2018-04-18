@@ -30,10 +30,14 @@ namespace utopia {
 
 			PC pc;
 			KSPGetPC(*ksp_, &pc);
-			for (std::size_t i = 0; i < this->num_levels()-1; i++)
+			for(std::size_t i = 0; i < this->num_levels()-1; i++)
 			{
 				KSP smoother;
 				PCMGGetSmoother(pc, i, &smoother);
+				if(block_size_ > 1) {
+					const_cast<Matrix &>(this->level(i).A()).implementation().convert_to_mat_baij(block_size_);
+				}
+
 				KSPSetOperators(smoother, raw_type(this->level(i).A()), raw_type(this->level(i).A()));
 			}
 		}
@@ -59,7 +63,7 @@ namespace utopia {
 		Multigrid(const std::shared_ptr<Smoother> &smoother    = nullptr,
 		          const std::shared_ptr<Solver> &linear_solver = nullptr,
 		          const Parameters params = Parameters())
-		: smoother_(smoother), linear_solver_(linear_solver), default_ksp_type_(KSPRICHARDSON), default_pc_type_(PCSOR)
+		: smoother_(smoother), linear_solver_(linear_solver), default_ksp_type_(KSPRICHARDSON), default_pc_type_(PCSOR), block_size_(1)
 		{
 		    set_parameters(params); 
 		}
@@ -93,6 +97,11 @@ namespace utopia {
 			aux_update_transfer(level);
 		}
 
+		inline void block_size(const PetscInt size)
+		{
+			block_size_ = size;
+		}
+
 	private:
 		std::shared_ptr<Smoother> smoother_;
 		std::shared_ptr<Solver>   linear_solver_;
@@ -102,6 +111,8 @@ namespace utopia {
 
 		KSPType default_ksp_type_;
 		PCType default_pc_type_;
+
+		PetscInt block_size_;
 
 		void aux_update_transfer(const SizeType level)
 		{

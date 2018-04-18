@@ -75,9 +75,12 @@ namespace utopia {
 
         auto alpha = 0.1;
         Y += alpha * X;
+
+
+        TVectord v = local_values(n, 5.);
         
-        // double val = norm1(y);
-        // assert(approxeq(val, n * mpi_world_size() * 1.5));
+        double val = norm1(Y * v);
+        assert(approxeq(val, 0.));
     }
 
     void trilinos_mv()

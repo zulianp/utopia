@@ -115,16 +115,16 @@ namespace utopia {
 				);
 
 				//axpy
-				// this->register_experiment(
-				// 	"mat_axpy_" + std::to_string(i),
-				// 	[n]() {
-				// 		Matrix A = local_sparse(n, n, 3);
-				// 		assemble_laplacian_1D(A);
+				this->register_experiment(
+					"mat_axpy_" + std::to_string(i),
+					[n]() {
+						Matrix A = local_sparse(n, n, 3);
+						assemble_laplacian_1D(A);
 
-				// 		// Matrix B = A;
-				// 		Matrix C = A + A;
-				// 	}
-				// );
+						Matrix B = A;
+						Matrix C = A + B;
+					}
+				);
 
 				//...
 			}
