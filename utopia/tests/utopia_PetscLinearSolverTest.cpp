@@ -7,34 +7,11 @@
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
+#include "test_problems/utopia_assemble_laplacian_1D.hpp"
 
 namespace utopia
 {
-    template<class Matrix>
-    void assemble_laplacian_1D(const utopia::SizeType n, Matrix &m)
-    {
-        
-        // n x n matrix with maximum 3 entries x row
-        {
-            Write<Matrix> w(m);
-            Range r = row_range(m);
-            
-            //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
-            for(SizeType i = r.begin(); i != r.end(); ++i) {
-                if(i > 0) {
-                    m.add(i, i - 1, -1.0);
-                }
-                
-                if(i < n-1) {
-                    m.add(i, i + 1, -1.0);
-                }
-                
-                m.add(i, i, 2.0);
-            }
-        }
-    }
-    
-    
+
 #ifdef WITH_PETSC
     class PetscLinearSolverTest {
     public:
@@ -381,21 +358,7 @@ namespace utopia
             DVectord rhs, x;
             DSMatrixd A = zeros(_n, _n);
             
-            assemble_laplacian_1D(_n, A);
-            {
-                Range r = row_range(A);
-                Write<DSMatrixd> w(A);
-                if(r.begin() == 0) {
-                    A.set(0, 0, 1.);
-                    A.set(0, 1, 0);
-                }
-                
-                
-                if(r.end() == _n) {
-                    A.set(_n-1, _n-1, 1.);
-                    A.set(_n-1, _n-2, 0);
-                }
-            }
+            assemble_laplacian_1D(A, true);
             
             x 	= local_zeros(local_size(A).get(0));
             rhs = local_values(local_size(A).get(0), 13.0);

@@ -63,15 +63,29 @@ namespace utopia {
 	{
 		// write_lock();
 		
-		Tpetra::MatrixMatrix::Add(
-			x.implementation(),
-			false,
-			alpha,
-			implementation(),
-			1.
-		);
+		// Add (const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, bool transposeA, Scalar scalarA, CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, Scalar scalarB)
+		
+		// write_lock();
+		//THIS DOES NOT WORK??????
+		// Tpetra::MatrixMatrix::Add(
+		// 	x.implementation(),
+		// 	false,
+		// 	alpha,
+		// 	implementation(),
+		// 	1.
+		// );
 
 		// write_unlock();
+
+		Tpetra::MatrixMatrix::add(
+			alpha,
+			false,
+			x.implementation(),
+			1.,
+			false,
+			implementation()
+		);
+
 	}
 
 	void TpetraMatrix::crs_init(

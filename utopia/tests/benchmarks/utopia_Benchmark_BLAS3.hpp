@@ -50,7 +50,7 @@ namespace utopia {
 
 				//matrix-vector mult
 				this->register_experiment(
-					"mv_" + std::to_string(i),
+					"mat_mat_mult_" + std::to_string(i),
 					[n]() {
 						Matrix A = local_sparse(n, n, 3);
 						assemble_laplacian_1D(A);
