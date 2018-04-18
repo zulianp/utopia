@@ -6,35 +6,10 @@
 #include "utopia.hpp"
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
+#include "test_problems/utopia_assemble_laplacian_1D.hpp"
 
 namespace utopia {   
-
-    template<class Matrix>
-    static void build_laplacian(const int n, Matrix &m)
-    {
-        m = local_sparse(n, n, 3);
-
-        Write<TSMatrixd> w_m(m);
-        Range r = row_range(m);
-        Size s = size(m);
-
-        for(auto i = r.begin(); i < r.end(); ++i) {
-            if(i > 0) {
-                m.set(i, i - 1, -1.);
-            }  
-
-            if(i + 1 < s.get(1)) {
-                m.set(i, i + 1, -1.);
-            }
-
-            if(i == 0 || i == s.get(1) - 1) {
-                m.set(i, i, 1);
-            } else {
-                m.set(i, i, 2.);
-            }
-        }
-    }
-    
+ 
     void trilinos_build_test()
     {
         auto n = 10;
@@ -43,8 +18,8 @@ namespace utopia {
         //FIXME replace this with an actual test
         // disp(v);
 
-        TSMatrixd m;
-        build_laplacian(n, m);
+        TSMatrixd m = local_sparse(n, n, 3);
+        assemble_laplacian_1D(m);
 
         //FIXME replace this with an actual test
         // disp(m);
@@ -97,8 +72,10 @@ namespace utopia {
     {
         auto n = 10;
         TVectord x = local_values(n, 5.);
-        TSMatrixd m;
-        build_laplacian(n, m);
+        TSMatrixd m = sparse(n, n, 3);
+        assemble_laplacian_1D(m);
+
+        // disp(m);
 
         TVectord y = m * x;
 

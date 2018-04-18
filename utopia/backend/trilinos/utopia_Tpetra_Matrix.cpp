@@ -1,7 +1,34 @@
 #include "utopia_Tpetra_Matrix.hpp"
 #include <TpetraExt_MatrixMatrix_def.hpp>
+#include "utopia_Logger.hpp"
+#include "utopia_Instance.hpp"
 
 namespace utopia {
+
+	void TpetraMatrix::set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
+	{
+	    m_utopia_status_once(
+	    	"> TpetraMatrix::set does what is supposed to do with respect to the edsl. " 
+	    	"However it might be slow because of the double trilinos call and branching."
+	    );
+
+	    if(implementation().replaceGlobalValues(row, 1, &value, &col) != 1) {
+	        implementation().insertGlobalValues(row, 1, &value, &col);
+	    }
+	}
+	
+	void TpetraMatrix::add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
+	{
+		m_utopia_status_once(
+			"> TpetraMatrix::add does what is supposed to do with respect to the edsl. " 
+			"However it might be slow because of the double trilinos call and branching."
+		);
+
+	    if(implementation().sumIntoGlobalValues(row, 1, &value, &col, false) != 1) {
+	        implementation().insertGlobalValues(row, 1, &value, &col);
+	    }
+	}
+
 	void TpetraMatrix::mult(const TpetraVector &vec, TpetraVector &result) const
 	{
 		if(result.is_null()) {

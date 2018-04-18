@@ -42,8 +42,49 @@ namespace utopia {
         // {
         //   return mat_->clone(node2, params);
         // }
-        
 
+        TpetraMatrix(const TpetraMatrix &other)
+        : owner_(true)
+        {
+            if(!other.is_null()) {
+                mat_ = other.mat_->clone(other.mat_->getNode());
+            }
+        }
+
+        TpetraMatrix(TpetraMatrix &&other)
+        : mat_(std::move(other.mat_)), owner_(std::move(other.owner_))
+        {}
+
+        TpetraMatrix &operator=(const TpetraMatrix &other)
+        {
+            if(this == &other) return *this;
+
+            if(other.is_null()) {
+                mat_.reset();
+                owner_ = true;
+                return *this;
+            }
+
+            mat_ = other.mat_->clone(other.mat_->getNode());
+            owner_ = true;
+            return *this;
+        }
+
+        TpetraMatrix &operator=(TpetraMatrix &&other)
+        {
+            if(this == &other) return *this;
+
+            if(other.is_null()) {
+                mat_.reset();
+                owner_ = true;
+                return *this;
+            }
+
+            mat_ = std::move(other.mat_);
+            owner_ = std::move(other.owner_);
+            return *this;
+        }
+        
         inline void finalize()
         {
             implementation().fillComplete();
@@ -58,7 +99,6 @@ namespace utopia {
         {
             owner_ = owner;
         }
-        
         
         //API functions
         void crs_init(const rcp_comm_type &comm,
@@ -111,20 +151,13 @@ namespace utopia {
             implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
         }
         
-        inline void set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
-        {
-            // m_utopia_warning_once("> TpetraMatrix::set does not do what is supposed to do. set should set not add");
-            implementation().insertGlobalValues(row, 1, &value, &col);
-        }
-        
-        inline void add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
-        {
-            implementation().sumIntoGlobalValues(row, 1, &value, &col);
-        }
+        void set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
+        void add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
 
         void mult(const TpetraVector &vec, TpetraVector &result) const;
         void mult(const TpetraMatrix &right, TpetraMatrix &result) const;
         void axpy(const Scalar alpha, const TpetraMatrix &x);
+       
         inline void scale(const Scalar alpha)
         {
             implementation().scale(alpha);

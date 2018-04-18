@@ -29,11 +29,7 @@ namespace utopia
     public:
         DEF_UTOPIA_SCALAR(Matrix)
 
-        Rastrigin():
-                    pi(3.141592) 
-        {
-
-        }
+        Rastrigin() : pi(3.141592) {}
 
         bool value(const Vector &point, typename Vector::Scalar &result) const override 
         {
@@ -47,6 +43,7 @@ namespace utopia
                     result += x * x - 10 * cos(2 * pi * x); 
                 } 
             }
+            
             return true;
         }
 
@@ -70,7 +67,13 @@ namespace utopia
         bool hessian(const Vector &point, Matrix &hessian) const override 
         {
             Scalar n = point.size().get(0); 
-            hessian = zeros(n, n);   // this could be sparse... 
+          
+            if(is_sparse<Matrix>::value) {
+                hessian = sparse(n, n, 1);
+            } else {
+                hessian = zeros(n, n); 
+            }
+
             {
                 const Read<Vector> read(point);
                 const Write<Matrix> write(hessian);

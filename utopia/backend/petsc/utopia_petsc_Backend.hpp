@@ -277,7 +277,7 @@ namespace utopia {
 			read_unlock(v);
 		}
 
-		static void apply_unary(Vector &result, const Vector &v, const Minus &)
+		static void apply_unary(Vector &result, const Minus &, const Vector &v)
 		{
 			result = v;
 			result.scale(-1.);
