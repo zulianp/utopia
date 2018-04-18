@@ -9,6 +9,11 @@
 
 #include <utility>
 
+
+//useful links:
+//https://trilinos.org/docs/dev/packages/tpetra/doc/html/namespaceTpetra_1_1TripleMatrixMultiply.html
+//see MultiplyRAP
+
 namespace utopia {
     class TrilinosBackend : public ScalarBackend<TpetraVector::Scalar> {
     public:
