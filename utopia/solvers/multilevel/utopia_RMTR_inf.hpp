@@ -1,27 +1,31 @@
 /*
 * @Author: alenakopanicakova
-* @Date:   2017-04-19
+* @Date:   2018-04-18
 * @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2018-02-08
+* @Last Modified time: 2018-04-18
 */
 
-#ifndef UTOPIA_RMTR_HPP
-#define UTOPIA_RMTR_HPP
+#ifndef UTOPIA_RMTR_INF_HPP
+#define UTOPIA_RMTR_INF_HPP
+
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
 #include "utopia_TRSubproblem.hpp"
+#include "utopia_TRBoxSubproblem.hpp"
+#include "utopia_TrustRegionVariableBound.hpp"
+
 #include "utopia_Linear.hpp"
 #include "utopia_Level.hpp"
-#include "utopia_LS_Strategy.hpp"
 
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_TRBase.hpp"
 
 #include "utopia_MultiLevelEvaluations.hpp"
+#include "utopia_RMTR.hpp"
 
 
 namespace utopia 
@@ -32,15 +36,19 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
+
+    // - inherit from RMTR - l2 later... 
     template<class Matrix, class Vector, class FunctionType, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER >
-    class RMTR : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>,
-                       public TrustRegionBase<Matrix, Vector>
+    class RMTR_inf :    public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>,
+                        public TrustRegionVariableBound<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
-        // typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
-        // typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
-        typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem; 
+
+
+        // pay attention that this one is inf norm... 
+        typedef utopia::TRBoxSubproblem<Matrix, Vector>        TRSubproblem; 
+
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
 
@@ -52,7 +60,7 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        RMTR(    
+        RMTR_inf(    
                 const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse = std::shared_ptr<TRSubproblem>(),
                 const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother = std::shared_ptr<TRSubproblem>(),
                 const Parameters params = Parameters()): 
@@ -63,7 +71,7 @@ namespace utopia
             set_parameters(params); 
         }
 
-        virtual ~RMTR(){} 
+        virtual ~RMTR_inf(){} 
         
 
         void set_parameters(const Parameters params) override

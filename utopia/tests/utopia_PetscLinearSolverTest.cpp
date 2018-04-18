@@ -236,8 +236,8 @@ namespace utopia
 			DVectord x_0 = zeros(A.size().get(0));
 			
 			//CG with diagonal preconditioner
-			cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
-			cg.solve(A, rhs, x_0);
+			// cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
+			// cg.solve(A, rhs, x_0);
 			
 			//CG with multigrid preconditioner
 			x_0 = zeros(A.size().get(0));
@@ -247,6 +247,10 @@ namespace utopia
 			cg.stol(1e-15);
 			
 			cg.solve(A, rhs, x_0);
+
+			auto diff = A*x_0 - rhs; 
+
+			std::cout<<"diff: "<< norm2(diff) << "  \n";
 
 			assert( approxeq(A*x_0, rhs, 1e-6) );
 			

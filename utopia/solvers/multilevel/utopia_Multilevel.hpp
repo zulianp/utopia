@@ -15,7 +15,7 @@
 #include "utopia_NonLinearMultigrid.hpp"
 #include "utopia_MG_OPT.hpp"
 #include "utopia_RMTR.hpp"
-
+#include "utopia_RMTR_inf.hpp"
 
 #include "utopia_NonlinearMultiLevelBase.hpp"
 #include "utopia_NonLinearSmoother.hpp"
