@@ -6,6 +6,7 @@
 #include "utopia.hpp"
 #include "utopia_Benchmark.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
+#include "test_problems/utopia_RastriginTestFunction.hpp"
 
 #include <string>
 #include <cassert>
@@ -62,6 +63,28 @@ namespace utopia {
 						assert(approxeq(A * x, b, 1e-6));
 					}
 				);	
+
+				this->register_experiment(
+					"newton_cg_" + std::to_string(i),
+					[i]() {
+						Rastrigin<Matrix, Vector> fun;
+						Vector x = local_values(10 * (i+1), 1.);
+
+						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+						cg.max_it(size(x).get(0));
+
+						auto backtracking = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+
+						Newton<Matrix, Vector, HOMEMADE> newton(make_ref(cg));
+						newton.set_line_search_strategy(backtracking);
+						// newton.verbose(true);
+						newton.solve(fun, x);
+
+						double mag_x = 1000;
+						fun.value(x, mag_x);
+						// disp(mag_x);
+					}
+				);
 			}
 		}
 

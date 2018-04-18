@@ -127,12 +127,23 @@ namespace utopia {
               nnz.nnz());
         }
 
-        inline static void set(TpetraVector &v, const int index, Scalar value)
+        inline static void build(TpetraSparseMatrix &, const Size &, const Zeros &)
+        {
+            m_utopia_error("> Build zeros is using build values");
+            assert(false);
+        }
+
+        static Scalar get(const TpetraVector &v, const TpetraVector::global_ordinal_type &index)
+        {
+            return v.get(index);
+        }
+
+        inline static void set(TpetraVector &v, const TpetraVector::global_ordinal_type &index, Scalar value)
         {
             v.set(index, value);
         }
 
-        inline static void add(TpetraVector &v, const int index, Scalar value)
+        inline static void add(TpetraVector &v, const TpetraVector::global_ordinal_type &index, Scalar value)
         {
             v.add(index, value);
         }
@@ -149,10 +160,14 @@ namespace utopia {
 
         //[host/device locks]
         template<class Tensor>
-        static void read_lock(const Tensor &) {}
+        static void read_lock(const Tensor &t) {
+           const_cast<Tensor &>(t).read_lock();
+        }
 
         template<class Tensor>
-        static void read_unlock(const Tensor &) {}
+        static void read_unlock(const Tensor &t) {
+            const_cast<Tensor &>(t).read_unlock();
+        }
 
         static void write_lock(TpetraVector &vec)
         {
@@ -206,6 +221,12 @@ namespace utopia {
         inline static void scale(TpetraMatrix &x, const Scalar alpha)
         {
             x.scale(alpha);
+        }
+
+        inline static void apply_unary(TpetraVector &result, const Minus &, const TpetraVector &v)
+        {
+            result = v;
+            result.scale(-1.);
         }
 
         inline static Scalar dot(const TpetraVector &x, const TpetraVector &y)

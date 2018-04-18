@@ -36,7 +36,11 @@ namespace utopia {
 				m.set(i, i + 1, -1.0);
 			}
 
-			m.set(i, i, 2.0);
+			if(i == 0 || i == n-1) {
+				m.set(i, i, 1.);
+			} else {
+				m.set(i, i, 2.0);
+			}
 		}
 	}
 }

@@ -133,6 +133,15 @@ namespace utopia {
 			build(m, size, NNZ<int>(nnz.nnz()));
 		}
 
+		inline static void build(Matrix &m, const Size &size, const LocalNNZ<int> &) {
+			//redirecting to Zeros
+			build(m, size, Zeros());
+		}
+
+		inline static void build(Matrix &m, const Size &size, const NNZ<int> &) {
+			build(m, size, Zeros());
+		}
+
 
 		//[accessors]
 		inline static Scalar get(const Vector &vec, const SizeType index)

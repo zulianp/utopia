@@ -104,6 +104,12 @@ namespace utopia {
             implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
         }
 
+        inline Scalar get(const global_ordinal_type i) const
+        {
+            assert(!data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
+            return data_[i - implementation().getMap()->getMinGlobalIndex()];
+        }
+
         inline void set(const global_ordinal_type i, const Scalar value)
         {
             implementation().replaceGlobalValue(i, value);
@@ -116,12 +122,12 @@ namespace utopia {
 
         inline void read_lock()
         {
-            //TODO?
+            data_ = implementation().getData();
         }
 
         inline void read_unlock()
         {
-            //TODO?
+            data_.release();
         }
 
         inline void write_lock()
@@ -192,6 +198,7 @@ namespace utopia {
 
     private:
         rcpvector_type vec_;
+        Teuchos::ArrayRCP<const Scalar> data_;
     };
 }
 
