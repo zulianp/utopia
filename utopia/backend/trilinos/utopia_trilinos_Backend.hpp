@@ -213,6 +213,11 @@ namespace utopia {
             y.axpy(alpha, x);
         }
 
+        inline static void axpy(TpetraMatrix &y, const Scalar alpha, const TpetraMatrix &x)
+        {
+            y.axpy(alpha, x);
+        }
+
         inline static void scale(TpetraVector &x, const Scalar alpha)
         {
             x.scale(alpha);

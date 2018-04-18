@@ -10,7 +10,7 @@
 
 namespace utopia {   
  
-    void trilinos_build_test()
+    void trilinos_build()
     {
         auto n = 10;
         TVectord v = local_values(n, 1.);
@@ -29,7 +29,7 @@ namespace utopia {
         assert(approxeq(nz, 0.));
     }
     
-    void trilinos_accessors_test()
+    void trilinos_accessors()
     {
         auto n = 10;
         TVectord v = local_values(n, 10.);
@@ -53,7 +53,7 @@ namespace utopia {
         // disp(v);
     }
     
-    void trilinos_axpy_test()
+    void trilinos_vec_axpy()
     {
         auto n = 10;
         TVectord y = local_values(n, 1.);
@@ -63,19 +63,29 @@ namespace utopia {
         
         double val = norm1(y);
         assert(approxeq(val, n * mpi_world_size() * 1.5));
-        
-        //FIXME replace this with an actual test
-        // disp(y);
     }
 
-    void trilinos_mult_test()
+    void trilinos_mat_axpy()
+    {
+        auto n = 10;
+        TSMatrixd X = local_sparse(n, n, 3);
+        assemble_laplacian_1D(X);
+
+        TSMatrixd Y = X;
+
+        auto alpha = 0.1;
+        Y += alpha * X;
+        
+        // double val = norm1(y);
+        // assert(approxeq(val, n * mpi_world_size() * 1.5));
+    }
+
+    void trilinos_mv()
     {
         auto n = 10;
         TVectord x = local_values(n, 5.);
         TSMatrixd m = sparse(n, n, 3);
         assemble_laplacian_1D(m);
-
-        // disp(m);
 
         TVectord y = m * x;
 
@@ -86,10 +96,11 @@ namespace utopia {
     void run_trilinos_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("TrilinosTest");
-        UTOPIA_RUN_TEST(trilinos_build_test);
-        UTOPIA_RUN_TEST(trilinos_accessors_test);
-        UTOPIA_RUN_TEST(trilinos_axpy_test);
-        UTOPIA_RUN_TEST(trilinos_mult_test);
+        UTOPIA_RUN_TEST(trilinos_build);
+        UTOPIA_RUN_TEST(trilinos_accessors);
+        UTOPIA_RUN_TEST(trilinos_vec_axpy);
+        UTOPIA_RUN_TEST(trilinos_mat_axpy);
+        UTOPIA_RUN_TEST(trilinos_mv);
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
 }
