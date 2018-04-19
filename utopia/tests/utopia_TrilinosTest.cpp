@@ -190,8 +190,6 @@ namespace utopia {
         assert(approxeq(d, D*x));
     }
 
-
-    //Does not work yet
     void trilinos_ptap()
     {
         auto n = 10;
@@ -236,6 +234,8 @@ namespace utopia {
             std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>()
         );
         
+
+#ifdef WITH_PETSC        
         //FIXME needs trilinos formats but for the moment lets use petsc's
         {
             DSMatrixd petsc_A, petsc_I;
@@ -277,6 +277,8 @@ namespace utopia {
 
         std::cout << std::flush;
         assert(approxeq(rhs, A * x, 1e-6));
+#endif //WITH_PETSC
+        
     }
 
     void trilinos_read()
