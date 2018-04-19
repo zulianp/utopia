@@ -9,6 +9,8 @@
 #include "utopia_petsc_build_ksp.hpp"
 #include "utopia_Instance.hpp"
 
+#undef __FUNCT__
+#define __FUNCT__ "KSPSetUp_UTOPIA"
 static PetscErrorCode KSPSetUp_UTOPIA(KSP ksp)
 {
   PetscFunctionBegin;
@@ -18,7 +20,8 @@ static PetscErrorCode KSPSetUp_UTOPIA(KSP ksp)
 }
 
 
-
+#undef __FUNCT__
+#define __FUNCT__ "KSPSolve_UTOPIA"
 static PetscErrorCode KSPSolve_UTOPIA(KSP ksp)
 {
   PetscFunctionBegin;
@@ -39,7 +42,8 @@ static PetscErrorCode KSPSolve_UTOPIA(KSP ksp)
   PetscFunctionReturn(0);
 }
 
-
+#undef __FUNCT__
+#define __FUNCT__ "KSPSetSolveRoutine_UTOPIA"
 PetscErrorCode  KSPSetSolveRoutine_UTOPIA(KSP ksp, std::function< void(const Mat &, const Mat &, const Vec &, Vec &) > solve_routine)
 {
   PetscFunctionBegin;
@@ -50,7 +54,8 @@ PetscErrorCode  KSPSetSolveRoutine_UTOPIA(KSP ksp, std::function< void(const Mat
   PetscFunctionReturn(0);
 }
 
-
+#undef __FUNCT__
+#define __FUNCT__ "KSPSetTolerances_UTOPIA"
 PetscErrorCode KSPSetTolerances_UTOPIA(KSP ksp, std::function< void(const PetscReal &, const PetscReal &, const PetscReal &, const PetscInt &) > set_tolerances)
 {
   PetscFunctionBegin;
@@ -61,6 +66,8 @@ PetscErrorCode KSPSetTolerances_UTOPIA(KSP ksp, std::function< void(const PetscR
   PetscFunctionReturn(0);
 }
 
+#undef __FUNCT__
+#define __FUNCT__ "KSPSetGetConvergenceReason_UTOPIA"
 PetscErrorCode KSPSetGetConvergenceReason_UTOPIA(KSP ksp, std::function< void(PetscInt &,  KSPConvergedReason&) > convergence_reason)
 {
   PetscFunctionBegin;
@@ -72,7 +79,8 @@ PetscErrorCode KSPSetGetConvergenceReason_UTOPIA(KSP ksp, std::function< void(Pe
 }
 
 
-
+#undef __FUNCT__
+#define __FUNCT__ "KSPDestroy_UTOPIA"
 PetscErrorCode KSPDestroy_UTOPIA(KSP ksp)
 {
   PetscFunctionBegin;
@@ -87,7 +95,8 @@ PetscErrorCode KSPDestroy_UTOPIA(KSP ksp)
   PetscFunctionReturn(0);
 }
 
-
+#undef __FUNCT__
+#define __FUNCT__ "KSPView_UTOPIA"
 PetscErrorCode KSPView_UTOPIA(KSP ksp,PetscViewer viewer)
 {
 
@@ -102,7 +111,8 @@ PetscErrorCode KSPView_UTOPIA(KSP ksp,PetscViewer viewer)
   PetscFunctionReturn(0);
 }
 
-
+#undef __FUNCT__
+#define __FUNCT__ "KSPSetFromOptions_UTOPIA"
 PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems *PetscOptionsObject,KSP ksp)
 {
   PetscFunctionBegin;
@@ -113,7 +123,8 @@ PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems *PetscOptionsObject,KSP
 }
 
 
-
+#undef __FUNCT__
+#define __FUNCT__ "KSPCreate_UTOPIA"
 PETSC_EXTERN PetscErrorCode KSPCreate_UTOPIA(KSP ksp)
 {
   PetscErrorCode ierr;

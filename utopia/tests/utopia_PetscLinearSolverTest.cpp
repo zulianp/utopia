@@ -128,6 +128,11 @@ namespace utopia
             int block_size = 2;
             multigrid.block_size(block_size);
             multigrid.update(make_ref(A));
+           
+            if(verbose) {
+                multigrid.describe();
+            }
+
             multigrid.apply(rhs, x);
 
             assert(approxeq(rhs, A * x, 1e-6));
@@ -142,8 +147,8 @@ namespace utopia
         void petsc_block_mg()
         {
             Multigrid<DSMatrixd, DVectord> multigrid(
-                std::make_shared<GMRES<DSMatrixd, DVectord>>(),
-                // std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
+                // std::make_shared<GMRES<DSMatrixd, DVectord>>(),
+                std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
                 std::make_shared<Factorization<DSMatrixd, DVectord>>()
             );
 
