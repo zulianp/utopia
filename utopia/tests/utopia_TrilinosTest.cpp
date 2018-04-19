@@ -7,8 +7,46 @@
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
+#include <algorithm>
 
 namespace utopia {   
+
+    template<class TensorFrom, class TensorTo>
+    void backend_convert_sparse(const Wrapper<TensorFrom, 2> &from, Wrapper<TensorTo, 2> &to)
+    {
+        auto ls = local_size(from);
+        auto n_row_local = ls.get(0);
+        std::vector<int> nnzxrow(n_row_local, 0);
+        auto r = row_range(from);
+
+        each_read(from, [&nnzxrow,&r](const SizeType i, const SizeType j, const double val) {
+            ++nnzxrow[i - r.begin()];
+        });
+
+
+        auto nnz = *std::max_element(nnzxrow.begin(), nnzxrow.end());
+
+        //FIXME use nnzxrow instead
+        to = local_sparse(ls.get(0), ls.get(1), nnz);
+
+
+        Write<Wrapper<TensorTo, 2>> w_t(to);
+        each_read(from, [&to](const SizeType i, const SizeType j, const double val) {
+            to.set(i, j, val);
+        });
+    }
+
+    template<class TensorFrom, class TensorTo>
+    void backend_convert(const Wrapper<TensorFrom, 1> &from, Wrapper<TensorTo, 1> &to)
+    {
+        auto ls = local_size(from).get(0);
+        to = local_zeros(ls);
+        
+        Write< Wrapper<TensorTo, 1> > w_t(to);
+        each_read(from, [&to](const SizeType i, const double val) {
+            to.set(i, val);
+        });
+    }
  
     void trilinos_build()
     {
@@ -96,6 +134,32 @@ namespace utopia {
         assert(approxeq(val, 0.));
     }
 
+    void trilinos_transpose()
+    {
+        auto rows = 5;
+        auto cols = 11;
+        TSMatrixd A = local_sparse(rows, cols, 2);
+
+        {
+            Write<TSMatrixd> w_A(A);
+            Range r = row_range(A);
+
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                A.set(i, 0, 1.);
+                A.set(i, 1, 2.);
+            }
+        }
+
+        auto s = size(A);
+
+        TSMatrixd At = transpose(A);
+        // disp(A);
+        // disp(At);
+
+        auto s_t = size(At);
+        assert(s_t.get(0) == s.get(1));
+    }
+
     void trilinos_mm()
     {
         auto n = 10;
@@ -126,9 +190,43 @@ namespace utopia {
         assert(approxeq(d, D*x));
     }
 
+
+    //Does not work yet
+    void trilinos_ptap()
+    {
+        auto n = 10;
+        auto m = 3;
+        TSMatrixd A = local_sparse(n, n, 3);
+        assemble_laplacian_1D(A);
+
+        TSMatrixd P = local_sparse(n, m, 1);
+
+        {
+            Write<TSMatrixd> w_(P);
+            auto r = row_range(P);
+            auto cols = size(P).get(1);
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                if(i >= cols) {
+                    break;
+                }
+
+                P.set(i, i, 1.);
+            }
+        }
+
+        //For the moment this is computing (transpose(P) * A) * P
+        TSMatrixd R = utopia::ptap(A, P);
+
+        disp(A);
+        disp(P);
+        disp(R);
+    }
+
     void trilinos_mg()
     {
         if(mpi_world_size() > 1) return;
+
+        bool ok = true;
 
         TVectord rhs;
         TSMatrixd A, I;
@@ -138,14 +236,24 @@ namespace utopia {
             std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>()
         );
         
-        const std::string data_path = Utopia::instance().get("data_path");
-        const std::string folder = data_path + "/mg";
+        //FIXME needs trilinos formats but for the moment lets use petsc's
+        {
+            DSMatrixd petsc_A, petsc_I;
+            DVectord petsc_rhs;
         
-        //needs trilinos formats
-        // read(folder + "/rhs.bin", rhs);
-        // read(folder + "/A.bin", A);
-        // read(folder + "/I.bin", I);
-        
+            const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
+            
+            ok = read(folder + "/f_rhs", petsc_rhs); assert(ok);
+            ok = read(folder + "/f_A", petsc_A);     assert(ok);
+            // ok = read(folder + "/I_2", I_2);   assert(ok);
+            ok = read(folder + "/I_3", petsc_I);   assert(ok);
+           
+            backend_convert_sparse(petsc_I, I);
+            backend_convert_sparse(petsc_A, A);
+            backend_convert(petsc_rhs, rhs);
+        }
+
+
         std::vector<std::shared_ptr<TSMatrixd>> interpolation_operators;
         interpolation_operators.push_back(make_ref(I));
         
@@ -154,15 +262,20 @@ namespace utopia {
         multigrid.atol(1e-15);
         multigrid.stol(1e-15);
         multigrid.rtol(1e-15);
-        // multigrid.verbose(verbose);
+        multigrid.verbose(true);
         
-        TVectord x = zeros(A.size().get(0));
+        TVectord x = local_zeros(local_size(rhs));
 
-        int block_size = 2;
-        multigrid.block_size(block_size);
-        multigrid.update(make_ref(A));
-        multigrid.apply(rhs, x);
+        try {
+            multigrid.update(make_ref(A));
+            multigrid.describe();
+            ok = multigrid.apply(rhs, x); assert(ok);
+        } catch(const std::exception &ex) {
+            std::cout << ex.what() << std::endl;
+            assert(false);
+        }
 
+        std::cout << std::flush;
         assert(approxeq(rhs, A * x, 1e-6));
     }
 
@@ -181,10 +294,14 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_accessors);
         UTOPIA_RUN_TEST(trilinos_vec_axpy);
         UTOPIA_RUN_TEST(trilinos_mat_axpy);
+        UTOPIA_RUN_TEST(trilinos_transpose);
         UTOPIA_RUN_TEST(trilinos_mv);
         UTOPIA_RUN_TEST(trilinos_mm);
         UTOPIA_RUN_TEST(trilinos_diag);
         UTOPIA_RUN_TEST(trilinos_read);
+
+        //they do not work yet
+        // UTOPIA_RUN_TEST(trilinos_ptap);
         // UTOPIA_RUN_TEST(trilinos_mg);
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
