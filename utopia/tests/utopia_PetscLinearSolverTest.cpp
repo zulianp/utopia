@@ -19,6 +19,7 @@ namespace utopia
         void run()
         {
             UTOPIA_RUN_TEST(petsc_mg_exp_test);
+            UTOPIA_RUN_TEST(petsc_block_mg_exp);
             UTOPIA_RUN_TEST(petsc_block_mg);
             UTOPIA_RUN_TEST(petsc_bicgstab_test);
             UTOPIA_RUN_TEST(petsc_gmres_test);
@@ -97,7 +98,8 @@ namespace utopia
             assert(approxeq(expected, sol));
         }
 
-        void petsc_block_mg()
+        template<class MultigridT>
+        void test_block_mg(MultigridT &multigrid, const bool verbose = false)
         {
             if(mpi_world_size() > 1) return;
 
@@ -114,18 +116,12 @@ namespace utopia
             std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
             interpolation_operators.push_back(make_ref(I));
             
-            Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
-            // Multigrid<DSMatrixd, DVectord> multigrid(
-            //     std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
-            //     std::make_shared<Factorization<DSMatrixd, DVectord>>()
-            // );
-
             multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
             multigrid.max_it(20);
             multigrid.atol(1e-15);
             multigrid.stol(1e-15);
             multigrid.rtol(1e-15);
-            // multigrid.verbose(true);
+            multigrid.verbose(verbose);
             
             DVectord x = zeros(A.size().get(0));
 
@@ -135,6 +131,24 @@ namespace utopia
             multigrid.apply(rhs, x);
 
             assert(approxeq(rhs, A * x, 1e-6));
+        }
+
+        void petsc_block_mg_exp()
+        {
+           Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
+           test_block_mg(multigrid, true);
+        }
+
+        void petsc_block_mg()
+        {
+            Multigrid<DSMatrixd, DVectord> multigrid(
+                std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
+                std::make_shared<Factorization<DSMatrixd, DVectord>>()
+            );
+
+            // multigrid.set_use_line_search(true);
+
+           test_block_mg(multigrid, true);
         }
         
         void petsc_mg_test()
