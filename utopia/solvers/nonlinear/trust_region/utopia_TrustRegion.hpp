@@ -13,6 +13,7 @@
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
 #include "utopia_Parameters.hpp"    
+#include "utopia_SteihaugToint.hpp"
 
 
  namespace utopia 
@@ -33,7 +34,7 @@
         typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
      	
      	public:
-      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem = std::shared_ptr<TRSubproblem>(),
+      TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>(),
                   const Parameters params = Parameters())
                   : NonLinearSolver(tr_subproblem, params)  
       {

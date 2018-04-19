@@ -11,6 +11,7 @@ list(APPEND SOLVERS_MODULES
 	nonlinear/line_search
 	nonlinear/trust_region
 	nonlinear/hessian_approximations
+	preconditioners
 )
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR SOLVERS_MODULES LOCAL_HEADERS LOCAL_SOURCES)

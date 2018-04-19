@@ -428,8 +428,12 @@ namespace utopia {
 		void inverse(PetscMatrix &result) const;
 
 		void mult(const PetscVector &vec, PetscVector &result) const;
+
+        //tranpose(*this) * vec
 		void mult_t(const PetscVector &vec, PetscVector &result) const;
 		void mult(const PetscMatrix &mat, PetscMatrix &result) const;
+
+        //tranpose(*this) * mat
 		void mult_t(const PetscMatrix &mat, PetscMatrix &result) const;
 		void mult_mat_t(const PetscMatrix &mat, PetscMatrix &result) const;
 

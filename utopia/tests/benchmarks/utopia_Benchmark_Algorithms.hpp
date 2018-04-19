@@ -31,7 +31,7 @@ namespace utopia {
 			for(SizeType i = 0; i < n_instances; ++i) {
 				const SizeType n = base_n * (i + 1);
 					
-				//Conjugate gradients method
+				//Conjugate gradient method
 				this->register_experiment(
 					"cg_" + std::to_string(i),
 					[n]() {
@@ -77,14 +77,48 @@ namespace utopia {
 
 						Newton<Matrix, Vector, HOMEMADE> newton(make_ref(cg));
 						newton.set_line_search_strategy(backtracking);
-						// newton.verbose(true);
+
+						double mag_x0 = -1;
+						fun.value(x, mag_x0);
+
 						newton.solve(fun, x);
 
-						double mag_x = 1000;
+						double mag_x = -1.;
 						fun.value(x, mag_x);
-						// disp(mag_x);
+						assert(mag_x <= mag_x0);
 					}
 				);
+
+				// This does not work yet
+				this->register_experiment(
+					"trust_region_" + std::to_string(i),
+					[i]() {
+						Rastrigin<Matrix, Vector> fun;
+						Vector x = local_values(10 * (i+1), 1.);
+
+						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
+						cg.max_it(size(x).get(0));
+
+						TrustRegion<Matrix, Vector> trust_region;
+						trust_region.set_linear_solver(make_ref(cg));
+						cg.verbose(true);
+						cg.atol(1e-19);
+						cg.stol(1e-19);
+						cg.rtol(1e-19);
+						trust_region.verbose(true);
+
+						double mag_x0 = -1;
+						fun.value(x, mag_x0);
+
+						trust_region.solve(fun, x);
+
+						double mag_x = -1.;
+						fun.value(x, mag_x);
+						assert(mag_x <= mag_x0);
+					}
+				);
+
+
 			}
 		}
 

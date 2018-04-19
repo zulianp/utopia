@@ -29,11 +29,7 @@ namespace utopia
 
     public:
 
-        Dogleg(const Parameters & params = Parameters()): 
-                                                          TRSubproblem<Matrix, Vector>(params)
-        {
-
-        };
+        Dogleg(const Parameters & params = Parameters()) : TRSubproblem<Matrix, Vector>(params) {}
 
 protected: 
         bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override

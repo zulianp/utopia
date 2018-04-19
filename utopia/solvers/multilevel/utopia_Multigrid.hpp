@@ -453,6 +453,7 @@ namespace utopia
         bool coarse_solve(const Matrix &A, const Vector &rhs, Vector &x)
         {
             _direct_solver->solve(A, rhs, x);
+            assert(approxeq(A*x, rhs, 1e-6));
             return true; 
         }
 

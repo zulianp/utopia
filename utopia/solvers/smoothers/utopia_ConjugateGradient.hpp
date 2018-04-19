@@ -101,7 +101,7 @@ namespace utopia
         bool unpreconditioned_solve(const Matrix &A, const Vector &b, Vector &x)
         {
         	Scalar it = 0; 
-        	Scalar rho, rho_1, beta, alpha, r_norm = 9e9; 
+        	Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9; 
         	Vector r, p, q; 
 
             assert(!empty(b));
@@ -153,7 +153,7 @@ namespace utopia
         bool preconditioned_solve(const Matrix &A, const Vector &b, Vector &x)
         {
             Scalar it = 0; 
-            Scalar beta, alpha, r_norm = 9e9; 
+            Scalar beta = 0., alpha = 1., r_norm = 9e9; 
             Vector r, p, Ap, r_new; 
 
             Vector z     = local_zeros(local_size(b)); 
