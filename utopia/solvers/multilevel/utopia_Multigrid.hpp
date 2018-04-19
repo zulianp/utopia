@@ -77,7 +77,7 @@ namespace utopia
         Multigrid(const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                   const std::shared_ptr<Solver> &direct_solver = std::shared_ptr<Solver>(),
                   const Parameters params = Parameters())
-        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true), use_line_search_(false)
+        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true), use_line_search_(false), block_size_(1)
         {
             set_parameters(params); 
         }
@@ -99,6 +99,14 @@ namespace utopia
             IterativeSolver::update(op);
             if(perform_galerkin_assembly_) {
                 this->galerkin_assembly(op);
+
+
+                //introduce API version
+                // if(block_size_ > 1) {
+                //     for(std::size_t i = 0; i < this->num_levels()-1; i++) {
+                //       const_cast<Matrix &>(this->level(i).A()).implementation().convert_to_mat_baij(block_size_);
+                //     }
+                // }
             }
         }
 
@@ -445,6 +453,7 @@ namespace utopia
         bool coarse_solve(const Matrix &A, const Vector &rhs, Vector &x)
         {
             _direct_solver->solve(A, rhs, x);
+            assert(approxeq(A*x, rhs, 1e-6));
             return true; 
         }
 
@@ -488,6 +497,11 @@ namespace utopia
             use_line_search_ = val;
         }
 
+        inline void block_size(const int size)
+        {
+            block_size_ = size;
+        }
+
     protected:   
         std::shared_ptr<Smoother>           _smoother;
         std::shared_ptr<Solver>             _direct_solver;
@@ -496,6 +510,7 @@ namespace utopia
         Parameters                          _parameters;
         bool perform_galerkin_assembly_;
         bool use_line_search_;
+        int block_size_;
 
     };
 

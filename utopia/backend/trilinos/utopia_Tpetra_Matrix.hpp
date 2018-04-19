@@ -27,6 +27,7 @@ namespace utopia {
         typedef Tpetra::Vector<>::local_ordinal_type      local_ordinal_type;
         typedef Tpetra::Vector<>::global_ordinal_type     global_ordinal_type;
         typedef Tpetra::Vector<>::scalar_type             Scalar;
+        typedef crs_matrix_type::node_type node_type;
         
         TpetraMatrix() : owner_(true) {}
                 
@@ -156,8 +157,17 @@ namespace utopia {
 
         void mult(const TpetraVector &vec, TpetraVector &result) const;
         void mult(const TpetraMatrix &right, TpetraMatrix &result) const;
+        //result = tranpose(*this) * mat
+        void mult_t(const TpetraMatrix &right, TpetraMatrix &result) const;
+
+        //result op(*this) * op
+        void mult(const bool transpose_this, const TpetraMatrix &right, const bool transpose_right, TpetraMatrix &result) const;
         void axpy(const Scalar alpha, const TpetraMatrix &x);
-       
+        void transpose(TpetraMatrix &mat) const;
+
+        void get_diag(TpetraVector &d) const;
+        void init_diag(const TpetraVector &d);
+
         inline void scale(const Scalar alpha)
         {
             implementation().scale(alpha);
@@ -179,6 +189,9 @@ namespace utopia {
         {
             return mat_.is_null();
         }
+
+        bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
+        bool write(const std::string &path) const;
         
     private:
         rcp_crs_matrix_type  mat_;

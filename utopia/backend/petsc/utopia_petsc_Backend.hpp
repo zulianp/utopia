@@ -277,6 +277,12 @@ namespace utopia {
 			read_unlock(v);
 		}
 
+		static void apply_unary(Vector &result, const Minus &, Vector &&v)
+		{
+			result = std::move(v);
+			result.scale(-1.);
+		}
+
 		static void apply_unary(Vector &result, const Minus &, const Vector &v)
 		{
 			result = v;

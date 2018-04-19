@@ -8,6 +8,10 @@
 #include "utopia_ScalarBackend.hpp"
 
 #include <utility>
+#include <TpetraExt_MatrixMatrix_def.hpp>
+
+//TODO find the configuration for having this
+// #include "TpetraExt_TripleMatrixMultiply_def.hpp"
 
 
 //useful links:
@@ -74,15 +78,27 @@ namespace utopia {
 
         //[io]
         // read matrix
-        static bool read(const std::string &path, TpetraMatrix &m);
+        static bool read(const std::string &path, TpetraMatrix &m)
+        {
+            return m.read(default_communicator(), path);
+        }
         // write matrix
-        static bool write(const std::string &path, const TpetraMatrix &m);
+        static bool write(const std::string &path, const TpetraMatrix &m)
+        {
+            return m.write(path);
+        }
 
         // read vector
-        static bool read(const std::string &path, TpetraVector &v);
+        static bool read(const std::string &path, TpetraVector &v)
+        {
+            return v.read(default_communicator(), path);
+        }
 
         // write vector
-        static bool write(const std::string &path, const TpetraVector &v);
+        static bool write(const std::string &path, const TpetraVector &v)
+        {
+            return v.write(path);
+        }
 
         //[builders]
         inline static void build(TpetraVector &v, const Size &size, const LocalValues<Scalar> &values)
@@ -156,6 +172,12 @@ namespace utopia {
         inline static void add(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
         {
             m.add(row, col, value);
+        }
+
+        template<class Tensor>
+        inline static void set(Tensor &t, const Scalar value)
+        {
+            t.set(value);
         }
 
         //[host/device locks]
@@ -306,8 +328,58 @@ namespace utopia {
             apply_binary(diff, left, Minus(), right);
             return norm_infty(diff) <= comp.tol();
         }
-        
 
+        // Ac = R*A*P,
+        // static void triple_product(
+        //     TpetraMatrix &Ac,
+        //     const TpetraMatrix &R,
+        //     const TpetraMatrix &A,
+        //     const TpetraMatrix &P)
+        // {
+        //     Tpetra::TripleMatrixMultiply::MultiplyRAP( 
+        //         R,
+        //         false, //transposeR
+        //         A,
+        //         false, //transposeA
+        //         P,
+        //         false, //transposeP
+        //         Ac,
+        //         true  //call_FillComplete_on_result
+        //     );   
+        // }
+
+        static void multiply(
+            TpetraMatrix &result,
+            bool transpose_left,
+            const TpetraMatrix &left,
+            bool transpose_right,
+            const TpetraMatrix &right)
+        {
+            left.mult(transpose_left, right, transpose_right, result);
+        }
+
+        static void assign_transposed(TpetraMatrix &left, const TpetraMatrix &right)
+        {
+            right.transpose(left);
+        }
+
+        static void diag(TpetraVector &out, const TpetraMatrix &in)
+        {
+            in.get_diag(out);
+        }
+        
+        static void diag(TpetraMatrix &out, const TpetraVector &in)
+        {
+           out.init_diag(in);
+        }
+
+        static void diag(TpetraMatrix &out, const TpetraMatrix &in)
+        {
+            TpetraVector d;
+            diag(d, in);
+            diag(out, d);
+        }
+        
         // monitoring functions for iterative solvers (Cyrill)
         // UTOPIA_DEPRECATED_MSG("Remove me")
         template<class Tensor>

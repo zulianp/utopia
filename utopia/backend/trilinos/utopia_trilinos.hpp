@@ -27,6 +27,7 @@
 #include "utopia_trilinos_ForwardDeclaration.hpp"
 #include "utopia_trilinos_Traits.hpp"
 #include "utopia_trilinos_Types.hpp"
+#include "utopia_trilinos_RowView.hpp"
 
 #endif //WITH_TRILINOS
 #endif //UTOPIA_TRILINOS_HPP

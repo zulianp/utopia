@@ -117,7 +117,7 @@ namespace utopia
          *
          * @param[in]  linear_solver  The linear solver
          */
-        void set_linear_solver(const std::shared_ptr<Solver> &linear_solver = std::shared_ptr<Solver>())
+        void set_linear_solver(const std::shared_ptr<Solver> &linear_solver)
         {
             linear_solver_ = linear_solver; 
         }

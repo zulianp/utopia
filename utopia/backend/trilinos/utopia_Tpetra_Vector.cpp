@@ -15,4 +15,18 @@ namespace utopia {
 	//     vec_ = Teuchos::rcp(new vector_type(map));
 	//     implementation().putScalar(value);
 	// }
+
+
+	bool TpetraVector::read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path)
+	{
+		// Tpetra::MatrixMarket::Reader< decltype(m.implementation()) >
+		return false;
+	}
+
+	bool TpetraVector::write(const std::string &path) const
+	{
+		// Tpetra::MatrixMarket::Reader< decltype(m.implementation()) >
+
+		return false;
+	}
 }

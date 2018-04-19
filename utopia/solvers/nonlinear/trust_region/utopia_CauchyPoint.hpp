@@ -31,11 +31,7 @@ namespace utopia
 
     public:
 
-    	CauchyPoint(const Parameters params = Parameters()): 
-    															TRSubproblem<Matrix, Vector>(params)
-        {
-
-        };
+    	CauchyPoint(const Parameters params = Parameters()): TRSubproblem<Matrix, Vector>(params) {}
 
         virtual ~CauchyPoint(){}; 
 		

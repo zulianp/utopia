@@ -120,6 +120,11 @@ namespace utopia {
             implementation().sumIntoGlobalValue(i, value);
         }
 
+        inline void set(const Scalar value)
+        {
+            implementation().putScalar(value);
+        }
+
         inline void read_lock()
         {
             read_only_data_ = implementation().getData();
@@ -192,9 +197,8 @@ namespace utopia {
             return vec_.is_null();
         }
 
-        // inline Scalar sum() const {
-        //     return what?
-        // }
+        bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
+        bool write(const std::string &path) const;
 
     private:
         rcpvector_type vec_;

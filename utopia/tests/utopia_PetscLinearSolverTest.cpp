@@ -18,17 +18,19 @@ namespace utopia
         
         void run()
         {
-            UTOPIA_RUN_TEST(petsc_mg_exp_test);
-            UTOPIA_RUN_TEST(petsc_bicgstab_test);
-            UTOPIA_RUN_TEST(petsc_gmres_test);
-            UTOPIA_RUN_TEST(petsc_mg_test);
-            UTOPIA_RUN_TEST(petsc_cg_mg_test);
-            UTOPIA_RUN_TEST(petsc_superlu_cg_mg_test);
-            UTOPIA_RUN_TEST(petsc_mg_jacobi_test);
-            UTOPIA_RUN_TEST(petsc_cholesky_test);
+            UTOPIA_RUN_TEST(petsc_mg_exp);
+            UTOPIA_RUN_TEST(petsc_block_mg_exp);
+            UTOPIA_RUN_TEST(petsc_block_mg);
+            UTOPIA_RUN_TEST(petsc_bicgstab);
+            UTOPIA_RUN_TEST(petsc_gmres);
+            UTOPIA_RUN_TEST(petsc_mg);
+            UTOPIA_RUN_TEST(petsc_cg_mg);
+            UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
+            UTOPIA_RUN_TEST(petsc_mg_jacobi);
+            UTOPIA_RUN_TEST(petsc_cholesky);
         }
         
-        void petsc_mg_exp_test()
+        void petsc_mg_exp()
         {
             
             DVectord rhs;
@@ -68,7 +70,7 @@ namespace utopia
             assert(err < 1e-6);
         }
         
-        void petsc_bicgstab_test()
+        void petsc_bicgstab()
         {
             
             DMatrixd mat = identity(_n, _n);
@@ -82,7 +84,7 @@ namespace utopia
             assert(approxeq(expected, sol));
         }
         
-        void petsc_gmres_test()
+        void petsc_gmres()
         {
             
             DMatrixd mat = identity(_n, _n);
@@ -95,10 +97,60 @@ namespace utopia
             DVectord expected = zeros(_n);
             assert(approxeq(expected, sol));
         }
+
+        template<class MultigridT>
+        void test_block_mg(MultigridT &multigrid, const bool verbose = false)
+        {
+            if(mpi_world_size() > 1) return;
+
+            DVectord rhs;
+            DSMatrixd A, I;
+            
+            const std::string data_path = Utopia::instance().get("data_path");
+            const std::string folder = data_path + "/mg";
+            
+            read(folder + "/rhs.bin", rhs);
+            read(folder + "/A.bin", A);
+            read(folder + "/I.bin", I);
+            
+            std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
+            interpolation_operators.push_back(make_ref(I));
+            
+            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.max_it(20);
+            multigrid.atol(1e-15);
+            multigrid.stol(1e-15);
+            multigrid.rtol(1e-15);
+            multigrid.verbose(verbose);
+            
+            DVectord x = zeros(A.size().get(0));
+
+            int block_size = 2;
+            multigrid.block_size(block_size);
+            multigrid.update(make_ref(A));
+            multigrid.apply(rhs, x);
+
+            assert(approxeq(rhs, A * x, 1e-6));
+        }
+
+        void petsc_block_mg_exp()
+        {
+           Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
+           test_block_mg(multigrid, false);
+        }
+
+        void petsc_block_mg()
+        {
+            Multigrid<DSMatrixd, DVectord> multigrid(
+                std::make_shared<GMRES<DSMatrixd, DVectord>>(),
+                // std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
+                std::make_shared<Factorization<DSMatrixd, DVectord>>()
+            );
+
+           test_block_mg(multigrid, false);
+        }
         
-        
-        
-        void petsc_mg_test()
+        void petsc_mg()
         {
             // reading data from outside
             DVectord rhs;
@@ -166,7 +218,7 @@ namespace utopia
         }
         
         
-        void petsc_cg_mg_test()
+        void petsc_cg_mg()
         {
             //! [MG solve example]
             const bool verbose = false;
@@ -236,7 +288,7 @@ namespace utopia
             //! [MG solve example]
         }
         
-        void petsc_mg_jacobi_test()
+        void petsc_mg_jacobi()
         {
             const std::string data_path = Utopia::instance().get("data_path");
             DSMatrixd A, I_1, I_2, I_3;
@@ -269,7 +321,7 @@ namespace utopia
             assert( approxeq(A*x, rhs, 1e-6) );
         }
         
-        void petsc_superlu_cg_mg_test()
+        void petsc_superlu_cg_mg()
         {
             const bool verbose = false;
             DVectord rhs;
@@ -345,12 +397,12 @@ namespace utopia
             double diff = norm2(rhs - A * x_0);
 
             if(diff > 1e-6) {
-                utopia_error("petsc_superlu_cg_mg_test fails. Known problem that needs to be fixed!");
+                utopia_error("petsc_superlu_cg_mg fails. Known problem that needs to be fixed!");
             }
             // assert( diff < 1e-6 );
         }
         
-        void petsc_cholesky_test()
+        void petsc_cholesky()
         {
             if(mpi_world_size() > 1)
                 return;
@@ -374,7 +426,7 @@ namespace utopia
             // assert( approxeq(A * x, rhs, 1e-6) );
             
             if(diff > 1e-6) {
-                utopia_error("petsc_cholesky_test fails. Known problem that needs to be fixed!");
+                utopia_error("petsc_cholesky fails. Known problem that needs to be fixed!");
             }
         }
     

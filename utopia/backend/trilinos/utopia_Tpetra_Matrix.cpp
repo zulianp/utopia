@@ -1,7 +1,10 @@
 #include "utopia_Tpetra_Matrix.hpp"
-#include <TpetraExt_MatrixMatrix_def.hpp>
 #include "utopia_Logger.hpp"
 #include "utopia_Instance.hpp"
+
+#include <TpetraExt_MatrixMatrix_def.hpp>
+#include <Tpetra_RowMatrixTransposer_decl.hpp>
+#include <MatrixMarket_Tpetra.hpp>
 
 namespace utopia {
 
@@ -33,8 +36,10 @@ namespace utopia {
 	{
 		if(result.is_null()) {
 			result.init(mat_->getRowMap());
+			// result.owner_ = true;
 		} else if(!result.implementation().getMap()->isSameAs(*mat_->getRowMap())) {
 			result.init(mat_->getRowMap());
+			// result.owner_ = true;
 		}
 
 		mat_->apply(vec.implementation(), result.implementation());
@@ -42,21 +47,41 @@ namespace utopia {
 
 	void TpetraMatrix::mult(const TpetraMatrix &right, TpetraMatrix &result) const
 	{
+		mult(false, right, false, result);
+	}
+
+	void TpetraMatrix::mult_t(const TpetraMatrix &right, TpetraMatrix &result) const
+	{
+		mult(true, right, false, result);
+	}
+
+	//result op(*this) * op
+	void TpetraMatrix::mult(const bool transpose_this, const TpetraMatrix &right, const bool transpose_right, TpetraMatrix &result) const
+	{
 		if(result.is_null()) {
 			auto s = size();
 			auto ls = local_size();
 			// auto row_map = Teuchos::rcp(new map_type(s.get(0), ls.get(0), 0, communicator()));
 			// result.mat_  = Teuchos::rcp(new crs_matrix_type(row_map, 0, Tpetra::DynamicProfile));
 			result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRowMap(), 0, Tpetra::DynamicProfile));
+			result.owner_ = true;
 		}
 
+		//C = op(A)*op(B), 
 		Tpetra::MatrixMatrix::Multiply(
 			this->implementation(),
-			false,
+			transpose_this,
 			right.implementation(),
-			false,
+			transpose_right,
 			result.implementation()
 		);
+	}
+
+	void TpetraMatrix::transpose(TpetraMatrix &mat) const
+	{
+		Tpetra::RowMatrixTransposer<Scalar, local_ordinal_type, global_ordinal_type, node_type> transposer(mat_);
+		mat.mat_ = transposer.createTranspose();
+		mat.owner_ = true;
 	}
 
 	void TpetraMatrix::axpy(const Scalar alpha, const TpetraMatrix &x)
@@ -118,5 +143,73 @@ namespace utopia {
 	    mat_->replaceColMap(col_map);
 
 	    owner_ = true;
+	}
+
+	void TpetraMatrix::get_diag(TpetraVector &d) const
+	{
+		if(d.is_null()) {
+			m_utopia_warning_once("TpetraMatrix::get_diag Assuming row <= col");
+			d.init(implementation().getRowMap());
+		}
+
+		implementation().getLocalDiagCopy(d.implementation());
+	}
+
+	void TpetraMatrix::init_diag(const TpetraVector &d)
+	{
+		//FIXME maybe there is a better and more efficent way to do this
+		//also without const_cast
+
+		auto ls = d.local_size().get(0);
+		auto gs = d.size().get(0);
+
+		crs_init(d.communicator(),
+				 ls,
+				 ls,
+				 gs,
+				 gs,
+				 1);
+
+
+		auto r = d.range();
+
+		const_cast<TpetraVector &>(d).read_lock();
+		write_lock();
+
+		for(auto i = r.begin(); i < r.end(); ++i) {
+			set(i, i, d.get(i));
+		}
+
+		const_cast<TpetraVector &>(d).read_unlock();
+		write_unlock();
+	}
+
+	bool TpetraMatrix::read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path)
+	{
+		std::ifstream is;
+		is.open(path.c_str());
+
+		if(!is.good()) {
+			return false;
+		}
+		
+		try {
+			//https://people.sc.fsu.edu/~jburkardt/data/mm/mm.html
+			mat_ = Tpetra::MatrixMarket::Reader<crs_matrix_type>::readSparse(is, comm);
+		} catch(std::exception &ex) {
+			is.close();
+			std::cout << ex.what() << std::endl;
+			return false;
+		}
+
+		is.close();
+		return !mat_.is_null();
+	}
+
+	bool TpetraMatrix::write(const std::string &path) const
+	{
+		// Tpetra::MatrixMarket::Reader< decltype(m.implementation()) >
+
+		return false;
 	}
 }
