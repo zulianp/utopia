@@ -152,11 +152,19 @@ namespace utopia {
 
         inline Size size() const
         {
+            if(is_null()) {
+                return {INVALID_INDEX};
+            }
+
             return { implementation().getMap()->getGlobalNumElements() };
         }
 
         inline Size local_size() const
-        {
+        {   
+            if(is_null()) {
+                return {INVALID_INDEX};
+            }
+            
             return { implementation().getMap()->getNodeNumElements() };
         }
 

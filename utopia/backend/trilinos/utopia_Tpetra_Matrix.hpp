@@ -13,6 +13,7 @@
 
 
 #include <iostream>
+#include <memory>
 
 namespace utopia {
     
@@ -86,10 +87,7 @@ namespace utopia {
             return *this;
         }
         
-        inline void finalize()
-        {
-            implementation().fillComplete();
-        }
+        void finalize();
         
         rcp_comm_type communicator() const
         {
@@ -196,6 +194,13 @@ namespace utopia {
     private:
         rcp_crs_matrix_type  mat_;
         bool                 owner_;
+
+        typedef struct {
+            rcp_map_type domain_map;
+            rcp_map_type range_map;
+        } InitStructs;
+
+        std::shared_ptr<InitStructs> init_;
     }; //TpetraMatrix
 }
 

@@ -41,8 +41,12 @@ namespace utopia {
 			result.init(mat_->getRowMap());
 			// result.owner_ = true;
 		}
-
-		mat_->apply(vec.implementation(), result.implementation());
+		try {
+			mat_->apply(vec.implementation(), result.implementation());
+		} catch(const std::exception &ex) {
+			std::cout << ex.what() << std::endl;
+			assert(false);
+		}
 	}
 
 	void TpetraMatrix::mult(const TpetraMatrix &right, TpetraMatrix &result) const
@@ -67,51 +71,65 @@ namespace utopia {
 			result.owner_ = true;
 		}
 
-		//C = op(A)*op(B), 
-		Tpetra::MatrixMatrix::Multiply(
-			this->implementation(),
-			transpose_this,
-			right.implementation(),
-			transpose_right,
-			result.implementation()
-		);
+		try {
+			//C = op(A)*op(B), 
+			Tpetra::MatrixMatrix::Multiply(
+				this->implementation(),
+				transpose_this,
+				right.implementation(),
+				transpose_right,
+				result.implementation()
+			);
+		} catch(const std::exception &ex) {
+			std::cout << ex.what() << std::endl;
+			assert(false);
+		}
 	}
 
 	void TpetraMatrix::transpose(TpetraMatrix &mat) const
 	{
-		Tpetra::RowMatrixTransposer<Scalar, local_ordinal_type, global_ordinal_type, node_type> transposer(mat_);
-		mat.mat_ = transposer.createTranspose();
-		mat.owner_ = true;
+		//FIXME this does not work as it should
+		try {
+			Tpetra::RowMatrixTransposer<Scalar, local_ordinal_type, global_ordinal_type, node_type> transposer(mat_);
+			mat.mat_ = transposer.createTranspose();
+			mat.owner_ = true;
+		} catch(const std::exception &ex) {
+			std::cout << ex.what() << std::endl;
+			assert(false);
+		}
 	}
 
 	void TpetraMatrix::axpy(const Scalar alpha, const TpetraMatrix &x)
 	{
-		// write_lock();
-		
-		// Add (const CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > &A, bool transposeA, Scalar scalarA, CrsMatrix< Scalar, LocalOrdinal, GlobalOrdinal, Node > &B, Scalar scalarB)
-		
-		// write_lock();
-		//THIS DOES NOT WORK??????
-		// Tpetra::MatrixMatrix::Add(
-		// 	x.implementation(),
-		// 	false,
-		// 	alpha,
-		// 	implementation(),
-		// 	1.
-		// );
-
-		// write_unlock();
-
-		Tpetra::MatrixMatrix::add(
-			alpha,
-			false,
-			x.implementation(),
-			1.,
-			false,
-			implementation()
-		);
-
+		try {
+			Tpetra::MatrixMatrix::add(
+				alpha,
+				false,
+				x.implementation(),
+				1.,
+				false,
+				implementation()
+			);
+		} catch(const std::exception &ex) {
+			std::cout << ex.what() << std::endl;
+			assert(false);
+		}
 	}
+
+	void TpetraMatrix::finalize()
+    {
+    	try {
+	    	if(init_) {
+	    		implementation().fillComplete(init_->domain_map, init_->range_map);
+	    		init_.reset();
+	    	} else {
+	        	implementation().fillComplete();
+	        }
+        } catch(const std::exception &ex) {
+        	std::cout << ex.what() << std::endl;
+        	assert(false);
+        }
+    }
 
 	void TpetraMatrix::crs_init(
 	              const rcp_comm_type &comm,
@@ -129,20 +147,27 @@ namespace utopia {
 		if(rows_local == INVALID_INDEX) {
 			row_map = Teuchos::rcp(new map_type(rows_global, 0, comm));
 		} else {
-			if(cols_global == Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()) {
-				Tpetra::global_size_t send_buff = cols_local;
-				cols_global = 0;
-				Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &send_buff, &cols_global);
-			}
-
 			row_map = Teuchos::rcp(new map_type(rows_global, rows_local, 0, comm));
 		}
 
-	    auto col_map = Teuchos::rcp(new map_type(cols_global, 0, comm, Tpetra::LocallyReplicated));
-	    mat_ = Teuchos::rcp(new crs_matrix_type(row_map, nnz_x_row, Tpetra::DynamicProfile));
-	    mat_->replaceColMap(col_map);
+		if(cols_global == Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()) {
+			Tpetra::global_size_t send_buff = cols_local;
+			cols_global = 0;
+			Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &send_buff, &cols_global);
+		}
 
+	    auto col_map = Teuchos::rcp(new map_type(cols_global, 0, comm, Tpetra::LocallyReplicated));
+	    mat_ = Teuchos::rcp(new crs_matrix_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
 	    owner_ = true;
+
+	    init_ = std::make_shared<InitStructs>();
+	    if(cols_local == INVALID_INDEX) {
+	    	init_->domain_map = Teuchos::rcp(new map_type(cols_global, 0, comm));
+	    } else {
+	    	init_->domain_map = Teuchos::rcp(new map_type(cols_global, cols_local, 0, comm));
+	    }
+
+	    init_->range_map = row_map;
 	}
 
 	void TpetraMatrix::get_diag(TpetraVector &d) const
