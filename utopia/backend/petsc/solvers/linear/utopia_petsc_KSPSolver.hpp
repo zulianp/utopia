@@ -263,10 +263,11 @@ public:
 
         return true;
     }
-
-
-    bool smooth(const Matrix &A, const Vector &rhs, Vector &x) override
+    
+    bool smooth(const Vector &rhs, Vector &x) override
     {
+        const Matrix &A = *this->get_operator();
+
         KSP solver;
         KSPCreate(A.implementation().communicator(), &solver);
         KSPSetFromOptions(solver); 
@@ -359,6 +360,16 @@ public:
 
         ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
         ierr = KSPSetTolerances(ksp, PreconditionedSolver::rtol(), PreconditionedSolver::atol(), PETSC_DEFAULT,  PreconditionedSolver::max_it());
+    }
+
+    virtual void update(const std::shared_ptr<const Matrix> &op) override
+    {
+        PreconditionedSolver::update(op);
+    }
+
+    virtual KSPSolver * clone() const override 
+    {
+        return new KSPSolver(*this);
     }
 
 

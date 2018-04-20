@@ -44,6 +44,14 @@ namespace utopia {
         // check if our options overwrite this
         KSPSetFromOptions(ksp);
         KSPSetType(ksp, KSPUTOPIA);
+
+        auto iterative_solver = std::dynamic_pointer_cast<utopia::IterativeSolver<Matrix, Vector>>(lin_solver);
+        
+        if(iterative_solver) {
+            ksp->rtol = iterative_solver->rtol(); 
+            ksp->abstol = iterative_solver->atol(); 
+            ksp->max_it = iterative_solver->max_it();
+        }
         
         std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> solve_routine = [&lin_solver](const Mat &A, const Mat & P, const Vec &b, Vec & x)
         {

@@ -53,7 +53,7 @@ namespace utopia {
 		/**
 		 * @brief      Function sets type of cycle
 		 */
-		inline bool cycle_type(const int & type_in)
+		inline bool cycle_type(const int &type_in)
 		{
 			cycle_type_ = type_in;
 			return true;

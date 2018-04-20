@@ -50,45 +50,7 @@ namespace utopia
 			return true;
 		}
 		
-		/**
-		 * @brief
-		 *        The function creates corser level operators by using Galerkin assembly.
-		 *
-		 *        $\f J_{i-1} = R * J_{i} * I  $\f
-		 *
-		 *        Resulting operators are assumed to go from fines = 0 to coarse = numlevels_
-		 *
-		 * @param[in]  stifness matrix for finest level
-		 *
-		 */
-		virtual bool galerkin_assembly(const std::shared_ptr<const Matrix> &A)
-		{
-			levels_.clear();
-			SizeType t_s = this->transfers_.size();
-			if(t_s <= 0)
-				std::cerr<<"Provide interpolation operators first!  \n";
-			
-			levels_.push_back(Level(A));
-				
-			auto L = this->n_levels();
-			
-			for(SizeType i = 1; i < L; i++)
-			{
-				// J_{i-1} = R * J_{i} * I
-				std::shared_ptr<Matrix> J_h = std::make_shared<Matrix>();
-				
-				this->transfers_[t_s - i].restrict(levels_[i - 1].A(), *J_h);
-				
-				if(fix_semidefinite_operators_) {
-					fix_semidefinite_operator(*J_h);
-				}
-				
-				levels_.push_back(Level(J_h));
-			}
-			
-			std::reverse(std::begin(levels_), std::end(levels_));
-			return true;
-		}
+
 
 		void add_level(Level &&level)
 		{
@@ -177,6 +139,46 @@ namespace utopia
 	protected:
 		std::vector<Level>                  levels_;      /*!< vector of level operators     */		
 		bool fix_semidefinite_operators_;
+
+		/**
+		 * @brief
+		 *        The function creates corser level operators by using Galerkin assembly.
+		 *
+		 *        $\f J_{i-1} = R * J_{i} * I  $\f
+		 *
+		 *        Resulting operators are assumed to go from fines = 0 to coarse = numlevels_
+		 *
+		 * @param[in]  stifness matrix for finest level
+		 *
+		 */
+		virtual bool galerkin_assembly(const std::shared_ptr<const Matrix> &A)
+		{
+			levels_.clear();
+			SizeType t_s = this->transfers_.size();
+			if(t_s <= 0)
+				std::cerr<<"Provide interpolation operators first!  \n";
+			
+			levels_.push_back(Level(A));
+				
+			auto L = this->n_levels();
+			
+			for(SizeType i = 1; i < L; i++)
+			{
+				// J_{i-1} = R * J_{i} * I
+				std::shared_ptr<Matrix> J_h = std::make_shared<Matrix>();
+				
+				this->transfers_[t_s - i].restrict(levels_[i - 1].A(), *J_h);
+				
+				if(fix_semidefinite_operators_) {
+					fix_semidefinite_operator(*J_h);
+				}
+				
+				levels_.push_back(Level(J_h));
+			}
+			
+			std::reverse(std::begin(levels_), std::end(levels_));
+			return true;
+		}
 	};
 	
 }

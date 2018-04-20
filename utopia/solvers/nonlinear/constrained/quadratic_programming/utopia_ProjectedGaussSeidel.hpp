@@ -27,8 +27,10 @@ namespace utopia {
 			IterativeSolver<Matrix, Vector>::set_parameters(params);
 		}
 
-		virtual bool smooth(const Matrix &A, const Vector &b, Vector &x) override
+		virtual bool smooth(const Vector &b, Vector &x) override
 		{
+			const Matrix &A = *this->get_operator();
+			
 			init(A);
 			std::size_t it = 0;
 			if(constraints_.has_bound()) {
@@ -279,6 +281,8 @@ namespace utopia {
 		: use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)
 		{}
 
+		ProjectedGaussSeidel(const ProjectedGaussSeidel &) = default;
+
 		void set_use_line_search(const bool val) 
 		{
 			use_line_search_ = val;
@@ -299,8 +303,11 @@ namespace utopia {
 			use_symmetric_sweep_ = use_symmetric_sweep;
 		}
 
+		inline ProjectedGaussSeidel * clone() const override
+		{
+			return new ProjectedGaussSeidel(*this);
+		}
 
-		
 	private:
 		bool use_line_search_;
 		bool use_symmetric_sweep_;

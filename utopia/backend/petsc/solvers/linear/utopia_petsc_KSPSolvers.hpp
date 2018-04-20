@@ -36,6 +36,11 @@ namespace utopia {
       KSPSolver<Matrix, Vector, PETSC>::pc_type(preconditioner_);
     }
 
+    virtual BiCGStab * clone() const override 
+    {
+        return new BiCGStab(*this);
+    }
+
   private:
     std::string preconditioner_;
   };
@@ -64,6 +69,10 @@ namespace utopia {
       KSPSolver<Matrix, Vector, PETSC>::pc_type(preconditioner_);
     }
 
+    virtual MINRES * clone() const override 
+    {
+        return new MINRES(*this);
+    }
 
   private:
     std::string preconditioner_;

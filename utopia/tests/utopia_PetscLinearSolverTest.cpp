@@ -19,8 +19,6 @@ namespace utopia
         void run()
         {
             UTOPIA_RUN_TEST(petsc_mg_exp);
-            UTOPIA_RUN_TEST(petsc_block_mg_exp);
-            UTOPIA_RUN_TEST(petsc_block_mg);
             UTOPIA_RUN_TEST(petsc_bicgstab);
             UTOPIA_RUN_TEST(petsc_gmres);
             UTOPIA_RUN_TEST(petsc_mg);
@@ -28,6 +26,8 @@ namespace utopia
             UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
+            UTOPIA_RUN_TEST(petsc_block_mg_exp);
+            UTOPIA_RUN_TEST(petsc_block_mg);
         }
         
         void petsc_mg_exp()
@@ -47,8 +47,8 @@ namespace utopia
             interpolation_operators.push_back(make_ref(I_2));
             interpolation_operators.push_back(make_ref(I_3));
             
-            auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord>>();
-            auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+            auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+            auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
             // auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
             // linear_solver->verbose(true);
             Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;//(smoother, linear_solver);
@@ -68,6 +68,73 @@ namespace utopia
             
             const double err = norm2(A*x - rhs);
             assert(err < 1e-6);
+        }
+
+        void petsc_mg()
+        {
+            // reading data from outside
+            DVectord rhs;
+            DSMatrixd A, I_1, I_2, I_3;
+            
+            const std::string data_path = Utopia::instance().get("data_path");
+            
+            read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
+            read(data_path + "/laplace/matrices_for_petsc/f_A", A);
+            // read(data_path + "/laplace/matrices_for_petsc/I_1", I_1);
+            read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
+            read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
+            
+            std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
+            
+            // from coarse to fine
+            // interpolation_operators.push_back(std::move(I_1));
+            interpolation_operators.push_back(make_ref(I_2));
+            interpolation_operators.push_back(make_ref(I_3));
+            
+            //  init
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+#ifdef PETSC_HAVE_MUMPS
+            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+#endif //PETSC_HAVE_MUMPS
+            
+            auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+            
+            Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
+            multigrid.set_use_line_search(true);
+            
+            
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            multigrid.set_fix_semidefinite_operators(true);
+            multigrid.update(make_ref(A));
+            
+            DVectord x_0 = zeros(A.size().get(0));
+            
+            Parameters params;
+            params.linear_solver_verbose(false);
+            multigrid.set_parameters(params);
+            
+            // multigrid.verbose(true);
+            multigrid.apply(rhs, x_0);
+            
+            x_0 = zeros(A.size().get(0));
+            multigrid.cycle_type(FULL_CYCLE);
+            multigrid.apply(rhs, x_0);
+            
+            x_0 = zeros(A.size().get(0));
+            multigrid.cycle_type(FULL_CYCLE);
+            multigrid.v_cycle_repetition(2);
+            
+            multigrid.apply(rhs, x_0);
+            
+            multigrid.max_it(1);
+            multigrid.cycle_type(MULTIPLICATIVE_CYCLE);
+            auto gmres = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+            gmres->set_preconditioner(make_ref(multigrid));
+            x_0.set(0.);
+            // gmres->verbose(true);
+            gmres->solve(A, rhs, x_0);
+            
+            assert( approxeq(A*x_0, rhs, 1e-6) );
         }
         
         void petsc_bicgstab()
@@ -141,7 +208,7 @@ namespace utopia
         void petsc_block_mg_exp()
         {
            Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
-           test_block_mg(multigrid, true);
+           test_block_mg(multigrid, false);
         }
 
         void petsc_block_mg()
@@ -149,78 +216,14 @@ namespace utopia
             Multigrid<DSMatrixd, DVectord> multigrid(
                 // std::make_shared<GMRES<DSMatrixd, DVectord>>(),
                 std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
-                std::make_shared<Factorization<DSMatrixd, DVectord>>()
+                // std::make_shared<Factorization<DSMatrixd, DVectord>>()
+                std::make_shared<LUDecomposition<DSMatrixd, DVectord>>()
             );
 
-           test_block_mg(multigrid, true);
+           test_block_mg(multigrid, false);
         }
         
-        void petsc_mg()
-        {
-            // reading data from outside
-            DVectord rhs;
-            DSMatrixd A, I_1, I_2, I_3;
-            
-            const std::string data_path = Utopia::instance().get("data_path");
-            
-            read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
-            read(data_path + "/laplace/matrices_for_petsc/f_A", A);
-            // read(data_path + "/laplace/matrices_for_petsc/I_1", I_1);
-            read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
-            read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
-            
-            std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
-            
-            // from coarse to fine
-            // interpolation_operators.push_back(std::move(I_1));
-            interpolation_operators.push_back(make_ref(I_2));
-            interpolation_operators.push_back(make_ref(I_3));
-            
-            //  init
-            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-#ifdef PETSC_HAVE_MUMPS
-            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
-#endif //PETSC_HAVE_MUMPS
-            
-            auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
-            
-            Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.set_use_line_search(true);
-            
-            
-            multigrid.set_transfer_operators(std::move(interpolation_operators));
-            multigrid.set_fix_semidefinite_operators(true);
-            multigrid.update(make_ref(A));
-            
-            DVectord x_0 = zeros(A.size().get(0));
-            
-            Parameters params;
-            params.linear_solver_verbose(false);
-            multigrid.set_parameters(params);
-            
-            // multigrid.verbose(true);
-            multigrid.apply(rhs, x_0);
-            
-            x_0 = zeros(A.size().get(0));
-            multigrid.cycle_type(FULL_CYCLE);
-            multigrid.apply(rhs, x_0);
-            
-            x_0 = zeros(A.size().get(0));
-            multigrid.cycle_type(FULL_CYCLE);
-            multigrid.v_cycle_repetition(2);
-            
-            multigrid.apply(rhs, x_0);
-            
-            multigrid.max_it(1);
-            multigrid.cycle_type(MULTIPLICATIVE_CYCLE);
-            auto gmres = std::make_shared<GMRES<DSMatrixd, DVectord>>();
-            gmres->set_preconditioner(make_ref(multigrid));
-            x_0.set(0.);
-            // gmres->verbose(true);
-            gmres->solve(A, rhs, x_0);
-            
-            assert( approxeq(A*x_0, rhs, 1e-6) );
-        }
+       
         
         
         void petsc_cg_mg()
@@ -321,7 +324,7 @@ namespace utopia
             
             // multigrid.verbose(true);
             multigrid.set_use_line_search(true);
-            multigrid.solve(rhs, x);
+            multigrid.apply(rhs, x);
             
             assert( approxeq(A*x, rhs, 1e-6) );
         }

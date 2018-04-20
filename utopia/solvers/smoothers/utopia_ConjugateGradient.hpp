@@ -88,13 +88,18 @@ namespace utopia
              }
          }
 
-         bool smooth(const Matrix &A, const Vector &rhs, Vector &x) override
+         bool smooth(const Vector &rhs, Vector &x) override
          {
             SizeType temp = this->max_it();
             this->max_it(this->sweeps());
-            unpreconditioned_solve(A, rhs, x);
+            unpreconditioned_solve(*this->get_operator(), rhs, x);
             this->max_it(temp);
             return true;
+         }
+
+         ConjugateGradient * clone() const override
+         {
+            return new ConjugateGradient(*this);
          }
 
      private:
