@@ -3,6 +3,7 @@
 
 #include "utopia_TrustRegionFactory.hpp"
 #include "utopia_petsc_KSPTR.hpp"
+#include "utopia_petsc_TaoSolver.hpp"
 
 namespace utopia {
 	/**
