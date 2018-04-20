@@ -46,7 +46,6 @@ namespace utopia
 		virtual void set_parameters(const Parameters params)
 		{
 			_parameters = params;
-			
 			_pre_smoothing_steps = params.pre_smoothing_steps();
 			_post_smoothing_steps = params.post_smoothing_steps();
 			_mg_type = params.mg_type();
@@ -56,32 +55,13 @@ namespace utopia
 		
 		/**
 		 * @brief
-		 Function initializes restriction transfer operators.
-		 Operators need to be ordered FROM COARSE TO FINE.
-		 
-		 * @param[in]  operators                The restriction operators.
-		 *
-		 */
-		virtual bool init_transfer_from_coarse_to_fine(const std::vector<std::shared_ptr <Matrix> > & restriction_operators)
-		{
-			_num_levels = restriction_operators.size() + 1;
-			_transfers.clear();
-			
-			for(auto I = restriction_operators.rbegin(); I != restriction_operators.rend() ; ++I )
-				_transfers.push_back(Transfer(*I));
-			
-			return true;
-		}
-		
-		/**
-		 * @brief
-		 Function initializes restriction transfer operators.
-		 Operators need to be ordered FROM FINE TO COARSE.
+		 * Function initializes restriction transfer operators.
+		 * Operators need to be ordered FROM COARSE TO FINE.
 		 *
 		 * @param[in]  operators                The restriction operators.
 		 *
 		 */
-		virtual bool init_transfer_from_fine_to_coarse(const std::vector<std::shared_ptr <Matrix> > & restriction_operators)
+		virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &restriction_operators)
 		{
 			_num_levels = restriction_operators.size() + 1;
 			_transfers.clear();
@@ -91,7 +71,6 @@ namespace utopia
 			
 			return true;
 		}
-		
 		
 		/**
 		 * @brief
@@ -104,7 +83,7 @@ namespace utopia
 		 * @param[in]  stifness matrix for finest level
 		 *
 		 */
-		virtual bool galerkin_assembly(const std::shared_ptr <const Matrix> & A)
+		virtual bool galerkin_assembly(const std::shared_ptr<const Matrix> &A)
 		{
 			_levels.clear();
 			SizeType t_s = _transfers.size();
@@ -159,29 +138,15 @@ namespace utopia
 			
 			A += Matrix(diag(d));
 		}
-		
+				
 		/**
 		 * @brief
 		 *        The function creates corser level operators provided by assembling on differnet levels of MG hierarchy
-		 *
+		 *		The first element of the vector is the coarset matrix and the last is the fienst
 		 * @param[in]  stifness matrix for finest level
 		 *
 		 */
-		virtual bool assembly_linear_operators_from_coarse_to_fine(const std::vector<std::shared_ptr <const Matrix> >  & A)
-		{
-			_levels.clear();
-			_levels.insert(_levels.begin(), A.rbegin(), A.rend());
-			return true;
-		}
-		
-		/**
-		 * @brief
-		 *        The function creates corser level operators provided by assembling on differnet levels of MG hierarchy
-		 *
-		 * @param[in]  stifness matrix for finest level
-		 *
-		 */
-		virtual bool assembly_linear_operators_from_fine_to_coarse(const std::vector<std::shared_ptr <const Matrix> > & A)
+		virtual bool set_linear_operators(const std::vector<std::shared_ptr<const Matrix>> &A)
 		{
 			_levels.clear();
 			_levels.insert(_levels.begin(), A.begin(), A.end());
@@ -189,7 +154,7 @@ namespace utopia
 		}
 		
 		/**
-		 * @brief      Returns number of levels in hierarchy.
+		 * @brief Returns number of levels in hierarchy.
 		 */
 		virtual SizeType num_levels()
 		{

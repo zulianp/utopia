@@ -216,9 +216,7 @@ namespace utopia {
 			std::cout << "dofs: " << es.get_system(0).get_dof_map().n_dofs() << std::endl;
 		}
 
-		mg.init_transfer_from_fine_to_coarse(interpolators_);
-		//FIXME naming is wrong
-		// mg.init_transfer_from_coarse_to_fine(std::move(interpolators));
+		mg.set_transfer_operators(interpolators_);
 	}	
 
 	void SemiGeometricMultigrid::update(const std::shared_ptr<const DSMatrixd> &op)

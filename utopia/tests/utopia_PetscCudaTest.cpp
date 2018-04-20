@@ -94,7 +94,7 @@ namespace utopia {
         // smoother->verbose(true);
         // linear_solver->verbose(true);
 
-        multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+        multigrid.set_transfer_operators(std::move(interpolation_operators));
         multigrid.max_it(20);
         multigrid.atol(1e-10);
         multigrid.stol(1e-10);

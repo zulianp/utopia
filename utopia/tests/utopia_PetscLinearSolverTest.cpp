@@ -56,7 +56,7 @@ namespace utopia
             // multigrid.set_default_ksp_type(KSPFGMRES);
             
             // Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
-            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
             multigrid.max_it(20);
             multigrid.atol(1e-15);
             multigrid.stol(1e-15);
@@ -116,7 +116,7 @@ namespace utopia
             std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
             interpolation_operators.push_back(make_ref(I));
             
-            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
             multigrid.max_it(20);
             multigrid.atol(1e-15);
             multigrid.stol(1e-15);
@@ -125,7 +125,7 @@ namespace utopia
             
             DVectord x = zeros(A.size().get(0));
 
-            int block_size = 2;
+            int block_size = 1;
             multigrid.block_size(block_size);
             multigrid.update(make_ref(A));
            
@@ -141,7 +141,7 @@ namespace utopia
         void petsc_block_mg_exp()
         {
            Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
-           test_block_mg(multigrid, false);
+           test_block_mg(multigrid, true);
         }
 
         void petsc_block_mg()
@@ -152,7 +152,7 @@ namespace utopia
                 std::make_shared<Factorization<DSMatrixd, DVectord>>()
             );
 
-           test_block_mg(multigrid, false);
+           test_block_mg(multigrid, true);
         }
         
         void petsc_mg()
@@ -188,7 +188,7 @@ namespace utopia
             multigrid.set_use_line_search(true);
             
             
-            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
             multigrid.set_fix_semidefinite_operators(true);
             multigrid.update(make_ref(A));
             
@@ -257,7 +257,7 @@ namespace utopia
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             // auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
             multigrid.max_it(1);
             multigrid.mg_type(1);
             multigrid.verbose(verbose);
@@ -316,7 +316,7 @@ namespace utopia
             auto direct_solver = std::make_shared< Factorization<DSMatrixd, DVectord> >();
             auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.init_transfer_from_fine_to_coarse(interpolation_operators);
+            multigrid.set_transfer_operators(interpolation_operators);
             multigrid.update(make_ref(A));
             
             // multigrid.verbose(true);
@@ -367,7 +367,7 @@ namespace utopia
             
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
             multigrid.update(make_ref(A));
             
             multigrid.max_it(1);

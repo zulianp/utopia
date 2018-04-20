@@ -147,7 +147,7 @@ namespace utopia {
         auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
         
         Multigrid<DSMatrixd, DVectord> multigrid(smoother, linear_solver);
-        multigrid.init_transfer_from_coarse_to_fine(p.interpolation_operators);
+        multigrid.set_transfer_operators(p.interpolation_operators);
         multigrid.mg_type(2);
         
         // multigrid.max_it(1);
