@@ -1,11 +1,3 @@
-/*
-* @Author: kopanicakova
-* @Date:   2018-03-08 22:57:34
-* @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-13 22:11:02
-*/
-
-
 #include "utopia_petsc_build_ksp.hpp"
 #include "utopia_Instance.hpp"
 

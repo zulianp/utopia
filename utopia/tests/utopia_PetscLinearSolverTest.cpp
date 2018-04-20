@@ -27,7 +27,7 @@ namespace utopia
             UTOPIA_RUN_TEST(petsc_cg_mg);
             UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
-            UTOPIA_RUN_TEST(petsc_cholesky);
+            UTOPIA_RUN_TEST(petsc_factorization);
         }
         
         void petsc_mg_exp()
@@ -380,6 +380,7 @@ namespace utopia
             auto precond = std::make_shared< InvDiagPreconditioner<DSMatrixd, DVectord> >();
             // utopia_ksp.set_preconditioner(precond);
             utopia_ksp.verbose(verbose);
+            utopia_ksp.ksp_type("gmres");
             utopia_ksp.solve(A, rhs, x_0);
             assert( approxeq(A*x_0, rhs, 1e-6) );
             //! [KSPSolver solve example1]
@@ -407,7 +408,7 @@ namespace utopia
             // assert( diff < 1e-6 );
         }
         
-        void petsc_cholesky()
+        void petsc_factorization()
         {
             if(mpi_world_size() > 1)
                 return;
@@ -421,7 +422,7 @@ namespace utopia
             rhs = local_values(local_size(A).get(0), 13.0);
             
             auto cholesky_factorization = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-            cholesky_factorization->set_type(PETSC_TAG, CHOLESKY_DECOMPOSITION_TAG);
+            cholesky_factorization->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
             
             if(!cholesky_factorization->solve(A, rhs, x)) {
                 assert(false && "failed to solve");
@@ -431,7 +432,7 @@ namespace utopia
             // assert( approxeq(A * x, rhs, 1e-6) );
             
             if(diff > 1e-6) {
-                utopia_error("petsc_cholesky fails. Known problem that needs to be fixed!");
+                utopia_error("petsc_factorization fails. Known problem that needs to be fixed!");
             }
         }
     

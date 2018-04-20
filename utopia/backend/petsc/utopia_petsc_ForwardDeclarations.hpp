@@ -10,6 +10,9 @@ namespace utopia
 
     class PetscVector;
     class PetscSerialVector;
+
+    template<class Matrix, class Vector>
+    class TaoSolver;
 }
 
 #endif //UTOPIA_PETSC_FORWARD_DECLARATIONS_HPP

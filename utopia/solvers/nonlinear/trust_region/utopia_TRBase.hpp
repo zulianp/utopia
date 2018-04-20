@@ -17,7 +17,8 @@
 #include "utopia_Parameters.hpp"    
 #include "utopia_NumericalTollerance.hpp"
 
-namespace utopia  {
+namespace utopia  
+{
   template<class Matrix, class Vector>
       /**
        * @brief      Base class for all TR solvers. Contains all general routines related to TR solvers.
@@ -27,8 +28,6 @@ namespace utopia  {
   {
     typedef UTOPIA_SCALAR(Vector)    Scalar;
     typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-    typedef utopia::LinearSolver<Matrix, Vector> Solver;
-    typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem; 
 
   public:
     TrustRegionBase(const Parameters params = Parameters())
@@ -213,20 +212,15 @@ namespace utopia  {
     {
       if(rho < eta1_)
       {
-          // in case of L2 norm - this is good option 
-          // for sloving with GS or MG in _inf norm, change ... 
-        radius = gamma1_ * radius; 
+        radius = std::max( Scalar(gamma1_ * norm2(p_k)), delta_min_); 
       }
-
-      // else if (rho > eta2_ && (norm2(p_k) > ((1 - eps_) * radius ) ))
       else if (rho > eta2_ )
       {
-        radius = std::min(gamma2_ * radius, delta_max_); 
+        Scalar intermediate = std::max(Scalar(gamma2_ * norm2(p_k)), radius); 
+        radius = std::min(intermediate, delta_max_); 
       }      
       return true; 
-
     }
-
 
     /*!
     \details
