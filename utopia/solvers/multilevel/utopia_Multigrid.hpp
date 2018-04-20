@@ -15,7 +15,7 @@
 #include "utopia_PrintInfo.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_Level.hpp"
-#include "utopia_MultiLevelBase.hpp"
+#include "utopia_LinearMultiLevel.hpp"
 #include <ctime>
 
 
@@ -28,7 +28,7 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Multigrid : public MultiLevelBase<Matrix, Vector>, 
+    class Multigrid : public LinearMultiLevel<Matrix, Vector>, 
                       public IterativeSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -44,16 +44,16 @@ namespace utopia
         {
             std::vector<Vector> r_h, r_H, c_H, c_h; 
 
-            void init(const int num_levels)
+            void init(const int n_levels)
             {
-                r_h.resize(num_levels);
-                r_H.resize(num_levels);
-                c_H.resize(num_levels);
-                c_h.resize(num_levels);
+                r_h.resize(n_levels);
+                r_H.resize(n_levels);
+                c_H.resize(n_levels);
+                c_h.resize(n_levels);
             }
 
-            inline bool valid(const std::size_t num_levels) const {
-                return r_h.size() == num_levels;
+            inline bool valid(const std::size_t n_levels) const {
+                return r_h.size() == n_levels;
             }
 
         } LevelMemory;
@@ -72,12 +72,12 @@ namespace utopia
         * @brief      Multigrid class
         *
         * @param[in]  smoother       The smoother.
-        * @param[in]  direct_solver  The direct solver for coarse level. 
+        * @param[in]  change_coarse_solver  The direct solver for coarse level. 
         */
         Multigrid(const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
-                  const std::shared_ptr<Solver> &direct_solver = std::shared_ptr<Solver>(),
+                  const std::shared_ptr<Solver> &change_coarse_solver = std::shared_ptr<Solver>(),
                   const Parameters params = Parameters())
-        : _smoother(smoother), _direct_solver(direct_solver), perform_galerkin_assembly_(true), use_line_search_(false), block_size_(1)
+        : _smoother(smoother), _change_coarse_solver(change_coarse_solver), perform_galerkin_assembly_(true), use_line_search_(false), block_size_(1)
         {
             set_parameters(params); 
         }
@@ -87,7 +87,7 @@ namespace utopia
         void set_parameters(const Parameters params) override
         {
             IterativeSolver::set_parameters(params); 
-            MultiLevelBase<Matrix, Vector>::set_parameters(params); 
+            LinearMultiLevel<Matrix, Vector>::set_parameters(params); 
             _smoother->set_parameters(params); 
 
         }
@@ -103,7 +103,7 @@ namespace utopia
 
                 //introduce API version
                 // if(block_size_ > 1) {
-                //     for(std::size_t i = 0; i < this->num_levels()-1; i++) {
+                //     for(std::size_t i = 0; i < this->n_levels()-1; i++) {
                 //       const_cast<Matrix &>(this->level(i).A()).implementation().convert_to_mat_baij(block_size_);
                 //     }
                 // }
@@ -126,7 +126,7 @@ namespace utopia
         virtual bool solve(const Vector &rhs, Vector &x_0)
         {
             Vector r, D_inv; 
-            SizeType l = this->num_levels(); 
+            SizeType l = this->n_levels(); 
 
             memory.init(l);
 
@@ -200,7 +200,7 @@ namespace utopia
                 D_inv = 1./D_inv; 
                 
                 Matrix A            =  level(l-1).A(); 
-                Matrix P            =  transfers(l-2).I(); 
+                Matrix P            =  transfer(l-2).I(); 
                 
                 grid_complexity     = get_global_nnz(P); 
                 operator_complexity = get_global_nnz(A); 
@@ -215,7 +215,7 @@ namespace utopia
                     
                     if(i <= l-3)
                     {
-                        P =  transfers(i).I(); 
+                        P =  transfer(i).I(); 
                         grid_complexity += get_global_nnz(P); 
                     }
                 }
@@ -284,18 +284,13 @@ namespace utopia
 
         inline Level &level(const SizeType &l)
         {
-            return this->_levels[l]; 
+            return this->levels_[l]; 
         }
 
 /*=======================================================================================================================================        =
 =========================================================================================================================================*/
     private:
       
-
-        inline Transfer &transfers(const SizeType & l)
-        {
-            return this->_transfers[l]; 
-        }
 
         /**
          * @brief      Function implements multiplicative multigrid cycle. 
@@ -307,7 +302,7 @@ namespace utopia
          */
         virtual bool multiplicative_cycle(const Vector &rhs, const SizeType &l, Vector &x_0)
         {            
-            assert(memory.valid(this->num_levels()) && l <= this->num_levels());
+            assert(memory.valid(this->n_levels()) && l <= this->n_levels());
            
             Vector &r_h = memory.r_h[l-1];
             Vector &r_H = memory.r_H[l-1];
@@ -322,7 +317,7 @@ namespace utopia
 
 
             //SHOULD NOT BE NECEASSARY HERE
-            // if(this->num_levels() > 2) {
+            // if(this->n_levels() > 2) {
             //     x_0 = redistribute_as(x_0, rhs); 
             // }
 
@@ -332,7 +327,7 @@ namespace utopia
 
             // residual transfer 
             r_h = rhs - level(l-1).A() * x_0; 
-            transfers(l-2).restrict(r_h, r_H); 
+            this->transfer(l-2).restrict(r_h, r_H); 
 
             assert(!empty(r_H));
 
@@ -358,7 +353,7 @@ namespace utopia
 
 
             // correction transfer
-            transfers(l-2).interpolate(c_H, c_h); 
+            this->transfer(l-2).interpolate(c_H, c_h); 
 
 
             if(use_line_search_) {
@@ -400,12 +395,12 @@ namespace utopia
 
             for(SizeType i = l-2; i >=0; i--)
             {
-                transfers(i).restrict(rhs_h, rhs_h); 
+                this->transfer(i).restrict(rhs_h, rhs_h); 
                 rhss.push_back(std::move(rhs_h));
             }
 
             coarse_solve(level(0).A(), rhss[l-1], x_0);    
-            transfers(0).interpolate(x_0, x_0); 
+            this->transfer(0).interpolate(x_0, x_0); 
 
             for(SizeType i = 1; i <l-1; i++)
             {
@@ -413,7 +408,7 @@ namespace utopia
                     multiplicative_cycle(rhss[i], i+1, x_0);  
                 }
 
-                transfers(i).interpolate(x_0, x_0); 
+                this->transfer(i).interpolate(x_0, x_0); 
             }
 
             for(SizeType i = 0; i < this->v_cycle_repetition(); i++) {
@@ -452,7 +447,7 @@ namespace utopia
          */
         bool coarse_solve(const Matrix &A, const Vector &rhs, Vector &x)
         {
-            _direct_solver->solve(A, rhs, x);
+            _change_coarse_solver->solve(A, rhs, x);
             assert(approxeq(A*x, rhs, 1e-6));
             return true; 
         }
@@ -466,10 +461,10 @@ namespace utopia
          *
          * @return     
          */
-        bool change_direct_solver(const std::shared_ptr<Solver> &linear_solver = std::shared_ptr<Solver>())
+        bool change_coarse_solver(const std::shared_ptr<Solver> &linear_solver = std::shared_ptr<Solver>())
         {
-            _direct_solver = linear_solver; 
-            _direct_solver->set_parameters(_parameters); 
+            _change_coarse_solver = linear_solver; 
+            _change_coarse_solver->set_parameters(_parameters); 
             return true; 
         }
 
@@ -504,7 +499,7 @@ namespace utopia
 
     protected:   
         std::shared_ptr<Smoother>           _smoother;
-        std::shared_ptr<Solver>             _direct_solver;
+        std::shared_ptr<Solver>             _change_coarse_solver;
 
     private:
         Parameters                          _parameters;

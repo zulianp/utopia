@@ -22,15 +22,15 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector, class FunctionType>
-    class NonLinearMultigrid : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>
+    template<class Matrix, class Vector>
+    class NonLinearMultigrid : public NonlinearMultiLevelBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
-
+        typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
     
 
     public:
@@ -44,7 +44,7 @@ namespace utopia
         NonLinearMultigrid( const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
                             const std::shared_ptr<Solver> &coarse_solver = std::shared_ptr<Solver>(),
                             const Parameters params = Parameters()): 
-                            NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
+                            NonlinearMultiLevelBase<Matrix,Vector>(params), 
                             _smoother(smoother), 
                             _coarse_solver(coarse_solver) 
         {
@@ -57,7 +57,7 @@ namespace utopia
 
         void set_parameters(const Parameters params)  // override
         {
-            NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params); 
+            NonlinearMultiLevelBase<Matrix, Vector>::set_parameters(params); 
             _smoother->set_parameters(params); 
             _coarse_solver->set_parameters(params); 
             
@@ -73,7 +73,7 @@ namespace utopia
         }
 
 
-        virtual bool solve(FunctionType & fine_fun, Vector &x_h) override
+        virtual bool solve(Fun & fine_fun, Vector &x_h) override
         {
             Vector rhs = local_zeros(local_size(x_h)); 
             return solve(fine_fun,  x_h, rhs); 
@@ -87,7 +87,7 @@ namespace utopia
          * @param      x_0   The initial guess. 
          *
          */
-        virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) override
+        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs) override
         {
             this->init_solver("Nonlinear multigrid", {" it. ", "|| r_N ||", "r_norm" }); 
             Vector F_h  = local_zeros(local_size(x_h)); 
@@ -142,7 +142,7 @@ namespace utopia
 
     private: 
 
-        inline FunctionType &levels(const SizeType &l)
+        inline Fun &levels(const SizeType &l)
         {
             return this->_nonlinear_levels[l]; 
         }
@@ -189,7 +189,7 @@ namespace utopia
         }
 
 
-        bool NMGM(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l, const std::vector<Vector> & rhss, const std::vector<Vector> & initial_iterates)
+        bool NMGM(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l, const std::vector<Vector> & rhss, const std::vector<Vector> & initial_iterates)
         {
             Vector L_l, L_2l, r_h,  r_2h, u_2l, e_2h, e_h; 
 
@@ -240,7 +240,7 @@ namespace utopia
          * @param[in]  l         Level
          *
          */
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
+        bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
             Vector g_fine, g_coarse, u_2l, e, u_init; 
             this->make_iterate_feasible(fine_fun, u_l); 
@@ -323,7 +323,7 @@ namespace utopia
         }
 
         // with RHS
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
+        bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs) override
         {
             _coarse_solver->solve(fun, x, rhs); 
             return true; 

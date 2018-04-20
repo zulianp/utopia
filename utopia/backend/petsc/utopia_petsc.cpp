@@ -2,6 +2,13 @@
 //https://www.mcs.anl.gov/petsc/documentation/changes/39.html
 
 #include "utopia_petsc.hpp"
+#include "utopia_MultiLevelEvaluations.hpp"
+#include "utopia_RMTR.hpp"
+#include "utopia_RMTR_inf.hpp"
+#include "utopia_MG_OPT.hpp"
+#include "utopia_FAS.hpp"
+#include "utopia_NonLinearMultigrid.hpp"
+#include "utopia_ExtendedFunction.hpp"
 
 //explicit instantiations
 namespace utopia {
@@ -18,8 +25,12 @@ namespace utopia {
 	//petsc non-linear solvers
 	template class NonLinearGaussSeidel<DSMatrixd, DVectord>;
 	
-
 	template class Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL>;
+	template class RMTR<DSMatrixd, DVectord, FIRST_ORDER>;
+	template class RMTR_inf<DSMatrixd, DVectord, FIRST_ORDER>;
+
+	template class FAS<DSMatrixd, DVectord>;
+	template class MG_OPT<DSMatrixd, DVectord>;
 
 	void optimize_nnz(DSMatrixd &A)
 	{

@@ -32,8 +32,8 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector, class FunctionType, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER >
-    class RMTR : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>,
+    template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
+    class RMTR : public NonlinearMultiLevelBase<Matrix, Vector>,
                        public TrustRegionBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
@@ -43,6 +43,7 @@ namespace utopia
         typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem; 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
+        typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
     public:
 
@@ -56,7 +57,7 @@ namespace utopia
                 const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse = std::shared_ptr<TRSubproblem>(),
                 const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother = std::shared_ptr<TRSubproblem>(),
                 const Parameters params = Parameters()): 
-                NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
+                NonlinearMultiLevelBase<Matrix,Vector>(params), 
                 _coarse_tr_subproblem(tr_subproblem_coarse), 
                 _smoother_tr_subproblem(tr_subproblem_smoother) 
         {
@@ -68,7 +69,7 @@ namespace utopia
 
         void set_parameters(const Parameters params) override
         {
-            NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params);    
+            NonlinearMultiLevelBase<Matrix, Vector>::set_parameters(params);    
             _it_global                  = 0;          
             _parameters                 = params; 
 
@@ -103,7 +104,7 @@ namespace utopia
         }
 
 
-        using NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::solve; 
+        using NonlinearMultiLevelBase<Matrix, Vector>::solve; 
 
         virtual std::string name_id() override { return "RMTR";  }
         
@@ -133,10 +134,10 @@ namespace utopia
          * @param      x_0   The initial guess. 
          *
          */
-        virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs) override
+        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs) override
         {
             bool converged = false; 
-            SizeType l = this->num_levels(); 
+            SizeType l = this->n_levels(); 
             Scalar r_norm, r0_norm, rel_norm, energy;
 
             Vector g_finest  = local_zeros(local_size(x_h)); 
@@ -225,17 +226,6 @@ namespace utopia
 
     private: 
 
-        inline FunctionType &levels(const SizeType &l)
-        {
-            return this->_nonlinear_levels[l]; 
-        }
-
-        inline Transfer &transfers(const SizeType & l)
-        {
-            return this->_transfers[l]; 
-        }
-
-
         /**
          * @brief      Multiplicative cycle 
          *
@@ -245,7 +235,7 @@ namespace utopia
          * @param[in]  level      The level
          *
          */
-        virtual bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &/*f*/, const SizeType & level) override
+        virtual bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &/*f*/, const SizeType & level) override
         {
             Vector g_fine, g_coarse, g_diff, u_2l, s_coarse, s_fine, s_global; 
             Matrix H_fine, H_coarse, H_diff; 
@@ -266,25 +256,25 @@ namespace utopia
             compute_s_global(u_l, level, s_global); 
             this->get_multilevel_gradient(fine_fun, u_l, g_fine, s_global, level); 
 
-            if(level == this->num_levels())
+            if(level == this->n_levels())
             {
                 converged =  this->criticality_measure_termination(norm2(g_fine)); 
                 if(converged==true)
                     return true; 
             }
 
-            transfers(level-2).restrict(g_fine, g_diff);
-            transfers(level-2).project_down(u_l, u_2l); 
+            this->transfer(level-2).restrict(g_fine, g_diff);
+            this->transfer(level-2).project_down(u_l, u_2l); 
 
-            this->make_iterate_feasible(levels(level-2), u_2l); 
+            this->make_iterate_feasible(this->function(level-2), u_2l); 
 
             //----------------------------------------------------------------------------
             //                   first order coarse level objective managment
             //----------------------------------------------------------------------------            
             if(CONSISTENCY_LEVEL != GALERKIN)
             {             
-                levels(level-2).gradient(u_2l, g_coarse); 
-                this->zero_correction_related_to_equality_constrain(levels(level-2), g_diff); 
+                this->function(level-2).gradient(u_2l, g_coarse); 
+                this->zero_correction_related_to_equality_constrain(this->function(level-2), g_diff); 
             }
 
             smoothness_flg = grad_smoothess_termination(g_diff, g_fine); 
@@ -298,12 +288,12 @@ namespace utopia
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
             {
                 this->get_multilevel_hessian(fine_fun, u_l, H_fine, level); 
-                transfers(level-2).restrict(H_fine, H_diff);
+                this->transfer(level-2).restrict(H_fine, H_diff);
                 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
                 {
-                    this->zero_correction_related_to_equality_constrain_mat(levels(level-2), H_diff); 
-                    levels(level-2).hessian(u_2l, H_coarse); 
+                    this->zero_correction_related_to_equality_constrain_mat(this->function(level-2), H_diff); 
+                    this->function(level-2).hessian(u_2l, H_coarse); 
                     H_diff -=  H_coarse; 
                 }
             }
@@ -322,7 +312,7 @@ namespace utopia
             
         
             s_coarse = 0*u_2l; 
-            coarse_reduction = this->get_multilevel_energy(levels(level-2),  u_2l,  s_coarse, level-1); 
+            coarse_reduction = this->get_multilevel_energy(this->function(level-2),  u_2l,  s_coarse, level-1); 
 
 
             //----------------------------------------------------------------------------
@@ -331,7 +321,7 @@ namespace utopia
             if(level == 2 && smoothness_flg)
             {
                 SizeType l_new = level - 1; 
-                this->local_tr_solve(levels(level-2), u_2l, l_new, true); 
+                this->local_tr_solve(this->function(level-2), u_2l, l_new, true); 
             }
             else if(smoothness_flg)
             {
@@ -339,7 +329,7 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = level - 1; 
-                    this->multiplicative_cycle(levels(level-2), u_2l, g_diff, l_new); 
+                    this->multiplicative_cycle(this->function(level-2), u_2l, g_diff, l_new); 
                 }
             }
             
@@ -349,9 +339,9 @@ namespace utopia
                 //                       building trial point from coarse level 
                 //----------------------------------------------------------------------------
                 s_coarse = u_2l - this->get_x_initial(level - 2);
-                coarse_reduction -= this->get_multilevel_energy(levels(level-2),  u_2l,  s_coarse, level-1);
+                coarse_reduction -= this->get_multilevel_energy(this->function(level-2),  u_2l,  s_coarse, level-1);
 
-                transfers(level-2).interpolate(s_coarse, s_fine);
+                this->transfer(level-2).interpolate(s_coarse, s_fine);
                 this->zero_correction_related_to_equality_constrain(fine_fun, s_fine); 
 
                 compute_s_global(u_l, level, s_global);                               
@@ -423,7 +413,7 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool local_tr_solve(FunctionType &fun, Vector & x, const SizeType & level, const bool & exact_solve_flg = false)
+        virtual bool local_tr_solve(Fun &fun, Vector & x, const SizeType & level, const bool & exact_solve_flg = false)
         {   
             Vector s_global, g; 
             Matrix  H; 
@@ -548,7 +538,7 @@ namespace utopia
 
 
             // on the finest level we work just with one radius 
-            if(level==this->num_levels())
+            if(level==this->n_levels())
             {
                 this->set_delta(level-1, intermediate_delta); 
                 return false; 
@@ -582,13 +572,13 @@ namespace utopia
          */
         virtual  Scalar level_dependent_norm(const Vector & u, const SizeType & current_l)
         {
-            if(current_l == this->num_levels())
+            if(current_l == this->n_levels())
                 return 0.0; 
             else
             {
                 Vector s = u; // carries over prolongated correction
-                for(SizeType i = current_l; i < this->num_levels(); i++)
-                    transfers(i-1).interpolate(s, s); 
+                for(SizeType i = current_l; i < this->n_levels(); i++)
+                    this->transfer(i-1).interpolate(s, s); 
                 
                 return norm2(s); 
             }    
@@ -599,7 +589,7 @@ namespace utopia
     // ---------------------------------- convergence checks -------------------------------
         virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta)
         {   
-            bool converged = NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::check_convergence(it, r_norm, rel_norm, 1); 
+            bool converged = NonlinearMultiLevelBase<Matrix, Vector>::check_convergence(it, r_norm, rel_norm, 1); 
 
             if(delta < this->delta_min())
             {
@@ -737,7 +727,7 @@ namespace utopia
          */
         virtual bool init_deltas()
         {
-            for(Scalar i = 0; i < this->num_levels(); i ++)
+            for(Scalar i = 0; i < this->n_levels(); i ++)
                 _deltas.push_back(this->delta0()); 
 
             return true; 
@@ -752,7 +742,7 @@ namespace utopia
          */
         bool init_delta_hessians()
         {
-            _delta_hessians.resize(this->num_levels()-1); 
+            _delta_hessians.resize(this->n_levels()-1); 
             return true; 
         }
 
@@ -791,7 +781,7 @@ namespace utopia
          */
         virtual bool init_x_initials()
         {
-            _x_initials.resize(this->num_levels()-1); 
+            _x_initials.resize(this->n_levels()-1); 
             return true; 
         }
 
@@ -830,7 +820,7 @@ namespace utopia
          */
         virtual bool init_delta_gradients()
         {
-            _delta_gradients.resize(this->num_levels()-1); 
+            _delta_gradients.resize(this->n_levels()-1); 
             return true; 
         }
 
@@ -875,7 +865,7 @@ namespace utopia
          * @param[in]  rhs          The rhs
          *
          */
-        virtual bool coarse_solve(FunctionType &fun, Vector &x, const Vector & /*rhs*/) override
+        virtual bool coarse_solve(Fun &fun, Vector &x, const Vector & /*rhs*/) override
         {
             local_tr_solve(fun, x, 0); 
             return true; 
@@ -926,10 +916,10 @@ namespace utopia
          *
          * @return     The multilevel hessian.
          */
-        virtual bool get_multilevel_hessian(const FunctionType & fun, const Vector & x,  Matrix & H, const SizeType & level)
+        virtual bool get_multilevel_hessian(const Fun & fun, const Vector & x,  Matrix & H, const SizeType & level)
         {
-            if(level < this->num_levels())
-                return MultilevelHessianEval<Matrix, Vector, FunctionType, CONSISTENCY_LEVEL>::compute_hessian(fun, x, H, get_delta_hessian(level-1));
+            if(level < this->n_levels())
+                return MultilevelHessianEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_hessian(fun, x, H, get_delta_hessian(level-1));
             else
                 return fun.hessian(x, H); 
         }
@@ -948,11 +938,11 @@ namespace utopia
          *
          * @return     The multilevel gradient.
          */
-        virtual bool get_multilevel_gradient(const FunctionType & fun, const Vector & x,  Vector & g, const Vector & s_global, const SizeType & level)
+        virtual bool get_multilevel_gradient(const Fun & fun, const Vector & x,  Vector & g, const Vector & s_global, const SizeType & level)
         {
-            if(level < this->num_levels())
+            if(level < this->n_levels())
             {
-                return MultilevelGradientEval<Matrix, Vector, FunctionType, CONSISTENCY_LEVEL>::compute_gradient(fun, x, g, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global);
+                return MultilevelGradientEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_gradient(fun, x, g, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global);
             }
             else
                  return fun.gradient(x, g); 
@@ -970,10 +960,10 @@ namespace utopia
          *
          * @return     The multilevel energy.
          */
-        virtual Scalar get_multilevel_energy(const FunctionType & fun, const Vector & x, const Vector & s_global, const SizeType & level)
+        virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & x, const Vector & s_global, const SizeType & level)
         {
-            if(level < this->num_levels())
-                return MultilevelEnergyEval<Matrix, Vector, FunctionType, CONSISTENCY_LEVEL>::compute_energy(fun, x, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global); 
+            if(level < this->n_levels())
+                return MultilevelEnergyEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_energy(fun, x, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global); 
             else
             {
                 Scalar energy; 
@@ -985,7 +975,7 @@ namespace utopia
 
         virtual void compute_s_global(const Vector & x, const SizeType & level, Vector & s_global)
         {
-            if(level < this->num_levels())
+            if(level < this->n_levels())
                 s_global = x - this->get_x_initial(level - 1);         
         }
 

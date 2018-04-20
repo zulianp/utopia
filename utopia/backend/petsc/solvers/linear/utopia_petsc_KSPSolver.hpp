@@ -334,8 +334,9 @@ public:
         compute_cond_number = ( (   KSP_type_ == "bcgs" || KSP_type_ == "cg"  || 
                                     KSP_type_ == "gmres") && (this->verbose() )) ? PETSC_TRUE : PETSC_FALSE; 
 
-        if(this->verbose())
+        if(this->verbose()) {
             KSPMonitorSet(ksp, MyKSPMonitor, &ut_log, 0);
+        }
 
         if(compute_cond_number)
             ierr = KSPSetComputeSingularValues(ksp, PETSC_TRUE); 
@@ -345,9 +346,9 @@ public:
 
         // KSP_NORM_PRECONDITIONED  is default in petsc
         //Why doesn't it work with cg?????????????
-        if(KSP_type_ != "cg") {
-            ierr = KSPSetNormType(ksp, KSP_NORM_UNPRECONDITIONED); 
-        }
+        // if(KSP_type_ != "cg") {
+        //     ierr = KSPSetNormType(ksp, KSP_NORM_UNPRECONDITIONED); 
+        // }
 
         if(!this->get_preconditioner()) 
         {
