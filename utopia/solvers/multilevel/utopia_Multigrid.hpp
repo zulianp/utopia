@@ -131,6 +131,7 @@ namespace utopia
             Scalar r_norm, r0_norm, rel_norm;
             SizeType it = 0;
             bool converged = false;
+            bool ok = true;
             SizeType L = this->n_levels();
             
             memory.init(L);
@@ -154,9 +155,9 @@ namespace utopia
             while(!converged)
             {
                 if(this->cycle_type() == MULTIPLICATIVE_CYCLE) {
-                    multiplicative_cycle(l);
+                    ok = standard_cycle(l); assert(ok);
                 } else if(this->cycle_type() == FULL_CYCLE) {
-                    full_cycle(l);
+                    ok = full_cycle(l); assert(ok);
                 } else {
                     std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n";
                 }
@@ -201,12 +202,12 @@ namespace utopia
         
         
         /**
-         * @brief      Function implements multiplicative multigrid cycle.
+         * @brief      Function implements multigrid standard cycle.
          *
-         * @param[in]  l     The level.
+         * @param[in] l The level.
          *
          */
-        virtual bool multiplicative_cycle(const SizeType &l)
+        virtual bool standard_cycle(const SizeType &l)
         {
             assert(memory.valid(this->n_levels()) && l < this->n_levels());
             
@@ -225,7 +226,12 @@ namespace utopia
             
             ////////////////////////////////////
             if(l == 0) {
-                return coarse_solve(r, c);
+                if(coarse_solve(r, c)) {
+                  assert(approxeq(level(0).A() * c, r, 1e-10));
+                  return true;
+                } else {
+                  return false;
+                }
             }
             ////////////////////////////////////
             
@@ -241,7 +247,7 @@ namespace utopia
                 assert(!empty(memory.r[l-1]));
                 
                 
-                multiplicative_cycle(l-1);
+                standard_cycle(l-1);
                 
                 // correction transfer
                 this->transfer(l-1).interpolate(memory.c[l-1], c_I);
@@ -264,16 +270,16 @@ namespace utopia
                     c += c_I;
                 }
 
+                // postsmoothing
+                smoothing(l, r, c, this->post_smoothing_steps());
+
 #ifndef NDEBUG
                 const Scalar new_err = norm2(r - level(l).A() * c);
                 // assert(new_err < err)
                 if(new_err > err) {
-                  std::cerr << "[Error] Multigrid::multiplicative: " << new_err << "<" << err << std::endl;
+                  std::cerr << "[Error] Multigrid::standard_cycle (" << l << "): " << new_err << "<" << err << std::endl;
                 }
 #endif
-                
-                // postsmoothing
-                smoothing(l, r, c, this->post_smoothing_steps());
             }
             
             return true;
@@ -312,7 +318,7 @@ namespace utopia
             {
                 for(SizeType j = 0; j < this->v_cycle_repetition(); j++) {
                     memory.r[i] = rhss[i];
-                    multiplicative_cycle(i);
+                    standard_cycle(i);
                 }
                 
                 this->transfer(i).interpolate(memory.c[i], memory.c[i+1]);
@@ -320,7 +326,7 @@ namespace utopia
             
             for(SizeType i = 0; i < this->v_cycle_repetition(); i++) {
                 // memory.r[l] = rhss[l];
-                multiplicative_cycle(l);
+                standard_cycle(l);
             }
             
             return true;

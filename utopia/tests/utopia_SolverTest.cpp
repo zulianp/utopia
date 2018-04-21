@@ -380,11 +380,10 @@ namespace utopia
 
     void runSolversTest()
     {
+    	runPetscLinearSolversTest(); 
     	runGenericSolversTest(); 
     	runPetscNonlinearSolversTest(); 
-    	runPetscLinearSolversTest(); 
     	runPetscSlepcSolversTest(); 
     }
-
-
+    
 }

@@ -447,7 +447,7 @@ namespace utopia {
 
 		void convert_to_mat_baij(const PetscInt block_size);
 
-		PetscBool is_initialized_as( MPI_Comm comm, MatType dense_type, PetscInt local_rows, PetscInt local_cols, PetscInt global_rows, PetscInt global_cols); 
+		bool is_initialized_as( MPI_Comm comm, MatType dense_type, PetscInt local_rows, PetscInt local_cols, PetscInt global_rows, PetscInt global_cols); 
         bool empty() const;
 
         bool has_type(VecType type) const;

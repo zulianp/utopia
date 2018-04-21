@@ -572,7 +572,7 @@ namespace utopia {
         return false;
     }
     
-    PetscBool PetscMatrix::is_initialized_as(MPI_Comm comm,
+    bool PetscMatrix::is_initialized_as(MPI_Comm comm,
        MatType dense_type,
        PetscInt local_rows,
        PetscInt local_cols,
@@ -580,7 +580,7 @@ namespace utopia {
        PetscInt global_cols)
     {
         if(empty()) {
-            return PETSC_FALSE;
+            return false;
         }
 
         // TODO:: check type and comm
@@ -602,7 +602,7 @@ namespace utopia {
             initialized = (m==global_rows && n == global_cols) ? PETSC_TRUE : PETSC_FALSE;
         }
         
-        return initialized;
+        return initialized == PETSC_TRUE;
     }
     
     void PetscMatrix::dense_init_values(MPI_Comm comm,

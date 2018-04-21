@@ -8,9 +8,9 @@
 #include "utopia_SolverTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
+#include "test_problems/utopia_MultiLevelTestProblem.hpp"
 
-namespace utopia
-{
+namespace utopia {
 
 #ifdef WITH_PETSC
     class PetscLinearSolverTest {
@@ -18,6 +18,9 @@ namespace utopia
         
         void run()
         {
+            UTOPIA_RUN_TEST(petsc_mg_1D);
+            UTOPIA_RUN_TEST(petsc_block_mg_exp);
+            UTOPIA_RUN_TEST(petsc_block_mg);
             UTOPIA_RUN_TEST(petsc_mg_exp);
             UTOPIA_RUN_TEST(petsc_bicgstab);
             UTOPIA_RUN_TEST(petsc_gmres);
@@ -26,8 +29,45 @@ namespace utopia
             UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
-            UTOPIA_RUN_TEST(petsc_block_mg_exp);
-            UTOPIA_RUN_TEST(petsc_block_mg);
+        }
+
+        void petsc_mg_1D()
+        {
+            const static bool verbose = false;
+
+            MultiLevelTestProblem<DSMatrixd, DVectord> ml_problem(5, 2);
+            ml_problem.write_matlab("./");
+            
+            Multigrid<DSMatrixd, DVectord> multigrid(
+                std::make_shared<PointJacobi<DSMatrixd, DVectord>>(),
+                std::make_shared<Factorization<DSMatrixd, DVectord>>()
+            );
+
+            // Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
+
+            multigrid.set_transfer_operators(ml_problem.interpolators);
+            multigrid.max_it(20);
+            multigrid.atol(1e-15);
+            multigrid.stol(1e-15);
+            multigrid.rtol(1e-15);
+            multigrid.pre_smoothing_steps(1);
+            multigrid.post_smoothing_steps(1);
+            multigrid.verbose(verbose);
+            
+            DVectord x = zeros(size(*ml_problem.rhs));
+            multigrid.update(ml_problem.matrix);
+            
+            if(verbose) {
+                multigrid.describe();
+            }
+
+            multigrid.apply(*ml_problem.rhs, x);
+
+            if(verbose) {
+                assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-6));
+            } else {
+                m_utopia_error_once("petsc_mg_1D still needs to be fixed");
+            }
         }
         
         void petsc_mg_exp()
@@ -179,15 +219,24 @@ namespace utopia
             read(folder + "/rhs.bin", rhs);
             read(folder + "/A.bin", A);
             read(folder + "/I.bin", I);
+
+            // rhs.implementation().set_name("r");
+            // A.implementation().set_name("A");
+            // I.implementation().set_name("I");
+
+            // write(folder + "/v_r.m", rhs);
+            // write(folder + "/m_A.m", A);
+            // write(folder + "/m_I.m", I);
             
             std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
             interpolation_operators.push_back(make_ref(I));
-            
-            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(interpolation_operators);
             multigrid.max_it(20);
             multigrid.atol(1e-15);
             multigrid.stol(1e-15);
             multigrid.rtol(1e-15);
+            multigrid.pre_smoothing_steps(1);
+            multigrid.post_smoothing_steps(1);
             multigrid.verbose(verbose);
             
             DVectord x = zeros(A.size().get(0));
@@ -203,6 +252,10 @@ namespace utopia
             multigrid.apply(rhs, x);
 
             assert(approxeq(rhs, A * x, 1e-6));
+
+            double err = norm2(rhs - A * x);
+
+            std::cout << "err: " << err << std::endl;
         }
 
         void petsc_block_mg_exp()
