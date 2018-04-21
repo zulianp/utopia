@@ -378,13 +378,4 @@ namespace utopia
 	}
 
 
-    void runSolversTest()
-    {
-    	runGenericSolversTest(); 
-    	runPetscNonlinearSolversTest(); 
-    	runPetscLinearSolversTest(); 
-    	runPetscSlepcSolversTest(); 
-    }
-
-
 }

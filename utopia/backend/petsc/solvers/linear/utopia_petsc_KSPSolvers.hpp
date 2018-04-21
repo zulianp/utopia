@@ -78,6 +78,38 @@ namespace utopia {
     std::string preconditioner_;
   };
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+  template<typename Matrix, typename Vector> 
+  class SOR<Matrix, Vector, PETSC> : public KSPSolver<Matrix, Vector, PETSC> {
+  public:
+    SOR(const Parameters params = Parameters())
+    : KSPSolver<Matrix, Vector, PETSC>(params)
+    {
+      this->pc_type("sor");
+      this->ksp_type("richardson");
+    }
+
+    void set_parameters(const Parameters params) override {
+      Parameters params_copy = params;
+      params_copy.lin_solver_type("richardson");
+      params_copy.preconditioner_type("sor");
+      KSPSolver<Matrix, Vector, PETSC>::set_parameters(params_copy);
+    }
+
+    inline void pc_type(const std::string & preconditioner) override
+    {
+      if(preconditioner != "sor")
+        std::cout<<"pc_type for SOR needs to be SOR... \n"; 
+    }
+
+    virtual SOR * clone() const override 
+    {
+        return new SOR(*this);
+    }
+
+
+  };
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
