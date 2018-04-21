@@ -201,20 +201,21 @@ namespace utopia {
         auto ux = u[0];
         auto uy = u[1];
 
-        const double mu = 1;
-        const double lambda = 1;
+        const double mu = 10;
+        const double lambda = 40;
 
         auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
         auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
-        LMDenseVector z = zeros(2);
-        // LMDenseVector z = values(2, -0.2);
+        // LMDenseVector z = zeros(2);
+        LMDenseVector z = values(2, -0.2);
         auto elast_op = ((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) * dX;
         auto f = inner(coeff(z), v) * dX;
 
         auto constr = constraints(
             boundary_conditions(uy == coeff(0.2),  {0}),
-            boundary_conditions(uy == coeff(-0.2),  {2}),
+            // boundary_conditions(uy == coeff(-0.2),  {2}),
+            boundary_conditions(uy == coeff(0.),  {2}),
             boundary_conditions(ux == coeff(0.0),  {0, 2})
             );
 

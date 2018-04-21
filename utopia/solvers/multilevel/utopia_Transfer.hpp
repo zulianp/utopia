@@ -136,6 +136,29 @@
             x_new = *_R * x; 
             return true; 
         }
+
+        /**
+         * @brief      Restriction of vector based on booleans.
+         * values have to be exact 1. and 0. 
+         *            \f$  x_{new} = R * x  \f$
+         * @param[in]  x     
+         * @param      x_new 
+         *
+         */
+        virtual bool boolean_restrict_or(const Vector &x, Vector &x_new)
+        {
+            x_new = local_zeros(local_size(*_R).get(0));
+            Read<Vector> r_(x);
+            Write<Vector> w_(x_new);
+
+            each_read(*_R, [&x, &x_new](const SizeType i, const SizeType j, const Scalar value) {
+                if(x.get(j) != 0.) {
+                    x_new.set(i, 1.);
+                } 
+            });
+
+            return true;
+        }
         
         /**
          * @brief      Restriction of matrix.

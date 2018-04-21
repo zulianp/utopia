@@ -7,7 +7,7 @@
 #include <ostream>
 #include <iomanip>
 
-// #define UTOPIA_RECORDER_ENABLED
+#define UTOPIA_RECORDER_ENABLED
 #ifdef UTOPIA_RECORDER_ENABLED
 #define UTOPIA_RECORD_EXPR(macro_expr_, macro_tensor_) { utopia::Recorder::instance().record_expr_and_value(macro_expr_, macro_tensor_); }
 #define UTOPIA_RECORD_VALUE(macro_name_, macro_tensor_) { utopia::Recorder::instance().record_name_and_value(macro_name_, macro_tensor_); }
