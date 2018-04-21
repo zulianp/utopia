@@ -202,7 +202,7 @@ namespace utopia {
         auto uy = u[1];
 
         const double mu = 10;
-        const double lambda = 40;
+        const double lambda = 10;
 
         auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
         auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );

@@ -53,6 +53,9 @@ namespace utopia {
 
 			rhs = std::make_shared<Vector>(values(n_finest, 1000.));
 
+
+			Write<Vector> w_(*rhs);
+
 			auto r = range(*rhs);
 			if(r.begin() == 0) {
 				rhs->set(0, -1.);
@@ -68,16 +71,16 @@ namespace utopia {
 			SizeType i = 0;
 			for(auto I_ptr : interpolators) {
 				//REMOVE ME
-				I_ptr->implementation().set_name("I_" + std::to_string(i));
+				// I_ptr->implementation().set_name("I_" + std::to_string(i));
 
 				write("mat_I_" + std::to_string(i) + ".m", *I_ptr);
 			}
 
 			//REMOVE ME
-			rhs->implementation().set_name("r");
+			// rhs->implementation().set_name("r");
 			
 			//REMOVE ME
-			matrix->implementation().set_name("A");
+			// matrix->implementation().set_name("A");
 			
 			write("vec_r.m", *rhs);
 			write("mat_A.m", *matrix);

@@ -33,6 +33,8 @@ namespace utopia {
 
         void petsc_mg_1D()
         {
+            if(mpi_world_size() > 1) return;
+            
             const static bool verbose = false;
 
             MultiLevelTestProblem<DSMatrixd, DVectord> ml_problem(4, 2);

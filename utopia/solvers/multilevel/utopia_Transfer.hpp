@@ -9,8 +9,11 @@
 #define UTOPIA_ML_TRANSFER_HPP
 
 #include "utopia_Smoother.hpp"
-#include <assert.h>
+#include <cassert>
+#include <cmath>
 #include <memory>
+
+
 
      namespace utopia 
      {
@@ -147,15 +150,40 @@
          */
         virtual bool boolean_restrict_or(const Vector &x, Vector &x_new)
         {
-            x_new = local_zeros(local_size(*_R).get(0));
-            Read<Vector> r_(x);
-            Write<Vector> w_(x_new);
+            static const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
 
-            each_read(*_R, [&x, &x_new](const SizeType i, const SizeType j, const Scalar value) {
-                if(x.get(j) != 0.) {
+            // x_new = local_zeros(local_size(*_R).get(0));
+
+            Matrix R_boolean = *_R;
+            R_boolean *= 0.;
+
+            {
+                Write<Matrix> w_(R_boolean);
+
+                each_read(*_R, [&R_boolean](const SizeType i, const SizeType j, const Scalar value) {
+                    if(std::abs(value) > off_diag_tol) {
+                        R_boolean.set(i, j, 1.);
+                    } 
+                });
+            }
+
+            x_new = R_boolean * x;
+
+            ReadAndWrite<Vector> rw_(x_new);
+
+            auto r = range(x_new);
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                if(x_new.get(i) > 1.) {
                     x_new.set(i, 1.);
                 } 
-            });
+            }
+
+            //THIS works for serial (use it once we have a is_parallel and is_serial query)
+            // each_read(*_R, [&x, &x_new](const SizeType i, const SizeType j, const Scalar value) {
+            //     if(x.get(j) != 0. && std::abs(value) > off_diag_tol) {
+            //         x_new.set(i, 1.);
+            //     } 
+            // });
 
             return true;
         }
