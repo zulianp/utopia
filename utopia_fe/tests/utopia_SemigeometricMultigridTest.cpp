@@ -177,7 +177,7 @@ namespace utopia {
 
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
-        const unsigned int n = 16;
+        const unsigned int n = 50;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,
@@ -225,7 +225,7 @@ namespace utopia {
         std::cout << "assembly complete" << std::endl;
 
         SemiGeometricMultigrid mg;
-        mg.init(*equation_systems, 3);
+        mg.init(*equation_systems, 4);
         // mg.max_it(1);
 
         DVectord sol = local_zeros(local_size(rhs));

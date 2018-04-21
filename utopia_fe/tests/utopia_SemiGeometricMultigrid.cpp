@@ -14,6 +14,20 @@
 #include <cmath>
 
 namespace utopia {
+
+	static void make_d(const DSMatrixd &mat, DVectord &res)
+		{
+			res = sum(mat, 1);
+
+			ReadAndWrite<DVectord> rw_(res);
+			auto r = range(res);
+			for(auto k = r.begin(); k != r.end(); ++k) {
+				if(approxeq(res.get(k), 0.0, 1e-14)) {
+					res.set(k, 1.);
+				}
+			}
+		}
+
 	SemiGeometricMultigrid::SemiGeometricMultigrid(
 		const std::shared_ptr<Smoother<DSMatrixd, DVectord> > &smoother,
 		const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver)
@@ -40,6 +54,8 @@ namespace utopia {
 		const std::size_t n_coarse_spaces = n_levels - 1;
 		meshes.resize(n_coarse_spaces);
 		equation_systems.resize(n_coarse_spaces);
+
+		DVectord d_diag;
 
 		switch(dim) {
 			case 2: 
@@ -120,6 +136,9 @@ namespace utopia {
 				dof_map.n_variables(),
 				*interpolators[i-1]
 				); assert(success);
+
+			make_d(*interpolators[i-1], d_diag);
+			*interpolators[i-1] = diag(1./d_diag) * *interpolators[i-1];
 		}
 
 		interpolators[n_coarse_spaces-1] = std::make_shared<DSMatrixd>();
@@ -135,6 +154,9 @@ namespace utopia {
 			dof_map.n_variables(),
 			*interpolators[n_coarse_spaces-1]
 			); assert(success);
+
+		make_d(*interpolators[n_coarse_spaces-1], d_diag);
+				*interpolators[n_coarse_spaces-1] = diag(1./d_diag) * *interpolators[n_coarse_spaces-1];
 
 		if(mg.verbose()) {
 			for(const auto &e : equation_systems) {
@@ -156,6 +178,7 @@ namespace utopia {
 
 	bool SemiGeometricMultigrid::apply(const DVectord &rhs, DVectord &sol)
 	{
+		mg.verbose(true);
 		return mg.solve(rhs, sol);
 	}
 

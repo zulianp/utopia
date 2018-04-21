@@ -333,9 +333,17 @@ namespace utopia
                 }
             }
 
+            double err = norm2(r_h);
+
             // correction transfer
             transfers(l-2).interpolate(c_H, c_h); 
             x_0 += c_h; 
+
+            double new_err = norm2(rhs - levels(l-1).A() * x_0);
+
+            if(new_err >= err) {
+                std::cerr << new_err << "<" << err << std::endl;
+            }
 
             // postsmoothing 
             smoothing(levels(l-1).A(), rhs, x_0, this->post_smoothing_steps()); 
