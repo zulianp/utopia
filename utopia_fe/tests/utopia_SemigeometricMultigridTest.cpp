@@ -179,7 +179,7 @@ namespace utopia {
 
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
-        const unsigned int n = 50;
+        const unsigned int n = 70;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,
@@ -207,14 +207,14 @@ namespace utopia {
         auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
         auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
-        // LMDenseVector z = zeros(2);
-        LMDenseVector z = values(2, -0.2);
+        LMDenseVector z = zeros(2);
+        // LMDenseVector z = values(2, -0.2);
         auto elast_op = ((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v))) * dX;
         auto f = inner(coeff(z), v) * dX;
 
         auto constr = constraints(
             boundary_conditions(uy == coeff(0.2),  {0}),
-            boundary_conditions(uy == coeff(0.0),  {2}),
+            boundary_conditions(uy == coeff(-0.2),  {2}),
             boundary_conditions(ux == coeff(0.0),  {0, 2})
             );
 
@@ -233,14 +233,14 @@ namespace utopia {
         // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
         auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-        // auto smoother      = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+        auto smoother      = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
         // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
-        auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+        // auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
         // linear_solver->verbose(true);
         SemiGeometricMultigrid mg(smoother, linear_solver);
-        mg.algebraic().rtol(1e-16);
-        mg.algebraic().atol(1e-16);
-        mg.algebraic().max_it(400);
+        // mg.algebraic().rtol(1e-16);
+        // mg.algebraic().atol(1e-16);
+        // mg.algebraic().max_it(400);
 
         // mg.convert_to_block_solver();
         mg.verbose(true);
@@ -313,7 +313,7 @@ namespace utopia {
         apply_boundary_conditions(V.dof_map(), lapl_mat, rhs);
 
          // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-        auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+        auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
         auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
         // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE>>();

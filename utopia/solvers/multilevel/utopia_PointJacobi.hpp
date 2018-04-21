@@ -83,7 +83,7 @@ namespace utopia
         bool sweep(const Matrix &A, const Vector &rhs, Vector &x)
         {
             Vector diag_A = diag(A);
-            Vector diag_A_inv = 1 / diag_A;
+            Vector diag_A_inv = 1. / diag_A;
             
             // prevents system from being indefinite
             check_indef(diag_A_inv);

@@ -33,12 +33,13 @@ namespace utopia {
 
         void petsc_mg_1D()
         {
-            const static bool verbose = false;
+            const static bool verbose = true;
 
-            MultiLevelTestProblem<DSMatrixd, DVectord> ml_problem(5, 2);
-            // ml_problem.write_matlab("./");
+            MultiLevelTestProblem<DSMatrixd, DVectord> ml_problem(4, 2);
+            ml_problem.write_matlab("./");
             
             Multigrid<DSMatrixd, DVectord> multigrid(
+                // std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
                 std::make_shared<PointJacobi<DSMatrixd, DVectord>>(),
                 std::make_shared<Factorization<DSMatrixd, DVectord>>()
             );
@@ -46,13 +47,13 @@ namespace utopia {
             // Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
 
             multigrid.set_transfer_operators(ml_problem.interpolators);
-            multigrid.max_it(20);
+            multigrid.max_it(4);
             multigrid.atol(1e-15);
             multigrid.stol(1e-15);
             multigrid.rtol(1e-15);
             multigrid.pre_smoothing_steps(1);
             multigrid.post_smoothing_steps(1);
-            multigrid.verbose(verbose);
+            // multigrid.verbose(verbose);
             
             DVectord x = zeros(size(*ml_problem.rhs));
             multigrid.update(ml_problem.matrix);
