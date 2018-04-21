@@ -38,8 +38,6 @@ namespace utopia
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
-        // typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
-        // typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
         typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem; 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
@@ -53,9 +51,7 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        RMTR(    
-                const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse = std::shared_ptr<TRSubproblem>(),
-                const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother = std::shared_ptr<TRSubproblem>(),
+        RMTR(   const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother, 
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector>(params), 
                 _coarse_tr_subproblem(tr_subproblem_coarse), 

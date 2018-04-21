@@ -38,7 +38,7 @@ namespace utopia
         typedef utopia::LSStrategy<Matrix, Vector> LSStrategy; 
 
     public:
-       Newton(  const std::shared_ptr <Solver> &linear_solver = std::shared_ptr<Solver>(),
+       Newton(  const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
                 const Parameters params                       = Parameters() ):
                 NonLinearSolver<Matrix, Vector>(linear_solver, params), alpha_(1)
                 {

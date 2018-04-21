@@ -41,9 +41,9 @@ namespace utopia
         typedef utopia::TrustRegionBase<Matrix, Vector>     TrustRegionBase; 
 
     public:
-       AutoAdaptiveAlternateMin(    const std::shared_ptr<TRSubproblem> &tr_subproblem_stag1 = std::shared_ptr<TRSubproblem>(),
-                                    const std::shared_ptr<TRSubproblem> &tr_subproblem_stag2 = std::shared_ptr<TRSubproblem>(),
-                                    const std::shared_ptr<TRSubproblem> &tr_subproblem_mono = std::shared_ptr<TRSubproblem>(),
+       AutoAdaptiveAlternateMin(    const std::shared_ptr<TRSubproblem> &tr_subproblem_stag1, 
+                                    const std::shared_ptr<TRSubproblem> &tr_subproblem_stag2,
+                                    const std::shared_ptr<TRSubproblem> &tr_subproblem_mono, 
                                     const Parameters params                                 = Parameters() ) :
                                     
                                     NonlinearSolver(tr_subproblem_mono, params), 

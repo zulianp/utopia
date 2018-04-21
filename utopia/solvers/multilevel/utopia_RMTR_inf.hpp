@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2018-04-18
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2018-04-18
-*/
-
 #ifndef UTOPIA_RMTR_INF_HPP
 #define UTOPIA_RMTR_INF_HPP
 
@@ -61,13 +54,10 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        RMTR_inf(    
-                const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse = std::shared_ptr<TRSubproblem>(),
-                const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother = std::shared_ptr<TRSubproblem>(),
-                const Parameters params = Parameters()): 
-                NonlinearMultiLevelBase<Matrix,Vector>(params), 
-                _coarse_tr_subproblem(tr_subproblem_coarse), 
-                _smoother_tr_subproblem(tr_subproblem_smoother) 
+        RMTR_inf(   const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother,  const Parameters params = Parameters()): 
+                    NonlinearMultiLevelBase<Matrix,Vector>(params), 
+                    _coarse_tr_subproblem(tr_subproblem_coarse), 
+                    _smoother_tr_subproblem(tr_subproblem_smoother) 
         {
             set_parameters(params); 
         }

@@ -95,14 +95,8 @@ namespace utopia {
 						Rastrigin<Matrix, Vector> fun;
 						Vector x = local_values(10 * (i+1), 1.);
 
-						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
-						cg.max_it(size(x).get(0));
-
 						TrustRegion<Matrix, Vector> trust_region;
-						cg.verbose(true);
-						cg.atol(1e-19);
-						cg.stol(1e-19);
-						cg.rtol(1e-19);
+						trust_region.verbose(false); 
 
 						double mag_x0 = -1;
 						fun.value(x, mag_x0);

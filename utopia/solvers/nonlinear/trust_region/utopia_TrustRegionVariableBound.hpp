@@ -1,17 +1,9 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-11
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 #define UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_TRBoxBase.hpp"
 #include "utopia_TRBoxSubproblem.hpp"
 #include "utopia_Parameters.hpp"    
-
 
  namespace utopia 
  {
@@ -29,12 +21,11 @@
         typedef utopia::TrustRegionBoxBase<Matrix, Vector> TrustRegionBase; 
         typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
      	
-     	public:
-      TrustRegionVariableBound(const std::shared_ptr<TRBoxSubproblem> &tr_subproblem = std::shared_ptr<TRBoxSubproblem>(),
-                              const Parameters params = Parameters())
-                              : NonLinearSolver(tr_subproblem, params)  
+     	public:                                                                       // once generic, then = std::shared_ptr<ProjectedGaussSeidel<Matrix, Vector> >()
+      TrustRegionVariableBound( const std::shared_ptr<TRBoxSubproblem> &tr_subproblem,
+                                const Parameters params = Parameters()) : 
+                                NonLinearSolver(tr_subproblem, params)  
       {
-
         set_parameters(params);        
       }
 
@@ -48,7 +39,6 @@
         NonLinearSolver::set_parameters(params);
         TrustRegionBase::set_parameters(params);
       }
-
 
       /**
        * @brief      Trust region solve. 
@@ -168,6 +158,21 @@
           return false;
       }
 
+
+      virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls) override
+      {
+          auto linear_solver = this->linear_solver(); 
+          if (dynamic_cast<TRBoxSubproblem *>(linear_solver.get()) != nullptr)
+          {
+              TRBoxSubproblem * tr_sub = dynamic_cast<TRBoxSubproblem *>(linear_solver.get());
+              tr_sub->set_linear_solver(ls);
+          }
+      }
+
+      virtual void set_trust_region_strategy(const std::shared_ptr<TRBoxSubproblem> &tr_linear_solver)
+      {
+        NonLinearSolver::set_linear_solver(tr_linear_solver); 
+      }
 
   };
 

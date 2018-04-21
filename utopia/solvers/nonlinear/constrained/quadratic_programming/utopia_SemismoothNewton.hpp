@@ -23,7 +23,7 @@ namespace utopia {
 		
 	public:
 		
-		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
+		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver, 
 						 const Parameters params                         = Parameters() ) :
 		linear_solver_(linear_solver), active_set_tol_(1e-15), linear_solve_zero_initial_guess_(true)
 		{
@@ -45,6 +45,11 @@ namespace utopia {
 			active_set_tol_ = tol;
 		}
 		
+        void set_linear_solver(const std::shared_ptr<Solver > &ls)
+        {
+            linear_solver_ = ls; 
+        }                
+
 		
 		bool solve(const Matrix &A, const Vector &b, Vector &x)  override
 		{
