@@ -18,14 +18,14 @@ namespace utopia
         
         void run()
         {
-            // UTOPIA_RUN_TEST(petsc_mg_exp);
-            // UTOPIA_RUN_TEST(petsc_bicgstab);
-            // UTOPIA_RUN_TEST(petsc_gmres);
-            // UTOPIA_RUN_TEST(petsc_mg);
-            // UTOPIA_RUN_TEST(petsc_cg_mg);
-            // UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
-            // UTOPIA_RUN_TEST(petsc_mg_jacobi);
-            // UTOPIA_RUN_TEST(petsc_factorization);
+            UTOPIA_RUN_TEST(petsc_mg_exp);
+            UTOPIA_RUN_TEST(petsc_bicgstab);
+            UTOPIA_RUN_TEST(petsc_gmres);
+            UTOPIA_RUN_TEST(petsc_mg);
+            UTOPIA_RUN_TEST(petsc_cg_mg);
+            UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
+            UTOPIA_RUN_TEST(petsc_mg_jacobi);
+            UTOPIA_RUN_TEST(petsc_factorization);
             UTOPIA_RUN_TEST(petsc_block_mg_exp);
             UTOPIA_RUN_TEST(petsc_block_mg);
         }
@@ -217,8 +217,8 @@ namespace utopia
         void petsc_block_mg()
         {
             Multigrid<DSMatrixd, DVectord> multigrid(
-                 std::make_shared<SOR<DSMatrixd, DVectord>>(),
-               // std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
+                // std::make_shared<GMRES<DSMatrixd, DVectord>>(),
+                std::make_shared<SOR<DSMatrixd, DVectord>>(),
                 // std::make_shared<Factorization<DSMatrixd, DVectord>>()
                 std::make_shared<LUDecomposition<DSMatrixd, DVectord>>()
             );
@@ -460,5 +460,4 @@ namespace utopia
         
         UTOPIA_UNIT_TEST_END("PetscLinearSolverTest");
     }
-
 }
