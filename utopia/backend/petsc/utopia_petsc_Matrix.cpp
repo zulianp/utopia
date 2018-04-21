@@ -955,6 +955,7 @@ namespace utopia {
         
         if(size == 1 || !is_mpi()) {
             MatGetRowSum(implementation(), col.implementation());
+            col.set_initialized(true);
         } else {
             reduce_rows(
                 col,

@@ -100,11 +100,11 @@ namespace utopia
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.set_use_line_search(true);
+            // multigrid.set_use_line_search(true);
             
             
             multigrid.set_transfer_operators(std::move(interpolation_operators));
-            multigrid.set_fix_semidefinite_operators(true);
+            // multigrid.set_fix_semidefinite_operators(true);
             multigrid.update(make_ref(A));
             
             DVectord x_0 = zeros(A.size().get(0));
@@ -223,6 +223,9 @@ namespace utopia
                 std::make_shared<LUDecomposition<DSMatrixd, DVectord>>()
             );
 
+           // multigrid.set_use_line_search(true);
+            // multigrid.set_fix_semidefinite_operators(true);
+
            test_block_mg(multigrid, true);
         }
         
@@ -267,7 +270,7 @@ namespace utopia
             multigrid.max_it(1);
             multigrid.mg_type(1);
             multigrid.verbose(verbose);
-            multigrid.set_use_line_search(true);
+            // multigrid.set_use_line_search(true);
             
             // ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> cg; //with the HOMEMADE works in parallel
             ConjugateGradient<DSMatrixd, DVectord> cg;
@@ -319,14 +322,14 @@ namespace utopia
             interpolation_operators.push_back(make_ref(I_2));
             interpolation_operators.push_back(make_ref(I_3));
             
-            auto direct_solver = std::make_shared< Factorization<DSMatrixd, DVectord> >();
-            auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+            auto smoother      = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
             multigrid.set_transfer_operators(interpolation_operators);
             multigrid.update(make_ref(A));
             
             // multigrid.verbose(true);
-            multigrid.set_use_line_search(true);
+            // multigrid.set_use_line_search(true);
             multigrid.apply(rhs, x);
             
             assert( approxeq(A*x, rhs, 1e-6) );

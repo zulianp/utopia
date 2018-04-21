@@ -179,7 +179,7 @@ namespace utopia {
 
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
-        const unsigned int n = 100;
+        const unsigned int n = 50;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,
@@ -229,10 +229,10 @@ namespace utopia {
 
         std::cout << "assembly complete" << std::endl;
 
-        auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
         // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        // auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+        auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
         // auto smoother      = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
         // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord>>();
         auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
@@ -278,7 +278,7 @@ namespace utopia {
         std::cout << "[run_semigeometric_multigrid_poisson]" << std::endl;
         auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());     
         
-        const unsigned int n = 200;
+        const unsigned int n = 50;
         libMesh::MeshTools::Generation::build_square(*lm_mesh,
             n, n,
             0, 1,
@@ -313,12 +313,12 @@ namespace utopia {
         apply_boundary_conditions(V.dof_map(), lapl_mat, rhs);
 
          // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-        // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>());
-        auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
-        // auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
-        auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE>>();
-        smoother->set_n_local_sweeps(3);
-        smoother->sweeps(1);
+        auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+        // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+        auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+        // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE>>();
+        // smoother->set_n_local_sweeps(3);
+        smoother->sweeps(3);
         
         // auto smoother = linear_solver;
 

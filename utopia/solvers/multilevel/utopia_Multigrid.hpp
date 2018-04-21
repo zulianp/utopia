@@ -253,7 +253,7 @@ namespace utopia
                     const Scalar alpha = dot(c_I, r_R)/dot(level(l).A() * c_I, c_I);
                     
                     if(alpha <= 0.) {
-                        // std::cerr << l << " zero grid correction" << std::endl;
+                        std::cerr << l << " alpha: " << alpha << std::endl;
                         c += c_I;
                     } else {
                         // std::cout << l << " : " << alpha << std::endl;
