@@ -376,14 +376,4 @@ namespace utopia
 		
 		UTOPIA_UNIT_TEST_END("SolversTest");
 	}
-
-
-    void runSolversTest()
-    {
-    	runPetscLinearSolversTest(); 
-    	runGenericSolversTest(); 
-    	runPetscNonlinearSolversTest(); 
-    	runPetscSlepcSolversTest(); 
-    }
-    
 }

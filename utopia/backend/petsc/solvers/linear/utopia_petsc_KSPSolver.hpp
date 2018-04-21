@@ -277,6 +277,10 @@ public:
 
         KSPSetOperators(solver, raw_type(A), raw_type(A));
 
+        // std::cout<<"--------- KSP smoothing... messing up with norms....... \n"; 
+        KSPSetNormType(solver, KSP_NORM_NONE); 
+        KSPSetConvergenceTest(solver, KSPConvergedSkip, NULL, NULL);
+
         if(!this->get_preconditioner()) 
         {
             PC pc; 
@@ -343,13 +347,6 @@ public:
             ierr = KSPSetComputeSingularValues(ksp, PETSC_TRUE); 
         
         ierr = KSPSetType(ksp, KSP_type_.c_str());
-
-
-        // KSP_NORM_PRECONDITIONED  is default in petsc
-        //Why doesn't it work with cg?????????????
-        // if(KSP_type_ != "cg") {
-        //     ierr = KSPSetNormType(ksp, KSP_NORM_UNPRECONDITIONED); 
-        // }
 
         if(!this->get_preconditioner()) 
         {

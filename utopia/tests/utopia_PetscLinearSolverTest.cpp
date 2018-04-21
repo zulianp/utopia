@@ -36,7 +36,7 @@ namespace utopia {
             const static bool verbose = false;
 
             MultiLevelTestProblem<DSMatrixd, DVectord> ml_problem(5, 2);
-            ml_problem.write_matlab("./");
+            // ml_problem.write_matlab("./");
             
             Multigrid<DSMatrixd, DVectord> multigrid(
                 std::make_shared<PointJacobi<DSMatrixd, DVectord>>(),
@@ -237,11 +237,14 @@ namespace utopia {
             multigrid.rtol(1e-15);
             multigrid.pre_smoothing_steps(1);
             multigrid.post_smoothing_steps(1);
+            multigrid.cycle_type(MULTIPLICATIVE_CYCLE); 
             multigrid.verbose(verbose);
+            multigrid.pre_smoothing_steps(1); 
+            multigrid.post_smoothing_steps(1); 
             
             DVectord x = zeros(A.size().get(0));
 
-            int block_size = 1;
+            int block_size = 2;
             multigrid.block_size(block_size);
             multigrid.update(make_ref(A));
            
@@ -268,7 +271,7 @@ namespace utopia {
         {
             Multigrid<DSMatrixd, DVectord> multigrid(
                 // std::make_shared<GMRES<DSMatrixd, DVectord>>(),
-                std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
+                std::make_shared<SOR<DSMatrixd, DVectord>>(),
                 // std::make_shared<Factorization<DSMatrixd, DVectord>>()
                 std::make_shared<LUDecomposition<DSMatrixd, DVectord>>()
             );
