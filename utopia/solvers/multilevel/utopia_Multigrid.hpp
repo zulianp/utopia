@@ -339,14 +339,16 @@ namespace utopia
             transfers(l-2).interpolate(c_H, c_h); 
             x_0 += c_h; 
 
+
+            // postsmoothing 
+            smoothing(levels(l-1).A(), rhs, x_0, this->post_smoothing_steps()); 
+
             double new_err = norm2(rhs - levels(l-1).A() * x_0);
 
             if(new_err >= err) {
                 std::cerr << new_err << "<" << err << std::endl;
             }
 
-            // postsmoothing 
-            smoothing(levels(l-1).A(), rhs, x_0, this->post_smoothing_steps()); 
             
             return true; 
         }
