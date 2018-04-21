@@ -287,19 +287,9 @@ namespace utopia
 			
 			//FIXME the following unilateral constraints do not work with MPRGP
 			// auto box = make_upper_bound_constraints(make_ref(u));
+	
 			
-			MPRGP<DSMatrixd, DVectord> mprgp;
-			mprgp.set_box_constraints(make_ref(box));
-			
-			// initial guess
-			DVectord x = 0 * b;
-			
-			mprgp.verbose(false);
-			mprgp.solve(A, b, x);
-			
-			
-			DVectord x_0 = 0. * x;
-
+			DVectord x_0 = 0. * b;
 			auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
 			// auto lsolver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
 			// auto lsolver = std::make_shared<GMRES<DSMatrixd, DVectord>>();

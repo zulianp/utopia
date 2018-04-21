@@ -278,8 +278,8 @@ public:
         KSPSetOperators(solver, raw_type(A), raw_type(A));
 
         // std::cout<<"--------- KSP smoothing... messing up with norms....... \n"; 
-        // KSPSetNormType(solver, KSP_NORM_NONE); 
-        // KSPSetConvergenceTest(solver, KSPConvergedSkip, NULL, NULL);
+        KSPSetNormType(solver, KSP_NORM_NONE); 
+        KSPSetConvergenceTest(solver, KSPConvergedSkip, NULL, NULL);
 
         if(!this->get_preconditioner()) 
         {
