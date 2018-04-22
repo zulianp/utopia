@@ -140,12 +140,23 @@ namespace utopia {
 		
 		PetscMatrix(const PetscMatrix &other) {
 			using std::make_shared;
+           
+            if(other.empty()) {
+                wrapper_ = make_shared<PetscMatrixMemory>(other.communicator());
+                return;
+            }
+
 			wrapper_ = make_shared<PetscMatrixMemory>();
 			other.wrapper_->duplicate(*wrapper_);
 		}
 		
 		PetscMatrix &operator=(const PetscMatrix &other) {
 			if(wrapper_ == other.wrapper_) return *this;
+
+            if(other.empty()) {
+                clear();
+                return *this;
+            }
 			
 			wrapper_ = std::make_shared<PetscMatrixMemory>();
 			other.wrapper_->duplicate(*wrapper_);
