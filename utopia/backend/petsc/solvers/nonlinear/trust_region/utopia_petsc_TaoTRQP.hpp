@@ -5,6 +5,7 @@
 #include "utopia_petsc_ForwardDeclarations.hpp"
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Traits.hpp"
+#include "utopia_TRQuadraticFunction.hpp"
 
 #include <string>
 #include <memory>
@@ -29,29 +30,19 @@ namespace utopia {
             
             virtual ~TaoTRSubproblem( ){}
 
-
             virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const BoxConstraints<Vector> & box) override
             {
                 tao_solver_->set_box_constraints(box);
 
-
-                // to be fixed ... 
-                Matrix * m3 = const_cast<Matrix*> (&H); 
-                Vector * v3 = const_cast<Vector*> (&g); 
-
-                *v3  *= -1.0; 
-                QuadraticFunction<Matrix, Vector, Traits<Vector>::Backend> fun(make_ref( *m3) , make_ref( *v3 ));
-
+                // note, we do not need to switch sign ... 
+                TRQuadraticFunction<Matrix, Vector, Traits<Vector>::Backend> fun(make_ref(H) , make_ref(g));
                 
-                //  just for debugging
-                // suitable options: gpcg, BQPIP, pgd,  ----- BNCG - to be checked from rmtr ... 
-                tao_solver_->verbose(false);
+                //  suitable options: gpcg, BQPIP, pgd, bncg, bqpip - to be checked from rmtr ... 
                 tao_solver_->set_type("gpcg");
                 tao_solver_->solve(fun, p_k);
-
+                
                 return true;
             }
-
 
             virtual void set_linear_solver(const std::shared_ptr<LinearSolver > &ls) override
             {

@@ -101,12 +101,7 @@
           if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver_.get()))
           {
             p_k = 0 * p_k; 
-            tr_subproblem->current_radius(delta);  
-
-            Vector ub, lb; 
-            this->merge_tr_with_pointwise_constrains(x_k, delta, ub, lb); 
-            
-            auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+            auto box = this->merge_tr_with_pointwise_constrains(x_k, delta); 
             tr_subproblem->tr_constrained_solve(H, g, p_k, box);
           }
 

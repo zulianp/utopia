@@ -165,9 +165,9 @@
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------          
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-            tr_subproblem->current_radius(delta);  
+          //   tr_subproblem->current_radius(delta);  
+          tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
 
-          this->linear_solve(H, g, p_k);
           this->get_pred(g, H, p_k, pred); 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------

@@ -7,8 +7,6 @@
 #include "utopia_Dogleg.hpp"
 #include "utopia_SteihaugToint.hpp"
 #include "utopia_ActiveSetTRSubproblem.hpp"
-// there is some problem with includes inside of petsc 
-// base classes 
 #include "utopia_TRBase.hpp"
 #include "utopia_TRBoxBase.hpp"
 
@@ -17,6 +15,7 @@
 #include "utopia_TRNormalEquation.hpp" 
 #include "utopia_TrustRegionVariableBound.hpp"
 
+#include "utopia_TRQuadraticFunction.hpp"
 
 // factory 
 #include "utopia_TrustRegionFactory.hpp"

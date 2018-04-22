@@ -879,18 +879,15 @@ namespace utopia
         {
             if(flg)
             {
-                _coarse_tr_subproblem->current_radius(get_delta(level-1));  
                 _coarse_tr_subproblem->atol(1e-16); 
                 _coarse_tr_subproblem->max_it(5000); 
-                _coarse_tr_subproblem->tr_constrained_solve(H, g, s); 
+                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, get_delta(level-1)); 
             }
             else
             {
-                _smoother_tr_subproblem->current_radius(get_delta(level-1));  
                 _smoother_tr_subproblem->atol(1e-16); 
                 _smoother_tr_subproblem->max_it(5);
-                _smoother_tr_subproblem->tr_constrained_solve(H, g, s); 
-
+                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, get_delta(level-1)); 
             }
 
             return true; 

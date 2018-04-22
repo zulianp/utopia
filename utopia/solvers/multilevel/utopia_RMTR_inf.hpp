@@ -883,26 +883,16 @@ namespace utopia
         {
             if(flg)
             {
-                // TODO:: tolerances
-                Vector ub, lb; 
-                this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
-                
-                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+                // TODO:: tolerances, max_it
+                auto box = this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1)); 
                 _coarse_tr_subproblem->tr_constrained_solve(H, g, s, box);
-
             }
             else
             {
-                // TODO:: tolerances
-                Vector ub, lb; 
-                this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
-                
-                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+                // TODO:: tolerances, max_it
+                auto box = this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1)); 
                 _smoother_tr_subproblem->tr_constrained_solve(H, g, s, box);
-
-
             }
-
             return true; 
         }
 
@@ -1040,50 +1030,36 @@ namespace utopia
 
 
 protected: 
-
-    // todo: check TR_bound ... 
-    virtual bool get_pred(const Vector & g, const Matrix & B, const Vector & p_k, Scalar &pred) override
-    {
-      Scalar l_term = dot(g, p_k);
-      Scalar qp_term = dot(p_k, B * p_k);
-      pred =  l_term - 0.5 * qp_term; 
-      return true; 
-    }
+    SizeType                            _it_global;                 /** * global iterate counter  */
+    std::vector<Scalar>                 _deltas;                    /** * deltas on given level  */
 
 
+    std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem;     /** * solver used to solve coarse level TR subproblems  */
+    std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem;   /** * solver used to solve fine level TR subproblems  */
 
 
-    protected:   
-        SizeType                            _it_global;                 /** * global iterate counter  */
-        std::vector<Scalar>                 _deltas;                    /** * deltas on given level  */
+    std::vector<Vector>           _delta_gradients;             /** * difference between fine and coarse level gradient */
+    std::vector<Matrix>           _delta_hessians;              /** * difference between fine and coarse level hessians */
+    std::vector<Vector>           _x_initials;                  /** * initial iterates on given level */
 
 
-        std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem;     /** * solver used to solve coarse level TR subproblems  */
-        std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem;   /** * solver used to solve fine level TR subproblems  */
+    // ----------------------- PARAMETERS ----------------------
+    Parameters                      _parameters; 
 
 
-        std::vector<Vector>           _delta_gradients;             /** * difference between fine and coarse level gradient */
-        std::vector<Matrix>           _delta_hessians;              /** * difference between fine and coarse level hessians */
-        std::vector<Vector>           _x_initials;                  /** * initial iterates on given level */
+    SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
+    SizeType                        _max_smoothing_it;          /** * max smoothing iterations  */
+
+    Scalar                         _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level corection stays inside fine level radius  */
+
+    Scalar                         _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to coarse level at all  */
+    Scalar                         _eps_grad_termination;       /** * tolerance on grad  */
+
+    Scalar                         _hessian_update_delta;       /** * tolerance used for updating hessians */
+    Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
 
 
-        // ----------------------- PARAMETERS ----------------------
-        Parameters                      _parameters; 
-
-    
-        SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
-        SizeType                        _max_smoothing_it;          /** * max smoothing iterations  */
-
-        Scalar                         _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level corection stays inside fine level radius  */
-
-        Scalar                         _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to coarse level at all  */
-        Scalar                         _eps_grad_termination;       /** * tolerance on grad  */
-
-        Scalar                         _hessian_update_delta;       /** * tolerance used for updating hessians */
-        Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
-
-
-        VerbosityLevel                  _verbosity_level; 
+    VerbosityLevel                  _verbosity_level; 
 
 
     };
