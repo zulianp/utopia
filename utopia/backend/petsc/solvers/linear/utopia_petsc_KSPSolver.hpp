@@ -31,7 +31,7 @@ namespace utopia {
 
         PetscBool compute_cond_number; 
     }
-    UTOPIA_TRACE;
+    UTOPIA_KSP_LOG;
 
     
     /**@ingroup     Linear 
@@ -249,6 +249,10 @@ public:
         ut_log.compute_cond_number = compute_cond_number; 
 
         ierr = KSPSetUp(ksp);
+        //FIXME everything that leads to KSPSetUp (including KSPSetUp) needs to be moved
+        //to update(..) and ksp has to be stored in the class, copy constructor has 
+        //to be implemented for cloning the ksp
+
         ierr = KSPSolve(ksp, raw_type(b), raw_type(x));
           
         ierr = KSPGetConvergedReason(ksp, &reason);
@@ -300,6 +304,10 @@ public:
         }
         
         KSPSetUp(solver);
+        //FIXME everything that leads to KSPSetUp (including KSPSetUp) needs to be moved
+        //to update(..) and ksp has to be stored in the class, copy constructor has 
+        //to be implemented for cloning the ksp
+        
         KSPSolve(solver, raw_type(rhs), raw_type(x));
         KSPDestroy(&solver);
         return true;
@@ -382,7 +390,7 @@ protected:
     const std::vector<std::string> Solver_packages;       /*!< Valid options for Solver packages types. */
 
     KSP                 ksp;
-    UTOPIA_TRACE          ut_log; 
+    UTOPIA_KSP_LOG          ut_log; 
     PetscBool           compute_cond_number;  
 
     };
