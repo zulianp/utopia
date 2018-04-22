@@ -89,9 +89,13 @@ namespace utopia {
 		{
 			LinearSolver<Matrix, Vector>::set_parameters(params);
 			strategy_.set_parameters(params);
-		}                                           
-	
+		}       
 
+		Factorization * clone() const override
+		{
+			return new Factorization(*this);
+		}
+	
 	private:
 
 		class Strategy : public KSPSolver<Matrix, Vector> {

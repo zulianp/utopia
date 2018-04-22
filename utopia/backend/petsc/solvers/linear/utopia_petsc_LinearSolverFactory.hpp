@@ -31,7 +31,7 @@ namespace utopia {
 				// std::cout<<"LinearSolver not available, solving with utopia_CG.  \n";  //FIXME fix tests and put back
 				return std::make_shared<ConjugateGradient<Matrix, Vector> >();
 			} else  {
-				return it->second;
+				return LinearSolverPtr(it->second->clone());
 			}
 		}
 

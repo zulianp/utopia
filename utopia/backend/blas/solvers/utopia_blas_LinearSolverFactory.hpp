@@ -38,7 +38,7 @@ namespace utopia {
 					} 
 					else 
 					{
-						return it->second;
+						return LinearSolverPtr(it->second->clone());
 					}
 				}
 

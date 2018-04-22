@@ -20,14 +20,22 @@ namespace utopia {
 		
 	public:
 		
-		SemismoothNewton(const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
-						 const Parameters params                         = Parameters() ) :
+		SemismoothNewton(const std::shared_ptr<Solver> &linear_solver = std::shared_ptr<Solver>(),
+						 const Parameters params = Parameters() ) :
 		linear_solver_(linear_solver), line_search_type_(SNESLINESEARCHBASIC)
 		{
 			set_parameters(params);
 		}
+
+		SemismoothNewton * clone() const override {
+			if(linear_solver_) {
+				return new SemismoothNewton(std::shared_ptr<Solver>(linear_solver_->clone()));
+			} else {
+				return new SemismoothNewton();
+			}
+		}
 				
-		bool solve(const Matrix &A, const Vector &b, Vector &x)  override
+		bool solve(const Matrix &A, const Vector &b, Vector &x) override
 		{
 			Vector f = local_zeros(local_size(b));
 			Matrix J = A;

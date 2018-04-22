@@ -23,6 +23,11 @@ namespace utopia
 
         virtual ~SteihaugToint(){}
 
+        SteihaugToint * clone() const override 
+        {
+        	return new SteihaugToint();
+        }
+
 	protected:
         bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
         {
