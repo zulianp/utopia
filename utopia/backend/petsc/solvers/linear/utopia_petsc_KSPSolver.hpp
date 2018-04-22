@@ -31,7 +31,7 @@ namespace utopia {
 
         PetscBool compute_cond_number; 
     }
-    UTOPIA_TRACE;
+    UTOPIA_KSP_LOG;
 
     
     /**@ingroup     Linear 
@@ -249,6 +249,10 @@ public:
         ut_log.compute_cond_number = compute_cond_number; 
 
         ierr = KSPSetUp(ksp);
+        //FIXME everything that leads to KSPSetUp (including KSPSetUp) needs to be moved
+        //to update(..) and ksp has to be stored in the class, copy constructor has 
+        //to be implemented for cloning the ksp
+
         ierr = KSPSolve(ksp, raw_type(b), raw_type(x));
           
         ierr = KSPGetConvergedReason(ksp, &reason);
@@ -263,10 +267,11 @@ public:
 
         return true;
     }
-
-
-    bool smooth(const Matrix &A, const Vector &rhs, Vector &x) override
+    
+    bool smooth(const Vector &rhs, Vector &x) override
     {
+        const Matrix &A = *this->get_operator();
+
         KSP solver;
         KSPCreate(A.implementation().communicator(), &solver);
         KSPSetFromOptions(solver); 
@@ -275,6 +280,10 @@ public:
         KSPSetTolerances(solver, 0., 0., PETSC_DEFAULT, this->sweeps());
 
         KSPSetOperators(solver, raw_type(A), raw_type(A));
+
+        // std::cout<<"--------- KSP smoothing... messing up with norms....... \n"; 
+        KSPSetNormType(solver, KSP_NORM_NONE); 
+        KSPSetConvergenceTest(solver, KSPConvergedSkip, NULL, NULL);
 
         if(!this->get_preconditioner()) 
         {
@@ -295,6 +304,10 @@ public:
         }
         
         KSPSetUp(solver);
+        //FIXME everything that leads to KSPSetUp (including KSPSetUp) needs to be moved
+        //to update(..) and ksp has to be stored in the class, copy constructor has 
+        //to be implemented for cloning the ksp
+        
         KSPSolve(solver, raw_type(rhs), raw_type(x));
         KSPDestroy(&solver);
         return true;
@@ -334,20 +347,14 @@ public:
         compute_cond_number = ( (   KSP_type_ == "bcgs" || KSP_type_ == "cg"  || 
                                     KSP_type_ == "gmres") && (this->verbose() )) ? PETSC_TRUE : PETSC_FALSE; 
 
-        if(this->verbose())
+        if(this->verbose()) {
             KSPMonitorSet(ksp, MyKSPMonitor, &ut_log, 0);
+        }
 
         if(compute_cond_number)
             ierr = KSPSetComputeSingularValues(ksp, PETSC_TRUE); 
         
         ierr = KSPSetType(ksp, KSP_type_.c_str());
-
-
-        // KSP_NORM_PRECONDITIONED  is default in petsc
-        //Why doesn't it work with cg?????????????
-        if(KSP_type_ != "cg") {
-            ierr = KSPSetNormType(ksp, KSP_NORM_UNPRECONDITIONED); 
-        }
 
         if(!this->get_preconditioner()) 
         {
@@ -358,6 +365,16 @@ public:
 
         ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
         ierr = KSPSetTolerances(ksp, PreconditionedSolver::rtol(), PreconditionedSolver::atol(), PETSC_DEFAULT,  PreconditionedSolver::max_it());
+    }
+
+    virtual void update(const std::shared_ptr<const Matrix> &op) override
+    {
+        PreconditionedSolver::update(op);
+    }
+
+    virtual KSPSolver * clone() const override 
+    {
+        return new KSPSolver(*this);
     }
 
 
@@ -373,7 +390,7 @@ protected:
     const std::vector<std::string> Solver_packages;       /*!< Valid options for Solver packages types. */
 
     KSP                 ksp;
-    UTOPIA_TRACE          ut_log; 
+    UTOPIA_KSP_LOG          ut_log; 
     PetscBool           compute_cond_number;  
 
     };

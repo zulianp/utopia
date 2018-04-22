@@ -83,23 +83,22 @@ namespace utopia {
 		auto smoother      = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
 		auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
 		Multigrid<DSMatrixd, DVectord> multigrid(smoother, linear_solver);
-		multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
-		multigrid.max_it(20);
-		multigrid.atol(1e-15);
-		multigrid.stol(1e-15);
-		multigrid.rtol(1e-15);
-		
+		multigrid.set_transfer_operators(std::move(interpolation_operators));
 		DVectord x = zeros(A.size().get(0));
 		// DVectord upper_bound = values(A.size().get(0), 0.003);
 		// auto box = make_upper_bound_constraints(make_ref(upper_bound));
 
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(A), make_ref(rhs));
 		TaoSolver<DSMatrixd, DVectord> tao(make_ref(multigrid));
+		
 		// multigrid.verbose(true);
+		multigrid.max_it(20);
+		multigrid.atol(1e-15);
+		multigrid.stol(1e-15);
+		multigrid.rtol(1e-15);
 		//constraints do not work with mg because system contains lagr mult
 		// tao.set_box_constraints(box);
 		tao.solve(fun, x);
-
 	}
 
 	void petsc_tao_tr_bound()
@@ -148,7 +147,7 @@ namespace utopia {
 		UTOPIA_UNIT_TEST_BEGIN("PetscTaoTest");
 		//does not work yet missing ksp for dense matrix
 		// UTOPIA_RUN_TEST(petsc_tao_solve_simple);
-		UTOPIA_RUN_TEST(petsc_tao_solve_vi);
+		// UTOPIA_RUN_TEST(petsc_tao_solve_vi);
 		UTOPIA_RUN_TEST(petsc_tao_solve_mg);
 		UTOPIA_RUN_TEST(petsc_tao_tr_bound);
 		UTOPIA_UNIT_TEST_END("PetscTaoTest");

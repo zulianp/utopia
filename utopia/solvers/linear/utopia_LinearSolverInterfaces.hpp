@@ -28,6 +28,15 @@ namespace utopia {
 		}	
 	};
 
+	template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
+	class SOR {
+	public:
+		SOR() {
+			static_assert(Backend < HOMEMADE, "MINRES not implemented for this backend");
+		}	
+	};
+
+
 	template<typename Matrix, typename Vector, int Backend = Traits<Vector>::Backend>
 	class Factorization {
 	public:

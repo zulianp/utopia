@@ -37,7 +37,7 @@ namespace utopia
 
 
     public:
-     InexactNewton(     const std::shared_ptr <Solver> &linear_solver                   = std::shared_ptr<Solver>(),
+     InexactNewton(     const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
                         const Parameters params                                         = Parameters()
                         ):
      NonLinearSolver<Matrix, Vector>(linear_solver, params),alpha_(1), 

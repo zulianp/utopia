@@ -1,10 +1,3 @@
-/*
- * @Author: alenakopanicakova
- * @Date:   2016-04-17
- * @Last Modified by:   Alena Kopanicakova
- * @Last Modified time: 2017-07-04
- */
-
 #ifndef UTOPIA_NONLINEAR_ML_BASE_HPP
 #define UTOPIA_NONLINEAR_ML_BASE_HPP
 #include "utopia_Level.hpp"
@@ -12,14 +5,14 @@
 #include "utopia_MultiLevelBase.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Function.hpp"
+#include "utopia_SolutionStatus.hpp"
+
 #include <algorithm>
 #include <vector>
 
-
-namespace utopia 
-{
-
+namespace utopia {
     #define CHECK_NUM_PRECISION_mode
+
 
     /**
      * @brief      Base class for all nonlinear multilevel solvers. \n
@@ -29,15 +22,14 @@ namespace utopia
      * @tparam     Matrix
      * @tparam     Vector
      */
-    template<class Matrix, class Vector, class FunctionType>
-    class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>,
-    public Monitor<Matrix, Vector>
-    {
-        
+    template<class Matrix, class Vector>
+    class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public Monitor<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::Transfer<Matrix, Vector> Transfer;
+        typedef utopia::ExtendedFunction<Matrix, Vector> Fun;
+        typedef std::shared_ptr<Fun> FunPtr;
         
         NonlinearMultiLevelBase(const Parameters params = Parameters())
         {
@@ -65,7 +57,6 @@ namespace utopia
             time_statistics_    = params.time_statistics();
         }
         
-        
         /**
          * @brief      The solve function for nonlinear multilevel solvers.
          *
@@ -74,18 +65,19 @@ namespace utopia
          * @param      x_h   The initial guess.
          *
          */
-        virtual bool solve(FunctionType &fine_fun, Vector & x_h, const Vector & rhs)
+        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs)
         {
             this->init_solver(this->name_id(), {" it. ", "|| grad ||", "r_norm" , "Energy"});
+            status_.clear();
             
             bool converged = false;
-            SizeType it = 0, l = this->num_levels();
+            SizeType it = 0, l = this->n_levels();
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
             
             if(this->verbose())
                 std::cout<<"Number of levels: "<< l << "  \n";
             
-            Vector g  = local_zeros(local_size(x_h));
+            Vector g = local_zeros(local_size(x_h));
             fine_fun.gradient(x_h, g);
             r0_norm = norm2(g);
             r_norm = r0_norm; 
@@ -156,47 +148,24 @@ namespace utopia
          * @param      x_h   The initial guess.
          *
          */
-        virtual bool solve(FunctionType & fine_fun, Vector &x_h)
+        virtual bool solve(Fun & fine_fun, Vector &x_h)
         {
             Vector rhs = local_zeros(local_size(x_h));
             return this->solve(fine_fun,  x_h, rhs);
         }
         
-        
         /**
          * @brief      Fnction inits functions associated with assemble on each level.
          *
          * @param[in]  level_functions  The level functions
          *
          */
-        virtual bool init_level_functions_from_coarse_to_fine(const std::vector<FunctionType> &level_functions)
+        virtual bool set_functions(const std::vector<FunPtr> &level_functions)
         {
-            _nonlinear_levels.clear();
-            _nonlinear_levels.insert(_nonlinear_levels.begin(), level_functions.rbegin(), level_functions.rend());
-            
+            level_functions_.clear();
+            level_functions_.insert(level_functions_.begin(), level_functions.begin(), level_functions.end());
             return true;
         }
-        
-        
-        
-        
-        /**
-         * @brief      Fnction inits functions associated with assemble on each level.
-         *
-         * @param[in]  level_functions  The level functions
-         *
-         */
-        virtual bool init_level_functions_from_fine_to_coarse(const std::vector<FunctionType> &level_functions)
-        {
-            _nonlinear_levels.clear();
-            _nonlinear_levels.insert(_nonlinear_levels.begin(), level_functions.begin(), level_functions.end());
-            
-            return true;
-        }
-        
-        
-        
-        
         
         /* @brief
          Function initializes projections  operators.
@@ -205,39 +174,17 @@ namespace utopia
          * @param[in]  operators                The restriction operators.
          *
          */
-        virtual bool init_nonlinear_transfer_from_coarse_to_fine(const std::vector<std::shared_ptr <Matrix> > & restriction_operators, const std::vector<std::shared_ptr <Matrix> > & projection_operators)
+        virtual bool set_transfer_operators(
+            const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
+            const std::vector<std::shared_ptr<Matrix>> &projection_operators)
         {
-            this->_num_levels = restriction_operators.size() + 1;
-            this->_transfers.clear();
-            
-            for(auto I = restriction_operators.rbegin(), P = projection_operators.rbegin(); I != restriction_operators.rend() && P != projection_operators.rend(); ++I, ++P )
-                this->_transfers.push_back(std::move(Transfer(*I, *P)));
+            this->transfers_.clear();
+            for(auto I = interpolation_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && P != projection_operators.end(); ++I, ++P )
+                this->transfers_.push_back(Transfer(*I, *P));
             
             return true;
         }
         
-        
-        /* @brief
-         Function initializes projections  operators.
-         Operators need to be ordered FROM FINE TO COARSE.
-         *
-         * @param[in]  operators                The restriction operators.
-         *
-         */
-        virtual bool init_nonlinear_transfer_from_fine_to_coarse(const std::vector<std::shared_ptr <Matrix> > & restriction_operators, const std::vector<std::shared_ptr <Matrix> > & projection_operators)
-        {
-            this->_num_levels = restriction_operators.size() + 1;
-            this->_transfers.clear();
-            
-            for(auto I = restriction_operators.begin(), P = projection_operators.begin(); I != restriction_operators.end() &&  P != projection_operators.end() ; ++I, ++P )
-                this->_transfers.push_back(std::move(Transfer(*I, *P)));
-            
-            return true;
-        }
-        
-
-
-
         virtual void print_statistics(const SizeType & it_global) 
         {
             std::string path = this->name_id() + "_data_path"; 
@@ -264,18 +211,13 @@ namespace utopia
             }
         }
 
-
-
-
-
-        
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Scalar      atol() const               { return atol_; }
         Scalar      rtol()  const              { return rtol_; }
         Scalar      stol()  const              { return stol_; }
         SizeType    max_it()  const            { return max_it_; }
-        bool        verbose() const                     { return verbose_; }
-        bool        time_statistics() const       { return time_statistics_; }
+        bool        verbose() const            { return verbose_; }
+        bool        time_statistics() const    { return time_statistics_; }
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         void atol(const Scalar & atol_in ) { atol_ = atol_in; };
@@ -320,8 +262,9 @@ namespace utopia
         virtual void exit_solver(const SizeType &num_it, const Scalar & convergence_reason) override
         {
             _time.stop();
-            params_.convergence_reason(convergence_reason);
-            params_.num_it(num_it);
+
+            status_.reason = convergence_reason;
+            status_.iterates = num_it;
         
             if(verbose_)
             {
@@ -389,7 +332,7 @@ namespace utopia
          * @param      x
          *
          */
-        virtual bool make_iterate_feasible(FunctionType & fun, Vector & x)
+        virtual bool make_iterate_feasible(Fun & fun, Vector & x)
         {
           Vector bc_values; 
           fun.get_eq_constrains_values(bc_values); 
@@ -425,7 +368,7 @@ namespace utopia
          * @param      fun   The fun
          * @param      c     The correction
          */
-        virtual bool zero_correction_related_to_equality_constrain(FunctionType & fun, Vector & c)
+        virtual bool zero_correction_related_to_equality_constrain(Fun & fun, Vector & c)
         {
             Vector bc;
             fun.get_eq_constrains_flg(bc);
@@ -452,7 +395,7 @@ namespace utopia
          * @param      M     matrix
          *
          */
-        virtual bool zero_correction_related_to_equality_constrain_mat(FunctionType & fun, Matrix & M)
+        virtual bool zero_correction_related_to_equality_constrain_mat(Fun & fun, Matrix & M)
         {
             Vector bc;
             fun.get_eq_constrains_flg(bc);
@@ -472,11 +415,7 @@ namespace utopia
             return true;
         }
         
-        
-        inline FunctionType &levels(const SizeType &l) { return this->_nonlinear_levels[l];  }
-        inline Transfer &transfers(const SizeType & l) { return this->_transfers[l];  }
-        
-        
+                
         /**
          * @brief     Multiplicative V/W cycle
          *
@@ -486,7 +425,7 @@ namespace utopia
          * @param[in]  l         level
          *
          */
-        virtual bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)=0;
+        virtual bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)=0;
         
         /**
          * @return     Name of solver - to have nice printouts
@@ -502,7 +441,7 @@ namespace utopia
          * @param[in]  rhs   The right hand side
          *
          */
-        virtual bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) = 0;
+        virtual bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs) = 0;
         
         
         /**
@@ -515,39 +454,45 @@ namespace utopia
          * @param[in]  l         level
          *
          */
-        virtual bool full_cycle(FunctionType &/*fine_fun*/, Vector & u_l, const Vector &/*f*/, const SizeType & l)
+        virtual bool full_cycle(Fun &/*fine_fun*/, Vector & u_l, const Vector &/*f*/, const SizeType & l)
         {
             for(SizeType i = l-2; i >=0; i--)
             {
-                transfers(i).restrict(u_l, u_l);
-                this->make_iterate_feasible(levels(i), u_l);
+                this->transfer(i).restrict(u_l, u_l);
+                this->make_iterate_feasible(this->function(i), u_l);
             }
             
             // TODO:: check this out
             // shouldnt be g - Rg_{L+1} ???
             Vector L_l = local_zeros(local_size(u_l));
-            this->coarse_solve(levels(0), u_l, L_l);
+            this->coarse_solve(this->function(0), u_l, L_l);
             
-            transfers(0).interpolate(u_l, u_l);
+            this->transfer(0).interpolate(u_l, u_l);
             
             for(SizeType i = 1; i <l-1; i++)
             {
                 for(SizeType j = 0; j < this->v_cycle_repetition(); j++)
                 {
                     Vector f = local_zeros(local_size(u_l));
-                    this->multiplicative_cycle(levels(i), u_l, f, i+1);
+                    this->multiplicative_cycle(this->function(i), u_l, f, i+1);
                 }
-                transfers(i).interpolate(u_l, u_l);
+                this->transfer(i).interpolate(u_l, u_l);
             }
             return true;
         }
         
+        inline Fun &function(const SizeType level)
+        {
+            return *level_functions_[level];
+        }
         
+        inline const Fun &function(const SizeType level) const
+        {
+            return *level_functions_[level];
+        }
         
     protected:
-        std::vector<FunctionType>                      _nonlinear_levels;
-        Parameters params_;                           /*!< Solver parameters. */
-        
+        std::vector<FunPtr>                      level_functions_;        
         
         // ... GENERAL SOLVER PARAMETERS ...
         Scalar atol_;                   /*!< Absolute tolerance. */
@@ -560,6 +505,8 @@ namespace utopia
         
         
         Chrono _time;                 /*!<Timing of solver. */
+
+        SolutionStatus status_;
         
     };
     

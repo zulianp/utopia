@@ -20,10 +20,8 @@ namespace utopia
      * @brief      The class helping to print-out information about solver: initialization messages, prinitning iteration status, time-stats and exit/convergance messages. 
      *             It also helps pass solution and informations about solve back into FEM packages. 
      */
-    class  ConvergenceReason
-    {
+    class ConvergenceReason {
         typedef double Scalar;
-
     public:
         
         // TODO:  put all reasons here ... 

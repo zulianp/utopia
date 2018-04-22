@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-10-04
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-15
-*/
-
 #ifndef UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP
 #define UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP
 #include "utopia_TRSubproblem.hpp"
@@ -12,7 +5,6 @@
 
 namespace utopia 
 {
-
 	/**
 	 * @brief      Interface to use petsc KSP in TR context \n
 	 *				There are 5 different possibilities, grouped as follows: \n
@@ -42,7 +34,6 @@ namespace utopia
 		static_assert(Traits<Matrix>::Backend == utopia::PETSC, "utopia::KSP_TR:: only works with petsc types");
 
     public:
-
 
     	KSP_TR(const Parameters params = Parameters()): 
     															TRSubproblem(params),
@@ -147,13 +138,40 @@ namespace utopia
 #else
 		    KSPCGSetRadius(ksp, this->current_radius());
 #endif
-
-		    
 	        ierr = KSPSetTolerances(ksp, KSPSolver::rtol(), KSPSolver::atol(), PETSC_DEFAULT,  TRSubproblem::max_it());
 	    }
 
     };
 
+
+    template<typename Matrix, typename Vector>
+    class SteihaugToint<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
+    public:
+        SteihaugToint(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
+        : KSP_TR<Matrix, Vector, PETSC>(params), preconditioner_(preconditioner)
+        {
+            this->pc_type(preconditioner_);
+            this->ksp_type("stcg");
+        }
+        
+        inline void set_parameters(const Parameters params) override
+        {
+            Parameters params_copy = params;
+            params_copy.lin_solver_type("stcg");
+            params_copy.preconditioner_type(preconditioner_.c_str());
+            KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
+        }
+        
+        inline void pc_type(const std::string & preconditioner) override
+        {
+            preconditioner_ = preconditioner;
+            KSP_TR<Matrix, Vector, PETSC>::pc_type(preconditioner_);
+        }
+        
+    private:
+        std::string preconditioner_;
+    };
+    
 }
 
 #endif //UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP
