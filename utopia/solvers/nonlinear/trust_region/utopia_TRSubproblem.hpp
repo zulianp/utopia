@@ -41,6 +41,12 @@ namespace  utopia
                 current_radius(params.delta0()); 
             } 
 
+            virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls)
+            {
+                if(this->verbose())
+                    std::cout<<"current TR strategy does not need linear solver \n"; 
+            }
+
             /**
              * @brief      Setter for current radius. 
              *
@@ -96,6 +102,18 @@ namespace  utopia
                 p_k = s + tau * d; 
                 return tau; 
             }
+
+
+        Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
+        {
+            Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c); 
+
+            Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a); 
+            Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a); 
+
+            return std::max(lower, lower);
+        }
+
 
     public: 
         virtual bool unpreconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
@@ -154,6 +172,7 @@ namespace  utopia
     private: 
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */  
         Scalar current_radius_;                     /*!< Radius on current iterate - used to solve constrained QP wrt TR bound. */  
+
         
     };
 }

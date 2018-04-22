@@ -1,9 +1,3 @@
-/*
- * @Author: kopanicakova
- * @Date:   2018-02-06 17:47:26
- * @Last Modified by:   kopanicakova
- * @Last Modified time: 2018-04-09 14:03:17
- */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
@@ -254,6 +248,8 @@ namespace utopia {
                 std::make_shared<Factorization<DSMatrixd, DVectord>>()
             );
 
+           // multigrid.set_use_line_search(true);
+            // multigrid.set_fix_semidefinite_operators(true);
            test_block_mg(multigrid, false);
         }
         

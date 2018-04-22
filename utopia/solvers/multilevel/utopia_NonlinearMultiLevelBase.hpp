@@ -13,6 +13,7 @@
 namespace utopia {
     #define CHECK_NUM_PRECISION_mode
 
+
     /**
      * @brief      Base class for all nonlinear multilevel solvers. \n
      *             Takes care of inializing multilevel hierarchy - calls into assembly routines on each level. \n

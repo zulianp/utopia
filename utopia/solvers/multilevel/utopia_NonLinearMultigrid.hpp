@@ -41,9 +41,7 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        NonLinearMultigrid( const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
-                            const std::shared_ptr<Solver> &coarse_solver = std::shared_ptr<Solver>(),
-                            const Parameters params = Parameters()): 
+        NonLinearMultigrid( const std::shared_ptr<Smoother> &smoother,  const std::shared_ptr<Solver> &coarse_solver,  const Parameters params = Parameters()): 
                             NonlinearMultiLevelBase<Matrix,Vector>(params), 
                             _smoother(smoother), 
                             _coarse_solver(coarse_solver) 

@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-05-03
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-04
-*/
-
 #ifndef UTOPIA_MG_OPT_HPP
 #define UTOPIA_MG_OPT_HPP
 #include "utopia_NonLinearSmoother.hpp"
@@ -12,6 +5,7 @@
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 #include "utopia_LS_Strategy.hpp"
+#include "utopia_SimpleBacktracking.hpp"
 
 namespace utopia 
 {
@@ -35,9 +29,8 @@ namespace utopia
 
     public:
 
-        MG_OPT( const std::shared_ptr<Solver> &smoother = std::shared_ptr<Solver>(), 
-                const std::shared_ptr<Solver> &coarse_solver = std::shared_ptr<Solver>(),
-                const std::shared_ptr<LSStrategy> &ls_strategy = std::shared_ptr<LSStrategy>(),
+        MG_OPT( const std::shared_ptr<Solver> &smoother, const std::shared_ptr<Solver> &coarse_solver,
+                const std::shared_ptr<LSStrategy> &ls_strategy = std::make_shared<utopia::SimpleBacktracking<Matrix, Vector> >(),
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector>(params), 
                 _smoother(smoother), 
