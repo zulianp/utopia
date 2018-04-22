@@ -24,7 +24,6 @@ namespace utopia {
 		
 		bool apply(const Vector &rhs, Vector &x) override
 		{
-			
 			const Matrix &A = *this->get_operator();
 			
 			SizeType it = 0;
