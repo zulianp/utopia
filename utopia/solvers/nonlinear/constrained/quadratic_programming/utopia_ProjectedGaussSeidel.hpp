@@ -31,7 +31,7 @@ namespace utopia {
 		{
 			const Matrix &A = *this->get_operator();
 			
-			init(A);
+			// init(A);
 			std::size_t it = 0;
 			if(constraints_.has_bound()) {
 				while(step(A, b, x) && it++ < this->sweeps()) {}
@@ -50,10 +50,11 @@ namespace utopia {
 
 			//TODO generic version
 			assert(!constraints_.has_lower_bound() );
-			init(A);
+			// init(A);
 
 			x_old = x;
 			bool converged = false;
+			const SizeType check_s_norm_each = 5;
 
 			int iteration = 0;
 			while(!converged) {
@@ -63,15 +64,20 @@ namespace utopia {
 					unconstrained_step(A, b, x);
 				}
 
-				const Scalar diff = norm2(x_old - x);
+				if(iteration % check_s_norm_each == 0) {
+					const Scalar diff = norm2(x_old - x);
 
-				if(this->verbose())
-				    PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff}); 
+					if(this->verbose()) {
+					    PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff}); 
+					}
 
-				converged = this->check_convergence(iteration, 1, 1, diff);
+					converged = this->check_convergence(iteration, 1, 1, diff);
+				}
 
 				++iteration;
+
 				if(converged) break;
+
 				x_old = x;
 			}
 

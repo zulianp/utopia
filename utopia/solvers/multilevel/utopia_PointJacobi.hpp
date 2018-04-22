@@ -4,6 +4,12 @@
 #include "utopia_Smoother.hpp"
 
 namespace utopia {
+
+    /**
+     * @brief Good example on how to implement a Linear Solver, Preconditioner, and Smoother 
+     * within utopia. Precomputations are done in the update method, and, in order to avoid 
+     * costly allocations, possible temporaries are stored as member variables.
+     */
 	template<class Matrix, class Vector>
 	class PointJacobi : public Smoother<Matrix, Vector>, public IterativeSolver<Matrix, Vector> {
 		typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -27,7 +33,8 @@ namespace utopia {
 			const Matrix &A = *this->get_operator();
 			
 			SizeType it = 0;
-			Scalar g_norm0 = norm2(rhs - A * x);
+            r_ = rhs - A * x;
+			Scalar g_norm0 = norm2(r_);
 			Scalar g_norm = g_norm0;
 			SizeType compute_norm_each = 50;
 			
@@ -36,8 +43,9 @@ namespace utopia {
 			while(true) {
 				sweep(rhs, x);
 				
-				if(it % compute_norm_each == 0) {
-					Scalar g_norm = norm2(rhs - A * x);
+				if(it++ % compute_norm_each == 0) {
+                    r_ = rhs - A * x;
+					Scalar g_norm = norm2(r_);
 					
 					if(this->verbose()) {
 						PrintInfo::print_iter_status(it, {g_norm});
@@ -47,18 +55,13 @@ namespace utopia {
 						return true;
 					}
 				}
-				
-				
-				it++;
 			}
 			
 			return false;
 		}
 		
 		bool smooth(const Vector &rhs, Vector &x) override
-		{
-			const Matrix &A = *this->get_operator();
-			
+		{			
 			for(SizeType it = 0; it < this->sweeps(); it++)
 			{
 				sweep(rhs, x);
@@ -97,7 +100,7 @@ namespace utopia {
 	private:
 		Vector d_inv_;
 		Matrix LU_;
-		
+        Vector r_;
 		
 		/**
 		 * @brief      Checks if there is a zero in the vector, if yes turn it into 1.
@@ -106,7 +109,7 @@ namespace utopia {
 		 *
 		 * @return     {  }
 		 */
-		bool check_indef(Vector &diag_A)
+		inline bool check_indef(Vector &diag_A)
 		{
 			ReadAndWrite<Vector> w(diag_A);
 			Range rr = range(diag_A);
@@ -122,21 +125,11 @@ namespace utopia {
 			return true;
 		}
 		
-		/**
-		 * @brief      This implementation could be way nicer,
-		 but it is here, just to test if ML/MG works in parallel as whole thing
-		 *
-		 * @param[in]  A     The stifness  matrix.
-		 * @param[in]  rhs   The rhs.
-		 * @param      x     The initial guess/solution.
-		 *
-		 *
-		 * @return     { }
-		 */
-		inline bool sweep(const Vector &rhs, Vector &x) const
+	
+		inline bool sweep(const Vector &rhs, Vector &x)
 		{
-			Vector r = rhs - (LU_ * x);
-			x = e_mul(d_inv_, r);
+			r_ = rhs - (LU_ * x);
+			x = e_mul(d_inv_, r_);
 			return true;
 		}
 		
