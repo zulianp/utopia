@@ -220,66 +220,66 @@ namespace utopia {
         disp(R);
     }
 
-    void trilinos_mg()
-    {
-        if(mpi_world_size() > 1) return;
+//     void trilinos_mg()
+//     {
+//         if(mpi_world_size() > 1) return;
 
-        bool ok = true;
+//         bool ok = true;
 
-        TVectord rhs;
-        TSMatrixd A, I;
+//         TVectord rhs;
+//         TSMatrixd A, I;
 
-        Multigrid<TSMatrixd, TVectord> multigrid(
-            std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>(),
-            std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>()
-        );
+//         Multigrid<TSMatrixd, TVectord> multigrid(
+//             std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>(),
+//             std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>()
+//         );
         
 
-#ifdef WITH_PETSC        
-        //FIXME needs trilinos formats but for the moment lets use petsc's
-        {
-            DSMatrixd petsc_A, petsc_I;
-            DVectord petsc_rhs;
+// #ifdef WITH_PETSC        
+//         //FIXME needs trilinos formats but for the moment lets use petsc's
+//         {
+//             DSMatrixd petsc_A, petsc_I;
+//             DVectord petsc_rhs;
         
-            const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
+//             const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
             
-            ok = read(folder + "/f_rhs", petsc_rhs); assert(ok);
-            ok = read(folder + "/f_A", petsc_A);     assert(ok);
-            // ok = read(folder + "/I_2", I_2);   assert(ok);
-            ok = read(folder + "/I_3", petsc_I);   assert(ok);
+//             ok = read(folder + "/f_rhs", petsc_rhs); assert(ok);
+//             ok = read(folder + "/f_A", petsc_A);     assert(ok);
+//             // ok = read(folder + "/I_2", I_2);   assert(ok);
+//             ok = read(folder + "/I_3", petsc_I);   assert(ok);
            
-            backend_convert_sparse(petsc_I, I);
-            backend_convert_sparse(petsc_A, A);
-            backend_convert(petsc_rhs, rhs);
-        }
+//             backend_convert_sparse(petsc_I, I);
+//             backend_convert_sparse(petsc_A, A);
+//             backend_convert(petsc_rhs, rhs);
+//         }
 
 
-        std::vector<std::shared_ptr<TSMatrixd>> interpolation_operators;
-        interpolation_operators.push_back(make_ref(I));
+//         std::vector<std::shared_ptr<TSMatrixd>> interpolation_operators;
+//         interpolation_operators.push_back(make_ref(I));
         
-        multigrid.set_transfer_operators(std::move(interpolation_operators));
-        multigrid.max_it(20);
-        multigrid.atol(1e-15);
-        multigrid.stol(1e-15);
-        multigrid.rtol(1e-15);
-        multigrid.verbose(true);
+//         multigrid.set_transfer_operators(std::move(interpolation_operators));
+//         multigrid.max_it(20);
+//         multigrid.atol(1e-15);
+//         multigrid.stol(1e-15);
+//         multigrid.rtol(1e-15);
+//         multigrid.verbose(true);
         
-        TVectord x = local_zeros(local_size(rhs));
+//         TVectord x = local_zeros(local_size(rhs));
 
-        try {
-            multigrid.update(make_ref(A));
-            multigrid.describe();
-            ok = multigrid.apply(rhs, x); assert(ok);
-        } catch(const std::exception &ex) {
-            std::cout << ex.what() << std::endl;
-            assert(false);
-        }
+//         try {
+//             multigrid.update(make_ref(A));
+//             multigrid.describe();
+//             ok = multigrid.apply(rhs, x); assert(ok);
+//         } catch(const std::exception &ex) {
+//             std::cout << ex.what() << std::endl;
+//             assert(false);
+//         }
 
-        std::cout << std::flush;
-        assert(approxeq(rhs, A * x, 1e-6));
-#endif //WITH_PETSC
+//         std::cout << std::flush;
+//         assert(approxeq(rhs, A * x, 1e-6));
+// #endif //WITH_PETSC
         
-    }
+//     }
 
     void trilinos_read()
     {

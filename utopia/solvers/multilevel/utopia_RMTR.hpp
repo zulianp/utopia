@@ -418,14 +418,13 @@ namespace utopia
             Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0; 
             bool make_grad_updates = true, make_hess_updates = true, converged = false, delta_converged = false; 
 
-
             Vector s = local_zeros(local_size(x)); 
             
-
             compute_s_global(x, level, s_global);  
             this->get_multilevel_gradient(fun, x, g, s_global, level); 
             energy_old = this->get_multilevel_energy(fun,  x, s_global, level); 
             g_norm = norm2(g); 
+
 
             if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
@@ -433,7 +432,7 @@ namespace utopia
                 PrintInfo::print_iter_status(0, {g_norm, energy_old, ared, pred, rho, get_delta(level-1) }); 
             }
 
-            it++; 
+            it++;       
 
             while(!converged)
             {
@@ -451,7 +450,8 @@ namespace utopia
 
                 // building trial point 
                 x += s;  
-                
+            
+
                 compute_s_global(x, level, s_global); 
                 energy_new = this->get_multilevel_energy(fun,  x, s_global, level); 
                 ared = energy_old - energy_new; 
@@ -476,7 +476,6 @@ namespace utopia
                     compute_s_global(x, level, s_global); 
                     make_grad_updates =  false; 
                 }
-
             //----------------------------------------------------------------------------
             //     trust region update 
             //----------------------------------------------------------------------------
@@ -505,7 +504,6 @@ namespace utopia
             }
 
             return delta_converged; 
-
         }
 
 

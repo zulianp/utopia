@@ -107,9 +107,6 @@ namespace utopia
 
             if(linear_solver_)
                 linear_solver_->set_parameters(params); 
-            else {
-                m_utopia_warning_once("NonLinearSolver::linear_solver_ - nullptr might not be handled correctly yet\n");
-            }
         }
 
 
@@ -123,10 +120,7 @@ namespace utopia
             linear_solver_ = linear_solver; 
         }
 
-
-
         inline DiffController &controller() { return controller_; }
-
 
 protected:
         /**
@@ -278,7 +272,6 @@ public:
             return linear_solver_->apply(rhs, sol);
         }
 
-     
 
         std::shared_ptr<Solver> linear_solver_;     /*!< Linear solver parameters. */  
         Parameters params_;        /*!< Solver parameters. */  

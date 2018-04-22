@@ -33,7 +33,6 @@ namespace utopia
 
             }
 
-
             virtual bool gradient(const Vector &x, Vector &g) const override
             {
                 // initialization of gradient vector... 

@@ -23,7 +23,8 @@ namespace utopia {
 		assert(other.is_consistent());
 
 		if(!same_type(other)) {
-			other.describe();
+			//other.describe();
+			// m_utopia_warning_once("> PetscVector::dot - vectors are not the same");
 		}
 
 		PetscScalar result;

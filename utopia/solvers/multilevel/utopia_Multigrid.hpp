@@ -18,6 +18,7 @@
 #include "utopia_LinearMultiLevel.hpp"
 #include <ctime>
 
+#include "utopia_Recorder.hpp"
 
 namespace utopia 
 {
@@ -85,6 +86,7 @@ namespace utopia
           block_size_(1)
         {
             set_parameters(params);
+            this->must_generate_masks_ = true;
         }
         
         virtual ~Multigrid(){}
@@ -128,15 +130,23 @@ namespace utopia
          */
         virtual bool apply(const Vector &rhs, Vector &x) override
         {
+
+            // UTOPIA_RECORD_SCOPE_BEGIN("apply");
             Scalar r_norm, r0_norm, rel_norm;
             SizeType it = 0;
             bool converged = false;
+            bool ok = true;
             SizeType L = this->n_levels();
             
             memory.init(L);
             SizeType l = L - 1;
+
+            // UTOPIA_RECORD_VALUE("rhs", rhs);
+            // UTOPIA_RECORD_VALUE("x", x);
             
             memory.r[l] = rhs - level(l).A() * x;
+
+            // UTOPIA_RECORD_VALUE("rhs - level(l).A() * x", memory.r[l]);
             
             r_norm = norm2(memory.r[l]);
             r0_norm = r_norm;
@@ -154,9 +164,9 @@ namespace utopia
             while(!converged)
             {
                 if(this->cycle_type() == MULTIPLICATIVE_CYCLE) {
-                    multiplicative_cycle(l);
+                    ok = standard_cycle(l); assert(ok);
                 } else if(this->cycle_type() == FULL_CYCLE) {
-                    full_cycle(l);
+                    ok = full_cycle(l); assert(ok);
                 } else {
                     std::cout<<"ERROR::UTOPIA_MG<< unknown MG type... \n";
                 }
@@ -170,8 +180,13 @@ namespace utopia
 #else
                 // assert(!has_nan_or_inf(x));
 #endif    
+
+                // UTOPIA_RECORD_VALUE("memory.c[l]", memory.c[l]);
                 
                 x += memory.c[l];
+
+                // UTOPIA_RECORD_VALUE("x += memory.c[l]", x);
+
                 memory.r[l] = rhs - level(l).A() * x;
                 r_norm = norm2(memory.r[l]);
                 rel_norm = r_norm/r0_norm;
@@ -186,7 +201,7 @@ namespace utopia
                 
             }
             
-            
+            // UTOPIA_RECORD_SCOPE_END("apply");
             return true;
         }
         
@@ -201,13 +216,14 @@ namespace utopia
         
         
         /**
-         * @brief      Function implements multiplicative multigrid cycle.
+         * @brief      Function implements multigrid standard cycle.
          *
-         * @param[in]  l     The level.
+         * @param[in] l The level.
          *
          */
-        virtual bool multiplicative_cycle(const SizeType &l)
+        virtual bool standard_cycle(const SizeType &l)
         {
+            // UTOPIA_RECORD_SCOPE_BEGIN("standard_cycle(" + std::to_string(l) + ")");
             assert(memory.valid(this->n_levels()) && l < this->n_levels());
             
             Vector &r   = memory.r[l];
@@ -225,7 +241,15 @@ namespace utopia
             
             ////////////////////////////////////
             if(l == 0) {
-                return coarse_solve(r, c);
+                if(coarse_solve(r, c)) {
+                  assert(approxeq(level(0).A() * c, r, 1e-6));
+                  // UTOPIA_RECORD_VALUE("coarse_solve(r, c)", c);
+                  // UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
+                  return true;
+                } else {
+                  assert(false);
+                  return false;
+                }
             }
             ////////////////////////////////////
             
@@ -233,18 +257,29 @@ namespace utopia
             for(SizeType k = 0; k < this->mg_type(); k++) {
                 // presmoothing
                 smoothing(l, r, c, this->pre_smoothing_steps());
+                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
+
                 
                 r_R = r - level(l).A() * c;
+
+                // UTOPIA_RECORD_VALUE("r_R", r_R);
                 
                 // residual transfer
                 this->transfer(l-1).restrict(r_R, memory.r[l-1]);
+                
+                //NEW
+                this->apply_mask(l-1, memory.r[l-1]);
+
                 assert(!empty(memory.r[l-1]));
+
+                // UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R, memory.r[l-1]);", memory.r[l-1]);
                 
                 
-                multiplicative_cycle(l-1);
+                standard_cycle(l-1);
                 
                 // correction transfer
                 this->transfer(l-1).interpolate(memory.c[l-1], c_I);
+                // UTOPIA_RECORD_VALUE("this->transfer(l-1).interpolate(memory.c[l-1], c_I);", c_I);
 
 #ifndef NDEBUG
                 const Scalar err = norm2(r_R);
@@ -264,18 +299,23 @@ namespace utopia
                     c += c_I;
                 }
 
+                // UTOPIA_RECORD_VALUE("c", c);
+
+                // postsmoothing
+                smoothing(l, r, c, this->post_smoothing_steps());
+
+                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
+
 #ifndef NDEBUG
                 const Scalar new_err = norm2(r - level(l).A() * c);
                 // assert(new_err < err)
                 if(new_err > err) {
-                  std::cerr << "[Error] Multigrid::multiplicative: " << new_err << "<" << err << std::endl;
+                  m_utopia_error("[Error] Multigrid::standard_cycle (" + std::to_string(l) + "): coarse grid correction raises error " + std::to_string(new_err) + "<" + std::to_string(err));
                 }
 #endif
-                
-                // postsmoothing
-                smoothing(l, r, c, this->post_smoothing_steps());
             }
             
+            // UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
             return true;
         }
         
@@ -303,6 +343,8 @@ namespace utopia
             for(SizeType i = l - 1; i >= 0; i--)
             {
                 this->transfer(i).restrict(rhss[i + 1], rhss[i]);
+                //NEW
+                this->apply_mask(i, rhss[i]);
             }
             
             coarse_solve(rhss[0], memory.c[0]);
@@ -312,7 +354,7 @@ namespace utopia
             {
                 for(SizeType j = 0; j < this->v_cycle_repetition(); j++) {
                     memory.r[i] = rhss[i];
-                    multiplicative_cycle(i);
+                    standard_cycle(i);
                 }
                 
                 this->transfer(i).interpolate(memory.c[i], memory.c[i+1]);
@@ -320,7 +362,7 @@ namespace utopia
             
             for(SizeType i = 0; i < this->v_cycle_repetition(); i++) {
                 // memory.r[l] = rhss[l];
-                multiplicative_cycle(l);
+                standard_cycle(l);
             }
             
             return true;
