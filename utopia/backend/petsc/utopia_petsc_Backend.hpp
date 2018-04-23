@@ -58,6 +58,7 @@ namespace utopia {
 		
 		using ScalarBackend<Scalar>::apply_binary;
 		using ScalarBackend<Scalar>::axpy;
+		using ScalarBackend<Scalar>::assign;
 		
 		template<class LorRValueMatrix>
 		static void assign(PetscMatrix &left, LorRValueMatrix &&right)

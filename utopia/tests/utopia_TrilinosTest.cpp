@@ -211,6 +211,22 @@ namespace utopia {
         assert(approxeq(val, 0.));
     }
 
+    void trilinos_m_tm()
+    {
+        //TODO
+        // auto n = 10;
+        // TSMatrixd A = local_sparse(n, n, 3);
+        // assemble_laplacian_1D(A);
+        // TSMatrixd B = A;
+        // TSMatrixd C = transpose(A) * B * A;
+
+        // TVectord x = local_values(n, 5.);
+        // TVectord y = transpose(C) * x;
+
+        // const double val = norm2(y);
+        // assert(approxeq(val, 0.));
+    }
+
     void trilinos_diag()
     {
         auto n = 10;
@@ -337,6 +353,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_transpose);
         UTOPIA_RUN_TEST(trilinos_mv);
         UTOPIA_RUN_TEST(trilinos_mm);
+        UTOPIA_RUN_TEST(trilinos_m_tm);
         UTOPIA_RUN_TEST(trilinos_diag);
         UTOPIA_RUN_TEST(trilinos_read);
         //they do not work yet
