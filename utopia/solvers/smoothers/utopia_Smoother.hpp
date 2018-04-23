@@ -16,7 +16,7 @@
 
      namespace utopia {
         template<class Matrix, class Vector>
-        class Smoother : public Clonable
+        class Smoother : public virtual Clonable
         {
             typedef UTOPIA_SCALAR(Vector)           Scalar;
             typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;

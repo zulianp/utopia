@@ -12,9 +12,11 @@ namespace utopia {
     template<class Left, class Right, typename ScalarT, class Traits, int Backend>
     class Eval<Binary<Binary<Number<ScalarT>, Left, Multiplies>, Right, Plus>, Traits, Backend> {
     public:
-        inline static EXPR_TYPE(Traits, Right)
-        apply(const Binary<Binary<Number<ScalarT>, Left, Multiplies>, Right, Plus> &expr) {
-            EXPR_TYPE(Traits, Right) result;
+        typedef utopia::Binary<Binary<Number<ScalarT>, Left, Multiplies>, Right, Plus> Expr;
+        typedef EXPR_TYPE(Traits, Expr) Result;
+
+        inline static Result apply(const Binary<Binary<Number<ScalarT>, Left, Multiplies>, Right, Plus> &expr) {
+            Result result;
 
             UTOPIA_TRACE_BEGIN(expr);
 

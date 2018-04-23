@@ -21,10 +21,15 @@ namespace utopia {
 		void init(const libMesh::EquationSystems &es, const std::size_t n_levels);
 
 		void update_contact(Contact &contact);
-		void update(const std::shared_ptr<const DSMatrixd> &op);
-		bool apply(const DVectord &rhs, DVectord &sol);
+		void update(const std::shared_ptr<const DSMatrixd> &op) override;
+		bool apply(const DVectord &rhs, DVectord &sol) override;
 		
-		virtual void set_parameters(const Parameters params)
+		SemiGeometricMultigrid * clone() const override
+		{
+			return new SemiGeometricMultigrid(*this);
+		}
+
+		virtual void set_parameters(const Parameters params) override
 		{
 			mg.set_parameters(params);
 		}

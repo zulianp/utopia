@@ -1,9 +1,3 @@
-/*
-* @Author: Alena Kopanicakova
-* @Date:   2018-04-06
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2018-04-06
-*/
 #ifndef UTOPIA_PETSC_SLEPC_H
 #define UTOPIA_PETSC_SLEPC_H
 
@@ -23,7 +17,7 @@ namespace utopia
     class EigenSolver; 
 
     template<typename Matrix, typename Vector>
-    class EigenSolver<Matrix, Vector, PETSC_EXPERIMENTAL>
+    class EigenSolver<Matrix, Vector, PETSC_EXPERIMENTAL> : public virtual Clonable 
     {
 
     public:
@@ -58,6 +52,12 @@ namespace utopia
         { 
             if (initialized_)
                 EPSDestroy(&eps_);
+        }
+
+
+        virtual EigenSolver<Matrix, Vector, PETSC_EXPERIMENTAL> * clone() const 
+        {
+            return new EigenSolver(*this);
         }
 
 

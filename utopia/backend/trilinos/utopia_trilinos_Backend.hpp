@@ -28,6 +28,7 @@ namespace utopia {
 
         using ScalarBackend<Scalar>::apply_binary;
         using ScalarBackend<Scalar>::axpy;
+        using ScalarBackend<Scalar>::assign;
 
         template<class LorRValueMatrix>
         static void assign(TpetraMatrix &left, LorRValueMatrix &&right)
@@ -211,6 +212,16 @@ namespace utopia {
             mat.write_unlock();
         }
 
+        static void read_and_write_lock(TpetraVector &v)
+        {
+            v.read_and_write_lock();
+        }
+
+        static void read_and_write_unlock(TpetraVector &v)
+        {
+            v.read_and_write_unlock();
+        }
+
         // reductions
         // static Scalar norm2(const TpetraMatrix &m);
         inline static Scalar norm2(const TpetraVector &v)
@@ -327,6 +338,11 @@ namespace utopia {
             TpetraVector diff;
             apply_binary(diff, left, Minus(), right);
             return norm_infty(diff) <= comp.tol();
+        }
+
+        static void apply_binary(TpetraVector &result, const TpetraVector &left, const EMultiplies &, const TpetraVector &right)
+        {
+            left.e_mul(right, result);
         }
 
         // Ac = R*A*P,

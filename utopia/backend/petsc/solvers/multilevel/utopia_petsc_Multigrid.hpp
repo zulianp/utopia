@@ -102,6 +102,11 @@ namespace utopia {
 			block_size_ = size;
 		}
 
+		Multigrid * clone() const override
+		{
+			return new Multigrid();
+		}
+
 	private:
 		std::shared_ptr<Smoother> smoother_;
 		std::shared_ptr<Solver>   linear_solver_;

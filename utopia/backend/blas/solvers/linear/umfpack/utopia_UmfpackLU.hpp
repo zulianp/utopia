@@ -18,8 +18,8 @@ namespace utopia {
 
         ~UmfpackLU();
 
-        bool solve(const CCSMatrixd &mat, const Vectord &rhs, Vectord &solution);
-        bool solve(const CRSMatrixd &matrix, const Vectord &rhs, Vectord &solution);
+        bool solve(const CCSMatrixd &mat, const Vectord &rhs, Vectord &solution) override;
+        bool solve(const CRSMatrixd &matrix, const Vectord &rhs, Vectord &solution) override;
 
         inline const double * ptr(const Vectord &v) const
         {
@@ -36,7 +36,7 @@ namespace utopia {
             return &m.implementation().entries()[0];
         }
 
-        virtual bool apply(const Vectord &rhs, Vectord &sol)
+        virtual bool apply(const Vectord &rhs, Vectord &sol) override
         {
            //deal with multiple inheritance
            if(DirectSolver<CRSMatrixd, Vectord>::has_operator()) {
@@ -44,6 +44,11 @@ namespace utopia {
            } else {
                return DirectSolver<CCSMatrixd, Vectord>::apply(rhs, sol);
            }
+        }
+
+        virtual UmfpackLU * clone() const override
+        {
+          return new UmfpackLU();
         }
 
     private:
