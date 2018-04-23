@@ -26,6 +26,11 @@ namespace utopia {
             {
               tao_solver_ = std::make_shared<utopia::TaoSolver<Matrix, Vector> >(); 
             }
+
+            TaoTRSubproblem * clone() const override
+            {
+                return new TaoTRSubproblem(std::shared_ptr<LinearSolver>(linear_solver_->clone()));
+            }
             
             virtual ~TaoTRSubproblem( ){}
 

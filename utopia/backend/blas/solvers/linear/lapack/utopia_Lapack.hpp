@@ -22,7 +22,12 @@ namespace utopia {
         inline bool apply(const Vectord &b, Vectord &x) override
         {
             return internals::lapack_dgesv_solve(this->get_operator()->implementation(), b.implementation(), x.implementation());
-        }       
+        }      
+
+        LUDecomposition * clone() const override
+        {
+            return new LUDecomposition();
+        }
     };
 }
 

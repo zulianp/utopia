@@ -30,11 +30,11 @@ namespace utopia {
     };
 
     template<class Left, class Right, class Traits, int Backend>
-    class Eval<Reduce<Binary<Left, Right, EMultiplies>, Plus>, Traits, Backend> {
+    class Eval<Dot<Left, Right>, Traits, Backend> {
     public:
         typedef typename Traits::Scalar Scalar;
 
-        inline static Scalar apply(const Reduce<Binary<Left, Right, EMultiplies>, Plus> &expr)
+        inline static Scalar apply(const Dot<Left, Right> &expr)
         {
             Scalar result;
             UTOPIA_TRACE_BEGIN(expr);

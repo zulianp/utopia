@@ -1,6 +1,8 @@
 #ifndef UTOPIA_TRILINOS_HPP
 #define UTOPIA_TRILINOS_HPP
 
+#include "utopia_Base.hpp"
+
 #ifdef WITH_TRILINOS
 #include <Tpetra_CrsMatrix.hpp>
 #include <Tpetra_DefaultPlatform.hpp>

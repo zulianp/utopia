@@ -53,6 +53,11 @@ namespace utopia
         }
 
 
+        inline CauchyPoint * clone() const override
+        {
+        	return new CauchyPoint();
+        }
+
 
     };
 }

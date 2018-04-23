@@ -86,7 +86,7 @@ namespace utopia
           block_size_(1)
         {
             set_parameters(params);
-            this->must_generate_masks_ = true;
+            this->must_generate_masks(true);
         }
         
         virtual ~Multigrid(){}
@@ -268,7 +268,8 @@ namespace utopia
                 this->transfer(l-1).restrict(r_R, memory.r[l-1]);
                 
                 //NEW
-                this->apply_mask(l-1, memory.r[l-1]);
+                if(this->must_generate_masks())
+                  this->apply_mask(l-1, memory.r[l-1]);
 
                 assert(!empty(memory.r[l-1]));
 
@@ -398,6 +399,14 @@ namespace utopia
             if(!coarse_solver_->apply(rhs, x)) return false;
             assert(approxeq(level(0).A() * x, rhs, 1e-6));
             return true;
+        }
+
+        Multigrid * clone() const override 
+        {
+           return new Multigrid(
+            std::shared_ptr<Smoother>(smoother_cloneable_->clone()),
+            std::shared_ptr<Solver>(coarse_solver_->clone())
+            );
         }
         
         

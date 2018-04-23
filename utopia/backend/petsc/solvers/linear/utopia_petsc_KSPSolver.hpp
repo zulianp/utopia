@@ -50,7 +50,7 @@ namespace utopia {
 
 
     template<typename Matrix, typename Vector>
-    class KSPSolver<Matrix, Vector, PETSC> : virtual public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
+    class KSPSolver<Matrix, Vector, PETSC> : virtual public PreconditionedSolver<Matrix, Vector>, virtual public Smoother<Matrix, Vector>
     {
 
     public:

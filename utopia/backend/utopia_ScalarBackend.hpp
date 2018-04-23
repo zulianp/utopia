@@ -6,6 +6,12 @@ namespace utopia {
 	template<typename Scalar>
 	class ScalarBackend {
 	public:
+
+		static inline void assign(Scalar &result, const Scalar &value)
+		{
+			result = value;
+		}
+		
 		static inline void apply_binary(Scalar &result, const Scalar left, const Plus &op, const Scalar right)
 		{
 			aux_apply_binary(left, right, op, result);
@@ -15,7 +21,6 @@ namespace utopia {
 		{
 			aux_apply_binary(left, right, op, result);
 		}
-
 
 		static inline void apply_binary(Scalar &result, const Scalar left, const Multiplies &op, const Scalar right)
 		{

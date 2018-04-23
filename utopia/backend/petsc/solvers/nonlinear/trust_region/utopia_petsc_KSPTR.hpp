@@ -84,7 +84,11 @@ namespace utopia
         Scalar      stol()  const              	{ return KSPSolver::stol(); }
         
 
-	protected:
+        virtual KSP_TR<Matrix, Vector, PETSC> * clone() const override {
+        	return new KSP_TR(*this);
+        }
+        
+	// protected:
 
         virtual bool apply(const Vector &b, Vector &x) override
     	{

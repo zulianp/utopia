@@ -62,6 +62,11 @@ namespace utopia
             linear_solver_ = ls; 
         }   
 
+        MoreSorensenEigen * clone() const override
+        {
+            return new MoreSorensenEigen(std::shared_ptr<LinearSolver>(linear_solver_->clone()), std::shared_ptr<EigenSolver>(eigen_solver_->clone()));
+        }
+
 
 	protected:
         bool unpreconditioned_solve(const Matrix &H, const Vector &g, Vector &s_k) override
