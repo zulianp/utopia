@@ -268,7 +268,8 @@ namespace utopia
                 this->transfer(l-1).restrict(r_R, memory.r[l-1]);
                 
                 //NEW
-                this->apply_mask(l-1, memory.r[l-1]);
+                if(this->must_generate_masks())
+                  this->apply_mask(l-1, memory.r[l-1]);
 
                 assert(!empty(memory.r[l-1]));
 

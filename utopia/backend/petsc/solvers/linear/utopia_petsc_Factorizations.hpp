@@ -35,7 +35,7 @@ namespace utopia {
 		inline void set_parameters(const Parameters params) override
 		{
 		    Factorization<Matrix, Vector, PETSC>::set_parameters(params);
-		    this->set_parameters(params);
+		    // this->set_parameters(params); // this line is causing seq. faults in passo.. 
 		} 
 
 		void set_library_type(const DirectSolverLib & TAG)
