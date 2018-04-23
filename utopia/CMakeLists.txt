@@ -18,7 +18,7 @@ option(TRY_WITH_PETSC "Enable the petsc backend" ON)
 option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
 
-option(ENABLE_TRACE "enables utopia logging facilities" OFF)
+option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
 option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
