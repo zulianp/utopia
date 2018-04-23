@@ -58,6 +58,11 @@ namespace utopia {
 			separate_subdomains_ = val;
 		}
 
+		SemiGeometricMultigrid * clone() const override
+		{
+			return new SemiGeometricMultigrid();
+		}
+
 	private:
 		MultigridT mg;
 		
