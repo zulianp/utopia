@@ -53,6 +53,15 @@ namespace utopia
 		}
 		
 
+		bool must_generate_masks()
+		{
+			return must_generate_masks_; 
+		}
+
+		void must_generate_masks(const bool must_generate_masks)
+		{
+			must_generate_masks_ = must_generate_masks; 
+		}
 
 		void add_level(Level &&level)
 		{
