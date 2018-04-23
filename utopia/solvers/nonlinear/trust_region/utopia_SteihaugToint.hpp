@@ -71,7 +71,7 @@ namespace utopia
 	    		}
 	    	
 	    		p_k = s1; 
-	    		r -= (alpha * B * d); 
+	    		r -= alpha * (B * d); 
 
 	    		z1 = dot(r,r);
 	    		d = r + (z1/z) * d;

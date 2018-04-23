@@ -103,6 +103,42 @@ namespace utopia {
         assert(approxeq(val, n * mpi_world_size() * 1.5));
     }
 
+    void trilinos_vec_scale()
+    {
+        auto n = 10;
+        TVectord y = local_values(n, 1.);
+
+        y *= 2.;
+
+        double val = norm1(y);
+        assert(approxeq(val, size(y).get(0) * 2.));
+
+
+        TVectord y2 = y * 2.;
+
+        val = norm1(y2);
+        assert(approxeq(val, size(y2).get(0) * 4.));
+    }
+
+    void trilinos_mat_scale()
+    {
+        auto n = 10;
+        TSMatrixd Y = local_sparse(n, n, 3);
+        assemble_laplacian_1D(Y);
+
+        Y *= 2.;
+
+        TVectord x = local_values(n, 1.);
+        double val = norm1(Y * x);
+        assert(approxeq(val, 0.));
+
+
+        TSMatrixd Y2 = Y * 2.;
+
+        val = norm1(Y2 * x);
+        assert(approxeq(val, 0.));
+    }
+
     void trilinos_mat_axpy()
     {
         auto n = 10;
@@ -294,6 +330,8 @@ namespace utopia {
         UTOPIA_UNIT_TEST_BEGIN("TrilinosTest");
         UTOPIA_RUN_TEST(trilinos_build);
         UTOPIA_RUN_TEST(trilinos_accessors);
+        UTOPIA_RUN_TEST(trilinos_vec_scale);
+        UTOPIA_RUN_TEST(trilinos_mat_scale);
         UTOPIA_RUN_TEST(trilinos_vec_axpy);
         UTOPIA_RUN_TEST(trilinos_mat_axpy);
         UTOPIA_RUN_TEST(trilinos_transpose);
@@ -301,7 +339,6 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_mm);
         UTOPIA_RUN_TEST(trilinos_diag);
         UTOPIA_RUN_TEST(trilinos_read);
-
         //they do not work yet
         // UTOPIA_RUN_TEST(trilinos_ptap);
         // UTOPIA_RUN_TEST(trilinos_mg);

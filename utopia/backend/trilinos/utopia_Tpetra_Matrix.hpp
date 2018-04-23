@@ -168,7 +168,10 @@ namespace utopia {
 
         inline void scale(const Scalar alpha)
         {
+            //Why???
+            write_lock();
             implementation().scale(alpha);
+            write_unlock();
         }
 
         inline crs_matrix_type &implementation()
