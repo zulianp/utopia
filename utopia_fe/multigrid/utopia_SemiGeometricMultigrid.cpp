@@ -216,9 +216,7 @@ namespace utopia {
 			std::cout << "dofs: " << es.get_system(0).get_dof_map().n_dofs() << std::endl;
 		}
 
-		mg.init_transfer_from_fine_to_coarse(interpolators_);
-		//FIXME naming is wrong
-		// mg.init_transfer_from_coarse_to_fine(std::move(interpolators));
+		mg.set_transfer_operators(interpolators_);
 	}	
 
 	void SemiGeometricMultigrid::update(const std::shared_ptr<const DSMatrixd> &op)
@@ -227,7 +225,7 @@ namespace utopia {
 
 		//hacky
 		if(is_block_solver_) {
-			for(SizeType i = 0; i < mg.num_levels(); ++i) {
+			for(SizeType i = 0; i < mg.n_levels(); ++i) {
 				const_cast<DSMatrixd &>(mg.level(i).A()).implementation().convert_to_mat_baij(meshes[0]->mesh_dimension());
 			}
 		}
@@ -241,7 +239,7 @@ namespace utopia {
 
 	void SemiGeometricMultigrid::update_contact(Contact &contact)
 	{
-		const auto last_interp = mg.num_levels() - 2;
+		const auto last_interp = mg.n_levels() - 2;
 		auto c_I = std::make_shared<DSMatrixd>();
 		*c_I = transpose(contact.complete_transformation) * *interpolators_[last_interp];
 		mg.update_transfer(last_interp, Transfer<DSMatrixd, DVectord>(c_I));

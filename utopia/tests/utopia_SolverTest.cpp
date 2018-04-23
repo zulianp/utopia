@@ -41,6 +41,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(tr_test);
 			UTOPIA_RUN_TEST(ls_test);
 			UTOPIA_RUN_TEST(nl_solve_test);
+			UTOPIA_RUN_TEST(dogleg_test); 
 			
 		}
 		
@@ -354,6 +355,28 @@ namespace utopia
 
 			// std::cout << c << std::endl;
 		}
+
+		void dogleg_test()
+		{
+			// rosenbrock test
+			if(mpi_world_size() == 1)
+			{
+				Rosenbrock<Matrix, Vector> rosenbrock;
+				Vector expected_rosenbrock = values(2, 1);				
+				
+				auto dogleg = std::make_shared<Dogleg<Matrix, Vector> >(); 
+
+				Vector x0 = values(2, 2.0);
+
+				TrustRegion<Matrix, Vector> tr_solver(dogleg); 
+				tr_solver.verbose(false); 
+				tr_solver.solve(rosenbrock, x0); 
+				auto cg = std::make_shared<ConjugateGradient<Matrix, Vector> >(); 
+				tr_solver.set_linear_solver(cg); 
+
+				assert(approxeq(expected_rosenbrock, x0));
+			}
+		}
 		
 		SolverTest()
 		: _n(10) { }
@@ -376,15 +399,4 @@ namespace utopia
 		
 		UTOPIA_UNIT_TEST_END("SolversTest");
 	}
-
-
-    void runSolversTest()
-    {
-    	runGenericSolversTest(); 
-    	runPetscNonlinearSolversTest(); 
-    	runPetscLinearSolversTest(); 
-    	runPetscSlepcSolversTest(); 
-    }
-
-
 }

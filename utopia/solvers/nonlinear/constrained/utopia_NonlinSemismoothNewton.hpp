@@ -30,7 +30,7 @@ namespace utopia
         typedef utopia::BoxConstraints<Vector>      BoxConstraints;
 
     public:
-       NonlinSemismoothNewton(  const std::shared_ptr <Solver> &linear_solver   = std::shared_ptr<Solver>(),
+       NonlinSemismoothNewton(  const std::shared_ptr <Solver> &linear_solver, 
                                 const Parameters   params                       = Parameters())
                                                     : NonLinearSolver<Matrix, Vector>(linear_solver, params)
         {  

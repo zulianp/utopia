@@ -23,7 +23,6 @@ namespace utopia
     {
         runWrapperTest();
         run_autodiff_test();
-        runSolversTest();
         runAlgebraTest();
         runUtilitiesTest();
         runPetscTest();
@@ -33,6 +32,12 @@ namespace utopia
         run_tao_solver_test();
         run_petsc_cuda_test();
         run_selection_test();
+
+        runGenericSolversTest(); 
+        runPetscNonlinearSolversTest(); 
+        runPetscLinearSolversTest(); 
+        runPetscSlepcSolversTest(); 
+
 
         //only works for serial
         if(mpi_world_size() == 1) {
@@ -60,7 +65,20 @@ namespace utopia
                 else if (token == "autodiff")
                     run_autodiff_test();
                 else if (token == "solvers")
-                   runSolversTest();
+                {
+                    runGenericSolversTest();
+                    runPetscNonlinearSolversTest(); 
+                    runPetscLinearSolversTest(); 
+                    runPetscSlepcSolversTest();   
+                }             
+                else if (token == "solvers_generic")
+                   runGenericSolversTest();
+                else if (token == "solvers_petsc_nonlinear")
+                   runPetscNonlinearSolversTest();
+                else if (token == "solvers_petsc_linear")
+                   runPetscLinearSolversTest();                                  
+                else if (token == "solvers_slepc")
+                   runPetscSlepcSolversTest();                                  
                 else if (token == "performance")
                     run_performance_test();
                 else if (token == "algebra")

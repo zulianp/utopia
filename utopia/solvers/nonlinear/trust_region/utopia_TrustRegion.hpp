@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-11
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_SOLVER_TRUSTREGION_HPP
 #define UTOPIA_SOLVER_TRUSTREGION_HPP
 #include "utopia_NonLinearSolver.hpp"
@@ -28,8 +21,9 @@
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-     		typedef utopia::LinearSolver<Matrix, Vector> Solver;
+
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem; 
+        
         typedef utopia::TrustRegionBase<Matrix, Vector> TrustRegionBase; 
         typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
      	
@@ -257,6 +251,23 @@
 
           return true;
       }
+
+      virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls) override
+      {
+          auto linear_solver = this->linear_solver(); 
+          if (dynamic_cast<TRSubproblem *>(linear_solver.get()) != nullptr)
+          {
+              TRSubproblem * tr_sub = dynamic_cast<TRSubproblem *>(linear_solver.get());
+              tr_sub->set_linear_solver(ls);
+          }
+      }
+
+      virtual void set_trust_region_strategy(const std::shared_ptr<TRSubproblem> &tr_linear_solver)
+      {
+        NonLinearSolver::set_linear_solver(tr_linear_solver); 
+      }
+
+
   };
 
 }

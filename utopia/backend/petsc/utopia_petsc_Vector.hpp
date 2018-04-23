@@ -136,7 +136,11 @@ namespace utopia {
 		
 		inline PetscInt size() const
 		{
-			if(!initialized()) {
+			// if(!initialized()) {
+			// 	return utopia::INVALID_INDEX;
+			// }
+
+			if(is_null()) {
 				return utopia::INVALID_INDEX;
 			}
 			

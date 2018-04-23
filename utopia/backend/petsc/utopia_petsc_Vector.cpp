@@ -23,7 +23,8 @@ namespace utopia {
 		assert(other.is_consistent());
 
 		if(!same_type(other)) {
-			other.describe();
+			//other.describe();
+			// m_utopia_warning_once("> PetscVector::dot - vectors are not the same");
 		}
 
 		PetscScalar result;
@@ -293,6 +294,8 @@ namespace utopia {
 			std::cout << "is_null    : " << is_null() << "\n";
 			std::cout << "initialized: " << initialized() << "\n";
 		}
+
+		if(is_null()) return;
 
 		VecView(implementation(), PETSC_VIEWER_STDOUT_(communicator()));
 	}

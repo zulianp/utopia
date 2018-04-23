@@ -1,16 +1,10 @@
-/*
- * @Author: kopanicakova
- * @Date:   2018-02-06 17:47:26
- * @Last Modified by:   kopanicakova
- * @Last Modified time: 2018-04-09 14:03:17
- */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
+#include "test_problems/utopia_MultiLevelTestProblem.hpp"
 
-namespace utopia
-{
+namespace utopia {
 
 #ifdef WITH_PETSC
     class PetscLinearSolverTest {
@@ -18,16 +12,51 @@ namespace utopia
         
         void run()
         {
-            UTOPIA_RUN_TEST(petsc_mg_exp);
+            UTOPIA_RUN_TEST(petsc_mg_1D);
             UTOPIA_RUN_TEST(petsc_block_mg_exp);
             UTOPIA_RUN_TEST(petsc_block_mg);
+            UTOPIA_RUN_TEST(petsc_mg_exp);
             UTOPIA_RUN_TEST(petsc_bicgstab);
             UTOPIA_RUN_TEST(petsc_gmres);
             UTOPIA_RUN_TEST(petsc_mg);
             UTOPIA_RUN_TEST(petsc_cg_mg);
             UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
-            UTOPIA_RUN_TEST(petsc_cholesky);
+            UTOPIA_RUN_TEST(petsc_factorization);
+        }
+
+        void petsc_mg_1D()
+        {
+            if(mpi_world_size() > 1) return;
+            
+            const static bool verbose = false;
+
+            MultiLevelTestProblem<DSMatrixd, DVectord> ml_problem(4, 2);
+            // ml_problem.write_matlab("./");
+            
+            Multigrid<DSMatrixd, DVectord> multigrid(
+                std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
+                std::make_shared<Factorization<DSMatrixd, DVectord>>()
+            );
+
+            multigrid.set_transfer_operators(ml_problem.interpolators);
+            multigrid.max_it(4);
+            multigrid.atol(1e-12);
+            multigrid.stol(1e-10);
+            multigrid.rtol(1e-10);
+            multigrid.pre_smoothing_steps(3);
+            multigrid.post_smoothing_steps(3);
+            multigrid.verbose(verbose);
+            
+            DVectord x = zeros(size(*ml_problem.rhs));
+            multigrid.update(ml_problem.matrix);
+            
+            if(verbose) {
+                multigrid.describe();
+            }
+
+            multigrid.apply(*ml_problem.rhs, x);
+            assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-7));
         }
         
         void petsc_mg_exp()
@@ -47,8 +76,8 @@ namespace utopia
             interpolation_operators.push_back(make_ref(I_2));
             interpolation_operators.push_back(make_ref(I_3));
             
-            auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord>>();
-            auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+            auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+            auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
             // auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
             // linear_solver->verbose(true);
             Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;//(smoother, linear_solver);
@@ -56,7 +85,7 @@ namespace utopia
             // multigrid.set_default_ksp_type(KSPFGMRES);
             
             // Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
-            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
             multigrid.max_it(20);
             multigrid.atol(1e-15);
             multigrid.stol(1e-15);
@@ -69,87 +98,7 @@ namespace utopia
             const double err = norm2(A*x - rhs);
             assert(err < 1e-6);
         }
-        
-        void petsc_bicgstab()
-        {
-            
-            DMatrixd mat = identity(_n, _n);
-            DVectord rhs = zeros(_n);
-            DVectord sol = zeros(_n);
-            
-            BiCGStab<DMatrixd, DVectord> bicgs;
-            bicgs.solve(mat, rhs, sol);
-            
-            DVectord expected = zeros(_n);
-            assert(approxeq(expected, sol));
-        }
-        
-        void petsc_gmres()
-        {
-            
-            DMatrixd mat = identity(_n, _n);
-            DVectord rhs = zeros(_n);
-            DVectord sol = zeros(_n);
-            
-            GMRES<DMatrixd, DVectord> gmres;
-            gmres.solve(mat, rhs, sol);
-            
-            DVectord expected = zeros(_n);
-            assert(approxeq(expected, sol));
-        }
 
-        template<class MultigridT>
-        void test_block_mg(MultigridT &multigrid, const bool verbose = false)
-        {
-            if(mpi_world_size() > 1) return;
-
-            DVectord rhs;
-            DSMatrixd A, I;
-            
-            const std::string data_path = Utopia::instance().get("data_path");
-            const std::string folder = data_path + "/mg";
-            
-            read(folder + "/rhs.bin", rhs);
-            read(folder + "/A.bin", A);
-            read(folder + "/I.bin", I);
-            
-            std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
-            interpolation_operators.push_back(make_ref(I));
-            
-            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
-            multigrid.max_it(20);
-            multigrid.atol(1e-15);
-            multigrid.stol(1e-15);
-            multigrid.rtol(1e-15);
-            multigrid.verbose(verbose);
-            
-            DVectord x = zeros(A.size().get(0));
-
-            int block_size = 2;
-            multigrid.block_size(block_size);
-            multigrid.update(make_ref(A));
-            multigrid.apply(rhs, x);
-
-            assert(approxeq(rhs, A * x, 1e-6));
-        }
-
-        void petsc_block_mg_exp()
-        {
-           Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
-           test_block_mg(multigrid, false);
-        }
-
-        void petsc_block_mg()
-        {
-            Multigrid<DSMatrixd, DVectord> multigrid(
-                std::make_shared<GMRES<DSMatrixd, DVectord>>(),
-                // std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
-                std::make_shared<Factorization<DSMatrixd, DVectord>>()
-            );
-
-           test_block_mg(multigrid, false);
-        }
-        
         void petsc_mg()
         {
             // reading data from outside
@@ -180,11 +129,11 @@ namespace utopia
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.set_use_line_search(true);
+            // multigrid.set_use_line_search(true);
             
             
-            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
-            multigrid.set_fix_semidefinite_operators(true);
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            // multigrid.set_fix_semidefinite_operators(true);
             multigrid.update(make_ref(A));
             
             DVectord x_0 = zeros(A.size().get(0));
@@ -217,6 +166,92 @@ namespace utopia
             assert( approxeq(A*x_0, rhs, 1e-6) );
         }
         
+        void petsc_bicgstab()
+        {
+            
+            DMatrixd mat = identity(_n, _n);
+            DVectord rhs = zeros(_n);
+            DVectord sol = zeros(_n);
+            
+            BiCGStab<DMatrixd, DVectord> bicgs;
+            bicgs.solve(mat, rhs, sol);
+            
+            DVectord expected = zeros(_n);
+            assert(approxeq(expected, sol));
+        }
+        
+        void petsc_gmres()
+        {
+            DMatrixd mat = identity(_n, _n);
+            DVectord rhs = zeros(_n);
+            DVectord sol = zeros(_n);
+            
+            GMRES<DMatrixd, DVectord> gmres;
+            gmres.solve(mat, rhs, sol);
+            
+            DVectord expected = zeros(_n);
+            assert(approxeq(expected, sol));
+        }
+
+        template<class MultigridT>
+        void test_block_mg(MultigridT &multigrid, const bool verbose = false)
+        {
+            if(mpi_world_size() > 1) return;
+
+            DVectord rhs;
+            DSMatrixd A, I;
+            
+            const std::string data_path = Utopia::instance().get("data_path");
+            const std::string folder = data_path + "/mg";
+            
+            read(folder + "/rhs.bin", rhs);
+            read(folder + "/A.bin", A);
+            read(folder + "/I.bin", I);
+            
+            std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
+            interpolation_operators.push_back(make_ref(I));
+            multigrid.set_transfer_operators(interpolation_operators);
+            multigrid.max_it(20);
+            multigrid.atol(1e-15);
+            multigrid.stol(1e-15);
+            multigrid.rtol(1e-15);
+            multigrid.pre_smoothing_steps(3);
+            multigrid.post_smoothing_steps(3);
+            multigrid.verbose(verbose);
+            multigrid.set_fix_semidefinite_operators(true);
+
+            DVectord x = zeros(A.size().get(0));
+
+            int block_size = 2;
+            multigrid.block_size(block_size);
+            multigrid.update(make_ref(A));
+           
+            if(verbose) {
+                multigrid.describe();
+            }
+
+            multigrid.apply(rhs, x);
+
+            assert(approxeq(rhs, A * x, 1e-6));
+        }
+
+        void petsc_block_mg_exp()
+        {
+           Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> multigrid;
+           test_block_mg(multigrid, false);
+        }
+
+        void petsc_block_mg()
+        {
+            Multigrid<DSMatrixd, DVectord> multigrid(
+                std::make_shared<SOR<DSMatrixd, DVectord>>(),
+                std::make_shared<Factorization<DSMatrixd, DVectord>>()
+            );
+
+           // multigrid.set_use_line_search(true);
+            // multigrid.set_fix_semidefinite_operators(true);
+           test_block_mg(multigrid, false);
+        }
         
         void petsc_cg_mg()
         {
@@ -252,11 +287,11 @@ namespace utopia
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             // auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
             multigrid.max_it(1);
             multigrid.mg_type(1);
             multigrid.verbose(verbose);
-            multigrid.set_use_line_search(true);
+            // multigrid.set_use_line_search(true);
             
             // ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> cg; //with the HOMEMADE works in parallel
             ConjugateGradient<DSMatrixd, DVectord> cg;
@@ -308,15 +343,15 @@ namespace utopia
             interpolation_operators.push_back(make_ref(I_2));
             interpolation_operators.push_back(make_ref(I_3));
             
-            auto direct_solver = std::make_shared< Factorization<DSMatrixd, DVectord> >();
-            auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+            auto smoother      = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.init_transfer_from_fine_to_coarse(interpolation_operators);
+            multigrid.set_transfer_operators(interpolation_operators);
             multigrid.update(make_ref(A));
             
             // multigrid.verbose(true);
-            multigrid.set_use_line_search(true);
-            multigrid.solve(rhs, x);
+            // multigrid.set_use_line_search(true);
+            multigrid.apply(rhs, x);
             
             assert( approxeq(A*x, rhs, 1e-6) );
         }
@@ -362,7 +397,7 @@ namespace utopia
             
             auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
-            multigrid.init_transfer_from_fine_to_coarse(std::move(interpolation_operators));
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
             multigrid.update(make_ref(A));
             
             multigrid.max_it(1);
@@ -375,6 +410,7 @@ namespace utopia
             auto precond = std::make_shared< InvDiagPreconditioner<DSMatrixd, DVectord> >();
             // utopia_ksp.set_preconditioner(precond);
             utopia_ksp.verbose(verbose);
+            utopia_ksp.ksp_type("gmres");
             utopia_ksp.solve(A, rhs, x_0);
             assert( approxeq(A*x_0, rhs, 1e-6) );
             //! [KSPSolver solve example1]
@@ -402,7 +438,7 @@ namespace utopia
             // assert( diff < 1e-6 );
         }
         
-        void petsc_cholesky()
+        void petsc_factorization()
         {
             if(mpi_world_size() > 1)
                 return;
@@ -416,7 +452,7 @@ namespace utopia
             rhs = local_values(local_size(A).get(0), 13.0);
             
             auto cholesky_factorization = std::make_shared<Factorization<DSMatrixd, DVectord> >();
-            cholesky_factorization->set_type(PETSC_TAG, CHOLESKY_DECOMPOSITION_TAG);
+            cholesky_factorization->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
             
             if(!cholesky_factorization->solve(A, rhs, x)) {
                 assert(false && "failed to solve");
@@ -426,7 +462,7 @@ namespace utopia
             // assert( approxeq(A * x, rhs, 1e-6) );
             
             if(diff > 1e-6) {
-                utopia_error("petsc_cholesky fails. Known problem that needs to be fixed!");
+                utopia_error("petsc_factorization fails. Known problem that needs to be fixed!");
             }
         }
     

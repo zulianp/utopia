@@ -89,35 +89,25 @@ namespace utopia {
 					}
 				);
 
-				// This does not work yet
-				// this->register_experiment(
-				// 	"trust_region_" + std::to_string(i),
-				// 	[i]() {
-				// 		Rastrigin<Matrix, Vector> fun;
-				// 		Vector x = local_values(10 * (i+1), 1.);
+				this->register_experiment(
+					"trust_region_" + std::to_string(i),
+					[i]() {
+						Rastrigin<Matrix, Vector> fun;
+						Vector x = local_values(10 * (i+1), 1.);
 
-				// 		ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
-				// 		cg.max_it(size(x).get(0));
+						TrustRegion<Matrix, Vector> trust_region;
+						trust_region.verbose(false); 
 
-				// 		TrustRegion<Matrix, Vector> trust_region;
-				// 		trust_region.set_linear_solver(make_ref(cg));
-				// 		cg.verbose(true);
-				// 		cg.atol(1e-19);
-				// 		cg.stol(1e-19);
-				// 		cg.rtol(1e-19);
-				// 		trust_region.verbose(true);
+						double mag_x0 = -1;
+						fun.value(x, mag_x0);
 
-				// 		double mag_x0 = -1;
-				// 		fun.value(x, mag_x0);
+						trust_region.solve(fun, x);
 
-				// 		trust_region.solve(fun, x);
-
-				// 		double mag_x = -1.;
-				// 		fun.value(x, mag_x);
-				// 		assert(mag_x <= mag_x0);
-				// 	}
-				// );
-
+						double mag_x = -1.;
+						fun.value(x, mag_x);
+						assert(mag_x <= mag_x0);
+					}
+				);
 
 			}
 		}

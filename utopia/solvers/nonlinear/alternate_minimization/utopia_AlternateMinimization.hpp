@@ -27,8 +27,8 @@ namespace utopia
         typedef utopia::NonLinearSolver<Matrix, Vector>     NonlinearSolver;
 
     public:
-       AlternateMinimization(   const std::shared_ptr<NonlinearSolver> &nl_solver_master = std::shared_ptr<NonlinearSolver>(),
-                                const std::shared_ptr<NonlinearSolver> &nl_solver_slave = std::shared_ptr<NonlinearSolver>(), 
+       AlternateMinimization(   const std::shared_ptr<NonlinearSolver> &nl_solver_master, 
+                                const std::shared_ptr<NonlinearSolver> &nl_solver_slave, 
                                 const Parameters params                                 = Parameters()):
                                 _nl_solver_master(nl_solver_master), 
                                 _nl_solver_slave(nl_solver_slave) 

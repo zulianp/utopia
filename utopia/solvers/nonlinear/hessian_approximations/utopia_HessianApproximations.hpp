@@ -75,14 +75,7 @@ namespace utopia
 
                     return true;
                 }   
-
-
-
-
-
-
             };
-
 
 
         template<class Matrix, class Vector>

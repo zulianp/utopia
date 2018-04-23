@@ -1,27 +1,24 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-04-19
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2018-02-08
-*/
+#ifndef UTOPIA_RMTR_INF_HPP
+#define UTOPIA_RMTR_INF_HPP
 
-#ifndef UTOPIA_RMTR_HPP
-#define UTOPIA_RMTR_HPP
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
 #include "utopia_TRSubproblem.hpp"
+#include "utopia_TRBoxSubproblem.hpp"
+#include "utopia_TrustRegionVariableBound.hpp"
+
 #include "utopia_Linear.hpp"
 #include "utopia_Level.hpp"
-#include "utopia_LS_Strategy.hpp"
 
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_TRBase.hpp"
 
 #include "utopia_MultiLevelEvaluations.hpp"
+#include "utopia_RMTR.hpp"
 
 
 namespace utopia 
@@ -32,13 +29,19 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR : public NonlinearMultiLevelBase<Matrix, Vector>,
-                       public TrustRegionBase<Matrix, Vector>
+
+    // - inherit from RMTR - l2 later... 
+    template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER >
+    class RMTR_inf :    public NonlinearMultiLevelBase<Matrix, Vector>,
+                        public TrustRegionBoxBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
-        typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem; 
+
+
+        // pay attention that this one is inf norm... 
+        typedef utopia::TRBoxSubproblem<Matrix, Vector>        TRSubproblem; 
+
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
@@ -51,16 +54,15 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        RMTR(   const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother, 
-                const Parameters params = Parameters()): 
-                NonlinearMultiLevelBase<Matrix,Vector>(params), 
-                _coarse_tr_subproblem(tr_subproblem_coarse), 
-                _smoother_tr_subproblem(tr_subproblem_smoother) 
+        RMTR_inf(   const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother,  const Parameters params = Parameters()): 
+                    NonlinearMultiLevelBase<Matrix,Vector>(params), 
+                    _coarse_tr_subproblem(tr_subproblem_coarse), 
+                    _smoother_tr_subproblem(tr_subproblem_smoother) 
         {
             set_parameters(params); 
         }
 
-        virtual ~RMTR(){} 
+        virtual ~RMTR_inf(){} 
         
 
         void set_parameters(const Parameters params) override
@@ -203,7 +205,7 @@ namespace utopia
                     std::cout << red; 
 
                     if(verbosity_level() > VERBOSITY_LEVEL_NORMAL)
-                        this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g_norm ||", "   E "}); 
+                        this->print_init_message("RMTR_inf OUTER SOLVE", {" it. ", "|| g_norm ||", "   E "}); 
 
                     PrintInfo::print_iter_status(_it_global, {r_norm, energy}); 
                     std::cout << def; 
@@ -418,13 +420,14 @@ namespace utopia
             Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0; 
             bool make_grad_updates = true, make_hess_updates = true, converged = false, delta_converged = false; 
 
+
             Vector s = local_zeros(local_size(x)); 
             
+
             compute_s_global(x, level, s_global);  
             this->get_multilevel_gradient(fun, x, g, s_global, level); 
             energy_old = this->get_multilevel_energy(fun,  x, s_global, level); 
             g_norm = norm2(g); 
-
 
             if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
@@ -432,7 +435,7 @@ namespace utopia
                 PrintInfo::print_iter_status(0, {g_norm, energy_old, ared, pred, rho, get_delta(level-1) }); 
             }
 
-            it++;       
+            it++; 
 
             while(!converged)
             {
@@ -443,15 +446,14 @@ namespace utopia
             //----------------------------------------------------------------------------
                 // correction needs to get prepared 
                 s = 0 * x;
-                this->solve_qp_subproblem(H, g, s, level, exact_solve_flg); 
+                this->solve_qp_subproblem(x, H, g, s, level, exact_solve_flg); 
 
                 // predicted reduction based on model 
-                TrustRegionBase<Matrix, Vector>::get_pred(g, H, s, pred); 
+                this->get_pred(g, H, s, pred); 
 
                 // building trial point 
                 x += s;  
-            
-
+                
                 compute_s_global(x, level, s_global); 
                 energy_new = this->get_multilevel_energy(fun,  x, s_global, level); 
                 ared = energy_old - energy_new; 
@@ -476,6 +478,7 @@ namespace utopia
                     compute_s_global(x, level, s_global); 
                     make_grad_updates =  false; 
                 }
+
             //----------------------------------------------------------------------------
             //     trust region update 
             //----------------------------------------------------------------------------
@@ -504,6 +507,7 @@ namespace utopia
             }
 
             return delta_converged; 
+
         }
 
 
@@ -875,21 +879,27 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool solve_qp_subproblem(const Matrix & H, const Vector & g, Vector & s, const SizeType & level, const bool & flg)
+        virtual bool solve_qp_subproblem(const Vector & x_k, const Matrix & H, const Vector & g, Vector & s, const SizeType & level, const bool & flg)
         {
             if(flg)
             {
-                _coarse_tr_subproblem->current_radius(get_delta(level-1));  
-                _coarse_tr_subproblem->atol(1e-16); 
-                _coarse_tr_subproblem->max_it(5000); 
-                _coarse_tr_subproblem->tr_constrained_solve(H, g, s); 
+                // TODO:: tolerances
+                Vector ub, lb; 
+                this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
+                
+                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, box);
+
             }
             else
             {
-                _smoother_tr_subproblem->current_radius(get_delta(level-1));  
-                _smoother_tr_subproblem->atol(1e-16); 
-                _smoother_tr_subproblem->max_it(5);
-                _smoother_tr_subproblem->tr_constrained_solve(H, g, s); 
+                // TODO:: tolerances
+                Vector ub, lb; 
+                this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
+                
+                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, box);
+
 
             }
 
@@ -1025,6 +1035,20 @@ namespace utopia
                 }
             }
         }
+
+
+
+
+protected: 
+
+    // todo: check TR_bound ... 
+    virtual bool get_pred(const Vector & g, const Matrix & B, const Vector & p_k, Scalar &pred) override
+    {
+      Scalar l_term = dot(g, p_k);
+      Scalar qp_term = dot(p_k, B * p_k);
+      pred =  l_term - 0.5 * qp_term; 
+      return true; 
+    }
 
 
 

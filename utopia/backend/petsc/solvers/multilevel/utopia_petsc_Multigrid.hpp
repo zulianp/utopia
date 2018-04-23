@@ -9,7 +9,7 @@ namespace utopia {
 
 	
 	template<class Matrix, class Vector>
-	class Multigrid<Matrix, Vector, PETSC_EXPERIMENTAL> : public IterativeSolver<Matrix, Vector>, public MultiLevelBase<Matrix, Vector> {
+	class Multigrid<Matrix, Vector, PETSC_EXPERIMENTAL> : public IterativeSolver<Matrix, Vector>, public LinearMultiLevel<Matrix, Vector> {
 		typedef UTOPIA_SCALAR(Vector)    Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
@@ -30,7 +30,7 @@ namespace utopia {
 
 			PC pc;
 			KSPGetPC(*ksp_, &pc);
-			for(std::size_t i = 0; i < this->num_levels()-1; i++)
+			for(std::size_t i = 0; i < this->n_levels()-1; i++)
 			{
 				KSP smoother;
 				PCMGGetSmoother(pc, i, &smoother);
@@ -71,7 +71,7 @@ namespace utopia {
 		void set_parameters(const Parameters params) override
 		{
 		    IterativeSolver::set_parameters(params); 
-		    MultiLevelBase<Matrix, Vector>::set_parameters(params); 
+		    LinearMultiLevel<Matrix, Vector>::set_parameters(params); 
 		}
 
 		inline void set_default_ksp_type(const KSPType &ksp_type)
@@ -87,13 +87,13 @@ namespace utopia {
 
 		virtual void update_transfer(const SizeType level, Transfer &&t) override
 		{
-			MultiLevelBase<Matrix, Vector>::update_transfer(level, std::move(t));
+			LinearMultiLevel<Matrix, Vector>::update_transfer(level, std::move(t));
 			aux_update_transfer(level);
 		}
 
 		virtual void update_transfer(const SizeType level, const Transfer &t) override
 		{
-			MultiLevelBase<Matrix, Vector>::update_transfer(level, t);
+			LinearMultiLevel<Matrix, Vector>::update_transfer(level, t);
 			aux_update_transfer(level);
 		}
 
@@ -201,7 +201,7 @@ namespace utopia {
 			KSPGetPC(*ksp_, &pc);
 			PCSetType(pc, PCMG);
 
-			PCMGSetLevels(pc, this->num_levels(), nullptr);
+			PCMGSetLevels(pc, this->n_levels(), nullptr);
 			// PCMGSetGalerkin(pc, PETSC_TRUE);
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0)  
 			PCMGSetGalerkin(pc, PETSC_FALSE);
@@ -210,7 +210,7 @@ namespace utopia {
 #endif
 			KSPSetInitialGuessNonzero(*ksp_, PETSC_TRUE);
 
-			for (std::size_t i = 0; i < this->num_levels()-1; i++)
+			for (std::size_t i = 0; i < this->n_levels()-1; i++)
 			{
 				KSP smoother;
 				PC sm;

@@ -21,12 +21,11 @@ namespace utopia
     {
 		typedef UTOPIA_SCALAR(Vector) Scalar;
 		typedef utopia::LinearSolver<Matrix, Vector> 		LinearSolver;
-		typedef utopia::EigenValueSlover<Matrix, Vector, PETSC_EXPERIMENTAL> 	EigenSolver;
+		typedef utopia::EigenSolver<Matrix, Vector, PETSC_EXPERIMENTAL> 	EigenSolver;
 
 
     public:
-    	MoreSorensenEigen(	const std::shared_ptr<LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(), 
-    						const std::shared_ptr<EigenSolver> & eigen_solver = std::shared_ptr<EigenSolver>(), 
+    	MoreSorensenEigen(	const std::shared_ptr<LinearSolver> &linear_solver,  const std::shared_ptr<EigenSolver> & eigen_solver, 
     						const Parameters params = Parameters()): 
     						TRSubproblem<Matrix, Vector>(params), 
     						linear_solver_(linear_solver), 
@@ -57,6 +56,11 @@ namespace utopia
         {
         	return lambda_eps_; 
         }
+
+        virtual void set_linear_solver(const std::shared_ptr<LinearSolver > &ls) override
+        {
+            linear_solver_ = ls; 
+        }   
 
 
 	protected:
@@ -101,7 +105,7 @@ namespace utopia
 	        	{
 	        		// we are in hard case, let's find solution on boundary, which is orthogonal to E_1
 	        		//                     because eigenvector is normalized
-	        		Scalar alpha = quadratic_function(1.0, 2.0 * dot(s_k, eigenvector), dot(s_k, s_k) - (this->current_radius() * this->current_radius())); 
+	        		Scalar alpha = this->quadratic_function(1.0, 2.0 * dot(s_k, eigenvector), dot(s_k, s_k) - (this->current_radius() * this->current_radius())); 
 	        		s_k += alpha * eigenvector;  
 	        		return true; 
 	        	}
@@ -148,19 +152,6 @@ namespace utopia
         	return false; 
         }
 
-
-   private: 
-
-	   	// TODO:: find out if lower better than upper
-	   	Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
-	   	{
-	   		Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c); 
-
-			Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a); 
-			Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a); 
-
-	   		return lower; 
-	   	}
 
     private: 
      	std::shared_ptr<LinearSolver> linear_solver_;     
