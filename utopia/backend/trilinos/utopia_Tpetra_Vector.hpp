@@ -112,7 +112,11 @@ namespace utopia {
 
         inline void set(const global_ordinal_type i, const Scalar value)
         {
-            implementation().replaceGlobalValue(i, value);
+            if(!write_data_.is_null()) {
+                write_data_[i - implementation().getMap()->getMinGlobalIndex()] = value;
+            } else {
+                implementation().replaceGlobalValue(i, value);
+            }
         }
 
         inline void add(const global_ordinal_type i, const Scalar value)
@@ -132,7 +136,7 @@ namespace utopia {
 
         inline void read_unlock()
         {
-            read_only_data_.release();
+            read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
         }
 
         inline void write_lock()
@@ -143,6 +147,17 @@ namespace utopia {
         inline void write_unlock()
         {
             //TODO?
+        }
+
+        inline void read_and_write_lock()
+        {
+            write_data_ = implementation().getDataNonConst();
+            read_only_data_ = write_data_;
+        }
+        inline void read_and_write_unlock()
+        {
+            write_data_ = Teuchos::ArrayRCP<Scalar>();
+            read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
         }
 
         inline Range range() const
@@ -190,6 +205,20 @@ namespace utopia {
             return implementation().dot(other.implementation());
         }
 
+
+        inline void e_mul(const TpetraVector &right, TpetraVector &result) const
+        {
+            //https://trilinos.org/docs/dev/packages/tpetra/doc/html/classTpetra_1_1MultiVector.html#a95fae4b1f2891d8438b7fb692a85b3bd
+            assert(false);
+            // result = *this;
+            // implementation().elementWiseMultiply(
+            //     1.,
+            //     result.implementation(),
+            //     right.implementation(),
+            //     1.
+            // );   
+        }
+
         inline vector_type &implementation()
         {
             return *vec_;
@@ -211,6 +240,7 @@ namespace utopia {
     private:
         rcpvector_type vec_;
         Teuchos::ArrayRCP<const Scalar> read_only_data_;
+        Teuchos::ArrayRCP<Scalar> write_data_;
     };
 }
 

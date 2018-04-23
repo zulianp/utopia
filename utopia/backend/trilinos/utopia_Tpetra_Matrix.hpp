@@ -144,10 +144,15 @@ namespace utopia {
             this->finalize();
         }
         
-        void describe(std::ostream &os = std::cout) const
+        void describe(std::ostream &os) const
         {
             auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
             implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
+        }
+
+        inline void describe() const
+        {
+            describe(std::cout);
         }
         
         void set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
