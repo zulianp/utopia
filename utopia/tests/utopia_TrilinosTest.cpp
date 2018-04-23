@@ -316,7 +316,6 @@ namespace utopia {
             backend_convert(petsc_rhs, rhs);
         }
 
-
         std::vector<std::shared_ptr<TSMatrixd>> interpolation_operators;
         interpolation_operators.push_back(make_ref(I));
         
@@ -325,13 +324,12 @@ namespace utopia {
         multigrid.atol(1e-15);
         multigrid.stol(1e-15);
         multigrid.rtol(1e-15);
-        multigrid.verbose(true);
-        
+        // multigrid.verbose(true);
+        multigrid.must_generate_masks(false);
         TVectord x = local_zeros(local_size(rhs));
 
         try {
             multigrid.update(make_ref(A));
-            multigrid.describe();
             ok = multigrid.apply(rhs, x); assert(ok);
         } catch(const std::exception &ex) {
             std::cout << ex.what() << std::endl;
@@ -368,7 +366,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_diag);
         UTOPIA_RUN_TEST(trilinos_read);
         UTOPIA_RUN_TEST(trilinos_ptap);
-        // UTOPIA_RUN_TEST(trilinos_mg);
+        UTOPIA_RUN_TEST(trilinos_mg);
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
 }

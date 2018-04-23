@@ -86,7 +86,7 @@ namespace utopia
           block_size_(1)
         {
             set_parameters(params);
-            this->must_generate_masks_ = true;
+            this->must_generate_masks(true);
         }
         
         virtual ~Multigrid(){}

@@ -59,6 +59,12 @@ namespace utopia {
         TpetraVector &operator=(const TpetraVector &other)
         {
             if(this == &other) return *this;
+
+            if(other.is_null()) {
+                vec_.reset();
+                return *this;
+            }
+            
             vec_ = Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy));
             return *this;
         }
@@ -209,14 +215,13 @@ namespace utopia {
         inline void e_mul(const TpetraVector &right, TpetraVector &result) const
         {
             //https://trilinos.org/docs/dev/packages/tpetra/doc/html/classTpetra_1_1MultiVector.html#a95fae4b1f2891d8438b7fb692a85b3bd
-            assert(false);
-            // result = *this;
-            // implementation().elementWiseMultiply(
-            //     1.,
-            //     result.implementation(),
-            //     right.implementation(),
-            //     1.
-            // );   
+            result.values(this->communicator(), local_size().get(0), size().get(0), 0.);
+            result.implementation().elementWiseMultiply(
+                1.,
+                result.implementation(),
+                right.implementation(),
+                0.
+            );   
         }
 
         inline vector_type &implementation()
