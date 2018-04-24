@@ -101,5 +101,11 @@ Follow the steps above (Compiling utopia) to compile utopia itself.
 The API documentation of Utopia can be generated through Doxygen by using the command *make docs* from the bin folder after calling cmake ... The API documentation is generated in the *utopia/doc/api* folder in both HTML (see html/index.html) and LateX (see refman.tex) formats.
 
 
+## Contact
+
+Join us on slack:
+https://join.slack.com/t/ics-utopia/signup
+
+
 # More details coming soon!
 
