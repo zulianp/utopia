@@ -18,10 +18,10 @@ namespace utopia {
 	void run_steady_contact(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		mesh->read("../data/wear_2_far.e");
+		// mesh->read("../data/wear_2_far.e");
 		// mesh->read(utopia::Utopia::instance().get("data_path") + "/input_file.e");
 		// mesh->read("../data/channel_2d.e");
-		// mesh->read("../data/leaves_3d_b.e");
+		mesh->read("../data/leaves_3d_b.e");
 
 
 		const auto dim = mesh->mesh_dimension();
@@ -131,25 +131,30 @@ namespace utopia {
 		
 		// begin: multigrid
 		
-		// // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		// // auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
+		// auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+		// auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
+		auto smoother = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+		// prec->max_it(1);
+		// smoother->set_preconditioner(prec);
+
 		// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
-		// // auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
+		// auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
 
 		// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
 		// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
-		// auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
-		// mg->verbose(true);
-		// mg->init(Vx, 3);
+		auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
+		mg->verbose(true);
+		mg->init(Vx, 3);
 		
-		// mg->algebraic().atol(1e-18);
-		// mg->algebraic().rtol(1e-8);
-		// mg->algebraic().stol(1e-16);
+		mg->algebraic().atol(1e-18);
+		mg->algebraic().rtol(1e-8);
+		mg->algebraic().stol(1e-16);
 		// mg->algebraic().set_use_line_search(true);
 
-		// sc.set_linear_solver(mg);
+		sc.set_linear_solver(mg);
 
-		// mg->set_separate_subdomains(true);
+		mg->set_separate_subdomains(true);
 		// end: multigrid
 
 
