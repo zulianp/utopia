@@ -85,6 +85,7 @@ namespace utopia {
 					result.implementation()
 				);
 
+
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);
@@ -98,6 +99,16 @@ namespace utopia {
 			Tpetra::RowMatrixTransposer<Scalar, local_ordinal_type, global_ordinal_type, node_type> transposer(mat_);
 			mat.mat_ = transposer.createTranspose();
 			mat.owner_ = true;
+
+
+			//None of this creat a valid matrix for getGlobalRowView
+			//1)
+			// auto col_map = Teuchos::rcp(new map_type(size().get(0), 0, communicator(), Tpetra::LocallyReplicated));
+			// mat.mat_->replaceColMap(col_map);	
+
+			//2)
+			// mat.implementation().resumeFill();
+			// mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);

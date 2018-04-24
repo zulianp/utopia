@@ -410,7 +410,7 @@ namespace utopia {
 		Vector lagrange_multiplier_;
 
 		//additional vectors
-		DSMatrixd internal_mass_matrix_;
+		// DSMatrixd internal_mass_matrix_;
 
 		std::shared_ptr<Exporter> io_;
 		int n_exports;

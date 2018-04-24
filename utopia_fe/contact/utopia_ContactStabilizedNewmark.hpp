@@ -50,14 +50,20 @@ namespace utopia {
 			ContactSolver<Matrix, Vector>::initialize();
 		}
 
-		void initial_condition()
+		void initial_condition(const Scalar density)
 		{
 			auto &V = this->space();
 			auto u = trial(V);
 			auto v = test(V);
 
 			utopia::assemble(inner(u, v) * dX, internal_mass_matrix_);
-			
+			internal_mass_matrix_ *= density;
+			initial_condition(internal_mass_matrix_);
+		}
+
+		void initial_condition(const DSMatrixd &mass_matrix)
+		{
+			internal_mass_matrix_ = mass_matrix;
 			Vector mass_vector = sum(internal_mass_matrix_, 1);
 			internal_mass_matrix_ = diag(mass_vector);
 			inverse_mass_vector_ = 1./mass_vector;
@@ -79,6 +85,16 @@ namespace utopia {
 			if(this->external_force_fun()) {
 				this->external_force_fun()->eval(t_, external_force_);
 			}
+		}
+
+		void initial_condition()
+		{
+			auto &V = this->space();
+			auto u = trial(V);
+			auto v = test(V);
+
+			utopia::assemble(inner(u, v) * dX, internal_mass_matrix_);
+			initial_condition(internal_mass_matrix_);
 		}
 
 		inline const Vector &velocity() const

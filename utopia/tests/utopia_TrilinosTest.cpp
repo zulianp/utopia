@@ -309,7 +309,7 @@ namespace utopia {
             ok = read(folder + "/f_rhs", petsc_rhs); assert(ok);
             ok = read(folder + "/f_A", petsc_A);     assert(ok);
             // ok = read(folder + "/I_2", I_2);   assert(ok);
-            ok = read(folder + "/I_3", petsc_I);   assert(ok);
+            ok = read(folder + "/I_3", petsc_I);     assert(ok);
            
             backend_convert_sparse(petsc_I, I);
             backend_convert_sparse(petsc_A, A);
@@ -342,6 +342,26 @@ namespace utopia {
         
     }
 
+    void row_view_and_loops()
+    {
+        auto n = 10;
+        auto m = 3;
+
+        TSMatrixd P;
+        build_rectangular_matrix(n, m, P);
+
+        each_read(P, [](const SizeType i, const SizeType j, const double val) {
+
+        });
+
+        TSMatrixd P_t = transpose(P);
+
+
+        each_read(P_t, [](const SizeType i, const SizeType j, const double val) {
+
+        });
+    }
+
     void trilinos_read()
     {
         TSMatrixd m;
@@ -367,6 +387,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_read);
         UTOPIA_RUN_TEST(trilinos_ptap);
         UTOPIA_RUN_TEST(trilinos_mg);
+
+        //does not work
+        // UTOPIA_RUN_TEST(row_view_and_loops);
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
 }
