@@ -256,9 +256,10 @@ namespace utopia {
         
         void attach_shell_preconditioner(
             PetscErrorCode (*apply)(PC, Vec, Vec),
+            void *ctx,
             PetscErrorCode (*setup)(PC),
-            PetscErrorCode (*destroy)(PC),
-            void *ctx)
+            PetscErrorCode (*destroy)(PC)
+            )
         {
             PetscErrorCode ierr;
             PC pc;
@@ -314,21 +315,21 @@ namespace utopia {
             void *ctx;
             
             //back-up settings
-            ierr = KSPGetNormType(ksp_, &normtype); assert(ierr == 0);
-            ierr = KSPGetTolerances(ksp_, &rtol, &abstol, &dtol, &maxits);  assert(ierr == 0);
+            ierr = KSPGetNormType(ksp_, &normtype);                                                    assert(ierr == 0);
+            ierr = KSPGetTolerances(ksp_, &rtol, &abstol, &dtol, &maxits);                             assert(ierr == 0);
             
             //set up smoothing things
-            ierr = KSPSetTolerances(ksp_, 0., 0., PETSC_DEFAULT, sweeps); assert(ierr == 0);
-            ierr = KSPSetNormType(ksp_, KSP_NORM_NONE); assert(ierr == 0);
-            ierr = KSPSetConvergenceTest(ksp_, KSPConvergedSkip, NULL, NULL); assert(ierr == 0);
+            ierr = KSPSetTolerances(ksp_, 0., 0., PETSC_DEFAULT, sweeps);                              assert(ierr == 0);
+            ierr = KSPSetNormType(ksp_, KSP_NORM_NONE);                                                assert(ierr == 0);
+            ierr = KSPSetConvergenceTest(ksp_, KSPConvergedSkip, NULL, NULL);                          assert(ierr == 0);
             
             //perform smoothing
-            ierr = KSPSolve(ksp_, raw_type(rhs), raw_type(x)); assert(ierr == 0);
+            ierr = KSPSolve(ksp_, raw_type(rhs), raw_type(x));                                         assert(ierr == 0);
             
             //reset-solver-stuff
-            ierr = KSPSetNormType(ksp_, normtype); assert(ierr == 0);
-            ierr = KSPSetTolerances(ksp_, rtol, abstol, dtol, maxits); assert(ierr == 0);
-            ierr = KSPConvergedDefaultCreate(&ctx); assert(ierr == 0);
+            ierr = KSPSetNormType(ksp_, normtype);                                                     assert(ierr == 0);
+            ierr = KSPSetTolerances(ksp_, rtol, abstol, dtol, maxits);                                 assert(ierr == 0);
+            ierr = KSPConvergedDefaultCreate(&ctx);                                                    assert(ierr == 0);
             ierr = KSPSetConvergenceTest(ksp_,  KSPConvergedDefault, ctx, KSPConvergedDefaultDestroy); assert(ierr == 0);
             return true;
         }
@@ -341,9 +342,13 @@ namespace utopia {
             auto ierr = KSPSetTolerances(ksp_, rtol, atol, stol, max_it); assert(ierr == 0);
         }
         
-        void set_monitor()
+        void set_monitor(
+            PetscErrorCode (*monitor)(KSP,PetscInt,PetscReal,void *),
+            void *mctx,
+            PetscErrorCode (*monitordestroy)(void**)
+        )
         {
-            
+            auto ierr = KSPMonitorSet(ksp_, monitor, mctx, monitordestroy); assert(ierr == 0);
         }
         
         bool apply(const Vector &b, Vector &x)
