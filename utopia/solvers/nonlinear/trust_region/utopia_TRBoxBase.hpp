@@ -184,9 +184,9 @@ namespace utopia
               }
           }
           else
-              l_f = -1 * radius * local_values(local_size(x_k).get(0), 1.0); ;         
+              l_f = -1 * radius * local_values(local_size(x_k).get(0), 1.0); 
 
-          return make_box_constaints(std::make_shared<Vector>(l_f), std::make_shared<Vector>(u_f));; 
+          return make_box_constaints(std::make_shared<Vector>(l_f), std::make_shared<Vector>(u_f));
       }
 
 

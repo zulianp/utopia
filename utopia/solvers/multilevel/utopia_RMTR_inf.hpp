@@ -46,6 +46,9 @@ namespace utopia
         typedef utopia::Level<Matrix, Vector>               Level;
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
+
+        typedef utopia::BoxConstraints<Vector>              BoxConstraints;
+
     public:
 
        /**
@@ -147,14 +150,8 @@ namespace utopia
             r0_norm = norm2(g_finest); 
             _it_global = 0; 
 
-            //-------------- INITIALIZATIONS ---------------
-            init_deltas(); 
-            init_delta_gradients();  
-            init_x_initials(); 
             
-
-            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
-                init_delta_hessians(); 
+            init(); 
             
             //----------------------------------------------
 
@@ -307,6 +304,9 @@ namespace utopia
                 this->set_delta_hessian(level-2, H_diff); 
 
             this->set_x_initial(level-2, u_2l); 
+
+            // check indexing ...
+            this->set_tr_constrain(u_l, level-1); 
             
         
             s_coarse = 0*u_2l; 
@@ -513,6 +513,23 @@ namespace utopia
 
 
     protected:
+
+
+        void init()
+        {
+            init_deltas(); 
+
+            _delta_gradients.resize(this->n_levels()-1); 
+            _x_initials.resize(this->n_levels()-1); 
+
+            tr_constraints_.resize(this->n_levels()-1); 
+            
+            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
+                _delta_hessians.resize(this->n_levels()-1); 
+        }
+
+
+
 
         // -------------------------- tr radius managment ---------------------------------------------        
         /**
@@ -732,18 +749,6 @@ namespace utopia
         }
 
 
-    
-        /**
-        * @brief      Initializes _delta_hessians for all levels. They are organized from coarsest to finest =>  _delta_hessians[0] =  coarsest level
-         * @NOTE:      We do not have any _delta_hessians for the finest level, since function on the finest level is taken from problem discretization 
-         *
-         */
-        bool init_delta_hessians()
-        {
-            _delta_hessians.resize(this->n_levels()-1); 
-            return true; 
-        }
-
 
         /**
          * @brief      Sets the delta hessian.
@@ -772,17 +777,6 @@ namespace utopia
         }
 
 
-        /**
-         * @brief      Initializes x0 for all levels. They are organized from coarsest to finest =>  _x_initials[0] =  coarsest level.
-         * @NOTE:      We do not have any x0 for the finest level, since function on the finest level is taken from problem discretization 
-         *
-         */
-        virtual bool init_x_initials()
-        {
-            _x_initials.resize(this->n_levels()-1); 
-            return true; 
-        }
-
 
         /**
          * @brief      Sets the x initial.
@@ -810,18 +804,7 @@ namespace utopia
             return _x_initials[level]; 
         }
 
-        
-        /**
-         * @brief      Initializes delta_grads for all levels. They are organized from coarsest to finest => _delta_gradients[0] =  coarsest level. 
-         * @NOTE:      We do not have any g_diff for the finest level, since function on the finest level is taken from problem discretization 
-         *
-         */
-        virtual bool init_delta_gradients()
-        {
-            _delta_gradients.resize(this->n_levels()-1); 
-            return true; 
-        }
-
+    
 
         /**
          * @brief      Sets the delta gradient.
@@ -883,16 +866,26 @@ namespace utopia
         {
             if(flg)
             {
-                // TODO:: tolerances, max_it
-                auto box = this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1)); 
+                // TODO:: tolerances
+                // Vector ub, lb; 
+                // this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
+                
+                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
                 _coarse_tr_subproblem->tr_constrained_solve(H, g, s, box);
+
             }
             else
             {
-                // TODO:: tolerances, max_it
-                auto box = this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1)); 
+                // TODO:: tolerances
+                // Vector ub, lb; 
+                // this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
+                
+                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
                 _smoother_tr_subproblem->tr_constrained_solve(H, g, s, box);
+
+
             }
+
             return true; 
         }
 
@@ -1027,39 +1020,98 @@ namespace utopia
         }
 
 
+        // correct only if P has only positive elements ... 
+        // x is at level l and we are going to initialialize one level down... 
+        void set_tr_constrain(const Vector &x, const Scalar level)
+        {
+            Vector lower = local_zeros(local_size(x)), upper = local_zeros(local_size(x)); 
+            
+            Vector tr_fine_last_lower = x - local_zeros(local_size(x), this->get_delta(level));   
+            Vector tr_fine_last_upper = x + local_zeros(local_size(x), this->get_delta(level));   
+
+            if(level > this->n_levels() - 1)
+            {              
+                auto tr_lower = tr_constraints_[level].lower_bound();
+                auto tr_upper = tr_constraints_[level].upper_bound();
+
+                {   
+                    Read<Vector> rv(tr_fine_last_lower); 
+                    Read<Vector> rv(tr_lower); 
+                    Write<Vector> wv(lower); 
+
+                    Range r = row_range(lower);
+
+                    for(SizeType i = r.begin(); i != r.end(); ++i) 
+                        lower.set(i, std::max(tr_lower.get(i), tr_fine_last_lower.get(i))); 
+                }
+                
+                {   
+                    Read<Vector> rv(tr_fine_last_upper); 
+                    Read<Vector> rv(tr_upper); 
+                    Write<Vector> wv(upper); 
+
+                    Range r = row_range(upper);
+
+                    for(SizeType i = r.begin(); i != r.end(); ++i) 
+                        upper.set(i, std::min(tr_upper.get(i), tr_fine_last_upper.get(i))); 
+                }
+
+                this->transfer(level-2).restrict(upper, upper_coarse);
+                this->transfer(level-2).restrict(lower, lower_coarse);
+            }
+            else
+            {
+                this->transfer(level-2).restrict(tr_fine_last_upper, upper_coarse);
+                this->transfer(level-2).restrict(tr_fine_last_lower, lower_coarse);
+            }
+
+
+
+            tr_constraints_[level-1] = make_box_constaints(std::make_shared<Vector>(lower_coarse), std::make_shared<Vector>(upper_coarse))
+
+
+        }
+
 
 
 protected: 
-    SizeType                            _it_global;                 /** * global iterate counter  */
-    std::vector<Scalar>                 _deltas;                    /** * deltas on given level  */
 
 
-    std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem;     /** * solver used to solve coarse level TR subproblems  */
-    std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem;   /** * solver used to solve fine level TR subproblems  */
+    protected:   
+        SizeType                            _it_global;                 /** * global iterate counter  */
+        std::vector<Scalar>                 _deltas;                    /** * deltas on given level  */
 
 
-    std::vector<Vector>           _delta_gradients;             /** * difference between fine and coarse level gradient */
-    std::vector<Matrix>           _delta_hessians;              /** * difference between fine and coarse level hessians */
-    std::vector<Vector>           _x_initials;                  /** * initial iterates on given level */
+        std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem;     /** * solver used to solve coarse level TR subproblems  */
+        std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem;   /** * solver used to solve fine level TR subproblems  */
 
 
-    // ----------------------- PARAMETERS ----------------------
-    Parameters                      _parameters; 
+        std::vector<Vector>           _delta_gradients;             /** * difference between fine and coarse level gradient */
+        std::vector<Matrix>           _delta_hessians;              /** * difference between fine and coarse level hessians */
+        std::vector<Vector>           _x_initials;                  /** * initial iterates on given level */
 
 
-    SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
-    SizeType                        _max_smoothing_it;          /** * max smoothing iterations  */
+        // ----------------------- PARAMETERS ----------------------
+        Parameters                      _parameters; 
 
-    Scalar                         _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level corection stays inside fine level radius  */
+    
+        SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
+        SizeType                        _max_smoothing_it;          /** * max smoothing iterations  */
 
-    Scalar                         _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to coarse level at all  */
-    Scalar                         _eps_grad_termination;       /** * tolerance on grad  */
+        Scalar                         _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level corection stays inside fine level radius  */
 
-    Scalar                         _hessian_update_delta;       /** * tolerance used for updating hessians */
-    Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
+        Scalar                         _grad_smoothess_termination; /** * determines when gradient is not smooth enough => does pay off to go to coarse level at all  */
+        Scalar                         _eps_grad_termination;       /** * tolerance on grad  */
+
+        Scalar                         _hessian_update_delta;       /** * tolerance used for updating hessians */
+        Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
 
 
-    VerbosityLevel                  _verbosity_level; 
+        VerbosityLevel                  _verbosity_level; 
+
+
+
+        std::vector<BoxConstraints>      tr_constraints_; 
 
 
     };
