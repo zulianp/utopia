@@ -1,9 +1,3 @@
-/*
- * @Author: Alena Kopanicakova
- * @Date:   2016-09-01
- * @Last Modified by:   kopanicakova
- * @Last Modified time: 2018-01-26
- */
 #include "utopia_petsc_KSPSolver.hpp"
 #include "utopia_petsc_Types.hpp"
 
