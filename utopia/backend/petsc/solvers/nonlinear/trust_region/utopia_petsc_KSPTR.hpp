@@ -121,9 +121,8 @@ namespace utopia
 	    virtual void set_ksp_options(KSP & ksp) override 
 	    {
 	    	PetscErrorCode ierr;
-
-
 	    	ierr = KSPSetFromOptions(ksp); 
+
 	        ierr = KSPSetType(ksp, this->ksp_type().c_str()); 
 	        ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
 
@@ -133,7 +132,7 @@ namespace utopia
 	            ierr = KSPGetPC(ksp, &pc);
 	            ierr = PCSetType(pc, this->pc_type().c_str());
 	        }
-
+	        
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0) 
 			if(this->ksp_type() == "qcg")
 				ierr = KSPQCGSetTrustRegionRadius(ksp, this->current_radius()); 
