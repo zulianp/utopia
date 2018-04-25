@@ -1,17 +1,11 @@
-/*
-* @Author: Alena Kopanicakova
-* @Date:   2016-09-01
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-09
-*/
-#ifndef UTOPIA_PETSC_KSP_H
-#define UTOPIA_PETSC_KSP_H
+#ifndef UTOPIA_PETSC_KSP_HPP
+#define UTOPIA_PETSC_KSP_HPP
 
 #include "utopia_Preconditioner.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_Smoother.hpp"
-
 #include "utopia_Core.hpp"
+#include "utopia_petsc_KSPWrapper.hpp"
 
 #include <algorithm>
 #include <petscpc.h>
@@ -19,384 +13,301 @@
 #include <petscsys.h>
 
 namespace utopia {
-
-
+    
     PetscErrorCode UtopiaPCApplyShell(PC pc, Vec x, Vec y);
     PetscErrorCode MyKSPMonitor(KSP,PetscInt,PetscReal,void*);
-
-    typedef struct
-    {
-        Vec x_k_1;       
-        Vec x_k_2;       
-
-        PetscBool compute_cond_number; 
-    }
-    UTOPIA_KSP_LOG;
-
     
-    /**@ingroup     Linear 
+    class KSPLog {
+    public:
+        Vec x_k_1;
+        Vec x_k_2;
+
+        KSPLog()
+        : x_k_1(nullptr), x_k_2(nullptr)
+        {}
+
+        inline bool initialized() const
+        {
+            return x_k_1 != nullptr;
+        }
+        
+        void init_from(Vec x)
+        {
+            destroy();
+
+            VecDuplicate(x, &x_k_1);
+            VecDuplicate(x, &x_k_2);
+        }
+
+        ~KSPLog()
+        {
+            destroy();
+        }
+
+        inline void destroy()
+        {
+            if(x_k_1) {
+                VecDestroy(&x_k_1);
+                x_k_1 = nullptr;
+            }
+
+            if(x_k_2) {
+                VecDestroy(&x_k_2);
+                x_k_2 = nullptr;
+            }
+        }
+    };
+    
+    /**@ingroup     Linear
      * @brief       Class provides interface to Petsc KSP solvers \n
-     *              For setting up basic parameters, one can use classic Petsc runtime options, e.g. 
-     *              To see all possibilities, please refer to: 
-     *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/PC/PCType.html">preconditioner types</a> 
+     *              For setting up basic parameters, one can use classic Petsc runtime options, e.g.
+     *              To see all possibilities, please refer to:
+     *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/PC/PCType.html">preconditioner types</a>
      *                                                   * <a href="http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/KSP/KSPType.html#KSPType">solver types</a>
-     *              
-     *              Setting own/utopia preconditioner, can be done as following: 
+     *
+     *              Setting own/utopia preconditioner, can be done as following:
      *              \snippet tests/utopia_SolverTest.cpp PetscKSPSolver solve example1
      *              Detailed information about preconditioners, can be found in  \ref precondotioners.
      */
-    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend> 
+    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class KSPSolver {};
-
-
+    
     template<typename Matrix, typename Vector>
-    class KSPSolver<Matrix, Vector, PETSC> : virtual public PreconditionedSolver<Matrix, Vector>, virtual public Smoother<Matrix, Vector>
-    {
-
+    class KSPSolver<Matrix, Vector, PETSC> : public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::Preconditioner<Vector> Preconditioner;
-        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver; 
+        typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
-
+        typedef utopia::Smoother<Matrix, Vector> Smoother;
+        
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "only works with petsc types");
-
-
-
-        KSPSolver(  const Parameters params = Parameters(), 
-                    const std::vector<std::string> ksp_types    = {"bcgs", "cg", "groppcg", "pipecg", "pipecgrr", "fcg", "pipefcg", "gmres", "pipefgmres",   "fgmres",   "lgmres",   "dgmres",   "pgmres", "tcqmr", "ibcgs",   "fbcgs",   "fbcgsr",   "bcgsl", "cgs", "tfqmr", "cr", "pipecr", "lsqr", "preonly", "qcg", "bicg", "minres", "symmlq", "lcd", "python", "gcr", "pipegcr", "tsirm", "cgls"},
-                    const std::vector<std::string> pc_types     = {"jacobi","sor","lu","bjacobi","eisenstat","ilu","icc","asm","gasm","ksp","cholesky","pbjacobi","mat","hypre", "cp","bfbt","lsc","python","pfmg","syspfmg","redistribute","svd","gamg","bicgstabcusp","ainvcusp","bddc"}, 
-                    const std::vector<std::string> pc_packages = {" "}):
-
-                KSP_types(ksp_types),
-                PC_types(pc_types),
-                Solver_packages(pc_packages), 
-                compute_cond_number(PETSC_FALSE)
-
+        
+        KSPSolver(const Parameters params = Parameters())
+        : ksp_(std::make_shared<KSPWrapper<Matrix, Vector>>(PETSC_COMM_WORLD, params))
         {
-            set_parameters(params); 
-            KSP_type_       = KSP_types.at(0); 
-            PC_type_        = PC_types.at(0);
-            solver_package_ = Solver_packages.at(0);
-
-            //KSPCreate(PETSC_COMM_WORLD, &ksp);  - something is wrong here ... 
+            set_parameters(params);
+        }
+        
+        KSPSolver(const std::shared_ptr<KSPWrapper<Matrix, Vector>> &w)
+        : ksp_(w)
+        {}
+        
+        virtual ~KSPSolver() {}
+        
+        /**
+         * @brief      Sets the parameters.
+         *
+         * @param[in]  params  The parameters
+         */
+        virtual void set_parameters(const Parameters params) override
+        {
+            PreconditionedSolver::set_parameters(params);
+            ksp_->set_parameters(params);
+        }
+        
+        /* @brief      Sets the choice of direct solver.
+         *             Please note, in petsc, direct solver is used as preconditioner alone, with proper settings.
+         *
+         * @param[in]  pc_type  The type of direct solver.
+         */
+        void pc_type(const std::string &pc_type)
+        {
+            ksp_->pc_type(pc_type);
+        }
+        
+        /**
+         * @brief      Sets KSP type
+         */
+        void ksp_type(const std::string & ksp_type)
+        {
+            ksp_->ksp_type(ksp_type);
+        }
+        
+        /**
+         * @brief      Sets solver package for choice of direct solver.
+         *
+         * @param[in]  package  The solver package.
+         */
+        void solver_package(const std::string &package)
+        {
+            ksp_->solver_package(package);
+        }
+        
+        /**
+         * @brief      Returns type of direct solver.
+         */
+       std::string pc_type() const { return this->ksp_->pc_type();}
+        
+        /**
+         * @brief      Returns ksp package type
+         */
+       std::string ksp_type() const { return this->ksp_->ksp_type();}
+        
+        /**
+         * @brief      Returns type of solver package.
+         */
+       std::string solver_package() const { return this->ksp_->solver_package();}
+                
+        /**
+         * @brief        Solve function for all PETS KSP solvers.
+         *              It is also compatible with our own Utopia preconditioners.
+         */
+        bool apply(const Vector &b, Vector &x) override
+        {
+            return ksp_->apply(b, x);
+        }
+        
+        bool smooth(const Vector &rhs, Vector &x) override
+        {
+            return ksp_->smooth(this->sweeps(), rhs, x);
         }
 
-
-        virtual ~KSPSolver()
-        { 
-            // KSPDestroy(&ksp);
+        inline bool must_compute_cond_number() const
+        {
+            static const std::vector<std::string> types = {"bcgs", "cg", "gmres"};
+            return (this->verbose() && in_array(ksp_->ksp_type(), types));
+        }
+        
+        /**
+         * @brief      Sets the default options for PETSC KSP solver. \n
+         *             Default: BiCGstab
+         *
+         * @param      ksp   The ksp
+         */
+        virtual void set_ksp_options(KSP &ksp)
+        {
+            PetscErrorCode ierr;
+            ksp_->copy_settings_to(ksp);
+            set_monitor_options(ksp);    
+        
         }
 
+        virtual void attach_preconditioner(KSP &ksp) const {
+            KSPWrapper<Matrix, Vector> w(ksp, false);
+                        
+             if(this->get_preconditioner()) 
+             {
+                 auto shell_ptr = this->get_preconditioner().get();
+                 w.attach_shell_preconditioner(
+                    UtopiaPCApplyShell,
+                    shell_ptr,
+                    nullptr,
+                    nullptr
+                );
+             }
+         }
 
-    /**
-     * @brief      Sets the parameters.
-     *
-     * @param[in]  params  The parameters
-     */
-    virtual void set_parameters(const Parameters params) override
-    {
-        PreconditionedSolver::set_parameters(params);
+         virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override
+         {
+            PreconditionedSolver::set_preconditioner(precond);
 
-        // our param options - useful for passing from passo 
-        ksp_type(params.lin_solver_type());                               
-        pc_type(params.preconditioner_type());      
-        solver_package(params.preconditioner_factor_mat_solver_package());                             
-    
-        // petsc command line options 
-        char           name_[1024]; 
-        PetscBool      flg;
+            if(this->get_preconditioner()) 
+            {
+                auto shell_ptr = this->get_preconditioner().get();
+                ksp_->attach_shell_preconditioner(
+                   UtopiaPCApplyShell,
+                   shell_ptr,
+                   nullptr,
+                   nullptr
+               );
+            }
+         }
 
-        #if UTOPIA_PETSC_VERSION_LESS_THAN(3,7,0)
-             PetscOptionsGetString(NULL, "-ksp_type", name_, 1024, &flg);
-            if(flg)
-                ksp_type(name_);
-
-            PetscOptionsGetString(NULL, "-pc_type", name_, 1024, &flg);
-            if(flg)
-                pc_type(name_);
-
-            PetscOptionsGetString(NULL, "-pc_factor_mat_solver_package", name_, 1024, &flg);
-            if(flg)
-                solver_package(name_);
-        #else
-             PetscOptionsGetString(NULL, NULL, "-ksp_type", name_, 1024, &flg);
-            if(flg)
-                ksp_type(name_);
-
-            PetscOptionsGetString(NULL, NULL, "-pc_type", name_, 1024, &flg);
-            if(flg)
-                pc_type(name_);
-
-            PetscOptionsGetString(NULL,NULL, "-pc_factor_mat_solver_package", name_, 1024, &flg);
-            if(flg)
-                solver_package(name_);
+        virtual void set_monitor_options(KSP &ksp) const
+        {
+            PetscErrorCode ierr;
+            if(this->verbose()) {
+               ierr = KSPMonitorSet(
+                    ksp,
+                    MyKSPMonitor,
+                    new KSPLog(), 
+                    [](void **arg) -> PetscErrorCode { 
+                        auto ksp_log = (KSPLog **)(arg);
+                        delete *ksp_log;
+                        *ksp_log = nullptr;
+                        return 0;
+                    });  assert(ierr == 0);
+            }
             
-        #endif
- 
-    }
-
-
-
-
-     /* @brief      Sets the choice of direct solver. 
-     *             Please note, in petsc, direct solver is used as preconditioner alone, with proper settings. 
-     *
-     * @param[in]  PCType  The type of direct solver. 
-     */
-    virtual void pc_type(const std::string & PCType ) 
-    { 
-        PC_type_ = in_array(PCType, PC_types) ? PCType : PC_types.at(0);
-    }; 
-
-    /**
-     * @brief      Sets KSP type 
-     */
-    void ksp_type(const std::string & KSPType ) 
-    { 
-        KSP_type_ = in_array(KSPType, KSP_types) ? KSPType : KSP_types.at(0);
-    }; 
-
-    /**
-     * @brief      Sets solver package for choice of direct solver. 
-     *
-     * @param[in]  SolverPackage  The solver package.
-     */
-    void solver_package(const std::string & SolverPackage ) 
-    { 
-        solver_package_ = in_array(SolverPackage, Solver_packages) ? SolverPackage : Solver_packages.at(0); 
-    }; 
-
-
-    /**
-     * @brief      Returns type of direct solver. 
-     */
-    const std::string &pc_type() const { return PC_type_;}; 
-
-    /**
-     * @brief      Returns ksp package type 
-     */
-    const std::string &ksp_type() const { return KSP_type_; }; 
-
-
-    /**
-     * @brief      Returns type of solver package. 
-     */
-    const std::string &solver_package() const { return solver_package_; }; 
-
-
-
-public:
-
-    /**
-    * @brief        Solve function for all PETS KSP solvers. 
-     *              It is also compatible with our own Utopia preconditioners.
-    */
-    bool apply(const Vector &b, Vector &x) override
-    {
-        PetscErrorCode ierr;
-
-        Size ls = local_size(b);
-        Size gs = size(b);
-
-        if(empty(x) || gs.get(0) != size(x).get(0)) 
+            if(must_compute_cond_number()) {
+                ierr = KSPSetComputeSingularValues(ksp, PETSC_TRUE); assert(ierr == 0);
+            }
+        }
+        
+        virtual void update(const std::shared_ptr<const Matrix> &op) override
         {
-            x = local_zeros(ls.get(0));
+            PetscErrorCode ierr;
+            PreconditionedSolver::update(op);
+           
+            if(op->implementation().communicator() != ksp_->communicator()) 
+            {
+                auto temp_ksp = std::make_shared<KSPWrapper<Matrix, Vector>>(op->implementation().communicator());
+                temp_ksp->copy_settings_from(*ksp_);
+                ksp_ = temp_ksp;
+            }
+
+            set_monitor_options(ksp_->implementation());
+
+            bool skip_set_operators = false;
+            if(this->get_preconditioner()) {
+                auto mat_prec = dynamic_cast< DelegatePreconditioner<Matrix, Vector> *>(this->get_preconditioner().get());
+               
+                if(mat_prec) {
+                    ksp_->update(*op, *mat_prec->get_matrix());
+                    skip_set_operators = true;
+                }
+            }
+
+            if(!skip_set_operators) {
+                ksp_->update(*op);
+            }
         }
 
-        assert(size(b).get(0) == size(x).get(0));
-        assert(local_size(b).get(0) == local_size(x).get(0));
-
-        const Matrix &A = *this->get_operator(); 
-
-
-        PreconditionedSolver::init_solver("UTOPIA::Petsc KSP", {}); 
-          
-        KSPConvergedReason  reason;
-        // PetscReal           r_norm;
-        PetscInt            its; 
-        MPI_Comm            comm; 
-          
-
-        ierr = PetscObjectGetComm((PetscObject)raw_type(A), &comm);
-        ierr = KSPCreate(comm, &ksp);
-
-        bool skip_set_operators = false;
-        
-        if(this->get_preconditioner()) {
-            auto mat_prec = dynamic_cast< DelegatePreconditioner<Matrix, Vector> *>(this->get_preconditioner().get());
-            if(mat_prec) {
-                ierr = KSPSetOperators(ksp, raw_type(A), raw_type(*mat_prec->get_matrix()));
-                skip_set_operators = true;
-            } 
-        }
-       
-        if(!skip_set_operators) { 
-            ierr = KSPSetOperators(ksp, raw_type(A), raw_type(A));
-        }
-
-        set_ksp_options(ksp); 
-
-        //  Set the user-defined routine for applying the preconditioner 
-        if(!skip_set_operators)
-            attach_preconditioner(ksp); 
-
-
-        VecDuplicate(raw_type(x), &(ut_log.x_k_2));
-        VecDuplicate(raw_type(x), &(ut_log.x_k_1));
-
-        ut_log.compute_cond_number = compute_cond_number; 
-
-        ierr = KSPSetUp(ksp);
-        //FIXME everything that leads to KSPSetUp (including KSPSetUp) needs to be moved
-        //to update(..) and ksp has to be stored in the class, copy constructor has 
-        //to be implemented for cloning the ksp
-
-        ierr = KSPSolve(ksp, raw_type(b), raw_type(x));
-          
-        ierr = KSPGetConvergedReason(ksp, &reason);
-        ierr = KSPGetIterationNumber(ksp, &its);
-        
-        this->exit_solver(its, reason); 
-          
-        VecDestroy(&(ut_log.x_k_1)); 
-        VecDestroy(&(ut_log.x_k_2)); 
-
-        KSPDestroy(&ksp);
-
-        return true;
-    }
-    
-    bool smooth(const Vector &rhs, Vector &x) override
-    {
-        const Matrix &A = *this->get_operator();
-
-        KSP solver;
-        KSPCreate(A.implementation().communicator(), &solver);
-        KSPSetFromOptions(solver); 
-        KSPSetType(solver, KSP_type_.c_str());
-        KSPSetInitialGuessNonzero(solver, PETSC_TRUE);
-        KSPSetTolerances(solver, 0., 0., PETSC_DEFAULT, this->sweeps());
-
-        KSPSetOperators(solver, raw_type(A), raw_type(A));
-
-        // std::cout<<"--------- KSP smoothing... messing up with norms....... \n"; 
-        KSPSetNormType(solver, KSP_NORM_NONE); 
-        KSPSetConvergenceTest(solver, KSPConvergedSkip, NULL, NULL);
-
-        if(!this->get_preconditioner()) 
+        inline KSPSolver &operator=(const KSPSolver &other)
         {
-            PC pc; 
-            KSPGetPC(solver, &pc);
-            PCSetType(pc, PC_type_.c_str());
+            if(this == &other) return *this;
+            PreconditionedSolver::operator=(other);
+            Smoother::operator=(other);
+            
+            ksp_ = std::make_shared<KSPWrapper<Matrix, Vector>>(other.ksp_->communicator());
+            ksp_->copy_settings_from(*other.ksp_);
+            return *this;
         }
         
-        if(this->verbose()) {
-            KSPMonitorSet(
-                solver,
-                [](KSP, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
-                    PrintInfo::print_iter_status({static_cast<PetscReal>(iter), res}); 
-                    return 0;
-                },
-                nullptr,
-                nullptr);
-        }
-        
-        KSPSetUp(solver);
-        //FIXME everything that leads to KSPSetUp (including KSPSetUp) needs to be moved
-        //to update(..) and ksp has to be stored in the class, copy constructor has 
-        //to be implemented for cloning the ksp
-        
-        KSPSolve(solver, raw_type(rhs), raw_type(x));
-        KSPDestroy(&solver);
-        return true;
-    }
-
-    virtual void attach_preconditioner(KSP & ksp)
-    {
-        PetscErrorCode ierr;
-        if(this->get_preconditioner()) 
+        inline KSPSolver &operator=(KSPSolver &&other)
         {
-            PC pc; 
-            ierr = KSPGetPC(ksp,&pc);
-            ierr = PCSetType(pc, PCSHELL);  
-            ierr = PCShellSetApply(pc, UtopiaPCApplyShell);
-  
-            auto shell_ptr = dynamic_cast<LinearSolver *>(this->get_preconditioner().get());
-            ierr = PCShellSetContext(pc, shell_ptr);
-            ierr = PCShellSetName(pc,"Utopia Preconditioner");
-        }
-    }
-
-    /**
-     * @brief      Sets the default options for PETSC KSP solver. \n
-     *             Default: BiCGstab
-     *
-     * @param      ksp   The ksp
-     */
-    virtual void set_ksp_options(KSP & ksp)
-    {
-        PetscErrorCode ierr;
-
-
-        // check if our options overwrite this 
-        KSPSetFromOptions(ksp); 
-
-        // TODO:: extend to other supported types... 
-        compute_cond_number = ( (   KSP_type_ == "bcgs" || KSP_type_ == "cg"  || 
-                                    KSP_type_ == "gmres") && (this->verbose() )) ? PETSC_TRUE : PETSC_FALSE; 
-
-        if(this->verbose()) {
-            KSPMonitorSet(ksp, MyKSPMonitor, &ut_log, 0);
+            if(this == &other) return *this;
+            PreconditionedSolver::operator=(std::move(other));
+            Smoother::operator=(std::move(other));
+            ksp_ = std::move(other.ksp_);
+            return *this;
         }
 
-        if(compute_cond_number)
-            ierr = KSPSetComputeSingularValues(ksp, PETSC_TRUE); 
-        
-        ierr = KSPSetType(ksp, KSP_type_.c_str());
-
-        if(!this->get_preconditioner()) 
+        KSPSolver(const KSPSolver &other):
+            PreconditionedSolver(other),
+            Smoother(other),
+            ksp_(std::make_shared<KSPWrapper<Matrix, Vector>>(other.ksp_->communicator()))
         {
-            PC pc; 
-            ierr = KSPGetPC(ksp, &pc);
-            ierr = PCSetType(pc, PC_type_.c_str());
+            ksp_->copy_settings_from(*other.ksp_);
         }
 
-        ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
-        ierr = KSPSetTolerances(ksp, PreconditionedSolver::rtol(), PreconditionedSolver::atol(), PETSC_DEFAULT,  PreconditionedSolver::max_it());
-    }
-
-    virtual void update(const std::shared_ptr<const Matrix> &op) override
-    {
-        PreconditionedSolver::update(op);
-    }
-
-    virtual KSPSolver * clone() const override 
-    {
-        return new KSPSolver(*this);
-    }
-
-
-protected:
-
-    std::string KSP_type_;                                  /*!< Choice of preconditioner types. */  
-    const std::vector<std::string> KSP_types;              /*!< Valid options for direct solver types. */  
-
-    std::string  PC_type_;                                  /*!< Choice of preconditioner types. */  
-    const std::vector<std::string> PC_types;      
-
-    std::string solver_package_;                            /*!< Choice of direct solver. */     
-    const std::vector<std::string> Solver_packages;       /*!< Valid options for Solver packages types. */
-
-    KSP                 ksp;
-    UTOPIA_KSP_LOG          ut_log; 
-    PetscBool           compute_cond_number;  
-
+        KSPSolver(KSPSolver &&other)
+        : PreconditionedSolver(std::move(other)),
+          Smoother(std::move(other)),
+          ksp_(std::move(other.ksp_))
+        {}
+        
+        virtual KSPSolver * clone() const override
+        {
+          return new KSPSolver(*this);
+        }
+        
+    protected:
+        std::shared_ptr<KSPWrapper<Matrix, Vector>> ksp_;
     };
     
 }
 
-
-
-#endif //UTOPIA_PETSC_KSP_H
+#endif //UTOPIA_PETSC_KSP_HPP

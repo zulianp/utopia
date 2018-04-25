@@ -60,23 +60,23 @@ namespace utopia {
         std::vector<std::string> package_;
     };
     
-    
     template<class Matrix, class Vector>
     class KSPWrapper final {
     public:
-        KSPWrapper(
-                   MPI_Comm comm,
+        KSPWrapper(MPI_Comm comm,
                    const Parameters &params = Parameters())
-        : ksp_(nullptr)
+        : ksp_(nullptr), owner_(true)
         {
             init(comm);
             
             ksp_type(KSPTypes::instance().ksp(0));
             pc_type(KSPTypes::instance().pc(0));
             solver_package(KSPTypes::instance().package(0));
-            
-            set_parameters(params);
         }
+
+        KSPWrapper(KSP &ksp, const bool owner = false)
+        : ksp_(ksp), owner_(owner)
+        {}
         
         /* @brief      Sets the choice of direct solver.
          *             Please note, in petsc, direct solver is used as preconditioner alone, with proper settings.
@@ -85,11 +85,11 @@ namespace utopia {
          */
         inline void pc_type(const std::string &pc_type)
         {
-            if(KSPTypes::instance().is_pc_valid(pc_type)) {
+            // if(KSPTypes::instance().is_pc_valid(pc_type)) {
                 PC pc;
                 KSPGetPC(ksp_, &pc);
                 PCSetType(pc, pc_type.c_str());
-            }
+            // }
         }
         
         /**
@@ -97,9 +97,9 @@ namespace utopia {
          */
         inline void ksp_type(const std::string & ksp_type)
         {
-            if(KSPTypes::instance().is_ksp_valid(ksp_type)) {
+            // if(KSPTypes::instance().is_ksp_valid(ksp_type)) {
                 KSPSetType(ksp_, ksp_type.c_str());
-            }
+            // }
         }
         
         /**
@@ -109,7 +109,7 @@ namespace utopia {
          */
         inline void solver_package(const std::string &package)
         {
-            if(KSPTypes::instance().is_solver_package_valid(package)) {
+            // if(KSPTypes::instance().is_solver_package_valid(package)) {
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
                 PetscErrorCode ierr;
                 PC pc;
@@ -118,7 +118,7 @@ namespace utopia {
 #else
                 m_utopia_error("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent?");
 #endif 
-            }
+            // }
         }
         
         /**
@@ -182,7 +182,10 @@ namespace utopia {
         inline void destroy()
         {
             if(ksp_) {
-                KSPDestroy(&ksp_);
+                if(owner_) {
+                    KSPDestroy(&ksp_);
+                }
+                
                 ksp_ = nullptr;
             }
         }
@@ -204,9 +207,10 @@ namespace utopia {
             destroy();
             KSPCreate(comm, &ksp_);
             KSPSetComputeSingularValues(ksp_, PETSC_FALSE);
+            KSPSetInitialGuessNonzero(ksp_, PETSC_TRUE);
         }
         
-        void pc_copy_settings(PC &other_pc)
+        void pc_copy_settings(PC &other_pc) const
         {
             PetscErrorCode ierr;
             PC this_pc;
@@ -223,8 +227,13 @@ namespace utopia {
             ierr = PCFactorSetMatSolverPackage(other_pc, stype); assert(ierr == 0);
 #endif
         }
+
+        void copy_settings_from(const KSPWrapper &other)
+        {
+            other.copy_settings_to(ksp_);
+        }
         
-        void ksp_copy_settings(KSP &other_ksp)
+        void copy_settings_to(KSP &other_ksp) const
         {
             PetscErrorCode ierr;
             PetscBool bool_value;
@@ -286,6 +295,7 @@ namespace utopia {
             //PCGetOperatorsSet(PC pc,PetscBool  *mat,PetscBool  *pmat)
             //PetscErrorCode  PCGetOperators(PC pc,Mat *Amat,Mat *Pmat)
             //PetscErrorCode  PCShellSetApplyRichardson(PC pc,PetscErrorCode (*apply)(PC,Vec,Vec,Vec,PetscReal,PetscReal,PetscReal,PetscInt,PetscBool,PetscInt*,PCRichardsonConvergedReason*))
+            //PCGetReusePreconditioner(PC pc,PetscBool *flag)
         }
 
         void update(const Matrix &mat)
@@ -293,6 +303,7 @@ namespace utopia {
             PetscErrorCode ierr;
             bool skip_set_operators = false;
             ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(mat)); assert(ierr == 0);
+            ierr = KSPSetUp(ksp_);                                      assert(ierr == 0);
         }
 
         void update(const Matrix &mat, const Matrix &prec)
@@ -300,6 +311,7 @@ namespace utopia {
             PetscErrorCode ierr;
             bool skip_set_operators = false;
             ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(prec)); assert(ierr == 0);
+            ierr = KSPSetUp(ksp_);                                       assert(ierr == 0);
         }
         
         bool smooth(const SizeType sweeps,
@@ -431,9 +443,20 @@ namespace utopia {
             }
 #endif
         }
+
+        KSP &implementation()
+        {
+            return ksp_;
+        }
+
+        const KSP &implementation() const
+        {
+            return ksp_;
+        }
         
     private:
         KSP            ksp_;
+        bool owner_;
     };
     
 }

@@ -35,19 +35,19 @@ namespace utopia
 
     public:
 
-    	KSP_TR(const Parameters params = Parameters()): 
-    															TRSubproblem(params),
-    															KSPSolver(params,{"stcg", "nash", "cgne", "gltr", "qcg"})
+    	KSP_TR(const Parameters params = Parameters()): TRSubproblem(params), KSPSolver(params)//,{"stcg", "nash", "cgne", "gltr", "qcg"})
         { 
         	set_parameters(params); 
-        };
+        	this->ksp_type("stcg");
+        }
 
         KSP_TR(const std::string type, const Parameters params = Parameters()): 
     															TRSubproblem(params),
-    															KSPSolver(params, {type})
+    															KSPSolver(params)
         { 
         	set_parameters(params); 
-        };
+        	this->ksp_type(type);
+        }
 
 
         virtual ~KSP_TR(){}
@@ -75,9 +75,9 @@ namespace utopia
 
 
 	public:
-	    void atol(const Scalar & atol_in )  {  KSPSolver::atol(atol_in); }; 
-        void rtol(const Scalar & rtol_in )  {  KSPSolver::rtol(rtol_in);  }; 
-        void stol(const Scalar & stol_in ) { KSPSolver::stol(stol_in); }; 	   	
+	    void atol(const Scalar & atol_in)  {  KSPSolver::atol(atol_in); }; 
+        void rtol(const Scalar & rtol_in)  {  KSPSolver::rtol(rtol_in); }; 
+        void stol(const Scalar & stol_in)  {  KSPSolver::stol(stol_in); }; 	   	
         
         Scalar      atol() const               	{ return KSPSolver::atol(); } 
         Scalar      rtol()  const              	{ return KSPSolver::rtol(); } 
@@ -118,6 +118,7 @@ namespace utopia
 	    {
 	    	PetscErrorCode ierr;
 
+
 	    	ierr = KSPSetFromOptions(ksp); 
 	        ierr = KSPSetType(ksp, this->ksp_type().c_str()); 
 	        ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
@@ -147,14 +148,13 @@ namespace utopia
 
     };
 
-
     template<typename Matrix, typename Vector>
     class SteihaugToint<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
     public:
         SteihaugToint(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSP_TR<Matrix, Vector, PETSC>(params), preconditioner_(preconditioner)
+        : KSP_TR<Matrix, Vector, PETSC>(params)
         {
-            this->pc_type(preconditioner_);
+            this->pc_type(preconditioner);
             this->ksp_type("stcg");
         }
         
@@ -162,18 +162,9 @@ namespace utopia
         {
             Parameters params_copy = params;
             params_copy.lin_solver_type("stcg");
-            params_copy.preconditioner_type(preconditioner_.c_str());
+            params_copy.preconditioner_type(this->pc_type().c_str());
             KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
         }
-        
-        inline void pc_type(const std::string & preconditioner) override
-        {
-            preconditioner_ = preconditioner;
-            KSP_TR<Matrix, Vector, PETSC>::pc_type(preconditioner_);
-        }
-        
-    private:
-        std::string preconditioner_;
     };
     
 }

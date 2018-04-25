@@ -19,7 +19,7 @@ namespace utopia {
 		*
 		* @param[in]  precond  The precondition
 		*/
-		void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
+		virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
 		{
 			precond_ = precond;
 		}
