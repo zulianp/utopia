@@ -28,7 +28,8 @@ namespace utopia {
 			} 
 			else 
 			{
-				return StrategyPtr(it->second->clone());
+				auto original = it->second;
+				return StrategyPtr(original->clone());
 			}
 		}
 

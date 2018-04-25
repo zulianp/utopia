@@ -21,11 +21,11 @@ namespace utopia {
     public:
         Vec x_k_1;
         Vec x_k_2;
-
+        
         KSPLog()
         : x_k_1(nullptr), x_k_2(nullptr)
         {}
-
+        
         inline bool initialized() const
         {
             return x_k_1 != nullptr;
@@ -34,23 +34,23 @@ namespace utopia {
         void init_from(Vec x)
         {
             destroy();
-
+            
             VecDuplicate(x, &x_k_1);
             VecDuplicate(x, &x_k_2);
         }
-
+        
         ~KSPLog()
         {
             destroy();
         }
-
+        
         inline void destroy()
         {
             if(x_k_1) {
                 VecDestroy(&x_k_1);
                 x_k_1 = nullptr;
             }
-
+            
             if(x_k_2) {
                 VecDestroy(&x_k_2);
                 x_k_2 = nullptr;
@@ -87,12 +87,21 @@ namespace utopia {
         KSPSolver(const Parameters params = Parameters())
         : ksp_(std::make_shared<KSPWrapper<Matrix, Vector>>(PETSC_COMM_WORLD, params))
         {
+            ksp_type("bcgs");
+            pc_type("jacobi");
+            ksp_->set_initial_guess_non_zero(true);
             set_parameters(params);
+            
         }
         
         KSPSolver(const std::shared_ptr<KSPWrapper<Matrix, Vector>> &w)
         : ksp_(w)
         {}
+        
+        inline void wrap(KSP &ksp)
+        {
+            ksp_ = std::make_shared< KSPWrapper<Matrix, Vector> >(ksp, false);
+        }
         
         virtual ~KSPSolver() {}
         
@@ -138,24 +147,25 @@ namespace utopia {
         /**
          * @brief      Returns type of direct solver.
          */
-       std::string pc_type() const { return this->ksp_->pc_type();}
+        std::string pc_type() const { return this->ksp_->pc_type();}
         
         /**
          * @brief      Returns ksp package type
          */
-       std::string ksp_type() const { return this->ksp_->ksp_type();}
+        std::string ksp_type() const { return this->ksp_->ksp_type();}
         
         /**
          * @brief      Returns type of solver package.
          */
-       std::string solver_package() const { return this->ksp_->solver_package();}
-                
+        std::string solver_package() const { return this->ksp_->solver_package();}
+        
         /**
          * @brief        Solve function for all PETS KSP solvers.
          *              It is also compatible with our own Utopia preconditioners.
          */
         bool apply(const Vector &b, Vector &x) override
         {
+            ksp_->set_tolerances(this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
             return ksp_->apply(b, x);
         }
         
@@ -163,7 +173,7 @@ namespace utopia {
         {
             return ksp_->smooth(this->sweeps(), rhs, x);
         }
-
+        
         inline bool must_compute_cond_number() const
         {
             static const std::vector<std::string> types = {"bcgs", "cg", "gmres"};
@@ -180,55 +190,63 @@ namespace utopia {
         {
             PetscErrorCode ierr;
             ksp_->copy_settings_to(ksp);
-            set_monitor_options(ksp);    
-        
+            set_monitor_options(ksp);
+            
         }
-
+        
         virtual void attach_preconditioner(KSP &ksp) const {
             KSPWrapper<Matrix, Vector> w(ksp, false);
-                        
-             if(this->get_preconditioner()) 
-             {
-                 auto shell_ptr = this->get_preconditioner().get();
-                 w.attach_shell_preconditioner(
-                    UtopiaPCApplyShell,
-                    shell_ptr,
-                    nullptr,
-                    nullptr
-                );
-             }
-         }
-
-         virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override
-         {
-            PreconditionedSolver::set_preconditioner(precond);
-
-            if(this->get_preconditioner()) 
-            {
+            auto delegate_ptr = std::dynamic_pointer_cast<DelegatePreconditioner<Matrix, Vector>>(this->get_preconditioner());
+            
+            if(delegate_ptr) {
+              if(ksp_->has_shell_pc()) {
+                  m_utopia_warning_once("set_preconditioner sets jacobi if a delegate precond has been set and type is matshell");
+              }
+            } else if(this->get_preconditioner()) {
                 auto shell_ptr = this->get_preconditioner().get();
-                ksp_->attach_shell_preconditioner(
-                   UtopiaPCApplyShell,
-                   shell_ptr,
-                   nullptr,
-                   nullptr
-               );
+                w.attach_shell_preconditioner(UtopiaPCApplyShell,
+                                              shell_ptr,
+                                              nullptr,
+                                              nullptr
+                                              );
             }
-         }
+        }
+        
+        virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override
+        {
+            PreconditionedSolver::set_preconditioner(precond);
+            
+            auto delegate_ptr = std::dynamic_pointer_cast<DelegatePreconditioner<Matrix, Vector>>(this->get_preconditioner());
+            
+            if(delegate_ptr) {
+                if(ksp_->has_shell_pc()) {
+                    m_utopia_warning_once("set_preconditioner sets jacobi if a delegate precond has been set and type is matshell");
+                    ksp_->pc_type("jacobi");
+                }
 
+            } else if(this->get_preconditioner()) {
+                auto shell_ptr = this->get_preconditioner().get();
+                ksp_->attach_shell_preconditioner(UtopiaPCApplyShell,
+                                                  shell_ptr,
+                                                  nullptr,
+                                                  nullptr
+                                                  );
+            }
+        }
+        
         virtual void set_monitor_options(KSP &ksp) const
         {
             PetscErrorCode ierr;
             if(this->verbose()) {
-               ierr = KSPMonitorSet(
-                    ksp,
-                    MyKSPMonitor,
-                    new KSPLog(), 
-                    [](void **arg) -> PetscErrorCode { 
-                        auto ksp_log = (KSPLog **)(arg);
-                        delete *ksp_log;
-                        *ksp_log = nullptr;
-                        return 0;
-                    });  assert(ierr == 0);
+                ierr = KSPMonitorSet(ksp,
+                                     MyKSPMonitor,
+                                     new KSPLog(),
+                                     [](void **arg) -> PetscErrorCode {
+                                         auto ksp_log = (KSPLog **)(arg);
+                                         delete *ksp_log;
+                                         *ksp_log = nullptr;
+                                         return 0;
+                                     });  assert(ierr == 0);
             }
             
             if(must_compute_cond_number()) {
@@ -236,35 +254,67 @@ namespace utopia {
             }
         }
         
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        void handle_reset(const Matrix &op)
         {
-            PetscErrorCode ierr;
-            PreconditionedSolver::update(op);
-           
-            if(op->implementation().communicator() != ksp_->communicator()) 
-            {
-                auto temp_ksp = std::make_shared<KSPWrapper<Matrix, Vector>>(op->implementation().communicator());
+            bool must_reset = true;
+            // bool must_reset = false;
+            
+            // if(this->has_operator()) {
+            //     auto s = size(*this->get_operator());
+            //     auto other_s = size(op);
+            //     if(s != other_s) {
+            //         must_reset = true;
+            //     }
+            // }
+            
+            // if(op.implementation().communicator() != ksp_->communicator())
+            // {
+            //     must_reset = true;
+            // }
+            
+            if(must_reset) {
+                auto temp_ksp = std::make_shared<KSPWrapper<Matrix, Vector>>(op.implementation().communicator());
                 temp_ksp->copy_settings_from(*ksp_);
                 ksp_ = temp_ksp;
+
+                if(this->get_preconditioner()) {
+                  set_preconditioner(this->get_preconditioner());
+                }
             }
-
+        }
+        
+        virtual void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override
+        {
+            handle_reset(*op);
             set_monitor_options(ksp_->implementation());
-
+            
+            PetscErrorCode ierr;
+            PreconditionedSolver::update(op, prec);
+            ksp_->update(*op, *prec);
+        }
+        
+        virtual void update(const std::shared_ptr<const Matrix> &op) override
+        {
+            handle_reset(*op);
+            
+            PetscErrorCode ierr;
+            PreconditionedSolver::update(op);
+            set_monitor_options(ksp_->implementation());
+            
             bool skip_set_operators = false;
             if(this->get_preconditioner()) {
-                auto mat_prec = dynamic_cast< DelegatePreconditioner<Matrix, Vector> *>(this->get_preconditioner().get());
-               
+                auto mat_prec = std::dynamic_pointer_cast< DelegatePreconditioner<Matrix, Vector>>(this->get_preconditioner());
                 if(mat_prec) {
                     ksp_->update(*op, *mat_prec->get_matrix());
                     skip_set_operators = true;
                 }
             }
-
+            
             if(!skip_set_operators) {
                 ksp_->update(*op);
             }
         }
-
+        
         inline KSPSolver &operator=(const KSPSolver &other)
         {
             if(this == &other) return *this;
@@ -284,24 +334,34 @@ namespace utopia {
             ksp_ = std::move(other.ksp_);
             return *this;
         }
-
+        
         KSPSolver(const KSPSolver &other):
-            PreconditionedSolver(other),
-            Smoother(other),
-            ksp_(std::make_shared<KSPWrapper<Matrix, Vector>>(other.ksp_->communicator()))
+        PreconditionedSolver(other),
+        Smoother(other),
+        ksp_(std::make_shared<KSPWrapper<Matrix, Vector>>(other.ksp_->communicator()))
         {
             ksp_->copy_settings_from(*other.ksp_);
         }
-
+        
         KSPSolver(KSPSolver &&other)
         : PreconditionedSolver(std::move(other)),
-          Smoother(std::move(other)),
-          ksp_(std::move(other.ksp_))
+        Smoother(std::move(other)),
+        ksp_(std::move(other.ksp_))
         {}
         
         virtual KSPSolver * clone() const override
         {
-          return new KSPSolver(*this);
+            return new KSPSolver(*this);
+        }
+        
+        KSPWrapper<Matrix, Vector> &ksp()
+        {
+            return *ksp_;
+        }
+        
+        const KSPWrapper<Matrix, Vector> &ksp() const
+        {
+            return *ksp_;
         }
         
     protected:

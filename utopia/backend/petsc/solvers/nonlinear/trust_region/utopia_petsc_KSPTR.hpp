@@ -39,6 +39,7 @@ namespace utopia
         { 
         	set_parameters(params); 
         	this->ksp_type("stcg");
+        	this->pc_type("jacobi");
         }
 
         KSP_TR(const std::string type, const Parameters params = Parameters()): 
@@ -46,6 +47,7 @@ namespace utopia
     															KSPSolver(params)
         { 
         	set_parameters(params); 
+        	this->pc_type("jacobi");
         	this->ksp_type(type);
         }
 
@@ -59,8 +61,10 @@ namespace utopia
 	     */
 	    virtual void set_parameters(const Parameters params) override
 	    {
-	        KSPSolver::set_parameters(params);
-	        TRSubproblem::set_parameters(params);
+	    	Parameters params_copy = params;
+	    	params_copy.preconditioner_type(this->pc_type().c_str());
+	        KSPSolver::set_parameters(params_copy);
+	        TRSubproblem::set_parameters(params_copy);
 	    }
 
 	   /**
@@ -85,7 +89,7 @@ namespace utopia
         
 
         virtual KSP_TR<Matrix, Vector, PETSC> * clone() const override {
-        	return new KSP_TR(*this);
+        	return new KSP_TR(this->ksp_type());
         }
         
 	// protected:

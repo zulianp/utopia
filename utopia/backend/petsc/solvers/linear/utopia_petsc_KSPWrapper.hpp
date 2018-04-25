@@ -85,11 +85,11 @@ namespace utopia {
          */
         inline void pc_type(const std::string &pc_type)
         {
-            // if(KSPTypes::instance().is_pc_valid(pc_type)) {
+            if(KSPTypes::instance().is_pc_valid(pc_type)) {
                 PC pc;
                 KSPGetPC(ksp_, &pc);
                 PCSetType(pc, pc_type.c_str());
-            // }
+            }
         }
         
         /**
@@ -97,9 +97,9 @@ namespace utopia {
          */
         inline void ksp_type(const std::string & ksp_type)
         {
-            // if(KSPTypes::instance().is_ksp_valid(ksp_type)) {
+            if(KSPTypes::instance().is_ksp_valid(ksp_type)) {
                 KSPSetType(ksp_, ksp_type.c_str());
-            // }
+            }
         }
         
         /**
@@ -109,7 +109,7 @@ namespace utopia {
          */
         inline void solver_package(const std::string &package)
         {
-            // if(KSPTypes::instance().is_solver_package_valid(package)) {
+            if(KSPTypes::instance().is_solver_package_valid(package)) {
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
                 PetscErrorCode ierr;
                 PC pc;
@@ -118,7 +118,7 @@ namespace utopia {
 #else
                 m_utopia_error("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent?");
 #endif 
-            // }
+            }
         }
         
         /**
@@ -196,8 +196,16 @@ namespace utopia {
             return comm;
         }
 
-        inline void describe()
+        void describe() const
         {
+            PetscBool bool_value;
+            KSPGetInitialGuessNonzero(ksp_, &bool_value);
+            std::cout << "-------------------------------------------" << std::endl;
+            std::cout << "KSPGetInitialGuessNonzero: " << bool_value << std::endl;
+            std::cout << "PCType:                    " << pc_type() << std::endl;
+            std::cout << "KSPType:                   " << ksp_type() << std::endl;
+            std::cout << "-------------------------------------------" << std::endl;
+
             PetscErrorCode ierr;
             ierr = KSPView(ksp_, PETSC_VIEWER_STDOUT_(communicator())); assert(ierr == 0);
         }
@@ -206,8 +214,18 @@ namespace utopia {
         {
             destroy();
             KSPCreate(comm, &ksp_);
+            KSPSetFromOptions(ksp_);
             KSPSetComputeSingularValues(ksp_, PETSC_FALSE);
-            KSPSetInitialGuessNonzero(ksp_, PETSC_TRUE);
+            KSPSetNormType(ksp_, KSP_NORM_UNPRECONDITIONED);   
+        }
+
+        inline void set_initial_guess_non_zero(const bool val)
+        {
+            if(val) {
+                KSPSetInitialGuessNonzero(ksp_, PETSC_TRUE);
+            } else {
+                KSPSetInitialGuessNonzero(ksp_, PETSC_FALSE);
+            }
         }
         
         void pc_copy_settings(PC &other_pc) const
@@ -348,10 +366,10 @@ namespace utopia {
         
         void set_tolerances(const PetscReal rtol,
                             const PetscReal atol,
-                            const PetscReal stol,
+                            const PetscReal dtol,
                             const PetscInt max_it)
         {
-            auto ierr = KSPSetTolerances(ksp_, rtol, atol, stol, max_it); assert(ierr == 0);
+            auto ierr = KSPSetTolerances(ksp_, rtol, atol, dtol, max_it); assert(ierr == 0);
         }
         
         void set_monitor(
@@ -379,6 +397,11 @@ namespace utopia {
             KSPConvergedReason  reason;
             ierr = KSPSolve(ksp_, raw_type(b), raw_type(x)); assert(ierr == 0);
             ierr = KSPGetConvergedReason(ksp_, &reason);     assert(ierr == 0);
+
+            if(reason < 0) {
+                std::cout << reason << std::endl;
+                describe();
+            }
             
             return reason >= 0;
         }
@@ -405,7 +428,7 @@ namespace utopia {
             ksp_type(params.lin_solver_type());
             pc_type(params.preconditioner_type());
             solver_package(params.preconditioner_factor_mat_solver_package());
-            set_tolerances(params.atol(), params.rtol(), params.stol(), params.max_it());
+            set_tolerances(params.rtol(), params.atol(), PETSC_DEFAULT, params.max_it());
             
             // petsc command line options
             char           name_[1024];

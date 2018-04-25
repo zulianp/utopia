@@ -54,7 +54,8 @@ namespace utopia {
 		strategy_(params) //{"lu", "jacobi", "sor", "shell",  "bjacobi",  "ilu",  "icc", "cholesky", "pbjacobi"}, 
 			//{"mumps", "superlu", "superlu_dist", "petsc", "cusparse"} 
 		{ 
-			strategy_.pc_type(KSPPREONLY);
+			strategy_.ksp_type(KSPPREONLY);
+			strategy_.ksp().set_initial_guess_non_zero(false);
 
 #ifdef PETSC_HAVE_MUMPS
 			if(pct=="lu" && sp == "mumps") {
@@ -88,7 +89,7 @@ namespace utopia {
 		inline void set_parameters(const Parameters params) override
 		{
 			LinearSolver<Matrix, Vector>::set_parameters(params);
-			strategy_.set_parameters(params);
+			// strategy_.set_parameters(params);
 		}       
 
 		Factorization * clone() const override
@@ -107,7 +108,8 @@ namespace utopia {
 			void set_ksp_options(KSP &ksp) override
 			{
 				this->reset_preconditioner(); 
-				this->pc_type(KSPPREONLY);
+				this->ksp_type(KSPPREONLY);
+				this->ksp().set_initial_guess_non_zero(false);
 
 				KSPSolver<Matrix, Vector>::set_ksp_options(ksp);
 			}
