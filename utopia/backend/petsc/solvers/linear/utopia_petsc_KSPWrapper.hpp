@@ -216,7 +216,7 @@ namespace utopia {
             KSPCreate(comm, &ksp_);
             KSPSetFromOptions(ksp_);
             KSPSetComputeSingularValues(ksp_, PETSC_FALSE);
-            KSPSetNormType(ksp_, KSP_NORM_UNPRECONDITIONED);   
+            // KSPSetNormType(ksp_, KSP_NORM_UNPRECONDITIONED);   
         }
 
         inline void set_initial_guess_non_zero(const bool val)

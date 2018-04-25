@@ -22,6 +22,10 @@ namespace utopia {
 		KSPCGGLTR,
 		KSPFETIDP,
 		KSPPIPEBCGS,		
+#else
+		KSPSTCG, 
+		KSPGLTR,
+		KSPNASH,		
 #endif
 		KSPFCG,
 		KSPPIPEFCG,
