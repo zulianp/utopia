@@ -168,7 +168,7 @@ namespace utopia {
             ksp_->set_tolerances(this->rtol(), this->atol(), PETSC_DEFAULT, this->max_it());
             
             // is this proper place to do so??? 
-            this->set_ksp_options(ksp_->implementation());
+            // this->set_ksp_options(ksp_->implementation());
             return ksp_->apply(b, x);
         }
         

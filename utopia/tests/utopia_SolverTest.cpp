@@ -207,7 +207,7 @@ namespace utopia
 				
 				x0 = values(2, 2.0);
 				params.trust_region_alg(STEIHAUG_TOINT_TAG);
-				params.verbose(true); 
+				// params.verbose(true); 
 				params.atol(1e-13); 
 				params.rtol(1e-17); 
 				trust_region_solve(rosenbrock, x0, params);

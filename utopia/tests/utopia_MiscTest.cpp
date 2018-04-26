@@ -1,9 +1,6 @@
-/*
-* @Author: Eric Botter
-* @Date:   2016-11-15
-*/
 #include "utopia.hpp"
 #include "utopia_MiscTest.hpp"
+#include "utopia_FactoryMethod.hpp"
 
 namespace utopia {
 
@@ -110,6 +107,15 @@ namespace utopia {
         ok = spd_geig_small(A, B, 0.3, e, V); assert(ok);
         ok = spd_geig(A, B, e, V);            assert(ok);
         ok = spd_eig(A, e, V);                assert(ok);
+    }
+
+    void factory_method()
+    {
+        FactoryMethod<Matrixd> factory;
+        auto ptr = factory.make();
+
+        auto fact_1 = make_factory<Matrixd, Matrixd>();
+        auto ptr_2  = fact_1->make();
     }
 
 #endif //WITH_BLAS
