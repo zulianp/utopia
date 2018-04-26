@@ -172,6 +172,10 @@ namespace utopia {
 		}
 		
 		inline void describe() const {
+            if(empty()) {
+                std::cout << "Empty" << std::endl;
+            }
+
 			MatView(wrapper_->implementation(), PETSC_VIEWER_STDOUT_(communicator()));
 		}
 		

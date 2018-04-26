@@ -454,6 +454,8 @@ namespace utopia
 			x = values(10, 2.0);
 			DVectord expected_2 = values(x.size().get(0), 0.468919);
 			nlsolver.solve(fun2, x);
+
+
 			assert(approxeq(expected_2, x));
 			
 			// -------------------------------------- SR1 test ------------------
@@ -485,7 +487,7 @@ namespace utopia
 			DVectord expected_rosenbrock;
 			DVectord x0;
 			
-			if (mpi_world_size() <= 2) {
+			if(mpi_world_size() <= 2) {
 				RosenbrockGeneric<DMatrixd, DVectord> r_generic_2d;
 				expected_rosenbrock = values(2, 1.0);
 				x0 = values(2, 2.0);
@@ -493,7 +495,7 @@ namespace utopia
 				assert(approxeq(expected_rosenbrock, x0));
 			}
 			
-			if (mpi_world_size() <= 3) {
+			if(mpi_world_size() <= 3) {
 				RosenbrockGeneric<DMatrixd, DVectord> r_generic_3d;
 				expected_rosenbrock = values(3, 1.0);
 				x0 = values(3, -2.0);
@@ -501,7 +503,7 @@ namespace utopia
 				assert(approxeq(expected_rosenbrock, x0));
 			}
 			
-			if (mpi_world_size() <= 6) {
+			if(mpi_world_size() <= 6) {
 				RosenbrockGeneric<DMatrixd, DVectord> r_generic_6d;
 				expected_rosenbrock = values(6, 1.0);
 				x0 = values(6, 2.0);

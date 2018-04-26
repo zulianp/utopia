@@ -2,6 +2,7 @@
 #define UTOPIA_BLAS_TRUST_REGION_FACTORY_HPP 
 
 #include "utopia_TrustRegionFactory.hpp"
+#include "utopia_FactoryMethod.hpp"
 
 namespace utopia {
 
@@ -12,41 +13,45 @@ namespace utopia {
 	 * @tparam     Vector  
 	 */
 	template<typename Matrix, typename Vector>
-	class TRStrategyFactory<Matrix, Vector, BLAS>
-	{
-		public: 
-			typedef std::shared_ptr< TRSubproblem<Matrix, Vector> > StrategyPtr;
-			std::map<std::string, StrategyPtr> strategies_;
+	class TRStrategyFactory<Matrix, Vector, BLAS> {
+	public: 
+		typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblemT;
+		typedef std::shared_ptr<TRSubproblemT> StrategyPtr;
+		typedef utopia::IFactoryMethod<TRSubproblemT> FactoryMethodT;
 
-			inline static StrategyPtr new_trust_region_strategy(const std::string & tag)
-			{
-				auto it = instance().strategies_.find(tag);
-				if(it == instance().strategies_.end()) 
-				{
-					std::cout<<"Strategy not available, solving with SteihaugToint.  \n";  
-					return std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();  
-				} 
-				else 
-				{
-					return it->second;
-				}
+		template<class Alg>
+		using TRFactoryMethod = FactoryMethod<TRSubproblemT, Alg>;
+		std::map<std::string, std::shared_ptr<FactoryMethodT> > strategies_;
+
+		inline static StrategyPtr new_trust_region_strategy(const std::string &tag)
+		{
+			auto it = instance().strategies_.find(tag);
+			if(it == instance().strategies_.end()) { 
+				utopia_warning("Strategy not available, solving with SteihaugToint.");
+				return std::make_shared< utopia::SteihaugToint<Matrix, Vector> >();  
+			} else {
+				return it->second->make();
 			}
+		}
 
-		private:
-			inline static const TRStrategyFactory &instance()
-			{
-				static TRStrategyFactory instance_;
-				instance_.init();
-				return instance_;
+	private:
+		inline static const TRStrategyFactory &instance()
+		{
+			static TRStrategyFactory instance_;
+			return instance_;
+		}
 
-			}
+		TRStrategyFactory()
+		{
+			init();
+		}
 
-			void init()
-			{
-				strategies_[CAUCHYPOINT_TAG] 		= std::make_shared<utopia::CauchyPoint<Matrix, Vector> >(); 
-				strategies_[DOGLEG_TAG] 			= std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();  // THIS IS WRONG !!!!!!!
-				strategies_[STEIHAUG_TOINT_TAG] 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector> >(); 
-			}
+		void init()
+		{
+			strategies_[CAUCHYPOINT_TAG] 	= std::make_shared< TRFactoryMethod< utopia::CauchyPoint<Matrix, Vector>> >(); 
+			strategies_[DOGLEG_TAG] 		= std::make_shared< TRFactoryMethod< utopia::Dogleg<Matrix, Vector>> >(); 
+			strategies_[STEIHAUG_TOINT_TAG] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
+		}
 	};
 }
 
