@@ -400,8 +400,7 @@ namespace utopia {
             ierr = KSPGetConvergedReason(ksp_, &reason);     assert(ierr == 0);
 
             if(reason < 0) {
-                std::cout << reason << std::endl;
-                describe();
+                m_utopia_warning_once("ksp apply returned " + std::to_string(reason));
             }
             
             return reason >= 0;
