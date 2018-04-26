@@ -13,19 +13,13 @@ namespace utopia {
 		inline RowView(const Tensor &t, const global_ordinal_type row)
 		: t_(t), offset_(0)
 		{
-			// if(!t_.implementation().implementation().isLocallyIndexed()) {
+			if(t_.implementation().implementation().isGloballyIndexed()) {
 				t_.implementation().implementation().getGlobalRowView(row, cols_, values_);
-			// 	offset_ = t_.implementation().implementation().getColMap()->getMinGlobalIndex();
-			// } else {
-			// 	size_t num_entries;
-
-			// 	Teuchos::ArrayView<global_ordinal_type> temp_cols;
-			// 	Teuchos::ArrayView<Scalar> temp_values;
-			// 	t_.implementation().implementation().getGlobalRowCopy(row,temp_cols, temp_values, num_entries);
-			// 	cols_  = temp_cols;
-			// 	values_ = temp_values;
-			// 	// assert(Teuchos::OrdinalTraits<size_t>::invalid() == num_entries);
-			// }
+			} else {
+				assert(t_.implementation().implementation().isLocallyIndexed());
+				t_.implementation().implementation().getLocalRowView(row, cols_, values_);
+				offset_ = t_.implementation().implementation().getColMap()->getMinGlobalIndex();
+			}
 		}
 
 		inline ~RowView()

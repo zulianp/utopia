@@ -116,7 +116,7 @@ namespace utopia {
                 ierr = KSPGetPC(ksp_, &pc);  assert(ierr == 0);
                 ierr = PCFactorSetMatSolverPackage(pc, package.c_str()); assert(ierr == 0);
 #else
-                m_utopia_error("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent?");
+                m_utopia_warning_once("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent?");
 #endif 
             }
         }

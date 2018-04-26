@@ -285,12 +285,12 @@ namespace utopia {
 
     void trilinos_mg()
     {
-        if(mpi_world_size() > 1) return;
+        // if(mpi_world_size() > 1) return;
 
         bool ok = true;
 
         TVectord rhs;
-        TSMatrixd A, I;
+        TSMatrixd A, I_1, I_2, I_3;
 
         Multigrid<TSMatrixd, TVectord> multigrid(
             std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>(),
@@ -301,31 +301,36 @@ namespace utopia {
 #ifdef WITH_PETSC        
         //FIXME needs trilinos formats but for the moment lets use petsc's
         {
-            DSMatrixd petsc_A, petsc_I;
+            DSMatrixd petsc_A, petsc_I_1, petsc_I_2, petsc_I_3;
             DVectord petsc_rhs;
         
             const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
             
             ok = read(folder + "/f_rhs", petsc_rhs); assert(ok);
             ok = read(folder + "/f_A", petsc_A);     assert(ok);
-            // ok = read(folder + "/I_2", I_2);   assert(ok);
-            ok = read(folder + "/I_3", petsc_I);     assert(ok);
+            ok = read(folder + "/I_1", petsc_I_1);   assert(ok);
+            ok = read(folder + "/I_2", petsc_I_2);   assert(ok);
+            ok = read(folder + "/I_3", petsc_I_3);   assert(ok);
            
-            backend_convert_sparse(petsc_I, I);
+            backend_convert_sparse(petsc_I_1, I_1);
+            backend_convert_sparse(petsc_I_2, I_2);
+            backend_convert_sparse(petsc_I_3, I_3);
             backend_convert_sparse(petsc_A, A);
             backend_convert(petsc_rhs, rhs);
         }
 
         std::vector<std::shared_ptr<TSMatrixd>> interpolation_operators;
-        interpolation_operators.push_back(make_ref(I));
+        // interpolation_operators.push_back(make_ref(I_1));
+        // interpolation_operators.push_back(make_ref(I_2));
+        interpolation_operators.push_back(make_ref(I_3));
         
         multigrid.set_transfer_operators(std::move(interpolation_operators));
         multigrid.max_it(20);
         multigrid.atol(1e-15);
         multigrid.stol(1e-15);
         multigrid.rtol(1e-15);
-        // multigrid.verbose(true);
-        multigrid.must_generate_masks(false);
+        multigrid.verbose(true);
+        // multigrid.must_generate_masks(false);
         TVectord x = local_zeros(local_size(rhs));
 
         try {
@@ -386,10 +391,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_diag);
         UTOPIA_RUN_TEST(trilinos_read);
         UTOPIA_RUN_TEST(trilinos_ptap);
-        UTOPIA_RUN_TEST(trilinos_mg);
-
         //does not work
-        // UTOPIA_RUN_TEST(row_view_and_loops);
+        UTOPIA_RUN_TEST(row_view_and_loops);
+        UTOPIA_RUN_TEST(trilinos_mg);
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
 }
