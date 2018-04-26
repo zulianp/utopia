@@ -107,8 +107,8 @@ namespace utopia {
 			// mat.mat_->replaceColMap(col_map);	
 
 			//2)
-			mat.implementation().resumeFill();
-			mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
+			// mat.implementation().resumeFill();
+			// mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);
