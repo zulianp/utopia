@@ -51,10 +51,11 @@ namespace utopia {
 
 	public:
 		Factorization(const std::string sp = "mumps", const std::string pct = "lu", const Parameters params = Parameters()):
-		strategy_(params,   {" "}, 
-			{"lu", "jacobi", "sor", "shell",  "bjacobi",  "ilu",  "icc", "cholesky", "pbjacobi"}, 
-			{"mumps", "superlu", "superlu_dist", "petsc", "cusparse"} )
+		strategy_(params) //{"lu", "jacobi", "sor", "shell",  "bjacobi",  "ilu",  "icc", "cholesky", "pbjacobi"}, 
+			//{"mumps", "superlu", "superlu_dist", "petsc", "cusparse"} 
 		{ 
+			strategy_.ksp_type(KSPPREONLY);
+			strategy_.ksp().set_initial_guess_non_zero(false);
 
 #ifdef PETSC_HAVE_MUMPS
 			if(pct=="lu" && sp == "mumps") {
@@ -88,7 +89,7 @@ namespace utopia {
 		inline void set_parameters(const Parameters params) override
 		{
 			LinearSolver<Matrix, Vector>::set_parameters(params);
-			strategy_.set_parameters(params);
+			// strategy_.set_parameters(params);
 		}       
 
 		Factorization * clone() const override
@@ -104,23 +105,13 @@ namespace utopia {
 	            /*@todo use : PCFactorSetReuseFill(PC pc,PetscBool flag)  // to keep factorization from prev. levels 
 	            */
 
-			void set_ksp_options(KSP & ksp) override
+			void set_ksp_options(KSP &ksp) override
 			{
 				this->reset_preconditioner(); 
-				PetscErrorCode ierr;
-				ierr = KSPSetType(ksp, KSPPREONLY);
-				PC pc; 
-				ierr = KSPGetPC(ksp,&pc);
+				this->ksp_type(KSPPREONLY);
+				this->ksp().set_initial_guess_non_zero(false);
 
-				ierr = PCSetType(pc, this->pc_type().c_str());
-				
-
-#if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
-				ierr = PCFactorSetMatSolverPackage(pc, this->solver_package().c_str());
-#else
-				m_utopia_error("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent");
-#endif 
-				ierr = KSPSetTolerances(ksp, IterativeSolver::rtol(), IterativeSolver::atol(), PETSC_DEFAULT,  IterativeSolver::max_it());
+				KSPSolver<Matrix, Vector>::set_ksp_options(ksp);
 			}
 		};
 

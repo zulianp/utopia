@@ -1,13 +1,110 @@
 #include "utopia_petsc_KSPWrapper.hpp"
 #include "utopia_petsc_Types.hpp"
 
-
-
 namespace utopia {
+	//TODO check what solvers are available in petsc based on the compilation and version
+
 	KSPTypes::KSPTypes():
-	ksp_({"bcgs", "cg", "groppcg", "pipecg", "pipecgrr", "fcg", "pipefcg", "gmres", "pipefgmres",   "fgmres",   "lgmres",   "dgmres",   "pgmres", "tcqmr", "ibcgs",   "fbcgs",   "fbcgsr",   "bcgsl", "cgs", "tfqmr", "cr", "pipecr", "lsqr", "preonly", "qcg", "bicg", "minres", "symmlq", "lcd", "python", "gcr", "pipegcr", "tsirm", "cgls"}),
-	pc_({"jacobi","sor","lu","bjacobi","eisenstat","ilu","icc","asm","gasm","ksp","cholesky","pbjacobi","mat","hypre", "cp","bfbt","lsc","python","pfmg","syspfmg","redistribute","svd","gamg","bicgstabcusp","ainvcusp","bddc"}), 
-	package_({" "})
+	ksp_({
+		KSPRICHARDSON,
+		KSPCHEBYSHEV,
+		KSPCG,
+		KSPGROPPCG,
+		KSPPIPECG,
+		KSPPIPECGRR,
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,9,0)
+		KSPPIPELCG,
+#endif
+		KSPCGNE,
+#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,8,0)
+		KSPCGNASH,
+		KSPCGSTCG,
+		KSPCGGLTR,
+		KSPFETIDP,
+		KSPPIPEBCGS,		
+#else
+		KSPSTCG, 
+		KSPGLTR,
+		KSPNASH,		
+#endif
+		KSPFCG,
+		KSPPIPEFCG,
+		KSPGMRES,
+		KSPPIPEFGMRES,
+		KSPFGMRES,
+		KSPLGMRES,
+		KSPDGMRES,
+		KSPPGMRES,
+		KSPTCQMR,
+		KSPBCGS,
+		KSPIBCGS,
+		KSPFBCGS,
+		KSPFBCGSR,
+		KSPBCGSL,
+		KSPCGS,
+		KSPTFQMR,
+		KSPCR,
+		KSPPIPECR,
+		KSPLSQR,
+		KSPPREONLY,
+		KSPQCG,
+		KSPBICG,
+		KSPMINRES,
+		KSPSYMMLQ,
+		KSPLCD,
+		KSPPYTHON,
+		KSPGCR,
+		KSPPIPEGCR,
+		KSPTSIRM,
+		KSPCGLS
+	}),
+	pc_({
+		PCJACOBI,
+		PCSOR,
+		PCLU,
+		PCSHELL,
+		PCBJACOBI,
+		PCMG,
+		PCEISENSTAT,
+		PCILU,
+		PCICC,
+		PCASM,
+		PCGASM,
+		PCKSP,
+		PCCOMPOSITE,
+		PCREDUNDANT,
+		PCSPAI,
+		PCNN,
+		PCCHOLESKY,
+		PCPBJACOBI,
+		PCMAT,
+		PCHYPRE,
+		PCPARMS,
+		PCFIELDSPLIT,
+		PCTFS,
+		PCML,
+		PCGALERKIN,
+		PCEXOTIC,
+		PCCP,
+		PCBFBT,
+		PCLSC,
+		PCPYTHON,
+		PCPFMG,
+		PCSYSPFMG,
+		PCREDISTRIBUTE,
+		PCSVD,
+		PCGAMG,
+	#if UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(3,8,0)
+		PCCHOWILUVIENNACL,
+		PCROWSCALINGVIENNACL,
+		PCSAVIENNACL,
+	#endif		
+		PCBDDC,
+		PCKACZMARZ,
+		PCTELESCOPE,
+		PCNONE
+	}), 
+	package_({" ", "petsc", "mumps", "superlu", "superlu_dist" })
 	{}
 
 	template class KSPWrapper<DSMatrixd, DVectord>;

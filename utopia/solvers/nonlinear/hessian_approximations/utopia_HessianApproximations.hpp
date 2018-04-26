@@ -51,6 +51,13 @@ namespace utopia
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
             public:
+
+                BFGS(): num_tol_(1e-12)
+                {
+
+                }
+
+
                 virtual bool approximate_hessian(
                     Function<Matrix, Vector> &fun, 
                     const Vector &sol_new,
@@ -62,8 +69,14 @@ namespace utopia
                     if(!fun.gradient(sol_new, grad_old_new)) return false;
                     diff_grad = grad_old_new - diff_grad;
 
+                    Scalar d_s = dot(diff_grad, step); 
+                    
+                    if(d_s < num_tol_)
+                        return true; 
+
+
                     Vector H_x_step = hessian_old_new * step;
-                    hessian_old_new += (1./Scalar(dot(diff_grad, step)) * Matrix(outer(diff_grad, diff_grad)));
+                    hessian_old_new += (1./d_s * Matrix(outer(diff_grad, diff_grad)));
 
                     //utopia::is_sparse<Matrix>::value
                     // temp += (outer(H_x_step, H_x_step)/dot(step, H_x_step));
@@ -75,6 +88,9 @@ namespace utopia
 
                     return true;
                 }   
+
+
+                Scalar num_tol_; 
             };
 
 

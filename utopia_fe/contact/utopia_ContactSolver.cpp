@@ -137,12 +137,12 @@ namespace utopia {
 		// prec->max_it(1);
 		// smoother->set_preconditioner(prec);
 
-		// auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord> >();
+		auto smoother = std::make_shared<SOR<DSMatrixd, DVectord> >();
 		// auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
 
-		auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-		// auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
+		// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+		// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
 		auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
 		mg->verbose(true);
 		mg->init(Vx, 3);

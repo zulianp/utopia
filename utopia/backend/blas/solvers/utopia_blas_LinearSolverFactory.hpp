@@ -6,6 +6,7 @@
 #include "utopia_LinearSolver.hpp"
 #include "utopia_LinearSolverFactory.hpp"
 #include "utopia_ConjugateGradient.hpp"
+#include "utopia_FactoryMethod.hpp"
 
 #ifdef WITH_LAPACK
 #include "utopia_Lapack.hpp"
@@ -25,20 +26,22 @@ namespace utopia {
 		template<typename Matrix, typename Vector>
 		class LinearSolverFactory<Matrix, Vector, BLAS> {
 			public: 
-				typedef std::shared_ptr< LinearSolver<Matrix, Vector> >  LinearSolverPtr;
-				std::map<std::string, LinearSolverPtr> solvers_;
+				typedef utopia::LinearSolver<Matrix, Vector> LinearSolverT;
+				typedef std::shared_ptr<LinearSolverT>  LinearSolverPtr;
+				typedef utopia::IFactoryMethod<LinearSolverT> FactoryMethodT;
+
+				template<class Alg>
+				using LSFactoryMethod = FactoryMethod<LinearSolverT, Alg>;
+				std::map<std::string, std::shared_ptr<FactoryMethodT> > solvers_;
+
 
 				inline static LinearSolverPtr new_linear_solver(const SolverTag &tag)
 				{
 					auto it = instance().solvers_.find(tag);
-					if(it == instance().solvers_.end()) 
-					{
-						//std::cout<<"LinearSolver not avaialble, solve with CG.  \n";   // TODO fix tests and put back
+					if(it == instance().solvers_.end()) {
 						return std::make_shared<ConjugateGradient<Matrix, Vector> >();
-					} 
-					else 
-					{
-						return LinearSolverPtr(it->second->clone());
+					} else {
+						return LinearSolverPtr(it->second->make());
 					}
 				}
 
@@ -47,29 +50,21 @@ namespace utopia {
 				inline static const LinearSolverFactory &instance()
 				{
 					static LinearSolverFactory instance_;
-					instance_.init();
 					return instance_;
-
 				}
 
-				
+				LinearSolverFactory()
+				{
+					init();
+				}
+
 				void init()
 				{
 	#ifdef WITH_LAPACK
-						//FIXME
-						solvers_[LAPACK_TAG] = std::make_shared< LUDecomposition<Matrix, Vector> >();
-						solvers_[AUTO_TAG]   = std::make_shared< LUDecomposition<Matrix, Vector> >();
+						solvers_[LAPACK_TAG] = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
+						solvers_[AUTO_TAG]   = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
 	#endif //WITH_LAPACK
-		
-
-	//FIXME does not work for dense matrices				
-					// #ifdef WITH_UMFPACK
-					// 	solvers_[UMFPACK_TAG] = std::make_shared<UmfpackLU>();
-					// #endif //WITH_UMFPACK
 				}
-
-
-
 		};
 }
 

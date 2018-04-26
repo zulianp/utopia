@@ -22,7 +22,7 @@ class LinearSolverFactory<Matrix, Vector, TRILINOS>
     public:
         typedef std::shared_ptr< LinearSolver<Matrix, Vector> >  LinearSolverPtr;
         std::map<std::string, LinearSolverPtr> solvers_;
-
+        ///See new implementation in utopia_petsc_LinearSolverFactory.hpp
 
         inline static LinearSolverPtr new_linear_solver(const SolverTag &tag)
             {
@@ -44,9 +44,13 @@ class LinearSolverFactory<Matrix, Vector, TRILINOS>
         inline static const LinearSolverFactory &instance()
             {
             static LinearSolverFactory instance_;
-            //   instance_.init();
             return instance_;
 
+            }
+
+            LinearSolverFactory()
+            {
+                init();
             }
 
 

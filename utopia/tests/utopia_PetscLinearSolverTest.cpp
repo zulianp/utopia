@@ -160,10 +160,16 @@ namespace utopia {
             auto gmres = std::make_shared<GMRES<DSMatrixd, DVectord>>();
             gmres->set_preconditioner(make_ref(multigrid));
             x_0.set(0.);
-            // gmres->verbose(true);
+            gmres->verbose(false);
+            gmres->atol(1e-16);
+            gmres->rtol(1e-16);
             gmres->solve(A, rhs, x_0);
-            
-            assert( approxeq(A*x_0, rhs, 1e-6) );
+
+            double diff = norm2(rhs - A *x_0);
+            if(diff > 1e-6) {
+                utopia_error("petsc_mg: gmres preconditioned with mg does not do what it is supposed to");
+            }
+            // assert( approxeq(diff, 0., 1e-6) );
         }
         
         void petsc_bicgstab()
