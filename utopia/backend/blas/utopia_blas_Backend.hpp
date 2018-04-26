@@ -27,6 +27,7 @@ namespace utopia {
 		
 		using ScalarBackend<Scalar>::apply_binary;
 		using ScalarBackend<Scalar>::axpy;
+		using ScalarBackend<Scalar>::assign;
 		
 		void static daxpy_wrapper(const int *n, const Scalar *alpha, const Scalar *x, const int *incx, Scalar *y, const int *incy);
 		void static dscal_wrapper(const int *n, const Scalar *sa, const Scalar *sx, const int *incx);

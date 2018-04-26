@@ -62,24 +62,30 @@ namespace utopia {
 	//result op(*this) * op
 	void TpetraMatrix::mult(const bool transpose_this, const TpetraMatrix &right, const bool transpose_right, TpetraMatrix &result) const
 	{
+		m_utopia_status_once("TpetraMatrix::mult Proper thing to do would be to check if the maps are compabible");
+		//IMPROVEME
+		result.mat_.reset();
+
 		if(result.is_null()) {
-			auto s = size();
-			auto ls = local_size();
-			// auto row_map = Teuchos::rcp(new map_type(s.get(0), ls.get(0), 0, communicator()));
-			// result.mat_  = Teuchos::rcp(new crs_matrix_type(row_map, 0, Tpetra::DynamicProfile));
-			result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRowMap(), 0, Tpetra::DynamicProfile));
+			if(transpose_this) {
+				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getColMap(), implementation().getRowMap(), 0, Tpetra::DynamicProfile));
+			} else {
+				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRowMap(), implementation().getColMap(), 0, Tpetra::DynamicProfile));
+			}
 			result.owner_ = true;
 		}
 
 		try {
-			//C = op(A)*op(B), 
-			Tpetra::MatrixMatrix::Multiply(
-				this->implementation(),
-				transpose_this,
-				right.implementation(),
-				transpose_right,
-				result.implementation()
-			);
+				//C = op(A)*op(B), 
+				Tpetra::MatrixMatrix::Multiply(
+					this->implementation(),
+					transpose_this,
+					right.implementation(),
+					transpose_right,
+					result.implementation()
+				);
+
+
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);
@@ -93,6 +99,16 @@ namespace utopia {
 			Tpetra::RowMatrixTransposer<Scalar, local_ordinal_type, global_ordinal_type, node_type> transposer(mat_);
 			mat.mat_ = transposer.createTranspose();
 			mat.owner_ = true;
+
+
+			//None of this creat a valid matrix for getGlobalRowView
+			//1)
+			// auto col_map = Teuchos::rcp(new map_type(size().get(0), 0, communicator(), Tpetra::LocallyReplicated));
+			// mat.mat_->replaceColMap(col_map);	
+
+			//2)
+			// mat.implementation().resumeFill();
+			// mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);

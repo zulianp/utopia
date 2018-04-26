@@ -20,8 +20,11 @@ namespace utopia
                 const Parameters & params = Parameters()) : 
                 TRSubproblem<Matrix, Vector>(params), 
                 ls_solver_(linear_solver) 
-                {
+                { }
 
+                inline Dogleg * clone() const override
+                {
+                    return new Dogleg(std::shared_ptr<LinearSolver>(ls_solver_->clone()));
                 }
                 
         protected: 

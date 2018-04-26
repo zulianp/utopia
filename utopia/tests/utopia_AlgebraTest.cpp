@@ -32,6 +32,20 @@ namespace utopia {
             assert(approxeq(10.0, n));
         }
 
+        void quadratic_form()
+        {
+            const int n = mpi_world_size() * 2;
+            Vector x = values(n, 1.);
+            Vector b = values(n, 2.);
+            Matrix A = values(n, n, 1.);
+
+            double value = 0.5 * dot(x, A * x) + dot(x, b);
+            double expected = sum(A) * 0.5 + sum(b);    
+
+            assert(approxeq(value, expected));
+            assert(approxeq(value, n*n*0.5 + n*2.));
+        }
+
         void dot_test()
         {
             Vector v1 = zeros(2), v2 = zeros(2);
@@ -174,6 +188,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(determinant_test);
             UTOPIA_RUN_TEST(size_test);
             UTOPIA_RUN_TEST(binary_min_max);
+            UTOPIA_RUN_TEST(quadratic_form);
         }
     };
 

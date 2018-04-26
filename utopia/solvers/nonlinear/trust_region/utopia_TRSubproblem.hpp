@@ -27,7 +27,8 @@ namespace  utopia
             {
                 set_parameters(params); 
             };
-            
+         
+
             virtual ~TRSubproblem( ){}        
 
             /**
@@ -65,6 +66,8 @@ namespace  utopia
                 return current_radius_;
             }; 
 
+
+            virtual TRSubproblem * clone() const override = 0;
 
         protected:
             /**

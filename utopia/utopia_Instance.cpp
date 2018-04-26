@@ -49,6 +49,12 @@ namespace utopia {
 #ifdef UTOPIA_TRACE_ENABLED
         Tracer::instance().save_collected_log();
 #endif
+
+        instance().logger().flush();
+
+        if(mpi_world_rank() == 0) {
+            instance().maintenance_logger().flush();
+        }
         
 #ifdef WITH_PETSC
         #ifdef WITH_SLEPC
@@ -63,9 +69,8 @@ namespace utopia {
 #endif //WITH_MPI
 #endif //WITH_PETSC
         
+     
 
-        instance().logger().flush();
-        instance().maintenance_logger().flush();
         return 0;
     }
     

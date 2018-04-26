@@ -203,15 +203,20 @@ namespace utopia
 				Vector expected_rosenbrock = values(2, 1);
 				
 				Rosenbrock<Matrix, Vector> rosenbrock;
-				// params.trust_region_alg(DOGLEG_TAG);
 				Vector x0 = values(2, 2.0);
-				// trust_region_solve(rosenbrock, x0, params);
-				// assert(approxeq(expected_rosenbrock, x0));
 				
 				x0 = values(2, 2.0);
 				params.trust_region_alg(STEIHAUG_TOINT_TAG);
+				params.verbose(false); 
+				params.atol(1e-13); 
+				params.rtol(1e-17); 
 				trust_region_solve(rosenbrock, x0, params);
-				assert(approxeq(expected_rosenbrock, x0));
+
+				auto diff_norm = norm2(expected_rosenbrock - x0); 
+	            
+	            if(diff_norm > 1e-12) {
+	                utopia_error("tr_test: STEIHAUG_TOINT_TAG with rosenbrock is failing");
+	            }
 			}
 		}
 		
