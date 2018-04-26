@@ -68,7 +68,7 @@ namespace utopia {
 
 		if(result.is_null()) {
 			if(transpose_this) {
-				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getColMap(), implementation().getRowMap(), 0, Tpetra::DynamicProfile));
+				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getDomainMap(), implementation().getRowMap(), 0, Tpetra::DynamicProfile));
 			} else {
 				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRowMap(), implementation().getColMap(), 0, Tpetra::DynamicProfile));
 			}

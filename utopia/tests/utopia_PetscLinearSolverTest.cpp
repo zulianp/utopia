@@ -12,6 +12,7 @@ namespace utopia {
         
         void run()
         {
+            UTOPIA_RUN_TEST(petsc_cg);
             UTOPIA_RUN_TEST(petsc_mg_1D);
             UTOPIA_RUN_TEST(petsc_block_mg_exp);
             UTOPIA_RUN_TEST(petsc_block_mg);
@@ -23,6 +24,23 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
+        }
+
+        void petsc_cg()
+        {
+            MultiLevelTestProblem<DSMatrixd, DVectord> ml_problem(100, 2);
+            DVectord x = zeros(size(*ml_problem.rhs));
+            (*ml_problem.rhs) *= 0.0001;
+
+            ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> cg;
+            cg.rtol(1e-6);
+            cg.atol(1e-6);
+            cg.max_it(500);
+            // cg.verbose(true);
+            cg.update(ml_problem.matrix);
+            cg.apply(*ml_problem.rhs, x);
+
+            assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-5));
         }
 
         void petsc_mg_1D()
@@ -37,6 +55,8 @@ namespace utopia {
             Multigrid<DSMatrixd, DVectord> multigrid(
                 std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
                 std::make_shared<Factorization<DSMatrixd, DVectord>>()
+                // std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>(),
+                // std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>()
             );
 
             multigrid.set_transfer_operators(ml_problem.interpolators);
