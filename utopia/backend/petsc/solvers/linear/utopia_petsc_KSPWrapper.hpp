@@ -121,6 +121,7 @@ namespace utopia {
             }
         }
         
+        
         /**
          * @brief      Returns type of direct solver.
          */

@@ -454,6 +454,8 @@ namespace utopia
 			x = values(10, 2.0);
 			DVectord expected_2 = values(x.size().get(0), 0.468919);
 			nlsolver.solve(fun2, x);
+
+
 			assert(approxeq(expected_2, x));
 			
 			// -------------------------------------- SR1 test ------------------

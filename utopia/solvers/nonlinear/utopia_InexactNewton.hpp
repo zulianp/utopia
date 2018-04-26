@@ -1,9 +1,3 @@
-/*
-* @Author: Alena Kopanicakova
-* @Date:   2017-01-31
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-13
-*/
 #ifndef UTOPIA_SOLVER_INEXACT_NEWTON_HPP
 #define UTOPIA_SOLVER_INEXACT_NEWTON_HPP
 
@@ -84,7 +78,10 @@ namespace utopia
 
             // check convergence and print interation info
             converged = this->check_convergence(it, g_norm, r_norm, s_norm);
-        
+            
+            if(converged)
+                return true; 
+
             //find direction step
             step = local_zeros(local_size(x));
             this->linear_solve(hessian, -1* grad, step);
@@ -118,7 +115,6 @@ namespace utopia
 
             it++;
         }
-
 
         return true;
     }
