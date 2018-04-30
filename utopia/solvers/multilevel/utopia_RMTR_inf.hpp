@@ -31,7 +31,7 @@ namespace utopia
      */
 
     // - inherit from RMTR - l2 later... 
-    template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER >
+    template<class Matrix, class Vector>
     class RMTR_inf :    public NonlinearMultiLevelBase<Matrix, Vector>,
                         public TrustRegionBoxBase<Matrix, Vector>
     {
@@ -63,10 +63,20 @@ namespace utopia
                     _smoother_tr_subproblem(tr_subproblem_smoother) 
         {
             set_parameters(params); 
+
+            consistency_level_ = FIRST_ORDER; 
         }
 
         virtual ~RMTR_inf()
         {
+
+            // for(auto i=0; i < tr_constraints_.size() << i++)
+            // {
+            //     VecDestroy(raw_type(tr_constraints_.lower_bound())); 
+            //     VecDestroy(raw_type(tr_constraints_.upper_bound())); 
+            // }
+
+            // we need to destroy all created vectors... 
             tr_constraints_.clear(); 
 
         } 
@@ -277,7 +287,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   first order coarse level objective managment
             //----------------------------------------------------------------------------            
-            if(CONSISTENCY_LEVEL != GALERKIN)
+            if(consistency_level_ != GALERKIN)
             {             
                 this->function(level-2).gradient(u_2l, g_coarse); 
                 this->zero_correction_related_to_equality_constrain(this->function(level-2), g_diff); 
@@ -285,18 +295,18 @@ namespace utopia
 
             smoothness_flg = grad_smoothess_termination(g_diff, g_fine); 
 
-            if(CONSISTENCY_LEVEL != GALERKIN)
+            if(consistency_level_ != GALERKIN)
                 g_diff -= g_coarse; 
 
             //----------------------------------------------------------------------------
             //                   second order coarse level objective managment
             //----------------------------------------------------------------------------            
-            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
+            if(consistency_level_ == SECOND_ORDER || consistency_level_ == GALERKIN)
             {
                 this->get_multilevel_hessian(fine_fun, u_l, H_fine, level); 
                 this->transfer(level-2).restrict(H_fine, H_diff);
                 
-                if(CONSISTENCY_LEVEL == SECOND_ORDER)
+                if(consistency_level_ == SECOND_ORDER)
                 {
                     this->zero_correction_related_to_equality_constrain_mat(this->function(level-2), H_diff); 
                     this->function(level-2).hessian(u_2l, H_coarse); 
@@ -311,7 +321,7 @@ namespace utopia
             this->set_delta(level-2, get_delta(level-1)); 
 
             this->set_delta_gradient(level-2, g_diff); 
-            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
+            if(consistency_level_ == SECOND_ORDER || consistency_level_ == GALERKIN)
                 this->set_delta_hessian(level-2, H_diff); 
 
             this->set_x_initial(level-2, u_2l); 
@@ -535,7 +545,7 @@ namespace utopia
 
             tr_constraints_.resize(this->n_levels()); 
             
-            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
+            if(consistency_level_ == SECOND_ORDER || consistency_level_ == GALERKIN)
                 _delta_hessians.resize(this->n_levels()-1); 
         }
 
@@ -907,7 +917,19 @@ namespace utopia
         virtual bool get_multilevel_hessian(const Fun & fun, const Vector & x,  Matrix & H, const SizeType & level)
         {
             if(level < this->n_levels())
-                return MultilevelHessianEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_hessian(fun, x, H, get_delta_hessian(level-1));
+            {
+                if(consistency_level_ == FIRST_ORDER)
+                    return MultilevelHessianEval<Matrix, Vector, FIRST_ORDER>::compute_hessian(fun, x, H, get_delta_hessian(level-1));
+                else if(consistency_level_ == SECOND_ORDER)
+                    return MultilevelHessianEval<Matrix, Vector, SECOND_ORDER>::compute_hessian(fun, x, H, get_delta_hessian(level-1));
+                else if(consistency_level_ == GALERKIN)
+                    return MultilevelHessianEval<Matrix, Vector, GALERKIN>::compute_hessian(fun, x, H, get_delta_hessian(level-1));
+                else
+                {
+                    std::cout<<"----- unknown evaluation routine.... \n"; 
+                    return false; 
+                }
+            }
             else
                 return fun.hessian(x, H); 
         }
@@ -930,7 +952,17 @@ namespace utopia
         {
             if(level < this->n_levels())
             {
-                return MultilevelGradientEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_gradient(fun, x, g, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global);
+                if(consistency_level_ == FIRST_ORDER)
+                    return MultilevelGradientEval<Matrix, Vector, FIRST_ORDER>::compute_gradient(fun, x, g, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global);
+                else if(consistency_level_ == SECOND_ORDER)
+                    return MultilevelGradientEval<Matrix, Vector, SECOND_ORDER>::compute_gradient(fun, x, g, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global);
+                else if(consistency_level_ == GALERKIN)
+                    return MultilevelGradientEval<Matrix, Vector, GALERKIN>::compute_gradient(fun, x, g, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global);
+                else
+                {
+                    std::cout<<"----- unknown evaluation routine.... \n"; 
+                    return false; 
+                }
             }
             else
                  return fun.gradient(x, g); 
@@ -951,7 +983,18 @@ namespace utopia
         virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & x, const Vector & s_global, const SizeType & level)
         {
             if(level < this->n_levels())
-                return MultilevelEnergyEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_energy(fun, x, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global); 
+            {
+                if(consistency_level_ == FIRST_ORDER)
+                    return MultilevelEnergyEval<Matrix, Vector, FIRST_ORDER>::compute_energy(fun, x, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global); 
+                else if(consistency_level_ == SECOND_ORDER)
+                    return MultilevelEnergyEval<Matrix, Vector, SECOND_ORDER>::compute_energy(fun, x, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global); 
+                else if(consistency_level_ == GALERKIN)
+                    return MultilevelEnergyEval<Matrix, Vector, GALERKIN>::compute_energy(fun, x, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global); 
+                else{
+                    std::cout<<"----- unknown evaluation routine.... \n"; 
+                    return 0.0; 
+                }
+            }
             else
             {
                 Scalar energy; 
@@ -1108,6 +1151,8 @@ protected:
         VerbosityLevel                  _verbosity_level; 
 
 
+
+        MultiLevelCoherence             consistency_level_; 
 
         std::vector<BoxConstraints>      tr_constraints_; 
 
