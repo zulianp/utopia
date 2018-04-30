@@ -65,7 +65,11 @@ namespace utopia
             set_parameters(params); 
         }
 
-        virtual ~RMTR_inf(){} 
+        virtual ~RMTR_inf()
+        {
+            tr_constraints_.clear(); 
+
+        } 
         
 
         void set_parameters(const Parameters params) override
@@ -138,7 +142,7 @@ namespace utopia
         virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs) override
         {
             bool converged = false; 
-            SizeType l = this->n_levels(); 
+            SizeType level = this->n_levels(); 
             Scalar r_norm, r0_norm, rel_norm, energy;
 
             Vector g_finest  = local_zeros(local_size(x_h)); 
@@ -152,7 +156,7 @@ namespace utopia
 
             
             init(); 
-            
+
             //----------------------------------------------
 
             if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL)
@@ -161,7 +165,7 @@ namespace utopia
                 ColorModifier def(FG_DEFAULT);
                 std::cout << red;
 
-                std::string name_id = this->name_id() + "     Number of levels: " + std::to_string(l); 
+                std::string name_id = this->name_id() + "     Number of levels: " + std::to_string(level); 
                 this->init_solver(name_id, {" it. ", "|| g_norm ||", "   E "}); 
 
                 PrintInfo::print_iter_status(_it_global, {r0_norm, energy}); 
@@ -171,11 +175,18 @@ namespace utopia
 
             while(!converged)
             {            
+
+                // put this somewhere else... 
+                Vector tr_lower = x_h - local_values(local_size(x_h).get(0), this->get_delta(level-1));   
+                Vector tr_upper = x_h + local_values(local_size(x_h).get(0), this->get_delta(level-1));   
+                tr_constraints_[this->n_levels()-1] = make_box_constaints(std::make_shared<Vector>(tr_lower), std::make_shared<Vector>(tr_upper)); 
+            
+
                 if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
-                    this->multiplicative_cycle(fine_fun, x_h, rhs, l); 
+                    this->multiplicative_cycle(fine_fun, x_h, rhs, level); 
                 else{
                     std::cout<<"ERROR::UTOPIA_RMTR << unknown cycle type, solving in multiplicative manner ... \n"; 
-                    this->multiplicative_cycle(fine_fun, x_h, rhs, l); 
+                    this->multiplicative_cycle(fine_fun, x_h, rhs, level); 
                 }
 
 
@@ -209,7 +220,7 @@ namespace utopia
                 }
 
                 // check convergence
-                converged = check_global_convergence(_it_global, r_norm, rel_norm, this->get_delta(l-1)); 
+                converged = check_global_convergence(_it_global, r_norm, rel_norm, this->get_delta(level-1)); 
             }
 
             // benchmarking
@@ -522,7 +533,7 @@ namespace utopia
             _delta_gradients.resize(this->n_levels()-1); 
             _x_initials.resize(this->n_levels()-1); 
 
-            tr_constraints_.resize(this->n_levels()-1); 
+            tr_constraints_.resize(this->n_levels()); 
             
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
                 _delta_hessians.resize(this->n_levels()-1); 
@@ -867,23 +878,13 @@ namespace utopia
             if(flg)
             {
                 // TODO:: tolerances
-                // Vector ub, lb; 
-                // this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
-                
-                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
-                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, box);
+                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, tr_constraints_[level-1]);
 
             }
             else
             {
                 // TODO:: tolerances
-                // Vector ub, lb; 
-                // this->merge_tr_with_pointwise_constrains(x_k, get_delta(level-1), ub, lb); 
-                
-                auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
-                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, box);
-
-
+                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, tr_constraints_[level-1]);
             }
 
             return true; 
@@ -1025,21 +1026,22 @@ namespace utopia
         void set_tr_constrain(const Vector &x, const Scalar level)
         {
             Vector lower = local_zeros(local_size(x)), upper = local_zeros(local_size(x)); 
+            Vector upper_coarse, lower_coarse;
             
-            Vector tr_fine_last_lower = x - local_zeros(local_size(x), this->get_delta(level));   
-            Vector tr_fine_last_upper = x + local_zeros(local_size(x), this->get_delta(level));   
+            Vector tr_fine_last_lower = x - local_values(local_size(x).get(0), this->get_delta(level));   
+            Vector tr_fine_last_upper = x + local_values(local_size(x).get(0), this->get_delta(level));   
 
-            if(level > this->n_levels() - 1)
+            if(level < this->n_levels())
             {              
-                auto tr_lower = tr_constraints_[level].lower_bound();
-                auto tr_upper = tr_constraints_[level].upper_bound();
+                Vector tr_lower = *(tr_constraints_[level].lower_bound());
+                Vector tr_upper = *(tr_constraints_[level].upper_bound());
 
                 {   
                     Read<Vector> rv(tr_fine_last_lower); 
-                    Read<Vector> rv(tr_lower); 
+                    Read<Vector> rl(tr_lower); 
                     Write<Vector> wv(lower); 
 
-                    Range r = row_range(lower);
+                    Range r = range(lower);
 
                     for(SizeType i = r.begin(); i != r.end(); ++i) 
                         lower.set(i, std::max(tr_lower.get(i), tr_fine_last_lower.get(i))); 
@@ -1047,29 +1049,25 @@ namespace utopia
                 
                 {   
                     Read<Vector> rv(tr_fine_last_upper); 
-                    Read<Vector> rv(tr_upper); 
+                    Read<Vector> rl(tr_upper); 
                     Write<Vector> wv(upper); 
 
-                    Range r = row_range(upper);
+                    Range r = range(upper);
 
                     for(SizeType i = r.begin(); i != r.end(); ++i) 
                         upper.set(i, std::min(tr_upper.get(i), tr_fine_last_upper.get(i))); 
                 }
 
-                this->transfer(level-2).restrict(upper, upper_coarse);
-                this->transfer(level-2).restrict(lower, lower_coarse);
+                this->transfer(level-1).restrict(upper, upper_coarse);
+                this->transfer(level-1).restrict(lower, lower_coarse);
             }
             else
             {
-                this->transfer(level-2).restrict(tr_fine_last_upper, upper_coarse);
-                this->transfer(level-2).restrict(tr_fine_last_lower, lower_coarse);
+                this->transfer(level-1).restrict(tr_fine_last_upper, upper_coarse);
+                this->transfer(level-1).restrict(tr_fine_last_lower, lower_coarse);
             }
 
-
-
-            tr_constraints_[level-1] = make_box_constaints(std::make_shared<Vector>(lower_coarse), std::make_shared<Vector>(upper_coarse))
-
-
+            tr_constraints_[level-1] = make_box_constaints(std::make_shared<Vector>(lower_coarse), std::make_shared<Vector>(upper_coarse)); 
         }
 
 
