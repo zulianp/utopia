@@ -146,13 +146,15 @@ namespace utopia
             _it_global = 0; 
 
             //-------------- INITIALIZATIONS ---------------
-            init_deltas(); 
-            init_delta_gradients();  
-            init_x_initials(); 
+            // init_deltas(); 
+            // init_delta_gradients();  
+            // init_x_initials(); 
             
 
-            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
-                init_delta_hessians(); 
+            // if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
+            //     init_delta_hessians(); 
+
+            init(); 
             
             //----------------------------------------------
 
@@ -509,6 +511,18 @@ namespace utopia
 
 
     protected:
+
+
+        virtual void init() 
+        {
+            init_deltas(); 
+
+            _delta_gradients.resize(this->n_levels()-1); 
+            _x_initials.resize(this->n_levels()-1); 
+            
+            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
+                _delta_hessians.resize(this->n_levels()-1); 
+        }
 
         // -------------------------- tr radius managment ---------------------------------------------        
         /**

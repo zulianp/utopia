@@ -23,6 +23,8 @@
 
 namespace utopia 
 {
+
+
     /**
      * @brief      The class for Nonlinear Multigrid solver. 
      *
@@ -44,6 +46,8 @@ namespace utopia
 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
+
+
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
 
@@ -69,18 +73,21 @@ namespace utopia
 
         virtual ~RMTR_inf()
         {
-
-            // for(auto i=0; i < tr_constraints_.size() << i++)
-            // {
-            //     VecDestroy(raw_type(tr_constraints_.lower_bound())); 
-            //     VecDestroy(raw_type(tr_constraints_.upper_bound())); 
-            // }
-
             // we need to destroy all created vectors... 
-            tr_constraints_.clear(); 
-
+            level_constraints_.clear(); 
         } 
         
+
+        struct LevelConstraints 
+        {
+            Vector tr_lower; 
+            Vector tr_upper; 
+            Vector x_lower; 
+            Vector x_upper; 
+        }; 
+
+
+
 
         void set_parameters(const Parameters params) override
         {
@@ -121,7 +128,7 @@ namespace utopia
 
         using NonlinearMultiLevelBase<Matrix, Vector>::solve; 
 
-        virtual std::string name_id() override { return "RMTR";  }
+        virtual std::string name_id() override { return "RMTR in infinity norm";  }
         
 
         void set_eps_grad_termination(const Scalar & eps_grad_termination)
@@ -189,8 +196,11 @@ namespace utopia
                 // put this somewhere else... 
                 Vector tr_lower = x_h - local_values(local_size(x_h).get(0), this->get_delta(level-1));   
                 Vector tr_upper = x_h + local_values(local_size(x_h).get(0), this->get_delta(level-1));   
-                tr_constraints_[this->n_levels()-1] = make_box_constaints(std::make_shared<Vector>(tr_lower), std::make_shared<Vector>(tr_upper)); 
+                //tr_constraints_[this->n_levels()-1] = make_box_constaints(std::make_shared<Vector>(tr_lower), std::make_shared<Vector>(tr_upper)); 
             
+                level_constraints_[this->n_levels()-1].tr_lower = tr_lower; 
+                level_constraints_[this->n_levels()-1].tr_upper = tr_upper; 
+
 
                 if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
                     this->multiplicative_cycle(fine_fun, x_h, rhs, level); 
@@ -536,14 +546,14 @@ namespace utopia
     protected:
 
 
-        void init()
+        virtual void init()
         {
             init_deltas(); 
 
             _delta_gradients.resize(this->n_levels()-1); 
             _x_initials.resize(this->n_levels()-1); 
 
-            tr_constraints_.resize(this->n_levels()); 
+            level_constraints_.resize(this->n_levels()); 
             
             if(consistency_level_ == SECOND_ORDER || consistency_level_ == GALERKIN)
                 _delta_hessians.resize(this->n_levels()-1); 
@@ -563,7 +573,8 @@ namespace utopia
          */
         virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global)
         {
-            Scalar intermediate_delta; 
+            std::cout<<"delta_update should be different .... \n"; 
+            Scalar intermediate_delta = this->get_delta(level-1); 
 
             if(rho < this->eta1())
                  intermediate_delta = std::max(this->gamma1() * this->get_delta(level-1), 1e-15); 
@@ -608,6 +619,7 @@ namespace utopia
          */
         virtual  Scalar level_dependent_norm(const Vector & u, const SizeType & current_l)
         {
+            std::cout<<"level_dependent_norm should be different .... \n"; 
             if(current_l == this->n_levels())
                 return 0.0; 
             else
@@ -625,6 +637,7 @@ namespace utopia
     // ---------------------------------- convergence checks -------------------------------
         virtual bool check_global_convergence(const SizeType & it, const Scalar & r_norm, const Scalar & rel_norm, const Scalar & delta)
         {   
+            std::cout<<"check_global_convergence should be different .... \n"; 
             bool converged = NonlinearMultiLevelBase<Matrix, Vector>::check_convergence(it, r_norm, rel_norm, 1); 
 
             if(delta < this->delta_min())
@@ -669,6 +682,7 @@ namespace utopia
          */
         virtual bool delta_termination(const Scalar & corr_norm, const SizeType & level)
         {   
+            std::cout<<"delta_termination should be different .... \n"; 
             return (corr_norm > (1.0 - _eps_delta_termination) * get_delta(level)) ? true : false; 
         }
 
@@ -683,6 +697,7 @@ namespace utopia
          */
         virtual bool criticality_measure_termination(const Scalar & g_norm)
         {
+            std::cout<<"criticality_measure_termination should be different .... \n"; 
             return (g_norm < _eps_grad_termination) ? true : false;    
         }
 
@@ -696,6 +711,7 @@ namespace utopia
          */
         virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse)
         {
+            std::cout<<"grad smoothness termination should be different .... \n"; 
             Scalar Rg_norm = norm2(g_restricted); 
             Scalar g_norm = norm2(g_coarse);
             return (Rg_norm >= _grad_smoothess_termination * g_norm) ? true : false;   
@@ -879,7 +895,7 @@ namespace utopia
          *
          * @param[in]  H      The hessian
          * @param[in]  g      The gradient
-         * @param      s      New correction
+         * @param      s      New corrections
          * @param[in]  level  The level
          *
          */
@@ -888,13 +904,15 @@ namespace utopia
             if(flg)
             {
                 // TODO:: tolerances
-                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, tr_constraints_[level-1]);
+                auto box = make_box_constaints(make_ref(level_constraints_[level-1].tr_lower), make_ref(level_constraints_[level-1].tr_upper)); 
+                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, box);
 
             }
             else
             {
                 // TODO:: tolerances
-                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, tr_constraints_[level-1]);
+                auto box = make_box_constaints(make_ref(level_constraints_[level-1].tr_lower), make_ref(level_constraints_[level-1].tr_upper)); 
+                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, box);
             }
 
             return true; 
@@ -1076,29 +1094,26 @@ namespace utopia
 
             if(level < this->n_levels())
             {              
-                Vector tr_lower = *(tr_constraints_[level].lower_bound());
-                Vector tr_upper = *(tr_constraints_[level].upper_bound());
-
                 {   
                     Read<Vector> rv(tr_fine_last_lower); 
-                    Read<Vector> rl(tr_lower); 
+                    Read<Vector> rl(level_constraints_[level].tr_lower); 
                     Write<Vector> wv(lower); 
 
                     Range r = range(lower);
 
                     for(SizeType i = r.begin(); i != r.end(); ++i) 
-                        lower.set(i, std::max(tr_lower.get(i), tr_fine_last_lower.get(i))); 
+                        lower.set(i, std::max(level_constraints_[level].tr_lower.get(i), tr_fine_last_lower.get(i))); 
                 }
                 
                 {   
                     Read<Vector> rv(tr_fine_last_upper); 
-                    Read<Vector> rl(tr_upper); 
+                    Read<Vector> rl(level_constraints_[level].tr_upper); 
                     Write<Vector> wv(upper); 
 
                     Range r = range(upper);
 
                     for(SizeType i = r.begin(); i != r.end(); ++i) 
-                        upper.set(i, std::min(tr_upper.get(i), tr_fine_last_upper.get(i))); 
+                        upper.set(i, std::min(level_constraints_[level].tr_upper.get(i), tr_fine_last_upper.get(i))); 
                 }
 
                 this->transfer(level-1).restrict(upper, upper_coarse);
@@ -1110,12 +1125,10 @@ namespace utopia
                 this->transfer(level-1).restrict(tr_fine_last_lower, lower_coarse);
             }
 
-            tr_constraints_[level-1] = make_box_constaints(std::make_shared<Vector>(lower_coarse), std::make_shared<Vector>(upper_coarse)); 
+            level_constraints_[level-1].tr_upper = upper_coarse; 
+            level_constraints_[level-1].tr_lower = lower_coarse; 
         }
 
-
-
-protected: 
 
 
     protected:   
@@ -1153,8 +1166,8 @@ protected:
 
 
         MultiLevelCoherence             consistency_level_; 
-
-        std::vector<BoxConstraints>      tr_constraints_; 
+        
+        std::vector<LevelConstraints>  level_constraints_; 
 
 
     };
