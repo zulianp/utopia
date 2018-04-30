@@ -73,22 +73,16 @@ namespace utopia {
         
         /* with volume tags and reverse operator*/
         DSMatrixd B_r;
-        if(!assemble_volume_transfer_r(comm,
+        if(!assemble_volume_transfer(comm,
          p.coarse_mesh,
          p.fine_mesh,
          utopia::make_ref(p.coarse_space->dof_map()),
          utopia::make_ref(p.fine_space->dof_map()),
-         utopia::make_ref(p.coarse_space->dof_map()),
-         utopia::make_ref(p.fine_space->dof_map()),
-         0,
-         0,
          0,
          0,
          true,
          1,
-         1,
-         B,
-         B_r))
+         B))
         {
             std::cerr << "No intersection" << std::endl;
             return;
