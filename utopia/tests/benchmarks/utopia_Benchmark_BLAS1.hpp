@@ -63,8 +63,8 @@ namespace utopia {
 						const Scalar norm_infty_x = norm_infty(x);
 
 						//some testing
-						assert(approxeq(norm2_x, Scalar(std::sqrt(n))));
-						assert(approxeq(norm1_x, Scalar(n)));
+						assert(approxeq(norm2_x, Scalar(std::sqrt(size(x).get(0)))));
+						assert(approxeq(norm1_x, Scalar(size(x).get(0))));
 						assert(approxeq(norm_infty_x, Scalar(1)));
 
 					}
@@ -88,7 +88,7 @@ namespace utopia {
 						const Vector y = local_values(n, 2.);
 						const Scalar d = dot(x, y);
 
-						assert(approxeq(d, Scalar(n*2)));
+						assert(approxeq(d, Scalar(size(x).get(0)*2)));
 					}
 				);
 
@@ -100,7 +100,7 @@ namespace utopia {
 						const Vector y = local_values(n, 2.);
 						const Scalar d = norm2(x - y);
 
-						assert(approxeq(d, Scalar(std::sqrt(n))));
+						assert(approxeq(d, Scalar(std::sqrt(size(x).get(0)))));
 					}
 				);
 

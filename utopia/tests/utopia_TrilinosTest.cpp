@@ -272,7 +272,9 @@ namespace utopia {
         build_rectangular_matrix(n, m, P);
 
         //For the moment this is computing (transpose(P) * A) * P
-        TSMatrixd R = utopia::ptap(A, P);
+        TSMatrixd R   = utopia::ptap(A, P);
+        //same thing
+        TSMatrixd R_2 = transpose(P) * A * P;
 
         // disp(A);
         // disp(P);
@@ -465,9 +467,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_cg);
 
         //tests that fail in parallel
-        if(mpi_world_size() == 1) {
-            UTOPIA_RUN_TEST(row_view_and_loops); 
-        }
+        UTOPIA_RUN_TEST(row_view_and_loops); 
 
         //tests that always fail
         // UTOPIA_RUN_TEST(trilinos_mg_1D);
