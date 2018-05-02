@@ -111,7 +111,7 @@ namespace utopia {
         }
 
 
-        inline void describe() const
+        void describe() const
         {
             describe(std::cout);
         }
