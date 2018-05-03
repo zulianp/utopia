@@ -306,8 +306,8 @@ namespace utopia {
         
         const static bool verbose = true;
 
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(4, 2);
-        // ml_problem.write_matlab("./");
+        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(4, 2, true);
+        ml_problem.write_matlab("./");
         
         Multigrid<TSMatrixd, TVectord> multigrid(
             std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>(),
@@ -321,6 +321,7 @@ namespace utopia {
         multigrid.rtol(1e-10);
         multigrid.pre_smoothing_steps(3);
         multigrid.post_smoothing_steps(3);
+        multigrid.set_fix_semidefinite_operators(true);
         multigrid.verbose(verbose);
 
         TVectord x = zeros(size(*ml_problem.rhs));
@@ -470,7 +471,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(row_view_and_loops); 
 
         //tests that always fail
-        // UTOPIA_RUN_TEST(trilinos_mg_1D);
+        UTOPIA_RUN_TEST(trilinos_mg_1D);
         // UTOPIA_RUN_TEST(trilinos_mg);
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }

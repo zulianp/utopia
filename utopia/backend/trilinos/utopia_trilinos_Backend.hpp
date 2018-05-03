@@ -114,13 +114,13 @@ namespace utopia {
 
         inline static void build(TpetraVector &v, const Size &size, const LocalZeros &)
         {
-            m_utopia_status_once("> Build zeros is using build values");
+            // m_utopia_status_once("> Build zeros is using build values");
             v.values(default_communicator(), size.get(0), Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), 0.);
         }
 
         inline static void build(TpetraVector &v, const Size &size, const Zeros &)
         {
-            m_utopia_status_once("> Build zeros is using build values");
+            // m_utopia_status_once("> Build zeros is using build values");
             v.values(default_communicator(), INVALID_INDEX, size.get(0), 0.);
         }
 

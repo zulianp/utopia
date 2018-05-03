@@ -255,13 +255,15 @@ namespace utopia {
 				if(alpha <= 0) {
 					std::cerr << "[Warning] negative alpha" << std::endl;
 					alpha = 1.;
-					descent_dir = r;
-				} else {
+					descent_dir = utopia::min(r, g);
+				} else if(alpha <= 1.) {
 					descent_dir = alpha * c;
+				} else {
+					descent_dir = utopia::min(alpha * c, g);
 				}
 			}
 
-			x += utopia::min(descent_dir, g);
+			x += descent_dir;
 			return true;
 		}
 
