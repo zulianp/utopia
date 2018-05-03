@@ -11,7 +11,7 @@ pipelines:
         script: # Modify the commands below to build your repository.
           - cd utopia
           - mkdir build
-          - cd bin
+          - cd build
           - apt-get update
 #          - apt-get dist-upgrade -y
 #          - dpkg-reconfigure
