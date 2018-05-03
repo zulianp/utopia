@@ -1,12 +1,12 @@
 #include "utopia_TaoSolverTest.hpp"
 #include "utopia.hpp"
 
+#ifdef WITH_PETSC
+
 #include "test_problems/utopia_TestProblems.hpp"
-#include "utopia_petsc_TaoSolver.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "utopia_QuadraticFunction.hpp"
-
-#ifdef WITH_PETSC
+#include "utopia_petsc_TaoSolver.hpp"
 
 namespace utopia {
 	void petsc_tao_solve_simple()
