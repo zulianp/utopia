@@ -4,7 +4,7 @@
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
 #image: gcc:latest
-image: rikorose/gcc-cmake
+image: rikorose/gcc-cmake:latest
 #image: 
 #  name: ocramz/petsc-docker:latest
   
