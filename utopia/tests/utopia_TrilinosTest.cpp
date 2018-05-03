@@ -272,7 +272,9 @@ namespace utopia {
         build_rectangular_matrix(n, m, P);
 
         //For the moment this is computing (transpose(P) * A) * P
-        TSMatrixd R = utopia::ptap(A, P);
+        TSMatrixd R   = utopia::ptap(A, P);
+        //same thing
+        TSMatrixd R_2 = transpose(P) * A * P;
 
         // disp(A);
         // disp(P);
@@ -304,7 +306,7 @@ namespace utopia {
         
         const static bool verbose = true;
 
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(4, 2);
+        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(4, 2, true);
         // ml_problem.write_matlab("./");
         
         Multigrid<TSMatrixd, TVectord> multigrid(
@@ -319,6 +321,7 @@ namespace utopia {
         multigrid.rtol(1e-10);
         multigrid.pre_smoothing_steps(3);
         multigrid.post_smoothing_steps(3);
+        multigrid.set_fix_semidefinite_operators(true);
         multigrid.verbose(verbose);
 
         TVectord x = zeros(size(*ml_problem.rhs));
@@ -465,12 +468,10 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_cg);
 
         //tests that fail in parallel
-        if(mpi_world_size() == 1) {
-            UTOPIA_RUN_TEST(row_view_and_loops); 
-        }
+        UTOPIA_RUN_TEST(row_view_and_loops); 
 
         //tests that always fail
-        // UTOPIA_RUN_TEST(trilinos_mg_1D);
+        UTOPIA_RUN_TEST(trilinos_mg_1D);
         // UTOPIA_RUN_TEST(trilinos_mg);
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }

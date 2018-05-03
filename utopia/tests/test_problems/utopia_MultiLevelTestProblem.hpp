@@ -12,7 +12,8 @@ namespace utopia {
 
 		MultiLevelTestProblem(
 			const SizeType n_coarse_elements,
-			const SizeType n_levels)
+			const SizeType n_levels,
+			const bool remove_bc_dofs_from_interp = false)
 		{
 
 			assert(n_coarse_elements > 0);
@@ -63,6 +64,23 @@ namespace utopia {
 
 			if(r.end() == n_finest) {
 				rhs->set(n_finest -1, -1.);
+			}
+
+			if(remove_bc_dofs_from_interp) {
+				auto &I = *interpolators.back();
+
+				Write<Matrix> w_(I);
+				auto rr = row_range(I);
+
+				if(rr.inside(0)) {
+					I.set(0, 0, 0.);
+				}
+
+				auto last_node_h = size(I).get(0) - 1;
+				auto last_node_H = size(I).get(1) - 1;
+				if(rr.inside(last_node_h)) {
+					I.set(last_node_h, last_node_H, 0.);
+				}
 			}
 		}
 

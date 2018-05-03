@@ -1,4 +1,9 @@
 #include "utopia_Tpetra_Vector.hpp"
+#include "utopia_Logger.hpp"
+#include "utopia_Instance.hpp"
+
+#include <Tpetra_CrsMatrix_decl.hpp>
+#include <MatrixMarket_Tpetra.hpp>
 
 namespace utopia {
 
@@ -19,14 +24,33 @@ namespace utopia {
 
 	bool TpetraVector::read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path)
 	{
-		// Tpetra::MatrixMarket::Reader< decltype(m.implementation()) >
-		return false;
+		typedef Tpetra::CrsMatrix<>                       crs_matrix_type;
+
+		try {
+			rcp_map_type map;
+			vec_ = Tpetra::MatrixMarket::Reader<crs_matrix_type>::readVectorFile(path, comm, map);
+		} catch(const std::exception &ex) {
+			// is.close();
+			std::cout << ex.what() << std::endl;
+			return false;
+		}
+
+		return !vec_.is_null();
 	}
 
 	bool TpetraVector::write(const std::string &path) const
 	{
-		// Tpetra::MatrixMarket::Reader< decltype(m.implementation()) >
+		typedef Tpetra::CrsMatrix<>                       crs_matrix_type;
+		
+		if(vec_.is_null()) return false;
 
-		return false;
+		try {
+			Tpetra::MatrixMarket::Writer<crs_matrix_type>::writeDenseFile(path, vec_, "vec", "");
+		} catch(const std::exception &ex) {
+			std::cout << ex.what() << std::endl;
+			return false;
+		}
+
+		return true;
 	}
 }
