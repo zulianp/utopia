@@ -43,8 +43,7 @@ namespace utopia {
             }
 
             Scalar sum_v_s = sum(v.select(s));
-            utopia_test_assert(sum_v_s > r.begin());
-            utopia_test_assert(false);
+            utopia_test_assert(sum_v_s >= r.begin());
         }
 
         void matrix_selection_test()

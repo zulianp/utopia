@@ -306,7 +306,7 @@ namespace utopia {
 			}
 
 			const SizeType rows = s.get(0);
-			const SizeType cols = s.get(1);
+			const SizeType cols = s.n_dims() == 1? 1 : s.get(1);
 
 			Scalar result = eval_at(expr.expr(), 0, 0);
 			if(s.n_dims() == 1) {

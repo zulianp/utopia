@@ -23,6 +23,7 @@ pipelines:
 #         - apt-get install -y cmake
 #          - apt-get -yq --no-install-suggests --no-install-recommends --force-yes install gfortran libblas-dev liblapack-dev
 #          - apt-get install -y petsc-dev
+          - echo '======== Utopia without backends ========='
           - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug -DTRY_WITH_PETSC=OFF
           - make
           - ./utopia_exec -verbose -bench

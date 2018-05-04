@@ -60,7 +60,8 @@
         Scalar delta, ared, pred, rho, E_old, E_new; 
 
         SizeType it = 0; 
-        Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
+        const Scalar infty = std::numeric_limits<Scalar>::infinity();
+        Scalar g_norm = infty, g0_norm = infty, r_norm = infty, s_norm = infty;
         bool rad_flg = false; 
 
         Vector g = 0*x_k, p_k = 0*x_k, x_k1 = 0*x_k;
