@@ -45,7 +45,7 @@ namespace utopia {
 				
 				if(it++ % compute_norm_each == 0) {
                     r_ = rhs - A * x;
-					Scalar g_norm = norm2(r_);
+					g_norm = norm2(r_);
 					
 					if(this->verbose()) {
 						PrintInfo::print_iter_status(it, {g_norm});

@@ -121,7 +121,7 @@ namespace utopia
 	     */
 	    virtual void set_ksp_options(KSP & ksp) override 
 	    {
-	    	PetscErrorCode ierr;
+	    	PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
 	    	ierr = KSPSetFromOptions(ksp); 
 
 	        ierr = KSPSetType(ksp, this->ksp_type().c_str()); 

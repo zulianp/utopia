@@ -14,24 +14,24 @@ namespace utopia {
         void factory_test() {
             Matrix m = identity(2, 2);
             auto size = m.size();
-            assert(size.get(0) == 2);
-            assert(size.get(1) == 2);
+            utopia_test_assert(size.get(0) == 2);
+            utopia_test_assert(size.get(1) == 2);
 
             each_read(m, [](SizeType x, SizeType y, double entry) {
                 if (x == y) {
-                    assert(approxeq(1.0, entry));
+                    utopia_test_assert(approxeq(1.0, entry));
                 } else {
-                    assert(approxeq(0.0, entry));
+                    utopia_test_assert(approxeq(0.0, entry));
                 }
             });
 
             Matrix m2 = values(2, 2, -4);
             size = m2.size();
-            assert(size.get(0) == 2);
-            assert(size.get(1) == 2);
+            utopia_test_assert(size.get(0) == 2);
+            utopia_test_assert(size.get(1) == 2);
 
             each_read(m2, [](SizeType x, SizeType y, double entry) {
-                assert(approxeq(-4.0, entry));
+                utopia_test_assert(approxeq(-4.0, entry));
             });
         }
 
@@ -54,8 +54,8 @@ namespace utopia {
 
             {
                 Read<Vector> w_res(res);
-                assert(approxeq(0.1, res.get(0)));
-                assert(approxeq(0.2, res.get(1)));
+                utopia_test_assert(approxeq(0.1, res.get(0)));
+                utopia_test_assert(approxeq(0.2, res.get(1)));
             }
         }
 
@@ -64,7 +64,7 @@ namespace utopia {
             View<Matrix> view = m1.range(0, 1, 0, 3);
             Matrix m2 = view;
             each_read(m2, [](SizeType x, SizeType y, double entry) {
-                assert(approxeq(y == 0 ? 1.0 : 0.0, entry));
+                utopia_test_assert(approxeq(y == 0 ? 1.0 : 0.0, entry));
             });
 
             #ifdef WITH_PETSC
@@ -75,18 +75,18 @@ namespace utopia {
             Matrix m3 = m1;
             m3.range(0, 1, 0, 3) = m2;
             each_read(m3, [](SizeType x, SizeType y, double entry) {
-                assert(approxeq(x == y ? 1.0 : 0.0, entry));
+                utopia_test_assert(approxeq(x == y ? 1.0 : 0.0, entry));
             });
 
             Matrix diff = m1 - m3;
             each_read(diff, [](SizeType x, SizeType y, double entry) {
-                assert(approxeq(0.0, entry));
+                utopia_test_assert(approxeq(0.0, entry));
             });
 
             Matrix m4 = values(4, 4, 0.0);
             m4.range(0, 2, 0, 2) = identity(2, 2);
             each_read(m4, [](SizeType x, SizeType y, double entry) {
-                assert(approxeq(x == y && x < 2 ? 1.0 : 0.0, entry));
+                utopia_test_assert(approxeq(x == y && x < 2 ? 1.0 : 0.0, entry));
             });
         }
 
@@ -109,7 +109,7 @@ namespace utopia {
             }
 
             Vector c = (m + 0.1 * identity(n, n)) * values(n, 0.5);
-            assert(c.size().get(0) == 3);
+            utopia_test_assert(c.size().get(0) == 3);
         }
 
         //TODO(eric): move this to AutoDiffTest?
@@ -134,7 +134,7 @@ namespace utopia {
             Vector expected = m * v;
             Vector actual   = s_expr;
 
-            assert(approxeq(expected, actual));
+            utopia_test_assert(approxeq(expected, actual));
         }
 
         void variable_test()
@@ -155,10 +155,10 @@ namespace utopia {
             auto expr = 0.5 * dot(m * var_0, var_1 - var_0);
 
             auto &var_0_found = find_variable<Vector, 0>(expr);
-            assert(v.get() == &var_0_found.expr());
+            utopia_test_assert(v.get() == &var_0_found.expr());
 
             auto &var_1_found = find_variable<Vector, 1>(expr);
-            assert(w.get() == &var_1_found.expr());
+            utopia_test_assert(w.get() == &var_1_found.expr());
 
             auto q = make_shared<Vector>();
             *q = values(20, 4.0);
@@ -167,7 +167,7 @@ namespace utopia {
             var_1_found.set(q);
 
             double result = expr;
-            assert(approxeq(10., result));
+            utopia_test_assert(approxeq(10., result));
         }
 
     public:
@@ -183,7 +183,7 @@ namespace utopia {
             }
 
             Vector v_exp = values(n, 0.1);
-            assert(approxeq(v_exp, res));
+            utopia_test_assert(approxeq(v_exp, res));
 
             Matrix m     = identity(n, n);
             Matrix m_res = dense(n, n);
@@ -195,7 +195,7 @@ namespace utopia {
             }
 
             each_read(m_res, [](SizeType x, SizeType y, double entry) {
-                assert(approxeq(x == y ? 0.1 : 0.0, entry));
+                utopia_test_assert(approxeq(x == y ? 0.1 : 0.0, entry));
             });
 
             {
@@ -205,7 +205,7 @@ namespace utopia {
             }
 
             v_exp = values(n, 3.0);
-            assert(approxeq(v_exp, res));
+            utopia_test_assert(approxeq(v_exp, res));
 
             Number<double> num = 0;
             
@@ -217,7 +217,7 @@ namespace utopia {
             }
 
 
-            assert(approxeq(30.0, num));
+            utopia_test_assert(approxeq(30.0, num));
 
             {
                 Read<Matrix> r_m(m);
@@ -229,7 +229,7 @@ namespace utopia {
                         ), num
                     );
             }
-            assert(approxeq(28.001, num));
+            utopia_test_assert(approxeq(28.001, num));
         }
 
         static void print_backend_info()
@@ -266,7 +266,7 @@ namespace utopia {
     //
     //     const std::vector <double> expected{1.1, 2.2, 3.3};
     //     for (size_t i = 0; i < 3; i++) {
-    //         assert(approxeq(result[i], expected[i]));
+    //         utopia_test_assert(approxeq(result[i], expected[i]));
     //     }
     // }
 

@@ -34,9 +34,9 @@ extern "C" {
 	void dsytrd_(char *uplo, int * n, double *A, int * lda, double * D, double * E, double * TAU, double * work, int * lwork, int * info);
 	void dorgtr_(char *uplo, int * n, double *A, int * lda, double * tau, double * work, int *lwork, int *info);
 
-	void spteqr_(char * compz, int * n, float * D, float * E, float * Z, int * ldz, float * work, int * info);
-	void ssytrd_(char *uplo, int * n, float *A, int * lda, float * D, float * E, float * TAU, float * work, int * lwork, int * info);
-	void sorgtr_(char *uplo, int * n, float *A, int * lda, float * tau, float * work, int *lwork, int *info);
+	// void spteqr_(char * compz, int * n, float * D, float * E, float * Z, int * ldz, float * work, int * info);
+	// void ssytrd_(char *uplo, int * n, float *A, int * lda, float * D, float * E, float * TAU, float * work, int * lwork, int * info);
+	// void sorgtr_(char *uplo, int * n, float *A, int * lda, float * tau, float * work, int *lwork, int *info);
 
 }
 
@@ -361,145 +361,145 @@ namespace utopia {
 	}
 
 
-	static bool aux_tridiagonalize(
-		int n,
-		const std::vector<float> &mat,
-		std::vector<float> &diagonal,
-		std::vector<float> &off_diagonal,
-		std::vector<float> &reflectors
-		)
-	{
-		char uplo = 'L';
-		int lda = n;
-		int lwork = -1;
-		int info = -1;
+	// static bool aux_tridiagonalize(
+	// 	int n,
+	// 	const std::vector<float> &mat,
+	// 	std::vector<float> &diagonal,
+	// 	std::vector<float> &off_diagonal,
+	// 	std::vector<float> &reflectors
+	// 	)
+	// {
+	// 	char uplo = 'L';
+	// 	int lda = n;
+	// 	int lwork = -1;
+	// 	int info = -1;
 
-		reflectors = mat;
+	// 	reflectors = mat;
 
-		diagonal.resize(n);
-		off_diagonal.resize(n-1);
+	// 	diagonal.resize(n);
+	// 	off_diagonal.resize(n-1);
 
-		std::vector<float> tau(n -1);
-		std::vector<float> work(1);
+	// 	std::vector<float> tau(n -1);
+	// 	std::vector<float> work(1);
 
-				//guess work size
-		ssytrd_(
-			&uplo,
-			&n,
-			&reflectors[0],
-			&lda,
-			&diagonal[0],
-			&off_diagonal[0],
-			&tau[0],
-			&work[0],
-			&lwork,
-			&info);
+	// 			//guess work size
+	// 	ssytrd_(
+	// 		&uplo,
+	// 		&n,
+	// 		&reflectors[0],
+	// 		&lda,
+	// 		&diagonal[0],
+	// 		&off_diagonal[0],
+	// 		&tau[0],
+	// 		&work[0],
+	// 		&lwork,
+	// 		&info);
 
-		assert(info == 0);
-		if(info != 0) return false;
+	// 	assert(info == 0);
+	// 	if(info != 0) return false;
 
-		lwork = work[0];
+	// 	lwork = work[0];
 
-		if(lwork > int(work.size())) {
-			work.resize(lwork);
-		}
+	// 	if(lwork > int(work.size())) {
+	// 		work.resize(lwork);
+	// 	}
 
-		ssytrd_(
-			&uplo,
-			&n,
-			&reflectors[0],
-			&lda,
-			&diagonal[0],
-			&off_diagonal[0],
-			&tau[0],
-			&work[0],
-			&lwork,
-			&info);
+	// 	ssytrd_(
+	// 		&uplo,
+	// 		&n,
+	// 		&reflectors[0],
+	// 		&lda,
+	// 		&diagonal[0],
+	// 		&off_diagonal[0],
+	// 		&tau[0],
+	// 		&work[0],
+	// 		&lwork,
+	// 		&info);
 
-		assert(info == 0);
-		if(info != 0) return false;
+	// 	assert(info == 0);
+	// 	if(info != 0) return false;
 
-		lwork = -1;
-		sorgtr_(
-			&uplo,
-			&n,
-			&reflectors[0],
-			&lda, 
-			&tau[0],
-			&work[0], 
-			&lwork,
-			&info);
+	// 	lwork = -1;
+	// 	sorgtr_(
+	// 		&uplo,
+	// 		&n,
+	// 		&reflectors[0],
+	// 		&lda, 
+	// 		&tau[0],
+	// 		&work[0], 
+	// 		&lwork,
+	// 		&info);
 
-		assert(info == 0);
-		if(info != 0) return false;
+	// 	assert(info == 0);
+	// 	if(info != 0) return false;
 
-		lwork = work[0];
+	// 	lwork = work[0];
 
-		if(lwork > int(work.size())) {
-			work.resize(lwork);
-		}
+	// 	if(lwork > int(work.size())) {
+	// 		work.resize(lwork);
+	// 	}
 
-		sorgtr_(
-			&uplo,
-			&n,
-			&reflectors[0],
-			&lda, 
-			&tau[0],
-			&work[0], 
-			&lwork,
-			&info);
+	// 	sorgtr_(
+	// 		&uplo,
+	// 		&n,
+	// 		&reflectors[0],
+	// 		&lda, 
+	// 		&tau[0],
+	// 		&work[0], 
+	// 		&lwork,
+	// 		&info);
 
-		assert(info == 0);
-		return info == 0;
-	}
+	// 	assert(info == 0);
+	// 	return info == 0;
+	// }
 
-	static bool aux_eig(
-		int n,
-		const std::vector<float> &mat,
-		std::vector<float> &eigen_values,
-		std::vector<float> &eigen_vectors
-		)
-	{
-		std::vector<float> work(n * 4);
-		std::vector<float> off_diag(n - 1);
+	// static bool aux_eig(
+	// 	int n,
+	// 	const std::vector<float> &mat,
+	// 	std::vector<float> &eigen_values,
+	// 	std::vector<float> &eigen_vectors
+	// 	)
+	// {
+	// 	std::vector<float> work(n * 4);
+	// 	std::vector<float> off_diag(n - 1);
 
-		char compz = 'V';
-		int ldz = n;
-		int info = 0;
+	// 	char compz = 'V';
+	// 	int ldz = n;
+	// 	int info = 0;
 
-		eigen_values.resize(n);
-		eigen_vectors.resize(n*n);
+	// 	eigen_values.resize(n);
+	// 	eigen_vectors.resize(n*n);
 
-		std::fill(eigen_vectors.begin(), eigen_vectors.end(), -6.);
+	// 	std::fill(eigen_vectors.begin(), eigen_vectors.end(), -6.);
 
-		aux_tridiagonalize(n, mat, eigen_values, off_diag, eigen_vectors);
+	// 	aux_tridiagonalize(n, mat, eigen_values, off_diag, eigen_vectors);
 
-		spteqr_(
-			&compz,
-			&n,
-			&eigen_values[0],
-			&off_diag[0],
-			&eigen_vectors[0],
-			&ldz,
-			&work[0],
-			&info);
+	// 	spteqr_(
+	// 		&compz,
+	// 		&n,
+	// 		&eigen_values[0],
+	// 		&off_diag[0],
+	// 		&eigen_vectors[0],
+	// 		&ldz,
+	// 		&work[0],
+	// 		&info);
 
-		if(info != 0) {
-			std::cerr << "Error in eig " << info << std::endl;
-			return false;
-		} 
+	// 	if(info != 0) {
+	// 		std::cerr << "Error in eig " << info << std::endl;
+	// 		return false;
+	// 	} 
 
-		for(int i = 0; i < n; ++i) {
-			int offset_i = i * n;
-			for(int j = i+1; j < n; ++j) {
-				int offset_j = j * n;
+	// 	for(int i = 0; i < n; ++i) {
+	// 		int offset_i = i * n;
+	// 		for(int j = i+1; j < n; ++j) {
+	// 			int offset_j = j * n;
 
-				std::swap(eigen_vectors[offset_j + i], eigen_vectors[offset_i + j]);
-			}
-		}
+	// 			std::swap(eigen_vectors[offset_j + i], eigen_vectors[offset_i + j]);
+	// 		}
+	// 	}
 
-		return true;
-	}
+	// 	return true;
+	// }
 
 	bool LapackEigenSolver::spd_eig(const Matrixd &A, Vectord &evalues, Matrixd &evector) const
 	{

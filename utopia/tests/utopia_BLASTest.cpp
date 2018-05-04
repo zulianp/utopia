@@ -38,7 +38,7 @@ namespace utopia {
         res = 0.1 * A * B;
         Matrixd expected = values(2, 2, 0.4);
         
-        assert(approxeq(expected, res));
+        utopia_test_assert(approxeq(expected, res));
         
         res *= -.6;
         
@@ -51,7 +51,7 @@ namespace utopia {
             expected.set(1, 1, 1.2);
         }
         
-        assert(approxeq(expected, res));
+        utopia_test_assert(approxeq(expected, res));
     }
     
     void blas_test() {
@@ -67,7 +67,7 @@ namespace utopia {
             vresult = expr;
             
             Vectord vexp({0.0, 0.0});
-            assert(approxeq(vexp, vresult));
+            utopia_test_assert(approxeq(vexp, vresult));
         }
         
         Matrixd mexp{ hm_matrix(2, 2, {1, 3, 2, 4}) };
@@ -78,13 +78,13 @@ namespace utopia {
             // std::cout << tree_format(mexpr.getClass()) << std::endl;
             mresult = mexpr;
             
-            assert(approxeq(mexp, mresult));
+            utopia_test_assert(approxeq(mexp, mresult));
         }
         
         {
             Matrixd mresult;
             mresult = transpose(m2);
-            assert(approxeq(mexp, mresult));
+            utopia_test_assert(approxeq(mexp, mresult));
         }
     }
     
@@ -120,13 +120,13 @@ namespace utopia {
         fun.value(point, fun_value);
         
         Vectord::Scalar val_exp = 169.0;
-        assert(approxeq(val_exp, fun_value));
+        utopia_test_assert(approxeq(val_exp, fun_value));
         
         Vectord g_exp{ hm_vector({-10.0, 48.0}) };
-        assert(approxeq(g_exp, g));
+        utopia_test_assert(approxeq(g_exp, g));
         
         Matrixd H_exp{ hm_matrix(2, 2, {4.0, 0.0, 0.0, 8.0}) };
-        assert(approxeq(H_exp, H));
+        utopia_test_assert(approxeq(H_exp, H));
     }
     
     void blas_solver_test() {
@@ -157,10 +157,10 @@ namespace utopia {
         //! [in place operations (blas)]
         
         Vectord v_exp{ hm_vector({3.0, 1.0, -1.0, -3.0}) };
-        assert(approxeq(v_exp, v1));
+        utopia_test_assert(approxeq(v_exp, v1));
         
         Matrixd m_exp{ hm_matrix(2, 2, {8.0, 8.0, 8.0, 8.0}) };
-        assert(approxeq(m_exp, m1));
+        utopia_test_assert(approxeq(m_exp, m1));
     }
     
     void blas_accessors_test() {
@@ -187,10 +187,10 @@ namespace utopia {
         m1 *= m2;
         
         Vectord v_exp{ hm_vector({0.0, 1.0}) };
-        assert(approxeq(v_exp, v1));
+        utopia_test_assert(approxeq(v_exp, v1));
         
         Matrixd m_exp{ hm_matrix(2, 2, {2.0, 2.0, 2.0, 2.0}) };
-        assert(approxeq(m_exp, m1));
+        utopia_test_assert(approxeq(m_exp, m1));
         
         
         
@@ -214,7 +214,7 @@ namespace utopia {
         }
         
         Matrixd m_exp{ hm_matrix(3, 3, {100.0, 0, 0, 0, 101.0, 0, 0, 0, 102.0}) };
-        assert(approxeq(m_exp, m1));
+        utopia_test_assert(approxeq(m_exp, m1));
     }
     
     void blas_axpy_test()
@@ -224,7 +224,7 @@ namespace utopia {
         Vectord actual = w1 + 0.1 * w2;
         Vectord expected{ hm_vector({1.4, 2.5, 3.6}) };
         
-        assert(approxeq(expected, actual));
+        utopia_test_assert(approxeq(expected, actual));
     }
     
     void blas_norm_test() {
@@ -238,12 +238,12 @@ namespace utopia {
         wresult = twiceaxpy;
         Vectord wexp{ hm_vector({-11.1, -2.93, -1.21}) };
         
-        assert(approxeq(wexp, wresult));
+        utopia_test_assert(approxeq(wexp, wresult));
         
         Real val = norm2(twiceaxpy);
         // std::cout << tree_format(norm2(twiceaxpy).getClass()) << std::endl;
         // std::cout << val << std::endl;
-        val = norm_infty(twiceaxpy);
+        val = norm_infty(twiceaxpy); UTOPIA_UNUSED(val);
     }
     
     void blas_composite_test() {
@@ -263,7 +263,7 @@ namespace utopia {
         //Evaluate and verify value of the expression
         wresult = expr;
         Vectord wexp{ hm_vector({-24.311, -7.2893, -2.4321}) };
-        assert(approxeq(wexp, wresult));
+        utopia_test_assert(approxeq(wexp, wresult));
     }
     
     void blas_row_view_test()
@@ -285,34 +285,35 @@ namespace utopia {
             Range r = row_range(mat);
             for(auto i = r.begin(); i != r.end(); ++i) {
                 RowView<const CRSMatrixd> row_view(mat, i);
+                const SizeType n_values = row_view.n_values();
                 
-                assert(row_view.n_values() == 1);
+                utopia_test_assert(n_values == SizeType(1));
                 
-                for(auto k = 0; k < row_view.n_values(); ++k) {
+                for(SizeType k = 0; k < n_values; ++k) {
                     auto c = row_view.col(k);
                     auto v = row_view.get(k);
                     
-                    assert(approxeq(2., v));
-                    assert(c == i);
+                    utopia_test_assert(approxeq(2., v));
+                    utopia_test_assert(SizeType(c) == SizeType(i));
                 }
             }
         }
         
         //simple way
         each_read(mat, [](const SizeType i, const SizeType j, const double v) {
-            assert(i == j);
-            assert(approxeq(2., v));
+            utopia_test_assert(i == j);
+            utopia_test_assert(approxeq(2., v));
         });
         
         Matrixd d_mat = values(3, 3, 2.);
         
         SizeType n_vals = 0;
         each_read(d_mat, [&n_vals](const SizeType i, const SizeType j, const double v) {
-            assert(approxeq(2., v));
+            utopia_test_assert(approxeq(2., v));
             ++n_vals;
         });
         
-        assert(n_vals == 3 * 3);
+        utopia_test_assert(n_vals == 3 * 3);
     }
     
     
@@ -339,7 +340,7 @@ namespace utopia {
         
         Vectord v1{ hm_vector({2, 2, 2}) };
         Vectord v2 = mat * v1;
-        assert(approxeq(2 * v1, v2));
+        utopia_test_assert(approxeq(2 * v1, v2));
         
         CCSMatrixd ccsmat = mat;
         
@@ -356,7 +357,7 @@ namespace utopia {
         //     Vectord expected = zeros(x.size());
         
         //     nlsolver.solve(fun, x);
-        //     assert(approxeq(expected, x));
+        //     utopia_test_assert(approxeq(expected, x));
         
         
         //     Rosenbrock<CRSMatrixd, Vectord> rosenbrock;
@@ -364,7 +365,7 @@ namespace utopia {
         //     nlsolver.solve(rosenbrock, x2);
         
         //     expected = values(2, 1);
-        //     assert(approxeq(expected, x2));
+        //     utopia_test_assert(approxeq(expected, x2));
 #endif //WITH_UMFPACK
     }
     

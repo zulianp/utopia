@@ -58,14 +58,14 @@ namespace utopia {
             v_expected.set(1, 99);
             v_expected.set(2, 77);
         }
-        assert(approxeq(v_expected, diag_A));
+        utopia_test_assert(approxeq(v_expected, diag_A));
 
         A = diag(diag_A);
 
         diag_A = values(4, 9.0);
         DVectord result_petsc = 5 / diag_A;
         v_expected = values(4, 5.0/9.0);
-        assert(approxeq(v_expected, result_petsc));
+        utopia_test_assert(approxeq(v_expected, result_petsc));
 
         DVectord v_expected_test= values(4.0, 1.0);
 
@@ -92,7 +92,7 @@ namespace utopia {
             const double alpha = 0.1;
 
             DVectord result = alpha * x + y;
-            assert(norm1(result - expected) < 1e-5);
+            utopia_test_assert(norm1(result - expected) < 1e-5);
             //! [axpy (petsc)]
         }
 
@@ -107,7 +107,7 @@ namespace utopia {
             const double alpha = 4;
             DMatrixd result = alpha * X + Y;
             double actual = sum(result);
-            assert(approxeq(810., actual));
+            utopia_test_assert(approxeq(810., actual));
         }
 
         ///////////////////////////////////   
@@ -145,7 +145,7 @@ namespace utopia {
 
             DSMatrixd actual = 0.1 * X + Y;
 
-            assert(approxeq(expected, actual));
+            utopia_test_assert(approxeq(expected, actual));
         }
     }
 
@@ -177,7 +177,7 @@ namespace utopia {
         { //scoped read lock
             Read<DVectord> reading(x);
             PetscScalar v = x.get(xb + 1);
-            assert(approxeq(1, v));
+            utopia_test_assert(approxeq(1, v));
         }
 
         { //scoped read-write lock
@@ -191,18 +191,18 @@ namespace utopia {
                 case 0:
                 case 1:
                 case 9:
-                assert(approxeq(-1, value));
+                utopia_test_assert(approxeq(-1, value));
                 break;
                 case 2:
                 case 3:
                 case 4:
-                assert(approxeq(10, value));
+                utopia_test_assert(approxeq(10, value));
                 break;
                 case 5:
                 case 6:
                 case 7:
                 case 8:
-                assert(approxeq(1, value));
+                utopia_test_assert(approxeq(1, value));
             }
         });
 
@@ -233,7 +233,7 @@ namespace utopia {
         { //scoped read lock
             Read<DMatrixd> reading(x);
             PetscScalar v = x.get(xb + 1, 0);
-            assert(approxeq(1, v));
+            utopia_test_assert(approxeq(1, v));
         }
     }
 
@@ -265,7 +265,7 @@ namespace utopia {
         {
             Read<DSMatrixd> r(x);
             PetscScalar v = x.get(xb + 1, 1);
-            assert(approxeq(3, v));
+            utopia_test_assert(approxeq(3, v));
         }
 
         x = sparse(n, n, 1);
@@ -279,9 +279,9 @@ namespace utopia {
         {
             Read<DSMatrixd> r(x);
             PetscScalar v = x.get(xb + 1, xb +1);
-            assert(approxeq(2, v));
+            utopia_test_assert(approxeq(2, v));
             v = x.get(xb, xb);
-            assert(approxeq(1, v));
+            utopia_test_assert(approxeq(1, v));
         }
 
         //! [Read write matrix]
@@ -305,7 +305,7 @@ namespace utopia {
             }
         }
 
-        assert(approxeq(expected, result));
+        utopia_test_assert(approxeq(expected, result));
     }
 
     void petsc_copy()
@@ -315,11 +315,11 @@ namespace utopia {
 
         DVectord v1 = values(n, 1, 1);
         DVectord v2 = v1;
-        assert(approxeq(v1, v2));
+        utopia_test_assert(approxeq(v1, v2));
 
         DMatrixd m1 = identity(m, n);
         DMatrixd m2 = m1;
-        assert(approxeq(m1, m2));
+        utopia_test_assert(approxeq(m1, m2));
     }
 
     void petsc_wrapper()
@@ -329,7 +329,7 @@ namespace utopia {
         Mat pmat = raw_type(m);
         DSMatrixd wmat;
         wrap(pmat, wmat);
-        assert( raw_type(wmat) == expected_ptr );
+        utopia_test_assert( raw_type(wmat) == expected_ptr );
     }
 
     void petsc_vector_composite() {
@@ -341,13 +341,13 @@ namespace utopia {
         auto expr = v1 * 0.1 + v2 + v1 - v3;
         DVectord vresult = expr;
         DVectord expected = values(n, 1, 2.9);
-        assert(approxeq(expected, vresult));
+        utopia_test_assert(approxeq(expected, vresult));
 
         PetscScalar value = norm2(expr);
-        assert(approxeq(std::sqrt(10*2.9*2.9), value));
+        utopia_test_assert(approxeq(std::sqrt(10*2.9*2.9), value));
 
         const double valueSum = sum(expr);
-        assert(std::abs(valueSum - 29) < 1e-14);
+        utopia_test_assert(std::abs(valueSum - 29) < 1e-14);
     }
 
     void petsc_matlab_connection() {
@@ -368,7 +368,7 @@ namespace utopia {
         lsolver->solve(K, M_rhs, sol);
 
         double diff = norm2(M_rhs - K * sol);
-        assert(diff < 1e-6);
+        utopia_test_assert(diff < 1e-6);
 
         // Non-linear solver
         Newton<DSMatrixd, DVectord> newton(lsolver);
@@ -379,7 +379,7 @@ namespace utopia {
         newton.solve(fun, sol);
 
         diff = norm2(M_rhs - K * sol);
-        assert(diff < 1e-6);
+        utopia_test_assert(diff < 1e-6);
     }
 
 
@@ -393,7 +393,7 @@ namespace utopia {
 
         DMatrixd result = m1 * 0.1 + m2 + m1 - m3;
         DMatrixd expected = values(n, n, 2.9);
-        assert(approxeq(expected, result));
+        utopia_test_assert(approxeq(expected, result));
 
         // std::cout << "end: petsc_matrix_composite_test" << std::endl;
     }
@@ -415,9 +415,9 @@ namespace utopia {
                 if(!approxeq(1, value)) {
                     std::cout << i << ", " << j << " -> " << value << std::endl;
                 }
-                assert(approxeq(1, value));
+                utopia_test_assert(approxeq(1, value));
             } else {
-                assert(approxeq(0, value));
+                utopia_test_assert(approxeq(0, value));
             }
         });
 
@@ -429,20 +429,19 @@ namespace utopia {
         PetscBool assembled;
         DSMatrixd M = zeros(5, 5);
         MatAssembled(raw_type(M), &assembled);
-        assert(!empty(M));
+        utopia_test_assert(!empty(M));
 
         DSMatrixd A;
-        assert(empty(A));
+        utopia_test_assert(empty(A));
     }
 
     void petsc_vec_tests()
     {
-        PetscBool assembled;
         DVectord v = zeros(5);
-        assert(!empty(v));
+        utopia_test_assert(!empty(v));
 
         DVectord e;
-        assert(empty(e));
+        utopia_test_assert(empty(e));
     }
 
     void petsc_read_and_write()
@@ -461,7 +460,7 @@ namespace utopia {
         // Read vector from disk
         read("test_vec.txt", y);
 
-        assert(approxeq(x, y));
+        utopia_test_assert(approxeq(x, y));
 
         DSMatrixd m = sparse(3, 3, 2);
         {
@@ -479,7 +478,7 @@ namespace utopia {
         // Read matrix from disk
         read("test_mat.txt", w);
 
-        assert(approxeq(m, w));
+        utopia_test_assert(approxeq(m, w));
 
         //! [Input and output (petsc)]
     }
@@ -505,7 +504,7 @@ namespace utopia {
     }
 
     DVectord expected = values(16, 2.0);
-    assert(approxeq(expected, x));
+    utopia_test_assert(approxeq(expected, x));
 
 #endif //WITH_BLAS
     }
@@ -560,15 +559,15 @@ namespace utopia {
 
         DVectord dvec;
         convert(raw_type(vec), dvec);
-        assert(approxeq(vec, dvec));
+        utopia_test_assert(approxeq(vec, dvec));
         convert(dvec, raw_type(vec));
-        assert(approxeq(vec, dvec));
+        utopia_test_assert(approxeq(vec, dvec));
 
 
         DMatrixd mat_dense = values(2, 3, 1);
         DMatrixd dmat_dense;
         convert(raw_type(mat_dense), dmat_dense);
-        assert(approxeq(mat_dense, dmat_dense));
+        utopia_test_assert(approxeq(mat_dense, dmat_dense));
         convert(dmat_dense, raw_type(mat_dense));
 
         DSMatrixd mat = sparse(3, 3, 2);
@@ -665,17 +664,17 @@ namespace utopia {
 
         each_read(a, [](const SizeType i, const SizeType j, const double value) {
             if (i == j)
-                assert(approxeq(i + 1, value));
+                utopia_test_assert(approxeq(i + 1, value));
             else
-                assert(approxeq(4, value));
+                utopia_test_assert(approxeq(4, value));
         });
 
         SSMatrixd b = local_diag_block(a);
         each_read(b, [](const SizeType i, const SizeType j, const double value) {
             if (i == j)
-                assert(approxeq(i + 1, value));
+                utopia_test_assert(approxeq(i + 1, value));
             else
-                assert(approxeq(4, value));
+                utopia_test_assert(approxeq(4, value));
         });
     }
 
@@ -694,7 +693,7 @@ namespace utopia {
         }
 
         each_read(a, [](const SizeType i, const SizeType j, const double value) {
-            assert(approxeq(i, value));
+            utopia_test_assert(approxeq(i, value));
         });
     }
 
@@ -711,8 +710,8 @@ namespace utopia {
         ABC = A * P * C;
 
         DSMatrixd expected = identity(n, n);
-        assert(approxeq(expected, PtAP));
-        assert(approxeq(expected, ABC));
+        utopia_test_assert(approxeq(expected, PtAP));
+        utopia_test_assert(approxeq(expected, ABC));
     }
 
 
@@ -725,7 +724,7 @@ namespace utopia {
         
         DVectord res = expr;
         DVectord expected = values(n, 0.9 * 2.);
-        assert(approxeq(expected, res));
+        utopia_test_assert(approxeq(expected, res));
     }
 
 
@@ -787,7 +786,7 @@ namespace utopia {
         cg->solve(*m, rhs, sol);
 
         DVectord expected = values(n, 0.5);
-        assert(approxeq(expected, sol));
+        utopia_test_assert(approxeq(expected, sol));
 
 
         // PetscViewer   viewer;
@@ -806,7 +805,7 @@ namespace utopia {
         //summing columns
         DVectord v = sum(mat, 1);
         DVectord expected = values(n, 1);
-        assert(approxeq(expected, v));
+        utopia_test_assert(approxeq(expected, v));
     }
 
     void petsc_inverse()
@@ -824,7 +823,7 @@ namespace utopia {
             DMatrixd actual   = inv_mat * mat;
             DMatrixd expected = identity(3, 3);
 
-            assert( approxeq(actual, expected) );
+            utopia_test_assert( approxeq(actual, expected) );
         }   
     }
 
@@ -889,13 +888,13 @@ namespace utopia {
         // disp(x);
 
         DVectord expected = values(n, 0.468919);
-        assert(approxeq(expected, x));
+        utopia_test_assert(approxeq(expected, x));
 
         cg.set_preconditioner(std::make_shared<PointJacobi<DMatrixd, DVectord> >());
         x = zeros(n);
 
         newton.solve(fun, x);
-        assert(approxeq(expected, x));
+        utopia_test_assert(approxeq(expected, x));
     }
 
     void petsc_is_nan_or_inf()
@@ -913,8 +912,8 @@ namespace utopia {
             sol.set(2, 1); 
         }
 
-        assert(has_nan_or_inf(sol) == 1);
-        assert(has_nan_or_inf(denom) == 0);
+        utopia_test_assert(has_nan_or_inf(sol) == 1);
+        utopia_test_assert(has_nan_or_inf(denom) == 0);
 
     }
 
@@ -938,11 +937,11 @@ namespace utopia {
 
             DVectord expected = values(n, n * d1 * d2 + d3);
 
-            assert(approxeq(expected, r1));
-            assert(approxeq(expected, r2));
+            utopia_test_assert(approxeq(expected, r1));
+            utopia_test_assert(approxeq(expected, r2));
 
             expected = values(n, n * d1 * d3 + d2);
-            assert(approxeq(expected, r3));
+            utopia_test_assert(approxeq(expected, r3));
         }
     }
 
@@ -953,14 +952,14 @@ namespace utopia {
         DSMatrixd A = identity(n, n);
 
         double min_v = min(v);
-        assert(approxeq(1.0, min_v));
+        utopia_test_assert(approxeq(1.0, min_v));
 
         double min_A = min(A);
-        assert(approxeq(0.0, min_A));
+        utopia_test_assert(approxeq(0.0, min_A));
 
         DVectord min_row_A = min(A, 1);
         DVectord expected  = values(n, 0.0);
-        assert(approxeq(expected, min_row_A));
+        utopia_test_assert(approxeq(expected, min_row_A));
     }
 
     void petsc_max()
@@ -970,14 +969,14 @@ namespace utopia {
         DSMatrixd A = identity(n, n);
 
         double max_v = max(v);
-        assert(approxeq(1.0, max_v));
+        utopia_test_assert(approxeq(1.0, max_v));
 
         double max_A = max(A);
-        assert(approxeq(1.0, max_A));
+        utopia_test_assert(approxeq(1.0, max_A));
 
         DVectord max_row_A = max(A, 1);
         DVectord expected  = values(n, 1.0);
-        assert(approxeq(expected, max_row_A));
+        utopia_test_assert(approxeq(expected, max_row_A));
     }
 
     void petsc_binary_min_max()
@@ -989,14 +988,14 @@ namespace utopia {
         DVectord actual_min = min(one, two);
         DVectord actual_max = max(one, two);
         
-        assert(approxeq(one, actual_min));
-        assert(approxeq(two, actual_max));
+        utopia_test_assert(approxeq(one, actual_min));
+        utopia_test_assert(approxeq(two, actual_max));
 
         actual_min = min(two, values(n, 1.));
         actual_max = max(values(n, 2.), one);
 
-        assert(approxeq(one, actual_min));
-        assert(approxeq(two, actual_max));
+        utopia_test_assert(approxeq(one, actual_min));
+        utopia_test_assert(approxeq(two, actual_max));
     }
 
     void petsc_ghosted()
@@ -1021,7 +1020,7 @@ namespace utopia {
             std::vector<PetscInt> index{(off + 3) % n};
             std::vector<PetscScalar> values;
             v.get(index, values);
-            assert(index[0] == PetscInt(values[0]));
+            utopia_test_assert(index[0] == PetscInt(values[0]));
         }
 
     }
@@ -1051,7 +1050,7 @@ namespace utopia {
         // std::cout << tree_format(expr.getClass()) << std::endl;
 
         double s = expr;
-        assert(approxeq(1., s));
+        utopia_test_assert(approxeq(1., s));
     }
 
     void petsc_residual()
@@ -1064,7 +1063,7 @@ namespace utopia {
         DVectord res = b - A * x;
         // disp(res);
         double s = sum(res);
-        assert(approxeq(n * mpi_world_size(), s));
+        utopia_test_assert(approxeq(n * mpi_world_size(), s));
     }
 
 
@@ -1118,7 +1117,7 @@ namespace utopia {
         // // petsc_local_entities(); //FIXME does not work
         //  petsc_conversion();
         //  maria();
-        //  //local_diag_block();              // TODO:: assert fails in parallel
+        //  //local_diag_block();              // TODO:: utopia_test_assert fails in parallel
         
         UTOPIA_UNIT_TEST_END("PetscTest");
         #endif // WITH_PETSC

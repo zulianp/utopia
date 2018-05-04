@@ -374,7 +374,7 @@ namespace utopia {
 	{
 		int y_size = transpose_A? A.rows() : A.cols();
 		
-		if(y.empty() || y.size() != y_size) {
+		if(y.empty() || int(y.size()) != y_size) {
 			y.resize(y_size);
 			std::fill(y.begin(), y.end(), 0);
 		}
@@ -385,7 +385,7 @@ namespace utopia {
 			for (SizeType r = 0; r != A_rows; ++r) {
 				BLASBackend::Scalar x_r = x[r];
 				
-				for (SizeType k = A.rowptr()[r]; k != A.rowptr()[r + 1]; ++k) {
+				for (auto k = A.rowptr()[r]; k != A.rowptr()[r + 1]; ++k) {
 					const SizeType c = A.colindex()[k];
 					const Scalar A_rk = A.at(k);
 					y[c] += alpha * A_rk * x_r;
@@ -395,7 +395,7 @@ namespace utopia {
 		} else {
 			for (SizeType r = 0; r != A_rows; ++r) {
 				BLASBackend::Scalar A_x = 0.;
-				for (SizeType k = A.rowptr()[r]; k != A.rowptr()[r + 1]; ++k) {
+				for (auto k = A.rowptr()[r]; k != A.rowptr()[r + 1]; ++k) {
 					const SizeType c = A.colindex()[k];
 					const Scalar A_rk = A.at(k);
 					A_x += A_rk * x[c];
