@@ -24,7 +24,7 @@ namespace utopia
 		typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
 
-		NonLinearLeastSquaresSolver(const std::shared_ptr<Solver> &linear_solver  = std::shared_ptr<Solver>(),
+		NonLinearLeastSquaresSolver(const std::shared_ptr<Solver> &linear_solver, 
 									const Parameters params = Parameters())   : 
 									linear_solver_(linear_solver),
 									params_(std::move(params))

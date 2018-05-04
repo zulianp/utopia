@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-11
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_TR_SUBPROBLEM_DOGLEG_HPP
 #define UTOPIA_TR_SUBPROBLEM_DOGLEG_HPP
 #include "utopia_TRSubproblem.hpp"
@@ -12,13 +5,6 @@
 #include "utopia_Parameters.hpp"    
 #include "utopia_LinearSolverInterfaces.hpp"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////// NEEEEEDS PROPER INTERFACE ///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 namespace utopia 
 {
 
@@ -26,114 +12,74 @@ namespace utopia
     class Dogleg : public TRSubproblem<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
+        typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
 
-    public:
+        public:
 
-        Dogleg(const Parameters & params = Parameters()): 
-                                                          TRSubproblem<Matrix, Vector>(params)
-        {
+        Dogleg( const std::shared_ptr <LinearSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
+                const Parameters & params = Parameters()) : 
+                TRSubproblem<Matrix, Vector>(params), 
+                ls_solver_(linear_solver) 
+                { }
 
-        };
-
-protected: 
-        bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
-        {
-            Vector p_N = g, p_SD = g, p_CP = g;
-            Scalar pred_N, g_B_g = dot(g, B * g), pNlen; 
-
-            
-            auto lsolver = std::make_shared< Factorization<Matrix, Vector> >();
-            // this is the worst hard-codding ever (edit: yes you are right ;-))
-			// #ifdef PETSC_HAVE_MUMPS
-   //          	lsolver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
-			// #endif //PETSC_HAVE_MUMPS
-			
-            //
-            lsolver->solve(B, -1 * g, p_N);
-
-
-            // model reduction for newton point
-            get_pred(g, B, p_N, pred_N); 
-
-
-            // good situation: p_N reduces m_k(p)
-	    	if(pred_N >= 0)
-            {   
-                pNlen = norm2(p_N);
-                // newton point inside of TR
-                if(pNlen <= this->current_radius())
+                inline Dogleg * clone() const override
                 {
-                    p_k = p_N;
+                    return new Dogleg(std::shared_ptr<LinearSolver>(ls_solver_->clone()));
+                }
+                
+        protected: 
+            bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
+            {
+                Vector p_N = local_zeros(local_size(p_k)), p_SD = local_zeros(local_size(p_k));
+                Scalar g_B_g = dot(g, B * g); 
+
+                ls_solver_->solve(B, -1 * g, p_k);
+
+                if(norm2(p_k) <= this->current_radius())
+                {
+                    return true; 
                 }
                 else
                 {
-                    // check if CP or SD 
-                    //steepest descent step 
-                    p_k = (dot(g, g)/g_B_g) * g;
-                    p_k *= -1.0;
-                    Scalar SD_norm = norm2(p_k); 
-                  //  std::cout<<"pNlen <= SD taking   \n"; 
+                    p_SD = -1.0 *(dot(g, g)/g_B_g) * g;
+                    Scalar SD_norm = norm2(p_SD); 
 
-                    if(SD_norm < this->current_radius())
+                    if(SD_norm > this->current_radius())
                     {
-                    	//std::cout<<"pNlen <= inside  \n"; 
-                        // p_SD inside, p_N outside => dogleg 
-                        // p_k = p_CP + \tau (p_N - P_CP), 
-                		// where \tau is the largest value in [0,1]
-                        // such that || p_k || <= \delta                   	
-                        Vector d = p_N - p_SD; 
-                        this->quad_solver(p_CP, d, this->current_radius(),  p_k);
-                    }
-                }
+                        Scalar a = SD_norm*SD_norm; 
+                        Scalar c = - 1.0 * std::pow(this->current_radius(), 2.); 
 
-            }
+                        Scalar tau = this->quadratic_function(a, 0.0, c); 
+                        p_k *= tau; 
 
-            //  bad situation: p_N increases m_k(p)
-            else
-            {
-                if(g_B_g > 5 * std::sqrt(1e-14))
-                {
-                    //  1D function is convex enough
-                    //  find unconstrained SD minimizer for model fun
-                    p_SD = -(dot(g, g)/g_B_g) * g;
-                    Scalar pSDlen = norm2(p_SD);
-
-                    if(pSDlen <= this->current_radius())
-                    {
-                        p_k = p_SD;
+                        return true;
                     }
                     else
                     {
-                        p_k = this->current_radius() * (p_SD* (1/pSDlen));
+                        Vector d = p_k - p_SD; 
+                        Scalar d_norm = norm2(d); 
+
+                        Scalar a = d_norm*d_norm; 
+                        Scalar b = 2.0 * dot(p_SD, p_N); 
+                        Scalar c = SD_norm*SD_norm - 1.0 * std::pow(this->current_radius(), 2.); 
+
+                        Scalar tau = this->quadratic_function(a, b, c); 
+                        p_k = p_SD + tau * d; 
+
+                        return true;
                     }
-                }
-                else
-                {
-                    //  1D slice of model function in gradient direction is concave:
-                    //  SD minimizer lies on TR boundary, in direction of -g'
-                    cauchy_point.unpreconditioned_solve(B, g, p_k); 
                 }
             }
 
-	    	return true; 
+        public:
+            virtual void set_linear_solver(const std::shared_ptr<LinearSolver > &ls) override
+            {
+                ls_solver_ = ls; 
+            }                    
 
-        }
-
-    virtual bool get_pred(const Vector & g, const Matrix & B, const Vector & p_k, Scalar &pred)
-    {
-      Scalar l_term = dot(g, p_k);
-      Scalar qp_term = dot(p_k, B * p_k);
-      pred = - l_term - 0.5 * qp_term; 
-      return true; 
-    }
-
-
-    private: 
-        CauchyPoint<Matrix, Vector> cauchy_point;       /*!< Cauchy Point  */  
-
-
+        private:  
+            std::shared_ptr<LinearSolver> ls_solver_; 
     };
 }
 
 #endif //UTOPIA_TR_SUBPROBLEM_DOGLEG_HPP
-

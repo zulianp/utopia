@@ -3,6 +3,9 @@
 #include "utopia_libmesh.hpp"
 #include "utopia_Socket.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
+#include "utopia_Contact.hpp"
+#include "utopia_BoundingBoxCoarsener.hpp"
+
 #include "moonolith_communicator.hpp"
 
 
@@ -14,24 +17,23 @@
 #include <cmath>
 
 namespace utopia {
-
 	static void make_d(const DSMatrixd &mat, DVectord &res)
-		{
-			res = sum(mat, 1);
+	{
+		res = sum(mat, 1);
 
-			ReadAndWrite<DVectord> rw_(res);
-			auto r = range(res);
-			for(auto k = r.begin(); k != r.end(); ++k) {
-				if(approxeq(res.get(k), 0.0, 1e-14)) {
-					res.set(k, 1.);
-				}
+		ReadAndWrite<DVectord> rw_(res);
+		auto r = range(res);
+		for(auto k = r.begin(); k != r.end(); ++k) {
+			if(approxeq(res.get(k), 0.0, 1e-14)) {
+				res.set(k, 1.);
 			}
 		}
+	}
 
 	SemiGeometricMultigrid::SemiGeometricMultigrid(
 		const std::shared_ptr<Smoother<DSMatrixd, DVectord> > &smoother,
 		const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver)
-	: mg(smoother, linear_solver)
+	: mg(smoother, linear_solver), is_block_solver_(false), separate_subdomains_(false)
 	{ }
 
 	void SemiGeometricMultigrid::init(const libMesh::EquationSystems &es, const std::size_t n_levels)
@@ -55,53 +57,92 @@ namespace utopia {
 		meshes.resize(n_coarse_spaces);
 		equation_systems.resize(n_coarse_spaces);
 
-		DVectord d_diag;
+		std::shared_ptr<libMesh::UnstructuredMesh> m = std::make_shared<libMesh::DistributedMesh>(mesh.comm());
 
-		switch(dim) {
-			case 2: 
-			{
-				const int n_segments = std::max(2, int( ceil( std::sqrt(mesh.n_active_elem() / std::pow(4, n_coarse_spaces)) ) ) );
-				const double aspect_ratio = r(0)/r(1);
-				const int nx = std::max(int(ceil(n_segments * aspect_ratio)), 2);
-				const int ny = std::max(n_segments, 2);
+		std::vector< std::vector< std::pair<int, int> > > tags(n_coarse_spaces);
 
-				auto m = std::make_shared<libMesh::DistributedMesh>(mesh.comm());
-				libMesh::MeshTools::Generation::build_square (
-					*m,
-					nx, ny,
-					bb.min()(0), bb.max()(0),
-					bb.min()(1), bb.max()(1),
-					libMesh::QUAD4);
+		if(!separate_subdomains_) {
 
-				meshes[0] = m;
-				equation_systems[0] = std::make_shared<libMesh::EquationSystems>(*m);
+			switch(dim) {
+				case 2: 
+				{
+					const int n_segments = std::max(2, int( std::round( std::sqrt(mesh.n_nodes() / std::pow(4, n_coarse_spaces)) ) ) );
+					const double max_r = std::max(r(0), r(1));
 
-				// plot_mesh(*m, "mg/l_" + std::to_string(0));
+					const double aspect_ratio_x = r(0)/max_r;
+					const double aspect_ratio_y = r(1)/max_r;
 
-				//use refinement instead
-				for(std::size_t i = 1; i < n_levels-1; ++i) {
-					auto m_i = std::make_shared<libMesh::DistributedMesh>(*meshes[i-1]);
-					
-					{
-						libMesh::MeshRefinement mesh_refinement(*m_i);
-						mesh_refinement.make_flags_parallel_consistent();
-						mesh_refinement.uniformly_refine(1);
-					}
+					const int nx = std::max(int(std::round(n_segments * aspect_ratio_x)), 2);
+					const int ny = std::max(int(std::round(n_segments * aspect_ratio_y)), 2);
 
-					equation_systems[i] = std::make_shared<libMesh::EquationSystems>(*m_i);
-					meshes[i] = m_i;
+					libMesh::MeshTools::Generation::build_square (
+						*m,
+						nx, ny,
+						bb.min()(0), bb.max()(0),
+						bb.min()(1), bb.max()(1),
+						libMesh::QUAD4);
 
-					// plot_mesh(*m_i, "mg/l_" + std::to_string(i));
+					break;
 				}
 
-				break;
+				case 3:
+				{
+					const int n_segments = std::max(2, int( std::round( std::cbrt(mesh.n_nodes() / std::pow(8, n_coarse_spaces)) ) ) );
+
+					const double max_r = std::max(r(0), std::max(r(1), r(2)));
+
+					const double aspect_ratio_x = r(0)/max_r;
+					const double aspect_ratio_y = r(1)/max_r;
+					const double aspect_ratio_z = r(2)/max_r;
+
+					const int nx = std::max(int(std::round(n_segments * aspect_ratio_x)), 2);
+					const int ny = std::max(int(std::round(n_segments * aspect_ratio_y)), 2);
+					const int nz = std::max(int(std::round(n_segments * aspect_ratio_z)), 2);
+
+					libMesh::MeshTools::Generation::build_cube (
+						*m,
+						nx, ny, nz,
+						bb.min()(0), bb.max()(0),
+						bb.min()(1), bb.max()(1),
+						bb.min()(2), bb.max()(2),
+						libMesh::HEX8);
+
+					break;
+				} 
+
+				default:
+				{	
+					assert(false && "implement me");
+					break;
+				}
+			}
+		} else {
+			BoundingBoxCoarsener bb_coarsener;
+			bb_coarsener.init(n_coarse_spaces, mesh);
+			bb_coarsener.describe();
+			m = bb_coarsener.get_mesh();
+			tags[n_coarse_spaces-1] = bb_coarsener.get_tags();
+		}
+
+		meshes[0] = m;
+		equation_systems[0] = std::make_shared<libMesh::EquationSystems>(*m);
+
+		// plot_mesh(*m, "mg/l_" + std::to_string(0));
+
+		//use refinement instead
+		for(std::size_t i = 1; i < n_levels-1; ++i) {
+			auto m_i = std::make_shared<libMesh::DistributedMesh>(*meshes[i-1]);
+			
+			{
+				libMesh::MeshRefinement mesh_refinement(*m_i);
+				mesh_refinement.make_flags_parallel_consistent();
+				mesh_refinement.uniformly_refine(1);
 			}
 
-			default:
-			{	
-				assert(false && "implement me");
-				break;
-			}
+			equation_systems[i] = std::make_shared<libMesh::EquationSystems>(*m_i);
+			meshes[i] = m_i;
+
+			// plot_mesh(*m_i, "mg/l_" + std::to_string(i));
 		}
 
 		// plot_mesh(mesh, "mg/L");
@@ -112,17 +153,19 @@ namespace utopia {
 			for(unsigned int v = 0; v < dof_map.n_variables(); ++v) {
 				const auto &var = dof_map.variable(v);
 				//FIXME
-				sys.add_variable(var.name(), dof_map.variable_order(v), libMesh::LAGRANGE);
+				sys.add_variable(var.name(), libMesh::FIRST, libMesh::LAGRANGE);
 			}
 
 			sys.init();
 		}
 
-		std::vector<std::shared_ptr<DSMatrixd>> interpolators(n_coarse_spaces);
+		interpolators_.resize(n_coarse_spaces);
 		moonolith::Communicator comm(mesh.comm().get());
+
+		DVectord d_diag;
 		
 		for(std::size_t i = 1; i < n_coarse_spaces; ++i) {
-			interpolators[i-1] = std::make_shared<DSMatrixd>();
+			interpolators_[i-1] = std::make_shared<DSMatrixd>();
 
 			bool success = assemble_volume_transfer(
 				comm,
@@ -134,14 +177,17 @@ namespace utopia {
 				0,
 				true,
 				dof_map.n_variables(),
-				*interpolators[i-1]
+				*interpolators_[i-1]
 				); assert(success);
 
-			make_d(*interpolators[i-1], d_diag);
-			*interpolators[i-1] = diag(1./d_diag) * *interpolators[i-1];
+			DVectord d_diag;
+
+			make_d(*interpolators_[i-1], d_diag);
+			*interpolators_[i-1] = diag(1./d_diag) * *interpolators_[i-1];
+
 		}
 
-		interpolators[n_coarse_spaces-1] = std::make_shared<DSMatrixd>();
+		interpolators_[n_coarse_spaces-1] = std::make_shared<DSMatrixd>();
 		bool success = assemble_volume_transfer(
 			comm,
 			meshes[n_coarse_spaces-1],
@@ -152,11 +198,15 @@ namespace utopia {
 			0,
 			true,
 			dof_map.n_variables(),
-			*interpolators[n_coarse_spaces-1]
+			*interpolators_[n_coarse_spaces-1],
+			tags[n_coarse_spaces-1]
 			); assert(success);
 
-		make_d(*interpolators[n_coarse_spaces-1], d_diag);
-				*interpolators[n_coarse_spaces-1] = diag(1./d_diag) * *interpolators[n_coarse_spaces-1];
+
+		make_d(*interpolators_[n_coarse_spaces-1], d_diag);
+		*interpolators_[n_coarse_spaces-1] = diag(1./d_diag) * *interpolators_[n_coarse_spaces-1];
+
+		// write("T.m", *interpolators[n_coarse_spaces-1]);
 
 		if(mg.verbose()) {
 			for(const auto &e : equation_systems) {
@@ -166,20 +216,32 @@ namespace utopia {
 			std::cout << "dofs: " << es.get_system(0).get_dof_map().n_dofs() << std::endl;
 		}
 
-		mg.init_transfer_from_fine_to_coarse(std::move(interpolators));
-		//FIXME naming is wrong
-		// mg.init_transfer_from_coarse_to_fine(std::move(interpolators));
+		mg.set_transfer_operators(interpolators_);
 	}	
 
 	void SemiGeometricMultigrid::update(const std::shared_ptr<const DSMatrixd> &op)
 	{
-		mg.galerkin_assembly(op);
+		mg.update(op);
+
+		//hacky
+		if(is_block_solver_) {
+			for(SizeType i = 0; i < mg.n_levels(); ++i) {
+				const_cast<DSMatrixd &>(mg.level(i).A()).implementation().convert_to_mat_baij(meshes[0]->mesh_dimension());
+			}
+		}
+
 	}
 
 	bool SemiGeometricMultigrid::apply(const DVectord &rhs, DVectord &sol)
 	{
-		mg.verbose(true);
-		return mg.solve(rhs, sol);
+		return mg.apply(rhs, sol);
 	}
 
+	void SemiGeometricMultigrid::update_contact(Contact &contact)
+	{
+		const auto last_interp = mg.n_levels() - 2;
+		auto c_I = std::make_shared<DSMatrixd>();
+		*c_I = transpose(contact.complete_transformation) * *interpolators_[last_interp];
+		mg.update_transfer(last_interp, Transfer<DSMatrixd, DVectord>(c_I));
+	}
 }

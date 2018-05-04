@@ -1,38 +1,50 @@
-//
-// Created by Patrick Zulian on 26/05/15.
-//
-
 #ifndef UTOPIA_UTOPIA_INSTANCE_HPP
 #define UTOPIA_UTOPIA_INSTANCE_HPP
 
+#include "utopia_Logger.hpp"
+
 #include <map>
 #include <string>
+#include <cassert>
 
 namespace utopia {
-    class Utopia {
+    class Utopia final {
     public:
-       static void Init(int argc, char *argv[]);
-       static int Finalize();
+        static void Init(int argc, char *argv[]);
+        static int Finalize();
+        
+        inline std::string get(const std::string &key) const
+        {
+            auto it = settings_.find(key);
+            if(it == settings_.end()) return "";
+            return it->second;
+        }
+        
+        inline void set(const std::string &key, const std::string &value)
+        {
+            settings_[key] = value;
+        }
+        
+        static Utopia &instance();
+        
+        bool verbose() const;
+        
+        Logger &logger() {
+            assert(logger_);
+            return *logger_;
+        }
 
-       inline std::string get(const std::string &key) const
-       {
-       		auto it = settings_.find(key);
-       		if(it == settings_.end()) return "";
-       		return it->second;
-       }
+        Logger &maintenance_logger() {
+            assert(logger_);
+            return *maintenance_logger_;
+        }
 
-       inline void set(const std::string &key, const std::string &value)
-       {
-       		settings_[key] = value;
-       }
-
-       static Utopia &Instance();
-
-      bool verbose() const;
-
-   private:
-   		Utopia();
-       	std::map<std::string, std::string> settings_;
+    private:
+        Utopia();
+        std::map<std::string, std::string> settings_;
+        std::shared_ptr<Logger> logger_;
+        std::shared_ptr<Logger> maintenance_logger_;
     };
 }
+
 #endif //UTOPIA_UTOPIA_INSTANCE_HPP

@@ -4,6 +4,8 @@
 #cmakedefine WITH_BLAS
 #cmakedefine WITH_LAPACK
 #cmakedefine WITH_PETSC
+#cmakedefine WITH_SLEPC
+#cmakedefine WITH_TRILINOS
 #cmakedefine WITH_CPP11
 #cmakedefine WITH_UMFPACK
 #cmakedefine WITH_MPI
@@ -12,7 +14,8 @@
 #cmakedefine WITH_CUDA
 #cmakedefine WITH_UTOPIA_OPENCL
 #cmakedefine WITH_EIGEN_3
-#cmakedefine UTOPIA_LOG_ENABLED
+#cmakedefine UTOPIA_TRACE_ENABLED
+#cmakedefine WITH_PASSO_EXTENSIONS
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR
@@ -51,9 +54,15 @@
 	    (PETSC_VERSION_MAJOR == (major) && ((PETSC_VERSION_MINOR < (minor)) || \
 	                                                         (PETSC_VERSION_MINOR == (minor) && \
 	                                                          PETSC_VERSION_SUBMINOR < (subminor))))) ? 1 : 0)
+
+#define UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(major,minor,subminor)                   \
+	  ((PETSC_VERSION_MAJOR > (major) ||                   \
+	    (PETSC_VERSION_MAJOR == (major) && ((PETSC_VERSION_MINOR > (minor)) || \
+	                                                         (PETSC_VERSION_MINOR == (minor) && \
+	                                                          PETSC_VERSION_SUBMINOR >= (subminor))))) ? 1 : 0)
 #else // WITH_PETSC
-	
 	#define UTOPIA_PETSC_VERSION_LESS_THAN(major,minor,subminor) 1
+	#define UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(major,minor,subminor) 0
 #endif // WITH_PETSC
 
 #ifndef NDEBUG 
@@ -67,5 +76,7 @@
 #else 
 #define assert_enabled(expr_)    
 #endif //NDEBUG
+
+#include "utopia_compiler_features.hpp"
 
 #endif //UTOPIA_CONFIG_HPP

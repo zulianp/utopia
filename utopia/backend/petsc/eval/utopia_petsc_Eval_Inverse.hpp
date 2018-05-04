@@ -12,13 +12,13 @@ namespace utopia {
 	    typedef typename TypeAndFill<Traits, Left>::Type Result;
 
 	    inline static void apply(const Expr &expr) {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 	        auto & left   = Eval<Left, Traits>::apply(expr.left());
 	        auto && right = Eval<Right, Traits>::apply(expr.right().expr());
 
 	    	UTOPIA_BACKEND(Traits).inverse(left, right);
 	    	
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 	    }
 	};
 
@@ -29,13 +29,13 @@ namespace utopia {
 	    typedef typename TypeAndFill<Traits, Left>::Type Result;
 
 	    inline static void apply(const Expr &expr) {
-			UTOPIA_LOG_BEGIN(expr);
+			UTOPIA_TRACE_BEGIN(expr);
 	        auto & left   = Eval<Left, Traits>::apply(expr.left());
 	        auto && right = Eval<Right, Traits>::apply(expr.right().expr());
 
 	    	UTOPIA_BACKEND(Traits).inverse(left, right);
 	    	
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
 	    }
 	};
 

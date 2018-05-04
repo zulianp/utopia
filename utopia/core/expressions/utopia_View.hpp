@@ -21,37 +21,27 @@ namespace utopia {
             return *this;
         }
 
-        View(Expr &expr, const Range &rowRange, const Range &colRange)
-                : _expr(expr), _rowRange(rowRange), _colRange(colRange) { }
+        View(Expr &expr, const Range &row_range, const Range &col_range)
+                : _expr(expr), row_range_(row_range), col_range_(col_range) { }
 
         Expr &expr() const {
             return _expr;
         }
 
-
-
-        const Range &rowRange() const {
-            return _rowRange;
-        }
-
-        const Range &colRange() const {
-            return _colRange;
-        }
-
         friend const Range &row_range(const View &v)
         {
-            return v._rowRange;
+            return v.row_range_;
         }
 
         friend const Range &col_range(const View &v)
         {
-            return v._colRange;
+            return v.col_range_;
         }
 
     private:
         Expr &_expr;
-        const Range _rowRange;
-        const Range _colRange;
+        const Range row_range_;
+        const Range col_range_;
 
     };
 

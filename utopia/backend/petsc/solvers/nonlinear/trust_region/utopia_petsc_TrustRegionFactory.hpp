@@ -3,6 +3,8 @@
 
 #include "utopia_TrustRegionFactory.hpp"
 #include "utopia_petsc_KSPTR.hpp"
+#include "utopia_petsc_TaoSolver.hpp"
+#include "utopia_FactoryMethod.hpp"
 
 namespace utopia {
 	/**
@@ -14,20 +16,27 @@ namespace utopia {
 	template<typename Matrix, typename Vector>
 	class TRStrategyFactory<Matrix, Vector, PETSC> {
 	public: 
-		typedef std::shared_ptr< TRSubproblem<Matrix, Vector> > StrategyPtr;
-		std::map<std::string, StrategyPtr> strategies_;
+		typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblemT;
+		typedef std::shared_ptr<TRSubproblemT> StrategyPtr;
+		typedef utopia::IFactoryMethod<TRSubproblemT> FactoryMethodT;
+
+		template<class Alg>
+		using TRFactoryMethod = FactoryMethod<TRSubproblemT, Alg>;
+
+		template<class Alg>
+		using TRUnaryFactoryMethod = UnaryFactoryMethod<TRSubproblemT, std::string, Alg>;
+		
+		std::map<std::string, std::shared_ptr<FactoryMethodT> > strategies_;
 
 		inline static StrategyPtr new_trust_region_strategy(const std::string & tag)
 		{
 			auto it = instance().strategies_.find(tag);
 			if(it == instance().strategies_.end()) 
 			{
-				std::cout<<"Strategy not available, solving with SteihaugToint.  \n";  
+				utopia_warning("Strategy not available, solving with SteihaugToint.");
 				return std::make_shared<utopia::SteihaugToint<Matrix, Vector> >(); 
-			} 
-			else 
-			{
-				return it->second;
+			} else {
+				return it->second->make();
 			}
 		}
 
@@ -35,20 +44,26 @@ namespace utopia {
 		inline static const TRStrategyFactory &instance()
 		{
 			static TRStrategyFactory instance_;
-			instance_.init();
 			return instance_;
+		}
+
+		TRStrategyFactory()
+		{
+			init();
 		}
 
 		void init()
 		{	
-			strategies_[CAUCHYPOINT_TAG] 	= std::make_shared<utopia::CauchyPoint<Matrix, Vector> >(); 
-			strategies_[DOGLEG_TAG] 		= std::make_shared<utopia::Dogleg<Matrix, Vector> >(); 
-			strategies_[STEIHAUG_TOINT_TAG] = std::make_shared<utopia::KSP_TR<Matrix, Vector> >("stcg"); 
-			strategies_[TOINT_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("qcg"); 
-			strategies_[NASH_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("nash"); 
-			strategies_[LANCZOS_TAG] 		= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("gltr"); 
-			strategies_[CGNE_TAG] 			= std::make_shared<utopia::KSP_TR<Matrix, Vector> >("cgne"); 
-			strategies_[AUTO_TR_TAG] 		= std::make_shared<utopia::KSP_TR<Matrix, Vector> >(); 
+			strategies_[CAUCHYPOINT_TAG] 	= std::make_shared< TRFactoryMethod< utopia::CauchyPoint<Matrix, Vector>> >(); 
+			strategies_[DOGLEG_TAG] 		= std::make_shared< TRFactoryMethod< utopia::Dogleg<Matrix, Vector>> >(); 
+			strategies_[STEIHAUG_TOINT_TAG] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
+			strategies_[AUTO_TR_TAG] 		= std::make_shared< TRFactoryMethod<utopia::KSP_TR<Matrix, Vector>> >(); 
+			
+			strategies_[TOINT_TAG] 			= std::make_shared< TRUnaryFactoryMethod< utopia::KSP_TR<Matrix, Vector>> >("qcg"); 
+			strategies_[NASH_TAG] 			= std::make_shared< TRUnaryFactoryMethod< utopia::KSP_TR<Matrix, Vector>> >("nash"); 
+			strategies_[LANCZOS_TAG] 		= std::make_shared< TRUnaryFactoryMethod< utopia::KSP_TR<Matrix, Vector>> >("gltr"); 
+			strategies_[CGNE_TAG] 			= std::make_shared< TRUnaryFactoryMethod< utopia::KSP_TR<Matrix, Vector>> >("cgne"); 
+			
 		}
 	};
 }

@@ -27,11 +27,9 @@ namespace utopia
 
   public:
 
-    LeastSquaresNewton(
-                        const std::shared_ptr<Solver> &linear_solver = std::shared_ptr<Solver>(), 
-                        const Parameters params               = Parameters()
-                      )
-    : NonLinearLeastSquaresSolver<Matrix, Vector>(linear_solver, params) 
+    LeastSquaresNewton( const std::shared_ptr<Solver> &linear_solver= std::make_shared<ConjugateGradient<Matrix, Vector> >(), 
+                        const Parameters params               = Parameters()): 
+                        NonLinearLeastSquaresSolver<Matrix, Vector>(linear_solver, params) 
     {
 
     }

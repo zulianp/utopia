@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.8.1)
 project(utopia_fe)
 
 #To kill the policy warning  (maybe not a good idea yet)
@@ -7,10 +7,20 @@ set(CMAKE_MACOSX_RPATH 1)
 option(ENABLE_SANITIZER "check for memory access problems" OFF)
 option(ENABLE_BOOST "enable boost features" OFF)
 option(ENABLE_MOONOLITH_PROFILER "enable moonolith profiling capabilities" OFF)
+option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
+option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
 
 #################################################################################
 #################################################################################
 #################################################################################
+
+if(UNIX AND NOT APPLE)
+       set(LINUX TRUE)
+endif()
+
+if(LINUX)
+	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 set(UTOPIA_FE_ROOT_PATH ${CMAKE_SOURCE_DIR})
 set(UTOPIA_FE_CMAKES_PATH ${UTOPIA_FE_ROOT_PATH}/libcmake)
@@ -24,6 +34,8 @@ endif()
 
 ################################## Include cmake functions and find modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_FE_ROOT_PATH}/cmake")
+include(${UTOPIA_FE_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
+
 file(GLOB_RECURSE FUNC_LIB "{UTOPIA_FE_ROOT_PATH}/cmake/utils" )
 foreach(funcLib ${FUNC_LIB})
 	include(${funcLib})
@@ -31,7 +43,6 @@ endforeach(funcLib)
 
 find_package(Utopia)
 if(UTOPIA_FOUND)
-    list(APPEND CMAKE_CXX_FLAGS "-std=c++11")
     include_directories(${UTOPIA_INCLUDES})
     add_definitions(${UTOPIA_DEFS})
 else()
@@ -73,6 +84,7 @@ endfunction()
 
 list(APPEND UTOPIA_FE_MODULES
 	tests
+	multigrid
 	transfer
 	visualization
 	backend/libmesh
@@ -80,6 +92,7 @@ list(APPEND UTOPIA_FE_MODULES
 	intersection
 	contact
 	materials
+	functions
 	core
 	rapidxml
  )
@@ -102,6 +115,7 @@ list(APPEND TOP_SOURCES utopia_fe.cpp)
 
 add_library(utopia_fe STATIC ${TOP_SOURCES} ${TOP_HEADERS})
 target_link_libraries(utopia_fe ${UTOPIA_LIBRARIES} ${UTOPIA_FE_LIBRARIES} ${TRANSFER_LIB})
+set_utopia_compiler_features(utopia_fe)
 
 add_executable(utopia_fe_exec  main.cpp ${TOP_HEADERS})
 # target_link_libraries(utopia_fe_exec utopia_fe ${UTOPIA_FE_LIBRARIES})

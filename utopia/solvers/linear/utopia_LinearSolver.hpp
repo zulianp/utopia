@@ -9,7 +9,7 @@
 #include "utopia_PrintInfo.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_Utils.hpp"
-
+#include "utopia_Clonable.hpp"
 
 namespace  utopia 
 {
@@ -19,15 +19,15 @@ namespace  utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector>
-    class LinearSolver : public Preconditioner<Vector> {
+    class LinearSolver : public Preconditioner<Vector>, public virtual Clonable {
     public:
         typedef UTOPIA_SCALAR(Vector)           Scalar;
 
         virtual ~LinearSolver() {}
     
-        virtual bool apply(const Vector &rhs, Vector &sol) = 0;
+        virtual bool apply(const Vector &rhs, Vector &sol) override = 0;
 
-        virtual void set_parameters(const Parameters /*params*/) { } 
+        virtual void set_parameters(const Parameters /*params*/) override { } 
 
 
         /**
@@ -43,6 +43,8 @@ namespace  utopia
             update(make_ref(A));
             return apply(b, x0);
         } 
+
+ 
 
         /*! @brief if overriden the subclass has to also call this one first
          */
@@ -62,6 +64,7 @@ namespace  utopia
             return static_cast<bool>(op_);
         }
 
+        virtual LinearSolver * clone() const override = 0;
     private:
         std::shared_ptr<const Matrix> op_;
     };
@@ -69,7 +72,8 @@ namespace  utopia
 
 
     template<class Matrix, class Vector>
-    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector> {
+    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector> 
+    {
     public:
         virtual bool apply(const Vector &rhs, Vector &sol) override
         {
@@ -92,6 +96,10 @@ namespace  utopia
             return d; 
         }
 
+        InvDiagPreconditioner * clone() const override
+        {
+            return new InvDiagPreconditioner(*this);
+        }
 
     private:
         Vector d;

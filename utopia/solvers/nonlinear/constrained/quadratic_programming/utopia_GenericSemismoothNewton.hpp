@@ -25,6 +25,11 @@ namespace utopia {
 		: constraint_(constraint), linear_solver_(linear_solver)
 		{}
 
+		GenericSemismoothNewton * clone() const override
+		{
+			return new GenericSemismoothNewton(constraint_, std::shared_ptr<Solver>(linear_solver_->clone()));
+		}
+
 		bool solve(const Matrix &A, const Vector &b, Vector &x_new) override
 		{			
 			const SizeType local_N = local_size(x_new).get(0);

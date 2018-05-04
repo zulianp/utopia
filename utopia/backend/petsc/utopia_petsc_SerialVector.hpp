@@ -6,8 +6,18 @@
 namespace utopia {
 	class PetscSerialVector : public PetscVector {
 	public:
-		// using PetscVector::PetscVector;
-		// using PetscVector::operator=;
+		virtual VecType type_override() const
+		{
+			return VECSEQ;
+		}
+	};
+
+	class PetscCuVector : public PetscVector {
+	public:
+		virtual VecType type_override() const
+		{
+			return VECCUDA;
+		}
 	};
 }
 

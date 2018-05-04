@@ -24,15 +24,19 @@ namespace utopia {
 		}
 
 		// virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
-		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) override
+		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
 		{
 			if(!this->material().assemble_hessian_and_gradient(x, stiffness_matrix_, internal_force_)) {
 				return false;
 			}
 
 			if(is_new_time_step_) {
-				auto &O = this->contact().orthogonal_trafo;
-				pred_ = O * utopia::min(O * (dt_ * velocity_old_), this->contact().gap);
+				//copy for time-adaptivity for changing the predictor for different dt
+				
+				O_copy_   = this->contact().orthogonal_trafo;
+				gap_copy_ = this->contact().gap;
+				update_predictor();
+
 				is_new_time_step_ = false;
 			}
 
@@ -46,14 +50,20 @@ namespace utopia {
 			ContactSolver<Matrix, Vector>::initialize();
 		}
 
-		void initial_condition()
+		void initial_condition(const Scalar density)
 		{
 			auto &V = this->space();
 			auto u = trial(V);
 			auto v = test(V);
 
 			utopia::assemble(inner(u, v) * dX, internal_mass_matrix_);
-			
+			internal_mass_matrix_ *= density;
+			initial_condition(internal_mass_matrix_);
+		}
+
+		void initial_condition(const DSMatrixd &mass_matrix)
+		{
+			internal_mass_matrix_ = mass_matrix;
 			Vector mass_vector = sum(internal_mass_matrix_, 1);
 			internal_mass_matrix_ = diag(mass_vector);
 			inverse_mass_vector_ = 1./mass_vector;
@@ -68,7 +78,7 @@ namespace utopia {
 			velocity_old_ = local_zeros(n_local);
 			velocity_inc_ = local_zeros(n_local);
 			pred_ 		  = local_zeros(n_local);
-
+			gap_copy_ 	  = local_zeros(n_local);
 
 			t_ = 0.;
 
@@ -77,9 +87,24 @@ namespace utopia {
 			}
 		}
 
+		void initial_condition()
+		{
+			auto &V = this->space();
+			auto u = trial(V);
+			auto v = test(V);
+
+			utopia::assemble(inner(u, v) * dX, internal_mass_matrix_);
+			initial_condition(internal_mass_matrix_);
+		}
+
 		inline const Vector &velocity() const
 		{
 			return velocity_;
+		}
+
+		void update_predictor()
+		{
+			pred_ = O_copy_ * utopia::min(dt_ * (O_copy_ * velocity_old_), gap_copy_);
 		}
 
 		void update_velocity()
@@ -87,6 +112,15 @@ namespace utopia {
 			velocity_inc_ = (-2./dt_) * (internal_mass_matrix_ * (x_old_ -  this->displacement() + pred_));
 			apply_zero_boundary_conditions(this->space()[0].dof_map(), velocity_inc_);			
 			velocity_ = velocity_old_ + e_mul(inverse_mass_vector_, velocity_inc_);
+		}
+
+		void update_forcing_term()
+		{
+			// if(this->external_force_fun()) {
+			// 	this->external_force_fun()->eval(t_, external_force_);
+			// }
+
+			forcing_term_ = internal_mass_matrix_ * x_old_ + (dt_*dt_/4.) * (2. * external_force_ - internal_force_old_);
 		}
 
 		void next_step() override
@@ -99,11 +133,12 @@ namespace utopia {
 			velocity_old_ = velocity_;
 
 			//external_force_ = (external_force_old + external_force_current)/2
-			forcing_term_ = internal_mass_matrix_ * x_old_ + (dt_*dt_/4.) * (2. * external_force_ - internal_force_old_);
-			is_new_time_step_ = true;
-
 			
+			update_forcing_term();
+			is_new_time_step_ = true;	
+			t_ += dt_;
 		}
+
 		void update_contact_system()
 		{
 			if(!c_sys_) return;
@@ -124,6 +159,18 @@ namespace utopia {
 		virtual void finalize() override
 		{
 		
+		}
+
+		void set_dt_and_update(const Scalar dt)
+		{
+			if(approxeq(dt, dt_)) {
+				return;
+			}
+
+			dt_ = dt;
+
+			update_forcing_term();
+			update_predictor();
 		}
 
 	private:
@@ -151,6 +198,8 @@ namespace utopia {
 		Vector velocity_inc_;
 
 		Vector pred_;
+		Vector gap_copy_;
+		Matrix O_copy_;
 		bool is_new_time_step_;
 
 		std::shared_ptr<ContactSystem> c_sys_;

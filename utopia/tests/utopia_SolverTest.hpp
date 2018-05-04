@@ -9,7 +9,12 @@
 
 namespace utopia 
 {
-    void runSolversTest();
+    void runGenericSolversTest();
+    void runPetscNonlinearSolversTest(); 
+    void runPetscLinearSolversTest(); 
+    void runPetscSlepcSolversTest(); 
+    void runSolversTest(); 
+
 }
 
 #endif //UTOPIA_SOLVER_TEST_HPP

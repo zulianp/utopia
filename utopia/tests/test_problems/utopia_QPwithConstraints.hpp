@@ -22,14 +22,14 @@ namespace utopia
     class QPwithConstraints : public FunctionBoxConstrained<Matrix, Vector> 
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
         
         ~QPwithConstraints(){} 
 
 
         QPwithConstraints() 
         {
-            const std::string data_path = Utopia::Instance().get("data_path");
+            const std::string data_path = Utopia::instance().get("data_path");
             read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs_);
             read(data_path + "/laplace/matrices_for_petsc/f_A", A_);
 

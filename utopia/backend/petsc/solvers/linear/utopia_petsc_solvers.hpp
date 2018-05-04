@@ -10,9 +10,13 @@
 #include "utopia_petsc_ConjugateGradient.hpp"
 #include "utopia_petsc_GaussSeidel.hpp"
 
-#include "utopia_petsc_NonLinearGaussSeidel.hpp"
-#include "utopia_petsc_Function.hpp"
+#include "utopia_petsc_NonLinearSmoothers.hpp"
+
 
 #include "utopia_petsc_SemismoothNewton.hpp"
+#include "utopia_petsc_ProjectedGaussSeidel.hpp"
+
+#include "utopia_petsc_Multigrid.hpp"
+#include "utopia_petsc_GMRES.hpp"
 
 #endif //UTOPIA_PETSC_SOLVERS_HPP

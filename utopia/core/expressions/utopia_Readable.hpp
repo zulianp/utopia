@@ -151,7 +151,7 @@ namespace utopia {
         /**
          * @ingroup     lock
          * @brief       Reading lock providing memory access to the object. 
-         * @param      tensor  The tensor.
+         * @param      tensor  The tensor (the const qualifier might be removed internally).
          */
         Read(const Tensor &tensor)
         : _tensor(tensor)

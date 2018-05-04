@@ -27,6 +27,7 @@ namespace utopia {
 		
 		using ScalarBackend<Scalar>::apply_binary;
 		using ScalarBackend<Scalar>::axpy;
+		using ScalarBackend<Scalar>::assign;
 		
 		void static daxpy_wrapper(const int *n, const Scalar *alpha, const Scalar *x, const int *incx, Scalar *y, const int *incy);
 		void static dscal_wrapper(const int *n, const Scalar *sa, const Scalar *sx, const int *incx);
@@ -110,7 +111,39 @@ namespace utopia {
 		static void build(Vector &m, const Size &size, const Zeros & /*values*/);
 		static void build(Vector &m, const Size &size, const LocalZeros & /*values*/);
 		static void build(Vector &v, const Size &size, const Values<Scalar> &values);
-		
+
+
+		///For compatiblity parallel expressions are treated as serial ones:
+		static void build(Matrix &m, const Size &size, const LocalValues<Scalar> &values)
+		{
+			build(m, size, Values<Scalar>(values.value()));
+		}
+
+		static void build(Vector &v, const Size &size, const LocalValues<Scalar> &values)
+		{
+			build(v, size, Values<Scalar>(values.value()));
+		}
+
+		static void build(CRSMatrix<Scalar> &m, const Size &size, const LocalNNZ<int> &nnz)
+		{
+			build(m, size, NNZ<int>(nnz.nnz()));
+		}
+
+		static void build(CCSMatrix<Scalar> &m, const Size &size, const LocalNNZ<int> &nnz)
+		{
+			build(m, size, NNZ<int>(nnz.nnz()));
+		}
+
+		inline static void build(Matrix &m, const Size &size, const LocalNNZ<int> &) {
+			//redirecting to Zeros
+			build(m, size, Zeros());
+		}
+
+		inline static void build(Matrix &m, const Size &size, const NNZ<int> &) {
+			build(m, size, Zeros());
+		}
+
+
 		//[accessors]
 		inline static Scalar get(const Vector &vec, const SizeType index)
 		{
@@ -154,6 +187,12 @@ namespace utopia {
 			
 			for (typename std::vector<Ordinal>::size_type i = 0; i < indices.size(); ++i)
 				set(v, indices[i], values[i]);
+		}
+
+
+		static void set(Vector &v, Scalar value)
+		{
+			std::fill(v.begin(), v.end(), value);
 		}
 		
 		// template<typename Ordinal>
@@ -367,6 +406,7 @@ namespace utopia {
 		static Scalar trace(const CCSMatrix<Scalar>  &in);
 		static Scalar dot(const Vector &left, const Vector &right);
 		static Scalar dot(const Matrix &left, const Matrix &right);
+		static Scalar norm1(const Vector &vector);
 		static Scalar norm2(const Vector &vector);
 		static Scalar norm2(const Matrix &mat);
 		static Scalar norm2(const CRSMatrix<Scalar> &mat);
@@ -568,6 +608,9 @@ namespace utopia {
 		static void diag(Matrix &left, const Vector &right);
 		static void diag(Vector &left, const Matrix &right);
 		static void diag(Matrix &left, const Matrix &right);
+
+		// static void diag(CRSMatrix<Scalar> &left, const Vector &right);
+		static void diag(Vector &left, const CRSMatrix<Scalar>  &right);
 		
 		static void mat_diag_shift(Matrix &left, const Scalar diag_factor);
 		static void diag_scale_right(Matrix &result, const Matrix &m, const Vector &diag)

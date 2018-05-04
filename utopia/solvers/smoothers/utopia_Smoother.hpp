@@ -8,13 +8,15 @@
 #ifndef UTOPIA_SMOOTHER_HPP
 #define UTOPIA_SMOOTHER_HPP
 #include "utopia_Core.hpp"
-#include "utopia_Parameters.hpp"    
+#include "utopia_Parameters.hpp"
+#include "utopia_Clonable.hpp"
+
 #include <iomanip>
 
 
      namespace utopia {
         template<class Matrix, class Vector>
-        class Smoother
+        class Smoother : public virtual Clonable
         {
             typedef UTOPIA_SCALAR(Vector)           Scalar;
             typedef UTOPIA_SIZE_TYPE(Vector)        SizeType;
@@ -27,6 +29,7 @@
          * @brief      Base class for smoothers. 
          */
         Smoother() 
+        : _sweeps(1), _relaxation_parameter(1.)
         {
 
         }
@@ -44,9 +47,12 @@
          * @brief      Single sweep. Function needs to be provided by actual smoothers.
          * @return    
          */
-        virtual bool smooth(const Matrix &A, const Vector &rhs, Vector &x) = 0; 
-
-
+        virtual bool smooth(const Vector &rhs, Vector &x) = 0; 
+        virtual void update(const std::shared_ptr<const Matrix> &) = 0;
+        // {
+        //     m_utopia_error_once("unimplemented update in sublclass");
+        //     assert(false);
+        // }
 
         /**
          * @brief      Quick interface for smoothing with projecting constraints.  
@@ -71,10 +77,9 @@
          *
          * @return    
          */
-        virtual bool sweeps(const SizeType & sweeps_in)
+        virtual void sweeps(const SizeType & sweeps_in)
         {
             _sweeps = sweeps_in;
-            return true; 
         }
 
 
@@ -99,6 +104,8 @@
              _relaxation_parameter = relaxation_parameter; 
              return true; 
         }
+
+        virtual Smoother * clone() const override = 0;
 
     private:
         SizeType     _sweeps;  

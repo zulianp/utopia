@@ -1,6 +1,8 @@
 
 #include "utopia.hpp"
 #include "utopia_Test.hpp"
+#include "utopia_benchmarks.hpp"
+
 #include <memory>
 #include <iostream>
 #include <sstream>
@@ -25,7 +27,7 @@ int main(const int argc, char *argv[])
             if (mpi_world_rank() == 0) {
                 std::cout << "data_path: " << argv[i] << std::endl;
             }
-            Utopia::Instance().set("data_path", argv[i]);
+            Utopia::instance().set("data_path", argv[i]);
         } else if (argv[i] == std::string("-test")) {
             if (++i >= argc)
                 break;
@@ -33,14 +35,16 @@ int main(const int argc, char *argv[])
         } else if(argv[i] == std::string("-skip-tests")) {
             run_tests = false;
         } else if(argv[i] == std::string("-verbose")) {
-            Utopia::Instance().set("verbose", "true");
+            Utopia::instance().set("verbose", "true");
         } else if(argv[i] == std::string("-performance_test_verbose")) {
-            Utopia::Instance().set("performance_test_verbose", "true");
+            Utopia::instance().set("performance_test_verbose", "true");
+        } else if(argv[i] == std::string("-bench")) {
+            run_benchmarks();
         }
     }
 
-    // Utopia::Instance().set("default_tollerance", "1e-15");
-    // Utopia::Instance().set("n_threads", "2");
+    // Utopia::instance().set("default_tollerance", "1e-15");
+    // Utopia::instance().set("n_threads", "2");
    
     if(run_tests) { 
         runTests(tests);

@@ -5,7 +5,8 @@
 #include "utopia_materials.hpp"
 #include "utopia_Contact.hpp"
 #include "utopia_Mechanics.hpp"
-
+#include "utopia_SemiGeometricMultigrid.hpp"
+#include "utopia_petsc_TaoSolver.hpp"
 
 #include "utopia_libmesh.hpp"
 
@@ -28,10 +29,25 @@ namespace utopia {
 			const std::shared_ptr<FunctionSpaceT> &V,
 			const std::shared_ptr<ElasticMaterial<Matrix, Vector>> &material,
 			const ContactParams &params)
-		: V_(V), material_(material), params_(params), first_(true), tol_(1e-10), debug_output_(false)
+		: V_(V),
+		  material_(material),
+		  params_(params),
+		  first_(true),
+		  tol_(1e-10),
+		  debug_output_(false),
+		  force_direct_solver_(false),
+		  bypass_contact_(false),
+		  max_outer_loops_(20)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
-			output_path_ = "contact_sol.e";
+			
+			output_path_ = utopia::Utopia::instance().get("output_path");
+			
+			if(!output_path_.empty()) {
+				output_path_ += "/";
+			}
+
+			output_path_ += "contact_sol.e";
 			linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
 			// auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
 			// iterative_solver->atol(1e-14);
@@ -39,6 +55,11 @@ namespace utopia {
 			// iterative_solver->rtol(1e-14);
 			// linear_solver_ = iterative_solver;
 			n_exports = 0;
+		}
+
+		void set_tol(const Scalar tol)
+		{
+			tol_ = tol;
 		}
 
 		void set_material(const std::shared_ptr< ElasticMaterial<Matrix, Vector> > &material)
@@ -52,6 +73,16 @@ namespace utopia {
 		{
 			auto &V_0 = V_->subspace(0);
 
+			if(bypass_contact_) {
+				if(!contact_.initialized) {
+					contact_.init_no_contact(
+						utopia::make_ref(V_0.mesh()),
+				    	utopia::make_ref(V_0.dof_map()));
+				} 
+
+				return;
+			}
+
 			deform_mesh(V_0.mesh(), V_0.dof_map(), x);
 
 			contact_.init(
@@ -61,6 +92,12 @@ namespace utopia {
 			);
 
 			deform_mesh(V_0.mesh(), V_0.dof_map(), -x);
+
+			auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
+			
+			if(mg) {
+				mg->update_contact(contact_);
+			}
 		}
 
 		bool solve_steady()
@@ -88,6 +125,9 @@ namespace utopia {
 
 			++n_exports;
 			for(int t = 0; t < n_time_steps; ++t) {
+				std::cout << "-------------------------------------"<< std::endl;
+				std::cout << "time_step: " << t << std::endl;
+
 				first_ = true;
 				if(!solve_contact()) return false;
 				next_step();
@@ -98,6 +138,7 @@ namespace utopia {
 
 
 				++n_exports;
+				std::cout << "-------------------------------------"<< std::endl;
 			}
 
 			finalize();
@@ -106,10 +147,10 @@ namespace utopia {
 
 		bool solve_contact()
 		{
-			const int max_outer_loops = 20;
+		
 			Vector old_sol = x_;
 
-			for(int i = 0; i < max_outer_loops; ++i) {
+			for(int i = 0; i < max_outer_loops_; ++i) {
 				contact_is_outdated_ = true;
 				solve_contact_in_current_configuration();
 				
@@ -158,9 +199,55 @@ namespace utopia {
 		}
 
 		// virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
-		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient)
+		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient)
 		{
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
+		}
+
+		void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
+		{
+			auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
+			if(!force_direct_solver_ && mg) {
+				SemismoothNewton<Matrix, Vector> newton(linear_solver_);
+				newton.verbose(true);
+				newton.max_it(40);
+				newton.set_box_constraints(box_c);
+				newton.solve(lhs, rhs, inc_c);
+			} else {
+				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
+				// SemismoothNewton<Matrix, Vector> newton(linear_solver_);
+				// newton.verbose(true);
+				// newton.max_it(40);
+				// newton.atol(1e-18);
+				// newton.rtol(1e-6);
+				// newton.stol(1e-18);
+
+				// auto scale_factor = 1.0e8;
+
+				// auto scaled_box = make_upper_bound_constraints(std::make_shared<Vector>(*box_c.upper_bound() * scale_factor));
+				// newton.set_box_constraints(scaled_box);
+				// newton.solve(scale_factor * lhs, scale_factor * rhs, inc_c);
+				// inc_c_ *= 1./scale_factor;
+
+				// newton.set_box_constraints(box_c);
+				// newton.solve(lhs, rhs, inc_c);
+				Chrono c;
+				c.start();
+
+				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
+				TaoSolver<Matrix, Vector> tao;//(linear_solver_);
+				tao.set_box_constraints(box_c);
+				tao.set_type("tron");
+				tao.set_ksp_types("bcgs", "jacobi", " ");
+				// tao.set_type("gpcg");
+				tao.solve(fun, inc_c);
+
+				force_direct_solver_ = false;
+
+				c.stop();
+
+				std::cout << "Solve " << c << std::endl;
+			}
 		}
 
 		bool step() 
@@ -193,12 +280,8 @@ namespace utopia {
 				apply_zero_boundary_conditions(V_->subspace(0).dof_map(), gc_);
 			} 
 
-			SemismoothNewton<Matrix, Vector> newton(linear_solver_);
-			newton.verbose(true);
-			newton.max_it(40);
-			newton.set_box_constraints(make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap - xc_)));
 			inc_c_ *= 0.;
-			newton.solve(Hc_, gc_, inc_c_);
+			qp_solve(Hc_, gc_, make_upper_bound_constraints(std::make_shared<Vector>(contact_.gap - xc_)), inc_c_);
 			
 			xc_ += inc_c_;
 			x_ += T * inc_c_;
@@ -281,6 +364,20 @@ namespace utopia {
 			external_force_fun_ = external_force_fun;
 		}
 
+		void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &linear_solver)
+		{
+			linear_solver_ = linear_solver;
+		}
+
+		void set_bypass_contact(const bool val)
+		{
+			bypass_contact_ = val;
+		}
+		void set_max_outer_loops(const int val)
+		{
+			max_outer_loops_ = val;
+		}
+
 	private:
 		std::shared_ptr<FunctionSpaceT> V_;
 		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
@@ -313,13 +410,17 @@ namespace utopia {
 		Vector lagrange_multiplier_;
 
 		//additional vectors
-		DSMatrixd internal_mass_matrix_;
+		// DSMatrixd internal_mass_matrix_;
 
 		std::shared_ptr<Exporter> io_;
 		int n_exports;
 
 		std::string output_path_;
 		bool debug_output_;
+		bool force_direct_solver_;
+		bool bypass_contact_;
+
+		int max_outer_loops_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);

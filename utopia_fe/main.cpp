@@ -1,3 +1,9 @@
+/*
+* @Author: kopanicakova
+* @Date:   2018-03-11 18:04:53
+* @Last Modified by:   kopanicakova
+* @Last Modified time: 2018-03-11 18:04:56
+*/
 #include <iostream>
 
 #include "par_moonolith.hpp"
@@ -37,6 +43,7 @@
 #include "utopia_LeastSquaresHelmholtz.hpp"
 #include "utopia_ContactSolver.hpp"
 #include "utopia_ContactTest.hpp"
+#include "utopia_CoarsenerTest.hpp"
 
 #include <functional>
 
@@ -79,16 +86,19 @@ int main(const int argc, char *argv[])
 	    runners["helm"] = run_form_least_squares_helmholtz;
 	    runners["contact_steady"] = run_steady_contact;
 	    runners["ct"] = run_contact_test;
+	    runners["coarsener_test"] = run_coarsener_test;
 
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
+
 	    
 
 
 		for(int i = 1; i < argc; ++i) {
+			const int ip1 = i+1;
+			
 			if(argv[i] == std::string("-r")) {
-				const int ip1 = i+1;
 				if(ip1 < argc) {
 					auto it = runners.find(argv[ip1]);
 					if(it == runners.end()) {
@@ -116,6 +126,12 @@ int main(const int argc, char *argv[])
 
 				std::cout << "--------------------------------------------" << std::endl;
 				std::cout << "--------------------------------------------" << std::endl;
+			} else if(argv[i] == std::string("-output_path")) {
+				utopia::Utopia::instance().set("output_path", argv[ip1]);
+				std::cout << "setting output_path to: " << argv[ip1] << std::endl;
+			} else if(argv[i] == std::string("-data_path")) {
+				utopia::Utopia::instance().set("data_path", argv[ip1]);
+				std::cout << "setting data_path to: " << argv[ip1] << std::endl;
 			}
 		}
 	}

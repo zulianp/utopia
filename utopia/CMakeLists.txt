@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 3.8.1)
+
 project(utopia)
 
 #To kill the policy warning  (maybe not a good idea yet)
@@ -7,25 +8,46 @@ set(CMAKE_MACOSX_RPATH 1)
 #################################################################################
 #################################################################################
 #################################################################################
+
 option(UTOPIA_ARCHIVE_ONLY "Allows to compile only the archive file. Suitable for linux" OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY "Allows to restrict the linking to static libraries" OFF)
-option(TRY_WITH_CUDA "Allows to enable to try enabling the cuda backend" OFF)
-option(TRY_WITH_OPENCL "Allows to enable to try enabling the opencl backend" OFF)
-option(TRY_WITH_PETSC "Allows to enable to try enabling the petsc backend" ON)
-option(TRY_WITH_BLAS "Allows to enable to try enabling the blas backend" ON)
-option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
-option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
-option(UTOPIA_LOG "enables utopia logging facilities" OFF)
+
+option(TRY_WITH_CUDA "Enable the cuda backend" OFF)
+option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
+option(TRY_WITH_PETSC "Enable the petsc backend" ON)
+option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
+option(TRY_WITH_BLAS "Enable the blas backend" ON)
+
+option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
 option(ENABLE_LOCK_CHECKING "Enable checks on the Read and Write locks" OFF)
+option(ENABLE_PASSO_EXTENSIONS "Enable non-standard petsc solvers developed in the PASSO library" OFF)
+option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
+option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
+
+option(TRY_WITH_EIGEN_3 "Look for eigen for comparing performance" OFF)
+option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" ON)
 
 #################################################################################
 #################################################################################
 #################################################################################
 
+if(UNIX AND NOT APPLE)
+       set(LINUX TRUE)
+endif()
 
-if(UTOPIA_LOG)
-	set(UTOPIA_LOG_ENABLED ON)
+if(LINUX)
+	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
+
+
+if(ENABLE_TRACE)
+	set(UTOPIA_TRACE_ENABLED ON)
+endif()
+
+if(ENABLE_PASSO_EXTENSIONS)
+	set(WITH_PASSO_EXTENSIONS TRUE)
 endif()
 
 IF(WIN32)
@@ -55,6 +77,7 @@ set(UTOPIA_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${UTOPIA_ROOT_PATH}/cmake")
 
 message(STATUS "[Status] UTOPIA_ROOT_PATH: ${UTOPIA_ROOT_PATH}")
+include(${UTOPIA_ROOT_PATH}/cmake/UtopiaCompilerFeatures.cmake)
 
 if( CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND NOT MSVC_IDE )
     message(FATAL_ERROR
@@ -85,7 +108,9 @@ macro(print_dependency_table)
 	SET(DEP_TABLE "${DEP_TABLE}--------------------------------------------------\n")
 	SET(DEP_TABLE "${DEP_TABLE}backend\t\t| active\t| developement status\n--------------------------------------------------\n")
 	SET(DEP_TABLE "${DEP_TABLE}petsc\t\t| ${UTOPIA_PETSC}\t\t| usable\n")
+	SET(DEP_TABLE "${DEP_TABLE}slepc\t\t| ${UTOPIA_SLEPC}\t\t| usable\n")
 	SET(DEP_TABLE "${DEP_TABLE}blas\t\t| ${UTOPIA_BLAS}\t\t| usable\n")
+	SET(DEP_TABLE "${DEP_TABLE}trilinos\t| ${UTOPIA_TRILINOS}\t\t| todo\n")
 	# SET(DEP_TABLE "${DEP_TABLE}openblas\t| ${OPEN_BLAS_FOUND}\t\t| usable\n")
 	SET(DEP_TABLE "${DEP_TABLE}lapack\t\t| ${UTOPIA_LAPACK}\t\t| usable\n")
 	SET(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_UMFPACK}\t\t| usable\n")
@@ -182,21 +207,16 @@ IF (NOT DOXYGEN_FOUND)
 message(WARNING "Doxygen is needed to build the documentation. Please install it correctly")
 ENDIF()
 #-- Configure the Template Doxyfile for our specific project
-configure_file(${UTOPIA_ROOT_PATH}/Doxyfile.txt  ${UTOPIA_ROOT_PATH}/bin  @ONLY IMMEDIATE)
+configure_file(${UTOPIA_ROOT_PATH}/Doxyfile.txt  ${CMAKE_BINARY_DIR}  @ONLY IMMEDIATE)
 #-- Add a custom target to run Doxygen when ever the project is built
-add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${UTOPIA_ROOT_PATH}/bin/Doxyfile.txt SOURCES ${UTOPIA_ROOT_PATH}/bin/Doxyfile.txt)
+add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile.txt SOURCES ${CMAKE_BINARY_DIR}/Doxyfile.txt)
 # IF you do NOT want the documentation to be generated EVERY time you build the project then leave out the 'ALL' keyword from the above command.
 
 #################################################################################
 #################################################################################
 #################################################################################
 
-# core modules
-set(UTOPIA_MODULES core backend solvers utils differentiable)
 
-foreach(MODULE ${UTOPIA_MODULES})
-	add_subdirectory(${MODULE})
-endforeach(MODULE)
 
 # backend modules
 if(TRY_WITH_BLAS)
@@ -206,6 +226,11 @@ endif()
 if(TRY_WITH_PETSC)
 	add_subdirectory(backend/petsc)
 endif()
+
+if(TRY_WITH_TRILINOS)
+	add_subdirectory(backend/trilinos)
+endif()
+
 
 if(TRY_WITH_CUDA)
 	add_subdirectory(backend/cuda)
@@ -224,6 +249,14 @@ endif()
 add_subdirectory(tests)
 
 
+# core modules
+set(UTOPIA_MODULES backend solvers differentiable core utils)
+
+foreach(MODULE ${UTOPIA_MODULES})
+	add_subdirectory(${MODULE})
+endforeach(MODULE)
+
+
 
 add_definitions(${UTOPIA_DEFS})
 include_directories(${UTOPIA_INCLUDES})
@@ -232,7 +265,7 @@ include_directories(${UTOPIA_MODULES})
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(.)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall ")# -Wextra -pedantic")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall ")# -Wextra -pedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 list(APPEND UTOPIA_HEADERS 
@@ -248,6 +281,29 @@ list(APPEND UTOPIA_SOURCES
 
 # config is created based on the successful backend compilations
 configure_file(${UTOPIA_ROOT_PATH}/utopia_Config.hpp.in ${CMAKE_BINARY_DIR}/utopia_Config.hpp)
+
+
+#########################################################
+include(WriteCompilerDetectionHeader)
+
+write_compiler_detection_header(
+  FILE utopia_compiler_features.hpp
+  PREFIX UTOPIA
+  COMPILERS GNU Clang MSVC Intel AppleClang
+  FEATURES 
+  		   # cxx_final #already in c++11
+  		   # cxx_noexcept #already in c++11
+  		   cxx_attribute_deprecated # in c++14
+  ALLOW_UNKNOWN_COMPILERS
+)
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/utopia_compiler_features.hpp
+  DESTINATION include
+)
+
+##########################################################
+
 
 add_library(utopia STATIC utopia.cpp ${UTOPIA_SOURCES})
 target_link_libraries(utopia ${UTOPIA_COMPONENTS})
@@ -309,3 +365,13 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_config.cmake 	 DESTINATION config)
 
 print_dependency_table()
 
+
+
+
+
+
+
+#############################
+### petsc-cuda stuff 
+
+link_directories(${CMAKE_CURRENT_BINARY_DIR})

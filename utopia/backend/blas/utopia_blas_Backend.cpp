@@ -42,6 +42,7 @@ namespace utopia {
 					const int *incy);
 		
 		double dnrm2_(const int *n, const double *x, const int *incx);
+		double dasum_(const int *n, const double *x, const int *incx);
 		
 		double ddot_(const int *n, const double *sx, const int *incx, const double *sy, const int *incy);
 		
@@ -452,6 +453,13 @@ namespace utopia {
 		return dnrm2_(&n, &vector[0], &incx);
 	}
 
+	BLASBackend::Scalar BLASBackend::norm1(const Vector &vector)
+	{
+		const int n = vector.size();
+		const int incx = 1;
+		return dasum_(&n, &vector[0], &incx);
+	}
+
 	BLASBackend::Scalar BLASBackend::norm2(const Matrix &mat)
 	{
 		const int n = mat.entries().size();
@@ -587,7 +595,28 @@ namespace utopia {
 			left.set(i, i,right[i]);
 		}
 	}
-	
+
+	void BLASBackend::diag(Vector &left, const CRSMatrix<Scalar>  &right)
+	{
+		const SizeType n = std::min(right.rows(), right.cols());
+		left.resize(n);
+
+		for (SizeType r = 0; r < n; ++r) {
+			const SizeType begin = right.rowptr()[r];
+			const SizeType end   = right.rowptr()[r + 1];
+
+			left[r] = 0.;
+
+			for (SizeType ind = begin; ind != end; ++ind) {
+				const SizeType c = right.colindex()[ind];
+				if(c == r) {
+					left[r] = right.entries()[ind];
+					break;
+				}
+			}
+		}
+	}
+
 	void BLASBackend::diag(Vector &left, const Matrix &right)
 	{
 		const SizeType n = std::min(right.rows(), right.cols());

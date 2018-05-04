@@ -13,7 +13,7 @@ namespace utopia {
         typedef typename TypeAndFill<Traits, CLeft>::Type Result;
 
         inline static void apply(const Expr &expr) {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             auto & result      = Eval<CLeft, Traits>::apply(expr.left());
             const auto & left  = expr.right().left().implementation();
@@ -23,7 +23,7 @@ namespace utopia {
 
         	UTOPIA_BACKEND(Traits).apply_binary(result, left, Multiplies(), right);
 
-			UTOPIA_LOG_END(expr);
+			UTOPIA_TRACE_END(expr);
         }
     };
 
@@ -34,21 +34,21 @@ namespace utopia {
         typedef typename TypeAndFill<Traits, CLeft>::Type Result;
 
         inline static void apply(const Expr &expr) {
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
-            auto & result       = Eval<CLeft, Traits>::apply(expr.left());
+            auto & result      = Eval<CLeft, Traits>::apply(expr.left());
             const auto & left  = expr.right().left().implementation();
             auto && right      = Eval<Right, Traits>::apply(expr.right().right());
 
         	if(&result != &right) {
         		UTOPIA_BACKEND(Traits).apply_binary(result, left, Multiplies(), right);
         	} else {
-        		Result temp;
+        		typename std::remove_const<typename std::remove_reference<decltype(result)>::type>::type temp;
         		UTOPIA_BACKEND(Traits).apply_binary(temp, left, Multiplies(),right);
                 result = temp;
         	}
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
         }
     };
 }

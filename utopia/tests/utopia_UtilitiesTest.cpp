@@ -234,9 +234,11 @@ namespace utopia {
 
         static void print_backend_info()
         {
-            if(Utopia::Instance().verbose()) {
+            mpi_world_barrier();
+            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
                 std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
+            mpi_world_barrier();
         }
 
         void run() {
@@ -279,9 +281,11 @@ namespace utopia {
             UtilitiesTest<Matrixd, DVectord>().inline_eval_test();
 #endif //WITH_BLAS
 
-        } else {
-            std::cerr << "[Warning] UtilitiesTest not run for petsc" << std::endl;
         }
+
+         // else {
+            // std::cerr << "[Warning] UtilitiesTest not run for petsc" << std::endl;
+        // }
 #endif //WITH_PETSC
 
 #ifdef WITH_BLAS

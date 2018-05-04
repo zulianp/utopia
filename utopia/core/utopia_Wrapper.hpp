@@ -17,6 +17,7 @@
 #include "utopia_Ranged.hpp"
 #include "utopia_Select.hpp"
 
+
 #include <iostream>
 #include <type_traits>
 
@@ -79,9 +80,7 @@ namespace utopia {
             StoreAs = UTOPIA_BY_REFERENCE
         };
 
-        virtual ~Wrapper()
-				{
-				}
+        virtual ~Wrapper() {}
 
         template<class Derived>
         Wrapper(const Expression<Derived> &expr) {
@@ -94,10 +93,22 @@ namespace utopia {
             return *this;
         }
 
-        // Wrapper(const int rows, const int cols, std::initializer_list<Scalar> list)
-        // : _impl(rows, cols, list)
-        // {
-        // }
+        Wrapper & operator=(Wrapper &&other) {
+             utopia::Backend<Scalar, Traits<Implementation>::Backend>::Instance().assign(_impl, std::move(other._impl));
+            return *this;
+        }
+
+        Wrapper & operator=(const Wrapper &other) {
+            utopia::Backend<Scalar, Traits<Implementation>::Backend>::Instance().assign(_impl, other._impl);
+            return *this;
+        }
+
+
+        Wrapper(const Wrapper &expr) {
+            // evaluator().eval(Construct<Wrapper, Wrapper>(*this, expr));
+            //FIXME
+            _impl = expr._impl;
+        }
         
         Wrapper() { }
 
@@ -426,15 +437,15 @@ namespace utopia {
         disp(w.implementation().begin(), w.implementation().end(), os);
     }
 
-    inline void disp(const double value, std::ostream &os)
+    inline void disp(const double value, std::ostream &os = std::cout)
     {
         os << value << "\n";
     }
 
-    inline void disp(const double value)
-    {
-        disp(value, std::cout);
-    }
+    // inline void disp(const double value)
+    // {
+    //     disp(value, std::cout);
+    // }
 
     template<class VectorT>
     Wrapper<VectorT, 1> vmake() {
@@ -511,7 +522,8 @@ namespace utopia {
     template<class Impl, int Order>
     void disp(const Wrapper<Impl, Order> &w)
     {
-        disp(w, std::cout);
+        // disp(w, std::cout);
+        return Backend<typename Traits<Impl>::Scalar, Traits<Impl>::Backend>::Instance().disp(w.implementation());
     }
 
     /**
@@ -555,6 +567,22 @@ namespace utopia {
     inline constexpr int order(const Expression<Derived> &)
     {
         return Derived::Order;
+    }
+
+    template<class Tensor, int Order>
+    inline auto raw_type(const Wrapper<Tensor, Order> &w) -> decltype( 
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation()) 
+        ) &
+    {
+        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation());
+    }
+
+    template<class Tensor, int Order>
+    inline auto raw_type(Wrapper<Tensor, Order> &w) -> decltype( 
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation())
+        ) &
+    {
+        return Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().raw_type(w.implementation());
     }
 }
 

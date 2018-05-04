@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-05-03
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-04
-*/
-
 #ifndef UTOPIA_MG_OPT_HPP
 #define UTOPIA_MG_OPT_HPP
 #include "utopia_NonLinearSmoother.hpp"
@@ -12,6 +5,7 @@
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 #include "utopia_LS_Strategy.hpp"
+#include "utopia_SimpleBacktracking.hpp"
 
 namespace utopia 
 {
@@ -21,24 +15,24 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector, class FunctionType>
-    class MG_OPT : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>
+    template<class Matrix, class Vector>
+    class MG_OPT : public NonlinearMultiLevelBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
         typedef utopia::LSStrategy<Matrix, Vector>          LSStrategy; 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
+        typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
     
 
     public:
 
-        MG_OPT( const std::shared_ptr<Solver> &smoother = std::shared_ptr<Solver>(), 
-                const std::shared_ptr<Solver> &coarse_solver = std::shared_ptr<Solver>(),
-                const std::shared_ptr<LSStrategy> &ls_strategy = std::shared_ptr<LSStrategy>(),
+        MG_OPT( const std::shared_ptr<Solver> &smoother, const std::shared_ptr<Solver> &coarse_solver,
+                const std::shared_ptr<LSStrategy> &ls_strategy = std::make_shared<utopia::SimpleBacktracking<Matrix, Vector> >(),
                 const Parameters params = Parameters()): 
-                NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
+                NonlinearMultiLevelBase<Matrix,Vector>(params), 
                 _smoother(smoother), 
                 _coarse_solver(coarse_solver), 
                 _ls_strategy(ls_strategy) 
@@ -48,14 +42,14 @@ namespace utopia
 
         virtual ~MG_OPT(){} 
         
-        virtual std::string name_id()
+        virtual std::string name_id() override
         {
             return "MG_OPT"; 
         }
 
-        void set_parameters(const Parameters params)  // override
+        void set_parameters(const Parameters params) override
         {
-            NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params); 
+            NonlinearMultiLevelBase<Matrix, Vector>::set_parameters(params); 
             _smoother->set_parameters(params); 
             _coarse_solver->set_parameters(params); 
             _parameters = params; 
@@ -63,20 +57,9 @@ namespace utopia
 
     private: 
 
-        inline FunctionType &levels(const SizeType &l)
+        bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
-            return this->_nonlinear_levels[l]; 
-        }
-
-        inline Transfer &transfers(const SizeType & l)
-        {
-            return this->_transfers[l]; 
-        }
-
-
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
-        {
-           Vector g_fine, g_coarse, u_2l, e, u_init; 
+           Vector g_fine, g_restricted,  g_coarse, u_2l, s_coarse, s_fine, u_init; 
            Scalar alpha; 
 
            this->make_iterate_feasible(fine_fun, u_l); 
@@ -87,21 +70,21 @@ namespace utopia
 
             g_fine -= f; 
 
-            transfers(l-2).restrict(g_fine, g_fine); 
-            transfers(l-2).project_down(u_l, u_2l); 
+            this->transfer(l-2).restrict(g_fine, g_restricted); 
+            this->transfer(l-2).project_down(u_l, u_2l); 
 
-            this->make_iterate_feasible(levels(l-2), u_2l); 
-            this->zero_correction_related_to_equality_constrain(levels(l-2), g_fine); 
+            this->make_iterate_feasible(this->function(l-2), u_2l); 
+            this->zero_correction_related_to_equality_constrain(this->function(l-2), g_restricted); 
 
-            levels(l-2).gradient(u_2l, g_coarse); 
+            this->function(l-2).gradient(u_2l, g_coarse); 
 
             u_init = u_2l; 
-            g_coarse -= g_fine;  // tau correction 
+            g_coarse -= g_restricted;  // tau correction - g_diff in rmtr 
                                  
+
             if(l == 2)
             {
-                this->make_iterate_feasible(levels(0), u_2l); 
-                coarse_solve(levels(0), u_2l, g_coarse); 
+                coarse_solve(this->function(0), u_2l, g_coarse); 
             }
             else
             {
@@ -109,18 +92,21 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = l - 1; 
-                    this->multiplicative_cycle(levels(l-2), u_2l, g_coarse, l_new); 
+                    this->multiplicative_cycle(this->function(l-2), u_2l, g_coarse, l_new); 
                 }
             }
 
-            e = u_2l - u_init; 
-            transfers(l-2).interpolate(e, e);
-            this->zero_correction_related_to_equality_constrain(fine_fun, e); 
+            s_coarse = u_2l - u_init; 
+            this->transfer(l-2).interpolate(s_coarse, s_fine);
+            this->zero_correction_related_to_equality_constrain(fine_fun, s_fine); 
             
-            _ls_strategy->get_alpha(fine_fun, g_fine, u_l, e, alpha);
-            // std::cout<<"l:   "<< l << "   alpha:   "<< alpha << " <g_k, e_h>:   "<< dot(L_l, e_h) << "  \n"; 
 
-            u_l += alpha * e; 
+            // TODO:: check which gradient: with/without tau correction  ...
+            // TODO::  put  energy checks ... 
+
+
+            _ls_strategy->get_alpha(fine_fun, g_fine, u_l, s_fine, alpha);
+            u_l += alpha * s_fine; 
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
@@ -139,10 +125,12 @@ namespace utopia
          *
          * @return   
          */
-        bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs, const SizeType & nu = 1)
+        bool smoothing(Fun &fun,  Vector &x, const Vector &rhs, const SizeType & nu = 1)
         {
-            _smoother->max_it(nu); 
+            _smoother->max_it(1); 
+            _smoother->verbose(true); 
             _smoother->solve(fun, x, rhs); 
+
             return true; 
         }
 
@@ -156,8 +144,9 @@ namespace utopia
          *
          * @return   
          */
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
+        bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs) override
         {
+            _coarse_solver->verbose(true); 
             _coarse_solver->solve(fun, x, rhs); 
             return true; 
         }

@@ -1,19 +1,9 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-11
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 #define UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 #include "utopia_NonLinearSolver.hpp"
-#include "utopia_TRBase.hpp"
+#include "utopia_TRBoxBase.hpp"
 #include "utopia_TRBoxSubproblem.hpp"
-#include "utopia_Dogleg.hpp"
-#include "utopia_SteihaugToint.hpp"
 #include "utopia_Parameters.hpp"    
-
 
  namespace utopia 
  {
@@ -22,23 +12,20 @@
        * @brief      Trust region solver taking into account also bound constrains.
        */ 
      	class TrustRegionVariableBound :  public NonLinearSolver<Matrix, Vector>, 
-                                        public TrustRegionBase<Matrix, Vector> 
+                                        public TrustRegionBoxBase<Matrix, Vector> 
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         typedef utopia::TRBoxSubproblem<Matrix, Vector> TRBoxSubproblem; 
-        typedef utopia::TrustRegionBase<Matrix, Vector> TrustRegionBase; 
+        typedef utopia::TrustRegionBoxBase<Matrix, Vector> TrustRegionBase; 
         typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
-        
-        typedef utopia::BoxConstraints<Vector>              BoxConstraints;
      	
-     	public:
-      TrustRegionVariableBound(const std::shared_ptr<TRBoxSubproblem> &tr_subproblem = std::shared_ptr<TRBoxSubproblem>(),
-                              const Parameters params = Parameters())
-                              : NonLinearSolver(tr_subproblem, params)  
+     	public:                                                                       // once generic, then = std::shared_ptr<ProjectedGaussSeidel<Matrix, Vector> >()
+      TrustRegionVariableBound( const std::shared_ptr<TRBoxSubproblem> &tr_subproblem,
+                                const Parameters params = Parameters()) : 
+                                NonLinearSolver(tr_subproblem, params)  
       {
-
         set_parameters(params);        
       }
 
@@ -52,8 +39,6 @@
         NonLinearSolver::set_parameters(params);
         TrustRegionBase::set_parameters(params);
       }
-
-
 
       /**
        * @brief      Trust region solve. 
@@ -87,8 +72,6 @@
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
         // delta = 10;        // testing 
 
-
-        
         g0_norm = norm2(g);
         g_norm = g0_norm;
         
@@ -121,14 +104,10 @@
             tr_subproblem->current_radius(delta);  
 
             Vector ub, lb; 
-            tr_subproblem->prepare_tr_box_solve( delta, x_k, box_constraints_, ub, lb); 
+            this->merge_tr_with_pointwise_constrains(x_k, delta, ub, lb); 
             
             auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
-            
-            std::cout<<"--------- constrained solve ---------- \n"; 
             tr_subproblem->tr_constrained_solve(H, g, p_k, box);
-            std::cout<<"--------- constrained solve end---------- \n"; 
-
           }
 
           this->get_pred(g, H, p_k, pred); 
@@ -180,98 +159,20 @@
       }
 
 
-      /**
-       * @brief      Sets the box constraints.
-       *
-       * @param      box   The box
-       *
-       */
-      virtual bool set_box_constraints(BoxConstraints & box)
+      virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls) override
       {
-        box_constraints_ = box; 
-        return true; 
-      }
-
-      /**
-       * @brief      Gets the box constraints.
-       *
-       * @return     The box constraints.
-       */
-      virtual BoxConstraints & get_box_constraints()
-      {
-        return box_constraints_; 
-      }
-
-
-
-  protected:
-
-      /**
-       * @brief      Computes criticality measure, which is later used for termination conditions
-       *
-       * @param[in]  x     The current iterate
-       * @param[in]  g     The gradient
-       *
-       */
-      virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g)
-      {
-
-        Vector Pc; 
-        Vector x_g = x - g; 
-        Vector ub, lb; 
-
-        Scalar n = local_size(x).get(0); 
-
-        if(box_constraints_.has_upper_bound())
-          ub = *box_constraints_.upper_bound(); 
-        else
-          ub =  local_values(n, 9e15); 
-
-        if(box_constraints_.has_lower_bound())
-          lb = *box_constraints_.lower_bound(); 
-        else
-          lb =  local_values(n, -9e15); 
-
-        get_projection(x_g, lb, ub, Pc); 
-        
-        Pc -= x; 
-        return norm2(Pc); 
-      }
-
-
-
-      /**
-       * @brief      Projection onto feasible set
-       *
-       * @param[in]  x     The quantity to be projected 
-       * @param[in]  lb    The lower bound
-       * @param[in]  ub    The upper bound
-       * @param      Pc    Projection
-       *
-       */
-      bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc)
-      {
-          Pc = local_values(local_size(x).get(0), 1.0);; 
+          auto linear_solver = this->linear_solver(); 
+          if (dynamic_cast<TRBoxSubproblem *>(linear_solver.get()) != nullptr)
           {
-              Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
-              Write<Vector> wv(Pc); 
-
-              each_write(Pc, [ub, lb, x](const SizeType i) -> double { 
-                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
-                          if(li >= xi)
-                            return li; 
-                          else
-                            return (ui <= xi) ? ui : xi; }   );
+              TRBoxSubproblem * tr_sub = dynamic_cast<TRBoxSubproblem *>(linear_solver.get());
+              tr_sub->set_linear_solver(ls);
           }
-
-          return true;
       }
 
-
-
-    protected: 
-      BoxConstraints box_constraints_; 
-
+      virtual void set_trust_region_strategy(const std::shared_ptr<TRBoxSubproblem> &tr_linear_solver)
+      {
+        NonLinearSolver::set_linear_solver(tr_linear_solver); 
+      }
 
   };
 

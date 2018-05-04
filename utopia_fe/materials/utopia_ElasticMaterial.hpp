@@ -11,7 +11,7 @@ namespace utopia {
 	public:
 		virtual ~ElasticMaterial() {}
 		// virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) = 0;
-		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) = 0;
+		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) = 0;
 		virtual void clear() {}
 	};
 

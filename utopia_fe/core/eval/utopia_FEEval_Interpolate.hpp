@@ -13,9 +13,9 @@ namespace utopia {
 
 	    inline static auto apply(
 	    	const Expr &expr,
-	    	AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::fun(expr, ctx) )
+	    	AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::fun(expr.coefficient(), expr.fun(), ctx) )
 	    {
-	    	return FEBackend<Backend>::fun(expr, ctx);
+	    	return FEBackend<Backend>::fun(expr.coefficient(), expr.fun(), ctx);
 	    } 
 	};
 
@@ -26,9 +26,9 @@ namespace utopia {
 
 	    inline static auto apply(
 	    	const Expr &expr,
-	    	AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::grad(expr.expr(), ctx) )
+	    	AssemblyContext<Backend> &ctx) -> decltype( FEBackend<Backend>::grad(expr.expr().coefficient(), expr.expr().fun(), ctx) )
 	    {
-	    	return FEBackend<Backend>::grad(expr.expr(), ctx);
+	    	return FEBackend<Backend>::grad(expr.expr().coefficient(), expr.expr().fun(), ctx);
 	    } 
 	};
 

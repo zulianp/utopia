@@ -21,14 +21,18 @@ namespace utopia {
 		{}
 
 		// virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
-		virtual bool assemble_hessian_and_gradient(Vector &x, Matrix &hessian, Vector &gradient) override
+		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
 		{
 			if(!this->material().assemble_hessian_and_gradient(x, stiffness_matrix_, internal_force_)) {
 				return false;
 			}
 			
-			hessian  = (4./(dt_*dt_)) * internal_mass_matrix_ + stiffness_matrix_;
-			gradient = internal_force_ + 4./(dt_*dt_) * (internal_mass_matrix_ * x) - forcing_term_;
+			// hessian  = (4./(dt_*dt_)) * internal_mass_matrix_ + stiffness_matrix_;
+			// gradient = internal_force_ + 4./(dt_*dt_) * (internal_mass_matrix_ * x) - forcing_term_;
+
+			auto dt2 = dt_*dt_;
+			hessian  = internal_mass_matrix_ + (dt2/4.) * stiffness_matrix_;
+			gradient = (dt2/4.) * (internal_force_ + 4./(dt2) * (internal_mass_matrix_ * x) - forcing_term_);
 			return true;
 		}
 

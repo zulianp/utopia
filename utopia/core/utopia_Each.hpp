@@ -59,12 +59,12 @@ namespace utopia {
 		inline static void apply_read(const Tensor &m, Fun fun)
 		{
 			Range r = row_range(m);
-			Range c = col_range(m);
+			Size s = size(m);
 
 			Read<Tensor> read_lock(m);
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
-				for(auto j = c.begin(); j != c.end(); ++j) {
+				for(auto j = 0; j != s.get(1); ++j) {
 					fun(i, j, m.get(i, j));
 				}
 			}
@@ -74,11 +74,12 @@ namespace utopia {
 		inline static void apply_write(Tensor &m, Fun fun)
 		{
 			Range r = row_range(m);
-			Range c = col_range(m);
+			Size s = size(m);
+
 			Write<Tensor> write_lock(m);
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
-				for(auto j = c.begin(); j != c.end(); ++j) {
+				for(auto j = 0; j != s.get(1); ++j) {
 					m.set(i, j, fun(i, j));
 				}
 			}

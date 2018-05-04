@@ -27,7 +27,8 @@ namespace  utopia
             {
                 set_parameters(params); 
             };
-            
+         
+
             virtual ~TRSubproblem( ){}        
 
             /**
@@ -40,6 +41,12 @@ namespace  utopia
                 IterativeSolver::set_parameters(params); 
                 current_radius(params.delta0()); 
             } 
+
+            virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls)
+            {
+                if(this->verbose())
+                    std::cout<<"current TR strategy does not need linear solver \n"; 
+            }
 
             /**
              * @brief      Setter for current radius. 
@@ -59,6 +66,8 @@ namespace  utopia
                 return current_radius_;
             }; 
 
+
+            virtual TRSubproblem * clone() const override = 0;
 
         protected:
             /**
@@ -97,18 +106,30 @@ namespace  utopia
                 return tau; 
             }
 
+
+        Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
+        {
+            Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c); 
+
+            Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a); 
+            Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a); 
+
+            return std::max(lower, lower);
+        }
+
+
     public: 
         virtual bool unpreconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
         virtual bool preconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
 
 
         
-            virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k)
-            {
-                update(make_ref(H));
-                apply(g, p_k); 
-                return true; 
-            }
+        virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k)
+        {
+            update(make_ref(H));
+            apply(g, p_k); 
+            return true; 
+        }
 
         /**
          * @brief                Solution routine for CG. 
@@ -154,6 +175,7 @@ namespace  utopia
     private: 
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */  
         Scalar current_radius_;                     /*!< Radius on current iterate - used to solve constrained QP wrt TR bound. */  
+
         
     };
 }

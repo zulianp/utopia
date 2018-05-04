@@ -22,14 +22,15 @@ namespace utopia
      * @tparam     Matrix  
      * @tparam     Vector  
      */
-    template<class Matrix, class Vector, class FunctionType>
-    class FAS : public NonlinearMultiLevelBase<Matrix, Vector, FunctionType>
+    template<class Matrix, class Vector>
+    class FAS : public NonlinearMultiLevelBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::NonLinearSolver<Matrix, Vector>     Solver;
         typedef utopia::NonLinearSmoother<Matrix, Vector>   Smoother;
         typedef utopia::Transfer<Matrix, Vector>   Transfer;
+        typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
     
 
@@ -41,12 +42,8 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        FAS(    const std::shared_ptr<Smoother> &smoother = std::shared_ptr<Smoother>(), 
-                const std::shared_ptr<Solver> &coarse_solver = std::shared_ptr<Solver>(),
-                const Parameters params = Parameters()): 
-                NonlinearMultiLevelBase<Matrix,Vector, FunctionType>(params), 
-                _smoother(smoother), 
-                _coarse_solver(coarse_solver) 
+        FAS( const std::shared_ptr<Smoother> &smoother, const std::shared_ptr<Solver> &coarse_solver, const Parameters params = Parameters()): 
+                NonlinearMultiLevelBase<Matrix,Vector>(params), _smoother(smoother), _coarse_solver(coarse_solver) 
         {
             set_parameters(params); 
         }
@@ -61,7 +58,7 @@ namespace utopia
          */
         void set_parameters(const Parameters params) override
         {
-            NonlinearMultiLevelBase<Matrix, Vector, FunctionType>::set_parameters(params); 
+            NonlinearMultiLevelBase<Matrix, Vector>::set_parameters(params); 
             _smoother->set_parameters(params); 
             _coarse_solver->set_parameters(params); 
             
@@ -80,44 +77,35 @@ namespace utopia
 
     private: 
 
-        inline FunctionType &levels(const SizeType &l)
-        {
-            return this->_nonlinear_levels[l]; 
-        }
-
-        inline Transfer &transfers(const SizeType & l)
-        {
-            return this->_transfers[l]; 
-        }
-
-
-        bool multiplicative_cycle(FunctionType &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
+        bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
             Vector g_fine, g_coarse, u_2l, e, u_init; 
 
            this->make_iterate_feasible(fine_fun, u_l); 
 
+
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
+
+
             fine_fun.gradient(u_l, g_fine);             
 
             g_fine -= f; 
 
-            transfers(l-2).restrict(g_fine, g_fine); 
-            transfers(l-2).project_down(u_l, u_2l); 
+            this->transfer(l-2).restrict(g_fine, g_fine); 
+            this->transfer(l-2).project_down(u_l, u_2l); 
 
-            this->make_iterate_feasible(levels(l-2), u_2l); 
-            this->zero_correction_related_to_equality_constrain(levels(l-2), g_fine); 
+            this->make_iterate_feasible(this->function(l-2), u_2l); 
+            this->zero_correction_related_to_equality_constrain(this->function(l-2), g_fine); 
 
-            levels(l-2).gradient(u_2l, g_coarse); 
+            this->function(l-2).gradient(u_2l, g_coarse); 
 
             u_init = u_2l; 
             g_coarse -= g_fine;  // tau correction 
                                  
             if(l == 2)
             {
-                this->make_iterate_feasible(levels(0), u_2l); 
-                coarse_solve(levels(0), u_2l, g_coarse); 
+                coarse_solve(this->function(0), u_2l, g_coarse); 
             }
             else
             {
@@ -125,12 +113,12 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = l - 1; 
-                    this->multiplicative_cycle(levels(l-2), u_2l, g_coarse, l_new); 
+                    this->multiplicative_cycle(this->function(l-2), u_2l, g_coarse, l_new); 
                 }
             }
 
             e = u_2l - u_init; 
-            transfers(l-2).interpolate(e, e);
+            this->transfer(l-2).interpolate(e, e);
             this->zero_correction_related_to_equality_constrain(fine_fun, e); 
             
             u_l += e; 
@@ -171,10 +159,8 @@ namespace utopia
          *
          * @return   
          */
-        bool coarse_solve(FunctionType &fun, Vector &x, const Vector & rhs) override
+        bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs) override
         {   
-            std::cout<<"coarse solver:    \n";
-            _coarse_solver->verbose(true);
             _coarse_solver->solve(fun, x, rhs); 
             return true; 
         }

@@ -62,7 +62,7 @@ namespace utopia {
 
 		inline BlockVar<double> var_mu() const
 		{
-			return make_var_from_map(default_lambda, lambda_);
+			return make_var_from_map(default_mu, mu_);
 		}
 		
 		double default_mu, default_lambda;

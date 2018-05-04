@@ -19,7 +19,7 @@ namespace utopia {
         {
             Tensor result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             //FIXME this is actually a binary thing
             UTOPIA_BACKEND(Traits).apply_binary(
@@ -30,7 +30,7 @@ namespace utopia {
 
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };
@@ -44,7 +44,7 @@ namespace utopia {
         {
             Result result;
 
-            UTOPIA_LOG_BEGIN(expr);
+            UTOPIA_TRACE_BEGIN(expr);
 
             UTOPIA_BACKEND(Traits).apply_unary(
                 result,
@@ -52,7 +52,7 @@ namespace utopia {
                 Eval<Expr, Traits>::apply(expr.expr())
                 );
 
-            UTOPIA_LOG_END(expr);
+            UTOPIA_TRACE_END(expr);
             return result;
         }
     };

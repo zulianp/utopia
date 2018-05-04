@@ -2,7 +2,6 @@
 #define UTOPIA_UTOPIA_TEST_HPP
 
 #include <sstream>
-#include "utopia_SpecTest.hpp"
 #include "utopia_WrapperTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "utopia_AutoDiffTest.hpp"
@@ -13,20 +12,31 @@
 #include "utopia_PetscTest.hpp"
 #include "utopia_BLASTest.hpp"
 #include "utopia_MiscTest.hpp"
+#include "utopia_TrilinosTest.hpp"
+#include "utopia_TaoSolverTest.hpp"
+#include "utopia_PetscCudaTest.hpp"
+#include "utopia_SelectionTest.hpp"
 
 namespace utopia
 {
     inline static void runAllTests()
     {
         runWrapperTest();
-        runSpecTest();
         run_autodiff_test();
-        runSolversTest();
         runAlgebraTest();
         runUtilitiesTest();
         runPetscTest();
         runBLASTest();
         runMiscTest();
+        run_trilinos_test();
+        run_tao_solver_test();
+        run_petsc_cuda_test();
+        run_selection_test();
+
+        runGenericSolversTest(); 
+        runPetscNonlinearSolversTest(); 
+        runPetscLinearSolversTest(); 
+        runPetscSlepcSolversTest(); 
 
 
         //only works for serial
@@ -41,6 +51,9 @@ namespace utopia
             std::cout << "[Begin testing]" << std::endl;
         }
 
+        Chrono c;
+        c.start();
+
         if (tests == "all") {
             runAllTests();
         } else {
@@ -49,12 +62,23 @@ namespace utopia
             while (std::getline(iss, token, ',')) {
                 if (token == "wrapper")
                     runWrapperTest();
-                else if (token == "spec")
-                    runSpecTest();
                 else if (token == "autodiff")
                     run_autodiff_test();
                 else if (token == "solvers")
-                   runSolversTest();
+                {
+                    runGenericSolversTest();
+                    runPetscNonlinearSolversTest(); 
+                    runPetscLinearSolversTest(); 
+                    runPetscSlepcSolversTest();   
+                }             
+                else if (token == "solvers_generic")
+                   runGenericSolversTest();
+                else if (token == "solvers_petsc_nonlinear")
+                   runPetscNonlinearSolversTest();
+                else if (token == "solvers_petsc_linear")
+                   runPetscLinearSolversTest();                                  
+                else if (token == "solvers_slepc")
+                   runPetscSlepcSolversTest();                                  
                 else if (token == "performance")
                     run_performance_test();
                 else if (token == "algebra")
@@ -67,11 +91,26 @@ namespace utopia
                     runBLASTest();
                 else if (token == "misc")
                     runMiscTest();
+                else if (token == "trilinos")
+                    run_trilinos_test();
+                else if(token == "tao") {
+                    run_tao_solver_test();
+                } else if(token == "petsc_cuda") {
+                    run_petsc_cuda_test();
+                } else if(token == "selection") {
+                    run_selection_test();
+                }
             }
         }
 
         if(mpi_world_rank() == 0) {
             std::cout << "[End testing]" << std::endl;
+        }
+
+        mpi_world_barrier();
+        c.stop();
+        if(utopia::Utopia::instance().verbose() && mpi_world_rank() == 0) {
+            std::cout << c << std::endl;
         }
     }
 }

@@ -116,7 +116,7 @@ namespace utopia {
 	void PetscBackend::resize(PetscVector &vec, const Size &s)
 	{
 		if(vec.is_null()) {
-			vec.init(default_communicator(), parallel_vector_type(), PETSC_DECIDE, s.get(0));
+			vec.init(default_communicator(), vec.type_override(), PETSC_DECIDE, s.get(0));
 		} else {
 			vec.resize(PETSC_DECIDE, s.get(0));
 		}
@@ -415,25 +415,25 @@ namespace utopia {
 
 	void PetscBackend::build(PetscMatrix &m, const Size &size, const Identity &, const PetscArgs &opts)
 	{
-		m.dense_init_identity(opts.comm, parallel_dense_matrix_type(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), 1.);
+		m.dense_init_identity(opts.comm,  m.type_override(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), 1.);
 		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const Identity &, const PetscArgs &opts)
 	{
-		m.matij_init_identity(opts.comm, PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), 1.);
+		m.matij_init_identity(opts.comm, m.type_override(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), 1.);
 		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PetscMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts)
 	{
-		m.dense_init_identity(opts.comm, parallel_dense_matrix_type(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, 1.);
+		m.dense_init_identity(opts.comm, m.type_override(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, 1.);
 		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PetscSparseMatrix &m, const Size &size, const LocalIdentity &, const PetscArgs &opts)
 	{
-		m.matij_init_identity(opts.comm, size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, 1.);
+		m.matij_init_identity(opts.comm, m.type_override(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, 1.);
 		apply_args(opts, m);
 	}
 	
@@ -441,6 +441,7 @@ namespace utopia {
 	{
 		m.matij_init(
         	opts.comm,
+        	m.type_override(),
         	PETSC_DECIDE,
         	PETSC_DECIDE,
         	size.get(0),
@@ -456,6 +457,7 @@ namespace utopia {
 	{
 		m.matij_init(
         	opts.comm,
+        	m.type_override(),
         	size.get(0),
         	size.get(1),
         	PETSC_DETERMINE,
@@ -472,10 +474,26 @@ namespace utopia {
 	{
 		build(m, size, LocalValues<Scalar>(0));
 	}
+
+	void PetscBackend::build(PetscCuSparseMatrix  &m, const Size &size, const LocalNNZ<PetscInt> &nnz, const PetscArgs &opts)
+	{
+		m.matij_init(
+        	opts.comm,
+        	m.type_override(),
+        	size.get(0),
+        	size.get(1),
+        	PETSC_DETERMINE,
+        	PETSC_DETERMINE,
+        	nnz.nnz(),
+        	nnz.nnz()
+        );
+
+		apply_args(opts, m);
+	}
 	
 	/// Obviously there is no sparse support for dense matrices. Nevertheless, compatibility requires it.
 	void PetscBackend::build(PetscMatrix  &m, const Size &size, const NNZ<PetscInt> &, const PetscArgs &opts)
-	{
+	{	
 		build(m, size, Zeros());
 	}
 	
@@ -500,30 +518,30 @@ namespace utopia {
 	}
 	
 	void PetscBackend::build(PetscMatrix &m, const Size &size, const Values<Scalar> &values, const PetscArgs &opts) {
-		m.dense_init_values(opts.comm, parallel_dense_matrix_type(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), values.value());
+		m.dense_init_values(opts.comm,  m.type_override(), PETSC_DECIDE, PETSC_DECIDE, size.get(0), size.get(1), values.value());
 		apply_args(opts, m);
 	}
 	
 	void PetscBackend::build(PetscMatrix &m, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts) {
-		m.dense_init_values(opts.comm, parallel_dense_matrix_type(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, values.value());
+		m.dense_init_values(opts.comm, m.type_override(), size.get(0), size.get(1), PETSC_DETERMINE, PETSC_DETERMINE, values.value());
 		apply_args(opts, m);
 	}
 
 	void PetscBackend::build(PetscVector &v, const Size &in_local_size, const Size &&in_global_size, const Values<Scalar> &values, const PetscArgs &opts)
 	{
-		v.values(opts.comm, parallel_vector_type(), in_local_size.get(0), in_global_size.get(0), values.value());
+		v.values(opts.comm, v.type_override(), in_local_size.get(0), in_global_size.get(0), values.value());
 		apply_args(opts, v);
 	}
 	
 	void PetscBackend::build(PetscVector &v, const Size &size, const Values<Scalar> &values, const PetscArgs &opts)
 	{
-		v.values(opts.comm, parallel_vector_type(), PETSC_DECIDE, size.get(0), values.value());
+		v.values(opts.comm, v.type_override(), PETSC_DECIDE, size.get(0), values.value());
 		apply_args(opts, v);
 	}
 	
 	void PetscBackend::build(PetscVector &v, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts)
 	{
-		v.values(opts.comm, parallel_vector_type(), size.get(0), PETSC_DETERMINE, values.value());
+		v.values(opts.comm, v.type_override(), size.get(0), PETSC_DETERMINE, values.value());
 		apply_args(opts, v);
 	}
 	
@@ -755,7 +773,7 @@ namespace utopia {
 	void PetscBackend::diag(PetscMatrix &mat, const PetscVector &vec)
 	{
 		//FIXME make it generic for all matrix types
-		mat.dense_init_diag(parallel_dense_matrix_type(), vec);
+		mat.dense_init_diag(mat.type_override(), vec);
 	}
 
 	void PetscBackend::mat_diag_shift(PetscMatrix &left, const Scalar diag_factor)
@@ -863,7 +881,7 @@ namespace utopia {
 		
 		result.dense_init(
 			comm,
-			parallel_dense_matrix_type(),
+			result.type_override(),
 			l_range.extent(),
 			PETSC_DECIDE,
 			result_size.get(0),
@@ -907,7 +925,7 @@ namespace utopia {
 	}
 	
 	void PetscBackend::vec_to_mat(Matrix &m, const Vector &v, const bool transpose) {
-		m.dense_init(v.communicator(), parallel_dense_matrix_type(), v.local_size(), 1, v.size(), 1);
+		m.dense_init(v.communicator(), m.type_override(), v.local_size(), 1, v.size(), 1);
 		
 		Range r = v.range();
 
@@ -940,16 +958,30 @@ namespace utopia {
 			std::cerr << "[Error] not handled case in triple_product_ptap" << std::endl;
 		}
 
-		check_error( MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) ); 
+		assert(A.same_type(P));
+
+		if(A.is_cuda()) {
+			m_utopia_status_once("MatPtAP does not work properly with the cusparse backend. Workaround implemented.");
+			Mat temp;
+			check_error( MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp) ); 
+			check_error( MatConvert(temp, A.type(), MAT_INITIAL_MATRIX, &result.implementation()) );
+			MatDestroy(&temp);
+		} else {
+			check_error( MatPtAP(A.implementation(), P.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) ); 
+		}
+
+		assert(result.same_type(A));
 	}
 	
-	void PetscBackend::triple_product(PetscMatrix & result, const PetscMatrix &A, const PetscMatrix &B, const PetscMatrix &C)
+	void PetscBackend::triple_product(PetscMatrix &result, const PetscMatrix &A, const PetscMatrix &B, const PetscMatrix &C)
 	{
 		if(result.implementation() != A.implementation() && result.implementation() != B.implementation() && result.implementation() != C.implementation()) {
 			result.destroy();
 		}
 		
 		check_error( MatMatMatMult(A.implementation(), B.implementation(), C.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) );
+		
+		assert(result.same_type(A));
 	}
 
 	bool PetscBackend::is_nan_or_inf(const PetscVector &X)
@@ -1064,12 +1096,12 @@ namespace utopia {
 		mat.inverse(result);
 	}
 
-	void PetscBackend::vec_create_parallel(MPI_Comm comm, PetscInt n_local, PetscInt n_global, Vec *vec)
-	{
-		check_error( VecCreate(comm, vec) );
-		check_error( VecSetType(*vec, parallel_vector_type()) );
-		check_error( VecSetSizes(*vec, n_local, n_global) );
-	}
+	// void PetscBackend::vec_create_parallel(MPI_Comm comm, PetscInt n_local, PetscInt n_global, Vec *vec)
+	// {
+	// 	check_error( VecCreate(comm, vec) );
+	// 	check_error( VecSetType(*vec, parallel_vector_type()) );
+	// 	check_error( VecSetSizes(*vec, n_local, n_global) );
+	// }
 
 	void PetscBackend::vec_repurpose(
 		MPI_Comm comm,
@@ -1101,46 +1133,46 @@ namespace utopia {
 		check_error( VecSetSizes(*vec, n_local, n_global) );
 	}
 
-	void PetscBackend::sparse_mat_create_parallel(
-		MPI_Comm comm,
-		PetscInt rows_local,
-		PetscInt cols_local,
-		PetscInt rows_global,
-		PetscInt cols_global,
-		PetscInt d_nnz,
-		PetscInt o_nnz,
-		Mat *mat)
-	{
-		check_error( MatCreate(comm, mat) );
-		check_error( MatSetSizes(*mat, rows_local, cols_local, rows_global, cols_global) );
+	// void PetscBackend::sparse_mat_create_parallel(
+	// 	MPI_Comm comm,
+	// 	PetscInt rows_local,
+	// 	PetscInt cols_local,
+	// 	PetscInt rows_global,
+	// 	PetscInt cols_global,
+	// 	PetscInt d_nnz,
+	// 	PetscInt o_nnz,
+	// 	Mat *mat)
+	// {
+	// 	check_error( MatCreate(comm, mat) );
+	// 	check_error( MatSetSizes(*mat, rows_local, cols_local, rows_global, cols_global) );
 		
-		check_error( MatSetType(*mat, parallel_sparse_matrix_type()) );
-		check_error( MatSeqAIJSetPreallocation(*mat, PetscMax(d_nnz, 1), PETSC_NULL) );
-		check_error( MatMPIAIJSetPreallocation(*mat, PetscMax(d_nnz, 1), PETSC_NULL, PetscMax(o_nnz, 1), PETSC_NULL) ); 
+	// 	check_error( MatSetType(*mat, parallel_sparse_matrix_type()) );
+	// 	check_error( MatSeqAIJSetPreallocation(*mat, PetscMax(d_nnz, 1), PETSC_NULL) );
+	// 	check_error( MatMPIAIJSetPreallocation(*mat, PetscMax(d_nnz, 1), PETSC_NULL, PetscMax(o_nnz, 1), PETSC_NULL) ); 
 
-		check_error( MatSetOption(*mat, MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE) );
-		check_error( MatSetOption(*mat, MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
-		check_error( MatSetOption(*mat, MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
+	// 	check_error( MatSetOption(*mat, MAT_NEW_NONZERO_LOCATIONS,   PETSC_TRUE) );
+	// 	check_error( MatSetOption(*mat, MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
+	// 	check_error( MatSetOption(*mat, MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
 
-		check_error( MatZeroEntries(*mat) );
-	}
+	// 	check_error( MatZeroEntries(*mat) );
+	// }
 
-	void PetscBackend::dense_mat_create_parallel(
-		MPI_Comm comm,
-		PetscInt rows_local,
-		PetscInt cols_local,
-		PetscInt rows_global,
-		PetscInt cols_global,
-		Mat *mat)
-	{
-		check_error( MatCreate(comm, mat) );
-		check_error( MatSetType(*mat, parallel_dense_matrix_type()) );
-		check_error( MatSetSizes(*mat, rows_local, cols_local, rows_global, cols_global) );
-		check_error( MatSetUp(*mat) );
+	// void PetscBackend::dense_mat_create_parallel(
+	// 	MPI_Comm comm,
+	// 	PetscInt rows_local,
+	// 	PetscInt cols_local,
+	// 	PetscInt rows_global,
+	// 	PetscInt cols_global,
+	// 	Mat *mat)
+	// {
+	// 	check_error( MatCreate(comm, mat) );
+	// 	check_error( MatSetType(*mat, parallel_dense_matrix_type()) );
+	// 	check_error( MatSetSizes(*mat, rows_local, cols_local, rows_global, cols_global) );
+	// 	check_error( MatSetUp(*mat) );
 
-		check_error( MatSetOption(*mat, MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
-		check_error( MatSetOption(*mat, MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
-	}
+	// 	check_error( MatSetOption(*mat, MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE) );
+	// 	check_error( MatSetOption(*mat, MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
+	// }
 
 	void PetscBackend::apply_args(const PetscArgs &args, Matrix &m)
 	{

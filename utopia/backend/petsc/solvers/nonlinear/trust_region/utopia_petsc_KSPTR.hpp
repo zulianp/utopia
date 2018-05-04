@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-10-04
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-06-15
-*/
-
 #ifndef UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP
 #define UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP
 #include "utopia_TRSubproblem.hpp"
@@ -12,7 +5,6 @@
 
 namespace utopia 
 {
-
 	/**
 	 * @brief      Interface to use petsc KSP in TR context \n
 	 *				There are 5 different possibilities, grouped as follows: \n
@@ -43,20 +35,21 @@ namespace utopia
 
     public:
 
-
-    	KSP_TR(const Parameters params = Parameters()): 
-    															TRSubproblem(params),
-    															KSPSolver(params,{"stcg", "nash", "cgne", "gltr", "qcg"})
+    	KSP_TR(const Parameters params = Parameters()): TRSubproblem(params), KSPSolver(params)//,{"stcg", "nash", "cgne", "gltr", "qcg"})
         { 
         	set_parameters(params); 
-        };
+        	this->ksp_type("stcg");
+        	this->pc_type("jacobi");
+        }
 
         KSP_TR(const std::string type, const Parameters params = Parameters()): 
     															TRSubproblem(params),
-    															KSPSolver(params, {type})
+    															KSPSolver(params)
         { 
         	set_parameters(params); 
-        };
+        	this->pc_type("jacobi");
+        	this->ksp_type(type);
+        }
 
 
         virtual ~KSP_TR(){}
@@ -68,8 +61,10 @@ namespace utopia
 	     */
 	    virtual void set_parameters(const Parameters params) override
 	    {
-	        KSPSolver::set_parameters(params);
-	        TRSubproblem::set_parameters(params);
+	    	Parameters params_copy = params;
+	    	params_copy.preconditioner_type(this->pc_type().c_str());
+	        KSPSolver::set_parameters(params_copy);
+	        TRSubproblem::set_parameters(params_copy);
 	    }
 
 	   /**
@@ -84,16 +79,20 @@ namespace utopia
 
 
 	public:
-	    void atol(const Scalar & atol_in )  {  KSPSolver::atol(atol_in); }; 
-        void rtol(const Scalar & rtol_in )  {  KSPSolver::rtol(rtol_in);  }; 
-        void stol(const Scalar & stol_in ) { KSPSolver::stol(stol_in); }; 	   	
+	    void atol(const Scalar & atol_in)  {  KSPSolver::atol(atol_in); }; 
+        void rtol(const Scalar & rtol_in)  {  KSPSolver::rtol(rtol_in); }; 
+        void stol(const Scalar & stol_in)  {  KSPSolver::stol(stol_in); }; 	   	
         
         Scalar      atol() const               	{ return KSPSolver::atol(); } 
         Scalar      rtol()  const              	{ return KSPSolver::rtol(); } 
         Scalar      stol()  const              	{ return KSPSolver::stol(); }
         
 
-	protected:
+        virtual KSP_TR<Matrix, Vector, PETSC> * clone() const override {
+        	return new KSP_TR(this->ksp_type());
+        }
+        
+	// protected:
 
         virtual bool apply(const Vector &b, Vector &x) override
     	{
@@ -108,6 +107,7 @@ namespace utopia
 	    virtual void update(const std::shared_ptr<const Matrix> &op) override
 	    {
 	         KSPSolver::update(op);
+	         set_ksp_options(this->ksp().implementation());
 	    }
 
 
@@ -122,8 +122,8 @@ namespace utopia
 	    virtual void set_ksp_options(KSP & ksp) override 
 	    {
 	    	PetscErrorCode ierr;
-
 	    	ierr = KSPSetFromOptions(ksp); 
+
 	        ierr = KSPSetType(ksp, this->ksp_type().c_str()); 
 	        ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
 
@@ -133,7 +133,8 @@ namespace utopia
 	            ierr = KSPGetPC(ksp, &pc);
 	            ierr = PCSetType(pc, this->pc_type().c_str());
 	        }
-
+	        
+#if UTOPIA_PETSC_VERSION_LESS_THAN(3,8,0) 
 			if(this->ksp_type() == "qcg")
 				ierr = KSPQCGSetTrustRegionRadius(ksp, this->current_radius()); 
 		    else if(this->ksp_type() == "gltr")    
@@ -143,12 +144,33 @@ namespace utopia
 			else
 		        ierr = KSPSTCGSetRadius(ksp, this->current_radius()); 
 
-		    
+#else
+		    KSPCGSetRadius(ksp, this->current_radius());
+#endif
 	        ierr = KSPSetTolerances(ksp, KSPSolver::rtol(), KSPSolver::atol(), PETSC_DEFAULT,  TRSubproblem::max_it());
 	    }
 
     };
 
+    template<typename Matrix, typename Vector>
+    class SteihaugToint<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
+    public:
+        SteihaugToint(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
+        : KSP_TR<Matrix, Vector, PETSC>(params)
+        {
+            this->pc_type(preconditioner);
+            this->ksp_type("stcg");
+        }
+        
+        inline void set_parameters(const Parameters params) override
+        {
+            Parameters params_copy = params;
+            params_copy.lin_solver_type("stcg");
+            params_copy.preconditioner_type(this->pc_type().c_str());
+            KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
+        }
+    };
+    
 }
 
 #endif //UTOPIA_TR_SUBPROBLEM_KSP_TR_HPP

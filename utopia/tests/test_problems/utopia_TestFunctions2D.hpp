@@ -68,7 +68,7 @@ namespace utopia
     class Rosenbrock : public Function<Matrix, Vector> 
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         Rosenbrock() {
             //FIXME find a way to implement generic Rosenbrock in parallel
@@ -108,6 +108,7 @@ namespace utopia
         bool hessian(const Vector &point, Matrix &result) const override 
         {
             assert(point.size().get(0) == 2);
+
             result = zeros(2, 2);
 
             const Read<Vector> read(point);

@@ -30,7 +30,7 @@ namespace utopia
     class Woods : public Function<Matrix, Vector> 
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         Woods() 
         {

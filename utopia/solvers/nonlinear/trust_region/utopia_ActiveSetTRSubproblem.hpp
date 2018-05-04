@@ -1,9 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-06-15
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
-*/
 #ifndef TR_ACTIVE_SET_TR_BOX_SUBPROBLEM
 #define TR_ACTIVE_SET_TR_BOX_SUBPROBLEM
 #include <string>
@@ -27,35 +21,34 @@ namespace  utopia
         typedef utopia::Preconditioner<Vector>                  Preconditioner;
 
         public:
-            ActiveSetTRSubproblem(  const std::shared_ptr <LinearSolver> &linear_solver = std::shared_ptr<LinearSolver>(),
+            ActiveSetTRSubproblem(  const std::shared_ptr <LinearSolver> & linear_solver,
                                     const Parameters params = Parameters()):
-                TRBoxSubproblem(params)
+                TRBoxSubproblem(params), ls_solver_(linear_solver)
             {
-                _active_set_solver = std::make_shared<SemismoothNewton>(linear_solver); 
+                active_set_solver_ = std::make_shared<SemismoothNewton>(ls_solver_); 
             }
             
             virtual ~ActiveSetTRSubproblem( ){}
 
-
             virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const BoxConstraints<Vector> & up_constrain) override
             {
-                _active_set_solver->set_box_constraints(up_constrain);
+                active_set_solver_->set_box_constraints(up_constrain);
+                Vector g_minus = -1.0 * g; 
+                active_set_solver_->solve(H, g_minus, p_k);
 
-                // just for debugging
-                _active_set_solver->verbose(true);
-                _active_set_solver->solve(H, g, p_k);
-
-                p_k *=-1;
                 return true;
             };
 
+        public:
+            virtual void set_linear_solver(const std::shared_ptr<LinearSolver > &ls) override
+            {
+                ls_solver_ = ls; 
+                active_set_solver_->set_linear_solver(ls); 
+            }                
 
-
-        protected: 
-            std::shared_ptr<SemismoothNewton> _active_set_solver; 
-
-
-
+        private:  
+            std::shared_ptr<LinearSolver> ls_solver_;               
+            std::shared_ptr<SemismoothNewton> active_set_solver_;           
         
     };
 }

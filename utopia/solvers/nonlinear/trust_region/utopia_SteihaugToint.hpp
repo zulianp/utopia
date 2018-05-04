@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-11
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_TR_SUBPROBLEM_STEIHAUG_TOINT_HPP
 #define UTOPIA_TR_SUBPROBLEM_STEIHAUG_TOINT_HPP
 #include "utopia_TRSubproblem.hpp"
@@ -13,10 +6,11 @@
 
 namespace utopia 
 {
+
 	/**
 	 * @brief      Class for Steihaug Toint conjugate gradient.
 	 */
-	template<class Matrix, class Vector>
+	template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
     class SteihaugToint : public TRSubproblem<Matrix, Vector>
     {
 		typedef UTOPIA_SCALAR(Vector) Scalar;
@@ -24,12 +18,17 @@ namespace utopia
     public:
 
     	SteihaugToint(const Parameters params = Parameters()): 
-    														TRSubproblem<Matrix, Vector>(params)
+    				  TRSubproblem<Matrix, Vector>(params)
         {  };
 
         virtual ~SteihaugToint(){}
 
-protected:
+        SteihaugToint * clone() const override 
+        {
+        	return new SteihaugToint();
+        }
+
+	protected:
         bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
         {
 
@@ -72,7 +71,7 @@ protected:
 	    		}
 	    	
 	    		p_k = s1; 
-	    		r -= (alpha * B * d); 
+	    		r -= alpha * (B * d); 
 
 	    		z1 = dot(r,r);
 	    		d = r + (z1/z) * d;

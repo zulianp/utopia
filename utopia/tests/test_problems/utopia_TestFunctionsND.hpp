@@ -14,9 +14,9 @@
 namespace utopia {
 
     template<class Matrix, class Vector>
-    class TestFunctionND_1 : public Function<Matrix, Vector> {
+    class TestFunctionND_1 final : public Function<Matrix, Vector> {
 
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
 
     public:
@@ -26,13 +26,22 @@ namespace utopia {
             static_assert(Matrix::FILL_TYPE == FillType::DENSE, "This function has a dense hessian do not use sparse implementations");
         }
 
+        inline bool initialize_hessian(Matrix &H, Matrix &H_pre) const override
+        {
+            H = values(N, N, 0.);
+            H_pre = values(N, N, 0.);
+            return true;
+        }
+
         bool value(const Vector &point, typename Vector::Scalar &result) const override {
             result =  0.5 * std::pow(dot(point, A * point) + 1, 2.0) - dot(b, point);
             return true;
         }
 
         bool gradient(const Vector &point, Vector &result) const override {
-            result = values(point.size().get(0), 0.0);
+            if(empty(result) || size(point).get(0) != size(result).get(0)) {
+                result = values(point.size().get(0), 0.0);
+            }
 
             const Scalar s = dot(point, A * point);
             const Range r = range(point);
@@ -53,13 +62,15 @@ namespace utopia {
 
         bool hessian(const Vector &point, Matrix &result) const override
         {
-            result = outer(point, point);
-            Matrix temp = result;
+            Matrix temp = outer(point, point);
+            
+            if(empty(result) || size(result) != size(temp)) {
+                result = temp;
+            }
 
             const Scalar s = dot(point, A * point);
-
             const Range rr = row_range(temp);
-            const Range cr = col_range(temp);
+            const auto n   = size(point).get(0);
 
             assert(rr.begin() == range(point).begin());
             assert(rr.end() == range(point).end());
@@ -71,7 +82,7 @@ namespace utopia {
                 const Write<Matrix> write(result);
 
                 for (SizeType i = rr.begin(); i != rr.end(); ++i) {
-                    for (SizeType j = cr.begin(); j != cr.end(); ++j) {
+                    for (SizeType j = 0; j != n; ++j) {
                         result.set(i, j, 4.0 * temp.get(i, j) + (i == j) * (identityScaleFactor));
                     }
                 }
@@ -88,7 +99,24 @@ namespace utopia {
         bool hessian(const Vector &point, Matrix &H, Matrix &precond) const override
         {
             if(!hessian(point, H)) return false;
-            precond = diag(diag(H));
+
+            if(empty(precond)) {
+                precond = diag(diag(H));
+            } else {
+                Vector d = diag(H);
+                precond *= 0.;
+
+                Write<Matrix> w_p(precond);
+                Read<Vector>  r_d(d);
+
+                auto r = row_range(precond);
+
+                for(auto i = r.begin(); i != r.end(); ++i) {
+                    precond.set(i, i, d.get(i));
+                }
+
+            }
+
             return true;
         }
 
@@ -104,7 +132,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class SimpleQuadraticFunction : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         virtual bool value(const Vector &point, Scalar &result) const override {
             const Scalar val = norm2(point);
@@ -127,41 +155,40 @@ namespace utopia {
         SimpleQuadraticFunction() { }
     };
 
-    template<class Matrix, class Vector>
-
+    // template<class Matrix, class Vector>
     // Quadratic function class
-    class QuadraticFunction : public Function<Matrix, Vector> {
-    public:
-        DEF_UTOPIA_SCALAR(Matrix);
+    // class QuadraticFunction : public Function<Matrix, Vector> {
+    // public:
+    //     DEF_UTOPIA_SCALAR(Matrix)
 
-        virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
-            Scalar val = dot(point, A * point);
-            Scalar val2 = dot(point, b);
-            result = 0.5 * val - val2;
-            return true;
-        }
+    //     virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
+    //         Scalar val = dot(point, A * point);
+    //         Scalar val2 = dot(point, b);
+    //         result = 0.5 * val - val2;
+    //         return true;
+    //     }
 
-        virtual bool gradient(const Vector &point, Vector &result) const override {
-            result = (A * point - b);
-            return true;
-        }
+    //     virtual bool gradient(const Vector &point, Vector &result) const override {
+    //         result = (A * point - b);
+    //         return true;
+    //     }
 
-        virtual bool hessian(const Vector &point, Matrix &result) const override {
-            result = A;
-            return true;
-        }
+    //     virtual bool hessian(const Vector &point, Matrix &result) const override {
+    //         result = A;
+    //         return true;
+    //     }
 
-        QuadraticFunction(Vector b, Matrix H): b(b), A(H) { }
-        private:
-            Vector b; /*!< Rhs */
-            Matrix A; /*!< Hessian */
-    };
+    //     QuadraticFunction(Vector b, Matrix H): b(b), A(H) { }
+    //     private:
+    //         Vector b; /*!< Rhs */
+    //         Matrix A; /*!< Hessian */
+    // };
 
     // Quadratic function class
     template<class Matrix, class Vector>
     class QuadraticFunctionBoundary : public Function<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         virtual bool value(const Vector &point, typename Vector::Scalar &result) const override {
             Scalar val = dot(point, A * point);
@@ -193,7 +220,7 @@ namespace utopia {
     template<class Matrix, class Vector>
     class QuadraticFunctionConstrained : public FunctionBoxConstrained<Matrix, Vector> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         QuadraticFunctionConstrained(Vector & b, Matrix & H, Matrix & B, Vector & ub):
                                                                         b_(b),
@@ -245,7 +272,7 @@ namespace utopia {
     {
     public:
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
-        DEF_UTOPIA_SCALAR(Matrix);
+        DEF_UTOPIA_SCALAR(Matrix)
 
         RosenbrockGeneric() { }
 

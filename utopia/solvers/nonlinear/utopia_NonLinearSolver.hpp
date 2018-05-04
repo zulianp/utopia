@@ -9,6 +9,7 @@
 #include "utopia_PrintInfo.hpp"
 #include "utopia_Monitor.hpp"
 #include "utopia_PreconditionedSolver.hpp"
+#include "utopia_ConjugateGradient.hpp"
 
 
 namespace utopia 
@@ -28,14 +29,13 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector> Solver;
 
 
-        NonLinearSolver(const std::shared_ptr<Solver> &linear_solver  = std::shared_ptr<Solver>(),
-                        const Parameters params                       = Parameters())   : 
-                                                                        linear_solver_(linear_solver),
-                                                                        params_(std::move(params))
+        NonLinearSolver(const std::shared_ptr<Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
+                        const Parameters &params = Parameters()): 
+                        linear_solver_(linear_solver),
+                        params_(params)
         {
             set_parameters(params);        
         }
-
 
         virtual ~NonLinearSolver() {}
 
@@ -81,9 +81,9 @@ namespace utopia
         /**
          * @brief      Getter for parameters. 
          */
-        virtual const Parameters parameters()
+        Parameters parameters()
         {
-            return std::move(params_);
+            return params_;
         }
 
         /**
@@ -105,7 +105,8 @@ namespace utopia
             log_system_         = params.log_system(); 
             check_diff_         = params.differentiation_control(); 
 
-            linear_solver_->set_parameters(params); 
+            if(linear_solver_)
+                linear_solver_->set_parameters(params); 
         }
 
 
@@ -114,15 +115,12 @@ namespace utopia
          *
          * @param[in]  linear_solver  The linear solver
          */
-        void set_linear_solver(const std::shared_ptr<Solver> &linear_solver = std::shared_ptr<Solver>())
+        virtual void set_linear_solver(const std::shared_ptr<Solver> &linear_solver)
         {
             linear_solver_ = linear_solver; 
         }
 
-
-
         inline DiffController &controller() { return controller_; }
-
 
 protected:
         /**
@@ -249,6 +247,11 @@ public:
 
 
         Scalar get_time() { return _time.get_seconds();  }
+
+        inline std::shared_ptr<Solver> linear_solver() const
+        {
+            return linear_solver_;
+        }
 
     protected:
         inline bool linear_solve(const Matrix &mat, const Vector &rhs, Vector &sol)

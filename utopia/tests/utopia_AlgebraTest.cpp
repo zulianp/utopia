@@ -1,10 +1,5 @@
-/*
-* @Author: Eric Botter
-* @Date:   2016-11-07
-*/
 #include "utopia.hpp"
 #include "utopia_AlgebraTest.hpp"
-// #include "utopia_Collection.hpp"
 #include "utopia_IsSubTree.hpp"
 
 namespace utopia {
@@ -14,7 +9,6 @@ namespace utopia {
     private:
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
 
-        //FIXME(eric): original norm_test in main.cpp is still there
         void norm_test()
         {
             Vector v = zeros(2);
@@ -38,6 +32,20 @@ namespace utopia {
             assert(approxeq(10.0, n));
         }
 
+        void quadratic_form()
+        {
+            const int n = mpi_world_size() * 2;
+            Vector x = values(n, 1.);
+            Vector b = values(n, 2.);
+            Matrix A = values(n, n, 1.);
+
+            double value = 0.5 * dot(x, A * x) + dot(x, b);
+            double expected = sum(A) * 0.5 + sum(b);    
+
+            assert(approxeq(value, expected));
+            assert(approxeq(value, n*n*0.5 + n*2.));
+        }
+
         void dot_test()
         {
             Vector v1 = zeros(2), v2 = zeros(2);
@@ -58,8 +66,6 @@ namespace utopia {
 
         void dot_product_composition_test()
         {
-
-
             Vector v = zeros(2);
             {
                 Write<Vector> w(v);
@@ -131,7 +137,6 @@ namespace utopia {
             assert(size.get(0) == 2);
         }
 
-
         void binary_min_max()
         {
             const int n = mpi_world_size() * 2;
@@ -151,85 +156,6 @@ namespace utopia {
             assert(approxeq(two, actual_max));
         }
 
-        void vector_selection_test()
-        {
-            typedef typename utopia::Traits<Vector>::SizeType SizeType;
-
-            const int n = mpi_world_size() * 3;
-            Vector v = zeros(n);
-            auto r = range(v);
-
-            {
-                Write<Vector> w_v(v);
-                for(auto i = r.begin(); i < r.end(); ++i) {
-                    v.set(i, i);
-                }
-            }
-
-            std::vector<SizeType> s;
-            s.push_back(r.begin());
-            s.push_back(r.end() % n);
-
-            Vector selection = v.select(s);
-            auto s_r = range(selection);
-
-            {
-                Read<Vector> r_s(selection);
-                assert(selection.get(s_r.begin()) == r.begin());
-                assert(selection.get(s_r.begin() + 1) == (r.end() % n));
-            }
-
-            Scalar sum_v_s = sum(v.select(s));
-        }
-
-        void matrix_selection_test()
-        {
-            typedef typename utopia::Traits<Vector>::SizeType SizeType;
-            
-            const int n = mpi_world_size() * 3;
-            Matrix m = zeros(n, n);
-            auto rr = row_range(m);
-
-            {
-                Write<Matrix> w_m(m);
-                for(auto i = rr.begin(); i < rr.end(); ++i) {
-                    for(auto j = 0; j < n; ++j) {
-                        m.set(i, j, i * n + j);
-                    }
-                }
-            }
-
-            std::vector<SizeType> r_s;
-            std::vector<SizeType> c_s;
-
-            r_s.push_back(rr.begin());
-            r_s.push_back(rr.begin() + 1);
-
-            c_s.push_back(0);
-            c_s.push_back(2);
-
-            Matrix selection = m.select(r_s, c_s);
-
-            {
-                auto s_r = row_range(selection);
-                Read<Matrix> r_s(selection);
-                assert(selection.get(s_r.begin(), 0) == rr.begin() * n);
-                assert(selection.get(s_r.begin(), 1) == rr.begin() * n + 2);
-            }
-
-            Matrix row_selection = m.select(r_s);
-
-            {
-                auto s_r = row_range(row_selection);
-                Read<Matrix> r_s(row_selection);
-
-                for(SizeType i = 0; i < n; ++i) {
-                    assert(row_selection.get(s_r.begin(), i) == (rr.begin() * n + i));
-                }
-            }
-
-        }
-
         void is_subtree()
         {
             Vector v;
@@ -243,22 +169,9 @@ namespace utopia {
             static_assert( (IsSubTree<Vector, decltype(expr)>::value),  "should be true"  ); 
         }
 
-
-        // void multiply_collections()
-        // {
-        //     const int n = mpi_world_size() * 3;
-        //     Matrix m = 2 * identity(n, n);
-        //     auto rr = row_range(m);
-
-        //     Matrix m2 = values(n, n, 0.1);
-
-        //     std::vector<Matrix> matrices(2, m);
-        //     std::vector<Matrix> result = m2 * wrap(matrices);
-        // }
-
         static void print_backend_info()
         {
-            if(Utopia::Instance().verbose()) {
+            if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
                 std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
         }
@@ -268,8 +181,6 @@ namespace utopia {
         {
             print_backend_info();
             UTOPIA_RUN_TEST(is_subtree);
-            UTOPIA_RUN_TEST(vector_selection_test);
-            UTOPIA_RUN_TEST(matrix_selection_test);
             UTOPIA_RUN_TEST(norm_test);
             UTOPIA_RUN_TEST(dot_test);
             UTOPIA_RUN_TEST(dot_product_composition_test);
@@ -277,7 +188,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(determinant_test);
             UTOPIA_RUN_TEST(size_test);
             UTOPIA_RUN_TEST(binary_min_max);
-            // UTOPIA_RUN_TEST(multiply_collections);
+            UTOPIA_RUN_TEST(quadratic_form);
         }
     };
 
@@ -285,13 +196,17 @@ namespace utopia {
     {
         UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
 
-        #ifdef WITH_BLAS
-            AlgebraTest<Matrixd, Vectord>().run();
-        #endif //WITH_BLAS
+#ifdef WITH_BLAS
+        AlgebraTest<Matrixd, Vectord>().run();
+#endif //WITH_BLAS
 
-        #ifdef WITH_PETSC
-            AlgebraTest<DMatrixd, DVectord>().run();
-        #endif //WITH_PETSC
+#ifdef WITH_PETSC
+        AlgebraTest<DMatrixd, DVectord>().run();
+#endif //WITH_PETSC
+
+// #ifdef WITH_TRILINOS
+//         AlgebraTest<TMatrixd, TVectord>().run();
+// #endif //WITH_TRILINOS
 
         UTOPIA_UNIT_TEST_END("AlgebraTest");
     }
