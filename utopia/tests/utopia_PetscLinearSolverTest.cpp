@@ -40,7 +40,7 @@ namespace utopia {
             cg.update(ml_problem.matrix);
             cg.apply(*ml_problem.rhs, x);
 
-            assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-5));
+            utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-5));
         }
 
         void petsc_mg_1D()
@@ -76,7 +76,7 @@ namespace utopia {
             }
 
             multigrid.apply(*ml_problem.rhs, x);
-            assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-7));
+            utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-7));
         }
         
         void petsc_mg_exp()
@@ -116,7 +116,7 @@ namespace utopia {
             multigrid.solve(A, rhs, x);
             
             const double err = norm2(A*x - rhs);
-            assert(err < 1e-6);
+            utopia_test_assert(err < 1e-6);
         }
 
         void petsc_mg()
@@ -189,7 +189,7 @@ namespace utopia {
             if(diff > 1e-6) {
                 utopia_error("petsc_mg: gmres preconditioned with mg does not do what it is supposed to");
             }
-            // assert( approxeq(diff, 0., 1e-6) );
+            // utopia_test_assert( approxeq(diff, 0., 1e-6) );
         }
         
         void petsc_bicgstab()
@@ -203,7 +203,7 @@ namespace utopia {
             bicgs.solve(mat, rhs, sol);
             
             DVectord expected = zeros(_n);
-            assert(approxeq(expected, sol));
+            utopia_test_assert(approxeq(expected, sol));
         }
         
         void petsc_gmres()
@@ -216,7 +216,7 @@ namespace utopia {
             gmres.solve(mat, rhs, sol);
             
             DVectord expected = zeros(_n);
-            assert(approxeq(expected, sol));
+            utopia_test_assert(approxeq(expected, sol));
         }
 
         template<class MultigridT>
@@ -258,7 +258,7 @@ namespace utopia {
 
             multigrid.apply(rhs, x);
 
-            assert(approxeq(rhs, A * x, 1e-6));
+            utopia_test_assert(approxeq(rhs, A * x, 1e-6));
         }
 
         void petsc_block_mg_exp()
@@ -338,7 +338,7 @@ namespace utopia {
             
             cg.solve(A, rhs, x_0);
             
-            assert( approxeq(A*x_0, rhs, 1e-6) );
+            utopia_test_assert( approxeq(A*x_0, rhs, 1e-6) );
             
             //Multigrid only
             // x_0 = zeros(A.size().get(0));
@@ -379,7 +379,7 @@ namespace utopia {
             // multigrid.set_use_line_search(true);
             multigrid.apply(rhs, x);
             
-            assert( approxeq(A*x, rhs, 1e-6) );
+            utopia_test_assert( approxeq(A*x, rhs, 1e-6) );
         }
         
         void petsc_superlu_cg_mg()
@@ -438,7 +438,7 @@ namespace utopia {
             utopia_ksp.verbose(verbose);
             utopia_ksp.ksp_type("gmres");
             utopia_ksp.solve(A, rhs, x_0);
-            assert( approxeq(A*x_0, rhs, 1e-6) );
+            utopia_test_assert( approxeq(A*x_0, rhs, 1e-6) );
             //! [KSPSolver solve example1]
             
             x_0 = zeros(A.size().get(0));
@@ -461,7 +461,7 @@ namespace utopia {
             if(diff > 1e-6) {
                 utopia_error("petsc_superlu_cg_mg fails. Known problem that needs to be fixed!");
             }
-            // assert( diff < 1e-6 );
+            // utopia_test_assert( diff < 1e-6 );
         }
         
         void petsc_factorization()
@@ -481,11 +481,11 @@ namespace utopia {
             cholesky_factorization->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
             
             if(!cholesky_factorization->solve(A, rhs, x)) {
-                assert(false && "failed to solve");
+                utopia_test_assert(false && "failed to solve");
             }
             
             double diff = norm2(rhs - A * x);
-            // assert( approxeq(A * x, rhs, 1e-6) );
+            // utopia_test_assert( approxeq(A * x, rhs, 1e-6) );
             
             if(diff > 1e-6) {
                 utopia_error("petsc_factorization fails. Known problem that needs to be fixed!");

@@ -59,7 +59,7 @@ namespace utopia {
             }
 
             Vector vec = values(n_dofs, 10);
-            assert(approxeq(expected, mat * vec));
+            utopia_test_assert(approxeq(expected, mat * vec));
         }
 
         void matrix_factory_test() {
@@ -71,7 +71,7 @@ namespace utopia {
 
                 for (int i = rr.begin(); i != rr.end(); ++i) {
                     for (int j = 0; j != n_dofs; ++j) {
-                        assert(approxeq(mat.get(i, j), 0.1));
+                        utopia_test_assert(approxeq(mat.get(i, j), 0.1));
                     }
                 }
             }
@@ -83,7 +83,7 @@ namespace utopia {
 
                 for (int i = rr.begin(); i != rr.end(); ++i) {
                     for (int j = 0; j != n_dofs; ++j) {
-                        assert(approxeq(mat.get(i, j), i == j));
+                        utopia_test_assert(approxeq(mat.get(i, j), i == j));
                     }
                 }
             }
@@ -97,7 +97,7 @@ namespace utopia {
                 Range r = range(vec);
 
                 for (int i = r.begin(); i != r.end(); ++i) {
-                    assert(approxeq(vec.get(i), 0.2));
+                    utopia_test_assert(approxeq(vec.get(i), 0.2));
                 }
             }
         }

@@ -65,7 +65,7 @@ namespace utopia {
 
         TVectord z = m * v;
         double nz = norm2(z);
-        assert(approxeq(nz, 0.));
+        utopia_test_assert(approxeq(nz, 0.));
     }
     
     void trilinos_accessors()
@@ -85,8 +85,8 @@ namespace utopia {
         Size s = size(v);
         Size ls = local_size(v);
         
-        assert(s.get(0) == n * mpi_world_size());
-        assert(ls.get(0) == n);
+        utopia_test_assert(s.get(0) == n * mpi_world_size());
+        utopia_test_assert(ls.get(0) == n);
 
         //FIXME replace this with an actual test
         // disp(v);
@@ -101,7 +101,7 @@ namespace utopia {
         y += alpha * x;
         
         double val = norm1(y);
-        assert(approxeq(val, n * mpi_world_size() * 1.5));
+        utopia_test_assert(approxeq(val, n * mpi_world_size() * 1.5));
     }
 
     void trilinos_vec_scale()
@@ -112,13 +112,13 @@ namespace utopia {
         y *= 2.;
 
         double val = norm1(y);
-        assert(approxeq(val, size(y).get(0) * 2.));
+        utopia_test_assert(approxeq(val, size(y).get(0) * 2.));
 
 
         TVectord y2 = y * 2.;
 
         val = norm1(y2);
-        assert(approxeq(val, size(y2).get(0) * 4.));
+        utopia_test_assert(approxeq(val, size(y2).get(0) * 4.));
     }
 
     void trilinos_mat_scale()
@@ -131,13 +131,13 @@ namespace utopia {
 
         TVectord x = local_values(n, 1.);
         double val = norm1(Y * x);
-        assert(approxeq(val, 0.));
+        utopia_test_assert(approxeq(val, 0.));
 
 
         TSMatrixd Y2 = Y * 2.;
 
         val = norm1(Y2 * x);
-        assert(approxeq(val, 0.));
+        utopia_test_assert(approxeq(val, 0.));
     }
 
     void trilinos_mat_axpy()
@@ -155,7 +155,7 @@ namespace utopia {
         TVectord v = local_values(n, 5.);
         
         double val = norm1(Y * v);
-        assert(approxeq(val, 0.));
+        utopia_test_assert(approxeq(val, 0.));
     }
 
     void trilinos_mv()
@@ -168,7 +168,7 @@ namespace utopia {
         TVectord y = m * x;
 
         const double val = norm2(y);
-        assert(approxeq(val, 0.));
+        utopia_test_assert(approxeq(val, 0.));
     }
 
     void trilinos_transpose()
@@ -194,7 +194,7 @@ namespace utopia {
         // disp(At);
 
         auto s_t = size(At);
-        assert(s_t.get(0) == s.get(1));
+        utopia_test_assert(s_t.get(0) == s.get(1));
     }
 
     void trilinos_mm()
@@ -209,7 +209,7 @@ namespace utopia {
         TVectord y = C * x;
 
         const double val = norm2(y);
-        assert(approxeq(val, 0.));
+        utopia_test_assert(approxeq(val, 0.));
     }
 
     template<class Matrix>
@@ -254,11 +254,11 @@ namespace utopia {
         TVectord d = diag(A);
 
         const double val = norm1(d);
-        assert(approxeq(val, size(d).get(0)*2.-2.));
+        utopia_test_assert(approxeq(val, size(d).get(0)*2.-2.));
 
         TSMatrixd D = diag(d);
         TVectord x  = local_values(n, 1.);
-        assert(approxeq(d, D*x));
+        utopia_test_assert(approxeq(d, D*x));
     }
 
     void trilinos_ptap()
@@ -297,7 +297,7 @@ namespace utopia {
          cg.update(ml_problem.matrix);
          cg.apply(*ml_problem.rhs, x);
 
-         assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-5));
+         utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-5));
     }
 
     void trilinos_mg_1D()
@@ -334,7 +334,7 @@ namespace utopia {
         }
 
         multigrid.apply(*ml_problem.rhs, x);
-        assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-7));
+        utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-7));
     }
 
     void trilinos_mg()
@@ -360,11 +360,11 @@ namespace utopia {
         
             const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
             
-            ok = read(folder + "/f_rhs", petsc_rhs); assert(ok);
-            ok = read(folder + "/f_A", petsc_A);     assert(ok);
-            ok = read(folder + "/I_1", petsc_I_1);   assert(ok);
-            ok = read(folder + "/I_2", petsc_I_2);   assert(ok);
-            ok = read(folder + "/I_3", petsc_I_3);   assert(ok);
+            ok = read(folder + "/f_rhs", petsc_rhs); utopia_test_assert(ok);
+            ok = read(folder + "/f_A", petsc_A);     utopia_test_assert(ok);
+            ok = read(folder + "/I_1", petsc_I_1);   utopia_test_assert(ok);
+            ok = read(folder + "/I_2", petsc_I_2);   utopia_test_assert(ok);
+            ok = read(folder + "/I_3", petsc_I_3);   utopia_test_assert(ok);
            
             backend_convert_sparse(petsc_I_1, I_1);
             backend_convert_sparse(petsc_I_2, I_2);
@@ -389,14 +389,14 @@ namespace utopia {
 
         try {
             multigrid.update(make_ref(A));
-            ok = multigrid.apply(rhs, x); assert(ok);
+            ok = multigrid.apply(rhs, x); utopia_test_assert(ok);
         } catch(const std::exception &ex) {
             std::cout << ex.what() << std::endl;
-            assert(false);
+            utopia_test_assert(false);
         }
 
         std::cout << std::flush;
-        assert(approxeq(rhs, A * x, 1e-6));
+        utopia_test_assert(approxeq(rhs, A * x, 1e-6));
 #endif //WITH_PETSC
         
     }
@@ -420,21 +420,21 @@ namespace utopia {
 
         SizeType count = 0;
         each_read(P, [&count](const SizeType i, const SizeType j, const double val) {
-            assert(val == 1.);
+            utopia_test_assert(val == 1.);
             ++count;
         });
 
-        assert(nnz == count);
+        utopia_test_assert(nnz == count);
 
         TSMatrixd P_t = transpose(P);
 
         each_read(P_t, [&count](const SizeType i, const SizeType j, const double val) {
-            assert(val == 1.);
+            utopia_test_assert(val == 1.);
             --count;
         });
 
         if(mpi_world_size() == 1) {
-            assert(count == 0);
+            utopia_test_assert(count == 0);
         }
 
         // disp(P);
@@ -446,7 +446,7 @@ namespace utopia {
         TSMatrixd m;
         auto path = Utopia::instance().get("data_path") + "/matrixmarket/gre_343_343_crg.mm";
         bool ok = read(path, m);
-        assert(ok);
+        utopia_test_assert(ok);
     }
     
     void run_trilinos_test()

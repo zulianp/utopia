@@ -104,9 +104,9 @@ namespace utopia {
         Vectord e;
 
         bool ok;
-        ok = spd_geig_small(A, B, 0.3, e, V); assert(ok);
-        ok = spd_geig(A, B, e, V);            assert(ok);
-        ok = spd_eig(A, e, V);                assert(ok);
+        ok = spd_geig_small(A, B, 0.3, e, V); utopia_test_assert(ok);
+        ok = spd_geig(A, B, e, V);            utopia_test_assert(ok);
+        ok = spd_eig(A, e, V);                utopia_test_assert(ok);
     }
 
     void factory_method()

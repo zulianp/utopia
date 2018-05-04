@@ -31,6 +31,10 @@ option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentati
 #################################################################################
 #################################################################################
 #################################################################################
+set(UTOPIA_DEV_FLAGS "-Wall ")
+
+
+
 
 if(UNIX AND NOT APPLE)
        set(LINUX TRUE)
@@ -265,8 +269,8 @@ include_directories(${UTOPIA_MODULES})
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(.)
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall ")# -Wextra -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${UTOPIA_DEV_FLAGS}")
 
 list(APPEND UTOPIA_HEADERS 
 	utopia.hpp

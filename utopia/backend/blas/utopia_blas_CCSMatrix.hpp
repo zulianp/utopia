@@ -46,7 +46,9 @@ namespace utopia {
             fill(entries_.begin(), entries_.end(), 0);
 
             colptr_[0] = 0;
-            for(SizeType i = 1; i < colptr_.size(); ++i) {
+
+            const SizeType col_ptr_size = colptr_.size();
+            for(SizeType i = 1; i < col_ptr_size; ++i) {
                 colptr_[i] = nnzXCol + colptr_[i-1];
             }
 

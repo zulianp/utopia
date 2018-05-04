@@ -18,7 +18,7 @@ namespace utopia {
 		tao.solve(fun, x);
 
 		DVectord expected = values(10, 0.468919);
-		assert(approxeq(x, expected));
+		utopia_test_assert(approxeq(x, expected));
 	}
 
 	void petsc_tao_solve_vi()
@@ -59,7 +59,7 @@ namespace utopia {
 		xssn *= 1./scale_factor;
 
 		double n_diff = norm2(xssn - x);
-		assert(n_diff < 1e-10);
+		utopia_test_assert(n_diff < 1e-10);
 
 
 	}
@@ -138,7 +138,7 @@ namespace utopia {
 		xssn *= 1./scale_factor;
 
 		double n_diff = norm2(xssn - x);
-		assert(n_diff < 1e-10);
+		utopia_test_assert(n_diff < 1e-10);
 
 	}
 

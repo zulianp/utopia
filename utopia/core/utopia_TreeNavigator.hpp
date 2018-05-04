@@ -183,9 +183,7 @@ namespace utopia {
 		public:
 			inline ScopedRecursionCounter(int &n_recursions)
 			: n_recursions_(n_recursions)
-			{
-				n_recursions_;
-			}
+			{}
 
 			inline ~ScopedRecursionCounter()
 			{

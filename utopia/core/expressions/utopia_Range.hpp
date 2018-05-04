@@ -1,11 +1,9 @@
-//
-// Created by Patrick Zulian on 26/05/15.
-//
-
 #ifndef UTOPIA_UTOPIA_RANGE_HPP
 #define UTOPIA_UTOPIA_RANGE_HPP
 
-#include <assert.h>
+
+#include "utopia_Base.hpp"
+#include <cassert>
 #include <ostream>
 #include <algorithm>
 
@@ -13,14 +11,14 @@
 namespace utopia {
     class Range {
     private:
-        const long _begin, _end, _extent;
+        const SizeType _begin, _end, _extent;
 
     public:
-        Range(const long begin, const long to)
+        Range(const SizeType begin, const SizeType to)
                 : _begin(begin), _end(to), _extent(to - begin) { }
 
 
-        explicit Range(const long beginAndTo)
+        explicit Range(const SizeType beginAndTo)
                 : _begin(beginAndTo), _end(beginAndTo + 1), _extent(1)
         {
             assert(beginAndTo >= 0);
@@ -33,7 +31,7 @@ namespace utopia {
         /*!
          * @return beginning of the range
          */
-        inline long begin() const
+        inline SizeType begin() const
         {
             return _begin;
         }
@@ -41,7 +39,7 @@ namespace utopia {
         /*!
          * @return ending of the range. Hence, larger index contained in the range + 1
          */
-        inline long end() const
+        inline SizeType end() const
         {
             return _end;
         }
@@ -49,7 +47,7 @@ namespace utopia {
         /**
          * @return extent of the range => number of elements between 1st and the last element in the range. 
          */
-        inline long extent() const
+        inline SizeType extent() const
         {
             return _extent;
         }
@@ -71,7 +69,7 @@ namespace utopia {
         /**
          * @brief      Checks if given index is inside of the range. 
          */
-        inline bool inside(const long index) const
+        inline bool inside(const SizeType index) const
         {
             return index >= _begin && index < _end;
         }

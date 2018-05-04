@@ -25,6 +25,8 @@ namespace  utopia
         typedef utopia::BoxConstraints<Vector>          BoxConstraints;
 
         public:
+            using TRSubproblem::tr_constrained_solve;
+
             TRBoxSubproblem(const Parameters params = Parameters())
                 : TRSubproblem(params)
             {
