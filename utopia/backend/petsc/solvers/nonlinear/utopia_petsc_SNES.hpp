@@ -165,7 +165,7 @@ namespace utopia
                                       const Scalar & stol,
                                       const SizeType & max_it)
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             SNESSetFromOptions(snes);
             
             SNESMonitorCancel(snes);

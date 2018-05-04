@@ -237,7 +237,7 @@ namespace utopia {
         
         virtual void set_monitor_options(KSP &ksp) const
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             if(this->verbose()) {
                 ierr = KSPMonitorSet(ksp,
                                      MyKSPMonitor,

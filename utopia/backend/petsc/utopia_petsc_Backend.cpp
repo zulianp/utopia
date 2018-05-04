@@ -375,7 +375,7 @@ namespace utopia {
 
 		result.destroy();
 
-		bool ok = false;
+		bool ok = false; UTOPIA_UNUSED(ok);
 		if(transpose_left && !transpose_right) {
 			ok = check_error( MatTransposeMatMult(l, r, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) );
 		} else if(!transpose_left && transpose_right) {
@@ -833,7 +833,8 @@ namespace utopia {
 		const Size result_size = {lsize.get(0), rsize.get(0)};
 		
 		const Scalar * right_array = nullptr;
-		PetscErrorCode err =  VecGetArrayRead(right.implementation(), &right_array);
+		PetscErrorCode err; UTOPIA_UNUSED(err);
+		err =  VecGetArrayRead(right.implementation(), &right_array);
 		
 		const Scalar * left_array = nullptr;
 		err =  VecGetArrayRead(left.implementation(), &left_array);

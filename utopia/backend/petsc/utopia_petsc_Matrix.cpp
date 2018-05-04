@@ -243,7 +243,8 @@ namespace utopia {
         }
         
         IS isrow;
-        PetscErrorCode ierr = ISCreateGeneral(comm, remote_rows.size(), &remote_rows[0], PETSC_USE_POINTER, &isrow);
+        PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+        ierr = ISCreateGeneral(comm, remote_rows.size(), &remote_rows[0], PETSC_USE_POINTER, &isrow);
         
         IS iscol;
         ierr = ISCreateGeneral(comm, remote_cols.size(), &remote_cols[0], PETSC_USE_POINTER, &iscol);
