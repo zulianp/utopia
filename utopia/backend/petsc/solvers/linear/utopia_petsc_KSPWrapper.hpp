@@ -206,7 +206,7 @@ namespace utopia {
             std::cout << "KSPType:                   " << ksp_type() << std::endl;
             std::cout << "-------------------------------------------" << std::endl;
 
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             ierr = KSPView(ksp_, PETSC_VIEWER_STDOUT_(communicator())); assert(ierr == 0);
         }
         
@@ -409,7 +409,7 @@ namespace utopia {
         
         void solution_status(SolutionStatus &status)
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             PetscInt its;
             KSPConvergedReason reason;
             PetscReal rnorm;

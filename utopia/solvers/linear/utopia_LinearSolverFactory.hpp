@@ -8,6 +8,7 @@
 #ifndef UTOPIA_LINEAR_SOLVER_FACTORY_HPP
 #define UTOPIA_LINEAR_SOLVER_FACTORY_HPP
 
+#include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Parameters.hpp"
 
@@ -23,7 +24,9 @@ namespace utopia  {
 	static SolverTag DIRECT_TAG 	= "DIRECT";
 	static SolverTag KSP_TAG 		= "KSP";
 
+#ifdef WITH_LAPACK
 	static SolverTag LAPACK_TAG 	= "LAPACK";
+#endif //WITH_LAPACK
 
 #ifdef WITH_UMFPACK
 	static SolverTag UMFPACK_TAG 	= "UMFPACK";

@@ -25,7 +25,7 @@ pipelines:
 #          - apt-get install -y petsc-dev
           - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug -DTRY_WITH_PETSC=OFF
           - make
-          - ./utopia_exec
+          - ./utopia_exec -verbose -bench
  #         - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug -DTRY_WITH_PETSC=ON
  #         - make
  #         - ./utopia_exec
