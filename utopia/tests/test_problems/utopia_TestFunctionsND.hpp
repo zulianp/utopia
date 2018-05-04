@@ -83,7 +83,7 @@ namespace utopia {
 
                 for (auto i = rr.begin(); i != rr.end(); ++i) {
                     for (SizeType j = 0; j != n; ++j) {
-                        result.set(i, j, 4.0 * temp.get(i, j) + (i == j) * (identityScaleFactor));
+                        result.set(i, j, 4.0 * temp.get(i, j) + (SizeType(i) == j) * (identityScaleFactor));
                     }
                 }
             }

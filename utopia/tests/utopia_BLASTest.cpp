@@ -294,7 +294,7 @@ namespace utopia {
                     auto v = row_view.get(k);
                     
                     utopia_test_assert(approxeq(2., v));
-                    utopia_test_assert(c == i);
+                    utopia_test_assert(SizeType(c) == SizeType(i));
                 }
             }
         }

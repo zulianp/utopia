@@ -51,7 +51,7 @@ namespace utopia {
         {
             typedef typename utopia::Traits<Vector>::SizeType SizeType;
             
-            const int n = mpi_world_size() * 3;
+            const SizeType n = mpi_world_size() * 3;
             Matrix m = zeros(n, n);
             auto rr = row_range(m);
 
