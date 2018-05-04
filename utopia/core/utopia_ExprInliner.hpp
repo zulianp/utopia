@@ -235,10 +235,11 @@ namespace utopia {
 
 			Scalar result = 0;
 			Size s = size(expr.left());
+			const SizeType cols = s.get(1);
 
 			ASSERT(size(expr).n_dims() == 2 || j == 0);
 
-			for(SizeType k = 0; k < s.get(1); ++k) {
+			for(SizeType k = 0; k < cols; ++k) {
 				result += eval_at(expr.left(), i, k) * eval_at(expr.right(), k, j);
 			}
 
@@ -254,7 +255,8 @@ namespace utopia {
 
 			Scalar result = 0;
 			Size s = size(expr.right());
-			for(SizeType k = 0; k < s.get(0); ++k) {
+			const SizeType rows = s.get(0);
+			for(SizeType k = 0; k < rows; ++k) {
 				result += eval_at(expr.left(), i, k) * eval_at(expr.right(), k);
 			}
 
@@ -304,6 +306,7 @@ namespace utopia {
 			}
 
 			const SizeType rows = s.get(0);
+			const SizeType cols = s.get(1);
 
 			Scalar result = eval_at(expr.expr(), 0, 0);
 			if(s.n_dims() == 1) {
@@ -314,7 +317,7 @@ namespace utopia {
 
 				SizeType j = 1;
 				for(SizeType i = 0; i < rows; ++i) {
-					for(; j < s.get(1); ++j) {
+					for(; j < cols; ++j) {
 					 result = Operation::template apply<Scalar>(result, eval_at(expr.expr(), i, j));
 					}
 
