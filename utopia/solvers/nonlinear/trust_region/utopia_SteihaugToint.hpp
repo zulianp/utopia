@@ -33,7 +33,7 @@ namespace utopia
         {
 
 			Vector r = -1 * g, d = r, s = local_zeros(local_size(g)), s1 = s; 
-	    	Scalar alpha, g_norm, d_B_d, z, z1, tau;
+	    	Scalar alpha, g_norm, d_B_d, z, z1;//, tau;
 	    	SizeType it = 0;
 
 	    	p_k = local_zeros(local_size(p_k)); 
@@ -56,7 +56,8 @@ namespace utopia
 	    		if(d_B_d <= 0)
 	    		{
 	    			s = p_k;
-	    			tau = this->quad_solver(s, d, this->current_radius(),  p_k);
+	    			// tau = 
+	    			this->quad_solver(s, d, this->current_radius(),  p_k);
 	    			return true; 
 	    		}
 
@@ -66,7 +67,8 @@ namespace utopia
 	    		if(norm2(s1) >= this->current_radius())
 	    		{
 	    			s = p_k; 
-	    			tau = this->quad_solver(s, d, this->current_radius(),  p_k);
+	    			// tau = 
+	    			this->quad_solver(s, d, this->current_radius(),  p_k);
 	    			return true; 
 	    		}
 	    	

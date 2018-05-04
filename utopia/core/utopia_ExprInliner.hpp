@@ -114,8 +114,9 @@ namespace utopia {
 			Write< Wrapper<Tensor, 2> > w(result);
 
 			Range rr = row_range(result);
-			for(SizeType i = rr.begin(); i < rr.end(); ++i) {
-				for(SizeType j = 0; j < s.get(1); ++j) {
+			const SizeType cols = s.get(1);
+			for(auto i = rr.begin(); i < rr.end(); ++i) {
+				for(SizeType j = 0; j < cols; ++j) {
 					result.set(i, j, eval_at(expr, i, j));
 				}
 			}
@@ -302,15 +303,17 @@ namespace utopia {
 				return 0;
 			}
 
+			const SizeType rows = s.get(0);
+
 			Scalar result = eval_at(expr.expr(), 0, 0);
 			if(s.n_dims() == 1) {
-				for(SizeType i = 1; i < s.get(0); ++i) {
+				for(SizeType i = 1; i < rows; ++i) {
 					result = Operation::template apply<Scalar>(result, eval_at(expr.expr(), i, 0));
 				}
 			} else {
 
 				SizeType j = 1;
-				for(SizeType i = 0; i < s.get(0); ++i) {
+				for(SizeType i = 0; i < rows; ++i) {
 					for(; j < s.get(1); ++j) {
 					 result = Operation::template apply<Scalar>(result, eval_at(expr.expr(), i, j));
 					}

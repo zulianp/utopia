@@ -33,10 +33,11 @@ namespace utopia {
 			
 			// init(A);
 			SizeType it = 0;
+			SizeType n_sweeps = this->sweeps();
 			if(constraints_.has_bound()) {
-				while(step(A, b, x) && it++ < this->sweeps()) {}
+				while(step(A, b, x) && it++ < n_sweeps) {}
 			} else {
-				while(unconstrained_step(A, b, x) && it++ < this->sweeps()) {}
+				while(unconstrained_step(A, b, x) && it++ < n_sweeps) {}
 			}
 			return it == SizeType(this->sweeps() - 1);
 		}

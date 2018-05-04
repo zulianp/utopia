@@ -47,10 +47,10 @@ namespace utopia
 		
 		class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
 		public:
-			bool residual(const Vector &/*point*/, Vector &/*result*/) const {}
-			bool jacobian(const Vector &/*x*/, Matrix &/*hessian*/) const {}
-			bool value(const Vector &, Scalar &val) const {}
-			bool update(const Vector &) { }
+			bool residual(const Vector &/*point*/, Vector &/*result*/) const { return true; }
+			bool jacobian(const Vector &/*x*/, Matrix &/*hessian*/) const { return true; }
+			bool value(const Vector &, Scalar &val) const { return true; }
+			bool update(const Vector &) { return true; }
 		};
 
 		

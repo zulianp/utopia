@@ -57,8 +57,8 @@ namespace utopia {
 
             {
                 Write<Matrix> w_m(m);
-                for(auto i = rr.begin(); i < rr.end(); ++i) {
-                    for(auto j = 0; j < n; ++j) {
+                for(SizeType i = rr.begin(); i < rr.end(); ++i) {
+                    for(SizeType j = 0; j < n; ++j) {
                         m.set(i, j, i * n + j);
                     }
                 }
