@@ -135,7 +135,7 @@ namespace utopia
             Scalar r_norm, r0_norm, rel_norm;
             SizeType it = 0;
             bool converged = false;
-            bool ok = true;
+            bool ok = true; UTOPIA_UNUSED(ok);
             SizeType L = this->n_levels();
             
             memory.init(L);

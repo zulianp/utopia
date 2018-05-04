@@ -180,7 +180,7 @@ namespace utopia {
 			Write< Wrapper<Tensor, 1> > w(result);
 
 			Range r = range(result);
-			for(SizeType i = r.begin(); i < r.end(); ++i) {
+			for(auto i = r.begin(); i < r.end(); ++i) {
 				result.set(i, eval_at(expr, i));
 			}
 		}

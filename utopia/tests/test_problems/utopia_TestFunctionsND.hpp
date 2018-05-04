@@ -52,7 +52,7 @@ namespace utopia {
 
                 const Write<Vector> write(result);
 
-                for (SizeType i = r.begin(); i != r.end(); ++i) {
+                for (auto i = r.begin(); i != r.end(); ++i) {
                     result.set(i, 2.0 * a * point.get(i) * (s + 1.0) - b.get(i));
                 }
             }
@@ -70,7 +70,7 @@ namespace utopia {
 
             const Scalar s = dot(point, A * point);
             const Range rr = row_range(temp);
-            const auto n   = size(point).get(0);
+            const SizeType n = size(point).get(0);
 
             assert(rr.begin() == range(point).begin());
             assert(rr.end() == range(point).end());
@@ -81,7 +81,7 @@ namespace utopia {
                 const Read<Matrix>  read(temp);
                 const Write<Matrix> write(result);
 
-                for (SizeType i = rr.begin(); i != rr.end(); ++i) {
+                for (auto i = rr.begin(); i != rr.end(); ++i) {
                     for (SizeType j = 0; j != n; ++j) {
                         result.set(i, j, 4.0 * temp.get(i, j) + (i == j) * (identityScaleFactor));
                     }

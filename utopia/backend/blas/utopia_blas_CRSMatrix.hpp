@@ -251,9 +251,9 @@ namespace utopia {
 
             if(rowptr_.empty()) return INVALID_INDEX;
 
-            assert(i + 1 < rowptr_.size());
+            assert(std::vector<SizeType>::size_type(i + 1) < rowptr_.size());
             
-            if(rowptr_[i + 1] >= colindex_.size()) {
+            if(std::vector<SizeType>::size_type(rowptr_[i + 1]) >= colindex_.size()) {
                 return INVALID_INDEX;
             }
 

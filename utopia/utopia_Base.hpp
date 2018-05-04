@@ -108,7 +108,7 @@ DERIVED_CRT(Derived)
 #define UTOPIA_UNUSED(macro_var_) (void) macro_var_
 
 #ifndef NDEBUG
-#define utopia_test_assert(macro_expr_) assert((macro_expr_));
+#define utopia_test_assert(macro_expr_) assert((macro_expr_))
 #else
 namespace utopia {
     inline void test_check_assertion(const bool expr, const std::string &filename, const int line, const std::string &expr_string)

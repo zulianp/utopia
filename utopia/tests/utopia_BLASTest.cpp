@@ -243,7 +243,7 @@ namespace utopia {
         Real val = norm2(twiceaxpy);
         // std::cout << tree_format(norm2(twiceaxpy).getClass()) << std::endl;
         // std::cout << val << std::endl;
-        val = norm_infty(twiceaxpy);
+        val = norm_infty(twiceaxpy); UTOPIA_UNUSED(val);
     }
     
     void blas_composite_test() {
@@ -285,10 +285,11 @@ namespace utopia {
             Range r = row_range(mat);
             for(auto i = r.begin(); i != r.end(); ++i) {
                 RowView<const CRSMatrixd> row_view(mat, i);
+                const SizeType n_values = row_view.n_values();
                 
-                utopia_test_assert(row_view.n_values() == 1);
+                utopia_test_assert(n_values == SizeType(1));
                 
-                for(auto k = 0; k < row_view.n_values(); ++k) {
+                for(SizeType k = 0; k < n_values; ++k) {
                     auto c = row_view.col(k);
                     auto v = row_view.get(k);
                     
