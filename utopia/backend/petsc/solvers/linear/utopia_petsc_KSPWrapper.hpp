@@ -160,7 +160,6 @@ namespace utopia {
             PetscErrorCode ierr;
             const MatSolverPackage stype;
             PC pc;
-            PCType ret;
             ierr = KSPGetPC(ksp_, &pc);                     assert(ierr == 0);
             ierr = PCFactorGetMatSolverPackage(pc, &stype); assert(ierr == 0);
             return stype;
@@ -319,16 +318,16 @@ namespace utopia {
 
         void update(const Matrix &mat)
         {
-            PetscErrorCode ierr;
-            bool skip_set_operators = false;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+
             ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(mat)); assert(ierr == 0);
             ierr = KSPSetUp(ksp_);                                      assert(ierr == 0);
         }
 
         void update(const Matrix &mat, const Matrix &prec)
         {
-            PetscErrorCode ierr;
-            bool skip_set_operators = false;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+
             ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(prec)); assert(ierr == 0);
             ierr = KSPSetUp(ksp_);                                       assert(ierr == 0);
         }
@@ -370,7 +369,8 @@ namespace utopia {
                             const PetscReal dtol,
                             const PetscInt max_it)
         {
-            auto ierr = KSPSetTolerances(ksp_, rtol, atol, dtol, max_it); assert(ierr == 0);
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+            ierr = KSPSetTolerances(ksp_, rtol, atol, dtol, max_it); assert(ierr == 0);
         }
         
         void set_monitor(
@@ -379,7 +379,8 @@ namespace utopia {
             PetscErrorCode (*monitordestroy)(void**)
         )
         {
-            auto ierr = KSPMonitorSet(ksp_, monitor, mctx, monitordestroy); assert(ierr == 0);
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+            ierr = KSPMonitorSet(ksp_, monitor, mctx, monitordestroy); assert(ierr == 0);
         }
         
         bool apply(const Vector &b, Vector &x)

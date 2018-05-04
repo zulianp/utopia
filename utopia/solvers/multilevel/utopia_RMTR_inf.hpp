@@ -48,6 +48,9 @@ namespace utopia
 
     public:
 
+        using TrustRegionBoxBase<Matrix, Vector>::delta_update;
+        using NonlinearMultiLevelBase<Matrix, Vector>::print_statistics;
+
        /**
         * @brief      Multigrid class
         *

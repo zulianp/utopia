@@ -23,7 +23,8 @@ namespace utopia {
 			const auto &b = expr.left().implementation();
 
 			r.init(x.communicator(), x.type(), x.local_size(), x.size());
-			auto ierr = MatResidual(a.implementation(), b.implementation(), x.implementation(), r.implementation()); assert(ierr == 0);
+			PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+			ierr = MatResidual(a.implementation(), b.implementation(), x.implementation(), r.implementation()); assert(ierr == 0);
 	    	
 			UTOPIA_TRACE_END(expr);
 			return r;

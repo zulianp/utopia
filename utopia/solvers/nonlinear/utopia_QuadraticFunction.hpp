@@ -7,7 +7,7 @@ namespace utopia {
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class QuadraticFunction final : public Function<Matrix, Vector, Backend> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix); 
+        DEF_UTOPIA_SCALAR(Matrix)
 
         QuadraticFunction(const std::shared_ptr<Matrix> &H, const std::shared_ptr<Vector> &rhs)
         : rhs_(rhs)

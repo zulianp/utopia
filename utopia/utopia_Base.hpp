@@ -105,7 +105,7 @@ DERIVED_CRT(Derived)
 #define UTOPIA_SIZE_TYPE(Tensor) typename utopia::Traits<Tensor>::SizeType
 #define UTOPIA_MATRIX(Tensor) typename utopia::Traits<Tensor>::Matrix
 #define UTOPIA_VECTOR(Tensor) typename utopia::Traits<Tensor>::Vector
-
+#define UTOPIA_UNUSED(macro_var_) (void) macro_var_
 
 #define UTOPIA_RUN_TEST(test_name) \
     {                               \

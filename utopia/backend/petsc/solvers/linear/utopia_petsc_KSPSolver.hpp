@@ -191,10 +191,8 @@ namespace utopia {
          */
         virtual void set_ksp_options(KSP &ksp)
         {
-            PetscErrorCode ierr;
             ksp_->copy_settings_to(ksp);
-            set_monitor_options(ksp);
-            
+            set_monitor_options(ksp);   
         }
         
         virtual void attach_preconditioner(KSP &ksp) const {
@@ -291,7 +289,7 @@ namespace utopia {
             handle_reset(*op);
             set_monitor_options(ksp_->implementation());
             
-            PetscErrorCode ierr;
+
             PreconditionedSolver::update(op, prec);
             ksp_->update(*op, *prec);
         }
@@ -300,7 +298,7 @@ namespace utopia {
         {
             handle_reset(*op);
             
-            PetscErrorCode ierr;
+
             PreconditionedSolver::update(op);
             set_monitor_options(ksp_->implementation());
             

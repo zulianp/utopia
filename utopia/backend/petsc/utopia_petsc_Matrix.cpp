@@ -180,7 +180,7 @@ namespace utopia {
        const std::vector<PetscInt> &col_index,
        PetscMatrix &result) const
     {
-        Mat r = implementation();
+        // Mat r = implementation();
         MPI_Comm comm = communicator();
         
         PetscInt min_col = col_index[0], max_col = col_index[1];
@@ -310,10 +310,10 @@ namespace utopia {
      const Range &global_col_range,
      PetscMatrix &result) const
     {
-        PetscErrorCode ierr = 0;
+        // PetscErrorCode ierr = 0;
         
-        Mat &l = result.implementation();
-        const Mat r = implementation();
+        // Mat &l = result.implementation();
+        // const Mat r = implementation();
         
         std::vector<PetscInt> remote_rows;
         remote_rows.reserve(local_row_range.extent());
@@ -544,7 +544,7 @@ namespace utopia {
         
         const Size gs = size();
         const Size ls = local_size();
-        const bool is_row = gs.get(0) < gs.get(1);
+        // const bool is_row = gs.get(0) < gs.get(1);
         
         PetscVector vec;
         get_diag(vec);

@@ -1,9 +1,3 @@
-/*
-* @Author: Alena Kopanicakova
-* @Date:   2016-08-01
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2016-08-01
-*/
 #ifndef UTOPIA_SOLVER_RASTRIGIN_TESTFUNCTION_HPP
 #define UTOPIA_SOLVER_RASTRIGIN_TESTFUNCTION_HPP
 
