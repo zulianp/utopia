@@ -126,7 +126,7 @@ namespace utopia {
 		
 		std::fill(left.entries().begin(), left.entries().end(), 0);
 		
-		for (SizeType r = 0; r < right.rows(); ++r) {
+		for (decltype(right.rows()) r = 0; r < right.rows(); ++r) {
 			const SizeType begin = right.rowptr()[r];
 			const SizeType end   = right.rowptr()[r + 1];
 			
@@ -174,8 +174,12 @@ namespace utopia {
 	{
 		
 		left.resize(rowRange.extent(), colRange.extent());
-		for (SizeType i = 0; i < rowRange.extent(); ++i) {
-			for (SizeType j = 0; j < colRange.extent(); ++j) {
+
+		const SizeType r_ext = rowRange.extent();
+		const SizeType c_ext = colRange.extent();
+
+		for (SizeType i = 0; i < r_ext; ++i) {
+			for (SizeType j = 0; j < c_ext; ++j) {
 				left.set(i, j, right.get(rowRange.begin() + i, colRange.begin() + j));
 			}
 		}
@@ -183,16 +187,16 @@ namespace utopia {
 	
 	void BLASBackend::assign_from_range(Vector &left, const Vector &right, const Range &rowRange, const Range & /*colRange*/)
 	{
-		
-		left.resize(rowRange.extent());
-		for (SizeType i = 0; i < rowRange.extent(); ++i) {
+		const SizeType r_ext = rowRange.extent();
+
+		left.resize(r_ext);
+		for (SizeType i = 0; i < r_ext; ++i) {
 			left[i] = right[rowRange.begin() + i];
 		}
 		
 	}
 	
-	void BLASBackend::select(
-							 Vector &left,
+	void BLASBackend::select(Vector &left,
 							 const Vector &right,
 							 const std::vector<SizeType> &index)
 	{
@@ -340,7 +344,7 @@ namespace utopia {
 		const int inc = 1;
 		const int lda = m;
 		
-		if(y.empty() || y_size != y.size()) {
+		if(y.empty() || y_size != int(y.size())) {
 			y.resize(y_size);
 			std::fill(y.begin(), y.end(), 0);
 		} else if(approxeq(alpha, 0.0)) {
@@ -374,9 +378,11 @@ namespace utopia {
 			y.resize(y_size);
 			std::fill(y.begin(), y.end(), 0);
 		}
+
+		const SizeType A_rows = A.rows();
 		
 		if(transpose_A) {
-			for (SizeType r = 0; r != A.rows(); ++r) {
+			for (SizeType r = 0; r != A_rows; ++r) {
 				BLASBackend::Scalar x_r = x[r];
 				
 				for (SizeType k = A.rowptr()[r]; k != A.rowptr()[r + 1]; ++k) {
@@ -387,7 +393,7 @@ namespace utopia {
 			}
 			
 		} else {
-			for (SizeType r = 0; r != A.rows(); ++r) {
+			for (SizeType r = 0; r != A_rows; ++r) {
 				BLASBackend::Scalar A_x = 0.;
 				for (SizeType k = A.rowptr()[r]; k != A.rowptr()[r + 1]; ++k) {
 					const SizeType c = A.colindex()[k];

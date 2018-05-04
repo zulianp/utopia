@@ -111,7 +111,7 @@ namespace utopia {
         {
             if(KSPTypes::instance().is_solver_package_valid(package)) {
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
-                PetscErrorCode ierr;
+                PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
                 PC pc;
                 ierr = KSPGetPC(ksp_, &pc);  assert(ierr == 0);
                 ierr = PCFactorSetMatSolverPackage(pc, package.c_str()); assert(ierr == 0);
@@ -127,7 +127,7 @@ namespace utopia {
          */
         inline PCType pc_type() const
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             PC pc;
             PCType ret;
             ierr = KSPGetPC(ksp_, &pc); assert(ierr == 0);
@@ -145,7 +145,7 @@ namespace utopia {
          */
         inline KSPType ksp_type() const
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             KSPType ret;
             ierr = KSPGetType(ksp_, &ret); assert(ierr == 0);
             return ret;
@@ -157,10 +157,9 @@ namespace utopia {
         inline std::string solver_package() const
         {
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             const MatSolverPackage stype;
             PC pc;
-            PCType ret;
             ierr = KSPGetPC(ksp_, &pc);                     assert(ierr == 0);
             ierr = PCFactorGetMatSolverPackage(pc, &stype); assert(ierr == 0);
             return stype;
@@ -207,7 +206,7 @@ namespace utopia {
             std::cout << "KSPType:                   " << ksp_type() << std::endl;
             std::cout << "-------------------------------------------" << std::endl;
 
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             ierr = KSPView(ksp_, PETSC_VIEWER_STDOUT_(communicator())); assert(ierr == 0);
         }
         
@@ -231,7 +230,7 @@ namespace utopia {
         
         void pc_copy_settings(PC &other_pc) const
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             PC this_pc;
             PCType type;
             
@@ -254,7 +253,7 @@ namespace utopia {
         
         void copy_settings_to(KSP &other_ksp) const
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             PetscBool bool_value;
             KSPType type;
             PetscReal rtol;
@@ -289,7 +288,7 @@ namespace utopia {
             PetscErrorCode (*destroy)(PC)
             )
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             PC pc;
             
             ierr = KSPGetPC(ksp_, &pc);                         assert(ierr == 0);
@@ -319,16 +318,16 @@ namespace utopia {
 
         void update(const Matrix &mat)
         {
-            PetscErrorCode ierr;
-            bool skip_set_operators = false;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+
             ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(mat)); assert(ierr == 0);
             ierr = KSPSetUp(ksp_);                                      assert(ierr == 0);
         }
 
         void update(const Matrix &mat, const Matrix &prec)
         {
-            PetscErrorCode ierr;
-            bool skip_set_operators = false;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+
             ierr = KSPSetOperators(ksp_, raw_type(mat), raw_type(prec)); assert(ierr == 0);
             ierr = KSPSetUp(ksp_);                                       assert(ierr == 0);
         }
@@ -337,7 +336,7 @@ namespace utopia {
                     const Vector &rhs,
                     Vector &x)
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             KSPNormType normtype;
             PetscReal rtol;
             PetscReal abstol;
@@ -370,7 +369,8 @@ namespace utopia {
                             const PetscReal dtol,
                             const PetscInt max_it)
         {
-            auto ierr = KSPSetTolerances(ksp_, rtol, atol, dtol, max_it); assert(ierr == 0);
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+            ierr = KSPSetTolerances(ksp_, rtol, atol, dtol, max_it); assert(ierr == 0);
         }
         
         void set_monitor(
@@ -379,12 +379,13 @@ namespace utopia {
             PetscErrorCode (*monitordestroy)(void**)
         )
         {
-            auto ierr = KSPMonitorSet(ksp_, monitor, mctx, monitordestroy); assert(ierr == 0);
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+            ierr = KSPMonitorSet(ksp_, monitor, mctx, monitordestroy); assert(ierr == 0);
         }
         
         bool apply(const Vector &b, Vector &x)
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             auto ls = local_size(b).get(0);
             auto gs = size(b).get(0);
             
@@ -408,7 +409,7 @@ namespace utopia {
         
         void solution_status(SolutionStatus &status)
         {
-            PetscErrorCode ierr;
+            PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
             PetscInt its;
             KSPConvergedReason reason;
             PetscReal rnorm;

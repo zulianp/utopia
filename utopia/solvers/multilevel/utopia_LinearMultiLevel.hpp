@@ -226,7 +226,7 @@ namespace utopia
 
 		virtual void generate_masks(const Matrix &A)
 		{
-			const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
+			// const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
 
 			const auto L = this->n_levels();
 			masks_.resize(L);

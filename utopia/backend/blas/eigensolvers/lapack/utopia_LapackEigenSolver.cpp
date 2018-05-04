@@ -258,7 +258,7 @@ namespace utopia {
 
 		lwork = work[0];
 
-		if(lwork > work.size()) {
+		if(lwork > int(work.size())) {
 			work.resize(lwork);
 		}
 
@@ -292,7 +292,7 @@ namespace utopia {
 
 		lwork = work[0];
 
-		if(lwork > work.size()) {
+		if(lwork > int(work.size())) {
 			work.resize(lwork);
 		}
 
@@ -400,7 +400,7 @@ namespace utopia {
 
 		lwork = work[0];
 
-		if(lwork > work.size()) {
+		if(lwork > int(work.size())) {
 			work.resize(lwork);
 		}
 
@@ -435,7 +435,7 @@ namespace utopia {
 
 		lwork = work[0];
 
-		if(lwork > work.size()) {
+		if(lwork > int(work.size())) {
 			work.resize(lwork);
 		}
 

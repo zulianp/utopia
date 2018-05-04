@@ -61,7 +61,7 @@ namespace utopia {
 				void init()
 				{
 	#ifdef WITH_LAPACK
-						solvers_[LAPACK_TAG] = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
+						solvers_[DIRECT_TAG] = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
 						solvers_[AUTO_TAG]   = std::make_shared< LSFactoryMethod< LUDecomposition<Matrix, Vector>> >();
 	#endif //WITH_LAPACK
 				}

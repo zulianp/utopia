@@ -76,7 +76,10 @@ namespace utopia {
             fill(entries_.begin(), entries_.end(), 0);
 
             rowptr_[0] = 0;
-            for(SizeType i = 1; i < rowptr_.size(); ++i) {
+
+            const SizeType row_ptr_size = rowptr_.size();
+            
+            for(SizeType i = 1; i < row_ptr_size; ++i) {
                 rowptr_[i] = nnzXRow + rowptr_[i-1];
             }
 

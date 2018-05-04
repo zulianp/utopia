@@ -99,7 +99,7 @@ namespace utopia
  	{
  		if (pFile!=NULL && mpi_world_rank() == 0)
  		{
-	 		for(auto i = 0;  i < vars.size(); i++ )
+	 		for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
 	 		{
 	 			if(i < vars.size() -1)
 	 				fprintf (pFile,"%f,", vars[i]);
@@ -115,7 +115,7 @@ namespace utopia
  	{
  		if (pFile!=NULL && mpi_world_rank() == 0)
  		{
-	 		for(auto i = 0;  i < vars.size(); i++ )
+	 		for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
 	 		{	
 	 			if(i < vars.size() -1)
 	 				fprintf (pFile,"%d,", vars[i]);
@@ -131,7 +131,7 @@ namespace utopia
  	{
  		if (pFile!=NULL && mpi_world_rank() == 0)
  		{
-	 		for(auto i = 0;  i < vars.size(); i++ )
+	 		for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
 	 		{	
 	 			if(i < vars.size() -1)
 	 				fprintf (pFile,"%lu,", vars[i]);
@@ -147,7 +147,7 @@ namespace utopia
  	{
  			if (pFile!=NULL && mpi_world_rank() == 0)
  		{
-	 		for(auto i = 0;  i < vars.size(); i++ )
+	 		for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
 	 		{	
 	 			if(i < vars.size() -1)
 	 				fprintf (pFile,"%c,", vars[i]);
@@ -164,7 +164,7 @@ namespace utopia
  	{
  			if (pFile!=NULL && mpi_world_rank() == 0)
  		{
-	 		for(auto i = 0;  i < vars.size(); i++ )
+	 		for(std::vector<double>::size_type i = 0;  i < vars.size(); i++ )
 	 		{	
 	 			if(i < vars.size() -1)
 	 				fprintf (pFile,"%s,", vars[i].c_str());

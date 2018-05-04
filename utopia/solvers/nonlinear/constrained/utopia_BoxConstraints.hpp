@@ -13,7 +13,7 @@ namespace utopia {
 	template<class Vector>
 	class BoxConstraints {
 	public:
-		DEF_UTOPIA_SCALAR(Vector); 
+		DEF_UTOPIA_SCALAR(Vector)
 
 		BoxConstraints(const std::shared_ptr<Vector> &lower_bound,
 					   const std::shared_ptr<Vector> &upper_bound)

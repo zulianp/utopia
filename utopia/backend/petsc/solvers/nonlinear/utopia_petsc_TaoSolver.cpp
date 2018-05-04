@@ -52,7 +52,7 @@ namespace utopia {
 	template<class Matrix, class Vector>
 	static PetscErrorCode UtopiaTaoFormHessian(Tao tao, Vec x, Mat H, Mat Hpre, void *ctx)
 	{
-		PetscErrorCode ierr = 0;
+		// PetscErrorCode ierr = 0;
 		Function<Matrix, Vector> * fun = static_cast<Function<Matrix, Vector> *>(ctx);
 		assert(fun);
 
