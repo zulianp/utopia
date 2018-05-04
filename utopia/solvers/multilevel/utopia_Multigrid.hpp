@@ -334,9 +334,9 @@ namespace utopia
         virtual bool full_cycle(const SizeType &l)
         {
             Vector &r   = memory.r[l];
-            Vector &c   = memory.c[l];
-            Vector &c_I = memory.c_I[l];
-            Vector &r_R = memory.r_R[l];
+            // Vector &c   = memory.c[l];
+            // Vector &c_I = memory.c_I[l];
+            // Vector &r_R = memory.r_R[l];
           
             std::vector<Vector> rhss(this->n_levels());
             rhss[l] = r;

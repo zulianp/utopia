@@ -59,7 +59,6 @@ namespace utopia {
 						cg.max_it(N);
 						cg.solve(A, b, x);
 
-						double err = norm2(b - A * x);
 						assert(approxeq(A * x, b, 1e-6));
 					}
 				);	

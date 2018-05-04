@@ -19,17 +19,17 @@ namespace utopia {
             }
 
             double n = norm2(v);
-            assert(approxeq(5.0, n));
+            utopia_test_assert(approxeq(5.0, n));
 
             n = norm_infty(v);
-            assert(approxeq(4.0, n));
+            utopia_test_assert(approxeq(4.0, n));
 
             v *= 2.5;
             n = norm2(v);
-            assert(approxeq(12.5, n));
+            utopia_test_assert(approxeq(12.5, n));
 
             n = norm_infty(v);
-            assert(approxeq(10.0, n));
+            utopia_test_assert(approxeq(10.0, n));
         }
 
         void quadratic_form()
@@ -42,8 +42,8 @@ namespace utopia {
             double value = 0.5 * dot(x, A * x) + dot(x, b);
             double expected = sum(A) * 0.5 + sum(b);    
 
-            assert(approxeq(value, expected));
-            assert(approxeq(value, n*n*0.5 + n*2.));
+            utopia_test_assert(approxeq(value, expected));
+            utopia_test_assert(approxeq(value, n*n*0.5 + n*2.));
         }
 
         void dot_test()
@@ -61,7 +61,7 @@ namespace utopia {
             }
 
             double v = dot(v1, v2 * 0.1);
-            assert(approxeq(0.0, v));
+            utopia_test_assert(approxeq(0.0, v));
         }
 
         void dot_product_composition_test()
@@ -74,10 +74,10 @@ namespace utopia {
             }
 
             double one = norm2(v) * norm2(v) / dot(v, v);
-            assert(approxeq(1.0, one));
+            utopia_test_assert(approxeq(1.0, one));
 
             one = norm2(v * (1.0 / Scalar(norm2(v))));
-            assert(approxeq(1.0, one));
+            utopia_test_assert(approxeq(1.0, one));
         }
 
         void multiply_test()
@@ -100,9 +100,9 @@ namespace utopia {
 
             each_read(m3, [](SizeType x, SizeType y, double entry) {
                 if (x == 0)
-                    assert(entry == 192);
+                    utopia_test_assert(entry == 192);
                 else
-                    assert(entry == 96);
+                    utopia_test_assert(entry == 96);
             });
         }
 
@@ -118,23 +118,23 @@ namespace utopia {
             auto expr = det(m);
 
             double val = expr;
-            assert(approxeq(0.125, val));
+            utopia_test_assert(approxeq(0.125, val));
         }
 
         void size_test()
         {
             Matrix m = zeros(2, 3);
             Size size = m.size();
-            assert(size.get(0) == 2);
-            assert(size.get(1) == 3);
+            utopia_test_assert(size.get(0) == 2);
+            utopia_test_assert(size.get(1) == 3);
 
             Vector v = zeros(3);
             size = v.size();
-            assert(size.get(0) == 3);
+            utopia_test_assert(size.get(0) == 3);
 
             v = m * v;
             size = v.size();
-            assert(size.get(0) == 2);
+            utopia_test_assert(size.get(0) == 2);
         }
 
         void binary_min_max()
@@ -146,14 +146,14 @@ namespace utopia {
             Vector actual_min = utopia::min(one, two);
             Vector actual_max = utopia::max(one, two);
             
-            assert(approxeq(one, actual_min));
-            assert(approxeq(two, actual_max));
+            utopia_test_assert(approxeq(one, actual_min));
+            utopia_test_assert(approxeq(two, actual_max));
         
             actual_min = utopia::min(two, values(n, 1.));
             actual_max = utopia::max(values(n, 2.), one);
         
-            assert(approxeq(one, actual_min));
-            assert(approxeq(two, actual_max));
+            utopia_test_assert(approxeq(one, actual_min));
+            utopia_test_assert(approxeq(two, actual_max));
         }
 
         void is_subtree()

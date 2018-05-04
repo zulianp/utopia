@@ -38,11 +38,13 @@ namespace utopia {
 
             {
                 Read<Vector> r_s(selection);
-                assert(selection.get(s_r.begin()) == r.begin());
-                assert(selection.get(s_r.begin() + 1) == (r.end() % n));
+                utopia_test_assert(selection.get(s_r.begin()) == r.begin());
+                utopia_test_assert(selection.get(s_r.begin() + 1) == (r.end() % n));
             }
 
             Scalar sum_v_s = sum(v.select(s));
+            utopia_test_assert(sum_v_s > r.begin());
+            utopia_test_assert(false);
         }
 
         void matrix_selection_test()
@@ -76,8 +78,8 @@ namespace utopia {
             {
                 auto s_r = row_range(selection);
                 Read<Matrix> r_s(selection);
-                assert(selection.get(s_r.begin(), 0) == rr.begin() * n);
-                assert(selection.get(s_r.begin(), 1) == rr.begin() * n + 2);
+                utopia_test_assert(selection.get(s_r.begin(), 0) == rr.begin() * n);
+                utopia_test_assert(selection.get(s_r.begin(), 1) == rr.begin() * n + 2);
             }
 
             Matrix row_selection = m.select(r_s);
@@ -87,7 +89,7 @@ namespace utopia {
                 Read<Matrix> r_s(row_selection);
 
                 for(SizeType i = 0; i < n; ++i) {
-                    assert(row_selection.get(s_r.begin(), i) == (rr.begin() * n + i));
+                    utopia_test_assert(row_selection.get(s_r.begin(), i) == (rr.begin() * n + i));
                 }
             }
 

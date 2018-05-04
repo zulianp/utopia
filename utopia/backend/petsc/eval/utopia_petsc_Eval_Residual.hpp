@@ -50,7 +50,8 @@ namespace utopia {
 				r.repurpose(x.communicator(), x.type(), x.local_size(), x.size());
 			}
 
-			auto ierr = MatResidual(a.implementation(), b.implementation(), x.implementation(), r.implementation()); assert(ierr == 0);
+			PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
+			ierr = MatResidual(a.implementation(), b.implementation(), x.implementation(), r.implementation()); assert(ierr == 0);
 	    	
 			UTOPIA_TRACE_END(assign_expr);
 			return true; 

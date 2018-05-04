@@ -7,7 +7,7 @@
 
 #include "utopia_Config.hpp"
 
-#include <assert.h>
+#include <cassert>
 #include <sstream>
 #include <iomanip>
 #include <iostream>
@@ -106,6 +106,19 @@ DERIVED_CRT(Derived)
 #define UTOPIA_MATRIX(Tensor) typename utopia::Traits<Tensor>::Matrix
 #define UTOPIA_VECTOR(Tensor) typename utopia::Traits<Tensor>::Vector
 #define UTOPIA_UNUSED(macro_var_) (void) macro_var_
+
+#ifndef NDEBUG
+#define utopia_test_assert(macro_expr_) assert((macro_expr_));
+#else
+namespace utopia {
+    inline void test_check_assertion(const bool expr, const std::string &filename, const int line, const std::string &expr_string)
+    {
+        if(!expr) { std::cout << filename << ": " << line << "\ntest failure: " << expr_string << std::endl; }
+    }
+}
+#define utopia_test_assert(macro_expr_) utopia::test_check_assertion(macro_expr_, __FILE__, __LINE__, #macro_expr_)
+#endif //NDEBUG
+
 
 #define UTOPIA_RUN_TEST(test_name) \
     {                               \

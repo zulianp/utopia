@@ -221,8 +221,6 @@ namespace utopia {
 					}
 				}
 			}
-
-			Scalar alpha = 1.;
 			
 			if(use_line_search_) {
 				inactive_set_ *= 0.;

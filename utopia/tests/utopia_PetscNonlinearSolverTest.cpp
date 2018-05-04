@@ -138,7 +138,7 @@ namespace utopia
 			// if(mpi_world_rank() == 0) std::cout << c << std::endl;
 
 			double diff = norm2(solution_u - solution);
-			double res_norm = norm2(m * solution_u - rhs);
+			// double res_norm = norm2(m * solution_u - rhs);
 
 			// disp(res_norm);
 
@@ -773,7 +773,7 @@ namespace utopia
 				nlsolver.solve(rosenbrock, x0_ros); 
 
 				expected_rosenbrock -= x0_ros; 
-				double diff_rb = norm2(expected_rosenbrock);
+				double diff_rb = norm2(expected_rosenbrock); UTOPIA_UNUSED(diff_rb);
 				assert(approxeq(diff_rb, 0., 1e-6));
 			}
 		}

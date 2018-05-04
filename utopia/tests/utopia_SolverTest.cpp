@@ -81,7 +81,7 @@ namespace utopia
 			
 			//test outcome...
 			Vector expected = values(n, 0.468919);
-			assert(approxeq(expected, actual));
+			utopia_test_assert(approxeq(expected, actual));
 			//! [NL solve example]
 		}
 		
@@ -107,7 +107,7 @@ namespace utopia
 			newton_solver.solve(fun, actual);
 			
 			//Check if the result is what we expected
-			assert(approxeq(expected, actual));
+			utopia_test_assert(approxeq(expected, actual));
 			//! [Newton CG example]
 		}
 		
@@ -166,13 +166,13 @@ namespace utopia
 				
 				// trust_region_solve(fun2, x, params);
 				// trust_region_solve(fun_woods, x_w1, params);
-				// assert(approxeq(expected, x));
+				// utopia_test_assert(approxeq(expected, x));
 				
 				
 				x = values(10, 2);
 				params.trust_region_alg(STEIHAUG_TOINT_TAG);
 				trust_region_solve(fun2, x, params);
-				assert(approxeq(expected, x));
+				utopia_test_assert(approxeq(expected, x));
 				
 				
 				// x = values(10, 2);
@@ -186,18 +186,18 @@ namespace utopia
 				
 				// tr_solver.verbose(true);
 				// tr_solver.solve(fun2, x);
-				// assert(approxeq(expected, x));
+				// utopia_test_assert(approxeq(expected, x));
 				
 				
 				
 				x = values(10, 2);
 				params.trust_region_alg(CAUCHYPOINT_TAG);
 				trust_region_solve(fun2, x, params);
-				assert(approxeq(expected, x));
+				utopia_test_assert(approxeq(expected, x));
 				
 				x = values(10, 2);
 				trust_region_solve(fun2, x, params);
-				assert(approxeq(expected, x));
+				utopia_test_assert(approxeq(expected, x));
 				
 				
 				Vector expected_rosenbrock = values(2, 1);
@@ -275,8 +275,8 @@ namespace utopia
 				nlsolver1.solve(fun_woods, x_w1);
 				nlsolver2.solve(fun_woods, x_w2);
 				
-				assert(approxeq(expected_woods, x_w1));
-				assert(approxeq(expected_woods, x_w2));
+				utopia_test_assert(approxeq(expected_woods, x_w1));
+				utopia_test_assert(approxeq(expected_woods, x_w2));
 				
 				// rastrigin function test - convergence to local minimum
 				Rastrigin<Matrix, Vector> fun_rastrigin;
@@ -300,8 +300,8 @@ namespace utopia
 				Vector x01 = values(2, 2.0), x02 = values(2, 2.0);
 				nlsolver1.solve(rosenbrock_fun, x01);
 				nlsolver2.solve(rosenbrock_fun, x02);
-				assert(approxeq(expected_rosenbrock, x01));
-				assert(approxeq(expected_rosenbrock, x02));
+				utopia_test_assert(approxeq(expected_rosenbrock, x01));
+				utopia_test_assert(approxeq(expected_rosenbrock, x02));
 				
 				x01 = values(2, 2.0);
 				params.verbose(false);
@@ -379,7 +379,7 @@ namespace utopia
 				auto cg = std::make_shared<ConjugateGradient<Matrix, Vector> >(); 
 				tr_solver.set_linear_solver(cg); 
 
-				assert(approxeq(expected_rosenbrock, x0));
+				utopia_test_assert(approxeq(expected_rosenbrock, x0));
 			}
 		}
 		

@@ -75,9 +75,9 @@ public:
 			
 			// std::cout << tree_format(d_expr_2.getClass()) << std::endl;
 			
-			Number<double> f = expr;    //or double f = scalar_cast<double>(expr);
-			Vector g = d_expr;
-			Matrix H = d_expr_2;
+			Number<double> f = expr;  UTOPIA_UNUSED(f);   //or double f = scalar_cast<double>(expr);
+			Vector g = d_expr;		  UTOPIA_UNUSED(g);
+			Matrix H = d_expr_2;	  UTOPIA_UNUSED(H);
 			// disp(H);
 		}
 		
@@ -135,7 +135,7 @@ public:
 			//create derivative
 			auto d_expr = derivative(expr);
 			
-			Number<double> f = expr; //or double f = scalar_cast<double>(expr);
+			Number<double> f = expr; UTOPIA_UNUSED(f); //or double f = scalar_cast<double>(expr);
 			
 			//evaluate derivative
 			Vector df = d_expr;
@@ -155,9 +155,9 @@ public:
 			
 			// std::cout << tree_format(d_expr_2.getClass()) << std::endl;
 			
-			Number<double> f = expr;
-			Vector g = d_expr;
-			Matrix H = d_expr_2;
+			Number<double> f = expr; UTOPIA_UNUSED(f);
+			Vector g = d_expr;		 UTOPIA_UNUSED(g);
+			Matrix H = d_expr_2;	 UTOPIA_UNUSED(H);
 		}
 	}
 	
