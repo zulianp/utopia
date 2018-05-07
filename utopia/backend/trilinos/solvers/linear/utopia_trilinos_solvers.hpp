@@ -5,10 +5,10 @@
 #include "utopia_trilinos_LinearSolverFactory.hpp"
 #include "utopia_PreconditionedSolver.hpp"
 
-#include "BelosConfigDefs.hpp"
-#include "BelosLinearProblem.hpp"
-#include "BelosTpetraAdapter.hpp"
-#include "BelosBlockCGSolMgr.hpp"
+//#include "BelosConfigDefs.hpp"
+#include <BelosLinearProblem.hpp>
+#include <BelosTpetraAdapter.hpp>
+//#include "BelosBlockCGSolMgr.hpp"
 
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
@@ -55,7 +55,39 @@ namespace utopia
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
 
+//////
 
+typedef Belos::LinearProblem<SC, MV, OP> problem_type;
+typedef Belos::SolverManager<SC, MV, OP> solver_type;
+
+
+ Teuchos::RCP<Belos::LinearProblem<SC, MV, OP> > linearProblem = 
+ Teuchos::rcp (new problem_type (A, LHS, RHS ));
+linearProblem->setProblem ();i
+
+Teuchos::RCP<Teuchos::ParameterList> ParamList = Teuchos::getParametersFromXmlFile(param_file_name);
+
+ Teuchos::RCP<solver_type> belosSolver; 
+
+
+Belos::SolverFactory<SC, MV, OP> belosFactory; 
+belosSolver = belosFactory.create (it_sol_type, ParamList); 
+
+
+{
+Belos::SolverFactory<SC, mv_type, op_type> belosFactory;
+ belosSolver = belosFactory.create (it_sol_type, ParamList);
+}
+
+
+
+//linearProblem->setRightPrec (M_ifpack);
+belosSolver->setProblem (linearProblem) ;
+
+const Belos::ReturnType belosResult = belosSolver->solve ();
+int numIterations = belosSolver->getNumIters();
+
+/////
         virtual ~BelosSolver()
         {
         }
