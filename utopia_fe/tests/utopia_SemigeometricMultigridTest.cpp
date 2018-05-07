@@ -230,6 +230,7 @@ namespace utopia {
 
         std::cout << "assembly complete" << std::endl;
 
+
         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
         // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
         // auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();

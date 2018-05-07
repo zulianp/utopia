@@ -104,10 +104,16 @@ namespace utopia {
             implementation().update(alpha, *x.vec_, 1.);
         }
 
-        inline void describe(std::ostream &os = std::cout) const
+        inline void describe(std::ostream &os) const
         {
             auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
             implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
+        }
+
+
+        void describe() const
+        {
+            describe(std::cout);
         }
 
         inline Scalar get(const global_ordinal_type i) const

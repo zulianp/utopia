@@ -32,13 +32,14 @@ namespace utopia {
 			const Matrix &A = *this->get_operator();
 			
 			// init(A);
-			std::size_t it = 0;
+			SizeType it = 0;
+			SizeType n_sweeps = this->sweeps();
 			if(constraints_.has_bound()) {
-				while(step(A, b, x) && it++ < this->sweeps()) {}
+				while(step(A, b, x) && it++ < n_sweeps) {}
 			} else {
-				while(unconstrained_step(A, b, x) && it++ < this->sweeps()) {}
+				while(unconstrained_step(A, b, x) && it++ < n_sweeps) {}
 			}
-			return it == this->sweeps() - 1;
+			return it == SizeType(this->sweeps() - 1);
 		}
 
 		bool apply(const Vector &b, Vector &x) override
@@ -104,11 +105,12 @@ namespace utopia {
 				for(SizeType il = 0; il < this->n_local_sweeps(); ++il) {
 					for(auto i = rr.begin(); i != rr.end(); ++i) {
 						RowView<const Matrix> row_view(A, i);
+						decltype(i) n_values = row_view.n_values();
 
 						auto s = r.get(i);
 
-						for(auto index = 0; index < row_view.n_values(); ++index) {
-							const auto j    = row_view.col(index);
+						for(auto index = 0; index < n_values; ++index) {
+							const decltype(i) j = row_view.col(index);
 							const auto a_ij = row_view.get(index);
 
 							if(rr.inside(j) && i != j) {
@@ -123,11 +125,12 @@ namespace utopia {
 					if(use_symmetric_sweep_) {
 						for(auto i = rr.end()-1; i >= rr.begin(); --i) {
 							RowView<const Matrix> row_view(A, i);
+							decltype(i) n_values = row_view.n_values();
 
 							auto s = r.get(i);
 
-							for(auto index = 0; index < row_view.n_values(); ++index) {
-								const auto j    = row_view.col(index);
+							for(auto index = 0; index < n_values; ++index) {
+								const decltype(i) j = row_view.col(index);
 								const auto a_ij = row_view.get(index);
 
 								if(rr.inside(j) && i != j) {
@@ -184,11 +187,12 @@ namespace utopia {
 
 					for(auto i = rr.begin(); i != rr.end(); ++i) {
 						RowView<const Matrix> row_view(A, i);
+						decltype(i) n_values = row_view.n_values();
 
 						auto s = r.get(i);
 
-						for(auto index = 0; index < row_view.n_values(); ++index) {
-							const auto j    = row_view.col(index);
+						for(auto index = 0; index < n_values; ++index) {
+							const decltype(i) j = row_view.col(index);
 							const auto a_ij = row_view.get(index);
 
 							if(rr.inside(j) && i != j) {
@@ -203,11 +207,12 @@ namespace utopia {
 					if(use_symmetric_sweep_) {
 						for(auto i = rr.end()-1; i >= rr.begin(); --i) {
 							RowView<const Matrix> row_view(A, i);
+							decltype(i) n_values = row_view.n_values();
 
 							auto s = r.get(i);
 
-							for(auto index = 0; index < row_view.n_values(); ++index) {
-								const auto j    = row_view.col(index);
+							for(auto index = 0; index < n_values; ++index) {
+								const decltype(i) j    = row_view.col(index);
 								const auto a_ij = row_view.get(index);
 
 								if(rr.inside(j) && i != j) {
@@ -221,8 +226,6 @@ namespace utopia {
 					}
 				}
 			}
-
-			Scalar alpha = 1.;
 			
 			if(use_line_search_) {
 				inactive_set_ *= 0.;
@@ -255,13 +258,15 @@ namespace utopia {
 				if(alpha <= 0) {
 					std::cerr << "[Warning] negative alpha" << std::endl;
 					alpha = 1.;
-					descent_dir = r;
-				} else {
+					descent_dir = utopia::min(r, g);
+				} else if(alpha <= 1.) {
 					descent_dir = alpha * c;
+				} else {
+					descent_dir = utopia::min(alpha * c, g);
 				}
 			}
 
-			x += utopia::min(descent_dir, g);
+			x += descent_dir;
 			return true;
 		}
 

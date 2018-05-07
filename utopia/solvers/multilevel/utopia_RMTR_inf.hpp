@@ -55,6 +55,9 @@ namespace utopia
 
     public:
 
+        using TrustRegionBoxBase<Matrix, Vector>::delta_update;
+        using NonlinearMultiLevelBase<Matrix, Vector>::print_statistics;
+
        /**
         * @brief      Multigrid class
         *
@@ -449,7 +452,7 @@ namespace utopia
 
             SizeType it_success = 0, it = 0; 
             Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0; 
-            bool make_grad_updates = true, make_hess_updates = true, converged = false, delta_converged = false; 
+            bool make_grad_updates = true, /*make_hess_updates = true,*/ converged = false, delta_converged = false; 
 
 
             Vector s = local_zeros(local_size(x)); 
@@ -520,7 +523,8 @@ namespace utopia
                     Vector g_old = g; 
                     this->get_multilevel_gradient(fun, x, g, s_global, level); 
                     g_norm = norm2(g); 
-                    make_hess_updates =  this->update_hessian(g, g_old, s, H, rho, g_norm); 
+                    // make_hess_updates =  
+                    this->update_hessian(g, g_old, s, H, rho, g_norm); 
                 }
 
                 converged  = (delta_converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, get_delta(level-1)); 

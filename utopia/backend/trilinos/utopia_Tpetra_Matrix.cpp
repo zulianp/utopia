@@ -62,7 +62,7 @@ namespace utopia {
 	//result op(*this) * op
 	void TpetraMatrix::mult(const bool transpose_this, const TpetraMatrix &right, const bool transpose_right, TpetraMatrix &result) const
 	{
-		m_utopia_status_once("TpetraMatrix::mult Proper thing to do would be to check if the maps are compabible");
+		m_utopia_status_once("TpetraMatrix::mult Proper thing to do would be to check if the maps are compatible");
 		//IMPROVEME
 		result.mat_.reset();
 
@@ -107,8 +107,8 @@ namespace utopia {
 			// mat.mat_->replaceColMap(col_map);	
 
 			//2)
-			mat.implementation().resumeFill();
-			mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
+			// mat.implementation().resumeFill();
+			// mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);
@@ -249,8 +249,15 @@ namespace utopia {
 
 	bool TpetraMatrix::write(const std::string &path) const
 	{
-		// Tpetra::MatrixMarket::Reader< decltype(m.implementation()) >
+		if(mat_.is_null()) return false;
 
-		return false;
+		try {
+			Tpetra::MatrixMarket::Writer<crs_matrix_type>::writeSparseFile(path, mat_, "mat", "", false);
+		} catch(const std::exception &ex) {
+			std::cout << ex.what() << std::endl;
+			return false;
+		}
+
+		return true;
 	}
 }

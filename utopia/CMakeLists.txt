@@ -31,6 +31,10 @@ option(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentati
 #################################################################################
 #################################################################################
 #################################################################################
+set(UTOPIA_DEV_FLAGS "-Wall ")
+
+
+
 
 if(UNIX AND NOT APPLE)
        set(LINUX TRUE)
@@ -207,9 +211,9 @@ IF (NOT DOXYGEN_FOUND)
 message(WARNING "Doxygen is needed to build the documentation. Please install it correctly")
 ENDIF()
 #-- Configure the Template Doxyfile for our specific project
-configure_file(${UTOPIA_ROOT_PATH}/Doxyfile.txt  ${UTOPIA_ROOT_PATH}/bin  @ONLY IMMEDIATE)
+configure_file(${UTOPIA_ROOT_PATH}/Doxyfile.txt  ${CMAKE_BINARY_DIR}  @ONLY IMMEDIATE)
 #-- Add a custom target to run Doxygen when ever the project is built
-add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${UTOPIA_ROOT_PATH}/bin/Doxyfile.txt SOURCES ${UTOPIA_ROOT_PATH}/bin/Doxyfile.txt)
+add_custom_target(docs COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile.txt SOURCES ${CMAKE_BINARY_DIR}/Doxyfile.txt)
 # IF you do NOT want the documentation to be generated EVERY time you build the project then leave out the 'ALL' keyword from the above command.
 
 #################################################################################
@@ -265,8 +269,8 @@ include_directories(${UTOPIA_MODULES})
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(.)
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall ")# -Wextra -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${UTOPIA_DEV_FLAGS}")
 
 list(APPEND UTOPIA_HEADERS 
 	utopia.hpp

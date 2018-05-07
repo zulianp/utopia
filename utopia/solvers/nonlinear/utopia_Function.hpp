@@ -18,7 +18,7 @@ namespace utopia
     class Function 
     {
     public:
-        DEF_UTOPIA_SCALAR(Matrix); 
+        DEF_UTOPIA_SCALAR(Matrix)
 
         virtual ~Function() { }
 

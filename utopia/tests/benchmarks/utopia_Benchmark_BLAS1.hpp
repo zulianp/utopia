@@ -58,13 +58,13 @@ namespace utopia {
 					"vec_norms_" + std::to_string(i),
 					[n]() {
 						const Vector x = local_values(n, 1.);
-						const Scalar norm2_x = norm2(x);
-						const Scalar norm1_x = norm1(x);
-						const Scalar norm_infty_x = norm_infty(x);
+						const Scalar norm2_x = norm2(x); 		   UTOPIA_UNUSED(norm2_x);
+						const Scalar norm1_x = norm1(x); 		   UTOPIA_UNUSED(norm1_x);
+						const Scalar norm_infty_x = norm_infty(x); UTOPIA_UNUSED(norm_infty_x);
 
 						//some testing
-						assert(approxeq(norm2_x, Scalar(std::sqrt(n))));
-						assert(approxeq(norm1_x, Scalar(n)));
+						assert(approxeq(norm2_x, Scalar(std::sqrt(size(x).get(0)))));
+						assert(approxeq(norm1_x, Scalar(size(x).get(0))));
 						assert(approxeq(norm_infty_x, Scalar(1)));
 
 					}
@@ -86,9 +86,9 @@ namespace utopia {
 					[n]() {
 						const Vector x = local_values(n, 1.);
 						const Vector y = local_values(n, 2.);
-						const Scalar d = dot(x, y);
+						const Scalar d = dot(x, y); UTOPIA_UNUSED(d);
 
-						assert(approxeq(d, Scalar(n*2)));
+						assert(approxeq(d, Scalar(size(x).get(0)*2)));
 					}
 				);
 
@@ -98,9 +98,9 @@ namespace utopia {
 					[n]() {
 						const Vector x = local_values(n, 1.);
 						const Vector y = local_values(n, 2.);
-						const Scalar d = norm2(x - y);
+						const Scalar d = norm2(x - y); UTOPIA_UNUSED(d);
 
-						assert(approxeq(d, Scalar(std::sqrt(n))));
+						assert(approxeq(d, Scalar(std::sqrt(size(x).get(0)))));
 					}
 				);
 

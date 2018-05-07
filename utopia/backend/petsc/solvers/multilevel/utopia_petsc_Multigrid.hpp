@@ -30,7 +30,9 @@ namespace utopia {
 
 			PC pc;
 			KSPGetPC(*ksp_, &pc);
-			for(std::size_t i = 0; i < this->n_levels()-1; i++)
+
+			std::size_t n_smoothers = this->n_levels()-1;
+			for(std::size_t i = 0; i < n_smoothers; i++)
 			{
 				KSP smoother;
 				PCMGGetSmoother(pc, i, &smoother);
@@ -215,7 +217,8 @@ namespace utopia {
 #endif
 			KSPSetInitialGuessNonzero(*ksp_, PETSC_TRUE);
 
-			for (std::size_t i = 0; i < this->n_levels()-1; i++)
+			const std::size_t n_smoothers = this->n_levels()-1;
+			for (std::size_t i = 0; i < n_smoothers; i++)
 			{
 				KSP smoother;
 				PC sm;

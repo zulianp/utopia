@@ -138,7 +138,7 @@ namespace utopia
 			// if(mpi_world_rank() == 0) std::cout << c << std::endl;
 
 			double diff = norm2(solution_u - solution);
-			double res_norm = norm2(m * solution_u - rhs);
+			// double res_norm = norm2(m * solution_u - rhs);
 
 			// disp(res_norm);
 
@@ -146,7 +146,7 @@ namespace utopia
 				std::cerr << "[Error] different implementations of pgs gives different results, diff: " << diff << std::endl;
 			}
 
-			assert(approxeq(solution_u, solution, 1e-5));
+			utopia_test_assert(approxeq(solution_u, solution, 1e-5));
 
 			//standard gs with MatSOR
 			// GaussSeidel<DSMatrixd, DVectord> gs;
@@ -171,7 +171,7 @@ namespace utopia
 			// 	std::cerr << "[Error] different implementations of pgs gives different results, diff: " << diff << std::endl;
 			// }
 
-			// assert(approxeq(solution_u, solution, 1e-5));
+			// utopia_test_assert(approxeq(solution_u, solution, 1e-5));
 		}
 
 		void petsc_gss_newton_test()
@@ -308,7 +308,7 @@ namespace utopia
 
 			// disp(l);
 			// disp(u);	
-			// assert(approxeq(x, x_0));
+			// utopia_test_assert(approxeq(x, x_0));
 		}
 		
 		void petsc_tr_rr_test()
@@ -368,7 +368,7 @@ namespace utopia
 			
 			DVectord expected = values(x.size().get(0), 0.468919);
 			nlsolver.solve(fun2, x);
-			assert(approxeq(expected, x));
+			utopia_test_assert(approxeq(expected, x));
 		}
 		
 		void petsc_sparse_newton_test()
@@ -390,7 +390,7 @@ namespace utopia
 			DVectord expected = zeros(x.size());
 			
 			nlsolver.solve(fun, x);
-			assert(approxeq(expected, x));
+			utopia_test_assert(approxeq(expected, x));
 		}
 		
 		void petsc_newton_test()
@@ -414,14 +414,14 @@ namespace utopia
 			DVectord expected = zeros(x.size());
 			
 			nlsolver.solve(fun, x);
-			assert(approxeq(expected, x));
+			utopia_test_assert(approxeq(expected, x));
 			
 			x = values(10, 2.0);
 			TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
 			
 			expected = values(x.size().get(0), 0.468919);
 			nlsolver.solve(fun2, x);
-			assert(approxeq(expected, x));
+			utopia_test_assert(approxeq(expected, x));
 		}
 
 		void petsc_inexact_newton_test()
@@ -448,7 +448,7 @@ namespace utopia
 			DVectord expected_1 = zeros(x.size());
 			
 			nlsolver.solve(fun, x);
-			assert(approxeq(expected_1, x));
+			utopia_test_assert(approxeq(expected_1, x));
 			
 			TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
 			x = values(10, 2.0);
@@ -456,7 +456,7 @@ namespace utopia
 			nlsolver.solve(fun2, x);
 
 
-			assert(approxeq(expected_2, x));
+			utopia_test_assert(approxeq(expected_2, x));
 			
 			// -------------------------------------- SR1 test ------------------
 			auto hess_approx_SR1    = std::make_shared<SR1<DMatrixd, DVectord> >();
@@ -464,11 +464,11 @@ namespace utopia
 			
 			x = values(10, 2.);
 			nlsolver.solve(fun, x);
-			assert(approxeq(expected_1, x));
+			utopia_test_assert(approxeq(expected_1, x));
 			
 			x = values(10, 2.0);
 			nlsolver.solve(fun2, x);
-			assert(approxeq(expected_2, x));			
+			utopia_test_assert(approxeq(expected_2, x));			
 		}
 
 		void petsc_newton_rosenbrock_test()
@@ -492,7 +492,7 @@ namespace utopia
 				expected_rosenbrock = values(2, 1.0);
 				x0 = values(2, 2.0);
 				nlsolver.solve(r_generic_2d, x0);
-				assert(approxeq(expected_rosenbrock, x0));
+				utopia_test_assert(approxeq(expected_rosenbrock, x0));
 			}
 			
 			if(mpi_world_size() <= 3) {
@@ -500,7 +500,7 @@ namespace utopia
 				expected_rosenbrock = values(3, 1.0);
 				x0 = values(3, -2.0);
 				nlsolver.solve(r_generic_3d, x0);
-				assert(approxeq(expected_rosenbrock, x0));
+				utopia_test_assert(approxeq(expected_rosenbrock, x0));
 			}
 			
 			if(mpi_world_size() <= 6) {
@@ -508,7 +508,7 @@ namespace utopia
 				expected_rosenbrock = values(6, 1.0);
 				x0 = values(6, 2.0);
 				nlsolver.solve(r_generic_6d, x0);
-				assert(approxeq(expected_rosenbrock, x0));
+				utopia_test_assert(approxeq(expected_rosenbrock, x0));
 			}
 		}
 		
@@ -566,7 +566,7 @@ namespace utopia
 			// 	std::cout << "norm_diff: " << norm_diff << std::endl;
 			// }
 
-			assert(approxeq(x_0, hm_x_0, 1e-8));
+			utopia_test_assert(approxeq(x_0, hm_x_0, 1e-8));
 		}
 		
 		void petsc_sparse_nonlinear_semismooth_newton_test()
@@ -623,14 +623,14 @@ namespace utopia
 			DVectord expected = zeros(x.size());
 			
 			nlsolver.solve(fun, x);
-			assert(approxeq(expected, x));
+			utopia_test_assert(approxeq(expected, x));
 			
 			
 			auto lCG = std::make_shared< ConjugateGradient<DSMatrixd, DVectord> >();
 			nlsolver.set_linear_solver(lCG);
 			x = values(_n, 2.);
 			nlsolver.solve(fun, x);
-			assert(approxeq(expected, x));
+			utopia_test_assert(approxeq(expected, x));
 		}
 		
 		
@@ -655,7 +655,7 @@ namespace utopia
 			TestFunctionND_1<DMatrixd, DVectord> fun(n);
 			
 			newton_solver.solve(fun, actual);
-			assert(approxeq(expected, actual));
+			utopia_test_assert(approxeq(expected, actual));
 		}
 		
 		void petsc_newton_inexact_newton_with_KSP_test()
@@ -679,7 +679,7 @@ namespace utopia
 			TestFunctionND_1<DMatrixd, DVectord> fun(n);
 			
 			newton_solver.solve(fun, actual);
-			assert(approxeq(expected, actual));
+			utopia_test_assert(approxeq(expected, actual));
 		}
 
 		void petsc_snes_test()
@@ -707,7 +707,7 @@ namespace utopia
 
 				expected_rosenbrock -= x0_ros; 
 				double diff_rb = norm2(expected_rosenbrock);
-				assert(approxeq(diff_rb, 0., 1e-6));
+				utopia_test_assert(approxeq(diff_rb, 0., 1e-6));
 
 
 				// std::cout<<"--------------------------------------------------- \n"; 
@@ -725,7 +725,7 @@ namespace utopia
 
 				expected_rosenbrock -= x0_ros; 
 				diff_rb = norm2(expected_rosenbrock);
-				assert(approxeq(diff_rb, 0., 1e-6));
+				utopia_test_assert(approxeq(diff_rb, 0., 1e-6));
 
 
 				// std::cout<<"------------------ utopia-precond test --------------------------------- \n"; 
@@ -759,7 +759,7 @@ namespace utopia
 			DVectord expected = zeros(x.size());
 			
 			nlsolver.solve(fun, x);
-			assert(approxeq(expected, x));
+			utopia_test_assert(approxeq(expected, x));
 
 			if(mpi_world_size() == 1)
 			{
@@ -773,8 +773,8 @@ namespace utopia
 				nlsolver.solve(rosenbrock, x0_ros); 
 
 				expected_rosenbrock -= x0_ros; 
-				double diff_rb = norm2(expected_rosenbrock);
-				assert(approxeq(diff_rb, 0., 1e-6));
+				double diff_rb = norm2(expected_rosenbrock); UTOPIA_UNUSED(diff_rb);
+				utopia_test_assert(approxeq(diff_rb, 0., 1e-6));
 			}
 		}
 

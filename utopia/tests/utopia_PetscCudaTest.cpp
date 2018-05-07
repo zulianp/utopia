@@ -29,7 +29,7 @@ namespace utopia {
 
         CuVectord r = y - m * sol; 
         double err = norm2(r);
-        assert(err < 1e-10);
+        utopia_test_assert(err < 1e-10);
     }
 
     template<class Matrix, class Vector>
@@ -56,7 +56,7 @@ namespace utopia {
 
         Vector r = b - m * x; 
         double err = norm2(r);
-        assert(err < 1e-10);
+        utopia_test_assert(err < 1e-10);
     }
 
     void petsc_cuda_linear_solver()
@@ -107,7 +107,7 @@ namespace utopia {
         multigrid.apply(rhs, x);
 
         const double err = norm2(A * x - rhs);
-        assert(err < 1e-6);
+        utopia_test_assert(err < 1e-6);
     }
 
 #endif //PETSC_HAVE_CUDA

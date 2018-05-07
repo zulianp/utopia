@@ -3,26 +3,30 @@
 # Only use spaces to indent your .yml configuration.
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
-image: gcc:6.1
-
+#image: gcc:latest
+image: rikorose/gcc-cmake:latest
+#image: 
+#  name: ocramz/petsc-docker:latest
+  
 pipelines:
   default:
     - step:
         script: # Modify the commands below to build your repository.
           - cd utopia
           - mkdir build
-          - cd bin
-          - apt-get update
+          - cd build
+#          - apt-get update
 #          - apt-get dist-upgrade -y
 #          - dpkg-reconfigure
 #          - dpkg --configure -a
 #          - update-initramfs -u
-          - apt-get install -y cmake
+#         - apt-get install -y cmake
 #          - apt-get -yq --no-install-suggests --no-install-recommends --force-yes install gfortran libblas-dev liblapack-dev
 #          - apt-get install -y petsc-dev
+          - echo '======== Utopia without backends ========='
           - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug -DTRY_WITH_PETSC=OFF
           - make
-          - ./utopia_exec
+          - ./utopia_exec -verbose -bench
  #         - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug -DTRY_WITH_PETSC=ON
  #         - make
  #         - ./utopia_exec

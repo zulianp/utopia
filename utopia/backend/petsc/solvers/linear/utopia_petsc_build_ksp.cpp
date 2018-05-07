@@ -7,7 +7,7 @@ static PetscErrorCode KSPSetUp_UTOPIA(KSP ksp)
 {
   PetscFunctionBegin;
 
-  KSP_UTOPIA         *utopia_Pt = (KSP_UTOPIA*)ksp->data;
+  // KSP_UTOPIA         *utopia_Pt = (KSP_UTOPIA*)ksp->data;
   PetscFunctionReturn(0);
 }
 
@@ -17,7 +17,7 @@ static PetscErrorCode KSPSetUp_UTOPIA(KSP ksp)
 static PetscErrorCode KSPSolve_UTOPIA(KSP ksp)
 {
   PetscFunctionBegin;
-  PetscErrorCode ierr;
+  // PetscErrorCode ierr;
  
   Mat            Amat, Pmat;
 
@@ -76,7 +76,7 @@ PetscErrorCode KSPSetGetConvergenceReason_UTOPIA(KSP ksp, std::function< void(Pe
 PetscErrorCode KSPDestroy_UTOPIA(KSP ksp)
 {
   PetscFunctionBegin;
-  KSP_UTOPIA         *utopia = (KSP_UTOPIA*)ksp->data;
+  // KSP_UTOPIA         *utopia = (KSP_UTOPIA*)ksp->data;
 
   KSPDestroyDefault(ksp);
 
@@ -97,7 +97,7 @@ PetscErrorCode KSPView_UTOPIA(KSP ksp,PetscViewer viewer)
 
   PetscBool      iascii;
   PetscObjectTypeCompare((PetscObject)viewer,PETSCVIEWERASCII,&iascii);
-  KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
+  // KSP_UTOPIA *utopia_ls = (KSP_UTOPIA*)ksp->data;
 
   // maybe som future printouts ... 
   PetscFunctionReturn(0);
@@ -108,7 +108,7 @@ PetscErrorCode KSPView_UTOPIA(KSP ksp,PetscViewer viewer)
 PetscErrorCode KSPSetFromOptions_UTOPIA(PetscOptionItems *PetscOptionsObject,KSP ksp)
 {
   PetscFunctionBegin;
-  PetscErrorCode ierr;
+  // PetscErrorCode ierr;
 
   // not much to add so far... 
   PetscFunctionReturn(0);

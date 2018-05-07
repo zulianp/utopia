@@ -76,7 +76,10 @@ namespace utopia {
             fill(entries_.begin(), entries_.end(), 0);
 
             rowptr_[0] = 0;
-            for(SizeType i = 1; i < rowptr_.size(); ++i) {
+
+            const SizeType row_ptr_size = rowptr_.size();
+            
+            for(SizeType i = 1; i < row_ptr_size; ++i) {
                 rowptr_[i] = nnzXRow + rowptr_[i-1];
             }
 
@@ -248,9 +251,9 @@ namespace utopia {
 
             if(rowptr_.empty()) return INVALID_INDEX;
 
-            assert(i + 1 < rowptr_.size());
+            assert(std::vector<SizeType>::size_type(i + 1) < rowptr_.size());
             
-            if(rowptr_[i + 1] >= colindex_.size()) {
+            if(std::vector<SizeType>::size_type(rowptr_[i + 1]) >= colindex_.size()) {
                 return INVALID_INDEX;
             }
 
