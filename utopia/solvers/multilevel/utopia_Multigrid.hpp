@@ -241,6 +241,8 @@ namespace utopia
             
             ////////////////////////////////////
             if(l == 0) {
+              // UTOPIA_RECORD_VALUE("c", c);
+              // UTOPIA_RECORD_VALUE("r", r);
                 if(coarse_solve(r, c)) {
                   assert(approxeq(level(0).A() * c, r, 1e-6));
                   // UTOPIA_RECORD_VALUE("coarse_solve(r, c)", c);

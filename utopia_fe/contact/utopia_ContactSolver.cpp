@@ -20,8 +20,8 @@ namespace utopia {
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 		// mesh->read("../data/wear_2_far.e");
 		// mesh->read(utopia::Utopia::instance().get("data_path") + "/input_file.e");
-		// mesh->read("../data/channel_2d.e");
-		mesh->read("../data/leaves_3d_b.e");
+		mesh->read("../data/channel_2d.e");
+		// mesh->read("../data/leaves_3d_b.e");
 
 
 		const auto dim = mesh->mesh_dimension();

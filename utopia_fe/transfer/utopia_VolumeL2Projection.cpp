@@ -33,7 +33,7 @@
 
 namespace utopia {
 
-	class VolumeL2Projection::Buffers {
+	class FETransfer::Buffers {
 	public:
 		typedef libMesh::DenseMatrix<libMesh::Real> LocalMatrixT;
 		typedef moonolith::SparseMatrix<double> GlobalMatrixT;
@@ -80,17 +80,17 @@ namespace utopia {
 
 	};
 
-	VolumeL2Projection::VolumeL2Projection()
+	FETransfer::FETransfer()
 	{
 		buffers_ = std::make_shared<Buffers>();
 	}
 
-	VolumeL2Projection::~VolumeL2Projection()
+	FETransfer::~FETransfer()
 	{
 
 	}
 
-	void VolumeL2Projection::init(
+	void FETransfer::init(
 		const std::shared_ptr<libMesh::MeshBase> &master_mesh,
 		const std::shared_ptr<libMesh::DofMap>   &master_dof_map,
 		const std::shared_ptr<libMesh::MeshBase> &slave_mesh,
@@ -126,7 +126,7 @@ namespace utopia {
 	}
 
 	template<class TreeT>
-	bool VolumeL2Projection::fill_tree(TreeT &tree)
+	bool FETransfer::fill_tree(TreeT &tree)
 	{
 		typedef typename TreeT::DataType Adapter;
 
@@ -191,7 +191,7 @@ namespace utopia {
 	}
 
 	template<int Dimensions>
-	bool VolumeL2Projection::assemble_aux()
+	bool FETransfer::assemble_aux()
 	{
 		using namespace moonolith;
 		typedef utopia::VTree<Dimensions> NTreeT;
@@ -207,7 +207,7 @@ namespace utopia {
 		return false;
 	}
 
-	bool VolumeL2Projection::assemble()
+	bool FETransfer::assemble()
 	{
 		switch(slave_mesh->mesh_dimension()) {
 			case 2: return assemble_aux<2>();
