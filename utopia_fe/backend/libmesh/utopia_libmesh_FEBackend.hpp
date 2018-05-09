@@ -2457,6 +2457,20 @@ namespace utopia {
 			return ret;
 		}
 
+		static auto inner(const std::vector<LMDenseVector> &left, const std::vector<LMDenseVector> &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			assert(left.size() == right.size());
+			const std::size_t n = left.size();
+
+			std::vector<double> ret(n);
+			for(std::size_t i = 0; i < n; ++i) {
+				ret[i] = utopia::inner(left[i].implementation(), right[i].implementation());
+			}
+
+			return ret;
+		}
+
+
 		template<class Left, class Right>
 		static auto inner(const std::vector<Left> &left, const std::vector<Right> &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
 		{
