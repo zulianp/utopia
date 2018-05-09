@@ -71,21 +71,21 @@ namespace utopia {
 		auto u_old = interpolate(sol, du);
 
 		// Set (bi)linear forms
-		auto residual = (c1 * diff_coeff) * inner(inner(grad(u_old), grad(u_old)), v) * dX 
+		auto l_form = (c1 * diff_coeff) * inner(inner(grad(u_old), grad(u_old)), v) * dX 
 		               + c2 * inner(sqrt(inner(grad(u_old), grad(u_old))), v) * dX
 		               - inner(coeff(forcing_term), v) * dX;
 
-		auto jacobian = (diff_coeff * c1) * inner(grad(du), grad(v)) * dX + c2 * inner(du * (1./sqrt(inner(u_old, u_old))), v) * dX;
+		auto b_form = (diff_coeff * c1) * inner(grad(du), grad(v)) * dX + c2 * inner(du * (1./sqrt(inner(u_old, u_old))), v) * dX;
 
 		// assemble
-		DSMatrixd A;
-		DVectord r;
+		DSMatrixd hessian;
+		DVectord gradient;
 
-		utopia::assemble(jacobian, A);
-		utopia::assemble(residual, r); 
+		utopia::assemble(b_form, hessian);
+		utopia::assemble(l_form, gradient); 
 
-		disp(A);
-		disp(r);
+		disp(hessian);
+		disp(gradient);
 
 	}
 }
