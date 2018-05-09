@@ -1811,6 +1811,20 @@ namespace utopia {
 			return std::move(f);
 		}
 
+		template<typename T>
+		inline static auto apply_binary(
+			const ConstantCoefficient<T, 0> &left,
+			std::vector<T> &&values,
+			const Plus &,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<T>
+		{
+			for(auto &v : values) {
+				v += left.expr();
+			}
+
+			return std::move(values);
+		}
+
 
 		template<typename T, typename C>
 		inline static auto apply_binary(

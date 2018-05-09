@@ -37,8 +37,8 @@ namespace utopia {
 		const double forcing_term = 5.;
 
 		//discretization parameters
-		const auto elem_type       = libMesh::QUAD4;
-		const auto elem_order 	   = libMesh::FIRST;
+		const auto elem_type       = libMesh::QUAD8;
+		const auto elem_order 	   = libMesh::SECOND;
 
 		//mesh
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
@@ -66,7 +66,7 @@ namespace utopia {
 		dof_map.prepare_send_list();
 
 		DVectord sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
-		sol.set(1.);
+		sol.set(0.);
 
 		auto u_old = interpolate(sol, du);
 
@@ -75,7 +75,7 @@ namespace utopia {
 		               + c2 * inner(sqrt(inner(grad(u_old), grad(u_old))), v) * dX
 		               - inner(coeff(forcing_term), v) * dX;
 
-		auto b_form = (diff_coeff * c1) * inner(grad(du), grad(v)) * dX + c2 * inner(du * (1./sqrt(inner(u_old, u_old))), v) * dX;
+		auto b_form = (diff_coeff * c1) * inner(grad(du), grad(v)) * dX + c2 * inner(du * (1./(coeff(1e-6) + sqrt(inner(u_old, u_old)))), v) * dX;
 
 		// assemble
 		DSMatrixd hessian;
