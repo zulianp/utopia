@@ -336,7 +336,7 @@ namespace utopia {
         const static bool verbose = true;
 
         MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(4, 2, false);
-        ml_problem.write_matlab("./");
+        // ml_problem.write_matlab("./");
         
         auto smoother = std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>();
         auto coarse_solver = std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>();
@@ -345,8 +345,8 @@ namespace utopia {
             coarse_solver
         );
 
-        smoother->verbose(true);
-        coarse_solver->verbose(true);
+        // smoother->verbose(true);
+        // coarse_solver->verbose(true);
 
         multigrid.set_transfer_operators(ml_problem.interpolators);
         multigrid.max_it(4);
@@ -361,8 +361,8 @@ namespace utopia {
         TVectord x = zeros(size(*ml_problem.rhs));
         multigrid.update(ml_problem.matrix);
 
-        write("A0.txt", multigrid.level(0).A());
-        write("R0.txt", multigrid.transfer(0).R());
+        // write("A0.txt", multigrid.level(0).A());
+        // write("R0.txt", multigrid.transfer(0).R());
         
         if(verbose) {
             multigrid.describe();

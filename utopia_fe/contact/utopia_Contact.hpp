@@ -30,7 +30,7 @@ namespace utopia {
 	class Contact {
 	public:
 		Contact()
-		: initialized(false)
+		: initialized(false), has_contact_(false)
 		{}
 
 		bool init_no_contact(
@@ -52,6 +52,12 @@ namespace utopia {
 				  unsigned int variable_number = 0,
 				  const bool use_biorthogonal_basis = true);
 
+
+		inline bool has_contact() const
+		{
+			return has_contact_;
+		}
+
 		DVectord gap;
 		DVectord weighted_gap;
 		DVectord normals;
@@ -65,6 +71,7 @@ namespace utopia {
 
 		DSMatrixd complete_transformation;
 		bool initialized;
+		bool has_contact_;
 
 
 		void print_debug_info();
