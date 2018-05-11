@@ -988,6 +988,17 @@ namespace utopia {
 		}
 
 
+		template<class Op>
+		static auto apply_binary(
+			const double &left,
+			const double &right,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> double
+		{
+			return op.apply(left, right);
+		}
+
+
 		template<typename T>
 		static auto apply_binary(
 			std::vector<T> &&left,
@@ -2494,6 +2505,27 @@ namespace utopia {
 			std::vector<double> ret(n);
 			for(std::size_t i = 0; i < n; ++i) {
 				ret[i] = utopia::inner(left[i], right[i]);
+			}
+
+			return ret;
+		}
+
+		template<class Left, class Right>
+		static auto inner(
+			const FQValues<Left> &left,
+			const QValues<Right> &right,
+			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<double>
+		{
+			assert(left.size() == right.size());
+			const std::size_t n = left.size();
+
+			FQValues<double> ret(n);
+			for(std::size_t i = 0; i < n; ++i) {
+				auto n_quad_points = left[i].size();
+				ret[i].resize(n_quad_points);
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					ret[i][qp] = utopia::inner(left[i][qp], right[qp]);
+				}
 			}
 
 			return ret;

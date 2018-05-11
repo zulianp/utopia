@@ -37,8 +37,8 @@ namespace utopia {
 		const double forcing_term = 5.;
 
 		//discretization parameters
-		const auto elem_type       = libMesh::QUAD8;
-		const auto elem_order 	   = libMesh::SECOND;
+		const auto elem_type = libMesh::QUAD8;
+		const auto elem_order = libMesh::SECOND;
 
 		//mesh
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
@@ -71,11 +71,9 @@ namespace utopia {
 		auto u_old = interpolate(sol, du);
 
 		// Set (bi)linear forms
-		auto l_form = (c1 * diff_coeff) * inner(inner(grad(u_old), grad(u_old)), v) * dX 
-		               + c2 * inner(sqrt(inner(grad(u_old), grad(u_old))), v) * dX
-		               - inner(coeff(forcing_term), v) * dX;
-
-		auto b_form = (diff_coeff * c1) * inner(grad(du), grad(v)) * dX + c2 * inner(du * (1./(coeff(1e-6) + sqrt(inner(u_old, u_old)))), v) * dX;
+		
+		auto l_form = (c1 * diff_coeff) * inner(grad(u_old), grad(v)) * dX + c2 * inner(sqrt(inner(grad(u_old), grad(u_old))), v) * dX - inner(coeff(forcing_term), v) * dX;
+		auto b_form = (diff_coeff * c1) * inner(grad(du), grad(v)) * dX + c2 * inner(inner(grad(du), grad(u_old))/(coeff(1e-10) + sqrt(inner(grad(u_old), grad(u_old)))), v) * dX;
 
 		// assemble
 		DSMatrixd hessian;
