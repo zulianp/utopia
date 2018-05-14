@@ -126,6 +126,12 @@ namespace utopia
 			while(!converged)
 			{
 				rho = dot(r, r);
+
+				if(rho == 0.) {
+					converged = true;
+					break;
+				}
+
 				if(it > 0)
 				{
 					beta = rho/rho_1;

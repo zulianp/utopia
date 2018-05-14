@@ -106,6 +106,13 @@ namespace utopia {
                       Tpetra::global_size_t rows_global,
                       Tpetra::global_size_t cols_global,
                       std::size_t nnz_x_row);
+
+        void crs_identity(const rcp_comm_type &comm,
+                      std::size_t rows_local,
+                      std::size_t cols_local,
+                      Tpetra::global_size_t rows_global,
+                      Tpetra::global_size_t cols_global,
+                      const Scalar factor = 1.);
         
         
         inline Range row_range() const

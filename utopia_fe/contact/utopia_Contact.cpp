@@ -78,6 +78,8 @@ namespace utopia {
 		gap = inv_mass_matrix * weighted_gap;
 		complete_transformation = transfer_operator * orthogonal_trafo;
 
+		has_contact_ = utopia::max(is_contact_node);
+
 		initialized = true;
 		return true;
 	}
@@ -101,6 +103,7 @@ namespace utopia {
 		orthogonal_trafo  = local_identity(n_local_dofs, n_local_dofs);
 		complete_transformation = local_identity(n_local_dofs, n_local_dofs);
 		initialized = true;
+		has_contact_ = false;
 		return true;
 	}
 

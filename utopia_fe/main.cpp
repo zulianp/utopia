@@ -44,6 +44,7 @@
 #include "utopia_ContactSolver.hpp"
 #include "utopia_ContactTest.hpp"
 #include "utopia_CoarsenerTest.hpp"
+#include "utopia_EikonalEquationTest.hpp"
 
 #include <functional>
 
@@ -87,7 +88,7 @@ int main(const int argc, char *argv[])
 	    runners["contact_steady"] = run_steady_contact;
 	    runners["ct"] = run_contact_test;
 	    runners["coarsener_test"] = run_coarsener_test;
-
+	    runners["eikonal"] = run_eikonal_equation_test;
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;

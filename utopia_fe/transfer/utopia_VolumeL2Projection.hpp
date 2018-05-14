@@ -21,7 +21,7 @@ namespace moonolith {
 namespace utopia {
 	class FESpacesAdapter;
 
-	// class L2ProjectionAssembler {
+	// class FETransferAssembler {
 	// public:
 
 	// };
@@ -33,11 +33,11 @@ namespace utopia {
 		//write
 	};
 
-	class L2ProjectionParams {
+	class FETransferParams {
 
 	};
 
-	class VolumeL2Projection {
+	class FETransfer {
 	public:
 
 		void init(
@@ -46,11 +46,11 @@ namespace utopia {
 			const std::shared_ptr<libMesh::MeshBase> &slave_mesh,
 			const std::shared_ptr<libMesh::DofMap>   &slave_dof_map,
 			const std::vector<std::pair<int, int>> &tags,
-			const std::vector<std::pair<int, int>> &var_pairings = {{0, 0}}
+			const std::vector<std::pair<int, int>> &var_pairings = {{}}
 			);
 
-		VolumeL2Projection();
-		~VolumeL2Projection();
+		FETransfer();
+		~FETransfer();
 
 		bool assemble();
 		moonolith::SearchSettings search_settings;
