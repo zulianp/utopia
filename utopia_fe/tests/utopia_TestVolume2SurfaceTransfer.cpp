@@ -15,25 +15,45 @@ namespace utopia {
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
 		auto n = 5;
-		auto elem_type  = libMesh::HEX8;
+		auto elem_type  = libMesh::TET4;
+		// auto elem_type  = libMesh::HEX8;
+		
 		auto elem_order = libMesh::FIRST;
+		// auto elem_order = libMesh::SECOND;
 
-		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
-		libMesh::MeshTools::Generation::build_cube(
-			*vol_mesh,
-			n, n, n,
-			0., 1.,
-			0., 1.,
-			-0.5, 0.5,
-			elem_type
-			);
+		bool is_test_case = false;
 
-		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
-		surf_mesh->read("../data/test/square_with_2_tri.e");
+		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
 
-		libMesh::MeshRefinement mesh_refinement(*surf_mesh);
-		mesh_refinement.make_flags_parallel_consistent();
-		mesh_refinement.uniformly_refine(4);
+
+		if(is_test_case) {
+			libMesh::MeshTools::Generation::build_cube(
+				*vol_mesh,
+				n, n, n,
+				0., 1.,
+				0., 1.,
+				-0.5, 0.5,
+				elem_type
+				);
+			surf_mesh->read("../data/test/square_with_2_tri.e");
+
+			libMesh::MeshRefinement mesh_refinement(*surf_mesh);
+			mesh_refinement.make_flags_parallel_consistent();
+			mesh_refinement.uniformly_refine(4);
+		} else {
+			
+			libMesh::MeshTools::Generation::build_cube(
+				*vol_mesh,
+				n, n, n,
+				-7.5, 7.5,
+				-7.5, 7.5,
+				-7.5, 7.5,
+				elem_type
+				);
+
+			surf_mesh->read("../data/test/fractures.e");
+		}
 
 		//equations system
 		auto vol_equation_systems = std::make_shared<libMesh::EquationSystems>(*vol_mesh);
@@ -44,7 +64,7 @@ namespace utopia {
 
 		//scalar function space
 		auto V_vol  = FunctionSpaceT(vol_equation_systems, libMesh::LAGRANGE, elem_order,   "u_vol");
-		auto V_surf = FunctionSpaceT(surf_equation_systems, libMesh::LAGRANGE, elem_order, "u_surf");
+		auto V_surf = FunctionSpaceT(surf_equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_surf");
 
 		V_vol.initialize();
 		V_surf.initialize();
@@ -65,9 +85,6 @@ namespace utopia {
 		{
 			DSMatrixd D_inv = diag(1./sum(B, 1));
 			DSMatrixd T = D_inv * B;
-
-			write("T.m", T);
-
 			DVectord v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
 			// {
 			// 	Write<DVectord> w_(v_vol);
@@ -81,10 +98,9 @@ namespace utopia {
 				std::vector<double> ret(n);
 
 				for(std::size_t i = 0; i != n; ++i) {
-					double x = pts[i](0);
-					double y = pts[i](1);
+					double x = pts[i](0) - 0.5;
+					double y = pts[i](1) - 0.5;
 					double z = pts[i](2);
-
 					ret[i] = x*x + y*y + z*z;
 				}
 
@@ -103,12 +119,13 @@ namespace utopia {
 			utopia::assemble(p_form, scaled_sol);
 			utopia::assemble(m_form, mass_mat);
 
-			utopia::solve(mass_mat, scaled_sol, v_vol);
+			DVectord lumped = sum(mass_mat, 1);
+			v_vol = e_mul(1./lumped, scaled_sol);
 
 			DVectord v_surf = T * v_vol;
 
-			disp(v_vol);
-			disp(v_surf);
+			// disp(v_vol);
+			// disp(v_surf);
 
 			convert(v_vol, *vol_sys.solution);
 			vol_sys.solution->close();
