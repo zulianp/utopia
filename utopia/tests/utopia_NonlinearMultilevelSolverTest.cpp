@@ -18,12 +18,20 @@ namespace utopia
 
 	    void TR_Bratu_test()
 	    {
-
 	    	Bratu1D<DSMatrixd, DVectord> fun(_n); 
+	    	DVectord x = values(_n, 1.0); 
+	    	fun.apply_bc_to_initial_guess(x); 
 
-
-
-
+	    	Parameters params;
+			params.atol(1e-10);
+			params.rtol(1e-10);
+			params.stol(1e-10);
+			params.verbose(false);
+			
+			auto subproblem = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >();
+			TrustRegion<DSMatrixd, DVectord> tr_solver(subproblem);
+			tr_solver.set_parameters(params);
+			tr_solver.solve(fun, x);
 	    }
 
 
