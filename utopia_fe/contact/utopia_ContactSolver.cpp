@@ -26,12 +26,12 @@ namespace utopia {
 
 		const auto dim = mesh->mesh_dimension();
 
-		if(dim == 2)
-		{
-			libMesh::MeshRefinement mesh_refinement(*mesh);
-			mesh_refinement.make_flags_parallel_consistent();
-			mesh_refinement.uniformly_refine(1);
-		}
+		// if(dim == 2)
+		// {
+		// 	libMesh::MeshRefinement mesh_refinement(*mesh);
+		// 	mesh_refinement.make_flags_parallel_consistent();
+		// 	mesh_refinement.uniformly_refine(1);
+		// }
 
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("dynamic-contact");
@@ -42,11 +42,11 @@ namespace utopia {
 			// dt = 0.01;
 		}
 		
-		// LameeParameters lamee_params(20., 20.);
+		LameeParameters lamee_params(20., 20.);
 		// lamee_params.set_mu(2, 10.);
 		// lamee_params.set_lambda(2, 10.);
 
-		LameeParameters lamee_params(200., 200.);
+		// LameeParameters lamee_params(200., 200.);
 		// 	lamee_params.set_mu(2, 10000.);
 		// lamee_params.set_lambda(2, 10000.);
 
