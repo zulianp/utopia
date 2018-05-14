@@ -96,8 +96,11 @@ namespace utopia
 
       void generate_constraints(Vector & lb, Vector & ub)
       {
-        lb = -0.68 * values(n_, 1.0);
-        ub = 9e9 * values(n_, 1.0); 
+        Scalar inf = std::numeric_limits<double>::infinity(); 
+
+        // lb = -0.68 * values(n_, 1.0);
+        lb = values(n_, -1 * inf);
+        ub = values(n_, inf); 
       }
 
 

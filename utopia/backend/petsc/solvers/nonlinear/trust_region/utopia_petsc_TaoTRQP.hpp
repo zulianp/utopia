@@ -21,11 +21,11 @@ namespace utopia {
         typedef utopia::TRBoxSubproblem<Matrix, Vector>         TRBoxSubproblem;
 
         public:
-            TaoTRSubproblem(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<KSPSolver<Matrix, Vector>>(),
+            TaoTRSubproblem(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<KSPSolver<Matrix, Vector>>("gmres"),
                             const Parameters params = Parameters()):
                             TRBoxSubproblem(params)
             {
-              tao_solver_ = std::make_shared<utopia::TaoSolver<Matrix, Vector> >(); 
+              
             }
 
             TaoTRSubproblem * clone() const override
@@ -37,14 +37,15 @@ namespace utopia {
 
             virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const BoxConstraints<Vector> & box) override
             {
-                tao_solver_->set_box_constraints(box);
+                // TODO:: if we store and re-initialize solver, there is a lot of memory leaks comming 
+                utopia::TaoSolver<Matrix, Vector> tao_solver_(linear_solver_); 
+                tao_solver_.set_box_constraints(box);
 
-                // note, we do not need to switch sign ... 
                 TRQuadraticFunction<Matrix, Vector, Traits<Vector>::Backend> fun(make_ref(H) , make_ref(g));
                 
-                //  suitable options: gpcg, BQPIP, pgd, bncg, bqpip 
-                tao_solver_->set_type("gpcg");
-                tao_solver_->solve(fun, p_k);
+                //  TODO:: investigate suitable options: gpcg, tron, ...
+                tao_solver_.set_type("gpcg");
+                tao_solver_.solve(fun, p_k);
                 
                 return true;
             }
@@ -52,11 +53,9 @@ namespace utopia {
             virtual void set_linear_solver(const std::shared_ptr<LinearSolver > &ls) override
             {
                 linear_solver_ = ls; 
-                tao_solver_->set_linear_solver(ls); 
             }    
 
         protected: 
-            std::shared_ptr<utopia::TaoSolver<Matrix, Vector> > tao_solver_; 
             std::shared_ptr<LinearSolver> linear_solver_; 
 
     };

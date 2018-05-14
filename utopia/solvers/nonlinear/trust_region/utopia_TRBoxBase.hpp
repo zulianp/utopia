@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2018-04-18
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2018-04-18
-*/
-
 #ifndef UTOPIA_SOLVER_TRUSTREGION_BOX_BASE_HPP
 #define UTOPIA_SOLVER_TRUSTREGION_BOX_BASE_HPP
 
@@ -154,7 +147,7 @@ namespace utopia
       virtual BoxConstraints  merge_tr_with_pointwise_constrains(const Vector & x_k, const Scalar & radius)
       {
           Vector l_f, u_f; 
-          
+
           if(box_constraints_.has_upper_bound())
           {
               Vector u =  *box_constraints_.upper_bound() - x_k; 

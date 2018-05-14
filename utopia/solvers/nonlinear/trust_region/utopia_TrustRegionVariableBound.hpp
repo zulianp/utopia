@@ -96,6 +96,8 @@
             fun.value(x_k, E_old); 
             fun.hessian(x_k, H); 
           }
+
+
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------          
@@ -105,6 +107,7 @@
             auto box = this->merge_tr_with_pointwise_constrains(x_k, delta); 
             tr_subproblem->tr_constrained_solve(H, g, p_k, box);
           }
+
 
           this->get_pred(g, H, p_k, pred); 
     //----------------------------------------------------------------------------
