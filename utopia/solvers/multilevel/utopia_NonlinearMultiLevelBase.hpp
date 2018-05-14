@@ -168,10 +168,11 @@ namespace utopia {
         }
         
         /* @brief
-         Function initializes projections  operators.
+         Function initializes transfer  operators.
          Operators need to be ordered FROM COARSE TO FINE.
          *
-         * @param[in]  operators                The restriction operators.
+         * @param[in]  interpolation_operators                The interpolation operators.
+         * @param[in]  projection_operators                   The projection operators.
          *
          */
         virtual bool set_transfer_operators(
@@ -184,6 +185,20 @@ namespace utopia {
             
             return true;
         }
+
+
+        virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
+                                            const std::vector<std::shared_ptr<Matrix>> &restriction_operators,
+                                            const std::vector<std::shared_ptr<Matrix>> &projection_operators)
+        {
+            this->transfers_.clear();
+            for(auto I = interpolation_operators.begin(), R = restriction_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && R != restriction_operators.end() &&  P != projection_operators.end(); ++I, ++R, ++P )
+                this->transfers_.push_back(Transfer(*I, *R, *P));
+            
+            return true;
+        }
+
+
         
         virtual void print_statistics(const SizeType & it_global)
         {

@@ -14,7 +14,7 @@ namespace utopia
 		typedef UTOPIA_SCALAR(DVectord) Scalar;
 
 		NonlinearBratuSolverTest(const SizeType & n_levels = 2): 
-					n_coarse_(100), 
+					n_coarse_(10), 
 					n_levels_(n_levels) 
 		{ 
 
@@ -70,15 +70,13 @@ namespace utopia
 			}
 
 			// restrictions, but let's use them as projections... 
+			// very not nice solution... 
 			for(SizeType i = 0; i < prolongations_.size(); ++i) 
 			{
 				auto &I = *prolongations_[i];
-				DSMatrixd R = 1.0/2.0 * transpose(I); 
+				DSMatrixd R =  transpose(I); 
 				restrictions_[i] = std::make_shared<DSMatrixd>(R);
 			}
-
-
-
 
 
 		}		
@@ -88,6 +86,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(TR_test); 
 			UTOPIA_RUN_TEST(TR_constraint_test); 
 			UTOPIA_RUN_TEST(newton_MG_test); 
+			UTOPIA_RUN_TEST(NMG_test); 
 		}
 
 
@@ -152,14 +151,63 @@ namespace utopia
             
             multigrid->set_transfer_operators(prolongations_);
             multigrid->must_generate_masks(false); 
-            multigrid->verbose(true);
+            multigrid->verbose(false);
             
             newton.set_linear_solver(multigrid);
-            newton.verbose(true); 
+            newton.verbose(false); 
             newton.atol(1e-9);
-            newton.rtol(1e-9);
+            newton.rtol(1e-10);
             newton.solve(fun, x);
 	    }	    
+
+
+
+
+
+	    void NMG_test()
+	    {
+	    	// this eq. is known to have problems without globalization... 
+
+	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
+
+	    	for(auto l=0; l < n_levels_-1; l++)
+	    	{
+		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l]); 
+		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
+		    }
+	        
+	        auto direct_solver = std::make_shared<LUDecomposition<DSMatrixd, DVectord>>();
+	        auto coarse_solver = std::make_shared<Newton<utopia::DSMatrixd, utopia::DVectord> >(direct_solver);
+	       	auto strategy = std::make_shared<utopia::Backtracking<utopia::DSMatrixd, utopia::DVectord>>();
+	        coarse_solver->set_line_search_strategy(strategy);
+	        coarse_solver->atol(1e-9); 
+	        coarse_solver->max_it(1); 
+
+	        // subject to change 
+	        // auto smoother = std::make_shared<NonLinearJacobi<DSMatrixd, DVectord> >();
+	        auto smoother = std::make_shared<NonLinearGMRES<DSMatrixd, DVectord> >();
+
+	        auto fas = std::make_shared<NonLinearMultigrid<DSMatrixd, DVectord>  >(smoother, coarse_solver);
+	        fas->set_transfer_operators(prolongations_, restrictions_);
+
+			fas->pre_smoothing_steps(5); 
+        	fas->post_smoothing_steps(5); 
+	        fas->verbose(false); 
+	        fas->atol(1e-8); 
+	        fas->rtol(1e-10);
+	        fas->max_it(50);
+
+	        fas->set_functions(level_functions); 
+	        
+	        Bratu1D<DSMatrixd, DVectord> fun_fine(n_dofs_[n_levels_-1]); 
+	        DVectord x = values(n_dofs_[n_levels_ -1 ], 0.0); 
+	        fun_fine.apply_bc_to_initial_guess(x); 
+
+	        fas->solve(fun_fine, x); 
+	    }	 
+
+
+
 
 
 
@@ -187,7 +235,7 @@ namespace utopia
 
 		UTOPIA_UNIT_TEST_BEGIN("runNonlinearMultilevelSolverTest");
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest().run();
+			NonlinearBratuSolverTest(3).run();
 		#endif		
 		UTOPIA_UNIT_TEST_END("runNonlinearMultilevelSolverTest");				
 	}

@@ -9,18 +9,39 @@ namespace utopia
 {
     
     template<class Matrix, class Vector>
-    class Bratu1D  : public Function<Matrix, Vector>
+    class Bratu1D  : public ExtendedFunction<Matrix, Vector>
     {
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
 
     public:
-        Bratu1D(const Scalar & n, const Scalar & lambda = 10): 
-          n_(n), lambda_(lambda)
+        Bratu1D(const Scalar & n, 
+                const Scalar & lambda = 5, 
+                const Vector & x_init = local_zeros(1), 
+                const Vector & bc_marker = local_zeros(1), 
+                const Vector & rhs = local_zeros(1)): 
+          ExtendedFunction<Matrix, Vector>(x_init, bc_marker, rhs), 
+          n_(n), 
+          lambda_(lambda)
         {
           h_ = 1.0/(n_ - 1.0); 
-
           assemble_laplacian_1D(); 
+
+
+          Vector bc_markers = values(n_, 0.0);
+          Vector bc_values = values(n_, 0.0);
+          {
+            Write<Vector> w(bc_markers);
+            Range r = range(bc_markers);
+
+            if(r.begin() == 0) 
+              bc_markers.set(0, 1.0);
+
+            if(r.end() == n_) 
+              bc_markers.set(n_-1, 1.0);            
+          }
+
+          ExtendedFunction<Matrix, Vector>::set_equality_constrains(bc_markers, bc_values); 
         }
 
         bool value(const Vector &x, typename Vector::Scalar &energy) const override 
@@ -98,8 +119,8 @@ namespace utopia
       {
         Scalar inf = std::numeric_limits<double>::infinity(); 
 
-        // lb = -0.68 * values(n_, 1.0);
-        lb = values(n_, -1 * inf);
+        // lb = values(n_, -0.68);
+        lb = values(n_, -0.68);
         ub = values(n_, inf); 
       }
 

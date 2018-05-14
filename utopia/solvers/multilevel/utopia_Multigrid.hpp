@@ -151,7 +151,8 @@ namespace utopia
             r_norm = norm2(memory.r[l]);
             r0_norm = r_norm;
             
-            this->init_solver("Multigrid", {" it. ", "|| r_N ||", "r_norm" });
+            std::string mg_header_message = "Multigrid: " + std::to_string(L) +  " levels";
+            this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "r_norm" });
             
             if(this->verbose())
                 PrintInfo::print_iter_status(it, {r_norm, 1});

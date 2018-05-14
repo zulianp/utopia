@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-04-19
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-04
-*/
-
 #ifndef UTOPIA_FAS_HPP
 #define UTOPIA_FAS_HPP
 #include "utopia_NonLinearSmoother.hpp"
@@ -83,7 +76,6 @@ namespace utopia
 
            this->make_iterate_feasible(fine_fun, u_l); 
 
-
             // PRE-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
 
@@ -121,7 +113,7 @@ namespace utopia
             this->transfer(l-2).interpolate(e, e);
             this->zero_correction_related_to_equality_constrain(fine_fun, e); 
             
-            u_l += e; 
+            u_l += e;    
 
             // POST-SMOOTHING 
             smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
@@ -177,7 +169,6 @@ namespace utopia
         bool change_coarse_solver(const std::shared_ptr<Solver> &nonlinear_solver = std::shared_ptr<Solver>())
         {
             _coarse_solver = nonlinear_solver; 
-            _coarse_solver->set_parameters(_parameters); 
             return true; 
         }
 

@@ -45,6 +45,12 @@ namespace utopia {
                 
                 //  TODO:: investigate suitable options: gpcg, tron, ...
                 tao_solver_.set_type("gpcg");
+                
+                // this is already way much better than even neccessary... 
+                tao_solver_.atol(1e-11);
+                tao_solver_.rtol(1e-11); 
+                tao_solver_.stol(1e-11);
+
                 tao_solver_.solve(fun, p_k);
                 
                 return true;

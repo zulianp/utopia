@@ -58,7 +58,7 @@ namespace utopia
                 fun.hessian(x, D);                 
                 fun.gradient(x, F); 
          
-                Vector d = 1/diag(D); 
+                Vector d = 1.0/diag(D); 
                 D = diag(d); 
          
                 x = x - this->relaxation_parameter() * (D * (F - rhs)); 

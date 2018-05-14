@@ -1,17 +1,9 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-04-24
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-04
-*/
-
 #ifndef UTOPIA_NMGM_HPP
 #define UTOPIA_NMGM_HPP
 #include "utopia_NonLinearSmoother.hpp"
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
-
 
 
 namespace utopia 
@@ -53,7 +45,7 @@ namespace utopia
         virtual ~NonLinearMultigrid(){} 
         
 
-        void set_parameters(const Parameters params)  // override
+        void set_parameters(const Parameters params)  override
         {
             NonlinearMultiLevelBase<Matrix, Vector>::set_parameters(params); 
             _smoother->set_parameters(params); 
@@ -91,7 +83,7 @@ namespace utopia
             Vector F_h  = local_zeros(local_size(x_h)); 
 
             bool converged = false; 
-            SizeType it = 0, l = this->num_levels(); 
+            SizeType it = 0, l = this->n_levels(); 
 
             std::cout<<"NMG: number of levels: "<< l << "  \n"; 
             Scalar r_norm, r0_norm, rel_norm;
@@ -140,48 +132,36 @@ namespace utopia
 
     private: 
 
-        inline Fun &levels(const SizeType &l)
-        {
-            return this->_nonlinear_levels[l]; 
-        }
-
-        inline Transfer &transfers(const SizeType & l)
-        {
-            return this->_transfers[l]; 
-        }
-
-
-
         // !!!!!!! TODO:: make this nicer ! 
         bool nested_iteration_cycle(Vector & u_l, const Vector &/*f*/, const SizeType & l, std::vector<Vector> & rhss, std::vector<Vector> & initial_iterates)
         {
             for(SizeType i = l-2; i >=0; i--)
             {
-              transfers(i).restrict(u_l, u_l); 
-              this->make_iterate_feasible(levels(i), u_l); 
+              this->transfer(i).restrict(u_l, u_l); 
+              this->make_iterate_feasible(this->function(i), u_l); 
             }
 
             Vector L_l = local_zeros(local_size(u_l));
-            coarse_solve(levels(0), u_l, L_l); 
+            coarse_solve(this->function(0), u_l, L_l); 
 
             initial_iterates.push_back(u_l); 
-            levels(0).gradient(u_l, L_l); 
+            this->function(0).gradient(u_l, L_l); 
             rhss.push_back(L_l); 
             
-            transfers(0).interpolate(u_l, u_l); 
+            this->transfer(0).interpolate(u_l, u_l); 
 
             for(SizeType i = 1; i <l-1; i++)
             {
                 for(SizeType j = 0; j < this->v_cycle_repetition(); j++)
                 {
                   Vector f = local_zeros(local_size(u_l));
-                  NMGM(levels(i),  u_l, f, i+1, rhss, initial_iterates); 
+                  NMGM(this->function(i),  u_l, f, i+1, rhss, initial_iterates); 
             
                   initial_iterates.push_back(u_l); 
-                  levels(i).gradient(u_l, L_l); 
+                  this->function(i).gradient(u_l, L_l); 
                   rhss.push_back(L_l); 
                 }
-                  transfers(i).interpolate(u_l, u_l); 
+                  this->transfer(i).interpolate(u_l, u_l); 
             }
             return true; 
         }
@@ -196,17 +176,17 @@ namespace utopia
             fine_fun.gradient(u_l, L_l);             
 
             r_h = L_l - f; 
-            transfers(l-2).restrict(r_h, r_2h); 
+            this->transfer(l-2).restrict(r_h, r_2h); 
           
             u_2l    = initial_iterates[l-2]; 
             Scalar s = scaling_factor(r_2h); 
 
-            this->zero_correction_related_to_equality_constrain(levels(l-2), r_2h); 
+            this->zero_correction_related_to_equality_constrain(this->function(l-2), r_2h); 
             L_2l = rhss[l-2] - s *r_2h;  // tau correction 
           
             if(l == 2)
             {
-                coarse_solve(levels(0), u_2l, L_2l); 
+                coarse_solve(this->function(0), u_2l, L_2l); 
             }
             else
             {
@@ -214,12 +194,12 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = l - 1; 
-                    NMGM(levels(l-2), u_2l, L_2l, l_new, rhss, initial_iterates); 
+                    NMGM(this->function(l-2), u_2l, L_2l, l_new, rhss, initial_iterates); 
                 }
             }
 
             e_2h = 1.0/s * (u_2l - initial_iterates[l-2]); 
-            transfers(l-2).interpolate(e_2h, e_h);
+            this->transfer(l-2).interpolate(e_2h, e_h);
 
             this->zero_correction_related_to_equality_constrain(fine_fun, e_h); 
             u_l += e_h; 
@@ -249,13 +229,13 @@ namespace utopia
 
             g_fine -= f; 
 
-            transfers(l-2).restrict(g_fine, g_fine); 
-            transfers(l-2).project_down(u_l, u_2l); 
+            this->transfer(l-2).restrict(g_fine, g_fine); 
+            this->transfer(l-2).project_down(u_l, u_2l); 
 
-            this->make_iterate_feasible(levels(l-2), u_2l); 
-            this->zero_correction_related_to_equality_constrain(levels(l-2), g_fine); 
+            this->make_iterate_feasible(this->function(l-2), u_2l); 
+            this->zero_correction_related_to_equality_constrain(this->function(l-2), g_fine); 
 
-            levels(l-2).gradient(u_2l, g_coarse); 
+            this->function(l-2).gradient(u_2l, g_coarse); 
             Scalar s = scaling_factor(g_fine); 
 
 
@@ -264,7 +244,7 @@ namespace utopia
                                  
             if(l == 2)
             {
-                coarse_solve(levels(0), u_2l, g_coarse); 
+                coarse_solve(this->function(0), u_2l, g_coarse); 
             }
             else
             {
@@ -272,12 +252,12 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = l - 1; 
-                    this->multiplicative_cycle(levels(l-2), u_2l, g_coarse, l_new); 
+                    this->multiplicative_cycle(this->function(l-2), u_2l, g_coarse, l_new); 
                 }
             }
 
             e = u_2l - u_init; 
-            transfers(l-2).interpolate(e, e);
+            this->transfer(l-2).interpolate(e, e);
             this->zero_correction_related_to_equality_constrain(fine_fun, e); 
             
             u_l += 1.0/s * e; 
