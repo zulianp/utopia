@@ -149,19 +149,11 @@ namespace utopia
             _it_global = 0; 
 
             //-------------- INITIALIZATIONS ---------------
-            // init_deltas(); 
-            // init_delta_gradients();  
-            // init_x_initials(); 
-            
-
-            // if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
-            //     init_delta_hessians(); 
-
             init(); 
             
             //----------------------------------------------
 
-            if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL)
+            if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0)
             {
                 ColorModifier red(FG_LIGHT_MAGENTA);
                 ColorModifier def(FG_DEFAULT);
@@ -201,7 +193,7 @@ namespace utopia
 
                 _it_global++; 
 
-                if(this->verbose())
+                if(this->verbose() && mpi_world_rank() == 0)
                 {
                     ColorModifier red(FG_LIGHT_MAGENTA);
                     ColorModifier def(FG_DEFAULT);
@@ -383,7 +375,7 @@ namespace utopia
                 if(converged==true) 
                     return true; 
 
-                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                 {
                     // just to see what is being printed 
                     std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level); 
@@ -431,7 +423,7 @@ namespace utopia
             g_norm = norm2(g); 
 
 
-            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
                 this->print_level_info(level); 
                 PrintInfo::print_iter_status(0, {g_norm, energy_old, ared, pred, rho, get_delta(level-1) }); 
@@ -495,15 +487,19 @@ namespace utopia
                     this->update_hessian(g, g_old, s, H, rho, g_norm); 
                 }
 
+                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+                    PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
+
                 converged  = (delta_converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, get_delta(level-1)); 
                 
-                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
-                    PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
+                if(level == this->n_levels())
+                    converged  = (converged  == true) ? true : check_global_convergence(1, g_norm, 9e9, get_delta(level-1)); 
+
                 it++; 
 
             }
 
-            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
                 ColorModifier color_def(FG_DEFAULT);
                 std::cout<< color_def; 
@@ -560,7 +556,7 @@ namespace utopia
                 Scalar corr_norm = this->level_dependent_norm(s_global, level); 
                 bool converged = this->delta_termination(corr_norm, level); 
                 
-                if(converged && verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+                if(converged && verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                     std::cout<<"termination  due to small radius on level: "<< level << ". \n"; 
 
                 corr_norm = this->get_delta(level) - corr_norm; 
@@ -999,7 +995,7 @@ namespace utopia
         virtual void print_level_info(const SizeType & level)
         {
             ColorModifier color_out(FG_LIGHT_YELLOW);
-            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
                 if(level == 1)
                 {

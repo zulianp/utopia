@@ -84,8 +84,6 @@ namespace utopia
 
             bool converged = false; 
             SizeType it = 0, l = this->n_levels(); 
-
-            std::cout<<"NMG: number of levels: "<< l << "  \n"; 
             Scalar r_norm, r0_norm, rel_norm;
 
             fine_fun.gradient(x_h, F_h); 

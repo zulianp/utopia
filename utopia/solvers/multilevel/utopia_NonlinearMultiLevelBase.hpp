@@ -307,7 +307,6 @@ namespace utopia {
          */
         virtual bool check_convergence(const SizeType &it, const Scalar & g_norm, const Scalar & r_norm, const Scalar & s_norm) override
         {
-            
             // termination because norm of grad is down
             if(g_norm < atol_)
             {
