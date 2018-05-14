@@ -14,7 +14,7 @@ namespace utopia
 		typedef UTOPIA_SCALAR(DVectord) Scalar;
 
 		NonlinearBratuSolverTest(const SizeType & n_levels = 2): 
-					n_coarse_(5), 
+					n_coarse_(100), 
 					n_levels_(n_levels) 
 		{ 
 
@@ -69,7 +69,7 @@ namespace utopia
 				}
 			}
 
-			// restrictions
+			// restrictions, but let's use them as projections... 
 			for(SizeType i = 0; i < prolongations_.size(); ++i) 
 			{
 				auto &I = *prolongations_[i];
