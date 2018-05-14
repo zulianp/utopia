@@ -108,7 +108,6 @@ namespace utopia
 
         void assemble_laplacian_1D()
         {
-
           A_ = sparse(n_, n_, 3); 
 
           {

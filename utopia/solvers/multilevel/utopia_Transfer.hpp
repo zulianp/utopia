@@ -43,6 +43,8 @@
             _Pr = _R;
         }
 
+
+        // TODO:: missing setter for restriction ... 
         Transfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P):
                 _I(I),
                 _R(std::make_shared<Matrix>(transpose(*I))),

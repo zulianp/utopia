@@ -141,7 +141,7 @@ namespace  utopia
             num_it_ = num_it; 
             conv_reason_ = convergence_reason; 
 
-            if(verbose_)
+            if(verbose_ && mpi_world_rank() == 0)
             {
               ConvergenceReason::exitMessage(num_it, convergence_reason);
               if(mpi_world_rank() == 0)
