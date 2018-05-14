@@ -1598,6 +1598,8 @@ namespace utopia {
 		polyhedron.el_index[9]  = 1;
 		polyhedron.el_index[10] = 2;
 		polyhedron.el_index[11] = 0;
+
+		polyhedron.type = P_MESH_TYPE_TET;
 	}
 	
 	void make_polyhedron_from_tet4(const libMesh::Elem &e, Polyhedron &polyhedron)
@@ -1614,6 +1616,61 @@ namespace utopia {
 		assert(e.n_nodes() == 10);
 		
 		make_polyhedron_from_generic_tet(e, polyhedron);
+	}
+
+	static void make_polyhedron_from_shell_element(const libMesh::Elem &e, Polyhedron &polyhedron)
+	{
+		polyhedron.n_dims = 3;
+		
+		polyhedron.el_ptr[0] = 0;
+		polyhedron.el_ptr[1] = 2;
+		polyhedron.el_ptr[2] = 4;
+
+		polyhedron.el_index[0] = 0;
+		polyhedron.el_index[1] = 1;
+
+		polyhedron.el_index[2] = 1;
+		polyhedron.el_index[3] = 2;
+
+		polyhedron.el_index[4] = 2;
+		polyhedron.el_index[5] = 3;
+
+		if(is_tri(e.type())) {
+			polyhedron.n_elements = 3;
+			polyhedron.n_nodes = 3;
+			polyhedron.type = P_MESH_TYPE_TRIANGLE;
+			
+		} else if(is_quad(e.type())) {
+			polyhedron.n_elements = 4;
+			polyhedron.n_nodes = 4;
+			polyhedron.el_ptr[3] = 6;
+
+			polyhedron.el_index[6] = 3;
+			polyhedron.el_index[7] = 4;
+
+			polyhedron.type = P_MESH_TYPE_QUAD;
+
+		} else {
+			assert(false);
+		}
+
+		for(int i = 0; i < polyhedron.n_nodes; ++i) {
+			const int offset = i * 3;
+			
+			for(int j = 0; j < 3; ++j) {
+				polyhedron.points[offset + j] = e.point(i)(j);
+			}
+		}
+	}
+
+	double compute_volume(const Polyhedron &poly)
+	{
+		Intersector isector;
+		if(poly.type >= P_MESH_TYPE_SURF) {
+			return isector.polygon_area_3(poly.n_nodes, poly.points);
+		} else {
+			return isector.p_mesh_volume_3(poly);
+		}
 	}
 
 	static void make_polyhedron_from_generic_hex(const libMesh::Elem &e, Polyhedron &polyhedron)
@@ -1674,6 +1731,8 @@ namespace utopia {
 		polyhedron.el_index[21] = 7;
 		polyhedron.el_index[22] = 4;
 		polyhedron.el_index[23] = 5;
+
+		polyhedron.type = P_MESH_TYPE_HEX;
 	}
 	
 	
@@ -1699,6 +1758,12 @@ namespace utopia {
 	
 	void make_polyhedron(const libMesh::Elem &e, Polyhedron &polyhedron)
 	{
+
+		if(is_tri(e.type()) || is_quad(e.type())) {
+			make_polyhedron_from_shell_element(e, polyhedron);
+			return;
+		}
+
 		//FIXME use libMesh enum types
 		switch(e.n_nodes()) {
 			case 4:
@@ -1738,21 +1803,32 @@ namespace utopia {
 			}
 		}
 	}
-	
-	bool intersect_3D(const libMesh::Elem &el1, const libMesh::Elem &el2, Polyhedron &intersection)
-	{
-		Intersector isector;
-		Polyhedron p1, p2;
-		make_polyhedron(el1, p1);
-		make_polyhedron(el2, p2);
-		return isector.intersect_convex_polyhedra(p1, p2, &intersection);
-	}
-	
+
 	bool intersect_3D(const Polyhedron &poly1, const Polyhedron &poly2, Polyhedron &intersection)
 	{
 		Intersector isector;
-		return isector.intersect_convex_polyhedra(poly1, poly2, &intersection);
+		if(poly1.type >= P_MESH_TYPE_SURF) {
+			bool ok = isector.intersect_convex_polyhedron_with_polygon(poly2, poly1.n_nodes, poly1.points, &intersection);
+			intersection.type = P_MESH_TYPE_SURF;
+			return ok;
+		} else if(poly2.type >= P_MESH_TYPE_SURF) {
+			bool ok = isector.intersect_convex_polyhedron_with_polygon(poly1, poly2.n_nodes, poly2.points, &intersection);
+			intersection.type = P_MESH_TYPE_SURF;
+			return ok;
+		} else {
+			return isector.intersect_convex_polyhedra(poly1, poly2, &intersection);
+		}
 	}
+	
+	bool intersect_3D(const libMesh::Elem &el1, const libMesh::Elem &el2, Polyhedron &intersection)
+	{
+		Polyhedron p1, p2;
+		make_polyhedron(el1, p1);
+		make_polyhedron(el2, p2);
+		return intersect_3D(p1, p2, intersection);
+	}
+	
+
 	
 	bool project_2D(const libMesh::DenseMatrix<libMesh::Real> &poly1,
 					const libMesh::DenseMatrix<libMesh::Real> &poly2,

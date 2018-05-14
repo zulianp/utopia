@@ -418,6 +418,8 @@ namespace utopia {
 			
 			const int dim = src_mesh.mesh_dimension();
 
+			bool vol2surf = false;
+
 			if(must_compute_biorth) {
 				assemble_biorth_weights(dest_el,
 									    dim,
@@ -459,12 +461,30 @@ namespace utopia {
 				make_polyhedron(dest_el, dest_poly);
 				
 				if(intersect_3D(src_poly, dest_poly, intersection3)) {
-					total_intersection_volume += isector.p_mesh_volume_3(intersection3);
-					const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
-					make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
+					total_intersection_volume += compute_volume(intersection3);
+					const libMesh::Real weight = compute_volume(dest_poly);
+					
 					
 					src_trans  = std::make_shared<AffineTransform3>(src_el);
-					dest_trans = std::make_shared<AffineTransform3>(dest_el);
+
+
+					
+					if(is_tri(dest_el.type()) || is_quad(dest_el.type())) {
+						dest_trans = std::make_shared<Transform2>(dest_el);
+						vol2surf = true;
+					} else {
+						dest_trans = std::make_shared<AffineTransform3>(dest_el);
+					}
+
+					if(vol2surf) {
+						libMesh::DenseMatrix<libMesh::Real> shell_poly;
+						shell_poly.resize(intersection3.n_nodes, 3);
+						std::copy(intersection3.points, intersection3.points + intersection3.n_nodes * intersection3.n_dims, &shell_poly.get_values()[0]);
+						make_composite_quadrature_on_surf_3D(shell_poly, 1./weight, order, composite_ir);
+					} else {
+						make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
+					}
+
 					pair_intersected = true;
 				}
 				
@@ -480,7 +500,12 @@ namespace utopia {
 				
 				
 				transform_to_reference(*src_trans,  src_el.type(),  composite_ir,  src_ir);
-				transform_to_reference(*dest_trans, dest_el.type(), composite_ir,  dest_ir);
+
+				if(vol2surf) {
+					transform_to_reference_surf(*dest_trans, dest_el.type(), composite_ir, dest_ir);
+				} else {
+					transform_to_reference(*dest_trans, dest_el.type(), composite_ir,  dest_ir);
+				}
 				
 				
 				assert(!master_dofs.empty());
