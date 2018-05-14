@@ -81,10 +81,11 @@ namespace utopia
 		
 		void run()
 		{
-			UTOPIA_RUN_TEST(TR_test); 
-			UTOPIA_RUN_TEST(TR_constraint_test); 
-			UTOPIA_RUN_TEST(newton_MG_test); 
-			UTOPIA_RUN_TEST(NMG_test); 
+			// UTOPIA_RUN_TEST(TR_test); 
+			// UTOPIA_RUN_TEST(TR_constraint_test); 
+
+			// UTOPIA_RUN_TEST(newton_MG_test); 
+			// UTOPIA_RUN_TEST(NMG_test); 
 			UTOPIA_RUN_TEST(RMTR_L2_test); 
 		}
 
@@ -250,12 +251,6 @@ namespace utopia
 
 	        rmtr->solve(fun_fine, x); 
 	    }	 
-
-
-
-
-
-
 		
 	private:
 		SizeType n_coarse_;

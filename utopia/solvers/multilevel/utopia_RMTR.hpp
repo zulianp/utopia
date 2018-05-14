@@ -493,7 +493,7 @@ namespace utopia
                 converged  = (delta_converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, get_delta(level-1)); 
                 
                 if(level == this->n_levels())
-                    converged  = (converged  == true) ? true : check_global_convergence(1, g_norm, 9e9, get_delta(level-1)); 
+                    converged  = (converged  == true || g_norm < this->atol_) ? true : false; 
 
                 it++; 
 
