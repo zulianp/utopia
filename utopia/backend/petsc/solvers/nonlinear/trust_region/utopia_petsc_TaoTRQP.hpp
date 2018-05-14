@@ -42,7 +42,7 @@ namespace utopia {
                 // note, we do not need to switch sign ... 
                 TRQuadraticFunction<Matrix, Vector, Traits<Vector>::Backend> fun(make_ref(H) , make_ref(g));
                 
-                //  suitable options: gpcg, BQPIP, pgd, bncg, bqpip - to be checked from rmtr ... 
+                //  suitable options: gpcg, BQPIP, pgd, bncg, bqpip 
                 tao_solver_->set_type("gpcg");
                 tao_solver_->solve(fun, p_k);
                 

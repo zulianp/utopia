@@ -80,7 +80,7 @@
         if(this->verbose_)
         {
           this->init_solver("TRUST_REGION_BASE",
-                              {" it. ", "||P_c(x-g)-x||","J_k", "J_{k+1}", "rho", "ared","pred", "delta_k", "|| p_k || "});
+                              {" it. ", "||P_c(x-g)-x||","J_k", "J_{k+1}", "ared","pred", "rho", "delta_k", "|| p_k || "});
           PrintInfo::print_iter_status(it, {g_norm}); 
         }
 
@@ -140,7 +140,7 @@
           s_norm = norm2(p_k); 
 
           if(this->verbose_)
-            PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, rho, ared, pred, delta, s_norm}); 
+            PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, ared, pred, rho, delta, s_norm}); 
 
           converged = TrustRegionBase::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, s_norm, delta); 
 

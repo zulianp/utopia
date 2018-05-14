@@ -13,6 +13,7 @@ namespace utopia
 		void run()
 		{
 			UTOPIA_RUN_TEST(TR_Bratu_test); 
+			UTOPIA_RUN_TEST(TR_Bratu_constraint_test); 
 		}
 
 
@@ -33,6 +34,40 @@ namespace utopia
 			tr_solver.set_parameters(params);
 			tr_solver.solve(fun, x);
 	    }
+
+
+	    void TR_Bratu_constraint_test()
+	    {
+	    	Bratu1D<DSMatrixd, DVectord> fun(_n); 
+	    	DVectord x = values(_n, 1.0); 
+	    	fun.apply_bc_to_initial_guess(x); 
+
+	    	DVectord ub, lb; 
+
+	    	fun.generate_constraints(lb, ub); 
+	    	auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+
+
+	    	Parameters params;
+			params.atol(1e-10);
+			params.rtol(1e-10);
+			params.stol(1e-10);
+			params.verbose(true);
+
+	        auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
+	        auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
+
+	        TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver); 
+	        tr_solver.set_box_constraints(box); 
+
+			tr_solver.set_parameters(params);
+			tr_solver.solve(fun, x);
+
+
+			disp(x); 
+
+
+	    }	    
 
 
 		NonlinearMultilevelSolverTest()

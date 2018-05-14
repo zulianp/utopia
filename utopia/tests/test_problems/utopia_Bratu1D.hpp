@@ -94,6 +94,13 @@ namespace utopia
           }
       }
 
+      void generate_constraints(Vector & lb, Vector & ub)
+      {
+        lb = -0.68 * values(n_, 1.0);
+        ub = 9e9 * values(n_, 1.0); 
+      }
+
+
     private: 
 
         void assemble_laplacian_1D()
