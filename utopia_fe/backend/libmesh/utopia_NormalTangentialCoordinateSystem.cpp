@@ -77,14 +77,16 @@ namespace utopia {
         
         const SizeType local_dofs = dof_map.n_local_dofs();
         DVectord global_normal_vec = local_zeros(local_dofs);
+        DVectord touched = local_zeros(local_dofs);
+
         normals = local_zeros(local_dofs);
         
         std::vector<libMesh::dof_id_type> dof_indices;
-        DenseVector<Real> vec;
+        DenseVector<Real> vec, local_touched;
         
         SizeType n_detected_side_sets = 0;
         { //synch-block begin
-            Write<DVectord> w_n(global_normal_vec);
+            Write<DVectord> w_n(global_normal_vec), w_t(touched);
             
             for(auto e_it = mesh.active_local_elements_begin();
                 e_it != mesh.active_local_elements_end(); ++e_it) {
@@ -132,11 +134,13 @@ namespace utopia {
                     for(uint i = 0; i < dof_indices.size(); ++i) {
                         const uint ind = dof_indices[i];
                         global_normal_vec.add(ind, vec(i));
+                        touched.set(ind, std::abs(vec(i)) > 1e-16);
                     }
                 }
             }
         } //synch-block end
         
+        // write("v.m", global_normal_vec);
         mat = local_sparse(local_dofs, local_dofs, n_dims);        
         auto r = range(global_normal_vec);
         
@@ -146,26 +150,33 @@ namespace utopia {
         
         SizeType n_detecetd_normals = 0;
         { //synch-block begin
-            Read<DVectord> r_n(global_normal_vec);
+            Read<DVectord> r_n(global_normal_vec), r_t(touched);
             Write<DSMatrixd> w_m(mat);
             Write<DVectord> w_i(is_normal_component);
             Write<DVectord> w_n(normals);
             
             for(SizeType i = r.begin(); i < r.end(); i += n_dims) {
-                std::vector<Real> n(n_dims, 0);
-                Real norm = 0.;
-
+                bool is_node_touched = false;
                 for(uint j = 0; j < n_dims; ++j) {
-                    n[j] = global_normal_vec.get(i + j);
-                    norm += n[j] * n[j];
+                   is_node_touched = is_node_touched || touched.get(i+j) > 0;
                 }
                 
                 bool use_identity = false;
                 
-                if(norm < 1e-8) {
+                if(!is_node_touched) {
                     use_identity = true;
                 } else {
                     ++n_detecetd_normals;
+
+                    std::vector<Real> n(n_dims, 0);
+                    Real norm = 0.;
+
+                    for(uint j = 0; j < n_dims; ++j) {
+                        n[j] = global_normal_vec.get(i + j);
+                        norm += n[j] * n[j];
+                    }
+
+
                     is_normal_component.set(i, 1.);
                     
                     norm = std::sqrt(norm);
@@ -178,14 +189,22 @@ namespace utopia {
 
 
                     
-                    n[0] -= 1;
+                    n[0] -= 1.;
                     
                     if(std::abs(n[0]) < 1e-16) {
                         use_identity = true;
                     } else {
+                        use_identity = false;
+
                         if(n_dims == 2) {
+                            norm = std::sqrt(n[0] * n[0] + n[1] * n[1]);
+                            n[0] /= norm; n[1] /= norm;
+
                             isector.householder_reflection_2(&n[0], &H[0]);
                         } else {
+                            norm = std::sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+                            n[0] /= norm; n[1] /= norm; n[2] /= norm;
+
                             isector.householder_reflection_3(&n[0], &H[0]);
                         }
                         

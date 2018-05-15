@@ -14,14 +14,16 @@ typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 namespace utopia {
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
-		auto n = 5;
-		auto elem_type  = libMesh::TET4;
+		auto n = 10;
+		auto elem_type  = libMesh::TET10;
+		// auto elem_type  = libMesh::TET4;
 		// auto elem_type  = libMesh::HEX8;
 		
-		auto elem_order = libMesh::FIRST;
-		// auto elem_order = libMesh::SECOND;
+		// auto elem_order = libMesh::FIRST;
+		auto elem_order = libMesh::SECOND;
 
-		bool is_test_case = false;
+		bool is_test_case = true;
+		// bool is_test_case = false;
 
 		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
 		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
@@ -101,7 +103,7 @@ namespace utopia {
 					double x = pts[i](0) - 0.5;
 					double y = pts[i](1) - 0.5;
 					double z = pts[i](2);
-					ret[i] = x*x + y*y + z*z;
+					ret[i] = x*(x*x + y*y + z*z);
 				}
 
 				return ret;
@@ -119,13 +121,12 @@ namespace utopia {
 			utopia::assemble(p_form, scaled_sol);
 			utopia::assemble(m_form, mass_mat);
 
-			DVectord lumped = sum(mass_mat, 1);
-			v_vol = e_mul(1./lumped, scaled_sol);
+			// DVectord lumped = sum(mass_mat, 1);
+			// v_vol = e_mul(1./lumped, scaled_sol);
+
+			Factorization<DSMatrixd, DVectord>().solve(mass_mat, scaled_sol, v_vol);
 
 			DVectord v_surf = T * v_vol;
-
-			// disp(v_vol);
-			// disp(v_surf);
 
 			convert(v_vol, *vol_sys.solution);
 			vol_sys.solution->close();

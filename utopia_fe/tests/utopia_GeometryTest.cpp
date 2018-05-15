@@ -2,13 +2,13 @@
 
 #include "utopia_NormalTangentialCoordinateSystem.hpp"
 
-#include "utopia_fe_core.hpp"
-#include "utopia_LibMeshBackend.hpp"
+#include "utopia_libmesh.hpp"
 
 #include <libmesh/const_function.h>
 #include <libmesh/petsc_vector.h>
 #include <libmesh/petsc_matrix.h>
 #include <libmesh/mesh_modification.h>
+#include "libmesh/nemesis_io.h"
 
 #include <memory>
 
@@ -18,21 +18,42 @@ namespace utopia {
 		using namespace libMesh;
 		using namespace std;
 
-		const auto order_elem = FIRST;
+		const auto elem_order = FIRST;
 
 		auto mesh = make_shared<libMesh::Mesh>(init.comm());
-		mesh->read("/Users/patrick/Desktop/PostDOC/sccer_turbines/turbine.e");
+		mesh->read("../data/stent2_101.e");
+		auto dim = mesh->mesh_dimension();
 
-		LibMeshFEContext<LinearImplicitSystem> context(mesh);
-		auto space_1 = fe_space(LAGRANGE, order_elem, context);
-		auto space_2 = fe_space(LAGRANGE, order_elem, context);
-		auto space_3 = fe_space(LAGRANGE, order_elem, context);
+		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
+		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("geo-test");
+
+		////////////////////////////////////////////
+
+		auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "n_x");
+		auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "n_y");
+		auto V = Vx * Vy;
+
+		if(dim == 3) {
+			V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "n_z");
+		}
 		
-		context.equation_systems.init();
+		Vx.initialize();
 
 		DVectord is_normal_component;
 		DVectord normals;
 		DSMatrixd mat;
-		assemble_normal_tangential_transformation(*mesh, space_1.dof_map(), {5}, is_normal_component, normals, mat);
+		assemble_normal_tangential_transformation(*mesh, Vx.dof_map(), {101}, is_normal_component, normals, mat);
+		mat.implementation().set_name("t");
+		write("O.m", mat);
+
+		normals.implementation().set_name("n");
+		write("vn.m", normals);
+
+		DVectord t_normals = mat * normals;
+
+		libMesh::Nemesis_IO io(*mesh);
+		convert(t_normals, *sys.solution);
+		sys.solution->close();
+		io.write_equation_systems("get-test.e", *equation_systems);
 	}
 }
