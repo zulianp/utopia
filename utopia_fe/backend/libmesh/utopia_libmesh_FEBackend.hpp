@@ -2516,7 +2516,7 @@ namespace utopia {
 			const QValues<Right> &right,
 			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<double>
 		{
-			assert(left.size() == right.size());
+			assert(left[0].size() == right.size());
 			const std::size_t n = left.size();
 
 			FQValues<double> ret(n);

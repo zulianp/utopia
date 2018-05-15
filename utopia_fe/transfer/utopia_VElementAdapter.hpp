@@ -64,8 +64,8 @@ template<int Dimension>
                     std::array<double, Dimension> p_a_minus;
 
                     for(int d = 0; d < Dimension; ++d) {
-                        p_a_plus[d]  = p_a[d] + n(d) * 1e-6;
-                        p_a_minus[d] = p_a[d] - n(d) * 1e-6;
+                        p_a_plus[d]  = p_a[d] + n(d) * 1e-10;
+                        p_a_minus[d] = p_a[d] - n(d) * 1e-10;
                     }
 
                     bound_.static_bound()  += p_a_minus;

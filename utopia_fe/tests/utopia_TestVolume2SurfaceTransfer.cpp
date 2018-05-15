@@ -14,16 +14,16 @@ typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 namespace utopia {
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
-		auto n = 10;
+		auto n = 5;
 		// auto elem_type  = libMesh::TET10;
-		// auto elem_type  = libMesh::TET4;
-		auto elem_type  = libMesh::HEX8;
+		auto elem_type  = libMesh::TET4;
+		// auto elem_type  = libMesh::HEX8;
 		
 		auto elem_order = libMesh::FIRST;
 		// auto elem_order = libMesh::SECOND;
 
-		bool is_test_case = true;
-		// bool is_test_case = false;
+		// bool is_test_case = true;
+		bool is_test_case = false;
 
 		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
 		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
@@ -51,9 +51,9 @@ namespace utopia {
 			libMesh::MeshTools::Generation::build_cube(
 				*vol_mesh,
 				n, n, n,
-				-7.5, 7.5,
-				-7.5, 7.5,
-				-7.5, 7.5,
+				-7.6, 7.6,
+				-7.6, 7.6,
+				-7.6, 7.6,
 				elem_type
 				);
 
@@ -74,6 +74,9 @@ namespace utopia {
 		V_vol.initialize();
 		V_surf.initialize();
 
+
+		Chrono c;
+		c.start();
 		DSMatrixd B;
 		moonolith::Communicator comm(init.comm().get());
 		if(assemble_volume_transfer(
@@ -88,6 +91,10 @@ namespace utopia {
 			1,
 			B))
 		{
+
+			c.stop();
+			std::cout << c << std::endl;
+
 			DSMatrixd D_inv = diag(1./sum(B, 1));
 			DSMatrixd T = D_inv * B;
 			DVectord v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
