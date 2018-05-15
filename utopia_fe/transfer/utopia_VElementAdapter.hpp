@@ -49,6 +49,7 @@ template<int Dimension>
 
             if(is_s) {
                 compute_side_normal(Dimension, *e, n);
+                assert(n.size()> 0.99);
             }
             
             std::array<double, Dimension> p_a;
@@ -78,6 +79,9 @@ template<int Dimension>
                     bound_.dynamic_bound() += p_a; 
                 }
             }
+
+            assert(!bound_.static_bound().empty());
+            assert(!bound_.dynamic_bound().empty());
         }
         
         VElementAdapter()
@@ -156,6 +160,8 @@ template<int Dimension>
 
 
         bool is_shell() const {
+            assert(fe_);
+
             libMesh::Elem &e = *fe_->elem(element_);
             
             if(Dimension == 3) {

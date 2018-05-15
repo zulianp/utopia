@@ -15,12 +15,12 @@ namespace utopia {
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
 		auto n = 10;
-		auto elem_type  = libMesh::TET10;
+		// auto elem_type  = libMesh::TET10;
 		// auto elem_type  = libMesh::TET4;
-		// auto elem_type  = libMesh::HEX8;
+		auto elem_type  = libMesh::HEX8;
 		
-		// auto elem_order = libMesh::FIRST;
-		auto elem_order = libMesh::SECOND;
+		auto elem_order = libMesh::FIRST;
+		// auto elem_order = libMesh::SECOND;
 
 		bool is_test_case = true;
 		// bool is_test_case = false;
@@ -38,7 +38,10 @@ namespace utopia {
 				-0.5, 0.5,
 				elem_type
 				);
-			surf_mesh->read("../data/test/square_with_2_tri.e");
+			// surf_mesh->read("../data/test/square_with_2_tri.e");
+			surf_mesh->read("../data/test/simple_network.e");
+			// surf_mesh->set_mesh_dimension(3);
+
 
 			libMesh::MeshRefinement mesh_refinement(*surf_mesh);
 			mesh_refinement.make_flags_parallel_consistent();
@@ -120,25 +123,22 @@ namespace utopia {
 
 			utopia::assemble(p_form, scaled_sol);
 			utopia::assemble(m_form, mass_mat);
-
-			// DVectord lumped = sum(mass_mat, 1);
-			// v_vol = e_mul(1./lumped, scaled_sol);
-
 			Factorization<DSMatrixd, DVectord>().solve(mass_mat, scaled_sol, v_vol);
 
 			DVectord v_surf = T * v_vol;
-
-			convert(v_vol, *vol_sys.solution);
-			vol_sys.solution->close();
-
-			libMesh::Nemesis_IO vol_IO(*vol_mesh);
-			vol_IO.write_equation_systems ("surf2vol_vol.e", *vol_equation_systems);
 
 			convert(v_surf, *surf_sys.solution);
 			surf_sys.solution->close();
 
 			libMesh::Nemesis_IO surf_IO(*surf_mesh);
-			surf_IO.write_equation_systems ("surf2vol_surf.e", *surf_equation_systems);
+			surf_IO.write_equation_systems("surf2vol_surf.e", *surf_equation_systems);
+
+
+			convert(v_vol, *vol_sys.solution);
+			vol_sys.solution->close();
+
+			libMesh::Nemesis_IO vol_IO(*vol_mesh);
+			vol_IO.write_equation_systems("surf2vol_vol.e", *vol_equation_systems);
 
 		} else {
 			assert(false);

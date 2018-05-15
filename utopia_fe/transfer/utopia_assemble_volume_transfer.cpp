@@ -25,6 +25,8 @@
 #include "moonolith_sparse_matrix.hpp"
 #include "par_moonolith.hpp"
 
+#include "utopia_Socket.hpp"
+
 #include <cmath>
 #include <queue>
 #include <algorithm>
@@ -420,6 +422,8 @@ namespace utopia {
 
 			bool vol2surf = false;
 
+
+
 			if(must_compute_biorth) {
 				assemble_biorth_weights(dest_el,
 									    dim,
@@ -476,11 +480,15 @@ namespace utopia {
 						dest_trans = std::make_shared<AffineTransform3>(dest_el);
 					}
 
+
+
 					if(vol2surf) {
 						libMesh::DenseMatrix<libMesh::Real> shell_poly;
 						shell_poly.resize(intersection3.n_nodes, 3);
 						std::copy(intersection3.points, intersection3.points + intersection3.n_nodes * intersection3.n_dims, &shell_poly.get_values()[0]);
 						make_composite_quadrature_on_surf_3D(shell_poly, 1./weight, order, composite_ir);
+
+						// plot_polygon(3, dest_poly.n_nodes, dest_poly.points, "polygon/" + std::to_string(comm.rank()) + "/p");
 					} else {
 						make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
 					}
@@ -665,6 +673,7 @@ namespace utopia {
 		///////////////////////////
 		
 		moonolith::SearchSettings settings;
+		// settings.verbosity_level = 3;
 		
 		bool ok = false;
 		if(master->mesh_dimension() == 2) {
