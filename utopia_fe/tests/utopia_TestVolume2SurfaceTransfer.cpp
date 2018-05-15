@@ -1,0 +1,147 @@
+#include "utopia_TestVolume2SurfaceTransfer.hpp"
+
+#include "utopia_libmesh.hpp"
+#include "moonolith_communicator.hpp"
+#include "utopia_assemble_volume_transfer.hpp"
+
+#include "libmesh/mesh_generation.h"
+#include "libmesh/nemesis_io.h"
+#include "libmesh/mesh_refinement.h"
+
+
+typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
+
+namespace utopia {
+	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
+	{
+		auto n = 10;
+		auto elem_type  = libMesh::TET10;
+		// auto elem_type  = libMesh::TET4;
+		// auto elem_type  = libMesh::HEX8;
+		
+		// auto elem_order = libMesh::FIRST;
+		auto elem_order = libMesh::SECOND;
+
+		bool is_test_case = true;
+		// bool is_test_case = false;
+
+		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+
+
+		if(is_test_case) {
+			libMesh::MeshTools::Generation::build_cube(
+				*vol_mesh,
+				n, n, n,
+				0., 1.,
+				0., 1.,
+				-0.5, 0.5,
+				elem_type
+				);
+			surf_mesh->read("../data/test/square_with_2_tri.e");
+
+			libMesh::MeshRefinement mesh_refinement(*surf_mesh);
+			mesh_refinement.make_flags_parallel_consistent();
+			mesh_refinement.uniformly_refine(4);
+		} else {
+			
+			libMesh::MeshTools::Generation::build_cube(
+				*vol_mesh,
+				n, n, n,
+				-7.5, 7.5,
+				-7.5, 7.5,
+				-7.5, 7.5,
+				elem_type
+				);
+
+			surf_mesh->read("../data/test/fractures.e");
+		}
+
+		//equations system
+		auto vol_equation_systems = std::make_shared<libMesh::EquationSystems>(*vol_mesh);
+		auto &vol_sys = vol_equation_systems->add_system<libMesh::LinearImplicitSystem>("vol_sys");
+
+		auto surf_equation_systems = std::make_shared<libMesh::EquationSystems>(*surf_mesh);
+		auto &surf_sys = surf_equation_systems->add_system<libMesh::LinearImplicitSystem>("surf_sys");
+
+		//scalar function space
+		auto V_vol  = FunctionSpaceT(vol_equation_systems, libMesh::LAGRANGE, elem_order,   "u_vol");
+		auto V_surf = FunctionSpaceT(surf_equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_surf");
+
+		V_vol.initialize();
+		V_surf.initialize();
+
+		DSMatrixd B;
+		moonolith::Communicator comm(init.comm().get());
+		if(assemble_volume_transfer(
+			comm,
+			vol_mesh,
+			surf_mesh,
+			make_ref(V_vol.dof_map()),
+			make_ref(V_surf.dof_map()),
+			0,
+			0,
+			true, 
+			1,
+			B))
+		{
+			DSMatrixd D_inv = diag(1./sum(B, 1));
+			DSMatrixd T = D_inv * B;
+			DVectord v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
+			// {
+			// 	Write<DVectord> w_(v_vol);
+			// 	v_vol.set(0, 0.);
+			// }
+
+			auto f_rhs = ctx_fun< std::vector<double> >([](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> { 
+				const auto &pts = ctx.fe()[0]->get_xyz();
+
+				const auto n = pts.size();
+				std::vector<double> ret(n);
+
+				for(std::size_t i = 0; i != n; ++i) {
+					double x = pts[i](0) - 0.5;
+					double y = pts[i](1) - 0.5;
+					double z = pts[i](2);
+					ret[i] = x*(x*x + y*y + z*z);
+				}
+
+				return ret;
+			});
+
+
+			auto u = trial(V_vol);
+			auto v = test(V_vol);
+			auto p_form = inner(f_rhs, v) * dX;
+			auto m_form = inner(u, v) * dX;
+
+			DVectord scaled_sol;
+			DSMatrixd mass_mat;
+
+			utopia::assemble(p_form, scaled_sol);
+			utopia::assemble(m_form, mass_mat);
+
+			// DVectord lumped = sum(mass_mat, 1);
+			// v_vol = e_mul(1./lumped, scaled_sol);
+
+			Factorization<DSMatrixd, DVectord>().solve(mass_mat, scaled_sol, v_vol);
+
+			DVectord v_surf = T * v_vol;
+
+			convert(v_vol, *vol_sys.solution);
+			vol_sys.solution->close();
+
+			libMesh::Nemesis_IO vol_IO(*vol_mesh);
+			vol_IO.write_equation_systems ("surf2vol_vol.e", *vol_equation_systems);
+
+			convert(v_surf, *surf_sys.solution);
+			surf_sys.solution->close();
+
+			libMesh::Nemesis_IO surf_IO(*surf_mesh);
+			surf_IO.write_equation_systems ("surf2vol_surf.e", *surf_equation_systems);
+
+		} else {
+			assert(false);
+		}
+	}
+}

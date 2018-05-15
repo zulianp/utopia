@@ -254,7 +254,7 @@ namespace utopia {
 	
 	void transform_to_reference(const Transform &trans, const int type, const QMortar &global_ir, QMortar &ref_ir);
 	void transform_to_reference_surf(const Transform &trans, const int type, const QMortar &global_ir, QMortar &ref_ir);
-	
+	double compute_volume(const Polyhedron &poly);
 	
 	void mortar_assemble(const libMesh::FEBase &trial_fe,
 						 const libMesh::FEBase &test_fe,

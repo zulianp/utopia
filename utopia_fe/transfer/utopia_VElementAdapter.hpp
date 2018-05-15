@@ -42,6 +42,14 @@ template<int Dimension>
             assert(element < fe.n_elem());
             
             libMesh::Elem * e = fe.elem(element);
+
+            bool is_s = is_shell();
+
+            libMesh::Point n;
+
+            if(is_s) {
+                compute_side_normal(Dimension, *e, n);
+            }
             
             std::array<double, Dimension> p_a;
             for (libMesh::dof_id_type i = 0; i < e->n_nodes(); ++i) {
@@ -50,8 +58,25 @@ template<int Dimension>
                     p_a[d] = p(d);
                 }
 
-                bound_.static_bound()  += p_a;
-                bound_.dynamic_bound() += p_a; 
+                if(is_s) {
+                    std::array<double, Dimension> p_a_plus;
+                    std::array<double, Dimension> p_a_minus;
+
+                    for(int d = 0; d < Dimension; ++d) {
+                        p_a_plus[d]  = p_a[d] + n(d) * 1e-6;
+                        p_a_minus[d] = p_a[d] - n(d) * 1e-6;
+                    }
+
+                    bound_.static_bound()  += p_a_minus;
+                    bound_.dynamic_bound() += p_a_minus; 
+
+                    bound_.static_bound()  += p_a_plus;
+                    bound_.dynamic_bound() += p_a_plus; 
+
+                } else {
+                    bound_.static_bound()  += p_a;
+                    bound_.dynamic_bound() += p_a; 
+                }
             }
         }
         
@@ -63,8 +88,7 @@ template<int Dimension>
         {
             return element_handle_;
         }
-        
-        
+
         inline long element() const
         {
             return element_;
@@ -129,6 +153,20 @@ template<int Dimension>
         BoxBoxAdapter<Dimension> bound_;
         std::vector<long> * dof_map_;
         std::vector<long> * dof_map_reverse_;
+
+
+        bool is_shell() const {
+            libMesh::Elem &e = *fe_->elem(element_);
+            
+            if(Dimension == 3) {
+                return is_tri(e.type()) || is_quad(e.type());
+
+            } else if(Dimension == 2) {
+                return !is_tri(e.type()) && !is_quad(e.type());
+            }
+
+            return false;
+        }
     };
 }
 

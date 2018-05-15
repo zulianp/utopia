@@ -34,6 +34,7 @@ namespace utopia {
 				//copy for time-adaptivity for changing the predictor for different dt
 				
 				O_copy_   = this->contact().orthogonal_trafo;
+				// O_copy_   = this->contact().complete_transformation;
 				gap_copy_ = this->contact().gap;
 				update_predictor();
 
@@ -104,7 +105,7 @@ namespace utopia {
 
 		void update_predictor()
 		{
-			pred_ = O_copy_ * utopia::min(dt_ * (O_copy_ * velocity_old_), gap_copy_);
+			pred_ = O_copy_ * utopia::min(dt_ * (transpose(O_copy_) * velocity_old_), gap_copy_);
 		}
 
 		void update_velocity()

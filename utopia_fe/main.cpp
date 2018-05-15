@@ -1,9 +1,3 @@
-/*
-* @Author: kopanicakova
-* @Date:   2018-03-11 18:04:53
-* @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-03-11 18:04:56
-*/
 #include <iostream>
 
 #include "par_moonolith.hpp"
@@ -45,6 +39,7 @@
 #include "utopia_ContactTest.hpp"
 #include "utopia_CoarsenerTest.hpp"
 #include "utopia_EikonalEquationTest.hpp"
+#include "utopia_TestVolume2SurfaceTransfer.hpp"
 
 #include <functional>
 
@@ -89,9 +84,11 @@ int main(const int argc, char *argv[])
 	    runners["ct"] = run_contact_test;
 	    runners["coarsener_test"] = run_coarsener_test;
 	    runners["eikonal"] = run_eikonal_equation_test;
+	    runners["vol2surf"] = run_volume_to_surface_transfer_test;
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
+
 
 	    
 
