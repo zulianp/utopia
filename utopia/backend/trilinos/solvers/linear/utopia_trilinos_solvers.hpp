@@ -13,8 +13,8 @@
 #include <Kokkos_DefaultNode.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_ParameterList.hpp>
-#include <Teuchos_XMLParameterListCoreHelpers.hpp>
 #include <Teuchos_StandardCatchMacros.hpp>
+#include <Teuchos_XMLParameterListCoreHelpers.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 #include <Tpetra_DefaultPlatform.hpp>
 
@@ -76,12 +76,14 @@ class BelosSolver<Matrix, Vector, TRILINOS>
   typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
 
   //////
-  BelosSolver(Teuchos::RCP<matrix_type> A, Teuchos::RCP<vec_type> LHS, Teuchos::RCP<vec_type> RHS, std::string param_file_name) {
+  BelosSolver(Teuchos::RCP<matrix_type> A, Teuchos::RCP<vec_type> LHS,
+              Teuchos::RCP<vec_type> RHS, std::string param_file_name) {
     linearProblem = Teuchos::rcp(new problem_type(A, LHS, RHS));
     ParamList = Teuchos::getParametersFromXmlFile(param_file_name);
   }
 
-  bool setProblem(std::string it_sol_type, Teuchos::RCP<Teuchos::ParameterList> ParamList) {
+  bool setProblem(std::string it_sol_type,
+                  Teuchos::RCP<Teuchos::ParameterList> ParamList) {
     linearProblem->setProblem();
     belosSolver = belosFactory.create(it_sol_type, ParamList);
     // linearProblem->setRightPrec (M_ifpack);
@@ -100,15 +102,15 @@ class BelosSolver<Matrix, Vector, TRILINOS>
 
   int getNumIter() { return belosSolver->getNumIters(); }
 
-
   /**
    * @brief      Sets the parameters.
    *
    * @param[in]  params  The parameters
    */
-  virtual void set_parameters(const Parameters params, std::string it_sol_type) override {
+  virtual void set_parameters(const Parameters params,
+                              std::string it_sol_type) override {
     PreconditionedSolver::set_parameters(params);
-   setProblem(it_sol_type, ParamList ) ;
+    setProblem(it_sol_type, ParamList);
   }
 };
 }  // namespace utopia
