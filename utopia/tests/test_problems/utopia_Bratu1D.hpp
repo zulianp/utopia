@@ -51,18 +51,9 @@ namespace utopia
           return true;
         }
 
-        bool gradient(const Vector &x, Vector &gradient) const override 
+        bool gradient_no_rhs(const Vector &x, Vector &gradient) const override 
         {
           gradient = (A_ * x) - (lambda_ * exp(x)); 
-
-
-
-          // THIS IS NEEDED FOR OTHER FUNCTIONS THAN TR 
-          std::cout<<"WARNING:: this should be done in outher function, or something.... \n"; 
-          if(local_size(gradient)==local_size(this->_rhs)) 
-              gradient = gradient - this->_rhs; 
-
-
 
           // enforce BC conditions
           {

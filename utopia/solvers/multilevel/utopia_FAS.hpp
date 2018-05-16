@@ -104,9 +104,10 @@ namespace utopia
             memory.g_diff[this->n_levels()-1] = 0.0 * u_l; 
 
             // seems that this doesn't need to be done on every level ... 
+            // this->make_iterate_feasible(this->function(this->n_levels()-1), memory.x[this->n_levels()-1]); 
+
             for(auto l = this->n_levels()-1; l > 0; l--)
             {
-                this->make_iterate_feasible(this->function(l), memory.x[l]); 
                 smoothing(this->function(l), memory.x[l], memory.g_diff[l], this->pre_smoothing_steps()); 
 
                 this->transfer(l-1).project_down(memory.x[l], memory.x[l-1]); 
@@ -119,18 +120,38 @@ namespace utopia
                 memory.g_diff[l-1] = memory.g[l-1] - memory.g_diff[l-1]; 
             }
 
+            
             coarse_solve(this->function(0), memory.x[0], memory.g_diff[0]); 
+
+                // Vector g_c;
+                // Matrix H_c; 
+                // Vector s; 
+
+                // this->function(0).gradient(memory.x[0], g_c);
+                // this->function(0).hessian(memory.x[0], H_c);
+
+                // g_c = g_c - memory.g_diff[0]; 
+
+                // auto direct_solver = std::make_shared<LUDecomposition<Matrix, Vector> > ();
+                // direct_solver->solve(H_c, g_c, s); 
+
+                // memory.x[0] = memory.x[0] - s; 
+
+
+
 
             for(auto l = 0; l < this->n_levels()-1; l++)
             {
                 memory.c[l] = memory.x[l] - memory.x_0[l]; 
                 this->transfer(l).interpolate(memory.c[l], memory.c[l+1]);
 
-                this->zero_correction_related_to_equality_constrain(this->function(l+1), memory.c[l+1]); 
 
                 memory.x[l+1] = memory.x[l+1] + memory.c[l+1]; 
                 smoothing(this->function(l+1), memory.x[l+1], memory.g_diff[l+1], this->pre_smoothing_steps()); 
             }
+
+
+
 
 
             // to be fixed...
@@ -210,6 +231,7 @@ namespace utopia
 
         //     return true; 
         // }
+
 
 
         bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
