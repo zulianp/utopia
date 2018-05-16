@@ -162,6 +162,8 @@ namespace utopia {
 		c.start();
 		DSMatrixd B;
 		moonolith::Communicator comm(init.comm().get());
+
+		const bool use_interpolation = false;
 		if(assemble_volume_transfer(
 			comm,
 			vol_mesh,
@@ -172,14 +174,25 @@ namespace utopia {
 			0,
 			true, 
 			1,
-			B))
+			B,
+			{},
+			use_interpolation))
 		{
 
 			c.stop();
 			std::cout << c << std::endl;
 
-			DSMatrixd D_inv = diag(1./sum(B, 1));
-			DSMatrixd T = D_inv * B;
+			
+			DSMatrixd T;
+			if(use_interpolation) {
+				T = B;
+				T.implementation().set_name("t");
+				write("T.m", T);
+			} else {
+				DSMatrixd D_inv = diag(1./sum(B, 1));
+				T = D_inv * B;
+			}
+
 			DVectord v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
 			// {
 			// 	Write<DVectord> w_(v_vol);
@@ -201,7 +214,6 @@ namespace utopia {
 
 				return ret;
 			});
-
 
 			auto u = trial(V_vol);
 			auto v = test(V_vol);
