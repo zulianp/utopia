@@ -7,6 +7,11 @@
 #include "utopia_Function.hpp"
 #include "utopia_SolutionStatus.hpp"
 
+
+#include "utopia_MultiLevelEvaluations.hpp"
+
+
+
 #include <algorithm>
 #include <vector>
 
@@ -56,6 +61,34 @@ namespace utopia {
             verbose_            = params.verbose();
             time_statistics_    = params.time_statistics();
         }
+
+
+
+
+        // TODO:: find proper place for this .... 
+        typedef struct
+        {
+            std::vector<Vector> x, x_0, g, g_diff, c; 
+            std::vector<Matrix> H, H_diff; 
+
+            void init(const int n_levels)
+            {
+                x.resize(n_levels);
+                x_0.resize(n_levels);
+                g.resize(n_levels);                 
+                g_diff.resize(n_levels);
+
+                c.resize(n_levels);
+
+                H.resize(n_levels); 
+                H_diff.resize(n_levels); 
+            }
+            
+        } LevelMemory;
+        
+        LevelMemory alloc_memory;
+
+
         
         /**
          * @brief      The solve function for nonlinear multilevel solvers.
@@ -67,15 +100,20 @@ namespace utopia {
          */
         virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs)
         {
-            this->init_solver(this->name_id(), {" it. ", "|| grad ||", "r_norm" , "Energy"});
-            status_.clear();
             
             bool converged = false;
-            SizeType it = 0, l = this->n_levels();
+            SizeType it = 0, n_levels = this->n_levels();
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
+
             
-            if(this->verbose())
-                std::cout<<"Number of levels: "<< l << "  \n";
+            std::string header_message = this->name_id() + ": " + std::to_string(n_levels) +  " levels";
+            this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
+            
+            status_.clear();
+
+
+            alloc_memory.init(n_levels); 
+            alloc_memory.g_diff[n_levels-1] = 0.0 * x_h; 
             
             Vector g = local_zeros(local_size(x_h));
             fine_fun.gradient(x_h, g);
@@ -92,16 +130,16 @@ namespace utopia {
             while(!converged)
             {
                 if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
-                    this->multiplicative_cycle(fine_fun, x_h, rhs, l);
+                    this->multiplicative_cycle(fine_fun, x_h, rhs, n_levels);
                 else if(this->cycle_type() == FULL_CYCLE)
                 {
-                    this->full_cycle(fine_fun, x_h, rhs, l);
+                    this->full_cycle(fine_fun, x_h, rhs, n_levels);
                     this->cycle_type(MULTIPLICATIVE_CYCLE);
                 }
                 else
                 {
                     std::cout<<"ERROR::UTOPIA_Multilevel<< unknown MG type, solving in multiplicative manner ... \n";
-                    this->multiplicative_cycle(fine_fun, x_h, rhs, l);
+                    this->multiplicative_cycle(fine_fun, x_h, rhs, n_levels);
                     this->cycle_type(MULTIPLICATIVE_CYCLE);
                 }
                 
@@ -175,8 +213,7 @@ namespace utopia {
          * @param[in]  projection_operators                   The projection operators.
          *
          */
-        virtual bool set_transfer_operators(
-                                            const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
+        virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
                                             const std::vector<std::shared_ptr<Matrix>> &projection_operators)
         {
             this->transfers_.clear();
@@ -225,6 +262,9 @@ namespace utopia {
                 }
             }
         }
+
+
+
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Scalar      atol() const               { return atol_; }
@@ -353,6 +393,8 @@ namespace utopia {
             
             Vector bc_ids;
             fun.get_eq_constrains_flg(bc_ids);
+
+            // disp(bc_values, "bc_values"); 
             
             if(local_size(bc_ids).get(0) != local_size(bc_values).get(0)) {
                 std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: local sizes do not match... \n";
@@ -506,6 +548,15 @@ namespace utopia {
         {
             return *level_functions_[level];
         }
+
+
+
+        inline  LevelMemory & memory()
+        {
+            return alloc_memory; 
+        }
+
+
         
     protected:
         std::vector<FunPtr>                      level_functions_;        

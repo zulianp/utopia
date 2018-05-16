@@ -178,8 +178,6 @@ namespace utopia
 		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
 		    }
 	        
-		    std::cout<<"level_functions: "<< level_functions.size() << "  \n"; 
-
 
 	        auto direct_solver = std::make_shared<LUDecomposition<DSMatrixd, DVectord>>();
 	        auto coarse_solver = std::make_shared<Newton<utopia::DSMatrixd, utopia::DVectord> >(direct_solver);

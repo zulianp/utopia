@@ -6,10 +6,6 @@
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
 
-// to be deleted... 
-#include "utopia_petsc_Factorizations.hpp"
-
-
 namespace utopia 
 {
     /**
@@ -56,41 +52,6 @@ namespace utopia
                 return "FAS"; 
             }
 
-
-
-        typedef struct
-        {
-            std::vector<Vector> x, x_0, g, g_diff, c; 
-            std::vector<Matrix> H; 
-
-            void init(const int n_levels)
-            {
-                x.resize(n_levels);
-                x_0.resize(n_levels);
-                g.resize(n_levels);                 
-                g_diff.resize(n_levels);
-
-                c.resize(n_levels);
-
-                H.resize(n_levels); 
-            }
-            
-        } LevelMemory;
-        
-        LevelMemory memory;
-
-
-        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs) override
-        {
-            std::cout<<"-------- init-------\n"; 
-            memory.init(this->n_levels()); 
-            std::cout<<"-------- end of init-------\n"; 
-            
-            NonlinearMultiLevelBase<Matrix, Vector>::solve(fine_fun, x_h, rhs); 
-            
-            return true; 
-        }
-
     
 
     private: 
@@ -99,138 +60,71 @@ namespace utopia
 
         bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
-            std::cout<<"we do not care about rhs at the moment .... \n"; 
-            memory.x[this->n_levels()-1] = u_l; 
-            memory.g_diff[this->n_levels()-1] = 0.0 * u_l; 
+            this->memory().x[this->n_levels()-1] = u_l; 
 
-            // seems that this doesn't need to be done on every level ... 
+            // sto be investigated with the energy  ... 
             // this->make_iterate_feasible(this->function(this->n_levels()-1), memory.x[this->n_levels()-1]); 
 
             for(auto l = this->n_levels()-1; l > 0; l--)
             {
-                smoothing(this->function(l), memory.x[l], memory.g_diff[l], this->pre_smoothing_steps()); 
+                smoothing(this->function(l), this->memory().x[l], this->memory().g_diff[l], this->pre_smoothing_steps()); 
 
-                this->transfer(l-1).project_down(memory.x[l], memory.x[l-1]); 
-                memory.x_0[l-1] = memory.x[l-1]; 
+                this->transfer(l-1).project_down(this->memory().x[l], this->memory().x[l-1]); 
+                this->memory().x_0[l-1] = this->memory().x[l-1]; 
 
-                this->function(l).gradient(memory.x[l], memory.g[l]); 
-                this->transfer(l-1).restrict(memory.g[l], memory.g_diff[l-1]);
 
-                this->function(l-1).gradient(memory.x[l-1], memory.g[l-1]); 
-                memory.g_diff[l-1] = memory.g[l-1] - memory.g_diff[l-1]; 
+
+                // this function could be nicer.... good replacement??? 
+                this->get_multilevel_gradient(l); 
+
+
+
+                this->transfer(l-1).restrict(this->memory().g[l], this->memory().g_diff[l-1]);
+
+                this->function(l-1).gradient(this->memory().x[l-1], this->memory().g[l-1]); 
+                this->memory().g_diff[l-1] = this->memory().g[l-1] - this->memory().g_diff[l-1]; 
+
+                this->zero_correction_related_to_equality_constrain(this->function(l-1), this->memory().g_diff[l-1]); 
             }
 
-            
-            coarse_solve(this->function(0), memory.x[0], memory.g_diff[0]); 
-
-                // Vector g_c;
-                // Matrix H_c; 
-                // Vector s; 
-
-                // this->function(0).gradient(memory.x[0], g_c);
-                // this->function(0).hessian(memory.x[0], H_c);
-
-                // g_c = g_c - memory.g_diff[0]; 
-
-                // auto direct_solver = std::make_shared<LUDecomposition<Matrix, Vector> > ();
-                // direct_solver->solve(H_c, g_c, s); 
-
-                // memory.x[0] = memory.x[0] - s; 
-
-
-
+            coarse_solve(this->function(0), this->memory().x[0], this->memory().g_diff[0]); 
 
             for(auto l = 0; l < this->n_levels()-1; l++)
             {
-                memory.c[l] = memory.x[l] - memory.x_0[l]; 
-                this->transfer(l).interpolate(memory.c[l], memory.c[l+1]);
+                this->memory().c[l] = this->memory().x[l] - this->memory().x_0[l]; 
+                this->transfer(l).interpolate(this->memory().c[l], this->memory().c[l+1]);
 
+                this->zero_correction_related_to_equality_constrain(this->function(l+1), this->memory().c[l+1]); 
 
-                memory.x[l+1] = memory.x[l+1] + memory.c[l+1]; 
-                smoothing(this->function(l+1), memory.x[l+1], memory.g_diff[l+1], this->pre_smoothing_steps()); 
+                this->memory().x[l+1] += this->memory().c[l+1]; 
+                smoothing(this->function(l+1), this->memory().x[l+1], this->memory().g_diff[l+1], this->pre_smoothing_steps()); 
             }
 
 
-
-
-
             // to be fixed...
-            u_l = memory.x[this->n_levels()-1]; 
+            u_l = this->memory().x[this->n_levels()-1]; 
 
             return true; 
         }
 
 
 
+        // TODO:: find more suitable place for  this function 
+        // ideally, such that it also works for 
+        virtual bool get_multilevel_gradient(const SizeType & level)
+        {
+            if(level < this->n_levels())
+            {
+                this->function(level).gradient(this->memory().x[level], this->memory().g[level]); 
+                this->memory().g[level] -= this->memory().g_diff[level]; 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
-        // {
-        //     Vector g_fine, g_coarse, u_2l, e, u_init; 
-
-        //    this->make_iterate_feasible(fine_fun, u_l); 
-
-        //     // PRE-SMOOTHING 
-        //     smoothing(fine_fun, u_l, f, this->pre_smoothing_steps()); 
-
-
-        //     fine_fun.gradient(u_l, g_fine);             
-
-        //     g_fine -= f; 
-
-        //     this->transfer(l-2).restrict(g_fine, g_fine); 
-        //     this->transfer(l-2).project_down(u_l, u_2l); 
-
-        //     this->make_iterate_feasible(this->function(l-2), u_2l); 
-        //     this->zero_correction_related_to_equality_constrain(this->function(l-2), g_fine); 
-
-        //     this->function(l-2).gradient(u_2l, g_coarse); 
-
-        //     u_init = u_2l; 
-        //     g_coarse -= g_fine;  // tau correction 
-                                 
-        //     if(l == 2)
-        //     {
-        //         coarse_solve(this->function(0), u_2l, g_coarse); 
-        //     }
-        //     else
-        //     {
-        //         // recursive call into FAS - needs to be checked 
-        //         for(SizeType k = 0; k < this->mg_type(); k++)
-        //         {   
-        //             SizeType l_new = l - 1; 
-        //             this->multiplicative_cycle(this->function(l-2), u_2l, g_coarse, l_new); 
-        //         }
-        //     }
-
-        //     e = u_2l - u_init; 
-        //     this->transfer(l-2).interpolate(e, e);
-        //     this->zero_correction_related_to_equality_constrain(fine_fun, e); 
-            
-        //     u_l += e;    
-
-        //     // POST-SMOOTHING 
-        //     smoothing(fine_fun, u_l, f, this->post_smoothing_steps()); 
-
-        //     return true; 
-        // }
+                return true; 
+            }
+            else
+            {
+                return this->function(level).gradient(this->memory().x[level], this->memory().g[level]); 
+            }
+        }
 
 
 
