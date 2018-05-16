@@ -53,6 +53,92 @@ namespace utopia {
 		mortar_assemble_weights(*biorth_elem, weights);
 	}
 
+	class Local2Global {
+	public:
+		using LocalMatrix = libMesh::DenseMatrix<libMesh::Real>;
+
+		Local2Global(const bool use_set_instead_of_add)
+		: use_set_instead_of_add(use_set_instead_of_add)
+		{}
+
+		void apply(
+			const std::vector<long> &trial,
+			const std::vector<long> &test,
+			const LocalMatrix &local_mat,
+			moonolith::SparseMatrix<double> &global_mat) const
+		{
+			if(use_set_instead_of_add) {
+				set(trial, test, local_mat, global_mat);
+			} else {
+				add(trial, test, local_mat, global_mat);
+			}
+		}
+
+		void add(
+			const std::vector<long> &trial,
+			const std::vector<long> &test,
+			const LocalMatrix &local_mat,
+			moonolith::SparseMatrix<double> &global_mat) const
+		{
+			for(std::size_t i = 0; i < test.size(); ++i) {
+				const auto dof_I = test[i];
+
+				for(std::size_t j = 0; j < trial.size(); ++j) {
+					const auto dof_J = trial[j];
+
+					global_mat.add(dof_I, dof_J, local_mat(i, j));
+				}
+			}
+		}
+
+		void set(
+			const std::vector<long> &trial,
+			const std::vector<long> &test,
+			const LocalMatrix &local_mat,
+			moonolith::SparseMatrix<double> &global_mat) const
+		{
+			for(std::size_t i = 0; i < test.size(); ++i) {
+				const auto dof_I = test[i];
+
+				for(std::size_t j = 0; j < trial.size(); ++j) {
+					const auto dof_J = trial[j];
+
+					global_mat.set(dof_I, dof_J, local_mat(i, j));
+				}
+			}
+		}
+
+		void redistribute(
+			moonolith::Communicator &comm,
+			const long n_local_dofs_trial,
+			const long n_local_dofs_test,
+			moonolith::SparseMatrix<double> &global_mat)
+		{
+			std::vector<moonolith::Integer> range_master(comm.size() + 1, 0);
+			std::vector<moonolith::Integer> range_slave(comm.size()  + 1, 0);
+
+			range_master[comm.rank() + 1] += static_cast<unsigned int>(n_local_dofs_trial);
+			range_slave [comm.rank() + 1] += static_cast<unsigned int>(n_local_dofs_test);
+
+			comm.all_reduce(&range_master[0], range_master.size(), moonolith::MPISum());
+			comm.all_reduce(&range_slave[0],  range_slave.size(),  moonolith::MPISum());
+
+			std::partial_sum(range_master.begin(), range_master.end(), range_master.begin());
+			std::partial_sum(range_slave.begin(),  range_slave.end(),  range_slave.begin());
+
+			moonolith::Redistribute< moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
+
+			if(use_set_instead_of_add) {
+				redist.apply(range_slave, global_mat, moonolith::Assign<double>());
+			} else {
+				redist.apply(range_slave, global_mat, moonolith::AddAssign<double>());
+			}
+
+			assert(range_slave.empty() == range_master.empty() || range_master.empty());
+		}
+
+		bool use_set_instead_of_add;
+	};
 
 	class LocalAssembler {
 	public:
@@ -349,7 +435,7 @@ namespace utopia {
 	
 	
 	template<int Dimensions, class Fun>
-	static bool Assemble(moonolith::Communicator &comm,
+	static bool Assemble(
 		const std::shared_ptr<MeshBase> &master,
 		const std::shared_ptr<MeshBase> &slave,
 		const std::shared_ptr<DofMap> &dof_master,
@@ -383,6 +469,8 @@ namespace utopia {
 		
 		const Parallel::Communicator &libmesh_comm_master = master_mesh->comm();
 		const Parallel::Communicator &libmesh_comm_slave = slave_mesh->comm();
+
+		moonolith::Communicator comm(libmesh_comm_master.get());
 		
 		
 		auto predicate = std::make_shared<MasterAndSlave>();
@@ -616,7 +704,7 @@ namespace utopia {
 		}
 
 		template<int Dimensions>
-		bool Assemble(moonolith::Communicator &comm,
+		bool Assemble(
 			const std::shared_ptr<MeshBase> &master,
 			const std::shared_ptr<MeshBase> &slave,
 			const std::shared_ptr<DofMap> &dof_master,
@@ -629,10 +717,22 @@ namespace utopia {
 			const std::vector< std::pair<int, int> > &tags,
 			int n_var)
 		{
+			const bool use_interpolation = false;
+
+			moonolith::Communicator comm(master->comm().get());
+
 			const int var_num_slave = to_var_num;
 			std::shared_ptr<FESpacesAdapter> local_fun_spaces = std::make_shared<FESpacesAdapter>(master, slave, dof_master, dof_slave,from_var_num,to_var_num);
 
-			auto assembler = std::make_shared<L2LocalAssembler>(master->mesh_dimension(), use_biorth);
+			Local2Global local2global(use_interpolation);
+
+			std::shared_ptr<LocalAssembler> assembler;
+			if(use_interpolation) {
+				// assembler = std::make_shared<InterpolationLocalAssembler>(master->mesh_dimension(), use_biorth);
+			} else {
+				assembler = std::make_shared<L2LocalAssembler>(master->mesh_dimension(), use_biorth);
+			}
+
 
 			libMesh::DenseMatrix<libMesh::Real> elemmat;
 			libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
@@ -673,27 +773,14 @@ namespace utopia {
 					const auto &master_dofs = master.dof_map();
 					const auto &slave_dofs  = slave.dof_map();
 
-					for(int i = 0; i < slave_dofs.size(); ++i) {
-
-						const long dof_I = slave_dofs[i];
-
-						for(int j = 0; j < master_dofs.size(); ++j) {
-
-							const long dof_J = master_dofs[j];
-
-							mat_buffer.add(dof_I, dof_J, elemmat(i, j));
-						}
-					}
-
+					local2global.apply(master_dofs, slave_dofs, elemmat, mat_buffer);
 					return true;
-
 				} else {
 					return false;
 				}
-
 			};
 
-			if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, from_var_num, to_var_num, fun, settings, use_biorth, tags, n_var)) {
+			if(!Assemble<Dimensions>(master, slave, dof_master, dof_slave, from_var_num, to_var_num, fun, settings, use_biorth, tags, n_var)) {
 				return false;
 			}
 
@@ -761,7 +848,6 @@ namespace utopia {
 				}
 			}
 
-
 			auto s_B_x = local_size(B_x);
 
 			B = local_sparse(s_B_x.get(0), s_B_x.get(1), n_var * mMaxRowEntries);
@@ -776,9 +862,8 @@ namespace utopia {
 			return true;
 		}
 
-
-
-		bool assemble_volume_transfer(moonolith::Communicator &comm,
+		bool assemble_volume_transfer(
+			moonolith::Communicator &comm,
 			const std::shared_ptr<MeshBase> &master,
 			const std::shared_ptr<MeshBase> &slave,
 			const std::shared_ptr<DofMap> &dof_master,
@@ -805,9 +890,9 @@ namespace utopia {
 
 			bool ok = false;
 			if(master->mesh_dimension() == 2) {
-				ok = utopia::Assemble<2>(comm, master, slave, dof_master, dof_slave, from_var_num,  to_var_num, B, settings,use_biorth, tags, n_var);
+				ok = utopia::Assemble<2>(master, slave, dof_master, dof_slave, from_var_num,  to_var_num, B, settings,use_biorth, tags, n_var);
 			} else if(master->mesh_dimension() == 3) {
-				ok = utopia::Assemble<3>(comm, master, slave, dof_master, dof_slave, from_var_num,  to_var_num, B, settings,use_biorth, tags, n_var);
+				ok = utopia::Assemble<3>(master, slave, dof_master, dof_slave, from_var_num,  to_var_num, B, settings,use_biorth, tags, n_var);
 			} else {
 				assert(false && "Dimension not supported!");
 			}
