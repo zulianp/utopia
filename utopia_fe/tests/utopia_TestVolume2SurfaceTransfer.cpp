@@ -50,7 +50,9 @@ namespace utopia {
 				0,
 				true, 
 				1,
-				B))
+				B,
+				{},
+				true))
 			{
 				c.stop();
 				std::cout << c << std::endl;
@@ -128,7 +130,7 @@ namespace utopia {
 			mesh_refinement.make_flags_parallel_consistent();
 			mesh_refinement.uniformly_refine(2);
 
-			// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 2);
+			refine_around_fractures(surf_mesh, elem_order, vol_mesh, 3);
 		} else {
 			
 			libMesh::MeshTools::Generation::build_cube(
@@ -186,8 +188,16 @@ namespace utopia {
 			DSMatrixd T;
 			if(use_interpolation) {
 				T = B;
-				T.implementation().set_name("t");
-				write("T.m", T);
+				// T.implementation().set_name("t");
+				// write("T.m", T);
+				DVectord t = sum(T, 1);
+				// disp(t);
+
+				double t_max = max(t);
+				double t_min = min(t);
+
+				std::cout << "[" << t_min << ", " << t_max << "]" << std::endl;
+
 			} else {
 				DSMatrixd D_inv = diag(1./sum(B, 1));
 				T = D_inv * B;
@@ -232,7 +242,7 @@ namespace utopia {
 				Factorization<DSMatrixd, DVectord>().solve(mass_mat, scaled_sol, v_vol);
 			}
 
-			v_vol.set(1.);
+			// v_vol.set(1.);
 
 			DVectord v_surf = T * v_vol;
 

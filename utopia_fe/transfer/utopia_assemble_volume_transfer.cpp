@@ -69,7 +69,7 @@ namespace utopia {
 			moonolith::SparseMatrix<double> &global_mat) const
 		{
 			if(use_set_instead_of_add) {
-				set(trial, test, local_mat, global_mat);
+				set_non_zero(trial, test, local_mat, global_mat);
 			} else {
 				add(trial, test, local_mat, global_mat);
 			}
@@ -92,7 +92,7 @@ namespace utopia {
 			}
 		}
 
-		void set(
+		void set_non_zero(
 			const std::vector<long> &trial,
 			const std::vector<long> &test,
 			const LocalMatrix &local_mat,
@@ -104,7 +104,12 @@ namespace utopia {
 				for(std::size_t j = 0; j < trial.size(); ++j) {
 					const auto dof_J = trial[j];
 
-					global_mat.set(dof_I, dof_J, local_mat(i, j));
+					if(std::abs(local_mat(i, j)) != 0.) {
+						global_mat.set(dof_I, dof_J, local_mat(i, j));
+
+						//REMOVE ME
+						// assert(global_mat.at(dof_I, dof_J) < 1.0001);
+					}
 				}
 			}
 		}
@@ -422,6 +427,40 @@ namespace utopia {
 		: dim(dim), nested_meshes(nested_meshes)
 		{ }
 
+		std::shared_ptr<Transform> get_trafo(const Elem &elem) const
+		{
+			std::shared_ptr<Transform> elem_trafo;
+			if(elem.has_affine_map()) {
+				if(dim == 2) {
+					assert(elem.dim() == 2);
+					elem_trafo = std::make_shared<AffineTransform2>(elem);
+				} else {
+					assert(dim == 3);
+
+					if(elem.dim() == 2) {
+						elem_trafo = std::make_shared<Transform2>(elem);
+					} else {
+						elem_trafo = std::make_shared<AffineTransform3>(elem);
+					}
+				}
+			} else {
+				if(dim == 2) {
+					assert(elem.dim() == 2);
+					elem_trafo = std::make_shared<Transform2>(elem);
+				} else {
+					assert(dim == 3);
+
+					if(elem.dim() == 2) {
+						elem_trafo = std::make_shared<Transform2>(elem);
+					} else {
+						elem_trafo = std::make_shared<Transform3>(elem);
+					}
+				}
+			}
+
+			return elem_trafo;
+		}
+
 		bool assemble(
 			const Elem &trial,
 			FEType trial_type,
@@ -437,58 +476,82 @@ namespace utopia {
 
 			if(test_dofs.empty()) return false;
 
-			std::shared_ptr<Transform> world_to_ref; 
-
-			if(trial.has_affine_map()) {
-				if(dim == 2) {
-					world_to_ref = std::make_shared<AffineTransform2>(trial);
-				} else {
-					assert(dim == 3);
-					world_to_ref = std::make_shared<AffineTransform3>(trial);
-				}
-			} else {
-				if(dim == 2) {
-					world_to_ref = std::make_shared<Transform2>(trial);
-				} else {
-					assert(dim == 3);
-					world_to_ref = std::make_shared<Transform3>(trial);
-				}
-			}
+			std::shared_ptr<Transform> trial_trafo = get_trafo(trial); 
+			std::shared_ptr<Transform> test_trafo  = get_trafo(test);
 
 			init_q(test_dofs.size());
 
 			int i_ref = 0;
 			for(auto i : test_dofs) {
-				 world_to_ref->transform_to_reference(test.node_ref(i), eval_q->get_points()[i_ref++]);
+				 trial_trafo->transform_to_reference(test.node_ref(i), q_trial->get_points()[i_ref++]);
 			}
 
-			std::fill(eval_q->get_weights().begin(), eval_q->get_weights().end(), 0.);
+			i_ref = 0;
+			for(auto i : test_dofs) {
+				 test_trafo->transform_to_reference(test.node_ref(i), q_test->get_points()[i_ref++]);
+			}
 
-			trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
-			trial_fe->attach_quadrature_rule(eval_q.get());
-			
+			auto trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
+			trial_fe->attach_quadrature_rule(q_trial.get());
 			const auto &trial_shape_fun = trial_fe->get_phi();
-			
 			trial_fe->reinit(&trial);
 
-			mat.resize(n_potential_nodes, trial_shape_fun.size());
+			auto test_fe = libMesh::FEBase::build(test.dim(), test_type);
+			test_fe->attach_quadrature_rule(q_test.get());
+			const auto &test_shape_fun = test_fe->get_phi();
+			test_fe->reinit(&test);
 
-			for(std::size_t i = 0; i < test_dofs.size(); ++i) {
-				for(int j = 0; j < mat.n(); ++j) {
-					mat(test_dofs[i], j) = trial_shape_fun.at(j).at(i);
+			mat.resize(test_shape_fun.size(), trial_shape_fun.size());
+
+			for(std::size_t i = 0; i < test_shape_fun.size(); ++i) {
+				for(std::size_t j = 0; j < trial_shape_fun.size(); ++j) {
+					for(std::size_t k = 0; k < test_dofs.size(); ++k) {
+						auto tf = test_shape_fun.at(i).at(k);
+						
+						if(tf < 0.5) {
+							tf = 0.;
+						}
+
+						mat(i, j) += trial_shape_fun.at(j).at(k) * tf;
+					}
 				}
 			}
+
+			// mat.print();
+
+			assert(check_valid(mat));
 			
+			return true;
+		}
+
+		bool check_valid(const Matrix &mat)
+		{
+			for(int i = 0; i < mat.m(); ++i) {
+				double row_sum = 0.;
+				for(int j = 0; j < mat.n(); ++j) {
+					row_sum += mat(i, j);
+					assert(mat(i, j) < 1.0001);
+				}
+
+				assert(row_sum < 1.0001);
+				if(row_sum > 1.001) return false;
+			}
+
 			return true;
 		}
 
 		void init_q(const std::size_t n_qp)
 		{
-			if(!eval_q) {
-				eval_q = std::make_shared<QMortar>(dim);
+			if(!q_trial) {
+				q_trial = std::make_shared<QMortar>(dim);
+				q_test  = std::make_shared<QMortar>(dim);
 			}
 
-			eval_q->resize(n_qp);
+			q_trial->resize(n_qp);
+			q_test->resize(n_qp);
+
+			std::fill(q_trial->get_weights().begin(), q_trial->get_weights().end(), 0.);
+			std::fill(q_test->get_weights().begin(),  q_test->get_weights().end(), 0.);
 		}
 
 		void contained_points(const Elem &trial, const Elem &test, std::vector<int> &test_dofs) const
@@ -505,15 +568,17 @@ namespace utopia {
 				return;
 			}
 
-			// if(dim == 2) {
-			// 	contained_points_2(trial, test, test_dofs);
-			// } else {
-			// 	assert(dim == 3);
-			// 	contained_points_3(trial, test, test_dofs);
-			// }
-			
 			test_dofs.reserve(n_potential_nodes);
 
+			if(dim == 2) {
+				contained_points_2(trial, test, test_dofs);
+				// return;
+			} else if(dim == 3) {
+				assert(dim == 3);
+				contained_points_3(trial, test, test_dofs);
+				return;
+			}
+			
 			for(int i = 0; i < n_potential_nodes; ++i) {
 				auto const & test_node = test.node_ref(i);
 				if(trial.contains_point(test_node, 1e-15)) {
@@ -529,14 +594,46 @@ namespace utopia {
 
 		void contained_points_3(const Elem &trial, const Elem &test, std::vector<int> &test_dofs) const
 		{
-		
+			Intersector isector;
+			Polyhedron poly;
+			make_polyhedron(trial, poly);
+
+			auto n_half_spaces = poly.n_elements;
+
+			std::vector<double> plane_normals(n_half_spaces * 3, 0.);
+			std::vector<double> plane_dists_from_origin(n_half_spaces, 0.);
+			isector.make_h_polyhedron_from_polyhedron(poly, &plane_normals[0], &plane_dists_from_origin[0]);
+
+			double p[3];
+
+			for(int k = 0; k < test.n_nodes(); ++k) {
+				const auto & node = test.node_ref(k);
+				p[0] = node(0);
+				p[1] = node(1);
+				p[2] = node(2);
+
+				bool inside = true;
+				for(int i = 0; i < n_half_spaces; ++i) {
+					const int i3 = i * 3;
+					auto d = isector.point_plane_distance(3, &plane_normals[i3], plane_dists_from_origin[i], p);
+
+					if(d >= 1e-10) {
+						inside = false;
+						break;
+					}
+				}
+
+				if(inside) {
+					test_dofs.push_back(k);
+				}
+			}
 		}
 
 	private:
 		int dim;
 		bool nested_meshes;
-		std::shared_ptr<QMortar> eval_q;
-		std::unique_ptr<libMesh::FEBase> trial_fe;
+		std::shared_ptr<QMortar> q_trial, q_test;
+		
 	};
 }
 
