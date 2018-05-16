@@ -417,9 +417,6 @@ namespace utopia {
 	class InterpolationLocalAssembler final : public LocalAssembler {
 	public:
 		using Point = libMesh::Point;
-		using QBase = libMesh::QBase;
-		using QTrap = libMesh::QTrap;
-		using QSimpson = libMesh::QSimpson;
 
 		InterpolationLocalAssembler(const int dim, const bool nested_meshes = false)
 		: dim(dim), nested_meshes(nested_meshes)
@@ -458,18 +455,21 @@ namespace utopia {
 				}
 			}
 
-			trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
-			trial_fe->attach_quadrature_rule(eval_q.get());
-			const auto &trial_shape_fun = trial_fe->get_phi();
-
-			ref_points.resize(test_dofs.size());
+			init_q(test_dofs.size());
 
 			int i_ref = 0;
 			for(auto i : test_dofs) {
-				 world_to_ref->transform_to_reference(test.node_ref(i), ref_points[i_ref++]);
+				 world_to_ref->transform_to_reference(test.node_ref(i), eval_q->get_points()[i_ref++]);
 			}
 
-			trial_fe->reinit(&trial, &ref_points);
+			std::fill(eval_q->get_weights().begin(), eval_q->get_weights().end(), 0.);
+
+			trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
+			trial_fe->attach_quadrature_rule(eval_q.get());
+			
+			const auto &trial_shape_fun = trial_fe->get_phi();
+			
+			trial_fe->reinit(&trial);
 
 			mat.resize(n_potential_nodes, trial_shape_fun.size());
 
@@ -482,15 +482,13 @@ namespace utopia {
 			return true;
 		}
 
-		void init_q(FEType test_type)
+		void init_q(const std::size_t n_qp)
 		{
-			if(test_type == libMesh::FIRST)  {
-				eval_q = std::make_shared<QTrap>(dim);
-			} else if(test_type == libMesh::SECOND) {
-				eval_q = std::make_shared<QSimpson>(dim);
-			} else {
-				assert(false);
+			if(!eval_q) {
+				eval_q = std::make_shared<QMortar>(dim);
 			}
+
+			eval_q->resize(n_qp);
 		}
 
 		void contained_points(const Elem &trial, const Elem &test, std::vector<int> &test_dofs) const
@@ -537,12 +535,8 @@ namespace utopia {
 	private:
 		int dim;
 		bool nested_meshes;
-
-		std::shared_ptr<QBase> eval_q;
+		std::shared_ptr<QMortar> eval_q;
 		std::unique_ptr<libMesh::FEBase> trial_fe;
-
-		std::vector<Point> physical_points;
-		std::vector<Point> ref_points;
 	};
 }
 

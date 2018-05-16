@@ -128,7 +128,7 @@ namespace utopia {
 			mesh_refinement.make_flags_parallel_consistent();
 			mesh_refinement.uniformly_refine(2);
 
-			refine_around_fractures(surf_mesh, elem_order, vol_mesh, 2);
+			// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 2);
 		} else {
 			
 			libMesh::MeshTools::Generation::build_cube(
@@ -163,7 +163,7 @@ namespace utopia {
 		DSMatrixd B;
 		moonolith::Communicator comm(init.comm().get());
 
-		const bool use_interpolation = false;
+		const bool use_interpolation = true;
 		if(assemble_volume_transfer(
 			comm,
 			vol_mesh,
@@ -231,6 +231,8 @@ namespace utopia {
 			} else {
 				Factorization<DSMatrixd, DVectord>().solve(mass_mat, scaled_sol, v_vol);
 			}
+
+			v_vol.set(1.);
 
 			DVectord v_surf = T * v_vol;
 
