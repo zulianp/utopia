@@ -21,6 +21,15 @@
 namespace utopia
 {
 
+         typedef double                           ST;
+         typedef Teuchos::ScalarTraits<ST>        SCT;
+         typedef SCT::magnitudeType               MT;
+         typedef Tpetra::Operator<ST,int>         OP;
+         typedef Tpetra::MultiVector<ST,int>      MV;
+         typedef Belos::OperatorTraits<ST,MV,OP>  OPT;
+         typedef Belos::MultiVecTraits<ST,MV>     MVT;
+typedef Belos::LinearProblem<SC, MV, OP> problem_type;
+typedef Belos::SolverManager<SC, MV, OP> solver_type;
 
 /**@ingroup     Linear
  * @brief       Class provides interface to Trilinos Belos solvers \n
@@ -33,16 +42,14 @@ namespace utopia
     template<typename Matrix, typename Vector>
     class BelosSolver<Matrix, Vector, TRILINOS> : virtual public PreconditionedSolver<Matrix, Vector>
     {
-        typedef double                           ST;
-        typedef Teuchos::ScalarTraits<ST>        SCT;
-        typedef SCT::magnitudeType               MT;
-        typedef Tpetra::Operator<ST,int>         OP;
-        typedef Tpetra::MultiVector<ST,int>      MV;
-        typedef Belos::OperatorTraits<ST,MV,OP>  OPT;
-        typedef Belos::MultiVecTraits<ST,MV>     MVT;
 
-        Belos::LinearProblem<ST,MV,OP> problem;
+//        Belos::LinearProblem<ST,MV,OP> problem;
+Teuchos::RCP<Belos::LinearProblem<SC, MV, OP> > linearProblem;
 
+//
+Teuchos::RCP<Teuchos::ParameterList> ParamList;
+Teuchos::RCP<solver_type> belosSolver;
+Belos::SolverFactory<SC, MV, OP> belosFactory;
         bool success = false;
         bool verbose = false;
 
@@ -56,37 +63,25 @@ namespace utopia
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
 
 //////
-
-typedef Belos::LinearProblem<SC, MV, OP> problem_type;
-typedef Belos::SolverManager<SC, MV, OP> solver_type;
-
-
- Teuchos::RCP<Belos::LinearProblem<SC, MV, OP> > linearProblem = 
- Teuchos::rcp (new problem_type (A, LHS, RHS ));
-linearProblem->setProblem ();i
-
-Teuchos::RCP<Teuchos::ParameterList> ParamList = Teuchos::getParametersFromXmlFile(param_file_name);
-
- Teuchos::RCP<solver_type> belosSolver; 
-
-
-Belos::SolverFactory<SC, MV, OP> belosFactory; 
-belosSolver = belosFactory.create (it_sol_type, ParamList); 
-
-
+BelosSolver(A,LHS,RHS, param_file_name)
 {
-Belos::SolverFactory<SC, mv_type, op_type> belosFactory;
- belosSolver = belosFactory.create (it_sol_type, ParamList);
+  linearProblem = 
+ Teuchos::rcp (new problem_type (A, LHS, RHS ));
+ParamList = Teuchos::getParametersFromXmlFile(param_file_name);
 }
 
-
-
+setProblem(it_sol_type,ParamList)
+{
+linearProblem->setProblem ();
+ belosSolver = belosFactory.create (it_sol_type, ParamList);
 //linearProblem->setRightPrec (M_ifpack);
 belosSolver->setProblem (linearProblem) ;
+}
 
-const Belos::ReturnType belosResult = belosSolver->solve ();
-int numIterations = belosSolver->getNumIters();
-
+getNumIter(int numIter)
+{
+numIter = belosSolver->getNumIters();
+}
 /////
         virtual ~BelosSolver()
         {
@@ -95,7 +90,8 @@ int numIterations = belosSolver->getNumIters();
 
         bool apply(const Vector &rhs, Vector &sol) override
 	{
-            problem.apply(*rhs, *sol);
+            linearProblem->apply(*rhs, *sol);
+            belosSolver->solve ();
         }
 
 
