@@ -62,9 +62,9 @@ namespace utopia {
 
 		virtual ~LocalAssembler() {}
 		virtual bool assemble(
-			Elem &trial,
+			const Elem &trial,
 			FEType trial_type,
-			Elem &test,
+			const Elem &test,
 			FEType test_type,
 			Matrix &mat
 			) = 0;
@@ -78,12 +78,14 @@ namespace utopia {
 		virtual ~QMortarBuilder() {}
 
 		virtual bool build(
-			Elem &trial,
+			const Elem &trial,
 			FEType trial_type,
-			Elem &test,
+			const Elem &test,
 			FEType test_type,
 			QMortar &q_trial,
 			QMortar &q_test) = 0;
+
+		virtual double get_total_intersection_volume() const = 0;
 
 	};
 
@@ -97,9 +99,9 @@ namespace utopia {
 		{}
 
 		virtual bool build(
-			Elem &trial,
+			const Elem &trial,
 			FEType trial_type,
-			Elem &test,
+			const Elem &test,
 			FEType test_type,
 			QMortar &q_trial,
 			QMortar &q_test) override
@@ -132,6 +134,12 @@ namespace utopia {
 			}
 		}
 
+		double get_total_intersection_volume() const override
+		{
+			return total_intersection_volume;
+		}
+
+	private:
 		Matrix trial_pts;
 		Matrix test_pts;
 		Matrix intersection;
@@ -152,9 +160,9 @@ namespace utopia {
 		{}
 
 		virtual bool build(
-			Elem &trial,
+			const Elem &trial,
 			FEType trial_type,
-			Elem &test,
+			const Elem &test,
 			FEType test_type,
 			QMortar &q_trial,
 			QMortar &q_test) override
@@ -203,6 +211,12 @@ namespace utopia {
 			}
 		}
 
+		double get_total_intersection_volume() const override
+		{
+			return total_intersection_volume;
+		}
+
+	private:
 		Real total_intersection_volume;
 		QMortar composite_ir;
 		Intersector isector;
@@ -232,9 +246,9 @@ namespace utopia {
 		}
 
 		virtual bool assemble(
-			Elem &trial,
+			const Elem &trial,
 			FEType trial_type,
-			Elem &test,
+			const Elem &test,
 			FEType test_type,
 			Matrix &mat
 			) override
@@ -269,9 +283,9 @@ namespace utopia {
 		}
 
 		void init_fe(
-			Elem &trial,
+			const Elem &trial,
 			FEType trial_type,
-			Elem &test,
+			const Elem &test,
 			FEType test_type)
 		{
 			if(trial_fe) return;
@@ -280,20 +294,26 @@ namespace utopia {
 			test_fe  = libMesh::FEBase::build(test.dim(),  test_type);
 		}
 
-		void init_biorth(Elem &test, FEType test_type)
+		void init_biorth(const Elem &test, FEType test_type)
 		{
 			if(!use_biorth) return;
 
 			assemble_biorth_weights(
 				test,
 				test.dim(),
-				test.type(),
+				test_type,
 				test_type.order,
 				biorth_weights);
 
 			must_compute_biorth = false;
 		}
 
+
+		inline const QMortarBuilder &get_q_builder() const
+		{
+			assert(q_builder);
+			return *q_builder;
+		}
 	private:
 		int dim;
 		bool use_biorth;
@@ -311,9 +331,9 @@ namespace utopia {
 	class InterpolationLocalAssembler final : public LocalAssembler {
 	public:
 		virtual bool assemble(
-			Elem &trial,
+			const Elem &trial,
 			FEType trial_type,
-			Elem &test,
+			const Elem &test,
 			FEType test_type,
 			Matrix &mat
 			) override
@@ -586,7 +606,7 @@ namespace utopia {
 
 			return true;
 		}
-		
+
 		static void scale_polyhedron(const double scaling, Polyhedron &poly)
 		{
 			const int n_values = poly.n_nodes * poly.n_dims;
@@ -595,7 +615,7 @@ namespace utopia {
 			}
 		}
 
-	template<int Dimensions>
+		template<int Dimensions>
 		bool Assemble(moonolith::Communicator &comm,
 			const std::shared_ptr<MeshBase> &master,
 			const std::shared_ptr<MeshBase> &slave,
@@ -609,199 +629,49 @@ namespace utopia {
 			const std::vector< std::pair<int, int> > &tags,
 			int n_var)
 		{
-
 			const int var_num_slave = to_var_num;
-
 			std::shared_ptr<FESpacesAdapter> local_fun_spaces = std::make_shared<FESpacesAdapter>(master, slave, dof_master, dof_slave,from_var_num,to_var_num);
 
-			libMesh::DenseMatrix<libMesh::Real> src_pts;
-			libMesh::DenseMatrix<libMesh::Real> dest_pts;
-			libMesh::DenseMatrix<libMesh::Real> intersection2;
-			Polyhedron src_poly, dest_poly;
-			Polyhedron  intersection3,temp_poly;
-			Intersector isector;
-
-			std::shared_ptr<MeshBase> master_space = master;
-			std::shared_ptr<MeshBase> slave_space  = slave;
+			auto assembler = std::make_shared<L2LocalAssembler>(master->mesh_dimension(), use_biorth);
 
 			libMesh::DenseMatrix<libMesh::Real> elemmat;
 			libMesh::DenseMatrix<libMesh::Real> cumulative_elemmat;
 
-			std::shared_ptr<Transform> src_trans;
-			std::shared_ptr<Transform> dest_trans;
-
-			libMesh::Real total_intersection_volume = 0.0;
 			libMesh::Real local_element_matrices_sum = 0.0;
 
 			moonolith::SparseMatrix<double> mat_buffer(comm);
 			mat_buffer.set_size(dof_slave->n_dofs(), dof_master->n_dofs());
 
-			libMesh::DenseMatrix<libMesh::Real> biorth_weights;
-
-			bool must_compute_biorth = use_biorth;
-			if(must_compute_biorth && slave_space->active_local_elements_begin() != slave_space->active_local_elements_end()) {
-				assemble_biorth_weights(**slave_space->active_local_elements_begin(),
-					slave_space->mesh_dimension(),
-					dof_slave->variable_type(to_var_num),
-					dof_slave->variable(to_var_num).type().order,
-					biorth_weights);
-
-
-				must_compute_biorth = false;
-			}
-
-			auto fun = [&](const VElementAdapter<Dimensions> &master,
+			auto fun = [&](
+				const VElementAdapter<Dimensions> &master,
 				const VElementAdapter<Dimensions> &slave) -> bool {
 
-				long n_intersections = 0;
+				const auto &master_mesh  = master.space();;
 
-				bool pair_intersected = false;
-
-				const auto &src_mesh  = master.space();;
-
-				const auto &dest_mesh = slave.space();
+				const auto &slave_mesh = slave.space();
 
 				const int src_index  = master.element();
 
 				const int dest_index = slave.element();
 
-				auto &src_el  = *src_mesh.elem(src_index);
+				auto &master_el  = *master_mesh.elem(src_index);
 
-				auto &dest_el = *dest_mesh.elem(dest_index);
+				auto &slave_el = *slave_mesh.elem(dest_index);
 
-				const int dim = src_mesh.mesh_dimension();
+				const int dim = master_mesh.mesh_dimension();
 
 				bool vol2surf = false;
 
+				auto master_type = dof_master->variable(0).type();
+				auto slave_type  = dof_slave->variable(0).type();
 
-
-				if(must_compute_biorth) {
-					assemble_biorth_weights(dest_el,
-						dim,
-						dest_el.type(),
-						dof_slave->variable(0).type().order,
-						biorth_weights);
-
-					must_compute_biorth = false;
-				}
-
-
-				std::unique_ptr<libMesh::FEBase> master_fe, slave_fe;
-
-				master_fe = libMesh::FEBase::build(src_mesh.mesh_dimension(),  dof_master->variable_type(0));
-				slave_fe  = libMesh::FEBase::build(dest_mesh.mesh_dimension(), dof_slave->variable_type(0));
-
-				QMortar composite_ir(dim);
-				QMortar src_ir(dim);
-				QMortar dest_ir(dim);
-
-				const int order = order_for_l2_integral(dim, src_el, dof_master->variable(0).type().order , dest_el, dof_slave->variable(0).type().order);
-
-				if(dim == 2)  {
-					make_polygon(src_el,   src_pts);
-					make_polygon(dest_el, dest_pts);
-
-					if(intersect_2D(src_pts, dest_pts, intersection2)) {
-						total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
-						const libMesh::Real weight = isector.polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
-						make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
-
-						src_trans  = std::make_shared<AffineTransform2>(src_el);
-						dest_trans = std::make_shared<AffineTransform2>(dest_el);
-						pair_intersected = true;
-					}
-				}
-				else if(dim == 3) {
-					make_polyhedron(src_el,  src_poly);
-					make_polyhedron(dest_el, dest_poly);
-
-					if(intersect_3D(src_poly, dest_poly, intersection3)) {
-						total_intersection_volume += compute_volume(intersection3);
-						const libMesh::Real weight = compute_volume(dest_poly);
-
-
-						src_trans  = std::make_shared<AffineTransform3>(src_el);
-
-
-
-						if(is_tri(dest_el.type()) || is_quad(dest_el.type())) {
-							dest_trans = std::make_shared<Transform2>(dest_el);
-							vol2surf = true;
-						} else {
-							dest_trans = std::make_shared<AffineTransform3>(dest_el);
-						}
-
-
-
-						if(vol2surf) {
-							libMesh::DenseMatrix<libMesh::Real> shell_poly;
-							shell_poly.resize(intersection3.n_nodes, 3);
-							std::copy(intersection3.points, intersection3.points + intersection3.n_nodes * intersection3.n_dims, &shell_poly.get_values()[0]);
-							make_composite_quadrature_on_surf_3D(shell_poly, 1./weight, order, composite_ir);
-
-						// plot_polygon(3, dest_poly.n_nodes, dest_poly.points, "polygon/" + std::to_string(comm.rank()) + "/p");
-						} else {
-							make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
-						}
-
-						pair_intersected = true;
-					}
-
-				} else {
-					assert(false);
-					return false;
-				}
-
-				const auto &master_dofs = master.dof_map();
-				const auto &slave_dofs  = slave.dof_map();
-
-				if(pair_intersected) {
-
-
-					transform_to_reference(*src_trans,  src_el.type(),  composite_ir,  src_ir);
-
-					if(vol2surf) {
-						transform_to_reference_surf(*dest_trans, dest_el.type(), composite_ir, dest_ir);
-					} else {
-						transform_to_reference(*dest_trans, dest_el.type(), composite_ir,  dest_ir);
-					}
-
-
-					assert(!master_dofs.empty());
-					assert(!slave_dofs.empty());
-
-					master_fe->attach_quadrature_rule(&src_ir);
-
-					const std::vector<std::vector<Real>> & phi_master  = master_fe->get_phi();
-
-					master_fe->reinit(&src_el);
-
-					slave_fe->attach_quadrature_rule(&dest_ir);
-
-					const std::vector<std::vector<Real>> & phi_slave = slave_fe->get_phi();
-
-					const std::vector<Real> & JxW_slave = slave_fe->get_JxW();
-
-					slave_fe->reinit(&dest_el);
-
-					elemmat.zero();
-
-					if(use_biorth) {
-						mortar_assemble_weighted_biorth(*master_fe, *slave_fe, biorth_weights, elemmat);
-					} else {
-						mortar_assemble(*master_fe, *slave_fe, elemmat);
-					}
-
+				elemmat.zero();
+				if(assembler->assemble(master_el, master_type, slave_el, slave_type, elemmat)) {
 					auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
-
 					local_element_matrices_sum += partial_sum;
 
-					++n_intersections;
-
-
-					assert(slave_dofs.size() == elemmat.m());
-					assert(master_dofs.size() == elemmat.n());
-
+					const auto &master_dofs = master.dof_map();
+					const auto &slave_dofs  = slave.dof_map();
 
 					for(int i = 0; i < slave_dofs.size(); ++i) {
 
@@ -818,7 +688,6 @@ namespace utopia {
 					return true;
 
 				} else {
-
 					return false;
 				}
 
@@ -826,6 +695,14 @@ namespace utopia {
 
 			if(!Assemble<Dimensions>(comm, master, slave, dof_master, dof_slave, from_var_num, to_var_num, fun, settings, use_biorth, tags, n_var)) {
 				return false;
+			}
+
+			double total_intersection_volume = 0.;
+			{
+				auto l2_assembler = std::dynamic_pointer_cast<L2LocalAssembler>(assembler);
+				if(l2_assembler) {
+					total_intersection_volume = l2_assembler->get_q_builder().get_total_intersection_volume();
+				}
 			}
 
 			double volumes[2] = { local_element_matrices_sum,  total_intersection_volume };

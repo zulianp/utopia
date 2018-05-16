@@ -126,9 +126,9 @@ namespace utopia {
 
 			libMesh::MeshRefinement mesh_refinement(*surf_mesh);
 			mesh_refinement.make_flags_parallel_consistent();
-			mesh_refinement.uniformly_refine(4);
+			mesh_refinement.uniformly_refine(2);
 
-			refine_around_fractures(surf_mesh, elem_order, vol_mesh, 4);
+			refine_around_fractures(surf_mesh, elem_order, vol_mesh, 2);
 		} else {
 			
 			libMesh::MeshTools::Generation::build_cube(
