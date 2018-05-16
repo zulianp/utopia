@@ -1,10 +1,3 @@
-/*
- * @Author: alenakopanicakova
- * @Date:   2016-03-29
- * @Last Modified by:   Alena Kopanicakova
- * @Last Modified time: 2017-07-03
- */
-
 #ifndef UTOPIA_MULTIGRID_HPP
 #define UTOPIA_MULTIGRID_HPP
 #include "utopia_Smoother.hpp"
@@ -30,7 +23,7 @@ namespace utopia
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Multigrid : public LinearMultiLevel<Matrix, Vector>,
-    public IterativeSolver<Matrix, Vector>
+                      public IterativeSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;

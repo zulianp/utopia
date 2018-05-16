@@ -14,9 +14,9 @@ namespace utopia
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
 
-    public:
+      public:
         Bratu1D(const Scalar & n, 
-                const Scalar & lambda = 10, 
+                const Scalar & lambda = 0.3, 
                 const Vector & x_init = local_zeros(1), 
                 const Vector & bc_marker = local_zeros(1), 
                 const Vector & rhs = local_zeros(1)): 
@@ -26,7 +26,6 @@ namespace utopia
         {
           h_ = 1.0/(n_ - 1.0); 
           assemble_laplacian_1D(); 
-
 
           Vector bc_markers = values(n_, 0.0);
           Vector bc_values = values(n_, 0.0);
@@ -47,14 +46,23 @@ namespace utopia
         bool value(const Vector &x, typename Vector::Scalar &energy) const override 
         {
           energy = 0.5 * dot(x, A_*x); 
-          energy +=  lambda_ * sum(exp(x)); 
+          energy -=  lambda_ * sum(exp(x)); 
 
           return true;
         }
 
         bool gradient(const Vector &x, Vector &gradient) const override 
         {
-          gradient = (A_ * x) + (lambda_ * exp(x)); 
+          gradient = (A_ * x) - (lambda_ * exp(x)); 
+
+
+
+          // THIS IS NEEDED FOR OTHER FUNCTIONS THAN TR 
+          std::cout<<"WARNING:: this should be done in outher function, or something.... \n"; 
+          if(local_size(gradient)==local_size(this->_rhs)) 
+              gradient = gradient - this->_rhs; 
+
+
 
           // enforce BC conditions
           {
@@ -76,6 +84,7 @@ namespace utopia
         bool hessian(const Vector &x, Matrix &hessian) const override 
         {
           hessian = diag(lambda_ * exp(x)); 
+          hessian *= -1.0; 
           hessian += A_;
 
           // enforce BC conditions
@@ -120,13 +129,12 @@ namespace utopia
         Scalar inf = std::numeric_limits<double>::infinity(); 
 
         // lb = values(n_, -0.68);
-        lb = values(n_, -0.68);
+        lb = values(n_, -inf);
         ub = values(n_, inf); 
       }
 
 
     private: 
-
         void assemble_laplacian_1D()
         {
           A_ = sparse(n_, n_, 3); 
@@ -150,15 +158,12 @@ namespace utopia
 
           A_ *= 1.0/(h_*h_); 
         }
-
-
   
     private:
         Scalar n_;  // global size
         Scalar h_; // grid size 
         Scalar lambda_; // combustion factor
         Matrix A_; // constant part of eq... 
-
     };
 
 }

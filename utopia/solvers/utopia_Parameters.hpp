@@ -99,7 +99,7 @@ namespace utopia
           mg_type_ = 1; 
           pre_smoothing_steps_ = 3; 
           post_smoothing_steps_ = 3; 
-          omega_ = 0.66; 
+          omega_ = 0.3; 
           static_time_step_ = true; 
           cycle_type_      = MULTIPLICATIVE_CYCLE; 
           sigma_            = 1; 
