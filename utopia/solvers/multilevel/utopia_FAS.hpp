@@ -72,9 +72,8 @@ namespace utopia
                 this->transfer(l-1).project_down(this->memory().x[l], this->memory().x[l-1]); 
                 this->memory().x_0[l-1] = this->memory().x[l-1]; 
 
-
-
-                // this function could be nicer.... good replacement??? 
+                // TODO:: make this function nicer... 
+                // generic enough...
                 this->get_multilevel_gradient(l); 
 
 

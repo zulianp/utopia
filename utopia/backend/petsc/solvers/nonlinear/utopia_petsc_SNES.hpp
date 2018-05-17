@@ -141,6 +141,7 @@ namespace utopia
             SNESSolve(snes, raw_type(rhs), raw_type(x));
             
             // needs to be reseted for use on other levels ...
+            VecDestroy(&snes->vec_rhs);
             snes->vec_rhs =  NULL;
             
             if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) == nullptr)
