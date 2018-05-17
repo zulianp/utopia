@@ -54,54 +54,87 @@ namespace utopia
 
     
 
-    private: 
+    protected: 
+
+
+        // TODO:: find proper place for this .... 
+        typedef struct
+        {
+            std::vector<Vector> x, x_0, g, g_diff, c; 
+            std::vector<Matrix> H, H_diff; 
+
+            void init(const int n_levels)
+            {
+                x.resize(n_levels);
+                x_0.resize(n_levels);
+                g.resize(n_levels);                 
+                g_diff.resize(n_levels);
+
+                c.resize(n_levels);
+
+                H.resize(n_levels); 
+                H_diff.resize(n_levels); 
+            }
+            
+        } LevelMemory;
+        
+        LevelMemory memory;
+
+
+        virtual void init_memory(const SizeType & fine_local_size) override 
+        {
+
+            memory.init(this->n_levels()); 
+            memory.g_diff[this->n_levels()-1] = local_zeros(fine_local_size); 
+        }
+
 
 
 
         bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
-            this->memory().x[this->n_levels()-1] = u_l; 
+            memory.x[this->n_levels()-1] = u_l; 
 
             // sto be investigated with the energy  ... 
             // this->make_iterate_feasible(this->function(this->n_levels()-1), memory.x[this->n_levels()-1]); 
 
             for(auto l = this->n_levels()-1; l > 0; l--)
             {
-                smoothing(this->function(l), this->memory().x[l], this->memory().g_diff[l], this->pre_smoothing_steps()); 
+                smoothing(this->function(l), memory.x[l], memory.g_diff[l], this->pre_smoothing_steps()); 
 
-                this->transfer(l-1).project_down(this->memory().x[l], this->memory().x[l-1]); 
-                this->memory().x_0[l-1] = this->memory().x[l-1]; 
+                this->transfer(l-1).project_down(memory.x[l], memory.x[l-1]); 
+                memory.x_0[l-1] = memory.x[l-1]; 
 
                 // TODO:: make this function nicer... 
-                // generic enough...
+                // not  generic enough...
                 this->get_multilevel_gradient(l); 
 
 
 
-                this->transfer(l-1).restrict(this->memory().g[l], this->memory().g_diff[l-1]);
+                this->transfer(l-1).restrict(memory.g[l], memory.g_diff[l-1]);
 
-                this->function(l-1).gradient(this->memory().x[l-1], this->memory().g[l-1]); 
-                this->memory().g_diff[l-1] = this->memory().g[l-1] - this->memory().g_diff[l-1]; 
+                this->function(l-1).gradient(memory.x[l-1], memory.g[l-1]); 
+                memory.g_diff[l-1] = memory.g[l-1] - memory.g_diff[l-1]; 
 
-                this->zero_correction_related_to_equality_constrain(this->function(l-1), this->memory().g_diff[l-1]); 
+                this->zero_correction_related_to_equality_constrain(this->function(l-1), memory.g_diff[l-1]); 
             }
 
-            coarse_solve(this->function(0), this->memory().x[0], this->memory().g_diff[0]); 
+            coarse_solve(this->function(0), memory.x[0],memory.g_diff[0]); 
 
             for(auto l = 0; l < this->n_levels()-1; l++)
             {
-                this->memory().c[l] = this->memory().x[l] - this->memory().x_0[l]; 
-                this->transfer(l).interpolate(this->memory().c[l], this->memory().c[l+1]);
+                memory.c[l] = memory.x[l] - memory.x_0[l]; 
+                this->transfer(l).interpolate(memory.c[l], memory.c[l+1]);
 
-                this->zero_correction_related_to_equality_constrain(this->function(l+1), this->memory().c[l+1]); 
+                this->zero_correction_related_to_equality_constrain(this->function(l+1), memory.c[l+1]); 
 
-                this->memory().x[l+1] += this->memory().c[l+1]; 
-                smoothing(this->function(l+1), this->memory().x[l+1], this->memory().g_diff[l+1], this->pre_smoothing_steps()); 
+                memory.x[l+1] += memory.c[l+1]; 
+                smoothing(this->function(l+1), memory.x[l+1], memory.g_diff[l+1], this->pre_smoothing_steps()); 
             }
 
 
             // to be fixed...
-            u_l = this->memory().x[this->n_levels()-1]; 
+            u_l = memory.x[this->n_levels()-1]; 
 
             return true; 
         }
@@ -114,14 +147,14 @@ namespace utopia
         {
             if(level < this->n_levels())
             {
-                this->function(level).gradient(this->memory().x[level], this->memory().g[level]); 
-                this->memory().g[level] -= this->memory().g_diff[level]; 
+                this->function(level).gradient(memory.x[level], memory.g[level]); 
+                memory.g[level] -= memory.g_diff[level]; 
 
                 return true; 
             }
             else
             {
-                return this->function(level).gradient(this->memory().x[level], this->memory().g[level]); 
+                return this->function(level).gradient(memory.x[level], memory.g[level]); 
             }
         }
 

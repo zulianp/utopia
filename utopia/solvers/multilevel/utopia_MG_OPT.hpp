@@ -55,6 +55,13 @@ namespace utopia
             _parameters = params; 
         }
 
+
+        virtual void init_memory(const SizeType & fine_local_size) override 
+        {
+            std::cout<<"-------- to be done \n"; 
+        }
+
+
     private: 
 
         bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override

@@ -62,33 +62,6 @@ namespace utopia {
             time_statistics_    = params.time_statistics();
         }
 
-
-
-
-        // TODO:: find proper place for this .... 
-        typedef struct
-        {
-            std::vector<Vector> x, x_0, g, g_diff, c; 
-            std::vector<Matrix> H, H_diff; 
-
-            void init(const int n_levels)
-            {
-                x.resize(n_levels);
-                x_0.resize(n_levels);
-                g.resize(n_levels);                 
-                g_diff.resize(n_levels);
-
-                c.resize(n_levels);
-
-                H.resize(n_levels); 
-                H_diff.resize(n_levels); 
-            }
-            
-        } LevelMemory;
-        
-        LevelMemory alloc_memory;
-
-
         
         /**
          * @brief      The solve function for nonlinear multilevel solvers.
@@ -112,8 +85,7 @@ namespace utopia {
             status_.clear();
 
 
-            alloc_memory.init(n_levels); 
-            alloc_memory.g_diff[n_levels-1] = 0.0 * x_h; 
+            this->init_memory(local_size(x_h).get(0)); 
             
             Vector g = local_zeros(local_size(x_h));
             fine_fun.gradient(x_h, g);
@@ -550,11 +522,10 @@ namespace utopia {
         }
 
 
+    protected:
 
-        inline  LevelMemory & memory()
-        {
-            return alloc_memory; 
-        }
+        virtual void init_memory(const SizeType & fine_local_size) = 0; 
+
 
 
         

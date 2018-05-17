@@ -84,6 +84,12 @@ namespace utopia
 
         }
 
+        virtual void init_memory(const SizeType & fine_local_size) override 
+        {
+            std::cout<<"-------- to be done \n"; 
+        }
+
+
 
         VerbosityLevel verbosity_level() const 
         {

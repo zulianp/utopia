@@ -69,6 +69,14 @@ namespace utopia
             return solve(fine_fun,  x_h, rhs); 
         }
 
+
+        virtual void init_memory(const SizeType & fine_local_size) override 
+        {
+            std::cout<<"-------- to be done \n"; 
+        }
+
+
+
         /**
          * @brief       The solve function for Nonlinear multigrid method. 
          *              This one is slightly different than in original base class, due to storing vectors from previous iteration
