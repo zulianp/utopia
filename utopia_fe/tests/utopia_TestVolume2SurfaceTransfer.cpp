@@ -102,8 +102,8 @@ namespace utopia {
 		auto elem_order = libMesh::FIRST;
 		// auto elem_order = libMesh::SECOND;
 
-		bool is_test_case = true;
-		// bool is_test_case = false;
+		// bool is_test_case = true;
+		bool is_test_case = false;
 
 		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
 		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
@@ -133,16 +133,34 @@ namespace utopia {
 			// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 3);
 		} else {
 			
-			libMesh::MeshTools::Generation::build_cube(
-				*vol_mesh,
-				n, n, n,
-				-7.6, 7.6,
-				-7.6, 7.6,
-				-7.6, 7.6,
-				elem_type
-				);
+			// libMesh::MeshTools::Generation::build_cube(
+			// 	*vol_mesh,
+			// 	n, n, n,
+			// 	-7.6, 7.6,
+			// 	-7.6, 7.6,
+			// 	-7.6, 7.6,
+			// 	elem_type
+			// 	);
 
-			surf_mesh->read("../data/test/fractures.e");
+			// surf_mesh->read("../data/test/fractures.e");
+
+			vol_mesh->read("../data/frac/frac1d_background.e");
+			surf_mesh->read("../data/frac/frac1d_network.e");
+			
+			{
+				libMesh::MeshRefinement mesh_refinement(*surf_mesh);
+				mesh_refinement.make_flags_parallel_consistent();
+				mesh_refinement.uniformly_refine(3);
+			}
+
+
+			{
+				// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 8);
+
+				libMesh::MeshRefinement mesh_refinement(*vol_mesh);
+				mesh_refinement.make_flags_parallel_consistent();
+				mesh_refinement.uniformly_refine(8);
+			}
 		}
 
 		//equations system
@@ -222,7 +240,7 @@ namespace utopia {
 					double x = pts[i](0) - 0.5;
 					double y = pts[i](1) - 0.5;
 					double z = pts[i](2);
-					ret[i] = sin(x)*(x*x + y*y + z*z);
+					ret[i] = std::abs(sin(x))*(x*x + y*y + z*z);
 				}
 
 				return ret;
@@ -247,7 +265,18 @@ namespace utopia {
 
 			// v_vol.set(1.);
 
+			double max_master = max(v_vol);
+
+			v_vol *= 1./max_master;
+			max_master = 1.;
+
 			DVectord v_surf = T * v_vol;
+
+			double min_master = min(v_vol);
+			double min_slave = min(v_surf);
+			double max_slave = max(v_surf);
+
+			std::cout << "[" << min_slave << ", " << max_slave << "] subset of [" << min_master << ", " << max_master << "]" << std::endl;
 
 			convert(v_surf, *surf_sys.solution);
 			surf_sys.solution->close();

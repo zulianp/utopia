@@ -35,6 +35,20 @@ namespace utopia {
 		virtual ~Transform() {}
 		virtual void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const = 0;
 	};
+
+
+	class Transform1 : public Transform {
+	public:
+		Transform1(const libMesh::Elem &elem)
+		: elem_(elem)
+		{}
+		
+		void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
+				
+	private:
+		const libMesh::Elem &elem_;
+	};
+
 	
 	class Transform2 : public Transform {
 	public:

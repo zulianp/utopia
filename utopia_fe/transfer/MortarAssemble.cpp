@@ -32,6 +32,13 @@ namespace utopia {
 		
 		return order;
 	}
+
+	void Transform1::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
+	{
+		ref = libMesh::FE<1, libMesh::LAGRANGE>::inverse_map(&elem_, world, 1e-10);
+		assert( (libMesh::FE<1, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-3)) );
+		assert( (libMesh::FE<1, libMesh::LAGRANGE>::map(&elem_, ref).absolute_fuzzy_equals(world, 1e-8)) );
+	}
 	
 	void Transform2::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
 	{

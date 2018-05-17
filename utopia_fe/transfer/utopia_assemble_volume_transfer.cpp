@@ -458,8 +458,11 @@ namespace utopia {
 			std::shared_ptr<Transform> elem_trafo;
 			if(elem.has_affine_map()) {
 				if(dim == 2) {
-					assert(elem.dim() == 2);
-					elem_trafo = std::make_shared<AffineTransform2>(elem);
+					if(elem.dim() == 1) {
+						elem_trafo = std::make_shared<Transform1>(elem);
+					} else {
+						elem_trafo = std::make_shared<AffineTransform2>(elem);
+					}
 				} else {
 					assert(dim == 3);
 
