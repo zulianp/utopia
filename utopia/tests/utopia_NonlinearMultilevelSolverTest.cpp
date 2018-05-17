@@ -169,7 +169,6 @@ namespace utopia
 
 	    void NMG_test()
 	    {
-	    	// this eq. is known to have problems without globalization... 
 	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
 
 	    	for(auto l=0; l < n_levels_; l++)

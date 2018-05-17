@@ -84,7 +84,6 @@ namespace utopia {
             
             status_.clear();
 
-
             this->init_memory(local_size(x_h).get(0)); 
             
             Vector g = local_zeros(local_size(x_h));
@@ -101,20 +100,8 @@ namespace utopia {
             
             while(!converged)
             {
-                if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
-                    this->multiplicative_cycle(fine_fun, x_h, rhs, n_levels);
-                else if(this->cycle_type() == FULL_CYCLE)
-                {
-                    this->full_cycle(fine_fun, x_h, rhs, n_levels);
-                    this->cycle_type(MULTIPLICATIVE_CYCLE);
-                }
-                else
-                {
-                    std::cout<<"ERROR::UTOPIA_Multilevel<< unknown MG type, solving in multiplicative manner ... \n";
-                    this->multiplicative_cycle(fine_fun, x_h, rhs, n_levels);
-                    this->cycle_type(MULTIPLICATIVE_CYCLE);
-                }
-                
+
+                this->multiplicative_cycle(fine_fun, x_h, rhs, n_levels);
                 
 #ifdef CHECK_NUM_PRECISION_mode
                 if(has_nan_or_inf(x_h) == 1)
@@ -195,7 +182,14 @@ namespace utopia {
             return true;
         }
 
-
+        /**
+         * @brief      Sets the transfer operators.
+         *
+         * @param[in]  interpolation_operators  The interpolation operators
+         * @param[in]  restriction_operators    The restriction operators
+         * @param[in]  projection_operators     The projection operators
+         *
+         */
         virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
                                             const std::vector<std::shared_ptr<Matrix>> &restriction_operators,
                                             const std::vector<std::shared_ptr<Matrix>> &projection_operators)
@@ -209,6 +203,11 @@ namespace utopia {
 
 
         
+        /**
+         * @brief      Writes CSV file with iteration info 
+         *
+         * @param[in]  it_global  The iterator global
+         */
         virtual void print_statistics(const SizeType & it_global)
         {
             std::string path = this->name_id() + "_data_path";
@@ -234,8 +233,6 @@ namespace utopia {
                 }
             }
         }
-
-
 
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -461,6 +458,13 @@ namespace utopia {
          * @return     Name of solver - to have nice printouts
          */
         virtual std::string name_id() = 0;
+
+        /**
+         * @brief      Init internal memory used for implementation of given multilevel solver
+         *
+         * @param[in]  fine_local_size  The local size of fine level problem
+         */
+        virtual void init_memory(const SizeType & fine_local_size) = 0; 
         
         
         /**
@@ -473,43 +477,7 @@ namespace utopia {
          */
         virtual bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs) = 0;
         
-        
-        /**
-         * @brief     Full multigrid cycle, after running F cycle once and reaching discretization tolerance,
-         *            solver continues as multiplicative cycle to achieve prescribed tolerance
-         *
-         * @param      fine_fun  Function to be minimized
-         * @param      u_l       The iterate
-         * @param[in]  f         Right hand side
-         * @param[in]  l         level
-         *
-         */
-        virtual bool full_cycle(Fun &/*fine_fun*/, Vector & u_l, const Vector &/*f*/, const SizeType & l)
-        {
-            for(SizeType i = l-2; i >=0; i--)
-            {
-                this->transfer(i).restrict(u_l, u_l);
-                this->make_iterate_feasible(this->function(i), u_l);
-            }
-            
-            // TODO:: check this out
-            // shouldnt be g - Rg_{L+1} ???
-            Vector L_l = local_zeros(local_size(u_l));
-            this->coarse_solve(this->function(0), u_l, L_l);
-            
-            this->transfer(0).interpolate(u_l, u_l);
-            
-            for(SizeType i = 1; i <l-1; i++)
-            {
-                for(SizeType j = 0; j < this->v_cycle_repetition(); j++)
-                {
-                    Vector f = local_zeros(local_size(u_l));
-                    this->multiplicative_cycle(this->function(i), u_l, f, i+1);
-                }
-                this->transfer(i).interpolate(u_l, u_l);
-            }
-            return true;
-        }
+    
         
         inline Fun &function(const SizeType level)
         {
@@ -520,12 +488,6 @@ namespace utopia {
         {
             return *level_functions_[level];
         }
-
-
-    protected:
-
-        virtual void init_memory(const SizeType & fine_local_size) = 0; 
-
 
 
         
