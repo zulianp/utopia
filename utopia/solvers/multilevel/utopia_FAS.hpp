@@ -5,6 +5,8 @@
 #include "utopia_Core.hpp"
 #include "utopia_NonlinearMultiLevelBase.hpp"
 
+#include "utopia_LevelMemory.hpp"
+
 
 namespace utopia 
 {
@@ -56,34 +58,8 @@ namespace utopia
 
     protected: 
 
-
-        // TODO:: find proper place for this .... 
-        typedef struct
-        {
-            std::vector<Vector> x, x_0, g, g_diff, c; 
-            std::vector<Matrix> H, H_diff; 
-
-            void init(const int n_levels)
-            {
-                x.resize(n_levels);
-                x_0.resize(n_levels);
-                g.resize(n_levels);                 
-                g_diff.resize(n_levels);
-
-                c.resize(n_levels);
-
-                H.resize(n_levels); 
-                H_diff.resize(n_levels); 
-            }
-            
-        } LevelMemory;
-        
-        LevelMemory memory;
-
-
         virtual void init_memory(const SizeType & fine_local_size) override 
         {
-
             memory.init(this->n_levels()); 
             memory.g_diff[this->n_levels()-1] = local_zeros(fine_local_size); 
         }
@@ -94,9 +70,6 @@ namespace utopia
         bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
         {
             memory.x[this->n_levels()-1] = u_l; 
-
-            // sto be investigated with the energy  ... 
-            // this->make_iterate_feasible(this->function(this->n_levels()-1), memory.x[this->n_levels()-1]); 
 
             for(auto l = this->n_levels()-1; l > 0; l--)
             {
@@ -186,6 +159,8 @@ namespace utopia
     protected:   
         std::shared_ptr<Smoother>           _smoother;
         std::shared_ptr<Solver>             _coarse_solver;  
+
+        LevelMemory<Matrix, Vector>         memory;
 
     private:
         Parameters                          _parameters; 
