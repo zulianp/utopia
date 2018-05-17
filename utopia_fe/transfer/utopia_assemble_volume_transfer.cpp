@@ -135,12 +135,31 @@ namespace utopia {
 			moonolith::Redistribute< moonolith::SparseMatrix<double> > redist(comm.get_mpi_comm());
 
 			if(use_set_instead_of_add) {
+				// assert(check_valid_matrix(global_mat));
+				
 				redist.apply(range_slave, global_mat, moonolith::Assign<double>());
+
+				// assert(check_valid_matrix(global_mat));
 			} else {
 				redist.apply(range_slave, global_mat, moonolith::AddAssign<double>());
 			}
 
 			assert(range_slave.empty() == range_master.empty() || range_master.empty());
+		}
+
+
+		bool check_valid_matrix(const moonolith::SparseMatrix<double> &global_mat) const
+		{
+			auto vec = global_mat.sum_cols();
+
+			for(auto v : vec) {
+				if(v > 1.0001) {
+					assert(false);
+					return false;
+				}
+			}
+
+			return true;
 		}
 
 		bool use_set_instead_of_add;
@@ -422,9 +441,11 @@ namespace utopia {
 	class InterpolationLocalAssembler final : public LocalAssembler {
 	public:
 		using Point = libMesh::Point;
+		using Vector2 = Intersector::Vector2;
+		using Matrix = libMesh::DenseMatrix<libMesh::Real>;
 
 		InterpolationLocalAssembler(const int dim, const bool nested_meshes = false)
-		: dim(dim), nested_meshes(nested_meshes)
+		: dim(dim), nested_meshes(nested_meshes), tol(1e-10)
 		{ }
 
 		std::shared_ptr<Transform> get_trafo(const Elem &elem) const
@@ -483,12 +504,12 @@ namespace utopia {
 
 			int i_ref = 0;
 			for(auto i : test_dofs) {
-				 trial_trafo->transform_to_reference(test.node_ref(i), q_trial->get_points()[i_ref++]);
+				trial_trafo->transform_to_reference(test.node_ref(i), q_trial->get_points()[i_ref++]);
 			}
 
 			i_ref = 0;
 			for(auto i : test_dofs) {
-				 test_trafo->transform_to_reference(test.node_ref(i), q_test->get_points()[i_ref++]);
+				test_trafo->transform_to_reference(test.node_ref(i), q_test->get_points()[i_ref++]);
 			}
 
 			auto trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
@@ -508,7 +529,8 @@ namespace utopia {
 					for(std::size_t k = 0; k < test_dofs.size(); ++k) {
 						auto tf = test_shape_fun.at(i).at(k);
 						
-						if(tf < 0.5) {
+						if(tf < 0.9) {
+							//exploiting the lagrange property
 							tf = 0.;
 						}
 
@@ -519,12 +541,11 @@ namespace utopia {
 
 			// mat.print();
 
-			assert(check_valid(mat));
-			
+			assert((test_type != libMesh::FIRST || trial_type != libMesh::FIRST || check_valid(mat)));
 			return true;
 		}
 
-		bool check_valid(const Matrix &mat)
+		bool check_valid(const Matrix &mat) const
 		{
 			for(int i = 0; i < mat.m(); ++i) {
 				double row_sum = 0.;
@@ -554,11 +575,14 @@ namespace utopia {
 			std::fill(q_test->get_weights().begin(),  q_test->get_weights().end(), 0.);
 		}
 
-		void contained_points(const Elem &trial, const Elem &test, std::vector<int> &test_dofs) const
+		void contained_points(const Elem &trial, const Elem &test, std::vector<int> &test_dofs)
 		{
 			int n_potential_nodes = test.n_nodes();
 
 			if(nested_meshes) {
+				//check if there is an intersection then...
+
+				
 				test_dofs.resize(n_potential_nodes);
 
 				for(int i = 0; i < n_potential_nodes; ++i) {
@@ -572,7 +596,7 @@ namespace utopia {
 
 			if(dim == 2) {
 				contained_points_2(trial, test, test_dofs);
-				// return;
+				return;
 			} else if(dim == 3) {
 				assert(dim == 3);
 				contained_points_3(trial, test, test_dofs);
@@ -581,15 +605,58 @@ namespace utopia {
 			
 			for(int i = 0; i < n_potential_nodes; ++i) {
 				auto const & test_node = test.node_ref(i);
-				if(trial.contains_point(test_node, 1e-15)) {
+				if(trial.contains_point(test_node, tol)) {
 					test_dofs.push_back(i);
 				}
 			}
 		}
 
-		void contained_points_2(const Elem &trial, const Elem &test, std::vector<int> &test_dofs) const
+		bool inside_half_plane(const Vector2 &e1, const Vector2 &e2, const Vector2 &point, const double tol) const
 		{
-		
+			const Vector2 u = e1 - e2;
+			const Vector2 v = point - e2;
+
+			const double dist = (u.x * v.y) - (v.x * u.y);
+			return dist <= tol;
+		}
+
+		void contained_points_2(const Elem &trial, const Elem &test, std::vector<int> &test_dofs)
+		{
+			make_polygon(trial, trial_pts);
+			make_polygon(test,  test_pts);
+
+			const auto &trial_poly = trial_pts.get_values();
+			const int trial_n_nodes = trial_poly.size() / 2;
+			const int test_n_nodes  = test.n_nodes();
+
+			test_dofs.clear();
+
+			Vector2 e1, e2, p, s, e;
+
+			std::vector<bool> is_inside(test_n_nodes, true);
+
+			for(int i = 0; i < trial_n_nodes; ++i) {
+				const int i2x = i * 2;
+				const int i2y = i2x + 1;
+
+				const int i2p1x = 2 * (((i + 1) == trial_n_nodes)? 0 : (i + 1));
+				const int i2p1y = i2p1x + 1;
+
+				e1 = Vector2(trial_poly[i2x],   trial_poly[i2y]);
+				e2 = Vector2(trial_poly[i2p1x], trial_poly[i2p1y]);
+
+				for(int j = 0; j < test_n_nodes; ++j) {
+					const auto &test_node = test.node_ref(j);
+					p = Vector2(test_node(0), test_node(1));
+					is_inside[j] = is_inside[j] && inside_half_plane(e1, e2, p, tol);
+				}
+			}
+
+			for(int i = 0; i < test_n_nodes; ++i) {
+				if(is_inside[i]) {
+					test_dofs.push_back(i);
+				}
+			}
 		}
 
 		void contained_points_3(const Elem &trial, const Elem &test, std::vector<int> &test_dofs) const
@@ -617,7 +684,7 @@ namespace utopia {
 					const int i3 = i * 3;
 					auto d = isector.point_plane_distance(3, &plane_normals[i3], plane_dists_from_origin[i], p);
 
-					if(d >= 1e-10) {
+					if(d >= tol) {
 						inside = false;
 						break;
 					}
@@ -632,7 +699,9 @@ namespace utopia {
 	private:
 		int dim;
 		bool nested_meshes;
+		double tol;
 		std::shared_ptr<QMortar> q_trial, q_test;
+		Matrix trial_pts, test_pts;
 		
 	};
 }
@@ -663,8 +732,8 @@ namespace utopia {
 		typedef typename NTreeT::DataContainer DataContainer;
 		typedef typename NTreeT::DataType Adapter;
 		
-		const long maxNElements = settings.max_elements;
-		const long maxDepth = settings.max_depth;
+		const long max_n_elements = settings.max_elements;
+		const long max_depth      = settings.max_depth;
 		
 		
 		const auto &master_mesh = master;
@@ -691,7 +760,7 @@ namespace utopia {
 
 		MOONOLITH_EVENT_BEGIN("create_adapters");
 
-		std::shared_ptr<NTreeT> tree = NTreeT::New(predicate, maxNElements, maxDepth);
+		std::shared_ptr<NTreeT> tree = NTreeT::New(predicate, max_n_elements, max_depth);
 		tree->reserve(n_elements);
 
 		auto local_spaces = std::make_shared<FESpacesAdapter>(master, slave, dof_master, dof_slave, from_var_num, to_var_num);
@@ -928,8 +997,8 @@ namespace utopia {
 			const int src_index  = master.element();
 			const int dest_index = slave.element();
 
-			auto &master_el  = *master_mesh.elem(src_index);
-			auto &slave_el = *slave_mesh.elem(dest_index);
+			auto &master_el = *master_mesh.elem(src_index);
+			auto &slave_el  = *slave_mesh.elem(dest_index);
 
 			auto master_type = dof_master->variable(0).type();
 			auto slave_type  = dof_slave->variable(0).type();

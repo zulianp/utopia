@@ -188,15 +188,11 @@ namespace utopia {
 			DSMatrixd T;
 			if(use_interpolation) {
 				T = B;
-				// T.implementation().set_name("t");
-				// write("T.m", T);
 				DVectord t = sum(T, 1);
-				// disp(t);
-
 				double t_max = max(t);
 				double t_min = min(t);
 
-				std::cout << "[" << t_min << ", " << t_max << "]" << std::endl;
+				std::cout << "[" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
 
 			} else {
 				DSMatrixd D_inv = diag(1./sum(B, 1));

@@ -40,6 +40,7 @@
 #include "utopia_CoarsenerTest.hpp"
 #include "utopia_EikonalEquationTest.hpp"
 #include "utopia_TestVolume2SurfaceTransfer.hpp"
+#include "utopia_VolumeInterpolationTest.hpp"
 
 #include <functional>
 
@@ -85,6 +86,7 @@ int main(const int argc, char *argv[])
 	    runners["coarsener_test"] = run_coarsener_test;
 	    runners["eikonal"] = run_eikonal_equation_test;
 	    runners["vol2surf"] = run_volume_to_surface_transfer_test;
+	    runners["interp"] = run_volume_interpolation_test;
 	    //benchmarks
 	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
