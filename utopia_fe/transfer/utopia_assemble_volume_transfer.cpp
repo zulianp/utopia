@@ -355,6 +355,11 @@ namespace utopia {
 			}
 		}
 
+		/**
+		* @brief if you are performing volume to surface transfer
+		* the method does not provide reliable results if the volume 
+		* element has facets aligned with the surface ones
+		*/
 		virtual bool assemble(
 			const Elem &trial,
 			FEType trial_type,
@@ -1055,14 +1060,18 @@ namespace utopia {
 			}
 		}
 
-		auto s_B_x = local_size(B_x);
+		if(n_var == 1) {
+			B = std::move(B_x);
+			return true;
+		}
 
+		auto s_B_x = local_size(B_x);
 		B = local_sparse(s_B_x.get(0), s_B_x.get(1), n_var * m_max_row_entries);
 
 		utopia::Write<DSMatrixd> w_B(B);
 		utopia::each_read(B_x, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
 			for(utopia::SizeType d = 0; d < n_var; ++d) {
-				B.set(i+d, j+d, value);
+				B.set(i + d, j + d, value);
 			}
 		});
 

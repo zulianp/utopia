@@ -94,7 +94,7 @@ namespace utopia {
 
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
-		auto n = 3;
+		auto n = 7;
 		// auto elem_type  = libMesh::TET10;
 		// auto elem_type  = libMesh::TET4;
 		auto elem_type  = libMesh::HEX8;
@@ -102,8 +102,8 @@ namespace utopia {
 		auto elem_order = libMesh::FIRST;
 		// auto elem_order = libMesh::SECOND;
 
-		// bool is_test_case = true;
 		bool is_test_case = true;
+		// bool is_test_case = false;
 
 		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
 		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
@@ -128,9 +128,9 @@ namespace utopia {
 
 			libMesh::MeshRefinement mesh_refinement(*surf_mesh);
 			mesh_refinement.make_flags_parallel_consistent();
-			mesh_refinement.uniformly_refine(2);
+			mesh_refinement.uniformly_refine(3);
 
-			refine_around_fractures(surf_mesh, elem_order, vol_mesh, 3);
+			// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 3);
 		} else {
 			
 			libMesh::MeshTools::Generation::build_cube(
@@ -184,20 +184,27 @@ namespace utopia {
 			c.stop();
 			std::cout << c << std::endl;
 
-			
 			DSMatrixd T;
+
 			if(use_interpolation) {
 				T = B;
-				DVectord t = sum(T, 1);
-				double t_max = max(t);
-				double t_min = min(t);
-
-				std::cout << "[" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
-
 			} else {
+				DSMatrixd surf_mass_mat;
+				assemble(inner(trial(V_surf), test(V_surf)) * dX, surf_mass_mat);
+				double expected_mass = sum(surf_mass_mat);
+				double actual_mass = sum(B);
+
+				std::cout << "operator volume : " << expected_mass << " == " <<  actual_mass << std::endl; 
+
 				DSMatrixd D_inv = diag(1./sum(B, 1));
 				T = D_inv * B;
 			}
+
+			DVectord t = sum(T, 1);
+			double t_max = max(t);
+			double t_min = min(t);
+
+			std::cout << "[" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
 
 			DVectord v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
 			// {
@@ -246,14 +253,14 @@ namespace utopia {
 			surf_sys.solution->close();
 
 			libMesh::Nemesis_IO surf_IO(*surf_mesh);
-			surf_IO.write_equation_systems("surf2vol_surf.e", *surf_equation_systems);
+			surf_IO.write_equation_systems("vol2surf_surf.e", *surf_equation_systems);
 
 
 			convert(v_vol, *vol_sys.solution);
 			vol_sys.solution->close();
 
 			libMesh::Nemesis_IO vol_IO(*vol_mesh);
-			vol_IO.write_equation_systems("surf2vol_vol.e", *vol_equation_systems);
+			vol_IO.write_equation_systems("vol2surf_vol.e", *vol_equation_systems);
 
 		} else {
 			assert(false);

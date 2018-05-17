@@ -15,8 +15,8 @@ namespace utopia {
 
 	void run_volume_interpolation_test(libMesh::LibMeshInit &init)
 	{
-		auto n_master = 10;
-		auto n_slave  = 13;
+		auto n_master = 4;
+		auto n_slave  = 5;
 		auto elem_order_master = libMesh::SECOND;
 		auto elem_order_slave  = libMesh::SECOND;
 
@@ -113,8 +113,8 @@ namespace utopia {
 				double t_max = max(t);
 				double t_min = min(t);
 
-				assert(t_min >= -1e-16);
-				assert(t_max <= (1 + 1e-16));
+				assert(t_min >= -1e-8);
+				assert(t_max <= (1 + 1e-8));
 				std::cout << "[" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
 
 			} else {
