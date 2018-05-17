@@ -30,8 +30,8 @@ namespace utopia
 
             FAS( const std::shared_ptr<Smoother> &smoother, const std::shared_ptr<Solver> &coarse_solver, const Parameters params = Parameters()): 
                     NonlinearMultiLevelBase<Matrix,Vector>(params),
-                     smoother_(smoother), 
-                     coarse_solver_(coarse_solver) 
+                    smoother_(smoother), 
+                    coarse_solver_(coarse_solver) 
             {
                 set_parameters(params); 
             }
@@ -147,7 +147,11 @@ namespace utopia
                 this->transfer(l-1).project_down(memory_.x[l], memory_.x[l-1]); 
                 memory_.x_0[l-1] = memory_.x[l-1]; 
 
-                this->compute_multilevel_gradient(l); 
+
+                // multilevel gradient ... 
+                this->function(l).gradient(memory_.x[l], memory_.g[l]); 
+                memory_.g[l] -= memory_.g_diff[l]; 
+
 
                 this->transfer(l-1).restrict(memory_.g[l], memory_.g_diff[l-1]);
 
@@ -169,15 +173,6 @@ namespace utopia
                 memory_.x[l+1] += memory_.c[l+1]; 
                 smoothing(this->function(l+1), memory_.x[l+1], memory_.g_diff[l+1], this->pre_smoothing_steps()); 
             }
-
-            return true; 
-        }
-
-
-        virtual bool compute_multilevel_gradient(const SizeType & level)
-        {
-            this->function(level).gradient(memory_.x[level], memory_.g[level]); 
-            memory_.g[level] -= memory_.g_diff[level]; 
 
             return true; 
         }
@@ -208,7 +203,6 @@ namespace utopia
     protected:   
         std::shared_ptr<Smoother>           smoother_;
         std::shared_ptr<Solver>             coarse_solver_;  
-
         LevelMemory <Matrix, Vector>         memory_;
 
     private:
