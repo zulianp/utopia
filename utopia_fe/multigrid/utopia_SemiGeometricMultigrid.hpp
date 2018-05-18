@@ -63,6 +63,11 @@ namespace utopia {
 			separate_subdomains_ = val;
 		}
 
+		void set_use_interpolation(const bool val)
+		{
+			use_interpolation_ = val;
+		}
+
 	private:
 		MultigridT mg;
 		
@@ -72,6 +77,8 @@ namespace utopia {
 		std::vector<std::shared_ptr<DSMatrixd>> interpolators_;
 		bool is_block_solver_;
 		bool separate_subdomains_;
+		bool use_interpolation_;
+		bool coarse_interpolators_;
 	};
 }
 
