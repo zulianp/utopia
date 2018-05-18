@@ -404,7 +404,12 @@ namespace utopia {
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	TransferAssembler::TransferAssembler()  {}
+	TransferAssembler::TransferAssembler(
+		const std::shared_ptr<LocalAssembler> &assembler,
+		const std::shared_ptr<Local2Global> &local2global)
+	: assembler_(assembler), local2global_(local2global)
+	{}
+
 	TransferAssembler::~TransferAssembler() {}
 
 	bool TransferAssembler::assemble(
@@ -419,6 +424,8 @@ namespace utopia {
 		assert(assembler_    && "assembler is required");
 		assert(local2global_ && "local2global");
 
+		///////////////////////////
+
 		moonolith::Communicator comm(from_mesh->comm().get());
 
 		if(Utopia::instance().verbose()) {
@@ -430,12 +437,14 @@ namespace utopia {
 		Chrono c;
 		c.start();
 
+		///////////////////////////
+
 		if(from_mesh->mesh_dimension() == 2) {
 			algorithm_ = std::make_shared<DefaultAlgorithm<2>>(from_mesh, from_dofs, to_mesh, to_dofs, opts);
 		} else if(from_mesh->mesh_dimension() == 3) {
 			algorithm_ = std::make_shared<DefaultAlgorithm<3>>(from_mesh, from_dofs, to_mesh, to_dofs, opts);
 		} else {
-			assert(false & "dimension not supported");
+			assert(false && "dimension not supported");
 			return false;
 		}
 

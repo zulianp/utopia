@@ -37,9 +37,10 @@ namespace utopia {
 				SparseMatrix   &B) = 0;
 		};
 
-		TransferAssembler();
-		~TransferAssembler();
-
+		TransferAssembler(
+			const std::shared_ptr<LocalAssembler> &assembler,
+			const std::shared_ptr<Local2Global>   &local2global);
+		
 		bool assemble(
 			const std::shared_ptr<MeshBase> &from_mesh,
 			const std::shared_ptr<DofMap>   &from_dofs,
@@ -59,6 +60,8 @@ namespace utopia {
 			local2global_ = local2global;
 		}
 
+		~TransferAssembler();
+
 	private:
 		std::shared_ptr<LocalAssembler> assembler_;
 		std::shared_ptr<Local2Global> local2global_;
@@ -68,22 +71,66 @@ namespace utopia {
 	class TransferOperator {
 	public:
 		virtual ~TransferOperator() {}
-		virtual void apply(const DVectord &from, const DVectord &to) = 0;
+		virtual void apply(const DVectord &from, DVectord &to) = 0;
 	};
 
 	class L2TransferOperator : public TransferOperator {
 	public:
-		void apply(const DVectord &from, const DVectord &to) override;
+		inline void apply(const DVectord &from, DVectord &to) override
+		{
+			DVectord B_from = *B * from;
+			
+			if(empty(to)) {
+				to = B_from;
+			}
+
+			linear_solver->apply(B_from, to);
+		}
+
+		inline L2TransferOperator(
+			const std::shared_ptr<DSMatrixd> &B,
+			const std::shared_ptr<DSMatrixd> &D,
+			const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>() 
+			)
+		: B(B), D(D), linear_solver(linear_solver)
+		{
+			linear_solver->update(D);
+		}
+
+	private:
+		std::shared_ptr<DSMatrixd> B;
+		std::shared_ptr<DSMatrixd> D;
+		std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > linear_solver;
 	};
 
 	class PseudoL2TransferOperator : public TransferOperator {
 	public:
-		void apply(const DVectord &from, const DVectord &to) override;
+		inline void apply(const DVectord &from, DVectord &to) override
+		{
+			to = *T * from;
+		}
+
+		PseudoL2TransferOperator(const std::shared_ptr<DSMatrixd> &T)
+		: T(T)
+		{}
+
+	private:
+		std::shared_ptr<DSMatrixd> T;
 	};
 
 	class Interpolator : public TransferOperator {
 	public:
-		void apply(const DVectord &from, const DVectord &to) override;
+		inline void apply(const DVectord &from, DVectord &to) override
+		{
+			to = *T * from;
+		}
+
+		Interpolator(const std::shared_ptr<DSMatrixd> &T)
+		: T(T)
+		{}
+
+	private:
+		std::shared_ptr<DSMatrixd> T;
 	};
 }
 
