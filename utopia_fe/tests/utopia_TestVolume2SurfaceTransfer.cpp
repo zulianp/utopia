@@ -111,8 +111,8 @@ namespace utopia {
 		auto elem_type  = libMesh::TET4;
 		// auto elem_type  = libMesh::HEX8;
 		
-		auto elem_order = libMesh::FIRST;
-		// auto elem_order = libMesh::SECOND;
+		// auto elem_order = libMesh::FIRST;
+		auto elem_order = libMesh::SECOND;
 
 		// bool is_test_case = true;
 		bool is_test_case = false;
@@ -165,7 +165,7 @@ namespace utopia {
 				n, n,
 				-0.5, 0.5,
 				-0.5, 0.5,
-				libMesh::TRI3
+				libMesh::TRI6
 				);
 
 			// vol_mesh->read("../data/frac/frac1d_background.e");
