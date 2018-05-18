@@ -19,7 +19,7 @@ class Trilinos_Parameters
         typedef long SizeType;
 
     public:
-        // copy default parameters in ParameterLis obj
+        // copy default parameters in ParameterList obj
 	Parameters() // default constructor
             {
 

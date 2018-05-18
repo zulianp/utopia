@@ -283,7 +283,7 @@ namespace utopia {
         {
             assert(!transpose_right);
             assert(!transpose_left);
-            //TODO implement transpoe left
+            //TODO implement transpose left
 
             left.mult(right, result);
         }
