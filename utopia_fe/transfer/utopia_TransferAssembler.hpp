@@ -21,14 +21,30 @@ namespace utopia {
 		std::vector< std::pair<int, int> > tags;
 	};
 
-	class TransferAssembler {
+	class TransferAssembler final {
 	public:
-		using FunctionSpace = LibMeshFunctionSpace;
-		using SparseMatrix = DSMatrixd;
+		using FunctionSpace = utopia::LibMeshFunctionSpace;
+		using SparseMatrix  = utopia::DSMatrixd;
+		using MeshBase      = libMesh::MeshBase;
+		using DofMap        = libMesh::DofMap;
 
-		void assemble(
-			const std::shared_ptr<FunctionSpace> &from,
-			const std::shared_ptr<FunctionSpace> &to,
+		class Algorithm {
+		public:
+			virtual ~Algorithm() {}
+			virtual bool assemble(
+				LocalAssembler &assembler,
+				Local2Global   &local2global,
+				SparseMatrix   &B) = 0;
+		};
+
+		TransferAssembler();
+		~TransferAssembler();
+
+		bool assemble(
+			const std::shared_ptr<MeshBase> &from_mesh,
+			const std::shared_ptr<DofMap>   &from_dofs,
+			const std::shared_ptr<MeshBase> &to_mesh,
+			const std::shared_ptr<DofMap>   &to_dofs,
 			SparseMatrix &B,
 			const TransferOptions &opts = TransferOptions()
 		);
@@ -46,10 +62,8 @@ namespace utopia {
 	private:
 		std::shared_ptr<LocalAssembler> assembler_;
 		std::shared_ptr<Local2Global> local2global_;
-
-		std::shared_ptr<void> impl_;
+		std::shared_ptr<Algorithm> algorithm_;
 	};
-
 
 	class TransferOperator {
 	public:

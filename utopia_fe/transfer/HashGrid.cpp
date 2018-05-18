@@ -193,32 +193,6 @@ namespace utopia {
 		return false;
 	}
 
-	void compute_side_normal(const int dim, const libMesh::Elem &side, libMesh::Point &n)
-	{
-		using namespace libMesh;
-		Point o, u, v;
-
-		if(dim == 2) {
-			assert(side.n_nodes() >= 2);
-			o = side.point(0);
-			u = side.point(1);
-			u -= o;
-			n(0) =  u(1);
-			n(1) = -u(0);
-			
-		} else {
-			assert(dim >= 3);
-			o = side.point(0);
-			u = side.point(1);
-			v = side.point(2);	
-			u -= o;
-			v -= o;
-			n = u.cross(v);
-		}
-
-		n *= 1./n.norm();
-	}
-
 	void enlarge_box_from_side(const int dim, const libMesh::Elem &side, Box &box, const libMesh::Real blow_up)
 	{
 

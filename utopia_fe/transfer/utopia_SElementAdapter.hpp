@@ -6,7 +6,7 @@
 #include "moonolith_serializable.hpp"
 #include "moonolith_input_stream.hpp"
 #include "moonolith_output_stream.hpp"
-
+#include "MortarAssemble.hpp"
 #include "libmesh/serial_mesh.h"
 
 namespace utopia {

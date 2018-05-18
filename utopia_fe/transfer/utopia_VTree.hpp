@@ -2,7 +2,7 @@
 #ifndef UTOPIA_V_TREE_HPP
 #define UTOPIA_V_TREE_HPP 
 
-#include "utopia_SElementAdapter.hpp"
+#include "utopia_VElementAdapter.hpp"
 
 #include "moonolith_tree.hpp"
 #include "moonolith_n_tree_mutator_factory.hpp"

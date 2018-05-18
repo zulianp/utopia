@@ -22,7 +22,8 @@
 #include <algorithm>
 
 namespace utopia {
-	
+
+	void compute_side_normal(const int dim, const libMesh::Elem &side, libMesh::Point &n);
 
 	int order_for_l2_integral(const int dim,
 							  const libMesh::Elem &master_el,

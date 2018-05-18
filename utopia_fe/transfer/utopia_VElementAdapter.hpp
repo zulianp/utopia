@@ -6,6 +6,7 @@
 #include "moonolith_output_stream.hpp"
 
 #include "utopia_BoxAdapter.hpp"
+#include "MortarAssemble.hpp"
 
 #include "libmesh/serial_mesh.h"
 
