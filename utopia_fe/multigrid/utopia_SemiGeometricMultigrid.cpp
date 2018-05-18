@@ -33,7 +33,11 @@ namespace utopia {
 	SemiGeometricMultigrid::SemiGeometricMultigrid(
 		const std::shared_ptr<Smoother<DSMatrixd, DVectord> > &smoother,
 		const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver)
-	: mg(smoother, linear_solver), is_block_solver_(false), separate_subdomains_(false), use_interpolation_(false), coarse_interpolators_(true)
+	: mg(smoother, linear_solver),
+	  is_block_solver_(false),
+	  separate_subdomains_(false),
+	  use_interpolation_(false),
+	  use_coarse_interpolators_(true)
 	{ }
 
 	void SemiGeometricMultigrid::init(const libMesh::EquationSystems &es, const std::size_t n_levels)
@@ -179,7 +183,7 @@ namespace utopia {
 				dof_map.n_variables(),
 				*interpolators_[i-1],
 				{},
-				coarse_interpolators_
+				use_coarse_interpolators_
 				); assert(success);
 
 			DVectord d_diag;
@@ -247,5 +251,5 @@ namespace utopia {
 		*c_I = transpose(contact.complete_transformation) * *interpolators_[last_interp];
 		mg.update_transfer(last_interp, Transfer<DSMatrixd, DVectord>(c_I));
 	}
-
 }
+

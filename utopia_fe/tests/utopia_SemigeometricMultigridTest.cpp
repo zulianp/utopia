@@ -326,7 +326,7 @@ namespace utopia {
 
         // linear_solver->verbose(true);
         SemiGeometricMultigrid mg(smoother, linear_solver);
-        // mg.set_use_interpolation(true);
+        mg.set_use_interpolation(true);
         mg.verbose(true);
         mg.init(V, 4);
         mg.update(make_ref(lapl_mat));

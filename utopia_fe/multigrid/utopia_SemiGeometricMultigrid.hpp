@@ -78,7 +78,7 @@ namespace utopia {
 		bool is_block_solver_;
 		bool separate_subdomains_;
 		bool use_interpolation_;
-		bool coarse_interpolators_;
+		bool use_coarse_interpolators_;
 	};
 }
 

@@ -31,8 +31,10 @@ namespace utopia {
 		std::shared_ptr<LocalAssembler> assembler;
 
 		if(use_interpolation) {
+			std::cout << "[Status] using interpolation" << std::endl;
 			assembler = std::make_shared<InterpolationLocalAssembler>(from_mesh->mesh_dimension());
 		} else {
+			std::cout << "[Status] using projection" << std::endl;
 			assembler = std::make_shared<L2LocalAssembler>(from_mesh->mesh_dimension(), use_biorth);
 		}
 
