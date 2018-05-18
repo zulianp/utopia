@@ -71,12 +71,18 @@ namespace utopia {
 	class TransferOperator {
 	public:
 		virtual ~TransferOperator() {}
-		virtual void apply(const DVectord &from, DVectord &to) = 0;
+		virtual void apply(const DVectord &from, DVectord &to) const = 0;
+		virtual void apply_transpose(const DVectord &from, DVectord &to) const = 0;
+		virtual void describe(std::ostream &) const {}
 	};
 
+
+	/**
+	 * @brief constructed as (D^-1 * B) * ( . )
+	 */
 	class L2TransferOperator : public TransferOperator {
 	public:
-		inline void apply(const DVectord &from, DVectord &to) override
+		inline void apply(const DVectord &from, DVectord &to) const override
 		{
 			DVectord B_from = *B * from;
 			
@@ -87,14 +93,41 @@ namespace utopia {
 			linear_solver->apply(B_from, to);
 		}
 
+		///@brief assumes that D is symmetric
+		void apply_transpose(const DVectord &from, DVectord &to) const override
+		{
+			DVectord D_inv_from; 
+			linear_solver->apply(from, D_inv_from);
+			to = transpose(*B) * D_inv_from;
+		}
+
 		inline L2TransferOperator(
 			const std::shared_ptr<DSMatrixd> &B,
 			const std::shared_ptr<DSMatrixd> &D,
-			const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>() 
+			const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>() 
 			)
 		: B(B), D(D), linear_solver(linear_solver)
 		{
+			assert(B);
+			assert(D);
+			assert(linear_solver);
+
 			linear_solver->update(D);
+		}
+
+		inline void describe(std::ostream &os) const override 
+		{
+			DVectord t_from = local_values(local_size(*D).get(0), 1);
+			DVectord t_to;
+			apply(t_from, t_to);
+
+			double t_max = max(t_to);
+			double t_min = min(t_to);
+
+			os << "------------------------------------------\n";
+			os << "L2TransferOperator:\n";
+			os << "row sum [" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
+			os << "------------------------------------------\n";
 		}
 
 	private:
@@ -105,14 +138,54 @@ namespace utopia {
 
 	class PseudoL2TransferOperator : public TransferOperator {
 	public:
-		inline void apply(const DVectord &from, DVectord &to) override
+		inline void apply(const DVectord &from, DVectord &to) const override
 		{
+			assert(T);
 			to = *T * from;
+		}
+
+		inline void apply_transpose(const DVectord &from, DVectord &to) const override
+		{
+			assert(T);
+			to = transpose(*T) * from;
+		}
+
+		PseudoL2TransferOperator() {}
+
+		inline void init_from_coupling_operator(const DSMatrixd &B)
+		{
+			T = std::make_shared<DSMatrixd>();
+			DVectord d = sum(B, 1);
+			ReadAndWrite<DVectord> rw_(d);
+			auto r = range(d);
+			for(auto k = r.begin(); k != r.end(); ++k) {
+				if(approxeq(d.get(k), 0.0, 1e-14)) {
+					d.set(k, 1.);
+				}
+			}
+
+			*T = diag(1./d) * B;
 		}
 
 		PseudoL2TransferOperator(const std::shared_ptr<DSMatrixd> &T)
 		: T(T)
-		{}
+		{
+			assert(T);
+		}
+
+		inline void describe(std::ostream &os) const override 
+		{
+			DVectord t = sum(*T, 1);
+			double t_max = max(t);
+			double t_min = min(t);
+			double t_sum = sum(t);
+
+			os << "------------------------------------------\n";
+			os << "PseudoL2TransferOperator:\n";
+			os << "row sum [" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
+			os << "sum(T): "  << t_sum << " <= " << size(*T).get(0) << "\n";
+			os << "------------------------------------------\n";
+		}
 
 	private:
 		std::shared_ptr<DSMatrixd> T;
@@ -120,14 +193,50 @@ namespace utopia {
 
 	class Interpolator : public TransferOperator {
 	public:
-		inline void apply(const DVectord &from, DVectord &to) override
+		inline void apply(const DVectord &from, DVectord &to) const override
 		{
 			to = *T * from;
 		}
 
+		void apply_transpose(const DVectord &from, DVectord &to) const override
+		{
+			assert(T);
+			to = transpose(*T) * from;
+		}
+
 		Interpolator(const std::shared_ptr<DSMatrixd> &T)
 		: T(T)
-		{}
+		{
+			assert(T);
+		}
+
+		void normalize_rows()
+		{
+			DVectord d = sum(*T, 1);
+			ReadAndWrite<DVectord> rw_(d);
+			auto r = range(d);
+			for(auto k = r.begin(); k != r.end(); ++k) {
+				if(approxeq(d.get(k), 0.0, 1e-14)) {
+					d.set(k, 1.);
+				}
+			}
+
+			*T = diag(1./d) * (*T);
+		}
+
+		inline void describe(std::ostream &os) const override 
+		{
+			DVectord t = sum(*T, 1);
+			double t_max = max(t);
+			double t_min = min(t);
+			double t_sum = sum(t);
+			
+			os << "------------------------------------------\n";
+			os << "Interpolator:\n";
+			os << "row sum [" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
+			os << "sum(T): " << t_sum << " <= " << size(*T).get(0) << "\n";
+			os << "------------------------------------------\n";
+		}
 
 	private:
 		std::shared_ptr<DSMatrixd> T;

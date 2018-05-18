@@ -13,9 +13,9 @@
 using namespace libMesh;
 
 namespace utopia {
-	
+
 	bool assemble_volume_transfer(
-		moonolith::Communicator &comm,
+		moonolith::Communicator &,
 		const std::shared_ptr<MeshBase> &from_mesh,
 		const std::shared_ptr<MeshBase> &to_mesh,
 		const std::shared_ptr<DofMap>   &from_dofs,

@@ -3,6 +3,7 @@
 #include "utopia_libmesh.hpp"
 #include "moonolith_communicator.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
+#include "utopia_TransferAssembler.hpp"
 
 #include "libmesh/mesh_generation.h"
 #include "libmesh/nemesis_io.h"
@@ -20,6 +21,8 @@ namespace utopia {
 		const int refinement_loops = 1
 		)
 	{
+
+		libMesh::MeshRefinement mesh_refinement(*mesh);
 
 		for(int i = 0; i < refinement_loops; ++i) {
 		//equations system
@@ -57,6 +60,10 @@ namespace utopia {
 				c.stop();
 				std::cout << c << std::endl;
 
+				Interpolator interp(make_ref(B));
+				interp.normalize_rows();
+				interp.describe(std::cout);
+
 				DSMatrixd D_inv = diag(1./sum(B, 1));
 				DSMatrixd T = D_inv * B;
 
@@ -68,6 +75,8 @@ namespace utopia {
 
 				std::vector<libMesh::dof_id_type> indices;
 				std::vector<double> values;
+
+				mesh_refinement.clean_refinement_flags();
 
 				Read<DVectord> r_(t);
 				for(auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it) {
@@ -81,20 +90,23 @@ namespace utopia {
 
 				}
 
-				libMesh::MeshRefinement mesh_refinement(*mesh);
 				mesh_refinement.make_flags_parallel_consistent();
 				mesh_refinement.refine_elements();
-
+				mesh_refinement.test_level_one(true);
+				
 			} else {
 				assert(false);
 			}
 		}
+
+		// mesh_refinement.clean_refinement_flags();
+		mesh->prepare_for_use();
 	}
 
 
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
-		auto n = 7;
+		auto n = 10;
 		// auto elem_type  = libMesh::TET10;
 		auto elem_type  = libMesh::TET4;
 		// auto elem_type  = libMesh::HEX8;
@@ -107,6 +119,9 @@ namespace utopia {
 
 		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
 		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+
+		// auto vol_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());	
+		// auto surf_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());	
 
 
 		if(is_test_case) {
@@ -144,43 +159,56 @@ namespace utopia {
 
 			// surf_mesh->read("../data/test/fractures.e");
 
-			vol_mesh->read("../data/frac/frac1d_background.e");
+
+			libMesh::MeshTools::Generation::build_square(
+				*vol_mesh,
+				n, n,
+				-0.5, 0.5,
+				-0.5, 0.5,
+				libMesh::TRI3
+				);
+
+			// vol_mesh->read("../data/frac/frac1d_background.e");
 			surf_mesh->read("../data/frac/frac1d_network.e");
 			
 			{
 				libMesh::MeshRefinement mesh_refinement(*surf_mesh);
 				mesh_refinement.make_flags_parallel_consistent();
-				mesh_refinement.uniformly_refine(3);
+				mesh_refinement.uniformly_refine(4);
 			}
 
-
 			{
-				// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 6);
+				refine_around_fractures(surf_mesh, elem_order, vol_mesh, 5);
 
-				libMesh::MeshRefinement mesh_refinement(*vol_mesh);
-				mesh_refinement.make_flags_parallel_consistent();
-				mesh_refinement.uniformly_refine(6);
+				// libMesh::MeshRefinement mesh_refinement(*vol_mesh);
+				// mesh_refinement.make_flags_parallel_consistent();
+				// mesh_refinement.uniformly_refine(6);
 			}
 		}
 
 		//equations system
 		auto vol_equation_systems = std::make_shared<libMesh::EquationSystems>(*vol_mesh);
 		auto &vol_sys = vol_equation_systems->add_system<libMesh::LinearImplicitSystem>("vol_sys");
+		auto &aux_sys = vol_equation_systems->add_system<libMesh::LinearImplicitSystem>("aux_sys");
 
 		auto surf_equation_systems = std::make_shared<libMesh::EquationSystems>(*surf_mesh);
 		auto &surf_sys = surf_equation_systems->add_system<libMesh::LinearImplicitSystem>("surf_sys");
 
 		//scalar function space
-		auto V_vol  = FunctionSpaceT(vol_equation_systems, libMesh::LAGRANGE, elem_order,   "u_vol");
+		auto V_vol  = FunctionSpaceT(vol_equation_systems, libMesh::LAGRANGE, elem_order, "u_vol");
+		auto V_aux  = FunctionSpaceT(vol_equation_systems, libMesh::LAGRANGE, elem_order, "indicator", aux_sys.number());
+
 		auto V_surf = FunctionSpaceT(surf_equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_surf");
 
 		V_vol.initialize();
 		V_surf.initialize();
+		V_aux.initialize();
 
 
 		Chrono c;
 		c.start();
-		DSMatrixd B;
+
+		auto B = std::make_shared<DSMatrixd>();
 		moonolith::Communicator comm(init.comm().get());
 
 		const bool use_interpolation = true;
@@ -194,7 +222,7 @@ namespace utopia {
 			0,
 			true, 
 			1,
-			B,
+			*B,
 			{},
 			use_interpolation))
 		{
@@ -202,27 +230,28 @@ namespace utopia {
 			c.stop();
 			std::cout << c << std::endl;
 
-			DSMatrixd T;
+			std::shared_ptr<TransferOperator> T;
 
 			if(use_interpolation) {
-				T = B;
+				auto p_T = std::make_shared<Interpolator>(B);
+				//only necessary for non-conforming mesh in parallel
+				p_T->normalize_rows();
+				T = p_T;
 			} else {
+
+				auto p_T = std::make_shared<PseudoL2TransferOperator>();
+				p_T->init_from_coupling_operator(*B);
+				T = p_T;
+
 				DSMatrixd surf_mass_mat;
 				assemble(inner(trial(V_surf), test(V_surf)) * dX, surf_mass_mat);
 				double expected_mass = sum(surf_mass_mat);
-				double actual_mass = sum(B);
+				double actual_mass = sum(*B);
 
 				std::cout << "operator volume : " << expected_mass << " == " <<  actual_mass << std::endl; 
-
-				DSMatrixd D_inv = diag(1./sum(B, 1));
-				T = D_inv * B;
 			}
 
-			DVectord t = sum(T, 1);
-			double t_max = max(t);
-			double t_min = min(t);
-
-			std::cout << "[" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
+			T->describe(std::cout);
 
 			DVectord v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
 			// {
@@ -270,7 +299,10 @@ namespace utopia {
 			v_vol *= 1./max_master;
 			max_master = 1.;
 
-			DVectord v_surf = T * v_vol;
+			DVectord v_surf, v_vol_back; 
+			T->apply(v_vol, v_surf);
+			T->apply_transpose(local_values(local_size(v_surf).get(0), 1.), v_vol_back);
+
 
 			double min_master = min(v_vol);
 			double min_slave = min(v_surf);
@@ -284,10 +316,11 @@ namespace utopia {
 			libMesh::Nemesis_IO surf_IO(*surf_mesh);
 			surf_IO.write_equation_systems("vol2surf_surf.e", *surf_equation_systems);
 
-
 			convert(v_vol, *vol_sys.solution);
-			vol_sys.solution->close();
+			convert(v_vol_back, *aux_sys.solution);
 
+			vol_sys.solution->close();
+			aux_sys.solution->close();
 			libMesh::Nemesis_IO vol_IO(*vol_mesh);
 			vol_IO.write_equation_systems("vol2surf_vol.e", *vol_equation_systems);
 
