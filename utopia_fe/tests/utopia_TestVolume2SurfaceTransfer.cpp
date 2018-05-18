@@ -96,8 +96,8 @@ namespace utopia {
 	{
 		auto n = 7;
 		// auto elem_type  = libMesh::TET10;
-		// auto elem_type  = libMesh::TET4;
-		auto elem_type  = libMesh::HEX8;
+		auto elem_type  = libMesh::TET4;
+		// auto elem_type  = libMesh::HEX8;
 		
 		auto elem_order = libMesh::FIRST;
 		// auto elem_order = libMesh::SECOND;
@@ -155,11 +155,11 @@ namespace utopia {
 
 
 			{
-				// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 8);
+				// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 6);
 
 				libMesh::MeshRefinement mesh_refinement(*vol_mesh);
 				mesh_refinement.make_flags_parallel_consistent();
-				mesh_refinement.uniformly_refine(8);
+				mesh_refinement.uniformly_refine(6);
 			}
 		}
 

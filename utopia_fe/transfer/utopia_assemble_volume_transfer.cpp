@@ -369,7 +369,7 @@ namespace utopia {
 		comm.all_reduce(volumes, 2, moonolith::MPISum());
 
 		const dof_id_type n_dofs_on_proc_master = dof_master->n_local_dofs();
-		const dof_id_type n_dofs_on_proc_slave  =dof_slave->n_local_dofs();
+		const dof_id_type n_dofs_on_proc_slave  = dof_slave->n_local_dofs();
 
 		if(comm.is_root()) {
 			std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
