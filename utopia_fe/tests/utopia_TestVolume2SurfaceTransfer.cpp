@@ -106,13 +106,13 @@ namespace utopia {
 
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
-		auto n = 10;
+		auto n = 1;
 		// auto elem_type  = libMesh::TET10;
 		auto elem_type  = libMesh::TET4;
 		// auto elem_type  = libMesh::HEX8;
 		
-		// auto elem_order = libMesh::FIRST;
-		auto elem_order = libMesh::SECOND;
+		auto elem_order = libMesh::FIRST;
+		// auto elem_order = libMesh::SECOND;
 
 		// bool is_test_case = true;
 		bool is_test_case = false;
@@ -165,20 +165,20 @@ namespace utopia {
 				n, n,
 				-0.5, 0.5,
 				-0.5, 0.5,
-				libMesh::TRI6
+				libMesh::QUAD4
 				);
 
 			// vol_mesh->read("../data/frac/frac1d_background.e");
 			surf_mesh->read("../data/frac/frac1d_network.e");
 			
 			{
-				libMesh::MeshRefinement mesh_refinement(*surf_mesh);
-				mesh_refinement.make_flags_parallel_consistent();
-				mesh_refinement.uniformly_refine(4);
+				// libMesh::MeshRefinement mesh_refinement(*surf_mesh);
+				// mesh_refinement.make_flags_parallel_consistent();
+				// mesh_refinement.uniformly_refine(4);
 			}
 
 			{
-				refine_around_fractures(surf_mesh, elem_order, vol_mesh, 5);
+				// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 5);
 
 				// libMesh::MeshRefinement mesh_refinement(*vol_mesh);
 				// mesh_refinement.make_flags_parallel_consistent();
@@ -211,7 +211,7 @@ namespace utopia {
 		auto B = std::make_shared<DSMatrixd>();
 		moonolith::Communicator comm(init.comm().get());
 
-		const bool use_interpolation = true;
+		const bool use_interpolation = false;
 		if(assemble_volume_transfer(
 			comm,
 			vol_mesh,

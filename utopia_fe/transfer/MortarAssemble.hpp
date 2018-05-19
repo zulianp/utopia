@@ -358,6 +358,7 @@ namespace utopia {
 	bool transfer(LibMeshFESpaceBase &src, libMesh::DenseVector<libMesh::Real> &src_fun, LibMeshFESpaceBase &dest, libMesh::DenseVector<libMesh::Real> &dest_fun);
 	
 	void make_polyhedron(const libMesh::Elem &e, Polyhedron &polyhedron);
+	void make_polyline(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polyline);
 	void make_polygon(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon);
 	void make_polygon_3(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon);
 	

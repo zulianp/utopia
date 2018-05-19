@@ -46,7 +46,7 @@ namespace utopia {
 		bool slave_has_affine_map = slave_el.has_affine_map();
 		
 		int order = 0;
-		if(dim == 2) {
+		if(dim == 2 || dim == 1) {
 			order = master_order * (is_quad(master_el.type())? 2 : 1 ) +
 			slave_order  * (is_quad(slave_el.type()) ? 2 : 1 ) * (slave_has_affine_map? 1 : 2);
 		} else if(dim == 3) {
@@ -732,6 +732,8 @@ namespace utopia {
 			} else if(is_hex(type)) {
 				ref_ir.get_weights()[i] *= 1.;
 			} else if(is_tet(type)) {
+				ref_ir.get_weights()[i] *= 0.5;
+			} else if(is_edge(type)) {
 				ref_ir.get_weights()[i] *= 0.5;
 			} else {
 				assert(false && "add special case");
@@ -1503,6 +1505,17 @@ namespace utopia {
 				
 			}
 		}
+	}
+
+	void make_polyline(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polyline)
+	{
+		polyline.resize(2, 2);
+
+		polyline(0, 0) = e.node_ref(0)(0);
+		polyline(0, 1) = e.node_ref(0)(1);
+
+		polyline(1, 0) = e.node_ref(1)(0);
+		polyline(1, 1) = e.node_ref(1)(1);
 	}
 	
 	void make_polygon(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
