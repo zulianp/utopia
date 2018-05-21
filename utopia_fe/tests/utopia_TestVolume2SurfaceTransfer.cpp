@@ -106,7 +106,7 @@ namespace utopia {
 
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
-		auto n = 1;
+		auto n = 2;
 		// auto elem_type  = libMesh::TET10;
 		auto elem_type  = libMesh::TET4;
 		// auto elem_type  = libMesh::HEX8;
@@ -172,13 +172,13 @@ namespace utopia {
 			surf_mesh->read("../data/frac/frac1d_network.e");
 			
 			{
-				// libMesh::MeshRefinement mesh_refinement(*surf_mesh);
-				// mesh_refinement.make_flags_parallel_consistent();
-				// mesh_refinement.uniformly_refine(4);
+				libMesh::MeshRefinement mesh_refinement(*surf_mesh);
+				mesh_refinement.make_flags_parallel_consistent();
+				mesh_refinement.uniformly_refine(4);
 			}
 
 			{
-				// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 5);
+				refine_around_fractures(surf_mesh, elem_order, vol_mesh, 6);
 
 				// libMesh::MeshRefinement mesh_refinement(*vol_mesh);
 				// mesh_refinement.make_flags_parallel_consistent();

@@ -146,7 +146,7 @@ namespace utopia {
 			make_polygon(trial, trial_pts);
 			make_polyline(test, test_pts);
 
-			std::vector<double> intersection_temp(test_pts.get_values().size(), 0.);
+			std::vector<double> intersection_temp(test_pts.get_values().size()*2, 0.);
 			
 			
 			SizeType n_res_pts;
@@ -159,6 +159,7 @@ namespace utopia {
 					&intersection_temp[0],
 					1e-10)) {
 
+				intersection_temp.resize(n_res_pts * 2);
 				intersection.resize(n_res_pts, 2);
 				intersection.get_values() = intersection_temp;
 				
@@ -170,7 +171,7 @@ namespace utopia {
 				auto trial_trans  = std::make_shared<AffineTransform2>(trial);
 				auto test_trans   = std::make_shared<Transform1>(test);
 
-				make_composite_quadrature_on_surf_2D(intersection, weight, order, composite_ir);
+				make_composite_quadrature_on_surf_2D(intersection, 1./weight, order, composite_ir);
 
 				transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
 				transform_to_reference_surf(*test_trans, test.type(), composite_ir, q_test);
