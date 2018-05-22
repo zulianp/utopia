@@ -94,8 +94,8 @@ namespace utopia {
 					  Local2Global   &local2global)
 		{
 			//FIXME assuming elements are all the same
-		 	auto master_type = from_dofs->variable(0).type();
-		 	auto slave_type  = to_dofs->variable(0).type();
+		 	auto master_type = from_dofs->variable(opts.from_var_num).type();
+		 	auto slave_type  = to_dofs->variable(opts.to_var_num).type();
 			
 			const auto &master_mesh = master.space();;
 			const auto &slave_mesh  = slave.space();

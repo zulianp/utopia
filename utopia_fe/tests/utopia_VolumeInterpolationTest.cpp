@@ -3,6 +3,7 @@
 #include "utopia_libmesh.hpp"
 #include "moonolith_communicator.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
+#include "utopia_TransferAssembler.hpp"
 
 #include "libmesh/mesh_generation.h"
 #include "libmesh/nemesis_io.h"
@@ -20,52 +21,81 @@ namespace utopia {
 		auto elem_order_master = libMesh::SECOND;
 		auto elem_order_slave  = libMesh::SECOND;
 
+		// auto elem_order_master = libMesh::FIRST;
+		// auto elem_order_slave  = libMesh::FIRST;
+
 		auto master_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
 		auto slave_mesh  = std::make_shared<libMesh::DistributedMesh>(init.comm());	
 
-		bool two_d = false;
+		bool test_files = true;
+		bool two_d      = false;
+
+		if(test_files) {
+			std::string path = "../data/test/quad_1.e";
+			// std::string path = "../data/test/LV_ellipsoid_tet_Z.e";
+			
+			master_mesh->read(path);
+			slave_mesh->read(path);
+
+			master_mesh->all_second_order(false);
+			slave_mesh->all_second_order(false);
+
+			// {
+			// 	libMesh::MeshRefinement mesh_refinement(*master_mesh);
+			// 	mesh_refinement.make_flags_parallel_consistent();
+			// 	mesh_refinement.uniformly_refine(1);
+			// }
 
 
-		if(two_d) {
-			auto elem_type_master  = libMesh::TRI6;
-			auto elem_type_slave   = libMesh::QUAD8;
+			{
+				libMesh::MeshRefinement mesh_refinement(*slave_mesh);
+				mesh_refinement.make_flags_parallel_consistent();
+				mesh_refinement.uniformly_refine(1);
+			}
 
-			libMesh::MeshTools::Generation::build_square(
-				*master_mesh,
-				n_master, n_master,
-				0, 1.,
-				0, 1.,
-				elem_type_master
-				);
-
-			libMesh::MeshTools::Generation::build_square(
-				*slave_mesh,
-				n_slave, n_slave,
-				0, 1.,
-				0, 1.,
-				elem_type_slave
-				);
 		} else {
-			auto elem_type_master  = libMesh::TET10;
-			auto elem_type_slave   = libMesh::TET10;
 
-			libMesh::MeshTools::Generation::build_cube(
-				*master_mesh,
-				n_master, n_master, n_master,
-				0, 1.,
-				0, 1.,
-				0, 1.,
-				elem_type_master
-				);
+			if(two_d) {
+				auto elem_type_master  = libMesh::TRI6;
+				auto elem_type_slave   = libMesh::QUAD8;
 
-			libMesh::MeshTools::Generation::build_cube(
-				*slave_mesh,
-				n_slave, n_slave, n_slave,
-				0, 1.,
-				0, 1.,
-				0, 1.,
-				elem_type_slave
-				);
+				libMesh::MeshTools::Generation::build_square(
+					*master_mesh,
+					n_master, n_master,
+					0, 1.,
+					0, 1.,
+					elem_type_master
+					);
+
+				libMesh::MeshTools::Generation::build_square(
+					*slave_mesh,
+					n_slave, n_slave,
+					0, 1.,
+					0, 1.,
+					elem_type_slave
+					);
+			} else {
+				auto elem_type_master  = libMesh::TET10;
+				auto elem_type_slave   = libMesh::TET10;
+
+				libMesh::MeshTools::Generation::build_cube(
+					*master_mesh,
+					n_master, n_master, n_master,
+					0, 1.,
+					0, 1.,
+					0, 1.,
+					elem_type_master
+					);
+
+				libMesh::MeshTools::Generation::build_cube(
+					*slave_mesh,
+					n_slave, n_slave, n_slave,
+					0, 1.,
+					0, 1.,
+					0, 1.,
+					elem_type_slave
+					);
+			}
 		}
 
 		//equations system
@@ -115,7 +145,8 @@ namespace utopia {
 
 				assert(t_min >= -1e-8);
 				assert(t_max <= (1 + 1e-8));
-				std::cout << "[" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
+				// std::cout << "[" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
+				Interpolator(make_ref(T)).describe(std::cout);
 
 			} else {
 				DSMatrixd D_inv = diag(1./sum(B, 1));
