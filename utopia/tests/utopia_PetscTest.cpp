@@ -1110,7 +1110,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_binary_min_max);
     
         //serial tests
+#ifdef PETSC_HAVE_MUMPS
         UTOPIA_RUN_TEST(petsc_inverse);
+#endif //PETSC_HAVE_MUMPS
 
         // petsc_sparse_matrix_accessors();  // TODO:: here something doesnt work in parallel !
         

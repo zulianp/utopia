@@ -132,15 +132,16 @@ namespace utopia {
 				auto l2_assembler = dynamic_cast<L2LocalAssembler *>(&assembler);
 				if(l2_assembler) {
 					total_intersection_volume = l2_assembler->get_q_builder().get_total_intersection_volume();
+
+					double volumes[2] = { local_element_matrices_sum, total_intersection_volume };
+					comm.all_reduce(volumes, 2, moonolith::MPISum());
+
+					if(comm.is_root()) {
+						std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
+					}
 				}
 			}
 
-			double volumes[2] = { local_element_matrices_sum, total_intersection_volume };
-			comm.all_reduce(volumes, 2, moonolith::MPISum());
-
-			if(comm.is_root()) {
-				std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
-			}
 
 			const libMesh::dof_id_type n_dofs_on_proc_master = from_dofs->n_local_dofs();
 			const libMesh::dof_id_type n_dofs_on_proc_slave  = to_dofs->n_local_dofs();
