@@ -145,7 +145,9 @@ namespace utopia {
 		// auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
 		auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
 		mg->verbose(true);
+		mg->set_use_interpolation(true);
 		mg->init(Vx, 3);
+		
 		
 		mg->algebraic().atol(1e-18);
 		mg->algebraic().rtol(1e-8);

@@ -34,6 +34,13 @@ namespace utopia {
 		return 	type == static_cast<int>(libMesh::TET4) ||
 				type == static_cast<int>(libMesh::TET10);
 	}
+
+	inline bool is_edge(const int type)
+	{
+		return type == static_cast<int>(libMesh::EDGE2) ||
+               type == static_cast<int>(libMesh::EDGE3) ||
+               type == static_cast<int>(libMesh::EDGE4);
+	}
 	
 	inline bool is_valid_elem_type(const int type)
 	{

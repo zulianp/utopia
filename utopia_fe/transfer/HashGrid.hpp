@@ -34,7 +34,6 @@ namespace utopia {
 	};
 
 	bool fix_normal_orientation(const libMesh::Elem &elem, int side, libMesh::Point &n);
-	void compute_side_normal(const int dim, const libMesh::Elem &side, libMesh::Point &n);
 	void enlarge_box_from_side(const int dim, const libMesh::Elem &side, Box &box, const libMesh::Real blow_up);
 
 	bool hash_grid_detect_intersection(const Box &src_box,

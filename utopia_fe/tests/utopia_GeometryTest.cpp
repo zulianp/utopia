@@ -43,17 +43,17 @@ namespace utopia {
 		DVectord normals;
 		DSMatrixd mat;
 		assemble_normal_tangential_transformation(*mesh, Vx.dof_map(), {101}, is_normal_component, normals, mat);
-		mat.implementation().set_name("t");
-		write("O.m", mat);
+		// mat.implementation().set_name("t");
+		// write("O.m", mat);
 
-		normals.implementation().set_name("n");
-		write("vn.m", normals);
+		// normals.implementation().set_name("n");
+		// write("vn.m", normals);
 
 		DVectord t_normals = mat * normals;
 
 		libMesh::Nemesis_IO io(*mesh);
 		convert(t_normals, *sys.solution);
 		sys.solution->close();
-		io.write_equation_systems("get-test.e", *equation_systems);
+		io.write_equation_systems("geo-test.e", *equation_systems);
 	}
 }

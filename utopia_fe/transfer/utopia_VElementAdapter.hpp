@@ -6,6 +6,7 @@
 #include "moonolith_output_stream.hpp"
 
 #include "utopia_BoxAdapter.hpp"
+#include "MortarAssemble.hpp"
 
 #include "libmesh/serial_mesh.h"
 
@@ -49,6 +50,7 @@ template<int Dimension>
 
             if(is_s) {
                 compute_side_normal(Dimension, *e, n);
+                assert(n.size()> 0.99);
             }
             
             std::array<double, Dimension> p_a;
@@ -63,8 +65,8 @@ template<int Dimension>
                     std::array<double, Dimension> p_a_minus;
 
                     for(int d = 0; d < Dimension; ++d) {
-                        p_a_plus[d]  = p_a[d] + n(d) * 1e-6;
-                        p_a_minus[d] = p_a[d] - n(d) * 1e-6;
+                        p_a_plus[d]  = p_a[d] + n(d) * 1e-10;
+                        p_a_minus[d] = p_a[d] - n(d) * 1e-10;
                     }
 
                     bound_.static_bound()  += p_a_minus;
@@ -78,6 +80,9 @@ template<int Dimension>
                     bound_.dynamic_bound() += p_a; 
                 }
             }
+
+            assert(!bound_.static_bound().empty());
+            assert(!bound_.dynamic_bound().empty());
         }
         
         VElementAdapter()
@@ -156,6 +161,8 @@ template<int Dimension>
 
 
         bool is_shell() const {
+            assert(fe_);
+
             libMesh::Elem &e = *fe_->elem(element_);
             
             if(Dimension == 3) {
