@@ -300,6 +300,111 @@ namespace utopia {
          utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-5));
     }
 
+    void trilinos_belos()
+    {
+    // comunicator
+    // map
+    
+    TVectord x ;
+    TVectord b ;
+    TSMatrixd A;
+    Parameters<TRILINOS> param;
+    param.readFromFile('file');
+    
+    
+    LinearSolver<TSMatrixd, TVectord, TVectord, TRILINOS> linearSol(A,x,b);
+    PrecondionedSolver<TSMatrixd, TVectord, TVectord, TRILINOS> prec;
+    prec.set_preconditioner();
+    
+    linearSol.apply();
+     ///////////////////
+     
+    Teuchos::RCP<const Teuchos::Comm<int> > Comm =
+        Tpetra::DefaultPlatform::getDefaultPlatform().getComm();  
+    int myPID = Comm->getRank();
+
+    Teuchos::RCP<const map_type> Map =
+        Teuchos::rcp(new map_type(Ndofs, indexBase, Comm));
+
+    Teuchos::RCP<vec_type> LHS = Teuchos::rcp(new vec_type(Map, false));
+    Teuchos::RCP<vec_type> RHS = Teuchos::rcp(new vec_type(Map, false));
+     
+      for (int i = 0; i < Ndofs; ++i)
+        LHS->replaceLocalValue(i, _linSystem->solution(i));  
+        LHS->getData(0)[i];    
+     
+    Teuchos::RCP<matrix_type> A = Teuchos::rcp(
+        new matrix_type(Map, maxNumEntries, Tpetra::StaticProfile)); 
+        
+      A->insertGlobalValues(row, values.size(), values.data(), columns.data());        
+      A->fillComplete();
+      
+      Teuchos::RCP<Belos::LinearProblem<SC, mv_type, op_type> > linearProblem =
+        Teuchos::rcp(new problem_type(A, LHS, RHS));
+
+      linearProblem->setProblem();
+
+//list
+      Teuchos::RCP<Teuchos::ParameterList> ParamList = Teuchos::getParametersFromXmlFile(param_file_name);
+//sublist      
+    auto& fasterPL = ParamList->sublist("FASTER", true);
+    bool direct_solver = fasterPL.get("Direct Solver", false);
+    bool direct_prec = fasterPL.get<bool>("Direct Preconditioner", false);
+    std::string dir_prec_type = fasterPL.get("Ifpack2 Preconditioner", "prec_type_unset");
+    std::string sol_type = fasterPL.get("Solver Type", "CG");    
+//"factory"
+    Teuchos::RCP<Amesos2::Solver<matrix_type, mv_type> > directSolver;
+    Teuchos::RCP<solver_type> belosSolver;
+     if (false==direct_solver)
+     {//belos
+     { Belos::SolverFactory<SC, mv_type, op_type> belosFactory;
+        belosSolver = belosFactory.create(sol_type, Teuchos::sublist(ParamList, sol_type, false));
+     }   
+//preconditioner
+Teuchos::RCP<ifpack_prec_type> M_ifpack;
+      Teuchos::RCP<muelu_prec_type> M_muelu;
+      if (direct_prec) {
+        M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, A);
+        assert(!M_ifpack.is_null());
+        M_ifpack->setParameters(ParamList->sublist(dir_prec_type, false));
+        M_ifpack->initialize();
+        M_ifpack->compute();
+        linearProblem->setLeftPrec(M_ifpack);
+      } else {
+        // Multigrid Hierarchy
+        M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<op_type>)A,
+                                                    ParamList->sublist("MueLu", false));
+        assert(!M_muelu.is_null());
+        linearProblem->setRightPrec(M_muelu);
+      }
+//solve     
+      belosSolver->setProblem(linearProblem);
+      belosSolver->getCurrentParameters()->print();
+      const Belos::ReturnType belosResult = belosSolver->solve();
+//print
+      ret = belosResult;
+      int numIterations = belosSolver->getNumIters();
+      residualOut = belosSolver->achievedTol();
+      if (myPID == 0) {
+        std::cout << "number of iterations = " << numIterations << std::endl;
+        std::cout << "||Residual|| = " << residualOut << std::endl;
+      }
+     }else//amesos
+     {
+      direct_solver = true;
+      directSolver =
+          Amesos2::create<matrix_type, mv_type>(sol_type, A, RHS, LHS);
+      directSolver->setParameters(Teuchos::sublist(ParamList, sol_type, false));
+      directSolver->symbolicFactorization().numericFactorization().solve();
+     
+     
+     }
+     ////////////////////
+    
+    
+    }
+
+
     void trilinos_mg_1D()
     {
         if(mpi_world_size() > 1) return;
@@ -466,6 +571,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_read);
         UTOPIA_RUN_TEST(trilinos_ptap);
         UTOPIA_RUN_TEST(trilinos_cg);
+        UTOPIA_RUN_TEST(trilinos_belos);
 
         //tests that fail in parallel
         UTOPIA_RUN_TEST(row_view_and_loops); 
