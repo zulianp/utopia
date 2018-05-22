@@ -1,17 +1,11 @@
 
 
-//
-// Example: Create an Ifpack2 preconditioner from a Tpetra::CrsMatrix.
-//
 
 #include <Ifpack2_Factory.hpp>
 
 #include <Teuchos_GlobalMPISession.hpp>
-#include <Teuchos_oblackholestream.hpp>
 #include <Teuchos_TimeMonitor.hpp>
 #include <Tpetra_CrsMatrix.hpp>
-#include <Tpetra_DefaultPlatform.hpp>
-#include <Tpetra_Version.hpp>
 #include <iostream>
 
 // The PreconditionerFactory class encapsulates creation of an Ifpack2
