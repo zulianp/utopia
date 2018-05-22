@@ -13,17 +13,20 @@ namespace utopia {
         void run()
         {
             UTOPIA_RUN_TEST(petsc_cg);
+            UTOPIA_RUN_TEST(petsc_bicgstab);
+            UTOPIA_RUN_TEST(petsc_gmres);
+//FIXME make it work also without mumps
+#ifdef PETSC_HAVE_MUMPS
+            UTOPIA_RUN_TEST(petsc_mg);
+            UTOPIA_RUN_TEST(petsc_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_1D);
             UTOPIA_RUN_TEST(petsc_block_mg_exp);
             UTOPIA_RUN_TEST(petsc_block_mg);
             UTOPIA_RUN_TEST(petsc_mg_exp);
-            UTOPIA_RUN_TEST(petsc_bicgstab);
-            UTOPIA_RUN_TEST(petsc_gmres);
-            UTOPIA_RUN_TEST(petsc_mg);
-            UTOPIA_RUN_TEST(petsc_cg_mg);
             UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
+#endif //PETSC_HAVE_MUMPS
         }
 
         void petsc_cg()
