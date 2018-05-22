@@ -18,7 +18,8 @@ namespace utopia {
 		const std::shared_ptr<libMesh::UnstructuredMesh> &fracture_network,
 		const libMesh::Order &elem_order,
 		const std::shared_ptr<libMesh::UnstructuredMesh> &mesh,
-		const int refinement_loops = 1
+		const int refinement_loops = 1,
+		const bool use_interpolation = false
 		)
 	{
 
@@ -55,7 +56,7 @@ namespace utopia {
 				1,
 				B,
 				{},
-				true))
+				use_interpolation))
 			{
 				c.stop();
 				std::cout << c << std::endl;
@@ -106,6 +107,7 @@ namespace utopia {
 
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
+		const bool use_interpolation = true;
 		auto n = 2;
 		// auto elem_type  = libMesh::TET10;
 		auto elem_type  = libMesh::TET4;
@@ -174,11 +176,11 @@ namespace utopia {
 			{
 				libMesh::MeshRefinement mesh_refinement(*surf_mesh);
 				mesh_refinement.make_flags_parallel_consistent();
-				mesh_refinement.uniformly_refine(4);
+				mesh_refinement.uniformly_refine(1);
 			}
 
 			{
-				refine_around_fractures(surf_mesh, elem_order, vol_mesh, 6);
+				refine_around_fractures(surf_mesh, elem_order, vol_mesh, 6, use_interpolation);
 
 				// libMesh::MeshRefinement mesh_refinement(*vol_mesh);
 				// mesh_refinement.make_flags_parallel_consistent();
@@ -211,7 +213,7 @@ namespace utopia {
 		auto B = std::make_shared<DSMatrixd>();
 		moonolith::Communicator comm(init.comm().get());
 
-		const bool use_interpolation = false;
+		
 		if(assemble_volume_transfer(
 			comm,
 			vol_mesh,
