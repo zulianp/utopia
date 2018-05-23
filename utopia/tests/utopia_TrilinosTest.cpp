@@ -308,11 +308,17 @@ namespace utopia {
     TVectord x ;
     TVectord b ;
     TSMatrixd A;
-    Parameters<TRILINOS> param;
-    param.readFromFile('file');
-    
-    
-    LinearSolver<TSMatrixd, TVectord, TVectord, TRILINOS> linearSol(A,x,b);
+    Parameters params();
+    //params.set_param_file_name( "~/utopiaTrilinosFile.xml");
+
+    BelosSolver<TSMatrixd, TVectord> solver(params);
+
+    solver.solve(TSMatrixd &A, const TSVectord &RHS, TSVectord &LHS);
+    std::cout << "Number of Iterations " << solver.getNumIter() << std::endl;
+
+    std::cout << "Achieved tolerance " << solver.achievedTol() << std::endl;
+
+ /*   Parameters<TRILINOS> param;
     PrecondionedSolver<TSMatrixd, TVectord, TVectord, TRILINOS> prec;
     prec.set_preconditioner();
     
@@ -398,7 +404,7 @@ Teuchos::RCP<ifpack_prec_type> M_ifpack;
       directSolver->symbolicFactorization().numericFactorization().solve();
      
      
-     }
+     }*/
      ////////////////////
     
     
