@@ -49,6 +49,12 @@ if(THRUST_FOUND)
 		ARCHIVE DESTINATION lib 
 		)
 
+	install(TARGETS utopia_cuda
+		RUNTIME DESTINATION bin 
+		LIBRARY DESTINATION lib 
+		ARCHIVE DESTINATION lib 
+		)
+
 	install(FILES ${LOCAL_HEADERS} DESTINATION include)
 
 	set(UTOPIA_COMPONENTS "${UTOPIA_COMPONENTS};utopia_cuda_cxx;utopia_cuda" PARENT_SCOPE)
