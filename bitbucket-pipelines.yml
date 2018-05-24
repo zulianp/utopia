@@ -5,7 +5,7 @@ pipelines:
     - step:
         script:
           - echo '======== Utopia with basic petsc/slepc backends ========='
-          - apk apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
+          - apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
           - cd utopia
           - mkdir build
           - mkdir bin
