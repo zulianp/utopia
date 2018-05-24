@@ -281,6 +281,7 @@ list(APPEND UTOPIA_HEADERS
 list(APPEND UTOPIA_SOURCES
 	utopia.cpp
 	utopia_Instance.cpp
+	utopia_Base.cpp
 	)
 
 # config is created based on the successful backend compilations

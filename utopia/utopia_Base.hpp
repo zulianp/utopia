@@ -111,10 +111,7 @@ DERIVED_CRT(Derived)
 #define utopia_test_assert(macro_expr_) assert((macro_expr_))
 #else
 namespace utopia {
-    inline void test_check_assertion(const bool expr, const std::string &filename, const int line, const std::string &expr_string)
-    {
-        if(!expr) { utopia::Utopia::instance().set_exit_code(1); std::cerr << filename << ": " << line << "\ntest failure: " << expr_string << std::endl; }
-    }
+    void test_check_assertion(const bool expr, const std::string &filename, const int line, const std::string &expr_string);
 }
 #define utopia_test_assert(macro_expr_) utopia::test_check_assertion(macro_expr_, __FILE__, __LINE__, #macro_expr_)
 #endif //NDEBUG
