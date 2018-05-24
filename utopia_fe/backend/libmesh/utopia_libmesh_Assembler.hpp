@@ -105,8 +105,11 @@ namespace utopia {
 
 
 			if(empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
-				auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-					*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+				SizeType nnz_x_row = 0;
+				if(!dof_map.get_n_nz().empty()) {
+					nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+						*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+				}
 
 				mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 			} else {
@@ -116,24 +119,27 @@ namespace utopia {
 			{
 				Write<GlobalMatrix> w_m(mat);
 
-				ElementMatrix el_mat;
-				init_context_on(expr, (*elements_begin(m))->id());
+				if(elements_begin(m) != elements_end(m)) {
 
-				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-					if(it != elements_begin(m)) {
-						reinit_context_on(expr, (*it)->id());
-					}
+					ElementMatrix el_mat;
+					init_context_on(expr, (*elements_begin(m))->id());
 
-					el_mat.implementation().zero();
+					for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+						if(it != elements_begin(m)) {
+							reinit_context_on(expr, (*it)->id());
+						}
 
-					FormEvaluator<LIBMESH_TAG> eval;
-					eval.eval(expr, el_mat, ctx_, true);
+						el_mat.implementation().zero();
 
-					std::vector<libMesh::dof_id_type> dof_indices;
-					dof_map.dof_indices(*it, dof_indices);
+						FormEvaluator<LIBMESH_TAG> eval;
+						eval.eval(expr, el_mat, ctx_, true);
 
-					if(ctx_.has_assembled()) {
-						add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+						std::vector<libMesh::dof_id_type> dof_indices;
+						dof_map.dof_indices(*it, dof_indices);
+
+						if(ctx_.has_assembled()) {
+							add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
+						}
 					}
 				}
 			}
@@ -173,23 +179,25 @@ namespace utopia {
 				Write<GlobalVector> w_v(vec);
 				ElementVector el_vec;
 
-				init_context_on(expr, (*elements_begin(m))->id());
+				if(elements_begin(m) != elements_end(m)) {
+					init_context_on(expr, (*elements_begin(m))->id());
 
-				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-					if(it != elements_begin(m)) {
-						reinit_context_on(expr, (*it)->id());
-					}
+					for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+						if(it != elements_begin(m)) {
+							reinit_context_on(expr, (*it)->id());
+						}
 
-					el_vec.implementation().zero();
+						el_vec.implementation().zero();
 
-					FormEvaluator<LIBMESH_TAG> eval;
-					eval.eval(expr, el_vec, ctx_, true);
+						FormEvaluator<LIBMESH_TAG> eval;
+						eval.eval(expr, el_vec, ctx_, true);
 
-					std::vector<libMesh::dof_id_type> dof_indices;
-					dof_map.dof_indices(*it, dof_indices);
+						std::vector<libMesh::dof_id_type> dof_indices;
+						dof_map.dof_indices(*it, dof_indices);
 
-					if(ctx_.has_assembled()) {
-						add_vector(el_vec.implementation(), dof_indices, vec);
+						if(ctx_.has_assembled()) {
+							add_vector(el_vec.implementation(), dof_indices, vec);
+						}
 					}
 				}
 			}

@@ -114,7 +114,7 @@ namespace  utopia
             Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a); 
             Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a); 
 
-            return std::max(lower, lower);
+            return std::max(upper, lower);
         }
 
 

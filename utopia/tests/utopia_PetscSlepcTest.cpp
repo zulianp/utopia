@@ -223,9 +223,9 @@ namespace utopia
 	void runPetscSlepcSolversTest()
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runSlepcsSolverTest");
-		#ifdef  WITH_SLEPC
+#ifdef  WITH_SLEPC
 				SlepcsSolverTest().run();
-		#endif		
+#endif		
 		UTOPIA_UNIT_TEST_END("runSlepcsSolverTest");				
 	}
 }

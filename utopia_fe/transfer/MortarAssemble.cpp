@@ -10,6 +10,32 @@
 #include <algorithm>
 
 namespace utopia {
+
+	void compute_side_normal(const int dim, const libMesh::Elem &side, libMesh::Point &n)
+	{
+		using namespace libMesh;
+		Point o, u, v;
+
+		if(dim == 2) {
+			assert(side.n_nodes() >= 2);
+			o = side.point(0);
+			u = side.point(1);
+			u -= o;
+			n(0) =  u(1);
+			n(1) = -u(0);
+			
+		} else {
+			assert(dim >= 3);
+			o = side.point(0);
+			u = side.point(1);
+			v = side.point(2);	
+			u -= o;
+			v -= o;
+			n = u.cross(v);
+		}
+
+		n *= 1./n.norm();
+	}
 	
 	int order_for_l2_integral(const int dim,
 							  const libMesh::Elem &master_el,
@@ -20,7 +46,7 @@ namespace utopia {
 		bool slave_has_affine_map = slave_el.has_affine_map();
 		
 		int order = 0;
-		if(dim == 2) {
+		if(dim == 2 || dim == 1) {
 			order = master_order * (is_quad(master_el.type())? 2 : 1 ) +
 			slave_order  * (is_quad(slave_el.type()) ? 2 : 1 ) * (slave_has_affine_map? 1 : 2);
 		} else if(dim == 3) {
@@ -31,6 +57,13 @@ namespace utopia {
 		}
 		
 		return order;
+	}
+
+	void Transform1::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
+	{
+		ref = libMesh::FE<1, libMesh::LAGRANGE>::inverse_map(&elem_, world, 1e-10);
+		assert( (libMesh::FE<1, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-3)) );
+		assert( (libMesh::FE<1, libMesh::LAGRANGE>::map(&elem_, ref).absolute_fuzzy_equals(world, 1e-8)) );
 	}
 	
 	void Transform2::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
@@ -699,6 +732,8 @@ namespace utopia {
 			} else if(is_hex(type)) {
 				ref_ir.get_weights()[i] *= 1.;
 			} else if(is_tet(type)) {
+				ref_ir.get_weights()[i] *= 0.5;
+			} else if(is_edge(type)) {
 				ref_ir.get_weights()[i] *= 0.5;
 			} else {
 				assert(false && "add special case");
@@ -1471,6 +1506,17 @@ namespace utopia {
 			}
 		}
 	}
+
+	void make_polyline(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polyline)
+	{
+		polyline.resize(2, 2);
+
+		polyline(0, 0) = e.node_ref(0)(0);
+		polyline(0, 1) = e.node_ref(0)(1);
+
+		polyline(1, 0) = e.node_ref(1)(0);
+		polyline(1, 1) = e.node_ref(1)(1);
+	}
 	
 	void make_polygon(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon)
 	{
@@ -1598,6 +1644,8 @@ namespace utopia {
 		polyhedron.el_index[9]  = 1;
 		polyhedron.el_index[10] = 2;
 		polyhedron.el_index[11] = 0;
+
+		polyhedron.type = P_MESH_TYPE_TET;
 	}
 	
 	void make_polyhedron_from_tet4(const libMesh::Elem &e, Polyhedron &polyhedron)
@@ -1614,6 +1662,61 @@ namespace utopia {
 		assert(e.n_nodes() == 10);
 		
 		make_polyhedron_from_generic_tet(e, polyhedron);
+	}
+
+	static void make_polyhedron_from_shell_element(const libMesh::Elem &e, Polyhedron &polyhedron)
+	{
+		polyhedron.n_dims = 3;
+		
+		polyhedron.el_ptr[0] = 0;
+		polyhedron.el_ptr[1] = 2;
+		polyhedron.el_ptr[2] = 4;
+
+		polyhedron.el_index[0] = 0;
+		polyhedron.el_index[1] = 1;
+
+		polyhedron.el_index[2] = 1;
+		polyhedron.el_index[3] = 2;
+
+		polyhedron.el_index[4] = 2;
+		polyhedron.el_index[5] = 3;
+
+		if(is_tri(e.type())) {
+			polyhedron.n_elements = 3;
+			polyhedron.n_nodes = 3;
+			polyhedron.type = P_MESH_TYPE_TRIANGLE;
+			
+		} else if(is_quad(e.type())) {
+			polyhedron.n_elements = 4;
+			polyhedron.n_nodes = 4;
+			polyhedron.el_ptr[3] = 6;
+
+			polyhedron.el_index[6] = 3;
+			polyhedron.el_index[7] = 4;
+
+			polyhedron.type = P_MESH_TYPE_QUAD;
+
+		} else {
+			assert(false);
+		}
+
+		for(int i = 0; i < polyhedron.n_nodes; ++i) {
+			const int offset = i * 3;
+			
+			for(int j = 0; j < 3; ++j) {
+				polyhedron.points[offset + j] = e.point(i)(j);
+			}
+		}
+	}
+
+	double compute_volume(const Polyhedron &poly)
+	{
+		Intersector isector;
+		if(poly.type >= P_MESH_TYPE_SURF) {
+			return isector.polygon_area_3(poly.n_nodes, poly.points);
+		} else {
+			return isector.p_mesh_volume_3(poly);
+		}
 	}
 
 	static void make_polyhedron_from_generic_hex(const libMesh::Elem &e, Polyhedron &polyhedron)
@@ -1674,6 +1777,8 @@ namespace utopia {
 		polyhedron.el_index[21] = 7;
 		polyhedron.el_index[22] = 4;
 		polyhedron.el_index[23] = 5;
+
+		polyhedron.type = P_MESH_TYPE_HEX;
 	}
 	
 	
@@ -1699,6 +1804,12 @@ namespace utopia {
 	
 	void make_polyhedron(const libMesh::Elem &e, Polyhedron &polyhedron)
 	{
+
+		if(is_tri(e.type()) || is_quad(e.type())) {
+			make_polyhedron_from_shell_element(e, polyhedron);
+			return;
+		}
+
 		//FIXME use libMesh enum types
 		switch(e.n_nodes()) {
 			case 4:
@@ -1738,21 +1849,32 @@ namespace utopia {
 			}
 		}
 	}
-	
-	bool intersect_3D(const libMesh::Elem &el1, const libMesh::Elem &el2, Polyhedron &intersection)
-	{
-		Intersector isector;
-		Polyhedron p1, p2;
-		make_polyhedron(el1, p1);
-		make_polyhedron(el2, p2);
-		return isector.intersect_convex_polyhedra(p1, p2, &intersection);
-	}
-	
+
 	bool intersect_3D(const Polyhedron &poly1, const Polyhedron &poly2, Polyhedron &intersection)
 	{
 		Intersector isector;
-		return isector.intersect_convex_polyhedra(poly1, poly2, &intersection);
+		if(poly1.type >= P_MESH_TYPE_SURF) {
+			bool ok = isector.intersect_convex_polyhedron_with_polygon(poly2, poly1.n_nodes, poly1.points, &intersection);
+			intersection.type = P_MESH_TYPE_SURF;
+			return ok;
+		} else if(poly2.type >= P_MESH_TYPE_SURF) {
+			bool ok = isector.intersect_convex_polyhedron_with_polygon(poly1, poly2.n_nodes, poly2.points, &intersection);
+			intersection.type = P_MESH_TYPE_SURF;
+			return ok;
+		} else {
+			return isector.intersect_convex_polyhedra(poly1, poly2, &intersection);
+		}
 	}
+	
+	bool intersect_3D(const libMesh::Elem &el1, const libMesh::Elem &el2, Polyhedron &intersection)
+	{
+		Polyhedron p1, p2;
+		make_polyhedron(el1, p1);
+		make_polyhedron(el2, p2);
+		return intersect_3D(p1, p2, intersection);
+	}
+	
+
 	
 	bool project_2D(const libMesh::DenseMatrix<libMesh::Real> &poly1,
 					const libMesh::DenseMatrix<libMesh::Real> &poly2,

@@ -207,6 +207,12 @@ namespace utopia {
           return implementation().normInf();
         }
 
+        inline Scalar sum() const {
+          // return implementation().sum();
+            assert(false && "implement me");
+            return -1.;
+        }
+
         inline void scale(const Scalar alpha)
         {
             implementation().scale(alpha);

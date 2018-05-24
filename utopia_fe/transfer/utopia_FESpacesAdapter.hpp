@@ -217,7 +217,7 @@ template<class Iterator>
 
             const libMesh::Point &p = space.node(node_id);
 
-            for(int i = 0; i < dim; ++i) {
+            for(int i = 0; i < LIBMESH_DIM; ++i) {
 
 //WRITE 3
                 os << p(i);
@@ -380,7 +380,7 @@ template<class Iterator>
 
             libMesh::Point p;
 
-            for(int j = 0; j < dim; ++j) {
+            for(int j = 0; j < LIBMESH_DIM; ++j) {
 //READ 3
                 is >> p(j);
             }

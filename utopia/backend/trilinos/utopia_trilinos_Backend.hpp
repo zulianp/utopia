@@ -134,6 +134,17 @@ namespace utopia {
               nnz.nnz());
         }
 
+
+        static void build(TpetraSparseMatrix &m, const Size &size, const LocalIdentity &)
+        {
+            m.crs_identity(default_communicator(),
+              size.get(0),
+              size.get(1),
+              Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+              Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()
+            );
+        }
+
         static void build(TpetraSparseMatrix &m, const Size &size, const NNZ<std::size_t> &nnz)
         {
             m.crs_init(default_communicator(),
@@ -237,6 +248,10 @@ namespace utopia {
         inline static Scalar norm_infty(const TpetraVector &v)
         {
             return v.norm_infty();
+        }
+
+        Scalar reduce(const TpetraVector &vec, const Plus &) {
+            return vec.sum();
         }
 
         //blas 1
