@@ -39,11 +39,17 @@ namespace utopia {
             return *maintenance_logger_;
         }
 
+        void set_exit_code(const int code)
+        {
+            exit_code_ = code;
+        }
+
     private:
         Utopia();
         std::map<std::string, std::string> settings_;
         std::shared_ptr<Logger> logger_;
         std::shared_ptr<Logger> maintenance_logger_;
+        int exit_code_;
     };
 }
 
