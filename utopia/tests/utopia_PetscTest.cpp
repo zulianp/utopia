@@ -912,8 +912,8 @@ namespace utopia {
             sol.set(2, 1); 
         }
 
-        utopia_test_assert(has_nan_or_inf(sol) == 1);
-        utopia_test_assert(has_nan_or_inf(denom) == 0);
+        utopia_test_assert(has_nan_or_inf(sol));
+        utopia_test_assert(!has_nan_or_inf(denom));
 
     }
 
