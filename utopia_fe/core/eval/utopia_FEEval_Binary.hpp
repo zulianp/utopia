@@ -112,6 +112,35 @@ namespace utopia {
 		}
 	};
 
+
+
+	template<class Left, class Right, class Traits>
+	class BinaryDelegate<Binary<Left, Right, Divides>, Traits, 1, 1, 1> {
+	public:
+		typedef utopia::Binary<Left, Right, Divides> BinExpr;
+
+		static const int Backend = Traits::Backend;
+
+
+		static auto apply(const BinExpr &expr, AssemblyContext<Backend> &ctx) -> 
+		decltype(
+			FEBackend<Backend>::apply_binary(
+							   FEEval<Left, Traits, Backend, 1>::apply(expr.left(), ctx),
+				   			   FEEval<Right, Traits, Backend, 1>::apply(expr.right(), ctx),
+				   			   expr.operation(),
+				   			   ctx
+				   			   )
+			)
+		{
+			return FEBackend<Backend>::apply_binary(
+				   FEEval<Left, Traits, Backend, 1>::apply(expr.left(), ctx),
+	   			   FEEval<Right, Traits, Backend, 1>::apply(expr.right(), ctx),
+	   			   expr.operation(),
+	   			   ctx
+	   			   );
+		}
+	};
+
 	template<class Left, class Right, class Traits, int IsQuadData>
 	class BinaryDelegate<Binary<Left, Right, Minus>, Traits, IsQuadData, 1, 1> {
 	public:

@@ -22,7 +22,8 @@
 #include <algorithm>
 
 namespace utopia {
-	
+
+	void compute_side_normal(const int dim, const libMesh::Elem &side, libMesh::Point &n);
 
 	int order_for_l2_integral(const int dim,
 							  const libMesh::Elem &master_el,
@@ -35,6 +36,20 @@ namespace utopia {
 		virtual ~Transform() {}
 		virtual void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const = 0;
 	};
+
+
+	class Transform1 : public Transform {
+	public:
+		Transform1(const libMesh::Elem &elem)
+		: elem_(elem)
+		{}
+		
+		void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
+				
+	private:
+		const libMesh::Elem &elem_;
+	};
+
 	
 	class Transform2 : public Transform {
 	public:
@@ -254,7 +269,7 @@ namespace utopia {
 	
 	void transform_to_reference(const Transform &trans, const int type, const QMortar &global_ir, QMortar &ref_ir);
 	void transform_to_reference_surf(const Transform &trans, const int type, const QMortar &global_ir, QMortar &ref_ir);
-	
+	double compute_volume(const Polyhedron &poly);
 	
 	void mortar_assemble(const libMesh::FEBase &trial_fe,
 						 const libMesh::FEBase &test_fe,
@@ -343,6 +358,7 @@ namespace utopia {
 	bool transfer(LibMeshFESpaceBase &src, libMesh::DenseVector<libMesh::Real> &src_fun, LibMeshFESpaceBase &dest, libMesh::DenseVector<libMesh::Real> &dest_fun);
 	
 	void make_polyhedron(const libMesh::Elem &e, Polyhedron &polyhedron);
+	void make_polyline(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polyline);
 	void make_polygon(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon);
 	void make_polygon_3(const libMesh::Elem &e, libMesh::DenseMatrix<libMesh::Real> &polygon);
 	

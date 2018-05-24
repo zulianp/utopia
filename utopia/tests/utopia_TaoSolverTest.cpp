@@ -118,7 +118,8 @@ namespace utopia {
 		auto box = make_upper_bound_constraints(make_ref(upper_bound));
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(m), make_ref(rhs));
 
-		auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
+		// auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
+		auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
         auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
 
         TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver); 
@@ -149,7 +150,10 @@ namespace utopia {
 		// UTOPIA_RUN_TEST(petsc_tao_solve_simple);
 		// UTOPIA_RUN_TEST(petsc_tao_solve_vi);
 		UTOPIA_RUN_TEST(petsc_tao_solve_mg);
+//FIXME
+#ifdef PETSC_HAVE_MUMPS
 		UTOPIA_RUN_TEST(petsc_tao_tr_bound);
+#endif //PETSC_HAVE_MUMPS
 		UTOPIA_UNIT_TEST_END("PetscTaoTest");
 	}
 }

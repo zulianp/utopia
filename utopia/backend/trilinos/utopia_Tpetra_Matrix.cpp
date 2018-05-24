@@ -186,6 +186,29 @@ namespace utopia {
 	    init_->range_map = row_map;
 	}
 
+	void TpetraMatrix::crs_identity(const rcp_comm_type &comm,
+	              std::size_t rows_local,
+	              std::size_t cols_local,
+	              Tpetra::global_size_t rows_global,
+	              Tpetra::global_size_t cols_global,
+	              const Scalar factor)
+	{
+		crs_init(comm, rows_local, cols_local, rows_global, cols_global, 1.);
+
+		write_lock();
+
+		Range r = row_range();
+
+		for(auto i = r.begin(); i < r.end(); ++i) {
+			if(i >= cols_global) break;
+			
+			set(i, i, factor);
+
+		}
+
+		write_unlock();
+	}
+
 	void TpetraMatrix::get_diag(TpetraVector &d) const
 	{
 		if(d.is_null()) {

@@ -1,10 +1,3 @@
-/*
- * @Author: alenakopanicakova
- * @Date:   2016-03-29
- * @Last Modified by:   Alena Kopanicakova
- * @Last Modified time: 2017-07-03
- */
-
 #ifndef UTOPIA_MULTIGRID_HPP
 #define UTOPIA_MULTIGRID_HPP
 #include "utopia_Smoother.hpp"
@@ -241,6 +234,8 @@ namespace utopia
             
             ////////////////////////////////////
             if(l == 0) {
+              // UTOPIA_RECORD_VALUE("c", c);
+              // UTOPIA_RECORD_VALUE("r", r);
                 if(coarse_solve(r, c)) {
                   assert(approxeq(level(0).A() * c, r, 1e-6));
                   // UTOPIA_RECORD_VALUE("coarse_solve(r, c)", c);

@@ -206,14 +206,19 @@ namespace utopia {
 
 		void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
 		{
-			auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
-			if(!force_direct_solver_ && mg) {
-				SemismoothNewton<Matrix, Vector> newton(linear_solver_);
-				newton.verbose(true);
-				newton.max_it(40);
-				newton.set_box_constraints(box_c);
-				newton.solve(lhs, rhs, inc_c);
-			} else {
+			if(linear_solver_ && !contact_.has_contact()) {
+				linear_solver_->solve(lhs, rhs, inc_c_);
+				return;
+			}
+
+			// auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
+			// if(!force_direct_solver_ && mg) {
+			// 	SemismoothNewton<Matrix, Vector> newton(linear_solver_);
+			// 	newton.verbose(true);
+			// 	newton.max_it(40);
+			// 	newton.set_box_constraints(box_c);
+			// 	newton.solve(lhs, rhs, inc_c);
+			// } else {
 				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
 				// SemismoothNewton<Matrix, Vector> newton(linear_solver_);
 				// newton.verbose(true);
@@ -247,7 +252,7 @@ namespace utopia {
 				c.stop();
 
 				std::cout << "Solve " << c << std::endl;
-			}
+			// }
 		}
 
 		bool step() 
