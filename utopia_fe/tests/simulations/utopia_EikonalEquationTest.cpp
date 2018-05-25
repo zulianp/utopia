@@ -69,7 +69,7 @@ namespace utopia {
 		sol.set(0.);
 
 		DVectord diff_coeff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
-		sol.set(diffusivity);
+		diff_coeff.set(diffusivity);
 
 		auto u_old = interpolate(sol, du);
 		auto d     = interpolate(diff_coeff, du);
