@@ -1774,6 +1774,7 @@ namespace utopia {
 			return ret;
 		}
 
+
 		template<typename T, typename C>
 		inline static auto apply_binary(
 			const ConstantCoefficient<T, 0> &left,
@@ -1886,7 +1887,23 @@ namespace utopia {
 			return ret;
 		}
 
-			//////////////////////////////////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////////////////////////////////
+		template<typename C>
+		inline static auto multiply(
+			const QValues<double> &left,
+			const GradInterpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> decltype( grad(right.expr().coefficient(), right.expr().fun(), ctx) )
+		{
+			auto &&g = grad(right.expr().coefficient(), right.expr().fun(), ctx);
+
+			std::size_t n_quad_points = g.size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				g[qp].implementation() *= left[qp];
+			}
+
+			return std::move(g);
+		}
 
 		template<typename T>
 		inline static auto multiply(
@@ -2099,6 +2116,24 @@ namespace utopia {
 		}
 
 		// template<class Space>
+		// inline static auto multiply(
+		// 	const QValues<Scalar> &left,
+		// 	const Gradient<TrialFunction<Space> > &right, 
+		// 	AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type 
+		// {
+		// 	typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
+
+		// 	for(auto &v : ret) {
+		// 		auto n_quad_points = v.size();
+		// 		for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+		// 			s = left[qp] * v[qp];
+		// 		}
+		// 	}
+
+		// 	return ret;
+		// }
+
+		// template<class Space>
 		inline static auto multiply(
 			const LMDenseMatrix &left,
 			const Gradient<TrialFunction<LibMeshFunctionSpace> > &right, 
@@ -2231,7 +2266,7 @@ namespace utopia {
 
 		template<class Space>
 		inline static auto multiply(
-			const std::vector<double> &left,
+			const QValues<double> &left,
 			const Gradient<TrialFunction<Space> > &right, 
 			AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type 
 		{

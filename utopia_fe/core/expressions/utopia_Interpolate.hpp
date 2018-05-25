@@ -94,6 +94,9 @@ namespace utopia {
 		UTOPIA_STORE(Fun) fun_;	
 	};
 
+	template<class Coefficient, class Fun>
+	using GradInterpolate = Gradient<Interpolate<Coefficient, Fun> >;
+
 
 	template<>
 	class Interpolate<Any, Any> {};
