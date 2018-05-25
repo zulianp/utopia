@@ -6,9 +6,8 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class LevelMemory
+    class FASLevelMemory
     {
-
         public: 
             void init(const int n_levels)
             {
@@ -20,7 +19,6 @@ namespace utopia
 
                 c.resize(n_levels);
             }
-
 
             std::vector<Vector> x, x_0, g, g_diff, c; 
     }; 

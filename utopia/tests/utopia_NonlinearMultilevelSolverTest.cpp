@@ -14,7 +14,7 @@ namespace utopia
 		typedef UTOPIA_SCALAR(DVectord) Scalar;
 
 		NonlinearBratuSolverTest(const SizeType & n_levels = 2): 
-					n_coarse_(5), 
+					n_coarse_(10), 
 					n_levels_(n_levels) 
 		{ 
 
@@ -278,7 +278,7 @@ namespace utopia
 
 		UTOPIA_UNIT_TEST_BEGIN("runNonlinearMultilevelSolverTest");
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(4).run();
+			NonlinearBratuSolverTest(5).run();
 		#endif		
 		UTOPIA_UNIT_TEST_END("runNonlinearMultilevelSolverTest");				
 	}
