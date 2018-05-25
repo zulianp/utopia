@@ -18,7 +18,7 @@ namespace utopia {
 			const Scalar dt,
 			const ContactParams &params
 		)
-		: ContactSolver<Matrix, Vector>(V, material, params), dt_(dt), is_new_time_step_(true)
+		: ContactSolver<Matrix, Vector>(V, material, params), dt_(dt), density_(1), is_new_time_step_(true)
 		{
 			// c_sys_ = std::make_shared<ContactSystem>(V->subspace(0).equation_systems_ptr(), V->subspace(0).equation_system().number());
 		}
@@ -41,8 +41,8 @@ namespace utopia {
 				is_new_time_step_ = false;
 			}
 
-			hessian  = internal_mass_matrix_ + ((dt_*dt_)/4.) * stiffness_matrix_;
-			gradient = ((dt_*dt_)/4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) - forcing_term_;
+			hessian  = internal_mass_matrix_ + ((dt_*dt_*density_)/4.) * stiffness_matrix_;
+			gradient = ((dt_*dt_*density_)/4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) - forcing_term_;
 			return true;
 		}
 
@@ -58,8 +58,9 @@ namespace utopia {
 			auto v = test(V);
 
 			utopia::assemble(inner(u, v) * dX, internal_mass_matrix_);
-			internal_mass_matrix_ *= density;
+			// internal_mass_matrix_ *= density;
 			initial_condition(internal_mass_matrix_);
+			density_ = density;
 		}
 
 		void initial_condition(const DSMatrixd &mass_matrix)
@@ -110,7 +111,7 @@ namespace utopia {
 
 		void update_velocity()
 		{
-			velocity_inc_ = (-2./dt_) * (internal_mass_matrix_ * (x_old_ -  this->displacement() + pred_));
+			velocity_inc_ = (-2./(dt_)) * (internal_mass_matrix_ * (x_old_ -  this->displacement() + pred_));
 			apply_zero_boundary_conditions(this->space()[0].dof_map(), velocity_inc_);			
 			velocity_ = velocity_old_ + e_mul(inverse_mass_vector_, velocity_inc_);
 		}
@@ -121,7 +122,7 @@ namespace utopia {
 			// 	this->external_force_fun()->eval(t_, external_force_);
 			// }
 
-			forcing_term_ = internal_mass_matrix_ * x_old_ + (dt_*dt_/4.) * (2. * external_force_ - internal_force_old_);
+			forcing_term_ = internal_mass_matrix_ * x_old_ + (dt_ * dt_ * density_/4.) * (2. * external_force_ - internal_force_old_);
 		}
 
 		void next_step() override
@@ -177,6 +178,7 @@ namespace utopia {
 	private:
 		Scalar dt_;
 		Scalar t_;
+		Scalar density_;
 		
 		//operators
 		Matrix stiffness_matrix_;
@@ -204,6 +206,7 @@ namespace utopia {
 		bool is_new_time_step_;
 
 		std::shared_ptr<ContactSystem> c_sys_;
+
 
 	};
 

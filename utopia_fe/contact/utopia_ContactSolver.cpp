@@ -159,10 +159,8 @@ namespace utopia {
 		// mg->set_separate_subdomains(true);
 		// end: multigrid
 
-
-
 		sc.set_external_force_fun(ef);		
-		sc.initial_condition();
+		sc.initial_condition(4.);
 		sc.solve_dynamic(400);
 	}
 }

@@ -6,34 +6,27 @@ ENV PETSC_DIR /opt/petsc
 ENV MPI_DIR /opt/petsc
 ENV LIBMESH_DIR /libmesh
 ENV LDFLAGS -L/opt/petsc/lib
-ENV CPATH /opt/OpenBLAS/include:/opt/petsc/include:/opt/slepc/include
+ENV CPATH opt/petsc/include:/opt/slepc/include
+ENV LDFLAGS -L/opt/petsc/lib
 
-#FIXME hack for using openblas
-ENV BLASDIR /opt/OpenBLAS
-ENV BLASLIB openblas
-
-RUN ls $BLASDIR/lib | grep blas
 RUN ls $MPI_DIR/bin | grep mpi
 
-RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl
+RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
 
 RUN git clone https://zulianp@bitbucket.org/zulianp/utopia.git utopia_cloned
-RUN cd /utopia_cloned && git checkout development
-
-ENV LDFLAGS -L/opt/petsc/lib
+RUN cd /utopia_cloned && git checkout development && git pull
 
 # compile utopia
 
 RUN cd /utopia_cloned/utopia && mkdir bin 
 RUN cd /utopia_cloned/utopia/bin && \
-    cmake .. -DCMAKE_INSTALL_PREFIX=/utopia -DCMAKE_BUILD_TYPE=Release \
-     		 -DBLAS_INCLUDE_DIR=$BLASDIR/include -DBLAS_LIBRARIES=$BLASDIR/lib/libopenblas.a -DBLAS_FOUND=TRUE
+    cmake .. -DCMAKE_INSTALL_PREFIX=/utopia -DCMAKE_BUILD_TYPE=Release 
 
 RUN cd /utopia_cloned/utopia/bin && make -j4 
 RUN cd /utopia_cloned/utopia/bin && make install
 
 ENV LD_LIBRARY_PATH /opt/petsc/lib
-RUN cd /utopia_cloned/utopia/bin && ./utopia_exec -verbose
+RUN cd /utopia_cloned/utopia/bin && ./utopia_exec -verbose && ./utopia_exec -test none -bench
 
 # compile moonolith
 
@@ -53,11 +46,13 @@ RUN cd /utopia_cloned/utopia_fe/bin && \
 
 RUN cd /utopia_cloned/utopia_fe/bin && make -j4 
 RUN cd /utopia_cloned/utopia_fe/bin && make install
+RUN cd /utopia_cloned/utopia_fe/bin && ./utopia_fe_exec -r smg
 
 ENV UTOPIA_DIR /utopia_fe 
-ENV LD_LIBRARY_PATH=/opt/petsc/lib/:/libmesh/lib/:/opt/slepc/lib:/opt/OpenBLAS/lib
+ENV LD_LIBRARY_PATH=/opt/petsc/lib/:/libmesh/lib/:/opt/slepc/lib
 
 RUN echo 'export LD_LIBRARY_PATH='$LD_LIBRARY_PATH > setup.sh
 RUN cat setup.sh
+
 
 CMD ["/bin/sh"]
