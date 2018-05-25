@@ -69,9 +69,7 @@ namespace utopia {
 #endif //WITH_MPI
 #endif //WITH_PETSC
         
-     
-
-        return 0;
+        return  instance().exit_code_;
     }
     
     Utopia &Utopia::instance()
@@ -81,6 +79,7 @@ namespace utopia {
     }
     
     Utopia::Utopia()
+    : exit_code_(EXIT_SUCCESS)
     {
         set("data_path", "../data");
         set("opencl_templates_path", "../backend/opencl/templates");

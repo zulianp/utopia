@@ -5,11 +5,14 @@ pipelines:
     - step:
         script:
           - echo '======== Utopia with basic petsc/slepc backends ========='
-          - apk add --no-cache curl build-base clang cmake git gfortran linux-headers 
+          - apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
           - cd utopia
           - mkdir build
           - mkdir bin
           - cd bin
-          - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Debug
-          - make
+          - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Release
+          - make && make install
+          - ./utopia_exec -verbose -bench
+          - cmake .. -DCMAKE_INSTALL_PREFIX=../build_debug -DCMAKE_BUILD_TYPE=Debug
+          - make && make install
           - ./utopia_exec -verbose -bench

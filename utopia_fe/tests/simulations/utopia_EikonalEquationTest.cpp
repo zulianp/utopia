@@ -33,7 +33,7 @@ namespace utopia {
 		const double c1 = 1.;
 		const double c2 = 1.;
 		const double tau = 1.;
-		const double diff_coeff = 1.;
+		const double diffusivity = 1.;
 		const double forcing_term = 5.;
 
 		//discretization parameters
@@ -68,12 +68,21 @@ namespace utopia {
 		DVectord sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 		sol.set(0.);
 
-		auto u_old = interpolate(sol, du);
+		DVectord diff_coeff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+		diff_coeff.set(diffusivity);
 
-		// Set (bi)linear forms
+		auto u_old = interpolate(sol, du);
+		auto d     = interpolate(diff_coeff, du);
 		
-		auto l_form = (c1 * diff_coeff) * inner(grad(u_old), grad(v)) * dX + c2 * inner(sqrt(inner(grad(u_old), grad(u_old))), v) * dX - inner(coeff(forcing_term), v) * dX;
-		auto b_form = (diff_coeff * c1) * inner(grad(du), grad(v)) * dX + c2 * inner(inner(grad(du), grad(u_old))/(coeff(1e-10) + sqrt(inner(grad(u_old), grad(u_old)))), v) * dX;
+		// Set (bi)linear forms
+		auto l_form = c1 * inner(d * grad(u_old), grad(v)) * dX 
+		+ c2 * inner(sqrt(inner(grad(u_old), grad(u_old))), v) * dX
+		- inner(coeff(forcing_term), v) * dX;
+
+		auto b_form = c1 * inner(d * grad(du), grad(v)) * dX 
+		+ c2 * inner(inner(grad(du), grad(u_old))/(coeff(1e-10) + sqrt(inner(grad(u_old), grad(u_old)))), v) * dX;
+		
+
 
 		// assemble
 		DSMatrixd hessian;

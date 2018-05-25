@@ -1,8 +1,7 @@
-# libmesh/Dockerfile
 FROM zulianp/utopia-env:latest
 ENV PETSC_DIR /opt/petsc
 ENV LDFLAGS -L/opt/petsc/lib
-ENV CPATH /opt/OpenBLAS/include:/opt/petsc/include:/opt/slepc/include
+ENV CPATH /opt/petsc/include:/opt/slepc/include
 
 RUN apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl
 RUN git clone https://github.com/libMesh/libmesh.git libmesh_git

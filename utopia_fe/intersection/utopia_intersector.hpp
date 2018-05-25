@@ -7,6 +7,13 @@
 #define USE_DOUBLE_PRECISION
 #define DEFAULT_TOLLERANCE 1e-12
 
+// #ifndef m_kernel__
+// #define m_kernel__
+// #define m_global__
+// #define m_local__
+// #define m_constant__
+// #endif
+
 namespace utopia {
 
 	class Intersector : public moonolith::OpenCLAdapter {
