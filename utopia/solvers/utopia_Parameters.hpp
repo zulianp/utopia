@@ -48,7 +48,7 @@ namespace utopia
     public:
        Parameters()
        {
-         param_file_name = "utopia_file.xml";
+          param_file_name_ = "";
           verbose_ = true; 
           time_statistics_ = true; 
           convergence_reason_ = 0; 
@@ -246,7 +246,8 @@ namespace utopia
     // -------------------------------------------------------------------------------//
     /* --------------------------------  SETTERS  ------------------------------------*/
     // -------------------------------------------------------------------------------//
-    void set_param_file_name(std::string file_name)             {param_file_name = file_name;}
+    void set_param_file_name(std::string file_name)             {param_file_name_ = file_name;}
+    const std::string &param_file_name() const {return param_file_name_;}
     void num_it(const SizeType & num_it)                              { num_it_  = num_it; }
     void convergence_reason(const SizeType & convergence_reason)      { convergence_reason_ = convergence_reason; }
     void max_it(const SizeType & max_it)                              { max_it_ = max_it; } 
@@ -428,7 +429,7 @@ namespace utopia
           Scalar          energy_slope_tol_; 
 
           // path to the parameter's filename
-          std::string param_file_name;
+          std::string param_file_name_;
 
     };
 

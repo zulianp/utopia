@@ -246,6 +246,11 @@ namespace utopia {
             return *vec_;
         }
 
+        inline const rcpvector_type &implementation_ptr() const
+        {
+            return vec_;
+        }
+
         inline bool is_null() const
         {
             return vec_.is_null();

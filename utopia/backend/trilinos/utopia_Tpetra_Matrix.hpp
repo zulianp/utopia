@@ -198,6 +198,11 @@ namespace utopia {
             return *mat_;
         }
 
+        inline const rcp_crs_matrix_type &implementation_ptr() const
+        {
+            return mat_;
+        }
+
         inline bool is_null() const
         {
             return mat_.is_null();
