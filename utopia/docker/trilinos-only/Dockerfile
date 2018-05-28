@@ -27,7 +27,7 @@ RUN cd trilinos_cloned && mkdir build && cd build && \
       -DTrilinos_ENABLE_Amesos=ON \
       -DTrilinos_ENABLE_Ifpack2=ON
       
-RUN cd trilinos_cloned && cd build && make -j && make install
+RUN cd trilinos_cloned && cd build && make && make install
 
 ENV TRILINOS_DIR /opt/trilinos
 

@@ -26,7 +26,7 @@ RUN cd /tmp/ && cd `ls | grep petsc` && \
                 --download-hypre
 
 RUN cd /tmp/ && cd `ls | grep petsc` && \
-    make -j && \
+    make && \
     make install
 
 ENV PETSC_DIR /opt/petsc
