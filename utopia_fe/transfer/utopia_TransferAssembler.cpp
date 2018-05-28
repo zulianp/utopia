@@ -31,6 +31,14 @@
 #include <sstream>
 #include <numeric>
 
+
+/**
+ * TODO:
+   - Allow element-node-dof <-> node-dof convertions
+   - Construction of accumulation operators
+   - Discrimination of element-matrices and deletion of bad entries (e.g., duplicate volume-surface maps)
+ */
+
 namespace utopia {
 
 	template<int Dimensions>
@@ -183,7 +191,7 @@ namespace utopia {
 			const std::shared_ptr<DofMap>   &to_dofs,
 			const TransferOptions &opts,
 			const std::shared_ptr<LocalAssembler> &assembler,
-			const std::shared_ptr<Local2Global>  &local2global)
+			const std::shared_ptr<Local2Global>   &local2global)
 		{
 			this->from_mesh = from_mesh;
 			this->from_dofs = from_dofs;
