@@ -19,16 +19,27 @@ namespace utopia {
     
     class TpetraMatrix {
     public:
-        
-        typedef Tpetra::CrsMatrix<>                       crs_matrix_type;
+
+        typedef Tpetra::Operator<>::scalar_type SC;
+        typedef Tpetra::Operator<SC>::local_ordinal_type LO;
+        typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
+    
+     // typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
+     // typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
+        typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
+     // typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;   
+        typedef serial_node NT;
+]
+        typedef Tpetra::CrsMatrix<SC, LO, GO, NT>         crs_matrix_type;
         typedef Teuchos::RCP<crs_matrix_type>             rcp_crs_matrix_type;
         typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
-        typedef Tpetra::Map<>                             map_type;
+        typedef Tpetra::Map<LO, GO, NT>                   map_type;
         typedef Teuchos::RCP<map_type>                    rcp_map_type;
-        typedef Tpetra::Vector<>::local_ordinal_type      local_ordinal_type;
-        typedef Tpetra::Vector<>::global_ordinal_type     global_ordinal_type;
+
+//        typedef Tpetra::Vector<>::local_ordinal_type      local_ordinal_type;
+//        typedef Tpetra::Vector<>::global_ordinal_type     global_ordinal_type;
         typedef Tpetra::Vector<>::scalar_type             Scalar;
-        typedef crs_matrix_type::node_type node_type;
+//        typedef crs_matrix_type::node_type                node_type;
         
         TpetraMatrix() : owner_(true) {}
                 
@@ -162,8 +173,8 @@ namespace utopia {
             describe(std::cout);
         }
         
-        void set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
-        void add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
+        void set(const GO &row, const GO &col, const Scalar &value);
+        void add(const GO &row, const GO &col, const Scalar &value);
 
         void mult(const TpetraVector &vec, TpetraVector &result) const;
         void mult(const TpetraMatrix &right, TpetraMatrix &result) const;

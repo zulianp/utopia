@@ -15,16 +15,31 @@ namespace utopia {
 
     class TpetraVector {
     public: 
-        typedef Tpetra::Map<>                             map_type;
-        typedef Tpetra::Vector<>                          vector_type;
+    
+    
+    typedef Tpetra::Operator<>::scalar_type SC;
+    typedef Tpetra::Operator<SC>::local_ordinal_type LO;
+    typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
+    
+    // typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
+    // typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
+    typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
+    // typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
+    
+    typedef serial_node NT;
+    
+
+    typedef Tpetra::Operator<SC, LO, GO, NT> OP;
+    
+        typedef Tpetra::Map<LO, GO, NT>                   map_type;
+        typedef Tpetra::MultiVector<SC, LO, GO, NT>       vector_type;
         typedef Teuchos::RCP<vector_type>                 rcpvector_type;
         typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
         typedef Teuchos::RCP<const map_type>              rcp_map_type;
-        typedef Tpetra::Vector<>::scalar_type             scalar_type;
-        typedef Tpetra::Vector<>::local_ordinal_type      local_ordinal_type;
-        typedef vector_type::global_ordinal_type          global_ordinal_type;
-        typedef Tpetra::Vector<>::mag_type                magnitude_type;
-        typedef vector_type::scalar_type Scalar;
+        
+//        typedef vector_type::global_ordinal_type          global_ordinal_type;
+//        typedef Tpetra::Vector<>::mag_type                magnitude_type;
+        typedef vector_type::scalar_type                  Scalar;
 
         TpetraVector()
         {
@@ -116,13 +131,13 @@ namespace utopia {
             describe(std::cout);
         }
 
-        inline Scalar get(const global_ordinal_type i) const
+        inline Scalar get(const GO i) const
         {
             assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
             return read_only_data_[i - implementation().getMap()->getMinGlobalIndex()];
         }
 
-        inline void set(const global_ordinal_type i, const Scalar value)
+        inline void set(const GO i, const Scalar value)
         {
             if(!write_data_.is_null()) {
                 write_data_[i - implementation().getMap()->getMinGlobalIndex()] = value;
@@ -131,7 +146,7 @@ namespace utopia {
             }
         }
 
-        inline void add(const global_ordinal_type i, const Scalar value)
+        inline void add(const GO i, const Scalar value)
         {
             implementation().sumIntoGlobalValue(i, value);
         }
