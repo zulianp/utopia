@@ -31,10 +31,7 @@ namespace utopia {
 		class Algorithm {
 		public:
 			virtual ~Algorithm() {}
-			virtual bool assemble(
-				LocalAssembler &assembler,
-				Local2Global   &local2global,
-				SparseMatrix   &B) = 0;
+			virtual bool assemble(SparseMatrix &B) = 0;
 		};
 
 		TransferAssembler(

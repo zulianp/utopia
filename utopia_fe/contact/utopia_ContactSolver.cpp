@@ -160,7 +160,7 @@ namespace utopia {
 		// end: multigrid
 
 		sc.set_external_force_fun(ef);		
-		sc.initial_condition(4.);
+		sc.initial_condition(2.);
 		sc.solve_dynamic(400);
 	}
 }
