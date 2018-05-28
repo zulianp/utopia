@@ -23,8 +23,6 @@ RUN cd trilinos_cloned && mkdir build && cd build && \
       -DTPL_ENABLE_MPI=ON \
       -DMPI_BASE_DIR=/opt/mpich \
       -DTrilinos_ENABLE_Tpetra=ON \
-      -DTpetra_ENABLE_Thread=ON \
-      -DTpetra_ENABLE_OpenMP=ON \
       -DTrilinos_ENABLE_Belos=ON \
       -DTrilinos_ENABLE_Amesos=ON \
       -DTrilinos_ENABLE_Ifpack2=ON
