@@ -8,7 +8,7 @@
 
 namespace utopia {
 
-	void TpetraMatrix::set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
+	void TpetraMatrix::set(const GO &row, const GO &col, const Scalar &value)
 	{
 	    m_utopia_status_once(
 	    	"> TpetraMatrix::set does what is supposed to do with respect to the edsl. " 
@@ -20,7 +20,7 @@ namespace utopia {
 	    }
 	}
 	
-	void TpetraMatrix::add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
+	void TpetraMatrix::add(const GO &row, const GO &col, const Scalar &value)
 	{
 		m_utopia_status_once(
 			"> TpetraMatrix::add does what is supposed to do with respect to the edsl. " 
@@ -96,7 +96,7 @@ namespace utopia {
 	{
 		//FIXME this does not work as it should
 		try {
-			Tpetra::RowMatrixTransposer<Scalar, local_ordinal_type, global_ordinal_type, node_type> transposer(mat_);
+			Tpetra::RowMatrixTransposer<Scalar, LO, GO, NT> transposer(mat_);
 			mat.mat_ = transposer.createTranspose();
 			mat.owner_ = true;
 

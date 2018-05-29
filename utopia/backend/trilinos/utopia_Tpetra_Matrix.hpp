@@ -12,6 +12,10 @@
 #include <Tpetra_Map_decl.hpp>
 
 
+#include <Kokkos_DefaultNode.hpp>
+#include <Tpetra_CrsMatrix.hpp>
+#include <Tpetra_DefaultPlatform.hpp>
+
 #include <iostream>
 #include <memory>
 
@@ -29,7 +33,7 @@ namespace utopia {
         typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
      // typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;   
         typedef serial_node NT;
-]
+
         typedef Tpetra::CrsMatrix<SC, LO, GO, NT>         crs_matrix_type;
         typedef Teuchos::RCP<crs_matrix_type>             rcp_crs_matrix_type;
         typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;

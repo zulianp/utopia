@@ -161,27 +161,27 @@ namespace utopia {
             assert(false);
         }
 
-        static Scalar get(const TpetraVector &v, const TpetraVector::global_ordinal_type &index)
+        static Scalar get(const TpetraVector &v, const TpetraVector::GO &index)
         {
             return v.get(index);
         }
 
-        inline static void set(TpetraVector &v, const TpetraVector::global_ordinal_type &index, Scalar value)
+        inline static void set(TpetraVector &v, const TpetraVector::GO &index, Scalar value)
         {
             v.set(index, value);
         }
 
-        inline static void add(TpetraVector &v, const TpetraVector::global_ordinal_type &index, Scalar value)
+        inline static void add(TpetraVector &v, const TpetraVector::GO &index, Scalar value)
         {
             v.add(index, value);
         }
 
-        inline static void set(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
+        inline static void set(TpetraMatrix &m, const TpetraMatrix::GO &row, const TpetraMatrix::GO &col, const Scalar &value)
         {
             m.set(row, col, value);
         }
 
-        inline static void add(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
+        inline static void add(TpetraMatrix &m, const TpetraMatrix::GO &row, const TpetraMatrix::GO &col, const Scalar &value)
         {
             m.add(row, col, value);
         }

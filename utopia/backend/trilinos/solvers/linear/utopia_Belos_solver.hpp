@@ -20,11 +20,11 @@
 #include <Tpetra_CrsMatrix.hpp>
 #include <Tpetra_DefaultPlatform.hpp>
 
-/*#include <MueLu.hpp>
- #include <MueLu_CreateTpetraPreconditioner.hpp>
+//#include <MueLu.hpp>
+ /*#include <MueLu_CreateTpetraPreconditioner.hpp>
  #include <MueLu_TpetraOperator.hpp>
  */
-// #include <Ifpack2_Factory.hpp>
+ #include <Ifpack2_Factory.hpp>
 
 
 namespace utopia {
@@ -52,12 +52,12 @@ namespace utopia {
     typedef Belos::LinearProblem<SC, MV, OP> problem_type;
     typedef Belos::SolverManager<SC, MV, OP> solver_type;
     
-    // typedef Ifpack2::Preconditioner<SC, LO, GO, NT> ifpack_prec_type;
+    typedef Ifpack2::Preconditioner<SC, LO, GO, NT> ifpack_prec_type;
     
     //typedef MueLu::TpetraOperator<SC, LO, GO, NT> muelu_prec_type;
     
-    /*
-     typedef Tpetra::Vector<SC, LO, GO, NT> vec_type;*/
+    
+    typedef Tpetra::Vector<SC, LO, GO, NT> vec_type;
     typedef Tpetra::CrsMatrix<SC, LO, GO, NT> matrix_type;
     
     /**@ingroup     Linear
@@ -81,7 +81,7 @@ namespace utopia {
         Belos::SolverFactory<SC, MV, OP> belosFactory;
         
         //preconditioner
-        // Teuchos::RCP<ifpack_prec_type> M_ifpack;
+        Teuchos::RCP<ifpack_prec_type> M_ifpack;
         //  Teuchos::RCP<muelu_prec_type> M_muelu;
         
     public:
@@ -151,12 +151,12 @@ namespace utopia {
             std::string dir_prec_type = ParamList->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
             
             if ( direct_solver ) {
-                // M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, *precond);
-                // assert(!M_ifpack.is_null());
-                // M_ifpack->setParameters(ParamList->sublist(dir_prec_type, false));
-                // M_ifpack->initialize();
-                // M_ifpack->compute();
-                // linearProblem->setLeftPrec(M_ifpack);
+                 //M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, *precond);
+                 assert(!M_ifpack.is_null());
+                 M_ifpack->setParameters(ParamList->sublist(dir_prec_type, false));
+                 M_ifpack->initialize();
+                 M_ifpack->compute();
+                 linearProblem->setLeftPrec(M_ifpack);
             } else {
                 // Multigrid Hierarchy
                 //M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)*precond,
@@ -172,12 +172,12 @@ namespace utopia {
             std::string dir_prec_type = ParamList->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
             
             if ( direct_solver ) {
-                // M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, *precond);
-                // assert(!M_ifpack.is_null());
-                // M_ifpack->setParameters(ParamList->sublist(dir_prec_type, false));
-                // M_ifpack->initialize();
-                // M_ifpack->compute();
-                // linearProblem->setLeftPrec(M_ifpack);
+                 M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, *precond);
+                 assert(!M_ifpack.is_null());
+                 M_ifpack->setParameters(ParamList->sublist(dir_prec_type, false));
+                 M_ifpack->initialize();
+                 M_ifpack->compute();
+                 linearProblem->setLeftPrec(M_ifpack);
             } else {
                 // Multigrid Hierarchy
                 //M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)*precond,

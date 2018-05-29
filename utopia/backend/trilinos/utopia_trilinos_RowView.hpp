@@ -7,10 +7,10 @@ namespace utopia {
 	template<class Tensor, int FILL_TYPE>
 	class RowView<Tensor, 2, FILL_TYPE, utopia::TRILINOS> {
 	public:
-		typedef typename Tensor::Implementation::global_ordinal_type global_ordinal_type;
+		typedef typename Tensor::Implementation::GO GO;
 		typedef typename Tensor::Implementation::Scalar Scalar;
 
-		inline RowView(const Tensor &t, const global_ordinal_type row)
+		inline RowView(const Tensor &t, const GO row)
 		: t_(t), offset_(0)
 		{
 			if(t_.implementation().implementation().isGloballyIndexed()) {
@@ -30,7 +30,7 @@ namespace utopia {
 			return cols_.size();
 		}
 
-		inline global_ordinal_type col(const int index) const
+		inline GO col(const int index) const
 		{
 			assert(index < n_values());
 			return cols_[index] + offset_;
@@ -44,8 +44,8 @@ namespace utopia {
 
 	private:
 		const Tensor &t_;
-		global_ordinal_type offset_;
-		Teuchos::ArrayView<const global_ordinal_type> cols_;
+		GO offset_;
+		Teuchos::ArrayView<const GO> cols_;
 		Teuchos::ArrayView<const Scalar> values_;
 	};
 }

@@ -9,6 +9,11 @@
 #include <Tpetra_Map_decl.hpp>
 #include <Tpetra_Vector_decl.hpp>
 
+#include <Kokkos_DefaultNode.hpp>
+#include <Tpetra_CrsMatrix.hpp>
+#include <Tpetra_DefaultPlatform.hpp>
+
+
 #include <memory>
 
 namespace utopia {
@@ -29,10 +34,10 @@ namespace utopia {
     typedef serial_node NT;
     
 
-    typedef Tpetra::Operator<SC, LO, GO, NT> OP;
+         typedef Tpetra::Operator<SC, LO, GO, NT> OP;
     
         typedef Tpetra::Map<LO, GO, NT>                   map_type;
-        typedef Tpetra::MultiVector<SC, LO, GO, NT>       vector_type;
+        typedef Tpetra::Vector<SC, LO, GO, NT>       vector_type;
         typedef Teuchos::RCP<vector_type>                 rcpvector_type;
         typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
         typedef Teuchos::RCP<const map_type>              rcp_map_type;

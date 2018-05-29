@@ -24,7 +24,17 @@ namespace utopia {
 
 	bool TpetraVector::read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path)
 	{
-		typedef Tpetra::CrsMatrix<>                       crs_matrix_type;
+        typedef Tpetra::Operator<>::scalar_type SC;
+        typedef Tpetra::Operator<SC>::local_ordinal_type LO;
+        typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
+    
+     // typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
+     // typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
+        typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
+     // typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;   
+        typedef serial_node NT;
+
+        typedef Tpetra::CrsMatrix<SC, LO, GO, NT>         crs_matrix_type;
 
 		try {
 			rcp_map_type map;
@@ -40,7 +50,7 @@ namespace utopia {
 
 	bool TpetraVector::write(const std::string &path) const
 	{
-		typedef Tpetra::CrsMatrix<>                       crs_matrix_type;
+     typedef Tpetra::CrsMatrix<SC, LO, GO, NT>            crs_matrix_type;
 		
 		if(vec_.is_null()) return false;
 
