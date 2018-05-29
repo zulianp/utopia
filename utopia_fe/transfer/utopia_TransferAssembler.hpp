@@ -238,6 +238,13 @@ namespace utopia {
 	private:
 		std::shared_ptr<DSMatrixd> T;
 	};
+
+
+	enum TransferOperatorType {
+		INTERPOLATION = 0,
+		L2_PROJECTION = 1,
+		PSEUDO_L2_PROJECTION = 2
+	};
 }
 
 #endif //UTOPIA_TRANSFER_ASSEMBLER_HPP

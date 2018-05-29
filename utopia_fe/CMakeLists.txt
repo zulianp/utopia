@@ -84,6 +84,7 @@ endfunction()
 
 list(APPEND UTOPIA_FE_MODULES
 	tests
+	fractures
 	multigrid
 	transfer
 	visualization
