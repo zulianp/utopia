@@ -143,6 +143,8 @@ namespace utopia {
 		QMortar &q_test)
 	{
 		if(test.dim() == 1) {
+			//volume to surface
+
 			make_polygon(trial, trial_pts);
 			make_polyline(test, test_pts);
 
@@ -195,13 +197,7 @@ namespace utopia {
 			auto test_trans   = std::make_shared<AffineTransform2>(test);
 
 			transform_to_reference(*trial_trans,  trial.type(), composite_ir, q_trial);
-
-
-			// if(vol2surf) {
-			// 	transform_to_reference_surf(*dest_trans, dest_el.type(), composite_ir, dest_ir);
-			// } else {
 			transform_to_reference(*test_trans, test.type(), composite_ir, q_test);
-			// }
 
 			return true;
 		} else {

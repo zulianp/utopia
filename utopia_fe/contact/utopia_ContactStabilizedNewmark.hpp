@@ -18,7 +18,7 @@ namespace utopia {
 			const Scalar dt,
 			const ContactParams &params
 		)
-		: ContactSolver<Matrix, Vector>(V, material, params), dt_(dt), density_(1), is_new_time_step_(true)
+		: ContactSolver<Matrix, Vector>(V, material, params), dt_(dt), density_(1.), is_new_time_step_(true)
 		{
 			// c_sys_ = std::make_shared<ContactSystem>(V->subspace(0).equation_systems_ptr(), V->subspace(0).equation_system().number());
 		}
@@ -111,7 +111,7 @@ namespace utopia {
 
 		void update_velocity()
 		{
-			velocity_inc_ = (-2./(dt_)) * (internal_mass_matrix_ * (x_old_ -  this->displacement() + pred_));
+			velocity_inc_ = (-2./dt_) * (internal_mass_matrix_ * (x_old_ -  this->displacement() + pred_));
 			apply_zero_boundary_conditions(this->space()[0].dof_map(), velocity_inc_);			
 			velocity_ = velocity_old_ + e_mul(inverse_mass_vector_, velocity_inc_);
 		}
@@ -122,7 +122,7 @@ namespace utopia {
 			// 	this->external_force_fun()->eval(t_, external_force_);
 			// }
 
-			forcing_term_ = internal_mass_matrix_ * x_old_ + (dt_ * dt_ * density_/4.) * (2. * external_force_ - internal_force_old_);
+			forcing_term_ = internal_mass_matrix_ * x_old_ + ((dt_ * dt_ * density_)/4.) * (2. * external_force_ - internal_force_old_);
 		}
 
 		void next_step() override

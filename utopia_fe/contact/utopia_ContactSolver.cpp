@@ -18,10 +18,10 @@ namespace utopia {
 	void run_steady_contact(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		mesh->read("../data/wear_2_far.e");
+		// mesh->read("../data/wear_2_far.e");
 		// mesh->read(utopia::Utopia::instance().get("data_path") + "/input_file.e");
 		// mesh->read("../data/channel_2d.e");
-		// mesh->read("../data/leaves_3d_b.e");
+		mesh->read("../data/leaves_3d_b.e");
 
 
 		const auto dim = mesh->mesh_dimension();
@@ -42,11 +42,11 @@ namespace utopia {
 			// dt = 0.01;
 		}
 		
-		LameeParameters lamee_params(20., 20.);
+		// LameeParameters lamee_params(20., 20.);
 		// lamee_params.set_mu(2, 10.);
 		// lamee_params.set_lambda(2, 10.);
 
-		// LameeParameters lamee_params(200., 200.);
+		LameeParameters lamee_params(200., 200.);
 		// 	lamee_params.set_mu(2, 10000.);
 		// lamee_params.set_lambda(2, 10000.);
 
@@ -160,7 +160,7 @@ namespace utopia {
 		// end: multigrid
 
 		sc.set_external_force_fun(ef);		
-		sc.initial_condition(4.);
+		sc.initial_condition(2.);
 		sc.solve_dynamic(400);
 	}
 }

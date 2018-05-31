@@ -48,7 +48,8 @@ namespace utopia {
 			}
 
 			output_path_ += "contact_sol.e";
-			linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
+			// linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
+			linear_solver_ = std::make_shared<BiCGStab<Matrix, Vector>>();
 			// auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
 			// iterative_solver->atol(1e-14);
 			// iterative_solver->stol(1e-14);
