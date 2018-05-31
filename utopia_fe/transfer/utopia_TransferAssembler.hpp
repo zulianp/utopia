@@ -31,10 +31,7 @@ namespace utopia {
 		class Algorithm {
 		public:
 			virtual ~Algorithm() {}
-			virtual bool assemble(
-				LocalAssembler &assembler,
-				Local2Global   &local2global,
-				SparseMatrix   &B) = 0;
+			virtual bool assemble(SparseMatrix &B) = 0;
 		};
 
 		TransferAssembler(
@@ -240,6 +237,13 @@ namespace utopia {
 
 	private:
 		std::shared_ptr<DSMatrixd> T;
+	};
+
+
+	enum TransferOperatorType {
+		INTERPOLATION = 0,
+		L2_PROJECTION = 1,
+		PSEUDO_L2_PROJECTION = 2
 	};
 }
 
