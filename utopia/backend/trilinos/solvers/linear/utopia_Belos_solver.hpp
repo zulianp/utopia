@@ -20,10 +20,10 @@
 #include <Tpetra_CrsMatrix.hpp>
 #include <Tpetra_DefaultPlatform.hpp>
 
-//#include <MueLu.hpp>
- /*#include <MueLu_CreateTpetraPreconditioner.hpp>
- #include <MueLu_TpetraOperator.hpp>
- */
+#include <MueLu.hpp>
+#include <MueLu_CreateTpetraPreconditioner.hpp>
+#include <MueLu_TpetraOperator.hpp>
+
  #include <Ifpack2_Factory.hpp>
 
 
@@ -38,10 +38,10 @@ namespace utopia {
     typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
     //typedef Tpetra::Map<LO, GO, NT> map_type;
     
-    // typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
+    typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
     // typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
     typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
-    // typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
+    typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
     
     typedef serial_node NT;
     
@@ -54,7 +54,7 @@ namespace utopia {
     
     typedef Ifpack2::Preconditioner<SC, LO, GO, NT> ifpack_prec_type;
     
-    //typedef MueLu::TpetraOperator<SC, LO, GO, NT> muelu_prec_type;
+    typedef MueLu::TpetraOperator<SC, LO, GO, NT> muelu_prec_type;
     
     
     typedef Tpetra::Vector<SC, LO, GO, NT> vec_type;
@@ -82,7 +82,7 @@ namespace utopia {
         
         //preconditioner
         Teuchos::RCP<ifpack_prec_type> M_ifpack;
-        //  Teuchos::RCP<muelu_prec_type> M_muelu;
+        Teuchos::RCP<muelu_prec_type> M_muelu;
         
     public:
         typedef UTOPIA_SCALAR(Vector) Scalar;
@@ -149,7 +149,23 @@ namespace utopia {
         {
             bool direct_solver = ParamList->sublist("UTOPIA", true).get<bool>("Direct Preconditioner", false);
             std::string dir_prec_type = ParamList->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
-            
+       //TODO    
+auto delegate_ptr = std::dynamic_pointer_cast<DelegatePreconditioner<Matrix, Vector>>(this->get_preconditioner());
+       /*if(delegate_ptr) {
+        if(ksp_->has_shell_pc()) {
+           m_utopia_warning_once("set_preconditioner sets jacobi if a delegate precond has been set and type is matshell");
+           ksp_->pc_type("jacobi");
+          }                                                                                                                                                                                                                  
+       } else if(this->get_preconditioner()) {
+         auto shell_ptr = this->get_preconditioner().get();
+         ksp_->attach_shell_preconditioner(UtopiaPCApplyShell,
+         shell_ptr,
+         nullptr,
+         nullptr
+         );
+        }
+       }*/
+
             if ( direct_solver ) {
                  //M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, *precond);
                  assert(!M_ifpack.is_null());
@@ -161,8 +177,8 @@ namespace utopia {
                 // Multigrid Hierarchy
                 //M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)*precond,
                 //                                            ParamList->sublist("MueLu", false));
-                //assert(!M_muelu.is_null());
-                //linearProblem->setRightPrec(M_muelu);
+                assert(!M_muelu.is_null());
+                linearProblem->setRightPrec(M_muelu);
             }
         }
         
@@ -180,10 +196,10 @@ namespace utopia {
                  linearProblem->setLeftPrec(M_ifpack);
             } else {
                 // Multigrid Hierarchy
-                //M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)*precond,
-                //                                            ParamList->sublist("MueLu", false));
-                //assert(!M_muelu.is_null());
-                //linearProblem->setRightPrec(M_muelu);
+                M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)*precond,
+                                                            ParamList->sublist("MueLu", false));
+                assert(!M_muelu.is_null());
+                linearProblem->setRightPrec(M_muelu);
             }
         }
         
