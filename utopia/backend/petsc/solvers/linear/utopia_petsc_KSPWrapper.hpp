@@ -397,6 +397,21 @@ namespace utopia {
             assert(ls == local_size(x).get(0));
             
             KSPConvergedReason  reason;
+
+            KSPType type; 
+            KSPGetType(ksp_, &type); 
+
+            std::cout<<"type: "<< type << " \n"; 
+
+            PC pc; 
+            KSPGetPC(ksp_, &pc); 
+
+            PCType pc_type; 
+            PCGetType(pc, &pc_type); 
+
+            std::cout<<"pc_type: "<< pc_type << " \n"; 
+
+
             ierr = KSPSolve(ksp_, raw_type(b), raw_type(x)); assert(ierr == 0);
             ierr = KSPGetConvergedReason(ksp_, &reason);     assert(ierr == 0);
 

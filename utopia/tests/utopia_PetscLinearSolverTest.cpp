@@ -24,7 +24,82 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
+            
+            UTOPIA_RUN_TEST(hardiks_test);
         }
+
+
+        void hardiks_test()
+        {
+
+            std::cout<<"-------- hardiks test --------- \n"; 
+
+            DVectord b, x; 
+            read("/Users/alenakopanicakova/Downloads/hardik/matlab/fb", b);
+
+            DSMatrixd A, T; 
+            read("/Users/alenakopanicakova/Downloads/hardik/matlab/Kb", A);
+            // read("/Users/alenakopanicakova/Downloads/hardik/matlab/T", T);
+
+
+            x = 0.0 * b; 
+
+
+            ConjugateGradient<DSMatrixd, DVectord> cg;
+
+            // BiCGStab<DSMatrixd, DVectord> cg;
+            
+            cg.pc_type("hypre");
+            cg.rtol(1e-14);
+            cg.atol(1e-14);
+            cg.max_it(500);
+            cg.verbose(true);
+
+            cg.solve(A, b, x); 
+
+            exit(0); 
+
+
+            std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
+            
+            // from coarse to fine
+            interpolation_operators.push_back(make_ref(T));
+            
+            //  init
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+#ifdef PETSC_HAVE_MUMPS
+            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+#endif //PETSC_HAVE_MUMPS
+            
+            auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+            
+            Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
+            // multigrid.set_use_line_search(true);
+            
+            
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            // multigrid.set_fix_semidefinite_operators(true);
+            // multigrid.update(make_ref(A));
+            
+            multigrid.must_generate_masks(false);
+            
+            multigrid.max_it(2);
+            multigrid.verbose(false); 
+            cg.set_preconditioner(make_ref(multigrid));
+
+            cg.solve(A, b, x); 
+
+
+
+            exit(0); 
+
+        }
+
+
+
+
+
+
 
         void petsc_cg()
         {
