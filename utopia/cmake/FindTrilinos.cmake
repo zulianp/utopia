@@ -59,5 +59,5 @@ ENDIF()
 
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Trilinos DEFAULT_MSG  Trilinos_INCLUDE_DIRS Trilinos_LIBRARIES Trilinos_TPL_LIBRARIES)
+find_package_handle_standard_args(Trilinos DEFAULT_MSG  Trilinos_INCLUDE_DIRS Trilinos_LIBRARIES Trilinos_TPL_LIBRARIES Trilinos_TPL_INCLUDE_DIRS)
 
