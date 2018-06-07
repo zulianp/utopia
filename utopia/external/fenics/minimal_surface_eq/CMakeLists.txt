@@ -37,7 +37,7 @@ if (EXISTS ${DOLFIN_USE_FILE})
   endif()
 else()
   # Compiler definitions
-  include("$ENV{UTOPIA_DIR}/config/utopia_config.cmake")
+  include("$ENV{UTOPIA_DIR}/config/utopia-config.cmake")
   add_definitions(${DOLFIN_CXX_DEFINITIONS})
   add_definitions(${UTOPIA_DEFS})
 

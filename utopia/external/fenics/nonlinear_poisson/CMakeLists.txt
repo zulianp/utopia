@@ -40,7 +40,7 @@ endif()
 
 
 # Add utopia library 
-include("$ENV{UTOPIA_DIR}/config/utopia_config.cmake")
+include("$ENV{UTOPIA_DIR}/config/utopia-config.cmake")
 
 # Compiler definitions
 add_definitions(${DOLFIN_CXX_DEFINITIONS})

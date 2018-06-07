@@ -55,7 +55,7 @@ Setting MOONOLITH\_INSTALL\_PREFIX is optional. But if you want to delete the co
 
 ## Compiling your code with utopia and Makefile
 
-If you are using utopia with 'make' you can use the utopia_config.makefile in the $UTOPIA\_DIR/config folder as shown
+If you are using utopia with 'make' you can use the utopia-config.makefile in the $UTOPIA\_DIR/config folder as shown
 in the example in the file utopia/utopia/example\_usage\_of\_utopia/Makefile
 
 If you are using utopia\_fe with 'make' you can use the utopia_fe_config.makefile in the $UTOPIA\_DIR/config folder as shown
