@@ -84,6 +84,12 @@ namespace utopia
 
         }
 
+        virtual void init_memory(const SizeType & fine_local_size) override 
+        {
+            std::cout<<"-------- to be done \n"; 
+        }
+
+
 
         VerbosityLevel verbosity_level() const 
         {
@@ -149,17 +155,11 @@ namespace utopia
             _it_global = 0; 
 
             //-------------- INITIALIZATIONS ---------------
-            init_deltas(); 
-            init_delta_gradients();  
-            init_x_initials(); 
-            
-
-            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
-                init_delta_hessians(); 
+            init(); 
             
             //----------------------------------------------
 
-            if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL)
+            if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0)
             {
                 ColorModifier red(FG_LIGHT_MAGENTA);
                 ColorModifier def(FG_DEFAULT);
@@ -199,7 +199,7 @@ namespace utopia
 
                 _it_global++; 
 
-                if(this->verbose())
+                if(this->verbose() && mpi_world_rank() == 0)
                 {
                     ColorModifier red(FG_LIGHT_MAGENTA);
                     ColorModifier def(FG_DEFAULT);
@@ -381,7 +381,7 @@ namespace utopia
                 if(converged==true) 
                     return true; 
 
-                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                 {
                     // just to see what is being printed 
                     std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level); 
@@ -429,7 +429,7 @@ namespace utopia
             g_norm = norm2(g); 
 
 
-            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
                 this->print_level_info(level); 
                 PrintInfo::print_iter_status(0, {g_norm, energy_old, ared, pred, rho, get_delta(level-1) }); 
@@ -493,15 +493,19 @@ namespace utopia
                     this->update_hessian(g, g_old, s, H, rho, g_norm); 
                 }
 
+                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+                    PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
+
                 converged  = (delta_converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, get_delta(level-1)); 
                 
-                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
-                    PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
+                if(level == this->n_levels())
+                    converged  = (converged  == true || g_norm < this->atol_) ? true : false; 
+
                 it++; 
 
             }
 
-            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
                 ColorModifier color_def(FG_DEFAULT);
                 std::cout<< color_def; 
@@ -513,6 +517,18 @@ namespace utopia
 
 
     protected:
+
+
+        virtual void init() 
+        {
+            init_deltas(); 
+
+            _delta_gradients.resize(this->n_levels()-1); 
+            _x_initials.resize(this->n_levels()-1); 
+            
+            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
+                _delta_hessians.resize(this->n_levels()-1); 
+        }
 
         // -------------------------- tr radius managment ---------------------------------------------        
         /**
@@ -546,7 +562,7 @@ namespace utopia
                 Scalar corr_norm = this->level_dependent_norm(s_global, level); 
                 bool converged = this->delta_termination(corr_norm, level); 
                 
-                if(converged && verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+                if(converged && verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                     std::cout<<"termination  due to small radius on level: "<< level << ". \n"; 
 
                 corr_norm = this->get_delta(level) - corr_norm; 
@@ -883,18 +899,15 @@ namespace utopia
         {
             if(flg)
             {
-                _coarse_tr_subproblem->current_radius(get_delta(level-1));  
                 _coarse_tr_subproblem->atol(1e-16); 
                 _coarse_tr_subproblem->max_it(5000); 
-                _coarse_tr_subproblem->tr_constrained_solve(H, g, s); 
+                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, get_delta(level-1)); 
             }
             else
             {
-                _smoother_tr_subproblem->current_radius(get_delta(level-1));  
                 _smoother_tr_subproblem->atol(1e-16); 
                 _smoother_tr_subproblem->max_it(5);
-                _smoother_tr_subproblem->tr_constrained_solve(H, g, s); 
-
+                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, get_delta(level-1)); 
             }
 
             return true; 
@@ -958,7 +971,7 @@ namespace utopia
          *
          * @return     The multilevel energy.
          */
-        virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & x, const Vector & s_global, const SizeType & level)
+        virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & x, const Vector & s_global, const SizeType & level) 
         {
             if(level < this->n_levels())
                 return MultilevelEnergyEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_energy(fun, x, get_delta_gradient(level-1), get_delta_hessian(level-1), s_global); 
@@ -988,7 +1001,7 @@ namespace utopia
         virtual void print_level_info(const SizeType & level)
         {
             ColorModifier color_out(FG_LIGHT_YELLOW);
-            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
+            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
                 if(level == 1)
                 {

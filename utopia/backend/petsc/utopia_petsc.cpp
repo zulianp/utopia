@@ -7,7 +7,6 @@
 #include "utopia_RMTR_inf.hpp"
 #include "utopia_MG_OPT.hpp"
 #include "utopia_FAS.hpp"
-#include "utopia_NonLinearMultigrid.hpp"
 #include "utopia_ExtendedFunction.hpp"
 
 //explicit instantiations
@@ -27,7 +26,7 @@ namespace utopia {
 	
 	template class Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL>;
 	template class RMTR<DSMatrixd, DVectord, FIRST_ORDER>;
-	template class RMTR_inf<DSMatrixd, DVectord, FIRST_ORDER>;
+	template class RMTR_inf<DSMatrixd, DVectord>;
 
 	template class FAS<DSMatrixd, DVectord>;
 	template class MG_OPT<DSMatrixd, DVectord>;

@@ -7,6 +7,11 @@
 #include "utopia_Function.hpp"
 #include "utopia_SolutionStatus.hpp"
 
+
+#include "utopia_MultiLevelEvaluations.hpp"
+
+
+
 #include <algorithm>
 #include <vector>
 
@@ -56,6 +61,7 @@ namespace utopia {
             verbose_            = params.verbose();
             time_statistics_    = params.time_statistics();
         }
+
         
         /**
          * @brief      The solve function for nonlinear multilevel solvers.
@@ -67,15 +73,18 @@ namespace utopia {
          */
         virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs)
         {
-            this->init_solver(this->name_id(), {" it. ", "|| grad ||", "r_norm" , "Energy"});
-            status_.clear();
             
             bool converged = false;
-            SizeType it = 0, l = this->n_levels();
+            SizeType it = 0, n_levels = this->n_levels();
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
+
             
-            if(this->verbose())
-                std::cout<<"Number of levels: "<< l << "  \n";
+            std::string header_message = this->name_id() + ": " + std::to_string(n_levels) +  " levels";
+            this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
+            
+            status_.clear();
+
+            this->init_memory(local_size(x_h).get(0)); 
             
             Vector g = local_zeros(local_size(x_h));
             fine_fun.gradient(x_h, g);
@@ -91,20 +100,8 @@ namespace utopia {
             
             while(!converged)
             {
-                if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
-                    this->multiplicative_cycle(fine_fun, x_h, rhs, l);
-                else if(this->cycle_type() == FULL_CYCLE)
-                {
-                    this->full_cycle(fine_fun, x_h, rhs, l);
-                    this->cycle_type(MULTIPLICATIVE_CYCLE);
-                }
-                else
-                {
-                    std::cout<<"ERROR::UTOPIA_Multilevel<< unknown MG type, solving in multiplicative manner ... \n";
-                    this->multiplicative_cycle(fine_fun, x_h, rhs, l);
-                    this->cycle_type(MULTIPLICATIVE_CYCLE);
-                }
-                
+
+                this->multiplicative_cycle(fine_fun, x_h, rhs, n_levels);
                 
 #ifdef CHECK_NUM_PRECISION_mode
                 if(has_nan_or_inf(x_h) == 1)
@@ -168,14 +165,14 @@ namespace utopia {
         }
         
         /* @brief
-         Function initializes projections  operators.
+         Function initializes transfer  operators.
          Operators need to be ordered FROM COARSE TO FINE.
          *
-         * @param[in]  operators                The restriction operators.
+         * @param[in]  interpolation_operators                The interpolation operators.
+         * @param[in]  projection_operators                   The projection operators.
          *
          */
-        virtual bool set_transfer_operators(
-                                            const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
+        virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
                                             const std::vector<std::shared_ptr<Matrix>> &projection_operators)
         {
             this->transfers_.clear();
@@ -184,7 +181,33 @@ namespace utopia {
             
             return true;
         }
+
+        /**
+         * @brief      Sets the transfer operators.
+         *
+         * @param[in]  interpolation_operators  The interpolation operators
+         * @param[in]  restriction_operators    The restriction operators
+         * @param[in]  projection_operators     The projection operators
+         *
+         */
+        virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
+                                            const std::vector<std::shared_ptr<Matrix>> &restriction_operators,
+                                            const std::vector<std::shared_ptr<Matrix>> &projection_operators)
+        {
+            this->transfers_.clear();
+            for(auto I = interpolation_operators.begin(), R = restriction_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && R != restriction_operators.end() &&  P != projection_operators.end(); ++I, ++R, ++P )
+                this->transfers_.push_back(Transfer(*I, *R, *P));
+            
+            return true;
+        }
+
+
         
+        /**
+         * @brief      Writes CSV file with iteration info 
+         *
+         * @param[in]  it_global  The iterator global
+         */
         virtual void print_statistics(const SizeType & it_global)
         {
             std::string path = this->name_id() + "_data_path";
@@ -210,6 +233,7 @@ namespace utopia {
                 }
             }
         }
+
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Scalar      atol() const               { return atol_; }
@@ -292,7 +316,6 @@ namespace utopia {
          */
         virtual bool check_convergence(const SizeType &it, const Scalar & g_norm, const Scalar & r_norm, const Scalar & s_norm) override
         {
-            
             // termination because norm of grad is down
             if(g_norm < atol_)
             {
@@ -339,6 +362,8 @@ namespace utopia {
             
             Vector bc_ids;
             fun.get_eq_constrains_flg(bc_ids);
+
+            // disp(bc_values, "bc_values"); 
             
             if(local_size(bc_ids).get(0) != local_size(bc_values).get(0)) {
                 std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: local sizes do not match... \n";
@@ -433,6 +458,13 @@ namespace utopia {
          * @return     Name of solver - to have nice printouts
          */
         virtual std::string name_id() = 0;
+
+        /**
+         * @brief      Init internal memory used for implementation of given multilevel solver
+         *
+         * @param[in]  fine_local_size  The local size of fine level problem
+         */
+        virtual void init_memory(const SizeType & fine_local_size) = 0; 
         
         
         /**
@@ -445,43 +477,7 @@ namespace utopia {
          */
         virtual bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs) = 0;
         
-        
-        /**
-         * @brief     Full multigrid cycle, after running F cycle once and reaching discretization tolerance,
-         *            solver continues as multiplicative cycle to achieve prescribed tolerance
-         *
-         * @param      fine_fun  Function to be minimized
-         * @param      u_l       The iterate
-         * @param[in]  f         Right hand side
-         * @param[in]  l         level
-         *
-         */
-        virtual bool full_cycle(Fun &/*fine_fun*/, Vector & u_l, const Vector &/*f*/, const SizeType & l)
-        {
-            for(SizeType i = l-2; i >=0; i--)
-            {
-                this->transfer(i).restrict(u_l, u_l);
-                this->make_iterate_feasible(this->function(i), u_l);
-            }
-            
-            // TODO:: check this out
-            // shouldnt be g - Rg_{L+1} ???
-            Vector L_l = local_zeros(local_size(u_l));
-            this->coarse_solve(this->function(0), u_l, L_l);
-            
-            this->transfer(0).interpolate(u_l, u_l);
-            
-            for(SizeType i = 1; i <l-1; i++)
-            {
-                for(SizeType j = 0; j < this->v_cycle_repetition(); j++)
-                {
-                    Vector f = local_zeros(local_size(u_l));
-                    this->multiplicative_cycle(this->function(i), u_l, f, i+1);
-                }
-                this->transfer(i).interpolate(u_l, u_l);
-            }
-            return true;
-        }
+    
         
         inline Fun &function(const SizeType level)
         {
@@ -492,6 +488,8 @@ namespace utopia {
         {
             return *level_functions_[level];
         }
+
+
         
     protected:
         std::vector<FunPtr>                      level_functions_;        

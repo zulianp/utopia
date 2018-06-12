@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2018-04-18
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2018-04-18
-*/
-
 #ifndef UTOPIA_SOLVER_TRUSTREGION_BOX_BASE_HPP
 #define UTOPIA_SOLVER_TRUSTREGION_BOX_BASE_HPP
 
@@ -151,8 +144,10 @@ namespace utopia
           return true;
       }
 
-      virtual bool merge_tr_with_pointwise_constrains(const Vector & x_k, const Scalar & radius,Vector & u_f, Vector & l_f)
+      virtual BoxConstraints  merge_tr_with_pointwise_constrains(const Vector & x_k, const Scalar & radius)
       {
+          Vector l_f, u_f; 
+
           if(box_constraints_.has_upper_bound())
           {
               Vector u =  *box_constraints_.upper_bound() - x_k; 
@@ -160,6 +155,7 @@ namespace utopia
               {   
                   Read<Vector> rv(u); 
                   Write<Vector> wv(u_f); 
+
                   each_write(u_f, [radius, u](const SizeType i) -> double { 
                       return  (u.get(i) <= radius)  ? u.get(i) : radius; }   );
               }
@@ -175,14 +171,15 @@ namespace utopia
               {   
                   Read<Vector> rv(l); 
                   Write<Vector> wv(l_f); 
+
                   each_write(l_f, [radius, l](const SizeType i) -> double { 
                       return  (l.get(i) >= -1*radius)  ? l.get(i) : -1 * radius;  }   );
               }
           }
           else
-              l_f = -1 * radius * local_values(local_size(x_k).get(0), 1.0); ;         
+              l_f = -1 * radius * local_values(local_size(x_k).get(0), 1.0); 
 
-          return true; 
+          return make_box_constaints(std::make_shared<Vector>(l_f), std::make_shared<Vector>(u_f));
       }
 
 

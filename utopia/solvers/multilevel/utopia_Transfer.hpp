@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-04-02
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_ML_TRANSFER_HPP
 #define UTOPIA_ML_TRANSFER_HPP
 
@@ -51,8 +44,20 @@
             assert(I);
             assert(P);
             
-            std::cout<<"proper transfer down ... \n"; 
+            // std::cout<<"proper transfer down ... \n"; 
         }
+
+
+        Transfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &R, const std::shared_ptr<Matrix> &P):
+                _I(I),
+                _R(R),
+                _Pr(P)
+        {
+            assert(I);
+            assert(R);
+            assert(P);
+        }
+
 
         virtual ~Transfer(){} 
         

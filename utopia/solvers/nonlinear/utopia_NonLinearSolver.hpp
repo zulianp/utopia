@@ -169,12 +169,10 @@ protected:
             params_.convergence_reason(convergence_reason);
             params_.num_it(num_it);
 
-            if(verbose_)
+            if(mpi_world_rank() == 0 && verbose_)
             {
                 ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);
-
-                if(mpi_world_rank() == 0)
-                    std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
+                std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
                     
             }
          }
