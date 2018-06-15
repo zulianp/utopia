@@ -7,7 +7,6 @@ ENV MPI_DIR /opt/petsc
 ENV LIBMESH_DIR /libmesh
 ENV LDFLAGS -L/opt/petsc/lib
 ENV CPATH opt/petsc/include:/opt/slepc/include
-ENV LDFLAGS -L/opt/petsc/lib
 
 RUN ls $MPI_DIR/bin | grep mpi
 

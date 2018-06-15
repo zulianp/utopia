@@ -49,12 +49,15 @@ namespace utopia {
 
 			output_path_ += "contact_sol.e";
 			// linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
-			linear_solver_ = std::make_shared<BiCGStab<Matrix, Vector>>();
+			auto  iterative_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
 			// auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
-			// iterative_solver->atol(1e-14);
-			// iterative_solver->stol(1e-14);
-			// iterative_solver->rtol(1e-14);
-			// linear_solver_ = iterative_solver;
+			
+			iterative_solver->atol(1e-18);
+			iterative_solver->stol(1e-17);
+			iterative_solver->rtol(1e-8);
+			iterative_solver->max_it(4000);
+			linear_solver_ = iterative_solver;
+
 			n_exports = 0;
 		}
 
@@ -239,6 +242,16 @@ namespace utopia {
 				// newton.solve(lhs, rhs, inc_c);
 				Chrono c;
 				c.start();
+
+				// static int n_stuff = 0;
+
+				// if(n_stuff++ >= 2) {
+				// 	std::cout << "Writing..." << std::flush;
+				// 	write("rhs.m", rhs);
+				// 	write("lhs.m", lhs);
+				// 	std::cout << "done." << std::endl;
+				// 	exit(0);
+				// }
 
 				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
 				TaoSolver<Matrix, Vector> tao;//(linear_solver_);
