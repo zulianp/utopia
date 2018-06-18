@@ -56,6 +56,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
+			UTOPIA_RUN_TEST(petsc_affine_similarity_rosenbrock_test); 
 		}
 
 		void petsc_ngs_test()
@@ -777,6 +778,50 @@ namespace utopia
 				utopia_test_assert(approxeq(diff_rb, 0., 1e-6));
 			}
 		}
+
+
+
+
+		void petsc_affine_similarity_rosenbrock_test()
+		{
+			auto lsolver = std::make_shared< LUDecomposition<DMatrixd, DVectord> >();
+			lsolver->set_type(PETSC_TAG, LU_DECOMPOSITION_TAG);
+
+			AffineSimilarity<DMatrixd, DVectord> nlsolver(lsolver);
+			nlsolver.enable_differentiation_control(false);
+			
+			Parameters params;
+			params.rtol(1e-15);
+			params.stol(1e-15);
+			params.atol(1e-6);
+			params.max_it(15);
+			params.verbose(true);
+			nlsolver.set_parameters(params);
+			
+			nlsolver.atol(1e-15); 
+			nlsolver.rtol(1e-15); 
+			nlsolver.stol(1e-15); 
+
+			DMatrixd M = identity(2,2); 
+
+			nlsolver.set_mass_matrix(M); 
+			
+			DVectord expected_rosenbrock;
+			DVectord x0;
+			
+			if(mpi_world_size() <= 2) 
+			{
+				RosenbrockGeneric<DMatrixd, DVectord> r_generic_2d;
+				expected_rosenbrock = values(2, 1.0);
+				x0 = values(2, 2.0);
+				nlsolver.solve(r_generic_2d, x0);
+				utopia_test_assert(approxeq(expected_rosenbrock, x0));
+			}
+			
+		}
+
+
+
 
 
 		PetscNonlinearSolverTest()
