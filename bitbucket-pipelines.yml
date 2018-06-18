@@ -8,9 +8,9 @@ pipelines:
           - apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
           - export PETSC_DIR=/opt/petsc
           - export MPI_DIR=/opt/petsc
-          - export LDFLAGS=-L/opt/petsc/lib
           - export CPATH=opt/petsc/include:/opt/slepc/include
           - export LDFLAGS=-L/opt/petsc/lib
+          - export LD_LIBRARY_PATH=/opt/petsc/lib/
           - cd utopia
           - mkdir build
           - mkdir bin
