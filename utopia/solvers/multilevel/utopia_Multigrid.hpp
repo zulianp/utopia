@@ -88,8 +88,9 @@ namespace utopia
         {
             IterativeSolver::set_parameters(params);
             LinearMultiLevel<Matrix, Vector>::set_parameters(params);
-            smoother_cloneable_->set_parameters(params);
-            
+
+            // this should not be necessary
+            // smoother_cloneable_->set_parameters(params);
         }
         
         /*! @brief if overriden the subclass has to also call this one first

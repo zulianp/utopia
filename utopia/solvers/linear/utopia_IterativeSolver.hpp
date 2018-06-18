@@ -213,7 +213,7 @@ namespace  utopia
         void rtol(const Scalar & rtol_in ) { rtol_ = rtol_in; }; 
         void stol(const Scalar & stol_in ) { stol_ = stol_in; }; 
         void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; }; 
-        void verbose(const bool & verbose_in ) { verbose_ = verbose_in; }; 
+        void verbose(const bool & verbose_in ) {verbose_ = verbose_in; }; 
         
         void precondition(const bool & precondition_in ) { precondition_ = precondition_in; }; 
         void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 
