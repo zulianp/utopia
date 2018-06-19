@@ -40,16 +40,21 @@ namespace utopia
             Scalar g_norm, g0_norm=9e9, r_norm=9e9, s_norm=9e9, tau;
             SizeType it = 0;
 
-            bool converged = false;
+            bool converged = false, taken=0;
 
             x0 = x; 
 
             fun.gradient(x, g);
+            // g0 = -1.0*g;
             g0 = g; 
-            g0_norm = norm2(g);
+
+            g0_norm = norm2(g0);
             g_norm = g0_norm;
 
-            this->init_solver("Affine similarity", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "tau"});
+
+            Scalar L0 = g0_norm; 
+
+            this->init_solver("Affine similarity", {" it. ", "|| g ||", "<s,g>", "|| s_k || ", "tau", "nu", "nu_test",   "taken"});
 
             if(this->verbose_)
                 PrintInfo::print_iter_status(it, {g_norm, 1, 0});
@@ -63,47 +68,74 @@ namespace utopia
                 //find direction step
                 s = local_zeros(local_size(x));
                 fun.hessian(x, H);
+                // H *= -1.0; 
+
                 fun.gradient(x, g);                
+                // g *= -1.0;                 
                 
                 A = (M_ - tau*H); 
                 rhs = tau*g; 
                 
+
                 this->linear_solve(A, rhs, s);
+
+                Scalar nu_test = dot(s, A*s); 
 
                 x_trial = x+s; 
 
                 fun.gradient(x_trial, g);  
-
-
-                if( norm2(g) < g0_norm)
-                {
-                    x = x_trial; 
-                    std::cout<<"-------- point taken ------\n";
-                }
+                // g *= -1.0;     
 
 
                 Vector gs_diff = g-s; 
+                s_norm = norm2(s); 
 
-                Scalar nu = dot(s, s-g0)/(norm2(s)*norm2(s));
-                
-                Scalar L2 = 2.0 * norm2(gs_diff); 
-                Scalar help = (tau*tau * norm2(s)*norm2(s)); 
-                L2 = L2/ help;
-                
-                Scalar help2 = L2 * norm2(s); 
-                tau = nu/help2; 
+                Scalar nu = (dot(s, s-g0)/(s_norm*s_norm))/tau;
 
+                // if(nu > 0 && tau > 0)
+                // {
+                //     tau = 0.5*tau; 
+                //     taken = 0; 
 
+                // }
+                // else if(tau < 0)
+                // {
+                //     taken = 0; 
+                //     tau = 9e249; 
+                // }
+                // else
+                {
+                    if( norm2(g) < g0_norm)
+                    {
+                        x = x_trial; 
+                        taken = 1; 
+                    }
 
-                fun.gradient(x, g);                
+                    
+                    Scalar L2 = 2.0 * norm2(gs_diff); 
+                    Scalar help = (tau*tau * s_norm*s_norm); 
+                    L2 = L2/ help;
+                    
+                    Scalar help2 = L2 * s_norm; 
+                    tau = std::abs(nu)/help2; 
+
+                    // clamping taus
+                    if(std::isinf(tau))
+                        tau = 9e249;                     
+                }
+
+                r_norm = dot(s,g); 
+                fun.gradient(x, g);     
+                // g *= -1.0;                
                 g_norm = norm2(g);
 
-                // // print iteration status on every iteration
+
+                // print iteration status on every iteration
                 if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, tau});
+                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, tau, nu, nu_test,  double(taken)});
 
 
-
+                r_norm = 9e9; 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, r_norm, s_norm);
                 it++;
@@ -111,7 +143,6 @@ namespace utopia
 
             return true;
         }
-
 
 
         void set_mass_matrix(const Matrix & M)
