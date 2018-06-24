@@ -12,11 +12,20 @@
 			<cond side="1" coord="1">1.</cond>
 		</dirichlet>
 	</boundary-conditions>
-	<wear>
-		<gait-cycle>
-			<rotation block="1" axis="z">0.1</rotation>
-			<!-- <rotation block="1" axis="y">0.2</rotation> -->
-		</gait-cycle>
-	</wear>
+    <forcing-functions>
+        <fun side="1" coord="1">0.1</fun>
+    </forcing-functions>
+    <contact radius="0.1">
+        <pair>
+            <master>1</master>
+            <slave>2</slave>
+        </pair>
+    </contact>
+    <wear>
+        <gait-cycle>
+            <rotation block="1" axis="z">0.1</rotation>
+            <!-- <rotation block="1" axis="y">0.2</rotation> -->
+        </gait-cycle>
+    </wear>
 	<ouput>wear_output</ouput>
 </simulation>

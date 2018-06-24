@@ -10,19 +10,24 @@
 #include "utopia_LinearElasticity.hpp"
 #include "utopia_NeoHookean.hpp"
 #include "utopia_SaintVenantKirchoff.hpp"
+#include "utopia_ContactSolver.hpp"
 
 #include <iostream>
 #include <fstream>
 
 namespace utopia {
-	class WearSimulation::Impl {
+
+	template class ContactSolver<DSMatrixd, DVectord>;
+	typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
+
+	class WearSimulation::Input {
 	public:
 
-		Impl()
+		Input()
 		: output_path("./")
 		{}
 
-		bool run(libMesh::LibMeshInit &init, std::istream &is)
+		bool init_from_xml(libMesh::LibMeshInit &init, std::istream &is)
 		{
 			using namespace rapidxml;
 
@@ -64,10 +69,10 @@ namespace utopia {
 
 			/////////////////////////////////////////////////////////////////////////////
 
-
 			xml_node<> *xml_bc = wear_simulation->first_node("boundary-conditions");
 			xml_node<> *xml_dirichlet = xml_bc->first_node("dirichlet");
 
+			std::cout << "side\tcoord\tvalue" << std::endl;
 			for (xml_node<> *xml_cond = xml_dirichlet->first_node(); xml_cond; xml_cond = xml_cond->next_sibling())
 			{
 				xml_attribute<> *cond_side_attr  = xml_cond->first_attribute("side"); assert(cond_side_attr);
@@ -77,7 +82,7 @@ namespace utopia {
 				auto coord    = atoi(cond_coord_attr->value());
 				auto value    = atof(xml_cond->value());
 
-				std::cout << side_set << " " << coord << " " << value << std::endl;
+				std::cout << side_set << "\t" << coord << "\t" << value << std::endl;
 
 				auto u = trial(V[coord]);
 				init_constraints(constraints(
@@ -117,10 +122,39 @@ namespace utopia {
 				material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, params);
 			}
 
+			params.describe(std::cout);
+
+			/////////////////////////////////////////////////////////////////////////////////////
+			xml_node<> *xml_contact = wear_simulation->first_node("contact"); assert(xml_contact);
+			xml_attribute<> *radius_att = xml_contact->first_attribute("radius");
+
+			if(radius_att) {
+				contact_params.search_radius = atof(radius_att->value());
+			}
+
+			std::cout << "master\tslave" << std::endl;
+			for (xml_node<> *xml_pair = xml_contact->first_node(); xml_pair; xml_pair = xml_pair->next_sibling())
+			{
+				xml_node<> *xml_master = xml_pair->first_node("master"); assert(xml_master);
+				xml_node<> *xml_slave  = xml_pair->first_node("slave");  assert(xml_slave);
+				
+				contact_params.contact_pair_tags.push_back({
+					atoi(xml_master->value()),
+					atoi(xml_slave->value()),
+				});
+
+				std::cout << contact_params.contact_pair_tags.back().first << "\t"	
+						  << contact_params.contact_pair_tags.back().second << std::endl;
+			}
+
 			/////////////////////////////////////////////////////////////////////////////////////
 
-			
-			params.describe(std::cout);
+			auto xml_output = wear_simulation->first_node("ouput");
+			if(xml_output) {
+				output_path = xml_output->value();
+			}
+
+			/////////////////////////////////////////////////////////////////////////////////////
 			return true;
 		}
 
@@ -131,23 +165,19 @@ namespace utopia {
 		ProductFunctionSpace<LibMeshFunctionSpace> V;
 		std::shared_ptr<libMesh::EquationSystems> equation_systems;
 		std::shared_ptr<ElasticMaterial<DSMatrixd, DVectord> > material;
+		ContactParams contact_params;
 	};
 
 	void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &xml_file_path)
 	{
-		Impl impl;
-
+		Input in;
 		std::ifstream is(xml_file_path);
-		impl.run(init, is);
+		in.init_from_xml(init, is);
 	}
 
 	WearSimulation::WearSimulation()
-	{
-
-	}
+	{}
 
 	WearSimulation::~WearSimulation()
-	{
-
-	}
+	{}
 }
