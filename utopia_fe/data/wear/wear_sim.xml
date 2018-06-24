@@ -1,0 +1,22 @@
+<simulation>
+	<mesh>../data/wear_2_b.e</mesh>
+	<model>
+		<material>NeoHookean</material>
+		<parameters>
+			<mu>300.</mu>
+			<lambda>600.</lambda>
+		</parameters>
+	</model>
+	<boundary-conditions>
+		<dirichlet>
+			<cond side="1" coord="1">1.</cond>
+		</dirichlet>
+	</boundary-conditions>
+	<wear>
+		<gait-cycle>
+			<rotation block="1" axis="z">0.1</rotation>
+			<!-- <rotation block="1" axis="y">0.2</rotation> -->
+		</gait-cycle>
+	</wear>
+	<ouput>wear_output</ouput>
+</simulation>
