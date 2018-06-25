@@ -46,7 +46,6 @@ namespace utopia
 
             fun.gradient(x, g);
             g0 = -1.0*g;
-            g0 = g; 
 
             g0_norm = norm2(g0);
             g_norm = g0_norm;
@@ -65,11 +64,13 @@ namespace utopia
 
 
             fun.hessian(x, H);
-            H *= -1.0; 
+            Matrix H0 = -1.0* H; 
 
-            Scalar nu_zero_approx = dot(g0, H*g0)/(g0_norm*g0_norm); 
+            Scalar nu_zero_approx = dot(g0, H0*g0)/(g0_norm*g0_norm); 
 
             std::cout<<"nu_zero_approx: "<< nu_zero_approx << "  \n"; 
+
+            Vector g_old = g0; 
 
             while(!converged)
             {
@@ -87,18 +88,17 @@ namespace utopia
 
                 this->linear_solve(A, rhs, s);
 
-                Scalar nu_test = dot(s, H*s); 
-
                 x_trial = x+s; 
 
                 fun.gradient(x_trial, g);  
                 g *= -1.0;     
 
-
+                s = 1./tau * s; 
                 Vector gs_diff = g-s; 
                 s_norm = norm2(s); 
 
-                Scalar nu = (dot(s, s-g0)/(s_norm*s_norm))/tau;
+                Scalar nu = dot(s, s-g_old)/(s_norm*s_norm);
+                Scalar nu_test = tau * dot(s, H0*s)/ (s_norm*s_norm); 
 
                 {
                     if( norm2(g) < g0_norm)
@@ -121,8 +121,10 @@ namespace utopia
                 }
 
                 r_norm = dot(s,g); 
+                g_old = g; 
+
                 fun.gradient(x, g);     
-                g *= -1.0;                
+                g *= -1.0;          
                 g_norm = norm2(g);
 
 
