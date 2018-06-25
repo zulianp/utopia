@@ -45,7 +45,7 @@ namespace utopia
             x0 = x; 
 
             fun.gradient(x, g);
-            // g0 = -1.0*g;
+            g0 = -1.0*g;
             g0 = g; 
 
             g0_norm = norm2(g0);
@@ -63,15 +63,23 @@ namespace utopia
             tau = norm2(g); 
             tau = 1/tau; 
 
+
+            fun.hessian(x, H);
+            H *= -1.0; 
+
+            Scalar nu_zero_approx = dot(g0, H*g0)/(g0_norm*g0_norm); 
+
+            std::cout<<"nu_zero_approx: "<< nu_zero_approx << "  \n"; 
+
             while(!converged)
             {
                 //find direction step
                 s = local_zeros(local_size(x));
                 fun.hessian(x, H);
-                // H *= -1.0; 
+                H *= -1.0; 
 
                 fun.gradient(x, g);                
-                // g *= -1.0;                 
+                g *= -1.0;                 
                 
                 A = (M_ - tau*H); 
                 rhs = tau*g; 
@@ -79,12 +87,12 @@ namespace utopia
 
                 this->linear_solve(A, rhs, s);
 
-                Scalar nu_test = dot(s, A*s); 
+                Scalar nu_test = dot(s, H*s); 
 
                 x_trial = x+s; 
 
                 fun.gradient(x_trial, g);  
-                // g *= -1.0;     
+                g *= -1.0;     
 
 
                 Vector gs_diff = g-s; 
@@ -92,18 +100,6 @@ namespace utopia
 
                 Scalar nu = (dot(s, s-g0)/(s_norm*s_norm))/tau;
 
-                // if(nu > 0 && tau > 0)
-                // {
-                //     tau = 0.5*tau; 
-                //     taken = 0; 
-
-                // }
-                // else if(tau < 0)
-                // {
-                //     taken = 0; 
-                //     tau = 9e249; 
-                // }
-                // else
                 {
                     if( norm2(g) < g0_norm)
                     {
@@ -126,7 +122,7 @@ namespace utopia
 
                 r_norm = dot(s,g); 
                 fun.gradient(x, g);     
-                // g *= -1.0;                
+                g *= -1.0;                
                 g_norm = norm2(g);
 
 
