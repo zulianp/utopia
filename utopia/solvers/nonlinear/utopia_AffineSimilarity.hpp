@@ -69,8 +69,8 @@ namespace utopia
                     g0_norm = norm2(g);          
                 // }
                 
-                A = M_ - tau*H; 
-                rhs = tau*g; 
+                A = H - 1.0/tau * M_; 
+                rhs = -1.0 * g; 
                 
                 //find direction step
                 s = local_zeros(local_size(x));
@@ -82,7 +82,7 @@ namespace utopia
                 s = 1.0/tau * s; 
                 s_norm = norm2(s); 
                 
-                Scalar nu = dot(s, ( (M_ * s) - g))/(s_norm*s_norm*tau);
+                Scalar nu = dot(s, ( (-tau * M_ * s) - g))/(s_norm*s_norm*tau);
 
                 // gradient of x_trial 
                 Vector g_trial; 
@@ -97,7 +97,7 @@ namespace utopia
                 // L2 = L2/ help;
                 
 
-                Scalar nom = dot(s, ( (M_ * s) - g)); 
+                Scalar nom = dot(s, ( (-tau * M_ * s) - g)); 
                 Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
                 tau = tau *  std::abs(nom)/ help_denom; 
                 // Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
