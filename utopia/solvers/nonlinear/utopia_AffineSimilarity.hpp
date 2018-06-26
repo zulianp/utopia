@@ -34,7 +34,7 @@ namespace utopia
         {
            using namespace utopia;
 
-            Vector g, s, rhs, x_trial, x0, g0;
+            Vector g, s, rhs, x_trial;
             Matrix H, A;
 
             Scalar g_norm, g0_norm=9e9, r_norm=9e9, s_norm=9e9, tau;
@@ -42,96 +42,121 @@ namespace utopia
 
             bool converged = false, taken=0;
 
-            x0 = x; 
-
             fun.gradient(x, g);
-            g0 = -1.0*g;
+            g = -1.0*g;
 
-            g0_norm = norm2(g0);
+            g0_norm = norm2(g);
             g_norm = g0_norm;
 
 
-            Scalar L0 = g0_norm; 
-
-            this->init_solver("Affine similarity", {" it. ", "|| g ||", "<s,g>", "|| s_k || ", "tau", "nu", "nu_test",   "taken"});
-
-            if(this->verbose_)
-                PrintInfo::print_iter_status(it, {g_norm, 1, 0});
-            it++;
+            this->init_solver("Affine similarity", {" it. ", "|| g ||", "<s,g>", "|| s_k || ", "tau", "nu",  "taken"});
 
             tau = norm2(g); 
             tau = 1/tau; 
+            
+            if(this->verbose_)
+                PrintInfo::print_iter_status(it, {g_norm, 1, 0, tau});
+            it++;
 
+            SizeType inner_counter = 0; 
 
             fun.hessian(x, H);
-            Matrix H0 = -1.0* H; 
+            H = -1.0* H; 
 
-            Scalar nu_zero_approx = dot(g0, H0*g0)/(g0_norm*g0_norm); 
-
+            Scalar nu_zero_approx = dot(g, H*g)/(g0_norm*g0_norm); 
             std::cout<<"nu_zero_approx: "<< nu_zero_approx << "  \n"; 
 
-            Vector g_old = g0; 
+            Vector g_old = g; 
 
             while(!converged)
             {
-                //find direction step
-                s = local_zeros(local_size(x));
-                fun.hessian(x, H);
-                H *= -1.0; 
+                if(taken == 1)
+                {
+                    fun.hessian(x, H);
+                    H *= -1.0; 
 
-                fun.gradient(x, g);                
-                g *= -1.0;                 
+                    fun.gradient(x, g);                
+                    g *= -1.0;       
+                    g0_norm = norm2(g);          
+                }
                 
-                A = (M_ - tau*H); 
+                A = M_ - tau*H; 
                 rhs = tau*g; 
                 
-
+                //find direction step
+                s = local_zeros(local_size(x));
                 this->linear_solve(A, rhs, s);
 
                 x_trial = x+s; 
 
+                // plain correction, without step-size
+                Vector t0 = (H*s); 
+                Scalar inv_tau = 1.0/tau; 
+                s = inv_tau * s; 
+                s_norm = norm2(s); 
+
+                Scalar s_test_norm = norm2(M_ * s); 
+
+                if(s_test_norm > norm2(g))
+                    std::cout<<"iteration should terminate.... \n"; 
+
+                
+                Scalar nu = dot(s, ( (M_ * s) - g))/(s_norm*s_norm*tau);
+
+
+                // gradient of x_trial 
                 fun.gradient(x_trial, g);  
                 g *= -1.0;     
 
-                s = 1./tau * s; 
-                Vector gs_diff = g-s; 
-                s_norm = norm2(s); 
+                // difference between gradient of trial point and correction
+                Vector gs_diff = g - (M_ *s); 
+                Scalar L2 = 2.0 * norm2(gs_diff); 
 
-                Scalar nu = dot(s, s-g_old)/(s_norm*s_norm);
-                Scalar nu_test = tau * dot(s, H0*s)/ (s_norm*s_norm); 
 
+                Scalar help = (tau*tau * s_norm*s_norm); 
+                L2 = L2/ help;
+                
+                Scalar help2 = L2 * s_norm; 
+                tau = std::abs(nu)/help2; 
+
+                Scalar denom = (g0_norm * L2);
+                denom = denom - (nu*nu); 
+                std::cout<<"denom: "<< denom << "  \n"; 
+                Scalar tau_opt = std::abs(nu)/ denom; 
+
+                std::cout<<"tau_opt: "<< tau_opt << "  tau: "<< tau << "   \n"; 
+
+                
                 {
-                    if( norm2(g) < g0_norm)
+                    if(norm2(g) < norm2(g_old))
                     {
                         x = x_trial; 
                         taken = 1; 
+                        g_old = g; 
+                        inner_counter = 0;
+                    }
+                    else
+                    {
+                        taken=0;
+                        inner_counter++; 
                     }
 
-                    
-                    Scalar L2 = 2.0 * norm2(gs_diff); 
-                    Scalar help = (tau*tau * s_norm*s_norm); 
-                    L2 = L2/ help;
-                    
-                    Scalar help2 = L2 * s_norm; 
-                    tau = std::abs(nu)/help2; 
 
-                    // clamping taus
+                    // clamping values of tau
                     if(std::isinf(tau))
-                        tau = 9e249;                     
+                        tau = 9e249;        
+                    else if(std::isnan(tau))
+                        tau = 1e-10;
+                    else if(tau==0)
+                        tau = 1e-10;                                        
                 }
 
                 r_norm = dot(s,g); 
-                g_old = g; 
-
-                fun.gradient(x, g);     
-                g *= -1.0;          
                 g_norm = norm2(g);
-
 
                 // print iteration status on every iteration
                 if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, tau, nu, nu_test,  double(taken)});
-
+                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, tau, nu,  double(taken)});
 
                 r_norm = 9e9; 
                 // check convergence and print interation info
