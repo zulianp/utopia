@@ -37,10 +37,10 @@ namespace utopia
             Vector g, s, rhs, x_trial;
             Matrix H, A;
 
-            Scalar g_norm, g0_norm=9e9, r_norm=9e9, s_norm=9e9, tau;
+            Scalar g_norm, g0_norm=9e9, s_norm=9e9, tau;
             SizeType it = 0;
 
-            bool converged = false, taken=0;
+            bool converged = false, taken=1;
 
             fun.gradient(x, g);
             g = -1.0*g;
@@ -48,37 +48,26 @@ namespace utopia
             g0_norm = norm2(g);
             g_norm = g0_norm;
 
-
-            this->init_solver("Affine similarity", {" it. ", "|| g ||", "<s,g>", "|| s_k || ", "tau", "nu",  "taken"});
-
-            tau = norm2(g); 
-            tau = 1/tau; 
+            this->init_solver("Affine similarity", {" it. ", "|| g ||", "|| s_k || ", "tau", "nu",  "taken"});
+            tau = 1.0/norm2(g); 
             
             if(this->verbose_)
-                PrintInfo::print_iter_status(it, {g_norm, 1, 0, tau});
+                PrintInfo::print_iter_status(it, {g_norm, 0, tau});
             it++;
-
-            SizeType inner_counter = 0; 
-
-            fun.hessian(x, H);
-            H = -1.0* H; 
-
-            Scalar nu_zero_approx = dot(g, H*g)/(g0_norm*g0_norm); 
-            std::cout<<"nu_zero_approx: "<< nu_zero_approx << "  \n"; 
 
             Vector g_old = g; 
 
             while(!converged)
             {
-                if(taken == 1)
-                {
+                // if(taken == 1)
+                // {
                     fun.hessian(x, H);
                     H *= -1.0; 
 
                     fun.gradient(x, g);                
                     g *= -1.0;       
                     g0_norm = norm2(g);          
-                }
+                // }
                 
                 A = M_ - tau*H; 
                 rhs = tau*g; 
@@ -90,55 +79,47 @@ namespace utopia
                 x_trial = x+s; 
 
                 // plain correction, without step-size
-                Vector t0 = (H*s); 
-                Scalar inv_tau = 1.0/tau; 
-                s = inv_tau * s; 
+                s = 1.0/tau * s; 
                 s_norm = norm2(s); 
-
-                Scalar s_test_norm = norm2(M_ * s); 
-
-                if(s_test_norm > norm2(g))
-                    std::cout<<"iteration should terminate.... \n"; 
-
                 
                 Scalar nu = dot(s, ( (M_ * s) - g))/(s_norm*s_norm*tau);
 
-
                 // gradient of x_trial 
-                fun.gradient(x_trial, g);  
-                g *= -1.0;     
+                Vector g_trial; 
+                fun.gradient(x_trial, g_trial);  
+                g_trial *= -1.0;     
 
-                // difference between gradient of trial point and correction
-                Vector gs_diff = g - (M_ *s); 
-                Scalar L2 = 2.0 * norm2(gs_diff); 
+                // // difference between gradient of trial point and correction
+                Vector gs_diff = g_trial - (M_ *s); 
+                // Scalar L2 = 2.0 * norm2(gs_diff); 
 
-
-                Scalar help = (tau*tau * s_norm*s_norm); 
-                L2 = L2/ help;
+                // Scalar help = (tau*tau * s_norm*s_norm); 
+                // L2 = L2/ help;
                 
-                Scalar help2 = L2 * s_norm; 
-                tau = std::abs(nu)/help2; 
 
-                Scalar denom = (g0_norm * L2);
-                denom = denom - (nu*nu); 
-                std::cout<<"denom: "<< denom << "  \n"; 
-                Scalar tau_opt = std::abs(nu)/ denom; 
-
-                std::cout<<"tau_opt: "<< tau_opt << "  tau: "<< tau << "   \n"; 
+                Scalar nom = dot(s, ( (M_ * s) - g)); 
+                Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
+                tau = tau *  std::abs(nom)/ help_denom; 
+                // Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
+                // tau = tau/ help_denom;
+                
+                // there is no point in continuing 
+                // if(nu > 0)
+                // {
+                //     std::cout<<"this will never converge, nu > 0 ... \n"; 
+                //     return false; 
+                // }
 
                 
                 {
-                    if(norm2(g) < norm2(g_old))
+                    if(norm2(g_trial) < norm2(g))
                     {
                         x = x_trial; 
                         taken = 1; 
-                        g_old = g; 
-                        inner_counter = 0;
                     }
                     else
                     {
                         taken=0;
-                        inner_counter++; 
                     }
 
 
@@ -150,17 +131,18 @@ namespace utopia
                     else if(tau==0)
                         tau = 1e-10;                                        
                 }
-
-                r_norm = dot(s,g); 
+ 
+            
+                fun.gradient(x, g);  
+                g *= -1.0;     
                 g_norm = norm2(g);
 
                 // print iteration status on every iteration
                 if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, r_norm, s_norm, tau, nu,  double(taken)});
+                    PrintInfo::print_iter_status(it, {g_norm, s_norm, tau, nu,  double(taken)});
 
-                r_norm = 9e9; 
                 // check convergence and print interation info
-                converged = this->check_convergence(it, g_norm, r_norm, s_norm);
+                converged = this->check_convergence(it, g_norm, 9e9, s_norm);
                 it++;
             }
 
