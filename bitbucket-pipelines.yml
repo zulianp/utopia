@@ -21,25 +21,25 @@ pipelines:
           - cmake .. -DCMAKE_INSTALL_PREFIX=../build_debug -DCMAKE_BUILD_TYPE=Debug
           - make && make install
           - ./utopia_exec -verbose -bench
-    - step: 
-        name: Utopia/Trilinos
-        image: zulianp/utopia-trilinos-env:latest
-        script:
-          - echo '======== Utopia with basic trilinos backend ========='
-          - apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
-          - export TRILINOS_DIR=/opt/trilinos
-          - export MPI_DIR=/opt/mpich
-          - export LDFLAGS='-L/opt/trilinos -L/opt/mpich'
-          - export CPATH=/opt/mpich/include:/opt/trilinos/include
-          - export LD_LIBRARY_PATH=/opt/trilinos/lib/:/opt/mpich/lib
-          - cd utopia
-          - mkdir build
-          - mkdir bin
-          - cd bin
-          - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Release
-          - make && make install
-          - ./utopia_exec -verbose -bench
-          - cmake .. -DCMAKE_INSTALL_PREFIX=../build_debug -DCMAKE_BUILD_TYPE=Debug
-          - make && make install
-          - ./utopia_exec -verbose -bench
+    # - step: 
+    #     name: Utopia/Trilinos
+    #     image: zulianp/utopia-trilinos-env:latest
+    #     script:
+    #       - echo '======== Utopia with basic trilinos backend ========='
+    #       - apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
+    #       - export TRILINOS_DIR=/opt/trilinos
+    #       - export MPI_DIR=/opt/mpich
+    #       - export LDFLAGS='-L/opt/trilinos -L/opt/mpich'
+    #       - export CPATH=/opt/mpich/include:/opt/trilinos/include
+    #       - export LD_LIBRARY_PATH=/opt/trilinos/lib/:/opt/mpich/lib
+    #       - cd utopia
+    #       - mkdir build
+    #       - mkdir bin
+    #       - cd bin
+    #       - cmake .. -DCMAKE_INSTALL_PREFIX=../build -DCMAKE_BUILD_TYPE=Release
+    #       - make && make install
+    #       - ./utopia_exec -verbose -bench
+    #       - cmake .. -DCMAKE_INSTALL_PREFIX=../build_debug -DCMAKE_BUILD_TYPE=Debug
+    #       - make && make install
+    #       - ./utopia_exec -verbose -bench
 
