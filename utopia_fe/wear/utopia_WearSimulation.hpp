@@ -12,6 +12,7 @@ namespace utopia {
 	public:
 		class Input;
 		class Output;
+		class GaitCycle;
 		
 		void run(libMesh::LibMeshInit &init, const std::string &xml_file_path);
 

@@ -1,5 +1,9 @@
 <simulation>
 	<mesh>../data/wear_2_b.e</mesh>
+    <time>
+        <dt>0.1</dt>
+        <steps>100</steps>
+    </time>
 	<model>
 		<material>NeoHookean</material>
 		<parameters>
@@ -23,7 +27,7 @@
     </contact>
     <wear>
         <gait-cycle>
-            <rotation block="1" axis="z">0.1</rotation>
+            <rotation block="1" axis="z" start="4.0" delta="0.1">-5.0</rotation>
             <!-- <rotation block="1" axis="y">0.2</rotation> -->
         </gait-cycle>
     </wear>

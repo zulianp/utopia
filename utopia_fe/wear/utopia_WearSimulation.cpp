@@ -19,6 +19,28 @@ namespace utopia {
 
 	template class ContactSolver<DSMatrixd, DVectord>;
 	typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
+	typedef std::array<double, 2> Point2d;
+	typedef std::array<double, 3> Point3d;
+	typedef std::function<std::array<double, 2>(const std::array<double, 2> &p)> Fun2d;
+	typedef std::function<std::array<double, 3>(const std::array<double, 3> &p)> Fun3d;
+
+
+	class WearSimulation::GaitCycle {
+	public:
+		void init(
+			const int dim,
+			rapidxml::xml_node<> &xml_gait_cycle)
+		{
+			using namespace rapidxml;
+		}
+
+		double start_angle_radian;
+		double angle_degree;
+		double angle_radian;
+		double d_angle;
+		Fun2d rotate2;
+		Fun3d rotate3;
+	};
 
 	class WearSimulation::Input {
 	public:
@@ -56,6 +78,7 @@ namespace utopia {
 
 			auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
 			auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("wear");
+			main_sys_num = sys.number();
 
 			auto elem_order = libMesh::FIRST;
 
@@ -149,6 +172,17 @@ namespace utopia {
 
 			/////////////////////////////////////////////////////////////////////////////////////
 
+			xml_node<> *xml_time  = wear_simulation->first_node("time");
+			xml_node<> *xml_dt    = xml_time->first_node("dt");
+			xml_node<> *xml_steps = xml_time->first_node("steps"); 
+
+			dt = atof(xml_dt->value());
+			n_time_teps = atoi(xml_steps->value());
+
+			std::cout << "dt: " << dt << " n_time_teps: " << n_time_teps << std::endl;
+
+			/////////////////////////////////////////////////////////////////////////////////////
+
 			auto xml_output = wear_simulation->first_node("ouput");
 			if(xml_output) {
 				output_path = xml_output->value();
@@ -166,6 +200,10 @@ namespace utopia {
 		std::shared_ptr<libMesh::EquationSystems> equation_systems;
 		std::shared_ptr<ElasticMaterial<DSMatrixd, DVectord> > material;
 		ContactParams contact_params;
+		int main_sys_num;
+		int aux_sys_num;
+		int n_time_teps;
+		double dt;
 	};
 
 	void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &xml_file_path)
