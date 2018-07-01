@@ -82,8 +82,7 @@ namespace utopia
                 s = 1.0/tau * s; 
                 s_norm = norm2(s); 
                 
-                // estimate 
-                // Scalar nu = dot(s, ( (-tau * M_ * s) - g))/(s_norm*s_norm*tau);
+                
                 Scalar nu = dot(s, H* s)/(s_norm*s_norm*tau);
 
                 // gradient of x_trial 
@@ -92,27 +91,12 @@ namespace utopia
                 g_trial *= -1.0;     
 
                 // difference between gradient of trial point and correction
-                Vector gs_diff = g_trial - (M_ * s); 
+                Vector gs_diff = (g_trial - (M_ * s)); 
+                Scalar nom = dot(s, ( (1.0/tau * M_ * s) - g)); 
 
-                // Scalar L2 = 2.0 * norm2(gs_diff); 
-
-                // Scalar help = (tau*tau * s_norm*s_norm); 
-                // L2 = L2/ help;
-                
-
-                Scalar nom = dot(s, ( (-tau * M_ * s) - g)); 
                 Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
-                tau = tau *  std::abs(nom)/ help_denom; 
-                // Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
-                // tau = tau/ help_denom;
-                
-                // there is no point in continuing 
-                // if(nu > 0)
-                // {
-                //     std::cout<<"this will never converge, nu > 0 ... \n"; 
-                //     return false; 
-                // }
-
+                tau = tau  *  std::abs(nom)/ help_denom; 
+ 
                 
                 {
                     if(norm2(g_trial) < norm2(g))
