@@ -82,15 +82,18 @@ namespace utopia
                 s = 1.0/tau * s; 
                 s_norm = norm2(s); 
                 
-                Scalar nu = dot(s, ( (-tau * M_ * s) - g))/(s_norm*s_norm*tau);
+                // estimate 
+                // Scalar nu = dot(s, ( (-tau * M_ * s) - g))/(s_norm*s_norm*tau);
+                Scalar nu = dot(s, H* s)/(s_norm*s_norm*tau);
 
                 // gradient of x_trial 
                 Vector g_trial; 
                 fun.gradient(x_trial, g_trial);  
                 g_trial *= -1.0;     
 
-                // // difference between gradient of trial point and correction
-                Vector gs_diff = g_trial - (M_ *s); 
+                // difference between gradient of trial point and correction
+                Vector gs_diff = g_trial - (M_ * s); 
+
                 // Scalar L2 = 2.0 * norm2(gs_diff); 
 
                 // Scalar help = (tau*tau * s_norm*s_norm); 
