@@ -29,7 +29,7 @@ pipelines:
           - apk add --no-cache curl build-base clang cmake git gfortran linux-headers m4 perl lapack-dev valgrind-dev gdb
           - export TRILINOS_DIR=/opt/trilinos
           - export MPI_DIR=/opt/mpich
-          - export LDFLAGS=-L/opt/trilinos -L/opt/mpich
+          - export LDFLAGS='-L/opt/trilinos -L/opt/mpich'
           - export CPATH=/opt/mpich/include:/opt/trilinos/include
           - export LD_LIBRARY_PATH=/opt/trilinos/lib/:/opt/mpich/lib
           - cd utopia
