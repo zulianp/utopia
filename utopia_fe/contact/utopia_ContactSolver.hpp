@@ -14,6 +14,7 @@
 #include "libmesh/exodusII_io.h"
 
 #include <memory>
+#include <fstream>
 
 namespace utopia {
 
