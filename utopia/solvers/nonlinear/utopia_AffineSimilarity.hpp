@@ -85,10 +85,6 @@ namespace utopia
                 fun.hessian(x, H);
                 H *= -1.0; 
 
-                // fun.gradient(x, g);                
-                // g *= -1.0;       
-                // g_norm = norm2(g);          
-                
                 A = H - 1.0/tau * M_; 
                 rhs = -1.0 * g; 
                 
@@ -107,27 +103,36 @@ namespace utopia
                 fun.gradient(x_trial, g_trial);  
                 g_trial *= -1.0;     
 
-                tau = estimate_tau(g_trial, g, s, tau, s_norm); 
-                clamp_tau(tau); 
- 
-                
-                if(norm2(g_trial) < norm2(g))
+                if(norm2(g_trial) < norm2(g) && algo_version_ < AF_VERSION_D)
                 {
                     x = x_trial; 
                     g = g_trial; 
                     taken = 1; 
+                    it_inner = 0; 
+
+                    if(algo_version_ == AF_VERSION_A || algo_version_ == AF_VERSION_C)
+                    {
+                        tau = estimate_tau(g_trial, g, s, tau, s_norm); 
+                        clamp_tau(tau); 
+                    }
                 }
                 else
                 {
                     taken=0;
                     bool converged_inner = false; 
 
+                    // here initial value for tau comes from tau_opt 
+                    tau = estimate_tau(g_trial, g, s, tau, s_norm); 
+                    clamp_tau(tau); 
+
                     if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                         this->init_solver("Inner it ", {" it. ", "|| tau ||"});
                     
+                    if(algo_version_ ==  AF_VERSION_A)
+                        converged_inner = true; 
 
                     Scalar tau_old = 9e9; 
-                    it_inner =0; 
+                    it_inner = 0; 
 
                     while(!converged_inner)
                     {
@@ -166,8 +171,10 @@ namespace utopia
                     {
                         x = x_trial; 
                         g = g_trial; 
-                    }
 
+                        // reset value of tau ... 
+                        tau = 1.0/g_norm; 
+                    }
                     else
                         std::cout<<"--- WARNING: residual monotonicity test failed... \n"; 
 
@@ -196,7 +203,6 @@ namespace utopia
             M_ = M; 
             mass_init_ = true; 
         }
-
 
 
         AFAlgoVersion algo_version() const {  return algo_version_;  }
