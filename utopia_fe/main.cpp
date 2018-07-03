@@ -41,6 +41,7 @@
 #include "utopia_EikonalEquationTest.hpp"
 #include "utopia_TestVolume2SurfaceTransfer.hpp"
 #include "utopia_VolumeInterpolationTest.hpp"
+#include "utopia_WearSimulation.hpp"
 
 #include <functional>
 
@@ -132,7 +133,13 @@ int main(const int argc, char *argv[])
 			} else if(argv[i] == std::string("-data_path")) {
 				utopia::Utopia::instance().set("data_path", argv[ip1]);
 				std::cout << "setting data_path to: " << argv[ip1] << std::endl;
+			} else if(argv[i] == std::string("-wear_sim")) {	
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+				//passing wear xml path to
+				WearSimulation ws; 
+				ws.run(init, argv[ip1]);
 			}
+
 		}
 	}
 

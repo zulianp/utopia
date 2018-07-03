@@ -38,6 +38,7 @@
 #include "utopia_Socket.hpp"
 #include "utopia_NormalTangentialCoordinateSystem.cpp"
 #include "utopia_SemiGeometricMultigrid.hpp"
+#include "utopia_ContactSystem.hpp"
 
 #include <algorithm>
 #include <memory>

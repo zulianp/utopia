@@ -55,8 +55,11 @@ namespace utopia {
             MultiLevelTestProblem<DSMatrixd, DVectord> ml_problem(4, 2);
             // ml_problem.write_matlab("./");
             
+            auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(); 
+            smoother->verbose(verbose); 
+
             Multigrid<DSMatrixd, DVectord> multigrid(
-                std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
+                smoother,
                 std::make_shared<Factorization<DSMatrixd, DVectord>>()
                 // std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>(),
                 // std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>()

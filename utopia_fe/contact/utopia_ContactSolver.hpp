@@ -14,6 +14,7 @@
 #include "libmesh/exodusII_io.h"
 
 #include <memory>
+#include <fstream>
 
 namespace utopia {
 
@@ -208,6 +209,55 @@ namespace utopia {
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
 
+		bool write_text(const std::string &path, const Matrix &mat)
+		{	
+			auto comm = mat.implementation().communicator();
+			int comm_size, comm_rank;
+			MPI_Comm_rank(comm, &comm_rank);
+			MPI_Comm_size(comm, &comm_size);
+
+			int nnz = 0;
+			for(SizeType r = 0; r < comm_size; ++r) {
+				if(r == 0) {
+					nnz = 0;
+					each_read(mat, [&nnz](const SizeType, const SizeType, const Scalar) {
+						++nnz;
+					});
+
+					MPI_Allreduce( MPI_IN_PLACE, &nnz, 1, MPI_INT, MPI_SUM, comm );
+				}
+
+				if(r == comm_rank) {
+					std::ofstream os;
+					
+					if(r == 0) {
+						os.open(path);
+						Size s = size(mat);
+						os << s.get(0) << " " << nnz << "\n";
+					} else {
+						os.open(path, std::ofstream::out | std::ofstream::app);
+					}
+
+					if(!os.good()) {
+						std::cerr << "invalid path: " << path << std::endl;
+						continue;
+					}
+
+					each_read(mat, [&os](const SizeType i, const SizeType j, const Scalar value) {	
+						os << i << " " << j << " " << value << "\n";
+					});
+
+					os.flush();
+					os.close();
+				}
+
+				MPI_Barrier(comm);
+			}
+
+			return true;
+		}
+
+
 		void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
 		{
 			if(linear_solver_ && !contact_.has_contact()) {
@@ -247,8 +297,8 @@ namespace utopia {
 
 				// if(n_stuff++ >= 2) {
 				// 	std::cout << "Writing..." << std::flush;
-				// 	write("rhs.m", rhs);
-				// 	write("lhs.m", lhs);
+				// 	write("rhs_" + std::to_string(size(lhs).get(0)) + ".m", rhs);
+				// 	write_text("lhs_" + std::to_string(size(lhs).get(0)) + ".txt", lhs);
 				// 	std::cout << "done." << std::endl;
 				// 	exit(0);
 				// }
