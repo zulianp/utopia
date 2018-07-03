@@ -17,7 +17,8 @@ namespace utopia
     enum AFAlgoVersion  {   AF_VERSION_A  = 1,
                             AF_VERSION_B  = 2,
                             AF_VERSION_C  = 3,
-                            AF_VERSION_D  = 4};
+                            AF_VERSION_D  = 5, 
+                            AF_VERSION_E  = 4 };
 
     
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
@@ -66,6 +67,7 @@ namespace utopia
             g = -1.0*g;
             g_norm = norm2(g);
 
+            SizeType summ_inn_iter = 0; 
 
             // initialization of  tau 
             tau = 1.0/g_norm; 
@@ -98,7 +100,7 @@ namespace utopia
                 // plain correction, without step-size
                 s = 1.0/tau * s; 
                 s_norm = norm2(s); 
-            
+
                 // gradient of x_trial 
                 fun.gradient(x_trial, g_trial);  
                 g_trial *= -1.0;     
@@ -110,7 +112,7 @@ namespace utopia
                     taken = 1; 
                     it_inner = 0; 
 
-                    if(algo_version_ == AF_VERSION_A || algo_version_ == AF_VERSION_C)
+                    if(algo_version_ != AF_VERSION_B)
                     {
                         tau = estimate_tau(g_trial, g, s, tau, s_norm); 
                         clamp_tau(tau); 
@@ -133,6 +135,11 @@ namespace utopia
 
                     Scalar tau_old = 9e9; 
                     it_inner = 0; 
+
+                    // this should not be here...
+                    // tau = g_norm/norm2(g_trial)*tau; 
+                    // tau = 1.0/g_norm;
+                    // tau = 1e7;
 
                     while(!converged_inner)
                     {
@@ -165,7 +172,15 @@ namespace utopia
 
                         if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                             PrintInfo::print_iter_status(it_inner, {tau});
+
+                        if(algo_version_ == AF_VERSION_E)
+                        {   
+                            if(norm2(g_trial) < norm2(g))
+                                converged_inner = true; 
+                        }
                     }
+
+                    summ_inn_iter +=it_inner; 
 
                     if(norm2(g_trial) < norm2(g))
                     {
@@ -173,9 +188,9 @@ namespace utopia
                         g = g_trial; 
 
                         // reset value of tau ... 
-                        tau = 1.0/g_norm; 
+                        // tau = 1.0/g_norm; 
                     }
-                    else
+                    else if(algo_version_ !=  AF_VERSION_A)
                         std::cout<<"--- WARNING: residual monotonicity test failed... \n"; 
 
                 }  // this is outer loop of residual monicity test
@@ -193,6 +208,8 @@ namespace utopia
                 it++;
 
             } // outer solve loop while(!converged)
+
+            std::cout<<"summ_inn_iter: "<< summ_inn_iter << "  \n"; 
 
             return true;
         }
