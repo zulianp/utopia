@@ -149,13 +149,13 @@ namespace utopia
 
             memory_.x[l-1] = x_h;
 
-            Vector g_finest  = local_zeros(local_size(memory_.x[l-1])); 
+            memory_.g[l-1]  = local_zeros(local_size(memory_.x[l-1])); 
             this->make_iterate_feasible(fine_fun, memory_.x[l-1]); 
 
-            fine_fun.gradient(memory_.x[l-1], g_finest); 
+            fine_fun.gradient(memory_.x[l-1], memory_.g[l-1]); 
             fine_fun.value(memory_.x[l-1], energy); 
 
-            r0_norm = norm2(g_finest); 
+            r0_norm = norm2(memory_.g[l-1]); 
             _it_global = 0; 
 
             
@@ -189,10 +189,10 @@ namespace utopia
                     }
                 #endif    
 
-                fine_fun.gradient(memory_.x[l-1], g_finest); 
+                fine_fun.gradient(memory_.x[l-1], memory_.g[l-1]); 
                 fine_fun.value(memory_.x[l-1], energy); 
                 
-                r_norm = norm2(g_finest);
+                r_norm = norm2(memory_.g[l-1]);
                 rel_norm = r_norm/r0_norm; 
 
                 _it_global++; 
@@ -232,7 +232,7 @@ namespace utopia
          */
         virtual bool multiplicative_cycle(Fun &fine_fun, Vector & /*u_l*/, const Vector &/*f*/, const SizeType & level) override
         {
-            Vector g_fine, g_coarse, g_diff, s_coarse, s_fine, s_global; // u_2l 
+            Vector s_coarse, s_fine, s_global; // u_2l, g_fine, g_coarse
             Matrix H_fine, H_coarse, H_diff; 
 
             Scalar ared=0.0, coarse_reduction=0.0, rho=0.0; 
@@ -249,16 +249,16 @@ namespace utopia
                 return true; 
 
             compute_s_global(memory_.x[level-1], level, s_global); 
-            this->get_multilevel_gradient(fine_fun, memory_.x[level-1], g_fine, s_global, level); 
+            this->get_multilevel_gradient(fine_fun, memory_.x[level-1], memory_.g[level-1], s_global, level); 
 
             if(level == this->n_levels())
             {
-                converged =  this->criticality_measure_termination(norm2(g_fine)); 
+                converged =  this->criticality_measure_termination(norm2(memory_.g[level-1])); 
                 if(converged==true)
                     return true; 
             }
 
-            this->transfer(level-2).restrict(g_fine, g_diff);
+            this->transfer(level-2).restrict(memory_.g[level-1], memory_.g_diff[level-2]);
             this->transfer(level-2).project_down(memory_.x[level-1], memory_.x[level-2]); 
 
             this->make_iterate_feasible(this->function(level-2), memory_.x[level-2]); 
@@ -268,14 +268,14 @@ namespace utopia
             //----------------------------------------------------------------------------            
             if(CONSISTENCY_LEVEL != GALERKIN)
             {             
-                this->function(level-2).gradient(memory_.x[level-2], g_coarse); 
-                this->zero_correction_related_to_equality_constrain(this->function(level-2), g_diff); 
+                this->function(level-2).gradient(memory_.x[level-2], memory_.g[level-2]); 
+                this->zero_correction_related_to_equality_constrain(this->function(level-2), memory_.g_diff[level-2]); 
             }
 
-            smoothness_flg = grad_smoothess_termination(g_diff, g_fine); 
+            smoothness_flg = grad_smoothess_termination(memory_.g_diff[level-2], memory_.g[level-1]); 
 
             if(CONSISTENCY_LEVEL != GALERKIN)
-                g_diff -= g_coarse; 
+                memory_.g_diff[level-2] -= memory_.g[level-2]; 
 
             //----------------------------------------------------------------------------
             //                   second order coarse level objective managment
@@ -298,7 +298,11 @@ namespace utopia
             //----------------------------------------------------------------------------
             this->set_delta(level-2, get_delta(level-1)); 
 
-            this->set_delta_gradient(level-2, g_diff); 
+            // this->set_delta_gradient(level-2, g_diff);  // now done automatically .... 
+
+
+
+
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
                 this->set_delta_hessian(level-2, H_diff); 
 
@@ -321,7 +325,7 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = level - 1; 
-                    this->multiplicative_cycle(this->function(level-2), memory_.x[level-2], g_diff, l_new); 
+                    this->multiplicative_cycle(this->function(level-2), memory_.x[level-2], memory_.g_diff[level-2], l_new); 
                 }
             }
             
