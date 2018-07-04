@@ -133,22 +133,22 @@ namespace utopia
         virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs) override
         {
             bool converged = false; 
-            SizeType l = this->n_levels(); 
+            SizeType fine_level = this->n_levels()-1; 
             Scalar r_norm, r0_norm, rel_norm, energy;
 
             //-------------- INITIALIZATIONS ---------------
             this->status_.clear();
             this->init_memory(); 
 
-            memory_.x[l-1] = x_h;
+            memory_.x[fine_level] = x_h;
 
-            memory_.g[l-1]  = local_zeros(local_size(memory_.x[l-1])); 
-            this->make_iterate_feasible(fine_fun, memory_.x[l-1]); 
+            memory_.g[fine_level]  = local_zeros(local_size(memory_.x[fine_level])); 
+            this->make_iterate_feasible(fine_fun, memory_.x[fine_level]); 
 
-            fine_fun.gradient(memory_.x[l-1], memory_.g[l-1]); 
-            fine_fun.value(memory_.x[l-1], energy); 
+            fine_fun.gradient(memory_.x[fine_level], memory_.g[fine_level]); 
+            fine_fun.value(memory_.x[fine_level], energy); 
 
-            r0_norm = norm2(memory_.g[l-1]); 
+            r0_norm = norm2(memory_.g[fine_level]); 
             _it_global = 0; 
 
             
@@ -157,7 +157,7 @@ namespace utopia
             if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0)
             {
                 std::cout << red_;
-                std::string name_id = this->name() + "     Number of levels: " + std::to_string(l); 
+                std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level); 
                 this->init_solver(name_id, {" it. ", "|| g ||", "   E "}); 
 
                 PrintInfo::print_iter_status(_it_global, {r0_norm, energy}); 
@@ -167,25 +167,25 @@ namespace utopia
             while(!converged)
             {            
                 if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
-                    this->multiplicative_cycle(fine_fun, memory_.x[l-1], rhs, l); 
+                    this->multiplicative_cycle(fine_fun, memory_.x[fine_level], rhs, fine_level); 
                 else{
                     std::cout<<"ERROR::UTOPIA_RMTR << unknown cycle type, solving in multiplicative manner ... \n"; 
-                    this->multiplicative_cycle(fine_fun, memory_.x[l-1], rhs, l); 
+                    this->multiplicative_cycle(fine_fun, memory_.x[fine_level], rhs, fine_level); 
                 }
 
 
                 #ifdef CHECK_NUM_PRECISION_mode
-                    if(has_nan_or_inf(memory_.x[l-1]) == 1)
+                    if(has_nan_or_inf(memory_.x[fine_level]) == 1)
                     {
-                        memory_.x[l-1] = local_zeros(local_size(memory_.x[l-1]));
+                        memory_.x[fine_level] = local_zeros(local_size(memory_.x[fine_level]));
                         return true; 
                     }
                 #endif    
 
-                fine_fun.gradient(memory_.x[l-1], memory_.g[l-1]); 
-                fine_fun.value(memory_.x[l-1], energy); 
+                fine_fun.gradient(memory_.x[fine_level], memory_.g[fine_level]); 
+                fine_fun.value(memory_.x[fine_level], energy); 
                 
-                r_norm = norm2(memory_.g[l-1]);
+                r_norm = norm2(memory_.g[fine_level]);
                 rel_norm = r_norm/r0_norm; 
 
                 _it_global++; 
@@ -201,12 +201,12 @@ namespace utopia
                 }
 
                 // check convergence
-                converged = check_global_convergence(_it_global, r_norm, rel_norm, memory_.delta[l-1]); 
+                converged = check_global_convergence(_it_global, r_norm, rel_norm, memory_.delta[fine_level]); 
             }
 
             // benchmarking
             this->print_statistics(_it_global); 
-            x_h = memory_.x[l-1];
+            x_h = memory_.x[fine_level];
             return true; 
         }
 
@@ -235,74 +235,74 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   presmoothing
             //----------------------------------------------------------------------------
-            converged = this->local_tr_solve(fine_fun, level-1); 
+            converged = this->local_tr_solve(fine_fun, level); 
 
             // making sure that correction does not exceed tr radius ... 
             if(converged)
                 return true; 
 
-            compute_s_global(level-1, s_global); 
-            this->get_multilevel_gradient(fine_fun, s_global, level-1); 
+            compute_s_global(level, s_global); 
+            this->get_multilevel_gradient(fine_fun, s_global, level); 
 
-            if(level == this->n_levels())
+            if(level == this->n_levels()-1)
             {
-                converged =  this->criticality_measure_termination(norm2(memory_.g[level-1])); 
+                converged =  this->criticality_measure_termination(norm2(memory_.g[level])); 
                 if(converged==true)
                     return true; 
             }
 
-            this->transfer(level-2).restrict(memory_.g[level-1], memory_.g_diff[level-2]);
-            this->transfer(level-2).project_down(memory_.x[level-1], memory_.x[level-2]); 
+            this->transfer(level-1).restrict(memory_.g[level], memory_.g_diff[level-1]);
+            this->transfer(level-1).project_down(memory_.x[level], memory_.x[level-1]); 
 
-            this->make_iterate_feasible(this->function(level-2), memory_.x[level-2]); 
+            this->make_iterate_feasible(this->function(level-1), memory_.x[level-1]); 
 
             //----------------------------------------------------------------------------
             //                   first order coarse level objective managment
             //----------------------------------------------------------------------------            
             if(CONSISTENCY_LEVEL != GALERKIN)
             {             
-                this->function(level-2).gradient(memory_.x[level-2], memory_.g[level-2]); 
-                this->zero_correction_related_to_equality_constrain(this->function(level-2), memory_.g_diff[level-2]); 
+                this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]); 
+                this->zero_correction_related_to_equality_constrain(this->function(level-1), memory_.g_diff[level-1]); 
             }
 
-            smoothness_flg = grad_smoothess_termination(memory_.g_diff[level-2], memory_.g[level-1]); 
+            smoothness_flg = grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level]); 
 
             if(CONSISTENCY_LEVEL != GALERKIN)
-                memory_.g_diff[level-2] -= memory_.g[level-2]; 
+                memory_.g_diff[level-1] -= memory_.g[level-1]; 
 
             //----------------------------------------------------------------------------
             //                   second order coarse level objective managment
             //----------------------------------------------------------------------------            
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
             {
-                this->get_multilevel_hessian(fine_fun, H_fine, level-1); 
-                this->transfer(level-2).restrict(H_fine, memory_.H_diff[level-2]);
+                this->get_multilevel_hessian(fine_fun, H_fine, level); 
+                this->transfer(level-1).restrict(H_fine, memory_.H_diff[level-1]);
                 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
                 {
-                    this->zero_correction_related_to_equality_constrain_mat(this->function(level-2), memory_.H_diff[level-2]); 
-                    this->function(level-2).hessian(memory_.x[level-2], H_coarse); 
-                    memory_.H_diff[level-2] -=  H_coarse; 
+                    this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]); 
+                    this->function(level-1).hessian(memory_.x[level-1], H_coarse); 
+                    memory_.H_diff[level-1] -=  H_coarse; 
                 }
             }
 
             //----------------------------------------------------------------------------
             //                   initializing coarse level
             //----------------------------------------------------------------------------
-            memory_.delta[level-2] = memory_.delta[level-1]; 
-            memory_.x_0[level-2] = memory_.x[level-2]; 
+            memory_.delta[level-1] = memory_.delta[level]; 
+            memory_.x_0[level-1] = memory_.x[level-1]; 
 
-            memory_.s[level-2] = 0*memory_.x[level-2]; 
+            memory_.s[level-1] = local_zeros(local_size(memory_.x[level-1])); 
 
             // at this point s_global on coarse level is empty 
-            coarse_reduction = this->get_multilevel_energy(this->function(level-2), memory_.s[level-2], level-2); 
+            coarse_reduction = this->get_multilevel_energy(this->function(level-1), memory_.s[level-1], level-1); 
 
             //----------------------------------------------------------------------------
             //               recursion  / Taylor correction
             //----------------------------------------------------------------------------
-            if(level == 2 && smoothness_flg)
+            if(level == 1 && smoothness_flg)
             {
-                this->local_tr_solve(this->function(level-2), level -2, true); 
+                this->local_tr_solve(this->function(level-1), level -1, true); 
             }
             else if(smoothness_flg)
             {
@@ -310,7 +310,7 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = level - 1; 
-                    this->multiplicative_cycle(this->function(level-2), memory_.x[level-2], memory_.g_diff[level-2], l_new); 
+                    this->multiplicative_cycle(this->function(level-1), memory_.x[level-1], memory_.g_diff[level-1], l_new); 
                 }
             }
        
@@ -319,20 +319,20 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 //                       building trial point from coarse level 
                 //----------------------------------------------------------------------------
-                memory_.s[level-2] = memory_.x[level-2] - memory_.x_0[level-2];
-                coarse_reduction -= this->get_multilevel_energy(this->function(level-2), memory_.s[level-2], level-2);
+                memory_.s[level-1] = memory_.x[level-1] - memory_.x_0[level-1];
+                coarse_reduction -= this->get_multilevel_energy(this->function(level-1), memory_.s[level-1], level-1);
 
-                this->transfer(level-2).interpolate(memory_.s[level-2], memory_.s[level-1]);
-                this->zero_correction_related_to_equality_constrain(fine_fun, memory_.s[level-1]); 
+                this->transfer(level-1).interpolate(memory_.s[level-1], memory_.s[level]);
+                this->zero_correction_related_to_equality_constrain(fine_fun, memory_.s[level]); 
 
-                compute_s_global(level-1, s_global);                               
-                E_old = this->get_multilevel_energy(fine_fun, s_global, level-1); 
+                compute_s_global(level, s_global);                               
+                E_old = this->get_multilevel_energy(fine_fun, s_global, level); 
 
                 // new test for dbg mode 
-                memory_.x[level-1] += memory_.s[level-1]; 
+                memory_.x[level] += memory_.s[level]; 
 
-                compute_s_global(level-1, s_global);  
-                E_new = this->get_multilevel_energy(fine_fun, s_global, level-1); 
+                compute_s_global(level, s_global);  
+                E_new = this->get_multilevel_energy(fine_fun, s_global, level); 
                 
                 //----------------------------------------------------------------------------
                 //                        trial point acceptance  
@@ -349,14 +349,14 @@ namespace utopia
                 }
                 else
                 {
-                    memory_.x[level-1] -= memory_.s[level-1]; 
-                    compute_s_global(level-1, s_global); 
+                    memory_.x[level] -= memory_.s[level]; 
+                    compute_s_global(level, s_global); 
                 }
 
                 //----------------------------------------------------------------------------
                 //                                  trust region update 
                 //----------------------------------------------------------------------------
-                converged = delta_update(rho, level-1, s_global); 
+                converged = delta_update(rho, level, s_global); 
                 
                 // terminate, since TR rad. does not allow to take more corrections on given level 
                 if(converged==true) 
@@ -366,9 +366,9 @@ namespace utopia
                 if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                 {
                     // just to see what is being printed 
-                    std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level); 
+                    std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level+1); 
                     this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"}); 
-                    PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level-1], coarse_corr_taken }); 
+                    PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level], coarse_corr_taken }); 
                 }
             }
             else
@@ -379,7 +379,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                        postsmoothing   
             //----------------------------------------------------------------------------
-            this->local_tr_solve(fine_fun, level-1, !smoothness_flg); 
+            this->local_tr_solve(fine_fun, level, !smoothness_flg); 
     
             return true; 
         }
