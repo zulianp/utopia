@@ -39,7 +39,7 @@ namespace utopia
                 g.resize(n_levels);                 
                 g_diff.resize(n_levels);
 
-                c.resize(n_levels);
+                s.resize(n_levels);
 
                 H_diff.resize(n_levels);
 
@@ -47,7 +47,7 @@ namespace utopia
             }
 
         std::vector<Scalar> delta; 
-        std::vector<Vector> x, x_0, g, g_diff, c; 
+        std::vector<Vector> x, x_0, g, g_diff, s; 
         std::vector<Matrix> H_diff; 
     }; 
 

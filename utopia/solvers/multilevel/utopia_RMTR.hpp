@@ -232,7 +232,7 @@ namespace utopia
          */
         virtual bool multiplicative_cycle(Fun &fine_fun, Vector & /*u_l*/, const Vector &/*f*/, const SizeType & level) override
         {
-            Vector s_coarse, s_fine, s_global; // u_2l, g_fine, g_coarse
+            Vector s_global; // u_2l, g_fine, g_coarse, s_fine, s_coarse
             Matrix H_fine, H_coarse, H_diff; 
 
             Scalar ared=0.0, coarse_reduction=0.0, rho=0.0; 
@@ -298,9 +298,6 @@ namespace utopia
             //----------------------------------------------------------------------------
             this->set_delta(level-2, get_delta(level-1)); 
 
-            // this->set_delta_gradient(level-2, g_diff);  // now done automatically .... 
-
-
 
 
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
@@ -308,8 +305,8 @@ namespace utopia
 
             this->set_x_initial(level-2, memory_.x[level-2]); 
         
-            s_coarse = 0*memory_.x[level-2]; 
-            coarse_reduction = this->get_multilevel_energy(this->function(level-2),  memory_.x[level-2],  s_coarse, level-1); 
+            memory_.s[level-2] = 0*memory_.x[level-2]; 
+            coarse_reduction = this->get_multilevel_energy(this->function(level-2),  memory_.x[level-2],  memory_.s[level-2], level-1); 
 
             //----------------------------------------------------------------------------
             //               recursion  / Taylor correction
@@ -334,17 +331,17 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 //                       building trial point from coarse level 
                 //----------------------------------------------------------------------------
-                s_coarse = memory_.x[level-2] - this->get_x_initial(level - 2);
-                coarse_reduction -= this->get_multilevel_energy(this->function(level-2),  memory_.x[level-2],  s_coarse, level-1);
+                memory_.s[level-2] = memory_.x[level-2] - this->get_x_initial(level - 2);
+                coarse_reduction -= this->get_multilevel_energy(this->function(level-2),  memory_.x[level-2],  memory_.s[level-2], level-1);
 
-                this->transfer(level-2).interpolate(s_coarse, s_fine);
-                this->zero_correction_related_to_equality_constrain(fine_fun, s_fine); 
+                this->transfer(level-2).interpolate(memory_.s[level-2], memory_.s[level-1]);
+                this->zero_correction_related_to_equality_constrain(fine_fun, memory_.s[level-1]); 
 
                 compute_s_global(memory_.x[level-1], level, s_global);                               
                 E_old = this->get_multilevel_energy(fine_fun,  memory_.x[level-1],  s_global, level); 
 
                 // new test for dbg mode 
-                memory_.x[level-1] += s_fine; 
+                memory_.x[level-1] += memory_.s[level-1]; 
 
                 compute_s_global(memory_.x[level-1], level, s_global);     
                 E_new = this->get_multilevel_energy(fine_fun,  memory_.x[level-1],  s_global, level); 
@@ -366,7 +363,7 @@ namespace utopia
                 }
                 else
                 {
-                    memory_.x[level-1] -= s_fine; 
+                    memory_.x[level-1] -= memory_.s[level-1]; 
                     compute_s_global(memory_.x[level-1], level, s_global);
                 }
 
