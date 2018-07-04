@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-04-19
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2018-02-08
-*/
-
 #ifndef UTOPIA_RMTR_HPP
 #define UTOPIA_RMTR_HPP
 #include "utopia_NonLinearSmoother.hpp"
@@ -24,10 +17,12 @@
 #include "utopia_MultiLevelEvaluations.hpp"
 
 
+#include "utopia_LevelMemory.hpp"
+
 namespace utopia 
 {
     /**
-     * @brief      The class for Nonlinear Multigrid solver. 
+     * @brief      The class for Recursive multilevel trust region solver. 
      *
      * @tparam     Matrix  
      * @tparam     Vector  
@@ -81,12 +76,14 @@ namespace utopia
             _hessian_update_eta         = params.hessian_update_eta();
 
             _verbosity_level           = params.verbosity_level(); 
-
         }
 
         virtual void init_memory(const SizeType & fine_local_size) override 
         {
             std::cout<<"-------- to be done \n"; 
+
+            memory_.init(this->n_levels()); 
+            memory_.g_diff[this->n_levels()-1] = local_zeros(fine_local_size); 
         }
 
 
@@ -155,6 +152,7 @@ namespace utopia
             _it_global = 0; 
 
             //-------------- INITIALIZATIONS ---------------
+            this->status_.clear();
             init(); 
             
             //----------------------------------------------
@@ -521,7 +519,17 @@ namespace utopia
 
         virtual void init() 
         {
-            init_deltas(); 
+            // init_deltas(); 
+
+
+            // new version .....
+            memory_.init(this->n_levels()); 
+            //memory_.g_diff[this->n_levels()-1] = local_zeros(fine_local_size); 
+
+            // new init deltas... 
+            for(Scalar l = 0; l < this->n_levels(); l ++)
+                memory_.delta[l] = this->delta0(); 
+
 
             _delta_gradients.resize(this->n_levels()-1); 
             _x_initials.resize(this->n_levels()-1); 
@@ -717,7 +725,8 @@ namespace utopia
          */
         virtual bool set_delta(const SizeType & level, const Scalar & radius)
         {
-            _deltas[level] = radius; 
+            // _deltas[level] = radius; 
+            memory_.delta[level] = radius; 
             return true; 
         }
 
@@ -731,7 +740,8 @@ namespace utopia
          */
         virtual Scalar get_delta(const SizeType & level) const 
         {
-            return _deltas[level]; 
+            // return _deltas[level]; 
+            return memory_.delta[level]; 
         }
 
 
@@ -739,13 +749,13 @@ namespace utopia
          * @brief      Initializes tr radius on eaxh level. Organized from coarsest => delta[0] =  coarsest level
          *
          */
-        virtual bool init_deltas()
-        {
-            for(Scalar i = 0; i < this->n_levels(); i ++)
-                _deltas.push_back(this->delta0()); 
+        // virtual bool init_deltas()
+        // {
+        //     for(Scalar i = 0; i < this->n_levels(); i ++)
+        //         _deltas.push_back(this->delta0()); 
 
-            return true; 
-        }
+        //     return true; 
+        // }
 
 
     
@@ -1048,8 +1058,6 @@ namespace utopia
 
     protected:   
         SizeType                            _it_global;                 /** * global iterate counter  */
-        std::vector<Scalar>                 _deltas;                    /** * deltas on given level  */
-
 
         std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem;     /** * solver used to solve coarse level TR subproblems  */
         std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem;   /** * solver used to solve fine level TR subproblems  */
@@ -1058,6 +1066,8 @@ namespace utopia
         std::vector<Vector>           _delta_gradients;             /** * difference between fine and coarse level gradient */
         std::vector<Matrix>           _delta_hessians;              /** * difference between fine and coarse level hessians */
         std::vector<Vector>           _x_initials;                  /** * initial iterates on given level */
+       // std::vector<Scalar>           _deltas;                      /** * deltas on given level  */
+
 
 
         // ----------------------- PARAMETERS ----------------------
@@ -1077,6 +1087,11 @@ namespace utopia
 
 
         VerbosityLevel                  _verbosity_level; 
+
+
+
+    private:
+        RMTRLevelMemory <Matrix, Vector>         memory_;
 
 
     };

@@ -57,9 +57,6 @@ namespace utopia
     
         virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs) override
         {
-
-            std::cout<<"yes, this solve ------- \n";
-            
             bool converged = false;
             SizeType it = 0, n_levels = this->n_levels();
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
