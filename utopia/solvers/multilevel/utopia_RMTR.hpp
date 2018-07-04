@@ -232,8 +232,8 @@ namespace utopia
          */
         virtual bool multiplicative_cycle(Fun &fine_fun, Vector & /*u_l*/, const Vector &/*f*/, const SizeType & level) override
         {
-            Vector s_global; // u_2l, g_fine, g_coarse, s_fine, s_coarse
-            Matrix H_fine, H_coarse, H_diff; 
+            Vector s_global; 
+            Matrix H_fine, H_coarse;  // lets not store all hessians for all levels... this is simply too much... 
 
             Scalar ared=0.0, coarse_reduction=0.0, rho=0.0; 
             Scalar E_old, E_new; 
@@ -283,13 +283,13 @@ namespace utopia
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
             {
                 this->get_multilevel_hessian(fine_fun, memory_.x[level-1], H_fine, level); 
-                this->transfer(level-2).restrict(H_fine, H_diff);
+                this->transfer(level-2).restrict(H_fine, memory_.H_diff[level-2]);
                 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
                 {
-                    this->zero_correction_related_to_equality_constrain_mat(this->function(level-2), H_diff); 
+                    this->zero_correction_related_to_equality_constrain_mat(this->function(level-2), memory_.H_diff[level-2]); 
                     this->function(level-2).hessian(memory_.x[level-2], H_coarse); 
-                    H_diff -=  H_coarse; 
+                    memory_.H_diff[level-2] -=  H_coarse; 
                 }
             }
 
@@ -297,13 +297,9 @@ namespace utopia
             //                   initializing coarse level
             //----------------------------------------------------------------------------
             this->set_delta(level-2, get_delta(level-1)); 
-
-
-
-            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
-                this->set_delta_hessian(level-2, H_diff); 
-
             this->set_x_initial(level-2, memory_.x[level-2]); 
+
+
         
             memory_.s[level-2] = 0*memory_.x[level-2]; 
             coarse_reduction = this->get_multilevel_energy(this->function(level-2),  memory_.x[level-2],  memory_.s[level-2], level-1); 
