@@ -79,7 +79,7 @@ namespace utopia {
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
 
             
-            std::string header_message = this->name_id() + ": " + std::to_string(n_levels) +  " levels";
+            std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";
             this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
             
             status_.clear();
@@ -210,7 +210,7 @@ namespace utopia {
          */
         virtual void print_statistics(const SizeType & it_global)
         {
-            std::string path = this->name_id() + "_data_path";
+            std::string path = this->name() + "_data_path";
             std::cout<<"string data path: "<< path << " \n";
             
             auto non_data_path = Utopia::instance().get(path);
@@ -457,7 +457,7 @@ namespace utopia {
         /**
          * @return     Name of solver - to have nice printouts
          */
-        virtual std::string name_id() = 0;
+        virtual std::string name() = 0;
 
         /**
          * @brief      Init internal memory used for implementation of given multilevel solver

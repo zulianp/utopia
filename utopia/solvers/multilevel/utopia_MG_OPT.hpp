@@ -42,7 +42,7 @@ namespace utopia
 
         virtual ~MG_OPT(){} 
         
-        virtual std::string name_id() override
+        virtual std::string name() override
         {
             return "MG_OPT"; 
         }

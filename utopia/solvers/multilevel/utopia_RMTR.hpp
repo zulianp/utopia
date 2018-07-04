@@ -29,7 +29,7 @@ namespace utopia
      */
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
     class RMTR : public NonlinearMultiLevelBase<Matrix, Vector>,
-                       public TrustRegionBase<Matrix, Vector>
+                 public TrustRegionBase<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -41,7 +41,6 @@ namespace utopia
     public:
 
         using TrustRegionBase<Matrix, Vector>::delta_update;
-        using NonlinearMultiLevelBase<Matrix, Vector>::print_statistics;
 
        /**
         * @brief      Multigrid class
@@ -49,7 +48,8 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        RMTR(   const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother, 
+        RMTR(   const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  
+                const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother, 
                 const Parameters params = Parameters()): 
                 NonlinearMultiLevelBase<Matrix,Vector>(params), 
                 _coarse_tr_subproblem(tr_subproblem_coarse), 
@@ -82,11 +82,6 @@ namespace utopia
             _verbosity_level           = params.verbosity_level(); 
         }
 
-        virtual void init_memory(const SizeType & fine_local_size) override 
-        {
-            memory_.init(this->n_levels()); 
-        }
-
         VerbosityLevel verbosity_level() const 
         {
             return _verbosity_level; 
@@ -107,7 +102,7 @@ namespace utopia
 
         using NonlinearMultiLevelBase<Matrix, Vector>::solve; 
 
-        virtual std::string name_id() override { return "RMTR";  }
+        virtual std::string name() override { return "RMTR";  }
         
 
         void set_eps_grad_termination(const Scalar & eps_grad_termination)
@@ -143,7 +138,7 @@ namespace utopia
 
             //-------------- INITIALIZATIONS ---------------
             this->status_.clear();
-            init(); 
+            this->init_memory(); 
 
             memory_.x[l-1] = x_h;
 
@@ -162,8 +157,8 @@ namespace utopia
             if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0)
             {
                 std::cout << red_;
-                std::string name_id = this->name_id() + "     Number of levels: " + std::to_string(l); 
-                this->init_solver(name_id, {" it. ", "|| g_norm ||", "   E "}); 
+                std::string name_id = this->name() + "     Number of levels: " + std::to_string(l); 
+                this->init_solver(name_id, {" it. ", "|| g ||", "   E "}); 
 
                 PrintInfo::print_iter_status(_it_global, {r0_norm, energy}); 
                 std::cout << def_; 
@@ -199,7 +194,7 @@ namespace utopia
                 {
                     std::cout << red_; 
                     if(verbosity_level() > VERBOSITY_LEVEL_NORMAL)
-                        this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g_norm ||", "   E "}); 
+                        this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g ||", "   E "}); 
 
                     PrintInfo::print_iter_status(_it_global, {r_norm, energy}); 
                     std::cout << def_; 
@@ -210,7 +205,7 @@ namespace utopia
             }
 
             // benchmarking
-            print_statistics(); 
+            // this->print_statistics(_it_global); 
             x_h = memory_.x[l-1];
             return true; 
         }
@@ -240,13 +235,15 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   presmoothing
             //----------------------------------------------------------------------------
-            converged = this->local_tr_solve(fine_fun, memory_.x[level-1], level); 
+            converged = this->local_tr_solve(fine_fun, level); 
 
             // making sure that correction does not exceed tr radius ... 
             if(converged)
                 return true; 
 
-            compute_s_global(memory_.x[level-1], level, s_global); 
+            compute_s_global(level-1, s_global); 
+
+
             this->get_multilevel_gradient(fine_fun, memory_.x[level-1], memory_.g[level-1], s_global, level); 
 
             if(level == this->n_levels())
@@ -306,7 +303,7 @@ namespace utopia
             if(level == 2 && smoothness_flg)
             {
                 SizeType l_new = level - 1; 
-                this->local_tr_solve(this->function(level-2), memory_.x[level-2], l_new, true); 
+                this->local_tr_solve(this->function(level-2), l_new, true); 
             }
             else if(smoothness_flg)
             {
@@ -329,13 +326,13 @@ namespace utopia
                 this->transfer(level-2).interpolate(memory_.s[level-2], memory_.s[level-1]);
                 this->zero_correction_related_to_equality_constrain(fine_fun, memory_.s[level-1]); 
 
-                compute_s_global(memory_.x[level-1], level, s_global);                               
+                compute_s_global(level-1, s_global);                               
                 E_old = this->get_multilevel_energy(fine_fun,  memory_.x[level-1],  s_global, level); 
 
                 // new test for dbg mode 
                 memory_.x[level-1] += memory_.s[level-1]; 
 
-                compute_s_global(memory_.x[level-1], level, s_global);     
+                compute_s_global(level-1, s_global);  
                 E_new = this->get_multilevel_energy(fine_fun,  memory_.x[level-1],  s_global, level); 
                 
 
@@ -356,7 +353,7 @@ namespace utopia
                 else
                 {
                     memory_.x[level-1] -= memory_.s[level-1]; 
-                    compute_s_global(memory_.x[level-1], level, s_global);
+                    compute_s_global(level-1, s_global); 
                 }
 
 
@@ -386,7 +383,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                        postsmoothing   
             //----------------------------------------------------------------------------
-            this->local_tr_solve(fine_fun, memory_.x[level-1], level, !smoothness_flg); 
+            this->local_tr_solve(fine_fun, level, !smoothness_flg); 
     
             return true; 
         }
@@ -401,7 +398,7 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool local_tr_solve(Fun &fun, Vector & /*x*/, const SizeType & level, const bool & exact_solve_flg = false)
+        virtual bool local_tr_solve(Fun &fun, const SizeType & level, const bool & exact_solve_flg = false)
         {   
             Vector s_global; 
             Matrix  H; 
@@ -412,7 +409,7 @@ namespace utopia
 
             Vector s = local_zeros(local_size(memory_.x[level-1])); 
             
-            compute_s_global(memory_.x[level-1], level, s_global);  
+            compute_s_global(level-1, s_global); 
             this->get_multilevel_gradient(fun, memory_.x[level-1], memory_.g[level-1], s_global, level); 
             energy_old = this->get_multilevel_energy(fun,  memory_.x[level-1], s_global, level); 
             g_norm = norm2(memory_.g[level-1]); 
@@ -443,7 +440,7 @@ namespace utopia
                 // building trial point 
                 memory_.x[level-1] += s;  
             
-                compute_s_global(memory_.x[level-1], level, s_global); 
+                compute_s_global(level-1, s_global); 
                 energy_new = this->get_multilevel_energy(fun, memory_.x[level-1], s_global, level); 
                 ared = energy_old - energy_new; 
                 
@@ -464,7 +461,7 @@ namespace utopia
                 else
                 {   
                     memory_.x[level-1] -= s; // return iterate into its initial state 
-                    compute_s_global(memory_.x[level-1], level, s_global); 
+                    compute_s_global(level-1, s_global); 
                     make_grad_updates =  false; 
                 }
             //----------------------------------------------------------------------------
@@ -503,8 +500,7 @@ namespace utopia
 
     protected:
 
-
-        virtual void init() 
+        virtual void init_memory(const SizeType & fine_local_size = 0) override 
         {
             // new version .....
             memory_.init(this->n_levels()); 
@@ -513,6 +509,9 @@ namespace utopia
             for(Scalar l = 0; l < this->n_levels(); l ++)
                 memory_.delta[l] = this->delta0(); 
         }
+
+
+
 
         // -------------------------- tr radius managment ---------------------------------------------        
         /**
@@ -705,7 +704,8 @@ namespace utopia
          */
         virtual bool coarse_solve(Fun &fun, Vector &x, const Vector & /*rhs*/) override
         {
-            local_tr_solve(fun, x, 0); 
+            memory_.x[0] = x; 
+            local_tr_solve(fun, 0); 
             return true; 
         }
 
@@ -808,10 +808,10 @@ namespace utopia
         }
 
 
-        virtual void compute_s_global(const Vector & x, const SizeType & level, Vector & s_global)
+        virtual void compute_s_global(const SizeType & level, Vector & s_global)
         {
-            if(level < this->n_levels())
-                s_global = x - memory_.x_0[level-1];         
+            if(level < this->n_levels()-1)
+                s_global = memory_.x[level] - memory_.x_0[level];         
         }
 
 
@@ -830,41 +830,16 @@ namespace utopia
                 {
                     std::cout << yellow_; 
                     std::string solver_type = "COARSE SOLVE:: " + std::to_string(level); 
-                    this->print_init_message(solver_type, {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
+                    this->print_init_message(solver_type, {" it. ", "|| g ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
                 }
                 else
                 {
                     std::cout << green_; 
                     std::string solver_type = "SMOOTHER:  " + std::to_string(level); 
-                    this->print_init_message(solver_type, {" it. ", "|| g_norm ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
+                    this->print_init_message(solver_type, {" it. ", "|| g ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "}); 
                 }
             }
         }
-
-
-
-        virtual void print_statistics() 
-        {
-            auto rmtr_data_path = Utopia::instance().get("rmtr_data_path");
-            if(!rmtr_data_path.empty())
-            {
-                CSVWriter writer; 
-                if (mpi_world_rank() == 0)
-                {
-                    if(!writer.file_exists(rmtr_data_path))
-                    {
-                        writer.open_file(rmtr_data_path); 
-                        writer.write_table_row<std::string>({"v_cycles", "time"}); 
-                    }
-                    else
-                        writer.open_file(rmtr_data_path); 
-
-                    writer.write_table_row<Scalar>({Scalar(_it_global), this->get_time()}); 
-                    writer.close_file(); 
-                }
-            }
-        }
-
 
 
 

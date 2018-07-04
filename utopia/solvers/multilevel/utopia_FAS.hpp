@@ -49,7 +49,7 @@ namespace utopia
             }
 
 
-            virtual std::string name_id() override
+            virtual std::string name() override
             {
                 return "FAS"; 
             }
@@ -62,7 +62,7 @@ namespace utopia
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
 
             
-            std::string header_message = this->name_id() + ": " + std::to_string(n_levels) +  " levels";
+            std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";
             this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
             
             this->status_.clear();

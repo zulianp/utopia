@@ -137,7 +137,7 @@ namespace utopia
 
         using NonlinearMultiLevelBase<Matrix, Vector>::solve; 
 
-        virtual std::string name_id() override { return "RMTR in infinity norm";  }
+        virtual std::string name() override { return "RMTR in infinity norm";  }
         
 
         void set_eps_grad_termination(const Scalar & eps_grad_termination)
@@ -191,7 +191,7 @@ namespace utopia
                 ColorModifier def(FG_DEFAULT);
                 std::cout << red;
 
-                std::string name_id = this->name_id() + "     Number of levels: " + std::to_string(level); 
+                std::string name_id = this->name() + "     Number of levels: " + std::to_string(level); 
                 this->init_solver(name_id, {" it. ", "|| g_norm ||", "   E "}); 
 
                 PrintInfo::print_iter_status(_it_global, {r0_norm, energy}); 
@@ -253,7 +253,7 @@ namespace utopia
             }
 
             // benchmarking
-            print_statistics(); 
+            this->print_statistics(_it_global); 
             return true; 
         }
 
@@ -1068,28 +1068,6 @@ namespace utopia
         }
 
 
-
-        virtual void print_statistics() 
-        {
-            auto rmtr_data_path = Utopia::instance().get("rmtr_data_path");
-            if(!rmtr_data_path.empty())
-            {
-                CSVWriter writer; 
-                if (mpi_world_rank() == 0)
-                {
-                    if(!writer.file_exists(rmtr_data_path))
-                    {
-                        writer.open_file(rmtr_data_path); 
-                        writer.write_table_row<std::string>({"v_cycles", "time"}); 
-                    }
-                    else
-                        writer.open_file(rmtr_data_path); 
-
-                    writer.write_table_row<Scalar>({Scalar(_it_global), this->get_time()}); 
-                    writer.close_file(); 
-                }
-            }
-        }
 
 
         // correct only if P has only positive elements ... 
