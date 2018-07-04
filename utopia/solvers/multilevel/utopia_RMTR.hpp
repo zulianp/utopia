@@ -87,8 +87,6 @@ namespace utopia
             memory_.init(this->n_levels()); 
         }
 
-
-
         VerbosityLevel verbosity_level() const 
         {
             return _verbosity_level; 
@@ -208,7 +206,7 @@ namespace utopia
                 }
 
                 // check convergence
-                converged = check_global_convergence(_it_global, r_norm, rel_norm, this->get_delta(l-1)); 
+                converged = check_global_convergence(_it_global, r_norm, rel_norm, memory_.delta[l-1]); 
             }
 
             // benchmarking
@@ -296,11 +294,11 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   initializing coarse level
             //----------------------------------------------------------------------------
-            this->set_delta(level-2, get_delta(level-1)); 
-            this->set_x_initial(level-2, memory_.x[level-2]); 
+            memory_.delta[level-2] = memory_.delta[level-1]; 
+            memory_.x_0[level-2] = memory_.x[level-2]; 
 
 
-        
+
             memory_.s[level-2] = 0*memory_.x[level-2]; 
             coarse_reduction = this->get_multilevel_energy(this->function(level-2),  memory_.x[level-2],  memory_.s[level-2], level-1); 
 
@@ -379,7 +377,7 @@ namespace utopia
                     // just to see what is being printed 
                     std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level); 
                     this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"}); 
-                    PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, get_delta(level-1), coarse_corr_taken }); 
+                    PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level-1], coarse_corr_taken }); 
                 }
             }
             else
@@ -425,7 +423,7 @@ namespace utopia
             if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
                 this->print_level_info(level); 
-                PrintInfo::print_iter_status(0, {g_norm, energy_old, ared, pred, rho, get_delta(level-1) }); 
+                PrintInfo::print_iter_status(0, {g_norm, energy_old, ared, pred, rho, memory_.delta[level-1] }); 
             }
 
             it++;       
@@ -487,9 +485,9 @@ namespace utopia
                 }
 
                 if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
-                    PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, get_delta(level-1)}); 
+                    PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, memory_.delta[level-1]}); 
 
-                converged  = (delta_converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, get_delta(level-1)); 
+                converged  = (delta_converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, memory_.delta[level-1]); 
                 
                 if(level == this->n_levels())
                     converged  = (converged  == true || g_norm < this->atol_) ? true : false; 
@@ -535,17 +533,17 @@ namespace utopia
             Scalar intermediate_delta; 
 
             if(rho < this->eta1())
-                 intermediate_delta = std::max(this->gamma1() * this->get_delta(level-1), 1e-15); 
+                 intermediate_delta = std::max(this->gamma1() * memory_.delta[level-1], 1e-15); 
             else if (rho > this->eta2() )
-                 intermediate_delta = std::min(this->gamma2() * this->get_delta(level-1), 1e15); 
+                 intermediate_delta = std::min(this->gamma2() * memory_.delta[level-1], 1e15); 
             else
-                intermediate_delta = this->get_delta(level-1); 
+                intermediate_delta = memory_.delta[level-1]; 
 
 
             // on the finest level we work just with one radius 
             if(level==this->n_levels())
             {
-                this->set_delta(level-1, intermediate_delta); 
+                memory_.delta[level-1] = intermediate_delta; 
                 return false; 
             }
             else
@@ -556,13 +554,14 @@ namespace utopia
                 if(converged && verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                     std::cout<<"termination  due to small radius on level: "<< level << ". \n"; 
 
-                corr_norm = this->get_delta(level) - corr_norm; 
+                corr_norm = memory_.delta[level] - corr_norm; 
                 corr_norm = std::min(intermediate_delta, corr_norm); 
 
                 if(corr_norm <= 0.0)
                     corr_norm = 0.0; 
+ 
+                memory_.delta[level-1] = corr_norm; 
 
-                this->set_delta(level-1, corr_norm); 
                 return converged; 
             }
         }
@@ -638,7 +637,7 @@ namespace utopia
          */
         virtual bool delta_termination(const Scalar & corr_norm, const SizeType & level)
         {   
-            return (corr_norm > (1.0 - _eps_delta_termination) * get_delta(level)) ? true : false; 
+            return (corr_norm > (1.0 - _eps_delta_termination) * memory_.delta[level]) ? true : false; 
         }
 
 
@@ -700,33 +699,6 @@ namespace utopia
 // ------------------------------- initializations  --------------------
 
         /**
-         * @brief      Sets the delta.
-         *
-         * @param[in]  level   The level
-         * @param[in]  radius  The radius
-         *
-         */
-        virtual bool set_delta(const SizeType & level, const Scalar & radius)
-        {
-            memory_.delta[level] = radius; 
-            return true; 
-        }
-
-
-        /**
-         * @brief      Gets the delta.
-         *
-         * @param[in]  level  The level
-         *
-         * @return     The delta.
-         */
-        virtual Scalar get_delta(const SizeType & level) const 
-        {
-            return memory_.delta[level]; 
-        }
-
-
-        /**
          * @brief      Sets the delta hessian.
          *
          * @param[in]  level   The level
@@ -750,20 +722,6 @@ namespace utopia
         virtual Matrix & get_delta_hessian(const SizeType & level) 
         {
             return memory_.H_diff[level]; 
-        }
-
-
-        /**
-         * @brief      Sets the x initial.
-         *
-         * @param[in]  level  The level
-         * @param[in]  x      The initial x.
-         *
-         */
-        virtual bool set_x_initial(const SizeType & level, const Vector & x)
-        {
-            memory_.x_0[level] = x; 
-            return true; 
         }
 
 
@@ -843,13 +801,13 @@ namespace utopia
             {
                 _coarse_tr_subproblem->atol(1e-16); 
                 _coarse_tr_subproblem->max_it(5000); 
-                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, get_delta(level-1)); 
+                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, memory_.delta[level-1]); 
             }
             else
             {
                 _smoother_tr_subproblem->atol(1e-16); 
                 _smoother_tr_subproblem->max_it(5);
-                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, get_delta(level-1)); 
+                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, memory_.delta[level-1]); 
             }
 
             return true; 
