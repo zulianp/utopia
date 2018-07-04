@@ -519,23 +519,12 @@ namespace utopia
 
         virtual void init() 
         {
-            // init_deltas(); 
-
-
             // new version .....
             memory_.init(this->n_levels()); 
-            //memory_.g_diff[this->n_levels()-1] = local_zeros(fine_local_size); 
-
+            
             // new init deltas... 
             for(Scalar l = 0; l < this->n_levels(); l ++)
                 memory_.delta[l] = this->delta0(); 
-
-
-            _delta_gradients.resize(this->n_levels()-1); 
-            _x_initials.resize(this->n_levels()-1); 
-            
-            if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
-                _delta_hessians.resize(this->n_levels()-1); 
         }
 
         // -------------------------- tr radius managment ---------------------------------------------        
@@ -725,7 +714,6 @@ namespace utopia
          */
         virtual bool set_delta(const SizeType & level, const Scalar & radius)
         {
-            // _deltas[level] = radius; 
             memory_.delta[level] = radius; 
             return true; 
         }
@@ -740,34 +728,7 @@ namespace utopia
          */
         virtual Scalar get_delta(const SizeType & level) const 
         {
-            // return _deltas[level]; 
             return memory_.delta[level]; 
-        }
-
-
-        /**
-         * @brief      Initializes tr radius on eaxh level. Organized from coarsest => delta[0] =  coarsest level
-         *
-         */
-        // virtual bool init_deltas()
-        // {
-        //     for(Scalar i = 0; i < this->n_levels(); i ++)
-        //         _deltas.push_back(this->delta0()); 
-
-        //     return true; 
-        // }
-
-
-    
-        /**
-        * @brief      Initializes _delta_hessians for all levels. They are organized from coarsest to finest =>  _delta_hessians[0] =  coarsest level
-         * @NOTE:      We do not have any _delta_hessians for the finest level, since function on the finest level is taken from problem discretization 
-         *
-         */
-        bool init_delta_hessians()
-        {
-            _delta_hessians.resize(this->n_levels()-1); 
-            return true; 
         }
 
 
@@ -780,7 +741,7 @@ namespace utopia
          */
         virtual bool set_delta_hessian(const SizeType & level, const Matrix & H_diff)
         {
-            _delta_hessians[level] = H_diff; 
+            memory_.H_diff[level] = H_diff; 
             return true; 
         }
 
@@ -794,19 +755,7 @@ namespace utopia
          */
         virtual Matrix & get_delta_hessian(const SizeType & level) 
         {
-            return _delta_hessians[level]; 
-        }
-
-
-        /**
-         * @brief      Initializes x0 for all levels. They are organized from coarsest to finest =>  _x_initials[0] =  coarsest level.
-         * @NOTE:      We do not have any x0 for the finest level, since function on the finest level is taken from problem discretization 
-         *
-         */
-        virtual bool init_x_initials()
-        {
-            _x_initials.resize(this->n_levels()-1); 
-            return true; 
+            return memory_.H_diff[level]; 
         }
 
 
@@ -819,7 +768,7 @@ namespace utopia
          */
         virtual bool set_x_initial(const SizeType & level, const Vector & x)
         {
-            _x_initials[level] = x; 
+            memory_.x_0[level] = x; 
             return true; 
         }
 
@@ -833,21 +782,10 @@ namespace utopia
          */
         virtual Vector & get_x_initial(const SizeType & level) 
         {
-            return _x_initials[level]; 
+            return memory_.x_0[level];
         }
 
         
-        /**
-         * @brief      Initializes delta_grads for all levels. They are organized from coarsest to finest => _delta_gradients[0] =  coarsest level. 
-         * @NOTE:      We do not have any g_diff for the finest level, since function on the finest level is taken from problem discretization 
-         *
-         */
-        virtual bool init_delta_gradients()
-        {
-            _delta_gradients.resize(this->n_levels()-1); 
-            return true; 
-        }
-
 
         /**
          * @brief      Sets the delta gradient.
@@ -858,7 +796,7 @@ namespace utopia
          */
         virtual bool set_delta_gradient(const SizeType & level, const Vector & g_diff)
         {
-            _delta_gradients[level] = g_diff; 
+            memory_.g_diff[level] = g_diff; 
             return true; 
         }
 
@@ -872,11 +810,11 @@ namespace utopia
          */
         virtual Vector & get_delta_gradient(const SizeType & level) 
         {
-            return _delta_gradients[level]; 
+            return memory_.g_diff[level]; 
         }
 
 
-//----------------------------- qp solve -----------------------------------------------------------------
+//----------------------------- QP solve -----------------------------------------------------------------
 
 
         /**
@@ -1061,13 +999,6 @@ namespace utopia
 
         std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem;     /** * solver used to solve coarse level TR subproblems  */
         std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem;   /** * solver used to solve fine level TR subproblems  */
-
-
-        std::vector<Vector>           _delta_gradients;             /** * difference between fine and coarse level gradient */
-        std::vector<Matrix>           _delta_hessians;              /** * difference between fine and coarse level hessians */
-        std::vector<Vector>           _x_initials;                  /** * initial iterates on given level */
-       // std::vector<Scalar>           _deltas;                      /** * deltas on given level  */
-
 
 
         // ----------------------- PARAMETERS ----------------------
