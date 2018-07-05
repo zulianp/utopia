@@ -15,8 +15,6 @@
 #include "utopia_TRBase.hpp"
 
 #include "utopia_MultiLevelEvaluations.hpp"
-
-
 #include "utopia_LevelMemory.hpp"
 
 namespace utopia 
@@ -36,6 +34,7 @@ namespace utopia
         typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem; 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
+
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
     public:
@@ -166,10 +165,10 @@ namespace utopia
             while(!converged)
             {            
                 if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
-                    this->multiplicative_cycle(fine_fun, memory_.x[fine_level], rhs, fine_level); 
+                    this->multiplicative_cycle(fine_fun, fine_level); 
                 else{
                     std::cout<<"ERROR::UTOPIA_RMTR << unknown cycle type, solving in multiplicative manner ... \n"; 
-                    this->multiplicative_cycle(fine_fun, memory_.x[fine_level], rhs, fine_level); 
+                    this->multiplicative_cycle(fine_fun, fine_level); 
                 }
 
 
@@ -222,7 +221,7 @@ namespace utopia
          * @param[in]  level      The level
          *
          */
-        virtual bool multiplicative_cycle(Fun &fine_fun, Vector & /*u_l*/, const Vector &/*f*/, const SizeType & level) override
+        virtual bool multiplicative_cycle(Fun &fine_fun, const SizeType & level)
         {
             Vector s_global; 
             Matrix H_fine, H_coarse;  // lets not store all hessians for all levels... this is simply too much... 
@@ -288,10 +287,10 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   initializing coarse level
             //----------------------------------------------------------------------------
-            memory_.delta[level-1] = memory_.delta[level]; 
-            memory_.x_0[level-1] = memory_.x[level-1]; 
+            memory_.delta[level-1]  = memory_.delta[level]; 
+            memory_.x_0[level-1]    = memory_.x[level-1]; 
 
-            memory_.s[level-1] = local_zeros(local_size(memory_.x[level-1])); 
+            memory_.s[level-1]      = local_zeros(local_size(memory_.x[level-1])); 
 
             // at this point s_global on coarse level is empty 
             coarse_reduction = this->get_multilevel_energy(this->function(level-1), memory_.s[level-1], level-1); 
@@ -309,7 +308,7 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = level - 1; 
-                    this->multiplicative_cycle(this->function(level-1), memory_.x[level-1], memory_.g_diff[level-1], l_new); 
+                    this->multiplicative_cycle(this->function(level-1), l_new); 
                 }
             }
        

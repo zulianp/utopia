@@ -88,7 +88,7 @@ namespace utopia
             
             while(!converged)
             {
-                this->multiplicative_cycle(fine_fun, memory_.x[n_levels-1], rhs, n_levels);
+                this->multiplicative_cycle(fine_fun, n_levels);
                 
 #ifdef CHECK_NUM_PRECISION_mode
                 if(has_nan_or_inf(memory_.x[n_levels-1]) == 1)
@@ -134,7 +134,7 @@ namespace utopia
         }
 
 
-        bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
+        bool multiplicative_cycle(Fun &fine_fun, const SizeType & l) 
         {
             for(auto l = this->n_levels()-1; l > 0; l--)
             {

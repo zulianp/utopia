@@ -270,7 +270,7 @@ namespace utopia
          * @param[in]  level      The level
          *
          */
-        virtual bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &/*f*/, const SizeType & level) override
+        virtual bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &/*f*/, const SizeType & level)
         {
             Vector g_fine, g_coarse, g_diff, u_2l, s_coarse, s_fine, s_global; 
             Matrix H_fine, H_coarse, H_diff; 
