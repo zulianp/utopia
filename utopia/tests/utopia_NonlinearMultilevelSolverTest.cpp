@@ -13,9 +13,10 @@ namespace utopia
 		typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
 		typedef UTOPIA_SCALAR(DVectord) Scalar;
 
-		NonlinearBratuSolverTest(const SizeType & n_levels = 2): 
+		NonlinearBratuSolverTest(const SizeType & n_levels = 2, bool remove_BC_contributions = false): 
+					n_levels_(n_levels),
 					n_coarse_(10), 
-					n_levels_(n_levels) 
+					remove_BC_contributions_(remove_BC_contributions)
 		{ 
 
 			assert(n_coarse_ > 0);
@@ -52,42 +53,41 @@ namespace utopia
 			}
 
 			// remove BC contributions 
-			// {
-			// 	auto &I = *prolongations_.back();
+			if(remove_BC_contributions_)
+			{
+				auto &I = *prolongations_.back();
 
-			// 	Write<DSMatrixd> w_(I);
-			// 	auto rr = row_range(I);
+				Write<DSMatrixd> w_(I);
+				auto rr = row_range(I);
 
-			// 	if(rr.inside(0)) {
-			// 		I.set(0, 0, 0.);
-			// 	}
+				if(rr.inside(0)) {
+					I.set(0, 0, 0.);
+				}
 
-			// 	auto last_node_h = size(I).get(0) - 1;
-			// 	auto last_node_H = size(I).get(1) - 1;
-			// 	if(rr.inside(last_node_h)) {
-			// 		I.set(last_node_h, last_node_H, 0.);
-			// 	}
-			// }
+				auto last_node_h = size(I).get(0) - 1;
+				auto last_node_H = size(I).get(1) - 1;
+				if(rr.inside(last_node_h)) {
+					I.set(last_node_h, last_node_H, 0.);
+				}
+			}
 
 			// restrictions, but let's use them as projections... 
-			// very not nice solution... 
+			// not very nice solution... 
 			for(SizeType i = 0; i < prolongations_.size(); ++i) 
 			{
 				auto &I = *prolongations_[i];
 				DSMatrixd R =  0.5*  transpose(I); 
 				restrictions_[i] = std::make_shared<DSMatrixd>(R);
-
-				//disp(*restrictions_[i]); 
 			}
 		}		
 		
 		void run()
 		{
-			// UTOPIA_RUN_TEST(TR_test); 
-			// UTOPIA_RUN_TEST(TR_constraint_test); 
+			UTOPIA_RUN_TEST(TR_test); 
+			UTOPIA_RUN_TEST(TR_constraint_test); 
 
-			// UTOPIA_RUN_TEST(newton_MG_test); 
-			// UTOPIA_RUN_TEST(NMG_test); 
+			UTOPIA_RUN_TEST(newton_MG_test); 
+			UTOPIA_RUN_TEST(NMG_test); 
 			UTOPIA_RUN_TEST(RMTR_test); 
 		}
 
@@ -234,13 +234,14 @@ namespace utopia
 	        tr_strategy_fine->rtol(1e-12); 
 	        tr_strategy_fine->pc_type("jacobi");   
 
-        	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+        	// auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+        	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(prolongations_, restrictions_);
 
 	        rmtr->max_it(1000); 
 	        rmtr->set_max_coarse_it(1); 
 	        rmtr->set_max_smoothing_it(1); 
-	        rmtr->delta0(10); 
+	        rmtr->delta0(1); 
 	        rmtr->atol(1e-6); 
 	        rmtr->rtol(1e-10); 
 	        rmtr->set_grad_smoothess_termination(0.000001); 
@@ -260,8 +261,10 @@ namespace utopia
 	    }	 
 		
 	private:
-		SizeType n_coarse_;
 		SizeType n_levels_; 
+		SizeType n_coarse_;
+		bool remove_BC_contributions_; 
+
 		std::vector<SizeType> n_dofs_;
 
 		std::vector<std::shared_ptr<DSMatrixd>> prolongations_;
@@ -277,7 +280,7 @@ namespace utopia
 
 		UTOPIA_UNIT_TEST_BEGIN("runNonlinearMultilevelSolverTest");
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(4).run();
+			NonlinearBratuSolverTest(4, true).run();
 		#endif		
 		UTOPIA_UNIT_TEST_END("runNonlinearMultilevelSolverTest");				
 	}

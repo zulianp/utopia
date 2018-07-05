@@ -486,7 +486,8 @@ namespace utopia
                 std::cout<< def_; 
 
 
-            return delta_converged; 
+            bool level_quit = ((this->criticality_measure_termination(g_norm) == true) || delta_converged) ? true : false; 
+            return level_quit; 
         }
 
 
