@@ -297,8 +297,6 @@ namespace utopia {
             
             Vector bc_ids;
             fun.get_eq_constrains_flg(bc_ids);
-
-            // disp(bc_values, "bc_values"); 
             
             if(local_size(bc_ids).get(0) != local_size(bc_values).get(0)) {
                 std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: local sizes do not match... \n";
@@ -377,17 +375,7 @@ namespace utopia {
             return true;
         }
         
-        
-        /**
-         * @brief     Multiplicative V/W cycle
-         *
-         * @param      fine_fun  Function to be minimized
-         * @param      u_l       The iterate
-         * @param[in]  f         Right hand side
-         * @param[in]  l         level
-         *
-         */
-        // virtual bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)=0;
+    
         
         /**
          * @return     Name of solver - to have nice printouts

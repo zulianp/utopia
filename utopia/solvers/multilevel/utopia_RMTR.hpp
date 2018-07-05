@@ -155,7 +155,7 @@ namespace utopia
             if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0)
             {
                 std::cout << red_;
-                std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level); 
+                std::string name_id = this->name() + "     Number of levels: " + std::to_string(fine_level+1); 
                 this->init_solver(name_id, {" it. ", "|| g ||", "   E "}); 
 
                 PrintInfo::print_iter_status(_it_global, {r0_norm, energy}); 
@@ -278,7 +278,7 @@ namespace utopia
                 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
                 {
-                    this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]); 
+                   this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]); 
                     this->function(level-1).hessian(memory_.x[level-1], H_coarse); 
                     memory_.H_diff[level-1] -=  H_coarse; 
                 }
@@ -364,7 +364,7 @@ namespace utopia
                 if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                 {
                     // just to see what is being printed 
-                    std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level+1); 
+                    std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level); 
                     this->print_init_message(status, {" it. ", "   E_old     ", "   E_new", "ared   ",  "  coarse_level_reduction  ", "  rho  ", "  delta ", "taken"}); 
                     PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level], coarse_corr_taken }); 
                 }
@@ -440,7 +440,6 @@ namespace utopia
                 
                 rho = (ared < 0) ? 0.0 : ared/pred; 
                 rho = (rho != rho) ? 0.0 : rho; 
-
             //----------------------------------------------------------------------------
             //     acceptance of trial point 
             //----------------------------------------------------------------------------

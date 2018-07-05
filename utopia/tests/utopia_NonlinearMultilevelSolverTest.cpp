@@ -87,8 +87,8 @@ namespace utopia
 			// UTOPIA_RUN_TEST(TR_constraint_test); 
 
 			// UTOPIA_RUN_TEST(newton_MG_test); 
-			UTOPIA_RUN_TEST(NMG_test); 
-			// UTOPIA_RUN_TEST(RMTR_L2_test); 
+			// UTOPIA_RUN_TEST(NMG_test); 
+			UTOPIA_RUN_TEST(RMTR_test); 
 		}
 
 
@@ -182,7 +182,7 @@ namespace utopia
 	        auto coarse_solver = std::make_shared<Newton<utopia::DSMatrixd, utopia::DVectord> >(direct_solver);
 	       	auto strategy = std::make_shared<utopia::Backtracking<utopia::DSMatrixd, utopia::DVectord>>();
 	        coarse_solver->set_line_search_strategy(strategy);
-	        coarse_solver->atol(1e-9); 
+	        coarse_solver->atol(1e-7); 
 	        coarse_solver->max_it(1); 
 
 	        // subject to change 
@@ -214,51 +214,50 @@ namespace utopia
 
 
 
-	  //   void RMTR_L2_test()
-	  //   {
-	  //   	// this eq. is known to have problems without globalization... 
-	  //   	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
+	    void RMTR_test()
+	    {
+	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
 
-	  //   	for(auto l=0; l < n_levels_-1; l++)
-	  //   	{
-		 //    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l]); 
-		 //    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
-		 //    }
+	    	for(auto l=0; l < n_levels_-1; l++)
+	    	{
+		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l], 0.7); 
+		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
+		    }
 	        
-	  //       auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
-	  //       tr_strategy_coarse->atol(1e-12); 
-	  //       tr_strategy_coarse->rtol(1e-12); 
-	  //       tr_strategy_coarse->pc_type("lu"); 
+	        auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
+	        tr_strategy_coarse->atol(1e-12); 
+	        tr_strategy_coarse->rtol(1e-12); 
+	        tr_strategy_coarse->pc_type("lu"); 
 
+	        auto tr_strategy_fine = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
+	        tr_strategy_fine->atol(1e-12); 
+	        tr_strategy_fine->rtol(1e-12); 
+	        tr_strategy_fine->pc_type("jacobi");   
 
-	  //       auto tr_strategy_fine = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
-	  //       tr_strategy_fine->atol(1e-15); 
-	  //       tr_strategy_fine->rtol(1e-15); 
-	  //       tr_strategy_fine->pc_type("jacobi");   
+        	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+	        rmtr->set_transfer_operators(prolongations_, restrictions_);
 
-   //      	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord>  >(tr_strategy_coarse, tr_strategy_fine);
-	  //       rmtr->set_transfer_operators(prolongations_, restrictions_);
-
-	  //       rmtr->max_it(1000); 
-	  //       rmtr->set_max_coarse_it(1); 
-	  //       rmtr->set_max_smoothing_it(1); 
-	  //       rmtr->delta0(1); 
-	  //       rmtr->atol(1e-6); 
-	  //       rmtr->rtol(1e-10); 
-	  //       rmtr->set_grad_smoothess_termination(0.000001); 
+	        rmtr->max_it(1000); 
+	        rmtr->set_max_coarse_it(1); 
+	        rmtr->set_max_smoothing_it(1); 
+	        rmtr->delta0(10); 
+	        rmtr->atol(1e-6); 
+	        rmtr->rtol(1e-10); 
+	        rmtr->set_grad_smoothess_termination(0.000001); 
+	        rmtr->set_eps_grad_termination(1e-7); 
 			
-			// rmtr->verbose(true); 
-			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
-			// // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
+			rmtr->verbose(true); 
+			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
 
-	  //       rmtr->set_functions(level_functions); 
+	        rmtr->set_functions(level_functions); 
 	        
-	  //       Bratu1D<DSMatrixd, DVectord> fun_fine(n_dofs_[n_levels_-1]); 
-	  //       DVectord x = values(n_dofs_[n_levels_ -1 ], 1.0); 
-	  //       fun_fine.apply_bc_to_initial_guess(x); 
+	        Bratu1D<DSMatrixd, DVectord> fun_fine(n_dofs_[n_levels_-1]); 
+	        DVectord x = values(n_dofs_[n_levels_ -1 ], 1.0); 
+	        fun_fine.apply_bc_to_initial_guess(x); 
 
-	  //       rmtr->solve(fun_fine, x); 
-	  //   }	 
+	        rmtr->solve(fun_fine, x); 
+	    }	 
 		
 	private:
 		SizeType n_coarse_;
@@ -278,7 +277,7 @@ namespace utopia
 
 		UTOPIA_UNIT_TEST_BEGIN("runNonlinearMultilevelSolverTest");
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(5).run();
+			NonlinearBratuSolverTest(4).run();
 		#endif		
 		UTOPIA_UNIT_TEST_END("runNonlinearMultilevelSolverTest");				
 	}
