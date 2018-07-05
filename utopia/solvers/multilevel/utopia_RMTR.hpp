@@ -151,7 +151,6 @@ namespace utopia
             r0_norm = norm2(memory_.g[fine_level]); 
             _it_global = 0; 
 
-            
             //----------------------------------------------
 
             if(verbosity_level() >= VERBOSITY_LEVEL_NORMAL && mpi_world_rank() == 0)
@@ -537,7 +536,7 @@ namespace utopia
             }
             else
             {
-                Scalar corr_norm = this->level_dependent_norm(s_global, level+1); 
+                Scalar corr_norm = this->level_dependent_norm(s_global, level); 
                 bool converged = this->delta_termination(corr_norm, level+1); 
                 
                 if(converged && verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
@@ -565,14 +564,12 @@ namespace utopia
          */
         virtual  Scalar level_dependent_norm(const Vector & u, const SizeType & current_l)
         {
-            if(current_l == this->n_levels())
-                return 0.0; 
+            if(current_l == this->n_levels()-1)
+                return norm2(u); 
             else
             {
-                Vector s = u; // carries over prolongated correction
-                for(SizeType i = current_l; i < this->n_levels(); i++)
-                    this->transfer(i-1).interpolate(s, s); 
-                
+                Vector s; // carries over prolongated correction
+                this->transfer(current_l).interpolate(u, s); 
                 return norm2(s); 
             }    
         }
