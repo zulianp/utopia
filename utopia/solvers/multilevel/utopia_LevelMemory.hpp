@@ -24,7 +24,6 @@ namespace utopia
     }; 
        
 
-    // TO be finished... 
     template<class Matrix, class Vector>
     class RMTRLevelMemory
     {
@@ -51,7 +50,21 @@ namespace utopia
         std::vector<Matrix> H_diff; 
     }; 
 
-        
+    
+    template<class Vector>
+    class ConstraintsLevelMemory
+    {
+
+        public: 
+            void init(const int n_levels)
+            {
+                x_lower.resize(n_levels);
+                x_upper.resize(n_levels);
+            }
+
+        std::vector<Vector> x_lower, x_upper; 
+    }; 
+
 
 
 }

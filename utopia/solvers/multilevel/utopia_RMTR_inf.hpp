@@ -32,7 +32,7 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR_inf : public RMTR<Matrix, Vector>
+    class RMTR_inf :    public RMTR<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -68,21 +68,9 @@ namespace utopia
 
         virtual ~RMTR_inf()
         {
-            // we need to destroy all created vectors... 
-            // level_constraints_.clear(); 
+            // do we need to destroy memory or no??? 
         } 
         
-
-        struct LevelConstraints 
-        {
-            Vector tr_lower; 
-            Vector tr_upper; 
-            Vector x_lower; 
-            Vector x_upper; 
-        }; 
-
-
-
 
         void set_parameters(const Parameters params) override
         {
@@ -150,6 +138,13 @@ namespace utopia
         {
             std::cout<<"-------- to be done \n";  
             return false;
+        }
+
+
+        virtual Scalar criticality_measure(const SizeType & level) override
+        {
+            std::cout<<"-------- to be done \n";  
+            return 0.0;
         }
 
 
@@ -239,7 +234,7 @@ namespace utopia
 
 
     protected:   
-        std::vector<LevelConstraints>  level_constraints_; 
+        ConstraintsLevelMemory <Vector>         constraints_memory_;
 
 
     };

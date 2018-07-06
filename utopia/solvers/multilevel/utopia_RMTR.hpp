@@ -147,7 +147,7 @@ namespace utopia
             fine_fun.gradient(memory_.x[fine_level], memory_.g[fine_level]); 
             fine_fun.value(memory_.x[fine_level], energy); 
 
-            r0_norm = norm2(memory_.g[fine_level]); 
+            r0_norm = this->criticality_measure(fine_level); 
             _it_global = 0; 
 
             //----------------------------------------------
@@ -183,7 +183,7 @@ namespace utopia
                 fine_fun.gradient(memory_.x[fine_level], memory_.g[fine_level]); 
                 fine_fun.value(memory_.x[fine_level], energy); 
                 
-                r_norm = norm2(memory_.g[fine_level]);
+                r_norm = this->criticality_measure(fine_level);
                 rel_norm = r_norm/r0_norm; 
 
                 _it_global++; 
@@ -191,7 +191,7 @@ namespace utopia
                 if(this->verbose() && mpi_world_rank() == 0)
                 {
                     std::cout << red_; 
-                    if(verbosity_level() > VERBOSITY_LEVEL_NORMAL)
+                    if(this->verbosity_level() > VERBOSITY_LEVEL_NORMAL)
                         this->print_init_message("RMTR OUTER SOLVE", {" it. ", "|| g ||", "   E "}); 
 
                     PrintInfo::print_iter_status(_it_global, {r_norm, energy}); 
@@ -199,7 +199,7 @@ namespace utopia
                 }
 
                 // check convergence
-                converged = check_global_convergence(_it_global, r_norm, rel_norm, memory_.delta[fine_level]); 
+                converged = this->check_global_convergence(_it_global, r_norm, rel_norm, memory_.delta[fine_level]); 
             }
 
             // benchmarking
@@ -239,12 +239,12 @@ namespace utopia
             if(converged)
                 return true; 
 
-            compute_s_global(level, s_global); 
+            this->compute_s_global(level, s_global); 
             this->get_multilevel_gradient(fine_fun, s_global, level); 
 
             if(level == this->n_levels()-1)
             {
-                converged =  this->criticality_measure_termination(norm2(memory_.g[level])); 
+                converged =  this->criticality_measure_termination(this->criticality_measure(level)); 
                 if(converged==true)
                     return true; 
             }
@@ -263,7 +263,7 @@ namespace utopia
                 this->zero_correction_related_to_equality_constrain(this->function(level-1), memory_.g_diff[level-1]); 
             }
 
-            smoothness_flg = grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level]); 
+            smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level]); 
 
             if(CONSISTENCY_LEVEL != GALERKIN)
                 memory_.g_diff[level-1] -= memory_.g[level-1]; 
@@ -323,13 +323,13 @@ namespace utopia
                 this->transfer(level-1).interpolate(memory_.s[level-1], memory_.s[level]);
                 this->zero_correction_related_to_equality_constrain(fine_fun, memory_.s[level]); 
 
-                compute_s_global(level, s_global);                               
+                this->compute_s_global(level, s_global);                               
                 E_old = this->get_multilevel_energy(fine_fun, s_global, level); 
 
                 // new test for dbg mode 
                 memory_.x[level] += memory_.s[level]; 
 
-                compute_s_global(level, s_global);  
+                this->compute_s_global(level, s_global);  
                 E_new = this->get_multilevel_energy(fine_fun, s_global, level); 
                 
                 //----------------------------------------------------------------------------
@@ -348,20 +348,20 @@ namespace utopia
                 else
                 {
                     memory_.x[level] -= memory_.s[level]; 
-                    compute_s_global(level, s_global); 
+                    this->compute_s_global(level, s_global); 
                 }
 
                 //----------------------------------------------------------------------------
                 //                                  trust region update 
                 //----------------------------------------------------------------------------
-                converged = delta_update(rho, level, s_global); 
+                converged = this->delta_update(rho, level, s_global); 
                 
                 // terminate, since TR rad. does not allow to take more corrections on given level 
                 if(converged==true) 
                     return true; 
 
 
-                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+                if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                 {
                     // just to see what is being printed 
                     std::string status = "RMTR_coarse_corr_stat, level: " + std::to_string(level); 
@@ -403,13 +403,14 @@ namespace utopia
 
             Vector s = local_zeros(local_size(memory_.x[level])); 
             
-            compute_s_global(level, s_global); 
+            this->compute_s_global(level, s_global); 
             this->get_multilevel_gradient(fun, s_global, level); 
             
             energy_old = this->get_multilevel_energy(fun, s_global, level); 
-            g_norm = norm2(memory_.g[level]); 
+            // g_norm = norm2(memory_.g[level]); 
+            g_norm = this->criticality_measure(level); 
 
-            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
                 this->print_level_info(level); 
                 PrintInfo::print_iter_status(0, {g_norm, energy_old, ared, pred, rho, memory_.delta[level] }); 
@@ -434,7 +435,7 @@ namespace utopia
                 // building trial point 
                 memory_.x[level] += s;  
             
-                compute_s_global(level, s_global); 
+                this->compute_s_global(level, s_global); 
                 energy_new = this->get_multilevel_energy(fun, s_global, level); 
                 ared = energy_old - energy_new; 
                 
@@ -454,23 +455,24 @@ namespace utopia
                 else
                 {   
                     memory_.x[level] -= s; // return iterate into its initial state 
-                    compute_s_global(level, s_global); 
+                    this->compute_s_global(level, s_global); 
                     make_grad_updates =  false; 
                 }
             //----------------------------------------------------------------------------
             //     trust region update 
             //----------------------------------------------------------------------------
-                delta_converged = delta_update(rho, level, s_global); 
+                delta_converged = this->delta_update(rho, level, s_global); 
 
                 if(make_grad_updates)
                 {
                     Vector g_old = memory_.g[level]; 
                     this->get_multilevel_gradient(fun, s_global, level); 
-                    g_norm = norm2(memory_.g[level]); 
+                    g_norm = this->criticality_measure(level);
+
                     // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm); 
                 }
 
-                if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+                if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                     PrintInfo::print_iter_status(it, {g_norm, energy_new, ared, pred, rho, memory_.delta[level]}); 
 
                 converged  = (delta_converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, memory_.delta[level]); 
@@ -482,7 +484,7 @@ namespace utopia
 
             }
 
-            if(verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
+            if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
                 std::cout<< def_; 
 
 
@@ -567,7 +569,7 @@ namespace utopia
          * @param[in]  current_l  The current level
          *
          */
-        virtual  Scalar level_dependent_norm(const Vector & u, const SizeType & current_l)
+        Scalar level_dependent_norm(const Vector & u, const SizeType & current_l)
         {
             if(current_l == this->n_levels()-1)
                 return norm2(u); 
@@ -644,6 +646,13 @@ namespace utopia
         {
             return (g_norm < _eps_grad_termination) ? true : false;    
         }
+
+
+        virtual Scalar criticality_measure(const SizeType & level)
+        {
+            return norm2(memory_.g[level]); 
+        }
+
 
 
         /**
@@ -852,7 +861,7 @@ namespace utopia
         ColorModifier yellow_; 
         ColorModifier green_; 
 
-    private:
+    
         RMTRLevelMemory <Matrix, Vector>         memory_;
 
 

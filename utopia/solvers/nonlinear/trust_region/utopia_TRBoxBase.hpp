@@ -11,10 +11,10 @@
 namespace utopia  
 {
   template<class Matrix, class Vector>
-      /**
-       * @brief      Base class for  TR bound constrained solvers. Contains all general routines related to TR solvers.
-       *             Design of class allows to provide different TR strategies in order to solve TR subproblem. 
-       */ 
+  /**
+   * @brief      Base class for  TR bound constrained solvers. Contains all general routines related to TR solvers.
+   *             Design of class allows to provide different TR strategies in order to solve TR subproblem. 
+   */ 
   class TrustRegionBoxBase : public TrustRegionBase<Matrix, Vector>
   {
     typedef UTOPIA_SCALAR(Vector)    Scalar;
