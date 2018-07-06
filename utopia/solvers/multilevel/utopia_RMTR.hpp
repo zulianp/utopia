@@ -287,9 +287,9 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   initializing coarse level
             //----------------------------------------------------------------------------
-            memory_.delta[level-1]  = memory_.delta[level]; 
-            memory_.x_0[level-1]    = memory_.x[level-1]; 
+            this->init_coarse_level_constrains(level); 
 
+            memory_.x_0[level-1]    = memory_.x[level-1]; 
             memory_.s[level-1]      = local_zeros(local_size(memory_.x[level-1])); 
 
             // at this point s_global on coarse level is empty 
@@ -505,6 +505,12 @@ namespace utopia
 
 
 
+        virtual void init_coarse_level_constrains(const SizeType & level)
+        {
+            memory_.delta[level-1]  = memory_.delta[level]; 
+        }
+
+
 
         // -------------------------- tr radius managment ---------------------------------------------        
         /**
@@ -683,24 +689,6 @@ namespace utopia
 //----------------------------- QP solve -----------------------------------------------------------------
         
         /**
-         * @brief      Provides coarse solve 
-         *              it is here, just to be able to use full cycle 
-         *              TODO: CHECK IF RHS does not need to be set-up
-         *
-         * @param      fun          The fun
-         * @param      x            THe current iterate
-         * @param[in]  rhs          The rhs
-         *
-         */
-        virtual bool coarse_solve(Fun &fun, Vector &x, const Vector & /*rhs*/) override
-        {
-            memory_.x[0] = x; 
-            local_tr_solve(fun, 0); 
-            return true; 
-        }
-
-
-        /**
          * @brief      Solves TR subroblem for given level 
          *
          * @param[in]  H      The hessian
@@ -859,14 +847,14 @@ namespace utopia
         VerbosityLevel                  _verbosity_level; 
 
 
-    private:
-        RMTRLevelMemory <Matrix, Vector>         memory_;
-
-
         ColorModifier red_;
         ColorModifier def_; 
         ColorModifier yellow_; 
         ColorModifier green_; 
+
+    private:
+        RMTRLevelMemory <Matrix, Vector>         memory_;
+
 
     };
 

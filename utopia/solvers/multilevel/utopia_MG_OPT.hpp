@@ -220,7 +220,7 @@ namespace utopia
          *
          * @return   
          */
-        bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs) override
+        bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs)
         {
             _coarse_solver->verbose(true); 
             _coarse_solver->solve(fun, x, rhs); 

@@ -182,7 +182,7 @@ namespace utopia
             return true; 
         }
 
-        bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs) override
+        bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs)
         {   
             coarse_solver_->max_it(1); 
             coarse_solver_->solve(fun, x, rhs); 

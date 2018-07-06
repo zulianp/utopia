@@ -29,6 +29,7 @@ namespace utopia {
      */
     template<class Matrix, class Vector>
     class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public Monitor<Matrix, Vector> {
+    
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -390,17 +391,6 @@ namespace utopia {
         virtual void init_memory(const SizeType & fine_local_size) = 0; 
         
         
-        /**
-         * @brief      Coarse solve function.
-         *
-         * @param      fun   Function to be minimized
-         * @param      x     Iterate
-         * @param[in]  rhs   The right hand side
-         *
-         */
-        virtual bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs) = 0;
-        
-    
         
         inline Fun &function(const SizeType level)
         {
