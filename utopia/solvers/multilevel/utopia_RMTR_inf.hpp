@@ -232,21 +232,43 @@ namespace utopia
          */
         virtual bool solve_qp_subproblem(const Matrix & H, const Vector & g, Vector & s, const SizeType & level, const bool & flg) override
         {
-            // this params should not be as hardcodded as they are...
-            // if(flg)
-            // {
-            //     _coarse_tr_subproblem->atol(1e-16); 
-            //     _coarse_tr_subproblem->max_it(5000); 
-            //     _coarse_tr_subproblem->tr_constrained_solve(H, g, s, memory_.delta[level]); 
-            // }
-            // else
-            // {
-            //     _smoother_tr_subproblem->atol(1e-16); 
-            //     _smoother_tr_subproblem->max_it(5);
-            //     _smoother_tr_subproblem->tr_constrained_solve(H, g, s, memory_.delta[level]); 
-            // }
+            Scalar radius = this->memory_.delta[level]; 
 
-            std::cout<<"----- to be done ------ \n"; 
+            // first we need to prepare box of intersection of level constraints with tr. constraints
+            Vector l = constraints_memory_.x_lower[level] - this->memory_.x[level]; 
+            {   
+                ReadAndWrite<Vector> rv(l); 
+                each_write(l, [radius, l](const SizeType i) -> double { 
+                    return  (l.get(i) >= -1*radius)  ? l.get(i) : -1 * radius;  }   );
+            }
+
+            Vector u =  constraints_memory_.x_upper[level] - this->memory_.x[level]; 
+            {   
+                ReadAndWrite<Vector> rv(u); 
+                  each_write(u, [radius, u](const SizeType i) -> double { 
+                      return  (u.get(i) <= radius)  ? u.get(i) : radius; }   );
+            }
+
+            // generating constraints to go for QP solve 
+            auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
+
+            if(flg)
+            {
+                // setting should be really parameters from outside ... 
+                this->_coarse_tr_subproblem->atol(1e-16); 
+                this->_coarse_tr_subproblem->max_it(5000); 
+
+                if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_coarse_tr_subproblem.get()))
+                    tr_subproblem->tr_constrained_solve(H, g, s, box);
+            }
+            else
+            {
+                this->_smoother_tr_subproblem->atol(1e-16); 
+                this->_smoother_tr_subproblem->max_it(5);
+                
+                if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_coarse_tr_subproblem.get()))
+                    tr_subproblem->tr_constrained_solve(H, g, s, box);
+            }
 
             return true; 
         }
