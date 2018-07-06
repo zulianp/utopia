@@ -89,8 +89,8 @@ namespace utopia
 			// UTOPIA_RUN_TEST(newton_MG_test); 
 			// UTOPIA_RUN_TEST(NMG_test); 
 
-			UTOPIA_RUN_TEST(RMTR_test); 
-			// UTOPIA_RUN_TEST(RMTR_inf_test); 
+			// UTOPIA_RUN_TEST(RMTR_test); 
+			UTOPIA_RUN_TEST(RMTR_inf_test); 
 		}
 
 

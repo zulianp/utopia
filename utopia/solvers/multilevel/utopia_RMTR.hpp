@@ -141,7 +141,6 @@ namespace utopia
             this->status_.clear();
             this->init_memory(fine_local_size); 
 
-            
 
             memory_.x[fine_level] = x_h;
             memory_.g[fine_level]  = local_zeros(local_size(memory_.x[fine_level])); 
@@ -237,6 +236,8 @@ namespace utopia
             //                   presmoothing
             //----------------------------------------------------------------------------
             converged = this->local_tr_solve(fine_fun, level); 
+
+            exit(0); 
 
             // making sure that correction does not exceed tr radius ... 
             if(converged)
@@ -410,7 +411,6 @@ namespace utopia
             this->get_multilevel_gradient(fun, s_global, level); 
             
             energy_old = this->get_multilevel_energy(fun, s_global, level); 
-            // g_norm = norm2(memory_.g[level]); 
             g_norm = this->criticality_measure(level); 
 
             if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
@@ -431,6 +431,8 @@ namespace utopia
                 // correction needs to get prepared 
                 s = local_zeros(local_size(memory_.x[level]));
                 this->solve_qp_subproblem(H, memory_.g[level], s, level, exact_solve_flg); 
+
+                exit(0); 
 
                 // predicted reduction based on model 
                 TrustRegionBase<Matrix, Vector>::get_pred(memory_.g[level], H, s, pred); 

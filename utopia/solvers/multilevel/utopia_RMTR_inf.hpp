@@ -81,7 +81,7 @@ namespace utopia
 
         virtual std::string name() override 
         { 
-            return "RMTR in infinity norm";  
+            return "RMTR_inf";  
         }
         
 
@@ -181,11 +181,44 @@ namespace utopia
         }
 
 
+        // measuring wrt to feasible set... 
         virtual Scalar criticality_measure(const SizeType & level) override
-        {
-            std::cout<<"-------- to be done \n";  
-            return 0.0;
+        {        
+            Vector Pc; 
+            Vector x_g = this->memory_.x[level] - this->memory_.g[level]; 
+
+            get_projection(x_g, constraints_memory_.x_lower[level], constraints_memory_.x_upper[level], Pc); 
+            
+            Pc -= this->memory_.x[level]; 
+            return norm2(Pc); 
         }
+
+
+        /**
+         * @brief      Projection onto feasible set
+         *
+         * @param[in]  x    Iterate
+         * @param[in]  lb   lower bound
+         * @param[in]  ub   upper bound
+         * @param[in]  Pc   projection
+         *
+         */
+        void get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc)
+        {
+            Pc = local_zeros(local_size(x).get(0)); 
+            {
+                Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
+                Write<Vector> wv(Pc); 
+
+                each_write(Pc, [ub, lb, x](const SizeType i) -> double { 
+                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
+                          if(li >= xi)
+                            return li; 
+                          else
+                            return (ui <= xi) ? ui : xi; }   );
+            }
+        }
+
 
 
         /**
