@@ -60,9 +60,13 @@ namespace utopia
             {
                 x_lower.resize(n_levels);
                 x_upper.resize(n_levels);
+                tr_lower.resize(n_levels);
+                tr_upper.resize(n_levels);
+                active_lower.resize(n_levels);
+                active_upper.resize(n_levels);                                
             }
 
-        std::vector<Vector> x_lower, x_upper; 
+        std::vector<Vector> x_lower, x_upper, tr_lower, tr_upper, active_lower, active_upper; 
     }; 
 
 

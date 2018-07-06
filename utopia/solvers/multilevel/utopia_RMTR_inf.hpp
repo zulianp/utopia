@@ -120,7 +120,7 @@ namespace utopia
             const SizeType fine_level = this->n_levels()-1; 
             const Scalar inf = std::numeric_limits<Scalar>::infinity();
 
-            // on the finest level, no intersection with tr bounds is needed... 
+            // bound constraints ....
             if(has_box_constraints_)
             {
                 if(box_constraints_.has_upper_bound())
@@ -138,13 +138,78 @@ namespace utopia
                 constraints_memory_.x_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
                 constraints_memory_.x_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0);
             }   
+
+
+            // inherited tr bound constraints... 
+            constraints_memory_.tr_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
+            constraints_memory_.tr_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0);
+
+
+
+            // active, for the finest level simply bound, since tr ones are artificial.... 
+            constraints_memory_.active_upper[fine_level] = constraints_memory_.x_upper[fine_level];
+            constraints_memory_.active_lower[fine_level] = constraints_memory_.x_lower[fine_level];
+
         }
 
 
-
+        // this routine is correct only under assumption, that P has only positive elements ... 
         virtual void init_coarse_level_constrains(const SizeType & level) override
         {
-            std::cout<<"-------- to be done \n"; 
+            // init delta on coarser level...
+            this->memory_.delta[level-1]  = this->memory_.delta[level]; 
+
+            //----------------------------------------------------------------------------
+            //     soft projection of tr bounds
+            //----------------------------------------------------------------------------
+            Vector tr_fine_last_lower = this->memory_.x[level] - local_values(local_size(this->memory_.x[level]).get(0), this->memory_.delta[level]);   
+            {   
+                ReadAndWrite<Vector> rv(tr_fine_last_lower); 
+                Read<Vector> rl(constraints_memory_.tr_lower[level]); 
+
+                Range r = range(tr_fine_last_lower);
+
+                for(SizeType i = r.begin(); i != r.end(); ++i) 
+                    tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[level].get(i), tr_fine_last_lower.get(i))); 
+            }
+            this->transfer(level-1).restrict(tr_fine_last_lower, constraints_memory_.tr_lower[level-1]);
+
+
+
+            Vector tr_fine_last_upper = this->memory_.x[level] + local_values(local_size(this->memory_.x[level]).get(0), this->memory_.delta[level]);   
+            {   
+                ReadAndWrite<Vector> rv(tr_fine_last_upper); 
+                Read<Vector> rl(constraints_memory_.tr_upper[level]); 
+
+                Range r = range(tr_fine_last_upper);
+
+                for(SizeType i = r.begin(); i != r.end(); ++i) 
+                    tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[level].get(i), tr_fine_last_upper.get(i))); 
+            }
+            this->transfer(level-1).restrict(tr_fine_last_upper, constraints_memory_.tr_upper[level-1]);
+
+
+            //----------------------------------------------------------------------------
+            //     projection of variable bounds
+            //----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+            //----------------------------------------------------------------------------
+            //     intersect bounds on coarse level
+            //----------------------------------------------------------------------------
+
+
+
+
+
+
+            exit(0); 
         }
 
 
@@ -160,7 +225,17 @@ namespace utopia
          */
         virtual bool delta_update(const Scalar & rho, const SizeType & level, const Vector & s_global) override
         {
-            std::cout<<"-------- to be done \n"; 
+            Scalar intermediate_delta; 
+
+            // we could do also more sophisticated options, but lets not care for the moment ... 
+            if(rho < this->eta1())
+                 intermediate_delta = std::max(this->gamma1() * this->memory_.delta[level], 1e-15); 
+            else if (rho > this->eta2() )
+                 intermediate_delta = std::min(this->gamma2() * this->memory_.delta[level], 1e15); 
+            else
+                intermediate_delta = this->memory_.delta[level]; 
+
+            this->memory_.delta[level] = intermediate_delta; 
 
             return false; 
         }
@@ -174,10 +249,24 @@ namespace utopia
          * @param[in]  g_coarse      Coarse level gradient 
          *
          */
-        virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse) override
+        virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
         {
-            std::cout<<"-------- to be done \n";  
-            return false;
+            Vector Pc; 
+
+            std::cout<<"level: "<< level << "  \n"; 
+
+            Vector x_g = this->memory_.x[level] - g_restricted; 
+            get_projection(x_g, constraints_memory_.active_lower[level], constraints_memory_.active_upper[level], Pc); 
+            Pc -= this->memory_.x[level]; 
+            Scalar Rg_norm =  norm2(Pc); 
+
+
+            x_g = this->memory_.x[level] - g_coarse; 
+            get_projection(x_g, constraints_memory_.active_lower[level], constraints_memory_.active_upper[level], Pc); 
+            Pc -= this->memory_.x[level]; 
+            Scalar  g_norm =  norm2(Pc); 
+
+            return (Rg_norm >= this->get_grad_smoothess_termination() * g_norm) ? true : false;   
         }
 
 
@@ -187,7 +276,7 @@ namespace utopia
             Vector Pc; 
             Vector x_g = this->memory_.x[level] - this->memory_.g[level]; 
 
-            get_projection(x_g, constraints_memory_.x_lower[level], constraints_memory_.x_upper[level], Pc); 
+            get_projection(x_g, constraints_memory_.active_lower[level], constraints_memory_.active_upper[level], Pc); 
             
             Pc -= this->memory_.x[level]; 
             return norm2(Pc); 
@@ -235,14 +324,14 @@ namespace utopia
             Scalar radius = this->memory_.delta[level]; 
 
             // first we need to prepare box of intersection of level constraints with tr. constraints
-            Vector l = constraints_memory_.x_lower[level] - this->memory_.x[level]; 
+            Vector l = constraints_memory_.active_lower[level] - this->memory_.x[level]; 
             {   
                 ReadAndWrite<Vector> rv(l); 
                 each_write(l, [radius, l](const SizeType i) -> double { 
                     return  (l.get(i) >= -1*radius)  ? l.get(i) : -1 * radius;  }   );
             }
 
-            Vector u =  constraints_memory_.x_upper[level] - this->memory_.x[level]; 
+            Vector u =  constraints_memory_.active_upper[level] - this->memory_.x[level]; 
             {   
                 ReadAndWrite<Vector> rv(u); 
                   each_write(u, [radius, u](const SizeType i) -> double { 
@@ -272,60 +361,6 @@ namespace utopia
 
             return true; 
         }
-
-
-
-// .............................................. rmtr inf functions .............................................
-        // correct only if P has only positive elements ... 
-        // x is at level l and we are going to initialialize one level down... 
-        void set_tr_constrain(const Vector &x, const Scalar level)
-        {
-            // Vector lower = local_zeros(local_size(x)), upper = local_zeros(local_size(x)); 
-            // Vector upper_coarse, lower_coarse;
-            
-            // Vector tr_fine_last_lower = x - local_values(local_size(x).get(0), this->get_delta(level));   
-            // Vector tr_fine_last_upper = x + local_values(local_size(x).get(0), this->get_delta(level));   
-
-            // if(level < this->n_levels())
-            // {              
-            //     {   
-            //         Read<Vector> rv(tr_fine_last_lower); 
-            //         Read<Vector> rl(level_constraints_[level].tr_lower); 
-            //         Write<Vector> wv(lower); 
-
-            //         Range r = range(lower);
-
-            //         for(SizeType i = r.begin(); i != r.end(); ++i) 
-            //             lower.set(i, std::max(level_constraints_[level].tr_lower.get(i), tr_fine_last_lower.get(i))); 
-            //     }
-                
-            //     {   
-            //         Read<Vector> rv(tr_fine_last_upper); 
-            //         Read<Vector> rl(level_constraints_[level].tr_upper); 
-            //         Write<Vector> wv(upper); 
-
-            //         Range r = range(upper);
-
-            //         for(SizeType i = r.begin(); i != r.end(); ++i) 
-            //             upper.set(i, std::min(level_constraints_[level].tr_upper.get(i), tr_fine_last_upper.get(i))); 
-            //     }
-
-            //     this->transfer(level-1).restrict(upper, upper_coarse);
-            //     this->transfer(level-1).restrict(lower, lower_coarse);
-            // }
-            // else
-            // {
-            //     this->transfer(level-1).restrict(tr_fine_last_upper, upper_coarse);
-            //     this->transfer(level-1).restrict(tr_fine_last_lower, lower_coarse);
-            // }
-
-            // level_constraints_[level-1].tr_upper = upper_coarse; 
-            // level_constraints_[level-1].tr_lower = lower_coarse; 
-
-
-            std::cout<<"--- to be done ----- \n"; 
-        }
-
 
 
     protected:   

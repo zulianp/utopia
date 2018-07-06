@@ -98,6 +98,11 @@ namespace utopia
             _grad_smoothess_termination = grad_smoothess_termination; 
         }
 
+        Scalar  get_grad_smoothess_termination( ) const 
+        {
+            return _grad_smoothess_termination; 
+        }
+
 
         using NonlinearMultiLevelBase<Matrix, Vector>::solve; 
 
@@ -237,8 +242,6 @@ namespace utopia
             //----------------------------------------------------------------------------
             converged = this->local_tr_solve(fine_fun, level); 
 
-            exit(0); 
-
             // making sure that correction does not exceed tr radius ... 
             if(converged)
                 return true; 
@@ -259,6 +262,13 @@ namespace utopia
             this->make_iterate_feasible(this->function(level-1), memory_.x[level-1]); 
 
             //----------------------------------------------------------------------------
+            //                   initializing coarse level constrains
+            //----------------------------------------------------------------------------
+            this->init_coarse_level_constrains(level); 
+
+            exit(0); 
+
+            //----------------------------------------------------------------------------
             //                   first order coarse level objective managment
             //----------------------------------------------------------------------------            
             if(CONSISTENCY_LEVEL != GALERKIN)
@@ -267,7 +277,7 @@ namespace utopia
                 this->zero_correction_related_to_equality_constrain(this->function(level-1), memory_.g_diff[level-1]); 
             }
 
-            smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level]); 
+            smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level], level-1); 
 
             if(CONSISTENCY_LEVEL != GALERKIN)
                 memory_.g_diff[level-1] -= memory_.g[level-1]; 
@@ -287,11 +297,10 @@ namespace utopia
                     memory_.H_diff[level-1] -=  H_coarse; 
                 }
             }
-
+            
             //----------------------------------------------------------------------------
-            //                   initializing coarse level
+            //                   additional coarse level initialization...
             //----------------------------------------------------------------------------
-            this->init_coarse_level_constrains(level); 
 
             memory_.x_0[level-1]    = memory_.x[level-1]; 
             memory_.s[level-1]      = local_zeros(local_size(memory_.x[level-1])); 
@@ -431,8 +440,6 @@ namespace utopia
                 // correction needs to get prepared 
                 s = local_zeros(local_size(memory_.x[level]));
                 this->solve_qp_subproblem(H, memory_.g[level], s, level, exact_solve_flg); 
-
-                exit(0); 
 
                 // predicted reduction based on model 
                 TrustRegionBase<Matrix, Vector>::get_pred(memory_.g[level], H, s, pred); 
@@ -667,7 +674,7 @@ namespace utopia
          * @param[in]  g_coarse      Coarse level gradient 
          *
          */
-        virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse)
+        virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & /*level*/)
         {
             Scalar Rg_norm = norm2(g_restricted); 
             Scalar g_norm = norm2(g_coarse);
