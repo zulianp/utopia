@@ -311,6 +311,7 @@ namespace utopia
 	        DVectord x = values(n_dofs_[n_levels_ -1 ], 1.0); 
 	        fun_fine.apply_bc_to_initial_guess(x); 
 
+
 	        rmtr->solve(fun_fine, x); 
 	    }	 
 

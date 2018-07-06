@@ -136,11 +136,14 @@ namespace utopia
             Scalar r_norm, r0_norm, rel_norm, energy;
 
             //-------------- INITIALIZATIONS ---------------
+            SizeType fine_local_size = local_size(x_h).get(0); 
+
             this->status_.clear();
-            this->init_memory(); 
+            this->init_memory(fine_local_size); 
+
+            
 
             memory_.x[fine_level] = x_h;
-
             memory_.g[fine_level]  = local_zeros(local_size(memory_.x[fine_level])); 
             this->make_iterate_feasible(fine_fun, memory_.x[fine_level]); 
 
@@ -496,7 +499,7 @@ namespace utopia
 
     protected:
 
-        virtual void init_memory(const SizeType & fine_local_size = 0) override 
+        virtual void init_memory(const SizeType & /*fine_local_size */) override 
         {
             memory_.init(this->n_levels()); 
             

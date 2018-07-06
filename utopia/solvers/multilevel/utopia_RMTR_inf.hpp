@@ -23,8 +23,6 @@
 
 namespace utopia 
 {
-
-
     /**
      * @brief      The class for RMTR in infinity norm... 
      *
@@ -32,14 +30,13 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR_inf :    public RMTR<Matrix, Vector>
+    class RMTR_inf :   public RMTR<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
 
-
         // pay attention that this one is inf norm... 
-        typedef utopia::TRBoxSubproblem<Matrix, Vector>        TRSubproblem; 
+        typedef utopia::TRBoxSubproblem<Matrix, Vector>     TRSubproblem; 
 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
@@ -48,7 +45,8 @@ namespace utopia
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
 
-        typedef utopia::BoxConstraints<Vector>              BoxConstraints;
+        typedef utopia::BoxConstraints<Vector>      BoxConstraints;
+        typedef utopia::RMTR<Matrix, Vector>        RMTR;
 
     public:
 
@@ -59,24 +57,26 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
-        RMTR_inf(   const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother,  const Parameters params = Parameters()): 
-                    RMTR<Matrix,Vector>(tr_subproblem_coarse, tr_subproblem_smoother, params)
+        RMTR_inf(   const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  
+                    const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother,  
+                    const Parameters params = Parameters()): 
+                    
+                    RMTR(tr_subproblem_coarse, tr_subproblem_smoother, params), 
+                    has_box_constraints_(false)
         {
             set_parameters(params); 
-
         }
 
         virtual ~RMTR_inf()
         {
-            // do we need to destroy memory or no??? 
+            // do we need to destroy some memory or no??? 
         } 
         
 
         void set_parameters(const Parameters params) override
         {
-            RMTR<Matrix, Vector>::set_parameters(params);    
+            RMTR::set_parameters(params);    
         }
-
 
 
         virtual std::string name() override 
@@ -85,19 +85,59 @@ namespace utopia
         }
         
 
+        /**
+         * @brief      Sets the box constraints.
+         *
+         * @param      box   The box
+         *
+         */
+        virtual bool set_box_constraints(BoxConstraints & box)
+        {
+          box_constraints_ = box; 
+          has_box_constraints_ = true; 
+          return true; 
+        }
+
+        /**
+         * @brief      Gets the box constraints.
+         *
+         * @return     The box constraints.
+         */
+        virtual BoxConstraints & get_box_constraints()
+        {
+          return box_constraints_; 
+        }
+
 
     protected:
 
 
-        virtual void init_memory(const SizeType & fine_local_size = 0) override 
-        {
-            // memory_.init(this->n_levels()); 
-            
-            // // init deltas to some default value... 
-            // for(Scalar l = 0; l < this->n_levels(); l ++)
-            //     memory_.delta[l] = this->delta0(); 
+        virtual void init_memory(const SizeType & fine_local_size) override 
+        {   
+            RMTR::init_memory(fine_local_size);
+            constraints_memory_.init(this->n_levels()); 
 
-            std::cout<<"-------- to be done \n"; 
+            const SizeType fine_level = this->n_levels()-1; 
+            const Scalar inf = std::numeric_limits<Scalar>::infinity();
+
+            // on the finest level, no intersection with tr bounds is needed... 
+            if(has_box_constraints_)
+            {
+                if(box_constraints_.has_upper_bound())
+                    constraints_memory_.x_upper[fine_level] = *box_constraints_.upper_bound(); 
+                else
+                    constraints_memory_.x_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
+
+                if(box_constraints_.has_lower_bound())
+                    constraints_memory_.x_lower[fine_level] = *box_constraints_.lower_bound(); 
+                else
+                    constraints_memory_.x_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0); 
+            }
+            else
+            {
+                constraints_memory_.x_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
+                constraints_memory_.x_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0);
+            }   
         }
 
 
@@ -235,6 +275,10 @@ namespace utopia
 
     protected:   
         ConstraintsLevelMemory <Vector>         constraints_memory_;
+
+        BoxConstraints box_constraints_;        // constraints on the finest level.... 
+
+        bool has_box_constraints_; // as we can run rmtr with inf. norm also without constraints... 
 
 
     };
