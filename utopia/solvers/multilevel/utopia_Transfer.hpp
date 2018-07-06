@@ -245,6 +245,23 @@
             return *_R;
         }
 
+
+        const Scalar interpolation_inf_norm() const
+        {
+            return norm_infty(*_I);
+        }
+
+        const Scalar projection_inf_norm() const
+        {
+            return norm_infty(*_R);
+        }
+
+        const Scalar restriction_inf_norm() const
+        {
+            return norm_infty(*_Pr);
+        }        
+
+
         protected:        
             std::shared_ptr<Matrix> _I, _R; // _P;  
             std::shared_ptr<Matrix> _Pr;

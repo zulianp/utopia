@@ -110,8 +110,6 @@ namespace utopia
 
 
     protected:
-
-
         virtual void init_memory(const SizeType & fine_local_size) override 
         {   
             RMTR::init_memory(fine_local_size);
@@ -144,11 +142,16 @@ namespace utopia
             constraints_memory_.tr_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
             constraints_memory_.tr_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0);
 
-
-
             // active, for the finest level simply bound, since tr ones are artificial.... 
             constraints_memory_.active_upper[fine_level] = constraints_memory_.x_upper[fine_level];
             constraints_memory_.active_lower[fine_level] = constraints_memory_.x_lower[fine_level];
+
+
+            // precompute norms of prolongation operators needed for projections of constraints... 
+            // since we are using L2 projection, this should be 1 for all, but in this way code is more generic... 
+            for(auto l = 0; l < this->n_levels() -1; l++)
+                constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm(); 
+
 
         }
 
@@ -172,7 +175,8 @@ namespace utopia
                 for(SizeType i = r.begin(); i != r.end(); ++i) 
                     tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[level].get(i), tr_fine_last_lower.get(i))); 
             }
-            this->transfer(level-1).restrict(tr_fine_last_lower, constraints_memory_.tr_lower[level-1]);
+            // this->transfer(level-1).restrict(tr_fine_last_lower, constraints_memory_.tr_lower[level-1]);
+            this->transfer(level-1).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level-1]);
 
 
 
@@ -186,30 +190,42 @@ namespace utopia
                 for(SizeType i = r.begin(); i != r.end(); ++i) 
                     tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[level].get(i), tr_fine_last_upper.get(i))); 
             }
-            this->transfer(level-1).restrict(tr_fine_last_upper, constraints_memory_.tr_upper[level-1]);
+            // this->transfer(level-1).restrict(tr_fine_last_upper, constraints_memory_.tr_upper[level-1]);
+            this->transfer(level-1).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level-1]);
 
 
             //----------------------------------------------------------------------------
-            //     projection of variable bounds
+            //     projection of variable bounds - to be checked out once more 
             //----------------------------------------------------------------------------
+            Vector lx =  (constraints_memory_.x_lower[level] - this->memory_.x[level]); 
+            Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level-1] * max(lx); 
+            constraints_memory_.x_lower[level-1] = this->memory_.x[level-1] + local_values(local_size(this->memory_.x[level-1]).get(0), lower_multiplier);
 
 
 
-
-
-
-
+            Vector ux =  (constraints_memory_.x_upper[level] - this->memory_.x[level]); 
+            Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level-1] * min(ux); 
+            constraints_memory_.x_upper[level-1] = this->memory_.x[level-1] + local_values(local_size(this->memory_.x[level-1]).get(0), upper_multiplier);
 
             //----------------------------------------------------------------------------
             //     intersect bounds on coarse level
             //----------------------------------------------------------------------------
 
+            constraints_memory_.active_upper[level-1] = local_zeros(local_size(this->memory_.x[level-1]).get(0)); 
+            constraints_memory_.active_lower[level-1] = local_zeros(local_size(this->memory_.x[level-1]).get(0)); 
+            {   
+                Write<Vector>   rv(constraints_memory_.active_upper[level-1]), rw(constraints_memory_.active_lower[level-1]); 
+                Read<Vector>    rl(this->memory_.x[level-1]), rq(constraints_memory_.x_lower[level-1]), re(constraints_memory_.x_upper[level-1]), rr(constraints_memory_.tr_lower[level-1]), rt(constraints_memory_.tr_upper[level-1]); 
 
+                Range r = range(this->memory_.x[level-1]);
 
+                for(SizeType i = r.begin(); i != r.end(); ++i)
+                {
+                    constraints_memory_.active_upper[level-1].set(i, std::min(constraints_memory_.tr_upper[level-1].get(i), constraints_memory_.x_upper[level-1].get(i))); 
+                    constraints_memory_.active_lower[level-1].set(i, std::max(constraints_memory_.tr_lower[level-1].get(i), constraints_memory_.x_lower[level-1].get(i))); 
+                }
+            }
 
-
-
-            exit(0); 
         }
 
 
@@ -252,8 +268,6 @@ namespace utopia
         virtual bool grad_smoothess_termination(const Vector & g_restricted, const Vector & g_coarse, const SizeType & level) override
         {
             Vector Pc; 
-
-            std::cout<<"level: "<< level << "  \n"; 
 
             Vector x_g = this->memory_.x[level] - g_restricted; 
             get_projection(x_g, constraints_memory_.active_lower[level], constraints_memory_.active_upper[level], Pc); 
@@ -353,7 +367,7 @@ namespace utopia
             else
             {
                 this->_smoother_tr_subproblem->atol(1e-16); 
-                this->_smoother_tr_subproblem->max_it(5);
+                this->_smoother_tr_subproblem->max_it(10);
                 
                 if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_coarse_tr_subproblem.get()))
                     tr_subproblem->tr_constrained_solve(H, g, s, box);

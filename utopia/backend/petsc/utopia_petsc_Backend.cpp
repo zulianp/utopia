@@ -724,6 +724,10 @@ namespace utopia {
 	Scalar PetscBackend::norm_infty(const PetscVector &v) {
 		return v.norm_infty();
 	}
+
+	Scalar PetscBackend::norm_infty(const Matrix &m) {
+		return m.norm_infty();
+	}
 	
 	Scalar PetscBackend::reduce(const PetscVector &vec, const Plus &) {
 		return vec.sum();

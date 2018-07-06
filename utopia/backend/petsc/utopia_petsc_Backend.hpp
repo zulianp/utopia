@@ -368,7 +368,10 @@ namespace utopia {
 		static Scalar norm2(const PetscVector &v);
 		static Scalar norm2(const Matrix &m);
 		static Scalar norm1(const PetscVector &v);
+		
 		static Scalar norm_infty(const PetscVector &v);
+		static Scalar norm_infty(const Matrix &m);
+
 		static Scalar reduce(const PetscVector &vec, const Plus &);
 		static Scalar reduce(const PetscMatrix &mat, const Plus &op);
 		static Scalar reduce(const PetscVector &, const Min &);

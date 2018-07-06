@@ -16,7 +16,7 @@ namespace utopia
 
       public:
         Bratu1D(const Scalar & n, 
-                const Scalar & lambda = 0.3, 
+                const Scalar & lambda = 1.9, 
                 const Vector & x_init = local_zeros(1), 
                 const Vector & bc_marker = local_zeros(1), 
                 const Vector & rhs = local_zeros(1)): 

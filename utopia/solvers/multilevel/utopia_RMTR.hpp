@@ -266,18 +266,15 @@ namespace utopia
             //----------------------------------------------------------------------------
             this->init_coarse_level_constrains(level); 
 
-            exit(0); 
-
             //----------------------------------------------------------------------------
             //                   first order coarse level objective managment
             //----------------------------------------------------------------------------            
+            this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]); 
+            
             if(CONSISTENCY_LEVEL != GALERKIN)
-            {             
-                this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]); 
                 this->zero_correction_related_to_equality_constrain(this->function(level-1), memory_.g_diff[level-1]); 
-            }
 
-            smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level], level-1); 
+            smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level-1], level-1); 
 
             if(CONSISTENCY_LEVEL != GALERKIN)
                 memory_.g_diff[level-1] -= memory_.g[level-1]; 

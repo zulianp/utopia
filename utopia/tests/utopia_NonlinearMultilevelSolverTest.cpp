@@ -52,7 +52,6 @@ namespace utopia
 				}
 			}
 
-			// remove BC contributions 
 			if(remove_BC_contributions_)
 			{
 				auto &I = *prolongations_.back();
@@ -89,7 +88,7 @@ namespace utopia
 			// UTOPIA_RUN_TEST(newton_MG_test); 
 			// UTOPIA_RUN_TEST(NMG_test); 
 
-			// UTOPIA_RUN_TEST(RMTR_test); 
+			UTOPIA_RUN_TEST(RMTR_test); 
 			UTOPIA_RUN_TEST(RMTR_inf_test); 
 		}
 
@@ -272,24 +271,11 @@ namespace utopia
 		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
 		    }
 	        
-	        // auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
-	        // tr_strategy_coarse->atol(1e-12); 
-	        // tr_strategy_coarse->rtol(1e-12); 
-	        // tr_strategy_coarse->pc_type("lu"); 
-
-	        // auto tr_strategy_fine = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
-	        // tr_strategy_fine->atol(1e-12); 
-	        // tr_strategy_fine->rtol(1e-12); 
-	        // tr_strategy_fine->pc_type("jacobi");   
-
-
 		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
         	auto tr_strategy_fine = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
         	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
 
-
-
-        	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
+        	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(prolongations_, restrictions_);
 
 	        rmtr->max_it(1000); 
