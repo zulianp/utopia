@@ -115,13 +115,10 @@ namespace utopia
           }
       }
 
-      void generate_constraints(Vector & lb, Vector & ub)
+      void generate_constraints(Vector & lb, Vector & ub, const Scalar lower_const = -1.0 *std::numeric_limits<Scalar>::infinity(),const Scalar upper_const = std::numeric_limits<Scalar>::infinity() )
       {
-        Scalar inf = std::numeric_limits<double>::infinity(); 
-
-        // lb = values(n_, -0.68);
-        lb = values(n_, -inf);
-        ub = values(n_, inf); 
+        lb = values(n_, lower_const);
+        ub = values(n_, upper_const); 
       }
 
 

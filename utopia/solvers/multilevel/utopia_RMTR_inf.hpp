@@ -91,11 +91,10 @@ namespace utopia
          * @param      box   The box
          *
          */
-        virtual bool set_box_constraints(BoxConstraints & box)
+        virtual void set_box_constraints(BoxConstraints & box)
         {
           box_constraints_ = box; 
           has_box_constraints_ = true; 
-          return true; 
         }
 
         /**
@@ -148,15 +147,13 @@ namespace utopia
 
 
             // precompute norms of prolongation operators needed for projections of constraints... 
-            // since we are using L2 projection, this should be 1 for all, but in this way code is more generic... 
             for(auto l = 0; l < this->n_levels() -1; l++)
                 constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm(); 
-
 
         }
 
 
-        // this routine is correct only under assumption, that P has only positive elements ... 
+        // this routine is correct only under assumption, that P/R/I have only positive elements ... 
         virtual void init_coarse_level_constrains(const SizeType & level) override
         {
             // init delta on coarser level...
@@ -175,7 +172,6 @@ namespace utopia
                 for(SizeType i = r.begin(); i != r.end(); ++i) 
                     tr_fine_last_lower.set(i, std::max(constraints_memory_.tr_lower[level].get(i), tr_fine_last_lower.get(i))); 
             }
-            // this->transfer(level-1).restrict(tr_fine_last_lower, constraints_memory_.tr_lower[level-1]);
             this->transfer(level-1).project_down(tr_fine_last_lower, constraints_memory_.tr_lower[level-1]);
 
 
@@ -190,7 +186,6 @@ namespace utopia
                 for(SizeType i = r.begin(); i != r.end(); ++i) 
                     tr_fine_last_upper.set(i, std::min(constraints_memory_.tr_upper[level].get(i), tr_fine_last_upper.get(i))); 
             }
-            // this->transfer(level-1).restrict(tr_fine_last_upper, constraints_memory_.tr_upper[level-1]);
             this->transfer(level-1).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level-1]);
 
 
@@ -200,8 +195,6 @@ namespace utopia
             Vector lx =  (constraints_memory_.x_lower[level] - this->memory_.x[level]); 
             Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level-1] * max(lx); 
             constraints_memory_.x_lower[level-1] = this->memory_.x[level-1] + local_values(local_size(this->memory_.x[level-1]).get(0), lower_multiplier);
-
-
 
             Vector ux =  (constraints_memory_.x_upper[level] - this->memory_.x[level]); 
             Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level-1] * min(ux); 
@@ -225,10 +218,7 @@ namespace utopia
                     constraints_memory_.active_lower[level-1].set(i, std::max(constraints_memory_.tr_lower[level-1].get(i), constraints_memory_.x_lower[level-1].get(i))); 
                 }
             }
-
         }
-
-
 
         // -------------------------- tr radius managment ---------------------------------------------        
         /**
@@ -255,7 +245,6 @@ namespace utopia
 
             return false; 
         }
-
 
 
         /**
@@ -382,7 +371,7 @@ namespace utopia
 
         BoxConstraints box_constraints_;        // constraints on the finest level.... 
 
-        bool has_box_constraints_; // as we can run rmtr with inf. norm also without constraints... 
+        bool has_box_constraints_;               // as we can run rmtr with inf. norm also without constraints... 
 
 
     };

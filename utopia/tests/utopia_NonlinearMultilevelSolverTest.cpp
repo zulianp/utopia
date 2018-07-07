@@ -83,13 +83,15 @@ namespace utopia
 		void run()
 		{
 			// UTOPIA_RUN_TEST(TR_test); 
-			// UTOPIA_RUN_TEST(TR_constraint_test); 
+			UTOPIA_RUN_TEST(TR_constraint_test); 
 
 			// UTOPIA_RUN_TEST(newton_MG_test); 
 			// UTOPIA_RUN_TEST(NMG_test); 
 
-			UTOPIA_RUN_TEST(RMTR_test); 
-			UTOPIA_RUN_TEST(RMTR_inf_test); 
+			// UTOPIA_RUN_TEST(RMTR_test); 
+			// UTOPIA_RUN_TEST(RMTR_inf_test); 
+
+			UTOPIA_RUN_TEST(RMTR_inf_bound_test); 
 		}
 
 
@@ -300,6 +302,60 @@ namespace utopia
 
 	        rmtr->solve(fun_fine, x); 
 	    }	 
+
+
+
+		void RMTR_inf_bound_test()
+	    {
+	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
+
+	    	for(auto l=0; l < n_levels_-1; l++)
+	    	{
+		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l], 0.7); 
+		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
+		    }
+	        
+		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
+        	auto tr_strategy_fine = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
+        	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
+
+        	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+	        rmtr->set_transfer_operators(prolongations_, restrictions_);
+
+	        rmtr->max_it(1000); 
+	        rmtr->set_max_coarse_it(1); 
+	        rmtr->set_max_smoothing_it(1); 
+	        rmtr->delta0(1); 
+	        rmtr->atol(1e-6); 
+	        rmtr->rtol(1e-10); 
+	        rmtr->set_grad_smoothess_termination(0.000001); 
+	        rmtr->set_eps_grad_termination(1e-7); 
+			
+			rmtr->verbose(true); 
+			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
+
+	        rmtr->set_functions(level_functions); 
+	        
+	        Bratu1D<DSMatrixd, DVectord> fun_fine(n_dofs_[n_levels_-1]); 
+	        DVectord x = values(n_dofs_[n_levels_ -1 ], 1.0); 
+	        fun_fine.apply_bc_to_initial_guess(x); 
+
+	        // generate constraints....
+	        DVectord ub, lb; 
+	    	fun_fine.generate_constraints(lb, ub, 0.05, 0.2); 
+	    	auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+	    	rmtr->set_box_constraints(box); 
+
+
+	        rmtr->solve(fun_fine, x); 
+	    }	 
+
+
+
+
+
+
 
 
 		
