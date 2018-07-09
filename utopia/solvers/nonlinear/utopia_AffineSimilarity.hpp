@@ -15,9 +15,7 @@ namespace utopia
 {
 
     enum AFAlgoVersion  {   AF_VERSION_A  = 1,
-                            AF_VERSION_B  = 2,
                             AF_VERSION_C  = 3,
-                            AF_VERSION_D  = 5, 
                             AF_VERSION_E  = 4 };
 
     
@@ -34,14 +32,13 @@ namespace utopia
                             const Parameters params                       = Parameters() ):
                             NonLinearSolver<Matrix, Vector>(linear_solver, params), 
                             mass_init_(false), 
-                            algo_version_(AF_VERSION_D), 
+                            algo_version_(AF_VERSION_E), 
                             tau_max_(1e9),
                             tau_min_(-1e9), 
                             fix_point_diff_tol_(1e-3),
-                            fix_point_max_it_(1000)
+                            fix_point_max_it_(3)
                             {
                                 //set_parameters(params);
-
                                 verbosity_level_ = params.verbose() ? VERBOSITY_LEVEL_NORMAL : VERBOSITY_LEVEL_QUIET;  
                             }
 
@@ -105,18 +102,16 @@ namespace utopia
                 fun.gradient(x_trial, g_trial);  
                 g_trial *= -1.0;     
 
-                if(norm2(g_trial) < norm2(g) && algo_version_ < AF_VERSION_D)
+                // residual  monotonicity test... 
+                if(norm2(g_trial) < norm2(g))
                 {
                     x = x_trial; 
                     g = g_trial; 
                     taken = 1; 
                     it_inner = 0; 
 
-                    if(algo_version_ != AF_VERSION_B)
-                    {
-                        tau = estimate_tau(g_trial, g, s, tau, s_norm); 
-                        clamp_tau(tau); 
-                    }
+                    tau = estimate_tau(g_trial, g, s, tau, s_norm); 
+                    clamp_tau(tau); 
                 }
                 else
                 {
@@ -135,11 +130,6 @@ namespace utopia
 
                     Scalar tau_old = 9e9; 
                     it_inner = 0; 
-
-                    // this should not be here...
-                    // tau = g_norm/norm2(g_trial)*tau; 
-                    // tau = 1.0/g_norm;
-                    // tau = 1e7;
 
                     while(!converged_inner)
                     {
@@ -165,7 +155,7 @@ namespace utopia
                         converged_inner =  clamp_tau(tau); 
 
                         // convergence criterium for fixed point iteration 
-                        if(std::abs(tau_old - tau) < fix_point_diff_tol_ || it_inner > fix_point_max_it_ )
+                        if(it_inner > fix_point_max_it_)
                             converged_inner = true; 
 
                         it_inner++; 
@@ -186,9 +176,6 @@ namespace utopia
                     {
                         x = x_trial; 
                         g = g_trial; 
-
-                        // reset value of tau ... 
-                        // tau = 1.0/g_norm; 
                     }
                     else if(algo_version_ !=  AF_VERSION_A)
                         std::cout<<"--- WARNING: residual monotonicity test failed... \n"; 
