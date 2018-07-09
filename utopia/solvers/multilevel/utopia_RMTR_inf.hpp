@@ -35,7 +35,7 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
 
-        // pay attention that this one is inf norm... 
+        // pay attention that this one in inf norm... 
         typedef utopia::TRBoxSubproblem<Matrix, Vector>     TRSubproblem; 
 
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
@@ -84,7 +84,6 @@ namespace utopia
             return "RMTR_inf";  
         }
         
-
         /**
          * @brief      Sets the box constraints.
          *
@@ -135,7 +134,6 @@ namespace utopia
                 constraints_memory_.x_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
                 constraints_memory_.x_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0);
             }   
-
 
             // inherited tr bound constraints... 
             constraints_memory_.tr_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
