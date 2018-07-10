@@ -17,6 +17,7 @@ option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_WITH_PETSC "Enable the petsc backend" ON)
 option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
+option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" ON)
 
 option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
@@ -120,6 +121,7 @@ macro(print_dependency_table)
 	SET(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_UMFPACK}\t\t| usable\n")
 	SET(DEP_TABLE "${DEP_TABLE}cuda+thrust\t| ${UTOPIA_CUDA}\t\t| not usable but can be easily developed further\n")
 	SET(DEP_TABLE "${DEP_TABLE}opencl\t\t| ${UTOPIA_OPENCL}\t\t| prototyping\n")
+	SET(DEP_TABLE "${DEP_TABLE}m3elinsol\t| ${UTOPIA_M3ELINSOL}\t\t| work in progress\n")
 	SET(DEP_TABLE "${DEP_TABLE}____________________________________________________\n")
 	message(STATUS ${DEP_TABLE})
 endmacro()
@@ -242,6 +244,10 @@ endif()
 
 if(TRY_WITH_OPENCL)
 	add_subdirectory(backend/opencl)
+endif()
+
+if(TRY_WITH_M3ELINSOL)
+	add_subdirectory(backend/m3elinsol)
 endif()
 
 # weird stuff goes here

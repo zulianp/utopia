@@ -41,6 +41,10 @@ if(TARGET utopia_trilinos)
 	target_link_libraries(utopia_tests utopia_trilinos)
 endif()
 
+if(TARGET utopia_m3elinsol)
+	target_link_libraries(utopia_tests utopia_m3elinsol)
+endif()
+
 install(TARGETS utopia_tests
 	RUNTIME DESTINATION bin 
 	LIBRARY DESTINATION lib 
