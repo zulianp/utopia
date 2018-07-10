@@ -14,10 +14,14 @@ namespace utopia {
 		DSMatrixd A;
 		
 		const std::string data_path = Utopia::instance().get("data_path");
-		const std::string folder = data_path + "/mg";
+		// const std::string folder = data_path + "/mg";
+		// read(folder + "/rhs.bin", rhs);
+		// read(folder + "/A.bin", A);
+
+		const std::string folder = data_path + "/laplace/matrices_for_petsc";
 		
-		read(folder + "/rhs.bin", rhs);
-		read(folder + "/A.bin", A);
+		read(folder + "/f_rhs", rhs);
+		read(folder + "/f_A", A);
 
 		x = local_zeros(local_size(rhs));
 
