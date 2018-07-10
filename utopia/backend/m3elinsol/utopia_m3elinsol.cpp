@@ -115,7 +115,7 @@ namespace utopia {
 			auto ls = local_size(mat_in);
 			auto n_row_local = ls.get(0);
 			row_ptr.resize(n_row_local + 1);
-			std::fill(row_ptr.begin(), row_ptr.end(), 0);
+			std::fill(row_ptr.begin(), row_ptr.end(), 1);
 
 			auto r = row_range(mat_in);
 

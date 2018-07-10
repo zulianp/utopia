@@ -24,10 +24,10 @@ if(M3ELINSOL_FOUND)
 
 	find_project_files(CMAKE_CURRENT_SOURCE_DIR M3ELINSOL_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 # compiling also m3elinsol c++ interface file
-list(APPEND LOCAL_SOURCES
+	list(APPEND LOCAL_SOURCES
 			${M3ELINSOL_SOURCE_FILES}
-)
-message(STATUS "${LOCAL_SOURCES}")
+	)
+# message(STATUS "${LOCAL_SOURCES}")
 	add_library(utopia_m3elinsol STATIC ${LOCAL_SOURCES})
 
 	foreach(MODULE ${M3ELINSOL_MODULES})
