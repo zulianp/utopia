@@ -354,9 +354,9 @@ namespace utopia
             else
             {
                 this->_smoother_tr_subproblem->atol(1e-16); 
-                this->_smoother_tr_subproblem->max_it(10);
+                this->_smoother_tr_subproblem->max_it(5);
                 
-                if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_coarse_tr_subproblem.get()))
+                if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_smoother_tr_subproblem.get()))
                     tr_subproblem->tr_constrained_solve(H, g, s, box);
             }
 
@@ -368,7 +368,6 @@ namespace utopia
         ConstraintsLevelMemory <Vector>         constraints_memory_;
 
         BoxConstraints box_constraints_;        // constraints on the finest level.... 
-
         bool has_box_constraints_;               // as we can run rmtr with inf. norm also without constraints... 
 
 
