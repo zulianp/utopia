@@ -1,8 +1,16 @@
 #include "utopia_m3elinsol.hpp"
 
+#ifdef WITH_TRILINOS
+#include "utopia_trilinos.hpp"
+#endif //WITH_TRILINOS
+
 #ifdef WITH_PETSC
 #include "utopia_petsc.hpp"
 #endif //WITH_PETSC
+
+#ifdef WITH_BLAS
+#include "utopia_blas.hpp"
+#endif //WITH_BLAS
 
 #include "M3Elinsol_CXX.hpp"
 
@@ -23,7 +31,7 @@ namespace utopia {
 		M3Elinsol_Int  maxit   = 1000;
 		M3Elinsol_Real rtol    = 1e-10;
 		M3Elinsol_Bool binread = true;
-		M3Elinsol_Str  logfile = "output.log";
+		M3Elinsol_Str  logfile = "m3elinsol_output.log";
 
 		//mat buffs
 		std::vector<M3Elinsol_Int>  row_ptr;
@@ -169,4 +177,15 @@ namespace utopia {
 	//explicit instantiations
 	template class ASPAMG<DSMatrixd, DVectord>;
 #endif //WITH_PETSC
+
+#ifdef WITH_BLAS
+	//explicit instantiations
+	template class ASPAMG<CRSMatrixd, Vectord>;
+#endif //WITH_BLAS
+
+#ifdef WITH_TRILINOS
+	//explicit instantiations
+	template class ASPAMG<TSMatrixd, TVectord>;
+#endif //WITH_TRILINOS
+
 }

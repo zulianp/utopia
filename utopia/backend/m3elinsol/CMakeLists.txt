@@ -36,6 +36,14 @@ if(M3ELINSOL_FOUND)
 		target_link_libraries(utopia_m3elinsol utopia_petsc)
 	endif()
 
+	if(TARGET utopia_blas)
+		target_link_libraries(utopia_m3elinsol utopia_blas)
+	endif()
+
+	if(TARGET utopia_trilinos)
+		target_link_libraries(utopia_m3elinsol utopia_trilinos)
+	endif()
+
 	add_definitions(${M3ELINSOL_DEFS})
 
 	install(TARGETS utopia_m3elinsol
