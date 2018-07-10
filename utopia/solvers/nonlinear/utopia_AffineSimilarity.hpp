@@ -68,7 +68,7 @@ namespace utopia
             SizeType summ_inn_iter = 0; 
 
             // initialization of  tau 
-            tau = 1.0/g_norm; 
+            tau = 1.0/g_norm;  
 
             if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL)
             {
@@ -90,8 +90,11 @@ namespace utopia
                 fun.hessian(x, H);
                 H *= -1.0; 
 
-                A = H - 1.0/tau * M_; 
-                rhs = -1.0 * g; 
+                // A = H - 1.0/tau * M_; 
+                // rhs = -1.0 * g; 
+
+                A = M_ - tau *H; 
+                rhs = tau * g; 
                 
                 //find direction step
                 s = local_zeros(local_size(x));
@@ -108,34 +111,47 @@ namespace utopia
                 fun.gradient(x_trial, g_trial);  
                 g_trial *= -1.0;     
 
+
                 // residual  monotonicity test... 
                 if(norm2(g_trial) < norm2(g))
                 {
+                    tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
+                    clamp_tau(tau); 
+
                     x = x_trial; 
                     g = g_trial; 
                     taken = 1; 
                     it_inner = 0; 
-
-                    tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
-                    clamp_tau(tau); 
                 }
                 else
                 {
                     taken=0;
                     bool converged_inner = false; 
 
-                    // here initial value for tau comes from tau_opt 
-                    tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
-                    clamp_tau(tau); 
+                    // tau =  tau /100.0; 
 
                     if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
-                        this->init_solver("Inner it ", {" it. ", "|| tau ||"});
+                    {
+                        this->init_solver("Fixed point it ", {" it. ", "|| tau ||"});
+                        PrintInfo::print_iter_status(0, {tau});
+                    }
+
+                    // here initial value for tau comes from tau_opt 
+                    // tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
+                    // clamp_tau(tau); 
+
+                    it_inner = 1; 
+
+                    // if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
+                    //     PrintInfo::print_iter_status(it_inner, {tau});
+
+                    // tau =  tau /100.0; 
                     
                     if(algo_version_ ==  AF_VERSION_A)
                         converged_inner = true; 
 
                     Scalar tau_old = 9e9; 
-                    it_inner = 0; 
+                    // it_inner++; 
 
                     while(!converged_inner)
                     {
@@ -164,10 +180,10 @@ namespace utopia
                         if(it_inner > fix_point_max_it_ && algo_version_ == AF_VERSION_B)
                             converged_inner = true; 
 
-                        it_inner++; 
-
                         if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                             PrintInfo::print_iter_status(it_inner, {tau});
+
+                        it_inner++; 
 
                         if(algo_version_ == AF_VERSION_C)
                         {   
@@ -185,6 +201,9 @@ namespace utopia
                     }
                     else if(algo_version_ !=  AF_VERSION_A)
                         std::cout<<"--- WARNING: residual monotonicity test failed... \n"; 
+
+                    if (mpi_world_rank() == 0)
+                        std::cout<<"                      ------ end of fixed point iteration ------ \n"; 
 
                 }  // this is outer loop of residual monicity test
             
@@ -297,22 +316,23 @@ namespace utopia
 
         void update_scaling(const Vector & x_old, const Vector & x_new)
         {
-            Vector x_scaling = local_zeros(local_size(x_old).get(0)); 
+            Vector x_scaling = local_values(local_size(x_old).get(0), 1.0); 
 
-            {   
-                Write<Vector>   w(x_scaling); 
-                Read<Vector>    r1(x_old), r2(x_new); 
+            // just test identity... 
+            // {   
+            //     Write<Vector>   w(x_scaling); 
+            //     Read<Vector>    r1(x_old), r2(x_new); 
 
-                Range r = range(x_scaling);
+            //     Range r = range(x_scaling);
 
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                {
-                    Scalar value = std::max(std::max( std::abs(x_old.get(i)), std::abs(x_new.get(i))), alpha_treshold_); 
-                    x_scaling.set(i, value); 
-                }
-            }
+            //     for(SizeType i = r.begin(); i != r.end(); ++i)
+            //     {
+            //         Scalar value = std::max(std::max( std::abs(x_old.get(i)), std::abs(x_new.get(i))), alpha_treshold_); 
+            //         x_scaling.set(i, value); 
+            //     }
+            // }
 
-            std::cout<<"x_scaling: "<< norm_infty(x_scaling) << "  \n"; 
+            // std::cout<<"x_scaling: "<< norm_infty(x_scaling) << "  \n"; 
 
             D_ = diag(x_scaling); 
             D_inv_ = diag(1.0/x_scaling); 
