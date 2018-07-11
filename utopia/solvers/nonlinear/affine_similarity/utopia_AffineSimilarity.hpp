@@ -30,7 +30,7 @@ namespace utopia
                             scaling_init_(false),
                             tau_max_(1e9),
                             tau_min_(-1e9), 
-                            alpha_treshold_(1)
+                            alpha_treshold_(1e-10)
                             {
                                 //set_parameters(params);
                                 verbosity_level_ = params.verbose() ? VERBOSITY_LEVEL_NORMAL : VERBOSITY_LEVEL_QUIET;  
@@ -49,6 +49,12 @@ namespace utopia
             Vector g, s, rhs, x_trial, g_trial;
             Matrix H, A;
 
+            // init Ds
+            Vector d = local_values(local_size(x).get(0), 1.0); 
+            D_ = diag(d); 
+            D_inv_ = D_; // since inverse of identity is identity ... 
+
+
             Scalar g_norm, s_norm=9e9, tau;
             SizeType it = 0, it_inner = 0;
 
@@ -61,20 +67,14 @@ namespace utopia
 
             // initialization of  tau 
             tau = 1.0/g_norm;  
-            // tau = 1.0;  
 
             if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL)
             {
-                this->init_solver("Affine similarity", {" it. ", "|| g ||", "|| s_k || ", "tau", "it_inner",  "marker"});
+                this->init_solver("Affine similarity", {" it. ", "|| F ||", "|| Delta x || ", "tau", "it_inner",  "marker"});
                 PrintInfo::print_iter_status(it, {g_norm, 0, tau});
             }
 
             print_statistics(it, g_norm, tau,  it_inner); 
-
-            // init Ds
-            Vector alphas = local_values(local_size(x).get(0), 1.0); 
-            D_ = diag(alphas); 
-            D_inv_ = D_; // since inverse of I is I ... 
 
             it++;
 
@@ -82,8 +82,12 @@ namespace utopia
             {
                 hessian(fun, x, H); 
 
+                //  necessary if scaling matrix changes, so we do not compare 2 completly different things... 
+                gradient(fun, x, g); 
+
                 A = M_ - tau *H; 
-                rhs = tau * g; 
+                rhs = g; 
+
                 
                 //find direction step
                 s = local_zeros(local_size(x));
@@ -91,15 +95,13 @@ namespace utopia
                 solves_counter++; 
 
                 // build trial point 
-                x_trial = x+s; 
+                x_trial = x + tau *  D_ * s; 
 
                 // plain correction, without step-size
-                s = 1.0/tau * s; 
                 s_norm = norm2(s); 
 
                 // gradient of x_trial 
                 gradient(fun, x_trial, g_trial);                 
-
 
                 if(residual_monotonicity_test(g_trial, g))
                 {   
@@ -119,7 +121,7 @@ namespace utopia
 
                     if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                     {
-                        this->init_solver("Fixed point it ", {" it. ", "|| tau ||"});
+                        this->init_solver("Fixed point it ", {" it. ", "tau"});
                         PrintInfo::print_iter_status(0, {tau});
                     }
 
@@ -140,8 +142,9 @@ namespace utopia
                     while(!converged_inner)
                     {
                         tau_old = tau; 
-                        A = H - 1.0/tau * M_; 
-                        rhs = -1.0 * g; 
+                        
+                        A = M_ - tau *H;
+                        rhs = g; 
                         
                         //find direction step
                         s = local_zeros(local_size(x));
@@ -149,10 +152,9 @@ namespace utopia
                         solves_counter++; 
                         it_inner++; 
 
-                        x_trial = x+s; 
+                        x_trial = x + tau *  D_ * s; 
 
                         // plain correction, without step-size
-                        s = 1.0/tau * s; 
                         s_norm = norm2(s); 
                     
                         // gradient of x_trial 
@@ -259,19 +261,23 @@ namespace utopia
         }
 
 
-        Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
-        {
-            Vector gs_diff = (g_trial - (M_ * s)); 
-            Scalar nom = dot(s, ( (1.0/tau * M_ * s) - g)); 
-            Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
-            return (tau  *  std::abs(nom)/ help_denom); 
-        }
+        // Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        // {
+        //     Vector gs_diff = (g_trial - (M_ * s)); 
+        //     Scalar nom = dot(s, ( (1.0/tau * M_ * s) - g)); 
+        //     Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
+        //     return (tau  *  std::abs(nom)/ help_denom); 
+        // }
 
 
         Scalar estimate_tau_scaled(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
         {   
-            Vector gs_diff = (D_inv_ * g_trial - (M_ * s)); 
-            Scalar nom = dot(s, ( (1.0/tau * M_ * s) - (D_inv_ *   g))); 
+            // Vector gs_diff = (g_trial - (M_ * s)); 
+            // Scalar nom = dot(s, ( (1.0/tau * M_ * s) - g)); 
+
+            Vector gs_diff = (g_trial - (s)); 
+            Scalar nom = dot(s, ( (1.0/tau * M_ * s) - 1.0/tau * g)); 
+
             Scalar help_denom = (2.0 * norm2(gs_diff) * s_norm); 
             return (tau  *  std::abs(nom)/ help_denom); 
         }
@@ -323,18 +329,20 @@ namespace utopia
         {
             fun.gradient(x, g); 
             g = -1.0 * g; 
+            g = D_inv_ * g; 
         }
 
         void hessian(Function<Matrix, Vector> &fun,  const Vector & x, Matrix & H)
         {
             fun.hessian(x, H); 
             H = -1.0 * H; 
+            H = D_inv_ * H * D_; 
         }
 
 
         bool residual_monotonicity_test(const Vector & g_trial, const Vector & g)
         {
-            // todo:: add scaling.... 
+            // this quantities have already D_inv inside ...
             return (norm2(g_trial) < norm2(g))? true : false; 
         }
 
