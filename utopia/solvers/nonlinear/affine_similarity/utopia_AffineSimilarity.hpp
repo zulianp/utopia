@@ -64,7 +64,8 @@ namespace utopia
             bool converged = false; 
 
             // no scaling transform here... 
-            gradient(fun, x, g); 
+            Vector x_test = D_ * x;
+            gradient(fun, x_test, g); 
             g_norm = norm2(g);
 
             SizeType solves_counter = 0; 
@@ -115,16 +116,14 @@ namespace utopia
                 if(residual_monotonicity_test(g_trial, g))
                 {   
                     // update tau since, you  have already all ingredients 
-                    tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
+                    tau = estimate_tau(g_trial, g, s, tau, s_norm); 
                     clamp_tau(tau); 
 
                     x = x_trial; 
-                    it_inner = 0; 
+                    it_inner = 1; 
                 }
                 else
-                {
-                    bool converged_inner = false; 
-
+                { 
                     if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                     {
                         this->init_solver("Fixed point it ", {" it. ", "|| tau ||"});
@@ -132,15 +131,14 @@ namespace utopia
                     }
                     
                     // here initial value for tau comes from tau_opt 
-                    tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
+                    tau = estimate_tau(g_trial, g, s, tau, s_norm); 
                     clamp_tau(tau); 
 
+                    bool converged_inner = false;
                     it_inner = 1; 
 
                     if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                         PrintInfo::print_iter_status(it_inner, {tau});
-
-                    // tau =  tau /100.0; 
 
                     while(!converged_inner)
                     {
@@ -162,7 +160,7 @@ namespace utopia
                         // gradient of x_trial 
                         gradient(fun, x_trial, g_trial); 
 
-                        tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
+                        tau = estimate_tau(g_trial, g, s, tau, s_norm); 
                         converged_inner =  clamp_tau(tau); 
 
                         // we iterate until residual monotonicity test is satisfied... 
@@ -192,13 +190,13 @@ namespace utopia
                 // iterative adaptation of diagonal scaling... 
                 if(!scaling_init_)
                 {
-                    update_scaling(x, x_old); 
+                    update_scaling_matrices(x, x_old); 
                     x_old = x; 
                 }
 
                 // print iteration status on every iteration
                 if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL)
-                    PrintInfo::print_iter_status(it, {g_norm, tau * s_norm, tau, Scalar(it_inner--)});
+                    PrintInfo::print_iter_status(it, {g_norm, s_norm, tau, Scalar(it_inner-1)});
 
                 print_statistics(it, g_norm, tau,  it_inner); 
 
@@ -227,7 +225,6 @@ namespace utopia
         {
             D_ = D; 
             D_inv_ = diag( 1.0/ diag(D_)); 
-
             scaling_init_ = true; 
         }
 
@@ -283,7 +280,7 @@ namespace utopia
         // }
 
 
-        Scalar estimate_tau_scaled(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
+        Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
         {   
             Vector gs_diff = (g_trial - (M_ * s)); 
             Scalar nom = dot(s, ( (1.0/tau * M_ * s) - g)); 
@@ -292,11 +289,10 @@ namespace utopia
         }
 
 
-        void update_scaling(const Vector & x_old, const Vector & x_new)
+        void update_scaling_matrices(const Vector & x_old, const Vector & x_new)
         {
             Vector x_scaling = local_values(local_size(x_old).get(0), 1.0); 
 
-            // just test identity... 
             {   
                 Write<Vector>   w(x_scaling); 
                 Read<Vector>    r1(x_old), r2(x_new); 
@@ -336,8 +332,7 @@ namespace utopia
         {
             Vector x_s = D_inv_ * x; 
             fun.gradient(x_s, g); 
-            g = -1.0 * g; 
-            // g = D_inv_ * g; 
+            g = -1.0 * g; // because we work with negative definitness 
         }
 
         void hessian(Function<Matrix, Vector> &fun,  const Vector & x, Matrix & H)
@@ -345,7 +340,7 @@ namespace utopia
             Vector x_s = D_inv_ * x; 
             fun.hessian(x_s, H); 
 
-            H = -1.0 * H; 
+            H = -1.0 * H; // because we work with negative definitness
             H = H * D_inv_; 
         }
 
