@@ -19,7 +19,6 @@ namespace utopia {
 		// read(folder + "/A.bin", A);
 
 		const std::string folder = data_path + "/laplace/matrices_for_petsc";
-		
 		read(folder + "/f_rhs", rhs);
 		read(folder + "/f_A", A);
 

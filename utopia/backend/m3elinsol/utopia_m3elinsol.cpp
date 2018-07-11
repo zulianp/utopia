@@ -26,12 +26,9 @@ namespace utopia {
 		M3Elinsol_Int ierr;
 
 		//params
-		M3Elinsol_Int  iverbosity = 1;
-		M3Elinsol_Int  plevel;
-		M3Elinsol_Int  maxit   = 1000;
-		M3Elinsol_Real rtol    = 1e-10;
-		M3Elinsol_Bool binread = true;
-		M3Elinsol_Str  logfile = "m3elinsol_output.log";
+		M3Elinsol_Int plevel;
+		M3Elinsol_Int iverbosity;
+		M3Elinsol_Str logfile;
 
 		//mat buffs
 		std::vector<M3Elinsol_Int>  row_ptr;
@@ -42,8 +39,10 @@ namespace utopia {
 		std::vector<M3Elinsol_Real> sol_buff;
 		std::vector<M3Elinsol_Real> rhs_buff;
 
-		Impl(const M3Elinsol_Int plevel = 1)
-		: plevel(plevel)
+		Impl(const M3Elinsol_Int plevel = 1, 
+		     const M3Elinsol_Int iverbosity = 1,
+		     const M3Elinsol_Str logfile = "m3elinsol_output.log"
+		     ) : plevel(plevel), iverbosity(iverbosity), logfile(logfile)
 		{
 			ierr = M3Elinsol_Init(plevel, iverbosity, logfile, &solver); M3Elinsol_Errchk(&solver, ierr);
 		}
@@ -88,25 +87,31 @@ namespace utopia {
 			update_vecs(rhs, sol);
 			set_options();
 
-			ierr = M3Elinsol_Set(&this->solver, &this->mat, &this->rhs); 							M3Elinsol_Errchk(&solver, ierr);
-			ierr = M3Elinsol_Solve(&this->solver, &this->mat, &this->rhs, &this->sol, maxit, rtol); M3Elinsol_Errchk(&solver, ierr);
+			ierr = M3Elinsol_Solve(&this->solver, &this->mat, &this->rhs, &this->sol); M3Elinsol_Errchk(&solver, ierr);
 
 			copy_buff(this->sol_buff, sol);
 			return ierr == 0;
 		}
-
+ 
 		void set_options()
 		{
+			// Set Problem level
+			M3Elinsol_ASPAMG_SetProblemLevel(&solver.handle, 1);
+
+			// Set Preconditioner Options
+			// M3Elinsol_ASPAMG_SetSmtNstep(&solver.handle, 5);
+			// M3Elinsol_ASPAMG_SetSmtNu(&solver.handle, 1);
+			// M3Elinsol_ASPAMG_SetTspMethod(&solver.handle, 1);
+			// M3Elinsol_ASPAMG_SetTspNtvecs(&solver.handle, 5);
+			// M3Elinsol_ASPAMG_SetTspMaxit(&solver.handle, 50);
+			// M3Elinsol_ASPAMG_SetCsnTheta(&solver.handle, 0.5);
+			// M3Elinsol_ASPAMG_SetPrlNnzrmax(&solver.handle, 4);
+			// M3Elinsol_ASPAMG_SetAmgMaxlvls(&solver.handle, 10);
+			// M3Elinsol_ASPAMG_SetAmgMaxcsize(&solver.handle, 20);
+
 			// Set Solver Options
-			M3Elinsol_ASPAMG_SetSmtNstep(&solver.handle, 5);
-			M3Elinsol_ASPAMG_SetSmtNu(&solver.handle, 1);
-			M3Elinsol_ASPAMG_SetTspMethod(&solver.handle, 1);
-			M3Elinsol_ASPAMG_SetTspNtvecs(&solver.handle, 5);
-			M3Elinsol_ASPAMG_SetTspMaxit(&solver.handle, 50);
-			M3Elinsol_ASPAMG_SetCsnTheta(&solver.handle, 0.5);
-			M3Elinsol_ASPAMG_SetPrlNnzrmax(&solver.handle, 4);
-			M3Elinsol_ASPAMG_SetAmgMaxlvls(&solver.handle, 10);
-			M3Elinsol_ASPAMG_SetAmgMaxcsize(&solver.handle, 10);
+			M3Elinsol_ASPAMG_SetPcgRelConvTol(&solver.handle, 1e-9);
+			M3Elinsol_ASPAMG_SetPcgMaxIter(&solver.handle, 100);
 		}
 
 		template<class T>
@@ -145,6 +150,8 @@ namespace utopia {
 			mat.values = &values[0];
 			mat.nrows  = n_row_local;
 			mat.nterm  = col_ind.size();
+
+			ierr = M3Elinsol_Set(&this->solver, &this->mat); M3Elinsol_Errchk(&solver, ierr);
 		}
 
 		~Impl()
