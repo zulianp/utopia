@@ -13,11 +13,6 @@
 
 namespace utopia
 {
-
-    enum AFAlgoVersion  {   AF_VERSION_A  = 1,
-                            AF_VERSION_B  = 2,
-                            AF_VERSION_C  = 3 };
-
     
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class AffineSimilarity : public NonLinearSolver<Matrix, Vector>
@@ -33,10 +28,8 @@ namespace utopia
                             NonLinearSolver<Matrix, Vector>(linear_solver, params), 
                             mass_init_(false), 
                             scaling_init_(false),
-                            algo_version_(AF_VERSION_C), 
                             tau_max_(1e9),
                             tau_min_(-1e9), 
-                            fix_point_max_it_(3), 
                             alpha_treshold_(1)
                             {
                                 //set_parameters(params);
@@ -65,10 +58,11 @@ namespace utopia
             g = -1.0*g;
             g_norm = norm2(g);
 
-            SizeType summ_inn_iter = 0; 
+            SizeType solves_counter = 0; 
 
             // initialization of  tau 
-            tau = 1.0/g_norm;  
+            // tau = 1.0/g_norm;  
+            tau = 1.0;  
 
             if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL)
             {
@@ -90,15 +84,13 @@ namespace utopia
                 fun.hessian(x, H);
                 H *= -1.0; 
 
-                // A = H - 1.0/tau * M_; 
-                // rhs = -1.0 * g; 
-
                 A = M_ - tau *H; 
                 rhs = tau * g; 
                 
                 //find direction step
                 s = local_zeros(local_size(x));
                 this->linear_solve(A, rhs, s);
+                solves_counter++; 
 
                 // build trial point 
                 x_trial = x+s; 
@@ -128,8 +120,6 @@ namespace utopia
                     taken=0;
                     bool converged_inner = false; 
 
-                    // tau =  tau /100.0; 
-
                     if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                     {
                         this->init_solver("Fixed point it ", {" it. ", "|| tau ||"});
@@ -137,18 +127,15 @@ namespace utopia
                     }
 
                     // here initial value for tau comes from tau_opt 
-                    // tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
-                    // clamp_tau(tau); 
+                    tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
+                    clamp_tau(tau); 
 
-                    it_inner = 1; 
+                    it_inner = 0; 
 
-                    // if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
-                    //     PrintInfo::print_iter_status(it_inner, {tau});
-
-                    // tau =  tau /100.0; 
+                    if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
+                        PrintInfo::print_iter_status(it_inner, {tau});
                     
-                    if(algo_version_ ==  AF_VERSION_A)
-                        converged_inner = true; 
+                    // tau =  tau /100.0; 
 
                     Scalar tau_old = 9e9; 
                     // it_inner++; 
@@ -162,6 +149,8 @@ namespace utopia
                         //find direction step
                         s = local_zeros(local_size(x));
                         this->linear_solve(A, rhs, s);
+                        solves_counter++; 
+                        it_inner++; 
 
                         x_trial = x+s; 
 
@@ -176,31 +165,17 @@ namespace utopia
                         tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
                         converged_inner =  clamp_tau(tau); 
 
-                        // convergence criterium for fixed point iteration 
-                        if(it_inner > fix_point_max_it_ && algo_version_ == AF_VERSION_B)
-                            converged_inner = true; 
-
                         if(verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
                             PrintInfo::print_iter_status(it_inner, {tau});
 
-                        it_inner++; 
-
-                        if(algo_version_ == AF_VERSION_C)
+                        // we iterate until residual monotonicity test is satisfied... 
+                        if(norm2(g_trial) < norm2(g))
                         {   
-                            if(norm2(g_trial) < norm2(g))
-                                converged_inner = true; 
+                            x = x_trial; 
+                            g = g_trial; 
+                            converged_inner = true; 
                         }
                     }
-
-                    summ_inn_iter +=it_inner; 
-
-                    if(norm2(g_trial) < norm2(g))
-                    {
-                        x = x_trial; 
-                        g = g_trial; 
-                    }
-                    else if(algo_version_ !=  AF_VERSION_A)
-                        std::cout<<"--- WARNING: residual monotonicity test failed... \n"; 
 
                     if (mpi_world_rank() == 0)
                         std::cout<<"                      ------ end of fixed point iteration ------ \n"; 
@@ -224,7 +199,7 @@ namespace utopia
 
             } // outer solve loop while(!converged)
 
-            std::cout<<"summ_inn_iter: "<< summ_inn_iter << "  \n"; 
+            std::cout<<"solves_counter: "<< solves_counter << "  \n"; 
 
             return true;
         }
@@ -245,11 +220,6 @@ namespace utopia
         }
 
 
-
-        AFAlgoVersion algo_version() const {  return algo_version_;  }
-        void algo_version(const AFAlgoVersion & version) {  algo_version_ = version;  }
-
-
         VerbosityLevel verbosity_level() const 
         {
             return verbosity_level_; 
@@ -263,13 +233,9 @@ namespace utopia
 
         Scalar tau_max() const { return tau_max_; }
         Scalar tau_min() const { return tau_min_; }
-        SizeType fixed_point_max_it() const { return fix_point_max_it_; }
-
 
         void tau_max(const Scalar & tau_max)  {  tau_max_ = tau_max; }
         void tau_min(const Scalar & tau_min)  { tau_min_ = tau_min; }
-        void fixed_point_max_it(const SizeType & max_it_tol)  {fix_point_max_it_ = max_it_tol; }
-
 
     private: 
         virtual void print_statistics(  const SizeType & it, const Scalar & g_norm, 
@@ -362,16 +328,16 @@ namespace utopia
         Matrix M_;                  // mass matrix 
         Matrix D_;                  // scaling matrix
         Matrix D_inv_; 
+
         bool mass_init_;            // marker of initialization of mass matrix 
         bool scaling_init_;       
 
         VerbosityLevel verbosity_level_;   // verbosity level 
-        AFAlgoVersion algo_version_; // version 
 
         Scalar tau_max_;            // clamping values of tau to prevent infty 
         Scalar tau_min_;            // clamping values of tau to prevent devision by zero 
-        SizeType fix_point_max_it_; // maximum iterations for fixed point iteration
-        Scalar alpha_treshold_; 
+
+        Scalar alpha_treshold_;     // treshold on scaling
 
     };
 
