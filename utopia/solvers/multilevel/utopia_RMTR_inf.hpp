@@ -354,7 +354,7 @@ namespace utopia
             else
             {
                 this->_smoother_tr_subproblem->atol(1e-16); 
-                this->_smoother_tr_subproblem->max_it(5);
+                this->_smoother_tr_subproblem->max_it(10);
                 
                 if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_smoother_tr_subproblem.get()))
                     tr_subproblem->tr_constrained_solve(H, g, s, box);

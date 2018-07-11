@@ -43,14 +43,10 @@ namespace utopia {
 
                 TRQuadraticFunction<Matrix, Vector, Traits<Vector>::Backend> fun(make_ref(H) , make_ref(g));
                 
-                //  TODO:: investigate suitable options: gpcg, tron, ...
+                //  TODO:: investigate suitable options: gpcg
                 tao_solver_.set_type("gpcg");
-                
-                // this is already way much better than even neccessary... 
-                tao_solver_.atol(1e-11);
-                tao_solver_.rtol(1e-11); 
-                tao_solver_.stol(1e-11);
 
+                
                 tao_solver_.solve(fun, p_k);
                 
                 return true;

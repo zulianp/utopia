@@ -354,10 +354,6 @@ namespace utopia
 
 
 
-
-
-
-
 		
 	private:
 		SizeType n_levels_; 
