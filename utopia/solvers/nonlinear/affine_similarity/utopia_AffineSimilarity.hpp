@@ -54,15 +54,14 @@ namespace utopia
 
             bool converged = false, taken=1;
 
-            fun.gradient(x, g);
-            g = -1.0*g;
+            gradient(fun, x, g); 
             g_norm = norm2(g);
 
             SizeType solves_counter = 0; 
 
             // initialization of  tau 
-            // tau = 1.0/g_norm;  
-            tau = 1.0;  
+            tau = 1.0/g_norm;  
+            // tau = 1.0;  
 
             if(verbosity_level_ >= VERBOSITY_LEVEL_NORMAL)
             {
@@ -81,8 +80,7 @@ namespace utopia
 
             while(!converged)
             {
-                fun.hessian(x, H);
-                H *= -1.0; 
+                hessian(fun, x, H); 
 
                 A = M_ - tau *H; 
                 rhs = tau * g; 
@@ -100,13 +98,12 @@ namespace utopia
                 s_norm = norm2(s); 
 
                 // gradient of x_trial 
-                fun.gradient(x_trial, g_trial);  
-                g_trial *= -1.0;     
+                gradient(fun, x_trial, g_trial);                 
 
 
-                // residual  monotonicity test... 
-                if(norm2(g_trial) < norm2(g))
-                {
+                if(residual_monotonicity_test(g_trial, g))
+                {   
+                    // update tau anyway... 
                     tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
                     clamp_tau(tau); 
 
@@ -159,8 +156,7 @@ namespace utopia
                         s_norm = norm2(s); 
                     
                         // gradient of x_trial 
-                        fun.gradient(x_trial, g_trial);  
-                        g_trial *= -1.0;     
+                        gradient(fun, x_trial, g_trial); 
 
                         tau = estimate_tau_scaled(g_trial, g, s, tau, s_norm); 
                         converged_inner =  clamp_tau(tau); 
@@ -169,7 +165,7 @@ namespace utopia
                             PrintInfo::print_iter_status(it_inner, {tau});
 
                         // we iterate until residual monotonicity test is satisfied... 
-                        if(norm2(g_trial) < norm2(g))
+                        if(residual_monotonicity_test(g_trial, g))
                         {   
                             x = x_trial; 
                             g = g_trial; 
@@ -199,7 +195,8 @@ namespace utopia
 
             } // outer solve loop while(!converged)
 
-            std::cout<<"solves_counter: "<< solves_counter << "  \n"; 
+            if (mpi_world_rank() == 0)
+                std::cout<<"solves_counter: "<< solves_counter << "  \n"; 
 
             return true;
         }
@@ -305,8 +302,6 @@ namespace utopia
         }
 
 
-
-
         bool clamp_tau(Scalar & tau)
         {
             if(std::isinf(tau) || tau > tau_max_ )
@@ -322,6 +317,27 @@ namespace utopia
             else
                 return false; 
         }
+
+
+        void gradient(Function<Matrix, Vector> &fun,  const Vector & x, Vector & g)
+        {
+            fun.gradient(x, g); 
+            g = -1.0 * g; 
+        }
+
+        void hessian(Function<Matrix, Vector> &fun,  const Vector & x, Matrix & H)
+        {
+            fun.hessian(x, H); 
+            H = -1.0 * H; 
+        }
+
+
+        bool residual_monotonicity_test(const Vector & g_trial, const Vector & g)
+        {
+            // todo:: add scaling.... 
+            return (norm2(g_trial) < norm2(g))? true : false; 
+        }
+
 
 
     private:
