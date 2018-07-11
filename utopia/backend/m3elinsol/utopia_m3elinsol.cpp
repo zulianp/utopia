@@ -137,7 +137,7 @@ namespace utopia {
 			col_ind.reserve(row_ptr.back());
 
 			values.clear();
-			values.reserve(col_ind.size());
+			values.reserve(row_ptr.back());
 
 			each_read(mat_in, [this](const M3Elinsol_Int i, const M3Elinsol_Int j, const M3Elinsol_Real val) {
 				//Fortran offset +1 
