@@ -160,14 +160,18 @@ namespace utopia
                         // gradient of x_trial 
                         gradient(fun, x_trial, g_trial); 
 
-                        tau = estimate_tau(g_trial, g, s, tau, s_norm); 
-                        converged_inner =  clamp_tau(tau); 
-
                         // we iterate until residual monotonicity test is satisfied... 
                         if(residual_monotonicity_test(g_trial, g))
                         {   
                             x = x_trial; 
                             converged_inner = true; 
+                        }
+                        else
+                        {
+                            // this seems to perform better than 
+                            // performing update also after residual monotonicity is satisfied
+                            tau = estimate_tau(g_trial, g, s, tau, s_norm); 
+                            converged_inner =  clamp_tau(tau); 
                         }
 
                         if(!converged_inner && verbosity_level_ > VERBOSITY_LEVEL_NORMAL)
