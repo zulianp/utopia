@@ -45,8 +45,18 @@ namespace utopia {
                 
                 //  TODO:: investigate suitable options: gpcg
                 tao_solver_.set_type("gpcg");
-
                 
+                // default in tao is hudge overshooot.... 
+                tao_solver_.atol(this->atol());
+                tao_solver_.rtol(this->rtol()); 
+                tao_solver_.stol(this->stol());
+
+                // counts + 1 ... 
+                tao_solver_.max_it(this->max_it());
+
+                // does not work, but -tao_monitor does the trick... 
+                // tao_solver_.verbose(true); 
+
                 tao_solver_.solve(fun, p_k);
                 
                 return true;
