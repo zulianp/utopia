@@ -3,19 +3,23 @@
 find_package(Trilinos)
 
 if(TRILINOS_FOUND)
+    foreach(LIB ${Trilinos_LIBRARY_DIRS})
+        list(APPEND UTOPIA_LIBRARIES -L${LIB})
+    endforeach(LIB)
+
     #	list(APPEND UTOPIA_INCLUDES ${Trilinos_INCLUDE_DIRS})
-	# list(APPEND UTOPIA_LIBRARIES ${Trilinos_LIBRARY_DIRS})
-	list(APPEND UTOPIA_LIBRARIES ${Trilinos_TPL_LIBRARIES})
+    # list(APPEND UTOPIA_LIBRARIES ${Trilinos_LIBRARY_DIRS})
+    list(APPEND Trilinos_all_libs ${Trilinos_TPL_LIBRARIES})
+    list(APPEND Trilinos_all_libs ${Trilinos_LIBRARIES})
+    list(REMOVE_DUPLICATES Trilinos_all_libs)
+    foreach(LIB ${Trilinos_all_libs})
+        if(EXISTS ${LIB})
+            list(APPEND UTOPIA_LIBRARIES ${LIB})
+        else()
+            list(APPEND UTOPIA_LIBRARIES -l${LIB})
+        endif()
+    endforeach()
     list(APPEND UTOPIA_INCLUDES ${Trilinos_TPL_INCLUDE_DIRS})
-
-	foreach(LIB ${Trilinos_LIBRARIES})
-		list(APPEND UTOPIA_LIBRARIES -l${LIB})
-	endforeach(LIB)
-
-	foreach(LIB ${Trilinos_LIBRARY_DIRS})
-		list(APPEND UTOPIA_LIBRARIES -L${LIB})
-	endforeach(LIB)
-
 
     # set(CMAKE_C_COMPILER ${TRILINOS_COMPILER})
 
