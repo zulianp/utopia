@@ -319,7 +319,7 @@ namespace utopia
         	auto tr_strategy_fine = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
         	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
 
-        	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+        	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(prolongations_, restrictions_);
 
 	        rmtr->max_it(1000); 

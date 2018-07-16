@@ -373,6 +373,21 @@ namespace utopia {
                 }
             }
             set_zero_rows(M, index);
+
+            // horible solution.... 
+            {
+                ReadAndWrite<Matrix> w(M);
+                Range r = row_range(M);
+
+                //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
+                for(SizeType i = r.begin(); i != r.end(); ++i) 
+                {
+                    if(std::abs(M.get(i,i)) < 1e-15)
+                        M.set(i, i, 1.0);
+                }
+            }
+
+
             return true;
         }
         

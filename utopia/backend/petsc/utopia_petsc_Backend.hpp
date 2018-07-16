@@ -131,8 +131,8 @@ namespace utopia {
 		static bool write(const std::string &path, const PetscVector &Vec_A);
 		
 		// monitoring functions for iterative solvers (Cyrill)
-		static void monitor(const long &iteration, PetscMatrix &m); 
-		static void monitor(const long &iteration, PetscVector &v); 
+		static void monitor(const long &iteration, PetscMatrix &m, const std::string name_of_file = "H_log.m", const std::string name_of_mat = "H"); 
+		static void monitor(const long &iteration, PetscVector &v,  const std::string name_of_file = "g_log.m", const std::string name_of_vec = "g"); 
 
 		static Scalar get_global_nnz(PetscMatrix &Mat_A); 
 		static Scalar get_local_nnz(PetscMatrix &Mat_A); 

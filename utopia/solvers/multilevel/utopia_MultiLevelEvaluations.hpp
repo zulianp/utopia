@@ -37,7 +37,16 @@ namespace utopia
            inline static bool compute_hessian(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Matrix & H, const Matrix & H_diff)
             {
                 fun.hessian(x, H); 
+
+                // static int iteration = 0; 
+                    
+                // monitor(iteration, H, "log_hessian_coarse.m", "H_c"); 
+
                 H += H_diff; 
+                // monitor(iteration, H, "log_hessian_plus_diff.m", "H_c_dif"); 
+
+                // iteration++;
+
                 return true; 
             }
     }; 
@@ -64,7 +73,7 @@ namespace utopia
     {
         public:
             inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & /*x*/,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
-            {
+            {   
                 g = g_diff + H_diff * s_global; 
                 return true; 
             }
@@ -78,7 +87,19 @@ namespace utopia
             inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
             {
                 fun.gradient(x, g);
+
+                // static int itt=0; 
+                // monitor(itt, g, "gradient.m", "g"); 
+
+                Vector g_diff_print = g_diff; 
+
+                // monitor(itt, g_diff_print, "g_diff.m", "g_diff"); 
+
                 g += g_diff + H_diff * s_global; 
+
+                // monitor(itt, g, "g_diff_plusg.m", "g_final"); 
+                // itt++; 
+
                 return true; 
             }
     }; 

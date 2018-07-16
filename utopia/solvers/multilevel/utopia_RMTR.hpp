@@ -291,8 +291,18 @@ namespace utopia
                 {
                     this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]); 
                     this->function(level-1).hessian(memory_.x[level-1], H_coarse); 
-                    memory_.H_diff[level-1] -=  H_coarse; 
+
+                    // static int iteration_rmtr = 0; 
+
+                    // monitor(iteration_rmtr, H_coarse, "log_hessian_init.m", "H_c0"); 
+                    // monitor(iteration_rmtr, memory_.H_diff[level-1], "log_hessian_restricted.m", "H_rest_galerkin"); 
+
+                    // iteration_rmtr++; 
+
+                    memory_.H_diff[level-1] -=  H_coarse;        
+
                 }
+
             }
             
             //----------------------------------------------------------------------------
