@@ -13,20 +13,23 @@ namespace utopia {
 		DVectord  rhs, x;
 		DSMatrixd A;
 		
+		const bool binwrite = false;
 		const std::string data_path = Utopia::instance().get("data_path");
-		// const std::string folder = data_path + "/mg";
-		// read(folder + "/rhs.bin", rhs);
-		// read(folder + "/A.bin", A);
+		const std::string folder = data_path + "/mg";
+		const std::string sysfile = "system.txt";
+		read(folder + "/rhs.bin", rhs);
+		read(folder + "/A.bin", A);
 
-		const std::string folder = data_path + "/laplace/matrices_for_petsc";
-		read(folder + "/f_rhs", rhs);
-		read(folder + "/f_A", A);
+		// const std::string folder = data_path + "/laplace/matrices_for_petsc";
+		// read(folder + "/f_rhs", rhs);
+		// read(folder + "/f_A", A);
 
 		x = local_zeros(local_size(rhs));
 
 		ASPAMG<DSMatrixd, DVectord> amg;
 		amg.update(make_ref(A));
 		amg.apply(rhs, x);
+		amg.printSystem(binwrite,sysfile); // Example on how to print a linear system to file in M3E's format
 
 		double res_norm = norm2(rhs - A * x);
 		utopia_test_assert(res_norm < 1e-8);
