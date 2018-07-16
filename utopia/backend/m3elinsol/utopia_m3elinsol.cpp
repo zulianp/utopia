@@ -85,12 +85,16 @@ namespace utopia {
 		bool apply(const Wrapper<T, 1> &rhs, Wrapper<T, 1> &sol)
 		{
 			update_vecs(rhs, sol);
-			set_options();
 
 			ierr = M3Elinsol_Solve(&this->solver, &this->mat, &this->rhs, &this->sol); M3Elinsol_Errchk(&solver, ierr);
 
 			copy_buff(this->sol_buff, sol);
 			return ierr == 0;
+		}
+
+		void printSystem(const bool binwrite, const M3Elinsol_Str systemfile)
+		{
+			ierr = M3Elinsol_DumpLinSys(&this->solver, binwrite, systemfile); M3Elinsol_Errchk(&solver, ierr);
 		}
  
 		void set_options()
@@ -151,6 +155,7 @@ namespace utopia {
 			mat.nrows  = n_row_local;
 			mat.nterm  = col_ind.size();
 
+			set_options();
 			ierr = M3Elinsol_Set(&this->solver, &this->mat); M3Elinsol_Errchk(&solver, ierr);
 		}
 
@@ -179,6 +184,12 @@ namespace utopia {
 	{
 		IterativeSolver<Matrix, Vector>::update(op);
 		solver.impl->update(*op);
+	}
+
+	template<class Matrix, class Vector, int Backend> 
+	void ASPAMG<Matrix, Vector, Backend>::printSystem(const bool binwrite, const M3Elinsol_Str systemfile)
+	{
+		return solver.impl->printSystem(binwrite,systemfile);
 	}
 
 #ifdef WITH_PETSC
