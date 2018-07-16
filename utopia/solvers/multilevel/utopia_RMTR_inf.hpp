@@ -30,7 +30,7 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector, MultiLevelCoherence CONSISTENCY_LEVEL = FIRST_ORDER>
-    class RMTR_inf :   public RMTR<Matrix, Vector>
+    class RMTR_inf :   public RMTR<Matrix, Vector, CONSISTENCY_LEVEL>
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
@@ -45,8 +45,8 @@ namespace utopia
         typedef typename NonlinearMultiLevelBase<Matrix, Vector>::Fun Fun;
 
 
-        typedef utopia::BoxConstraints<Vector>      BoxConstraints;
-        typedef utopia::RMTR<Matrix, Vector>        RMTR;
+        typedef utopia::BoxConstraints<Vector>                          BoxConstraints;
+        typedef utopia::RMTR<Matrix, Vector, CONSISTENCY_LEVEL>         RMTR;
 
     public:
 

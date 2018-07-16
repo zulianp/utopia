@@ -304,7 +304,7 @@ namespace utopia
 
             // at this point s_global on coarse level is empty 
             coarse_reduction = this->get_multilevel_energy(this->function(level-1), memory_.s[level-1], level-1); 
-
+            
             //----------------------------------------------------------------------------
             //               recursion  / Taylor correction
             //----------------------------------------------------------------------------
@@ -808,7 +808,9 @@ namespace utopia
         virtual Scalar get_multilevel_energy(const Fun & fun, const Vector & s_global, const SizeType & level) 
         {
             if(level < this->n_levels()-1)
+            {
                 return MultilevelEnergyEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_energy(fun, memory_.x[level], memory_.g_diff[level], memory_.H_diff[level], s_global); 
+            }
             else
             {
                 Scalar energy; 
