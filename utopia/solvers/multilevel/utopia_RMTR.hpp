@@ -289,7 +289,7 @@ namespace utopia
                 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
                 {
-                   this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]); 
+                    this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]); 
                     this->function(level-1).hessian(memory_.x[level-1], H_coarse); 
                     memory_.H_diff[level-1] -=  H_coarse; 
                 }
@@ -365,6 +365,12 @@ namespace utopia
                 //                                  trust region update 
                 //----------------------------------------------------------------------------
                 converged = this->delta_update(rho, level, s_global); 
+
+                // because, x + Is_{l-1} does not need to be inside of feasible set.... 
+                // mostly case for rmtr_inf with bounds... 
+                if(rho > this->rho_tol() && converged==false)
+                    converged = this->check_feasibility(level); 
+
                 
                 // terminate, since TR rad. does not allow to take more corrections on given level 
                 if(converged==true) 
@@ -418,6 +424,8 @@ namespace utopia
             
             energy_old = this->get_multilevel_energy(fun, s_global, level); 
             g_norm = this->criticality_measure(level); 
+
+            converged  = this->check_local_convergence(it_success,  g_norm, level, memory_.delta[level]); 
 
             if(this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE && mpi_world_rank() == 0)
             {
@@ -487,7 +495,7 @@ namespace utopia
                 converged  = (delta_converged  == true) ? true : this->check_local_convergence(it_success,  g_norm, level, memory_.delta[level]); 
                 
                 if(level == this->n_levels()-1)
-                    converged  = (converged  == true || g_norm < this->atol_) ? true : false; 
+                    converged  = (converged  == true || g_norm < this->atol()) ? true : false; 
 
                 it++; 
 
@@ -504,6 +512,11 @@ namespace utopia
 
 
     protected:
+
+        virtual bool check_feasibility(const SizeType & level )
+        {
+            return false; 
+        }
 
         virtual void init_memory(const SizeType & /*fine_local_size */) override 
         {

@@ -83,7 +83,7 @@ namespace utopia
 		void run()
 		{
 			// UTOPIA_RUN_TEST(TR_test); 
-			UTOPIA_RUN_TEST(TR_constraint_test); 
+			// UTOPIA_RUN_TEST(TR_constraint_test); 
 
 			// UTOPIA_RUN_TEST(newton_MG_test); 
 			// UTOPIA_RUN_TEST(NMG_test); 
@@ -326,7 +326,7 @@ namespace utopia
 	        rmtr->set_max_coarse_it(1); 
 	        rmtr->set_max_smoothing_it(1); 
 	        rmtr->delta0(1); 
-	        rmtr->atol(1e-6); 
+	        rmtr->atol(1e-5); 
 	        rmtr->rtol(1e-10); 
 	        rmtr->set_grad_smoothess_termination(0.000001); 
 	        rmtr->set_eps_grad_termination(1e-7); 
@@ -343,7 +343,7 @@ namespace utopia
 
 	        // generate constraints....
 	        DVectord ub, lb; 
-	    	fun_fine.generate_constraints(lb, ub, 0.05, 0.2); 
+	    	fun_fine.generate_constraints(lb, ub, -10, 0.1); 
 	    	auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
 	    	rmtr->set_box_constraints(box); 
 

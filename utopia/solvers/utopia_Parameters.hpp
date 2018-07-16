@@ -78,7 +78,7 @@ namespace utopia
           gamma2_ = 2.0; 
           eta1_ = 0.1; 
           eta2_ = 0.85; 
-          rho_tol_ = 0.01; 
+          rho_tol_ = 0.005; 
           SteihaugToint_tol_ = 1e-10; 
           eps_ = 2e-12; 
 

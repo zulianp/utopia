@@ -43,7 +43,7 @@ namespace utopia {
 
                 TRQuadraticFunction<Matrix, Vector, Traits<Vector>::Backend> fun(make_ref(H) , make_ref(g));
                 
-                //  TODO:: investigate suitable options: gpcg
+                //  TODO:: investigate suitable options for constrained QPs 
                 tao_solver_.set_type("gpcg");
                 
                 // default in tao is hudge overshooot.... 

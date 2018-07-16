@@ -151,6 +151,35 @@ namespace utopia
         }
 
 
+
+        // since TR bounds are weak bounds...  
+        virtual bool check_feasibility(const SizeType & level ) override
+        {
+            bool terminate = false; 
+
+            {   
+                Read<Vector> ru(constraints_memory_.tr_upper[level]); 
+                Read<Vector> rl(constraints_memory_.tr_lower[level]); 
+                Read<Vector> rx(this->memory_.x[level]); 
+
+                Range r = range(constraints_memory_.tr_upper[level]);
+
+                for(SizeType i = r.begin(); i != r.end(); ++i)
+                {
+                    Scalar xi = this->memory_.x[level].get(i); 
+                    Scalar li = constraints_memory_.tr_lower[level].get(i); 
+                    Scalar ui = constraints_memory_.tr_upper[level].get(i); 
+
+                   if(xi < li || xi > ui)
+                        terminate = true; 
+                }
+            }
+
+            return terminate; 
+        }
+
+
+
         // this routine is correct only under assumption, that P/R/I have only positive elements ... 
         virtual void init_coarse_level_constrains(const SizeType & level) override
         {
@@ -354,7 +383,7 @@ namespace utopia
             else
             {
                 this->_smoother_tr_subproblem->atol(1e-16); 
-                this->_smoother_tr_subproblem->max_it(3);
+                this->_smoother_tr_subproblem->max_it(1);
                 
                 if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_smoother_tr_subproblem.get()))
                     tr_subproblem->tr_constrained_solve(H, g, s, box);

@@ -59,7 +59,8 @@
 
         Scalar delta, ared, pred, rho, E_old, E_new; 
 
-        SizeType it = 0; 
+        SizeType it = 0;
+        SizeType it_successful = 0;  
         const Scalar infty = std::numeric_limits<Scalar>::infinity();
         Scalar g_norm = infty, g0_norm = infty, r_norm = infty, s_norm = infty;
         bool rad_flg = false; 
@@ -133,6 +134,10 @@
 
 
           this->trial_point_acceptance(rho, x_k1, x_k); 
+          
+          if (rho >= this->rho_tol())
+            it_successful++; 
+
     //----------------------------------------------------------------------------
     //    convergence check 
     //----------------------------------------------------------------------------
@@ -153,6 +158,26 @@
           this->delta_update(rho, p_k, delta); 
           it++; 
         }
+
+        // some benchmarking 
+        auto data_path = Utopia::instance().get("tr_data_path");
+        if(!data_path.empty())
+        {
+            CSVWriter writer; 
+            if (mpi_world_rank() == 0)
+            {
+              if(!writer.file_exists(data_path))
+              {
+                  writer.open_file(data_path); 
+                  writer.write_table_row<std::string>({("it"), "it_successful", "time"}); 
+              }
+              else
+                  writer.open_file(data_path); 
+              
+              writer.write_table_row<Scalar>({Scalar(it-1), Scalar(it_successful), this->get_time() }); 
+              writer.close_file(); 
+            }
+        }        
 
           return false;
       }
