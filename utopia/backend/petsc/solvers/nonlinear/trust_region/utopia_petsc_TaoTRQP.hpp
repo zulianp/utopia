@@ -23,7 +23,8 @@ namespace utopia {
         public:
             TaoTRSubproblem(const std::shared_ptr<LinearSolver> &linear_solver = std::make_shared<KSPSolver<Matrix, Vector>>("gmres"),
                             const Parameters params = Parameters()):
-                            TRBoxSubproblem(params)
+                            TRBoxSubproblem(params), 
+                            pc_type_("jacobi")
             {
               
             }
@@ -54,6 +55,8 @@ namespace utopia {
                 // counts + 1 ... 
                 tao_solver_.max_it(this->max_it());
 
+                tao_solver_.set_pc_type(pc_type_); 
+
                 // does not work, but -tao_monitor does the trick... 
                 // tao_solver_.verbose(true); 
 
@@ -67,8 +70,15 @@ namespace utopia {
                 linear_solver_ = ls; 
             }    
 
+            virtual void pc_type(const std::string & pc_type)
+            {
+                pc_type_ = pc_type; 
+            }
+
+
         protected: 
             std::shared_ptr<LinearSolver> linear_solver_; 
+            std::string pc_type_; 
 
     };
 }

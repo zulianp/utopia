@@ -34,6 +34,9 @@ namespace utopia {
 
 		void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package);
 		bool get_ksp(KSP *ksp);
+		
+		void set_pc_type(const std::string &pc); 
+
 	private:
 		void * data_;
 		std::string ksp_type_;
@@ -72,6 +75,12 @@ namespace utopia {
 		{
 			impl_.set_ksp_types(ksp, pc, solver_package);
 		}
+
+		inline void set_pc_type(const std::string &pc)
+		{
+			impl_.set_pc_type(pc); 
+		}
+
 
 		bool solve(Function<Matrix, Vector> &fun, Vector &x)
 		{	

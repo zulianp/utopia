@@ -317,7 +317,10 @@ namespace utopia
 	        
 		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
         	auto tr_strategy_fine = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
+        	tr_strategy_fine->pc_type("jacobi"); 
+
         	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
+        	tr_strategy_coarse->pc_type("lu"); 
 
         	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(prolongations_, restrictions_);

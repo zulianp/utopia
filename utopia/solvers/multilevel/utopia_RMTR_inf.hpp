@@ -375,7 +375,7 @@ namespace utopia
             {
                 // setting should be really parameters from outside ... 
                 this->_coarse_tr_subproblem->atol(1e-16); 
-                this->_coarse_tr_subproblem->max_it(5000); 
+                this->_coarse_tr_subproblem->max_it(50); 
 
                 if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_coarse_tr_subproblem.get()))
                     tr_subproblem->tr_constrained_solve(H, g, s, box);

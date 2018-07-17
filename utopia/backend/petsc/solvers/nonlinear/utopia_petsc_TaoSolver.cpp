@@ -221,6 +221,12 @@ namespace utopia {
 		solver_package_ = solver_package;
 	}
 
+	void TaoSolverWrapper::set_pc_type(const std::string &pc)
+	{
+		pc_type_ = pc;
+	}
+
+
 	bool TaoSolverWrapper::set_bounds(const PetscVector &lb, const PetscVector &ub)
 	{
 		auto tao = static_cast<Tao>(data_);
