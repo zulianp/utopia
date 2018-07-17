@@ -281,7 +281,7 @@ public:
         Scalar stol_;                   /*!< Step tolerance. */  
 
         SizeType max_it_;               /*!< Maximum number of iterations. */  
-        SizeType verbose_;              /*!< Verobse enable? . */  
+        bool verbose_;              /*!< Verobse enable? . */  
         SizeType time_statistics_;      /*!< Perform time stats or not? */  
 
         bool log_iterates_;             /*!< Monitoring of iterate. */  

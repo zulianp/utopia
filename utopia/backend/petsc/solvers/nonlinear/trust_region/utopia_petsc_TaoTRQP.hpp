@@ -56,9 +56,7 @@ namespace utopia {
                 tao_solver_.max_it(this->max_it());
 
                 tao_solver_.set_pc_type(pc_type_); 
-
-                // does not work, but -tao_monitor does the trick... 
-                // tao_solver_.verbose(true); 
+                tao_solver_.verbose(this->verbose());
 
                 tao_solver_.solve(fun, p_k);
                 

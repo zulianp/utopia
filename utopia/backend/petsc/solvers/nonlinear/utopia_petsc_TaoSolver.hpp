@@ -37,6 +37,8 @@ namespace utopia {
 		
 		void set_pc_type(const std::string &pc); 
 
+		void set_monitor(MPI_Comm comm); 
+
 	private:
 		void * data_;
 		std::string ksp_type_;
@@ -101,6 +103,9 @@ namespace utopia {
 				this->stol(),
 				this->max_it()
 			);
+
+			if(this->verbose() )
+				impl_.set_monitor(x.implementation().communicator()); 
 
 			if(!linear_solver_is_set) {
 				auto factorization = std::dynamic_pointer_cast<Factorization<Matrix, Vector>>(this->linear_solver());

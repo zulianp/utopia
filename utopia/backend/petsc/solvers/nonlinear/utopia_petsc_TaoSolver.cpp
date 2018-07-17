@@ -205,6 +205,16 @@ namespace utopia {
 		}
 	}
 
+	void TaoSolverWrapper::set_monitor(MPI_Comm comm)
+	{
+		const char  monfilename[7] ="stdout";
+		PetscViewer    monviewer;
+		auto tao = (Tao *) &data_;
+		PetscViewerASCIIOpen(comm, monfilename, &monviewer);
+		TaoSetMonitor(*tao, TaoDefaultSMonitor, monviewer, (PetscErrorCode (*)(void**))PetscViewerDestroy);
+	}
+
+
 	TaoSolverWrapper::TaoSolverWrapper()
 	: data_(nullptr), ksp_type_(KSPPREONLY), pc_type_(PCLU), solver_package_("mumps")
 	{}
