@@ -422,9 +422,9 @@ namespace utopia
                     PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level], coarse_corr_taken }); 
                 }
             }
-            else if(mpi_world_rank() ==0)
+            else if(mpi_world_rank() ==0 && this->verbosity_level() >= VERBOSITY_LEVEL_VERY_VERBOSE)
             {
-                std::cout<< "-------------------------------------- GRAD NOT SMOOTH ENOUGH ----------------------------------- \n"; 
+                std::cout<< "--------- Recursion terminated due to non-smoothness of the gradient ----------------------- \n"; 
             }
 
             //----------------------------------------------------------------------------

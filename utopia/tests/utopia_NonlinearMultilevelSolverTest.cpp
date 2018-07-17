@@ -13,10 +13,11 @@ namespace utopia
 		typedef UTOPIA_SIZE_TYPE(DVectord) SizeType;
 		typedef UTOPIA_SCALAR(DVectord) Scalar;
 
-		NonlinearBratuSolverTest(const SizeType & n_levels = 2, bool remove_BC_contributions = false): 
+		NonlinearBratuSolverTest(const SizeType & n_levels = 2, bool remove_BC_contributions = false, bool verbose = false): 
 					n_levels_(n_levels),
 					n_coarse_(10), 
-					remove_BC_contributions_(remove_BC_contributions)
+					remove_BC_contributions_(remove_BC_contributions), 
+					verbose_(verbose)
 		{ 
 
 			assert(n_coarse_ > 0);
@@ -71,7 +72,7 @@ namespace utopia
 			}
 
 			// restrictions, but let's use them as projections... 
-			// not very nice solution... 
+			// not very nice solution, but I am lazy to do something more sophisticated just for testing purposes... 
 			for(SizeType i = 0; i < prolongations_.size(); ++i) 
 			{
 				auto &I = *prolongations_[i];
@@ -105,14 +106,13 @@ namespace utopia
 			params.atol(1e-10);
 			params.rtol(1e-10);
 			params.stol(1e-10);
-			params.verbose(true);
+			params.verbose(verbose_);
 			
 			auto subproblem = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >();
 			TrustRegion<DSMatrixd, DVectord> tr_solver(subproblem);
 			tr_solver.set_parameters(params);
 			tr_solver.solve(fun, x);
 	    }
-
 
 	    void TR_constraint_test()
 	    {
@@ -128,7 +128,7 @@ namespace utopia
 			params.atol(1e-6);
 			params.rtol(1e-10);
 			params.stol(1e-10);
-			params.verbose(true);
+			params.verbose(verbose_);
 
 	        auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
 	        auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
@@ -138,8 +138,6 @@ namespace utopia
 			tr_solver.set_parameters(params);
 			tr_solver.solve(fun, x);
 	    }	    
-
-
 
 	    void newton_MG_test()
 	    {
@@ -156,18 +154,15 @@ namespace utopia
             
             multigrid->set_transfer_operators(prolongations_);
             multigrid->must_generate_masks(false); 
-            multigrid->verbose(false);
+            multigrid->verbose(verbose_);
             multigrid->atol(1e-11);
             
             newton.set_linear_solver(multigrid);
-            newton.verbose(true); 
+            newton.verbose(verbose_); 
             newton.atol(1e-9);
             newton.rtol(1e-10);
             newton.solve(fun, x);
 	    }	    
-
-
-
 
 
 	    void FAS_test()
@@ -199,7 +194,7 @@ namespace utopia
 
 			fas->pre_smoothing_steps(3); 
         	fas->post_smoothing_steps(3); 
-	        fas->verbose(true); 
+	        fas->verbose(verbose_); 
 	        fas->atol(1e-8); 
 	        fas->rtol(1e-10);
 	        fas->max_it(10);
@@ -250,7 +245,7 @@ namespace utopia
 	        rmtr->set_grad_smoothess_termination(0.000001); 
 	        rmtr->set_eps_grad_termination(1e-7); 
 			
-			rmtr->verbose(true); 
+			rmtr->verbose(verbose_); 
 			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
 			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
 
@@ -289,7 +284,7 @@ namespace utopia
 	        rmtr->set_grad_smoothess_termination(0.000001); 
 	        rmtr->set_eps_grad_termination(1e-7); 
 			
-			rmtr->verbose(true); 
+			rmtr->verbose(verbose_); 
 			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
 			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
 
@@ -322,7 +317,7 @@ namespace utopia
 
         	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
         	tr_strategy_coarse->pc_type("lu"); 
-        	tr_strategy_coarse->verbose(true); 
+        	tr_strategy_coarse->verbose(verbose_); 
 
         	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(prolongations_, restrictions_);
@@ -336,7 +331,7 @@ namespace utopia
 	        rmtr->set_grad_smoothess_termination(0.000001); 
 	        rmtr->set_eps_grad_termination(1e-7); 
 			
-			rmtr->verbose(true); 
+			rmtr->verbose(verbose_); 
 			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
 			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
 
@@ -356,8 +351,6 @@ namespace utopia
 	        rmtr->solve(fun_fine, x); 
 	    }	 
 
-
-		
 	private:
 		SizeType n_levels_; 
 		SizeType n_coarse_;
@@ -368,6 +361,8 @@ namespace utopia
 		std::vector<std::shared_ptr<DSMatrixd>> prolongations_;
 		std::vector<std::shared_ptr<DSMatrixd>> restrictions_;
 
+		bool verbose_; 
+
 	};
 
 #endif //WITH_PETSC
@@ -375,10 +370,9 @@ namespace utopia
 
 	void runNonlinearMultilevelSolverTest()
 	{
-
-		UTOPIA_UNIT_TEST_BEGIN("runNonlinearMultilevelSolverTest");
+		UTOPIA_UNIT_TEST_BEGIN("runNonlinearMultilevelSolverTest"); 
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(4, true).run();
+			NonlinearBratuSolverTest(4, true, true).run();
 		#endif		
 		UTOPIA_UNIT_TEST_END("runNonlinearMultilevelSolverTest");				
 	}
