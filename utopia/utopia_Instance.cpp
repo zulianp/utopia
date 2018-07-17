@@ -20,6 +20,8 @@
 
 #include <cassert>
 
+#define DISABLE_LOGGER
+
 namespace utopia {
     
     void Utopia::Init(int argc, char *argv[]) {
@@ -84,11 +86,17 @@ namespace utopia {
         set("data_path", "../data");
         set("opencl_templates_path", "../backend/opencl/templates");
 
-        logger_ = std::make_shared<StandardLogger>();
+        #ifdef DISABLE_LOGGER
+            logger_ = std::make_shared<NullLogger>();
+            auto temp = std::make_shared<StandardLogger>();
+            maintenance_logger_ = temp;
+        #else
+            logger_ = std::make_shared<StandardLogger>();
+            auto temp = std::make_shared<StandardLogger>();
+            temp->set_direct_output(false, false, false);
+            maintenance_logger_ = temp;
+        #endif
       
-        auto temp = std::make_shared<StandardLogger>();
-        temp->set_direct_output(false, false, false);
-        maintenance_logger_ = temp;
     }
     
     bool Utopia::verbose() const
