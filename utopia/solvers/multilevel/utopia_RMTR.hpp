@@ -422,7 +422,7 @@ namespace utopia
                     PrintInfo::print_iter_status(_it_global, {E_old, E_new, ared, coarse_reduction, rho, memory_.delta[level], coarse_corr_taken }); 
                 }
             }
-            else
+            else if(mpi_world_rank() ==0)
             {
                 std::cout<< "-------------------------------------- GRAD NOT SMOOTH ENOUGH ----------------------------------- \n"; 
             }

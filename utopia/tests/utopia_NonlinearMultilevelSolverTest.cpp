@@ -86,7 +86,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(TR_constraint_test); 
 
 			UTOPIA_RUN_TEST(newton_MG_test); 
-			UTOPIA_RUN_TEST(NMG_test); 
+			UTOPIA_RUN_TEST(FAS_test); 
 
 			UTOPIA_RUN_TEST(RMTR_test); 
 			UTOPIA_RUN_TEST(RMTR_inf_test); 
@@ -170,7 +170,7 @@ namespace utopia
 
 
 
-	    void NMG_test()
+	    void FAS_test()
 	    {
 	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
 

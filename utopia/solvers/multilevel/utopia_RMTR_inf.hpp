@@ -116,7 +116,6 @@ namespace utopia
             const SizeType fine_level = this->n_levels()-1; 
             const Scalar inf = std::numeric_limits<Scalar>::infinity();
 
-            // bound constraints ....
             if(has_box_constraints_)
             {
                 if(box_constraints_.has_upper_bound())
@@ -128,26 +127,24 @@ namespace utopia
                     constraints_memory_.x_lower[fine_level] = *box_constraints_.lower_bound(); 
                 else
                     constraints_memory_.x_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0); 
+
+
+                constraints_memory_.active_upper[fine_level] = constraints_memory_.x_upper[fine_level];
+                constraints_memory_.active_lower[fine_level] = constraints_memory_.x_lower[fine_level];                
             }
             else
             {
-                constraints_memory_.x_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
-                constraints_memory_.x_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0);
-            }   
+                constraints_memory_.active_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
+                constraints_memory_.active_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0);
+            }
 
             // inherited tr bound constraints... 
             constraints_memory_.tr_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
             constraints_memory_.tr_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0);
 
-            // active, for the finest level simply bound, since tr ones are artificial.... 
-            constraints_memory_.active_upper[fine_level] = constraints_memory_.x_upper[fine_level];
-            constraints_memory_.active_lower[fine_level] = constraints_memory_.x_lower[fine_level];
-
-
             // precompute norms of prolongation operators needed for projections of constraints... 
             for(auto l = 0; l < this->n_levels() -1; l++)
                 constraints_memory_.P_inf_norm[l] = this->transfer(l).interpolation_inf_norm(); 
-
         }
 
 
@@ -183,7 +180,7 @@ namespace utopia
         // this routine is correct only under assumption, that P/R/I have only positive elements ... 
         virtual void init_coarse_level_constrains(const SizeType & level) override
         {
-            // init delta on coarser level...
+            // init delta on the coarser level...
             this->memory_.delta[level-1]  = this->memory_.delta[level]; 
 
             //----------------------------------------------------------------------------
@@ -216,34 +213,41 @@ namespace utopia
             this->transfer(level-1).project_down(tr_fine_last_upper, constraints_memory_.tr_upper[level-1]);
 
 
-            //----------------------------------------------------------------------------
-            //     projection of variable bounds - to be checked out once more 
-            //----------------------------------------------------------------------------
-            Vector lx =  (constraints_memory_.x_lower[level] - this->memory_.x[level]); 
-            Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level-1] * max(lx); 
-            constraints_memory_.x_lower[level-1] = this->memory_.x[level-1] + local_values(local_size(this->memory_.x[level-1]).get(0), lower_multiplier);
+            if(has_box_constraints_)
+            {
+                //----------------------------------------------------------------------------
+                //     projection of variable bounds to the coarse level
+                //----------------------------------------------------------------------------
+                Vector lx =  (constraints_memory_.x_lower[level] - this->memory_.x[level]); 
+                Scalar lower_multiplier = 1.0/constraints_memory_.P_inf_norm[level-1] * max(lx); 
+                constraints_memory_.x_lower[level-1] = this->memory_.x[level-1] + local_values(local_size(this->memory_.x[level-1]).get(0), lower_multiplier);
 
-            Vector ux =  (constraints_memory_.x_upper[level] - this->memory_.x[level]); 
-            Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level-1] * min(ux); 
-            constraints_memory_.x_upper[level-1] = this->memory_.x[level-1] + local_values(local_size(this->memory_.x[level-1]).get(0), upper_multiplier);
+                Vector ux =  (constraints_memory_.x_upper[level] - this->memory_.x[level]); 
+                Scalar upper_multiplier = 1.0/constraints_memory_.P_inf_norm[level-1] * min(ux); 
+                constraints_memory_.x_upper[level-1] = this->memory_.x[level-1] + local_values(local_size(this->memory_.x[level-1]).get(0), upper_multiplier);
 
-            //----------------------------------------------------------------------------
-            //     intersect bounds on coarse level
-            //----------------------------------------------------------------------------
+                //----------------------------------------------------------------------------
+                //     intersect bounds on the coarse level
+                //----------------------------------------------------------------------------
+                constraints_memory_.active_upper[level-1] = local_zeros(local_size(this->memory_.x[level-1]).get(0)); 
+                constraints_memory_.active_lower[level-1] = local_zeros(local_size(this->memory_.x[level-1]).get(0)); 
+                {   
+                    Write<Vector>   rv(constraints_memory_.active_upper[level-1]), rw(constraints_memory_.active_lower[level-1]); 
+                    Read<Vector>    rl(this->memory_.x[level-1]), rq(constraints_memory_.x_lower[level-1]), re(constraints_memory_.x_upper[level-1]), rr(constraints_memory_.tr_lower[level-1]), rt(constraints_memory_.tr_upper[level-1]); 
 
-            constraints_memory_.active_upper[level-1] = local_zeros(local_size(this->memory_.x[level-1]).get(0)); 
-            constraints_memory_.active_lower[level-1] = local_zeros(local_size(this->memory_.x[level-1]).get(0)); 
-            {   
-                Write<Vector>   rv(constraints_memory_.active_upper[level-1]), rw(constraints_memory_.active_lower[level-1]); 
-                Read<Vector>    rl(this->memory_.x[level-1]), rq(constraints_memory_.x_lower[level-1]), re(constraints_memory_.x_upper[level-1]), rr(constraints_memory_.tr_lower[level-1]), rt(constraints_memory_.tr_upper[level-1]); 
+                    Range r = range(this->memory_.x[level-1]);
 
-                Range r = range(this->memory_.x[level-1]);
-
-                for(SizeType i = r.begin(); i != r.end(); ++i)
-                {
-                    constraints_memory_.active_upper[level-1].set(i, std::min(constraints_memory_.tr_upper[level-1].get(i), constraints_memory_.x_upper[level-1].get(i))); 
-                    constraints_memory_.active_lower[level-1].set(i, std::max(constraints_memory_.tr_lower[level-1].get(i), constraints_memory_.x_lower[level-1].get(i))); 
+                    for(SizeType i = r.begin(); i != r.end(); ++i)
+                    {
+                        constraints_memory_.active_upper[level-1].set(i, std::min(constraints_memory_.tr_upper[level-1].get(i), constraints_memory_.x_upper[level-1].get(i))); 
+                        constraints_memory_.active_lower[level-1].set(i, std::max(constraints_memory_.tr_lower[level-1].get(i), constraints_memory_.x_lower[level-1].get(i))); 
+                    }
                 }
+            }
+            else
+            {
+                constraints_memory_.active_upper[level-1] = constraints_memory_.tr_upper[level-1]; 
+                constraints_memory_.active_lower[level-1] = constraints_memory_.tr_lower[level-1]; 
             }
         }
 
