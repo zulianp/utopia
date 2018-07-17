@@ -82,14 +82,14 @@ namespace utopia
 		
 		void run()
 		{
-			// UTOPIA_RUN_TEST(TR_test); 
-			// UTOPIA_RUN_TEST(TR_constraint_test); 
+			UTOPIA_RUN_TEST(TR_test); 
+			UTOPIA_RUN_TEST(TR_constraint_test); 
 
-			// UTOPIA_RUN_TEST(newton_MG_test); 
-			// UTOPIA_RUN_TEST(NMG_test); 
+			UTOPIA_RUN_TEST(newton_MG_test); 
+			UTOPIA_RUN_TEST(NMG_test); 
 
-			// UTOPIA_RUN_TEST(RMTR_test); 
-			// UTOPIA_RUN_TEST(RMTR_inf_test); 
+			UTOPIA_RUN_TEST(RMTR_test); 
+			UTOPIA_RUN_TEST(RMTR_inf_test); 
 
 			UTOPIA_RUN_TEST(RMTR_inf_bound_test); 
 		}
@@ -242,8 +242,8 @@ namespace utopia
 	        rmtr->set_transfer_operators(prolongations_, restrictions_);
 
 	        rmtr->max_it(1000); 
-	        rmtr->set_max_coarse_it(1); 
-	        rmtr->set_max_smoothing_it(1); 
+	        rmtr->max_coarse_it(1); 
+	        rmtr->max_smoothing_it(1); 
 	        rmtr->delta0(1); 
 	        rmtr->atol(1e-6); 
 	        rmtr->rtol(1e-10); 
@@ -281,8 +281,8 @@ namespace utopia
 	        rmtr->set_transfer_operators(prolongations_, restrictions_);
 
 	        rmtr->max_it(1000); 
-	        rmtr->set_max_coarse_it(1); 
-	        rmtr->set_max_smoothing_it(1); 
+	        rmtr->max_coarse_it(1); 
+	        rmtr->max_smoothing_it(1); 
 	        rmtr->delta0(1); 
 	        rmtr->atol(1e-6); 
 	        rmtr->rtol(1e-10); 
@@ -328,8 +328,8 @@ namespace utopia
 	        rmtr->set_transfer_operators(prolongations_, restrictions_);
 
 	        rmtr->max_it(1000); 
-	        rmtr->set_max_coarse_it(1); 
-	        rmtr->set_max_smoothing_it(1); 
+	        rmtr->max_coarse_it(1); 
+	        rmtr->max_smoothing_it(1); 
 	        rmtr->delta0(1); 
 	        rmtr->atol(1e-5); 
 	        rmtr->rtol(1e-10); 
@@ -355,8 +355,6 @@ namespace utopia
 
 	        rmtr->solve(fun_fine, x); 
 	    }	 
-
-
 
 
 		

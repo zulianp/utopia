@@ -78,6 +78,10 @@ namespace utopia
             _hessian_update_delta       = params.hessian_update_delta();
             _hessian_update_eta         = params.hessian_update_eta();
 
+            // TODO:: put to params... 
+            _max_QP_smoothing_it        = 5; 
+            _max_QP_coarse_it           = 50; 
+
             _verbosity_level           = params.verbosity_level(); 
         }
 
@@ -115,15 +119,47 @@ namespace utopia
         }
 
 
-        void set_max_coarse_it(const SizeType & max_coarse_it)
+        void max_coarse_it(const SizeType & max_coarse_it)
         {
             _max_coarse_it = max_coarse_it; 
         }
 
 
-        void set_max_smoothing_it(const SizeType & max_smoothing_it)
+        void max_smoothing_it(const SizeType & max_smoothing_it)
         {
             _max_smoothing_it = max_smoothing_it; 
+        }
+        
+        SizeType max_coarse_it() const 
+        {
+            return _max_coarse_it; 
+        }
+
+
+        SizeType max_smoothing_it() const 
+        {
+            return _max_smoothing_it; 
+        }
+
+
+        void max_QP_smoothing_it(const SizeType & num_it)
+        {
+            _max_QP_smoothing_it = num_it; 
+        }
+
+        void max_QP_coarse_it(const SizeType & num_it)
+        {
+            _max_QP_coarse_it = num_it; 
+        }
+
+        SizeType max_QP_coarse_it() const
+        {
+            return _max_QP_coarse_it; 
+        }
+        
+        SizeType max_QP_smoothing_it() const
+        {
+            return _max_QP_smoothing_it; 
         }
 
 
@@ -735,13 +771,13 @@ namespace utopia
             if(flg)
             {
                 _coarse_tr_subproblem->atol(1e-16); 
-                _coarse_tr_subproblem->max_it(5000); 
+                _coarse_tr_subproblem->max_it(_max_QP_coarse_it);     
                 _coarse_tr_subproblem->tr_constrained_solve(H, g, s, memory_.delta[level]); 
             }
             else
             {
                 _smoother_tr_subproblem->atol(1e-16); 
-                _smoother_tr_subproblem->max_it(5);
+                _smoother_tr_subproblem->max_it(_max_QP_smoothing_it);
                 _smoother_tr_subproblem->tr_constrained_solve(H, g, s, memory_.delta[level]); 
             }
 
@@ -869,6 +905,10 @@ namespace utopia
     
         SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
         SizeType                        _max_smoothing_it;          /** * max smoothing iterations  */
+
+        SizeType                        _max_QP_smoothing_it; 
+        SizeType                        _max_QP_coarse_it; 
+
 
         Scalar                         _eps_delta_termination;      /** * maximum delta allowed on coarse level - makes sure that coarse level corection stays inside fine level radius  */
 

@@ -375,7 +375,7 @@ namespace utopia
             {
                 // setting should be really parameters from outside ... 
                 this->_coarse_tr_subproblem->atol(1e-16); 
-                this->_coarse_tr_subproblem->max_it(50); 
+                this->_coarse_tr_subproblem->max_it(this->max_QP_coarse_it()); 
 
                 if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_coarse_tr_subproblem.get()))
                     tr_subproblem->tr_constrained_solve(H, g, s, box);
@@ -383,7 +383,7 @@ namespace utopia
             else
             {
                 this->_smoother_tr_subproblem->atol(1e-16); 
-                this->_smoother_tr_subproblem->max_it(1);
+                this->_smoother_tr_subproblem->max_it(this->max_QP_smoothing_it());
                 
                 if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_smoother_tr_subproblem.get()))
                     tr_subproblem->tr_constrained_solve(H, g, s, box);
