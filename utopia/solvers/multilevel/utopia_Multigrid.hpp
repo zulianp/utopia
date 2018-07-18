@@ -195,6 +195,8 @@ namespace utopia
                 it++;
                 
             }
+
+            this->print_statistics(it); 
             
             // UTOPIA_RECORD_SCOPE_END("apply");
             return true;

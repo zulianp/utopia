@@ -145,6 +145,7 @@ namespace utopia {
 			(void) os;
 		}
 		
+
 	protected:
 		std::vector<Transfer>               transfers_;   /*!< vector of transfer operators  */
 		

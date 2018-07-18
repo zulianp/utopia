@@ -309,6 +309,8 @@ namespace utopia
 		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l], 0.7); 
 		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
 		    }
+
+		    // Utopia::instance().set("log_output_path", "benchmark.csv");
 	        
 		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
         	auto tr_strategy_fine = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
@@ -372,7 +374,7 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runNonlinearMultilevelSolverTest"); 
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(4, true, true).run();
+			NonlinearBratuSolverTest(4, true, false).run();
 		#endif		
 		UTOPIA_UNIT_TEST_END("runNonlinearMultilevelSolverTest");				
 	}

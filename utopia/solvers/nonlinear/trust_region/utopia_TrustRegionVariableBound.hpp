@@ -24,7 +24,7 @@
      	public:                                                                       // once generic, then = std::shared_ptr<ProjectedGaussSeidel<Matrix, Vector> >()
       TrustRegionVariableBound( const std::shared_ptr<TRBoxSubproblem> &tr_subproblem,
                                 const Parameters params = Parameters()) : 
-                                NonLinearSolver(tr_subproblem, params)  
+                                NonLinearSolver(tr_subproblem, params), it_successful_(0)  
       {
         set_parameters(params);        
       }
@@ -60,7 +60,7 @@
         Scalar delta, ared, pred, rho, E_old, E_new; 
 
         SizeType it = 0;
-        SizeType it_successful = 0;  
+        it_successful_ = 0; 
         const Scalar infty = std::numeric_limits<Scalar>::infinity();
         Scalar g_norm = infty, g0_norm = infty, r_norm = infty, s_norm = infty;
         bool rad_flg = false; 
@@ -97,7 +97,6 @@
             fun.value(x_k, E_old); 
             fun.hessian(x_k, H); 
           }
-
 
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
@@ -136,7 +135,7 @@
           this->trial_point_acceptance(rho, x_k1, x_k); 
           
           if (rho >= this->rho_tol())
-            it_successful++; 
+            it_successful_++; 
 
     //----------------------------------------------------------------------------
     //    convergence check 
@@ -160,24 +159,7 @@
         }
 
         // some benchmarking 
-        auto data_path = Utopia::instance().get("tr_data_path");
-        if(!data_path.empty())
-        {
-            CSVWriter writer; 
-            if (mpi_world_rank() == 0)
-            {
-              if(!writer.file_exists(data_path))
-              {
-                  writer.open_file(data_path); 
-                  writer.write_table_row<std::string>({("it"), "it_successful", "time"}); 
-              }
-              else
-                  writer.open_file(data_path); 
-              
-              writer.write_table_row<Scalar>({Scalar(it-1), Scalar(it_successful), this->get_time() }); 
-              writer.close_file(); 
-            }
-        }        
+        this->print_statistics(it);      
 
           return false;
       }
@@ -197,6 +179,38 @@
       {
         NonLinearSolver::set_linear_solver(tr_linear_solver); 
       }
+
+
+    protected: 
+
+        virtual void print_statistics(const SizeType & it) override
+        {
+            std::string path = "log_output_path";
+            auto non_data_path = Utopia::instance().get(path);
+
+            if(!non_data_path.empty())
+            {
+                CSVWriter writer;
+                if (mpi_world_rank() == 0)
+                {
+                    if(!writer.file_exists(non_data_path))
+                    {
+                        writer.open_file(non_data_path);
+                        writer.write_table_row<std::string>({"num_its", "it_successful", "time"});
+                    }
+                    else
+                        writer.open_file(non_data_path);
+                    
+                    writer.write_table_row<Scalar>({Scalar(it), Scalar(it_successful_),  this->get_time()});
+                    writer.close_file();
+                }
+            }
+        }
+
+
+    private:
+      SizeType it_successful_; 
+
 
   };
 

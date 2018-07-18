@@ -141,6 +141,30 @@ protected:
         }
 
 
+        virtual void print_statistics(const SizeType & it_global)
+        {
+            std::string path = "log_output_path";
+            auto non_data_path = Utopia::instance().get(path);
+
+            if(!non_data_path.empty())
+            {
+                CSVWriter writer;
+                if (mpi_world_rank() == 0)
+                {
+                    if(!writer.file_exists(non_data_path))
+                    {
+                        writer.open_file(non_data_path);
+                        writer.write_table_row<std::string>({"num_its", "time"});
+                    }
+                    else
+                        writer.open_file(non_data_path);
+                    
+                    writer.write_table_row<Scalar>({Scalar(it_global), this->get_time()});
+                    writer.close_file();
+                }
+            }
+        }
+
         /**
          * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve process. 
          *
@@ -272,7 +296,7 @@ public:
 
 
         std::shared_ptr<Solver> linear_solver_;     /*!< Linear solver parameters. */  
-        Parameters params_;        /*!< Solver parameters. */  
+        Parameters params_;                         /*!< Solver parameters. */  
         DiffController controller_;
 
         // ... GENERAL SOLVER PARAMETERS ...

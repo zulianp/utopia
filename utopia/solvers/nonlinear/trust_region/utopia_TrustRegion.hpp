@@ -30,7 +30,7 @@
      	public:
       TrustRegion(const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>(),
                   const Parameters params = Parameters())
-                  : NonLinearSolver(tr_subproblem, params)  
+                  : NonLinearSolver(tr_subproblem, params), it_successful_(0)  
       {
 
         set_parameters(params);        
@@ -100,7 +100,8 @@
 
          Scalar delta, product, ared, pred, rho, E, E_k, E_k1; 
 
-         SizeType it = 0, it_successful=0; 
+         SizeType it = 0; 
+         it_successful_ = 0; 
          Scalar g_norm, g0_norm, r_norm, s_norm = std::numeric_limits<Scalar>::infinity();
 
          bool rad_flg = false; 
@@ -165,8 +166,7 @@
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------          
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-          //   tr_subproblem->current_radius(delta);  
-          tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
+            tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
 
           this->get_pred(g, H, p_k, pred); 
     //----------------------------------------------------------------------------
@@ -200,7 +200,7 @@
           } 
 
           if (rho >= this->rho_tol())
-            it_successful++; 
+            it_successful_++; 
 
           this->trial_point_acceptance(rho, E, E_k, E_k1, p_k, x_k, x_k1);
     //----------------------------------------------------------------------------
@@ -229,25 +229,7 @@
         }
 
         // some benchmarking 
-        auto data_path = Utopia::instance().get("tr_data_path");
-        if(!data_path.empty())
-        {
-            CSVWriter writer; 
-            if (mpi_world_rank() == 0)
-            {
-              if(!writer.file_exists(data_path))
-              {
-                  writer.open_file(data_path); 
-                  writer.write_table_row<std::string>({("it"), "it_successful", "time"}); 
-              }
-              else
-                  writer.open_file(data_path); 
-              
-              writer.write_table_row<Scalar>({Scalar(it-1), Scalar(it_successful), this->get_time() }); 
-              writer.close_file(); 
-            }
-        }
-
+        this->print_statistics(it); 
 
           return true;
       }
@@ -266,6 +248,37 @@
       {
         NonLinearSolver::set_linear_solver(tr_linear_solver); 
       }
+
+
+    protected: 
+
+        virtual void print_statistics(const SizeType & it) override
+        {
+            std::string path = "log_output_path";
+            auto non_data_path = Utopia::instance().get(path);
+
+            if(!non_data_path.empty())
+            {
+                CSVWriter writer;
+                if (mpi_world_rank() == 0)
+                {
+                    if(!writer.file_exists(non_data_path))
+                    {
+                        writer.open_file(non_data_path);
+                        writer.write_table_row<std::string>({"num_its", "it_successful", "time"});
+                    }
+                    else
+                        writer.open_file(non_data_path);
+                    
+                    writer.write_table_row<Scalar>({Scalar(it), Scalar(it_successful_),  this->get_time()});
+                    writer.close_file();
+                }
+            }
+        }
+
+
+  private:
+    SizeType it_successful_; 
 
 
   };

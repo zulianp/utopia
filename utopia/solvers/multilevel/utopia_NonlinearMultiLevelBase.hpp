@@ -137,37 +137,6 @@ namespace utopia {
             return true;
         }
 
-
-        
-        /**
-         * @brief      Writes CSV file with iteration info 
-         *
-         * @param[in]  it_global  The iterator global
-         */
-        virtual void print_statistics(const SizeType & it_global)
-        {
-            std::string path = this->name() + "_data_path";
-            auto non_data_path = Utopia::instance().get(path);
-            
-            if(!non_data_path.empty())
-            {
-                CSVWriter writer;
-                if (mpi_world_rank() == 0)
-                {
-                    if(!writer.file_exists(non_data_path))
-                    {
-                        writer.open_file(non_data_path);
-                        writer.write_table_row<std::string>({"v_cycles", "time"});
-                    }
-                    else
-                        writer.open_file(non_data_path);
-                    
-                    writer.write_table_row<Scalar>({Scalar(it_global), this->get_time()});
-                    writer.close_file();
-                }
-            }
-        }
-
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Scalar      atol() const               { return atol_; }
@@ -413,6 +382,36 @@ namespace utopia {
         inline const Fun &function(const SizeType level) const
         {
             return *level_functions_[level];
+        }
+
+
+        /**
+         * @brief      Writes CSV file with iteration info 
+         *
+         * @param[in]  it_global  The iterator global
+         */
+        virtual void print_statistics(const SizeType & it_global)
+        {
+            std::string path = "log_output_path";
+            auto non_data_path = Utopia::instance().get(path);
+        
+            if(!non_data_path.empty())
+            {
+                CSVWriter writer;
+                if (mpi_world_rank() == 0)
+                {
+                    if(!writer.file_exists(non_data_path))
+                    {
+                        writer.open_file(non_data_path);
+                        writer.write_table_row<std::string>({"v_cycles", "time"});
+                    }
+                    else
+                        writer.open_file(non_data_path);
+                    
+                    writer.write_table_row<Scalar>({Scalar(it_global), this->get_time()});
+                    writer.close_file();
+                }
+            }
         }
 
 

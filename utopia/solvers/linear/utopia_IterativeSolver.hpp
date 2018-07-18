@@ -95,6 +95,8 @@ namespace  utopia
             return this->solve(*this->get_operator(), rhs, sol);
         }
     
+        Scalar get_time() { return _time.get_seconds();  }
+
     protected:
 
         /**
@@ -126,6 +128,36 @@ namespace  utopia
             }
             _time.start();
         }     
+
+
+        /**
+         * @brief      Writes CSV file with iteration info 
+         *
+         * @param[in]  it_global  The iterator global
+         */
+        virtual void print_statistics(const SizeType & it_global)
+        {
+            std::string path = "log_output_path";
+            auto non_data_path = Utopia::instance().get(path);
+
+            if(!non_data_path.empty())
+            {
+                CSVWriter writer;
+                if (mpi_world_rank() == 0)
+                {
+                    if(!writer.file_exists(non_data_path))
+                    {
+                        writer.open_file(non_data_path);
+                        writer.write_table_row<std::string>({"num_its", "time"});
+                    }
+                    else
+                        writer.open_file(non_data_path);
+                    
+                    writer.write_table_row<Scalar>({Scalar(it_global), this->get_time()});
+                    writer.close_file();
+                }
+            }
+        }
 
 
         /**
