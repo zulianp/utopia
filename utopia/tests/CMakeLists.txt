@@ -43,6 +43,15 @@ endif()
 
 if(TARGET utopia_m3elinsol)
 	target_link_libraries(utopia_tests utopia_m3elinsol)
+
+	# find_package(OpenMP)
+	# if(OPENMP_FOUND)
+	# 	SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+	# 	SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+	# 	SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+	# 	set (CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${OpenMP_CXX_FLAGS}")
+	# endif()
+
 endif()
 
 install(TARGETS utopia_tests

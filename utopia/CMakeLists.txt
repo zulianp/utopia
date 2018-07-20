@@ -12,6 +12,7 @@ set(CMAKE_MACOSX_RPATH 1)
 option(UTOPIA_ARCHIVE_ONLY "Allows to compile only the archive file. Suitable for linux" OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY "Allows to restrict the linking to static libraries" OFF)
 
+option(TRY_WITH_MPI "Enable the cuda backend" ON)
 option(TRY_WITH_CUDA "Enable the cuda backend" OFF)
 option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_WITH_PETSC "Enable the petsc backend" ON)
@@ -377,7 +378,13 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia_config.cmake 	 DESTINATION config)
 print_dependency_table()
 
 
-
+# find_package(OpenMP)
+# if(OPENMP_FOUND)
+# 	SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+# 	SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+# 	SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+# 	set (CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${OpenMP_CXX_FLAGS}")
+# endif()
 
 
 

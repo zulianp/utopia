@@ -40,6 +40,22 @@ if(M3ELINSOL_FOUND)
 	target_link_libraries(utopia_m3elinsol utopia_core utopia_utils utopia_solvers)
 	target_link_libraries(utopia_m3elinsol ${M3ELINSOL_LIBRARIES})
 
+	find_package(OpenMP)
+	if(OPENMP_FOUND)
+		SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}" PARENT_SCOPE)
+		SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" PARENT_SCOPE)
+		SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" PARENT_SCOPE)
+		set (CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -lgfortran" PARENT_SCOPE)
+	endif()
+
+	find_package(gfortran)
+	if(GFORTRAN_FOUND)
+		message(STATUS "Found gfortran")
+	endif()
+
+	# set_target_properties(utopia_m3elinsol PROPERTIES COMPILE_FLAGS "-fopenmp")
+	# set_target_properties(utopia_m3elinsol PROPERTIES LINK_FLAGS "-fopenmp")
+
 	if(TARGET utopia_petsc)
 		target_link_libraries(utopia_m3elinsol utopia_petsc)
 	endif()

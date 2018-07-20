@@ -69,6 +69,13 @@ namespace utopia {
 		inline static Range range(const Vector &v) {
 			return Range(0, v.size());
 		}
+
+		//[io]
+		// read matrix
+		static bool read(const std::string &path, CRSMatrix<Scalar> &mat);
+		static bool read(const std::string &path, Vector &vec);
+		// write matrix
+		// static bool write(const std::string &path, const PetscMatrix &Mat_A);
 		
 		template<class MatrixT>
 		inline static Range row_range(const MatrixT &m) {
@@ -585,6 +592,10 @@ namespace utopia {
 				result[i] = op.template apply<Scalar>(left[i], right[i]);
 			}
 		}
+
+		static void disp(const Vector &vec);
+		// static void disp(const CRSMatrix<Scalar> &mat);
+
 		
 
 		static void apply_binary(Vector &result, const Reciprocal<Scalar> &reciprocal, const Vector &vec);
