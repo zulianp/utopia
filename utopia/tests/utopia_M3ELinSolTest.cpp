@@ -53,12 +53,6 @@ namespace utopia {
 		read(folder + "/rhs.txt", rhs);
 		read(folder + "/lhs.txt", A);
 
-		// disp(A);
-
-		// const std::string folder = data_path + "/laplace/matrices_for_petsc";
-		// read(folder + "/f_rhs", rhs);
-		// read(folder + "/f_A", A);
-
 		x = local_zeros(local_size(rhs));
 
 		ASPAMG<CRSMatrixd, Vectord> amg;
