@@ -9,75 +9,13 @@
 #include "utopia_ContactSolver.hpp"
 
 #include "utopia_ui.hpp"
+#include "utopia_GaitCycle.hpp"
+#include "utopia_Wear.hpp"
 
 #include <iostream>
 #include <fstream>
 
 namespace utopia {
-
-    // template class ContactSolver<DSMatrixd, DVectord>;
-    // typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
-    // typedef std::array<double, 2> Point2d;
-    // typedef std::array<double, 3> Point3d;
-    // typedef std::function<std::array<double, 2>(const std::array<double, 2> &p)> Fun2d;
-    // typedef std::function<std::array<double, 3>(const std::array<double, 3> &p)> Fun3d;
-
-
-	class WearSimulation::GaitCycle {
-	public:
-		void init(
-			const int dim,
-			InputStream &is)
-		{
-			if(is.object_begin("rotation")) {
-				is.read("block", rot.block);
-				is.read("axis",  rot.axis);
-				is.read("begin", rot.begin_angle_degree);
-				is.read("end",   rot.end_angle_degree);
-
-				rot.finalize();
-			}
-
-			is.object_end(); //rotation
-		}
-
-		class Rotation {
-		public:
-			int block;
-			int axis;
-
-			double begin_angle_degree;
-			double end_angle_degree;
-
-			double begin_angle_radian;
-			double end_angle_radian;
-			
-			double d_angle;
-
-
-			Rotation() : 
-			block(1),
-			axis(2),
-			begin_angle_degree(40),
-			end_angle_degree(140),
-			d_angle(0.1)
-			{
-				finalize();
-			}
-
-			void finalize()
-			{
-				begin_angle_radian = begin_angle_degree/180.*M_PI;
-				end_angle_radian = end_angle_degree/180.*M_PI;
-			}
-		};
-
-		Rotation rot;
-
-	
-        // Fun2d rotate2;
-        // Fun3d rotate3;
-	};
 
 	class ElasticitySimulation {
 	public:
@@ -174,7 +112,7 @@ namespace utopia {
             			auto u = trial(V[coord]);
             			init_constraints(constraints(
             				boundary_conditions(u == coeff(value), {side_set})
-            				));
+            			));
 
             			is.next();
             		}
@@ -302,8 +240,7 @@ namespace utopia {
     		return ok;
     	}
 
-    	WearSimulation::GaitCycle gc;
-
+    	GaitCycle gc;
     };
 
     void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &conf_file_path)
