@@ -17,6 +17,14 @@ namespace utopia {
 		virtual bool object_begin(const std::string &name) = 0;
 		virtual bool object_end() = 0;
 
+		virtual void start() = 0;
+		virtual void start(const std::string &name) = 0;
+		virtual std::string name() = 0;
+		virtual bool good() = 0;
+		virtual bool next() = 0;
+		virtual void finish() = 0;
+
+
 		virtual void read(double &val) = 0;
 		virtual void read(int &val) = 0;
 		virtual void read(SizeType &val) = 0;

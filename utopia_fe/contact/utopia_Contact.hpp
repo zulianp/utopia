@@ -25,6 +25,8 @@ namespace utopia {
 		std::vector<std::pair<int, int> > contact_pair_tags;
 		unsigned int variable_number;
 		bool use_biorthogonal_basis;
+
+		void describe(std::ostream &os) const;
 	};
 
 	class Contact {

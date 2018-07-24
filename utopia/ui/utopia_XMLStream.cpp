@@ -21,7 +21,8 @@ namespace utopia {
 			current_node = &doc;
 		}
 
-		bool good() const {
+		bool valid() const {
+			//FIXME
 			return true;
 		}
 
@@ -54,7 +55,10 @@ namespace utopia {
 
 		bool object_end()
 		{
-			if(!current_node) return false;
+			if(!current_node) {
+				assert(false);
+				return false;
+			}
 
 			if(n_invalid_subtrees_ == 0) {
 				return current_node = current_node->parent();
@@ -74,7 +78,7 @@ namespace utopia {
 	bool XMLInputStream::open(const Path &path)
 	{
 		impl_ = make_unique<Impl>(path);
-		return impl_->good();
+		return impl_->valid();
 	}
 
 	XMLInputStream::~XMLInputStream() {}
@@ -160,4 +164,70 @@ namespace utopia {
 		return impl_.get();
 	}
 
+
+
+	void XMLInputStream::start()
+	{
+		if(impl_->is_invalid_subtree()) {
+			impl_->n_invalid_subtrees_++;
+			return;
+		}
+
+		auto temp = impl_->current_node->first_node();
+		if(temp) {
+			impl_->current_node = temp;
+		} else {
+			impl_->n_invalid_subtrees_++;
+		}
+	}
+
+ 	void XMLInputStream::start(const std::string &name)
+ 	{
+ 		if(impl_->is_invalid_subtree()) {
+ 			impl_->n_invalid_subtrees_++;
+ 			return;
+ 		}
+
+ 		auto temp = impl_->current_node->first_node(name.c_str());
+ 		if(temp) {
+ 			impl_->current_node = temp;
+ 		} else {
+ 			impl_->n_invalid_subtrees_++;
+ 		}
+ 	}
+
+	std::string XMLInputStream::name()
+	{
+		if(impl_->is_invalid_subtree()) return "";
+
+		return impl_->current_node->name();
+	}
+
+	bool XMLInputStream::good()
+	{
+		return !(impl_->is_invalid_subtree());
+	}
+
+	bool XMLInputStream::next()
+	{
+		if(impl_->is_invalid_subtree()) return false;
+
+		auto temp = impl_->current_node->next_sibling();
+		if(!temp) {
+			impl_->n_invalid_subtrees_++;
+		} else {
+			impl_->current_node = temp;
+		}
+
+		return good();
+	}
+
+	void XMLInputStream::finish()
+	{
+		if(!good()) {
+			impl_->n_invalid_subtrees_--;
+		}
+
+		impl_->object_end();
+	}
 }

@@ -1,9 +1,5 @@
 #include "utopia_WearSimulation.hpp"
 
-#include "rapidxml.hpp"
-#include "rapidxml_utils.hpp"
-#include "rapidxml_print.hpp"
-
 #include "utopia_libmesh.hpp"
 #include "utopia_LameeParameters.hpp"
 #include "utopia_ElasticMaterial.hpp"
@@ -12,68 +8,108 @@
 #include "utopia_SaintVenantKirchoff.hpp"
 #include "utopia_ContactSolver.hpp"
 
+#include "utopia_ui.hpp"
+
 #include <iostream>
 #include <fstream>
 
 namespace utopia {
 
-	template class ContactSolver<DSMatrixd, DVectord>;
-	typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
-	typedef std::array<double, 2> Point2d;
-	typedef std::array<double, 3> Point3d;
-	typedef std::function<std::array<double, 2>(const std::array<double, 2> &p)> Fun2d;
-	typedef std::function<std::array<double, 3>(const std::array<double, 3> &p)> Fun3d;
+    // template class ContactSolver<DSMatrixd, DVectord>;
+    // typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
+    // typedef std::array<double, 2> Point2d;
+    // typedef std::array<double, 3> Point3d;
+    // typedef std::function<std::array<double, 2>(const std::array<double, 2> &p)> Fun2d;
+    // typedef std::function<std::array<double, 3>(const std::array<double, 3> &p)> Fun3d;
 
 
 	class WearSimulation::GaitCycle {
 	public:
 		void init(
 			const int dim,
-			rapidxml::xml_node<> &xml_gait_cycle)
+			InputStream &is)
 		{
-			using namespace rapidxml;
+			if(is.object_begin("rotation")) {
+				is.read("block", rot.block);
+				is.read("axis",  rot.axis);
+				is.read("begin", rot.begin_angle_degree);
+				is.read("end",   rot.end_angle_degree);
+
+				rot.finalize();
+			}
+
+			is.object_end(); //rotation
 		}
 
-		double start_angle_radian;
-		double angle_degree;
-		double angle_radian;
-		double d_angle;
-		Fun2d rotate2;
-		Fun3d rotate3;
+		class Rotation {
+		public:
+			int block;
+			int axis;
+
+			double begin_angle_degree;
+			double end_angle_degree;
+
+			double begin_angle_radian;
+			double end_angle_radian;
+			
+			double d_angle;
+
+
+			Rotation() : 
+			block(1),
+			axis(2),
+			begin_angle_degree(40),
+			end_angle_degree(140),
+			d_angle(0.1)
+			{
+				finalize();
+			}
+
+			void finalize()
+			{
+				begin_angle_radian = begin_angle_degree/180.*M_PI;
+				end_angle_radian = end_angle_degree/180.*M_PI;
+			}
+		};
+
+		Rotation rot;
+
+	
+        // Fun2d rotate2;
+        // Fun3d rotate3;
 	};
 
-	class WearSimulation::Input {
+	class ElasticitySimulation {
 	public:
+		virtual ~ElasticitySimulation() {}
 
-		Input()
-		: output_path("./")
+		ElasticitySimulation() :
+		mesh_path("../data/mesh2.e"),
+		output_path("output2"),
+		material_name("LinearElasticity"),
+		params(1, 1),
+		n_time_teps(10),
+		dt(0.1)
 		{}
 
-		bool init_from_xml(libMesh::LibMeshInit &init, std::istream &is)
+		virtual bool init_sim(libMesh::Parallel::Communicator &comm, InputStream &is)
 		{
-			using namespace rapidxml;
-
-			file<> f(is);
-			xml_document<> doc;  
-			doc.parse<0>(f.data());  
-
-			xml_node<> *wear_simulation = doc.first_node("simulation");
-			
-			if(!wear_simulation) {
-				std::cerr << "could not find <simulation> node" << std::endl;
-				return false;
+			bool ok = false;
+			if(is.object_begin("simulation"))
+			{
+				ok = init(comm, is);
 			}
 
-			xml_node<> *xml_mesh = wear_simulation->first_node("mesh");
-			if(!xml_mesh) {
-				std::cerr << "could not find <mesh> node" << std::endl;
-				return false;
-			}
+			is.object_end();
+			return ok;
+		}
 
-			std::cout << "mesh:   " << xml_mesh->value() << std::endl;
+		virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is)
+		{
+			is.read("mesh", mesh_path);
 
-			mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-			mesh->read(xml_mesh->value());
+			mesh = std::make_shared<libMesh::DistributedMesh>(comm);
+			mesh->read(mesh_path);
 			auto dim = mesh->mesh_dimension();
 
 			auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
@@ -90,132 +126,204 @@ namespace utopia {
 				V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
 			}
 
-			/////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////
 
-			xml_node<> *xml_bc = wear_simulation->first_node("boundary-conditions");
-			xml_node<> *xml_dirichlet = xml_bc->first_node("dirichlet");
+			if(is.object_begin("model")) {
+				is.read("material", material_name);
 
-			std::cout << "side\tcoord\tvalue" << std::endl;
-			for (xml_node<> *xml_cond = xml_dirichlet->first_node(); xml_cond; xml_cond = xml_cond->next_sibling())
-			{
-				xml_attribute<> *cond_side_attr  = xml_cond->first_attribute("side"); assert(cond_side_attr);
-				xml_attribute<> *cond_coord_attr = xml_cond->first_attribute("coord"); assert(cond_coord_attr);
+				std::cout << material_name << std::endl;
 
-				auto side_set = atoi(cond_side_attr->value());
-				auto coord    = atoi(cond_coord_attr->value());
-				auto value    = atof(xml_cond->value());
-
-				std::cout << side_set << "\t" << coord << "\t" << value << std::endl;
-
-				auto u = trial(V[coord]);
-				init_constraints(constraints(
-					boundary_conditions(u == coeff(value), {side_set})
-				));
-			}
-
-			/////////////////////////////////////////////////////////////////////////////
-
-			xml_node<> *xml_model 	   = wear_simulation->first_node("model");
-			xml_node<> *xml_material   = xml_model->first_node("material");
-			xml_node<> *xml_parameters = xml_model->first_node("parameters");
-			
-			if(xml_parameters) {
-				xml_node<> *xml_mu     = xml_parameters->first_node("mu");
-				xml_node<> *xml_lambda = xml_parameters->first_node("lambda");
-
-				const double mu     = xml_mu?     atof(xml_mu->value()) : 1.;
-				const double lambda = xml_lambda? atof(xml_lambda->value()) : 1.;
-
-				params = LameeParameters(mu, lambda);
-			}
-
-			if(xml_material) {
-				if(xml_material->value() == std::string("NeoHookean")) {
-					std::cout << "material: NeoHookean" << std::endl;
+				if(material_name == "NeoHookean") {
 					material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, params);
-				} else if(xml_model->value() == std::string("SaintVenantKirchoff")) {
-					std::cout << "material: SaintVenantKirchoff" << std::endl;
+				} else if(material_name == "SaintVenantKirchoff") {
 					material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, params);
-				} else //if(mode->value() == "LinearElasticity") 
-				{
-					std::cout << "material: LinearElasticity" << std::endl;
+                } else /*if(material_name == "LinearElasticity")*/ {
 					material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, params);
 				}
-			} else {
-				material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, params);
-			}
 
-			params.describe(std::cout);
+				if(is.object_begin("parameters")) {
+					double mu, lambda;
+					is.read("mu", mu);
+					is.read("lambda", lambda);
+					params = LameeParameters(mu, lambda);
+				}
 
-			/////////////////////////////////////////////////////////////////////////////////////
-			xml_node<> *xml_contact = wear_simulation->first_node("contact"); assert(xml_contact);
-			xml_attribute<> *radius_att = xml_contact->first_attribute("radius");
+                is.object_end(); //parameters
+            }
+            
+            is.object_end(); //model
+            
+            /////////////////////////////////////////////////////////////////////////////
+            
+            if(is.object_begin("boundary-conditions")) {
 
-			if(radius_att) {
-				contact_params.search_radius = atof(radius_att->value());
-			}
+            	if(is.object_begin("dirichlet")) {
 
-			std::cout << "master\tslave" << std::endl;
-			for (xml_node<> *xml_pair = xml_contact->first_node(); xml_pair; xml_pair = xml_pair->next_sibling())
-			{
-				xml_node<> *xml_master = xml_pair->first_node("master"); assert(xml_master);
-				xml_node<> *xml_slave  = xml_pair->first_node("slave");  assert(xml_slave);
-				
-				contact_params.contact_pair_tags.push_back({
-					atoi(xml_master->value()),
-					atoi(xml_slave->value()),
-				});
+            		is.start();
 
-				std::cout << contact_params.contact_pair_tags.back().first << "\t"	
-						  << contact_params.contact_pair_tags.back().second << std::endl;
-			}
+            		while(is.good()) {
+            			int side_set = 0, coord = 0;
+            			double value = 0;
 
-			/////////////////////////////////////////////////////////////////////////////////////
+            			is.read("side", side_set);
+            			is.read("coord", coord);
+            			is.read("value", value);
 
-			xml_node<> *xml_time  = wear_simulation->first_node("time");
-			xml_node<> *xml_dt    = xml_time->first_node("dt");
-			xml_node<> *xml_steps = xml_time->first_node("steps"); 
+            			std::cout << side_set << ", " << coord << ", " << value << std::endl;
 
-			dt = atof(xml_dt->value());
-			n_time_teps = atoi(xml_steps->value());
+            			auto u = trial(V[coord]);
+            			init_constraints(constraints(
+            				boundary_conditions(u == coeff(value), {side_set})
+            				));
 
-			std::cout << "dt: " << dt << " n_time_teps: " << n_time_teps << std::endl;
+            			is.next();
+            		}
 
-			/////////////////////////////////////////////////////////////////////////////////////
+            		is.finish();
+            	}
 
-			auto xml_output = wear_simulation->first_node("ouput");
-			if(xml_output) {
-				output_path = xml_output->value();
-			}
+                is.object_end(); //dirichlet
+            }
+            
+            is.object_end(); //boundary-conditions
+            
+            /////////////////////////////////////////////////////////////////////////////
+            
+            if(is.object_begin("time")) {
+            	is.read("dt", dt);
+            	is.read("steps", n_time_teps);
+            }
+            
+            is.object_end(); //time
+            
+            /////////////////////////////////////////////////////////////////////////////
+            
+            is.read("output", output_path);
+            
+            
+            if(!material) {
+            	material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, params);
+            }
+            
+            return true;
+        }
+        
+        virtual void describe(std::ostream &os) const
+        {
+        	os << "mesh_path:\t" << mesh_path << "\n";
+        	os << "output_path:\t" << output_path << "\n";
+        	os << "material_name:\t" << material_name << "\n";
+        	os << "material_params:\n";
+        	params.describe(os);
+        	os << "n_time_teps:\t" << n_time_teps << "\n";
+        	os << "dt:\t" << dt << "\n";
+        }
+        
+    public:
+    	std::shared_ptr<libMesh::DistributedMesh> mesh;
+    	ProductFunctionSpace<LibMeshFunctionSpace> V;
+    	std::shared_ptr<libMesh::EquationSystems> equation_systems;
+    	std::shared_ptr<ElasticMaterial<DSMatrixd, DVectord> > material;
 
-			/////////////////////////////////////////////////////////////////////////////////////
-			return true;
-		}
+    	int main_sys_num;
+    	int aux_sys_num;
 
-		std::string mesh_path;
-		std::string output_path;
-		LameeParameters params;
-		std::shared_ptr<libMesh::DistributedMesh> mesh;
-		ProductFunctionSpace<LibMeshFunctionSpace> V;
-		std::shared_ptr<libMesh::EquationSystems> equation_systems;
-		std::shared_ptr<ElasticMaterial<DSMatrixd, DVectord> > material;
-		ContactParams contact_params;
-		int main_sys_num;
-		int aux_sys_num;
-		int n_time_teps;
-		double dt;
-	};
+    private:
+    	std::string mesh_path;
+    	std::string output_path;
+    	std::string material_name;
+    	LameeParameters params;
+    	int n_time_teps;
+    	double dt;
+    };
+    
+    class ContactSimulation : public ElasticitySimulation {
+    public:
+    	virtual ~ContactSimulation() {}
 
-	void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &xml_file_path)
-	{
-		Input in;
-		std::ifstream is(xml_file_path);
-		in.init_from_xml(init, is);
-	}
+    	virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is) override
+    	{
+    		bool ok = true;
+    		if(!ElasticitySimulation::init(comm, is)) {
+    			ok = false;
+    		}
 
-	WearSimulation::WearSimulation()
-	{}
+    		if(is.object_begin("contact")) {
+    			is.read("radius", contact_params.search_radius);
 
-	WearSimulation::~WearSimulation()
-	{}
+    			is.start("pair");
+
+    			while(is.good()) {
+    				int master = -1, slave = -1;
+    				is.read("master", master);
+    				is.read("slave", slave);
+
+    				assert(master != -1);
+    				assert(slave != -1);
+
+    				contact_params.contact_pair_tags.push_back({ master, slave });
+
+    				is.next();
+    			}
+
+    			is.finish();
+    		}
+
+            is.object_end(); //contact
+            return true;
+        }
+        
+        virtual void describe(std::ostream &os) const override
+        {
+        	ElasticitySimulation::describe(os);
+        	contact_params.describe(os);
+        }
+        
+        ContactParams contact_params;
+        
+    };
+    
+    class WearSimulation::Input : public ContactSimulation {
+    public:
+    	Input()
+    	{}
+
+    	virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is) override
+    	{
+    		bool ok = ContactSimulation::init(comm, is);
+
+    		if(is.object_begin("gait-cycle")) {
+    			gc.init(mesh->mesh_dimension(), is);
+    		} else {
+    			ok = false;
+    		}
+
+    		is.object_end();
+    		return ok;
+    	}
+
+    	WearSimulation::GaitCycle gc;
+
+    };
+
+    void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &conf_file_path)
+    {
+    	Input in;
+    	auto is_ptr = open_istream(conf_file_path);
+    	if(!is_ptr) {
+    		std::cerr << "[Error] invalid path " << conf_file_path << std::endl;
+    		assert(false);
+    		return;
+
+    	}
+
+    	in.init_sim(init.comm(), *is_ptr);
+    	in.describe(std::cout);
+    }
+
+    WearSimulation::WearSimulation()
+    {}
+
+    WearSimulation::~WearSimulation()
+    {}
 }

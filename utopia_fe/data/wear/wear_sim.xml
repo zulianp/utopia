@@ -21,9 +21,11 @@
 		</dirichlet>
 	</boundary-conditions>
     <forcing-functions>
-        <side>1</side>
-        <coord>1</coord>
-        <value>0.1</value>
+        <fun>
+            <side>1</side>
+            <coord>1</coord>
+            <value>0.1</value>
+        </fun>
     </forcing-functions>
     <contact>
         <radius>0.1</radius>
@@ -42,5 +44,5 @@
             </rotation>
         </gait-cycle>
     </wear>
-	<ouput>wear_output</ouput>
+	<output>wear_output</output>
 </simulation>

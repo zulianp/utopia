@@ -31,6 +31,15 @@ namespace utopia {
 
 		bool good() const override;
 
+
+		void start() override;
+		void start(const std::string &name) override;
+		
+		std::string name() override;
+		bool good() override;
+		bool next() override;
+		void finish() override;
+
 	private:
 
 		class Impl;
