@@ -16,6 +16,7 @@
 #include "utopia_TaoSolverTest.hpp"
 #include "utopia_PetscCudaTest.hpp"
 #include "utopia_SelectionTest.hpp"
+#include "utopia_UITest.hpp"
 
 namespace utopia
 {
@@ -32,6 +33,7 @@ namespace utopia
         run_tao_solver_test();
         run_petsc_cuda_test();
         run_selection_test();
+        run_ui_test();
 
         runGenericSolversTest(); 
         runPetscNonlinearSolversTest(); 
@@ -99,6 +101,8 @@ namespace utopia
                     run_petsc_cuda_test();
                 } else if(token == "selection") {
                     run_selection_test();
+                } else if(token == "ui") {
+                    run_ui_test();
                 }
             }
         }

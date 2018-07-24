@@ -13,13 +13,20 @@
 	</model>
 	<boundary-conditions>
 		<dirichlet>
-			<cond side="1" coord="1">1.</cond>
+			<cond>
+                <coord>1</coord>
+                <side>1</side>
+                <value>1.</value>
+            </cond>
 		</dirichlet>
 	</boundary-conditions>
     <forcing-functions>
-        <fun side="1" coord="1">0.1</fun>
+        <side>1</side>
+        <coord>1</coord>
+        <value>0.1</value>
     </forcing-functions>
-    <contact radius="0.1">
+    <contact>
+        <radius>0.1</radius>
         <pair>
             <master>1</master>
             <slave>2</slave>
@@ -27,8 +34,12 @@
     </contact>
     <wear>
         <gait-cycle>
-            <rotation block="1" axis="z" start="4.0" delta="0.1">-5.0</rotation>
-            <!-- <rotation block="1" axis="y">0.2</rotation> -->
+            <rotation>
+                <block>1</block>
+                <axis>z</axis>
+                <begin>4.0</begin>
+                <end>-1.</end>
+            </rotation>
         </gait-cycle>
     </wear>
 	<ouput>wear_output</ouput>

@@ -254,7 +254,7 @@ add_subdirectory(tests)
 
 
 # core modules
-set(UTOPIA_MODULES backend solvers differentiable core utils)
+set(UTOPIA_MODULES backend solvers differentiable core ui utils)
 
 foreach(MODULE ${UTOPIA_MODULES})
 	add_subdirectory(${MODULE})

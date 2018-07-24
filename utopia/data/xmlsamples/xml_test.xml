@@ -1,0 +1,9 @@
+<solve>
+	<type>linear</type>
+	<operator>../data/mg/A.bin</operator>
+	<rhs>../data/mg/rhs.bin</rhs>
+	<solver>
+		<algorithm>CG</algorithm>
+		<max_iter>10</max_iter>
+	</solver>
+</solve>
