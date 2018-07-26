@@ -88,11 +88,11 @@ namespace utopia {
 
                 is.object_end(); //parameters
             }
-            
+
             is.object_end(); //model
-            
+
             /////////////////////////////////////////////////////////////////////////////
-            
+
             if(is.object_begin("boundary-conditions")) {
 
             	if(is.object_begin("dirichlet")) {
@@ -122,30 +122,30 @@ namespace utopia {
 
                 is.object_end(); //dirichlet
             }
-            
+
             is.object_end(); //boundary-conditions
-            
+
             /////////////////////////////////////////////////////////////////////////////
-            
+
             if(is.object_begin("time")) {
             	is.read("dt", dt);
             	is.read("steps", n_time_teps);
             }
-            
+
             is.object_end(); //time
-            
+
             /////////////////////////////////////////////////////////////////////////////
-            
+
             is.read("output", output_path);
-            
-            
+
+
             if(!material) {
             	material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, params);
             }
-            
+
             return true;
         }
-        
+
         virtual void describe(std::ostream &os) const
         {
         	os << "mesh_path:\t" << mesh_path << "\n";
@@ -156,7 +156,7 @@ namespace utopia {
         	os << "n_time_teps:\t" << n_time_teps << "\n";
         	os << "dt:\t" << dt << "\n";
         }
-        
+
     public:
     	std::shared_ptr<libMesh::DistributedMesh> mesh;
     	ProductFunctionSpace<LibMeshFunctionSpace> V;
@@ -174,7 +174,7 @@ namespace utopia {
     	int n_time_teps;
     	double dt;
     };
-    
+
     class ContactSimulation : public ElasticitySimulation {
     public:
     	virtual ~ContactSimulation() {}
@@ -210,17 +210,17 @@ namespace utopia {
             is.object_end(); //contact
             return true;
         }
-        
+
         virtual void describe(std::ostream &os) const override
         {
         	ElasticitySimulation::describe(os);
         	contact_params.describe(os);
         }
-        
+
         ContactParams contact_params;
-        
+
     };
-    
+
     class WearSimulation::Input : public ContactSimulation {
     public:
     	Input()

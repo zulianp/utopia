@@ -8,9 +8,9 @@ find_project_files(CMAKE_CURRENT_SOURCE_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOU
 add_library(utopia_tests STATIC ${LOCAL_SOURCES})
 
 target_link_libraries(utopia_tests utopia_core utopia_utils utopia_solvers utopia_differentiable utopia_ui)
-target_include_directories(utopia_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) 
+target_include_directories(utopia_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(utopia_tests PUBLIC ..)
-target_include_directories(utopia_tests PUBLIC ../backend ${TEST_MODULES}) 
+target_include_directories(utopia_tests PUBLIC ../backend ${TEST_MODULES})
 
 if(TRY_WITH_EIGEN_3)
 	find_package(Eigen3)
@@ -19,7 +19,7 @@ if(TRY_WITH_EIGEN_3)
 		set(WITH_EIGEN_3 ON PARENT_SCOPE)
 		target_include_directories(utopia_tests PRIVATE ${EIGEN3_INCLUDE_DIR})
 	endif()
-endif()	
+endif()
 
 if(TARGET utopia_opencl)
 	target_link_libraries(utopia_tests utopia_opencl)
@@ -42,9 +42,9 @@ if(TARGET utopia_trilinos)
 endif()
 
 install(TARGETS utopia_tests
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
 	)
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)

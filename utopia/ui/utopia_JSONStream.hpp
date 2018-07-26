@@ -13,7 +13,7 @@ namespace utopia {
 	public:
 		JSONInputStream();
 		~JSONInputStream();
-		
+
 		bool open(const Path &path) override;
 		bool object_begin(const std::string &name) override;
 		bool object_end() override;
@@ -34,7 +34,7 @@ namespace utopia {
 
 		void start() override;
 		void start(const std::string &name) override;
-		
+
 		std::string name() override;
 		bool good() override;
 		bool next() override;

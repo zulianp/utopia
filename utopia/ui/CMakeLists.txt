@@ -4,6 +4,22 @@ list(APPEND UI_MODULES
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR UI_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
+find_path(TINY_EXPR_DIR
+	NAMES tinyexpr.h
+	HINTS ${TINY_EXPR_DIR}
+		  $ENV{TINY_EXPR_DIR}
+		  ${INSTALL_DIR}/tinyexpr
+		  $ENV{INSTALL_DIR}/tinyexpr
+)
+
+if(TINY_EXPR_DIR)
+	# tinyexpr
+	add_library(tinyexpr STATIC ${TINY_EXPR_DIR}/tinyexpr.c)
+	target_include_directories(tinyexpr PUBLIC ${TINY_EXPR_DIR})
+	set(WITH_TINY_EXPR ON PARENT_SCOPE)
+endif()
+
+
 add_library(utopia_ui STATIC ${LOCAL_SOURCES})
 target_include_directories(utopia_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 target_include_directories(utopia_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -17,15 +33,19 @@ if(WIN32)
 	target_include_directories(utopia_ui PRIVATE windows)
 endif()
 
-
 target_link_libraries(utopia_ui utopia_utils)
+
+if(TARGET tinyexpr)
+	target_link_libraries(utopia_ui tinyexpr)
+endif()
 
 set_utopia_compiler_features(utopia_ui)
 
+
 install(TARGETS utopia_ui
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
 	)
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)

@@ -14,7 +14,7 @@ namespace utopia {
 		const DVectord &displacement_increment,
 		const libMesh::DofMap &dof_map,
 		libMesh::MeshBase &mesh)
-	{	
+	{
 		//FIXME
 		int sys_num = 0;
 
@@ -31,8 +31,8 @@ namespace utopia {
 			std::set<PetscInt> unique_idx;
 			std::map<libMesh::dof_id_type, double> idx_to_value;
 			std::vector<libMesh::dof_id_type> dof_indices;
-			
-			for(auto m_it = m_begin; m_it != m_end; ++m_it) { 
+
+			for(auto m_it = m_begin; m_it != m_end; ++m_it) {
 				dof_map.dof_indices(*m_it, dof_indices);
 				for(auto dof_id : dof_indices) {
 					if(r.inside(dof_id)) {
@@ -52,9 +52,9 @@ namespace utopia {
 				for(std::size_t i = 0; i < idx.size(); ++i) {
 					idx_to_value[idx[i]] = out.get(range_out.begin() + i);
 				}
-			}	
+			}
 
-			for(auto m_it = m_begin; m_it != m_end; ++m_it) { 
+			for(auto m_it = m_begin; m_it != m_end; ++m_it) {
 				auto &e = **m_it;
 				for(int i = 0; i < e.n_nodes(); ++i) {
 					auto &node = e.node_ref(i);
@@ -77,7 +77,7 @@ namespace utopia {
 			auto m_end = mesh.local_nodes_end();
 
 
-			for(; m_it != m_end; ++m_it) { 
+			for(; m_it != m_end; ++m_it) {
 				for(unsigned int c = 0; c < mesh.mesh_dimension(); ++c) {
 					const int dof_id = (*m_it)->dof_number(sys_num, c, 0);
 					(**m_it)(c) += displacement_increment.get(dof_id);
@@ -134,7 +134,7 @@ namespace utopia {
 
 		DSMatrixd lapl_mat;
 		auto lapl = inner(grad(u), grad(v)) * dX;
-		assemble(lapl, lapl_mat);			
+		assemble(lapl, lapl_mat);
 		DVectord warped_displacement = local_zeros(local_size(wear_induced_displacement));
 
 		//FIXME warped_displacement passed as dummy
@@ -162,44 +162,44 @@ namespace utopia {
 	{
 		//init aux system for plotting
 		auto &aux = es.add_system<libMesh::LinearImplicitSystem>("aux");
-		
+
 		var_num_aux.push_back( aux.add_variable("inc_x", libMesh::Order(order), libMesh::LAGRANGE) );
 		var_num_aux.push_back( aux.add_variable("inc_y", libMesh::Order(order), libMesh::LAGRANGE) );
 
 		const int dim = es.get_mesh().mesh_dimension();
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_aux.push_back( aux.add_variable("inc_z", libMesh::Order(order), libMesh::LAGRANGE) );
 
 		var_num_aux.push_back( aux.add_variable("vel_x", libMesh::Order(order), libMesh::LAGRANGE) );
 		var_num_aux.push_back( aux.add_variable("vel_y", libMesh::Order(order), libMesh::LAGRANGE) );
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_aux.push_back( aux.add_variable("vel_z", libMesh::Order(order), libMesh::LAGRANGE) );
 
 		var_num_aux.push_back( aux.add_variable("f_x", libMesh::Order(order), libMesh::LAGRANGE) );
 		var_num_aux.push_back( aux.add_variable("f_y", libMesh::Order(order), libMesh::LAGRANGE) );
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_aux.push_back( aux.add_variable("f_z", libMesh::Order(order), libMesh::LAGRANGE) );
 
 		var_num_aux.push_back( aux.add_variable("fext_x", libMesh::Order(order), libMesh::LAGRANGE) );
 		var_num_aux.push_back( aux.add_variable("fext_y", libMesh::Order(order), libMesh::LAGRANGE) );
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_aux.push_back( aux.add_variable("fext_z", libMesh::Order(order), libMesh::LAGRANGE) );
 
 
 		var_num_aux.push_back( aux.add_variable("n_x", libMesh::Order(order), libMesh::LAGRANGE) );
 		var_num_aux.push_back( aux.add_variable("n_y", libMesh::Order(order), libMesh::LAGRANGE) );
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_aux.push_back( aux.add_variable("n_z", libMesh::Order(order), libMesh::LAGRANGE) );
 
 		var_num_aux.push_back( aux.add_variable("wear_disp_x", libMesh::Order(order), libMesh::LAGRANGE) );
 		var_num_aux.push_back( aux.add_variable("wear_disp_y", libMesh::Order(order), libMesh::LAGRANGE) );
 
-		if(dim > 2) 
+		if(dim > 2)
 			var_num_aux.push_back( aux.add_variable("wear_disp_z", libMesh::Order(order), libMesh::LAGRANGE) );
 
 
@@ -209,7 +209,7 @@ namespace utopia {
 		var_num_aux.push_back( aux.add_variable("is_contact", libMesh::Order(order), libMesh::LAGRANGE) );
 		var_num_aux.push_back( aux.add_variable("gap", libMesh::Order(order), libMesh::LAGRANGE) );
 
-		aux.init();	
+		aux.init();
 		aux.update();
 	}
 
@@ -228,7 +228,7 @@ namespace utopia {
 		const int dim = mesh.mesh_dimension();
 
 		DVectord normal_stress = local_zeros(local_size(state.displacement));
-		DVectord sliding_distance = local_zeros(local_size(state.displacement)); 
+		DVectord sliding_distance = local_zeros(local_size(state.displacement));
 
 		// DVectord stress = local_zeros(local_size(state.displacement));
 
@@ -240,7 +240,7 @@ namespace utopia {
 			DVectord tangential_velocity = contact.orthogonal_trafo * state.velocity;
 			sliding_distance = local_zeros(local_size(state.displacement));
 
-			{	
+			{
 				Read<DVectord>   r_v(tangential_velocity);
 				Write<DVectord> w_s(sliding_distance);
 
@@ -289,7 +289,7 @@ namespace utopia {
 			Read<DVectord> r_d(state.displacement), r_v(state.velocity);
 			Read<DVectord> r_f(state.internal_force), r_ef(state.external_force), r_ns(normal_stress);
 			Read<DVectord> r_c(contact.is_contact_node);
-			
+
 			auto nd 	= mesh.local_nodes_begin();
 			auto nd_end = mesh.local_nodes_end();
 

@@ -14,10 +14,10 @@ using namespace rapidxml;
 namespace utopia {
 	class XMLInputStream::Impl {
 	public:
-		Impl(const Path &path) 
+		Impl(const Path &path)
 		: f(path.c_str()), current_node(nullptr), n_invalid_subtrees_(0)
-		{ 
-			doc.parse<0>(f.data());  
+		{
+			doc.parse<0>(f.data());
 			current_node = &doc;
 		}
 
@@ -70,7 +70,7 @@ namespace utopia {
 		}
 
 		file<> f;
-		xml_document<> doc; 
+		xml_document<> doc;
 		xml_node<> *current_node;
 		SizeType n_invalid_subtrees_;
 	};

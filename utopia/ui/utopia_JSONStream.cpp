@@ -17,9 +17,9 @@ using namespace rapidjson;
 namespace utopia {
 	class JSONInputStream::Impl {
 	public:
-		Impl(const Path &path) 
+		Impl(const Path &path)
 		: current_node(nullptr), n_invalid_subtrees_(0)
-		{ 
+		{
 			std::ifstream file(path.c_str());
 
 			if(file.good()) {

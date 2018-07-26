@@ -5,6 +5,7 @@
 #include "utopia.hpp"
 #include "utopia_ui.hpp"
 #include "utopia_Instance.hpp"
+#include "utopia_SymbolicFunction.hpp"
 
 namespace utopia {
 	void generic_stream(InputStream &is)
@@ -19,13 +20,13 @@ namespace utopia {
 		double tol = 1e-16;
 
 		utopia_test_assert( is.object_begin("solve") );
-		
+
 		{
 			is.read("type", type);
 			is.read("operator", op);
 
 			utopia_test_assert( is.object_begin("solver") );
-			
+
 			{
 				is.read("algorithm", algorithm);
 				is.read("max_iter", max_iter);
@@ -68,10 +69,36 @@ namespace utopia {
 		generic_stream(*is_ptr);
 	}
 
+#ifdef WITH_TINY_EXPR
+	void symbolic_expr()
+	{
+		{
+			SymbolicFunction f("x + y + z");
+			double w = f.eval(1, 2, 3);
+			utopia_test_assert(f.valid());
+			utopia_test_assert(approxeq(w, 6.));
+
+			w = f.eval(1, 2);
+			utopia_test_assert(approxeq(w, 3.));
+		}
+
+		{
+			SymbolicFunction f("x*y");
+			double w = f.eval({2, 2, 3});
+			utopia_test_assert(f.valid());
+			utopia_test_assert(approxeq(w, 4.));
+		}
+	}
+
+#endif //WITH_TINY_EXPR
+
 	void run_ui_test()
 	{
 		UTOPIA_UNIT_TEST_BEGIN("UITest");
 		UTOPIA_RUN_TEST(xml_stream);
+#ifdef WITH_TINY_EXPR
+		UTOPIA_RUN_TEST(symbolic_expr);
+#endif //WITH_TINY_EXPR
 		UTOPIA_UNIT_TEST_END("UITest");
 	}
 
