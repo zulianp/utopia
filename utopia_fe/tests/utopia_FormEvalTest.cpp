@@ -44,7 +44,7 @@ namespace utopia {
 		}
 	};
 
-	
+
 
 
 	template<class SpaceInput, class FunctionSpaceT>
@@ -190,7 +190,7 @@ namespace utopia {
 			auto u = trial(V);
 			auto v = test(V);
 
-			auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
+			auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) );
 			auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
 			auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
@@ -233,9 +233,9 @@ namespace utopia {
 			auto J = det(F);
 			auto C = F + transpose(F);
 			auto t = trace(C);
-			
+
 			auto P = mu * (F - F_inv_t) + lambda * logn(J) * F_inv_t;
-			
+
 			//compressible neo-hookean
 			auto l_form = inner(P, grad(v)) * dX;
 			auto b_form = (
@@ -243,7 +243,7 @@ namespace utopia {
 				 		    - inner((lambda * logn(J) - mu) * transpose(F_inv * grad(u)), F_inv * grad(v))
 				 		    + inner(lambda * F_inv_t, grad(u)) * inner(F_inv_t, grad(v))
 				 		  ) * dX;
-		
+
 			static_assert(IsForm<decltype(l_form)>::value,      "must be a form");
 			static_assert(IsForm<decltype(l_form)>::order == 1, "must be a form");
 
@@ -329,7 +329,7 @@ namespace utopia {
 		{
 			std::cout << "[run_scalar_form_eval_test]" << std::endl;
 
-			
+
 			auto V = FunctionSpaceT(space_input);
 			auto u = trial(V);
 			auto v = test(V);
@@ -419,7 +419,7 @@ namespace utopia {
 			auto Q  = Qx * Qy;
 
 			auto u = trial(V);
-			auto v = test(V);	
+			auto v = test(V);
 
 			auto s = trial(Q);
 			auto q = test(Q);
@@ -585,9 +585,9 @@ namespace utopia {
 
 	template<typename F>
 	static void run_libmesh_test(libMesh::LibMeshInit &init, F fun)
-	{	
-		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
-		
+	{
+		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+
 		const unsigned int n = 10;
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
 			n, n,
@@ -713,7 +713,7 @@ namespace utopia {
 		// run_libmesh_test(init, [](
 		// 	LibMeshFormEvalTest &lm_test,
 		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
-			
+
 		// 	//create system of equations
 		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("test_equations");
 
@@ -744,7 +744,7 @@ namespace utopia {
 		// run_libmesh_test(init, [](
 		// 	LibMeshFormEvalTest &lm_test,
 		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
-			
+
 		// 	//create system of equations
 		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("test_elasticity");
 
@@ -762,7 +762,7 @@ namespace utopia {
 		// 	const double mu = 1;
 		// 	const double lambda = 1;
 
-		// 	auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
+		// 	auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) );
 		// 	auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
 
 		// 	LMDenseVector z = zeros(2);
@@ -791,7 +791,7 @@ namespace utopia {
 		// run_libmesh_test(init, [](
 		// 	LibMeshFormEvalTest &lm_test,
 		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
-			
+
 		// 	//create system of equations
 		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("non_linear_laplacian");
 
@@ -800,7 +800,7 @@ namespace utopia {
 
 		// 	auto u = trial(V);
 		// 	auto v = test(V);
-			
+
 		// 	DVectord sol;
 		// 	auto uk = interpolate(sol, u);
 
@@ -826,11 +826,11 @@ namespace utopia {
 		// run_libmesh_test(init, [](
 		// 	LibMeshFormEvalTest &lm_test,
 		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
-			
+
 		// 	//create system of equations
 		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("navier_stokes");
 
-	
+
 		// 	auto Vx = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_x");
 		// 	auto Vy = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_y");
 		// 	auto V  = Vx * Vy;
@@ -903,7 +903,7 @@ namespace utopia {
 		run_libmesh_test(init, [](
 			LibMeshFormEvalTest &lm_test,
 			const std::shared_ptr<libMesh::EquationSystems> &es) {
-			
+
 			//create system of equations
 			auto &sys = es->add_system<libMesh::LinearImplicitSystem>("reaction_diffusion");
 			auto V = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::FIRST, "u");
@@ -918,7 +918,7 @@ namespace utopia {
 
 			//if_else(cond, val_if, val_else)
 
-			// auto uk     = interpolate(sol, in_block(u == 0.1, {1, 2}) || 
+			// auto uk     = interpolate(sol, in_block(u == 0.1, {1, 2}) ||
 										   // in_block(u == 0.,  {0, 3}) );
 
 			auto uk     = interpolate(sol, u);
@@ -928,24 +928,26 @@ namespace utopia {
 			auto alpha = coeff(0.5);
 			auto R = uk * a * (coeff(1.) - uk) * (uk - alpha);
 
-			auto f_rhs = ctx_fun< std::vector<double> >([&u](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
-				const auto &pts = ctx.fe()[0]->get_xyz();
+			// auto f_rhs = ctx_fun< std::vector<double> >([&u](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
+			// 	const auto &pts = ctx.fe()[0]->get_xyz();
 
-				const auto n = pts.size();
-				std::vector<double> ret(n);
-				
-				for(std::size_t i = 0; i != n; ++i) {
-					double x = (pts[i](0) - 0.5);
-					double y = (pts[i](1) - 0.5);
-					double dist = std::sqrt(x*x + y*y);
-					if(dist < 0.2)
-						ret[i] = 2;
-					else
-						ret[i] = 0.;
-				}
+			// 	const auto n = pts.size();
+			// 	std::vector<double> ret(n);
 
-			 	return ret;
-			});
+			// 	for(std::size_t i = 0; i != n; ++i) {
+			// 		double x = (pts[i](0) - 0.5);
+			// 		double y = (pts[i](1) - 0.5);
+			// 		double dist = std::sqrt(x*x + y*y);
+			// 		if(dist < 0.2)
+			// 			ret[i] = 2;
+			// 		else
+			// 			ret[i] = 0.;
+			// 	}
+
+			//  	return ret;
+			// });
+
+			auto f_rhs = symbolic("((x - 0.5)^2 + (y - 0.5)^2))");
 
 			if(nl_implicit_euler(
 				equations(
@@ -957,10 +959,10 @@ namespace utopia {
 					boundary_conditions(u == coeff(0.0), {2})
 				),
 				sol_old,
-				sol, 
+				sol,
 				dt,
 				n_ts
-				)) 
+				))
 			{
 				//post process
 			} else {
@@ -974,7 +976,7 @@ namespace utopia {
 		// run_libmesh_test(init, [](
 		// 	LibMeshFormEvalTest &lm_test,
 		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
-			
+
 		// 	//create system of equations
 		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("test_user_kernel");
 
@@ -988,13 +990,13 @@ namespace utopia {
 		// 		equations(
 		// 			bilinear_kernel<double>(
 		// 				[](libMesh::FEBase &trial,
-		// 				   libMesh::FEBase &test, 
+		// 				   libMesh::FEBase &test,
 		// 				   const unsigned int trial_index,
 		// 				   const unsigned int test_index,
 		// 				   const unsigned int qp) -> libMesh::Real {
 
 		// 				return (trial.get_dphi()[trial_index][qp] * test.get_dphi()[test_index][qp]) * trial.get_JxW()[qp];
-					
+
 		// 			}, 0) == inner(coeff(0.), v) * dX
 		// 		),
 		// 		constraints(
@@ -1014,11 +1016,11 @@ namespace utopia {
 		// run_libmesh_test(init, [](
 		// 	LibMeshFormEvalTest &lm_test,
 		// 	const std::shared_ptr<libMesh::EquationSystems> &es) {
-			
+
 		// 	//create system of equations
 		// 	auto &sys = es->add_system<libMesh::LinearImplicitSystem>("transient_navier_stokes");
 
-		
+
 		// 	auto Vx = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_x");
 		// 	auto Vy = LibMeshFunctionSpace(es, libMesh::LAGRANGE, libMesh::SECOND, "vel_y");
 		// 	auto V  = Vx * Vy;

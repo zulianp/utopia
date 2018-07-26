@@ -52,12 +52,12 @@ using namespace std;
 using namespace libMesh;
 
 
-int main(const int argc, char *argv[]) 
+int main(const int argc, char *argv[])
 {
 
 	Utopia::Init(argc, argv);
 	MOONOLITH_PROFILING_BEGIN();
-	
+
 	{
 		LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
 
@@ -93,12 +93,12 @@ int main(const int argc, char *argv[])
 	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
 
 
-	    
+
 
 
 		for(int i = 1; i < argc; ++i) {
 			const int ip1 = i+1;
-			
+
 			if(argv[i] == std::string("-r")) {
 				if(ip1 < argc) {
 					auto it = runners.find(argv[ip1]);
@@ -133,10 +133,10 @@ int main(const int argc, char *argv[])
 			} else if(argv[i] == std::string("-data_path")) {
 				utopia::Utopia::instance().set("data_path", argv[ip1]);
 				std::cout << "setting data_path to: " << argv[ip1] << std::endl;
-			} else if(argv[i] == std::string("-wear_sim")) {	
+			} else if(argv[i] == std::string("-wear_sim")) {
 				std::cout << argv[i] << " " << argv[ip1] << std::endl;
 				//passing wear xml path to
-				WearSimulation ws; 
+				WearSimulation ws;
 				ws.run(init, argv[ip1]);
 			}
 
