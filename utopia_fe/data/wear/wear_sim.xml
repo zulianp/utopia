@@ -12,12 +12,12 @@
 		</parameters>
 	</model>
 	<boundary-conditions>
-		<dirichlet>
-			<cond>
+		<dirichlet type="array">
+			<entry>
                 <coord>1</coord>
                 <side>1</side>
                 <value>1.</value>
-            </cond>
+            </entry>
 		</dirichlet>
 	</boundary-conditions>
     <forcing-functions>
@@ -29,10 +29,12 @@
     </forcing-functions>
     <contact>
         <radius>0.1</radius>
-        <pair>
-            <master>1</master>
-            <slave>2</slave>
-        </pair>
+        <pairs type="array">
+            <entry>
+                <master>1</master>
+                <slave>2</slave>
+            </entry>
+        </pairs>
     </contact>
     <wear>
         <gait-cycle>

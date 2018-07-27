@@ -36,6 +36,12 @@ namespace utopia {
 		const double diffusivity = 1.;
 		const double forcing_term = 5.;
 
+#ifdef WITH_TINY_EXPR
+		auto f = symbolic("5 * sqrt(x^2 + y^2 + z^2)");
+#else
+		auto f = coeff(forcing_term);
+#endif  //WITH_TINY_EXPR
+
 		//discretization parameters
 		const auto elem_type = libMesh::QUAD8;
 		const auto elem_order = libMesh::SECOND;
@@ -77,7 +83,7 @@ namespace utopia {
 		// Set (bi)linear forms
 		auto l_form = c1 * inner(d * grad(u_old), grad(v)) * dX
 		+ c2 * inner(sqrt(inner(grad(u_old), grad(u_old))), v) * dX
-		- inner(coeff(forcing_term), v) * dX;
+		- inner(f, v) * dX;
 
 		auto b_form = c1 * inner(d * grad(du), grad(v)) * dX
 		+ c2 * inner(inner(grad(du), grad(u_old))/(coeff(1e-10) + sqrt(inner(grad(u_old), grad(u_old)))), v) * dX;

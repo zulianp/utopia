@@ -928,26 +928,25 @@ namespace utopia {
 			auto alpha = coeff(0.5);
 			auto R = uk * a * (coeff(1.) - uk) * (uk - alpha);
 
-			// auto f_rhs = ctx_fun< std::vector<double> >([&u](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
-			// 	const auto &pts = ctx.fe()[0]->get_xyz();
+			auto f_rhs = ctx_fun< std::vector<double> >([&u](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
+				const auto &pts = ctx.fe()[0]->get_xyz();
 
-			// 	const auto n = pts.size();
-			// 	std::vector<double> ret(n);
+				const auto n = pts.size();
+				std::vector<double> ret(n);
 
-			// 	for(std::size_t i = 0; i != n; ++i) {
-			// 		double x = (pts[i](0) - 0.5);
-			// 		double y = (pts[i](1) - 0.5);
-			// 		double dist = std::sqrt(x*x + y*y);
-			// 		if(dist < 0.2)
-			// 			ret[i] = 2;
-			// 		else
-			// 			ret[i] = 0.;
-			// 	}
+				for(std::size_t i = 0; i != n; ++i) {
+					double x = (pts[i](0) - 0.5);
+					double y = (pts[i](1) - 0.5);
+					double dist = std::sqrt(x*x + y*y);
+					if(dist < 0.2)
+						ret[i] = 2;
+					else
+						ret[i] = 0.;
+				}
 
-			//  	return ret;
-			// });
+			 	return ret;
+			});
 
-			auto f_rhs = symbolic("((x - 0.5)^2 + (y - 0.5)^2))");
 
 			if(nl_implicit_euler(
 				equations(

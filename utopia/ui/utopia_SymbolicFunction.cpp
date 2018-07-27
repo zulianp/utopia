@@ -15,11 +15,13 @@ namespace utopia {
 		x_(0.),
 		y_(0.),
 		z_(0.),
+		t_(0.),
 		expr_(expr),
 		vars_({
 			{"x", &x_},
 			{"y", &y_},
 			{"z", &z_},
+			{"t", &t_},
 		}),
 		err_(0)
 		{
@@ -43,7 +45,7 @@ namespace utopia {
 		}
 
 	public:
-		double x_, y_, z_;
+		double x_, y_, z_, t_;
 
 	private:
 		std::string expr_;
@@ -71,6 +73,7 @@ namespace utopia {
 		impl_->x_ = x;
 		impl_->y_ = 0.;
 		impl_->z_ = 0.;
+		impl_->t_ = 0.;
 		return  impl_->eval();
 	}
 
@@ -79,6 +82,7 @@ namespace utopia {
 		impl_->x_ = x;
 		impl_->y_ = y;
 		impl_->z_ = 0.;
+		impl_->t_ = 0.;
 		return  impl_->eval();
 	}
 
@@ -87,13 +91,24 @@ namespace utopia {
 		impl_->x_ = x;
 		impl_->y_ = y;
 		impl_->z_ = z;
+		impl_->t_ = 0.;
+		return  impl_->eval();
+	}
+
+
+	double SymbolicFunction::eval(const double x, const double y, const double z, const double t)
+	{
+		impl_->x_ = x;
+		impl_->y_ = y;
+		impl_->z_ = z;
+		impl_->t_ = t;
 		return  impl_->eval();
 	}
 
 	double SymbolicFunction::eval(const std::vector<double> &x)
 	{
 		//FIXME
-		assert(x.size() <= 3);
+		assert(x.size() <= 4);
 
 		switch(x.size()) {
 			case 1: {
@@ -106,6 +121,10 @@ namespace utopia {
 
 			case 3: {
 				return eval(x[0], x[1], x[2]);
+			}
+
+			case 4: {
+				return eval(x[0], x[1], x[2], x[3]);
 			}
 
 			default:

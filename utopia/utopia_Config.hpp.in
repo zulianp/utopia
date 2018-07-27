@@ -17,6 +17,7 @@
 #cmakedefine UTOPIA_TRACE_ENABLED
 #cmakedefine WITH_PASSO_EXTENSIONS
 #cmakedefine WITH_TINY_EXPR
+#cmakedefine WITH_JSON
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR

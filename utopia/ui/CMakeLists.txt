@@ -34,7 +34,7 @@ target_include_directories(utopia_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 #hidden dependencies
 target_include_directories(utopia_ui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidxml)
-target_include_directories(utopia_ui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidjson)
+# target_include_directories(utopia_ui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/rapidjson)
 
 if(WIN32)
 	target_include_directories(utopia_ui PRIVATE windows)
@@ -44,6 +44,23 @@ target_link_libraries(utopia_ui utopia_utils)
 
 if(TARGET tinyexpr)
 	target_link_libraries(utopia_ui tinyexpr)
+endif()
+
+
+find_path(JSON_DIR
+	NAMES json.hpp
+	HINTS ${JSON_DIR}
+	      $ENV{JSON_DIR}
+	      ${INSTALL_DIR}/json
+	      $ENV{INSTALL_DIR}/json
+	PATH_SUFFIXES single_include/nlohmann
+)
+
+
+
+if(JSON_DIR)
+	target_include_directories(utopia_ui PRIVATE ${JSON_DIR})
+	set(WITH_JSON ON PARENT_SCOPE)
 endif()
 
 set_utopia_compiler_features(utopia_ui)

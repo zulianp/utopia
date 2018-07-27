@@ -1,188 +1,172 @@
-#include "utopia_JSONStream.hpp"
+// #include "utopia_JSONStream.hpp"
 
-#include <stack>
+// #include <stack>
 
-#include "rapidjson.h"
-#include "prettywriter.h"	// for stringify JSON
-#include "filestream.h"	// wrapper of C stream for prettywriter as output
-#include "rapidjson/document.h"		// rapidjson's DOM-style API
+// #include "json.hpp"
 
-#include "utopia_make_unique.hpp"
-#include "utopia_Path.hpp"
+// #include "utopia_make_unique.hpp"
+// #include "utopia_Path.hpp"
 
-#include <fstream>
+// #include <fstream>
 
-using namespace rapidjson;
+// namespace utopia {
+// 	class JSONInputStream::Impl {
+// 	public:
+// 		using json = nlohmann::json;
 
-namespace utopia {
-	class JSONInputStream::Impl {
-	public:
-		Impl(const Path &path)
-		: current_node(nullptr), n_invalid_subtrees_(0)
-		{
-			std::ifstream file(path.c_str());
+// 		Impl(const Path &path)
+// 		: n_invalid_subtrees_(0)
+// 		{
+// 			std::ifstream file(path.c_str());
 
-			if(file.good()) {
+// 			if(file.good()) {
+// 				file >> j_;
+// 				current_json_ = j_;
+// 			}
 
-				std::stringstream ss;
+// 			file.close();
+// 		}
 
-				while (file.good()) {
-					std::string str;
-					getline(file, str);
-					ss << str << "\n";
-				}
+// 		bool valid() const {
+// 			return !j_.empty();
+// 		}
 
-				file.close();
-				std::string jsonString = ss.str();
+// 		bool is_invalid_subtree()
+// 		{
+// 			return n_invalid_subtrees_ > 0;
+// 		}
 
-				if(doc.ParseInsitu<0>(&jsonString[0]).HasParseError())  {
-					std::cerr << "Settings::fromJSON(...) : JSON Syntax error" << std::endl;
-					std::cerr << doc.GetParseError() << std::endl;
-				} else {
-					current_node = &doc;
-				}
-			}
-		}
+// 		json j_;
+// 		json current_json_;
+// 		SizeType n_invalid_subtrees_;
+// 	};
 
-		bool valid() const {
+// 	bool JSONInputStream::open(const Path &path)
+// 	{
+// 		impl_ = make_unique<Impl>(path);
+// 		if(!impl_->valid()) {
+// 			impl_ = nullptr;
+// 			return false;
+// 		}
 
-			return current_node;
-		}
+// 		return true;
+// 	}
 
-		bool is_invalid_subtree()
-		{
-			return n_invalid_subtrees_ > 0;
-		}
+// 	JSONInputStream::~JSONInputStream() {}
 
-		rapidjson::Document doc;
-		rapidjson::Value *current_node;
-		SizeType n_invalid_subtrees_;
-	};
+// 	JSONInputStream::JSONInputStream() {}
 
-	bool JSONInputStream::open(const Path &path)
-	{
-		impl_ = make_unique<Impl>(path);
-		if(!impl_->valid()) {
-			impl_ = nullptr;
-			return false;
-		}
+// 	bool JSONInputStream::object_begin(const std::string &name)
+// 	{
+// 		//TODO
 
-		return true;
-	}
 
-	JSONInputStream::~JSONInputStream() {}
+// 		return false;
+// 	}
 
-	JSONInputStream::JSONInputStream() {}
+// 	bool JSONInputStream::object_end()
+// 	{
+// 		//TODO
+// 		return false;
+// 	}
 
-	bool JSONInputStream::object_begin(const std::string &name)
-	{
-		//TODO
-		return false;
-	}
+// 	void JSONInputStream::read(double &val)
+// 	{
+// 		if(impl_->is_invalid_subtree()) return;
 
-	bool JSONInputStream::object_end()
-	{
-		//TODO
-		return false;
-	}
+// 		//TODO
+// 	}
 
-	void JSONInputStream::read(double &val)
-	{
-		if(impl_->is_invalid_subtree()) return;
+// 	void JSONInputStream::read(int &val)
+// 	{
+// 		if(impl_->is_invalid_subtree()) return;
+// 		//TODO
+// 	}
 
-		//TODO
-	}
+// 	void JSONInputStream::read(SizeType &val)
+// 	{
+// 		if(impl_->is_invalid_subtree()) return;
 
-	void JSONInputStream::read(int &val)
-	{
-		if(impl_->is_invalid_subtree()) return;
-		//TODO
-	}
+// 		//TODO
+// 	}
 
-	void JSONInputStream::read(SizeType &val)
-	{
-		if(impl_->is_invalid_subtree()) return;
+// 	void JSONInputStream::read(std::string &val)
+// 	{
+// 		if(impl_->is_invalid_subtree()) return;
 
-		//TODO
-	}
+// 		//TODO
+// 	}
 
-	void JSONInputStream::read(std::string &val)
-	{
-		if(impl_->is_invalid_subtree()) return;
+// 	void JSONInputStream::read(const std::string &key, double &val)
+// 	{
+// 		object_begin(key);
+// 		read(val);
+// 		object_end();
+// 	}
 
-		//TODO
-	}
+// 	void JSONInputStream::read(const std::string &key, int &val)
+// 	{
+// 		object_begin(key);
+// 		read(val);
+// 		object_end();
+// 	}
 
-	void JSONInputStream::read(const std::string &key, double &val)
-	{
-		object_begin(key);
-		read(val);
-		object_end();
-	}
+// 	void JSONInputStream::read(const std::string &key, SizeType &val)
+// 	{
+// 		object_begin(key);
+// 		read(val);
+// 		object_end();
+// 	}
 
-	void JSONInputStream::read(const std::string &key, int &val)
-	{
-		object_begin(key);
-		read(val);
-		object_end();
-	}
+// 	void JSONInputStream::read(const std::string &key, std::string &val)
+// 	{
+// 		object_begin(key);
+// 		read(val);
+// 		object_end();
+// 	}
 
-	void JSONInputStream::read(const std::string &key, SizeType &val)
-	{
-		object_begin(key);
-		read(val);
-		object_end();
-	}
+// 	bool JSONInputStream::good() const
+// 	{
+// 		return impl_.get();
+// 	}
 
-	void JSONInputStream::read(const std::string &key, std::string &val)
-	{
-		object_begin(key);
-		read(val);
-		object_end();
-	}
+// 	void JSONInputStream::start()
+// 	{
+// 		//TODO
+// 	}
 
-	bool JSONInputStream::good() const
-	{
-		return impl_.get();
-	}
+//  	void JSONInputStream::start(const std::string &name)
+//  	{
+//  	//TODO
+//  	}
 
-	void JSONInputStream::start()
-	{
-		//TODO
-	}
+// 	std::string JSONInputStream::name()
+// 	{
+// 		if(impl_->is_invalid_subtree()) return "";
 
- 	void JSONInputStream::start(const std::string &name)
- 	{
- 	//TODO
- 	}
+// 		//TODO
+// 		return "";
+// 	}
 
-	std::string JSONInputStream::name()
-	{
-		if(impl_->is_invalid_subtree()) return "";
+// 	bool JSONInputStream::good()
+// 	{
+// 		return !(impl_->is_invalid_subtree());
+// 	}
 
-		//TODO
-		return "";
-	}
+// 	bool JSONInputStream::next()
+// 	{
+// 		if(impl_->is_invalid_subtree()) return false;
+// 		//TODO
+// 		return good();
+// 	}
 
-	bool JSONInputStream::good()
-	{
-		return !(impl_->is_invalid_subtree());
-	}
+// 	void JSONInputStream::finish()
+// 	{
+// 		//TODO
+// 		if(!good()) {
+// 			impl_->n_invalid_subtrees_--;
+// 		}
 
-	bool JSONInputStream::next()
-	{
-		if(impl_->is_invalid_subtree()) return false;
-		//TODO
-		return good();
-	}
-
-	void JSONInputStream::finish()
-	{
-		//TODO
-		if(!good()) {
-			impl_->n_invalid_subtrees_--;
-		}
-
-		object_end();
-	}
-}
+// 		object_end();
+// 	}
+// }

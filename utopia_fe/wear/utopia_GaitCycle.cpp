@@ -5,24 +5,19 @@
 #include "utopia_libmesh.hpp"
 
 namespace utopia {
-	void GaitCycle::init(
-		const int dim,
-		InputStream &is)
+	void GaitCycle::read(InputStream &is)
 	{
-		if(is.object_begin("rotation")) {
+		is.read("rotation", [this](InputStream &is) {
 			//TODO
-
 			// is.read("block", rot.block);
 			// is.read("axis",  rot.axis);
 			// is.read("begin", rot.begin_angle_degree);
 			// is.read("end",   rot.end_angle_degree);
 
 			// rot.finalize();
-		}
-
-		is.object_end(); //rotation
+		});
 	}
-	
+
 	GaitCycle::GaitCycle()
 	{
 		n_time_steps = 50;
@@ -48,7 +43,7 @@ namespace utopia {
 	void GaitCycle::init()
 	{
 		t = 0.;
-		dt = (t_end - t)/(n_time_steps - 1);	
+		dt = (t_end - t)/(n_time_steps - 1);
 		angle_radian = (angle_degree/180 * M_PI);
 		start_angle_radian = (start_angle_degree/180 * M_PI);
 		d_angle = angle_radian/(t_end - t);

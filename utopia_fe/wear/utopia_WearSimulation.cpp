@@ -21,33 +21,65 @@ namespace utopia {
 	public:
 		virtual ~ElasticitySimulation() {}
 
-		ElasticitySimulation() :
-		mesh_path("../data/mesh2.e"),
-		output_path("output2"),
-		material_name("LinearElasticity"),
-		params(1, 1),
-		n_time_teps(10),
-		dt(0.1)
+        class Desc : public Serializable {
+        public:
+            Desc() :
+                mesh_path("../data/mesh2.e"),
+                output_path("output2"),
+                material_name("LinearElasticity"),
+                params(1, 1),
+                n_time_teps(10),
+                dt(0.1)
+            { }
+
+            void read(InputStream &is) {
+               is.read("mesh", mesh_path);
+
+               is.read("model", [this](InputStream &is) {
+                    is.read("material", material_name);
+
+                    is.read("parameters", [this](InputStream &is) {
+                        is.read("mu", params.default_mu);
+                        is.read("lambda", params.default_lambda);
+                    });
+
+                    is.read("time", [this](InputStream &is) {
+                        is.read("dt", dt);
+                        is.read("steps", n_time_teps);
+                    });
+               });
+
+               is.read("output", output_path);
+            }
+
+            std::string mesh_path;
+            std::string output_path;
+            std::string material_name;
+            LameeParameters params;
+            int n_time_teps;
+            double dt;
+        };
+
+		ElasticitySimulation()
 		{}
 
 		virtual bool init_sim(libMesh::Parallel::Communicator &comm, InputStream &is)
 		{
 			bool ok = false;
-			if(is.object_begin("simulation"))
-			{
-				ok = init(comm, is);
-			}
 
-			is.object_end();
+			is.read("simulation", [this, &ok, &comm](InputStream &is) {
+                ok = init(comm, is);
+            });
+
 			return ok;
 		}
 
 		virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is)
 		{
-			is.read("mesh", mesh_path);
+            is.read(desc_);
 
 			mesh = std::make_shared<libMesh::DistributedMesh>(comm);
-			mesh->read(mesh_path);
+			mesh->read(desc_.mesh_path);
 			auto dim = mesh->mesh_dimension();
 
 			auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
@@ -58,7 +90,7 @@ namespace utopia {
 
 			auto Vx = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_x");
 			auto Vy = LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_y");
-			auto V  = Vx * Vy;
+			V  = Vx * Vy;
 
 			if(dim == 3) {
 				V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "disp_z");
@@ -66,95 +98,53 @@ namespace utopia {
 
             /////////////////////////////////////////////////////////////////////////////
 
-			if(is.object_begin("model")) {
-				is.read("material", material_name);
-
-				std::cout << material_name << std::endl;
-
-				if(material_name == "NeoHookean") {
-					material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, params);
-				} else if(material_name == "SaintVenantKirchoff") {
-					material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, params);
-                } else /*if(material_name == "LinearElasticity")*/ {
-					material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, params);
-				}
-
-				if(is.object_begin("parameters")) {
-					double mu, lambda;
-					is.read("mu", mu);
-					is.read("lambda", lambda);
-					params = LameeParameters(mu, lambda);
-				}
-
-                is.object_end(); //parameters
-            }
-
-            is.object_end(); //model
+			if(desc_.material_name == "NeoHookean") {
+				material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, desc_.params);
+			} else if(desc_.material_name == "SaintVenantKirchoff") {
+				material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, desc_.params);
+            } else /*if(desc_.material_name == "LinearElasticity")*/ {
+				material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, desc_.params);
+			}
 
             /////////////////////////////////////////////////////////////////////////////
 
-            if(is.object_begin("boundary-conditions")) {
+            is.read("boundary-conditions", [this](InputStream &is) {
+            	is.read("dirichlet", [this](InputStream &is) {
 
-            	if(is.object_begin("dirichlet")) {
+                    is.read_all([this](InputStream &is) {
+                        int side_set = 0, coord = 0;
+                        double value = 0;
+                        // std::string expr = "0";
 
-            		is.start();
+                        is.read("side", side_set);
+                        is.read("coord", coord);
+                        is.read("value", value);
 
-            		while(is.good()) {
-            			int side_set = 0, coord = 0;
-            			double value = 0;
+                        std::cout << side_set << " " << coord << " " << value << std::endl;
 
-            			is.read("side", side_set);
-            			is.read("coord", coord);
-            			is.read("value", value);
+                        auto u = trial(V[coord]);
+                        init_constraints(constraints(
+                            boundary_conditions(u == coeff(value), {side_set})
+                        ));
 
-            			std::cout << side_set << ", " << coord << ", " << value << std::endl;
+                    });
 
-            			auto u = trial(V[coord]);
-            			init_constraints(constraints(
-            				boundary_conditions(u == coeff(value), {side_set})
-            			));
-
-            			is.next();
-            		}
-
-            		is.finish();
-            	}
-
-                is.object_end(); //dirichlet
-            }
-
-            is.object_end(); //boundary-conditions
+            	});
+            });
 
             /////////////////////////////////////////////////////////////////////////////
-
-            if(is.object_begin("time")) {
-            	is.read("dt", dt);
-            	is.read("steps", n_time_teps);
-            }
-
-            is.object_end(); //time
-
-            /////////////////////////////////////////////////////////////////////////////
-
-            is.read("output", output_path);
-
-
-            if(!material) {
-            	material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, params);
-            }
-
             return true;
         }
 
         virtual void describe(std::ostream &os) const
         {
-        	os << "mesh_path:\t" << mesh_path << "\n";
-        	os << "output_path:\t" << output_path << "\n";
-        	os << "material_name:\t" << material_name << "\n";
+        	os << "mesh_path:\t" << desc_.mesh_path << "\n";
+        	os << "output_path:\t" << desc_.output_path << "\n";
+        	os << "material_name:\t" << desc_.material_name << "\n";
         	os << "material_params:\n";
-        	params.describe(os);
-        	os << "n_time_teps:\t" << n_time_teps << "\n";
-        	os << "dt:\t" << dt << "\n";
+        	desc_.params.describe(os);
+        	os << "n_time_teps:\t" << desc_.n_time_teps << "\n";
+        	os << "dt:\t" << desc_.dt << "\n";
         }
 
     public:
@@ -166,13 +156,7 @@ namespace utopia {
     	int main_sys_num;
     	int aux_sys_num;
 
-    private:
-    	std::string mesh_path;
-    	std::string output_path;
-    	std::string material_name;
-    	LameeParameters params;
-    	int n_time_teps;
-    	double dt;
+        Desc desc_;
     };
 
     class ContactSimulation : public ElasticitySimulation {
@@ -186,28 +170,28 @@ namespace utopia {
     			ok = false;
     		}
 
-    		if(is.object_begin("contact")) {
-    			is.read("radius", contact_params.search_radius);
+    		// if(is.object_begin("contact")) {
+    		// 	is.read("radius", contact_params.search_radius);
 
-    			is.start("pair");
+    		// 	is.start("pair");
 
-    			while(is.good()) {
-    				int master = -1, slave = -1;
-    				is.read("master", master);
-    				is.read("slave", slave);
+    		// 	while(is.good()) {
+    		// 		int master = -1, slave = -1;
+    		// 		is.read("master", master);
+    		// 		is.read("slave", slave);
 
-    				assert(master != -1);
-    				assert(slave != -1);
+    		// 		assert(master != -1);
+    		// 		assert(slave != -1);
 
-    				contact_params.contact_pair_tags.push_back({ master, slave });
+    		// 		contact_params.contact_pair_tags.push_back({ master, slave });
 
-    				is.next();
-    			}
+    		// 		is.next();
+    		// 	}
 
-    			is.finish();
-    		}
+    		// 	is.finish();
+    		// }
 
-            is.object_end(); //contact
+      //       is.object_end(); //contact
             return true;
         }
 
@@ -229,14 +213,7 @@ namespace utopia {
     	virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is) override
     	{
     		bool ok = ContactSimulation::init(comm, is);
-
-    		if(is.object_begin("gait-cycle")) {
-    			gc.init(mesh->mesh_dimension(), is);
-    		} else {
-    			ok = false;
-    		}
-
-    		is.object_end();
+            is.read("gait-cycle", gc);
     		return ok;
     	}
 

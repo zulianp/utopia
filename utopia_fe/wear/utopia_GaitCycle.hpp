@@ -7,21 +7,20 @@
 #include "libmesh/mesh.h"
 #include "libmesh/dof_map.h"
 
+#include "utopia_InputStream.hpp"
 
 namespace utopia {
 
 	class InputStream;
 
-	class GaitCycle {
+	class GaitCycle : public Serializable {
 	public:
 		using Point2d = std::array<double, 2>;
 		using Point3d = std::array<double, 3>;
 		using Fun2d = std::function<std::array<double, 2>(const std::array<double, 2> &p)>;
 		using Fun3d = std::function<std::array<double, 3>(const std::array<double, 3> &p)>;
 
-		void init(
-			const int dim,
-			InputStream &is);
+		void read(InputStream &is) override;
 
 		GaitCycle();
 

@@ -15,35 +15,35 @@ namespace utopia {
 		~XMLInputStream();
 
 		bool open(const Path &path) override;
-		bool object_begin(const std::string &name) override;
-		bool object_end() override;
 
 		void read(double &val) override;
 		void read(int &val) override;
 		void read(SizeType &val) override;
 		void read(std::string &val) override;
+		void read(Serializable &val) override;
+		void read(std::function<void(InputStream &)> lambda) override;
 
 		void read(const std::string &key, double &val) override;
 		void read(const std::string &key, int &val) override;
 		void read(const std::string &key, SizeType &val) override;
 		void read(const std::string &key, std::string &val) override;
-
+		void read(const std::string &key, Serializable &val) override;
+		void read(const std::string &key, std::function<void(InputStream &)> lambda) override;
 
 		bool good() const override;
 
-
-		void start() override;
-		void start(const std::string &name) override;
-
-		std::string name() override;
-		bool good() override;
-		bool next() override;
-		void finish() override;
+		SizeType size() const override;
 
 	private:
-
 		class Impl;
 		std::unique_ptr<Impl> impl_;
+
+		bool object_begin(const std::string &name);
+		bool object_end();
+
+		void next()   override;
+		void array_start()  override;
+		void array_finish() override;
 	};
 }
 

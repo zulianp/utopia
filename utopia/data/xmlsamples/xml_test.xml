@@ -6,4 +6,9 @@
 		<algorithm>CG</algorithm>
 		<max_iter>10</max_iter>
 	</solver>
+	<values>
+		<value>1</value>
+		<value>2</value>
+		<value>3</value>
+	</values>
 </solve>

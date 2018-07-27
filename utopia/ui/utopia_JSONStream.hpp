@@ -1,50 +1,50 @@
-#ifndef UTOPIA_JSON_STREAM_HPP
-#define UTOPIA_JSON_STREAM_HPP
+// #ifndef UTOPIA_JSON_STREAM_HPP
+// #define UTOPIA_JSON_STREAM_HPP
 
-#include <memory>
-#include "utopia_Base.hpp"
-#include "utopia_Path.hpp"
-#include "utopia_InputStream.hpp"
-
-
-namespace utopia {
-
-	class JSONInputStream final : public InputStream {
-	public:
-		JSONInputStream();
-		~JSONInputStream();
-
-		bool open(const Path &path) override;
-		bool object_begin(const std::string &name) override;
-		bool object_end() override;
-
-		void read(double &val) override;
-		void read(int &val) override;
-		void read(SizeType &val) override;
-		void read(std::string &val) override;
-
-		void read(const std::string &key, double &val) override;
-		void read(const std::string &key, int &val) override;
-		void read(const std::string &key, SizeType &val) override;
-		void read(const std::string &key, std::string &val) override;
+// #include <memory>
+// #include "utopia_Base.hpp"
+// #include "utopia_Path.hpp"
+// #include "utopia_InputStream.hpp"
 
 
-		bool good() const override;
+// namespace utopia {
+
+// 	class JSONInputStream final : public InputStream {
+// 	public:
+// 		JSONInputStream();
+// 		~JSONInputStream();
+
+// 		bool open(const Path &path) override;
+// 		bool object_begin(const std::string &name) override;
+// 		bool object_end() override;
+
+// 		void read(double &val) override;
+// 		void read(int &val) override;
+// 		void read(SizeType &val) override;
+// 		void read(std::string &val) override;
+
+// 		void read(const std::string &key, double &val) override;
+// 		void read(const std::string &key, int &val) override;
+// 		void read(const std::string &key, SizeType &val) override;
+// 		void read(const std::string &key, std::string &val) override;
 
 
-		void start() override;
-		void start(const std::string &name) override;
+// 		bool good() const override;
 
-		std::string name() override;
-		bool good() override;
-		bool next() override;
-		void finish() override;
 
-	private:
+// 		void start() override;
+// 		void start(const std::string &name) override;
 
-		class Impl;
-		std::unique_ptr<Impl> impl_;
-	};
-}
+// 		std::string name() override;
+// 		bool good() override;
+// 		bool next() override;
+// 		void finish() override;
 
-#endif //UTOPIA_JSON_STREAM_HPP
+// 	private:
+
+// 		class Impl;
+// 		std::unique_ptr<Impl> impl_;
+// 	};
+// }
+
+// #endif //UTOPIA_JSON_STREAM_HPP
