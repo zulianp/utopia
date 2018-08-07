@@ -9,7 +9,9 @@
 #define ASSERT(x) do { (void)sizeof(x);} while (0)
 #else
 #include <assert.h>
+#ifndef ASSERT
 #define ASSERT(x) assert(x)
+#endif
 #endif
 
 

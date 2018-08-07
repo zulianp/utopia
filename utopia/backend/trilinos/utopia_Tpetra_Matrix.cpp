@@ -68,9 +68,9 @@ namespace utopia {
 
 		if(result.is_null()) {
 			if(transpose_this) {
-				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getDomainMap(), implementation().getRowMap(), 0, Tpetra::DynamicProfile));
+				result.mat_ = Teuchos::rcp(new crs_mat_type(implementation().getDomainMap(), implementation().getRowMap(), 0, Tpetra::DynamicProfile));
 			} else {
-				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRowMap(), implementation().getColMap(), 0, Tpetra::DynamicProfile));
+				result.mat_ = Teuchos::rcp(new crs_mat_type(implementation().getRowMap(), implementation().getColMap(), 0, Tpetra::DynamicProfile));
 			}
 			result.owner_ = true;
 		}
@@ -174,7 +174,7 @@ namespace utopia {
 		}
 
 	    auto col_map = Teuchos::rcp(new map_type(cols_global, indexBase, comm, Tpetra::LocallyReplicated));
-	    mat_ = Teuchos::rcp(new crs_matrix_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
+	    mat_ = Teuchos::rcp(new crs_mat_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
 	    owner_ = true;
 
 	    init_ = std::make_shared<InitStructs>();
@@ -260,7 +260,7 @@ namespace utopia {
 		
 		try {
 			//https://people.sc.fsu.edu/~jburkardt/data/mm/mm.html
-			mat_ = Tpetra::MatrixMarket::Reader<crs_matrix_type>::readSparse(is, comm);
+			mat_ = Tpetra::MatrixMarket::Reader<crs_mat_type>::readSparse(is, comm);
 		} catch(std::exception &ex) {
 			is.close();
 			std::cout << ex.what() << std::endl;
@@ -276,7 +276,7 @@ namespace utopia {
 		if(mat_.is_null()) return false;
 
 		try {
-			Tpetra::MatrixMarket::Writer<crs_matrix_type>::writeSparseFile(path, mat_, "mat", "", false);
+			Tpetra::MatrixMarket::Writer<crs_mat_type>::writeSparseFile(path, mat_, "mat", "", false);
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			return false;

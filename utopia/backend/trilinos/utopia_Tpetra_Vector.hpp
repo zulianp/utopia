@@ -48,10 +48,10 @@ namespace utopia {
 
         TpetraVector()
         {
-            // FIXME global size to size of the comm and index base to zero
-            // auto comm = Tpetra::DefaultPlatform::getDefaultPlatform ().getComm ();
-            // auto conigMap = Teuchos::rcp (new Tpetra::Map<> (comm->getSize (), 0, comm));
-            // vec_.reset(new vector_type (conigMap));
+            int indexBase = 0;
+            auto comm = Tpetra::DefaultPlatform::getDefaultPlatform ().getComm ();
+            auto conigMap = Teuchos::rcp (new map_type (comm->getSize (), indexBase, comm));
+            vec_.reset(new vector_type (conigMap, false));
         }
 
         ~TpetraVector()
@@ -85,7 +85,7 @@ namespace utopia {
                 return *this;
             }
             
-            vec_ = Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy));
+            vec_.reset(new vector_type(*other.vec_, Teuchos::Copy));
             return *this;
         }
 
@@ -110,13 +110,13 @@ namespace utopia {
                 map = Teuchos::rcp(new map_type(n_global, n_local, 0, comm));
             }
 
-            vec_ = Teuchos::rcp(new vector_type(map));
+            vec_.reset(new vector_type(map));
             implementation().putScalar(value);
         }
 
         inline void init(const rcp_map_type &map)
         {
-            vec_ = Teuchos::rcp(new vector_type(map));
+            vec_.reset(new vector_type(map));
         }
 
         inline void axpy(const Scalar &alpha, const TpetraVector &x)
@@ -274,6 +274,20 @@ namespace utopia {
         inline bool is_null() const
         {
             return vec_.is_null();
+        }
+
+        void replaceGlobalValue (const GO globalRow, const SC &value )
+        {
+            std::cout << " sono qui " << std::endl;
+            vec_->replaceGlobalValue (globalRow, value);
+
+        }
+
+        void replaceLocalValue (const LO localRow, const SC &value )
+        {
+            std::cout << localRow << " localRow " << std::endl;
+            std::cout << value << " value " << std::endl;
+            vec_->replaceLocalValue(localRow, value);
         }
 
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);

@@ -339,9 +339,11 @@ namespace utopia {
         TSMatrixd A;
         Parameters params;
         //params.set_param_file_name( "~/utopiaTrilinosFile.xml");
-        
+        int i = 2;
+        double ii=3.442;
         BelosSolver<TSMatrixd, TVectord> solver(params);
-        
+        x.implementation().replaceLocalValue(i, ii);
+
         solver.solve(A, b, x);
         std::cout << "Number of Iterations " << solver.getNumIter() << std::endl;
         

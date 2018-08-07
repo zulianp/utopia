@@ -105,14 +105,33 @@ namespace utopia {
          }*/
         
         bool setProblem() {
+                         std::cout << "pota 3 " << std::endl;
             linearProblem->setProblem();
+                         std::cout << "pota 4 " << std::endl;
             belosSolver = belosFactory.create( ParamList->sublist("UTOPIA", true).get("Solver Type", "CG"), ParamList); //to change it to have the specialization
+                         std::cout << "pota 5 " << std::endl;
             belosSolver->setProblem(linearProblem);
+                         std::cout << "pota 6 " << std::endl;
             if (this->verbose()) belosSolver->getCurrentParameters()->print();
             
             return true;
         }
-        
+
+        bool setProblem(Matrix &A) {
+                 std::cout << "pota 3 " << std::endl;
+             linearProblem->setProblem();
+                        std::cout << "pota 4 " << std::endl;
+            belosSolver = belosFactory.create( ParamList->sublist("UTOPIA", true).get("Solver Type", "CG"), ParamList); //to change it to have the specialization
+                     std::cout << "pota 5 " << std::endl;
+            set_preconditioner(A);
+                     std::cout << "pota 5a " << std::endl;
+            belosSolver->setProblem(linearProblem);
+                         std::cout << "pota 6 " << std::endl;
+             if (this->verbose()) belosSolver->getCurrentParameters()->print();
+
+             return true;
+         }
+
         /////
         virtual ~BelosSolver() {}
 
@@ -131,7 +150,7 @@ namespace utopia {
         
         
         bool apply(const Vector &rhs, Vector &lhs) override {
-           
+            std::cout << "pota 1 " << std::endl;
             linearProblem = Teuchos::rcp(
              new problem_type(
                this->get_operator()->implementation().implementation_ptr(),
@@ -139,12 +158,27 @@ namespace utopia {
                rhs.implementation().implementation_ptr()
                )
              );
-           
+             std::cout << "pota 2 " << std::endl;
             setProblem();
+                         std::cout << "pota 7 " << std::endl;
             belosSolver->solve();
             return true;
         }
         
+
+bool solve(Matrix &A,const Vector &rhs, Vector &lhs) { //override {
+        std::cout << "pota 1appl " << std::endl;
+        linearProblem = Teuchos::rcp( new problem_type(A.implementation().implementation_ptr(),
+        lhs.implementation().implementation_ptr(),
+        rhs.implementation().implementation_ptr() ) );
+         std::cout << "pota 2appl " << std::endl;
+            setProblem(A);
+               std::cout << "pota 7appl " << std::endl;
+            belosSolver->solve();
+            return true;
+         }
+
+
         void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override
         {
             bool direct_solver = ParamList->sublist("UTOPIA", true).get<bool>("Direct Preconditioner", false);
@@ -167,7 +201,7 @@ auto delegate_ptr = std::dynamic_pointer_cast<DelegatePreconditioner<Matrix, Vec
        }*/
 
             if ( direct_solver ) {
-                 //M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, *precond);
+//                 M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, precond->implementation().implementation_ptr()); //TODO
                  assert(!M_ifpack.is_null());
                  M_ifpack->setParameters(ParamList->sublist(dir_prec_type, false));
                  M_ifpack->initialize();
@@ -175,8 +209,8 @@ auto delegate_ptr = std::dynamic_pointer_cast<DelegatePreconditioner<Matrix, Vec
                  linearProblem->setLeftPrec(M_ifpack);
             } else {
                 // Multigrid Hierarchy
-                //M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)*precond,
-                //                                            ParamList->sublist("MueLu", false));
+//                M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)precond->implementation().implementation_ptr(),    //TODO
+//                                                            ParamList->sublist("MueLu", false));
                 assert(!M_muelu.is_null());
                 linearProblem->setRightPrec(M_muelu);
             }
@@ -186,9 +220,8 @@ auto delegate_ptr = std::dynamic_pointer_cast<DelegatePreconditioner<Matrix, Vec
         {
             bool direct_solver = ParamList->sublist("UTOPIA", true).get<bool>("Direct Preconditioner", false);
             std::string dir_prec_type = ParamList->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
-            
             if ( direct_solver ) {
-                 M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, *precond);
+                 M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, precond.implementation().implementation_ptr());
                  assert(!M_ifpack.is_null());
                  M_ifpack->setParameters(ParamList->sublist(dir_prec_type, false));
                  M_ifpack->initialize();
@@ -196,7 +229,7 @@ auto delegate_ptr = std::dynamic_pointer_cast<DelegatePreconditioner<Matrix, Vec
                  linearProblem->setLeftPrec(M_ifpack);
             } else {
                 // Multigrid Hierarchy
-                M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)*precond,
+                M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>) precond.implementation().implementation_ptr(),
                                                             ParamList->sublist("MueLu", false));
                 assert(!M_muelu.is_null());
                 linearProblem->setRightPrec(M_muelu);
