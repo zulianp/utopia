@@ -126,57 +126,12 @@ namespace utopia {
 		const libMesh::DofMap &dof_map,
 		DVectord &displacement) const
 	{
-		//FIXME
-		// const int main_system_number = 0;
-		// // displacement = local_zeros(dof_map.n_local_dofs());
-
-		// const auto dim = mesh.mesh_dimension();
-		// const bool is_3d = dim == 3;
-
-		// auto r = range(displacement);
-		// Write<DVectord> w_d(displacement);
-
-		// for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
-		// 	const auto &e = **e_it;
-		// 	if(e.subdomain_id() != block_id_rot && e.subdomain_id() != block_id_trasl) continue;
-
-		// 	for(std::size_t i = 0; i < e.n_nodes(); ++i) {
-		// 		const auto &node = e.node_ref(i);
-
-		// 		Point2d p2{ node(0), node(1) };
-		// 		Point3d p3{ node(0), node(1), node(2) };
-
-		// 		if(e.subdomain_id() == block_id_rot){
-		// 			if(is_3d) {
-		// 				p3 = rotate3(p3);
-		// 			} else {
-		// 				p2 = rotate2(p2);
-		// 			}
-		// 		} else if(e.subdomain_id() == block_id_trasl) {
-		// 			if(is_3d) {
-		// 				p3 = translate3_z(p3);
-		// 			} else {
-		// 				p2 = translate2_y(p2);
-		// 			}
-		// 		}
-
-		// 		for(unsigned int d = 0; d < dim; ++d) {
-		// 			unsigned int dof = node.dof_number(main_system_number, d, 0);
-
-		// 			if(r.inside(dof)) {
-		// 				if(is_3d) {
-		// 					displacement.set(dof, p3[d]);
-		// 				} else {
-		// 					displacement.set(dof, p2[d]);
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// }
-
 
 		const int main_system_number = 0;
-		// displacement = local_zeros(dof_map.n_local_dofs());
+
+		if(empty(displacement)) {
+			displacement = local_zeros(dof_map.n_local_dofs());
+		}
 
 		const auto dim = mesh.mesh_dimension();
 		const bool is_3d = dim == 3;

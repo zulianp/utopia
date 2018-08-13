@@ -82,7 +82,7 @@ namespace utopia {
 			mesh->read(desc_.mesh_path);
 			auto dim = mesh->mesh_dimension();
 
-			auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
+            equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
 			auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("wear");
 			main_sys_num = sys.number();
 
@@ -133,6 +133,8 @@ namespace utopia {
             	});
             });
 
+
+            //This should be moved
             V[0].initialize();
 
             forcing_function = std::make_shared<CompositeForcingFunction<DVectord>>();
