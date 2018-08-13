@@ -273,7 +273,7 @@ namespace utopia {
 		// }
 
 		if(reason < 0) {
-			utopia_error("> Failed to converge");
+			utopia_warning("> Failed to converge");
 		}
 
 		return reason >= 0;
