@@ -63,7 +63,6 @@ namespace utopia
 
         virtual ~RMTR(){} 
         
-
         void set_parameters(const Parameters params) override
         {
             NonlinearMultiLevelBase<Matrix, Vector>::set_parameters(params);    
@@ -170,8 +169,12 @@ namespace utopia
          * @param      x_0   The initial guess. 
          *
          */
-        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs) override
+        virtual bool solve(Vector & x_h) override
         {
+            if(this->transfers_.size() + 1 != this->level_functions_.size())
+                utopia_error("RMTR::solve size of transfer and level functions do not match... \n"); 
+
+
             bool converged = false; 
             SizeType fine_level = this->n_levels()-1; 
             Scalar r_norm, r0_norm, rel_norm, energy;
@@ -185,10 +188,10 @@ namespace utopia
 
             memory_.x[fine_level] = x_h;
             memory_.g[fine_level]  = local_zeros(local_size(memory_.x[fine_level])); 
-            this->make_iterate_feasible(fine_fun, memory_.x[fine_level]); 
+            this->make_iterate_feasible(this->function(fine_level), memory_.x[fine_level]); 
 
-            fine_fun.gradient(memory_.x[fine_level], memory_.g[fine_level]); 
-            fine_fun.value(memory_.x[fine_level], energy); 
+            this->function(fine_level).gradient(memory_.x[fine_level], memory_.g[fine_level]); 
+            this->function(fine_level).value(memory_.x[fine_level], energy); 
 
             r0_norm = this->criticality_measure(fine_level); 
             _it_global = 0; 
@@ -208,10 +211,10 @@ namespace utopia
             while(!converged)
             {            
                 if(this->cycle_type() == MULTIPLICATIVE_CYCLE)
-                    this->multiplicative_cycle(fine_fun, fine_level); 
+                    this->multiplicative_cycle(fine_level); 
                 else{
                     std::cout<<"ERROR::UTOPIA_RMTR << unknown cycle type, solving in multiplicative manner ... \n"; 
-                    this->multiplicative_cycle(fine_fun, fine_level); 
+                    this->multiplicative_cycle(fine_level); 
                 }
 
 
@@ -223,8 +226,8 @@ namespace utopia
                     }
                 #endif    
 
-                fine_fun.gradient(memory_.x[fine_level], memory_.g[fine_level]); 
-                fine_fun.value(memory_.x[fine_level], energy); 
+                this->function(fine_level).gradient(memory_.x[fine_level], memory_.g[fine_level]); 
+                this->function(fine_level).value(memory_.x[fine_level], energy); 
                 
                 r_norm = this->criticality_measure(fine_level);
                 rel_norm = r_norm/r0_norm; 
@@ -264,7 +267,7 @@ namespace utopia
          * @param[in]  level      The level
          *
          */
-        virtual bool multiplicative_cycle(Fun &fine_fun, const SizeType & level)
+        virtual bool multiplicative_cycle(const SizeType & level)
         {
             Vector s_global; 
             Matrix H_fine, H_coarse;  // lets not store all hessians for all levels... this is simply too much... 
@@ -276,14 +279,14 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   presmoothing
             //----------------------------------------------------------------------------
-            converged = this->local_tr_solve(fine_fun, level); 
+            converged = this->local_tr_solve(this->function(level), level); 
 
             // making sure that correction does not exceed tr radius ... 
             if(converged)
                 return true; 
 
             this->compute_s_global(level, s_global); 
-            this->get_multilevel_gradient(fine_fun, s_global, level); 
+            this->get_multilevel_gradient(this->function(level), s_global, level); 
 
             if(level == this->n_levels()-1)
             {
@@ -320,7 +323,7 @@ namespace utopia
             //----------------------------------------------------------------------------            
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
             {
-                this->get_multilevel_hessian(fine_fun, H_fine, level); 
+                this->get_multilevel_hessian(this->function(level), H_fine, level); 
                 this->transfer(level-1).restrict(H_fine, memory_.H_diff[level-1]);
                 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
@@ -355,7 +358,7 @@ namespace utopia
                 for(SizeType k = 0; k < this->mg_type(); k++)
                 {   
                     SizeType l_new = level - 1; 
-                    this->multiplicative_cycle(this->function(level-1), l_new); 
+                    this->multiplicative_cycle(l_new); 
                 }
             }
        
@@ -368,16 +371,16 @@ namespace utopia
                 coarse_reduction -= this->get_multilevel_energy(this->function(level-1), memory_.s[level-1], level-1);
 
                 this->transfer(level-1).interpolate(memory_.s[level-1], memory_.s[level]);
-                this->zero_correction_related_to_equality_constrain(fine_fun, memory_.s[level]); 
+                this->zero_correction_related_to_equality_constrain(this->function(level), memory_.s[level]); 
 
                 this->compute_s_global(level, s_global);                               
-                E_old = this->get_multilevel_energy(fine_fun, s_global, level); 
+                E_old = this->get_multilevel_energy(this->function(level), s_global, level); 
 
                 // new test for dbg mode 
                 memory_.x[level] += memory_.s[level]; 
 
                 this->compute_s_global(level, s_global);  
-                E_new = this->get_multilevel_energy(fine_fun, s_global, level); 
+                E_new = this->get_multilevel_energy(this->function(level), s_global, level); 
                 
                 //----------------------------------------------------------------------------
                 //                        trial point acceptance  
@@ -430,7 +433,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                        postsmoothing   
             //----------------------------------------------------------------------------
-            this->local_tr_solve(fine_fun, level, !smoothness_flg); 
+            this->local_tr_solve(this->function(level), level, !smoothness_flg); 
     
             return true; 
         }

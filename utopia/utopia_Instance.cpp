@@ -1,9 +1,3 @@
-/*
-* @Author: kopanicakova
-* @Date:   2018-04-05 17:59:33
-* @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-06 15:45:05
-*/
 #include "utopia_Instance.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Tracer.hpp"

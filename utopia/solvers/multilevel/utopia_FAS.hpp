@@ -56,11 +56,14 @@ namespace utopia
             }
 
     
-        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs) override
+        virtual bool solve(Vector & x_h) override
         {
             bool converged = false;
             SizeType it = 0, n_levels = this->n_levels();
             Scalar r_norm, r0_norm=1, rel_norm=1, energy;
+
+            if(this->transfers_.size() + 1 != this->level_functions_.size())
+                utopia_error("FAS::solve size of transfer and level functions do not match... \n"); 
 
             
             std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";
@@ -76,11 +79,11 @@ namespace utopia
             memory_.g[n_levels-1] = local_zeros(local_size(memory_.x[n_levels-1]));
 
 
-            fine_fun.gradient(memory_.x[n_levels-1], memory_.g[n_levels-1]);
+            this->function(n_levels-1).gradient(memory_.x[n_levels-1], memory_.g[n_levels-1]);
             r0_norm = norm2(memory_.g[n_levels-1]);
             r_norm = r0_norm;
             
-            fine_fun.value(memory_.x[n_levels-1], energy);
+            this->function(n_levels-1).value(memory_.x[n_levels-1], energy);
             
             if(this->verbose())
                 PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy});
@@ -89,7 +92,7 @@ namespace utopia
             
             while(!converged)
             {
-                this->multiplicative_cycle(fine_fun, n_levels);
+                this->multiplicative_cycle(n_levels);
                 
 #ifdef CHECK_NUM_PRECISION_mode
                 if(has_nan_or_inf(memory_.x[n_levels-1]) == 1)
@@ -99,8 +102,8 @@ namespace utopia
                 }
 #endif
                 
-                fine_fun.gradient(memory_.x[n_levels-1], memory_.g[n_levels-1]);
-                fine_fun.value(memory_.x[n_levels-1], energy);
+                this->function(n_levels-1).gradient(memory_.x[n_levels-1], memory_.g[n_levels-1]);
+                this->function(n_levels-1).value(memory_.x[n_levels-1], energy);
                 
                 r_norm = norm2(memory_.g[n_levels-1]);
                 rel_norm = r_norm/r0_norm;
@@ -136,7 +139,7 @@ namespace utopia
         }
 
 
-        bool multiplicative_cycle(Fun &fine_fun, const SizeType & l) 
+        bool multiplicative_cycle(const SizeType & l) 
         {
             for(auto l = this->n_levels()-1; l > 0; l--)
             {

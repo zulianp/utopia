@@ -64,16 +64,7 @@ namespace utopia {
         }
 
         
-        /**
-         * @brief      The solve function for nonlinear multilevel solvers.
-         *
-         * @param[in]  rhs   Function to be minimized.
-         * @param[in]  rhs   The right hand side.
-         * @param      x_h   The initial guess.
-         *
-         */
-        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs) = 0; 
-        
+
         /**
          * @brief      The solve function for nonlinear multilevel solvers.
          *
@@ -81,11 +72,8 @@ namespace utopia {
          * @param      x_h   The initial guess.
          *
          */
-        virtual bool solve(Fun & fine_fun, Vector &x_h)
-        {
-            Vector rhs = local_zeros(local_size(x_h));
-            return this->solve(fine_fun,  x_h, rhs);
-        }
+        virtual bool solve( Vector &x_h) = 0; 
+
         
         /**
          * @brief      Fnction inits functions associated with assemble on each level.

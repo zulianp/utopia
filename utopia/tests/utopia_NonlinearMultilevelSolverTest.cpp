@@ -170,12 +170,20 @@ namespace utopia
 	    	if(mpi_world_size() > 1)
 	    		return; 
 
+	    	// intial guess 
+	        DVectord x = values(n_dofs_[n_levels_ -1 ], 0.0); 
+
 	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
+
 
 	    	for(auto l=0; l < n_levels_; l++)
 	    	{
 		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l]); 
 		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
+
+		    	// making sure that fine level IG is feasible 
+		    	if(l+1 == n_levels_)
+		    		fun.apply_bc_to_initial_guess(x); 
 		    }
 	        
 
@@ -203,13 +211,7 @@ namespace utopia
 	        fas->max_it(10);
 
 	        fas->set_functions(level_functions); 
-	        
-	        Bratu1D<DSMatrixd, DVectord> fun_fine(n_dofs_[n_levels_-1]); 
-	        DVectord x = values(n_dofs_[n_levels_ -1 ], 0.0); 
-	        fun_fine.apply_bc_to_initial_guess(x); 
-
-	        DVectord rhs = 0.0 * x; 
-	        fas->solve(fun_fine, x, rhs); 
+	        fas->solve(x); 
 
 	    }	 
 
@@ -217,12 +219,20 @@ namespace utopia
 
 	    void RMTR_test()
 	    {
+	    	// intial guess 
+	        DVectord x = values(n_dofs_[n_levels_ -1 ], 0.0); 
+
 	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
 
-	    	for(auto l=0; l < n_levels_-1; l++)
+
+	    	for(auto l=0; l < n_levels_; l++)
 	    	{
-		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l], 0.7); 
+		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l]); 
 		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
+
+		    	// making sure that fine level IG is feasible 
+		    	if(l+1 == n_levels_)
+		    		fun.apply_bc_to_initial_guess(x); 
 		    }
 	        
 	        auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
@@ -251,26 +261,31 @@ namespace utopia
 			rmtr->verbose(verbose_); 
 			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
 			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
-
 	        rmtr->set_functions(level_functions); 
 	        
-	        Bratu1D<DSMatrixd, DVectord> fun_fine(n_dofs_[n_levels_-1]); 
-	        DVectord x = values(n_dofs_[n_levels_ -1 ], 1.0); 
-	        fun_fine.apply_bc_to_initial_guess(x); 
 
-	        rmtr->solve(fun_fine, x); 
-	    }	 
+	        rmtr->solve(x); 
+	    }	
+
+
 
 		void RMTR_inf_test()
 	    {
-	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
+	    	// intial guess 
+	        DVectord x = values(n_dofs_[n_levels_ -1 ], 0.0); 
 
-	    	for(auto l=0; l < n_levels_-1; l++)
+	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
+	    	for(auto l=0; l < n_levels_; l++)
 	    	{
-		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l], 0.7); 
+		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l]); 
 		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
+
+		    	// making sure that fine level IG is feasible 
+		    	if(l+1 == n_levels_)
+		    		fun.apply_bc_to_initial_guess(x); 
 		    }
-	        
+
+
 		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
         	auto tr_strategy_fine = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
         	tr_strategy_fine->pc_type("jacobi"); 
@@ -295,26 +310,33 @@ namespace utopia
 			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
 
 	        rmtr->set_functions(level_functions); 
-	        
-	        Bratu1D<DSMatrixd, DVectord> fun_fine(n_dofs_[n_levels_-1]); 
-	        DVectord x = values(n_dofs_[n_levels_ -1 ], 1.0); 
-	        fun_fine.apply_bc_to_initial_guess(x); 
-
-
-	        rmtr->solve(fun_fine, x); 
+	        rmtr->solve(x); 
 	    }	 
 
 
 
 		void RMTR_inf_bound_test()
 	    {
-	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
+	    	// intial guess 
+	        DVectord x = values(n_dofs_[n_levels_ -1 ], 0.0); 
 
-	    	for(auto l=0; l < n_levels_-1; l++)
+	        // upper, lower bound... 
+	        DVectord ub, lb; 
+
+	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
+	    	for(auto l=0; l < n_levels_; l++)
 	    	{
-		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l], 0.7); 
+		    	Bratu1D<DSMatrixd, DVectord> fun(n_dofs_[l]); 
 		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun); 
+
+		    	// making sure that fine level IG is feasible 
+		    	if(l+1 == n_levels_)
+		    	{
+		    		fun.apply_bc_to_initial_guess(x); 
+		    		fun.generate_constraints(lb, ub, -10, 0.1); 
+		    	}
 		    }
+
 
 		    // Utopia::instance().set("log_output_path", "benchmark.csv");
 	        
@@ -345,19 +367,10 @@ namespace utopia
 			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
 
 	        rmtr->set_functions(level_functions); 
-	        
-	        Bratu1D<DSMatrixd, DVectord> fun_fine(n_dofs_[n_levels_-1]); 
-	        DVectord x = values(n_dofs_[n_levels_ -1 ], 1.0); 
-	        fun_fine.apply_bc_to_initial_guess(x); 
 
-	        // generate constraints....
-	        DVectord ub, lb; 
-	    	fun_fine.generate_constraints(lb, ub, -10, 0.1); 
-	    	auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+	       	auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
 	    	rmtr->set_box_constraints(box); 
-
-
-	        rmtr->solve(fun_fine, x); 
+	        rmtr->solve(x); 
 	    }	 
 
 	private:

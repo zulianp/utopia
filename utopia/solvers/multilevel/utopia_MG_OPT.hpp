@@ -29,6 +29,12 @@ namespace utopia
 
     public:
 
+        virtual bool solve(Vector & x_h) override
+        {
+            utopia_error("MG_OPT:: solve(x) function is not supported, use solve(fun, x, rhs) instead .... \n"); 
+            return false; 
+        }
+
         MG_OPT( const std::shared_ptr<Solver> &smoother, const std::shared_ptr<Solver> &coarse_solver,
                 const std::shared_ptr<LSStrategy> &ls_strategy = std::make_shared<utopia::SimpleBacktracking<Matrix, Vector> >(),
                 const Parameters params = Parameters()): 
@@ -63,7 +69,7 @@ namespace utopia
 
 
 
-        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs) override
+        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs)
         {
             
             bool converged = false;
