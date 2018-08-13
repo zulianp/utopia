@@ -83,11 +83,11 @@ namespace utopia
 		
 		void run()
 		{
-			// UTOPIA_RUN_TEST(TR_test); 
-			// UTOPIA_RUN_TEST(TR_constraint_test); 
+			UTOPIA_RUN_TEST(TR_test); 
+			UTOPIA_RUN_TEST(TR_constraint_test); 
 
-			// UTOPIA_RUN_TEST(newton_MG_test); 
-			// UTOPIA_RUN_TEST(FAS_test); 
+			UTOPIA_RUN_TEST(newton_MG_test); 
+			UTOPIA_RUN_TEST(FAS_test); 
 
 			UTOPIA_RUN_TEST(RMTR_test); 
 			UTOPIA_RUN_TEST(RMTR_inf_test); 
@@ -167,6 +167,9 @@ namespace utopia
 
 	    void FAS_test()
 	    {
+	    	if(mpi_world_size() > 1)
+	    		return; 
+
 	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(n_levels_); 
 
 	    	for(auto l=0; l < n_levels_; l++)
@@ -246,8 +249,8 @@ namespace utopia
 	        rmtr->set_eps_grad_termination(1e-7); 
 			
 			rmtr->verbose(verbose_); 
-			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
-			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
+			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
 
 	        rmtr->set_functions(level_functions); 
 	        
@@ -270,7 +273,10 @@ namespace utopia
 	        
 		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
         	auto tr_strategy_fine = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
+        	tr_strategy_fine->pc_type("jacobi"); 
+        	
         	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
+        	tr_strategy_coarse->pc_type("lu"); 
 
         	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(prolongations_, restrictions_);
@@ -279,14 +285,14 @@ namespace utopia
 	        rmtr->max_coarse_it(1); 
 	        rmtr->max_smoothing_it(1); 
 	        rmtr->delta0(1); 
-	        rmtr->atol(1e-6); 
+	        rmtr->atol(1e-5); 
 	        rmtr->rtol(1e-10); 
 	        rmtr->set_grad_smoothess_termination(0.000001); 
 	        rmtr->set_eps_grad_termination(1e-7); 
 			
 			rmtr->verbose(verbose_); 
-			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
-			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
+			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
 
 	        rmtr->set_functions(level_functions); 
 	        
@@ -319,7 +325,8 @@ namespace utopia
 
         	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
         	tr_strategy_coarse->pc_type("lu"); 
-        	tr_strategy_coarse->verbose(verbose_); 
+        	// tr_strategy_coarse->verbose(true);
+        	tr_strategy_coarse->verbose(false); 
 
         	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(prolongations_, restrictions_);
@@ -334,8 +341,8 @@ namespace utopia
 	        rmtr->set_eps_grad_termination(1e-7); 
 			
 			rmtr->verbose(verbose_); 
-			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
-			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
+			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE); 
+			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL); 
 
 	        rmtr->set_functions(level_functions); 
 	        

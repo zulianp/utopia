@@ -38,7 +38,7 @@ namespace utopia
         runPetscLinearSolversTest(); 
         runPetscSlepcSolversTest(); 
 
-        runNonlinearMultilevelSolverTest(); 
+//        runNonlinearMultilevelSolverTest(); 
 
 
         //only works for serial

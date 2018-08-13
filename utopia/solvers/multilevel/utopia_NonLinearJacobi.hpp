@@ -43,13 +43,13 @@ namespace utopia
             for(int i =0; i < this->sweeps(); i++)
             {
                 Matrix H; 
-                fun.hessian(x, H);                 
+                fun.hessian(x, H);             
                 fun.gradient(x, g); 
                 g -= rhs; 
          
                 Vector d = 1./diag(H); 
                 H = diag(d); 
-         
+
                 x = x - (this->damping_parameter() * H * g); 
             }
             

@@ -42,8 +42,9 @@ namespace utopia
             void set_parameters(const Parameters params) override
             {
                 NonlinearMultiLevelBase<Matrix, Vector>::set_parameters(params); 
-                smoother_->set_parameters(params); 
-                coarse_solver_->set_parameters(params); 
+                
+                // smoother_->set_parameters(params); 
+                // coarse_solver_->set_parameters(params); 
                 
                 parameters_ = params; 
             }
@@ -146,15 +147,14 @@ namespace utopia
                 this->transfer(l-1).project_down(memory_.x[l], memory_.x[l-1]); 
                 memory_.x_0[l-1] = memory_.x[l-1]; 
 
-
                 // multilevel gradient ... 
                 this->function(l).gradient(memory_.x[l], memory_.g[l]); 
+
                 memory_.g[l] -= memory_.g_diff[l]; 
 
-                
                 this->transfer(l-1).restrict(memory_.g[l], memory_.g_diff[l-1]);
-
                 this->function(l-1).gradient(memory_.x[l-1], memory_.g[l-1]); 
+
                 memory_.g_diff[l-1] = memory_.g[l-1] - memory_.g_diff[l-1]; 
 
                 this->zero_correction_related_to_equality_constrain(this->function(l-1), memory_.g_diff[l-1]); 

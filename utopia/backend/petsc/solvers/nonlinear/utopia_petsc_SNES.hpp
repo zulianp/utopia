@@ -174,8 +174,11 @@ namespace utopia
             if(this->verbose())
                 SNESMonitorSet(
                                snes,
-                               [](SNES snes, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
-                                   PrintInfo::print_iter_status({static_cast<PetscReal>(iter), res});
+                               [](SNES snes, PetscInt iter, PetscReal res, void*) -> PetscErrorCode 
+                               {
+                                   if(mpi_world_rank() == 0)
+                                        std::cout<<iter << "       "<< res << "      \n"; 
+                                    
                                    return 0;
                                },
                                nullptr,
