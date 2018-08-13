@@ -78,10 +78,7 @@ namespace utopia
             inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & fun, const Vector & x,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
             {
                 fun.gradient(x, g);
-
-                Vector g_diff_print = g_diff; 
                 g += g_diff + H_diff * s_global; 
-                
                 return true; 
             }
     }; 
