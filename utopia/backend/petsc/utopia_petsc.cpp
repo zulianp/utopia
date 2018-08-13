@@ -8,6 +8,7 @@
 #include "utopia_MG_OPT.hpp"
 #include "utopia_FAS.hpp"
 #include "utopia_ExtendedFunction.hpp"
+#include "utopia_AffineSimilarity.hpp"
 
 //explicit instantiations
 namespace utopia {
@@ -30,6 +31,8 @@ namespace utopia {
 
 	template class FAS<DSMatrixd, DVectord>;
 	template class MG_OPT<DSMatrixd, DVectord>;
+
+	template class AffineSimilarity<DSMatrixd, DVectord>;
 
 	void optimize_nnz(DSMatrixd &A)
 	{

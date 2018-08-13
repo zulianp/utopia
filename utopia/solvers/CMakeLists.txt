@@ -5,6 +5,7 @@ list(APPEND SOLVERS_MODULES
 	multilevel
 	smoothers
 	nonlinear
+	nonlinear/affine_similarity
 	nonlinear/alternate_minimization
 	nonlinear/constrained
 	nonlinear/constrained/quadratic_programming
