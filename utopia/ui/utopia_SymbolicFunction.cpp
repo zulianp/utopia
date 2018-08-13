@@ -44,6 +44,11 @@ namespace utopia {
 			return te_eval(e_);
 		}
 
+		inline const std::string &expr() const
+		{
+			return expr_;
+		}
+
 	public:
 		double x_, y_, z_, t_;
 
@@ -61,6 +66,19 @@ namespace utopia {
 	SymbolicFunction::SymbolicFunction(const std::string &expr)
 	{
 		impl_ = make_unique<Impl>(expr);
+	}
+
+	SymbolicFunction & SymbolicFunction::operator=(const SymbolicFunction &other)
+	{
+		if(this == &other) return *this;
+
+		impl_ = make_unique<Impl>(other.impl_->expr());
+		return *this;
+	}
+
+	SymbolicFunction::SymbolicFunction(const SymbolicFunction &other)
+	{
+		impl_ = make_unique<Impl>(other.impl_->expr());
 	}
 
 	bool SymbolicFunction::valid() const
@@ -94,7 +112,6 @@ namespace utopia {
 		impl_->t_ = 0.;
 		return  impl_->eval();
 	}
-
 
 	double SymbolicFunction::eval(const double x, const double y, const double z, const double t)
 	{

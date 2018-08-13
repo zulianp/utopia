@@ -107,7 +107,7 @@ namespace utopia
 	    virtual void update(const std::shared_ptr<const Matrix> &op) override
 	    {
 	         KSPSolver::update(op);
-	         set_ksp_options(this->ksp().implementation());
+	         set_ksp_options(KSPSolver::implementation());
 	    }
 
 

@@ -18,7 +18,7 @@ namespace utopia {
 	inline ContextFunction<
 				std::vector<double>,
 				std::function<std::vector<double>(const AssemblyContext<LIBMESH_TAG> &)>
-		   > symbolic(const std::string &expr)
+		   > symbolic_to_ctx_fun(const std::string &expr)
 	{
 
 		std::function<std::vector<double>(const AssemblyContext<LIBMESH_TAG> &)> f = [expr](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>

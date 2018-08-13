@@ -36,7 +36,7 @@ namespace utopia {
 			const int block_id_rot,
 			const int block_id_trasl,
 			DVectord &displacement) const;
-		
+
 		std::size_t n_time_steps;
 		double dt;
 		double t;

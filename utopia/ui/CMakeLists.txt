@@ -4,9 +4,12 @@ list(APPEND UI_MODULES
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR UI_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
+set(EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
+
 find_path(TINY_EXPR_DIR
 	NAMES tinyexpr.h
-	HINTS ${TINY_EXPR_DIR}
+	HINTS ${EXTERNAL_DIR}/tinyexpr
+		  ${TINY_EXPR_DIR}
 		  $ENV{TINY_EXPR_DIR}
 		  ${INSTALL_DIR}/tinyexpr
 		  $ENV{INSTALL_DIR}/tinyexpr
@@ -40,7 +43,7 @@ if(WIN32)
 	target_include_directories(utopia_ui PRIVATE windows)
 endif()
 
-target_link_libraries(utopia_ui utopia_utils)
+target_link_libraries(utopia_ui utopia_utils utopia_core)
 
 if(TARGET tinyexpr)
 	target_link_libraries(utopia_ui tinyexpr)
@@ -49,7 +52,8 @@ endif()
 
 find_path(JSON_DIR
 	NAMES json.hpp
-	HINTS ${JSON_DIR}
+	HINTS ${EXTERNAL_DIR}/json
+		  ${JSON_DIR}
 	      $ENV{JSON_DIR}
 	      ${INSTALL_DIR}/json
 	      $ENV{INSTALL_DIR}/json

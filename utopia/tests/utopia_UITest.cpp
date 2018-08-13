@@ -23,6 +23,16 @@ namespace utopia {
 				sub_is.read("max_iter", max_iter);
 			});
 
+
+
+			is.read("array", [this](InputStream &sub_is) {
+				sub_is.read_all([this](InputStream &sub_is) {
+					std::string v;
+					sub_is.read(v);
+					array.push_back(v);
+				});
+			});
+
 			is.read("tol", tol);
 			is.read("values", values);
 		}
@@ -32,6 +42,7 @@ namespace utopia {
 		int max_iter;
 		double tol = 1e-16;
 		std::vector<double> values;
+		std::vector<std::string> array;
 	};
 
 	void generic_stream(InputStream &is)
@@ -69,6 +80,10 @@ namespace utopia {
 					<value>2</value>
 					<value>3</value>
 				</values>
+				<array>
+					<entry>first</entry>
+					<entry>last</entry>
+				</array>
 			</solve>
 		*/
 

@@ -114,17 +114,18 @@ namespace utopia {
                     is.read_all([this](InputStream &is) {
                         int side_set = 0, coord = 0;
                         double value = 0;
-                        // std::string expr = "0";
+                        std::string expr = "0";
 
                         is.read("side", side_set);
                         is.read("coord", coord);
-                        is.read("value", value);
+                        is.read("value", expr);
 
-                        std::cout << side_set << " " << coord << " " << value << std::endl;
+                        // std::cout << side_set << " " << coord << " " << value << std::endl;
 
                         auto u = trial(V[coord]);
                         init_constraints(constraints(
-                            boundary_conditions(u == coeff(value), {side_set})
+                            // boundary_conditions(u == coeff(value), {side_set})
+                            boundary_conditions(u == symbolic(expr), {side_set})
                         ));
 
                     });
@@ -170,28 +171,25 @@ namespace utopia {
     			ok = false;
     		}
 
-    		// if(is.object_begin("contact")) {
-    		// 	is.read("radius", contact_params.search_radius);
+    		is.read("contact", [this](InputStream &is) {
+    			is.read("radius", contact_params.search_radius);
 
-    		// 	is.start("pair");
+                is.read("pairs", [this](InputStream &is) {
+                    is.read_all([this](InputStream &is) {
+                        int master = -1, slave = -1;
+                        is.read("master", master);
+                        is.read("slave", slave);
 
-    		// 	while(is.good()) {
-    		// 		int master = -1, slave = -1;
-    		// 		is.read("master", master);
-    		// 		is.read("slave", slave);
+                        // std::cout << master << " " << slave << std::endl;
 
-    		// 		assert(master != -1);
-    		// 		assert(slave != -1);
+                        assert(master != -1);
+                        assert(slave  != -1);
 
-    		// 		contact_params.contact_pair_tags.push_back({ master, slave });
+                        contact_params.contact_pair_tags.push_back({ master, slave });
+                    });
+                });
+    		});
 
-    		// 		is.next();
-    		// 	}
-
-    		// 	is.finish();
-    		// }
-
-      //       is.object_end(); //contact
             return true;
         }
 

@@ -1,5 +1,5 @@
 #ifndef UTOPIA_LIBMESH_ASSEMBLY_VALUES_HPP
-#define UTOPIA_LIBMESH_ASSEMBLY_VALUES_HPP 
+#define UTOPIA_LIBMESH_ASSEMBLY_VALUES_HPP
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
@@ -11,6 +11,7 @@
 #include "utopia_libmesh_Utils.hpp"
 #include "utopia_FEIsSubTree.hpp"
 #include "utopia_Traverse.hpp"
+#include "utopia_SymbolicFunction.hpp"
 #include "utopia_ProductFunctionSpace.hpp"
 #include "utopia_libmesh_TreeNavigator.hpp"
 
@@ -28,13 +29,13 @@ namespace utopia {
 	class LibMeshAssemblyValues {
 	public:
 		typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
-		typedef TraitsT::FE FE; 
+		typedef TraitsT::FE FE;
 		typedef TraitsT::Matrix Matrix;
 		typedef TraitsT::Vector Vector;
 		typedef TraitsT::DXType DXType;
 		typedef TraitsT::JacobianType JacobianType;
 
-		inline std::vector< std::unique_ptr<FE> > &fe()		
+		inline std::vector< std::unique_ptr<FE> > &fe()
 		{
 			return fe_;
 		}
@@ -54,7 +55,7 @@ namespace utopia {
 			return vector_fe_;
 		}
 
-		inline std::vector< std::unique_ptr<FE> > &test()		
+		inline std::vector< std::unique_ptr<FE> > &test()
 		{
 			return fe_;
 		}
@@ -100,7 +101,7 @@ namespace utopia {
 			} else if(is_hex(elem->type())) {
 				const int temp = quadrature_order_/2;
 				quadrature_order_ = (temp + 2) * 2;
-			}			
+			}
 
 			set_up_quadrature(dim, quadrature_order_);
 			block_id_ = elem->subdomain_id();
@@ -113,7 +114,7 @@ namespace utopia {
 				auto fe = libMesh::FEBase::build(dim, eq_sys.get_dof_map().variable_type(i));
 				fe->attach_quadrature_rule(quad_test().get());
 				fe_[i] = std::move(fe);
-						
+
 			}
 
 			init_fe_flags(expr);
@@ -170,7 +171,7 @@ namespace utopia {
 				const int temp = quadrature_order_/2;
 				quadrature_order_ = (temp + 2) * 2;
 			}
-			
+
 			set_up_quadrature(dim-1, quadrature_order_);
 			// block_id_ = elem->side_ptr(side)->subdomain_id();
 			block_id_ = space_ptr->mesh().get_boundary_info().boundary_id(elem, side);
@@ -243,7 +244,7 @@ namespace utopia {
 			return current_element_;
 		}
 
-		
+
 		inline std::size_t n_shape_functions() const
 		{
 			std::size_t ret = 0;
@@ -294,7 +295,7 @@ namespace utopia {
 
 			template<class Any>
 			inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
-			
+
 
 			void init_phi(const LibMeshFunctionSpace &s)
 			{
@@ -415,7 +416,7 @@ namespace utopia {
 				init_phi(*expr.fun().space_ptr());
 				return TRAVERSE_CONTINUE;
 			}
-			
+
 			//Divergence
 			template<template<class> class Function>
 			inline int visit(const Divergence<Function<ProductFunctionSpace<LibMeshFunctionSpace>>> &expr)
@@ -453,6 +454,12 @@ namespace utopia {
 				return TRAVERSE_CONTINUE;
 			}
 
+			inline int visit(const SymbolicFunction &expr)
+			{
+				init_xyz();
+				return TRAVERSE_CONTINUE;
+			}
+
 			template<class Expr>
 			void apply(const Expr &expr)
 			{
@@ -462,7 +469,7 @@ namespace utopia {
 			LibMeshAssemblyValues &ctx;
 		};
 
-		template<class Expr>		
+		template<class Expr>
 		void init_fe_flags(const Expr &expr)
 		{
 			FEInitializer fe_init(*this);

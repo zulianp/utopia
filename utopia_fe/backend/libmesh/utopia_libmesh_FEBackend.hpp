@@ -355,6 +355,34 @@ namespace utopia {
 				cond.expr().left().space_ptr()->dof_map().add_dirichlet_boundary(d_bc);
 			}
 
+			template<class S>
+			inline void operator()(
+				const int,
+				const DirichletBoundaryCondition<
+					Equality<TrialFunction<S>, SymbolicFunction>
+				> &cond) const
+			{
+
+				auto &f = cond.expr().right();
+
+				std::function<libMesh::Real(const libMesh::Point &)> fun
+				= [f](const libMesh::Point &xyz) -> libMesh::Real
+				{
+					//FIXME
+					auto f_copy = f;
+					return f_copy.eval(xyz(0), xyz(1), xyz(2));
+				};
+
+				LibMeshLambdaFunction<libMesh::Real> lambda(fun);
+				// lambda.set_is_time_dependent(true);
+
+				std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().space_ptr()->subspace_id();
+				std::set<libMesh::boundary_id_type> bt;
+				bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
+				libMesh::DirichletBoundary d_bc(bt, vars, lambda );
+				cond.expr().left().space_ptr()->dof_map().add_dirichlet_boundary(d_bc);
+			}
+
 			template<class T>
 			void strong_enforce( DirichletBoundaryCondition<
 				Equality<TrialFunction<ProductFunctionSpace<LibMeshFunctionSpace>>,
@@ -467,6 +495,23 @@ namespace utopia {
 		static T apply(const BlockVar<T> &var, const AssemblyContext<LIBMESH_TAG> &ctx)
 		{
 			return var.get(ctx.block_id());
+		}
+
+		static QValues<double> apply(const SymbolicFunction &fun, const AssemblyContext<LIBMESH_TAG> &ctx)
+		{
+			const auto & xyz = ctx.test()[0]->get_xyz();
+			auto n_quad_points = xyz.size();
+			QValues<double> ret;
+			ret.resize(n_quad_points);
+
+			//FIXME
+			auto f_copy = fun;
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				ret[qp] = f_copy.eval(xyz[qp](0), xyz[qp](1), xyz[qp](2));
+			}
+
+			return ret;
 		}
 
 		template<typename T>

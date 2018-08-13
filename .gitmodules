@@ -1,0 +1,6 @@
+[submodule "utopia/external/json"]
+	path = utopia/external/json
+	url = https://github.com/nlohmann/json
+[submodule "utopia/external/tinyexpr"]
+	path = utopia/external/tinyexpr
+	url = https://github.com/codeplea/tinyexpr

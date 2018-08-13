@@ -3,7 +3,7 @@
 
 #include <string>
 #include "utopia_Core.hpp"
-#include "utopia_Parameters.hpp"    
+#include "utopia_Parameters.hpp"
 #include "utopia_Traits.hpp"
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_PrintInfo.hpp"
@@ -11,12 +11,12 @@
 #include "utopia_Utils.hpp"
 #include "utopia_Clonable.hpp"
 
-namespace  utopia 
+namespace  utopia
 {
     /**
      * @brief      The base class for linear solvers.
-     * @tparam     Matrix  
-     * @tparam     Vector  
+     * @tparam     Matrix
+     * @tparam     Vector
      */
     template<class Matrix, class Vector>
     class LinearSolver : public Preconditioner<Vector>, public virtual Clonable {
@@ -24,27 +24,27 @@ namespace  utopia
         typedef UTOPIA_SCALAR(Vector)           Scalar;
 
         virtual ~LinearSolver() {}
-    
+
         virtual bool apply(const Vector &rhs, Vector &sol) override = 0;
 
-        virtual void set_parameters(const Parameters /*params*/) override { } 
+        virtual void set_parameters(const Parameters /*params*/) override { }
 
 
         /**
-         * @brief      Solve routine. 
-         * @param[in]  A     
-         * @param[in]  b     
-         * @param      x0    
+         * @brief      Solve routine.
+         * @param[in]  A
+         * @param[in]  b
+         * @param      x0
          *
-         * @return    
+         * @return
          */
         virtual bool solve(const Matrix &A, const Vector &b, Vector &x0)
         {
             update(make_ref(A));
             return apply(b, x0);
-        } 
+        }
 
- 
+
 
         /*! @brief if overriden the subclass has to also call this one first
          */
@@ -72,7 +72,7 @@ namespace  utopia
 
 
     template<class Matrix, class Vector>
-    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector> 
+    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector>
     {
     public:
         virtual bool apply(const Vector &rhs, Vector &sol) override
@@ -87,13 +87,13 @@ namespace  utopia
         {
             LinearSolver<Matrix, Vector>::update(op);
             d = diag(*op);
-            d  = 1 / d; 
+            d  = 1 / d;
         }
 
-        
+
         virtual Vector get_d()
         {
-            return d; 
+            return d;
         }
 
         InvDiagPreconditioner * clone() const override

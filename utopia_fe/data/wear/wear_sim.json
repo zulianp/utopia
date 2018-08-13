@@ -1,0 +1,52 @@
+{
+    "simulation": {
+        "mesh": "../data/wear_2_b.e",
+        "time": {
+            "dt": "0.1",
+            "steps": "100"
+        },
+        "model": {
+            "material": "NeoHookean",
+            "parameters": {
+                "mu": "300.",
+                "lambda": "600."
+            }
+        },
+        "boundary-conditions": {
+            "dirichlet": {
+                "cond": {
+                    "coord": "1",
+                    "side": "1",
+                    "value": "1."
+                }
+            }
+        },
+        "forcing-functions": {
+            "fun": {
+                "side": "1",
+                "coord": "1",
+                "value": "0.1"
+            }
+        },
+        "contact": {
+            "radius": "0.1",
+            "pairs": [
+                {
+                    "master": "1",
+                    "slave": "2"
+                }
+            ]
+        },
+        "wear": {
+            "gait-cycle": {
+                "rotation": {
+                    "block": "1",
+                    "axis": "z",
+                    "begin": "4.0",
+                    "end": "-1."
+                }
+            }
+        },
+        "output": "wear_output"
+    }
+}

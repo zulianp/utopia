@@ -11,4 +11,8 @@
 		<value>2</value>
 		<value>3</value>
 	</values>
+	<array type="array">
+		<entry>first</entry>
+		<entry>last</entry>
+	</array>
 </solve>
