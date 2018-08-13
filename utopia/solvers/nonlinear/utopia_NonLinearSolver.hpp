@@ -105,8 +105,8 @@ namespace utopia
             log_system_         = params.log_system(); 
             check_diff_         = params.differentiation_control(); 
 
-            if(linear_solver_)
-                linear_solver_->set_parameters(params); 
+            // if(linear_solver_)
+            //     linear_solver_->set_parameters(params); 
         }
 
 
