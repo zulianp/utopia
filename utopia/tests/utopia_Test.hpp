@@ -38,9 +38,8 @@ namespace utopia
         runPetscLinearSolversTest(); 
         runPetscSlepcSolversTest(); 
 
-//        runNonlinearMultilevelSolverTest(); 
-
-
+        runNonlinearMultilevelSolverTest(); 
+        
         //only works for serial
         if(mpi_world_size() == 1) {
             run_performance_test();
