@@ -20,9 +20,9 @@
 
 #include <cassert>
 
-#define DISABLE_LOGGER
-
 namespace utopia {
+
+    // #define DISABLE_LOGGER
     
     void Utopia::Init(int argc, char *argv[]) {
         

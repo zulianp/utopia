@@ -83,11 +83,11 @@ namespace utopia
 		
 		void run()
 		{
-			UTOPIA_RUN_TEST(TR_test); 
-			UTOPIA_RUN_TEST(TR_constraint_test); 
+			// UTOPIA_RUN_TEST(TR_test); 
+			// UTOPIA_RUN_TEST(TR_constraint_test); 
 
-			UTOPIA_RUN_TEST(newton_MG_test); 
-			UTOPIA_RUN_TEST(FAS_test); 
+			// UTOPIA_RUN_TEST(newton_MG_test); 
+			// UTOPIA_RUN_TEST(FAS_test); 
 
 			UTOPIA_RUN_TEST(RMTR_test); 
 			UTOPIA_RUN_TEST(RMTR_inf_test); 
@@ -376,6 +376,7 @@ namespace utopia
 		#ifdef  WITH_PETSC
 			NonlinearBratuSolverTest(4, true, false).run();
 		#endif		
-		UTOPIA_UNIT_TEST_END("runNonlinearMultilevelSolverTest");				
+		UTOPIA_UNIT_TEST_END("runNonlinearMultilevelSolverTest");			
+
 	}
 }

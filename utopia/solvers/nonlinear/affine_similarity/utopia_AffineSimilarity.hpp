@@ -250,7 +250,7 @@ namespace utopia
         void tau_max(const Scalar & tau_max)  {  tau_max_ = tau_max; }
         void tau_min(const Scalar & tau_min)  { tau_min_ = tau_min; }
 
-    private: 
+    protected:
         virtual void print_statistics(  const SizeType & it, const Scalar & g_norm, 
                                         const Scalar & tau,  const SizeType & it_inner) 
         {
@@ -273,6 +273,14 @@ namespace utopia
                 }
             }
         }
+
+
+        virtual void print_statistics(const SizeType & it_global) override
+        {
+            NonLinearSolver<Matrix, Vector>::print_statistics(it_global); 
+        }
+    
+    private: 
 
 
         // Scalar estimate_tau(const Vector & g_trial, const Vector & g, const Vector & s, const Scalar & tau, const Scalar & s_norm)
