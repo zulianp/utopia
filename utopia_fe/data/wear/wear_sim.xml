@@ -14,18 +14,29 @@
 	<boundary-conditions>
 		<dirichlet type="array">
 			<entry>
+                <coord>0</coord>
+                <side>1</side>
+                <value>0.</value>
+            </entry>
+            <entry>
                 <coord>1</coord>
                 <side>1</side>
-                <value>1.</value>
+                <value>0.</value>
             </entry>
+      <!--       <entry>
+                <coord>2</coord>
+                <side>1</side>
+                <value>0.</value>
+            </entry> -->
 		</dirichlet>
 	</boundary-conditions>
-    <forcing-functions>
-        <fun>
-            <side>1</side>
+    <forcing-functions type="array">
+        <entry>
+            <!-- no block means that is applied to all -->
+            <!-- <block>1</block> -->
             <coord>1</coord>
             <value>0.1</value>
-        </fun>
+        </entry>
     </forcing-functions>
     <contact>
         <radius>0.16</radius>
@@ -37,13 +48,29 @@
         </pairs>
     </contact>
     <wear>
+        <n-cycles>1</n-cycles>
+<!--         <worn-surfaces type="array">
+            <entry>1</entry>
+            <entry>2</entry>
+        </worn-surfaces> -->
         <gait-cycle>
-            <rotation>
-                <block>1</block>
-                <axis>z</axis>
-                <begin>4.0</begin>
-                <end>-1.</end>
-            </rotation>
+            <steps>10</steps>
+            <rotations type="array">
+                <entry>
+                    <block>1</block>
+                    <axis>z</axis>
+                    <begin>4.0</begin>
+                    <end>-1.</end>
+                </entry>
+            </rotations>
+            <translations type="array">
+                <entry>
+                    <block>1</block>
+                    <axis>z</axis>
+                    <begin>0.</begin>
+                    <end>-1.</end>
+                </entry>
+            </translations>
         </gait-cycle>
     </wear>
 	<output>wear_output</output>

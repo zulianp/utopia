@@ -25,12 +25,12 @@ namespace utopia {
 
 	class Wear {
 	public:
-		
+
 		inline void update(
 			const double dt,
 			const DVectord &sliding_distance,
 			const DVectord &normal_stress)
-		{	
+		{
 			wear += (dt * wear_coefficient) * abs(e_mul(sliding_distance, normal_stress));
 		}
 
@@ -46,11 +46,10 @@ namespace utopia {
 
 		void init_aux_system(
 			libMesh::EquationSystems &es,
-			libMesh::Order order);
+			libMesh::Order order = libMesh::FIRST);
 
 		void update_aux_system(
 			const int main_system_number,
-			const MechanicsContext &mech_ctx,
 			const MechanicsState &state,
 			const Contact &contact,
 			const double dt,

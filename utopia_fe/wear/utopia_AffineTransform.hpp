@@ -13,7 +13,7 @@ namespace utopia {
 		std::array<double, N> apply(const std::array<double, N> &p) const
 		{
 			std::array<double, N> ret;
-			
+
 			for(std::size_t i = 0; i < N; ++i) {
 				ret[i] = translation[i];
 
@@ -32,19 +32,56 @@ namespace utopia {
 
 			switch(dim) {
 				case 2:
-				{	
+				{
 					assert(axis == 'y' || axis == 'Y');
 					make_rotation_2(angle, linear_transformation);
-					return;	
+					return;
 				}
 				case 3:
 				{
 					make_rotation_3(angle, axis, linear_transformation);
 					return;
 				}
-				default: 
+				default:
 				{
 					assert(false);
+					return;
+				}
+			}
+		}
+
+		void make_translation(const int dim, const double offset, const char axis)
+		{
+			std::fill(begin(translation), end(translation), 0.0);
+			std::fill(begin(linear_transformation), end(linear_transformation), 0.);
+
+			set(0, 0, 1., linear_transformation);
+			set(1, 1, 1., linear_transformation);
+			set(2, 2, 1., linear_transformation);
+
+			switch(axis) {
+				case 'X':
+				case 'x':
+				{
+					translation[0] = offset;
+					return;
+				}
+
+				case 'Y':
+				case 'y':
+				{
+					translation[1] = offset;
+					return;
+				}
+
+				case 'Z':
+				case 'z':
+				{
+					translation[2] = offset;
+					return;
+				}
+
+				default: {
 					return;
 				}
 			}
@@ -54,32 +91,32 @@ namespace utopia {
 		std::array<double, 3> translation;
 
 	private:
-	
-		static void make_rotation_3(const double angle, const char axis, std::array<double, 9> &result)  
+
+		static void make_rotation_3(const double angle, const char axis, std::array<double, 9> &result)
 		{
 			set(0, 0, 1., result);
 			set(1, 1, 1., result);
 			set(2, 2, 1., result);
 
 			if ((axis == 'x') || (axis == 'X')) {
-				set(1, 1,  cos(angle), result);   
-				set(1, 2, -sin(angle), result);   			
-				set(2, 1,  sin(angle), result);   		
-				set(2, 2,  cos(angle), result);   			
+				set(1, 1,  cos(angle), result);
+				set(1, 2, -sin(angle), result);
+				set(2, 1,  sin(angle), result);
+				set(2, 2,  cos(angle), result);
 			} else
 				// set rotation around y axis:
 			if ((axis == 'y') || (axis == 'Y')) {
-				set(0, 0,  cos(angle), result);   
-				set(0, 2,  sin(angle), result);   
-				set(2, 0, -sin(angle), result);   
-				set(2, 2,  cos(angle), result);   
+				set(0, 0,  cos(angle), result);
+				set(0, 2,  sin(angle), result);
+				set(2, 0, -sin(angle), result);
+				set(2, 2,  cos(angle), result);
 			} else
 					// set rotation around z axis:
 			if ((axis == 'z') || (axis == 'Z')) {
-				set(0, 0,  cos(angle), result);   
-				set(0, 1, -sin(angle), result);   
-				set(1, 0,  sin(angle), result);   
-				set(1, 1,  cos(angle), result);   
+				set(0, 0,  cos(angle), result);
+				set(0, 1, -sin(angle), result);
+				set(1, 0,  sin(angle), result);
+				set(1, 1,  cos(angle), result);
 			}
 		}
 

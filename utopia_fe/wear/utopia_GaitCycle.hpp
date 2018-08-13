@@ -8,6 +8,7 @@
 #include "libmesh/dof_map.h"
 
 #include "utopia_InputStream.hpp"
+#include "utopia_AffineTransform.hpp"
 
 namespace utopia {
 
@@ -19,6 +20,41 @@ namespace utopia {
 		using Point3d = std::array<double, 3>;
 		using Fun2d = std::function<std::array<double, 2>(const std::array<double, 2> &p)>;
 		using Fun3d = std::function<std::array<double, 3>(const std::array<double, 3> &p)>;
+
+		class Rotation {
+		public:
+			int block;
+			int n_dims;
+			char axis;
+			double begin_angle_degree;
+			double end_angle_degree;
+			double d_angle;
+
+			AffineTransform trafo;
+
+			Rotation();
+
+			void init(const int n_dims, const int n_steps);
+			void update(const int step, const double t);
+		};
+
+		class Translation {
+		public:
+			int block;
+			int n_dims;
+			char axis;
+			double begin_offset;
+			double end_offset;
+			double d_offset;
+
+			AffineTransform trafo;
+
+			Translation();
+
+			void init(const int n_dims, const int n_steps);
+			void update(const int step, const double t);
+		};
+
 
 		void read(InputStream &is) override;
 
@@ -33,27 +69,28 @@ namespace utopia {
 		void override_displacement(
 			const libMesh::MeshBase &mesh,
 			const libMesh::DofMap &dof_map,
-			const int block_id_rot,
-			const int block_id_trasl,
 			DVectord &displacement) const;
 
-		std::size_t n_time_steps;
+		int n_time_steps;
 		double dt;
 		double t;
 		double t_end;
-		double start_angle_degree;
-		double start_angle_radian;
-		double angle_degree;
-		double angle_radian;
-		double d_angle;
-		Fun2d rotate2;
-		Fun3d rotate3;
-		Fun2d translate2_y;
-		Fun3d translate3_z;
-		Fun2d zero2;
-		Fun3d zero3;
-		Fun3d bc34;
-		bool negative_dir;
+		// double start_angle_degree;
+		// double start_angle_radian;
+		// double angle_degree;
+		// double angle_radian;
+		// double d_angle;
+		// Fun2d rotate2;
+		// Fun3d rotate3;
+		// Fun2d translate2_y;
+		// Fun3d translate3_z;
+		// Fun2d zero2;
+		// Fun3d zero3;
+		// Fun3d bc34;
+		// bool negative_dir;
+
+		std::vector<Rotation> rotations;
+		std::vector<Translation> translations;
 	};
 }
 

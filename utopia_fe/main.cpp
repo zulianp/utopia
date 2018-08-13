@@ -72,7 +72,7 @@ int main(const int argc, char *argv[])
 	    runners["tests"] = run_all_utopia_fe_tests;
 	    runners["smg"] = run_semigeometric_multigrid_test;
 	    runners["sdc"] = run_sdc_test;
-	    runners["wear"] = run_wear_test;
+	    // runners["wear"] = run_wear_test;
 	    runners["mech"] = run_mech_test;
 	    runners["asm"] = run_assembly_test;
 	    runners["fsi"] = run_fsi_test;

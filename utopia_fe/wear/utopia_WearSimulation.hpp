@@ -12,7 +12,7 @@ namespace utopia {
 	public:
 		class Input;
 		class Output;
-		
+
 		void run(libMesh::LibMeshInit &init, const std::string &conf_file_path);
 
 		WearSimulation();

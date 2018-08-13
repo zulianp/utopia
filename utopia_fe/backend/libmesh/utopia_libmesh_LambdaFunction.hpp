@@ -39,12 +39,34 @@ namespace utopia {
 
 		Output operator() (const Point &p, const Scalar time = 0.) override
 		{
+			assert(scalar_fun_);
 			return scalar_fun_(p);
 		}
 
 		void operator()(const Point &p, const Scalar time, libMesh::DenseVector<Output> &output) override
 		{
-			vector_fun_(p, output);
+			if(!vector_fun_) {
+				auto val = (*this)(p, time);
+
+				int size = output.size();
+				for(int i = 0; i < size; ++i) {
+					output(i) = val;
+				}
+
+			} else {
+				vector_fun_(p, output);
+			}
+		}
+
+		inline libMesh::Real component(unsigned int var_cmp, const Point &p, libMesh::Real time) override
+		{
+			if(!vector_fun_) {
+				return (*this, time);
+			} else {
+				libMesh::DenseVector<Output> out;
+				(*this)(p, time, out);
+				return out(var_cmp);
+			}
 		}
 
 	private:

@@ -215,7 +215,6 @@ namespace utopia {
 
 	void Wear::update_aux_system(
 		const int main_system_number,
-		const MechanicsContext &mech_ctx,
 		const MechanicsState &state,
 		const Contact &contact,
 		const double dt,
