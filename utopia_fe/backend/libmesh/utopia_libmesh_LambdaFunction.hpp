@@ -61,7 +61,7 @@ namespace utopia {
 		inline libMesh::Real component(unsigned int var_cmp, const Point &p, libMesh::Real time) override
 		{
 			if(!vector_fun_) {
-				return (*this, time);
+				return (*this)(p, time);
 			} else {
 				libMesh::DenseVector<Output> out;
 				(*this)(p, time, out);

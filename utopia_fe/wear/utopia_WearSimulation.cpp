@@ -255,15 +255,31 @@ namespace utopia {
 
     	virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is) override
     	{
-    		bool ok = ContactSimulation::init(comm, is);
-            is.read("n-cycles",   n_cycles);
-            is.read("gait-cycle", gc);
-    		return ok;
+    		if(!ContactSimulation::init(comm, is)) return false;
+
+            is.read("wear", [this](InputStream &is) {
+                is.read("n-cycles",   n_cycles);
+                is.read("gait-cycle", gc);
+            });
+
+            gc.init(mesh->mesh_dimension());
+
+    		return true;
     	}
 
 
     	GaitCycle gc;
         int n_cycles;
+
+
+        virtual void describe(std::ostream &os) const override
+        {
+            ContactSimulation::describe(os);
+            contact_params.describe(os);
+
+            std::cout << "n_cycles: " << n_cycles << std::endl;
+            gc.describe(os);
+        }
     };
 
     void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &conf_file_path)
@@ -295,7 +311,7 @@ namespace utopia {
         // solver.set_bypass_contact(true);
         solver.set_max_outer_loops(10);
 
-        libMesh::Nemesis_IO io(*in.mesh);
+
 
         Wear wear;
         wear.init_aux_system(
@@ -306,17 +322,29 @@ namespace utopia {
         DVectord overriden_displacement = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
         MechanicsState state;
 
-        for(int i = 0; i < in.n_cycles; ++i) {
+
+        libMesh::Nemesis_IO(*in.mesh).write_timestep("wear_in.e", *in.equation_systems, (1), in.gc.t);
+
+        for(int i = 1; i <= in.n_cycles; ++i) {
+
+            std::cout << "cycle " << i << std::endl;
+
+            libMesh::Nemesis_IO io(*in.mesh);
 
             //gait-cycle
             for(int t = 0; t < in.gc.n_time_steps; ++t) {
+                std::cout << "\t step " << t << std::endl;
                 in.material->clear();
+                in.gc.set_time_step(t);
 
                 //set-up experiment
                     //transform mesh
 
                 in.gc.override_displacement(*in.mesh, in.V.subspace(0).dof_map(), overriden_displacement);
+
                 apply_displacement(overriden_displacement, in.V.subspace(0).dof_map(), *in.mesh);
+
+                libMesh::Nemesis_IO(*in.mesh).write_timestep("wear_overr.e", *in.equation_systems, (1), in.gc.t);
 
                 //solve
                 solver.solve_steady();
@@ -332,12 +360,10 @@ namespace utopia {
 
                 state.velocity               = (1./in.gc.dt) * solver.displacement();
 
-                //TODO
-                // state.external_force;//
+                in.forcing_function->eval(state.displacement, state.external_force);
 
                 in.material->stress(state.displacement, state.stress);
 
-                // state.stress -= state.external_force;
                 state.t = in.gc.t;
 
                 wear.update_aux_system(
@@ -352,10 +378,19 @@ namespace utopia {
                     //transform-back mesh
                 apply_displacement(-overriden_displacement, in.V.subspace(0).dof_map(), *in.mesh);
 
+                auto &sys = in.equation_systems->get_system<libMesh::LinearImplicitSystem>("wear");
+                DVectord temp = state.displacement + overriden_displacement;
+                convert(temp, *sys.solution);
+                sys.solution->close();
+
+                io.write_timestep("wear_test_" + std::to_string(i) + ".e", *in.equation_systems, (t+1), in.gc.t);
             }
 
             //deform geometry
+            wear.modify_geometry(in.V, in.contact_surfaces);
         }
+
+        std::cout << "finished" << std::endl;
     }
 
     WearSimulation::WearSimulation()

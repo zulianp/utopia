@@ -56,7 +56,6 @@ namespace utopia {
 	{
 		n_time_steps = 50;
 		t_end = 10.;
-		init();
 	}
 
 	void GaitCycle::set_time_step(const std::size_t time_step)
@@ -65,6 +64,30 @@ namespace utopia {
 		// if(time_step > n_time_steps/2) {
 		// 	negative_dir = true;
 		// }
+
+		update_trafos(time_step, t);
+	}
+
+	void GaitCycle::update_trafos(const int step, const double t)
+	{
+		for(auto &r : rotations) {
+			r.update(step, t);
+		}
+
+		for(auto &tr : translations) {
+			tr.update(step, t);
+		}
+	}
+
+	void GaitCycle::init_trafos(const int n_dims, const int n_steps)
+	{
+		for(auto &r : rotations) {
+			r.init(n_dims, n_steps);
+		}
+
+		for(auto &tr : translations) {
+			tr.init(n_dims, n_steps);
+		}
 	}
 
 	void GaitCycle::toggle_dir()
@@ -72,53 +95,9 @@ namespace utopia {
 		// negative_dir = !negative_dir;
 	}
 
-	void GaitCycle::init()
+	void GaitCycle::init(int n_dims)
 	{
-		// t = 0.;
-		// dt = (t_end - t)/(n_time_steps - 1);
-		// angle_radian = (angle_degree/180 * M_PI);
-		// start_angle_radian = (start_angle_degree/180 * M_PI);
-		// d_angle = angle_radian/(t_end - t);
-		// negative_dir = false;
-
-		// rotate2 = [this](const Point2d &p) -> Point2d {
-		// 	AffineTransform trafo;
-		// 	trafo.make_rotation(2, this->t * this->d_angle, 'y');
-		// 	trafo.translation[0] = -p[0];
-		// 	trafo.translation[1] = -p[1];
-
-		// 	return trafo.apply(p);
-		// };
-
-		// rotate3 = [this](const Point3d &p) -> Point3d {
-		// 	AffineTransform trafo;
-		// 	trafo.make_rotation(3, this->start_angle_radian + this->t * this->d_angle, 'x');
-		// 	trafo.translation[0] = -p[0];
-		// 	trafo.translation[1] = -p[1] + 2.;
-		// 	trafo.translation[2] = -p[2] + this->t * 0.1;
-
-		// 	return trafo.apply(p);
-		// };
-
-		// zero2 = [](const Point2d &p) -> Point2d {
-		// 	return {0., 0.};
-		// };
-
-		// zero3  = [](const Point3d &p) -> Point3d {
-		// 	return {0., 0., 0.};
-		// };
-
-		// translate2_y = [this](const Point2d &p) -> Point2d {
-		// 	return {0., std::min(0.5 + 2*this->dt*0.1, 0.52) };
-		// };
-
-		// translate3_z = [this](const Point3d &p) -> Point3d {
-		// 	return {0., 0., 0.};
-		// };
-
-		// bc34 = [this](const Point3d &p) -> Point3d {
-		// 	return { 0., 0., 2.2 };
-		// };
+		init_trafos(n_dims, n_time_steps);
 	}
 
 	void GaitCycle::override_displacement(
@@ -135,6 +114,8 @@ namespace utopia {
 
 		const auto dim = mesh.mesh_dimension();
 		const bool is_3d = dim == 3;
+
+
 
 		auto r = range(displacement);
 		Write<DVectord> w_d(displacement);

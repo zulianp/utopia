@@ -96,6 +96,11 @@ namespace utopia {
 		libMesh::DofMap &dof_map = V[0].dof_map();
 		auto dim = mesh.mesh_dimension();
 
+		if(empty(wear)) {
+			wear_induced_displacement = local_zeros(dof_map.n_local_dofs());
+			return;
+		}
+
 		//compute surface normals
 		assemble_normal_tangential_transformation(mesh, dof_map, boundary_tags, is_normal_component, normals, trafo);
 
@@ -228,6 +233,10 @@ namespace utopia {
 
 		DVectord normal_stress = local_zeros(local_size(state.displacement));
 		DVectord sliding_distance = local_zeros(local_size(state.displacement));
+
+		if(empty(wear_induced_displacement)) {
+			wear_induced_displacement = local_zeros(local_size(state.displacement));
+		}
 
 		// DVectord stress = local_zeros(local_size(state.displacement));
 

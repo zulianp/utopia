@@ -31,6 +31,10 @@ namespace utopia {
 			const DVectord &sliding_distance,
 			const DVectord &normal_stress)
 		{
+			if(empty(wear)) {
+				wear = local_zeros(local_size(normal_stress));
+			}
+
 			wear += (dt * wear_coefficient) * abs(e_mul(sliding_distance, normal_stress));
 		}
 

@@ -64,12 +64,23 @@ namespace utopia {
 
 		void toggle_dir();
 
-		void init();
+		void init(int n_dims);
+		void update_trafos(const int step, const double t);
+		void init_trafos(const int n_dims, const int n_steps);
 
 		void override_displacement(
 			const libMesh::MeshBase &mesh,
 			const libMesh::DofMap &dof_map,
 			DVectord &displacement) const;
+
+
+		void describe(std::ostream &os) const
+		{
+			os << "n_time_steps: " << n_time_steps << std::endl;
+			std::cout << dt << std::endl;
+			std::cout << t << std::endl;
+			std::cout << t_end << std::endl;
+		}
 
 		int n_time_steps;
 		double dt;

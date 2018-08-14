@@ -456,7 +456,7 @@ namespace utopia {
     }
 
 #ifdef WITH_PETSC
-    void petc_interop()
+    void petsc_interop()
     {
         using KSPSolver = utopia::KSPSolver<DSMatrixd, DVectord, PETSC>;
         CrossBackendLinearSolver<
@@ -503,7 +503,7 @@ namespace utopia {
         // UTOPIA_RUN_TEST(trilinos_mg);
 
 #ifdef WITH_PETSC
-        UTOPIA_RUN_TEST(petc_interop);
+        UTOPIA_RUN_TEST(petsc_interop);
 #endif //WITH_PETSC
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
