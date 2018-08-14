@@ -290,7 +290,8 @@ namespace utopia {
 
 		ProjectedGaussSeidel()
 		: use_line_search_(true), use_symmetric_sweep_(true), n_local_sweeps_(3)
-		{}
+		{
+		}
 
 		ProjectedGaussSeidel(const ProjectedGaussSeidel &) = default;
 

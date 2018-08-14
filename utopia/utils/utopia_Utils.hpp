@@ -29,6 +29,15 @@ namespace utopia
 	bool write(const std::string &path, const std::string &str);
 	void disp(const std::string &str);
 	void disp(const char * str);
+
+	template<typename T>
+	void disp(const T & val, const std::string & name)
+	{
+		if(mpi_world_rank() == 0)
+			std::cout<<"---  "<< name <<"  --- \n"; 
+		return disp(val); 
+	}
+
 	std::vector<std::string> split_string(const std::string &, char);
 
 	/** \addtogroup Utilities

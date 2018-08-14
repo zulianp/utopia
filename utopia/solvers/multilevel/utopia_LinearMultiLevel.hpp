@@ -40,7 +40,7 @@ namespace utopia
 		 * Function initializes restriction transfer operators.
 		 * Operators need to be ordered FROM COARSE TO FINE.
 		 *
-		 * @param[in]  operators                The restriction operators.
+		 * @param[in]  operators                The inteprolation operators.
 		 *
 		 */
 		virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators)

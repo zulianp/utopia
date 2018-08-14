@@ -1,10 +1,3 @@
-/*
- * @Author: alenakopanicakova
- * @Date:   2016-04-04
- * @Last Modified by:   Alena Kopanicakova
- * @Last Modified time: 2017-04-21
- */
-
 #ifndef UTOPIA_PETSC_GS_HPP
 #define UTOPIA_PETSC_GS_HPP
 
