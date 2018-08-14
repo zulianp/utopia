@@ -14,6 +14,7 @@ namespace utopia {
 	>
 	class CrossBackendLinearSolver : public LinearSolver<Matrix, Vector> {
 	public:
+		virtual ~CrossBackendLinearSolver() {}
 
 		virtual bool apply(const Vector &rhs, Vector &sol) override
 		{

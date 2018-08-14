@@ -7,7 +7,7 @@ list(APPEND TEST_MODULES
 find_project_files(CMAKE_CURRENT_SOURCE_DIR TEST_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 add_library(utopia_tests STATIC ${LOCAL_SOURCES})
 
-target_link_libraries(utopia_tests utopia_core utopia_utils utopia_solvers utopia_differentiable utopia_ui)
+target_link_libraries(utopia_tests utopia_core utopia_utils utopia_solvers utopia_differentiable utopia_ui utopia_interoperability)
 target_include_directories(utopia_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(utopia_tests PUBLIC ..)
 target_include_directories(utopia_tests PUBLIC ../backend ${TEST_MODULES})

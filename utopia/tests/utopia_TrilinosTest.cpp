@@ -8,11 +8,15 @@
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
 
-#include "utopia_CrossBackendLinearSolver.hpp"
+
 
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_MultiLevelTestProblem.hpp"
 #include <algorithm>
+
+#ifdef WITH_PETSC
+#include "utopia_petsc_trilinos.hpp"
+#endif
 
 namespace utopia {
 
@@ -458,11 +462,13 @@ namespace utopia {
 #ifdef WITH_PETSC
     void petsc_interop()
     {
-        using KSPSolver = utopia::KSPSolver<DSMatrixd, DVectord, PETSC>;
-        CrossBackendLinearSolver<
-            TSMatrixd, TVectord,
-            DSMatrixd, DVectord,
-            KSPSolver> solver;
+        // using KSPSolver = utopia::KSPSolver<DSMatrixd, DVectord, PETSC>;
+        // CrossBackendLinearSolver<
+        //     TSMatrixd, TVectord,
+        //     DSMatrixd, DVectord,
+        //     KSPSolver> solver;
+
+        KSPSolver<TSMatrixd, TVectord> solver;
 
         MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(100, 2);
         TVectord x = zeros(size(*ml_problem.rhs));
