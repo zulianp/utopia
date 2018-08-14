@@ -10,15 +10,18 @@ target_include_directories(utopia_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 find_package(MPI)
 
-if(MPI_FOUND)
-	list(APPEND UTOPIA_INCLUDES ${MPI_CXX_INCLUDE_PATH})
-	list(APPEND UTOPIA_LIBRARIES  ${MPI_CXX_LIBRARIES} )
 
-	target_include_directories(utopia_utils PUBLIC ${MPI_CXX_INCLUDE_PATH})
-	# target_link_libraries(utopia_utils utopia_core ${MPI_CXX_LIBRARIES} )
-	target_link_libraries(utopia_utils ${MPI_CXX_LIBRARIES})
-	
-	set(WITH_MPI TRUE PARENT_SCOPE)
+if(TRY_WITH_MPI)
+	if(MPI_FOUND)
+		list(APPEND UTOPIA_INCLUDES ${MPI_CXX_INCLUDE_PATH})
+		list(APPEND UTOPIA_LIBRARIES  ${MPI_CXX_LIBRARIES} )
+
+		target_include_directories(utopia_utils PUBLIC ${MPI_CXX_INCLUDE_PATH})
+		# target_link_libraries(utopia_utils utopia_core ${MPI_CXX_LIBRARIES} )
+		target_link_libraries(utopia_utils ${MPI_CXX_LIBRARIES})
+		
+		set(WITH_MPI TRUE PARENT_SCOPE)
+	endif()
 endif()
 
 set_utopia_compiler_features(utopia_utils)
