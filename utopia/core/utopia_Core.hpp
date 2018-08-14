@@ -44,5 +44,6 @@
 #include "utopia_Eval.hpp"
 
 #include "utopia_Temp.hpp"
+#include "utopia_BackendConvert.hpp"
 
 #endif //UTOPIA_CORE_HPP

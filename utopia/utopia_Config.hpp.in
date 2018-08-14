@@ -18,6 +18,7 @@
 #cmakedefine WITH_PASSO_EXTENSIONS
 #cmakedefine WITH_TINY_EXPR
 #cmakedefine WITH_JSON
+#cmakedefine WITH_M3ELINSOL
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR
@@ -67,16 +68,16 @@
 	#define UTOPIA_PETSC_VERSION_GREATER_EQUAL_THAN(major,minor,subminor) 0
 #endif // WITH_PETSC
 
-#ifndef NDEBUG 
+#ifndef NDEBUG
 #include <assert.h>
 #cmakedefine ENABLE_LOCK_CHECK
 #ifdef ENABLE_LOCK_CHECK
 #define assert_enabled(expr_) assert(expr_)
 #else
-#define assert_enabled(expr_)  
+#define assert_enabled(expr_)
 #endif //ENABLE_LOCK_CHECK
-#else 
-#define assert_enabled(expr_)    
+#else
+#define assert_enabled(expr_)
 #endif //NDEBUG
 
 #include "utopia_compiler_features.hpp"

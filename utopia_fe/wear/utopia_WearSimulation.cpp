@@ -303,7 +303,7 @@ namespace utopia {
         );
 
 
-        DVectord overriden_displacement;
+        DVectord overriden_displacement = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
         MechanicsState state;
 
         for(int i = 0; i < in.n_cycles; ++i) {

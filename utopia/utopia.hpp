@@ -273,4 +273,9 @@ with compile time decisions.
 #endif //WITH_UTOPIA_OPENCL
 
 
+#ifdef WITH_M3ELINSOL
+#include "utopia_m3elinsol.hpp"
+#endif //WITH_M3ELINSOL
+
+
 #endif //UTOPIA_HPP
