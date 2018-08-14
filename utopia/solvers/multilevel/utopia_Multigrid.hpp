@@ -23,7 +23,7 @@ namespace utopia
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Multigrid : public LinearMultiLevel<Matrix, Vector>,
-    public IterativeSolver<Matrix, Vector>
+                      public IterativeSolver<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -145,7 +145,8 @@ namespace utopia
             r_norm = norm2(memory.r[l]);
             r0_norm = r_norm;
             
-            this->init_solver("Multigrid", {" it. ", "|| r_N ||", "r_norm" });
+            std::string mg_header_message = "Multigrid: " + std::to_string(L) +  " levels";
+            this->init_solver(mg_header_message, {" it. ", "|| r_N ||", "r_norm" });
             
             if(this->verbose())
                 PrintInfo::print_iter_status(it, {r_norm, 1});
@@ -194,6 +195,8 @@ namespace utopia
                 it++;
                 
             }
+
+            this->print_statistics(it); 
             
             // UTOPIA_RECORD_SCOPE_END("apply");
             return true;

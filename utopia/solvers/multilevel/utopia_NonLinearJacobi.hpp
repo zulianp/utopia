@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-04-17
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-05-02
-*/
-
 #ifndef UTOPIA_NONLINEAR_JACOBI_SMOOTHER_HPP
 #define UTOPIA_NONLINEAR_JACOBI_SMOOTHER_HPP
 
@@ -43,25 +36,21 @@ namespace utopia
             Smoother::set_parameters(params); 
         }
 
-
-
-        // takes function
-        // - take PETSC nonlinear function - to get SNES ??? 
-        // dynamic cast ?? 
         virtual bool nonlinear_smooth(Function & fun,  Vector &x, const Vector &rhs) override
         {
-            Vector F = local_zeros(local_size(x));
+            Vector g = local_zeros(local_size(x));
                
             for(int i =0; i < this->sweeps(); i++)
             {
-                Matrix D; 
-                fun.hessian(x, D);                 
-                fun.gradient(x, F); 
+                Matrix H; 
+                fun.hessian(x, H);             
+                fun.gradient(x, g); 
+                g -= rhs; 
          
-                Vector d = 1/diag(D); 
-                D = diag(d); 
-         
-                x = x - this->relaxation_parameter() * (D * (F - rhs)); 
+                Vector d = 1./diag(H); 
+                H = diag(d); 
+
+                x = x - (this->damping_parameter() * H * g); 
             }
             
             return true; 
