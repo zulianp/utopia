@@ -306,6 +306,13 @@ namespace utopia {
         	return val;
         }
 
+        inline PetscReal norm_infty() const
+        {
+            PetscReal val;
+            MatNorm(implementation(), NORM_INFINITY, &val);
+            return val;
+        }        
+
         bool is_mpi() const;
         bool is_nan_or_inf() const;
         

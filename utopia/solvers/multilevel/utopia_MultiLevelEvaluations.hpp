@@ -64,7 +64,7 @@ namespace utopia
     {
         public:
             inline static bool compute_gradient(const ExtendedFunction<Matrix, Vector> & /*fun*/, const Vector & /*x*/,  Vector & g, const Vector & g_diff, const Matrix & H_diff, const Vector & s_global)
-            {
+            {   
                 g = g_diff + H_diff * s_global; 
                 return true; 
             }
