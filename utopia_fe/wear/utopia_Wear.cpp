@@ -102,16 +102,13 @@ namespace utopia {
 		libMesh::DofMap &dof_map = V[0].dof_map();
 		auto dim = mesh.mesh_dimension();
 
-		if(empty(wear)) {
-			wear_induced_displacement = local_zeros(dof_map.n_local_dofs());
-			return;
-		}
+		wear_induced_displacement = local_zeros(dof_map.n_local_dofs());
 
 		//compute surface normals
 		assemble_normal_tangential_transformation(mesh, dof_map, boundary_tags, is_normal_component, normals, trafo);
 
 		//compute surface displacement
-		wear_induced_displacement = local_zeros(local_size(wear));
+		// wear_induced_displacement = local_zeros(local_size(wear));
 		{
 			auto r = range(wear);
 			Write<DVectord> w_w(wear_induced_displacement);
@@ -120,6 +117,7 @@ namespace utopia {
 			for(auto i = r.begin(); i < r.end(); i += dim) {
 				if(is_normal_component.get(i) > 0) {
 					for(unsigned int d = 0; d < dim; ++d) {
+						assert(wear.get(i) >= -1e-16);
 						wear_induced_displacement.set(i + d, normals.get(i + d) * (-extrapolation_factor) * wear.get(i));
 					}
 				}
@@ -131,7 +129,7 @@ namespace utopia {
 	void Wear::mesh_displacement(
 		ProductFunctionSpace<LibMeshFunctionSpace> &V,
 		const std::vector<int> &boundary_tags,
-		DVectord &disp)
+		DVectord &warped_displacement)
 	{
 		libMesh::MeshBase &mesh = V[0].mesh();
 		libMesh::DofMap &dof_map = V[0].dof_map();
@@ -147,7 +145,7 @@ namespace utopia {
 		DSMatrixd lapl_mat;
 		auto lapl = inner(grad(u), grad(v)) * dX;
 		assemble(lapl, lapl_mat);
-		DVectord warped_displacement = local_zeros(local_size(wear_induced_displacement));
+		warped_displacement = local_zeros(local_size(wear_induced_displacement));
 
 		//FIXME warped_displacement passed as dummy
 		set_identity_at_constraint_rows(dof_map, lapl_mat);
@@ -156,18 +154,16 @@ namespace utopia {
 		solver.solve(lapl_mat, wear_induced_displacement, warped_displacement);
 
 		//displace mesh
-		apply_displacement(warped_displacement, dof_map, mesh);
+		// apply_displacement(warped_displacement, dof_map, mesh);
 		convert(warped_displacement, *V[0].equation_system().solution);
 		// convert(wear_induced_displacement, *V[0].equation_system().solution);
 		V[0].equation_system().solution->close();
 
-		double wear_magnitude = norm2(wear_induced_displacement);
-		std::cout << "wear_magnitude: " << wear_magnitude << std::endl;
+		// double wear_magnitude = norm2(wear_induced_displacement);
+		// std::cout << "wear_magnitude: " << wear_magnitude << std::endl;
 
-		double param_magn = norm2(warped_displacement);
-		std::cout << "param_magn: " << param_magn << std::endl;
-
-		disp = warped_displacement;
+		// double param_magn = norm2(warped_displacement);
+		// std::cout << "param_magn: " << param_magn << std::endl;
 	}
 
 	void Wear::init_aux_system(
@@ -255,7 +251,7 @@ namespace utopia {
 			normal_stress = contact.orthogonal_trafo * state.stress;
 
 			DVectord tangential_velocity = contact.orthogonal_trafo * state.velocity;
-			sliding_distance = local_zeros(local_size(state.displacement));
+			sliding_distance = local_zeros(local_size(state.velocity));
 
 			{
 				Read<DVectord>   r_v(tangential_velocity);
@@ -297,6 +293,12 @@ namespace utopia {
 					normal_stress.set(i, ns);
 				}
 			}
+
+			const double mag_normal_stress = norm2(normal_stress);
+			const double mag_sliding_dist  = norm2(sliding_distance);
+
+			std::cout << "mag_normal_stress: " << mag_normal_stress << std::endl;
+			std::cout << "mag_sliding_dist:  " << mag_sliding_dist  << std::endl;
 
 			update(dt, sliding_distance, normal_stress);
 			total_wear.push_back(sum(wear));

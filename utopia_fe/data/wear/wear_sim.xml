@@ -37,11 +37,11 @@
 		</dirichlet>
 	</boundary-conditions>
     <forcing-functions type="array">
+        <!-- no block means that is applied to all -->
         <entry>
-            <!-- no block means that is applied to all -->
             <block>2</block>
             <coord>1</coord>
-            <value>0.2</value>
+            <value>0.</value>
         </entry>
     </forcing-functions>
     <contact>
@@ -54,17 +54,17 @@
         </pairs>
     </contact>
     <wear>
-        <n-cycles>10</n-cycles>
+        <n-cycles>50</n-cycles>
         <coeff>0.007</coeff>
-        <extrapolation>100.0</extrapolation>
+        <extrapolation>10.0</extrapolation>
         <gait-cycle>
-            <steps>100</steps>
+            <steps>30</steps>
             <rotations type="array">
                 <entry>
                     <block>1</block>
                     <axis>z</axis>
                     <begin>0.</begin>
-                    <end>180</end>
+                    <end>10</end>
                 </entry>
             </rotations>
             <translations type="array">

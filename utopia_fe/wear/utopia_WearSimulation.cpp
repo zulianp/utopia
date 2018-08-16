@@ -339,15 +339,17 @@ namespace utopia {
 
         libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() / "wear_in.e", *in.equation_systems, (1), in.gc.t);
 
-        libMesh::Nemesis_IO wear_out(*in.mesh);
+        libMesh::Nemesis_IO wear_io(*in.mesh);
+        libMesh::Nemesis_IO wear_ovv_io(*in.mesh);
+        libMesh::Nemesis_IO io(*in.mesh);
 
-        wear_out.write_timestep(in.output_path() / "wear.e", *in.equation_systems, 1, 0);
+        wear_io.write_timestep(in.output_path() / "wear.e", *in.equation_systems, 1, 0);
 
         for(int i = 1; i <= in.n_cycles; ++i) {
 
             std::cout << "cycle " << i << std::endl;
 
-            libMesh::Nemesis_IO io(*in.mesh);
+
 
             //gait-cycle
             for(int t = 0; t < in.gc.n_time_steps; ++t) {
@@ -363,7 +365,13 @@ namespace utopia {
 
                 apply_displacement(overriden_displacement + wear_displacement, in.V.subspace(0).dof_map(), *in.mesh);
 
-                libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, (1), in.gc.t);
+                {
+                    auto &sys = in.equation_systems->get_system<libMesh::LinearImplicitSystem>("wear");
+                    DVectord temp = overriden_displacement + wear_displacement;
+                    convert(temp, *sys.solution);
+                    sys.solution->close();
+                    wear_ovv_io.write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, ((i-1) * in.gc.n_time_steps + t+1),((i-1) * in.gc.n_time_steps) * in.gc.dt + in.gc.t);
+                }
 
                 //solve
                 solver.solve_steady();
@@ -383,6 +391,12 @@ namespace utopia {
 
                 in.material->stress(state.displacement, state.stress);
 
+                const double mag_stress   = norm2(state.stress);
+                const double mag_velocity = norm2(state.velocity);
+
+                // std::cout << "mag_stress:   " << mag_stress   << std::endl;
+                // std::cout << "mag_velocity: " << mag_velocity << std::endl;
+
                 state.t = in.gc.t;
 
                 wear.update_aux_system(
@@ -398,17 +412,19 @@ namespace utopia {
                 apply_displacement(-(overriden_displacement + wear_displacement), in.V.subspace(0).dof_map(), *in.mesh);
 
                 auto &sys = in.equation_systems->get_system<libMesh::LinearImplicitSystem>("wear");
-                DVectord temp = state.displacement + overriden_displacement;
+                DVectord temp = state.displacement + overriden_displacement + wear_displacement;
                 convert(temp, *sys.solution);
                 sys.solution->close();
 
-                io.write_timestep(in.output_path() / "wear_test_" + std::to_string(i) + ".e", *in.equation_systems, (t+1), in.gc.t);
+                io.write_timestep(in.output_path() / "gait_cycles.e", *in.equation_systems, ((i-1) * in.gc.n_time_steps + t+1),((i-1) * in.gc.n_time_steps) * in.gc.dt + in.gc.t);
             }
 
             //deform geometry
             wear.mesh_displacement(in.V, in.contact_surfaces, wear_displacement);
-            wear_out.write_timestep(in.output_path() / "wear.e", *in.equation_systems, (i+1), i);
+            wear_io.write_timestep(in.output_path() / "wear.e", *in.equation_systems, (i+1), i);
         }
+
+        wear.print(std::cout);
 
         std::cout << "finished" << std::endl;
     }

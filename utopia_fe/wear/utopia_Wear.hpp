@@ -69,6 +69,17 @@ namespace utopia {
 			const double dt,
 			libMesh::EquationSystems &es);
 
+		void print(std::ostream &os) {
+
+			os << "wear: ";
+
+			for(auto w : total_wear) {
+				os << " " << w;
+			}
+
+			os << "\n";
+		}
+
 	private:
 		DVectord wear;
 		double wear_coefficient;
