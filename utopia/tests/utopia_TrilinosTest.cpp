@@ -462,12 +462,6 @@ namespace utopia {
 #ifdef WITH_PETSC
     void petsc_interop()
     {
-        // using KSPSolver = utopia::KSPSolver<DSMatrixd, DVectord, PETSC>;
-        // CrossBackendLinearSolver<
-        //     TSMatrixd, TVectord,
-        //     DSMatrixd, DVectord,
-        //     KSPSolver> solver;
-
         KSPSolver<TSMatrixd, TVectord> solver;
 
         MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(100, 2);

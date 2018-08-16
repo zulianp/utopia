@@ -304,12 +304,12 @@ namespace utopia {
 				// }
 
 				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
-				TaoSolver<Matrix, Vector> tao;//(linear_solver_);
-				tao.set_box_constraints(box_c);
-				tao.set_type("tron");
-				tao.set_ksp_types("bcgs", "jacobi", " ");
-				// tao.set_type("gpcg");
-				tao.solve(fun, inc_c);
+				//(linear_solver_);
+				tao_.set_box_constraints(box_c);
+				tao_.set_type("tron");
+				tao_.set_ksp_types("bcgs", "jacobi", " ");
+				// tao_.set_type("gpcg");
+				tao_.solve(fun, inc_c);
 
 				force_direct_solver_ = false;
 
@@ -447,6 +447,11 @@ namespace utopia {
 			max_outer_loops_ = val;
 		}
 
+		TaoSolver<Matrix, Vector> &tao()
+		{
+			return tao_;
+		}
+
 	private:
 		std::shared_ptr<FunctionSpaceT> V_;
 		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
@@ -490,6 +495,8 @@ namespace utopia {
 		bool bypass_contact_;
 
 		int max_outer_loops_;
+
+		TaoSolver<Matrix, Vector> tao_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);

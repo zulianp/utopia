@@ -184,6 +184,11 @@ namespace utopia {
         	os << "dt:\t" << desc_.dt << "\n";
         }
 
+        inline Path output_path() const
+        {
+            return desc_.output_path;
+        }
+
     public:
     	std::shared_ptr<libMesh::DistributedMesh> mesh;
     	ProductFunctionSpace<LibMeshFunctionSpace> V;
@@ -300,6 +305,11 @@ namespace utopia {
         ContactSolverT solver(make_ref(in.V), in.material, in.contact_params);
         solver.set_tol(5e-6);
 
+        solver.tao().atol(1e-8);
+        solver.tao().rtol(1e-8);
+        solver.tao().stol(1e-8);
+        solver.tao().verbose(true);
+
         // auto ls = std::make_shared<Factorization<DSMatrixd, DVectord>>();
         // auto ls = std::make_shared<GMRES<DSMatrixd, DVectord>>();
         // ls->atol(1e-15);
@@ -323,7 +333,7 @@ namespace utopia {
         MechanicsState state;
 
 
-        libMesh::Nemesis_IO(*in.mesh).write_timestep("wear_in.e", *in.equation_systems, (1), in.gc.t);
+        libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() + "wear_in.e", *in.equation_systems, (1), in.gc.t);
 
         for(int i = 1; i <= in.n_cycles; ++i) {
 
@@ -340,11 +350,12 @@ namespace utopia {
                 //set-up experiment
                     //transform mesh
 
+                overriden_displacement.set(0.);
                 in.gc.override_displacement(*in.mesh, in.V.subspace(0).dof_map(), overriden_displacement);
 
                 apply_displacement(overriden_displacement, in.V.subspace(0).dof_map(), *in.mesh);
 
-                libMesh::Nemesis_IO(*in.mesh).write_timestep("wear_overr.e", *in.equation_systems, (1), in.gc.t);
+                libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() + "wear_overr.e", *in.equation_systems, (1), in.gc.t);
 
                 //solve
                 solver.solve_steady();
@@ -383,7 +394,7 @@ namespace utopia {
                 convert(temp, *sys.solution);
                 sys.solution->close();
 
-                io.write_timestep("wear_test_" + std::to_string(i) + ".e", *in.equation_systems, (t+1), in.gc.t);
+                io.write_timestep(in.output_path() + "wear_test_" + std::to_string(i) + ".e", *in.equation_systems, (t+1), in.gc.t);
             }
 
             //deform geometry

@@ -18,10 +18,8 @@ namespace utopia {
             Matrix, Vector,
             DSMatrixd, DVectord,
             KSPSolver<DSMatrixd, DVectord, PETSC>
-            > {
-	public:
+            > {};
 
-	};
 }
 
 #endif //WITH_TRILINOS
