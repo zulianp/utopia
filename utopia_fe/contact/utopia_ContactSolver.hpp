@@ -38,7 +38,8 @@ namespace utopia {
 		  debug_output_(false),
 		  force_direct_solver_(false),
 		  bypass_contact_(false),
-		  max_outer_loops_(20)
+		  max_outer_loops_(20),
+		  use_ssn_(false)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 
@@ -108,7 +109,10 @@ namespace utopia {
 		bool solve_steady()
 		{
 			initialize();
-			if(!solve_contact()) return false;
+			if(!solve_contact()) {
+				assert(false);
+				return false;
+			}
 
 			convert(x_, *V_->subspace(0).equation_system().solution);
 			io_->write_equation_systems(output_path_, V_->subspace(0).equation_systems());
@@ -170,7 +174,14 @@ namespace utopia {
 
 				std::cout << "outer_loop: " << i << " diff: " << diff << std::endl;
 				if(diff < 1e-6) {
+					std::cout << "terminated at iteration " << i << " with diff " << diff << " < 1e-6" << std::endl;
 					break;
+				} else {
+					if(i + 1 == max_outer_loops_) {
+						std::cerr << "[Warning] contact solver failed to converge with " << max_outer_loops_ << " loops under tolerance 1e-6" << std::endl;
+						// assert(false);
+						return false;
+					}
 				}
 
 				old_sol = x_;
@@ -267,29 +278,25 @@ namespace utopia {
 
 			// auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
 			// if(!force_direct_solver_ && mg) {
+
+			if(use_ssn_) {
 			// 	SemismoothNewton<Matrix, Vector> newton(linear_solver_);
 			// 	newton.verbose(true);
 			// 	newton.max_it(40);
 			// 	newton.set_box_constraints(box_c);
 			// 	newton.solve(lhs, rhs, inc_c);
 			// } else {
-				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> newton(linear_solver_);
-				// SemismoothNewton<Matrix, Vector> newton(linear_solver_);
-				// newton.verbose(true);
-				// newton.max_it(40);
-				// newton.atol(1e-18);
-				// newton.rtol(1e-6);
-				// newton.stol(1e-18);
+				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
+				// SemismoothNewton<Matrix, Vector> ssn(linear_solver_);
+				// ssn.verbose(true);
+				ssn.max_it(40);
+				ssn.atol(1e-14);
+				ssn.rtol(1e-8);
+				ssn.stol(1e-8);
 
-				// auto scale_factor = 1.0e8;
-
-				// auto scaled_box = make_upper_bound_constraints(std::make_shared<Vector>(*box_c.upper_bound() * scale_factor));
-				// newton.set_box_constraints(scaled_box);
-				// newton.solve(scale_factor * lhs, scale_factor * rhs, inc_c);
-				// inc_c_ *= 1./scale_factor;
-
-				// newton.set_box_constraints(box_c);
-				// newton.solve(lhs, rhs, inc_c);
+				ssn.set_box_constraints(box_c);
+				ssn.solve(lhs, rhs, inc_c);
+			} else {
 				Chrono c;
 				c.start();
 
@@ -297,8 +304,10 @@ namespace utopia {
 
 				// if(n_stuff++ >= 2) {
 				// 	std::cout << "Writing..." << std::flush;
-				// 	write("rhs_" + std::to_string(size(lhs).get(0)) + ".m", rhs);
-				// 	write_text("lhs_" + std::to_string(size(lhs).get(0)) + ".txt", lhs);
+					// write("rhs_" + std::to_string(size(lhs).get(0)) + ".m", rhs);
+					// write("g_" + std::to_string(size(lhs).get(0)) + ".m", *box_c.upper_bound());
+					// write_text("lhs_" + std::to_string(size(lhs).get(0)) + ".txt", lhs);
+					// write("lhs_" + std::to_string(size(lhs).get(0)) + ".m", lhs);
 				// 	std::cout << "done." << std::endl;
 				// 	exit(0);
 				// }
@@ -308,7 +317,10 @@ namespace utopia {
 				tao_.set_box_constraints(box_c);
 				tao_.set_type("tron");
 				tao_.set_ksp_types("bcgs", "jacobi", " ");
+				// tao_.set_ksp_types(KSPPREONLY, PCLU, "mumps");
 				// tao_.set_type("gpcg");
+
+
 				tao_.solve(fun, inc_c);
 
 				force_direct_solver_ = false;
@@ -316,6 +328,7 @@ namespace utopia {
 				c.stop();
 
 				std::cout << "Solve " << c << std::endl;
+			}
 			// }
 		}
 
@@ -332,6 +345,7 @@ namespace utopia {
 			}
 
 			if(!assemble_hessian_and_gradient(x_, H_, g_)) {
+				assert(false);
 				return false;
 			}
 
@@ -447,6 +461,11 @@ namespace utopia {
 			max_outer_loops_ = val;
 		}
 
+		void set_use_ssn(const bool val)
+		{
+			use_ssn_ = val;
+		}
+
 		TaoSolver<Matrix, Vector> &tao()
 		{
 			return tao_;
@@ -497,6 +516,7 @@ namespace utopia {
 		int max_outer_loops_;
 
 		TaoSolver<Matrix, Vector> tao_;
+		bool use_ssn_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);

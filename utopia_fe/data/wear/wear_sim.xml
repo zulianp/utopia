@@ -27,25 +27,32 @@
             <entry>
                 <coord>0</coord>
                 <side>4</side>
-                <value>0.</value>
-            </entry>
-            <entry>
-                <coord>1</coord>
-                <side>4</side>
                 <value>0.0</value>
             </entry>
+        <!--     <entry>
+                <coord>1</coord>
+                <side>4</side>
+                <value>0.03</value>
+            </entry> -->
 		</dirichlet>
 	</boundary-conditions>
     <forcing-functions type="array">
         <!-- no block means that is applied to all -->
         <entry>
-            <block>2</block>
+            <!-- <block>2</block> -->
             <coord>1</coord>
-            <value>0.</value>
+            <value>5.</value>
         </entry>
+    <!--        <entry>
+            <block>1</block>
+            <coord>1</coord>
+            <value>-100.</value>
+        </entry> -->
     </forcing-functions>
     <contact>
-        <radius>0.7</radius>
+        <type>steady</type>
+        <!-- <type>transient</type> -->
+        <radius>0.9</radius>
         <pairs type="array">
             <entry>
                 <master>2</master>
@@ -56,7 +63,7 @@
     <wear>
         <n-cycles>100</n-cycles>
         <coeff>0.007</coeff>
-        <extrapolation>10.0</extrapolation>
+        <extrapolation>5.0</extrapolation>
         <gait-cycle>
             <steps>30</steps>
             <rotations type="array">
@@ -86,32 +93,38 @@
                 </entry>
             </rotations>
             <translations type="array">
-                <entry>
+         <!--        <entry>
                     <block>2</block>
                     <axis>y</axis>
                     <begin>0.53</begin>
                     <end>0.53</end>
-                </entry>
+                </entry> -->
                 <entry>
                     <block>2</block>
-                    <axis>x</axis>
-                    <!-- Range -->
-                    <begin>0.</begin>
-                    <end>0.5</end>
-                    <!-- steps when active -->
-                    <from>0</from>
-                    <to>15</to>
-                </entry>
-                <entry>
-                    <block>2</block>
-                    <axis>x</axis>
-                    <!-- Range -->
+                    <axis>y</axis>
                     <begin>0.5</begin>
-                    <end>0.</end>
-                    <!-- steps when active -->
-                    <from>15</from>
-                    <to>30</to>
+                    <end>0.5</end>
                 </entry>
+                <!-- <entry> -->
+                    <!-- <block>2</block> -->
+                    <!-- <axis>x</axis> -->
+                    <!-- Range -->
+                    <!-- <begin>0.</begin> -->
+                    <!-- <end>0.5</end> -->
+                    <!-- steps when active -->
+         <!--            <from>0</from>
+                    <to>15</to>
+                </entry> -->
+          <!--       <entry>
+                    <block>2</block>
+                    <axis>x</axis> -->
+                    <!-- Range -->
+                <!--     <begin>0.5</begin>
+                    <end>0.</end> -->
+                    <!-- steps when active -->
+                  <!--   <from>15</from>
+                    <to>30</to> -->
+                <!-- </entry> -->
             </translations>
         </gait-cycle>
     </wear>

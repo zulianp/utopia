@@ -151,7 +151,9 @@ namespace utopia {
 		set_identity_at_constraint_rows(dof_map, lapl_mat);
 
 		Factorization<DSMatrixd, DVectord> solver;
-		solver.solve(lapl_mat, wear_induced_displacement, warped_displacement);
+		if(!solver.solve(lapl_mat, wear_induced_displacement, warped_displacement)) {
+			warped_displacement = wear_induced_displacement;
+		}
 
 		//displace mesh
 		// apply_displacement(warped_displacement, dof_map, mesh);

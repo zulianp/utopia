@@ -51,8 +51,10 @@ namespace utopia {
 			result.set(0.);
 
 			for(auto f_ptr : functions_) {
+				if(!empty(buff_)) { buff_.set(0.); }
 
 				if(!f_ptr->eval(x, buff_)) {
+					assert(false);
 					return false;
 				}
 

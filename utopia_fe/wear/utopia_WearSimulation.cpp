@@ -7,6 +7,7 @@
 #include "utopia_NeoHookean.hpp"
 #include "utopia_SaintVenantKirchoff.hpp"
 #include "utopia_ContactSolver.hpp"
+#include "utopia_ContactStabilizedNewmark.hpp"
 
 #include "utopia_ui.hpp"
 #include "utopia_GaitCycle.hpp"
@@ -218,6 +219,16 @@ namespace utopia {
     		is.read("contact", [this,&temp](InputStream &is) {
     			is.read("radius", contact_params.search_radius);
 
+                std::string type;
+                is.read("type", type);
+
+                is_steady = false;
+                n_transient_steps = 1;
+
+                if(type == "steady") {
+                    is_steady = true;
+                }
+
                 is.read("pairs", [this,&temp](InputStream &is) {
                     is.read_all([this,&temp](InputStream &is) {
                         int master = -1, slave = -1;
@@ -250,6 +261,8 @@ namespace utopia {
 
         ContactParams contact_params;
         std::vector<int> contact_surfaces;
+        bool is_steady;
+        int n_transient_steps;
 
     };
 
@@ -294,6 +307,7 @@ namespace utopia {
     void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &conf_file_path)
     {
         typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
+        typedef utopia::ContactStabilizedNewmark<DSMatrixd, DVectord> TransientContactSolverT;
 
     	Input in;
     	auto is_ptr = open_istream(conf_file_path);
@@ -306,13 +320,25 @@ namespace utopia {
     	in.init_sim(init.comm(), *is_ptr);
     	in.describe(std::cout);
 
-        ContactSolverT solver(make_ref(in.V), in.material, in.contact_params);
-        solver.set_tol(5e-6);
+        std::shared_ptr<ContactSolverT> solver;
+        std::shared_ptr<TransientContactSolverT> transient_solver;
+        if(in.is_steady) {
+            solver = std::make_shared<ContactSolverT>(make_ref(in.V), in.material, in.contact_params);
+        } else {
+            double dt = in.gc.dt / in.n_transient_steps;
+            transient_solver = std::make_shared<TransientContactSolverT>(make_ref(in.V), in.material, dt, in.contact_params);
+            solver = transient_solver;
+        }
 
-        solver.tao().atol(1e-10);
-        solver.tao().rtol(1e-10);
-        solver.tao().stol(1e-10);
-        // solver.tao().verbose(true);
+        solver->set_tol(5e-6);
+        solver->set_max_outer_loops(40);
+        //HERE
+        solver->set_use_ssn(true);
+
+        solver->tao().atol(1e-8);
+        solver->tao().rtol(1e-8);
+        solver->tao().stol(1e-8);
+        solver->tao().verbose(true);
 
         // auto ls = std::make_shared<Factorization<DSMatrixd, DVectord>>();
         // auto ls = std::make_shared<GMRES<DSMatrixd, DVectord>>();
@@ -321,9 +347,9 @@ namespace utopia {
         // ls->stol(1e-15);
         // ls->max_it(1000);
         // // ls->verbose(true);
-        // solver.set_linear_solver(ls);
-        // solver.set_bypass_contact(true);
-        solver.set_max_outer_loops(10);
+        // solver->set_linear_solver(ls);
+        // solver->set_bypass_contact(true);
+        // solver->set_max_outer_loops(10);
 
 
         Wear wear;
@@ -363,8 +389,6 @@ namespace utopia {
                 overriden_displacement.set(0.);
                 in.gc.override_displacement(*in.mesh, in.V.subspace(0).dof_map(), overriden_displacement);
 
-                apply_displacement(overriden_displacement + wear_displacement, in.V.subspace(0).dof_map(), *in.mesh);
-
                 {
                     auto &sys = in.equation_systems->get_system<libMesh::LinearImplicitSystem>("wear");
                     DVectord temp = overriden_displacement + wear_displacement;
@@ -373,8 +397,15 @@ namespace utopia {
                     wear_ovv_io.write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, ((i-1) * in.gc.n_time_steps + t+1),((i-1) * in.gc.n_time_steps) * in.gc.dt + in.gc.t);
                 }
 
+                apply_displacement(overriden_displacement + wear_displacement, in.V.subspace(0).dof_map(), *in.mesh);
+
                 //solve
-                solver.solve_steady();
+                if(in.is_steady) {
+                    solver->solve_steady();
+                } else {
+                    transient_solver->initial_condition(1.);
+                    transient_solver->solve_dynamic(in.n_transient_steps);
+                }
 
                 //update-wear
                     //compute velocity
@@ -382,10 +413,10 @@ namespace utopia {
                     //compute sliding distance
                     //compute wear
 
-                state.displacement           = solver.displacement();
-                state.displacement_increment = solver.displacement();
+                state.displacement           = solver->displacement();
+                state.displacement_increment = solver->displacement();
 
-                state.velocity               = (1./in.gc.dt) * solver.displacement();
+                state.velocity               = (1./in.gc.dt) * solver->displacement();
 
                 in.forcing_function->eval(state.displacement, state.external_force);
 
@@ -402,7 +433,7 @@ namespace utopia {
                 wear.update_aux_system(
                     0,
                     state,
-                    solver.contact(),
+                    solver->contact(),
                     in.gc.dt,
                     *in.equation_systems
                 );
