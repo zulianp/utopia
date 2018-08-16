@@ -27,6 +27,8 @@ namespace utopia {
 				is.read("axis",  axis);
 				is.read("begin", rot.begin_angle_degree);
 				is.read("end",   rot.end_angle_degree);
+				is.read("from",  rot.from_step);
+				is.read("to",    rot.to_step);
 
 				rot.axis = axis[0];
 
@@ -44,6 +46,9 @@ namespace utopia {
 				is.read("axis",  axis);
 				is.read("begin", tr.begin_offset);
 				is.read("end",   tr.end_offset);
+
+				is.read("from",  tr.from_step);
+				is.read("to",    tr.to_step);
 
 				tr.axis = axis[0];
 
@@ -130,12 +135,16 @@ namespace utopia {
 				Point3d p3{ node(0), node(1), node(2) };
 
 				for(auto &r : rotations) {
+					if(!r.active) continue;
+
 					if(e.subdomain_id() == r.block) {
 						p3 = r.trafo.apply(p3);
 					}
 				}
 
 				for(auto &t : translations) {
+					if(!t.active) continue;
+
 					if(e.subdomain_id() == t.block) {
 						p3 = t.trafo.apply(p3);
 					}
@@ -160,6 +169,11 @@ namespace utopia {
 		begin_angle_degree = 0;
 		end_angle_degree = 90;
 		d_angle = end_angle_degree - begin_angle_degree;
+
+		from_step = -1;
+		to_step   = -1;
+
+		active = true;
 	}
 
 	void GaitCycle::Rotation::init(
@@ -167,7 +181,12 @@ namespace utopia {
 		const int n_steps)
 	{
 		double range = (end_angle_degree - begin_angle_degree) * (M_PI/180.);
-		d_angle = range/n_steps;
+
+		if(from_step != -1 && to_step != -1) {
+			d_angle = range/(to_step - from_step);
+		} else {
+			d_angle = range/n_steps;
+		}
 	}
 
 	void GaitCycle::Rotation::update(
@@ -175,7 +194,14 @@ namespace utopia {
 		const double t)
 	{
 		auto begin_angle_radian = begin_angle_degree * (M_PI/180.);
-		trafo.make_rotation(n_dims, begin_angle_radian + step * d_angle, axis);
+
+		if(from_step == -1 || to_step == -1) {
+			trafo.make_rotation(n_dims, begin_angle_radian + step * d_angle, axis);
+			return;
+		}
+
+		active = from_step <= step && step < to_step;
+		trafo.make_rotation(n_dims, begin_angle_radian + (step - from_step) * d_angle, axis);
 	}
 
 
@@ -187,6 +213,11 @@ namespace utopia {
 		begin_offset = 0;
 		end_offset   = 1;
 		d_offset = end_offset - begin_offset;
+
+		from_step = -1;
+		to_step   = -1;
+
+		active = true;
 	}
 
 	void GaitCycle::Translation::init(
@@ -194,7 +225,12 @@ namespace utopia {
 		const int n_steps)
 	{
 		double range = (end_offset - begin_offset);
-		d_offset = range/n_steps;
+
+		if(from_step != -1 && to_step != -1) {
+			d_offset = range/(to_step - from_step);
+		} else {
+			d_offset = range/n_steps;
+		}
 	}
 
 	void GaitCycle::Translation::update(
@@ -202,6 +238,12 @@ namespace utopia {
 		const double t
 		)
 	{
-		trafo.make_translation(n_dims, begin_offset + step * d_offset, axis);
+		if(from_step == -1 || to_step == -1) {
+			trafo.make_translation(n_dims, begin_offset + step * d_offset, axis);
+			return;
+		}
+
+		active = from_step <= step && step < to_step;
+		trafo.make_translation(n_dims, begin_offset + (step - from_step) * d_offset, axis);
 	}
 }

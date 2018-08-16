@@ -309,9 +309,9 @@ namespace utopia {
         ContactSolverT solver(make_ref(in.V), in.material, in.contact_params);
         solver.set_tol(5e-6);
 
-        solver.tao().atol(1e-8);
-        solver.tao().rtol(1e-8);
-        solver.tao().stol(1e-8);
+        solver.tao().atol(1e-10);
+        solver.tao().rtol(1e-10);
+        solver.tao().stol(1e-10);
         // solver.tao().verbose(true);
 
         // auto ls = std::make_shared<Factorization<DSMatrixd, DVectord>>();
@@ -424,7 +424,13 @@ namespace utopia {
             wear_io.write_timestep(in.output_path() / "wear.e", *in.equation_systems, (i+1), i);
         }
 
-        wear.print(std::cout);
+        std::ofstream os(in.output_path() / "wear_profile.txt");
+
+        if(os.good()) {
+            wear.print(os);
+        }
+
+        os.close();
 
         std::cout << "finished" << std::endl;
     }

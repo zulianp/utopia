@@ -2,7 +2,7 @@
 	<mesh>../data/wear_2_far.e</mesh>
     <time>
         <dt>0.1</dt>
-        <steps>100</steps>
+        <steps>10</steps>
     </time>
 	<model>
 		<!-- <material>NeoHookean</material> -->
@@ -45,7 +45,7 @@
         </entry>
     </forcing-functions>
     <contact>
-        <radius>0.5</radius>
+        <radius>0.7</radius>
         <pairs type="array">
             <entry>
                 <master>2</master>
@@ -54,25 +54,63 @@
         </pairs>
     </contact>
     <wear>
-        <n-cycles>50</n-cycles>
+        <n-cycles>100</n-cycles>
         <coeff>0.007</coeff>
         <extrapolation>10.0</extrapolation>
         <gait-cycle>
             <steps>30</steps>
             <rotations type="array">
+           <!--      <entry>
+                    <block>1</block>
+                    <axis>z</axis>
+                    <begin>0.</begin>
+                    <end>10</end>
+                </entry> -->
                 <entry>
                     <block>1</block>
                     <axis>z</axis>
                     <begin>0.</begin>
                     <end>10</end>
+                    <!-- steps when active -->
+                    <from>0</from>
+                    <to>15</to>
+                </entry>
+                   <entry>
+                    <block>1</block>
+                    <axis>z</axis>
+                    <begin>10.</begin>
+                    <end>0.</end>
+                    <!-- steps when active -->
+                    <from>15</from>
+                    <to>30</to>
                 </entry>
             </rotations>
             <translations type="array">
                 <entry>
                     <block>2</block>
                     <axis>y</axis>
+                    <begin>0.53</begin>
+                    <end>0.53</end>
+                </entry>
+                <entry>
+                    <block>2</block>
+                    <axis>x</axis>
+                    <!-- Range -->
                     <begin>0.</begin>
-                    <end>0.56</end>
+                    <end>0.5</end>
+                    <!-- steps when active -->
+                    <from>0</from>
+                    <to>15</to>
+                </entry>
+                <entry>
+                    <block>2</block>
+                    <axis>x</axis>
+                    <!-- Range -->
+                    <begin>0.5</begin>
+                    <end>0.</end>
+                    <!-- steps when active -->
+                    <from>15</from>
+                    <to>30</to>
                 </entry>
             </translations>
         </gait-cycle>

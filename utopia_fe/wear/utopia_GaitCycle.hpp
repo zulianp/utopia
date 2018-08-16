@@ -21,6 +21,8 @@ namespace utopia {
 		using Fun2d = std::function<std::array<double, 2>(const std::array<double, 2> &p)>;
 		using Fun3d = std::function<std::array<double, 3>(const std::array<double, 3> &p)>;
 
+
+
 		class Rotation {
 		public:
 			int block;
@@ -31,6 +33,11 @@ namespace utopia {
 			double d_angle;
 
 			AffineTransform trafo;
+
+			int from_step;
+			int to_step;
+
+			bool active;
 
 			Rotation();
 
@@ -46,6 +53,11 @@ namespace utopia {
 			double begin_offset;
 			double end_offset;
 			double d_offset;
+
+			int from_step;
+			int to_step;
+
+			bool active;
 
 			AffineTransform trafo;
 

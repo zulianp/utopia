@@ -70,11 +70,8 @@ namespace utopia {
 			libMesh::EquationSystems &es);
 
 		void print(std::ostream &os) {
-
-			os << "wear: ";
-
 			for(auto w : total_wear) {
-				os << " " << w;
+				os << w << " ";
 			}
 
 			os << "\n";
