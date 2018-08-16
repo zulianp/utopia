@@ -25,6 +25,15 @@ namespace utopia {
 
 	class Wear {
 	public:
+		Wear();
+
+		void set_params(
+			const double wear_coefficient,
+			const double extrapolation_factor)
+		{
+			this->wear_coefficient = wear_coefficient;
+			this->extrapolation_factor = extrapolation_factor;
+		}
 
 		inline void update(
 			const double dt,

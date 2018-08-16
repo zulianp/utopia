@@ -55,10 +55,8 @@
     </contact>
     <wear>
         <n-cycles>1</n-cycles>
-<!--         <worn-surfaces type="array">
-            <entry>1</entry>
-            <entry>2</entry>
-        </worn-surfaces> -->
+        <coeff>0.007</coeff>
+        <extrapolation>10.0</extrapolation>
         <gait-cycle>
             <steps>30</steps>
             <rotations type="array">

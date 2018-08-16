@@ -86,6 +86,12 @@ namespace utopia {
 		}
 	}
 
+	Wear::Wear()
+	: wear_coefficient(7e-3), extrapolation_factor(10.)
+	{
+
+	}
+
 	void Wear::compute_displacement(
 		ProductFunctionSpace<LibMeshFunctionSpace> &V,
 		const std::vector<int> &boundary_tags,

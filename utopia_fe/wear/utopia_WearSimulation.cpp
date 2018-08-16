@@ -256,6 +256,7 @@ namespace utopia {
     class WearSimulation::Input : public ContactSimulation {
     public:
     	Input()
+        : wear_coefficient(7e-3), extrapolation_factor(10.)
     	{}
 
     	virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is) override
@@ -265,6 +266,8 @@ namespace utopia {
             is.read("wear", [this](InputStream &is) {
                 is.read("n-cycles",   n_cycles);
                 is.read("gait-cycle", gc);
+                is.read("coeff", wear_coefficient);
+                is.read("extrapolation", extrapolation_factor);
             });
 
             gc.init(mesh->mesh_dimension());
@@ -275,6 +278,7 @@ namespace utopia {
 
     	GaitCycle gc;
         int n_cycles;
+        double wear_coefficient, extrapolation_factor;
 
 
         virtual void describe(std::ostream &os) const override
@@ -322,18 +326,21 @@ namespace utopia {
         solver.set_max_outer_loops(10);
 
 
-
         Wear wear;
+        wear.set_params(in.wear_coefficient, in.extrapolation_factor);
         wear.init_aux_system(
             *in.equation_systems
         );
-
 
         DVectord overriden_displacement = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
         MechanicsState state;
 
 
-        libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() + "wear_in.e", *in.equation_systems, (1), in.gc.t);
+        libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() / "wear_in.e", *in.equation_systems, (1), in.gc.t);
+
+        libMesh::Nemesis_IO wear_out(*in.mesh);
+
+        wear_out.write_timestep(in.output_path() / "wear.e", *in.equation_systems, 1, 0);
 
         for(int i = 1; i <= in.n_cycles; ++i) {
 
@@ -355,7 +362,7 @@ namespace utopia {
 
                 apply_displacement(overriden_displacement, in.V.subspace(0).dof_map(), *in.mesh);
 
-                libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() + "wear_overr.e", *in.equation_systems, (1), in.gc.t);
+                libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, (1), in.gc.t);
 
                 //solve
                 solver.solve_steady();
@@ -394,11 +401,12 @@ namespace utopia {
                 convert(temp, *sys.solution);
                 sys.solution->close();
 
-                io.write_timestep(in.output_path() + "wear_test_" + std::to_string(i) + ".e", *in.equation_systems, (t+1), in.gc.t);
+                io.write_timestep(in.output_path() / "wear_test_" + std::to_string(i) + ".e", *in.equation_systems, (t+1), in.gc.t);
             }
 
             //deform geometry
             wear.modify_geometry(in.V, in.contact_surfaces);
+            wear_out.write_timestep(in.output_path() / "wear.e", *in.equation_systems, (i+1), i);
         }
 
         std::cout << "finished" << std::endl;
