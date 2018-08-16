@@ -54,11 +54,11 @@
         </pairs>
     </contact>
     <wear>
-        <n-cycles>1</n-cycles>
+        <n-cycles>10</n-cycles>
         <coeff>0.007</coeff>
-        <extrapolation>10.0</extrapolation>
+        <extrapolation>100.0</extrapolation>
         <gait-cycle>
-            <steps>30</steps>
+            <steps>100</steps>
             <rotations type="array">
                 <entry>
                     <block>1</block>

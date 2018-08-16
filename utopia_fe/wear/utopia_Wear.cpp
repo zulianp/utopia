@@ -128,9 +128,10 @@ namespace utopia {
 
 	}
 
-	void Wear::modify_geometry(
+	void Wear::mesh_displacement(
 		ProductFunctionSpace<LibMeshFunctionSpace> &V,
-		const std::vector<int> &boundary_tags)
+		const std::vector<int> &boundary_tags,
+		DVectord &disp)
 	{
 		libMesh::MeshBase &mesh = V[0].mesh();
 		libMesh::DofMap &dof_map = V[0].dof_map();
@@ -165,6 +166,8 @@ namespace utopia {
 
 		double param_magn = norm2(warped_displacement);
 		std::cout << "param_magn: " << param_magn << std::endl;
+
+		disp = warped_displacement;
 	}
 
 	void Wear::init_aux_system(

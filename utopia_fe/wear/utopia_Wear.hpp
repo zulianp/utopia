@@ -53,9 +53,10 @@ namespace utopia {
 			DVectord &wear_induced_displacement
 			);
 
-		void modify_geometry(
+		void mesh_displacement(
 			ProductFunctionSpace<LibMeshFunctionSpace> &V,
-			const std::vector<int> &boundary_tags);
+			const std::vector<int> &boundary_tags,
+			DVectord &disp);
 
 		void init_aux_system(
 			libMesh::EquationSystems &es,

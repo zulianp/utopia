@@ -17,7 +17,7 @@ namespace utopia {
 	class PathIterator {
 	private:
 		struct DirHandle {
-			//DIR * hidden 
+			//DIR * hidden
 			void * dir;
 			DirHandle(const std::string &path);
 			~DirHandle();
@@ -25,13 +25,13 @@ namespace utopia {
 		};
 
 		const Path &path_;
-		std::shared_ptr<DirHandle> dir_;	
+		std::shared_ptr<DirHandle> dir_;
 		struct dirent *it_;
 		bool skip_hidden_;
 	public:
 
 		PathIterator(const Path &path);
-		operator bool() const; 
+		operator bool() const;
 		PathIterator & operator ++();
 		Path operator *() const;
 	};
@@ -73,6 +73,6 @@ namespace utopia {
 	};
 
 
-} /* utopia */	
+} /* utopia */
 
 #endif // UTOPIA_PATH_HPP

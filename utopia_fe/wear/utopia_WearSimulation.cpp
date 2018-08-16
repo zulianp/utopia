@@ -312,7 +312,7 @@ namespace utopia {
         solver.tao().atol(1e-8);
         solver.tao().rtol(1e-8);
         solver.tao().stol(1e-8);
-        solver.tao().verbose(true);
+        // solver.tao().verbose(true);
 
         // auto ls = std::make_shared<Factorization<DSMatrixd, DVectord>>();
         // auto ls = std::make_shared<GMRES<DSMatrixd, DVectord>>();
@@ -333,6 +333,7 @@ namespace utopia {
         );
 
         DVectord overriden_displacement = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
+        DVectord wear_displacement = overriden_displacement;
         MechanicsState state;
 
 
@@ -360,7 +361,7 @@ namespace utopia {
                 overriden_displacement.set(0.);
                 in.gc.override_displacement(*in.mesh, in.V.subspace(0).dof_map(), overriden_displacement);
 
-                apply_displacement(overriden_displacement, in.V.subspace(0).dof_map(), *in.mesh);
+                apply_displacement(overriden_displacement + wear_displacement, in.V.subspace(0).dof_map(), *in.mesh);
 
                 libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, (1), in.gc.t);
 
@@ -394,7 +395,7 @@ namespace utopia {
 
                 //clean-up experiment
                     //transform-back mesh
-                apply_displacement(-overriden_displacement, in.V.subspace(0).dof_map(), *in.mesh);
+                apply_displacement(-(overriden_displacement + wear_displacement), in.V.subspace(0).dof_map(), *in.mesh);
 
                 auto &sys = in.equation_systems->get_system<libMesh::LinearImplicitSystem>("wear");
                 DVectord temp = state.displacement + overriden_displacement;
@@ -405,7 +406,7 @@ namespace utopia {
             }
 
             //deform geometry
-            wear.modify_geometry(in.V, in.contact_surfaces);
+            wear.mesh_displacement(in.V, in.contact_surfaces, wear_displacement);
             wear_out.write_timestep(in.output_path() / "wear.e", *in.equation_systems, (i+1), i);
         }
 
