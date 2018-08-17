@@ -1,11 +1,6 @@
 <simulation>
 	<mesh>../data/wear_2_far.e</mesh>
-    <time>
-        <dt>0.1</dt>
-        <steps>10</steps>
-    </time>
 	<model>
-		<!-- <material>NeoHookean</material> -->
         <material>LinearElasticity</material>
 		<parameters>
 			<mu>300.</mu>
@@ -29,11 +24,6 @@
                 <side>4</side>
                 <value>0.0</value>
             </entry>
-        <!--     <entry>
-                <coord>1</coord>
-                <side>4</side>
-                <value>0.03</value>
-            </entry> -->
 		</dirichlet>
 	</boundary-conditions>
     <forcing-functions type="array">
@@ -43,15 +33,9 @@
             <coord>1</coord>
             <value>5.</value>
         </entry>
-    <!--        <entry>
-            <block>1</block>
-            <coord>1</coord>
-            <value>-100.</value>
-        </entry> -->
     </forcing-functions>
     <contact>
         <type>steady</type>
-        <!-- <type>transient</type> -->
         <radius>0.9</radius>
         <pairs type="array">
             <entry>
@@ -67,12 +51,6 @@
         <gait-cycle>
             <steps>30</steps>
             <rotations type="array">
-           <!--      <entry>
-                    <block>1</block>
-                    <axis>z</axis>
-                    <begin>0.</begin>
-                    <end>10</end>
-                </entry> -->
                 <entry>
                     <block>1</block>
                     <axis>z</axis>
@@ -93,40 +71,14 @@
                 </entry>
             </rotations>
             <translations type="array">
-         <!--        <entry>
-                    <block>2</block>
-                    <axis>y</axis>
-                    <begin>0.53</begin>
-                    <end>0.53</end>
-                </entry> -->
                 <entry>
                     <block>2</block>
                     <axis>y</axis>
                     <begin>0.5</begin>
                     <end>0.5</end>
                 </entry>
-                <!-- <entry> -->
-                    <!-- <block>2</block> -->
-                    <!-- <axis>x</axis> -->
-                    <!-- Range -->
-                    <!-- <begin>0.</begin> -->
-                    <!-- <end>0.5</end> -->
-                    <!-- steps when active -->
-         <!--            <from>0</from>
-                    <to>15</to>
-                </entry> -->
-          <!--       <entry>
-                    <block>2</block>
-                    <axis>x</axis> -->
-                    <!-- Range -->
-                <!--     <begin>0.5</begin>
-                    <end>0.</end> -->
-                    <!-- steps when active -->
-                  <!--   <from>15</from>
-                    <to>30</to> -->
-                <!-- </entry> -->
             </translations>
         </gait-cycle>
     </wear>
-	<output>wear_output</output>
+	<output>./</output>
 </simulation>

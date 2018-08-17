@@ -44,10 +44,10 @@ namespace utopia {
                         is.read("lambda", params.default_lambda);
                     });
 
-                    is.read("time", [this](InputStream &is) {
-                        is.read("dt", dt);
-                        is.read("steps", n_time_teps);
-                    });
+                    // is.read("time", [this](InputStream &is) {
+                    //     is.read("dt", dt);
+                    //     is.read("steps", n_time_teps);
+                    // });
                });
 
                is.read("output", output_path);
