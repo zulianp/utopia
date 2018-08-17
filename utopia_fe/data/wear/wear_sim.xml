@@ -28,14 +28,14 @@
 	</boundary-conditions>
     <forcing-functions type="array">
         <!-- no block means that is applied to all -->
-      <!--   <entry>
+        <entry>
             <coord>1</coord>
-            <value>5.</value>
-        </entry> -->
+            <value>x*x + y*y</value>
+        </entry>
         <entry>
             <block>4</block>
             <coord>1</coord>
-            <value>5.</value>
+            <value>0.5</value>
             <type>surface</type>
         </entry>
     </forcing-functions>
@@ -85,5 +85,5 @@
             </translations>
         </gait-cycle>
     </wear>
-	<output>./</output>
+	<output>./wear_out</output>
 </simulation>

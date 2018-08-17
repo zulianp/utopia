@@ -145,7 +145,8 @@ namespace utopia {
 
                     int block = -1;
                     int coord = 0;
-                    double value = 0.;
+                    // double value = 0.;
+                    std::string value;
                     std::string type = "volume";
 
                     is.read("block", block);
@@ -155,14 +156,14 @@ namespace utopia {
 
                     if(type == "surface") {
                         auto v = test(V[coord]);
-                        auto l_form = surface_integral(inner(coeff(value), v), block);
+                        auto l_form = surface_integral(inner(symbolic(value), v), block);
 
                         auto ff = std::make_shared<ConstantForcingFunction<DVectord>>();
                         ff->init(l_form);
                         forcing_function->add(ff);
                     } else {
                         auto v = test(V[coord]);
-                        auto l_form = integral(inner(coeff(value), v), block);
+                        auto l_form = integral(inner(symbolic(value), v), block);
 
                         auto ff = std::make_shared<ConstantForcingFunction<DVectord>>();
                         ff->init(l_form);
