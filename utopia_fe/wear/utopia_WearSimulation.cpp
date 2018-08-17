@@ -146,17 +146,28 @@ namespace utopia {
                     int block = -1;
                     int coord = 0;
                     double value = 0.;
+                    std::string type = "volume";
 
                     is.read("block", block);
                     is.read("coord", coord);
                     is.read("value", value);
+                    is.read("type", type);
 
-                    auto v = test(V[coord]);
-                    auto l_form = integral(inner(coeff(value), v), block);
+                    if(type == "surface") {
+                        auto v = test(V[coord]);
+                        auto l_form = surface_integral(inner(coeff(value), v), block);
 
-                    auto ff = std::make_shared<ConstantForcingFunction<DVectord>>();
-                    ff->init(l_form);
-                    forcing_function->add(ff);
+                        auto ff = std::make_shared<ConstantForcingFunction<DVectord>>();
+                        ff->init(l_form);
+                        forcing_function->add(ff);
+                    } else {
+                        auto v = test(V[coord]);
+                        auto l_form = integral(inner(coeff(value), v), block);
+
+                        auto ff = std::make_shared<ConstantForcingFunction<DVectord>>();
+                        ff->init(l_form);
+                        forcing_function->add(ff);
+                    }
 
                     has_force = true;
 

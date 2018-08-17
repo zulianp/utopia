@@ -28,10 +28,15 @@
 	</boundary-conditions>
     <forcing-functions type="array">
         <!-- no block means that is applied to all -->
-        <entry>
-            <!-- <block>2</block> -->
+      <!--   <entry>
             <coord>1</coord>
             <value>5.</value>
+        </entry> -->
+        <entry>
+            <block>4</block>
+            <coord>1</coord>
+            <value>5.</value>
+            <type>surface</type>
         </entry>
     </forcing-functions>
     <contact>
