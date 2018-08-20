@@ -57,602 +57,602 @@
 
 namespace utopia {
 
-	class LibMeshFESpaceBase {
-	public:
-		typedef libMesh::Real Scalar;
-		
-		static inline int next_num_var()
-		{
-			static int fe_space_num_vars_ = 0;
-			return fe_space_num_vars_++;
-		}
-		
-		template<class SystemType>
-		LibMeshFESpaceBase(const libMesh::FEFamily &type,
-						   const libMesh::Order &order,
-						   LibMeshFEContext<SystemType> &context)
-		: mesh_(context.mesh),
-		dof_map_(make_ref(context.system.get_dof_map())),
-		var_num_(context.system.add_variable("var_" + std::to_string(next_num_var()), order, type) )
-		//system_(context.equation_systems)
-		{}
-		
-		template<class SystemType>
-		LibMeshFESpaceBase(
-						   const std::string &name,
-						   const libMesh::FEFamily &type,
-						   const libMesh::Order &order,
-						   LibMeshFEContext<SystemType> &context)
-		: mesh_(context.mesh),
-		dof_map_(make_ref(context.system.get_dof_map())),
-		var_num_(context.system.add_variable(name, order, type) )
-		// system_(context.equation_systems)
-		{}
-		
-		LibMeshFESpaceBase(const std::shared_ptr<libMesh::MeshBase> &mesh,
-						   const std::shared_ptr<libMesh::DofMap>  &dof_map,
-						   const int var_num
-		/* libMesh::EquationSystems &system*/)
-		: mesh_(mesh),
-		dof_map_(dof_map),
-		var_num_(var_num)
-		//system_(system)
-		{}
-		
-		inline libMesh::Order order()
-		{
-			return dof_map_->variable_order(var_num_);
-		}
-		
-		inline int var_num() const
-		{
-			return var_num_;
-		}
-		
-		inline libMesh::DofMap &dof_map() {
-			//assert(dof_map_);
-			return *dof_map_;
-		}
-		
-		inline const libMesh::DofMap &dof_map() const {
-			//assert(dof_map_);
-			return *dof_map_;
-		}
-		
-		inline libMesh::MeshBase &mesh() { return *mesh_; }
-		inline const libMesh::MeshBase &mesh() const { return *mesh_; }
-		
-		//  inline const libMesh::EquationSystems &system() const { return system_; }
-		
-		inline const std::shared_ptr<libMesh::DofMap> dof_map_ptr() const { return dof_map_; }
-		inline const std::shared_ptr<libMesh::MeshBase> mesh_ptr() const { return mesh_; }
-		inline void set_mesh(const std::shared_ptr<libMesh::MeshBase> &mesh) { mesh_ = mesh; }
-		
-		
-		virtual bool is_vector() = 0;
-		
-	private:
-		std::shared_ptr<libMesh::MeshBase> mesh_;
-		std::shared_ptr<libMesh::DofMap> dof_map_;
-		//libMesh::EquationSystems &system_;
-		int var_num_;
-		
-	};
-	
-	class LibMeshFEFunction;
-	class LibMeshVecFEFunction;
-	
-	
-	template<>
-	class FESpace< LibMeshTraits, LIBMESH_TAG> : public LibMeshFESpaceBase {
-	public:
-		using LibMeshFESpaceBase::LibMeshFESpaceBase;
-		typedef utopia::LibMeshFEFunction Function;
-		inline bool is_vector() { return false; }
-	};
-	
-	typedef utopia::FESpace< LibMeshTraits > LibMeshFESpaceReal;
-	typedef utopia::FESpace< LibMeshTraits > LMFESpace;
-	
-	
-	template<>
-	class VectorFESpace< LibMeshTraits, LIBMESH_TAG> : public LibMeshFESpaceBase {
-	public:
-		using LibMeshFESpaceBase::LibMeshFESpaceBase;
-		typedef utopia::LibMeshVecFEFunction Function;
-		inline bool is_vector() { return true; }
-	};
-	
-	typedef utopia::VectorFESpace< LibMeshTraits > LMVecFESpace;
-	
-	template<class SystemType>
-	FESpace<LibMeshTraits> fe_space(
-		const libMesh::FEFamily &type,
-		const libMesh::Order &order,
-		LibMeshFEContext<SystemType> &context)
-	{
-		return FESpace<LibMeshTraits >(type, order, context);
-	}
-	
-	template<class SystemType>
-	VectorFESpace<LibMeshTraits > vector_fe_space(
-																 const libMesh::FEFamily &type,
-																 const libMesh::Order &order,
-																 LibMeshFEContext<SystemType> &context)
-	{
-		return VectorFESpace<LibMeshTraits >(type, order, context);
-	}
-	
-	template<int ROWS, int COLS, class SystemType>
-	TensorProductFESpace< FESpace<LibMeshTraits >, ROWS, COLS > fe_tensor_product_space(const libMesh::FEFamily &type,
-																									   const libMesh::Order &order,
-																									   LibMeshFEContext<SystemType> &context)
-	{
-		return TensorProductFESpace< FESpace<LibMeshTraits >, ROWS, COLS >(type, order, context);
-	}
-	
-	
-	template<class SystemType>
-	VectorFESpace<LibMeshTraits > vector_fe_space(
-																 const std::string &name,
-																 const libMesh::FEFamily &type,
-																 const libMesh::Order &order,
-																 LibMeshFEContext<SystemType> &context)
-	{
-		return VectorFESpace<LibMeshTraits >(name, type, order, context);
-	}
-	
-	
-	class LibMeshFEFunction : public Expression<LibMeshFEFunction> {
-	public:
-		enum {
-			Order = 0
-		};
-		
-		enum {
-			StoreAs = UTOPIA_BY_REFERENCE
-		};
-		
-		typedef libMesh::Real Scalar;
-		typedef libMesh::dof_id_type SizeType;
-		
-		//non-copiable
-		LibMeshFEFunction() = default;
-		// LibMeshFEFunction(const LibMeshFEFunction&) = delete;
-		// LibMeshFEFunction& operator=(const LibMeshFEFunction&) = delete;
-		
-		std::string getClass() const { return "LibMeshFEFunction"; }
-		
-		const libMesh::FEBase &get_fe() const
-		{
-			assert(fe_);
-			return *fe_;
-		}
-		
-		void set_element(const SizeType element)
-		{
-			using namespace libMesh;
-			if(!fe_) {
-				fe_ = FEBase::build(mesh_->mesh_dimension(), dof_map_->variable_type(var_num_));
-				fe_->attach_quadrature_rule(qrule_.get());
-				fe_->get_xyz();
-			}
-			
-			
-			elem_ = mesh_->elem(element);
-			fe_->reinit(elem_);
-			dof_map_->dof_indices(mesh_->elem(element), dof_indices_);
-		}
-		
-		void set_element(const libMesh::Elem &element)
-		{
-			using namespace libMesh;
-			if(!fe_) {
-				fe_ = FEBase::build(mesh_->mesh_dimension(), dof_map_->variable_type(var_num_));
-				fe_->attach_quadrature_rule(qrule_.get());
-				fe_->get_xyz();
-			}
-			
-			elem_ = &element;
-			fe_->reinit(elem_);
-			dof_map_->dof_indices(&element, dof_indices_);
-		}
-		
-		inline int block_id() const
-		{
-			assert(elem_);
-			return elem_->subdomain_id();
-		}
-		
-		uint get_dimension()
-		{
-			return mesh_->mesh_dimension();
-		}
-		
-		void set_quad_rule(const std::shared_ptr<libMesh::QGauss> &qrule)
-		{
-			qrule_ = qrule;
-		}
-		
-		void dof_indices_of_current_element(std::vector<SizeType> &v)
-		{
-			v.resize(dof_indices_.size());
-			std::copy(dof_indices_.begin(), dof_indices_.end(), v.begin());
-		}
-		
-		LibMeshFEFunction(const FESpace<LibMeshTraits > &fe)
-		: mesh_(fe.mesh_ptr()),
-		var_num_(fe.var_num()),
-		dof_map_(fe.dof_map_ptr())
-		{}
-		
-		inline int var_num() const
-		{
-			return var_num_;
-		}
-		
-		inline libMesh::DofMap &dof_map() { return *dof_map_; }
-		inline const libMesh::DofMap &dof_map() const { return *dof_map_; }
-		
-		inline libMesh::MeshBase &mesh() { return *mesh_; }
-		inline const libMesh::MeshBase &mesh() const { return *mesh_; }
-		
-		inline friend Size size(const LibMeshFEFunction &fe)
-		{
-			return { fe.dof_map().n_dofs() };
-		}
-	public:
-		std::shared_ptr<libMesh::MeshBase> mesh_;
-		int var_num_;
-		std::unique_ptr<libMesh::FEBase> fe_;
-		std::shared_ptr<libMesh::DofMap> dof_map_;
-		std::shared_ptr<libMesh::QGauss> qrule_;
-		std::vector<SizeType> dof_indices_;
-		const libMesh::Elem *elem_;
-	};
-	
-	template<>
-	class Traits<LibMeshFEFunction> {
-	public:
-		typedef libMesh::Real Scalar;
-		typedef libMesh::dof_id_type SizeType;
-	};
-	
-	
-	class LibMeshVecFEFunction : public Expression<LibMeshVecFEFunction> {
-	public:
-		enum {
-			Order = 0
-		};
-		
-		enum {
-			StoreAs = UTOPIA_BY_REFERENCE
-		};
-		
-		typedef libMesh::Real Scalar;
-		typedef libMesh::dof_id_type SizeType;
-		
-		//non-copiable
-		LibMeshVecFEFunction() = default;
-		// LibMeshVecFEFunction(const LibMeshVecFEFunction&) = delete;
-		// LibMeshVecFEFunction& operator=(const LibMeshVecFEFunction&) = delete;
-		
-		std::string getClass() const { return "LibMeshVecFEFunction"; }
-		
-		const libMesh::FEVectorBase &get_fe() const
-		{
-			assert(fe_);
-			return *fe_;
-		}
-		
-		void set_element(const SizeType element)
-		{
-			using namespace libMesh;
-			if(!fe_) {
-				fe_ = FEVectorBase::build(mesh_->mesh_dimension(), dof_map_->variable_type(var_num_));
-				fe_->attach_quadrature_rule(qrule_.get());
-				fe_->get_xyz();
-			}
-			
-			fe_->reinit(mesh_->elem(element));
-		}
-		
-		void set_element(const libMesh::Elem &element)
-		{
-			using namespace libMesh;
-			if(!fe_) {
-				fe_ = FEVectorBase::build(mesh_->mesh_dimension(), dof_map_->variable_type(var_num_));
-				fe_->attach_quadrature_rule(qrule_.get());
-				fe_->get_xyz();
-			}
-			
-			fe_->reinit(&element);
-		}
-		
-		
-		void set_quad_rule(const std::shared_ptr<libMesh::QGauss> &qrule)
-		{
-			qrule_ = qrule;
-		}
-		
-		const libMesh::QGauss &get_quad_rule() const
-		{
-			return *qrule_;
-		}
-		
-		inline int var_num() const
-		{
-			return var_num_;
-		}
-		
-		inline libMesh::MeshBase &mesh() { return *mesh_; }
-		inline const libMesh::MeshBase &mesh() const { return *mesh_; }
-		
-		inline libMesh::DofMap &dof_map() { return *dof_map_; }
-		inline const libMesh::DofMap &dof_map() const { return *dof_map_; }
-		
-		LibMeshVecFEFunction(const VectorFESpace< LibMeshTraits > &fe)
-		: mesh_(fe.mesh_ptr()),
-		var_num_(fe.var_num()),
-		dof_map_(fe.dof_map_ptr())
-		{}
-		
-	public:
-		std::shared_ptr<libMesh::MeshBase> mesh_;
-		int var_num_;
-		std::unique_ptr<libMesh::FEVectorBase> fe_;
-		std::shared_ptr<libMesh::DofMap> dof_map_;
-		std::shared_ptr<libMesh::QGauss> qrule_;
-	};
-	
-	inline LibMeshVecFEFunction fe_function(const VectorFESpace< LibMeshTraits > &fe)
-	{
-		return LibMeshVecFEFunction(fe);
-	}
-	
-	inline LibMeshFEFunction fe_function(const FESpace< LibMeshTraits > &fe)
-	{
-		return LibMeshFEFunction(fe);
-	}
-	
-	template<>
-	class Traits<LibMeshVecFEFunction> {
-	public:
-		typedef libMesh::Real Scalar;
-		typedef libMesh::dof_id_type SizeType;
-	};
-	
-	
-	template<class Coefficient>
-	class Interpolate<Coefficient, LibMeshFEFunction> : public Expression< Interpolate<Coefficient, LibMeshFEFunction> > {
-	public:
-		
-		typedef typename Traits<Coefficient>::Scalar Scalar;
-		typedef libMesh::DenseVector<libMesh::Real> DenseVectorT;
-		typedef libMesh::dof_id_type SizeType;
-		
-		enum {
-			Order = Traits<Coefficient>::Order
-		};
-		
-		Interpolate(const Coefficient &coeff, LibMeshFEFunction &fe, const std::shared_ptr<libMesh::NumericVector<libMesh::Real>> &global_vec = nullptr)
-		: coeff_(coeff), fe_(fe), global_vec_(global_vec)
-		{
-			if(global_vec_) {
-				initialize_project();
-			}
-		}
-		
-		void eval(std::vector<Scalar> &values) const
-		{
-			if(!global_vec_) {
-				auto &p = fe_.get_fe().get_xyz();
-				auto &fun = fe_.get_fe().get_phi();
-				
-				values.resize(p.size());
-				
-				for(SizeType j = 0; j < values.size(); ++j) {
-					Scalar val = 0.;
-					coeff_.eval(p[j], val);
-					
-					for(SizeType i = 0; i < fun.size(); ++i) {
-						values[j] += fun[i][j] * val;
-					}
-				}
-				
-			} else {
-				
-				std::vector<SizeType> dof_indices;
-				fe_.dof_indices_of_current_element(dof_indices);
-				std::vector<Scalar> vec_values;
-				gather_values(dof_indices, *global_vec_, vec_values);
-				
-				
-				auto &fun = fe_.get_fe().get_phi();
-				assert(fun.size() == dof_indices.size());
-				
-				values.resize(fun[0].size());
-				std::fill(values.begin(), values.end(), 0.0);
-				
-				for(SizeType i = 0; i < fun.size(); ++i) {
-					for(SizeType j = 0; j < fun[i].size(); ++j) {
-						values[j] += fun[i][j] * vec_values[i];
-					}
-				}
-			}
-		}
-		
-		void eval_grad(std::vector<DenseVectorT> &grads) const
-		{
-			DenseVectorT temp;
-			if(!global_vec_) {
-				auto &p = fe_.get_fe().get_xyz();
-				auto &grad_fun = fe_.get_fe().get_dphi();
-				
-				grads.resize(p.size());
-				
-				for(SizeType j = 0; j < grads.size(); ++j) {
-					Scalar val = 0.;
-					coeff_.eval(p[j], val);
-					
-					grads[j].resize(fe_.get_dimension());
-					grads[j].zero();
-					for(SizeType i = 0; i < grad_fun.size(); ++i) {
-						for(uint d = 0; d < grads[j].size(); ++d) {
-							grads[j](d) += grad_fun[i][j](d) * val;
-						}
-					}
-				}
-				
-			} else {
-				
-				std::vector<SizeType> dof_indices;
-				fe_.dof_indices_of_current_element(dof_indices);
-				std::vector<Scalar> vec_values;
-				gather_values(dof_indices, *global_vec_, vec_values);
-				
-				
-				auto &grad_fun = fe_.get_fe().get_dphi();
-				// assert(fun.size() == dof_indices.size());
-				
-				grads.resize(grad_fun[0].size());
-				DenseVectorT zero(fe_.get_dimension());
-				zero.zero();
-				std::fill(grads.begin(), grads.end(), zero);
-				
-				for(SizeType i = 0; i < grad_fun.size(); ++i) {
-					for(SizeType j = 0; j < grad_fun[i].size(); ++j) {
-						for(uint d = 0; d < grads[j].size(); ++d) {
-							grads[j](d) += grad_fun[i][j](d) * vec_values[i];
-						}
-					}
-				}
-			}
-			
-		}
-		
-		void initialize_project()
-		{
-			using namespace libMesh;
-			// LibMeshBackend backend;
-			
-			auto e_begin = fe_.mesh().active_local_elements_begin();
-			auto e_end   = fe_.mesh().active_local_elements_end();
-			
-			auto dof_begin = fe_.dof_map().first_dof();
-			auto dof_end   = fe_.dof_map().end_dof();
-			
-			auto n_local_dofs = fe_.dof_map().n_local_dofs();
-			if(global_vec_->local_size() != n_local_dofs) {
-				global_vec_->init(n_local_dofs);
-			}
-			
-			global_vec_->zero();
-			auto sum_of_weights = global_vec_->clone();
-			
-			std::vector<dof_id_type> dof_indices;
-			DenseVector<Real> vec;
-			DenseVector<Real> w;
-			
-			for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-				fe_.set_element(**e_it);
-				fe_.dof_map().dof_indices(*e_it, dof_indices, fe_.var_num());
-				
-				auto && fun = fe_.get_fe().get_phi();
-				auto && JxW = fe_.get_fe().get_JxW();
-				auto && points = fe_.get_fe().get_xyz();
-				
-				uint n_quad_points = JxW.size();
-				
-				vec.resize(fun.size());
-				vec.zero();
-				
-				w.resize(fun.size());
-				w.zero();
-				
-				for (uint i = 0; i < fun.size(); i++) {
-					for (uint qp = 0; qp < n_quad_points; qp++) {
-						Real val = 0.0;
-						coeff_.eval(points[qp], val);
-						vec(i) += JxW[qp] * val;
-						w(i)   += JxW[qp];
-					}
-				}
-				
-				global_vec_->add_vector(vec, dof_indices);
-				sum_of_weights->add_vector(w, dof_indices);
-			}
-			
-			global_vec_->close();
-			sum_of_weights->close();
-			
-			(*global_vec_) /= (*sum_of_weights);
-		}
-		
-		libMesh::NumericVector<libMesh::Real> &vector()
-		{
-			return *global_vec_;
-		}
-		
-	private:
-		Coefficient coeff_;
-		LibMeshFEFunction &fe_;
-		std::shared_ptr<libMesh::NumericVector<libMesh::Real>> global_vec_;
-		
-		
-		
-		void gather_values(const std::vector<libMesh::dof_id_type> &indices,
-						   const libMesh::NumericVector<libMesh::Real> &global_vec,
-						   std::vector<libMesh::Real> &values) const
-		{
-			values.resize(indices.size());
-			for(SizeType i = 0; i < indices.size(); ++i) {
-				values[i] = global_vec(indices[i]);
-			}
-		}
-	};
-	
-	
-	template<class Right>
-	void strong_enforce( DirichletBoundaryCondition<
-						Equality<LibMeshFEFunction,
-						ConstantCoefficient<Right, 0> >
-						> &&cond)
-	{
-		std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().var_num();
-		std::set<libMesh::boundary_id_type> bt;
-		bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
-		libMesh::DirichletBoundary d_bc(bt, vars, libMesh::ConstFunction<libMesh::Real>(cond.expr().right()) );
-		const_cast<LibMeshFEFunction &>(cond.expr().left()).dof_map().add_dirichlet_boundary(d_bc);
-	}
-	
-	template<class Right>
-	void strong_enforce( DirichletBoundaryCondition<
-						Equality<LibMeshVecFEFunction,
-						ConstantCoefficient<Right, 1> >
-						> &&cond)
-	{
-		std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().var_num();
-		std::set<libMesh::boundary_id_type> bt;
-		bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
-		libMesh::DirichletBoundary d_bc(bt, vars, libMesh::ConstFunction<Right>(cond.expr().right()) );
-		const_cast<LibMeshVecFEFunction &>(cond.expr().left()).dof_map().add_dirichlet_boundary(d_bc);
-	}
-	
-	
-	// template<class Right, class Matrix, class Vector>
-	// void strong_enforce( DirichletBoundaryCondition<
-	// 							Equality<LibMeshVecFEFunction,
-	// 									 ConstantCoefficient<Right, 1> >
-	// 							> &&cond,
-	// 					Matrix &mat,
-	// 					Vector &vec
-	// 					)
-	// {
-	
-	// }
-	
-	// void constrained_face_selector
+// 	class LibMeshFESpaceBase {
+// 	public:
+// 		typedef libMesh::Real Scalar;
+
+// 		static inline int next_num_var()
+// 		{
+// 			static int fe_space_num_vars_ = 0;
+// 			return fe_space_num_vars_++;
+// 		}
+
+// 		template<class SystemType>
+// 		LibMeshFESpaceBase(const libMesh::FEFamily &type,
+// 						   const libMesh::Order &order,
+// 						   LibMeshFEContext<SystemType> &context)
+// 		: mesh_(context.mesh),
+// 		dof_map_(make_ref(context.system.get_dof_map())),
+// 		var_num_(context.system.add_variable("var_" + std::to_string(next_num_var()), order, type) )
+// 		//system_(context.equation_systems)
+// 		{}
+
+// 		template<class SystemType>
+// 		LibMeshFESpaceBase(
+// 						   const std::string &name,
+// 						   const libMesh::FEFamily &type,
+// 						   const libMesh::Order &order,
+// 						   LibMeshFEContext<SystemType> &context)
+// 		: mesh_(context.mesh),
+// 		dof_map_(make_ref(context.system.get_dof_map())),
+// 		var_num_(context.system.add_variable(name, order, type) )
+// 		// system_(context.equation_systems)
+// 		{}
+
+// 		LibMeshFESpaceBase(const std::shared_ptr<libMesh::MeshBase> &mesh,
+// 						   const std::shared_ptr<libMesh::DofMap>  &dof_map,
+// 						   const int var_num
+// 		/* libMesh::EquationSystems &system*/)
+// 		: mesh_(mesh),
+// 		dof_map_(dof_map),
+// 		var_num_(var_num)
+// 		//system_(system)
+// 		{}
+
+// 		inline libMesh::Order order()
+// 		{
+// 			return dof_map_->variable_order(var_num_);
+// 		}
+
+// 		inline int var_num() const
+// 		{
+// 			return var_num_;
+// 		}
+
+// 		inline libMesh::DofMap &dof_map() {
+// 			//assert(dof_map_);
+// 			return *dof_map_;
+// 		}
+
+// 		inline const libMesh::DofMap &dof_map() const {
+// 			//assert(dof_map_);
+// 			return *dof_map_;
+// 		}
+
+// 		inline libMesh::MeshBase &mesh() { return *mesh_; }
+// 		inline const libMesh::MeshBase &mesh() const { return *mesh_; }
+
+// 		//  inline const libMesh::EquationSystems &system() const { return system_; }
+
+// 		inline const std::shared_ptr<libMesh::DofMap> dof_map_ptr() const { return dof_map_; }
+// 		inline const std::shared_ptr<libMesh::MeshBase> mesh_ptr() const { return mesh_; }
+// 		inline void set_mesh(const std::shared_ptr<libMesh::MeshBase> &mesh) { mesh_ = mesh; }
+
+
+// 		virtual bool is_vector() = 0;
+
+// 	private:
+// 		std::shared_ptr<libMesh::MeshBase> mesh_;
+// 		std::shared_ptr<libMesh::DofMap> dof_map_;
+// 		//libMesh::EquationSystems &system_;
+// 		int var_num_;
+
+// 	};
+
+// 	class LibMeshFEFunction;
+// 	class LibMeshVecFEFunction;
+
+
+// 	template<>
+// 	class FESpace< LibMeshTraits, LIBMESH_TAG> : public LibMeshFESpaceBase {
+// 	public:
+// 		using LibMeshFESpaceBase::LibMeshFESpaceBase;
+// 		typedef utopia::LibMeshFEFunction Function;
+// 		inline bool is_vector() { return false; }
+// 	};
+
+// 	typedef utopia::FESpace< LibMeshTraits > LibMeshFESpaceReal;
+// 	typedef utopia::FESpace< LibMeshTraits > LMFESpace;
+
+
+// 	template<>
+// 	class VectorFESpace< LibMeshTraits, LIBMESH_TAG> : public LibMeshFESpaceBase {
+// 	public:
+// 		using LibMeshFESpaceBase::LibMeshFESpaceBase;
+// 		typedef utopia::LibMeshVecFEFunction Function;
+// 		inline bool is_vector() { return true; }
+// 	};
+
+// 	typedef utopia::VectorFESpace< LibMeshTraits > LMVecFESpace;
+
+// 	template<class SystemType>
+// 	FESpace<LibMeshTraits> fe_space(
+// 		const libMesh::FEFamily &type,
+// 		const libMesh::Order &order,
+// 		LibMeshFEContext<SystemType> &context)
+// 	{
+// 		return FESpace<LibMeshTraits >(type, order, context);
+// 	}
+
+// 	template<class SystemType>
+// 	VectorFESpace<LibMeshTraits > vector_fe_space(
+// 																 const libMesh::FEFamily &type,
+// 																 const libMesh::Order &order,
+// 																 LibMeshFEContext<SystemType> &context)
+// 	{
+// 		return VectorFESpace<LibMeshTraits >(type, order, context);
+// 	}
+
+// 	template<int ROWS, int COLS, class SystemType>
+// 	TensorProductFESpace< FESpace<LibMeshTraits >, ROWS, COLS > fe_tensor_product_space(const libMesh::FEFamily &type,
+// 																									   const libMesh::Order &order,
+// 																									   LibMeshFEContext<SystemType> &context)
+// 	{
+// 		return TensorProductFESpace< FESpace<LibMeshTraits >, ROWS, COLS >(type, order, context);
+// 	}
+
+
+// 	template<class SystemType>
+// 	VectorFESpace<LibMeshTraits > vector_fe_space(
+// 																 const std::string &name,
+// 																 const libMesh::FEFamily &type,
+// 																 const libMesh::Order &order,
+// 																 LibMeshFEContext<SystemType> &context)
+// 	{
+// 		return VectorFESpace<LibMeshTraits >(name, type, order, context);
+// 	}
+
+
+// 	class LibMeshFEFunction : public Expression<LibMeshFEFunction> {
+// 	public:
+// 		enum {
+// 			Order = 0
+// 		};
+
+// 		enum {
+// 			StoreAs = UTOPIA_BY_REFERENCE
+// 		};
+
+// 		typedef libMesh::Real Scalar;
+// 		typedef libMesh::dof_id_type SizeType;
+
+// 		//non-copiable
+// 		LibMeshFEFunction() = default;
+// 		// LibMeshFEFunction(const LibMeshFEFunction&) = delete;
+// 		// LibMeshFEFunction& operator=(const LibMeshFEFunction&) = delete;
+
+// 		std::string getClass() const { return "LibMeshFEFunction"; }
+
+// 		const libMesh::FEBase &get_fe() const
+// 		{
+// 			assert(fe_);
+// 			return *fe_;
+// 		}
+
+// 		void set_element(const SizeType element)
+// 		{
+// 			using namespace libMesh;
+// 			if(!fe_) {
+// 				fe_ = FEBase::build(mesh_->mesh_dimension(), dof_map_->variable_type(var_num_));
+// 				fe_->attach_quadrature_rule(qrule_.get());
+// 				fe_->get_xyz();
+// 			}
+
+
+// 			elem_ = mesh_->elem(element);
+// 			fe_->reinit(elem_);
+// 			dof_map_->dof_indices(mesh_->elem(element), dof_indices_);
+// 		}
+
+// 		void set_element(const libMesh::Elem &element)
+// 		{
+// 			using namespace libMesh;
+// 			if(!fe_) {
+// 				fe_ = FEBase::build(mesh_->mesh_dimension(), dof_map_->variable_type(var_num_));
+// 				fe_->attach_quadrature_rule(qrule_.get());
+// 				fe_->get_xyz();
+// 			}
+
+// 			elem_ = &element;
+// 			fe_->reinit(elem_);
+// 			dof_map_->dof_indices(&element, dof_indices_);
+// 		}
+
+// 		inline int block_id() const
+// 		{
+// 			assert(elem_);
+// 			return elem_->subdomain_id();
+// 		}
+
+// 		uint get_dimension()
+// 		{
+// 			return mesh_->mesh_dimension();
+// 		}
+
+// 		void set_quad_rule(const std::shared_ptr<libMesh::QGauss> &qrule)
+// 		{
+// 			qrule_ = qrule;
+// 		}
+
+// 		void dof_indices_of_current_element(std::vector<SizeType> &v)
+// 		{
+// 			v.resize(dof_indices_.size());
+// 			std::copy(dof_indices_.begin(), dof_indices_.end(), v.begin());
+// 		}
+
+// 		LibMeshFEFunction(const FESpace<LibMeshTraits > &fe)
+// 		: mesh_(fe.mesh_ptr()),
+// 		var_num_(fe.var_num()),
+// 		dof_map_(fe.dof_map_ptr())
+// 		{}
+
+// 		inline int var_num() const
+// 		{
+// 			return var_num_;
+// 		}
+
+// 		inline libMesh::DofMap &dof_map() { return *dof_map_; }
+// 		inline const libMesh::DofMap &dof_map() const { return *dof_map_; }
+
+// 		inline libMesh::MeshBase &mesh() { return *mesh_; }
+// 		inline const libMesh::MeshBase &mesh() const { return *mesh_; }
+
+// 		inline friend Size size(const LibMeshFEFunction &fe)
+// 		{
+// 			return { fe.dof_map().n_dofs() };
+// 		}
+// 	public:
+// 		std::shared_ptr<libMesh::MeshBase> mesh_;
+// 		int var_num_;
+// 		std::unique_ptr<libMesh::FEBase> fe_;
+// 		std::shared_ptr<libMesh::DofMap> dof_map_;
+// 		std::shared_ptr<libMesh::QGauss> qrule_;
+// 		std::vector<SizeType> dof_indices_;
+// 		const libMesh::Elem *elem_;
+// 	};
+
+// 	template<>
+// 	class Traits<LibMeshFEFunction> {
+// 	public:
+// 		typedef libMesh::Real Scalar;
+// 		typedef libMesh::dof_id_type SizeType;
+// 	};
+
+
+// 	class LibMeshVecFEFunction : public Expression<LibMeshVecFEFunction> {
+// 	public:
+// 		enum {
+// 			Order = 0
+// 		};
+
+// 		enum {
+// 			StoreAs = UTOPIA_BY_REFERENCE
+// 		};
+
+// 		typedef libMesh::Real Scalar;
+// 		typedef libMesh::dof_id_type SizeType;
+
+// 		//non-copiable
+// 		LibMeshVecFEFunction() = default;
+// 		// LibMeshVecFEFunction(const LibMeshVecFEFunction&) = delete;
+// 		// LibMeshVecFEFunction& operator=(const LibMeshVecFEFunction&) = delete;
+
+// 		std::string getClass() const { return "LibMeshVecFEFunction"; }
+
+// 		const libMesh::FEVectorBase &get_fe() const
+// 		{
+// 			assert(fe_);
+// 			return *fe_;
+// 		}
+
+// 		void set_element(const SizeType element)
+// 		{
+// 			using namespace libMesh;
+// 			if(!fe_) {
+// 				fe_ = FEVectorBase::build(mesh_->mesh_dimension(), dof_map_->variable_type(var_num_));
+// 				fe_->attach_quadrature_rule(qrule_.get());
+// 				fe_->get_xyz();
+// 			}
+
+// 			fe_->reinit(mesh_->elem(element));
+// 		}
+
+// 		void set_element(const libMesh::Elem &element)
+// 		{
+// 			using namespace libMesh;
+// 			if(!fe_) {
+// 				fe_ = FEVectorBase::build(mesh_->mesh_dimension(), dof_map_->variable_type(var_num_));
+// 				fe_->attach_quadrature_rule(qrule_.get());
+// 				fe_->get_xyz();
+// 			}
+
+// 			fe_->reinit(&element);
+// 		}
+
+
+// 		void set_quad_rule(const std::shared_ptr<libMesh::QGauss> &qrule)
+// 		{
+// 			qrule_ = qrule;
+// 		}
+
+// 		const libMesh::QGauss &get_quad_rule() const
+// 		{
+// 			return *qrule_;
+// 		}
+
+// 		inline int var_num() const
+// 		{
+// 			return var_num_;
+// 		}
+
+// 		inline libMesh::MeshBase &mesh() { return *mesh_; }
+// 		inline const libMesh::MeshBase &mesh() const { return *mesh_; }
+
+// 		inline libMesh::DofMap &dof_map() { return *dof_map_; }
+// 		inline const libMesh::DofMap &dof_map() const { return *dof_map_; }
+
+// 		LibMeshVecFEFunction(const VectorFESpace< LibMeshTraits > &fe)
+// 		: mesh_(fe.mesh_ptr()),
+// 		var_num_(fe.var_num()),
+// 		dof_map_(fe.dof_map_ptr())
+// 		{}
+
+// 	public:
+// 		std::shared_ptr<libMesh::MeshBase> mesh_;
+// 		int var_num_;
+// 		std::unique_ptr<libMesh::FEVectorBase> fe_;
+// 		std::shared_ptr<libMesh::DofMap> dof_map_;
+// 		std::shared_ptr<libMesh::QGauss> qrule_;
+// 	};
+
+// 	inline LibMeshVecFEFunction fe_function(const VectorFESpace< LibMeshTraits > &fe)
+// 	{
+// 		return LibMeshVecFEFunction(fe);
+// 	}
+
+// 	inline LibMeshFEFunction fe_function(const FESpace< LibMeshTraits > &fe)
+// 	{
+// 		return LibMeshFEFunction(fe);
+// 	}
+
+// 	template<>
+// 	class Traits<LibMeshVecFEFunction> {
+// 	public:
+// 		typedef libMesh::Real Scalar;
+// 		typedef libMesh::dof_id_type SizeType;
+// 	};
+
+
+// 	template<class Coefficient>
+// 	class Interpolate<Coefficient, LibMeshFEFunction> : public Expression< Interpolate<Coefficient, LibMeshFEFunction> > {
+// 	public:
+
+// 		typedef typename Traits<Coefficient>::Scalar Scalar;
+// 		typedef libMesh::DenseVector<libMesh::Real> DenseVectorT;
+// 		typedef libMesh::dof_id_type SizeType;
+
+// 		enum {
+// 			Order = Traits<Coefficient>::Order
+// 		};
+
+// 		Interpolate(const Coefficient &coeff, LibMeshFEFunction &fe, const std::shared_ptr<libMesh::NumericVector<libMesh::Real>> &global_vec = nullptr)
+// 		: coeff_(coeff), fe_(fe), global_vec_(global_vec)
+// 		{
+// 			if(global_vec_) {
+// 				initialize_project();
+// 			}
+// 		}
+
+// 		void eval(std::vector<Scalar> &values) const
+// 		{
+// 			if(!global_vec_) {
+// 				auto &p = fe_.get_fe().get_xyz();
+// 				auto &fun = fe_.get_fe().get_phi();
+
+// 				values.resize(p.size());
+
+// 				for(SizeType j = 0; j < values.size(); ++j) {
+// 					Scalar val = 0.;
+// 					coeff_.eval(p[j], val);
+
+// 					for(SizeType i = 0; i < fun.size(); ++i) {
+// 						values[j] += fun[i][j] * val;
+// 					}
+// 				}
+
+// 			} else {
+
+// 				std::vector<SizeType> dof_indices;
+// 				fe_.dof_indices_of_current_element(dof_indices);
+// 				std::vector<Scalar> vec_values;
+// 				gather_values(dof_indices, *global_vec_, vec_values);
+
+
+// 				auto &fun = fe_.get_fe().get_phi();
+// 				assert(fun.size() == dof_indices.size());
+
+// 				values.resize(fun[0].size());
+// 				std::fill(values.begin(), values.end(), 0.0);
+
+// 				for(SizeType i = 0; i < fun.size(); ++i) {
+// 					for(SizeType j = 0; j < fun[i].size(); ++j) {
+// 						values[j] += fun[i][j] * vec_values[i];
+// 					}
+// 				}
+// 			}
+// 		}
+
+// 		void eval_grad(std::vector<DenseVectorT> &grads) const
+// 		{
+// 			DenseVectorT temp;
+// 			if(!global_vec_) {
+// 				auto &p = fe_.get_fe().get_xyz();
+// 				auto &grad_fun = fe_.get_fe().get_dphi();
+
+// 				grads.resize(p.size());
+
+// 				for(SizeType j = 0; j < grads.size(); ++j) {
+// 					Scalar val = 0.;
+// 					coeff_.eval(p[j], val);
+
+// 					grads[j].resize(fe_.get_dimension());
+// 					grads[j].zero();
+// 					for(SizeType i = 0; i < grad_fun.size(); ++i) {
+// 						for(uint d = 0; d < grads[j].size(); ++d) {
+// 							grads[j](d) += grad_fun[i][j](d) * val;
+// 						}
+// 					}
+// 				}
+
+// 			} else {
+
+// 				std::vector<SizeType> dof_indices;
+// 				fe_.dof_indices_of_current_element(dof_indices);
+// 				std::vector<Scalar> vec_values;
+// 				gather_values(dof_indices, *global_vec_, vec_values);
+
+
+// 				auto &grad_fun = fe_.get_fe().get_dphi();
+// 				// assert(fun.size() == dof_indices.size());
+
+// 				grads.resize(grad_fun[0].size());
+// 				DenseVectorT zero(fe_.get_dimension());
+// 				zero.zero();
+// 				std::fill(grads.begin(), grads.end(), zero);
+
+// 				for(SizeType i = 0; i < grad_fun.size(); ++i) {
+// 					for(SizeType j = 0; j < grad_fun[i].size(); ++j) {
+// 						for(uint d = 0; d < grads[j].size(); ++d) {
+// 							grads[j](d) += grad_fun[i][j](d) * vec_values[i];
+// 						}
+// 					}
+// 				}
+// 			}
+
+// 		}
+
+// 		void initialize_project()
+// 		{
+// 			using namespace libMesh;
+// 			// LibMeshBackend backend;
+
+// 			auto e_begin = fe_.mesh().active_local_elements_begin();
+// 			auto e_end   = fe_.mesh().active_local_elements_end();
+
+// 			auto dof_begin = fe_.dof_map().first_dof();
+// 			auto dof_end   = fe_.dof_map().end_dof();
+
+// 			auto n_local_dofs = fe_.dof_map().n_local_dofs();
+// 			if(global_vec_->local_size() != n_local_dofs) {
+// 				global_vec_->init(n_local_dofs);
+// 			}
+
+// 			global_vec_->zero();
+// 			auto sum_of_weights = global_vec_->clone();
+
+// 			std::vector<dof_id_type> dof_indices;
+// 			DenseVector<Real> vec;
+// 			DenseVector<Real> w;
+
+// 			for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+// 				fe_.set_element(**e_it);
+// 				fe_.dof_map().dof_indices(*e_it, dof_indices, fe_.var_num());
+
+// 				auto && fun = fe_.get_fe().get_phi();
+// 				auto && JxW = fe_.get_fe().get_JxW();
+// 				auto && points = fe_.get_fe().get_xyz();
+
+// 				uint n_quad_points = JxW.size();
+
+// 				vec.resize(fun.size());
+// 				vec.zero();
+
+// 				w.resize(fun.size());
+// 				w.zero();
+
+// 				for (uint i = 0; i < fun.size(); i++) {
+// 					for (uint qp = 0; qp < n_quad_points; qp++) {
+// 						Real val = 0.0;
+// 						coeff_.eval(points[qp], val);
+// 						vec(i) += JxW[qp] * val;
+// 						w(i)   += JxW[qp];
+// 					}
+// 				}
+
+// 				global_vec_->add_vector(vec, dof_indices);
+// 				sum_of_weights->add_vector(w, dof_indices);
+// 			}
+
+// 			global_vec_->close();
+// 			sum_of_weights->close();
+
+// 			(*global_vec_) /= (*sum_of_weights);
+// 		}
+
+// 		libMesh::NumericVector<libMesh::Real> &vector()
+// 		{
+// 			return *global_vec_;
+// 		}
+
+// 	private:
+// 		Coefficient coeff_;
+// 		LibMeshFEFunction &fe_;
+// 		std::shared_ptr<libMesh::NumericVector<libMesh::Real>> global_vec_;
+
+
+
+// 		void gather_values(const std::vector<libMesh::dof_id_type> &indices,
+// 						   const libMesh::NumericVector<libMesh::Real> &global_vec,
+// 						   std::vector<libMesh::Real> &values) const
+// 		{
+// 			values.resize(indices.size());
+// 			for(SizeType i = 0; i < indices.size(); ++i) {
+// 				values[i] = global_vec(indices[i]);
+// 			}
+// 		}
+// 	};
+
+
+// 	template<class Right>
+// 	void strong_enforce( DirichletBoundaryCondition<
+// 						Equality<LibMeshFEFunction,
+// 						ConstantCoefficient<Right, 0> >
+// 						> &&cond)
+// 	{
+// 		std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().var_num();
+// 		std::set<libMesh::boundary_id_type> bt;
+// 		bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
+// 		libMesh::DirichletBoundary d_bc(bt, vars, libMesh::ConstFunction<libMesh::Real>(cond.expr().right()) );
+// 		const_cast<LibMeshFEFunction &>(cond.expr().left()).dof_map().add_dirichlet_boundary(d_bc);
+// 	}
+
+// 	template<class Right>
+// 	void strong_enforce( DirichletBoundaryCondition<
+// 						Equality<LibMeshVecFEFunction,
+// 						ConstantCoefficient<Right, 1> >
+// 						> &&cond)
+// 	{
+// 		std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().var_num();
+// 		std::set<libMesh::boundary_id_type> bt;
+// 		bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
+// 		libMesh::DirichletBoundary d_bc(bt, vars, libMesh::ConstFunction<Right>(cond.expr().right()) );
+// 		const_cast<LibMeshVecFEFunction &>(cond.expr().left()).dof_map().add_dirichlet_boundary(d_bc);
+// 	}
+
+
+// 	// template<class Right, class Matrix, class Vector>
+// 	// void strong_enforce( DirichletBoundaryCondition<
+// 	// 							Equality<LibMeshVecFEFunction,
+// 	// 									 ConstantCoefficient<Right, 1> >
+// 	// 							> &&cond,
+// 	// 					Matrix &mat,
+// 	// 					Vector &vec
+// 	// 					)
+// 	// {
+
+// 	// }
+
+// 	// void constrained_face_selector
 
 
 	template<class Matrix, class Vector>
@@ -661,18 +661,18 @@ namespace utopia {
 		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
 		// std::cout << dof_map.n_constrained_dofs() << std::endl;
 		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-		
+
 		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 		if(!has_constaints) {
 			// std::cerr << "[Warning] no boundary conditions to apply\n" << std::endl;
 			// return;
 		}
-		
+
 		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
-		
+
 		Size s = size(mat);
 		Matrix temp = mat;
-		
+
 		{
 			Write<Matrix> w_t(mat);
 			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
@@ -681,17 +681,17 @@ namespace utopia {
 				}
 			});
 		}
-		
+
 		{
 			Write<Vector> w_v(vec);
-			
+
 			Range r = range(vec);
 			for(SizeType i = r.begin(); i < r.end(); ++i) {
 				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					auto valpos = rhs_values.find(i);
 					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
 				}
-			}	
+			}
 		}
 	}
 
@@ -700,17 +700,17 @@ namespace utopia {
 	{
 		apply_boundary_conditions(u.dof_map(), mat, vec);
 	}
-	
-	
+
+
 	template<class DofMap, class Vector>
 	void apply_zero_boundary_conditions(DofMap &dof_map, Vector &vec)
-	{		
+	{
 		bool has_constaints = true;
 		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
 			// std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
 			has_constaints = false;
 		}
-		
+
 		{
 			Write<Vector> w_v(vec);
 			Range r = range(vec);
@@ -733,10 +733,10 @@ namespace utopia {
 
 		Size s = size(mat);
 		Matrix temp = mat;
-		
+
 		{
 			Write<Matrix> w_t(mat);
-			
+
 			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
 				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					mat.set(i, j, i == j);
@@ -744,1744 +744,1744 @@ namespace utopia {
 			});
 		}
 	}
-	
-	
 
-	
-	template<class Right, typename T>
-	void strong_enforce(const DirichletBoundaryCondition<
-						Equality<LibMeshFEFunction,
-						FunctionCoefficient<Right, T, 0> >
-						> &cond)
-	{
-		std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().var_num();
-		std::set<libMesh::boundary_id_type> bt;
-		bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
-		libMesh::DirichletBoundary d_bc(bt, vars, LibMeshLambdaFunction<libMesh::Real>(cond.expr().right().fun()) );
-		const_cast<LibMeshFEFunction &>(cond.expr().left()).dof_map().add_dirichlet_boundary(d_bc);
-	}
-	
-	template<class Right, typename T>
-	void strong_enforce(const DirichletBoundaryCondition<
-						Equality<LibMeshVecFEFunction,
-						FunctionCoefficient<Right, T, 1> >
-						> &cond)
-	{
-		std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().var_num();
-		std::set<libMesh::boundary_id_type> bt;
-		bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
-		libMesh::DirichletBoundary d_bc(bt, vars, LibMeshLambdaFunction<libMesh::Real>(cond.expr().right().fun()) );
-		const_cast<LibMeshVecFEFunction &>(cond.expr().left()).dof_map().add_dirichlet_boundary(d_bc);
-	}
-	
-	
-	class LibMeshBackend {
-	public:
-		typedef unsigned int uint;
-		typedef libMesh::DenseMatrix<libMesh::Real> DenseMatrixT;
-		typedef libMesh::TensorValue<libMesh::Real> TensorValueT;
-		typedef libMesh::DenseVector<libMesh::Real> DenseVectorT;
-		
-		class Context {
-		public:
-			
-			Context() {}
-			
-			Context(const LibMeshFEFunction &fe)
-			{
-				init(fe);
-			}
-			
-			Context(const LibMeshVecFEFunction &fe)
-			{
-				init(fe);
-			}
-			
-			// Context(const std::vector<libMesh::Point> &points)
-			// {
-			// 	this->points = make_ref(points);
-			// }
-			
-			void init(const LibMeshFEFunction &fe)
-			{
-				points  = make_ref(fe.get_fe().get_xyz());
-				weights = make_ref(fe.get_fe().get_JxW());
-				block_id = fe.block_id();
-			}
-			
-			void init(const LibMeshVecFEFunction &fe)
-			{
-				points  = make_ref(fe.get_fe().get_xyz());
-				weights = make_ref(fe.get_fe().get_JxW());
-				block_id = 0; //TODO
-			}
-			
-			inline bool good() const
-			{
-				return static_cast<bool>(points) && static_cast<bool>(weights);
-			}
-			
-			const std::vector<libMesh::Point> &get_points() const
-			{
-				assert(points);
-				return *points;
-			}
-			
-			const std::vector<libMesh::Real> &get_weights() const
-			{
-				assert(weights);
-				return *weights;
-			}
-			
-			std::shared_ptr<const std::vector<libMesh::Point> > points;
-			std::shared_ptr<const std::vector<libMesh::Real> >  weights;
-			int block_id;
-		};
-		
-		template<class FEFun>
-		inline static void construct_context(const Integral<FEFun> &expr, Context &ctx)
-		{
-			construct_context(expr.expr(), ctx);
-		}
-		
-		template<class FEFun, class Operation>
-		inline static void construct_context(const Unary<FEFun, Operation> &expr, Context &ctx)
-		{
-			construct_context(expr.expr(), ctx);
-		}
-		
-		template<class FEFun, class Operation>
-		inline static void construct_context(const Reduce<FEFun, Operation> &expr, Context &ctx)
-		{
-			construct_context(expr.expr(), ctx);
-		}
-		
-		template<class FEFun>
-		inline static void construct_context(const Divergence<FEFun> &expr, Context &ctx)
-		{
-			construct_context(expr.expr(), ctx);
-		}
-		
-		template<class FEFun>
-		inline static void construct_context(const Gradient<FEFun> &expr, Context &ctx)
-		{
-			construct_context(expr.expr(), ctx);
-		}
-		
-		template<class FEFun>
-		inline static void construct_context(const Curl<FEFun> &expr, Context &ctx)
-		{
-			construct_context(expr.expr(), ctx);
-		}
-		
-		template<class Left, class Right, class Operation>
-		inline static void construct_context(const Binary<Left, Right, Operation> &expr, Context &ctx)
-		{
-			construct_context(expr.right(), ctx);
-		}
-		
-		template<class Left, class Right, class Operation>
-		inline static void construct_context(const Binary<Left, Number<Right>, Operation> &expr, Context &ctx)
-		{
-			construct_context(expr.left(), ctx);
-		}
-		
-		template<class Left, class Right, class Operation>
-		inline static void construct_context(const Binary<Left, BlockVar<Right>, Operation> &expr, Context &ctx)
-		{
-			construct_context(expr.left(), ctx);
-		}
-		
-		template<class Left, class Right>
-		inline static void  construct_context(const Multiply<Left, Right> &expr, Context &ctx)
-		{
-			construct_context(expr.right(), ctx);
-		}
-		
-		inline static void construct_context(const LibMeshFEFunction &expr, Context &ctx)
-		{
-			ctx.init(expr);
-		}
-		
-		inline static void construct_context(const LibMeshVecFEFunction &expr, Context &ctx)
-		{
-			ctx.init(expr);
-		}
-		
-		template<class FEType, int N>
-		inline static void construct_context(const VectorFE<FEType, N> &fe_vec, Context &ctx)
-		{
-			ctx.init(fe_vec.get(0));
-			
-		}
-		
-		template<class FEType, int ROWS, int COLS>
-		inline static void construct_context(const MatrixFE<FEType, ROWS, COLS> &fe_vec, Context &ctx)
-		{
-			ctx.init(fe_vec.get(0));
-		}
-		
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		
-		inline static const DenseMatrixT &eval(const Wrapper<DenseMatrixT, 2> &expr, const Context &){
-			return expr.implementation();
-		}
-		
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		
-		//Eval
-		inline static auto eval(const LibMeshVecFEFunction &expr, const Context &) -> decltype(expr.get_fe().get_phi())
-		{
-			return expr.get_fe().get_phi();
-		}
-		
-		inline static auto eval(const Gradient<LibMeshVecFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_dphi())
-		{
-			return expr.expr().get_fe().get_dphi();
-		}
-		
-		inline static auto eval(const Divergence<LibMeshVecFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_div_phi())
-		{
-			return expr.expr().get_fe().get_div_phi();
-		}
-		
-		inline static auto eval(const Curl<LibMeshVecFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_curl_phi())
-		{
-			return expr.expr().get_fe().get_curl_phi();
-		}
-		
-		template<int N>
-		inline static std::vector< std::vector<TensorValueT> > eval(const Gradient< VectorFE<LibMeshFEFunction, N> > &expr, const Context &)
-		{
-			const auto &fe_vec = expr.expr();
-			
-			uint n_funs = 0;
-			std::vector< std::vector<TensorValueT> > ret;
-			for(uint k = 0; k < N; ++k) {
-				n_funs += fe_vec.get(k).get_fe().get_dphi().size();
-			}
-			
-			ret.resize(n_funs);
-			
-			uint funs_offset = 0;
-			for(uint k = 0; k < N; ++k) {
-				const auto &grad_fun = fe_vec.get(k).get_fe().get_dphi();
-				
-				for(uint i = 0; i < grad_fun.size(); ++i) {
-					const uint i_k = funs_offset + i;
-					ret[i_k].resize(grad_fun[i].size());
-					
-					for(uint q = 0; q < ret[i_k].size(); ++q) {
-						ret[i_k][q].zero();
-						
-						for(uint d = 0; d < LIBMESH_DIM; ++d) {
-							ret[i_k][q](k, d) = grad_fun[i][q](d);
-						}
-					}
-				}
-				
-				funs_offset += grad_fun.size();
-			}
-			
-			return ret;
-		}
-		
-		template<class FE, int N>
-		inline static std::vector< std::vector<libMesh::Real> > eval(const Divergence< VectorFE<FE, N> > &expr, const Context &)
-		{
-			const auto &fe_vec = expr.expr();
-			uint n_funs = 0;
-			std::vector< std::vector<libMesh::Real> > ret;
-			for(uint k = 0; k < N; ++k) {
-				n_funs += fe_vec.get(k).get_fe().get_dphi().size();
-			}
-			
-			ret.resize(n_funs);
-			
-			uint funs_offset = 0;
-			for(uint k = 0; k < N; ++k) {
-				const auto &grad_fun = fe_vec.get(k).get_fe().get_dphi();
-				
-				for(uint i = 0; i < grad_fun.size(); ++i) {
-					const uint i_k = funs_offset + i;
-					ret[i_k].resize(grad_fun[i].size());
-					
-					for(uint q = 0; q < ret[i_k].size(); ++q) {
-						ret[i_k][q] = grad_fun[i][q](k);
-					}
-				}
-				
-				funs_offset += grad_fun.size();
-			}
-			
-			return ret;
-		}
-		
-		template<class FE, int ROWS, int COLS>
-		inline static std::vector< std::vector<DenseVectorT> > eval(const Divergence< MatrixFE<FE, ROWS, COLS> > &expr, const Context &)
-		{
-			static_assert(ROWS == COLS, "works only for square matrices");
-			
-			const auto &fe_mat = expr.expr();
-			uint n_funs = 0;
-			std::vector< std::vector<DenseVectorT> > ret;
-			
-			for(uint k = 0; k < ROWS * COLS; ++k) {
-				n_funs += fe_mat.get(k).get_fe().get_dphi().size();
-			}
-			
-			ret.resize(n_funs);
-			
-			uint funs_offset = 0;
-			for(uint r = 0; r < ROWS; ++r) {
-				for(uint c = 0; c < COLS; ++c) {
-					const auto &grad_fun = fe_mat.get(r, c).get_fe().get_dphi();
-					
-					// for(uint d = 0; d < ROWS; ++d) {
-					// 	std::cout << "d: " << d << "\n";
-					// 	grad_fun[d][0].print(std::cout);
-					// 	std::cout << "\n";
-					// }
-					
-					for(uint i = 0; i < grad_fun.size(); ++i) {
-						const uint i_k = funs_offset + i;
-						
-						ret[i_k].resize(grad_fun[i].size());
-						
-						for(uint q = 0; q < ret[i_k].size(); ++q) {
-							ret[i_k][q].resize(ROWS);
-							ret[i_k][q].zero();
-							ret[i_k][q](r) = grad_fun[i][q](c);
-						}
-					}
-					
-					
-					funs_offset += grad_fun.size();
-				}
-			}
-			
-			return ret;
-		}
-		
-		template<class Left, class Right, class Operation>
-		inline static std::vector<libMesh::Real> eval(const Binary<Left, Right, Operation> &expr, const Context &ctx)
-		{
-			std::vector<libMesh::Real> result;
-			apply_binary_op(eval(expr.left(), ctx), eval(expr.right(), ctx), expr.operation(), result);
-			return result;
-		}
-		
-		template<typename T, class Operation>
-		inline static void apply_binary_op(const std::vector<T> &left, const std::vector<T> &right, const Operation &op, std::vector<T> &result)
-		{
-			
-			
-			result.resize(left.size());
-			
-			for(uint i = 0; i < left.size(); ++i) {
-				// std::cout << op.fun_str() << "(" << left[i] << ","  << right[i] << ")" << std::endl;
-				result[i] = op.template apply<T>(left[i], right[i]);
-			}
-		}
-		
-		template<typename T, typename T2, class Operation>
-		inline static void apply_binary_op(const std::vector<T> &left, const ConstantCoefficient<T2, 0> &right, const Operation &op, std::vector<T> &result)
-		{
-			result.resize(left.size());
-			
-			for(uint i = 0; i < left.size(); ++i) {
-				// std::cout << op.getClass() << "(" << left[i] << ","  << right[i] << ")" << std::endl;
-				result[i] = op.template apply<T>(left[i], right[i]);
-			}
-		}
-		
-		inline static std::vector< std::vector<TensorValueT> > eval(
-																	const Binary< Transposed< Gradient<LibMeshVecFEFunction> >,
-																	Gradient<LibMeshVecFEFunction>,
-																	Plus>
-																	&expr, const Context &ctx)
-		{
-			using namespace libMesh;
-			auto &&left  = eval(expr.left().expr(), ctx);
-			auto &&right = eval(expr.right(), ctx);
-			
-			std::vector< std::vector<TensorValueT> > result(right);
-			
-			for(uint i = 0; i < left.size(); ++i) {
-				for(uint q = 0; q < left[i].size(); ++q) {
-					result[i][q] += left[i][q].transpose();
-				}
-			}
-			
-			return result;
-		}
-		
-		template<class FE, int N>
-		inline static std::vector< std::vector<TensorValueT> > eval(
-																	const Binary<
-																	Transposed< Gradient< VectorFE<FE, N> > >,
-																	Gradient< VectorFE<FE, N> >,
-																	Plus>
-																	&expr, const Context &ctx)
-		{
-			using namespace libMesh;
-			auto &&left  = eval(expr.left().expr(), ctx);
-			auto &&right = eval(expr.right(), ctx);
-			
-			std::vector< std::vector<TensorValueT> > result(right);
-			
-			for(uint i = 0; i < left.size(); ++i) {
-				for(uint q = 0; q < left[i].size(); ++q) {
-					result[i][q] += left[i][q].transpose();
-				}
-			}
-			
-			return result;
-		}
-		
-		
-		
-		
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		
-		//Eval
-		
-		inline static auto eval(const LibMeshFEFunction &expr, const Context &) -> decltype(expr.get_fe().get_phi())
-		{
-			return expr.get_fe().get_phi();
-		}
-		
-		inline static auto eval(const Gradient<LibMeshFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_dphi())
-		{
-			return expr.expr().get_fe().get_dphi();
-		}
-		
-		inline static auto eval(const Divergence<LibMeshFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_div_phi())
-		{
-			return expr.expr().get_fe().get_div_phi();
-		}
-		
-		inline static auto eval(const Curl<LibMeshFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_curl_phi())
-		{
-			return expr.expr().get_fe().get_curl_phi();
-		}
-		
-		template<class Coeff>
-		inline static std::vector<libMesh::Real> eval(const Interpolate<Coeff, LibMeshFEFunction> &expr, const Context &)
-		{
-			std::vector<libMesh::Real> result;
-			expr.eval(result);
-			return result;
-		}
-		
-		template<class Coeff>
-		inline static std::vector<DenseVectorT> eval(const Gradient<Interpolate<Coeff, LibMeshFEFunction> > &expr, const Context &)
-		{
-			std::vector<DenseVectorT> result;
-			expr.expr().eval_grad(result);
-			return result;
-		}
-		
-		template<class Expr>
-		inline static auto eval(const Unary<Expr, Pow2> &expr, const Context &ctx) -> typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type
-		{
-			typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type result;
-			apply_unary_transform(eval(expr.expr(), ctx), result, expr.operation());
-			return result;
-		}
-		
-		template<class Expr>
-		inline static auto eval(const Unary<Expr, Sqrt> &expr, const Context &ctx) -> typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type
-		{
-			typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type result;
-			apply_unary_transform(eval(expr.expr(), ctx), result, expr.operation());
-			return result;
-		}
-		
-		template<class Expr, typename T>
-		inline static auto eval(const Unary<Expr, Reciprocal<T> > &expr, const Context &ctx) -> typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type
-		{
-			typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type result;
-			
-			auto &&in = eval(expr.expr(), ctx);
-			result.resize(in.size());
-			
-			auto val = eval(expr.operation().numerator(), ctx);
-			for(uint i = 0; i < in.size(); ++i) {
-				result[i] = val/in[i];
-			}
-			
-			return result;
-		}
-		
-		inline static double eval(const double value, const Context &)
-		{
-			return value;
-		}
-		
-		inline static int eval(const int value, const Context &)
-		{
-			return value;
-		}
-		
-		inline static double eval(const float value, const Context &)
-		{
-			return value;
-		}
-		
-		// template<class Tensor>
-		inline static const double eval(const BlockVar<double> &value, const Context &ctx)
-		{
-			return value.get(ctx.block_id);
-		}
-		
-		inline static const DenseMatrixT & eval(const BlockVar<LMDenseMatrix> &value, const Context &ctx)
-		{
-			return raw_type(value.get(ctx.block_id));
-		}
-		
-		// template<class Fun, typename T>
-		// inline static std::vector<libMesh::Real> eval(const FunctionCoefficient<Fun, T, 0> &expr, const Context &ctx)
-		
-		// template<typename T, int Order>
-		// inline static const T eval(const BlockVar<ConstantCoefficient<T, Order> > &var, const Context &ctx)
-		// {
-		// 	return eval(var.get(ctx.block_id), ctx);
-		// }
-		
-		template<typename Fun, typename T>
-		inline static const std::vector<libMesh::Real> eval(const BlockVar<FunctionCoefficient<Fun, T, 0> > &var, const Context &ctx)
-		{
-			return eval(var.get(ctx.block_id), ctx);
-		}
-		
-		// template<class Tensor>
-		// inline static auto eval(const BlockVar<Tensor> &value, const Context &ctx) -> decltype(eval(value.get(ctx.block_id)))
-		// {
-		// 	return eval(value.get(ctx.block_id));
-		// }
-		
-		template<class Real>
-		inline static const Real eval(const Number<Real> &value, const Context &ctx)
-		{
-			return value;
-		}
-		
-		
-		template<class Operation>
-		inline static void apply_unary_transform(const std::vector<libMesh::Real> &in, std::vector<libMesh::Real> &out, Operation &op)
-		{
-			out.resize(in.size());
-			for(uint i = 0; i < in.size(); ++i) {
-				out[i] = op.template apply<libMesh::Real>(in[i]);
-			}
-		}
-		
-		template<class Left, class Right>
-		inline static std::vector< std::vector<libMesh::FEBase::OutputGradient> > eval(
-																					   const Multiply<Left, Right> &expr, const Context &ctx)
-		{
-			auto && left  = eval(expr.left(), ctx);
-			auto && right = eval(expr.right(), ctx);
-			
-			std::vector< std::vector<libMesh::FEBase::OutputGradient> > result(right.size());
-			for(uint i = 0; i < right.size(); ++i) {
-				result[i].resize(right[i].size());
-				
-				for(uint j = 0; j < right[i].size(); ++j) {
-					mult_at_quad_point(j, left, right[i][j], result[i][j]);
-				}
-			}
-			
-			return result;
-		}
-		
-		template<class Left, int ROWS, int COLS>
-		inline static std::vector< std::vector<DenseVectorT> > eval(
-																	const Multiply<Left, MatrixFE<LibMeshFEFunction, ROWS, COLS> > &expr,
-																	const Context &ctx)
-		{
-			auto && left  = eval(expr.left(), ctx);
-			auto && right = eval(expr.right(), ctx);
-			
-			std::vector< std::vector<DenseVectorT> > result(right.size());
-			
-			for(uint i = 0; i < right.size(); ++i) {
-				result[i].resize(right[i].size());
-				
-				for(uint j = 0; j < right[i].size(); ++j) {
-					mult_at_quad_point(j, left, right[i][j], result[i][j]);
-				}
-			}
-			
-			return result;
-		}
-		
-		
-		template<class Left>
-		inline static std::vector< std::vector<libMesh::FEBase::OutputGradient> > eval(
-																					   const Multiply<Left,
-																					   Gradient<LibMeshFEFunction>
-																					   > &expr, const Context &ctx)
-		{
-			auto && left  = eval(expr.left(), ctx);
-			auto && right = eval(expr.right(), ctx);
-			
-			std::vector< std::vector<libMesh::FEBase::OutputGradient> > result(right.size());
-			for(uint i = 0; i < right.size(); ++i) {
-				result[i].resize(right[i].size());
-				
-				for(uint j = 0; j < right[i].size(); ++j) {
-					mult_at_quad_point(j, left, right[i][j], result[i][j]);
-				}
-			}
-			
-			return result;
-		}
-		
-		inline static void mult_at_quad_point(const SizeType quad_index,
-											  const DenseMatrixT &mat,
-											  const libMesh::FEBase::OutputGradient &v,
-											  libMesh::FEBase::OutputGradient &result)
-		{
-			for(uint i = 0; i < mat.m(); ++i) {
-				result(i) = 0;
-				for(uint j = 0; j < mat.n(); ++j) {
-					result(i) += mat(i, j) * v(j);
-				}
-			}
-		}
-		
-		inline static void mult_at_quad_point(const SizeType quad_index,
-											  const DenseMatrixT &mat,
-											  const DenseVectorT &v,
-											  DenseVectorT &result)
-		{
-			mat.vector_mult(result, v);
-		}
-		
-		inline static void mult_at_quad_point(const SizeType quad_index,
-											  const std::vector<libMesh::Real> &coeff,
-											  const libMesh::FEBase::OutputGradient &v,
-											  libMesh::FEBase::OutputGradient &result)
-		{
-			result = v;
-			result *= coeff[quad_index];
-		}
-		
-		template<class FE, int N>
-		inline static std::vector< std::vector<DenseVectorT> > eval(const VectorFE<FE, N> &fe_vec, const Context &)
-		{
-			uint n_funs = 0;
-			std::vector< std::vector<DenseVectorT> > ret;
-			for(uint k = 0; k < N; ++k) {
-				n_funs += fe_vec.get(k).get_fe().get_phi().size();
-			}
-			
-			ret.resize(n_funs);
-			
-			uint funs_offset = 0;
-			for(uint k = 0; k < N; ++k) {
-				const auto &fun = fe_vec.get(k).get_fe().get_phi();
-				
-				for(uint i = 0; i < fun.size(); ++i) {
-					const uint i_k = funs_offset + i;
-					ret[i_k].resize(fun[i].size());
-					
-					for(uint q = 0; q < ret[i_k].size(); ++q) {
-						ret[i_k][q].resize(N);
-						ret[i_k][q].zero();
-						ret[i_k][q](k) = fun[i][q];
-					}
-				}
-				
-				funs_offset += fun.size();
-			}
-			
-			return ret;
-		}
-		
-		
-		template<class FE, int ROWS, int COLS>
-		inline static std::vector< std::vector<DenseVectorT> > eval(const MatrixFE<FE, ROWS, COLS> &fe_vec, const Context &)
-		{
-			static const int N = ROWS * COLS;
-			uint n_funs = 0;
-			std::vector< std::vector<DenseVectorT> > ret;
-			for(uint k = 0; k < N; ++k) {
-				n_funs += fe_vec.get(k).get_fe().get_phi().size();
-			}
-			
-			ret.resize(n_funs);
-			
-			uint funs_offset = 0;
-			for(uint k = 0; k < N; ++k) {
-				const auto &fun = fe_vec.get(k).get_fe().get_phi();
-				
-				for(uint i = 0; i < fun.size(); ++i) {
-					const uint i_k = funs_offset + i;
-					ret[i_k].resize(fun[i].size());
-					
-					for(uint q = 0; q < ret[i_k].size(); ++q) {
-						ret[i_k][q].resize(N);
-						ret[i_k][q].zero();
-						ret[i_k][q](k) = fun[i][q];
-					}
-				}
-				
-				funs_offset += fun.size();
-			}
-			
-			return ret;
-		}
-		
-		
-		//////////////////////////////////////////////////////////////////////
-		//////////////////////////////////////////////////////////////////////
-		
-		// template<class Right>
-		// static void assemble(
-		// 	const Binary<Number<typename Right::Scalar>, Right, Multiplies> &expr,
-		// 	libMesh::DenseMatrix<libMesh::Real> &mat,
-		// 	Context &ctx
-		// 	)
-		// {
-		// 	using namespace libMesh;
-		
-		// 	assemble(expr.right(), mat, ctx);
-		// 	mat *= expr.left();
-		// }
-		
-		template<class Right>
-		static void assemble(
-							 const Binary<Number<typename Right::Scalar>, Right, Multiplies> &expr,
-							 libMesh::DenseVector<libMesh::Real> &vec,
-							 Context &ctx
-							 )
-		{
-			using namespace libMesh;
-			
-			assemble(expr.right(), vec, ctx);
-			vec *= expr.left();
-		}
-		
-		template<typename T1, typename T2>
-		static T2 eval(const Binary<Number<T1>, BlockVar<T2>, Multiplies> &expr, Context &ctx)
-		{
-			return eval(expr.left(), ctx) * eval(expr.right(), ctx);
-		}
-		
-		template<typename T1, typename T2>
-		static T1 eval(const Binary<BlockVar<T1>, Number<T2>, Multiplies> &expr, Context &ctx)
-		{
-			return eval(expr.left(), ctx) * eval(expr.right(), ctx);
-		}
-		
-		template<typename T>
-		inline static std::vector< std::vector<TensorValueT> > eval(
-																	const Binary<Number<T>, Binary< Transposed< Gradient<LibMeshVecFEFunction> >,
-																	Gradient<LibMeshVecFEFunction>,
-																	Plus>,
-																	Multiplies>
-																	&expr, const Context &ctx)
-		{
-			using namespace libMesh;
-			auto &&left  = eval(expr.right().left().expr(), ctx);
-			auto &&right = eval(expr.right().right(), ctx);
-			
-			std::vector< std::vector<TensorValueT> > result(right);
-			
-			for(uint i = 0; i < left.size(); ++i) {
-				for(uint q = 0; q < left[i].size(); ++q) {
-					result[i][q] += left[i][q].transpose();
-					result[i][q] *= expr.left();
-				}
-			}
-			
-			return result;
-		}
-		
-		//////////////////////////////////////////////////////////////////////
-		//////////////////////////////////////////////////////////////////////
-		
-		template<class Factor, class Trial, class Test>
-		static void assemble(
-							 const Binary<Factor,
-							 Reduce<Binary<Trial, Test, EMultiplies>, Plus>,
-							 Multiplies> &expr,
-							 libMesh::DenseMatrix<libMesh::Real> &mat,
-							 Context &ctx)
-		{
-			assemble(expr.right(), mat, ctx);
-			mat *= eval(expr.left(), ctx);
-		}
-		
-		// template<typename T, class Right>
-		// static void assemble(
-		// 	const Binary<BlockVar<T>, Right, Multiplies> &expr,
-		// 	libMesh::DenseMatrix<libMesh::Real> &mat,
-		// 	Context &ctx
-		// 	)
-		// {
-		// 	using namespace libMesh;
-		
-		// 	assemble(expr.right(), mat, ctx);
-		// 	mat *= eval(expr.left(), ctx);
-		// }
-		
-		template<typename T, class Right>
-		static void assemble(
-							 const Binary<BlockVar<T>, Right, Multiplies> &expr,
-							 libMesh::DenseVector<libMesh::Real> &vec,
-							 Context &ctx
-							 )
-		{
-			using namespace libMesh;
-			
-			assemble(expr.right(), vec, ctx);
-			vec *= eval(expr.left(), ctx);
-		}
-		
-		template<typename T>
-		inline static std::vector< std::vector<TensorValueT> > eval(
-																	const Binary<BlockVar<T>, Binary< Transposed< Gradient<LibMeshVecFEFunction> >,
-																	Gradient<LibMeshVecFEFunction>,
-																	Plus>,
-																	Multiplies>
-																	&expr, const Context &ctx)
-		{
-			using namespace libMesh;
-			auto &&left  = eval(expr.right().left().expr(), ctx);
-			auto &&right = eval(expr.right().right(), ctx);
-			
-			std::vector< std::vector<TensorValueT> > result(right);
-			
-			auto val = eval(expr.left(), ctx);
-			for(uint i = 0; i < left.size(); ++i) {
-				for(uint q = 0; q < left[i].size(); ++q) {
-					result[i][q] += left[i][q].transpose();
-					result[i][q] *= val;
-				}
-			}
-			
-			return result;
-		}
-		
-		
-		//////////////////////////////////////////////////////////////////////
-		//////////////////////////////////////////////////////////////////////
-		
-		
-		
-		template<class Left, class Right>
-		static void assemble(
-							 const Binary<Left, Right, Plus> &expr,
-							 libMesh::DenseMatrix<libMesh::Real> &mat,
-							 Context &ctx
-							 )
-		{
-			using namespace libMesh;
-			
-			assemble(expr.left(), mat, ctx);
-			assemble(expr.right(), mat, ctx);
-		}
-		
-		template<class Left, class Right>
-		static void assemble(
-							 const Binary<Left, Right, Minus> &expr,
-							 libMesh::DenseMatrix<libMesh::Real> &mat,
-							 Context &ctx
-							 )
-		{
-			using namespace libMesh;
-			
-			assemble(expr.right(), mat, ctx);
-			mat *= -1;
-			assemble(expr.left(), mat, ctx);
-		}
-		
-		template<class Left, class Right>
-		static void assemble(
-							 const Binary<Left, Right, Minus> &expr,
-							 libMesh::DenseVector<libMesh::Real> &vec,
-							 Context &ctx
-							 )
-		{
-			using namespace libMesh;
-			
-			assemble(expr.right(), vec, ctx);
-			vec *= -1;
-			assemble(expr.left(), vec, ctx);
-		}
-		
-		template<class Left, class Right>
-		static void assemble(
-							 const Binary<Left, Right, Plus> &expr,
-							 libMesh::DenseVector<libMesh::Real> &vec,
-							 Context &ctx
-							 )
-		{
-			using namespace libMesh;
-			
-			assemble(expr.left(), vec, ctx);
-			assemble(expr.right(), vec, ctx);
-		}
-		
-		template<class Expr>
-		static void assemble(
-							 const Unary<Expr, Minus> &expr,
-							 libMesh::DenseMatrix<libMesh::Real> &mat,
-							 Context &ctx
-							 )
-		{
-			using namespace libMesh;
-			assemble(expr.expr(), mat, ctx);
-			mat *= -1;
-		}
-		
-		template<class Expr>
-		static void assemble(
-							 const Unary<Expr, Minus> &expr,
-							 libMesh::DenseVector<libMesh::Real> &vec,
-							 Context &ctx
-							 )
-		{
-			using namespace libMesh;
-			assemble(expr.expr(), vec, ctx);
-			vec *= -1;
-		}
-		
-		//Dot product
-		template<class Left, class Right>
-		static void assemble(
-							 //pattern
-							 const Reduce<Binary<
-							 Left,
-							 Right,
-							 EMultiplies>,
-							 Plus> &expr,
-							 libMesh::DenseMatrix<libMesh::Real> &mat,
-							 Context &ctx)
-		{
-			using namespace libMesh;
-			// std::cout << tree_format(expr.getClass()) << std::endl;
-			
-			auto && trial = eval(expr.expr().left(), ctx);
-			auto && test  = eval(expr.expr().right(), ctx);
-			auto && JxW   = ctx.get_weights();
-			
-			uint n_quad_points = JxW.size();
-			
-			if(mat.n() == 0) {
-				mat.resize(test.size(), trial.size());
-				mat.zero();
-			}
-			
-			for (uint i = 0; i < test.size(); i++) {
-				for (uint j = 0; j < trial.size(); j++) {
-					for (uint qp = 0; qp < n_quad_points; qp++) {
-						mat(i, j) += JxW[qp] * contract( test[i][qp], trial[j][qp] );
-						
-					}
-				}
-			}
-		}
-		
-		//entry point
-		template<class L, class R>
-		static void assemble(const Binary<L, R, Plus> &expr,
-							 libMesh::DenseMatrix<libMesh::Real> &mat)
-		{
-			// mat.zero();
-			mat.resize(0, 0);
-			Context ctx;
-			construct_context(expr.left(), ctx);
-			
-			assemble(expr.left(), mat, ctx);
-			assemble(expr.right(), mat, ctx);
-		}
-		
-		//entry point
-		template<class L, class R>
-		static void assemble(const Binary<L, R, Minus> &expr,
-							 libMesh::DenseVector<libMesh::Real> &vec)
-		{
-			vec.resize(0);
-			Context ctx;
-			construct_context(expr.left(), ctx);
-			
-			assemble(expr.right(), vec, ctx);
-			vec *= -1;
-			assemble(expr.left(), vec, ctx);
-		}
-		
-		//entry point
-		template<class L, class R>
-		static void assemble(const Binary<L, R, Minus> &expr,
-							 libMesh::DenseMatrix<libMesh::Real> &mat)
-		{
-			// mat.zero();
-			mat.resize(0, 0);
-			Context ctx;
-			construct_context(expr.left(), ctx);
-			
-			assemble(expr.right(), mat, ctx);
-			mat *= -1;
-			assemble(expr.left(), mat, ctx);
-			
-		}
-		
-		//entry point
-		template<class L, class R>
-		static void assemble(const Binary<L, R, Plus> &expr,
-							 libMesh::DenseVector<libMesh::Real> &vec)
-		{
-			vec.resize(0);
-			Context ctx;
-			construct_context(expr.left(), ctx);
-			
-			assemble(expr.left(), vec, ctx);
-			assemble(expr.right(), vec, ctx);
-		}
-		
-		
-		//entry point
-		template<class Expr>
-		static void assemble(const Integral<Expr> &expr,
-							 libMesh::DenseMatrix<libMesh::Real> &mat)
-		{
-			// mat.zero();
-			
-			Context ctx;
-			construct_context(expr.expr(), ctx);
-			
-			mat.resize(0, 0);
-			assemble(expr.expr(), mat, ctx);
-		}
-		
-		//Dot product
-		template<class Expr>
-		static void assemble(const Integral<Expr> &expr,
-							 libMesh::DenseMatrix<libMesh::Real> &mat,
-							 Context &ctx)
-		{
-			
-			if(expr.has_block_id() && ctx.block_id != expr.block_id()) {
-				return;
-			}
-			
-			assemble(expr.expr(), mat, ctx);
-		}
-		
-		//Dot product
-		template<class Expr>
-		static void assemble(const Integral<Expr> &expr,
-							 libMesh::DenseVector<libMesh::Real> &vec,
-							 Context &ctx)
-		{
-			
-			if(expr.has_block_id() && ctx.block_id != expr.block_id()) {
-				return;
-			}
-			
-			assemble(expr.expr(), vec, ctx);
-		}
-		
-		
-		//Dot product
-		template<class Left, class Right>
-		static void assemble(
-							 //pattern
-							 const Reduce<Binary<
-							 Gradient<Left>,
-							 Gradient<Right>,
-							 EMultiplies>,
-							 Plus> &expr,
-							 libMesh::DenseMatrix<libMesh::Real> &mat,
-							 Context &ctx)
-		{
-			using namespace libMesh;
-			typedef unsigned int uint;
-			
-			// Context ctx;
-			// construct_context(expr.expr().right(), ctx);
-			
-			// std::cout << tree_format(expr.getClass()) << std::endl;
-			auto && trial = eval(expr.expr().left(), ctx);
-			auto && test  = eval(expr.expr().right(), ctx);
-			auto && JxW   = ctx.get_weights();
-			
-			uint n_quad_points = JxW.size();
-			
-			if(mat.n() == 0) {
-				mat.resize(test.size(), trial.size());
-				mat.zero();
-			}
-			
-			for (uint i = 0; i < test.size(); i++) {
-				for (uint j = 0; j < trial.size(); j++) {
-					for (uint qp = 0; qp < n_quad_points; qp++) {
-						mat(i, j) += JxW[qp] * ( test[i][qp].contract(trial[j][qp]) );
-						
-					}
-				}
-			}
-		}
-		
-		//////////////////////////////////////////////////////////////////////////////////////////
-		
-		template<class Expr>
-		static void assemble(const Integral<Expr> &expr,
-							 libMesh::DenseVector<libMesh::Real> &vec)
-		{
-			// mat.zero();
-			vec.resize(0);
-			
-			Context ctx;
-			construct_context(expr.expr(), ctx);
-			assemble(expr.expr(), vec, ctx);
-		}
-		
-		
-		template<typename Left, typename Right>
-		inline static libMesh::Real  contract(const Left &left, const Right &right)
-		{
-			return left * right;
-		}
-		
-		inline static libMesh::Real contract(const TensorValueT &left, const TensorValueT &right)
-		{
-			return left.contract(right);
-		}
-		
-		inline static libMesh::Real contract(const DenseVectorT &left, const TensorValueT &right)
-		{
-			return contract(right, left);
-		}
-		
-		
-		inline static libMesh::Real contract(const TensorValueT &left, const DenseVectorT &right)
-		{
-			using std::sqrt;
-			uint n = sqrt(right.size());
-			assert(n*n == right.size());
-			
-			libMesh::Real ret = 0.0;
-			
-			uint index = 0;
-			for(uint i = 0; i < n; ++i) {
-				for(uint j = 0; j < n; ++j) {
-					ret += left(i, j) * right(index++);
-				}
-			}
-			
-			return ret;
-		}
-		
-		
-		inline static auto contract(const DenseVectorT &left, const DenseVectorT &right) -> decltype(left.dot(right))
-		{
-			return left.dot(right);
-		}
-		
-		// inline static libMesh::Real contract(const DenseVectorT &left, const TensorValueT &right)
-		// {
-		// 	return 0;
-		// }
-		
-		inline static libMesh::Real contract(const DenseVectorT &left, const libMesh::VectorValue<libMesh::Real> &right)
-		{
-			libMesh::Real result = 0;
-			
-			for(uint i = 0; i < left.size(); ++i) {
-				result += left(i) * right(i);
-			}
-			
-			return result;
-		}
-		
-		inline static libMesh::Real contract(const libMesh::VectorValue<libMesh::Real> &left, const DenseVectorT &right)
-		{
-			libMesh::Real result = 0;
-			
-			for(uint i = 0; i < right.size(); ++i) {
-				result += left(i) * right(i);
-			}
-			
-			return result;
-		}
-		
-		
-		//Dot product
-		template<class Left, class Right>
-		static void assemble(
-							 //pattern
-							 const Reduce<Binary<
-							 Left,
-							 Right,
-							 EMultiplies>,
-							 Plus> &expr,
-							 libMesh::DenseVector<libMesh::Real> &vec,
-							 Context &ctx)
-		{
-			using namespace libMesh;
-			
-			// Context ctx;
-			// construct_context(expr.expr().right(), ctx);
-			
-			auto && coef = eval(expr.expr().left(),  ctx);
-			auto && test = eval(expr.expr().right(), ctx);
-			auto && JxW  = ctx.get_weights();
-			
-			uint n_quad_points = JxW.size();
-			
-			if(vec.size() == 0) {
-				vec.resize(test.size());
-				vec.zero();
-			}
-			
-			for (uint i = 0; i < test.size(); i++) {
-				for (uint qp = 0; qp < n_quad_points; qp++) {
-					vec(i) += JxW[qp] *  contract(test[i][qp], coef[qp]);
-				}
-			}
-		}
-		
-		template<typename T, int Order>
-		inline static const ConstantCoefficient<T, Order> &eval(const ConstantCoefficient<T, Order> &expr, const Context &ctx){
-			return expr;
-		}
-		
-		template<class Fun, typename T>
-		inline static std::vector<libMesh::Real> eval(const FunctionCoefficient<Fun, T, 0> &expr, const Context &ctx) {
-			assert(ctx.points);
-			std::vector<libMesh::Real> result(ctx.points->size());
-			
-			for(uint i = 0; i < ctx.points->size(); ++i) {
-				expr.eval(ctx.points->at(i), result[i]);
-			}
-			
-			return result;
-		}
-		
-		
-		
-		template<int ROWS, int COLS>
-		static void collect_indices(libMesh::Elem *el, const MatrixFE<LibMeshFEFunction, ROWS, COLS> &fe, std::vector<libMesh::dof_id_type> &indices)
-		{
-			using namespace libMesh;
-			std::vector<dof_id_type> temp;
-			for(uint i = 0; i < ROWS*COLS; ++i) {
-				auto &var = fe.get(i);
-				var.dof_map().dof_indices(el, temp, var.var_num());
-				indices.insert(indices.end(), temp.begin(), temp.end());
-			}
-		}
-		
-		
-		template<int ROWS, int COLS, class Matrix>
-		static void constrain_mixed_matrix_and_add(libMesh::Elem *el, DenseMatrixT &diag_block, DenseMatrixT &off_diag_block,
-												   LibMeshVecFEFunction &u, MatrixFE<LibMeshFEFunction, ROWS, COLS> &sigma,
-												   Matrix &mat
-												   )
-		{
-			using namespace libMesh;
-			std::vector<dof_id_type> dof_u, dof_sigma;
-			u.dof_map().dof_indices(el, dof_u, u.var_num());
-			
-			collect_indices(el, sigma, dof_sigma);
-			
-			u.dof_map().constrain_element_matrix(diag_block, dof_u, dof_u);
-			u.dof_map().constrain_element_matrix(off_diag_block, dof_u, dof_sigma);
-			
-			add_matrix(diag_block, dof_u, dof_u, mat);
-			add_matrix(off_diag_block, dof_u, dof_sigma, mat);
-		}
-		
-		template<int ROWS, int COLS, class Matrix>
-		static void mixed_matrix_and_add(libMesh::Elem *el, DenseMatrixT &diag_block, DenseMatrixT &off_diag_block,
-										 LibMeshVecFEFunction &u, MatrixFE<LibMeshFEFunction, ROWS, COLS> &sigma,
-										 Matrix &mat
-										 )
-		{
-			using namespace libMesh;
-			std::vector<dof_id_type> dof_u, dof_sigma;
-			u.dof_map().dof_indices(el, dof_u, u.var_num());
-			
-			collect_indices(el, sigma, dof_sigma);
-			
-			add_matrix(diag_block, dof_u, dof_u, mat);
-			add_matrix(off_diag_block, dof_u, dof_sigma, mat);
-		}
-		
-		
-		template<int ROWS, int COLS, class Matrix>
-		static void mixed_matrix_add(libMesh::Elem *el, DenseMatrixT &off_diag_block, DenseMatrixT &diag_block,
-									 MatrixFE<LibMeshFEFunction, ROWS, COLS> &sigma, LibMeshVecFEFunction &u,
-									 Matrix &mat
-									 )
-		{
-			using namespace libMesh;
-			std::vector<dof_id_type> dof_u, dof_sigma;
-			u.dof_map().dof_indices(el, dof_u, u.var_num());
-			
-			collect_indices(el, sigma, dof_sigma);
-			
-			add_matrix(diag_block, dof_sigma, dof_sigma, mat);
-			add_matrix(off_diag_block, dof_sigma, dof_u, mat);
-		}
-		
-		template<int ROWS, int COLS, class Vector>
-		void mixed_vector_add(libMesh::Elem *el, const DenseVectorT &vec_1, const DenseVectorT &vec_2,
-							  LibMeshVecFEFunction &u,
-							  MatrixFE<LibMeshFEFunction, ROWS, COLS> &sigma,
-							  Vector &vec)
-		{
-			using namespace libMesh;
-			std::vector<dof_id_type> dof_u, dof_sigma;
-			u.dof_map().dof_indices(el, dof_u, u.var_num());
-			
-			collect_indices(el, sigma, dof_sigma);
-			add_vector(vec_1, dof_u, vec);
-			add_vector(vec_2, dof_sigma, vec);
-		}
-	};
-	
-	template<class Expr, class ElementMatrix, class DofIndexTrial, class DofIndexTest>
-	void add_matrix(const ElementMatrix &el_mat, const DofIndexTrial &dof_test, const DofIndexTest &dof_trial, Wrapper<Expr, 2> &expr)
-	{
-		// std::cout << "el_mat: " << el_mat.m() << " x " << el_mat.n() << std::endl;
-		// std::cout << "dofs: " << dof_test.size() << " x " << dof_trial.size() << std::endl;
-		int i = 0, j;
-		for(auto test : dof_test) {
-			j = 0;
-			for(auto trial : dof_trial) {
-				expr.add(test, trial, el_mat(i, j));
-				++j;
-			}
-			
-			++i;
-		}
-	}
-	
-	template<class Expr, class ElementVector, class DofIndexTest>
-	void add_vector(const ElementVector &el_vec, const DofIndexTest &dof_test, Wrapper<Expr, 1> &expr)
-	{
-		int i = 0;
-		for(auto test : dof_test) {
-			expr.add(test, el_vec(i));
-			++i;
-		}
-	}
-	
-	
-	
-	
-	template<class TrialFunction, class TestFunction, class Expr, class Matrix>
-	void assemble(TrialFunction &trial, TestFunction &test,
-				  const Expression<Expr> &expr, Wrapper<Matrix, 2> &result,
-				  const bool apply_constraints = true)
-	{
-		using namespace libMesh;
-		LibMeshBackend backend;
-		
-		auto e_begin = test.mesh().active_local_elements_begin();
-		auto e_end   = test.mesh().active_local_elements_end();
-		
-		//FIXME
-		int nnz_x_row = 30;
-		result = local_sparse(test.dof_map().n_local_dofs(), trial.dof_map().n_local_dofs(), nnz_x_row);
-		
-		std::vector<dof_id_type> dof_indices_trial;
-		std::vector<dof_id_type> dof_indices_test;
-		
-		Write< Wrapper<Matrix, 2> > w(result);
-		
-		DenseMatrix<Real> mat;
-		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-			trial.set_element(**e_it);
-			test.set_element(**e_it);
-			backend.assemble(expr.derived(), mat);
-			trial.dof_map().dof_indices(*e_it, dof_indices_trial, trial.var_num());
-			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
-			
-			if(apply_constraints) {
-				test.dof_map().constrain_element_matrix(mat, dof_indices_test, dof_indices_trial);
-			}
-			
-			add_matrix(mat, dof_indices_test, dof_indices_trial, result);
-		}
-	}
-	
-	template<class TestFunction, class Expr, class Vector>
-	void assemble(TestFunction &test,
-				  const Expression<Expr> &expr,
-				  Wrapper<Vector, 1> &result,
-				  const bool apply_constraints = true)
-	{
-		using namespace libMesh;
-		LibMeshBackend backend;
-		
-		auto e_begin = test.mesh().active_local_elements_begin();
-		auto e_end   = test.mesh().active_local_elements_end();
-		result       = local_zeros(test.dof_map().n_local_dofs());
-		
-		
-		std::vector<dof_id_type> dof_indices_test;
-		
-		Write< Wrapper<Vector, 1> > w(result);
-		
-		DenseVector<Real> vec;
-		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-			test.set_element(**e_it);
-			backend.assemble(expr.derived(), vec);
-			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
-			
-			if(apply_constraints) {
-				test.dof_map().constrain_element_vector(vec, dof_indices_test);
-			}
-			
-			add_vector(vec, dof_indices_test, result);
-		}
-	}
-	
-	
-	template<class BilinearForm, class LinearForm>
-	void local_assemble(const Expression<BilinearForm> &b_form, const Expression<LinearForm> &l_form,
-						libMesh::DenseMatrix<libMesh::Real> &mat, libMesh::DenseVector<libMesh::Real> &vec) {
-		
-		LibMeshBackend backend;
-		backend.assemble(b_form.derived(), mat);
-		backend.assemble(l_form.derived(), vec);
-	}
-	
-	template<class BilinearForm_11, class BilinearForm_12, class LinearForm_1,
-	class BilinearForm_21, class BilinearForm_22, class LinearForm_2>
-	void block_local_assemble(const Expression<BilinearForm_11> &b_form_11,
-							  const Expression<BilinearForm_12> &b_form_12,
-							  const Expression<LinearForm_1> 	&l_form_1,
-							  const Expression<BilinearForm_21> &b_form_21,
-							  const Expression<BilinearForm_22> &b_form_22,
-							  const Expression<LinearForm_2> 	&l_form_2,
-							  libMesh::DenseMatrix<libMesh::Real> &mat_11,
-							  libMesh::DenseMatrix<libMesh::Real> &mat_12,
-							  libMesh::DenseVector<libMesh::Real> &vec_1,
-							  libMesh::DenseMatrix<libMesh::Real> &mat_21,
-							  libMesh::DenseMatrix<libMesh::Real> &mat_22,
-							  libMesh::DenseVector<libMesh::Real> &vec_2
-							  ) {
-		
-		LibMeshBackend backend;
-		backend.assemble(b_form_11.derived(), mat_11);
-		backend.assemble(b_form_21.derived(), mat_12);
-		backend.assemble(b_form_12.derived(), mat_21);
-		backend.assemble(b_form_22.derived(), mat_22);
-		backend.assemble(l_form_1.derived(),  vec_1);
-		backend.assemble(l_form_2.derived(),  vec_2);
-	}
-	
-	
-	template<class TrialFunction, class TestFunction, class Expr, class Matrix>
-	void assemble(TrialFunction &trial, TestFunction &test,
-				  const Expression<Expr> &expr, Matrix &result, const bool apply_constraints = true)
-	{
-		using namespace libMesh;
-		LibMeshBackend backend;
-		
-		auto e_begin = test.mesh().active_local_elements_begin();
-		auto e_end   = test.mesh().active_local_elements_end();
-		
-		std::vector<dof_id_type> dof_indices_trial;
-		std::vector<dof_id_type> dof_indices_test;
-		
-		DenseMatrix<Real> mat;
-		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-			trial.set_element(**e_it);
-			test.set_element(**e_it);
-			backend.assemble(expr.derived(), mat);
-			trial.dof_map().dof_indices(*e_it, dof_indices_trial, trial.var_num());
-			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
-			
-			// std::cout << "el: " << std::distance(e_begin, e_it) << std::endl;
-			// mat.print(std::cout);
-			// std::cout << "======================" << std::endl;
-			
-			if(apply_constraints) {
-				test.dof_map().constrain_element_matrix(mat, dof_indices_test, dof_indices_trial);
-			}
-			
-			add_matrix(mat, dof_indices_test, dof_indices_trial, result);
-		}
-	}
-	
-	template<class TestFunction, class Expr>
-	void assemble(TestFunction &test,
-				  const Expression<Expr> &expr,
-				  libMesh::NumericVector<libMesh::Real> &result,
-				  const bool apply_constraints = true)
-	{
-		using namespace libMesh;
-		LibMeshBackend backend;
-		
-		auto e_begin = test.mesh().active_local_elements_begin();
-		auto e_end   = test.mesh().active_local_elements_end();
-		
-		std::vector<dof_id_type> dof_indices_test;
-		DenseVector<Real> vec;
-		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-			test.set_element(**e_it);
-			backend.assemble(expr.derived(), vec);
-			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
-			
-			if(apply_constraints) {
-				test.dof_map().constrain_element_vector(vec, dof_indices_test);
-			}
-			
-			add_vector(vec, dof_indices_test, result);
-		}
-	}
-	
-	
-	
-	template<class TrialFunction, class TestFunction, class BilinearForm, class LinearForm, class Matrix, class Vector>
-	void assemble(TrialFunction &trial,
-				  TestFunction  &test,
-				  const Expression<BilinearForm> &bilinear_form,
-				  const Expression<LinearForm>   &linear_form,
-				  Matrix &mat,
-				  Vector &rhs,
-				  const bool apply_constraints = true)
-	{
-		using namespace libMesh;
-		LibMeshBackend backend;
-		
-		auto e_begin = test.mesh().active_local_elements_begin();
-		auto e_end   = test.mesh().active_local_elements_end();
-		
-		std::vector<dof_id_type> dof_indices_trial;
-		std::vector<dof_id_type> dof_indices_test;
-		
-		DenseMatrix<Real> el_mat;
-		DenseVector<Real> el_vec;
-		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-			trial.set_element(**e_it);
-			test.set_element(**e_it);
-			
-			backend.assemble(bilinear_form.derived(), el_mat);
-			backend.assemble(linear_form.derived(), 	el_vec);
-			
-			trial.dof_map().dof_indices(*e_it, dof_indices_trial, trial.var_num());
-			test.dof_map().dof_indices(*e_it,  dof_indices_test,  test.var_num());
-			
-			if(apply_constraints) {
-				test.dof_map().heterogenously_constrain_element_matrix_and_vector(el_mat, el_vec, dof_indices_test);
-			}
-			
-			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
-			add_vector(el_vec, dof_indices_test, rhs);
-		}
-	}
-	
-	
-	template<int N>
-	static void collect_indices(libMesh::Elem *el, const VectorFE<LibMeshFEFunction, N> &fe, std::vector<libMesh::dof_id_type> &indices)
-	{
-		using namespace libMesh;
-		std::vector<dof_id_type> temp;
-		for(uint i = 0; i < N; ++i) {
-			auto &var = fe.get(i);
-			temp.clear();
-			var.dof_map().dof_indices(el, temp, var.var_num());
-			indices.insert(indices.end(), temp.begin(), temp.end());
-		}
-	}
-	
-	template<class TrialFunction,
-	class TestFunction,
-	int NTrial,
-	int NTest,
-	class BilinearForm,
-	class LinearForm,
-	class Matrix,
-	class Vector>
-	void assemble(
-				  VectorFE<TrialFunction, NTrial> &trial,
-				  VectorFE<TestFunction, NTest>  &test,
-				  const Expression<BilinearForm> &bilinear_form,
-				  const Expression<LinearForm>   &linear_form,
-				  Matrix &mat,
-				  Vector &rhs,
-				  const bool apply_constraints = true)
-	{
-		using namespace libMesh;
-		LibMeshBackend backend;
-		
-		auto e_begin = test.get(0).mesh().active_local_elements_begin();
-		auto e_end   = test.get(0).mesh().active_local_elements_end();
-		
-		std::vector<dof_id_type> dof_indices_trial;
-		std::vector<dof_id_type> dof_indices_test;
-		
-		DenseMatrix<Real> el_mat;
-		DenseVector<Real> el_vec;
-		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-			for(int i = 0; i < NTrial; ++i) {
-				trial.get(i).set_element(**e_it);
-			}
-			
-			for(int i = 0; i < NTest; ++i) {
-				test.get(i).set_element(**e_it);
-			}
-			
-			backend.assemble(bilinear_form.derived(), el_mat);
-			backend.assemble(linear_form.derived(), 	el_vec);
-			
-			dof_indices_test.clear();
-			dof_indices_trial.clear();
-			
-			collect_indices(*e_it, trial, dof_indices_trial);
-			collect_indices(*e_it, test,  dof_indices_test);
-			
-			if(apply_constraints) {
-				test.get(0).dof_map().heterogenously_constrain_element_matrix_and_vector(el_mat, el_vec, dof_indices_test);
-			}
-			
-			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
-			add_vector(el_vec, dof_indices_test, rhs);
-		}
-	}
-	
-	template<class TrialFunction,
-	class TestFunction,
-	int NTrial,
-	int NTest,
-	class BilinearForm>
-	void assemble(
-				  VectorFE<TrialFunction, NTrial> &trial,
-				  VectorFE<TestFunction, NTest>  &test,
-				  const Expression<BilinearForm> &bilinear_form,
-				  DSMatrixd &mat,
-				  const bool apply_constraints)
-	{
-		using namespace libMesh;
-		LibMeshBackend backend;
-		
-		assert(!apply_constraints);
-		
-		auto e_begin = test.get(0).mesh().active_local_elements_begin();
-		auto e_end   = test.get(0).mesh().active_local_elements_end();
-		
-		std::vector<dof_id_type> dof_indices_trial;
-		std::vector<dof_id_type> dof_indices_test;
-		
-		const SizeType local_rows = test.get(0).dof_map().n_local_dofs();
-		const SizeType local_cols = trial.get(0).dof_map().n_local_dofs();
-		mat = local_sparse(local_rows, local_cols, 30);
-		
-		Write<DSMatrixd> w_m(mat);
-		
-		DenseMatrix<Real> el_mat;
-		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-			for(int i = 0; i < NTrial; ++i) {
-				trial.get(i).set_element(**e_it);
-			}
-			
-			for(int i = 0; i < NTest; ++i) {
-				test.get(i).set_element(**e_it);
-			}
-			
-			backend.assemble(bilinear_form.derived(), el_mat);
-			
-			
-			dof_indices_test.clear();
-			dof_indices_trial.clear();
-			
-			collect_indices(*e_it, trial, dof_indices_trial);
-			collect_indices(*e_it, test,  dof_indices_test);
-			
-			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
-		}
-	}
-	
-	template<class TrialFunction,
-	class TestFunction,
-	int NTrial,
-	int NTest,
-	class BilinearForm,
-	typename T>
-	void assemble_no_constraints(
-								 VectorFE<TrialFunction, NTrial> &trial,
-								 VectorFE<TestFunction, NTest>  &test,
-								 const Expression<BilinearForm> &bilinear_form,
-								 libMesh::SparseMatrix<T> &mat)
-	{
-		using namespace libMesh;
-		LibMeshBackend backend;
-		
-		auto e_begin = test.get(0).mesh().active_local_elements_begin();
-		auto e_end   = test.get(0).mesh().active_local_elements_end();
-		
-		std::vector<dof_id_type> dof_indices_trial;
-		std::vector<dof_id_type> dof_indices_test;
-		
-		const SizeType local_rows = test.get(0).dof_map().n_local_dofs();
-		const SizeType local_cols = trial.get(0).dof_map().n_local_dofs();
-		
-		DenseMatrix<Real> el_mat;
-		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
-			for(int i = 0; i < NTrial; ++i) {
-				trial.get(i).set_element(**e_it);
-			}
-			
-			for(int i = 0; i < NTest; ++i) {
-				test.get(i).set_element(**e_it);
-			}
-			
-			backend.assemble(bilinear_form.derived(), el_mat);
-			
-			
-			dof_indices_test.clear();
-			dof_indices_trial.clear();
-			
-			collect_indices(*e_it, trial, dof_indices_trial);
-			collect_indices(*e_it, test,  dof_indices_test);
-			
-			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
-		}
-	}
-	
-	
+
+
+
+// 	template<class Right, typename T>
+// 	void strong_enforce(const DirichletBoundaryCondition<
+// 						Equality<LibMeshFEFunction,
+// 						FunctionCoefficient<Right, T, 0> >
+// 						> &cond)
+// 	{
+// 		std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().var_num();
+// 		std::set<libMesh::boundary_id_type> bt;
+// 		bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
+// 		libMesh::DirichletBoundary d_bc(bt, vars, LibMeshLambdaFunction<libMesh::Real>(cond.expr().right().fun()) );
+// 		const_cast<LibMeshFEFunction &>(cond.expr().left()).dof_map().add_dirichlet_boundary(d_bc);
+// 	}
+
+// 	template<class Right, typename T>
+// 	void strong_enforce(const DirichletBoundaryCondition<
+// 						Equality<LibMeshVecFEFunction,
+// 						FunctionCoefficient<Right, T, 1> >
+// 						> &cond)
+// 	{
+// 		std::vector<unsigned int> vars(1); vars[0] = cond.expr().left().var_num();
+// 		std::set<libMesh::boundary_id_type> bt;
+// 		bt.insert(cond.boundary_tags().begin(), cond.boundary_tags().end());
+// 		libMesh::DirichletBoundary d_bc(bt, vars, LibMeshLambdaFunction<libMesh::Real>(cond.expr().right().fun()) );
+// 		const_cast<LibMeshVecFEFunction &>(cond.expr().left()).dof_map().add_dirichlet_boundary(d_bc);
+// 	}
+
+
+// 	class LibMeshBackend {
+// 	public:
+// 		typedef unsigned int uint;
+// 		typedef libMesh::DenseMatrix<libMesh::Real> DenseMatrixT;
+// 		typedef libMesh::TensorValue<libMesh::Real> TensorValueT;
+// 		typedef libMesh::DenseVector<libMesh::Real> DenseVectorT;
+
+// 		class Context {
+// 		public:
+
+// 			Context() {}
+
+// 			Context(const LibMeshFEFunction &fe)
+// 			{
+// 				init(fe);
+// 			}
+
+// 			Context(const LibMeshVecFEFunction &fe)
+// 			{
+// 				init(fe);
+// 			}
+
+// 			// Context(const std::vector<libMesh::Point> &points)
+// 			// {
+// 			// 	this->points = make_ref(points);
+// 			// }
+
+// 			void init(const LibMeshFEFunction &fe)
+// 			{
+// 				points  = make_ref(fe.get_fe().get_xyz());
+// 				weights = make_ref(fe.get_fe().get_JxW());
+// 				block_id = fe.block_id();
+// 			}
+
+// 			void init(const LibMeshVecFEFunction &fe)
+// 			{
+// 				points  = make_ref(fe.get_fe().get_xyz());
+// 				weights = make_ref(fe.get_fe().get_JxW());
+// 				block_id = 0; //TODO
+// 			}
+
+// 			inline bool good() const
+// 			{
+// 				return static_cast<bool>(points) && static_cast<bool>(weights);
+// 			}
+
+// 			const std::vector<libMesh::Point> &get_points() const
+// 			{
+// 				assert(points);
+// 				return *points;
+// 			}
+
+// 			const std::vector<libMesh::Real> &get_weights() const
+// 			{
+// 				assert(weights);
+// 				return *weights;
+// 			}
+
+// 			std::shared_ptr<const std::vector<libMesh::Point> > points;
+// 			std::shared_ptr<const std::vector<libMesh::Real> >  weights;
+// 			int block_id;
+// 		};
+
+// 		template<class FEFun>
+// 		inline static void construct_context(const Integral<FEFun> &expr, Context &ctx)
+// 		{
+// 			construct_context(expr.expr(), ctx);
+// 		}
+
+// 		template<class FEFun, class Operation>
+// 		inline static void construct_context(const Unary<FEFun, Operation> &expr, Context &ctx)
+// 		{
+// 			construct_context(expr.expr(), ctx);
+// 		}
+
+// 		template<class FEFun, class Operation>
+// 		inline static void construct_context(const Reduce<FEFun, Operation> &expr, Context &ctx)
+// 		{
+// 			construct_context(expr.expr(), ctx);
+// 		}
+
+// 		template<class FEFun>
+// 		inline static void construct_context(const Divergence<FEFun> &expr, Context &ctx)
+// 		{
+// 			construct_context(expr.expr(), ctx);
+// 		}
+
+// 		template<class FEFun>
+// 		inline static void construct_context(const Gradient<FEFun> &expr, Context &ctx)
+// 		{
+// 			construct_context(expr.expr(), ctx);
+// 		}
+
+// 		template<class FEFun>
+// 		inline static void construct_context(const Curl<FEFun> &expr, Context &ctx)
+// 		{
+// 			construct_context(expr.expr(), ctx);
+// 		}
+
+// 		template<class Left, class Right, class Operation>
+// 		inline static void construct_context(const Binary<Left, Right, Operation> &expr, Context &ctx)
+// 		{
+// 			construct_context(expr.right(), ctx);
+// 		}
+
+// 		template<class Left, class Right, class Operation>
+// 		inline static void construct_context(const Binary<Left, Number<Right>, Operation> &expr, Context &ctx)
+// 		{
+// 			construct_context(expr.left(), ctx);
+// 		}
+
+// 		template<class Left, class Right, class Operation>
+// 		inline static void construct_context(const Binary<Left, BlockVar<Right>, Operation> &expr, Context &ctx)
+// 		{
+// 			construct_context(expr.left(), ctx);
+// 		}
+
+// 		template<class Left, class Right>
+// 		inline static void  construct_context(const Multiply<Left, Right> &expr, Context &ctx)
+// 		{
+// 			construct_context(expr.right(), ctx);
+// 		}
+
+// 		inline static void construct_context(const LibMeshFEFunction &expr, Context &ctx)
+// 		{
+// 			ctx.init(expr);
+// 		}
+
+// 		inline static void construct_context(const LibMeshVecFEFunction &expr, Context &ctx)
+// 		{
+// 			ctx.init(expr);
+// 		}
+
+// 		template<class FEType, int N>
+// 		inline static void construct_context(const VectorFE<FEType, N> &fe_vec, Context &ctx)
+// 		{
+// 			ctx.init(fe_vec.get(0));
+
+// 		}
+
+// 		template<class FEType, int ROWS, int COLS>
+// 		inline static void construct_context(const MatrixFE<FEType, ROWS, COLS> &fe_vec, Context &ctx)
+// 		{
+// 			ctx.init(fe_vec.get(0));
+// 		}
+
+// 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// 		inline static const DenseMatrixT &eval(const Wrapper<DenseMatrixT, 2> &expr, const Context &){
+// 			return expr.implementation();
+// 		}
+
+// 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// 		//Eval
+// 		inline static auto eval(const LibMeshVecFEFunction &expr, const Context &) -> decltype(expr.get_fe().get_phi())
+// 		{
+// 			return expr.get_fe().get_phi();
+// 		}
+
+// 		inline static auto eval(const Gradient<LibMeshVecFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_dphi())
+// 		{
+// 			return expr.expr().get_fe().get_dphi();
+// 		}
+
+// 		inline static auto eval(const Divergence<LibMeshVecFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_div_phi())
+// 		{
+// 			return expr.expr().get_fe().get_div_phi();
+// 		}
+
+// 		inline static auto eval(const Curl<LibMeshVecFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_curl_phi())
+// 		{
+// 			return expr.expr().get_fe().get_curl_phi();
+// 		}
+
+// 		template<int N>
+// 		inline static std::vector< std::vector<TensorValueT> > eval(const Gradient< VectorFE<LibMeshFEFunction, N> > &expr, const Context &)
+// 		{
+// 			const auto &fe_vec = expr.expr();
+
+// 			uint n_funs = 0;
+// 			std::vector< std::vector<TensorValueT> > ret;
+// 			for(uint k = 0; k < N; ++k) {
+// 				n_funs += fe_vec.get(k).get_fe().get_dphi().size();
+// 			}
+
+// 			ret.resize(n_funs);
+
+// 			uint funs_offset = 0;
+// 			for(uint k = 0; k < N; ++k) {
+// 				const auto &grad_fun = fe_vec.get(k).get_fe().get_dphi();
+
+// 				for(uint i = 0; i < grad_fun.size(); ++i) {
+// 					const uint i_k = funs_offset + i;
+// 					ret[i_k].resize(grad_fun[i].size());
+
+// 					for(uint q = 0; q < ret[i_k].size(); ++q) {
+// 						ret[i_k][q].zero();
+
+// 						for(uint d = 0; d < LIBMESH_DIM; ++d) {
+// 							ret[i_k][q](k, d) = grad_fun[i][q](d);
+// 						}
+// 					}
+// 				}
+
+// 				funs_offset += grad_fun.size();
+// 			}
+
+// 			return ret;
+// 		}
+
+// 		template<class FE, int N>
+// 		inline static std::vector< std::vector<libMesh::Real> > eval(const Divergence< VectorFE<FE, N> > &expr, const Context &)
+// 		{
+// 			const auto &fe_vec = expr.expr();
+// 			uint n_funs = 0;
+// 			std::vector< std::vector<libMesh::Real> > ret;
+// 			for(uint k = 0; k < N; ++k) {
+// 				n_funs += fe_vec.get(k).get_fe().get_dphi().size();
+// 			}
+
+// 			ret.resize(n_funs);
+
+// 			uint funs_offset = 0;
+// 			for(uint k = 0; k < N; ++k) {
+// 				const auto &grad_fun = fe_vec.get(k).get_fe().get_dphi();
+
+// 				for(uint i = 0; i < grad_fun.size(); ++i) {
+// 					const uint i_k = funs_offset + i;
+// 					ret[i_k].resize(grad_fun[i].size());
+
+// 					for(uint q = 0; q < ret[i_k].size(); ++q) {
+// 						ret[i_k][q] = grad_fun[i][q](k);
+// 					}
+// 				}
+
+// 				funs_offset += grad_fun.size();
+// 			}
+
+// 			return ret;
+// 		}
+
+// 		template<class FE, int ROWS, int COLS>
+// 		inline static std::vector< std::vector<DenseVectorT> > eval(const Divergence< MatrixFE<FE, ROWS, COLS> > &expr, const Context &)
+// 		{
+// 			static_assert(ROWS == COLS, "works only for square matrices");
+
+// 			const auto &fe_mat = expr.expr();
+// 			uint n_funs = 0;
+// 			std::vector< std::vector<DenseVectorT> > ret;
+
+// 			for(uint k = 0; k < ROWS * COLS; ++k) {
+// 				n_funs += fe_mat.get(k).get_fe().get_dphi().size();
+// 			}
+
+// 			ret.resize(n_funs);
+
+// 			uint funs_offset = 0;
+// 			for(uint r = 0; r < ROWS; ++r) {
+// 				for(uint c = 0; c < COLS; ++c) {
+// 					const auto &grad_fun = fe_mat.get(r, c).get_fe().get_dphi();
+
+// 					// for(uint d = 0; d < ROWS; ++d) {
+// 					// 	std::cout << "d: " << d << "\n";
+// 					// 	grad_fun[d][0].print(std::cout);
+// 					// 	std::cout << "\n";
+// 					// }
+
+// 					for(uint i = 0; i < grad_fun.size(); ++i) {
+// 						const uint i_k = funs_offset + i;
+
+// 						ret[i_k].resize(grad_fun[i].size());
+
+// 						for(uint q = 0; q < ret[i_k].size(); ++q) {
+// 							ret[i_k][q].resize(ROWS);
+// 							ret[i_k][q].zero();
+// 							ret[i_k][q](r) = grad_fun[i][q](c);
+// 						}
+// 					}
+
+
+// 					funs_offset += grad_fun.size();
+// 				}
+// 			}
+
+// 			return ret;
+// 		}
+
+// 		template<class Left, class Right, class Operation>
+// 		inline static std::vector<libMesh::Real> eval(const Binary<Left, Right, Operation> &expr, const Context &ctx)
+// 		{
+// 			std::vector<libMesh::Real> result;
+// 			apply_binary_op(eval(expr.left(), ctx), eval(expr.right(), ctx), expr.operation(), result);
+// 			return result;
+// 		}
+
+// 		template<typename T, class Operation>
+// 		inline static void apply_binary_op(const std::vector<T> &left, const std::vector<T> &right, const Operation &op, std::vector<T> &result)
+// 		{
+
+
+// 			result.resize(left.size());
+
+// 			for(uint i = 0; i < left.size(); ++i) {
+// 				// std::cout << op.fun_str() << "(" << left[i] << ","  << right[i] << ")" << std::endl;
+// 				result[i] = op.template apply<T>(left[i], right[i]);
+// 			}
+// 		}
+
+// 		template<typename T, typename T2, class Operation>
+// 		inline static void apply_binary_op(const std::vector<T> &left, const ConstantCoefficient<T2, 0> &right, const Operation &op, std::vector<T> &result)
+// 		{
+// 			result.resize(left.size());
+
+// 			for(uint i = 0; i < left.size(); ++i) {
+// 				// std::cout << op.getClass() << "(" << left[i] << ","  << right[i] << ")" << std::endl;
+// 				result[i] = op.template apply<T>(left[i], right[i]);
+// 			}
+// 		}
+
+// 		inline static std::vector< std::vector<TensorValueT> > eval(
+// 																	const Binary< Transposed< Gradient<LibMeshVecFEFunction> >,
+// 																	Gradient<LibMeshVecFEFunction>,
+// 																	Plus>
+// 																	&expr, const Context &ctx)
+// 		{
+// 			using namespace libMesh;
+// 			auto &&left  = eval(expr.left().expr(), ctx);
+// 			auto &&right = eval(expr.right(), ctx);
+
+// 			std::vector< std::vector<TensorValueT> > result(right);
+
+// 			for(uint i = 0; i < left.size(); ++i) {
+// 				for(uint q = 0; q < left[i].size(); ++q) {
+// 					result[i][q] += left[i][q].transpose();
+// 				}
+// 			}
+
+// 			return result;
+// 		}
+
+// 		template<class FE, int N>
+// 		inline static std::vector< std::vector<TensorValueT> > eval(
+// 																	const Binary<
+// 																	Transposed< Gradient< VectorFE<FE, N> > >,
+// 																	Gradient< VectorFE<FE, N> >,
+// 																	Plus>
+// 																	&expr, const Context &ctx)
+// 		{
+// 			using namespace libMesh;
+// 			auto &&left  = eval(expr.left().expr(), ctx);
+// 			auto &&right = eval(expr.right(), ctx);
+
+// 			std::vector< std::vector<TensorValueT> > result(right);
+
+// 			for(uint i = 0; i < left.size(); ++i) {
+// 				for(uint q = 0; q < left[i].size(); ++q) {
+// 					result[i][q] += left[i][q].transpose();
+// 				}
+// 			}
+
+// 			return result;
+// 		}
+
+
+
+
+// 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// 		//Eval
+
+// 		inline static auto eval(const LibMeshFEFunction &expr, const Context &) -> decltype(expr.get_fe().get_phi())
+// 		{
+// 			return expr.get_fe().get_phi();
+// 		}
+
+// 		inline static auto eval(const Gradient<LibMeshFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_dphi())
+// 		{
+// 			return expr.expr().get_fe().get_dphi();
+// 		}
+
+// 		inline static auto eval(const Divergence<LibMeshFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_div_phi())
+// 		{
+// 			return expr.expr().get_fe().get_div_phi();
+// 		}
+
+// 		inline static auto eval(const Curl<LibMeshFEFunction> &expr, const Context &) -> decltype(expr.expr().get_fe().get_curl_phi())
+// 		{
+// 			return expr.expr().get_fe().get_curl_phi();
+// 		}
+
+// 		template<class Coeff>
+// 		inline static std::vector<libMesh::Real> eval(const Interpolate<Coeff, LibMeshFEFunction> &expr, const Context &)
+// 		{
+// 			std::vector<libMesh::Real> result;
+// 			expr.eval(result);
+// 			return result;
+// 		}
+
+// 		template<class Coeff>
+// 		inline static std::vector<DenseVectorT> eval(const Gradient<Interpolate<Coeff, LibMeshFEFunction> > &expr, const Context &)
+// 		{
+// 			std::vector<DenseVectorT> result;
+// 			expr.expr().eval_grad(result);
+// 			return result;
+// 		}
+
+// 		template<class Expr>
+// 		inline static auto eval(const Unary<Expr, Pow2> &expr, const Context &ctx) -> typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type
+// 		{
+// 			typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type result;
+// 			apply_unary_transform(eval(expr.expr(), ctx), result, expr.operation());
+// 			return result;
+// 		}
+
+// 		template<class Expr>
+// 		inline static auto eval(const Unary<Expr, Sqrt> &expr, const Context &ctx) -> typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type
+// 		{
+// 			typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type result;
+// 			apply_unary_transform(eval(expr.expr(), ctx), result, expr.operation());
+// 			return result;
+// 		}
+
+// 		template<class Expr, typename T>
+// 		inline static auto eval(const Unary<Expr, Reciprocal<T> > &expr, const Context &ctx) -> typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type
+// 		{
+// 			typename std::remove_reference< decltype(eval(expr.expr(), ctx)) >::type result;
+
+// 			auto &&in = eval(expr.expr(), ctx);
+// 			result.resize(in.size());
+
+// 			auto val = eval(expr.operation().numerator(), ctx);
+// 			for(uint i = 0; i < in.size(); ++i) {
+// 				result[i] = val/in[i];
+// 			}
+
+// 			return result;
+// 		}
+
+// 		inline static double eval(const double value, const Context &)
+// 		{
+// 			return value;
+// 		}
+
+// 		inline static int eval(const int value, const Context &)
+// 		{
+// 			return value;
+// 		}
+
+// 		inline static double eval(const float value, const Context &)
+// 		{
+// 			return value;
+// 		}
+
+// 		// template<class Tensor>
+// 		inline static const double eval(const BlockVar<double> &value, const Context &ctx)
+// 		{
+// 			return value.get(ctx.block_id);
+// 		}
+
+// 		inline static const DenseMatrixT & eval(const BlockVar<LMDenseMatrix> &value, const Context &ctx)
+// 		{
+// 			return raw_type(value.get(ctx.block_id));
+// 		}
+
+// 		// template<class Fun, typename T>
+// 		// inline static std::vector<libMesh::Real> eval(const FunctionCoefficient<Fun, T, 0> &expr, const Context &ctx)
+
+// 		// template<typename T, int Order>
+// 		// inline static const T eval(const BlockVar<ConstantCoefficient<T, Order> > &var, const Context &ctx)
+// 		// {
+// 		// 	return eval(var.get(ctx.block_id), ctx);
+// 		// }
+
+// 		template<typename Fun, typename T>
+// 		inline static const std::vector<libMesh::Real> eval(const BlockVar<FunctionCoefficient<Fun, T, 0> > &var, const Context &ctx)
+// 		{
+// 			return eval(var.get(ctx.block_id), ctx);
+// 		}
+
+// 		// template<class Tensor>
+// 		// inline static auto eval(const BlockVar<Tensor> &value, const Context &ctx) -> decltype(eval(value.get(ctx.block_id)))
+// 		// {
+// 		// 	return eval(value.get(ctx.block_id));
+// 		// }
+
+// 		template<class Real>
+// 		inline static const Real eval(const Number<Real> &value, const Context &ctx)
+// 		{
+// 			return value;
+// 		}
+
+
+// 		template<class Operation>
+// 		inline static void apply_unary_transform(const std::vector<libMesh::Real> &in, std::vector<libMesh::Real> &out, Operation &op)
+// 		{
+// 			out.resize(in.size());
+// 			for(uint i = 0; i < in.size(); ++i) {
+// 				out[i] = op.template apply<libMesh::Real>(in[i]);
+// 			}
+// 		}
+
+// 		template<class Left, class Right>
+// 		inline static std::vector< std::vector<libMesh::FEBase::OutputGradient> > eval(
+// 																					   const Multiply<Left, Right> &expr, const Context &ctx)
+// 		{
+// 			auto && left  = eval(expr.left(), ctx);
+// 			auto && right = eval(expr.right(), ctx);
+
+// 			std::vector< std::vector<libMesh::FEBase::OutputGradient> > result(right.size());
+// 			for(uint i = 0; i < right.size(); ++i) {
+// 				result[i].resize(right[i].size());
+
+// 				for(uint j = 0; j < right[i].size(); ++j) {
+// 					mult_at_quad_point(j, left, right[i][j], result[i][j]);
+// 				}
+// 			}
+
+// 			return result;
+// 		}
+
+// 		template<class Left, int ROWS, int COLS>
+// 		inline static std::vector< std::vector<DenseVectorT> > eval(
+// 																	const Multiply<Left, MatrixFE<LibMeshFEFunction, ROWS, COLS> > &expr,
+// 																	const Context &ctx)
+// 		{
+// 			auto && left  = eval(expr.left(), ctx);
+// 			auto && right = eval(expr.right(), ctx);
+
+// 			std::vector< std::vector<DenseVectorT> > result(right.size());
+
+// 			for(uint i = 0; i < right.size(); ++i) {
+// 				result[i].resize(right[i].size());
+
+// 				for(uint j = 0; j < right[i].size(); ++j) {
+// 					mult_at_quad_point(j, left, right[i][j], result[i][j]);
+// 				}
+// 			}
+
+// 			return result;
+// 		}
+
+
+// 		template<class Left>
+// 		inline static std::vector< std::vector<libMesh::FEBase::OutputGradient> > eval(
+// 																					   const Multiply<Left,
+// 																					   Gradient<LibMeshFEFunction>
+// 																					   > &expr, const Context &ctx)
+// 		{
+// 			auto && left  = eval(expr.left(), ctx);
+// 			auto && right = eval(expr.right(), ctx);
+
+// 			std::vector< std::vector<libMesh::FEBase::OutputGradient> > result(right.size());
+// 			for(uint i = 0; i < right.size(); ++i) {
+// 				result[i].resize(right[i].size());
+
+// 				for(uint j = 0; j < right[i].size(); ++j) {
+// 					mult_at_quad_point(j, left, right[i][j], result[i][j]);
+// 				}
+// 			}
+
+// 			return result;
+// 		}
+
+// 		inline static void mult_at_quad_point(const SizeType quad_index,
+// 											  const DenseMatrixT &mat,
+// 											  const libMesh::FEBase::OutputGradient &v,
+// 											  libMesh::FEBase::OutputGradient &result)
+// 		{
+// 			for(uint i = 0; i < mat.m(); ++i) {
+// 				result(i) = 0;
+// 				for(uint j = 0; j < mat.n(); ++j) {
+// 					result(i) += mat(i, j) * v(j);
+// 				}
+// 			}
+// 		}
+
+// 		inline static void mult_at_quad_point(const SizeType quad_index,
+// 											  const DenseMatrixT &mat,
+// 											  const DenseVectorT &v,
+// 											  DenseVectorT &result)
+// 		{
+// 			mat.vector_mult(result, v);
+// 		}
+
+// 		inline static void mult_at_quad_point(const SizeType quad_index,
+// 											  const std::vector<libMesh::Real> &coeff,
+// 											  const libMesh::FEBase::OutputGradient &v,
+// 											  libMesh::FEBase::OutputGradient &result)
+// 		{
+// 			result = v;
+// 			result *= coeff[quad_index];
+// 		}
+
+// 		template<class FE, int N>
+// 		inline static std::vector< std::vector<DenseVectorT> > eval(const VectorFE<FE, N> &fe_vec, const Context &)
+// 		{
+// 			uint n_funs = 0;
+// 			std::vector< std::vector<DenseVectorT> > ret;
+// 			for(uint k = 0; k < N; ++k) {
+// 				n_funs += fe_vec.get(k).get_fe().get_phi().size();
+// 			}
+
+// 			ret.resize(n_funs);
+
+// 			uint funs_offset = 0;
+// 			for(uint k = 0; k < N; ++k) {
+// 				const auto &fun = fe_vec.get(k).get_fe().get_phi();
+
+// 				for(uint i = 0; i < fun.size(); ++i) {
+// 					const uint i_k = funs_offset + i;
+// 					ret[i_k].resize(fun[i].size());
+
+// 					for(uint q = 0; q < ret[i_k].size(); ++q) {
+// 						ret[i_k][q].resize(N);
+// 						ret[i_k][q].zero();
+// 						ret[i_k][q](k) = fun[i][q];
+// 					}
+// 				}
+
+// 				funs_offset += fun.size();
+// 			}
+
+// 			return ret;
+// 		}
+
+
+// 		template<class FE, int ROWS, int COLS>
+// 		inline static std::vector< std::vector<DenseVectorT> > eval(const MatrixFE<FE, ROWS, COLS> &fe_vec, const Context &)
+// 		{
+// 			static const int N = ROWS * COLS;
+// 			uint n_funs = 0;
+// 			std::vector< std::vector<DenseVectorT> > ret;
+// 			for(uint k = 0; k < N; ++k) {
+// 				n_funs += fe_vec.get(k).get_fe().get_phi().size();
+// 			}
+
+// 			ret.resize(n_funs);
+
+// 			uint funs_offset = 0;
+// 			for(uint k = 0; k < N; ++k) {
+// 				const auto &fun = fe_vec.get(k).get_fe().get_phi();
+
+// 				for(uint i = 0; i < fun.size(); ++i) {
+// 					const uint i_k = funs_offset + i;
+// 					ret[i_k].resize(fun[i].size());
+
+// 					for(uint q = 0; q < ret[i_k].size(); ++q) {
+// 						ret[i_k][q].resize(N);
+// 						ret[i_k][q].zero();
+// 						ret[i_k][q](k) = fun[i][q];
+// 					}
+// 				}
+
+// 				funs_offset += fun.size();
+// 			}
+
+// 			return ret;
+// 		}
+
+
+// 		//////////////////////////////////////////////////////////////////////
+// 		//////////////////////////////////////////////////////////////////////
+
+// 		// template<class Right>
+// 		// static void assemble(
+// 		// 	const Binary<Number<typename Right::Scalar>, Right, Multiplies> &expr,
+// 		// 	libMesh::DenseMatrix<libMesh::Real> &mat,
+// 		// 	Context &ctx
+// 		// 	)
+// 		// {
+// 		// 	using namespace libMesh;
+
+// 		// 	assemble(expr.right(), mat, ctx);
+// 		// 	mat *= expr.left();
+// 		// }
+
+// 		template<class Right>
+// 		static void assemble(
+// 							 const Binary<Number<typename Right::Scalar>, Right, Multiplies> &expr,
+// 							 libMesh::DenseVector<libMesh::Real> &vec,
+// 							 Context &ctx
+// 							 )
+// 		{
+// 			using namespace libMesh;
+
+// 			assemble(expr.right(), vec, ctx);
+// 			vec *= expr.left();
+// 		}
+
+// 		template<typename T1, typename T2>
+// 		static T2 eval(const Binary<Number<T1>, BlockVar<T2>, Multiplies> &expr, Context &ctx)
+// 		{
+// 			return eval(expr.left(), ctx) * eval(expr.right(), ctx);
+// 		}
+
+// 		template<typename T1, typename T2>
+// 		static T1 eval(const Binary<BlockVar<T1>, Number<T2>, Multiplies> &expr, Context &ctx)
+// 		{
+// 			return eval(expr.left(), ctx) * eval(expr.right(), ctx);
+// 		}
+
+// 		template<typename T>
+// 		inline static std::vector< std::vector<TensorValueT> > eval(
+// 																	const Binary<Number<T>, Binary< Transposed< Gradient<LibMeshVecFEFunction> >,
+// 																	Gradient<LibMeshVecFEFunction>,
+// 																	Plus>,
+// 																	Multiplies>
+// 																	&expr, const Context &ctx)
+// 		{
+// 			using namespace libMesh;
+// 			auto &&left  = eval(expr.right().left().expr(), ctx);
+// 			auto &&right = eval(expr.right().right(), ctx);
+
+// 			std::vector< std::vector<TensorValueT> > result(right);
+
+// 			for(uint i = 0; i < left.size(); ++i) {
+// 				for(uint q = 0; q < left[i].size(); ++q) {
+// 					result[i][q] += left[i][q].transpose();
+// 					result[i][q] *= expr.left();
+// 				}
+// 			}
+
+// 			return result;
+// 		}
+
+// 		//////////////////////////////////////////////////////////////////////
+// 		//////////////////////////////////////////////////////////////////////
+
+// 		template<class Factor, class Trial, class Test>
+// 		static void assemble(
+// 							 const Binary<Factor,
+// 							 Reduce<Binary<Trial, Test, EMultiplies>, Plus>,
+// 							 Multiplies> &expr,
+// 							 libMesh::DenseMatrix<libMesh::Real> &mat,
+// 							 Context &ctx)
+// 		{
+// 			assemble(expr.right(), mat, ctx);
+// 			mat *= eval(expr.left(), ctx);
+// 		}
+
+// 		// template<typename T, class Right>
+// 		// static void assemble(
+// 		// 	const Binary<BlockVar<T>, Right, Multiplies> &expr,
+// 		// 	libMesh::DenseMatrix<libMesh::Real> &mat,
+// 		// 	Context &ctx
+// 		// 	)
+// 		// {
+// 		// 	using namespace libMesh;
+
+// 		// 	assemble(expr.right(), mat, ctx);
+// 		// 	mat *= eval(expr.left(), ctx);
+// 		// }
+
+// 		template<typename T, class Right>
+// 		static void assemble(
+// 							 const Binary<BlockVar<T>, Right, Multiplies> &expr,
+// 							 libMesh::DenseVector<libMesh::Real> &vec,
+// 							 Context &ctx
+// 							 )
+// 		{
+// 			using namespace libMesh;
+
+// 			assemble(expr.right(), vec, ctx);
+// 			vec *= eval(expr.left(), ctx);
+// 		}
+
+// 		template<typename T>
+// 		inline static std::vector< std::vector<TensorValueT> > eval(
+// 																	const Binary<BlockVar<T>, Binary< Transposed< Gradient<LibMeshVecFEFunction> >,
+// 																	Gradient<LibMeshVecFEFunction>,
+// 																	Plus>,
+// 																	Multiplies>
+// 																	&expr, const Context &ctx)
+// 		{
+// 			using namespace libMesh;
+// 			auto &&left  = eval(expr.right().left().expr(), ctx);
+// 			auto &&right = eval(expr.right().right(), ctx);
+
+// 			std::vector< std::vector<TensorValueT> > result(right);
+
+// 			auto val = eval(expr.left(), ctx);
+// 			for(uint i = 0; i < left.size(); ++i) {
+// 				for(uint q = 0; q < left[i].size(); ++q) {
+// 					result[i][q] += left[i][q].transpose();
+// 					result[i][q] *= val;
+// 				}
+// 			}
+
+// 			return result;
+// 		}
+
+
+// 		//////////////////////////////////////////////////////////////////////
+// 		//////////////////////////////////////////////////////////////////////
+
+
+
+// 		template<class Left, class Right>
+// 		static void assemble(
+// 							 const Binary<Left, Right, Plus> &expr,
+// 							 libMesh::DenseMatrix<libMesh::Real> &mat,
+// 							 Context &ctx
+// 							 )
+// 		{
+// 			using namespace libMesh;
+
+// 			assemble(expr.left(), mat, ctx);
+// 			assemble(expr.right(), mat, ctx);
+// 		}
+
+// 		template<class Left, class Right>
+// 		static void assemble(
+// 							 const Binary<Left, Right, Minus> &expr,
+// 							 libMesh::DenseMatrix<libMesh::Real> &mat,
+// 							 Context &ctx
+// 							 )
+// 		{
+// 			using namespace libMesh;
+
+// 			assemble(expr.right(), mat, ctx);
+// 			mat *= -1;
+// 			assemble(expr.left(), mat, ctx);
+// 		}
+
+// 		template<class Left, class Right>
+// 		static void assemble(
+// 							 const Binary<Left, Right, Minus> &expr,
+// 							 libMesh::DenseVector<libMesh::Real> &vec,
+// 							 Context &ctx
+// 							 )
+// 		{
+// 			using namespace libMesh;
+
+// 			assemble(expr.right(), vec, ctx);
+// 			vec *= -1;
+// 			assemble(expr.left(), vec, ctx);
+// 		}
+
+// 		template<class Left, class Right>
+// 		static void assemble(
+// 							 const Binary<Left, Right, Plus> &expr,
+// 							 libMesh::DenseVector<libMesh::Real> &vec,
+// 							 Context &ctx
+// 							 )
+// 		{
+// 			using namespace libMesh;
+
+// 			assemble(expr.left(), vec, ctx);
+// 			assemble(expr.right(), vec, ctx);
+// 		}
+
+// 		template<class Expr>
+// 		static void assemble(
+// 							 const Unary<Expr, Minus> &expr,
+// 							 libMesh::DenseMatrix<libMesh::Real> &mat,
+// 							 Context &ctx
+// 							 )
+// 		{
+// 			using namespace libMesh;
+// 			assemble(expr.expr(), mat, ctx);
+// 			mat *= -1;
+// 		}
+
+// 		template<class Expr>
+// 		static void assemble(
+// 							 const Unary<Expr, Minus> &expr,
+// 							 libMesh::DenseVector<libMesh::Real> &vec,
+// 							 Context &ctx
+// 							 )
+// 		{
+// 			using namespace libMesh;
+// 			assemble(expr.expr(), vec, ctx);
+// 			vec *= -1;
+// 		}
+
+// 		//Dot product
+// 		template<class Left, class Right>
+// 		static void assemble(
+// 							 //pattern
+// 							 const Reduce<Binary<
+// 							 Left,
+// 							 Right,
+// 							 EMultiplies>,
+// 							 Plus> &expr,
+// 							 libMesh::DenseMatrix<libMesh::Real> &mat,
+// 							 Context &ctx)
+// 		{
+// 			using namespace libMesh;
+// 			// std::cout << tree_format(expr.getClass()) << std::endl;
+
+// 			auto && trial = eval(expr.expr().left(), ctx);
+// 			auto && test  = eval(expr.expr().right(), ctx);
+// 			auto && JxW   = ctx.get_weights();
+
+// 			uint n_quad_points = JxW.size();
+
+// 			if(mat.n() == 0) {
+// 				mat.resize(test.size(), trial.size());
+// 				mat.zero();
+// 			}
+
+// 			for (uint i = 0; i < test.size(); i++) {
+// 				for (uint j = 0; j < trial.size(); j++) {
+// 					for (uint qp = 0; qp < n_quad_points; qp++) {
+// 						mat(i, j) += JxW[qp] * contract( test[i][qp], trial[j][qp] );
+
+// 					}
+// 				}
+// 			}
+// 		}
+
+// 		//entry point
+// 		template<class L, class R>
+// 		static void assemble(const Binary<L, R, Plus> &expr,
+// 							 libMesh::DenseMatrix<libMesh::Real> &mat)
+// 		{
+// 			// mat.zero();
+// 			mat.resize(0, 0);
+// 			Context ctx;
+// 			construct_context(expr.left(), ctx);
+
+// 			assemble(expr.left(), mat, ctx);
+// 			assemble(expr.right(), mat, ctx);
+// 		}
+
+// 		//entry point
+// 		template<class L, class R>
+// 		static void assemble(const Binary<L, R, Minus> &expr,
+// 							 libMesh::DenseVector<libMesh::Real> &vec)
+// 		{
+// 			vec.resize(0);
+// 			Context ctx;
+// 			construct_context(expr.left(), ctx);
+
+// 			assemble(expr.right(), vec, ctx);
+// 			vec *= -1;
+// 			assemble(expr.left(), vec, ctx);
+// 		}
+
+// 		//entry point
+// 		template<class L, class R>
+// 		static void assemble(const Binary<L, R, Minus> &expr,
+// 							 libMesh::DenseMatrix<libMesh::Real> &mat)
+// 		{
+// 			// mat.zero();
+// 			mat.resize(0, 0);
+// 			Context ctx;
+// 			construct_context(expr.left(), ctx);
+
+// 			assemble(expr.right(), mat, ctx);
+// 			mat *= -1;
+// 			assemble(expr.left(), mat, ctx);
+
+// 		}
+
+// 		//entry point
+// 		template<class L, class R>
+// 		static void assemble(const Binary<L, R, Plus> &expr,
+// 							 libMesh::DenseVector<libMesh::Real> &vec)
+// 		{
+// 			vec.resize(0);
+// 			Context ctx;
+// 			construct_context(expr.left(), ctx);
+
+// 			assemble(expr.left(), vec, ctx);
+// 			assemble(expr.right(), vec, ctx);
+// 		}
+
+
+// 		//entry point
+// 		template<class Expr>
+// 		static void assemble(const Integral<Expr> &expr,
+// 							 libMesh::DenseMatrix<libMesh::Real> &mat)
+// 		{
+// 			// mat.zero();
+
+// 			Context ctx;
+// 			construct_context(expr.expr(), ctx);
+
+// 			mat.resize(0, 0);
+// 			assemble(expr.expr(), mat, ctx);
+// 		}
+
+// 		//Dot product
+// 		template<class Expr>
+// 		static void assemble(const Integral<Expr> &expr,
+// 							 libMesh::DenseMatrix<libMesh::Real> &mat,
+// 							 Context &ctx)
+// 		{
+
+// 			if(expr.has_block_id() && ctx.block_id != expr.block_id()) {
+// 				return;
+// 			}
+
+// 			assemble(expr.expr(), mat, ctx);
+// 		}
+
+// 		//Dot product
+// 		template<class Expr>
+// 		static void assemble(const Integral<Expr> &expr,
+// 							 libMesh::DenseVector<libMesh::Real> &vec,
+// 							 Context &ctx)
+// 		{
+
+// 			if(expr.has_block_id() && ctx.block_id != expr.block_id()) {
+// 				return;
+// 			}
+
+// 			assemble(expr.expr(), vec, ctx);
+// 		}
+
+
+// 		//Dot product
+// 		template<class Left, class Right>
+// 		static void assemble(
+// 							 //pattern
+// 							 const Reduce<Binary<
+// 							 Gradient<Left>,
+// 							 Gradient<Right>,
+// 							 EMultiplies>,
+// 							 Plus> &expr,
+// 							 libMesh::DenseMatrix<libMesh::Real> &mat,
+// 							 Context &ctx)
+// 		{
+// 			using namespace libMesh;
+// 			typedef unsigned int uint;
+
+// 			// Context ctx;
+// 			// construct_context(expr.expr().right(), ctx);
+
+// 			// std::cout << tree_format(expr.getClass()) << std::endl;
+// 			auto && trial = eval(expr.expr().left(), ctx);
+// 			auto && test  = eval(expr.expr().right(), ctx);
+// 			auto && JxW   = ctx.get_weights();
+
+// 			uint n_quad_points = JxW.size();
+
+// 			if(mat.n() == 0) {
+// 				mat.resize(test.size(), trial.size());
+// 				mat.zero();
+// 			}
+
+// 			for (uint i = 0; i < test.size(); i++) {
+// 				for (uint j = 0; j < trial.size(); j++) {
+// 					for (uint qp = 0; qp < n_quad_points; qp++) {
+// 						mat(i, j) += JxW[qp] * ( test[i][qp].contract(trial[j][qp]) );
+
+// 					}
+// 				}
+// 			}
+// 		}
+
+// 		//////////////////////////////////////////////////////////////////////////////////////////
+
+// 		template<class Expr>
+// 		static void assemble(const Integral<Expr> &expr,
+// 							 libMesh::DenseVector<libMesh::Real> &vec)
+// 		{
+// 			// mat.zero();
+// 			vec.resize(0);
+
+// 			Context ctx;
+// 			construct_context(expr.expr(), ctx);
+// 			assemble(expr.expr(), vec, ctx);
+// 		}
+
+
+// 		template<typename Left, typename Right>
+// 		inline static libMesh::Real  contract(const Left &left, const Right &right)
+// 		{
+// 			return left * right;
+// 		}
+
+// 		inline static libMesh::Real contract(const TensorValueT &left, const TensorValueT &right)
+// 		{
+// 			return left.contract(right);
+// 		}
+
+// 		inline static libMesh::Real contract(const DenseVectorT &left, const TensorValueT &right)
+// 		{
+// 			return contract(right, left);
+// 		}
+
+
+// 		inline static libMesh::Real contract(const TensorValueT &left, const DenseVectorT &right)
+// 		{
+// 			using std::sqrt;
+// 			uint n = sqrt(right.size());
+// 			assert(n*n == right.size());
+
+// 			libMesh::Real ret = 0.0;
+
+// 			uint index = 0;
+// 			for(uint i = 0; i < n; ++i) {
+// 				for(uint j = 0; j < n; ++j) {
+// 					ret += left(i, j) * right(index++);
+// 				}
+// 			}
+
+// 			return ret;
+// 		}
+
+
+// 		inline static auto contract(const DenseVectorT &left, const DenseVectorT &right) -> decltype(left.dot(right))
+// 		{
+// 			return left.dot(right);
+// 		}
+
+// 		// inline static libMesh::Real contract(const DenseVectorT &left, const TensorValueT &right)
+// 		// {
+// 		// 	return 0;
+// 		// }
+
+// 		inline static libMesh::Real contract(const DenseVectorT &left, const libMesh::VectorValue<libMesh::Real> &right)
+// 		{
+// 			libMesh::Real result = 0;
+
+// 			for(uint i = 0; i < left.size(); ++i) {
+// 				result += left(i) * right(i);
+// 			}
+
+// 			return result;
+// 		}
+
+// 		inline static libMesh::Real contract(const libMesh::VectorValue<libMesh::Real> &left, const DenseVectorT &right)
+// 		{
+// 			libMesh::Real result = 0;
+
+// 			for(uint i = 0; i < right.size(); ++i) {
+// 				result += left(i) * right(i);
+// 			}
+
+// 			return result;
+// 		}
+
+
+// 		//Dot product
+// 		template<class Left, class Right>
+// 		static void assemble(
+// 							 //pattern
+// 							 const Reduce<Binary<
+// 							 Left,
+// 							 Right,
+// 							 EMultiplies>,
+// 							 Plus> &expr,
+// 							 libMesh::DenseVector<libMesh::Real> &vec,
+// 							 Context &ctx)
+// 		{
+// 			using namespace libMesh;
+
+// 			// Context ctx;
+// 			// construct_context(expr.expr().right(), ctx);
+
+// 			auto && coef = eval(expr.expr().left(),  ctx);
+// 			auto && test = eval(expr.expr().right(), ctx);
+// 			auto && JxW  = ctx.get_weights();
+
+// 			uint n_quad_points = JxW.size();
+
+// 			if(vec.size() == 0) {
+// 				vec.resize(test.size());
+// 				vec.zero();
+// 			}
+
+// 			for (uint i = 0; i < test.size(); i++) {
+// 				for (uint qp = 0; qp < n_quad_points; qp++) {
+// 					vec(i) += JxW[qp] *  contract(test[i][qp], coef[qp]);
+// 				}
+// 			}
+// 		}
+
+// 		template<typename T, int Order>
+// 		inline static const ConstantCoefficient<T, Order> &eval(const ConstantCoefficient<T, Order> &expr, const Context &ctx){
+// 			return expr;
+// 		}
+
+// 		template<class Fun, typename T>
+// 		inline static std::vector<libMesh::Real> eval(const FunctionCoefficient<Fun, T, 0> &expr, const Context &ctx) {
+// 			assert(ctx.points);
+// 			std::vector<libMesh::Real> result(ctx.points->size());
+
+// 			for(uint i = 0; i < ctx.points->size(); ++i) {
+// 				expr.eval(ctx.points->at(i), result[i]);
+// 			}
+
+// 			return result;
+// 		}
+
+
+
+// 		template<int ROWS, int COLS>
+// 		static void collect_indices(libMesh::Elem *el, const MatrixFE<LibMeshFEFunction, ROWS, COLS> &fe, std::vector<libMesh::dof_id_type> &indices)
+// 		{
+// 			using namespace libMesh;
+// 			std::vector<dof_id_type> temp;
+// 			for(uint i = 0; i < ROWS*COLS; ++i) {
+// 				auto &var = fe.get(i);
+// 				var.dof_map().dof_indices(el, temp, var.var_num());
+// 				indices.insert(indices.end(), temp.begin(), temp.end());
+// 			}
+// 		}
+
+
+// 		template<int ROWS, int COLS, class Matrix>
+// 		static void constrain_mixed_matrix_and_add(libMesh::Elem *el, DenseMatrixT &diag_block, DenseMatrixT &off_diag_block,
+// 												   LibMeshVecFEFunction &u, MatrixFE<LibMeshFEFunction, ROWS, COLS> &sigma,
+// 												   Matrix &mat
+// 												   )
+// 		{
+// 			using namespace libMesh;
+// 			std::vector<dof_id_type> dof_u, dof_sigma;
+// 			u.dof_map().dof_indices(el, dof_u, u.var_num());
+
+// 			collect_indices(el, sigma, dof_sigma);
+
+// 			u.dof_map().constrain_element_matrix(diag_block, dof_u, dof_u);
+// 			u.dof_map().constrain_element_matrix(off_diag_block, dof_u, dof_sigma);
+
+// 			add_matrix(diag_block, dof_u, dof_u, mat);
+// 			add_matrix(off_diag_block, dof_u, dof_sigma, mat);
+// 		}
+
+// 		template<int ROWS, int COLS, class Matrix>
+// 		static void mixed_matrix_and_add(libMesh::Elem *el, DenseMatrixT &diag_block, DenseMatrixT &off_diag_block,
+// 										 LibMeshVecFEFunction &u, MatrixFE<LibMeshFEFunction, ROWS, COLS> &sigma,
+// 										 Matrix &mat
+// 										 )
+// 		{
+// 			using namespace libMesh;
+// 			std::vector<dof_id_type> dof_u, dof_sigma;
+// 			u.dof_map().dof_indices(el, dof_u, u.var_num());
+
+// 			collect_indices(el, sigma, dof_sigma);
+
+// 			add_matrix(diag_block, dof_u, dof_u, mat);
+// 			add_matrix(off_diag_block, dof_u, dof_sigma, mat);
+// 		}
+
+
+// 		template<int ROWS, int COLS, class Matrix>
+// 		static void mixed_matrix_add(libMesh::Elem *el, DenseMatrixT &off_diag_block, DenseMatrixT &diag_block,
+// 									 MatrixFE<LibMeshFEFunction, ROWS, COLS> &sigma, LibMeshVecFEFunction &u,
+// 									 Matrix &mat
+// 									 )
+// 		{
+// 			using namespace libMesh;
+// 			std::vector<dof_id_type> dof_u, dof_sigma;
+// 			u.dof_map().dof_indices(el, dof_u, u.var_num());
+
+// 			collect_indices(el, sigma, dof_sigma);
+
+// 			add_matrix(diag_block, dof_sigma, dof_sigma, mat);
+// 			add_matrix(off_diag_block, dof_sigma, dof_u, mat);
+// 		}
+
+// 		template<int ROWS, int COLS, class Vector>
+// 		void mixed_vector_add(libMesh::Elem *el, const DenseVectorT &vec_1, const DenseVectorT &vec_2,
+// 							  LibMeshVecFEFunction &u,
+// 							  MatrixFE<LibMeshFEFunction, ROWS, COLS> &sigma,
+// 							  Vector &vec)
+// 		{
+// 			using namespace libMesh;
+// 			std::vector<dof_id_type> dof_u, dof_sigma;
+// 			u.dof_map().dof_indices(el, dof_u, u.var_num());
+
+// 			collect_indices(el, sigma, dof_sigma);
+// 			add_vector(vec_1, dof_u, vec);
+// 			add_vector(vec_2, dof_sigma, vec);
+// 		}
+// 	};
+
+// 	template<class Expr, class ElementMatrix, class DofIndexTrial, class DofIndexTest>
+// 	void add_matrix(const ElementMatrix &el_mat, const DofIndexTrial &dof_test, const DofIndexTest &dof_trial, Wrapper<Expr, 2> &expr)
+// 	{
+// 		// std::cout << "el_mat: " << el_mat.m() << " x " << el_mat.n() << std::endl;
+// 		// std::cout << "dofs: " << dof_test.size() << " x " << dof_trial.size() << std::endl;
+// 		int i = 0, j;
+// 		for(auto test : dof_test) {
+// 			j = 0;
+// 			for(auto trial : dof_trial) {
+// 				expr.add(test, trial, el_mat(i, j));
+// 				++j;
+// 			}
+
+// 			++i;
+// 		}
+// 	}
+
+// 	template<class Expr, class ElementVector, class DofIndexTest>
+// 	void add_vector(const ElementVector &el_vec, const DofIndexTest &dof_test, Wrapper<Expr, 1> &expr)
+// 	{
+// 		int i = 0;
+// 		for(auto test : dof_test) {
+// 			expr.add(test, el_vec(i));
+// 			++i;
+// 		}
+// 	}
+
+
+
+
+// 	template<class TrialFunction, class TestFunction, class Expr, class Matrix>
+// 	void assemble(TrialFunction &trial, TestFunction &test,
+// 				  const Expression<Expr> &expr, Wrapper<Matrix, 2> &result,
+// 				  const bool apply_constraints = true)
+// 	{
+// 		using namespace libMesh;
+// 		LibMeshBackend backend;
+
+// 		auto e_begin = test.mesh().active_local_elements_begin();
+// 		auto e_end   = test.mesh().active_local_elements_end();
+
+// 		//FIXME
+// 		int nnz_x_row = 30;
+// 		result = local_sparse(test.dof_map().n_local_dofs(), trial.dof_map().n_local_dofs(), nnz_x_row);
+
+// 		std::vector<dof_id_type> dof_indices_trial;
+// 		std::vector<dof_id_type> dof_indices_test;
+
+// 		Write< Wrapper<Matrix, 2> > w(result);
+
+// 		DenseMatrix<Real> mat;
+// 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+// 			trial.set_element(**e_it);
+// 			test.set_element(**e_it);
+// 			backend.assemble(expr.derived(), mat);
+// 			trial.dof_map().dof_indices(*e_it, dof_indices_trial, trial.var_num());
+// 			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
+
+// 			if(apply_constraints) {
+// 				test.dof_map().constrain_element_matrix(mat, dof_indices_test, dof_indices_trial);
+// 			}
+
+// 			add_matrix(mat, dof_indices_test, dof_indices_trial, result);
+// 		}
+// 	}
+
+// 	template<class TestFunction, class Expr, class Vector>
+// 	void assemble(TestFunction &test,
+// 				  const Expression<Expr> &expr,
+// 				  Wrapper<Vector, 1> &result,
+// 				  const bool apply_constraints = true)
+// 	{
+// 		using namespace libMesh;
+// 		LibMeshBackend backend;
+
+// 		auto e_begin = test.mesh().active_local_elements_begin();
+// 		auto e_end   = test.mesh().active_local_elements_end();
+// 		result       = local_zeros(test.dof_map().n_local_dofs());
+
+
+// 		std::vector<dof_id_type> dof_indices_test;
+
+// 		Write< Wrapper<Vector, 1> > w(result);
+
+// 		DenseVector<Real> vec;
+// 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+// 			test.set_element(**e_it);
+// 			backend.assemble(expr.derived(), vec);
+// 			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
+
+// 			if(apply_constraints) {
+// 				test.dof_map().constrain_element_vector(vec, dof_indices_test);
+// 			}
+
+// 			add_vector(vec, dof_indices_test, result);
+// 		}
+// 	}
+
+
+// 	template<class BilinearForm, class LinearForm>
+// 	void local_assemble(const Expression<BilinearForm> &b_form, const Expression<LinearForm> &l_form,
+// 						libMesh::DenseMatrix<libMesh::Real> &mat, libMesh::DenseVector<libMesh::Real> &vec) {
+
+// 		LibMeshBackend backend;
+// 		backend.assemble(b_form.derived(), mat);
+// 		backend.assemble(l_form.derived(), vec);
+// 	}
+
+// 	template<class BilinearForm_11, class BilinearForm_12, class LinearForm_1,
+// 	class BilinearForm_21, class BilinearForm_22, class LinearForm_2>
+// 	void block_local_assemble(const Expression<BilinearForm_11> &b_form_11,
+// 							  const Expression<BilinearForm_12> &b_form_12,
+// 							  const Expression<LinearForm_1> 	&l_form_1,
+// 							  const Expression<BilinearForm_21> &b_form_21,
+// 							  const Expression<BilinearForm_22> &b_form_22,
+// 							  const Expression<LinearForm_2> 	&l_form_2,
+// 							  libMesh::DenseMatrix<libMesh::Real> &mat_11,
+// 							  libMesh::DenseMatrix<libMesh::Real> &mat_12,
+// 							  libMesh::DenseVector<libMesh::Real> &vec_1,
+// 							  libMesh::DenseMatrix<libMesh::Real> &mat_21,
+// 							  libMesh::DenseMatrix<libMesh::Real> &mat_22,
+// 							  libMesh::DenseVector<libMesh::Real> &vec_2
+// 							  ) {
+
+// 		LibMeshBackend backend;
+// 		backend.assemble(b_form_11.derived(), mat_11);
+// 		backend.assemble(b_form_21.derived(), mat_12);
+// 		backend.assemble(b_form_12.derived(), mat_21);
+// 		backend.assemble(b_form_22.derived(), mat_22);
+// 		backend.assemble(l_form_1.derived(),  vec_1);
+// 		backend.assemble(l_form_2.derived(),  vec_2);
+// 	}
+
+
+// 	template<class TrialFunction, class TestFunction, class Expr, class Matrix>
+// 	void assemble(TrialFunction &trial, TestFunction &test,
+// 				  const Expression<Expr> &expr, Matrix &result, const bool apply_constraints = true)
+// 	{
+// 		using namespace libMesh;
+// 		LibMeshBackend backend;
+
+// 		auto e_begin = test.mesh().active_local_elements_begin();
+// 		auto e_end   = test.mesh().active_local_elements_end();
+
+// 		std::vector<dof_id_type> dof_indices_trial;
+// 		std::vector<dof_id_type> dof_indices_test;
+
+// 		DenseMatrix<Real> mat;
+// 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+// 			trial.set_element(**e_it);
+// 			test.set_element(**e_it);
+// 			backend.assemble(expr.derived(), mat);
+// 			trial.dof_map().dof_indices(*e_it, dof_indices_trial, trial.var_num());
+// 			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
+
+// 			// std::cout << "el: " << std::distance(e_begin, e_it) << std::endl;
+// 			// mat.print(std::cout);
+// 			// std::cout << "======================" << std::endl;
+
+// 			if(apply_constraints) {
+// 				test.dof_map().constrain_element_matrix(mat, dof_indices_test, dof_indices_trial);
+// 			}
+
+// 			add_matrix(mat, dof_indices_test, dof_indices_trial, result);
+// 		}
+// 	}
+
+// 	template<class TestFunction, class Expr>
+// 	void assemble(TestFunction &test,
+// 				  const Expression<Expr> &expr,
+// 				  libMesh::NumericVector<libMesh::Real> &result,
+// 				  const bool apply_constraints = true)
+// 	{
+// 		using namespace libMesh;
+// 		LibMeshBackend backend;
+
+// 		auto e_begin = test.mesh().active_local_elements_begin();
+// 		auto e_end   = test.mesh().active_local_elements_end();
+
+// 		std::vector<dof_id_type> dof_indices_test;
+// 		DenseVector<Real> vec;
+// 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+// 			test.set_element(**e_it);
+// 			backend.assemble(expr.derived(), vec);
+// 			test.dof_map().dof_indices(*e_it, dof_indices_test, test.var_num());
+
+// 			if(apply_constraints) {
+// 				test.dof_map().constrain_element_vector(vec, dof_indices_test);
+// 			}
+
+// 			add_vector(vec, dof_indices_test, result);
+// 		}
+// 	}
+
+
+
+// 	template<class TrialFunction, class TestFunction, class BilinearForm, class LinearForm, class Matrix, class Vector>
+// 	void assemble(TrialFunction &trial,
+// 				  TestFunction  &test,
+// 				  const Expression<BilinearForm> &bilinear_form,
+// 				  const Expression<LinearForm>   &linear_form,
+// 				  Matrix &mat,
+// 				  Vector &rhs,
+// 				  const bool apply_constraints = true)
+// 	{
+// 		using namespace libMesh;
+// 		LibMeshBackend backend;
+
+// 		auto e_begin = test.mesh().active_local_elements_begin();
+// 		auto e_end   = test.mesh().active_local_elements_end();
+
+// 		std::vector<dof_id_type> dof_indices_trial;
+// 		std::vector<dof_id_type> dof_indices_test;
+
+// 		DenseMatrix<Real> el_mat;
+// 		DenseVector<Real> el_vec;
+// 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+// 			trial.set_element(**e_it);
+// 			test.set_element(**e_it);
+
+// 			backend.assemble(bilinear_form.derived(), el_mat);
+// 			backend.assemble(linear_form.derived(), 	el_vec);
+
+// 			trial.dof_map().dof_indices(*e_it, dof_indices_trial, trial.var_num());
+// 			test.dof_map().dof_indices(*e_it,  dof_indices_test,  test.var_num());
+
+// 			if(apply_constraints) {
+// 				test.dof_map().heterogenously_constrain_element_matrix_and_vector(el_mat, el_vec, dof_indices_test);
+// 			}
+
+// 			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
+// 			add_vector(el_vec, dof_indices_test, rhs);
+// 		}
+// 	}
+
+
+// 	template<int N>
+// 	static void collect_indices(libMesh::Elem *el, const VectorFE<LibMeshFEFunction, N> &fe, std::vector<libMesh::dof_id_type> &indices)
+// 	{
+// 		using namespace libMesh;
+// 		std::vector<dof_id_type> temp;
+// 		for(uint i = 0; i < N; ++i) {
+// 			auto &var = fe.get(i);
+// 			temp.clear();
+// 			var.dof_map().dof_indices(el, temp, var.var_num());
+// 			indices.insert(indices.end(), temp.begin(), temp.end());
+// 		}
+// 	}
+
+// 	template<class TrialFunction,
+// 	class TestFunction,
+// 	int NTrial,
+// 	int NTest,
+// 	class BilinearForm,
+// 	class LinearForm,
+// 	class Matrix,
+// 	class Vector>
+// 	void assemble(
+// 				  VectorFE<TrialFunction, NTrial> &trial,
+// 				  VectorFE<TestFunction, NTest>  &test,
+// 				  const Expression<BilinearForm> &bilinear_form,
+// 				  const Expression<LinearForm>   &linear_form,
+// 				  Matrix &mat,
+// 				  Vector &rhs,
+// 				  const bool apply_constraints = true)
+// 	{
+// 		using namespace libMesh;
+// 		LibMeshBackend backend;
+
+// 		auto e_begin = test.get(0).mesh().active_local_elements_begin();
+// 		auto e_end   = test.get(0).mesh().active_local_elements_end();
+
+// 		std::vector<dof_id_type> dof_indices_trial;
+// 		std::vector<dof_id_type> dof_indices_test;
+
+// 		DenseMatrix<Real> el_mat;
+// 		DenseVector<Real> el_vec;
+// 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+// 			for(int i = 0; i < NTrial; ++i) {
+// 				trial.get(i).set_element(**e_it);
+// 			}
+
+// 			for(int i = 0; i < NTest; ++i) {
+// 				test.get(i).set_element(**e_it);
+// 			}
+
+// 			backend.assemble(bilinear_form.derived(), el_mat);
+// 			backend.assemble(linear_form.derived(), 	el_vec);
+
+// 			dof_indices_test.clear();
+// 			dof_indices_trial.clear();
+
+// 			collect_indices(*e_it, trial, dof_indices_trial);
+// 			collect_indices(*e_it, test,  dof_indices_test);
+
+// 			if(apply_constraints) {
+// 				test.get(0).dof_map().heterogenously_constrain_element_matrix_and_vector(el_mat, el_vec, dof_indices_test);
+// 			}
+
+// 			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
+// 			add_vector(el_vec, dof_indices_test, rhs);
+// 		}
+// 	}
+
+// 	template<class TrialFunction,
+// 	class TestFunction,
+// 	int NTrial,
+// 	int NTest,
+// 	class BilinearForm>
+// 	void assemble(
+// 				  VectorFE<TrialFunction, NTrial> &trial,
+// 				  VectorFE<TestFunction, NTest>  &test,
+// 				  const Expression<BilinearForm> &bilinear_form,
+// 				  DSMatrixd &mat,
+// 				  const bool apply_constraints)
+// 	{
+// 		using namespace libMesh;
+// 		LibMeshBackend backend;
+
+// 		assert(!apply_constraints);
+
+// 		auto e_begin = test.get(0).mesh().active_local_elements_begin();
+// 		auto e_end   = test.get(0).mesh().active_local_elements_end();
+
+// 		std::vector<dof_id_type> dof_indices_trial;
+// 		std::vector<dof_id_type> dof_indices_test;
+
+// 		const SizeType local_rows = test.get(0).dof_map().n_local_dofs();
+// 		const SizeType local_cols = trial.get(0).dof_map().n_local_dofs();
+// 		mat = local_sparse(local_rows, local_cols, 30);
+
+// 		Write<DSMatrixd> w_m(mat);
+
+// 		DenseMatrix<Real> el_mat;
+// 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+// 			for(int i = 0; i < NTrial; ++i) {
+// 				trial.get(i).set_element(**e_it);
+// 			}
+
+// 			for(int i = 0; i < NTest; ++i) {
+// 				test.get(i).set_element(**e_it);
+// 			}
+
+// 			backend.assemble(bilinear_form.derived(), el_mat);
+
+
+// 			dof_indices_test.clear();
+// 			dof_indices_trial.clear();
+
+// 			collect_indices(*e_it, trial, dof_indices_trial);
+// 			collect_indices(*e_it, test,  dof_indices_test);
+
+// 			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
+// 		}
+// 	}
+
+// 	template<class TrialFunction,
+// 	class TestFunction,
+// 	int NTrial,
+// 	int NTest,
+// 	class BilinearForm,
+// 	typename T>
+// 	void assemble_no_constraints(
+// 								 VectorFE<TrialFunction, NTrial> &trial,
+// 								 VectorFE<TestFunction, NTest>  &test,
+// 								 const Expression<BilinearForm> &bilinear_form,
+// 								 libMesh::SparseMatrix<T> &mat)
+// 	{
+// 		using namespace libMesh;
+// 		LibMeshBackend backend;
+
+// 		auto e_begin = test.get(0).mesh().active_local_elements_begin();
+// 		auto e_end   = test.get(0).mesh().active_local_elements_end();
+
+// 		std::vector<dof_id_type> dof_indices_trial;
+// 		std::vector<dof_id_type> dof_indices_test;
+
+// 		const SizeType local_rows = test.get(0).dof_map().n_local_dofs();
+// 		const SizeType local_cols = trial.get(0).dof_map().n_local_dofs();
+
+// 		DenseMatrix<Real> el_mat;
+// 		for(auto e_it = e_begin; e_it != e_end; ++e_it) {
+// 			for(int i = 0; i < NTrial; ++i) {
+// 				trial.get(i).set_element(**e_it);
+// 			}
+
+// 			for(int i = 0; i < NTest; ++i) {
+// 				test.get(i).set_element(**e_it);
+// 			}
+
+// 			backend.assemble(bilinear_form.derived(), el_mat);
+
+
+// 			dof_indices_test.clear();
+// 			dof_indices_trial.clear();
+
+// 			collect_indices(*e_it, trial, dof_indices_trial);
+// 			collect_indices(*e_it, test,  dof_indices_test);
+
+// 			add_matrix(el_mat, dof_indices_test, dof_indices_trial, mat);
+// 		}
+// 	}
+
+
 	inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, DVectord &utopia_vec)
 	{
 		using namespace libMesh;
 		Vec p_vec = cast_ptr< libMesh::PetscVector<libMesh::Number> *>(&lm_vec)->vec();
 		utopia::convert(p_vec, utopia_vec);
 	}
-	
+
 	inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, DSMatrixd &utopia_mat) {
 		using namespace libMesh;
-		
+
 		Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
 		utopia::convert(p_mat, utopia_mat);
 	}
-	
+
 	inline void convert(DSMatrixd &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
 		using namespace libMesh;
 		using namespace utopia;
-		
-		
+
+
 		//Does not work
 		// Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
 		// utopia::convert(utopia_mat, p_mat);
-		
+
 		each_read(utopia_mat, [&lm_mat](const SizeType i, const SizeType j, const double value) -> void {
 			lm_mat.set(i, j, value);
 		});
 	}
-	
+
 	inline void convert(DVectord &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec)
 	{
 		{
@@ -2492,34 +2492,34 @@ namespace utopia {
 			}
 		}
 	}
-	
+
 	template<class Space>
 	inline static bool has_constrained_dofs(const Space &space, const libMesh::Elem &elem)
 	{
 		std::vector<libMesh::dof_id_type> indices;
 		space.dof_map().dof_indices(&elem, indices, space.var_num());
-		
+
 		for(auto i : indices) {
 			if(space.dof_map().is_constrained_dof(i)) {
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
-	
-	
+
+
 	inline std::ostream &logger()
 	{
 		return std::cout;
 	}
-	
-	
-	
+
+
+
 	inline bool is_symmetric(const libMesh::DenseMatrix<libMesh::Real> &mat)
 	{
 		if(mat.m() != mat.n()) return false;
-		
+
 		for(int i = 0; i < mat.m(); ++i) {
 			for(int j = i+1; j < mat.n(); ++j) {
 				if(fabs(mat(i, j) - mat(j, i)) > 1e-14) {
@@ -2527,15 +2527,15 @@ namespace utopia {
 				}
 			}
 		}
-		
+
 		return true;
 	}
-	
+
 	inline bool is_approx_equal(const libMesh::DenseMatrix<libMesh::Real> &left, const libMesh::DenseMatrix<libMesh::Real> &right)
 	{
 		if(left.m() != right.m()) return false;
 		if(left.n() != right.n()) return false;
-		
+
 		for(int i = 0; i < left.m(); ++i) {
 			for(int j = i+1; j < left.n(); ++j) {
 				if(fabs(left(i, j) - right(i, j)) > 1e-14) {
@@ -2543,15 +2543,15 @@ namespace utopia {
 				}
 			}
 		}
-		
+
 		return true;
 	}
-	
+
 	inline bool is_approx_equal_tr(const libMesh::DenseMatrix<libMesh::Real> &left, const libMesh::DenseMatrix<libMesh::Real> &right)
 	{
 		if(left.m() != right.n()) return false;
 		if(left.n() != right.m()) return false;
-		
+
 		for(int i = 0; i < left.m(); ++i) {
 			for(int j = i+1; j < left.n(); ++j) {
 				if(fabs(left(i, j) - right(j, i)) > 1e-14) {
@@ -2559,11 +2559,11 @@ namespace utopia {
 				}
 			}
 		}
-		
+
 		return true;
 	}
-	
-	
+
+
 }
 
 #endif //UTOPIA_LIB_MESH_BACKEND_HPP

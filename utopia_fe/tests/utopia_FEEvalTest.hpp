@@ -1,5 +1,5 @@
 #ifndef UTOPIA_FE_EVAL_TEST_HPP
-#define UTOPIA_FE_EVAL_TEST_HPP 
+#define UTOPIA_FE_EVAL_TEST_HPP
 
 namespace libMesh {
 	class LibMeshInit;

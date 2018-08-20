@@ -12,6 +12,8 @@
 #include "libmesh/parallel_mesh.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/linear_implicit_system.h"
+#include "libmesh/nemesis_io.h"
+#include "libmesh/exodusII_io.h"
 
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_Equations.hpp"

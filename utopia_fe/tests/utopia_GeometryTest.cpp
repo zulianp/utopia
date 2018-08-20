@@ -24,7 +24,7 @@ namespace utopia {
 		mesh->read("../data/stent2_101.e");
 		auto dim = mesh->mesh_dimension();
 
-		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
+		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("geo-test");
 
 		////////////////////////////////////////////
@@ -36,7 +36,7 @@ namespace utopia {
 		if(dim == 3) {
 			V *= LibMeshFunctionSpace(equation_systems, libMesh::LAGRANGE, elem_order, "n_z");
 		}
-		
+
 		Vx.initialize();
 
 		DVectord is_normal_component;

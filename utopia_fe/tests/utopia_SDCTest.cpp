@@ -48,7 +48,7 @@ namespace utopia {
 					   const Vector &u0,
 					   std::vector<Vector> &solutions
 					   )
-		{	
+		{
 			auto s = local_size(u0);
 
 			const std::size_t N = quad_points.size();
@@ -84,8 +84,8 @@ namespace utopia {
 
 	void run_sdc_test(libMesh::LibMeshInit &init)
 	{
-		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
-		
+		auto lm_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+
 		const unsigned int n = 10;
 		libMesh::MeshTools::Generation::build_square(*lm_mesh,
 			n, n,
@@ -110,7 +110,7 @@ namespace utopia {
 		auto var_u = interpolate(storage_u, u);
 		auto form =
 				( inner(R, v) - inner( grad(var_u), grad(v)) ) * dX;
-		
+
 		auto constr = constraints(
 						boundary_conditions(u == coeff(0.),  {1, 3}),
 						boundary_conditions(u == coeff(0.),  {0}),

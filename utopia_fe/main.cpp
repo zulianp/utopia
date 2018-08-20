@@ -62,13 +62,13 @@ int main(const int argc, char *argv[])
 		LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
 
 		std::map<std::string, std::function<void(LibMeshInit &)> > runners;
-		runners["base"] = run_base_examples;
-		runners["time_diff"] = run_time_diff_examples;
-		runners["least_squares"] = run_least_squares_examples;
-		runners["mixed_fe_space"] = run_mixed_fe_space_example;
-	    runners["biomechanics"] = run_biomechanics_example;
+		// runners["base"] = run_base_examples;
+		// runners["time_diff"] = run_time_diff_examples;
+		// runners["least_squares"] = run_least_squares_examples;
+		// runners["mixed_fe_space"] = run_mixed_fe_space_example;
+	    // runners["biomechanics"] = run_biomechanics_example;
 	    runners["geometry"] = run_geometry_test;
-	    runners["mortar"] = run_mortar_examples;
+	    // runners["mortar"] = run_mortar_examples;
 	    runners["tests"] = run_all_utopia_fe_tests;
 	    runners["smg"] = run_semigeometric_multigrid_test;
 	    runners["sdc"] = run_sdc_test;
@@ -83,14 +83,14 @@ int main(const int argc, char *argv[])
 	    runners["fe_test"] = run_fe_eval_test;
 	    runners["helm"] = run_form_least_squares_helmholtz;
 	    runners["contact_steady"] = run_steady_contact;
-	    runners["ct"] = run_contact_test;
+	    // runners["ct"] = run_contact_test;
 	    runners["coarsener_test"] = run_coarsener_test;
 	    runners["eikonal"] = run_eikonal_equation_test;
 	    runners["vol2surf"] = run_volume_to_surface_transfer_test;
 	    runners["interp"] = run_volume_interpolation_test;
 	    //benchmarks
-	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
-	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
+	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;
+	    // runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
 
 
 
