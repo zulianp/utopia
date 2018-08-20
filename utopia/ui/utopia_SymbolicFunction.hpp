@@ -10,7 +10,10 @@
 #include "utopia_Traits.hpp"
 
 namespace utopia {
-
+	/**
+	 * @brief Symbolic evaluation of strings using the tinyexpr library
+	 * supported variable names are x, y, z, t and are ordered by dimension.
+	 */
 	class SymbolicFunction : public Expression<SymbolicFunction> {
 	public:
 		static const int Order = 0;

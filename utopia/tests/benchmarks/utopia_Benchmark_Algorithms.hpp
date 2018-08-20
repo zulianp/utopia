@@ -30,12 +30,12 @@ namespace utopia {
 
 			for(SizeType i = 0; i < n_instances; ++i) {
 				const SizeType n = base_n * (i + 1);
-					
+
 				//Conjugate gradient method
 				this->register_experiment(
 					"cg_" + std::to_string(i),
 					[n]() {
-						Matrix A = local_sparse(n, n, 3); 
+						Matrix A = local_sparse(n, n, 3);
 						Vector b = local_values(n, 1.);
 						Vector x = local_values(n, 0.);
 
@@ -45,7 +45,7 @@ namespace utopia {
 						{
 							Range r = row_range(A);
 							Write<Vector> w_b(b);
-							
+
 							if(r.begin() == 0) {
 								b.set(0, 0.);
 							}
@@ -61,7 +61,7 @@ namespace utopia {
 
 						assert(approxeq(A * x, b, 1e-6));
 					}
-				);	
+				);
 
 				this->register_experiment(
 					"newton_cg_" + std::to_string(i),
@@ -95,7 +95,7 @@ namespace utopia {
 						Vector x = local_values(10 * (i+1), 1.);
 
 						TrustRegion<Matrix, Vector> trust_region;
-						trust_region.verbose(false); 
+						trust_region.verbose(false);
 
 						double mag_x0 = -1;
 						fun.value(x, mag_x0);

@@ -1,6 +1,10 @@
 #ifndef UTOPIA_LIBMESH_HPP
 #define UTOPIA_LIBMESH_HPP
 
+#include "utopia_Base.hpp"
+
+#ifdef WITH_TINY_EXPR
+
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_libmesh_AssemblyContext.hpp"
@@ -15,6 +19,8 @@
 #include "libmesh/parallel_mesh.h"
 
 namespace utopia {
+
+
 	inline ContextFunction<
 				std::vector<double>,
 				std::function<std::vector<double>(const AssemblyContext<LIBMESH_TAG> &)>
@@ -39,5 +45,7 @@ namespace utopia {
 		return ctx_fun<std::vector<double> >(f);
 	}
 }
+
+#endif //WITH_TINY_EXPR
 
 #endif //UTOPIA_LIBMESH_HPP

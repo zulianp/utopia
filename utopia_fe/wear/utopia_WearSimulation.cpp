@@ -114,19 +114,24 @@ namespace utopia {
 
                     is.read_all([this](InputStream &is) {
                         int side_set = 0, coord = 0;
-                        double value = 0;
-                        std::string expr = "0";
 
                         is.read("side", side_set);
                         is.read("coord", coord);
-                        is.read("value", expr);
-
-                        // std::cout << side_set << " " << coord << " " << value << std::endl;
 
                         auto u = trial(V[coord]);
+
+#ifdef WITH_TINY_EXPR
+                        std::string expr = "0";
+                        is.read("value", expr);
+                        auto g = symbolic(expr);
+#else
+                        double value = 0;
+                        is.read("value", value);
+                        auto g = ceoff(value);
+#endif //WITH_TINY_EXPR
+
                         init_constraints(constraints(
-                            // boundary_conditions(u == coeff(value), {side_set})
-                            boundary_conditions(u == symbolic(expr), {side_set})
+                            boundary_conditions(u == g, {side_set})
                         ));
 
                     });
@@ -145,25 +150,32 @@ namespace utopia {
 
                     int block = -1;
                     int coord = 0;
-                    // double value = 0.;
-                    std::string value;
-                    std::string type = "volume";
 
+                    std::string type = "volume";
                     is.read("block", block);
                     is.read("coord", coord);
-                    is.read("value", value);
                     is.read("type", type);
+
+#ifdef WITH_TINY_EXPR
+                    std::string value;
+                    is.read("value", value);
+                    auto f = symbolic(value);
+#else
+                    double value = 0.;
+                    is.read("value", value);
+                    auto f = coeff(value);
+#endif //WITH_TINY_EXPR
 
                     if(type == "surface") {
                         auto v = test(V[coord]);
-                        auto l_form = surface_integral(inner(symbolic(value), v), block);
+                        auto l_form = surface_integral(inner(f, v), block);
 
                         auto ff = std::make_shared<ConstantForcingFunction<DVectord>>();
                         ff->init(l_form);
                         forcing_function->add(ff);
                     } else {
                         auto v = test(V[coord]);
-                        auto l_form = integral(inner(symbolic(value), v), block);
+                        auto l_form = integral(inner(f, v), block);
 
                         auto ff = std::make_shared<ConstantForcingFunction<DVectord>>();
                         ff->init(l_form);
