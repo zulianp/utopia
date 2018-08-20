@@ -4,8 +4,8 @@
         <material>LinearElasticity</material>
         <!-- <material>NeoHookean</material> -->
 		<parameters>
-			<mu>1.</mu>
-			<lambda>1.</lambda>
+			<mu>600.</mu>
+			<lambda>600.</lambda>
 		</parameters>
 	</model>
 	<boundary-conditions>
@@ -46,7 +46,7 @@
         <entry>
             <block>2</block>
             <coord>1</coord>
-            <value>0.1</value>
+            <value>0.05</value>
         </entry>
     </forcing-functions>
     <contact>
