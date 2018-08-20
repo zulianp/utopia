@@ -46,13 +46,13 @@
         <entry>
             <block>2</block>
             <coord>1</coord>
-            <value>50.</value>
+            <value>0.1</value>
         </entry>
     </forcing-functions>
     <contact>
-        <!-- <type>steady</type> -->
-        <type>transient</type>
-        <n-transient-steps>10</n-transient-steps>
+        <type>steady</type>
+        <!-- <type>transient</type> -->
+        <!-- <n-transient-steps>10</n-transient-steps> -->
         <radius>0.9</radius>
         <pairs type="array">
             <entry>

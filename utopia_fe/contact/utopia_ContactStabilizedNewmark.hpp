@@ -46,7 +46,7 @@ namespace utopia {
 			return true;
 		}
 
-		virtual bool stress(const Vector &x, Vector &result) {
+		virtual bool stress(const Vector &x, Vector &result) override {
 			result = ((dt_*dt_*density_)/4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) - forcing_term_;
 			return true;
 		}

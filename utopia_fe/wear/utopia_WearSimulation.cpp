@@ -346,13 +346,15 @@ namespace utopia {
 
         solver->set_tol(5e-6);
         solver->set_max_outer_loops(40);
-        //HERE
-        solver->set_use_ssn(true);
 
-        solver->tao().atol(1e-8);
-        solver->tao().rtol(1e-8);
-        solver->tao().stol(1e-8);
-        solver->tao().verbose(true);
+        if(in.is_steady) {
+            solver->set_use_ssn(true);
+        } else {
+            // solver->tao().atol(1e-8);
+            // solver->tao().rtol(1e-8);
+            // solver->tao().stol(1e-8);
+            solver->tao().verbose(true);
+        }
 
         // auto ls = std::make_shared<Factorization<DSMatrixd, DVectord>>();
         // auto ls = std::make_shared<GMRES<DSMatrixd, DVectord>>();
