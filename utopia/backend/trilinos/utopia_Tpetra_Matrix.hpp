@@ -16,10 +16,10 @@
 #include <memory>
 
 namespace utopia {
-    
+
     class TpetraMatrix {
     public:
-        
+
         typedef Tpetra::CrsMatrix<>                       crs_matrix_type;
         typedef Teuchos::RCP<crs_matrix_type>             rcp_crs_matrix_type;
         typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
@@ -29,13 +29,13 @@ namespace utopia {
         typedef Tpetra::Vector<>::global_ordinal_type     global_ordinal_type;
         typedef Tpetra::Vector<>::scalar_type             Scalar;
         typedef crs_matrix_type::node_type node_type;
-        
+
         TpetraMatrix() : owner_(true) {}
-                
+
         /////////////////////////////////////////////////////////////
         ~TpetraMatrix()
         {}
-        
+
         //deep copy
         //     template <class Node2>
         // rcp_crs_matrix_type  clone (
@@ -86,19 +86,19 @@ namespace utopia {
             owner_ = std::move(other.owner_);
             return *this;
         }
-        
+
         void finalize();
-        
+
         rcp_comm_type communicator() const
         {
             return implementation().getMap()->getComm();
         }
-        
+
         void set_owner(const bool owner)
         {
             owner_ = owner;
         }
-        
+
         //API functions
         void crs_init(const rcp_comm_type &comm,
                       std::size_t rows_local,
@@ -113,44 +113,44 @@ namespace utopia {
                       Tpetra::global_size_t rows_global,
                       Tpetra::global_size_t cols_global,
                       const Scalar factor = 1.);
-        
-        
+
+
         inline Range row_range() const
         {
             return  { implementation().getRowMap()->getMinGlobalIndex(), implementation().getRowMap()->getMaxGlobalIndex() + 1 };
         }
-        
+
         inline Size size() const
         {
             return { implementation().getRowMap()->getGlobalNumElements(), implementation().getColMap()->getGlobalNumElements() };
         }
-        
+
         inline Size local_size() const
         {
             return { implementation().getRowMap()->getNodeNumElements(), implementation().getColMap()->getNodeNumElements() };
         }
-        
+
         inline void read_lock()
         {
             //TODO?
         }
-        
+
         inline void read_unlock()
         {
             //TODO?
         }
-        
+
         inline void write_lock()
         {
             //TODO?
             implementation().resumeFill();
         }
-        
+
         inline void write_unlock()
         {
             this->finalize();
         }
-        
+
         void describe(std::ostream &os) const
         {
             auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
@@ -161,7 +161,7 @@ namespace utopia {
         {
             describe(std::cout);
         }
-        
+
         void set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
         void add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
 
@@ -205,7 +205,7 @@ namespace utopia {
 
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
         bool write(const std::string &path) const;
-        
+
     private:
         rcp_crs_matrix_type  mat_;
         bool                 owner_;
