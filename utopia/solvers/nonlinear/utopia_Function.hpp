@@ -4,18 +4,18 @@
 #include "utopia_Base.hpp"
 #include "utopia_Core.hpp"
 
-namespace utopia 
+namespace utopia
 {
     /**
      * @brief      Base class for Nonlinear Function. All application context needed by solver is usually provided inside of this functions.
      *             In optimization settings, user needs to supply value(energy), gradient, hessian.
      *
-     * @todo       Intorduce approximate Hessian updates strategies, e.g. BFGS, ... 
-     * @tparam     Matrix  
-     * @tparam     Vector  
+     * @todo       Intorduce approximate Hessian updates strategies, e.g. BFGS, ...
+     * @tparam     Matrix
+     * @tparam     Vector
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Function 
+    class Function
     {
     public:
         DEF_UTOPIA_SCALAR(Matrix)
@@ -26,7 +26,7 @@ namespace utopia
         virtual bool gradient(const Vector &/*point*/, Vector &/*result*/) const = 0;
         virtual bool hessian(const Vector &x, Matrix &H) const = 0;
 
-        virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const 
+        virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const
         {
             return false;
         }
@@ -57,7 +57,7 @@ namespace utopia
                 if(!g) { g = std::make_shared<Vector>(); }
             }
         };
-        
+
         inline std::shared_ptr<Data> data() const {
             return data_;
         }
