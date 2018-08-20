@@ -500,10 +500,6 @@ namespace utopia {
         auto expr = structure(A);
 
         TSMatrixd B(expr);
-
-        std::cout << tree_format(expr.getClass()) << std::endl;
-
-        disp(B);
     }
 
     void run_trilinos_test()
