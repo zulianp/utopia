@@ -241,6 +241,8 @@ namespace utopia {
                     is_steady = true;
                 }
 
+                is.read("n-transient-steps", n_transient_steps);
+
                 is.read("pairs", [this,&temp](InputStream &is) {
                     is.read_all([this,&temp](InputStream &is) {
                         int master = -1, slave = -1;
@@ -432,7 +434,7 @@ namespace utopia {
 
                 in.forcing_function->eval(state.displacement, state.external_force);
 
-                in.material->stress(state.displacement, state.stress);
+                solver->stress(state.displacement, state.stress);
 
                 const double mag_stress   = norm2(state.stress);
                 const double mag_velocity = norm2(state.velocity);

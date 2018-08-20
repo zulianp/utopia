@@ -2,9 +2,10 @@
 	<mesh>../data/wear_2_far.e</mesh>
 	<model>
         <material>LinearElasticity</material>
+        <!-- <material>NeoHookean</material> -->
 		<parameters>
-			<mu>300.</mu>
-			<lambda>600.</lambda>
+			<mu>1.</mu>
+			<lambda>1.</lambda>
 		</parameters>
 	</model>
 	<boundary-conditions>
@@ -28,19 +29,30 @@
 	</boundary-conditions>
     <forcing-functions type="array">
         <!-- no block means that is applied to all -->
-        <entry>
+     <!--    <entry>
+            <coord>1</coord>
+            <value>0.1</value>
+        </entry> -->
+     <!--    <entry>
             <coord>1</coord>
             <value>x*x + y*y</value>
-        </entry>
-        <entry>
+        </entry> -->
+     <!--    <entry>
             <block>4</block>
             <coord>1</coord>
-            <value>0.5</value>
+            <value>50.</value>
             <type>surface</type>
+        </entry> -->
+        <entry>
+            <block>2</block>
+            <coord>1</coord>
+            <value>50.</value>
         </entry>
     </forcing-functions>
     <contact>
-        <type>steady</type>
+        <!-- <type>steady</type> -->
+        <type>transient</type>
+        <n-transient-steps>10</n-transient-steps>
         <radius>0.9</radius>
         <pairs type="array">
             <entry>

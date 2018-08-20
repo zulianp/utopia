@@ -471,6 +471,10 @@ namespace utopia {
 			return tao_;
 		}
 
+		virtual bool stress(const Vector &x, Vector &result) {
+			return material_->stress(x, result);
+		}
+
 	private:
 		std::shared_ptr<FunctionSpaceT> V_;
 		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
