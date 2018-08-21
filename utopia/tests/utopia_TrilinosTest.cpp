@@ -559,14 +559,10 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_cg);
 
         //tests that fail in parallel
-<<<<<<< HEAD
         UTOPIA_RUN_TEST(row_view_and_loops);
-=======
         UTOPIA_RUN_TEST(trilinos_transpose);
         UTOPIA_RUN_TEST(row_view_and_loops);
         UTOPIA_RUN_TEST(trilinos_each_read_transpose);
-
->>>>>>> remotes/origin/development
 
         //tests that always fail
         // UTOPIA_RUN_TEST(trilinos_mg_1D);
