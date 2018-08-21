@@ -127,7 +127,7 @@ namespace utopia {
 #else
                         double value = 0;
                         is.read("value", value);
-                        auto g = ceoff(value);
+                        auto g = coeff(value);
 #endif //WITH_TINY_EXPR
 
                         init_constraints(constraints(

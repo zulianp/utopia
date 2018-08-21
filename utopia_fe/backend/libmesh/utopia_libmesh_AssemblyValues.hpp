@@ -454,11 +454,13 @@ namespace utopia {
 				return TRAVERSE_CONTINUE;
 			}
 
+#ifdef WITH_TINY_EXPR
 			inline int visit(const SymbolicFunction &expr)
 			{
 				init_xyz();
 				return TRAVERSE_CONTINUE;
 			}
+#endif //WITH_TINY_EXPR
 
 			template<class Expr>
 			void apply(const Expr &expr)
