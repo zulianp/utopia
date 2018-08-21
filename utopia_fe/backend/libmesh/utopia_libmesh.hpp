@@ -2,9 +2,6 @@
 #define UTOPIA_LIBMESH_HPP
 
 #include "utopia_Base.hpp"
-
-#ifdef WITH_TINY_EXPR
-
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_libmesh_AssemblyContext.hpp"
@@ -13,11 +10,13 @@
 #include "utopia_libmesh_FormEval.hpp"
 #include "utopia_libmesh_LambdaFunction.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
-#include "utopia_SymbolicFunction.hpp"
+
 #include "utopia_FEFunction.hpp"
 
 #include "libmesh/parallel_mesh.h"
 
+#ifdef WITH_TINY_EXPR
+#include "utopia_SymbolicFunction.hpp"
 namespace utopia {
 
 
