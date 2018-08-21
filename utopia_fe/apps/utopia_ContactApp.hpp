@@ -7,10 +7,7 @@
 namespace utopia {
 	class ContactApp final : public App {
 	public:
-		void run(const std::string &path) override
-		{
-
-		}
+		void run(const std::string &path) override;
 	};
 }
 
