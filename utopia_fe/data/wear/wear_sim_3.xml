@@ -1,5 +1,5 @@
 <simulation>
-	<mesh>../data/wear/wear_geoms.e</mesh>
+	<mesh>../data/wear/wear_geoms_2.e</mesh>
 	<model>
         <material>LinearElasticity</material>
         <!-- <material>NeoHookean</material> -->
@@ -43,22 +43,23 @@
         <entry>
             <block>2</block>
             <coord>2</coord>
-            <value>0.05</value>
+            <value>0.01</value>
         </entry>
     </forcing-functions>
     <contact>
         <type>steady</type>
-        <radius>2</radius>
+        <radius>1.5</radius>
         <pairs type="array">
             <entry>
                 <master>1</master>
                 <slave>2</slave>
             </entry>
         </pairs>
+        <step-tol>1e-5</step-tol>
     </contact>
     <wear>
         <n-cycles>100</n-cycles>
-        <coeff>0.007</coeff>
+        <coeff>0.0007</coeff>
         <extrapolation>5.0</extrapolation>
         <gait-cycle>
             <steps>30</steps>

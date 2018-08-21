@@ -246,6 +246,9 @@ namespace utopia {
                 std::string type;
                 is.read("type", type);
 
+                step_tol = 5e-6;
+                is.read("step-tol", step_tol);
+
                 is_steady = false;
                 n_transient_steps = 1;
 
@@ -289,6 +292,7 @@ namespace utopia {
         std::vector<int> contact_surfaces;
         bool is_steady;
         int n_transient_steps;
+        double step_tol;
 
     };
 
@@ -356,7 +360,7 @@ namespace utopia {
             solver = transient_solver;
         }
 
-        solver->set_tol(5e-6);
+        solver->set_tol(in.step_tol);
         solver->set_max_outer_loops(40);
 
         if(in.is_steady) {
