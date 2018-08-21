@@ -181,7 +181,7 @@ namespace utopia {
 							   const SizeType col,
 							   const Scalar value)
 		{
-			assert(row < mat.rows() && col < mat.cols());
+			assert(row < SizeType(mat.rows()) && col < SizeType(mat.cols()));
 			mat.set(row, col, value);
 		}
 
