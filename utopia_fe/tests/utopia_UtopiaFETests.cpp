@@ -1,8 +1,6 @@
 #include "utopia_UtopiaFETests.hpp"
 #include "utopia_SemigeometricMultigridTest.hpp"
-#include "utopia_ContactTest.hpp"
 #include "utopia_FormEvalTest.hpp"
-#include "utopia_LibMeshBackendTest.hpp"
 #include "utopia_FSITest.hpp"
 
 namespace utopia {
