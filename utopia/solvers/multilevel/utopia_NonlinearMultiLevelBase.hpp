@@ -17,8 +17,8 @@
 
 namespace utopia {
 #define CHECK_NUM_PRECISION_mode
-    
-    
+
+
     /**
      * @brief      Base class for all nonlinear multilevel solvers. \n
      *             Takes care of inializing multilevel hierarchy - calls into assembly routines on each level. \n
@@ -29,22 +29,22 @@ namespace utopia {
      */
     template<class Matrix, class Vector>
     class NonlinearMultiLevelBase : public MultiLevelBase<Matrix, Vector>, public Monitor<Matrix, Vector> {
-    
+
     public:
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
         typedef utopia::Transfer<Matrix, Vector> Transfer;
         typedef utopia::ExtendedFunction<Matrix, Vector> Fun;
         typedef std::shared_ptr<Fun> FunPtr;
-        
+
         NonlinearMultiLevelBase(const Parameters params = Parameters())
         {
             set_parameters(params);
         }
-        
+
         virtual ~NonlinearMultiLevelBase(){}
-        
-        
+
+
         /**
          * @brief      Sets the parameters.
          *
@@ -53,17 +53,17 @@ namespace utopia {
         virtual void set_parameters(const Parameters params) override
         {
             MultiLevelBase<Matrix, Vector>::set_parameters(params);
-            
+
             atol_               = params.atol();
             rtol_               = params.rtol();
             stol_               = params.stol();
-            
+
             max_it_             = params.max_it();
             verbose_            = params.verbose();
             time_statistics_    = params.time_statistics();
         }
 
-        
+
 
         /**
          * @brief      The solve function for nonlinear multilevel solvers.
@@ -72,9 +72,9 @@ namespace utopia {
          * @param      x_h   The initial guess.
          *
          */
-        virtual bool solve( Vector &x_h) = 0; 
+        virtual bool solve( Vector &x_h) = 0;
 
-        
+
         /**
          * @brief      Fnction inits functions associated with assemble on each level.
          *
@@ -87,7 +87,7 @@ namespace utopia {
             level_functions_.insert(level_functions_.begin(), level_functions.begin(), level_functions.end());
             return true;
         }
-        
+
         /* @brief
          Function initializes transfer  operators.
          Operators need to be ordered FROM COARSE TO FINE.
@@ -102,7 +102,7 @@ namespace utopia {
             this->transfers_.clear();
             for(auto I = interpolation_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && P != projection_operators.end(); ++I, ++P )
                 this->transfers_.push_back(Transfer(*I, *P));
-            
+
             return true;
         }
 
@@ -121,11 +121,11 @@ namespace utopia {
             this->transfers_.clear();
             for(auto I = interpolation_operators.begin(), R = restriction_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && R != restriction_operators.end() &&  P != projection_operators.end(); ++I, ++R, ++P )
                 this->transfers_.push_back(Transfer(*I, *R, *P));
-            
+
             return true;
         }
 
-        
+
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Scalar      atol() const               { return atol_; }
         Scalar      rtol()  const              { return rtol_; }
@@ -133,7 +133,7 @@ namespace utopia {
         SizeType    max_it()  const            { return max_it_; }
         bool        verbose() const            { return verbose_; }
         bool        time_statistics() const    { return time_statistics_; }
-        
+
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         void atol(const Scalar & atol_in ) { atol_ = atol_in; };
         void rtol(const Scalar & rtol_in ) { rtol_ = rtol_in; };
@@ -141,10 +141,10 @@ namespace utopia {
         void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; };
         void verbose(const bool & verbose_in ) { verbose_ = verbose_in; };
         void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; };
-        
-        
+
+
         Scalar get_time() { return _time.get_seconds();  }
-        
+
     protected:
         /**
          * @brief      Initialization of nonlinear solver. Includes nice printout and starts calculating time of solve process.
@@ -156,18 +156,18 @@ namespace utopia {
         {
             if(mpi_world_rank() == 0 && verbose_)
                 PrintInfo::print_init(method, status_variables);
-            
+
             _time.start();
         }
-        
-        
+
+
         virtual void print_init_message(const std::string &method, const std::vector<std::string> status_variables)
         {
             if(mpi_world_rank() == 0 && verbose_)
                 PrintInfo::print_init(method, status_variables);
         }
-        
-        
+
+
         /**
          * @brief      Exit of solver.
          *
@@ -177,10 +177,10 @@ namespace utopia {
         virtual void exit_solver(const SizeType &num_it, const Scalar & convergence_reason) override
         {
             _time.stop();
-            
+
             status_.reason = convergence_reason;
             status_.iterates = num_it;
-            
+
             if(verbose_)
             {
                 ConvergenceReason::exitMessage_nonlinear(num_it, convergence_reason);
@@ -188,14 +188,14 @@ namespace utopia {
                     std::cout<<"  Walltime of solve: " << _time.get_seconds() << " seconds. \n";
             }
         }
-        
-        
+
+
         virtual bool solver_monitor(const SizeType& /*it*/, Vector & /*x*/, Matrix & /*H*/) override
         {
             std::cout<<"utopia::NonlinearMultilevelBase:: WE ARE NOT SUPPORTING this function at the moment... \n";
             return true;
         }
-        
+
         /**
          * @brief      General function to check convergence in nonlinear solvers. It checks absolute, relative norm of gradient
          *             and lenght of the step size.
@@ -213,32 +213,32 @@ namespace utopia {
                 exit_solver(it, ConvergenceReason::CONVERGED_FNORM_ABS);
                 return true;
             }
-            
+
             // step size so small that we rather exit than wait for nan's
             if(s_norm < stol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_SNORM_RELATIVE);
                 return true;
             }
-            
+
             // step size so small that we rather exit than wait for nan's
             if(r_norm < rtol_)
             {
                 exit_solver(it, ConvergenceReason::CONVERGED_FNORM_RELATIVE);
                 return true;
             }
-            
+
             // check number of iterations
             if( it > max_it_)
             {
                 exit_solver(it, ConvergenceReason::DIVERGED_MAX_IT);
                 return true;
             }
-            
+
             return false;
         }
-        
-        
+
+
         /**
          * @brief      Function looks up for ids, where we should apply Dirichlet BC and set value to required one
          *
@@ -250,34 +250,34 @@ namespace utopia {
         {
             Vector bc_values;
             fun.get_eq_constrains_values(bc_values);
-            
+
             Vector bc_ids;
             fun.get_eq_constrains_flg(bc_ids);
-            
+
             if(local_size(bc_ids).get(0) != local_size(bc_values).get(0)) {
                 std::cerr<<"utopia::NonlinearMultiLevelBase::make_iterate_feasible:: local sizes do not match... \n";
             }
-            
+
             {
                 Write<Vector> w(x);
                 Read<Vector>  r_id(bc_ids);
                 Read<Vector>  r_val(bc_values);
-                
+
                 Range range_w = range(x);
                 for (SizeType i = range_w.begin(); i != range_w.end(); i++)
                 {
                     Scalar id = bc_ids.get(i);
                     Scalar value = bc_values.get(i);
-                    
+
                     if(id == 1)
                         x.set(i, value);
                 }
             }
-            
+
             return true;
         }
-        
-        
+
+
         /**
          * @brief      Function zeors correction, where we have Dirichlet BC aplied.
          *
@@ -288,11 +288,11 @@ namespace utopia {
         {
             Vector bc;
             fun.get_eq_constrains_flg(bc);
-            
+
             {
                 Write<Vector> w(c);
                 Read<Vector> r(bc);
-                
+
                 Range range_w = range(c);
                 for (SizeType i = range_w.begin(); i != range_w.end(); i++)
                 {
@@ -302,8 +302,8 @@ namespace utopia {
             }
             return true;
         }
-        
-        
+
+
         /**
          * @brief      Function zeors correction, where we have Dirichlet BC aplied.
          *
@@ -316,10 +316,10 @@ namespace utopia {
             Vector bc;
             fun.get_eq_constrains_flg(bc);
             std::vector<SizeType> index;
-            
+
             {
                 Read<Vector> r(bc);
-                
+
                 Range range_w = range(bc);
                 for (SizeType i = range_w.begin(); i != range_w.end(); i++)
                 {
@@ -329,13 +329,13 @@ namespace utopia {
             }
             set_zero_rows(M, index);
 
-            // horible solution.... 
+            // horible solution....
             {
                 ReadAndWrite<Matrix> w(M);
                 Range r = row_range(M);
 
                 //You can use set instead of add. [Warning] Petsc does not allow to mix add and set.
-                for(SizeType i = r.begin(); i != r.end(); ++i) 
+                for(SizeType i = r.begin(); i != r.end(); ++i)
                 {
                     if(std::abs(M.get(i,i)) < 1e-15)
                         M.set(i, i, 1.0);
@@ -345,9 +345,9 @@ namespace utopia {
 
             return true;
         }
-        
-    
-        
+
+
+
         /**
          * @return     Name of solver - to have nice printouts
          */
@@ -358,15 +358,15 @@ namespace utopia {
          *
          * @param[in]  fine_local_size  The local size of fine level problem
          */
-        virtual void init_memory(const SizeType & fine_local_size) = 0; 
-        
-        
-        
+        virtual void init_memory(const SizeType & fine_local_size) = 0;
+
+
+
         inline Fun &function(const SizeType level)
         {
             return *level_functions_[level];
         }
-        
+
         inline const Fun &function(const SizeType level) const
         {
             return *level_functions_[level];
@@ -374,7 +374,7 @@ namespace utopia {
 
 
         /**
-         * @brief      Writes CSV file with iteration info 
+         * @brief      Writes CSV file with iteration info
          *
          * @param[in]  it_global  The iterator global
          */
@@ -382,7 +382,7 @@ namespace utopia {
         {
             std::string path = "log_output_path";
             auto non_data_path = Utopia::instance().get(path);
-        
+
             if(!non_data_path.empty())
             {
                 CSVWriter writer;
@@ -395,7 +395,7 @@ namespace utopia {
                     }
                     else
                         writer.open_file(non_data_path);
-                    
+
                     writer.write_table_row<Scalar>({Scalar(it_global), this->get_time()});
                     writer.close_file();
                 }
@@ -403,26 +403,26 @@ namespace utopia {
         }
 
 
-        
+
     protected:
-        std::vector<FunPtr>                      level_functions_;        
-        
+        std::vector<FunPtr>                      level_functions_;
+
         // ... GENERAL SOLVER PARAMETERS ...
         Scalar atol_;                   /*!< Absolute tolerance. */
         Scalar rtol_;                   /*!< Relative tolerance. */
         Scalar stol_;                   /*!< Step tolerance. */
-        
+
         SizeType max_it_;               /*!< Maximum number of iterations. */
         SizeType verbose_;              /*!< Verobse enable? . */
         SizeType time_statistics_;      /*!< Perform time stats or not? */
-        
-        
+
+
         Chrono _time;                 /*!<Timing of solver. */
-        
+
         SolutionStatus status_;
-        
+
     };
-    
+
 }
 
 #endif //UTOPIA_NONLINEAR_ML_BASE_HPP

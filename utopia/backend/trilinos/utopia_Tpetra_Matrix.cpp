@@ -11,7 +11,7 @@ namespace utopia {
 	void TpetraMatrix::set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
 	{
 	    m_utopia_status_once(
-	    	"> TpetraMatrix::set does what is supposed to do with respect to the edsl. " 
+	    	"> TpetraMatrix::set does what is supposed to do with respect to the edsl. "
 	    	"However it might be slow because of the double trilinos call and branching."
 	    );
 
@@ -19,11 +19,11 @@ namespace utopia {
 	        implementation().insertGlobalValues(row, 1, &value, &col);
 	    }
 	}
-	
+
 	void TpetraMatrix::add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
 	{
 		m_utopia_status_once(
-			"> TpetraMatrix::add does what is supposed to do with respect to the edsl. " 
+			"> TpetraMatrix::add does what is supposed to do with respect to the edsl. "
 			"However it might be slow because of the double trilinos call and branching."
 		);
 
@@ -76,7 +76,7 @@ namespace utopia {
 		}
 
 		try {
-				//C = op(A)*op(B), 
+				//C = op(A)*op(B),
 				Tpetra::MatrixMatrix::Multiply(
 					this->implementation(),
 					transpose_this,
@@ -104,7 +104,7 @@ namespace utopia {
 			//None of this creat a valid matrix for getGlobalRowView
 			//1)
 			// auto col_map = Teuchos::rcp(new map_type(size().get(0), 0, communicator(), Tpetra::LocallyReplicated));
-			// mat.mat_->replaceColMap(col_map);	
+			// mat.mat_->replaceColMap(col_map);
 
 			//2)
 			// mat.implementation().resumeFill();
@@ -155,7 +155,7 @@ namespace utopia {
 	              Tpetra::global_size_t cols_global,
 	              std::size_t nnz_x_row)
 	{
-		//Trilinos has more distribution options than petsc and it does not require to have 
+		//Trilinos has more distribution options than petsc and it does not require to have
 		//a column operator structure as petsc
 
 		rcp_map_type row_map;
@@ -201,7 +201,7 @@ namespace utopia {
 
 		for(auto i = r.begin(); i < r.end(); ++i) {
 			if(i >= cols_global) break;
-			
+
 			set(i, i, factor);
 
 		}
@@ -256,7 +256,7 @@ namespace utopia {
 		if(!is.good()) {
 			return false;
 		}
-		
+
 		try {
 			//https://people.sc.fsu.edu/~jburkardt/data/mm/mm.html
 			mat_ = Tpetra::MatrixMarket::Reader<crs_matrix_type>::readSparse(is, comm);
