@@ -1,6 +1,5 @@
 list(APPEND APPS_MODULES
 	.
-	simulations
 )
 
 find_project_files(CMAKE_CURRENT_SOURCE_DIR APPS_MODULES LOCAL_HEADERS LOCAL_SOURCES)
@@ -28,13 +27,13 @@ target_link_libraries(
 	utopia_fe_wear
 )
 
-target_include_directories(utopia_fe_apps PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/simulations) 
+target_include_directories(utopia_fe_apps PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/simulations)
 set_utopia_compiler_features(utopia_fe_apps)
 
 install(TARGETS utopia_fe_apps
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
 	)
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)

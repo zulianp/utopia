@@ -1,5 +1,5 @@
 #ifndef UTOPIA_MPI_HPP
-#define UTOPIA_MPI_HPP 
+#define UTOPIA_MPI_HPP
 
 #include "utopia_Base.hpp"
 
