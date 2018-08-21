@@ -86,6 +86,7 @@ list(APPEND UTOPIA_FE_MODULES
 	tests
 	fractures
 	wear
+	ui
 	multigrid
 	transfer
 	visualization

@@ -150,10 +150,12 @@ namespace utopia {
 #ifdef WITH_OPENCL
     template<class Expr, int Order>
     class Evaluate;
-#endif //WITH_OPENCL   
+#endif //WITH_OPENCL
 
     template<class Matrix, class Vector, int Backend>
     class QuadraticFunction;
+
+    class SymbolicFunction;
 
 }
 

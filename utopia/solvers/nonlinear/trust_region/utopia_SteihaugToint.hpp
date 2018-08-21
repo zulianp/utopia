@@ -4,7 +4,7 @@
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Preconditioner.hpp"
 
-namespace utopia 
+namespace utopia
 {
 
 	/**
@@ -17,13 +17,13 @@ namespace utopia
 
     public:
 
-    	SteihaugToint(const Parameters params = Parameters()): 
+    	SteihaugToint(const Parameters params = Parameters()):
     				  TRSubproblem<Matrix, Vector>(params)
         {  };
 
         virtual ~SteihaugToint(){}
 
-        SteihaugToint * clone() const override 
+        SteihaugToint * clone() const override
         {
         	return new SteihaugToint();
         }
@@ -32,70 +32,70 @@ namespace utopia
         bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
         {
 
-			Vector r = -1 * g, d = r, s = local_zeros(local_size(g)), s1 = s; 
+			Vector r = -1 * g, d = r, s = local_zeros(local_size(g)), s1 = s;
 	    	Scalar alpha, g_norm, d_B_d, z, z1;//, tau;
 	    	SizeType it = 0;
 
-	    	p_k = local_zeros(local_size(p_k)); 
+	    	p_k = local_zeros(local_size(p_k));
 	    	g_norm = norm2(g);
-	    	z = g_norm * g_norm; 
+	    	z = g_norm * g_norm;
 
 
-	    	// this->atol(std::min(0.5, std::sqrt(g_norm)) * g_norm); 
-	    	// this->atol(1e-14); 
-	    	// this->rtol(1e-14); 
-	    	// this->stol(1e-14); 
+	    	// this->atol(std::min(0.5, std::sqrt(g_norm)) * g_norm);
+	    	// this->atol(1e-14);
+	    	// this->rtol(1e-14);
+	    	// this->stol(1e-14);
 
-	    	this->init_solver(" Utopia Steihaug-Toint CG ", {"it. ", "||r||" }); 
-            bool converged = false; 
+	    	this->init_solver(" Utopia Steihaug-Toint CG ", {"it. ", "||r||" });
+            bool converged = false;
 
         	while(!converged)
         	{
-	    		d_B_d = dot(d, B * d); 
+	    		d_B_d = dot(d, B * d);
 
 	    		if(d_B_d <= 0)
 	    		{
 	    			s = p_k;
-	    			// tau = 
+	    			// tau =
 	    			this->quad_solver(s, d, this->current_radius(),  p_k);
-	    			return true; 
+	    			return true;
 	    		}
 
-	    		alpha = z / d_B_d; 
+	    		alpha = z / d_B_d;
 	    		s1 = p_k + alpha * d;
 
 	    		if(norm2(s1) >= this->current_radius())
 	    		{
-	    			s = p_k; 
-	    			// tau = 
+	    			s = p_k;
+	    			// tau =
 	    			this->quad_solver(s, d, this->current_radius(),  p_k);
-	    			return true; 
+	    			return true;
 	    		}
-	    	
-	    		p_k = s1; 
-	    		r -= alpha * (B * d); 
+
+	    		p_k = s1;
+	    		r -= alpha * (B * d);
 
 	    		z1 = dot(r,r);
 	    		d = r + (z1/z) * d;
 
-	    		z = z1; 
+	    		z = z1;
 
-        		g_norm = std::sqrt(z); 
+        		g_norm = std::sqrt(z);
                 if(this->verbose())
-                    PrintInfo::print_iter_status(it, {g_norm}); 
+                    PrintInfo::print_iter_status(it, {g_norm});
 
-                converged = this->check_convergence(it, g_norm, 1, 1); 
-                it++; 
+                converged = this->check_convergence(it, g_norm, 1, 1);
+                it++;
 	    	}
 
-        	return true; 
+        	return true;
         }
 
 
         bool preconditioned_solve(const Matrix & /*B*/, const Vector &/*g*/, Vector &/*p_k*/) override
         {
-        	std::cout<<"SteihaugToint:: preconditioned solve not imlemented yet ... \n"; 
-        	return false; 
+        	std::cout<<"SteihaugToint:: preconditioned solve not imlemented yet ... \n";
+        	return false;
         }
 
 

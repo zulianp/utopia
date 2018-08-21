@@ -10,6 +10,20 @@
 #include <sstream>
 
 namespace utopia {
+
+	void ContactParams::describe(std::ostream &os) const
+	{
+		os << "search_radius: " << search_radius << "\n";
+		os << "variable_number: " << variable_number << "\n";
+		os << "use_biorthogonal_basis: " << use_biorthogonal_basis << "\n";
+		os << "master, slave:\n";
+		for(const auto &p : contact_pair_tags) {
+			os << p.first << ", " << p.second << "\n";
+		}
+
+		os << std::endl;
+	}
+
 	bool Contact::init(
 		const std::shared_ptr<libMesh::MeshBase> &mesh,
 		const std::shared_ptr<libMesh::DofMap> &dof_map,
@@ -23,14 +37,14 @@ namespace utopia {
 
 		if(!assemble_contact(
 			comm,
-			mesh, 
-			dof_map, 
-			variable_number, 
-			coupling, 
-			orthogonal_trafo, 
-			weighted_gap, 
+			mesh,
+			dof_map,
+			variable_number,
+			coupling,
+			orthogonal_trafo,
+			weighted_gap,
 			normals,
-			is_contact_node, 
+			is_contact_node,
 			search_radius,
 			contact_pair_tags,
 			use_biorthogonal_basis,

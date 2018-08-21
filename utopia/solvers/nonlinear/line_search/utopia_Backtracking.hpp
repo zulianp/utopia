@@ -15,13 +15,13 @@
 namespace utopia {
 
     /**
-     * @brief      
+     * @brief
 
         This is the algorithm described in the book
-        Dennis and Schnabel "Numerical Methods for Nonlinear Equations 
-        and Unconstrained Optimization", Prentice-Hall (1983), 
+        Dennis and Schnabel "Numerical Methods for Nonlinear Equations
+        and Unconstrained Optimization", Prentice-Hall (1983),
         reprinte by SIAM (1996), Section 6.3.2.
-        @todo check params naming properly... 
+        @todo check params naming properly...
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class Backtracking : public LSStrategy<Matrix, Vector>
@@ -37,23 +37,23 @@ namespace utopia {
         : LSStrategy<Matrix, Vector>(params)
 
         {
-            set_parameters(params); 
+            set_parameters(params);
         }
 
         /**
-         * @brief      Get the alpha_k on given iterate. We are using quadratic and qubic interpolation as part of backtracking. 
-         *             For checking decrease conditions, we are using Wolfe conditions.  
+         * @brief      Get the alpha_k on given iterate. We are using quadratic and qubic interpolation as part of backtracking.
+         *             For checking decrease conditions, we are using Wolfe conditions.
          *
-         * @param      fun      The fun with eval. 
+         * @param      fun      The fun with eval.
          * @param[in]  g        The gradient.
          * @param[in]  x        The current iterate.
          * @param[in]  d        The descent direction/ usually Newton step.
-         * @param      alpha_k  The new step size 
+         * @param      alpha_k  The new step size
          *
-         * @return     
+         * @return
          */
 
-        bool get_alpha(LeastSquaresFunction<Matrix, Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override 
+        bool get_alpha(LeastSquaresFunction<Matrix, Vector> &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) override
         {
             return get_alpha_aux_home_made(fun, g, x, d, alpha);
         }
@@ -65,17 +65,17 @@ namespace utopia {
         }
 
         template<class FunctionT>
-        bool get_alpha_aux_home_made(FunctionT &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha) 
+        bool get_alpha_aux_home_made(FunctionT &fun, const Vector &g, const Vector& x, const Vector &d, Scalar &alpha)
         {
             Vector x_0 = x, x_k = x;
             Scalar alpha_c, alpha_p, dg = dot(d,g);
-            Scalar f, f0, fc, fp, t1, t2, t3, a, b, disc; 
-            alpha = 1; 
+            Scalar f, f0, fc, fp, t1, t2, t3, a, b, disc;
+            alpha = 1;
 
             if(dg >= 0)
             {
                 if(mpi_rank == 0) {
-                    std::cerr<< "utopia::LS::backtracking:: d is not descent direction \n"; 
+                    std::cerr<< "utopia::LS::backtracking:: d is not descent direction \n";
                     assert(false);
                 }
 
@@ -86,12 +86,12 @@ namespace utopia {
             fun.value(x_k, f);
             f0 = f;
             fc = f;
-            alpha_c = alpha; 
+            alpha_c = alpha;
 
-            Scalar it = 0; 
+            Scalar it = 0;
 
             if(verbose_)
-                PrintInfo::print_init("BACKTRACKING_LS_INNER_ITERATIONS", {" it. ", "|| alpha ||"}); 
+                PrintInfo::print_init("BACKTRACKING_LS_INNER_ITERATIONS", {" it. ", "|| alpha ||"});
 
             while(alpha > c2_ && it < max_it_)
             {
@@ -102,19 +102,19 @@ namespace utopia {
                 if(f < f0 + c1_ * alpha * dg )
                 {
 
-                    return true; 
+                    return true;
                 }
 
-                alpha_p = alpha_c; 
-                alpha_c = alpha; 
+                alpha_p = alpha_c;
+                alpha_c = alpha;
                 fp = fc;
-                fc = f; 
+                fc = f;
 
                 //  compute next step size alpha
                 if(it == 0)
                 {
-                    alpha = - dg / (2 * (fc - f0 -dg)); 
-                    it++; 
+                    alpha = - dg / (2 * (fc - f0 -dg));
+                    it++;
                 }
                 else
                 {
@@ -138,20 +138,20 @@ namespace utopia {
                         alpha = -dg / ( 2 * b );
                     }
                 }
-                
+
                 //  saveguard the step size
                 if(alpha > 0.5 * alpha_c)
                 {
-                    alpha = 0.5 * alpha_c; 
+                    alpha = 0.5 * alpha_c;
                 }
 
                 if(alpha < alpha_c/10)
                 {
-                    alpha = alpha_c/10; 
+                    alpha = alpha_c/10;
                 }
-                it++; 
+                it++;
                 if(verbose_)
-                    PrintInfo::print_iter_status({it, alpha}); 
+                    PrintInfo::print_iter_status({it, alpha});
             }
 
             return true;
@@ -160,26 +160,26 @@ namespace utopia {
 
         bool set_parameters(const Parameters params) override
         {
-            verbose_    = params.line_search_inner_verbose(); 
-            c1_         = params.c1(); 
-            c2_         = params.c2(); 
-            max_it_     = params.n_line_search_iters(); 
+            verbose_    = params.line_search_inner_verbose();
+            c1_         = params.c1();
+            c2_         = params.c2();
+            max_it_     = params.n_line_search_iters();
             rho_        = params.ls_rho();
-            alpha_min_   = params.alpha_min(); 
-            
-            return true; 
-        } 
+            alpha_min_   = params.alpha_min();
+
+            return true;
+        }
 
     private:
         SizeType mpi_size = mpi_world_size();
         SizeType mpi_rank = mpi_world_rank();
 
-        bool verbose_;      /*!< Verbose inside of LS strategy.  */  
-        Scalar c1_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */  
-        Scalar c2_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */  
-        Scalar max_it_;     /*!< Maximum of the iterations inside of LS strategy.  */  
-        Scalar rho_;        /*!< Contraction factor.   */  
-        Scalar alpha_min_;  /*!< Minimum allowed step-size.   */  
+        bool verbose_;      /*!< Verbose inside of LS strategy.  */
+        Scalar c1_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
+        Scalar c2_;         /*!< Constant for Wolfe conditions \f$ c_1 \in (0,1),   c_1 = 10^{-4} \f$.  */
+        Scalar max_it_;     /*!< Maximum of the iterations inside of LS strategy.  */
+        Scalar rho_;        /*!< Contraction factor.   */
+        Scalar alpha_min_;  /*!< Minimum allowed step-size.   */
 
     };
 }

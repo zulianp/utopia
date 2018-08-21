@@ -14,6 +14,7 @@
 #include "Box.hpp"
 
 #include "utopia_fe_config.hpp"
+#include "utopia_libmesh_Types.hpp"
 
 #ifdef WITH_BOOST
 

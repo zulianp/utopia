@@ -1,5 +1,5 @@
 #ifndef UTOPIA_FE_COEFFICIENT_HPP
-#define UTOPIA_FE_COEFFICIENT_HPP 
+#define UTOPIA_FE_COEFFICIENT_HPP
 
 #include "utopia_StoreAs.hpp"
 #include "utopia_Traits.hpp"
@@ -7,7 +7,7 @@
 #include <functional>
 
 namespace utopia {
-	
+
 	template<typename T, int Order_>
 	class ConstantCoefficient : public Expression< ConstantCoefficient<T, Order_> > {
 	public:
@@ -16,7 +16,7 @@ namespace utopia {
 			Order = Order_
 		};
 
-		typedef typename Traits<T>::Scalar Scalar;	
+		typedef typename Traits<T>::Scalar Scalar;
 
 		ConstantCoefficient(const T &value)
 		: value_(value)
@@ -62,7 +62,7 @@ namespace utopia {
 			Order = 0
 		};
 
-		typedef T Scalar;	
+		typedef T Scalar;
 
 		ConstantCoefficient(const T &value)
 		: value_(value)
@@ -134,7 +134,7 @@ namespace utopia {
 			Order = 0
 		};
 
-		typedef T Scalar;	
+		typedef T Scalar;
 	};
 
 
@@ -149,7 +149,7 @@ namespace utopia {
 			Order = 1
 		};
 
-		typedef typename Traits<T>::Scalar Scalar;	
+		typedef typename Traits<T>::Scalar Scalar;
 	};
 
 
@@ -164,7 +164,7 @@ namespace utopia {
 			Order = 2
 		};
 
-		typedef typename Traits<T>::Scalar Scalar;	
+		typedef typename Traits<T>::Scalar Scalar;
 	};
 
 
@@ -175,7 +175,7 @@ namespace utopia {
 				Order = Order_
 			};
 
-			typedef typename Traits<T>::Scalar Scalar;	
+			typedef typename Traits<T>::Scalar Scalar;
 
 			FunctionCoefficient(const Fun &fun)
 			: fun_(fun)
@@ -213,7 +213,7 @@ namespace utopia {
 				Order = 0
 			};
 
-			typedef T Scalar;	
+			typedef T Scalar;
 
 			FunctionCoefficient() = default;
 
@@ -258,7 +258,7 @@ namespace utopia {
 			Order = Order_
 		};
 
-		typedef typename Traits<T>::Scalar Scalar;	
+		typedef typename Traits<T>::Scalar Scalar;
 	};
 
 	template<class Fun, class T>
@@ -272,7 +272,7 @@ namespace utopia {
 			Order = 0
 		};
 
-		typedef T Scalar;	
+		typedef T Scalar;
 	};
 
 	template<class Point, class T>

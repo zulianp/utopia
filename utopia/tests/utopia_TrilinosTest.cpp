@@ -1,3 +1,4 @@
+
 #include "utopia_Base.hpp"
 
 #ifdef WITH_TRILINOS
@@ -6,51 +7,20 @@
 #include "utopia.hpp"
 #include "utopia_trilinos.hpp"
 #include "utopia_trilinos_solvers.hpp"
+
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_MultiLevelTestProblem.hpp"
 #include <algorithm>
 
+#ifdef WITH_PETSC
+#include "utopia_petsc_trilinos.hpp"
+#endif
+
 #include "utopia_Structure.hpp"
 #include "utopia_Eval_Structure.hpp"
 
+
 namespace utopia {
-
-    // template<class TensorFrom, class TensorTo>
-    // void backend_convert_sparse(const Wrapper<TensorFrom, 2> &from, Wrapper<TensorTo, 2> &to)
-    // {
-    //     auto ls = local_size(from);
-    //     auto n_row_local = ls.get(0);
-    //     std::vector<int> nnzxrow(n_row_local, 0);
-    //     auto r = row_range(from);
-
-    //     each_read(from, [&nnzxrow,&r](const SizeType i, const SizeType j, const double val) {
-    //         ++nnzxrow[i - r.begin()];
-    //     });
-
-
-    //     auto nnz = *std::max_element(nnzxrow.begin(), nnzxrow.end());
-
-    //     //FIXME use nnzxrow instead
-    //     to = local_sparse(ls.get(0), ls.get(1), nnz);
-
-
-    //     Write<Wrapper<TensorTo, 2>> w_t(to);
-    //     each_read(from, [&to](const SizeType i, const SizeType j, const double val) {
-    //         to.set(i, j, val);
-    //     });
-    // }
-
-    // template<class TensorFrom, class TensorTo>
-    // void backend_convert(const Wrapper<TensorFrom, 1> &from, Wrapper<TensorTo, 1> &to)
-    // {
-    //     auto ls = local_size(from).get(0);
-    //     to = local_zeros(ls);
-
-    //     Write< Wrapper<TensorTo, 1> > w_t(to);
-    //     each_read(from, [&to](const SizeType i, const double val) {
-    //         to.set(i, val);
-    //     });
-    // }
 
     void trilinos_build()
     {
@@ -388,7 +358,7 @@ namespace utopia {
         multigrid.update(ml_problem.matrix);
 
         // write("A0.txt", multigrid.level(0).A());
-        write("R0.txt", multigrid.transfer(0).R());
+        // write("R0.txt", multigrid.transfer(0).R());
 
         if(verbose) {
             multigrid.describe();
@@ -508,6 +478,7 @@ namespace utopia {
     }
 
 
+
     void trilinos_each_read_transpose()
     {
         int n = 11;
@@ -531,6 +502,7 @@ namespace utopia {
         });
     }
 
+
     void trilinos_read()
     {
         TSMatrixd m;
@@ -538,6 +510,23 @@ namespace utopia {
         bool ok = read(path, m);
         utopia_test_assert(ok);
     }
+
+
+#ifdef WITH_PETSC
+    void petsc_interop()
+    {
+        KSPSolver<TSMatrixd, TVectord> solver;
+
+        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(100, 2);
+        TVectord x = zeros(size(*ml_problem.rhs));
+        (*ml_problem.rhs) *= 0.0001;
+
+
+        solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
+
+        utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-8));
+    }
+#endif //WITH_PETSC
 
     void trilinos_structure()
     {
@@ -570,14 +559,18 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_cg);
 
         //tests that fail in parallel
+        UTOPIA_RUN_TEST(row_view_and_loops);
         UTOPIA_RUN_TEST(trilinos_transpose);
         UTOPIA_RUN_TEST(row_view_and_loops);
         UTOPIA_RUN_TEST(trilinos_each_read_transpose);
 
-
         //tests that always fail
         // UTOPIA_RUN_TEST(trilinos_mg_1D);
         // UTOPIA_RUN_TEST(trilinos_mg);
+
+#ifdef WITH_PETSC
+        UTOPIA_RUN_TEST(petsc_interop);
+#endif //WITH_PETSC
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
 }

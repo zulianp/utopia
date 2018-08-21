@@ -53,7 +53,7 @@ namespace utopia {
 				make_ref(V_surf.dof_map()),
 				0,
 				0,
-				true, 
+				true,
 				1,
 				B,
 				{},
@@ -95,7 +95,7 @@ namespace utopia {
 				mesh_refinement.make_flags_parallel_consistent();
 				mesh_refinement.refine_elements();
 				mesh_refinement.test_level_one(true);
-				
+
 			} else {
 				assert(false);
 			}
@@ -113,18 +113,18 @@ namespace utopia {
 		// auto elem_type  = libMesh::TET10;
 		auto elem_type  = libMesh::TET4;
 		// auto elem_type  = libMesh::HEX8;
-		
+
 		auto elem_order = libMesh::FIRST;
 		// auto elem_order = libMesh::SECOND;
 
 		// bool is_test_case = true;
 		bool is_test_case = false;
 
-		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
-		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 
-		// auto vol_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());	
-		// auto surf_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());	
+		// auto vol_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());
+		// auto surf_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());
 
 
 		if(is_test_case) {
@@ -150,7 +150,7 @@ namespace utopia {
 
 			// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 3);
 		} else {
-			
+
 			// libMesh::MeshTools::Generation::build_cube(
 			// 	*vol_mesh,
 			// 	n, n, n,
@@ -173,7 +173,7 @@ namespace utopia {
 
 			// vol_mesh->read("../data/frac/frac1d_background.e");
 			surf_mesh->read("../data/frac/frac1d_network.e");
-			
+
 			{
 				libMesh::MeshRefinement mesh_refinement(*surf_mesh);
 				mesh_refinement.make_flags_parallel_consistent();
@@ -221,7 +221,7 @@ namespace utopia {
 			c.stop();
 			std::cout << c << std::endl;
 
-			auto f_rhs = ctx_fun< std::vector<double> >([](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> { 
+			auto f_rhs = ctx_fun< std::vector<double> >([](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
 				const auto &pts = ctx.fe()[0]->get_xyz();
 
 				const auto n = pts.size();
@@ -262,7 +262,7 @@ namespace utopia {
 			v_vol *= 1./max_master;
 			max_master = 1.;
 
-			DVectord v_surf, v_vol_back; 
+			DVectord v_surf, v_vol_back;
 			pmtoft.apply(v_vol, v_surf);
 			pmtoft.apply_transpose(local_values(local_size(v_surf).get(0), 1.), v_vol_back);
 

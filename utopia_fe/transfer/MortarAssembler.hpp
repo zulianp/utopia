@@ -3,39 +3,42 @@
 
 
 #include "utopia_fe_core.hpp"
-#include "utopia_LibMeshBackend.hpp"
+// #include "utopia_LibMeshBackend.hpp"
 #include <libmesh/sparse_matrix.h>
+#include <libmesh/dense_matrix.h>
+#include <libmesh/dense_vector.h>
+
 #include "moonolith_predicate.hpp"
 
 namespace utopia {
 
-	class MortarAssembler {
-	public:
+// 	// class MortarAssembler {
+// 	// public:
 
-		MortarAssembler(
-			const std::shared_ptr<LibMeshFESpaceBase> &master, 
-			const std::shared_ptr<LibMeshFESpaceBase> &slave);
+// 	// 	MortarAssembler(
+// 	// 		const std::shared_ptr<LibMeshFESpaceBase> &master, 
+// 	// 		const std::shared_ptr<LibMeshFESpaceBase> &slave);
 
-		 bool assemble(DSMatrixd &B);
+// 	// 	 bool assemble(DSMatrixd &B);
 
-		 	DSMatrixd D;
+// 	// 	 	DSMatrixd D;
 
-		 	void set_use_biorthogonal_multipliers(const bool use_biorth)
-		 	{
-		 		use_biorth_ = use_biorth;
-		 	}
+// 	// 	 	void set_use_biorthogonal_multipliers(const bool use_biorth)
+// 	// 	 	{
+// 	// 	 		use_biorth_ = use_biorth;
+// 	// 	 	}
 
-		private:
-			std::shared_ptr<LibMeshFESpaceBase> master_;
-			std::shared_ptr<LibMeshFESpaceBase> slave_;	
+// 	// 	private:
+// 	// 		std::shared_ptr<LibMeshFESpaceBase> master_;
+// 	// 		std::shared_ptr<LibMeshFESpaceBase> slave_;	
 
-			bool use_biorth_;
-	};
+// 	// 		bool use_biorth_;
+// 	// };
 
-	static const ushort MASTER     = 1;
-	static const ushort SLAVE      = 2;
-	static const ushort UNASSIGNED = 0;
-	static const ushort REMOVED    = 3;
+// 	static const ushort MASTER     = 1;
+// 	static const ushort SLAVE      = 2;
+// 	static const ushort UNASSIGNED = 0;
+// 	static const ushort REMOVED    = 3;
 
 	class ContactAssembly {
 	public:
@@ -109,28 +112,28 @@ namespace utopia {
 		void finalize();
 	};
 
-	static void build_dag(std::vector< std::shared_ptr<ContactAssembly> > &contacts, std::vector< std::vector<long> > &dag, std::vector<long> &ordering);
-	static void assign_master_and_slave_roles(const std::vector< std::vector<long> > &dag, const std::vector<long> &ordering, const std::vector< std::vector<long> > &adj_list, std::vector<ushort> &role);
+// 	static void build_dag(std::vector< std::shared_ptr<ContactAssembly> > &contacts, std::vector< std::vector<long> > &dag, std::vector<long> &ordering);
+// 	static void assign_master_and_slave_roles(const std::vector< std::vector<long> > &dag, const std::vector<long> &ordering, const std::vector< std::vector<long> > &adj_list, std::vector<ushort> &role);
 
-	class MortarContactAssembler {
-	public:
+// 	// class MortarContactAssembler {
+// 	// public:
 
-		//pass to true to accept pairs whose average distance is smaller than the gap
-		void set_strict_gap_policy(const bool strict_gap_policy)
-		{
-			this->strict_gap_policy = strict_gap_policy;
-		}
+// 	// 	//pass to true to accept pairs whose average distance is smaller than the gap
+// 	// 	void set_strict_gap_policy(const bool strict_gap_policy)
+// 	// 	{
+// 	// 		this->strict_gap_policy = strict_gap_policy;
+// 	// 	}
 		
 
-		MortarContactAssembler(const std::shared_ptr<LibMeshFESpaceBase> &space);
-		bool assemble(DSMatrixd &coupling, DVectord &gap, DVectord &normals, DSMatrixd &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate = std::shared_ptr<moonolith::Predicate>());
+// 	// 	MortarContactAssembler(const std::shared_ptr<LibMeshFESpaceBase> &space);
+// 	// 	bool assemble(DSMatrixd &coupling, DVectord &gap, DVectord &normals, DSMatrixd &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate = std::shared_ptr<moonolith::Predicate>());
 
-		private:
-			std::shared_ptr<LibMeshFESpaceBase> space_;
-			bool strict_gap_policy;
+// 	// 	private:
+// 	// 		std::shared_ptr<LibMeshFESpaceBase> space_;
+// 	// 		bool strict_gap_policy;
 
 			
-	};
+// 	// };
 
 }
 
