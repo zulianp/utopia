@@ -3,6 +3,7 @@
 
 
 #include "utopia_Eval_Empty.hpp"
+#include <cassert>
 
 namespace utopia {
 
@@ -19,7 +20,7 @@ namespace utopia {
             const auto & left  = expr.right().left().implementation();
             auto && right      = Eval<Right, Traits>::apply(expr.right().right());
 
-        	ASSERT(&result != &right && "should never happen");
+        	assert(&result != &right && "should never happen");
 
         	UTOPIA_BACKEND(Traits).apply_binary(result, left, Multiplies(), right);
 

@@ -4,11 +4,11 @@
 #include "utopia_Core.hpp"
 
 
-namespace utopia 
+namespace utopia
 {
 
         template<class Matrix, class Vector>
-        class HessianApproximation         
+        class HessianApproximation
         {
             typedef UTOPIA_SCALAR(Vector)    Scalar;
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -24,17 +24,17 @@ namespace utopia
                 // H = local_identity(n_local, n_local);
 
                 //for sparse
-                fun.hessian(x, H); 
-                
+                fun.hessian(x, H);
+
                 // opt 1
-                // fun.hessian(x, H); 
+                // fun.hessian(x, H);
                 // H = 0.0 * H + Matrix(diag(diag(H)));
 
                 //opt 2
                 //hessian *= 0.;
                 //hessian += local_identity(n_local, n_local);
-                
-                return true; 
+
+                return true;
             }
 
 
@@ -42,7 +42,7 @@ namespace utopia
             virtual bool approximate_hessian( Function<Matrix, Vector> &/*fun*/,  const Vector & /*sol_new*/, const Vector & /*step*/, Matrix & /*hessian_old_new*/,  Vector & /*grad_old_new*/) = 0;
             virtual bool approximate_hessian_inverse( Function<Matrix, Vector> & /*fun*/,  const Vector & /*sol_new*/, const Vector & /*step*/, Matrix & /*hessian_old_new*/,  Vector & /*grad_old_new*/) {return 0; };
         };
-        
+
 
         template<class Matrix, class Vector>
         class BFGS : public HessianApproximation<Matrix, Vector>
@@ -59,20 +59,20 @@ namespace utopia
 
 
                 virtual bool approximate_hessian(
-                    Function<Matrix, Vector> &fun, 
+                    Function<Matrix, Vector> &fun,
                     const Vector &sol_new,
                     const Vector &step,
-                    Matrix &hessian_old_new, 
+                    Matrix &hessian_old_new,
                     Vector &grad_old_new) override
                 {
                     Vector diff_grad = grad_old_new;
                     if(!fun.gradient(sol_new, grad_old_new)) return false;
                     diff_grad = grad_old_new - diff_grad;
 
-                    Scalar d_s = dot(diff_grad, step); 
-                    
+                    Scalar d_s = dot(diff_grad, step);
+
                     if(d_s < num_tol_)
-                        return true; 
+                        return true;
 
 
                     Vector H_x_step = hessian_old_new * step;
@@ -80,17 +80,17 @@ namespace utopia
 
                     //utopia::is_sparse<Matrix>::value
                     // temp += (outer(H_x_step, H_x_step)/dot(step, H_x_step));
-                    
+
                     Matrix a  = outer(H_x_step, H_x_step);
-                    Scalar b = dot(step, H_x_step); 
-                    hessian_old_new -= (1./b * a); 
+                    Scalar b = dot(step, H_x_step);
+                    hessian_old_new -= (1./b * a);
 
 
                     return true;
-                }   
+                }
 
 
-                Scalar num_tol_; 
+                Scalar num_tol_;
             };
 
 
@@ -107,31 +107,31 @@ namespace utopia
                 { }
 
                 virtual bool approximate_hessian(
-                    Function<Matrix, Vector> &fun, 
+                    Function<Matrix, Vector> &fun,
                     const Vector & x_new,
                     const Vector & s,
-                    Matrix &hessian_old_new, 
+                    Matrix &hessian_old_new,
                     Vector &grad_old_new) override
                 {
                     Vector g_diff = grad_old_new;
                     if(!fun.gradient(x_new, grad_old_new)) return false;
                     g_diff = grad_old_new - g_diff;
 
-                    Vector help_vec = g_diff - hessian_old_new * s; 
-                    Scalar denom = dot(help_vec, s); 
+                    Vector help_vec = g_diff - hessian_old_new * s;
+                    Scalar denom = dot(help_vec, s);
 
-                    // here, we prevent numerical instabilities leading to very small denominator 
+                    // here, we prevent numerical instabilities leading to very small denominator
                     if(std::abs(denom) >= num_tol_ * norm2(s) * norm2(help_vec))
-                            hessian_old_new += 1./denom * Matrix(outer(help_vec, help_vec)); 
+                            hessian_old_new += 1./denom * Matrix(outer(help_vec, help_vec));
                     return true;
-                }   
+                }
 
 
             private:
-                Scalar num_tol_; 
+                Scalar num_tol_;
 
             };
 
 }
 
-#endif //UTOPIA_HESSIAN_APPROX_HPP        
+#endif //UTOPIA_HESSIAN_APPROX_HPP

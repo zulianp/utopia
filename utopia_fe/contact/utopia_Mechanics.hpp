@@ -1,5 +1,5 @@
 #ifndef UTOPIA_MECHANICS_HPP
-#define UTOPIA_MECHANICS_HPP 
+#define UTOPIA_MECHANICS_HPP
 
 #include "utopia.hpp"
 #include "utopia_FEForwardDeclarations.hpp"
@@ -20,9 +20,9 @@ namespace utopia {
 
 		DVectord displacement;
 		DVectord displacement_increment;
-		
+
 		DVectord velocity;
-		
+
 		DVectord internal_force;
 		DVectord external_force;
 

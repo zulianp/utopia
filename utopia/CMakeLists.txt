@@ -18,7 +18,7 @@ option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_WITH_PETSC "Enable the petsc backend" ON)
 option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
-option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" ON)
+option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" OFF)
 
 option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
@@ -141,16 +141,16 @@ function(find_project_files rootPath dirPaths headers sources)
 	FOREACH(INCLUDE_PATH ${DIR_PATHS})
 		INCLUDE_DIRECTORIES(${ROOT_PATH}/${INCLUDE_PATH})
 
-		file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )   
-		file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )    
+		file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
+		file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
 		file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
 		file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
-		
+
 		SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
-		
+
 		SET(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
-		SET(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR}) 
-	ENDFOREACH(INCLUDE_PATH)  
+		SET(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR})
+	ENDFOREACH(INCLUDE_PATH)
 
 	SET(${headers} ${theaders} PARENT_SCOPE)
 	SET(${sources} ${tsources} PARENT_SCOPE)
@@ -165,8 +165,8 @@ function(append_list_to_string_for_makefile OUTPUT_STRING PRE_LIST POST_LIST ITE
 
 	SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
-	FOREACH(LIST_EL ${LIST_OF_STRINGS}) 
-		
+	FOREACH(LIST_EL ${LIST_OF_STRINGS})
+
 		string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
 		if(IS_FRAME_WORK)
 			get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
@@ -176,7 +176,7 @@ function(append_list_to_string_for_makefile OUTPUT_STRING PRE_LIST POST_LIST ITE
 		else()
 	    	SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL} ")
 	    endif()
-	ENDFOREACH(LIST_EL) 
+	ENDFOREACH(LIST_EL)
 
 	SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
 	SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
@@ -191,9 +191,9 @@ LIST(REMOVE_DUPLICATES LIST_OF_STRINGS)
 
 SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
-FOREACH(LIST_EL ${LIST_OF_STRINGS}) 
+FOREACH(LIST_EL ${LIST_OF_STRINGS})
     SET(TEMPSTR "${TEMPSTR}\t\"${LIST_EL}\"\n")
-ENDFOREACH(LIST_EL) 
+ENDFOREACH(LIST_EL)
 
 SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
 SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
@@ -261,7 +261,7 @@ add_subdirectory(tests)
 
 
 # core modules
-set(UTOPIA_MODULES backend solvers differentiable core utils)
+set(UTOPIA_MODULES interoperability backend solvers differentiable core ui utils)
 
 foreach(MODULE ${UTOPIA_MODULES})
 	add_subdirectory(${MODULE})
@@ -279,7 +279,7 @@ include_directories(.)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${UTOPIA_DEV_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g ${UTOPIA_DEV_FLAGS}")
 
-list(APPEND UTOPIA_HEADERS 
+list(APPEND UTOPIA_HEADERS
 	utopia.hpp
 	utopia_Base.hpp
 	utopia_Instance.hpp
@@ -302,7 +302,7 @@ write_compiler_detection_header(
   FILE utopia_compiler_features.hpp
   PREFIX UTOPIA
   COMPILERS GNU Clang MSVC Intel AppleClang
-  FEATURES 
+  FEATURES
   		   # cxx_final #already in c++11
   		   # cxx_noexcept #already in c++11
   		   cxx_attribute_deprecated # in c++14
@@ -325,22 +325,22 @@ if(NOT UTOPIA_ARCHIVE_ONLY)
 	# add_library(utopia_dynamic SHARED utopia.cpp ${UTOPIA_SOURCES})
 	# target_link_libraries(utopia_dynamic ${UTOPIA_COMPONENTS})
 	# target_link_libraries(utopia_dynamic ${UTOPIA_LIBRARIES})
-	
+
 	add_executable(utopia_exec main.cpp ${UTOPIA_HEADERS} ${UTOPIA_SOURCES})
 	target_link_libraries(utopia_exec utopia)
 	target_link_libraries(utopia_exec ${UTOPIA_COMPONENTS})
 	target_link_libraries(utopia_exec ${UTOPIA_LIBRARIES})
 
-	install(TARGETS utopia utopia_exec #utopia_dynamic 
-		RUNTIME DESTINATION bin 
-		LIBRARY DESTINATION lib 
-		ARCHIVE DESTINATION lib 
+	install(TARGETS utopia utopia_exec #utopia_dynamic
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
 	)
 else()
-	install(TARGETS utopia 
-		RUNTIME DESTINATION bin 
-		LIBRARY DESTINATION lib 
-		ARCHIVE DESTINATION lib 
+	install(TARGETS utopia
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
 	)
 endif()
 
@@ -390,6 +390,6 @@ print_dependency_table()
 
 
 #############################
-### petsc-cuda stuff 
+### petsc-cuda stuff
 
 link_directories(${CMAKE_CURRENT_BINARY_DIR})

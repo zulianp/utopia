@@ -1,5 +1,5 @@
 #ifndef UTOPIA_PETSC_EVAL_DOT_DIV_DOT_HPP
-#define UTOPIA_PETSC_EVAL_DOT_DIV_DOT_HPP 
+#define UTOPIA_PETSC_EVAL_DOT_DIV_DOT_HPP
 
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_ForwardDeclarations.hpp"
@@ -20,12 +20,12 @@
 
 namespace utopia {
 	template<class X, class FunOfX, class Traits>
-	class Eval< Binary< 
-					Dot<Wrapper<X, 1>, Wrapper<X, 1> >, 
+	class Eval< Binary<
+					Dot<Wrapper<X, 1>, Wrapper<X, 1> >,
 					Dot<FunOfX, Wrapper<X, 1> >,
 					Divides>, Traits, PETSC> {
 	public:
-		typedef Binary< Dot<Wrapper<X, 1>, Wrapper<X, 1> >, 
+		typedef Binary< Dot<Wrapper<X, 1>, Wrapper<X, 1> >,
 					    Dot<FunOfX, Wrapper<X, 1> >,
 					    Divides> Expr;
 
@@ -56,14 +56,14 @@ namespace utopia {
 				ierr = VecMDot(x2.implementation(), 2, vecs, vals); assert(ierr == 0);
 				result_num = vals[0];
 				result_denom = vals[1];
-			} else { 
+			} else {
 				ierr = VecDotBegin(x1.implementation(), x2.implementation(), &result_num); assert(ierr == 0);
 				ierr = VecDotBegin(x3.implementation(), x4.implementation(), &result_denom); assert(ierr == 0);
 
 				ierr = VecDotEnd(x1.implementation(), x2.implementation(), &result_num); assert(ierr == 0);
 				ierr = VecDotEnd(x3.implementation(), x4.implementation(), &result_denom); assert(ierr == 0);
 			}
-			
+
 			Scalar r = result_num/result_denom;
 			if(result_denom == 0. || ierr != 0) {
 				r = 0.;

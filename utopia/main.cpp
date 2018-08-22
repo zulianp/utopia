@@ -45,10 +45,10 @@ int main(const int argc, char *argv[])
 
     // Utopia::instance().set("default_tollerance", "1e-15");
     // Utopia::instance().set("n_threads", "2");
-   
-    if(run_tests) { 
+
+    if(run_tests) {
         runTests(tests);
     }
-    
+
     return Utopia::Finalize();
 }

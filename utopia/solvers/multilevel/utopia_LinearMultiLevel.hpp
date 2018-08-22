@@ -9,7 +9,7 @@
 
 namespace utopia
 {
-	
+
 	/**
 	 * @brief      Base class for all linear multilevel solvers. \n
 	 *             Takes care of inializing multilevel hierarchy. \n
@@ -26,13 +26,13 @@ namespace utopia
 		typedef utopia::Level<Matrix, Vector> Level;
 		typedef utopia::Transfer<Matrix, Vector> Transfer;
 	public:
-	
+
 		LinearMultiLevel(const Parameters params = Parameters())
 		: MultiLevelBase<Matrix, Vector>(params),
 		  fix_semidefinite_operators_(false),
 		  must_generate_masks_(false)
 		{ }
-		
+
 		virtual ~LinearMultiLevel(){}
 
 		/**
@@ -45,22 +45,22 @@ namespace utopia
 		 */
 		virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators)
 		{
-			this->transfers_.clear();	
+			this->transfers_.clear();
 			for(auto I = interpolation_operators.begin(); I != interpolation_operators.end() ; ++I )
 				this->transfers_.push_back(Transfer(*I));
-			
+
 			return true;
 		}
-		
+
 
 		bool must_generate_masks()
 		{
-			return must_generate_masks_; 
+			return must_generate_masks_;
 		}
 
 		void must_generate_masks(const bool must_generate_masks)
 		{
-			must_generate_masks_ = must_generate_masks; 
+			must_generate_masks_ = must_generate_masks;
 		}
 
 		void add_level(Level &&level)
@@ -72,26 +72,26 @@ namespace utopia
 		{
 			levels_.push_back(level);
 		}
-		
+
 		static void fix_semidefinite_operator(Matrix &A)
 		{
-			
+
 			Vector d;
-			
+
 			Size s = local_size(A);
 			d = local_values(s.get(0), 1.);
-			
+
 			{
 				Write<Vector> w_d(d);
-				
+
 				each_read(A,[&d](const SizeType i, const SizeType, const double) {
 					d.set(i, 0.);
 				});
 			}
-			
+
 			A += Matrix(diag(d));
 		}
-				
+
 		/**
 		 * @brief
 		 *        The function creates corser level operators provided by assembling on differnet levels of MG hierarchy
@@ -105,7 +105,7 @@ namespace utopia
 			levels_.insert(levels_.begin(), A.begin(), A.end());
 			return true;
 		}
-	
+
 		inline void set_fix_semidefinite_operators(const bool val)
 		{
 			fix_semidefinite_operators_ = val;
@@ -146,9 +146,9 @@ namespace utopia
 		{
 			this->transfers_[level] = t;
 		}
-		
+
 	protected:
-		std::vector<Level>                  levels_;      /*!< vector of level operators     */		
+		std::vector<Level>                  levels_;      /*!< vector of level operators     */
 		std::vector<Vector>					masks_;
 		bool fix_semidefinite_operators_;
 		bool must_generate_masks_;
@@ -170,28 +170,28 @@ namespace utopia
 			SizeType t_s = this->transfers_.size();
 			if(t_s <= 0)
 				std::cerr<<"Provide interpolation operators first!  \n";
-			
+
 			levels_.push_back(Level(A));
-				
+
 			auto L = this->n_levels();
 
 			if(must_generate_masks_) {
 				this->generate_masks(*A);
 			}
-			
+
 			for(SizeType i = 1; i < L; i++)
 			{
 				// J_{i-1} = R * J_{i} * I
 				std::shared_ptr<Matrix> J_h = std::make_shared<Matrix>();
 				this->transfers_[t_s - i].restrict(levels_[i - 1].A(), *J_h);
-				
+
 				if(fix_semidefinite_operators_) {
 					fix_semidefinite_operator(*J_h);
 				}
-				
+
 				levels_.push_back(Level(J_h));
 			}
-			
+
 			std::reverse(std::begin(levels_), std::end(levels_));
 			return true;
 		}
@@ -240,7 +240,7 @@ namespace utopia
 				this->transfer(l-1).boolean_restrict_or(masks_[l], mask_l);
 
 				// UTOPIA_RECORD_VALUE("r_mask", mask_l);
-			}	
+			}
 
 			for(auto &m : masks_) {
 				m = local_values(local_size(m).get(0), 1.) - m;
@@ -248,7 +248,7 @@ namespace utopia
 			}
 		}
 	};
-	
+
 }
 
 

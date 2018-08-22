@@ -1,5 +1,5 @@
 #ifndef UTOPIA_PETSC_EVAL_RESIDUAL_HPP
-#define UTOPIA_PETSC_EVAL_RESIDUAL_HPP 
+#define UTOPIA_PETSC_EVAL_RESIDUAL_HPP
 
 #include "utopia_Eval_Empty.hpp"
 #include "utopia_ForwardDeclarations.hpp"
@@ -25,7 +25,7 @@ namespace utopia {
 			r.init(x.communicator(), x.type(), x.local_size(), x.size());
 			PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
 			ierr = MatResidual(a.implementation(), b.implementation(), x.implementation(), r.implementation()); assert(ierr == 0);
-	    	
+
 			UTOPIA_TRACE_END(expr);
 			return r;
 	    }
@@ -52,9 +52,9 @@ namespace utopia {
 
 			PetscErrorCode ierr; UTOPIA_UNUSED(ierr);
 			ierr = MatResidual(a.implementation(), b.implementation(), x.implementation(), r.implementation()); assert(ierr == 0);
-	    	
+
 			UTOPIA_TRACE_END(assign_expr);
-			return true; 
+			return true;
 	    }
 	};
 }

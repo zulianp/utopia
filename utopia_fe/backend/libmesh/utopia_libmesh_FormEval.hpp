@@ -17,10 +17,10 @@ namespace utopia {
 	public:
 		template<class Any>
 		inline constexpr static int visit(const Any &) { return TRAVERSE_CONTINUE; }
-		
+
 		template<class T>
 		inline int visit(const TestFunction<T> &expr)
-		{	
+		{
 			//TODO
 			return TRAVERSE_CONTINUE;
 		}
@@ -70,11 +70,11 @@ namespace utopia {
 
 		template<class Expr, class Tensor>
 		static void apply(
-					const Integral<Expr> &expr, 
-					Tensor &t, 
+					const Integral<Expr> &expr,
+					Tensor &t,
 					AssemblyContext<LIBMESH_TAG> &ctx)
 		{
-		
+
 			if(expr.is_surface()) {
 
 				if(ctx.n_sides() != 0) {
@@ -82,7 +82,7 @@ namespace utopia {
 
 					for(std::size_t i = 0; i < ctx.n_sides(); ++i) {
 						ctx.set_side(i);
-						
+
 						if(expr.has_block_id() && ctx.block_id() != expr.block_id()) continue;
 
 						t += FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx);
@@ -90,7 +90,7 @@ namespace utopia {
 					}
 
 					ctx.surface_integral_end();
-				} 
+				}
 
 			} else {
 
@@ -107,9 +107,9 @@ namespace utopia {
 
 		template<class Left, class Right, class Matrix, class Vector>
 		static void apply(
-					const Equality<Left, Right> &expr, 
+					const Equality<Left, Right> &expr,
 					Wrapper<Matrix, 2> &mat,
-					Wrapper<Vector, 1> &vec, 
+					Wrapper<Vector, 1> &vec,
 					AssemblyContext<LIBMESH_TAG> &ctx)
 		{
 			apply(expr.left(),  mat, ctx);
@@ -119,12 +119,12 @@ namespace utopia {
 		template<class Matrix, class Vector>
 		class EquationAssembler {
 		public:
-			EquationAssembler(Matrix &mat, Vector &vec, AssemblyContext<LIBMESH_TAG> &ctx) 
+			EquationAssembler(Matrix &mat, Vector &vec, AssemblyContext<LIBMESH_TAG> &ctx)
 			: mat(mat), vec(vec), ctx(ctx) {}
 
 			template<class Eq>
 			void operator()(const int index, const Eq &eq) {
-				FormEval<Form, LIBMESH_TAG>::apply(eq, mat_buff, vec_buff, ctx); 
+				FormEval<Form, LIBMESH_TAG>::apply(eq, mat_buff, vec_buff, ctx);
 				if(empty(mat)) {
 					mat = mat_buff;
 					vec = vec_buff;
@@ -146,7 +146,7 @@ namespace utopia {
 		static void apply(
 			const Equations<Eq...> &eqs,
 			Wrapper<Matrix, 2> &mat,
-			Wrapper<Vector, 1> &vec, 
+			Wrapper<Vector, 1> &vec,
 			AssemblyContext<LIBMESH_TAG> &ctx)
 		{
 			// FEBackend<LIBMESH_TAG>::init_context(eqs, ctx);
@@ -156,10 +156,10 @@ namespace utopia {
 
 		template<class Left, class Right, class Tensor>
 		static void apply(
-			const Binary<Left, Right, Plus> &expr, 
-			Tensor &result, 
+			const Binary<Left, Right, Plus> &expr,
+			Tensor &result,
 			AssemblyContext<LIBMESH_TAG> &ctx)
-		{	
+		{
 			apply(expr.left(),  result, ctx);
 
 			Tensor right = zeros(size(result));
@@ -169,105 +169,105 @@ namespace utopia {
 
 		template<class Left, class Right, class Tensor>
 		static void apply(
-			const Binary<Number<Left>, Right, Multiplies> &expr, 
-			Tensor &result, 
+			const Binary<Number<Left>, Right, Multiplies> &expr,
+			Tensor &result,
 			AssemblyContext<LIBMESH_TAG> &ctx)
-		{	
+		{
 			apply(expr.right(), result, ctx);
 			result *= expr.left();
 		}
 
 		template<class Left, class Right, class Tensor>
 		static void apply(
-			const Binary<Left, Right, Minus> &expr, 
-			Tensor &result, 
+			const Binary<Left, Right, Minus> &expr,
+			Tensor &result,
 			AssemblyContext<LIBMESH_TAG> &ctx)
-		{	
+		{
 			apply(expr.left(), result, ctx);
 
 			Tensor right = zeros(size(result));
-			apply(expr.right(), right, ctx);	
+			apply(expr.right(), right, ctx);
 			result -= right;
 		}
 
 		template<class Left, class Right, class Op, class Tensor>
 		static void apply(
-			const Binary<Left, Right, Op> &expr, 
-			Tensor &result, 
+			const Binary<Left, Right, Op> &expr,
+			Tensor &result,
 			AssemblyContext<LIBMESH_TAG> &ctx)
-		{	
+		{
 			apply(expr.left(), result, ctx);
 
 			Tensor right = zeros(size(result));
-			apply(expr.right(), result, ctx);	
+			apply(expr.right(), result, ctx);
 
 			result = expr.operation().apply(result, right);
 		}
 
 		template<class Expr, class Tensor>
 		static void apply(
-			const Unary<Expr, Minus> &expr, 
-			Tensor &result, 
+			const Unary<Expr, Minus> &expr,
+			Tensor &result,
 			AssemblyContext<LIBMESH_TAG> &ctx)
-		{	
+		{
 			apply(expr.expr(), result, ctx);
 			result = -result;
 		}
 
 		template<class Expr, class Tensor>
 		static void apply(
-			const Negate<Expr> &expr, 
-			Tensor &result, 
+			const Negate<Expr> &expr,
+			Tensor &result,
 			AssemblyContext<LIBMESH_TAG> &ctx)
-		{	
+		{
 			apply(expr.expr(), result, ctx);
 			result = -result;
 		}
 
 		template<class Expr, class Tensor>
 		static void apply(
-			const Unary<Expr, Abs> &expr, 
-			Tensor &result, 
+			const Unary<Expr, Abs> &expr,
+			Tensor &result,
 			AssemblyContext<LIBMESH_TAG> &ctx)
-		{	
+		{
 			apply(expr.expr(), result, ctx);
 			result = abs(result);
 		}
 
 		template<class Expr, class Tensor>
 		static void apply(
-			const Unary<Expr, Sqrt> &expr, 
-			Tensor &result, 
+			const Unary<Expr, Sqrt> &expr,
+			Tensor &result,
 			AssemblyContext<LIBMESH_TAG> &ctx)
-		{	
+		{
 			apply(expr.expr(), result, ctx);
 			result = sqrt(result);
 		}
 	};
 
 	// template<class Derived, int Backend>
-	// static auto eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
+	// static auto eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx)
 	// -> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
 	// {
 	// 	return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_NO>::apply(expr.derived(), ctx);
 	// }
 
 	// template<class Derived, int Backend>
-	// static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx) 
+	// static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<Backend> &ctx)
 	// -> decltype( FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx) )
 	// {
 	// 	return FEEval<Derived, Traits<Derived>, Backend, QUAD_DATA_YES>::apply(expr.derived(), ctx);
 	// }
 
 	template<class Derived>
-	static auto eval(const Expression<Derived> &expr, AssemblyContext<LIBMESH_TAG> &ctx) 
+	static auto eval(const Expression<Derived> &expr, AssemblyContext<LIBMESH_TAG> &ctx)
 	-> decltype( FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr.derived(), ctx) )
 	{
 		return FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr.derived(), ctx);
 	}
 
 	template<class Derived>
-	static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<LIBMESH_TAG> &ctx) 
+	static auto quad_eval(const Expression<Derived> &expr, AssemblyContext<LIBMESH_TAG> &ctx)
 	-> decltype( FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_YES>::apply(expr.derived(), ctx) )
 	{
 		return FEEval<Derived, utopia::Traits<LibMeshFunctionSpace>, LIBMESH_TAG, QUAD_DATA_YES>::apply(expr.derived(), ctx);

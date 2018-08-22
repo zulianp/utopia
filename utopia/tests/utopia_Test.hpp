@@ -16,6 +16,7 @@
 #include "utopia_TaoSolverTest.hpp"
 #include "utopia_PetscCudaTest.hpp"
 #include "utopia_SelectionTest.hpp"
+#include "utopia_UITest.hpp"
 #include "utopia_M3ELinSolTest.hpp"
 
 namespace utopia
@@ -33,14 +34,15 @@ namespace utopia
         run_tao_solver_test();
         run_petsc_cuda_test();
         run_selection_test();
+        run_ui_test();
 
-        runGenericSolversTest(); 
-        runPetscNonlinearSolversTest(); 
-        runPetscLinearSolversTest(); 
-        runPetscSlepcSolversTest(); 
+        runGenericSolversTest();
+        runPetscNonlinearSolversTest();
+        runPetscLinearSolversTest();
+        runPetscSlepcSolversTest();
 
-        runNonlinearMultilevelSolverTest(); 
-        
+        runNonlinearMultilevelSolverTest();
+
         //only works for serial
         if(mpi_world_size() == 1) {
             run_performance_test();
@@ -70,20 +72,20 @@ namespace utopia
                 else if (token == "solvers")
                 {
                     runGenericSolversTest();
-                    runPetscNonlinearSolversTest(); 
-                    runPetscLinearSolversTest(); 
-                    runPetscSlepcSolversTest();   
-                }             
+                    runPetscNonlinearSolversTest();
+                    runPetscLinearSolversTest();
+                    runPetscSlepcSolversTest();
+                }
                 else if (token == "solvers_generic")
                    runGenericSolversTest();
                 else if (token == "solvers_petsc_nonlinear")
                    runPetscNonlinearSolversTest();
                 else if (token == "solvers_petsc_linear")
-                   runPetscLinearSolversTest();                                  
+                   runPetscLinearSolversTest();
                 else if (token == "solvers_slepc")
-                   runPetscSlepcSolversTest();    
+                   runPetscSlepcSolversTest();
                 else if(token == "nonlinear_multilevel")
-                    runNonlinearMultilevelSolverTest();                                                  
+                    runNonlinearMultilevelSolverTest();
                 else if (token == "performance")
                     run_performance_test();
                 else if (token == "algebra")
@@ -104,6 +106,8 @@ namespace utopia
                     run_petsc_cuda_test();
                 } else if(token == "selection") {
                     run_selection_test();
+                } else if(token == "ui") {
+                    run_ui_test();
                 } else if(token == "m3e") {
                     run_m3e_lin_sol_test();
                 }

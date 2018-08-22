@@ -17,6 +17,18 @@ Developed at the Institute of Computational Science, USI, Lugano, Switzerland (h
 
 # Getting started
 
+## Downloading utopia
+
+Clone the repository and its submodules
+
+- git clone --recurse-submodules https://bitbucket.org/zulianp/utopia.git
+
+or for older git versions
+
+- git clone https://bitbucket.org/zulianp/utopia.git
+- cd utopia
+- git submodule update --init --recursive
+
 ## Compiling utopia
 Define the utopia path (you can also add it to your .bash_profile)
 export UTOPIA\_DIR=<The absolute path of where you want to install utopia>

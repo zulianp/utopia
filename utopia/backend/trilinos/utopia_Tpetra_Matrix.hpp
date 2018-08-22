@@ -133,9 +133,8 @@ namespace utopia {
             owner_ = std::move(other.owner_);
             return *this;
         }
-        
+
         void finalize();
-        
 
         void fillComplete()
         {
@@ -156,12 +155,12 @@ namespace utopia {
         {
             return implementation().getMap()->getComm();
         }
-        
+
         void set_owner(const bool owner)
         {
             owner_ = owner;
         }
-        
+
         //API functions
         void crs_init(const rcp_comm_type &comm,
                       std::size_t rows_local,
@@ -176,44 +175,44 @@ namespace utopia {
                       Tpetra::global_size_t rows_global,
                       Tpetra::global_size_t cols_global,
                       const Scalar factor = 1.);
-        
-        
+
+
         inline Range row_range() const
         {
             return  { implementation().getRowMap()->getMinGlobalIndex(), implementation().getRowMap()->getMaxGlobalIndex() + 1 };
         }
-        
+
         inline Size size() const
         {
             return { implementation().getRowMap()->getGlobalNumElements(), implementation().getColMap()->getGlobalNumElements() };
         }
-        
+
         inline Size local_size() const
         {
             return { implementation().getRowMap()->getNodeNumElements(), implementation().getColMap()->getNodeNumElements() };
         }
-        
+
         inline void read_lock()
         {
             //TODO?
         }
-        
+
         inline void read_unlock()
         {
             //TODO?
         }
-        
+
         inline void write_lock()
         {
             //TODO?
             implementation().resumeFill();
         }
-        
+
         inline void write_unlock()
         {
             this->finalize();
         }
-        
+
         void describe(std::ostream &os) const
         {
             auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
@@ -273,7 +272,7 @@ namespace utopia {
 
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
         bool write(const std::string &path) const;
-        
+
     private:
         rcp_crs_mat_type  mat_;
         bool              owner_;

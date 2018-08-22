@@ -161,6 +161,12 @@ namespace utopia {
             assert(false);
         }
 
+        inline static void build_from_structure(TpetraSparseMatrix &lhs, const TpetraSparseMatrix &rhs)
+        {
+            //IMPLEMENT ME
+            lhs = rhs;
+        }
+
         static Scalar get(const TpetraVector &v, const TpetraVector::GO &index)
         {
             return v.get(index);

@@ -5,18 +5,18 @@
 
 #include <mpi.h>
 
-namespace utopia 
+namespace utopia
 {
     /** \addtogroup MPI
-     * @brief MPI based routines. 
+     * @brief MPI based routines.
      * @ingroup parallel_expressions
      */
 
 	/**
 	 * @ingroup 	MPI
-	 * @brief      	Getter for MPI Comm size. 
+	 * @brief      	Getter for MPI Comm size.
 	 *
-	 * @return     MPI_COMM_WORLD size. 
+	 * @return     MPI_COMM_WORLD size.
 	 */
 	SizeType mpi_world_size()
 	{
@@ -30,7 +30,7 @@ namespace utopia
 	 * @ingroup 	MPI
 	 * @brief      	Getter for MPI world rank.
 	 *
-	 * @return     The rank on given processor. 
+	 * @return     The rank on given processor.
 	 */
 	SizeType mpi_world_rank()
 	{
@@ -39,10 +39,10 @@ namespace utopia
 		return rank;
 	}
 
-	
+
 	/**
 	 * @ingroup 	MPI
-	 * @brief      	Blocks until all processes in the MPI_COMM_WORLD communicator have reached this routine. 
+	 * @brief      	Blocks until all processes in the MPI_COMM_WORLD communicator have reached this routine.
 	 *
 	 */
 	void mpi_world_barrier()
@@ -52,7 +52,7 @@ namespace utopia
 }
 
 #else
-namespace utopia 
+namespace utopia
 {
 
 	SizeType mpi_world_size()
@@ -67,7 +67,7 @@ namespace utopia
 
 	void mpi_world_barrier()
 	{
-	
+
 	}
 }
 

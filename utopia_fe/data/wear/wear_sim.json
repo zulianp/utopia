@@ -1,0 +1,92 @@
+{
+    "simulation": {
+        "mesh": "../data/wear_2_far.e",
+        "model": {
+            "material": "LinearElasticity",
+            "parameters": {
+                "mu": "600.",
+                "lambda": "600."
+            }
+        },
+        "boundary-conditions": {
+            "dirichlet": {
+                "@type": "array",
+                "entry": [
+                    {
+                        "coord": "0",
+                        "side": "3",
+                        "value": "0."
+                    },
+                    {
+                        "coord": "1",
+                        "side": "3",
+                        "value": "0."
+                    },
+                    {
+                        "coord": "0",
+                        "side": "4",
+                        "value": "0.0"
+                    }
+                ]
+            }
+        },
+        "forcing-functions": {
+            "@type": "array",
+            "entry": {
+                "block": "2",
+                "coord": "1",
+                "value": "0.05"
+            }
+        },
+        "contact": {
+            "type": "steady",
+            "radius": "0.9",
+            "pairs": {
+                "@type": "array",
+                "entry": {
+                    "master": "2",
+                    "slave": "1"
+                }
+            }
+        },
+        "wear": {
+            "n-cycles": "100",
+            "coeff": "0.007",
+            "extrapolation": "5.0",
+            "gait-cycle": {
+                "steps": "30",
+                "rotations": {
+                    "@type": "array",
+                    "entry": [
+                        {
+                            "block": "1",
+                            "axis": "z",
+                            "begin": "0.",
+                            "end": "10",
+                            "from": "0",
+                            "to": "15"
+                        },
+                        {
+                            "block": "1",
+                            "axis": "z",
+                            "begin": "10.",
+                            "end": "0.",
+                            "from": "15",
+                            "to": "30"
+                        }
+                    ]
+                },
+                "translations": {
+                    "@type": "array",
+                    "entry": {
+                        "block": "2",
+                        "axis": "y",
+                        "begin": "0.5",
+                        "end": "0.5"
+                    }
+                }
+            }
+        },
+        "output": "./wear_out"
+    }
+}
