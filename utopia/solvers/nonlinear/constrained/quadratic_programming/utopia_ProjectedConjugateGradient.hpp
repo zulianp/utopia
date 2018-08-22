@@ -20,6 +20,7 @@ namespace utopia {
 		virtual bool set_box_constraints(const BoxConstraints & box)
 		{
 			constraints_ = box;
+			constraints_.fill_empty_bounds();
 			return true;
 		}
 
@@ -75,11 +76,14 @@ namespace utopia {
 			return converged;
 		}
 
-
-
+		//one step for solving A * x = b : l <= x <= u
 		bool step(const Matrix &A, const Vector &b, Vector &x)
 		{
+			const auto &u = *constraints_.upper_bound();
+			const auto &l = *constraints_.lower_bound();
+
 			assert(false && "implement me");
+
 			return true;
 		}
 

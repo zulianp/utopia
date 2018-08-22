@@ -120,6 +120,14 @@ namespace utopia {
 		static void build(Vector &m, const Size &size, const LocalZeros & /*values*/);
 		static void build(Vector &v, const Size &size, const Values<Scalar> &values);
 
+		// template<class Tensor>
+		// static void build_from_structure(Tensor &lhs, const Tensor &rhs)
+		// {
+		// 	//TODO
+		// }
+
+		static void build_from_structure(Vector &lhs, const Vector &rhs);
+
 
 		///For compatiblity parallel expressions are treated as serial ones:
 		static void build(Matrix &m, const Size &size, const LocalValues<Scalar> &values)

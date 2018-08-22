@@ -168,6 +168,9 @@ namespace utopia {
 		static void build(PetscVector &v, const Size &size, const Values<Scalar> &values, const PetscArgs &opts = PetscArgs());
 		static void build(PetscMatrix &m, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts = PetscArgs());
 		static void build(PetscVector &v, const Size &size, const LocalValues<Scalar> &values, const PetscArgs &opts = PetscArgs());
+		static void build_from_structure(PetscVector &lhs, const PetscVector &rhs);
+		// static void build_from_structure(PetscMatrix &lhs, const PetscMatrix &rhs);
+
 
 		static void set(PetscVector &v, const PetscInt index, Scalar value);
 		static void add(PetscVector &v, const PetscInt index, Scalar value);
