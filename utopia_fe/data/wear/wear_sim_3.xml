@@ -93,5 +93,5 @@
             </translations>
         </gait-cycle>
     </wear>
-	<output>./wear_out</output>
+	<output>.</output>
 </simulation>

@@ -286,7 +286,8 @@ namespace utopia {
 			// 	newton.set_box_constraints(box_c);
 			// 	newton.solve(lhs, rhs, inc_c);
 			// } else {
-				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
+				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
+				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_);
 				// SemismoothNewton<Matrix, Vector> ssn(linear_solver_);
 				// ssn.verbose(true);
 				ssn.max_it(40);

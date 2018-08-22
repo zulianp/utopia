@@ -150,7 +150,7 @@ namespace utopia {
 		//FIXME warped_displacement passed as dummy
 		set_identity_at_constraint_rows(dof_map, lapl_mat);
 
-		Factorization<DSMatrixd, DVectord> solver;
+		KSPSolver<DSMatrixd, DVectord> solver;
 		if(!solver.solve(lapl_mat, wear_induced_displacement, warped_displacement)) {
 			warped_displacement = wear_induced_displacement;
 		}

@@ -44,8 +44,11 @@ using namespace std;
 using namespace libMesh;
 
 
-int main(const int argc, char *argv[])
+int main(int argc, char *argv[])
 {
+	//For debugginh with ddt
+	MPI_Init(&argc, &argv);
+	PETSC_COMM_WORLD = MPI_COMM_WORLD;
 
 	Utopia::Init(argc, argv);
 	MOONOLITH_PROFILING_BEGIN();

@@ -62,7 +62,7 @@ namespace utopia {
 	std::string Path::extension() const
 	{
 		std::size_t index = path_.find_last_of('.');
-	
+
 		if(std::string::npos == index) {
 			return "";
 		} else {
@@ -75,17 +75,17 @@ namespace utopia {
 	{
 		if(other.empty())
 			return *this;
-		if(empty()) 
+		if(empty())
 			return other;
 
 		return Path(path_ + other.path_);
-	} 
+	}
 
 	Path Path::operator/(const Path &other) const
 	{
 		if(other.empty())
 			return *this;
-		if(empty()) 
+		if(empty())
 			return other;
 
 
@@ -94,7 +94,7 @@ namespace utopia {
 			tmp=PATH_SEPARATOR+tmp;
 
 		return Path(path_ + tmp);
-	} 
+	}
 
 	std::string Path::file_name() const
 	{
@@ -104,7 +104,7 @@ namespace utopia {
 		return name.substr(0,dot);
 	}
 
-	Path Path::parent() const 
+	Path Path::parent() const
 	{
 		const size_t found = path_.find_last_of(PATH_SEPARATOR);
 		if(found == std::string::npos) return Path(".");
@@ -123,21 +123,38 @@ namespace utopia {
 		return *this;
 	}
 
+	bool Path::is_dir() const
+	{
+		auto dir = opendir(path_.c_str());
+		if(dir) {
+			closedir((DIR *)dir);
+			return  true;
+		} else {
+			return false;
+		}
+	}
+
+	bool Path::make_dir(const int permissions)
+	{
+		int result = mkdir(path_.c_str(), permissions);
+	}
+
 	PathIterator::DirHandle::DirHandle(const std::string &path)
 	{
 		dir = opendir(path.c_str());
-	}	
+	}
 
 	PathIterator::DirHandle::~DirHandle()
 	{
-		if(dir)
+		if(dir) {
 			closedir((DIR *)dir);
+		}
 	}
 
-	struct dirent * PathIterator::DirHandle::next() 
-	{ 
+	struct dirent * PathIterator::DirHandle::next()
+	{
 		if(dir)
-			return readdir((DIR *)dir); 
+			return readdir((DIR *)dir);
 		return NULL;
 	}
 
@@ -148,10 +165,10 @@ namespace utopia {
 		++(*this); //init and skip hidden
 	}
 
-	PathIterator::operator bool() const 
+	PathIterator::operator bool() const
 	{
 		return it_ != NULL;
-	} 
+	}
 
 	PathIterator & PathIterator::operator ++()
 	{
