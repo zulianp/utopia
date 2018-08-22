@@ -9,6 +9,7 @@
 
 //for windows looks for windows/dirent.h
 #include <dirent.h>
+#include <sys/stat.h>
 
 #ifdef WIN32
 static const char PATH_SEPARATOR='\\';
@@ -137,6 +138,7 @@ namespace utopia {
 	bool Path::make_dir(const int permissions)
 	{
 		int result = mkdir(path_.c_str(), permissions);
+		return result == 0;
 	}
 
 	PathIterator::DirHandle::DirHandle(const std::string &path)

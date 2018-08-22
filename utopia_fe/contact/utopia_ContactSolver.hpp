@@ -39,7 +39,8 @@ namespace utopia {
 		  force_direct_solver_(false),
 		  bypass_contact_(false),
 		  max_outer_loops_(20),
-		  use_ssn_(false)
+		  use_ssn_(false),
+		  max_non_linear_iterations_(30)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 
@@ -194,7 +195,7 @@ namespace utopia {
 		{
 			bool converged = false;
 			int iteration = 0;
-			int max_iteration = 100;
+
 			while(!converged) {
 
 				if(!step()) return false;
@@ -205,7 +206,7 @@ namespace utopia {
 				std::cout << "iteration: " << iteration << " norm_inc: " << norm_inc << std::endl;
 				++iteration;
 
-				if(max_iteration <= iteration) {
+				if(max_non_linear_iterations_ <= iteration) {
 					std::cerr << "[Error] solver did not converge" << std::endl;
 					return false;
 				}
@@ -462,6 +463,11 @@ namespace utopia {
 			max_outer_loops_ = val;
 		}
 
+		void set_max_non_linear_iterations(const int val)
+		{
+			max_non_linear_iterations_ = val;
+		}
+
 		void set_use_ssn(const bool val)
 		{
 			use_ssn_ = val;
@@ -522,6 +528,8 @@ namespace utopia {
 
 		TaoSolver<Matrix, Vector> tao_;
 		bool use_ssn_;
+
+		int max_non_linear_iterations_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);

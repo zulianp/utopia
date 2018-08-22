@@ -249,6 +249,9 @@ namespace utopia {
                 step_tol = 5e-6;
                 is.read("step-tol", step_tol);
 
+                max_nl_iter = 30;
+                is.read("max-nl-iter", max_nl_iter);
+
                 is_steady = false;
                 n_transient_steps = 1;
 
@@ -293,6 +296,7 @@ namespace utopia {
         bool is_steady;
         int n_transient_steps;
         double step_tol;
+        int max_nl_iter;
 
     };
 
@@ -360,8 +364,17 @@ namespace utopia {
             solver = transient_solver;
         }
 
+        // auto sor = std::make_shared<SOR<DSMatrixd, DVectord>>();
+        // sor->rtol(1e-8);
+        // sor->atol(1e-16);
+        // sor->stol(1e-10);
+        // solver->set_linear_solver(sor);
+        solver->set_linear_solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
+
         solver->set_tol(in.step_tol);
+        solver->set_max_non_linear_iterations(in.max_nl_iter);
         solver->set_max_outer_loops(40);
+
 
         if(in.is_steady) {
             solver->set_use_ssn(true);

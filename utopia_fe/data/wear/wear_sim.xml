@@ -51,6 +51,7 @@
     </forcing-functions>
     <contact>
         <type>steady</type>
+        <max-nl-iter>100</max-nl-iter>
         <!-- <type>transient</type> -->
         <!-- <n-transient-steps>10</n-transient-steps> -->
         <radius>0.9</radius>
