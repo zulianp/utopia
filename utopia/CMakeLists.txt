@@ -12,11 +12,13 @@ set(CMAKE_MACOSX_RPATH 1)
 option(UTOPIA_ARCHIVE_ONLY "Allows to compile only the archive file. Suitable for linux" OFF)
 option(UTOPIA_STATIC_DEPENDENCIES_ONLY "Allows to restrict the linking to static libraries" OFF)
 
+option(TRY_WITH_MPI "Enable the cuda backend" ON)
 option(TRY_WITH_CUDA "Enable the cuda backend" OFF)
 option(TRY_WITH_OPENCL "Enable the opencl backend" OFF)
 option(TRY_WITH_PETSC "Enable the petsc backend" ON)
 option(TRY_WITH_TRILINOS "Enable the Trilinos backend" ON)
 option(TRY_WITH_BLAS "Enable the blas backend" ON)
+option(TRY_WITH_M3ELINSOL "Enable the m3elinsol algebraic multigrid backend" ON)
 
 option(ENABLE_TRACE "enables utopia tracing facilities" OFF)
 option(ENABLE_SANITIZER "Enable clang -fsanitize=address flag" OFF)
@@ -120,6 +122,7 @@ macro(print_dependency_table)
 	SET(DEP_TABLE "${DEP_TABLE}umfpack\t\t| ${UTOPIA_UMFPACK}\t\t| usable\n")
 	SET(DEP_TABLE "${DEP_TABLE}cuda+thrust\t| ${UTOPIA_CUDA}\t\t| not usable but can be easily developed further\n")
 	SET(DEP_TABLE "${DEP_TABLE}opencl\t\t| ${UTOPIA_OPENCL}\t\t| prototyping\n")
+	SET(DEP_TABLE "${DEP_TABLE}m3elinsol\t| ${UTOPIA_M3ELINSOL}\t\t| work in progress\n")
 	SET(DEP_TABLE "${DEP_TABLE}____________________________________________________\n")
 	message(STATUS ${DEP_TABLE})
 endmacro()
@@ -242,6 +245,10 @@ endif()
 
 if(TRY_WITH_OPENCL)
 	add_subdirectory(backend/opencl)
+endif()
+
+if(TRY_WITH_M3ELINSOL)
+	add_subdirectory(backend/m3elinsol)
 endif()
 
 # weird stuff goes here
@@ -371,7 +378,13 @@ install(FILES ${CMAKE_BINARY_DIR}/utopia-config.cmake 	 DESTINATION config)
 print_dependency_table()
 
 
-
+# find_package(OpenMP)
+# if(OPENMP_FOUND)
+# 	SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+# 	SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+# 	SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+# 	set (CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${OpenMP_CXX_FLAGS}")
+# endif()
 
 
 

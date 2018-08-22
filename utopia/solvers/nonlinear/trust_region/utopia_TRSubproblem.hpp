@@ -124,8 +124,9 @@ namespace  utopia
 
 
         
-        virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k)
+        virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const Scalar & tr_radius)
         {
+            current_radius(tr_radius); 
             update(make_ref(H));
             apply(g, p_k); 
             return true; 

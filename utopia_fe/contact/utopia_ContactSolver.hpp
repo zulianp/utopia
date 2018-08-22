@@ -14,6 +14,7 @@
 #include "libmesh/exodusII_io.h"
 
 #include <memory>
+#include <fstream>
 
 namespace utopia {
 
@@ -49,12 +50,15 @@ namespace utopia {
 
 			output_path_ += "contact_sol.e";
 			// linear_solver_ = std::make_shared<Factorization<Matrix, Vector>>();
-			linear_solver_ = std::make_shared<BiCGStab<Matrix, Vector>>();
+			auto  iterative_solver = std::make_shared<BiCGStab<Matrix, Vector>>();
 			// auto iterative_solver = std::make_shared<GaussSeidel<Matrix, Vector>>();
-			// iterative_solver->atol(1e-14);
-			// iterative_solver->stol(1e-14);
-			// iterative_solver->rtol(1e-14);
-			// linear_solver_ = iterative_solver;
+			
+			iterative_solver->atol(1e-18);
+			iterative_solver->stol(1e-17);
+			iterative_solver->rtol(1e-8);
+			iterative_solver->max_it(4000);
+			linear_solver_ = iterative_solver;
+
 			n_exports = 0;
 		}
 
@@ -205,6 +209,55 @@ namespace utopia {
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
 
+		bool write_text(const std::string &path, const Matrix &mat)
+		{	
+			auto comm = mat.implementation().communicator();
+			int comm_size, comm_rank;
+			MPI_Comm_rank(comm, &comm_rank);
+			MPI_Comm_size(comm, &comm_size);
+
+			int nnz = 0;
+			for(SizeType r = 0; r < comm_size; ++r) {
+				if(r == 0) {
+					nnz = 0;
+					each_read(mat, [&nnz](const SizeType, const SizeType, const Scalar) {
+						++nnz;
+					});
+
+					MPI_Allreduce( MPI_IN_PLACE, &nnz, 1, MPI_INT, MPI_SUM, comm );
+				}
+
+				if(r == comm_rank) {
+					std::ofstream os;
+					
+					if(r == 0) {
+						os.open(path);
+						Size s = size(mat);
+						os << s.get(0) << " " << nnz << "\n";
+					} else {
+						os.open(path, std::ofstream::out | std::ofstream::app);
+					}
+
+					if(!os.good()) {
+						std::cerr << "invalid path: " << path << std::endl;
+						continue;
+					}
+
+					each_read(mat, [&os](const SizeType i, const SizeType j, const Scalar value) {	
+						os << i << " " << j << " " << value << "\n";
+					});
+
+					os.flush();
+					os.close();
+				}
+
+				MPI_Barrier(comm);
+			}
+
+			return true;
+		}
+
+
 		void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
 		{
 			if(linear_solver_ && !contact_.has_contact()) {
@@ -239,6 +292,16 @@ namespace utopia {
 				// newton.solve(lhs, rhs, inc_c);
 				Chrono c;
 				c.start();
+
+				// static int n_stuff = 0;
+
+				// if(n_stuff++ >= 2) {
+				// 	std::cout << "Writing..." << std::flush;
+				// 	write("rhs_" + std::to_string(size(lhs).get(0)) + ".m", rhs);
+				// 	write_text("lhs_" + std::to_string(size(lhs).get(0)) + ".txt", lhs);
+				// 	std::cout << "done." << std::endl;
+				// 	exit(0);
+				// }
 
 				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
 				TaoSolver<Matrix, Vector> tao;//(linear_solver_);

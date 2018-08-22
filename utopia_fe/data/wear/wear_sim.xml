@@ -1,0 +1,35 @@
+<simulation>
+	<mesh>../data/wear_2_b.e</mesh>
+    <time>
+        <dt>0.1</dt>
+        <steps>100</steps>
+    </time>
+	<model>
+		<material>NeoHookean</material>
+		<parameters>
+			<mu>300.</mu>
+			<lambda>600.</lambda>
+		</parameters>
+	</model>
+	<boundary-conditions>
+		<dirichlet>
+			<cond side="1" coord="1">1.</cond>
+		</dirichlet>
+	</boundary-conditions>
+    <forcing-functions>
+        <fun side="1" coord="1">0.1</fun>
+    </forcing-functions>
+    <contact radius="0.1">
+        <pair>
+            <master>1</master>
+            <slave>2</slave>
+        </pair>
+    </contact>
+    <wear>
+        <gait-cycle>
+            <rotation block="1" axis="z" start="4.0" delta="0.1">-5.0</rotation>
+            <!-- <rotation block="1" axis="y">0.2</rotation> -->
+        </gait-cycle>
+    </wear>
+	<ouput>wear_output</ouput>
+</simulation>

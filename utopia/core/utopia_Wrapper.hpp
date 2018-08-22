@@ -382,6 +382,23 @@ namespace utopia {
         Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().monitor(it, t.implementation());
     }
 
+    /**
+     * @ingroup    profiling
+     * @brief      Monitoring of the specific tensor over iterations in solvers. \n
+     *             Outputs matlab file, with saved values of tensor over iterates. \n
+     *
+     * @param[in]  it                    The iteration number. 
+     * @param[in]  name_of_file          The name of file.
+     * @param[in]  name_of_instance      The name of tensor to be saved.
+     * @param      t                     Tensor to be monitored.
+     */
+    template<class Tensor, int Order>
+    inline void monitor(const long &it, Wrapper<Tensor, Order> &t, const std::string name_of_file, const std::string name_of_instance) 
+    {
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().monitor(it, t.implementation(), name_of_file, name_of_instance);
+    }
+
+
 
     /**
      * @ingroup    profiling

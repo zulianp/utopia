@@ -30,21 +30,38 @@ namespace utopia
 
         }
 
-        virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const = 0;
-        virtual bool gradient(const Vector &/*point*/, Vector &/*result*/) const = 0;
-        virtual bool hessian(const Vector &x, Matrix &H) const = 0;
+        virtual bool value(const Vector &/*point*/, Scalar &/*value*/) const override = 0;
 
-        virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const 
+
+        bool gradient(const Vector & x, Vector & gradient) const final
+        {
+            this->gradient_no_rhs(x, gradient);
+            
+            if(local_size(gradient)==local_size(this->_rhs)) 
+                gradient = gradient - this->_rhs; 
+
+            return true; 
+        }
+
+
+        virtual bool gradient_no_rhs(const Vector &/*point*/, Vector &/*result*/) const = 0;
+
+
+        virtual bool hessian(const Vector &x, Matrix &H) const override = 0;
+        virtual bool hessian(const Vector &/*point*/, Matrix &/*result*/, Matrix &/*preconditioner*/) const  override
         {
             return false;
         }
 
-        virtual bool has_preconditioner() const {
+        virtual bool has_preconditioner() const override
+        {
             return false;
         }
 
-        virtual bool update(const Vector &/*point*/) { return true; };
-
+        virtual bool update(const Vector &/*point*/)  override 
+        { 
+            return true; 
+        }
 
         virtual bool set_rhs(const Vector & rhs)
         {

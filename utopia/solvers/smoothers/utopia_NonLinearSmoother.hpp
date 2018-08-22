@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2017-04-22
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-03
-*/
-
 #ifndef UTOPIA_NONLINEAR_SMOOTHER_HPP
 #define UTOPIA_NONLINEAR_SMOOTHER_HPP
 
@@ -38,7 +31,7 @@ namespace utopia {
         virtual void set_parameters(const Parameters params) 
         {
             _sweeps = params.pre_smoothing_steps();            
-            _relaxation_parameter = params.omega();     
+            _damping_parameter = params.omega();     
         }
 
 
@@ -75,26 +68,26 @@ namespace utopia {
          *
          * @return     omega  The relaxation parameter.
          */
-        virtual Scalar relaxation_parameter()
+        virtual Scalar damping_parameter()
         {
-            return _relaxation_parameter; 
+            return _damping_parameter; 
         }
 
 
         /**
-         * @brief      Set omega.
+         * @brief      Set omega
          *
          * @return     omega  The relaxation parameter.
          */
-        virtual bool relaxation_parameter(const Scalar & relaxation_parameter)
+        virtual bool damping_parameter(const Scalar & alpha)
         {
-             _relaxation_parameter = relaxation_parameter; 
+             _damping_parameter = alpha; 
              return true; 
         }
 
 
         /**
-         * @brief      verbose ? 
+         * @brief      verbose
          *
          */
         virtual void verbose(const bool & verbose)
@@ -103,7 +96,7 @@ namespace utopia {
         }
 
         /**
-         * @brief      Verbose ?
+         * @brief      Verbose
          *
          */
         virtual bool verbose()
@@ -114,7 +107,7 @@ namespace utopia {
 
         private:
             SizeType     _sweeps;  
-            Scalar       _relaxation_parameter; 
+            Scalar       _damping_parameter; 
             bool         _verbose; 
 };
 

@@ -79,7 +79,7 @@ namespace utopia
           gamma2_ = 2.0; 
           eta1_ = 0.1; 
           eta2_ = 0.85; 
-          rho_tol_ = 0.01; 
+          rho_tol_ = 0.005; 
           SteihaugToint_tol_ = 1e-10; 
           eps_ = 2e-12; 
 
@@ -100,7 +100,7 @@ namespace utopia
           mg_type_ = 1; 
           pre_smoothing_steps_ = 3; 
           post_smoothing_steps_ = 3; 
-          omega_ = 0.66; 
+          omega_ = 0.3; 
           static_time_step_ = true; 
           cycle_type_      = MULTIPLICATIVE_CYCLE; 
           sigma_            = 1; 

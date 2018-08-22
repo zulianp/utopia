@@ -65,6 +65,22 @@ namespace utopia {
 			return make_var_from_map(default_mu, mu_);
 		}
 		
+		void describe(std::ostream &os) const {
+			os << "mu: " << std::endl;
+			os << default_mu << std::endl;
+
+			for(auto mu : mu_) {
+				os << " " << mu.first << " -> " << mu.second << "\n";
+			}
+
+			os << "lambda: " << std::endl;
+			os << default_lambda << std::endl;
+
+			for(auto lambda : lambda_) {
+				os << " " << lambda.first << " -> " << lambda.second << "\n";
+			}
+		}
+
 		double default_mu, default_lambda;
 		std::map<int, double> mu_;
 		std::map<int, double> lambda_;

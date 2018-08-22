@@ -16,6 +16,7 @@
 #include "utopia_TaoSolverTest.hpp"
 #include "utopia_PetscCudaTest.hpp"
 #include "utopia_SelectionTest.hpp"
+#include "utopia_M3ELinSolTest.hpp"
 
 namespace utopia
 {
@@ -38,10 +39,12 @@ namespace utopia
         runPetscLinearSolversTest(); 
         runPetscSlepcSolversTest(); 
 
-
+        runNonlinearMultilevelSolverTest(); 
+        
         //only works for serial
         if(mpi_world_size() == 1) {
             run_performance_test();
+            run_m3e_lin_sol_test();
         }
     }
 
@@ -78,7 +81,9 @@ namespace utopia
                 else if (token == "solvers_petsc_linear")
                    runPetscLinearSolversTest();                                  
                 else if (token == "solvers_slepc")
-                   runPetscSlepcSolversTest();                                  
+                   runPetscSlepcSolversTest();    
+                else if(token == "nonlinear_multilevel")
+                    runNonlinearMultilevelSolverTest();                                                  
                 else if (token == "performance")
                     run_performance_test();
                 else if (token == "algebra")
@@ -99,6 +104,8 @@ namespace utopia
                     run_petsc_cuda_test();
                 } else if(token == "selection") {
                     run_selection_test();
+                } else if(token == "m3e") {
+                    run_m3e_lin_sol_test();
                 }
             }
         }
