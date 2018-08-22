@@ -174,7 +174,7 @@ namespace utopia {
     template<typename T>
     class NNZ {
     public:
-    
+
         NNZ()  {};
         NNZ(T nnz) : _nnz(nnz) {};
         template<typename OtherT>
@@ -212,7 +212,7 @@ namespace utopia {
     template<typename T>
     class LocalNNZ {
     public:
-  
+
 
         LocalNNZ()  {};
         LocalNNZ(T nnz) : _nnz(nnz) {};
@@ -417,7 +417,7 @@ namespace utopia {
              int Order,
              class Right,
              class Default,
-             int SparsityLeft, 
+             int SparsityLeft,
              int SparsityRight>
     class ChooseType<SymbolicTensor<SType, Order>, Right, Default, SparsityLeft, SparsityRight> {
     public:
@@ -428,7 +428,7 @@ namespace utopia {
              int Order,
              class Left,
              class Default,
-             int SparsityLeft, 
+             int SparsityLeft,
              int SparsityRight>
     class ChooseType<Left, SymbolicTensor<SType, Order>, Default, SparsityLeft, SparsityRight> {
     public:
@@ -440,7 +440,7 @@ namespace utopia {
              int Order,
              class Right,
              class Default,
-             int SparsityLeft, 
+             int SparsityLeft,
              int SparsityRight>
     class ChooseType<Factory<SType, Order>, Right, Default, SparsityLeft, SparsityRight> {
     public:
@@ -451,7 +451,7 @@ namespace utopia {
              int Order,
              class Left,
              class Default,
-             int SparsityLeft, 
+             int SparsityLeft,
              int SparsityRight>
     class ChooseType<Left, Factory<SType, Order>, Default, SparsityLeft, SparsityRight> {
     public:
@@ -542,36 +542,36 @@ namespace utopia {
      *  @{
      */
 
-    /// Returns identity matrix  \f$ I^{row \times cols}  \f$. 
+    /// Returns identity matrix  \f$ I^{row \times cols}  \f$.
     inline Factory<Identity, 2> identity(const Size::SizeType rows, const Size::SizeType cols)
     {
         return Factory<Identity, 2>(Size({rows, cols}));
     }
-    /// Returns identity matrix  \f$ I^{size_0 \times size_1}  \f$. 
+    /// Returns identity matrix  \f$ I^{size_0 \times size_1}  \f$.
     inline Factory<Identity, 2> identity(const Size &size)
     {
         return Factory<Identity, 2>(size);
     }
 
-    /// Returns identity matrix  \f$ I^{row \times cols}  \f$. 
+    /// Returns identity matrix  \f$ I^{row \times cols}  \f$.
     inline constexpr SymbolicTensor<Identity, 2> identity()
-    {   
+    {
         return SymbolicTensor<Identity, 2>();
     }
 
-    /// Returns global \f$ 0^{rows \times rows}  \f$. 
+    /// Returns global \f$ 0^{rows \times rows}  \f$.
     inline Factory<Zeros, 2> zeros(const Size::SizeType rows, const Size::SizeType cols)
     {
         return Factory<Zeros, 2>(Size({rows, cols}));
     }
 
-    /// Returns global \f$ 0^{n \times 1}  \f$. 
+    /// Returns global \f$ 0^{n \times 1}  \f$.
     inline Factory<Zeros, 1> zeros(const Size::SizeType n)
     {
         return Factory<Zeros, 1>(Size({n}));
     }
 
-    /// Returns global \f$ 0^{size \times size}  \f$. 
+    /// Returns global \f$ 0^{size \times size}  \f$.
     inline Factory<Zeros, utopia::DYNAMIC> zeros(const Size &size)
     {
         return Factory<Zeros, utopia::DYNAMIC>(size);
@@ -607,26 +607,26 @@ namespace utopia {
      *  @{
      */
 
-    /// Returns local identity matrix  \f$ I^{row \times cols}  \f$ i.e. each processors owns local identity matrix. 
+    /// Returns local identity matrix  \f$ I^{row \times cols}  \f$ i.e. each processors owns local identity matrix.
     inline Factory<LocalIdentity, 2> local_identity(const Size::SizeType rows, const Size::SizeType cols)
     {
         return Factory<LocalIdentity, 2>(Size({rows, cols}));
     }
 
-    /// Returns local identity matrix  \f$ I^{size \times size}  \f$ i.e. each processors owns local identity matrix. 
+    /// Returns local identity matrix  \f$ I^{size \times size}  \f$ i.e. each processors owns local identity matrix.
     inline Factory<LocalIdentity, 2> local_identity(const Size &size)
     {
         return Factory<LocalIdentity, 2>(size);
     }
 
 
-    ///  Returns local zero vector \f$ 0^{n \times 1}  \f$. 
+    ///  Returns local zero vector \f$ 0^{n \times 1}  \f$.
     inline Factory<LocalZeros, 1> local_zeros(const Size::SizeType n)
     {
         return Factory<LocalZeros, 1>(Size({n}));
     }
 
-    ///  Returns local zero matrices \f$ 0^{size \times size}  \f$ i.e. each processors owns local zero matrix. 
+    ///  Returns local zero matrices \f$ 0^{size \times size}  \f$ i.e. each processors owns local zero matrix.
     inline Factory<LocalZeros, utopia::DYNAMIC> local_zeros(const Size &size)
     {
         return Factory<LocalZeros, utopia::DYNAMIC>(size);
@@ -645,14 +645,14 @@ namespace utopia {
     }
 
 
-    ///  Returns local matrices \f$ value * 1^{rows \times cols}  \f$ i.e. each processors owns local matrix. 
+    ///  Returns local matrices \f$ value * 1^{rows \times cols}  \f$ i.e. each processors owns local matrix.
     template<typename T>
     inline Factory<LocalValues<T>, 2> local_values(const Size::SizeType rows, const Size::SizeType cols, T value)
     {
         return Factory<LocalValues<T>, 2>(Size({rows, cols}), LocalValues<T>(value));
     }
 
-    ///  Returns local vector \f$ value * 1^{rows \times 1}  \f$ i.e. each processors owns local vector. 
+    ///  Returns local vector \f$ value * 1^{rows \times 1}  \f$ i.e. each processors owns local vector.
     template<typename T>
     inline Factory<LocalValues<T>, 1> local_values(const Size::SizeType rows, T value)
     {

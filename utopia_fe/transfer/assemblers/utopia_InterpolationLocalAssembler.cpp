@@ -58,13 +58,13 @@ namespace utopia {
 		)
 	{
 		int n_potential_nodes = test.n_nodes();
-		
+
 		std::vector<int> test_dofs;
 		contained_points(trial, test, test_dofs);
 
 		if(test_dofs.empty()) return false;
 
-		std::shared_ptr<Transform> trial_trafo = get_trafo(trial); 
+		std::shared_ptr<Transform> trial_trafo = get_trafo(trial);
 		std::shared_ptr<Transform> test_trafo  = get_trafo(test);
 
 		init_q(test_dofs.size());
@@ -95,7 +95,7 @@ namespace utopia {
 			for(std::size_t j = 0; j < trial_shape_fun.size(); ++j) {
 				for(std::size_t k = 0; k < test_dofs.size(); ++k) {
 					auto tf = test_shape_fun.at(i).at(k);
-					
+
 					if(tf < 0.9) {
 						//exploiting the lagrange property
 						tf = 0.;
@@ -149,7 +149,7 @@ namespace utopia {
 		if(nested_meshes) {
 			//check if there is an intersection then...
 
-			
+
 			test_dofs.resize(n_potential_nodes);
 
 			for(int i = 0; i < n_potential_nodes; ++i) {
@@ -169,7 +169,7 @@ namespace utopia {
 			contained_points_3(trial, test, test_dofs);
 			return;
 		}
-		
+
 		for(int i = 0; i < n_potential_nodes; ++i) {
 			auto const & test_node = test.node_ref(i);
 			if(trial.contains_point(test_node, tol)) {
