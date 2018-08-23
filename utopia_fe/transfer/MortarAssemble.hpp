@@ -42,6 +42,7 @@ namespace utopia {
 	public:
 		virtual ~Transform() {}
 		virtual void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const = 0;
+		virtual void apply(const libMesh::Point &ref, libMesh::Point &world) const = 0;
 	};
 
 
@@ -52,6 +53,7 @@ namespace utopia {
 		{}
 
 		void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
+		void apply(const libMesh::Point &ref, libMesh::Point &world) const override { assert(false && "implement me"); }
 
 	private:
 		const libMesh::Elem &elem_;
@@ -71,6 +73,7 @@ namespace utopia {
 		{}
 
 		void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
+		void apply(const libMesh::Point &ref, libMesh::Point &world) const override;
 
 		static void compute_affine_transformation(const libMesh::Elem * elem, libMesh::DenseMatrix<libMesh::Real> &A_inv);
 
@@ -94,6 +97,7 @@ namespace utopia {
 		{ }
 
 		void transform_to_reference(const libMesh::Point &world, libMesh::Point &refm) const override;
+		void apply(const libMesh::Point &ref, libMesh::Point &world) const override;
 
 
 	private:
@@ -116,6 +120,7 @@ namespace utopia {
 		{}
 
 		void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
+		void apply(const libMesh::Point &ref, libMesh::Point &world) const override { assert(false && "implement me"); }
 
 		AffineTransform2() {}
 
@@ -150,6 +155,7 @@ namespace utopia {
 		}
 
 		void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
+		void apply(const libMesh::Point &ref, libMesh::Point &world) const override { assert(false && "implement me"); }
 
 		AffineTransform3(const libMesh::DenseMatrix<libMesh::Real> &A_inv,
 						 const libMesh::DenseVector<libMesh::Real> A_inv_m_b)
@@ -192,6 +198,8 @@ namespace utopia {
 			assert( std::abs(ref(2)) < 1e-8 );
 		}
 
+		void apply(const libMesh::Point &ref, libMesh::Point &world) const override { assert(false && "implement me"); }
+
 	private:
 		AffineTransform3 a_trafo_;
 
@@ -220,6 +228,8 @@ namespace utopia {
             assert( std::abs(ref(1)) < 1e-8 );
             assert( std::abs(ref(2)) < 1e-8 );
         }
+
+        void apply(const libMesh::Point &ref, libMesh::Point &world) const override { assert(false && "implement me"); }
 
     private:
         AffineTransform2 a_trafo_;

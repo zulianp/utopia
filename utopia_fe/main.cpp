@@ -34,6 +34,7 @@
 #include "utopia_TestVolume2SurfaceTransfer.hpp"
 #include "utopia_VolumeInterpolationTest.hpp"
 #include "utopia_WearSimulation.hpp"
+#include "utopia_TransferApp.hpp"
 
 #include <functional>
 
@@ -133,6 +134,12 @@ int main(int argc, char *argv[])
 				//passing wear xml path to
 				WearSimulation ws;
 				ws.run(init, argv[ip1]);
+			} else if(argv[i] == TransferApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				TransferApp app;
+				app.init(init);
+				app.run(argv[ip1]);
 			}
 
 		}

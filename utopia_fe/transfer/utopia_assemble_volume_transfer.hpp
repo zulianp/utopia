@@ -28,7 +28,7 @@ namespace utopia {
       const std::shared_ptr<libMesh::DofMap> &dof_slave,
       const unsigned int &from_var_num,
       const unsigned int &to_var_num,
-      bool use_biorth, 
+      bool use_biorth,
       int n_var,
       DSMatrixd &B,
       const std::vector< std::pair<int, int> > &tags = std::vector< std::pair<int, int> >(),

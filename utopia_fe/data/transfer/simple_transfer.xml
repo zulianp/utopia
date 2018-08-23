@@ -1,0 +1,12 @@
+<transfer>
+	<type>approx-l2-projection</type>
+	<!-- <type>l2-projection</type> -->
+	<!-- <biorth-basis>1</biorth-basis> -->
+	<mesh-master>../data/test/quad_0.e</mesh-master>
+	<refine-master>2</refine-master>
+	<order-master>1</order-master>
+	<mesh-slave>../data/test/quad_1.e</mesh-slave>
+	<refine-slave>2</refine-slave>
+	<order-slave>1</order-slave>
+	<function>x*x+y*y</function>
+</transfer>

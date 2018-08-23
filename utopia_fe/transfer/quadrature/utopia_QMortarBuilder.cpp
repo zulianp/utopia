@@ -39,7 +39,7 @@ namespace utopia {
 
 
 		Vector2 e1, e2, p, s, e;
-		
+
 		for(SizeType i = 0; i < n_vertices_1; ++i) {
 			if(i > 0) {
 				generic_ptr_swap(Scalar, input, output);
@@ -63,7 +63,7 @@ namespace utopia {
 
 				p = isect.vec_2(input[jx], input[jy]);
 				is_inside[j] = isect.inside_half_plane(e1, e2, p, tol);
-				n_outside += is_inside[j] == OUTSIDE;	
+				n_outside += is_inside[j] == OUTSIDE;
 			}
 
 			if(n_input_points - n_outside == 0) return false;
@@ -149,8 +149,8 @@ namespace utopia {
 			make_polyline(test, test_pts);
 
 			std::vector<double> intersection_temp(test_pts.get_values().size()*2, 0.);
-			
-			
+
+
 			SizeType n_res_pts;
 			if(intersect_convex_polygon_with_polyline(
 					trial_pts.get_values().size()/2,
@@ -164,7 +164,7 @@ namespace utopia {
 				intersection_temp.resize(n_res_pts * 2);
 				intersection.resize(n_res_pts, 2);
 				intersection.get_values() = intersection_temp;
-				
+
 				total_intersection_volume += polyline_length(n_res_pts, &intersection.get_values()[0]);
 				const Scalar weight = polyline_length(test_pts.n(), &test_pts.get_values()[0]);
 
