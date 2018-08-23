@@ -120,6 +120,11 @@ namespace utopia {
             return  { implementation().getRowMap()->getMinGlobalIndex(), implementation().getRowMap()->getMaxGlobalIndex() + 1 };
         }
 
+        inline Range col_range() const
+        {
+            return  { implementation().getDomainMap()->getMinGlobalIndex(), implementation().getDomainMap()->getMaxGlobalIndex() + 1 };
+        }
+
         inline Size size() const
         {
             return { implementation().getRowMap()->getGlobalNumElements(), implementation().getColMap()->getGlobalNumElements() };
@@ -127,7 +132,7 @@ namespace utopia {
 
         inline Size local_size() const
         {
-            return { implementation().getRowMap()->getNodeNumElements(), implementation().getColMap()->getNodeNumElements() };
+            return { implementation().getRowMap()->getNodeNumElements(), implementation().getDomainMap()->getNodeNumElements() };
         }
 
         inline void read_lock()

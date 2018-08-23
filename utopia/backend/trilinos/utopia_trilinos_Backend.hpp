@@ -52,6 +52,11 @@ namespace utopia {
             return m.row_range();
         }
 
+        static Range col_range(const TpetraMatrix &m)
+        {
+            return m.col_range();
+        }
+
         // static Range col_range(const TpetraMatrix &m)
         // {
         //     return m.col_range();

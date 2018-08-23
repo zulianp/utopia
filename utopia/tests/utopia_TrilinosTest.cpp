@@ -437,6 +437,22 @@ namespace utopia {
 
     }
 
+    void row_view()
+    {
+        TSMatrixd A = local_sparse(4, 4, 3);
+        assemble_laplacian_1D(A);
+
+        auto rr = row_range(A);
+
+        for(auto i = rr.begin(); i != rr.end(); ++i) {
+            RowView<TSMatrixd> row(A, i);
+            utopia_test_assert(row.n_values() >= 2);
+            auto col = row.col(0);
+
+            utopia_test_assert(col == i || col == i - 1 || col == i  + 1);
+        }
+    }
+
     void row_view_and_loops()
     {
         int n = 10;
@@ -517,12 +533,19 @@ namespace utopia {
     {
         KSPSolver<TSMatrixd, TVectord> solver;
 
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(100, 2);
+        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
         TVectord x = zeros(size(*ml_problem.rhs));
         (*ml_problem.rhs) *= 0.0001;
 
 
         solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
+
+        // disp(*ml_problem.matrix);
+
+        DSMatrixd p_mat;
+        backend_convert_sparse(*ml_problem.matrix, p_mat);
+
+        // disp(p_mat);
 
         utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-8));
     }
@@ -559,18 +582,19 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_cg);
 
         //tests that fail in parallel
+        UTOPIA_RUN_TEST(row_view);
         UTOPIA_RUN_TEST(row_view_and_loops);
         UTOPIA_RUN_TEST(trilinos_transpose);
-        UTOPIA_RUN_TEST(row_view_and_loops);
         UTOPIA_RUN_TEST(trilinos_each_read_transpose);
+
+#ifdef WITH_PETSC
+        UTOPIA_RUN_TEST(petsc_interop);
+#endif //WITH_PETSC
 
         //tests that always fail
         // UTOPIA_RUN_TEST(trilinos_mg_1D);
         // UTOPIA_RUN_TEST(trilinos_mg);
 
-#ifdef WITH_PETSC
-        UTOPIA_RUN_TEST(petsc_interop);
-#endif //WITH_PETSC
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
 }
