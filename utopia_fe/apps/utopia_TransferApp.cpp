@@ -5,6 +5,7 @@
 #include "utopia_InterpolationLocalAssembler.hpp"
 #include "utopia_Local2Global.hpp"
 #include "utopia_ui.hpp"
+#include "utopia_SymbolicFunction.hpp"
 
 #include "libmesh/mesh_refinement.h"
 

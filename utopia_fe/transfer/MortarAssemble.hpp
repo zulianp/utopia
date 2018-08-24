@@ -14,6 +14,7 @@
 #include <libmesh/quadrature_gauss.h>
 #include <libmesh/sparse_matrix.h>
 #include "libmesh/auto_ptr.h"
+#include "libmesh/enum_quadrature_type.h"
 
 // // Define the Finite Element object.
 #include "libmesh/fe.h"

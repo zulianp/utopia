@@ -4,6 +4,7 @@
 #include <vector>
 #include "Box.hpp"
 #include "libmesh/mesh.h"
+#include "libmesh/enum_elem_type.h"
 
 namespace utopia {
 	inline bool is_simplex(const int type)
