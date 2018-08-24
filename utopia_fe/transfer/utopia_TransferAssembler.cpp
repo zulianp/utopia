@@ -55,7 +55,7 @@ namespace utopia {
 			const libMesh::Parallel::Communicator &comm,
 			const TransferOptions &opts,
 			const std::shared_ptr<FESpacesAdapter> &local_spaces)
-		: comm(comm), 
+		: comm(comm),
 		  m_comm(comm.get()),
 		  opts(opts),
 		  local_spaces(local_spaces)
@@ -206,7 +206,7 @@ namespace utopia {
 			this->local_spaces = std::make_shared<FESpacesAdapter>(from_mesh, to_mesh, from_dofs, to_dofs, opts.from_var_num, opts.to_var_num);
 
 			predicate = std::make_shared<moonolith::MasterAndSlave>();
-			
+
 			if(opts.tags.empty()){
 				predicate->add(0, 1);
 			} else {
@@ -229,7 +229,7 @@ namespace utopia {
 			//FIXME assuming elements are all the same
 		 	auto master_type = from_dofs->variable(opts.from_var_num).type();
 		 	auto slave_type  = to_dofs->variable(opts.to_var_num).type();
-			
+
 			const auto &master_mesh = master.space();;
 			const auto &slave_mesh  = slave.space();
 
@@ -374,11 +374,11 @@ namespace utopia {
 		void init_tree()
 		{
 			using namespace moonolith;
-							
+
 			const auto n_elements_from = from_mesh->n_active_local_elem();
 			const auto n_elements_to   = to_mesh->n_active_local_elem();
 			const auto n_elements 	  = n_elements_from + n_elements_to;
-		
+
 			MOONOLITH_EVENT_BEGIN("create_adapters");
 
 			tree = NTreeT::New(predicate, settings.max_elements, settings.max_depth);

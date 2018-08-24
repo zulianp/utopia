@@ -2,6 +2,8 @@
 #define UTOPIA_TPETRA_ROW_VIEW_HPP
 #include <Teuchos_ArrayViewDecl.hpp>
 
+#include "utopia_Traits.hpp"
+
 namespace utopia {
 
 	template<class Tensor, int FILL_TYPE>
