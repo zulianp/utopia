@@ -44,7 +44,11 @@ namespace utopia {
 		int biorth_basis;
 
 
+#ifdef WITH_TINY_EXPR
 		std::shared_ptr<SymbolicFunction> fun;
+#else
+		std::shared_ptr<ConstantCoefficient<double, 0>> fun;
+#endif //WITH_TINY_EXPR
 
 	};
 }

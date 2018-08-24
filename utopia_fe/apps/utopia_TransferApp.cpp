@@ -87,10 +87,18 @@ namespace utopia {
 
 			local2global_ = std::make_shared<Local2Global>(is_interpolation_);
 
+#ifdef WITH_TINY_EXPR
 			std::string expr = "x";
 			is.read("function", expr);
 
 			fun = std::make_shared<SymbolicFunction>(expr);
+#else
+			double expr = 1.;
+			is.read("function", expr);
+
+			fun = std::make_shared<ConstantCoefficient<double, 0>>(expr);
+#endif //WITH_TINY_EXPR
+
 		});
 
 
@@ -111,11 +119,16 @@ namespace utopia {
 			make_ref(space_slave_->dof_map()),
 			*B,
 			opts
-		);
+			);
 
 		if(!ok) {
 			std::cerr << "[Error] transfer failed" << std::endl;
 			return;
+		}
+
+
+		if(mpi_world_rank() == 0) {
+			std::cout << "dof_slave x dof_master = " << size(*B).get(0) << " x " << size(*B).get(1) << std::endl;
 		}
 
 		if(type == "l2-projection" || type == "approx-l2-projection") {
@@ -142,14 +155,26 @@ namespace utopia {
 		auto u = trial(*space_master_);
 		auto v = test(*space_master_);
 
+		Chrono c;
+		c.start();
+
 		DVectord fun_master_h, fun_master, fun_slave, back_fun_master;
 		assemble(inner(*fun, v) * dX, fun_master_h);
 
 		DSMatrixd mass_mat_master;
 		assemble(inner(u, v) * dX, mass_mat_master);
 
+		c.stop();
+
+		if(mpi_world_rank() == 0) {
+			std::cout << "Assembled M and M * fun" << std::endl;
+			std::cout << c << std::endl;
+		}
+
 		fun_master = fun_master_h;
-		solve(mass_mat_master, fun_master_h, fun_master);
+
+		BiCGStab<DSMatrixd, DVectord> solver;
+		solver.solve(mass_mat_master, fun_master_h, fun_master);
 
 		transfer_op_->apply(fun_master, fun_slave);
 		transfer_op_->apply_transpose(fun_slave, back_fun_master);
