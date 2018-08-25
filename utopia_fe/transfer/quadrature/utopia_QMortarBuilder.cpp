@@ -7,7 +7,6 @@ namespace utopia {
 	using Scalar   = double;
 	// using SizeType = int;
 	using Vector2  = Intersector::Vector2;
-	static Intersector isect;
 
 
 	static const int INSIDE  = 1;
@@ -53,16 +52,16 @@ namespace utopia {
 			const SizeType i2p1x = 2 * (((i + 1) == n_vertices_1)? 0 : (i + 1));
 			const SizeType i2p1y = i2p1x + 1;
 
-			e1 = isect.vec_2(polygon_1[i2x], polygon_1[i2y]);
-			e2 = isect.vec_2(polygon_1[i2p1x], polygon_1[i2p1y]);
+			e1 = Intersector::vec_2(polygon_1[i2x], polygon_1[i2y]);
+			e2 = Intersector::vec_2(polygon_1[i2p1x], polygon_1[i2p1y]);
 
 			SizeType n_outside = 0;
 			for(SizeType j = 0; j < n_input_points; ++j) {
 				const SizeType jx = j * 2;
 				const SizeType jy = jx + 1;
 
-				p = isect.vec_2(input[jx], input[jy]);
-				is_inside[j] = isect.inside_half_plane(e1, e2, p, tol);
+				p = Intersector::vec_2(input[jx], input[jy]);
+				is_inside[j] = Intersector::inside_half_plane(e1, e2, p, tol);
 				n_outside += is_inside[j] == OUTSIDE;	
 			}
 
@@ -76,20 +75,20 @@ namespace utopia {
 				const SizeType jp1x = jp1 * 2;
 				const SizeType jp1y = jp1x + 1;
 
-				s = isect.vec_2(input[jx], input[jy]);
-				e = isect.vec_2(input[jp1x], input[jp1y]);
+				s = Intersector::vec_2(input[jx], input[jy]);
+				e = Intersector::vec_2(input[jp1x], input[jp1y]);
 
 				if(is_inside[j]) {
-					n_output_points = isect.append_point(n_output_points, s, output);
+					n_output_points = Intersector::append_point(n_output_points, s, output);
 
 					if( ( is_inside[j] != ON_EDGE ) && ( !is_inside[jp1] ) ) {
-						n_output_points = isect.append_point(n_output_points, isect.intersect_lines(e1, e2, s, e), output);
+						n_output_points = Intersector::append_point(n_output_points, Intersector::intersect_lines(e1, e2, s, e), output);
 					}
 				} else if(is_inside[jp1]) {
-					n_output_points = isect.append_point(n_output_points, isect.intersect_lines(e1, e2, s, e), output);
+					n_output_points = Intersector::append_point(n_output_points, Intersector::intersect_lines(e1, e2, s, e), output);
 				} else if(is_inside[j] == ON_EDGE && is_inside[jp1] == ON_EDGE) {
-					n_output_points = isect.append_point(n_output_points, s, output);
-					n_output_points = isect.append_point(n_output_points, e, output);
+					n_output_points = Intersector::append_point(n_output_points, s, output);
+					n_output_points = Intersector::append_point(n_output_points, e, output);
 				}
 			}
 
@@ -97,7 +96,7 @@ namespace utopia {
 				return false;
 			}
 
-			n_output_points = isect.collapse_quasi_equal_points(n_output_points, output, tol);
+			n_output_points = Intersector::collapse_quasi_equal_points(n_output_points, output, tol);
 
 			if(n_output_points < 2) {
 				return false;
@@ -188,8 +187,8 @@ namespace utopia {
 		make_polygon(test, test_pts);
 
 		if(intersect_2D(trial_pts, test_pts, intersection)) {
-			total_intersection_volume += fabs(isector.polygon_area_2(intersection.m(), &intersection.get_values()[0]));
-			const libMesh::Real weight = isector.polygon_area_2(test_pts.m(), &test_pts.get_values()[0]);
+			total_intersection_volume += fabs(Intersector::polygon_area_2(intersection.m(), &intersection.get_values()[0]));
+			const libMesh::Real weight = Intersector::polygon_area_2(test_pts.m(), &test_pts.get_values()[0]);
 
 			const int order = order_for_l2_integral(2, trial, trial_type.order, test, test_type.order);
 			make_composite_quadrature_2D(intersection, weight, order, composite_ir);
