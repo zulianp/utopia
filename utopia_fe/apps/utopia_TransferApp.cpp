@@ -27,6 +27,10 @@ namespace utopia {
 
 	void TransferApp::run(const std::string &conf_file_path)
 	{
+		Chrono c;
+
+		c.start();
+
 		mesh_master_ = std::make_shared<libMesh::DistributedMesh>(*comm_);
 		mesh_slave_  = std::make_shared<libMesh::DistributedMesh>(*comm_);
 
@@ -85,6 +89,12 @@ namespace utopia {
 				local_assembler_ = std::make_shared<ApproxL2LocalAssembler>(mesh_master_->mesh_dimension());
 			}
 
+			if(!local_assembler_) {
+				assert(false);
+				std::cerr << "choose type of assembler" << std::endl;
+				return;
+			}
+
 			local2global_ = std::make_shared<Local2Global>(is_interpolation_);
 
 #ifdef WITH_TINY_EXPR
@@ -92,14 +102,28 @@ namespace utopia {
 			is.read("function", expr);
 
 			fun = std::make_shared<SymbolicFunction>(expr);
+
+			std::string fun_type = "non-linear";
+			is.read("function-type", fun_type);
+
+			if(fun_type == "constant") {
+				fun_is_constant = true;
+			}
 #else
 			double expr = 1.;
 			is.read("function", expr);
+			fun_is_constant = true;
 
 			fun = std::make_shared<ConstantCoefficient<double, 0>>(expr);
 #endif //WITH_TINY_EXPR
 
 		});
+
+		c.stop();
+
+		if(mpi_world_rank() == 0) {
+			std::cout << "set-up time: " << c << std::endl;
+		}
 
 
 		TransferOptions opts;
@@ -110,6 +134,7 @@ namespace utopia {
 
 		//////////////////////////////////////////////////////
 
+		c.start();
 		auto B = std::make_shared<DSMatrixd>();
 		TransferAssembler transfer_assembler(local_assembler_, local2global_);
 		bool ok = transfer_assembler.assemble(
@@ -126,8 +151,11 @@ namespace utopia {
 			return;
 		}
 
+		c.stop();
+
 
 		if(mpi_world_rank() == 0) {
+			std::cout << "assembly time: " << c << std::endl;
 			std::cout << "dof_slave x dof_master = " << size(*B).get(0) << " x " << size(*B).get(1) << std::endl;
 		}
 
@@ -155,26 +183,34 @@ namespace utopia {
 		auto u = trial(*space_master_);
 		auto v = test(*space_master_);
 
-		Chrono c;
+		
 		c.start();
 
 		DVectord fun_master_h, fun_master, fun_slave, back_fun_master;
-		assemble(inner(*fun, v) * dX, fun_master_h);
 
-		DSMatrixd mass_mat_master;
-		assemble(inner(u, v) * dX, mass_mat_master);
 
-		c.stop();
+		if(!fun_is_constant) {
+			assemble(inner(*fun, v) * dX, fun_master_h);
 
-		if(mpi_world_rank() == 0) {
-			std::cout << "Assembled M and M * fun" << std::endl;
-			std::cout << c << std::endl;
+			DSMatrixd mass_mat_master;
+			assemble(inner(u, v) * dX, mass_mat_master);
+
+			c.stop();
+
+			if(mpi_world_rank() == 0) {
+				std::cout << "Assembled M and M * fun" << std::endl;
+				std::cout << c << std::endl;
+			}
+
+			fun_master = fun_master_h;
+
+			BiCGStab<DSMatrixd, DVectord> solver;
+			solver.solve(mass_mat_master, fun_master_h, fun_master);
+		} else {
+			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun->eval(0., 0., 0.));
 		}
 
-		fun_master = fun_master_h;
 
-		BiCGStab<DSMatrixd, DVectord> solver;
-		solver.solve(mass_mat_master, fun_master_h, fun_master);
 
 		transfer_op_->apply(fun_master, fun_slave);
 		transfer_op_->apply_transpose(fun_slave, back_fun_master);

@@ -244,7 +244,6 @@ namespace utopia {
 
 	void ApproxL2LocalAssembler::contained_points_3(const Elem &trial,  const libMesh::QBase &q, std::vector<int> &index) const
 	{
-		Intersector isector;
 		Polyhedron poly;
 		make_polyhedron(trial, poly);
 
@@ -252,7 +251,7 @@ namespace utopia {
 
 		std::vector<double> plane_normals(n_half_spaces * 3, 0.);
 		std::vector<double> plane_dists_from_origin(n_half_spaces, 0.);
-		isector.make_h_polyhedron_from_polyhedron(poly, &plane_normals[0], &plane_dists_from_origin[0]);
+		Intersector::make_h_polyhedron_from_polyhedron(poly, &plane_normals[0], &plane_dists_from_origin[0]);
 
 		double p[3];
 
@@ -268,7 +267,7 @@ namespace utopia {
 			bool inside = true;
 			for(int i = 0; i < n_half_spaces; ++i) {
 				const int i3 = i * 3;
-				auto d = isector.point_plane_distance(3, &plane_normals[i3], plane_dists_from_origin[i], p);
+				auto d = Intersector::point_plane_distance(3, &plane_normals[i3], plane_dists_from_origin[i], p);
 
 				if(d >= tol) {
 					inside = false;

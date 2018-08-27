@@ -55,6 +55,7 @@
         <!-- <type>transient</type> -->
         <!-- <n-transient-steps>10</n-transient-steps> -->
         <radius>0.9</radius>
+        <!-- <solver>pg</solver> -->
         <pairs type="array">
             <entry>
                 <master>2</master>

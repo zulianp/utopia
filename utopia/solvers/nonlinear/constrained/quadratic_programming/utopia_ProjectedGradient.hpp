@@ -47,7 +47,7 @@ namespace utopia {
 			Scalar alpha = 1.;
 
 			bool converged = false;
-			const SizeType check_s_norm_each = 5;
+			const SizeType check_s_norm_each = 20;
 
 			int iteration = 0;
 			while(!converged) {

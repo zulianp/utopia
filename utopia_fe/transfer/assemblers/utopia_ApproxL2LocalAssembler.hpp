@@ -37,7 +37,7 @@ namespace utopia {
 		bool nested_meshes;
 		double tol;
 		std::shared_ptr<QMortar> q_trial, q_test;
-		Matrix trial_pts, test_pts;
+		Matrix trial_pts;
 
 		std::shared_ptr<Transform> get_trafo(const Elem &elem) const;
 		bool check_valid(const Matrix &mat) const;

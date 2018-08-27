@@ -1,5 +1,5 @@
 <simulation>
-	<mesh>../data/wear/wear_geoms_3.e</mesh>
+	<mesh>../data/wear/wear_geoms_2.e</mesh>
 	<model>
         <material>LinearElasticity</material>
         <!-- <material>NeoHookean</material> -->
@@ -49,6 +49,7 @@
     <contact>
         <type>steady</type>
         <radius>1.5</radius>
+        <solver>pg</solver>
         <pairs type="array">
             <entry>
                 <master>1</master>

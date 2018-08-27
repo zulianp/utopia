@@ -50,6 +50,8 @@ namespace utopia {
 		std::shared_ptr<ConstantCoefficient<double, 0>> fun;
 #endif //WITH_TINY_EXPR
 
+		bool fun_is_constant;
+
 	};
 }
 

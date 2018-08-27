@@ -259,6 +259,14 @@ namespace utopia {
                     is_steady = true;
                 }
 
+                use_pg = false;
+                std::string solver;
+                is.read("solver", solver);
+
+                if(solver == "pg") {
+                    use_pg = true;
+                }
+
                 is.read("n-transient-steps", n_transient_steps);
 
                 is.read("pairs", [this,&temp](InputStream &is) {
@@ -297,6 +305,7 @@ namespace utopia {
         int n_transient_steps;
         double step_tol;
         int max_nl_iter;
+        bool use_pg;
 
     };
 
@@ -377,7 +386,11 @@ namespace utopia {
 
 
         if(in.is_steady) {
-            solver->set_use_ssn(true);
+            if(in.use_pg) {
+                solver->set_use_pg(true);
+            } else {
+                solver->set_use_ssn(true);
+            }
         } else {
             // solver->tao().atol(1e-8);
             // solver->tao().rtol(1e-8);
