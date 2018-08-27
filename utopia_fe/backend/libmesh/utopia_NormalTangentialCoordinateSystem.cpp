@@ -65,8 +65,6 @@ namespace utopia {
     {
         using namespace libMesh;
 
-        Intersector isector;
-
         const uint n_dims = mesh.mesh_dimension();
         std::unique_ptr<FEBase> fe = FEBase::build(n_dims, dof_map.variable_order(0));
         fe->get_normals();
@@ -201,12 +199,12 @@ namespace utopia {
                             norm = std::sqrt(n[0] * n[0] + n[1] * n[1]);
                             n[0] /= norm; n[1] /= norm;
 
-                            isector.householder_reflection_2(&n[0], &H[0]);
+                            Intersector::householder_reflection_2(&n[0], &H[0]);
                         } else {
                             norm = std::sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
                             n[0] /= norm; n[1] /= norm; n[2] /= norm;
 
-                            isector.householder_reflection_3(&n[0], &H[0]);
+                            Intersector::householder_reflection_3(&n[0], &H[0]);
                         }
 
                         for(uint di = 0; di < n_dims; ++di) {

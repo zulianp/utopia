@@ -1,5 +1,5 @@
 <simulation>
-	<mesh>../data/wear/wear_geoms_2.e</mesh>
+	<mesh>../data/wear/wear_geoms_3.e</mesh>
 	<model>
         <material>LinearElasticity</material>
         <!-- <material>NeoHookean</material> -->

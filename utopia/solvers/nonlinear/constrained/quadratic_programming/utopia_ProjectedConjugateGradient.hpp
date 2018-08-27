@@ -12,7 +12,7 @@
 namespace utopia {
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedConjugateGradient : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
+	class ProjectedConjugateGradient : public IterativeSolver<Matrix, Vector> {
 	public:
 		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
 		DEF_UTOPIA_SCALAR(Matrix)
@@ -29,17 +29,6 @@ namespace utopia {
 			IterativeSolver<Matrix, Vector>::set_parameters(params);
 		}
 
-		virtual bool smooth(const Vector &b, Vector &x) override
-		{
-			const Matrix &A = *this->get_operator();
-
-			SizeType it = 0;
-			SizeType n_sweeps = this->sweeps();
-
-			while(step(A, b, x) && it++ < n_sweeps) {}
-
-			return it == SizeType(this->sweeps() - 1);
-		}
 
 		bool apply(const Vector &b, Vector &x) override
 		{
@@ -49,6 +38,8 @@ namespace utopia {
 			const Matrix &A = *this->get_operator();
 
 			x_old = x;
+			u = b - A * x;
+
 			bool converged = false;
 			const SizeType check_s_norm_each = 5;
 
@@ -84,12 +75,19 @@ namespace utopia {
 
 			assert(false && "implement me");
 
+
+			// Scalar alpha_k_p_1 = dot(u, p)/dot(p, A * p);
+			// x_half = x + alpha_k_p_1 * p;
+			// x    = max(min(x_half, u), l);
+			// u = b - A * x;
+			// p = 
 			return true;
 		}
 
 		void init(const Matrix &A)
 		{
-
+			auto s = local_size(A);
+			p = local_zeros(s.get(0));
 		}
 
 
@@ -114,7 +112,7 @@ namespace utopia {
 		BoxConstraints constraints_;
 
 		//buffers
-		Vector x_old;
+		Vector x_old, x_half, p, u;
 	};
 }
 
