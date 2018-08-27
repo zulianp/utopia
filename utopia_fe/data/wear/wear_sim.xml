@@ -1,5 +1,6 @@
 <simulation>
-	<mesh>../data/wear_2_far.e</mesh>
+	<!-- <mesh>../data/wear_2_far.e</mesh> -->
+    <mesh>../data/wear_2_b.e</mesh>
 	<model>
         <material>LinearElasticity</material>
         <!-- <material>NeoHookean</material> -->
@@ -81,7 +82,7 @@
     <wear>
         <n-cycles>100</n-cycles>
         <coeff>0.007</coeff>
-        <extrapolation>10.0</extrapolation>
+        <extrapolation>500.0</extrapolation>
         <gait-cycle>
             <steps>30</steps>
             <rotations type="array">
