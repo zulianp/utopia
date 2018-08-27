@@ -108,6 +108,8 @@ namespace utopia {
 
 			if(fun_type == "constant") {
 				fun_is_constant = true;
+			} else {
+				fun_is_constant = false;
 			}
 #else
 			double expr = 1.;
@@ -183,7 +185,7 @@ namespace utopia {
 		auto u = trial(*space_master_);
 		auto v = test(*space_master_);
 
-		
+
 		c.start();
 
 		DVectord fun_master_h, fun_master, fun_slave, back_fun_master;

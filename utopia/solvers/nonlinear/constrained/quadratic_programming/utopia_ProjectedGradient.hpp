@@ -53,7 +53,10 @@ namespace utopia {
 			while(!converged) {
 				//perform step
 				x_half = x + alpha * p;
-				x = utopia::min(upbo, utopia::max(lobo, x_half));
+
+				x = utopia::max(lobo, x_half);
+				x = utopia::min(upbo, x);
+
 				u = b - A * x;
 
 				{

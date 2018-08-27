@@ -301,8 +301,9 @@ namespace utopia {
 		std::shared_ptr<FESpaceAdapter> local_fun_spaces_new = std::make_shared<FESpaceAdapter>(master_slave, dof_map, var_num, tags);
 		auto predicate = std::make_shared<moonolith::MasterAndSlave>();
 
-		for(auto t : tags)
+		for(auto t : tags) {
 			predicate->add(t.first, t.second);
+		}
 
 		using namespace moonolith;
 

@@ -66,6 +66,9 @@ namespace utopia {
 			linear_solver_ = iterative_solver;
 
 			n_exports = 0;
+
+			tao_.set_type("tron");
+			tao_.set_ksp_types("bcgs", "jacobi", " ");
 		}
 
 		void set_tol(const Scalar tol)
@@ -340,8 +343,6 @@ namespace utopia {
 				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
 				//(linear_solver_);
 				tao_.set_box_constraints(box_c);
-				tao_.set_type("tron");
-				tao_.set_ksp_types("bcgs", "jacobi", " ");
 				// tao_.set_ksp_types(KSPPREONLY, PCLU, "mumps");
 				// tao_.set_type("gpcg");
 

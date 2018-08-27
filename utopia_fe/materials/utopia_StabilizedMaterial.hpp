@@ -9,15 +9,34 @@
 namespace utopia {
 
 	template<class FunctionSpace, class Matrix, class Vector>
-	class StabilizedMaterial : public ElasticMaterial<Matrix, Vector> {
+	class StabilizedMaterial final : public ElasticMaterial<Matrix, Vector> {
 	public:
+		enum StabilizationType {
+			L2 = 0,
+			H1 = 1
+		};
 
 		StabilizedMaterial(
 			FunctionSpace &V,
 			const double stabilization_mag,
-			const std::shared_ptr<ElasticMaterial<Matrix, Vector>> &material)
-		: V_(V), stabilization_mag_(stabilization_mag), material_(material)
+			const std::shared_ptr<ElasticMaterial<Matrix, Vector>> &material,
+			const StabilizationType type = H1)
+		: V_(V), stabilization_mag_(stabilization_mag), material_(material), type_(type)
 		{}
+
+		StabilizedMaterial(
+			FunctionSpace &V,
+			const double stabilization_mag,
+			const std::shared_ptr<ElasticMaterial<Matrix, Vector>> &material,
+			const std::string type)
+		: V_(V), stabilization_mag_(stabilization_mag), material_(material)
+		{
+			if(type == "L2" || type == "l2") {
+				type_ = L2;
+			} else  {
+				type_ = H1;
+			}
+		}
 
 		bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override
 		{
@@ -26,17 +45,31 @@ namespace utopia {
 				return false;
 			}
 
-			if(empty(lapl_)) {
+			if(empty(stab_)) {
 				auto u = trial(V_);
 				auto v = test(V_);
 
-				auto b_form = inner(u, v) * dX;
-				utopia::assemble(b_form, lapl_);
-				lapl_ *= stabilization_mag_;
+				switch(type_) {
+					case L2: {
+						utopia::assemble(inner(u, v) * dX, stab_);
+						break;
+					}
+
+					default: {
+						utopia::assemble(inner(grad(u), grad(v)) * dX, stab_);
+						break;
+					}
+				}
+
+				stab_ *= stabilization_mag_;
 			}
 
-			hessian = hessian_ + lapl_;
+			hessian = hessian_ + stab_;
 			return true;
+		}
+
+		bool stress(const Vector &x, Vector &result) override {
+			return material_->stress(x, result);
 		}
 
 	private:
@@ -45,7 +78,8 @@ namespace utopia {
 		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
 
 		Matrix hessian_;
-		Matrix lapl_;
+		Matrix stab_;
+		StabilizationType type_;
 	};
 }
 

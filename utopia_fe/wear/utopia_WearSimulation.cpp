@@ -44,6 +44,12 @@ namespace utopia {
                         is.read("lambda", params.default_lambda);
                     });
 
+                    stabilization = "none";
+
+                    is.read("stabilization", stabilization);
+                    stabilization_mag = 0.1;
+                    is.read("stabilization-mag", stabilization_mag);
+
                     // is.read("time", [this](InputStream &is) {
                     //     is.read("dt", dt);
                     //     is.read("steps", n_time_teps);
@@ -59,6 +65,8 @@ namespace utopia {
             LameeParameters params;
             int n_time_teps;
             double dt;
+            std::string stabilization;
+            double stabilization_mag;
         };
 
 		ElasticitySimulation()
@@ -106,6 +114,11 @@ namespace utopia {
             } else /*if(desc_.material_name == "LinearElasticity")*/ {
 				material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, desc_.params);
 			}
+
+            if(desc_.stabilization != "none") {
+                std::cout << "using stabilization: " << desc_.stabilization << " mag: " << desc_.stabilization_mag << std::endl;
+                material = std::make_shared<StabilizedMaterial<decltype(V), DSMatrixd, DVectord>>(V, desc_.stabilization_mag, material, desc_.stabilization);
+            }
 
             /////////////////////////////////////////////////////////////////////////////
 
@@ -391,6 +404,11 @@ namespace utopia {
             } else {
                 solver->set_use_ssn(true);
             }
+            // solver->tao().set_type("gpcg");
+            // solver->tao().verbose(true);
+            // solver->tao().atol(1e-8);
+            // solver->tao().rtol(1e-8);
+            // solver->tao().stol(1e-8);
         } else {
             // solver->tao().atol(1e-8);
             // solver->tao().rtol(1e-8);
@@ -476,7 +494,9 @@ namespace utopia {
 
                 state.velocity               = (1./in.gc.dt) * solver->displacement();
 
-                in.forcing_function->eval(state.displacement, state.external_force);
+                if(in.forcing_function) {
+                    in.forcing_function->eval(state.displacement, state.external_force);
+                }
 
                 solver->stress(state.displacement, state.stress);
 
