@@ -1,5 +1,5 @@
 #ifndef UTOPIA_LIBMESH_VECTOR_ELEMENT_HPP
-#define UTOPIA_LIBMESH_VECTOR_ELEMENT_HPP 
+#define UTOPIA_LIBMESH_VECTOR_ELEMENT_HPP
 
 #include "utopia_libmesh_FunctionSpace.hpp"
 
@@ -8,7 +8,7 @@ namespace utopia {
 	public:
 		typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
 		typedef TraitsT::JacobianType JacobianType;
-		typedef TraitsT::FE FE; 
+		typedef TraitsT::FE FE;
 
 		VectorElement()
 		: grad_flag(false)
@@ -23,7 +23,7 @@ namespace utopia {
 				n_shape_functions += fe_object[start_var + i]->n_shape_functions();
 			}
 
-			grad.resize(n_shape_functions); 
+			grad.resize(n_shape_functions);
 
 			for(std::size_t i = 0; i < n_shape_functions; ++i) {
 				grad[i].resize(n_quad_points);
@@ -47,9 +47,9 @@ namespace utopia {
 				std::size_t offset = 0;
 
 				for(std::size_t i = 0; i < n_vars; ++i) {
-					const auto &fe = fe_object[start_var + i];	
+					const auto &fe = fe_object[start_var + i];
 					const uint n_shape_i = fe->n_shape_functions();
-					
+
 					for(uint j = 0; j < n_shape_i; ++j, offset++) {
 						const auto &grad_i = fe->get_dphi()[j][qp];
 

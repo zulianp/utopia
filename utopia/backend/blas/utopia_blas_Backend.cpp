@@ -16,6 +16,8 @@
 #include <iostream>
 #include <numeric>
 #include <algorithm>
+#include <fstream>
+#include <string>
 
 namespace utopia {
 	
@@ -745,6 +747,93 @@ namespace utopia {
 	{
 		gemm(result, 0., 1, false, left, false, right);
 	}
+
+
+	bool BLASBackend::read(const std::string &path, CRSMatrix<Scalar> &mat)
+	{	
+		SizeType offset = -1;
+		std::ifstream is(path.c_str());
+
+		if(!is.good()) {
+			is.close();
+			return false;
+		}
+
+		mat.clear();
+
+		std::string line;
+		std::getline(is, line);
+
+		SizeType rows, nnz;
+		int nvals = std::sscanf(line.c_str(), "%ld %ld", &rows, &nnz);
+
+		if(nvals != 2) {
+			std::cerr << "bad format for line 0: " << line << std::endl;
+		}
+
+		mat.initialize(rows, rows, nnz);
+
+		mat.assembly_begin();
+
+		int line_num = 1;
+		while(is.good()) {
+			std::getline(is, line);
+
+			SizeType i, j;
+			Scalar val;
+
+			nvals = std::sscanf(line.c_str(), "%ld %ld %lg", &i, &j, &val);
+
+			if(nvals != 3) {
+				std::cerr << "[Warning] bad format for line" << line_num << ": " << line << std::endl;
+				continue;
+			} 
+			
+			mat.set(i + offset, j + offset, val);
+
+			if(line_num == nnz) break;
+			line_num++;
+		}
+
+		if(line_num != nnz) {
+			std::cerr << "[Warning] bad format, number of entries not equal to nnz" << std::endl; 	
+		}
+
+		mat.assembly_end();
+
+		is.close();
+		return false;
+	}
+
+	bool BLASBackend::read(const std::string &path, Vector &vec)
+	{
+		std::ifstream is(path.c_str());
+		vec.clear();
+
+		std::string line;
+		while(is.good()) {
+			std::getline(is, line);
+			vec.push_back(atof(line.c_str()));
+		}
+
+		is.close();
+		return false;
+	}
+
+	void BLASBackend::disp(const Vector &vec)
+	{
+		for(auto v : vec) {
+			std::cout << v << " ";
+		}
+
+		std::cout << std::endl; 
+	}
+
+	// void BLASBackend::disp(const CRSMatrix<Scalar> &mat)
+	// {
+	// 	disp(mat, std::cout);
+	// }
+
 }
 
 #endif //utopia_utopia_BLASBACKEND_CPP

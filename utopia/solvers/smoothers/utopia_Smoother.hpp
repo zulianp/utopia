@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-04-04
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
-*/
-
 #ifndef UTOPIA_SMOOTHER_HPP
 #define UTOPIA_SMOOTHER_HPP
 #include "utopia_Core.hpp"

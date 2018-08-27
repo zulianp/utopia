@@ -290,32 +290,32 @@ namespace utopia {
 		}
 	}
 	
-	void PetscBackend::monitor(const long &iteration, PetscMatrix &m)
+	void PetscBackend::monitor(const long &iteration, PetscMatrix &m, const std::string name_of_file, const std::string name_of_mat)
 	{
 		PetscViewer viewer = nullptr;
 
-		PetscViewerASCIIOpen(m.communicator(), "log_hessian.m", &viewer);  
+		PetscViewerASCIIOpen(m.communicator(), name_of_file.c_str(), &viewer);  
 		PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB); 
 
 		const char *name;
 		PetscObjectGetName((PetscObject)m.implementation(), &name);
-		PetscObjectSetName((PetscObject)m.implementation(), ("H_" + std::to_string(iteration)).c_str());
+		PetscObjectSetName((PetscObject)m.implementation(), (name_of_mat + std::to_string(iteration)).c_str());
 		MatView(m.implementation(), viewer); 
 
 		PetscViewerDestroy(&viewer);
 		PetscObjectSetName((PetscObject)m.implementation(), name);
 	}
 	
-	void PetscBackend::monitor(const long &iteration, PetscVector &v)
+	void PetscBackend::monitor(const long &iteration, PetscVector &v, const std::string name_of_file, const std::string name_of_vec)
 	{
 		PetscViewer viewer = nullptr;
         
-		PetscViewerASCIIOpen(v.communicator(), "log_iterate.m", &viewer);  
+		PetscViewerASCIIOpen(v.communicator(), name_of_file.c_str(), &viewer);  
 		PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
 
 		const char *name;
 		PetscObjectGetName((PetscObject)v.implementation(), &name);
-		PetscObjectSetName((PetscObject)v.implementation(), ("it_" + std::to_string(iteration)).c_str());
+		PetscObjectSetName((PetscObject)v.implementation(), (name_of_vec + std::to_string(iteration)).c_str());
 		VecView(v.implementation(), viewer); 
 		PetscViewerDestroy(&viewer);
 		PetscObjectSetName((PetscObject)v.implementation(), name);
@@ -723,6 +723,10 @@ namespace utopia {
 	
 	Scalar PetscBackend::norm_infty(const PetscVector &v) {
 		return v.norm_infty();
+	}
+
+	Scalar PetscBackend::norm_infty(const Matrix &m) {
+		return m.norm_infty();
 	}
 	
 	Scalar PetscBackend::reduce(const PetscVector &vec, const Plus &) {

@@ -17,7 +17,7 @@ namespace utopia {
 	        auto && right = Eval<Right, Traits>::apply(expr.right().expr());
 
 	    	UTOPIA_BACKEND(Traits).inverse(left, right);
-	    	
+
 			UTOPIA_TRACE_END(expr);
 	    }
 	};
@@ -34,7 +34,7 @@ namespace utopia {
 	        auto && right = Eval<Right, Traits>::apply(expr.right().expr());
 
 	    	UTOPIA_BACKEND(Traits).inverse(left, right);
-	    	
+
 			UTOPIA_TRACE_END(expr);
 	    }
 	};

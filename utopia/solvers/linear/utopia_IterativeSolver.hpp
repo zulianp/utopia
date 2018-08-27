@@ -95,6 +95,8 @@ namespace  utopia
             return this->solve(*this->get_operator(), rhs, sol);
         }
     
+        Scalar get_time() { return _time.get_seconds();  }
+
     protected:
 
         /**
@@ -129,6 +131,36 @@ namespace  utopia
 
 
         /**
+         * @brief      Writes CSV file with iteration info 
+         *
+         * @param[in]  it_global  The iterator global
+         */
+        virtual void print_statistics(const SizeType & it_global)
+        {
+            std::string path = "log_output_path";
+            auto non_data_path = Utopia::instance().get(path);
+
+            if(!non_data_path.empty())
+            {
+                CSVWriter writer;
+                if (mpi_world_rank() == 0)
+                {
+                    if(!writer.file_exists(non_data_path))
+                    {
+                        writer.open_file(non_data_path);
+                        writer.write_table_row<std::string>({"num_its", "time"});
+                    }
+                    else
+                        writer.open_file(non_data_path);
+                    
+                    writer.write_table_row<Scalar>({Scalar(it_global), this->get_time()});
+                    writer.close_file();
+                }
+            }
+        }
+
+
+        /**
          * @brief      Exit of solver. 
          *
          * @param[in]  num_it              The number iterator
@@ -141,7 +173,7 @@ namespace  utopia
             num_it_ = num_it; 
             conv_reason_ = convergence_reason; 
 
-            if(verbose_)
+            if(verbose_ && mpi_world_rank() == 0)
             {
               ConvergenceReason::exitMessage(num_it, convergence_reason);
               if(mpi_world_rank() == 0)
@@ -213,7 +245,7 @@ namespace  utopia
         void rtol(const Scalar & rtol_in ) { rtol_ = rtol_in; }; 
         void stol(const Scalar & stol_in ) { stol_ = stol_in; }; 
         void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; }; 
-        void verbose(const bool & verbose_in ) { verbose_ = verbose_in; }; 
+        void verbose(const bool & verbose_in ) {verbose_ = verbose_in; }; 
         
         void precondition(const bool & precondition_in ) { precondition_ = precondition_in; }; 
         void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 

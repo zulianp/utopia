@@ -1,0 +1,101 @@
+<simulation>
+	<mesh>../data/wear_2_far.e</mesh>
+	<model>
+        <material>LinearElasticity</material>
+        <!-- <material>NeoHookean</material> -->
+		<parameters>
+			<mu>600.</mu>
+			<lambda>600.</lambda>
+		</parameters>
+	</model>
+	<boundary-conditions>
+		<dirichlet type="array">
+			<entry>
+                <coord>0</coord>
+                <side>3</side>
+                <value>0.</value>
+            </entry>
+            <entry>
+                <coord>1</coord>
+                <side>3</side>
+                <value>0.</value>
+            </entry>
+            <entry>
+                <coord>0</coord>
+                <side>4</side>
+                <value>0.0</value>
+            </entry>
+		</dirichlet>
+	</boundary-conditions>
+    <forcing-functions type="array">
+        <!-- no block means that is applied to all -->
+     <!--    <entry>
+            <coord>1</coord>
+            <value>0.1</value>
+        </entry> -->
+     <!--    <entry>
+            <coord>1</coord>
+            <value>x*x + y*y</value>
+        </entry> -->
+     <!--    <entry>
+            <block>4</block>
+            <coord>1</coord>
+            <value>50.</value>
+            <type>surface</type>
+        </entry> -->
+        <entry>
+            <block>2</block>
+            <coord>1</coord>
+            <value>0.05</value>
+        </entry>
+    </forcing-functions>
+    <contact>
+        <type>steady</type>
+        <!-- <type>transient</type> -->
+        <!-- <n-transient-steps>10</n-transient-steps> -->
+        <radius>0.9</radius>
+        <pairs type="array">
+            <entry>
+                <master>2</master>
+                <slave>1</slave>
+            </entry>
+        </pairs>
+    </contact>
+    <wear>
+        <n-cycles>100</n-cycles>
+        <coeff>0.007</coeff>
+        <extrapolation>5.0</extrapolation>
+        <gait-cycle>
+            <steps>30</steps>
+            <rotations type="array">
+                <entry>
+                    <block>1</block>
+                    <axis>z</axis>
+                    <begin>0.</begin>
+                    <end>10</end>
+                    <!-- steps when active -->
+                    <from>0</from>
+                    <to>15</to>
+                </entry>
+                   <entry>
+                    <block>1</block>
+                    <axis>z</axis>
+                    <begin>10.</begin>
+                    <end>0.</end>
+                    <!-- steps when active -->
+                    <from>15</from>
+                    <to>30</to>
+                </entry>
+            </rotations>
+            <translations type="array">
+                <entry>
+                    <block>2</block>
+                    <axis>y</axis>
+                    <begin>0.5</begin>
+                    <end>0.5</end>
+                </entry>
+            </translations>
+        </gait-cycle>
+    </wear>
+	<output>./wear_out</output>
+</simulation>

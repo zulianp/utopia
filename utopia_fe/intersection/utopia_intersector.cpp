@@ -94,8 +94,7 @@ namespace utopia {
 		// }
 
 
-		Intersector isector;
-		return isector.intersect_convex_polygons(n_vertices_1, polygon_1, n_vertices_2, polygon_2, n_vertices_result, result_buffer, tol);
+		return Intersector::intersect_convex_polygons(n_vertices_1, polygon_1, n_vertices_2, polygon_2, n_vertices_result, result_buffer, tol);
 #endif //USE_CLIPPER
 	}
 }

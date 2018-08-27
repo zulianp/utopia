@@ -29,7 +29,7 @@ namespace utopia {
         bool apply(const Vector &rhs, Vector &sol) override
         {
             sol = expr_ * rhs;
-            std::cout<< "expression thing ... \n"; 
+            std::cout<< "expression thing ... \n";
             return true;
         }
 
@@ -53,20 +53,20 @@ namespace utopia {
 
         bool apply(const Vector &/*rhs*/, Vector &/*sol*/) override
         {
-            std::cerr<< "[Warning] DelegatePreconditioner::apply doing nothing ... \n"; 
+            std::cerr<< "[Warning] DelegatePreconditioner::apply doing nothing ... \n";
             return true;
         }
 
         void update(const std::shared_ptr<const Matrix> &op)
         {
             // disp(*op);
-            // std::cout<< "[Message] DelegatePreconditioner::update ... \n"; 
+            // std::cout<< "[Message] DelegatePreconditioner::update ... \n";
             op_ = op;
         }
 
         const std::shared_ptr<const Matrix> &get_matrix() const
         {
-            // std::cout<< "[Message] DelegatePreconditioner::get_matrix ... \n"; 
+            // std::cout<< "[Message] DelegatePreconditioner::get_matrix ... \n";
             return op_;
         }
 

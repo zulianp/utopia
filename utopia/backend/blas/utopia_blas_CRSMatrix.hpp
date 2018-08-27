@@ -313,7 +313,7 @@ namespace utopia {
 
 
     template<typename T>
-    void disp(const Wrapper< CRSMatrix<T>, 2> &w, std::ostream &os)
+    void disp(const Wrapper< CRSMatrix<T>, 2> &w, std::ostream &os = std::cout)
     {
         os << "-------------------------------------------------------------------------\n";
         os << w.implementation().rows() << ", " << w.implementation().cols() << "\n";

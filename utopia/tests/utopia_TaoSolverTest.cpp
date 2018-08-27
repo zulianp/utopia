@@ -10,7 +10,7 @@
 
 namespace utopia {
 	void petsc_tao_solve_simple()
-	{	
+	{
 		TestFunctionND_1<DMatrixd, DVectord> fun(10);
 		TaoSolver<DMatrixd, DVectord> tao(std::make_shared<Factorization<DMatrixd, DVectord>>());
 		DVectord x = zeros(10);
@@ -68,18 +68,18 @@ namespace utopia {
 	{
 		DVectord rhs;
 		DSMatrixd A, I_1, I_2, I_3;
-		
+
 		const std::string data_path = Utopia::instance().get("data_path");
-		
+
 		read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
 		read(data_path + "/laplace/matrices_for_petsc/f_A", A);
 		read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
 		read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
-		
+
 		std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
 		interpolation_operators.push_back(make_ref(I_2));
 		interpolation_operators.push_back(make_ref(I_3));
-		
+
 		auto smoother      = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
 		auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
 		Multigrid<DSMatrixd, DVectord> multigrid(smoother, linear_solver);
@@ -90,7 +90,7 @@ namespace utopia {
 
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(A), make_ref(rhs));
 		TaoSolver<DSMatrixd, DVectord> tao(make_ref(multigrid));
-		
+
 		// multigrid.verbose(true);
 		multigrid.max_it(20);
 		multigrid.atol(1e-15);
@@ -111,7 +111,7 @@ namespace utopia {
 		example.getOperators(n, m, rhs, upper_bound);
 		DVectord x = zeros(n);
 
-		const double scale_factor = 1e-10;
+		const double scale_factor = 10e-10;
 		rhs *= scale_factor;
 		upper_bound *= scale_factor;
 
@@ -120,12 +120,18 @@ namespace utopia {
 
 		// auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
 		auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
-        auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
+        auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
+        qp_solver->atol(1e-18);
+        qp_solver->stol(1e-18);
+        qp_solver->max_it(300);
 
-        TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver); 
-        tr_solver.set_box_constraints(box); 
-        tr_solver.verbose(false); 
-        tr_solver.solve(fun, x); 
+        TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver);
+        tr_solver.set_box_constraints(box);
+        tr_solver.verbose(false);
+        tr_solver.atol(1e-17);
+        tr_solver.stol(1e-20);
+        tr_solver.rtol(1e-20);
+        tr_solver.solve(fun, x);
 
 		x *= 1./scale_factor;
 

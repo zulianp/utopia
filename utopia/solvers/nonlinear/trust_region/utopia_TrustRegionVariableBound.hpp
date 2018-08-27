@@ -24,7 +24,7 @@
      	public:                                                                       // once generic, then = std::shared_ptr<ProjectedGaussSeidel<Matrix, Vector> >()
       TrustRegionVariableBound( const std::shared_ptr<TRBoxSubproblem> &tr_subproblem,
                                 const Parameters params = Parameters()) : 
-                                NonLinearSolver(tr_subproblem, params)  
+                                NonLinearSolver(tr_subproblem, params), it_successful_(0)  
       {
         set_parameters(params);        
       }
@@ -59,7 +59,8 @@
 
         Scalar delta, ared, pred, rho, E_old, E_new; 
 
-        SizeType it = 0; 
+        SizeType it = 0;
+        it_successful_ = 0; 
         const Scalar infty = std::numeric_limits<Scalar>::infinity();
         Scalar g_norm = infty, g0_norm = infty, r_norm = infty, s_norm = infty;
         bool rad_flg = false; 
@@ -80,7 +81,7 @@
         if(this->verbose_)
         {
           this->init_solver("TRUST_REGION_BASE",
-                              {" it. ", "||P_c(x-g)-x||","J_k", "J_{k+1}", "rho", "ared","pred", "delta_k", "|| p_k || "});
+                              {" it. ", "||P_c(x-g)-x||","J_k", "J_{k+1}", "ared","pred", "rho", "delta_k", "|| p_k || "});
           PrintInfo::print_iter_status(it, {g_norm}); 
         }
 
@@ -96,20 +97,17 @@
             fun.value(x_k, E_old); 
             fun.hessian(x_k, H); 
           }
+
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------          
           if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver_.get()))
           {
             p_k = 0 * p_k; 
-            tr_subproblem->current_radius(delta);  
-
-            Vector ub, lb; 
-            this->merge_tr_with_pointwise_constrains(x_k, delta, ub, lb); 
-            
-            auto box = make_box_constaints(make_ref(lb), make_ref(ub)); 
+            auto box = this->merge_tr_with_pointwise_constrains(x_k, delta); 
             tr_subproblem->tr_constrained_solve(H, g, p_k, box);
           }
+
 
           this->get_pred(g, H, p_k, pred); 
     //----------------------------------------------------------------------------
@@ -135,6 +133,10 @@
 
 
           this->trial_point_acceptance(rho, x_k1, x_k); 
+          
+          if (rho >= this->rho_tol())
+            it_successful_++; 
+
     //----------------------------------------------------------------------------
     //    convergence check 
     //----------------------------------------------------------------------------
@@ -145,7 +147,7 @@
           s_norm = norm2(p_k); 
 
           if(this->verbose_)
-            PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, rho, ared, pred, delta, s_norm}); 
+            PrintInfo::print_iter_status(it, {g_norm, E_old, E_new, ared, pred, rho, delta, s_norm}); 
 
           converged = TrustRegionBase::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, s_norm, delta); 
 
@@ -155,6 +157,9 @@
           this->delta_update(rho, p_k, delta); 
           it++; 
         }
+
+        // some benchmarking 
+        this->print_statistics(it);      
 
           return false;
       }
@@ -174,6 +179,38 @@
       {
         NonLinearSolver::set_linear_solver(tr_linear_solver); 
       }
+
+
+    protected: 
+
+        virtual void print_statistics(const SizeType & it) override
+        {
+            std::string path = "log_output_path";
+            auto non_data_path = Utopia::instance().get(path);
+
+            if(!non_data_path.empty())
+            {
+                CSVWriter writer;
+                if (mpi_world_rank() == 0)
+                {
+                    if(!writer.file_exists(non_data_path))
+                    {
+                        writer.open_file(non_data_path);
+                        writer.write_table_row<std::string>({"num_its", "it_successful", "time"});
+                    }
+                    else
+                        writer.open_file(non_data_path);
+                    
+                    writer.write_table_row<Scalar>({Scalar(it), Scalar(it_successful_),  this->get_time()});
+                    writer.close_file();
+                }
+            }
+        }
+
+
+    private:
+      SizeType it_successful_; 
+
 
   };
 

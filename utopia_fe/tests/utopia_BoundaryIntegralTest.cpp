@@ -33,7 +33,7 @@ namespace utopia {
 		const unsigned int nz = 6;
 
 		auto elem_order = libMesh::SECOND;
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 
 		libMesh::MeshTools::Generation::build_cube(*mesh,
 			nx, ny, nz,
@@ -46,7 +46,7 @@ namespace utopia {
 
 		auto dim = mesh->mesh_dimension();
 
-		auto sys = std::make_shared<libMesh::EquationSystems>(*mesh);	
+		auto sys = std::make_shared<libMesh::EquationSystems>(*mesh);
 		sys->add_system<libMesh::LinearImplicitSystem>("bit");
 
 		auto V = LibMeshFunctionSpace(sys, libMesh::LAGRANGE, elem_order, "u");
@@ -74,11 +74,11 @@ namespace utopia {
 		DSMatrixd boundary_mass_matrix = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 
 		double mat_sum = 0.0;
-		
+
 		{
 			Write<DSMatrixd> w_b(boundary_mass_matrix);
 			libMesh::DenseMatrix<libMesh::Real> elemat;
-			
+
 			// for(const auto & elem : mesh->active_local_element_ptr_range()) {
 			for(auto e_it = mesh->active_local_elements_begin(); e_it != mesh->active_local_elements_end(); ++e_it) {
 				auto elem = *e_it;
@@ -89,7 +89,7 @@ namespace utopia {
 				elemat.zero();
 
 				bool has_assembled = false;
-				
+
 				// for(auto side : elem->side_index_range()) {
 				for(auto side = 0; side < elem->n_sides(); ++side) {
 					if((elem->neighbor_ptr(side) != libmesh_nullptr)) { continue; }

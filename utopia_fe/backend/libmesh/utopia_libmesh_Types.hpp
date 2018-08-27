@@ -12,23 +12,23 @@
 #include "libmesh/dense_vector.h"
 
 namespace utopia {
-	
+
 	template<class It>
 	void print_vector(const It &begin, const It &end, std::ostream &os = std::cout)
 	{
 		for(It it = begin; it != end; ++it) {
 			os << *it << " ";
 		}
-		
+
 		os << "\n";
 	}
-	
+
 	template<typename T>
 	class LibMeshAlgebraTraits {
 	public:
 		typedef T Scalar;
 		typedef libMesh::dof_id_type SizeType;
-		
+
 		enum {
 			Backend = LIBMESH_TAG
 		};
@@ -36,11 +36,11 @@ namespace utopia {
 		typedef libMesh::DenseMatrix<Scalar> Matrix;
 		typedef libMesh::DenseVector<Scalar> Vector;
 	};
-	
+
 	UTOPIA_MAKE_TRAITS_DENSE_TPL_1(libMesh::DenseMatrix, LibMeshAlgebraTraits);
 	UTOPIA_MAKE_TRAITS_DENSE_TPL_1(libMesh::DenseVector, LibMeshAlgebraTraits);
-	
-	
+
+
 	inline static void add_matrix(const libMesh::DenseMatrix<libMesh::Real> &block,
 								  const std::vector<libMesh::dof_id_type> &row_dofs,
 								  const std::vector<libMesh::dof_id_type> &col_dofs,
@@ -48,14 +48,14 @@ namespace utopia {
 	{
 		mat.add_matrix(block, row_dofs, col_dofs);
 	}
-	
+
 	inline static void add_vector(const libMesh::DenseVector<libMesh::Real> &block, const std::vector<libMesh::dof_id_type> &dofs, libMesh::NumericVector<libMesh::Real> &vec)
 	{
 		assert(block.size() == dofs.size());
 		vec.add_vector(block, dofs);
 	}
-	
-	
+
+
 	inline static void get_vector(const DVectord &vec, const std::vector<libMesh::dof_id_type> &dofs, libMesh::DenseVector<libMesh::Real> &el_vec)
 	{
 		el_vec.resize(dofs.size());
@@ -64,7 +64,7 @@ namespace utopia {
 			el_vec(i++) = vec.get(test);
 		}
 	}
-	
+
 	inline static void add_matrix(const libMesh::DenseMatrix<libMesh::Real> &block,
 								  const std::vector<libMesh::dof_id_type> &row_dofs,
 								  const std::vector<libMesh::dof_id_type> &col_dofs,
@@ -77,7 +77,7 @@ namespace utopia {
 		// 		if(val != 0.0) {
 		// 			assert(row_dofs[i] < s.get(0));
 		// 			assert(col_dofs[j] < s.get(1));
-					
+
 		// 			mat.add(row_dofs[i], col_dofs[j], val);
 		// 		}
 		// 	}
@@ -85,7 +85,7 @@ namespace utopia {
 
 		mat.add_matrix(row_dofs, col_dofs, block.get_values());
 	}
-	
+
 	inline static void add_vector(const libMesh::DenseVector<libMesh::Real> &block, const std::vector<libMesh::dof_id_type> &dofs, DVectord &vec)
 	{
 		assert(block.size() == dofs.size());
@@ -93,30 +93,30 @@ namespace utopia {
 			vec.add(dofs[i], block(i));
 		}
 	}
-	
+
 	template<typename Scalar>
 	class Backend<Scalar, LIBMESH_TAG> : public ScalarBackend<Scalar> {
 	public:
 		typedef libMesh::dof_id_type SizeType;
-		
+
 		inline static Backend &Instance()
 		{
 			static Backend instance_;
 			return instance_;
 		}
-		
+
 		template<typename T>
 		inline static void write_lock(T &) {}
-		
+
 		template<typename T>
 		inline static void write_unlock(T &) {}
-		
+
 		template<typename T>
 		inline static void read_lock(T &) {}
-		
+
 		template<typename T>
 		inline static void read_unlock(T &) {}
-		
+
 		template<class Tensor>
 		inline static void set(Tensor &t, const SizeType row, const SizeType col, const Scalar value)
 		{
@@ -128,7 +128,7 @@ namespace utopia {
 		{
 			t(row, col) += value;
 		}
-		
+
 		template<class Tensor>
 		inline static Scalar get(Tensor &t, const SizeType row, const SizeType col)
 		{
@@ -152,7 +152,7 @@ namespace utopia {
 		{
 			return t(row);
 		}
-		
+
 		template<typename T>
 		inline static void assign_transposed(libMesh::DenseMatrix<T> &left, const libMesh::DenseMatrix<T> &right)
 		{
@@ -164,22 +164,22 @@ namespace utopia {
 			m.resize(size.get(0), size.get(1));
 			m.zero();
 		}
-		
+
 		template<typename T>
 		inline static Range range(const libMesh::DenseVector<T> &v) {
 			return Range(0, v.size());
 		}
-		
+
 		template<typename T>
 		inline static Range row_range(const libMesh::DenseMatrix<T> &m) {
 			return Range(0, m.m());
 		}
-		
+
 		template<typename T>
 		inline static Range col_range(const libMesh::DenseMatrix<T> &m) {
 			return Range(0, m.n());
 		}
-		
+
 		template<typename T>
 		inline static void resize(libMesh::DenseMatrix<T> &mat, const Size &size)
 		{
@@ -187,7 +187,7 @@ namespace utopia {
 				mat.resize(size.get(0), size.get(1));
 			}
 		}
-		
+
 		template<typename T>
 		inline static void resize(libMesh::DenseVector<T> &vec, const Size &size)
 		{
@@ -200,16 +200,16 @@ namespace utopia {
 		inline static void assign(L &left, R &&right) {
 			left = std::forward<R>(right);
 		}
-		
+
 	private:
 		Backend() {}
-		
+
 	};
-	
+
 	template<typename Result>
 	class Evaluator<Result, LIBMESH_TAG> {
 	public:
-		
+
 		template<class Left, class Right>
 		static void eval(const Construct<Left, Right> &expr)
 		{
@@ -226,14 +226,14 @@ namespace utopia {
 		static void eval(const InPlace<Left, Right, Operation> &expr)
 		{
 		    ExprInliner<InPlace<Left, Right, Operation>>::eval(expr);
-		}  
+		}
 
 		template<class Derived>
 		static auto eval(const Expression<Derived> &expr) -> decltype( ExprInliner<Derived>::eval(expr.derived()) )
 		{
 		    return ExprInliner<Derived>::eval(expr.derived());
 		}
-		
+
 		template<class Tensor>
 		inline static void eval(const Wrapper<Tensor, 2> &t, Size &size)
 		{
@@ -249,7 +249,7 @@ namespace utopia {
 			size.set(0, t.implementation().size());
 		}
 	};
-	
+
 	typedef utopia::Wrapper<libMesh::DenseMatrix<libMesh::Real>, 2>  LMDenseMatrix;
 	typedef utopia::Wrapper<libMesh::DenseVector<libMesh::Real>, 1>  LMDenseVector;
 
@@ -262,15 +262,15 @@ namespace utopia {
 	{
 		vec.implementation().print(os);
 	}
-	
-	
-	
+
+
+
 	inline const libMesh::DenseMatrix<libMesh::Real> &raw_type(const Wrapper<libMesh::DenseMatrix<libMesh::Real>, 2> &utopiaType)
 	{
 		return utopiaType.implementation();
 	}
-	
-	
+
+
 	inline libMesh::DenseMatrix<libMesh::Real> &raw_type(Wrapper<libMesh::DenseMatrix<libMesh::Real>, 2> &utopiaType)
 	{
 		return utopiaType.implementation();

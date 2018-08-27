@@ -22,11 +22,11 @@ namespace utopia {
 		KSPCGSTCG,
 		KSPCGGLTR,
 		KSPFETIDP,
-		KSPPIPEBCGS,		
+		KSPPIPEBCGS,
 #else
-		KSPSTCG, 
+		KSPSTCG,
 		KSPGLTR,
-		KSPNASH,		
+		KSPNASH,
 #endif
 		KSPFCG,
 		KSPPIPEFCG,
@@ -99,12 +99,12 @@ namespace utopia {
 		PCCHOWILUVIENNACL,
 		PCROWSCALINGVIENNACL,
 		PCSAVIENNACL,
-#endif		
+#endif
 		PCBDDC,
 		PCKACZMARZ,
 		PCTELESCOPE,
 		PCNONE
-	}), 
+	}),
 	package_({" ", "petsc", "mumps", "superlu", "superlu_dist" })
 	{}
 

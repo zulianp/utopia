@@ -13,19 +13,12 @@
 #include "MortarAssembler.hpp"
 #include "utopia_Socket.hpp"
 
-#include "utopia_FEDSLBaseExamples.hpp"
-#include "utopia_FEDSLMortarExamples.hpp"
-#include "utopia_FEDSLLeastSquaresExamples.hpp"
-#include "utopia_MixedFESpaceExample.hpp"
 #include "utopia_TimeDiffExamples.hpp"
 #include "utopia_TimeDiffExamples.hpp"
 #include "utopia_GeometryTest.hpp"
-#include "utopia_Biomechanics.hpp"
 #include "utopia_UtopiaFETests.hpp"
-#include "utopia_VolumeTransferBenchmark.hpp"
 #include "utopia_SemigeometricMultigridTest.hpp"
 #include "utopia_SDCTest.hpp"
-#include "utopia_WearEstimator.hpp"
 #include "utopia_MechTest.hpp"
 #include "utopia_AssemblyTest.hpp"
 #include "utopia_FSITest.hpp"
@@ -36,11 +29,11 @@
 #include "utopia_FEEvalTest.hpp"
 #include "utopia_LeastSquaresHelmholtz.hpp"
 #include "utopia_ContactSolver.hpp"
-#include "utopia_ContactTest.hpp"
 #include "utopia_CoarsenerTest.hpp"
 #include "utopia_EikonalEquationTest.hpp"
 #include "utopia_TestVolume2SurfaceTransfer.hpp"
 #include "utopia_VolumeInterpolationTest.hpp"
+#include "utopia_WearSimulation.hpp"
 
 #include <functional>
 
@@ -51,27 +44,27 @@ using namespace std;
 using namespace libMesh;
 
 
-int main(const int argc, char *argv[]) 
+int main(const int argc, char *argv[])
 {
 
 	Utopia::Init(argc, argv);
 	MOONOLITH_PROFILING_BEGIN();
-	
+
 	{
 		LibMeshInit init(argc, argv, PETSC_COMM_WORLD);
 
 		std::map<std::string, std::function<void(LibMeshInit &)> > runners;
-		runners["base"] = run_base_examples;
-		runners["time_diff"] = run_time_diff_examples;
-		runners["least_squares"] = run_least_squares_examples;
-		runners["mixed_fe_space"] = run_mixed_fe_space_example;
-	    runners["biomechanics"] = run_biomechanics_example;
+		// runners["base"] = run_base_examples;
+		// runners["time_diff"] = run_time_diff_examples;
+		// runners["least_squares"] = run_least_squares_examples;
+		// runners["mixed_fe_space"] = run_mixed_fe_space_example;
+	    // runners["biomechanics"] = run_biomechanics_example;
 	    runners["geometry"] = run_geometry_test;
-	    runners["mortar"] = run_mortar_examples;
+	    // runners["mortar"] = run_mortar_examples;
 	    runners["tests"] = run_all_utopia_fe_tests;
 	    runners["smg"] = run_semigeometric_multigrid_test;
 	    runners["sdc"] = run_sdc_test;
-	    runners["wear"] = run_wear_test;
+	    // runners["wear"] = run_wear_test;
 	    runners["mech"] = run_mech_test;
 	    runners["asm"] = run_assembly_test;
 	    runners["fsi"] = run_fsi_test;
@@ -82,22 +75,22 @@ int main(const int argc, char *argv[])
 	    runners["fe_test"] = run_fe_eval_test;
 	    runners["helm"] = run_form_least_squares_helmholtz;
 	    runners["contact_steady"] = run_steady_contact;
-	    runners["ct"] = run_contact_test;
+	    // runners["ct"] = run_contact_test;
 	    runners["coarsener_test"] = run_coarsener_test;
 	    runners["eikonal"] = run_eikonal_equation_test;
 	    runners["vol2surf"] = run_volume_to_surface_transfer_test;
 	    runners["interp"] = run_volume_interpolation_test;
 	    //benchmarks
-	    runners["vt_benchmark"] = run_volume_transfer_benchmark;
-	    runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
+	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;
+	    // runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
 
 
-	    
+
 
 
 		for(int i = 1; i < argc; ++i) {
 			const int ip1 = i+1;
-			
+
 			if(argv[i] == std::string("-r")) {
 				if(ip1 < argc) {
 					auto it = runners.find(argv[ip1]);
@@ -132,7 +125,13 @@ int main(const int argc, char *argv[])
 			} else if(argv[i] == std::string("-data_path")) {
 				utopia::Utopia::instance().set("data_path", argv[ip1]);
 				std::cout << "setting data_path to: " << argv[ip1] << std::endl;
+			} else if(argv[i] == std::string("-wear_sim")) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+				//passing wear xml path to
+				WearSimulation ws;
+				ws.run(init, argv[ip1]);
 			}
+
 		}
 	}
 

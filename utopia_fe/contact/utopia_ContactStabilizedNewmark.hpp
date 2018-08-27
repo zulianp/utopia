@@ -1,5 +1,5 @@
 #ifndef UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP
-#define UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP 
+#define UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP
 
 #include "utopia_ContactSolver.hpp"
 #include "utopia_ContactSystem.hpp"
@@ -18,7 +18,7 @@ namespace utopia {
 			const Scalar dt,
 			const ContactParams &params
 		)
-		: ContactSolver<Matrix, Vector>(V, material, params), dt_(dt), density_(1), is_new_time_step_(true)
+		: ContactSolver<Matrix, Vector>(V, material, params), dt_(dt), density_(1.), is_new_time_step_(true)
 		{
 			// c_sys_ = std::make_shared<ContactSystem>(V->subspace(0).equation_systems_ptr(), V->subspace(0).equation_system().number());
 		}
@@ -32,7 +32,7 @@ namespace utopia {
 
 			if(is_new_time_step_) {
 				//copy for time-adaptivity for changing the predictor for different dt
-				
+
 				O_copy_   = this->contact().orthogonal_trafo;
 				// O_copy_   = this->contact().complete_transformation;
 				gap_copy_ = this->contact().gap;
@@ -43,6 +43,11 @@ namespace utopia {
 
 			hessian  = internal_mass_matrix_ + ((dt_*dt_*density_)/4.) * stiffness_matrix_;
 			gradient = ((dt_*dt_*density_)/4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) - forcing_term_;
+			return true;
+		}
+
+		virtual bool stress(const Vector &x, Vector &result) override {
+			result = ((dt_*dt_*density_)/4.) * internal_force_ + (internal_mass_matrix_ * (x - pred_)) - forcing_term_;
 			return true;
 		}
 
@@ -111,8 +116,8 @@ namespace utopia {
 
 		void update_velocity()
 		{
-			velocity_inc_ = (-2./(dt_)) * (internal_mass_matrix_ * (x_old_ -  this->displacement() + pred_));
-			apply_zero_boundary_conditions(this->space()[0].dof_map(), velocity_inc_);			
+			velocity_inc_ = (-2./dt_) * (internal_mass_matrix_ * (x_old_ -  this->displacement() + pred_));
+			apply_zero_boundary_conditions(this->space()[0].dof_map(), velocity_inc_);
 			velocity_ = velocity_old_ + e_mul(inverse_mass_vector_, velocity_inc_);
 		}
 
@@ -122,11 +127,11 @@ namespace utopia {
 			// 	this->external_force_fun()->eval(t_, external_force_);
 			// }
 
-			forcing_term_ = internal_mass_matrix_ * x_old_ + (dt_ * dt_ * density_/4.) * (2. * external_force_ - internal_force_old_);
+			forcing_term_ = internal_mass_matrix_ * x_old_ + ((dt_ * dt_ * density_)/4.) * (2. * external_force_ - internal_force_old_);
 		}
 
 		void next_step() override
-		{	
+		{
 			update_velocity();
 			update_contact_system();
 
@@ -135,22 +140,22 @@ namespace utopia {
 			velocity_old_ = velocity_;
 
 			//external_force_ = (external_force_old + external_force_current)/2
-			
+
 			update_forcing_term();
-			is_new_time_step_ = true;	
+			is_new_time_step_ = true;
 			t_ += dt_;
 		}
 
 		void update_contact_system()
 		{
 			if(!c_sys_) return;
-			
+
 			MechanicsState state;
 			state.displacement = this->displacement();
 			state.displacement_increment = this->displacement() - x_old_;
-			
+
 			state.velocity = velocity_;
-			
+
 			state.internal_force = internal_force_;
 			state.external_force = external_force_;
 
@@ -160,7 +165,7 @@ namespace utopia {
 
 		virtual void finalize() override
 		{
-		
+
 		}
 
 		void set_dt_and_update(const Scalar dt)
@@ -179,12 +184,12 @@ namespace utopia {
 		Scalar dt_;
 		Scalar t_;
 		Scalar density_;
-		
+
 		//operators
 		Matrix stiffness_matrix_;
 		Matrix internal_mass_matrix_;
 		Vector inverse_mass_vector_;
-	
+
 		//old displacement
 		Vector x_old_;
 
@@ -193,7 +198,7 @@ namespace utopia {
 
 
 		//forces
-		Vector internal_force_;	
+		Vector internal_force_;
 		Vector internal_force_old_;
 
 		Vector external_force_;

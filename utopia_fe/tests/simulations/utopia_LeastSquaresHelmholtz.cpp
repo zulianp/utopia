@@ -40,7 +40,7 @@ namespace utopia {
 		const auto elem_order_grad = libMesh::FIRST;
 
 		//mesh
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());		
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 		libMesh::MeshTools::Generation::build_square(
 			*mesh,
 			n, n,
@@ -62,7 +62,7 @@ namespace utopia {
 		auto Q  = Qx * Qy;
 
 		auto u = trial(V);
-		auto v = test(V);	
+		auto v = test(V);
 
 		auto s = trial(Q);
 		auto q = test(Q);

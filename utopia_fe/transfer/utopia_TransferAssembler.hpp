@@ -1,9 +1,10 @@
 #ifndef UTOPIA_TRANSFER_ASSEMBLER_HPP
-#define UTOPIA_TRANSFER_ASSEMBLER_HPP 
+#define UTOPIA_TRANSFER_ASSEMBLER_HPP
 
 #include "utopia_LocalAssembler.hpp"
 #include "utopia_Local2Global.hpp"
 #include "utopia_libmesh.hpp"
+#include "utopia.hpp"
 
 #include <memory>
 
@@ -31,16 +32,13 @@ namespace utopia {
 		class Algorithm {
 		public:
 			virtual ~Algorithm() {}
-			virtual bool assemble(
-				LocalAssembler &assembler,
-				Local2Global   &local2global,
-				SparseMatrix   &B) = 0;
+			virtual bool assemble(SparseMatrix &B) = 0;
 		};
 
 		TransferAssembler(
 			const std::shared_ptr<LocalAssembler> &assembler,
 			const std::shared_ptr<Local2Global>   &local2global);
-		
+
 		bool assemble(
 			const std::shared_ptr<MeshBase> &from_mesh,
 			const std::shared_ptr<DofMap>   &from_dofs,
@@ -85,7 +83,7 @@ namespace utopia {
 		inline void apply(const DVectord &from, DVectord &to) const override
 		{
 			DVectord B_from = *B * from;
-			
+
 			if(empty(to)) {
 				to = B_from;
 			}
@@ -96,7 +94,7 @@ namespace utopia {
 		///@brief assumes that D is symmetric
 		void apply_transpose(const DVectord &from, DVectord &to) const override
 		{
-			DVectord D_inv_from; 
+			DVectord D_inv_from;
 			linear_solver->apply(from, D_inv_from);
 			to = transpose(*B) * D_inv_from;
 		}
@@ -104,7 +102,7 @@ namespace utopia {
 		inline L2TransferOperator(
 			const std::shared_ptr<DSMatrixd> &B,
 			const std::shared_ptr<DSMatrixd> &D,
-			const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>() 
+			const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>()
 			)
 		: B(B), D(D), linear_solver(linear_solver)
 		{
@@ -115,7 +113,7 @@ namespace utopia {
 			linear_solver->update(D);
 		}
 
-		inline void describe(std::ostream &os) const override 
+		inline void describe(std::ostream &os) const override
 		{
 			DVectord t_from = local_values(local_size(*D).get(0), 1);
 			DVectord t_to;
@@ -173,7 +171,7 @@ namespace utopia {
 			assert(T);
 		}
 
-		inline void describe(std::ostream &os) const override 
+		inline void describe(std::ostream &os) const override
 		{
 			DVectord t = sum(*T, 1);
 			double t_max = max(t);
@@ -224,13 +222,13 @@ namespace utopia {
 			*T = diag(1./d) * (*T);
 		}
 
-		inline void describe(std::ostream &os) const override 
+		inline void describe(std::ostream &os) const override
 		{
 			DVectord t = sum(*T, 1);
 			double t_max = max(t);
 			double t_min = min(t);
 			double t_sum = sum(t);
-			
+
 			os << "------------------------------------------\n";
 			os << "Interpolator:\n";
 			os << "row sum [" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
@@ -240,6 +238,13 @@ namespace utopia {
 
 	private:
 		std::shared_ptr<DSMatrixd> T;
+	};
+
+
+	enum TransferOperatorType {
+		INTERPOLATION = 0,
+		L2_PROJECTION = 1,
+		PSEUDO_L2_PROJECTION = 2
 	};
 }
 

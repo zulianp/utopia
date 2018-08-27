@@ -4,6 +4,7 @@
 #include "moonolith_communicator.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
 #include "utopia_TransferAssembler.hpp"
+#include "utopia_PourousMediaToFractureTransfer.hpp"
 
 #include "libmesh/mesh_generation.h"
 #include "libmesh/nemesis_io.h"
@@ -52,7 +53,7 @@ namespace utopia {
 				make_ref(V_surf.dof_map()),
 				0,
 				0,
-				true, 
+				true,
 				1,
 				B,
 				{},
@@ -94,7 +95,7 @@ namespace utopia {
 				mesh_refinement.make_flags_parallel_consistent();
 				mesh_refinement.refine_elements();
 				mesh_refinement.test_level_one(true);
-				
+
 			} else {
 				assert(false);
 			}
@@ -112,18 +113,18 @@ namespace utopia {
 		// auto elem_type  = libMesh::TET10;
 		auto elem_type  = libMesh::TET4;
 		// auto elem_type  = libMesh::HEX8;
-		
+
 		auto elem_order = libMesh::FIRST;
 		// auto elem_order = libMesh::SECOND;
 
 		// bool is_test_case = true;
 		bool is_test_case = false;
 
-		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
-		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 
-		// auto vol_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());	
-		// auto surf_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());	
+		// auto vol_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());
+		// auto surf_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());
 
 
 		if(is_test_case) {
@@ -149,7 +150,7 @@ namespace utopia {
 
 			// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 3);
 		} else {
-			
+
 			// libMesh::MeshTools::Generation::build_cube(
 			// 	*vol_mesh,
 			// 	n, n, n,
@@ -172,7 +173,7 @@ namespace utopia {
 
 			// vol_mesh->read("../data/frac/frac1d_background.e");
 			surf_mesh->read("../data/frac/frac1d_network.e");
-			
+
 			{
 				libMesh::MeshRefinement mesh_refinement(*surf_mesh);
 				mesh_refinement.make_flags_parallel_consistent();
@@ -206,62 +207,21 @@ namespace utopia {
 		V_surf.initialize();
 		V_aux.initialize();
 
-
 		Chrono c;
 		c.start();
 
-		auto B = std::make_shared<DSMatrixd>();
-		moonolith::Communicator comm(init.comm().get());
-
-		
-		if(assemble_volume_transfer(
-			comm,
+		PourousMediaToFractureTransfer pmtoft(
 			vol_mesh,
-			surf_mesh,
 			make_ref(V_vol.dof_map()),
-			make_ref(V_surf.dof_map()),
-			0,
-			0,
-			true, 
-			1,
-			*B,
-			{},
-			use_interpolation))
-		{
+			surf_mesh,
+			make_ref(V_surf.dof_map())
+		);
 
+		if(pmtoft.initialize(INTERPOLATION)) {
 			c.stop();
 			std::cout << c << std::endl;
 
-			std::shared_ptr<TransferOperator> T;
-
-			if(use_interpolation) {
-				auto p_T = std::make_shared<Interpolator>(B);
-				//only necessary for non-conforming mesh in parallel
-				p_T->normalize_rows();
-				T = p_T;
-			} else {
-
-				auto p_T = std::make_shared<PseudoL2TransferOperator>();
-				p_T->init_from_coupling_operator(*B);
-				T = p_T;
-
-				DSMatrixd surf_mass_mat;
-				assemble(inner(trial(V_surf), test(V_surf)) * dX, surf_mass_mat);
-				double expected_mass = sum(surf_mass_mat);
-				double actual_mass = sum(*B);
-
-				std::cout << "operator volume : " << expected_mass << " == " <<  actual_mass << std::endl; 
-			}
-
-			T->describe(std::cout);
-
-			DVectord v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
-			// {
-			// 	Write<DVectord> w_(v_vol);
-			// 	v_vol.set(0, 0.);
-			// }
-
-			auto f_rhs = ctx_fun< std::vector<double> >([](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> { 
+			auto f_rhs = ctx_fun< std::vector<double> >([](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
 				const auto &pts = ctx.fe()[0]->get_xyz();
 
 				const auto n = pts.size();
@@ -288,6 +248,7 @@ namespace utopia {
 			utopia::assemble(p_form, scaled_sol);
 			utopia::assemble(m_form, mass_mat);
 
+			DVectord v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
 			if(elem_order == libMesh::FIRST) {
 				v_vol = e_mul(1./sum(mass_mat, 1), scaled_sol);
 			} else {
@@ -301,10 +262,9 @@ namespace utopia {
 			v_vol *= 1./max_master;
 			max_master = 1.;
 
-			DVectord v_surf, v_vol_back; 
-			T->apply(v_vol, v_surf);
-			T->apply_transpose(local_values(local_size(v_surf).get(0), 1.), v_vol_back);
-
+			DVectord v_surf, v_vol_back;
+			pmtoft.apply(v_vol, v_surf);
+			pmtoft.apply_transpose(local_values(local_size(v_surf).get(0), 1.), v_vol_back);
 
 			double min_master = min(v_vol);
 			double min_slave = min(v_surf);

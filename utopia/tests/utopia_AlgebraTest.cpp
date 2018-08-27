@@ -119,6 +119,12 @@ namespace utopia {
 
             double val = expr;
             utopia_test_assert(approxeq(0.125, val));
+
+
+            Matrix m4 = 0.5 * identity(4, 4);
+            double det4 = det(m4);
+
+            utopia_test_assert(approxeq(0.0625, det4));
         }
 
         void size_test()

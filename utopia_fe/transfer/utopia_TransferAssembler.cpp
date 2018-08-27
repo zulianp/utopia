@@ -31,7 +31,135 @@
 #include <sstream>
 #include <numeric>
 
+
+/**
+ * TODO:
+   - Allow element-node-dof <-> node-dof convertions
+   - Construction of accumulation operators
+   - Discrimination of element-matrices and deletion of bad entries (e.g., duplicate volume-surface maps)
+ */
+
 namespace utopia {
+
+	template<int Dimensions>
+	class FESpaceSerializerDeserializer {
+	public:
+		using InputStream  = moonolith::InputStream;
+		using OutputStream = moonolith::OutputStream;
+
+		using NTreeT 		= utopia::VTree<Dimensions>;
+		using DataContainer = typename NTreeT::DataContainer;
+		using Adapter       = typename NTreeT::DataType;
+
+		FESpaceSerializerDeserializer(
+			const libMesh::Parallel::Communicator &comm,
+			const TransferOptions &opts,
+			const std::shared_ptr<FESpacesAdapter> &local_spaces)
+		: comm(comm), 
+		  m_comm(comm.get()),
+		  opts(opts),
+		  local_spaces(local_spaces)
+		{}
+
+		const libMesh::Parallel::Communicator &comm;
+		moonolith::Communicator m_comm;
+		const TransferOptions &opts;
+
+		std::shared_ptr<FESpacesAdapter> local_spaces;
+		std::map<long, std::shared_ptr<FESpacesAdapter> > spaces;
+		std::map<long, std::vector<std::shared_ptr<FESpacesAdapter> > > migrated_spaces;
+
+		void read(
+			const long ownerrank,
+			const long senderrank,
+			bool is_forwarding, DataContainer &data,
+			InputStream &in
+		) {
+
+			CHECK_STREAM_READ_BEGIN("vol_proj", in);
+
+			std::shared_ptr<FESpacesAdapter> proc_space = std::make_shared<FESpacesAdapter>(m_comm);
+
+			read_spaces(in, *proc_space, comm, comm);
+
+			if (!is_forwarding) {
+				assert(!spaces[ownerrank]);
+				spaces[ownerrank] = proc_space;
+			} else {
+				migrated_spaces[ownerrank].push_back(proc_space);
+			}
+
+			data.reserve(data.size() + 3000);
+
+			long offset = 0;
+
+			if(opts.tags.empty()){
+				int space_num = 0;
+				for(auto s : proc_space->spaces()) {
+					if(s) {
+						//ID_FIX this should be fine n_elem is actually local sence the mesh is a SerialMesh
+						for (int i=0; i<s->n_elem(); i++) {
+							data.push_back(Adapter(*s, i, offset + i,space_num));
+							assert(!proc_space->dof_map(space_num)[i].empty());
+							data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
+						}
+
+						offset += s->n_elem();
+
+					}
+
+					++space_num;
+				}
+			} else {
+				int space_num = 0;
+				for(auto s : proc_space->spaces()) {
+					if(s) {
+						for (int i=0; i<s->n_elem(); i++) {
+							const libMesh::Elem * elem = s->elem_ptr(i);
+							//Volume Tag
+							int volume_tag = elem->subdomain_id();
+							data.push_back(Adapter(*s, i, offset + i,volume_tag) );
+							assert(!proc_space->dof_map(space_num)[i].empty());
+							data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
+						}
+
+						offset += s->n_elem();
+
+					}
+
+					++space_num;
+				}
+			}
+
+			CHECK_STREAM_READ_END("vol_proj", in);
+		};
+
+		void write(
+			const long ownerrank, const long recvrank,
+			const std::vector<long>::const_iterator &begin,
+			const std::vector<long>::const_iterator &end,
+			const DataContainer &data,
+			OutputStream &out) {
+
+			CHECK_STREAM_WRITE_BEGIN("vol_proj", out);
+
+			if (ownerrank == m_comm.rank()) {
+				write_element_selection(begin, end, *local_spaces, out);
+			} else {
+				auto it = spaces.find(ownerrank);
+				assert(it != spaces.end());
+				std::shared_ptr<FESpacesAdapter> spaceptr = it->second;
+				assert(std::distance(begin, end) > 0);
+				write_element_selection(begin, end, *spaceptr, out);
+			}
+
+			CHECK_STREAM_WRITE_END("vol_proj", out);
+		};
+
+	};
+
+	template class FESpaceSerializerDeserializer<2>;
+	template class FESpaceSerializerDeserializer<3>;
 
 	template<int Dimensions>
 	class DefaultAlgorithm final : public TransferAssembler::Algorithm {
@@ -49,9 +177,11 @@ namespace utopia {
 			const std::shared_ptr<DofMap>   &from_dofs,
 			const std::shared_ptr<MeshBase> &to_mesh,
 			const std::shared_ptr<DofMap>   &to_dofs,
-			const TransferOptions &opts)
+			const TransferOptions &opts,
+			const std::shared_ptr<LocalAssembler> &assembler,
+			const std::shared_ptr<Local2Global>  &local2global)
 		{
-			init(from_mesh, from_dofs, to_mesh, to_dofs, opts);
+			init(from_mesh, from_dofs, to_mesh, to_dofs, opts, assembler, local2global);
 		}
 
 		void init(
@@ -59,13 +189,18 @@ namespace utopia {
 			const std::shared_ptr<DofMap>   &from_dofs,
 			const std::shared_ptr<MeshBase> &to_mesh,
 			const std::shared_ptr<DofMap>   &to_dofs,
-			const TransferOptions &opts)
+			const TransferOptions &opts,
+			const std::shared_ptr<LocalAssembler> &assembler,
+			const std::shared_ptr<Local2Global>   &local2global)
 		{
 			this->from_mesh = from_mesh;
 			this->from_dofs = from_dofs;
 			this->to_mesh 	= to_mesh;
 			this->to_dofs	= to_dofs;
 			this->opts 		= opts;
+
+			this->assembler = assembler;
+			this->local2global = local2global;
 
 			this->comm = moonolith::Communicator(from_mesh->comm().get());
 			this->local_spaces = std::make_shared<FESpacesAdapter>(from_mesh, to_mesh, from_dofs, to_dofs, opts.from_var_num, opts.to_var_num);
@@ -89,9 +224,7 @@ namespace utopia {
 		}
 
 		bool assemble(Adapter &master,
-					  Adapter &slave,
-					  LocalAssembler &assembler,
-					  Local2Global   &local2global)
+					  Adapter &slave)
 		{
 			//FIXME assuming elements are all the same
 		 	auto master_type = from_dofs->variable(opts.from_var_num).type();
@@ -108,28 +241,25 @@ namespace utopia {
 
 			elemmat.zero();
 
-			if(assembler.assemble(master_el, master_type, slave_el, slave_type, elemmat)) {
+			if(assembler->assemble(master_el, master_type, slave_el, slave_type, elemmat)) {
 				auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
 				local_element_matrices_sum += partial_sum;
 
 				const auto &master_dofs = master.dof_map();
 				const auto &slave_dofs  = slave.dof_map();
 
-				local2global.apply(master_dofs, slave_dofs, elemmat, *mat_buffer);
+				local2global->apply(master_dofs, slave_dofs, elemmat, *mat_buffer);
 				return true;
 			} else {
 				return false;
 			}
 		}
 
-
-		void post_assemble(LocalAssembler &assembler,
-					       Local2Global   &local2global,
-					       SparseMatrix   &B)
+		void post_assemble(SparseMatrix &B)
 		{
 			double total_intersection_volume = 0.;
 			{
-				auto l2_assembler = dynamic_cast<L2LocalAssembler *>(&assembler);
+				auto l2_assembler = std::dynamic_pointer_cast<L2LocalAssembler>(assembler);
 				if(l2_assembler) {
 					total_intersection_volume = l2_assembler->get_q_builder().get_total_intersection_volume();
 
@@ -142,11 +272,10 @@ namespace utopia {
 				}
 			}
 
-
 			const libMesh::dof_id_type n_dofs_on_proc_master = from_dofs->n_local_dofs();
 			const libMesh::dof_id_type n_dofs_on_proc_slave  = to_dofs->n_local_dofs();
 
-			local2global.redistribute(comm, n_dofs_on_proc_master, n_dofs_on_proc_slave, *mat_buffer);
+			local2global->redistribute(comm, n_dofs_on_proc_master, n_dofs_on_proc_slave, *mat_buffer);
 
 			SizeType m_max_row_entries = mat_buffer->local_max_entries_x_col();
 			comm.all_reduce(&m_max_row_entries, 1, moonolith::MPIMax());
@@ -177,10 +306,7 @@ namespace utopia {
 			});
 		}
 
-		bool assemble(
-			LocalAssembler &assembler,
-			Local2Global   &local2global,
-			SparseMatrix &B) override
+		bool assemble(SparseMatrix &B) override
 		{
 			using namespace moonolith;
 
@@ -189,98 +315,34 @@ namespace utopia {
 			std::map<long, std::shared_ptr<FESpacesAdapter> > spaces;
 			std::map<long, std::vector<std::shared_ptr<FESpacesAdapter> > > migrated_spaces;
 
-			auto read = [&] (
+			FESpaceSerializerDeserializer<Dimensions> serializer(
+				from_mesh->comm(),
+				opts,
+				local_spaces);
+
+			auto read = [&serializer] (
 				const long ownerrank,
 				const long senderrank,
 				bool is_forwarding, DataContainer &data,
 				InputStream &in
 			) {
-
-				CHECK_STREAM_READ_BEGIN("vol_proj", in);
-
-				std::shared_ptr<FESpacesAdapter> proc_space = std::make_shared<FESpacesAdapter>(comm);
-
-				read_spaces(in, *proc_space, from_mesh->comm(), to_mesh->comm());
-
-				if (!is_forwarding) {
-					assert(!spaces[ownerrank]);
-					spaces[ownerrank] = proc_space;
-				} else {
-					migrated_spaces[ownerrank].push_back(proc_space);
-				}
-
-				data.reserve(data.size() + 3000);
-
-				long offset = 0;
-
-				if(opts.tags.empty()){
-					int space_num = 0;
-					for(auto s : proc_space->spaces()) {
-						if(s) {
-							//ID_FIX this should be fine n_elem is actually local sence the mesh is a SerialMesh
-							for (int i=0; i<s->n_elem(); i++) {
-								data.push_back(Adapter(*s, i, offset + i,space_num));
-								assert(!proc_space->dof_map(space_num)[i].empty());
-								data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
-							}
-
-							offset += s->n_elem();
-
-						}
-
-						++space_num;
-					}
-				} else {
-					int space_num = 0;
-					for(auto s : proc_space->spaces()) {
-						if(s) {
-							for (int i=0; i<s->n_elem(); i++) {
-								const libMesh::Elem * elem = s->elem_ptr(i);
-								//Volume Tag
-								int volume_tag = elem->subdomain_id();
-								data.push_back(Adapter(*s, i, offset + i,volume_tag) );
-								assert(!proc_space->dof_map(space_num)[i].empty());
-								data.back().set_dof_map(&proc_space->dof_map(space_num)[i].global);
-							}
-
-							offset += s->n_elem();
-
-						}
-
-						++space_num;
-					}
-				}
-
-				CHECK_STREAM_READ_END("vol_proj", in);
+				serializer.read(ownerrank, senderrank, is_forwarding, data, in);
 			};
 
-			auto write = [&] (
+			auto write = [&serializer] (
 				const long ownerrank, const long recvrank,
 				const std::vector<long>::const_iterator &begin,
 				const std::vector<long>::const_iterator &end,
 				const DataContainer &data,
-				OutputStream &out) {
-
-				CHECK_STREAM_WRITE_BEGIN("vol_proj", out);
-
-
-				if (ownerrank == comm.rank()) {
-					write_element_selection(begin, end, *local_spaces, out);
-				} else {
-					auto it = spaces.find(ownerrank);
-					assert(it != spaces.end());
-					std::shared_ptr<FESpacesAdapter> spaceptr = it->second;
-					assert(std::distance(begin, end) > 0);
-					write_element_selection(begin, end, *spaceptr, out);
-				}
-
-				CHECK_STREAM_WRITE_END("vol_proj", out);
+				OutputStream &out
+			) {
+				serializer.write(ownerrank, recvrank, begin, end, data, out);
 			};
 
 			long n_false_positives = 0, n_intersections = 0;
 
 			auto fun = [&](Adapter &master, Adapter &slave) -> bool {
-				if(this->assemble(master, slave, assembler, local2global)) {
+				if(this->assemble(master, slave)) {
 					n_intersections++;
 					return true;
 				} else {
@@ -293,7 +355,7 @@ namespace utopia {
 
 			moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);
 
-			post_assemble(assembler, local2global, B);
+			post_assemble(B);
 
 			long n_total_candidates = n_intersections + n_false_positives;
 			long n_collection[3] = {n_intersections, n_total_candidates, n_false_positives};
@@ -385,6 +447,9 @@ namespace utopia {
 		std::shared_ptr<DofMap>   to_dofs;
 		TransferOptions opts;
 
+		std::shared_ptr<LocalAssembler> assembler;
+		std::shared_ptr<Local2Global> local2global;
+
 		moonolith::Communicator comm;
 		moonolith::SearchSettings settings;
 		std::shared_ptr<moonolith::MasterAndSlave> predicate;
@@ -441,15 +506,15 @@ namespace utopia {
 		///////////////////////////
 
 		if(from_mesh->mesh_dimension() == 2) {
-			algorithm_ = std::make_shared<DefaultAlgorithm<2>>(from_mesh, from_dofs, to_mesh, to_dofs, opts);
+			algorithm_ = std::make_shared<DefaultAlgorithm<2>>(from_mesh, from_dofs, to_mesh, to_dofs, opts, assembler_, local2global_);
 		} else if(from_mesh->mesh_dimension() == 3) {
-			algorithm_ = std::make_shared<DefaultAlgorithm<3>>(from_mesh, from_dofs, to_mesh, to_dofs, opts);
+			algorithm_ = std::make_shared<DefaultAlgorithm<3>>(from_mesh, from_dofs, to_mesh, to_dofs, opts, assembler_, local2global_);
 		} else {
 			assert(false && "dimension not supported");
 			return false;
 		}
 
-		bool ok = algorithm_->assemble(*assembler_, *local2global_, B);
+		bool ok = algorithm_->assemble(B);
 
 
 		///////////////////////////

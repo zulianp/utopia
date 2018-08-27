@@ -29,6 +29,12 @@ namespace utopia
 
     public:
 
+        virtual bool solve(Vector & x_h) override
+        {
+            utopia_error("MG_OPT:: solve(x) function is not supported, use solve(fun, x, rhs) instead .... \n"); 
+            return false; 
+        }
+
         MG_OPT( const std::shared_ptr<Solver> &smoother, const std::shared_ptr<Solver> &coarse_solver,
                 const std::shared_ptr<LSStrategy> &ls_strategy = std::make_shared<utopia::SimpleBacktracking<Matrix, Vector> >(),
                 const Parameters params = Parameters()): 
@@ -42,7 +48,7 @@ namespace utopia
 
         virtual ~MG_OPT(){} 
         
-        virtual std::string name_id() override
+        virtual std::string name() override
         {
             return "MG_OPT"; 
         }
@@ -55,9 +61,85 @@ namespace utopia
             _parameters = params; 
         }
 
+
+        virtual void init_memory(const SizeType & fine_local_size) override 
+        {
+            std::cout<<"-------- to be done \n"; 
+        }
+
+
+
+        virtual bool solve(Fun &fine_fun, Vector & x_h, const Vector & rhs)
+        {
+            
+            bool converged = false;
+            SizeType it = 0, n_levels = this->n_levels();
+            Scalar r_norm, r0_norm=1, rel_norm=1, energy;
+
+            
+            std::string header_message = this->name() + ": " + std::to_string(n_levels) +  " levels";
+            this->init_solver(header_message, {" it. ", "|| grad ||", "r_norm" , "Energy"});
+            
+            this->status_.clear();
+
+            this->init_memory(local_size(x_h).get(0)); 
+            
+            Vector g = local_zeros(local_size(x_h));
+            fine_fun.gradient(x_h, g);
+            r0_norm = norm2(g);
+            r_norm = r0_norm;
+            
+            fine_fun.value(x_h, energy);
+            
+            if(this->verbose())
+                PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy});
+            
+            it++;
+            
+            while(!converged)
+            {
+
+                this->multiplicative_cycle(fine_fun, x_h, rhs, n_levels);
+                
+#ifdef CHECK_NUM_PRECISION_mode
+                if(has_nan_or_inf(x_h) == 1)
+                {
+                    x_h = local_zeros(local_size(x_h));
+                    return true;
+                }
+#endif
+                
+                fine_fun.gradient(x_h, g);
+                fine_fun.value(x_h, energy);
+                
+                r_norm = norm2(g);
+                rel_norm = r_norm/r0_norm;
+                
+                // print iteration status on every iteration
+                if(this->verbose())
+                    PrintInfo::print_iter_status(it, {r_norm, rel_norm, energy});
+                
+                // check convergence and print interation info
+                converged = this->check_convergence(it, r_norm, rel_norm, 1);
+                it++;
+            }
+            
+            this->print_statistics(it);
+            
+#ifdef CHECK_NUM_PRECISION_mode
+            if(has_nan_or_inf(x_h) == 1)
+                exit(0);
+#endif
+            
+            
+            return true;
+        }
+
+
+
     private: 
 
-        bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l) override
+        bool multiplicative_cycle(Fun &fine_fun, Vector & u_l, const Vector &f, const SizeType & l)
         {
            Vector g_fine, g_restricted,  g_coarse, u_2l, s_coarse, s_fine, u_init; 
            Scalar alpha; 
@@ -144,7 +226,7 @@ namespace utopia
          *
          * @return   
          */
-        bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs) override
+        bool coarse_solve(Fun &fun, Vector &x, const Vector & rhs)
         {
             _coarse_solver->verbose(true); 
             _coarse_solver->solve(fun, x, rhs); 

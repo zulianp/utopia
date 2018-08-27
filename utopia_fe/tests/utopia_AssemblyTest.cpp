@@ -7,7 +7,7 @@ namespace utopia {
 		std::cout << "[run_assembly_test]" << std::endl;
 		typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
-		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 
 		const unsigned int n = 2;
 		libMesh::MeshTools::Generation::build_cube(*mesh,
@@ -19,8 +19,8 @@ namespace utopia {
 
 		auto es = std::make_shared<libMesh::EquationSystems>(*mesh);
 		es->add_system<libMesh::LinearImplicitSystem>("lapl");
-		
-		auto V = FunctionSpaceT(es); 
+
+		auto V = FunctionSpaceT(es);
 
 		auto u = trial(V);
 		auto v = test(V);
@@ -34,10 +34,10 @@ namespace utopia {
 
 		const double alpha = 1.;
 		DSMatrixd laplacian, mass_matrix;
-		
+
 		assemble(inner(alpha * grad(u), grad(v)) * dX, laplacian);
 		assemble(inner(u, v) * dX, mass_matrix);
-		
+
 		const double norm_laplacian   = norm2(laplacian);
 		const double norm_mass_matrix = norm2(mass_matrix);
 
