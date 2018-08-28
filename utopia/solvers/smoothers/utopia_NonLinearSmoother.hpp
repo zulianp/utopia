@@ -35,7 +35,7 @@ namespace utopia {
         }
 
 
-        virtual bool nonlinear_smooth(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs) = 0; 
+        virtual bool smooth(Function<Matrix, Vector> &fun,  Vector &x, const Vector &rhs) = 0; 
 
 
         /**
