@@ -542,7 +542,7 @@ namespace utopia {
     //     each_read(P_t, [](const SizeType i, const SizeType j, const double val) {
     //         std::cout << i << " " << j << " -> " << val << "\n";
     //     });
-    // }
+    }
 
 
     void trilinos_read()
