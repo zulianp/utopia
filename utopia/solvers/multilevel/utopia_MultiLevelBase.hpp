@@ -22,6 +22,7 @@ namespace utopia {
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 		typedef utopia::Level<Matrix, Vector> Level;
 		typedef utopia::Transfer<Matrix, Vector> Transfer;
+		typedef std::shared_ptr<Transfer> TransferPtr;
 
 	public:
 
@@ -132,12 +133,12 @@ namespace utopia {
 
 		inline Transfer &transfer(const SizeType level)
 		{
-			return transfers_[level];
+			return *transfers_[level];
 		}
 
 		inline const Transfer &transfer(const SizeType level) const
 		{
-			return transfers_[level];
+			return *transfers_[level];
 		}
 
 		virtual void describe(std::ostream &os = std::cout) const
@@ -145,9 +146,15 @@ namespace utopia {
 			(void) os;
 		}
 
+		bool set_transfer_operators(const std::vector<std::shared_ptr<Transfer>> &transfers)
+		{
+			transfers_ = transfers;
+			return true;
+		}
+
 
 	protected:
-		std::vector<Transfer>               transfers_;   /*!< vector of transfer operators  */
+		std::vector<TransferPtr>               transfers_;   /*!< vector of transfer operators  */
 
 		Parameters                          parameters_;
 

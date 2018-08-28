@@ -3,6 +3,8 @@
 	<model>
         <material>LinearElasticity</material>
         <!-- <material>NeoHookean</material> -->
+        <stabilization>L2</stabilization>
+        <stabilization-mag>0.00001</stabilization-mag>
 		<parameters>
 			<mu>600.</mu>
 			<lambda>600.</lambda>
@@ -49,7 +51,7 @@
     <contact>
         <type>steady</type>
         <radius>1.5</radius>
-        <solver>pg</solver>
+<!--        <solver>pg</solver>-->
         <pairs type="array">
             <entry>
                 <master>1</master>

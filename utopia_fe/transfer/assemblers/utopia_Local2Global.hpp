@@ -22,7 +22,7 @@ namespace utopia {
 			const std::vector<long> &test,
 			const LocalMatrix &local_mat,
 			moonolith::SparseMatrix<double> &global_mat) const;
-		
+
 		void add(
 			const std::vector<long> &trial,
 			const std::vector<long> &test,

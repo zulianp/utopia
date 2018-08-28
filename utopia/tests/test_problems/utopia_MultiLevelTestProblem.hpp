@@ -96,10 +96,10 @@ namespace utopia {
 
 			//REMOVE ME
 			// rhs->implementation().set_name("r");
-			
+
 			//REMOVE ME
 			// matrix->implementation().set_name("A");
-			
+
 			write("vec_r.m", *rhs);
 			write("mat_A.m", *matrix);
 		}

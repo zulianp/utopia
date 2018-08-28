@@ -153,6 +153,7 @@ namespace utopia {
 		// KSPSolver<DSMatrixd, DVectord> solver;
 		Factorization<DSMatrixd, DVectord> solver;
 		if(!solver.solve(lapl_mat, wear_induced_displacement, warped_displacement)) {
+			std::cerr << "[Warning] harmonic map did not work" << std::endl;
 			warped_displacement = wear_induced_displacement;
 		}
 

@@ -13,10 +13,20 @@
 #include "utopia_GaitCycle.hpp"
 #include "utopia_Wear.hpp"
 
+#include "libmesh/mesh_refinement.h"
+
 #include <iostream>
 #include <fstream>
 
 namespace utopia {
+    static void refine(const int n_refs, libMesh::MeshBase &mesh)
+    {
+        if(n_refs <= 0) return;
+
+        libMesh::MeshRefinement mesh_refinement(mesh);
+        mesh_refinement.make_flags_parallel_consistent();
+        mesh_refinement.uniformly_refine(n_refs);
+    }
 
 	class ElasticitySimulation {
 	public:
@@ -35,6 +45,9 @@ namespace utopia {
 
             void read(InputStream &is) {
                is.read("mesh", mesh_path);
+
+               mesh_refinements = 0;
+               is.read("mesh-refinements", mesh_refinements);
 
                is.read("model", [this](InputStream &is) {
                     is.read("material", material_name);
@@ -67,6 +80,7 @@ namespace utopia {
             double dt;
             std::string stabilization;
             double stabilization_mag;
+            int mesh_refinements;
         };
 
 		ElasticitySimulation()
@@ -89,6 +103,9 @@ namespace utopia {
 
 			mesh = std::make_shared<libMesh::DistributedMesh>(comm);
 			mesh->read(desc_.mesh_path);
+
+            refine(desc_.mesh_refinements, *mesh);
+
 			auto dim = mesh->mesh_dimension();
 
             equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
@@ -385,6 +402,8 @@ namespace utopia {
             transient_solver = std::make_shared<TransientContactSolverT>(make_ref(in.V), in.material, dt, in.contact_params);
             solver = transient_solver;
         }
+
+        std::cout << "n_dofs: " << in.V[0].dof_map().n_dofs() << std::endl;
 
         // auto sor = std::make_shared<SOR<DSMatrixd, DVectord>>();
         // sor->rtol(1e-8);

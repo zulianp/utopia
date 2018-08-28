@@ -1,6 +1,7 @@
 <simulation>
-	<!-- <mesh>../data/wear_2_far.e</mesh> -->
-    <mesh>../data/wear_2_b.e</mesh>
+	<mesh>../data/wear_2_far.e</mesh>
+    <mesh-refinements>1</mesh-refinements>
+    <!-- <mesh>../data/wear_2_b.e</mesh> -->
 	<model>
         <material>LinearElasticity</material>
         <!-- <material>NeoHookean</material> -->

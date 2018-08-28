@@ -19,6 +19,9 @@
 #include "utopia_Structure.hpp"
 #include "utopia_Eval_Structure.hpp"
 
+#include "test_problems/utopia_BratuMultilevelTestProblem.hpp"
+#include "test_problems/utopia_TestProblems.hpp"
+
 
 namespace utopia {
 
@@ -562,6 +565,55 @@ namespace utopia {
         TSMatrixd B(expr);
     }
 
+    void trilinos_rmtr()
+    {
+        BratuMultilevelTestProblem<TSMatrixd, TVectord> problem;
+
+        TVectord x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
+
+        std::vector<std::shared_ptr<ExtendedFunction<TSMatrixd, TVectord> > >  level_functions(problem.n_levels);
+
+
+        for(auto l=0; l < problem.n_levels; l++)
+        {
+            Bratu1D<TSMatrixd, TVectord> fun(problem.n_dofs[l]);
+            level_functions[l] = std::make_shared<Bratu1D<TSMatrixd, TVectord> >(fun);
+
+            // making sure that fine level IG is feasible
+            if(l+1 == problem.n_levels)
+                fun.apply_bc_to_initial_guess(x);
+        }
+
+        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<TSMatrixd, TVectord> >();
+        tr_strategy_coarse->atol(1e-12);
+        tr_strategy_coarse->rtol(1e-12);
+
+        auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<TSMatrixd, TVectord> >();
+        tr_strategy_fine->atol(1e-12);
+        tr_strategy_fine->rtol(1e-12);
+
+        // auto rmtr = std::make_shared<RMTR<TSMatrixd, TVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+        auto rmtr = std::make_shared<RMTR<TSMatrixd, TVectord, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
+        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
+
+        rmtr->max_it(1000);
+        rmtr->max_coarse_it(1);
+        rmtr->max_smoothing_it(1);
+        rmtr->delta0(1);
+        rmtr->atol(1e-6);
+        rmtr->rtol(1e-10);
+        rmtr->set_grad_smoothess_termination(0.000001);
+        rmtr->set_eps_grad_termination(1e-7);
+
+        rmtr->verbose(problem.verbose);
+        // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+        rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+        rmtr->set_functions(level_functions);
+
+
+        rmtr->solve(x);
+    }
+
     void run_trilinos_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("TrilinosTest");
@@ -591,8 +643,11 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_interop);
 #endif //WITH_PETSC
 
+        // UTOPIA_RUN_TEST(trilinos_rmtr);
+
         //tests that always fail
-        // UTOPIA_RUN_TEST(trilinos_mg_1D);
+        UTOPIA_RUN_TEST(trilinos_mg_1D);
+
         // UTOPIA_RUN_TEST(trilinos_mg);
 
         UTOPIA_UNIT_TEST_END("TrilinosTest");
