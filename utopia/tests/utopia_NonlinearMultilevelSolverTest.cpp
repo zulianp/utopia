@@ -232,15 +232,8 @@ namespace utopia
 		    		fun.apply_bc_to_initial_guess(x);
 		    }
 
-	        auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
-	        tr_strategy_coarse->atol(1e-12);
-	        tr_strategy_coarse->rtol(1e-12);
-	        tr_strategy_coarse->pc_type("lu");
-
-	        auto tr_strategy_fine = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
-	        tr_strategy_fine->atol(1e-12);
-	        tr_strategy_fine->rtol(1e-12);
-	        tr_strategy_fine->pc_type("jacobi");
+	        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord, HOMEMADE> >();
+	        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord, HOMEMADE> >();
 
         	// auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
         	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
