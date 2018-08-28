@@ -232,15 +232,8 @@ namespace utopia
 		    		fun.apply_bc_to_initial_guess(x);
 		    }
 
-	        auto tr_strategy_coarse = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
-	        tr_strategy_coarse->atol(1e-12);
-	        tr_strategy_coarse->rtol(1e-12);
-	        tr_strategy_coarse->pc_type("lu");
-
-	        auto tr_strategy_fine = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
-	        tr_strategy_fine->atol(1e-12);
-	        tr_strategy_fine->rtol(1e-12);
-	        tr_strategy_fine->pc_type("jacobi");
+	        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord, HOMEMADE> >();
+	        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord, HOMEMADE> >();
 
         	// auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
         	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
@@ -340,12 +333,12 @@ namespace utopia
 		    auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
         	auto tr_strategy_fine = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
         	tr_strategy_fine->pc_type("jacobi");
-        	tr_strategy_fine->verbose(problem.verbose);
+        	tr_strategy_fine->verbose(false);
 
         	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
         	tr_strategy_coarse->pc_type("lu");
         	// tr_strategy_coarse->verbose(true);
-        	tr_strategy_coarse->verbose(problem.verbose);
+        	tr_strategy_coarse->verbose(false);
 
         	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
@@ -383,7 +376,7 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runNonlinearMultilevelSolverTest");
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(4, true, false).run();
+			NonlinearBratuSolverTest(4, true, true).run();
 		#endif
 		UTOPIA_UNIT_TEST_END("runNonlinearMultilevelSolverTest");
 
