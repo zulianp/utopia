@@ -12,7 +12,7 @@ namespace utopia {
 		using Matrix = libMesh::DenseMatrix<libMesh::Real>;
 
 		virtual ~LocalAssembler() {}
-		
+
 		virtual bool assemble(
 			const Elem &trial,
 			FEType trial_type,

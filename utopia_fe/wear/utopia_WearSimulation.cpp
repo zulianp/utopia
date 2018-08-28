@@ -13,10 +13,20 @@
 #include "utopia_GaitCycle.hpp"
 #include "utopia_Wear.hpp"
 
+#include "libmesh/mesh_refinement.h"
+
 #include <iostream>
 #include <fstream>
 
 namespace utopia {
+    static void refine(const int n_refs, libMesh::MeshBase &mesh)
+    {
+        if(n_refs <= 0) return;
+
+        libMesh::MeshRefinement mesh_refinement(mesh);
+        mesh_refinement.make_flags_parallel_consistent();
+        mesh_refinement.uniformly_refine(n_refs);
+    }
 
 	class ElasticitySimulation {
 	public:
@@ -36,6 +46,9 @@ namespace utopia {
             void read(InputStream &is) {
                is.read("mesh", mesh_path);
 
+               mesh_refinements = 0;
+               is.read("mesh-refinements", mesh_refinements);
+
                is.read("model", [this](InputStream &is) {
                     is.read("material", material_name);
 
@@ -43,6 +56,12 @@ namespace utopia {
                         is.read("mu", params.default_mu);
                         is.read("lambda", params.default_lambda);
                     });
+
+                    stabilization = "none";
+
+                    is.read("stabilization", stabilization);
+                    stabilization_mag = 0.1;
+                    is.read("stabilization-mag", stabilization_mag);
 
                     // is.read("time", [this](InputStream &is) {
                     //     is.read("dt", dt);
@@ -59,6 +78,9 @@ namespace utopia {
             LameeParameters params;
             int n_time_teps;
             double dt;
+            std::string stabilization;
+            double stabilization_mag;
+            int mesh_refinements;
         };
 
 		ElasticitySimulation()
@@ -81,6 +103,9 @@ namespace utopia {
 
 			mesh = std::make_shared<libMesh::DistributedMesh>(comm);
 			mesh->read(desc_.mesh_path);
+
+            refine(desc_.mesh_refinements, *mesh);
+
 			auto dim = mesh->mesh_dimension();
 
             equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
@@ -106,6 +131,11 @@ namespace utopia {
             } else /*if(desc_.material_name == "LinearElasticity")*/ {
 				material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, desc_.params);
 			}
+
+            if(desc_.stabilization != "none") {
+                std::cout << "using stabilization: " << desc_.stabilization << " mag: " << desc_.stabilization_mag << std::endl;
+                material = std::make_shared<StabilizedMaterial<decltype(V), DSMatrixd, DVectord>>(V, desc_.stabilization_mag, material, desc_.stabilization);
+            }
 
             /////////////////////////////////////////////////////////////////////////////
 
@@ -246,11 +276,25 @@ namespace utopia {
                 std::string type;
                 is.read("type", type);
 
+                step_tol = 5e-6;
+                is.read("step-tol", step_tol);
+
+                max_nl_iter = 30;
+                is.read("max-nl-iter", max_nl_iter);
+
                 is_steady = false;
                 n_transient_steps = 1;
 
                 if(type == "steady") {
                     is_steady = true;
+                }
+
+                use_pg = false;
+                std::string solver;
+                is.read("solver", solver);
+
+                if(solver == "pg") {
+                    use_pg = true;
                 }
 
                 is.read("n-transient-steps", n_transient_steps);
@@ -289,6 +333,9 @@ namespace utopia {
         std::vector<int> contact_surfaces;
         bool is_steady;
         int n_transient_steps;
+        double step_tol;
+        int max_nl_iter;
+        bool use_pg;
 
     };
 
@@ -356,11 +403,31 @@ namespace utopia {
             solver = transient_solver;
         }
 
-        solver->set_tol(5e-6);
+        std::cout << "n_dofs: " << in.V[0].dof_map().n_dofs() << std::endl;
+
+        // auto sor = std::make_shared<SOR<DSMatrixd, DVectord>>();
+        // sor->rtol(1e-8);
+        // sor->atol(1e-16);
+        // sor->stol(1e-10);
+        // solver->set_linear_solver(sor);
+        solver->set_linear_solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
+
+        solver->set_tol(in.step_tol);
+        solver->set_max_non_linear_iterations(in.max_nl_iter);
         solver->set_max_outer_loops(40);
 
+
         if(in.is_steady) {
-            solver->set_use_ssn(true);
+            if(in.use_pg) {
+                solver->set_use_pg(true);
+            } else {
+                solver->set_use_ssn(true);
+            }
+            // solver->tao().set_type("gpcg");
+            // solver->tao().verbose(true);
+            // solver->tao().atol(1e-8);
+            // solver->tao().rtol(1e-8);
+            // solver->tao().stol(1e-8);
         } else {
             // solver->tao().atol(1e-8);
             // solver->tao().rtol(1e-8);
@@ -446,7 +513,9 @@ namespace utopia {
 
                 state.velocity               = (1./in.gc.dt) * solver->displacement();
 
-                in.forcing_function->eval(state.displacement, state.external_force);
+                if(in.forcing_function) {
+                    in.forcing_function->eval(state.displacement, state.external_force);
+                }
 
                 solver->stress(state.displacement, state.stress);
 

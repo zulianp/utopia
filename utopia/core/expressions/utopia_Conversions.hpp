@@ -31,6 +31,10 @@ namespace utopia {
         each_read(from, [&to](const SizeType i, const SizeType j, const double val) {
             to.set(i, j, val);
         });
+
+
+        assert(size(from) == size(to));
+        assert(local_size(from) == local_size(to));
     }
 
     template<class TensorFrom, class TensorTo>
@@ -43,6 +47,9 @@ namespace utopia {
         each_read(from, [&to](const SizeType i, const double val) {
             to.set(i, val);
         });
+
+        assert(size(from) == size(to));
+        assert(local_size(from) == local_size(to));
     }
 
 //    template<class Vector, class Matrix>

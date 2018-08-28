@@ -94,7 +94,7 @@ namespace utopia {
 		///@brief assumes that D is symmetric
 		void apply_transpose(const DVectord &from, DVectord &to) const override
 		{
-			DVectord D_inv_from;
+			DVectord D_inv_from = local_zeros(local_size(*D).get(0));
 			linear_solver->apply(from, D_inv_from);
 			to = transpose(*B) * D_inv_from;
 		}
@@ -154,11 +154,14 @@ namespace utopia {
 		{
 			T = std::make_shared<DSMatrixd>();
 			DVectord d = sum(B, 1);
-			ReadAndWrite<DVectord> rw_(d);
-			auto r = range(d);
-			for(auto k = r.begin(); k != r.end(); ++k) {
-				if(approxeq(d.get(k), 0.0, 1e-14)) {
-					d.set(k, 1.);
+
+			{
+				ReadAndWrite<DVectord> rw_(d);
+				auto r = range(d);
+				for(auto k = r.begin(); k != r.end(); ++k) {
+					if(approxeq(d.get(k), 0.0, 1e-14)) {
+						d.set(k, 1.);
+					}
 				}
 			}
 

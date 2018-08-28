@@ -19,6 +19,9 @@
 #include "utopia_Structure.hpp"
 #include "utopia_Eval_Structure.hpp"
 
+#include "test_problems/utopia_BratuMultilevelTestProblem.hpp"
+#include "test_problems/utopia_TestProblems.hpp"
+
 
 namespace utopia {
 
@@ -437,6 +440,22 @@ namespace utopia {
 
     }
 
+    void row_view()
+    {
+        TSMatrixd A = local_sparse(4, 4, 3);
+        assemble_laplacian_1D(A);
+
+        auto rr = row_range(A);
+
+        for(auto i = rr.begin(); i != rr.end(); ++i) {
+            RowView<TSMatrixd> row(A, i);
+            utopia_test_assert(row.n_values() >= 2);
+            auto col = row.col(0);
+
+            utopia_test_assert(col == i || col == i - 1 || col == i  + 1);
+        }
+    }
+
     void row_view_and_loops()
     {
         int n = 10;
@@ -517,12 +536,19 @@ namespace utopia {
     {
         KSPSolver<TSMatrixd, TVectord> solver;
 
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(100, 2);
+        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
         TVectord x = zeros(size(*ml_problem.rhs));
         (*ml_problem.rhs) *= 0.0001;
 
 
         solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
+
+        // disp(*ml_problem.matrix);
+
+        DSMatrixd p_mat;
+        backend_convert_sparse(*ml_problem.matrix, p_mat);
+
+        // disp(p_mat);
 
         utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-8));
     }
@@ -537,6 +563,55 @@ namespace utopia {
         auto expr = structure(A);
 
         TSMatrixd B(expr);
+    }
+
+    void trilinos_rmtr()
+    {
+        BratuMultilevelTestProblem<TSMatrixd, TVectord> problem;
+
+        TVectord x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
+
+        std::vector<std::shared_ptr<ExtendedFunction<TSMatrixd, TVectord> > >  level_functions(problem.n_levels);
+
+
+        for(auto l=0; l < problem.n_levels; l++)
+        {
+            Bratu1D<TSMatrixd, TVectord> fun(problem.n_dofs[l]);
+            level_functions[l] = std::make_shared<Bratu1D<TSMatrixd, TVectord> >(fun);
+
+            // making sure that fine level IG is feasible
+            if(l+1 == problem.n_levels)
+                fun.apply_bc_to_initial_guess(x);
+        }
+
+        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<TSMatrixd, TVectord> >();
+        tr_strategy_coarse->atol(1e-12);
+        tr_strategy_coarse->rtol(1e-12);
+
+        auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<TSMatrixd, TVectord> >();
+        tr_strategy_fine->atol(1e-12);
+        tr_strategy_fine->rtol(1e-12);
+
+        // auto rmtr = std::make_shared<RMTR<TSMatrixd, TVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+        auto rmtr = std::make_shared<RMTR<TSMatrixd, TVectord, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
+        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
+
+        rmtr->max_it(1000);
+        rmtr->max_coarse_it(1);
+        rmtr->max_smoothing_it(1);
+        rmtr->delta0(1);
+        rmtr->atol(1e-6);
+        rmtr->rtol(1e-10);
+        rmtr->set_grad_smoothess_termination(0.000001);
+        rmtr->set_eps_grad_termination(1e-7);
+
+        rmtr->verbose(problem.verbose);
+        // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+        rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+        rmtr->set_functions(level_functions);
+
+
+        rmtr->solve(x);
     }
 
     void run_trilinos_test()
@@ -559,18 +634,22 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_cg);
 
         //tests that fail in parallel
+        UTOPIA_RUN_TEST(row_view);
         UTOPIA_RUN_TEST(row_view_and_loops);
         UTOPIA_RUN_TEST(trilinos_transpose);
-        UTOPIA_RUN_TEST(row_view_and_loops);
         UTOPIA_RUN_TEST(trilinos_each_read_transpose);
-
-        //tests that always fail
-        // UTOPIA_RUN_TEST(trilinos_mg_1D);
-        // UTOPIA_RUN_TEST(trilinos_mg);
 
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(petsc_interop);
 #endif //WITH_PETSC
+
+        // UTOPIA_RUN_TEST(trilinos_rmtr);
+
+        //tests that always fail
+        UTOPIA_RUN_TEST(trilinos_mg_1D);
+
+        // UTOPIA_RUN_TEST(trilinos_mg);
+
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
 }

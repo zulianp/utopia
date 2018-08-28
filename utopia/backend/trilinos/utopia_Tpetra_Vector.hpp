@@ -14,7 +14,7 @@
 namespace utopia {
 
     class TpetraVector {
-    public: 
+    public:
         typedef Tpetra::Map<>                             map_type;
         typedef Tpetra::Vector<>                          vector_type;
         typedef Teuchos::RCP<vector_type>                 rcpvector_type;
@@ -64,7 +64,7 @@ namespace utopia {
                 vec_.reset();
                 return *this;
             }
-            
+
             vec_ = Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy));
             return *this;
         }
@@ -187,22 +187,22 @@ namespace utopia {
         }
 
         inline Size local_size() const
-        {   
+        {
             if(is_null()) {
                 return {INVALID_INDEX};
             }
-            
+
             return { implementation().getMap()->getNodeNumElements() };
         }
 
         inline Scalar norm2() const {
            return implementation().norm2();
         }
-        
+
         inline Scalar norm1() const {
            return implementation().norm1();
         }
-        
+
         inline Scalar norm_infty() const {
           return implementation().normInf();
         }
@@ -233,7 +233,7 @@ namespace utopia {
                 result.implementation(),
                 right.implementation(),
                 0.
-            );   
+            );
         }
 
         inline vector_type &implementation()

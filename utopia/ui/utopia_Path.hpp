@@ -70,6 +70,9 @@ namespace utopia {
 		PathIterator iter() const;
 
 		virtual ~Path();
+
+		bool is_dir() const;
+		bool make_dir(const int permissions = 0777);
 	};
 
 

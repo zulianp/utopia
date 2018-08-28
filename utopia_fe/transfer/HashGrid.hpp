@@ -1,9 +1,11 @@
 #ifndef MFEM_L2P_HASH_GRID_HPP
 #define MFEM_L2P_HASH_GRID_HPP 
 
+#include <libmesh/enum_elem_type.h>
 #include <vector>
 #include "Box.hpp"
 #include "libmesh/mesh.h"
+#include "libmesh/enum_elem_type.h"
 
 namespace utopia {
 	inline bool is_simplex(const int type)

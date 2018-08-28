@@ -19,6 +19,7 @@ namespace utopia {
 		}
 
 		virtual void clear() {}
+		virtual bool is_linear() const { return false; }
 	};
 
 }

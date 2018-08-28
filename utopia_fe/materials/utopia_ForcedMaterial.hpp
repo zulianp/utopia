@@ -23,7 +23,7 @@ namespace utopia {
 	template<class Vector>
 	class ConstantForcingFunction : public ForcingFunction<Vector> {
 	public:
-		bool eval(const Vector &x, Vector &result) override {
+		bool eval(const Vector &, Vector &result) override {
 			result = value;
 			return true;
 		}
@@ -106,12 +106,15 @@ namespace utopia {
 			}
 
 			if(!force_->eval(x, force_vec_)) {
+				assert(false);
 				return false;
 			}
 
 			result -= force_vec_;
 			return true;
 		}
+
+		bool is_linear() const override { return material_->is_linear(); }
 
 	private:
 		std::shared_ptr<ElasticMaterial<Matrix, Vector>> material_;
