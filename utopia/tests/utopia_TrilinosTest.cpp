@@ -22,8 +22,48 @@
 #include "test_problems/utopia_BratuMultilevelTestProblem.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 
+#include "utopia_IPTransfer.hpp"
 
 namespace utopia {
+
+    template<class Matrix>
+    static void build_rectangular_matrix(const SizeType &n, const SizeType &m, Matrix &mat)
+    {
+        mat  = local_sparse(n, m, 2);
+
+        Write<TSMatrixd> w_(mat);
+        auto r = row_range(mat);
+        auto cols = size(mat).get(1);
+        for(auto i = r.begin(); i < r.end(); ++i) {
+            if(i >= cols) {
+                break;
+            }
+
+            mat.set(i, i, 1.);
+
+        }
+    }
+
+    template<class Matrix>
+    static void build_rectangular_matrix_2(const SizeType &n, const SizeType &m, Matrix &mat)
+    {
+        mat  = local_sparse(n, m, 2);
+
+        Write<TSMatrixd> w_(mat);
+        auto r = row_range(mat);
+        auto cols = size(mat).get(1);
+        for(auto i = r.begin(); i < r.end(); ++i) {
+            if(i >= cols) {
+                break;
+            }
+
+            mat.set(i, i, 1.);
+
+        }
+
+        mat.set(0, m-1, 1.);
+    }
+
 
     void trilinos_build()
     {
@@ -57,6 +97,13 @@ namespace utopia {
         actual = norm1(id * v);
 
         utopia_test_assert(approxeq(size(v).get(0) * 2., actual));
+    }
+
+    void trilinos_rect_matrix()
+    {
+        TSMatrixd P;
+        build_rectangular_matrix(5, 10, P);
+        utopia_test_assert(P.implementation().is_valid(true));
     }
 
     void trilinos_accessors()
@@ -219,44 +266,6 @@ namespace utopia {
         utopia_test_assert(approxeq(val, 0.));
     }
 
-    template<class Matrix>
-    static void build_rectangular_matrix(const SizeType &n, const SizeType &m, Matrix &mat)
-    {
-        mat  = local_sparse(n, m, 2);
-
-        Write<TSMatrixd> w_(mat);
-        auto r = row_range(mat);
-        auto cols = size(mat).get(1);
-        for(auto i = r.begin(); i < r.end(); ++i) {
-            if(i >= cols) {
-                break;
-            }
-
-            mat.set(i, i, 1.);
-
-        }
-    }
-
-    template<class Matrix>
-    static void build_rectangular_matrix_2(const SizeType &n, const SizeType &m, Matrix &mat)
-    {
-        mat  = local_sparse(n, m, 2);
-
-        Write<TSMatrixd> w_(mat);
-        auto r = row_range(mat);
-        auto cols = size(mat).get(1);
-        for(auto i = r.begin(); i < r.end(); ++i) {
-            if(i >= cols) {
-                break;
-            }
-
-            mat.set(i, i, 1.);
-
-        }
-
-        mat.set(0, m-1, 1.);
-    }
-
     void trilinos_m_tm()
     {
         auto n = 10;
@@ -332,30 +341,45 @@ namespace utopia {
     {
         if(mpi_world_size() > 1) return;
 
+        using TransferT   = utopia::Transfer<TSMatrixd, TVectord>;
+        using IPTransferT = utopia::IPTransfer<TSMatrixd, TVectord>;
+
         const static bool verbose = true;
 
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(4, 2, false);
-        // ml_problem.write_matlab("./");
+        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(5, 2, true);
 
-        auto smoother = std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>();
+        auto smoother      = std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>();
         auto coarse_solver = std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>();
+
         Multigrid<TSMatrixd, TVectord> multigrid(
             smoother,
             coarse_solver
         );
 
-        // smoother->verbose(true);
-        // coarse_solver->verbose(true);
-
-        multigrid.set_transfer_operators(ml_problem.interpolators);
-        multigrid.max_it(4);
+        multigrid.max_it(10);
         multigrid.atol(1e-12);
         multigrid.stol(1e-10);
         multigrid.rtol(1e-10);
         multigrid.pre_smoothing_steps(3);
         multigrid.post_smoothing_steps(3);
         multigrid.set_fix_semidefinite_operators(true);
+        multigrid.must_generate_masks(false);;
         multigrid.verbose(verbose);
+
+        std::vector<std::shared_ptr<TransferT>> transfers;
+
+        for(auto &interp_ptr : ml_problem.interpolators) {
+            transfers.push_back( std::make_shared<IPTransferT>(interp_ptr) );
+
+            // disp(local_size(*interp_ptr));
+            // disp(size(*interp_ptr));
+
+            // disp(*interp_ptr);
+
+            utopia_test_assert(interp_ptr->implementation().is_valid(true));
+        }
+
+        multigrid.set_transfers(transfers);
 
         TVectord x = zeros(size(*ml_problem.rhs));
         multigrid.update(ml_problem.matrix);
@@ -371,10 +395,9 @@ namespace utopia {
         multigrid.apply(*ml_problem.rhs, x);
 
         double diff = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
-        disp(diff);
-
-        // utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-7));
+        utopia_test_assert(diff < 1e-7);
     }
+
 
     void trilinos_mg()
     {
@@ -508,18 +531,18 @@ namespace utopia {
 
         TSMatrixd P_t = transpose(P);
 
-        std::cout << "-----------------------------" << std::endl;
+    //     std::cout << "-----------------------------" << std::endl;
 
-        each_read(P, [](const SizeType i, const SizeType j, const double val) {
-            std::cout << i << " " << j << " -> " << val << "\n";
-        });
+    //     each_read(P, [](const SizeType i, const SizeType j, const double val) {
+    //         std::cout << i << " " << j << " -> " << val << "\n";
+    //     });
 
-        std::cout << "-----------------------------" << std::endl;
+    //     std::cout << "-----------------------------" << std::endl;
 
-        each_read(P_t, [](const SizeType i, const SizeType j, const double val) {
-            std::cout << i << " " << j << " -> " << val << "\n";
-        });
-    }
+    //     each_read(P_t, [](const SizeType i, const SizeType j, const double val) {
+    //         std::cout << i << " " << j << " -> " << val << "\n";
+    //     });
+    // }
 
 
     void trilinos_read()
@@ -643,11 +666,10 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_interop);
 #endif //WITH_PETSC
 
-        // UTOPIA_RUN_TEST(trilinos_rmtr);
-
         //tests that always fail
-        UTOPIA_RUN_TEST(trilinos_mg_1D);
-
+        // UTOPIA_RUN_TEST(trilinos_rect_matrix);
+        // UTOPIA_RUN_TEST(trilinos_mg_1D);
+        // UTOPIA_RUN_TEST(trilinos_rmtr);
         // UTOPIA_RUN_TEST(trilinos_mg);
 
         UTOPIA_UNIT_TEST_END("TrilinosTest");

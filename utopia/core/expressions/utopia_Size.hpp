@@ -108,6 +108,16 @@ namespace utopia {
             return !(l == r);
         }
 
+
+        friend std::ostream &operator<<(std::ostream &os, const Size &s)
+        {
+            for(auto si : s._data) {
+                os << si << " ";
+            }
+
+            return os;
+        }
+
     private:
 
         std::vector<SizeType> _data;

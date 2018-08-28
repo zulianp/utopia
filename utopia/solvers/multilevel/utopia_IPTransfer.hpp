@@ -9,8 +9,7 @@
 
 
 
-     namespace utopia
-     {
+     namespace utopia {
         /**
          * @brief      The class for transfer operators.
          *
@@ -26,7 +25,7 @@
 
         public:
 
-        IPTransfer(const std::shared_ptr<Matrix> & I)
+        IPTransfer(const std::shared_ptr<Matrix> &I)
         {
             assert(I);
             _I = I;

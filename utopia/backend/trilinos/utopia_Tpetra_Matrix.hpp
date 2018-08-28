@@ -171,6 +171,8 @@ namespace utopia {
         void add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
 
         void mult(const TpetraVector &vec, TpetraVector &result) const;
+        void mult_t(const TpetraVector &vec, TpetraVector &result) const;
+
         void mult(const TpetraMatrix &right, TpetraMatrix &result) const;
         //result = tranpose(*this) * mat
         void mult_t(const TpetraMatrix &right, TpetraMatrix &result) const;
@@ -210,6 +212,8 @@ namespace utopia {
 
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
         bool write(const std::string &path) const;
+
+        bool is_valid(const bool verbose = false) const;
 
     private:
         rcp_crs_matrix_type  mat_;
