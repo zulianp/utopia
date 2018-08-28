@@ -36,7 +36,7 @@ namespace utopia
             Smoother::set_parameters(params); 
         }
 
-        virtual bool nonlinear_smooth(Function & fun,  Vector &x, const Vector &rhs) override
+        virtual bool smooth(Function & fun,  Vector &x, const Vector &rhs) override
         {
             Vector g = local_zeros(local_size(x));
                

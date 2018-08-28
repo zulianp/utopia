@@ -120,7 +120,7 @@ namespace utopia
         
         
         
-        virtual bool nonlinear_smooth(Function & fun,  Vector &x, const Vector &rhs) override
+        virtual bool smooth(Function & fun,  Vector &x, const Vector &rhs) override
         {
             using namespace utopia;
             
