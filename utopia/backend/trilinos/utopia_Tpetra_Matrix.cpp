@@ -49,6 +49,26 @@ namespace utopia {
 		}
 	}
 
+
+	void TpetraMatrix::mult_t(const TpetraVector &vec, TpetraVector &result) const
+	{
+		assert(mat_->hasTransposeApply());
+
+		if(result.is_null()) {
+			result.init(mat_->getDomainMap());
+			// result.owner_ = true;
+		} else if(!result.implementation().getMap()->isSameAs(*mat_->getDomainMap())) {
+			result.init(mat_->getDomainMap());
+			// result.owner_ = true;
+		}
+		try {
+			mat_->apply(vec.implementation(), result.implementation(), Teuchos::TRANS);
+		} catch(const std::exception &ex) {
+			std::cout << ex.what() << std::endl;
+			assert(false);
+		}
+	}
+
 	void TpetraMatrix::mult(const TpetraMatrix &right, TpetraMatrix &result) const
 	{
 		mult(false, right, false, result);
@@ -66,16 +86,29 @@ namespace utopia {
 		//IMPROVEME
 		result.mat_.reset();
 
+		assert(!transpose_right);
+
 		if(result.is_null()) {
 			if(transpose_this) {
-				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getDomainMap(), implementation().getRowMap(), 0, Tpetra::DynamicProfile));
+				// result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getDomainMap(), implementation().getRowMap(), 0, Tpetra::DynamicProfile));
+				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getDomainMap(), implementation().getRangeMap(), 0, Tpetra::DynamicProfile));
 			} else {
-				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRowMap(), implementation().getColMap(), 0, Tpetra::DynamicProfile));
+				// result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRowMap(), implementation().getColMap(), 0, Tpetra::DynamicProfile));
+				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRangeMap(), implementation().getDomainMap(), 0, Tpetra::DynamicProfile));
 			}
 			result.owner_ = true;
 		}
 
 		try {
+
+			// std::cout << "--------------------\n";
+			// this->describe();
+			// std::cout << "--------------------\n";
+			// right.describe();
+			// std::cout << "--------------------\n";
+
+
+
 				//C = op(A)*op(B),
 				Tpetra::MatrixMatrix::Multiply(
 					this->implementation(),
@@ -283,4 +316,31 @@ namespace utopia {
 
 		return true;
 	}
+
+	bool TpetraMatrix::is_valid(const bool verbose) const
+	{
+		if(mat_.is_null()) {
+			if(verbose) { std::cerr << "is_null" << std::endl; }
+			return false;
+		}
+
+		auto comm = communicator();
+
+		if(comm->getSize() == 1) {
+
+			if(local_size() != size()) {
+
+				if(verbose) {
+					std::cerr << "local_size() != size()" << std::endl;
+					std::cerr << local_size() << " != " << size() << std::endl;
+					std::cerr << "this indicates inconsistent domain_map with respect to the col_map" << std::endl;
+				}
+
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 }

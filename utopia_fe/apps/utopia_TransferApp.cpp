@@ -209,7 +209,11 @@ namespace utopia {
 			BiCGStab<DSMatrixd, DVectord> solver;
 			solver.solve(mass_mat_master, fun_master_h, fun_master);
 		} else {
+#ifdef WITH_TINY_EXPR
 			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun->eval(0., 0., 0.));
+#else
+			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun[0]);
+#endif //WITH_TINY_EXPR
 		}
 
 

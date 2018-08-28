@@ -344,10 +344,14 @@ namespace utopia {
             const Vector &right)
         {
             assert(!transpose_right);
-            assert(!transpose_left);
+            // assert(!transpose_left);
             //TODO implement transpoe left
 
-            left.mult(right, result);
+            if(transpose_left) {
+                left.mult_t(right, result);
+            } else {
+                left.mult(right, result);
+            }
         }
 
         inline static void apply_binary(TpetraVector &result, const TpetraMatrix &left, const Multiplies &, const TpetraVector &right)
