@@ -68,7 +68,7 @@ namespace utopia {
 		if(!separate_subdomains_) {
 
 			switch(dim) {
-				case 2: 
+				case 2:
 				{
 					const int n_segments = std::max(2, int( std::round( std::sqrt(mesh.n_nodes() / std::pow(4, n_coarse_spaces)) ) ) );
 					const double max_r = std::max(r(0), r(1));
@@ -112,10 +112,10 @@ namespace utopia {
 						libMesh::HEX8);
 
 					break;
-				} 
+				}
 
 				default:
-				{	
+				{
 					assert(false && "implement me");
 					break;
 				}
@@ -136,7 +136,7 @@ namespace utopia {
 		//use refinement instead
 		for(std::size_t i = 1; i < n_levels-1; ++i) {
 			auto m_i = std::make_shared<libMesh::DistributedMesh>(*meshes[i-1]);
-			
+
 			{
 				libMesh::MeshRefinement mesh_refinement(*m_i);
 				mesh_refinement.make_flags_parallel_consistent();
@@ -167,7 +167,7 @@ namespace utopia {
 		moonolith::Communicator comm(mesh.comm().get());
 
 		DVectord d_diag;
-		
+
 		for(std::size_t i = 1; i < n_coarse_spaces; ++i) {
 			interpolators_[i-1] = std::make_shared<DSMatrixd>();
 
@@ -175,7 +175,7 @@ namespace utopia {
 				comm,
 				meshes[i-1],
 				meshes[i],
-				make_ref(equation_systems[i-1]->get_system(0).get_dof_map()), 
+				make_ref(equation_systems[i-1]->get_system(0).get_dof_map()),
 				make_ref(equation_systems[i]->get_system(0).get_dof_map()),
 				0,
 				0,
@@ -198,7 +198,7 @@ namespace utopia {
 			comm,
 			meshes[n_coarse_spaces-1],
 			make_ref(const_cast<libMesh::MeshBase &>(mesh)),
-			make_ref(equation_systems[n_coarse_spaces-1]->get_system(0).get_dof_map()), 
+			make_ref(equation_systems[n_coarse_spaces-1]->get_system(0).get_dof_map()),
 			make_ref(const_cast<libMesh::DofMap &>(dof_map)),
 			0,
 			0,
@@ -224,7 +224,7 @@ namespace utopia {
 		}
 
 		mg.set_transfer_operators(interpolators_);
-	}	
+	}
 
 	void SemiGeometricMultigrid::update(const std::shared_ptr<const DSMatrixd> &op)
 	{
@@ -249,7 +249,7 @@ namespace utopia {
 		const auto last_interp = mg.n_levels() - 2;
 		auto c_I = std::make_shared<DSMatrixd>();
 		*c_I = transpose(contact.complete_transformation) * *interpolators_[last_interp];
-		mg.update_transfer(last_interp, Transfer<DSMatrixd, DVectord>(c_I));
+		mg.update_transfer(last_interp, std::make_shared<MatrixTransfer<DSMatrixd, DVectord>>(c_I));
 	}
 }
 
