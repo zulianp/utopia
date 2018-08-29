@@ -225,18 +225,18 @@ namespace utopia
 			auto &mask = masks_[L - 1];
 
 			generate_mask_from_matrix(A, mask, 0., 1.);
-			UTOPIA_RECORD_VALUE("r_mask", mask);
+			// UTOPIA_RECORD_VALUE("r_mask", mask);
 
 			for(SizeType l = L - 1; l > 0; --l) {
 				auto &mask_l = masks_[l - 1];
 				this->transfer(l-1).boolean_restrict_or(masks_[l], mask_l);
 
-				UTOPIA_RECORD_VALUE("r_mask", mask_l);
+				// UTOPIA_RECORD_VALUE("r_mask", mask_l);
 			}
 
 			for(auto &m : masks_) {
 				m = local_values(local_size(m).get(0), 1.) - m;
-				UTOPIA_RECORD_VALUE("mask", m);
+				// UTOPIA_RECORD_VALUE("mask", m);
 			}
 		}
 	};

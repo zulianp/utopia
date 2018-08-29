@@ -225,9 +225,10 @@ namespace utopia {
         {
             //https://trilinos.org/docs/dev/packages/tpetra/doc/html/classTpetra_1_1MultiVector.html#a95fae4b1f2891d8438b7fb692a85b3bd
             result.values(this->communicator(), local_size().get(0), size().get(0), 0.);
+          
             result.implementation().elementWiseMultiply(
                 1.,
-                result.implementation(),
+                this->implementation(),
                 right.implementation(),
                 0.
             );
