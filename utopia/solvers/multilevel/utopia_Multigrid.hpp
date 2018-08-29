@@ -103,6 +103,14 @@ namespace utopia
                 this->galerkin_assembly(op);
             }
 
+            update();
+        }
+
+        /*! @brief if no galerkin assembly is used but instead set_linear_operators is used.
+                   One can call this update instead of the other one.
+         */
+        virtual void update()
+        {
             smoothers_.resize(this->n_levels());
             smoothers_[0] = nullptr;
 
