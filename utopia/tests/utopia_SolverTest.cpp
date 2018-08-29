@@ -30,7 +30,7 @@ namespace utopia {
 		{
 			print_backend_info();
 			UTOPIA_RUN_TEST(pg_test);
-			// UTOPIA_RUN_TEST(pcg_test);
+			UTOPIA_RUN_TEST(pcg_test);
 			UTOPIA_RUN_TEST(ngs_test);
 			UTOPIA_RUN_TEST(newton_cg_test);
 			UTOPIA_RUN_TEST(solver_from_params_test);
@@ -362,13 +362,14 @@ namespace utopia {
 		void pg_test()
 		{
 			ProjectedGradient<Matrix, Vector> pg;
-			// pg.verbose(true);
+			pg.verbose(true);
 			run_qp_solver(pg);
 		}
 
 		void pcg_test()
 		{
 			ProjectedConjugateGradient<Matrix, Vector> pcg;
+			pcg.verbose(true);
 			run_qp_solver(pcg);
 		}
 
