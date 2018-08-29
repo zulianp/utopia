@@ -314,7 +314,7 @@ namespace utopia
                 const Scalar new_err = norm2(r - level(l).A() * c);
                 // assert(new_err < err)
                 if(new_err > err) {
-                  m_utopia_error("[Error] Multigrid::standard_cycle (" + std::to_string(l) + "): coarse grid correction raises error " + std::to_string(new_err) + "<" + std::to_string(err));
+                  m_utopia_error_once("[Error] Multigrid::standard_cycle (" + std::to_string(l) + "): coarse grid correction raises error " + std::to_string(new_err) + "<" + std::to_string(err));
                 }
 #endif
             }

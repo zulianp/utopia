@@ -40,24 +40,28 @@ namespace utopia {
 			const auto &lb = *constraints_.lower_bound();
 
 			x_old = x;
-			u = b - A * x;
+			uk = b - A * x;
 
 			bool converged = false;
 			const SizeType check_s_norm_each = 10;			
-			p = -u;
+			pk = -uk;
 
 			int iteration = 0;
 			while(!converged) {
+				
 				// START step
-				Scalar alpha = dot(u, p)/dot(p, A * p);
-				x_half = x_old + alpha * p;
-				// std::cout << x_half.size() << std::endl;
-				x = utopia::max(utopia::min(x_half, ub), lb);
+
+				Scalar alpha = dot(uk, pk)/dot(pk, A * pk);
+				x_half = x_old + alpha * pk;
+
+				x = utopia::min(x_half, ub);
+				x = utopia::max(x, lb);
+
 				uk = b - A * x;
 
 				{
 					Write<Vector> w_wk(wk), w_zk(zk);
-					Read<Vector> r_uk(uk), r_lb(lb), r_p(p);
+					Read<Vector> r_uk(uk), r_lb(lb), r_p(pk);
 
 					each_read(x, [&](SizeType i, Scalar elem) {
 							Scalar val = 0.;
@@ -68,17 +72,16 @@ namespace utopia {
 							}
 
 							if (val == 0) {
-								zk.set(i, std::max(p.get(i), Scalar(0)));
+								zk.set(i, std::max(pk.get(i), Scalar(0)));
 							} else {
-								zk.set(i, p.get(i));
+								zk.set(i, pk.get(i));
 							}
 
 							wk.set(i, val);
-	            });
+	            	});
 				}
 
-
-				Scalar beta = dot(wk, A * p)/dot(p, A * p);
+				Scalar beta = dot(wk, A * pk)/dot(pk, A * pk);
 				pk = wk + beta * zk;
 
 				// END step
@@ -97,30 +100,11 @@ namespace utopia {
 
 				if(converged) break;
 
-				p = pk;
-        		u = uk;
 				x_old = x;
 			}
 
 			return converged;
 		}
-
-		//one step for solving A * x = b : l <= x <= u
-		// bool step(const Matrix &A, const Vector &b, Vector &x)
-		// {
-		// 	const auto &u = *constraints_.upper_bound();
-		// 	const auto &l = *constraints_.lower_bound();
-		//
-		// 	assert(false && "implement me");
-		//
-		//
-		// 	// Scalar alpha_k_p_1 = dot(r, p)/dot(p, A * p);
-		// 	// x_half = x + alpha_k_p_1 * p;
-		// 	// x    = max(min(x_half, u), l);
-		// 	// u = b - A * x;
-		// 	// p =
-		// 	return true;
-		// }
 
 		void init(const Matrix &A)
 		{
@@ -130,9 +114,7 @@ namespace utopia {
 			wk = local_zeros(n);
 			zk = local_zeros(n);
 			pk = local_zeros(n);
-			p  = local_zeros(n);
 		}
-
 
 		virtual void update(const std::shared_ptr<const Matrix> &op) override
 		{
@@ -140,9 +122,7 @@ namespace utopia {
 		    init(*op);
 		}
 
-		ProjectedConjugateGradient()
-		{
-		}
+		ProjectedConjugateGradient() {}
 
 		ProjectedConjugateGradient(const ProjectedConjugateGradient &) = default;
 
@@ -155,7 +135,7 @@ namespace utopia {
 		BoxConstraints constraints_;
 
 		//buffers
-		Vector x_old, x_half, u, r, uk, wk, zk, pk, p;
+		Vector x_old, x_half, r, uk, wk, zk, pk;
 	};
 }
 

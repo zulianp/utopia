@@ -309,7 +309,7 @@ namespace utopia {
 
 		template<class QPSolver>
 		void run_qp_solver(QPSolver &qp_solver) {
-			const SizeType n = 30;
+			const SizeType n = 100;
 
 			Matrix m = zeros(n, n);
 			assemble_laplacian_1D(m);
@@ -362,14 +362,12 @@ namespace utopia {
 		void pg_test()
 		{
 			ProjectedGradient<Matrix, Vector> pg;
-			pg.verbose(true);
 			run_qp_solver(pg);
 		}
 
 		void pcg_test()
 		{
 			ProjectedConjugateGradient<Matrix, Vector> pcg;
-			pcg.verbose(true);
 			run_qp_solver(pcg);
 		}
 
