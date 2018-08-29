@@ -169,10 +169,15 @@ namespace utopia {
     {
     	try {
 	    	if(init_) {
+
+	    		assert(!init_->domain_map.is_null());
+	    		assert(!init_->range_map.is_null());
+
 	    		implementation().fillComplete(init_->domain_map, init_->range_map);
-	    		init_.reset();
+	    		// init_.reset();
 	    	} else {
-	        	implementation().fillComplete();
+	    		// assert(false);
+	        	implementation().fillComplete(implementation().getDomainMap(), implementation().getRangeMap());
 	        }
         } catch(const std::exception &ex) {
         	std::cout << ex.what() << std::endl;

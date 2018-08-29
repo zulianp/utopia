@@ -102,7 +102,18 @@ namespace utopia {
     void trilinos_rect_matrix()
     {
         TSMatrixd P;
-        build_rectangular_matrix(5, 10, P);
+        // build_rectangular_matrix(5, 10, P);
+        build_rectangular_matrix(10, 5, P);
+
+
+        // auto rm = P.implementation().implementation().getRangeMap();
+        // auto dm = P.implementation().implementation().getDomainMap();
+
+        // auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(std::cout));
+
+        // rm->describe(*out);
+        // dm->describe(*out);
+
         utopia_test_assert(P.implementation().is_valid(true));
     }
 
@@ -344,9 +355,9 @@ namespace utopia {
         using TransferT   = utopia::Transfer<TSMatrixd, TVectord>;
         using IPTransferT = utopia::IPTransfer<TSMatrixd, TVectord>;
 
-        const static bool verbose = true;
+        const static bool verbose = false;
 
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(5, 2, true);
+        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 5, true);
 
         auto smoother      = std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>();
         auto coarse_solver = std::make_shared<ConjugateGradient<TSMatrixd, TVectord>>();
@@ -356,10 +367,10 @@ namespace utopia {
             coarse_solver
         );
 
-        multigrid.max_it(10);
+        multigrid.max_it(12);
         multigrid.atol(1e-12);
-        multigrid.stol(1e-10);
-        multigrid.rtol(1e-10);
+        multigrid.stol(1e-11);
+        multigrid.rtol(1e-11);
         multigrid.pre_smoothing_steps(3);
         multigrid.post_smoothing_steps(3);
         multigrid.set_fix_semidefinite_operators(true);
@@ -370,12 +381,6 @@ namespace utopia {
 
         for(auto &interp_ptr : ml_problem.interpolators) {
             transfers.push_back( std::make_shared<IPTransferT>(interp_ptr) );
-
-            // disp(local_size(*interp_ptr));
-            // disp(size(*interp_ptr));
-
-            // disp(*interp_ptr);
-
             utopia_test_assert(interp_ptr->implementation().is_valid(true));
         }
 
@@ -445,7 +450,7 @@ namespace utopia {
         multigrid.atol(1e-15);
         multigrid.stol(1e-15);
         multigrid.rtol(1e-15);
-        multigrid.verbose(true);
+        // multigrid.verbose(true);
         multigrid.must_generate_masks(false);
         TVectord x = local_zeros(local_size(rhs));
 
@@ -667,10 +672,10 @@ namespace utopia {
 #endif //WITH_PETSC
 
         //tests that always fail
-        // UTOPIA_RUN_TEST(trilinos_rect_matrix);
-        // UTOPIA_RUN_TEST(trilinos_mg_1D);
+        UTOPIA_RUN_TEST(trilinos_rect_matrix);
+        UTOPIA_RUN_TEST(trilinos_mg_1D);
+        UTOPIA_RUN_TEST(trilinos_mg);
         // UTOPIA_RUN_TEST(trilinos_rmtr);
-        // UTOPIA_RUN_TEST(trilinos_mg);
 
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
