@@ -173,7 +173,8 @@ namespace utopia {
 				auto D = std::make_shared<DSMatrixd>();
 
 				assemble(inner(u, v) * dX, *D);
-				transfer_op_ = std::make_shared<L2TransferOperator>(B, D);
+				transfer_op_ = std::make_shared<L2TransferOperator>(B, D, std::make_shared<Factorization<DSMatrixd, DVectord>>());
+				// transfer_op_ = std::make_shared<L2TransferOperator>(B, D, std::make_shared<BiCGStab<DSMatrixd, DVectord>>());
 			}
 
 		} else if(type == "interpolation") {
