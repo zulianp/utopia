@@ -212,7 +212,7 @@ namespace utopia {
 #ifdef WITH_TINY_EXPR
 			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun->eval(0., 0., 0.));
 #else
-			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun[0]);
+			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun->expr());
 #endif //WITH_TINY_EXPR
 		}
 

@@ -125,7 +125,7 @@ namespace utopia
         virtual bool apply(const Vector &rhs, Vector &x) override
         {
 
-            // UTOPIA_RECORD_SCOPE_BEGIN("apply");
+            UTOPIA_RECORD_SCOPE_BEGIN("apply");
             Scalar r_norm, r0_norm, rel_norm;
             SizeType it = 0;
             bool converged = false;
@@ -135,12 +135,12 @@ namespace utopia
             memory.init(L);
             SizeType l = L - 1;
 
-            // UTOPIA_RECORD_VALUE("rhs", rhs);
-            // UTOPIA_RECORD_VALUE("x", x);
+            UTOPIA_RECORD_VALUE("rhs", rhs);
+            UTOPIA_RECORD_VALUE("x", x);
 
             memory.r[l] = rhs - level(l).A() * x;
 
-            // UTOPIA_RECORD_VALUE("rhs - level(l).A() * x", memory.r[l]);
+            UTOPIA_RECORD_VALUE("rhs - level(l).A() * x", memory.r[l]);
 
             r_norm = norm2(memory.r[l]);
             r0_norm = r_norm;
@@ -176,11 +176,11 @@ namespace utopia
                 // assert(!has_nan_or_inf(x));
 #endif
 
-                // UTOPIA_RECORD_VALUE("memory.c[l]", memory.c[l]);
+                UTOPIA_RECORD_VALUE("memory.c[l]", memory.c[l]);
 
                 x += memory.c[l];
 
-                // UTOPIA_RECORD_VALUE("x += memory.c[l]", x);
+                UTOPIA_RECORD_VALUE("x += memory.c[l]", x);
 
                 memory.r[l] = rhs - level(l).A() * x;
                 r_norm = norm2(memory.r[l]);
@@ -198,7 +198,7 @@ namespace utopia
 
             this->print_statistics(it);
 
-            // UTOPIA_RECORD_SCOPE_END("apply");
+            UTOPIA_RECORD_SCOPE_END("apply");
             return true;
         }
 
@@ -220,7 +220,7 @@ namespace utopia
          */
         virtual bool standard_cycle(const SizeType &l)
         {
-            // UTOPIA_RECORD_SCOPE_BEGIN("standard_cycle(" + std::to_string(l) + ")");
+            UTOPIA_RECORD_SCOPE_BEGIN("standard_cycle(" + std::to_string(l) + ")");
             assert(memory.valid(this->n_levels()) && l < this->n_levels());
 
             Vector &r   = memory.r[l];
@@ -238,12 +238,12 @@ namespace utopia
 
             ////////////////////////////////////
             if(l == 0) {
-              // UTOPIA_RECORD_VALUE("c", c);
-              // UTOPIA_RECORD_VALUE("r", r);
+              UTOPIA_RECORD_VALUE("c", c);
+              UTOPIA_RECORD_VALUE("r", r);
                 if(coarse_solve(r, c)) {
                   assert(approxeq(level(0).A() * c, r, 1e-6));
-                  // UTOPIA_RECORD_VALUE("coarse_solve(r, c)", c);
-                  // UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
+                  UTOPIA_RECORD_VALUE("coarse_solve(r, c)", c);
+                  UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
                   return true;
                 } else {
                   assert(false);
@@ -256,30 +256,34 @@ namespace utopia
             for(SizeType k = 0; k < this->mg_type(); k++) {
                 // presmoothing
                 smoothing(l, r, c, this->pre_smoothing_steps());
-                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
+                UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->pre_smoothing_steps());", c);
 
 
                 r_R = r - level(l).A() * c;
 
-                // UTOPIA_RECORD_VALUE("r_R", r_R);
+                UTOPIA_RECORD_VALUE("r_R", r_R);
 
                 // residual transfer
                 this->transfer(l-1).restrict(r_R, memory.r[l-1]);
 
+                UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R, memory.r[l-1]);", memory.r[l-1]);
+
                 //NEW
-                if(this->must_generate_masks())
+                if(this->must_generate_masks()) {
                   this->apply_mask(l-1, memory.r[l-1]);
+                  UTOPIA_RECORD_VALUE("this->apply_mask(l-1, memory.r[l-1]);", memory.r[l-1]);
+                }
 
                 assert(!empty(memory.r[l-1]));
 
-                // UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R, memory.r[l-1]);", memory.r[l-1]);
+                
 
 
                 standard_cycle(l-1);
 
                 // correction transfer
                 this->transfer(l-1).interpolate(memory.c[l-1], c_I);
-                // UTOPIA_RECORD_VALUE("this->transfer(l-1).interpolate(memory.c[l-1], c_I);", c_I);
+                UTOPIA_RECORD_VALUE("this->transfer(l-1).interpolate(memory.c[l-1], c_I);", c_I);
 
 #ifndef NDEBUG
                 const Scalar err = norm2(r_R);
@@ -299,12 +303,12 @@ namespace utopia
                     c += c_I;
                 }
 
-                // UTOPIA_RECORD_VALUE("c", c);
+                UTOPIA_RECORD_VALUE("c", c);
 
                 // postsmoothing
                 smoothing(l, r, c, this->post_smoothing_steps());
 
-                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
+                UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
 
 #ifndef NDEBUG
                 const Scalar new_err = norm2(r - level(l).A() * c);
@@ -315,7 +319,7 @@ namespace utopia
 #endif
             }
 
-            // UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
+            UTOPIA_RECORD_SCOPE_END("standard_cycle(" + std::to_string(l) + ")");
             return true;
         }
 

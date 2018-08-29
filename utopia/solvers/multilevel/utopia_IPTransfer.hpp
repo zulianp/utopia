@@ -25,7 +25,8 @@
 
         public:
 
-        IPTransfer(const std::shared_ptr<Matrix> &I)
+        IPTransfer(const std::shared_ptr<Matrix> &I, const Scalar restrict_factor = 1.)
+        : restrict_factor_(restrict_factor)
         {
             assert(I);
             _I = I;
@@ -33,7 +34,8 @@
 
         IPTransfer(const std::shared_ptr<Matrix> &I, const std::shared_ptr<Matrix> &P):
                 _I(I),
-                _Pr(P)
+                _Pr(P),
+                restrict_factor_(1.)
         {
             assert(I);
             assert(P);
@@ -72,6 +74,11 @@
         {
             assert(_I);
             x_new = transpose(*_I) * x;
+
+            if(restrict_factor_ != 1.0) {
+                x_new *= restrict_factor_;
+            }
+
             return true;
         }
 
@@ -179,6 +186,7 @@
         protected:
             std::shared_ptr<Matrix> _I;
             std::shared_ptr<Matrix> _Pr;
+            Scalar restrict_factor_;
     };
 
 }

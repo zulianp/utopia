@@ -26,6 +26,8 @@ namespace utopia {
 				n_dofs[i] = (n_dofs[i-1] - 1) * 2 + 1;
 			}
 
+			Scalar h = 1.;//1./(n_dofs[n_levels -1]);
+
 			interpolators.resize(n_levels - 1);
 
 			for(SizeType i = 0; i < n_levels - 1; ++i) {
@@ -39,11 +41,11 @@ namespace utopia {
 
 				SizeType j = r.begin()/2;
 				for(auto k = r.begin(); k < r.end(); k += 2, ++j) {
-					I.set(k, j, 1.);
+					I.set(k, j, 1./h);
 
 					if(j + 1 < n_coarse) {
-						I.set(k + 1, j, 0.5);
-						I.set(k + 1, j + 1, 0.5);
+						I.set(k + 1, j, 0.5/h);
+						I.set(k + 1, j + 1, 0.5/h);
 					}
 				}
 			}
@@ -52,7 +54,7 @@ namespace utopia {
 			matrix = std::make_shared<Matrix>(sparse(n_finest, n_finest, 3));
 			assemble_laplacian_1D(*matrix, true);
 
-			rhs = std::make_shared<Vector>(values(n_finest, 1000.));
+			rhs = std::make_shared<Vector>(values(n_finest, h*1000.));
 
 
 			Write<Vector> w_(*rhs);

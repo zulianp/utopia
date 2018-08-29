@@ -142,6 +142,8 @@ namespace utopia {
 			//2)
 			// mat.implementation().resumeFill();
 			// mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
+
+			assert(is_valid(true));
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);
