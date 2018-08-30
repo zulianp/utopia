@@ -279,7 +279,8 @@ namespace utopia {
 	enum TransferOperatorType {
 		INTERPOLATION = 0,
 		L2_PROJECTION = 1,
-		PSEUDO_L2_PROJECTION = 2
+		PSEUDO_L2_PROJECTION = 2,
+		APPROX_L2_PROJECTION = 3
 	};
 }
 

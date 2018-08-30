@@ -1,6 +1,7 @@
 #include "utopia_PourousMediaToFractureTransfer.hpp"
 
 #include "utopia_L2LocalAssembler.hpp"
+#include "utopia_ApproxL2LocalAssembler.hpp"
 #include "utopia_InterpolationLocalAssembler.hpp"
 #include "utopia_Local2Global.hpp"
 
@@ -11,39 +12,67 @@ namespace utopia {
 	{
 		std::shared_ptr<LocalAssembler> assembler;
 
-		bool use_interpolation = operator_type == INTERPOLATION;
-		bool use_biorth = operator_type == PSEUDO_L2_PROJECTION;
+		bool use_interpolation = false;
+		bool use_biorth = false;
 
-		if(use_interpolation) {
-			std::cout << "[Status] using interpolation" << std::endl;
-			assembler = std::make_shared<InterpolationLocalAssembler>(from_mesh->mesh_dimension());
-		} else {
-			std::cout << "[Status] using projection" << std::endl;
-			assembler = std::make_shared<L2LocalAssembler>(from_mesh->mesh_dimension(), use_biorth);
+		switch(operator_type) {
+			case INTERPOLATION:
+			{
+				std::cout << "[Status] using interpolation" << std::endl;
+				assembler = std::make_shared<InterpolationLocalAssembler>(from_mesh->mesh_dimension());
+				use_interpolation = true;
+				break;
+			}
+
+			case L2_PROJECTION:
+			{	
+				std::cout << "[Status] using l2 projection" << std::endl;
+				assembler = std::make_shared<L2LocalAssembler>(from_mesh->mesh_dimension(), false, true);
+				break;
+			}
+
+			case PSEUDO_L2_PROJECTION:
+			{
+				std::cout << "[Status] using pseudo l2 projection" << std::endl;
+				assembler = std::make_shared<L2LocalAssembler>(from_mesh->mesh_dimension(), true, false);
+				use_biorth = true;
+				break;
+			}
+
+			case APPROX_L2_PROJECTION:
+			{
+				std::cout << "[Status] using approx l2 projection" << std::endl;
+				assembler = std::make_shared<ApproxL2LocalAssembler>(from_mesh->mesh_dimension());
+				break;
+			}
+
+			default:
+			{
+				assert(false);
+				return false;
+			}
 		}
 
 		auto local2global = std::make_shared<Local2Global>(use_interpolation);
 		TransferAssembler transfer_assembler(assembler, local2global);
 
-		auto B = std::make_shared<SparseMatrix>();
-
-		if(!transfer_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs, *B, opts)) {
+		std::vector< std::shared_ptr<SparseMatrix> > mats;
+		if(!transfer_assembler.assemble(from_mesh, from_dofs, to_mesh, to_dofs, mats, opts)) {
 			return false;
 		}
 
 		if(use_interpolation) {
-			auto interpolation_operator = std::make_shared<Interpolator>(B);
+			auto interpolation_operator = std::make_shared<Interpolator>(mats[0]);
 			//only necessary for non-conforming mesh in parallel
 			interpolation_operator->normalize_rows();
 			operator_ = interpolation_operator;
 		} else if(use_biorth) {
 			auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
-			pseudo_l2_operator->init_from_coupling_operator(*B);
+			pseudo_l2_operator->init_from_coupling_operator(*mats[0]);
 			operator_ = pseudo_l2_operator;
 		} else {
-			assert(false && "must assemble mass matrix. Not implemented yet");
-			auto D = std::make_shared<SparseMatrix>();
-			auto l2_operator = std::make_shared<L2TransferOperator>(B, D);
+			auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<DSMatrixd, DVectord>>());
+			l2_operator->fix_mass_matrix_operator();
 			operator_ = l2_operator;
 		}
 

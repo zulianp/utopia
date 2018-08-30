@@ -168,7 +168,7 @@ namespace utopia {
 			);
 		}
 
-		libMesh::QGauss q(dim, libMesh::Order(order));
+		libMesh::QGauss q(test.dim(), libMesh::Order(order));
 		q.init(test.type());
 
 		std::size_t n_quad_points = q.get_points().size();
