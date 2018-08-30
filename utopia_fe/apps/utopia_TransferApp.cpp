@@ -51,6 +51,10 @@ namespace utopia {
 
 			mesh_master_->read(path);
 
+			if(order == 2) {
+				mesh_master_->all_second_order(false);
+			}
+
 			int n_master_ref = 0;
 			is.read("refine-master", n_master_ref);
 			refine(n_master_ref, *mesh_master_);
@@ -67,6 +71,10 @@ namespace utopia {
 			is.read("order-slave", order);
 			is.read("type", type);
 			mesh_slave_->read(path);
+
+			if(order == 2) {
+				mesh_slave_->all_second_order(false);
+			}
 
 			int n_slave_ref = 0;
 			is.read("refine-slave", n_slave_ref);
@@ -90,7 +98,14 @@ namespace utopia {
 				local_assembler_ = std::make_shared<InterpolationLocalAssembler>(mesh_master_->mesh_dimension());
 				is_interpolation_ = true;
 			} else if(type == "approx-l2-projection") {
-				local_assembler_ = std::make_shared<ApproxL2LocalAssembler>(mesh_master_->mesh_dimension());
+				int quad_order = -1;
+
+				is.read("quad-order-approx", quad_order);
+				std::cout << "quad_order: " << quad_order << std::endl;
+
+				auto apl2 = std::make_shared<ApproxL2LocalAssembler>(mesh_master_->mesh_dimension());
+				apl2->set_quadrature_order(quad_order);
+				local_assembler_  = apl2;
 			}
 
 			if(!local_assembler_) {
@@ -151,7 +166,7 @@ namespace utopia {
 			make_ref(space_slave_->dof_map()),
 			mats,
 			opts
-			);
+		);
 
 		if(!ok) {
 			std::cerr << "[Error] transfer failed" << std::endl;
@@ -173,12 +188,11 @@ namespace utopia {
 		}
 
 		if(type == "l2-projection" || type == "approx-l2-projection") {
-			if(biorth_basis) {
+			if(biorth_basis && type != "approx-l2-projection") {
 				auto pl2 = std::make_shared<PseudoL2TransferOperator>();
 				pl2->init_from_coupling_operator(*mats[0]);
 				transfer_op_ = pl2;
 			} else {
-
 				if(mats.size() == 2) {
 					auto l2op = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<DSMatrixd, DVectord>>());
 					l2op->fix_mass_matrix_operator();
@@ -192,7 +206,6 @@ namespace utopia {
 					assemble(inner(u, v) * dX, *D);
 					transfer_op_ = std::make_shared<L2TransferOperator>(mats[0], D, std::make_shared<Factorization<DSMatrixd, DVectord>>());
 				}
-				// transfer_op_ = std::make_shared<L2TransferOperator>(B, D, std::make_shared<BiCGStab<DSMatrixd, DVectord>>());
 			}
 
 		} else if(type == "interpolation") {

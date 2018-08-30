@@ -32,8 +32,9 @@ namespace utopia {
 
 		bool apply(const Vector &b, Vector &x) override
 		{
-			if(this->verbose())
+			if(this->verbose()) {
 				this->init_solver("utopia ProjectedConjugateGradient", {" it. ", "|| u - u_old ||"});
+			}
 
 			const Matrix &A = *this->get_operator();
 			const auto &ub = *constraints_.upper_bound();
