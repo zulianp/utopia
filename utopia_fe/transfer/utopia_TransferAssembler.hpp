@@ -32,7 +32,8 @@ namespace utopia {
 		class Algorithm {
 		public:
 			virtual ~Algorithm() {}
-			virtual bool assemble(SparseMatrix &B) = 0;
+			// virtual bool assemble(SparseMatrix &B) = 0;
+			virtual bool assemble(std::vector<std::shared_ptr<SparseMatrix> > &B) = 0;
 		};
 
 		TransferAssembler(
@@ -45,6 +46,15 @@ namespace utopia {
 			const std::shared_ptr<MeshBase> &to_mesh,
 			const std::shared_ptr<DofMap>   &to_dofs,
 			SparseMatrix &B,
+			const TransferOptions &opts = TransferOptions()
+		);
+
+		bool assemble(
+			const std::shared_ptr<MeshBase> &from_mesh,
+			const std::shared_ptr<DofMap>   &from_dofs,
+			const std::shared_ptr<MeshBase> &to_mesh,
+			const std::shared_ptr<DofMap>   &to_dofs,
+			std::vector<std::shared_ptr<SparseMatrix> > &B,
 			const TransferOptions &opts = TransferOptions()
 		);
 
@@ -115,16 +125,20 @@ namespace utopia {
 
 		inline void describe(std::ostream &os) const override
 		{
-			DVectord t_from = local_values(local_size(*D).get(0), 1);
+			DVectord t_from = local_values(local_size(*B).get(1), 1);
 			DVectord t_to;
 			apply(t_from, t_to);
 
 			double t_max = max(t_to);
 			double t_min = min(t_to);
 
+			double sum_D = sum(*D);
+			double sum_B = sum(*B);
+
 			os << "------------------------------------------\n";
 			os << "L2TransferOperator:\n";
 			os << "row sum [" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
+			os << "sum(B) = " << sum_B << ", sum(D) = " << sum_D << std::endl;
 			os << "------------------------------------------\n";
 		}
 

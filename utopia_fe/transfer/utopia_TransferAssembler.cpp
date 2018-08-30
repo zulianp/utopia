@@ -218,9 +218,31 @@ namespace utopia {
 
 		void pre_assemble()
 		{
-			local_element_matrices_sum = 0.;
-			mat_buffer = std::make_shared< moonolith::SparseMatrix<double> >(comm);
-			mat_buffer->set_size(to_dofs->n_dofs(), from_dofs->n_dofs());
+			for(std::size_t i = 0; i < mat_buffer.size(); ++i) {
+				mat_buffer[i] = std::make_shared< moonolith::SparseMatrix<double> >(comm);
+				local_element_matrices_sum[i] = 0.;
+
+				switch(assembler->type(i)) {
+					
+					case LocalAssembler::MASTER_X_SLAVE: 
+					{
+						mat_buffer[0]->set_size(to_dofs->n_dofs(), from_dofs->n_dofs());
+						break;
+					}
+
+					case LocalAssembler::SLAVE_X_SLAVE:
+					{
+						mat_buffer[1]->set_size(to_dofs->n_dofs(), to_dofs->n_dofs());
+						break;
+					}
+
+					default:
+					{
+						assert(false);
+						break;
+					}
+				}
+			}
 		}
 
 		bool assemble(Adapter &master,
@@ -239,23 +261,51 @@ namespace utopia {
 			auto &master_el = *master_mesh.elem(src_index);
 			auto &slave_el  = *slave_mesh.elem(dest_index);
 
-			elemmat.zero();
+			for(auto &mat_i : elemmat) {
+				mat_i.zero();
+			}
 
 			if(assembler->assemble(master_el, master_type, slave_el, slave_type, elemmat)) {
-				auto partial_sum = std::accumulate(elemmat.get_values().begin(), elemmat.get_values().end(), libMesh::Real(0.0));
-				local_element_matrices_sum += partial_sum;
+				
+				for(std::size_t i = 0; i < elemmat.size(); ++i) {	
+					auto &mat_i = elemmat[i];
+					auto partial_sum = std::accumulate(mat_i.get_values().begin(), mat_i.get_values().end(), libMesh::Real(0.0));
+					local_element_matrices_sum[i] += partial_sum;
 
-				const auto &master_dofs = master.dof_map();
-				const auto &slave_dofs  = slave.dof_map();
+					switch(assembler->type(i)) {
+						
+						case LocalAssembler::MASTER_X_SLAVE: 
+						{
+							const auto &master_dofs = master.dof_map();
+							const auto &slave_dofs  = slave.dof_map();
 
-				local2global->apply(master_dofs, slave_dofs, elemmat, *mat_buffer);
+							local2global->apply(master_dofs, slave_dofs, elemmat[i], *mat_buffer[i]);
+							break;
+						}
+
+						case LocalAssembler::SLAVE_X_SLAVE:
+						{
+							const auto &slave_dofs  = slave.dof_map();
+
+							local2global->apply(slave_dofs, slave_dofs, elemmat[i], *mat_buffer[i]);
+							break;
+						}
+
+						default:
+						{
+							assert(false);
+							break;
+						}
+					}
+				}
+
 				return true;
 			} else {
 				return false;
 			}
 		}
 
-		void post_assemble(SparseMatrix &B)
+		void print_stats()
 		{
 			double total_intersection_volume = 0.;
 			{
@@ -263,7 +313,7 @@ namespace utopia {
 				if(l2_assembler) {
 					total_intersection_volume = l2_assembler->get_q_builder().get_total_intersection_volume();
 
-					double volumes[2] = { local_element_matrices_sum, total_intersection_volume };
+					double volumes[2] = { local_element_matrices_sum[0], total_intersection_volume };
 					comm.all_reduce(volumes, 2, moonolith::MPISum());
 
 					if(comm.is_root()) {
@@ -271,42 +321,89 @@ namespace utopia {
 					}
 				}
 			}
+		}
 
-			const libMesh::dof_id_type n_dofs_on_proc_master = from_dofs->n_local_dofs();
-			const libMesh::dof_id_type n_dofs_on_proc_slave  = to_dofs->n_local_dofs();
+		void post_assemble(std::size_t buffer_num)
+		{
+			SparseMatrix &mat = *mats_[buffer_num];
 
-			local2global->redistribute(comm, n_dofs_on_proc_master, n_dofs_on_proc_slave, *mat_buffer);
+			libMesh::dof_id_type n_dofs_on_proc_trial = 0;
+			libMesh::dof_id_type n_dofs_on_proc_test  = 0;
 
-			SizeType m_max_row_entries = mat_buffer->local_max_entries_x_col();
+			switch(assembler->type(buffer_num)) {
+				
+				case LocalAssembler::MASTER_X_SLAVE: 
+				{
+					n_dofs_on_proc_trial = from_dofs->n_local_dofs();
+					n_dofs_on_proc_test  = to_dofs->n_local_dofs();
+					break;
+				}
+
+				case LocalAssembler::SLAVE_X_SLAVE:
+				{
+					n_dofs_on_proc_trial = to_dofs->n_local_dofs();
+					n_dofs_on_proc_test  = to_dofs->n_local_dofs();
+					break;
+				}
+
+				default:
+				{
+					assert(false);
+					break;
+				}
+			}
+
+			local2global->redistribute(comm, n_dofs_on_proc_trial, n_dofs_on_proc_test, *mat_buffer[buffer_num]);
+
+			SizeType m_max_row_entries = mat_buffer[buffer_num]->local_max_entries_x_col();
 			comm.all_reduce(&m_max_row_entries, 1, moonolith::MPIMax());
 
-			DSMatrixd B_x = utopia::local_sparse(n_dofs_on_proc_slave, n_dofs_on_proc_master, m_max_row_entries);
+			DSMatrixd mat_x = utopia::local_sparse(n_dofs_on_proc_test, n_dofs_on_proc_trial, m_max_row_entries);
 
 			{
-				utopia::Write<utopia::DSMatrixd> write(B_x);
-				for (auto it = mat_buffer->iter(); it; ++it) {
-					B_x.set(it.row(), it.col(), *it);
+				utopia::Write<utopia::DSMatrixd> write(mat_x);
+				for (auto it = mat_buffer[buffer_num]->iter(); it; ++it) {
+					mat_x.set(it.row(), it.col(), *it);
 
 				}
 			}
 
 			if(opts.n_var == 1) {
-				B = std::move(B_x);
+				mat = std::move(mat_x);
 				return;
 			}
 
-			auto s_B_x = local_size(B_x);
-			B = local_sparse(s_B_x.get(0), s_B_x.get(1), opts.n_var * m_max_row_entries);
+			auto s_mat_x = local_size(mat_x);
+			mat = local_sparse(s_mat_x.get(0), s_mat_x.get(1), opts.n_var * m_max_row_entries);
 
-			utopia::Write<DSMatrixd> w_B(B);
-			utopia::each_read(B_x, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
+			utopia::Write<DSMatrixd> w_mat(mat);
+			utopia::each_read(mat_x, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
 				for(utopia::SizeType d = 0; d < opts.n_var; ++d) {
-					B.set(i + d, j + d, value);
+					mat.set(i + d, j + d, value);
 				}
 			});
 		}
 
-		bool assemble(SparseMatrix &B) override
+		bool assemble(std::vector<std::shared_ptr<SparseMatrix> > &mats)
+		{
+			assert(assembler->n_forms() == 2);
+
+			if(assembler->n_forms() != mats.size()) {
+				mats.resize(assembler->n_forms());
+			}
+
+			for(auto &mat_ptr : mats) {
+				if(!mat_ptr) {
+					mat_ptr = std::make_shared<SparseMatrix>();
+				}
+			}
+
+			init_buffers(assembler->n_forms());
+			mats_ = mats;
+			return assemble_aux();
+		}
+
+		bool assemble_aux()
 		{
 			using namespace moonolith;
 
@@ -355,7 +452,11 @@ namespace utopia {
 
 			moonolith::search_and_compute(comm, tree, predicate, read, write, fun, settings);
 
-			post_assemble(B);
+			print_stats();
+			
+			for(std::size_t i = 0; i < mats_.size(); ++i) {
+				post_assemble(i);
+			}
 
 			long n_total_candidates = n_intersections + n_false_positives;
 			long n_collection[3] = {n_intersections, n_total_candidates, n_false_positives};
@@ -440,6 +541,13 @@ namespace utopia {
 			MOONOLITH_EVENT_END("create_adapters");
 		}
 
+		void init_buffers(const SizeType n)
+		{
+			mat_buffer.resize(n);
+			elemmat.resize(n);
+			local_element_matrices_sum.resize(n);
+		}
+
 	private:
 		std::shared_ptr<MeshBase> from_mesh;
 		std::shared_ptr<DofMap>   from_dofs;
@@ -457,11 +565,11 @@ namespace utopia {
 		std::shared_ptr<NTreeT> tree;
 		std::shared_ptr<FESpacesAdapter> local_spaces;
 
+		std::vector< libMesh::DenseMatrix<libMesh::Real> > elemmat;
+		std::vector< libMesh::Real > local_element_matrices_sum;
 
-		libMesh::DenseMatrix<libMesh::Real> elemmat;
-		libMesh::Real local_element_matrices_sum;
-
-		std::shared_ptr< moonolith::SparseMatrix<double> > mat_buffer;
+		std::vector< std::shared_ptr< moonolith::SparseMatrix<double> > > mat_buffer;
+		std::vector<std::shared_ptr<SparseMatrix>> mats_;
 	};
 
 	template class DefaultAlgorithm<2>;
@@ -478,14 +586,14 @@ namespace utopia {
 
 	TransferAssembler::~TransferAssembler() {}
 
+
 	bool TransferAssembler::assemble(
-			const std::shared_ptr<MeshBase> &from_mesh,
-			const std::shared_ptr<DofMap>   &from_dofs,
-			const std::shared_ptr<MeshBase> &to_mesh,
-			const std::shared_ptr<DofMap>   &to_dofs,
-			SparseMatrix &B,
-			const TransferOptions &opts
-		)
+		const std::shared_ptr<MeshBase> &from_mesh,
+		const std::shared_ptr<DofMap>   &from_dofs,
+		const std::shared_ptr<MeshBase> &to_mesh,
+		const std::shared_ptr<DofMap>   &to_dofs,
+		std::vector<std::shared_ptr<SparseMatrix> > &mats,
+		const TransferOptions &opts)
 	{
 		assert(assembler_    && "assembler is required");
 		assert(local2global_ && "local2global");
@@ -514,7 +622,7 @@ namespace utopia {
 			return false;
 		}
 
-		bool ok = algorithm_->assemble(B);
+		bool ok = algorithm_->assemble(mats);
 
 
 		///////////////////////////
@@ -530,5 +638,19 @@ namespace utopia {
 		///////////////////////////
 
 		return ok;
+	}
+
+	bool TransferAssembler::assemble(
+			const std::shared_ptr<MeshBase> &from_mesh,
+			const std::shared_ptr<DofMap>   &from_dofs,
+			const std::shared_ptr<MeshBase> &to_mesh,
+			const std::shared_ptr<DofMap>   &to_dofs,
+			SparseMatrix &B,
+			const TransferOptions &opts
+		)
+	{
+		std::vector<std::shared_ptr<SparseMatrix> > mats;
+		mats.push_back(make_ref(B));
+		return assemble(from_mesh, from_dofs, to_mesh, to_dofs, mats, opts);
 	}
 }

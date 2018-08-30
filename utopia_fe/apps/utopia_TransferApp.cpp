@@ -20,6 +20,27 @@ namespace utopia {
 		mesh_refinement.uniformly_refine(n_refs);
 	}
 
+	template<class Matrix>
+	static void fix_semidefinite_operator(Matrix &A)
+	{
+		using Vector = Wrapper<typename Traits<Matrix>::Vector, 1>;
+		Vector d;
+
+		Size s = local_size(A);
+		d = local_values(s.get(0), 1.);
+
+		{
+			Write<Vector> w_d(d);
+
+			each_read(A,[&d](const SizeType i, const SizeType, const double) {
+				d.set(i, 0.);
+			});
+		}
+
+		A += Matrix(diag(d));
+	}
+
+
 	void TransferApp::init(libMesh::LibMeshInit &init)
 	{
 		comm_ = make_ref(init.comm());
@@ -77,11 +98,14 @@ namespace utopia {
 			space_slave_->initialize();
 
 			is_interpolation_ = false;
+			assemble_mass_mat_ = 0;
+
+			is.read("assemble-mass-mat", assemble_mass_mat_);
 
 			if(type == "l2-projection") {
 				biorth_basis = true;
 				is.read("biorth-basis", biorth_basis);
-				local_assembler_ = std::make_shared<L2LocalAssembler>(mesh_master_->mesh_dimension(), biorth_basis);
+				local_assembler_ = std::make_shared<L2LocalAssembler>(mesh_master_->mesh_dimension(), biorth_basis, assemble_mass_mat_);
 			} else if(type == "interpolation") {
 				local_assembler_ = std::make_shared<InterpolationLocalAssembler>(mesh_master_->mesh_dimension());
 				is_interpolation_ = true;
@@ -137,14 +161,15 @@ namespace utopia {
 		//////////////////////////////////////////////////////
 
 		c.start();
-		auto B = std::make_shared<DSMatrixd>();
+
+		std::vector<std::shared_ptr<DSMatrixd>> mats;
 		TransferAssembler transfer_assembler(local_assembler_, local2global_);
 		bool ok = transfer_assembler.assemble(
 			mesh_master_,
 			make_ref(space_master_->dof_map()),
 			mesh_slave_,
 			make_ref(space_slave_->dof_map()),
-			*B,
+			mats,
 			opts
 			);
 
@@ -155,30 +180,42 @@ namespace utopia {
 
 		c.stop();
 
-
 		if(mpi_world_rank() == 0) {
 			std::cout << "assembly time: " << c << std::endl;
-			std::cout << "dof_slave x dof_master = " << size(*B).get(0) << " x " << size(*B).get(1) << std::endl;
+		}
+
+		for(auto mat_ptr : mats) {
+			double sum_m = sum(*mat_ptr);
+			if(mpi_world_rank() == 0) {
+				std::cout << "rows x cols = " << size(*mat_ptr).get(0) << " x " << size(*mat_ptr).get(1) << std::endl;
+				std::cout << "sum(M): " << sum_m << std::endl;
+			}
 		}
 
 		if(type == "l2-projection" || type == "approx-l2-projection") {
 			if(biorth_basis) {
 				auto pl2 = std::make_shared<PseudoL2TransferOperator>();
-				pl2->init_from_coupling_operator(*B);
+				pl2->init_from_coupling_operator(*mats[0]);
 				transfer_op_ = pl2;
 			} else {
-				auto u = trial(*space_slave_);
-				auto v = test(*space_slave_);
 
-				auto D = std::make_shared<DSMatrixd>();
+				if(mats.size() == 2) {
+					fix_semidefinite_operator(*mats[1]);
+					transfer_op_ = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<DSMatrixd, DVectord>>());
+				} else {
+					auto u = trial(*space_slave_);
+					auto v = test(*space_slave_);
 
-				assemble(inner(u, v) * dX, *D);
-				transfer_op_ = std::make_shared<L2TransferOperator>(B, D, std::make_shared<Factorization<DSMatrixd, DVectord>>());
+					auto D = std::make_shared<DSMatrixd>();
+
+					assemble(inner(u, v) * dX, *D);
+					transfer_op_ = std::make_shared<L2TransferOperator>(mats[0], D, std::make_shared<Factorization<DSMatrixd, DVectord>>());
+				}
 				// transfer_op_ = std::make_shared<L2TransferOperator>(B, D, std::make_shared<BiCGStab<DSMatrixd, DVectord>>());
 			}
 
 		} else if(type == "interpolation") {
-			transfer_op_ = std::make_shared<Interpolator>(B);
+			transfer_op_ = std::make_shared<Interpolator>(mats[0]);
 		}
 
 		////////////////////////////////////////////////////////////
@@ -186,24 +223,15 @@ namespace utopia {
 		auto u = trial(*space_master_);
 		auto v = test(*space_master_);
 
-
 		c.start();
 
 		DVectord fun_master_h, fun_master, fun_slave, back_fun_master;
 
+		DSMatrixd mass_mat_master;
+		assemble(inner(u, v) * dX, mass_mat_master);
 
 		if(!fun_is_constant) {
 			assemble(inner(*fun, v) * dX, fun_master_h);
-
-			DSMatrixd mass_mat_master;
-			assemble(inner(u, v) * dX, mass_mat_master);
-
-			c.stop();
-
-			if(mpi_world_rank() == 0) {
-				std::cout << "Assembled M and M * fun" << std::endl;
-				std::cout << c << std::endl;
-			}
 
 			fun_master = fun_master_h;
 
@@ -217,10 +245,22 @@ namespace utopia {
 #endif //WITH_TINY_EXPR
 		}
 
+		c.stop();
 
+		if(mpi_world_rank() == 0) {
+			std::cout << "Assembled M and fun_m" << std::endl;
+			std::cout << c << std::endl;
+		}
 
 		transfer_op_->apply(fun_master, fun_slave);
 		transfer_op_->apply_transpose(fun_slave, back_fun_master);
+
+		double sum_fun_master = sum(fun_master);
+		double sum_fun_slave  = sum(fun_slave);
+
+		transfer_op_->describe(std::cout);
+		std::cout << "f_m = " << sum_fun_master << ", f_s = " << sum_fun_slave << std::endl;
+		std::cout << "sum(M_m) = " << double(sum(mass_mat_master)) << std::endl;
 
 		////////////////////////////////////////////////////////////
 		//output
