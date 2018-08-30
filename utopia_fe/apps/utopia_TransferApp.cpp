@@ -20,26 +20,6 @@ namespace utopia {
 		mesh_refinement.uniformly_refine(n_refs);
 	}
 
-	template<class Matrix>
-	static void fix_semidefinite_operator(Matrix &A)
-	{
-		using Vector = Wrapper<typename Traits<Matrix>::Vector, 1>;
-		Vector d;
-
-		Size s = local_size(A);
-		d = local_values(s.get(0), 1.);
-
-		{
-			Write<Vector> w_d(d);
-
-			each_read(A,[&d](const SizeType i, const SizeType, const double) {
-				d.set(i, 0.);
-			});
-		}
-
-		A += Matrix(diag(d));
-	}
-
 
 	void TransferApp::init(libMesh::LibMeshInit &init)
 	{
@@ -200,8 +180,9 @@ namespace utopia {
 			} else {
 
 				if(mats.size() == 2) {
-					fix_semidefinite_operator(*mats[1]);
-					transfer_op_ = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<DSMatrixd, DVectord>>());
+					auto l2op = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<DSMatrixd, DVectord>>());
+					l2op->fix_mass_matrix_operator();
+					transfer_op_ = l2op;
 				} else {
 					auto u = trial(*space_slave_);
 					auto v = test(*space_slave_);

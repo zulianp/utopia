@@ -101,6 +101,24 @@ namespace utopia {
 			linear_solver->apply(B_from, to);
 		}
 
+		void fix_mass_matrix_operator()
+		{
+			DVectord d;
+
+			Size s = local_size(*D);
+			d = local_values(s.get(0), 1.);
+
+			{
+				Write<DVectord> w_d(d);
+
+				each_read(*D, [&d](const SizeType i, const SizeType, const double) {
+					d.set(i, 0.);
+				});
+			}
+
+			(*D) += DSMatrixd(diag(d));
+		}
+
 		///@brief assumes that D is symmetric
 		void apply_transpose(const DVectord &from, DVectord &to) const override
 		{
