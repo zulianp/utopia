@@ -4,6 +4,8 @@
 #include "libmesh/elem.h"
 #include "libmesh/fe.h"
 
+#include <cassert>
+
 namespace utopia {
 
 
