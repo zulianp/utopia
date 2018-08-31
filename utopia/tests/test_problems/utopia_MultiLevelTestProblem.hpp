@@ -39,8 +39,22 @@ namespace utopia {
 				Write<Matrix> w_(I);
 				auto r = row_range(I);
 
-				SizeType j = r.begin()/2;
-				for(auto k = r.begin(); k < r.end(); k += 2, ++j) {
+				SizeType j = std::floor(r.begin()/2.);
+
+				SizeType reminder = r.begin() % 2;
+				SizeType r_begin  = r.begin() + reminder;
+
+				if(reminder) {
+					
+					if(j + 1 < n_coarse) {
+						I.set(r.begin(), j, 0.5/h);
+						I.set(r.begin(), j + 1, 0.5/h);
+					}
+
+					++j;
+				}
+
+				for(auto k = r_begin; k < r.end(); k += 2, ++j) {
 					I.set(k, j, 1./h);
 
 					if(j + 1 < n_coarse) {

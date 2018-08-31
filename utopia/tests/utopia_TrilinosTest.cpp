@@ -361,10 +361,11 @@ namespace utopia {
         using IPTransferT     = utopia::IPTransfer<Matrix, Vector>;
         using MatrixTransferT = utopia::MatrixTransfer<Matrix, Vector>;
 
-        const static bool verbose   = false;
+        const static bool verbose   = true;
         const static bool use_masks = true;
 
         MultiLevelTestProblem<Matrix, Vector> ml_problem(10, 6, !use_masks);
+        // ml_problem.write_matlab("./");
 
         auto smoother      = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
         auto coarse_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
@@ -435,7 +436,7 @@ namespace utopia {
     {
         // if(mpi_world_size() > 1) return;
       //petsc version
-      // test_mg<DSMatrixd, DVectord>();
+      test_mg<DSMatrixd, DVectord>();
     
       //trilinos version
       test_mg<TSMatrixd, TVectord>();

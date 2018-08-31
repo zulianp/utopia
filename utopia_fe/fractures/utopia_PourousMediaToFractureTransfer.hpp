@@ -30,6 +30,7 @@ namespace utopia {
 
 		//@brief operator_type \in \{ INTERPOLATION| L2_PROJECTION| PSEUDO_L2_PROJECTION | APPROX_L2_PROJECTION \}
 		bool initialize(const TransferOperatorType operator_type = utopia::INTERPOLATION);
+		bool initialize(const std::string operator_type);
 
 		inline void apply(const Vector &from, Vector &to) const
 		{

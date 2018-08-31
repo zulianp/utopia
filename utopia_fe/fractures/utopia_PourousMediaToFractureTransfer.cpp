@@ -8,12 +8,39 @@
 
 namespace utopia {
 
+	static const std::map<std::string, TransferOperatorType> &get_str_to_type()
+	{
+		static std::map<std::string, TransferOperatorType> types;
+
+		if(types.empty()) {
+			types["INTERPOLATION"] 		  = INTERPOLATION;
+			types["L2_PROJECTION"] 		  = L2_PROJECTION;
+			types["PSEUDO_L2_PROJECTION"] = PSEUDO_L2_PROJECTION;
+			types["APPROX_L2_PROJECTION"] = APPROX_L2_PROJECTION;
+		}
+
+		return types;
+	}
+
+	bool MeshTransferOperator::initialize(const std::string operator_type)
+	{
+		const auto &m = get_str_to_type(); 
+
+		auto it = m.find(operator_type);
+
+		if(it == m.end()) {
+			return initialize(PSEUDO_L2_PROJECTION);
+		} else {
+			return initialize(it->second);
+		}
+	}
+
 	bool MeshTransferOperator::initialize(const TransferOperatorType operator_type)
 	{
 		std::shared_ptr<LocalAssembler> assembler;
 
 		bool use_interpolation = false;
-		bool use_biorth = false;
+		bool use_biorth        = false;
 
 		switch(operator_type) {
 			case INTERPOLATION:
