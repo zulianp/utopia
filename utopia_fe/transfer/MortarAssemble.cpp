@@ -134,7 +134,6 @@ namespace utopia {
 	
 	void AffineTransform3::compute_affine_transformation(const libMesh::Elem &elem, libMesh::DenseMatrix<libMesh::Real> &A_inv, libMesh::DenseVector<libMesh::Real> &A_inv_m_b){
 		
-		static Intersector isector;
 		
 		libMesh::Point p0, p1, p2, p3;
 		
@@ -169,8 +168,8 @@ namespace utopia {
 		A(2,1) =  p2(2) - p0(2);
 		A(2,2) =  p3(2) - p0(2);
 		
-		libMesh::Real det =  isector.det_3(&A.get_values()[0]);
-		isector.inverse_3(&A.get_values()[0], det, &A_inv.get_values()[0]);
+		libMesh::Real det =  Intersector::det_3(&A.get_values()[0]);
+		Intersector::inverse_3(&A.get_values()[0], det, &A_inv.get_values()[0]);
 		
 		A_inv_m_b(0) = -1.0 * A_inv(0,0) * p0(0) - A_inv(0,1) * p0(1) - 1.0 * A_inv(0,2) * p0(2);
 		A_inv_m_b(1) = -1.0 * A_inv(1,0) * p0(0) - A_inv(1,1) * p0(1) - 1.0 * A_inv(1,2) * p0(2);
@@ -222,7 +221,6 @@ namespace utopia {
 	
 	void SideAffineTransform3::compute_affine_transformation(const libMesh::Elem &elem,  const int side, libMesh::DenseMatrix<libMesh::Real> &A_inv, libMesh::DenseVector<libMesh::Real> &A_inv_m_b)
 	{
-		static Intersector isector;
 		auto side_ptr = elem.build_side_ptr(side);
 		
 		libMesh::Point ref_p0(0.0, 0.0);
@@ -258,8 +256,8 @@ namespace utopia {
 		A(2,1) = v(2);
 		A(2,2) = n(2);
 		
-		libMesh::Real det =  isector.det_3(&A.get_values()[0]);
-		isector.inverse_3(&A.get_values()[0], det, &A_inv.get_values()[0]);
+		libMesh::Real det =  Intersector::det_3(&A.get_values()[0]);
+		Intersector::inverse_3(&A.get_values()[0], det, &A_inv.get_values()[0]);
 		
 		A_inv_m_b(0) = -1.0 * A_inv(0,0) * p0(0) - A_inv(0,1) * p0(1) - 1.0 * A_inv(0,2) * p0(2);
 		A_inv_m_b(1) = -1.0 * A_inv(1,0) * p0(0) - A_inv(1,1) * p0(1) - 1.0 * A_inv(1,2) * p0(2);
@@ -324,7 +322,6 @@ namespace utopia {
 		libMesh::QGauss ir(2, libMesh::Order(order));
 		ir.init(libMesh::TRI6);
 		
-		Intersector isector;
 		double triangle[3 * 2] = { 0., 0., 0., 0., 0., 0. };
 		
 		const int n_triangles   = tri.size() / 3;
@@ -359,7 +356,7 @@ namespace utopia {
 			u -= o;
 			v -= o;
 			
-			const double scale = fabs(isector.polygon_area_2(3, triangle)) / ( weight );
+			const double scale = fabs(Intersector::polygon_area_2(3, triangle)) / ( weight );
 			relative_weight += scale;
 			
 			for(int k = 0; k < ir.n_points(); ++k, ++quad_index) {
@@ -403,7 +400,6 @@ namespace utopia {
 		get_row(0, polygon, o);
 		
 		c_ir.resize(n_quad_points);
-		Intersector isector;
 		
 		double relative_weight = 0;
 		
@@ -422,7 +418,7 @@ namespace utopia {
 			u -= o;
 			v -= o;
 			
-			const double scale = fabs(isector.polygon_area_2(3, triangle)) / ( weight );
+			const double scale = fabs(Intersector::polygon_area_2(3, triangle)) / ( weight );
 			relative_weight += scale;
 			
 			for(int k = 0; k < ir.n_points(); ++k, ++quad_index) {
@@ -449,12 +445,11 @@ namespace utopia {
 	{
 		using std::min;
 		
-		Intersector isector;
 		
 		libMesh::QGauss ir(3, libMesh::Order(order));
 		ir.init(libMesh::TET4);
 		
-		const int n_sub_elements      = isector.n_volume_elements(polyhedron);
+		const int n_sub_elements      = Intersector::n_volume_elements(polyhedron);
 		const int total_n_quad_points = n_sub_elements * ir.n_points();
 		
 		std::vector<double> ref_quad_points (ir.n_points() * 3);
@@ -477,9 +472,9 @@ namespace utopia {
 		double quad_weights    [MAX_QUAD_POINTS];
 		
 		double barycenter_p[3];
-		isector.row_average( polyhedron.n_nodes, polyhedron.n_dims, polyhedron.points, barycenter_p);
+		Intersector::row_average( polyhedron.n_nodes, polyhedron.n_dims, polyhedron.points, barycenter_p);
 		
-		const uint max_n_sub_els = isector.max_n_elements_from_facets(polyhedron);
+		const uint max_n_sub_els = Intersector::max_n_elements_from_facets(polyhedron);
 		const uint max_n_sub_inc = std::max(1u, MAX_QUAD_POINTS / (max_n_sub_els * ir.n_points()));
 		
 		const double scale = 1.0 / ( weight );
@@ -487,9 +482,9 @@ namespace utopia {
 		int utopia_fe_quad_index = 0;
 		
 		if(n_sub_elements == 1) {
-			isector.tetrahedron_transform(polyhedron.points, total_n_quad_points, &ref_quad_points[0], quad_points);
+			Intersector::tetrahedron_transform(polyhedron.points, total_n_quad_points, &ref_quad_points[0], quad_points);
 			
-			const double w = fabs(isector.m_tetrahedron_volume(polyhedron.points) * scale);
+			const double w = fabs(Intersector::m_tetrahedron_volume(polyhedron.points) * scale);
 			for(int i = 0; i < total_n_quad_points; ++i, ++utopia_fe_quad_index) {
 				const int offset = i * 3;
 				c_ir.get_points()[utopia_fe_quad_index](0) = quad_points[offset 	];
@@ -506,7 +501,7 @@ namespace utopia {
 				assert(end_k > begin_k && "end_k > begin_k");
 				
 				const int n_quad_points =
-				isector.make_quadrature_points_from_polyhedron_in_range_around_point(
+				Intersector::make_quadrature_points_from_polyhedron_in_range_around_point(
 																					 polyhedron,
 																					 begin_k,
 																					 end_k,
@@ -568,7 +563,6 @@ namespace utopia {
 	void make_composite_quadrature_on_surf_3D(const libMesh::DenseMatrix<libMesh::Real> &polygon, const double weight, const int order, QMortar &c_ir)
 	{
 		
-		Intersector isector;
 		libMesh::QGauss ir(2, libMesh::Order(order));
 
 		if(order <= 2) {
@@ -614,7 +608,7 @@ namespace utopia {
 			u -= o;
 			v -= o;
 			
-			relative_weight = isector.polygon_area_3(3, triangle) * weight * 2.; 
+			relative_weight = Intersector::polygon_area_3(3, triangle) * weight * 2.; 
 			assert(relative_weight >= 0.);
 			
 			for(int k = 0; k < ir.n_points(); ++k, ++quad_index) {
@@ -997,7 +991,6 @@ namespace utopia {
 	{
 		using namespace libMesh;
 		
-		Intersector isector;
 		
 		const uint dim = plane_normal.size();
 		
@@ -1029,7 +1022,7 @@ namespace utopia {
 				}
 				
 				Real isect = 0;
-				isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
+				Intersector::intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
 				
 				
 				// printf("g: %g (%g, %g)\n", isect, p(1), plane_offset);
@@ -1073,7 +1066,6 @@ namespace utopia {
 	{
 		using namespace libMesh;
 		
-		Intersector isector;
 		
 		const uint dim = plane_normal.size();
 		
@@ -1104,7 +1096,7 @@ namespace utopia {
 			}
 			
 			Real isect = 0;
-			isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
+			Intersector::intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
 			
 			v = surf_normal;
 			v *= isect;
@@ -1156,7 +1148,6 @@ namespace utopia {
 	{
 		using namespace libMesh;
 		
-		Intersector isector;
 		
 		const uint dim = plane_normal.size();
 		
@@ -1192,7 +1183,7 @@ namespace utopia {
 				}
 				
 				Real isect = 0;
-				isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
+				Intersector::intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
 				
 				// v = surf_normal;
 				// v *= isect;
@@ -1243,7 +1234,6 @@ namespace utopia {
 		
 		using namespace libMesh;
 		
-		Intersector isector;
 		
 		const uint dim = plane_normal.size();
 		
@@ -1274,7 +1264,7 @@ namespace utopia {
 			}
 			
 			Real isect = 0;
-			isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
+			Intersector::intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal.get_values()[0], &plane_normal.get_values()[0], plane_offset, &isect);
 			
 			v = surf_normal;
 			v *= isect;
@@ -1327,15 +1317,14 @@ namespace utopia {
 	
 	bool intersect_2D(const libMesh::DenseMatrix<libMesh::Real> &poly1, const libMesh::DenseMatrix<libMesh::Real> &poly2, libMesh::DenseMatrix<libMesh::Real> &intersection)
 	{
-		Intersector isector;
 		double result_buffer[MAX_N_ISECT_POINTS * 2];
 		int n_vertices_result;
 		
-		assert( isector.polygon_area_2(poly1.m(),  &poly1.get_values()[0]) > 0 );
-		assert( isector.polygon_area_2(poly2.m(),  &poly2.get_values()[0]) > 0 );
+		assert( Intersector::polygon_area_2(poly1.m(),  &poly1.get_values()[0]) > 0 );
+		assert( Intersector::polygon_area_2(poly2.m(),  &poly2.get_values()[0]) > 0 );
 		
 		if(!
-			// isector.
+			// Intersector::
 			intersect_convex_polygons(poly1.m(),
 									  &poly1.get_values()[0],
 									  poly2.m(),
@@ -1346,7 +1335,7 @@ namespace utopia {
 			return false;
 		}
 		
-		assert( isector.polygon_area_2(n_vertices_result,  result_buffer) > 0 );
+		assert( Intersector::polygon_area_2(n_vertices_result,  result_buffer) > 0 );
 		
 		intersection.resize(n_vertices_result, 2);
 		std::copy(result_buffer, result_buffer + n_vertices_result * 2, &intersection.get_values()[0]);
@@ -1741,17 +1730,15 @@ namespace utopia {
 	
 	bool intersect_3D(const libMesh::Elem &el1, const libMesh::Elem &el2, Polyhedron &intersection)
 	{
-		Intersector isector;
 		Polyhedron p1, p2;
 		make_polyhedron(el1, p1);
 		make_polyhedron(el2, p2);
-		return isector.intersect_convex_polyhedra(p1, p2, &intersection);
+		return Intersector::intersect_convex_polyhedra(p1, p2, &intersection);
 	}
 	
 	bool intersect_3D(const Polyhedron &poly1, const Polyhedron &poly2, Polyhedron &intersection)
 	{
-		Intersector isector;
-		return isector.intersect_convex_polyhedra(poly1, poly2, &intersection);
+		return Intersector::intersect_convex_polyhedra(poly1, poly2, &intersection);
 	}
 	
 	bool project_2D(const libMesh::DenseMatrix<libMesh::Real> &poly1,
@@ -1764,7 +1751,6 @@ namespace utopia {
 		
 		typedef Intersector::Scalar Scalar;
 		
-		Intersector isector;
 		
 		Scalar A   [2 * 2], b   [2];
 		Scalar Ainv[2 * 2], binv[2];
@@ -1780,10 +1766,10 @@ namespace utopia {
 		//computing geometric surface projection
 		
 		//moving from global space to reference space
-		isector.line_make_affine_transform_2(&poly2.get_values()[0], A, b);
-		isector.make_inverse_affine_transform_2(A, b, Ainv, binv);
+		Intersector::line_make_affine_transform_2(&poly2.get_values()[0], A, b);
+		Intersector::make_inverse_affine_transform_2(A, b, Ainv, binv);
 		
-		isector.apply_affine_transform_2(Ainv, binv, n_points_master, &poly1.get_values()[0], w.ref_points_master);
+		Intersector::apply_affine_transform_2(Ainv, binv, n_points_master, &poly1.get_values()[0], w.ref_points_master);
 		
 		Scalar x_min, y_min;
 		Scalar x_max, y_max;
@@ -1831,7 +1817,7 @@ namespace utopia {
 		w.isect_slave[2] = x_max_isect;
 		w.isect_slave[3] = 0;
 		
-//		const Scalar inv_area_slave = 2.0/( isector.det_2(A) );
+//		const Scalar inv_area_slave = 2.0/( Intersector::det_2(A) );
 		
 		//////////////////////////////////////////////////////////////////////////////////////////
 		//create master fe object from intersection
@@ -1840,10 +1826,10 @@ namespace utopia {
 		projection_2.resize(2, 2);
 		
 		//move back to global coordinates
-		isector.apply_affine_transform_2(A, b, 2, w.isect_master, &projection_1.get_values()[0]);
+		Intersector::apply_affine_transform_2(A, b, 2, w.isect_master, &projection_1.get_values()[0]);
 		
 		//move back to global coordinates
-		isector.apply_affine_transform_2(A, b, 2, w.isect_slave,  &projection_2.get_values()[0]);
+		Intersector::apply_affine_transform_2(A, b, 2, w.isect_slave,  &projection_2.get_values()[0]);
 		return true;
 	}
 	
@@ -1859,7 +1845,6 @@ namespace utopia {
 		
 		const int dim = 3;
 		
-		Intersector isector;
 		
 		Scalar A   [3 * 3], b   [3];
 		Scalar Ainv[3 * 3], binv[3];
@@ -1878,16 +1863,16 @@ namespace utopia {
 		clipper_2.resize(polygon_1.m(), dim - 1);
 		ref_polygon_2.resize(polygon_2.m(), polygon_2.n());
 		
-		isector.triangle_make_affine_transform_3(&polygon_2.get_values()[0], A, b);
-		isector.make_inverse_affine_transform_3(A, b, Ainv, binv);
+		Intersector::triangle_make_affine_transform_3(&polygon_2.get_values()[0], A, b);
+		Intersector::make_inverse_affine_transform_3(A, b, Ainv, binv);
 		
-		isector.apply_affine_transform_3(Ainv, binv,
+		Intersector::apply_affine_transform_3(Ainv, binv,
 										 polygon_1.m(),
 										 &polygon_1.get_values()[0],
 										 &ref_polygon_1.get_values()[0]);
 		
 		//FIXME could store reference instead of computing it each time
-		isector.apply_affine_transform_3(Ainv, binv, polygon_2.m(),
+		Intersector::apply_affine_transform_3(Ainv, binv, polygon_2.m(),
 										 &polygon_2.get_values()[0],
 										 &ref_polygon_2.get_values()[0]);
 		
@@ -1897,7 +1882,7 @@ namespace utopia {
 			clipper_2(i, 1) = ref_polygon_2(i, 1);
 		}
 		
-		const int n_projection_points = isector.project_surface_poly_onto_ref_poly(
+		const int n_projection_points = Intersector::project_surface_poly_onto_ref_poly(
 																				   dim,
 																				   ref_polygon_1.m(), &ref_polygon_1.get_values()[0],
 																				   polygon_2.m(),     &clipper_2.get_values()[0],
@@ -1916,8 +1901,8 @@ namespace utopia {
 		projection_1.resize(n_projection_points, 3);
 		projection_2.resize(n_projection_points, 3);
 		
-		isector.apply_affine_transform_3(A, b, n_projection_points, isect_1, &projection_1.get_values()[0]);
-		isector.apply_affine_transform_3(A, b, n_projection_points, isect_2, &projection_2.get_values()[0]);
+		Intersector::apply_affine_transform_3(A, b, n_projection_points, isect_1, &projection_1.get_values()[0]);
+		Intersector::apply_affine_transform_3(A, b, n_projection_points, isect_2, &projection_2.get_values()[0]);
 		return true;
 	}
 	
@@ -2152,7 +2137,6 @@ namespace utopia {
 		
 		using namespace libMesh;
 		
-		Intersector isector;
 		
 		
 		if(normals.m() != test_fe.get_phi().size()/dim || dim != normals.n()) {
@@ -2191,7 +2175,7 @@ namespace utopia {
 			}
 			
 			Real isect = 0;
-			isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &s_n.get_values()[0], &p_n.get_values()[0], plane_offset, &isect);
+			Intersector::intersect_ray_with_plane(dim, 1, &p.get_values()[0], &s_n.get_values()[0], &p_n.get_values()[0], plane_offset, &isect);
 			
 			v = s_n;
 			v *= isect;
@@ -2239,7 +2223,6 @@ namespace utopia {
 	{
 		using namespace libMesh;
 		
-		Intersector isector;
 		
 		if(normals.m() != test_fe.get_phi().size() || dim != normals.n()) {
 			normals.resize(test_fe.get_phi().size(), dim);
@@ -2275,7 +2258,7 @@ namespace utopia {
 				}
 				
 				Real isect = 0;
-				isector.intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal_v[0], &plane_normal_v[0], plane_offset, &isect);
+				Intersector::intersect_ray_with_plane(dim, 1, &p.get_values()[0], &surf_normal_v[0], &plane_normal_v[0], plane_offset, &isect);
 				// assert(isect > 0);
 				// if(visdbg) {
 				// 	v.get_values() = surf_normal_v; //visdbg

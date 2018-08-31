@@ -11,6 +11,7 @@
 #include "HashGrid.hpp"
 
 #include <libmesh/elem.h>
+#include <libmesh/enum_quadrature_type.h>
 #include <libmesh/quadrature_gauss.h>
 #include <libmesh/sparse_matrix.h>
 

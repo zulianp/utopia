@@ -49,7 +49,6 @@ namespace utopia {
 
 		Polyhedron master_poly, slave_poly;
 		Polyhedron  intersection3;
-		Intersector isector;
 
 		std::shared_ptr<Transform> master_trans;
 		std::shared_ptr<Transform> slave_trans;
@@ -99,10 +98,10 @@ namespace utopia {
 				const auto &elem = **e_it;
 				if(dim == 2) {
 					make_polygon(elem, slave_pts);
-					volumes[i] = isector.polygon_area_2(slave_pts.m(), &slave_pts.get_values()[0]);
+					volumes[i] = Intersector::polygon_area_2(slave_pts.m(), &slave_pts.get_values()[0]);
 				} else if(dim == 3) {
 					make_polyhedron(elem, intersection3);
-					volumes[i] = isector.p_mesh_volume_3(intersection3);
+					volumes[i] = Intersector::p_mesh_volume_3(intersection3);
 				} else {
 					assert(false);
 				}
@@ -128,7 +127,7 @@ namespace utopia {
 
 					if(slave_el.has_affine_map() && master_el.has_affine_map()) {
 						if(intersect_2D(master_pts, slave_pts, intersection2)) {
-							const double area = isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]);
+							const double area = Intersector::polygon_area_2(intersection2.m(), &intersection2.get_values()[0]);
 							total_intersection_volume += fabs(area);
 							make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
 
@@ -166,11 +165,11 @@ namespace utopia {
 								m_tri(1, 0) = master_pts(v2_m, 0); m_tri(1, 1) = master_pts(v2_m, 1); 
 								m_tri(2, 0) = master_pts(v3_m, 0); m_tri(2, 1) = master_pts(v3_m, 1); 
 
-								assert(isector.polygon_area_2(m_tri.m(), &m_tri.get_values()[0]) > 0);
-								assert(isector.polygon_area_2(s_tri.m(), &s_tri.get_values()[0]) > 0);
+								assert(Intersector::polygon_area_2(m_tri.m(), &m_tri.get_values()[0]) > 0);
+								assert(Intersector::polygon_area_2(s_tri.m(), &s_tri.get_values()[0]) > 0);
 
 								if(intersect_2D(m_tri, s_tri, intersection2)) {
-									const double area = isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]);
+									const double area = Intersector::polygon_area_2(intersection2.m(), &intersection2.get_values()[0]);
 									relative_intersection_volume += fabs(area);
 
 									triangulate_polygon(intersection2.m(), &intersection2.get_values()[0],  temp_tri);
@@ -202,7 +201,7 @@ namespace utopia {
 					make_polyhedron(slave_el,  slave_poly);
 
 					if(intersect_3D(master_poly, slave_poly, intersection3)) {
-						total_intersection_volume += isector.p_mesh_volume_3(intersection3);
+						total_intersection_volume += Intersector::p_mesh_volume_3(intersection3);
 
 	 				// const int order = master_order * ( is_hex(master_el.type())? 3 : 1 ) + 
 	 				// 				  slave_order  * ( is_hex(slave_el.type())? 3  : 1 ) * (slave_el.has_affine_map()? 1 : 2);
@@ -553,7 +552,6 @@ namespace utopia {
 
 		shared_ptr<Transform> transform_1, transform_2;
 
-		Intersector isector;
 
 //		Scalar projection_1[MAX_N_ISECT_POINTS * MAX_N_DIMS];
 //		Scalar projection_2[MAX_N_ISECT_POINTS * MAX_N_DIMS];
@@ -709,8 +707,8 @@ namespace utopia {
 				continue;
 			}
 
-			const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);	
-			const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
+			const Scalar area_slave = Intersector::polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);	
+			const Scalar area   	= Intersector::polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
 			const Scalar relative_area 	= area/area_slave;
 			const Scalar weight = 1./area_slave;
 
@@ -900,7 +898,6 @@ bool assemble_aux(
 	typedef Intersector::Scalar Scalar;
 	static const Scalar tol = 1e-8;
 
-	Intersector isector;
 
 	const MeshBase &mesh = space.mesh();
 	const int dim = mesh.mesh_dimension();
@@ -1156,9 +1153,9 @@ bool assemble_aux(
 					}
 
 					if(dim == 2) {
-						isector.householder_reflection_2(&normal[0], &H[0]);
+						Intersector::householder_reflection_2(&normal[0], &H[0]);
 					} else {
-						isector.householder_reflection_3(&normal[0], &H[0]);
+						Intersector::householder_reflection_3(&normal[0], &H[0]);
 					}
 
 

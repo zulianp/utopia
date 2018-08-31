@@ -825,7 +825,6 @@ namespace utopia {
         libMesh::DenseMatrix<libMesh::Real> intersection2;
         Polyhedron src_poly, dest_poly;
         Polyhedron  intersection3,temp_poly;
-        Intersector isector;
         typedef Intersector::Scalar Scalar;
         std::shared_ptr<LibMeshFESpaceBase> master_slave_space = master_slave;
         
@@ -1147,7 +1146,6 @@ namespace utopia {
         libMesh::DenseMatrix<libMesh::Real> intersection2;
         Polyhedron src_poly, dest_poly;
         Polyhedron  intersection3,temp_poly;
-        Intersector isector;
         
         std::shared_ptr<LibMeshFESpaceBase> master_slave_space = master_slave;
         
@@ -1419,8 +1417,8 @@ namespace utopia {
                             continue;
                         }
                         
-                        const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
-                        const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
+                        const Scalar area_slave = Intersector::polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
+                        const Scalar area   	= Intersector::polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
                         const Scalar weight 	= area/area_slave;
                         
                         const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
@@ -1893,7 +1891,6 @@ namespace utopia {
 //        libMesh::DenseMatrix<libMesh::Real> intersection2;
 //        Polyhedron src_poly, dest_poly;
 //        Polyhedron  intersection3,temp_poly;
-//        Intersector isector;
 //        
 //        std::shared_ptr<LibMeshFESpaceBase> master_slave_space = master_slave;
 //        
@@ -2018,9 +2015,9 @@ namespace utopia {
 //                    make_polygon(src_el,   src_pts);
 //                    make_polygon(dest_el,  dest_pts);
 //                    {
-//                        //					total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
+//                        //					total_intersection_volume += fabs(Intersector::polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
 //                        //
-//                        //					const libMesh::Real weight=isector.polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
+//                        //					const libMesh::Real weight=Intersector::polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
 //                        //
 //                        //					make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
 //                        //					pair_intersected = true;
@@ -2035,9 +2032,9 @@ namespace utopia {
 //                    make_polyhedron(src_el,  src_poly);
 //                    make_polyhedron(dest_el, dest_poly);
 //                    {
-//                        //					total_intersection_volume += isector.p_mesh_volume_3(intersection3);
+//                        //					total_intersection_volume += Intersector::p_mesh_volume_3(intersection3);
 //                        //
-//                        //					const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
+//                        //					const libMesh::Real weight = Intersector::p_mesh_volume_3(dest_poly);
 //                        //
 //                        //
 //                        //					make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
@@ -2128,8 +2125,8 @@ namespace utopia {
 //                                continue;
 //                            }
 //                            
-//                            const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
-//                            const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
+//                            const Scalar area_slave = Intersector::polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
+//                            const Scalar area   	= Intersector::polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
 //                            const Scalar weight 	= area/area_slave;
 //                            
 //                            const int order = order_for_l2_integral(dim_src, src_el, approx_order, dest_el, approx_order);
@@ -2203,8 +2200,8 @@ namespace utopia {
 //            //                                continue;
 //            //                            }
 //            //
-//            //                            const Scalar area_slave = isector.polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
-//            //                            const Scalar area   	= isector.polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
+//            //                            const Scalar area_slave = Intersector::polygon_area_3(side_polygon_2.m(),  &side_polygon_2.get_values()[0]);
+//            //                            const Scalar area   	= Intersector::polygon_area_3(isect_polygon_2.m(), &isect_polygon_2.get_values()[0]);
 //            //                            const Scalar weight 	= area/area_slave;
 //            //
 //            //                            const int order = order_for_l2_integral(dim, el_1, approx_order, el_2, approx_order);

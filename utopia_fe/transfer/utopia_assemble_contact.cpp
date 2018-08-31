@@ -497,7 +497,6 @@ namespace utopia {
 		libMesh::DenseMatrix<libMesh::Real> points_slave;
 		libMesh::DenseMatrix<libMesh::Real> intersection2;
 		Polyhedron poly_master, poly_slave;
-		Intersector isector;
 		
 		auto predicate = std::make_shared<moonolith::MasterAndSlave>();
 		
@@ -741,8 +740,8 @@ namespace utopia {
 							continue;
 						}
 						
-						const Scalar area_slave = isector.polygon_area_3(side_polygon_slave.m(),  &side_polygon_slave.get_values()[0]);
-						const Scalar area   	= isector.polygon_area_3(isect_polygon_slave.m(), &isect_polygon_slave.get_values()[0]);
+						const Scalar area_slave = Intersector::polygon_area_3(side_polygon_slave.m(),  &side_polygon_slave.get_values()[0]);
+						const Scalar area   	= Intersector::polygon_area_3(isect_polygon_slave.m(), &isect_polygon_slave.get_values()[0]);
 						const Scalar relative_area = area/area_slave;
 						const Scalar weight = 1./area_slave;
 						
@@ -1243,9 +1242,9 @@ namespace utopia {
 						normalize(normal);
 						
 						if(dim == 2) {
-							isector.householder_reflection_2(&normal[0], &H[0]);
+							Intersector::householder_reflection_2(&normal[0], &H[0]);
 						} else {
-							isector.householder_reflection_3(&normal[0], &H[0]);
+							Intersector::householder_reflection_3(&normal[0], &H[0]);
 						}
 						
 						for(uint di = 0; di < dim; ++di) {
