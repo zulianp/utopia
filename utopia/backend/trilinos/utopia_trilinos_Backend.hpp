@@ -188,11 +188,9 @@ namespace utopia {
             v.add(index, value);
         }
 
-        static Scalar get(const TpetraMatrix &v, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col)
+        static Scalar get(const TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col)
         {
-            // return v.get(index);
-            assert(false && "implement me");
-            return 0.;
+            return m.get(row, col);
         }
 
         inline static void set(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
