@@ -175,12 +175,12 @@ namespace utopia
 
 	    	for(auto l=0; l < problem.n_levels; l++)
 	    	{
-		    	Bratu1D<DSMatrixd, DVectord> fun(problem.n_dofs[l]);
-		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun);
+		    	auto fun = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(problem.n_dofs[l]);
+		    	level_functions[l] = fun; 
 
 		    	// making sure that fine level IG is feasible
 		    	if(l+1 == problem.n_levels)
-		    		fun.apply_bc_to_initial_guess(x);
+		    		fun->apply_bc_to_initial_guess(x);
 		    }
 
 
@@ -224,12 +224,12 @@ namespace utopia
 
 	    	for(auto l=0; l < problem.n_levels; l++)
 	    	{
-		    	Bratu1D<DSMatrixd, DVectord> fun(problem.n_dofs[l]);
-		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun);
+		    	auto fun = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(problem.n_dofs[l]);
+		    	level_functions[l] = fun;
 
 		    	// making sure that fine level IG is feasible
 		    	if(l+1 == problem.n_levels)
-		    		fun.apply_bc_to_initial_guess(x);
+		    		fun->apply_bc_to_initial_guess(x);
 		    }
 
 	        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord, HOMEMADE> >();
@@ -267,12 +267,12 @@ namespace utopia
 	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(problem.n_levels);
 	    	for(auto l=0; l < problem.n_levels; l++)
 	    	{
-		    	Bratu1D<DSMatrixd, DVectord> fun(problem.n_dofs[l]);
-		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun);
+		    	auto fun = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(problem.n_dofs[l]);
+		    	level_functions[l] = fun; 
 
 		    	// making sure that fine level IG is feasible
 		    	if(l+1 == problem.n_levels)
-		    		fun.apply_bc_to_initial_guess(x);
+		    		fun->apply_bc_to_initial_guess(x);
 		    }
 
 
@@ -312,18 +312,17 @@ namespace utopia
 
 	        // upper, lower bound...
 	        DVectord ub, lb;
-
-	    	std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(problem.n_levels);
+	        std::vector<std::shared_ptr<ExtendedFunction<DSMatrixd, DVectord> > >  level_functions(problem.n_levels);
 	    	for(auto l=0; l < problem.n_levels; l++)
 	    	{
-		    	Bratu1D<DSMatrixd, DVectord> fun(problem.n_dofs[l]);
-		    	level_functions[l] = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(fun);
+		    	auto fun = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(problem.n_dofs[l]);
+		    	level_functions[l] = fun;
 
 		    	// making sure that fine level IG is feasible
 		    	if(l+1 == problem.n_levels)
 		    	{
-		    		fun.apply_bc_to_initial_guess(x);
-		    		fun.generate_constraints(lb, ub, -10, 0.1);
+		    		fun->apply_bc_to_initial_guess(x);
+		    		fun->generate_constraints(lb, ub, -10, 0.1);
 		    	}
 		    }
 
