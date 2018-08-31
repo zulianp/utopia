@@ -42,6 +42,13 @@ namespace utopia {
 			operator_->apply_transpose(from, to);
 		}
 
+		inline void describe(std::ostream &os) const
+		{
+			if(operator_) {
+				operator_->describe(os);
+			}
+		}
+
 	private:
 		std::shared_ptr<MeshBase> from_mesh;
 		std::shared_ptr<DofMap>   from_dofs;
