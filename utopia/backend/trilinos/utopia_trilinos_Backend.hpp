@@ -270,11 +270,9 @@ namespace utopia {
 
         // reductions
         // static Scalar norm2(const TpetraMatrix &m);
-        inline static Scalar norm2(const TpetraMatrix &v)
+        inline static Scalar norm2(const TpetraMatrix &m)
         {
-            assert(false && "IMPLEMENT ME");
-            return 0.;
-            // return v.norm2();
+            return m.norm2();
         }
 
         inline static Scalar norm1(const TpetraMatrix &v)
@@ -326,7 +324,6 @@ namespace utopia {
         template<class Op>
         inline static void apply_unary(TpetraVector &result, const Op &op, const TpetraVector &v)
         {
-            // assert(false && "implement me");
             result = v;
             result.apply(op);
         }

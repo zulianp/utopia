@@ -235,6 +235,9 @@ namespace utopia {
 
         bool is_valid(const bool verbose = false) const;
 
+        Scalar norm2() const;
+
+
     private:
         rcp_crs_matrix_type  mat_;
         bool                 owner_;

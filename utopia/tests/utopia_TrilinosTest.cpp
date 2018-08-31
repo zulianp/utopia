@@ -24,6 +24,8 @@
 
 #include "utopia_IPTransfer.hpp"
 
+#include <cmath>
+
 namespace utopia {
 
     template<class Matrix>
@@ -261,6 +263,14 @@ namespace utopia {
 
         double val = norm1(Y * v);
         utopia_test_assert(approxeq(val, 0.));
+
+
+        TSMatrixd Id = local_identity(n, n);
+        Id += 2. * Id;
+
+        v.set(1.);
+        val = norm1(Id * v);
+        utopia_test_assert(approxeq(val, size(v).get(0) * 3.));
     }
 
     void trilinos_mv()
@@ -555,7 +565,7 @@ namespace utopia {
             // utopia_test_assert(interp_ptr->implementation().is_valid(true));
         }
 
-        multigrid.set_transfers(transfers);
+        multigrid.set_transfer_operators(transfers);
 
         Vector x = zeros(size(*ml_problem.rhs));
         multigrid.update(ml_problem.matrix);
@@ -791,37 +801,153 @@ namespace utopia {
         TSMatrixd B(expr);
     }
 
-    void trilinos_rmtr()
+    template<class T1, class T2>
+    bool cross_backend_approxeq(const Wrapper<T1, 1> &l, const Wrapper<T2, 1> &r)
     {
-        BratuMultilevelTestProblem<TSMatrixd, TVectord> problem;
+        Wrapper<T1, 1> r_copy;
+        backend_convert(r, r_copy);
+        return approxeq(l, r_copy);
+    }
+
+    template<class T1, class T2>
+    bool cross_backend_approxeq(const Wrapper<T1, 2> &l, const Wrapper<T2, 2> &r)
+    {
+        Wrapper<T1, 2> r_copy;
+        backend_convert_sparse(r, r_copy);
+        return approxeq(l, r_copy);
+    }
+
+    void trilinos_exp()
+    {
+#ifdef WITH_PETSC
+        TVectord x = local_values(10, 2.);
+        DVectord y = local_values(10, 2.);
+
+        TVectord ex = exp(x);
+        DVectord ey = exp(y);
+
+        utopia_test_assert(cross_backend_approxeq(ey, ex));
+
+#endif //WITH_PETSC
+    }
+
+    void trilinos_diag_ops()
+    {
+        int n = 10;
+
+        TSMatrixd m = local_sparse(n, n, 3);
+        assemble_laplacian_1D(m);
+
+        TSMatrixd m_copy = m;
+
+        TVectord d  = local_values(n, -1.);
+        TSMatrixd D = diag(d);
+        m += D;
+
+        TVectord ones = local_values(n, 1);
+
+        double sum_m      = sum(m * ones);
+        double sum_d      = sum(d);
+        double sum_D      = sum(D * ones);
+        double sum_m_copy = sum(m_copy * ones);
+
+        utopia_test_assert(approxeq(sum_d, sum_D));
+        utopia_test_assert(approxeq(sum_m, sum_d + sum_m_copy));
+
+        TSMatrixd m_new = m_copy + D;
+        double sum_m_new = sum(m * ones);
+
+        utopia_test_assert(approxeq(sum_m_new, sum_d + sum_m_copy));
+    }
+
+    void trilinos_bratu_1D()
+    {
+#ifdef WITH_PETSC
+        int n = 10;
+        double lambda = 1.9;
+
+        auto fun_tpetra = std::make_shared<Bratu1D<TSMatrixd, TVectord> >(n, lambda);
+        auto fun_petsc  = std::make_shared<Bratu1D<DSMatrixd, DVectord> >(n, lambda);
+
+        auto init_expr = values(n, 1.);
+        
+        TVectord x_tpetra = init_expr;
+        DVectord x_petsc  = init_expr;
+
+        double val_tpetra = 0.;
+        double val_petsc  = 0.;
+
+        bool ok = true;
+        ok = fun_tpetra->value(x_tpetra, val_tpetra); assert(ok);
+        ok = fun_petsc->value(x_petsc,   val_petsc);  assert(ok);
+
+        utopia_test_assert(cross_backend_approxeq(x_petsc, x_tpetra));
+        utopia_test_assert(approxeq(val_tpetra, val_petsc));
+
+        TVectord grad_tpetra;
+        DVectord grad_petsc;
+
+        ok = fun_tpetra->gradient_no_rhs(x_tpetra, grad_tpetra); assert(ok);
+        ok = fun_petsc->gradient_no_rhs(x_petsc, grad_petsc);    assert(ok);
+
+        utopia_test_assert(cross_backend_approxeq(grad_petsc, grad_tpetra));
+
+        //last part fails
+
+        TSMatrixd H_tpetra;
+        DSMatrixd H_petsc;
+
+        ok = fun_tpetra->hessian(x_tpetra, H_tpetra); assert(ok);
+        ok = fun_petsc->hessian(x_petsc, H_petsc);    assert(ok);
+
+        // write("H_p.m", H_petsc);
+        // write("H_t.m", H_tpetra);
+        
+        utopia_test_assert(cross_backend_approxeq(H_petsc, H_tpetra));
+
+#endif //WITH_PETSC
+    }
+
+    template<class Matrix, class Vector>
+    void rmtr_test()
+    {
+        using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
+
+
+        BratuMultilevelTestProblem<Matrix, Vector> problem;
         problem.verbose = true;
 
-        TVectord x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
+        Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
 
-        std::vector<std::shared_ptr<ExtendedFunction<TSMatrixd, TVectord> > >  level_functions(problem.n_levels);
-
+        std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions(problem.n_levels);
 
         for(auto l=0; l < problem.n_levels; l++)
         {
-            Bratu1D<TSMatrixd, TVectord> fun(problem.n_dofs[l]);
-            level_functions[l] = std::make_shared<Bratu1D<TSMatrixd, TVectord> >(fun);
+            auto fun = std::make_shared<Bratu1D<Matrix, Vector> >(problem.n_dofs[l]);
+            level_functions[l] = fun;
 
             // making sure that fine level IG is feasible
-            if(l+1 == problem.n_levels)
-                fun.apply_bc_to_initial_guess(x);
+            if(l + 1 == problem.n_levels) {
+                fun->apply_bc_to_initial_guess(x);
+            }
         }
 
-        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<TSMatrixd, TVectord> >();
+        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
         tr_strategy_coarse->atol(1e-12);
         tr_strategy_coarse->rtol(1e-12);
 
-        auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<TSMatrixd, TVectord> >();
+        auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
         tr_strategy_fine->atol(1e-12);
         tr_strategy_fine->rtol(1e-12);
 
-        // auto rmtr = std::make_shared<RMTR<TSMatrixd, TVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
-        auto rmtr = std::make_shared<RMTR<TSMatrixd, TVectord, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
-        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
+        // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+        auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
+        std::vector< std::shared_ptr<Transfer<Matrix, Vector>> > transfers;
+        for(std::size_t i = 0; i < problem.prolongations.size(); ++i) {
+            transfers.push_back( std::make_shared<IPTransferT>(problem.prolongations[i], 0.5) );
+        }
+
+        rmtr->set_transfer_operators(transfers);
 
         rmtr->max_it(1000);
         rmtr->max_coarse_it(1);
@@ -839,6 +965,21 @@ namespace utopia {
 
 
         rmtr->solve(x);
+    }
+
+    void trilinos_rmtr()
+    {
+        //petsc version
+        rmtr_test<DSMatrixd, DVectord>();
+        rmtr_test<TSMatrixd, TVectord>();
+    }
+
+    void trilinos_matrix_norm()
+    {
+        TSMatrixd m = local_identity(10, 10);
+
+        double nm = norm2(m);
+        utopia_test_assert( approxeq(nm, std::sqrt(1.*size(m).get(0))) );
     }
 
     void run_trilinos_test()
@@ -866,6 +1007,11 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_residual);
         UTOPIA_RUN_TEST(trilinos_ptap_square_mat);
         UTOPIA_RUN_TEST(trilinos_matrix_access);
+        UTOPIA_RUN_TEST(trilinos_matrix_norm);
+        UTOPIA_RUN_TEST(trilinos_exp);
+        UTOPIA_RUN_TEST(trilinos_diag_ops);
+        UTOPIA_RUN_TEST(trilinos_bratu_1D);
+        
         
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(trilinos_petsc_interop);
@@ -885,6 +1031,7 @@ namespace utopia {
 
 
         //tests that always fail
+        
         // UTOPIA_RUN_TEST(trilinos_rmtr);
         
 

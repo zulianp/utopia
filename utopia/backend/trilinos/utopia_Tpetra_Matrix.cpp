@@ -222,7 +222,7 @@ namespace utopia {
 	void TpetraMatrix::axpy(const Scalar alpha, const TpetraMatrix &x)
 	{
 		try {
-			Tpetra::MatrixMatrix::add(
+			mat_ = Tpetra::MatrixMatrix::add(
 				alpha,
 				false,
 				x.implementation(),
@@ -230,6 +230,8 @@ namespace utopia {
 				false,
 				implementation()
 			);
+
+			owner_ = true;
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);
@@ -417,6 +419,11 @@ namespace utopia {
 		}
 
 		return true;
+	}
+
+	TpetraMatrix::Scalar TpetraMatrix::norm2() const
+	{
+		return implementation().getFrobeniusNorm();
 	}
 
 }

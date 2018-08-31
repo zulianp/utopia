@@ -39,7 +39,7 @@ namespace utopia {
         typedef std::shared_ptr<Fun> FunPtr;
         typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
 
-        // using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
+        using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
 
         NonlinearMultiLevelBase(const Parameters params = Parameters())
         {
