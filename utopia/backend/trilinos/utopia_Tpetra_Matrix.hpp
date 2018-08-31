@@ -122,7 +122,12 @@ namespace utopia {
 
         inline Range col_range() const
         {
-            return  { implementation().getDomainMap()->getMinGlobalIndex(), implementation().getDomainMap()->getMaxGlobalIndex() + 1 };
+            if(implementation().getDomainMap().is_null()) {
+                assert(!init_->domain_map.is_null());
+                return  { init_->domain_map->getMinGlobalIndex(), init_->domain_map->getMaxGlobalIndex() + 1 };
+            } else {
+                return  { implementation().getDomainMap()->getMinGlobalIndex(), implementation().getDomainMap()->getMaxGlobalIndex() + 1 };
+            }
         }
 
         inline Size size() const
@@ -132,7 +137,14 @@ namespace utopia {
 
         inline Size local_size() const
         {
-            return { implementation().getRowMap()->getNodeNumElements(), implementation().getDomainMap()->getNodeNumElements() };
+            assert(!implementation().getRowMap().is_null());
+
+            if(implementation().getDomainMap().is_null()) {
+                assert(!init_->domain_map.is_null());
+                return { implementation().getRowMap()->getNodeNumElements(), init_->domain_map->getNodeNumElements() };
+            } else {
+                return { implementation().getRowMap()->getNodeNumElements(), implementation().getDomainMap()->getNodeNumElements() };
+            }
         }
 
         inline void read_lock()

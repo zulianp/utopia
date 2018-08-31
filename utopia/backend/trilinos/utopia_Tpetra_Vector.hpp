@@ -207,11 +207,8 @@ namespace utopia {
           return implementation().normInf();
         }
 
-        inline Scalar sum() const {
-          // return implementation().sum();
-            assert(false && "implement me");
-            return -1.;
-        }
+        Scalar sum() const;
+        bool is_nan_or_inf() const;
 
         inline void scale(const Scalar alpha)
         {
@@ -228,12 +225,25 @@ namespace utopia {
         {
             //https://trilinos.org/docs/dev/packages/tpetra/doc/html/classTpetra_1_1MultiVector.html#a95fae4b1f2891d8438b7fb692a85b3bd
             result.values(this->communicator(), local_size().get(0), size().get(0), 0.);
+          
             result.implementation().elementWiseMultiply(
                 1.,
-                result.implementation(),
+                this->implementation(),
                 right.implementation(),
                 0.
             );
+        }
+
+        template<typename Op>
+        inline void apply(const Op op)
+        {
+            read_lock();
+
+            for(auto i = 0; i < write_data_.size(); ++i) {
+                write_data_[i] = op.apply(write_data_[i]);
+            }
+
+            read_unlock();
         }
 
         inline vector_type &implementation()

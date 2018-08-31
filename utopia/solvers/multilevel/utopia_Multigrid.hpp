@@ -103,6 +103,14 @@ namespace utopia
                 this->galerkin_assembly(op);
             }
 
+            update();
+        }
+
+        /*! @brief if no galerkin assembly is used but instead set_linear_operators is used.
+                   One can call this update instead of the other one.
+         */
+        virtual void update()
+        {
             smoothers_.resize(this->n_levels());
             smoothers_[0] = nullptr;
 
@@ -256,7 +264,7 @@ namespace utopia
             for(SizeType k = 0; k < this->mg_type(); k++) {
                 // presmoothing
                 smoothing(l, r, c, this->pre_smoothing_steps());
-                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->post_smoothing_steps());", c);
+                // UTOPIA_RECORD_VALUE("smoothing(l, r, c, this->pre_smoothing_steps());", c);
 
 
                 r_R = r - level(l).A() * c;
@@ -266,13 +274,17 @@ namespace utopia
                 // residual transfer
                 this->transfer(l-1).restrict(r_R, memory.r[l-1]);
 
+                // UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R, memory.r[l-1]);", memory.r[l-1]);
+
                 //NEW
-                if(this->must_generate_masks())
+                if(this->must_generate_masks()) {
                   this->apply_mask(l-1, memory.r[l-1]);
+                  // UTOPIA_RECORD_VALUE("this->apply_mask(l-1, memory.r[l-1]);", memory.r[l-1]);
+                }
 
                 assert(!empty(memory.r[l-1]));
 
-                // UTOPIA_RECORD_VALUE("this->transfer(l-1).restrict(r_R, memory.r[l-1]);", memory.r[l-1]);
+                
 
 
                 standard_cycle(l-1);
@@ -310,7 +322,7 @@ namespace utopia
                 const Scalar new_err = norm2(r - level(l).A() * c);
                 // assert(new_err < err)
                 if(new_err > err) {
-                  m_utopia_error("[Error] Multigrid::standard_cycle (" + std::to_string(l) + "): coarse grid correction raises error " + std::to_string(new_err) + "<" + std::to_string(err));
+                  m_utopia_error_once("[Error] Multigrid::standard_cycle (" + std::to_string(l) + "): coarse grid correction raises error " + std::to_string(new_err) + "<" + std::to_string(err));
                 }
 #endif
             }

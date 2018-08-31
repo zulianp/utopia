@@ -1,14 +1,14 @@
 <transfer>
-	<!-- <type>l2-projection</type> -->
-	<type>approx-l2-projection</type>
+	<type>l2-projection</type>
+	<!-- <type>approx-l2-projection</type> -->
 	<!-- <type>interpolation</type> -->
-	<!-- <biorth-basis>1</biorth-basis> -->
+	<biorth-basis>0</biorth-basis>
 	<mesh-master>../data/transfer/fluid.e</mesh-master>
 	<order-master>1</order-master>
 	<refine-master>2</refine-master>
 	<mesh-slave>../data/transfer/solid_coarse.e</mesh-slave>
 	<order-slave>1</order-slave>
 	<function-type>constant</function-type>
-	<function>100.</function>
+	<function>1.</function>
 	<!-- <function>x*x+y*y+z*z</function> -->
 </transfer>

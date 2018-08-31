@@ -82,71 +82,48 @@ namespace utopia {
 	{
 		libMesh::Point p0, p1, p2;
 
-		switch(elem.type())
-		{
-			case libMesh::TRI3:
-			case libMesh::TRI6:
-			case libMesh::QUAD4:
-			case libMesh::QUAD8:
-			case libMesh::QUAD9:
-			case libMesh::TRISHELL3:
-			case libMesh::QUADSHELL4:
-			// case libMesh::QUADSHELL8:
-			{
+		A_inv.resize(2,2);
+		A_inv_m_b.resize(2);
 
-				A_inv.resize(2,2);
-				A_inv_m_b.resize(2);
+		libMesh::DenseMatrix<libMesh::Real> A;
 
-				libMesh::DenseMatrix<libMesh::Real> A;
+		A.resize(2,2);
 
-				A.resize(2,2);
+		std::vector<const libMesh::Node *> elem_nodes;
 
-				std::vector<const libMesh::Node *> elem_nodes;
-
-				std::vector<libMesh::Point> reference_points;
-
-				{
-					libMesh::Point ref_p0(0.0, 0.0, 0.0);
-
-					libMesh::Point ref_p1(1.0, 0.0, 0.0);
-
-					libMesh::Point ref_p2(0.0, 1.0, 0.0);
+		std::vector<libMesh::Point> reference_points;
 
 
-					p0 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, ref_p0);
+		libMesh::Point ref_p0(0.0, 0.0, 0.0);
 
-					p1 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, ref_p1);
+		libMesh::Point ref_p1(1.0, 0.0, 0.0);
 
-					p2 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, ref_p2);
+		libMesh::Point ref_p2(0.0, 1.0, 0.0);
+
+
+		p0 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, ref_p0);
+
+		p1 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, ref_p1);
+
+		p2 = libMesh::FE<2, libMesh::LAGRANGE>::map(&elem, ref_p2);
 
 
 
-					A(0,0) =  (p1(0)-p0(0));
-					A(0,1) =  (p2(0)-p0(0));
-					A(1,0) =  (p1(1)-p0(1));
-					A(1,1) =  (p2(1)-p0(1));
+		A(0,0) =  (p1(0)-p0(0));
+		A(0,1) =  (p2(0)-p0(0));
+		A(1,0) =  (p1(1)-p0(1));
+		A(1,1) =  (p2(1)-p0(1));
 
 
-					libMesh::Real det =   A(0,0) * A(1,1) - A(0,1) * A(1,0);
+		libMesh::Real det =   A(0,0) * A(1,1) - A(0,1) * A(1,0);
 
-					A_inv(0,0) = 1./det * A(1,1);
-					A_inv(1,1) = 1./det * A(0,0);
-					A_inv(0,1) = -1./det * A(0,1);
-					A_inv(1,0) = -1./det * A(1,0);
+		A_inv(0,0) = 1./det * A(1,1);
+		A_inv(1,1) = 1./det * A(0,0);
+		A_inv(0,1) = -1./det * A(0,1);
+		A_inv(1,0) = -1./det * A(1,0);
 
-					A_inv_m_b(0) = -1.0 * A_inv(0,0) * p0(0) - A_inv(0,1) * p0(1);
-					A_inv_m_b(1) = -1.0 * A_inv(1,0) * p0(0) - A_inv(1,1) * p0(1);
-
-				}
-
-				break;
-			}
-			default:
-			{
-				assert(false && "implement me");
-				break;
-			}
-		}
+		A_inv_m_b(0) = -1.0 * A_inv(0,0) * p0(0) - A_inv(0,1) * p0(1);
+		A_inv_m_b(1) = -1.0 * A_inv(1,0) * p0(0) - A_inv(1,1) * p0(1);
 	}
 
 

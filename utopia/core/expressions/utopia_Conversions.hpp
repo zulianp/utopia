@@ -26,11 +26,12 @@ namespace utopia {
         //FIXME use nnzxrow instead
         to = local_sparse(ls.get(0), ls.get(1), nnz);
 
-
-        Write<Wrapper<TensorTo, 2>> w_t(to);
-        each_read(from, [&to](const SizeType i, const SizeType j, const double val) {
-            to.set(i, j, val);
-        });
+        {
+            Write<Wrapper<TensorTo, 2>> w_t(to);
+            each_read(from, [&to](const SizeType i, const SizeType j, const double val) {
+                to.set(i, j, val);
+            });
+        }
 
 
         assert(size(from) == size(to));

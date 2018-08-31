@@ -20,6 +20,7 @@ namespace utopia {
 		mesh_refinement.uniformly_refine(n_refs);
 	}
 
+
 	void TransferApp::init(libMesh::LibMeshInit &init)
 	{
 		comm_ = make_ref(init.comm());
@@ -50,6 +51,10 @@ namespace utopia {
 
 			mesh_master_->read(path);
 
+			if(order == 2) {
+				mesh_master_->all_second_order(false);
+			}
+
 			int n_master_ref = 0;
 			is.read("refine-master", n_master_ref);
 			refine(n_master_ref, *mesh_master_);
@@ -67,6 +72,10 @@ namespace utopia {
 			is.read("type", type);
 			mesh_slave_->read(path);
 
+			if(order == 2) {
+				mesh_slave_->all_second_order(false);
+			}
+
 			int n_slave_ref = 0;
 			is.read("refine-slave", n_slave_ref);
 			refine(n_slave_ref, *mesh_slave_);
@@ -77,16 +86,26 @@ namespace utopia {
 			space_slave_->initialize();
 
 			is_interpolation_ = false;
+			assemble_mass_mat_ = 0;
+
+			is.read("assemble-mass-mat", assemble_mass_mat_);
 
 			if(type == "l2-projection") {
 				biorth_basis = true;
 				is.read("biorth-basis", biorth_basis);
-				local_assembler_ = std::make_shared<L2LocalAssembler>(mesh_master_->mesh_dimension(), biorth_basis);
+				local_assembler_ = std::make_shared<L2LocalAssembler>(mesh_master_->mesh_dimension(), biorth_basis, assemble_mass_mat_);
 			} else if(type == "interpolation") {
 				local_assembler_ = std::make_shared<InterpolationLocalAssembler>(mesh_master_->mesh_dimension());
 				is_interpolation_ = true;
 			} else if(type == "approx-l2-projection") {
-				local_assembler_ = std::make_shared<ApproxL2LocalAssembler>(mesh_master_->mesh_dimension());
+				int quad_order = -1;
+
+				is.read("quad-order-approx", quad_order);
+				std::cout << "quad_order: " << quad_order << std::endl;
+
+				auto apl2 = std::make_shared<ApproxL2LocalAssembler>(mesh_master_->mesh_dimension());
+				apl2->set_quadrature_order(quad_order);
+				local_assembler_  = apl2;
 			}
 
 			if(!local_assembler_) {
@@ -137,16 +156,17 @@ namespace utopia {
 		//////////////////////////////////////////////////////
 
 		c.start();
-		auto B = std::make_shared<DSMatrixd>();
+
+		std::vector<std::shared_ptr<DSMatrixd>> mats;
 		TransferAssembler transfer_assembler(local_assembler_, local2global_);
 		bool ok = transfer_assembler.assemble(
 			mesh_master_,
 			make_ref(space_master_->dof_map()),
 			mesh_slave_,
 			make_ref(space_slave_->dof_map()),
-			*B,
+			mats,
 			opts
-			);
+		);
 
 		if(!ok) {
 			std::cerr << "[Error] transfer failed" << std::endl;
@@ -155,29 +175,41 @@ namespace utopia {
 
 		c.stop();
 
-
 		if(mpi_world_rank() == 0) {
 			std::cout << "assembly time: " << c << std::endl;
-			std::cout << "dof_slave x dof_master = " << size(*B).get(0) << " x " << size(*B).get(1) << std::endl;
+		}
+
+		for(auto mat_ptr : mats) {
+			double sum_m = sum(*mat_ptr);
+			if(mpi_world_rank() == 0) {
+				std::cout << "rows x cols = " << size(*mat_ptr).get(0) << " x " << size(*mat_ptr).get(1) << std::endl;
+				std::cout << "sum(M): " << sum_m << std::endl;
+			}
 		}
 
 		if(type == "l2-projection" || type == "approx-l2-projection") {
-			if(biorth_basis) {
+			if(biorth_basis && type != "approx-l2-projection") {
 				auto pl2 = std::make_shared<PseudoL2TransferOperator>();
-				pl2->init_from_coupling_operator(*B);
+				pl2->init_from_coupling_operator(*mats[0]);
 				transfer_op_ = pl2;
 			} else {
-				auto u = trial(*space_slave_);
-				auto v = test(*space_slave_);
+				if(mats.size() == 2) {
+					auto l2op = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<DSMatrixd, DVectord>>());
+					l2op->fix_mass_matrix_operator();
+					transfer_op_ = l2op;
+				} else {
+					auto u = trial(*space_slave_);
+					auto v = test(*space_slave_);
 
-				auto D = std::make_shared<DSMatrixd>();
+					auto D = std::make_shared<DSMatrixd>();
 
-				assemble(inner(u, v) * dX, *D);
-				transfer_op_ = std::make_shared<L2TransferOperator>(B, D);
+					assemble(inner(u, v) * dX, *D);
+					transfer_op_ = std::make_shared<L2TransferOperator>(mats[0], D, std::make_shared<Factorization<DSMatrixd, DVectord>>());
+				}
 			}
 
 		} else if(type == "interpolation") {
-			transfer_op_ = std::make_shared<Interpolator>(B);
+			transfer_op_ = std::make_shared<Interpolator>(mats[0]);
 		}
 
 		////////////////////////////////////////////////////////////
@@ -185,24 +217,15 @@ namespace utopia {
 		auto u = trial(*space_master_);
 		auto v = test(*space_master_);
 
-
 		c.start();
 
 		DVectord fun_master_h, fun_master, fun_slave, back_fun_master;
 
+		DSMatrixd mass_mat_master;
+		assemble(inner(u, v) * dX, mass_mat_master);
 
 		if(!fun_is_constant) {
 			assemble(inner(*fun, v) * dX, fun_master_h);
-
-			DSMatrixd mass_mat_master;
-			assemble(inner(u, v) * dX, mass_mat_master);
-
-			c.stop();
-
-			if(mpi_world_rank() == 0) {
-				std::cout << "Assembled M and M * fun" << std::endl;
-				std::cout << c << std::endl;
-			}
 
 			fun_master = fun_master_h;
 
@@ -212,14 +235,26 @@ namespace utopia {
 #ifdef WITH_TINY_EXPR
 			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun->eval(0., 0., 0.));
 #else
-			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun[0]);
+			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun->expr());
 #endif //WITH_TINY_EXPR
 		}
 
+		c.stop();
 
+		if(mpi_world_rank() == 0) {
+			std::cout << "Assembled M and fun_m" << std::endl;
+			std::cout << c << std::endl;
+		}
 
 		transfer_op_->apply(fun_master, fun_slave);
 		transfer_op_->apply_transpose(fun_slave, back_fun_master);
+
+		double sum_fun_master = sum(fun_master);
+		double sum_fun_slave  = sum(fun_slave);
+
+		transfer_op_->describe(std::cout);
+		std::cout << "f_m = " << sum_fun_master << ", f_s = " << sum_fun_slave << std::endl;
+		std::cout << "sum(M_m) = " << double(sum(mass_mat_master)) << std::endl;
 
 		////////////////////////////////////////////////////////////
 		//output

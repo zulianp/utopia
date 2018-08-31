@@ -8,6 +8,7 @@
 #include "utopia_ScalarBackend.hpp"
 
 #include <utility>
+#include <cmath>
 #include <TpetraExt_MatrixMatrix_def.hpp>
 
 //TODO find the configuration for having this
@@ -324,9 +325,12 @@ namespace utopia {
             result.scale(-1.);
         }
 
-        inline static void apply_unary(TpetraVector &result, const Exp &, const TpetraVector &v)
+        template<class Op>
+        inline static void apply_unary(TpetraVector &result, const Op &op, const TpetraVector &v)
         {
-            assert(false && "implement me");
+            // assert(false && "implement me");
+            result = v;
+            result.apply(op);
         }
 
         inline static Scalar dot(const TpetraVector &x, const TpetraVector &y)
@@ -464,8 +468,7 @@ namespace utopia {
 
         static bool is_nan_or_inf(const TpetraVector &v)
         {
-            assert(false && "implement me");
-            return false;
+            return v.is_nan_or_inf();
         }
 
         static void set_zero_rows(TpetraMatrix &Mat_A, const std::vector<int> &index)

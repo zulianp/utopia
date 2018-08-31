@@ -374,11 +374,11 @@ namespace utopia
 
 	void runNonlinearMultilevelSolverTest()
 	{
-		UTOPIA_UNIT_TEST_BEGIN("runNonlinearMultilevelSolverTest");
+		UTOPIA_UNIT_TEST_BEGIN("NonlinearMultilevelSolverTest");
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(4, true, true).run();
+			NonlinearBratuSolverTest(4, true, false).run();
 		#endif
-		UTOPIA_UNIT_TEST_END("runNonlinearMultilevelSolverTest");
+		UTOPIA_UNIT_TEST_END("NonlinearMultilevelSolverTest");
 
 	}
 }

@@ -4,12 +4,16 @@
 #include "utopia_LocalAssembler.hpp"
 #include "MortarAssemble.hpp"
 
+#include <vector>
+
 namespace utopia {
 	class QMortarBuilder;
 
 	class L2LocalAssembler final : public LocalAssembler {
 	public:
-		L2LocalAssembler(const int dim, const bool use_biorth);
+		using Matrix = LocalAssembler::Matrix;
+
+		L2LocalAssembler(const int dim, const bool use_biorth, const bool assemble_mass_mat = false);
 		~L2LocalAssembler();
 
 		/**
@@ -25,10 +29,31 @@ namespace utopia {
 			Matrix &mat
 			) override;
 
+		bool assemble(
+			const Elem &trial,
+			FEType trial_type,
+			const Elem &test,
+			FEType test_type,
+			std::vector<Matrix> &mat
+			) override;
+
 		inline const QMortarBuilder &get_q_builder() const
 		{
 			assert(q_builder);
 			return *q_builder;
+		}
+
+		inline int n_forms() const override
+		{
+			return (assemble_mass_mat_)? 2 : 1;
+		}
+
+		inline Type type(const int index) const override
+		{
+			assert(index < n_forms());
+			assert(index >= 0);
+			
+			return index == 0 ? MASTER_X_SLAVE : SLAVE_X_SLAVE;
 		}
 
 	private:
@@ -43,6 +68,8 @@ namespace utopia {
 
 		std::shared_ptr<QMortarBuilder> q_builder;
 		std::unique_ptr<libMesh::FEBase> trial_fe, test_fe;
+
+		bool assemble_mass_mat_;
 
 		void init_fe(
 			const Elem &trial,

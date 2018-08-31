@@ -58,7 +58,38 @@ namespace utopia {
 		Matrix &mat
 		)
 	{
+		if(!init_q(trial, trial_type, test, test_type)) {
+			return false;
+		}
 
+		auto trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
+		trial_fe->attach_quadrature_rule(q_trial.get());
+		trial_fe->get_phi();
+		trial_fe->reinit(&trial);
+
+		auto test_fe = libMesh::FEBase::build(test.dim(), test_type);
+		test_fe->attach_quadrature_rule(q_test.get());
+		test_fe->get_JxW();
+		test_fe->get_phi();
+		test_fe->reinit(&test);
+
+		assemble(*trial_fe, *test_fe, mat);
+
+		assert((test_type != libMesh::FIRST || trial_type != libMesh::FIRST || check_valid(mat)));
+		return true;
+	}
+
+	bool ApproxL2LocalAssembler::assemble(
+		const Elem &trial,
+		FEType trial_type,
+		const Elem &test,
+		FEType test_type,
+		std::vector<Matrix> &mat
+		) 
+	{
+		assert(n_forms() == 2);
+
+		mat.resize(n_forms());
 
 		if(!init_q(trial, trial_type, test, test_type)) {
 			return false;
@@ -66,14 +97,25 @@ namespace utopia {
 
 		auto trial_fe = libMesh::FEBase::build(trial.dim(), trial_type);
 		trial_fe->attach_quadrature_rule(q_trial.get());
-		const auto &trial_shape_fun = trial_fe->get_phi();
+		trial_fe->get_phi();
 		trial_fe->reinit(&trial);
 
 		auto test_fe = libMesh::FEBase::build(test.dim(), test_type);
 		test_fe->attach_quadrature_rule(q_test.get());
-		auto &JxW = test_fe->get_JxW();
-		const auto &test_shape_fun = test_fe->get_phi();
+		test_fe->get_JxW();
+		test_fe->get_phi();
 		test_fe->reinit(&test);
+
+		assemble(*trial_fe, *test_fe, mat[0]);
+		assemble(*test_fe,  *test_fe, mat[1]);
+		return true;
+	}
+
+	void ApproxL2LocalAssembler::assemble(libMesh::FEBase &trial, libMesh::FEBase &test, Matrix &mat) const
+	{
+		const auto &trial_shape_fun = trial.get_phi();
+		const auto &test_shape_fun  = test.get_phi();
+		auto &JxW = test.get_JxW();
 
 		mat.resize(test_shape_fun.size(), trial_shape_fun.size());
 
@@ -82,16 +124,10 @@ namespace utopia {
 			for(std::size_t j = 0; j < trial_shape_fun.size(); ++j) {
 				for(std::size_t k = 0; k < n_qps; ++k) {
 					auto tf = test_shape_fun.at(i).at(k);
-
 					mat(i, j) += trial_shape_fun.at(j).at(k) * tf * JxW[k];
 				}
 			}
 		}
-
-		// mat.print();
-
-		assert((test_type != libMesh::FIRST || trial_type != libMesh::FIRST || check_valid(mat)));
-		return true;
 	}
 
 	bool ApproxL2LocalAssembler::check_valid(const Matrix &mat) const
@@ -125,12 +161,14 @@ namespace utopia {
 		}
 
 		int order = quadrature_order;
-
 		if(order < 0) {
-			order = order_for_l2_integral(dim, test, test_type.order, test, test_type.order);
+			order = std::max(
+				order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order),
+				order_for_l2_integral(dim, test,  test_type.order,  test, test_type.order)
+			);
 		}
 
-		libMesh::QGauss q(dim, libMesh::Order(order));
+		libMesh::QGauss q(test.dim(), libMesh::Order(order));
 		q.init(test.type());
 
 		std::size_t n_quad_points = q.get_points().size();

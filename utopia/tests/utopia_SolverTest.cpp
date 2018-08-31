@@ -30,7 +30,7 @@ namespace utopia {
 		{
 			print_backend_info();
 			UTOPIA_RUN_TEST(pg_test);
-			// UTOPIA_RUN_TEST(pcg_test);
+			UTOPIA_RUN_TEST(pcg_test);
 			UTOPIA_RUN_TEST(ngs_test);
 			UTOPIA_RUN_TEST(newton_cg_test);
 			UTOPIA_RUN_TEST(solver_from_params_test);
@@ -309,7 +309,7 @@ namespace utopia {
 
 		template<class QPSolver>
 		void run_qp_solver(QPSolver &qp_solver) {
-			const SizeType n = 30;
+			const SizeType n = 100;
 
 			Matrix m = zeros(n, n);
 			assemble_laplacian_1D(m);
@@ -362,7 +362,6 @@ namespace utopia {
 		void pg_test()
 		{
 			ProjectedGradient<Matrix, Vector> pg;
-			// pg.verbose(true);
 			run_qp_solver(pg);
 		}
 

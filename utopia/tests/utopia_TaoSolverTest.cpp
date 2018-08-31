@@ -148,7 +148,7 @@ namespace utopia {
 		xssn *= 1./scale_factor;
 
 		double n_diff = norm2(xssn - x);
-		utopia_test_assert(n_diff < 1e-8);
+		utopia_test_assert(n_diff < 1e-7);
 
 	}
 

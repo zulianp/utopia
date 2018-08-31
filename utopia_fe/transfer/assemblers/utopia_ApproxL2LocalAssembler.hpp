@@ -14,7 +14,9 @@ namespace utopia {
 		using Point = libMesh::Point;
 		using Matrix = libMesh::DenseMatrix<libMesh::Real>;
 
-		ApproxL2LocalAssembler(const int dim, const bool nested_meshes = false)
+		ApproxL2LocalAssembler(
+			const int dim, 
+			const bool nested_meshes = false)
 		: dim(dim), quadrature_order(-1), nested_meshes(nested_meshes), tol(1e-10)
 		{ }
 
@@ -26,9 +28,30 @@ namespace utopia {
 			Matrix &mat
 			) override;
 
+		bool assemble(
+				const Elem &trial,
+				FEType trial_type,
+				const Elem &test,
+				FEType test_type,
+				std::vector<Matrix> &mat
+				) override;
+
 		inline void set_quadrature_order(const int val)
 		{
 			quadrature_order = val;
+		}
+
+		inline int n_forms() const override
+		{
+			return 2;
+		}
+
+		inline Type type(const int index) const override
+		{
+			assert(index < n_forms());
+			assert(index >= 0);
+			
+			return index == 0 ? MASTER_X_SLAVE : SLAVE_X_SLAVE;
 		}
 
 	private:
@@ -50,6 +73,8 @@ namespace utopia {
 		void contained_points(const libMesh::Elem &trial,   const libMesh::QBase &q, std::vector<int> &index);
 		void contained_points_2(const libMesh::Elem &trial, const libMesh::QBase &q, std::vector<int> &index);
 		void contained_points_3(const libMesh::Elem &trial, const libMesh::QBase &q, std::vector<int> &index) const;
+
+		void assemble(libMesh::FEBase &trial, libMesh::FEBase &test, Matrix &mat) const;
 	};
 }
 

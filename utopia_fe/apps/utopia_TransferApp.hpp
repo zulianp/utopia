@@ -42,6 +42,7 @@ namespace utopia {
 
 		std::shared_ptr<TransferOperator> transfer_op_;
 		int biorth_basis;
+		int assemble_mass_mat_;
 
 
 #ifdef WITH_TINY_EXPR
