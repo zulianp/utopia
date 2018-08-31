@@ -218,7 +218,8 @@ namespace utopia {
 
 		void pre_assemble()
 		{
-			for(std::size_t i = 0; i < mat_buffer.size(); ++i) {
+			const std::size_t n_forms = mat_buffer.size();
+			for(std::size_t i = 0; i < n_forms; ++i) {
 				mat_buffer[i] = std::make_shared< moonolith::SparseMatrix<double> >(comm);
 				local_element_matrices_sum[i] = 0.;
 

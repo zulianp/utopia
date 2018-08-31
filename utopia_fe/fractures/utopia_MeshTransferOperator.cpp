@@ -18,6 +18,12 @@ namespace utopia {
 			types["L2_PROJECTION"] 		  = L2_PROJECTION;
 			types["PSEUDO_L2_PROJECTION"] = PSEUDO_L2_PROJECTION;
 			types["APPROX_L2_PROJECTION"] = APPROX_L2_PROJECTION;
+
+			//other way of writing them
+			types["interpolation"] 		  = INTERPOLATION;
+			types["l2-projection"] 		  = L2_PROJECTION;
+			types["pseudo-l2-projection"] = PSEUDO_L2_PROJECTION;
+			types["approx-l2-projection"] = APPROX_L2_PROJECTION;
 		}
 
 		return types;
