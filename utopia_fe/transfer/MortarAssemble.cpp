@@ -82,17 +82,17 @@ namespace utopia {
 	{
 		libMesh::Point p0, p1, p2;
 
-		switch(elem.type())
-		{
-			case libMesh::TRI3:
-			case libMesh::TRI6:
-			case libMesh::QUAD4:
-			case libMesh::QUAD8:
-			case libMesh::QUAD9:
-			case libMesh::TRISHELL3:
-			case libMesh::QUADSHELL4:
-			// case libMesh::QUADSHELL8:
-			{
+		// switch(elem.type())
+		// {
+		// 	case libMesh::TRI3:
+		// 	case libMesh::TRI6:
+		// 	case libMesh::QUAD4:
+		// 	case libMesh::QUAD8:
+		// 	case libMesh::QUAD9:
+		// 	case libMesh::TRISHELL3:
+		// 	case libMesh::QUADSHELL4:
+		// 	// case libMesh::QUADSHELL8:
+		// 	{
 
 				A_inv.resize(2,2);
 				A_inv_m_b.resize(2);
@@ -139,14 +139,14 @@ namespace utopia {
 
 				}
 
-				break;
-			}
-			default:
-			{
-				assert(false && "implement me");
-				break;
-			}
-		}
+			// 	break;
+			// }
+			// default:
+			// {
+			// 	assert(false && "implement me");
+			// 	break;
+			// }
+		// }
 	}
 
 

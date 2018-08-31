@@ -170,16 +170,24 @@ namespace utopia {
 			// surf_mesh->read("../data/test/fractures.e");
 
 
+		
+			// vol_mesh->read("../data/frac/frac1d_background.e");
+			surf_mesh->read("../data/frac/frac1d_network.e");
+
+#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
+		libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(*surf_mesh);
+#else
+		libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(*surf_mesh);
+#endif
+
 			libMesh::MeshTools::Generation::build_square(
 				*vol_mesh,
 				n, n,
-				-0.5, 0.5,
-				-0.5, 0.5,
+				bb.min()(0), bb.max()(0),
+				bb.min()(1), bb.max()(1),
 				libMesh::QUAD4
-				);
+			 );
 
-			// vol_mesh->read("../data/frac/frac1d_background.e");
-			surf_mesh->read("../data/frac/frac1d_network.e");
 
 			{
 				libMesh::MeshRefinement mesh_refinement(*surf_mesh);
@@ -217,7 +225,7 @@ namespace utopia {
 		Chrono c;
 		c.start();
 
-		PourousMediaToFractureTransfer pmtoft(
+		MeshTransferOperator pmtoft(
 			vol_mesh,
 			make_ref(V_vol.dof_map()),
 			surf_mesh,
@@ -225,8 +233,9 @@ namespace utopia {
 		);
 
 		// if(pmtoft.initialize(INTERPOLATION)) {
-		// if(pmtoft.initialize(L2_PROJECTION)) {
-		if(pmtoft.initialize(APPROX_L2_PROJECTION)) {
+		if(pmtoft.initialize(L2_PROJECTION)) {
+		// if(pmtoft.initialize(APPROX_L2_PROJECTION)) {
+		// if(pmtoft.initialize(PSEUDO_L2_PROJECTION)) {
 			c.stop();
 			std::cout << c << std::endl;
 

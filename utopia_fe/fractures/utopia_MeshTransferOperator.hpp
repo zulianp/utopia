@@ -32,17 +32,19 @@ namespace utopia {
 		bool initialize(const TransferOperatorType operator_type = utopia::INTERPOLATION);
 		bool initialize(const std::string operator_type);
 
-		inline void apply(const Vector &from, Vector &to) const
+		inline void apply(const Vector &from, Vector &to) const override
 		{
+			assert(operator_);
 			operator_->apply(from, to);
 		}
 
-		inline void apply_transpose(const Vector &from, Vector &to) const
+		inline void apply_transpose(const Vector &from, Vector &to) const override
 		{
+			assert(operator_);
 			operator_->apply_transpose(from, to);
 		}
 
-		inline void describe(std::ostream &os) const
+		inline void describe(std::ostream &os) const override
 		{
 			if(operator_) {
 				operator_->describe(os);

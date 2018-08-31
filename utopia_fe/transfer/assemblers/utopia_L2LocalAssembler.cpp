@@ -132,6 +132,7 @@ namespace utopia {
 	void L2LocalAssembler::init_biorth(const Elem &test, FEType test_type)
 	{
 		if(!use_biorth) return;
+		if(!must_compute_biorth) return;
 
 		assemble_biorth_weights(
 			test,

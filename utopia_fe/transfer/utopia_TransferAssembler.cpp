@@ -386,8 +386,6 @@ namespace utopia {
 
 		bool assemble(std::vector<std::shared_ptr<SparseMatrix> > &mats)
 		{
-			assert(assembler->n_forms() == 2);
-
 			if(assembler->n_forms() != mats.size()) {
 				mats.resize(assembler->n_forms());
 			}
