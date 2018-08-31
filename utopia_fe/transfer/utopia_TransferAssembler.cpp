@@ -236,6 +236,18 @@ namespace utopia {
 						break;
 					}
 
+					case LocalAssembler::MASTER_X_MASTER:
+					{
+						mat_buffer[1]->set_size(from_dofs->n_dofs(), from_dofs->n_dofs());
+						break;
+					}
+
+					case LocalAssembler::SLAVE_X_MASTER: 
+					{
+						mat_buffer[0]->set_size(from_dofs->n_dofs(), to_dofs->n_dofs());
+						break;
+					}
+
 					default:
 					{
 						assert(false);
@@ -291,6 +303,23 @@ namespace utopia {
 							break;
 						}
 
+						case LocalAssembler::MASTER_X_MASTER:
+						{
+							const auto &master_dofs  = master.dof_map();
+
+							local2global->apply(master_dofs, master_dofs, elemmat[i], *mat_buffer[i]);
+							break;
+						}
+
+						case LocalAssembler::SLAVE_X_MASTER: 
+						{
+							const auto &master_dofs = master.dof_map();
+							const auto &slave_dofs  = slave.dof_map();
+
+							local2global->apply(slave_dofs, master_dofs, elemmat[i], *mat_buffer[i]);
+							break;
+						}
+
 						default:
 						{
 							assert(false);
@@ -343,6 +372,20 @@ namespace utopia {
 				{
 					n_dofs_on_proc_trial = to_dofs->n_local_dofs();
 					n_dofs_on_proc_test  = to_dofs->n_local_dofs();
+					break;
+				}
+
+				case LocalAssembler::MASTER_X_MASTER:
+				{
+					n_dofs_on_proc_trial = from_dofs->n_local_dofs();
+					n_dofs_on_proc_test  = from_dofs->n_local_dofs();
+					break;
+				}
+
+				case LocalAssembler::SLAVE_X_MASTER: 
+				{
+					n_dofs_on_proc_trial = to_dofs->n_local_dofs();
+					n_dofs_on_proc_test  = from_dofs->n_local_dofs();
 					break;
 				}
 

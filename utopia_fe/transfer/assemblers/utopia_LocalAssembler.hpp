@@ -17,8 +17,10 @@ namespace utopia {
 		using Matrix = libMesh::DenseMatrix<libMesh::Real>;
 
 		enum Type {
-			MASTER_X_SLAVE = 0,
-			SLAVE_X_SLAVE  = 1
+			MASTER_X_SLAVE  = 0,
+			SLAVE_X_SLAVE   = 1,
+			MASTER_X_MASTER = 3,
+			SLAVE_X_MASTER  = 4
 		};
 
 		virtual ~LocalAssembler() {}
