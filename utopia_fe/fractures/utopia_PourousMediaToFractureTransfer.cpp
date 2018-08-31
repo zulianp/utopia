@@ -8,7 +8,7 @@
 
 namespace utopia {
 
-	bool PourousMediaToFractureTransfer::initialize(const TransferOperatorType operator_type)
+	bool MeshTransferOperator::initialize(const TransferOperatorType operator_type)
 	{
 		std::shared_ptr<LocalAssembler> assembler;
 
