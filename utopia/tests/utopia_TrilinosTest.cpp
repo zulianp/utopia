@@ -921,7 +921,7 @@ namespace utopia {
 
         std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions(problem.n_levels);
 
-        for(auto l=0; l < problem.n_levels; l++)
+        for(auto l = 0; l < problem.n_levels; l++)
         {
             auto fun = std::make_shared<Bratu1D<Matrix, Vector> >(problem.n_dofs[l]);
             level_functions[l] = fun;
