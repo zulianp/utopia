@@ -70,7 +70,7 @@ namespace utopia
 
 			// restrictions, but let's use them as projections...
 			// not very nice solution, but I am lazy to do something more sophisticated just for testing purposes...
-			for(SizeType i = 0; i < problem.prolongations.size(); ++i)
+			for(auto i = 0; i < problem.prolongations.size(); ++i)
 			{
 				auto &I = *problem.prolongations[i];
 				DSMatrixd R =  0.5*  transpose(I);

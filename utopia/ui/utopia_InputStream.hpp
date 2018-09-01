@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <functional>
 
 #include "utopia_Base.hpp"
 
