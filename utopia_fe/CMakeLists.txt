@@ -65,16 +65,16 @@ function(find_project_files rootPath dirPaths headers sources)
 	FOREACH(INCLUDE_PATH ${DIR_PATHS})
 		INCLUDE_DIRECTORIES(${ROOT_PATH}/${INCLUDE_PATH})
 
-		file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )   
-		file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )    
+		file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
+		file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
 		file(GLOB TEMP_HPPDR "${ROOT_PATH}/${INCLUDE_PATH}/*.hpp" )
 		file(GLOB TEMP_HDR "${ROOT_PATH}/${INCLUDE_PATH}/*.h" )
-		
+
 		SOURCE_GROUP(${INCLUDE_PATH} FILES ${TEMP_HPPDR}; ${TEMP_HDR}; ${TEMP_HPPSRC}; ${TEMP_SRC}; ${TEMP_UI})
-		
+
 		SET(tsources ${tsources}; ${TEMP_SRC}; ${TEMP_HPPSRC})
-		SET(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR}) 
-	ENDFOREACH(INCLUDE_PATH)  
+		SET(theaders ${theaders}; ${TEMP_HDR}; ${TEMP_HPPDR})
+	ENDFOREACH(INCLUDE_PATH)
 
 	SET(${headers} ${theaders} PARENT_SCOPE)
 	SET(${sources} ${tsources} PARENT_SCOPE)
@@ -84,7 +84,10 @@ endfunction()
 
 list(APPEND UTOPIA_FE_MODULES
 	tests
+	apps
 	fractures
+	wear
+	ui
 	multigrid
 	transfer
 	visualization
@@ -100,7 +103,7 @@ list(APPEND UTOPIA_FE_MODULES
 
 FOREACH(MODULE ${UTOPIA_FE_MODULES})
 		add_subdirectory("${MODULE}")
-ENDFOREACH(MODULE)  
+ENDFOREACH(MODULE)
 
 
 include_directories(${CMAKE_BINARY_DIR})
@@ -127,15 +130,15 @@ target_link_libraries(utopia_fe_exec ${UTOPIA_LIBRARIES})
 
 
 install(TARGETS utopia_fe
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
 	)
 
 install(TARGETS utopia_fe_exec
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
 	)
 
 install(FILES ${TOP_HEADERS} DESTINATION include)
@@ -153,8 +156,8 @@ function(append_list_to_string_for_makefile OUTPUT_STRING PRE_LIST POST_LIST ITE
 
 	SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
-	FOREACH(LIST_EL ${LIST_OF_STRINGS}) 
-		
+	FOREACH(LIST_EL ${LIST_OF_STRINGS})
+
 		string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
 		if(IS_FRAME_WORK)
 			get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
@@ -165,7 +168,7 @@ function(append_list_to_string_for_makefile OUTPUT_STRING PRE_LIST POST_LIST ITE
 		else()
 	    	SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL} ")
 	    endif()
-	ENDFOREACH(LIST_EL) 
+	ENDFOREACH(LIST_EL)
 
 	SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
 	SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
@@ -178,8 +181,8 @@ function(append_list_to_string_for_makefile_with_postfix OUTPUT_STRING PRE_LIST 
 
 	SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
-	FOREACH(LIST_EL ${LIST_OF_STRINGS}) 
-		
+	FOREACH(LIST_EL ${LIST_OF_STRINGS})
+
 		string(REGEX MATCH "(.*)framework" IS_FRAME_WORK "${LIST_EL}")
 		if(IS_FRAME_WORK)
 			get_filename_component(FRAMEWORK_NAME "${LIST_EL}" NAME)
@@ -190,7 +193,7 @@ function(append_list_to_string_for_makefile_with_postfix OUTPUT_STRING PRE_LIST 
 		else()
 	    	SET(TEMPSTR "${TEMPSTR}${ITEM_PREFIX}${LIST_EL}${ITEM_POSTFIX} ")
 	    endif()
-	ENDFOREACH(LIST_EL) 
+	ENDFOREACH(LIST_EL)
 
 	SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
 	SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)
@@ -204,9 +207,9 @@ function(append_list_to_string_for_cmake OUTPUT_STRING PRE_LIST POST_LIST LIST_O
 
 	SET(TEMPSTR ${${OUTPUT_STRING}} ${PRE_LIST})
 
-	FOREACH(LIST_EL ${LIST_OF_STRINGS}) 
+	FOREACH(LIST_EL ${LIST_OF_STRINGS})
 	    SET(TEMPSTR "${TEMPSTR}\t\"${LIST_EL}\"\n")
-	ENDFOREACH(LIST_EL) 
+	ENDFOREACH(LIST_EL)
 
 	SET(TEMPSTR "${TEMPSTR} ${POST_LIST}")
 	SET(${OUTPUT_STRING} ${TEMPSTR} PARENT_SCOPE)

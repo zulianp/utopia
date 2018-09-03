@@ -22,16 +22,17 @@ namespace utopia {
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 		typedef utopia::Level<Matrix, Vector> Level;
 		typedef utopia::Transfer<Matrix, Vector> Transfer;
-	
+		typedef std::shared_ptr<Transfer> TransferPtr;
+
 	public:
-	
+
 		MultiLevelBase(const Parameters params = Parameters())
 		{
 			set_parameters(params);
 		}
-		
+
 		virtual ~MultiLevelBase(){}
-		
+
 		virtual void set_parameters(const Parameters params)
 		{
 			parameters_ = params;
@@ -41,7 +42,7 @@ namespace utopia {
 			cycle_type_ = params.cycle_type();
 			v_cycle_repetition_ = 1;  // TODO:: create option in params for this
 		}
-		
+
 		/**
 		 * @brief Returns number of levels in hierarchy.
 		 */
@@ -49,7 +50,7 @@ namespace utopia {
 		{
 			return transfers_.size() + 1;
 		}
-		
+
 		/**
 		 * @brief      Function sets type of cycle
 		 */
@@ -58,7 +59,7 @@ namespace utopia {
 			cycle_type_ = type_in;
 			return true;
 		}
-		
+
 		/**
 		 * @brief    Sets amount of V-cycles inside of F-cycle
 		 */
@@ -67,7 +68,7 @@ namespace utopia {
 			v_cycle_repetition_ = v_cycle_repetition_in;
 			return true;
 		}
-		
+
 		/**
 		 * @brief      Setting number pre-smoothing steps.
 		 *
@@ -77,7 +78,7 @@ namespace utopia {
 		{
 			pre_smoothing_steps_ = pre_smoothing_steps_in;
 		}
-		
+
 		/**
 		 * @brief      Setting number of post-smoothing steps.
 		 *
@@ -87,7 +88,7 @@ namespace utopia {
 		{
 			post_smoothing_steps_ = post_smoothing_steps_in;
 		}
-		
+
 		/**
 		 * @brief      Setting type of MG:  1 goes for V_CYCLE, 2 for W-cycle.
 		 *
@@ -97,7 +98,7 @@ namespace utopia {
 		{
 			mg_type_ = mg_type_in;
 		}
-		
+
 		/**
 		 * @return     Number of pre-smoothing steps.
 		 */
@@ -105,7 +106,7 @@ namespace utopia {
 		{
 			return pre_smoothing_steps_;
 		}
-		
+
 		/**
 		 * @return     Number of post-smoothing steps.
 		 */
@@ -113,53 +114,60 @@ namespace utopia {
 		{
 			return post_smoothing_steps_;
 		}
-		
+
 		/**
 		 * @return     Type of MG cycle.
 		 */
 		inline bool mg_type() const { return mg_type_; }
-		
+
 		/**
 		 * @return     Type of MG cycle.
 		 */
 		inline int cycle_type() const { return cycle_type_; }
-		
-		
+
+
 		/**
 		 * @brief      Amount of V-cycles on each level during full-cycle
 		 */
 		inline SizeType v_cycle_repetition() const { return v_cycle_repetition_; }
-		
+
 		inline Transfer &transfer(const SizeType level)
 		{
-			return transfers_[level];
+			return *transfers_[level];
 		}
 
 		inline const Transfer &transfer(const SizeType level) const
 		{
-			return transfers_[level];
+			return *transfers_[level];
 		}
 
 		virtual void describe(std::ostream &os = std::cout) const
 		{
 			(void) os;
 		}
-		
+
+		bool set_transfers(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector>>> &transfers)
+		{
+			transfers_ = transfers;
+			return true;
+		}
+
+
 	protected:
-		std::vector<Transfer>               transfers_;   /*!< vector of transfer operators  */
-		
+		std::vector<TransferPtr>               transfers_;   /*!< vector of transfer operators  */
+
 		Parameters                          parameters_;
-		
+
 		SizeType                            pre_smoothing_steps_;
 		SizeType                            post_smoothing_steps_;
 		SizeType                            mg_type_;
-		
+
 		int                                 cycle_type_;
 		SizeType                            v_cycle_repetition_;
-		
+
 		bool fix_semidefinite_operators_;
 	};
-	
+
 }
 
 #endif //UTOPIA_ML_BASE_HPP

@@ -6,3 +6,7 @@ Fixes:
 New features:
 -Deeper petsc SNES integration and control (SNESMonitor and SNESConvergenceTest)
 -Block iterations for petsc
+
+
+Using external dependencies
+git submodule add

@@ -9,11 +9,11 @@
 #include <string>
 #include "utopia_IterativeSolver.hpp"
 
-namespace  utopia 
+namespace  utopia
 {
 
     /**
-     * @brief      Wrapper for TR subproblems 
+     * @brief      Wrapper for TR subproblems
      */
     template<class Matrix, class Vector>
     class TRSubproblem : public IterativeSolver<Matrix, Vector>
@@ -25,11 +25,11 @@ namespace  utopia
         public:
             TRSubproblem(const Parameters params = Parameters())
             {
-                set_parameters(params); 
+                set_parameters(params);
             };
-         
 
-            virtual ~TRSubproblem( ){}        
+
+            virtual ~TRSubproblem( ){}
 
             /**
              * @brief      Sets the parameters.
@@ -38,103 +38,104 @@ namespace  utopia
              */
             virtual void set_parameters(const Parameters params) override
             {
-                IterativeSolver::set_parameters(params); 
-                current_radius(params.delta0()); 
-            } 
+                IterativeSolver::set_parameters(params);
+                current_radius(params.delta0());
+            }
 
             virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector> > &ls)
             {
                 if(this->verbose())
-                    std::cout<<"current TR strategy does not need linear solver \n"; 
+                    std::cout<<"current TR strategy does not need linear solver \n";
             }
 
             /**
-             * @brief      Setter for current radius. 
+             * @brief      Setter for current radius.
              *
              * @param[in]  radius  The radius
              */
             virtual void current_radius(const Scalar &radius)
             {
-                current_radius_ = radius; 
-            }; 
-            
+                current_radius_ = radius;
+            };
+
             /**
-             * @brief      Getter for current radius. 
+             * @brief      Getter for current radius.
              */
             virtual Scalar current_radius()
             {
                 return current_radius_;
-            }; 
+            };
 
 
             virtual TRSubproblem * clone() const override = 0;
 
         protected:
             /**
-             * @brief      Solver solves easy problem of finding minimum, 
+             * @brief      Solver solves easy problem of finding minimum,
              *             such that \f$ p_k = s + \tau d \f$ minimizes \f$ m_k(p_k) \f$
              *             and satisfies \f$ ||p_k|| = \Delta_k  \f$
              *
-             * @param[in]  s      
-             * @param[in]  d      
-             * @param[in]  delta  The TR radius. 
-             * @param      p_k    The current iterate. 
+             * @param[in]  s
+             * @param[in]  d
+             * @param[in]  delta  The TR radius.
+             * @param      p_k    The current iterate.
              *
              * @return     tau
              */
             Scalar quad_solver(const Vector &s, const Vector &d, const Scalar & delta,  Vector &p_k)
             {
                 Scalar a, b, c, x1, x2, nom, denom,tau;
-                
+
                 a = dot(d, d);
-                b = dot(2 * s, d); 
+                b = dot(2 * s, d);
                 c = dot(s, s) - delta * delta;
 
-                nom = b * b - 4 * a * c; 
+                nom = b * b - 4 * a * c;
                 nom =  std::sqrt(nom);
-                denom = 2 * a; 
+                denom = 2 * a;
 
-                x1 = (- b + nom)/denom; 
-                x2 = (- b - nom)/denom; 
+                x1 = (- b + nom)/denom;
+                x2 = (- b - nom)/denom;
 
-                tau = std::max(x1, x2); 
+                tau = std::max(x1, x2);
 
                 if(tau != tau)
-                    tau = 0; 
+                    tau = 0;
 
-                p_k = s + tau * d; 
-                return tau; 
+                p_k = s + tau * d;
+                return tau;
             }
 
 
         Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
         {
-            Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c); 
+            Scalar sqrt_discriminant = std::sqrt( b * b - 4.0 * a * c);
 
-            Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a); 
-            Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a); 
+            Scalar lower = (-b + sqrt_discriminant)/ (2.0 * a);
+            Scalar upper = (-b - sqrt_discriminant)/ (2.0 * a);
 
             return std::max(upper, lower);
         }
 
 
-    public: 
+    public:
         virtual bool unpreconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
         virtual bool preconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
 
 
-        
-        virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k)
+
+        virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const Scalar & tr_radius)
         {
+            current_radius(tr_radius);
             update(make_ref(H));
-            apply(g, p_k); 
-            return true; 
+            apply(g, p_k);
+            return true;
         }
 
         /**
-         * @brief                Solution routine for CG. 
+         * @brief                Solution routine for CG.
          *
-         * @param[in]  b         The right hand side. 
+         * @param[in]  b         The right hand side.
          * @param      x         The initial guess/solution.
          *
          * @return true if the linear system has been solved up to required tollerance. False otherwise
@@ -166,17 +167,17 @@ namespace  utopia
              if(precond_) {
                 auto ls_ptr = dynamic_cast<LinearSolver<Matrix, Vector> *>(precond_.get());
                 if(ls_ptr) {
-                    ls_ptr->update(op);    
+                    ls_ptr->update(op);
                 }
              }
          }
 
 
-    private: 
-        std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */  
-        Scalar current_radius_;                     /*!< Radius on current iterate - used to solve constrained QP wrt TR bound. */  
+    private:
+        std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
+        Scalar current_radius_;                     /*!< Radius on current iterate - used to solve constrained QP wrt TR bound. */
 
-        
+
     };
 }
 

@@ -120,7 +120,7 @@ namespace utopia
         
         
         
-        virtual bool nonlinear_smooth(Function & fun,  Vector &x, const Vector &rhs) override
+        virtual bool smooth(Function & fun,  Vector &x, const Vector &rhs) override
         {
             using namespace utopia;
             
@@ -141,6 +141,7 @@ namespace utopia
             SNESSolve(snes, raw_type(rhs), raw_type(x));
             
             // needs to be reseted for use on other levels ...
+            VecDestroy(&snes->vec_rhs);
             snes->vec_rhs =  NULL;
             
             if (dynamic_cast<PETSCUtopiaNonlinearFunction<Matrix, Vector> *>(&fun) == nullptr)
@@ -173,8 +174,11 @@ namespace utopia
             if(this->verbose())
                 SNESMonitorSet(
                                snes,
-                               [](SNES snes, PetscInt iter, PetscReal res, void*) -> PetscErrorCode {
-                                   PrintInfo::print_iter_status({static_cast<PetscReal>(iter), res});
+                               [](SNES snes, PetscInt iter, PetscReal res, void*) -> PetscErrorCode 
+                               {
+                                   if(mpi_world_rank() == 0)
+                                        std::cout<<iter << "       "<< res << "      \n"; 
+                                    
                                    return 0;
                                },
                                nullptr,

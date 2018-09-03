@@ -4,7 +4,7 @@
 namespace utopia {
 
 	template<class FunctionSpaceT, class Matrix, class Vector>
-	class LinearElasticity : public ElasticMaterial<Matrix, Vector> {
+	class LinearElasticity final : public ElasticMaterial<Matrix, Vector> {
 	public:
 		LinearElasticity(FunctionSpaceT &V, const LameeParameters &params)
 		: V_(V), params_(params), initialized_(false)
@@ -13,19 +13,7 @@ namespace utopia {
 		bool init(Matrix &hessian)
 		{
 			if(initialized_) return true;
-
-			auto u = trial(V_);
-			auto v = test(V_);
-
-			auto mu     = params_.var_mu();
-			auto lambda = params_.var_lambda();
-
-			auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) ); 
-			auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
-
-			auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
-			
-			initialized_ = assemble(b_form, hessian);
+			initialized_ = assemble_hessian(hessian);
 			return initialized_;
 		}
 
@@ -40,15 +28,44 @@ namespace utopia {
 			return true;
 		}
 
+		bool stress(const Vector &x, Vector &result) override {
+			Matrix hessian;
+
+			if(!assemble_hessian(hessian)) {
+				return false;
+			}
+
+			result = hessian * x;
+			return true;
+		}
+
 		void clear() override
 		{
 			initialized_ = false;
 		}
 
+		bool is_linear() const override { return true; }
+
 	private:
 		FunctionSpaceT &V_;
 		LameeParameters params_;
 		bool initialized_;
+
+		bool assemble_hessian(Matrix &hessian)
+		{
+			auto u = trial(V_);
+			auto v = test(V_);
+
+			auto mu     = params_.var_mu();
+			auto lambda = params_.var_lambda();
+
+			auto e_u = 0.5 * ( transpose(grad(u)) + grad(u) );
+			auto e_v = 0.5 * ( transpose(grad(v)) + grad(v) );
+
+			auto b_form = integral((2. * mu) * inner(e_u, e_v) + lambda * inner(div(u), div(v)));
+
+			return assemble(b_form, hessian);
+		}
 	};
 }
 

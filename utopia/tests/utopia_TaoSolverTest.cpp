@@ -10,7 +10,7 @@
 
 namespace utopia {
 	void petsc_tao_solve_simple()
-	{	
+	{
 		TestFunctionND_1<DMatrixd, DVectord> fun(10);
 		TaoSolver<DMatrixd, DVectord> tao(std::make_shared<Factorization<DMatrixd, DVectord>>());
 		DVectord x = zeros(10);
@@ -68,18 +68,18 @@ namespace utopia {
 	{
 		DVectord rhs;
 		DSMatrixd A, I_1, I_2, I_3;
-		
+
 		const std::string data_path = Utopia::instance().get("data_path");
-		
+
 		read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
 		read(data_path + "/laplace/matrices_for_petsc/f_A", A);
 		read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
 		read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
-		
+
 		std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
 		interpolation_operators.push_back(make_ref(I_2));
 		interpolation_operators.push_back(make_ref(I_3));
-		
+
 		auto smoother      = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
 		auto linear_solver = std::make_shared<ConjugateGradient<DSMatrixd, DVectord>>();
 		Multigrid<DSMatrixd, DVectord> multigrid(smoother, linear_solver);
@@ -90,7 +90,7 @@ namespace utopia {
 
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(A), make_ref(rhs));
 		TaoSolver<DSMatrixd, DVectord> tao(make_ref(multigrid));
-		
+
 		// multigrid.verbose(true);
 		multigrid.max_it(20);
 		multigrid.atol(1e-15);
@@ -111,35 +111,44 @@ namespace utopia {
 		example.getOperators(n, m, rhs, upper_bound);
 		DVectord x = zeros(n);
 
-		const double scale_factor = 1e-10;
+		const double scale_factor = 10e-10;
 		rhs *= scale_factor;
 		upper_bound *= scale_factor;
 
 		auto box = make_upper_bound_constraints(make_ref(upper_bound));
 		QuadraticFunction<DSMatrixd, DVectord> fun(make_ref(m), make_ref(rhs));
 
-		// auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
-		auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
-        auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver); 
+		auto lsolver = std::make_shared<LUDecomposition<DSMatrixd, DVectord> >();
+		// auto lsolver = std::make_shared<BiCGStab<DSMatrixd, DVectord> >();
+        auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
 
-        TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver); 
-        tr_solver.set_box_constraints(box); 
-        tr_solver.verbose(false); 
-        tr_solver.solve(fun, x); 
+        // lsolver->atol(1e-16);
+
+        qp_solver->atol(1e-15);
+        qp_solver->stol(1e-15);
+        qp_solver->max_it(10000);
+
+        TrustRegionVariableBound<DSMatrixd, DVectord>  tr_solver(qp_solver);
+        tr_solver.set_box_constraints(box);
+        tr_solver.verbose(false);
+        tr_solver.atol(1e-15);
+        tr_solver.stol(1e-15);
+        tr_solver.rtol(1e-15);
+        tr_solver.solve(fun, x);
 
 		x *= 1./scale_factor;
 
 		DVectord xssn = zeros(n);
 		SemismoothNewton<DSMatrixd, DVectord, HOMEMADE> ssnewton(std::make_shared<Factorization<DSMatrixd, DVectord>>());
 		ssnewton.set_box_constraints(box);
-		ssnewton.stol(1e-18);
-		ssnewton.atol(1e-18);
-		ssnewton.rtol(1e-18);
+		ssnewton.stol(1e-17);
+		ssnewton.atol(1e-17);
+		ssnewton.rtol(1e-17);
 		ssnewton.solve(m, rhs, xssn);
 		xssn *= 1./scale_factor;
 
 		double n_diff = norm2(xssn - x);
-		utopia_test_assert(n_diff < 1e-10);
+		utopia_test_assert(n_diff < 1e-7);
 
 	}
 

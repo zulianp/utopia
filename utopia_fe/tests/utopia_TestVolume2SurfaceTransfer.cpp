@@ -4,11 +4,12 @@
 #include "moonolith_communicator.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
 #include "utopia_TransferAssembler.hpp"
-#include "utopia_PourousMediaToFractureTransfer.hpp"
+#include "utopia_MeshTransferOperator.hpp"
 
 #include "libmesh/mesh_generation.h"
 #include "libmesh/nemesis_io.h"
 #include "libmesh/mesh_refinement.h"
+#include "libmesh/mesh_tools.h"
 #include <algorithm>
 
 
@@ -53,7 +54,7 @@ namespace utopia {
 				make_ref(V_surf.dof_map()),
 				0,
 				0,
-				true, 
+				true,
 				1,
 				B,
 				{},
@@ -95,7 +96,7 @@ namespace utopia {
 				mesh_refinement.make_flags_parallel_consistent();
 				mesh_refinement.refine_elements();
 				mesh_refinement.test_level_one(true);
-				
+
 			} else {
 				assert(false);
 			}
@@ -109,48 +110,54 @@ namespace utopia {
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
 		const bool use_interpolation = true;
-		auto n = 2;
+		auto n = 10;
 		// auto elem_type  = libMesh::TET10;
 		auto elem_type  = libMesh::TET4;
 		// auto elem_type  = libMesh::HEX8;
-		
+
 		auto elem_order = libMesh::FIRST;
 		// auto elem_order = libMesh::SECOND;
 
-		// bool is_test_case = true;
-		bool is_test_case = false;
+		bool is_test_case = true;
+		// bool is_test_case = false;
 
-		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
-		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());	
+		auto vol_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
+		auto surf_mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 
-		// auto vol_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());	
-		// auto surf_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());	
+		// auto vol_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());
+		// auto surf_mesh = std::make_shared<libMesh::ReplicatedMesh>(init.comm());
 
 
 		if(is_test_case) {
-			libMesh::MeshTools::Generation::build_cube(
-				*vol_mesh,
-				n, n, n,
-				// 0., 1.,
-				// 0., 1.,
-				// -0.5, 0.5,
-				-0.1, 1.1,
-				-0.1, 1.1,
-				-0.6, 0.6,
-				elem_type
-				);
+	
 			// surf_mesh->read("../data/test/square_with_2_tri.e");
-			surf_mesh->read("../data/test/simple_network.e");
+			// surf_mesh->read("../data/test/simple_network.e");
+			surf_mesh->read("../data/test/fractures.e");
 			// surf_mesh->set_mesh_dimension(3);
 
 
-			libMesh::MeshRefinement mesh_refinement(*surf_mesh);
-			mesh_refinement.make_flags_parallel_consistent();
-			mesh_refinement.uniformly_refine(3);
+			// libMesh::MeshRefinement mesh_refinement(*surf_mesh);
+			// mesh_refinement.make_flags_parallel_consistent();
+			// mesh_refinement.uniformly_refine(3);
 
 			// refine_around_fractures(surf_mesh, elem_order, vol_mesh, 3);
+
+#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
+		libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(*surf_mesh);
+#else
+		libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(*surf_mesh);
+#endif
+
+			libMesh::MeshTools::Generation::build_cube(
+				*vol_mesh,
+				n, n, n,
+				bb.min()(0), bb.max()(0),
+				bb.min()(1), bb.max()(1),
+				bb.min()(2), bb.max()(2),
+				elem_type
+				);
 		} else {
-			
+
 			// libMesh::MeshTools::Generation::build_cube(
 			// 	*vol_mesh,
 			// 	n, n, n,
@@ -163,17 +170,25 @@ namespace utopia {
 			// surf_mesh->read("../data/test/fractures.e");
 
 
+		
+			// vol_mesh->read("../data/frac/frac1d_background.e");
+			surf_mesh->read("../data/frac/frac1d_network.e");
+
+#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
+		libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(*surf_mesh);
+#else
+		libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(*surf_mesh);
+#endif
+
 			libMesh::MeshTools::Generation::build_square(
 				*vol_mesh,
 				n, n,
-				-0.5, 0.5,
-				-0.5, 0.5,
+				bb.min()(0), bb.max()(0),
+				bb.min()(1), bb.max()(1),
 				libMesh::QUAD4
-				);
+			 );
 
-			// vol_mesh->read("../data/frac/frac1d_background.e");
-			surf_mesh->read("../data/frac/frac1d_network.e");
-			
+
 			{
 				libMesh::MeshRefinement mesh_refinement(*surf_mesh);
 				mesh_refinement.make_flags_parallel_consistent();
@@ -210,18 +225,21 @@ namespace utopia {
 		Chrono c;
 		c.start();
 
-		PourousMediaToFractureTransfer pmtoft(
+		MeshTransferOperator pmtoft(
 			vol_mesh,
 			make_ref(V_vol.dof_map()),
 			surf_mesh,
 			make_ref(V_surf.dof_map())
 		);
 
-		if(pmtoft.initialize(INTERPOLATION)) {
+		// if(pmtoft.initialize(INTERPOLATION)) {
+		if(pmtoft.initialize(L2_PROJECTION)) {
+		// if(pmtoft.initialize(APPROX_L2_PROJECTION)) {
+		// if(pmtoft.initialize(PSEUDO_L2_PROJECTION)) {
 			c.stop();
 			std::cout << c << std::endl;
 
-			auto f_rhs = ctx_fun< std::vector<double> >([](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> { 
+			auto f_rhs = ctx_fun< std::vector<double> >([](const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double> {
 				const auto &pts = ctx.fe()[0]->get_xyz();
 
 				const auto n = pts.size();
@@ -230,12 +248,17 @@ namespace utopia {
 				for(std::size_t i = 0; i != n; ++i) {
 					double x = pts[i](0) - 0.5;
 					double y = pts[i](1) - 0.5;
-					double z = pts[i](2);
-					ret[i] = std::abs(sin(x))*(x*x + y*y + z*z);
+					double z = pts[i](2) - 0.5;
+
+					// ret[i] = std::abs(sin(x))*(x*x + y*y + z*z);
+
+					ret[i] = std::sqrt(x*x + y*y + z*z);
 				}
 
 				return ret;
 			});
+
+			// auto f_rhs = coeff(1.);
 
 			auto u = trial(V_vol);
 			auto v = test(V_vol);
@@ -249,6 +272,7 @@ namespace utopia {
 			utopia::assemble(m_form, mass_mat);
 
 			DVectord v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
+			
 			if(elem_order == libMesh::FIRST) {
 				v_vol = e_mul(1./sum(mass_mat, 1), scaled_sol);
 			} else {
@@ -262,7 +286,7 @@ namespace utopia {
 			v_vol *= 1./max_master;
 			max_master = 1.;
 
-			DVectord v_surf, v_vol_back; 
+			DVectord v_surf, v_vol_back;
 			pmtoft.apply(v_vol, v_surf);
 			pmtoft.apply_transpose(local_values(local_size(v_surf).get(0), 1.), v_vol_back);
 

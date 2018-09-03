@@ -25,6 +25,7 @@ target_link_libraries(
 	utopia_fe_multigrid
 	utopia_fe_functions
 	utopia_fe_fractures
+	utopia_fe_wear
 )
 
 target_include_directories(utopia_fe_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/simulations) 

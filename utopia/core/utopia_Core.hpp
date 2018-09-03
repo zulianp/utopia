@@ -5,12 +5,12 @@
 // to get rid of unused variables in Realease build 
 // #define ASSERT_DEBUG
 
-#ifdef ASSERT_DEBUG
-#define ASSERT(x) do { (void)sizeof(x);} while (0)
-#else
-#include <assert.h>
-#define ASSERT(x) assert(x)
-#endif
+// #ifdef ASSERT_DEBUG
+// #define ASSERT(x) do { (void)sizeof(x);} while (0)
+// #else
+// #include <assert.h>
+// #define ASSERT(x) assert(x)
+// #endif
 
 
 #include "utopia_Expressions.hpp"
@@ -44,5 +44,6 @@
 #include "utopia_Eval.hpp"
 
 #include "utopia_Temp.hpp"
+#include "utopia_BackendConvert.hpp"
 
 #endif //UTOPIA_CORE_HPP

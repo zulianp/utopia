@@ -121,6 +121,8 @@ namespace utopia
                 it++;
             }
 
+            this->print_statistics(it); 
+
             return true;
         }
 

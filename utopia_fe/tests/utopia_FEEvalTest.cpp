@@ -101,7 +101,7 @@ namespace utopia {
 				}
 
 				auto ret_iqp = neohookean_linearized(mu, lambda, H[i][qp], F_qp);
-				
+
 				if(dim < 3) {
 					ret_iqp(2, 2) = 0;
 					ret_iqp(2, 0) = 0;
@@ -139,7 +139,7 @@ namespace utopia {
 			for(std::size_t qp = 0; qp < left[i].size(); ++qp) {
 				auto l = left[i][qp];
 				auto r = right[i][qp];
-				
+
 				auto diff = l - r;
 
 				const bool ok = approxeq(diff.norm_sq(), 0.);
@@ -160,7 +160,7 @@ namespace utopia {
 	void run_fe_eval_test(libMesh::LibMeshInit &init)
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		
+
 
 		const int n = 1;
 		libMesh::MeshTools::Generation::build_square(*mesh,
@@ -173,7 +173,7 @@ namespace utopia {
 
 		auto dim = mesh->mesh_dimension();
 
-		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);	
+		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("eval-test");
 
 		const double mu = 0.1;
@@ -193,7 +193,7 @@ namespace utopia {
 		Vx.initialize();
 		DVectord sol = ghosted(Vx.dof_map().n_local_dofs(), Vx.dof_map().n_dofs(), Vx.dof_map().get_send_list());
 		sol = local_values(local_size(sol).get(0), 0.);
-		
+
 		{
 			Write<DVectord> w_sol(sol);
 			auto r = range(sol);
@@ -225,15 +225,15 @@ namespace utopia {
 
 			auto P = mu * (F - F_inv_t) + (lambda * logn(J)) * F_inv_t;
 
-			auto stress_lin = mu * grad(u) 
-			-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t 
+			auto stress_lin = mu * grad(u)
+			-(lambda * logn(J) - mu) * F_inv_t * transpose(grad(u)) * F_inv_t
 			+ inner(lambda * F_inv_t, grad(u)) * F_inv_t;
 
 			ctx.set_current_element((*e_it)->id());
 			ctx.set_has_assembled(false);
 			ctx.init( inner(stress_lin, grad(v)) * dX == inner(P, grad(v)) );
 
-			//evaluate 
+			//evaluate
 			auto eval_grad    = eval(grad(u), ctx);
 			auto eval_uk 	  = eval(uk, ctx);
 			auto eval_g_uk	  = eval(g_uk, ctx);
@@ -306,9 +306,9 @@ namespace utopia {
 			auto S_iso = S_bar + (inner((-1.0 / 2) * S_bar, C) * inv(C));
 			auto eval_S_iso = quad_eval(S_iso, ctx);
 			// MostDescriptive<decltype(S_bar), decltype(F)>::Type desc;
-			// std::cout << 
+			// std::cout <<
 		}
 
-	
+
 	}
 }

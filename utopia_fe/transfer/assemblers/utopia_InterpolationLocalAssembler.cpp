@@ -58,13 +58,13 @@ namespace utopia {
 		)
 	{
 		int n_potential_nodes = test.n_nodes();
-		
+
 		std::vector<int> test_dofs;
 		contained_points(trial, test, test_dofs);
 
 		if(test_dofs.empty()) return false;
 
-		std::shared_ptr<Transform> trial_trafo = get_trafo(trial); 
+		std::shared_ptr<Transform> trial_trafo = get_trafo(trial);
 		std::shared_ptr<Transform> test_trafo  = get_trafo(test);
 
 		init_q(test_dofs.size());
@@ -95,7 +95,7 @@ namespace utopia {
 			for(std::size_t j = 0; j < trial_shape_fun.size(); ++j) {
 				for(std::size_t k = 0; k < test_dofs.size(); ++k) {
 					auto tf = test_shape_fun.at(i).at(k);
-					
+
 					if(tf < 0.9) {
 						//exploiting the lagrange property
 						tf = 0.;
@@ -149,7 +149,7 @@ namespace utopia {
 		if(nested_meshes) {
 			//check if there is an intersection then...
 
-			
+
 			test_dofs.resize(n_potential_nodes);
 
 			for(int i = 0; i < n_potential_nodes; ++i) {
@@ -169,7 +169,7 @@ namespace utopia {
 			contained_points_3(trial, test, test_dofs);
 			return;
 		}
-		
+
 		for(int i = 0; i < n_potential_nodes; ++i) {
 			auto const & test_node = test.node_ref(i);
 			if(trial.contains_point(test_node, tol)) {
@@ -219,7 +219,6 @@ namespace utopia {
 
 	void InterpolationLocalAssembler::contained_points_3(const Elem &trial, const Elem &test, std::vector<int> &test_dofs) const
 	{
-		Intersector isector;
 		Polyhedron poly;
 		make_polyhedron(trial, poly);
 
@@ -227,7 +226,7 @@ namespace utopia {
 
 		std::vector<double> plane_normals(n_half_spaces * 3, 0.);
 		std::vector<double> plane_dists_from_origin(n_half_spaces, 0.);
-		isector.make_h_polyhedron_from_polyhedron(poly, &plane_normals[0], &plane_dists_from_origin[0]);
+		Intersector::make_h_polyhedron_from_polyhedron(poly, &plane_normals[0], &plane_dists_from_origin[0]);
 
 		double p[3];
 
@@ -240,7 +239,7 @@ namespace utopia {
 			bool inside = true;
 			for(int i = 0; i < n_half_spaces; ++i) {
 				const int i3 = i * 3;
-				auto d = isector.point_plane_distance(3, &plane_normals[i3], plane_dists_from_origin[i], p);
+				auto d = Intersector::point_plane_distance(3, &plane_normals[i3], plane_dists_from_origin[i], p);
 
 				if(d >= tol) {
 					inside = false;

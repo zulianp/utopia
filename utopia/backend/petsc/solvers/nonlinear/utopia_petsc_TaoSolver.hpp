@@ -28,12 +28,18 @@ namespace utopia {
 
 		bool set_bounds(const PetscVector &lb, const PetscVector &ub);
 		bool solve(PetscVector &x);
+		bool smooth(PetscVector &x);
 
 		void set_function(Function<DMatrixd, DVectord> &fun);
 		void set_function(Function<DSMatrixd, DVectord> &fun);
 
 		void set_ksp_types(const std::string &ksp, const std::string &pc, const std::string &solver_package);
 		bool get_ksp(KSP *ksp);
+		
+		void set_pc_type(const std::string &pc); 
+
+		void set_monitor(MPI_Comm comm); 
+
 	private:
 		void * data_;
 		std::string ksp_type_;
@@ -73,8 +79,27 @@ namespace utopia {
 			impl_.set_ksp_types(ksp, pc, solver_package);
 		}
 
+		inline void set_pc_type(const std::string &pc)
+		{
+			impl_.set_pc_type(pc); 
+		}
+
+
 		bool solve(Function<Matrix, Vector> &fun, Vector &x)
 		{	
+			setup_solve(fun, x); 
+			return impl_.solve(x.implementation());
+		}
+
+		bool smooth(Function<Matrix, Vector> &fun, Vector &x)
+		{	
+			setup_solve(fun, x); 
+			return impl_.smooth(x.implementation());
+		}
+
+
+		void setup_solve(Function<Matrix, Vector> &fun,Vector & x)
+		{
 			bool linear_solver_is_set = false;
 			auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector>>(this->linear_solver());
 
@@ -92,6 +117,9 @@ namespace utopia {
 				this->stol(),
 				this->max_it()
 			);
+
+			if(this->verbose() )
+				impl_.set_monitor(x.implementation().communicator()); 
 
 			if(!linear_solver_is_set) {
 				auto factorization = std::dynamic_pointer_cast<Factorization<Matrix, Vector>>(this->linear_solver());
@@ -116,10 +144,9 @@ namespace utopia {
 					box_constraints_.upper_bound()->implementation()
 				);
 			}
-
 			impl_.set_function(fun);
-			return impl_.solve(x.implementation());
 		}
+
 
 		bool set_box_constraints(const BoxConstraints &box_constraints)
 		{

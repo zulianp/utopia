@@ -184,7 +184,7 @@ namespace utopia {
 #if UTOPIA_PETSC_VERSION_LESS_THAN(3,9,0)
 			ierr = PCFactorSetMatSolverPackage(pc, solver_package_.c_str()); U_CHECKERR(ierr);
 #else
-			m_utopia_error("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent");
+			m_utopia_warning_once("PCFactorSetMatSolverPackage not available in petsc 3.9.0 find equivalent");
 #endif 
 			ierr = KSPSetInitialGuessNonzero(ksp, PETSC_FALSE); U_CHECKERR(ierr);
 		} else {
@@ -205,6 +205,16 @@ namespace utopia {
 		}
 	}
 
+	void TaoSolverWrapper::set_monitor(MPI_Comm comm)
+	{
+		const char  monfilename[7] ="stdout";
+		PetscViewer    monviewer;
+		auto tao = (Tao *) &data_;
+		PetscViewerASCIIOpen(comm, monfilename, &monviewer);
+		TaoSetMonitor(*tao, TaoDefaultSMonitor, monviewer, (PetscErrorCode (*)(void**))PetscViewerDestroy);
+	}
+
+
 	TaoSolverWrapper::TaoSolverWrapper()
 	: data_(nullptr), ksp_type_(KSPPREONLY), pc_type_(PCLU), solver_package_("mumps")
 	{}
@@ -220,6 +230,12 @@ namespace utopia {
 		pc_type_ = pc;
 		solver_package_ = solver_package;
 	}
+
+	void TaoSolverWrapper::set_pc_type(const std::string &pc)
+	{
+		pc_type_ = pc;
+	}
+
 
 	bool TaoSolverWrapper::set_bounds(const PetscVector &lb, const PetscVector &ub)
 	{
@@ -257,11 +273,24 @@ namespace utopia {
 		// }
 
 		if(reason < 0) {
-			utopia_error("> Failed to converge");
+			utopia_warning("> Failed to converge");
 		}
 
 		return reason >= 0;
 	}
+
+	bool TaoSolverWrapper::smooth(PetscVector &x)
+	{
+		auto tao = static_cast<Tao>(data_);
+
+		PetscErrorCode ierr = 0; 
+		TaoSetInitialVector(tao, x.implementation());
+		ierr = TaoSolve(tao); U_CHECKERR(ierr);
+
+		return true;
+	}
+
+
 }
 
 #undef U_CHECKERR

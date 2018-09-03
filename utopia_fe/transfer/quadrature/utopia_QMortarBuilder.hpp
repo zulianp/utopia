@@ -55,7 +55,6 @@ namespace utopia {
 
 		Real total_intersection_volume;
 		QMortar composite_ir;
-		Intersector isector;
 	};
 
 	class QMortarBuilder3 final : public QMortarBuilder {
@@ -83,7 +82,6 @@ namespace utopia {
 	private:
 		Real total_intersection_volume;
 		QMortar composite_ir;
-		Intersector isector;
 
 		Polyhedron trial_poly, test_poly;
 		Polyhedron intersection, temp_poly;

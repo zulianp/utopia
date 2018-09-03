@@ -10,11 +10,11 @@ namespace utopia {
 	template<class Matrix>
 	void assemble_laplacian_1D(Matrix &m, const bool bc = false)
 	{
-	    // n x n matrix with maximum 3 entries x row        
+	    // n x n matrix with maximum 3 entries x row
 		Write<Matrix> w(m);
 		Range r = row_range(m);
 		auto n = size(m).get(0);
-		
+
 		for(SizeType i = r.begin(); i != r.end(); ++i) {
 			if(bc) {
 				if(i == 0) {
@@ -28,8 +28,8 @@ namespace utopia {
 				}
 			}
 
-			if(i > 0) {    
-				m.set(i, i - 1, -1.0);    
+			if(i > 0) {
+				m.set(i, i - 1, -1.0);
 			}
 
 			if(i < n-1) {

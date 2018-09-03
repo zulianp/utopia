@@ -37,9 +37,11 @@ typedef struct
 
 namespace utopia {
     template<typename Matrix, typename Vector>
-    void build_ksp(const std::shared_ptr<utopia::LinearSolver<Matrix, Vector> > & lin_solver, KSP &ksp)
+    void build_ksp(const std::shared_ptr<utopia::LinearSolver<Matrix, Vector> > &lin_solver, KSP &ksp)
     {
         using namespace utopia;
+
+        assert(lin_solver);
         
         // check if our options overwrite this
         KSPSetFromOptions(ksp);
@@ -53,8 +55,10 @@ namespace utopia {
             ksp->max_it = iterative_solver->max_it();
         }
         
-        std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> solve_routine = [&lin_solver](const Mat &A, const Mat & P, const Vec &b, Vec & x)
+        std::function<void(const Mat &, const Mat &, const Vec &, Vec &)> solve_routine = [lin_solver](const Mat &A, const Mat & P, const Vec &b, Vec & x)
         {
+            assert(lin_solver);
+
             Vector  b_ut, x_ut;
             
             // we need to get some better way how to do this
@@ -71,11 +75,13 @@ namespace utopia {
         
         
         std::function< void(const PetscReal &, const PetscReal &,
-                            const PetscReal &, const PetscInt &) > tol_routine = [&lin_solver](const PetscReal & rtol,
+                            const PetscReal &, const PetscInt &) > tol_routine = [lin_solver](const PetscReal & rtol,
                                                                                                const PetscReal & abstol,
                                                                                                const PetscReal & dtol,
                                                                                                const PetscInt & maxits)
         {
+            assert(lin_solver);
+
             if (dynamic_cast<utopia::IterativeSolver<Matrix, Vector>*>(lin_solver.get()) != nullptr)
             {
                 auto ls = dynamic_cast<utopia::IterativeSolver<Matrix, Vector> *>(lin_solver.get());
@@ -89,8 +95,10 @@ namespace utopia {
             }
         };
         
-        std::function< void(PetscInt &,  KSPConvergedReason&) > convergence_routine = [&lin_solver](PetscInt & max_it,  KSPConvergedReason & reason)
+        std::function< void(PetscInt &,  KSPConvergedReason&) > convergence_routine = [lin_solver](PetscInt & max_it,  KSPConvergedReason & reason)
         {
+            assert(lin_solver);
+
             if (dynamic_cast<utopia::IterativeSolver<Matrix, Vector>*>(lin_solver.get()) != nullptr)
             {
                 auto ls = dynamic_cast<utopia::IterativeSolver<Matrix, Vector> *>(lin_solver.get());

@@ -1,9 +1,3 @@
-/*
-* @Author: kopanicakova
-* @Date:   2018-04-05 17:59:33
-* @Last Modified by:   kopanicakova
-* @Last Modified time: 2018-04-06 15:45:05
-*/
 #include "utopia_Instance.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Tracer.hpp"
@@ -21,21 +15,23 @@
 #include <cassert>
 
 namespace utopia {
-    
+
+    // #define DISABLE_LOGGER
+
     void Utopia::Init(int argc, char *argv[]) {
-        
+
 #ifdef WITH_PETSC
         static char help[] = "initializing utopia environment through petsc";
-    
+
     #ifdef WITH_SLEPC
         SlepcInitialize(&argc,&argv,(char*)0, help); // calls PetscInitialize inside
-    #else        
+    #else
         PetscInitialize(&argc, &argv, (char *) 0, help);
     #endif    //WITH_SLEPC
 
         // is this proper place for doing this ???
         KSPRegister("utopia", KSPCreate_UTOPIA);
-        
+
         //        PetscInitializeNoArguments();
 #else
 #ifdef WITH_MPI
@@ -43,8 +39,8 @@ namespace utopia {
 #endif //WITH_MPI
 #endif //WITH_PETSC
     }
-    
-    
+
+
     int Utopia::Finalize() {
 #ifdef UTOPIA_TRACE_ENABLED
         Tracer::instance().save_collected_log();
@@ -55,42 +51,48 @@ namespace utopia {
         if(mpi_world_rank() == 0) {
             instance().maintenance_logger().flush();
         }
-        
+
 #ifdef WITH_PETSC
         #ifdef WITH_SLEPC
-            SlepcFinalize(); // calls PetscFinalize inside 
-        #else        
+            SlepcFinalize(); // calls PetscFinalize inside
+        #else
             PetscFinalize();
         #endif    //WITH_SLEPC
-        
+
 #else
 #ifdef WITH_MPI
         return MPI_Finalize();
 #endif //WITH_MPI
 #endif //WITH_PETSC
-        
+
         return  instance().exit_code_;
     }
-    
+
     Utopia &Utopia::instance()
     {
         static Utopia instance;
         return instance;
     }
-    
+
     Utopia::Utopia()
     : exit_code_(EXIT_SUCCESS)
     {
         set("data_path", "../data");
         set("opencl_templates_path", "../backend/opencl/templates");
 
+#ifdef DISABLE_LOGGER
+        logger_ = std::make_shared<NullLogger>();
+        auto temp = std::make_shared<StandardLogger>();
+        maintenance_logger_ = temp;
+#else
         logger_ = std::make_shared<StandardLogger>();
-      
         auto temp = std::make_shared<StandardLogger>();
         temp->set_direct_output(false, false, false);
         maintenance_logger_ = temp;
+#endif
+
     }
-    
+
     bool Utopia::verbose() const
     {
         return get("verbose") == "true";

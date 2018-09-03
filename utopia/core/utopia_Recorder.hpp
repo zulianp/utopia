@@ -31,7 +31,7 @@ namespace utopia {
 		}
 
 		void scope_begin(const std::string &name)
-		{	
+		{
 			++n_nested_scopes_;
 			os_  << std::setfill(' ');
 			os_ << std::setw(n_nested_scopes_*10) << " " <<  "%----------------------------------------------------------------\n";
@@ -57,11 +57,11 @@ namespace utopia {
 			os_ << std::endl;
 			os_ << std::setw(n_nested_scopes_*10) << " " << "% " << name << "\n";
 			os_ << std::setw(n_nested_scopes_*10) << " " << "v_" << expr_num_++ << " = [";
-			
+
 			each_read(v, [this](const SizeType i, const Scalar val) {
 				os_ << val << " ";
 			});
-			
+
 			os_ << "]';";
 			os_ << std::endl;
 		}
