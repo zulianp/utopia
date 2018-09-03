@@ -19,6 +19,7 @@
 #cmakedefine WITH_TINY_EXPR
 #cmakedefine WITH_JSON
 #cmakedefine WITH_M3ELINSOL
+#cmakedefine WITH_CPP14
 
 #cmakedefine UTOPIA_PETSC_VERSION_MAJOR
 #cmakedefine UTOPIA_PETSC_VERSION_MINOR

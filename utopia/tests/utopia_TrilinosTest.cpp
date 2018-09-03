@@ -908,6 +908,12 @@ namespace utopia {
 #endif //WITH_PETSC
     }
 
+    // template<class Matrix, class Vector>
+    // void steihaug_toint_test()
+    // {
+        
+    // }
+
     template<class Matrix, class Vector>
     void rmtr_test()
     {
@@ -941,7 +947,7 @@ namespace utopia {
         tr_strategy_fine->rtol(1e-12);
 
         // auto rmtr = std::make_shared<RMTR<Matrix, Vector, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
-        auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
+        auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(tr_strategy_coarse, tr_strategy_fine);
         std::vector< std::shared_ptr<Transfer<Matrix, Vector>> > transfers;
         for(std::size_t i = 0; i < problem.prolongations.size(); ++i) {
             transfers.push_back( std::make_shared<IPTransferT>(problem.prolongations[i], 0.5) );
@@ -959,8 +965,8 @@ namespace utopia {
         rmtr->set_eps_grad_termination(1e-7);
 
         rmtr->verbose(problem.verbose);
-        // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-        rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+        rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+        // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
         rmtr->set_functions(level_functions);
 
 
