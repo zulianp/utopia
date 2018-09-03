@@ -20,39 +20,39 @@
 #include <memory>
 
 namespace utopia {
-    template<class NodeType>
+    //template<class NodeType>
     class TpetraMatrix {
     public:
 
         /////////////////////////////////////////////////////////////
-        // using definitions
+        // typedef definitions
         /////////////////////////////////////////////////////////////
 
         //types of Operators
-        using Tpetra::Operator<>::scalar_type SC;
-        using Tpetra::Operator<SC>::local_ordinal_type LO;
-        using Tpetra::Operator<SC, LO>::global_ordinal_type GO;
+        typedef Tpetra::Operator<>::scalar_type SC;
+        typedef Tpetra::Operator<SC>::local_ordinal_type LO;
+        typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
 
         //types of Kokkos Parallel Nodes
-        using Kokkos::Compat::KokkosSerialWrapperNode serial_node;
+        typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
 #ifdef  KOKKOS_CUDA
-        using Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
-        using cuda_node NT;
+        typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
+        typedef cuda_node NT;
 #elif   KOKKOS_OPENMP
-        using Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
-        using Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
-        using openmp_node NT;
+        typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
+        typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
+        typedef openmp_node NT;
 #else
-        using serial_node NT;
+        typedef serial_node NT;
 #endif
 
         //types of Trilinos Objects
-        using Tpetra::CrsMatrix<SC, LO, GO, NT>             crs_mat_type;
-        using Teuchos::RCP<crs_mat_type>                    rcp_crs_mat_type;
-        using Teuchos::RCP<const Teuchos::Comm<int> >       rcp_comm_type;
-        using Tpetra::Map<LO, GO, NT>                       map_type;
-        using Teuchos::RCP<const map_type>                  rcp_map_type;
-        using Tpetra::Vector<SC, LO, GO, NT>::scalar_type   Scalar;
+        typedef Tpetra::CrsMatrix<SC, LO, GO, NT>             crs_mat_type;
+        typedef Teuchos::RCP<crs_mat_type>                    rcp_crs_mat_type;
+        typedef Teuchos::RCP<const Teuchos::Comm<int> >       rcp_comm_type;
+        typedef Tpetra::Map<LO, GO, NT>                       map_type;
+        typedef Teuchos::RCP<const map_type>                  rcp_map_type;
+        typedef Tpetra::Vector<SC, LO, GO, NT>::scalar_type   Scalar;
 
         /////////////////////////////////////////////////////////////
         //Constructors
