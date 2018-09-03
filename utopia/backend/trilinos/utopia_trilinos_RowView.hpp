@@ -2,6 +2,8 @@
 #define UTOPIA_TPETRA_ROW_VIEW_HPP
 #include <Teuchos_ArrayViewDecl.hpp>
 
+#include "utopia_Traits.hpp"
+
 namespace utopia {
 
 	template<class Tensor, int FILL_TYPE>
@@ -17,7 +19,8 @@ namespace utopia {
 				t_.implementation().implementation().getGlobalRowView(row, cols_, values_);
 			} else {
 				assert(t_.implementation().implementation().isLocallyIndexed());
-				t_.implementation().implementation().getLocalRowView(row, cols_, values_);
+				auto rr = row_range(t);
+				t_.implementation().implementation().getLocalRowView(row - rr.begin(), cols_, values_);
 				offset_ = t_.implementation().implementation().getColMap()->getMinGlobalIndex();
 			}
 		}
@@ -33,7 +36,8 @@ namespace utopia {
 		inline GO col(const int index) const
 		{
 			assert(index < n_values());
-			return cols_[index] + offset_;
+			auto ret = cols_[index] + offset_;
+			return ret;
 		}
 
 		inline Scalar get(const int index) const

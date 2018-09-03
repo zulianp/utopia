@@ -28,6 +28,7 @@ namespace utopia {
 
 		bool set_bounds(const PetscVector &lb, const PetscVector &ub);
 		bool solve(PetscVector &x);
+		bool smooth(PetscVector &x);
 
 		void set_function(Function<DMatrixd, DVectord> &fun);
 		void set_function(Function<DSMatrixd, DVectord> &fun);
@@ -86,6 +87,19 @@ namespace utopia {
 
 		bool solve(Function<Matrix, Vector> &fun, Vector &x)
 		{	
+			setup_solve(fun, x); 
+			return impl_.solve(x.implementation());
+		}
+
+		bool smooth(Function<Matrix, Vector> &fun, Vector &x)
+		{	
+			setup_solve(fun, x); 
+			return impl_.smooth(x.implementation());
+		}
+
+
+		void setup_solve(Function<Matrix, Vector> &fun,Vector & x)
+		{
 			bool linear_solver_is_set = false;
 			auto ksp_solver = std::dynamic_pointer_cast<KSPSolver<Matrix, Vector>>(this->linear_solver());
 
@@ -130,10 +144,9 @@ namespace utopia {
 					box_constraints_.upper_bound()->implementation()
 				);
 			}
-
 			impl_.set_function(fun);
-			return impl_.solve(x.implementation());
 		}
+
 
 		bool set_box_constraints(const BoxConstraints &box_constraints)
 		{

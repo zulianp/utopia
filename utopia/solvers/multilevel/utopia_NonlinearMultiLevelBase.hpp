@@ -6,6 +6,7 @@
 #include "utopia_Core.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_SolutionStatus.hpp"
+#include "utopia_MatrixTransfer.hpp"
 
 
 #include "utopia_MultiLevelEvaluations.hpp"
@@ -36,6 +37,9 @@ namespace utopia {
         typedef utopia::Transfer<Matrix, Vector> Transfer;
         typedef utopia::ExtendedFunction<Matrix, Vector> Fun;
         typedef std::shared_ptr<Fun> FunPtr;
+        typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
+
+        // using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
 
         NonlinearMultiLevelBase(const Parameters params = Parameters())
         {
@@ -101,7 +105,7 @@ namespace utopia {
         {
             this->transfers_.clear();
             for(auto I = interpolation_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && P != projection_operators.end(); ++I, ++P )
-                this->transfers_.push_back(Transfer(*I, *P));
+                this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I, *P));
 
             return true;
         }
@@ -120,7 +124,7 @@ namespace utopia {
         {
             this->transfers_.clear();
             for(auto I = interpolation_operators.begin(), R = restriction_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && R != restriction_operators.end() &&  P != projection_operators.end(); ++I, ++R, ++P )
-                this->transfers_.push_back(Transfer(*I, *R, *P));
+                this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I, *R, *P));
 
             return true;
         }

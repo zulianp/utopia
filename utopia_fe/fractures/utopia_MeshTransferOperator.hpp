@@ -7,14 +7,14 @@
 #include <memory>
 
 namespace utopia {
-	class PourousMediaToFractureTransfer {
+	class MeshTransferOperator final : public TransferOperator {
 	public:
 		using SparseMatrix  = utopia::DSMatrixd;
 		using Vector 		= utopia::DVectord;
 		using MeshBase      = libMesh::MeshBase;
 		using DofMap        = libMesh::DofMap;
 
-		PourousMediaToFractureTransfer(
+		MeshTransferOperator(
 			const std::shared_ptr<MeshBase> &from_mesh,
 			const std::shared_ptr<DofMap>   &from_dofs,
 			const std::shared_ptr<MeshBase> &to_mesh,
@@ -28,17 +28,27 @@ namespace utopia {
 		opts(opts)
 		{}
 
-		//@brief operator_type \in \{ INTERPOLATION| L2_PROJECTION| PSEUDO_L2_PROJECTION \}
+		//@brief operator_type \in \{ INTERPOLATION| L2_PROJECTION| PSEUDO_L2_PROJECTION | APPROX_L2_PROJECTION \}
 		bool initialize(const TransferOperatorType operator_type = utopia::INTERPOLATION);
+		bool initialize(const std::string operator_type);
 
-		inline void apply(const Vector &from, Vector &to) const
+		inline void apply(const Vector &from, Vector &to) const override
 		{
+			assert(operator_);
 			operator_->apply(from, to);
 		}
 
-		inline void apply_transpose(const Vector &from, Vector &to) const
+		inline void apply_transpose(const Vector &from, Vector &to) const override
 		{
+			assert(operator_);
 			operator_->apply_transpose(from, to);
+		}
+
+		inline void describe(std::ostream &os) const override
+		{
+			if(operator_) {
+				operator_->describe(os);
+			}
 		}
 
 	private:
@@ -51,6 +61,8 @@ namespace utopia {
 		std::shared_ptr<TransferOperator> operator_;
 
 	};
+
+	using PourousMediaToFractureTransfer = MeshTransferOperator;
 }
 
 #endif //UTOPIA_POUROUS_MEDIA_TO_FRACTURE_TRANSFER_HPP

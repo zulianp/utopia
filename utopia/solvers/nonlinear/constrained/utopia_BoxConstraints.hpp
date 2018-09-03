@@ -1,5 +1,5 @@
 #ifndef UTOPIA_BOX_CONSTRAINTS_HPP
-#define UTOPIA_BOX_CONSTRAINTS_HPP 
+#define UTOPIA_BOX_CONSTRAINTS_HPP
 
 #include "utopia_Base.hpp"
 #include "utopia_Traits.hpp"
@@ -45,14 +45,14 @@ namespace utopia {
 			return lower_bound_;
 		}
 
-		inline bool has_lower_bound() const 
+		inline bool has_lower_bound() const
 		{
-			return static_cast<bool>(lower_bound_); 
+			return static_cast<bool>(lower_bound_);
 		}
 
-		inline bool has_upper_bound() const 
+		inline bool has_upper_bound() const
 		{
-			return static_cast<bool>(upper_bound_); 
+			return static_cast<bool>(upper_bound_);
 		}
 
 		inline bool has_bound() const
@@ -68,7 +68,7 @@ namespace utopia {
 
 			if(!lower_bound_) {
 				lower_bound_ = std::make_shared<Vector>(local_values(local_size(*upper_bound_).get(0), min_val_));
-			} 
+			}
 
 			if(!upper_bound_) {
 				upper_bound_ = std::make_shared<Vector>(local_values(local_size(*lower_bound_).get(0), max_val_));
@@ -77,13 +77,13 @@ namespace utopia {
 
 	private:
 		std::shared_ptr<Vector> lower_bound_;
-		std::shared_ptr<Vector> upper_bound_;	
+		std::shared_ptr<Vector> upper_bound_;
 		Scalar min_val_;
-		Scalar max_val_;	
+		Scalar max_val_;
 	};
 
 	template<class Vector>
-	inline BoxConstraints<Vector> make_box_constaints(const std::shared_ptr<Vector> &lower_bound, 
+	inline BoxConstraints<Vector> make_box_constaints(const std::shared_ptr<Vector> &lower_bound,
 											          const std::shared_ptr<Vector> &upper_bound)
 	{
 		return BoxConstraints<Vector>(lower_bound, upper_bound);
@@ -94,7 +94,7 @@ namespace utopia {
 	{
 		return BoxConstraints<Vector>(lower_bound, nullptr);
 	}
-	
+
 	template<class Vector>
 	inline BoxConstraints<Vector> make_upper_bound_constraints(const std::shared_ptr<Vector> &upper_bound)
 	{

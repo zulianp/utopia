@@ -182,7 +182,7 @@ namespace utopia
         bool smoothing(Function<Matrix, Vector> &fun,  Vector &x, const Vector &f, const SizeType & nu = 1)
         {
             smoother_->sweeps(nu); 
-            smoother_->nonlinear_smooth(fun, x, f); 
+            smoother_->smooth(fun, x, f); 
             return true; 
         }
 

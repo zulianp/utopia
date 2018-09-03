@@ -7,6 +7,7 @@
 #include "utopia_Mechanics.hpp"
 #include "utopia_SemiGeometricMultigrid.hpp"
 #include "utopia_petsc_TaoSolver.hpp"
+#include "utopia_ProjectedGradient.hpp"
 
 #include "utopia_libmesh.hpp"
 
@@ -38,8 +39,12 @@ namespace utopia {
 		  debug_output_(false),
 		  force_direct_solver_(false),
 		  bypass_contact_(false),
+		  exit_on_contact_solve_failure_(true),
+		  sol_to_gap_on_contact_bdr_(false),
 		  max_outer_loops_(20),
-		  use_ssn_(false)
+		  use_ssn_(false),
+		  use_pg_(false),
+		  max_non_linear_iterations_(30)
 		{
 			io_ = std::make_shared<Exporter>(V_->subspace(0).mesh());
 
@@ -61,6 +66,9 @@ namespace utopia {
 			linear_solver_ = iterative_solver;
 
 			n_exports = 0;
+
+			tao_.set_type("tron");
+			tao_.set_ksp_types("bcgs", "jacobi", " ");
 		}
 
 		void set_tol(const Scalar tol)
@@ -138,7 +146,7 @@ namespace utopia {
 				std::cout << "time_step: " << t << std::endl;
 
 				first_ = true;
-				if(!solve_contact()) return false;
+				if(!solve_contact() && exit_on_contact_solve_failure_) return false;
 				next_step();
 
 				convert(x_, *V_->subspace(0).equation_system().solution);
@@ -173,12 +181,12 @@ namespace utopia {
 				++n_exports;
 
 				std::cout << "outer_loop: " << i << " diff: " << diff << std::endl;
-				if(diff < 1e-6) {
-					std::cout << "terminated at iteration " << i << " with diff " << diff << " < 1e-6" << std::endl;
+				if(diff < tol_) {
+					std::cout << "terminated at iteration " << i << " with diff " << diff << " <  " << tol_ << std::endl;
 					break;
 				} else {
 					if(i + 1 == max_outer_loops_) {
-						std::cerr << "[Warning] contact solver failed to converge with " << max_outer_loops_ << " loops under tolerance 1e-6" << std::endl;
+						std::cerr << "[Warning] contact solver failed to converge with " << max_outer_loops_ << " loops under tolerance " << tol_ << std::endl;
 						// assert(false);
 						return false;
 					}
@@ -194,10 +202,11 @@ namespace utopia {
 		{
 			bool converged = false;
 			int iteration = 0;
-			int max_iteration = 100;
+
 			while(!converged) {
 
 				if(!step()) return false;
+				// if(material_->is_linear()) { break; }
 
 				const double norm_inc = norm2(inc_c_);
 				converged = norm_inc < tol_;
@@ -205,7 +214,7 @@ namespace utopia {
 				std::cout << "iteration: " << iteration << " norm_inc: " << norm_inc << std::endl;
 				++iteration;
 
-				if(max_iteration <= iteration) {
+				if(max_non_linear_iterations_ <= iteration) {
 					std::cerr << "[Error] solver did not converge" << std::endl;
 					return false;
 				}
@@ -276,6 +285,10 @@ namespace utopia {
 				return;
 			}
 
+			if(sol_to_gap_on_contact_bdr_) {
+				inc_c = e_mul(contact_.is_contact_node, *box_c.upper_bound());
+			}
+
 			// auto mg = std::dynamic_pointer_cast<SemiGeometricMultigrid>(linear_solver_);
 			// if(!force_direct_solver_ && mg) {
 
@@ -286,7 +299,8 @@ namespace utopia {
 			// 	newton.set_box_constraints(box_c);
 			// 	newton.solve(lhs, rhs, inc_c);
 			// } else {
-				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
+				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
+				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_);
 				// SemismoothNewton<Matrix, Vector> ssn(linear_solver_);
 				// ssn.verbose(true);
 				ssn.max_it(40);
@@ -294,8 +308,22 @@ namespace utopia {
 				ssn.rtol(1e-8);
 				ssn.stol(1e-8);
 
+
 				ssn.set_box_constraints(box_c);
 				ssn.solve(lhs, rhs, inc_c);
+			} else if(use_pg_) {
+
+				ProjectedGradient<Matrix, Vector> pg;
+				// SemismoothNewton<Matrix, Vector> pg(linear_solver_);
+				// pg.verbose(true);
+				pg.max_it(size(inc_c).get(0) * 20);
+				pg.atol(1e-14);
+				pg.rtol(1e-8);
+				pg.stol(1e-8);
+
+				pg.set_box_constraints(box_c);
+				pg.solve(lhs, rhs, inc_c);
+
 			} else {
 				Chrono c;
 				c.start();
@@ -315,8 +343,6 @@ namespace utopia {
 				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
 				//(linear_solver_);
 				tao_.set_box_constraints(box_c);
-				tao_.set_type("tron");
-				tao_.set_ksp_types("bcgs", "jacobi", " ");
 				// tao_.set_ksp_types(KSPPREONLY, PCLU, "mumps");
 				// tao_.set_type("gpcg");
 
@@ -348,6 +374,9 @@ namespace utopia {
 				assert(false);
 				return false;
 			}
+
+			double norm_g = norm2(g_);
+			std::cout << "norm_g: " << norm_g << std::endl;
 
 			//handle transformations
 			const auto &T = contact_.complete_transformation;
@@ -461,9 +490,27 @@ namespace utopia {
 			max_outer_loops_ = val;
 		}
 
+		void set_max_non_linear_iterations(const int val)
+		{
+			max_non_linear_iterations_ = val;
+		}
+
 		void set_use_ssn(const bool val)
 		{
 			use_ssn_ = val;
+		}
+
+		void set_use_pg(const bool val) {
+			use_pg_ = val;
+		}
+
+		void set_exit_on_contact_solve_failure(const bool val)
+		{
+			exit_on_contact_solve_failure_ = val;
+		}
+
+		void set_sol_to_gap_on_contact_bdr(const bool val) {
+			sol_to_gap_on_contact_bdr_ = val;
 		}
 
 		TaoSolver<Matrix, Vector> &tao()
@@ -516,11 +563,15 @@ namespace utopia {
 		bool debug_output_;
 		bool force_direct_solver_;
 		bool bypass_contact_;
+		bool exit_on_contact_solve_failure_;
+		bool sol_to_gap_on_contact_bdr_;
 
 		int max_outer_loops_;
 
 		TaoSolver<Matrix, Vector> tao_;
-		bool use_ssn_;
+		bool use_ssn_, use_pg_;
+
+		int max_non_linear_iterations_;
 	};
 
 	void run_steady_contact(libMesh::LibMeshInit &init);

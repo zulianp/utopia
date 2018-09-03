@@ -3,7 +3,9 @@
 
 #include "utopia_MultiLevelBase.hpp"
 #include "utopia_Recorder.hpp"
+#include "utopia_MatrixTransfer.hpp"
 
+#include <iostream>
 
 
 
@@ -25,7 +27,10 @@ namespace utopia
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 		typedef utopia::Level<Matrix, Vector> Level;
 		typedef utopia::Transfer<Matrix, Vector> Transfer;
+		typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
 	public:
+
+		// using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
 
 		LinearMultiLevel(const Parameters params = Parameters())
 		: MultiLevelBase<Matrix, Vector>(params),
@@ -47,7 +52,7 @@ namespace utopia
 		{
 			this->transfers_.clear();
 			for(auto I = interpolation_operators.begin(); I != interpolation_operators.end() ; ++I )
-				this->transfers_.push_back(Transfer(*I));
+				this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I));
 
 			return true;
 		}
@@ -111,15 +116,6 @@ namespace utopia
 			fix_semidefinite_operators_ = val;
 		}
 
-		inline Transfer &transfer(const SizeType level)
-		{
-			return this->transfers_[level];
-		}
-
-		inline const Transfer &transfer(const SizeType level) const
-		{
-			return this->transfers_[level];
-		}
 
 		inline const Level &level(const SizeType l) const
 		{
@@ -137,15 +133,11 @@ namespace utopia
 			}
 		}
 
-		virtual void update_transfer(const SizeType level, Transfer &&t)
-		{
-			this->transfers_[level] = std::move(t);
-		}
-
-		virtual void update_transfer(const SizeType level, const Transfer &t)
+		virtual void update_transfer(const SizeType level, const std::shared_ptr<Transfer> &t)
 		{
 			this->transfers_[level] = t;
 		}
+
 
 	protected:
 		std::vector<Level>                  levels_;      /*!< vector of level operators     */
@@ -183,7 +175,7 @@ namespace utopia
 			{
 				// J_{i-1} = R * J_{i} * I
 				std::shared_ptr<Matrix> J_h = std::make_shared<Matrix>();
-				this->transfers_[t_s - i].restrict(levels_[i - 1].A(), *J_h);
+				this->transfer(t_s - i).restrict(levels_[i - 1].A(), *J_h);
 
 				if(fix_semidefinite_operators_) {
 					fix_semidefinite_operator(*J_h);

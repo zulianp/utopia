@@ -21,3 +21,8 @@ Fix parameters with undefined default values to avoid overwritting the existing 
     std::cout << "done\n";
     assert(approxeq(1.0, one));
 }
+
+
+///
+MG 
+test petsc-mg with GMRES instead of smoother

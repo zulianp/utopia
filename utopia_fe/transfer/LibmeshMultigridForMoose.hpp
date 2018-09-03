@@ -858,7 +858,6 @@ namespace utopia {
         libMesh::DenseMatrix<libMesh::Real> intersection2;
         Polyhedron src_poly, dest_poly;
         Polyhedron  intersection3,temp_poly;
-        Intersector isector;
         
         std::shared_ptr<MeshBase> master_space = mesh;
         std::shared_ptr<MeshBase> slave_space  = mesh;
@@ -940,9 +939,9 @@ namespace utopia {
                 make_polygon(dest_el, dest_pts);
                 
                 if(intersect_2D(src_pts, dest_pts, intersection2)) {
-                    total_intersection_volume += fabs(isector.polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
+                    total_intersection_volume += fabs(Intersector::polygon_area_2(intersection2.m(), &intersection2.get_values()[0]));
                     
-                    const libMesh::Real weight=isector.polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
+                    const libMesh::Real weight=Intersector::polygon_area_2(dest_pts.m(), &dest_pts.get_values()[0]);
                     
                     make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
                     pair_intersected = true;
@@ -959,9 +958,9 @@ namespace utopia {
                 
                 if(intersect_3D(src_poly, dest_poly, intersection3)) {
                     
-                    total_intersection_volume += isector.p_mesh_volume_3(intersection3);
+                    total_intersection_volume += Intersector::p_mesh_volume_3(intersection3);
                     
-                    const libMesh::Real weight = isector.p_mesh_volume_3(dest_poly);
+                    const libMesh::Real weight = Intersector::p_mesh_volume_3(dest_poly);
                     
                     make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
                     src_trans  = std::make_shared<Transform3>(src_el);

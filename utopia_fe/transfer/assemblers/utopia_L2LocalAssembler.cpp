@@ -8,13 +8,14 @@
 #include <numeric>
 
 namespace utopia {
-	L2LocalAssembler::L2LocalAssembler(const int dim, const bool use_biorth)
+	L2LocalAssembler::L2LocalAssembler(const int dim, const bool use_biorth, const bool assemble_mass_mat)
 	: dim(dim),
 	use_biorth(use_biorth),
 	must_compute_biorth(use_biorth),
 	composite_ir(dim),
 	q_trial(dim),
-	q_test(dim)
+	q_test(dim),
+	assemble_mass_mat_(assemble_mass_mat)
 	{
 		if(dim == 2) {
 			q_builder = std::make_shared<QMortarBuilder2>();
@@ -64,6 +65,58 @@ namespace utopia {
 		return true;
 	}
 
+	bool L2LocalAssembler::assemble(
+		const Elem &trial,
+		FEType trial_type,
+		const Elem &test,
+		FEType test_type,
+		std::vector<Matrix> &mat
+		) 
+	{
+		mat.resize(n_forms());
+
+		if(!assemble_mass_mat_) {
+			return assemble(trial, trial_type, test, test_type, mat[0]);
+		}
+
+
+		auto trial_fe   = libMesh::FEBase::build(trial.dim(), trial_type);
+		auto test_fe    = libMesh::FEBase::build(test.dim(),  test_type);
+		
+		const int order = std::max(
+			order_for_l2_integral(dim, trial, trial_type.order, test, test_type.order), 
+			order_for_l2_integral(dim, test, test_type.order, test, test_type.order)
+		);
+
+
+		if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
+			return false;
+		}
+
+		init_biorth(test, test_type);
+		init_fe(trial, trial_type, test, test_type);
+
+		trial_fe->attach_quadrature_rule(&q_trial);
+		trial_fe->get_phi();
+		trial_fe->reinit(&trial);
+
+		test_fe->attach_quadrature_rule(&q_test);
+		test_fe->get_phi();
+		test_fe->get_JxW();
+		test_fe->reinit(&test);
+
+		if(use_biorth) {
+			mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat[0]);
+			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights,  mat[1]);
+		} else {
+			mortar_assemble(*trial_fe, *test_fe, mat[0]);
+			mortar_assemble(*test_fe,  *test_fe, mat[1]);
+		}
+
+		return true;
+
+	}
+
 	void L2LocalAssembler::init_fe(
 		const Elem &trial,
 		FEType trial_type,
@@ -79,6 +132,7 @@ namespace utopia {
 	void L2LocalAssembler::init_biorth(const Elem &test, FEType test_type)
 	{
 		if(!use_biorth) return;
+		if(!must_compute_biorth) return;
 
 		assemble_biorth_weights(
 			test,

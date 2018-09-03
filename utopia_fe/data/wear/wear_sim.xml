@@ -1,11 +1,17 @@
 <simulation>
 	<mesh>../data/wear_2_far.e</mesh>
+    <mesh-refinements>1</mesh-refinements>
+    <!-- <mesh>../data/wear_2_b.e</mesh> -->
 	<model>
         <material>LinearElasticity</material>
         <!-- <material>NeoHookean</material> -->
+        <stabilization>L2</stabilization>
+        <stabilization-mag>0.00001</stabilization-mag>
 		<parameters>
-			<mu>600.</mu>
-			<lambda>600.</lambda>
+	<!-- 		<mu>600.</mu>
+			<lambda>600.</lambda> -->
+            <mu>20.</mu>
+            <lambda>10.</lambda>
 		</parameters>
 	</model>
 	<boundary-conditions>
@@ -25,6 +31,13 @@
                 <side>4</side>
                 <value>0.0</value>
             </entry>
+            <!-- remove me from here -->
+          <!--   <entry>
+                <coord>1</coord>
+                <side>4</side>
+                <value>0.05</value>
+            </entry> -->
+            <!-- to here -->
 		</dirichlet>
 	</boundary-conditions>
     <forcing-functions type="array">
@@ -46,14 +59,20 @@
         <entry>
             <block>2</block>
             <coord>1</coord>
-            <value>0.05</value>
+            <value>0.1</value>
         </entry>
+     <!--      <entry>
+            <coord>1</coord>
+            <value>-0.1</value>
+        </entry> -->
     </forcing-functions>
     <contact>
         <type>steady</type>
+        <max-nl-iter>100</max-nl-iter>
         <!-- <type>transient</type> -->
         <!-- <n-transient-steps>10</n-transient-steps> -->
         <radius>0.9</radius>
+        <!-- <solver>pg</solver> -->
         <pairs type="array">
             <entry>
                 <master>2</master>
@@ -64,7 +83,7 @@
     <wear>
         <n-cycles>100</n-cycles>
         <coeff>0.007</coeff>
-        <extrapolation>5.0</extrapolation>
+        <extrapolation>500.0</extrapolation>
         <gait-cycle>
             <steps>30</steps>
             <rotations type="array">

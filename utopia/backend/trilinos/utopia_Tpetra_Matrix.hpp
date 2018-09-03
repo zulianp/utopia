@@ -182,6 +182,16 @@ namespace utopia {
             return  { implementation().getRowMap()->getMinGlobalIndex(), implementation().getRowMap()->getMaxGlobalIndex() + 1 };
         }
 
+        inline Range col_range() const
+        {
+            if(implementation().getDomainMap().is_null()) {
+                assert(!init_->domain_map.is_null());
+                return  { init_->domain_map->getMinGlobalIndex(), init_->domain_map->getMaxGlobalIndex() + 1 };
+            } else {
+                return  { implementation().getDomainMap()->getMinGlobalIndex(), implementation().getDomainMap()->getMaxGlobalIndex() + 1 };
+            }
+        }
+
         inline Size size() const
         {
             return { implementation().getRowMap()->getGlobalNumElements(), implementation().getColMap()->getGlobalNumElements() };
@@ -189,7 +199,14 @@ namespace utopia {
 
         inline Size local_size() const
         {
-            return { implementation().getRowMap()->getNodeNumElements(), implementation().getColMap()->getNodeNumElements() };
+            assert(!implementation().getRowMap().is_null());
+
+            if(implementation().getDomainMap().is_null()) {
+                assert(!init_->domain_map.is_null());
+                return { implementation().getRowMap()->getNodeNumElements(), init_->domain_map->getNodeNumElements() };
+            } else {
+                return { implementation().getRowMap()->getNodeNumElements(), implementation().getDomainMap()->getNodeNumElements() };
+            }
         }
 
         inline void read_lock()
@@ -228,6 +245,8 @@ namespace utopia {
         void add(const GO &row, const GO &col, const Scalar &value);
 
         void mult(const TpetraVector &vec, TpetraVector &result) const;
+        void mult_t(const TpetraVector &vec, TpetraVector &result) const;
+
         void mult(const TpetraMatrix &right, TpetraMatrix &result) const;
         //result = tranpose(*this) * mat
         void mult_t(const TpetraMatrix &right, TpetraMatrix &result) const;
@@ -272,6 +291,8 @@ namespace utopia {
 
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
         bool write(const std::string &path) const;
+
+        bool is_valid(const bool verbose = false) const;
 
     private:
         rcp_crs_mat_type  mat_;

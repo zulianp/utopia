@@ -278,6 +278,19 @@ namespace utopia {
 
 		return reason >= 0;
 	}
+
+	bool TaoSolverWrapper::smooth(PetscVector &x)
+	{
+		auto tao = static_cast<Tao>(data_);
+
+		PetscErrorCode ierr = 0; 
+		TaoSetInitialVector(tao, x.implementation());
+		ierr = TaoSolve(tao); U_CHECKERR(ierr);
+
+		return true;
+	}
+
+
 }
 
 #undef U_CHECKERR

@@ -4,7 +4,7 @@
 namespace utopia {
 
 	template<class FunctionSpaceT, class Matrix, class Vector>
-	class LinearElasticity : public ElasticMaterial<Matrix, Vector> {
+	class LinearElasticity final : public ElasticMaterial<Matrix, Vector> {
 	public:
 		LinearElasticity(FunctionSpaceT &V, const LameeParameters &params)
 		: V_(V), params_(params), initialized_(false)
@@ -43,6 +43,8 @@ namespace utopia {
 		{
 			initialized_ = false;
 		}
+
+		bool is_linear() const override { return true; }
 
 	private:
 		FunctionSpaceT &V_;

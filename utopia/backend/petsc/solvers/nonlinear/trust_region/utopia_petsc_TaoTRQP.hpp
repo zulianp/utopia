@@ -58,7 +58,7 @@ namespace utopia {
                 tao_solver_.set_pc_type(pc_type_); 
                 tao_solver_.verbose(this->verbose());
 
-                tao_solver_.solve(fun, p_k);
+                tao_solver_.smooth(fun, p_k);
                 
                 return true;
             }

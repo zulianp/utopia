@@ -8,6 +8,7 @@
 #include "utopia_ScalarBackend.hpp"
 
 #include <utility>
+#include <cmath>
 #include <TpetraExt_MatrixMatrix_def.hpp>
 
 //TODO find the configuration for having this
@@ -35,7 +36,7 @@ namespace utopia {
         {
             left = std::forward<LorRValueMatrix>(right);
         }
-        
+
         template<class LorRValueVector>
         static void assign(TpetraVector &left, LorRValueVector &&right)
         {
@@ -50,6 +51,11 @@ namespace utopia {
         static Range row_range(const TpetraMatrix &m)
         {
             return m.row_range();
+        }
+
+        static Range col_range(const TpetraMatrix &m)
+        {
+            return m.col_range();
         }
 
         // static Range col_range(const TpetraMatrix &m)
@@ -187,6 +193,13 @@ namespace utopia {
             m.set(row, col, value);
         }
 
+        static Scalar get(const TpetraMatrix &v, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col)
+        {
+            // return v.get(index);
+            assert(false && "implement me");
+            return 0.;
+        }
+
         inline static void add(TpetraMatrix &m, const TpetraMatrix::GO &row, const TpetraMatrix::GO &col, const Scalar &value)
         {
             m.add(row, col, value);
@@ -256,6 +269,30 @@ namespace utopia {
             return v.norm_infty();
         }
 
+
+        // reductions
+        // static Scalar norm2(const TpetraMatrix &m);
+        inline static Scalar norm2(const TpetraMatrix &v)
+        {
+            assert(false && "IMPLEMENT ME");
+            return 0.;
+            // return v.norm2();
+        }
+
+        inline static Scalar norm1(const TpetraMatrix &v)
+        {
+            assert(false && "IMPLEMENT ME");
+            return 0.;
+            // return v.norm1();
+        }
+
+        inline static Scalar norm_infty(const TpetraMatrix &v)
+        {
+            assert(false && "IMPLEMENT ME");
+            return 0.;
+            // return v.norm_infty();
+        }
+
         Scalar reduce(const TpetraVector &vec, const Plus &) {
             return vec.sum();
         }
@@ -288,6 +325,14 @@ namespace utopia {
             result.scale(-1.);
         }
 
+        template<class Op>
+        inline static void apply_unary(TpetraVector &result, const Op &op, const TpetraVector &v)
+        {
+            // assert(false && "implement me");
+            result = v;
+            result.apply(op);
+        }
+
         inline static Scalar dot(const TpetraVector &x, const TpetraVector &y)
         {
             return x.dot(y);
@@ -303,10 +348,14 @@ namespace utopia {
             const Vector &right)
         {
             assert(!transpose_right);
-            assert(!transpose_left);
-            //TODO implement transpose left
+            // assert(!transpose_left);
+            //TODO implement transpoe left
 
-            left.mult(right, result);
+            if(transpose_left) {
+                left.mult_t(right, result);
+            } else {
+                left.mult(right, result);
+            }
         }
 
         inline static void apply_binary(TpetraVector &result, const TpetraMatrix &left, const Multiplies &, const TpetraVector &right)
@@ -373,7 +422,7 @@ namespace utopia {
         //     const TpetraMatrix &A,
         //     const TpetraMatrix &P)
         // {
-        //     Tpetra::TripleMatrixMultiply::MultiplyRAP( 
+        //     Tpetra::TripleMatrixMultiply::MultiplyRAP(
         //         R,
         //         false, //transposeR
         //         A,
@@ -382,7 +431,7 @@ namespace utopia {
         //         false, //transposeP
         //         Ac,
         //         true  //call_FillComplete_on_result
-        //     );   
+        //     );
         // }
 
         static void multiply(
@@ -404,7 +453,7 @@ namespace utopia {
         {
             in.get_diag(out);
         }
-        
+
         static void diag(TpetraMatrix &out, const TpetraVector &in)
         {
            out.init_diag(in);
@@ -416,7 +465,27 @@ namespace utopia {
             diag(d, in);
             diag(out, d);
         }
-        
+
+        static bool is_nan_or_inf(const TpetraVector &v)
+        {
+            return v.is_nan_or_inf();
+        }
+
+        static void set_zero_rows(TpetraMatrix &Mat_A, const std::vector<int> &index)
+        {
+            assert(false && "implement me");
+        }
+
+        static void read_and_write_lock(TpetraMatrix &t) {
+            //IMPLEMENTME
+            write_lock(t);
+        }
+
+        static void read_and_write_unlock(TpetraMatrix &t){
+            //IMPLEMENTME
+            write_unlock(t);
+        }
+
         // monitoring functions for iterative solvers (Cyrill)
         // UTOPIA_DEPRECATED_MSG("Remove me")
         template<class Tensor>
