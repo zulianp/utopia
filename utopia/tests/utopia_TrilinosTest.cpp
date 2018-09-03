@@ -26,45 +26,6 @@
 
 namespace utopia {
 
-    template<class Matrix>
-    static void build_rectangular_matrix(const SizeType &n, const SizeType &m, Matrix &mat)
-    {
-        mat  = local_sparse(n, m, 2);
-
-        Write<TSMatrixd> w_(mat);
-        auto r = row_range(mat);
-        auto cols = size(mat).get(1);
-        for(auto i = r.begin(); i < r.end(); ++i) {
-            if(i >= cols) {
-                break;
-            }
-
-            mat.set(i, i, 1.);
-
-        }
-    }
-
-    template<class Matrix>
-    static void build_rectangular_matrix_2(const SizeType &n, const SizeType &m, Matrix &mat)
-    {
-        mat  = local_sparse(n, m, 2);
-
-        Write<TSMatrixd> w_(mat);
-        auto r = row_range(mat);
-        auto cols = size(mat).get(1);
-        for(auto i = r.begin(); i < r.end(); ++i) {
-            if(i >= cols) {
-                break;
-            }
-
-            mat.set(i, i, 1.);
-
-        }
-
-        mat.set(0, m-1, 1.);
-    }
-
-
     void trilinos_build()
     {
         auto n = 10;
@@ -97,24 +58,6 @@ namespace utopia {
         actual = norm1(id * v);
         
         utopia_test_assert(approxeq(size(v).get(0) * 2., actual));
-    }
-
-    void trilinos_rect_matrix()
-    {
-        TSMatrixd P;
-        // build_rectangular_matrix(5, 10, P);
-        build_rectangular_matrix(10, 5, P);
-
-
-        // auto rm = P.implementation().implementation().getRangeMap();
-        // auto dm = P.implementation().implementation().getDomainMap();
-
-        // auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(std::cout));
-
-        // rm->describe(*out);
-        // dm->describe(*out);
-
-        utopia_test_assert(P.implementation().is_valid(true));
     }
 
     void trilinos_accessors()
@@ -319,6 +262,25 @@ namespace utopia {
 
         mat.set(0, m-1, 1.);
     }
+
+    void trilinos_rect_matrix()
+    {
+     TSMatrixd P;
+     // build_rectangular_matrix(5, 10, P);
+     build_rectangular_matrix(10, 5, P);
+
+     auto rm = P.implementation().implementation().getRangeMap();
+     auto dm = P.implementation().implementation().getDomainMap();
+     auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(std::cout));
+
+     rm->describe(*out);
+     dm->describe(*out);
+
+       utopia_test_assert(P.implementation().is_valid(true));
+     }
+
+
+
 
     void trilinos_m_tm()
     {

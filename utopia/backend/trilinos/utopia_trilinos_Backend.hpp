@@ -193,7 +193,7 @@ namespace utopia {
             m.set(row, col, value);
         }
 
-        static Scalar get(const TpetraMatrix &v, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col)
+        static Scalar get(const TpetraMatrix &v, const TpetraMatrix::GO &row, const TpetraMatrix::GO &col)
         {
             // return v.get(index);
             assert(false && "implement me");
