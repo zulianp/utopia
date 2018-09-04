@@ -4,6 +4,7 @@
 #include "MortarAssemble.hpp"
 #include "utopia_Polygon.hpp"
 #include "utopia_intersector.hpp"
+#include "utopia_libmesh_Utils.hpp"
 
 #include <memory>
 #include <assert.h>
