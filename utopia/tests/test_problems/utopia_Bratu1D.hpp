@@ -74,9 +74,13 @@ namespace utopia
 
         bool hessian(const Vector &x, Matrix &hessian) const override 
         {
-          hessian = diag(lambda_ * exp(x)); 
-          hessian *= -1.0; 
-          hessian += A_;
+          // hessian = diag((-lambda_) * exp(x)); 
+          // hessian += A_;
+
+          //FIXME Changed for accomdating tpetra
+          Vector d = (-lambda_) * exp(x);
+          hessian = A_; 
+          hessian += Matrix(diag(d));
 
           // enforce BC conditions
           {
@@ -119,6 +123,12 @@ namespace utopia
       {
         lb = values(n_, lower_const);
         ub = values(n_, upper_const); 
+      }
+
+
+      void print() const
+      {
+          disp(A_);
       }
 
 
