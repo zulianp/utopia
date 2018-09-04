@@ -159,7 +159,7 @@
             assert(_Pr || _I);
 
             if(!_Pr) {
-            	x_new = transpose(*_I) * x;
+            	return restrict(x, x_new);
             } else {
             	x_new = *_Pr * x;
         	}

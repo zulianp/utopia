@@ -6,6 +6,8 @@
 #include <Tpetra_RowMatrixTransposer_decl.hpp>
 #include <MatrixMarket_Tpetra.hpp>
 
+#include <iterator>
+
 namespace utopia {
 
 	void TpetraMatrix::set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
@@ -32,6 +34,35 @@ namespace utopia {
 	    }
 	}
 
+
+	//FIXME make faster version by storing view?
+	TpetraMatrix::Scalar TpetraMatrix::get(const global_ordinal_type &row, const global_ordinal_type &col) const
+	{
+		Teuchos::ArrayView<const global_ordinal_type> cols;
+		Teuchos::ArrayView<const Scalar> values;
+
+		assert(implementation().isLocallyIndexed());
+
+		auto local_col = col - implementation().getColMap()->getMinGlobalIndex();
+
+		auto rr = row_range();
+		implementation().getLocalRowView(row - rr.begin(), cols, values);
+
+		auto it = std::lower_bound(std::begin(cols), std::end(cols), local_col);
+
+		if(it == std::end(cols)) {
+			return 0.;
+		}
+
+		assert(it != std::end(cols));
+
+		std::size_t index = std::distance(std::begin(cols), it);
+
+		assert(cols[index] == local_col);
+
+		return values[index];
+	}
+
 	void TpetraMatrix::mult(const TpetraVector &vec, TpetraVector &result) const
 	{
 		if(result.is_null()) {
@@ -48,7 +79,6 @@ namespace utopia {
 			assert(false);
 		}
 	}
-
 
 	void TpetraMatrix::mult_t(const TpetraVector &vec, TpetraVector &result) const
 	{
@@ -88,35 +118,68 @@ namespace utopia {
 
 		assert(!transpose_right);
 
-		if(result.is_null()) {
-			if(transpose_this) {
-				// result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getDomainMap(), implementation().getRowMap(), 0, Tpetra::DynamicProfile));
-				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getDomainMap(), implementation().getRangeMap(), 0, Tpetra::DynamicProfile));
-			} else {
-				// result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRowMap(), implementation().getColMap(), 0, Tpetra::DynamicProfile));
-				result.mat_ = Teuchos::rcp(new crs_matrix_type(implementation().getRangeMap(), implementation().getDomainMap(), 0, Tpetra::DynamicProfile));
-			}
-			result.owner_ = true;
+		assert(transpose_this  || (this->local_size().get(1) == right.local_size().get(0) && this->size().get(1) == right.size().get(0) ) );
+		assert(!transpose_this || (this->local_size().get(0) == right.local_size().get(0) && this->size().get(0) == right.size().get(0) ) );
+
+		// if(result.is_null()) {
+
+		auto col_map = Teuchos::rcp(new map_type(right.size().get(1), 0, communicator(), Tpetra::LocallyReplicated));
+
+		if(transpose_this) {
+
+			assert(!right.implementation().getDomainMap().is_null());
+			result.mat_ = Teuchos::rcp(
+				new crs_matrix_type(
+					implementation().getDomainMap(),
+					col_map,
+					0, Tpetra::DynamicProfile));
+
+		} else {
+
+			result.mat_ = Teuchos::rcp(
+				new crs_matrix_type(
+					implementation().getRowMap(),
+					col_map,
+					0, Tpetra::DynamicProfile));
 		}
 
+		result.owner_ = true;
+		// }
+
 		try {
-
-			// std::cout << "--------------------\n";
-			// this->describe();
-			// std::cout << "--------------------\n";
-			// right.describe();
-			// std::cout << "--------------------\n";
-
-
-
 				//C = op(A)*op(B),
 				Tpetra::MatrixMatrix::Multiply(
 					this->implementation(),
 					transpose_this,
 					right.implementation(),
 					transpose_right,
-					result.implementation()
+					result.implementation(),
+					false
 				);
+
+
+			auto dm = this->implementation().getDomainMap();
+			auto rm = this->implementation().getRangeMap();
+
+			result.implementation().fillComplete(
+				right.implementation().getDomainMap(),
+				(transpose_this ? dm : rm)
+			);
+
+			// std::cout << ("---------------------------") << std::endl;
+			// std::cout << transpose_this << std::endl;
+			// disp(this->size());
+			// disp(right.size());
+			// disp(result.size());
+			// std::cout << ("---------------------------") << std::endl;
+			// disp(this->local_size());
+			// disp(right.local_size());
+			// disp(result.local_size());
+			// std::cout << ("---------------------------") << std::endl;
+
+			assert(transpose_this  || (this->local_size().get(0) == result.local_size().get(0) && this->size().get(0) == result.size().get(0) ) );
+			assert(!transpose_this || (this->local_size().get(1) == result.local_size().get(0) && this->size().get(1) == result.size().get(0) ) );
+			assert(transpose_right || (right.local_size().get(1) == result.local_size().get(1) && right.size().get(1) == result.size().get(1) ) );
 
 
 		} catch(const std::exception &ex) {
@@ -143,6 +206,12 @@ namespace utopia {
 			// mat.implementation().resumeFill();
 			// mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
 
+			assert(this->local_size().get(0) == mat.local_size().get(1));
+			assert(this->local_size().get(1) == mat.local_size().get(0));
+
+			assert(this->size().get(0) == mat.size().get(1));
+			assert(this->size().get(1) == mat.size().get(0));
+
 			assert(is_valid(true));
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
@@ -153,7 +222,7 @@ namespace utopia {
 	void TpetraMatrix::axpy(const Scalar alpha, const TpetraMatrix &x)
 	{
 		try {
-			Tpetra::MatrixMatrix::add(
+			mat_ = Tpetra::MatrixMatrix::add(
 				alpha,
 				false,
 				x.implementation(),
@@ -161,6 +230,8 @@ namespace utopia {
 				false,
 				implementation()
 			);
+
+			owner_ = true;
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			assert(false);
@@ -348,6 +419,11 @@ namespace utopia {
 		}
 
 		return true;
+	}
+
+	TpetraMatrix::Scalar TpetraMatrix::norm2() const
+	{
+		return implementation().getFrobeniusNorm();
 	}
 
 }

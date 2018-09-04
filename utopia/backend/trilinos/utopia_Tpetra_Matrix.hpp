@@ -132,7 +132,14 @@ namespace utopia {
 
         inline Size size() const
         {
-            return { implementation().getRowMap()->getGlobalNumElements(), implementation().getColMap()->getGlobalNumElements() };
+            if(implementation().isFillComplete()) {
+                return { implementation().getGlobalNumRows(), implementation().getGlobalNumCols() };
+            } else {
+                assert(!implementation().getRowMap().is_null());
+                assert(!implementation().getColMap().is_null());
+
+                return { implementation().getRowMap()->getGlobalNumElements(), implementation().getColMap()->getGlobalNumElements() };
+            }
         }
 
         inline Size local_size() const
@@ -180,6 +187,7 @@ namespace utopia {
         }
 
         void set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
+        Scalar get(const global_ordinal_type &row, const global_ordinal_type &col) const;
         void add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
 
         void mult(const TpetraVector &vec, TpetraVector &result) const;
@@ -226,6 +234,9 @@ namespace utopia {
         bool write(const std::string &path) const;
 
         bool is_valid(const bool verbose = false) const;
+
+        Scalar norm2() const;
+
 
     private:
         rcp_crs_matrix_type  mat_;

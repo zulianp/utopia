@@ -30,7 +30,7 @@ namespace utopia
 		typedef utopia::MatrixTransfer<Matrix, Vector> MatrixTransfer;
 	public:
 
-		// using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
+		using MultiLevelBase<Matrix, Vector>::set_transfer_operators;
 
 		LinearMultiLevel(const Parameters params = Parameters())
 		: MultiLevelBase<Matrix, Vector>(params),

@@ -43,7 +43,10 @@ Go to the folder utopia/utopia:
 
 
 ## Compiling utopia_fe
-After compiling utopia
+After compiling utopia.
+
+Define the utopia\_fe path (you can also add it to your .bash_profile)
+export UTOPIA\_FE\_DIR=<The absolute path of where you want to install utopia\_fe>
 
 You need a limesh installation. Define the libmesh install directory
 export LIBMESH\_DIR=<The aboslute path of where you installed libmesh>
@@ -52,7 +55,7 @@ Go to the folder utopia/utopia\_fe:
 
 - mkdir bin
 - cd bin
-- cmake .. -DUTOPIA\_DIR=$UTOPIA\_DIR -DLIBMESH_DIR=$LIBMESH_DIR -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_DIR -DMOONOLITH\_INSTALL\_PREFIX=$UTOPIA_DIR
+- cmake .. -DUTOPIA\_DIR=$UTOPIA\_DIR -DLIBMESH_DIR=$LIBMESH_DIR -DCMAKE\_INSTALL\_PREFIX=$UTOPIA_FE_DIR -DMOONOLITH\_INSTALL\_PREFIX=$UTOPIA_FE_DIR
 - make 
 - make install
 

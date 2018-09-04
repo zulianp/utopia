@@ -146,7 +146,7 @@ namespace utopia {
 			(void) os;
 		}
 
-		bool set_transfers(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector>>> &transfers)
+		bool set_transfer_operators(const std::vector<std::shared_ptr<utopia::Transfer<Matrix, Vector>>> &transfers)
 		{
 			transfers_ = transfers;
 			return true;
