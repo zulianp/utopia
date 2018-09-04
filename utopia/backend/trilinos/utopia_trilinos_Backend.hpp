@@ -410,6 +410,21 @@ namespace utopia {
             left.e_mul(right, result);
         }
 
+        template<class Op>
+        static void apply_binary(TpetraVector &result, const TpetraVector &left, const Op &op, const TpetraVector &right)
+        {
+            left.apply_binary(op, right, result);
+        }
+
+        static void apply_binary(TpetraVector &result, const Reciprocal<Scalar> &reciprocal, const TpetraVector &vec)
+        {
+            vec.reciprocal(result);
+
+            if(reciprocal.numerator() != 1.) {
+                result.scale(reciprocal.numerator());
+            }
+        }
+
         // Ac = R*A*P,
         // static void triple_product(
         //     TpetraMatrix &Ac,

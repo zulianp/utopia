@@ -62,7 +62,7 @@ namespace utopia {
 
 				{
 					Write<Vector> w_wk(wk), w_zk(zk);
-					Read<Vector> r_uk(uk), r_lb(lb), r_p(pk);
+					Read<Vector> r_uk(uk), r_ub(ub), r_lb(lb), r_p(pk);
 
 					each_read(x, [&](SizeType i, Scalar elem) {
 							Scalar val = 0.;

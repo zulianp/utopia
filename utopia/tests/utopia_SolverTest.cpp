@@ -2,8 +2,7 @@
 #include "utopia_SolverTest.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
-#include "utopia_ProjectedConjugateGradient.hpp"
-#include "utopia_ProjectedGradient.hpp"
+
 
 namespace utopia {
 	/**
@@ -29,9 +28,6 @@ namespace utopia {
 		void run()
 		{
 			print_backend_info();
-			UTOPIA_RUN_TEST(pg_test);
-			UTOPIA_RUN_TEST(pcg_test);
-			UTOPIA_RUN_TEST(ngs_test);
 			UTOPIA_RUN_TEST(newton_cg_test);
 			UTOPIA_RUN_TEST(solver_from_params_test);
 			UTOPIA_RUN_TEST(tr_test);
@@ -306,78 +302,6 @@ namespace utopia {
 			}
 		}
 
-
-		template<class QPSolver>
-		void run_qp_solver(QPSolver &qp_solver) {
-			const SizeType n = 100;
-
-			Matrix m = zeros(n, n);
-			assemble_laplacian_1D(m);
-			{
-				Range r = row_range(m);
-				Write<Matrix> w(m);
-				if(r.begin() == 0) {
-					m.set(0, 0, 1.);
-					m.set(0, 1, 0);
-				}
-
-				if(r.end() == n) {
-					m.set(n-1, n-1, 1.);
-					m.set(n-1, n-2, 0);
-				}
-			}
-
-			Vector rhs = values(n, 1.);
-			{
-			    //Creating test vector (alternative way see [assemble vector alternative], which might be easier for beginners)
-				Range r = range(rhs);
-				Write<Vector> w(rhs);
-
-				if(r.begin() == 0) {
-					rhs.set(0, 0);
-				}
-
-				if(r.end() == n) {
-					rhs.set(n-1, 0.);
-				}
-			}
-
-			Vector upper_bound = values(n, 100.0);
-			Vector solution    = zeros(n);
-
-
-			qp_solver.max_it(n*40);
-			// qp_solver.verbose(true);
-			qp_solver.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
-
-			Chrono c;
-			c.start();
-			bool ok = qp_solver.solve(m, rhs, solution);
-			c.stop();
-
-			utopia_test_assert(ok);
-			// disp(solution);
-
-		}
-		void pg_test()
-		{
-			ProjectedGradient<Matrix, Vector> pg;
-			run_qp_solver(pg);
-		}
-
-		void pcg_test()
-		{
-			ProjectedConjugateGradient<Matrix, Vector> pcg;
-			run_qp_solver(pcg);
-		}
-
-
-		void ngs_test()
-		{
-			ProjectedGaussSeidel<Matrix, Vector> pgs;
-			run_qp_solver(pgs);
-			// std::cout << c << std::endl;
-		}
 
 		void dogleg_test()
 		{

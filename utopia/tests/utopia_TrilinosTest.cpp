@@ -337,7 +337,7 @@ namespace utopia {
         TSMatrixd At  = transpose(A);
         TVectord At_v = At * v;
 
-        disp(At);
+        // disp(At);
 
         each_read(At_v, [](const SizeType i, const double val) {
             utopia_test_assert(val <= 2. + 1e-16);
@@ -346,7 +346,7 @@ namespace utopia {
 
         double s_At_v = sum(At_v);
 
-        disp(s_At_v);
+        // disp(s_At_v);
 
         utopia_test_assert(approxeq(s_At_v, size(A).get(0) * 2.));
     }
@@ -801,21 +801,7 @@ namespace utopia {
         TSMatrixd B(expr);
     }
 
-    template<class T1, class T2>
-    bool cross_backend_approxeq(const Wrapper<T1, 1> &l, const Wrapper<T2, 1> &r)
-    {
-        Wrapper<T1, 1> r_copy;
-        backend_convert(r, r_copy);
-        return approxeq(l, r_copy);
-    }
 
-    template<class T1, class T2>
-    bool cross_backend_approxeq(const Wrapper<T1, 2> &l, const Wrapper<T2, 2> &r)
-    {
-        Wrapper<T1, 2> r_copy;
-        backend_convert_sparse(r, r_copy);
-        return approxeq(l, r_copy);
-    }
 
     void trilinos_exp()
     {
@@ -1025,21 +1011,21 @@ namespace utopia {
 
         //tests that fail in parallel
 
-        // if(mpi_world_size() == 1) {
-        // UTOPIA_RUN_TEST(trilinos_ptap);
-        // UTOPIA_RUN_TEST(trilinos_mg_1D);
-        // UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);
-        // UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
-        // UTOPIA_RUN_TEST(trilinos_transpose);
-        // UTOPIA_RUN_TEST(trilinos_each_read_transpose);
-        // UTOPIA_RUN_TEST(trilinos_mg);
-        // }
+        if(mpi_world_size() == 1) {
+            UTOPIA_RUN_TEST(trilinos_ptap);
+            UTOPIA_RUN_TEST(trilinos_mg_1D);
+            UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);
+            UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
+            UTOPIA_RUN_TEST(trilinos_transpose);
+            UTOPIA_RUN_TEST(trilinos_each_read_transpose);
+            UTOPIA_RUN_TEST(trilinos_mg);
+        } else {
+            m_utopia_warning_once("several tests left out for parallel execution");
+        }
 
 
         //tests that always fail
-        
         // UTOPIA_RUN_TEST(trilinos_rmtr);
-        
 
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }

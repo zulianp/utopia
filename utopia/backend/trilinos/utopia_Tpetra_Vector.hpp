@@ -248,6 +248,32 @@ namespace utopia {
             read_and_write_unlock();
         }
 
+        void reciprocal(TpetraVector &result) const
+        {
+            if(result.empty() || result.size() != this->size())
+            {
+                result.init(this->implementation().getMap());
+            }
+
+            result.implementation().reciprocal(this->implementation());
+        }
+
+        template<typename Op>
+        inline void apply_binary(const Op op, const TpetraVector &rhs, TpetraVector &result) const
+        {
+            if(result.empty() || result.size() != rhs.size())
+            {
+                result.init(rhs.implementation().getMap());
+            } 
+
+            auto a_lhs = this->implementation().getData();
+            auto a_rhs = rhs.implementation().getData();
+
+            for(auto i = 0; i < write_data_.size(); ++i) {
+               result.write_data_[i] = op.apply(a_lhs[i], a_rhs[i]);
+            }
+        }
+
         inline vector_type &implementation()
         {
             return *vec_;
@@ -266,6 +292,10 @@ namespace utopia {
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
         bool write(const std::string &path) const;
 
+        inline bool empty() const
+        {
+            return vec_.is_null();
+        }
     private:
         rcpvector_type vec_;
         Teuchos::ArrayRCP<const Scalar> read_only_data_;
