@@ -185,6 +185,22 @@ namespace utopia {
        utopia_test_assert(approxeq(sum_v, 0.));
     }
 
+    void trilinos_vec_minus()
+    {
+        auto n = 10;
+        TVectord y = local_values(n, 1.);
+        TVectord x = local_values(n, 5.);
+
+        TVectord z;
+        z = y - x;
+
+        TVectord expected = local_values(n, -4.);
+
+        double sum_z = double(sum(z));
+
+        utopia_test_assert(approxeq(sum_z, size(z).get(0) * (-4.)));
+        utopia_test_assert(approxeq(z, expected));
+    }
 
     void trilinos_vec_axpy()
     {
@@ -984,6 +1000,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_vec_scale);
         UTOPIA_RUN_TEST(trilinos_mat_scale);
         UTOPIA_RUN_TEST(trilinos_vec_axpy);
+        UTOPIA_RUN_TEST(trilinos_vec_minus);
         UTOPIA_RUN_TEST(trilinos_mat_axpy);
         UTOPIA_RUN_TEST(trilinos_mv);
         UTOPIA_RUN_TEST(trilinos_mm);

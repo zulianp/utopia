@@ -22,7 +22,7 @@ namespace utopia {
 
         template<class QPSolver>
         static void run_qp_solver(QPSolver &qp_solver) {
-            const SizeType n = 100;
+            const SizeType n = 10;
 
             Matrix m = sparse(n, n, 3);
             assemble_laplacian_1D(m);

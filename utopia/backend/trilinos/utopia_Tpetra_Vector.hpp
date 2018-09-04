@@ -104,7 +104,7 @@ namespace utopia {
             implementation().update(alpha, *x.vec_, 1.);
         }
 
-        inline void describe(std::ostream &os) const
+        void describe(std::ostream &os) const
         {
             auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
             implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
@@ -261,6 +261,11 @@ namespace utopia {
         template<typename Op>
         inline void apply_binary(const Op op, const TpetraVector &rhs, TpetraVector &result) const
         {
+            assert(!empty());
+            assert(!rhs.empty());
+            assert(rhs.size() == size());
+            assert(rhs.local_size() == local_size());
+
             if(result.empty() || result.size() != rhs.size())
             {
                 result.init(rhs.implementation().getMap());
@@ -268,19 +273,25 @@ namespace utopia {
 
             auto a_lhs = this->implementation().getData();
             auto a_rhs = rhs.implementation().getData();
+            auto a_res = result.implementation().getDataNonConst();
 
-            for(auto i = 0; i < write_data_.size(); ++i) {
-               result.write_data_[i] = op.apply(a_lhs[i], a_rhs[i]);
+            assert(a_res.size() == a_lhs.size());
+            assert(a_res.size() == a_rhs.size());
+
+            for(auto i = 0; i < a_lhs.size(); ++i) {
+               a_res[i] = op.apply(a_lhs[i], a_rhs[i]);
             }
         }
 
         inline vector_type &implementation()
         {
+            assert(!vec_.is_null());
             return *vec_;
         }
 
         inline const vector_type &implementation() const
         {
+            assert(!vec_.is_null());
             return *vec_;
         }
 
