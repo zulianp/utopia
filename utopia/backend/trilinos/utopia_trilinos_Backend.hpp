@@ -188,11 +188,9 @@ namespace utopia {
             v.add(index, value);
         }
 
-        static Scalar get(const TpetraMatrix &v, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col)
+        static Scalar get(const TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col)
         {
-            // return v.get(index);
-            assert(false && "implement me");
-            return 0.;
+            return m.get(row, col);
         }
 
         inline static void set(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
@@ -272,11 +270,9 @@ namespace utopia {
 
         // reductions
         // static Scalar norm2(const TpetraMatrix &m);
-        inline static Scalar norm2(const TpetraMatrix &v)
+        inline static Scalar norm2(const TpetraMatrix &m)
         {
-            assert(false && "IMPLEMENT ME");
-            return 0.;
-            // return v.norm2();
+            return m.norm2();
         }
 
         inline static Scalar norm1(const TpetraMatrix &v)
@@ -328,7 +324,6 @@ namespace utopia {
         template<class Op>
         inline static void apply_unary(TpetraVector &result, const Op &op, const TpetraVector &v)
         {
-            // assert(false && "implement me");
             result = v;
             result.apply(op);
         }
@@ -413,6 +408,21 @@ namespace utopia {
         static void apply_binary(TpetraVector &result, const TpetraVector &left, const EMultiplies &, const TpetraVector &right)
         {
             left.e_mul(right, result);
+        }
+
+        template<class Op>
+        static void apply_binary(TpetraVector &result, const TpetraVector &left, const Op &op, const TpetraVector &right)
+        {
+            left.apply_binary(op, right, result);
+        }
+
+        static void apply_binary(TpetraVector &result, const Reciprocal<Scalar> &reciprocal, const TpetraVector &vec)
+        {
+            vec.reciprocal(result);
+
+            if(reciprocal.numerator() != 1.) {
+                result.scale(reciprocal.numerator());
+            }
         }
 
         // Ac = R*A*P,

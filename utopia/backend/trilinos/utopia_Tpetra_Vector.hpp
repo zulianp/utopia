@@ -104,7 +104,7 @@ namespace utopia {
             implementation().update(alpha, *x.vec_, 1.);
         }
 
-        inline void describe(std::ostream &os) const
+        void describe(std::ostream &os) const
         {
             auto out = Teuchos::getFancyOStream(Teuchos::rcpFromRef(os));
             implementation().describe(*out, Teuchos::EVerbosityLevel::VERB_EXTREME);
@@ -237,22 +237,61 @@ namespace utopia {
         template<typename Op>
         inline void apply(const Op op)
         {
-            read_lock();
+            read_and_write_lock();
+
+            assert(write_data_.size() > 0);
 
             for(auto i = 0; i < write_data_.size(); ++i) {
                 write_data_[i] = op.apply(write_data_[i]);
             }
 
-            read_unlock();
+            read_and_write_unlock();
+        }
+
+        void reciprocal(TpetraVector &result) const
+        {
+            if(result.empty() || result.size() != this->size())
+            {
+                result.init(this->implementation().getMap());
+            }
+
+            result.implementation().reciprocal(this->implementation());
+        }
+
+        template<typename Op>
+        inline void apply_binary(const Op op, const TpetraVector &rhs, TpetraVector &result) const
+        {
+            assert(!empty());
+            assert(!rhs.empty());
+            assert(rhs.size() == size());
+            assert(rhs.local_size() == local_size());
+
+            if(result.empty() || result.size() != rhs.size())
+            {
+                result.init(rhs.implementation().getMap());
+            } 
+
+            auto a_lhs = this->implementation().getData();
+            auto a_rhs = rhs.implementation().getData();
+            auto a_res = result.implementation().getDataNonConst();
+
+            assert(a_res.size() == a_lhs.size());
+            assert(a_res.size() == a_rhs.size());
+
+            for(auto i = 0; i < a_lhs.size(); ++i) {
+               a_res[i] = op.apply(a_lhs[i], a_rhs[i]);
+            }
         }
 
         inline vector_type &implementation()
         {
+            assert(!vec_.is_null());
             return *vec_;
         }
 
         inline const vector_type &implementation() const
         {
+            assert(!vec_.is_null());
             return *vec_;
         }
 
@@ -264,6 +303,10 @@ namespace utopia {
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
         bool write(const std::string &path) const;
 
+        inline bool empty() const
+        {
+            return vec_.is_null();
+        }
     private:
         rcpvector_type vec_;
         Teuchos::ArrayRCP<const Scalar> read_only_data_;

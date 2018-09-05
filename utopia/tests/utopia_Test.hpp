@@ -18,6 +18,7 @@
 #include "utopia_SelectionTest.hpp"
 #include "utopia_UITest.hpp"
 #include "utopia_M3ELinSolTest.hpp"
+#include "utopia_QPSolverTest.hpp"
 
 namespace utopia
 {
@@ -42,6 +43,7 @@ namespace utopia
         runPetscSlepcSolversTest();
 
         runNonlinearMultilevelSolverTest();
+        run_qp_solver_test();
 
         //only works for serial
         if(mpi_world_size() == 1) {
@@ -110,6 +112,8 @@ namespace utopia
                     run_ui_test();
                 } else if(token == "m3e") {
                     run_m3e_lin_sol_test();
+                } else if(token == "qp") {
+                    run_qp_solver_test();
                 }
             }
         }

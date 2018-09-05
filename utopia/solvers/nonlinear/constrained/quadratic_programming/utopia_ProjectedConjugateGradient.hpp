@@ -53,6 +53,8 @@ namespace utopia {
 				// START step
 
 				Scalar alpha = dot(uk, pk)/dot(pk, A * pk);
+				assert(alpha != 0.);
+				
 				x_half = x_old + alpha * pk;
 
 				x = utopia::min(x_half, ub);
@@ -62,7 +64,7 @@ namespace utopia {
 
 				{
 					Write<Vector> w_wk(wk), w_zk(zk);
-					Read<Vector> r_uk(uk), r_lb(lb), r_p(pk);
+					Read<Vector> r_uk(uk), r_ub(ub), r_lb(lb), r_p(pk);
 
 					each_read(x, [&](SizeType i, Scalar elem) {
 							Scalar val = 0.;
@@ -82,7 +84,7 @@ namespace utopia {
 	            	});
 				}
 
-				Scalar beta = dot(wk, A * pk)/dot(pk, A * pk);
+				const Scalar beta = dot(wk, A * pk)/dot(pk, A * pk);
 				pk = wk + beta * zk;
 
 				// END step

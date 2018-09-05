@@ -51,7 +51,7 @@ find_path(LIBMESH_INCLUDE_DIR libmesh/libmesh.h
   ${PC_LIBMESH_INCLUDEDIR} 
   ${PC_LIBMESH_INCLUDE_DIRS} 
   ${LIBMESH_INCLUDES_MY_LOCATIONS}
-  PATH_SUFFIXES libmesh
+  PATH_SUFFIXES libmesh installed
 )
 
 find_library(LIBMESH_LIBRARY

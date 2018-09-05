@@ -7,6 +7,7 @@
 #include "utopia_Smoother.hpp"
 #include "utopia_Core.hpp"
 #include "utopia_Operations.hpp"
+#include "utopia_Recorder.hpp"
 
 #include <cmath>
 #include <cassert>
@@ -34,6 +35,8 @@ namespace utopia {
 
 		bool apply(const Vector &b, Vector &x) override
 		{
+			// UTOPIA_RECORD_SCOPE_BEGIN("apply");
+
 			if(this->verbose())
 				this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
@@ -46,6 +49,9 @@ namespace utopia {
 			p = u;
 			Scalar alpha = 1.;
 
+			// UTOPIA_RECORD_VALUE("u = b - A * x", u);
+			// UTOPIA_RECORD_VALUE("p = u", p);
+
 			bool converged = false;
 			const SizeType check_s_norm_each = 20;
 
@@ -54,8 +60,16 @@ namespace utopia {
 				//perform step
 				x_half = x + alpha * p;
 
+				// UTOPIA_RECORD_VALUE("x_half = x + alpha * p", x_half);
+
 				x = utopia::max(lobo, x_half);
+
+				// UTOPIA_RECORD_VALUE("x = utopia::max(lobo, x_half)", x);
+
+
 				x = utopia::min(upbo, x);
+
+				// UTOPIA_RECORD_VALUE("x = utopia::min(upbo, x)", x);
 
 				u = b - A * x;
 
@@ -74,9 +88,12 @@ namespace utopia {
 					}
 				}
 
+				// UTOPIA_RECORD_VALUE("p <- min_max", p);
 
 				if(iteration % check_s_norm_each == 0) {
 					const Scalar diff = norm2(x_old - x);
+
+					// UTOPIA_RECORD_VALUE("x_old - x", Vector(x_old - x));
 
 					if(this->verbose()) {
 					    PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
@@ -93,6 +110,7 @@ namespace utopia {
 				alpha = dot(u, p)/dot(p, A * p);
 			}
 
+			// UTOPIA_RECORD_SCOPE_END("apply");
 			return converged;
 		}
 

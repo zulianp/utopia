@@ -77,6 +77,22 @@ namespace utopia {
 //            }
 //        }
 //    }
+
+    template<class T1, class T2>
+    bool cross_backend_approxeq(const Wrapper<T1, 1> &l, const Wrapper<T2, 1> &r)
+    {
+        Wrapper<T1, 1> r_copy;
+        backend_convert(r, r_copy);
+        return approxeq(l, r_copy);
+    }
+
+    template<class T1, class T2>
+    bool cross_backend_approxeq(const Wrapper<T1, 2> &l, const Wrapper<T2, 2> &r)
+    {
+        Wrapper<T1, 2> r_copy;
+        backend_convert_sparse(r, r_copy);
+        return approxeq(l, r_copy);
+    }
 }
 
 #endif //UTOPIA_UTOPIA_CONVERSIONS_HPP
