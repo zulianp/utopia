@@ -910,12 +910,6 @@ namespace utopia {
 #endif //WITH_PETSC
     }
 
-    // template<class Matrix, class Vector>
-    // void steihaug_toint_test()
-    // {
-        
-    // }
-
     template<class Matrix, class Vector>
     void rmtr_test()
     {
@@ -952,7 +946,7 @@ namespace utopia {
         auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(tr_strategy_coarse, tr_strategy_fine);
         std::vector< std::shared_ptr<Transfer<Matrix, Vector>> > transfers;
         for(std::size_t i = 0; i < problem.prolongations.size(); ++i) {
-            transfers.push_back( std::make_shared<IPTransferT>(problem.prolongations[i], 0.5) );
+            transfers.push_back( std::make_shared<IPTransferT>( problem.prolongations[i], 0.5) );
         }
 
         rmtr->set_transfer_operators(transfers);
@@ -979,8 +973,11 @@ namespace utopia {
 
     void trilinos_rmtr()
     {
+#ifdef WITH_PETSC
         //petsc version
         rmtr_test<DSMatrixd, DVectord>();
+#endif //WITH_PETSC
+
         rmtr_test<TSMatrixd, TVectord>();
     }
 
@@ -1030,7 +1027,6 @@ namespace utopia {
 #endif //WITH_PETSC
 
         //tests that fail in parallel
-
         if(mpi_world_size() == 1) {
             UTOPIA_RUN_TEST(trilinos_ptap);
             UTOPIA_RUN_TEST(trilinos_mg_1D);
@@ -1045,7 +1041,7 @@ namespace utopia {
 
 
         //tests that always fail
-        //...
+        //NONE for now...
 
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
