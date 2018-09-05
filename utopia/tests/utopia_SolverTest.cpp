@@ -4,6 +4,7 @@
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "utopia_ProjectedConjugateGradient.hpp"
 #include "utopia_ProjectedGradient.hpp"
+#include "utopia_MultiLevelTestProblem.hpp"
 
 namespace utopia {
 	/**
@@ -38,6 +39,7 @@ namespace utopia {
 			UTOPIA_RUN_TEST(ls_test);
 			UTOPIA_RUN_TEST(nl_solve_test);
 			UTOPIA_RUN_TEST(dogleg_test);
+			UTOPIA_RUN_TEST(st_cg_test); 
 
 		}
 
@@ -61,6 +63,20 @@ namespace utopia {
 			Vector x0;
 			newton.solve(fun, x0);
 		}
+
+		void st_cg_test()
+        {
+            MultiLevelTestProblem<Matrix, Vector> ml_problem(100, 2);
+            Vector x = zeros(size(*ml_problem.rhs));
+
+            SteihaugToint<Matrix, Vector, HOMEMADE> cg;
+            cg.rtol(1e-7);
+            cg.atol(1e-6);
+            cg.max_it(500);
+            // cg.verbose(true);
+            cg.tr_constrained_solve(*ml_problem.matrix, -1.0 * *ml_problem.rhs, x, 1e15);
+            utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-5));
+        }
 
 
 		void nl_solve_test()
