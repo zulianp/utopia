@@ -26,9 +26,7 @@ namespace utopia {
                 result,
                 expr.operation(),
                 Eval<Wrapper<Tensor, 1>, Traits>::apply(expr.expr())
-
-
-                );
+            );
 
             UTOPIA_TRACE_END(expr);
             return result;

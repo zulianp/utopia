@@ -219,6 +219,7 @@ namespace utopia {
 		void pre_assemble()
 		{
 			const std::size_t n_forms = mat_buffer.size();
+			
 			for(std::size_t i = 0; i < n_forms; ++i) {
 				mat_buffer[i] = std::make_shared< moonolith::SparseMatrix<double> >(comm);
 				local_element_matrices_sum[i] = 0.;
@@ -227,25 +228,25 @@ namespace utopia {
 					
 					case LocalAssembler::MASTER_X_SLAVE: 
 					{
-						mat_buffer[0]->set_size(to_dofs->n_dofs(), from_dofs->n_dofs());
+						mat_buffer[i]->set_size(to_dofs->n_dofs(), from_dofs->n_dofs());
 						break;
 					}
 
 					case LocalAssembler::SLAVE_X_SLAVE:
 					{
-						mat_buffer[1]->set_size(to_dofs->n_dofs(), to_dofs->n_dofs());
+						mat_buffer[i]->set_size(to_dofs->n_dofs(), to_dofs->n_dofs());
 						break;
 					}
 
 					case LocalAssembler::MASTER_X_MASTER:
 					{
-						mat_buffer[1]->set_size(from_dofs->n_dofs(), from_dofs->n_dofs());
+						mat_buffer[i]->set_size(from_dofs->n_dofs(), from_dofs->n_dofs());
 						break;
 					}
 
 					case LocalAssembler::SLAVE_X_MASTER: 
 					{
-						mat_buffer[0]->set_size(from_dofs->n_dofs(), to_dofs->n_dofs());
+						mat_buffer[i]->set_size(from_dofs->n_dofs(), to_dofs->n_dofs());
 						break;
 					}
 
