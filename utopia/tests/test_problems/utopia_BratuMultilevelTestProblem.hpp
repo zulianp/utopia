@@ -74,7 +74,7 @@ namespace utopia {
 
 				// restrictions, but let's use them as projections...
 				// not very nice solution, but I am lazy to do something more sophisticated just for testing purposes...
-				for(SizeType i = 0; i < prolongations.size(); ++i)
+				for(auto i = 0; i < prolongations.size(); ++i)
 				{
 					auto &I = *prolongations[i];
 					Matrix R =  0.5 * transpose(I);
