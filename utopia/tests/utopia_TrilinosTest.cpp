@@ -921,9 +921,9 @@ namespace utopia {
     {
         using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
 
-
-        BratuMultilevelTestProblem<Matrix, Vector> problem;
-        problem.verbose = true;
+        BratuMultilevelTestProblem<Matrix, Vector> problem(2);
+        problem.verbose = false;
+        // problem.verbose = true;
 
         Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
 
@@ -940,11 +940,11 @@ namespace utopia {
             }
         }
 
-        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
         tr_strategy_coarse->atol(1e-12);
         tr_strategy_coarse->rtol(1e-12);
 
-        auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+        auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
         tr_strategy_fine->atol(1e-12);
         tr_strategy_fine->rtol(1e-12);
 
@@ -972,7 +972,9 @@ namespace utopia {
         rmtr->set_functions(level_functions);
 
 
-        rmtr->solve(x);
+        bool ok = rmtr->solve(x);
+
+        utopia_test_assert(ok);
     }
 
     void trilinos_rmtr()
@@ -1020,6 +1022,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_exp);
         UTOPIA_RUN_TEST(trilinos_diag_ops);
         UTOPIA_RUN_TEST(trilinos_bratu_1D);
+        UTOPIA_RUN_TEST(trilinos_rmtr);
         
         
 #ifdef WITH_PETSC
@@ -1042,7 +1045,7 @@ namespace utopia {
 
 
         //tests that always fail
-        // UTOPIA_RUN_TEST(trilinos_rmtr);
+        //...
 
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
