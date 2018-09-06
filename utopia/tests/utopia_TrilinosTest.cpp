@@ -278,7 +278,7 @@ namespace utopia {
         TVectord v = local_values(n, 5.);
 
         double val = norm1(Y * v);
-        utopia_test_assert(approxeq(val, 0.));
+        utopia_test_assert(approxeq(val, 0., 1e-14));
 
 
         TSMatrixd Id = local_identity(n, n);
@@ -286,7 +286,7 @@ namespace utopia {
 
         v.set(1.);
         val = norm1(Id * v);
-        utopia_test_assert(approxeq(val, size(v).get(0) * 3.));
+        utopia_test_assert( approxeq(val, size(v).get(0) * 3., 1e-14));
     }
 
     void trilinos_mv()

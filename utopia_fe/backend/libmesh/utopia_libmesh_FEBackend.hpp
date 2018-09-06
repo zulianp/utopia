@@ -1954,6 +1954,23 @@ namespace utopia {
 			return std::move(g);
 		}
 
+		template<typename T, typename C>
+		inline static auto multiply(
+			const ConstantCoefficient<T, 0> &left,
+			const GradInterpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> decltype( grad(right.expr().coefficient(), right.expr().fun(), ctx) )
+		{
+			auto &&g = grad(right.expr().coefficient(), right.expr().fun(), ctx);
+
+			std::size_t n_quad_points = g.size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				g[qp].implementation() *= left.expr();
+			}
+
+			return std::move(g);
+		}
+
 		template<typename T>
 		inline static auto multiply(
 			const std::vector<std::vector<double>> &left,

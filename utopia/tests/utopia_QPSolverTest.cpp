@@ -70,19 +70,19 @@ namespace utopia {
             utopia_test_assert(ok);
         }
 
-        void pg_test()
+        void pg_test() const
         {
             ProjectedGradient<Matrix, Vector> pg;
             run_qp_solver(pg);
         }
 
-        void pcg_test()
+        void pcg_test() const
         {
             ProjectedConjugateGradient<Matrix, Vector> pcg;
             run_qp_solver(pcg);
         }
 
-        void ngs_test()
+        void ngs_test() const
         {
             ProjectedGaussSeidel<Matrix, Vector> pgs;
             run_qp_solver(pgs);

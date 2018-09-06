@@ -35,6 +35,7 @@
 #include "utopia_VolumeInterpolationTest.hpp"
 #include "utopia_WearSimulation.hpp"
 #include "utopia_TransferApp.hpp"
+#include "utopia_CoupledEquationSim.hpp"
 
 #include <functional>
 
@@ -84,6 +85,7 @@ int main(int argc, char *argv[])
 	    runners["eikonal"] = run_eikonal_equation_test;
 	    runners["vol2surf"] = run_volume_to_surface_transfer_test;
 	    runners["interp"] = run_volume_interpolation_test;
+	    runners["coupled"] = run_coupled_equation_test;
 	    //benchmarks
 	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    // runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
