@@ -51,6 +51,15 @@ namespace utopia {
 			}
 		}
 
+		bool write(const Path &path) const override
+		{ 
+			if(operator_) {
+				return operator_->write(path);
+			}
+
+			return false;
+		}
+
 	private:
 		std::shared_ptr<MeshBase> from_mesh;
 		std::shared_ptr<DofMap>   from_dofs;
