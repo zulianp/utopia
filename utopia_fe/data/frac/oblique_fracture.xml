@@ -1,0 +1,37 @@
+<!-- MASTER STUFF -->
+<master>
+	<!-- <mesh>file</mesh> -->
+	<!-- <path>../data/frac/unit_square.e</path> -->
+	<mesh>unit-square</mesh>
+	<boundary-conditions>
+		<entry>
+			<side>1</side>
+			<value>1</value>
+		</entry>
+		<entry>
+			<side>2</side>
+			<value>4</value>
+		</entry>
+	</boundary-conditions>
+</master>
+
+
+<!-- SLAVE STUFF -->
+<slave>
+	<mesh>file</mesh>
+	<path>../data/frac/line.e</path>
+	<boundary-conditions>
+		<entry>
+			<side>1</side>
+			<value>1</value>
+		</entry>
+		<entry>
+			<side>2</side>
+			<value>4</value>
+		</entry>
+	</boundary-conditions>
+</slave>
+
+
+
+<solve-strategy>staggered</solve-strategy>
