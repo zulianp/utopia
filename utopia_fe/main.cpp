@@ -36,6 +36,8 @@
 #include "utopia_WearSimulation.hpp"
 #include "utopia_TransferApp.hpp"
 
+#include "utopia_FractureFlowApp.hpp"
+
 #include <functional>
 
 #include "par_moonolith.hpp"
@@ -84,6 +86,7 @@ int main(int argc, char *argv[])
 	    runners["eikonal"] = run_eikonal_equation_test;
 	    runners["vol2surf"] = run_volume_to_surface_transfer_test;
 	    runners["interp"] = run_volume_interpolation_test;
+	    // runners["coupled"] = run_coupled_equation_test;
 	    //benchmarks
 	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;
 	    // runners["vt_weak_scaling"] = run_weak_scaling_benchmark;
@@ -138,6 +141,12 @@ int main(int argc, char *argv[])
 				std::cout << argv[i] << " " << argv[ip1] << std::endl;
 
 				TransferApp app;
+				app.init(init);
+				app.run(argv[ip1]);
+			} else if(argv[i] == FractureFlowApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				FractureFlowApp app;
 				app.init(init);
 				app.run(argv[ip1]);
 			}

@@ -88,8 +88,6 @@ namespace utopia {
 		auto b_form = c1 * inner(d * grad(du), grad(v)) * dX
 		+ c2 * inner(inner(grad(du), grad(u_old))/(coeff(1e-10) + sqrt(inner(grad(u_old), grad(u_old)))), v) * dX;
 
-
-
 		// assemble
 		DSMatrixd hessian;
 		DVectord gradient;

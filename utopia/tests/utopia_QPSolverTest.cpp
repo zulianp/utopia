@@ -21,8 +21,7 @@ namespace utopia {
         }
 
         template<class QPSolver>
-        static void run_qp_solver(QPSolver &qp_solver) {
-            const SizeType n = 100;
+        void run_qp_solver(QPSolver &qp_solver) const {
 
             Matrix m = sparse(n, n, 3);
             assemble_laplacian_1D(m);
@@ -60,7 +59,7 @@ namespace utopia {
 
 
             qp_solver.max_it(n*40);
-            // qp_solver.verbose(true);
+            qp_solver.verbose(verbose);
             qp_solver.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
             Chrono c;
@@ -71,19 +70,19 @@ namespace utopia {
             utopia_test_assert(ok);
         }
 
-        void pg_test()
+        void pg_test() const
         {
             ProjectedGradient<Matrix, Vector> pg;
             run_qp_solver(pg);
         }
 
-        void pcg_test()
+        void pcg_test() const
         {
             ProjectedConjugateGradient<Matrix, Vector> pcg;
             run_qp_solver(pcg);
         }
 
-        void ngs_test()
+        void ngs_test() const
         {
             ProjectedGaussSeidel<Matrix, Vector> pgs;
             run_qp_solver(pgs);
@@ -92,10 +91,14 @@ namespace utopia {
         void run()
         {
             print_backend_info();
-            // UTOPIA_RUN_TEST(pg_test);
+
+            UTOPIA_RUN_TEST(pg_test);
             UTOPIA_RUN_TEST(pcg_test);
-            // UTOPIA_RUN_TEST(ngs_test);
+            UTOPIA_RUN_TEST(ngs_test);
         }
+
+        SizeType n = 20;
+        bool verbose = false;
     };
 
     void run_qp_solver_test() {

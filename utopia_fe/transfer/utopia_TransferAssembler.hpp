@@ -5,6 +5,7 @@
 #include "utopia_Local2Global.hpp"
 #include "utopia_libmesh.hpp"
 #include "utopia.hpp"
+#include "utopia_Path.hpp"
 
 #include <memory>
 
@@ -82,6 +83,7 @@ namespace utopia {
 		virtual void apply(const DVectord &from, DVectord &to) const = 0;
 		virtual void apply_transpose(const DVectord &from, DVectord &to) const = 0;
 		virtual void describe(std::ostream &) const {}
+		virtual bool write(const Path &) const { return false; }
 	};
 
 
@@ -160,6 +162,11 @@ namespace utopia {
 			os << "------------------------------------------\n";
 		}
 
+		bool write(const Path &path) const override
+		{ 
+			return utopia::write(path / "B.m", *B) && utopia::write(path / "D.m", *D);
+		}
+
 	private:
 		std::shared_ptr<DSMatrixd> B;
 		std::shared_ptr<DSMatrixd> D;
@@ -220,6 +227,11 @@ namespace utopia {
 			os << "------------------------------------------\n";
 		}
 
+		bool write(const Path &path) const override
+		{ 
+			return utopia::write(path / "T.m", *T);
+		}
+
 	private:
 		std::shared_ptr<DSMatrixd> T;
 	};
@@ -269,6 +281,11 @@ namespace utopia {
 			os << "row sum [" << t_min << ", " << t_max << "] subset of [0, 1]" << std::endl;
 			os << "sum(T): " << t_sum << " <= " << size(*T).get(0) << "\n";
 			os << "------------------------------------------\n";
+		}
+
+		bool write(const Path &path) const override
+		{ 
+			return utopia::write(path / "T.m", *T);
 		}
 
 	private:

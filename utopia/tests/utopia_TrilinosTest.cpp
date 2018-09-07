@@ -278,7 +278,7 @@ namespace utopia {
         TVectord v = local_values(n, 5.);
 
         double val = norm1(Y * v);
-        utopia_test_assert(approxeq(val, 0.));
+        utopia_test_assert(approxeq(val, 0., 1e-14));
 
 
         TSMatrixd Id = local_identity(n, n);
@@ -286,7 +286,7 @@ namespace utopia {
 
         v.set(1.);
         val = norm1(Id * v);
-        utopia_test_assert(approxeq(val, size(v).get(0) * 3.));
+        utopia_test_assert( approxeq(val, size(v).get(0) * 3., 1e-14));
     }
 
     void trilinos_mv()
@@ -459,6 +459,20 @@ namespace utopia {
         TSMatrixd D = diag(d);
         TVectord x  = local_values(n, 1.);
         utopia_test_assert(approxeq(d, D*x));
+    }
+
+    void trilinos_diag_rect_matrix()
+    {
+        auto n = 10;
+        auto m = 3;
+        TSMatrixd A = local_identity(n, m);
+        TVectord d;
+         d  = diag(A);
+        const double val = norm1(d);
+
+        if( !approxeq(val, size(A).get(1) * 1.) ) {
+            m_utopia_error("diag does not work on for tpetra rectangular matrices in parallel (nor serial)");
+        }
     }
 
     void test_ptap(const int n, const int m)
@@ -817,8 +831,6 @@ namespace utopia {
         TSMatrixd B(expr);
     }
 
-
-
     void trilinos_exp()
     {
 #ifdef WITH_PETSC
@@ -910,20 +922,14 @@ namespace utopia {
 #endif //WITH_PETSC
     }
 
-    // template<class Matrix, class Vector>
-    // void steihaug_toint_test()
-    // {
-        
-    // }
-
     template<class Matrix, class Vector>
     void rmtr_test()
     {
         using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
 
-
-        BratuMultilevelTestProblem<Matrix, Vector> problem;
-        problem.verbose = true;
+        BratuMultilevelTestProblem<Matrix, Vector> problem(2);
+        problem.verbose = false;
+        // problem.verbose = true;
 
         Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
 
@@ -940,11 +946,11 @@ namespace utopia {
             }
         }
 
-        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
         tr_strategy_coarse->atol(1e-12);
         tr_strategy_coarse->rtol(1e-12);
 
-        auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector> >();
+        auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
         tr_strategy_fine->atol(1e-12);
         tr_strategy_fine->rtol(1e-12);
 
@@ -952,7 +958,7 @@ namespace utopia {
         auto rmtr = std::make_shared<RMTR<Matrix, Vector, GALERKIN> >(tr_strategy_coarse, tr_strategy_fine);
         std::vector< std::shared_ptr<Transfer<Matrix, Vector>> > transfers;
         for(std::size_t i = 0; i < problem.prolongations.size(); ++i) {
-            transfers.push_back( std::make_shared<IPTransferT>(problem.prolongations[i], 0.5) );
+            transfers.push_back( std::make_shared<IPTransferT>( problem.prolongations[i], 0.5) );
         }
 
         rmtr->set_transfer_operators(transfers);
@@ -972,13 +978,18 @@ namespace utopia {
         rmtr->set_functions(level_functions);
 
 
-        rmtr->solve(x);
+        bool ok = rmtr->solve(x);
+
+        utopia_test_assert(ok);
     }
 
     void trilinos_rmtr()
     {
+#ifdef WITH_PETSC
         //petsc version
         rmtr_test<DSMatrixd, DVectord>();
+#endif //WITH_PETSC
+
         rmtr_test<TSMatrixd, TVectord>();
     }
 
@@ -1020,6 +1031,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_exp);
         UTOPIA_RUN_TEST(trilinos_diag_ops);
         UTOPIA_RUN_TEST(trilinos_bratu_1D);
+        UTOPIA_RUN_TEST(trilinos_rmtr);
         
         
 #ifdef WITH_PETSC
@@ -1027,7 +1039,6 @@ namespace utopia {
 #endif //WITH_PETSC
 
         //tests that fail in parallel
-
         if(mpi_world_size() == 1) {
             UTOPIA_RUN_TEST(trilinos_ptap);
             UTOPIA_RUN_TEST(trilinos_mg_1D);
@@ -1036,13 +1047,13 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_transpose);
             UTOPIA_RUN_TEST(trilinos_each_read_transpose);
             UTOPIA_RUN_TEST(trilinos_mg);
+            
         } else {
             m_utopia_warning_once("several tests left out for parallel execution");
         }
 
-
         //tests that always fail
-        // UTOPIA_RUN_TEST(trilinos_rmtr);
+        // UTOPIA_RUN_TEST(trilinos_diag_rect_matrix);
 
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }
