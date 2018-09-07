@@ -19,7 +19,11 @@ if(TRILINOS_FOUND)
             list(APPEND UTOPIA_LIBRARIES -l${LIB})
         endif()
     endforeach()
+    list(APPEND Trilinos_TPL_INCLUDE_DIRS ${Trilinos_additional_headers})
     list(APPEND UTOPIA_INCLUDES ${Trilinos_TPL_INCLUDE_DIRS})
+    #####
+    message(STATUS "Trilinos_additional_headers ${Trilinos_additional_headers}")
+    message(STATUS "Trilinos_TPL_INCLUDE_DIRS ${Trilinos_TPL_INCLUDE_DIRS})
 
     # set(CMAKE_C_COMPILER ${TRILINOS_COMPILER})
 
