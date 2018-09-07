@@ -154,10 +154,11 @@ namespace utopia {
 			}
 		}
 
-		A.implementation().set_name("a");
-		write("A.m", A);
+		// A.implementation().set_name("a");
+		// write("A.m", A);
 
-		Factorization<DSMatrixd, DVectord> op;
+		// Factorization<DSMatrixd, DVectord> op;
+		LUDecomposition<DSMatrixd, DVectord> op;
 		op.update(make_ref(A));
 
 
@@ -188,7 +189,149 @@ namespace utopia {
 
 	}
 
+	void write_solution(
+		const std::string &name,
+		DVectord &sol,
+		const int time_step,
+		const double t,
+		FunctionSpaceT &space,
+		libMesh::ExodusII_IO &io)
+	{	
+		utopia::convert(sol, *space.equation_system().solution);
+		space.equation_system().solution->close();
+		io.write_timestep(name, space.equation_systems(), time_step, t);
+	}
+
 	static void solve_staggered(
+		FunctionSpaceT &V_m,
+		FunctionSpaceT &V_s,
+		DSMatrixd &A_m,
+		DVectord &rhs_m,
+		DSMatrixd &A_s,
+		DVectord &rhs_s,
+		DVectord &sol_m,
+		DVectord &sol_s,
+		DVectord &lagr)
+	{
+
+		libMesh::ExodusII_IO io_m(V_m.mesh());
+		libMesh::ExodusII_IO io_s(V_s.mesh());
+		libMesh::ExodusII_IO io_m_l(V_m.mesh());
+		libMesh::ExodusII_IO io_s_l(V_s.mesh());
+
+
+		Factorization<DSMatrixd, DVectord> op_m;
+		op_m.update(make_ref(A_m));
+
+
+		Factorization<DSMatrixd, DVectord> op_s;
+		op_s.update(make_ref(A_s));
+
+		sol_s = local_zeros(local_size(rhs_s));
+
+		DVectord lagr_m = local_zeros(local_size(rhs_m));
+		DVectord lagr_s = local_zeros(local_size(rhs_s));
+
+		DVectord rhs_lagr_m, rhs_lagr_s;
+		DVectord delta_lagr = local_zeros(local_size(rhs_s));
+
+		double dumping = 1.;
+
+		TransferOptions opts;
+	 	opts.from_var_num = 0;
+		opts.to_var_num   = 0;
+
+		MeshTransferOperator t(make_ref(V_m.mesh()),
+							   make_ref(V_m.dof_map()),
+							   make_ref(V_s.mesh()),
+							   make_ref(V_s.dof_map()),
+							   opts
+							   );
+
+
+		// t.initialize(INTERPOLATION);
+		// t.write("T.m");
+		t.initialize(L2_PROJECTION);
+
+		lagr_m.set(0.);
+
+		for(int i = 0; i < 20; ++i) {
+			apply_zero_boundary_conditions(V_m.dof_map(), lagr_m);
+			rhs_lagr_m = rhs_m + lagr_m;
+
+			write_solution(
+					"lagr_m.e",
+					lagr_m,
+					(i + 1),
+					(i + 1),
+					V_m,
+					io_m_l
+			);
+			
+			op_m.apply(rhs_lagr_m, sol_m);
+
+			write_solution(
+					"sol_m.e",
+					sol_m,
+					(i + 1),
+					(i + 1),
+					V_m,
+					io_m
+			);
+
+			sol_s.set(0.);
+			t.apply(sol_m, sol_s);
+
+			// apply_boundary_conditions(V_s, A_s, sol_s);
+
+			lagr_s = rhs_s - A_s * sol_s;
+			apply_zero_boundary_conditions(V_s.dof_map(), lagr_s);
+
+			// rhs_lagr_s = rhs_s + lagr_s;
+			// op_s.apply(rhs_lagr_s, sol_s);
+
+			// lagr_s = rhs_lagr_s - A_s * sol_s;
+
+			write_solution(
+					"sol_s.e",
+					sol_s,
+					(i + 1),
+					(i + 1),
+					V_s,
+					io_s
+			);
+
+
+			write_solution(
+					"lagr_s.e",
+					lagr_s,
+					(i + 1),
+					(i + 1),
+					V_s,
+					io_s_l
+			);
+
+			apply_zero_boundary_conditions(V_s.dof_map(), lagr_s);
+
+			double n_lagr_s = norm2(lagr_s);
+
+			disp(n_lagr_s);
+
+			if(n_lagr_s < 1e-14) {
+				break;
+			}
+
+			delta_lagr.set(0);
+			t.apply_transpose(lagr_s, delta_lagr);
+			// lagr_m += dumping * delta_lagr;
+			lagr_m =  delta_lagr;
+		}
+
+		lagr = lagr_m;
+
+	}
+	
+	static void solve_separate(
 		FunctionSpaceT &V_m,
 		FunctionSpaceT &V_s,
 		DSMatrixd &A_m,
@@ -202,17 +345,13 @@ namespace utopia {
 		Factorization<DSMatrixd, DVectord> op_m;
 		op_m.update(make_ref(A_m));
 
+		Factorization<DSMatrixd, DVectord> op_s;
+		op_s.update(make_ref(A_s));
 
-		// Factorization<DSMatrixd, DVectord> op_s;
-		// op_s.update(make_ref(A_s));
 
-		DVectord lagr_m = local_zeros(local_size(rhs_m));
-		DVectord lagr_s = local_zeros(local_size(rhs_s));
+		op_m.apply(rhs_m, sol_m);
+		op_s.apply(rhs_s, sol_s);
 
-		DVectord rhs_lagr_m;
-		DVectord delta_lagr = local_zeros(local_size(rhs_s));
-
-		double dumping = 1.;
 
 		MeshTransferOperator t(make_ref(V_m.mesh()),
 							   make_ref(V_m.dof_map()),
@@ -220,36 +359,11 @@ namespace utopia {
 							   make_ref(V_s.dof_map())
 							   );
 
-
 		t.initialize(INTERPOLATION);
-		// t.write("T.m");
-		// t.initialize(L2_PROJECTION);
 
-		for(int i = 0; i < 4; ++i) {
-			apply_zero_boundary_conditions(V_m.dof_map(), lagr_m);
-			rhs_lagr_m = rhs_m + lagr_m;
-			
-			op_m.apply(rhs_lagr_m, sol_m);
-
-			t.apply(sol_m, sol_s);
-
-			lagr_s = rhs_s - A_s * sol_s;
-
-			double n_lagr_s = norm2(lagr_s);
-
-			disp(n_lagr_s);
-
-			if(n_lagr_s < 1e-14) {
-				break;
-			}
-
-			delta_lagr.set(0);
-			t.apply_transpose(lagr_s, delta_lagr);
-			lagr_m += dumping * delta_lagr;
-		}
-
-		lagr = lagr_m;
-
+		DVectord sol_transfered;
+		t.apply(sol_m, sol_transfered);
+		lagr = sol_transfered - sol_s;
 	}
 
 
@@ -276,16 +390,18 @@ namespace utopia {
 		const auto elem_order = libMesh::FIRST;
 
 		auto mesh_master = std::make_shared<libMesh::DistributedMesh>(init.comm());
-		// libMesh::MeshTools::Generation::build_square(
-		// 	*mesh_master,
-		// 	50, 11,
-		// 	-0.5, 0.5,
-		// 	-0.1, 0.1,
-		// 	elem_type
-		// );
+		libMesh::MeshTools::Generation::build_square(
+			*mesh_master,
+			30, 30,
+			// -0.5, 0.5,
+			// -0.1, 0.1,
+			-0., 1.,
+			-0., 1.,
+			elem_type
+		);
 
 
-		mesh_master->read("../data/frac/master_backg.e");
+		// mesh_master->read("../data/frac/master_backg.e");
 
 		auto mesh_slave = std::make_shared<libMesh::DistributedMesh>(init.comm());
 		// libMesh::MeshTools::Generation::build_square(
@@ -296,8 +412,9 @@ namespace utopia {
 		// 	elem_type
 		// );
 
-		mesh_slave->read("../data/frac/slave_frac.e");
-		// refine(1, *mesh_slave);
+		// mesh_slave->read("../data/frac/slave_frac.e");
+		mesh_slave->read("../data/frac/line.e");
+		// refine(4, *mesh_slave);
 
 
 		//equations system
@@ -320,19 +437,19 @@ namespace utopia {
 
 		init_constraints(
 			constraints(
-				// boundary_conditions(u_m == coeff(4.), {1}),
-				// boundary_conditions(u_m == coeff(1.), {3})
 				boundary_conditions(u_m == coeff(4.), {1}),
-				 boundary_conditions(u_m == coeff(1.), {2})
+				boundary_conditions(u_m == coeff(1.), {3})
+				// boundary_conditions(u_m == coeff(4.), {1}),
+				//  boundary_conditions(u_m == coeff(1.), {2})
 			)
 		);
 
 		init_constraints(
 			constraints(
-				// boundary_conditions(u_s == coeff(1.), {1}),
-				// boundary_conditions(u_s == coeff(4.), {2})
-				boundary_conditions(u_s == coeff(4.), {1}),
-                boundary_conditions(u_s == coeff(1.), {2})
+				boundary_conditions(u_s == coeff(1.), {1}),
+				boundary_conditions(u_s == coeff(4.), {2})
+				// boundary_conditions(u_s == coeff(4.), {1}),
+    //             boundary_conditions(u_s == coeff(1.), {2})
 			)
 		);
 
@@ -359,6 +476,7 @@ namespace utopia {
 
 		// solve_monolithic(
 		solve_staggered(
+		// solve_separate(
 				V_m,
 				V_s,
 				A_m,

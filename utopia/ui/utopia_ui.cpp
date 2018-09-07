@@ -11,6 +11,11 @@ namespace utopia {
 			auto ret = make_unique<XMLInputStream>();
 			ret->open(path);
 			return ret;
+			
+			// auto ret = new XMLInputStream();
+			// auto ret_ptr = std::unique_ptr<InputStream>(ret);
+			// ret->open(path);
+			// return ret_ptr;
 		} else {
 			std::cerr << "[Error] format not supported" << std::endl;
 			return nullptr;
