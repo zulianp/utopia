@@ -1,0 +1,38 @@
+<!-- MASTER STUFF -->
+<master>
+	<mesh>unit-square</mesh>
+	<boundary-conditions>
+		<entry>
+			<side>3</side>
+			<value>1</value>
+		</entry>
+		<entry>
+			<side>1</side>
+			<value>4</value>
+		</entry>
+	</boundary-conditions>
+	<diffusivity>1.</diffusivity>
+	<forcing-function>0.</forcing-function>
+	<refinements>0</refinements>
+</master>
+
+<!-- SLAVE STUFF -->
+<slave>
+	<mesh>unit-square</mesh>
+	<boundary-conditions>
+		<entry>
+			<side>3</side>
+			<value>1</value>
+		</entry>
+		<entry>
+			<side>1</side>
+			<value>4</value>
+		</entry>
+	</boundary-conditions>
+	<diffusivity>10.</diffusivity>
+	<forcing-function>0.</forcing-function>
+	<refinements>0</refinements>
+</slave>
+
+<solve-strategy>staggered</solve-strategy>
+<!-- <solve-strategy>monolithic</solve-strategy> -->
