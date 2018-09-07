@@ -322,7 +322,7 @@ namespace utopia {
 
 	void TpetraMatrix::get_diag(TpetraVector &d) const
 	{
-		if(d.is_null()) {
+		if(d.is_null() || d.size().get(0) != this->size().get(0)) {
 			m_utopia_warning_once("TpetraMatrix::get_diag Assuming row <= col");
 			d.init(implementation().getRowMap());
 		}
@@ -347,15 +347,16 @@ namespace utopia {
 
 
 		auto r = d.range();
+		auto data = d.implementation().getData();
 
-		const_cast<TpetraVector &>(d).read_lock();
 		write_lock();
 
+		global_ordinal_type index = 0;
+
 		for(auto i = r.begin(); i < r.end(); ++i) {
-			set(i, i, d.get(i));
+			set(i, i, data[index++]);
 		}
 
-		const_cast<TpetraVector &>(d).read_unlock();
 		write_unlock();
 	}
 
