@@ -279,7 +279,6 @@ namespace utopia {
         double val = norm1(Y * v);
         utopia_test_assert(approxeq(val, 0.));
 
-
         TSMatrixd Id = local_identity(n, n);
         Id += 2. * Id;
 
@@ -615,10 +614,11 @@ namespace utopia {
 
     void trilinos_mg_1D()
     {
-        // if(mpi_world_size() > 1) return;
+      // if(mpi_world_size() > 1) return;
       //petsc version
-      test_mg<DSMatrixd, DVectord>();
-    
+#ifdef WITH_PETSC
+       test_mg<DSMatrixd, DVectord>();
+#endif //WITH_PETSC
       //trilinos version
       test_mg<TSMatrixd, TVectord>();
     }
@@ -634,8 +634,6 @@ namespace utopia {
         // using MatrixT = utopia::DSMatrixd;
         // using VectorT = utopia::DVectord;
 
-        bool ok = true;
-
         VectorT rhs;
         MatrixT A, I;
 
@@ -649,6 +647,8 @@ namespace utopia {
 #ifdef WITH_PETSC
         //FIXME needs trilinos formats but for the moment lets use petsc's
         {
+
+            bool ok = true;
             DSMatrixd petsc_A, petsc_I;
             DVectord petsc_rhs;
 
@@ -977,8 +977,10 @@ namespace utopia {
     void trilinos_rmtr()
     {
         //petsc version
+    #ifdef WITH_PETSC
         rmtr_test<DSMatrixd, DVectord>();
         rmtr_test<TSMatrixd, TVectord>();
+    #endif //WITH_PETSC
     }
 
     void trilinos_matrix_norm()
