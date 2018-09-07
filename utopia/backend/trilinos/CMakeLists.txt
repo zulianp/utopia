@@ -46,6 +46,13 @@ if(TRILINOS_FOUND)
 	endif()
 
     set(WITH_TRILINOS TRUE)
+    if(KOKKOS_CUDA_HPP)
+        set(KOKKOS_CUDA TRUE)
+    endif()
+    if(KOKKOS_OPENMP_HPP)
+        set(KOKKOS_OPENMP TRUE)
+    endif()
+
 else()
     message(WARNING "[Warning] Trilinos not found")
     set(WITH_TRILINOS FALSE)
