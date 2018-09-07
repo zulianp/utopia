@@ -332,9 +332,6 @@ namespace utopia {
 
 	void TpetraMatrix::init_diag(const TpetraVector &d)
 	{
-		//FIXME maybe there is a better and more efficent way to do this
-		//also without const_cast
-
 		auto ls = d.local_size().get(0);
 		auto gs = d.size().get(0);
 
@@ -348,6 +345,8 @@ namespace utopia {
 
 		auto r = d.range();
 		auto data = d.implementation().getData();
+
+		assert(!data.is_null());
 
 		write_lock();
 
