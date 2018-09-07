@@ -392,30 +392,39 @@ namespace utopia {
     
     class FractureFlowApp::Input : public Serializable {
     public:
-
+        
         void read(InputStream &is) override
         {
             is.read("mesh", mesh_type);
             if(mesh_type == "file") {
                 is.read("path", path);
             }
-
+            
             is.read("boundary-conditions", [this](InputStream &is) {
                 is.read_all([this](InputStream &is) {
                     int side_set = 0;
-
+                    
                     is.read("side", side_set);
-
-
+                    
+                    
                     double value = 0;
                     is.read("value", value);
-
+                    
                     sides.push_back(side_set);
                     values.push_back(value);
                 });
             });
-        }
+            
+            diffusivity = 1.;
+            is.read("diffusivity", diffusivity);
+            forcing_function = 0.;
+            
+            is.read("forcing-function", forcing_function);
 
+            refinements = 0;
+            is.read("refinements", refinements);
+        }
+        
         void make_mesh(libMesh::DistributedMesh &mesh) const
         {
             if(this->mesh_type == "file") {
@@ -429,39 +438,49 @@ namespace utopia {
                                                              elem_type
                                                              );
             }
-        }
 
-        void set_up_bc(const FunctionSpaceT &V) 
+            refine(refinements, mesh);
+        }
+        
+        void set_up_bc(const FunctionSpaceT &V)
         {
             auto u = trial(V);
             std::size_t n = sides.size();
-
+            
             for(std::size_t i = 0; i < n; ++i) {
-             init_constraints(
-                constraints(
-                    boundary_conditions(u == coeff(values[i]), {sides[i]})
-                        )
-                    );
+                init_constraints(
+                                 constraints(
+                                             boundary_conditions(u == coeff(values[i]), {sides[i]})
+                                             )
+                                 );
             }
         }
-
+        
         void desribe(std::ostream &os = std::cout) const
         {
-            os << "mesh_type: " << mesh_type << "\n";
-            os << "path: " << path << "\n";
-
+            os << "-----------------------------------\n";
+            os << "mesh_type:       " << mesh_type << "\n";
+            os << "path:            " << path << "\n";
+            os << "diffusivity:     " << diffusivity << "\n";
+            os << "forcing_function: " << forcing_function << "\n";
+            
             os << "side, value\n";
-
+            
             std::size_t n = sides.size();
             for(std::size_t i = 0; i < n; ++i) {
                 os << sides[i]<< ", " << values[i] << "\n";
-            }   
+            }
+            
+            os << "-----------------------------------\n";
         }
         
-
+        
         std::string mesh_type, path;
         std::vector<int> sides;
         std::vector<double> values;
+        double diffusivity;
+        double forcing_function;
+        int refinements;
     };
     
     void FractureFlowApp::run(const std::string &conf_file_path)
@@ -471,61 +490,26 @@ namespace utopia {
         c.start();
         
         auto is_ptr = open_istream(conf_file_path);
-
+        
         Input master_in, slave_in;
-
+        
         is_ptr->read("master", master_in);
         is_ptr->read("slave", slave_in);
         
         std::string solve_strategy = "staggered";
         is_ptr->read("solve-strategy", solve_strategy);
-
+        
         master_in.desribe();
         slave_in.desribe();
-
-        std::cout << "solve_strategy: "  << solve_strategy << std::endl;
-        //model parameters
-        // const unsigned int n = 100;
-        // const unsigned int m = 10;
         
-        //discretization parameters
-        // const auto elem_type = libMesh::QUAD8;
+        std::cout << "solve_strategy: "  << solve_strategy << std::endl;
         const auto elem_order = libMesh::FIRST;
         
         auto mesh_master = std::make_shared<libMesh::DistributedMesh>(*comm_);
         auto mesh_slave = std::make_shared<libMesh::DistributedMesh>(*comm_);
-
+        
         master_in.make_mesh(*mesh_master);
         slave_in.make_mesh(*mesh_slave);
-
-
-
-        // if( )
-        // libMesh::MeshTools::Generation::build_square(*mesh_master,
-        //                                              30, 30,
-        //                                              // -0.5, 0.5,
-        //                                              // -0.1, 0.1,
-        //                                              -0., 1.,
-        //                                              -0., 1.,
-        //                                              elem_type
-        //                                              );
-        
-        
-        // mesh_master->read("../data/frac/master_backg.e");
-        
-        
-        // libMesh::MeshTools::Generation::build_square(
-        // 	*mesh_slave,
-        // 	m, m/2,
-        // 	0., 1.,
-        // 	0.35, 0.4,
-        // 	elem_type
-        // );
-        
-        // mesh_slave->read("../data/frac/slave_frac.e");
-        // mesh_slave->read("../data/frac/line.e");
-        // refine(4, *mesh_slave);
-        
         
         //equations system
         auto equation_systems_master = std::make_shared<libMesh::EquationSystems>(*mesh_master);
@@ -544,15 +528,15 @@ namespace utopia {
         
         auto u_s = trial(V_s);
         auto v_s = test(V_s);
-
+        
         master_in.set_up_bc(V_m);
         slave_in.set_up_bc(V_s);
         
         V_m.initialize();
         V_s.initialize();
         
-        auto eq_m = 1. * inner(grad(u_m), grad(v_m)) * dX == inner(coeff(0.), v_m) * dX;
-        auto eq_s = 10. * inner(grad(u_s), grad(v_s)) * dX == inner(coeff(0.), v_s) * dX;
+        auto eq_m = master_in.diffusivity * inner(grad(u_m), grad(v_m)) * dX == inner(coeff(master_in.forcing_function), v_m) * dX;
+        auto eq_s = slave_in.diffusivity  * inner(grad(u_s), grad(v_s)) * dX == inner(coeff(slave_in.forcing_function), v_s) * dX;
         
         DSMatrixd A_m, A_s;
         DVectord rhs_m, rhs_s;
@@ -568,37 +552,32 @@ namespace utopia {
         
         DVectord sol_m, sol_s, lagr;
         
-
+        
         if(solve_strategy == "staggered") {
-        // solve_monolithic(
-        solve_staggered(
-                        // solve_separate(
-                        V_m,
-                        V_s,
-                        A_m,
-                        rhs_m,
-                        A_s,
-                        rhs_s,
-                        sol_m,
-                        sol_s,
-                        lagr
-                        );
-
-    } else {
-        solve_monolithic(
-        // solve_staggered(
-                        // solve_separate(
-                        V_m,
-                        V_s,
-                        A_m,
-                        rhs_m,
-                        A_s,
-                        rhs_s,
-                        sol_m,
-                        sol_s,
-                        lagr
-                        );
-    }
+            
+            solve_staggered(V_m,
+                            V_s,
+                            A_m,
+                            rhs_m,
+                            A_s,
+                            rhs_s,
+                            sol_m,
+                            sol_s,
+                            lagr
+                            );
+            
+        } else {
+            solve_monolithic(V_m,
+                             V_s,
+                             A_m,
+                             rhs_m,
+                             A_s,
+                             rhs_s,
+                             sol_m,
+                             sol_s,
+                             lagr
+                             );
+        }
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
