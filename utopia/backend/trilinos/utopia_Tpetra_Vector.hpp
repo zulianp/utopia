@@ -25,23 +25,29 @@ namespace utopia {
     typedef Tpetra::Operator<>::scalar_type SC;
     typedef Tpetra::Operator<SC>::local_ordinal_type LO;
     typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
-    
-    // typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
-    // typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
-    typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
-    // typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
-    
-    typedef serial_node NT;
-    
 
-         typedef Tpetra::Operator<SC, LO, GO, NT> OP;
-    
-        typedef Tpetra::Map<LO, GO, NT>                   map_type;
-        typedef Tpetra::Vector<SC, LO, GO, NT>            vector_type;
-        typedef Teuchos::RCP<vector_type>                 rcpvector_type;
-        typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
-        typedef Teuchos::RCP<const map_type>              rcp_map_type;
-        
+    //types of Kokkos Parallel Nodes
+    typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
+
+#ifdef KOKKOS_CUDA
+    typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
+    typedef cuda_node NT;
+#elif defined KOKKOS_OPENMP
+    typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
+    typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
+    typedef openmp_node NT;
+#else
+    typedef serial_node NT;
+#endif
+
+    typedef Tpetra::Operator<SC, LO, GO, NT> OP;
+
+    typedef Tpetra::Map<LO, GO, NT>                   map_type;
+    typedef Tpetra::Vector<SC, LO, GO, NT>            vector_type;
+    typedef Teuchos::RCP<vector_type>                 rcpvector_type;
+    typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
+    typedef Teuchos::RCP<const map_type>              rcp_map_type;
+
 //        typedef vector_type::global_ordinal_type          global_ordinal_type;
 //        typedef Tpetra::Vector<>::mag_type                magnitude_type;
         typedef vector_type::scalar_type                  Scalar;

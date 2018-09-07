@@ -277,7 +277,9 @@ namespace utopia {
         TVectord v = local_values(n, 5.);
 
         double val = norm1(Y * v);
-        utopia_test_assert(approxeq(val, 0., 1e-14));
+        double tolerance = 30. * std::numeric_limits<double>::epsilon();
+        //std::cout << "val " << val <<std::endl;
+        utopia_test_assert(approxeq(val, 0., tolerance ));
 
         TSMatrixd Id = local_identity(n, n);
         Id += 2. * Id;
@@ -450,12 +452,16 @@ namespace utopia {
         TSMatrixd A = local_sparse(n, n, 3);
         assemble_laplacian_1D(A);
         TVectord d = diag(A);
+//        disp(A);
+//        disp(d);
 
         const double val = norm1(d);
         utopia_test_assert(approxeq(val, size(d).get(0)*2.-2.));
 
         TSMatrixd D = diag(d);
         TVectord x  = local_values(n, 1.);
+//        disp(D);
+//        disp(x);
         utopia_test_assert(approxeq(d, D*x));
     }
 
@@ -659,10 +665,10 @@ namespace utopia {
         );
 
 #ifdef WITH_PETSC
+
+        bool ok = true;
         //FIXME needs trilinos formats but for the moment lets use petsc's
         {
-
-            bool ok = true;
             DSMatrixd petsc_A, petsc_I;
             DVectord petsc_rhs;
 

@@ -35,17 +35,16 @@ namespace utopia {
 
         //types of Kokkos Parallel Nodes
         typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
-#ifdef  KOKKOS_CUDA
+#ifdef KOKKOS_CUDA
         typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
         typedef cuda_node NT;
-#elif   KOKKOS_OPENMP
+#elif defined KOKKOS_OPENMP
         typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
         typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
         typedef openmp_node NT;
 #else
         typedef serial_node NT;
 #endif
-
         //types of Trilinos Objects
         typedef Tpetra::CrsMatrix<SC, LO, GO, NT>             crs_mat_type;
         typedef Teuchos::RCP<crs_mat_type>                    rcp_crs_mat_type;

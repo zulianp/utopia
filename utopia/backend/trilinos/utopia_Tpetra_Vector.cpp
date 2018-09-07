@@ -14,12 +14,6 @@ namespace utopia {
         typedef Tpetra::Operator<>::scalar_type SC;
         typedef Tpetra::Operator<SC>::local_ordinal_type LO;
         typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
-    
-     // typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
-     // typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
-        typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
-     // typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;   
-        typedef serial_node NT;
 
         typedef Tpetra::CrsMatrix<SC, LO, GO, NT>         crs_matrix_type;
 

@@ -37,14 +37,20 @@ namespace utopia {
     typedef Tpetra::Operator<SC>::local_ordinal_type LO;
     typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
     //typedef Tpetra::Map<LO, GO, NT> map_type;
-    
-    typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
-    // typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
+
     typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
+
+#ifdef  KOKKOS_CUDA
+    typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
+    typedef cuda_node NT;
+#elif defined   KOKKOS_OPENMP
+    typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
     typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
-    
+    typedef openmp_node NT;
+#else
     typedef serial_node NT;
-    
+#endif
+
     typedef Tpetra::MultiVector<SC, LO, GO, NT> MV;
     typedef Tpetra::Operator<SC, LO, GO, NT> OP;
     

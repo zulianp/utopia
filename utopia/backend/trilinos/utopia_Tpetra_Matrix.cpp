@@ -327,7 +327,7 @@ namespace utopia {
 	void TpetraMatrix::get_diag(TpetraVector &d) const
 	{
 		const bool is_row_min = this->size().get(0) <= this->size().get(1);
-		global_ordinal_type n = (is_row_min)? this->size().get(0) : this->size().get(1);
+		GO n = (is_row_min)? this->size().get(0) : this->size().get(1);
 
 		if(d.is_null() || d.size().get(0) != n) {
 			m_utopia_warning_once("TpetraMatrix::get_diag Assuming row <= col");
@@ -362,7 +362,7 @@ namespace utopia {
 
 		write_lock();
 
-		local_ordinal_type index = 0;
+		LO index = 0;
 
 		for(auto i = r.begin(); i < r.end(); ++i) {
 			set(i, i, data[index++]);
