@@ -216,8 +216,7 @@ namespace utopia {
         io.write_timestep(name, space.equation_systems(), time_step, t);
     }
     
-    static void solve_staggered(
-                                FunctionSpaceT &V_m,
+    static void solve_staggered(FunctionSpaceT &V_m,
                                 FunctionSpaceT &V_s,
                                 DSMatrixd &A_m,
                                 DVectord &rhs_m,
@@ -233,13 +232,8 @@ namespace utopia {
         libMesh::ExodusII_IO io_m_l(V_m.mesh());
         libMesh::ExodusII_IO io_s_l(V_s.mesh());
         
-        
         Factorization<DSMatrixd, DVectord> op_m;
         op_m.update(make_ref(A_m));
-        
-        
-        Factorization<DSMatrixd, DVectord> op_s;
-        op_s.update(make_ref(A_s));
         
         sol_s = local_zeros(local_size(rhs_s));
         
@@ -262,19 +256,17 @@ namespace utopia {
                                opts
                                );
         
-        
         // t.initialize(INTERPOLATION);
-        // t.write("T.m");
-        t.initialize(L2_PROJECTION);
-        
+        // t.initialize(L2_PROJECTION);
+        // t.write("./");
+
         lagr_m.set(0.);
         
         for(int i = 0; i < 20; ++i) {
             apply_zero_boundary_conditions(V_m.dof_map(), lagr_m);
             rhs_lagr_m = rhs_m + lagr_m;
             
-            write_solution(
-                           "lagr_m.e",
+            write_solution("lagr_m.e",
                            lagr_m,
                            (i + 1),
                            (i + 1),
@@ -284,8 +276,7 @@ namespace utopia {
             
             op_m.apply(rhs_lagr_m, sol_m);
             
-            write_solution(
-                           "sol_m.e",
+            write_solution("sol_m.e",
                            sol_m,
                            (i + 1),
                            (i + 1),
@@ -296,18 +287,12 @@ namespace utopia {
             sol_s.set(0.);
             t.apply(sol_m, sol_s);
             
-            // apply_boundary_conditions(V_s, A_s, sol_s);
-            
+            apply_boundary_conditions(V_s, A_s, sol_s);
             lagr_s = rhs_s - A_s * sol_s;
             apply_zero_boundary_conditions(V_s.dof_map(), lagr_s);
+
             
-            // rhs_lagr_s = rhs_s + lagr_s;
-            // op_s.apply(rhs_lagr_s, sol_s);
-            
-            // lagr_s = rhs_lagr_s - A_s * sol_s;
-            
-            write_solution(
-                           "sol_s.e",
+            write_solution("sol_s.e",
                            sol_s,
                            (i + 1),
                            (i + 1),
@@ -316,16 +301,13 @@ namespace utopia {
                            );
             
             
-            write_solution(
-                           "lagr_s.e",
+            write_solution("lagr_s.e",
                            lagr_s,
                            (i + 1),
                            (i + 1),
                            V_s,
                            io_s_l
                            );
-            
-            apply_zero_boundary_conditions(V_s.dof_map(), lagr_s);
             
             double n_lagr_s = norm2(lagr_s);
             
@@ -337,12 +319,10 @@ namespace utopia {
             
             delta_lagr.set(0);
             t.apply_transpose(lagr_s, delta_lagr);
-            // lagr_m += dumping * delta_lagr;
-            lagr_m =  delta_lagr;
+            lagr_m += dumping * delta_lagr;
         }
         
         lagr = lagr_m;
-        
     }
     
     static void solve_separate(
@@ -488,6 +468,11 @@ namespace utopia {
         Chrono c;
         
         c.start();
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////// SET-UP ////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
         
         auto is_ptr = open_istream(conf_file_path);
         
@@ -503,14 +488,17 @@ namespace utopia {
         slave_in.desribe();
         
         std::cout << "solve_strategy: "  << solve_strategy << std::endl;
-        const auto elem_order = libMesh::FIRST;
-        
+       
         auto mesh_master = std::make_shared<libMesh::DistributedMesh>(*comm_);
         auto mesh_slave = std::make_shared<libMesh::DistributedMesh>(*comm_);
         
         master_in.make_mesh(*mesh_master);
         slave_in.make_mesh(*mesh_slave);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
         
+        //////////////////////////// Variational formulation ////////////////////////////
         //equations system
         auto equation_systems_master = std::make_shared<libMesh::EquationSystems>(*mesh_master);
         auto &sys_master = equation_systems_master->add_system<libMesh::LinearImplicitSystem>("master");
@@ -519,9 +507,9 @@ namespace utopia {
         auto &sys_slave = equation_systems_slave->add_system<libMesh::LinearImplicitSystem>("slave");
         
         //scalar function space
-        auto V_m = FunctionSpaceT(equation_systems_master, libMesh::LAGRANGE, elem_order, "u");
-        auto V_s = FunctionSpaceT(equation_systems_slave, libMesh::LAGRANGE, elem_order, "u");
-        
+        const auto elem_order = libMesh::FIRST;
+        auto V_m = FunctionSpaceT(equation_systems_master, libMesh::LAGRANGE, elem_order, "u_m");
+        auto V_s = FunctionSpaceT(equation_systems_slave, libMesh::LAGRANGE, elem_order,  "u_s");
         
         auto u_m = trial(V_m);
         auto v_m = test(V_m);
@@ -536,8 +524,10 @@ namespace utopia {
         V_s.initialize();
         
         auto eq_m = master_in.diffusivity * inner(grad(u_m), grad(v_m)) * dX == inner(coeff(master_in.forcing_function), v_m) * dX;
-        auto eq_s = slave_in.diffusivity  * inner(grad(u_s), grad(v_s)) * dX == inner(coeff(slave_in.forcing_function), v_s) * dX;
+        auto eq_s = slave_in.diffusivity  * inner(grad(u_s), grad(v_s)) * dX == inner(coeff(slave_in.forcing_function),  v_s) * dX;
         
+        //////////////////////////// Generation of the algebraic system ////////////////////////////
+
         DSMatrixd A_m, A_s;
         DVectord rhs_m, rhs_s;
         utopia::assemble(eq_m, A_m, rhs_m);
@@ -546,13 +536,14 @@ namespace utopia {
         apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
         apply_boundary_conditions(V_s.dof_map(), A_s, rhs_s);
         
-        
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
+       
         DVectord sol_m, sol_s, lagr;
-        
-        
+
         if(solve_strategy == "staggered") {
             
             solve_staggered(V_m,
@@ -582,6 +573,8 @@ namespace utopia {
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         
+
+        // UGLY code for writing stuff to disk
         
         libMesh::ExodusII_IO io_m(*mesh_master);
         libMesh::ExodusII_IO io_s(*mesh_slave);
@@ -607,10 +600,6 @@ namespace utopia {
             V_s.equation_system().solution->close();
             io_l.write_timestep("lagr.e", V_s.equation_systems(), 1, 0);
         }
-        
-        
-        
-        
         
         c.stop();
         std::cout << c << std::endl;

@@ -162,6 +162,11 @@ namespace utopia {
 			os << "------------------------------------------\n";
 		}
 
+		bool write(const Path &path) const override
+		{ 
+			return utopia::write(path / "B.m", *B) && utopia::write(path / "D.m", *D);
+		}
+
 	private:
 		std::shared_ptr<DSMatrixd> B;
 		std::shared_ptr<DSMatrixd> D;
@@ -222,6 +227,11 @@ namespace utopia {
 			os << "------------------------------------------\n";
 		}
 
+		bool write(const Path &path) const override
+		{ 
+			return utopia::write(path / "T.m", *T);
+		}
+
 	private:
 		std::shared_ptr<DSMatrixd> T;
 	};
@@ -275,7 +285,7 @@ namespace utopia {
 
 		bool write(const Path &path) const override
 		{ 
-			return utopia::write(path, *T);
+			return utopia::write(path / "T.m", *T);
 		}
 
 	private:
