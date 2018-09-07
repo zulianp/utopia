@@ -202,8 +202,7 @@ namespace utopia {
         
     }
     
-    static void write_solution(
-                               const std::string &name,
+    static void write_solution(const std::string &name,
                                DVectord &sol,
                                const int time_step,
                                const double t,
@@ -259,7 +258,6 @@ namespace utopia {
                                );
         
         t.initialize(operator_type);
-        // t.initialize(L2_PROJECTION);
         t.write("./");
 
         lagr_m.set(0.);
