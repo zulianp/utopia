@@ -34,5 +34,6 @@
 	<refinements>0</refinements>
 </slave>
 
+<operator-type>INTERPOLATION</operator-type>
 <solve-strategy>staggered</solve-strategy>
 <!-- <solve-strategy>monolithic</solve-strategy> -->

@@ -44,7 +44,7 @@
 			<value>4</value>
 		</entry>
 	</boundary-conditions>
-	<diffusivity>1.</diffusivity>
+	<diffusivity>10.</diffusivity>
 	<forcing-function>0.</forcing-function>
 	<refinements>0</refinements>
 </slave>

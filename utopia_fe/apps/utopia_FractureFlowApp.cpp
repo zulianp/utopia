@@ -49,8 +49,7 @@ namespace utopia {
     }
     
     
-    static void solve_monolithic(
-                                 FunctionSpaceT &V_m,
+    static void solve_monolithic(FunctionSpaceT &V_m,
                                  FunctionSpaceT &V_s,
                                  DSMatrixd &A_m,
                                  DVectord &rhs_m,
@@ -216,7 +215,8 @@ namespace utopia {
         io.write_timestep(name, space.equation_systems(), time_step, t);
     }
     
-    static void solve_staggered(FunctionSpaceT &V_m,
+    static void solve_staggered(const std::string &operator_type,
+                                FunctionSpaceT &V_m,
                                 FunctionSpaceT &V_s,
                                 DSMatrixd &A_m,
                                 DVectord &rhs_m,
@@ -235,7 +235,9 @@ namespace utopia {
         Factorization<DSMatrixd, DVectord> op_m;
         op_m.update(make_ref(A_m));
         
-        sol_s = local_zeros(local_size(rhs_s));
+        if(empty(sol_s)) {
+            sol_s = local_zeros(local_size(rhs_s));
+        }
         
         DVectord lagr_m = local_zeros(local_size(rhs_m));
         DVectord lagr_s = local_zeros(local_size(rhs_s));
@@ -256,9 +258,9 @@ namespace utopia {
                                opts
                                );
         
-        // t.initialize(INTERPOLATION);
-        t.initialize(L2_PROJECTION);
-        // t.write("./");
+        t.initialize(operator_type);
+        // t.initialize(L2_PROJECTION);
+        t.write("./");
 
         lagr_m.set(0.);
         
@@ -325,7 +327,7 @@ namespace utopia {
         lagr = lagr_m;
     }
     
-    static void solve_separate(
+    static void solve_separate(const std::string &operator_type,
                                FunctionSpaceT &V_m,
                                FunctionSpaceT &V_s,
                                DSMatrixd &A_m,
@@ -353,7 +355,7 @@ namespace utopia {
                                make_ref(V_s.dof_map())
                                );
         
-        t.initialize(INTERPOLATION);
+        t.initialize(operator_type);
         
         DVectord sol_transfered;
         t.apply(sol_m, sol_transfered);
@@ -483,6 +485,10 @@ namespace utopia {
         
         std::string solve_strategy = "staggered";
         is_ptr->read("solve-strategy", solve_strategy);
+
+
+        std::string operator_type = "INTERPOLATION";
+        is_ptr->read("operator-type", operator_type);
         
         master_in.desribe();
         slave_in.desribe();
@@ -546,7 +552,8 @@ namespace utopia {
 
         if(solve_strategy == "staggered") {
             
-            solve_staggered(V_m,
+            solve_staggered(operator_type,
+                            V_m,
                             V_s,
                             A_m,
                             rhs_m,
