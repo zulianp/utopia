@@ -50,7 +50,8 @@ namespace utopia {
 		return true;
 	}
 
-	TpetraVector::Scalar TpetraVector::sum() const {
+	TpetraVector::Scalar TpetraVector::sum() const
+	{
 	    m_utopia_warning_once("> TpetraVector::sum is hand-coded");
 
 	    auto data = implementation().getData();

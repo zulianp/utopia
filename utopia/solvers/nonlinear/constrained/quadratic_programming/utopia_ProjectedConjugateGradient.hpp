@@ -54,6 +54,7 @@ namespace utopia {
 
 				Scalar alpha = dot(uk, pk)/dot(pk, A * pk);
 				assert(alpha != 0.);
+				if(alpha == 0.) break;
 				
 				x_half = x_old + alpha * pk;
 

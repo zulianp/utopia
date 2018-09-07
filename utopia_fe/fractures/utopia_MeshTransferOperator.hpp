@@ -3,6 +3,8 @@
 
 #include "utopia_libmesh.hpp"
 #include "utopia_TransferAssembler.hpp"
+#include "utopia_Path.hpp"
+
 
 #include <memory>
 
@@ -49,6 +51,15 @@ namespace utopia {
 			if(operator_) {
 				operator_->describe(os);
 			}
+		}
+
+		bool write(const Path &path) const override
+		{ 
+			if(operator_) {
+				return operator_->write(path);
+			}
+
+			return false;
 		}
 
 	private:

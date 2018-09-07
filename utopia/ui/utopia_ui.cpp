@@ -8,6 +8,10 @@ namespace utopia {
 	{
 		if(path.extension() == "xml") {
 			// auto ret = make_unique<XMLInputStream>();
+			// ret->open(path);
+			// return ret;
+			
+			//portable version when compuling with nvcc
 			auto ret = new XMLInputStream();
 			auto ret_ptr = std::unique_ptr<InputStream>(ret);
 			ret->open(path);

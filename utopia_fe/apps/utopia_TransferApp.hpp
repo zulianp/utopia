@@ -4,6 +4,7 @@
 #include "utopia_App.hpp"
 #include "utopia_libmesh.hpp"
 #include "utopia_TransferAssembler.hpp"
+#include "utopia_libmesh.hpp"
 
 #include <string>
 #include <memory>
