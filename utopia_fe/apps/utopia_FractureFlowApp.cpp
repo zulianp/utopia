@@ -257,7 +257,7 @@ namespace utopia {
                                );
         
         // t.initialize(INTERPOLATION);
-        // t.initialize(L2_PROJECTION);
+        t.initialize(L2_PROJECTION);
         // t.write("./");
 
         lagr_m.set(0.);
@@ -412,7 +412,7 @@ namespace utopia {
             } else if(this->mesh_type == "unit-square") {
                 const auto elem_type = libMesh::QUAD8;
                 libMesh::MeshTools::Generation::build_square(mesh,
-                                                             30, 30,
+                                                             5, 5,
                                                              -0., 1.,
                                                              -0., 1.,
                                                              elem_type
