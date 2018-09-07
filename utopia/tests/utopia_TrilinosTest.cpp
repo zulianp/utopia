@@ -461,6 +461,20 @@ namespace utopia {
         utopia_test_assert(approxeq(d, D*x));
     }
 
+    void trilinos_diag_rect_matrix()
+    {
+        auto n = 10;
+        auto m = 3;
+        TSMatrixd A = local_identity(n, m);
+        TVectord d;
+         d  = diag(A);
+        const double val = norm1(d);
+
+        if( !approxeq(val, size(A).get(1) * 1.) ) {
+            m_utopia_error("diag does not work on for tpetra rectangular matrices in parallel (nor serial)");
+        }
+    }
+
     void test_ptap(const int n, const int m)
     {
         TSMatrixd A = local_sparse(n, n, 3);
@@ -817,8 +831,6 @@ namespace utopia {
         TSMatrixd B(expr);
     }
 
-
-
     void trilinos_exp()
     {
 #ifdef WITH_PETSC
@@ -1035,13 +1047,13 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_transpose);
             UTOPIA_RUN_TEST(trilinos_each_read_transpose);
             UTOPIA_RUN_TEST(trilinos_mg);
+            
         } else {
             m_utopia_warning_once("several tests left out for parallel execution");
         }
 
-
         //tests that always fail
-        //NONE for now...
+        // UTOPIA_RUN_TEST(trilinos_diag_rect_matrix);
 
         UTOPIA_UNIT_TEST_END("TrilinosTest");
     }

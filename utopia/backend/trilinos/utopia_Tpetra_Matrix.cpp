@@ -310,11 +310,14 @@ namespace utopia {
 
 		Range r = row_range();
 
+		auto cols = init_->domain_map->getGlobalNumElements();
+
 		for(auto i = r.begin(); i < r.end(); ++i) {
-			if(i >= cols_global) break;
-
-			set(i, i, factor);
-
+			if(i < cols) {
+				set(i, i, factor);
+			} else {
+				break;
+			}
 		}
 
 		write_unlock();
@@ -322,9 +325,17 @@ namespace utopia {
 
 	void TpetraMatrix::get_diag(TpetraVector &d) const
 	{
-		if(d.is_null() || d.size().get(0) != this->size().get(0)) {
+		const bool is_row_min = this->size().get(0) <= this->size().get(1);
+		global_ordinal_type n = (is_row_min)? this->size().get(0) : this->size().get(1);
+
+		if(d.is_null() || d.size().get(0) != n) {
 			m_utopia_warning_once("TpetraMatrix::get_diag Assuming row <= col");
-			d.init(implementation().getRowMap());
+
+			if(is_row_min) {
+				d.init(implementation().getRowMap());
+			} else {
+				d.init(implementation().getDomainMap());
+			}
 		}
 
 		implementation().getLocalDiagCopy(d.implementation());
@@ -332,9 +343,6 @@ namespace utopia {
 
 	void TpetraMatrix::init_diag(const TpetraVector &d)
 	{
-		//FIXME maybe there is a better and more efficent way to do this
-		//also without const_cast
-
 		auto ls = d.local_size().get(0);
 		auto gs = d.size().get(0);
 
@@ -349,9 +357,11 @@ namespace utopia {
 		auto r = d.range();
 		auto data = d.implementation().getData();
 
+		assert(!data.is_null());
+
 		write_lock();
 
-		global_ordinal_type index = 0;
+		local_ordinal_type index = 0;
 
 		for(auto i = r.begin(); i < r.end(); ++i) {
 			set(i, i, data[index++]);
@@ -360,7 +370,7 @@ namespace utopia {
 		write_unlock();
 	}
 
-	bool TpetraMatrix::read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path)
+	bool TpetraMatrix::read(const Teuchos::RCP< const Teuchos::Comm<int> > &comm, const std::string &path)
 	{
 		std::ifstream is;
 		is.open(path.c_str());
