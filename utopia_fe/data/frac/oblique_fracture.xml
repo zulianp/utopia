@@ -1,19 +1,6 @@
 <!-- MASTER STUFF -->
 <master>
-	<!-- <mesh>file</mesh> -->
-	<!-- <path>../data/frac/unit_square.e</path> -->
 	<mesh>unit-square</mesh>
-<!-- 	<boundary-conditions>
-		<entry>
-			<side>1</side>
-			<value>1</value>
-		</entry>
-		<entry>
-			<side>2</side>
-			<value>4</value>
-		</entry>
-	</boundary-conditions> -->
-
 	<boundary-conditions>
 		<entry>
 			<side>3</side>
@@ -49,7 +36,5 @@
 	<refinements>0</refinements>
 </slave>
 
-
-
-<solve-strategy>staggered</solve-strategy>
-<!-- <solve-strategy>monolithic</solve-strategy> -->
+<!-- <solve-strategy>staggered</solve-strategy> --> 
+<solve-strategy>monolithic</solve-strategy>

@@ -74,6 +74,8 @@ namespace utopia {
 		file_.get(time_step, 4, tibial_int_ext_rotation_);
 
 
+		std::cout << "time_step " << time_step << std::endl;
+		describe_params(std::cout);
 		//dt_?
 	}
 
@@ -87,12 +89,12 @@ namespace utopia {
 		auto dim = mesh.mesh_dimension();
 
 		AffineTransform femoral_component;
-		femoral_component.make_rotation(dim, flexion_extension_angle_, flexion_extension_angle_axis_);
+		femoral_component.make_rotation(dim, flexion_extension_angle_ * (M_PI/180), flexion_extension_angle_axis_);
 
 		AffineTransform tibial_component;
 		{
 			AffineTransform rot, tr;
-			rot.make_rotation(dim, tibial_int_ext_rotation_, tibial_rotation_axis_);
+			rot.make_rotation(dim, tibial_int_ext_rotation_ * (M_PI/180), tibial_rotation_axis_);
 			tr.make_translation(dim, ap_motion_, ap_motion_axis_);
 			tibial_component = tr * rot;
 		}
@@ -136,7 +138,52 @@ namespace utopia {
 		auto v = test(space);
 
 
-		auto l_form = inner(coeff(axial_force_), v[axial_force_axis_]) * dX;
+		auto l_form = surface_integral(
+			inner(coeff(axial_force_), v[axial_force_axis_]), 
+			axial_force_side_
+		);
+
 		utopia::assemble(l_form, forces);
+	}
+
+	void ISO14243_3::describe_params(std::ostream &os) const
+	{
+		os << "percentage_of_time_cycle: " << percentage_of_time_cycle_ << "\n";
+		//degrees
+		os << "flexion_extension_angle: " << flexion_extension_angle_ << "\n";
+
+		//Newton
+		os << "axial_force: " << axial_force_ << "\n";
+
+
+		//mm
+		os << "ap_motion: " << ap_motion_ << "\n";
+
+		//degrees
+		os << "tibial_int_ext_rotation: " << tibial_int_ext_rotation_ << "\n";
+
+	}
+
+	void ISO14243_3::describe(std::ostream &os) const
+	{
+		file_.write(os);
+
+		os << "flexion_extension_angle_axis: " << flexion_extension_angle_axis_ << "\n";			
+		os << "ap_motion_axis: " << ap_motion_axis_ << "\n";
+		os << "tibial_rotation_axis: " << tibial_rotation_axis_ << "\n";
+		os << "axial_force_axis: " << axial_force_axis_ << "\n";
+		
+		//blocks and side-sets
+		os << "femural_block: " << femural_block_ << "\n";
+		os << "tibial_block: " << tibial_block_ << "\n";
+		os << "axial_force_side: " << axial_force_side_ << "\n";
+
+		os << "dt: " << dt_ << "\n";
+
+		os << "n_steps: " << n_steps()  << "\n";
+
+
+		describe_params(os);
+		
 	}
 }

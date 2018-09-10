@@ -48,7 +48,7 @@ namespace utopia {
 			switch(dim) {
 				case 2:
 				{
-					assert(axis == 'y' || axis == 'Y');
+					assert(axis == 'z' || axis == 'Z');
 					make_rotation_2(angle, linear_transformation);
 					return;
 				}

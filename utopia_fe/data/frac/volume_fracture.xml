@@ -29,11 +29,11 @@
 			<value>4</value>
 		</entry>
 	</boundary-conditions>
-	<diffusivity>10.</diffusivity>
+	<diffusivity>1.</diffusivity>
 	<forcing-function>0.</forcing-function>
 	<refinements>0</refinements>
 </slave>
 
 <operator-type>INTERPOLATION</operator-type>
-<solve-strategy>staggered</solve-strategy>
-<!-- <solve-strategy>monolithic</solve-strategy> -->
+<!-- <solve-strategy>staggered</solve-strategy> -->
+<solve-strategy>monolithic</solve-strategy>

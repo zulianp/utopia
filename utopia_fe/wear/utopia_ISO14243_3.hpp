@@ -46,6 +46,10 @@ namespace utopia {
 			return dt_;
 		}
 
+		void describe(std::ostream &os) const override;
+		void describe_params(std::ostream &os) const;
+		
+
 	private:
 		char flexion_extension_angle_axis_;			
 		char ap_motion_axis_;
@@ -58,7 +62,7 @@ namespace utopia {
 		int axial_force_side_;
 
 
-		//////////////////// Valus from ISO ////////////////
+		//////////////////// Values from ISO ////////////////
 		//%
 		int percentage_of_time_cycle_;
 		//degrees

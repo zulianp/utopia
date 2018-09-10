@@ -392,13 +392,18 @@ namespace utopia {
     	in.init_sim(init.comm(), *is_ptr);
     	in.describe(std::cout);
 
+
+        auto configuration_forces = std::make_shared<ConstantForcingFunction<DVectord>>();
+        configuration_forces->value() = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
+        auto configuration_forced_material = std::make_shared<ForcedMaterial<DSMatrixd, DVectord>>(in.material, configuration_forces);
+
         std::shared_ptr<ContactSolverT> solver;
         std::shared_ptr<TransientContactSolverT> transient_solver;
         if(in.is_steady) {
-            solver = std::make_shared<ContactSolverT>(make_ref(in.V), in.material, in.contact_params);
+            solver = std::make_shared<ContactSolverT>(make_ref(in.V), configuration_forced_material, in.contact_params);
         } else {
             double dt = in.gc.conf().dt() / in.n_transient_steps;
-            transient_solver = std::make_shared<TransientContactSolverT>(make_ref(in.V), in.material, dt, in.contact_params);
+            transient_solver = std::make_shared<TransientContactSolverT>(make_ref(in.V), configuration_forced_material, dt, in.contact_params);
             solver = transient_solver;
         }
 
@@ -454,7 +459,9 @@ namespace utopia {
 
         DVectord overriden_displacement = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
         DVectord wear_displacement = overriden_displacement;
-        DVectord configuration_forces = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
+
+  
+
         MechanicsState state;
 
 
@@ -473,14 +480,14 @@ namespace utopia {
             //gait-cycle
             for(int t = 0; t < in.gc.conf().n_steps(); ++t) {
                 std::cout << "\t step " << t << std::endl;
-                in.material->clear();
+                configuration_forced_material->clear();
                 in.gc.update(t);
 
                 //set-up experiment
                     //transform mesh
 
                 overriden_displacement.set(0.);
-                in.gc.displacement_and_forces(in.V, overriden_displacement, configuration_forces);
+                in.gc.displacement_and_forces(in.V, overriden_displacement, configuration_forces->value());
 
                 {
                     auto &sys = in.equation_systems->get_system<libMesh::LinearImplicitSystem>("wear");
@@ -515,7 +522,7 @@ namespace utopia {
 
                 if(in.forcing_function) {
                     in.forcing_function->eval(state.displacement, state.external_force);
-                    state.external_force += configuration_forces;
+                    state.external_force += configuration_forces->value();
                 }
 
                 solver->stress(state.displacement, state.stress);

@@ -63,8 +63,8 @@ namespace utopia {
         DSMatrixd B, D;
         assemble_projection(V_m, V_s, B, D);
         
-        D *= -1.;
-        // B *= -1.;
+        // D *= -1.;
+        B *= -1.;
         
         auto s_m = local_size(A_m);
         auto s_s = local_size(A_s);
