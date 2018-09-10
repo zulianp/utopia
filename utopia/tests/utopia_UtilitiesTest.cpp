@@ -11,6 +11,24 @@ namespace utopia {
     template<class Matrix, class Vector>
     class UtilitiesTest {
     private:
+        void csv_read_write()
+        {
+            Path path = Path(Utopia::instance().get("data_path")) / "csv/test.csv";
+            CSV csv;
+
+            utopia_test_assert( csv.read(path) );
+            utopia_test_assert( csv.write("./out.csv") );
+
+            int val = -1.;
+            csv.get(1, 0, val); utopia_test_assert( val == 0 );
+            csv.get(1, 1, val); utopia_test_assert( val == 1 );
+            csv.get(1, 2, val); utopia_test_assert( val == 2 );
+            
+            csv.get(2, 0, val); utopia_test_assert( val == 1 );
+            csv.get(2, 1, val); utopia_test_assert( val == 2 );
+            csv.get(2, 2, val); utopia_test_assert( val == 3 );
+        }
+
         void factory_test() {
             Matrix m = identity(2, 2);
             auto size = m.size();
@@ -243,6 +261,7 @@ namespace utopia {
 
         void run() {
             print_backend_info();
+            UTOPIA_RUN_TEST(csv_read_write);
             UTOPIA_RUN_TEST(factory_test);
             UTOPIA_RUN_TEST(wrapper_test);
             UTOPIA_RUN_TEST(range_test);

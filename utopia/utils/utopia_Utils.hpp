@@ -11,6 +11,8 @@
 
 #include "utopia_MPI.hpp"
 #include "utopia_Chrono.hpp"
+#include "utopia_Path.hpp"
+#include "utopia_CSV.hpp"
 
 namespace utopia 
 {
