@@ -356,8 +356,7 @@ namespace utopia {
                 is.read("extrapolation", extrapolation_factor);
             });
 
-            gc.init(mesh->mesh_dimension());
-
+            gc.init(V);
     		return true;
     	}
 
@@ -398,7 +397,7 @@ namespace utopia {
         if(in.is_steady) {
             solver = std::make_shared<ContactSolverT>(make_ref(in.V), in.material, in.contact_params);
         } else {
-            double dt = in.gc.dt / in.n_transient_steps;
+            double dt = in.gc.conf().dt() / in.n_transient_steps;
             transient_solver = std::make_shared<TransientContactSolverT>(make_ref(in.V), in.material, dt, in.contact_params);
             solver = transient_solver;
         }
@@ -455,10 +454,11 @@ namespace utopia {
 
         DVectord overriden_displacement = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
         DVectord wear_displacement = overriden_displacement;
+        DVectord configuration_forces = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
         MechanicsState state;
 
 
-        libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() / "wear_in.e", *in.equation_systems, (1), in.gc.t);
+        libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() / "wear_in.e", *in.equation_systems, (1), (1));
 
         libMesh::Nemesis_IO wear_io(*in.mesh);
         libMesh::Nemesis_IO wear_ovv_io(*in.mesh);
@@ -470,26 +470,26 @@ namespace utopia {
 
             std::cout << "cycle " << i << std::endl;
 
-
-
             //gait-cycle
-            for(int t = 0; t < in.gc.n_time_steps; ++t) {
+            for(int t = 0; t < in.gc.conf().n_steps(); ++t) {
                 std::cout << "\t step " << t << std::endl;
                 in.material->clear();
-                in.gc.set_time_step(t);
+                in.gc.update(t);
 
                 //set-up experiment
                     //transform mesh
 
                 overriden_displacement.set(0.);
-                in.gc.override_displacement(*in.mesh, in.V.subspace(0).dof_map(), overriden_displacement);
+                in.gc.displacement_and_forces(in.V, overriden_displacement, configuration_forces);
 
                 {
                     auto &sys = in.equation_systems->get_system<libMesh::LinearImplicitSystem>("wear");
                     DVectord temp = overriden_displacement + wear_displacement;
                     convert(temp, *sys.solution);
                     sys.solution->close();
-                    wear_ovv_io.write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, ((i-1) * in.gc.n_time_steps + t+1),((i-1) * in.gc.n_time_steps) * in.gc.dt + in.gc.t);
+
+                    auto frame = ((i-1) * in.gc.conf().n_steps() + t + 1);
+                    wear_ovv_io.write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, frame, frame);
                 }
 
                 apply_displacement(overriden_displacement + wear_displacement, in.V.subspace(0).dof_map(), *in.mesh);
@@ -511,10 +511,11 @@ namespace utopia {
                 state.displacement           = solver->displacement();
                 state.displacement_increment = solver->displacement();
 
-                state.velocity               = (1./in.gc.dt) * solver->displacement();
+                state.velocity               = (1./in.gc.conf().dt()) * solver->displacement();
 
                 if(in.forcing_function) {
                     in.forcing_function->eval(state.displacement, state.external_force);
+                    state.external_force += configuration_forces;
                 }
 
                 solver->stress(state.displacement, state.stress);
@@ -525,13 +526,15 @@ namespace utopia {
                 // std::cout << "mag_stress:   " << mag_stress   << std::endl;
                 // std::cout << "mag_velocity: " << mag_velocity << std::endl;
 
-                state.t = in.gc.t;
+
+                //FIXME
+                state.t = in.gc.conf().dt() * t;
 
                 wear.update_aux_system(
                     0,
                     state,
                     solver->contact(),
-                    in.gc.dt,
+                    in.gc.conf().dt(),
                     *in.equation_systems
                 );
 
@@ -544,7 +547,8 @@ namespace utopia {
                 convert(temp, *sys.solution);
                 sys.solution->close();
 
-                io.write_timestep(in.output_path() / "gait_cycles.e", *in.equation_systems, ((i-1) * in.gc.n_time_steps + t+1),((i-1) * in.gc.n_time_steps) * in.gc.dt + in.gc.t);
+                auto frame = ((i-1) * in.gc.conf().n_steps() + t + 1);
+                io.write_timestep(in.output_path() / "gait_cycles.e", *in.equation_systems, frame, frame);
             }
 
             //deform geometry

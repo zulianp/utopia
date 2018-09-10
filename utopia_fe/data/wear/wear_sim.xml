@@ -81,10 +81,12 @@
         </pairs>
     </contact>
     <wear>
+        <type>old</type>
         <n-cycles>100</n-cycles>
         <coeff>0.007</coeff>
         <extrapolation>500.0</extrapolation>
         <gait-cycle>
+            <type>old</type>
             <steps>30</steps>
             <rotations type="array">
                 <entry>

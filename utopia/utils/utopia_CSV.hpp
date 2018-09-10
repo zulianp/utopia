@@ -11,7 +11,7 @@
 
 namespace utopia {
 
-	class CSV {
+	class CSV final {
 	public:
 
 		CSV(const char separator = ',')
@@ -27,6 +27,10 @@ namespace utopia {
 		void get(const SizeType i, const SizeType j, double &val) const;
 		void get(const SizeType i, const SizeType j, int &val) const;
 		void get(const SizeType i, const SizeType j, std::string &val) const;
+		inline std::size_t n_rows() const
+		{
+			return table_.size();
+		}
 
 
 		void clear();
