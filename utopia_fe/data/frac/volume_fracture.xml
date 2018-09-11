@@ -13,7 +13,7 @@
 	</boundary-conditions>
 	<diffusivity>1.</diffusivity>
 	<forcing-function>0.</forcing-function>
-	<refinements>0</refinements>
+	<refinements>2</refinements>
 </master>
 
 <!-- SLAVE STUFF -->
@@ -29,9 +29,9 @@
 			<value>4</value>
 		</entry>
 	</boundary-conditions>
-	<diffusivity>1.</diffusivity>
+	<diffusivity>10.</diffusivity>
 	<forcing-function>0.</forcing-function>
-	<refinements>0</refinements>
+	<refinements>2</refinements>
 </slave>
 
 <operator-type>INTERPOLATION</operator-type>

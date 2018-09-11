@@ -63,8 +63,8 @@ namespace utopia {
         DSMatrixd B, D;
         assemble_projection(V_m, V_s, B, D);
         
-        // D *= -1.;
-        B *= -1.;
+        D *= -1.;
+        // B *= -1.;
         
         auto s_m = local_size(A_m);
         auto s_s = local_size(A_s);
@@ -163,7 +163,7 @@ namespace utopia {
             }
             
             for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                rhs.set(i, off_r + rhs_s.get(i));
+                rhs.set(off_r + i, rhs_s.get(i));
             }
         }
         
@@ -192,11 +192,11 @@ namespace utopia {
             }
             
             for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                sol_s.set(i, sol.get(i) - off_r);
+                sol_s.set(i, sol.get(off_r + i));
             }
             
             for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                lagr.set(i, sol.get(i) - off_r_l);
+                lagr.set(i, sol.get(off_r_l + i));
             }
         }
         

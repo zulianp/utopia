@@ -13,7 +13,7 @@
 	</boundary-conditions>
 	<diffusivity>1.</diffusivity>
 	<forcing-function>0.</forcing-function>
-	<refinements>2</refinements>
+	<refinements>5</refinements>
 </master>
 
 
@@ -33,7 +33,7 @@
 	</boundary-conditions>
 	<diffusivity>10.</diffusivity>
 	<forcing-function>0.</forcing-function>
-	<refinements>0</refinements>
+	<refinements>2</refinements>
 </slave>
 
 <!-- <solve-strategy>staggered</solve-strategy> --> 
