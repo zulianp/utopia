@@ -11,7 +11,8 @@
 
 #include "utopia_MeshTransferOperator.hpp"
 #include "utopia_assemble_volume_transfer.hpp"
-
+#include "utopia_Blocks.hpp"
+#include "utopia_Eval_Blocks.hpp"
 
 #include "libmesh/mesh_refinement.h"
 
@@ -193,6 +194,162 @@ namespace utopia {
     }
     
     
+    // static void solve_monolithic_old(FunctionSpaceT &V_m,
+    //                              FunctionSpaceT &V_s,
+    //                              DSMatrixd &A_m,
+    //                              DVectord &rhs_m,
+    //                              DSMatrixd &A_s,
+    //                              DVectord &rhs_s,
+    //                              DVectord &sol_m,
+    //                              DVectord &sol_s,
+    //                              DVectord &lagr)
+    // {
+        
+    //     DSMatrixd B, D;
+    //     assemble_projection(V_m, V_s, B, D);
+    //     // assemble_interpolation(V_m, V_s, B, D);
+
+    //     D *= -1.;
+    //     // B *= -1.;
+        
+    //     auto s_m = local_size(A_m);
+    //     auto s_s = local_size(A_s);
+        
+        
+    //     auto nnz_x_row_m =
+    //     std::max(*std::max_element(V_m.dof_map().get_n_nz().begin(), V_m.dof_map().get_n_nz().end()),
+    //              *std::max_element(V_m.dof_map().get_n_oz().begin(), V_m.dof_map().get_n_oz().end()));
+        
+    //     auto nnz_x_row_s =
+    //     std::max(*std::max_element(V_s.dof_map().get_n_nz().begin(), V_s.dof_map().get_n_nz().end()),
+    //              *std::max_element(V_s.dof_map().get_n_oz().begin(), V_s.dof_map().get_n_oz().end()));
+        
+        
+    //     DSMatrixd A = local_sparse(
+    //                                s_m.get(0) + 2 * s_s.get(0),
+    //                                s_m.get(1) + 2 * s_s.get(1),
+    //                                2 * nnz_x_row_m + 2 * nnz_x_row_s //FIXME
+    //                                );
+        
+        
+    //     auto rr_m = row_range(A_m);
+    //     auto rr_s = row_range(A_s);
+        
+    //     auto off_r   = size(A_m).get(0);
+    //     auto off_c   = size(A_m).get(1);
+        
+    //     auto off_r_l = off_r + size(A_s).get(0);
+    //     auto off_c_l = off_c + size(A_s).get(1);
+        
+    //     {
+    //         Write<DSMatrixd> w_(A);
+            
+    //         for(auto i = rr_m.begin(); i != rr_m.end(); ++i) {
+    //             {
+    //                 RowView<DSMatrixd> row(A_m, i);
+                    
+    //                 for(auto k = 0; k < row.n_values(); ++k) {
+    //                     //(1, 1)
+    //                     A.set(i, row.col(k), row.get(k));
+    //                 }
+    //             }
+    //         }
+            
+    //         for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
+                
+    //             {
+    //                 RowView<DSMatrixd> row(A_s, i);
+                    
+    //                 for(auto k = 0; k < row.n_values(); ++k) {
+    //                     //(2, 2)
+    //                     A.set(off_r + i, off_c + row.col(k), row.get(k));
+    //                 }
+    //             }
+                
+    //             {
+    //                 RowView<DSMatrixd> row(B, i);
+                    
+    //                 for(auto k = 0; k < row.n_values(); ++k) {
+    //                     //(1, 3)  //B^T
+    //                     if(!V_m.dof_map().is_constrained_dof(row.col(k))) {
+    //                         A.set(row.col(k), off_c_l + i, row.get(k));
+    //                     }
+                        
+    //                     //(3, 1) //B
+    //                     A.set(off_r_l + i, row.col(k), row.get(k));
+    //                 }
+    //             }
+                
+    //             {
+    //                 RowView<DSMatrixd> row(D, i);
+                    
+    //                 for(auto k = 0; k < row.n_values(); ++k) {
+                        
+    //                     //(2, 3) //D^T
+    //                     if(!V_s.dof_map().is_constrained_dof(row.col(k))) {
+    //                         A.set(off_r + row.col(k), off_c_l + i, row.get(k));
+    //                     }
+                        
+    //                     //(3, 2)   //D
+    //                     A.set(off_r_l + i, off_c + row.col(k), row.get(k));
+    //                 }
+    //             }
+                
+    //         }
+    //     }
+        
+    //     DVectord rhs = local_zeros(local_size(rhs_m).get(0) + 2 * local_size(rhs_s).get(0));
+        
+    //     {
+    //         Write<DVectord> w_(rhs);
+    //         Write<DVectord> r_m(rhs_m), r_s(rhs_s);
+            
+    //         for(auto i = rr_m.begin(); i != rr_m.end(); ++i) {
+    //             rhs.set(i, rhs_m.get(i));
+    //         }
+            
+    //         for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
+    //             rhs.set(off_r + i, rhs_s.get(i));
+    //         }
+    //     }
+        
+    //     // A.implementation().set_name("a");
+    //     // write("A.m", A);
+        
+    //     Factorization<DSMatrixd, DVectord> op;
+    //     // GMRES<DSMatrixd, DVectord> op;
+    //     // LUDecomposition<DSMatrixd, DVectord> op;
+    //     op.update(make_ref(A));
+        
+        
+    //     DVectord sol = local_zeros(local_size(rhs));
+    //     op.apply(rhs, sol);
+        
+        
+    //     sol_m  = local_zeros(local_size(rhs_m));
+    //     sol_s  = local_zeros(local_size(rhs_s));
+    //     lagr   = local_zeros(local_size(rhs_s));
+        
+    //     {
+    //         Write<DVectord> w_(sol);
+    //         Write<DVectord> r_m(sol_m), r_s(sol_s);
+            
+    //         for(auto i = rr_m.begin(); i != rr_m.end(); ++i) {
+    //             sol_m.set(i, sol.get(i));
+    //         }
+            
+    //         for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
+    //             sol_s.set(i, sol.get(off_r + i));
+    //         }
+            
+    //         for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
+    //             lagr.set(i, sol.get(off_r_l + i));
+    //         }
+    //     }
+        
+    // }
+
+
     static void solve_monolithic(FunctionSpaceT &V_m,
                                  FunctionSpaceT &V_s,
                                  DSMatrixd &A_m,
@@ -209,143 +366,69 @@ namespace utopia {
         // assemble_interpolation(V_m, V_s, B, D);
 
         D *= -1.;
-        // B *= -1.;
-        
-        auto s_m = local_size(A_m);
-        auto s_s = local_size(A_s);
-        
-        
-        auto nnz_x_row_m =
-        std::max(*std::max_element(V_m.dof_map().get_n_nz().begin(), V_m.dof_map().get_n_nz().end()),
-                 *std::max_element(V_m.dof_map().get_n_oz().begin(), V_m.dof_map().get_n_oz().end()));
-        
-        auto nnz_x_row_s =
-        std::max(*std::max_element(V_s.dof_map().get_n_nz().begin(), V_s.dof_map().get_n_nz().end()),
-                 *std::max_element(V_s.dof_map().get_n_oz().begin(), V_s.dof_map().get_n_oz().end()));
-        
-        
-        DSMatrixd A = local_sparse(
-                                   s_m.get(0) + 2 * s_s.get(0),
-                                   s_m.get(1) + 2 * s_s.get(1),
-                                   2 * nnz_x_row_m + 2 * nnz_x_row_s //FIXME
-                                   );
-        
-        
-        auto rr_m = row_range(A_m);
-        auto rr_s = row_range(A_s);
-        
-        auto off_r   = size(A_m).get(0);
-        auto off_c   = size(A_m).get(1);
-        
-        auto off_r_l = off_r + size(A_s).get(0);
-        auto off_c_l = off_c + size(A_s).get(1);
-        
+
+        DSMatrixd D_t = transpose(D);
+        DSMatrixd B_t = transpose(B);
+
+        set_zero_at_constraint_rows(V_m.dof_map(), B_t);
+        set_zero_at_constraint_rows(V_s.dof_map(), D_t);
+
+        DSMatrixd A = Blocks<DSMatrixd>(3, 3, 
         {
-            Write<DSMatrixd> w_(A);
-            
-            for(auto i = rr_m.begin(); i != rr_m.end(); ++i) {
-                {
-                    RowView<DSMatrixd> row(A_m, i);
-                    
-                    for(auto k = 0; k < row.n_values(); ++k) {
-                        //(1, 1)
-                        A.set(i, row.col(k), row.get(k));
-                    }
-                }
-            }
-            
-            for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                
-                {
-                    RowView<DSMatrixd> row(A_s, i);
-                    
-                    for(auto k = 0; k < row.n_values(); ++k) {
-                        //(2, 2)
-                        A.set(off_r + i, off_c + row.col(k), row.get(k));
-                    }
-                }
-                
-                {
-                    RowView<DSMatrixd> row(B, i);
-                    
-                    for(auto k = 0; k < row.n_values(); ++k) {
-                        //(1, 3)  //B^T
-                        if(!V_m.dof_map().is_constrained_dof(row.col(k))) {
-                            A.set(row.col(k), off_c_l + i, row.get(k));
-                        }
-                        
-                        //(3, 1) //B
-                        A.set(off_r_l + i, row.col(k), row.get(k));
-                    }
-                }
-                
-                {
-                    RowView<DSMatrixd> row(D, i);
-                    
-                    for(auto k = 0; k < row.n_values(); ++k) {
-                        
-                        //(2, 3) //D^T
-                        if(!V_s.dof_map().is_constrained_dof(row.col(k))) {
-                            A.set(off_r + row.col(k), off_c_l + i, row.get(k));
-                        }
-                        
-                        //(3, 2)   //D
-                        A.set(off_r_l + i, off_c + row.col(k), row.get(k));
-                    }
-                }
-                
-            }
-        }
-        
-        DVectord rhs = local_zeros(local_size(rhs_m).get(0) + 2 * local_size(rhs_s).get(0));
-        
+            make_ref(A_m), nullptr, make_ref(B_t),
+            nullptr, make_ref(A_s), make_ref(D_t),
+            make_ref(B), make_ref(D), nullptr
+        });
+
+        DVectord z = local_zeros(local_size(rhs_s));
+
+        DVectord rhs = Blocks<DVectord>(
         {
-            Write<DVectord> w_(rhs);
-            Write<DVectord> r_m(rhs_m), r_s(rhs_s);
-            
-            for(auto i = rr_m.begin(); i != rr_m.end(); ++i) {
-                rhs.set(i, rhs_m.get(i));
-            }
-            
-            for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                rhs.set(off_r + i, rhs_s.get(i));
-            }
-        }
-        
-        // A.implementation().set_name("a");
-        // write("A.m", A);
-        
+            make_ref(rhs_m),
+            make_ref(rhs_s),
+            make_ref(z)
+        });
+
+        sol_m = local_zeros(local_size(rhs_m));
+        sol_s = local_zeros(local_size(rhs_s));
+        lagr  = local_zeros(local_size(rhs_s));
+
+        DVectord sol = Blocks<DVectord>(
+        {
+            make_ref(sol_m),
+            make_ref(sol_s),
+            make_ref(lagr)
+        });
+
         Factorization<DSMatrixd, DVectord> op;
-        // GMRES<DSMatrixd, DVectord> op;
-        // LUDecomposition<DSMatrixd, DVectord> op;
         op.update(make_ref(A));
-        
-        
-        DVectord sol = local_zeros(local_size(rhs));
         op.apply(rhs, sol);
-        
-        
-        sol_m  = local_zeros(local_size(rhs_m));
-        sol_s  = local_zeros(local_size(rhs_s));
-        lagr   = local_zeros(local_size(rhs_s));
-        
+
+        auto r_m = range(sol_m);
+        auto r_s = range(sol_s);
+
+        auto r = range(sol);
+
+        auto n_m = local_size(sol_m).get(0);
+        auto n_s = n_m + local_size(sol_s).get(0);
+
         {
-            Write<DVectord> w_(sol);
-            Write<DVectord> r_m(sol_m), r_s(sol_s);
-            
-            for(auto i = rr_m.begin(); i != rr_m.end(); ++i) {
-                sol_m.set(i, sol.get(i));
+            Read<DVectord> r_(sol);
+            Write<DVectord> w_m(sol_m), w_s(sol_s), w_l(lagr);
+
+            SizeType index = r.begin();
+            for(auto i = r_m.begin(); i < r_m.end(); ++i) {
+                sol_m.set(i, sol.get(index++));
             }
-            
-            for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                sol_s.set(i, sol.get(off_r + i));
+
+            for(auto i = r_s.begin(); i < r_s.end(); ++i) {
+                sol_s.set(i, sol.get(index++));
             }
-            
-            for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                lagr.set(i, sol.get(off_r_l + i));
+
+            for(auto i = r_s.begin(); i < r_s.end(); ++i) {
+                lagr.set(i, sol.get(index++));
             }
         }
-        
     }
     
     static void write_solution(const std::string &name,
@@ -353,7 +436,7 @@ namespace utopia {
                                const int time_step,
                                const double t,
                                FunctionSpaceT &space,
-                               libMesh::ExodusII_IO &io)
+                               libMesh::Nemesis_IO &io)
     {
         utopia::convert(sol, *space.equation_system().solution);
         space.equation_system().solution->close();
@@ -372,10 +455,10 @@ namespace utopia {
                                 DVectord &lagr)
     {
         
-        libMesh::ExodusII_IO io_m(V_m.mesh());
-        libMesh::ExodusII_IO io_s(V_s.mesh());
-        libMesh::ExodusII_IO io_m_l(V_m.mesh());
-        libMesh::ExodusII_IO io_s_l(V_s.mesh());
+        libMesh::Nemesis_IO io_m(V_m.mesh());
+        libMesh::Nemesis_IO io_s(V_s.mesh());
+        libMesh::Nemesis_IO io_m_l(V_m.mesh());
+        libMesh::Nemesis_IO io_s_l(V_s.mesh());
         
         Factorization<DSMatrixd, DVectord> op_m;
         op_m.update(make_ref(A_m));
@@ -751,8 +834,8 @@ namespace utopia {
 
         // UGLY code for writing stuff to disk
         
-        libMesh::ExodusII_IO io_m(*mesh_master);
-        libMesh::ExodusII_IO io_s(*mesh_slave);
+        libMesh::Nemesis_IO io_m(*mesh_master);
+        libMesh::Nemesis_IO io_s(*mesh_slave);
         
         
         utopia::convert(sol_m, *V_m.equation_system().solution);
@@ -765,12 +848,12 @@ namespace utopia {
         io_s.write_timestep(V_s.equation_system().name() + ".e", V_s.equation_systems(), 1, 0);
         
         if(size(lagr) == size(sol_m)) {
-            libMesh::ExodusII_IO io_l(*mesh_master);
+            libMesh::Nemesis_IO io_l(*mesh_master);
             utopia::convert(lagr, *V_m.equation_system().solution);
             V_m.equation_system().solution->close();
             io_l.write_timestep("lagr.e", V_m.equation_systems(), 1, 0);
         } else {
-            libMesh::ExodusII_IO io_l(*mesh_slave);
+            libMesh::Nemesis_IO io_l(*mesh_slave);
             utopia::convert(lagr, *V_s.equation_system().solution);
             V_s.equation_system().solution->close();
             io_l.write_timestep("lagr.e", V_s.equation_systems(), 1, 0);

@@ -146,6 +146,29 @@ namespace utopia {
 		}
 	}
 
+	template<class DofMap, class Matrix>
+	void set_zero_at_constraint_rows(DofMap &dof_map, Matrix &mat)
+	{
+		bool has_constaints = true;
+		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
+			// std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
+			has_constaints = false;
+		}
+
+		Size s = size(mat);
+		Matrix temp = mat;
+
+		{
+			Write<Matrix> w_t(mat);
+
+			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
+					mat.set(i, j, 0.0);
+				}
+			});
+		}
+	}
+
 	inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, DVectord &utopia_vec)
 	{
 		using namespace libMesh;

@@ -2,9 +2,9 @@
 <master>
 	<!-- <mesh>unit-square</mesh> -->
 	<mesh>file</mesh>
-	<path>../data/frac/adaptive_background_2.e</path>
+	<!-- <path>../data/frac/adaptive_background_2.e</path> -->
 	<!-- <path>../data/frac/adaptive_background.e</path> -->
-	<!-- <path>../data/frac/background.e</path> -->
+	<path>../data/frac/background.e</path>
 	<boundary-conditions>
 		<entry>
 			<side>3</side>

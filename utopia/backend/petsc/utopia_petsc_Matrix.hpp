@@ -438,7 +438,8 @@ namespace utopia {
             const IS is_row[],
             PetscInt nc,
             const IS is_col[],
-            const Mat a[]
+            const Mat a[],
+            const bool use_mat_nest_type = false
          );
 
         // void mat_aij_cusparse_init(

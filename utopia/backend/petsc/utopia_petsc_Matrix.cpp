@@ -540,11 +540,22 @@ namespace utopia {
        const IS is_row[],
        PetscInt nc,
        const IS is_col[],
-       const Mat a[]
+       const Mat a[],
+       const bool use_mat_nest_type
     )
     {
         destroy();
-        check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &implementation()) );
+
+        if(use_mat_nest_type) {
+            check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &implementation()) );
+        } else {
+            Mat temp = nullptr;
+            
+            check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &temp) );
+            check_error( MatConvert(temp, type_override(), MAT_INITIAL_MATRIX, &implementation()) );
+
+            check_error(  MatDestroy(&temp) );
+        }
     }
 
     void PetscMatrix::get_diag(PetscMatrix &result) const
