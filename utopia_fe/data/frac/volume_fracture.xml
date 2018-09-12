@@ -13,7 +13,7 @@
 	</boundary-conditions>
 	<diffusivity>1.</diffusivity>
 	<forcing-function>0.</forcing-function>
-	<refinements>2</refinements>
+	<refinements>5</refinements>
 </master>
 
 <!-- SLAVE STUFF -->

@@ -10,7 +10,7 @@
 #include "utopia_SymbolicFunction.hpp"
 
 #include "utopia_MeshTransferOperator.hpp"
-
+#include "utopia_assemble_volume_transfer.hpp"
 
 
 #include "libmesh/mesh_refinement.h"
@@ -23,6 +23,124 @@ namespace utopia {
     void FractureFlowApp::init(libMesh::LibMeshInit &init)
     {
         comm_ = make_ref(init.comm());
+    }
+
+
+    static void refine_around_fractures(
+        const std::shared_ptr<libMesh::UnstructuredMesh> &fracture_network,
+        const libMesh::Order &elem_order,
+        const std::shared_ptr<libMesh::UnstructuredMesh> &mesh,
+        const int refinement_loops = 1,
+        const bool use_interpolation = false
+        )
+    {
+
+        libMesh::MeshRefinement mesh_refinement(*mesh);
+
+        for(int i = 0; i < refinement_loops; ++i) {
+        //equations system
+            auto vol_equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
+            auto &vol_sys = vol_equation_systems->add_system<libMesh::LinearImplicitSystem>("vol_sys");
+
+            auto surf_equation_systems = std::make_shared<libMesh::EquationSystems>(*fracture_network);
+            auto &surf_sys = surf_equation_systems->add_system<libMesh::LinearImplicitSystem>("surf_sys");
+
+        //scalar function space
+            auto V_vol  = FunctionSpaceT(vol_equation_systems, libMesh::LAGRANGE, elem_order,      "u_vol");
+            auto V_surf = FunctionSpaceT(surf_equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_surf");
+
+            V_vol.initialize();
+            V_surf.initialize();
+
+            Chrono c;
+            c.start();
+            DSMatrixd B;
+            moonolith::Communicator comm(mesh->comm().get());
+            if(assemble_volume_transfer(
+                comm,
+                mesh,
+                fracture_network,
+                make_ref(V_vol.dof_map()),
+                make_ref(V_surf.dof_map()),
+                0,
+                0,
+                true,
+                1,
+                B,
+                {},
+                use_interpolation))
+            {
+                c.stop();
+                std::cout << c << std::endl;
+
+                Interpolator interp(make_ref(B));
+                interp.normalize_rows();
+                interp.describe(std::cout);
+
+                DSMatrixd D_inv = diag(1./sum(B, 1));
+                DSMatrixd T = D_inv * B;
+
+                DSMatrixd T_t = transpose(T);
+                DVectord t_temp = sum(T_t, 1);
+                DVectord t = ghosted(local_size(t_temp).get(0), size(t_temp).get(0), V_vol.dof_map().get_send_list());
+                t = t_temp;
+
+
+                std::vector<libMesh::dof_id_type> indices;
+                std::vector<double> values;
+
+                mesh_refinement.clean_refinement_flags();
+
+                Read<DVectord> r_(t);
+                for(auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it) {
+                    V_vol.dof_map().dof_indices(*e_it, indices);
+                    t.get(indices, values);
+
+                    double val = std::accumulate(values.begin(), values.end(), 0.,  std::plus<double>());
+                    if(val > 0) {
+                        (*e_it)->set_refinement_flag(libMesh::Elem::REFINE);
+                    }
+
+                }
+
+                mesh_refinement.make_flags_parallel_consistent();
+                mesh_refinement.refine_elements();
+                mesh_refinement.test_level_one(true);
+
+            } else {
+                assert(false);
+            }
+        }
+
+        // mesh_refinement.clean_refinement_flags();
+        mesh->prepare_for_use();
+    }
+
+    static bool assemble_interpolation(FunctionSpaceT &from, FunctionSpaceT &to, DSMatrixd &B, DSMatrixd &D)
+    {
+        auto assembler = std::make_shared<InterpolationLocalAssembler>(from.mesh().mesh_dimension());
+        auto local2global = std::make_shared<Local2Global>(true);
+        
+        TransferAssembler transfer_assembler(assembler, local2global);
+        
+        std::vector< std::shared_ptr<DSMatrixd> > mats;
+        if(!transfer_assembler.assemble(
+                                        make_ref(from.mesh()),
+                                        make_ref(from.dof_map()),
+                                        make_ref(to.mesh()),
+                                        make_ref(to.dof_map()),
+                                        mats)) {
+            return false;
+        }
+        
+        B = std::move(*mats[0]);
+        D = diag(sum(B, 1));
+
+        double sum_B = sum(B);
+        double sum_D = sum(D);
+
+        std::cout << sum_B << " == " << sum_D << std::endl;
+        return true;
     }
     
     
@@ -45,6 +163,32 @@ namespace utopia {
         
         B = std::move(*mats[0]);
         D = std::move(*mats[1]);
+
+        double sum_B = sum(B);
+        double sum_D = sum(D);
+
+        std::cout << sum_B << " == " << sum_D << std::endl;
+        return true;
+    }
+
+    //use different lagr mult space
+    static bool assemble_projection(
+        FunctionSpaceT &from,
+        FunctionSpaceT &to, 
+        FunctionSpaceT &lagr, 
+        DSMatrixd &B, DSMatrixd &D)
+    {
+
+        {
+            DSMatrixd dump;
+            assemble_projection(from, lagr, B, dump);
+        }
+
+        {
+            DSMatrixd dump;
+            assemble_projection(to, lagr, D, dump);
+        }
+
         return true;
     }
     
@@ -62,7 +206,8 @@ namespace utopia {
         
         DSMatrixd B, D;
         assemble_projection(V_m, V_s, B, D);
-        
+        // assemble_interpolation(V_m, V_s, B, D);
+
         D *= -1.;
         // B *= -1.;
         
@@ -170,8 +315,9 @@ namespace utopia {
         // A.implementation().set_name("a");
         // write("A.m", A);
         
-        // Factorization<DSMatrixd, DVectord> op;
-        LUDecomposition<DSMatrixd, DVectord> op;
+        Factorization<DSMatrixd, DVectord> op;
+        // GMRES<DSMatrixd, DVectord> op;
+        // LUDecomposition<DSMatrixd, DVectord> op;
         op.update(make_ref(A));
         
         
@@ -375,34 +521,44 @@ namespace utopia {
         
         void read(InputStream &is) override
         {
-            is.read("mesh", mesh_type);
-            if(mesh_type == "file") {
-                is.read("path", path);
-            }
-            
-            is.read("boundary-conditions", [this](InputStream &is) {
-                is.read_all([this](InputStream &is) {
-                    int side_set = 0;
-                    
-                    is.read("side", side_set);
-                    
-                    
-                    double value = 0;
-                    is.read("value", value);
-                    
-                    sides.push_back(side_set);
-                    values.push_back(value);
+            try {
+                is.read("mesh", mesh_type);
+                if(mesh_type == "file") {
+                    is.read("path", path);
+                }
+                
+                is.read("boundary-conditions", [this](InputStream &is) {
+                    is.read_all([this](InputStream &is) {
+                        int side_set = 0;
+                        
+                        is.read("side", side_set);
+                        
+                        
+                        double value = 0;
+                        is.read("value", value);
+                        
+                        sides.push_back(side_set);
+                        values.push_back(value);
+                    });
                 });
-            });
-            
-            diffusivity = 1.;
-            is.read("diffusivity", diffusivity);
-            forcing_function = 0.;
-            
-            is.read("forcing-function", forcing_function);
+                
+                diffusivity = 1.;
+                is.read("diffusivity", diffusivity);
+                forcing_function = 0.;
+                
+                is.read("forcing-function", forcing_function);
 
-            refinements = 0;
-            is.read("refinements", refinements);
+                refinements = 0;
+                is.read("refinements", refinements);
+
+
+                adaptive_refinements = 0;
+                is.read("adaptive-refinements", adaptive_refinements);
+
+            } catch(const std::exception &ex) {
+                std::cerr << ex.what() << std::endl;
+                assert(false);
+            }
         }
         
         void make_mesh(libMesh::DistributedMesh &mesh) const
@@ -418,8 +574,9 @@ namespace utopia {
                                                              elem_type
                                                              );
             }
-
+            
             refine(refinements, mesh);
+
         }
         
         void set_up_bc(const FunctionSpaceT &V)
@@ -436,6 +593,16 @@ namespace utopia {
             }
         }
         
+        void apply_adaptive_refinement(
+            const std::shared_ptr<libMesh::UnstructuredMesh> &fracture_network,
+            const libMesh::Order &elem_order,
+            const std::shared_ptr<libMesh::UnstructuredMesh> &mesh)
+        {
+            if(adaptive_refinements) {
+                refine_around_fractures(fracture_network, elem_order, mesh, adaptive_refinements, false);
+            }
+        }
+
         void desribe(std::ostream &os = std::cout) const
         {
             os << "-----------------------------------\n";
@@ -461,6 +628,7 @@ namespace utopia {
         double diffusivity;
         double forcing_function;
         int refinements;
+        int adaptive_refinements;
     };
     
     void FractureFlowApp::run(const std::string &conf_file_path)
@@ -498,6 +666,8 @@ namespace utopia {
         
         master_in.make_mesh(*mesh_master);
         slave_in.make_mesh(*mesh_slave);
+
+        master_in.apply_adaptive_refinement(mesh_slave, libMesh::FIRST, mesh_master);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////

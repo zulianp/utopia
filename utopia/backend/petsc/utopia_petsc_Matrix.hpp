@@ -432,6 +432,15 @@ namespace utopia {
         	PetscInt block_size
         );
 
+         void nest(
+            MPI_Comm comm,
+            PetscInt nr,
+            const IS is_row[],
+            PetscInt nc,
+            const IS is_col[],
+            const Mat a[]
+         );
+
         // void mat_aij_cusparse_init(
         //  	MPI_Comm comm,
         //  	PetscInt rows_local,

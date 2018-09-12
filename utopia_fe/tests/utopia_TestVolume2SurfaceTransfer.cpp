@@ -16,7 +16,7 @@
 typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
 
 namespace utopia {
-	void refine_around_fractures(
+	static void refine_around_fractures(
 		const std::shared_ptr<libMesh::UnstructuredMesh> &fracture_network,
 		const libMesh::Order &elem_order,
 		const std::shared_ptr<libMesh::UnstructuredMesh> &mesh,

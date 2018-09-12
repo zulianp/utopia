@@ -534,6 +534,19 @@ namespace utopia {
         check_error( MatDiagonalSet( implementation(), diag.implementation(), INSERT_VALUES) );
     }
 
+    void PetscMatrix::nest(
+       MPI_Comm comm,
+       PetscInt nr,
+       const IS is_row[],
+       PetscInt nc,
+       const IS is_col[],
+       const Mat a[]
+    )
+    {
+        destroy();
+        check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &implementation()) );
+    }
+
     void PetscMatrix::get_diag(PetscMatrix &result) const
     {
         MatType type = this->type();

@@ -378,8 +378,8 @@ namespace utopia {
 
 		void init(MPI_Comm comm, VecType type, PetscInt n_local, PetscInt n_global);
 		void ghosted(MPI_Comm comm, PetscInt local_size, PetscInt global_size, const std::vector<PetscInt> &index);
-
-
+		void nest(MPI_Comm comm, PetscInt nb, IS is[], Vec x[]);
+		
 
 		//ops
 		///this is y

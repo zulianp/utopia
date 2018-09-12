@@ -102,6 +102,16 @@ namespace utopia {
 		assert(is_consistent());
 	}
 
+	void PetscVector::nest(
+		MPI_Comm comm,
+		PetscInt nb,
+		IS is[],
+		Vec x[])
+	{
+		destroy();
+		VecCreateNest(comm, nb, is, x, &vec_);
+	}	
+
 	void PetscVector::ghosted(MPI_Comm comm,
 		PetscInt local_size,
 		PetscInt global_size,

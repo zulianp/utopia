@@ -78,6 +78,7 @@ namespace utopia {
 			array_finish();
 		}
 
+		virtual void read(bool &val) = 0;
 		virtual void read(double &val) = 0;
 		virtual void read(int &val) = 0;
 		virtual void read(SizeType &val) = 0;
@@ -85,7 +86,7 @@ namespace utopia {
 		virtual void read(Serializable &val) = 0;
 		virtual void read(std::function<void(InputStream &)> lambda) = 0;
 
-
+		virtual void read(const std::string &key, bool &val) = 0;
 		virtual void read(const std::string &key, double &val) = 0;
 		virtual void read(const std::string &key, int &val) = 0;
 		virtual void read(const std::string &key, SizeType &val) = 0;

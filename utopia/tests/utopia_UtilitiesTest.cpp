@@ -5,8 +5,41 @@
 #include "utopia.hpp"
 #include "utopia_AutoDiff.hpp" //simplify_test
 #include "utopia_UtilitiesTest.hpp"
+#include "utopia_Blocks.hpp"
+#include "utopia_Eval_Blocks.hpp"
 
 namespace utopia {
+
+    template<class Matrix, class Vector>
+    class BlockTest {
+    public:
+
+        void run() {
+            UTOPIA_RUN_TEST(block_test);
+        }
+
+    private:
+        void block_test()
+        {   
+            int n = 2;
+            auto id_ptr = std::make_shared<Matrix>(identity(n, n));
+
+            Blocks<Matrix> b(2, 2, {
+                id_ptr, nullptr,
+                id_ptr, id_ptr
+            });
+
+           auto s = size(b);
+           utopia_test_assert(s.get(0) == 2*n);
+           utopia_test_assert(s.get(1) == 2*n);
+           // b.set_block(0, 1, id_ptr);
+
+           Matrix mat = b;
+
+           disp(mat);
+        }
+    };
+
 
     template<class Matrix, class Vector>
     class UtilitiesTest {
@@ -250,6 +283,7 @@ namespace utopia {
             utopia_test_assert(approxeq(28.001, num));
         }
 
+
         static void print_backend_info()
         {
             mpi_world_barrier();
@@ -294,6 +328,7 @@ namespace utopia {
 #ifdef WITH_PETSC
         if(mpi_world_size() == 1) {
             UtilitiesTest<DMatrixd, DVectord>().run();
+            BlockTest<DSMatrixd, DVectord>().run();
 #ifdef WITH_BLAS
             // interoperability
             UtilitiesTest<DMatrixd, Vectord>().inline_eval_test();

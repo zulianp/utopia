@@ -8,6 +8,6 @@
 	<order-master>1</order-master>
 	<mesh-slave>../data/test/quad_1.e</mesh-slave>
 	<refine-slave>2</refine-slave>
-	<order-slave>1</order-slave>
+	<order-slave>0</order-slave>
 	<function>x*x+y*y</function>
 </transfer>
