@@ -1,10 +1,10 @@
 <!-- MASTER STUFF -->
 <master>
-	<!-- <mesh>unit-square</mesh> -->
-	<mesh>file</mesh>
+	<mesh>unit-square</mesh>
+	<!-- <mesh>file</mesh> -->
 	<!-- <path>../data/frac/adaptive_background_2.e</path> -->
 	<!-- <path>../data/frac/adaptive_background.e</path> -->
-	<path>../data/frac/background.e</path>
+	<!-- <path>../data/frac/background.e</path> -->
 	<boundary-conditions>
 		<entry>
 			<side>3</side>
@@ -16,8 +16,10 @@
 		</entry>
 	</boundary-conditions>
 	<diffusivity>1.</diffusivity>
+	<!-- <forcing-function>-100.</forcing-function> -->
 	<forcing-function>0.</forcing-function>
-	<refinements>2</refinements>
+	<refinements>3</refinements>
+	<order>2</order>
 	<!-- <adaptive-refinements>1</adaptive-refinements> -->
 </master>
 
@@ -37,8 +39,10 @@
 		</entry>
 	</boundary-conditions>
 	<diffusivity>10.</diffusivity>
+	<!-- <forcing-function>100.</forcing-function> -->
 	<forcing-function>0.</forcing-function>
 	<refinements>1</refinements>
+	<order>1</order>
 </slave>
 
 <!-- <solve-strategy>staggered</solve-strategy> --> 

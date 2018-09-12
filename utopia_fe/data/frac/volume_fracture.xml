@@ -14,6 +14,7 @@
 	<diffusivity>1.</diffusivity>
 	<forcing-function>0.</forcing-function>
 	<refinements>3</refinements>
+	<order>2</order>
 </master>
 
 <!-- SLAVE STUFF -->
@@ -32,8 +33,28 @@
 	<diffusivity>10.</diffusivity>
 	<forcing-function>0.</forcing-function>
 	<refinements>1</refinements>
+	<order>2</order>
 </slave>
 
-<operator-type>INTERPOLATION</operator-type>
+
+<!-- MULTIPLIER STUFF -->
+<multiplier>
+	<mesh>unit-square</mesh>
+	<boundary-conditions>
+		<entry>
+			<side>3</side>
+			<value>1</value>
+		</entry>
+		<entry>
+			<side>1</side>
+			<value>4</value>
+		</entry>
+	</boundary-conditions>
+	<refinements>0</refinements>
+	<order>1</order>
+</multiplier>
+
+<!-- <operator-type>INTERPOLATION</operator-type> -->
+<operator-type>L2_PROJECTION</operator-type>
 <!-- <solve-strategy>staggered</solve-strategy> -->
 <solve-strategy>monolithic</solve-strategy>
