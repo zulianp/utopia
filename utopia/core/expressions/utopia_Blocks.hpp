@@ -179,7 +179,7 @@ namespace utopia {
 	};
 
 	template<class Tensor>
-	Blocks<Wrapper<Tensor, 1>> block2(
+	Blocks<Wrapper<Tensor, 1>> blocks(
 		const Wrapper<Tensor, 1> &a0,
 		const Wrapper<Tensor, 1> &a1
 		)
@@ -194,7 +194,36 @@ namespace utopia {
 	}
 
 	template<class Tensor>
-	Blocks<Wrapper<Tensor, 1>> block3(
+	void undo_blocks(
+		const Wrapper<Tensor, 1> &block_vec,
+		Wrapper<Tensor, 1> &a0,
+		Wrapper<Tensor, 1> &a1
+		)
+	{
+		using Vector = Wrapper<Tensor, 1>;
+
+		auto r = range(block_vec);
+
+		auto r0 = range(a0);
+		auto r1 = range(a1);
+
+		{
+		    Read<Vector> r_(block_vec);
+		    Write<Vector> w0(a0), w1(a1);
+
+		    SizeType index = r.begin();
+		    for(auto i = r0.begin(); i < r0.end(); ++i) {
+		        a0.set(i, block_vec.get(index++));
+		    }
+
+		    for(auto i = r1.begin(); i < r1.end(); ++i) {
+		        a1.set(i, block_vec.get(index++));
+		    }
+		}
+	}
+
+	template<class Tensor>
+	Blocks<Wrapper<Tensor, 1>> blocks(
 		const Wrapper<Tensor, 1> &a0,
 		const Wrapper<Tensor, 1> &a1,
 		const Wrapper<Tensor, 1> &a2
@@ -208,6 +237,41 @@ namespace utopia {
 		};
 
 		return Blocks<Wrapper<Tensor, 1>>(vec);
+	}
+
+	template<class Tensor>
+	void undo_blocks(
+		const Wrapper<Tensor, 1> &block_vec,
+		Wrapper<Tensor, 1> &a0,
+		Wrapper<Tensor, 1> &a1,
+		Wrapper<Tensor, 1> &a2
+		)
+	{
+		using Vector = Wrapper<Tensor, 1>;
+
+		auto r = range(block_vec);
+
+		auto r0 = range(a0);
+		auto r1 = range(a1);
+		auto r2 = range(a2);
+
+		{
+		    Read<Vector> r_(block_vec);
+		    Write<Vector> w0(a0), w1(a1), w2(a2);
+
+		    SizeType index = r.begin();
+		    for(auto i = r0.begin(); i < r0.end(); ++i) {
+		        a0.set(i, block_vec.get(index++));
+		    }
+
+		    for(auto i = r1.begin(); i < r1.end(); ++i) {
+		        a1.set(i, block_vec.get(index++));
+		    }
+
+		    for(auto i = r2.begin(); i < r2.end(); ++i) {
+		        a2.set(i, block_vec.get(index++));
+		    }
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////

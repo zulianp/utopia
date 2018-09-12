@@ -30,26 +30,17 @@ namespace utopia {
             });
 
            auto s = size(b_mat);
-           utopia_test_assert(s.get(0) == 2*n);
-           utopia_test_assert(s.get(1) == 2*n);
+           utopia_test_assert(s.get(0) == 2 * n);
+           utopia_test_assert(s.get(1) == 2 * n);
 
            Matrix mat = b_mat;
-           disp(mat);
-
            Vector ones = values(n, 1.);
 
-           // Blocks<Vector> b_vec({
-           //     make_ref(ones), 
-           //     make_ref(ones),
-           // });
-
-           Vector vec = block2(ones, ones);
-           disp(vec);
-
-
+           Vector vec = blocks(ones, ones);
            Vector r = mat * vec;
+           Vector r1 = ones, r2 = ones;
 
-           disp(r);
+           undo_blocks(r, r1, r2);
         }
     };
 

@@ -224,54 +224,19 @@ namespace utopia {
         });
 
         DVectord z = local_zeros(local_size(rhs_s));
-
-        DVectord rhs = Blocks<DVectord>(
-        {
-            make_ref(rhs_m),
-            make_ref(rhs_s),
-            make_ref(z)
-        });
+        DVectord rhs = blocks(rhs_m, rhs_s, z);
 
         sol_m = local_zeros(local_size(rhs_m));
         sol_s = local_zeros(local_size(rhs_s));
         lagr  = local_zeros(local_size(rhs_s));
 
-        DVectord sol = Blocks<DVectord>(
-        {
-            make_ref(sol_m),
-            make_ref(sol_s),
-            make_ref(lagr)
-        });
+        DVectord sol = blocks(sol_m, sol_s, lagr);
 
         Factorization<DSMatrixd, DVectord> op;
         op.update(make_ref(A));
         op.apply(rhs, sol);
 
-        auto r_m = range(sol_m);
-        auto r_s = range(sol_s);
-
-        auto r = range(sol);
-
-        auto n_m = local_size(sol_m).get(0);
-        auto n_s = n_m + local_size(sol_s).get(0);
-
-        {
-            Read<DVectord> r_(sol);
-            Write<DVectord> w_m(sol_m), w_s(sol_s), w_l(lagr);
-
-            SizeType index = r.begin();
-            for(auto i = r_m.begin(); i < r_m.end(); ++i) {
-                sol_m.set(i, sol.get(index++));
-            }
-
-            for(auto i = r_s.begin(); i < r_s.end(); ++i) {
-                sol_s.set(i, sol.get(index++));
-            }
-
-            for(auto i = r_s.begin(); i < r_s.end(); ++i) {
-                lagr.set(i, sol.get(index++));
-            }
-        }
+        undo_blocks(sol, sol_m, sol_s, lagr);
     }
     
     static void write_solution(const std::string &name,
