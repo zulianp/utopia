@@ -79,6 +79,46 @@ namespace utopia {
 		std::vector<MatrixPtrT> blocks_;
 	};
 
+	template<class Tensor>
+	Blocks<Wrapper<Tensor, 2>> block2x2(
+		const Wrapper<Tensor, 2> &a00, const Wrapper<Tensor, 2> &a01,
+		const Wrapper<Tensor, 2> &a10, const Wrapper<Tensor, 2> &a11
+		)
+	{
+		using MatrixPtrT = typename Blocks<Wrapper<Tensor, 2>>::MatrixPtrT;
+		std::vector<MatrixPtrT> vec = {
+			make_ref(a00),
+			make_ref(a01),
+			make_ref(a10),
+			make_ref(a11),
+		};
+
+		return Blocks<Wrapper<Tensor, 2>>(2, 2, vec);
+	}
+
+	template<class Tensor>
+	Blocks<Wrapper<Tensor, 2>> block3x3(
+		const Wrapper<Tensor, 2> &a00, const Wrapper<Tensor, 2> &a01, const Wrapper<Tensor, 2> &a02,
+		const Wrapper<Tensor, 2> &a10, const Wrapper<Tensor, 2> &a11, const Wrapper<Tensor, 2> &a12,
+		const Wrapper<Tensor, 2> &a20, const Wrapper<Tensor, 2> &a21, const Wrapper<Tensor, 2> &a22
+		)
+	{
+		using MatrixPtrT = typename Blocks<Wrapper<Tensor, 2>>::MatrixPtrT;
+		std::vector<MatrixPtrT> vec = {
+			make_ref(a00),
+			make_ref(a01),
+			make_ref(a02),
+			make_ref(a10),
+			make_ref(a11),
+			make_ref(a12),
+			make_ref(a20),
+			make_ref(a21),
+			make_ref(a22)
+		};
+
+		return Blocks<Wrapper<Tensor, 2>>(3, 3, vec);
+	}
+
 	//////////////////////////////////////////////////////////////////
 
 
@@ -137,6 +177,38 @@ namespace utopia {
 	private:
 		std::vector<VectorPtrT> blocks_;
 	};
+
+	template<class Tensor>
+	Blocks<Wrapper<Tensor, 1>> block2(
+		const Wrapper<Tensor, 1> &a0,
+		const Wrapper<Tensor, 1> &a1
+		)
+	{
+		using VectorPtrT = typename Blocks<Wrapper<Tensor, 1>>::VectorPtrT;
+		std::vector<VectorPtrT> vec = {
+			make_ref(a0),
+			make_ref(a1),
+		};
+
+		return Blocks<Wrapper<Tensor, 1>>(vec);
+	}
+
+	template<class Tensor>
+	Blocks<Wrapper<Tensor, 1>> block3(
+		const Wrapper<Tensor, 1> &a0,
+		const Wrapper<Tensor, 1> &a1,
+		const Wrapper<Tensor, 1> &a2
+		)
+	{
+		using VectorPtrT = typename Blocks<Wrapper<Tensor, 1>>::VectorPtrT;
+		std::vector<VectorPtrT> vec = {
+			make_ref(a0),
+			make_ref(a1),
+			make_ref(a2),
+		};
+
+		return Blocks<Wrapper<Tensor, 1>>(vec);
+	}
 
 	/////////////////////////////////////////////////////////////////
 

@@ -36,14 +36,14 @@ namespace utopia {
            Matrix mat = b_mat;
            disp(mat);
 
-           auto ones = std::make_shared<Vector>(values(n, 1.));
+           Vector ones = values(n, 1.);
 
-           Blocks<Vector> b_vec({
-               ones, 
-               ones
-           });
+           // Blocks<Vector> b_vec({
+           //     make_ref(ones), 
+           //     make_ref(ones),
+           // });
 
-           Vector vec = b_vec;
+           Vector vec = block2(ones, ones);
            disp(vec);
 
 
