@@ -236,6 +236,8 @@ namespace utopia {
         op.update(make_ref(A));
         op.apply(rhs, sol);
 
+        //write("A.m", A);
+
         undo_blocks(sol, sol_m, sol_s, lagr);
     }
 
@@ -613,11 +615,11 @@ namespace utopia {
             // multiplier_in = slave_in;  //LAMBDA
         // }                           //LAMBDA
         
-        std::string solve_strategy = "staggered";
+        std::string solve_strategy = "monolithic";
         is_ptr->read("solve-strategy", solve_strategy);
 
 
-        std::string operator_type = "INTERPOLATION";
+        std::string operator_type = "L2_PROJECTION";
         is_ptr->read("operator-type", operator_type);
         
         master_in.describe();
