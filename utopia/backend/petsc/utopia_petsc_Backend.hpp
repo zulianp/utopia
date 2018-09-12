@@ -556,9 +556,10 @@ namespace utopia {
 				
 				if(b_ptr) {
 					comm = b_ptr->implementation().communicator();
+					matrices.push_back(b_ptr->implementation().implementation());
+				}  else {
+					matrices.push_back(nullptr);
 				}
-
-				matrices.push_back(b_ptr->implementation().implementation());
 			}
 
 			left.nest(comm, blocks.rows(), nullptr, blocks.cols(), nullptr, &matrices[0]);
@@ -575,9 +576,10 @@ namespace utopia {
 				
 				if(b_ptr) {
 					comm = b_ptr->implementation().communicator();
+					vectors.push_back(b_ptr->implementation().implementation());
+				}  else {
+					vectors.push_back(nullptr);
 				}
-
-				vectors.push_back(b_ptr->implementation().implementation());
 			}
 
 			left.nest(comm, blocks.size(), nullptr, &vectors[0]);

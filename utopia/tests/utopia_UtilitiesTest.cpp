@@ -21,25 +21,37 @@ namespace utopia {
     private:
         void block_test()
         {   
-            int n = 2;
+            int n = 5;
             auto id_ptr = std::make_shared<Matrix>(identity(n, n));
 
-            Blocks<Matrix> b(2, 2, {
+            Blocks<Matrix> b_mat(2, 2, {
                 id_ptr, nullptr,
                 id_ptr, id_ptr
             });
 
-           auto s = size(b);
+           auto s = size(b_mat);
            utopia_test_assert(s.get(0) == 2*n);
            utopia_test_assert(s.get(1) == 2*n);
-           // b.set_block(0, 1, id_ptr);
 
-           Matrix mat = b;
-
+           Matrix mat = b_mat;
            disp(mat);
+
+           auto ones = std::make_shared<Vector>(values(n, 1.));
+
+           Blocks<Vector> b_vec({
+               ones, 
+               ones
+           });
+
+           Vector vec = b_vec;
+           disp(vec);
+
+
+           Vector r = mat * vec;
+
+           disp(r);
         }
     };
-
 
     template<class Matrix, class Vector>
     class UtilitiesTest {
@@ -326,9 +338,10 @@ namespace utopia {
     void runUtilitiesTest() {
         UTOPIA_UNIT_TEST_BEGIN("UtilitiesTest");
 #ifdef WITH_PETSC
+        BlockTest<DSMatrixd, DVectord>().run();
+        
         if(mpi_world_size() == 1) {
             UtilitiesTest<DMatrixd, DVectord>().run();
-            BlockTest<DSMatrixd, DVectord>().run();
 #ifdef WITH_BLAS
             // interoperability
             UtilitiesTest<DMatrixd, Vectord>().inline_eval_test();
