@@ -721,7 +721,7 @@ namespace utopia {
         moonolith::SearchSettings settings;
         
         if(master->mesh_dimension() == 2) {
-            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
+            //std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
             return utopia::Assemble<2>(comm,
                                        master, 
                                        slave,
@@ -744,7 +744,7 @@ namespace utopia {
         
         
         if(master->mesh_dimension() == 3) {
-            std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
+            //std::cout<<"Assemble_matrix::I am in assemble"<<std::endl;
             return utopia::Assemble<3>(comm,
                                        master, 
                                        slave,
