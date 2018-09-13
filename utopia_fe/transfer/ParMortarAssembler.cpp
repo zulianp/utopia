@@ -1689,7 +1689,7 @@ namespace utopia {
 
         assert(ownershipRangesSlave.empty() == ownershipRangesMaster.empty() || ownershipRangesMaster.empty());
 
-        moonolith::root_describe("petsc assembly begin", comm, std::cout);
+        //moonolith::root_describe("petsc assembly begin", comm, std::cout);
 
         SizeType  mMaxRowEntries = mat_buffer.local_max_entries_x_col();
         
@@ -1753,7 +1753,7 @@ namespace utopia {
         
         assert(ownershipRangesSlave_p.empty() == ownershipRangesMaster_p.empty() || ownershipRangesMaster_p.empty());
         
-        moonolith::root_describe("petsc assembly begin", comm, std::cout);
+        //moonolith::root_describe("petsc assembly begin", comm, std::cout);
         
         SizeType  mMaxRowEntries_p = p_buffer.local_max_entries_x_col();
         
@@ -1805,7 +1805,7 @@ namespace utopia {
         
         assert(ownershipRangesSlave_q.empty() == ownershipRangesMaster_q.empty() || ownershipRangesMaster_q.empty());
         
-        moonolith::root_describe("petsc assembly begin", comm, std::cout);
+        //moonolith::root_describe("petsc assembly begin", comm, std::cout);
         
         SizeType  mMaxRowEntries_q = q_buffer.local_max_entries_x_col();
         

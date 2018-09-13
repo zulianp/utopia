@@ -610,7 +610,7 @@ namespace utopia {
         
         assert(ownershipRangesMaster_r.empty() == ownershipRangesSlave_r.empty() || ownershipRangesSlave_r.empty());
         
-        moonolith::root_describe("petsc assembly begin", comm, std::cout);
+        //moonolith::root_describe("petsc assembly begin", comm, std::cout);
         
         SizeType  mMaxRowEntries = mat_buffer.max_entries_x_col();
         
@@ -624,11 +624,11 @@ namespace utopia {
         const SizeType local_range_master = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
         // bbecsek
         
-        moonolith::root_describe("petsc assembly begin 1", comm, std::cout);
+        //moonolith::root_describe("petsc assembly begin 1", comm, std::cout);
         const SizeType local_range_slave_r  = ownershipRangesSlave_r [comm.rank()+1] - ownershipRangesSlave_r [comm.rank()];
         const SizeType local_range_master_r = ownershipRangesMaster_r[comm.rank()+1] - ownershipRangesMaster_r[comm.rank()];
         
-        moonolith::root_describe("petsc assembly begin 2", comm, std::cout);
+        //moonolith::root_describe("petsc assembly begin 2", comm, std::cout);
         
         DSMatrixd B_x = utopia::local_sparse(local_range_slave, local_range_master, mMaxRowEntries);
         // bbecsek
@@ -646,7 +646,7 @@ namespace utopia {
         // utopia::write("B_x.m",B_x);
         // bbecsek
         
-        moonolith::root_describe("petsc assembly begin 3", comm, std::cout);
+        //moonolith::root_describe("petsc assembly begin 3", comm, std::cout);
         
         {
             utopia::Write<utopia::DSMatrixd> write_reverse(B_x_reverse);
