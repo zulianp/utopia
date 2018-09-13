@@ -693,7 +693,7 @@ namespace utopia {
         //std::cout << "Participate size: " << particip_slave_dofs.size() << " on processor " << world_rank << std::endl;
  
         //disp(B_reverse.size());
-        moonolith::root_describe("petsc assembly end", comm, std::cout);
+        //moonolith::root_describe("petsc assembly end", comm, std::cout);
         return true;
     }
     
