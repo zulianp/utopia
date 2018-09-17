@@ -9,6 +9,30 @@
 
 namespace utopia {
 
+	void TpetraVector::add_vector(
+	    const std::vector<global_ordinal_type> &indices,
+	    const std::vector<Scalar> &values)
+	{
+		const std::size_t n = values.size();
+		assert(n == indices.size());
+
+		for(std::size_t i = 0; i < n; ++i) {
+			add(indices[i], values[i]);
+		}
+	}
+
+	void TpetraVector::set_vector(
+	    const std::vector<global_ordinal_type> &indices,
+	    const std::vector<Scalar> &values)
+	{
+		const std::size_t n = values.size();
+		assert(n == indices.size());
+
+		for(std::size_t i = 0; i < n; ++i) {
+			set(indices[i], values[i]);
+		}
+	}
+
 	bool TpetraVector::read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path)
 	{
 		typedef Tpetra::CrsMatrix<>                       crs_matrix_type;

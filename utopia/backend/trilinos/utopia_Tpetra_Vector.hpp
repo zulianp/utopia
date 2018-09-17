@@ -141,6 +141,15 @@ namespace utopia {
             implementation().putScalar(value);
         }
 
+        void set_vector(
+            const std::vector<global_ordinal_type> &indices,
+            const std::vector<Scalar> &values);
+
+        void add_vector(
+            const std::vector<global_ordinal_type> &indices,
+            const std::vector<Scalar> &values);
+
+
         inline void read_lock()
         {
             read_only_data_ = implementation().getData();

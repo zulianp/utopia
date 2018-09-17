@@ -190,6 +190,18 @@ namespace utopia {
         Scalar get(const global_ordinal_type &row, const global_ordinal_type &col) const;
         void add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
 
+        void set_matrix(
+            const std::vector<global_ordinal_type> &rows,
+            const std::vector<global_ordinal_type> &cols,
+            const std::vector<Scalar> &values
+        );
+
+        void add_matrix(
+            const std::vector<global_ordinal_type> &rows,
+            const std::vector<global_ordinal_type> &cols,
+            const std::vector<Scalar> &values
+        );
+
         void mult(const TpetraVector &vec, TpetraVector &result) const;
         void mult_t(const TpetraVector &vec, TpetraVector &result) const;
 
