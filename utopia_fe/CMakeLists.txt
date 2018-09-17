@@ -99,13 +99,14 @@ list(APPEND UTOPIA_FE_MODULES
 	functions
 	core
 	rapidxml
+	base
  )
 
 FOREACH(MODULE ${UTOPIA_FE_MODULES})
 		add_subdirectory("${MODULE}")
 ENDFOREACH(MODULE)
 
-
+include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
 configure_file(${UTOPIA_FE_ROOT_PATH}/utopia_fe_config.hpp.in ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)

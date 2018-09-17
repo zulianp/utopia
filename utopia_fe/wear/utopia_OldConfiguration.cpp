@@ -82,8 +82,8 @@ namespace utopia {
 
 	void OldConfiguration::displacement_and_forces(
 		ProductFunctionSpace<LibMeshFunctionSpace> &space,
-		DVectord &displacement,
-		DVectord &forces) const
+		UVector &displacement,
+		UVector &forces) const
 	{
 		const libMesh::MeshBase &mesh  = space[0].mesh();
 		const libMesh::DofMap &dof_map = space[0].dof_map();
@@ -100,7 +100,7 @@ namespace utopia {
 		}
 
 		auto r = range(displacement);
-		Write<DVectord> w_d(displacement);
+		Write<UVector> w_d(displacement);
 
 		for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
 			const auto &e = **e_it;

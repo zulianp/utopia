@@ -28,8 +28,8 @@ namespace utopia {
 		void update(const int time_step) override;
 		void displacement_and_forces(
 			ProductFunctionSpace<LibMeshFunctionSpace> &space,
-			DVectord &displacement,
-			DVectord &forces) const override;
+			UVector &displacement,
+			UVector &forces) const override;
 
 		void init(ProductFunctionSpace<LibMeshFunctionSpace> &space) override;
 

@@ -4,6 +4,7 @@
 #include "utopia.hpp"
 #include "utopia_FEForwardDeclarations.hpp"
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
+#include "utopia_fe_base.hpp"
 
 #include <memory>
 
@@ -18,15 +19,15 @@ namespace utopia {
 	public:
 		void init(const Size &local_size, const Size &global_size);
 
-		DVectord displacement;
-		DVectord displacement_increment;
+		UVector displacement;
+		UVector displacement_increment;
 
-		DVectord velocity;
+		UVector velocity;
 
-		DVectord internal_force;
-		DVectord external_force;
+		UVector internal_force;
+		UVector external_force;
 
-		DVectord stress;
+		UVector stress;
 
 		double t;
 	};
@@ -34,14 +35,14 @@ namespace utopia {
 	class MechanicsContext {
 	public:
 		//stiffness matrix
-		DSMatrixd stiffness_matrix;
+		USMatrix stiffness_matrix;
 
-		DSMatrixd non_lumped_mass_matrix;
+		USMatrix non_lumped_mass_matrix;
 		//lumped mass matrix
-		DSMatrixd mass_matrix;
-		DVectord  inverse_mass_vector;
+		USMatrix mass_matrix;
+		UVector  inverse_mass_vector;
 
-		DVectord dirichlet_selector;
+		UVector dirichlet_selector;
 
 		void init_mass_matrix(const ProductFunctionSpace<LibMeshFunctionSpace> &V);
 	};
@@ -75,7 +76,7 @@ namespace utopia {
 			const unsigned int dim,
 			libMesh::DofMap &dof_map);
 
-		void set_linear_solver(const std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > &solver)
+		void set_linear_solver(const std::shared_ptr< LinearSolver<USMatrix, UVector> > &solver)
 		{
 			this->linear_solver = solver;
 		}
@@ -89,17 +90,17 @@ namespace utopia {
 			MechanicsState &current) = 0;
 
 		bool solve(
-			const DSMatrixd &K,
-			const DVectord &inverse_mass_vector,
-			const DVectord &rhs,
-			const DVectord &gap,
+			const USMatrix &K,
+			const UVector &inverse_mass_vector,
+			const UVector &rhs,
+			const UVector &gap,
 			const Friction &friction,
-			DVectord &sol);
+			UVector &sol);
 
 		//FIXME I do not like it
 		unsigned int dim;
 		libMesh::DofMap &dof_map;
-		std::shared_ptr< LinearSolver<DSMatrixd, DVectord> > linear_solver;
+		std::shared_ptr< LinearSolver<USMatrix, UVector> > linear_solver;
 	};
 
 	class ImplicitEuler : public MechIntegrationScheme, public MechWithContactIntegrationScheme {
@@ -129,12 +130,12 @@ namespace utopia {
 	class ExternalForce {
 	public:
 		virtual ~ExternalForce() {}
-		virtual void eval(const double t, DVectord &result) = 0;
+		virtual void eval(const double t, UVector &result) = 0;
 	};
 
 	class ConstantExternalForce : public ExternalForce {
 	public:
-		inline void eval(const double, DVectord &result) override
+		inline void eval(const double, UVector &result) override
 		{
 			result = value;
 		}
@@ -145,7 +146,7 @@ namespace utopia {
 			assemble(linear_form, value);
 		}
 
-		DVectord value;
+		UVector value;
 	};
 
 	// class MechanicsSimulation {

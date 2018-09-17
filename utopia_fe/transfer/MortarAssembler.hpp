@@ -19,9 +19,9 @@ namespace utopia {
 // 	// 		const std::shared_ptr<LibMeshFESpaceBase> &master, 
 // 	// 		const std::shared_ptr<LibMeshFESpaceBase> &slave);
 
-// 	// 	 bool assemble(DSMatrixd &B);
+// 	// 	 bool assemble(USMatrix &B);
 
-// 	// 	 	DSMatrixd D;
+// 	// 	 	USMatrix D;
 
 // 	// 	 	void set_use_biorthogonal_multipliers(const bool use_biorth)
 // 	// 	 	{
@@ -126,7 +126,7 @@ namespace utopia {
 		
 
 // 	// 	MortarContactAssembler(const std::shared_ptr<LibMeshFESpaceBase> &space);
-// 	// 	bool assemble(DSMatrixd &coupling, DVectord &gap, DVectord &normals, DSMatrixd &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate = std::shared_ptr<moonolith::Predicate>());
+// 	// 	bool assemble(USMatrix &coupling, UVector &gap, UVector &normals, USMatrix &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate = std::shared_ptr<moonolith::Predicate>());
 
 // 	// 	private:
 // 	// 		std::shared_ptr<LibMeshFESpaceBase> space_;

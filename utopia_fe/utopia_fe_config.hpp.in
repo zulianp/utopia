@@ -1,6 +1,13 @@
 #ifndef UTOPIA_FE_CONFIG_HPP
 #define UTOPIA_FE_CONFIG_HPP 
 
+#include "utopia_Config.hpp"
+
 #cmakedefine WITH_BOOST
+
+#ifdef WITH_TRILINOS
+#cmakedefine USE_UTOPIA_TRILINOS
+#endif //WITH_TRILINOS
+
 
 #endif //UTOPIA_FE_CONFIG_HPP

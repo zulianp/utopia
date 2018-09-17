@@ -82,9 +82,9 @@ namespace utopia {
 	void ContactSystem::update_wear(
 		const double dt,
 		const double wear_coefficient,
-		const DVectord &sliding_distance,
-		const DVectord &normal_stress,
-		DVectord &wear
+		const UVector &sliding_distance,
+		const UVector &normal_stress,
+		UVector &wear
 		)
 	{	
 		wear += (dt * wear_coefficient) * abs(e_mul(sliding_distance, normal_stress));
@@ -100,20 +100,20 @@ namespace utopia {
 		const auto &mesh = equation_systems_->get_mesh();
 		const int dim = mesh.mesh_dimension();
 
-		DVectord normal_stress = local_zeros(local_size(state.displacement));
-		DVectord sliding_distance = local_zeros(local_size(state.displacement)); 
+		UVector normal_stress = local_zeros(local_size(state.displacement));
+		UVector sliding_distance = local_zeros(local_size(state.displacement)); 
 
-			// DVectord stress = local_zeros(local_size(state.displacement));
+			// UVector stress = local_zeros(local_size(state.displacement));
 
 		if(contact.initialized) {
 			normal_stress = contact.orthogonal_trafo * state.stress;
 
-			DVectord tangential_velocity = contact.orthogonal_trafo * state.velocity;
+			UVector tangential_velocity = contact.orthogonal_trafo * state.velocity;
 			sliding_distance = local_zeros(local_size(state.displacement));
 
 			{	
-				Read<DVectord>   r_v(tangential_velocity);
-				Write<DVectord> w_s(sliding_distance);
+				Read<UVector>   r_v(tangential_velocity);
+				Write<UVector> w_s(sliding_distance);
 
 				Range r = range(tangential_velocity);
 
@@ -137,8 +137,8 @@ namespace utopia {
 			{
 				normal_stress *= 0.;
 
-				Read<DVectord> r_s(state.stress), r_n(contact.normals);
-				Write<DVectord> w_n(normal_stress);
+				Read<UVector> r_s(state.stress), r_n(contact.normals);
+				Write<UVector> w_n(normal_stress);
 
 				Range r = range(state.stress);
 
@@ -157,9 +157,9 @@ namespace utopia {
 		}
 
 		{
-			Read<DVectord> r_d(state.displacement), r_v(state.velocity);
-			Read<DVectord> r_f(state.internal_force), r_ef(state.external_force), r_ns(normal_stress);
-			Read<DVectord> r_c(contact.is_contact_node);
+			Read<UVector> r_d(state.displacement), r_v(state.velocity);
+			Read<UVector> r_f(state.internal_force), r_ef(state.external_force), r_ns(normal_stress);
+			Read<UVector> r_c(contact.is_contact_node);
 
 			auto nd 	= mesh.local_nodes_begin();
 			auto nd_end = mesh.local_nodes_end();

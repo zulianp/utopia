@@ -848,7 +848,7 @@ namespace utopia {
                   const std::shared_ptr<const int> &level,
                   const std::shared_ptr<const int> &coarse_elem,
                   const std::shared_ptr<const int> &fine_elem,
-                  DSMatrixd &B,
+                  USMatrix &B,
                   const moonolith::SearchSettings &settings)
     {
         std::shared_ptr<Spaces> local_fun_spaces = std::make_shared<Spaces>(mesh, dof_master, dof_slave, _to_var_num, coarse_elem, fine_elem, level);
@@ -1106,7 +1106,7 @@ namespace utopia {
         B = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
         
         {
-            utopia::Write<utopia::DSMatrixd> write(B);
+            utopia::Write<utopia::USMatrix> write(B);
             for (auto it = mat_buffer.iter(); it; ++it) {
                 B.set(it.row(), it.col(), *it);
                 
@@ -1128,7 +1128,7 @@ namespace utopia {
                        const std::shared_ptr<const int> &level,
                        const std::shared_ptr<const int> &coarse_elem,
                        const std::shared_ptr<const int> &fine_elem,
-                       DSMatrixd &B)
+                       USMatrix &B)
     {
         moonolith::SearchSettings settings;
         
@@ -1151,7 +1151,7 @@ namespace utopia {
 ////                       const std::shared_ptr<MeshBase> &mesh_slave,
 ////                       libMesh::Order master_order,
 ////                       libMesh::Order slave_order,
-////                       DSMatrixd &B)
+////                       USMatrix &B)
 ////    {
 ////        moonolith::SearchSettings settings;
 ////        

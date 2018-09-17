@@ -32,8 +32,8 @@ namespace utopia {
 
 			virtual void displacement_and_forces(
 				ProductFunctionSpace<LibMeshFunctionSpace> &space,
-				DVectord &displacement,
-				DVectord &forces) const = 0;
+				UVector &displacement,
+				UVector &forces) const = 0;
 
 			virtual int n_steps() const = 0;
 			virtual double dt() const = 0;
@@ -56,8 +56,8 @@ namespace utopia {
 
 		void displacement_and_forces(
 			ProductFunctionSpace<LibMeshFunctionSpace> &space,
-			DVectord &displacement,
-			DVectord &forces) const;
+			UVector &displacement,
+			UVector &forces) const;
 
 		virtual void describe(std::ostream &os) const 
 		{

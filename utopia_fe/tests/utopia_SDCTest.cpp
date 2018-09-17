@@ -105,7 +105,7 @@ namespace utopia {
 		const double dt = 0.01;
 		const std::size_t n_ts = 40;
 
-		DVectord storage_u;
+		UVector storage_u;
 		auto R = coeff(1.);
 		auto var_u = interpolate(storage_u, u);
 		auto form =
@@ -121,15 +121,15 @@ namespace utopia {
 		FEBackend<LIBMESH_TAG>::init_constraints(constr);
 		V.initialize();
 
-		DVectord u0 = local_zeros(V.dof_map().n_local_dofs());
+		UVector u0 = local_zeros(V.dof_map().n_local_dofs());
 		//apply boundary conditions
 
-		auto f = [&form, &storage_u](const DVectord &u, DVectord &ret) {
+		auto f = [&form, &storage_u](const UVector &u, UVector &ret) {
 			storage_u = u;
 			// assemble(form, ret);
 		};
 
 		std::vector<double> quad_points{0, 0.5, 1.};
-		ExplicitSDC<DSMatrixd, DVectord> sdc;
+		ExplicitSDC<USMatrix, UVector> sdc;
 	}
 }

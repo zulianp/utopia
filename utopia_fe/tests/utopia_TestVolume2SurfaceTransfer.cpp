@@ -44,7 +44,7 @@ namespace utopia {
 
 			Chrono c;
 			c.start();
-			DSMatrixd B;
+			USMatrix B;
 			moonolith::Communicator comm(mesh->comm().get());
 			if(assemble_volume_transfer(
 				comm,
@@ -67,12 +67,12 @@ namespace utopia {
 				interp.normalize_rows();
 				interp.describe(std::cout);
 
-				DSMatrixd D_inv = diag(1./sum(B, 1));
-				DSMatrixd T = D_inv * B;
+				USMatrix D_inv = diag(1./sum(B, 1));
+				USMatrix T = D_inv * B;
 
-				DSMatrixd T_t = transpose(T);
-				DVectord t_temp = sum(T_t, 1);
-				DVectord t = ghosted(local_size(t_temp).get(0), size(t_temp).get(0), V_vol.dof_map().get_send_list());
+				USMatrix T_t = transpose(T);
+				UVector t_temp = sum(T_t, 1);
+				UVector t = ghosted(local_size(t_temp).get(0), size(t_temp).get(0), V_vol.dof_map().get_send_list());
 				t = t_temp;
 
 
@@ -81,7 +81,7 @@ namespace utopia {
 
 				mesh_refinement.clean_refinement_flags();
 
-				Read<DVectord> r_(t);
+				Read<UVector> r_(t);
 				for(auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it) {
 					V_vol.dof_map().dof_indices(*e_it, indices);
 					t.get(indices, values);
@@ -265,18 +265,18 @@ namespace utopia {
 			auto p_form = inner(f_rhs, v) * dX;
 			auto m_form = inner(u, v) * dX;
 
-			DVectord scaled_sol;
-			DSMatrixd mass_mat;
+			UVector scaled_sol;
+			USMatrix mass_mat;
 
 			utopia::assemble(p_form, scaled_sol);
 			utopia::assemble(m_form, mass_mat);
 
-			DVectord v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
+			UVector v_vol = local_values(V_vol.dof_map().n_local_dofs(), 1.);
 			
 			if(elem_order == libMesh::FIRST) {
 				v_vol = e_mul(1./sum(mass_mat, 1), scaled_sol);
 			} else {
-				Factorization<DSMatrixd, DVectord>().solve(mass_mat, scaled_sol, v_vol);
+				Factorization<USMatrix, UVector>().solve(mass_mat, scaled_sol, v_vol);
 			}
 
 			// v_vol.set(1.);
@@ -286,7 +286,7 @@ namespace utopia {
 			v_vol *= 1./max_master;
 			max_master = 1.;
 
-			DVectord v_surf, v_vol_back;
+			UVector v_surf, v_vol_back;
 			pmtoft.apply(v_vol, v_surf);
 			pmtoft.apply_transpose(local_values(local_size(v_surf).get(0), 1.), v_vol_back);
 

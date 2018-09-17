@@ -30,7 +30,10 @@ namespace utopia {
 
 		template<class T>
 		void read(std::vector<T> &vec) {
-			vec.resize(size());
+			auto n = size();
+			if(n == 0) return;
+
+			vec.resize(n);
 
 			array_start();
 
@@ -44,6 +47,8 @@ namespace utopia {
 
 		void read_all(std::function<void(InputStream &)> lambda) {
 			auto n = size();
+
+			if(n == 0) return;
 
 			array_start();
 

@@ -1,8 +1,6 @@
 #ifndef UTOPIA_FE_LANG_HPP
 #define UTOPIA_FE_LANG_HPP
 
-#include "utopia.hpp"
-
 #include <set>
 #include <cassert>
 

@@ -6,8 +6,8 @@
 namespace utopia {
 	class LibMeshAssembler {
 	public:
-		typedef utopia::DSMatrixd GlobalMatrix;
-		typedef utopia::DVectord GlobalVector;
+		typedef utopia::USMatrix GlobalMatrix;
+		typedef utopia::UVector GlobalVector;
 
 		template<class Expr>
 		bool assemble(const Expr &expr, GlobalMatrix &mat, GlobalVector &vec, const bool apply_constraints = false)

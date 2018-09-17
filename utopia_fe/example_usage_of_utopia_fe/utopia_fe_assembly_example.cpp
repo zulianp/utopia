@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 		0.3, 0.8,
 		QUAD8);
 
-	DVectord d = local_zeros(10);
+	UVector d = local_zeros(10);
 
 	disp(d);
 

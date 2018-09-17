@@ -169,21 +169,21 @@ namespace utopia {
 		}
 	}
 
-	inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, DVectord &utopia_vec)
+	inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, UVector &utopia_vec)
 	{
 		using namespace libMesh;
 		Vec p_vec = cast_ptr< libMesh::PetscVector<libMesh::Number> *>(&lm_vec)->vec();
 		utopia::convert(p_vec, utopia_vec);
 	}
 
-	inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, DSMatrixd &utopia_mat) {
+	inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, USMatrix &utopia_mat) {
 		using namespace libMesh;
 
 		Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
 		utopia::convert(p_mat, utopia_mat);
 	}
 
-	inline void convert(DSMatrixd &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
+	inline void convert(USMatrix &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
 		using namespace libMesh;
 		using namespace utopia;
 
@@ -197,10 +197,10 @@ namespace utopia {
 		});
 	}
 
-	inline void convert(DVectord &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec)
+	inline void convert(UVector &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec)
 	{
 		{
-			Read<DVectord> w_s(utopia_vec);
+			Read<UVector> w_s(utopia_vec);
 			Range r = range(utopia_vec);
 			for(long i = r.begin() ; i < r.end(); ++i) {
 				lm_vec.set(i, utopia_vec.get(i) );

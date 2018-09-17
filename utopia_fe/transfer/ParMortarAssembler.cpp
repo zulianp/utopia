@@ -815,7 +815,7 @@
 //     bool Assemble(
 //                   moonolith::Communicator &comm,
 //                   std::shared_ptr<LibMeshFESpaceBase> &master_slave,
-//                   DSMatrixd &B,
+//                   USMatrix &B,
 //                   const moonolith::SearchSettings &settings)
 //     {
 //         std::shared_ptr<UtopiaMesh> local_fun_spaces = std::make_shared<UtopiaMesh>(master_slave);
@@ -927,7 +927,7 @@
 //         return true;
 //     }
   
-//     bool ParMortarAssembler::Assemble(DSMatrixd &B)
+//     bool ParMortarAssembler::Assemble(USMatrix &B)
 //     {
         
 //         moonolith::SearchSettings settings;
@@ -1133,7 +1133,7 @@
 //     bool SurfaceAssemble(
 //                          moonolith::Communicator &comm,
 //                          std::shared_ptr<LibMeshFESpaceBase> &master_slave,
-//                          DSMatrixd &B,
+//                          USMatrix &B,
 //                          const moonolith::SearchSettings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
 //     {
 
@@ -1699,13 +1699,13 @@
 //         const SizeType local_range_master_range = ownershipRangesMaster[comm.rank()+1] - ownershipRangesMaster[comm.rank()];
         
         
-//         DSMatrixd B_tilde = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
+//         USMatrix B_tilde = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
         
         
-//         DVectord relAreaVec = zeros(master_slave->dof_map().n_dofs());
+//         UVector relAreaVec = zeros(master_slave->dof_map().n_dofs());
             
 //         {
-//             utopia::Write<utopia::DVectord> write(relAreaVec);
+//             utopia::Write<utopia::UVector> write(relAreaVec);
 //             for (auto it = rel_area_buff.iter(); it; ++it) {
 //                 relAreaVec.add(it.row(), *it);
 //             }
@@ -1714,7 +1714,7 @@
 //         // disp(relAreaVec);
 
 //         {
-//             utopia::Write<utopia::DSMatrixd> write(B_tilde);
+//             utopia::Write<utopia::USMatrix> write(B_tilde);
 //             for (auto it = mat_buffer.iter(); it; ++it) {
 //                 B_tilde.set(it.row(), it.col(), *it);
 
@@ -1762,10 +1762,10 @@
 //         const SizeType local_range_slave_range_p  = ownershipRangesSlave_p [comm.rank()+1] - ownershipRangesSlave_p [comm.rank()];
 //         const SizeType local_range_master_range_p = ownershipRangesMaster_p[comm.rank()+1] - ownershipRangesMaster_p[comm.rank()];
         
-//         DSMatrixd P_tilde = utopia::local_sparse(local_range_slave_range_p, local_range_master_range_p, mMaxRowEntries_p);
+//         USMatrix P_tilde = utopia::local_sparse(local_range_slave_range_p, local_range_master_range_p, mMaxRowEntries_p);
         
 //         {
-//             utopia::Write<utopia::DSMatrixd> write(P_tilde);
+//             utopia::Write<utopia::USMatrix> write(P_tilde);
 //             for (auto it = p_buffer.iter(); it; ++it) {
 //                 P_tilde.set(it.row(), it.col(), *it);
                 
@@ -1814,11 +1814,11 @@
 //         const SizeType local_range_slave_range_q  = ownershipRangesSlave_q [comm.rank()+1] - ownershipRangesSlave_q [comm.rank()];
 //         const SizeType local_range_master_range_q = ownershipRangesMaster_q[comm.rank()+1] - ownershipRangesMaster_q[comm.rank()];
 
-//         DSMatrixd Q_transpose = utopia::local_sparse(local_range_slave_range_q, local_range_master_range_q, mMaxRowEntries);
+//         USMatrix Q_transpose = utopia::local_sparse(local_range_slave_range_q, local_range_master_range_q, mMaxRowEntries);
         
         
 //         {
-//             utopia::Write<utopia::DSMatrixd> write(Q_transpose);
+//             utopia::Write<utopia::USMatrix> write(Q_transpose);
 //             for (auto it = q_buffer.iter(); it; ++it) {
 //                 Q_transpose.set(it.row(), it.col(), *it);
                 
@@ -1834,7 +1834,7 @@
   
     
     
-//     bool ParMortarAssembler::SurfaceAssemble(DSMatrixd &B, const libMesh::Real search_radius, const int tag_1, const int tag_2)
+//     bool ParMortarAssembler::SurfaceAssemble(USMatrix &B, const libMesh::Real search_radius, const int tag_1, const int tag_2)
 //     {
         
 //         moonolith::SearchSettings settings;
@@ -1861,9 +1861,9 @@
 //     //
 //     //
 //     //
-//     //	bool ParMortarAssembler::Transfer(DSMatrixd &B, DSMatrixd &T)
+//     //	bool ParMortarAssembler::Transfer(USMatrix &B, USMatrix &T)
 //     //	{
-//     //		DVectord               diag_elem;
+//     //		UVector               diag_elem;
 //     //		PetscInt               mG;
 //     //		PetscInt               nG;
 //     //		PetscInt               mL;
@@ -1881,7 +1881,7 @@
 // //    bool SurfaceAssemble(
 // //                         moonolith::Communicator &comm,
 // //                         std::shared_ptr<LibMeshFESpaceBase> &master_slave,
-// //                         DSMatrixd &B,
+// //                         USMatrix &B,
 // //                         const moonolith::SearchSettings &settings,const libMesh::Real search_radius, const int tag_1, const int tag_2)
 // //    {
 // //        std::shared_ptr<UtopiaMesh> local_fun_spaces = std::make_shared<UtopiaMesh>(master_slave);
@@ -2354,7 +2354,7 @@
 // //        //		B = utopia::local_sparse(local_range_slave_range, local_range_master_range, mMaxRowEntries);
 // //        //
 // //        //		{
-// //        //			utopia::Write<utopia::DSMatrixd> write(B);
+// //        //			utopia::Write<utopia::USMatrix> write(B);
 // //        //			for (auto it = mat_buffer.iter(); it; ++it) {
 // //        //				B.set(it.row(), it.col(), *it);
 // //        //
@@ -2375,7 +2375,7 @@
 // //    
 // //    
 // //    
-// //    bool ParMortarAssembler::SurfaceAssemble(DSMatrixd &B, const libMesh::Real search_radius, const int tag_1, const int tag_2)
+// //    bool ParMortarAssembler::SurfaceAssemble(USMatrix &B, const libMesh::Real search_radius, const int tag_1, const int tag_2)
 // //    {
 // //        
 // //        moonolith::SearchSettings settings;
@@ -2399,9 +2399,9 @@
 // //    //
 // //    //
 // //    //
-// //    //	bool ParMortarAssembler::Transfer(DSMatrixd &B, DSMatrixd &T)
+// //    //	bool ParMortarAssembler::Transfer(USMatrix &B, USMatrix &T)
 // //    //	{
-// //    //		DVectord               diag_elem;
+// //    //		UVector               diag_elem;
 // //    //		PetscInt               mG;
 // //    //		PetscInt               nG;
 // //    //		PetscInt               mL;

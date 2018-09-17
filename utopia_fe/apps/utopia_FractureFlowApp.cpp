@@ -55,7 +55,7 @@ namespace utopia {
 
             Chrono c;
             c.start();
-            DSMatrixd B;
+            USMatrix B;
             moonolith::Communicator comm(mesh->comm().get());
             if(assemble_volume_transfer(
                 comm,
@@ -78,12 +78,12 @@ namespace utopia {
                 interp.normalize_rows();
                 interp.describe(std::cout);
 
-                DSMatrixd D_inv = diag(1./sum(B, 1));
-                DSMatrixd T = D_inv * B;
+                USMatrix D_inv = diag(1./sum(B, 1));
+                USMatrix T = D_inv * B;
 
-                DSMatrixd T_t = transpose(T);
-                DVectord t_temp = sum(T_t, 1);
-                DVectord t = ghosted(local_size(t_temp).get(0), size(t_temp).get(0), V_vol.dof_map().get_send_list());
+                USMatrix T_t = transpose(T);
+                UVector t_temp = sum(T_t, 1);
+                UVector t = ghosted(local_size(t_temp).get(0), size(t_temp).get(0), V_vol.dof_map().get_send_list());
                 t = t_temp;
 
 
@@ -92,7 +92,7 @@ namespace utopia {
 
                 mesh_refinement.clean_refinement_flags();
 
-                Read<DVectord> r_(t);
+                Read<UVector> r_(t);
                 for(auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it) {
                     V_vol.dof_map().dof_indices(*e_it, indices);
                     t.get(indices, values);
@@ -117,14 +117,14 @@ namespace utopia {
         mesh->prepare_for_use();
     }
 
-    static bool assemble_interpolation(FunctionSpaceT &from, FunctionSpaceT &to, DSMatrixd &B, DSMatrixd &D)
+    static bool assemble_interpolation(FunctionSpaceT &from, FunctionSpaceT &to, USMatrix &B, USMatrix &D)
     {
         auto assembler = std::make_shared<InterpolationLocalAssembler>(from.mesh().mesh_dimension());
         auto local2global = std::make_shared<Local2Global>(true);
         
         TransferAssembler transfer_assembler(assembler, local2global);
         
-        std::vector< std::shared_ptr<DSMatrixd> > mats;
+        std::vector< std::shared_ptr<USMatrix> > mats;
         if(!transfer_assembler.assemble(
                                         make_ref(from.mesh()),
                                         make_ref(from.dof_map()),
@@ -145,14 +145,14 @@ namespace utopia {
     }
     
     
-    static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, DSMatrixd &B, DSMatrixd &D)
+    static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USMatrix &B, USMatrix &D)
     {
         auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, true);
         auto local2global = std::make_shared<Local2Global>(false);
         
         TransferAssembler transfer_assembler(assembler, local2global);
         
-        std::vector< std::shared_ptr<DSMatrixd> > mats;
+        std::vector< std::shared_ptr<USMatrix> > mats;
         if(!transfer_assembler.assemble(
                                         make_ref(from.mesh()),
                                         make_ref(from.dof_map()),
@@ -177,16 +177,16 @@ namespace utopia {
         FunctionSpaceT &from,
         FunctionSpaceT &to, 
         FunctionSpaceT &lagr, 
-        DSMatrixd &B, DSMatrixd &D)
+        USMatrix &B, USMatrix &D)
     {
 
         {
-            DSMatrixd dump;
+            USMatrix dump;
             assemble_projection(from, lagr, B, dump);
         }
 
         {
-            DSMatrixd dump;
+            USMatrix dump;
             assemble_projection(to, lagr, D, dump);
         }
 
@@ -195,44 +195,44 @@ namespace utopia {
     
     static void solve_monolithic(FunctionSpaceT &V_m,
                                  FunctionSpaceT &V_s,
-                                 DSMatrixd &A_m,
-                                 DVectord &rhs_m,
-                                 DSMatrixd &A_s,
-                                 DVectord &rhs_s,
-                                 DVectord &sol_m,
-                                 DVectord &sol_s,
-                                 DVectord &lagr)
+                                 USMatrix &A_m,
+                                 UVector &rhs_m,
+                                 USMatrix &A_s,
+                                 UVector &rhs_s,
+                                 UVector &sol_m,
+                                 UVector &sol_s,
+                                 UVector &lagr)
     {
         
-        DSMatrixd B, D;
+        USMatrix B, D;
         assemble_projection(V_m, V_s, B, D);
         // assemble_interpolation(V_m, V_s, B, D);
 
         D *= -1.;
 
-        DSMatrixd D_t = transpose(D);
-        DSMatrixd B_t = transpose(B);
+        USMatrix D_t = transpose(D);
+        USMatrix B_t = transpose(B);
 
         set_zero_at_constraint_rows(V_m.dof_map(), B_t);
         set_zero_at_constraint_rows(V_s.dof_map(), D_t);
 
-        DSMatrixd A = Blocks<DSMatrixd>(3, 3, 
+        USMatrix A = Blocks<USMatrix>(3, 3, 
         {
             make_ref(A_m), nullptr, make_ref(B_t),
             nullptr, make_ref(A_s), make_ref(D_t),
             make_ref(B), make_ref(D), nullptr
         });
 
-        DVectord z = local_zeros(local_size(rhs_s));
-        DVectord rhs = blocks(rhs_m, rhs_s, z);
+        UVector z = local_zeros(local_size(rhs_s));
+        UVector rhs = blocks(rhs_m, rhs_s, z);
 
         sol_m = local_zeros(local_size(rhs_m));
         sol_s = local_zeros(local_size(rhs_s));
         lagr  = local_zeros(local_size(rhs_s));
 
-        DVectord sol = blocks(sol_m, sol_s, lagr);
+        UVector sol = blocks(sol_m, sol_s, lagr);
 
-        Factorization<DSMatrixd, DVectord> op;
+        Factorization<USMatrix, UVector> op;
         op.update(make_ref(A));
         op.apply(rhs, sol);
 
@@ -245,52 +245,51 @@ namespace utopia {
     static void solve_monolithic(FunctionSpaceT &V_m,
                                  FunctionSpaceT &V_s,
                                  FunctionSpaceT &L,
-                                 DSMatrixd &A_m,
-                                 DVectord &rhs_m,
-                                 DSMatrixd &A_s,
-                                 DVectord &rhs_s,
-                                 DVectord &sol_m,
-                                 DVectord &sol_s,
-                                 DVectord &lagr)
+                                 USMatrix &A_m,
+                                 UVector &rhs_m,
+                                 USMatrix &A_s,
+                                 UVector &rhs_s,
+                                 UVector &sol_m,
+                                 UVector &sol_s,
+                                 UVector &lagr)
     {
         
-        DSMatrixd B, D;
+        USMatrix B, D;
         assemble_projection(V_m, V_s, L, B, D);
         // assemble_interpolation(V_m, V_s, B, D);
 
         D *= -1.;
 
-        DSMatrixd D_t = transpose(D);
-        DSMatrixd B_t = transpose(B);
+        USMatrix D_t = transpose(D);
+        USMatrix B_t = transpose(B);
 
         set_zero_at_constraint_rows(V_m.dof_map(), B_t);
         set_zero_at_constraint_rows(V_s.dof_map(), D_t);
 
-        DSMatrixd A = Blocks<DSMatrixd>(3, 3, 
+        USMatrix A = Blocks<USMatrix>(3, 3, 
         {
             make_ref(A_m), nullptr, make_ref(B_t),
             nullptr, make_ref(A_s), make_ref(D_t),
             make_ref(B), make_ref(D), nullptr
         });
 
-        DVectord z = local_zeros(L.dof_map().n_local_dofs());
-        DVectord rhs = blocks(rhs_m, rhs_s, z);
+        UVector z = local_zeros(L.dof_map().n_local_dofs());
+        UVector rhs = blocks(rhs_m, rhs_s, z);
 
         sol_m = local_zeros(local_size(rhs_m));
         sol_s = local_zeros(local_size(rhs_s));
         lagr  = local_zeros(L.dof_map().n_local_dofs());
 
-        DVectord sol = blocks(sol_m, sol_s, lagr);
+        UVector sol = blocks(sol_m, sol_s, lagr);
 
-        Factorization<DSMatrixd, DVectord> op;
-        op.update(make_ref(A));
-        op.apply(rhs, sol);
+        Factorization<USMatrix, UVector> op;
+        op.solve(A, rhs, sol);
 
         undo_blocks(sol, sol_m, sol_s, lagr);
     }
     
     static void write_solution(const std::string &name,
-                               DVectord &sol,
+                               UVector &sol,
                                const int time_step,
                                const double t,
                                FunctionSpaceT &space,
@@ -304,13 +303,13 @@ namespace utopia {
     static void solve_staggered(const std::string &operator_type,
                                 FunctionSpaceT &V_m,
                                 FunctionSpaceT &V_s,
-                                DSMatrixd &A_m,
-                                DVectord &rhs_m,
-                                DSMatrixd &A_s,
-                                DVectord &rhs_s,
-                                DVectord &sol_m,
-                                DVectord &sol_s,
-                                DVectord &lagr)
+                                USMatrix &A_m,
+                                UVector &rhs_m,
+                                USMatrix &A_s,
+                                UVector &rhs_s,
+                                UVector &sol_m,
+                                UVector &sol_s,
+                                UVector &lagr)
     {
         
         libMesh::Nemesis_IO io_m(V_m.mesh());
@@ -318,18 +317,18 @@ namespace utopia {
         libMesh::Nemesis_IO io_m_l(V_m.mesh());
         libMesh::Nemesis_IO io_s_l(V_s.mesh());
         
-        Factorization<DSMatrixd, DVectord> op_m;
+        Factorization<USMatrix, UVector> op_m;
         op_m.update(make_ref(A_m));
         
         if(empty(sol_s)) {
             sol_s = local_zeros(local_size(rhs_s));
         }
         
-        DVectord lagr_m = local_zeros(local_size(rhs_m));
-        DVectord lagr_s = local_zeros(local_size(rhs_s));
+        UVector lagr_m = local_zeros(local_size(rhs_m));
+        UVector lagr_s = local_zeros(local_size(rhs_s));
         
-        DVectord rhs_lagr_m, rhs_lagr_s;
-        DVectord delta_lagr = local_zeros(local_size(rhs_s));
+        UVector rhs_lagr_m, rhs_lagr_s;
+        UVector delta_lagr = local_zeros(local_size(rhs_s));
         
         double dumping = 1.;
         
@@ -415,18 +414,18 @@ namespace utopia {
     static void solve_separate(const std::string &operator_type,
                                FunctionSpaceT &V_m,
                                FunctionSpaceT &V_s,
-                               DSMatrixd &A_m,
-                               DVectord &rhs_m,
-                               DSMatrixd &A_s,
-                               DVectord &rhs_s,
-                               DVectord &sol_m,
-                               DVectord &sol_s,
-                               DVectord &lagr)
+                               USMatrix &A_m,
+                               UVector &rhs_m,
+                               USMatrix &A_s,
+                               UVector &rhs_s,
+                               UVector &sol_m,
+                               UVector &sol_s,
+                               UVector &lagr)
     {
-        Factorization<DSMatrixd, DVectord> op_m;
+        Factorization<USMatrix, UVector> op_m;
         op_m.update(make_ref(A_m));
         
-        Factorization<DSMatrixd, DVectord> op_s;
+        Factorization<USMatrix, UVector> op_s;
         op_s.update(make_ref(A_s));
         
         
@@ -442,7 +441,7 @@ namespace utopia {
         
         t.initialize(operator_type);
         
-        DVectord sol_transfered;
+        UVector sol_transfered;
         t.apply(sol_m, sol_transfered);
         lagr = sol_transfered - sol_s;
     }
@@ -605,15 +604,15 @@ namespace utopia {
         auto is_ptr = open_istream(conf_file_path);
         
         Input master_in, slave_in;
-        // Input multiplier_in; //LAMBDA
+        Input multiplier_in; //LAMBDA
         
         is_ptr->read("master", master_in);
         is_ptr->read("slave", slave_in);
-        // is_ptr->read("multiplier", multiplier_in); //LAMBDA
+        is_ptr->read("multiplier", multiplier_in); //LAMBDA
 
-        // if(multiplier_in.empty()) { //LAMBDA
-            // multiplier_in = slave_in;  //LAMBDA
-        // }                           //LAMBDA
+        if(multiplier_in.empty()) { //LAMBDA
+            multiplier_in = slave_in;  //LAMBDA
+        }                           //LAMBDA
         
         std::string solve_strategy = "monolithic";
         is_ptr->read("solve-strategy", solve_strategy);
@@ -624,7 +623,7 @@ namespace utopia {
         
         master_in.describe();
         slave_in.describe();
-        // multiplier_in.describe(); //LAMBDA
+        multiplier_in.describe(); //LAMBDA
         
         std::cout << "solve_strategy: "  << solve_strategy << std::endl;
        
@@ -634,7 +633,7 @@ namespace utopia {
         
         master_in.make_mesh(*mesh_master);
         slave_in.make_mesh(*mesh_slave);
-        // multiplier_in.make_mesh(*mesh_multiplier); //LAMBDA
+        multiplier_in.make_mesh(*mesh_multiplier); //LAMBDA
 
 
         master_in.apply_adaptive_refinement(mesh_slave, libMesh::FIRST, mesh_master);
@@ -650,17 +649,17 @@ namespace utopia {
         auto equation_systems_slave = std::make_shared<libMesh::EquationSystems>(*mesh_slave);
         auto &sys_slave = equation_systems_slave->add_system<libMesh::LinearImplicitSystem>("slave");
 
-        // auto equation_systems_multiplier = std::make_shared<libMesh::EquationSystems>(*mesh_multiplier);        //LAMBDA
-        // auto &sys_multiplier = equation_systems_multiplier->add_system<libMesh::LinearImplicitSystem>("multiplier"); //LAMBDA
+        auto equation_systems_multiplier = std::make_shared<libMesh::EquationSystems>(*mesh_multiplier);        //LAMBDA
+        auto &sys_multiplier = equation_systems_multiplier->add_system<libMesh::LinearImplicitSystem>("multiplier"); //LAMBDA
         
         //scalar function space
         const auto elem_order_m = libMesh::Order(master_in.order);
         const auto elem_order_s = libMesh::Order(slave_in.order);
-        // const auto elem_order_l = libMesh::Order(multiplier_in.order); //LAMBDA
+        const auto elem_order_l = libMesh::Order(multiplier_in.order); //LAMBDA
 
         auto V_m = FunctionSpaceT(equation_systems_master, libMesh::LAGRANGE, elem_order_m, "u_m");
         auto V_s = FunctionSpaceT(equation_systems_slave,  libMesh::LAGRANGE, elem_order_s,  "u_s");
-        // auto L   = FunctionSpaceT(equation_systems_multiplier, libMesh::LAGRANGE, elem_order_l,  "lambda"); //LAMBDA
+        auto L   = FunctionSpaceT(equation_systems_multiplier, libMesh::LAGRANGE, elem_order_l,  "lambda"); //LAMBDA
         
         auto u_m = trial(V_m);
         auto v_m = test(V_m);
@@ -670,14 +669,14 @@ namespace utopia {
         
         master_in.set_up_bc(V_m);
         slave_in.set_up_bc(V_s);
-        // multiplier_in.set_up_bc(L); //LAMBDA
+        multiplier_in.set_up_bc(L); //LAMBDA
         
         V_m.initialize();
         V_s.initialize();
-        // L.initialize(); //LAMBDA
+        L.initialize(); //LAMBDA
 
         std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " x " <<  V_s.dof_map().n_dofs();
-        // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
+        std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
         std::cout << std::endl;
         
         auto eq_m = master_in.diffusivity * inner(grad(u_m), grad(v_m)) * dX == inner(coeff(master_in.forcing_function), v_m) * dX;
@@ -685,8 +684,8 @@ namespace utopia {
         
         //////////////////////////// Generation of the algebraic system ////////////////////////////
 
-        DSMatrixd A_m, A_s;
-        DVectord rhs_m, rhs_s;
+        USMatrix A_m, A_s;
+        UVector rhs_m, rhs_s;
         utopia::assemble(eq_m, A_m, rhs_m);
         utopia::assemble(eq_s, A_s, rhs_s);
         
@@ -699,7 +698,7 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
        
-        DVectord sol_m, sol_s, lagr;
+        UVector sol_m, sol_s, lagr;
 
         if(solve_strategy == "staggered") {
             
@@ -718,7 +717,7 @@ namespace utopia {
         } else {
             solve_monolithic(V_m,
                              V_s,
-                             // L, //LAMBDA
+                             L, //LAMBDA
                              A_m,
                              rhs_m,
                              A_s,
@@ -748,9 +747,9 @@ namespace utopia {
         V_s.equation_system().solution->close();
         io_s.write_timestep(V_s.equation_system().name() + ".e", V_s.equation_systems(), 1, 0);
 
-        // utopia::convert(lagr, *L.equation_system().solution);                                         //LAMBDA
-        // L.equation_system().solution->close();                                                        //LAMBDA
-        // io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);  //LAMBDA
+        utopia::convert(lagr, *L.equation_system().solution);                                         //LAMBDA
+        L.equation_system().solution->close();                                                        //LAMBDA
+        io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);  //LAMBDA
         
         // if(size(lagr) == size(sol_m)) {
         //     libMesh::Nemesis_IO io_l(*mesh_master);

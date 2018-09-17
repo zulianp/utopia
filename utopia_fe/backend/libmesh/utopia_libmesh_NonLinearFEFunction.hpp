@@ -188,7 +188,7 @@ namespace utopia {
 	template<class Expr>
 	bool assemble(
 		const Expr &expr,
-		DSMatrixd &mat,
+		USMatrix &mat,
 		const bool first = true)
 	{
 		return LibMeshAssembler().assemble(expr, mat);
@@ -222,21 +222,21 @@ namespace utopia {
 	template<class Expr>
 	bool assemble(
 		const Expr &expr,
-		DVectord &vec,
+		UVector &vec,
 		const bool first = true)
 	{
 		return LibMeshAssembler().assemble(expr, vec);
 	}
 
 	template<class... Eqs>
-	bool assemble(const Equations<Eqs...> &eqs, DSMatrixd &mat, DVectord &vec)
+	bool assemble(const Equations<Eqs...> &eqs, USMatrix &mat, UVector &vec)
 	{
 
 		return LibMeshAssembler().assemble(eqs, mat, vec);
 	}
 
 	template<class Left, class Right>
-	bool assemble(const Equality<Left, Right> &equation, DSMatrixd &mat, DVectord &vec)
+	bool assemble(const Equality<Left, Right> &equation, USMatrix &mat, UVector &vec)
 	{
 		return assemble(equations(equation), mat, vec);
 	}
@@ -318,8 +318,8 @@ namespace utopia {
 			// }
 
 			// {
-			// 	Write<DSMatrixd> w_m(buff_mat);
-			// 	Write<DVectord>  w_v(buff_vec);
+			// 	Write<USMatrix> w_m(buff_mat);
+			// 	Write<UVector>  w_v(buff_vec);
 
 			// 	auto &m = space.mesh();
 
@@ -362,7 +362,7 @@ namespace utopia {
 
 
 	template<class... Eqs, class... Constr>
-	bool nl_solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol)
+	bool nl_solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, UVector &sol)
 	{
 		typedef typename GetFirst<Eqs...>::Type Eq1Type;
 		typedef typename FindFunctionSpace<Eq1Type>::Type FunctionSpaceT;
@@ -375,9 +375,9 @@ namespace utopia {
 
 		sol = ghosted(space.dof_map().n_local_dofs(), space.dof_map().n_dofs(), space.dof_map().get_send_list());
 
-		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs);
-		Newton<DSMatrixd, DVectord> solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
-		// solver.set_line_search_strategy(std::make_shared<Backtracking<DSMatrixd, DVectord>>());
+		NonLinearFEFunction<USMatrix, UVector, Equations<Eqs...>> nl_fun(eqs);
+		Newton<USMatrix, UVector> solver(std::make_shared<Factorization<USMatrix, UVector>>());
+		// solver.set_line_search_strategy(std::make_shared<Backtracking<USMatrix, UVector>>());
 		solver.verbose(true);
 		return solver.solve(nl_fun, sol);
 	}
@@ -386,8 +386,8 @@ namespace utopia {
 	bool nl_implicit_euler(
 		const Equations<Eqs...> &eqs,
 		const FEConstraints<Constr...> &constr,
-		DVectord &old_sol,
-		DVectord &sol,
+		UVector &old_sol,
+		UVector &sol,
 		const double dt,
 		std::size_t n_ts = 10)
 	{
@@ -404,8 +404,8 @@ namespace utopia {
 		sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 		old_sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 
-		NonLinearFEFunction<DSMatrixd, DVectord, Equations<Eqs...>> nl_fun(eqs, true);
-		Newton<DSMatrixd, DVectord> solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
+		NonLinearFEFunction<USMatrix, UVector, Equations<Eqs...>> nl_fun(eqs, true);
+		Newton<USMatrix, UVector> solver(std::make_shared<Factorization<USMatrix, UVector>>());
 		solver.verbose(true);
 
 		libMesh::ExodusII_IO io(space.mesh());
@@ -425,7 +425,7 @@ namespace utopia {
 
 
 	template<class... Eqs, class... Constr>
-	bool solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, DVectord &sol, const bool first = true)
+	bool solve(const Equations<Eqs...> &eqs, const FEConstraints<Constr...> &constr, UVector &sol, const bool first = true)
 	{
 		//FIXME this stuff only works for the libmesh backend
 		typedef typename GetFirst<Eqs...>::Type Eq1Type;
@@ -442,8 +442,8 @@ namespace utopia {
 		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
 			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
-		DSMatrixd mat;
-		DVectord vec;
+		USMatrix mat;
+		UVector vec;
 
 		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 		vec = local_zeros(dof_map.n_local_dofs());
@@ -454,9 +454,9 @@ namespace utopia {
 		}
 
 		{
-			Write<DSMatrixd> w_m(mat);
-			Write<DVectord>  w_v(vec);
-			Read<DVectord> r_s(sol);
+			Write<USMatrix> w_m(mat);
+			Write<UVector>  w_v(vec);
+			Read<UVector> r_s(sol);
 
 
 			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
@@ -470,8 +470,8 @@ namespace utopia {
 			apply_zero_boundary_conditions(dof_map, vec);
 		}
 
-		DVectord inc = local_zeros(local_size(sol));
-		Factorization<DSMatrixd, DVectord> solver;
+		UVector inc = local_zeros(local_size(sol));
+		Factorization<USMatrix, UVector> solver;
 		if(!solver.solve(mat, vec, inc)) {
 			return false;
 		}

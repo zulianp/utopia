@@ -71,10 +71,10 @@ namespace utopia {
 		auto &dof_map = V.dof_map();
 		dof_map.prepare_send_list();
 
-		DVectord sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+		UVector sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 		sol.set(0.);
 
-		DVectord diff_coeff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+		UVector diff_coeff = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 		diff_coeff.set(diffusivity);
 
 		auto u_old = interpolate(sol, du);
@@ -89,8 +89,8 @@ namespace utopia {
 		+ c2 * inner(inner(grad(du), grad(u_old))/(coeff(1e-10) + sqrt(inner(grad(u_old), grad(u_old)))), v) * dX;
 
 		// assemble
-		DSMatrixd hessian;
-		DVectord gradient;
+		USMatrix hessian;
+		UVector gradient;
 
 		utopia::assemble(b_form, hessian);
 		utopia::assemble(l_form, gradient);

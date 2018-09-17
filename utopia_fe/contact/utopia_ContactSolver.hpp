@@ -549,12 +549,12 @@ namespace utopia {
 
 		Vector inactive_set_;
 		Vector active_set_;
-		DSMatrixd A_, I_;
+		USMatrix A_, I_;
 
 		Vector lagrange_multiplier_;
 
 		//additional vectors
-		// DSMatrixd internal_mass_matrix_;
+		// USMatrix internal_mass_matrix_;
 
 		std::shared_ptr<Exporter> io_;
 		int n_exports;

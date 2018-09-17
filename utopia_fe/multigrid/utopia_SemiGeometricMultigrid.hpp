@@ -8,10 +8,10 @@
 namespace utopia {
 	class Contact;
 	
-	class SemiGeometricMultigrid : public LinearSolver<DSMatrixd, DVectord> {
+	class SemiGeometricMultigrid : public LinearSolver<USMatrix, UVector> {
     public:
-    	typedef utopia::Multigrid<DSMatrixd, DVectord> MultigridT;
-    	// typedef utopia::Multigrid<DSMatrixd, DVectord, PETSC_EXPERIMENTAL> MultigridT;
+    	typedef utopia::Multigrid<USMatrix, UVector> MultigridT;
+    	// typedef utopia::Multigrid<USMatrix, UVector, PETSC_EXPERIMENTAL> MultigridT;
 
 		void init(const LibMeshFunctionSpace &space, const std::size_t n_levels)
 		{
@@ -21,8 +21,8 @@ namespace utopia {
 		void init(const libMesh::EquationSystems &es, const std::size_t n_levels);
 
 		void update_contact(Contact &contact);
-		void update(const std::shared_ptr<const DSMatrixd> &op) override;
-		bool apply(const DVectord &rhs, DVectord &sol) override;
+		void update(const std::shared_ptr<const USMatrix> &op) override;
+		bool apply(const UVector &rhs, UVector &sol) override;
 		
 		SemiGeometricMultigrid * clone() const override
 		{
@@ -49,8 +49,8 @@ namespace utopia {
 		}
 
 		SemiGeometricMultigrid(
-			const std::shared_ptr<Smoother<DSMatrixd, DVectord> > &smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>(),
-			const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>()
+			const std::shared_ptr<Smoother<USMatrix, UVector> > &smoother = std::make_shared<GaussSeidel<USMatrix, UVector>>(),
+			const std::shared_ptr<LinearSolver<USMatrix, UVector> > &linear_solver = std::make_shared<Factorization<USMatrix, UVector>>()
 		);
 
 		inline MultigridT &algebraic()
@@ -74,7 +74,7 @@ namespace utopia {
 		std::vector<std::shared_ptr<libMesh::UnstructuredMesh>> meshes;
 		std::vector<std::shared_ptr<libMesh::EquationSystems>> equation_systems;
 
-		std::vector<std::shared_ptr<DSMatrixd>> interpolators_;
+		std::vector<std::shared_ptr<USMatrix>> interpolators_;
 		bool is_block_solver_;
 		bool separate_subdomains_;
 		bool use_interpolation_;

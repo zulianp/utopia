@@ -24,7 +24,7 @@ namespace utopia {
 		const unsigned int              &to_var_num,
 		bool use_biorth,
 		int n_var,
-		DSMatrixd &B,
+		USMatrix &B,
 		const std::vector< std::pair<int, int> > &tags,
 		const bool use_interpolation)
 	{

@@ -26,7 +26,7 @@ namespace utopia {
 	class TransferAssembler final {
 	public:
 		using FunctionSpace = utopia::LibMeshFunctionSpace;
-		using SparseMatrix  = utopia::DSMatrixd;
+		using SparseMatrix  = utopia::USMatrix;
 		using MeshBase      = libMesh::MeshBase;
 		using DofMap        = libMesh::DofMap;
 
@@ -80,8 +80,8 @@ namespace utopia {
 	class TransferOperator {
 	public:
 		virtual ~TransferOperator() {}
-		virtual void apply(const DVectord &from, DVectord &to) const = 0;
-		virtual void apply_transpose(const DVectord &from, DVectord &to) const = 0;
+		virtual void apply(const UVector &from, UVector &to) const = 0;
+		virtual void apply_transpose(const UVector &from, UVector &to) const = 0;
 		virtual void describe(std::ostream &) const {}
 		virtual bool write(const Path &) const { return false; }
 	};
@@ -92,9 +92,9 @@ namespace utopia {
 	 */
 	class L2TransferOperator : public TransferOperator {
 	public:
-		inline void apply(const DVectord &from, DVectord &to) const override
+		inline void apply(const UVector &from, UVector &to) const override
 		{
-			DVectord B_from = *B * from;
+			UVector B_from = *B * from;
 
 			if(empty(to)) {
 				to = B_from;
@@ -105,34 +105,34 @@ namespace utopia {
 
 		void fix_mass_matrix_operator()
 		{
-			DVectord d;
+			UVector d;
 
 			Size s = local_size(*D);
 			d = local_values(s.get(0), 1.);
 
 			{
-				Write<DVectord> w_d(d);
+				Write<UVector> w_d(d);
 
 				each_read(*D, [&d](const SizeType i, const SizeType, const double) {
 					d.set(i, 0.);
 				});
 			}
 
-			(*D) += DSMatrixd(diag(d));
+			(*D) += USMatrix(diag(d));
 		}
 
 		///@brief assumes that D is symmetric
-		void apply_transpose(const DVectord &from, DVectord &to) const override
+		void apply_transpose(const UVector &from, UVector &to) const override
 		{
-			DVectord D_inv_from = local_zeros(local_size(*D).get(0));
+			UVector D_inv_from = local_zeros(local_size(*D).get(0));
 			linear_solver->apply(from, D_inv_from);
 			to = transpose(*B) * D_inv_from;
 		}
 
 		inline L2TransferOperator(
-			const std::shared_ptr<DSMatrixd> &B,
-			const std::shared_ptr<DSMatrixd> &D,
-			const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>()
+			const std::shared_ptr<USMatrix> &B,
+			const std::shared_ptr<USMatrix> &D,
+			const std::shared_ptr<LinearSolver<USMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USMatrix, UVector>>()
 			)
 		: B(B), D(D), linear_solver(linear_solver)
 		{
@@ -145,8 +145,8 @@ namespace utopia {
 
 		inline void describe(std::ostream &os) const override
 		{
-			DVectord t_from = local_values(local_size(*B).get(1), 1);
-			DVectord t_to;
+			UVector t_from = local_values(local_size(*B).get(1), 1);
+			UVector t_to;
 			apply(t_from, t_to);
 
 			double t_max = max(t_to);
@@ -168,20 +168,20 @@ namespace utopia {
 		}
 
 	private:
-		std::shared_ptr<DSMatrixd> B;
-		std::shared_ptr<DSMatrixd> D;
-		std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > linear_solver;
+		std::shared_ptr<USMatrix> B;
+		std::shared_ptr<USMatrix> D;
+		std::shared_ptr<LinearSolver<USMatrix, UVector> > linear_solver;
 	};
 
 	class PseudoL2TransferOperator : public TransferOperator {
 	public:
-		inline void apply(const DVectord &from, DVectord &to) const override
+		inline void apply(const UVector &from, UVector &to) const override
 		{
 			assert(T);
 			to = *T * from;
 		}
 
-		inline void apply_transpose(const DVectord &from, DVectord &to) const override
+		inline void apply_transpose(const UVector &from, UVector &to) const override
 		{
 			assert(T);
 			to = transpose(*T) * from;
@@ -189,13 +189,13 @@ namespace utopia {
 
 		PseudoL2TransferOperator() {}
 
-		inline void init_from_coupling_operator(const DSMatrixd &B)
+		inline void init_from_coupling_operator(const USMatrix &B)
 		{
-			T = std::make_shared<DSMatrixd>();
-			DVectord d = sum(B, 1);
+			T = std::make_shared<USMatrix>();
+			UVector d = sum(B, 1);
 
 			{
-				ReadAndWrite<DVectord> rw_(d);
+				ReadAndWrite<UVector> rw_(d);
 				auto r = range(d);
 				for(auto k = r.begin(); k != r.end(); ++k) {
 					if(approxeq(d.get(k), 0.0, 1e-14)) {
@@ -207,7 +207,7 @@ namespace utopia {
 			*T = diag(1./d) * B;
 		}
 
-		PseudoL2TransferOperator(const std::shared_ptr<DSMatrixd> &T)
+		PseudoL2TransferOperator(const std::shared_ptr<USMatrix> &T)
 		: T(T)
 		{
 			assert(T);
@@ -215,7 +215,7 @@ namespace utopia {
 
 		inline void describe(std::ostream &os) const override
 		{
-			DVectord t = sum(*T, 1);
+			UVector t = sum(*T, 1);
 			double t_max = max(t);
 			double t_min = min(t);
 			double t_sum = sum(t);
@@ -233,23 +233,23 @@ namespace utopia {
 		}
 
 	private:
-		std::shared_ptr<DSMatrixd> T;
+		std::shared_ptr<USMatrix> T;
 	};
 
 	class Interpolator : public TransferOperator {
 	public:
-		inline void apply(const DVectord &from, DVectord &to) const override
+		inline void apply(const UVector &from, UVector &to) const override
 		{
 			to = *T * from;
 		}
 
-		void apply_transpose(const DVectord &from, DVectord &to) const override
+		void apply_transpose(const UVector &from, UVector &to) const override
 		{
 			assert(T);
 			to = transpose(*T) * from;
 		}
 
-		Interpolator(const std::shared_ptr<DSMatrixd> &T)
+		Interpolator(const std::shared_ptr<USMatrix> &T)
 		: T(T)
 		{
 			assert(T);
@@ -257,8 +257,8 @@ namespace utopia {
 
 		void normalize_rows()
 		{
-			DVectord d = sum(*T, 1);
-			ReadAndWrite<DVectord> rw_(d);
+			UVector d = sum(*T, 1);
+			ReadAndWrite<UVector> rw_(d);
 			auto r = range(d);
 			for(auto k = r.begin(); k != r.end(); ++k) {
 				if(approxeq(d.get(k), 0.0, 1e-14)) {
@@ -271,7 +271,7 @@ namespace utopia {
 
 		inline void describe(std::ostream &os) const override
 		{
-			DVectord t = sum(*T, 1);
+			UVector t = sum(*T, 1);
 			double t_max = max(t);
 			double t_min = min(t);
 			double t_sum = sum(t);
@@ -289,7 +289,7 @@ namespace utopia {
 		}
 
 	private:
-		std::shared_ptr<DSMatrixd> T;
+		std::shared_ptr<USMatrix> T;
 	};
 
 

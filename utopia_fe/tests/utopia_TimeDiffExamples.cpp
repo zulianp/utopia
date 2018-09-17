@@ -72,22 +72,22 @@
 // 		auto l_form = uf.right();
 
 // 		auto s = size(v);
-// 		DVectord g  = zeros(s);
-// 		DSMatrixd m = sparse(s.get(0), s.get(0), 0.2 * s.get(0));
-// 		DSMatrixd boundary_matrix = identity(s.get(0), s.get(0));
+// 		UVector g  = zeros(s);
+// 		USMatrix m = sparse(s.get(0), s.get(0), 0.2 * s.get(0));
+// 		USMatrix boundary_matrix = identity(s.get(0), s.get(0));
 
 // 		{	
-// 			Write<DSMatrixd> w_m(m);
-// 			Write<DVectord>  w_g(g);
+// 			Write<USMatrix> w_m(m);
+// 			Write<UVector>  w_g(g);
 // 			assemble(v, v, mass, m, false);
 // 			assemble(v, l_form,  g, false);
 // 		}
 
-// 		DVectord Minvg = zeros(s);
+// 		UVector Minvg = zeros(s);
 // 		solve(m, g, Minvg);
 
 // 		auto &sol = trafo.get_solution(eq);
-// 		DVectord u_sol = zeros(s);
+// 		UVector u_sol = zeros(s);
 // 		convert(sol.vector(), u_sol);
 // 		apply_boundary_conditions(v, boundary_matrix, u_sol);
 // 		u_sol += delta_t * Minvg;
@@ -105,7 +105,7 @@
 // 			 	io.write_timestep("heat_equation.e", context.equation_systems, write_iteration++, t);
 // 			}
 // 			{	
-// 				Write<DVectord> w_g(g);
+// 				Write<UVector> w_g(g);
 // 				assemble(v, l_form, g);
 // 			}
 

@@ -71,12 +71,12 @@ namespace utopia {
 			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end())
 		);
 
-		DSMatrixd boundary_mass_matrix = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+		USMatrix boundary_mass_matrix = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
 
 		double mat_sum = 0.0;
 
 		{
-			Write<DSMatrixd> w_b(boundary_mass_matrix);
+			Write<USMatrix> w_b(boundary_mass_matrix);
 			libMesh::DenseMatrix<libMesh::Real> elemat;
 
 			// for(const auto & elem : mesh->active_local_element_ptr_range()) {
@@ -118,7 +118,7 @@ namespace utopia {
 			}
 		}
 
-		DSMatrixd boundary_mass_matrix_2;
+		USMatrix boundary_mass_matrix_2;
 		assemble(inner(u, v) * dS, boundary_mass_matrix_2);
 
 		double surface_area   = sum(boundary_mass_matrix);
@@ -127,30 +127,30 @@ namespace utopia {
 		assert(approxeq(surface_area,   6., 1e-10));
 		assert(approxeq(surface_area_2, 6., 1e-10));
 
-		DSMatrixd diff_mm = boundary_mass_matrix - boundary_mass_matrix_2;
+		USMatrix diff_mm = boundary_mass_matrix - boundary_mass_matrix_2;
 		const double diff_norm = norm2(diff_mm);
 
 		assert(approxeq(diff_norm, 0.));
 
-		DSMatrixd side_mass_matrix;
+		USMatrix side_mass_matrix;
 		assemble(surface_integral(inner(u, v), 1), side_mass_matrix);
 
-		DVectord side_mass_vec = sum(side_mass_matrix, 1);
+		UVector side_mass_vec = sum(side_mass_matrix, 1);
 
 		const double side_area_1 = sum(side_mass_matrix);
 		assert(approxeq(side_area_1, 1., 1e-10));
 
-		DSMatrixd side_mass_matrix_12;
+		USMatrix side_mass_matrix_12;
 		assemble(surface_integral(inner(u, v), 1) + surface_integral(inner(u, v), 2), side_mass_matrix_12);
 		const double side_area_12 = sum(side_mass_matrix_12);
 		assert(approxeq(side_area_12, 2., 1e-10));
 
-		DSMatrixd boundary_lapl;
+		USMatrix boundary_lapl;
 		assemble(surface_integral(inner(grad(u), grad(v))), boundary_lapl);
 		const double sum_lapl = sum(boundary_lapl);
 		assert(approxeq(sum_lapl, 0., 1e-10));
 
-		DVectord b_fun;
+		UVector b_fun;
 		assemble(surface_integral(inner(coeff(1.), v), 1), b_fun);
 	}
 }

@@ -1,7 +1,7 @@
 #ifndef UTOPIA_NORMAL_TANGENTIAL_COORDINATE_SYSTEM_HPP
 #define UTOPIA_NORMAL_TANGENTIAL_COORDINATE_SYSTEM_HPP
 
-#include "utopia.hpp"
+#include "utopia_fe_base.hpp"
 #include <vector>
 
 namespace libMesh {
@@ -11,15 +11,15 @@ namespace libMesh {
 
 namespace utopia {
 	
-	void scale_normal_vector_with_gap(const int dim, const DVectord &normals, const DVectord &gap, DVectord &out);
+	void scale_normal_vector_with_gap(const int dim, const UVector &normals, const UVector &gap, UVector &out);
 	
 	bool assemble_normal_tangential_transformation(
 		const libMesh::MeshBase &mesh, 
 		const libMesh::DofMap &dof_map,
 		const std::vector<int> &boundary_tags, 
-		DVectord &is_normal_component,
-		DVectord &normals,
-		DSMatrixd &mat);
+		UVector &is_normal_component,
+		UVector &normals,
+		USMatrix &mat);
 }
 
 #endif //UTOPIA_NORMAL_TANGENTIAL_COORDINATE_SYSTEM_HPP

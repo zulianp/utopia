@@ -44,8 +44,8 @@ namespace utopia {
 
 	void GaitCycle::displacement_and_forces(
 		ProductFunctionSpace<LibMeshFunctionSpace> &space,
-		DVectord &displacement,
-		DVectord &forces) const
+		UVector &displacement,
+		UVector &forces) const
 	{
 		conf_->displacement_and_forces(space, displacement, forces);
 	}

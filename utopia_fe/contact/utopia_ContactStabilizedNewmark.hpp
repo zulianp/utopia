@@ -56,7 +56,7 @@ namespace utopia {
 			ContactSolver<Matrix, Vector>::initialize();
 		}
 
-		void initial_condition(const Scalar density, const DVectord &initial_velocity = DVectord())
+		void initial_condition(const Scalar density, const UVector &initial_velocity = UVector())
 		{
 			auto &V = this->space();
 			auto u = trial(V);
@@ -68,7 +68,7 @@ namespace utopia {
 			density_ = density;
 		}
 
-		void initial_condition(const DSMatrixd &mass_matrix, const DVectord &initial_velocity = DVectord())
+		void initial_condition(const USMatrix &mass_matrix, const UVector &initial_velocity = UVector())
 		{
 			internal_mass_matrix_ = mass_matrix;
 			Vector mass_vector = sum(internal_mass_matrix_, 1);
@@ -100,7 +100,7 @@ namespace utopia {
 			}
 		}
 
-		void initial_condition(const DVectord &initial_velocity = DVectord())
+		void initial_condition(const UVector &initial_velocity = UVector())
 		{
 			auto &V = this->space();
 			auto u = trial(V);

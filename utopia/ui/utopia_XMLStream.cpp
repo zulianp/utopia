@@ -199,13 +199,21 @@ namespace utopia {
 
 	void XMLInputStream::read(std::function<void(InputStream &)> lambda)
 	{
+		if(impl_->is_invalid_subtree()) return;
+
 		lambda(*this);
 	}
 
 	void XMLInputStream::read(const std::string &key, std::function<void(InputStream &)> lambda)
 	{
+		if(impl_->is_invalid_subtree()) return;
+
 		impl_->object_begin(key);
-		lambda(*this);
+
+		if(!impl_->is_invalid_subtree()) {
+			lambda(*this);
+		}
+		
 		impl_->object_end();
 	}
 
