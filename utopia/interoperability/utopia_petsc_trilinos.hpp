@@ -7,9 +7,11 @@
 #ifdef WITH_PETSC
 
 #include "utopia_petsc_KSPSolver.hpp"
+#include "utopia_petsc_KSPSolvers.hpp"
 #include "utopia_petsc_Factorization.hpp"
 #include "utopia_CrossBackendLinearSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
+#include "utopia_petsc_GaussSeidel.hpp"
 #include "utopia_petsc_Types.hpp"
 
 namespace utopia {
@@ -22,12 +24,32 @@ namespace utopia {
             KSPSolver<DSMatrixd, DVectord, PETSC>
             > {};
 
+      //FIXME remove me once the belos solver works
 	template<typename Matrix, typename Vector>
 	class Factorization<Matrix, Vector, TRILINOS> :
 		public CrossBackendLinearSolver<
             Matrix, Vector,
             DSMatrixd, DVectord,
             Factorization<DSMatrixd, DVectord, PETSC>
+            > {};
+
+      //FIXME remove me once the belos solver works
+      template<typename Matrix, typename Vector>
+      class BiCGStab<Matrix, Vector, TRILINOS> :
+            public CrossBackendLinearSolver<
+            Matrix, Vector,
+            DSMatrixd, DVectord,
+            BiCGStab<DSMatrixd, DVectord, PETSC>
+            > {};
+
+
+      //FIXME remove me once the belos solver works
+      template<typename Matrix, typename Vector>
+      class GaussSeidel<Matrix, Vector, TRILINOS> :
+            public CrossBackendLinearSolver<
+            Matrix, Vector,
+            DSMatrixd, DVectord,
+            GaussSeidel<DSMatrixd, DVectord, PETSC>
             > {};
 
 }

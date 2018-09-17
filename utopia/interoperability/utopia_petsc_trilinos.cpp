@@ -8,6 +8,8 @@
 namespace utopia {
 	template class KSPSolver<TSMatrixd, TVectord, TRILINOS>;
 	template class Factorization<TSMatrixd, TVectord, TRILINOS>;
+	template class BiCGStab<TSMatrixd, TVectord, TRILINOS>;
+	template class GaussSeidel<TSMatrixd, TVectord, TRILINOS>;
 }
 
 #endif //WITH_PETSC

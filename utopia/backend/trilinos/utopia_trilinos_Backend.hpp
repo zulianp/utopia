@@ -178,6 +178,12 @@ namespace utopia {
             return v.get(index);
         }
 
+        template<typename Integer>
+       	static void get(const TpetraVector &v, const std::vector<Integer> &index, std::vector<Scalar> &values)
+       	{
+       		v.get(index, values);
+       	}
+
         inline static void set(TpetraVector &v, const TpetraVector::global_ordinal_type &index, Scalar value)
         {
             v.set(index, value);
@@ -309,6 +315,10 @@ namespace utopia {
             // return v.norm_infty();
         }
 
+        Scalar reduce(const TpetraMatrix &mat, const Plus &) {
+            return mat.sum();
+        }
+
         Scalar reduce(const TpetraVector &vec, const Plus &) {
             return vec.sum();
         }
@@ -321,6 +331,19 @@ namespace utopia {
 
         Scalar reduce(const TpetraVector &vec, const Min &op) {
             return vec.min();
+        }
+
+        void apply_tensor_reduce(TpetraVector &result, const TpetraMatrix &mat, const Plus &, const int dim)
+        {
+        	if(dim == 1) {
+        		TpetraVector vec;
+        		vec.values(mat.communicator(), mat.local_size().get(1), mat.size().get(1), 1.);
+        		mat.mult(vec, result);
+        	} else {
+        		TpetraVector vec;
+        		vec.values(mat.communicator(), mat.local_size().get(0), mat.size().get(0), 1.);
+        		mat.mult_t(vec, result);
+        	}
         }
 
         //blas 1

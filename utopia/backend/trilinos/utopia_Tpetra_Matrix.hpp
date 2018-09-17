@@ -270,6 +270,7 @@ namespace utopia {
         bool is_valid(const bool verbose = false) const;
 
         Scalar norm2() const;
+        Scalar sum() const;
 
 
     private:

@@ -390,6 +390,8 @@ namespace utopia {
         return res;
     }
 
+
+
     template<class Operation>
     inline static PetscScalar generic_local_reduce(const PetscMatrix &m, const PetscScalar &init_value, const Operation &op)
     {
@@ -1037,6 +1039,13 @@ namespace utopia {
                 utopia::Min()
                 );
         }
+    }
+
+    void PetscMatrix::col_sum(PetscVector &col) const
+    {
+        PetscVector temp;
+        temp.values(communicator(), col.type(), local_size().get(0), size().get(0), 1.);
+        this->mult_t(temp, col);
     }
 
     void PetscMatrix::mult(const PetscVector &vec, PetscVector &result) const

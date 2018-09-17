@@ -299,6 +299,8 @@ namespace utopia {
         void row_max(PetscVector &col) const;
         void row_min(PetscVector &col) const;
 
+        void col_sum(PetscVector &col) const;
+
         inline PetscReal norm2() const
         {
         	PetscReal val;

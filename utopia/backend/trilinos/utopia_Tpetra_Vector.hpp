@@ -141,6 +141,26 @@ namespace utopia {
             implementation().putScalar(value);
         }
 
+        template<typename Integer>
+        void get(
+            const std::vector<Integer> &index,
+            std::vector<Scalar> &values) const
+        {
+            // m_utopia_warning_once(" > get does not work in parallel if it asks for ghost entries");
+            //FIXME does not work in parallel
+            auto data   = implementation().getData();
+            auto offset = implementation().getMap()->getMinGlobalIndex();
+
+            auto n = data.size();
+            values.resize(n);
+
+            for(std::size_t i = 0; i < n; ++i) {
+                auto local_index = index[i] - offset;
+                assert(local_index < n);
+                values[i] = data[local_index];
+            }
+        }
+
         void set_vector(
             const std::vector<global_ordinal_type> &indices,
             const std::vector<Scalar> &values);
@@ -348,6 +368,15 @@ namespace utopia {
         {
             return vec_.is_null();
         }
+
+        void update_ghosts() {}
+
+        bool has_ghosts() const
+        {
+            // m_utopia_warning_once(" > has ghosts in trilinos backend does not do anything!");
+            return false;
+        }
+        
     private:
         rcpvector_type vec_;
         Teuchos::ArrayRCP<const Scalar> read_only_data_;

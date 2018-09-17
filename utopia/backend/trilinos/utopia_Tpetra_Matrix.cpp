@@ -439,4 +439,12 @@ namespace utopia {
 		return implementation().getFrobeniusNorm();
 	}
 
+	TpetraMatrix::Scalar TpetraMatrix::sum() const
+	{
+		TpetraVector vec, row_sum;
+		vec.values(this->communicator(), this->local_size().get(1), this->size().get(1), 1.);
+		this->mult(vec, row_sum);
+		return row_sum.sum();
+	}
+
 }
