@@ -1,0 +1,50 @@
+<!-- MASTER STUFF -->
+<master>
+	<mesh>aabb</mesh>
+	<path>../data/frac/line.e</path>
+	<span-x>0.2</span-x>
+	<span-y>0.1</span-y>
+	<span-z>0.</span-z>
+	<elem-type>tri</elem-type>
+	<boundary-conditions>
+		<entry>
+			<side>3</side>
+			<value>1</value>
+		</entry>
+		<entry>
+			<side>1</side>
+			<value>4</value>
+		</entry>
+	</boundary-conditions>
+	<diffusivity>1.</diffusivity>
+	<!-- <forcing-function>-100.</forcing-function> -->
+	<forcing-function>0.</forcing-function>
+	<refinements>3</refinements>
+	<order>2</order>
+	<!-- <adaptive-refinements>1</adaptive-refinements> -->
+</master>
+
+
+<!-- SLAVE STUFF -->
+<slave>
+	<mesh>file</mesh>
+	<path>../data/frac/line.e</path>
+	<boundary-conditions>
+		<entry>
+			<side>1</side>
+			<value>1</value>
+		</entry>
+		<entry>
+			<side>2</side>
+			<value>4</value>
+		</entry>
+	</boundary-conditions>
+	<diffusivity>10.</diffusivity>
+	<!-- <forcing-function>100.</forcing-function> -->
+	<forcing-function>0.</forcing-function>
+	<refinements>1</refinements>
+	<order>1</order>
+</slave>
+
+<!-- <solve-strategy>staggered</solve-strategy> --> 
+<solve-strategy>monolithic</solve-strategy>
