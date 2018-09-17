@@ -12,6 +12,7 @@
 #include <utility>
 
 namespace utopia {
+
 	class PetscBackend : public ScalarBackend<PetscScalar>  {
 	public:
 		typedef PetscScalar Scalar;

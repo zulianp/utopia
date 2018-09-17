@@ -43,6 +43,19 @@ namespace utopia {
             left = std::forward<LorRValueVector>(right);
         }
 
+
+        template<class T>
+        auto raw_type(T &t) -> decltype(t.implementation_ptr())
+        {
+            return t.implementation_ptr();
+        }
+
+        template<class T>
+        auto raw_type(const T &t) -> decltype(t.implementation_ptr())
+        {
+            return t.implementation_ptr();
+        }
+
         static Range range(const TpetraVector &v)
         {
             return v.range();
@@ -130,6 +143,11 @@ namespace utopia {
             v.values(default_communicator(), INVALID_INDEX, size.get(0), 0.);
         }
 
+        static void build(TpetraMatrix &m, const Size &size, const LocalZeros &)
+        {
+            assert(false && "implement me");
+        }
+
         static void build(TpetraSparseMatrix &m, const Size &size, const LocalNNZ<std::size_t> &nnz)
         {
             m.crs_init(default_communicator(),
@@ -167,10 +185,34 @@ namespace utopia {
             assert(false);
         }
 
+        template<class Integer>
+        void build_ghosts(
+            const TpetraVector::global_ordinal_type &local_size,
+            const TpetraVector::global_ordinal_type &global_size,
+            const std::vector<Integer> &index,
+            TpetraVector &vec)
+        {
+            assert(default_communicator()->getSize() == 1 && "implement me: does not work in parallel yet");
+            vec.values(default_communicator(), local_size, global_size, 0.);
+        }
+
         inline static void build_from_structure(TpetraSparseMatrix &lhs, const TpetraSparseMatrix &rhs)
         {
             //IMPLEMENT ME
             lhs = rhs;
+        }
+
+        template<class Expr>
+        static void build_blocks(TpetraMatrix &left, const Blocks<Expr> &blocks)
+        {
+            assert(false && "IMPLEMENT ME");
+        }
+
+
+        template<class Expr>
+        static void build_blocks(TpetraVector &left, const Blocks<Expr> &blocks)
+        {
+            assert(false && "IMPLEMENT ME");
         }
 
         static Scalar get(const TpetraVector &v, const TpetraVector::global_ordinal_type &index)
@@ -306,6 +348,12 @@ namespace utopia {
             assert(false && "IMPLEMENT ME");
             return 0.;
             // return v.norm1();
+        }
+
+        static bool is_nan_or_inf(const TpetraMatrix &m)
+        {
+            assert(false && "IMPLEMENT ME");
+            return true;
         }
 
         inline static Scalar norm_infty(const TpetraMatrix &v)

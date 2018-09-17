@@ -151,12 +151,12 @@ namespace utopia {
             auto data   = implementation().getData();
             auto offset = implementation().getMap()->getMinGlobalIndex();
 
-            auto n = data.size();
+            auto n = index.size();
             values.resize(n);
 
             for(std::size_t i = 0; i < n; ++i) {
                 auto local_index = index[i] - offset;
-                assert(local_index < n);
+                assert(local_index < data.size());
                 values[i] = data[local_index];
             }
         }
@@ -354,6 +354,18 @@ namespace utopia {
         {
             assert(!vec_.is_null());
             return *vec_;
+        }
+
+        inline rcpvector_type &implementation_ptr()
+        {
+            assert(!vec_.is_null());
+            return vec_;
+        }
+
+        inline const rcpvector_type &implementation_ptr() const
+        {
+            assert(!vec_.is_null());
+            return vec_;
         }
 
         inline bool is_null() const

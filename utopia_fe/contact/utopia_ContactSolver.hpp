@@ -66,9 +66,9 @@ namespace utopia {
 			linear_solver_ = iterative_solver;
 
 			n_exports = 0;
-
-			tao_.set_type("tron");
-			tao_.set_ksp_types("bcgs", "jacobi", " ");
+ 
+			tao_.set_type("tron"); //REMOVED_TRILINOS
+			tao_.set_ksp_types("bcgs", "jacobi", " "); //REMOVED_TRILINOS
 		}
 
 		void set_tol(const Scalar tol)
@@ -229,53 +229,51 @@ namespace utopia {
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
 
-		bool write_text(const std::string &path, const Matrix &mat)
-		{
-			auto comm = mat.implementation().communicator();
-			int comm_size, comm_rank;
-			MPI_Comm_rank(comm, &comm_rank);
-			MPI_Comm_size(comm, &comm_size);
+		// bool write_text(const std::string &path, const Matrix &mat)
+		// {
+		// 	int size = utopia::comm_size(mat);
+		// 	int rank = utopia::comm_rank(mat);
 
-			int nnz = 0;
-			for(SizeType r = 0; r < comm_size; ++r) {
-				if(r == 0) {
-					nnz = 0;
-					each_read(mat, [&nnz](const SizeType, const SizeType, const Scalar) {
-						++nnz;
-					});
+		// 	int nnz = 0;
+		// 	for(SizeType r = 0; r < size; ++r) {
+		// 		if(r == 0) {
+		// 			nnz = 0;
+		// 			each_read(mat, [&nnz](const SizeType, const SizeType, const Scalar) {
+		// 				++nnz;
+		// 			});
 
-					MPI_Allreduce( MPI_IN_PLACE, &nnz, 1, MPI_INT, MPI_SUM, comm );
-				}
+		// 			MPI_Allreduce( MPI_IN_PLACE, &nnz, 1, MPI_INT, MPI_SUM, comm );
+		// 		}
 
-				if(r == comm_rank) {
-					std::ofstream os;
+		// 		if(r == rank) {
+		// 			std::ofstream os;
 
-					if(r == 0) {
-						os.open(path);
-						Size s = size(mat);
-						os << s.get(0) << " " << nnz << "\n";
-					} else {
-						os.open(path, std::ofstream::out | std::ofstream::app);
-					}
+		// 			if(r == 0) {
+		// 				os.open(path);
+		// 				Size s = size(mat);
+		// 				os << s.get(0) << " " << nnz << "\n";
+		// 			} else {
+		// 				os.open(path, std::ofstream::out | std::ofstream::app);
+		// 			}
 
-					if(!os.good()) {
-						std::cerr << "invalid path: " << path << std::endl;
-						continue;
-					}
+		// 			if(!os.good()) {
+		// 				std::cerr << "invalid path: " << path << std::endl;
+		// 				continue;
+		// 			}
 
-					each_read(mat, [&os](const SizeType i, const SizeType j, const Scalar value) {
-						os << i << " " << j << " " << value << "\n";
-					});
+		// 			each_read(mat, [&os](const SizeType i, const SizeType j, const Scalar value) {
+		// 				os << i << " " << j << " " << value << "\n";
+		// 			});
 
-					os.flush();
-					os.close();
-				}
+		// 			os.flush();
+		// 			os.close();
+		// 		}
 
-				MPI_Barrier(comm);
-			}
+		// 		MPI_Barrier(comm);
+		// 	}
 
-			return true;
-		}
+		// 	return true;
+		// }
 
 
 		void qp_solve(Matrix &lhs, Vector &rhs, const BoxConstraints<Vector> &box_c, Vector &inc_c)
@@ -300,17 +298,17 @@ namespace utopia {
 			// 	newton.solve(lhs, rhs, inc_c);
 			// } else {
 				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
-				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_);
-				// SemismoothNewton<Matrix, Vector> ssn(linear_solver_);
+				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_);  //REMOVED_TRILINOS
+				// SemismoothNewton<Matrix, Vector> ssn(linear_solver_); 
 				// ssn.verbose(true);
-				ssn.max_it(40);
-				ssn.atol(1e-14);
-				ssn.rtol(1e-8);
-				ssn.stol(1e-8);
+				ssn.max_it(40); //REMOVED_TRILINOS
+				ssn.atol(1e-14); //REMOVED_TRILINOS
+				ssn.rtol(1e-8); //REMOVED_TRILINOS
+				ssn.stol(1e-8); //REMOVED_TRILINOS
 
 
-				ssn.set_box_constraints(box_c);
-				ssn.solve(lhs, rhs, inc_c);
+				ssn.set_box_constraints(box_c); //REMOVED_TRILINOS
+				ssn.solve(lhs, rhs, inc_c); //REMOVED_TRILINOS
 			} else if(use_pg_) {
 
 				ProjectedGradient<Matrix, Vector> pg;
@@ -342,12 +340,12 @@ namespace utopia {
 
 				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
 				//(linear_solver_);
-				tao_.set_box_constraints(box_c);
+				tao_.set_box_constraints(box_c); //REMOVED_TRILINOS
 				// tao_.set_ksp_types(KSPPREONLY, PCLU, "mumps");
 				// tao_.set_type("gpcg");
 
 
-				tao_.solve(fun, inc_c);
+				tao_.solve(fun, inc_c); //REMOVED_TRILINOS
 
 				force_direct_solver_ = false;
 
@@ -513,10 +511,10 @@ namespace utopia {
 			sol_to_gap_on_contact_bdr_ = val;
 		}
 
-		TaoSolver<Matrix, Vector> &tao()
-		{
-			return tao_;
-		}
+		TaoSolver<Matrix, Vector> &tao() //REMOVED_TRILINOS
+		{								 //REMOVED_TRILINOS
+			return tao_;				 //REMOVED_TRILINOS
+		}								//REMOVED_TRILINOS
 
 		virtual bool stress(const Vector &x, Vector &result) {
 			return material_->stress(x, result);
@@ -568,7 +566,7 @@ namespace utopia {
 
 		int max_outer_loops_;
 
-		TaoSolver<Matrix, Vector> tao_;
+		TaoSolver<Matrix, Vector> tao_; //REMOVED_TRILINOS
 		bool use_ssn_, use_pg_;
 
 		int max_non_linear_iterations_;

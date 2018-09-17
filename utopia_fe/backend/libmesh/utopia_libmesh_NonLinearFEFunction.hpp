@@ -1,7 +1,10 @@
 #ifndef UTOPIA_LIBMESH_NON_LINEAR_FE_FUNCTION_HPP
 #define UTOPIA_LIBMESH_NON_LINEAR_FE_FUNCTION_HPP
 
+
+#include "utopia_fe_base.hpp"
 #include "utopia_NonLinearFEFunction.hpp"
+
 
 #include "utopia_FormEvaluator.hpp"
 #include "utopia_fe_core.hpp"
@@ -23,6 +26,7 @@
 #include "utopia_libmesh_FEBackend.hpp"
 #include "utopia_Projection.hpp"
 #include "utopia_libmesh_Assembler.hpp"
+
 
 namespace utopia {
 	//libmesh

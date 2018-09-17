@@ -436,7 +436,7 @@ namespace utopia {
             // solver->tao().atol(1e-8);
             // solver->tao().rtol(1e-8);
             // solver->tao().stol(1e-8);
-            solver->tao().verbose(true);
+            // solver->tao().verbose(true); //REMOVED_TRILINOS
         }
 
         // auto ls = std::make_shared<Factorization<USMatrix, UVector>>();

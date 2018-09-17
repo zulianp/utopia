@@ -232,9 +232,9 @@ namespace utopia {
 
 		//hacky
 		if(is_block_solver_) {
-			for(SizeType i = 0; i < mg.n_levels(); ++i) {
-				const_cast<USMatrix &>(mg.level(i).A()).implementation().convert_to_mat_baij(meshes[0]->mesh_dimension());
-			}
+			// for(SizeType i = 0; i < mg.n_levels(); ++i) {																   //REMOVED_TRILINOS
+				// const_cast<USMatrix &>(mg.level(i).A()).implementation().convert_to_mat_baij(meshes[0]->mesh_dimension());  //REMOVED_TRILINOS
+			// }																											   //REMOVED_TRILINOS
 		}
 
 	}

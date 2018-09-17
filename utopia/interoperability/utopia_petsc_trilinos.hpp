@@ -18,7 +18,7 @@ namespace utopia {
 
 	template<typename Matrix, typename Vector>
 	class KSPSolver<Matrix, Vector, TRILINOS> :
-		public CrossBackendLinearSolver<
+		public CrossBackendLinearSolverAndSmoother<
             Matrix, Vector,
             DSMatrixd, DVectord,
             KSPSolver<DSMatrixd, DVectord, PETSC>
@@ -36,7 +36,7 @@ namespace utopia {
       //FIXME remove me once the belos solver works
       template<typename Matrix, typename Vector>
       class BiCGStab<Matrix, Vector, TRILINOS> :
-            public CrossBackendLinearSolver<
+            public CrossBackendLinearSolverAndSmoother<
             Matrix, Vector,
             DSMatrixd, DVectord,
             BiCGStab<DSMatrixd, DVectord, PETSC>
@@ -46,7 +46,7 @@ namespace utopia {
       //FIXME remove me once the belos solver works
       template<typename Matrix, typename Vector>
       class GaussSeidel<Matrix, Vector, TRILINOS> :
-            public CrossBackendLinearSolver<
+            public CrossBackendLinearSolverAndSmoother<
             Matrix, Vector,
             DSMatrixd, DVectord,
             GaussSeidel<DSMatrixd, DVectord, PETSC>

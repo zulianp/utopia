@@ -15,6 +15,7 @@
 #include "utopia_Eval_Blocks.hpp"
 
 #include "libmesh/mesh_refinement.h"
+#include "libmesh/mesh_tools.h"
 
 namespace utopia {
     
@@ -463,9 +464,8 @@ namespace utopia {
         {
             try {
                 is.read("mesh", mesh_type);
-                if(mesh_type == "file") {
-                    is.read("path", path);
-                }
+                path = "";
+                is.read("path", path);
                 
                 is.read("boundary-conditions", [this](InputStream &is) {
                     is.read_all([this](InputStream &is) {
@@ -498,10 +498,60 @@ namespace utopia {
                 order = 1;
                 is.read("order", order);
 
+                std::fill(std::begin(span), std::end(span), 0.);
+
+                is.read("span-x", span[0]);
+                is.read("span-y", span[1]);
+                is.read("span-z", span[2]);
+
+                elem_type = "quad";
+                is.read("elem-type", elem_type);
+
+
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);
             }
+        }
+
+        libMesh::ElemType get_type(const int dim) const
+        {
+            if(dim == 3) {
+                libMesh::ElemType type = libMesh::HEX8;
+
+                if(elem_type == "tet") {
+                    type = libMesh::TET4;
+                }
+
+                if(order == 2) {
+                    type = libMesh::HEX20;
+
+                    if(elem_type == "tet") {
+                        type = libMesh::TET10;
+                    }
+                }
+
+                return type;
+
+            } else if(dim == 2) {
+                libMesh::ElemType type = libMesh::QUAD4;
+
+                if(elem_type == "tri") {
+                    type = libMesh::TRI3;
+                }
+                
+                if(order == 2) {
+                    type = libMesh::QUAD8;
+
+                    if(elem_type == "tri") {
+                        type = libMesh::TRI6;
+                    }
+                }
+
+                return type;
+            }
+
+            return libMesh::TRI3;
         }
         
         void make_mesh(libMesh::DistributedMesh &mesh) const
@@ -509,20 +559,46 @@ namespace utopia {
             if(this->mesh_type == "file") {
                 mesh.read(path);
             } else if(this->mesh_type == "unit-square") {
-                libMesh::ElemType elem_type = libMesh::QUAD8;
-               
-                if(order == 1) {
-                    libMesh::ElemType elem_type = libMesh::QUAD4;
-                }
-
                 libMesh::MeshTools::Generation::build_square(mesh,
                                                              5, 5,
                                                              -0., 1.,
                                                              -0., 1.,
-                                                             elem_type
+                                                             get_type(2)
                                                              );
-            }
+            } else if(this->mesh_type == "aabb") {
+                libMesh::DistributedMesh temp_mesh(mesh.comm());
+                temp_mesh.read(path);
+
+#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
+                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(temp_mesh);
+#else
+                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(temp_mesh);
+#endif
             
+                if(temp_mesh.spatial_dimension() == 3) {
+                 
+                    libMesh::MeshTools::Generation::build_cube(
+                        mesh,
+                        n, n, n,
+                        bb.min()(0) - span[0], bb.max()(0) + span[0],
+                        bb.min()(1) - span[1], bb.max()(1) + span[1],
+                        bb.min()(2) - span[2], bb.max()(2) + span[2],
+                        get_type(3)
+                    );
+
+                } else {
+
+                    libMesh::MeshTools::Generation::build_square(
+                        mesh,
+                        n, n,
+                        bb.min()(0) - span[0], bb.max()(0) + span[0],
+                        bb.min()(1) - span[1], bb.max()(1) + span[1],
+                        get_type(2)
+                    );
+                }
+
+            }
+
             refine(refinements, mesh);
 
             if(this->mesh_type == "file" && order == 2) {
@@ -588,6 +664,9 @@ namespace utopia {
         int refinements;
         int adaptive_refinements;
         int order;
+        double span[3];
+        std::string elem_type;
+        int n = 10;
     };
     
     void FractureFlowApp::run(const std::string &conf_file_path)

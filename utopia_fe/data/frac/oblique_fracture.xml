@@ -1,6 +1,7 @@
 <!-- MASTER STUFF -->
 <master>
 	<mesh>unit-square</mesh>
+	<elem-type>tri</elem-type>
 	<!-- <mesh>file</mesh> -->
 	<!-- <path>../data/frac/adaptive_background_2.e</path> -->
 	<!-- <path>../data/frac/adaptive_background.e</path> -->
@@ -18,8 +19,8 @@
 	<diffusivity>1.</diffusivity>
 	<!-- <forcing-function>-100.</forcing-function> -->
 	<forcing-function>0.</forcing-function>
-	<refinements>3</refinements>
-	<order>2</order>
+	<refinements>0</refinements>
+	<order>1</order>
 	<!-- <adaptive-refinements>1</adaptive-refinements> -->
 </master>
 
@@ -41,7 +42,7 @@
 	<diffusivity>10.</diffusivity>
 	<!-- <forcing-function>100.</forcing-function> -->
 	<forcing-function>0.</forcing-function>
-	<refinements>1</refinements>
+	<refinements>0</refinements>
 	<order>1</order>
 </slave>
 

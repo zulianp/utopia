@@ -6,6 +6,7 @@
 #include "libmesh/elem.h"
 
 #include "utopia.hpp"
+#include "utopia_fe_base.hpp"
 
 #include <vector>
 #include <algorithm>
