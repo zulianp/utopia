@@ -85,6 +85,46 @@ namespace utopia {
 	    return ret_global;
 	}
 
+	TpetraVector::Scalar TpetraVector::min() const
+	{
+	    m_utopia_warning_once("> TpetraVector::min is hand-coded");
+
+	    auto data = implementation().getData();
+
+	    Scalar ret_temp = data[0];
+
+	    for(auto i = 1; i < data.size(); ++i) {
+	        ret_temp = std::min(data[i], ret_temp);
+	    }
+
+	    double ret = ret_temp;
+	    auto &comm = *communicator();
+	    double ret_global = 0.;
+
+	    Teuchos::reduceAll(comm, Teuchos::REDUCE_MIN, 1, &ret, &ret_global);
+	    return ret_global;
+	}
+
+	TpetraVector::Scalar TpetraVector::max() const
+	{
+	    m_utopia_warning_once("> TpetraVector::max is hand-coded");
+
+	    auto data = implementation().getData();
+
+	    Scalar ret_temp = data[0];
+
+	    for(auto i = 1; i < data.size(); ++i) {
+	        ret_temp = std::max(data[i], ret_temp);
+	    }
+
+	    double ret = ret_temp;
+	    auto &comm = *communicator();
+	    double ret_global = 0.;
+
+	    Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
+	    return ret_global;
+	}
+
 	bool TpetraVector::is_nan_or_inf() const
 	{
 		m_utopia_warning_once("> TpetraVector::is_nan_or_inf is hand-coded");

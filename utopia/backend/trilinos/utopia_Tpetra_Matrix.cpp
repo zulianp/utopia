@@ -34,38 +34,7 @@ namespace utopia {
 	    }
 	}
 
-	void TpetraMatrix::add_matrix(
-	    const std::vector<global_ordinal_type> &rows,
-	    const std::vector<global_ordinal_type> &cols,
-	    const std::vector<Scalar> &values
-	)
-	{
-		//FIXME and find more efficient way
-		const auto n = values.size();
-		assert(n == rows.size());
-		assert(n == cols.size());
 
-		for(std::size_t i = 0; i < n; ++i) {
-			add(rows[i], cols[i], values[i]);
-		}
-	}
-
-	void TpetraMatrix::set_matrix(
-	    const std::vector<global_ordinal_type> &rows,
-	    const std::vector<global_ordinal_type> &cols,
-	    const std::vector<Scalar> &values
-	)
-	{
-		//FIXME and find more efficient way
-		const auto n = values.size();
-		assert(n == rows.size());
-		assert(n == cols.size());
-
-		for(std::size_t i = 0; i < n; ++i) {
-			set(rows[i], cols[i], values[i]);
-		}
-	}
-	
 
 
 	//FIXME make faster version by storing view?

@@ -40,8 +40,6 @@
 <!-- MULTIPLIER STUFF -->
 <multiplier>
 	<mesh>unit-square</mesh>
-	<!-- <boundary-conditions> -->
-	<!-- </boundary-conditions> -->
 	<refinements>0</refinements>
 	<order>1</order>
 </multiplier>

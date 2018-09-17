@@ -604,15 +604,15 @@ namespace utopia {
         auto is_ptr = open_istream(conf_file_path);
         
         Input master_in, slave_in;
-        Input multiplier_in; //LAMBDA
+        // Input multiplier_in; //LAMBDA
         
         is_ptr->read("master", master_in);
         is_ptr->read("slave", slave_in);
-        is_ptr->read("multiplier", multiplier_in); //LAMBDA
+        // is_ptr->read("multiplier", multiplier_in); //LAMBDA
 
-        if(multiplier_in.empty()) { //LAMBDA
-            multiplier_in = slave_in;  //LAMBDA
-        }                           //LAMBDA
+        // if(multiplier_in.empty()) { //LAMBDA
+            // multiplier_in = slave_in;  //LAMBDA
+        // }                           //LAMBDA
         
         std::string solve_strategy = "monolithic";
         is_ptr->read("solve-strategy", solve_strategy);
@@ -623,7 +623,7 @@ namespace utopia {
         
         master_in.describe();
         slave_in.describe();
-        multiplier_in.describe(); //LAMBDA
+        // multiplier_in.describe(); //LAMBDA
         
         std::cout << "solve_strategy: "  << solve_strategy << std::endl;
        
@@ -633,7 +633,7 @@ namespace utopia {
         
         master_in.make_mesh(*mesh_master);
         slave_in.make_mesh(*mesh_slave);
-        multiplier_in.make_mesh(*mesh_multiplier); //LAMBDA
+        // multiplier_in.make_mesh(*mesh_multiplier); //LAMBDA
 
 
         master_in.apply_adaptive_refinement(mesh_slave, libMesh::FIRST, mesh_master);
@@ -649,17 +649,17 @@ namespace utopia {
         auto equation_systems_slave = std::make_shared<libMesh::EquationSystems>(*mesh_slave);
         auto &sys_slave = equation_systems_slave->add_system<libMesh::LinearImplicitSystem>("slave");
 
-        auto equation_systems_multiplier = std::make_shared<libMesh::EquationSystems>(*mesh_multiplier);        //LAMBDA
-        auto &sys_multiplier = equation_systems_multiplier->add_system<libMesh::LinearImplicitSystem>("multiplier"); //LAMBDA
+        // auto equation_systems_multiplier = std::make_shared<libMesh::EquationSystems>(*mesh_multiplier);        //LAMBDA
+        // auto &sys_multiplier = equation_systems_multiplier->add_system<libMesh::LinearImplicitSystem>("multiplier"); //LAMBDA
         
         //scalar function space
         const auto elem_order_m = libMesh::Order(master_in.order);
         const auto elem_order_s = libMesh::Order(slave_in.order);
-        const auto elem_order_l = libMesh::Order(multiplier_in.order); //LAMBDA
+        // const auto elem_order_l = libMesh::Order(multiplier_in.order); //LAMBDA
 
         auto V_m = FunctionSpaceT(equation_systems_master, libMesh::LAGRANGE, elem_order_m, "u_m");
         auto V_s = FunctionSpaceT(equation_systems_slave,  libMesh::LAGRANGE, elem_order_s,  "u_s");
-        auto L   = FunctionSpaceT(equation_systems_multiplier, libMesh::LAGRANGE, elem_order_l,  "lambda"); //LAMBDA
+        // auto L   = FunctionSpaceT(equation_systems_multiplier, libMesh::LAGRANGE, elem_order_l,  "lambda"); //LAMBDA
         
         auto u_m = trial(V_m);
         auto v_m = test(V_m);
@@ -669,14 +669,14 @@ namespace utopia {
         
         master_in.set_up_bc(V_m);
         slave_in.set_up_bc(V_s);
-        multiplier_in.set_up_bc(L); //LAMBDA
+        // multiplier_in.set_up_bc(L); //LAMBDA
         
         V_m.initialize();
         V_s.initialize();
-        L.initialize(); //LAMBDA
+        // L.initialize(); //LAMBDA
 
         std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " x " <<  V_s.dof_map().n_dofs();
-        std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
+        // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
         std::cout << std::endl;
         
         auto eq_m = master_in.diffusivity * inner(grad(u_m), grad(v_m)) * dX == inner(coeff(master_in.forcing_function), v_m) * dX;
@@ -717,7 +717,7 @@ namespace utopia {
         } else {
             solve_monolithic(V_m,
                              V_s,
-                             L, //LAMBDA
+                             // L, //LAMBDA
                              A_m,
                              rhs_m,
                              A_s,
@@ -747,9 +747,9 @@ namespace utopia {
         V_s.equation_system().solution->close();
         io_s.write_timestep(V_s.equation_system().name() + ".e", V_s.equation_systems(), 1, 0);
 
-        utopia::convert(lagr, *L.equation_system().solution);                                         //LAMBDA
-        L.equation_system().solution->close();                                                        //LAMBDA
-        io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);  //LAMBDA
+        // utopia::convert(lagr, *L.equation_system().solution);                                         //LAMBDA
+        // L.equation_system().solution->close();                                                        //LAMBDA
+        // io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);  //LAMBDA
         
         // if(size(lagr) == size(sol_m)) {
         //     libMesh::Nemesis_IO io_l(*mesh_master);

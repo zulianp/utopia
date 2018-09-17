@@ -217,6 +217,9 @@ namespace utopia {
         }
 
         Scalar sum() const;
+        Scalar min() const;
+        Scalar max() const;
+        
         bool is_nan_or_inf() const;
 
         inline void scale(const Scalar alpha)

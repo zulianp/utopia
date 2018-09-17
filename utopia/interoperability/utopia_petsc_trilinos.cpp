@@ -7,6 +7,7 @@
 
 namespace utopia {
 	template class KSPSolver<TSMatrixd, TVectord, TRILINOS>;
+	template class Factorization<TSMatrixd, TVectord, TRILINOS>;
 }
 
 #endif //WITH_PETSC

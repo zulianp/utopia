@@ -209,6 +209,26 @@ namespace utopia {
             t.set(value);
         }
 
+        template<typename Integer>
+        void add_matrix(
+            TpetraMatrix &m,
+            const std::vector<Integer> &rows,
+            const std::vector<Integer> &cols,
+            const std::vector<Scalar> &values)
+        {
+            m.add_matrix(rows, cols, values);
+        }
+
+        template<typename Integer>
+        void set_matrix(
+            TpetraMatrix &m,
+            const std::vector<Integer> &rows,
+            const std::vector<Integer> &cols,
+            const std::vector<Scalar> &values)
+        {
+            m.set_matrix(rows, cols, values);
+        }
+
         //[host/device locks]
         template<class Tensor>
         static void read_lock(const Tensor &t) {
@@ -291,6 +311,16 @@ namespace utopia {
 
         Scalar reduce(const TpetraVector &vec, const Plus &) {
             return vec.sum();
+        }
+
+
+        Scalar reduce(const TpetraVector &vec, const Max &op) {
+            return vec.max();
+        }
+
+
+        Scalar reduce(const TpetraVector &vec, const Min &op) {
+            return vec.min();
         }
 
         //blas 1

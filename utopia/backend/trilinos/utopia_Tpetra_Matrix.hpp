@@ -190,17 +190,39 @@ namespace utopia {
         Scalar get(const global_ordinal_type &row, const global_ordinal_type &col) const;
         void add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
 
-        void set_matrix(
-            const std::vector<global_ordinal_type> &rows,
-            const std::vector<global_ordinal_type> &cols,
-            const std::vector<Scalar> &values
-        );
-
+        template<typename Integer>
         void add_matrix(
-            const std::vector<global_ordinal_type> &rows,
-            const std::vector<global_ordinal_type> &cols,
-            const std::vector<Scalar> &values
-        );
+         const std::vector<Integer> &rows,
+         const std::vector<Integer> &cols,
+         const std::vector<Scalar> &values
+         )
+        {
+            //FIXME and find more efficient way
+            const auto n = values.size();
+            assert(n == rows.size());
+            assert(n == cols.size());
+
+            for(std::size_t i = 0; i < n; ++i) {
+                add(rows[i], cols[i], values[i]);
+            }
+        }
+
+       template<typename Integer>
+        void set_matrix(
+         const std::vector<Integer> &rows,
+         const std::vector<Integer> &cols,
+         const std::vector<Scalar> &values
+         )
+        {
+            //FIXME and find more efficient way
+            const auto n = values.size();
+            assert(n == rows.size());
+            assert(n == cols.size());
+
+            for(std::size_t i = 0; i < n; ++i) {
+                set(rows[i], cols[i], values[i]);
+            }
+        }
 
         void mult(const TpetraVector &vec, TpetraVector &result) const;
         void mult_t(const TpetraVector &vec, TpetraVector &result) const;
