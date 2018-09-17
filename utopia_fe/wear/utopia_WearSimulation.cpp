@@ -1,5 +1,10 @@
 #include "utopia_WearSimulation.hpp"
 
+
+#include "utopia_fe_base.hpp"
+
+#ifndef WITH_TRILINOS_ALGEBRA
+
 #include "utopia_libmesh.hpp"
 #include "utopia_LameeParameters.hpp"
 #include "utopia_ElasticMaterial.hpp"
@@ -125,16 +130,16 @@ namespace utopia {
             /////////////////////////////////////////////////////////////////////////////
 
 			if(desc_.material_name == "NeoHookean") {
-				material = std::make_shared<NeoHookean<decltype(V), USMatrix, UVector>>(V, desc_.params);
+				material = std::make_shared<NeoHookean<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
 			} else if(desc_.material_name == "SaintVenantKirchoff") {
-				material = std::make_shared<SaintVenantKirchoff<decltype(V), USMatrix, UVector>>(V, desc_.params);
+				material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
             } else /*if(desc_.material_name == "LinearElasticity")*/ {
-				material = std::make_shared<LinearElasticity<decltype(V), USMatrix, UVector>>(V, desc_.params);
+				material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
 			}
 
             if(desc_.stabilization != "none") {
                 std::cout << "using stabilization: " << desc_.stabilization << " mag: " << desc_.stabilization_mag << std::endl;
-                material = std::make_shared<StabilizedMaterial<decltype(V), USMatrix, UVector>>(V, desc_.stabilization_mag, material, desc_.stabilization);
+                material = std::make_shared<StabilizedMaterial<decltype(V), USparseMatrix, UVector>>(V, desc_.stabilization_mag, material, desc_.stabilization);
             }
 
             /////////////////////////////////////////////////////////////////////////////
@@ -218,7 +223,7 @@ namespace utopia {
             });
 
             if(has_force) {
-                material = std::make_shared<ForcedMaterial<USMatrix, UVector>>(
+                material = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(
                     material,
                     forcing_function
                 );
@@ -248,7 +253,7 @@ namespace utopia {
     	std::shared_ptr<libMesh::DistributedMesh> mesh;
     	ProductFunctionSpace<LibMeshFunctionSpace> V;
     	std::shared_ptr<libMesh::EquationSystems> equation_systems;
-    	std::shared_ptr<ElasticMaterial<USMatrix, UVector> > material;
+    	std::shared_ptr<ElasticMaterial<USparseMatrix, UVector> > material;
         std::shared_ptr<CompositeForcingFunction<UVector> > forcing_function;
 
     	int main_sys_num;
@@ -378,8 +383,8 @@ namespace utopia {
 
     void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &conf_file_path)
     {
-        typedef utopia::ContactSolver<USMatrix, UVector> ContactSolverT;
-        typedef utopia::ContactStabilizedNewmark<USMatrix, UVector> TransientContactSolverT;
+        typedef utopia::ContactSolver<USparseMatrix, UVector> ContactSolverT;
+        typedef utopia::ContactStabilizedNewmark<USparseMatrix, UVector> TransientContactSolverT;
 
     	Input in;
     	auto is_ptr = open_istream(conf_file_path);
@@ -395,7 +400,7 @@ namespace utopia {
 
         auto configuration_forces = std::make_shared<ConstantForcingFunction<UVector>>();
         configuration_forces->value() = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
-        auto configuration_forced_material = std::make_shared<ForcedMaterial<USMatrix, UVector>>(in.material, configuration_forces);
+        auto configuration_forced_material = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(in.material, configuration_forces);
 
         std::shared_ptr<ContactSolverT> solver;
         std::shared_ptr<TransientContactSolverT> transient_solver;
@@ -409,12 +414,12 @@ namespace utopia {
 
         std::cout << "n_dofs: " << in.V[0].dof_map().n_dofs() << std::endl;
 
-        // auto sor = std::make_shared<SOR<USMatrix, UVector>>();
+        // auto sor = std::make_shared<SOR<USparseMatrix, UVector>>();
         // sor->rtol(1e-8);
         // sor->atol(1e-16);
         // sor->stol(1e-10);
         // solver->set_linear_solver(sor);
-        solver->set_linear_solver(std::make_shared<Factorization<USMatrix, UVector>>());
+        solver->set_linear_solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
 
         solver->set_tol(in.step_tol);
         solver->set_max_non_linear_iterations(in.max_nl_iter);
@@ -439,8 +444,8 @@ namespace utopia {
             // solver->tao().verbose(true); //REMOVED_TRILINOS
         }
 
-        // auto ls = std::make_shared<Factorization<USMatrix, UVector>>();
-        // auto ls = std::make_shared<GMRES<USMatrix, UVector>>();
+        // auto ls = std::make_shared<Factorization<USparseMatrix, UVector>>();
+        // auto ls = std::make_shared<GMRES<USparseMatrix, UVector>>();
         // ls->atol(1e-15);
         // ls->rtol(1e-15);
         // ls->stol(1e-15);
@@ -580,3 +585,21 @@ namespace utopia {
     WearSimulation::~WearSimulation()
     {}
 }
+
+#else
+
+namespace utopia {
+    void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &conf_file_path)
+    {
+      std::cerr << "[Error] not run (does not work with trilinos backend)" << std::endl;
+    }
+
+    WearSimulation::WearSimulation()
+    {}
+
+    WearSimulation::~WearSimulation()
+    {}
+}
+
+#endif //WITH_TRILINOS_ALGEBRA
+

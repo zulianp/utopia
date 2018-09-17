@@ -5,13 +5,13 @@
 #include "utopia.hpp"
 
 namespace utopia {
-#ifdef USE_UTOPIA_TRILINOS
-	using USMatrix = TSMatrixd;
+#ifdef WITH_TRILINOS_ALGEBRA
+	using USparseMatrix = TSMatrixd;
 	using UVector  = TVectord;
 #else
-	using USMatrix = DSMatrixd;
+	using USparseMatrix = DSMatrixd;
 	using UVector  = DVectord;
-#endif //USE_UTOPIA_TRILINOS
+#endif //WITH_TRILINOS_ALGEBRA
 }
 
 #endif //UTOPIA_FE_BASE_HPP

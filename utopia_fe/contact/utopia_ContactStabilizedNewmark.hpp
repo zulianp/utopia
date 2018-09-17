@@ -1,6 +1,11 @@
 #ifndef UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP
 #define UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP
 
+
+#include "utopia_fe_base.hpp"
+
+#ifndef WITH_TRILINOS_ALGEBRA
+
 #include "utopia_ContactSolver.hpp"
 #include "utopia_ContactSystem.hpp"
 
@@ -68,7 +73,7 @@ namespace utopia {
 			density_ = density;
 		}
 
-		void initial_condition(const USMatrix &mass_matrix, const UVector &initial_velocity = UVector())
+		void initial_condition(const USparseMatrix &mass_matrix, const UVector &initial_velocity = UVector())
 		{
 			internal_mass_matrix_ = mass_matrix;
 			Vector mass_vector = sum(internal_mass_matrix_, 1);
@@ -223,5 +228,5 @@ namespace utopia {
 
 }
 
-
+#endif //WITH_TRILINOS_ALGEBRA
 #endif //UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP

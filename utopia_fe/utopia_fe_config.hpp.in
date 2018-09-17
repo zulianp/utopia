@@ -6,7 +6,7 @@
 #cmakedefine WITH_BOOST
 
 #ifdef WITH_TRILINOS
-#cmakedefine USE_UTOPIA_TRILINOS
+#cmakedefine WITH_TRILINOS_ALGEBRA
 #endif //WITH_TRILINOS
 
 

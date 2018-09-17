@@ -575,7 +575,7 @@ namespace utopia {
 			// auto linear_form   = integral(inner(coeff(1.), v));
 			// auto eq = bilinear_form == linear_form;
 
-			// USMatrix mat;
+			// USparseMatrix mat;
 			// UVector vec;
 			// assemble_expression_v<FunctionSpaceT>(eq, mat, vec);
 		}

@@ -69,7 +69,7 @@ namespace utopia {
 	inline static void add_matrix(const libMesh::DenseMatrix<libMesh::Real> &block,
 								  const std::vector<libMesh::dof_id_type> &row_dofs,
 								  const std::vector<libMesh::dof_id_type> &col_dofs,
-								  USMatrix &mat)
+								  USparseMatrix &mat)
 	{
 		// Size s = size(mat);
 		// for(uint i = 0; i < row_dofs.size(); ++i) {

@@ -249,18 +249,18 @@ namespace utopia {
 	    fsi_forcing_term_f = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), dof_map_f.get_send_list());
 	    displacement_s     = ghosted(dof_map_s.n_local_dofs(), dof_map_s.n_dofs(), dof_map_s.get_send_list());
 
-	    USMatrix mat_s, mass_mat_s, mass_mat_f;
+	    USparseMatrix mat_s, mass_mat_s, mass_mat_f;
 	    UVector rhs_s,  mass_vec_s, mass_vec_f;
 
 	    assemble_expression_v<LibMeshFunctionSpace>(eq_solid, mat_s, rhs_s);
 	    assemble_expression_v<LibMeshFunctionSpace>(mass_f == mass_rhs_f, mass_mat_f,  mass_vec_f, false);
 	    assemble_expression_v<LibMeshFunctionSpace>(mass_s == mass_rhs_s, mass_mat_s,  mass_vec_s, false);
 
-	    NonLinearFEFunction<USMatrix, UVector, decltype(eq_fluid)> nl_fun(eq_fluid, true);
+	    NonLinearFEFunction<USparseMatrix, UVector, decltype(eq_fluid)> nl_fun(eq_fluid, true);
 
-	    auto linear_solver = std::make_shared<Factorization<USMatrix, UVector>>();
-	    // auto linear_solver = std::make_shared<GMRES<USMatrix, UVector>>(); linear_solver->verbose(true);
-	    Newton<USMatrix, UVector> solver(linear_solver);
+	    auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+	    // auto linear_solver = std::make_shared<GMRES<USparseMatrix, UVector>>(); linear_solver->verbose(true);
+	    Newton<USparseMatrix, UVector> solver(linear_solver);
 	    // solver.verbose(true);
 	    
 	    // libMesh::ExodusII_IO io_fluid(*fluid_mesh);
@@ -278,7 +278,7 @@ namespace utopia {
 	    		// plot_mesh(*solid_mesh, "mesh/" + std::to_string(ts));
 	    	}
 
-	    	USMatrix B;
+	    	USparseMatrix B;
 	    	
 	    	if(!assemble_volume_transfer(
 	    	    comm,

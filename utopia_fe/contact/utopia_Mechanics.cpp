@@ -50,10 +50,10 @@ namespace utopia {
 		libMesh::DofMap &dof_map)
 	: dim(dim), dof_map(dof_map) 
 	{
-		linear_solver = std::make_shared<Factorization<USMatrix, UVector>>();
-		// auto temp =  std::make_shared<BiCGStab<USMatrix, UVector>>();
-		// auto temp =  std::make_shared<ConjugateGradient<USMatrix, UVector, HOMEMADE>>();
-		// auto temp =  std::make_shared<GaussSeidel<USMatrix, UVector>>();
+		linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+		// auto temp =  std::make_shared<BiCGStab<USparseMatrix, UVector>>();
+		// auto temp =  std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
+		// auto temp =  std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
 
 		// temp->atol(1e-10);
 		// temp->stol(1e-10);
@@ -65,7 +65,7 @@ namespace utopia {
 	}
 
 	bool MechWithContactIntegrationScheme::solve(
-		const USMatrix &K,
+		const USparseMatrix &K,
 		const UVector &inverse_mass_vector,
 		const UVector &rhs,
 		const UVector &gap,
@@ -77,18 +77,18 @@ namespace utopia {
 
 		if(friction.friction_coefficient == 0.) {
 			if(mpi_world_size() == 1) {
-				SemismoothNewton<USMatrix, UVector> solver(linear_solver);
+				SemismoothNewton<USparseMatrix, UVector> solver(linear_solver);
 				solver.max_it(100);
 				solver.verbose(true);
 				solver.set_box_constraints(make_upper_bound_constraints(make_ref(non_const_gap)));
 				return solver.solve(K, rhs, sol);
 
 			} else {
-				// SemismoothNewton<USMatrix, UVector, PETSC_EXPERIMENTAL> solver(linear_solver);
-				SemismoothNewton<USMatrix, UVector> solver(linear_solver);
+				// SemismoothNewton<USparseMatrix, UVector, PETSC_EXPERIMENTAL> solver(linear_solver);
+				SemismoothNewton<USparseMatrix, UVector> solver(linear_solver);
 				solver.max_it(100);
 
-				// ProjectedGaussSeidel<USMatrix, UVector, -1> solver;
+				// ProjectedGaussSeidel<USparseMatrix, UVector, -1> solver;
 				// solver.max_it(size(rhs).get(0) * 40);
 				
 				solver.verbose(true);
@@ -97,10 +97,10 @@ namespace utopia {
 			}
 
 		} else {
-			typedef std::function<void(const USMatrix &, const UVector &, const UVector &, UVector &, UVector &)> F;
+			typedef std::function<void(const USparseMatrix &, const UVector &, const UVector &, UVector &, UVector &)> F;
 
 			UVector lambda, d;
-			F f = [&](const USMatrix &H, const UVector &g, const UVector &x, UVector &active, UVector &value) 
+			F f = [&](const USparseMatrix &H, const UVector &g, const UVector &x, UVector &active, UVector &value) 
 			{
 				lambda = (g - H * x);
 				lambda = e_mul(inverse_mass_vector, lambda);
@@ -156,7 +156,7 @@ namespace utopia {
 
 		
 
-			GenericSemismoothNewton<USMatrix, UVector, F> solver(f, linear_solver);
+			GenericSemismoothNewton<USparseMatrix, UVector, F> solver(f, linear_solver);
 			solver.verbose(true);
 			solver.max_it(20);
 			return solver.solve(K, rhs, sol);
@@ -169,7 +169,7 @@ namespace utopia {
 		const MechanicsState &old,
 		MechanicsState &current)
 	{
-		const USMatrix &K = mech_ctx.stiffness_matrix;
+		const USparseMatrix &K = mech_ctx.stiffness_matrix;
 		UVector rhs = current.external_force - old.internal_force;
 
 		linear_solver->solve(K, rhs, current.displacement_increment);
@@ -191,13 +191,13 @@ namespace utopia {
 	{
 		auto s = local_size(old.internal_force);
 
-		const USMatrix &T = contact.complete_transformation;
-		const USMatrix &K = mech_ctx.stiffness_matrix;
+		const USparseMatrix &T = contact.complete_transformation;
+		const USparseMatrix &K = mech_ctx.stiffness_matrix;
 		const UVector rhs = current.external_force;// - old.internal_force;
 
 		UVector sol_c = local_zeros(s);
 		UVector rhs_c = transpose(T) * rhs;
-		USMatrix K_c  = transpose(T) * K * T;
+		USparseMatrix K_c  = transpose(T) * K * T;
 
 		bool solved = solve(K_c, mech_ctx.inverse_mass_vector, rhs_c, contact.gap, friction, sol_c);
 		

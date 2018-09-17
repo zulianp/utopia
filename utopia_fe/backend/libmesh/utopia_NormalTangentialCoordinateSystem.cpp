@@ -61,7 +61,7 @@ namespace utopia {
                                                    const std::vector<int> &boundary_tags,
                                                    UVector &is_normal_component,
                                                    UVector &normals,
-                                                   USMatrix &mat)
+                                                   USparseMatrix &mat)
     {
         using namespace libMesh;
 
@@ -150,7 +150,7 @@ namespace utopia {
         SizeType n_detecetd_normals = 0;
         { //synch-block begin
             Read<UVector> r_n(global_normal_vec), r_t(touched);
-            Write<USMatrix> w_m(mat);
+            Write<USparseMatrix> w_m(mat);
             Write<UVector> w_i(is_normal_component);
             Write<UVector> w_n(normals);
 

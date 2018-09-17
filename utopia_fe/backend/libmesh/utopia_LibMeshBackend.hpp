@@ -209,7 +209,7 @@ namespace utopia {
 #endif //WITH_TRILINOS
 
 
-	inline void convert(USMatrix &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
+	inline void convert(USparseMatrix &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
 		using namespace libMesh;
 		using namespace utopia;
 

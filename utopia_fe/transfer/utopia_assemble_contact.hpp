@@ -27,10 +27,10 @@ namespace utopia {
 		const std::shared_ptr<libMesh::MeshBase> &mesh,
 		const std::shared_ptr<libMesh::DofMap> &dof_map,
 		const unsigned int var_num,
-		USMatrix &B,
-		USMatrix &orthogonal_trafos,
+		USparseMatrix &B,
+		USparseMatrix &orthogonal_trafos,
 		UVector &gap,
-		USMatrix &normals,
+		USparseMatrix &normals,
 		UVector &is_contact_node,
 		const libMesh::Real search_radius,
 		const std::vector< std::pair<int, int> > &tags,
@@ -42,10 +42,10 @@ namespace utopia {
 		const std::shared_ptr<libMesh::MeshBase> &mesh,
 		const std::shared_ptr<libMesh::DofMap> &dof_map,
 		const unsigned int var_num,
-		USMatrix &B,
-		USMatrix &orthogonal_trafos,
+		USparseMatrix &B,
+		USparseMatrix &orthogonal_trafos,
 		UVector &gap,
-		USMatrix &normals,
+		USparseMatrix &normals,
 		UVector &is_contact_node,
 		const libMesh::Real search_radius,
 		const int tag_1, 
@@ -59,8 +59,8 @@ namespace utopia {
 		const std::shared_ptr<libMesh::MeshBase> &mesh,
 		const std::shared_ptr<libMesh::DofMap> &dof_map,
 		const unsigned int var_num,
-		USMatrix &B,
-		USMatrix &orthogonal_trafos,
+		USparseMatrix &B,
+		USparseMatrix &orthogonal_trafos,
 		UVector &gap,
 		UVector &normals,
 		UVector &is_contact_node,
@@ -70,7 +70,7 @@ namespace utopia {
 		const bool use_volume_differential = false);
 
 
-	void convert_normal_matrix_to_vector(const USMatrix &mat, UVector &vec);
+	void convert_normal_matrix_to_vector(const USparseMatrix &mat, UVector &vec);
 
 }
 

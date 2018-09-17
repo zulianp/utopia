@@ -328,6 +328,11 @@ namespace utopia {
 
     void runUtilitiesTest() {
         UTOPIA_UNIT_TEST_BEGIN("UtilitiesTest");
+
+#ifdef WITH_TRILINOS
+        BlockTest<TSMatrixd, TVectord>().run();
+#endif //WITH_TRILINOS
+        
 #ifdef WITH_PETSC
         BlockTest<DSMatrixd, DVectord>().run();
         

@@ -114,7 +114,7 @@ namespace utopia {
 
 		Chrono c;
 		c.start();
-		USMatrix B;
+		USparseMatrix B;
 		moonolith::Communicator comm(init.comm().get());
 
 		const bool use_interpolation = true;
@@ -136,7 +136,7 @@ namespace utopia {
 			c.stop();
 			std::cout << c << std::endl;
 
-			USMatrix T;
+			USparseMatrix T;
 			if(use_interpolation) {
 				T = B;
 				UVector t = sum(T, 1);
@@ -149,7 +149,7 @@ namespace utopia {
 				Interpolator(make_ref(T)).describe(std::cout);
 
 			} else {
-				USMatrix D_inv = diag(1./sum(B, 1));
+				USparseMatrix D_inv = diag(1./sum(B, 1));
 				T = D_inv * B;
 			}
 
@@ -177,7 +177,7 @@ namespace utopia {
 			auto m_form = inner(u, v) * dX;
 
 			UVector scaled_sol;
-			USMatrix mass_mat;
+			USparseMatrix mass_mat;
 
 			utopia::assemble(p_form, scaled_sol);
 			utopia::assemble(m_form, mass_mat);
@@ -185,7 +185,7 @@ namespace utopia {
 			if(elem_order_master == libMesh::FIRST) {
 				v_m = e_mul(1./sum(mass_mat, 1), scaled_sol);
 			} else {
-				Factorization<USMatrix, UVector>().solve(mass_mat, scaled_sol, v_m);
+				Factorization<USparseMatrix, UVector>().solve(mass_mat, scaled_sol, v_m);
 			}
 
 			// v_m.set(1.);

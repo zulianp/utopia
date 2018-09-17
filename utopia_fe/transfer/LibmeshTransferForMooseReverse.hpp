@@ -22,8 +22,8 @@ namespace utopia {
                                     bool  use_biorth_,
                                     int n_var,
                                     int n_var_r,
-                                    USMatrix &B,
-                                    USMatrix &B_reverse)
+                                    USparseMatrix &B,
+                                    USparseMatrix &B_reverse)
     {
         
 
@@ -47,8 +47,8 @@ namespace utopia {
                                      bool  use_biorth_,
                                      int n_var,
                                      int n_var_r,
-                                     USMatrix &B,
-                                     USMatrix &B_reverse,
+                                     USparseMatrix &B,
+                                     USparseMatrix &B_reverse,
                                      const std::vector< std::pair<int, int> > &tags)
     {
         

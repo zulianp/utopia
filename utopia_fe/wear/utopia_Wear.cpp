@@ -142,7 +142,7 @@ namespace utopia {
 		auto u = trial(V);
 		auto v = test(V);
 
-		USMatrix lapl_mat;
+		USparseMatrix lapl_mat;
 		auto lapl = inner(grad(u), grad(v)) * dX;
 		assemble(lapl, lapl_mat);
 		warped_displacement = local_zeros(local_size(wear_induced_displacement));
@@ -150,8 +150,8 @@ namespace utopia {
 		//FIXME warped_displacement passed as dummy
 		set_identity_at_constraint_rows(dof_map, lapl_mat);
 
-		// KSPSolver<USMatrix, UVector> solver;
-		Factorization<USMatrix, UVector> solver;
+		// KSPSolver<USparseMatrix, UVector> solver;
+		Factorization<USparseMatrix, UVector> solver;
 		if(!solver.solve(lapl_mat, wear_induced_displacement, warped_displacement)) {
 			std::cerr << "[Warning] harmonic map did not work" << std::endl;
 			warped_displacement = wear_induced_displacement;

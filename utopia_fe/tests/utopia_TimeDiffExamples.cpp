@@ -73,11 +73,11 @@
 
 // 		auto s = size(v);
 // 		UVector g  = zeros(s);
-// 		USMatrix m = sparse(s.get(0), s.get(0), 0.2 * s.get(0));
-// 		USMatrix boundary_matrix = identity(s.get(0), s.get(0));
+// 		USparseMatrix m = sparse(s.get(0), s.get(0), 0.2 * s.get(0));
+// 		USparseMatrix boundary_matrix = identity(s.get(0), s.get(0));
 
 // 		{	
-// 			Write<USMatrix> w_m(m);
+// 			Write<USparseMatrix> w_m(m);
 // 			Write<UVector>  w_g(g);
 // 			assemble(v, v, mass, m, false);
 // 			assemble(v, l_form,  g, false);

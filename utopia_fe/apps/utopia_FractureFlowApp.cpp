@@ -56,7 +56,7 @@ namespace utopia {
 
             Chrono c;
             c.start();
-            USMatrix B;
+            USparseMatrix B;
             moonolith::Communicator comm(mesh->comm().get());
             if(assemble_volume_transfer(
                 comm,
@@ -79,10 +79,10 @@ namespace utopia {
                 interp.normalize_rows();
                 interp.describe(std::cout);
 
-                USMatrix D_inv = diag(1./sum(B, 1));
-                USMatrix T = D_inv * B;
+                USparseMatrix D_inv = diag(1./sum(B, 1));
+                USparseMatrix T = D_inv * B;
 
-                USMatrix T_t = transpose(T);
+                USparseMatrix T_t = transpose(T);
                 UVector t_temp = sum(T_t, 1);
                 UVector t = ghosted(local_size(t_temp).get(0), size(t_temp).get(0), V_vol.dof_map().get_send_list());
                 t = t_temp;
@@ -118,14 +118,14 @@ namespace utopia {
         mesh->prepare_for_use();
     }
 
-    static bool assemble_interpolation(FunctionSpaceT &from, FunctionSpaceT &to, USMatrix &B, USMatrix &D)
+    static bool assemble_interpolation(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &B, USparseMatrix &D)
     {
         auto assembler = std::make_shared<InterpolationLocalAssembler>(from.mesh().mesh_dimension());
         auto local2global = std::make_shared<Local2Global>(true);
         
         TransferAssembler transfer_assembler(assembler, local2global);
         
-        std::vector< std::shared_ptr<USMatrix> > mats;
+        std::vector< std::shared_ptr<USparseMatrix> > mats;
         if(!transfer_assembler.assemble(
                                         make_ref(from.mesh()),
                                         make_ref(from.dof_map()),
@@ -146,14 +146,14 @@ namespace utopia {
     }
     
     
-    static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USMatrix &B, USMatrix &D)
+    static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &B, USparseMatrix &D)
     {
         auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, true);
         auto local2global = std::make_shared<Local2Global>(false);
         
         TransferAssembler transfer_assembler(assembler, local2global);
         
-        std::vector< std::shared_ptr<USMatrix> > mats;
+        std::vector< std::shared_ptr<USparseMatrix> > mats;
         if(!transfer_assembler.assemble(
                                         make_ref(from.mesh()),
                                         make_ref(from.dof_map()),
@@ -178,16 +178,16 @@ namespace utopia {
         FunctionSpaceT &from,
         FunctionSpaceT &to, 
         FunctionSpaceT &lagr, 
-        USMatrix &B, USMatrix &D)
+        USparseMatrix &B, USparseMatrix &D)
     {
 
         {
-            USMatrix dump;
+            USparseMatrix dump;
             assemble_projection(from, lagr, B, dump);
         }
 
         {
-            USMatrix dump;
+            USparseMatrix dump;
             assemble_projection(to, lagr, D, dump);
         }
 
@@ -196,28 +196,28 @@ namespace utopia {
     
     static void solve_monolithic(FunctionSpaceT &V_m,
                                  FunctionSpaceT &V_s,
-                                 USMatrix &A_m,
+                                 USparseMatrix &A_m,
                                  UVector &rhs_m,
-                                 USMatrix &A_s,
+                                 USparseMatrix &A_s,
                                  UVector &rhs_s,
                                  UVector &sol_m,
                                  UVector &sol_s,
                                  UVector &lagr)
     {
         
-        USMatrix B, D;
+        USparseMatrix B, D;
         assemble_projection(V_m, V_s, B, D);
         // assemble_interpolation(V_m, V_s, B, D);
 
         D *= -1.;
 
-        USMatrix D_t = transpose(D);
-        USMatrix B_t = transpose(B);
+        USparseMatrix D_t = transpose(D);
+        USparseMatrix B_t = transpose(B);
 
         set_zero_at_constraint_rows(V_m.dof_map(), B_t);
         set_zero_at_constraint_rows(V_s.dof_map(), D_t);
 
-        USMatrix A = Blocks<USMatrix>(3, 3, 
+        USparseMatrix A = Blocks<USparseMatrix>(3, 3, 
         {
             make_ref(A_m), nullptr, make_ref(B_t),
             nullptr, make_ref(A_s), make_ref(D_t),
@@ -233,7 +233,7 @@ namespace utopia {
 
         UVector sol = blocks(sol_m, sol_s, lagr);
 
-        Factorization<USMatrix, UVector> op;
+        Factorization<USparseMatrix, UVector> op;
         op.update(make_ref(A));
         op.apply(rhs, sol);
 
@@ -246,28 +246,28 @@ namespace utopia {
     static void solve_monolithic(FunctionSpaceT &V_m,
                                  FunctionSpaceT &V_s,
                                  FunctionSpaceT &L,
-                                 USMatrix &A_m,
+                                 USparseMatrix &A_m,
                                  UVector &rhs_m,
-                                 USMatrix &A_s,
+                                 USparseMatrix &A_s,
                                  UVector &rhs_s,
                                  UVector &sol_m,
                                  UVector &sol_s,
                                  UVector &lagr)
     {
         
-        USMatrix B, D;
+        USparseMatrix B, D;
         assemble_projection(V_m, V_s, L, B, D);
         // assemble_interpolation(V_m, V_s, B, D);
 
         D *= -1.;
 
-        USMatrix D_t = transpose(D);
-        USMatrix B_t = transpose(B);
+        USparseMatrix D_t = transpose(D);
+        USparseMatrix B_t = transpose(B);
 
         set_zero_at_constraint_rows(V_m.dof_map(), B_t);
         set_zero_at_constraint_rows(V_s.dof_map(), D_t);
 
-        USMatrix A = Blocks<USMatrix>(3, 3, 
+        USparseMatrix A = Blocks<USparseMatrix>(3, 3, 
         {
             make_ref(A_m), nullptr, make_ref(B_t),
             nullptr, make_ref(A_s), make_ref(D_t),
@@ -283,7 +283,7 @@ namespace utopia {
 
         UVector sol = blocks(sol_m, sol_s, lagr);
 
-        Factorization<USMatrix, UVector> op;
+        Factorization<USparseMatrix, UVector> op;
         op.solve(A, rhs, sol);
 
         undo_blocks(sol, sol_m, sol_s, lagr);
@@ -304,9 +304,9 @@ namespace utopia {
     static void solve_staggered(const std::string &operator_type,
                                 FunctionSpaceT &V_m,
                                 FunctionSpaceT &V_s,
-                                USMatrix &A_m,
+                                USparseMatrix &A_m,
                                 UVector &rhs_m,
-                                USMatrix &A_s,
+                                USparseMatrix &A_s,
                                 UVector &rhs_s,
                                 UVector &sol_m,
                                 UVector &sol_s,
@@ -318,7 +318,7 @@ namespace utopia {
         libMesh::Nemesis_IO io_m_l(V_m.mesh());
         libMesh::Nemesis_IO io_s_l(V_s.mesh());
         
-        Factorization<USMatrix, UVector> op_m;
+        Factorization<USparseMatrix, UVector> op_m;
         op_m.update(make_ref(A_m));
         
         if(empty(sol_s)) {
@@ -415,18 +415,18 @@ namespace utopia {
     static void solve_separate(const std::string &operator_type,
                                FunctionSpaceT &V_m,
                                FunctionSpaceT &V_s,
-                               USMatrix &A_m,
+                               USparseMatrix &A_m,
                                UVector &rhs_m,
-                               USMatrix &A_s,
+                               USparseMatrix &A_s,
                                UVector &rhs_s,
                                UVector &sol_m,
                                UVector &sol_s,
                                UVector &lagr)
     {
-        Factorization<USMatrix, UVector> op_m;
+        Factorization<USparseMatrix, UVector> op_m;
         op_m.update(make_ref(A_m));
         
-        Factorization<USMatrix, UVector> op_s;
+        Factorization<USparseMatrix, UVector> op_s;
         op_s.update(make_ref(A_s));
         
         
@@ -763,7 +763,7 @@ namespace utopia {
         
         //////////////////////////// Generation of the algebraic system ////////////////////////////
 
-        USMatrix A_m, A_s;
+        USparseMatrix A_m, A_s;
         UVector rhs_m, rhs_s;
         utopia::assemble(eq_m, A_m, rhs_m);
         utopia::assemble(eq_s, A_s, rhs_s);

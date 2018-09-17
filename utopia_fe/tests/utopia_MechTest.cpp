@@ -89,7 +89,7 @@ namespace utopia {
 		Size ls({Vx.dof_map().n_local_dofs()});
 
 		UVector internal_force;
-		USMatrix stiffness_matrix;
+		USparseMatrix stiffness_matrix;
 
 		MechanicsContext mech_ctx;
 		MechanicsState old;
@@ -101,7 +101,7 @@ namespace utopia {
 		current.init(ls, gs);
 
 		LameeParameters params;
-		auto elast = std::make_shared<LinearElasticity<decltype(V), USMatrix, UVector>>(V, params);
+		auto elast = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, params);
 		elast->assemble_hessian_and_gradient(old.displacement, mech_ctx.stiffness_matrix, old.internal_force);
 
 		auto vx = test(Vx);

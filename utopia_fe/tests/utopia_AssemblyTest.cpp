@@ -33,7 +33,7 @@ namespace utopia {
 		V.initialize();
 
 		const double alpha = 1.;
-		USMatrix laplacian, mass_matrix;
+		USparseMatrix laplacian, mass_matrix;
 
 		assemble(inner(alpha * grad(u), grad(v)) * dX, laplacian);
 		assemble(inner(u, v) * dX, mass_matrix);

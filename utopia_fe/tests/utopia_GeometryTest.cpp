@@ -41,7 +41,7 @@ namespace utopia {
 
 		UVector is_normal_component;
 		UVector normals;
-		USMatrix mat;
+		USparseMatrix mat;
 		assemble_normal_tangential_transformation(*mesh, Vx.dof_map(), {101}, is_normal_component, normals, mat);
 		// mat.implementation().set_name("t");
 		// write("O.m", mat);

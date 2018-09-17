@@ -15,7 +15,7 @@ namespace utopia {
 // 	// { }
 
 
-// 	bool MortarAssembler::assemble(USMatrix &B)
+// 	bool MortarAssembler::assemble(USparseMatrix &B)
 // 	{
 // 		using namespace std;
 // 		static const bool verbose = true;
@@ -74,8 +74,8 @@ namespace utopia {
 // 		D = sparse(slave_->dof_map().n_local_dofs(), slave_->dof_map().n_local_dofs(), std::max(1, int(master_->dof_map().n_local_dofs() * 0.2)));
 		
 // 		{ //write scope begin
-// 			Write<USMatrix> w_B(B);
-// 			Write<USMatrix> w_D(D);
+// 			Write<USparseMatrix> w_B(B);
+// 			Write<USparseMatrix> w_D(D);
 
 // 			std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;
 // 			libMesh::DenseMatrix<libMesh::Real> elemmat;
@@ -885,7 +885,7 @@ namespace utopia {
 // 	SpaceT &space,
 // 	const std::unique_ptr<FEBaseT> &master_fe, 
 // 	const std::unique_ptr<FEBaseT> &slave_fe, 
-// 	USMatrix &coupling, UVector &gap, UVector &normals, USMatrix &orthogonal_trafos, 
+// 	USparseMatrix &coupling, UVector &gap, UVector &normals, USparseMatrix &orthogonal_trafos, 
 // 	std::vector<bool> &is_contact_node, const libMesh::Real search_radius, 
 // 	const bool strict_gap_policy, 
 // 	const std::shared_ptr<moonolith::Predicate> &predicate)
@@ -941,7 +941,7 @@ namespace utopia {
 
 // 	{
 // 		Write<UVector>  w_gap(gap);
-// 		Write<USMatrix> w_coupling(coupling);
+// 		Write<USparseMatrix> w_coupling(coupling);
 // 		Write<UVector>  w_normals(normals);
 
 // 		std::vector<dof_id_type> dof_indices_slave;
@@ -1068,10 +1068,10 @@ namespace utopia {
 
 // 	std::cout << "sum(coupling): " << double(sum(sum_c)) << std::endl;
 
-// 	USMatrix coupling_2 = coupling;
+// 	USparseMatrix coupling_2 = coupling;
 	
 // 	{
-// 		Write<USMatrix> w_c(coupling_2);
+// 		Write<USparseMatrix> w_c(coupling_2);
 // 		Read<UVector>  r_c(sum_c);
 
 // 		each_read(coupling, [&sum_c, &coupling_2, &is_contact_node](const SizeType i, const SizeType j, const Scalar value) {
@@ -1119,7 +1119,7 @@ namespace utopia {
 // 		std::vector<Scalar> H(dim * dim, 0);
 
 // 		Read<UVector>  r_n(normals);
-// 		Write<USMatrix> w_o(orthogonal_trafos);
+// 		Write<USparseMatrix> w_o(orthogonal_trafos);
 
 // 		Range r = range(normals);
 // 		for(uint i = r.begin(); i < r.end(); i += dim) {
@@ -1192,7 +1192,7 @@ namespace utopia {
 // 	return true;
 // }
 
-// bool MortarContactAssembler::assemble(USMatrix &coupling, UVector &gap, UVector &normals, USMatrix &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate) {
+// bool MortarContactAssembler::assemble(USparseMatrix &coupling, UVector &gap, UVector &normals, USparseMatrix &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate) {
 	
 
 // 	if(space_->is_vector()) {

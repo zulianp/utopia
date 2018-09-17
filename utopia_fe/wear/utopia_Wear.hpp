@@ -91,7 +91,7 @@ namespace utopia {
 		UVector wear_induced_displacement;
 		UVector is_normal_component;
 		UVector normals;
-		USMatrix trafo;
+		USparseMatrix trafo;
 	};
 }
 

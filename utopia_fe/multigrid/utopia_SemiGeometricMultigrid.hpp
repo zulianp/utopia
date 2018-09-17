@@ -8,10 +8,10 @@
 namespace utopia {
 	class Contact;
 	
-	class SemiGeometricMultigrid : public LinearSolver<USMatrix, UVector> {
+	class SemiGeometricMultigrid : public LinearSolver<USparseMatrix, UVector> {
     public:
-    	typedef utopia::Multigrid<USMatrix, UVector> MultigridT;
-    	// typedef utopia::Multigrid<USMatrix, UVector, PETSC_EXPERIMENTAL> MultigridT;
+    	typedef utopia::Multigrid<USparseMatrix, UVector> MultigridT;
+    	// typedef utopia::Multigrid<USparseMatrix, UVector, PETSC_EXPERIMENTAL> MultigridT;
 
 		void init(const LibMeshFunctionSpace &space, const std::size_t n_levels)
 		{
@@ -21,7 +21,7 @@ namespace utopia {
 		void init(const libMesh::EquationSystems &es, const std::size_t n_levels);
 
 		void update_contact(Contact &contact);
-		void update(const std::shared_ptr<const USMatrix> &op) override;
+		void update(const std::shared_ptr<const USparseMatrix> &op) override;
 		bool apply(const UVector &rhs, UVector &sol) override;
 		
 		SemiGeometricMultigrid * clone() const override
@@ -49,8 +49,8 @@ namespace utopia {
 		}
 
 		SemiGeometricMultigrid(
-			const std::shared_ptr<Smoother<USMatrix, UVector> > &smoother = std::make_shared<GaussSeidel<USMatrix, UVector>>(),
-			const std::shared_ptr<LinearSolver<USMatrix, UVector> > &linear_solver = std::make_shared<Factorization<USMatrix, UVector>>()
+			const std::shared_ptr<Smoother<USparseMatrix, UVector> > &smoother = std::make_shared<GaussSeidel<USparseMatrix, UVector>>(),
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>()
 		);
 
 		inline MultigridT &algebraic()
@@ -74,7 +74,7 @@ namespace utopia {
 		std::vector<std::shared_ptr<libMesh::UnstructuredMesh>> meshes;
 		std::vector<std::shared_ptr<libMesh::EquationSystems>> equation_systems;
 
-		std::vector<std::shared_ptr<USMatrix>> interpolators_;
+		std::vector<std::shared_ptr<USparseMatrix>> interpolators_;
 		bool is_block_solver_;
 		bool separate_subdomains_;
 		bool use_interpolation_;

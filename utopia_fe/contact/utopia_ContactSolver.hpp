@@ -1,6 +1,11 @@
 #ifndef UTOPIA_STEADY_CONTACTHPP
 #define UTOPIA_STEADY_CONTACTHPP
 
+
+#include "utopia_fe_config.hpp"
+
+#ifndef WITH_TRILINOS_ALGEBRA
+
 #include "utopia.hpp"
 #include "utopia_materials.hpp"
 #include "utopia_Contact.hpp"
@@ -547,12 +552,12 @@ namespace utopia {
 
 		Vector inactive_set_;
 		Vector active_set_;
-		USMatrix A_, I_;
+		USparseMatrix A_, I_;
 
 		Vector lagrange_multiplier_;
 
 		//additional vectors
-		// USMatrix internal_mass_matrix_;
+		// USparseMatrix internal_mass_matrix_;
 
 		std::shared_ptr<Exporter> io_;
 		int n_exports;
@@ -576,5 +581,5 @@ namespace utopia {
 
 }
 
-
+#endif //WITH_TRILINOS_ALGEBRA
 #endif //UTOPIA_STEADY_CONTACTHPP

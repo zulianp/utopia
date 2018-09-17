@@ -26,7 +26,7 @@ namespace utopia {
 	class TransferAssembler final {
 	public:
 		using FunctionSpace = utopia::LibMeshFunctionSpace;
-		using SparseMatrix  = utopia::USMatrix;
+		using SparseMatrix  = utopia::USparseMatrix;
 		using MeshBase      = libMesh::MeshBase;
 		using DofMap        = libMesh::DofMap;
 
@@ -118,7 +118,7 @@ namespace utopia {
 				});
 			}
 
-			(*D) += USMatrix(diag(d));
+			(*D) += USparseMatrix(diag(d));
 		}
 
 		///@brief assumes that D is symmetric
@@ -130,9 +130,9 @@ namespace utopia {
 		}
 
 		inline L2TransferOperator(
-			const std::shared_ptr<USMatrix> &B,
-			const std::shared_ptr<USMatrix> &D,
-			const std::shared_ptr<LinearSolver<USMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USMatrix, UVector>>()
+			const std::shared_ptr<USparseMatrix> &B,
+			const std::shared_ptr<USparseMatrix> &D,
+			const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>()
 			)
 		: B(B), D(D), linear_solver(linear_solver)
 		{
@@ -168,9 +168,9 @@ namespace utopia {
 		}
 
 	private:
-		std::shared_ptr<USMatrix> B;
-		std::shared_ptr<USMatrix> D;
-		std::shared_ptr<LinearSolver<USMatrix, UVector> > linear_solver;
+		std::shared_ptr<USparseMatrix> B;
+		std::shared_ptr<USparseMatrix> D;
+		std::shared_ptr<LinearSolver<USparseMatrix, UVector> > linear_solver;
 	};
 
 	class PseudoL2TransferOperator : public TransferOperator {
@@ -189,9 +189,9 @@ namespace utopia {
 
 		PseudoL2TransferOperator() {}
 
-		inline void init_from_coupling_operator(const USMatrix &B)
+		inline void init_from_coupling_operator(const USparseMatrix &B)
 		{
-			T = std::make_shared<USMatrix>();
+			T = std::make_shared<USparseMatrix>();
 			UVector d = sum(B, 1);
 
 			{
@@ -207,7 +207,7 @@ namespace utopia {
 			*T = diag(1./d) * B;
 		}
 
-		PseudoL2TransferOperator(const std::shared_ptr<USMatrix> &T)
+		PseudoL2TransferOperator(const std::shared_ptr<USparseMatrix> &T)
 		: T(T)
 		{
 			assert(T);
@@ -233,7 +233,7 @@ namespace utopia {
 		}
 
 	private:
-		std::shared_ptr<USMatrix> T;
+		std::shared_ptr<USparseMatrix> T;
 	};
 
 	class Interpolator : public TransferOperator {
@@ -249,7 +249,7 @@ namespace utopia {
 			to = transpose(*T) * from;
 		}
 
-		Interpolator(const std::shared_ptr<USMatrix> &T)
+		Interpolator(const std::shared_ptr<USparseMatrix> &T)
 		: T(T)
 		{
 			assert(T);
@@ -289,7 +289,7 @@ namespace utopia {
 		}
 
 	private:
-		std::shared_ptr<USMatrix> T;
+		std::shared_ptr<USparseMatrix> T;
 	};
 
 

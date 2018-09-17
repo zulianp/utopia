@@ -11,7 +11,7 @@
 namespace utopia {
 	class MeshTransferOperator final : public TransferOperator {
 	public:
-		using SparseMatrix  = utopia::USMatrix;
+		using SparseMatrix  = utopia::USparseMatrix;
 		using Vector 		= utopia::UVector;
 		using MeshBase      = libMesh::MeshBase;
 		using DofMap        = libMesh::DofMap;

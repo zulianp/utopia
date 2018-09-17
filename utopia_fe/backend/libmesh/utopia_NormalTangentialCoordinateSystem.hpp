@@ -19,7 +19,7 @@ namespace utopia {
 		const std::vector<int> &boundary_tags, 
 		UVector &is_normal_component,
 		UVector &normals,
-		USMatrix &mat);
+		USparseMatrix &mat);
 }
 
 #endif //UTOPIA_NORMAL_TANGENTIAL_COORDINATE_SYSTEM_HPP

@@ -44,7 +44,7 @@ namespace utopia {
 
 			Chrono c;
 			c.start();
-			USMatrix B;
+			USparseMatrix B;
 			moonolith::Communicator comm(mesh->comm().get());
 			if(assemble_volume_transfer(
 				comm,
@@ -67,10 +67,10 @@ namespace utopia {
 				interp.normalize_rows();
 				interp.describe(std::cout);
 
-				USMatrix D_inv = diag(1./sum(B, 1));
-				USMatrix T = D_inv * B;
+				USparseMatrix D_inv = diag(1./sum(B, 1));
+				USparseMatrix T = D_inv * B;
 
-				USMatrix T_t = transpose(T);
+				USparseMatrix T_t = transpose(T);
 				UVector t_temp = sum(T_t, 1);
 				UVector t = ghosted(local_size(t_temp).get(0), size(t_temp).get(0), V_vol.dof_map().get_send_list());
 				t = t_temp;
@@ -266,7 +266,7 @@ namespace utopia {
 			auto m_form = inner(u, v) * dX;
 
 			UVector scaled_sol;
-			USMatrix mass_mat;
+			USparseMatrix mass_mat;
 
 			utopia::assemble(p_form, scaled_sol);
 			utopia::assemble(m_form, mass_mat);
@@ -276,7 +276,7 @@ namespace utopia {
 			if(elem_order == libMesh::FIRST) {
 				v_vol = e_mul(1./sum(mass_mat, 1), scaled_sol);
 			} else {
-				Factorization<USMatrix, UVector>().solve(mass_mat, scaled_sol, v_vol);
+				Factorization<USparseMatrix, UVector>().solve(mass_mat, scaled_sol, v_vol);
 			}
 
 			// v_vol.set(1.);

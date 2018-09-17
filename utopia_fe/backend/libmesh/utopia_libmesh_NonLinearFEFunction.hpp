@@ -192,7 +192,7 @@ namespace utopia {
 	template<class Expr>
 	bool assemble(
 		const Expr &expr,
-		USMatrix &mat,
+		USparseMatrix &mat,
 		const bool first = true)
 	{
 		return LibMeshAssembler().assemble(expr, mat);
@@ -233,14 +233,14 @@ namespace utopia {
 	}
 
 	template<class... Eqs>
-	bool assemble(const Equations<Eqs...> &eqs, USMatrix &mat, UVector &vec)
+	bool assemble(const Equations<Eqs...> &eqs, USparseMatrix &mat, UVector &vec)
 	{
 
 		return LibMeshAssembler().assemble(eqs, mat, vec);
 	}
 
 	template<class Left, class Right>
-	bool assemble(const Equality<Left, Right> &equation, USMatrix &mat, UVector &vec)
+	bool assemble(const Equality<Left, Right> &equation, USparseMatrix &mat, UVector &vec)
 	{
 		return assemble(equations(equation), mat, vec);
 	}
@@ -322,7 +322,7 @@ namespace utopia {
 			// }
 
 			// {
-			// 	Write<USMatrix> w_m(buff_mat);
+			// 	Write<USparseMatrix> w_m(buff_mat);
 			// 	Write<UVector>  w_v(buff_vec);
 
 			// 	auto &m = space.mesh();
@@ -379,9 +379,9 @@ namespace utopia {
 
 		sol = ghosted(space.dof_map().n_local_dofs(), space.dof_map().n_dofs(), space.dof_map().get_send_list());
 
-		NonLinearFEFunction<USMatrix, UVector, Equations<Eqs...>> nl_fun(eqs);
-		Newton<USMatrix, UVector> solver(std::make_shared<Factorization<USMatrix, UVector>>());
-		// solver.set_line_search_strategy(std::make_shared<Backtracking<USMatrix, UVector>>());
+		NonLinearFEFunction<USparseMatrix, UVector, Equations<Eqs...>> nl_fun(eqs);
+		Newton<USparseMatrix, UVector> solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
+		// solver.set_line_search_strategy(std::make_shared<Backtracking<USparseMatrix, UVector>>());
 		solver.verbose(true);
 		return solver.solve(nl_fun, sol);
 	}
@@ -408,8 +408,8 @@ namespace utopia {
 		sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 		old_sol = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
 
-		NonLinearFEFunction<USMatrix, UVector, Equations<Eqs...>> nl_fun(eqs, true);
-		Newton<USMatrix, UVector> solver(std::make_shared<Factorization<USMatrix, UVector>>());
+		NonLinearFEFunction<USparseMatrix, UVector, Equations<Eqs...>> nl_fun(eqs, true);
+		Newton<USparseMatrix, UVector> solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
 		solver.verbose(true);
 
 		libMesh::ExodusII_IO io(space.mesh());
@@ -446,7 +446,7 @@ namespace utopia {
 		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
 			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
-		USMatrix mat;
+		USparseMatrix mat;
 		UVector vec;
 
 		mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
@@ -458,7 +458,7 @@ namespace utopia {
 		}
 
 		{
-			Write<USMatrix> w_m(mat);
+			Write<USparseMatrix> w_m(mat);
 			Write<UVector>  w_v(vec);
 			Read<UVector> r_s(sol);
 
@@ -475,7 +475,7 @@ namespace utopia {
 		}
 
 		UVector inc = local_zeros(local_size(sol));
-		Factorization<USMatrix, UVector> solver;
+		Factorization<USparseMatrix, UVector> solver;
 		if(!solver.solve(mat, vec, inc)) {
 			return false;
 		}

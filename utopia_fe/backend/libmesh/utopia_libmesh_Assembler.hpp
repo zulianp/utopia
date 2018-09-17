@@ -6,7 +6,7 @@
 namespace utopia {
 	class LibMeshAssembler {
 	public:
-		typedef utopia::USMatrix GlobalMatrix;
+		typedef utopia::USparseMatrix GlobalMatrix;
 		typedef utopia::UVector GlobalVector;
 
 		template<class Expr>

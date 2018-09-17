@@ -130,6 +130,6 @@ namespace utopia {
 		};
 
 		std::vector<double> quad_points{0, 0.5, 1.};
-		ExplicitSDC<USMatrix, UVector> sdc;
+		ExplicitSDC<USparseMatrix, UVector> sdc;
 	}
 }

@@ -68,12 +68,12 @@ namespace utopia {
 		UVector inv_mass_vector;
 		UVector is_contact_node;
 
-		USMatrix coupling;
-		USMatrix inv_mass_matrix;
-		USMatrix transfer_operator;
-		USMatrix orthogonal_trafo;
+		USparseMatrix coupling;
+		USparseMatrix inv_mass_matrix;
+		USparseMatrix transfer_operator;
+		USparseMatrix orthogonal_trafo;
 
-		USMatrix complete_transformation;
+		USparseMatrix complete_transformation;
 		bool initialized;
 		bool has_contact_;
 

@@ -35,11 +35,11 @@ namespace utopia {
 	class MechanicsContext {
 	public:
 		//stiffness matrix
-		USMatrix stiffness_matrix;
+		USparseMatrix stiffness_matrix;
 
-		USMatrix non_lumped_mass_matrix;
+		USparseMatrix non_lumped_mass_matrix;
 		//lumped mass matrix
-		USMatrix mass_matrix;
+		USparseMatrix mass_matrix;
 		UVector  inverse_mass_vector;
 
 		UVector dirichlet_selector;
@@ -76,7 +76,7 @@ namespace utopia {
 			const unsigned int dim,
 			libMesh::DofMap &dof_map);
 
-		void set_linear_solver(const std::shared_ptr< LinearSolver<USMatrix, UVector> > &solver)
+		void set_linear_solver(const std::shared_ptr< LinearSolver<USparseMatrix, UVector> > &solver)
 		{
 			this->linear_solver = solver;
 		}
@@ -90,7 +90,7 @@ namespace utopia {
 			MechanicsState &current) = 0;
 
 		bool solve(
-			const USMatrix &K,
+			const USparseMatrix &K,
 			const UVector &inverse_mass_vector,
 			const UVector &rhs,
 			const UVector &gap,
@@ -100,7 +100,7 @@ namespace utopia {
 		//FIXME I do not like it
 		unsigned int dim;
 		libMesh::DofMap &dof_map;
-		std::shared_ptr< LinearSolver<USMatrix, UVector> > linear_solver;
+		std::shared_ptr< LinearSolver<USparseMatrix, UVector> > linear_solver;
 	};
 
 	class ImplicitEuler : public MechIntegrationScheme, public MechWithContactIntegrationScheme {

@@ -158,7 +158,6 @@ namespace utopia {
               nnz.nnz());
         }
 
-
         static void build(TpetraSparseMatrix &m, const Size &size, const LocalIdentity &)
         {
             m.crs_identity(default_communicator(),
@@ -166,6 +165,16 @@ namespace utopia {
               size.get(1),
               Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
               Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()
+            );
+        }
+
+        static void build(TpetraSparseMatrix &m, const Size &size, const Identity &)
+        {
+            m.crs_identity(default_communicator(),
+              INVALID_INDEX,
+              INVALID_INDEX,
+              size.get(0),
+              size.get(1)
             );
         }
 
