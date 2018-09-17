@@ -20,7 +20,7 @@
 	<!-- <forcing-function>-100.</forcing-function> -->
 	<forcing-function>0.</forcing-function>
 	<refinements>3</refinements>
-	<order>2</order>
+	<order>1</order>
 	<!-- <adaptive-refinements>1</adaptive-refinements> -->
 </master>
 
