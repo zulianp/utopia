@@ -149,6 +149,35 @@ namespace utopia {
             const std::vector<global_ordinal_type> &indices,
             const std::vector<Scalar> &values);
 
+        template<typename Integer>
+        void select(
+            const std::vector<Integer> &index,
+            TpetraVector &out
+            ) const
+        {
+            //FIXME does not work in parallel
+            auto data   = implementation().getData();
+            auto offset = implementation().getMap()->getMinGlobalIndex();
+
+            auto map = Teuchos::rcp(
+                new map_type(
+                    Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+                    index.size(),
+                    0,
+                    communicator())
+            );
+
+            out.init(map);
+            auto n = data.size();
+            auto out_data = out.implementation().getDataNonConst();
+
+            for(std::size_t i = 0; i < n; ++i) {
+                auto local_index = index[i] - offset;
+                assert(local_index < n);
+                out_data[i] = data[local_index];
+            }
+        }
+
 
         inline void read_lock()
         {
@@ -219,7 +248,7 @@ namespace utopia {
         Scalar sum() const;
         Scalar min() const;
         Scalar max() const;
-        
+
         bool is_nan_or_inf() const;
 
         inline void scale(const Scalar alpha)

@@ -474,6 +474,12 @@ namespace utopia {
         //     );
         // }
 
+        void diag_scale_left(TpetraMatrix &result, const TpetraVector &diag, const TpetraMatrix &m)
+        {
+        	result = m;
+        	result.implementation().leftScale(diag.implementation());
+        }
+
         static void multiply(
             TpetraMatrix &result,
             bool transpose_left,
@@ -515,6 +521,16 @@ namespace utopia {
         {
             assert(false && "implement me");
         }
+
+        template<typename Integer>
+        void select(
+            TpetraVector &left,
+            const TpetraVector &right,
+            const std::vector<Integer> &index)
+        {
+            right.select(index, left);
+        }
+
 
         static void read_and_write_lock(TpetraMatrix &t) {
             //IMPLEMENTME

@@ -176,19 +176,22 @@ namespace utopia {
 		utopia::convert(p_vec, utopia_vec);
 	}
 
-	inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TVectord &utopia_vec)
-	{
-		//FIXME inefficient
-		DVectord temp;
-		utopia::convert(lm_vec, temp);
-		utopia::backend_convert(temp, utopia_vec);
-	}
+
 
 	inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, DSMatrixd &utopia_mat) {
 		using namespace libMesh;
 
 		Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
 		utopia::convert(p_mat, utopia_mat);
+	}
+
+#ifdef WITH_TRILINOS
+	inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TVectord &utopia_vec)
+	{
+		//FIXME inefficient
+		DVectord temp;
+		utopia::convert(lm_vec, temp);
+		utopia::backend_convert(temp, utopia_vec);
 	}
 
 
@@ -202,6 +205,9 @@ namespace utopia {
 		utopia::convert(p_mat, temp);
 		backend_convert_sparse(temp, utopia_mat);
 	}
+	
+#endif //WITH_TRILINOS
+
 
 	inline void convert(USMatrix &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
 		using namespace libMesh;
