@@ -13,6 +13,9 @@
 #include "utopia_assemble_volume_transfer.hpp"
 #include "utopia_Blocks.hpp"
 #include "utopia_Eval_Blocks.hpp"
+#include "utopia_UIFunctionSpace.hpp"
+#include "utopia_UIForcingFunction.hpp"
+#include "utopia_UIMesh.hpp"
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_tools.h"
@@ -723,6 +726,9 @@ namespace utopia {
         
         c.start();
 
+        UIMesh<libMesh::DistributedMesh> ui_mesh(*comm_);       
+        UIFunctionSpace<FunctionSpaceT>  ui_space(ui_mesh);        
+
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////////////////////// SET-UP ////////////////////////////////////////////////
@@ -735,6 +741,10 @@ namespace utopia {
         
         is_ptr->read("master", master_in);
         is_ptr->read("slave", slave_in);
+
+        is_ptr->read("mesh", ui_mesh);
+        is_ptr->read("space", ui_space);
+        
         // is_ptr->read("multiplier", multiplier_in); //LAMBDA
 
         // if(multiplier_in.empty()) { //LAMBDA

@@ -16,6 +16,8 @@
 #include "libmesh/petsc_vector.h"
 #include "libmesh/petsc_matrix.h"
 #include "libmesh/auto_ptr.h"
+#include "libmesh/mesh_tools.h"
+#include "libmesh/libmesh_version.h"
 
 // Define the Finite Element object.
 #include "libmesh/fe.h"
@@ -355,6 +357,16 @@ namespace utopia {
 		}
 
 		return true;
+	}
+
+	inline libMesh::MeshTools::BoundingBox bounding_box(const libMesh::MeshBase &mesh) {
+#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
+                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(mesh);
+#else
+                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(mesh);
+#endif
+
+	    return bb;
 	}
 }
 
