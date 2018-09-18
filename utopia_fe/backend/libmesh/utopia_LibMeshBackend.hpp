@@ -96,6 +96,59 @@ namespace utopia {
 		}
 	}
 
+
+
+	template<class Vector>
+	void apply_boundary_conditions(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
+	{
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+		// std::cout << dof_map.n_constrained_dofs() << std::endl;
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+
+		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+		{
+			Write<Wrapper<Vector, 1>> w_v(vec);
+
+			Range r = range(vec);
+			for(SizeType i = r.begin(); i < r.end(); ++i) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
+					auto valpos = rhs_values.find(i);
+					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+				}
+			}
+		}
+	}
+
+
+	template<class Vector>
+	void mark_constrained_dofs(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
+	{
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+		// std::cout << dof_map.n_constrained_dofs() << std::endl;
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+
+		vec = local_zeros(dof_map.n_local_dofs());
+
+		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+		{
+			Write<Wrapper<Vector, 1>> w_v(vec);
+
+			Range r = range(vec);
+			for(SizeType i = r.begin(); i < r.end(); ++i) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
+					auto valpos = rhs_values.find(i);
+					vec.set(i, (valpos == rhs_values.end()) ? 0 : 1.);
+				}
+			}
+		}
+	}
+
 	template<class FEFunction, class Matrix, class Vector>
 	void apply_boundary_conditions(FEFunction &u, Matrix &mat, Vector &vec)
 	{
