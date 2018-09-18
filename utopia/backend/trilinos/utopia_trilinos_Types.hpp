@@ -49,6 +49,34 @@ typedef Wrapper<TpetraVector, 1>             TVectord;
         w.implementation().describe();
     }
 
+    inline int comm_size(const TVectord &t)
+    {
+        auto comm = t.implementation().communicator();
+        return comm->getSize();
+    }
+
+    inline int comm_rank(const TSMatrixd &t)
+    {
+        auto comm = t.implementation().communicator();
+        return comm->getRank();
+    }
+
+    inline int comm_size(const TSMatrixd &t)
+    {
+        auto comm = t.implementation().communicator();
+        return comm->getSize();
+    }
+
+    inline int comm_rank(const TVectord &t)
+    {
+        auto comm = t.implementation().communicator();
+        return comm->getRank();
+    }
+
+    inline void synchronize(TVectord &t)
+    {
+        t.implementation().update_ghosts();
+    }
     // inline void disp(const Wrapper<TpetraSerialVector, 1> &w) {
     //     w.implementation().describe()
     // }

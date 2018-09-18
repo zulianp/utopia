@@ -7,6 +7,7 @@
 
 
 #include "utopia.hpp"
+#include "utopia_fe_base.hpp"
 #include "libmesh/libmesh_common.h"
 
 //forward decl
@@ -26,11 +27,11 @@ namespace utopia {
 		const std::shared_ptr<libMesh::MeshBase> &mesh,
 		const std::shared_ptr<libMesh::DofMap> &dof_map,
 		const unsigned int var_num,
-		DSMatrixd &B,
-		DSMatrixd &orthogonal_trafos,
-		DVectord &gap,
-		DSMatrixd &normals,
-		DVectord &is_contact_node,
+		USparseMatrix &B,
+		USparseMatrix &orthogonal_trafos,
+		UVector &gap,
+		USparseMatrix &normals,
+		UVector &is_contact_node,
 		const libMesh::Real search_radius,
 		const std::vector< std::pair<int, int> > &tags,
 		const bool use_biorth = true,
@@ -41,11 +42,11 @@ namespace utopia {
 		const std::shared_ptr<libMesh::MeshBase> &mesh,
 		const std::shared_ptr<libMesh::DofMap> &dof_map,
 		const unsigned int var_num,
-		DSMatrixd &B,
-		DSMatrixd &orthogonal_trafos,
-		DVectord &gap,
-		DSMatrixd &normals,
-		DVectord &is_contact_node,
+		USparseMatrix &B,
+		USparseMatrix &orthogonal_trafos,
+		UVector &gap,
+		USparseMatrix &normals,
+		UVector &is_contact_node,
 		const libMesh::Real search_radius,
 		const int tag_1, 
 		const int tag_2,
@@ -58,18 +59,18 @@ namespace utopia {
 		const std::shared_ptr<libMesh::MeshBase> &mesh,
 		const std::shared_ptr<libMesh::DofMap> &dof_map,
 		const unsigned int var_num,
-		DSMatrixd &B,
-		DSMatrixd &orthogonal_trafos,
-		DVectord &gap,
-		DVectord &normals,
-		DVectord &is_contact_node,
+		USparseMatrix &B,
+		USparseMatrix &orthogonal_trafos,
+		UVector &gap,
+		UVector &normals,
+		UVector &is_contact_node,
 		const libMesh::Real search_radius,
 		const std::vector< std::pair<int, int> > &tags,
 		const bool use_biorth = true,
 		const bool use_volume_differential = false);
 
 
-	void convert_normal_matrix_to_vector(const DSMatrixd &mat, DVectord &vec);
+	void convert_normal_matrix_to_vector(const USparseMatrix &mat, UVector &vec);
 
 }
 

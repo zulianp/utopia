@@ -6,6 +6,7 @@
 #include "libmesh/elem.h"
 
 #include "utopia.hpp"
+#include "utopia_fe_base.hpp"
 
 #include <vector>
 #include <algorithm>
@@ -17,7 +18,7 @@ namespace utopia {
 	inline static void deform_mesh(
 		libMesh::MeshBase &mesh,
 		const libMesh::DofMap &dof_map,
-		const DVectord &disp,
+		const UVector &disp,
 		const std::vector<int> &vars_in = std::vector<int>(),
 		int sys_num = 0)
 	{	
@@ -37,7 +38,7 @@ namespace utopia {
 
 		if(mesh.comm().size() > 1) {
 			auto r = range(disp);
-			Read<DVectord> r_d(disp);
+			Read<UVector> r_d(disp);
 
 			auto m_begin = mesh.active_local_elements_begin();
 			auto m_end   = mesh.active_local_elements_end();
@@ -59,9 +60,9 @@ namespace utopia {
 			}
 
 			idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
-			DVectord out = disp.select(idx);
+			UVector out = disp.select(idx);
 			{
-				Read<DVectord> r_out(out);
+				Read<UVector> r_out(out);
 				auto range_out = range(out);
 
 				for(std::size_t i = 0; i < idx.size(); ++i) {
@@ -86,7 +87,7 @@ namespace utopia {
 
 		} else {
 
-			Read<DVectord> r_d(disp);
+			Read<UVector> r_d(disp);
 
 			auto m_it  = mesh.local_nodes_begin();
 			auto m_end = mesh.local_nodes_end();

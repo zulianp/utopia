@@ -10,10 +10,12 @@
 #include "utopia_SymbolicFunction.hpp"
 
 #include "utopia_MeshTransferOperator.hpp"
-
-
+#include "utopia_assemble_volume_transfer.hpp"
+#include "utopia_Blocks.hpp"
+#include "utopia_Eval_Blocks.hpp"
 
 #include "libmesh/mesh_refinement.h"
+#include "libmesh/mesh_tools.h"
 
 namespace utopia {
     
@@ -24,16 +26,134 @@ namespace utopia {
     {
         comm_ = make_ref(init.comm());
     }
+
+
+    static void refine_around_fractures(
+        const std::shared_ptr<libMesh::UnstructuredMesh> &fracture_network,
+        const libMesh::Order &elem_order,
+        const std::shared_ptr<libMesh::UnstructuredMesh> &mesh,
+        const int refinement_loops = 1,
+        const bool use_interpolation = false
+        )
+    {
+
+        libMesh::MeshRefinement mesh_refinement(*mesh);
+
+        for(int i = 0; i < refinement_loops; ++i) {
+        //equations system
+            auto vol_equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
+            auto &vol_sys = vol_equation_systems->add_system<libMesh::LinearImplicitSystem>("vol_sys");
+
+            auto surf_equation_systems = std::make_shared<libMesh::EquationSystems>(*fracture_network);
+            auto &surf_sys = surf_equation_systems->add_system<libMesh::LinearImplicitSystem>("surf_sys");
+
+        //scalar function space
+            auto V_vol  = FunctionSpaceT(vol_equation_systems, libMesh::LAGRANGE, elem_order,      "u_vol");
+            auto V_surf = FunctionSpaceT(surf_equation_systems, libMesh::LAGRANGE, libMesh::FIRST, "u_surf");
+
+            V_vol.initialize();
+            V_surf.initialize();
+
+            Chrono c;
+            c.start();
+            USparseMatrix B;
+            moonolith::Communicator comm(mesh->comm().get());
+            if(assemble_volume_transfer(
+                comm,
+                mesh,
+                fracture_network,
+                make_ref(V_vol.dof_map()),
+                make_ref(V_surf.dof_map()),
+                0,
+                0,
+                true,
+                1,
+                B,
+                {},
+                use_interpolation))
+            {
+                c.stop();
+                std::cout << c << std::endl;
+
+                Interpolator interp(make_ref(B));
+                interp.normalize_rows();
+                interp.describe(std::cout);
+
+                USparseMatrix D_inv = diag(1./sum(B, 1));
+                USparseMatrix T = D_inv * B;
+
+                USparseMatrix T_t = transpose(T);
+                UVector t_temp = sum(T_t, 1);
+                UVector t = ghosted(local_size(t_temp).get(0), size(t_temp).get(0), V_vol.dof_map().get_send_list());
+                t = t_temp;
+
+
+                std::vector<libMesh::dof_id_type> indices;
+                std::vector<double> values;
+
+                mesh_refinement.clean_refinement_flags();
+
+                Read<UVector> r_(t);
+                for(auto e_it = elements_begin(*mesh); e_it != elements_end(*mesh); ++e_it) {
+                    V_vol.dof_map().dof_indices(*e_it, indices);
+                    t.get(indices, values);
+
+                    double val = std::accumulate(values.begin(), values.end(), 0.,  std::plus<double>());
+                    if(val > 0) {
+                        (*e_it)->set_refinement_flag(libMesh::Elem::REFINE);
+                    }
+
+                }
+
+                mesh_refinement.make_flags_parallel_consistent();
+                mesh_refinement.refine_elements();
+                mesh_refinement.test_level_one(true);
+
+            } else {
+                assert(false);
+            }
+        }
+
+        // mesh_refinement.clean_refinement_flags();
+        mesh->prepare_for_use();
+    }
+
+    static bool assemble_interpolation(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &B, USparseMatrix &D)
+    {
+        auto assembler = std::make_shared<InterpolationLocalAssembler>(from.mesh().mesh_dimension());
+        auto local2global = std::make_shared<Local2Global>(true);
+        
+        TransferAssembler transfer_assembler(assembler, local2global);
+        
+        std::vector< std::shared_ptr<USparseMatrix> > mats;
+        if(!transfer_assembler.assemble(
+                                        make_ref(from.mesh()),
+                                        make_ref(from.dof_map()),
+                                        make_ref(to.mesh()),
+                                        make_ref(to.dof_map()),
+                                        mats)) {
+            return false;
+        }
+        
+        B = std::move(*mats[0]);
+        D = diag(sum(B, 1));
+
+        double sum_B = sum(B);
+        double sum_D = sum(D);
+
+        std::cout << sum_B << " == " << sum_D << std::endl;
+        return true;
+    }
     
     
-    static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, DSMatrixd &B, DSMatrixd &D)
+    static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &B, USparseMatrix &D)
     {
         auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, true);
         auto local2global = std::make_shared<Local2Global>(false);
         
         TransferAssembler transfer_assembler(assembler, local2global);
         
-        std::vector< std::shared_ptr<DSMatrixd> > mats;
+        std::vector< std::shared_ptr<USparseMatrix> > mats;
         if(!transfer_assembler.assemble(
                                         make_ref(from.mesh()),
                                         make_ref(from.dof_map()),
@@ -45,169 +165,136 @@ namespace utopia {
         
         B = std::move(*mats[0]);
         D = std::move(*mats[1]);
+
+        double sum_B = sum(B);
+        double sum_D = sum(D);
+
+        std::cout << sum_B << " == " << sum_D << std::endl;
+        return true;
+    }
+
+    //use different lagr mult space
+    static bool assemble_projection(
+        FunctionSpaceT &from,
+        FunctionSpaceT &to, 
+        FunctionSpaceT &lagr, 
+        USparseMatrix &B, USparseMatrix &D)
+    {
+
+        {
+            USparseMatrix dump;
+            assemble_projection(from, lagr, B, dump);
+        }
+
+        {
+            USparseMatrix dump;
+            assemble_projection(to, lagr, D, dump);
+        }
+
         return true;
     }
     
-    
     static void solve_monolithic(FunctionSpaceT &V_m,
                                  FunctionSpaceT &V_s,
-                                 DSMatrixd &A_m,
-                                 DVectord &rhs_m,
-                                 DSMatrixd &A_s,
-                                 DVectord &rhs_s,
-                                 DVectord &sol_m,
-                                 DVectord &sol_s,
-                                 DVectord &lagr)
+                                 USparseMatrix &A_m,
+                                 UVector &rhs_m,
+                                 USparseMatrix &A_s,
+                                 UVector &rhs_s,
+                                 UVector &sol_m,
+                                 UVector &sol_s,
+                                 UVector &lagr)
     {
         
-        DSMatrixd B, D;
+        USparseMatrix B, D;
         assemble_projection(V_m, V_s, B, D);
-        
+        // assemble_interpolation(V_m, V_s, B, D);
+
         D *= -1.;
-        // B *= -1.;
-        
-        auto s_m = local_size(A_m);
-        auto s_s = local_size(A_s);
-        
-        
-        auto nnz_x_row_m =
-        std::max(*std::max_element(V_m.dof_map().get_n_nz().begin(), V_m.dof_map().get_n_nz().end()),
-                 *std::max_element(V_m.dof_map().get_n_oz().begin(), V_m.dof_map().get_n_oz().end()));
-        
-        auto nnz_x_row_s =
-        std::max(*std::max_element(V_s.dof_map().get_n_nz().begin(), V_s.dof_map().get_n_nz().end()),
-                 *std::max_element(V_s.dof_map().get_n_oz().begin(), V_s.dof_map().get_n_oz().end()));
-        
-        
-        DSMatrixd A = local_sparse(
-                                   s_m.get(0) + 2 * s_s.get(0),
-                                   s_m.get(1) + 2 * s_s.get(1),
-                                   2 * nnz_x_row_m + 2 * nnz_x_row_s //FIXME
-                                   );
-        
-        
-        auto rr_m = row_range(A_m);
-        auto rr_s = row_range(A_s);
-        
-        auto off_r   = size(A_m).get(0);
-        auto off_c   = size(A_m).get(1);
-        
-        auto off_r_l = off_r + size(A_s).get(0);
-        auto off_c_l = off_c + size(A_s).get(1);
-        
+
+        USparseMatrix D_t = transpose(D);
+        USparseMatrix B_t = transpose(B);
+
+        set_zero_at_constraint_rows(V_m.dof_map(), B_t);
+        set_zero_at_constraint_rows(V_s.dof_map(), D_t);
+
+        USparseMatrix A = Blocks<USparseMatrix>(3, 3, 
         {
-            Write<DSMatrixd> w_(A);
-            
-            for(auto i = rr_m.begin(); i != rr_m.end(); ++i) {
-                {
-                    RowView<DSMatrixd> row(A_m, i);
-                    
-                    for(auto k = 0; k < row.n_values(); ++k) {
-                        //(1, 1)
-                        A.set(i, row.col(k), row.get(k));
-                    }
-                }
-            }
-            
-            for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                
-                {
-                    RowView<DSMatrixd> row(A_s, i);
-                    
-                    for(auto k = 0; k < row.n_values(); ++k) {
-                        //(2, 2)
-                        A.set(off_r + i, off_c + row.col(k), row.get(k));
-                    }
-                }
-                
-                {
-                    RowView<DSMatrixd> row(B, i);
-                    
-                    for(auto k = 0; k < row.n_values(); ++k) {
-                        //(1, 3)  //B^T
-                        if(!V_m.dof_map().is_constrained_dof(row.col(k))) {
-                            A.set(row.col(k), off_c_l + i, row.get(k));
-                        }
-                        
-                        //(3, 1) //B
-                        A.set(off_r_l + i, row.col(k), row.get(k));
-                    }
-                }
-                
-                {
-                    RowView<DSMatrixd> row(D, i);
-                    
-                    for(auto k = 0; k < row.n_values(); ++k) {
-                        
-                        //(2, 3) //D^T
-                        if(!V_s.dof_map().is_constrained_dof(row.col(k))) {
-                            A.set(off_r + row.col(k), off_c_l + i, row.get(k));
-                        }
-                        
-                        //(3, 2)   //D
-                        A.set(off_r_l + i, off_c + row.col(k), row.get(k));
-                    }
-                }
-                
-            }
-        }
-        
-        DVectord rhs = local_zeros(local_size(rhs_m).get(0) + 2 * local_size(rhs_s).get(0));
-        
-        {
-            Write<DVectord> w_(rhs);
-            Write<DVectord> r_m(rhs_m), r_s(rhs_s);
-            
-            for(auto i = rr_m.begin(); i != rr_m.end(); ++i) {
-                rhs.set(i, rhs_m.get(i));
-            }
-            
-            for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                rhs.set(i, off_r + rhs_s.get(i));
-            }
-        }
-        
-        // A.implementation().set_name("a");
-        // write("A.m", A);
-        
-        // Factorization<DSMatrixd, DVectord> op;
-        LUDecomposition<DSMatrixd, DVectord> op;
+            make_ref(A_m), nullptr, make_ref(B_t),
+            nullptr, make_ref(A_s), make_ref(D_t),
+            make_ref(B), make_ref(D), nullptr
+        });
+
+        UVector z = local_zeros(local_size(rhs_s));
+        UVector rhs = blocks(rhs_m, rhs_s, z);
+
+        sol_m = local_zeros(local_size(rhs_m));
+        sol_s = local_zeros(local_size(rhs_s));
+        lagr  = local_zeros(local_size(rhs_s));
+
+        UVector sol = blocks(sol_m, sol_s, lagr);
+
+        Factorization<USparseMatrix, UVector> op;
         op.update(make_ref(A));
-        
-        
-        DVectord sol = local_zeros(local_size(rhs));
         op.apply(rhs, sol);
+
+        //write("A.m", A);
+
+        undo_blocks(sol, sol_m, sol_s, lagr);
+    }
+
+
+    static void solve_monolithic(FunctionSpaceT &V_m,
+                                 FunctionSpaceT &V_s,
+                                 FunctionSpaceT &L,
+                                 USparseMatrix &A_m,
+                                 UVector &rhs_m,
+                                 USparseMatrix &A_s,
+                                 UVector &rhs_s,
+                                 UVector &sol_m,
+                                 UVector &sol_s,
+                                 UVector &lagr)
+    {
         
-        
-        sol_m  = local_zeros(local_size(rhs_m));
-        sol_s  = local_zeros(local_size(rhs_s));
-        lagr   = local_zeros(local_size(rhs_s));
-        
+        USparseMatrix B, D;
+        assemble_projection(V_m, V_s, L, B, D);
+        // assemble_interpolation(V_m, V_s, B, D);
+
+        D *= -1.;
+
+        USparseMatrix D_t = transpose(D);
+        USparseMatrix B_t = transpose(B);
+
+        set_zero_at_constraint_rows(V_m.dof_map(), B_t);
+        set_zero_at_constraint_rows(V_s.dof_map(), D_t);
+
+        USparseMatrix A = Blocks<USparseMatrix>(3, 3, 
         {
-            Write<DVectord> w_(sol);
-            Write<DVectord> r_m(sol_m), r_s(sol_s);
-            
-            for(auto i = rr_m.begin(); i != rr_m.end(); ++i) {
-                sol_m.set(i, sol.get(i));
-            }
-            
-            for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                sol_s.set(i, sol.get(i) - off_r);
-            }
-            
-            for(auto i = rr_s.begin(); i != rr_s.end(); ++i) {
-                lagr.set(i, sol.get(i) - off_r_l);
-            }
-        }
-        
+            make_ref(A_m), nullptr, make_ref(B_t),
+            nullptr, make_ref(A_s), make_ref(D_t),
+            make_ref(B), make_ref(D), nullptr
+        });
+
+        UVector z = local_zeros(L.dof_map().n_local_dofs());
+        UVector rhs = blocks(rhs_m, rhs_s, z);
+
+        sol_m = local_zeros(local_size(rhs_m));
+        sol_s = local_zeros(local_size(rhs_s));
+        lagr  = local_zeros(L.dof_map().n_local_dofs());
+
+        UVector sol = blocks(sol_m, sol_s, lagr);
+
+        Factorization<USparseMatrix, UVector> op;
+        op.solve(A, rhs, sol);
+
+        undo_blocks(sol, sol_m, sol_s, lagr);
     }
     
     static void write_solution(const std::string &name,
-                               DVectord &sol,
+                               UVector &sol,
                                const int time_step,
                                const double t,
                                FunctionSpaceT &space,
-                               libMesh::ExodusII_IO &io)
+                               libMesh::Nemesis_IO &io)
     {
         utopia::convert(sol, *space.equation_system().solution);
         space.equation_system().solution->close();
@@ -217,32 +304,32 @@ namespace utopia {
     static void solve_staggered(const std::string &operator_type,
                                 FunctionSpaceT &V_m,
                                 FunctionSpaceT &V_s,
-                                DSMatrixd &A_m,
-                                DVectord &rhs_m,
-                                DSMatrixd &A_s,
-                                DVectord &rhs_s,
-                                DVectord &sol_m,
-                                DVectord &sol_s,
-                                DVectord &lagr)
+                                USparseMatrix &A_m,
+                                UVector &rhs_m,
+                                USparseMatrix &A_s,
+                                UVector &rhs_s,
+                                UVector &sol_m,
+                                UVector &sol_s,
+                                UVector &lagr)
     {
         
-        libMesh::ExodusII_IO io_m(V_m.mesh());
-        libMesh::ExodusII_IO io_s(V_s.mesh());
-        libMesh::ExodusII_IO io_m_l(V_m.mesh());
-        libMesh::ExodusII_IO io_s_l(V_s.mesh());
+        libMesh::Nemesis_IO io_m(V_m.mesh());
+        libMesh::Nemesis_IO io_s(V_s.mesh());
+        libMesh::Nemesis_IO io_m_l(V_m.mesh());
+        libMesh::Nemesis_IO io_s_l(V_s.mesh());
         
-        Factorization<DSMatrixd, DVectord> op_m;
+        Factorization<USparseMatrix, UVector> op_m;
         op_m.update(make_ref(A_m));
         
         if(empty(sol_s)) {
             sol_s = local_zeros(local_size(rhs_s));
         }
         
-        DVectord lagr_m = local_zeros(local_size(rhs_m));
-        DVectord lagr_s = local_zeros(local_size(rhs_s));
+        UVector lagr_m = local_zeros(local_size(rhs_m));
+        UVector lagr_s = local_zeros(local_size(rhs_s));
         
-        DVectord rhs_lagr_m, rhs_lagr_s;
-        DVectord delta_lagr = local_zeros(local_size(rhs_s));
+        UVector rhs_lagr_m, rhs_lagr_s;
+        UVector delta_lagr = local_zeros(local_size(rhs_s));
         
         double dumping = 1.;
         
@@ -328,18 +415,18 @@ namespace utopia {
     static void solve_separate(const std::string &operator_type,
                                FunctionSpaceT &V_m,
                                FunctionSpaceT &V_s,
-                               DSMatrixd &A_m,
-                               DVectord &rhs_m,
-                               DSMatrixd &A_s,
-                               DVectord &rhs_s,
-                               DVectord &sol_m,
-                               DVectord &sol_s,
-                               DVectord &lagr)
+                               USparseMatrix &A_m,
+                               UVector &rhs_m,
+                               USparseMatrix &A_s,
+                               UVector &rhs_s,
+                               UVector &sol_m,
+                               UVector &sol_s,
+                               UVector &lagr)
     {
-        Factorization<DSMatrixd, DVectord> op_m;
+        Factorization<USparseMatrix, UVector> op_m;
         op_m.update(make_ref(A_m));
         
-        Factorization<DSMatrixd, DVectord> op_s;
+        Factorization<USparseMatrix, UVector> op_s;
         op_s.update(make_ref(A_s));
         
         
@@ -355,7 +442,7 @@ namespace utopia {
         
         t.initialize(operator_type);
         
-        DVectord sol_transfered;
+        UVector sol_transfered;
         t.apply(sol_m, sol_transfered);
         lagr = sol_transfered - sol_s;
     }
@@ -375,34 +462,96 @@ namespace utopia {
         
         void read(InputStream &is) override
         {
-            is.read("mesh", mesh_type);
-            if(mesh_type == "file") {
+            try {
+                is.read("mesh", mesh_type);
+                path = "";
                 is.read("path", path);
-            }
-            
-            is.read("boundary-conditions", [this](InputStream &is) {
-                is.read_all([this](InputStream &is) {
-                    int side_set = 0;
-                    
-                    is.read("side", side_set);
-                    
-                    
-                    double value = 0;
-                    is.read("value", value);
-                    
-                    sides.push_back(side_set);
-                    values.push_back(value);
+                
+                is.read("boundary-conditions", [this](InputStream &is) {
+                    is.read_all([this](InputStream &is) {
+                        int side_set = 0;
+                        
+                        is.read("side", side_set);
+                        
+                        
+                        double value = 0;
+                        is.read("value", value);
+                        
+                        sides.push_back(side_set);
+                        values.push_back(value);
+                    });
                 });
-            });
-            
-            diffusivity = 1.;
-            is.read("diffusivity", diffusivity);
-            forcing_function = 0.;
-            
-            is.read("forcing-function", forcing_function);
+                
+                diffusivity = 1.;
+                is.read("diffusivity", diffusivity);
+                forcing_function = 0.;
+                
+                is.read("forcing-function", forcing_function);
 
-            refinements = 0;
-            is.read("refinements", refinements);
+                refinements = 0;
+                is.read("refinements", refinements);
+
+
+                adaptive_refinements = 0;
+                is.read("adaptive-refinements", adaptive_refinements);
+
+                order = 1;
+                is.read("order", order);
+
+                std::fill(std::begin(span), std::end(span), 0.);
+
+                is.read("span-x", span[0]);
+                is.read("span-y", span[1]);
+                is.read("span-z", span[2]);
+
+                elem_type = "quad";
+                is.read("elem-type", elem_type);
+
+
+            } catch(const std::exception &ex) {
+                std::cerr << ex.what() << std::endl;
+                assert(false);
+            }
+        }
+
+        libMesh::ElemType get_type(const int dim) const
+        {
+            if(dim == 3) {
+                libMesh::ElemType type = libMesh::HEX8;
+
+                if(elem_type == "tet") {
+                    type = libMesh::TET4;
+                }
+
+                if(order == 2) {
+                    type = libMesh::HEX20;
+
+                    if(elem_type == "tet") {
+                        type = libMesh::TET10;
+                    }
+                }
+
+                return type;
+
+            } else if(dim == 2) {
+                libMesh::ElemType type = libMesh::QUAD4;
+
+                if(elem_type == "tri") {
+                    type = libMesh::TRI3;
+                }
+                
+                if(order == 2) {
+                    type = libMesh::QUAD8;
+
+                    if(elem_type == "tri") {
+                        type = libMesh::TRI6;
+                    }
+                }
+
+                return type;
+            }
+
+            return libMesh::TRI3;
         }
         
         void make_mesh(libMesh::DistributedMesh &mesh) const
@@ -410,16 +559,51 @@ namespace utopia {
             if(this->mesh_type == "file") {
                 mesh.read(path);
             } else if(this->mesh_type == "unit-square") {
-                const auto elem_type = libMesh::QUAD8;
                 libMesh::MeshTools::Generation::build_square(mesh,
                                                              5, 5,
                                                              -0., 1.,
                                                              -0., 1.,
-                                                             elem_type
+                                                             get_type(2)
                                                              );
+            } else if(this->mesh_type == "aabb") {
+                libMesh::DistributedMesh temp_mesh(mesh.comm());
+                temp_mesh.read(path);
+
+#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
+                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(temp_mesh);
+#else
+                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(temp_mesh);
+#endif
+            
+                if(temp_mesh.spatial_dimension() == 3) {
+                 
+                    libMesh::MeshTools::Generation::build_cube(
+                        mesh,
+                        n, n, n,
+                        bb.min()(0) - span[0], bb.max()(0) + span[0],
+                        bb.min()(1) - span[1], bb.max()(1) + span[1],
+                        bb.min()(2) - span[2], bb.max()(2) + span[2],
+                        get_type(3)
+                    );
+
+                } else {
+
+                    libMesh::MeshTools::Generation::build_square(
+                        mesh,
+                        n, n,
+                        bb.min()(0) - span[0], bb.max()(0) + span[0],
+                        bb.min()(1) - span[1], bb.max()(1) + span[1],
+                        get_type(2)
+                    );
+                }
+
             }
 
             refine(refinements, mesh);
+
+            if(this->mesh_type == "file" && order == 2) {
+                mesh.all_second_order();
+            }
         }
         
         void set_up_bc(const FunctionSpaceT &V)
@@ -436,13 +620,30 @@ namespace utopia {
             }
         }
         
-        void desribe(std::ostream &os = std::cout) const
+        void apply_adaptive_refinement(
+            const std::shared_ptr<libMesh::UnstructuredMesh> &fracture_network,
+            const libMesh::Order &elem_order,
+            const std::shared_ptr<libMesh::UnstructuredMesh> &mesh)
+        {
+            if(adaptive_refinements) {
+                refine_around_fractures(fracture_network, elem_order, mesh, adaptive_refinements, false);
+            }
+        }
+
+        inline bool empty() const
+        {
+            return mesh_type.empty();
+        }
+
+        void describe(std::ostream &os = std::cout) const
         {
             os << "-----------------------------------\n";
             os << "mesh_type:       " << mesh_type << "\n";
+            os << "order:           " << order << "\n";
             os << "path:            " << path << "\n";
             os << "diffusivity:     " << diffusivity << "\n";
             os << "forcing_function: " << forcing_function << "\n";
+
             
             os << "side, value\n";
             
@@ -461,6 +662,11 @@ namespace utopia {
         double diffusivity;
         double forcing_function;
         int refinements;
+        int adaptive_refinements;
+        int order;
+        double span[3];
+        std::string elem_type;
+        int n = 10;
     };
     
     void FractureFlowApp::run(const std::string &conf_file_path)
@@ -477,27 +683,39 @@ namespace utopia {
         auto is_ptr = open_istream(conf_file_path);
         
         Input master_in, slave_in;
+        // Input multiplier_in; //LAMBDA
         
         is_ptr->read("master", master_in);
         is_ptr->read("slave", slave_in);
+        // is_ptr->read("multiplier", multiplier_in); //LAMBDA
+
+        // if(multiplier_in.empty()) { //LAMBDA
+            // multiplier_in = slave_in;  //LAMBDA
+        // }                           //LAMBDA
         
-        std::string solve_strategy = "staggered";
+        std::string solve_strategy = "monolithic";
         is_ptr->read("solve-strategy", solve_strategy);
 
 
-        std::string operator_type = "INTERPOLATION";
+        std::string operator_type = "L2_PROJECTION";
         is_ptr->read("operator-type", operator_type);
         
-        master_in.desribe();
-        slave_in.desribe();
+        master_in.describe();
+        slave_in.describe();
+        // multiplier_in.describe(); //LAMBDA
         
         std::cout << "solve_strategy: "  << solve_strategy << std::endl;
        
         auto mesh_master = std::make_shared<libMesh::DistributedMesh>(*comm_);
         auto mesh_slave = std::make_shared<libMesh::DistributedMesh>(*comm_);
+        auto mesh_multiplier = std::make_shared<libMesh::DistributedMesh>(*comm_);
         
         master_in.make_mesh(*mesh_master);
         slave_in.make_mesh(*mesh_slave);
+        // multiplier_in.make_mesh(*mesh_multiplier); //LAMBDA
+
+
+        master_in.apply_adaptive_refinement(mesh_slave, libMesh::FIRST, mesh_master);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -509,11 +727,18 @@ namespace utopia {
         
         auto equation_systems_slave = std::make_shared<libMesh::EquationSystems>(*mesh_slave);
         auto &sys_slave = equation_systems_slave->add_system<libMesh::LinearImplicitSystem>("slave");
+
+        // auto equation_systems_multiplier = std::make_shared<libMesh::EquationSystems>(*mesh_multiplier);        //LAMBDA
+        // auto &sys_multiplier = equation_systems_multiplier->add_system<libMesh::LinearImplicitSystem>("multiplier"); //LAMBDA
         
         //scalar function space
-        const auto elem_order = libMesh::FIRST;
-        auto V_m = FunctionSpaceT(equation_systems_master, libMesh::LAGRANGE, elem_order, "u_m");
-        auto V_s = FunctionSpaceT(equation_systems_slave, libMesh::LAGRANGE, elem_order,  "u_s");
+        const auto elem_order_m = libMesh::Order(master_in.order);
+        const auto elem_order_s = libMesh::Order(slave_in.order);
+        // const auto elem_order_l = libMesh::Order(multiplier_in.order); //LAMBDA
+
+        auto V_m = FunctionSpaceT(equation_systems_master, libMesh::LAGRANGE, elem_order_m, "u_m");
+        auto V_s = FunctionSpaceT(equation_systems_slave,  libMesh::LAGRANGE, elem_order_s,  "u_s");
+        // auto L   = FunctionSpaceT(equation_systems_multiplier, libMesh::LAGRANGE, elem_order_l,  "lambda"); //LAMBDA
         
         auto u_m = trial(V_m);
         auto v_m = test(V_m);
@@ -523,17 +748,23 @@ namespace utopia {
         
         master_in.set_up_bc(V_m);
         slave_in.set_up_bc(V_s);
+        // multiplier_in.set_up_bc(L); //LAMBDA
         
         V_m.initialize();
         V_s.initialize();
+        // L.initialize(); //LAMBDA
+
+        std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " x " <<  V_s.dof_map().n_dofs();
+        // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
+        std::cout << std::endl;
         
         auto eq_m = master_in.diffusivity * inner(grad(u_m), grad(v_m)) * dX == inner(coeff(master_in.forcing_function), v_m) * dX;
         auto eq_s = slave_in.diffusivity  * inner(grad(u_s), grad(v_s)) * dX == inner(coeff(slave_in.forcing_function),  v_s) * dX;
         
         //////////////////////////// Generation of the algebraic system ////////////////////////////
 
-        DSMatrixd A_m, A_s;
-        DVectord rhs_m, rhs_s;
+        USparseMatrix A_m, A_s;
+        UVector rhs_m, rhs_s;
         utopia::assemble(eq_m, A_m, rhs_m);
         utopia::assemble(eq_s, A_s, rhs_s);
         
@@ -546,7 +777,7 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
        
-        DVectord sol_m, sol_s, lagr;
+        UVector sol_m, sol_s, lagr;
 
         if(solve_strategy == "staggered") {
             
@@ -565,6 +796,7 @@ namespace utopia {
         } else {
             solve_monolithic(V_m,
                              V_s,
+                             // L, //LAMBDA
                              A_m,
                              rhs_m,
                              A_s,
@@ -581,9 +813,9 @@ namespace utopia {
 
         // UGLY code for writing stuff to disk
         
-        libMesh::ExodusII_IO io_m(*mesh_master);
-        libMesh::ExodusII_IO io_s(*mesh_slave);
-        
+        libMesh::Nemesis_IO io_m(*mesh_master);
+        libMesh::Nemesis_IO io_s(*mesh_slave);
+        libMesh::Nemesis_IO io_multiplier(*mesh_multiplier);
         
         utopia::convert(sol_m, *V_m.equation_system().solution);
         V_m.equation_system().solution->close();
@@ -593,18 +825,22 @@ namespace utopia {
         utopia::convert(sol_s, *V_s.equation_system().solution);
         V_s.equation_system().solution->close();
         io_s.write_timestep(V_s.equation_system().name() + ".e", V_s.equation_systems(), 1, 0);
+
+        // utopia::convert(lagr, *L.equation_system().solution);                                         //LAMBDA
+        // L.equation_system().solution->close();                                                        //LAMBDA
+        // io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);  //LAMBDA
         
-        if(size(lagr) == size(sol_m)) {
-            libMesh::ExodusII_IO io_l(*mesh_master);
-            utopia::convert(lagr, *V_m.equation_system().solution);
-            V_m.equation_system().solution->close();
-            io_l.write_timestep("lagr.e", V_m.equation_systems(), 1, 0);
-        } else {
-            libMesh::ExodusII_IO io_l(*mesh_slave);
-            utopia::convert(lagr, *V_s.equation_system().solution);
-            V_s.equation_system().solution->close();
-            io_l.write_timestep("lagr.e", V_s.equation_systems(), 1, 0);
-        }
+        // if(size(lagr) == size(sol_m)) {
+        //     libMesh::Nemesis_IO io_l(*mesh_master);
+        //     utopia::convert(lagr, *V_m.equation_system().solution);
+        //     V_m.equation_system().solution->close();
+        //     io_l.write_timestep("lagr.e", V_m.equation_systems(), 1, 0);
+        // } else {
+        //     libMesh::Nemesis_IO io_l(*mesh_slave);
+        //     utopia::convert(lagr, *V_s.equation_system().solution);
+        //     V_s.equation_system().solution->close();
+        //     io_l.write_timestep("lagr.e", V_s.equation_systems(), 1, 0);
+        // }
         
         c.stop();
         std::cout << c << std::endl;

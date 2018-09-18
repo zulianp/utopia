@@ -132,6 +132,10 @@ namespace utopia {
 
         inline Size size() const
         {
+            if(is_null()) {
+                return {0, 0};
+            }
+
             if(implementation().isFillComplete()) {
                 return { implementation().getGlobalNumRows(), implementation().getGlobalNumCols() };
             } else {
@@ -190,6 +194,48 @@ namespace utopia {
         Scalar get(const global_ordinal_type &row, const global_ordinal_type &col) const;
         void add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
 
+        template<typename Integer>
+        void add_matrix(
+         const std::vector<Integer> &rows,
+         const std::vector<Integer> &cols,
+         const std::vector<Scalar> &values
+         )
+        {
+            //FIXME and find more efficient way
+            const auto n_vals = values.size();
+            const auto n_rows = rows.size();
+            const auto n_cols = cols.size();
+            assert(n_vals == n_rows*n_cols);
+
+            for(std::size_t i = 0; i < n_rows; ++i) {
+                const auto i_offset = i*n_rows;
+                for(std::size_t j = 0; j < n_cols; ++j) {
+                    add(rows[i], cols[j], values[i_offset + j]);
+                }
+            }
+        }
+
+       template<typename Integer>
+        void set_matrix(
+         const std::vector<Integer> &rows,
+         const std::vector<Integer> &cols,
+         const std::vector<Scalar> &values
+         )
+        {
+            //FIXME and find more efficient way
+           const auto n_vals = values.size();
+           const auto n_rows = rows.size();
+           const auto n_cols = cols.size();
+           assert(n_vals == n_rows*n_cols);
+
+           for(std::size_t i = 0; i < n_rows; ++i) {
+               const auto i_offset = i*n_rows;
+               for(std::size_t j = 0; j < n_cols; ++j) {
+                   set(rows[i], cols[j], values[i_offset + j]);
+               }
+           }
+        }
+
         void mult(const TpetraVector &vec, TpetraVector &result) const;
         void mult_t(const TpetraVector &vec, TpetraVector &result) const;
 
@@ -225,6 +271,18 @@ namespace utopia {
             return *mat_;
         }
 
+        inline rcp_crs_matrix_type &implementation_ptr()
+        {
+            assert(!mat_.is_null());
+            return mat_;
+        }
+
+        inline const rcp_crs_matrix_type &implementation_ptr() const
+        {
+            assert(!mat_.is_null());
+            return mat_;
+        }
+
         inline bool is_null() const
         {
             return mat_.is_null();
@@ -236,6 +294,7 @@ namespace utopia {
         bool is_valid(const bool verbose = false) const;
 
         Scalar norm2() const;
+        Scalar sum() const;
 
 
     private:

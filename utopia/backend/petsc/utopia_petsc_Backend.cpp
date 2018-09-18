@@ -1071,8 +1071,10 @@ namespace utopia {
 		if(dim == 1) {
 			mat.row_sum(result);
 		} else {
-			assert(false && "not available in pestsc");
-			result.set_initialized(false);
+			mat.col_sum(result);
+			
+			// assert(false && "not available in pestsc");
+			// result.set_initialized(false);
 		}
 	}
 

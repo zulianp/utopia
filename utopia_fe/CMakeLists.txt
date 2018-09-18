@@ -9,6 +9,7 @@ option(ENABLE_BOOST "enable boost features" OFF)
 option(ENABLE_MOONOLITH_PROFILER "enable moonolith profiling capabilities" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
+option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers" ON)
 
 #################################################################################
 #################################################################################
@@ -20,6 +21,10 @@ endif()
 
 if(LINUX)
 	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
+if(ENABLE_TRILINOS_ALGEBRA)
+	set(WITH_TRILINOS_ALGEBRA TRUE)
 endif()
 
 set(UTOPIA_FE_ROOT_PATH ${CMAKE_SOURCE_DIR})
@@ -99,13 +104,14 @@ list(APPEND UTOPIA_FE_MODULES
 	functions
 	core
 	rapidxml
+	base
  )
 
 FOREACH(MODULE ${UTOPIA_FE_MODULES})
 		add_subdirectory("${MODULE}")
 ENDFOREACH(MODULE)
 
-
+include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
 configure_file(${UTOPIA_FE_ROOT_PATH}/utopia_fe_config.hpp.in ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)

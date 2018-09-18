@@ -6,12 +6,12 @@ namespace utopia {
 
 	void ContactApp::run(const std::string &path)
 	{
-		// template class ContactSolver<DSMatrixd, DVectord>;
+		// template class ContactSolver<USparseMatrix, UVector>;
 		// typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> VectorFunctionSpace;
 
-		// // typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
-		// // typedef utopia::Newmark<DSMatrixd, DVectord> ContactSolverT;
-		// typedef utopia::ContactStabilizedNewmark<DSMatrixd, DVectord> ContactSolverT;
+		// // typedef utopia::ContactSolver<USparseMatrix, UVector> ContactSolverT;
+		// // typedef utopia::Newmark<USparseMatrix, UVector> ContactSolverT;
+		// typedef utopia::ContactStabilizedNewmark<USparseMatrix, UVector> ContactSolverT;
 
 		// const auto dim = mesh->mesh_dimension();
 
@@ -86,10 +86,10 @@ namespace utopia {
 		// 	ef->init(integral(inner(coeff(-.2), vy)));
 		// }
 
-		// // auto material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-		// // auto material = std::make_shared<IncompressibleNeoHookean<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-		// // auto material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
-		// auto material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, lamee_params);
+		// // auto material = std::make_shared<NeoHookean<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
+		// // auto material = std::make_shared<IncompressibleNeoHookean<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
+		// // auto material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
+		// auto material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
 
 		// ContactParams contact_params;
 		// // contact_params.contact_pair_tags = {{2, 1}};
@@ -102,14 +102,14 @@ namespace utopia {
 		// }
 
 
-		// // auto stabilized_material = std::make_shared<StabilizedMaterial<decltype(V), DSMatrixd, DVectord> >(V, 1e-2, material);
+		// // auto stabilized_material = std::make_shared<StabilizedMaterial<decltype(V), USparseMatrix, UVector> >(V, 1e-2, material);
 		// // ContactSolverT sc(make_ref(V), stabilized_material, dt, contact_params);
 
 		// ContactSolverT sc(make_ref(V), material, dt, contact_params);
 		// sc.set_tol(5e-6);
 
-		// // auto ls = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-		// // auto ls = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+		// // auto ls = std::make_shared<Factorization<USparseMatrix, UVector>>();
+		// // auto ls = std::make_shared<GMRES<USparseMatrix, UVector>>();
 		// // ls->atol(1e-15);
 		// // ls->rtol(1e-15);
 		// // ls->stol(1e-15);
@@ -121,18 +121,18 @@ namespace utopia {
 
 		// // begin: multigrid
 
-		// // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		// // auto smoother = std::make_shared<ConjugateGradient<DSMatrixd, DVectord, HOMEMADE>>();
-		// // auto smoother = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
+		// // auto linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>();
+		// // auto smoother = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
+		// // auto smoother = std::make_shared<BiCGStab<USparseMatrix, UVector>>();
 		// // prec->max_it(1);
 		// // smoother->set_preconditioner(prec);
 
-		// // auto smoother = std::make_shared<SOR<DSMatrixd, DVectord> >();
-		// // // auto smoother = std::make_shared<GMRES<DSMatrixd, DVectord> >();
+		// // auto smoother = std::make_shared<SOR<USparseMatrix, UVector> >();
+		// // // auto smoother = std::make_shared<GMRES<USparseMatrix, UVector> >();
 
-		// // auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-		// // // auto linear_solver = std::make_shared<BiCGStab<DSMatrixd, DVectord>>();
-		// // // auto smoother = std::make_shared<ProjectedGaussSeidel<DSMatrixd, DVectord, HOMEMADE> >();
+		// // auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+		// // // auto linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>();
+		// // // auto smoother = std::make_shared<ProjectedGaussSeidel<USparseMatrix, UVector, HOMEMADE> >();
 		// // auto mg = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
 		// // mg->verbose(true);
 		// // mg->set_use_interpolation(true);

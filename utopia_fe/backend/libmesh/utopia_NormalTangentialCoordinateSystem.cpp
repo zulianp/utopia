@@ -20,12 +20,12 @@
 #include <cmath>
 
 namespace utopia {
-    void scale_normal_vector_with_gap(const int dim, const DVectord &normals, const DVectord &gap, DVectord &out)
+    void scale_normal_vector_with_gap(const int dim, const UVector &normals, const UVector &gap, UVector &out)
     {
         out = local_zeros(local_size(normals));
 
-        Read<DVectord> r_n(normals), r_g(gap);
-        Write<DVectord> w_o(out);
+        Read<UVector> r_n(normals), r_g(gap);
+        Write<UVector> w_o(out);
 
         using namespace libMesh;
 
@@ -59,9 +59,9 @@ namespace utopia {
     bool assemble_normal_tangential_transformation(const libMesh::MeshBase &mesh,
                                                    const libMesh::DofMap &dof_map,
                                                    const std::vector<int> &boundary_tags,
-                                                   DVectord &is_normal_component,
-                                                   DVectord &normals,
-                                                   DSMatrixd &mat)
+                                                   UVector &is_normal_component,
+                                                   UVector &normals,
+                                                   USparseMatrix &mat)
     {
         using namespace libMesh;
 
@@ -75,8 +75,8 @@ namespace utopia {
 
 
         const SizeType local_dofs = dof_map.n_local_dofs();
-        DVectord global_normal_vec = local_zeros(local_dofs);
-        DVectord touched = local_zeros(local_dofs);
+        UVector global_normal_vec = local_zeros(local_dofs);
+        UVector touched = local_zeros(local_dofs);
 
         normals = local_zeros(local_dofs);
 
@@ -85,7 +85,7 @@ namespace utopia {
 
         SizeType n_detected_side_sets = 0;
         { //synch-block begin
-            Write<DVectord> w_n(global_normal_vec), w_t(touched);
+            Write<UVector> w_n(global_normal_vec), w_t(touched);
 
             for(auto e_it = mesh.active_local_elements_begin();
                 e_it != mesh.active_local_elements_end(); ++e_it) {
@@ -149,10 +149,10 @@ namespace utopia {
 
         SizeType n_detecetd_normals = 0;
         { //synch-block begin
-            Read<DVectord> r_n(global_normal_vec), r_t(touched);
-            Write<DSMatrixd> w_m(mat);
-            Write<DVectord> w_i(is_normal_component);
-            Write<DVectord> w_n(normals);
+            Read<UVector> r_n(global_normal_vec), r_t(touched);
+            Write<USparseMatrix> w_m(mat);
+            Write<UVector> w_i(is_normal_component);
+            Write<UVector> w_n(normals);
 
             for(SizeType i = r.begin(); i < r.end(); i += n_dims) {
                 bool is_node_touched = false;

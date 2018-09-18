@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 26/08/16.
-//
-
 #ifndef UTOPIA_EVAL_HPP
 #define UTOPIA_EVAL_HPP
 
@@ -25,6 +21,7 @@
 #include "utopia_Eval_Determinant.hpp"
 #include "utopia_Eval_Select.hpp"
 #include "utopia_Eval_Inverse.hpp"
+#include "utopia_Eval_Blocks.hpp"
 
 
 #endif //UTOPIA_EVAL_HPP

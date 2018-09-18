@@ -165,7 +165,7 @@ namespace utopia {
 	class DefaultAlgorithm final : public TransferAssembler::Algorithm {
 	public:
 		using FunctionSpace = utopia::LibMeshFunctionSpace;
-		using SparseMatrix  = utopia::DSMatrixd;
+		using SparseMatrix  = utopia::USparseMatrix;
 		using MeshBase      = libMesh::MeshBase;
 		using DofMap        = libMesh::DofMap;
 		using NTreeT 		= utopia::VTree<Dimensions>;
@@ -403,10 +403,10 @@ namespace utopia {
 			SizeType m_max_row_entries = mat_buffer[buffer_num]->local_max_entries_x_col();
 			comm.all_reduce(&m_max_row_entries, 1, moonolith::MPIMax());
 
-			DSMatrixd mat_x = utopia::local_sparse(n_dofs_on_proc_test, n_dofs_on_proc_trial, m_max_row_entries);
+			USparseMatrix mat_x = utopia::local_sparse(n_dofs_on_proc_test, n_dofs_on_proc_trial, m_max_row_entries);
 
 			{
-				utopia::Write<utopia::DSMatrixd> write(mat_x);
+				utopia::Write<utopia::USparseMatrix> write(mat_x);
 				for (auto it = mat_buffer[buffer_num]->iter(); it; ++it) {
 					mat_x.set(it.row(), it.col(), *it);
 
@@ -421,7 +421,7 @@ namespace utopia {
 			auto s_mat_x = local_size(mat_x);
 			mat = local_sparse(s_mat_x.get(0), s_mat_x.get(1), opts.n_var * m_max_row_entries);
 
-			utopia::Write<DSMatrixd> w_mat(mat);
+			utopia::Write<USparseMatrix> w_mat(mat);
 			utopia::each_read(mat_x, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
 				for(utopia::SizeType d = 0; d < opts.n_var; ++d) {
 					mat.set(i + d, j + d, value);

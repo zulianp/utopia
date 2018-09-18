@@ -11,7 +11,7 @@ namespace utopia {
 		moonolith::Communicator &comm,
 		const libMesh::DofMap &dof_map,
 		const std::vector<int> &vars,
-		const DVectord &disp,
+		const UVector &disp,
 		libMesh::MeshBase &mesh
 		)
 	{	
@@ -19,7 +19,7 @@ namespace utopia {
 
 		if(!comm.is_alone()) {
 			auto r = range(disp);
-			Read<DVectord> r_d(disp);
+			Read<UVector> r_d(disp);
 
 			auto m_begin = mesh.active_local_elements_begin();
 			auto m_end   = mesh.active_local_elements_end();
@@ -41,9 +41,9 @@ namespace utopia {
 			}
 
 			idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
-			DVectord out = disp.select(idx);
+			UVector out = disp.select(idx);
 			{
-				Read<DVectord> r_out(out);
+				Read<UVector> r_out(out);
 				auto range_out = range(out);
 
 				for(std::size_t i = 0; i < idx.size(); ++i) {
@@ -68,7 +68,7 @@ namespace utopia {
 
 		} else {
 
-			Read<DVectord> r_d(disp);
+			Read<UVector> r_d(disp);
 
 			auto m_it  = mesh.local_nodes_begin();
 			auto m_end = mesh.local_nodes_end();
@@ -165,14 +165,14 @@ namespace utopia {
 		
 		const std::size_t n_ts = 3000;
 
-		DVectord sol_f;
-		DVectord sol_fold;
-		DVectord fsi_forcing_term_f;
+		UVector sol_f;
+		UVector sol_fold;
+		UVector fsi_forcing_term_f;
 
-		DVectord old_displacement_s;
-		DVectord displacement_s;
-		DVectord reaction_force_s;
-		DVectord fsi_velocity_s;
+		UVector old_displacement_s;
+		UVector displacement_s;
+		UVector reaction_force_s;
+		UVector fsi_velocity_s;
 
 		auto uk_f 	 = interpolate(sol_f, u_f);
 		auto uk_fold = interpolate(sol_fold, u_f);
@@ -249,18 +249,18 @@ namespace utopia {
 	    fsi_forcing_term_f = ghosted(dof_map_f.n_local_dofs(), dof_map_f.n_dofs(), dof_map_f.get_send_list());
 	    displacement_s     = ghosted(dof_map_s.n_local_dofs(), dof_map_s.n_dofs(), dof_map_s.get_send_list());
 
-	    DSMatrixd mat_s, mass_mat_s, mass_mat_f;
-	    DVectord rhs_s,  mass_vec_s, mass_vec_f;
+	    USparseMatrix mat_s, mass_mat_s, mass_mat_f;
+	    UVector rhs_s,  mass_vec_s, mass_vec_f;
 
 	    assemble_expression_v<LibMeshFunctionSpace>(eq_solid, mat_s, rhs_s);
 	    assemble_expression_v<LibMeshFunctionSpace>(mass_f == mass_rhs_f, mass_mat_f,  mass_vec_f, false);
 	    assemble_expression_v<LibMeshFunctionSpace>(mass_s == mass_rhs_s, mass_mat_s,  mass_vec_s, false);
 
-	    NonLinearFEFunction<DSMatrixd, DVectord, decltype(eq_fluid)> nl_fun(eq_fluid, true);
+	    NonLinearFEFunction<USparseMatrix, UVector, decltype(eq_fluid)> nl_fun(eq_fluid, true);
 
-	    auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-	    // auto linear_solver = std::make_shared<GMRES<DSMatrixd, DVectord>>(); linear_solver->verbose(true);
-	    Newton<DSMatrixd, DVectord> solver(linear_solver);
+	    auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+	    // auto linear_solver = std::make_shared<GMRES<USparseMatrix, UVector>>(); linear_solver->verbose(true);
+	    Newton<USparseMatrix, UVector> solver(linear_solver);
 	    // solver.verbose(true);
 	    
 	    // libMesh::ExodusII_IO io_fluid(*fluid_mesh);
@@ -278,7 +278,7 @@ namespace utopia {
 	    		// plot_mesh(*solid_mesh, "mesh/" + std::to_string(ts));
 	    	}
 
-	    	DSMatrixd B;
+	    	USparseMatrix B;
 	    	
 	    	if(!assemble_volume_transfer(
 	    	    comm,
@@ -316,12 +316,12 @@ namespace utopia {
 	    	while(!converged) {
 	    		std::cout << "outer iter: " << outer_iter << std::endl;
 	    		//transfer velocity to solid
-	    		DVectord temp_s = B * sol_f;
+	    		UVector temp_s = B * sol_f;
 	    		std::cout << "mag temp_s: " << double(norm2(temp_s)) << std::endl;
 	    		linear_solver->solve(mass_mat_s, temp_s, fsi_velocity_s);
 	    		std::cout << "mag vel: " << double(norm2(fsi_velocity_s)) << std::endl;
 
-	    		DVectord displacement_prev = displacement_s;
+	    		UVector displacement_prev = displacement_s;
 	    		displacement_s = old_displacement_s + dt * fsi_velocity_s;
 
 	    		const double diff = norm2(displacement_prev - displacement_s);
@@ -338,8 +338,8 @@ namespace utopia {
 
 	    		//update the forcing term in the fluid
 	    		linear_solver->solve(mass_mat_s, reaction_force_s, temp_s);
-	    		DVectord temp_f = transpose(B) * temp_s;
-	    		DVectord sol_temp = local_zeros(local_size(fsi_forcing_term_f));
+	    		UVector temp_f = transpose(B) * temp_s;
+	    		UVector sol_temp = local_zeros(local_size(fsi_forcing_term_f));
 	    		linear_solver->solve(mass_mat_f, temp_f, sol_temp);
 
 	    		//preserves ghost information and copies the entries
@@ -350,7 +350,7 @@ namespace utopia {
 	    		const double mag_fsi = norm2(fsi_forcing_term_f);
 	    		std::cout << "mag_fsi: " << mag_fsi << std::endl;
 	    		
-	    		DVectord temp = sol_f;
+	    		UVector temp = sol_f;
 
 	    		assert(sol_f.implementation().has_ghosts() || mpi_world_size() == 1);
 
@@ -367,7 +367,7 @@ namespace utopia {
 	     		double mean_pressure = 0.;
 	     		
 	     		{
-	     			Read<DVectord> r(sol_f);
+	     			Read<UVector> r(sol_f);
 	     			for(auto idx : pressure_index) {
 	     				mean_pressure += sol_f.get(idx);
 	     			}	
@@ -376,11 +376,11 @@ namespace utopia {
 	     		comm.all_reduce(&mean_pressure, 1, moonolith::MPISum());
 	     		mean_pressure /= pressure_dofs;
 
-	     		DVectord sol_f_copy = sol_f;
+	     		UVector sol_f_copy = sol_f;
 
 	     		{
-	     			Read<DVectord>  r(sol_f_copy);
-	     			Write<DVectord> w(sol_f);
+	     			Read<UVector>  r(sol_f_copy);
+	     			Write<UVector> w(sol_f);
 	     			for(auto idx : pressure_index) {
 	     			 	sol_f.set(idx, sol_f_copy.get(idx) - mean_pressure);
 	     			}	

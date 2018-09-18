@@ -1,19 +1,11 @@
 <!-- MASTER STUFF -->
 <master>
-	<!-- <mesh>file</mesh> -->
-	<!-- <path>../data/frac/unit_square.e</path> -->
 	<mesh>unit-square</mesh>
-<!-- 	<boundary-conditions>
-		<entry>
-			<side>1</side>
-			<value>1</value>
-		</entry>
-		<entry>
-			<side>2</side>
-			<value>4</value>
-		</entry>
-	</boundary-conditions> -->
-
+	<elem-type>tri</elem-type>
+	<!-- <mesh>file</mesh> -->
+	<!-- <path>../data/frac/adaptive_background_2.e</path> -->
+	<!-- <path>../data/frac/adaptive_background.e</path> -->
+	<!-- <path>../data/frac/background.e</path> -->
 	<boundary-conditions>
 		<entry>
 			<side>3</side>
@@ -25,8 +17,11 @@
 		</entry>
 	</boundary-conditions>
 	<diffusivity>1.</diffusivity>
+	<!-- <forcing-function>-100.</forcing-function> -->
 	<forcing-function>0.</forcing-function>
-	<refinements>2</refinements>
+	<refinements>0</refinements>
+	<order>1</order>
+	<!-- <adaptive-refinements>1</adaptive-refinements> -->
 </master>
 
 
@@ -45,11 +40,11 @@
 		</entry>
 	</boundary-conditions>
 	<diffusivity>10.</diffusivity>
+	<!-- <forcing-function>100.</forcing-function> -->
 	<forcing-function>0.</forcing-function>
 	<refinements>0</refinements>
+	<order>1</order>
 </slave>
 
-
-
-<solve-strategy>staggered</solve-strategy>
-<!-- <solve-strategy>monolithic</solve-strategy> -->
+<!-- <solve-strategy>staggered</solve-strategy> --> 
+<solve-strategy>monolithic</solve-strategy>
