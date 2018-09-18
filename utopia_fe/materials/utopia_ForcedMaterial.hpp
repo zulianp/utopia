@@ -56,6 +56,8 @@ namespace utopia {
 	template<class Vector>
 	class CompositeForcingFunction : public ForcingFunction<Vector> {
 	public:
+		virtual ~CompositeForcingFunction() {}
+		
 		bool eval(const Vector &x, Vector &result) override {
 			result = x;
 			result.set(0.);

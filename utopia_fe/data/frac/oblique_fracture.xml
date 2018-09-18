@@ -19,7 +19,7 @@
 	<diffusivity>1.</diffusivity>
 	<!-- <forcing-function>-100.</forcing-function> -->
 	<forcing-function>0.</forcing-function>
-	<refinements>0</refinements>
+	<refinements>2</refinements>
 	<order>1</order>
 	
 	<min-x>0.</min-x>
