@@ -41,7 +41,7 @@ namespace utopia {
 					Number<Scalar> el_val = 0.;
 
 					FormEvaluator<LIBMESH_TAG> eval;
-					eval.eval(expr, el_val, ctx_, true);
+					eval.eval(expr, el_val, ctx_);
 
 					if(ctx_.has_assembled()) {
 						val += el_val;

@@ -20,11 +20,12 @@ namespace utopia {
         
         bool value(const Vector &x, typename Vector::Scalar &energy) const override
         {
-            // auto u  = trial(V_);
-            // auto uk = interpolate(x, u);
+            auto u  = trial(V_);
+            auto uk = interpolate(x, u);
 
             // auto f = 0.5 * inner(grad(uk), grad(uk)) * dX - exp(lambda_ * uk) * dX;
-            // utopia::assemble(f, energy);
+            auto f = exp(lambda_ * uk) * dX;
+            utopia::assemble(f, energy);
             return true;
         }
         
@@ -57,12 +58,12 @@ namespace utopia {
 
         void initialize()
         {
-            // Vector x = local_zeros(V_.dof_map().n_local_dofs());
-            // apply_boundary_conditions(V_.dof_map(), x);
+            Vector x = local_zeros(V_.dof_map().n_local_dofs());
+            apply_boundary_conditions(V_.dof_map(), x);
 
-            // Vector marked;
-            // mark_constrained_dofs(V_.dof_map(), marked);
-            // this->set_equality_constrains(marked, x);
+            Vector marked;
+            mark_constrained_dofs(V_.dof_map(), marked);
+            this->set_equality_constrains(marked, x);
         }
         
     };
