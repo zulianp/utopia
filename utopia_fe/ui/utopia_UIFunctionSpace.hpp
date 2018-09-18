@@ -95,6 +95,10 @@ namespace utopia {
 
 			    });
 			});
+
+			for(int i = 0; i < n_vars; ++i) {
+				space_->subspace(i).initialize();
+			}
 		}
 
 		inline ProductFunctionSpace<LibMeshFunctionSpace> &space()

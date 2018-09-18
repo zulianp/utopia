@@ -1,60 +1,103 @@
 <!-- MASTER STUFF -->
 <master>
-	<mesh>square</mesh>
-	<elem-type>quad</elem-type>
-	<!-- <mesh>file</mesh> -->
-	<!-- <path>../data/frac/adaptive_background_2.e</path> -->
-	<!-- <path>../data/frac/adaptive_background.e</path> -->
-	<!-- <path>../data/frac/background.e</path> -->
-	<boundary-conditions>
-		<entry>
-			<side>3</side>
-			<value>1</value>
-		</entry>
-		<entry>
-			<side>1</side>
-			<value>4</value>
-		</entry>
-	</boundary-conditions>
+	<mesh>
+		<type>square</type>
+		<elem-type>quad</elem-type>
+		<order>2</order>
+
+		<!-- <mesh>file</mesh> -->
+		<!-- <path>../data/frac/adaptive_background_2.e</path> -->
+		<!-- <path>../data/frac/adaptive_background.e</path> -->
+		<!-- <path>../data/frac/background.e</path> -->
+
+		<min-x>0.</min-x>
+		<min-y>0.</min-y>
+		
+		<max-x>2.</max-x>
+		<max-y>1.</min-y>
+		
+		<n-x>20</n-x>
+		<n-y>10</n-y>
+
+		<refinements>2</refinements>
+	</mesh>
+
+	<space>
+		<system-name>master</system-name>
+	<!-- 	<variables>
+			<var>
+				<name>u_m</name>
+				<order>2</order>
+			</var>
+		</variables> -->
+		<boundary-conditions>
+			<entry>
+				<side>3</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>1</side>
+				<value>4</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
+	<forcing-function>
+		<fun> 
+			<block>2</block>
+			<!-- <coord>0</coord> -->
+			<value>100.</value>
+			<type>surface</type>
+		</fun>
+		<fun> 
+			<block>0</block>
+			<!-- <coord>0</coord> -->
+			<value>-100.</value>
+			<type>surface</type>
+		</fun>
+		<fun>
+			<!-- <coord>0</coord> -->
+			<value>-100.</value>
+		</fun>
+	</forcing-function>
+
+
 	<diffusivity>1.</diffusivity>
-	<!-- <forcing-function>-100.</forcing-function> -->
-	<forcing-function>0.</forcing-function>
-	<refinements>2</refinements>
-	<order>1</order>
-	
-	<min-x>0.</min-x>
-	<min-y>0.</min-y>
-	
-	<max-x>2.</max-x>
-	<max-y>1.</min-y>
-	
-	<n-x>20</n-x>
-	<n-y>10</n-y>
-
-	<!-- <adaptive-refinements>1</adaptive-refinements> -->
 </master>
-
 
 <!-- SLAVE STUFF -->
 <slave>
-	<mesh>file</mesh>
-	<path>../data/frac/line.e</path>
-	<boundary-conditions>
-		<entry>
-			<side>1</side>
-			<value>1</value>
-		</entry>
-		<entry>
-			<side>2</side>
-			<value>4</value>
-		</entry>
-	</boundary-conditions>
+	<mesh>
+		<type>file</type>
+		<path>../data/frac/line.e</path>
+		<!-- <order>1</order> -->
+		<!-- <refinements>0</refinements> -->
+	</mesh>
+
+	<space>
+		<system-name>slave</system-name>
+	<!-- 	<variables>
+			<var>
+				<name>u_s</name>
+				<order>1</order>
+			</var>
+		</variables> -->
+
+		<boundary-conditions>
+			<entry>
+				<side>1</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>2</side>
+				<value>4</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
+	<forcing-function></forcing-function>
+
 	<diffusivity>10.</diffusivity>
-	<!-- <forcing-function>100.</forcing-function> -->
-	<forcing-function>0.</forcing-function>
-	<refinements>0</refinements>
-	<order>1</order>
 </slave>
 
-<!-- <solve-strategy>staggered</solve-strategy> --> 
 <solve-strategy>monolithic</solve-strategy>

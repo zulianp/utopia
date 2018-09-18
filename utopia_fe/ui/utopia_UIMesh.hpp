@@ -38,6 +38,7 @@ namespace utopia {
 			is.read("type", mesh_type);
 			is.read("elem-type", elem_type);
 			is.read("order", order);
+			is.read("path", path);
 
 			is.read("refinements", refinements);
 			
@@ -117,6 +118,10 @@ namespace utopia {
 		inline std::shared_ptr<libMesh::DistributedMesh> mesh_ptr()
 		{
 			return mesh_;
+		}
+
+		inline bool empty() const {
+			return bool(mesh_);
 		}
 
 	private:

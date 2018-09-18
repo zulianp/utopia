@@ -481,70 +481,21 @@ namespace utopia {
     
     class FractureFlowApp::Input : public Serializable {
     public:
-        
+        Input(libMesh::Parallel::Communicator &comm)
+        : mesh(comm), space(mesh)
+        {}
+
         void read(InputStream &is) override
         {
             try {
-                is.read("mesh", mesh_type);
-                path = "";
-                is.read("path", path);
-                
-                is.read("boundary-conditions", [this](InputStream &is) {
-                    is.read_all([this](InputStream &is) {
-                        int side_set = 0;
-                        
-                        is.read("side", side_set);
-                        
-                        
-                        double value = 0;
-                        is.read("value", value);
-                        
-                        sides.push_back(side_set);
-                        values.push_back(value);
-                    });
-                });
-                
-                diffusivity = 1.;
+                is.read("mesh", mesh);
+                is.read("space", space);
+
+                forcing_function = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
+                is.read("forcing-function", *forcing_function);
+    
+                //material parameters              
                 is.read("diffusivity", diffusivity);
-                forcing_function = 0.;
-                
-                is.read("forcing-function", forcing_function);
-
-                refinements = 0;
-                is.read("refinements", refinements);
-
-
-                adaptive_refinements = 0;
-                is.read("adaptive-refinements", adaptive_refinements);
-
-                order = 1;
-                is.read("order", order);
-
-                std::fill(std::begin(span), std::end(span), 0.);
-
-                is.read("span-x", span[0]);
-                is.read("span-y", span[1]);
-                is.read("span-z", span[2]);
-
-                elem_type = "quad";
-                is.read("elem-type", elem_type);
-
-
-                std::fill(std::begin(min_coords), std::end(min_coords), 0.);
-                std::fill(std::begin(max_coords), std::end(max_coords), 1.);
-
-                is.read("min-x", min_coords[0]);
-                is.read("min-y", min_coords[1]);
-                is.read("min-z", min_coords[2]);
-
-                is.read("max-x", max_coords[0]);
-                is.read("max-y", max_coords[1]);
-                is.read("max-z", max_coords[2]);
-
-                std::fill(std::begin(n), std::end(n), 5);
-                is.read("n-x", n[0]);
-                is.read("n-y", n[1]);
-                is.read("n-z", n[2]);
 
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
@@ -552,172 +503,25 @@ namespace utopia {
             }
         }
 
-        libMesh::ElemType get_type(const int dim) const
-        {
-            if(dim == 3) {
-                libMesh::ElemType type = libMesh::HEX8;
-
-                if(elem_type == "tet") {
-                    type = libMesh::TET4;
-                }
-
-                if(order == 2) {
-                    type = libMesh::HEX20;
-
-                    if(elem_type == "tet") {
-                        type = libMesh::TET10;
-                    }
-                }
-
-                return type;
-
-            } else if(dim == 2) {
-                libMesh::ElemType type = libMesh::QUAD4;
-
-                if(elem_type == "tri") {
-                    type = libMesh::TRI3;
-                }
-                
-                if(order == 2) {
-                    type = libMesh::QUAD8;
-
-                    if(elem_type == "tri") {
-                        type = libMesh::TRI6;
-                    }
-                }
-
-                return type;
-            }
-
-            return libMesh::TRI3;
-        }
-        
-        void make_mesh(libMesh::DistributedMesh &mesh) const
-        {
-            if(this->mesh_type == "file") {
-                mesh.read(path);
-            } else if(this->mesh_type == "square") {
-                libMesh::MeshTools::Generation::build_square(mesh,
-                                                             n[0], n[1],
-                                                             min_coords[0], max_coords[0],
-                                                             min_coords[1], max_coords[1],
-                                                             get_type(2)
-                                                             );
-            } else if(this->mesh_type == "cube") {
-                libMesh::MeshTools::Generation::build_cube(mesh,
-                                                             n[0], n[1], n[2],
-                                                             min_coords[0], max_coords[0],
-                                                             min_coords[1], max_coords[1],
-                                                             min_coords[2], max_coords[2],
-                                                             get_type(3)
-                                                             );
-            } else if(this->mesh_type == "aabb") {
-                libMesh::DistributedMesh temp_mesh(mesh.comm());
-                temp_mesh.read(path);
-
-#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
-                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(temp_mesh);
-#else
-                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(temp_mesh);
-#endif
-            
-                if(temp_mesh.spatial_dimension() == 3) {
-                 
-                    libMesh::MeshTools::Generation::build_cube(
-                        mesh,
-                        n[0], n[1], n[2],
-                        bb.min()(0) - span[0], bb.max()(0) + span[0],
-                        bb.min()(1) - span[1], bb.max()(1) + span[1],
-                        bb.min()(2) - span[2], bb.max()(2) + span[2],
-                        get_type(3)
-                    );
-
-                } else {
-
-                    libMesh::MeshTools::Generation::build_square(
-                        mesh,
-                        n[0], n[1],
-                        bb.min()(0) - span[0], bb.max()(0) + span[0],
-                        bb.min()(1) - span[1], bb.max()(1) + span[1],
-                        get_type(2)
-                    );
-                }
-
-            }
-
-            refine(refinements, mesh);
-
-            if(this->mesh_type == "file" && order == 2) {
-                mesh.all_second_order();
-            }
-        }
-        
-        void set_up_bc(const FunctionSpaceT &V)
-        {
-            auto u = trial(V);
-            std::size_t n = sides.size();
-            
-            for(std::size_t i = 0; i < n; ++i) {
-                init_constraints(
-                                 constraints(
-                                             boundary_conditions(u == coeff(values[i]), {sides[i]})
-                                             )
-                                 );
-            }
-        }
-        
-        void apply_adaptive_refinement(
-            const std::shared_ptr<libMesh::UnstructuredMesh> &fracture_network,
-            const libMesh::Order &elem_order,
-            const std::shared_ptr<libMesh::UnstructuredMesh> &mesh)
-        {
-            if(adaptive_refinements) {
-                refine_around_fractures(fracture_network, elem_order, mesh, adaptive_refinements, false);
-            }
-        }
-
         inline bool empty() const
         {
-            return mesh_type.empty();
+            return mesh.empty();
         }
 
         void describe(std::ostream &os = std::cout) const
         {
-            os << "-----------------------------------\n";
-            os << "mesh_type:       " << mesh_type << "\n";
-            os << "order:           " << order << "\n";
-            os << "path:            " << path << "\n";
-            os << "diffusivity:     " << diffusivity << "\n";
-            os << "forcing_function: " << forcing_function << "\n";
-
-            
-            os << "side, value\n";
-            
-            std::size_t n = sides.size();
-            for(std::size_t i = 0; i < n; ++i) {
-                os << sides[i]<< ", " << values[i] << "\n";
-            }
-            
-            os << "-----------------------------------\n";
+            // os << "-----------------------------------\n";
+            // mesh.describe(os);
+            // space.describe(os);
+            // forcing_function.describe(os);
+            // os << "-----------------------------------\n";
         }
         
-        
-        std::string mesh_type, path;
-        std::vector<int> sides;
-        std::vector<double> values;
+        UIMesh<libMesh::DistributedMesh> mesh;    
+        UIFunctionSpace<FunctionSpaceT>  space;
+        std::shared_ptr< UIForcingFunction<FunctionSpaceT, UVector> > forcing_function;
+
         double diffusivity;
-        double forcing_function;
-        int refinements;
-        int adaptive_refinements;
-        int order;
-        double span[3];
-
-        double min_coords[3];
-        double max_coords[3];
-
-        int n[3];
-
-        std::string elem_type;
     };
     
     void FractureFlowApp::run(const std::string &conf_file_path)
@@ -726,8 +530,6 @@ namespace utopia {
         
         c.start();
 
-        UIMesh<libMesh::DistributedMesh> ui_mesh(*comm_);       
-        UIFunctionSpace<FunctionSpaceT>  ui_space(ui_mesh);        
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -736,15 +538,12 @@ namespace utopia {
         
         auto is_ptr = open_istream(conf_file_path);
         
-        Input master_in, slave_in;
-        // Input multiplier_in; //LAMBDA
+        Input master_in(*comm_), slave_in(*comm_);
+        // Input multiplier_in(*comm_); //LAMBDA
         
         is_ptr->read("master", master_in);
-        is_ptr->read("slave", slave_in);
+        is_ptr->read("slave",  slave_in);
 
-        is_ptr->read("mesh", ui_mesh);
-        is_ptr->read("space", ui_space);
-        
         // is_ptr->read("multiplier", multiplier_in); //LAMBDA
 
         // if(multiplier_in.empty()) { //LAMBDA
@@ -763,40 +562,14 @@ namespace utopia {
         // multiplier_in.describe(); //LAMBDA
         
         std::cout << "solve_strategy: "  << solve_strategy << std::endl;
-       
-        auto mesh_master = std::make_shared<libMesh::DistributedMesh>(*comm_);
-        auto mesh_slave = std::make_shared<libMesh::DistributedMesh>(*comm_);
-        auto mesh_multiplier = std::make_shared<libMesh::DistributedMesh>(*comm_);
-        
-        master_in.make_mesh(*mesh_master);
-        slave_in.make_mesh(*mesh_slave);
-        // multiplier_in.make_mesh(*mesh_multiplier); //LAMBDA
-
-
-        master_in.apply_adaptive_refinement(mesh_slave, libMesh::FIRST, mesh_master);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
+            
+        auto &V_m = master_in.space.subspace(0);
+        auto &V_s = slave_in.space.subspace(0);
+
         //////////////////////////// Variational formulation ////////////////////////////
-        //equations system
-        auto equation_systems_master = std::make_shared<libMesh::EquationSystems>(*mesh_master);
-        auto &sys_master = equation_systems_master->add_system<libMesh::LinearImplicitSystem>("master");
-        
-        auto equation_systems_slave = std::make_shared<libMesh::EquationSystems>(*mesh_slave);
-        auto &sys_slave = equation_systems_slave->add_system<libMesh::LinearImplicitSystem>("slave");
-
-        // auto equation_systems_multiplier = std::make_shared<libMesh::EquationSystems>(*mesh_multiplier);        //LAMBDA
-        // auto &sys_multiplier = equation_systems_multiplier->add_system<libMesh::LinearImplicitSystem>("multiplier"); //LAMBDA
-        
-        //scalar function space
-        const auto elem_order_m = libMesh::Order(master_in.order);
-        const auto elem_order_s = libMesh::Order(slave_in.order);
-        // const auto elem_order_l = libMesh::Order(multiplier_in.order); //LAMBDA
-
-        auto V_m = FunctionSpaceT(equation_systems_master, libMesh::LAGRANGE, elem_order_m, "u_m");
-        auto V_s = FunctionSpaceT(equation_systems_slave,  libMesh::LAGRANGE, elem_order_s,  "u_s");
-        // auto L   = FunctionSpaceT(equation_systems_multiplier, libMesh::LAGRANGE, elem_order_l,  "lambda"); //LAMBDA
         
         auto u_m = trial(V_m);
         auto v_m = test(V_m);
@@ -804,27 +577,27 @@ namespace utopia {
         auto u_s = trial(V_s);
         auto v_s = test(V_s);
         
-        master_in.set_up_bc(V_m);
-        slave_in.set_up_bc(V_s);
-        // multiplier_in.set_up_bc(L); //LAMBDA
-        
-        V_m.initialize();
-        V_s.initialize();
         // L.initialize(); //LAMBDA
 
         std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " x " <<  V_s.dof_map().n_dofs();
         // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
         std::cout << std::endl;
         
-        auto eq_m = master_in.diffusivity * inner(grad(u_m), grad(v_m)) * dX == inner(coeff(master_in.forcing_function), v_m) * dX;
-        auto eq_s = slave_in.diffusivity  * inner(grad(u_s), grad(v_s)) * dX == inner(coeff(slave_in.forcing_function),  v_s) * dX;
+        auto eq_m = master_in.diffusivity * inner(grad(u_m), grad(v_m)) * dX;
+        auto eq_s = slave_in.diffusivity  * inner(grad(u_s), grad(v_s)) * dX;
         
         //////////////////////////// Generation of the algebraic system ////////////////////////////
 
         USparseMatrix A_m, A_s;
         UVector rhs_m, rhs_s;
-        utopia::assemble(eq_m, A_m, rhs_m);
-        utopia::assemble(eq_s, A_s, rhs_s);
+        utopia::assemble(eq_m, A_m);
+        utopia::assemble(eq_s, A_s);
+
+        UVector x_m = local_zeros(V_m.dof_map().n_local_dofs());
+        UVector x_s = local_zeros(V_s.dof_map().n_local_dofs());
+
+        master_in.forcing_function->eval(x_m, rhs_m);
+        slave_in.forcing_function->eval(x_s, rhs_s);
         
         apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
         apply_boundary_conditions(V_s.dof_map(), A_s, rhs_s);
@@ -870,10 +643,9 @@ namespace utopia {
         
 
         // UGLY code for writing stuff to disk
-        
-        libMesh::Nemesis_IO io_m(*mesh_master);
-        libMesh::Nemesis_IO io_s(*mesh_slave);
-        libMesh::Nemesis_IO io_multiplier(*mesh_multiplier);
+        libMesh::Nemesis_IO io_m(master_in.mesh.mesh());
+        libMesh::Nemesis_IO io_s(slave_in.mesh.mesh());
+        // libMesh::Nemesis_IO io_multiplier(*mesh_multiplier);
         
         utopia::convert(sol_m, *V_m.equation_system().solution);
         V_m.equation_system().solution->close();
@@ -888,17 +660,6 @@ namespace utopia {
         // L.equation_system().solution->close();                                                        //LAMBDA
         // io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);  //LAMBDA
         
-        // if(size(lagr) == size(sol_m)) {
-        //     libMesh::Nemesis_IO io_l(*mesh_master);
-        //     utopia::convert(lagr, *V_m.equation_system().solution);
-        //     V_m.equation_system().solution->close();
-        //     io_l.write_timestep("lagr.e", V_m.equation_systems(), 1, 0);
-        // } else {
-        //     libMesh::Nemesis_IO io_l(*mesh_slave);
-        //     utopia::convert(lagr, *V_s.equation_system().solution);
-        //     V_s.equation_system().solution->close();
-        //     io_l.write_timestep("lagr.e", V_s.equation_systems(), 1, 0);
-        // }
         
         c.stop();
         std::cout << c << std::endl;
