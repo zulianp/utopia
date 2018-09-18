@@ -3,6 +3,7 @@
 
 #include "utopia_petsc_KSPSolver.hpp"
 #include "utopia_DirectSolver.hpp"
+#include "utopia_LinearSolverInterfaces.hpp"
 
 namespace utopia {
 

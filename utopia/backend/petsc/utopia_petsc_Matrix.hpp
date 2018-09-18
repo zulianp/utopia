@@ -299,6 +299,8 @@ namespace utopia {
         void row_max(PetscVector &col) const;
         void row_min(PetscVector &col) const;
 
+        void col_sum(PetscVector &col) const;
+
         inline PetscReal norm2() const
         {
         	PetscReal val;
@@ -431,6 +433,16 @@ namespace utopia {
         	PetscInt o_nnz,
         	PetscInt block_size
         );
+
+         void nest(
+            MPI_Comm comm,
+            PetscInt nr,
+            const IS is_row[],
+            PetscInt nc,
+            const IS is_col[],
+            const Mat a[],
+            const bool use_mat_nest_type = false
+         );
 
         // void mat_aij_cusparse_init(
         //  	MPI_Comm comm,

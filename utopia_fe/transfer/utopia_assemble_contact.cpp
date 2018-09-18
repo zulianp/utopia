@@ -481,11 +481,11 @@ namespace utopia {
 						 const std::shared_ptr<MeshBase> &master_slave,
 						 const std::shared_ptr<DofMap> &dof_map,
 						 const unsigned int var_num,
-						 DSMatrixd &B,
-						 DSMatrixd &orthogonal_trafos,
-						 DVectord &gap,
-						 DSMatrixd &normals,
-						 DVectord &is_contact_node,
+						 USparseMatrix &B,
+						 USparseMatrix &orthogonal_trafos,
+						 UVector &gap,
+						 USparseMatrix &normals,
+						 UVector &is_contact_node,
 						 const moonolith::SearchSettings &settings,
 						 const libMesh::Real search_radius,
 						 const std::vector< std::pair<int, int> > &tags,
@@ -1109,11 +1109,11 @@ namespace utopia {
 			}
 		}
 
-		DVectord is_contact_node_tilde = local_zeros(n_local_side_node_dofs);
-		DVectord gap_tilde = local_zeros(n_local_side_node_dofs);
+		UVector is_contact_node_tilde = local_zeros(n_local_side_node_dofs);
+		UVector gap_tilde = local_zeros(n_local_side_node_dofs);
 		{
-			Write<DVectord> w_g(gap_tilde);
-			Write<DVectord> w_i(is_contact_node_tilde);
+			Write<UVector> w_g(gap_tilde);
+			Write<UVector> w_i(is_contact_node_tilde);
 
 			for (auto it = gap_buffer.iter(); it; ++it) {
 
@@ -1127,9 +1127,9 @@ namespace utopia {
 			}
 		}
 
-		DSMatrixd normal_tilde = utopia::local_sparse(n_local_side_node_dofs, dim, dim);
+		USparseMatrix normal_tilde = utopia::local_sparse(n_local_side_node_dofs, dim, dim);
 		{
-			utopia::Write<utopia::DSMatrixd> write(normal_tilde);
+			utopia::Write<utopia::USparseMatrix> write(normal_tilde);
 			for (auto it = normal_buffer.iter(); it; ++it) {
 
 				const SizeType index = it.row() - side_node_ownership_ranges[comm.rank()];
@@ -1148,9 +1148,9 @@ namespace utopia {
 		const SizeType n_max_row_entries_p = n_max_row_entries_bpq[1];
 		const SizeType n_max_row_entries_q = n_max_row_entries_bpq[2];
 
-		DSMatrixd B_tilde = utopia::local_sparse(n_local_side_node_dofs, n_local_side_node_dofs, n_max_row_entries_b);
+		USparseMatrix B_tilde = utopia::local_sparse(n_local_side_node_dofs, n_local_side_node_dofs, n_max_row_entries_b);
 		{
-			utopia::Write<utopia::DSMatrixd> write(B_tilde);
+			utopia::Write<utopia::USparseMatrix> write(B_tilde);
 			for (auto it = B_buffer.iter(); it; ++it) {
 
 				const SizeType index = it.row() - side_node_ownership_ranges[comm.rank()];
@@ -1162,35 +1162,35 @@ namespace utopia {
 			}
 		}
 
-		DSMatrixd P = utopia::local_sparse(n_local_dofs_slave, n_local_side_node_dofs, n_max_row_entries_p);
+		USparseMatrix P = utopia::local_sparse(n_local_dofs_slave, n_local_side_node_dofs, n_max_row_entries_p);
 		{
-			utopia::Write<utopia::DSMatrixd> write(P);
+			utopia::Write<utopia::USparseMatrix> write(P);
 			for (auto it = P_buffer.iter(); it; ++it) {
 				P.set(it.row(), it.col(), *it);
 			}
 		}
 
-		DSMatrixd Q = utopia::local_sparse(n_local_dofs_master, n_local_side_node_dofs, n_max_row_entries_q);
+		USparseMatrix Q = utopia::local_sparse(n_local_dofs_master, n_local_side_node_dofs, n_max_row_entries_q);
 		{
-			utopia::Write<utopia::DSMatrixd> write(Q);
+			utopia::Write<utopia::USparseMatrix> write(Q);
 			for (auto it = Q_buffer.iter(); it; ++it) {
 				Q.set(it.row(), it.col(), *it);
 			}
 		}
 
-		DSMatrixd Q_t = transpose(Q);
-		DSMatrixd B_x = P * B_tilde * Q_t;
+		USparseMatrix Q_t = transpose(Q);
+		USparseMatrix B_x = P * B_tilde * Q_t;
 
 		normals = P * normal_tilde;
 
-		DVectord gap_x = P * gap_tilde;
+		UVector gap_x = P * gap_tilde;
 
 		is_contact_node = P * is_contact_node_tilde;
 
 
-		DVectord normals_vec = local_zeros(n_local_dofs_slave);
+		UVector normals_vec = local_zeros(n_local_dofs_slave);
 		{
-			Write<DVectord> w(normals_vec);
+			Write<UVector> w(normals_vec);
 
 			each_read(normals, [&](const SizeType i, const SizeType j, const double value){
 				normals_vec.set(i + j, value);
@@ -1199,7 +1199,7 @@ namespace utopia {
 
 		bool has_contact = false;
 		{
-			Write<DVectord> w_i(is_contact_node);
+			Write<UVector> w_i(is_contact_node);
 			each_read(is_contact_node, [&](const SizeType i , const double value){
 				if (value > 0)
 				{
@@ -1215,9 +1215,9 @@ namespace utopia {
 			std::vector<Scalar> normal(dim, 0);
 			std::vector<Scalar> H(dim * dim, 0);
 
-			Read<DVectord>  r_n(normals_vec);
-			Write<DSMatrixd> w_o(orthogonal_trafos);
-			Read<DVectord> r_icn(is_contact_node);
+			Read<UVector>  r_n(normals_vec);
+			Write<USparseMatrix> w_o(orthogonal_trafos);
+			Read<UVector> r_icn(is_contact_node);
 
 			bool check_has_contact = false;
 
@@ -1274,8 +1274,8 @@ namespace utopia {
 
 		static const double LARGE_VALUE = 10000;
 		{
-			Write<DVectord> w_g(gap);
-			Read<DVectord> r_icn(is_contact_node);
+			Write<UVector> w_g(gap);
+			Read<UVector> r_icn(is_contact_node);
 
 			each_read(gap_x, [&](const SizeType i, const double value) {
 				const SizeType offset = i;
@@ -1292,7 +1292,7 @@ namespace utopia {
 		B = local_sparse(size_B_x.get(0), size_B_x.get(1), n_max_row_entries_b * dim);
 
 		{
-			Write<DSMatrixd> w_B(B);
+			Write<USparseMatrix> w_B(B);
 			each_read(B_x, [&](const SizeType i, const SizeType j, const double value) {
 				for(SizeType d = 0; d < dim; ++d) {
 					B.set(i + d, j + d, value);
@@ -1307,11 +1307,11 @@ namespace utopia {
 						  const std::shared_ptr<MeshBase> &mesh,
 						  const std::shared_ptr<DofMap> &dof_map,
 						  const unsigned int var_num,
-						  DSMatrixd &B,
-						  DSMatrixd &orthogonal_trafos,
-						  DVectord &gap,
-						  DSMatrixd &normals,
-						  DVectord &is_contact_node,
+						  USparseMatrix &B,
+						  USparseMatrix &orthogonal_trafos,
+						  UVector &gap,
+						  USparseMatrix &normals,
+						  UVector &is_contact_node,
 						  const libMesh::Real search_radius,
 						  const std::vector< std::pair<int, int> > &tags,
 						  const bool use_biorth,
@@ -1336,11 +1336,11 @@ namespace utopia {
 						  const std::shared_ptr<MeshBase> &mesh,
 						  const std::shared_ptr<DofMap> &dof_map,
 						  const unsigned int var_num,
-						  DSMatrixd &B,
-						  DSMatrixd &orthogonal_trafos,
-						  DVectord &gap,
-						  DSMatrixd &normals,
-						  DVectord &is_contact_node,
+						  USparseMatrix &B,
+						  USparseMatrix &orthogonal_trafos,
+						  UVector &gap,
+						  USparseMatrix &normals,
+						  UVector &is_contact_node,
 						  const libMesh::Real search_radius,
 						  const int tag_1,
 						  const int tag_2,
@@ -1356,17 +1356,17 @@ namespace utopia {
 								use_volume_differential);
 	}
 
-	void convert_normal_matrix_to_vector(const DSMatrixd &mat, DVectord &vec)
+	void convert_normal_matrix_to_vector(const USparseMatrix &mat, UVector &vec)
 	{
 		auto s = local_size(mat);
 
 		vec = local_zeros(s.get(0));
-		DVectord norms = local_zeros(s.get(0));
+		UVector norms = local_zeros(s.get(0));
 
 		auto s_ns = local_size(norms);
 
 		{
-			Write<DVectord> w_ns(norms);
+			Write<UVector> w_ns(norms);
 			each_read(mat, [&](const SizeType i, const SizeType j, const double value){
 				norms.add(i, value * value);
 			});
@@ -1375,8 +1375,8 @@ namespace utopia {
 		norms = sqrt(norms);
 
 		{
-			Write<DVectord> w(vec);
-			Read<DVectord> r_ns(norms);
+			Write<UVector> w(vec);
+			Read<UVector> r_ns(norms);
 
 			each_read(mat, [&](const SizeType i, const SizeType j, const double value){
 				vec.set(i + j, value/norms.get(i));
@@ -1388,11 +1388,11 @@ namespace utopia {
 						  const std::shared_ptr<libMesh::MeshBase> &mesh,
 						  const std::shared_ptr<libMesh::DofMap> &dof_map,
 						  const unsigned int var_num,
-						  DSMatrixd &B,
-						  DSMatrixd &orthogonal_trafos,
-						  DVectord &gap,
-						  DVectord &normals,
-						  DVectord &is_contact_node,
+						  USparseMatrix &B,
+						  USparseMatrix &orthogonal_trafos,
+						  UVector &gap,
+						  UVector &normals,
+						  UVector &is_contact_node,
 						  const libMesh::Real search_radius,
 						  const std::vector< std::pair<int, int> > &tags,
 						  const bool use_biorth,
@@ -1411,7 +1411,7 @@ namespace utopia {
 		c.start();
 		///////////////////////////
 
-		DSMatrixd direction_matrix;
+		USparseMatrix direction_matrix;
 		if(!assemble_contact(comm, mesh, dof_map, var_num,
 							 B, orthogonal_trafos,
 							 gap, direction_matrix, is_contact_node,

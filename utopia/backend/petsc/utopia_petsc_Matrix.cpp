@@ -390,6 +390,8 @@ namespace utopia {
         return res;
     }
 
+
+
     template<class Operation>
     inline static PetscScalar generic_local_reduce(const PetscMatrix &m, const PetscScalar &init_value, const Operation &op)
     {
@@ -532,6 +534,30 @@ namespace utopia {
 
         check_error( MatZeroEntries(implementation()) );
         check_error( MatDiagonalSet( implementation(), diag.implementation(), INSERT_VALUES) );
+    }
+
+    void PetscMatrix::nest(
+       MPI_Comm comm,
+       PetscInt nr,
+       const IS is_row[],
+       PetscInt nc,
+       const IS is_col[],
+       const Mat a[],
+       const bool use_mat_nest_type
+    )
+    {
+        destroy();
+
+        if(use_mat_nest_type) {
+            check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &implementation()) );
+        } else {
+            Mat temp = nullptr;
+            
+            check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &temp) );
+            check_error( MatConvert(temp, type_override(), MAT_INITIAL_MATRIX, &implementation()) );
+
+            check_error(  MatDestroy(&temp) );
+        }
     }
 
     void PetscMatrix::get_diag(PetscMatrix &result) const
@@ -1013,6 +1039,13 @@ namespace utopia {
                 utopia::Min()
                 );
         }
+    }
+
+    void PetscMatrix::col_sum(PetscVector &col) const
+    {
+        PetscVector temp;
+        temp.values(communicator(), col.type(), local_size().get(0), size().get(0), 1.);
+        this->mult_t(temp, col);
     }
 
     void PetscMatrix::mult(const PetscVector &vec, PetscVector &result) const

@@ -102,6 +102,53 @@ namespace utopia {
 		assert(is_consistent());
 	}
 
+	void PetscVector::nest(
+		MPI_Comm comm,
+		PetscInt nb,
+		IS is[],
+		Vec x[],
+		const bool use_vec_nest_type)
+	{
+		if(use_vec_nest_type) {
+			destroy();
+			VecCreateNest(comm, nb, is, x, &vec_);
+		} else {
+
+			PetscInt ls = 0, gs = 0;
+			PetscInt ls_i = 0, gs_i = 0;
+
+
+			for(PetscInt i = 0; i < nb; ++i) {
+				VecGetLocalSize(x[i], &ls_i);
+				ls += ls_i;
+
+				VecGetSize(x[i], &gs_i);
+				gs += gs_i;
+			}
+
+			repurpose(comm, type_override(), ls, gs);
+
+			write_lock();
+
+			auto r = range();
+
+			const PetscScalar *a;
+			PetscInt local_index = 0;
+			for(PetscInt i = 0; i < nb; ++i) {
+				VecGetLocalSize(x[i], &ls_i);
+				VecGetArrayRead(x[i], &a);
+
+				for(PetscInt k = 0; k < ls_i; ++k) {
+					VecSetValue(implementation(), r.begin() + local_index++, a[k], INSERT_VALUES);
+				}
+
+				VecRestoreArrayRead(x[i], &a);
+			}
+
+			write_unlock();
+		}
+	}	
+
 	void PetscVector::ghosted(MPI_Comm comm,
 		PetscInt local_size,
 		PetscInt global_size,

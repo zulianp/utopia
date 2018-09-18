@@ -476,12 +476,12 @@ namespace utopia {
 
 
 	void plot_scaled_normal_field(const libMesh::MeshBase &mesh,
-		const DVectord &normals,
-		const DVectord &scale,
+		const UVector &normals,
+		const UVector &scale,
 		const std::string &name)
 	{
 
-		Read<DVectord> r_n(normals), r_s(scale);
+		Read<UVector> r_n(normals), r_s(scale);
 
 		using namespace libMesh;
 		int mesh_dim = mesh.mesh_dimension();
@@ -589,8 +589,8 @@ namespace utopia {
 
 	void plot_scaled_normal_field(
 		const libMesh::MeshBase &,
-		const DVectord &,
-		const DVectord &,
+		const UVector &,
+		const UVector &,
 		const std::string &)
 	{
 		std::cerr << "[Warning] plot function not implemented, make sure to have a proper boost installation" << std::endl;

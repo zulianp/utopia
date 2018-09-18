@@ -2,6 +2,7 @@
 #define UTOPIA_LIBMESH_HPP
 
 #include "utopia_Base.hpp"
+#include "utopia_fe_base.hpp"
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
 #include "utopia_libmesh_AssemblyContext.hpp"

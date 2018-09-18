@@ -15,7 +15,7 @@ namespace utopia {
 // 	// { }
 
 
-// 	bool MortarAssembler::assemble(DSMatrixd &B)
+// 	bool MortarAssembler::assemble(USparseMatrix &B)
 // 	{
 // 		using namespace std;
 // 		static const bool verbose = true;
@@ -74,8 +74,8 @@ namespace utopia {
 // 		D = sparse(slave_->dof_map().n_local_dofs(), slave_->dof_map().n_local_dofs(), std::max(1, int(master_->dof_map().n_local_dofs() * 0.2)));
 		
 // 		{ //write scope begin
-// 			Write<DSMatrixd> w_B(B);
-// 			Write<DSMatrixd> w_D(D);
+// 			Write<USparseMatrix> w_B(B);
+// 			Write<USparseMatrix> w_D(D);
 
 // 			std::vector<libMesh::dof_id_type> master_dofs, slave_dofs;
 // 			libMesh::DenseMatrix<libMesh::Real> elemmat;
@@ -885,7 +885,7 @@ namespace utopia {
 // 	SpaceT &space,
 // 	const std::unique_ptr<FEBaseT> &master_fe, 
 // 	const std::unique_ptr<FEBaseT> &slave_fe, 
-// 	DSMatrixd &coupling, DVectord &gap, DVectord &normals, DSMatrixd &orthogonal_trafos, 
+// 	USparseMatrix &coupling, UVector &gap, UVector &normals, USparseMatrix &orthogonal_trafos, 
 // 	std::vector<bool> &is_contact_node, const libMesh::Real search_radius, 
 // 	const bool strict_gap_policy, 
 // 	const std::shared_ptr<moonolith::Predicate> &predicate)
@@ -940,9 +940,9 @@ namespace utopia {
 // 	std::fill(is_contact_node.begin(), is_contact_node.end(), false);
 
 // 	{
-// 		Write<DVectord>  w_gap(gap);
-// 		Write<DSMatrixd> w_coupling(coupling);
-// 		Write<DVectord>  w_normals(normals);
+// 		Write<UVector>  w_gap(gap);
+// 		Write<USparseMatrix> w_coupling(coupling);
+// 		Write<UVector>  w_normals(normals);
 
 // 		std::vector<dof_id_type> dof_indices_slave;
 // 		std::vector<dof_id_type> dof_indices_master;
@@ -1044,16 +1044,16 @@ namespace utopia {
 // 	// write("gap.m", gap);
 
 
-// 	DVectord sum_c   = sum(coupling, 1);
-// 	DVectord gap_2   = zeros(size(gap));
+// 	UVector sum_c   = sum(coupling, 1);
+// 	UVector gap_2   = zeros(size(gap));
 
 
 // 	// write("sum_c.m", sum_c);
 
 // 	{
-// 		Read<DVectord>  r_c(sum_c);
-// 		Read<DVectord>  r_g(gap);
-// 		Write<DVectord> w_g(gap_2);
+// 		Read<UVector>  r_c(sum_c);
+// 		Read<UVector>  r_g(gap);
+// 		Write<UVector> w_g(gap_2);
 
 // 		Range r = range(gap);
 // 		for(uint i = r.begin(); i < r.end(); ++i) {
@@ -1068,11 +1068,11 @@ namespace utopia {
 
 // 	std::cout << "sum(coupling): " << double(sum(sum_c)) << std::endl;
 
-// 	DSMatrixd coupling_2 = coupling;
+// 	USparseMatrix coupling_2 = coupling;
 	
 // 	{
-// 		Write<DSMatrixd> w_c(coupling_2);
-// 		Read<DVectord>  r_c(sum_c);
+// 		Write<USparseMatrix> w_c(coupling_2);
+// 		Read<UVector>  r_c(sum_c);
 
 // 		each_read(coupling, [&sum_c, &coupling_2, &is_contact_node](const SizeType i, const SizeType j, const Scalar value) {
 // 			if(is_contact_node[i]) {
@@ -1085,11 +1085,11 @@ namespace utopia {
 // 	coupling = std::move(coupling_2);
 
 
-// 	DVectord mm_normals = normals;
-// 	DVectord lenghts = zeros(n_dofs/dim);
+// 	UVector mm_normals = normals;
+// 	UVector lenghts = zeros(n_dofs/dim);
 
 // 	{
-// 		Write<DVectord> w_l(lenghts);
+// 		Write<UVector> w_l(lenghts);
 // 		each_read(mm_normals, [&lenghts, dim](const int i, const double value){
 // 			lenghts.add(i/dim, value*value);
 // 		});
@@ -1098,9 +1098,9 @@ namespace utopia {
 // 	lenghts = sqrt(lenghts);
 
 // 	{	
-// 		Read<DVectord>  r_n(mm_normals);
-// 		Read<DVectord>  r_l(lenghts);
-// 		Write<DVectord> w_n(normals);
+// 		Read<UVector>  r_n(mm_normals);
+// 		Read<UVector>  r_l(lenghts);
+// 		Write<UVector> w_n(normals);
 
 // 		Range r = range(normals);
 // 		for(uint i = r.begin(); i < r.end(); ++i) {
@@ -1118,8 +1118,8 @@ namespace utopia {
 // 		std::vector<Scalar> normal(dim, 0);
 // 		std::vector<Scalar> H(dim * dim, 0);
 
-// 		Read<DVectord>  r_n(normals);
-// 		Write<DSMatrixd> w_o(orthogonal_trafos);
+// 		Read<UVector>  r_n(normals);
+// 		Write<USparseMatrix> w_o(orthogonal_trafos);
 
 // 		Range r = range(normals);
 // 		for(uint i = r.begin(); i < r.end(); i += dim) {
@@ -1175,7 +1175,7 @@ namespace utopia {
 // 	}
 
 // 	{
-// 		Write<DVectord> w_g(gap);
+// 		Write<UVector> w_g(gap);
 // 		Range r = range(gap);
 
 // 		const Scalar large_number = 1000;
@@ -1192,7 +1192,7 @@ namespace utopia {
 // 	return true;
 // }
 
-// bool MortarContactAssembler::assemble(DSMatrixd &coupling, DVectord &gap, DVectord &normals, DSMatrixd &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate) {
+// bool MortarContactAssembler::assemble(USparseMatrix &coupling, UVector &gap, UVector &normals, USparseMatrix &orthogonal_trafos, std::vector<bool> &is_contact_node, const libMesh::Real search_radius, const std::shared_ptr<moonolith::Predicate> &predicate) {
 	
 
 // 	if(space_->is_vector()) {

@@ -32,6 +32,7 @@
 #include "utopia_MatrixPtAPProduct.hpp"
 #include "utopia_Equality.hpp"
 #include "utopia_Determinant.hpp"
+#include "utopia_Blocks.hpp"
 
 
 #include "utopia_Readable.hpp"

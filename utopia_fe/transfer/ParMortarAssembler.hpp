@@ -23,9 +23,9 @@
 // 			const std::shared_ptr<LibMeshFESpaceBase> &master_slave); //constructor
         
         
-//         bool Assemble(DSMatrixd &B);
-//         bool SurfaceAssemble(DSMatrixd &B, const libMesh::Real search_radius, const int tag_1, const int tag_2);
-//         bool Transfer(DSMatrixd &B,DSMatrixd &T);
+//         bool Assemble(USparseMatrix &B);
+//         bool SurfaceAssemble(USparseMatrix &B, const libMesh::Real search_radius, const int tag_1, const int tag_2);
+//         bool Transfer(USparseMatrix &B,USparseMatrix &T);
 
     
 //     private:

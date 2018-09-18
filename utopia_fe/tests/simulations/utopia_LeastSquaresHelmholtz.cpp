@@ -83,7 +83,7 @@ namespace utopia {
 		auto b_form = b_11 + b_12 + b_21 + b_22;
 		auto l_form = l_1 + l_2;
 
-		DVectord sol;
+		UVector sol;
 		if(!solve(
 			equations(
 				b_form == l_form

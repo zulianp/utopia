@@ -23,8 +23,6 @@ namespace utopia {
 				sub_is.read("max_iter", max_iter);
 			});
 
-
-
 			is.read("array", [this](InputStream &sub_is) {
 				sub_is.read_all([this](InputStream &sub_is) {
 					std::string v;
@@ -33,8 +31,26 @@ namespace utopia {
 				});
 			});
 
+			is.read("empty-array", [this](InputStream &sub_is) {
+				sub_is.read_all([this](InputStream &sub_is) {
+					utopia_test_assert(false);
+					empty_array.push_back("I should not be here");
+				});
+			});
+
+			utopia_test_assert(is.good());
+
 			is.read("tol", tol);
 			is.read("values", values);
+
+			//stuff that is not there
+			no_value = false;
+			is.read("no-value", no_value);
+
+			no_value = false;
+			is.read("no-value-2", [](InputStream &sub_is) {
+				utopia_test_assert(false);
+			});
 		}
 
 		std::string type, op, rhs;
@@ -43,6 +59,8 @@ namespace utopia {
 		double tol = 1e-16;
 		std::vector<double> values;
 		std::vector<std::string> array;
+		std::vector<std::string> empty_array;
+		bool no_value;
 	};
 
 	void generic_stream(InputStream &is)
@@ -62,6 +80,8 @@ namespace utopia {
 		utopia_test_assert( desc.values[0] == 1. );
 		utopia_test_assert( desc.values[1] == 2. );
 		utopia_test_assert( desc.values[2] == 3. );
+		utopia_test_assert( desc.empty_array.empty() );
+		utopia_test_assert( !desc.no_value );
 	}
 
 	void xml_stream()

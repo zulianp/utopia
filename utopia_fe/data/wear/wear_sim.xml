@@ -85,6 +85,7 @@
         <coeff>0.007</coeff>
         <extrapolation>500.0</extrapolation>
         <gait-cycle>
+            <type>old</type>
             <steps>30</steps>
             <rotations type="array">
                 <entry>

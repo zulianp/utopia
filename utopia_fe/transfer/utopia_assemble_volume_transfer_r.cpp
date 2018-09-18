@@ -311,8 +311,8 @@ namespace utopia {
 				  const unsigned int &to_var_num,
 				  const unsigned int &from_var_num_r,
 				  const unsigned int &to_var_num_r,
-				  DSMatrixd &B,
-				  DSMatrixd &B_reverse,
+				  USparseMatrix &B,
+				  USparseMatrix &B_reverse,
 				  const moonolith::SearchSettings &settings,
 				  bool use_biorth_,
 				  int n_var,
@@ -606,11 +606,11 @@ namespace utopia {
 		const SizeType local_range_slave_r  = ownershipRangesSlave_r [comm.rank()+1] - ownershipRangesSlave_r [comm.rank()];
 		const SizeType local_range_master_r = ownershipRangesMaster_r[comm.rank()+1] - ownershipRangesMaster_r[comm.rank()];
 		
-		DSMatrixd B_x = utopia::local_sparse(local_range_slave, local_range_master, mMaxRowEntries);
-		DSMatrixd B_x_reverse = utopia::local_sparse(local_range_master_r, local_range_slave_r, mMaxRowEntries_reverse);
+		USparseMatrix B_x = utopia::local_sparse(local_range_slave, local_range_master, mMaxRowEntries);
+		USparseMatrix B_x_reverse = utopia::local_sparse(local_range_master_r, local_range_slave_r, mMaxRowEntries_reverse);
 		
 		{
-			utopia::Write<utopia::DSMatrixd> write(B_x);
+			utopia::Write<utopia::USparseMatrix> write(B_x);
 			for (auto it = mat_buffer.iter(); it; ++it) {
 				B_x.set(it.row(), it.col(), *it);
 				
@@ -618,7 +618,7 @@ namespace utopia {
 		}
 		
 		{
-			utopia::Write<utopia::DSMatrixd> write_reverse(B_x_reverse);
+			utopia::Write<utopia::USparseMatrix> write_reverse(B_x_reverse);
 			for (auto it = mat_buffer_reverse.iter(); it; ++it) {
 				B_x_reverse.set(it.row(), it.col(), *it);
 				
@@ -632,7 +632,7 @@ namespace utopia {
 		
 		B_reverse = local_sparse(s_B_x_reverse.get(0), s_B_x_reverse.get(1), n_var_r * mMaxRowEntries_reverse);
 		
-		utopia::Write<DSMatrixd> w_B(B);
+		utopia::Write<USparseMatrix> w_B(B);
 		utopia::each_read(B_x, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
 			for(utopia::SizeType d = 0; d < n_var; ++d) {
 				B.set(i+d, j+d, value);
@@ -640,7 +640,7 @@ namespace utopia {
 		});
 		
 		
-		utopia::Write<DSMatrixd> w_B_reverse(B_reverse);
+		utopia::Write<USparseMatrix> w_B_reverse(B_reverse);
 		utopia::each_read(B_x_reverse, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
 			for(utopia::SizeType d = 0; d < n_var_r ; ++d) {
 				B_reverse.set(i + d, j + d, value);
@@ -667,8 +667,8 @@ namespace utopia {
 									bool  use_biorth_,
 									int n_var,
 									int n_var_r,
-									DSMatrixd &B,
-									DSMatrixd &B_reverse,
+									USparseMatrix &B,
+									USparseMatrix &B_reverse,
 									const std::vector< std::pair<int, int> > &tags)
 	{
 		

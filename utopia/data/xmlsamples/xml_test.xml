@@ -15,4 +15,6 @@
 		<entry>first</entry>
 		<entry>last</entry>
 	</array>
+	<empty-array type="array">
+	</empty-array >
 </solve>

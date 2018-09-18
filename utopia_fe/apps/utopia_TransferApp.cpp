@@ -157,7 +157,7 @@ namespace utopia {
 
 		c.start();
 
-		std::vector<std::shared_ptr<DSMatrixd>> mats;
+		std::vector<std::shared_ptr<USparseMatrix>> mats;
 		TransferAssembler transfer_assembler(local_assembler_, local2global_);
 		bool ok = transfer_assembler.assemble(
 			mesh_master_,
@@ -194,17 +194,17 @@ namespace utopia {
 				transfer_op_ = pl2;
 			} else {
 				if(mats.size() == 2) {
-					auto l2op = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<DSMatrixd, DVectord>>());
+					auto l2op = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
 					l2op->fix_mass_matrix_operator();
 					transfer_op_ = l2op;
 				} else {
 					auto u = trial(*space_slave_);
 					auto v = test(*space_slave_);
 
-					auto D = std::make_shared<DSMatrixd>();
+					auto D = std::make_shared<USparseMatrix>();
 
 					assemble(inner(u, v) * dX, *D);
-					transfer_op_ = std::make_shared<L2TransferOperator>(mats[0], D, std::make_shared<Factorization<DSMatrixd, DVectord>>());
+					transfer_op_ = std::make_shared<L2TransferOperator>(mats[0], D, std::make_shared<Factorization<USparseMatrix, UVector>>());
 				}
 			}
 
@@ -219,9 +219,9 @@ namespace utopia {
 
 		c.start();
 
-		DVectord fun_master_h, fun_master, fun_slave, back_fun_master;
+		UVector fun_master_h, fun_master, fun_slave, back_fun_master;
 
-		DSMatrixd mass_mat_master;
+		USparseMatrix mass_mat_master;
 		assemble(inner(u, v) * dX, mass_mat_master);
 
 		if(!fun_is_constant) {
@@ -229,7 +229,7 @@ namespace utopia {
 
 			fun_master = fun_master_h;
 
-			BiCGStab<DSMatrixd, DVectord> solver;
+			BiCGStab<USparseMatrix, UVector> solver;
 			solver.solve(mass_mat_master, fun_master_h, fun_master);
 		} else {
 #ifdef WITH_TINY_EXPR

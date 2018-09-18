@@ -168,6 +168,64 @@ namespace utopia {
             implementation().putScalar(value);
         }
 
+        template<typename Integer>
+        void get(
+            const std::vector<Integer> &index,
+            std::vector<Scalar> &values) const
+        {
+            // m_utopia_warning_once(" > get does not work in parallel if it asks for ghost entries");
+            //FIXME does not work in parallel
+            auto data   = implementation().getData();
+            auto offset = implementation().getMap()->getMinGlobalIndex();
+
+            auto n = index.size();
+            values.resize(n);
+
+            for(std::size_t i = 0; i < n; ++i) {
+                auto local_index = index[i] - offset;
+                assert(local_index < data.size());
+                values[i] = data[local_index];
+            }
+        }
+
+        void set_vector(
+            const std::vector<global_ordinal_type> &indices,
+            const std::vector<Scalar> &values);
+
+        void add_vector(
+            const std::vector<global_ordinal_type> &indices,
+            const std::vector<Scalar> &values);
+
+        template<typename Integer>
+        void select(
+            const std::vector<Integer> &index,
+            TpetraVector &out
+            ) const
+        {
+            //FIXME does not work in parallel
+            auto data   = implementation().getData();
+            auto offset = implementation().getMap()->getMinGlobalIndex();
+
+            auto map = Teuchos::rcp(
+                new map_type(
+                    Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
+                    index.size(),
+                    0,
+                    communicator())
+            );
+
+            out.init(map);
+            auto n = data.size();
+            auto out_data = out.implementation().getDataNonConst();
+
+            for(std::size_t i = 0; i < n; ++i) {
+                auto local_index = index[i] - offset;
+                assert(local_index < n);
+                out_data[i] = data[local_index];
+            }
+        }
+
+
         inline void read_lock()
         {
             read_only_data_ = implementation().getData();
@@ -235,6 +293,9 @@ namespace utopia {
         }
 
         Scalar sum() const;
+        Scalar min() const;
+        Scalar max() const;
+
         bool is_nan_or_inf() const;
 
         inline void scale(const Scalar alpha)
@@ -322,8 +383,15 @@ namespace utopia {
             return *vec_;
         }
 
+        inline rcpvector_type &implementation_ptr()
+        {
+            assert(!vec_.is_null());
+            return vec_;
+        }
+
         inline const rcpvector_type &implementation_ptr() const
         {
+            assert(!vec_.is_null());
             return vec_;
         }
 
@@ -353,6 +421,15 @@ namespace utopia {
         {
             return vec_.is_null();
         }
+
+        void update_ghosts() {}
+
+        bool has_ghosts() const
+        {
+            // m_utopia_warning_once(" > has ghosts in trilinos backend does not do anything!");
+            return false;
+        }
+        
     private:
         rcpvector_type vec_;
         Teuchos::ArrayRCP<const Scalar> read_only_data_;

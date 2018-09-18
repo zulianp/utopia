@@ -5,6 +5,7 @@
 
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia.hpp"
+#include "utopia_fe_base.hpp"
 
 #include "libmesh/sparse_matrix.h"
 #include "libmesh/numeric_vector.h"
@@ -56,7 +57,7 @@ namespace utopia {
 	}
 
 
-	inline static void get_vector(const DVectord &vec, const std::vector<libMesh::dof_id_type> &dofs, libMesh::DenseVector<libMesh::Real> &el_vec)
+	inline static void get_vector(const UVector &vec, const std::vector<libMesh::dof_id_type> &dofs, libMesh::DenseVector<libMesh::Real> &el_vec)
 	{
 		el_vec.resize(dofs.size());
 		int i = 0;
@@ -68,7 +69,7 @@ namespace utopia {
 	inline static void add_matrix(const libMesh::DenseMatrix<libMesh::Real> &block,
 								  const std::vector<libMesh::dof_id_type> &row_dofs,
 								  const std::vector<libMesh::dof_id_type> &col_dofs,
-								  DSMatrixd &mat)
+								  USparseMatrix &mat)
 	{
 		// Size s = size(mat);
 		// for(uint i = 0; i < row_dofs.size(); ++i) {
@@ -86,7 +87,7 @@ namespace utopia {
 		mat.add_matrix(row_dofs, col_dofs, block.get_values());
 	}
 
-	inline static void add_vector(const libMesh::DenseVector<libMesh::Real> &block, const std::vector<libMesh::dof_id_type> &dofs, DVectord &vec)
+	inline static void add_vector(const libMesh::DenseVector<libMesh::Real> &block, const std::vector<libMesh::dof_id_type> &dofs, UVector &vec)
 	{
 		assert(block.size() == dofs.size());
 		for(uint i = 0; i < dofs.size(); ++i) {

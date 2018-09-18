@@ -1,6 +1,11 @@
 #ifndef UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP
 #define UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP
 
+
+#include "utopia_fe_base.hpp"
+
+#ifndef WITH_TRILINOS_ALGEBRA
+
 #include "utopia_ContactSolver.hpp"
 #include "utopia_ContactSystem.hpp"
 
@@ -56,7 +61,7 @@ namespace utopia {
 			ContactSolver<Matrix, Vector>::initialize();
 		}
 
-		void initial_condition(const Scalar density)
+		void initial_condition(const Scalar density, const UVector &initial_velocity = UVector())
 		{
 			auto &V = this->space();
 			auto u = trial(V);
@@ -64,11 +69,11 @@ namespace utopia {
 
 			utopia::assemble(inner(u, v) * dX, internal_mass_matrix_);
 			// internal_mass_matrix_ *= density;
-			initial_condition(internal_mass_matrix_);
+			initial_condition(internal_mass_matrix_, initial_velocity);
 			density_ = density;
 		}
 
-		void initial_condition(const DSMatrixd &mass_matrix)
+		void initial_condition(const USparseMatrix &mass_matrix, const UVector &initial_velocity = UVector())
 		{
 			internal_mass_matrix_ = mass_matrix;
 			Vector mass_vector = sum(internal_mass_matrix_, 1);
@@ -82,7 +87,13 @@ namespace utopia {
 			x_old_        = local_zeros(n_local);
 			forcing_term_ = local_zeros(n_local);
 			velocity_     = local_zeros(n_local);
-			velocity_old_ = local_zeros(n_local);
+			
+			if(empty(initial_velocity)) {
+				velocity_old_ = local_zeros(n_local);
+			} else {
+				velocity_old_ = initial_velocity;
+			}
+
 			velocity_inc_ = local_zeros(n_local);
 			pred_ 		  = local_zeros(n_local);
 			gap_copy_ 	  = local_zeros(n_local);
@@ -94,14 +105,14 @@ namespace utopia {
 			}
 		}
 
-		void initial_condition()
+		void initial_condition(const UVector &initial_velocity = UVector())
 		{
 			auto &V = this->space();
 			auto u = trial(V);
 			auto v = test(V);
 
 			utopia::assemble(inner(u, v) * dX, internal_mass_matrix_);
-			initial_condition(internal_mass_matrix_);
+			initial_condition(internal_mass_matrix_, initial_velocity);
 		}
 
 		inline const Vector &velocity() const
@@ -217,5 +228,5 @@ namespace utopia {
 
 }
 
-
+#endif //WITH_TRILINOS_ALGEBRA
 #endif //UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP
