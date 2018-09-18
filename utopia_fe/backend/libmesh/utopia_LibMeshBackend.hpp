@@ -146,12 +146,37 @@ namespace utopia {
 		}
 	}
 
+	template<class DofMap, class Matrix>
+	void set_zero_at_constraint_rows(DofMap &dof_map, Matrix &mat)
+	{
+		bool has_constaints = true;
+		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
+			// std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
+			has_constaints = false;
+		}
+
+		Size s = size(mat);
+		Matrix temp = mat;
+
+		{
+			Write<Matrix> w_t(mat);
+
+			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
+					mat.set(i, j, 0.0);
+				}
+			});
+		}
+	}
+
 	inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, DVectord &utopia_vec)
 	{
 		using namespace libMesh;
 		Vec p_vec = cast_ptr< libMesh::PetscVector<libMesh::Number> *>(&lm_vec)->vec();
 		utopia::convert(p_vec, utopia_vec);
 	}
+
+
 
 	inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, DSMatrixd &utopia_mat) {
 		using namespace libMesh;
@@ -160,7 +185,31 @@ namespace utopia {
 		utopia::convert(p_mat, utopia_mat);
 	}
 
-	inline void convert(DSMatrixd &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
+#ifdef WITH_TRILINOS
+	inline void convert(libMesh::NumericVector<libMesh::Number> &lm_vec, TVectord &utopia_vec)
+	{
+		//FIXME inefficient
+		DVectord temp;
+		utopia::convert(lm_vec, temp);
+		utopia::backend_convert(temp, utopia_vec);
+	}
+
+
+	inline void convert(libMesh::SparseMatrix<libMesh::Number> &lm_mat, TSMatrixd &utopia_mat) {
+		using namespace libMesh;
+
+		Mat p_mat = cast_ptr< libMesh::PetscMatrix<libMesh::Number> *>(&lm_mat)->mat();
+
+		//FIXME inefficient
+		DSMatrixd temp;
+		utopia::convert(p_mat, temp);
+		backend_convert_sparse(temp, utopia_mat);
+	}
+	
+#endif //WITH_TRILINOS
+
+
+	inline void convert(USparseMatrix &utopia_mat, libMesh::SparseMatrix<libMesh::Number> &lm_mat) {
 		using namespace libMesh;
 		using namespace utopia;
 
@@ -174,10 +223,10 @@ namespace utopia {
 		});
 	}
 
-	inline void convert(DVectord &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec)
+	inline void convert(UVector &utopia_vec, libMesh::NumericVector<libMesh::Number> &lm_vec)
 	{
 		{
-			Read<DVectord> w_s(utopia_vec);
+			Read<UVector> w_s(utopia_vec);
 			Range r = range(utopia_vec);
 			for(long i = r.begin() ; i < r.end(); ++i) {
 				lm_vec.set(i, utopia_vec.get(i) );

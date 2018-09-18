@@ -54,6 +54,7 @@ if(TRILINOS_FOUND)
 
 	list(APPEND TRILINOS_MODULES
 		.
+		eval
 		solvers
 		solvers/linear
 		preconditioners

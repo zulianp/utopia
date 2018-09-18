@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "utopia.hpp"
+#include "utopia_fe_base.hpp"
 #include "libmesh/libmesh_common.h"
 
 //forward decl
@@ -30,7 +31,7 @@ namespace utopia {
       const unsigned int &to_var_num,
       bool use_biorth,
       int n_var,
-      DSMatrixd &B,
+      USparseMatrix &B,
       const std::vector< std::pair<int, int> > &tags = std::vector< std::pair<int, int> >(),
       const bool use_interpolation = false);
 }

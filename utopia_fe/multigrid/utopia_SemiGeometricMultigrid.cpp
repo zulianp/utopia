@@ -17,11 +17,11 @@
 #include <cmath>
 
 namespace utopia {
-	static void make_d(const DSMatrixd &mat, DVectord &res)
+	static void make_d(const USparseMatrix &mat, UVector &res)
 	{
 		res = sum(mat, 1);
 
-		ReadAndWrite<DVectord> rw_(res);
+		ReadAndWrite<UVector> rw_(res);
 		auto r = range(res);
 		for(auto k = r.begin(); k != r.end(); ++k) {
 			if(approxeq(res.get(k), 0.0, 1e-14)) {
@@ -31,8 +31,8 @@ namespace utopia {
 	}
 
 	SemiGeometricMultigrid::SemiGeometricMultigrid(
-		const std::shared_ptr<Smoother<DSMatrixd, DVectord> > &smoother,
-		const std::shared_ptr<LinearSolver<DSMatrixd, DVectord> > &linear_solver)
+		const std::shared_ptr<Smoother<USparseMatrix, UVector> > &smoother,
+		const std::shared_ptr<LinearSolver<USparseMatrix, UVector> > &linear_solver)
 	: mg(smoother, linear_solver),
 	  is_block_solver_(false),
 	  separate_subdomains_(false),
@@ -166,10 +166,10 @@ namespace utopia {
 		interpolators_.resize(n_coarse_spaces);
 		moonolith::Communicator comm(mesh.comm().get());
 
-		DVectord d_diag;
+		UVector d_diag;
 
 		for(std::size_t i = 1; i < n_coarse_spaces; ++i) {
-			interpolators_[i-1] = std::make_shared<DSMatrixd>();
+			interpolators_[i-1] = std::make_shared<USparseMatrix>();
 
 			bool success = assemble_volume_transfer(
 				comm,
@@ -186,14 +186,14 @@ namespace utopia {
 				use_coarse_interpolators_
 				); assert(success);
 
-			DVectord d_diag;
+			UVector d_diag;
 
 			make_d(*interpolators_[i-1], d_diag);
 			*interpolators_[i-1] = diag(1./d_diag) * *interpolators_[i-1];
 
 		}
 
-		interpolators_[n_coarse_spaces-1] = std::make_shared<DSMatrixd>();
+		interpolators_[n_coarse_spaces-1] = std::make_shared<USparseMatrix>();
 		bool success = assemble_volume_transfer(
 			comm,
 			meshes[n_coarse_spaces-1],
@@ -226,20 +226,24 @@ namespace utopia {
 		mg.set_transfer_operators(interpolators_);
 	}
 
-	void SemiGeometricMultigrid::update(const std::shared_ptr<const DSMatrixd> &op)
+	void SemiGeometricMultigrid::update(const std::shared_ptr<const USparseMatrix> &op)
 	{
 		mg.update(op);
 
+#ifndef WITH_TRILINOS_ALGEBRA
+
 		//hacky
 		if(is_block_solver_) {
-			for(SizeType i = 0; i < mg.n_levels(); ++i) {
-				const_cast<DSMatrixd &>(mg.level(i).A()).implementation().convert_to_mat_baij(meshes[0]->mesh_dimension());
-			}
+			for(SizeType i = 0; i < mg.n_levels(); ++i) {																   
+				const_cast<USparseMatrix &>(mg.level(i).A()).implementation().convert_to_mat_baij(meshes[0]->mesh_dimension());  
+			}																											   
 		}
+
+#endif //WITH_TRILINOS_ALGEBRA
 
 	}
 
-	bool SemiGeometricMultigrid::apply(const DVectord &rhs, DVectord &sol)
+	bool SemiGeometricMultigrid::apply(const UVector &rhs, UVector &sol)
 	{
 		return mg.apply(rhs, sol);
 	}
@@ -247,9 +251,9 @@ namespace utopia {
 	void SemiGeometricMultigrid::update_contact(Contact &contact)
 	{
 		const auto last_interp = mg.n_levels() - 2;
-		auto c_I = std::make_shared<DSMatrixd>();
+		auto c_I = std::make_shared<USparseMatrix>();
 		*c_I = transpose(contact.complete_transformation) * *interpolators_[last_interp];
-		mg.update_transfer(last_interp, std::make_shared<MatrixTransfer<DSMatrixd, DVectord>>(c_I));
+		mg.update_transfer(last_interp, std::make_shared<MatrixTransfer<USparseMatrix, UVector>>(c_I));
 	}
 }
 

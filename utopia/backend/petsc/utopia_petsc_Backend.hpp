@@ -12,6 +12,7 @@
 #include <utility>
 
 namespace utopia {
+
 	class PetscBackend : public ScalarBackend<PetscScalar>  {
 	public:
 		typedef PetscScalar Scalar;
@@ -545,6 +546,45 @@ namespace utopia {
 
 
 		static void update_ghosts(PetscVector &vec);
+		
+		template<class Expr>
+		static void build_blocks(PetscMatrix &left, const Blocks<Expr> &blocks)
+		{
+			std::vector<Mat> matrices; 
+
+			MPI_Comm comm = PETSC_COMM_WORLD;
+			for(auto b_ptr : blocks.blocks()) {
+				
+				if(b_ptr) {
+					comm = b_ptr->implementation().communicator();
+					matrices.push_back(b_ptr->implementation().implementation());
+				}  else {
+					matrices.push_back(nullptr);
+				}
+			}
+
+			left.nest(comm, blocks.rows(), nullptr, blocks.cols(), nullptr, &matrices[0]);
+		}
+
+
+		template<class Expr>
+		static void build_blocks(PetscVector &left, const Blocks<Expr> &blocks)
+		{
+			std::vector<Vec> vectors; 
+
+			MPI_Comm comm = PETSC_COMM_WORLD;
+			for(auto b_ptr : blocks.blocks()) {
+				
+				if(b_ptr) {
+					comm = b_ptr->implementation().communicator();
+					vectors.push_back(b_ptr->implementation().implementation());
+				}  else {
+					vectors.push_back(nullptr);
+				}
+			}
+
+			left.nest(comm, blocks.size(), nullptr, &vectors[0]);
+		}
 
 	private:
 

@@ -105,7 +105,7 @@ namespace utopia {
 			pseudo_l2_operator->init_from_coupling_operator(*mats[0]);
 			operator_ = pseudo_l2_operator;
 		} else {
-			auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<DSMatrixd, DVectord>>());
+			auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
 			l2_operator->fix_mass_matrix_operator();
 			operator_ = l2_operator;
 		}

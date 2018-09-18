@@ -136,6 +136,16 @@ namespace utopia {
 		}
 	}
 
+	void XMLInputStream::read(bool &val)
+	{
+		if(impl_->is_invalid_subtree()) return;
+		static const std::string true_val = "true";
+
+		if(impl_->current_node) {
+			val = (impl_->current_node->value() == true_val);
+		}
+	}
+
 	void XMLInputStream::read(Serializable &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
@@ -173,6 +183,13 @@ namespace utopia {
 		impl_->object_end();
 	}
 
+	void XMLInputStream::read(const std::string &key, bool &val)
+	{
+		impl_->object_begin(key);
+		read(val);
+		impl_->object_end();
+	}
+
 	void XMLInputStream::read(const std::string &key, Serializable &val)
 	{
 		impl_->object_begin(key);
@@ -182,13 +199,21 @@ namespace utopia {
 
 	void XMLInputStream::read(std::function<void(InputStream &)> lambda)
 	{
+		if(impl_->is_invalid_subtree()) return;
+
 		lambda(*this);
 	}
 
 	void XMLInputStream::read(const std::string &key, std::function<void(InputStream &)> lambda)
 	{
+		if(impl_->is_invalid_subtree()) return;
+
 		impl_->object_begin(key);
-		lambda(*this);
+
+		if(!impl_->is_invalid_subtree()) {
+			lambda(*this);
+		}
+		
 		impl_->object_end();
 	}
 

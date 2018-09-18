@@ -16,7 +16,7 @@ namespace utopia {
                               const std::shared_ptr<libMesh::DofMap> &dof_slave,
                               const unsigned int & _from_var_num,
                               const unsigned int & _to_var_num,
-                              bool  use_biorth_, int n_var, DSMatrixd &B)
+                              bool  use_biorth_, int n_var, USparseMatrix &B)
     {
      
         std::cerr << "[Warning] AssembleMOOSE will be deleted, use assemble_volume_transfer instead" << std::endl; 
@@ -32,7 +32,7 @@ namespace utopia {
                               const std::shared_ptr<libMesh::DofMap> &dof_slave,
                               const unsigned int & _from_var_num,
                               const unsigned int & _to_var_num,
-                              bool  use_biorth_, int n_var, DSMatrixd &B,
+                              bool  use_biorth_, int n_var, USparseMatrix &B,
                               const std::vector< std::pair<int, int> > &tags)
     {
         std::cerr << "[Warning] AssembleMOOSE will be deleted, use assemble_volume_transfer instead" << std::endl;

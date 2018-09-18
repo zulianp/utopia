@@ -1,5 +1,10 @@
 #include "utopia_WearSimulation.hpp"
 
+
+#include "utopia_fe_base.hpp"
+
+#ifndef WITH_TRILINOS_ALGEBRA
+
 #include "utopia_libmesh.hpp"
 #include "utopia_LameeParameters.hpp"
 #include "utopia_ElasticMaterial.hpp"
@@ -125,16 +130,16 @@ namespace utopia {
             /////////////////////////////////////////////////////////////////////////////
 
 			if(desc_.material_name == "NeoHookean") {
-				material = std::make_shared<NeoHookean<decltype(V), DSMatrixd, DVectord>>(V, desc_.params);
+				material = std::make_shared<NeoHookean<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
 			} else if(desc_.material_name == "SaintVenantKirchoff") {
-				material = std::make_shared<SaintVenantKirchoff<decltype(V), DSMatrixd, DVectord>>(V, desc_.params);
+				material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
             } else /*if(desc_.material_name == "LinearElasticity")*/ {
-				material = std::make_shared<LinearElasticity<decltype(V), DSMatrixd, DVectord>>(V, desc_.params);
+				material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, desc_.params);
 			}
 
             if(desc_.stabilization != "none") {
                 std::cout << "using stabilization: " << desc_.stabilization << " mag: " << desc_.stabilization_mag << std::endl;
-                material = std::make_shared<StabilizedMaterial<decltype(V), DSMatrixd, DVectord>>(V, desc_.stabilization_mag, material, desc_.stabilization);
+                material = std::make_shared<StabilizedMaterial<decltype(V), USparseMatrix, UVector>>(V, desc_.stabilization_mag, material, desc_.stabilization);
             }
 
             /////////////////////////////////////////////////////////////////////////////
@@ -173,7 +178,7 @@ namespace utopia {
             //This should be moved
             V[0].initialize();
 
-            forcing_function = std::make_shared<CompositeForcingFunction<DVectord>>();
+            forcing_function = std::make_shared<CompositeForcingFunction<UVector>>();
             bool has_force = false;
             is.read("forcing-functions", [this, &has_force](InputStream &is) {
                 is.read_all([this, &has_force](InputStream &is) {
@@ -200,14 +205,14 @@ namespace utopia {
                         auto v = test(V[coord]);
                         auto l_form = surface_integral(inner(f, v), block);
 
-                        auto ff = std::make_shared<ConstantForcingFunction<DVectord>>();
+                        auto ff = std::make_shared<ConstantForcingFunction<UVector>>();
                         ff->init(l_form);
                         forcing_function->add(ff);
                     } else {
                         auto v = test(V[coord]);
                         auto l_form = integral(inner(f, v), block);
 
-                        auto ff = std::make_shared<ConstantForcingFunction<DVectord>>();
+                        auto ff = std::make_shared<ConstantForcingFunction<UVector>>();
                         ff->init(l_form);
                         forcing_function->add(ff);
                     }
@@ -218,7 +223,7 @@ namespace utopia {
             });
 
             if(has_force) {
-                material = std::make_shared<ForcedMaterial<DSMatrixd, DVectord>>(
+                material = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(
                     material,
                     forcing_function
                 );
@@ -248,8 +253,8 @@ namespace utopia {
     	std::shared_ptr<libMesh::DistributedMesh> mesh;
     	ProductFunctionSpace<LibMeshFunctionSpace> V;
     	std::shared_ptr<libMesh::EquationSystems> equation_systems;
-    	std::shared_ptr<ElasticMaterial<DSMatrixd, DVectord> > material;
-        std::shared_ptr<CompositeForcingFunction<DVectord> > forcing_function;
+    	std::shared_ptr<ElasticMaterial<USparseMatrix, UVector> > material;
+        std::shared_ptr<CompositeForcingFunction<UVector> > forcing_function;
 
     	int main_sys_num;
     	int aux_sys_num;
@@ -356,8 +361,7 @@ namespace utopia {
                 is.read("extrapolation", extrapolation_factor);
             });
 
-            gc.init(mesh->mesh_dimension());
-
+            gc.init(V);
     		return true;
     	}
 
@@ -379,8 +383,8 @@ namespace utopia {
 
     void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &conf_file_path)
     {
-        typedef utopia::ContactSolver<DSMatrixd, DVectord> ContactSolverT;
-        typedef utopia::ContactStabilizedNewmark<DSMatrixd, DVectord> TransientContactSolverT;
+        typedef utopia::ContactSolver<USparseMatrix, UVector> ContactSolverT;
+        typedef utopia::ContactStabilizedNewmark<USparseMatrix, UVector> TransientContactSolverT;
 
     	Input in;
     	auto is_ptr = open_istream(conf_file_path);
@@ -393,24 +397,29 @@ namespace utopia {
     	in.init_sim(init.comm(), *is_ptr);
     	in.describe(std::cout);
 
+
+        auto configuration_forces = std::make_shared<ConstantForcingFunction<UVector>>();
+        configuration_forces->value() = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
+        auto configuration_forced_material = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(in.material, configuration_forces);
+
         std::shared_ptr<ContactSolverT> solver;
         std::shared_ptr<TransientContactSolverT> transient_solver;
         if(in.is_steady) {
-            solver = std::make_shared<ContactSolverT>(make_ref(in.V), in.material, in.contact_params);
+            solver = std::make_shared<ContactSolverT>(make_ref(in.V), configuration_forced_material, in.contact_params);
         } else {
-            double dt = in.gc.dt / in.n_transient_steps;
-            transient_solver = std::make_shared<TransientContactSolverT>(make_ref(in.V), in.material, dt, in.contact_params);
+            double dt = in.gc.conf().dt() / in.n_transient_steps;
+            transient_solver = std::make_shared<TransientContactSolverT>(make_ref(in.V), configuration_forced_material, dt, in.contact_params);
             solver = transient_solver;
         }
 
         std::cout << "n_dofs: " << in.V[0].dof_map().n_dofs() << std::endl;
 
-        // auto sor = std::make_shared<SOR<DSMatrixd, DVectord>>();
+        // auto sor = std::make_shared<SOR<USparseMatrix, UVector>>();
         // sor->rtol(1e-8);
         // sor->atol(1e-16);
         // sor->stol(1e-10);
         // solver->set_linear_solver(sor);
-        solver->set_linear_solver(std::make_shared<Factorization<DSMatrixd, DVectord>>());
+        solver->set_linear_solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
 
         solver->set_tol(in.step_tol);
         solver->set_max_non_linear_iterations(in.max_nl_iter);
@@ -432,11 +441,11 @@ namespace utopia {
             // solver->tao().atol(1e-8);
             // solver->tao().rtol(1e-8);
             // solver->tao().stol(1e-8);
-            solver->tao().verbose(true);
+            // solver->tao().verbose(true); //REMOVED_TRILINOS
         }
 
-        // auto ls = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-        // auto ls = std::make_shared<GMRES<DSMatrixd, DVectord>>();
+        // auto ls = std::make_shared<Factorization<USparseMatrix, UVector>>();
+        // auto ls = std::make_shared<GMRES<USparseMatrix, UVector>>();
         // ls->atol(1e-15);
         // ls->rtol(1e-15);
         // ls->stol(1e-15);
@@ -453,12 +462,15 @@ namespace utopia {
             *in.equation_systems
         );
 
-        DVectord overriden_displacement = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
-        DVectord wear_displacement = overriden_displacement;
+        UVector overriden_displacement = local_zeros(in.V.subspace(0).dof_map().n_local_dofs());
+        UVector wear_displacement = overriden_displacement;
+
+  
+
         MechanicsState state;
 
 
-        libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() / "wear_in.e", *in.equation_systems, (1), in.gc.t);
+        libMesh::Nemesis_IO(*in.mesh).write_timestep(in.output_path() / "wear_in.e", *in.equation_systems, (1), (1));
 
         libMesh::Nemesis_IO wear_io(*in.mesh);
         libMesh::Nemesis_IO wear_ovv_io(*in.mesh);
@@ -470,26 +482,26 @@ namespace utopia {
 
             std::cout << "cycle " << i << std::endl;
 
-
-
             //gait-cycle
-            for(int t = 0; t < in.gc.n_time_steps; ++t) {
+            for(int t = 0; t < in.gc.conf().n_steps(); ++t) {
                 std::cout << "\t step " << t << std::endl;
-                in.material->clear();
-                in.gc.set_time_step(t);
+                configuration_forced_material->clear();
+                in.gc.update(t);
 
                 //set-up experiment
                     //transform mesh
 
                 overriden_displacement.set(0.);
-                in.gc.override_displacement(*in.mesh, in.V.subspace(0).dof_map(), overriden_displacement);
+                in.gc.displacement_and_forces(in.V, overriden_displacement, configuration_forces->value());
 
                 {
                     auto &sys = in.equation_systems->get_system<libMesh::LinearImplicitSystem>("wear");
-                    DVectord temp = overriden_displacement + wear_displacement;
+                    UVector temp = overriden_displacement + wear_displacement;
                     convert(temp, *sys.solution);
                     sys.solution->close();
-                    wear_ovv_io.write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, ((i-1) * in.gc.n_time_steps + t+1),((i-1) * in.gc.n_time_steps) * in.gc.dt + in.gc.t);
+
+                    auto frame = ((i-1) * in.gc.conf().n_steps() + t + 1);
+                    wear_ovv_io.write_timestep(in.output_path() / "wear_overr.e", *in.equation_systems, frame, frame);
                 }
 
                 apply_displacement(overriden_displacement + wear_displacement, in.V.subspace(0).dof_map(), *in.mesh);
@@ -511,10 +523,11 @@ namespace utopia {
                 state.displacement           = solver->displacement();
                 state.displacement_increment = solver->displacement();
 
-                state.velocity               = (1./in.gc.dt) * solver->displacement();
+                state.velocity               = (1./in.gc.conf().dt()) * solver->displacement();
 
                 if(in.forcing_function) {
                     in.forcing_function->eval(state.displacement, state.external_force);
+                    state.external_force += configuration_forces->value();
                 }
 
                 solver->stress(state.displacement, state.stress);
@@ -525,13 +538,15 @@ namespace utopia {
                 // std::cout << "mag_stress:   " << mag_stress   << std::endl;
                 // std::cout << "mag_velocity: " << mag_velocity << std::endl;
 
-                state.t = in.gc.t;
+
+                //FIXME
+                state.t = in.gc.conf().dt() * t;
 
                 wear.update_aux_system(
                     0,
                     state,
                     solver->contact(),
-                    in.gc.dt,
+                    in.gc.conf().dt(),
                     *in.equation_systems
                 );
 
@@ -540,11 +555,12 @@ namespace utopia {
                 apply_displacement(-(overriden_displacement + wear_displacement), in.V.subspace(0).dof_map(), *in.mesh);
 
                 auto &sys = in.equation_systems->get_system<libMesh::LinearImplicitSystem>("wear");
-                DVectord temp = state.displacement + overriden_displacement + wear_displacement;
+                UVector temp = state.displacement + overriden_displacement + wear_displacement;
                 convert(temp, *sys.solution);
                 sys.solution->close();
 
-                io.write_timestep(in.output_path() / "gait_cycles.e", *in.equation_systems, ((i-1) * in.gc.n_time_steps + t+1),((i-1) * in.gc.n_time_steps) * in.gc.dt + in.gc.t);
+                auto frame = ((i-1) * in.gc.conf().n_steps() + t + 1);
+                io.write_timestep(in.output_path() / "gait_cycles.e", *in.equation_systems, frame, frame);
             }
 
             //deform geometry
@@ -569,3 +585,21 @@ namespace utopia {
     WearSimulation::~WearSimulation()
     {}
 }
+
+#else
+
+namespace utopia {
+    void WearSimulation::run(libMesh::LibMeshInit &init, const std::string &conf_file_path)
+    {
+      std::cerr << "[Error] not run (does not work with trilinos backend)" << std::endl;
+    }
+
+    WearSimulation::WearSimulation()
+    {}
+
+    WearSimulation::~WearSimulation()
+    {}
+}
+
+#endif //WITH_TRILINOS_ALGEBRA
+

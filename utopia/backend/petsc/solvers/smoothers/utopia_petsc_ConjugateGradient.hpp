@@ -3,6 +3,7 @@
 
 #include "utopia_Core.hpp"
 #include "utopia_petsc_KSPSolver.hpp"
+#include "utopia_ConjugateGradient.hpp"
 
 #include "petscmat.h"
 #include "petscvec.h"

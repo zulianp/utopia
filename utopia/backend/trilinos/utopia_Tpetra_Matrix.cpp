@@ -35,6 +35,8 @@ namespace utopia {
 	}
 
 
+
+
 	//FIXME make faster version by storing view?
 	TpetraMatrix::Scalar TpetraMatrix::get(const global_ordinal_type &row, const global_ordinal_type &col) const
 	{
@@ -435,6 +437,14 @@ namespace utopia {
 	TpetraMatrix::Scalar TpetraMatrix::norm2() const
 	{
 		return implementation().getFrobeniusNorm();
+	}
+
+	TpetraMatrix::Scalar TpetraMatrix::sum() const
+	{
+		TpetraVector vec, row_sum;
+		vec.values(this->communicator(), this->local_size().get(1), this->size().get(1), 1.);
+		this->mult(vec, row_sum);
+		return row_sum.sum();
 	}
 
 }

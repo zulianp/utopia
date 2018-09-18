@@ -5,12 +5,66 @@
 #include "utopia.hpp"
 #include "utopia_AutoDiff.hpp" //simplify_test
 #include "utopia_UtilitiesTest.hpp"
+#include "utopia_Blocks.hpp"
+#include "utopia_Eval_Blocks.hpp"
 
 namespace utopia {
 
     template<class Matrix, class Vector>
+    class BlockTest {
+    public:
+
+        void run() {
+            UTOPIA_RUN_TEST(block_test);
+        }
+
+    private:
+        void block_test()
+        {   
+            int n = 5;
+            auto id_ptr = std::make_shared<Matrix>(identity(n, n));
+
+            Blocks<Matrix> b_mat(2, 2, {
+                id_ptr, nullptr,
+                id_ptr, id_ptr
+            });
+
+           auto s = size(b_mat);
+           utopia_test_assert(s.get(0) == 2 * n);
+           utopia_test_assert(s.get(1) == 2 * n);
+
+           Matrix mat = b_mat;
+           Vector ones = values(n, 1.);
+
+           Vector vec = blocks(ones, ones);
+           Vector r = mat * vec;
+           Vector r1 = ones, r2 = ones;
+
+           undo_blocks(r, r1, r2);
+        }
+    };
+
+    template<class Matrix, class Vector>
     class UtilitiesTest {
     private:
+        void csv_read_write()
+        {
+            Path path = Path(Utopia::instance().get("data_path")) / "csv/test.csv";
+            CSV csv;
+
+            utopia_test_assert( csv.read(path) );
+            utopia_test_assert( csv.write("./out.csv") );
+
+            int val = -1.;
+            csv.get(1, 0, val); utopia_test_assert( val == 0 );
+            csv.get(1, 1, val); utopia_test_assert( val == 1 );
+            csv.get(1, 2, val); utopia_test_assert( val == 2 );
+            
+            csv.get(2, 0, val); utopia_test_assert( val == 1 );
+            csv.get(2, 1, val); utopia_test_assert( val == 2 );
+            csv.get(2, 2, val); utopia_test_assert( val == 3 );
+        }
+
         void factory_test() {
             Matrix m = identity(2, 2);
             auto size = m.size();
@@ -232,6 +286,7 @@ namespace utopia {
             utopia_test_assert(approxeq(28.001, num));
         }
 
+
         static void print_backend_info()
         {
             mpi_world_barrier();
@@ -243,6 +298,7 @@ namespace utopia {
 
         void run() {
             print_backend_info();
+            UTOPIA_RUN_TEST(csv_read_write);
             UTOPIA_RUN_TEST(factory_test);
             UTOPIA_RUN_TEST(wrapper_test);
             UTOPIA_RUN_TEST(range_test);
@@ -272,7 +328,14 @@ namespace utopia {
 
     void runUtilitiesTest() {
         UTOPIA_UNIT_TEST_BEGIN("UtilitiesTest");
+
+#ifdef WITH_TRILINOS
+        BlockTest<TSMatrixd, TVectord>().run();
+#endif //WITH_TRILINOS
+        
 #ifdef WITH_PETSC
+        BlockTest<DSMatrixd, DVectord>().run();
+        
         if(mpi_world_size() == 1) {
             UtilitiesTest<DMatrixd, DVectord>().run();
 #ifdef WITH_BLAS
