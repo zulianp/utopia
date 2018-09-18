@@ -375,7 +375,7 @@ namespace utopia {
         auto is_ptr = open_istream(conf_file_path);
 
         Input in;
-        is_ptr->read("min-surf", in);
+        is_ptr->read("rmtr-app", in);
 
         in.describe();
 

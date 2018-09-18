@@ -147,10 +147,10 @@ int main(int argc, char *argv[])
 				TransferApp app;
 				app.init(init);
 				app.run(argv[ip1]);
-			} else if(argv[i] == RMTRApp::command()) {
+			} else if(argv[i] == FractureFlowApp::command()) {
 				std::cout << argv[i] << " " << argv[ip1] << std::endl;
 
-				RMTRApp app;
+				FractureFlowApp app;
 				app.init(init);
 				app.run(argv[ip1]);
 			} else if(argv[i] == RMTRApp::command()) {

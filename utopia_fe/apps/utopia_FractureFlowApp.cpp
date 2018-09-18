@@ -527,6 +527,22 @@ namespace utopia {
                 is.read("elem-type", elem_type);
 
 
+                std::fill(std::begin(min_coords), std::end(min_coords), 0.);
+                std::fill(std::begin(max_coords), std::end(max_coords), 1.);
+
+                is.read("min-x", min_coords[0]);
+                is.read("min-y", min_coords[1]);
+                is.read("min-z", min_coords[2]);
+
+                is.read("max-x", max_coords[0]);
+                is.read("max-y", max_coords[1]);
+                is.read("max-z", max_coords[2]);
+
+                std::fill(std::begin(n), std::end(n), 5);
+                is.read("n-x", n[0]);
+                is.read("n-y", n[1]);
+                is.read("n-z", n[2]);
+
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);
@@ -577,12 +593,20 @@ namespace utopia {
         {
             if(this->mesh_type == "file") {
                 mesh.read(path);
-            } else if(this->mesh_type == "unit-square") {
+            } else if(this->mesh_type == "square") {
                 libMesh::MeshTools::Generation::build_square(mesh,
-                                                             5, 5,
-                                                             -0., 1.,
-                                                             -0., 1.,
+                                                             n[0], n[1],
+                                                             min_coords[0], max_coords[0],
+                                                             min_coords[1], max_coords[1],
                                                              get_type(2)
+                                                             );
+            } else if(this->mesh_type == "cube") {
+                libMesh::MeshTools::Generation::build_cube(mesh,
+                                                             n[0], n[1], n[2],
+                                                             min_coords[0], max_coords[0],
+                                                             min_coords[1], max_coords[1],
+                                                             min_coords[2], max_coords[2],
+                                                             get_type(3)
                                                              );
             } else if(this->mesh_type == "aabb") {
                 libMesh::DistributedMesh temp_mesh(mesh.comm());
@@ -598,7 +622,7 @@ namespace utopia {
                  
                     libMesh::MeshTools::Generation::build_cube(
                         mesh,
-                        n, n, n,
+                        n[0], n[1], n[2],
                         bb.min()(0) - span[0], bb.max()(0) + span[0],
                         bb.min()(1) - span[1], bb.max()(1) + span[1],
                         bb.min()(2) - span[2], bb.max()(2) + span[2],
@@ -609,7 +633,7 @@ namespace utopia {
 
                     libMesh::MeshTools::Generation::build_square(
                         mesh,
-                        n, n,
+                        n[0], n[1],
                         bb.min()(0) - span[0], bb.max()(0) + span[0],
                         bb.min()(1) - span[1], bb.max()(1) + span[1],
                         get_type(2)
@@ -684,8 +708,13 @@ namespace utopia {
         int adaptive_refinements;
         int order;
         double span[3];
+
+        double min_coords[3];
+        double max_coords[3];
+
+        int n[3];
+
         std::string elem_type;
-        int n = 10;
     };
     
     void FractureFlowApp::run(const std::string &conf_file_path)

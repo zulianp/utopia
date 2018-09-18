@@ -1,7 +1,7 @@
 <!-- MASTER STUFF -->
 <master>
-	<mesh>unit-square</mesh>
-	<elem-type>tri</elem-type>
+	<mesh>square</mesh>
+	<elem-type>quad</elem-type>
 	<!-- <mesh>file</mesh> -->
 	<!-- <path>../data/frac/adaptive_background_2.e</path> -->
 	<!-- <path>../data/frac/adaptive_background.e</path> -->
@@ -21,6 +21,16 @@
 	<forcing-function>0.</forcing-function>
 	<refinements>0</refinements>
 	<order>1</order>
+	
+	<min-x>0.</min-x>
+	<min-y>0.</min-y>
+	
+	<max-x>2.</max-x>
+	<max-y>1.</min-y>
+	
+	<n-x>20</n-x>
+	<n-y>10</n-y>
+
 	<!-- <adaptive-refinements>1</adaptive-refinements> -->
 </master>
 

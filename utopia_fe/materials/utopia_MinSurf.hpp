@@ -2,6 +2,8 @@
 #define UTOPIA_MIN_SURF_HPP
 
 #include "utopia_Core.hpp"
+#include "utopia_ExtendedFunction.hpp"
+
 #include <vector>
 
 namespace utopia {

@@ -8,6 +8,56 @@ namespace utopia {
 	public:
 		typedef utopia::USparseMatrix GlobalMatrix;
 		typedef utopia::UVector GlobalVector;
+		typedef UTOPIA_SCALAR(GlobalVector) Scalar;
+
+		template<class Expr>
+		bool assemble(const Expr &expr, Scalar &val)
+		{
+			//perf
+			Chrono c;
+			c.start();
+
+			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
+			typedef typename TraitsT::Matrix ElementMatrix;
+			typedef typename TraitsT::Vector ElementVector;
+
+			static const int Backend = TraitsT::Backend;
+
+			const auto &space = find_space<LibMeshFunctionSpace>(expr);
+			const auto &dof_map = space.dof_map();
+			auto &m = space.mesh();
+
+
+			val = 0.;
+
+			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+				init_context_on(expr, (*elements_begin(m))->id());
+
+				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
+					if(it != elements_begin(m)) {
+						reinit_context_on(expr, (*it)->id());
+					}
+
+					Number<Scalar> el_val = 0.;
+
+					FormEvaluator<LIBMESH_TAG> eval;
+					eval.eval(expr, el_val, ctx_, true);
+
+					if(ctx_.has_assembled()) {
+						val += el_val;
+					}
+				}
+			}
+
+			m.comm().sum(val);
+
+			//perf
+			c.stop();
+			std::cout << "assemble: value" << std::endl;
+			std::cout << c << std::endl;
+			return false;
+		}
+
 
 		template<class Expr>
 		bool assemble(const Expr &expr, GlobalMatrix &mat, GlobalVector &vec, const bool apply_constraints = false)

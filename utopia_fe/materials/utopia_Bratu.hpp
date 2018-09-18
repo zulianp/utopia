@@ -1,8 +1,10 @@
-#ifndef UTOPIA_BRATU_HPP
-#define UTOPIA_BRATU_HPP
+#ifndef UTOPIA_FE_BRATU_HPP
+#define UTOPIA_FE_BRATU_HPP
 
 #include "utopia_Core.hpp"
-#include <vector>
+#include "utopia_ExtendedFunction.hpp"
+#include "utopia_libmesh.hpp"
+
 
 namespace utopia {
     template<class FunctionSpace, class Matrix, class Vector>
@@ -28,24 +30,24 @@ namespace utopia {
         
         bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
         {
-            // auto u  = trial(V_);
-            // auto v  = test(V_);
-            // auto uk = interpolate(x, u);
+            auto u  = trial(V_);
+            auto v  = test(V_);
+            auto uk = interpolate(x, u);
 
-            // auto l_form = inner(grad(uk), grad(v)) * dX - inner(exp(lambda_ * uk), v) * dX; 
-            // utopia::assemble(l_form, gradient);
+            auto l_form = inner(grad(uk), grad(v)) * dX - inner(exp(lambda_ * uk), v) * dX; 
+            utopia::assemble(l_form, gradient);
             return true;
         }
  
         bool hessian(const Vector &x, Matrix &hessian) const override
         {
-            // auto u  = trial(V_);
-            // auto v  = test(V_);
-            // auto uk = interpolate(x, u);
+            auto u  = trial(V_);
+            auto v  = test(V_);
+            auto uk = interpolate(x, u);
 
-            // auto b_form = inner(grad(u), grad(v)) * dX - inner(exp(lambda_ * uk) * u, v) * dX;
-            // utopia::assemble(b_form, hessian);
-            // set_identity_at_constraint_rows(V_.dof_map(), hessian);
+            auto b_form = inner(grad(u), grad(v)) * dX - inner(exp(lambda_ * uk) * u, v) * dX;
+            utopia::assemble(b_form, hessian);
+            set_identity_at_constraint_rows(V_.dof_map(), hessian);
             return true;
         }
         
@@ -67,4 +69,4 @@ namespace utopia {
     
 }
 
-#endif // UTOPIA_BRATU_HPP
+#endif // UTOPIA_FE_BRATU_HPP

@@ -192,6 +192,14 @@ namespace utopia {
 	template<class Expr>
 	bool assemble(
 		const Expr &expr,
+		double &val)
+	{
+		return LibMeshAssembler().assemble(expr, val);
+	}
+
+	template<class Expr>
+	bool assemble(
+		const Expr &expr,
 		USparseMatrix &mat,
 		const bool first = true)
 	{

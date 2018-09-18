@@ -1,6 +1,6 @@
 <!-- MASTER STUFF -->
 <master>
-	<mesh>unit-square</mesh>
+	<mesh>square</mesh>
 	<boundary-conditions>
 		<entry>
 			<side>3</side>
@@ -19,7 +19,7 @@
 
 <!-- SLAVE STUFF -->
 <slave>
-	<mesh>unit-square</mesh>
+	<mesh>square</mesh>
 	<boundary-conditions>
 		<entry>
 			<side>3</side>
@@ -39,7 +39,7 @@
 
 <!-- MULTIPLIER STUFF -->
 <multiplier>
-	<mesh>unit-square</mesh>
+	<mesh>square</mesh>
 	<refinements>0</refinements>
 	<order>1</order>
 </multiplier>

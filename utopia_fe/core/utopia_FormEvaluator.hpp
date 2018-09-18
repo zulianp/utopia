@@ -68,6 +68,17 @@ namespace utopia {
 		{	
 			FormEval<Expr, BAKEND_FLAG>::apply(expr, mat, vec, ctx);
 		}
+
+
+
+		template<class Expr, typename T>
+		static void eval(
+			const Expr &expr,
+			Number<T> &value,
+			AssemblyContext<BAKEND_FLAG> &ctx)
+		{	
+			FormEval<Expr, BAKEND_FLAG>::apply(expr, value, ctx);
+		}
 	};
 }
 
