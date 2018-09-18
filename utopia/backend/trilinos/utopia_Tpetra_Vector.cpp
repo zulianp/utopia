@@ -9,6 +9,30 @@
 
 namespace utopia {
 
+	void TpetraVector::add_vector(
+	    const std::vector<global_ordinal_type> &indices,
+	    const std::vector<Scalar> &values)
+	{
+		const std::size_t n = values.size();
+		assert(n == indices.size());
+
+		for(std::size_t i = 0; i < n; ++i) {
+			add(indices[i], values[i]);
+		}
+	}
+
+	void TpetraVector::set_vector(
+	    const std::vector<global_ordinal_type> &indices,
+	    const std::vector<Scalar> &values)
+	{
+		const std::size_t n = values.size();
+		assert(n == indices.size());
+
+		for(std::size_t i = 0; i < n; ++i) {
+			set(indices[i], values[i]);
+		}
+	}
+
 	bool TpetraVector::read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path)
 	{
 		typedef Tpetra::CrsMatrix<>                       crs_matrix_type;
@@ -58,6 +82,46 @@ namespace utopia {
 	    double ret_global = 0.;
 
 	    Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
+	    return ret_global;
+	}
+
+	TpetraVector::Scalar TpetraVector::min() const
+	{
+	    m_utopia_warning_once("> TpetraVector::min is hand-coded");
+
+	    auto data = implementation().getData();
+
+	    Scalar ret_temp = data[0];
+
+	    for(auto i = 1; i < data.size(); ++i) {
+	        ret_temp = std::min(data[i], ret_temp);
+	    }
+
+	    double ret = ret_temp;
+	    auto &comm = *communicator();
+	    double ret_global = 0.;
+
+	    Teuchos::reduceAll(comm, Teuchos::REDUCE_MIN, 1, &ret, &ret_global);
+	    return ret_global;
+	}
+
+	TpetraVector::Scalar TpetraVector::max() const
+	{
+	    m_utopia_warning_once("> TpetraVector::max is hand-coded");
+
+	    auto data = implementation().getData();
+
+	    Scalar ret_temp = data[0];
+
+	    for(auto i = 1; i < data.size(); ++i) {
+	        ret_temp = std::max(data[i], ret_temp);
+	    }
+
+	    double ret = ret_temp;
+	    auto &comm = *communicator();
+	    double ret_global = 0.;
+
+	    Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
 	    return ret_global;
 	}
 

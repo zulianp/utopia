@@ -191,11 +191,11 @@ namespace utopia {
 		auto v = test(V);
 
 		Vx.initialize();
-		DVectord sol = ghosted(Vx.dof_map().n_local_dofs(), Vx.dof_map().n_dofs(), Vx.dof_map().get_send_list());
+		UVector sol = ghosted(Vx.dof_map().n_local_dofs(), Vx.dof_map().n_dofs(), Vx.dof_map().get_send_list());
 		sol = local_values(local_size(sol).get(0), 0.);
 
 		{
-			Write<DVectord> w_sol(sol);
+			Write<UVector> w_sol(sol);
 			auto r = range(sol);
 			// for(auto i = r.begin(); i != r.end(); ++i) {
 			// 	sol.set(i, i + (i%3)*1.5);

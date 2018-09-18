@@ -31,5 +31,7 @@
 #include "utopia_trilinos_Types.hpp"
 #include "utopia_trilinos_RowView.hpp"
 
+#include "utopia_trilinos_Eval_Factory.hpp"
+
 #endif //WITH_TRILINOS
 #endif //UTOPIA_TRILINOS_HPP

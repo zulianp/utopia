@@ -19,7 +19,7 @@
 namespace utopia {
 
 	void apply_displacement(
-		const DVectord &displacement_increment,
+		const UVector &displacement_increment,
 		const libMesh::DofMap &dof_map,
 		libMesh::MeshBase &mesh);
 
@@ -37,8 +37,8 @@ namespace utopia {
 
 		inline void update(
 			const double dt,
-			const DVectord &sliding_distance,
-			const DVectord &normal_stress)
+			const UVector &sliding_distance,
+			const UVector &normal_stress)
 		{
 			if(empty(wear)) {
 				wear = local_zeros(local_size(normal_stress));
@@ -50,13 +50,13 @@ namespace utopia {
 		void compute_displacement(
 			ProductFunctionSpace<LibMeshFunctionSpace> &V,
 			const std::vector<int> &boundary_tags,
-			DVectord &wear_induced_displacement
+			UVector &wear_induced_displacement
 			);
 
 		void mesh_displacement(
 			ProductFunctionSpace<LibMeshFunctionSpace> &V,
 			const std::vector<int> &boundary_tags,
-			DVectord &disp);
+			UVector &disp);
 
 		void init_aux_system(
 			libMesh::EquationSystems &es,
@@ -78,7 +78,7 @@ namespace utopia {
 		}
 
 	private:
-		DVectord wear;
+		UVector wear;
 		double wear_coefficient;
 		double extrapolation_factor;
 
@@ -88,10 +88,10 @@ namespace utopia {
 		std::vector<double> total_wear;
 
 		//buffers
-		DVectord wear_induced_displacement;
-		DVectord is_normal_component;
-		DVectord normals;
-		DSMatrixd trafo;
+		UVector wear_induced_displacement;
+		UVector is_normal_component;
+		UVector normals;
+		USparseMatrix trafo;
 	};
 }
 

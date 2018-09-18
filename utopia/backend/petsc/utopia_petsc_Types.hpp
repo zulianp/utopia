@@ -73,6 +73,44 @@ namespace utopia {
         Backend<PetscScalar, PETSC>::Instance().wrap(vec, utopia_vec.implementation());
     }
 
+    inline int comm_size(const DVectord &t)
+    {
+        auto comm = t.implementation().communicator();
+        int ret;
+        MPI_Comm_size(comm, &ret);
+        return ret;
+    }
+
+    inline int comm_rank(const DVectord &t)
+    {
+        auto comm = t.implementation().communicator();
+        int ret;
+        MPI_Comm_rank(comm, &ret);
+        return ret;
+    }
+
+    inline int comm_size(const DSMatrixd &t)
+    {
+        auto comm = t.implementation().communicator();
+        int ret;
+        MPI_Comm_size(comm, &ret);
+        return ret;
+    }
+
+    inline int comm_rank(const DSMatrixd &t)
+    {
+        auto comm = t.implementation().communicator();
+        int ret;
+        MPI_Comm_rank(comm, &ret);
+        return ret;
+    }
+
+    inline void synchronize(DVectord &t)
+    {
+        t.implementation().update_ghosts();
+    }
+    
+
     UTOPIA_DEPRECATED_MSG("sparse_mref will be removed use wrap(Mat, DSMatrixd) instead")
     inline DSMatrixd sparse_mref(const Mat &m) {
         m_utopia_warning_once("sparse_mref will be removed use wrap(Mat, DSMatrixd) instead");

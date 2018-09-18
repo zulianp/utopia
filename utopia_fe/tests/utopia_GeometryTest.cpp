@@ -39,9 +39,9 @@ namespace utopia {
 
 		Vx.initialize();
 
-		DVectord is_normal_component;
-		DVectord normals;
-		DSMatrixd mat;
+		UVector is_normal_component;
+		UVector normals;
+		USparseMatrix mat;
 		assemble_normal_tangential_transformation(*mesh, Vx.dof_map(), {101}, is_normal_component, normals, mat);
 		// mat.implementation().set_name("t");
 		// write("O.m", mat);
@@ -49,7 +49,7 @@ namespace utopia {
 		// normals.implementation().set_name("n");
 		// write("vn.m", normals);
 
-		DVectord t_normals = mat * normals;
+		UVector t_normals = mat * normals;
 
 		libMesh::Nemesis_IO io(*mesh);
 		convert(t_normals, *sys.solution);

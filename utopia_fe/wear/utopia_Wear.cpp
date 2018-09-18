@@ -11,7 +11,7 @@
 namespace utopia {
 
 	void apply_displacement(
-		const DVectord &displacement_increment,
+		const UVector &displacement_increment,
 		const libMesh::DofMap &dof_map,
 		libMesh::MeshBase &mesh)
 	{
@@ -22,7 +22,7 @@ namespace utopia {
 
 		if(!comm.is_alone()) {
 			auto r = range(displacement_increment);
-			Read<DVectord> r_d(displacement_increment);
+			Read<UVector> r_d(displacement_increment);
 
 			auto m_begin = mesh.active_local_elements_begin();
 			auto m_end   = mesh.active_local_elements_end();
@@ -44,9 +44,9 @@ namespace utopia {
 			}
 
 			idx.insert(idx.end(), unique_idx.begin(), unique_idx.end());
-			DVectord out = displacement_increment.select(idx);
+			UVector out = displacement_increment.select(idx);
 			{
-				Read<DVectord> r_out(out);
+				Read<UVector> r_out(out);
 				auto range_out = range(out);
 
 				for(std::size_t i = 0; i < idx.size(); ++i) {
@@ -71,7 +71,7 @@ namespace utopia {
 
 		} else {
 
-			Read<DVectord> r_d(displacement_increment);
+			Read<UVector> r_d(displacement_increment);
 
 			auto m_it  = mesh.local_nodes_begin();
 			auto m_end = mesh.local_nodes_end();
@@ -95,7 +95,7 @@ namespace utopia {
 	void Wear::compute_displacement(
 		ProductFunctionSpace<LibMeshFunctionSpace> &V,
 		const std::vector<int> &boundary_tags,
-		DVectord &wear_induced_displacement
+		UVector &wear_induced_displacement
 		)
 	{
 		libMesh::MeshBase &mesh  = V[0].mesh();
@@ -111,8 +111,8 @@ namespace utopia {
 		// wear_induced_displacement = local_zeros(local_size(wear));
 		{
 			auto r = range(wear);
-			Write<DVectord> w_w(wear_induced_displacement);
-			Read<DVectord> r_w(wear), r_n(normals), r_i(is_normal_component);
+			Write<UVector> w_w(wear_induced_displacement);
+			Read<UVector> r_w(wear), r_n(normals), r_i(is_normal_component);
 
 			for(auto i = r.begin(); i < r.end(); i += dim) {
 				if(is_normal_component.get(i) > 0) {
@@ -129,7 +129,7 @@ namespace utopia {
 	void Wear::mesh_displacement(
 		ProductFunctionSpace<LibMeshFunctionSpace> &V,
 		const std::vector<int> &boundary_tags,
-		DVectord &warped_displacement)
+		UVector &warped_displacement)
 	{
 		libMesh::MeshBase &mesh = V[0].mesh();
 		libMesh::DofMap &dof_map = V[0].dof_map();
@@ -142,7 +142,7 @@ namespace utopia {
 		auto u = trial(V);
 		auto v = test(V);
 
-		DSMatrixd lapl_mat;
+		USparseMatrix lapl_mat;
 		auto lapl = inner(grad(u), grad(v)) * dX;
 		assemble(lapl, lapl_mat);
 		warped_displacement = local_zeros(local_size(wear_induced_displacement));
@@ -150,8 +150,8 @@ namespace utopia {
 		//FIXME warped_displacement passed as dummy
 		set_identity_at_constraint_rows(dof_map, lapl_mat);
 
-		// KSPSolver<DSMatrixd, DVectord> solver;
-		Factorization<DSMatrixd, DVectord> solver;
+		// KSPSolver<USparseMatrix, UVector> solver;
+		Factorization<USparseMatrix, UVector> solver;
 		if(!solver.solve(lapl_mat, wear_induced_displacement, warped_displacement)) {
 			std::cerr << "[Warning] harmonic map did not work" << std::endl;
 			warped_displacement = wear_induced_displacement;
@@ -240,26 +240,26 @@ namespace utopia {
 		const auto &mesh = es.get_mesh();
 		const int dim = mesh.mesh_dimension();
 
-		DVectord normal_stress = local_zeros(local_size(state.displacement));
-		DVectord sliding_distance = local_zeros(local_size(state.displacement));
+		UVector normal_stress = local_zeros(local_size(state.displacement));
+		UVector sliding_distance = local_zeros(local_size(state.displacement));
 
 		if(empty(wear_induced_displacement)) {
 			wear_induced_displacement = local_zeros(local_size(state.displacement));
 		}
 
-		// DVectord stress = local_zeros(local_size(state.displacement));
+		// UVector stress = local_zeros(local_size(state.displacement));
 
 		if(contact.initialized) {
 			// stress = e_mul(mech_ctx.inverse_mass_vector, (state.external_force - state.internal_force));
 			// stress = (state.external_force - state.internal_force);
 			normal_stress = contact.orthogonal_trafo * state.stress;
 
-			DVectord tangential_velocity = contact.orthogonal_trafo * state.velocity;
+			UVector tangential_velocity = contact.orthogonal_trafo * state.velocity;
 			sliding_distance = local_zeros(local_size(state.velocity));
 
 			{
-				Read<DVectord>   r_v(tangential_velocity);
-				Write<DVectord> w_s(sliding_distance);
+				Read<UVector>   r_v(tangential_velocity);
+				Write<UVector> w_s(sliding_distance);
 
 				Range r = range(tangential_velocity);
 
@@ -283,8 +283,8 @@ namespace utopia {
 			{
 				normal_stress *= 0.;
 
-				Read<DVectord> r_s(state.stress), r_n(contact.normals);
-				Write<DVectord> w_n(normal_stress);
+				Read<UVector> r_s(state.stress), r_n(contact.normals);
+				Write<UVector> w_n(normal_stress);
 
 				Range r = range(state.stress);
 
@@ -309,9 +309,9 @@ namespace utopia {
 		}
 
 		{
-			Read<DVectord> r_d(state.displacement), r_v(state.velocity);
-			Read<DVectord> r_f(state.internal_force), r_ef(state.external_force), r_ns(normal_stress);
-			Read<DVectord> r_c(contact.is_contact_node);
+			Read<UVector> r_d(state.displacement), r_v(state.velocity);
+			Read<UVector> r_f(state.internal_force), r_ef(state.external_force), r_ns(normal_stress);
+			Read<UVector> r_c(contact.is_contact_node);
 
 			auto nd 	= mesh.local_nodes_begin();
 			auto nd_end = mesh.local_nodes_end();

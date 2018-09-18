@@ -2,6 +2,8 @@
 #define UTOPIA_FE_CONTACT_HPP 
 
 #include "utopia.hpp"
+#include "utopia_fe_base.hpp"
+
 #include <vector>
 #include <utility>
 
@@ -60,18 +62,18 @@ namespace utopia {
 			return has_contact_;
 		}
 
-		DVectord gap;
-		DVectord weighted_gap;
-		DVectord normals;
-		DVectord inv_mass_vector;
-		DVectord is_contact_node;
+		UVector gap;
+		UVector weighted_gap;
+		UVector normals;
+		UVector inv_mass_vector;
+		UVector is_contact_node;
 
-		DSMatrixd coupling;
-		DSMatrixd inv_mass_matrix;
-		DSMatrixd transfer_operator;
-		DSMatrixd orthogonal_trafo;
+		USparseMatrix coupling;
+		USparseMatrix inv_mass_matrix;
+		USparseMatrix transfer_operator;
+		USparseMatrix orthogonal_trafo;
 
-		DSMatrixd complete_transformation;
+		USparseMatrix complete_transformation;
 		bool initialized;
 		bool has_contact_;
 

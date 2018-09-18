@@ -38,7 +38,7 @@ namespace utopia {
 		auto v = test(V);
 
 		Vx.initialize();
-		DVectord sol = ghosted(Vx.dof_map().n_local_dofs(), Vx.dof_map().n_dofs(), Vx.dof_map().get_send_list());
+		UVector sol = ghosted(Vx.dof_map().n_local_dofs(), Vx.dof_map().n_dofs(), Vx.dof_map().get_send_list());
 
 		// auto uh = interpolate(V); 
 

@@ -16,6 +16,7 @@ namespace utopia {
 
 		bool open(const Path &path) override;
 
+		void read(bool &val) override;
 		void read(double &val) override;
 		void read(int &val) override;
 		void read(SizeType &val) override;
@@ -23,6 +24,7 @@ namespace utopia {
 		void read(Serializable &val) override;
 		void read(std::function<void(InputStream &)> lambda) override;
 
+		void read(const std::string &key, bool &val) override;
 		void read(const std::string &key, double &val) override;
 		void read(const std::string &key, int &val) override;
 		void read(const std::string &key, SizeType &val) override;

@@ -2,6 +2,7 @@
 #define UTOPIA_SOCKET_HPP
 
 #include "utopia.hpp"
+#include "utopia_fe_base.hpp"
 
 #include <string>
 #include <vector>
@@ -28,8 +29,8 @@ namespace utopia {
 
 	void plot_scaled_normal_field(
 		const libMesh::MeshBase &mesh,
-		const DVectord &normals,
-		const DVectord &scale,
+		const UVector &normals,
+		const UVector &scale,
 		const std::string &name = "normal_field/nf");
 }
 

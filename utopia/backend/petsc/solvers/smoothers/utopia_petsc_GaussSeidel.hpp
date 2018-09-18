@@ -3,6 +3,7 @@
 
 #include "utopia_Smoother.hpp"
 #include "utopia_Core.hpp"
+#include "utopia_LinearSolverInterfaces.hpp"
 
 
 #include <petscpc.h>
@@ -16,12 +17,7 @@
 
 
 namespace utopia {
-    template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class GaussSeidel {};
-    
-    
-    
-    
+ 
     /**
      * @brief      Wrapper for PETSC implementation of SOR.
      *             Be aware, that this function doesn't run in parallel.

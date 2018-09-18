@@ -25,6 +25,21 @@ namespace utopia {
 			return ret;
 		}
 
+		template<class Point>
+		Point apply(const Point &p) const
+		{
+			Point ret;
+			for(std::size_t i = 0; i < 3; ++i) {
+				ret(i) = translation[i];
+
+				for(std::size_t k = 0; k < 3; ++k) {
+					ret(i) += get(i, k, linear_transformation) * p(k);
+				}
+			}
+
+			return ret;
+		}	
+
 		void make_rotation(const int dim, const double angle, const char axis)
 		{
 			std::fill(begin(translation), end(translation), 0.0);
@@ -33,7 +48,7 @@ namespace utopia {
 			switch(dim) {
 				case 2:
 				{
-					assert(axis == 'y' || axis == 'Y');
+					assert(axis == 'z' || axis == 'Z');
 					make_rotation_2(angle, linear_transformation);
 					return;
 				}
@@ -87,10 +102,69 @@ namespace utopia {
 			}
 		}
 
+		AffineTransform operator*(const AffineTransform &other) const
+		{
+			AffineTransform ret;
+
+			mat_mult(linear_transformation, other.linear_transformation, ret.linear_transformation);
+			mat_mult(linear_transformation, other.translation, ret.translation);
+			axpy(1., translation, ret.translation);
+			return ret;
+		}
+
 		std::array<double, 3*3> linear_transformation;
 		std::array<double, 3> translation;
 
 	private:
+
+		static void mat_mult(
+			const std::array<double, 3*3> &A,
+			const std::array<double, 3*3> &B,
+			std::array<double, 3*3> &C)
+		{
+
+			std::fill(std::begin(C), std::end(C), 0.);
+
+			for(int i = 0; i < 3; ++i) {
+				auto i_offset = i * 3;
+
+				for(int j = 0; j < 3; ++j) {
+					for(int k = 0; k < 3; ++k) {
+						auto k_offset = k * 3;
+						C[i_offset + j] += A[i_offset + k] * B[k_offset + j];
+					}
+				}
+			}
+		}
+
+		static void mat_mult(
+			const std::array<double, 3*3> &A,
+			const std::array<double, 3> &x,
+			std::array<double, 3> &y)
+		{
+
+			std::fill(std::begin(y), std::end(y), 0.);
+
+			for(int i = 0; i < 3; ++i) {
+				auto i_offset = i * 3;
+
+				for(int k = 0; k < 3; ++k) {
+					y[i] += A[i_offset + k] * x[k];
+				}
+			}
+		}
+
+		static void axpy(
+			const double alpha,
+			const std::array<double, 3> &x,
+			std::array<double, 3> &y)
+		{
+			std::fill(std::begin(y), std::end(y), 0.);
+
+			for(int i = 0; i < 3; ++i) {
+				y[i] += alpha * x[i];
+			}
+		}
 
 		static void make_rotation_3(const double angle, const char axis, std::array<double, 9> &result)
 		{

@@ -80,7 +80,11 @@ int main(int argc, char *argv[])
 	    runners["test_msh_reader"] = test_msh_reader;
 	    runners["fe_test"] = run_fe_eval_test;
 	    runners["helm"] = run_form_least_squares_helmholtz;
+
+#ifndef WITH_TRILINOS_ALGEBRA
 	    runners["contact_steady"] = run_steady_contact;
+#endif //WITH_TRILINOS_ALGEBRA
+	    
 	    // runners["ct"] = run_contact_test;
 	    runners["coarsener_test"] = run_coarsener_test;
 	    runners["eikonal"] = run_eikonal_equation_test;
