@@ -27,7 +27,7 @@ namespace utopia {
 	template<>
 	class UIFunctionSpace<LibMeshFunctionSpace> final : public Serializable {
 	public:
-		UIFunctionSpace(UIMesh<libMesh::DistributedMesh> &mesh)
+		UIFunctionSpace(const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh)
 		: mesh_(mesh)
 		{}
 
@@ -62,7 +62,7 @@ namespace utopia {
 
 			is.read("system-name", system_name);
 
-			auto equation_systems = std::make_shared<libMesh::EquationSystems>(mesh_.mesh());
+			auto equation_systems = std::make_shared<libMesh::EquationSystems>(mesh_->mesh());
 			auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>(system_name);
 
 			space_ = std::make_shared<ProductFunctionSpace<LibMeshFunctionSpace>>();
@@ -118,7 +118,7 @@ namespace utopia {
 		}
 
 	private:
-		UIMesh<libMesh::DistributedMesh> &mesh_;
+		std::shared_ptr<UIMesh<libMesh::DistributedMesh>> mesh_;
 		std::shared_ptr<ProductFunctionSpace<LibMeshFunctionSpace>> space_;
 	};
 }

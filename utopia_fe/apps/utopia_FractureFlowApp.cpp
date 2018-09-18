@@ -482,7 +482,7 @@ namespace utopia {
     class FractureFlowApp::Input : public Serializable {
     public:
         Input(libMesh::Parallel::Communicator &comm)
-        : mesh(comm), space(mesh)
+        : mesh(comm), space(make_ref(mesh))
         {}
 
         void read(InputStream &is) override
@@ -543,12 +543,7 @@ namespace utopia {
         
         is_ptr->read("master", master_in);
         is_ptr->read("slave",  slave_in);
-
         // is_ptr->read("multiplier", multiplier_in); //LAMBDA
-
-        // if(multiplier_in.empty()) { //LAMBDA
-            // multiplier_in = slave_in;  //LAMBDA
-        // }                           //LAMBDA
         
         std::string solve_strategy = "monolithic";
         is_ptr->read("solve-strategy", solve_strategy);
@@ -568,6 +563,7 @@ namespace utopia {
             
         auto &V_m = master_in.space.subspace(0);
         auto &V_s = slave_in.space.subspace(0);
+        // auto &L   = multiplier_in.space.subspace(0); //LAMBDA
 
         //////////////////////////// Variational formulation ////////////////////////////
         
@@ -577,8 +573,6 @@ namespace utopia {
         auto u_s = trial(V_s);
         auto v_s = test(V_s);
         
-        // L.initialize(); //LAMBDA
-
         std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " x " <<  V_s.dof_map().n_dofs();
         // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
         std::cout << std::endl;
@@ -645,7 +639,7 @@ namespace utopia {
         // UGLY code for writing stuff to disk
         libMesh::Nemesis_IO io_m(master_in.mesh.mesh());
         libMesh::Nemesis_IO io_s(slave_in.mesh.mesh());
-        // libMesh::Nemesis_IO io_multiplier(*mesh_multiplier);
+        // libMesh::Nemesis_IO io_multiplier(multiplier_in.mesh.mesh()); //LAMBDA
         
         utopia::convert(sol_m, *V_m.equation_system().solution);
         V_m.equation_system().solution->close();
@@ -659,7 +653,6 @@ namespace utopia {
         // utopia::convert(lagr, *L.equation_system().solution);                                         //LAMBDA
         // L.equation_system().solution->close();                                                        //LAMBDA
         // io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);  //LAMBDA
-        
         
         c.stop();
         std::cout << c << std::endl;
