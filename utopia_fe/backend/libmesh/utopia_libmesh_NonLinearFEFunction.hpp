@@ -305,7 +305,7 @@ namespace utopia {
 
 			//FIXME
 			auto &x_mutable = const_cast<Vector &>(x);
-			x_mutable.implementation().update_ghosts();
+			synchronize(x_mutable);//.implementation().update_ghosts();
 
 			LibMeshAssembler().assemble(eqs_, buff_mat, buff_vec);
 

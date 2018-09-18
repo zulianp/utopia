@@ -302,7 +302,7 @@ namespace utopia {
 	    	assert(sol_fold.implementation().has_ghosts() || mpi_world_size() == 1);
 	    	sol_fold = sol_f;
 	    	assert(sol_fold.implementation().has_ghosts() || mpi_world_size() == 1);
-	    	sol_fold.implementation().update_ghosts();
+	    	synchronize(sol_fold);//.implementation().update_ghosts();
 
 	    	std::vector<libMesh::dof_id_type> pressure_index;
 	    	Q_f.dof_map().local_variable_indices(pressure_index, Q_f.mesh(), Q_f.subspace_id());
