@@ -332,13 +332,13 @@ namespace utopia {
             return *mat_;
         }
 
-        inline rcp_crs_matrix_type &implementation_ptr()
+        inline rcp_crs_mat_type &implementation_ptr()
         {
             assert(!mat_.is_null());
             return mat_;
         }
 
-        inline const rcp_crs_matrix_type &implementation_ptr() const
+        inline const rcp_crs_mat_type &implementation_ptr() const
         {
             assert(!mat_.is_null());
             return mat_;

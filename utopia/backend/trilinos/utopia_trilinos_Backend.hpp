@@ -196,8 +196,8 @@ namespace utopia {
 
         template<class Integer>
         void build_ghosts(
-            const TpetraVector::global_ordinal_type &local_size,
-            const TpetraVector::global_ordinal_type &global_size,
+            const TpetraVector::GO &local_size,
+            const TpetraVector::GO &global_size,
             const std::vector<Integer> &index,
             TpetraVector &vec)
         {

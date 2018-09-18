@@ -10,7 +10,7 @@
 namespace utopia {
 
 	void TpetraVector::add_vector(
-	    const std::vector<global_ordinal_type> &indices,
+	    const std::vector<GO> &indices,
 	    const std::vector<Scalar> &values)
 	{
 		const std::size_t n = values.size();
@@ -22,7 +22,7 @@ namespace utopia {
 	}
 
 	void TpetraVector::set_vector(
-	    const std::vector<global_ordinal_type> &indices,
+	    const std::vector<GO> &indices,
 	    const std::vector<Scalar> &values)
 	{
 		const std::size_t n = values.size();

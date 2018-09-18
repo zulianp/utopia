@@ -189,11 +189,11 @@ namespace utopia {
         }
 
         void set_vector(
-            const std::vector<global_ordinal_type> &indices,
+            const std::vector<GO> &indices,
             const std::vector<Scalar> &values);
 
         void add_vector(
-            const std::vector<global_ordinal_type> &indices,
+            const std::vector<GO> &indices,
             const std::vector<Scalar> &values);
 
         template<typename Integer>
