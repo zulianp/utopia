@@ -173,6 +173,32 @@ namespace utopia {
         return true;
     }
 
+
+    static bool assemble_coupling(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &B)
+    {
+        auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, false);
+        auto local2global = std::make_shared<Local2Global>(false);
+        
+        TransferAssembler transfer_assembler(assembler, local2global);
+        
+        std::vector< std::shared_ptr<USparseMatrix> > mats;
+        if(!transfer_assembler.assemble(
+                                        make_ref(from.mesh()),
+                                        make_ref(from.dof_map()),
+                                        make_ref(to.mesh()),
+                                        make_ref(to.dof_map()),
+                                        mats)) {
+            return false;
+        }
+        
+        B = std::move(*mats[0]);
+
+        double sum_B = sum(B);
+
+        std::cout << sum_B << std::endl;
+        return true;
+    }
+
     //use different lagr mult space
     static bool assemble_projection(
         FunctionSpaceT &from,
@@ -180,18 +206,11 @@ namespace utopia {
         FunctionSpaceT &lagr, 
         USparseMatrix &B, USparseMatrix &D)
     {
-
-        {
-            USparseMatrix dump;
-            assemble_projection(from, lagr, B, dump);
+        if(assemble_coupling(from, lagr, B)) {
+            return assemble_coupling(to, lagr, D);
+        } else {
+            return false;
         }
-
-        {
-            USparseMatrix dump;
-            assemble_projection(to, lagr, D, dump);
-        }
-
-        return true;
     }
     
     static void solve_monolithic(FunctionSpaceT &V_m,

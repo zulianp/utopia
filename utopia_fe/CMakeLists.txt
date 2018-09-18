@@ -9,7 +9,7 @@ option(ENABLE_BOOST "enable boost features" OFF)
 option(ENABLE_MOONOLITH_PROFILER "enable moonolith profiling capabilities" OFF)
 option(ENABLE_CXX14_FEATURES "Enable usage of cxx14 standard" OFF)
 option(ENABLE_MOOSE_ENV_MODE "Allows to use the moose installation compilers" ON)
-option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers" ON)
+option(ENABLE_TRILINOS_ALGEBRA "Allows to use the moose installation compilers" OFF)
 
 #################################################################################
 #################################################################################

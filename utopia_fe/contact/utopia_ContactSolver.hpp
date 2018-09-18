@@ -364,7 +364,7 @@ namespace utopia {
 		bool step()
 		{
 			assert(x_.implementation().has_ghosts());
-			x_.implementation().update_ghosts();
+			synchronize(x_);//.implementation().update_ghosts();
 
 			if(contact_is_outdated_) {
 				update_contact(x_);
