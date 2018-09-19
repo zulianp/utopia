@@ -92,7 +92,7 @@ namespace utopia {
 
         template<class Derived>
         Number(const Expression<Derived> &expr)
-        : value_(scalar_cast<Scalar>(expr))
+        : value_(scalar_cast<Scalar>(expr.derived()))
         {}
 
     private:

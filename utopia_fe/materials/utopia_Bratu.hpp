@@ -18,13 +18,12 @@ namespace utopia {
             initialize();
         }
         
-        bool value(const Vector &x, typename Vector::Scalar &energy) const override
+        bool value(const Vector &x, Scalar &energy) const override
         {
             auto u  = trial(V_);
             auto uk = interpolate(x, u);
 
-            // auto f = 0.5 * inner(grad(uk), grad(uk)) * dX - exp(lambda_ * uk) * dX;
-            auto f = exp(lambda_ * uk) * dX;
+            auto f = 0.5 * inner(grad(uk), grad(uk)) * dX - exp(lambda_ * uk) * dX;
             utopia::assemble(f, energy);
             return true;
         }

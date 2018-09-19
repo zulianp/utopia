@@ -133,8 +133,8 @@ namespace utopia {
 			accumulator = val;
 		}
 
-		template<typename T1, typename T2>
-		inline static void assign(const std::vector<T1> &vals, Number<T2> &accumulator)
+		template<typename T>
+		inline static void assign(const std::vector<T> &vals, Number<T> &accumulator)
 		{
 			accumulator = 0.;
 			for(const auto &v : vals) {

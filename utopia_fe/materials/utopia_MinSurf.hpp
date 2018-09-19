@@ -32,9 +32,11 @@ namespace utopia {
             // auto u  = trial(V_);
             // auto v  = test(V_);
             // auto uk = interpolate(x, u);
-            // auto denom = sqrt(coeff(1) + inner(grad(uk), grad(uk)));
+            // auto denom = sqrt( coeff(1.) + inner(grad(uk), grad(uk)) );
             // auto num   = inner(grad(uk), grad(v));
-            // auto l_form = (num/denom) * dX;
+            // // auto l_form = (num/denom) * dX;
+
+            // auto l_form = ( coeff(1.) + inner(grad(uk), grad(uk)) ) * dX;
             // utopia::assemble(l_form, gradient);
             return true;
         }

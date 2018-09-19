@@ -290,8 +290,10 @@ namespace utopia {
         auto f = get_function(in, V);
 
         Newton<USparseMatrix, UVector> solver;
+        solver.set_line_search_strategy(std::make_shared<Backtracking<USparseMatrix, UVector>>());
 
         UVector x = local_zeros(V.dof_map().n_local_dofs());
+        solver.verbose(in.verbose);
         solver.solve(*f, x);
 
         c.stop();
@@ -380,7 +382,7 @@ namespace utopia {
         in.describe();
 
         solve_newton(in);
-        solve_rmtr(in);
+        // solve_rmtr(in);
     }
 }
 
