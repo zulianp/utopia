@@ -15,6 +15,7 @@
 #include "utopia_Eval_Blocks.hpp"
 #include "utopia_MinSurf.hpp"
 #include "utopia_Bratu.hpp"
+#include "utopia_Poisson.hpp"
 #include "utopia_IPTransfer.hpp"
 
 #include "libmesh/mesh_refinement.h"
@@ -261,6 +262,8 @@ namespace utopia {
             f = std::make_shared<Bratu<decltype(V), USparseMatrix, UVector>>(V);
         } else if(in.fun == "min-surf") {
             f = std::make_shared<MinSurf<decltype(V), USparseMatrix, UVector>>(V);
+        }  else if(in.fun == "poisson") {
+            f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
         } else {
             assert(false);
             return nullptr;

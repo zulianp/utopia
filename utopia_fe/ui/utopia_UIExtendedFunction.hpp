@@ -4,6 +4,7 @@
 #include "utopia_ExtendedFunction.hpp"
 #include "utopia_Bratu.hpp"
 #include "utopia_MinSurf.hpp"
+#include "utopia_Poisson.hpp"
 
 #include "utopia_ui.hpp"
 #include <string>
@@ -28,6 +29,8 @@ namespace utopia {
 			    fun_ = std::make_shared<Bratu<decltype(V_), USparseMatrix, UVector>>(V_);
 			} else if(name == "min-surf") {
 			    fun_ = std::make_shared<MinSurf<decltype(V_), USparseMatrix, UVector>>(V_);
+			} else if(name == "poisson") {
+				fun_ = std::make_shared<Poisson<decltype(V_), USparseMatrix, UVector>>(V_);
 			} else {
 			    assert(false);
 			}

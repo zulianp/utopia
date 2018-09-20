@@ -1823,6 +1823,51 @@ namespace utopia {
 			return ret;
 		}
 
+		template<typename T, typename C>
+		inline static auto inner(
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			const ConstantCoefficient<T, 0> &left,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			return apply_binary(left, right, Multiplies(), ctx);
+		}
+
+
+		template<typename T>
+		inline static auto inner(
+			QValues<double> &&left,
+			const ConstantCoefficient<T, 0> &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			for(auto &l : left) {
+				l *= right.expr();
+			}
+
+			return std::move(left);
+		}
+
+		template<typename T>
+		inline static auto inner(
+			const ConstantCoefficient<T, 0> &left,
+			QValues<double> &&right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			for(auto &r : right) {
+				r *= left.expr();
+			}
+
+			return std::move(right);
+		}
+
+		template<typename T, typename C>
+		inline static auto inner(
+			const ConstantCoefficient<T, 0> &left,
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+		{
+			return apply_binary(left, right, Multiplies(), ctx);
+		}
+
 
 		template<typename T, typename C>
 		inline static auto apply_binary(
