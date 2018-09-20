@@ -505,10 +505,10 @@ namespace utopia {
                 is.read("diffusivity-y", diffusivities[1]);
                 is.read("diffusivity-z", diffusivities[2]);
 
-                int dim = space.subspace(0).mesh().mesh_dimension();
+                int dim = space.subspace(0).mesh().spatial_dimension();
 
                 diffusion_tensor = identity(dim, dim);
-                
+
                 {
                     Write<ElementMatrix> w(diffusion_tensor);
                     for(int i = 0; i < dim; ++i) {
