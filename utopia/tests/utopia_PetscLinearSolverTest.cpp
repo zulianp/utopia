@@ -26,6 +26,9 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_superlu_cg_mg);
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
+            UTOPIA_RUN_TEST(petsc_st_cg_mg); 
+
+
 #endif //PETSC_HAVE_MUMPS
         }
 
@@ -470,6 +473,7 @@ namespace utopia {
             // utopia_test_assert( diff < 1e-6 );
         }
 
+
         void petsc_factorization()
         {
             if(mpi_world_size() > 1)
@@ -497,6 +501,82 @@ namespace utopia {
                 utopia_error("petsc_factorization fails. Known problem that needs to be fixed!");
             }
         }
+
+
+        void petsc_st_cg_mg()
+        {
+            //! [MG solve example]
+            const bool verbose = false;
+
+            DVectord rhs;
+            DSMatrixd A, I_1, I_2, I_3;
+
+            //reading data from disk
+            const std::string data_path = Utopia::instance().get("data_path");
+            read(data_path + "/laplace/matrices_for_petsc/f_rhs", rhs);
+            read(data_path + "/laplace/matrices_for_petsc/f_A", A);
+            read(data_path + "/laplace/matrices_for_petsc/I_1", I_1);
+            read(data_path + "/laplace/matrices_for_petsc/I_2", I_2);
+            read(data_path + "/laplace/matrices_for_petsc/I_3", I_3);
+
+            std::vector<std::shared_ptr<DSMatrixd>> interpolation_operators;
+
+            //interpolation operators from coarse to fine
+            interpolation_operators.push_back(make_ref(I_1));
+            interpolation_operators.push_back(make_ref(I_2));
+            interpolation_operators.push_back(make_ref(I_3));
+
+            //choose solver for coarse level solution
+            auto direct_solver = std::make_shared<Factorization<DSMatrixd, DVectord> >();
+
+#ifdef PETSC_HAVE_MUMPS
+            direct_solver->set_type(MUMPS_TAG, LU_DECOMPOSITION_TAG);
+#endif //PETSC_HAVE_MUMPS
+
+            //choose smoother
+            auto smoother = std::make_shared<GaussSeidel<DSMatrixd, DVectord>>();
+            // auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
+            Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
+            multigrid.set_transfer_operators(std::move(interpolation_operators));
+            multigrid.max_it(1);
+            multigrid.mg_type(1);
+            multigrid.verbose(verbose);
+            // multigrid.set_use_line_search(true);
+
+            SteihaugToint<DSMatrixd, DVectord, HOMEMADE> cg;
+            cg.verbose(verbose);
+
+            DVectord x_0 = zeros(A.size().get(0));
+
+            // plain cg
+            cg.atol(1e-18);
+            cg.rtol(1e-18);
+            cg.stol(1e-18);
+            cg.tr_constrained_solve(A, -1.0 * rhs, x_0, 1e15);
+
+
+            //CG with diagonal preconditioner
+            x_0 = zeros(A.size().get(0));
+            cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
+            cg.tr_constrained_solve(A, -1.0 * rhs, x_0, 1e15);
+            
+
+            //CG with multigrid preconditioner
+            x_0 = zeros(A.size().get(0));
+            cg.set_preconditioner(make_ref(multigrid));
+            cg.tr_constrained_solve(A, -1.0 * rhs, x_0, 1e15);
+
+
+            utopia_test_assert( approxeq(A*x_0, rhs, 1e-6) );
+
+            //Multigrid only
+            // x_0 = zeros(A.size().get(0));
+            // multigrid.max_it(12);
+            // multigrid.verbose(verbose);
+            // multigrid.solve(rhs, x_0);
+
+            //! [MG solve example]
+        }        
 
         PetscLinearSolverTest()
         : _n(10) { }

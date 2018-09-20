@@ -38,6 +38,7 @@ namespace utopia {
 			UTOPIA_RUN_TEST(nl_solve_test);
 			UTOPIA_RUN_TEST(dogleg_test);
 			UTOPIA_RUN_TEST(st_cg_test); 
+			UTOPIA_RUN_TEST(precond_st_cg_test); 
 
 		}
 
@@ -64,17 +65,59 @@ namespace utopia {
 
 		void st_cg_test()
         {
-            MultiLevelTestProblem<Matrix, Vector> ml_problem(100, 2);
-            Vector x = zeros(size(*ml_problem.rhs));
-
             SteihaugToint<Matrix, Vector, HOMEMADE> cg;
             cg.rtol(1e-7);
             cg.atol(1e-6);
-            cg.max_it(500);
-            // cg.verbose(true);
-            cg.tr_constrained_solve(*ml_problem.matrix, -1.0 * *ml_problem.rhs, x, 1e15);
-            utopia_test_assert(approxeq(*ml_problem.rhs, *ml_problem.matrix * x, 1e-5));
+            cg.max_it(_n);
+            cg.verbose(false);
+
+            Matrix A = sparse(_n, _n, 3);
+			assemble_symmetric_laplacian_1D(A, true);
+
+			Vector rhs = values(_n, 975.9);
+
+            {
+            	Write<Vector> w(rhs);
+            	rhs.set(0, 0.0); 
+            	rhs.set(_n-1, 0.0); 
+            }			
+
+            Vector x = zeros(size(rhs));
+
+            cg.tr_constrained_solve(A, -1.0 * rhs, x, 1e15);
+            utopia_test_assert(approxeq(rhs, A * x, 1e-5));
+
         }
+
+
+		void precond_st_cg_test()
+        {
+            SteihaugToint<Matrix, Vector, HOMEMADE> cg;
+            cg.rtol(1e-7);
+            cg.atol(1e-6);
+            cg.max_it(_n);
+            cg.verbose(false);
+            cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+            // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+            
+
+            Matrix A = sparse(_n, _n, 3);
+			assemble_symmetric_laplacian_1D(A, true);
+
+			Vector rhs = values(_n, 975.9);
+
+            {
+            	Write<Vector> w(rhs);
+            	rhs.set(0, 0.0); 
+            	rhs.set(_n-1, 0.0); 
+            }			
+
+            Vector x = zeros(size(rhs));
+
+            cg.tr_constrained_solve(A, -1.0 * rhs, x, 1e15);
+            utopia_test_assert(approxeq(rhs, A * x, 1e-5));
+        }
+
 
 
 		void nl_solve_test()
@@ -358,9 +401,9 @@ namespace utopia {
 		SolverTest<DMatrixd, DVectord, PetscScalar>().run();
 #endif
 
-#ifdef WITH_BLAS
-		SolverTest<Matrixd, Vectord, double>().run();
-#endif //WITH_BLAS
+// #ifdef WITH_BLAS
+// 		SolverTest<Matrixd, Vectord, double>().run();
+// #endif //WITH_BLAS
 
 		UTOPIA_UNIT_TEST_END("SolversTest");
 	}

@@ -233,7 +233,19 @@ namespace utopia
 		    }
 
 	        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord, HOMEMADE> >();
+	        tr_strategy_coarse->atol(1e-9); 
+	        // tr_strategy_coarse->verbose(true);
 	        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord, HOMEMADE> >();
+	        tr_strategy_fine->atol(1e-9); 
+	        // tr_strategy_fine->verbose(true);
+
+	        // we should apply BC conditions in symmetric way... ASAP... 
+	        tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
+	        tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
+	        
+	        // tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<DSMatrixd, DVectord> >());
+	        // tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<DSMatrixd, DVectord> >());	        
+
 
         	// auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
         	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
