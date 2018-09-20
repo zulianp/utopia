@@ -262,9 +262,11 @@ namespace utopia {
             f = std::make_shared<Bratu<decltype(V), USparseMatrix, UVector>>(V);
         } else if(in.fun == "min-surf") {
             f = std::make_shared<MinSurf<decltype(V), USparseMatrix, UVector>>(V);
-        }  else if(in.fun == "poisson") {
-            f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
-        } else {
+        }  
+        // else if(in.fun == "poisson") {
+        //     f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
+        // } 
+        else {
             assert(false);
             return nullptr;
         }
@@ -272,6 +274,12 @@ namespace utopia {
         return f;
     }
 
+    static void write(const Path &path, LibMeshFunctionSpace &space, UVector &x)
+    {
+        utopia::convert(x, *space.equation_system().solution);
+        space.equation_system().solution->close();
+        libMesh::Nemesis_IO(space.mesh()).write_equation_systems(path.to_string(), space.equation_systems());
+    }
 
     void RMTRApp::solve_newton(const Input &in)
     {
@@ -285,22 +293,30 @@ namespace utopia {
         auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("master");
 
         const auto elem_order = libMesh::Order(in.order);
-        auto V = FunctionSpaceT(equation_systems, libMesh::LAGRANGE, elem_order, "u_m");
+        auto V = FunctionSpaceT(equation_systems, libMesh::LAGRANGE, elem_order, "u");
         in.set_up_bc(V);
         V.initialize();
         std::cout << "n_dofs: " << V.dof_map().n_dofs() << std::endl;
 
         auto f = get_function(in, V);
+        // auto f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
 
         Newton<USparseMatrix, UVector> solver;
-        solver.set_line_search_strategy(std::make_shared<Backtracking<USparseMatrix, UVector>>());
+        // solver.set_line_search_strategy(std::make_shared<Backtracking<USparseMatrix, UVector>>());
 
         UVector x = local_zeros(V.dof_map().n_local_dofs());
+
+        apply_boundary_conditions(V.dof_map(), x);
         solver.verbose(in.verbose);
         solver.solve(*f, x);
 
+        double energy = 0.;
+        f->value(x, energy);
+        disp(energy);
         c.stop();
         std::cout << c << std::endl;
+
+        write("rmtr.e", V, x);
     }
 
 

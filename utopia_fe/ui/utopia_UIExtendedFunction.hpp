@@ -29,9 +29,11 @@ namespace utopia {
 			    fun_ = std::make_shared<Bratu<decltype(V_), USparseMatrix, UVector>>(V_);
 			} else if(name == "min-surf") {
 			    fun_ = std::make_shared<MinSurf<decltype(V_), USparseMatrix, UVector>>(V_);
-			} else if(name == "poisson") {
-				fun_ = std::make_shared<Poisson<decltype(V_), USparseMatrix, UVector>>(V_);
-			} else {
+			} else 
+			// if(name == "poisson") {
+			// 	fun_ = std::make_shared<Poisson<decltype(V_), USparseMatrix, UVector>>(V_);
+			// } else 
+			{
 			    assert(false);
 			}
 		}
