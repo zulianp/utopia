@@ -607,7 +607,7 @@ namespace utopia {
         // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
         std::cout << std::endl;
 
-
+        
         auto eq_m = inner(master_in.diffusion_tensor * grad(u_m), grad(v_m)) * dX;
         auto eq_s = inner(slave_in.diffusion_tensor  * grad(u_s), grad(v_s)) * dX;
         
@@ -626,6 +626,10 @@ namespace utopia {
         
         apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
         apply_boundary_conditions(V_s.dof_map(), A_s, rhs_s);
+
+        // double penalty = 1000.;
+        // A_s *= penalty;
+        // rhs_s *= penalty;
         
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -33,6 +33,8 @@ namespace utopia {
 
 			int n[3] = {5, 5, 5};
 
+			double scale = 1.;
+
 			std::string elem_type = "quad";
 
 			is.read("type", mesh_type);
@@ -57,6 +59,9 @@ namespace utopia {
 			is.read("n-x", n[0]);
 			is.read("n-y", n[1]);
 			is.read("n-z", n[2]);
+
+			is.read("scale", scale);
+
 
 			if(mesh_type == "file") {
 				mesh_->read(path);
@@ -101,6 +106,8 @@ namespace utopia {
 						);
 				}
 			}
+
+			scale_mesh(scale, *mesh_);
 
 			refine(refinements, *mesh_);
 
@@ -180,6 +187,20 @@ namespace utopia {
 		    libMesh::MeshRefinement mesh_refinement(mesh);
 		    mesh_refinement.make_flags_parallel_consistent();
 		    mesh_refinement.uniformly_refine(n_refs);
+		}
+
+		static void scale_mesh(const double &scale_factor, libMesh::MeshBase &mesh)
+		{
+			if(scale_factor == 1.) return;
+			assert(scale_factor > 0.);
+
+			// for(auto it = mesh.local_nodes_begin(); it != mesh.local_nodes_end(); ++it) {
+			for(auto it = mesh.nodes_begin(); it != mesh.nodes_end(); ++it) {
+
+				for(int i = 0; i < LIBMESH_DIM; ++i) {
+					(**it)(i) *= scale_factor;
+				}
+			}
 		}
 	};
 }

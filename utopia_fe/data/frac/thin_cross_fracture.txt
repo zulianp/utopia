@@ -37,15 +37,16 @@ create surface vertex 21,22,23,24
 
 unite volume all
 
-volume all scale 100
+
 
 
 Sideset 1 curve 3
 sideset 2 curve 1
 sideset 3 curve 23
 
+
 surface all scheme TriMesh
-surface all sizing function type skeleton   
+surface all size auto factor 4
 mesh surface all
 
 

@@ -14,7 +14,8 @@
 		<n-x>20</n-x>
 		<n-y>20</n-y>
 
-		<refinements>3</refinements>
+		<refinements>4</refinements>
+		<!-- <scale>1000.</scale> -->
 	</mesh>
 
 	<space>
@@ -49,7 +50,8 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/cross.e</path>
-		<refinements>2</refinements>
+		<refinements>3</refinements>
+		<!-- <scale>1000.</scale> -->
 	</mesh>
 
 	<space>
@@ -75,7 +77,8 @@
 		</fun>
 	</forcing-function>
 
-	<diffusivity>10000.</diffusivity>
+	<diffusivity>1e4</diffusivity>
+	<!-- <diffusivity>1e-12</diffusivity> -->
 	<!-- <diffusivity-x>10000.</diffusivity-x> -->
 	<!-- <diffusivity-y>1.</diffusivity-y> -->
 	<!-- <diffusivity>.00001</diffusivity> -->

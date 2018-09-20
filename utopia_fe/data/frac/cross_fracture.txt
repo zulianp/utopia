@@ -42,8 +42,9 @@ Sideset 1 curve 3
 sideset 2 curve 1
 sideset 3 curve 23
 
-surface all scheme Auto  
+surface all size auto factor 40
+surface all scheme TriMesh
+surface all size auto factor 40
 mesh surface all
-
 
 export mesh "/Users/zulianp/Desktop/code/utopia/utopia_fe/data/frac/cross.e" dimension 2 overwrite
