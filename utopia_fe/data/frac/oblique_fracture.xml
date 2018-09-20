@@ -13,10 +13,10 @@
 		<min-x>0.</min-x>
 		<min-y>0.</min-y>
 		
-		<max-x>2.</max-x>
+		<max-x>1.</max-x>
 		<max-y>1.</min-y>
 		
-		<n-x>20</n-x>
+		<n-x>10</n-x>
 		<n-y>10</n-y>
 
 		<refinements>2</refinements>
@@ -24,12 +24,6 @@
 
 	<space>
 		<system-name>master</system-name>
-	<!-- 	<variables>
-			<var>
-				<name>u_m</name>
-				<order>2</order>
-			</var>
-		</variables> -->
 		<boundary-conditions>
 			<entry>
 				<side>3</side>
@@ -42,26 +36,6 @@
 		</boundary-conditions>
 	</space>
 
-	<forcing-function>
-		<fun> 
-			<block>2</block>
-			<!-- <coord>0</coord> -->
-			<value>100.</value>
-			<type>surface</type>
-		</fun>
-		<fun> 
-			<block>0</block>
-			<!-- <coord>0</coord> -->
-			<value>-100.</value>
-			<type>surface</type>
-		</fun>
-		<fun>
-			<!-- <coord>0</coord> -->
-			<value>-100.</value>
-		</fun>
-	</forcing-function>
-
-
 	<diffusivity>1.</diffusivity>
 </master>
 
@@ -69,7 +43,9 @@
 <slave>
 	<mesh>
 		<type>file</type>
-		<path>../data/frac/line.e</path>
+		<!-- <path>../data/frac/line.e</path> -->
+		<!-- <path>../data/frac/vol_line.e</path> -->
+		<path>../data/frac/thin_line.e</path>
 		<!-- <order>1</order> -->
 		<!-- <refinements>0</refinements> -->
 	</mesh>

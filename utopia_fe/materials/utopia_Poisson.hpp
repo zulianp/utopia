@@ -17,7 +17,9 @@ namespace utopia {
         {
             // initialize();
         }
-        
+            
+
+        //HANDLE boundary conditions when computing energy
         bool value(const Vector &x, typename Vector::Scalar &energy) const override
         {
             auto u  = trial(V_);

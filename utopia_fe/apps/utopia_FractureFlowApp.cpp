@@ -24,6 +24,8 @@ namespace utopia {
     
     
     typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
+    typedef utopia::Traits<FunctionSpaceT> TraitsT;
+    typedef typename TraitsT::Matrix ElementMatrix;
     
     void FractureFlowApp::init(libMesh::LibMeshInit &init)
     {
@@ -494,8 +496,25 @@ namespace utopia {
                 forcing_function = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
                 is.read("forcing-function", *forcing_function);
     
-                //material parameters              
+                //material parameters   
+                double diffusivity = 1.;    
+                double diffusivities[3] = {1., 1., 1.};
+                
                 is.read("diffusivity", diffusivity);
+                is.read("diffusivity-x", diffusivities[0]);
+                is.read("diffusivity-y", diffusivities[1]);
+                is.read("diffusivity-z", diffusivities[2]);
+
+                int dim = space.subspace(0).mesh().mesh_dimension();
+
+                diffusion_tensor = identity(dim, dim);
+                
+                {
+                    Write<ElementMatrix> w(diffusion_tensor);
+                    for(int i = 0; i < dim; ++i) {
+                        diffusion_tensor.set(i, i, diffusivities[i] * diffusivity);
+                    }
+                }
 
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
@@ -510,18 +529,29 @@ namespace utopia {
 
         void describe(std::ostream &os = std::cout) const
         {
-            // os << "-----------------------------------\n";
+            os << "-----------------------------------\n";
             // mesh.describe(os);
             // space.describe(os);
             // forcing_function.describe(os);
-            // os << "-----------------------------------\n";
+            os << "diffusivity: " << std::endl;
+            
+            {
+                int dim = size(diffusion_tensor).get(0);
+                Read<ElementMatrix> w(diffusion_tensor);
+                for(int i = 0; i < dim; ++i) {
+                    os << diffusion_tensor.get(i, i) << " ";
+                }
+            }
+
+            os << "\n";
+            os << "-----------------------------------\n";
         }
         
         UIMesh<libMesh::DistributedMesh> mesh;    
         UIFunctionSpace<FunctionSpaceT>  space;
         std::shared_ptr< UIForcingFunction<FunctionSpaceT, UVector> > forcing_function;
 
-        double diffusivity;
+        ElementMatrix diffusion_tensor;
     };
     
     void FractureFlowApp::run(const std::string &conf_file_path)
@@ -576,9 +606,10 @@ namespace utopia {
         std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " x " <<  V_s.dof_map().n_dofs();
         // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
         std::cout << std::endl;
-        
-        auto eq_m = master_in.diffusivity * inner(grad(u_m), grad(v_m)) * dX;
-        auto eq_s = slave_in.diffusivity  * inner(grad(u_s), grad(v_s)) * dX;
+
+
+        auto eq_m = inner(master_in.diffusion_tensor * grad(u_m), grad(v_m)) * dX;
+        auto eq_s = inner(slave_in.diffusion_tensor  * grad(u_s), grad(v_s)) * dX;
         
         //////////////////////////// Generation of the algebraic system ////////////////////////////
 
