@@ -1,0 +1,49 @@
+create vertex 0.0 0.500005 0 
+create vertex 0.0 0.499995 0 
+create vertex 1.0 0.499995 0
+create vertex 1.0 0.500005 0 
+create surface vertex 1,2,3,4
+
+create vertex 0.500005 0. 0
+create vertex 0.499995 0. 0
+create vertex 0.499995 1. 0 
+create vertex 0.500005 1. 0 
+create surface vertex 5,6,7,8
+
+create vertex 0.625005 0.5 0
+create vertex 0.624995 0.5 0
+create vertex 0.624995 0.75 0 
+create vertex 0.625005 0.75 0 
+create surface vertex 9,10,11,12
+
+create vertex 0.5 0.625005 0
+create vertex 0.5 0.624995 0
+create vertex 0.75 0.624995 0 
+create vertex 0.75 0.625005 0 
+create surface vertex 13,14,15,16
+
+create vertex 0.75005 0.5 0 
+create vertex 0.74995 0.5 0
+create vertex 0.74995 1.  0 
+create vertex 0.75005 1.  0
+create surface vertex 17,18,19,20
+
+create vertex 0.5 0.75005 0 
+create vertex 0.5 0.74995 0
+create vertex 1. 0.74995  0
+create vertex 1. 0.75005  0
+
+create surface vertex 21,22,23,24
+
+unite volume all
+
+
+Sideset 1 curve 3
+sideset 2 curve 1
+sideset 3 curve 23
+
+surface all scheme Auto  
+mesh surface all
+
+
+export mesh "/Users/zulianp/Desktop/code/utopia/utopia_fe/data/frac/cross.e" dimension 2 overwrite

@@ -1,0 +1,84 @@
+<!-- MASTER STUFF -->
+<master>
+	<mesh>
+		<type>square</type>
+		<elem-type>quad</elem-type>
+		<order>2</order>
+
+		<min-x>0.</min-x>
+		<min-y>0.</min-y>
+		
+		<max-x>1.</max-x>
+		<max-y>1.</min-y>
+		
+		<n-x>20</n-x>
+		<n-y>20</n-y>
+
+		<refinements>3</refinements>
+	</mesh>
+
+	<space>
+		<system-name>master</system-name>
+		<variables>
+			<var>
+				<name>u</name>
+				<order>2</order>
+			</var>
+		</variables>
+		<boundary-conditions>
+			<entry>
+				<side>1</side>
+				<value>1.</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
+	<forcing-function>
+		<fun>
+			<block>3</block>
+			<value>1.</value>
+			<type>surface</type>
+		</fun>
+	</forcing-function>
+
+	<diffusivity>1.</diffusivity>
+</master>
+
+<!-- SLAVE STUFF -->
+<slave>
+	<mesh>
+		<type>file</type>
+		<path>../data/frac/cross.e</path>
+		<refinements>2</refinements>
+	</mesh>
+
+	<space>
+		<system-name>slave</system-name>
+
+		<boundary-conditions>
+			<entry>
+				<side>1</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>3</side>
+				<value>1</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
+	<forcing-function>
+		<fun>
+			<block>2</block>
+			<value>1.</value>
+			<type>surface</type>
+		</fun>
+	</forcing-function>
+
+	<diffusivity>10000.</diffusivity>
+	<!-- <diffusivity-x>10000.</diffusivity-x> -->
+	<!-- <diffusivity-y>1.</diffusivity-y> -->
+	<!-- <diffusivity>.00001</diffusivity> -->
+</slave>
+
+<solve-strategy>monolithic</solve-strategy>
