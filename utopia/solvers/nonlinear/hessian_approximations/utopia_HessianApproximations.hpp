@@ -20,11 +20,11 @@ namespace utopia
             virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x, Matrix &H)
             {
                 // (void) fun;
-                // SizeType n_local = local_size(x).get(0);
-                // H = local_identity(n_local, n_local);
+                SizeType n_local = local_size(x).get(0);
+                H = local_identity(n_local, n_local);
 
                 //for sparse
-                fun.hessian(x, H);
+                // fun.hessian(x, H);
 
                 // opt 1
                 // fun.hessian(x, H);
