@@ -96,38 +96,42 @@ namespace utopia {
 			is.read("max-y", max_[1]);
 			is.read("max-z", max_[2]);
 
+			is.read("nx", dims_[0]);
+			is.read("ny", dims_[1]);
+			is.read("nz", dims_[2]);
+
+			n = 0;
+
+			std::size_t n_values = 1;
 			for(std::size_t i = 0; i < 3; ++i) {
 				range_[i] = max_[i] - min_[i];
+
+				if(dims_[i] != 0) {
+					n++;
+					n_values *= dims_[i];
+				}
 			}
 
+
+			values_.reserve(n_values);
 			std::ifstream ifs(file.c_str());
 			
-			if(ifs.good()) {
-				std::string line;
-				std::getline(ifs, line);
-				n = std::sscanf(line.c_str(), "%ld %ld %ld", &dims_[0], &dims_[1], &dims_[2]); assert(n <= 2);
-
-				//for now
-				CSV csv;
-				csv.read(ifs);
-
-				csv.write(std::cout);
-
-				dims_[0] = csv.n_rows();
-				dims_[1] = csv.n_cols();
-
-				values_.resize(csv.n_rows() * csv.n_cols());
-				std::size_t index = 0;
-
-				for(auto i = 0; i < csv.n_rows(); ++i) {
-					for(auto j = 0; j < csv.n_cols(); ++j) {
-						csv.get(i, j, values_[index++]);
-					}	
-				}
-
+			while(ifs.good()) {
+				Scalar val;
+				ifs >> val;
+				values_.push_back(val);
 			}
 
 			ifs.close();
+
+			assert(values_.size() == n_values);
+			
+			if(values_.size() != n_values) {
+				std::cout << 
+				"number of values is not consistent" 
+				"with the dimensions provided expected " 
+				<< n_values << " but found " << values_.size() << std::endl;
+			}
 
 		}
 
