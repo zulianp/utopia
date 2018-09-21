@@ -16,17 +16,18 @@
 #include "utopia_UIFunctionSpace.hpp"
 #include "utopia_UIForcingFunction.hpp"
 #include "utopia_UIMesh.hpp"
+#include "utopia_UIScalarSampler.hpp"
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_tools.h"
 
 namespace utopia {
-    
-    
+
+
     typedef utopia::LibMeshFunctionSpace FunctionSpaceT;
     typedef utopia::Traits<FunctionSpaceT> TraitsT;
     typedef typename TraitsT::Matrix ElementMatrix;
-    
+
     void FractureFlowApp::init(libMesh::LibMeshInit &init)
     {
         comm_ = make_ref(init.comm());
@@ -127,9 +128,9 @@ namespace utopia {
     {
         auto assembler = std::make_shared<InterpolationLocalAssembler>(from.mesh().mesh_dimension());
         auto local2global = std::make_shared<Local2Global>(true);
-        
+
         TransferAssembler transfer_assembler(assembler, local2global);
-        
+
         std::vector< std::shared_ptr<USparseMatrix> > mats;
         if(!transfer_assembler.assemble(
                                         make_ref(from.mesh()),
@@ -139,7 +140,7 @@ namespace utopia {
                                         mats)) {
             return false;
         }
-        
+
         B = std::move(*mats[0]);
         D = diag(sum(B, 1));
 
@@ -149,15 +150,15 @@ namespace utopia {
         std::cout << sum_B << " == " << sum_D << std::endl;
         return true;
     }
-    
-    
+
+
     static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &B, USparseMatrix &D)
     {
         auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, true);
         auto local2global = std::make_shared<Local2Global>(false);
-        
+
         TransferAssembler transfer_assembler(assembler, local2global);
-        
+
         std::vector< std::shared_ptr<USparseMatrix> > mats;
         if(!transfer_assembler.assemble(
                                         make_ref(from.mesh()),
@@ -167,7 +168,7 @@ namespace utopia {
                                         mats)) {
             return false;
         }
-        
+
         B = std::move(*mats[0]);
         D = std::move(*mats[1]);
 
@@ -183,9 +184,9 @@ namespace utopia {
     {
         auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, false);
         auto local2global = std::make_shared<Local2Global>(false);
-        
+
         TransferAssembler transfer_assembler(assembler, local2global);
-        
+
         std::vector< std::shared_ptr<USparseMatrix> > mats;
         if(!transfer_assembler.assemble(
                                         make_ref(from.mesh()),
@@ -195,7 +196,7 @@ namespace utopia {
                                         mats)) {
             return false;
         }
-        
+
         B = std::move(*mats[0]);
 
         double sum_B = sum(B);
@@ -207,8 +208,8 @@ namespace utopia {
     //use different lagr mult space
     static bool assemble_projection(
         FunctionSpaceT &from,
-        FunctionSpaceT &to, 
-        FunctionSpaceT &lagr, 
+        FunctionSpaceT &to,
+        FunctionSpaceT &lagr,
         USparseMatrix &B, USparseMatrix &D)
     {
         if(assemble_coupling(from, lagr, B)) {
@@ -217,7 +218,7 @@ namespace utopia {
             return false;
         }
     }
-    
+
     static void solve_monolithic(FunctionSpaceT &V_m,
                                  FunctionSpaceT &V_s,
                                  USparseMatrix &A_m,
@@ -228,7 +229,7 @@ namespace utopia {
                                  UVector &sol_s,
                                  UVector &lagr)
     {
-        
+
         USparseMatrix B, D;
         assemble_projection(V_m, V_s, B, D);
         // assemble_interpolation(V_m, V_s, B, D);
@@ -241,7 +242,7 @@ namespace utopia {
         set_zero_at_constraint_rows(V_m.dof_map(), B_t);
         set_zero_at_constraint_rows(V_s.dof_map(), D_t);
 
-        USparseMatrix A = Blocks<USparseMatrix>(3, 3, 
+        USparseMatrix A = Blocks<USparseMatrix>(3, 3,
         {
             make_ref(A_m), nullptr, make_ref(B_t),
             nullptr, make_ref(A_s), make_ref(D_t),
@@ -278,7 +279,7 @@ namespace utopia {
                                  UVector &sol_s,
                                  UVector &lagr)
     {
-        
+
         USparseMatrix B, D;
         assemble_projection(V_m, V_s, L, B, D);
         // assemble_interpolation(V_m, V_s, B, D);
@@ -291,7 +292,7 @@ namespace utopia {
         set_zero_at_constraint_rows(V_m.dof_map(), B_t);
         set_zero_at_constraint_rows(V_s.dof_map(), D_t);
 
-        USparseMatrix A = Blocks<USparseMatrix>(3, 3, 
+        USparseMatrix A = Blocks<USparseMatrix>(3, 3,
         {
             make_ref(A_m), nullptr, make_ref(B_t),
             nullptr, make_ref(A_s), make_ref(D_t),
@@ -312,7 +313,7 @@ namespace utopia {
 
         undo_blocks(sol, sol_m, sol_s, lagr);
     }
-    
+
     static void write_solution(const std::string &name,
                                UVector &sol,
                                const int time_step,
@@ -324,7 +325,7 @@ namespace utopia {
         space.equation_system().solution->close();
         io.write_timestep(name, space.equation_systems(), time_step, t);
     }
-    
+
     static void solve_staggered(const std::string &operator_type,
                                 FunctionSpaceT &V_m,
                                 FunctionSpaceT &V_s,
@@ -336,47 +337,47 @@ namespace utopia {
                                 UVector &sol_s,
                                 UVector &lagr)
     {
-        
+
         libMesh::Nemesis_IO io_m(V_m.mesh());
         libMesh::Nemesis_IO io_s(V_s.mesh());
         libMesh::Nemesis_IO io_m_l(V_m.mesh());
         libMesh::Nemesis_IO io_s_l(V_s.mesh());
-        
+
         Factorization<USparseMatrix, UVector> op_m;
         op_m.update(make_ref(A_m));
-        
+
         if(empty(sol_s)) {
             sol_s = local_zeros(local_size(rhs_s));
         }
-        
+
         UVector lagr_m = local_zeros(local_size(rhs_m));
         UVector lagr_s = local_zeros(local_size(rhs_s));
-        
+
         UVector rhs_lagr_m, rhs_lagr_s;
         UVector delta_lagr = local_zeros(local_size(rhs_s));
-        
+
         double dumping = 1.;
-        
+
         TransferOptions opts;
         opts.from_var_num = 0;
         opts.to_var_num   = 0;
-        
+
         MeshTransferOperator t(make_ref(V_m.mesh()),
                                make_ref(V_m.dof_map()),
                                make_ref(V_s.mesh()),
                                make_ref(V_s.dof_map()),
                                opts
                                );
-        
+
         t.initialize(operator_type);
         t.write("./");
 
         lagr_m.set(0.);
-        
+
         for(int i = 0; i < 20; ++i) {
             apply_zero_boundary_conditions(V_m.dof_map(), lagr_m);
             rhs_lagr_m = rhs_m + lagr_m;
-            
+
             write_solution("lagr_m.e",
                            lagr_m,
                            (i + 1),
@@ -384,9 +385,9 @@ namespace utopia {
                            V_m,
                            io_m_l
                            );
-            
+
             op_m.apply(rhs_lagr_m, sol_m);
-            
+
             write_solution("sol_m.e",
                            sol_m,
                            (i + 1),
@@ -394,15 +395,15 @@ namespace utopia {
                            V_m,
                            io_m
                            );
-            
+
             sol_s.set(0.);
             t.apply(sol_m, sol_s);
-            
+
             apply_boundary_conditions(V_s, A_s, sol_s);
             lagr_s = rhs_s - A_s * sol_s;
             apply_zero_boundary_conditions(V_s.dof_map(), lagr_s);
 
-            
+
             write_solution("sol_s.e",
                            sol_s,
                            (i + 1),
@@ -410,8 +411,8 @@ namespace utopia {
                            V_s,
                            io_s
                            );
-            
-            
+
+
             write_solution("lagr_s.e",
                            lagr_s,
                            (i + 1),
@@ -419,23 +420,23 @@ namespace utopia {
                            V_s,
                            io_s_l
                            );
-            
+
             double n_lagr_s = norm2(lagr_s);
-            
+
             disp(n_lagr_s);
-            
+
             if(n_lagr_s < 1e-14) {
                 break;
             }
-            
+
             delta_lagr.set(0);
             t.apply_transpose(lagr_s, delta_lagr);
             lagr_m += dumping * delta_lagr;
         }
-        
+
         lagr = lagr_m;
     }
-    
+
     static void solve_separate(const std::string &operator_type,
                                FunctionSpaceT &V_m,
                                FunctionSpaceT &V_s,
@@ -449,38 +450,75 @@ namespace utopia {
     {
         Factorization<USparseMatrix, UVector> op_m;
         op_m.update(make_ref(A_m));
-        
+
         Factorization<USparseMatrix, UVector> op_s;
         op_s.update(make_ref(A_s));
-        
-        
+
+
         op_m.apply(rhs_m, sol_m);
         op_s.apply(rhs_s, sol_s);
-        
-        
+
+
         MeshTransferOperator t(make_ref(V_m.mesh()),
                                make_ref(V_m.dof_map()),
                                make_ref(V_s.mesh()),
                                make_ref(V_s.dof_map())
                                );
-        
+
         t.initialize(operator_type);
-        
+
         UVector sol_transfered;
         t.apply(sol_m, sol_transfered);
         lagr = sol_transfered - sol_s;
     }
-    
-    
+
+
     static void refine(const int n_refs, libMesh::MeshBase &mesh)
     {
         if(n_refs <= 0) return;
-        
+
         libMesh::MeshRefinement mesh_refinement(mesh);
         mesh_refinement.make_flags_parallel_consistent();
         mesh_refinement.uniformly_refine(n_refs);
     }
-    
+
+    class FractureFlowAuxSystem {
+    public:
+        FractureFlowAuxSystem(FunctionSpaceT &V)
+        : aux_( V.equation_systems().add_system<libMesh::LinearImplicitSystem>("aux") )
+        {
+            var_nums_.push_back( aux_.add_variable("aperture", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+            aux_.init();
+        }
+
+        void sample_aperture(const std::shared_ptr<UIFunction<double>> &sampler)
+        {
+            FunctionSpaceT V_aperture(aux_, var_nums_[0]);
+            auto u = trial(V_aperture);
+            auto v = test(V_aperture);
+
+            auto lform = inner(ctx_fun(sampler), v) * dX;
+
+            UVector aperture_h;
+            utopia::assemble(lform, aperture_h);
+
+            USparseMatrix mass_mat;
+            utopia::assemble(inner(u, v) * dX, mass_mat);
+            UVector d_inv = 1./sum(mass_mat, 1);
+
+            UVector aperture = e_mul(d_inv, aperture_h);
+
+            disp(aperture);
+
+            utopia::convert(aperture, *aux_.solution);
+            aux_.solution->close();
+        }
+
+
+        libMesh::LinearImplicitSystem &aux_;
+        std::vector<int> var_nums_;
+    };
+
     class FractureFlowApp::Input : public Serializable {
     public:
         Input(libMesh::Parallel::Communicator &comm)
@@ -493,13 +531,22 @@ namespace utopia {
                 is.read("mesh", mesh);
                 is.read("space", space);
 
+                auto grid_sampler = std::make_shared<UIScalarSampler<double>>();
+                is.read("sampler", *grid_sampler);
+
+                if(grid_sampler) {
+                    sampler = grid_sampler;
+                } else {
+                    sampler = std::make_shared<UIConstantFunction<double>>(1.);
+                }
+
                 forcing_function = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
                 is.read("forcing-function", *forcing_function);
-    
-                //material parameters   
-                double diffusivity = 1.;    
+
+                //material parameters
+                double diffusivity = 1.;
                 double diffusivities[3] = {1., 1., 1.};
-                
+
                 is.read("diffusivity", diffusivity);
                 is.read("diffusivity-x", diffusivities[0]);
                 is.read("diffusivity-y", diffusivities[1]);
@@ -534,7 +581,7 @@ namespace utopia {
             // space.describe(os);
             // forcing_function.describe(os);
             os << "diffusivity: " << std::endl;
-            
+
             {
                 int dim = size(diffusion_tensor).get(0);
                 Read<ElementMatrix> w(diffusion_tensor);
@@ -546,18 +593,21 @@ namespace utopia {
             os << "\n";
             os << "-----------------------------------\n";
         }
-        
-        UIMesh<libMesh::DistributedMesh> mesh;    
+
+        UIMesh<libMesh::DistributedMesh> mesh;
         UIFunctionSpace<FunctionSpaceT>  space;
         std::shared_ptr< UIForcingFunction<FunctionSpaceT, UVector> > forcing_function;
 
+
+        std::shared_ptr<UIFunction<double>> sampler;
+
         ElementMatrix diffusion_tensor;
     };
-    
+
     void FractureFlowApp::run(const std::string &conf_file_path)
     {
         Chrono c;
-        
+
         c.start();
 
 
@@ -565,52 +615,57 @@ namespace utopia {
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////////////////////// SET-UP ////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
+
         auto is_ptr = open_istream(conf_file_path);
-        
+
         Input master_in(*comm_), slave_in(*comm_);
         // Input multiplier_in(*comm_); //LAMBDA
-        
+
         is_ptr->read("master", master_in);
         is_ptr->read("slave",  slave_in);
         // is_ptr->read("multiplier", multiplier_in); //LAMBDA
-        
+
         std::string solve_strategy = "monolithic";
         is_ptr->read("solve-strategy", solve_strategy);
 
 
         std::string operator_type = "L2_PROJECTION";
         is_ptr->read("operator-type", operator_type);
-        
+
         master_in.describe();
         slave_in.describe();
         // multiplier_in.describe(); //LAMBDA
-        
+
         std::cout << "solve_strategy: "  << solve_strategy << std::endl;
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
-            
+
         auto &V_m = master_in.space.subspace(0);
         auto &V_s = slave_in.space.subspace(0);
         // auto &L   = multiplier_in.space.subspace(0); //LAMBDA
 
+
+        FractureFlowAuxSystem aux(V_s);
+        aux.sample_aperture(slave_in.sampler);
+
         //////////////////////////// Variational formulation ////////////////////////////
-        
+
         auto u_m = trial(V_m);
         auto v_m = test(V_m);
-        
+
         auto u_s = trial(V_s);
         auto v_s = test(V_s);
-        
+
         std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " x " <<  V_s.dof_map().n_dofs();
         // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
         std::cout << std::endl;
 
-        
-        auto eq_m = inner(master_in.diffusion_tensor * grad(u_m), grad(v_m)) * dX;
-        auto eq_s = inner(slave_in.diffusion_tensor  * grad(u_s), grad(v_s)) * dX;
-        
+        // ctx_fun(master_in.sampler) *
+
+        auto eq_m = inner(master_in.diffusion_tensor * grad(u_m),  grad(v_m)) * dX;
+        auto eq_s = inner(slave_in.diffusion_tensor  * grad(u_s),  ctx_fun(slave_in.sampler) * grad(v_s)) * dX;
+
         //////////////////////////// Generation of the algebraic system ////////////////////////////
 
         USparseMatrix A_m, A_s;
@@ -623,24 +678,24 @@ namespace utopia {
 
         master_in.forcing_function->eval(x_m, rhs_m);
         slave_in.forcing_function->eval(x_s, rhs_s);
-        
+
         apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
         apply_boundary_conditions(V_s.dof_map(), A_s, rhs_s);
 
         // double penalty = 1000.;
         // A_s *= penalty;
         // rhs_s *= penalty;
-        
+
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
-       
+
         UVector sol_m, sol_s, lagr;
 
         if(solve_strategy == "staggered") {
-            
+
             solve_staggered(operator_type,
                             V_m,
                             V_s,
@@ -652,7 +707,7 @@ namespace utopia {
                             sol_s,
                             lagr
                             );
-            
+
         } else {
             solve_monolithic(V_m,
                              V_s,
@@ -666,21 +721,21 @@ namespace utopia {
                              lagr
                              );
         }
-        
+
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
+
 
         // UGLY code for writing stuff to disk
         libMesh::Nemesis_IO io_m(master_in.mesh.mesh());
         libMesh::Nemesis_IO io_s(slave_in.mesh.mesh());
         // libMesh::Nemesis_IO io_multiplier(multiplier_in.mesh.mesh()); //LAMBDA
-        
+
         utopia::convert(sol_m, *V_m.equation_system().solution);
         V_m.equation_system().solution->close();
         io_m.write_timestep(V_m.equation_system().name() + ".e", V_m.equation_systems(), 1, 0);
-        
-        
+
+
         utopia::convert(sol_s, *V_s.equation_system().solution);
         V_s.equation_system().solution->close();
         io_s.write_timestep(V_s.equation_system().name() + ".e", V_s.equation_systems(), 1, 0);
@@ -688,7 +743,7 @@ namespace utopia {
         // utopia::convert(lagr, *L.equation_system().solution);                                         //LAMBDA
         // L.equation_system().solution->close();                                                        //LAMBDA
         // io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);  //LAMBDA
-        
+
         c.stop();
         std::cout << c << std::endl;
     }

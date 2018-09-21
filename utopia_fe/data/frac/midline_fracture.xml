@@ -1,0 +1,70 @@
+<!-- MASTER STUFF -->
+<master>
+	<mesh>
+		<type>square</type>
+		<elem-type>quad</elem-type>
+		<order>2</order>
+
+		<min-x>0.</min-x>
+		<min-y>0.</min-y>
+		
+		<max-x>1.</max-x>
+		<max-y>1.</min-y>
+		
+		<n-x>10</n-x>
+		<n-y>10</n-y>
+
+		<refinements>2</refinements>
+	</mesh>
+
+	<space>
+		<system-name>master</system-name>
+		<boundary-conditions>
+			<entry>
+				<side>3</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>1</side>
+				<value>4</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
+	<diffusivity>1.</diffusivity>
+</master>
+
+<!-- SLAVE STUFF -->
+<slave>
+	<mesh>
+		<type>file</type>
+		<path>../data/frac/midline.e</path>
+		<refinements>3</refinements>
+	</mesh>
+	<sampler>
+		<file>../data/frac/aperture.txt</file>
+		<min-x>0.</min-x>
+		<max-x>1.</max-x>
+	</sampler>
+
+	<space>
+		<system-name>slave</system-name>
+
+		<boundary-conditions>
+			<entry>
+				<side>1</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>2</side>
+				<value>4</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
+	<forcing-function></forcing-function>
+
+	<diffusivity>10.</diffusivity>
+</slave>
+
+<solve-strategy>monolithic</solve-strategy>

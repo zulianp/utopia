@@ -1827,9 +1827,29 @@ namespace utopia {
 		inline static auto inner(
 			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
 			const ConstantCoefficient<T, 0> &left,
-			AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
+			AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<double>
 		{
 			return apply_binary(left, right, Multiplies(), ctx);
+		}
+
+
+		template<typename T, typename C>
+		inline static auto inner(
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &left,
+			const Interpolate<C, TrialFunction<LibMeshFunctionSpace> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<double>
+		{
+			auto f_left    = fun(left.coefficient(), left.fun(), ctx);
+			auto &&f_right = fun(right.coefficient(), right.fun(), ctx);
+
+
+			std::size_t n = f_left.size();
+
+			for(std::size_t i = 0; i < n; ++i) {
+				f_left[i] *= f_right[i];
+			}
+
+			return f_left;
 		}
 
 
@@ -2476,6 +2496,27 @@ namespace utopia {
 				}
 			}
 
+
+			return ret;
+		}
+
+		template<class Space>
+		inline static auto multiply(
+			const std::vector<double> &left,
+			const Gradient<TestFunction<Space> > &right,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type
+		{
+			typename remove_ref_and_const<decltype(grad(right.expr(), ctx))>::type ret = grad(right.expr(), ctx);
+
+			const std::size_t n_functions = ret.size();
+			const std::size_t n_quad_points = ret[0].size();
+
+			for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+				for(std::size_t i = 0; i < n_functions; ++i) {
+					ret[i][qp] *= left[qp];
+
+				}
+			}
 
 			return ret;
 		}

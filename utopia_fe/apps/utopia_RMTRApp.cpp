@@ -298,8 +298,8 @@ namespace utopia {
         V.initialize();
         std::cout << "n_dofs: " << V.dof_map().n_dofs() << std::endl;
 
-        auto f = get_function(in, V);
-        // auto f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
+        // auto f = get_function(in, V);
+        auto f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
 
         Newton<USparseMatrix, UVector> solver;
         // solver.set_line_search_strategy(std::make_shared<Backtracking<USparseMatrix, UVector>>());
