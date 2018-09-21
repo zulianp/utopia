@@ -262,7 +262,8 @@ namespace utopia {
         op.update(make_ref(A));
         op.apply(rhs, sol);
 
-        //write("A.m", A);
+        // write("A.m", A);
+        // write("rhs.m", rhs);
 
         undo_blocks(sol, sol_m, sol_s, lagr);
     }
@@ -692,6 +693,8 @@ namespace utopia {
         double it = 0;
         double rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
 
+
+        UVector lagr_old = lagr;
         UVector p, q, Ap, r_new, z, z_new;
         while(!converged)
         {
@@ -720,16 +723,18 @@ namespace utopia {
             
             rho_1 = rho;
             it++;
-            r_norm = norm2(r);
+            r_norm = norm2(lagr - lagr_old);
 
             converged = r_norm < 1e-8;
             it++;
 
-            if(!converged && it > 100) {
+            if(!converged && it > 600) {
                 break;
             }
 
             std::cout << it << " " << r_norm << std::endl;
+
+            lagr_old = lagr;
         }
 
         sol_m = local_zeros(local_size(rhs_m));

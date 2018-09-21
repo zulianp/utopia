@@ -14,7 +14,7 @@
 		<n-x>20</n-x>
 		<n-y>20</n-y>
 
-		<refinements>4</refinements>
+		<refinements>3</refinements>
 		<!-- <scale>1000.</scale> -->
 	</mesh>
 
@@ -50,7 +50,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/cross.e</path>
-		<refinements>3</refinements>
+		<refinements>1</refinements>
 		<!-- <scale>1000.</scale> -->
 	</mesh>
 
@@ -84,4 +84,6 @@
 	<!-- <diffusivity>.00001</diffusivity> -->
 </slave>
 
-<solve-strategy>monolithic</solve-strategy>
+<!-- <solve-strategy>monolithic</solve-strategy> -->
+
+<solve-strategy>staggered</solve-strategy>
