@@ -16,7 +16,7 @@
 
 		<refinements>2</refinements>
 	</mesh>
-
+<!-- 
 	<sampler>
 		<file>../data/frac/diffusivity.txt</file>
 		<min-x>0.</min-x>
@@ -25,7 +25,7 @@
 		<max-y>1.</max-y>
 		<nx>5</nx>
 		<ny>5</ny>
-	</sampler>
+	</sampler> -->
 
 	<space>
 		<system-name>master</system-name>
@@ -49,7 +49,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/midline.e</path>
-		<refinements>3</refinements>
+		<refinements>2</refinements>
 	</mesh>
 
 	<sampler>
@@ -79,4 +79,5 @@
 	<diffusivity>10.</diffusivity>
 </slave>
 
-<solve-strategy>monolithic</solve-strategy>
+<!-- <solve-strategy>monolithic</solve-strategy> -->
+<solve-strategy>staggered</solve-strategy>

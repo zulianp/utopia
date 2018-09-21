@@ -19,7 +19,7 @@
 		<n-x>10</n-x>
 		<n-y>10</n-y>
 
-		<refinements>2</refinements>
+		<refinements>4</refinements>
 	</mesh>
 
 	<space>
@@ -73,7 +73,9 @@
 
 	<forcing-function></forcing-function>
 
-	<diffusivity>10.</diffusivity>
+	<diffusivity>1.</diffusivity>
 </slave>
 
 <solve-strategy>monolithic</solve-strategy>
+
+<!-- <solve-strategy>staggered</solve-strategy> -->

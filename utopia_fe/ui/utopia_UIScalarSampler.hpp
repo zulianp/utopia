@@ -123,9 +123,10 @@ namespace utopia {
 
 			ifs.close();
 
-			assert(values_.size() == n_values);
+			std::size_t n_read_values = values_.size();
+			assert(n_read_values == n_values);
 			
-			if(values_.size() != n_values) {
+			if(n_read_values != n_values) {
 				std::cout << 
 				"number of values is not consistent" 
 				"with the dimensions provided expected " 

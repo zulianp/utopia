@@ -508,8 +508,6 @@ namespace utopia {
 
             UVector aperture = e_mul(d_inv, aperture_h);
 
-            disp(aperture);
-
             utopia::convert(aperture, *aux_.solution);
             aux_.solution->close();
         }
@@ -537,7 +535,7 @@ namespace utopia {
                 auto grid_sampler = std::make_shared<UIScalarSampler<double>>();
                 is.read("sampler", *grid_sampler);
 
-                if(grid_sampler) {
+                if(!grid_sampler->empty()) {
                     sampler = grid_sampler;
                 } else {
                     sampler = std::make_shared<UIConstantFunction<double>>(1.);
@@ -583,7 +581,7 @@ namespace utopia {
             // mesh.describe(os);
             // space.describe(os);
             // forcing_function.describe(os);
-            os << "diffusivity: " << std::endl;
+            os << "permeability: " << std::endl;
 
             {
                 int dim = size(diffusion_tensor).get(0);
@@ -606,6 +604,143 @@ namespace utopia {
 
         ElementMatrix diffusion_tensor;
     };
+
+
+    class CompositeOperator {
+    public:
+        CompositeOperator(
+            USparseMatrix &A_m,
+            UVector &rhs_m,
+            USparseMatrix &A_s,
+            UVector &rhs_s)
+        : A_m(A_m), rhs_m(rhs_m), A_s(A_s), rhs_s(rhs_s)
+        {
+            op_m.update(make_ref(A_m));
+            op_s.update(make_ref(A_s));
+
+            solved_m = local_zeros(local_size(rhs_m));
+            solved_s = local_zeros(local_size(rhs_s));
+        }
+
+        void apply(const UVector &p, UVector &Ap)
+        {
+            buff_m = B_t * p;
+            buff_s = D_t * p;
+
+            op_m.apply(buff_m, solved_m);
+            op_s.apply(buff_s, solved_s);
+            
+            Ap = B * solved_m + D * solved_s;
+        }
+
+        void residual(const UVector &p, UVector &r)
+        {
+            buff_m = rhs_m - B_t * p;
+            buff_s = rhs_s - D_t * p;
+
+            op_m.apply(buff_m, solved_m);
+            op_s.apply(buff_s, solved_s);
+            
+            r = B * solved_m + D * solved_s;
+        }
+
+        USparseMatrix &A_m;
+        UVector &rhs_m;
+        USparseMatrix &A_s;
+        UVector &rhs_s;
+
+        USparseMatrix D, D_t;
+        USparseMatrix B, B_t;
+
+        Factorization<USparseMatrix, UVector> op_m;
+        Factorization<USparseMatrix, UVector> op_s;
+
+
+    private:
+        UVector buff_m, solved_m, buff_s, solved_s;
+    };
+
+    bool solve_cg_dual(
+        FunctionSpaceT &V_m,
+        FunctionSpaceT &V_s,
+        USparseMatrix &A_m,
+        UVector &rhs_m,
+        USparseMatrix &A_s,
+        UVector &rhs_s,
+        UVector &sol_m,
+        UVector &sol_s,
+        UVector &lagr)
+    {
+
+        CompositeOperator op(A_m, rhs_m, A_s, rhs_s);
+
+        assemble_interpolation(V_m, V_s, op.B, op.D);
+        op.D *= -1.;
+
+        op.D_t = transpose(op.D);
+        op.B_t = transpose(op.B);
+
+        set_zero_at_constraint_rows(V_m.dof_map(), op.B_t);
+        set_zero_at_constraint_rows(V_s.dof_map(), op.D_t);
+
+        lagr = local_zeros(local_size(rhs_s));
+
+        UVector r;
+        op.residual(lagr, r);
+        bool converged = false;
+
+        double it = 0;
+        double rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
+
+        UVector p, q, Ap, r_new, z, z_new;
+        while(!converged)
+        {
+            rho = dot(r, r);
+
+            if(rho == 0.) {
+                converged = true;
+                break;
+            }
+
+            if(it > 0)
+            {
+                beta = rho/rho_1;
+                p = r + beta * p;
+            }
+            else
+            {
+                p = r;
+            }
+            
+            op.apply(p, q);
+            alpha = rho / dot(p, q);
+            
+            lagr += alpha * p;
+            r -= alpha * q;
+            
+            rho_1 = rho;
+            it++;
+            r_norm = norm2(r);
+
+            converged = r_norm < 1e-8;
+            it++;
+
+            if(!converged && it > 100) {
+                break;
+            }
+
+            std::cout << it << " " << r_norm << std::endl;
+        }
+
+        sol_m = local_zeros(local_size(rhs_m));
+        sol_s = local_zeros(local_size(rhs_s));
+        
+        op.op_m.apply(rhs_m - op.B_t * lagr, sol_m);
+        op.op_s.apply(rhs_s - op.D_t * lagr, sol_s);
+
+        return converged;
+    }
+
 
     void FractureFlowApp::run(const std::string &conf_file_path)
     {
@@ -653,7 +788,7 @@ namespace utopia {
         aux_s.sample(slave_in.sampler);
 
 
-        FractureFlowAuxSystem aux_m(V_m, "diffusivity");
+        FractureFlowAuxSystem aux_m(V_m, "permeability");
         aux_m.sample(master_in.sampler);
 
         //////////////////////////// Variational formulation ////////////////////////////
@@ -668,9 +803,8 @@ namespace utopia {
         // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
         std::cout << std::endl;
 
-
-        auto eq_m = inner(master_in.diffusion_tensor * grad(u_m),  ctx_fun(master_in.sampler) *grad(v_m)) * dX;
-        auto eq_s = inner(slave_in.diffusion_tensor  * grad(u_s),  ctx_fun(slave_in.sampler) * grad(v_s)) * dX;
+        auto eq_m = inner(master_in.diffusion_tensor * grad(u_m), ctx_fun(master_in.sampler) * grad(v_m)) * dX;
+        auto eq_s = inner(slave_in.diffusion_tensor  * grad(u_s), ctx_fun(slave_in.sampler)  * grad(v_s)) * dX;
 
         //////////////////////////// Generation of the algebraic system ////////////////////////////
 
@@ -702,17 +836,30 @@ namespace utopia {
 
         if(solve_strategy == "staggered") {
 
-            solve_staggered(operator_type,
-                            V_m,
-                            V_s,
-                            A_m,
-                            rhs_m,
-                            A_s,
-                            rhs_s,
-                            sol_m,
-                            sol_s,
-                            lagr
-                            );
+            // solve_staggered(operator_type,
+            //                 V_m,
+            //                 V_s,
+            //                 A_m,
+            //                 rhs_m,
+            //                 A_s,
+            //                 rhs_s,
+            //                 sol_m,
+            //                 sol_s,
+            //                 lagr
+            //                 );
+
+
+            solve_cg_dual(
+                        V_m,
+                        V_s,
+                        A_m,
+                        rhs_m,
+                        A_s,
+                        rhs_s,
+                        sol_m,
+                        sol_s,
+                        lagr
+                        );
 
         } else {
             solve_monolithic(V_m,
