@@ -112,7 +112,6 @@ namespace utopia {
 				}
 			}
 
-
 			values_.reserve(n_values);
 			std::ifstream ifs(file.c_str());
 			
@@ -138,7 +137,7 @@ namespace utopia {
 		Scalar eval(const std::vector<Scalar> &x) const override
 		{
 			long ind = index(x);
-			if(ind < 0) {
+			if(ind < 0 || ind >= values_.size()) {
 				assert(false);
 				return 0.;
 			}

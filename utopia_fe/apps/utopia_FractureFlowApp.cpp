@@ -484,14 +484,14 @@ namespace utopia {
 
     class FractureFlowAuxSystem {
     public:
-        FractureFlowAuxSystem(FunctionSpaceT &V)
+        FractureFlowAuxSystem(FunctionSpaceT &V, const std::string &name = "aperture")
         : aux_( V.equation_systems().add_system<libMesh::LinearImplicitSystem>("aux") )
         {
-            var_nums_.push_back( aux_.add_variable("aperture", libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
+            var_nums_.push_back( aux_.add_variable(name, libMesh::Order(V.order(0)), libMesh::LAGRANGE) );
             aux_.init();
         }
 
-        void sample_aperture(const std::shared_ptr<UIFunction<double>> &sampler)
+        void sample(const std::shared_ptr<UIFunction<double>> &sampler)
         {
             FunctionSpaceT V_aperture(aux_, var_nums_[0]);
             auto u = trial(V_aperture);
@@ -513,6 +513,9 @@ namespace utopia {
             utopia::convert(aperture, *aux_.solution);
             aux_.solution->close();
         }
+
+
+    private:
 
 
         libMesh::LinearImplicitSystem &aux_;
@@ -646,8 +649,12 @@ namespace utopia {
         // auto &L   = multiplier_in.space.subspace(0); //LAMBDA
 
 
-        FractureFlowAuxSystem aux(V_s);
-        aux.sample_aperture(slave_in.sampler);
+        FractureFlowAuxSystem aux_s(V_s);
+        aux_s.sample(slave_in.sampler);
+
+
+        FractureFlowAuxSystem aux_m(V_m, "diffusivity");
+        aux_m.sample(master_in.sampler);
 
         //////////////////////////// Variational formulation ////////////////////////////
 
@@ -661,9 +668,8 @@ namespace utopia {
         // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
         std::cout << std::endl;
 
-        // ctx_fun(master_in.sampler) *
 
-        auto eq_m = inner(master_in.diffusion_tensor * grad(u_m),  grad(v_m)) * dX;
+        auto eq_m = inner(master_in.diffusion_tensor * grad(u_m),  ctx_fun(master_in.sampler) *grad(v_m)) * dX;
         auto eq_s = inner(slave_in.diffusion_tensor  * grad(u_s),  ctx_fun(slave_in.sampler) * grad(v_s)) * dX;
 
         //////////////////////////// Generation of the algebraic system ////////////////////////////

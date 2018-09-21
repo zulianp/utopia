@@ -17,6 +17,16 @@
 		<refinements>2</refinements>
 	</mesh>
 
+	<sampler>
+		<file>../data/frac/diffusivity.txt</file>
+		<min-x>0.</min-x>
+		<max-x>1.</max-x>
+		<min-y>0.</min-y>
+		<max-y>1.</max-y>
+		<nx>5</nx>
+		<ny>5</ny>
+	</sampler>
+
 	<space>
 		<system-name>master</system-name>
 		<boundary-conditions>
@@ -41,7 +51,7 @@
 		<path>../data/frac/midline.e</path>
 		<refinements>3</refinements>
 	</mesh>
-	
+
 	<sampler>
 		<file>../data/frac/aperture.txt</file>
 		<min-x>0.</min-x>
