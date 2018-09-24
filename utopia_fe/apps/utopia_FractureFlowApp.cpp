@@ -606,61 +606,6 @@ namespace utopia {
         ElementMatrix diffusion_tensor;
     };
 
-
-    class CompositeOperator {
-    public:
-        CompositeOperator(
-            USparseMatrix &A_m,
-            UVector &rhs_m,
-            USparseMatrix &A_s,
-            UVector &rhs_s)
-        : A_m(A_m), rhs_m(rhs_m), A_s(A_s), rhs_s(rhs_s)
-        {
-            op_m.update(make_ref(A_m));
-            op_s.update(make_ref(A_s));
-
-            solved_m = local_zeros(local_size(rhs_m));
-            solved_s = local_zeros(local_size(rhs_s));
-        }
-
-        void apply(const UVector &p, UVector &Ap)
-        {
-            buff_m = B_t * p;
-            buff_s = D_t * p;
-
-            op_m.apply(buff_m, solved_m);
-            op_s.apply(buff_s, solved_s);
-            
-            Ap = B * solved_m + D * solved_s;
-        }
-
-        void residual(const UVector &p, UVector &r)
-        {
-            buff_m = rhs_m - B_t * p;
-            buff_s = rhs_s - D_t * p;
-
-            op_m.apply(buff_m, solved_m);
-            op_s.apply(buff_s, solved_s);
-            
-            r = B * solved_m + D * solved_s;
-        }
-
-        USparseMatrix &A_m;
-        UVector &rhs_m;
-        USparseMatrix &A_s;
-        UVector &rhs_s;
-
-        USparseMatrix D, D_t;
-        USparseMatrix B, B_t;
-
-        Factorization<USparseMatrix, UVector> op_m;
-        Factorization<USparseMatrix, UVector> op_s;
-
-
-    private:
-        UVector buff_m, solved_m, buff_s, solved_s;
-    };
-
     bool solve_cg_dual(
         FunctionSpaceT &V_m,
         FunctionSpaceT &V_s,
@@ -672,78 +617,32 @@ namespace utopia {
         UVector &sol_s,
         UVector &lagr)
     {
+        USparseMatrix D, B, D_t, B_t;
 
-        CompositeOperator op(A_m, rhs_m, A_s, rhs_s);
+        // assemble_interpolation
+        assemble_projection(V_m, V_s, B, D);
 
-        assemble_interpolation(V_m, V_s, op.B, op.D);
-        op.D *= -1.;
+        D *= -1.;
 
-        op.D_t = transpose(op.D);
-        op.B_t = transpose(op.B);
+        D_t = transpose(D);
+        B_t = transpose(B);
 
-        set_zero_at_constraint_rows(V_m.dof_map(), op.B_t);
-        set_zero_at_constraint_rows(V_s.dof_map(), op.D_t);
+        set_zero_at_constraint_rows(V_m.dof_map(), B_t);
+        set_zero_at_constraint_rows(V_s.dof_map(), D_t);
 
-        lagr = local_zeros(local_size(rhs_s));
-
-        UVector r;
-        op.residual(lagr, r);
-        bool converged = false;
-
-        double it = 0;
-        double rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
-
-
-        UVector lagr_old = lagr;
-        UVector p, q, Ap, r_new, z, z_new;
-        while(!converged)
-        {
-            rho = dot(r, r);
-
-            if(rho == 0.) {
-                converged = true;
-                break;
-            }
-
-            if(it > 0)
-            {
-                beta = rho/rho_1;
-                p = r + beta * p;
-            }
-            else
-            {
-                p = r;
-            }
-            
-            op.apply(p, q);
-            alpha = rho / dot(p, q);
-            
-            lagr += alpha * p;
-            r -= alpha * q;
-            
-            rho_1 = rho;
-            it++;
-            r_norm = norm2(lagr - lagr_old);
-
-            converged = r_norm < 1e-8;
-            it++;
-
-            if(!converged && it > 600) {
-                break;
-            }
-
-            std::cout << it << " " << r_norm << std::endl;
-
-            lagr_old = lagr;
-        }
-
-        sol_m = local_zeros(local_size(rhs_m));
-        sol_s = local_zeros(local_size(rhs_s));
+        SPBlockConjugateGradient<USparseMatrix, UVector> solver;
+        solver.verbose(true);
         
-        op.op_m.apply(rhs_m - op.B_t * lagr, sol_m);
-        op.op_s.apply(rhs_s - op.D_t * lagr, sol_s);
+        solver.update(
+            make_ref(A_m),
+            make_ref(A_s),
+            make_ref(B),
+            make_ref(D),
+            make_ref(B_t),
+            make_ref(D_t)
+        );
 
-        return converged;
+        return solver.apply(rhs_m, rhs_s, sol_m, sol_s, lagr);
     }
 
 
