@@ -109,6 +109,9 @@ namespace utopia {
                 verbose = false;
                 is.read("verbose", verbose);
 
+                use_newton = false;
+                is.read("use-newton", use_newton);
+
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);
@@ -253,6 +256,7 @@ namespace utopia {
         std::string fun;
         int n_levels;
         bool verbose;
+        bool use_newton;
     };
 
     static std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> get_function(const RMTRApp::Input &in, FunctionSpaceT &V)
@@ -262,10 +266,9 @@ namespace utopia {
             f = std::make_shared<Bratu<decltype(V), USparseMatrix, UVector>>(V);
         } else if(in.fun == "min-surf") {
             f = std::make_shared<MinSurf<decltype(V), USparseMatrix, UVector>>(V);
-        }  
-        // else if(in.fun == "poisson") {
-        //     f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
-        // } 
+        } else if(in.fun == "poisson") {
+            f = std::make_shared<ExtendedPoisson<decltype(V), USparseMatrix, UVector>>(V);
+        } 
         else {
             assert(false);
             return nullptr;
@@ -345,13 +348,14 @@ namespace utopia {
         const auto elem_order = libMesh::Order(in.order);
         for(std::size_t i = 0; i < n_levels; ++i) {
             equation_systems[i] = std::make_shared<libMesh::EquationSystems>(*meshes[i]);
+            equation_systems[i]->add_system<libMesh::LinearImplicitSystem>("sys_" + std::to_string(i));
             spaces[i]           = std::make_shared<FunctionSpaceT>(equation_systems[i], libMesh::LAGRANGE, elem_order, "u");
 
             in.set_up_bc(*spaces[i]);
             spaces[i]->initialize();
         }
 
-        std::vector< std::shared_ptr<TransferT> > transfers;
+        std::vector< std::shared_ptr<TransferT> > transfers(n_levels - 1);
 
         for(std::size_t i = 1; i < n_levels; ++i) {
             auto T_cf = std::make_shared<USparseMatrix>();
@@ -387,6 +391,7 @@ namespace utopia {
         bool ok = rmtr->solve(x);
 
         //Write solution to disk
+        write("rmtr.e", *spaces.back(), x);
     }
 
 
@@ -400,8 +405,11 @@ namespace utopia {
 
         in.describe();
 
-        solve_newton(in);
-        // solve_rmtr(in);
+        if(in.use_newton) {
+            solve_newton(in);
+        } else {
+            solve_rmtr(in);
+        }
     }
 }
 
