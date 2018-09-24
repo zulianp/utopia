@@ -113,8 +113,8 @@ namespace utopia {
 
 			bool converged = false;
 
-			double it = 0;
-			double rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
+			Scalar it = 0;
+			Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
 
 			Vector lagr_old = lagr;
 			Vector p, q, Ap, r_new, z, z_new;
