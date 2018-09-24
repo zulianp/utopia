@@ -7,6 +7,7 @@
 
 #include "utopia_SemiGeometricMultigrid.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
+#include "utopia_SemiGeometricMultigrid.hpp"
 
 using namespace libMesh;
 

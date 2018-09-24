@@ -16,6 +16,7 @@ namespace utopia {
 		| 0			A_s		D_t | | sol_s | = | rhs_s |
 		| B 		D 		0   | | lagr  | = | 0     |
 	m := master, s := slave
+	It uses the schur complement 
 	Warning: rows with boundary conditions in B_t and D_t have to be handled outside.
 
 	*/
@@ -173,6 +174,18 @@ namespace utopia {
 			buff_m = (*B_t) * p;
 			buff_s = (*D_t) * p;
 
+			if(empty(solved_m)) {
+				solved_m = local_zeros(local_size(buff_m));
+			} else {
+				solved_m.set(0.);
+			}
+
+			if(empty(solved_s)) {
+				solved_s = local_zeros(local_size(buff_s));
+			} else {
+				solved_s.set(0.);
+			}
+
 			op_m->apply(buff_m, solved_m);
 			op_s->apply(buff_s, solved_s);
 
@@ -187,6 +200,19 @@ namespace utopia {
 		{
 			buff_m = rhs_m - (*B_t) * p;
 			buff_s = rhs_s - (*D_t) * p;
+
+
+			if(empty(solved_m)) {
+				solved_m = local_zeros(local_size(buff_m));
+			} else {
+				solved_m.set(0.);
+			}
+
+			if(empty(solved_s)) {
+				solved_s = local_zeros(local_size(buff_s));
+			} else {
+				solved_s.set(0.);
+			}
 
 			op_m->apply(buff_m, solved_m);
 			op_s->apply(buff_s, solved_s);

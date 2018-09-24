@@ -17,6 +17,7 @@
 #include "utopia_UIForcingFunction.hpp"
 #include "utopia_UIMesh.hpp"
 #include "utopia_UIScalarSampler.hpp"
+#include "utopia_SemiGeometricMultigrid.hpp"
 
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_tools.h"
@@ -606,6 +607,20 @@ namespace utopia {
         ElementMatrix diffusion_tensor;
     };
 
+
+    std::shared_ptr<LinearSolver<USparseMatrix, UVector> > make_mg_solver(const FunctionSpaceT &space, const int n_levels)
+    {
+        auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
+        auto smoother      = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
+        auto mg            = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
+       
+        mg->algebraic().rtol(1e-9);
+        mg->algebraic().atol(1e-14);
+        // mg->verbose(true);
+        mg->init(space.equation_systems(), n_levels);
+        return mg;
+    }
+
     bool solve_cg_dual(
         FunctionSpaceT &V_m,
         FunctionSpaceT &V_s,
@@ -617,6 +632,10 @@ namespace utopia {
         UVector &sol_s,
         UVector &lagr)
     {
+
+        Chrono c;
+        c.start();
+
         USparseMatrix D, B, D_t, B_t;
 
         // assemble_interpolation
@@ -632,7 +651,10 @@ namespace utopia {
 
         SPBlockConjugateGradient<USparseMatrix, UVector> solver;
         solver.verbose(true);
-        
+        solver.max_it(2000);
+        solver.atol(1e-6);
+        // solver.set_master_solver(make_mg_solver(V_m, 5));
+
         solver.update(
             make_ref(A_m),
             make_ref(A_s),
@@ -642,7 +664,11 @@ namespace utopia {
             make_ref(D_t)
         );
 
-        return solver.apply(rhs_m, rhs_s, sol_m, sol_s, lagr);
+        bool ok = solver.apply(rhs_m, rhs_s, sol_m, sol_s, lagr);
+
+        c.stop();
+        std::cout << "Solver time: " << c << std::endl;
+        return ok;
     }
 
 
