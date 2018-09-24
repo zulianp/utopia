@@ -36,6 +36,13 @@
 		<type>square</type>
 		<order>1</order>
 		<refinements>1</refinements>
+
+		<min-x>0.</min-x>
+		<min-y>0.45</min-y>
+		
+		<max-x>1.</max-x>
+		<max-y>0.55</min-y>
+
 	</mesh>
 	<space>
 		<system-name>slave</system-name>
@@ -65,6 +72,14 @@
 	<mesh>
 		<type>square</type>
 		<order>1</order>
+		<refinements>1</refinements>
+
+		<min-x>0.</min-x>
+		<min-y>0.45</min-y>
+		
+		<max-x>1.</max-x>
+		<max-y>0.55</min-y>
+
 	</mesh>
 	<space>
 		<system-name>multiplier</system-name>
