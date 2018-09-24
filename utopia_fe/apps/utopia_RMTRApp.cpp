@@ -277,13 +277,6 @@ namespace utopia {
         return f;
     }
 
-    static void write(const Path &path, LibMeshFunctionSpace &space, UVector &x)
-    {
-        utopia::convert(x, *space.equation_system().solution);
-        space.equation_system().solution->close();
-        libMesh::Nemesis_IO(space.mesh()).write_equation_systems(path.to_string(), space.equation_systems());
-    }
-
     void RMTRApp::solve_newton(const Input &in)
     {
         Chrono c;
@@ -292,17 +285,14 @@ namespace utopia {
         auto mesh = std::make_shared<libMesh::DistributedMesh>(*comm_);
         in.make_mesh(*mesh);
 
-        auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
-        auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("master");
-
         const auto elem_order = libMesh::Order(in.order);
-        auto V = FunctionSpaceT(equation_systems, libMesh::LAGRANGE, elem_order, "u");
+        auto V = FunctionSpaceT(*mesh, libMesh::LAGRANGE, elem_order, "u");
         in.set_up_bc(V);
         V.initialize();
         std::cout << "n_dofs: " << V.dof_map().n_dofs() << std::endl;
 
-        // auto f = get_function(in, V);
-        auto f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
+        auto f = get_function(in, V);
+        // auto f = std::make_shared<FormPoisson<decltype(V), USparseMatrix, UVector>>(V);
 
         Newton<USparseMatrix, UVector> solver;
         // solver.set_line_search_strategy(std::make_shared<Backtracking<USparseMatrix, UVector>>());
@@ -311,6 +301,7 @@ namespace utopia {
 
         apply_boundary_conditions(V.dof_map(), x);
         solver.verbose(in.verbose);
+
         solver.solve(*f, x);
 
         double energy = 0.;

@@ -2,7 +2,9 @@
 
 	<function>poisson</function>
 	<mesh>unit-square</mesh>
-	<elem-type>tri</elem-type>
+	<elem-type>quad</elem-type>
+	<refinements>1</refinements>
+	<order>1</order>
 	
 	<boundary-conditions>
 		
@@ -28,10 +30,9 @@
 	
 	</boundary-conditions>
 
-	<refinements>1</refinements>
 	<n-levels>2</n-levels>
-	<order>1</order>
+
 	<verbose>true</verbose>
-	<!-- <use-newton>true</use-newton> -->
+	<use-newton>true</use-newton>
 
 </rmtr-app>

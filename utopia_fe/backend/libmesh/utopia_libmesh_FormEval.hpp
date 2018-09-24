@@ -93,8 +93,21 @@ namespace utopia {
 					ctx.surface_integral_end();
 				}
 
-			} else {
+			} else if(expr.is_inner_volume_only()) {
+				if(!ctx.on_boundary()) {
 
+					if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
+						return;
+					}
+
+					auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx);
+					assign(r, t);
+
+					ctx.set_has_assembled(true);
+				}
+
+			} else {
+				assert(expr.is_volume());
 				if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
 					return;
 				}
@@ -103,7 +116,7 @@ namespace utopia {
 				assign(r, t);
 
 				ctx.set_has_assembled(true);
-			}
+			} 
 
 		}
 

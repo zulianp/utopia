@@ -9,19 +9,26 @@
 
 namespace utopia {
 
+
+
 	template<class Expr_>
 	class Integral : public Expression< Integral<Expr_> >, public FEExpression {
 	public:
 		typedef Expr_ Expr;
 		static const int Order = Expr::Order;
 
+		enum Type {
+			SURFACE = 0,
+			VOLUME = 1,
+			INNER_VOLUME_ONLY = 2
+		};
 
 		typedef typename Expr::Scalar Scalar;
 
 		std::string getClass() const override { return "Integral<" + expr_.getClass() + ">"; }
 
-		Integral(const Expr &expr, const int block_id = -1, const bool is_surface = false)
-		: expr_(expr), block_id_(block_id), integral_id_(-1), is_surface_(is_surface)
+		Integral(const Expr &expr, const int block_id = -1, const Type type = VOLUME)
+		: expr_(expr), block_id_(block_id), integral_id_(-1), type_(type)
 		{}
 
 		inline const Expr &expr() const
@@ -51,19 +58,24 @@ namespace utopia {
 
 		inline bool is_surface() const
 		{
-			return is_surface_;
+			return (type_ == SURFACE);
 		}
 
 		inline bool is_volume() const
 		{
-			return !is_surface_;
+			return (type_ == VOLUME);
+		}
+
+		inline bool is_inner_volume_only() const
+		{
+			return (type_ == INNER_VOLUME_ONLY);
 		}
 
 	private:
 		UTOPIA_STORE_CONST(Expr) expr_;
 		int block_id_;
 		int integral_id_;
-		bool is_surface_;
+		Type type_;
 	};
 
 
@@ -111,7 +123,13 @@ namespace utopia {
 	template<class Derived>
 	inline Integral<Derived> surface_integral(const Expression<Derived> &expr, const int side_set_id = -1) {
 		static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
-		return Integral<Derived>(expr.derived(), side_set_id, true);
+		return Integral<Derived>(expr.derived(), side_set_id, Integral<Derived>::SURFACE);
+	}
+
+	template<class Derived>
+	inline Integral<Derived> inner_volume_only_integral(const Expression<Derived> &expr, const int side_set_id = -1) {
+		static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
+		return Integral<Derived>(expr.derived(), side_set_id, Integral<Derived>::INNER_VOLUME_ONLY);
 	}
 
 	 // inline constexpr Differential dV(const int block_id = -1) 
@@ -131,7 +149,7 @@ namespace utopia {
 	 template<class Derived>
 	 inline Integral<Derived> operator *(const Expression<Derived> &expr, const SurfaceDifferential &d) {
 	 	static_assert(!IsSubTree<Integral<utopia::Any>, Derived>::value, "nested integrals are not allowed");
-	 	return Integral<Derived>(expr.derived(), d.side_set_id, true);
+	 	return Integral<Derived>(expr.derived(), d.side_set_id, Integral<Derived>::SURFACE);
 	 }
 }
 

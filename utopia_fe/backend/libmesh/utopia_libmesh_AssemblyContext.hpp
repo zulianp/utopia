@@ -122,6 +122,11 @@ namespace utopia {
 			return active_values().quad_trial();
 		}
 
+		inline bool on_boundary() const
+		{
+			return active_values().on_boundary();
+		}
+
 		template<class Expr>
 		void init(const Expr &expr) 
 		{		

@@ -3,7 +3,7 @@
 	<mesh>
 		<type>square</type>
 		<elem-type>quad</elem-type>
-		<order>1</order>
+		<order>2</order>
 
 		<!-- <mesh>file</mesh> -->
 		<!-- <path>../data/frac/adaptive_background_2.e</path> -->
@@ -19,11 +19,19 @@
 		<n-x>10</n-x>
 		<n-y>10</n-y>
 
-		<refinements>5</refinements>
+		<refinements>4</refinements>
 	</mesh>
 
 	<space>
 		<system-name>master</system-name>
+		
+		<variables>
+			<var>
+			<name>u</name>
+			<order>2</order>
+			</var>
+		</variables>
+
 		<boundary-conditions>
 			<entry>
 				<side>3</side>
@@ -47,7 +55,7 @@
 		<!-- <path>../data/frac/vol_line.e</path> -->
 		<!-- <path>../data/frac/thin_line.e</path> -->
 		<!-- <order>1</order> -->
-		<refinements>0</refinements>
+		<refinements>1</refinements>
 	</mesh>
 
 	<space>
@@ -78,5 +86,5 @@
 
 <!-- <solve-strategy>monolithic</solve-strategy> -->
 
-<!-- <solve-strategy>staggered</solve-strategy>
-<use-mg>true</use-mg> -->
+<solve-strategy>staggered</solve-strategy>
+<!-- <use-mg>true</use-mg> -->
