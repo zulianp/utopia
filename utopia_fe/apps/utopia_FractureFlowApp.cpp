@@ -630,7 +630,8 @@ namespace utopia {
         UVector &rhs_s,
         UVector &sol_m,
         UVector &sol_s,
-        UVector &lagr)
+        UVector &lagr,
+        const bool use_mg = false)
     {
 
         Chrono c;
@@ -653,7 +654,10 @@ namespace utopia {
         solver.verbose(true);
         solver.max_it(2000);
         solver.atol(1e-6);
-        // solver.set_master_solver(make_mg_solver(V_m, 5));
+
+        if(use_mg) {
+            solver.set_master_solver(make_mg_solver(V_m, 5));
+        }
 
         solver.update(
             make_ref(A_m),
@@ -695,6 +699,9 @@ namespace utopia {
 
         std::string solve_strategy = "monolithic";
         is_ptr->read("solve-strategy", solve_strategy);
+
+        bool use_mg = false;
+        is_ptr->read("use-mg", use_mg);
 
 
         std::string operator_type = "L2_PROJECTION";
@@ -788,7 +795,8 @@ namespace utopia {
                         rhs_s,
                         sol_m,
                         sol_s,
-                        lagr
+                        lagr,
+                        use_mg
                         );
 
         } else {
