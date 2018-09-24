@@ -89,7 +89,7 @@ namespace utopia {
 		template<class Expr>
 		void init_fe_from(const Expr &expr)
 		{
-			auto space_ptr = find_any_space(expr);
+			auto space_ptr = find_any_space(expr); assert(bool(space_ptr));
 			space_ptr->initialize();
 			quadrature_order_ = functional_order(expr, *this);
 			const int dim = space_ptr->mesh().mesh_dimension();

@@ -32,6 +32,15 @@ namespace utopia {
 			return table_.size();
 		}
 
+		inline std::size_t n_cols() const
+		{
+			if(table_.empty()) {
+				return 0;
+			}
+
+			return table_[0].size();
+		}
+
 
 		void clear();
 	private:

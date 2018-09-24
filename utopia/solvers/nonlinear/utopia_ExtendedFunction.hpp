@@ -21,6 +21,7 @@ namespace utopia
 
         virtual ~ExtendedFunction() { }
 
+        ExtendedFunction() {}
 
         ExtendedFunction(const Vector & x_init, const Vector & bc_marker, const Vector & rhs) :
                 _x_eq_values(x_init),

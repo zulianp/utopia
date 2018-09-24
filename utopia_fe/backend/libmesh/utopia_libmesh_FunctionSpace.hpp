@@ -17,6 +17,18 @@ namespace utopia {
 	class LibMeshFunctionSpace : public FunctionSpace<LibMeshFunctionSpace> {
 	public:
 		inline explicit LibMeshFunctionSpace(
+		libMesh::System &equation_system,
+		const int var_num)
+		: equation_systems_(
+			make_ref(equation_system.get_equation_systems())
+		  ),
+		 system_num_(equation_system.number())
+		 {
+		 	this->set_subspace_id(var_num);
+		 }
+
+
+		inline explicit LibMeshFunctionSpace(
 			const std::shared_ptr<libMesh::EquationSystems> &equation_systems,
 			const int system_num,
 			const int var_num)

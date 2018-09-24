@@ -35,8 +35,8 @@
 #include "utopia_VolumeInterpolationTest.hpp"
 #include "utopia_WearSimulation.hpp"
 #include "utopia_TransferApp.hpp"
-
 #include "utopia_FractureFlowApp.hpp"
+#include "utopia_RMTRApp.hpp"
 
 #include <functional>
 
@@ -151,6 +151,12 @@ int main(int argc, char *argv[])
 				std::cout << argv[i] << " " << argv[ip1] << std::endl;
 
 				FractureFlowApp app;
+				app.init(init);
+				app.run(argv[ip1]);
+			} else if(argv[i] == RMTRApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+					
+				RMTRApp app;
 				app.init(init);
 				app.run(argv[ip1]);
 			}

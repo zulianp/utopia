@@ -16,6 +16,8 @@
 #include "libmesh/petsc_vector.h"
 #include "libmesh/petsc_matrix.h"
 #include "libmesh/auto_ptr.h"
+#include "libmesh/mesh_tools.h"
+#include "libmesh/libmesh_version.h"
 
 // Define the Finite Element object.
 #include "libmesh/fe.h"
@@ -91,6 +93,59 @@ namespace utopia {
 				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					auto valpos = rhs_values.find(i);
 					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+				}
+			}
+		}
+	}
+
+
+
+	template<class Vector>
+	void apply_boundary_conditions(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
+	{
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+		// std::cout << dof_map.n_constrained_dofs() << std::endl;
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+
+		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+		{
+			Write<Wrapper<Vector, 1>> w_v(vec);
+
+			Range r = range(vec);
+			for(SizeType i = r.begin(); i < r.end(); ++i) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
+					auto valpos = rhs_values.find(i);
+					vec.set(i, (valpos == rhs_values.end()) ? 0 : valpos->second);
+				}
+			}
+		}
+	}
+
+
+	template<class Vector>
+	void mark_constrained_dofs(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
+	{
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+		// std::cout << dof_map.n_constrained_dofs() << std::endl;
+		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
+
+		vec = local_zeros(dof_map.n_local_dofs());
+
+		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
+
+		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
+
+		{
+			Write<Wrapper<Vector, 1>> w_v(vec);
+
+			Range r = range(vec);
+			for(SizeType i = r.begin(); i < r.end(); ++i) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
+					auto valpos = rhs_values.find(i);
+					vec.set(i, (valpos == rhs_values.end()) ? 0 : 1.);
 				}
 			}
 		}
@@ -302,6 +357,16 @@ namespace utopia {
 		}
 
 		return true;
+	}
+
+	inline libMesh::MeshTools::BoundingBox bounding_box(const libMesh::MeshBase &mesh) {
+#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
+                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(mesh);
+#else
+                libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(mesh);
+#endif
+
+	    return bb;
 	}
 }
 

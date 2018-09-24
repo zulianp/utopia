@@ -3,12 +3,7 @@
 	<mesh>
 		<type>square</type>
 		<elem-type>quad</elem-type>
-		<order>1</order>
-
-		<!-- <mesh>file</mesh> -->
-		<!-- <path>../data/frac/adaptive_background_2.e</path> -->
-		<!-- <path>../data/frac/adaptive_background.e</path> -->
-		<!-- <path>../data/frac/background.e</path> -->
+		<order>2</order>
 
 		<min-x>0.</min-x>
 		<min-y>0.</min-y>
@@ -19,8 +14,18 @@
 		<n-x>10</n-x>
 		<n-y>10</n-y>
 
-		<refinements>5</refinements>
+		<refinements>2</refinements>
 	</mesh>
+<!-- 
+	<sampler>
+		<file>../data/frac/diffusivity.txt</file>
+		<min-x>0.</min-x>
+		<max-x>1.</max-x>
+		<min-y>0.</min-y>
+		<max-y>1.</max-y>
+		<nx>5</nx>
+		<ny>5</ny>
+	</sampler> -->
 
 	<space>
 		<system-name>master</system-name>
@@ -43,21 +48,19 @@
 <slave>
 	<mesh>
 		<type>file</type>
-		<path>../data/frac/line.e</path>
-		<!-- <path>../data/frac/vol_line.e</path> -->
-		<!-- <path>../data/frac/thin_line.e</path> -->
-		<!-- <order>1</order> -->
-		<refinements>0</refinements>
+		<path>../data/frac/midline.e</path>
+		<refinements>2</refinements>
 	</mesh>
+
+	<sampler>
+		<file>../data/frac/aperture.txt</file>
+		<min-x>0.</min-x>
+		<max-x>1.</max-x>
+		<nx>5</nx>
+	</sampler>
 
 	<space>
 		<system-name>slave</system-name>
-	<!-- 	<variables>
-			<var>
-				<name>u_s</name>
-				<order>1</order>
-			</var>
-		</variables> -->
 
 		<boundary-conditions>
 			<entry>
@@ -73,10 +76,8 @@
 
 	<forcing-function></forcing-function>
 
-	<diffusivity>1000.</diffusivity>
+	<diffusivity>10.</diffusivity>
 </slave>
 
 <!-- <solve-strategy>monolithic</solve-strategy> -->
-
-<!-- <solve-strategy>staggered</solve-strategy>
-<use-mg>true</use-mg> -->
+<solve-strategy>staggered</solve-strategy>

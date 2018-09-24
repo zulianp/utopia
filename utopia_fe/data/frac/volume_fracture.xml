@@ -1,50 +1,76 @@
 <!-- MASTER STUFF -->
 <master>
-	<mesh>unit-square</mesh>
-	<boundary-conditions>
-		<entry>
-			<side>3</side>
-			<value>1</value>
-		</entry>
-		<entry>
-			<side>1</side>
-			<value>4</value>
-		</entry>
-	</boundary-conditions>
+	<mesh>
+		<type>square</type>
+		<order>1</order>
+		<refinements>2</refinements>
+	</mesh>
+	<space>
+		<system-name>master</system-name>
+	
+		<variables>
+			<var>
+				<name>u</name>
+				<order>1</order>
+			</var>
+		</variables>
+
+		<boundary-conditions>
+			<entry>
+				<side>3</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>1</side>
+				<value>4</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
 	<diffusivity>1.</diffusivity>
-	<forcing-function>0.</forcing-function>
-	<refinements>0</refinements>
-	<order>2</order>
 </master>
 
 <!-- SLAVE STUFF -->
 <slave>
-	<mesh>unit-square</mesh>
-	<boundary-conditions>
-		<entry>
-			<side>3</side>
-			<value>1</value>
-		</entry>
-		<entry>
-			<side>1</side>
-			<value>4</value>
-		</entry>
-	</boundary-conditions>
+	<mesh>
+		<type>square</type>
+		<order>1</order>
+		<refinements>1</refinements>
+	</mesh>
+	<space>
+		<system-name>slave</system-name>
+		<variables>
+			<var>
+				<name>u_s</name>
+				<order>1</order>
+			</var>
+		</variables>
+
+		<boundary-conditions>
+			<entry>
+				<side>3</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>1</side>
+				<value>4</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
 	<diffusivity>10.</diffusivity>
-	<forcing-function>0.</forcing-function>
-	<refinements>1</refinements>
-	<order>2</order>
 </slave>
 
-
-<!-- MULTIPLIER STUFF -->
 <multiplier>
-	<mesh>unit-square</mesh>
-	<refinements>0</refinements>
-	<order>1</order>
+	<mesh>
+		<type>square</type>
+		<order>1</order>
+	</mesh>
+	<space>
+		<system-name>multiplier</system-name>
+	</space>
 </multiplier>
 
-<!-- <operator-type>INTERPOLATION</operator-type> -->
+
 <operator-type>L2_PROJECTION</operator-type>
-<!-- <solve-strategy>staggered</solve-strategy> -->
 <solve-strategy>monolithic</solve-strategy>

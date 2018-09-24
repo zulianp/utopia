@@ -35,6 +35,30 @@ namespace utopia {
             return value_;
         }
 
+        inline Number &operator+=(const Scalar &other) 
+        {
+            value_ += other;
+            return *this;
+        }
+
+        inline Number &operator-=(const Scalar &other) 
+        {
+            value_ -= other;
+            return *this;
+        }
+
+        inline Number &operator*=(const Scalar &other) 
+        {
+            value_ *= other;
+            return *this;
+        }
+
+        inline Number &operator/=(const Scalar &other) 
+        {
+            value_ /= other;
+            return *this;
+        }
+
         // template<typename TOther>
         // inline constexpr Number &operator=(const Number<TOther> &other)
         // {
@@ -68,7 +92,7 @@ namespace utopia {
 
         template<class Derived>
         Number(const Expression<Derived> &expr)
-        : value_(scalar_cast<Scalar>(expr))
+        : value_(scalar_cast<Scalar>(expr.derived()))
         {}
 
     private:

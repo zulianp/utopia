@@ -9,6 +9,7 @@ namespace utopia {
 	template<class Out, class Fun>
 	class ContextFunction : public Expression< ContextFunction<Out, Fun> > {
 	public:
+		virtual ~ContextFunction() {}
 		//FIXME
 		static const int Order = 0;
 		typedef double Scalar;

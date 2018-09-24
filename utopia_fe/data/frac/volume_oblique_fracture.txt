@@ -1,0 +1,13 @@
+create vertex 0.2 0 0 
+create vertex 0.2001 0 0 
+create vertex 0.7001 1 0
+create vertex 0.70 1 0 
+create surface vertex 1,2,3,4
+
+Sideset 1 curve 1
+Sideset 2 curve 3
+surface 1 scheme Auto  
+mesh surface 1 
+
+
+export mesh "/Users/zulianp/Desktop/code/utopia/utopia_fe/data/frac/thin_line.e" dimension 2 overwrite
