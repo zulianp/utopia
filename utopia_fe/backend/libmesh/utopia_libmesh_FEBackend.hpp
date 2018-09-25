@@ -2870,6 +2870,32 @@ namespace utopia {
 			return ret;
 		}
 
+		static Matrix integrate(Matrix &&mat, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			return std::move(mat);
+		}
+
+		static Vector integrate(Vector &&mat, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			return std::move(mat);
+		}
+
+
+		static Scalar integrate(const QValues<double> &vals, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			auto && dx = ctx.dx();
+			uint n_quad_points = dx.size();
+
+			assert( vals.size() == dx.size() );
+
+			Scalar ret = 0.;
+			for (uint qp = 0; qp < n_quad_points; qp++) {
+				ret += vals[qp] * dx[qp];
+			}
+
+			return ret;
+		}
+
 		// template<class Left, class Right>
 		// static auto inner(const Left &left, const Right &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
 		// {

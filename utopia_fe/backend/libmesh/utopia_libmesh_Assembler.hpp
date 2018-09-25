@@ -37,19 +37,17 @@ namespace utopia {
 			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
 				init_context_on(expr, (*elements_begin(m))->id());
 
-				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-					if(it != elements_begin(m)) {
-						reinit_context_on(expr, (*it)->id());
-					}
+				if(it != elements_begin(m)) {
+					reinit_context_on(expr, (*it)->id());
+				}
 
-					Number<Scalar> el_val = 0.;
+				Number<Scalar> el_val = 0.;
 
-					FormEvaluator<LIBMESH_TAG> eval;
-					eval.eval(expr, el_val, ctx_);
+				FormEvaluator<LIBMESH_TAG> eval;
+				eval.eval(expr, el_val, ctx_);
 
-					if(ctx_.has_assembled()) {
-						val += el_val;
-					}
+				if(ctx_.has_assembled()) {
+					val += el_val;
 				}
 			}
 

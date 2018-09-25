@@ -21,16 +21,16 @@ namespace utopia {
         
         bool value(const Vector &x, typename Vector::Scalar &energy) const override
         {
-            Vector x_ =  ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
-            x_ = x;
-            synchronize(x_);
+            // Vector x_ =  ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
+            // x_ = x;
+            // synchronize(x_);
 
-            auto u  = trial(V_);
+            // auto u  = trial(V_);
           
-            auto uk = interpolate(x_, u);
-            auto r  = interpolate(rhs_, u);
+            // auto uk = interpolate(x_, u);
+            // auto r  = interpolate(rhs_, u);
 
-            utopia::assemble(0.5 * inner(grad(uk), grad(uk)) * dX - inner(uk, coeff(1.)) * dX, energy);
+            // utopia::assemble(0.5 * inner(grad(uk), grad(uk)) * dX - inner(uk, coeff(1.)) * dX, energy);
             return true;
         }
         

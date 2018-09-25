@@ -34,17 +34,17 @@ namespace utopia {
 			return out;
 		}
 
-		inline static Type collect(const std::vector<Type> &out)
-		{
-			Type reduced_out = out[0];
+		// inline static Type collect(const std::vector<Type> &out)
+		// {
+		// 	Type reduced_out = out[0];
 
-			const std::size_t n = out.size();
-			for(std::size_t i = 1; i < n; ++i) {
-				reduced_out += out[i];
-			}
+		// 	const std::size_t n = out.size();
+		// 	for(std::size_t i = 1; i < n; ++i) {
+		// 		reduced_out += out[i];
+		// 	}
 
-			return reduced_out;
-		}
+		// 	return reduced_out;
+		// }
 	};
 
 	template<class Traits>

@@ -383,6 +383,13 @@ namespace utopia {
 				ctx.vector_fe()[s_id]->grad_flag = true;
 			}
 
+			template<class Expr>
+			inline int visit(const Integral<Expr> &expr)
+			{
+				ctx.fe()[0]->get_JxW();
+				return TRAVERSE_CONTINUE;
+			}
+
 			//Gradient
 			template<template<class> class Function>
 			inline int visit(const Gradient<Function<ProductFunctionSpace<LibMeshFunctionSpace>>> &expr)

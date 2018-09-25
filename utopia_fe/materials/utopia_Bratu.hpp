@@ -27,7 +27,8 @@ namespace utopia {
             auto u  = trial(V_);
             auto uk = interpolate(x_, u);
 
-            auto f = 0.5 * inner(grad(uk), grad(uk)) * dX - exp(lambda_ * uk) * dX;
+            // // auto f = 0.5 * inner(grad(uk), grad(uk)) * dX - exp(lambda_ * uk) * dX;
+            auto f = exp(lambda_ * uk) * dX;
             utopia::assemble(f, energy);
             return true;
         }
