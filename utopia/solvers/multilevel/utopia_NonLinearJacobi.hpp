@@ -18,7 +18,7 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector>
-    class NonLinearJacobi: public NonLinearSmoother<Matrix, Vector> 
+    class NonLinearJacobi final : public NonLinearSmoother<Matrix, Vector> 
     {
             typedef UTOPIA_SCALAR(Vector)                           Scalar;
             typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;

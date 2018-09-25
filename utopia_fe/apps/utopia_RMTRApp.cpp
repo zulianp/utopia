@@ -291,10 +291,11 @@ namespace utopia {
         V.initialize();
         std::cout << "n_dofs: " << V.dof_map().n_dofs() << std::endl;
 
-        auto f = get_function(in, V);
-        // auto f = std::make_shared<FormPoisson<decltype(V), USparseMatrix, UVector>>(V);
+        // auto f = get_function(in, V);
+        auto f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
 
         Newton<USparseMatrix, UVector> solver;
+        solver.set_linear_solver(std::make_shared<SOR<USparseMatrix, UVector>>());
         // solver.set_line_search_strategy(std::make_shared<Backtracking<USparseMatrix, UVector>>());
 
         UVector x = local_zeros(V.dof_map().n_local_dofs());
@@ -373,8 +374,8 @@ namespace utopia {
         rmtr->set_eps_grad_termination(1e-7);
 
         rmtr->verbose(in.verbose);
-        // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-        rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+        rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+        // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
         rmtr->set_functions(functions);
 
         UVector x;

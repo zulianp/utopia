@@ -23,7 +23,7 @@ namespace utopia
      * @tparam     Vector  
      */
     template<class Matrix, class Vector>
-    class SimpleBacktracking : public LSStrategy<Matrix, Vector>
+    class SimpleBacktracking final : public LSStrategy<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 

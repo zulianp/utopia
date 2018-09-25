@@ -26,6 +26,40 @@ namespace utopia {
 		virtual double get_total_intersection_volume() const = 0;
 	};
 
+
+	class QMortarBuilder1 final : public QMortarBuilder {
+	public:
+		using Matrix = libMesh::DenseMatrix<libMesh::Real>;
+		using Real = libMesh::Real;
+
+		QMortarBuilder1()
+		: total_intersection_volume(0), composite_ir(1)
+		{}
+
+		bool build(
+			const Elem &trial,
+			FEType trial_type,
+			const Elem &test,
+			FEType test_type,
+			QMortar &q_trial,
+			QMortar &q_test) override;
+
+		inline double get_total_intersection_volume() const override
+		{
+			return total_intersection_volume;
+		}
+
+	private:
+		libMesh::Point trial_pts[2];
+		libMesh::Point test_pts[2];
+		libMesh::Point intersection[2];
+		libMesh::Point u, v;
+
+		Real total_intersection_volume;
+		QMortar composite_ir;
+	};
+
+
 	class QMortarBuilder2 final : public QMortarBuilder {
 	public:
 		using Matrix = libMesh::DenseMatrix<libMesh::Real>;
