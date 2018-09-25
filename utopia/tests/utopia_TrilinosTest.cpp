@@ -978,6 +978,7 @@ namespace utopia {
         rmtr->set_functions(level_functions);
 
 
+        rmtr->handle_equality_constraints();
         bool ok = rmtr->solve(x);
 
         utopia_test_assert(ok);

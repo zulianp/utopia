@@ -133,11 +133,17 @@ namespace utopia {
 
 		inline Transfer &transfer(const SizeType level)
 		{
+			assert(level < transfers_.size());
+			assert(transfers_[level]);
+
 			return *transfers_[level];
 		}
 
 		inline const Transfer &transfer(const SizeType level) const
 		{
+			assert(level < transfers_.size());
+			assert(transfers_[level]);
+			
 			return *transfers_[level];
 		}
 

@@ -139,8 +139,8 @@ namespace utopia {
 		static Scalar get_local_nnz(PetscMatrix &Mat_A);
 
 		// call to MatZeroRows
-		static void set_zero_rows(PetscMatrix &Mat_A, const std::vector<int> &index);
-		static void apply_BC_to_system(PetscMatrix & A, PetscVector& x, PetscVector& rhs, const std::vector<int> &index);
+		static void set_zero_rows(PetscMatrix &Mat_A, const std::vector<PetscInt> &index, const Scalar diag = 0.);
+		static void apply_BC_to_system(PetscMatrix & A, PetscVector& x, PetscVector& rhs, const std::vector<PetscInt> &index);
 
 
 		//[builders]

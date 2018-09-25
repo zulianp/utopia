@@ -597,9 +597,39 @@ namespace utopia {
             return v.is_nan_or_inf();
         }
 
-        static void set_zero_rows(TpetraMatrix &Mat_A, const std::vector<int> &index)
+        template<typename Integer>
+        static void set_zero_rows(TpetraMatrix &mat, const std::vector<Integer> &index, const Scalar diag)
         {
-            assert(false && "implement me");
+            typedef typename TpetraMatrix::global_ordinal_type global_ordinal_type;
+            typedef typename TpetraMatrix::Scalar Scalar;
+
+            auto &impl = mat.implementation();
+            static const Scalar zero = 0.;
+
+            global_ordinal_type offset = 0;
+            Teuchos::ArrayView<const global_ordinal_type> cols;
+            Teuchos::ArrayView<const Scalar> values;
+
+            for(auto row : index) {
+                if(impl.isGloballyIndexed()) {
+                    impl.getGlobalRowView(row, cols, values);
+                } else {
+                    assert(impl.isLocallyIndexed());
+                    auto rr = mat.row_range();
+                    impl.getLocalRowView(row - rr.begin(), cols, values);
+                    offset = impl.getColMap()->getMinGlobalIndex();
+                }
+
+                for(auto c : cols) {
+                    const global_ordinal_type col = c + offset;
+
+                    if(col == row) {
+                        impl.replaceGlobalValues(row, 1, &diag, &col);
+                    } else {
+                        impl.replaceGlobalValues(row, 1, &zero, &col);
+                    }
+                }
+            }
         }
 
         template<typename Integer>

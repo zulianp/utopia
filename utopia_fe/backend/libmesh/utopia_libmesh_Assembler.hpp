@@ -10,6 +10,10 @@ namespace utopia {
 		typedef utopia::UVector GlobalVector;
 		typedef UTOPIA_SCALAR(GlobalVector) Scalar;
 
+		LibMeshAssembler()
+		: verbose_(Utopia::instance().verbose())
+		{}
+
 		template<class Expr>
 		bool assemble(const Expr &expr, Scalar &val)
 		{
@@ -53,8 +57,12 @@ namespace utopia {
 
 			//perf
 			c.stop();
-			std::cout << "assemble: value" << std::endl;
-			std::cout << c << std::endl;
+
+			if(verbose_) {
+				std::cout << "assemble: value" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return false;
 		}
 
@@ -129,8 +137,11 @@ namespace utopia {
 
 			//perf
 			c.stop();
-			std::cout << "assemble: lhs == rhs" << std::endl;
-			std::cout << c << std::endl;
+			if(verbose_) {
+				std::cout << "assemble: lhs == rhs" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return true;
 		}
 
@@ -196,8 +207,12 @@ namespace utopia {
 
 			//perf
 			c.stop();
-			std::cout << "assemble: lhs" << std::endl;
-			std::cout << c << std::endl;
+
+			if(verbose_) {
+				std::cout << "assemble: lhs" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return true;
 		}
 
@@ -255,8 +270,12 @@ namespace utopia {
 
 			//perf
 			c.stop();
-			std::cout << "assemble: rhs" << std::endl;
-			std::cout << c << std::endl;
+
+			if(verbose_) {
+				std::cout << "assemble: rhs" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return true;
 		}
 
@@ -278,6 +297,7 @@ namespace utopia {
 
 	private:
 		AssemblyContext<LIBMESH_TAG> ctx_;
+		bool verbose_;
 	};
 }
 

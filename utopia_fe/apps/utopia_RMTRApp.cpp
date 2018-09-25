@@ -266,9 +266,12 @@ namespace utopia {
             f = std::make_shared<Bratu<decltype(V), USparseMatrix, UVector>>(V);
         } else if(in.fun == "min-surf") {
             f = std::make_shared<MinSurf<decltype(V), USparseMatrix, UVector>>(V);
+        } else if(in.fun == "matrixpoisson") {
+            f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
         } else if(in.fun == "poisson") {
-            f = std::make_shared<ExtendedPoisson<decltype(V), USparseMatrix, UVector>>(V);
+            f = std::make_shared<FormPoisson<decltype(V), USparseMatrix, UVector>>(V);
         } 
+
         else {
             assert(false);
             return nullptr;
@@ -322,7 +325,6 @@ namespace utopia {
 
         std::size_t n_levels = in.n_levels;
         std::vector< std::shared_ptr<libMesh::DistributedMesh> > meshes(n_levels);
-        std::vector< std::shared_ptr<libMesh::EquationSystems> > equation_systems(n_levels);
         std::vector< std::shared_ptr<FunctionSpaceT> > spaces(n_levels);
         std::vector< std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> > functions(n_levels);
 
@@ -339,9 +341,7 @@ namespace utopia {
 
         const auto elem_order = libMesh::Order(in.order);
         for(std::size_t i = 0; i < n_levels; ++i) {
-            equation_systems[i] = std::make_shared<libMesh::EquationSystems>(*meshes[i]);
-            equation_systems[i]->add_system<libMesh::LinearImplicitSystem>("sys_" + std::to_string(i));
-            spaces[i]           = std::make_shared<FunctionSpaceT>(equation_systems[i], libMesh::LAGRANGE, elem_order, "u");
+            spaces[i]           = std::make_shared<FunctionSpaceT>(*meshes[i], libMesh::LAGRANGE, elem_order, "u");
 
             in.set_up_bc(*spaces[i]);
             spaces[i]->initialize();
@@ -362,24 +362,27 @@ namespace utopia {
         }
 
         auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, GALERKIN> >(coarse_solver, smoother);
+        // auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, FIRST_ORDER> >(coarse_solver, smoother);
         rmtr->set_transfer_operators(transfers);
 
         rmtr->max_it(1000);
         rmtr->max_coarse_it(1);
         rmtr->max_smoothing_it(1);
-        rmtr->delta0(1);
+        rmtr->delta0(1000);
         rmtr->atol(1e-6);
         rmtr->rtol(1e-10);
         rmtr->set_grad_smoothess_termination(0.000001);
         rmtr->set_eps_grad_termination(1e-7);
 
         rmtr->verbose(in.verbose);
-        rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-        // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+        // rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+        rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
         rmtr->set_functions(functions);
 
+        auto &dof_map = spaces.back()->dof_map();
+
         UVector x;
-        functions.back()->get_eq_constrains_values(x);
+        rmtr->handle_equality_constraints();
         bool ok = rmtr->solve(x);
 
         //Write solution to disk

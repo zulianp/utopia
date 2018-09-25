@@ -2,6 +2,7 @@
 #define UTOPIA_IP_TRANSFER_HPP
 
 #include "utopia_Transfer.hpp"
+#include "utopia_Temp.hpp"
 
 #include <cassert>
 #include <cmath>
@@ -129,6 +130,17 @@
             // // });
 
             return true;
+        }
+
+        void handle_equality_constraints(const Vector &is_constrained) override {
+            assert(_I);
+            assert(!empty(*_I));
+            assert(!empty(is_constrained));
+            assert( size(is_constrained).get(0) == size(*_I).get(0) );
+
+            if(empty(is_constrained) || empty(*_I)) return;
+
+            set_zero_rows(*_I, is_constrained);
         }
 
         /**

@@ -75,7 +75,6 @@ namespace utopia
 			v = e_mul(masks_[l], v);
 		}
 
-
 				
 		void generate_masks(const Matrix &A, const std::vector<TransferPtr> &transfers)
 		{
