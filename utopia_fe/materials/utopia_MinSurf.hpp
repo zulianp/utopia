@@ -29,12 +29,12 @@ namespace utopia {
         
         bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
         {
-            // auto u  = trial(V_);
-            // auto v  = test(V_);
-            // auto uk = interpolate(x, u);
-            // auto denom = sqrt( inner(coeff(1.), v) + inner(grad(uk), grad(v)) );
-            // auto num   = inner(grad(uk), grad(v));
-            // // auto l_form = (num/denom) * dX;
+            auto u  = trial(V_);
+            auto v  = test(V_);
+            auto uk = interpolate(x, u);
+            auto denom = sqrt( inner(coeff(1.), v) + inner(grad(uk), grad(v)) );
+            auto num   = inner(grad(uk), grad(v));
+            // auto l_form = (num/denom) * dX;
  
             // auto l_form = ( inner( grad(uk), grad(v) ) / inner( grad(uk), grad(v) ) ) * dX;
             // utopia::assemble(l_form, gradient);
