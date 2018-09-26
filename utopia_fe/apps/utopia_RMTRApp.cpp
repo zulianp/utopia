@@ -331,8 +331,12 @@ namespace utopia {
         auto coarse_solver = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
         auto smoother      = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
 
+        // coarse_solver->verbose(true); 
+        // smoother->verbose(true); 
+
         coarse_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<USparseMatrix, UVector> >());
-        smoother->set_preconditioner(std::make_shared<InvDiagPreconditioner<USparseMatrix, UVector> >());
+        // smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<USparseMatrix, UVector> >());
+        smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<USparseMatrix, UVector> >());
 
 
         meshes[0] = std::make_shared<libMesh::DistributedMesh>(*comm_);

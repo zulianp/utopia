@@ -241,10 +241,10 @@ namespace utopia
 
 	        // we should apply BC conditions in symmetric way... ASAP... 
 	        tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
-	        tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
+	        // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
 	        
 	        // tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<DSMatrixd, DVectord> >());
-	        // tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<DSMatrixd, DVectord> >());	        
+	        tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());	        
 
 
         	// auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);

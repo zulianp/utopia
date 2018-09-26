@@ -165,29 +165,30 @@ namespace utopia
 
 	    		this->precond_->apply(g_k, v_k);
 
-	    		// if precond yields nans or infs, we just return current iterate 
-	    		if(has_nan_or_inf(v_k))
-		    		return false; 
-
 	    		g_v_prod_new = dot(g_k, v_k); 
+
+
+	    		// if preconditioner yields nans or inf, or is precond. dir is indefinite - just return current step 
+				if(!std::isfinite(g_v_prod_new)){
+		    		return true; 
+				}
+
 	    		betta  = g_v_prod_new/ g_v_prod_old; 
 	    		p_k = betta * p_k - v_k; 
  		
-
-	    		// updating norms recursively 
+	    		// updating norms recursively  - see TR book
 	    		sMp = (betta * sMp) + (alpha * p_norm); 
 	    		p_norm = g_v_prod_new + (betta*betta * p_norm); 
 	    		s_norm = s_norm_new; 
+
 
 	    		g_norm = norm2(g_k);  
 
 	    		if(this->verbose())
                     PrintInfo::print_iter_status(it, {g_norm});
 	    		
-	    		if(has_nan_or_inf(g_k))
-	    		{
+	    		if(!std::isfinite(g_norm))
 	    			return false; 
-	    		}                
 
                 converged = this->check_convergence(it, g_norm, 1, 1);
                 it++;
