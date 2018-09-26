@@ -7,50 +7,51 @@ namespace utopia {
 
 	static void laplacian_test(LibMeshFunctionSpace &V)
 	{
-		// UVector x = local_values(V.dof_map().n_local_dofs(), 10.);
-		// auto rhs = coeff(1.);
+		UVector x = local_values(V.dof_map().n_local_dofs(), 10.);
+		auto rhs = coeff(1.);
 
-		// auto u  = trial(V);
-		// auto v  = test(V);
+		auto u  = trial(V);
+		auto v  = test(V);
 
-		// auto uk = interpolate(x, u);
-		// auto f1 = 0.5 * inner(grad(uk), grad(uk)) * dX;
-		// auto f2 = inner(rhs, uk) * dX;
+		auto uk = interpolate(x, u);
 
-		// double energy1 = -1.;
-		// utopia::assemble(f1, energy1);
+		auto f1 = 0.5 * inner(grad(uk), grad(uk)) * dX;
+		auto f2 = inner(rhs, uk) * dX;
 
-		// double energy2 = -1.;
-		// utopia::assemble(f2, energy2);
+		double energy1 = -1.;
+		utopia::assemble(f1, energy1);
 
-		// double energy = energy1 - energy2;
+		double energy2 = -1.;
+		utopia::assemble(f2, energy2);
 
-		// utopia_test_assert(std::abs(energy1) < 1e-8);
+		double energy = energy1 - energy2;
 
-		// std::cout << std::abs(energy) << std::endl;
+		utopia_test_assert(std::abs(energy1) < 1e-8);
 
-		// USparseMatrix H;
-		// UVector g;
+		std::cout << std::abs(energy) << std::endl;
 
-		// utopia::assemble(inner(grad(u), grad(v)) * dX == inner(rhs, v) * dX, H, g);
-		// apply_boundary_conditions(V.dof_map(), H, g);
+		USparseMatrix H;
+		UVector g;
 
-		// Factorization<USparseMatrix, UVector> solver;
-		// solver.solve(H, g, x);
+		utopia::assemble(inner(grad(u), grad(v)) * dX == inner(rhs, v) * dX, H, g);
+		apply_boundary_conditions(V.dof_map(), H, g);
 
-		// double energy_after = -1.;
-		// utopia::assemble(
-		// 	// inner_volume_only_integral(
-		// 	integral(
-		// 		0.5 * inner(grad(uk), grad(uk)) - inner(rhs, uk)
-		// 	), 
-		// 	energy_after
-		// );
+		Factorization<USparseMatrix, UVector> solver;
+		solver.solve(H, g, x);
 
-		// utopia_test_assert(std::abs(energy) > std::abs(energy_after));
-		// std::cout << std::abs(energy_after) << std::endl;
+		double energy_after = -1.;
+		utopia::assemble(
+			// inner_volume_only_integral(
+			integral(
+				0.5 * inner(grad(uk), grad(uk)) - inner(rhs, uk)
+			), 
+			energy_after
+		);
 
-		// write("test.e", V, x);
+		utopia_test_assert(std::abs(energy) > std::abs(energy_after));
+		std::cout << std::abs(energy_after) << std::endl;
+
+		write("test.e", V, x);
 	}
 
 	void run_energy_test(libMesh::LibMeshInit &init)

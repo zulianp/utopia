@@ -295,18 +295,29 @@ namespace utopia {
 
 			auto S_bar = mu * identity(dim, dim);
 			auto eval_S_bar = quad_eval(S_bar * F, ctx);
-			disp(eval_S_bar);
+			// disp(eval_S_bar);
 
 			// auto sum_SF = F - S_bar;
 			auto sum_SF = S_bar + F;
 			// auto sum_SF = mu * identity() - F;
 			auto eval_sum_SF = eval(inner(sum_SF, grad(v)), ctx);
-			disp(eval_sum_SF);
+			// disp(eval_sum_SF);
 
 			auto S_iso = S_bar + (inner((-1.0 / 2) * S_bar, C) * inv(C));
 			auto eval_S_iso = quad_eval(S_iso, ctx);
 			// MostDescriptive<decltype(S_bar), decltype(F)>::Type desc;
 			// std::cout <<
+
+			auto dot_grads = inner(grad(uk), grad(uk));
+			auto en = quad_eval(dot_grads, ctx);
+			assert(!en.empty());
+
+			auto dot_grads_dx = dot_grads * dX;
+			auto endx = eval(dot_grads_dx, ctx);
+			// disp(endx);
+
+
+			// disp(en);
 		}
 
 
