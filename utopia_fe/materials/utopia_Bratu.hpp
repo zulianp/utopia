@@ -13,7 +13,7 @@ namespace utopia {
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
         
-        Bratu(FunctionSpace &V, const Scalar lambda = 0.) : V_(V), lambda_(lambda)
+        Bratu(FunctionSpace &V, const Scalar lambda = 0.2) : V_(V), lambda_(lambda)
         {
             initialize();
         }

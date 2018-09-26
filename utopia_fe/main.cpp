@@ -104,6 +104,11 @@ int main(int argc, char *argv[])
 		for(int i = 1; i < argc; ++i) {
 			const int ip1 = i+1;
 
+			if(argv[i] == std::string("-verbose")) {
+				Utopia::instance().set("verbose", "true");
+				continue;
+			}
+
 			if(argv[i] == std::string("-r")) {
 				if(ip1 < argc) {
 					auto it = runners.find(argv[ip1]);
