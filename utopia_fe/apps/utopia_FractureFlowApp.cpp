@@ -657,7 +657,9 @@ namespace utopia {
         SPBlockConjugateGradient<USparseMatrix, UVector> solver;
         solver.verbose(true);
         solver.max_it(2000);
-        solver.atol(1e-6);
+        solver.atol(1e-12);
+
+        solver.use_simple_preconditioner();
 
         if(use_mg) {
             solver.set_master_solver(make_mg_solver(V_m, 5));
@@ -672,6 +674,7 @@ namespace utopia {
             make_ref(D_t)
         );
 
+        
         bool ok = solver.apply(rhs_m, rhs_s, sol_m, sol_s, lagr);
 
         c.stop();
@@ -713,7 +716,9 @@ namespace utopia {
         SPBlockConjugateGradient<USparseMatrix, UVector> solver;
         solver.verbose(true);
         solver.max_it(2000);
-        solver.atol(1e-6);
+        solver.atol(1e-12);
+
+        solver.use_simple_preconditioner();
 
         if(use_mg) {
             solver.set_master_solver(make_mg_solver(V_m, 5));
@@ -727,6 +732,8 @@ namespace utopia {
             make_ref(B_t),
             make_ref(D_t)
         );
+
+        
 
         bool ok = solver.apply(rhs_m, rhs_s, sol_m, sol_s, lagr);
 

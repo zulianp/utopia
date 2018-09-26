@@ -288,6 +288,8 @@ namespace utopia {
         auto mesh = std::make_shared<libMesh::DistributedMesh>(*comm_);
         in.make_mesh(*mesh);
 
+        mesh->print_info();
+
         const auto elem_order = libMesh::Order(in.order);
         auto V = FunctionSpaceT(*mesh, libMesh::LAGRANGE, elem_order, "u");
         in.set_up_bc(V);

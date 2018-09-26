@@ -2171,6 +2171,18 @@ namespace utopia {
 			return std::move(left);
 		}
 
+		template<typename T, int Order>
+		inline static auto apply_binary(
+			Wrapper<T, Order> &&left,
+			const Wrapper<T, Order> &right,
+			const Divides &,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> Wrapper<T, Order> 
+		{
+			assert(false);
+			return std::move(left);
+		}
+
+
 		template<typename T>
 		inline static auto apply_binary(
 			FQValues<T> &&left,
@@ -2186,12 +2198,32 @@ namespace utopia {
 
 			for(std::size_t i = 0; i < n; ++i) {
 				for(std::size_t qp = 0; i < n_quad_points; ++i) {
-					left[i][qp] = apply_binary(left[i][qp], right[i][qp], op, ctx);
+					// left[i][qp] = apply_binary(left[i][qp], right[i][qp], op, ctx);
+					left[i][qp] /= right[i][qp];
 				}
 			}
 
 			return std::move(left);
 		}
+
+
+		// template<typename T>
+		// inline static auto apply_binary(
+		// 	QValues<T> &&left,
+		// 	const QValues<double> &right,
+		// 	const Divides &op,
+		// 	AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<T>
+		// {
+		// 	auto n = right.size();
+
+		// 	assert(n == left.size());
+
+		// 	for(std::size_t i = 0; i < n; ++i) {
+		// 		left[i] /= right[i];
+		// 	}
+
+		// 	return std::move(left);
+		// }
 
 		//alpha * (grad_t + grad)
 		template<class Left, class Right>
@@ -2928,7 +2960,7 @@ namespace utopia {
 		}
 
 		template<class Left, class Right>
-		static auto inner(const std::vector<Left> &left, const std::vector<std::vector<Right>> &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<std::vector<double>>
+		static auto inner(const QValues<Left> &left, const FQValues<Right> &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<double>
 		{
 			assert(left.size() == right[0].size());
 

@@ -316,8 +316,9 @@ namespace utopia {
 			auto endx = eval(dot_grads_dx, ctx);
 			// disp(endx);
 
+			auto denom      = inner(grad(uk), grad(uk));
+			auto div_inner  = inner(grad(uk)/denom, grad(v));
 
-			// auto div_inner = ( inner( grad(uk), grad(v) ) / inner( grad(uk), grad(v) ) );
 			// auto e_div_inner = quad_eval(div_inner, ctx);
 			// disp(e_div_inner[0]);
 
@@ -325,10 +326,6 @@ namespace utopia {
 
 			// auto e_div_inner_dx = eval(div_inner_dx, ctx);
 			// disp(e_div_inner_dx);
-
-
 		}
-
-
 	}
 }
