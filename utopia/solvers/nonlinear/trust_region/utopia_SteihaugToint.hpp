@@ -103,21 +103,31 @@ namespace utopia
 
 			this->precond_->apply(g_k, v_k);
 
-			// if preconditioner yields nans or inf, return gradient step 
-			if(has_nan_or_inf(v_k))
-	    	{
-	    		s_k = g_k; // TODO:: check for minus sign 
-	    		return false; 
-	    	}   
-
 			Vector p_k = -1.0 * v_k; 
 
             Scalar alpha, kappa, betta; 
             Scalar g_v_prod_old, g_v_prod_new; 
 
             Scalar s_norm=0.0, s_norm_new=0.0,  sMp=0.0; 
+			Scalar r2 = this->current_radius() * this->current_radius(); 
+
+
             Scalar p_norm = dot(g_k, v_k); 
-            Scalar r2 = this->current_radius() * this->current_radius(); 
+
+			// if preconditioner yields nans or inf, or is precond. dir is indefinite - return gradient step 
+			if(!std::isfinite(p_norm) || p_norm < 0.0)
+	    	{
+	    		Scalar alpha_termination; 
+	    		if(r2 >= g_norm)
+	    			alpha_termination = 1.0;  		// grad. step is inside of tr boundary, just take it
+	    		else
+	    			alpha_termination = std::sqrt(r2/g_norm);  // grad. step is outside of tr boundary, project on the boundary
+
+	    		s_k -= alpha_termination * g_k;  
+
+	    		return true; 
+	    	}   
+
 
         	while(!converged)
         	{

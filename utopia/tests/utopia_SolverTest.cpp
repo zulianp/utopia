@@ -409,7 +409,7 @@ namespace utopia {
 				tr_solver.set_hessian_approximation_strategy(hes_approx);
 
 				tr_solver.max_it(100); 
-				tr_solver.verbose(true);
+				tr_solver.verbose(false);
 				tr_solver.solve(rosenbrock, x0);
 
 				utopia_test_assert(approxeq(expected_rosenbrock, x0));

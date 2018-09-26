@@ -1,14 +1,13 @@
 <rmtr-app>
 
 	<function>bratu</function>
-	<mesh>unit-square</mesh>
-	<elem-type>quad</elem-type>
+	<path>../data/rmtr/rmtr_test_mesh.e</path>
+	<mesh>file</mesh>
 
-	
 	<boundary-conditions>
 		
 		<entry>
-			<side>0</side>
+			<side>4</side>
 			<value>0</value>
 		</entry>
 
@@ -30,9 +29,8 @@
 	</boundary-conditions>
 
 	<refinements>0</refinements>
-	<n-levels>7</n-levels>
+	<n-levels>3</n-levels>
 	<order>1</order>
 	<verbose>true</verbose>
 	<!-- <use-newton>true</use-newton> -->
-
 </rmtr-app>
