@@ -657,7 +657,7 @@ namespace utopia {
         SPBlockConjugateGradient<USparseMatrix, UVector> solver;
         solver.verbose(true);
         solver.max_it(2000);
-        solver.atol(1e-12);
+        solver.atol(1e-14);
 
         solver.use_simple_preconditioner();
 
@@ -716,7 +716,7 @@ namespace utopia {
         SPBlockConjugateGradient<USparseMatrix, UVector> solver;
         solver.verbose(true);
         solver.max_it(2000);
-        solver.atol(1e-12);
+        solver.atol(1e-14);
 
         solver.use_simple_preconditioner();
 

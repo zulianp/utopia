@@ -41,6 +41,16 @@ namespace utopia {
 			this->op_s = op_s;
 		}
 
+		void set_prec_solver(const std::shared_ptr< LinearSolver<Matrix, Vector> > &solver)
+		{	
+			if(prec_) {
+				prec_->set_linear_solver(solver);
+			} else {
+				std::cerr << "[Error] set preconditioner before calling set_prec_solver" << std::endl;
+				assert(prec_);
+			}
+		}
+
 		inline void verbose(const bool verbose)
 		{
 			verbose_ = verbose;
@@ -136,6 +146,7 @@ namespace utopia {
 			virtual ~BlockPreconditioner() {}
 			virtual bool apply(const Vector &r, Vector &z) const = 0;
 			virtual void update(SPBlockConjugateGradient &solver) = 0;
+			virtual void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver) = 0;
 		};
 
 		//http://ta.twi.tudelft.nl/nw/users/vuik/talks/norwich_2014.pdf
@@ -169,6 +180,11 @@ namespace utopia {
 				}
 
 				op_prec->update(P);
+			}
+
+			inline void set_linear_solver(const std::shared_ptr<LinearSolver<Matrix, Vector>> &solver) override
+			{
+				op_prec = solver;
 			}
 
 		private:
@@ -346,12 +362,12 @@ namespace utopia {
 				lagr += alpha * p;
 				r_new = r - alpha * Ap;
 
-				// r_norm = norm2(lagr - lagr_old);
-
 				r_norm = norm2(r_new);
 
-
-				if(verbose_) { std::cout << it << " " << r_norm << std::endl; }
+				if(verbose_) {
+					Scalar diff_norm = norm2(lagr - lagr_old);
+					std::cout << it << " " << r_norm << " " << diff_norm << std::endl;
+				}
 
 				if(r_norm < atol_) {
 					converged = true;
@@ -454,7 +470,9 @@ namespace utopia {
 					break;
 				}
 
-				if(verbose_) { std::cout << it << " " << r_norm << std::endl; }
+				if(verbose_) { 
+					std::cout << it << " " << r_norm << std::endl;
+				}
 
 				lagr_old = lagr;
 			}

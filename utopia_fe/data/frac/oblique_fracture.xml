@@ -87,4 +87,4 @@
 <!-- <solve-strategy>monolithic</solve-strategy> -->
 
 <solve-strategy>staggered</solve-strategy>
-<!-- <use-mg>true</use-mg> -->
+<use-mg>true</use-mg>
