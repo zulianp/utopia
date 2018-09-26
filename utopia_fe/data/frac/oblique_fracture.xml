@@ -16,8 +16,8 @@
 		<max-x>1.</max-x>
 		<max-y>1.</min-y>
 		
-		<n-x>10</n-x>
-		<n-y>10</n-y>
+		<n-x>15</n-x>
+		<n-y>15</n-y>
 
 		<refinements>5</refinements>
 	</mesh>
@@ -88,3 +88,6 @@
 
 <solve-strategy>staggered</solve-strategy>
 <use-mg>true</use-mg>
+<mg-sweeps>1</mg-sweeps>
+<mg-levels>5</mg-levels>
+

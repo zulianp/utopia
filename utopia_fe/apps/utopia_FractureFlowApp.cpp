@@ -612,7 +612,8 @@ namespace utopia {
     };
 
 
-    std::shared_ptr<LinearSolver<USparseMatrix, UVector> > make_mg_solver(const FunctionSpaceT &space, const int n_levels)
+    std::shared_ptr<SemiGeometricMultigrid> make_mg_solver(
+        const FunctionSpaceT &space, const int n_levels)
     {
         auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
         auto smoother      = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
@@ -635,7 +636,9 @@ namespace utopia {
         UVector &sol_m,
         UVector &sol_s,
         UVector &lagr,
-        const bool use_mg = false)
+        const bool use_mg,
+        int mg_levels,
+        int mg_sweeps)
     {
 
         Chrono c;
@@ -661,9 +664,14 @@ namespace utopia {
 
         solver.use_simple_preconditioner();
 
-        if(use_mg) {
-            solver.set_master_solver(make_mg_solver(V_m, 5));
-        }
+       if(use_mg) {
+           auto mg = make_mg_solver(V_m, mg_levels);
+           solver.set_master_solver(mg);
+
+           solver.set_master_sweeps(mg_sweeps);
+           solver.set_master_max_it(mg->max_it());
+       }
+
 
         solver.update(
             make_ref(A_m),
@@ -694,7 +702,9 @@ namespace utopia {
         UVector &sol_m,
         UVector &sol_s,
         UVector &lagr,
-        const bool use_mg = false)
+        const bool use_mg,
+        int mg_levels,
+        int mg_sweeps)
     {
 
         Chrono c;
@@ -721,7 +731,11 @@ namespace utopia {
         solver.use_simple_preconditioner();
 
         if(use_mg) {
-            solver.set_master_solver(make_mg_solver(V_m, 5));
+            auto mg = make_mg_solver(V_m, mg_levels);
+            solver.set_master_solver(mg);
+
+            solver.set_master_sweeps(mg_sweeps);
+            solver.set_master_max_it(mg->max_it());
         }
 
         solver.update(
@@ -732,8 +746,6 @@ namespace utopia {
             make_ref(B_t),
             make_ref(D_t)
         );
-
-        
 
         bool ok = solver.apply(rhs_m, rhs_s, sol_m, sol_s, lagr);
 
@@ -770,6 +782,12 @@ namespace utopia {
         bool use_mg = false;
         is_ptr->read("use-mg", use_mg);
 
+        int mg_sweeps = 1;
+        is_ptr->read("mg-sweeps", mg_sweeps);
+
+        int mg_levels = 5;
+        is_ptr->read("mg-levels", mg_levels);
+
 
         std::string operator_type = "L2_PROJECTION";
         is_ptr->read("operator-type", operator_type);
@@ -778,7 +796,12 @@ namespace utopia {
         slave_in.describe();
         multiplier_in.describe();
 
-        std::cout << "solve_strategy: "  << solve_strategy << std::endl;
+        std::cout << "solve-strategy: "  << solve_strategy << std::endl;
+        std::cout << "use-mg:         "  << use_mg         << std::endl;
+        if(use_mg) {
+            std::cout << "mg-sweeps:      "  << mg_sweeps      << std::endl;
+            std::cout << "mg-levels:      "  << mg_levels      << std::endl;
+        }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -851,7 +874,9 @@ namespace utopia {
                             sol_m,
                             sol_s,
                             lagr,
-                            use_mg
+                            use_mg,
+                            mg_levels,
+                            mg_sweeps
                             );
 
             } else {
@@ -865,7 +890,9 @@ namespace utopia {
                             sol_m,
                             sol_s,
                             lagr,
-                            use_mg
+                            use_mg,
+                            mg_levels,
+                            mg_sweeps
                             );
             }
 

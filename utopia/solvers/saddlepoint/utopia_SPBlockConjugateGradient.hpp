@@ -4,6 +4,7 @@
 #include "utopia_Traits.hpp"
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_LinearSolver.hpp"
+#include "utopia_IterativeSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
 
 #include <iostream>
@@ -28,7 +29,7 @@ namespace utopia {
 		SPBlockConjugateGradient()
 		: op_m(std::make_shared<Factorization<Matrix, Vector>>()),
 		op_s(std::make_shared<Factorization<Matrix, Vector>>()),
-		verbose_(false), atol_(1e-8), rtol_(1e-8), max_it_(1000)
+		verbose_(false), atol_(1e-8), rtol_(1e-8), max_it_(1000), master_sweeps_(-1), master_max_it_(-1)
 		{}
 
 		void set_master_solver(const std::shared_ptr< LinearSolver<Matrix, Vector> > &op_m)
@@ -49,6 +50,16 @@ namespace utopia {
 				std::cerr << "[Error] set preconditioner before calling set_prec_solver" << std::endl;
 				assert(prec_);
 			}
+		}
+
+		void set_master_sweeps(const int n_sweeps)
+		{
+			master_sweeps_ = n_sweeps;
+		}
+
+		void set_master_max_it(const int n_its)
+		{
+			master_max_it_ = n_its;
 		}
 
 		inline void verbose(const bool verbose)
@@ -104,6 +115,9 @@ namespace utopia {
 
 			op_m->update(A_m);
 			op_s->update(A_s);
+
+
+			set_iterations_master(master_sweeps_);
 
 			if(prec_) {
 				prec_->update(*this);
@@ -258,6 +272,9 @@ namespace utopia {
 		bool verbose_;
 		Scalar atol_, rtol_;
 		int max_it_;
+
+		int master_sweeps_;
+		int master_max_it_;
 
 
 		std::shared_ptr<BlockPreconditioner> prec_;
@@ -485,10 +502,23 @@ namespace utopia {
 				sol_s = local_zeros(local_size(rhs_s));
 			}
 
+
+			set_iterations_master(master_max_it_);
+
 			op_m->apply(rhs_m - (*B_t) * lagr, sol_m);
 			op_s->apply(rhs_s  - (*D_t) * lagr, sol_s);
 
 			return converged;
+		}
+
+
+		void set_iterations_master(const int iterations) {
+			if(iterations > 0) {
+				auto op_m_iterative = std::dynamic_pointer_cast<IterativeSolver<Matrix,Vector>>(op_m);
+				if(op_m_iterative) {
+					op_m_iterative->max_it(iterations);
+				}
+			}
 		}
 	};
 
