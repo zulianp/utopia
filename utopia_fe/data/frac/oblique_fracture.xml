@@ -70,10 +70,10 @@
 	<diffusivity>1000.</diffusivity>
 </slave>
 
-<solve-strategy>monolithic</solve-strategy>
+<!-- <solve-strategy>monolithic</solve-strategy> -->
 
-<!-- <solve-strategy>staggered</solve-strategy>
+<solve-strategy>staggered</solve-strategy>
 <use-mg>true</use-mg>
 <mg-sweeps>1</mg-sweeps>
-<mg-levels>5</mg-levels> -->
+<mg-levels>5</mg-levels>
 
