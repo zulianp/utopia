@@ -294,8 +294,8 @@ namespace utopia {
         V.initialize();
         std::cout << "n_dofs: " << V.dof_map().n_dofs() << std::endl;
 
-        // auto f = get_function(in, V);
-        auto f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
+        auto f = get_function(in, V);
+        // auto f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
 
         Newton<USparseMatrix, UVector> solver;
         solver.set_linear_solver(std::make_shared<SOR<USparseMatrix, UVector>>());
@@ -328,8 +328,19 @@ namespace utopia {
         std::vector< std::shared_ptr<FunctionSpaceT> > spaces(n_levels);
         std::vector< std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> > functions(n_levels);
 
-        auto coarse_solver = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
-        auto smoother      = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
+        // auto coarse_solver = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
+        // auto smoother      = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
+
+        auto coarse_solver = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
+        coarse_solver->atol(1e-12);
+        coarse_solver->rtol(1e-12);
+        coarse_solver->pc_type("lu");
+
+
+        auto smoother = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
+        smoother->atol(1e-15);
+        smoother->rtol(1e-15);
+        smoother->pc_type("asm");
 
         meshes[0] = std::make_shared<libMesh::DistributedMesh>(*comm_);
         in.make_mesh(*meshes[0]);

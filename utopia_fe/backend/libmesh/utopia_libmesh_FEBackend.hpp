@@ -442,6 +442,17 @@ namespace utopia {
 			return c[i];
 		}
 
+		template<typename T, int Order>
+		inline static Wrapper<T, Order> get(Wrapper<T, Order> &&c, const std::size_t qp, const std::size_t i)
+		{
+			return std::move(c);
+		}
+
+		inline static const double get(const double &c, const std::size_t qp, const std::size_t i)
+		{
+			return c;
+		}
+
 		template<typename T>
 		inline static void add(Matrix &mat, const int i, const int j, const T value)
 		{
@@ -454,6 +465,8 @@ namespace utopia {
 			assert(j == 0);
 			vec.add(i, value);
 		}
+
+
 
 		//////////////////////////////////////////////////////////////////////////////////////////
 		static inline unsigned int offset(const LibMeshFunctionSpace &space, const AssemblyContext<LIBMESH_TAG> &ctx)
@@ -736,6 +749,20 @@ namespace utopia {
 		{
 			for(auto &v : vals) {
 				v *= factor;
+			}
+
+			return std::move(vals);
+		}
+
+		template<typename T>
+		static auto apply_binary(
+			const ConstantCoefficient<T, 0> &factor,
+			QValues<double> &&vals,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+		{
+			for(auto &v : vals) {
+				v *= factor.expr();
 			}
 
 			return std::move(vals);
@@ -2124,16 +2151,44 @@ namespace utopia {
 			return std::move(f);
 		}
 
-		// template<typename T>
-		// inline static auto apply_binary(
-		// 	const QValues<T> &left,
-		// 	const QValues<T> &right,
-		// 	const Divides &,
-		// 	AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<T>
-		// {
-		// 	assert(false);
-		// 	return left;
-		// }
+		template<typename T>
+		inline static auto apply_binary(
+			QValues<T> &&left,
+			const QValues<T> &right,
+			const Divides &,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<T>
+		{
+			auto n = right.size();
+			assert(n == left.size());
+
+			for(std::size_t i = 0; i < n; ++i) {
+				left[i] /= right[i];
+			}
+
+			return std::move(left);
+		}
+
+		template<typename T>
+		inline static auto apply_binary(
+			FQValues<T> &&left,
+			const FQValues<T> &right,
+			const Divides &op,
+			AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<T>
+		{
+			auto n = right.size();
+			auto n_quad_points = right[0].size();
+
+			assert(n == left.size());
+			assert(n_quad_points == left[0].size());
+
+			for(std::size_t i = 0; i < n; ++i) {
+				for(std::size_t qp = 0; i < n_quad_points; ++i) {
+					left[i][qp] = apply_binary(left[i][qp], right[i][qp], op, ctx);
+				}
+			}
+
+			return std::move(left);
+		}
 
 		//alpha * (grad_t + grad)
 		template<class Left, class Right>
