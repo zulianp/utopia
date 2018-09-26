@@ -100,6 +100,11 @@ namespace utopia
             return true;
         }
 
+        const Vector &get_eq_constrains_flg() const
+        {
+            return _eq_constrains_flg;
+        }
+
         virtual bool set_equality_constrains(const Vector &eq_constrains_flg, const Vector &x_in)
         {
             _x_eq_values             =  x_in;

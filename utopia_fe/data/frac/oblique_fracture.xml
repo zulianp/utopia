@@ -19,11 +19,19 @@
 		<n-x>10</n-x>
 		<n-y>10</n-y>
 
-		<refinements>5</refinements>
+		<refinements>3</refinements>
 	</mesh>
 
 	<space>
 		<system-name>master</system-name>
+		
+		<variables>
+			<var>
+			<name>u</name>
+			<order>1</order>
+			</var>
+		</variables>
+
 		<boundary-conditions>
 			<entry>
 				<side>3</side>
@@ -76,7 +84,7 @@
 	<diffusivity>1000.</diffusivity>
 </slave>
 
-<!-- <solve-strategy>monolithic</solve-strategy> -->
+<solve-strategy>monolithic</solve-strategy>
 
-<!-- <solve-strategy>staggered</solve-strategy>
-<use-mg>true</use-mg> -->
+<!-- <solve-strategy>staggered</solve-strategy> -->
+<!-- <use-mg>true</use-mg> -->

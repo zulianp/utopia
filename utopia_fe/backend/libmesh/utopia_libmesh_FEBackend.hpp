@@ -1250,13 +1250,97 @@ namespace utopia {
 		}
 
 		static auto apply_unary(
-			std::vector<std::vector<TensorValueT>> &&vals,
+			FQValues<TensorValueT> &&vals,
 			const Minus &op,
-			const AssemblyContext<LIBMESH_TAG> &) -> std::vector<std::vector<TensorValueT>>
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<TensorValueT>
 		{
 			for(auto &v : vals) {
 				for(auto &vv : v) {
 				 	vv *= -1.;
+				 }
+			}
+
+			return std::move(vals);
+		}
+
+		template<class Op>
+		static auto apply_unary(
+			FQValues<double> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<double>
+		{
+			for(auto &v : vals) {
+				for(auto &vv : v) {
+				 	vv = op.apply(vv);
+				 }
+			}
+
+			return std::move(vals);
+		}
+
+		template<class Op>
+		static auto apply_unary(
+			FQValues<VectorValueT> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<VectorValueT>
+		{
+			for(auto &v : vals) {
+				for(auto &vv : v) {
+				 	for(int i = 0; i < LIBMESH_DIM; ++i) {
+				 		vv(i) = op.apply(vv(i));
+				 	}
+				 }
+			}
+
+			return std::move(vals);
+		}
+
+
+		template<class Op>
+		static auto apply_unary(
+			FQValues<Wrapper<DenseVectorT, 1>> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<Wrapper<DenseVectorT, 1>>
+		{
+			for(auto &v : vals) {
+				for(auto &vv : v) {
+				 	for(int i = 0; i < LIBMESH_DIM; ++i) {
+				 		vv.implementation()(i) = op.apply(vv.implementation()(i));
+				 	}
+				 }
+			}
+
+			return std::move(vals);
+		}
+
+
+		template<class Op>
+		static auto apply_unary(
+			Wrapper<DenseVectorT, 1> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> Wrapper<DenseVectorT, 1>
+		{
+
+		 	for(int i = 0; i < LIBMESH_DIM; ++i) {
+		 		vals.implementation()(i) = op.apply(vals.implementation()(i));
+		 	}
+
+			return std::move(vals);
+		}
+
+		template<class Op>
+		static auto apply_unary(
+			FQValues<TensorValueT> &&vals,
+			const Op &op,
+			const AssemblyContext<LIBMESH_TAG> &) -> FQValues<TensorValueT>
+		{
+			for(auto &v : vals) {
+				for(auto &vv : v) {
+				 	for(int i = 0; i < LIBMESH_DIM; ++i) {
+				 		for(int j = 0; j < LIBMESH_DIM; ++j) {
+				 			vv(i, j) = op.apply(vv(i, j));
+				 		}
+				 	}
 				 }
 			}
 
@@ -1983,6 +2067,17 @@ namespace utopia {
 
 			return std::move(f);
 		}
+
+		// template<typename T>
+		// inline static auto apply_binary(
+		// 	const QValues<T> &left,
+		// 	const QValues<T> &right,
+		// 	const Divides &,
+		// 	AssemblyContext<LIBMESH_TAG> &ctx) -> QValues<T>
+		// {
+		// 	assert(false);
+		// 	return left;
+		// }
 
 		//alpha * (grad_t + grad)
 		template<class Left, class Right>
@@ -2770,6 +2865,32 @@ namespace utopia {
 				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
 					ret[qp] = utopia::inner(left, right[i][qp]);
 				}
+			}
+
+			return ret;
+		}
+
+		static Matrix integrate(Matrix &&mat, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			return std::move(mat);
+		}
+
+		static Vector integrate(Vector &&mat, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			return std::move(mat);
+		}
+
+
+		static Scalar integrate(const QValues<double> &vals, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			auto && dx = ctx.dx();
+			uint n_quad_points = dx.size();
+
+			assert( vals.size() == dx.size() );
+
+			Scalar ret = 0.;
+			for (uint qp = 0; qp < n_quad_points; qp++) {
+				ret += vals[qp] * dx[qp];
 			}
 
 			return ret;

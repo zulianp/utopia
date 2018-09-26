@@ -20,30 +20,44 @@ namespace utopia {
         
         bool value(const Vector &x, Scalar &energy) const override
         {
-            auto u  = trial(V_);
-            auto uk = interpolate(x, u);
+            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
+            x_ = x;
+            synchronize(x_);
 
-            auto f = 0.5 * inner(grad(uk), grad(uk)) * dX - exp(lambda_ * uk) * dX;
+            auto u  = trial(V_);
+            auto uk = interpolate(x_, u);
+
+            // // auto f = 0.5 * inner(grad(uk), grad(uk)) * dX - exp(lambda_ * uk) * dX;
+            auto f = exp(lambda_ * uk) * dX;
             utopia::assemble(f, energy);
             return true;
         }
         
         bool gradient_no_rhs(const Vector &x, Vector &gradient) const override
         {
+            Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
+            x_ = x;
+            synchronize(x_);
+
             auto u  = trial(V_);
             auto v  = test(V_);
-            auto uk = interpolate(x, u);
+            auto uk = interpolate(x_, u);
 
             auto l_form = inner(grad(uk), grad(v)) * dX - inner(exp(lambda_ * uk), v) * dX; 
             utopia::assemble(l_form, gradient);
+            apply_zero_boundary_conditions(V_.dof_map(), gradient);
             return true;
         }
  
         bool hessian(const Vector &x, Matrix &hessian) const override
         {
+            Vector x_ =  ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
+            x_ = x;
+            synchronize(x_);
+
             auto u  = trial(V_);
             auto v  = test(V_);
-            auto uk = interpolate(x, u);
+            auto uk = interpolate(x_, u);
 
             auto b_form = inner(grad(u), grad(v)) * dX - inner(exp(lambda_ * uk) * u, v) * dX;
             utopia::assemble(b_form, hessian);

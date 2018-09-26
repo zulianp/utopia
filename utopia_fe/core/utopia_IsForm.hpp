@@ -38,6 +38,9 @@ namespace utopia {
 		static const bool is_linear = (right_has_test || left_has_test) && (!left_has_trial && !right_has_trial);
 		static const bool value = (left_has_trial && right_has_test) || (right_has_trial && left_has_test);
 		static const int  order  = is_linear? 1 : (value? 2 : 0);
+
+
+		static const int has_fun = left_has_trial || right_has_trial || left_has_test || right_has_test;
 	};
 
 	template<class Expr>

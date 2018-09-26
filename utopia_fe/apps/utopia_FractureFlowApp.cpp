@@ -259,6 +259,8 @@ namespace utopia {
 
         UVector sol = blocks(sol_m, sol_s, lagr);
 
+        std::cout << "n_dofs: " << size(A).get(0) << std::endl;
+
         Factorization<USparseMatrix, UVector> op;
         op.update(make_ref(A));
         op.apply(rhs, sol);
@@ -309,6 +311,8 @@ namespace utopia {
         lagr  = local_zeros(L.dof_map().n_local_dofs());
 
         UVector sol = blocks(sol_m, sol_s, lagr);
+
+        std::cout << "n_dofs: " << size(A).get(0) << std::endl;
 
         Factorization<USparseMatrix, UVector> op;
         op.solve(A, rhs, sol);
@@ -676,6 +680,62 @@ namespace utopia {
     }
 
 
+    bool solve_cg_dual(
+        FunctionSpaceT &V_m,
+        FunctionSpaceT &V_s,
+        FunctionSpaceT &L,
+        USparseMatrix &A_m,
+        UVector &rhs_m,
+        USparseMatrix &A_s,
+        UVector &rhs_s,
+        UVector &sol_m,
+        UVector &sol_s,
+        UVector &lagr,
+        const bool use_mg = false)
+    {
+
+        Chrono c;
+        c.start();
+
+        USparseMatrix D, B, D_t, B_t;
+
+        assemble_coupling(V_m, L, B);
+        assemble_coupling(V_s, L, D);
+
+        D *= -1.;
+
+        D_t = transpose(D);
+        B_t = transpose(B);
+
+        set_zero_at_constraint_rows(V_m.dof_map(), B_t);
+        set_zero_at_constraint_rows(V_s.dof_map(), D_t);
+
+        SPBlockConjugateGradient<USparseMatrix, UVector> solver;
+        solver.verbose(true);
+        solver.max_it(2000);
+        solver.atol(1e-6);
+
+        if(use_mg) {
+            solver.set_master_solver(make_mg_solver(V_m, 5));
+        }
+
+        solver.update(
+            make_ref(A_m),
+            make_ref(A_s),
+            make_ref(B),
+            make_ref(D),
+            make_ref(B_t),
+            make_ref(D_t)
+        );
+
+        bool ok = solver.apply(rhs_m, rhs_s, sol_m, sol_s, lagr);
+
+        c.stop();
+        std::cout << "Solver time: " << c << std::endl;
+        return ok;
+    }
+
+
     void FractureFlowApp::run(const std::string &conf_file_path)
     {
         Chrono c;
@@ -691,11 +751,11 @@ namespace utopia {
         auto is_ptr = open_istream(conf_file_path);
 
         Input master_in(*comm_), slave_in(*comm_);
-        // Input multiplier_in(*comm_); //LAMBDA
+        Input multiplier_in(*comm_);
 
         is_ptr->read("master", master_in);
         is_ptr->read("slave",  slave_in);
-        // is_ptr->read("multiplier", multiplier_in); //LAMBDA
+        is_ptr->read("multiplier", multiplier_in);
 
         std::string solve_strategy = "monolithic";
         is_ptr->read("solve-strategy", solve_strategy);
@@ -709,7 +769,7 @@ namespace utopia {
 
         master_in.describe();
         slave_in.describe();
-        // multiplier_in.describe(); //LAMBDA
+        multiplier_in.describe();
 
         std::cout << "solve_strategy: "  << solve_strategy << std::endl;
 
@@ -718,7 +778,6 @@ namespace utopia {
 
         auto &V_m = master_in.space.subspace(0);
         auto &V_s = slave_in.space.subspace(0);
-        // auto &L   = multiplier_in.space.subspace(0); //LAMBDA
 
 
         FractureFlowAuxSystem aux_s(V_s);
@@ -736,8 +795,7 @@ namespace utopia {
         auto u_s = trial(V_s);
         auto v_s = test(V_s);
 
-        std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " x " <<  V_s.dof_map().n_dofs();
-        // std::cout << " x " <<  L.dof_map().n_dofs() << ""; //LAMBDA
+        std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " + " <<  V_s.dof_map().n_dofs();
         std::cout << std::endl;
 
         auto eq_m = inner(master_in.diffusion_tensor * grad(u_m), ctx_fun(master_in.sampler) * grad(v_m)) * dX;
@@ -773,44 +831,67 @@ namespace utopia {
 
         if(solve_strategy == "staggered") {
 
-            // solve_staggered(operator_type,
-            //                 V_m,
-            //                 V_s,
-            //                 A_m,
-            //                 rhs_m,
-            //                 A_s,
-            //                 rhs_s,
-            //                 sol_m,
-            //                 sol_s,
-            //                 lagr
-            //                 );
+            if(!multiplier_in.empty()) {
+                multiplier_in.space.subspace(0).initialize();
+                solve_cg_dual(
+                            V_m,
+                            V_s,
+                            multiplier_in.space.subspace(0),
+                            A_m,
+                            rhs_m,
+                            A_s,
+                            rhs_s,
+                            sol_m,
+                            sol_s,
+                            lagr,
+                            use_mg
+                            );
 
-
-            solve_cg_dual(
-                        V_m,
-                        V_s,
-                        A_m,
-                        rhs_m,
-                        A_s,
-                        rhs_s,
-                        sol_m,
-                        sol_s,
-                        lagr,
-                        use_mg
-                        );
+            } else {
+                solve_cg_dual(
+                            V_m,
+                            V_s,
+                            A_m,
+                            rhs_m,
+                            A_s,
+                            rhs_s,
+                            sol_m,
+                            sol_s,
+                            lagr,
+                            use_mg
+                            );
+            }
 
         } else {
-            solve_monolithic(V_m,
-                             V_s,
-                             // L, //LAMBDA
-                             A_m,
-                             rhs_m,
-                             A_s,
-                             rhs_s,
-                             sol_m,
-                             sol_s,
-                             lagr
-                             );
+            if(!multiplier_in.empty()) {
+
+                std::cout << "solving with different Lagr space" << std::endl;
+                multiplier_in.space.subspace(0).initialize();
+                solve_monolithic(V_m,
+                                 V_s,
+                                 multiplier_in.space.subspace(0),
+                                 A_m,
+                                 rhs_m,
+                                 A_s,
+                                 rhs_s,
+                                 sol_m,
+                                 sol_s,
+                                 lagr
+                                 );
+
+            } else {
+
+                solve_monolithic(V_m,
+                                 V_s,
+                                 A_m,
+                                 rhs_m,
+                                 A_s,
+                                 rhs_s,
+                                 sol_m,
+                                 sol_s,
+                                 lagr
+                                 );
+            }
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -820,7 +901,7 @@ namespace utopia {
         // UGLY code for writing stuff to disk
         libMesh::Nemesis_IO io_m(master_in.mesh.mesh());
         libMesh::Nemesis_IO io_s(slave_in.mesh.mesh());
-        // libMesh::Nemesis_IO io_multiplier(multiplier_in.mesh.mesh()); //LAMBDA
+        
 
         utopia::convert(sol_m, *V_m.equation_system().solution);
         V_m.equation_system().solution->close();
@@ -831,9 +912,13 @@ namespace utopia {
         V_s.equation_system().solution->close();
         io_s.write_timestep(V_s.equation_system().name() + ".e", V_s.equation_systems(), 1, 0);
 
-        // utopia::convert(lagr, *L.equation_system().solution);                                         //LAMBDA
-        // L.equation_system().solution->close();                                                        //LAMBDA
-        // io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);  //LAMBDA
+        if(!multiplier_in.empty()) {
+            libMesh::Nemesis_IO io_multiplier(multiplier_in.mesh.mesh());
+            auto &L = multiplier_in.space.subspace(0);
+            utopia::convert(lagr, *L.equation_system().solution);                                       
+            L.equation_system().solution->close();                                                      
+            io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);
+        }
 
         c.stop();
         std::cout << c << std::endl;

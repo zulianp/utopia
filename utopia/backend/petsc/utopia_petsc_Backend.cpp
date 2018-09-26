@@ -335,14 +335,23 @@ namespace utopia {
 		return info.nz_used;
 	}
 
-	void PetscBackend::set_zero_rows(PetscMatrix &Mat_A, const std::vector<int> &index)
+	void PetscBackend::set_zero_rows(PetscMatrix &mat, const std::vector<PetscInt> &index, const Scalar diag)
 	{
-		check_error(MatZeroRows(Mat_A.implementation(), index.size(), &index[0], 1.0, nullptr, nullptr));
+		// check_error( MatZeroRows(mat.implementation(), index.size(), &index[0], 1.0, nullptr, nullptr) );
+
+		PetscBool val = PETSC_TRUE;
+		
+		MatGetOption(mat.implementation(), MAT_KEEP_NONZERO_PATTERN, &val);
+		MatSetOption(mat.implementation(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
+// 
+		check_error( MatZeroRows(mat.implementation(), index.size(), &index[0], diag, nullptr, nullptr) );
+
+		MatSetOption(mat.implementation(), MAT_KEEP_NONZERO_PATTERN, val);
 	}
 
-	void PetscBackend::apply_BC_to_system(PetscMatrix & A, PetscVector& x, PetscVector& rhs, const std::vector<int> &index)
+	void PetscBackend::apply_BC_to_system(PetscMatrix & A, PetscVector& x, PetscVector& rhs, const std::vector<PetscInt> &index)
 	{
-		check_error(MatZeroRows(A.implementation(), index.size(), &index[0], 1.0, x.implementation(), rhs.implementation()));
+		check_error( MatZeroRows(A.implementation(), index.size(), &index[0], 1.0, x.implementation(), rhs.implementation()) );
 	}
 
 	// read vector

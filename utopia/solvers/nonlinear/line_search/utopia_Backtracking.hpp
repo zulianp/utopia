@@ -24,7 +24,7 @@ namespace utopia {
         @todo check params naming properly...
      */
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-    class Backtracking : public LSStrategy<Matrix, Vector>
+    class Backtracking final : public LSStrategy<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector)       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)    SizeType;

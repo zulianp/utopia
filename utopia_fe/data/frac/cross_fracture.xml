@@ -84,6 +84,22 @@
 	<!-- <diffusivity>.00001</diffusivity> -->
 </slave>
 
-<!-- <solve-strategy>monolithic</solve-strategy> -->
 
-<solve-strategy>staggered</solve-strategy>
+
+<!-- MULTIPLIER STUFF -->
+<multiplier>
+	<mesh>
+		<type>file</type>
+		<path>../data/frac/cross.e</path>
+		<refinements>0</refinements>
+	</mesh>
+
+	<space>
+		<system-name>multiplier</system-name>
+	</space>
+</multiplier>
+
+
+<solve-strategy>monolithic</solve-strategy>
+
+<!-- <solve-strategy>staggered</solve-strategy> -->

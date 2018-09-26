@@ -17,13 +17,15 @@ namespace utopia {
 	public:
 		template<class... Args>
 		UIMesh(Args &&...args)
-		: mesh_(std::make_shared<libMesh::DistributedMesh>(std::forward<Args...>(args...))) 
+		: mesh_(std::make_shared<libMesh::DistributedMesh>(std::forward<Args...>(args...))), empty_(true)
 		{}
 
 		void read(InputStream &is) override {
 			std::string mesh_type = "square";
 			std::string path = "";
 	
+			empty_ = false;
+
 			int refinements = 0;
 			
 			double span[3] = { 0., 0., 0. };
@@ -128,12 +130,13 @@ namespace utopia {
 		}
 
 		inline bool empty() const {
-			return bool(mesh_);
+			return empty_;
 		}
 
 	private:
 		int order = 1;
 		std::shared_ptr<libMesh::DistributedMesh> mesh_;
+		bool empty_;
 
 		////////////////////////////////////////////////
 

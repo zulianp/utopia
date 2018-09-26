@@ -136,6 +136,8 @@ namespace utopia {
 
 		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
+		if(!has_constaints) return;
+
 		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
 		{
@@ -143,9 +145,9 @@ namespace utopia {
 
 			Range r = range(vec);
 			for(SizeType i = r.begin(); i < r.end(); ++i) {
-				if(has_constaints && dof_map.is_constrained_dof(i)) {
-					auto valpos = rhs_values.find(i);
-					vec.set(i, (valpos == rhs_values.end()) ? 0 : 1.);
+				if(dof_map.is_constrained_dof(i)) {
+					auto value = 1.;
+					vec.set(i, value);
 				}
 			}
 		}

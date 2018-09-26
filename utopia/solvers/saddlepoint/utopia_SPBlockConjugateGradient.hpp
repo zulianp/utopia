@@ -101,7 +101,7 @@ namespace utopia {
 			Vector &lagr)
 		{
 			if(empty(lagr)) {
-				lagr = local_zeros(local_size(rhs_s));
+				lagr = local_zeros(local_size(*B).get(0));
 			}
 
 			this->residual(
@@ -159,8 +159,13 @@ namespace utopia {
 				lagr_old = lagr;
 			}
 
-			sol_m = local_zeros(local_size(rhs_m));
-			sol_s = local_zeros(local_size(rhs_s));
+			if(empty(sol_m) || size(sol_m) != size(rhs_m)) {
+				sol_m = local_zeros(local_size(rhs_m));
+			}
+
+			if(empty(sol_s) || size(sol_s) != size(rhs_s)) {
+				sol_s = local_zeros(local_size(rhs_s));
+			}
 
 			op_m->apply(rhs_m - (*B_t) * lagr, sol_m);
 			op_s->apply(rhs_s  - (*D_t) * lagr, sol_s);

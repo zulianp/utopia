@@ -10,6 +10,10 @@ namespace utopia {
 		typedef utopia::UVector GlobalVector;
 		typedef UTOPIA_SCALAR(GlobalVector) Scalar;
 
+		LibMeshAssembler()
+		: verbose_(Utopia::instance().verbose())
+		{}
+
 		template<class Expr>
 		bool assemble(const Expr &expr, Scalar &val)
 		{
@@ -33,19 +37,17 @@ namespace utopia {
 			for(auto it = elements_begin(m); it != elements_end(m); ++it) {
 				init_context_on(expr, (*elements_begin(m))->id());
 
-				for(auto it = elements_begin(m); it != elements_end(m); ++it) {
-					if(it != elements_begin(m)) {
-						reinit_context_on(expr, (*it)->id());
-					}
+				if(it != elements_begin(m)) {
+					reinit_context_on(expr, (*it)->id());
+				}
 
-					Number<Scalar> el_val = 0.;
+				Number<Scalar> el_val = 0.;
 
-					FormEvaluator<LIBMESH_TAG> eval;
-					eval.eval(expr, el_val, ctx_);
+				FormEvaluator<LIBMESH_TAG> eval;
+				eval.eval(expr, el_val, ctx_);
 
-					if(ctx_.has_assembled()) {
-						val += el_val;
-					}
+				if(ctx_.has_assembled()) {
+					val += el_val;
 				}
 			}
 
@@ -53,8 +55,12 @@ namespace utopia {
 
 			//perf
 			c.stop();
-			std::cout << "assemble: value" << std::endl;
-			std::cout << c << std::endl;
+
+			if(verbose_) {
+				std::cout << "assemble: value" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return false;
 		}
 
@@ -129,8 +135,11 @@ namespace utopia {
 
 			//perf
 			c.stop();
-			std::cout << "assemble: lhs == rhs" << std::endl;
-			std::cout << c << std::endl;
+			if(verbose_) {
+				std::cout << "assemble: lhs == rhs" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return true;
 		}
 
@@ -196,8 +205,12 @@ namespace utopia {
 
 			//perf
 			c.stop();
-			std::cout << "assemble: lhs" << std::endl;
-			std::cout << c << std::endl;
+
+			if(verbose_) {
+				std::cout << "assemble: lhs" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return true;
 		}
 
@@ -255,8 +268,12 @@ namespace utopia {
 
 			//perf
 			c.stop();
-			std::cout << "assemble: rhs" << std::endl;
-			std::cout << c << std::endl;
+
+			if(verbose_) {
+				std::cout << "assemble: rhs" << std::endl;
+				std::cout << c << std::endl;
+			}
+
 			return true;
 		}
 
@@ -278,6 +295,7 @@ namespace utopia {
 
 	private:
 		AssemblyContext<LIBMESH_TAG> ctx_;
+		bool verbose_;
 	};
 }
 
