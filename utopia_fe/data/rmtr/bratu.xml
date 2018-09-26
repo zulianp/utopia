@@ -30,7 +30,7 @@
 	</boundary-conditions>
 
 	<refinements>0</refinements>
-	<n-levels>2</n-levels>
+	<n-levels>7</n-levels>
 	<order>1</order>
 	<verbose>true</verbose>
 	<!-- <use-newton>true</use-newton> -->

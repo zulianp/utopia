@@ -13,11 +13,16 @@ namespace utopia {
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
         
-        Bratu(FunctionSpace &V, const Scalar lambda = 0.2) : V_(V), lambda_(lambda)
+        Bratu(FunctionSpace &V, const Scalar lambda = 1.0) : V_(V)
         {
+            if(lambda>=0.0 && lambda < 6.81)
+                lambda_=lambda; 
+            else
+                std::cout<<"Bratu: lambda is not in the correct range. Please choose from the range: 0 < lambda < 6.8."; 
+
             initialize();
         }
-        
+
         bool value(const Vector &x, Scalar &energy) const override
         {
             Vector x_ = ghosted(V_.dof_map().n_local_dofs(), V_.dof_map().n_dofs(), V_.dof_map().get_send_list()); 
@@ -27,7 +32,7 @@ namespace utopia {
             auto u  = trial(V_);
             auto uk = interpolate(x_, u);
 
-            auto f = 0.5 * inner(grad(uk), grad(uk)) * dX - exp(lambda_ * uk) * dX;
+            auto f = 0.5 * inner(grad(uk), grad(uk)) * dX - lambda_ * exp(uk) * dX;
             utopia::assemble(f, energy);
             return true;
         }
@@ -42,7 +47,7 @@ namespace utopia {
             auto v  = test(V_);
             auto uk = interpolate(x_, u);
 
-            auto l_form = inner(grad(uk), grad(v)) * dX - inner(exp(lambda_ * uk), v) * dX; 
+            auto l_form = inner(grad(uk), grad(v)) * dX - lambda_ * inner(exp( uk), v) * dX; 
             utopia::assemble(l_form, gradient);
             apply_zero_boundary_conditions(V_.dof_map(), gradient);
             return true;
@@ -58,7 +63,7 @@ namespace utopia {
             auto v  = test(V_);
             auto uk = interpolate(x_, u);
 
-            auto b_form = inner(grad(u), grad(v)) * dX - inner(exp(lambda_ * uk) * u, v) * dX;
+            auto b_form = inner(grad(u), grad(v)) * dX - lambda_ * inner(exp(uk) * u, v) * dX;
             utopia::assemble(b_form, hessian);
             set_identity_at_constraint_rows(V_.dof_map(), hessian);
             return true;
@@ -71,6 +76,7 @@ namespace utopia {
         void initialize()
         {
             Vector x = local_zeros(V_.dof_map().n_local_dofs());
+
             apply_boundary_conditions(V_.dof_map(), x);
 
             Vector marked;
