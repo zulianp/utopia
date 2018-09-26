@@ -934,9 +934,12 @@ namespace utopia {
 			const AssemblyContext<LIBMESH_TAG> &ctx) -> FQValues<T>
 		{
 			std::size_t n = left.size();
+			std::size_t n_quad_points = left[0].size();
 
 			for(std::size_t i = 0; i != n; ++i) {
-				left[i] = apply_binary(left[i], right[i], op, ctx);
+				for(std::size_t qp = 0; qp < n_quad_points; ++qp) {
+					left[i][qp] /= right[i][qp];
+				}
 			}
 
 			return std::move(left);
