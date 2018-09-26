@@ -5,19 +5,14 @@
 		<elem-type>quad</elem-type>
 		<order>1</order>
 
-		<!-- <mesh>file</mesh> -->
-		<!-- <path>../data/frac/adaptive_background_2.e</path> -->
-		<!-- <path>../data/frac/adaptive_background.e</path> -->
-		<!-- <path>../data/frac/background.e</path> -->
-
 		<min-x>0.</min-x>
 		<min-y>0.</min-y>
 		
 		<max-x>1.</max-x>
 		<max-y>1.</min-y>
 		
-		<n-x>15</n-x>
-		<n-y>15</n-y>
+		<n-x>20</n-x>
+		<n-y>20</n-y>
 
 		<refinements>5</refinements>
 	</mesh>
@@ -52,20 +47,11 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/line.e</path>
-		<!-- <path>../data/frac/vol_line.e</path> -->
-		<!-- <path>../data/frac/thin_line.e</path> -->
-		<!-- <order>1</order> -->
 		<refinements>2</refinements>
 	</mesh>
 
 	<space>
 		<system-name>slave</system-name>
-	<!-- 	<variables>
-			<var>
-				<name>u_s</name>
-				<order>1</order>
-			</var>
-		</variables> -->
 
 		<boundary-conditions>
 			<entry>
@@ -84,10 +70,10 @@
 	<diffusivity>1000.</diffusivity>
 </slave>
 
-<!-- <solve-strategy>monolithic</solve-strategy> -->
+<solve-strategy>monolithic</solve-strategy>
 
-<solve-strategy>staggered</solve-strategy>
+<!-- <solve-strategy>staggered</solve-strategy>
 <use-mg>true</use-mg>
 <mg-sweeps>1</mg-sweeps>
-<mg-levels>5</mg-levels>
+<mg-levels>5</mg-levels> -->
 

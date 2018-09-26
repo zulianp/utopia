@@ -500,24 +500,31 @@ namespace utopia {
         void sample(const std::shared_ptr<UIFunction<double>> &sampler)
         {
             FunctionSpaceT V_aperture(aux_, var_nums_[0]);
-            auto u = trial(V_aperture);
-            auto v = test(V_aperture);
+            V_aperture.initialize();
 
-            auto lform = inner(ctx_fun(sampler), v) * dX;
+            UVector aperture;
 
-            UVector aperture_h;
-            utopia::assemble(lform, aperture_h);
+            auto constant_sampler = std::dynamic_pointer_cast<UIConstantFunction<double>>(sampler);
+            if(constant_sampler) {
+                aperture = local_values(V_aperture.dof_map().n_local_dofs(), constant_sampler->value());
+            } else {
+                auto u = trial(V_aperture);
+                auto v = test(V_aperture);
 
-            USparseMatrix mass_mat;
-            utopia::assemble(inner(u, v) * dX, mass_mat);
-            UVector d_inv = 1./sum(mass_mat, 1);
+                auto lform = inner(ctx_fun(sampler), v) * dX;
 
-            UVector aperture = e_mul(d_inv, aperture_h);
+                UVector aperture_h;
+                utopia::assemble(lform, aperture_h);
+
+                USparseMatrix mass_mat;
+                utopia::assemble(inner(u, v) * dX, mass_mat);
+                UVector d_inv = 1./sum(mass_mat, 1);
+                aperture = e_mul(d_inv, aperture_h);
+            }
 
             utopia::convert(aperture, *aux_.solution);
             aux_.solution->close();
         }
-
 
     private:
 

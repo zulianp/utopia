@@ -32,6 +32,11 @@ namespace utopia {
 			return val_;
 		}
 
+		const Scalar &value() const
+		{
+			return val_;
+		}
+
 	private:
 		Scalar val_;
 	};
