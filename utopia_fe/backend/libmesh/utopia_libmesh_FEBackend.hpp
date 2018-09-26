@@ -728,6 +728,62 @@ namespace utopia {
 			return std::move(mats);
 		}
 
+		static auto apply_binary(
+			const double factor,
+			QValues<double> &&vals,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+		{
+			for(auto &v : vals) {
+				v *= factor;
+			}
+
+			return std::move(vals);
+		}
+
+
+		static auto apply_binary(
+			QValues<double> &&left,
+			const QValues<double> &right,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+		{
+			std::size_t n = left.size();
+
+			for(std::size_t i = 0; i < n; ++i) {
+				left[i] *= right[i];
+			}
+
+			return std::move(left);
+		}
+
+		static auto apply_binary(
+			const double factor,
+			const QValues<double> &vals_in,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> QValues<double>
+		{
+			QValues<double> vals;
+			for(auto &v : vals) {
+				v *= factor;
+			}
+
+			return vals;
+		}
+
+
+		template<class T, int Order>
+		static auto apply_binary(
+			const double factor,
+			Wrapper<T, Order> &&v,
+			const Multiplies &,
+			const AssemblyContext<LIBMESH_TAG> &) -> Wrapper<T, Order> 
+		{
+			v.implementation() *= factor;
+			return std::move(v);
+		}
+
+
 		template<typename T>
 		static auto apply_binary(
 			const Wrapper<T, 2> &mat,
@@ -2880,6 +2936,12 @@ namespace utopia {
 			return std::move(mat);
 		}
 
+
+		static double integrate(const double val, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			assert(false);
+			return val;
+		}
 
 		static Scalar integrate(const QValues<double> &vals, AssemblyContext<LIBMESH_TAG> &ctx) 
 		{
