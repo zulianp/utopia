@@ -317,11 +317,16 @@ namespace utopia {
 			// disp(endx);
 
 
-			auto div_inner = ( inner( grad(uk), grad(v) ) / inner( grad(uk), grad(v) ) );
-			auto e_div_inner = quad_eval(div_inner, ctx);
-			disp(e_div_inner[0]);
+			// auto div_inner = ( inner( grad(uk), grad(v) ) / inner( grad(uk), grad(v) ) );
+			// auto e_div_inner = quad_eval(div_inner, ctx);
+			// disp(e_div_inner[0]);
 
 			// auto div_inner_dx = div_inner * dX;
+
+			// auto e_div_inner_dx = eval(div_inner_dx, ctx);
+			// disp(e_div_inner_dx);
+
+
 		}
 
 
