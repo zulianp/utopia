@@ -317,7 +317,9 @@ namespace utopia {
 			// disp(endx);
 
 
-			// disp(en);
+			// auto div_inner = ( inner( grad(uk), grad(v) ) / inner( grad(uk), grad(v) ) );// * dX;
+			// auto e_div_inner = quad_eval(div_inner, ctx);
+			// disp(div_inner);
 		}
 
 

@@ -10,6 +10,10 @@ namespace utopia {
 		inline static const Expr &apply(const Expr &expr, const AssemblyContext<Backend> &) {
 			return expr;
 		}
+
+		// inline static const T &apply(const Expr &expr, const AssemblyContext<Backend> &) {
+		// 	return expr.expr();
+		// }
 	};
 
 	template<class T, int Order, class AssemblyContext>

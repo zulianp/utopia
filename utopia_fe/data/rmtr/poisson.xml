@@ -1,7 +1,7 @@
 <rmtr-app>
 
-	<!-- <function>poisson</function> -->
-	<function>matrixpoisson</function>
+	<function>poisson</function>
+	<!-- <function>matrixpoisson</function> -->
 	<mesh>unit-square</mesh>
 	<elem-type>quad</elem-type>
 	<!-- <refinements>1</refinements> -->
@@ -34,6 +34,6 @@
 	<n-levels>2</n-levels>
 
 	<verbose>true</verbose>
-	<!-- <use-newton>true</use-newton> -->
+	<use-newton>true</use-newton>
 
 </rmtr-app>
