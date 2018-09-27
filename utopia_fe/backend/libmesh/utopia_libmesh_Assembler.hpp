@@ -100,8 +100,8 @@ namespace utopia {
 			}
 
 			{
-				Write<GlobalMatrix> w_m(mat);
-				Write<GlobalVector> w_v(vec);
+				Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
+				Write<GlobalVector> w_v(vec, utopia::GLOBAL_ADD);
 
 				ElementMatrix el_mat;
 				ElementVector el_vec;
