@@ -138,6 +138,9 @@ namespace utopia
 
 	    void newton_MG_test()
 	    {
+	    	if(mpi_world_size() > 1)
+	    		return;
+
 	    	Bratu1D<DSMatrixd, DVectord> fun(problem.n_dofs[problem.n_levels - 1]);
 	    	DVectord x = values(problem.n_dofs[problem.n_levels - 1], 1.0);
 	    	fun.apply_bc_to_initial_guess(x);
@@ -151,6 +154,7 @@ namespace utopia
 
             multigrid->set_transfer_operators(problem.prolongations);
             multigrid->must_generate_masks(false);
+            multigrid->set_fix_semidefinite_operators(true);
             multigrid->verbose(problem.verbose);
             multigrid->atol(1e-11);
 

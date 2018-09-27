@@ -21,20 +21,20 @@ namespace utopia
 	public:
 
 		MultiLevelMask()
-		 : must_generate_masks_(false)
+		 : active_(false)
 		{ }
 
 		~MultiLevelMask(){}
 
 
-		bool must_generate_masks()
+		inline bool active() const
 		{
-			return must_generate_masks_;
+			return active_;
 		}
 
-		void must_generate_masks(const bool must_generate_masks)
+		void active(const bool val)
 		{
-			must_generate_masks_ = must_generate_masks;
+			active_ = val;
 		}
 
 	
@@ -64,14 +64,15 @@ namespace utopia
 		// }
 
 	
-
 		void describe(std::ostream &os = std::cout) const
-		{ }
+		{ 
+			os << "active: " << active_ << "\n";
+			os << "n_masks: " << masks_.size() << "\n";
+		}
 
 		void apply(const SizeType l, Vector &v) const
 		{
-			if(masks_.empty()) return;
-
+			if(masks_.empty() || !active_) return;
 			v = e_mul(masks_[l], v);
 		}
 
@@ -79,7 +80,7 @@ namespace utopia
 		void generate_masks(const Matrix &A, const std::vector<TransferPtr> &transfers)
 		{
 			// const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
-			if(!must_generate_masks_) return;
+			if(!active_) return;
 
 			const auto L = transfers.size() + 1;
 
@@ -105,7 +106,7 @@ namespace utopia
 		private:
 			std::vector<Vector>					masks_;
 			// bool fix_semidefinite_operators_;
-			bool must_generate_masks_;
+			bool active_;
 
 
 

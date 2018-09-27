@@ -14,6 +14,7 @@
 #include <petscsys.h>
 
 namespace utopia {
+    std::string converged_str(KSPConvergedReason reason);
 
     class KSPTypes final {
     public:
@@ -401,7 +402,7 @@ namespace utopia {
             ierr = KSPGetConvergedReason(ksp_, &reason);     assert(ierr == 0);
 
             if(reason < 0) {
-                utopia_warning("ksp apply returned " + std::to_string(reason));
+                utopia_warning("ksp apply returned " + std::to_string(reason) + " = " + converged_str(reason) );
             }
 
             return reason >= 0;
