@@ -1,14 +1,14 @@
 #ifndef UTOPIA_FE_SEMI_GEOMETRIC_MULTIGRID_HPP
 #define UTOPIA_FE_SEMI_GEOMETRIC_MULTIGRID_HPP 
 
-#include "utopia_LinearSolver.hpp"
+#include "utopia_IterativeSolver.hpp"
 #include "utopia.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
 
 namespace utopia {
 	class Contact;
 	
-	class SemiGeometricMultigrid : public LinearSolver<USparseMatrix, UVector> {
+	class SemiGeometricMultigrid final : public IterativeSolver<USparseMatrix, UVector> {
     public:
     	typedef utopia::Multigrid<USparseMatrix, UVector> MultigridT;
     	// typedef utopia::Multigrid<USparseMatrix, UVector, PETSC_EXPERIMENTAL> MultigridT;
@@ -34,13 +34,21 @@ namespace utopia {
 			mg.set_parameters(params);
 		}
 
-		inline void verbose(const bool val)
+		inline void verbose(const bool &val) override
 		{
 			mg.verbose(val);
 		}
 
-		inline void max_it(const unsigned int it) {
+		inline void max_it(const SizeType &it) override {
 			mg.max_it(it);
+		}
+
+		inline SizeType max_it() const override {
+			return mg.max_it();
+		}
+
+		inline void atol(const double tol) {
+			algebraic().atol(tol);
 		}
 
 		void convert_to_block_solver()

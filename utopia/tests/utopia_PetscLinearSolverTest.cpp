@@ -320,6 +320,8 @@ namespace utopia {
             // auto smoother = std::make_shared<PointJacobi<DSMatrixd, DVectord>>();
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
             multigrid.set_transfer_operators(std::move(interpolation_operators));
+            multigrid.set_fix_semidefinite_operators(true);
+            multigrid.must_generate_masks(true);
             multigrid.max_it(1);
             multigrid.mg_type(1);
             multigrid.verbose(verbose);

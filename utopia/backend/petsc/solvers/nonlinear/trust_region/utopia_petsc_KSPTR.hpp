@@ -79,9 +79,9 @@ namespace utopia
 
 
 	public:
-	    void atol(const Scalar & atol_in)  {  KSPSolver::atol(atol_in); };
-        void rtol(const Scalar & rtol_in)  {  KSPSolver::rtol(rtol_in); };
-        void stol(const Scalar & stol_in)  {  KSPSolver::stol(stol_in); };
+	    void atol(const Scalar & atol_in)  override {  KSPSolver::atol(atol_in); };
+        void rtol(const Scalar & rtol_in)  override {  KSPSolver::rtol(rtol_in); };
+        void stol(const Scalar & stol_in)  override {  KSPSolver::stol(stol_in); };
 
         Scalar      atol() const               	{ return KSPSolver::atol(); }
         Scalar      rtol()  const              	{ return KSPSolver::rtol(); }

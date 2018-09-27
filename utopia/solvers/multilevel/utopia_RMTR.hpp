@@ -161,6 +161,20 @@ namespace utopia
             return _max_QP_smoothing_it;
         }
 
+        
+        void handle_equality_constraints()
+        {
+            const SizeType L = this->n_levels();
+
+            for(SizeType i = 0; i < L-1; ++i) {
+                const auto &flags = this->function(i+1).get_eq_constrains_flg();
+                assert(!empty(flags));
+
+                this->transfer(i).handle_equality_constraints(flags);
+            }
+        }
+  
+
 
         /**
          * @brief      The solve function for multigrid method.
@@ -169,21 +183,27 @@ namespace utopia
          * @param      x_0   The initial guess.
          *
          */
-        virtual bool solve(Vector & x_h) override
+        virtual bool solve(Vector &x_h) override
         {
             if(this->transfers_.size() + 1 != this->level_functions_.size())
                 utopia_error("RMTR::solve size of transfer and level functions do not match... \n");
 
+            
 
             bool converged = false;
             SizeType fine_level = this->n_levels()-1;
             Scalar r_norm, r0_norm, rel_norm, energy;
 
             //-------------- INITIALIZATIONS ---------------
+            
+            this->function(fine_level).get_eq_constrains_values(x_h);
             SizeType fine_local_size = local_size(x_h).get(0);
 
             this->status_.clear();
             this->init_memory(fine_local_size);
+
+
+            // initialize();
 
 
             memory_.x[fine_level] = x_h;
@@ -437,6 +457,7 @@ namespace utopia
 
             return true;
         }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

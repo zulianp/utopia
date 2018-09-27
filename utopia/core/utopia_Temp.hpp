@@ -24,13 +24,13 @@
 
 
 
-namespace utopia 
-{
+namespace utopia  {
+
 
     template<class Tensor>
-    void set_zero_rows(Wrapper<Tensor, 2> &w,  const std::vector<typename utopia::Traits<Tensor>::SizeType> & index)
+    void set_zero_rows(Wrapper<Tensor, 2> &w,  const std::vector<typename utopia::Traits<Tensor>::SizeType> & index, const double diag)
     {
-        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().set_zero_rows(w.implementation(), index);
+        Backend<typename Traits<Tensor>::Scalar, Traits<Tensor>::Backend>::Instance().set_zero_rows(w.implementation(), index, diag);
     }
 
     // not sure how to name this one 
@@ -38,6 +38,29 @@ namespace utopia
     void apply_BC_to_system(Wrapper<MatTensor, 2> &A, Wrapper<VectorTensor, 1> &x, Wrapper<VectorTensor, 1> &rhs,  const std::vector<typename utopia::Traits<VectorTensor>::SizeType> & index)
     {
         Backend<typename Traits<MatTensor>::Scalar, Traits<MatTensor>::Backend>::Instance().apply_BC_to_system(A.implementation(), x.implementation(), rhs.implementation(), index);
+    }
+
+    template<class Matrix, class Vector>
+    void set_zero_rows(Wrapper<Matrix, 2> &w, const Wrapper<Vector, 1> &indicator, const double diag = 0.)  
+    {
+        using VectorT  = utopia::Wrapper<Vector, 1>;
+        using Scalar   = UTOPIA_SCALAR(VectorT);
+        using SizeType = UTOPIA_SIZE_TYPE(VectorT);
+
+        std::vector<SizeType> index;
+        //index.reserve(local_size(indicator).get(0));
+
+        each_read(indicator, [&index](const SizeType i, const Scalar value) {
+            if(value == 1.) {
+                index.push_back(i);
+            }
+        });
+
+        if(index.empty()) {
+            return;
+        }
+
+        set_zero_rows(w, index, diag);
     }
 
 }

@@ -64,7 +64,7 @@ namespace utopia {
 				}
 			}
 
-			auto n_finest = n_dofs.back();
+			SizeType n_finest = n_dofs.back();
 			matrix = std::make_shared<Matrix>(sparse(n_finest, n_finest, 3));
 			assemble_laplacian_1D(*matrix, true);
 

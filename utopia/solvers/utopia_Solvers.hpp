@@ -6,6 +6,7 @@
 #include "utopia_Nonlinear.hpp"
 #include "utopia_DomainDecomposition.hpp"
 #include "utopia_Parameters.hpp"
+#include "utopia_SaddlePoint.hpp"
 
 /**
  * @defgroup   solving Solvers

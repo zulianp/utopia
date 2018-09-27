@@ -1,0 +1,39 @@
+<rmtr-app>
+
+	<function>poisson</function>
+	<!-- <function>matrixpoisson</function> -->
+	<mesh>unit-square</mesh>
+	<elem-type>quad</elem-type>
+	<!-- <refinements>1</refinements> -->
+	<order>1</order>
+	
+	<boundary-conditions>
+		
+		<entry>
+			<side>0</side>
+			<value>5.</value>
+		</entry>
+
+	<!-- 	<entry>
+			<side>1</side>
+			<value>0</value>
+		</entry>
+ -->
+		<entry>
+			<side>2</side>
+			<value>1.</value>
+		</entry>
+
+	<!-- 	<entry>
+			<side>3</side>
+			<value>0</value>
+		</entry> -->
+	
+	</boundary-conditions>
+
+	<n-levels>2</n-levels>
+
+	<verbose>true</verbose>
+	<use-newton>true</use-newton>
+
+</rmtr-app>

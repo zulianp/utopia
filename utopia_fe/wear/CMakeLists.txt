@@ -18,6 +18,7 @@ target_link_libraries(
 	utopia_fe_multigrid
 	utopia_fe_functions
 	utopia_fe_fractures
+	utopia_fe_ui
 )
 
 set_utopia_compiler_features(utopia_fe_wear)

@@ -63,6 +63,9 @@ namespace utopia {
 			case TET10: 	 return TRI6;
 			case HEX8:  	 return QUAD4;
 			case HEX20: 	 return QUAD8; //maybe
+			case EDGE2:      return NODEELEM;
+			case EDGE3:      return NODEELEM;
+			case EDGE4:      return NODEELEM;
 			default: {
 				assert(false && "add special case");
 				return libMesh::INVALID_ELEM;

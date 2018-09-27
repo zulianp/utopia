@@ -133,6 +133,48 @@ namespace utopia {
 	}
 
 
+	bool QMortarBuilder1::build(
+		const Elem &trial,
+		FEType trial_type,
+		const Elem &test,
+		FEType test_type,
+		QMortar &q_trial,
+		QMortar &q_test)
+	{
+		assert(trial.n_nodes() == 2);
+		assert(test.n_nodes()  == 2);
+
+		trial_pts[0] = trial.node_ref(0);
+		trial_pts[1] = trial.node_ref(1);
+
+		test_pts[0] = test.node_ref(0);
+		test_pts[1] = test.node_ref(1);
+
+		u = trial_pts[1] - trial_pts[0];
+		v = test_pts[0]  - trial_pts[0];
+
+
+		//TODO
+
+		if(std::abs(u(1)) < 1e-16) {
+			if(std::abs(v(1)) > 1e-8) {
+				return false;
+			}
+
+
+
+
+			//1D case
+
+		} else {
+
+		}
+
+
+		return false;
+	}
+
+
 	bool QMortarBuilder2::build(
 		const Elem &trial,
 		FEType trial_type,

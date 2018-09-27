@@ -129,6 +129,8 @@ namespace utopia {
 
 		inline PetscInt local_size() const
 		{
+			if(is_null()) return 0;
+			
 			PetscInt ret;
 			VecGetLocalSize(implementation(), &ret);
 			return ret;

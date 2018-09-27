@@ -85,24 +85,80 @@ namespace utopia {
 
 						if(expr.has_block_id() && ctx.block_id() != expr.block_id()) continue;
 
-						t += FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx);
+						// t += FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx);
+						add( FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx), t);
 						ctx.set_has_assembled(true);
 					}
 
 					ctx.surface_integral_end();
 				}
 
-			} else {
+			} else if(expr.is_inner_volume_only()) {
+				if(!ctx.on_boundary()) {
 
+					if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
+						return;
+					}
+
+					auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx);
+					assign(r, t);
+
+					ctx.set_has_assembled(true);
+				}
+
+			} else {
+				assert(expr.is_volume());
 				if(expr.has_block_id() && ctx.block_id() != expr.block_id()) {
 					return;
 				}
 
 				auto &&r = FEEval<Integral<Expr>, Traits, LIBMESH_TAG, QUAD_DATA_NO>::apply(expr, ctx);
-				t = r;
-				ctx.set_has_assembled(true);
-			}
+				assign(r, t);
 
+				ctx.set_has_assembled(true);
+			} 
+
+		}
+
+		template<typename T1, typename T2>
+		inline static void add(const T1 &val, T2 &accumulator)
+		{
+			accumulator += val;
+		}
+
+		template<typename T1, typename T2>
+		inline static void add(const std::vector<T1> &vals, Number<T2> &accumulator)
+		{
+			for(const auto &v : vals) {
+				accumulator += v;
+			}
+		}
+
+		template<typename T1, typename T2>
+		inline static void add(const Number<T1> &val, Number<T2> &accumulator)
+		{
+			accumulator += val;
+		}
+
+		template<typename T1, typename T2>
+		inline static void assign(const T1 &val, T2 &accumulator)
+		{
+			accumulator = val;
+		}
+
+		template<typename T>
+		inline static void assign(const std::vector<T> &vals, Number<T> &accumulator)
+		{
+			accumulator = 0.;
+			for(const auto &v : vals) {
+				accumulator += v;
+			}
+		}
+
+		template<typename T1, typename T2>
+		inline static void assign(const Number<T1> &val, Number<T2> &accumulator)
+		{
+			accumulator = val;
 		}
 
 		template<class Left, class Right, class Matrix, class Vector>

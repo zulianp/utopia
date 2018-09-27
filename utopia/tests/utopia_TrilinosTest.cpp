@@ -983,13 +983,53 @@ namespace utopia {
         rmtr->set_functions(level_functions);
 
 
+        rmtr->handle_equality_constraints();
         bool ok = rmtr->solve(x);
 
         utopia_test_assert(ok);
     }
 
+
+    void trilinos_ghosted()
+    {
+        const int n   = mpi_world_size() * 2;
+        const int off = mpi_world_rank() * 2;
+
+        std::vector<TVectord::SizeType> ghosts{ (off + 3) % n };
+        TVectord v = ghosted(2, n, ghosts);
+
+        auto r = range(v);
+
+        {
+            Write<TVectord> w_v(v);
+            for(auto i = r.begin(); i != r.end(); ++i) {
+                v.set(i, i);
+            }
+        }
+
+        // synchronize(v);
+
+        {
+            Read<TVectord> r_v(v);
+            std::vector<SizeType> index{(off + 3) % n};
+            std::vector<double> values;
+            v.get(index, values);
+            utopia_test_assert(index[0] == SizeType(values[0]));
+        }
+
+        // disp(v);
+    }
+
     void trilinos_rmtr()
     {
+        if(mpi_world_size() > 2) {
+            if(mpi_world_rank() == 0) {
+                utopia_warning("trilinos_rmtr only works for nprocs <= 2");
+            }
+            
+            return;
+        }
+
 #ifdef WITH_PETSC
         //petsc version
     #ifdef WITH_PETSC
@@ -1152,6 +1192,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_diag_ops);
         UTOPIA_RUN_TEST(trilinos_bratu_1D);
         UTOPIA_RUN_TEST(trilinos_rmtr);
+        UTOPIA_RUN_TEST(trilinos_ghosted);
         
         
 #ifdef WITH_PETSC

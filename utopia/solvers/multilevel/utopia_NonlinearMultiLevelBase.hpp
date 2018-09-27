@@ -331,7 +331,8 @@ namespace utopia {
                         index.push_back(i);
                 }
             }
-            set_zero_rows(M, index);
+            
+            set_zero_rows(M, index, 1.);
 
             // horible solution....
             {
@@ -368,11 +369,17 @@ namespace utopia {
 
         inline Fun &function(const SizeType level)
         {
+            assert(level < level_functions_.size());
+            assert(level_functions_[level]);
+
             return *level_functions_[level];
         }
 
         inline const Fun &function(const SizeType level) const
         {
+            assert(level < level_functions_.size());
+            assert(level_functions_[level]);
+            
             return *level_functions_[level];
         }
 

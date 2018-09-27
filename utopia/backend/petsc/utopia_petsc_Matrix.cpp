@@ -641,15 +641,18 @@ namespace utopia {
         PetscScalar value
         )
     {
-        if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
+        if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols)) {
             dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+        }
 
         const auto r = row_range();
         const PetscInt r_begin = r.begin();
         const PetscInt r_end   = r.end();
 
+        const PetscInt computed_global_cols = (global_cols <= 0) ? size().get(1) : global_cols;
+
         for (PetscInt i = r_begin; i < r_end; ++i) {
-            for (PetscInt j = 0; j < global_cols; ++j) {
+            for (PetscInt j = 0; j < computed_global_cols; ++j) {
                 MatSetValue(implementation(), i, j, value, INSERT_VALUES);
             }
         }
@@ -1159,6 +1162,8 @@ namespace utopia {
 
     void PetscMatrix::mult_mat_t(const PetscMatrix &mat, PetscMatrix &result) const
     {
+        m_utopia_warning("> FIXME MatMatTransposeMult does not work in parallel, prepare work around");
+
         if(mat.implementation() != result.implementation() && implementation() != result.implementation()) {
             result.destroy();
             check_error( MatMatTransposeMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) );

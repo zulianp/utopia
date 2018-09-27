@@ -14,18 +14,37 @@ namespace utopia {
 	template<class Traits>
 	class InnerProduct<Traits, 0> {
 	public:
-		typedef typename Traits::Scalar Type;
+		typedef typename Traits::Scalar ScalarType;
+		typedef std::vector<ScalarType> Type;
 		typedef typename Traits::Implementation Space;
 		static const int Backend = Traits::Backend;
 
 		template<class Left, class Right>
-		inline static Type apply(const Left &left, const Right &right, AssemblyContext<Traits::Backend> &ctx)
+		inline static std::vector<ScalarType> apply(const Left &left, const Right &right, AssemblyContext<Traits::Backend> &ctx)
 		{
 			return FEBackend<Traits::Backend>::inner(
-				FEEval<Left,  Traits, Backend, QUAD_DATA_NO>::apply(left, ctx),
-				FEEval<Right, Traits, Backend, QUAD_DATA_NO>::apply(right, ctx),
-				ctx);
+					FEEval<Left,  Traits, Backend, QUAD_DATA_NO>::apply(left, ctx),
+					FEEval<Right, Traits, Backend, QUAD_DATA_NO>::apply(right, ctx),
+					ctx
+				);
 		}
+
+		// inline static const Type & collect(const Type &out)
+		// {
+		// 	return out;
+		// }
+
+		// inline static Type collect(const std::vector<Type> &out)
+		// {
+		// 	Type reduced_out = out[0];
+
+		// 	const std::size_t n = out.size();
+		// 	for(std::size_t i = 1; i < n; ++i) {
+		// 		reduced_out += out[i];
+		// 	}
+
+		// 	return reduced_out;
+		// }
 	};
 
 	template<class Traits>

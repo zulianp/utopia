@@ -84,6 +84,8 @@
         virtual Scalar interpolation_inf_norm() const = 0;
         virtual Scalar projection_inf_norm()    const = 0;
         virtual Scalar restriction_inf_norm()   const = 0;
+
+        virtual void handle_equality_constraints(const Vector &) {}
     };
 
 }

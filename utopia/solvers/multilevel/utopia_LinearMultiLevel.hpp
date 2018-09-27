@@ -4,6 +4,7 @@
 #include "utopia_MultiLevelBase.hpp"
 #include "utopia_Recorder.hpp"
 #include "utopia_MatrixTransfer.hpp"
+#include "utopia_MultiLevelMask.hpp"
 
 #include <iostream>
 
@@ -34,8 +35,7 @@ namespace utopia
 
 		LinearMultiLevel(const Parameters params = Parameters())
 		: MultiLevelBase<Matrix, Vector>(params),
-		  fix_semidefinite_operators_(false),
-		  must_generate_masks_(false)
+		fix_semidefinite_operators_(false)
 		{ }
 
 		virtual ~LinearMultiLevel(){}
@@ -60,12 +60,12 @@ namespace utopia
 
 		bool must_generate_masks()
 		{
-			return must_generate_masks_;
+			return mask_.active();
 		}
 
 		void must_generate_masks(const bool must_generate_masks)
 		{
-			must_generate_masks_ = must_generate_masks;
+			mask_.active(must_generate_masks);
 		}
 
 		void add_level(Level &&level)
@@ -141,7 +141,7 @@ namespace utopia
 
 	protected:
 		std::vector<Level>                  levels_;      /*!< vector of level operators     */
-		std::vector<Vector>					masks_;
+		MultiLevelMask<Matrix, Vector> mask_;
 		bool fix_semidefinite_operators_;
 		bool must_generate_masks_;
 
@@ -167,9 +167,8 @@ namespace utopia
 
 			auto L = this->n_levels();
 
-			if(must_generate_masks_) {
-				this->generate_masks(*A);
-			}
+			mask_.generate_masks(*A, this->transfers_);
+
 
 			for(SizeType i = 1; i < L; i++)
 			{
@@ -190,55 +189,9 @@ namespace utopia
 
 		virtual void apply_mask(const SizeType l, Vector &v) const
 		{
-			if(masks_.empty()) return;
-
-			v = e_mul(masks_[l], v);
+			mask_.apply(l, v);
 		}
 
-	private:
-		static void generate_mask_from_matrix(const Matrix &A, Vector &mask, const Scalar on_value, const Scalar off_value)
-		{
-			const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
-
-			auto ls = local_size(A);
-			mask = local_values(ls.get(0), off_value);
-
-			{
-				Write<Vector> w_(mask);
-
-				each_read(A, [&](const SizeType i, const SizeType j, const Scalar value) {
-					if(i == j) return;
-
-					if(std::abs(value) > off_diag_tol) {
-						mask.set(i, on_value);
-					}
-				});
-			}
-		}
-
-		virtual void generate_masks(const Matrix &A)
-		{
-			// const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
-
-			const auto L = this->n_levels();
-			masks_.resize(L);
-			auto &mask = masks_[L - 1];
-
-			generate_mask_from_matrix(A, mask, 0., 1.);
-			// UTOPIA_RECORD_VALUE("r_mask", mask);
-
-			for(SizeType l = L - 1; l > 0; --l) {
-				auto &mask_l = masks_[l - 1];
-				this->transfer(l-1).boolean_restrict_or(masks_[l], mask_l);
-
-				// UTOPIA_RECORD_VALUE("r_mask", mask_l);
-			}
-
-			for(auto &m : masks_) {
-				m = local_values(local_size(m).get(0), 1.) - m;
-				// UTOPIA_RECORD_VALUE("mask", m);
-			}
-		}
 	};
 
 }

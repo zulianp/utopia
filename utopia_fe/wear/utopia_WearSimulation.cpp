@@ -13,6 +13,7 @@
 #include "utopia_SaintVenantKirchoff.hpp"
 #include "utopia_ContactSolver.hpp"
 #include "utopia_ContactStabilizedNewmark.hpp"
+#include "utopia_UIForcingFunction.hpp"
 
 #include "utopia_ui.hpp"
 #include "utopia_GaitCycle.hpp"
@@ -178,56 +179,15 @@ namespace utopia {
             //This should be moved
             V[0].initialize();
 
-            forcing_function = std::make_shared<CompositeForcingFunction<UVector>>();
-            bool has_force = false;
-            is.read("forcing-functions", [this, &has_force](InputStream &is) {
-                is.read_all([this, &has_force](InputStream &is) {
+            auto ff = std::make_shared<UIForcingFunction<decltype(V), UVector>>(V);
+            is.read("forcing-functions", *ff);
+            forcing_function = ff;
 
-                    int block = -1;
-                    int coord = 0;
+            material = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(
+                material,
+                forcing_function
+            );
 
-                    std::string type = "volume";
-                    is.read("block", block);
-                    is.read("coord", coord);
-                    is.read("type", type);
-
-#ifdef WITH_TINY_EXPR
-                    std::string value;
-                    is.read("value", value);
-                    auto f = symbolic(value);
-#else
-                    double value = 0.;
-                    is.read("value", value);
-                    auto f = coeff(value);
-#endif //WITH_TINY_EXPR
-
-                    if(type == "surface") {
-                        auto v = test(V[coord]);
-                        auto l_form = surface_integral(inner(f, v), block);
-
-                        auto ff = std::make_shared<ConstantForcingFunction<UVector>>();
-                        ff->init(l_form);
-                        forcing_function->add(ff);
-                    } else {
-                        auto v = test(V[coord]);
-                        auto l_form = integral(inner(f, v), block);
-
-                        auto ff = std::make_shared<ConstantForcingFunction<UVector>>();
-                        ff->init(l_form);
-                        forcing_function->add(ff);
-                    }
-
-                    has_force = true;
-
-                });
-            });
-
-            if(has_force) {
-                material = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(
-                    material,
-                    forcing_function
-                );
-            }
 
             /////////////////////////////////////////////////////////////////////////////
             return true;
