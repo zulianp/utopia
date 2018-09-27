@@ -166,8 +166,12 @@ namespace utopia {
 			if(empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
 				SizeType nnz_x_row = 0;
 				if(!dof_map.get_n_nz().empty()) {
-					nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-						*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+					// nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+					// 	*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+
+					nnz_x_row = 
+						*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) + 
+						*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
 				}
 
 				mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);

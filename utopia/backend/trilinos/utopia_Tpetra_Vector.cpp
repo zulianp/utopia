@@ -146,4 +146,95 @@ namespace utopia {
 		Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
 		return ret_global;
 	}
+
+	void TpetraVector::ghosted(
+		const rcp_comm_type &comm, 
+		const TpetraVector::global_ordinal_type &local_size,
+	    const TpetraVector::global_ordinal_type &global_size,
+		const std::vector<global_ordinal_type> &ghost_index
+	)
+	{
+		rcp_map_type map(new map_type(global_size, local_size, 0, comm));
+		rcp_map_type ghost_map;
+
+		if(!ghost_index.empty()) {
+
+			Range r = { map->getMinGlobalIndex(), map->getMaxGlobalIndex() + 1 };
+
+			std::vector<global_ordinal_type> filled_with_local;
+			filled_with_local.reserve(r.extent() + ghost_index.size());
+
+			for(auto i = r.begin(); i != r.end(); ++i) {
+				filled_with_local.push_back(i);
+			}
+
+			for(auto g : ghost_index) {
+				if(!r.inside(g)) {
+					filled_with_local.push_back(g);
+				}
+			}
+
+			const Teuchos::ArrayView<const global_ordinal_type>
+			   local_indices(filled_with_local);
+
+			 ghost_map = Teuchos::rcp(new map_type(global_size, local_indices, 0, comm));
+
+		} else {
+			ghost_map = map;
+		}
+
+		ghosted_vec_ = Teuchos::rcp(new vector_type(ghost_map, 1));
+		vec_ = ghosted_vec_->offsetViewNonConst(map, 0);
+
+		assert(!vec_.is_null());
+	}
+
+	void TpetraVector::update_ghosts()
+	{
+		if(!has_ghosts()) return;
+
+		auto map = vec_->getMap();
+		auto ghost_map = ghosted_vec_->getMap();
+
+		Tpetra::Import<
+			local_ordinal_type,
+			global_ordinal_type,
+			vector_type::node_type> importer(map, ghost_map);
+
+		ghosted_vec_->doImport(*vec_, importer, Tpetra::INSERT);
+	}
+
+
+	TpetraVector::TpetraVector(const TpetraVector &other)
+	{ 
+		copy(other);
+	}
+
+	void TpetraVector::copy(const TpetraVector &other)
+	{
+		if(other.has_ghosts()) {
+			ghosted_vec_ = Teuchos::rcp(new vector_type(other.ghosted_vec_->getMap(), 1));
+			ghosted_vec_->assign(*other.ghosted_vec_);
+			vec_ = ghosted_vec_->offsetViewNonConst(other.vec_->getMap(), 0);
+		} else {
+			if(vec_.is_null() == other.size().get(0) != size().get(0)) {
+				vec_ = (Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy)));
+			} else {
+				vec_->assign(other.implementation());
+			}
+		}
+	}
+
+	TpetraVector &TpetraVector::operator=(const TpetraVector &other)
+	{
+	    if(this == &other) return *this;
+
+	    if(other.is_null()) {
+	        vec_.reset();
+	        return *this;
+	    }
+
+	    copy(other);
+	    return *this;
+	}
 }
