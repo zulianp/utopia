@@ -39,7 +39,7 @@ namespace utopia {
 			UTOPIA_RUN_TEST(dogleg_test);
 			UTOPIA_RUN_TEST(st_cg_test); 
 			UTOPIA_RUN_TEST(precond_st_cg_test); 
-			UTOPIA_RUN_TEST(inexact_newton_test);
+			UTOPIA_RUN_TEST(quasi_newton_test);
 			// UTOPIA_RUN_TEST(Quasi_TR_test); 
 		}
 
@@ -387,83 +387,95 @@ namespace utopia {
 			}
 		}
 
-		void inexact_newton_test()
+		void quasi_newton_test()
 		{
-			if(mpi_world_size() > 10) return;
+			// because dense matrices can not be sum-up in parallel
+			if(mpi_world_size() > 1) return;
 			
 			Parameters params;
-			params.atol(1e-15);
+			params.atol(1e-9);
 			params.rtol(1e-15);
 			params.stol(1e-15);
-			params.verbose(false);
+			params.verbose(true);
 			
 			auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector> >();
-			InexactNewton<Matrix, Vector> nlsolver(lsolver);
-			nlsolver.set_parameters(params);
-			
 			auto hess_approx_BFGS   = std::make_shared<BFGS<Matrix, Vector> >();
-			nlsolver.set_hessian_approximation_strategy(hess_approx_BFGS);
+
+
+			QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, lsolver);
+			nlsolver.set_parameters(params);
+
+			auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+			nlsolver.set_line_search_strategy(line_search);
 			
 			
 			SimpleQuadraticFunction<Matrix, Vector> fun;
 			
-			Vector x = values(10, 2.);
+			Vector x = values(_n, 2.);
 			Vector expected_1 = zeros(x.size());
 			
+
 			nlsolver.solve(fun, x);
 			utopia_test_assert(approxeq(expected_1, x));
 			
 			TestFunctionND_1<Matrix, Vector> fun2(x.size().get(0));
-			x = values(10, 2.0);
+			x = values(_n, 2.0);
 			Vector expected_2 = values(x.size().get(0), 0.468919);
+
 			nlsolver.solve(fun2, x);
-
-
 			utopia_test_assert(approxeq(expected_2, x));
+
+			Rosenbrock<Matrix, Vector> rosenbrock;
+			Vector x0 = values(2, 0.5);
+			nlsolver.solve(rosenbrock, x0);
+			Vector expected_rosenbrock = values(2, 1.0);
+
+			utopia_test_assert(approxeq(x0, expected_rosenbrock));
 			
+			// ...  TO BE FINISHED ... 
 			// -------------------------------------- SR1 test ------------------
-			auto hess_approx_SR1    = std::make_shared<SR1<Matrix, Vector> >();
-			nlsolver.set_hessian_approximation_strategy(hess_approx_SR1);
+			// auto hess_approx_SR1    = std::make_shared<SR1<Matrix, Vector> >();
+			// nlsolver.set_hessian_approximation_strategy(hess_approx_SR1);
 			
-			x = values(10, 2.);
-			nlsolver.solve(fun, x);
-			utopia_test_assert(approxeq(expected_1, x));
+			// x = values(_n, 2.);
+			// nlsolver.solve(fun, x);
+			// utopia_test_assert(approxeq(expected_1, x));
 			
-			x = values(10, 2.0);
-			nlsolver.solve(fun2, x);
-			utopia_test_assert(approxeq(expected_2, x));			
+			// x = values(_n, 2.0);
+			// nlsolver.solve(fun2, x);
+			// utopia_test_assert(approxeq(expected_2, x));			
 		}
 
 
-		void Quasi_TR_test()
-		{
-			// rosenbrock test
-			if(mpi_world_size() == 1)
-			{
-				Rosenbrock<Matrix, Vector> rosenbrock;
-				Vector expected_rosenbrock = values(2, 1);
+		// void Quasi_TR_test()
+		// {
+		// 	// rosenbrock test
+		// 	if(mpi_world_size() == 1)
+		// 	{
+		// 		Rosenbrock<Matrix, Vector> rosenbrock;
+		// 		Vector expected_rosenbrock = values(2, 1);
 
-				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+		// 		auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
 
 
-				Vector x0 = values(2, 2.0);
+		// 		Vector x0 = values(2, 2.0);
 
-				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
-				auto cg = std::make_shared<ConjugateGradient<Matrix, Vector> >();
-				cg->atol(1e-7); 
-				tr_solver.set_linear_solver(cg);	
-				tr_solver.atol(1e-6); 
+		// 		QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
+		// 		auto cg = std::make_shared<ConjugateGradient<Matrix, Vector> >();
+		// 		cg->atol(1e-7); 
+		// 		tr_solver.set_linear_solver(cg);	
+		// 		tr_solver.atol(1e-6); 
 
-				auto hes_approx    = std::make_shared<SR1<Matrix, Vector> >();
-				tr_solver.set_hessian_approximation_strategy(hes_approx);
+		// 		auto hes_approx    = std::make_shared<SR1<Matrix, Vector> >();
+		// 		tr_solver.set_hessian_approximation_strategy(hes_approx);
 
-				tr_solver.max_it(100); 
-				tr_solver.verbose(true);
-				tr_solver.solve(rosenbrock, x0);
+		// 		tr_solver.max_it(100); 
+		// 		tr_solver.verbose(true);
+		// 		tr_solver.solve(rosenbrock, x0);
 
-				utopia_test_assert(approxeq(expected_rosenbrock, x0));
-			}
-		}
+		// 		utopia_test_assert(approxeq(expected_rosenbrock, x0));
+		// 	}
+		// }
 
 
 		SolverTest()
@@ -481,9 +493,9 @@ namespace utopia {
 		SolverTest<DMatrixd, DVectord, PetscScalar>().run();
 #endif
 
-#ifdef WITH_BLAS
-		SolverTest<Matrixd, Vectord, double>().run();
-#endif //WITH_BLAS
+// #ifdef WITH_BLAS
+// 		SolverTest<Matrixd, Vectord, double>().run();
+// #endif //WITH_BLAS
 
 		UTOPIA_UNIT_TEST_END("SolversTest");
 	}

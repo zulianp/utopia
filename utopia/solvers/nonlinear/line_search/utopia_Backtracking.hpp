@@ -70,9 +70,9 @@ namespace utopia {
             Vector x_0 = x, x_k = x;
             Scalar alpha_c, alpha_p, dg = dot(d,g);
             Scalar f, f0, fc, fp, t1, t2, t3, a, b, disc;
-            alpha = 1;
+            alpha = 1.0;
 
-            if(dg >= 0)
+            if(dg >= 0.0)
             {
                 if(mpi_rank == 0) {
                     std::cerr<< "utopia::LS::backtracking:: d is not descent direction \n";

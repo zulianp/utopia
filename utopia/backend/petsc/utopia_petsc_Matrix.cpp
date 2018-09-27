@@ -72,6 +72,8 @@ namespace utopia {
         check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
     }
 
+
+
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path)
     {
         destroy();
@@ -641,15 +643,18 @@ namespace utopia {
         PetscScalar value
         )
     {
-        if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
+        if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols)) {
             dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+        }
 
         const auto r = row_range();
         const PetscInt r_begin = r.begin();
         const PetscInt r_end   = r.end();
 
+        const PetscInt computed_global_cols = (global_cols <= 0) ? size().get(1) : global_cols;
+
         for (PetscInt i = r_begin; i < r_end; ++i) {
-            for (PetscInt j = 0; j < global_cols; ++j) {
+            for (PetscInt j = 0; j < computed_global_cols; ++j) {
                 MatSetValue(implementation(), i, j, value, INSERT_VALUES);
             }
         }
@@ -676,7 +681,10 @@ namespace utopia {
 
         const auto r = row_range();
         const PetscInt r_begin = r.begin();
-        const PetscInt r_end = PetscMin(r.end(), global_cols);
+
+        // otherwise global_cols gives -1, as it should be determined... 
+        MatGetSize(implementation(), &global_rows, &global_cols); 
+        const PetscInt r_end = PetscMin(r.end(), global_cols); 
 
         for(PetscInt i = r_begin; i < r_end; ++i) {
             set(i, i, scale_factor);

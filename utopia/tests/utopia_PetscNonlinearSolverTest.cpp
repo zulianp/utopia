@@ -610,29 +610,6 @@ namespace utopia
 			utopia_test_assert(approxeq(expected, actual));
 		}
 		
-		void petsc_newton_inexact_newton_with_KSP_test()
-		{
-			using namespace std;
-			
-			const bool verbose = false;
-			
-			auto linear_solver  = make_shared< KSPSolver<DMatrixd, DVectord> >();
-			auto preconditioner = make_shared< InvDiagPreconditioner<DMatrixd, DVectord> >();
-			linear_solver->set_preconditioner(preconditioner);
-			
-			
-			InexactNewton<DMatrixd, DVectord> newton_solver(linear_solver);
-			newton_solver.verbose(verbose);
-			
-			const int n = 10;
-			DVectord actual   = values(n, 2.);
-			DVectord expected = values(n, 0.468919);
-			
-			TestFunctionND_1<DMatrixd, DVectord> fun(n);
-			
-			newton_solver.solve(fun, actual);
-			utopia_test_assert(approxeq(expected, actual));
-		}
 
 		void petsc_snes_test()
 		{
@@ -692,7 +669,6 @@ namespace utopia
 		}
 
 
-
 		void petsc_sparse_newton_snes_test()
 		{
 			if(mpi_world_size() > 1) return;
@@ -729,9 +705,6 @@ namespace utopia
 				utopia_test_assert(approxeq(diff_rb, 0., 1e-6));
 			}
 		}
-
-
-
 
 
 		PetscNonlinearSolverTest()

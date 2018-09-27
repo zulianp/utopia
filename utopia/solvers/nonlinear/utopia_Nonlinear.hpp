@@ -14,7 +14,7 @@
 #include "utopia_Newton.hpp"
 
 
-#include "utopia_InexactNewton.hpp"
+#include "utopia_QuasiNewton.hpp"
 #include "utopia_AffineSimilarity.hpp"
 
 #include "utopia_ConstrainedIncludes.hpp"
@@ -24,6 +24,7 @@
 
 #include "utopia_NonlinearSolverFactory.hpp"
 #include "utopia_HessianApproximations.hpp"
+#include "utopia_LBFGS.hpp"
 
 #endif //UTOPIA_NON_LINEAR_HPP
 
