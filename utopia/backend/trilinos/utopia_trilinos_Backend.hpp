@@ -204,7 +204,7 @@ namespace utopia {
             // assert(default_communicator()->getSize() == 1 && "implement me: does not work in parallel yet");
             // vec.values(default_communicator(), local_size, global_size, 0.);
 
-            std::vector<TpetraVector::global_ordinal_type> tpetra_index;
+            std::vector<TpetraVector::GO> tpetra_index;
 
             tpetra_index.insert(tpetra_index.end(), index.begin(), index.end());
             vec.ghosted(default_communicator(), local_size, global_size, tpetra_index);
@@ -212,9 +212,9 @@ namespace utopia {
 
 
         void build_ghosts(
-            const TpetraVector::global_ordinal_type &local_size,
-            const TpetraVector::global_ordinal_type &global_size,
-            const std::vector<TpetraVector::global_ordinal_type> &index,
+            const TpetraVector::GO &local_size,
+            const TpetraVector::GO &global_size,
+            const std::vector<TpetraVector::GO> &index,
             TpetraVector &vec)
         {
             // assert(default_communicator()->getSize() == 1 && "implement me: does not work in parallel yet");
@@ -618,14 +618,14 @@ namespace utopia {
         template<typename Integer>
         static void set_zero_rows(TpetraMatrix &mat, const std::vector<Integer> &index, const Scalar diag)
         {
-            typedef typename TpetraMatrix::global_ordinal_type global_ordinal_type;
+            typedef typename TpetraMatrix::GO GO;
             typedef typename TpetraMatrix::Scalar Scalar;
 
             auto &impl = mat.implementation();
             static const Scalar zero = 0.;
 
-            global_ordinal_type offset = 0;
-            Teuchos::ArrayView<const global_ordinal_type> cols;
+            GO offset = 0;
+            Teuchos::ArrayView<const GO> cols;
             Teuchos::ArrayView<const Scalar> values;
 
             for(auto row : index) {
@@ -639,7 +639,7 @@ namespace utopia {
                 }
 
                 for(auto c : cols) {
-                    const global_ordinal_type col = c + offset;
+                    const GO col = c + offset;
 
                     if(col == row) {
                         impl.replaceGlobalValues(row, 1, &diag, &col);

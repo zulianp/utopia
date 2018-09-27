@@ -49,9 +49,8 @@ namespace utopia {
     typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
     typedef Teuchos::RCP<const map_type>              rcp_map_type;
 
-//        typedef vector_type::global_ordinal_type          global_ordinal_type;
 //        typedef Tpetra::Vector<>::mag_type                magnitude_type;
-        typedef vector_type::scalar_type                  Scalar;
+    typedef vector_type::scalar_type                  Scalar;
 
         TpetraVector()
         {
@@ -81,18 +80,7 @@ namespace utopia {
             return implementation().getMap()->getComm();
         }
 
-        TpetraVector &operator=(const TpetraVector &other)
-        {
-            if(this == &other) return *this;
-
-            if(other.is_null()) {
-                vec_.reset();
-                return *this;
-            }
-            vec_.reset(new vector_type(*other.vec_, Teuchos::Copy));
-
-            return *this;
-        }
+        TpetraVector &operator=(const TpetraVector &other);
 
         TpetraVector &operator=(TpetraVector &&other)
         {
@@ -130,9 +118,9 @@ namespace utopia {
 
 
         void ghosted(const rcp_comm_type &comm, 
-                     const TpetraVector::global_ordinal_type &local_size,
-                     const TpetraVector::global_ordinal_type &global_size,
-                     const std::vector<global_ordinal_type> &ghost_index
+                     const TpetraVector::GO &local_size,
+                     const TpetraVector::GO &global_size,
+                     const std::vector<GO> &ghost_index
         );
 
         inline void axpy(const Scalar &alpha, const TpetraVector &x)
@@ -159,7 +147,7 @@ namespace utopia {
 
         }
 
-        inline local_ordinal_type local_index(const global_ordinal_type i) const
+        inline LO local_index(const GO i) const
         {
             if(has_ghosts()) {
                return ghosted_vec_->getMap()->getLocalElement(i);
@@ -254,21 +242,21 @@ namespace utopia {
             // } else {
             //     /////////////////////////////////////////////////
 
-            //     std::vector<global_ordinal_type> tpetra_index;
+            //     std::vector<GO> tpetra_index;
             //     tpetra_index.reserve(index.size());
 
             //     for(auto i : index) {
             //         tpetra_index.push_back(i);
             //     }
 
-            //     const Teuchos::ArrayView<const global_ordinal_type>
+            //     const Teuchos::ArrayView<const GO>
             //        index_view(tpetra_index);
 
             //      auto import_map = Teuchos::rcp(new map_type(global_size, index_view, 0, comm));
 
             //     Tpetra::Import<
-            //         local_ordinal_type,
-            //         global_ordinal_type,
+            //         LO,
+            //         GO,
             //         vector_type::node_type> importer(map, import_map);
 
             //     implementation().doImport(out.implementation(), importer, Tpetra::INSERT);
