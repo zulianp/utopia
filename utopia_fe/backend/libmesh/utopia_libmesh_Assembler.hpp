@@ -180,7 +180,7 @@ namespace utopia {
 			}
 
 			{
-				Write<GlobalMatrix> w_m(mat);
+				Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
 
 				if(elements_begin(m) != elements_end(m)) {
 
@@ -237,13 +237,14 @@ namespace utopia {
 			auto &m = space.mesh();
 
 			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs()) {
-				vec = local_zeros(dof_map.n_local_dofs());
+				// vec = local_zeros(dof_map.n_local_dofs());
+				vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
 			} else {
 				vec *= 0.;
 			}
 
 			{
-				Write<GlobalVector> w_v(vec);
+				Write<GlobalVector> w_v(vec, utopia::GLOBAL_ADD);
 				ElementVector el_vec;
 
 				if(elements_begin(m) != elements_end(m)) {

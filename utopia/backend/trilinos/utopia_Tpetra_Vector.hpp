@@ -5,6 +5,7 @@
 #include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Writable.hpp"
 
 #include <Tpetra_Map_decl.hpp>
 #include <Tpetra_Vector_decl.hpp>
@@ -142,7 +143,11 @@ namespace utopia {
 
         inline void add(const global_ordinal_type i, const Scalar value)
         {
-            implementation().sumIntoGlobalValue(i, value);
+            if(!ghosted_vec_.is_null()) {
+                ghosted_vec_->sumIntoGlobalValue(i, value);
+            } else {
+                implementation().sumIntoGlobalValue(i, value);
+            }
         }
 
         inline void set(const Scalar value)
@@ -254,21 +259,19 @@ namespace utopia {
             read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
         }
 
-        inline void write_lock()
+        inline void write_lock(WriteMode mode)
         {
             //TODO?
         }
 
-        inline void write_unlock()
-        {
-            update_ghosts();
-        }
+        void write_unlock(WriteMode mode);
 
         inline void read_and_write_lock()
         {
             write_data_ = implementation().getDataNonConst();
             read_only_data_ = write_data_;
         }
+
         inline void read_and_write_unlock()
         {
             write_data_ = Teuchos::ArrayRCP<Scalar>();
@@ -427,6 +430,7 @@ namespace utopia {
         }
 
         void update_ghosts();
+        void export_ghosts_add();
 
         bool has_ghosts() const
         {

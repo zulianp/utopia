@@ -641,15 +641,18 @@ namespace utopia {
         PetscScalar value
         )
     {
-        if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
+        if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols)) {
             dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+        }
 
         const auto r = row_range();
         const PetscInt r_begin = r.begin();
         const PetscInt r_end   = r.end();
 
+        const PetscInt computed_global_cols = (global_cols <= 0) ? size().get(1) : global_cols;
+
         for (PetscInt i = r_begin; i < r_end; ++i) {
-            for (PetscInt j = 0; j < global_cols; ++j) {
+            for (PetscInt j = 0; j < computed_global_cols; ++j) {
                 MatSetValue(implementation(), i, j, value, INSERT_VALUES);
             }
         }

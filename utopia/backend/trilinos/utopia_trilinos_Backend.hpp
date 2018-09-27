@@ -315,22 +315,22 @@ namespace utopia {
             const_cast<Tensor &>(t).read_unlock();
         }
 
-        static void write_lock(TpetraVector &vec)
+        static void write_lock(TpetraVector &vec, WriteMode mode)
         {
-            vec.write_lock();
+            vec.write_lock(mode);
         }
 
-        static void write_unlock(TpetraVector &vec)
+        static void write_unlock(TpetraVector &vec, WriteMode mode)
         {
-            vec.write_unlock();
+            vec.write_unlock(mode);
         }
 
-        static void write_lock(TpetraMatrix &mat)
+        static void write_lock(TpetraMatrix &mat, WriteMode mode)
         {
             mat.write_lock();
         }
 
-        static void write_unlock(TpetraMatrix &mat)
+        static void write_unlock(TpetraMatrix &mat, WriteMode mode)
         {
             mat.write_unlock();
         }
@@ -662,12 +662,12 @@ namespace utopia {
 
         static void read_and_write_lock(TpetraMatrix &t) {
             //IMPLEMENTME
-            write_lock(t);
+            write_lock(t, LOCAL);
         }
 
         static void read_and_write_unlock(TpetraMatrix &t){
             //IMPLEMENTME
-            write_unlock(t);
+            write_unlock(t, LOCAL);
         }
 
         // monitoring functions for iterative solvers (Cyrill)

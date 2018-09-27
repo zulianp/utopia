@@ -204,6 +204,29 @@ namespace utopia {
 		ghosted_vec_->doImport(*vec_, importer, Tpetra::INSERT);
 	}
 
+	void TpetraVector::export_ghosts_add()
+	{
+		if(!has_ghosts()) return;
+
+		auto map = vec_->getMap();
+		auto ghost_map = ghosted_vec_->getMap();
+
+		Tpetra::Export<
+			local_ordinal_type,
+			global_ordinal_type,
+			vector_type::node_type> exporter(ghost_map, map);
+
+
+		Teuchos::RCP<vector_type> y(new vector_type(map, 1));
+
+		y->doExport(*ghosted_vec_, exporter, Tpetra::ADD);
+
+		Tpetra::Import<vector_type::local_ordinal_type,
+		                vector_type::global_ordinal_type,
+		                vector_type::node_type> importer(map, ghost_map);
+
+		 ghosted_vec_->doImport(*y, importer, Tpetra::INSERT);
+	}
 
 	TpetraVector::TpetraVector(const TpetraVector &other)
 	{ 
@@ -237,4 +260,27 @@ namespace utopia {
 	    copy(other);
 	    return *this;
 	}
+
+
+	void TpetraVector::write_unlock(WriteMode mode)
+	{
+	    switch(mode) {
+	        case utopia::GLOBAL_ADD: {
+	            export_ghosts_add();
+	            break;
+	        }
+
+	        case utopia::LOCAL: {
+	        	break;
+	        }
+
+	        default: {
+	        	update_ghosts(); 
+	            break;
+	        }
+	    }
+
+	    write_data_ = Teuchos::ArrayRCP<Scalar>();
+	}
+
 }

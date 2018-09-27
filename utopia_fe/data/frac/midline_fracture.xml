@@ -49,7 +49,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/midline.e</path>
-		<refinements>2</refinements>
+		<refinements>1</refinements>
 	</mesh>
 
 	<sampler>

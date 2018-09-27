@@ -107,10 +107,10 @@ namespace utopia {
 		}
 
 		template<typename T>
-		inline static void write_lock(T &) {}
+		inline static void write_lock(T &, WriteMode) {}
 
 		template<typename T>
-		inline static void write_unlock(T &) {}
+		inline static void write_unlock(T &, WriteMode) {}
 
 		template<typename T>
 		inline static void read_lock(T &) {}

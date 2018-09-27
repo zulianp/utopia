@@ -182,6 +182,19 @@ namespace utopia {
             }
         }
 
+        void local_values_test()
+        {
+            auto k = 15;
+            auto m = 4;
+
+            Matrix A = local_values(k, m, 1.);
+            Vector x = local_values(k, 1.0);
+            Vector x_result = transpose(A) * x; 
+            Scalar x_norm   = norm2(x_result); 
+
+            utopia_test_assert(x_norm != 0.0);
+        }
+
     public:
         void run()
         {
@@ -195,6 +208,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(size_test);
             UTOPIA_RUN_TEST(binary_min_max);
             UTOPIA_RUN_TEST(quadratic_form);
+            UTOPIA_RUN_TEST(local_values_test);
         }
     };
 

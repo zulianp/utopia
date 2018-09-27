@@ -279,6 +279,8 @@ namespace utopia {
 
 		std::shared_ptr<BlockPreconditioner> prec_;
 
+		Vector p, q, Ap, r_new, z, z_new;
+
 		void apply_preconditioner(
 			const Vector &r,
 			Vector &z)
@@ -361,8 +363,10 @@ namespace utopia {
 			Scalar beta = 0., alpha = 1., r_norm = 9e9;
 
 			Vector lagr_old = lagr;
-			Vector p, q, Ap, r_new, z, z_new;
-
+			
+			z = local_zeros(local_size(r));
+			z_new = local_zeros(local_size(r));
+			
 			this->apply_preconditioner(
 				r,
 				z
@@ -450,7 +454,7 @@ namespace utopia {
 			Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
 
 			Vector lagr_old = lagr;
-			Vector p, q, Ap, r_new, z, z_new;
+
 			while(!converged)
 			{
 				rho = dot(r, r);
