@@ -13,12 +13,14 @@ namespace utopia {
         typedef typename utopia::Traits<Vector>::Scalar Scalar;
         typedef typename utopia::Traits<Vector>::SizeType SizeType;
         
-        Bratu(FunctionSpace &V, const Scalar lambda = 6.7) : V_(V)
+        Bratu(FunctionSpace &V, const Scalar lambda = 5.7) : V_(V)
         {
             if(lambda>=0.0 && lambda < 6.81)
                 lambda_=lambda; 
-            else
+            else{
                 std::cout<<"Bratu: lambda is not in the correct range. Please choose from the range: 0 < lambda < 6.8."; 
+                lambda_ = 1.0;
+            }
 
             initialize();
         }

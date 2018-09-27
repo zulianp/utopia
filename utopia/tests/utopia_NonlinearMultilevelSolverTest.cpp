@@ -80,16 +80,16 @@ namespace utopia
 
 		void run()
 		{
-			// UTOPIA_RUN_TEST(TR_test);
-			// UTOPIA_RUN_TEST(TR_constraint_test);
+			UTOPIA_RUN_TEST(TR_test);
+			UTOPIA_RUN_TEST(TR_constraint_test);
 
-			// UTOPIA_RUN_TEST(newton_MG_test);
-			// UTOPIA_RUN_TEST(FAS_test);
+			UTOPIA_RUN_TEST(newton_MG_test);
+			UTOPIA_RUN_TEST(FAS_test);
 
 			UTOPIA_RUN_TEST(RMTR_test);
-			// UTOPIA_RUN_TEST(RMTR_inf_test);
+			UTOPIA_RUN_TEST(RMTR_inf_test);
 
-			// UTOPIA_RUN_TEST(RMTR_inf_bound_test);
+			UTOPIA_RUN_TEST(RMTR_inf_bound_test);
 		}
 
 
@@ -138,6 +138,9 @@ namespace utopia
 
 	    void newton_MG_test()
 	    {
+	    	if(mpi_world_size() > 1)
+	    		return;
+
 	    	Bratu1D<DSMatrixd, DVectord> fun(problem.n_dofs[problem.n_levels - 1]);
 	    	DVectord x = values(problem.n_dofs[problem.n_levels - 1], 1.0);
 	    	fun.apply_bc_to_initial_guess(x);
@@ -387,7 +390,7 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("NonlinearMultilevelSolverTest");
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(4, true, true).run();
+			NonlinearBratuSolverTest(4, true, false).run();
 		#endif
 		UTOPIA_UNIT_TEST_END("NonlinearMultilevelSolverTest");
 

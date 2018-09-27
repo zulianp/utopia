@@ -39,7 +39,7 @@ namespace utopia {
 			UTOPIA_RUN_TEST(dogleg_test);
 			UTOPIA_RUN_TEST(st_cg_test); 
 			UTOPIA_RUN_TEST(precond_st_cg_test); 
-			UTOPIA_RUN_TEST(Quasi_TR_test); 
+			// UTOPIA_RUN_TEST(Quasi_TR_test); 
 
 		}
 
@@ -403,13 +403,15 @@ namespace utopia {
 
 				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
 				auto cg = std::make_shared<ConjugateGradient<Matrix, Vector> >();
+				cg->atol(1e-7); 
 				tr_solver.set_linear_solver(cg);	
+				tr_solver.atol(1e-6); 
 
 				auto hes_approx    = std::make_shared<SR1<Matrix, Vector> >();
 				tr_solver.set_hessian_approximation_strategy(hes_approx);
 
 				tr_solver.max_it(100); 
-				tr_solver.verbose(false);
+				tr_solver.verbose(true);
 				tr_solver.solve(rosenbrock, x0);
 
 				utopia_test_assert(approxeq(expected_rosenbrock, x0));
