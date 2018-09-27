@@ -19,20 +19,13 @@ namespace utopia
 
             virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x, Matrix &H)
             {
-                // (void) fun;
-                SizeType n_local = local_size(x).get(0);
-                H = local_identity(n_local, n_local);
+                // SizeType n_local = local_size(x).get(0);
+                SizeType n = size(x).get(0);
 
                 //for sparse
-                // fun.hessian(x, H);
-
-                // opt 1
-                // fun.hessian(x, H);
-                // H = 0.0 * H + Matrix(diag(diag(H)));
-
-                //opt 2
-                //hessian *= 0.;
-                //hessian += local_identity(n_local, n_local);
+                if(!fun.hessian(x, H))
+                    // H = local_identity(n, n);
+                    H = identity(n, n);
 
                 return true;
             }
@@ -47,6 +40,9 @@ namespace utopia
         template<class Matrix, class Vector>
         class BFGS : public HessianApproximation<Matrix, Vector>
         {
+            private: 
+                static_assert(!utopia::is_sparse<Matrix>::value, "BFGS does not support sparse matrices."); 
+
             typedef UTOPIA_SCALAR(Vector)    Scalar;
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
@@ -65,6 +61,11 @@ namespace utopia
                     Matrix &hessian_old_new,
                     Vector &grad_old_new) override
                 {
+
+                    // utopia::is_sparse<Matrix>::value;
+
+
+
                     Vector diff_grad = grad_old_new;
                     if(!fun.gradient(sol_new, grad_old_new)) return false;
                     diff_grad = grad_old_new - diff_grad;
@@ -78,9 +79,6 @@ namespace utopia
                     Vector H_x_step = hessian_old_new * step;
                     hessian_old_new += (1./d_s * Matrix(outer(diff_grad, diff_grad)));
 
-                    //utopia::is_sparse<Matrix>::value
-                    // temp += (outer(H_x_step, H_x_step)/dot(step, H_x_step));
-
                     Matrix a  = outer(H_x_step, H_x_step);
                     Scalar b = dot(step, H_x_step);
                     hessian_old_new -= (1./b * a);
@@ -91,12 +89,15 @@ namespace utopia
 
 
                 Scalar num_tol_;
+
             };
 
 
         template<class Matrix, class Vector>
         class SR1 : public HessianApproximation<Matrix, Vector>
         {
+            private: 
+                static_assert(!utopia::is_sparse<Matrix>::value, "SR1 does not support sparse matrices."); 
 
             typedef UTOPIA_SCALAR(Vector)    Scalar;
             typedef UTOPIA_SIZE_TYPE(Vector) SizeType;

@@ -39,8 +39,8 @@ namespace utopia {
 			UTOPIA_RUN_TEST(dogleg_test);
 			UTOPIA_RUN_TEST(st_cg_test); 
 			UTOPIA_RUN_TEST(precond_st_cg_test); 
+			UTOPIA_RUN_TEST(inexact_newton_test);
 			// UTOPIA_RUN_TEST(Quasi_TR_test); 
-
 		}
 
 		class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
@@ -387,6 +387,53 @@ namespace utopia {
 			}
 		}
 
+		void inexact_newton_test()
+		{
+			if(mpi_world_size() > 10) return;
+			
+			Parameters params;
+			params.atol(1e-15);
+			params.rtol(1e-15);
+			params.stol(1e-15);
+			params.verbose(false);
+			
+			auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector> >();
+			InexactNewton<Matrix, Vector> nlsolver(lsolver);
+			nlsolver.set_parameters(params);
+			
+			auto hess_approx_BFGS   = std::make_shared<BFGS<Matrix, Vector> >();
+			nlsolver.set_hessian_approximation_strategy(hess_approx_BFGS);
+			
+			
+			SimpleQuadraticFunction<Matrix, Vector> fun;
+			
+			Vector x = values(10, 2.);
+			Vector expected_1 = zeros(x.size());
+			
+			nlsolver.solve(fun, x);
+			utopia_test_assert(approxeq(expected_1, x));
+			
+			TestFunctionND_1<Matrix, Vector> fun2(x.size().get(0));
+			x = values(10, 2.0);
+			Vector expected_2 = values(x.size().get(0), 0.468919);
+			nlsolver.solve(fun2, x);
+
+
+			utopia_test_assert(approxeq(expected_2, x));
+			
+			// -------------------------------------- SR1 test ------------------
+			auto hess_approx_SR1    = std::make_shared<SR1<Matrix, Vector> >();
+			nlsolver.set_hessian_approximation_strategy(hess_approx_SR1);
+			
+			x = values(10, 2.);
+			nlsolver.solve(fun, x);
+			utopia_test_assert(approxeq(expected_1, x));
+			
+			x = values(10, 2.0);
+			nlsolver.solve(fun2, x);
+			utopia_test_assert(approxeq(expected_2, x));			
+		}
+
 
 		void Quasi_TR_test()
 		{
@@ -434,9 +481,9 @@ namespace utopia {
 		SolverTest<DMatrixd, DVectord, PetscScalar>().run();
 #endif
 
-// #ifdef WITH_BLAS
-// 		SolverTest<Matrixd, Vectord, double>().run();
-// #endif //WITH_BLAS
+#ifdef WITH_BLAS
+		SolverTest<Matrixd, Vectord, double>().run();
+#endif //WITH_BLAS
 
 		UTOPIA_UNIT_TEST_END("SolversTest");
 	}

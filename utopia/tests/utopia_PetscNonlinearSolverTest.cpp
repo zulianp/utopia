@@ -53,7 +53,6 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_newton_petsc_cg_test);
 			UTOPIA_RUN_TEST(petsc_tr_rr_test);
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
-			// UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
 		}
@@ -422,53 +421,6 @@ namespace utopia
 			expected = values(x.size().get(0), 0.468919);
 			nlsolver.solve(fun2, x);
 			utopia_test_assert(approxeq(expected, x));
-		}
-
-		void petsc_inexact_newton_test()
-		{
-			if(mpi_world_size() > 10) return;
-			
-			Parameters params;
-			params.atol(1e-15);
-			params.rtol(1e-15);
-			params.stol(1e-15);
-			params.verbose(false);
-			
-			auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
-			InexactNewton<DMatrixd, DVectord> nlsolver(lsolver);
-			nlsolver.set_parameters(params);
-			
-			auto hess_approx_BFGS   = std::make_shared<BFGS<DMatrixd, DVectord> >();
-			nlsolver.set_hessian_approximation_strategy(hess_approx_BFGS);
-			
-			
-			SimpleQuadraticFunction<DMatrixd, DVectord> fun;
-			
-			DVectord x = values(10, 2.);
-			DVectord expected_1 = zeros(x.size());
-			
-			nlsolver.solve(fun, x);
-			utopia_test_assert(approxeq(expected_1, x));
-			
-			TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
-			x = values(10, 2.0);
-			DVectord expected_2 = values(x.size().get(0), 0.468919);
-			nlsolver.solve(fun2, x);
-
-
-			utopia_test_assert(approxeq(expected_2, x));
-			
-			// -------------------------------------- SR1 test ------------------
-			auto hess_approx_SR1    = std::make_shared<SR1<DMatrixd, DVectord> >();
-			nlsolver.set_hessian_approximation_strategy(hess_approx_SR1);
-			
-			x = values(10, 2.);
-			nlsolver.solve(fun, x);
-			utopia_test_assert(approxeq(expected_1, x));
-			
-			x = values(10, 2.0);
-			nlsolver.solve(fun2, x);
-			utopia_test_assert(approxeq(expected_2, x));			
 		}
 
 		void petsc_newton_rosenbrock_test()
