@@ -21,7 +21,7 @@ namespace utopia {
     private:
         void block_test()
         {   
-            int n = 5;
+            int n = 10;
             auto id_ptr = std::make_shared<Matrix>(identity(n, n));
 
             Blocks<Matrix> b_mat(2, 2, {

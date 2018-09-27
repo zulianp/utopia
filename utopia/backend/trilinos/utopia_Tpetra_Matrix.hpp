@@ -202,10 +202,9 @@ namespace utopia {
          )
         {
             //FIXME and find more efficient way
-            const auto n_vals = values.size();
             const auto n_rows = rows.size();
             const auto n_cols = cols.size();
-            assert(n_vals == n_rows*n_cols);
+            assert(values.size() == n_rows*n_cols);
 
             for(std::size_t i = 0; i < n_rows; ++i) {
                 const auto i_offset = i*n_rows;
@@ -223,10 +222,9 @@ namespace utopia {
          )
         {
             //FIXME and find more efficient way
-           const auto n_vals = values.size();
            const auto n_rows = rows.size();
            const auto n_cols = cols.size();
-           assert(n_vals == n_rows*n_cols);
+           assert(values.size() == n_rows*n_cols);
 
            for(std::size_t i = 0; i < n_rows; ++i) {
                const auto i_offset = i*n_rows;

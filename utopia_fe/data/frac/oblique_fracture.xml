@@ -1,50 +1,79 @@
 <!-- MASTER STUFF -->
 <master>
-	<mesh>unit-square</mesh>
-	<elem-type>tri</elem-type>
-	<!-- <mesh>file</mesh> -->
-	<!-- <path>../data/frac/adaptive_background_2.e</path> -->
-	<!-- <path>../data/frac/adaptive_background.e</path> -->
-	<!-- <path>../data/frac/background.e</path> -->
-	<boundary-conditions>
-		<entry>
-			<side>3</side>
-			<value>1</value>
-		</entry>
-		<entry>
-			<side>1</side>
-			<value>4</value>
-		</entry>
-	</boundary-conditions>
-	<diffusivity>1.</diffusivity>
-	<!-- <forcing-function>-100.</forcing-function> -->
-	<forcing-function>0.</forcing-function>
-	<refinements>0</refinements>
-	<order>1</order>
-	<!-- <adaptive-refinements>1</adaptive-refinements> -->
-</master>
+	<mesh>
+		<type>square</type>
+		<elem-type>quad</elem-type>
+		<order>1</order>
 
+		<min-x>0.</min-x>
+		<min-y>0.</min-y>
+		
+		<max-x>1.</max-x>
+		<max-y>1.</min-y>
+		
+		<n-x>20</n-x>
+		<n-y>20</n-y>
+
+		<refinements>5</refinements>
+	</mesh>
+
+	<space>
+		<system-name>master</system-name>
+		
+		<variables>
+			<var>
+			<name>u</name>
+			<order>1</order>
+			</var>
+		</variables>
+
+		<boundary-conditions>
+			<entry>
+				<side>3</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>1</side>
+				<value>4</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
+	<diffusivity>1.</diffusivity>
+</master>
 
 <!-- SLAVE STUFF -->
 <slave>
-	<mesh>file</mesh>
-	<path>../data/frac/line.e</path>
-	<boundary-conditions>
-		<entry>
-			<side>1</side>
-			<value>1</value>
-		</entry>
-		<entry>
-			<side>2</side>
-			<value>4</value>
-		</entry>
-	</boundary-conditions>
-	<diffusivity>10.</diffusivity>
-	<!-- <forcing-function>100.</forcing-function> -->
-	<forcing-function>0.</forcing-function>
-	<refinements>0</refinements>
-	<order>1</order>
+	<mesh>
+		<type>file</type>
+		<path>../data/frac/line.e</path>
+		<refinements>2</refinements>
+	</mesh>
+
+	<space>
+		<system-name>slave</system-name>
+
+		<boundary-conditions>
+			<entry>
+				<side>1</side>
+				<value>1</value>
+			</entry>
+			<entry>
+				<side>2</side>
+				<value>4</value>
+			</entry>
+		</boundary-conditions>
+	</space>
+
+	<forcing-function></forcing-function>
+
+	<diffusivity>1000.</diffusivity>
 </slave>
 
-<!-- <solve-strategy>staggered</solve-strategy> --> 
-<solve-strategy>monolithic</solve-strategy>
+<!-- <solve-strategy>monolithic</solve-strategy> -->
+
+<solve-strategy>staggered</solve-strategy>
+<use-mg>true</use-mg>
+<mg-sweeps>1</mg-sweeps>
+<mg-levels>5</mg-levels>
+

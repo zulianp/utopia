@@ -11,10 +11,7 @@ namespace utopia {
 	template<typename T, int Order_>
 	class ConstantCoefficient : public Expression< ConstantCoefficient<T, Order_> > {
 	public:
-
-		enum {
-			Order = Order_
-		};
+		static const int Order = Order_;
 
 		typedef typename Traits<T>::Scalar Scalar;
 

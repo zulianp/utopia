@@ -14,12 +14,16 @@ namespace utopia {
 	    inline static auto apply(
 	    	const Expr &expr,
 	    	AssemblyContext<Backend> &ctx) -> decltype(
-	    		FEEval<Inner, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx)
+	    		FEBackend<Traits::Backend>::integrate(
+	    			    		FEEval<Inner, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx),
+	    			    	ctx)
 	    	)
 	    {
 	    	//Check subtree properties
 	    	//TODO
-	    	return FEEval<Inner, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx);
+	    	return FEBackend<Traits::Backend>::integrate(
+	    		FEEval<Inner, Traits, Backend, IsQuadData>::apply(expr.expr(), ctx),
+	    	ctx);
 	    }  
 	};
 }

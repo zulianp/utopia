@@ -201,8 +201,26 @@ namespace utopia {
             const std::vector<Integer> &index,
             TpetraVector &vec)
         {
-            assert(default_communicator()->getSize() == 1 && "implement me: does not work in parallel yet");
-            vec.values(default_communicator(), local_size, global_size, 0.);
+            // assert(default_communicator()->getSize() == 1 && "implement me: does not work in parallel yet");
+            // vec.values(default_communicator(), local_size, global_size, 0.);
+
+            std::vector<TpetraVector::global_ordinal_type> tpetra_index;
+
+            tpetra_index.insert(tpetra_index.end(), index.begin(), index.end());
+            vec.ghosted(default_communicator(), local_size, global_size, tpetra_index);
+        }
+
+
+        void build_ghosts(
+            const TpetraVector::global_ordinal_type &local_size,
+            const TpetraVector::global_ordinal_type &global_size,
+            const std::vector<TpetraVector::global_ordinal_type> &index,
+            TpetraVector &vec)
+        {
+            // assert(default_communicator()->getSize() == 1 && "implement me: does not work in parallel yet");
+            // vec.values(default_communicator(), local_size, global_size, 0.);
+
+            vec.ghosted(default_communicator(), local_size, global_size, index);
         }
 
         inline static void build_from_structure(TpetraSparseMatrix &lhs, const TpetraSparseMatrix &rhs)
@@ -297,22 +315,22 @@ namespace utopia {
             const_cast<Tensor &>(t).read_unlock();
         }
 
-        static void write_lock(TpetraVector &vec)
+        static void write_lock(TpetraVector &vec, WriteMode mode)
         {
-            vec.write_lock();
+            vec.write_lock(mode);
         }
 
-        static void write_unlock(TpetraVector &vec)
+        static void write_unlock(TpetraVector &vec, WriteMode mode)
         {
-            vec.write_unlock();
+            vec.write_unlock(mode);
         }
 
-        static void write_lock(TpetraMatrix &mat)
+        static void write_lock(TpetraMatrix &mat, WriteMode mode)
         {
             mat.write_lock();
         }
 
-        static void write_unlock(TpetraMatrix &mat)
+        static void write_unlock(TpetraMatrix &mat, WriteMode mode)
         {
             mat.write_unlock();
         }
@@ -597,9 +615,39 @@ namespace utopia {
             return v.is_nan_or_inf();
         }
 
-        static void set_zero_rows(TpetraMatrix &Mat_A, const std::vector<int> &index)
+        template<typename Integer>
+        static void set_zero_rows(TpetraMatrix &mat, const std::vector<Integer> &index, const Scalar diag)
         {
-            assert(false && "implement me");
+            typedef typename TpetraMatrix::global_ordinal_type global_ordinal_type;
+            typedef typename TpetraMatrix::Scalar Scalar;
+
+            auto &impl = mat.implementation();
+            static const Scalar zero = 0.;
+
+            global_ordinal_type offset = 0;
+            Teuchos::ArrayView<const global_ordinal_type> cols;
+            Teuchos::ArrayView<const Scalar> values;
+
+            for(auto row : index) {
+                if(impl.isGloballyIndexed()) {
+                    impl.getGlobalRowView(row, cols, values);
+                } else {
+                    assert(impl.isLocallyIndexed());
+                    auto rr = mat.row_range();
+                    impl.getLocalRowView(row - rr.begin(), cols, values);
+                    offset = impl.getColMap()->getMinGlobalIndex();
+                }
+
+                for(auto c : cols) {
+                    const global_ordinal_type col = c + offset;
+
+                    if(col == row) {
+                        impl.replaceGlobalValues(row, 1, &diag, &col);
+                    } else {
+                        impl.replaceGlobalValues(row, 1, &zero, &col);
+                    }
+                }
+            }
         }
 
         template<typename Integer>
@@ -614,12 +662,12 @@ namespace utopia {
 
         static void read_and_write_lock(TpetraMatrix &t) {
             //IMPLEMENTME
-            write_lock(t);
+            write_lock(t, LOCAL);
         }
 
         static void read_and_write_unlock(TpetraMatrix &t){
             //IMPLEMENTME
-            write_unlock(t);
+            write_unlock(t, LOCAL);
         }
 
         // monitoring functions for iterative solvers (Cyrill)

@@ -234,6 +234,13 @@ namespace utopia {
 #endif //ENABLE_LOCK_CHECK  
     };
 
+    enum WriteMode {
+        AUTO  = 0, //unsafe for the moment depends on backend implementation
+        LOCAL = 1,
+        GLOBAL_INSERT = 2,
+        GLOBAL_ADD    = 3
+    };
+
 
     template<class Tensor>
     class Write {
@@ -246,13 +253,13 @@ namespace utopia {
          * @brief       Write lock providing memory access to object. \n
          * @param       tensor  The tensor.
          */
-        Write(Tensor &tensor)
-        : _tensor(tensor)
+        Write(Tensor &tensor, WriteMode mode = utopia::AUTO)
+        : _tensor(tensor), mode_(mode)
         {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.write_lock();
 #endif //ENABLE_LOCK_CHECK            
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().write_lock(_tensor.implementation());
+            Backend<Scalar, Traits<Tensor>::Backend >::Instance().write_lock(_tensor.implementation(), mode_);
         }
 
         ~Write()
@@ -260,8 +267,11 @@ namespace utopia {
 #ifdef ENABLE_LOCK_CHECK
             _tensor.write_unlock();
 #endif //ENABLE_LOCK_CHECK   
-            Backend<Scalar, Traits<Tensor>::Backend >::Instance().write_unlock(_tensor.implementation());
+            Backend<Scalar, Traits<Tensor>::Backend >::Instance().write_unlock(_tensor.implementation(), mode_);
         }
+
+
+        WriteMode mode_;
     };
 }
 

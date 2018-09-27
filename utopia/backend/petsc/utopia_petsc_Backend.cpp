@@ -335,14 +335,23 @@ namespace utopia {
 		return info.nz_used;
 	}
 
-	void PetscBackend::set_zero_rows(PetscMatrix &Mat_A, const std::vector<int> &index)
+	void PetscBackend::set_zero_rows(PetscMatrix &mat, const std::vector<PetscInt> &index, const Scalar diag)
 	{
-		check_error(MatZeroRows(Mat_A.implementation(), index.size(), &index[0], 1.0, nullptr, nullptr));
+		// check_error( MatZeroRows(mat.implementation(), index.size(), &index[0], 1.0, nullptr, nullptr) );
+
+		PetscBool val = PETSC_TRUE;
+		
+		MatGetOption(mat.implementation(), MAT_KEEP_NONZERO_PATTERN, &val);
+		MatSetOption(mat.implementation(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
+// 
+		check_error( MatZeroRows(mat.implementation(), index.size(), &index[0], diag, nullptr, nullptr) );
+
+		MatSetOption(mat.implementation(), MAT_KEEP_NONZERO_PATTERN, val);
 	}
 
-	void PetscBackend::apply_BC_to_system(PetscMatrix & A, PetscVector& x, PetscVector& rhs, const std::vector<int> &index)
+	void PetscBackend::apply_BC_to_system(PetscMatrix & A, PetscVector& x, PetscVector& rhs, const std::vector<PetscInt> &index)
 	{
-		check_error(MatZeroRows(A.implementation(), index.size(), &index[0], 1.0, x.implementation(), rhs.implementation()));
+		check_error( MatZeroRows(A.implementation(), index.size(), &index[0], 1.0, x.implementation(), rhs.implementation()) );
 	}
 
 	// read vector
@@ -575,22 +584,22 @@ namespace utopia {
 		m.set(row, col, value);
 	}
 
-	void PetscBackend::write_lock(PetscVector &vec)
+	void PetscBackend::write_lock(PetscVector &vec, WriteMode mode)
 	{
 		vec.write_lock();
 	}
 
-	void PetscBackend::write_unlock(PetscVector &vec)
+	void PetscBackend::write_unlock(PetscVector &vec, WriteMode mode)
 	{
 		vec.write_unlock();
 	}
 
-	void PetscBackend::write_lock(PetscMatrix &mat)
+	void PetscBackend::write_lock(PetscMatrix &mat, WriteMode mode)
 	{
 		mat.write_lock();
 	}
 
-	void PetscBackend::write_unlock(PetscMatrix &mat)
+	void PetscBackend::write_unlock(PetscMatrix &mat, WriteMode mode)
 	{
 		mat.write_unlock();
 	}
@@ -893,7 +902,7 @@ namespace utopia {
 			result_size.get(1)
 		);
 
-		write_lock(result);
+		write_lock(result, LOCAL);
 
 		for(SizeType i = l_range.begin(); i != l_range.end(); ++i) {
 			const Scalar l_value = left_array[i-l_range.begin()];
@@ -905,7 +914,7 @@ namespace utopia {
 			}
 		}
 
-		write_unlock(result);
+		write_unlock(result, LOCAL);
 
 		VecRestoreArrayRead(left.implementation(), &left_array);
 	}

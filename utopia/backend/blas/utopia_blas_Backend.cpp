@@ -775,7 +775,7 @@ namespace utopia {
 
 		mat.assembly_begin();
 
-		int line_num = 1;
+		SizeType line_num = 1;
 		while(is.good()) {
 			std::getline(is, line);
 

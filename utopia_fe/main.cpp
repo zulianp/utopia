@@ -35,8 +35,9 @@
 #include "utopia_VolumeInterpolationTest.hpp"
 #include "utopia_WearSimulation.hpp"
 #include "utopia_TransferApp.hpp"
-
 #include "utopia_FractureFlowApp.hpp"
+#include "utopia_RMTRApp.hpp"
+#include "utopia_EnergyAssemblyTest.hpp"
 
 #include <functional>
 
@@ -90,6 +91,7 @@ int main(int argc, char *argv[])
 	    runners["eikonal"] = run_eikonal_equation_test;
 	    runners["vol2surf"] = run_volume_to_surface_transfer_test;
 	    runners["interp"] = run_volume_interpolation_test;
+	    runners["energy"] = run_energy_test;
 	    // runners["coupled"] = run_coupled_equation_test;
 	    //benchmarks
 	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;
@@ -101,6 +103,11 @@ int main(int argc, char *argv[])
 
 		for(int i = 1; i < argc; ++i) {
 			const int ip1 = i+1;
+
+			if(argv[i] == std::string("-verbose")) {
+				Utopia::instance().set("verbose", "true");
+				continue;
+			}
 
 			if(argv[i] == std::string("-r")) {
 				if(ip1 < argc) {
@@ -151,6 +158,12 @@ int main(int argc, char *argv[])
 				std::cout << argv[i] << " " << argv[ip1] << std::endl;
 
 				FractureFlowApp app;
+				app.init(init);
+				app.run(argv[ip1]);
+			} else if(argv[i] == RMTRApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+					
+				RMTRApp app;
 				app.init(init);
 				app.run(argv[ip1]);
 			}

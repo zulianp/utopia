@@ -84,8 +84,31 @@ namespace utopia {
                 }
             }
 
-            //FIXME figure out the nnz from the various blocks
-            l = local_sparse(rows, cols, rows * 0.2);
+            SizeType max_nnz = 0;
+            for(SizeType i = 0; i < r.rows(); ++i) {
+
+                SizeType block_row_nnz = 0;
+
+                for(SizeType j = 0; j < r.cols(); ++j) {
+                    if(!r.block_is_null(i, j)) {
+                        const auto &b = r.block(i, j);
+
+                        std::vector<SizeType> nnz(local_size(b).get(0), 0);
+                        auto rr = row_range(b);
+
+                        each_read(b, [&](const SizeType r, const SizeType c, const Scalar val) {
+                            nnz[r - rr.begin()];
+                        });
+
+
+                        block_row_nnz += *std::max_element(std::begin(nnz), std::end(nnz));
+                    }
+                }
+
+                max_nnz = std::max(max_nnz, block_row_nnz);
+            }
+
+            l = local_sparse(rows, cols, max_nnz);
 
             {
                 Write<Tensor> w_(l);

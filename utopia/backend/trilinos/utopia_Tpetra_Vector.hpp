@@ -5,6 +5,7 @@
 #include "utopia_Range.hpp"
 #include "utopia_Base.hpp"
 #include "utopia_Size.hpp"
+#include "utopia_Writable.hpp"
 
 #include <Tpetra_Map_decl.hpp>
 #include <Tpetra_Vector_decl.hpp>
@@ -37,9 +38,7 @@ namespace utopia {
         ~TpetraVector()
         { }
 
-        TpetraVector(const TpetraVector &other)
-        : vec_(Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy)))
-        { }
+        TpetraVector(const TpetraVector &other);
 
 
         TpetraVector(TpetraVector &&other)
@@ -56,25 +55,17 @@ namespace utopia {
             return implementation().getMap()->getComm();
         }
 
-        TpetraVector &operator=(const TpetraVector &other)
-        {
-            if(this == &other) return *this;
-
-            if(other.is_null()) {
-                vec_.reset();
-                return *this;
-            }
-
-            vec_ = Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy));
-            return *this;
-        }
+        TpetraVector &operator=(const TpetraVector &other);
 
         TpetraVector &operator=(TpetraVector &&other)
         {
             if(this == &other) return *this;
             vec_ = std::move(other.vec_);
+            ghosted_vec_ = std::move(other.ghosted_vec_);
             return *this;
         }
+
+        void copy(const TpetraVector &other);
 
 
         //////////////////////////////////////////
@@ -99,6 +90,14 @@ namespace utopia {
             vec_ = Teuchos::rcp(new vector_type(map));
         }
 
+
+
+        void ghosted(const rcp_comm_type &comm, 
+                     const TpetraVector::global_ordinal_type &local_size,
+                     const TpetraVector::global_ordinal_type &global_size,
+                     const std::vector<global_ordinal_type> &ghost_index
+        );
+
         inline void axpy(const Scalar &alpha, const TpetraVector &x)
         {
             implementation().update(alpha, *x.vec_, 1.);
@@ -119,7 +118,18 @@ namespace utopia {
         inline Scalar get(const global_ordinal_type i) const
         {
             assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
-            return read_only_data_[i - implementation().getMap()->getMinGlobalIndex()];
+            return read_only_data_[local_index(i)];
+
+        }
+
+        inline local_ordinal_type local_index(const global_ordinal_type i) const
+        {
+            if(has_ghosts()) {
+               return ghosted_vec_->getMap()->getLocalElement(i);
+            } else {
+                //i - implementation().getMap()->getMinGlobalIndex()
+                return implementation().getMap()->getLocalElement(i);
+            }
         }
 
         inline void set(const global_ordinal_type i, const Scalar value)
@@ -133,7 +143,11 @@ namespace utopia {
 
         inline void add(const global_ordinal_type i, const Scalar value)
         {
-            implementation().sumIntoGlobalValue(i, value);
+            if(!ghosted_vec_.is_null()) {
+                ghosted_vec_->sumIntoGlobalValue(i, value);
+            } else {
+                implementation().sumIntoGlobalValue(i, value);
+            }
         }
 
         inline void set(const Scalar value)
@@ -148,14 +162,14 @@ namespace utopia {
         {
             // m_utopia_warning_once(" > get does not work in parallel if it asks for ghost entries");
             //FIXME does not work in parallel
-            auto data   = implementation().getData();
-            auto offset = implementation().getMap()->getMinGlobalIndex();
+            auto data  = get_read_only_data();
+            // auto offset = implementation().getMap()->getMinGlobalIndex();
 
             auto n = index.size();
             values.resize(n);
 
             for(std::size_t i = 0; i < n; ++i) {
-                auto local_index = index[i] - offset;
+                auto local_index = this->local_index(index[i]);// - offset;
                 assert(local_index < data.size());
                 values[i] = data[local_index];
             }
@@ -187,21 +201,57 @@ namespace utopia {
                     communicator())
             );
 
-            out.init(map);
-            auto n = data.size();
-            auto out_data = out.implementation().getDataNonConst();
 
-            for(std::size_t i = 0; i < n; ++i) {
-                auto local_index = index[i] - offset;
-                assert(local_index < n);
-                out_data[i] = data[local_index];
+            out.init(map);
+
+            // if(communicator()->getSize() == 1) {
+
+                auto n = data.size();
+                auto out_data = out.implementation().getDataNonConst();
+
+                for(std::size_t i = 0; i < n; ++i) {
+                    auto local_index = index[i] - offset;
+                    assert(local_index < n);
+                    out_data[i] = data[local_index];
+                }
+            // } else {
+            //     /////////////////////////////////////////////////
+
+            //     std::vector<global_ordinal_type> tpetra_index;
+            //     tpetra_index.reserve(index.size());
+
+            //     for(auto i : index) {
+            //         tpetra_index.push_back(i);
+            //     }
+
+            //     const Teuchos::ArrayView<const global_ordinal_type>
+            //        index_view(tpetra_index);
+
+            //      auto import_map = Teuchos::rcp(new map_type(global_size, index_view, 0, comm));
+
+            //     Tpetra::Import<
+            //         local_ordinal_type,
+            //         global_ordinal_type,
+            //         vector_type::node_type> importer(map, import_map);
+
+            //     implementation().doImport(out.implementation(), importer, Tpetra::INSERT);
+            // }
+        }
+
+        inline Teuchos::ArrayRCP<const Scalar> get_read_only_data() const
+        {
+            if(!ghosted_vec_.is_null()) {
+                return ghosted_vec_->getData();
+            } else {
+                return implementation().getData();
             }
         }
 
 
         inline void read_lock()
         {
-            read_only_data_ = implementation().getData();
+            read_only_data_ = get_read_only_data();
+
         }
 
         inline void read_unlock()
@@ -209,21 +259,19 @@ namespace utopia {
             read_only_data_ = Teuchos::ArrayRCP<const Scalar>();
         }
 
-        inline void write_lock()
+        inline void write_lock(WriteMode mode)
         {
             //TODO?
         }
 
-        inline void write_unlock()
-        {
-            //TODO?
-        }
+        void write_unlock(WriteMode mode);
 
         inline void read_and_write_lock()
         {
             write_data_ = implementation().getDataNonConst();
             read_only_data_ = write_data_;
         }
+
         inline void read_and_write_unlock()
         {
             write_data_ = Teuchos::ArrayRCP<Scalar>();
@@ -381,16 +429,17 @@ namespace utopia {
             return vec_.is_null();
         }
 
-        void update_ghosts() {}
+        void update_ghosts();
+        void export_ghosts_add();
 
         bool has_ghosts() const
         {
-            // m_utopia_warning_once(" > has ghosts in trilinos backend does not do anything!");
-            return false;
+            return !ghosted_vec_.is_null();
         }
         
     private:
         rcpvector_type vec_;
+        rcpvector_type ghosted_vec_;
         Teuchos::ArrayRCP<const Scalar> read_only_data_;
         Teuchos::ArrayRCP<Scalar> write_data_;
     };

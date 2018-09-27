@@ -83,6 +83,12 @@ namespace utopia {
 			return TRAVERSE_STOP;
 		}
 
+		template<class Coefficient, class Function>
+		inline int visit(const Interpolate<Coefficient, Function> &expr)
+		{
+			return visit(expr.fun());
+		}
+
 		FindTrialSpace()
 		: space_(nullptr)
 		{}
@@ -158,29 +164,40 @@ namespace utopia {
 	};
 
 	template<class Space, class Expr>
-	inline auto find_test_space(const Expr &tree) -> Space &
+	inline auto find_test_space(const Expr &tree) -> std::shared_ptr<Space>
 	{
 		FindTestSpace<Space, Expr> fm;
 		auto space_ptr = fm.apply(tree);
-		assert(space_ptr);
-		return *space_ptr;
+		return space_ptr;
 	}
 
 	template<class Space, class Expr>
-	inline auto find_trial_space(const Expr &tree) -> Space &
+	inline auto find_trial_space(const Expr &tree) -> std::shared_ptr<Space>
 	{
 		FindTrialSpace<Space, Expr> fm;
 		auto space_ptr = fm.apply(tree);
 		assert(space_ptr);
-		return *space_ptr;
+		return space_ptr;
 	}
-
-
 
 	template<class Space, class Expr>
 	inline auto find_space(const Expr &tree) -> Space &
 	{
-		return find_test_space<Space>(tree);
+		{
+			FindTestSpace<Space, Expr> fm;
+			auto space_ptr = fm.apply(tree);
+
+			if(space_ptr) {
+				return *space_ptr;
+			}
+		}
+
+		{
+			FindTrialSpace<Space, Expr> fm;
+			auto space_ptr = fm.apply(tree);
+			assert(space_ptr);
+			return *space_ptr;
+		}
 	}
 
 	template<class Mesh, class Expr>

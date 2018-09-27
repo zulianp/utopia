@@ -231,21 +231,20 @@ namespace  utopia
         Scalar      atol() const               { return atol_; } 
         Scalar      rtol()  const              { return rtol_; } 
         Scalar      stol()  const              { return stol_; } 
-        SizeType    max_it()  const            { return max_it_; } 
+        virtual SizeType    max_it()  const            { return max_it_; } 
 
         bool      precondition() const          { return precondition_; } 
         bool      time_statistics() const       { return time_statistics_; } 
-
 
         bool log_iterates() const                { return log_iterates_; } 
         bool log_system() const                  { return log_system_; } 
         bool verbose() const                     { return verbose_; } 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        void atol(const Scalar & atol_in ) { atol_ = atol_in; }; 
-        void rtol(const Scalar & rtol_in ) { rtol_ = rtol_in; }; 
-        void stol(const Scalar & stol_in ) { stol_ = stol_in; }; 
-        void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; }; 
-        void verbose(const bool & verbose_in ) {verbose_ = verbose_in; }; 
+        virtual void atol(const Scalar & atol_in ) { atol_ = atol_in; }; 
+        virtual void rtol(const Scalar & rtol_in ) { rtol_ = rtol_in; }; 
+        virtual void stol(const Scalar & stol_in ) { stol_ = stol_in; }; 
+        virtual void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; }; 
+        virtual void verbose(const bool & verbose_in ) {verbose_ = verbose_in; }; 
         
         void precondition(const bool & precondition_in ) { precondition_ = precondition_in; }; 
         void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 

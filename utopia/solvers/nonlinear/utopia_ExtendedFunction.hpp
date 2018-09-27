@@ -21,6 +21,7 @@ namespace utopia
 
         virtual ~ExtendedFunction() { }
 
+        ExtendedFunction() {}
 
         ExtendedFunction(const Vector & x_init, const Vector & bc_marker, const Vector & rhs) :
                 _x_eq_values(x_init),
@@ -97,6 +98,11 @@ namespace utopia
         {
             x = _eq_constrains_flg;
             return true;
+        }
+
+        const Vector &get_eq_constrains_flg() const
+        {
+            return _eq_constrains_flg;
         }
 
         virtual bool set_equality_constrains(const Vector &eq_constrains_flg, const Vector &x_in)

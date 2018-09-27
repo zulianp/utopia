@@ -40,24 +40,24 @@ namespace utopia {
 		inline static void read_unlock(const Tensor &) {}
 
 		template<class Tensor>
-		inline static void write_lock(const Tensor &) {}
+		inline static void write_lock(const Tensor &, WriteMode) {}
 
 		template<class Tensor>
-		inline static void write_unlock(const Tensor &) {}
+		inline static void write_unlock(const Tensor &, WriteMode) {}
 
-		inline static void write_lock(CRSMatrix<Scalar> &mat) {
+		inline static void write_lock(CRSMatrix<Scalar> &mat, WriteMode) {
 			mat.assembly_begin();
 		}
 
-		inline static void write_unlock(CRSMatrix<Scalar> &mat) {
+		inline static void write_unlock(CRSMatrix<Scalar> &mat, WriteMode) {
 			mat.assembly_end();
 		}
 
-		inline static void write_lock(CCSMatrix<Scalar> &mat) {
+		inline static void write_lock(CCSMatrix<Scalar> &mat, WriteMode) {
 			mat.assembly_begin();
 		}
 
-		inline static void write_unlock(CCSMatrix<Scalar> &mat) {
+		inline static void write_unlock(CCSMatrix<Scalar> &mat, WriteMode) {
 			mat.assembly_end();
 		}
 
