@@ -11,14 +11,6 @@
 #include <cmath>
 #include <TpetraExt_MatrixMatrix_def.hpp>
 
-//TODO find the configuration for having this
-// #include "TpetraExt_TripleMatrixMultiply_def.hpp"
-
-
-//useful links:
-//https://trilinos.org/docs/dev/packages/tpetra/doc/html/namespaceTpetra_1_1TripleMatrixMultiply.html
-//see MultiplyRAP
-
 namespace utopia {
     class TrilinosBackend : public ScalarBackend<TpetraVector::Scalar> {
     public:

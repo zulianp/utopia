@@ -7,7 +7,7 @@ if(TRILINOS_FOUND)
         list(APPEND UTOPIA_LIBRARIES -L${LIB})
     endforeach(LIB)
 
-    #	list(APPEND UTOPIA_INCLUDES ${Trilinos_INCLUDE_DIRS})
+    list(APPEND UTOPIA_INCLUDES ${Trilinos_INCLUDE_DIRS})
     # list(APPEND UTOPIA_LIBRARIES ${Trilinos_LIBRARY_DIRS})
     list(APPEND Trilinos_all_libs ${Trilinos_TPL_LIBRARIES})
     list(APPEND Trilinos_all_libs ${Trilinos_LIBRARIES})
