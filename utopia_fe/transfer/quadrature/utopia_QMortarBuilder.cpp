@@ -159,8 +159,6 @@ namespace utopia {
 		u /= len_u;
 		v /= len_v;
 
-		// std::cout << len_u << ", " << len_v << " ";
-
 		const double cos_angle = u * v;
 
 		if(std::abs(std::abs(cos_angle) - 1.) > 1e-14) {
@@ -176,7 +174,6 @@ namespace utopia {
 			const double cos_angle_2 = w * u;
 			if(std::abs(std::abs(cos_angle_2) - 1.) > 1e-14) {
 				//not on the same plane
-				// std::cout << "niet" << std::endl;
 				return false;
 			}
 		}
@@ -196,11 +193,8 @@ namespace utopia {
 
 		auto isect_len = r.norm_sq();
 		if(isect_len < 1e-16) {
-			// std::cout << isect_len << std::endl;
 			return false;
 		}
-
-		// std::cout << isect_len << std::endl;
 
 		libMesh::DenseMatrix<libMesh::Real> line(2, LIBMESH_DIM);
 
