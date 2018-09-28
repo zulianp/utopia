@@ -25,20 +25,34 @@ public:
 
     virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) = 0;
 
-    Scalar num_tol() {return num_tol_; }
-    void num_tol(Scalar & tol ) {num_tol_ = tol; }
+    Scalar num_tol()const 
+    {
+        return num_tol_; 
+    }
 
-    void initialized(const bool init) {initialized_ = init; }
-    bool initialized() {return initialized_; }
+    void num_tol(Scalar & tol ) 
+    {
+        num_tol_ = tol; 
+    }
+
+    void initialized(const bool init) 
+    {
+        initialized_ = init; 
+    }
+
+    bool initialized() const 
+    {
+        return initialized_; 
+    }
 
     // applications of inverse of Hessian
-    virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) = 0;
-    virtual Scalar compute_uHinvv_dot(const Vector &/*u*/, const Vector & /*v*/) {return false; }
+    virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;
+    virtual Scalar compute_uHinvv_dot(const Vector &/*u*/, const Vector & /*v*/) const {return false; }
 
     // applications of Hessian
-    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) {return false; }
-    virtual Scalar compute_uHv_dot(const Vector &/*u*/, const Vector & /*v*/) {return false; }
-    virtual Scalar compute_uHu_dot(const Vector &/*u*/) {return false; }
+    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  {return false; }
+    virtual Scalar compute_uHv_dot(const Vector &/*u*/, const Vector & /*v*/) const {return false; }
+    virtual Scalar compute_uHu_dot(const Vector &/*u*/) const {return false; }
 
     // refresh vectors
     virtual bool update(const Vector & /* s  */, const Vector &  /* y */ ) = 0;

@@ -496,6 +496,18 @@ namespace utopia {
         result.set_initialized(true);
     }
 
+    void PetscMatrix::get_col(PetscVector &result, const PetscInt id) const
+    {        
+        auto gs = size();
+
+        result.destroy();
+        MatCreateVecs(implementation(), nullptr, &result.implementation());
+
+        check_error( MatGetColumnVector(implementation(), result.implementation(), id) );
+        result.set_initialized(true);
+    }
+
+
     void PetscMatrix::dense_init_diag(MatType dense_type, const PetscVector &diag)
     {
         MPI_Comm comm = diag.communicator();

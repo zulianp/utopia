@@ -642,7 +642,7 @@ namespace utopia
 
 
 				// std::cout<<"--------------------------------------------------- \n"; 
-				auto cg_home = std::make_shared<ConjugateGradient<DMatrixd, DVectord, HOMEMADE>>();
+				auto cg_home = std::make_shared<ConjugateGradient<DMatrixd, DVectord>>();
 				cg_home->verbose(verbose); 
 
 				SNESSolver<DMatrixd, DVectord, PETSC> nonlinear_solver2(cg_home); 
@@ -714,6 +714,8 @@ namespace utopia
 		{
 			// because dense matrices can not be sum-up in parallel
 			// if(mpi_world_size() > 1) return;
+
+			std::cout<<"lbfgs_quasi_newton_test  \n"; 
 			
 			SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
 
@@ -723,9 +725,11 @@ namespace utopia
 			params.stol(1e-15);
 			params.verbose(true);
 
-			const auto m = 2; 
+			const auto m = 3; 
 			
-			auto hess_approx_BFGS   = std::make_shared<LBFGSB<DSMatrixd,  DVectord> >(m);
+			auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+
+			auto hess_approx_BFGS   = std::make_shared<LBFGSB<DSMatrixd,  DVectord> >(m, linear_solver);
 
 
 	  		auto k = 15;
@@ -743,21 +747,22 @@ namespace utopia
 
 	        // disp(A); 
 
+
+
 	        DVectord v = values(k, 999); 
 	        DVectord y = values(k, 55); 
 	        DVectord s = values(k, 1); 
 
-	        // hess_approx_BFGS->add_col_to_mat(A, v); 
+	  //       hess_approx_BFGS->add_col_to_mat(A, v); 
 			// hess_approx_BFGS->shift_cols_left_replace_last_col(A, v); 
 	        
-
 
 	        hess_approx_BFGS->initialize(fun, v); 
 	        hess_approx_BFGS->update(s, y); 
 	        hess_approx_BFGS->update(s, s); 
 	        hess_approx_BFGS->update(s, y); 
 	        hess_approx_BFGS->update(s, v); 
-
+	       	hess_approx_BFGS->update(s, s); 
 
 
 

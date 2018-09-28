@@ -61,7 +61,7 @@ namespace utopia
                 return true; 
             }
 
-            virtual bool apply_Hinv(const Vector & g , Vector & s) override
+            virtual bool apply_Hinv(const Vector & g , Vector & s) const override
             {
                 if(this->initialized())
                     s = H_prev_inv_ * g; 
@@ -72,7 +72,7 @@ namespace utopia
             }
 
 
-            virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) override
+            virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const override
             {
                 if(this->initialized())
                     return dot(u, H_prev_inv_ * v); 
@@ -83,7 +83,7 @@ namespace utopia
             }
 
 
-            virtual bool apply_H(const Vector & v, Vector & result) override
+            virtual bool apply_H(const Vector & v, Vector & result) const override
             {
                 std::cout<<"apply_H: update_hessian_: "<< update_hessian_ << "  \n"; 
                 if(update_hessian_ && this->initialized())
@@ -95,7 +95,7 @@ namespace utopia
             }
 
 
-            virtual Scalar compute_uHv_dot(const Vector & u, const Vector & v) override
+            virtual Scalar compute_uHv_dot(const Vector & u, const Vector & v) const override
             {
                 if(update_hessian_ && this->initialized())
                     return dot(u, H_prev_ * v); 
@@ -106,7 +106,7 @@ namespace utopia
                 }
             }
 
-            virtual Scalar compute_uHu_dot(const Vector & u) override
+            virtual Scalar compute_uHu_dot(const Vector & u) const override
             {
                 if(update_hessian_ && this->initialized())
                     return dot(u, H_prev_ * u);
@@ -117,8 +117,26 @@ namespace utopia
                 }
             }
 
-            void set_update_hessian(const bool flg){update_hessian_ = flg; }
-            bool get_update_hessian(){return update_hessian_; }
+            void set_update_hessian(const bool flg)
+            {
+                update_hessian_ = flg; 
+            }
+            
+            bool get_update_hessian() const
+            {
+                return update_hessian_; 
+            }
+
+
+            virtual Matrix & get_Hessian() override
+            {
+                return H_prev_; 
+            }
+
+            virtual Matrix & get_Hessian_inv() override
+            {
+                return H_prev_inv_; 
+            }                
 
         private:
             virtual void update_Hessian_inverse()
@@ -163,16 +181,6 @@ namespace utopia
                 Matrix a  = outer(H_s, H_s);
                 H_prev_ -= 1./sHs * a;
             }
-
-            virtual Matrix & get_Hessian() override
-            {
-                return H_prev_; 
-            }
-
-            virtual Matrix & get_Hessian_inv() override
-            {
-                return H_prev_inv_; 
-            }                
 
 
         private:

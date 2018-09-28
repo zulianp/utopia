@@ -39,7 +39,7 @@ namespace utopia
                 return true; 
             }
 
-            virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) override
+            virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const override
             {
                 // TODO 
                 return true; 
@@ -64,7 +64,7 @@ namespace utopia
                 m_ = m; 
             }
 
-            SizeType get_memory_size()
+            SizeType get_memory_size() const 
             {
                 return m_; 
             }

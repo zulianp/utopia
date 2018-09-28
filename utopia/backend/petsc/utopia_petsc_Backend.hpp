@@ -227,6 +227,8 @@ namespace utopia {
 		static Scalar get(const PetscMatrix &v, const PetscInt row, const PetscInt col);
 		static void get(const PetscVector &v, const std::vector<PetscInt> &index, std::vector<PetscScalar> &values);
 
+		static void mat_get_col(const PetscMatrix &m, PetscVector &v, const PetscScalar value);
+
 		template<typename I>
 		inline static void get(const PetscVector &v, const std::vector<I> &index, std::vector<PetscScalar> &values)
 		{

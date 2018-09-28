@@ -650,6 +650,11 @@ namespace utopia {
 		v.get(index, values);
 	}
 
+	void PetscBackend::mat_get_col(const PetscMatrix &m, PetscVector &v, const PetscScalar col_id)
+	{
+		m.get_col(v, col_id); 
+	}
+
 	void PetscBackend::apply_binary(PetscVector &result, const PetscMatrix &left, const Multiplies &, const PetscVector &right)
 	{
 		left.mult(right, result);

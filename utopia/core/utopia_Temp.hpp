@@ -63,6 +63,15 @@ namespace utopia  {
         set_zero_rows(w, index, diag);
     }
 
+
+    template<class Matrix, class Vector>
+    void mat_get_col(const Wrapper<Matrix, 2> &m, Wrapper<Vector, 1> &v, double col_id)
+    {
+        Backend<typename Traits<Matrix>::Scalar, Traits<Matrix>::Backend>::Instance().mat_get_col(m.implementation(), v.implementation(), col_id);
+
+    }
+
+
 }
 
 #endif //utopia_TEMP_HPP
