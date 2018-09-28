@@ -23,8 +23,8 @@
 #include "utopia_AlternateIncludes.hpp"
 
 #include "utopia_NonlinearSolverFactory.hpp"
-#include "utopia_HessianApproximations.hpp"
-#include "utopia_LBFGS.hpp"
+#include "utopia_HessianApprox.hpp"
+
 
 #endif //UTOPIA_NON_LINEAR_HPP
 

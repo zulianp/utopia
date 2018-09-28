@@ -61,7 +61,7 @@
          bool converged = false;
          NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-         Scalar delta, product, ared, pred, rho, E, E_k, E_k1;
+         Scalar delta, product, ared, pred, rho, E, E_k, E_k1, alpha;
 
          SizeType it = 0;
          it_successful_ = 0;
@@ -69,8 +69,7 @@
 
          bool rad_flg = false;
 
-         Vector g; 
-         Vector p_k = local_zeros(local_size(x_k).get(0)); 
+         Vector g, y = local_zeros(local_size(x_k).get(0)), p_k = local_zeros(local_size(x_k).get(0)); 
          Matrix H;
 
         #define DEBUG_mode
@@ -78,16 +77,8 @@
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg);
 
-
-        if(has_hessian_approx())
-            hessian_approx_strategy_->initialize(fun, x_k, H);
-        else
-        {
-            std::cout<<"hessian approx is missing..... \n"; 
-            fun.hessian(x_k, H);
-        }
+        hessian_approx_strategy_->initialize(fun, x_k);
             
-
         fun.gradient(x_k, g);
         g0_norm = norm2(g);
         g_norm = g0_norm;
@@ -119,10 +110,30 @@
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------
-          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-            tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
+          // this should be replaced ASAP .... 
+          // H = hessian_approx_strategy_->get_Hessian(); 
+          // if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
+          //   tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
 
-          this->get_pred(g, H, p_k, pred);
+
+          hessian_approx_strategy_->apply_Hinv(-1.0 * g, p_k); 
+
+          // scaling correction to fit into tr radius ... 
+          s_norm = norm2(p_k);
+
+          alpha = 1.0; 
+          while(s_norm >= delta)
+          {
+            alpha *= 0.8;  // shrinking alpha 
+            s_norm = norm2(alpha*p_k);
+          }
+
+          p_k = alpha*p_k; 
+
+          Scalar l_term = dot(g, p_k);
+          Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
+          pred = - l_term - 0.5 * qp_term; 
+
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           if(it == 1 && rad_flg)
@@ -160,6 +171,11 @@
           if (rho >= this->rho_tol())
           {
             x_k += p_k;
+
+            y = g; 
+            fun.gradient(x_k, g);
+            y = g - y; 
+            
             E = E_k1; 
           }
           // otherwise, keep old point
@@ -168,21 +184,14 @@
             E = E_k; 
           }
 
-          if(has_hessian_approx())
-              hessian_approx_strategy_->approximate_hessian(fun, x_k, p_k, H,  g);
-          else
-          {
-            std::cout<<"hessian approx is missing..... \n"; 
-              fun.hessian(x_k, H);
-          }  
+
+          hessian_approx_strategy_->update(p_k, y);
 
     //----------------------------------------------------------------------------
     //    convergence check
     //----------------------------------------------------------------------------
-          fun.gradient(x_k, g);
           g_norm = norm2(g);
           r_norm = g_norm/g0_norm;
-          s_norm = norm2(p_k);
 
           #ifdef DEBUG_mode
             if(this->verbose_)
