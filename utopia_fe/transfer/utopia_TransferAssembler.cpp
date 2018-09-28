@@ -655,10 +655,14 @@ namespace utopia {
 		c.start();
 
 		///////////////////////////
+		// const int spatial_dimension = from_mesh->spatial_dimension();
+		const int spatial_dimension = from_mesh->mesh_dimension();
 
-		if(from_mesh->mesh_dimension() == 2) {
+		if(spatial_dimension == 1) {
+			algorithm_ = std::make_shared<DefaultAlgorithm<1>>(from_mesh, from_dofs, to_mesh, to_dofs, opts, assembler_, local2global_);
+		} else if(spatial_dimension == 2) {
 			algorithm_ = std::make_shared<DefaultAlgorithm<2>>(from_mesh, from_dofs, to_mesh, to_dofs, opts, assembler_, local2global_);
-		} else if(from_mesh->mesh_dimension() == 3) {
+		} else if(spatial_dimension == 3) {
 			algorithm_ = std::make_shared<DefaultAlgorithm<3>>(from_mesh, from_dofs, to_mesh, to_dofs, opts, assembler_, local2global_);
 		} else {
 			assert(false && "dimension not supported");

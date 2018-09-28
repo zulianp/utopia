@@ -12,17 +12,20 @@ namespace utopia {
 	: dim(dim),
 	use_biorth(use_biorth),
 	must_compute_biorth(use_biorth),
-	composite_ir(dim),
+	// composite_ir(dim),
 	q_trial(dim),
 	q_test(dim),
 	assemble_mass_mat_(assemble_mass_mat)
 	{
-		if(dim == 2) {
+
+		if(dim == 1) {
+			q_builder = std::make_shared<QMortarBuilder1>();
+		} else if(dim == 2) {
 			q_builder = std::make_shared<QMortarBuilder2>();
 		} else {
 			assert(dim == 3);
 			q_builder = std::make_shared<QMortarBuilder3>(); 
-		}
+		} 
 	}
 
 	L2LocalAssembler::~L2LocalAssembler()

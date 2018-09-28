@@ -563,13 +563,12 @@ namespace utopia {
 
 		c_ir.resize(ir.n_points());
 
-		Point o(2), v(2);
+		Point o, v;
 
-		o(0) = line(0, 0);
-		o(1) = line(0, 1);
-
-		v(0) = line(1, 0) - line(0, 0);
-		v(1) = line(1, 1) - line(0, 1);
+		for(int i = 0; i < line.n(); ++i) {
+			o(i) = line(0, i);
+			v(i) = line(1, i) - line(0, i);
+		}
 
 		const Real length = v.norm();
 
@@ -669,10 +668,7 @@ namespace utopia {
 		for(int i = 0; i < global_ir.n_points(); ++i) {
 			p(0) = global_ir.qp(i)(0);
 			p(1) = global_ir.qp(i)(1);
-
-			if(dim > 2) {
-				p(2) = global_ir.qp(i)(2);
-			}
+			p(2) = global_ir.qp(i)(2);
 
 
 			trans.transform_to_reference(p, ref_ir.get_points()[i]);
@@ -685,6 +681,9 @@ namespace utopia {
 			} else if(is_quad(type)) {
 				//remove triangle scaling and add quad scaling
 				ref_ir.get_weights()[i] *= (4.*2.);
+			} else if(is_edge(type)) {
+				//rescale with ref-line length
+				ref_ir.get_weights()[i] *= 2.;
 			}
 		}
 	}
@@ -703,10 +702,7 @@ namespace utopia {
 		for(int i = 0; i < global_ir.n_points(); ++i) {
 			p(0) = global_ir.qp(i)(0);
 			p(1) = global_ir.qp(i)(1);
-
-			if(dim > 2) {
-				p(2) = global_ir.qp(i)(2);
-			}
+			p(2) = global_ir.qp(i)(2);
 
 			trans.transform_to_reference(p, ref_ir.get_points()[i]);
 
