@@ -1032,12 +1032,9 @@ namespace utopia {
 
 #ifdef WITH_PETSC
         //petsc version
-    #ifdef WITH_PETSC
         rmtr_test<DSMatrixd, DVectord>();
 #endif //WITH_PETSC
-
         rmtr_test<TSMatrixd, TVectord>();
-    #endif //WITH_PETSC
     }
 
     void trilinos_matrix_norm()
@@ -1195,9 +1192,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_ghosted);
         
         
-#ifdef WITH_PETSC
-        UTOPIA_RUN_TEST(trilinos_petsc_interop);
-#endif //WITH_PETSC
+// #ifdef WITH_PETSC
+//         UTOPIA_RUN_TEST(trilinos_petsc_interop);
+// #endif //WITH_PETSC
 
         //tests that fail in parallel
         if(mpi_world_size() == 1) {
