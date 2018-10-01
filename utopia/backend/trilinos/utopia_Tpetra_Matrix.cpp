@@ -10,7 +10,7 @@
 
 namespace utopia {
 
-	void TpetraMatrix::set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
+	void TpetraMatrix::set(const GO &row, const GO &col, const Scalar &value)
 	{
 	    m_utopia_status_once(
 	    	"> TpetraMatrix::set does what is supposed to do with respect to the edsl. "
@@ -21,8 +21,8 @@ namespace utopia {
 	        implementation().insertGlobalValues(row, 1, &value, &col);
 	    }
 	}
-
-	void TpetraMatrix::add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value)
+	
+	void TpetraMatrix::add(const GO &row, const GO &col, const Scalar &value)
 	{
 		m_utopia_status_once(
 			"> TpetraMatrix::add does what is supposed to do with respect to the edsl. "
@@ -38,9 +38,9 @@ namespace utopia {
 
 
 	//FIXME make faster version by storing view?
-	TpetraMatrix::Scalar TpetraMatrix::get(const global_ordinal_type &row, const global_ordinal_type &col) const
+	TpetraMatrix::Scalar TpetraMatrix::get(const GO &row, const GO &col) const
 	{
-		Teuchos::ArrayView<const global_ordinal_type> cols;
+		Teuchos::ArrayView<const GO> cols;
 		Teuchos::ArrayView<const Scalar> values;
 
 		assert(implementation().isLocallyIndexed());
@@ -131,7 +131,7 @@ namespace utopia {
 
 			assert(!right.implementation().getDomainMap().is_null());
 			result.mat_ = Teuchos::rcp(
-				new crs_matrix_type(
+				new crs_mat_type(
 					implementation().getDomainMap(),
 					col_map,
 					0, Tpetra::DynamicProfile));
@@ -139,7 +139,7 @@ namespace utopia {
 		} else {
 
 			result.mat_ = Teuchos::rcp(
-				new crs_matrix_type(
+				new crs_mat_type(
 					implementation().getRowMap(),
 					col_map,
 					0, Tpetra::DynamicProfile));
@@ -194,7 +194,7 @@ namespace utopia {
 	{
 		//FIXME this does not work as it should
 		try {
-			Tpetra::RowMatrixTransposer<Scalar, local_ordinal_type, global_ordinal_type, node_type> transposer(mat_);
+			Tpetra::RowMatrixTransposer<Scalar, LO, GO, NT> transposer(mat_);
 			mat.mat_ = transposer.createTranspose();
 			mat.owner_ = true;
 
@@ -272,11 +272,12 @@ namespace utopia {
 		//a column operator structure as petsc
 
 		rcp_map_type row_map;
+		const int indexBase = 0;
 
 		if(rows_local == INVALID_INDEX) {
-			row_map = Teuchos::rcp(new map_type(rows_global, 0, comm));
+			row_map.reset(new map_type(rows_global, indexBase, comm));
 		} else {
-			row_map = Teuchos::rcp(new map_type(rows_global, rows_local, 0, comm));
+			row_map.reset(new map_type(rows_global, rows_local, indexBase, comm));
 		}
 
 		if(cols_global == Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()) {
@@ -285,15 +286,15 @@ namespace utopia {
 			Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &send_buff, &cols_global);
 		}
 
-	    auto col_map = Teuchos::rcp(new map_type(cols_global, 0, comm, Tpetra::LocallyReplicated));
-	    mat_ = Teuchos::rcp(new crs_matrix_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
+	    auto col_map = Teuchos::rcp(new map_type(cols_global, indexBase, comm, Tpetra::LocallyReplicated));
+	    mat_.reset(new crs_mat_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
 	    owner_ = true;
 
 	    init_ = std::make_shared<InitStructs>();
 	    if(cols_local == INVALID_INDEX) {
-	    	init_->domain_map = Teuchos::rcp(new map_type(cols_global, 0, comm));
+	    	init_->domain_map.reset(new map_type(cols_global, indexBase, comm));
 	    } else {
-	    	init_->domain_map = Teuchos::rcp(new map_type(cols_global, cols_local, 0, comm));
+	    	init_->domain_map.reset(new map_type(cols_global, cols_local, indexBase, comm));
 	    }
 
 	    init_->range_map = row_map;
@@ -328,7 +329,7 @@ namespace utopia {
 	void TpetraMatrix::get_diag(TpetraVector &d) const
 	{
 		const bool is_row_min = this->size().get(0) <= this->size().get(1);
-		global_ordinal_type n = (is_row_min)? this->size().get(0) : this->size().get(1);
+		GO n = (is_row_min)? this->size().get(0) : this->size().get(1);
 
 		if(d.is_null() || d.size().get(0) != n) {
 			m_utopia_warning_once("TpetraMatrix::get_diag Assuming row <= col");
@@ -363,7 +364,7 @@ namespace utopia {
 
 		write_lock();
 
-		local_ordinal_type index = 0;
+		LO index = 0;
 
 		for(auto i = r.begin(); i < r.end(); ++i) {
 			set(i, i, data[index++]);
@@ -383,7 +384,7 @@ namespace utopia {
 
 		try {
 			//https://people.sc.fsu.edu/~jburkardt/data/mm/mm.html
-			mat_ = Tpetra::MatrixMarket::Reader<crs_matrix_type>::readSparse(is, comm);
+			mat_ = Tpetra::MatrixMarket::Reader<crs_mat_type>::readSparse(is, comm);
 		} catch(std::exception &ex) {
 			is.close();
 			std::cout << ex.what() << std::endl;
@@ -399,7 +400,7 @@ namespace utopia {
 		if(mat_.is_null()) return false;
 
 		try {
-			Tpetra::MatrixMarket::Writer<crs_matrix_type>::writeSparseFile(path, mat_, "mat", "", false);
+			Tpetra::MatrixMarket::Writer<crs_mat_type>::writeSparseFile(path, mat_, "mat", "", false);
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
 			return false;

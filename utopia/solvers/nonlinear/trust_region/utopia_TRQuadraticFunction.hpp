@@ -11,7 +11,7 @@ namespace utopia {
     template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
     class TRQuadraticFunction final : public Function<Matrix, Vector, Backend> {
     public:
-        DEF_UTOPIA_SCALAR(Matrix); 
+        DEF_UTOPIA_SCALAR(Matrix)
 
         TRQuadraticFunction(const std::shared_ptr<const Matrix> &H, const std::shared_ptr<const Vector> &rhs)
         : rhs_(rhs), H_(H)

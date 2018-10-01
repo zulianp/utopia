@@ -1,6 +1,6 @@
 UTOPIA_INSTALLATION_PATH=$(UTOPIA_DIR)
 
-include $(UTOPIA_INSTALLATION_PATH)/config/utopia_config.makefile
+include $(UTOPIA_INSTALLATION_PATH)/config/utopia-config.makefile
 
 INCLUDES:= $(UTOPIA_INCLUDES)
 LIBS:=$(UTOPIA_LIBRARIES)

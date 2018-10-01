@@ -1,7 +1,7 @@
 # UTOPIA_INSTALLATION_PATH=$(MOONOLITH_ROOT)/utopia/build
 UTOPIA_INSTALLATION_PATH=/Users/alenakopanicakova/MOOSE/moonolith/utopia_installation
 
-include $(UTOPIA_INSTALLATION_PATH)/config/utopia_config.makefile
+include $(UTOPIA_INSTALLATION_PATH)/config/utopia-config.makefile
 
 INCLUDES:=-I $(UTOPIA_INSTALLATION_PATH)/include $(UTOPIA_INCLUDES)
 LIBS:=-L$(UTOPIA_INSTALLATION_PATH)/lib -lutopia $(UTOPIA_LIBRARIES)
