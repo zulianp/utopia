@@ -1,37 +1,39 @@
 #ifndef UTOPIA_FE_CONSTARAINTS_HPP
-#define UTOPIA_FE_CONSTARAINTS_HPP 
+#define UTOPIA_FE_CONSTARAINTS_HPP
 
 #include "utopia_Equations.hpp"
+
+#include "tao/tuple/tuple.hpp"
 
 namespace utopia {
 	template<class... Constraint>
 	class FEConstraints {
 	public:
 
-		static const int n_constraints = std::tuple_size< std::tuple<Constraint...> >::value;
+		static const int n_constraints = sizeof...(Constraint);
 
 		FEConstraints(const Constraint &...eqs)
 		: eqs_(eqs...)
 		{ }
 
-		FEConstraints(const std::tuple<Constraint...> &eqs)
+		FEConstraints(const tao::tuple<Constraint...> &eqs)
 		: eqs_(eqs)
 		{}
 
 		template<int Index>
-		inline auto get() const -> const typename std::tuple_element<Index, std::tuple<Constraint...>>::type
+		inline auto get() const -> const typename tao::tuple_element<Index, tao::tuple<Constraint...>>::type
 		{
-			return std::get<Index>(eqs_);
+			return tao::get<Index>(eqs_);
 		}
 
 		template<int Index>
-		inline auto get() -> typename std::tuple_element<Index, std::tuple<Constraint...>>::type
+		inline auto get() -> typename tao::tuple_element<Index, tao::tuple<Constraint...>>::type
 		{
-			return std::get<Index>(eqs_);
+			return tao::get<Index>(eqs_);
 		}
 
 		template<class Fun>
-		void each(Fun fun) 
+		void each(Fun fun)
 		{
 			EquationIterator<FEConstraints, 0, n_constraints> iter(*this);
 			iter.visit(fun);
@@ -44,13 +46,13 @@ namespace utopia {
 			iter.visit(fun);
 		}
 
-		const std::tuple<Constraint...> &equations() const
+		const tao::tuple<Constraint...> &equations() const
 		{
 			return eqs_;
 		}
 
 	private:
-		std::tuple<Constraint...> eqs_;
+		tao::tuple<Constraint...> eqs_;
 	};
 
 	template<>
@@ -72,7 +74,7 @@ namespace utopia {
 	template<class... Constraint, class Appended>
 	FEConstraints<Constraint..., Appended> operator+(const FEConstraints<Constraint...> &constr, const Appended &eq)
 	{
-		return FEConstraints<Constraint..., Appended>(std::tuple_cat(constr.equations(), std::make_tuple(eq)));
+		return FEConstraints<Constraint..., Appended>(tao::tuple_cat(constr.equations(), tao::make_tuple(eq)));
 	}
 }
 

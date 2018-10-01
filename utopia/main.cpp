@@ -1,7 +1,7 @@
 
 #include "utopia.hpp"
-#include "utopia_Test.hpp"
-#include "utopia_benchmarks.hpp"
+//#include "utopia_Test.hpp"
+//#include "utopia_benchmarks.hpp"
 
 #include <memory>
 #include <iostream>
@@ -39,7 +39,7 @@ int main(const int argc, char *argv[])
         } else if(argv[i] == std::string("-performance_test_verbose")) {
             Utopia::instance().set("performance_test_verbose", "true");
         } else if(argv[i] == std::string("-bench")) {
-            run_benchmarks();
+            // run_benchmarks();
         }
     }
 
@@ -47,7 +47,7 @@ int main(const int argc, char *argv[])
     // Utopia::instance().set("n_threads", "2");
 
     if(run_tests) {
-        runTests(tests);
+//        runTests(tests);
     }
 
     return Utopia::Finalize();

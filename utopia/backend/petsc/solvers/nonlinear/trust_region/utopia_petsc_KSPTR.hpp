@@ -91,8 +91,8 @@ namespace utopia
 
         // virtual KSP_TR* clone() const override = 0; 
 
-        virtual KSP_TR<Matrix, Vector, PETSC>* clone() const override {
-        	return new KSP_TR<Matrix, Vector, PETSC>(*this);
+        virtual  KSP_TR* clone() const override {
+        	return new KSP_TR(*this);
         }
 
 	// protected:
@@ -155,111 +155,111 @@ namespace utopia
 
     };
 
-    template<typename Matrix, typename Vector>
-    class SteihaugToint<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
-    public:
-        SteihaugToint(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSP_TR<Matrix, Vector, PETSC>(params)
-        {
-            this->pc_type(preconditioner);
-            this->ksp_type("stcg");
-        }
+  //  template<typename Matrix, typename Vector>
+  //  class SteihaugToint<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
+  //  public:
+  //      SteihaugToint(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
+  //      : KSP_TR<Matrix, Vector, PETSC>(params)
+  //      {
+  //          this->pc_type(preconditioner);
+  //          this->ksp_type("stcg");
+  //      }
 
-        inline void set_parameters(const Parameters params) override
-        {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("stcg");
-            params_copy.preconditioner_type(this->pc_type().c_str());
-            KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
-        }
+  //      inline void set_parameters(const Parameters params) override
+  //      {
+  //          Parameters params_copy = params;
+  //          params_copy.lin_solver_type("stcg");
+  //          params_copy.preconditioner_type(this->pc_type().c_str());
+  //          KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
+  //      }
 
-        virtual SteihaugToint<Matrix, Vector, PETSC>* clone() const override {
-        	return new SteihaugToint<Matrix, Vector, PETSC>(*this);
-        }
+  //      virtual SteihaugToint<Matrix, Vector, PETSC>* clone() const override {
+  //      	return new SteihaugToint<Matrix, Vector, PETSC>(*this);
+  //      }
 
-    };
+  //  };
 
-    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
-    class Nash {};
+  //  template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+  //  class Nash {};
 
-    template<typename Matrix, typename Vector>
-    class Nash<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
-    public:
-        Nash(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSP_TR<Matrix, Vector, PETSC>(params)
-        {
-            this->pc_type(preconditioner);
-            this->ksp_type("nash");
-        }
+  //  template<typename Matrix, typename Vector>
+  //  class Nash<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
+  //  public:
+  //      Nash(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
+  //      : KSP_TR<Matrix, Vector, PETSC>(params)
+  //      {
+  //          this->pc_type(preconditioner);
+  //          this->ksp_type("nash");
+  //      }
 
-        inline void set_parameters(const Parameters params) override
-        {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("nash");
-            params_copy.preconditioner_type(this->pc_type().c_str());
-            KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
-        }
+  //      inline void set_parameters(const Parameters params) override
+  //      {
+  //          Parameters params_copy = params;
+  //          params_copy.lin_solver_type("nash");
+  //          params_copy.preconditioner_type(this->pc_type().c_str());
+  //          KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
+  //      }
 
-        virtual Nash<Matrix, Vector, PETSC>* clone() const override {
-        	return new Nash<Matrix, Vector, PETSC>(*this);
-        }
+  //      virtual Nash<Matrix, Vector, PETSC>* clone() const override {
+  //      	return new Nash<Matrix, Vector, PETSC>(*this);
+  //      }
 
-    };
+  //  };
 
-    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
-    class Lanczos {};
+  //  template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+  //  class Lanczos {};
 
-   	template<typename Matrix, typename Vector>
-    class Lanczos<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
-    public:
-        Lanczos(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSP_TR<Matrix, Vector, PETSC>(params)
-        {
-            this->pc_type(preconditioner);
-            this->ksp_type("nash");
-        }
+  // 	template<typename Matrix, typename Vector>
+  //  class Lanczos<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
+  //  public:
+  //      Lanczos(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
+  //      : KSP_TR<Matrix, Vector, PETSC>(params)
+  //      {
+  //          this->pc_type(preconditioner);
+  //          this->ksp_type("nash");
+  //      }
 
-        inline void set_parameters(const Parameters params) override
-        {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("gltr");
-            params_copy.preconditioner_type(this->pc_type().c_str());
-            KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
-        }
+  //      inline void set_parameters(const Parameters params) override
+  //      {
+  //          Parameters params_copy = params;
+  //          params_copy.lin_solver_type("gltr");
+  //          params_copy.preconditioner_type(this->pc_type().c_str());
+  //          KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
+  //      }
 
-        virtual Lanczos<Matrix, Vector, PETSC>* clone() const override {
-        	return new Lanczos<Matrix, Vector, PETSC>(*this);
-        }
+  //      virtual Lanczos<Matrix, Vector, PETSC>* clone() const override {
+  //      	return new Lanczos<Matrix, Vector, PETSC>(*this);
+  //      }
 
-    };
+  //  };
 
 
-    template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
-    class CGNE {};
+  //  template<typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
+  //  class CGNE {};
 
-    template<typename Matrix, typename Vector>
-    class CGNE<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
-    public:
-        CGNE(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
-        : KSP_TR<Matrix, Vector, PETSC>(params)
-        {
-            this->pc_type(preconditioner);
-            this->ksp_type("cgne");
-        }
+  //  template<typename Matrix, typename Vector>
+  //  class CGNE<Matrix, Vector, PETSC> : public KSP_TR<Matrix, Vector, PETSC> {
+  //  public:
+  //      CGNE(const Parameters params = Parameters(), const std::string &preconditioner = "jacobi")
+  //      : KSP_TR<Matrix, Vector, PETSC>(params)
+  //      {
+  //          this->pc_type(preconditioner);
+  //          this->ksp_type("cgne");
+  //      }
 
-        inline void set_parameters(const Parameters params) override
-        {
-            Parameters params_copy = params;
-            params_copy.lin_solver_type("cgne");
-            params_copy.preconditioner_type(this->pc_type().c_str());
-            KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
-        }
+  //      inline void set_parameters(const Parameters params) override
+  //      {
+  //          Parameters params_copy = params;
+  //          params_copy.lin_solver_type("cgne");
+  //          params_copy.preconditioner_type(this->pc_type().c_str());
+  //          KSP_TR<Matrix, Vector, PETSC>::set_parameters(params_copy);
+  //      }
 
-        virtual CGNE<Matrix, Vector, PETSC>* clone() const override {
-        	return new CGNE<Matrix, Vector, PETSC>(*this);
-        }
+  //      virtual CGNE<Matrix, Vector, PETSC>* clone() const override {
+  //      	return new CGNE<Matrix, Vector, PETSC>(*this);
+  //      }
 
-    };
+  //  };
 
 }
 

@@ -1,0 +1,225 @@
+t a/utopia_fe/core/CMakeLists.txt b/utopia_fe/core/CMakeLists.txt
+index 7901ae2c..e6d5b212 100644
+--- a/utopia_fe/core/CMakeLists.txt
++++ b/utopia_fe/core/CMakeLists.txt
+@@ -22,6 +22,7 @@ install(TARGETS utopia_fe_core
+ 	)
+ 
+ install(FILES ${LOCAL_HEADERS} DESTINATION include)
++install(DIRECTORY expressions/tao DESTINATION include)
+ 
+ set(UTOPIA_FE_LIBRARIES "${UTOPIA_FE_LIBRARIES};utopia_fe_core" PARENT_SCOPE)
+ 
+diff --git a/utopia_fe/core/expressions/utopia_Equations.hpp b/utopia_fe/core/expressions/utopia_Equations.hpp
+index 28d18940..f12e6700 100644
+--- a/utopia_fe/core/expressions/utopia_Equations.hpp
++++ b/utopia_fe/core/expressions/utopia_Equations.hpp
+@@ -1,8 +1,10 @@
+ #ifndef UTOPIA_EQUATIONS_HPP
+-#define UTOPIA_EQUATIONS_HPP 
++#define UTOPIA_EQUATIONS_HPP
+ 
+ #include <utility>
+ 
++#include "tao/tuple/tuple.hpp"
++
+ namespace utopia {
+ 
+ 	template<class Eqs, int Begin, int End>
+@@ -33,22 +35,22 @@ namespace utopia {
+ 	class Equations : public Expression< Equations<Equation...> > {
+ 	public:
+ 
+-		static const int n_equations = std::tuple_size< std::tuple<Equation...> >::value;
++		static const int n_equations = tao::tuple_size< tao::tuple<Equation...> >::value;
+ 
+ 		Equations(const Equation &...eqs)
+ 		: eqs_(eqs...)
+ 		{ }
+ 
+ 		template<int Index>
+-		inline auto get() const -> const typename std::tuple_element<Index, std::tuple<Equation...>>::type
++		inline auto get() const -> const typename tao::tuple_element<Index, tao::tuple<Equation...>>::type
+ 		{
+-			return std::get<Index>(eqs_);
++			return tao::get<Index>(eqs_);
+ 		}
+ 
+ 		template<int Index>
+-		inline auto get() -> typename std::tuple_element<Index, std::tuple<Equation...>>::type
++		inline auto get() -> typename tao::tuple_element<Index, tao::tuple<Equation...>>::type
+ 		{
+-			return std::get<Index>(eqs_);
++			return tao::get<Index>(eqs_);
+ 		}
+ 
+ 		template<class Fun>
+@@ -72,7 +74,7 @@ namespace utopia {
+ 		}
+ 
+ 	private:
+-		std::tuple<Equation...> eqs_;
++		tao::tuple<Equation...> eqs_;
+ 	};
+ 
+ 
+@@ -108,7 +110,7 @@ namespace utopia {
+ 
+ 		class FunctionalOrder {
+ 		public:
+-			
++
+ 			template<class Eq>
+ 			void operator()(const int index, const Eq &eq)
+ 			{
+@@ -121,8 +123,8 @@ namespace utopia {
+ 			int order;
+ 		};
+ 
+-		inline static int type(const Equations<Eqs...> &expr,  const AssemblyContext &ctx) 
+-		{ 
++		inline static int type(const Equations<Eqs...> &expr,  const AssemblyContext &ctx)
++		{
+ 			FunctionalType ft(ctx);
+ 			expr.template each<FunctionalType &>(ft);
+ 			return ft.type;
+diff --git a/utopia_fe/core/expressions/utopia_FEConstraints.hpp b/utopia_fe/core/expressions/utopia_FEConstraints.hpp
+index e2942753..aebd4c56 100644
+--- a/utopia_fe/core/expressions/utopia_FEConstraints.hpp
++++ b/utopia_fe/core/expressions/utopia_FEConstraints.hpp
+@@ -1,37 +1,39 @@
+ #ifndef UTOPIA_FE_CONSTARAINTS_HPP
+-#define UTOPIA_FE_CONSTARAINTS_HPP 
++#define UTOPIA_FE_CONSTARAINTS_HPP
+ 
+ #include "utopia_Equations.hpp"
+ 
++#include "tao/tuple/tuple.hpp"
++
+ namespace utopia {
+ 	template<class... Constraint>
+ 	class FEConstraints {
+ 	public:
+ 
+-		static const int n_constraints = std::tuple_size< std::tuple<Constraint...> >::value;
++		static const int n_constraints = sizeof...(Constraint);
+ 
+ 		FEConstraints(const Constraint &...eqs)
+ 		: eqs_(eqs...)
+ 		{ }
+ 
+-		FEConstraints(const std::tuple<Constraint...> &eqs)
++		FEConstraints(const tao::tuple<Constraint...> &eqs)
+ 		: eqs_(eqs)
+ 		{}
+ 
+ 		template<int Index>
+-		inline auto get() const -> const typename std::tuple_element<Index, std::tuple<Constraint...>>::type
++		inline auto get() const -> const typename tao::tuple_element<Index, tao::tuple<Constraint...>>::type
+ 		{
+-			return std::get<Index>(eqs_);
++			return tao::get<Index>(eqs_);
+ 		}
+ 
+ 		template<int Index>
+-		inline auto get() -> typename std::tuple_element<Index, std::tuple<Constraint...>>::type
++		inline auto get() -> typename tao::tuple_element<Index, tao::tuple<Constraint...>>::type
+ 		{
+-			return std::get<Index>(eqs_);
++			return tao::get<Index>(eqs_);
+ 		}
+ 
+ 		template<class Fun>
+-		void each(Fun fun) 
++		void each(Fun fun)
+ 		{
+ 			EquationIterator<FEConstraints, 0, n_constraints> iter(*this);
+ 			iter.visit(fun);
+@@ -44,13 +46,13 @@ namespace utopia {
+ 			iter.visit(fun);
+ 		}
+ 
+-		const std::tuple<Constraint...> &equations() const
++		const tao::tuple<Constraint...> &equations() const
+ 		{
+ 			return eqs_;
+ 		}
+ 
+ 	private:
+-		std::tuple<Constraint...> eqs_;
++		tao::tuple<Constraint...> eqs_;
+ 	};
+ 
+ 	template<>
+@@ -72,7 +74,7 @@ namespace utopia {
+ 	template<class... Constraint, class Appended>
+ 	FEConstraints<Constraint..., Appended> operator+(const FEConstraints<Constraint...> &constr, const Appended &eq)
+ 	{
+-		return FEConstraints<Constraint..., Appended>(std::tuple_cat(constr.equations(), std::make_tuple(eq)));
++		return FEConstraints<Constraint..., Appended>(tao::tuple_cat(constr.equations(), tao::make_tuple(eq)));
+ 	}
+ }
+ 
+diff --git a/utopia_fe/core/expressions/utopia_MixedFunctionSpace.hpp b/utopia_fe/core/expressions/utopia_MixedFunctionSpace.hpp
+index 8793ae50..58fda3cd 100644
+--- a/utopia_fe/core/expressions/utopia_MixedFunctionSpace.hpp
++++ b/utopia_fe/core/expressions/utopia_MixedFunctionSpace.hpp
+@@ -1,7 +1,8 @@
+ #ifndef UTOPIA_MIXED_FUNCTION_SPACE_HPP
+-#define UTOPIA_MIXED_FUNCTION_SPACE_HPP 
++#define UTOPIA_MIXED_FUNCTION_SPACE_HPP
+ 
+ #include <utility>
++#include "tao/tuple/tuple.hpp"
+ 
+ namespace utopia {
+ 
+@@ -11,26 +12,26 @@ namespace utopia {
+ 	struct TupleFilter {
+ 
+ 		template<class Function>
+-	    static void apply(const InputTuple& in, OutputTuple& out, Function fun) 
++	    static void apply(const InputTuple& in, OutputTuple& out, Function fun)
+ 	    {
+ 	        TupleFilter<InputTuple, OutputTuple, N-1>::apply(in, out, fun);
+-	        fun(std::get<N-1>(in), std::get<N-1>(out));
++	        fun(tao::get<N-1>(in), tao::get<N-1>(out));
+ 	    }
+ 	};
+-	 
++
+ 	template<class InputTuple,
+ 			 class OutputTuple>
+ 	struct TupleFilter<InputTuple, OutputTuple, 1> {
+ 
+ 		template<class Function>
+-	    static void apply(const InputTuple& in, OutputTuple& out, Function fun) 
++	    static void apply(const InputTuple& in, OutputTuple& out, Function fun)
+ 	    {
+-	        fun(std::get<0>(in), std::get<0>(out));
++	        fun(tao::get<0>(in), tao::get<0>(out));
+ 	    }
+ 	};
+ 
+ 	template<class...T>
+-	using MixedFunctionSpace = std::tuple<T...>;
++	using MixedFunctionSpace = tao::tuple<T...>;
+ 
+ 
+ 	class MakeTrial {
+@@ -54,13 +55,13 @@ namespace utopia {
+ 	template<class... Args>
+ 	MixedFunctionSpace<FunctionSpace<Args>...> mixed(FunctionSpace<Args> &&...args)
+ 	{
+-		return std::make_tuple(args...);
++		return tao::make_tuple(args...);
+ 	}
+ 
+ 	template<class... Args>
+ 	MixedFunctionSpace<std::shared_ptr<FunctionSpace<Args>>...> mixed(std::shared_ptr<FunctionSpace<Args> > &&... args)
+ 	{
+-		return std::make_tuple(args...);
++		return tao::make_tuple(args...);
+ 	}
+ 
+ 	template<class... Args>
