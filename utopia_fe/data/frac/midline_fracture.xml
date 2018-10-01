@@ -6,15 +6,15 @@
 		<order>2</order>
 
 		<min-x>0.</min-x>
-		<min-y>0.</min-y>
+		<min-y>0.1</min-y>
 		
-		<max-x>1.</max-x>
-		<max-y>1.</min-y>
+		<max-x>1</max-x>
+		<max-y>1.1</min-y>
 		
-		<n-x>10</n-x>
-		<n-y>10</n-y>
+		<n-x>3</n-x>
+		<n-y>3</n-y>
 
-		<refinements>2</refinements>
+		<refinements>4</refinements>
 	</mesh>
 <!-- 
 	<sampler>
@@ -49,7 +49,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/midline.e</path>
-		<refinements>1</refinements>
+		<refinements>2</refinements>
 	</mesh>
 
 	<sampler>
@@ -78,6 +78,20 @@
 
 	<diffusivity>10.</diffusivity>
 </slave>
+
+
+<!-- MULTIPLIER STUFF -->
+<multiplier>
+	<mesh>
+		<type>file</type>
+		<path>../data/frac/midline.e</path>
+		<refinements>1</refinements>
+	</mesh>
+	<space>
+		<system-name>multiplier</system-name>
+	</space>
+
+</multiplier>
 
 <!-- <solve-strategy>monolithic</solve-strategy> -->
 <solve-strategy>staggered</solve-strategy>
