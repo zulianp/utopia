@@ -111,28 +111,19 @@ namespace utopia {
          }*/
         
         bool setProblem() {
-                         std::cout << "pota 3 " << std::endl;
             linearProblem->setProblem();
-                         std::cout << "pota 4 " << std::endl;
             belosSolver = belosFactory.create( ParamList->sublist("UTOPIA", true).get("Solver Type", "CG"), ParamList); //to change it to have the specialization
-                         std::cout << "pota 5 " << std::endl;
             belosSolver->setProblem(linearProblem);
-                         std::cout << "pota 6 " << std::endl;
             if (this->verbose()) belosSolver->getCurrentParameters()->print();
             
             return true;
         }
 
         bool setProblem(Matrix &A) {
-                 std::cout << "pota 3 " << std::endl;
              linearProblem->setProblem();
-                        std::cout << "pota 4 " << std::endl;
             belosSolver = belosFactory.create( ParamList->sublist("UTOPIA", true).get("Solver Type", "CG"), ParamList); //to change it to have the specialization
-                     std::cout << "pota 5 " << std::endl;
             set_preconditioner(A);
-                     std::cout << "pota 5a " << std::endl;
             belosSolver->setProblem(linearProblem);
-                         std::cout << "pota 6 " << std::endl;
              if (this->verbose()) belosSolver->getCurrentParameters()->print();
 
              return true;
@@ -156,7 +147,6 @@ namespace utopia {
         
         
         bool apply(const Vector &rhs, Vector &lhs) override {
-            std::cout << "pota 1 " << std::endl;
             linearProblem = Teuchos::rcp(
              new problem_type(
                this->get_operator()->implementation().implementation_ptr(),
@@ -164,22 +154,17 @@ namespace utopia {
                rhs.implementation().implementation_ptr()
                )
              );
-             std::cout << "pota 2 " << std::endl;
             setProblem();
-                         std::cout << "pota 7 " << std::endl;
             belosSolver->solve();
             return true;
         }
         
 
 bool solve(Matrix &A,const Vector &rhs, Vector &lhs) { //override {
-        std::cout << "pota 1appl " << std::endl;
         linearProblem = Teuchos::rcp( new problem_type(A.implementation().implementation_ptr(),
         lhs.implementation().implementation_ptr(),
         rhs.implementation().implementation_ptr() ) );
-         std::cout << "pota 2appl " << std::endl;
             setProblem(A);
-               std::cout << "pota 7appl " << std::endl;
             belosSolver->solve();
             return true;
          }

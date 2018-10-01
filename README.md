@@ -11,6 +11,12 @@ Utopia is a C++ embedded domain specific language designed for parallel non-line
 
 Developed at the Institute of Computational Science, USI, Lugano, Switzerland (https://www.ics.usi.ch).
 
+# License
+The software is realized with NO WARRANTY and it is licenzed under BSD 3-Clause license (https://opensource.org/licenses/BSD-3-Clause)
+
+# Copyright
+Copyright (c) 2015 Institute of Computational Science - USI Università della Svizzera Italiana, ETH-Z Eidgenössische Technische Hochschule Zürich
+
 # Dependencies
 - PETSc (https://www.mcs.anl.gov/petsc/), must be compiled with MUMPS enabled
 - LibMesh for the experimental FE module (https://github.com/libMesh)
