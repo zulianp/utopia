@@ -50,6 +50,8 @@ namespace utopia {
 		{
 			assert(i < rows());
 			assert(j < cols());
+			assert((blocks_[i*cols_ + j]));
+			
 			return *blocks_[i*cols_ + j];
 		}
 

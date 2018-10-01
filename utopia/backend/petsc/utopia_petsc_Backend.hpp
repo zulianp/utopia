@@ -193,10 +193,10 @@ namespace utopia {
 		template<class Tensor>
 		static void read_unlock(const Tensor &) {}
 
-		static void write_lock(PetscVector &vec);
-		static void write_unlock(PetscVector &vec);
-		static void write_lock(PetscMatrix &mat);
-		static void write_unlock(PetscMatrix &mat);
+		static void write_lock(PetscVector &vec, WriteMode mode);
+		static void write_unlock(PetscVector &vec, WriteMode mode);
+		static void write_lock(PetscMatrix &mat, WriteMode mode);
+		static void write_unlock(PetscMatrix &mat, WriteMode mode);
 
 		static void set(PetscMatrix &v, const std::vector<PetscInt> &rows, const std::vector<PetscInt> &cols, const std::vector<Scalar> &values);
 
@@ -272,7 +272,7 @@ namespace utopia {
 			VecSetType(result.implementation(), type);
 			VecSetSizes(result.implementation(), ls.get(0), gs.get(0));
 
-			write_lock(result);
+			write_lock(result, LOCAL);
 			read_lock(v);
 
 			for(PetscInt i = r.begin(); i < r.end(); ++i) {
@@ -280,7 +280,7 @@ namespace utopia {
 				VecSetValue(result.implementation(), i, op.template apply<Scalar>(value), INSERT_VALUES);
 			}
 
-			write_unlock(result);
+			write_unlock(result, LOCAL);
 			read_unlock(v);
 		}
 
@@ -349,7 +349,7 @@ namespace utopia {
 
 			read_lock(left);
 			read_lock(right);
-			write_lock(result);
+			write_lock(result, LOCAL);
 
 			for(PetscInt i = ll.begin(); i < ll.end(); ++i) {
 				Scalar lv, rv;
@@ -361,7 +361,7 @@ namespace utopia {
 
 			read_unlock(left);
 			read_unlock(right);
-			write_unlock(result);
+			write_unlock(result, LOCAL);
 		}
 
 		//[specialized]
@@ -444,12 +444,12 @@ namespace utopia {
 
 		template<class Tensor>
 		static void read_and_write_lock(Tensor &t) {
-			write_lock(t);
+			write_lock(t, LOCAL);
 		}
 
 		template<class Tensor>
 		static void read_and_write_unlock(Tensor &t){
-			write_unlock(t);
+			write_unlock(t, LOCAL);
 		}
 
 		static void diag_scale_right(Matrix &result, const Matrix &m,    const Vector &diag);

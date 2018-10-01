@@ -55,6 +55,27 @@ namespace utopia {
         return true;
     }
 
+    static bool assemble_interpolation(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &T)
+    {
+        auto assembler = std::make_shared<InterpolationLocalAssembler>(from.mesh().mesh_dimension());
+        auto local2global = std::make_shared<Local2Global>(true);
+
+        TransferAssembler transfer_assembler(assembler, local2global);
+
+        std::vector< std::shared_ptr<USparseMatrix> > mats;
+        if(!transfer_assembler.assemble(
+                                        make_ref(from.mesh()),
+                                        make_ref(from.dof_map()),
+                                        make_ref(to.mesh()),
+                                        make_ref(to.dof_map()),
+                                        mats)) {
+            return false;
+        }
+
+        T = std::move(*mats[0]);
+        return true;
+    }
+
 
     static void refine(const int n_refs, libMesh::MeshBase &mesh)
     {
@@ -288,6 +309,8 @@ namespace utopia {
         auto mesh = std::make_shared<libMesh::DistributedMesh>(*comm_);
         in.make_mesh(*mesh);
 
+        mesh->print_info();
+
         const auto elem_order = libMesh::Order(in.order);
         auto V = FunctionSpaceT(*mesh, libMesh::LAGRANGE, elem_order, "u");
         in.set_up_bc(V);
@@ -298,7 +321,7 @@ namespace utopia {
         // auto f = std::make_shared<Poisson<decltype(V), USparseMatrix, UVector>>(V);
 
         Newton<USparseMatrix, UVector> solver;
-        solver.set_linear_solver(std::make_shared<SOR<USparseMatrix, UVector>>());
+        solver.set_linear_solver(std::make_shared<Factorization<USparseMatrix, UVector>>());
         // solver.set_line_search_strategy(std::make_shared<Backtracking<USparseMatrix, UVector>>());
 
         UVector x = local_zeros(V.dof_map().n_local_dofs());
@@ -331,12 +354,24 @@ namespace utopia {
         auto coarse_solver = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
         auto smoother      = std::make_shared<utopia::SteihaugToint<USparseMatrix, UVector, HOMEMADE> >();
 
+
         // coarse_solver->verbose(true); 
         // smoother->verbose(true); 
+        // auto coarse_solver = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
+        // coarse_solver->atol(1e-12);
+        // coarse_solver->rtol(1e-12);
+        // coarse_solver->pc_type("lu");
+
 
         coarse_solver->set_preconditioner(std::make_shared<InvDiagPreconditioner<USparseMatrix, UVector> >());
         // smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<USparseMatrix, UVector> >());
         smoother->set_preconditioner(std::make_shared<IdentityPreconditioner<USparseMatrix, UVector> >());
+
+
+        // auto smoother = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >("gltr");
+        // smoother->atol(1e-15);
+        // smoother->rtol(1e-15);
+        // smoother->pc_type("asm");
 
 
         meshes[0] = std::make_shared<libMesh::DistributedMesh>(*comm_);
@@ -360,8 +395,8 @@ namespace utopia {
         for(std::size_t i = 1; i < n_levels; ++i) {
             auto T_cf = std::make_shared<USparseMatrix>();
             auto T_fc = std::make_shared<USparseMatrix>();
-            assemble_projection(*spaces[i-1], *spaces[i],   *T_cf);
-            assemble_projection(*spaces[i],   *spaces[i-1], *T_fc);
+            assemble_interpolation(*spaces[i-1], *spaces[i],   *T_cf); //assemble_projection 
+            assemble_interpolation(*spaces[i],   *spaces[i-1], *T_fc); //assemble_projection 
             transfers[i-1] = std::make_shared<IPTransferT>(T_cf, T_fc);
         }
 

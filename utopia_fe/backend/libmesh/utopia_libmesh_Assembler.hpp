@@ -100,8 +100,8 @@ namespace utopia {
 			}
 
 			{
-				Write<GlobalMatrix> w_m(mat);
-				Write<GlobalVector> w_v(vec);
+				Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
+				Write<GlobalVector> w_v(vec, utopia::GLOBAL_ADD);
 
 				ElementMatrix el_mat;
 				ElementVector el_vec;
@@ -166,8 +166,12 @@ namespace utopia {
 			if(empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
 				SizeType nnz_x_row = 0;
 				if(!dof_map.get_n_nz().empty()) {
-					nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-						*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+					// nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+					// 	*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+
+					nnz_x_row = 
+						*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()) + 
+						*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
 				}
 
 				mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
@@ -176,7 +180,7 @@ namespace utopia {
 			}
 
 			{
-				Write<GlobalMatrix> w_m(mat);
+				Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
 
 				if(elements_begin(m) != elements_end(m)) {
 
@@ -233,13 +237,14 @@ namespace utopia {
 			auto &m = space.mesh();
 
 			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs()) {
-				vec = local_zeros(dof_map.n_local_dofs());
+				// vec = local_zeros(dof_map.n_local_dofs());
+				vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
 			} else {
 				vec *= 0.;
 			}
 
 			{
-				Write<GlobalVector> w_v(vec);
+				Write<GlobalVector> w_v(vec, utopia::GLOBAL_ADD);
 				ElementVector el_vec;
 
 				if(elements_begin(m) != elements_end(m)) {

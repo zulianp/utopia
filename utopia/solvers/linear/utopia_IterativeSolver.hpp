@@ -231,15 +231,16 @@ namespace  utopia
         virtual Scalar      atol() const               { return atol_; } 
         virtual Scalar      rtol()  const              { return rtol_; } 
         virtual Scalar      stol()  const              { return stol_; } 
+
         virtual SizeType    max_it()  const            { return max_it_; } 
 
         virtual bool      precondition() const          { return precondition_; } 
         virtual bool      time_statistics() const       { return time_statistics_; } 
 
-
         virtual bool log_iterates() const                { return log_iterates_; } 
         virtual bool log_system() const                  { return log_system_; } 
         virtual bool verbose() const                     { return verbose_; } 
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual void atol(const Scalar & atol_in ) { atol_ = atol_in; }; 
         virtual void rtol(const Scalar & rtol_in ) { rtol_ = rtol_in; }; 

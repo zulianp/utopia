@@ -60,12 +60,12 @@ namespace utopia
 
 		bool must_generate_masks()
 		{
-			return mask_.must_generate_masks();
+			return mask_.active();
 		}
 
 		void must_generate_masks(const bool must_generate_masks)
 		{
-			mask_.must_generate_masks(must_generate_masks);
+			mask_.active(must_generate_masks);
 		}
 
 		void add_level(Level &&level)

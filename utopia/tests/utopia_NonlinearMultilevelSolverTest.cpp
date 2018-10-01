@@ -154,6 +154,7 @@ namespace utopia
 
             multigrid->set_transfer_operators(problem.prolongations);
             multigrid->must_generate_masks(false);
+            multigrid->set_fix_semidefinite_operators(true);
             multigrid->verbose(problem.verbose);
             multigrid->atol(1e-11);
 

@@ -500,27 +500,41 @@ namespace utopia {
         void sample(const std::shared_ptr<UIFunction<double>> &sampler)
         {
             FunctionSpaceT V_aperture(aux_, var_nums_[0]);
-            auto u = trial(V_aperture);
-            auto v = test(V_aperture);
+            V_aperture.initialize();
 
-            auto lform = inner(ctx_fun(sampler), v) * dX;
+            auto &dof_map = V_aperture.dof_map();
 
-            UVector aperture_h;
-            utopia::assemble(lform, aperture_h);
+            sampled = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+            // sampled = local_zeros(dof_map.n_local_dofs());
 
-            USparseMatrix mass_mat;
-            utopia::assemble(inner(u, v) * dX, mass_mat);
-            UVector d_inv = 1./sum(mass_mat, 1);
+            auto constant_sampler = std::dynamic_pointer_cast<UIConstantFunction<double>>(sampler);
 
-            UVector aperture = e_mul(d_inv, aperture_h);
+            if(constant_sampler) {
+                sampled.set(constant_sampler->value());
+            } else {
+                auto u = trial(V_aperture);
+                auto v = test(V_aperture);
 
-            utopia::convert(aperture, *aux_.solution);
+                auto lform = inner(ctx_fun(sampler), v) * dX;
+
+                UVector aperture_h = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());
+                utopia::assemble(lform, aperture_h);
+
+                USparseMatrix mass_mat;
+                utopia::assemble(inner(u, v) * dX, mass_mat);
+                UVector d_inv = 1./sum(mass_mat, 1);
+                sampled = e_mul(d_inv, aperture_h);
+            }
+
+            utopia::convert(sampled, *aux_.solution);
             aux_.solution->close();
+
+            // synchronize(sampled);
         }
 
+        UVector sampled;
 
     private:
-
 
         libMesh::LinearImplicitSystem &aux_;
         std::vector<int> var_nums_;
@@ -612,12 +626,13 @@ namespace utopia {
     };
 
 
-    std::shared_ptr<LinearSolver<USparseMatrix, UVector> > make_mg_solver(const FunctionSpaceT &space, const int n_levels)
+    std::shared_ptr<SemiGeometricMultigrid> make_mg_solver(
+        const FunctionSpaceT &space, const int n_levels)
     {
         auto linear_solver = std::make_shared<Factorization<USparseMatrix, UVector>>();
         auto smoother      = std::make_shared<GaussSeidel<USparseMatrix, UVector>>();
         auto mg            = std::make_shared<SemiGeometricMultigrid>(smoother, linear_solver);
-       
+
         mg->algebraic().rtol(1e-9);
         mg->algebraic().atol(1e-14);
         // mg->verbose(true);
@@ -635,7 +650,9 @@ namespace utopia {
         UVector &sol_m,
         UVector &sol_s,
         UVector &lagr,
-        const bool use_mg = false)
+        const bool use_mg,
+        int mg_levels,
+        int mg_sweeps)
     {
 
         Chrono c;
@@ -657,11 +674,18 @@ namespace utopia {
         SPBlockConjugateGradient<USparseMatrix, UVector> solver;
         solver.verbose(true);
         solver.max_it(2000);
-        solver.atol(1e-6);
+        solver.atol(1e-14);
 
-        if(use_mg) {
-            solver.set_master_solver(make_mg_solver(V_m, 5));
-        }
+        solver.use_simple_preconditioner();
+
+       if(use_mg) {
+           auto mg = make_mg_solver(V_m, mg_levels);
+           solver.set_master_solver(mg);
+
+           solver.set_master_sweeps(mg_sweeps);
+           solver.set_master_max_it(mg->max_it());
+       }
+
 
         solver.update(
             make_ref(A_m),
@@ -671,6 +695,7 @@ namespace utopia {
             make_ref(B_t),
             make_ref(D_t)
         );
+
 
         bool ok = solver.apply(rhs_m, rhs_s, sol_m, sol_s, lagr);
 
@@ -691,7 +716,9 @@ namespace utopia {
         UVector &sol_m,
         UVector &sol_s,
         UVector &lagr,
-        const bool use_mg = false)
+        const bool use_mg,
+        int mg_levels,
+        int mg_sweeps)
     {
 
         Chrono c;
@@ -713,10 +740,16 @@ namespace utopia {
         SPBlockConjugateGradient<USparseMatrix, UVector> solver;
         solver.verbose(true);
         solver.max_it(2000);
-        solver.atol(1e-6);
+        solver.atol(1e-14);
+
+        solver.use_simple_preconditioner();
 
         if(use_mg) {
-            solver.set_master_solver(make_mg_solver(V_m, 5));
+            auto mg = make_mg_solver(V_m, mg_levels);
+            solver.set_master_solver(mg);
+
+            solver.set_master_sweeps(mg_sweeps);
+            solver.set_master_max_it(mg->max_it());
         }
 
         solver.update(
@@ -763,6 +796,12 @@ namespace utopia {
         bool use_mg = false;
         is_ptr->read("use-mg", use_mg);
 
+        int mg_sweeps = 1;
+        is_ptr->read("mg-sweeps", mg_sweeps);
+
+        int mg_levels = 5;
+        is_ptr->read("mg-levels", mg_levels);
+
 
         std::string operator_type = "L2_PROJECTION";
         is_ptr->read("operator-type", operator_type);
@@ -771,7 +810,12 @@ namespace utopia {
         slave_in.describe();
         multiplier_in.describe();
 
-        std::cout << "solve_strategy: "  << solve_strategy << std::endl;
+        std::cout << "solve-strategy: "  << solve_strategy << std::endl;
+        std::cout << "use-mg:         "  << use_mg         << std::endl;
+        if(use_mg) {
+            std::cout << "mg-sweeps:      "  << mg_sweeps      << std::endl;
+            std::cout << "mg-levels:      "  << mg_levels      << std::endl;
+        }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -800,6 +844,11 @@ namespace utopia {
 
         auto eq_m = inner(master_in.diffusion_tensor * grad(u_m), ctx_fun(master_in.sampler) * grad(v_m)) * dX;
         auto eq_s = inner(slave_in.diffusion_tensor  * grad(u_s), ctx_fun(slave_in.sampler)  * grad(v_s)) * dX;
+
+        // auto permeability_m = interpolate(aux_m.sampled, u_m);
+        // auto aperture_s     = interpolate(aux_s.sampled, u_s);
+        // auto eq_m = inner(master_in.diffusion_tensor * grad(u_m), permeability_m * grad(v_m)) * dX;
+        // auto eq_s = inner(slave_in.diffusion_tensor  * grad(u_s), aperture_s     * grad(v_s)) * dX;
 
         //////////////////////////// Generation of the algebraic system ////////////////////////////
 
@@ -844,7 +893,9 @@ namespace utopia {
                             sol_m,
                             sol_s,
                             lagr,
-                            use_mg
+                            use_mg,
+                            mg_levels,
+                            mg_sweeps
                             );
 
             } else {
@@ -858,7 +909,9 @@ namespace utopia {
                             sol_m,
                             sol_s,
                             lagr,
-                            use_mg
+                            use_mg,
+                            mg_levels,
+                            mg_sweeps
                             );
             }
 
@@ -901,7 +954,7 @@ namespace utopia {
         // UGLY code for writing stuff to disk
         libMesh::Nemesis_IO io_m(master_in.mesh.mesh());
         libMesh::Nemesis_IO io_s(slave_in.mesh.mesh());
-        
+
 
         utopia::convert(sol_m, *V_m.equation_system().solution);
         V_m.equation_system().solution->close();
@@ -915,8 +968,8 @@ namespace utopia {
         if(!multiplier_in.empty()) {
             libMesh::Nemesis_IO io_multiplier(multiplier_in.mesh.mesh());
             auto &L = multiplier_in.space.subspace(0);
-            utopia::convert(lagr, *L.equation_system().solution);                                       
-            L.equation_system().solution->close();                                                      
+            utopia::convert(lagr, *L.equation_system().solution);
+            L.equation_system().solution->close();
             io_multiplier.write_timestep(L.equation_system().name() + ".e", L.equation_systems(), 1, 0);
         }
 

@@ -330,7 +330,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
-
     private:
         static_assert(utopia::is_sparse<Matrix>::value, "BFGS does not support sparse matrices.");
 

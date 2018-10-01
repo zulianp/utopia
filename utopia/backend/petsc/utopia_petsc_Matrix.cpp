@@ -1179,6 +1179,8 @@ namespace utopia {
 
     void PetscMatrix::mult_mat_t(const PetscMatrix &mat, PetscMatrix &result) const
     {
+        m_utopia_warning("> FIXME MatMatTransposeMult does not work in parallel, prepare work around");
+
         if(mat.implementation() != result.implementation() && implementation() != result.implementation()) {
             result.destroy();
             check_error( MatMatTransposeMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation()) );
