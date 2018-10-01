@@ -1,20 +1,23 @@
-list(APPEND INTREPID2_BACKEND_MODULES
-	.
-)
 
-find_project_files(CMAKE_CURRENT_SOURCE_DIR INTREPID2_BACKEND_MODULES LOCAL_HEADERS LOCAL_SOURCES)
-
-
-add_library(utopia_fe_intrepid2_backend STATIC ${LOCAL_SOURCES})
-target_link_libraries(utopia_fe_intrepid2_backend utopia_fe_core utopia_fe_intersection utopia_fe_base)
-target_include_directories(utopia_fe_intrepid2_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-set_utopia_compiler_features(utopia_fe_intrepid2_backend)
 #----------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------
 
 find_package(Intrepid2)
+	if(INTREPID2_FOUND)
 
-if(INTREPID2_FOUND)
+	list(APPEND INTREPID2_BACKEND_MODULES
+		.
+	)
+
+	find_project_files(CMAKE_CURRENT_SOURCE_DIR INTREPID2_BACKEND_MODULES LOCAL_HEADERS LOCAL_SOURCES)
+
+
+	add_library(utopia_fe_intrepid2_backend STATIC ${LOCAL_SOURCES})
+	target_link_libraries(utopia_fe_intrepid2_backend utopia_fe_core utopia_fe_intersection utopia_fe_base)
+	target_include_directories(utopia_fe_intrepid2_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+	set_utopia_compiler_features(utopia_fe_intrepid2_backend)
+
+
 	target_include_directories(utopia_fe_intrepid2_backend PUBLIC ${INTREPID2_INCLUDE_DIR})
 	target_link_libraries(utopia_fe_intrepid2_backend ${INTREPID2_LIBRARIES})
 
