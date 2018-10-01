@@ -98,6 +98,7 @@ list(APPEND UTOPIA_FE_MODULES
 	visualization
 	backend/libmesh
 	backend/homemade
+	backend/intrepid2
 	intersection
 	contact
 	materials

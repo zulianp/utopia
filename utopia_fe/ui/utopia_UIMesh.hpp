@@ -67,6 +67,10 @@ namespace utopia {
 
 			if(mesh_type == "file") {
 				mesh_->read(path);
+			} else if(mesh_type == "line") {
+				libMesh::MeshTools::Generation::build_line(
+					*mesh_, n[0], min_coords[0], max_coords[0], get_type(elem_type, order, 1)
+				);
 			} else if(mesh_type == "square") {
 				libMesh::MeshTools::Generation::build_square(*mesh_,
 					n[0], n[1],
@@ -178,6 +182,14 @@ namespace utopia {
 		        }
 
 		        return type;
+		    } else if(dim == 1) {
+		    	libMesh::ElemType type = libMesh::EDGE2;
+
+		    	if(order == 2) {
+		    		type = libMesh::EDGE4;
+		    	}
+
+		    	return type;
 		    }
 
 		    return libMesh::TRI3;
