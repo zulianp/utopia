@@ -7,6 +7,7 @@
 namespace utopia
 {
 
+
 	/**
 	 * @brief      Class for Steihaug Toint conjugate gradient.
 	 */
@@ -23,10 +24,12 @@ namespace utopia
 
         virtual ~SteihaugToint(){}
 
-        SteihaugToint * clone() const override
+        virtual SteihaugToint * clone() const override
         {
-        	return new SteihaugToint();
+        	return new SteihaugToint(*this);
         }
+
+
 
 	protected:
         bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override

@@ -105,7 +105,7 @@ namespace utopia
 			params.stol(1e-10);
 			params.verbose(problem.verbose);
 
-			auto subproblem = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >();
+			auto subproblem = std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord> >();
 			TrustRegion<DSMatrixd, DVectord> tr_solver(subproblem);
 			tr_solver.set_parameters(params);
 			tr_solver.solve(fun, x);
