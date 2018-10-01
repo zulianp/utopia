@@ -21,7 +21,7 @@ namespace utopia {
 				assert(t_.implementation().implementation().isLocallyIndexed());
 				auto rr = row_range(t);
 				t_.implementation().implementation().getLocalRowView(row - rr.begin(), cols_, values_);
-				offset_ = t_.implementation().implementation().getColMap()->getMinGlobalIndex();
+				offset_ = t_.implementation().implementation().getDomainMap()->getMinGlobalIndex();
 			}
 		}
 
@@ -36,8 +36,13 @@ namespace utopia {
 		inline GO col(const int index) const
 		{
 			assert(index < n_values());
-			auto ret = cols_[index] + offset_;
-			return ret;
+
+			if(offset_ == 0) {
+				auto ret = cols_[index] + offset_;
+				return ret;
+			} else {
+				return t_.implementation().implementation().getDomainMap()->getGlobalElement(cols_[index]);
+			}
 		}
 
 		inline Scalar get(const int index) const

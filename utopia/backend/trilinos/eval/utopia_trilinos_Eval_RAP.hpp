@@ -33,7 +33,6 @@ namespace utopia {
 			result.implementation_ptr().reset(
 				new decltype(result)(
 					R.implementation().getRowMap(),
-					P.implementation().getColMap(),
 					0,
 					Tpetra::DynamicProfile
 				)
