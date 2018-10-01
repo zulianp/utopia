@@ -144,34 +144,75 @@ namespace utopia {
 		assert(trial.n_nodes() == 2);
 		assert(test.n_nodes()  == 2);
 
-		trial_pts[0] = trial.node_ref(0);
-		trial_pts[1] = trial.node_ref(1);
+		const auto &p1 = trial.node_ref(0);
+		const auto &p2 = trial.node_ref(1);
 
-		test_pts[0] = test.node_ref(0);
-		test_pts[1] = test.node_ref(1);
+		const auto &q1 = test.node_ref(0);
+		const auto &q2 = test.node_ref(1);
 
-		u = trial_pts[1] - trial_pts[0];
-		v = test_pts[0]  - trial_pts[0];
+		u = p2 - p1;
+		v = q2 - q1;
 
+		auto len_u = u.norm();
+		auto len_v = v.norm();
 
-		//TODO
+		u /= len_u;
+		v /= len_v;
 
-		if(std::abs(u(1)) < 1e-16) {
-			if(std::abs(v(1)) > 1e-8) {
-				return false;
-			}
+		const double cos_angle = u * v;
 
-
-
-
-			//1D case
-
-		} else {
-
+		if(std::abs(std::abs(cos_angle) - 1.) > 1e-14) {
+			//not collinear
+			return false;
 		}
 
+		w = q2 - p1;
+		auto len_w = w.norm();
 
-		return false;
+		if(len_w != 0.) {
+			w /= len_w;
+			const double cos_angle_2 = w * u;
+			if(std::abs(std::abs(cos_angle_2) - 1.) > 1e-14) {
+				//not on the same plane
+				return false;
+			}
+		}
+
+		for(int i = 0; i < LIBMESH_DIM; ++i) {
+			min_p(i) = std::min(p1(i), p2(i));
+			max_p(i) = std::max(p1(i), p2(i));
+			
+			min_q(i) = std::min(q1(i), q2(i));
+			max_q(i) = std::max(q1(i), q2(i));
+
+			intersection[0](i) = std::max(min_p(i), min_q(i));
+			intersection[1](i) = std::min(max_p(i), max_q(i));
+		}
+
+		r = intersection[1] - intersection[0];
+
+		auto isect_len = r.norm_sq();
+		if(isect_len < 1e-16) {
+			return false;
+		}
+
+		libMesh::DenseMatrix<libMesh::Real> line(2, LIBMESH_DIM);
+
+		for(int i = 0; i < LIBMESH_DIM; ++i) {
+			line(0, i) = intersection[0](i);
+			line(1, i) = intersection[1](i);
+		}
+
+		const int order = order_for_l2_integral(1, trial, trial_type.order, test, test_type.order);
+		make_composite_quadrature_on_surf_2D(line, 1./len_v, order, composite_ir);
+		total_intersection_volume += std::sqrt(isect_len);
+
+		auto trial_trans = std::make_shared<Transform1>(trial);
+		auto test_trans  = std::make_shared<Transform1>(test);
+
+		transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
+		transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
+		return true;
 	}
 
 
@@ -217,7 +258,7 @@ namespace utopia {
 				make_composite_quadrature_on_surf_2D(intersection, 1./weight, order, composite_ir);
 
 				transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
-				transform_to_reference_surf(*test_trans, test.type(), composite_ir, q_test);
+				transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
 				return true;
 			}
 

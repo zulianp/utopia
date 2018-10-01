@@ -60,7 +60,7 @@ namespace utopia {
 		int dim;
 		bool use_biorth;
 		bool must_compute_biorth;
-		QMortar composite_ir;
+		// QMortar composite_ir;
 		QMortar q_trial;
 		QMortar q_test;
 

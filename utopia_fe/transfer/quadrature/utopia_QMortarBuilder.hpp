@@ -50,10 +50,8 @@ namespace utopia {
 		}
 
 	private:
-		libMesh::Point trial_pts[2];
-		libMesh::Point test_pts[2];
 		libMesh::Point intersection[2];
-		libMesh::Point u, v;
+		libMesh::Point u, v, w, min_p, max_p, min_q, max_q, r;
 
 		Real total_intersection_volume;
 		QMortar composite_ir;
