@@ -27,7 +27,7 @@
 
 
 //FIXME find right macros (these packages are optional in trilinos, they should be optional also in utopia)
-#define HAVE_BELOS_MUELU
+// #define HAVE_BELOS_MUELU
 #define HAVE_BELOS_IFPACK2
 
 
