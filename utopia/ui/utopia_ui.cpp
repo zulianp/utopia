@@ -4,8 +4,7 @@
 
 
 namespace utopia {
-
-	std::unique_ptr<InputStream> open_istream(const Path &path)
+    std::unique_ptr<InputStream> open_istream(const Path &path)
 	{
 		if(path.extension() == "xml") {
 			// auto ret = make_unique<XMLInputStream>();

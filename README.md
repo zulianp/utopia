@@ -11,6 +11,12 @@ Utopia is a C++ embedded domain specific language designed for parallel non-line
 
 Developed at the Institute of Computational Science, USI, Lugano, Switzerland (https://www.ics.usi.ch).
 
+# License
+The software is realized with NO WARRANTY and it is licenzed under BSD 3-Clause license (https://opensource.org/licenses/BSD-3-Clause)
+
+# Copyright
+Copyright (c) 2015 Institute of Computational Science - USI Università della Svizzera Italiana, ETH-Z Eidgenössische Technische Hochschule Zürich
+
 # Dependencies
 - PETSc (https://www.mcs.anl.gov/petsc/), must be compiled with MUMPS enabled
 - LibMesh for the experimental FE module (https://github.com/libMesh)
@@ -70,7 +76,7 @@ Setting MOONOLITH\_INSTALL\_PREFIX is optional. But if you want to delete the co
 
 ## Compiling your code with utopia and Makefile
 
-If you are using utopia with 'make' you can use the utopia_config.makefile in the $UTOPIA\_DIR/config folder as shown
+If you are using utopia with 'make' you can use the utopia-config.makefile in the $UTOPIA\_DIR/config folder as shown
 in the example in the file utopia/utopia/example\_usage\_of\_utopia/Makefile
 
 If you are using utopia\_fe with 'make' you can use the utopia_fe_config.makefile in the $UTOPIA\_DIR/config folder as shown

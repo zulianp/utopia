@@ -3,19 +3,27 @@
 find_package(Trilinos)
 
 if(TRILINOS_FOUND)
-	list(APPEND UTOPIA_INCLUDES ${Trilinos_INCLUDE_DIRS})
-	# list(APPEND UTOPIA_LIBRARIES ${Trilinos_LIBRARY_DIRS})
-	list(APPEND UTOPIA_LIBRARIES ${Trilinos_TPL_LIBRARIES})
+    foreach(LIB ${Trilinos_LIBRARY_DIRS})
+        list(APPEND UTOPIA_LIBRARIES -L${LIB})
+    endforeach(LIB)
 
-
-	foreach(LIB ${Trilinos_LIBRARIES})
-		list(APPEND UTOPIA_LIBRARIES -l${LIB})
-	endforeach(LIB)
-
-	foreach(LIB ${Trilinos_LIBRARY_DIRS})
-		list(APPEND UTOPIA_LIBRARIES -L${LIB})
-	endforeach(LIB)
-
+    list(APPEND UTOPIA_INCLUDES ${Trilinos_INCLUDE_DIRS})
+    # list(APPEND UTOPIA_LIBRARIES ${Trilinos_LIBRARY_DIRS})
+    list(APPEND Trilinos_all_libs ${Trilinos_TPL_LIBRARIES})
+    list(APPEND Trilinos_all_libs ${Trilinos_LIBRARIES})
+    list(REMOVE_DUPLICATES Trilinos_all_libs)
+    foreach(LIB ${Trilinos_all_libs})
+        if(EXISTS ${LIB})
+            list(APPEND UTOPIA_LIBRARIES ${LIB})
+        else()
+            list(APPEND UTOPIA_LIBRARIES -l${LIB})
+        endif()
+    endforeach()
+    list(APPEND Trilinos_TPL_INCLUDE_DIRS ${Trilinos_additional_headers})
+    list(APPEND UTOPIA_INCLUDES ${Trilinos_TPL_INCLUDE_DIRS})
+    #####
+    message(STATUS "Trilinos_additional_headers ${Trilinos_additional_headers}")
+    message(STATUS "Trilinos_TPL_INCLUDE_DIRS ${Trilinos_TPL_INCLUDE_DIRS}")
 
     # set(CMAKE_C_COMPILER ${TRILINOS_COMPILER})
 
@@ -42,6 +50,13 @@ if(TRILINOS_FOUND)
 	endif()
 
     set(WITH_TRILINOS TRUE)
+    if(KOKKOS_CUDA_HPP)
+        set(KOKKOS_CUDA TRUE)
+    endif()
+    if(KOKKOS_OPENMP_HPP)
+        set(KOKKOS_OPENMP TRUE)
+    endif()
+
 else()
     message(WARNING "[Warning] Trilinos not found")
     set(WITH_TRILINOS FALSE)

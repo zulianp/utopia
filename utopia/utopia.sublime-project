@@ -14,7 +14,8 @@
 				"xcode",
 				"doc/api",
 				"build_*",
-				"bin_*"
+				"bin_*",
+				"install"
 			],
 			"path": "."
 		}

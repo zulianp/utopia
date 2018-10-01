@@ -38,7 +38,7 @@ find_library(UTOPIA_LIBRARIES
  NO_DEFAULT_PATH)
 
 find_path(UTOPIA_CONFIG_FILE_PATH 
-  NAMES "utopia_config.cmake"
+  NAMES "utopia-config.cmake"
   HINTS
     $ENV{UTOPIA_DIR}
     ${UTOPIA_DIR}
@@ -50,7 +50,7 @@ find_path(UTOPIA_CONFIG_FILE_PATH
 
 
 if(UTOPIA_CONFIG_FILE_PATH)
-  include(${UTOPIA_CONFIG_FILE_PATH}/utopia_config.cmake)
+  include(${UTOPIA_CONFIG_FILE_PATH}/utopia-config.cmake)
 endif()
 
 # Send useful message if everything is found

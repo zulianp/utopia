@@ -11,14 +11,6 @@
 #include <cmath>
 #include <TpetraExt_MatrixMatrix_def.hpp>
 
-//TODO find the configuration for having this
-// #include "TpetraExt_TripleMatrixMultiply_def.hpp"
-
-
-//useful links:
-//https://trilinos.org/docs/dev/packages/tpetra/doc/html/namespaceTpetra_1_1TripleMatrixMultiply.html
-//see MultiplyRAP
-
 namespace utopia {
     class TrilinosBackend : public ScalarBackend<TpetraVector::Scalar> {
     public:
@@ -196,15 +188,15 @@ namespace utopia {
 
         template<class Integer>
         void build_ghosts(
-            const TpetraVector::global_ordinal_type &local_size,
-            const TpetraVector::global_ordinal_type &global_size,
+            const TpetraVector::GO &local_size,
+            const TpetraVector::GO &global_size,
             const std::vector<Integer> &index,
             TpetraVector &vec)
         {
             // assert(default_communicator()->getSize() == 1 && "implement me: does not work in parallel yet");
             // vec.values(default_communicator(), local_size, global_size, 0.);
 
-            std::vector<TpetraVector::global_ordinal_type> tpetra_index;
+            std::vector<TpetraVector::GO> tpetra_index;
 
             tpetra_index.insert(tpetra_index.end(), index.begin(), index.end());
             vec.ghosted(default_communicator(), local_size, global_size, tpetra_index);
@@ -212,9 +204,9 @@ namespace utopia {
 
 
         void build_ghosts(
-            const TpetraVector::global_ordinal_type &local_size,
-            const TpetraVector::global_ordinal_type &global_size,
-            const std::vector<TpetraVector::global_ordinal_type> &index,
+            const TpetraVector::GO &local_size,
+            const TpetraVector::GO &global_size,
+            const std::vector<TpetraVector::GO> &index,
             TpetraVector &vec)
         {
             // assert(default_communicator()->getSize() == 1 && "implement me: does not work in parallel yet");
@@ -242,7 +234,7 @@ namespace utopia {
             assert(false && "IMPLEMENT ME");
         }
 
-        static Scalar get(const TpetraVector &v, const TpetraVector::global_ordinal_type &index)
+        static Scalar get(const TpetraVector &v, const TpetraVector::GO &index)
         {
             return v.get(index);
         }
@@ -253,27 +245,27 @@ namespace utopia {
        		v.get(index, values);
        	}
 
-        inline static void set(TpetraVector &v, const TpetraVector::global_ordinal_type &index, Scalar value)
+        inline static void set(TpetraVector &v, const TpetraVector::GO &index, Scalar value)
         {
             v.set(index, value);
         }
 
-        inline static void add(TpetraVector &v, const TpetraVector::global_ordinal_type &index, Scalar value)
+        inline static void add(TpetraVector &v, const TpetraVector::GO &index, Scalar value)
         {
             v.add(index, value);
         }
 
-        static Scalar get(const TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col)
-        {
-            return m.get(row, col);
-        }
-
-        inline static void set(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
+        inline static void set(TpetraMatrix &m, const TpetraMatrix::GO &row, const TpetraMatrix::GO &col, const Scalar &value)
         {
             m.set(row, col, value);
         }
 
-        inline static void add(TpetraMatrix &m, const TpetraMatrix::global_ordinal_type &row, const TpetraMatrix::global_ordinal_type &col, const Scalar &value)
+        static Scalar get(const TpetraMatrix &m, const TpetraMatrix::GO &row, const TpetraMatrix::GO &col)
+        {
+            return m.get(row, col);
+        }
+
+        inline static void add(TpetraMatrix &m, const TpetraMatrix::GO &row, const TpetraMatrix::GO &col, const Scalar &value)
         {
             m.add(row, col, value);
         }
@@ -618,14 +610,14 @@ namespace utopia {
         template<typename Integer>
         static void set_zero_rows(TpetraMatrix &mat, const std::vector<Integer> &index, const Scalar diag)
         {
-            typedef typename TpetraMatrix::global_ordinal_type global_ordinal_type;
+            typedef typename TpetraMatrix::GO GO;
             typedef typename TpetraMatrix::Scalar Scalar;
 
             auto &impl = mat.implementation();
             static const Scalar zero = 0.;
 
-            global_ordinal_type offset = 0;
-            Teuchos::ArrayView<const global_ordinal_type> cols;
+            GO offset = 0;
+            Teuchos::ArrayView<const GO> cols;
             Teuchos::ArrayView<const Scalar> values;
 
             for(auto row : index) {
@@ -639,7 +631,7 @@ namespace utopia {
                 }
 
                 for(auto c : cols) {
-                    const global_ordinal_type col = c + offset;
+                    const GO col = c + offset;
 
                     if(col == row) {
                         impl.replaceGlobalValues(row, 1, &diag, &col);

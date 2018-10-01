@@ -10,7 +10,7 @@
 namespace utopia {
 
 	void TpetraVector::add_vector(
-	    const std::vector<global_ordinal_type> &indices,
+	    const std::vector<GO> &indices,
 	    const std::vector<Scalar> &values)
 	{
 		const std::size_t n = values.size();
@@ -22,7 +22,7 @@ namespace utopia {
 	}
 
 	void TpetraVector::set_vector(
-	    const std::vector<global_ordinal_type> &indices,
+	    const std::vector<GO> &indices,
 	    const std::vector<Scalar> &values)
 	{
 		const std::size_t n = values.size();
@@ -35,7 +35,11 @@ namespace utopia {
 
 	bool TpetraVector::read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path)
 	{
-		typedef Tpetra::CrsMatrix<>                       crs_matrix_type;
+        typedef Tpetra::Operator<>::scalar_type SC;
+        typedef Tpetra::Operator<SC>::local_ordinal_type LO;
+        typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
+
+        typedef Tpetra::CrsMatrix<SC, LO, GO, NT>         crs_matrix_type;
 
 		try {
 			rcp_map_type map;
@@ -51,8 +55,7 @@ namespace utopia {
 
 	bool TpetraVector::write(const std::string &path) const
 	{
-		typedef Tpetra::CrsMatrix<>                       crs_matrix_type;
-
+     typedef Tpetra::CrsMatrix<SC, LO, GO, NT>            crs_matrix_type;
 		if(vec_.is_null()) return false;
 
 		try {
@@ -149,9 +152,9 @@ namespace utopia {
 
 	void TpetraVector::ghosted(
 		const rcp_comm_type &comm, 
-		const TpetraVector::global_ordinal_type &local_size,
-	    const TpetraVector::global_ordinal_type &global_size,
-		const std::vector<global_ordinal_type> &ghost_index
+		const TpetraVector::GO &local_size,
+	    const TpetraVector::GO &global_size,
+		const std::vector<GO> &ghost_index
 	)
 	{
 		rcp_map_type map(new map_type(global_size, local_size, 0, comm));
@@ -161,7 +164,7 @@ namespace utopia {
 
 			Range r = { map->getMinGlobalIndex(), map->getMaxGlobalIndex() + 1 };
 
-			std::vector<global_ordinal_type> filled_with_local;
+			std::vector<GO> filled_with_local;
 			filled_with_local.reserve(r.extent() + ghost_index.size());
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
@@ -174,7 +177,7 @@ namespace utopia {
 				}
 			}
 
-			const Teuchos::ArrayView<const global_ordinal_type>
+			const Teuchos::ArrayView<const GO>
 			   local_indices(filled_with_local);
 
 			 ghost_map = Teuchos::rcp(new map_type(global_size, local_indices, 0, comm));
@@ -197,8 +200,8 @@ namespace utopia {
 		auto ghost_map = ghosted_vec_->getMap();
 
 		Tpetra::Import<
-			local_ordinal_type,
-			global_ordinal_type,
+			LO,
+			GO,
 			vector_type::node_type> importer(map, ghost_map);
 
 		ghosted_vec_->doImport(*vec_, importer, Tpetra::INSERT);
@@ -212,8 +215,8 @@ namespace utopia {
 		auto ghost_map = ghosted_vec_->getMap();
 
 		Tpetra::Export<
-			local_ordinal_type,
-			global_ordinal_type,
+			LO,
+			GO,
 			vector_type::node_type> exporter(ghost_map, map);
 
 

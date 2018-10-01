@@ -12,33 +12,68 @@
 #include <Tpetra_Map_decl.hpp>
 
 
+#include <Kokkos_DefaultNode.hpp>
+#include <Tpetra_CrsMatrix.hpp>
+#include <Tpetra_DefaultPlatform.hpp>
+
 #include <iostream>
 #include <memory>
 
 namespace utopia {
-
+    //template<class NodeType>
     class TpetraMatrix {
     public:
 
-        typedef Tpetra::CrsMatrix<>                       crs_matrix_type;
-        typedef Teuchos::RCP<crs_matrix_type>             rcp_crs_matrix_type;
-        typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
-        typedef Tpetra::Map<>                             map_type;
-        typedef Teuchos::RCP<map_type>                    rcp_map_type;
-        typedef Tpetra::Vector<>::local_ordinal_type      local_ordinal_type;
-        typedef Tpetra::Vector<>::global_ordinal_type     global_ordinal_type;
-        typedef Tpetra::Vector<>::scalar_type             Scalar;
-        typedef crs_matrix_type::node_type node_type;
+        /////////////////////////////////////////////////////////////
+        // typedef definitions
+        /////////////////////////////////////////////////////////////
 
-        TpetraMatrix() : owner_(true) {}
+        //types of Operators
+        typedef Tpetra::Operator<>::scalar_type SC;
+        typedef Tpetra::Operator<SC>::local_ordinal_type LO;
+        typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
+
+        //types of Kokkos Parallel Nodes
+        typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
+#ifdef KOKKOS_CUDA
+        typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
+        typedef cuda_node NT;
+#elif defined KOKKOS_OPENMP
+        typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
+        typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
+        typedef openmp_node NT;
+#else
+        typedef serial_node NT;
+#endif
+        //types of Trilinos Objects
+        typedef Tpetra::CrsMatrix<SC, LO, GO, NT>             crs_mat_type;
+        typedef Teuchos::RCP<crs_mat_type>                    rcp_crs_mat_type;
+        typedef Teuchos::RCP<const Teuchos::Comm<int> >       rcp_comm_type;
+        typedef Tpetra::Map<LO, GO, NT>                       map_type;
+        typedef Teuchos::RCP<const map_type>                  rcp_map_type;
+        typedef Tpetra::Vector<SC, LO, GO, NT>::scalar_type   Scalar;
 
         /////////////////////////////////////////////////////////////
-        ~TpetraMatrix()
-        {}
+        //Constructors
+        /////////////////////////////////////////////////////////////
+
+        //Default Constructor
+        TpetraMatrix() : owner_(true) {}
+        // TpetraMatrix(int Ndofs, int maxNumEntries) : owner_(true) {
+        // int indexBase = 0;
+        // rcp_comm_type Comm = Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
+        // rcp_map_type Map = Teuchos::rcp(new map_type(Ndofs, indexBase, Comm));
+        // mat_.reset(new crs_mat_type(Map, maxNumEntries, Tpetra::StaticProfile));
+        // }
+
+        // //Explicit Constructors
+        // TpetraMatrix(rcp_map_type Map, int maxNumEntries) : owner_(true) {
+        // mat_.reset(new crs_mat_type(Map, maxNumEntries, Tpetra::StaticProfile));
+        // }
 
         //deep copy
         //     template <class Node2>
-        // rcp_crs_matrix_type  clone (
+        // rcp_crs_mat_type  clone (
         //   const Teuchos::RCP<Node2> & node2,
         //   const Teuchos::RCP<Teuchos::ParameterList> & params = Teuchos::null)
         // {
@@ -56,6 +91,17 @@ namespace utopia {
         TpetraMatrix(TpetraMatrix &&other)
         : mat_(std::move(other.mat_)), owner_(std::move(other.owner_))
         {}
+
+        /////////////////////////////////////////////////////////////
+        //Destructor
+        /////////////////////////////////////////////////////////////
+
+         ~TpetraMatrix()
+         {}
+
+        /////////////////////////////////////////////////////////////
+        //Overloading Operators
+        /////////////////////////////////////////////////////////////
 
         TpetraMatrix &operator=(const TpetraMatrix &other)
         {
@@ -88,6 +134,21 @@ namespace utopia {
         }
 
         void finalize();
+
+        // void fillComplete()
+        // {
+        //     mat_->fillComplete();
+        // }
+
+        // void replaceGlobalValues (const GO globalRow, const LO numEnt, const SC vals[], const GO cols[])
+        // {
+        //     mat_->replaceGlobalValues(globalRow, numEnt, vals, cols);
+        // }
+
+        // void replaceLocalValues (const LO localRow, const LO numEnt,  const SC vals[], const LO cols[] )
+        // {
+        //     mat_->replaceLocalValues(localRow, numEnt, vals, cols);
+        // }
 
         rcp_comm_type communicator() const
         {
@@ -190,9 +251,9 @@ namespace utopia {
             describe(std::cout);
         }
 
-        void set(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
-        Scalar get(const global_ordinal_type &row, const global_ordinal_type &col) const;
-        void add(const global_ordinal_type &row, const global_ordinal_type &col, const Scalar &value);
+        void set(const GO &row, const GO &col, const Scalar &value);
+        Scalar get(const GO &row, const GO &col) const;
+        void add(const GO &row, const GO &col, const Scalar &value);
 
         template<typename Integer>
         void add_matrix(
@@ -257,25 +318,25 @@ namespace utopia {
             write_unlock();
         }
 
-        inline crs_matrix_type &implementation()
+        inline crs_mat_type &implementation()
         {
             assert(!mat_.is_null());
             return *mat_;
         }
 
-        inline const crs_matrix_type &implementation() const
+        inline const crs_mat_type &implementation() const
         {
             assert(!mat_.is_null());
             return *mat_;
         }
 
-        inline rcp_crs_matrix_type &implementation_ptr()
+        inline rcp_crs_mat_type &implementation_ptr()
         {
             assert(!mat_.is_null());
             return mat_;
         }
 
-        inline const rcp_crs_matrix_type &implementation_ptr() const
+        inline const rcp_crs_mat_type &implementation_ptr() const
         {
             assert(!mat_.is_null());
             return mat_;
@@ -295,9 +356,19 @@ namespace utopia {
         Scalar sum() const;
 
 
+        void set_domain_and_range(
+            const rcp_map_type &domain_map,
+            const rcp_map_type &range_map
+            )
+        {
+            init_ = std::make_shared<InitStructs>();
+            init_->domain_map = domain_map;
+            init_->range_map = range_map;
+        }
+
     private:
-        rcp_crs_matrix_type  mat_;
-        bool                 owner_;
+        rcp_crs_mat_type  mat_;
+        bool              owner_;
 
         typedef struct {
             rcp_map_type domain_map;

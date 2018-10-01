@@ -1,4 +1,3 @@
-
 #include "utopia_Base.hpp"
 
 #ifdef WITH_TRILINOS
@@ -278,8 +277,9 @@ namespace utopia {
         TVectord v = local_values(n, 5.);
 
         double val = norm1(Y * v);
-        utopia_test_assert(approxeq(val, 0., 1e-14));
-
+        double tolerance = 30. * std::numeric_limits<double>::epsilon();
+        //std::cout << "val " << val <<std::endl;
+        utopia_test_assert(approxeq(val, 0., tolerance ));
 
         TSMatrixd Id = local_identity(n, n);
         Id += 2. * Id;
@@ -452,12 +452,16 @@ namespace utopia {
         TSMatrixd A = local_sparse(n, n, 3);
         assemble_laplacian_1D(A);
         TVectord d = diag(A);
+//        disp(A);
+//        disp(d);
 
         const double val = norm1(d);
         utopia_test_assert(approxeq(val, size(d).get(0)*2.-2.));
 
         TSMatrixd D = diag(d);
         TVectord x  = local_values(n, 1.);
+//        disp(D);
+//        disp(x);
         utopia_test_assert(approxeq(d, D*x));
     }
 
@@ -630,10 +634,11 @@ namespace utopia {
 
     void trilinos_mg_1D()
     {
-        // if(mpi_world_size() > 1) return;
+      // if(mpi_world_size() > 1) return;
       //petsc version
-      test_mg<DSMatrixd, DVectord>();
-    
+#ifdef WITH_PETSC
+       test_mg<DSMatrixd, DVectord>();
+#endif //WITH_PETSC
       //trilinos version
       test_mg<TSMatrixd, TVectord>();
     }
@@ -649,8 +654,6 @@ namespace utopia {
         // using MatrixT = utopia::DSMatrixd;
         // using VectorT = utopia::DVectord;
 
-        bool ok = true;
-
         VectorT rhs;
         MatrixT A, I;
 
@@ -662,6 +665,8 @@ namespace utopia {
         );
 
 #ifdef WITH_PETSC
+
+        bool ok = true;
         //FIXME needs trilinos formats but for the moment lets use petsc's
         {
             DSMatrixd petsc_A, petsc_I;
@@ -1027,10 +1032,12 @@ namespace utopia {
 
 #ifdef WITH_PETSC
         //petsc version
+    #ifdef WITH_PETSC
         rmtr_test<DSMatrixd, DVectord>();
 #endif //WITH_PETSC
 
         rmtr_test<TSMatrixd, TVectord>();
+    #endif //WITH_PETSC
     }
 
     void trilinos_matrix_norm()
@@ -1040,6 +1047,119 @@ namespace utopia {
         double nm = norm2(m);
         utopia_test_assert( approxeq(nm, std::sqrt(1.*size(m).get(0))) );
     }
+
+    void trilinos_belos()
+    {
+        // comunicator
+        // map
+        
+        TVectord x ;
+        TVectord b ;
+        TSMatrixd A;
+        Parameters params;
+        //params.set_param_file_name( "~/utopiaTrilinosFile.xml");
+        int i = 2;
+        double ii=3.442;
+        BelosSolver<TSMatrixd, TVectord> solver(params);
+        x.implementation().replaceLocalValue(i, ii);
+
+        solver.solve(A, b, x);
+        std::cout << "Number of Iterations " << solver.getNumIter() << std::endl;
+        
+        std::cout << "Achieved tolerance " << solver.achievedTol() << std::endl;
+        
+        /*   Parameters<TRILINOS> param;
+         PrecondionedSolver<TSMatrixd, TVectord, TVectord, TRILINOS> prec;
+         prec.set_preconditioner();
+         
+         linearSol.apply();
+         ///////////////////
+         
+         Teuchos::RCP<const Teuchos::Comm<int> > Comm =
+         Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
+         int myPID = Comm->getRank();
+         
+         Teuchos::RCP<const map_type> Map =
+         Teuchos::rcp(new map_type(Ndofs, indexBase, Comm));
+         
+         Teuchos::RCP<vec_type> LHS = Teuchos::rcp(new vec_type(Map, false));
+         Teuchos::RCP<vec_type> RHS = Teuchos::rcp(new vec_type(Map, false));
+         
+         for (int i = 0; i < Ndofs; ++i)
+         LHS->replaceLocalValue(i, _linSystem->solution(i));
+         LHS->getData(0)[i];
+         
+         Teuchos::RCP<matrix_type> A = Teuchos::rcp(
+         new matrix_type(Map, maxNumEntries, Tpetra::StaticProfile));
+         
+         A->insertGlobalValues(row, values.size(), values.data(), columns.data());
+         A->fillComplete();
+         
+         Teuchos::RCP<Belos::LinearProblem<SC, mv_type, op_type> > linearProblem =
+         Teuchos::rcp(new problem_type(A, LHS, RHS));
+         
+         linearProblem->setProblem();
+         
+         //list
+         Teuchos::RCP<Teuchos::ParameterList> ParamList = Teuchos::getParametersFromXmlFile(param_file_name);
+         //sublist
+         auto& fasterPL = ParamList->sublist("FASTER", true);
+         bool direct_solver = fasterPL.get("Direct Solver", false);
+         bool direct_prec = fasterPL.get<bool>("Direct Preconditioner", false);
+         std::string dir_prec_type = fasterPL.get("Ifpack2 Preconditioner", "prec_type_unset");
+         std::string sol_type = fasterPL.get("Solver Type", "CG");
+         //"factory"
+         Teuchos::RCP<Amesos2::Solver<matrix_type, mv_type> > directSolver;
+         Teuchos::RCP<solver_type> belosSolver;
+         if (false==direct_solver)
+         {//belos
+         { Belos::SolverFactory<SC, mv_type, op_type> belosFactory;
+         belosSolver = belosFactory.create(sol_type, Teuchos::sublist(ParamList, sol_type, false));
+         }
+         //preconditioner
+         Teuchos::RCP<ifpack_prec_type> M_ifpack;
+         Teuchos::RCP<muelu_prec_type> M_muelu;
+         if (direct_prec) {
+         M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, A);
+         assert(!M_ifpack.is_null());
+         M_ifpack->setParameters(ParamList->sublist(dir_prec_type, false));
+         M_ifpack->initialize();
+         M_ifpack->compute();
+         linearProblem->setLeftPrec(M_ifpack);
+         } else {
+         // Multigrid Hierarchy
+         M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<op_type>)A,
+         ParamList->sublist("MueLu", false));
+         assert(!M_muelu.is_null());
+         linearProblem->setRightPrec(M_muelu);
+         }
+         //solve
+         belosSolver->setProblem(linearProblem);
+         belosSolver->getCurrentParameters()->print();
+         const Belos::ReturnType belosResult = belosSolver->solve();
+         //print
+         ret = belosResult;
+         int numIterations = belosSolver->getNumIters();
+         residualOut = belosSolver->achievedTol();
+         if (myPID == 0) {
+         std::cout << "number of iterations = " << numIterations << std::endl;
+         std::cout << "||Residual|| = " << residualOut << std::endl;
+         }
+         }else//amesos
+         {
+         direct_solver = true;
+         directSolver =
+         Amesos2::create<matrix_type, mv_type>(sol_type, A, RHS, LHS);
+         directSolver->setParameters(Teuchos::sublist(ParamList, sol_type, false));
+         directSolver->symbolicFactorization().numericFactorization().solve();
+         
+         
+         }*/
+        ////////////////////
+        
+        
+    }
+
 
     void run_trilinos_test()
     {
@@ -1108,3 +1228,4 @@ namespace utopia
 }
 
 #endif //WITH_TRILINOS
+

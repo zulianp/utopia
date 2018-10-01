@@ -10,29 +10,53 @@
 #include <Tpetra_Map_decl.hpp>
 #include <Tpetra_Vector_decl.hpp>
 
+#include <Kokkos_DefaultNode.hpp>
+#include <Tpetra_CrsMatrix.hpp>
+#include <Tpetra_DefaultPlatform.hpp>
+
 #include <memory>
 
 namespace utopia {
 
     class TpetraVector {
-    public:
-        typedef Tpetra::Map<>                             map_type;
-        typedef Tpetra::Vector<>                          vector_type;
-        typedef Teuchos::RCP<vector_type>                 rcpvector_type;
-        typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
-        typedef Teuchos::RCP<const map_type>              rcp_map_type;
-        typedef Tpetra::Vector<>::scalar_type             scalar_type;
-        typedef Tpetra::Vector<>::local_ordinal_type      local_ordinal_type;
-        typedef vector_type::global_ordinal_type          global_ordinal_type;
-        typedef Tpetra::Vector<>::mag_type                magnitude_type;
-        typedef vector_type::scalar_type Scalar;
+    public: 
+    
+    
+    typedef Tpetra::Operator<>::scalar_type SC;
+    typedef Tpetra::Operator<SC>::local_ordinal_type LO;
+    typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
+
+    //types of Kokkos Parallel Nodes
+    typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
+
+#ifdef KOKKOS_CUDA
+    typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
+    typedef cuda_node NT;
+#elif defined KOKKOS_OPENMP
+    typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
+    typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
+    typedef openmp_node NT;
+#else
+    typedef serial_node NT;
+#endif
+
+    typedef Tpetra::Operator<SC, LO, GO, NT> OP;
+
+    typedef Tpetra::Map<LO, GO, NT>                   map_type;
+    typedef Tpetra::Vector<SC, LO, GO, NT>            vector_type;
+    typedef Teuchos::RCP<vector_type>                 rcpvector_type;
+    typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
+    typedef Teuchos::RCP<const map_type>              rcp_map_type;
+
+//        typedef Tpetra::Vector<>::mag_type                magnitude_type;
+    typedef vector_type::scalar_type                  Scalar;
 
         TpetraVector()
         {
-            // FIXME global size to size of the comm and index base to zero
-            // auto comm = Tpetra::DefaultPlatform::getDefaultPlatform ().getComm ();
-            // auto conigMap = Teuchos::rcp (new Tpetra::Map<> (comm->getSize (), 0, comm));
-            // vec_.reset(new vector_type (conigMap));
+            int indexBase = 0;
+            auto comm = Tpetra::DefaultPlatform::getDefaultPlatform ().getComm ();
+            auto conigMap = Teuchos::rcp (new map_type (comm->getSize (), indexBase, comm));
+            vec_.reset(new vector_type (conigMap, false));
         }
 
         ~TpetraVector()
@@ -81,21 +105,21 @@ namespace utopia {
                 map = Teuchos::rcp(new map_type(n_global, n_local, 0, comm));
             }
 
-            vec_ = Teuchos::rcp(new vector_type(map));
+            vec_.reset(new vector_type(map));
             implementation().putScalar(value);
         }
 
         inline void init(const rcp_map_type &map)
         {
-            vec_ = Teuchos::rcp(new vector_type(map));
+            vec_.reset(new vector_type(map));
         }
 
 
 
         void ghosted(const rcp_comm_type &comm, 
-                     const TpetraVector::global_ordinal_type &local_size,
-                     const TpetraVector::global_ordinal_type &global_size,
-                     const std::vector<global_ordinal_type> &ghost_index
+                     const TpetraVector::GO &local_size,
+                     const TpetraVector::GO &global_size,
+                     const std::vector<GO> &ghost_index
         );
 
         inline void axpy(const Scalar &alpha, const TpetraVector &x)
@@ -115,14 +139,14 @@ namespace utopia {
             describe(std::cout);
         }
 
-        inline Scalar get(const global_ordinal_type i) const
+        inline Scalar get(const GO i) const
         {
             assert(!read_only_data_.is_null() && "Use Read<Vector> w(v); to enable reading from this vector v!");
             return read_only_data_[local_index(i)];
 
         }
 
-        inline local_ordinal_type local_index(const global_ordinal_type i) const
+        inline LO local_index(const GO i) const
         {
             if(has_ghosts()) {
                return ghosted_vec_->getMap()->getLocalElement(i);
@@ -132,7 +156,7 @@ namespace utopia {
             }
         }
 
-        inline void set(const global_ordinal_type i, const Scalar value)
+        inline void set(const GO i, const Scalar value)
         {
             if(!write_data_.is_null()) {
                 write_data_[i - implementation().getMap()->getMinGlobalIndex()] = value;
@@ -141,7 +165,7 @@ namespace utopia {
             }
         }
 
-        inline void add(const global_ordinal_type i, const Scalar value)
+        inline void add(const GO i, const Scalar value)
         {
             if(!ghosted_vec_.is_null()) {
                 ghosted_vec_->sumIntoGlobalValue(i, value);
@@ -176,11 +200,11 @@ namespace utopia {
         }
 
         void set_vector(
-            const std::vector<global_ordinal_type> &indices,
+            const std::vector<GO> &indices,
             const std::vector<Scalar> &values);
 
         void add_vector(
-            const std::vector<global_ordinal_type> &indices,
+            const std::vector<GO> &indices,
             const std::vector<Scalar> &values);
 
         template<typename Integer>
@@ -217,21 +241,21 @@ namespace utopia {
             // } else {
             //     /////////////////////////////////////////////////
 
-            //     std::vector<global_ordinal_type> tpetra_index;
+            //     std::vector<GO> tpetra_index;
             //     tpetra_index.reserve(index.size());
 
             //     for(auto i : index) {
             //         tpetra_index.push_back(i);
             //     }
 
-            //     const Teuchos::ArrayView<const global_ordinal_type>
+            //     const Teuchos::ArrayView<const GO>
             //        index_view(tpetra_index);
 
             //      auto import_map = Teuchos::rcp(new map_type(global_size, index_view, 0, comm));
 
             //     Tpetra::Import<
-            //         local_ordinal_type,
-            //         global_ordinal_type,
+            //         LO,
+            //         GO,
             //         vector_type::node_type> importer(map, import_map);
 
             //     implementation().doImport(out.implementation(), importer, Tpetra::INSERT);
@@ -419,6 +443,20 @@ namespace utopia {
         inline bool is_null() const
         {
             return vec_.is_null();
+        }
+
+        void replaceGlobalValue (const GO globalRow, const SC &value )
+        {
+            std::cout << " sono qui " << std::endl;
+            vec_->replaceGlobalValue (globalRow, value);
+
+        }
+
+        void replaceLocalValue (const LO localRow, const SC &value )
+        {
+            std::cout << localRow << " localRow " << std::endl;
+            std::cout << value << " value " << std::endl;
+            vec_->replaceLocalValue(localRow, value);
         }
 
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
