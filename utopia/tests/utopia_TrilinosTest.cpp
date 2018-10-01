@@ -372,6 +372,7 @@ namespace utopia {
         auto rows = 5;
         auto cols = 11;
         TSMatrixd A = local_sparse(rows, cols, 2);
+        auto gs = size(A);
 
         {
             Write<TSMatrixd> w_A(A);
@@ -379,7 +380,7 @@ namespace utopia {
 
             for(auto i = r.begin(); i < r.end(); ++i) {
                 A.set(i, 0, 1.);
-                A.set(i, 1, 2.);
+                A.set(i, gs.get(1)-1, 2.);
             }
         }
 
@@ -388,6 +389,13 @@ namespace utopia {
         TSMatrixd At = transpose(A);
         auto s_t = size(At);
         utopia_test_assert(s_t.get(0) == s.get(1));
+
+
+        // disp(A);
+        // std::cout << "-----------------------" << std::endl;
+        // disp(At);
+        // std::cout << "-----------------------" << std::endl;
+
 
 
         TSMatrixd id = local_identity(rows, cols);
@@ -772,8 +780,6 @@ namespace utopia {
         // disp(P_t);
     }
 
-
-
     void trilinos_each_read_transpose()
     {
         MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(5, 2, false);
@@ -791,7 +797,6 @@ namespace utopia {
         double nrv = norm2(Rv);
         utopia_test_assert(nrv > 10.);
     }
-
 
     void trilinos_read()
     {
@@ -1051,20 +1056,19 @@ namespace utopia {
         // comunicator
         // map
         
-        TVectord x ;
-        TVectord b ;
-        TSMatrixd A;
-        Parameters params;
-        //params.set_param_file_name( "~/utopiaTrilinosFile.xml");
-        int i = 2;
-        double ii=3.442;
-        BelosSolver<TSMatrixd, TVectord> solver(params);
-        x.implementation().replaceLocalValue(i, ii);
-
-        solver.solve(A, b, x);
-        std::cout << "Number of Iterations " << solver.getNumIter() << std::endl;
+        // TVectord x ;
+        // TVectord b ;
+        // TSMatrixd A;
+        // Parameters params;
+        // //params.set_param_file_name( "~/utopiaTrilinosFile.xml");
+        // int i = 2;
+        // double ii=3.442;
+        // BelosSolver<TSMatrixd, TVectord> solver(params);
         
-        std::cout << "Achieved tolerance " << solver.achievedTol() << std::endl;
+        // solver.solve(A, b, x);
+        // std::cout << "Number of Iterations " << solver.getNumIter() << std::endl;
+        
+        // std::cout << "Achieved tolerance " << solver.achievedTol() << std::endl;
         
         /*   Parameters<TRILINOS> param;
          PrecondionedSolver<TSMatrixd, TVectord, TVectord, TRILINOS> prec;
@@ -1193,9 +1197,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_ghosted);
         
         
-// #ifdef WITH_PETSC
-//         UTOPIA_RUN_TEST(trilinos_petsc_interop);
-// #endif //WITH_PETSC
+#ifdef WITH_PETSC
+        UTOPIA_RUN_TEST(trilinos_petsc_interop);
+#endif //WITH_PETSC
 
         //tests that fail in parallel
         if(mpi_world_size() == 1) {
