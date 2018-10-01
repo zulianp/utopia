@@ -8,6 +8,7 @@
 
 #include "utopia_DirectSolver.hpp"
 #include "utopia_LinearSolverInterfaces.hpp"
+#include "utopia_ConjugateGradient.hpp"
 
 #include <map>
 #include <string>

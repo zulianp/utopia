@@ -14,7 +14,7 @@
 		<n-x>20</n-x>
 		<n-y>20</n-y>
 
-		<refinements>5</refinements>
+		<refinements>3</refinements>
 	</mesh>
 
 	<space>
@@ -47,7 +47,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/line.e</path>
-		<refinements>2</refinements>
+		<refinements>3</refinements>
 	</mesh>
 
 	<space>
@@ -69,6 +69,19 @@
 
 	<diffusivity>1000.</diffusivity>
 </slave>
+
+<!-- MULTIPLIER STUFF -->
+<multiplier>
+	<mesh>
+		<type>file</type>
+		<path>../data/frac/line.e</path>
+		<refinements>1</refinements>
+	</mesh>
+
+	<space>
+		<system-name>multiplier</system-name>
+	</space>
+</multiplier>
 
 <!-- <solve-strategy>monolithic</solve-strategy> -->
 

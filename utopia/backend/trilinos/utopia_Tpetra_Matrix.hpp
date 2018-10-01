@@ -59,17 +59,17 @@ namespace utopia {
 
         //Default Constructor
         TpetraMatrix() : owner_(true) {}
-        TpetraMatrix(int Ndofs, int maxNumEntries) : owner_(true) {
-        int indexBase = 0;
-        rcp_comm_type Comm = Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
-        rcp_map_type Map = Teuchos::rcp(new map_type(Ndofs, indexBase, Comm));
-        mat_.reset(new crs_mat_type(Map, maxNumEntries, Tpetra::StaticProfile));
-        }
+        // TpetraMatrix(int Ndofs, int maxNumEntries) : owner_(true) {
+        // int indexBase = 0;
+        // rcp_comm_type Comm = Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
+        // rcp_map_type Map = Teuchos::rcp(new map_type(Ndofs, indexBase, Comm));
+        // mat_.reset(new crs_mat_type(Map, maxNumEntries, Tpetra::StaticProfile));
+        // }
 
-        //Explicit Constructors
-        TpetraMatrix(rcp_map_type Map, int maxNumEntries) : owner_(true) {
-        mat_.reset(new crs_mat_type(Map, maxNumEntries, Tpetra::StaticProfile));
-        }
+        // //Explicit Constructors
+        // TpetraMatrix(rcp_map_type Map, int maxNumEntries) : owner_(true) {
+        // mat_.reset(new crs_mat_type(Map, maxNumEntries, Tpetra::StaticProfile));
+        // }
 
         //deep copy
         //     template <class Node2>
@@ -135,20 +135,20 @@ namespace utopia {
 
         void finalize();
 
-        void fillComplete()
-        {
-            mat_->fillComplete();
-        }
+        // void fillComplete()
+        // {
+        //     mat_->fillComplete();
+        // }
 
-        void replaceGlobalValues (const GO globalRow, const LO numEnt, const SC vals[], const GO cols[])
-        {
-            mat_->replaceGlobalValues(globalRow, numEnt, vals, cols);
-        }
+        // void replaceGlobalValues (const GO globalRow, const LO numEnt, const SC vals[], const GO cols[])
+        // {
+        //     mat_->replaceGlobalValues(globalRow, numEnt, vals, cols);
+        // }
 
-        void replaceLocalValues (const LO localRow, const LO numEnt,  const SC vals[], const LO cols[] )
-        {
-            mat_->replaceLocalValues(localRow, numEnt, vals, cols);
-        }
+        // void replaceLocalValues (const LO localRow, const LO numEnt,  const SC vals[], const LO cols[] )
+        // {
+        //     mat_->replaceLocalValues(localRow, numEnt, vals, cols);
+        // }
 
         rcp_comm_type communicator() const
         {
@@ -355,6 +355,16 @@ namespace utopia {
         Scalar norm2() const;
         Scalar sum() const;
 
+
+        void set_domain_and_range(
+            const rcp_map_type &domain_map,
+            const rcp_map_type &range_map
+            )
+        {
+            init_ = std::make_shared<InitStructs>();
+            init_->domain_map = domain_map;
+            init_->range_map = range_map;
+        }
 
     private:
         rcp_crs_mat_type  mat_;

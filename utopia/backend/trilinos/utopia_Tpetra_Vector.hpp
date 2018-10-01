@@ -14,7 +14,6 @@
 #include <Tpetra_CrsMatrix.hpp>
 #include <Tpetra_DefaultPlatform.hpp>
 
-
 #include <memory>
 
 namespace utopia {
