@@ -636,85 +636,85 @@ namespace utopia {
     {
       // if(mpi_world_size() > 1) return;
       //petsc version
-// #ifdef WITH_PETSC
-//        test_mg<DSMatrixd, DVectord>();
-// #endif //WITH_PETSC
+#ifdef WITH_PETSC
+       test_mg<DSMatrixd, DVectord>();
+#endif //WITH_PETSC
       //trilinos version
       test_mg<TSMatrixd, TVectord>();
     }
 
 
-//     void trilinos_mg()
-//     {
-//         // if(mpi_world_size() > 1) return;
+    void trilinos_mg()
+    {
+        // if(mpi_world_size() > 1) return;
 
-//         using MatrixT = utopia::TSMatrixd;
-//         using VectorT = utopia::TVectord;
+        using MatrixT = utopia::TSMatrixd;
+        using VectorT = utopia::TVectord;
 
-//         // using MatrixT = utopia::DSMatrixd;
-//         // using VectorT = utopia::DVectord;
+        // using MatrixT = utopia::DSMatrixd;
+        // using VectorT = utopia::DVectord;
 
-//         VectorT rhs;
-//         MatrixT A, I;
+        VectorT rhs;
+        MatrixT A, I;
 
-//         Multigrid<MatrixT, VectorT> multigrid(
-//             std::make_shared<ConjugateGradient<MatrixT, VectorT, HOMEMADE>>(),
-//             std::make_shared<ConjugateGradient<MatrixT, VectorT, HOMEMADE>>()
-//             // std::make_shared<SOR<MatrixT, VectorT>>(),
-//             // std::make_shared<Factorization<MatrixT, VectorT>>()
-//         );
+        Multigrid<MatrixT, VectorT> multigrid(
+            std::make_shared<ConjugateGradient<MatrixT, VectorT, HOMEMADE>>(),
+            std::make_shared<ConjugateGradient<MatrixT, VectorT, HOMEMADE>>()
+            // std::make_shared<SOR<MatrixT, VectorT>>(),
+            // std::make_shared<Factorization<MatrixT, VectorT>>()
+        );
 
-// #ifdef WITH_PETSC
+#ifdef WITH_PETSC
 
-//         bool ok = true;
-//         //FIXME needs trilinos formats but for the moment lets use petsc's
-//         {
-//             DSMatrixd petsc_A, petsc_I;
-//             DVectord petsc_rhs;
+        bool ok = true;
+        //FIXME needs trilinos formats but for the moment lets use petsc's
+        {
+            DSMatrixd petsc_A, petsc_I;
+            DVectord petsc_rhs;
 
-//             const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
+            const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
 
-//             ok = read(folder + "/f_rhs", petsc_rhs); utopia_test_assert(ok);
-//             ok = read(folder + "/f_A", petsc_A);     utopia_test_assert(ok);
-//             ok = read(folder + "/I_3", petsc_I);     utopia_test_assert(ok);
+            ok = read(folder + "/f_rhs", petsc_rhs); utopia_test_assert(ok);
+            ok = read(folder + "/f_A", petsc_A);     utopia_test_assert(ok);
+            ok = read(folder + "/I_3", petsc_I);     utopia_test_assert(ok);
 
-//             backend_convert_sparse(petsc_I, I);
-//             backend_convert_sparse(petsc_A, A);
-//             backend_convert(petsc_rhs, rhs);
-//         }
+            backend_convert_sparse(petsc_I, I);
+            backend_convert_sparse(petsc_A, A);
+            backend_convert(petsc_rhs, rhs);
+        }
 
-//         // write("A.mm", A);
-//         // write("I.mm", I);
+        // write("A.mm", A);
+        // write("I.mm", I);
 
-//         std::vector<std::shared_ptr<MatrixT>> interpolation_operators;
-//         interpolation_operators.push_back(make_ref(I));
+        std::vector<std::shared_ptr<MatrixT>> interpolation_operators;
+        interpolation_operators.push_back(make_ref(I));
 
-//         multigrid.set_transfer_operators(std::move(interpolation_operators));
-//         multigrid.max_it(20);
-//         multigrid.atol(1e-15);
-//         multigrid.stol(1e-15);
-//         multigrid.rtol(1e-15);
-//         // multigrid.verbose(true);
-//         multigrid.set_fix_semidefinite_operators(true);
-//         multigrid.must_generate_masks(true);
-//         VectorT x = local_zeros(local_size(rhs));
+        multigrid.set_transfer_operators(std::move(interpolation_operators));
+        multigrid.max_it(20);
+        multigrid.atol(1e-15);
+        multigrid.stol(1e-15);
+        multigrid.rtol(1e-15);
+        // multigrid.verbose(true);
+        multigrid.set_fix_semidefinite_operators(true);
+        multigrid.must_generate_masks(true);
+        VectorT x = local_zeros(local_size(rhs));
 
-//         try {
-//             multigrid.update(make_ref(A));
-//             ok = multigrid.apply(rhs, x); utopia_test_assert(ok);
-//         } catch(const std::exception &ex) {
-//             std::cout << ex.what() << std::endl;
-//             utopia_test_assert(false);
-//         }
+        try {
+            multigrid.update(make_ref(A));
+            ok = multigrid.apply(rhs, x); utopia_test_assert(ok);
+        } catch(const std::exception &ex) {
+            std::cout << ex.what() << std::endl;
+            utopia_test_assert(false);
+        }
 
-//         std::cout << std::flush;
+        std::cout << std::flush;
 
-//         double diff = norm2(rhs - A * x);
-//         utopia_test_assert(approxeq(diff, 0., 1e-6));
+        double diff = norm2(rhs - A * x);
+        utopia_test_assert(approxeq(diff, 0., 1e-6));
 
-// #endif //WITH_PETSC
+#endif //WITH_PETSC
 
-//     }
+    }
 
     void trilinos_row_view()
     {
@@ -1034,6 +1034,7 @@ namespace utopia {
         //petsc version
         rmtr_test<DSMatrixd, DVectord>();
 #endif //WITH_PETSC
+
         rmtr_test<TSMatrixd, TVectord>();
     }
 
@@ -1204,7 +1205,7 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
             UTOPIA_RUN_TEST(trilinos_transpose);
             UTOPIA_RUN_TEST(trilinos_each_read_transpose);
-            // UTOPIA_RUN_TEST(trilinos_mg);
+            UTOPIA_RUN_TEST(trilinos_mg);
             
         } else {
             m_utopia_warning_once("several tests left out for parallel execution");
