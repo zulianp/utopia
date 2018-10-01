@@ -20,23 +20,26 @@ if(INTREPID2_FOUND)
 
 	set(INTREPID2_INCLUDE_DIR ${Intrepid2_INCLUDE_DIR} PARENT_SCOPE)
 	set(Intrepid2_LIBRARIES ${Intrepid2_LIBRARIES} PARENT_SCOPE)
+
+	#----------------------------------------------------------------------------------------
+	#----------------------------------------------------------------------------------------
+
+	install(TARGETS utopia_fe_intrepid2_backend
+		RUNTIME DESTINATION bin 
+		LIBRARY DESTINATION lib 
+		ARCHIVE DESTINATION lib 
+		)
+
+	install(FILES ${LOCAL_HEADERS} DESTINATION include)
+
+	set(UTOPIA_FE_LIBRARIES "${UTOPIA_FE_LIBRARIES};utopia_fe_intrepid2_backend" PARENT_SCOPE)
+
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${MOONOLITH_DEV_FLAGS}")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+	
 else()
-	message(FATAL_ERROR "could not find Intrepid2")
+	message(WARNING "could not find Intrepid2")
 endif()
 
-#----------------------------------------------------------------------------------------
-#----------------------------------------------------------------------------------------
 
-install(TARGETS utopia_fe_intrepid2_backend
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
-	)
-
-install(FILES ${LOCAL_HEADERS} DESTINATION include)
-
-set(UTOPIA_FE_LIBRARIES "${UTOPIA_FE_LIBRARIES};utopia_fe_intrepid2_backend" PARENT_SCOPE)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${MOONOLITH_DEV_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
