@@ -1,7 +1,7 @@
 
 #include "utopia.hpp"
-//#include "utopia_Test.hpp"
-//#include "utopia_benchmarks.hpp"
+#include "utopia_Test.hpp"
+#include "utopia_benchmarks.hpp"
 
 #include <memory>
 #include <iostream>

@@ -261,7 +261,7 @@ if(USE_SPIKE_SOLVERS)
 endif()
 
 # test suite
-#add_subdirectory(tests)
+add_subdirectory(tests)
 
 
 # core modules

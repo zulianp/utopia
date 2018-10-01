@@ -3,6 +3,8 @@
 #include "par_moonolith.hpp"
 #include "utopia.hpp"
 
+#include <math_constants.h>
+
 //fe extension
 #include "utopia_fe.hpp"
 #include <libmesh/const_function.h>
