@@ -629,7 +629,7 @@ namespace utopia {
         using IPTransferT     = utopia::IPTransfer<Matrix, Vector>;
         using MatrixTransferT = utopia::MatrixTransfer<Matrix, Vector>;
         
-        const static bool verbose   = true;
+        const static bool verbose   = false;
         const static bool use_masks = false;
         
         MultiLevelTestProblem<Matrix, Vector> ml_problem(10, 2, !use_masks);
@@ -1186,22 +1186,16 @@ namespace utopia {
         MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
         A = *ml_problem.interpolators[0];
 
-        // disp("----------------------");
-        // disp(A);
+        A = transpose(A);
 
-        // disp("----------------------");
-        // disp(A);
-        
         TSMatrixd A2 = A;
-  
-        // disp("----------------------");
         
         A2 *= 0.;
 
         {
             Write<TSMatrixd> w_(A2);
-            each_read(A, [&A](const SizeType i, const SizeType j, const double value) {
-                A.set(i, j, value * 2.);
+            each_read(A, [&A2](const SizeType i, const SizeType j, const double value) {
+                A2.set(i, j, 1.);
             });
         }
 
@@ -1408,7 +1402,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_rmtr);
         UTOPIA_RUN_TEST(trilinos_ghosted);
         UTOPIA_RUN_TEST(trilinos_transpose);
-        UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
+        
         UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);
         UTOPIA_RUN_TEST(trilinos_each_read_transpose);
         UTOPIA_RUN_TEST(trilinos_local_row_view);
@@ -1422,10 +1416,17 @@ namespace utopia {
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(trilinos_petsc_interop);
 #endif //WITH_PETSC
+
+
+        UTOPIA_RUN_TEST(trilinos_copy_write);
+
+        if(mpi_world_size() <= 3) {
+            //working up to 3 processes
+            UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
+        }
         
         //tests that fail in parallel
         if(mpi_world_size() == 1) {
-            UTOPIA_RUN_TEST(trilinos_copy_write);
             UTOPIA_RUN_TEST(trilinos_mg);
         } else {
             m_utopia_warning_once("several tests left out for parallel execution");

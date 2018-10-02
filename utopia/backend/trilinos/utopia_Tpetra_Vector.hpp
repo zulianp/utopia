@@ -445,19 +445,19 @@ namespace utopia {
             return vec_.is_null();
         }
 
-        void replaceGlobalValue (const GO globalRow, const SC &value )
-        {
-            std::cout << " sono qui " << std::endl;
-            vec_->replaceGlobalValue (globalRow, value);
+        // void replaceGlobalValue (const GO globalRow, const SC &value )
+        // {
+        //     std::cout << " sono qui " << std::endl;
+        //     vec_->replaceGlobalValue (globalRow, value);
 
-        }
+        // }
 
-        void replaceLocalValue (const LO localRow, const SC &value )
-        {
-            std::cout << localRow << " localRow " << std::endl;
-            std::cout << value << " value " << std::endl;
-            vec_->replaceLocalValue(localRow, value);
-        }
+        // void replaceLocalValue (const LO localRow, const SC &value )
+        // {
+        //     std::cout << localRow << " localRow " << std::endl;
+        //     std::cout << value << " value " << std::endl;
+        //     vec_->replaceLocalValue(localRow, value);
+        // }
 
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
         bool write(const std::string &path) const;
