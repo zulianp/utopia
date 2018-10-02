@@ -61,9 +61,9 @@ namespace utopia {
 
 			strategies_[AUTO_TR_TAG] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
 			
-			strategies_[NASH_TAG] = std::make_shared< TRFactoryMethod< utopia::Nash<Matrix, Vector>> >(); 
-			strategies_[LANCZOS_TAG] = std::make_shared< TRFactoryMethod< utopia::Lanczos<Matrix, Vector>> >(); 
-			strategies_[CGNE_TAG] = std::make_shared< TRFactoryMethod< utopia::CGNE<Matrix, Vector>> >(); 
+			// strategies_[NASH_TAG] = std::make_shared< TRFactoryMethod< utopia::Nash<Matrix, Vector>> >(); 
+			// strategies_[LANCZOS_TAG] = std::make_shared< TRFactoryMethod< utopia::Lanczos<Matrix, Vector>> >(); 
+			// strategies_[CGNE_TAG] = std::make_shared< TRFactoryMethod< utopia::CGNE<Matrix, Vector>> >(); 
 
 
 			// strategies_[AUTO_TR_TAG] 		= std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 

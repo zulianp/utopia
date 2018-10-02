@@ -632,6 +632,50 @@ namespace utopia {
         utopia_test_assert(approxeq(sv, n * mpi_world_size()));
     }
 
+
+    template<class Matrix, class Vector>
+    void st_cg_test()
+    {
+        typename Vector::SizeType _n = 20; 
+
+        SteihaugToint<Matrix, Vector, HOMEMADE> cg;
+        cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+        // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+                
+        cg.rtol(1e-7);
+        cg.atol(1e-6);
+        cg.max_it(_n);
+        cg.verbose(true);
+
+        Matrix A = sparse(_n, _n, 3);
+        assemble_symmetric_laplacian_1D(A, true);
+
+        Vector rhs = values(_n, 975.9);
+
+        {
+            Write<Vector> w(rhs);
+            rhs.set(0, 0.0); 
+            rhs.set(_n-1, 0.0); 
+        }           
+
+        Vector x = zeros(size(rhs));
+
+        cg.tr_constrained_solve(A, -1.0 * rhs, x, 1e15);
+        utopia_test_assert(approxeq(rhs, A * x, 1e-5));
+
+    }
+
+    void stcg_pt_test()
+    {
+
+#ifdef WITH_PETSC
+        //petsc version
+        st_cg_test<DSMatrixd, DVectord>();
+#endif //WITH_PETSC
+        st_cg_test<TSMatrixd, TVectord>();
+    }
+
+
     void trilinos_mg_1D()
     {
       // if(mpi_world_size() > 1) return;
@@ -952,10 +996,17 @@ namespace utopia {
         }
 
         auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+
         tr_strategy_coarse->atol(1e-12);
         tr_strategy_coarse->rtol(1e-12);
 
         auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+
+        
+        tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+
         tr_strategy_fine->atol(1e-12);
         tr_strategy_fine->rtol(1e-12);
 
@@ -1161,35 +1212,38 @@ namespace utopia {
     void run_trilinos_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("TrilinosTest");
-        UTOPIA_RUN_TEST(trilinos_structure);
-        UTOPIA_RUN_TEST(trilinos_build);
-        UTOPIA_RUN_TEST(trilinos_build_identity);
-        UTOPIA_RUN_TEST(trilinos_accessors);
-        UTOPIA_RUN_TEST(trilinos_vec_scale);
-        UTOPIA_RUN_TEST(trilinos_mat_scale);
-        UTOPIA_RUN_TEST(trilinos_vec_axpy);
-        UTOPIA_RUN_TEST(trilinos_vec_minus);
-        UTOPIA_RUN_TEST(trilinos_mat_axpy);
-        UTOPIA_RUN_TEST(trilinos_mv);
-        UTOPIA_RUN_TEST(trilinos_mm);
-        UTOPIA_RUN_TEST(trilinos_m_tm);
-        UTOPIA_RUN_TEST(trilinos_diag);
-        UTOPIA_RUN_TEST(trilinos_read);
-        UTOPIA_RUN_TEST(trilinos_cg);
-        UTOPIA_RUN_TEST(trilinos_rect_matrix);
-        UTOPIA_RUN_TEST(trilinos_e_mul);
-        UTOPIA_RUN_TEST(trilinos_row_view);
-        UTOPIA_RUN_TEST(trilinos_apply_transpose);
-        UTOPIA_RUN_TEST(trilinos_set);
-        UTOPIA_RUN_TEST(trilinos_residual);
-        UTOPIA_RUN_TEST(trilinos_ptap_square_mat);
-        UTOPIA_RUN_TEST(trilinos_matrix_access);
-        UTOPIA_RUN_TEST(trilinos_matrix_norm);
-        UTOPIA_RUN_TEST(trilinos_exp);
-        UTOPIA_RUN_TEST(trilinos_diag_ops);
-        UTOPIA_RUN_TEST(trilinos_bratu_1D);
-        UTOPIA_RUN_TEST(trilinos_rmtr);
-        UTOPIA_RUN_TEST(trilinos_ghosted);
+        // UTOPIA_RUN_TEST(trilinos_structure);
+        // UTOPIA_RUN_TEST(trilinos_build);
+        // UTOPIA_RUN_TEST(trilinos_build_identity);
+        // UTOPIA_RUN_TEST(trilinos_accessors);
+        // UTOPIA_RUN_TEST(trilinos_vec_scale);
+        // UTOPIA_RUN_TEST(trilinos_mat_scale);
+        // UTOPIA_RUN_TEST(trilinos_vec_axpy);
+        // UTOPIA_RUN_TEST(trilinos_vec_minus);
+        // UTOPIA_RUN_TEST(trilinos_mat_axpy);
+        // UTOPIA_RUN_TEST(trilinos_mv);
+        // UTOPIA_RUN_TEST(trilinos_mm);
+        // UTOPIA_RUN_TEST(trilinos_m_tm);
+        // UTOPIA_RUN_TEST(trilinos_diag);
+        // UTOPIA_RUN_TEST(trilinos_read);
+        // UTOPIA_RUN_TEST(trilinos_cg);
+        // UTOPIA_RUN_TEST(trilinos_rect_matrix);
+        // UTOPIA_RUN_TEST(trilinos_e_mul);
+        // UTOPIA_RUN_TEST(trilinos_row_view);
+        // UTOPIA_RUN_TEST(trilinos_apply_transpose);
+        // UTOPIA_RUN_TEST(trilinos_set);
+        // UTOPIA_RUN_TEST(trilinos_residual);
+        // UTOPIA_RUN_TEST(trilinos_ptap_square_mat);
+        // UTOPIA_RUN_TEST(trilinos_matrix_access);
+        // UTOPIA_RUN_TEST(trilinos_matrix_norm);
+        // UTOPIA_RUN_TEST(trilinos_exp);
+        // UTOPIA_RUN_TEST(trilinos_diag_ops);
+        // UTOPIA_RUN_TEST(trilinos_bratu_1D);
+        // UTOPIA_RUN_TEST(trilinos_rmtr);
+        // UTOPIA_RUN_TEST(trilinos_ghosted);
+
+
+        UTOPIA_RUN_TEST(stcg_pt_test); 
         
         
 // #ifdef WITH_PETSC

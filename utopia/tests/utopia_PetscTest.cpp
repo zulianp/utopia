@@ -1081,18 +1081,13 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_line_search);
         UTOPIA_RUN_TEST(petsc_residual);
         UTOPIA_RUN_TEST(petsc_block_mat);
-
-
-        
-        // UTOPIA_RUN_TEST(petc_optional);  // not working with cuda ... 
-
         UTOPIA_RUN_TEST(petsc_ghosted);
+
+        // UTOPIA_RUN_TEST(petc_optional); // fails to compile with gpu
+        
         UTOPIA_RUN_TEST(petsc_view);
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate);
         UTOPIA_RUN_TEST(petsc_hardcoded_cg);
-
-
-
         UTOPIA_RUN_TEST(petsc_reciprocal);
         UTOPIA_RUN_TEST(petsc_axpy);
         UTOPIA_RUN_TEST(petsc_vector_accessors);
@@ -1122,7 +1117,7 @@ namespace utopia {
 
         //serial tests
 #ifdef PETSC_HAVE_MUMPS
-        UTOPIA_RUN_TEST(petsc_inverse);
+        // UTOPIA_RUN_TEST(petsc_inverse);
 #endif //PETSC_HAVE_MUMPS
 
         // petsc_sparse_matrix_accessors();  // TODO:: here something doesnt work in parallel !
