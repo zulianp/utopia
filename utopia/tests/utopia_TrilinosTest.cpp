@@ -636,12 +636,12 @@ namespace utopia {
     template<class Matrix, class Vector>
     void st_cg_test()
     {
-        typename Vector::SizeType _n = 20; 
+        typename Vector::SizeType _n = 10; 
 
         SteihaugToint<Matrix, Vector, HOMEMADE> cg;
         cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
         // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
-                
+
         cg.rtol(1e-7);
         cg.atol(1e-6);
         cg.max_it(_n);
