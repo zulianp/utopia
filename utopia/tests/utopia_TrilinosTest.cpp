@@ -580,6 +580,12 @@ namespace utopia {
          // disp("-----------------------------");
          // disp(R_2_petsc);
 
+         write("R_t.mm", R);
+         write("R_p.m", R_petsc);
+
+         write("R2_t.mm", R_2);
+         write("R2_p.m", R_2_petsc);
+
          double diff_2 = norm2(R_2_petsc - R_2_tpetra);
          double diff   = norm2(R_petsc - R_tpetra);
 
@@ -623,7 +629,7 @@ namespace utopia {
         using IPTransferT     = utopia::IPTransfer<Matrix, Vector>;
         using MatrixTransferT = utopia::MatrixTransfer<Matrix, Vector>;
 
-        const static bool verbose   = false;
+        const static bool verbose   = true;
         const static bool use_masks = false;
 
         MultiLevelTestProblem<Matrix, Vector> ml_problem(10, 2, !use_masks);
@@ -678,6 +684,38 @@ namespace utopia {
 
         utopia_test_assert(rel_diff < 1e-8);
     }
+
+    void trilinos_local_row_view()
+    {
+        auto rows = 3;
+        auto cols = 4;
+        TSMatrixd A = local_sparse(rows, cols, 2);
+
+        {
+            Write<TSMatrixd> w_A(A);
+            Range r = row_range(A);
+
+            for(auto i = r.begin(); i < r.end(); ++i) {
+                A.set(i, i,     i);
+                A.set(i, i + 1, i + 1);
+            }
+        }
+
+        TSMatrixd At = transpose(A);
+
+        auto &M = A;
+
+        auto rr = row_range(M);
+        for(auto i = rr.begin(); i < rr.end(); ++i) {
+            RowView<TSMatrixd> row(M, i, true);
+            for(auto j = 0; j < row.n_values(); ++j) {
+                int col = row.col(j);
+                int val = row.get(j);
+                utopia_test_assert(col == val);
+            }
+        }
+    }
+
 
     void trilinos_e_mul()
     {
@@ -1275,7 +1313,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_apply_transpose);
         UTOPIA_RUN_TEST(trilinos_set);
         UTOPIA_RUN_TEST(trilinos_residual);
-        // UTOPIA_RUN_TEST(trilinos_ptap_square_mat); //NOW Fails in paralle
+        
         UTOPIA_RUN_TEST(trilinos_matrix_access);
         UTOPIA_RUN_TEST(trilinos_matrix_norm);
         UTOPIA_RUN_TEST(trilinos_exp);
@@ -1284,6 +1322,12 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_rmtr);
         UTOPIA_RUN_TEST(trilinos_ghosted);
         UTOPIA_RUN_TEST(trilinos_transpose);
+        UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
+        UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);
+        UTOPIA_RUN_TEST(trilinos_each_read_transpose);
+        UTOPIA_RUN_TEST(trilinos_local_row_view);
+        UTOPIA_RUN_TEST(trilinos_ptap_square_mat);
+        UTOPIA_RUN_TEST(trilinos_ptap);
 
 
 // #ifdef WITH_PETSC
@@ -1294,14 +1338,9 @@ namespace utopia {
         // if(mpi_world_size() == 1) {
             // UTOPIA_RUN_TEST(raw_trilinos_transpose);
         
-        UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
-        UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);
-        UTOPIA_RUN_TEST(trilinos_each_read_transpose);
-
-
+        
         UTOPIA_RUN_TEST(trilinos_mg_1D);
-        UTOPIA_RUN_TEST(trilinos_mg);
-        UTOPIA_RUN_TEST(trilinos_ptap);
+        UTOPIA_RUN_TEST(trilinos_mg);   
         UTOPIA_RUN_TEST(trilinos_bratu_1D);
 
         // } else {

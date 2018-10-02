@@ -3,6 +3,7 @@
 #include <Teuchos_ArrayViewDecl.hpp>
 
 #include "utopia_Traits.hpp"
+#include <cassert>
 
 namespace utopia {
 
@@ -12,10 +13,10 @@ namespace utopia {
 		typedef typename Tensor::Implementation::GO GO;
 		typedef typename Tensor::Implementation::Scalar Scalar;
 
-		inline RowView(const Tensor &t, const GO row)
+		inline RowView(const Tensor &t, const GO row, const bool force_local_view = true)
 		: t_(t), offset_(0)
 		{
-			if(t_.implementation().implementation().isGloballyIndexed()) {
+			if(t_.implementation().implementation().isGloballyIndexed() && !force_local_view) {
 				t_.implementation().implementation().getGlobalRowView(row, cols_, values_);
 			} else {
 				assert(t_.implementation().implementation().isLocallyIndexed());
@@ -38,10 +39,14 @@ namespace utopia {
 			assert(index < n_values());
 
 			if(offset_ == 0) {
-				auto ret = cols_[index] + offset_;
-				return ret;
+				return cols_[index];
+				// auto ret = cols_[index] + offset_;
+				// assert(ret < size(t_).get(1));
+				// return ret;
 			} else {
-				return t_.implementation().implementation().getDomainMap()->getGlobalElement(cols_[index]);
+				auto ret = t_.implementation().implementation().getColMap()->getGlobalElement(cols_[index]);
+				assert(ret < size(t_).get(1));
+				return ret;
 			}
 		}
 
