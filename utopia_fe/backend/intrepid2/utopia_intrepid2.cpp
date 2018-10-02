@@ -1,463 +1,474 @@
-// #include "Intrepid_config.h"
+/*   Example building stiffness matrix and right hand side for a Poisson equation 
+            using nodal (Hgrad) elements.
 
+             div grad u = f in Omega
+                      u = 0 on Gamma 
 
-// /*   Example building stiffness matrix and right hand side for a Poisson equation 
-//             using nodal (Hgrad) elements.
+     Discrete linear system for nodal coefficients(x):
+                 Kx = b
 
-//              div grad u = f in Omega
-//                       u = 0 on Gamma 
+            K - HGrad stiffness matrix
+            b - right hand side vector 
 
-//      Discrete linear system for nodal coefficients(x):
-//                  Kx = b
+        int NX              - num intervals in x direction (assumed box domain, 0,1)
+        int NY              - num intervals in y direction (assumed box domain, 0,1)
+        int NZ              - num intervals in z direction (assumed box domain, 0,1)
+        verbose (optional)  - any character, indicates verbose output
+*/
 
-//             K - HGrad stiffness matrix
-//             b - right hand side vector 
+// Intrepid2 includes
+#include "Intrepid2_FunctionSpaceTools.hpp"
+//#include "Intrepid2_FieldContainer.hpp"
+#include "Intrepid2_CellTools.hpp"
+#include "Intrepid2_ArrayTools.hpp"
+#include "Intrepid2_HGRAD_HEX_C1_FEM.hpp"
+#include "Intrepid2_RealSpaceTools.hpp"
+#include "Intrepid2_DefaultCubatureFactory.hpp"
+#include "Intrepid2_Utils.hpp"
 
-//         int NX              - num intervals in x direction (assumed box domain, 0,1)
-//         int NY              - num intervals in y direction (assumed box domain, 0,1)
-//         int NZ              - num intervals in z direction (assumed box domain, 0,1)
-//         verbose (optional)  - any character, indicates verbose output
-// */
+// Teuchos includes
+#include <Teuchos_oblackholestream.hpp>
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_BLAS.hpp>
+#include <Teuchos_GlobalMPISession.hpp>
+#include <Teuchos_TimeMonitor.hpp>
+#include <Teuchos_ParameterList.hpp>
+#include <Teuchos_XMLParameterListCoreHelpers.hpp>
 
-// // Intrepid includes
-// #include "Intrepid_FunctionSpaceTools.hpp"
-// #include "Intrepid_FieldContainer.hpp"
-// #include "Intrepid_CellTools.hpp"
-// #include "Intrepid_ArrayTools.hpp"
-// #include "Intrepid_HGRAD_HEX_C1_FEM.hpp"
-// #include "Intrepid_RealSpaceTools.hpp"
-// #include "Intrepid_DefaultCubatureFactory.hpp"
-// #include "Intrepid_Utils.hpp"
+// Belos includes
+#include <BelosLinearProblem.hpp>
+#include <BelosTpetraAdapter.hpp>
 
-// // Teuchos includes
-// #include <Teuchos_oblackholestream.hpp>
-// #include <Teuchos_RCP.hpp>
-// #include <Teuchos_BLAS.hpp>
-// #include <Teuchos_GlobalMPISession.hpp>
-// #include <Teuchos_TimeMonitor.hpp>
-// #include <Teuchos_ParameterList.hpp>
-// #include <Teuchos_XMLParameterListCoreHelpers.hpp>
+// Ifpack2 includes
+#include <Ifpack2_Factory.hpp>
 
-// // Belos includes
-// #include <BelosLinearProblem.hpp>
-// #include <BelosTpetraAdapter.hpp>
+// Amesos2 includes
+#include <Amesos2.hpp>
 
-// // Ifpack2 includes
-// #include <Ifpack2_Factory.hpp>
-// #include <Tpetra_DefaultPlatform.hpp>
+// Muelu includes
+#include <MueLu.hpp>
+#include <MueLu_CreateTpetraPreconditioner.hpp>
+#include <MueLu_TpetraOperator.hpp>
+#include <MueLu_Utilities.hpp>
 
-// // Amesos2 includes
-// #include <Amesos2.hpp>
+// Shards includes
+#include "Shards_CellTopology.hpp"
 
-// // Muelu includes
-// #include <MueLu.hpp>
-// #include <MueLu_CreateTpetraPreconditioner.hpp>
-// #include <MueLu_TpetraOperator.hpp>
-// #include <MueLu_Utilities.hpp>
+// Tpetra includes
+#include <Tpetra_Core.hpp>
+#include <Tpetra_Vector.hpp>
 
-// // Shards includes
-// #include "Shards_CellTopology.hpp"
+// Kokkos and Tpetra typedefs
+// typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
+// typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
+typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
+//typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
+typedef serial_node NT;
 
-// // Tpetra includes
-// #include <Tpetra_Vector.hpp>
+typedef Tpetra::Operator<>::scalar_type SC;
+typedef Tpetra::Operator<SC>::local_ordinal_type LO;
+typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
+typedef Tpetra::Map<LO, GO, NT> map_type;
+typedef Tpetra::Operator<SC, LO, GO, NT> op_type;
+typedef Tpetra::MultiVector<SC, LO, GO, NT> mv_type;
+typedef Tpetra::Vector<SC, LO, GO, NT> vec_type;
+typedef Tpetra::CrsMatrix<SC, LO, GO, NT> matrix_type;
+typedef Tpetra::CrsGraph<LO, GO, NT> graph_type;
 
-// // Kokkos and Tpetra typedefs
-// // typedef Kokkos::Compat::KokkosOpenMPWrapperNode openmp_node;
-// // typedef Kokkos::Compat::KokkosCudaWrapperNode cuda_node;
-// typedef Kokkos::Compat::KokkosSerialWrapperNode serial_node;
-// //typedef Kokkos::Compat::KokkosThreadsWrapperNode thread_node;
-// typedef serial_node NT;
+typedef double ValueType;
+typedef Kokkos::DefaultExecutionSpace DeviceSpaceType;
 
-// typedef Tpetra::Operator<>::scalar_type SC;
-// typedef Tpetra::Operator<SC>::local_ordinal_type LO;
-// typedef Tpetra::Operator<SC, LO>::global_ordinal_type GO;
-// typedef Tpetra::Map<LO, GO, NT> map_type;
-// typedef Tpetra::Operator<SC, LO, GO, NT> op_type;
-// typedef Tpetra::MultiVector<SC, LO, GO, NT> mv_type;
-// typedef Tpetra::Vector<SC, LO, GO, NT> vec_type;
-// typedef Tpetra::CrsMatrix<SC, LO, GO, NT> matrix_type;
-// typedef Tpetra::CrsGraph<LO, GO, NT> graph_type;
+typedef Kokkos::DynRankView<ValueType, DeviceSpaceType> DynRankView;
 
+typedef shards::CellTopology    CellTopology;
+//typedef Intrepid2::CellTools<DeviceSpaceType>    CellTools;
+typedef Intrepid2::FunctionSpaceTools<DeviceSpaceType> fst;
 
-// using namespace std;
-// using namespace Intrepid;
+using namespace std;
+using namespace Intrepid2;
 
-// // Functions to evaluate exact solution and derivatives
-// double evalu(double & x, double & y, double & z);
-// int evalGradu(double & x, double & y, double & z, double & gradu1, double & gradu2, double & gradu3);
-// double evalDivGradu(double & x, double & y, double & z);
+// Functions to evaluate exact solution and derivatives
+double evalu(double & x, double & y, double & z);
+int evalGradu(double & x, double & y, double & z, double & gradu1, double & gradu2, double & gradu3);
+double evalDivGradu(double & x, double & y, double & z);
 
-// int main(int argc, char *argv[]) {
-
-//   //Check number of arguments
-//    if (argc < 4) {
-//       std::cout <<"\n>>> ERROR: Invalid number of arguments.\n\n";
-//       std::cout <<"Usage:\n\n";
-//       std::cout <<"  ./poisson.exe NX NY NZ verbose\n\n";
-//       std::cout <<" where \n";
-//       std::cout <<"   int NX              - num intervals in x direction (assumed box domain, 0,1) \n";
-//       std::cout <<"   int NY              - num intervals in y direction (assumed box domain, 0,1) \n";
-//       std::cout <<"   int NZ              - num intervals in z direction (assumed box domain, 0,1) \n";
-//       std::cout <<"   verbose (optional)  - any character, indicates verbose output \n\n";
-//       exit(1);
-//    }
+int main(int argc, char *argv[]) {
+    Tpetra::initialize (&argc, &argv);
+  //Check number of arguments
+   if (argc < 4) {
+      std::cout <<"\n>>> ERROR: Invalid number of arguments.\n\n";
+      std::cout <<"Usage:\n\n";
+      std::cout <<"  ./poisson.exe NX NY NZ verbose\n\n";
+      std::cout <<" where \n";
+      std::cout <<"   int NX              - num intervals in x direction (assumed box domain, 0,1) \n";
+      std::cout <<"   int NY              - num intervals in y direction (assumed box domain, 0,1) \n";
+      std::cout <<"   int NZ              - num intervals in z direction (assumed box domain, 0,1) \n";
+      std::cout <<"   verbose (optional)  - any character, indicates verbose output \n\n";
+      exit(1);
+   }
   
-//   // This little trick lets us print to std::cout only if
-//   // a (dummy) command-line argument is provided.
-//   int iprint     = argc - 1;
-//   Teuchos::RCP<std::ostream> outStream;
-//   Teuchos::oblackholestream bhs; // outputs nothing
-//   if (iprint > 3)
-//     outStream = Teuchos::rcp(&std::cout, false);
-//   else
-//     outStream = Teuchos::rcp(&bhs, false);
+  // This little trick lets us print to std::cout only if
+  // a (dummy) command-line argument is provided.
+  int iprint     = argc - 1;
+  Teuchos::RCP<std::ostream> outStream;
+  Teuchos::oblackholestream bhs; // outputs nothing
+  if (iprint > 3)
+    outStream = Teuchos::rcp(&std::cout, false);
+  else
+    outStream = Teuchos::rcp(&bhs, false);
   
-//   // Save the format state of the original std::cout.
-//   Teuchos::oblackholestream oldFormatState;
-//   oldFormatState.copyfmt(std::cout);
+  // Save the format state of the original std::cout.
+  Teuchos::oblackholestream oldFormatState;
+  oldFormatState.copyfmt(std::cout);
   
-//   *outStream \
-//     << "===============================================================================\n" \
-//     << "|                                                                             |\n" \
-//     << "|  Example: Generate Stiffness Matrix and Right Hand Side Vector for          |\n" \
-//     << "|                   Poisson Equation on Hexahedral Mesh                       |\n" \
-//     << "|                                                                             |\n" \
-//     << "===============================================================================\n";
+  *outStream \
+    << "===============================================================================\n" \
+    << "|                                                                             |\n" \
+    << "|  Example: Generate Stiffness Matrix and Right Hand Side Vector for          |\n" \
+    << "|                   Poisson Equation on Hexahedral Mesh                       |\n" \
+    << "|                                                                             |\n" \
+    << "===============================================================================\n";
 
 
-// // ************************************ GET INPUTS **************************************
+// ************************************ GET INPUTS **************************************
 
-//     int NX            = atoi(argv[1]);  // num intervals in x direction (assumed box domain, 0,1)
-//     int NY            = atoi(argv[2]);  // num intervals in y direction (assumed box domain, 0,1)
-//     int NZ            = atoi(argv[3]);  // num intervals in z direction (assumed box domain, 0,1)
+    int NX            = atoi(argv[1]);  // num intervals in x direction (assumed box domain, 0,1)
+    int NY            = atoi(argv[2]);  // num intervals in y direction (assumed box domain, 0,1)
+    int NZ            = atoi(argv[3]);  // num intervals in z direction (assumed box domain, 0,1)
 
-// // *********************************** CELL TOPOLOGY **********************************
+// *********************************** CELL TOPOLOGY **********************************
 
-//    // Get cell topology for base hexahedron
-//     typedef shards::CellTopology    CellTopology;
-//     CellTopology hex_8(shards::getCellTopologyData<shards::Hexahedron<8> >() );
+   // Get cell topology for base hexahedron
+    CellTopology hex_8(shards::getCellTopologyData<shards::Hexahedron<8> >() );
 
-//    // Get dimensions 
-//     int numNodesPerElem = hex_8.getNodeCount();
-//     int spaceDim = hex_8.getDimension();
+   // Get dimensions 
+    int numNodesPerElem = hex_8.getNodeCount();
+    int spaceDim = hex_8.getDimension();
 
-// // *********************************** GENERATE MESH ************************************
+// *********************************** GENERATE MESH ************************************
 
-//     *outStream << "Generating mesh ... \n\n";
+    *outStream << "Generating mesh ... \n\n";
 
-//     *outStream << "   NX" << "   NY" << "   NZ\n";
-//     *outStream << std::setw(5) << NX <<
-//                  std::setw(5) << NY <<
-//                  std::setw(5) << NZ << "\n\n";
+    *outStream << "   NX" << "   NY" << "   NZ\n";
+    *outStream << std::setw(5) << NX <<
+                 std::setw(5) << NY <<
+                 std::setw(5) << NZ << "\n\n";
 
-//    // Print mesh information
-//     int numElems = NX*NY*NZ;
-//     int numNodes = (NX+1)*(NY+1)*(NZ+1);
-//     *outStream << " Number of Elements: " << numElems << " \n";
-//     *outStream << "    Number of Nodes: " << numNodes << " \n\n";
+   // Print mesh information
+    int numElems = NX*NY*NZ;
+    int numNodes = (NX+1)*(NY+1)*(NZ+1);
+    *outStream << " Number of Elements: " << numElems << " \n";
+    *outStream << "    Number of Nodes: " << numNodes << " \n\n";
 
-//    // Cube
-//     double leftX = 0.0, rightX = 1.0;
-//     double leftY = 0.0, rightY = 1.0;
-//     double leftZ = 0.0, rightZ = 1.0;
+   // Cube
+    double leftX = 0.0, rightX = 1.0;
+    double leftY = 0.0, rightY = 1.0;
+    double leftZ = 0.0, rightZ = 1.0;
 
-//    // Mesh spacing
-//     double hx = (rightX-leftX)/((double)NX);
-//     double hy = (rightY-leftY)/((double)NY);
-//     double hz = (rightZ-leftZ)/((double)NZ);
+   // Mesh spacing
+    double hx = (rightX-leftX)/((double)NX);
+    double hy = (rightY-leftY)/((double)NY);
+    double hz = (rightZ-leftZ)/((double)NZ);
 
-//    // Get nodal coordinates
-//     FieldContainer<double> nodeCoord(numNodes, spaceDim);
-//     FieldContainer<int> nodeOnBoundary(numNodes);
-//     int inode = 0;
-//     for (int k=0; k<NZ+1; k++) {
-//       for (int j=0; j<NY+1; j++) {
-//         for (int i=0; i<NX+1; i++) {
-//           nodeCoord(inode,0) = leftX + (double)i*hx;
-//           nodeCoord(inode,1) = leftY + (double)j*hy;
-//           nodeCoord(inode,2) = leftZ + (double)k*hz;
-//           if (k==0 || j==0 || i==0 || k==NZ || j==NY || i==NX){
-//              nodeOnBoundary(inode)=1;
-//           }
-//           else {
-//              nodeOnBoundary(inode)=0;
-//           }
-//           inode++;
-//         }
-//       }
-//     }
-// #define DUMP_DATA
-// #ifdef DUMP_DATA
-//    // Print nodal coords
-//     ofstream fcoordout("coords.dat");
-//     for (int i=0; i<numNodes; i++) {
-//        fcoordout << nodeCoord(i,0) <<" ";
-//        fcoordout << nodeCoord(i,1) <<" ";
-//        fcoordout << nodeCoord(i,2) <<"\n";
-//     }
-//     fcoordout.close();
-// #endif
-
-
-//   // Element to Node map
-//     FieldContainer<int> elemToNode(numElems, numNodesPerElem);
-//     int ielem = 0;
-//     for (int k=0; k<NZ; k++) {
-//       for (int j=0; j<NY; j++) {
-//         for (int i=0; i<NX; i++) {
-//           elemToNode(ielem,0) = (NY + 1)*(NX + 1)*k + (NX + 1)*j + i;
-//           elemToNode(ielem,1) = (NY + 1)*(NX + 1)*k + (NX + 1)*j + i + 1;
-//           elemToNode(ielem,2) = (NY + 1)*(NX + 1)*k + (NX + 1)*(j + 1) + i + 1;
-//           elemToNode(ielem,3) = (NY + 1)*(NX + 1)*k + (NX + 1)*(j + 1) + i;
-//           elemToNode(ielem,4) = (NY + 1)*(NX + 1)*(k + 1) + (NX + 1)*j + i;
-//           elemToNode(ielem,5) = (NY + 1)*(NX + 1)*(k + 1) + (NX + 1)*j + i + 1;
-//           elemToNode(ielem,6) = (NY + 1)*(NX + 1)*(k + 1) + (NX + 1)*(j + 1) + i + 1;
-//           elemToNode(ielem,7) = (NY + 1)*(NX + 1)*(k + 1) + (NX + 1)*(j + 1) + i;
-//           ielem++;
-//         }
-//       }
-//     }
-// #ifdef DUMP_DATA
-//    // Output connectivity
-//     ofstream fe2nout("elem2node.dat");
-//     for (int k=0; k<NZ; k++) {
-//       for (int j=0; j<NY; j++) {
-//         for (int i=0; i<NX; i++) {
-//           int ielem = i + j * NX + k * NX * NY;
-//           for (int m=0; m<numNodesPerElem; m++){
-//               fe2nout << elemToNode(ielem,m) <<"  ";
-//            }
-//           fe2nout <<"\n";
-//         }
-//       }
-//     }
-//     fe2nout.close();
-// #endif
+   // Get nodal coordinates
+   // FieldContainer<double> nodeCoord(numNodes, spaceDim);
+   // FieldContainer<int> nodeOnBoundary(numNodes);
+    DynRankView nodeCoord("nodeCoord", numNodes, spaceDim);
+    Kokkos::DynRankView<int,DeviceSpaceType> nodeOnBoundary("nodeOnBoundary",numNodes);
+    int inode = 0;
+    for (int k=0; k<NZ+1; k++) {
+      for (int j=0; j<NY+1; j++) {
+        for (int i=0; i<NX+1; i++) {
+          nodeCoord(inode,0) = leftX + (double)i*hx;
+          nodeCoord(inode,1) = leftY + (double)j*hy;
+          nodeCoord(inode,2) = leftZ + (double)k*hz;
+          if (k==0 || j==0 || i==0 || k==NZ || j==NY || i==NX){
+             nodeOnBoundary(inode)=1;
+          }
+          else {
+             nodeOnBoundary(inode)=0;
+          }
+          inode++;
+        }
+      }
+    }
+#define DUMP_DATA
+#ifdef DUMP_DATA
+   // Print nodal coords
+    ofstream fcoordout("coords.dat");
+    for (int i=0; i<numNodes; i++) {
+       fcoordout << nodeCoord(i,0) <<" ";
+       fcoordout << nodeCoord(i,1) <<" ";
+       fcoordout << nodeCoord(i,2) <<"\n";
+    }
+    fcoordout.close();
+#endif
 
 
-// // ************************************ CUBATURE **************************************
+  // Element to Node map
+    //FieldContainer<int> elemToNode(numElems, numNodesPerElem);
+    Kokkos::DynRankView<int,DeviceSpaceType> elemToNode("elemToNode",numElems, numNodesPerElem);
+    int ielem = 0;
+    for (int k=0; k<NZ; k++) {
+      for (int j=0; j<NY; j++) {
+        for (int i=0; i<NX; i++) {
+          elemToNode(ielem,0) = (NY + 1)*(NX + 1)*k + (NX + 1)*j + i;
+          elemToNode(ielem,1) = (NY + 1)*(NX + 1)*k + (NX + 1)*j + i + 1;
+          elemToNode(ielem,2) = (NY + 1)*(NX + 1)*k + (NX + 1)*(j + 1) + i + 1;
+          elemToNode(ielem,3) = (NY + 1)*(NX + 1)*k + (NX + 1)*(j + 1) + i;
+          elemToNode(ielem,4) = (NY + 1)*(NX + 1)*(k + 1) + (NX + 1)*j + i;
+          elemToNode(ielem,5) = (NY + 1)*(NX + 1)*(k + 1) + (NX + 1)*j + i + 1;
+          elemToNode(ielem,6) = (NY + 1)*(NX + 1)*(k + 1) + (NX + 1)*(j + 1) + i + 1;
+          elemToNode(ielem,7) = (NY + 1)*(NX + 1)*(k + 1) + (NX + 1)*(j + 1) + i;
+          ielem++;
+        }
+      }
+    }
+#ifdef DUMP_DATA
+   // Output connectivity
+    ofstream fe2nout("elem2node.dat");
+    for (int k=0; k<NZ; k++) {
+      for (int j=0; j<NY; j++) {
+        for (int i=0; i<NX; i++) {
+          int ielem = i + j * NX + k * NX * NY;
+          for (int m=0; m<numNodesPerElem; m++){
+              fe2nout << elemToNode(ielem,m) <<"  ";
+           }
+          fe2nout <<"\n";
+        }
+      }
+    }
+    fe2nout.close();
+#endif
 
-//     *outStream << "Getting cubature ... \n\n";
 
-//    // Get numerical integration points and weights
-//     DefaultCubatureFactory<double>  cubFactory;                                   
-//     int cubDegree = 2;
-//     Teuchos::RCP<Cubature<double> > hexCub = cubFactory.create(hex_8, cubDegree); 
+// ************************************ CUBATURE **************************************
 
-//     int cubDim       = hexCub->getDimension();
-//     int numCubPoints = hexCub->getNumPoints();
+    *outStream << "Getting cubature ... \n\n";
 
-//     FieldContainer<double> cubPoints(numCubPoints, cubDim);
-//     FieldContainer<double> cubWeights(numCubPoints);
+   // Get numerical integration points and weights
+    DefaultCubatureFactory  cubFactory;
 
-//     hexCub->getCubature(cubPoints, cubWeights);
+    //auto cubature = DefaultCubatureFactory::create<DeviceSpaceType,ValueType,ValueType>(cellTopo, order);
 
+    int cubDegree = 2;
+    auto hexCub = cubFactory.create<DeviceSpaceType,ValueType,ValueType>(hex_8, cubDegree); 
 
-// // ************************************** BASIS ***************************************
+    int cubDim       = hexCub->getDimension();
+    int numCubPoints = hexCub->getNumPoints();
 
-//      *outStream << "Getting basis ... \n\n";
+    //FieldContainer<double> cubPoints(numCubPoints, cubDim);
+    //FieldContainer<double> cubWeights(numCubPoints);
+    DynRankView cubPoints("cubPoints",numCubPoints, cubDim);
+    DynRankView cubWeights("cubWeights",numCubPoints);
 
-//    // Define basis 
-//      Basis_HGRAD_HEX_C1_FEM<double, FieldContainer<double> > hexHGradBasis;
-//      int numFieldsG = hexHGradBasis.getCardinality();
-//      FieldContainer<double> hexGVals(numFieldsG, numCubPoints); 
-//      FieldContainer<double> hexGrads(numFieldsG, numCubPoints, spaceDim); 
-
-//   // Evaluate basis values and gradients at cubature points
-//      hexHGradBasis.getValues(hexGVals, cubPoints, OPERATOR_VALUE);
-//      hexHGradBasis.getValues(hexGrads, cubPoints, OPERATOR_GRAD);
+    hexCub->getCubature(cubPoints, cubWeights);
 
 
-// // ******** LOOP OVER ELEMENTS TO CREATE LOCAL STIFFNESS MATRIX *************
+// ************************************** BASIS ***************************************
 
-//     *outStream << "Building stiffness matrix and right hand side ... \n\n";
+     *outStream << "Getting basis ... \n\n";
 
-//  // Settings and data structures for mass and stiffness matrices
-//     typedef CellTools<double>  CellTools;
-//     typedef FunctionSpaceTools fst;
-//     int numCells = 1; 
+   // Define basis 
+     Basis_HGRAD_HEX_C1_FEM<DeviceSpaceType, double, double> hexHGradBasis;
 
-//    // Container for nodes
-//     FieldContainer<double> hexNodes(numCells, numNodesPerElem, spaceDim);
-//    // Containers for Jacobian
-//     FieldContainer<double> hexJacobian(numCells, numCubPoints, spaceDim, spaceDim);
-//     FieldContainer<double> hexJacobInv(numCells, numCubPoints, spaceDim, spaceDim);
-//     FieldContainer<double> hexJacobDet(numCells, numCubPoints);
-//    // Containers for element HGRAD stiffness matrix
-//     FieldContainer<double> localStiffMatrix(numCells, numFieldsG, numFieldsG);
-//     FieldContainer<double> weightedMeasure(numCells, numCubPoints);
-//     FieldContainer<double> hexGradsTransformed(numCells, numFieldsG, numCubPoints, spaceDim);
-//     FieldContainer<double> hexGradsTransformedWeighted(numCells, numFieldsG, numCubPoints, spaceDim);
-//    // Containers for right hand side vectors
-//     FieldContainer<double> rhsData(numCells, numCubPoints);
-//     FieldContainer<double> localRHS(numCells, numFieldsG);
-//     FieldContainer<double> hexGValsTransformed(numCells, numFieldsG, numCubPoints);
-//     FieldContainer<double> hexGValsTransformedWeighted(numCells, numFieldsG, numCubPoints);
-//    // Container for cubature points in physical space
-//     FieldContainer<double> physCubPoints(numCells, numCubPoints, cubDim);
-//     int indexBase = 0;
-//    Teuchos::GlobalMPISession mpiSession(&argc, &argv, nullptr);
-//     Teuchos::RCP<const Teuchos::Comm<int> > Comm = Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
-//     Teuchos::RCP<const map_type> globalMapG = Teuchos::rcp(new map_type(numNodes, indexBase, Comm));
-//     Teuchos::RCP<matrix_type> StiffMatrix = Teuchos::rcp(new matrix_type(globalMapG, numFieldsG));
-//     Teuchos::RCP<vec_type> rhs = Teuchos::rcp(new vec_type(globalMapG, false));
-//  // *** Element loop ***
-//     for (int k=0; k<numElems; k++) {
+ //    Basis_HGRAD_HEX_C1_FEM<double, FieldContainer<double> > hexHGradBasis;
+     int numFieldsG = hexHGradBasis.getCardinality();
+     DynRankView hexGVals("hexGVals",numFieldsG, numCubPoints); 
+     DynRankView hexGrads("hexGrads",numFieldsG, numCubPoints, spaceDim); 
 
-//      // Physical cell coordinates
-//       for (int i=0; i<numNodesPerElem; i++) {
-//          hexNodes(0,i,0) = nodeCoord(elemToNode(k,i),0);
-//          hexNodes(0,i,1) = nodeCoord(elemToNode(k,i),1);
-//          hexNodes(0,i,2) = nodeCoord(elemToNode(k,i),2);
-//       }
-//     // Compute cell Jacobians, their inverses and their determinants
-//        CellTools::setJacobian(hexJacobian, cubPoints, hexNodes, hex_8);
-//        CellTools::setJacobianInv(hexJacobInv, hexJacobian );
-//        CellTools::setJacobianDet(hexJacobDet, hexJacobian );
-// // ************************** Compute element HGrad stiffness matrices *******************************
+  // Evaluate basis values and gradients at cubature points
+     hexHGradBasis.getValues(hexGVals, cubPoints, OPERATOR_VALUE);
+     hexHGradBasis.getValues(hexGrads, cubPoints, OPERATOR_GRAD);
+
+
+// ******** LOOP OVER ELEMENTS TO CREATE LOCAL STIFFNESS MATRIX *************
+
+    *outStream << "Building stiffness matrix and right hand side ... \n\n";
+
+ // Settings and data structures for mass and stiffness matrices
+    int numCells = 1; 
+
+   // Container for nodes
+    DynRankView hexNodes("hexNodes",numCells, numNodesPerElem, spaceDim);
+   // Containers for Jacobian
+    DynRankView hexJacobian("hexJacobian",numCells, numCubPoints, spaceDim, spaceDim);
+    DynRankView hexJacobInv("hexJacobInv",numCells, numCubPoints, spaceDim, spaceDim);
+    DynRankView hexJacobDet("hexJacobDet",numCells, numCubPoints);
+   // Containers for element HGRAD stiffness matrix
+    DynRankView localStiffMatrix("localStiffMatrix",numCells, numFieldsG, numFieldsG);
+    DynRankView weightedMeasure("weightedMeasure",numCells, numCubPoints);
+    DynRankView hexGradsTransformed("hexGradsTransformed",numCells, numFieldsG, numCubPoints, spaceDim);
+    DynRankView hexGradsTransformedWeighted("hexGradsTransformedWeighted",numCells, numFieldsG, numCubPoints, spaceDim);
+   // Containers for right hand side vectors
+    DynRankView rhsData("rhsData",numCells, numCubPoints);
+    DynRankView localRHS("localRHS",numCells, numFieldsG);
+    DynRankView hexGValsTransformed("hexGValsTransformed",numCells, numFieldsG, numCubPoints);
+    DynRankView hexGValsTransformedWeighted("hexGValsTransformedWeighted",numCells, numFieldsG, numCubPoints);
+   // Container for cubature points in physical space
+    DynRankView physCubPoints("",numCells, numCubPoints, cubDim);
+    int indexBase = 0;
+   Teuchos::GlobalMPISession mpiSession(&argc, &argv, nullptr);
+    Teuchos::RCP<const Teuchos::Comm<int> > Comm = Tpetra::getDefaultComm();
+    Teuchos::RCP<const map_type> globalMapG = Teuchos::rcp(new map_type(numNodes, indexBase, Comm));
+    Teuchos::RCP<matrix_type> StiffMatrix = Teuchos::rcp(new matrix_type(globalMapG, numFieldsG));
+    Teuchos::RCP<vec_type> rhs = Teuchos::rcp(new vec_type(globalMapG, false));
+ // *** Element loop ***
+    for (int k=0; k<numElems; k++) {
+
+     // Physical cell coordinates
+      for (int i=0; i<numNodesPerElem; i++) {
+         hexNodes(0,i,0) = nodeCoord(elemToNode(k,i),0);
+         hexNodes(0,i,1) = nodeCoord(elemToNode(k,i),1);
+         hexNodes(0,i,2) = nodeCoord(elemToNode(k,i),2);
+      }
+    // Compute cell Jacobians, their inverses and their determinants
+      Intrepid2::CellTools<DeviceSpaceType>::setJacobian(hexJacobian, cubPoints, hexNodes, hex_8);
+      Intrepid2::CellTools<DeviceSpaceType>::setJacobianInv(hexJacobInv, hexJacobian );
+      Intrepid2::CellTools<DeviceSpaceType>::setJacobianDet(hexJacobDet, hexJacobian );
+// ************************** Compute element HGrad stiffness matrices *******************************
   
-//      // transform to physical coordinates 
-//       fst::HGRADtransformGRAD<double>(hexGradsTransformed, hexJacobInv, hexGrads);
+     // transform to physical coordinates 
+      fst::HGRADtransformGRAD<double>(hexGradsTransformed, hexJacobInv, hexGrads);
       
-//      // compute weighted measure
-//       fst::computeCellMeasure<double>(weightedMeasure, hexJacobDet, cubWeights);
+     // compute weighted measure
+      fst::computeCellMeasure<double>(weightedMeasure, hexJacobDet, cubWeights);
 
-//      // multiply values with weighted measure
-//       fst::multiplyMeasure<double>(hexGradsTransformedWeighted,
-//                                    weightedMeasure, hexGradsTransformed);
+     // multiply values with weighted measure
+      fst::multiplyMeasure<double>(hexGradsTransformedWeighted,
+                                   weightedMeasure, hexGradsTransformed);
 
-//      // integrate to compute element stiffness matrix
-//       fst::integrate<double>(localStiffMatrix,
-//                              hexGradsTransformed, hexGradsTransformedWeighted, COMP_BLAS);
-//       // assemble into global matrix
-//       for (int row = 0; row < numFieldsG; row++){
-//         for (int col = 0; col < numFieldsG; col++){
-//             int rowIndex = elemToNode(k,row);
-//             int colIndex = elemToNode(k,col);
-//             double val = localStiffMatrix(0,row,col);
-//             StiffMatrix->insertGlobalValues(rowIndex, 1, &val, &colIndex);
-//             //C->insertGlobalValues(row, values.size(), values.data(), columns.data());
-//          }
-//       }
-// // ******************************* Build right hand side ************************************
+     // integrate to compute element stiffness matrix
+      fst::integrate(localStiffMatrix, hexGradsTransformed, hexGradsTransformedWeighted);
+      // assemble into global matrix
+      for (int row = 0; row < numFieldsG; row++){
+        for (int col = 0; col < numFieldsG; col++){
+            int rowIndex = elemToNode(k,row);
+            int colIndex = elemToNode(k,col);
+            double val = localStiffMatrix(0,row,col);
+            StiffMatrix->insertGlobalValues(rowIndex, 1, &val, &colIndex);
+            //C->insertGlobalValues(row, values.size(), values.data(), columns.data());
+         }
+      }
+// ******************************* Build right hand side ************************************
 
-//       // transform integration points to physical points
-//        CellTools::mapToPhysicalFrame(physCubPoints, cubPoints, hexNodes, hex_8);
-//       // evaluate right hand side function at physical points
-//        for (int nPt = 0; nPt < numCubPoints; nPt++){
+      // transform integration points to physical points
+      Intrepid2::CellTools<DeviceSpaceType>::mapToPhysicalFrame(physCubPoints, cubPoints, hexNodes, hex_8);
+      // evaluate right hand side function at physical points
+       for (int nPt = 0; nPt < numCubPoints; nPt++){
 
-//           double x = physCubPoints(0,nPt,0);
-//           double y = physCubPoints(0,nPt,1);
-//           double z = physCubPoints(0,nPt,2);
+          double x = physCubPoints(0,nPt,0);
+          double y = physCubPoints(0,nPt,1);
+          double z = physCubPoints(0,nPt,2);
 
-//           rhsData(0,nPt) = evalDivGradu(x, y, z);
-//        }
-//      // transform basis values to physical coordinates 
-//       fst::HGRADtransformVALUE<double>(hexGValsTransformed, hexGVals);
+          rhsData(0,nPt) = evalDivGradu(x, y, z);
+       }
+     // transform basis values to physical coordinates 
+      fst::HGRADtransformVALUE<double>(hexGValsTransformed, hexGVals);
 
-//      // multiply values with weighted measure
-//       fst::multiplyMeasure<double>(hexGValsTransformedWeighted,
-//                                    weightedMeasure, hexGValsTransformed);
+     // multiply values with weighted measure
+      fst::multiplyMeasure<double>(hexGValsTransformedWeighted,
+                                   weightedMeasure, hexGValsTransformed);
 
-//      // integrate rhs term
-//       fst::integrate<double>(localRHS, rhsData, hexGValsTransformedWeighted, 
-//                              COMP_BLAS);
-//     // assemble into global vector
-//      for (int row = 0; row < numFieldsG; row++){
-//            int rowIndex = elemToNode(k,row);
-//        const    double val = -localRHS(0,row);
-//        const double *valp = &val;
-//        //    rhs->sumIntoGlobalValue(rowIndex, *valp );
-//       }
+     // integrate rhs term
+      fst::integrate(localRHS, rhsData, hexGValsTransformedWeighted);
+    // assemble into global vector
+     for (int row = 0; row < numFieldsG; row++){
+           int rowIndex = elemToNode(k,row);
+       const    double val = -localRHS(0,row);
+       //const double *valp = &val;
+       //    rhs->sumIntoGlobalValue(rowIndex, *valp );
+      }
      
-//  } // *** end element loop ***
+ } // *** end element loop ***
 
-//   // Assemble global matrices
-//    StiffMatrix->globalAssemble(); StiffMatrix->fillComplete();
-// //   rhs->globalAssemble();
+  // Assemble global matrices
+   StiffMatrix->globalAssemble(); StiffMatrix->fillComplete();
+//   rhs->globalAssemble();
  
-//   // Adjust stiffness matrix and rhs based on boundary conditions
-//    for (int row = 0; row<numNodes; row++){
-//        if (nodeOnBoundary(row)) {
-//           int rowindex = row;
-//           for (int col=0; col<numNodes; col++){
-//               double val = 0.0;
-//               int colindex = col;
-//               StiffMatrix->replaceGlobalValues(rowindex,1, &val, &colindex);
-//           }
-//           double val = 1.0;
+  // Adjust stiffness matrix and rhs based on boundary conditions
+   for (int row = 0; row<numNodes; row++){
+       if (nodeOnBoundary(row)) {
+          int rowindex = row;
+          for (int col=0; col<numNodes; col++){
+              double val = 0.0;
+              int colindex = col;
+              StiffMatrix->replaceGlobalValues(rowindex,1, &val, &colindex);
+          }
+          double val = 1.0;
 
-//           StiffMatrix->replaceGlobalValues(rowindex,1, &val, &rowindex);
-//           val = 0.0;
-//           rhs->replaceGlobalValue(rowindex, val );
-//        }
-//     }
+          StiffMatrix->replaceGlobalValues(rowindex,1, &val, &rowindex);
+          val = 0.0;
+          rhs->replaceGlobalValue(rowindex, val );
+       }
+    }
 
-// /*#ifdef DUMP_DATA
-//    // Dump matrices to disk
-//      EpetraExt::RowMatrixToMatlabFile("stiff_matrix.dat",StiffMatrix);
-//      EpetraExt::MultiVectorToMatrixMarketFile("rhs_vector.dat",rhs,0,0,false);
-// #endif*/
+/*#ifdef DUMP_DATA
+   // Dump matrices to disk
+     EpetraExt::RowMatrixToMatlabFile("stiff_matrix.dat",StiffMatrix);
+     EpetraExt::MultiVectorToMatrixMarketFile("rhs_vector.dat",rhs,0,0,false);
+#endif*/
 
-//    std::cout << "End Result: TEST PASSED\n";
+   std::cout << "End Result: TEST PASSED\n";
    
-//    // reset format state of std::cout
-//    std::cout.copyfmt(oldFormatState);
-   
-//    return 0;
-// }
+   // reset format state of std::cout
+   std::cout.copyfmt(oldFormatState);
+
+   Tpetra::finalize ();
+   return 0;
+}
 
 
-// // Calculates value of exact solution u
-//  double evalu(double & x, double & y, double & z)
-//  {
-//  /*
-//    // function1
-//     double exactu = sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z);
-//  */
+// Calculates value of exact solution u
+ double evalu(double & x, double & y, double & z)
+ {
+ /*
+   // function1
+    double exactu = sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z);
+ */
 
-//    // function2
-//    double exactu = sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z);
+   // function2
+   double exactu = sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z);
 
-//    return exactu;
-//  }
+   return exactu;
+ }
 
-// // Calculates gradient of exact solution u
-//  int evalGradu(double & x, double & y, double & z, double & gradu1, double & gradu2, double & gradu3)
-//  {
-//  /*
-//    // function 1
-//        gradu1 = M_PI*cos(M_PI*x)*sin(M_PI*y)*sin(M_PI*z);
-//        gradu2 = M_PI*sin(M_PI*x)*cos(M_PI*y)*sin(M_PI*z);
-//        gradu3 = M_PI*sin(M_PI*x)*sin(M_PI*y)*cos(M_PI*z);
-//  */
+// Calculates gradient of exact solution u
+ int evalGradu(double & x, double & y, double & z, double & gradu1, double & gradu2, double & gradu3)
+ {
+ /*
+   // function 1
+       gradu1 = M_PI*cos(M_PI*x)*sin(M_PI*y)*sin(M_PI*z);
+       gradu2 = M_PI*sin(M_PI*x)*cos(M_PI*y)*sin(M_PI*z);
+       gradu3 = M_PI*sin(M_PI*x)*sin(M_PI*y)*cos(M_PI*z);
+ */
 
-//    // function2
-//        gradu1 = (M_PI*cos(M_PI*x)+sin(M_PI*x))
-//                   *sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z);
-//        gradu2 = (M_PI*cos(M_PI*y)+sin(M_PI*y))
-//                   *sin(M_PI*x)*sin(M_PI*z)*exp(x+y+z);
-//        gradu3 = (M_PI*cos(M_PI*z)+sin(M_PI*z))
-//                   *sin(M_PI*x)*sin(M_PI*y)*exp(x+y+z);
+   // function2
+       gradu1 = (M_PI*cos(M_PI*x)+sin(M_PI*x))
+                  *sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z);
+       gradu2 = (M_PI*cos(M_PI*y)+sin(M_PI*y))
+                  *sin(M_PI*x)*sin(M_PI*z)*exp(x+y+z);
+       gradu3 = (M_PI*cos(M_PI*z)+sin(M_PI*z))
+                  *sin(M_PI*x)*sin(M_PI*y)*exp(x+y+z);
   
-//    return 0;
-//  }
+   return 0;
+ }
 
-// // Calculates Laplacian of exact solution u
-//  double evalDivGradu(double & x, double & y, double & z)
-//  {
-//  /*
-//    // function 1
-//     double divGradu = -3.0*M_PI*M_PI*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z);
-//  */
+// Calculates Laplacian of exact solution u
+ double evalDivGradu(double & x, double & y, double & z)
+ {
+ /*
+   // function 1
+    double divGradu = -3.0*M_PI*M_PI*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z);
+ */
 
-//    // function 2
-//    double divGradu = -3.0*M_PI*M_PI*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z)
-//                     + 2.0*M_PI*cos(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z)
-//                     + 2.0*M_PI*cos(M_PI*y)*sin(M_PI*x)*sin(M_PI*z)*exp(x+y+z)
-//                     + 2.0*M_PI*cos(M_PI*z)*sin(M_PI*x)*sin(M_PI*y)*exp(x+y+z)
-//                     + 3.0*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z);
+   // function 2
+   double divGradu = -3.0*M_PI*M_PI*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z)
+                    + 2.0*M_PI*cos(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z)
+                    + 2.0*M_PI*cos(M_PI*y)*sin(M_PI*x)*sin(M_PI*z)*exp(x+y+z)
+                    + 2.0*M_PI*cos(M_PI*z)*sin(M_PI*x)*sin(M_PI*y)*exp(x+y+z)
+                    + 3.0*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z)*exp(x+y+z);
    
-//    return divGradu;
-//  }
+   return divGradu;
+ }
 

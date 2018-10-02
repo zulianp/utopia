@@ -310,7 +310,7 @@ namespace utopia {
         inline Size size() const
         {
             if(is_null()) {
-                return {INVALID_INDEX};
+                return {0};
             }
 
             return { implementation().getMap()->getGlobalNumElements() };
@@ -319,7 +319,7 @@ namespace utopia {
         inline Size local_size() const
         {
             if(is_null()) {
-                return {INVALID_INDEX};
+                return {0};
             }
 
             return { implementation().getMap()->getNodeNumElements() };

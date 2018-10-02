@@ -199,8 +199,10 @@ namespace utopia {
 		//FIXME this does not work as it should
 		try {
 			Tpetra::RowMatrixTransposer<Scalar, LO, GO, NT> transposer(mat_);
-			mat.mat_ = transposer.createTranspose();
-			mat.owner_ = true;
+
+			auto temp = transposer.createTranspose(); 
+			
+			
 
 
 			//None of this creat a valid matrix for getGlobalRowView
@@ -209,15 +211,17 @@ namespace utopia {
 			// mat.mat_->replaceColMap(col_map);
 
 			//2)
-			mat.implementation().resumeFill();
-			mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
+			// temp->resumeFill();
+			// temp->fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
 
-			assert(this->local_size().get(0) == mat.local_size().get(1));
-			assert(this->local_size().get(1) == mat.local_size().get(0));
+			// assert(this->local_size().get(0) == mat.local_size().get(1));
+			// assert(this->local_size().get(1) == mat.local_size().get(0));
 
-			assert(this->size().get(0) == mat.size().get(1));
-			assert(this->size().get(1) == mat.size().get(0));
+			// assert(this->size().get(0) == mat.size().get(1));
+			// assert(this->size().get(1) == mat.size().get(0));
 
+			mat.mat_ = temp;
+			mat.owner_ = true;
 			assert(is_valid(true));
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;

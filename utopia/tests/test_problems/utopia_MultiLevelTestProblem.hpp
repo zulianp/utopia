@@ -36,7 +36,7 @@ namespace utopia {
 				interpolators[i] = std::make_shared<Matrix>(sparse(n_fine, n_coarse, 2));
 				auto &I = *interpolators[i];
 
-				Write<Matrix> w_(I);
+				Write<Matrix> w_(I, utopia::GLOBAL_INSERT);
 				auto r = row_range(I);
 
 				SizeType j = std::floor(r.begin()/2.);
@@ -58,8 +58,12 @@ namespace utopia {
 					I.set(k, j, 1./h);
 
 					if(j + 1 < n_coarse) {
-						I.set(k + 1, j, 0.5/h);
-						I.set(k + 1, j + 1, 0.5/h);
+						auto kp1 = k + 1;
+
+						if(r.inside(kp1)) {
+							I.set(kp1, j, 0.5/h);
+							I.set(kp1, j + 1, 0.5/h);
+						}
 					}
 				}
 			}
@@ -79,7 +83,7 @@ namespace utopia {
 			}
 
 			if(r.end() == n_finest) {
-				rhs->set(n_finest -1, -1.);
+				rhs->set(n_finest - 1, -1.);
 			}
 
 			if(remove_bc_dofs_from_interp) {
@@ -98,6 +102,15 @@ namespace utopia {
 					I.set(last_node_h, last_node_H, 0.);
 				}
 			}
+		}
+
+		void describe() const
+		{
+			disp("----------------------------------");
+			for(auto I_ptr : interpolators) {
+				disp(*I_ptr);
+			}
+			disp("----------------------------------");
 		}
 
 		void write_matlab(const std::string &folder)
