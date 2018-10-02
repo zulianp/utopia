@@ -127,12 +127,14 @@ namespace utopia {
                                                        const std::shared_ptr<const Matrix> &prec)
     {
         PreconditionedSolver::update(op, prec);
+        // set_problem(*op);
     }
     
     template <typename Matrix, typename Vector>
     void BelosSolver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op)
     {
         PreconditionedSolver::update(op);
+        // set_problem(*op);
     }
     
     template <typename Matrix, typename Vector>
@@ -145,8 +147,10 @@ namespace utopia {
                                                                              rhs.implementation().implementation_ptr()
                                                                              )
                                              );
-        
+
         set_problem();
+
+        assert((impl_->belos_solver));
         impl_->belos_solver->solve();
         return true;
     }
