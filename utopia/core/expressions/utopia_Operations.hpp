@@ -229,6 +229,7 @@ namespace utopia {
      */
     template<class Left, class Right>
     inline Binary<Left, Right, Min> min(const Expression<Left> &left, const Expression<Right> &right) {
+//        std::cout<<"Min OP"<<'\n';
         return Binary<Left, Right, Min>(left.derived(), right.derived());
     }
 
@@ -239,6 +240,7 @@ namespace utopia {
      */
     template<class Left, class Right>
     inline Binary<Left, Right, Max> max(const Expression<Left> &left, const Expression<Right> &right) {
+//        std::cout<<"Max OP"<<'\n';
         return Binary<Left, Right, Max>(left.derived(), right.derived());
     }
 

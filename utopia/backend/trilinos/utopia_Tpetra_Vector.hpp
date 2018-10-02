@@ -9,8 +9,13 @@
 
 #include <Tpetra_Map_decl.hpp>
 #include <Tpetra_Vector_decl.hpp>
-
+#include <Tpetra_Core.hpp>
+// This is the only header file you need to include for the "core"
+// part of Kokkos.  That includes Kokkos::View, Kokkos::parallel_*,
+// and atomic updates.
+#include <Kokkos_Core.hpp>
 #include <memory>
+using host_memory_space = Kokkos::HostSpace;
 
 namespace utopia {
 
@@ -380,16 +385,31 @@ namespace utopia {
                 result.init(rhs.implementation().getMap());
             } 
 
-            auto a_lhs = this->implementation().getData();
-            auto a_rhs = rhs.implementation().getData();
-            auto a_res = result.implementation().getDataNonConst();
-
-            assert(a_res.size() == a_lhs.size());
-            assert(a_res.size() == a_rhs.size());
-
-            for(auto i = 0; i < a_lhs.size(); ++i) {
-               a_res[i] = op.apply(a_lhs[i], a_rhs[i]);
-            }
+//            auto a_lhs = this->implementation().getData();
+//            auto a_rhs = rhs.implementation().getData();
+//            auto a_res = result.implementation().getDataNonConst();
+ 
+                
+            auto k_rhs = rhs.implementation().getLocalView<host_memory_space> ();
+            auto k_lhs = this->implementation().getLocalView<host_memory_space> ();
+            auto k_res = result.implementation().getLocalView<host_memory_space> ();
+            
+//            assert(a_res.size() == a_lhs.size());
+//            assert(a_res.size() == a_rhs.size());
+            
+//            std::cout<<"I am using KOKKOS"<<std::endl;
+            
+//            assert(k_res.extent(0) == k_lhs.extent(0));
+//            assert(k_res.extent(0) == k_rhs.extent(0));
+//
+//            for(auto i = 0; i < a_lhs.size(); ++i) {
+//               a_res[i] = op.apply(a_lhs[i], a_rhs[i]);
+//            }
+//
+             Kokkos::parallel_for (k_lhs.extent(0), KOKKOS_LAMBDA (const int i) {
+                 k_res(i,0) = op.apply(k_lhs(i,0), k_rhs(i,0));
+             });
+            
         }
 
         inline vector_type &implementation()
