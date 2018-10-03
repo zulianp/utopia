@@ -45,7 +45,7 @@ namespace utopia {
 
 		assert(implementation().isLocallyIndexed());
 
-		auto local_col = col - implementation().getColMap()->getMinGlobalIndex();
+		auto local_col = col - implementation().getDomainMap()->getMinGlobalIndex();
 
 		auto rr = row_range();
 		implementation().getLocalRowView(row - rr.begin(), cols, values);
@@ -125,7 +125,7 @@ namespace utopia {
 
 		// if(result.is_null()) {
 
-		auto col_map = Teuchos::rcp(new map_type(right.size().get(1), 0, communicator(), Tpetra::LocallyReplicated));
+		// auto col_map = Teuchos::rcp(new map_type(right.size().get(1), 0, communicator(), Tpetra::LocallyReplicated));
 
 		if(transpose_this) {
 
@@ -133,7 +133,7 @@ namespace utopia {
 			result.mat_ = Teuchos::rcp(
 				new crs_mat_type(
 					implementation().getDomainMap(),
-					col_map,
+					// col_map,
 					0, Tpetra::DynamicProfile));
 
 		} else {
@@ -141,7 +141,7 @@ namespace utopia {
 			result.mat_ = Teuchos::rcp(
 				new crs_mat_type(
 					implementation().getRowMap(),
-					col_map,
+					// col_map,
 					0, Tpetra::DynamicProfile));
 		}
 
@@ -163,9 +163,13 @@ namespace utopia {
 			auto dm = this->implementation().getDomainMap();
 			auto rm = this->implementation().getRangeMap();
 
+			result.init_ = std::make_shared<InitStructs>();
+			result.init_->domain_map = right.implementation().getDomainMap();
+			result.init_->range_map  = (transpose_this ? dm : rm);
+
 			result.implementation().fillComplete(
-				right.implementation().getDomainMap(),
-				(transpose_this ? dm : rm)
+				result.init_->domain_map,
+				result.init_->range_map
 			);
 
 			// std::cout << ("---------------------------") << std::endl;
@@ -195,8 +199,10 @@ namespace utopia {
 		//FIXME this does not work as it should
 		try {
 			Tpetra::RowMatrixTransposer<Scalar, LO, GO, NT> transposer(mat_);
-			mat.mat_ = transposer.createTranspose();
-			mat.owner_ = true;
+
+			auto temp = transposer.createTranspose(); 
+			
+			
 
 
 			//None of this creat a valid matrix for getGlobalRowView
@@ -205,15 +211,17 @@ namespace utopia {
 			// mat.mat_->replaceColMap(col_map);
 
 			//2)
-			// mat.implementation().resumeFill();
-			// mat.implementation().fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
+			// temp->resumeFill();
+			// temp->fillComplete(this->implementation().getRangeMap(), this->implementation().getDomainMap());
 
-			assert(this->local_size().get(0) == mat.local_size().get(1));
-			assert(this->local_size().get(1) == mat.local_size().get(0));
+			// assert(this->local_size().get(0) == mat.local_size().get(1));
+			// assert(this->local_size().get(1) == mat.local_size().get(0));
 
-			assert(this->size().get(0) == mat.size().get(1));
-			assert(this->size().get(1) == mat.size().get(0));
+			// assert(this->size().get(0) == mat.size().get(1));
+			// assert(this->size().get(1) == mat.size().get(0));
 
+			mat.mat_ = temp;
+			mat.owner_ = true;
 			assert(is_valid(true));
 		} catch(const std::exception &ex) {
 			std::cout << ex.what() << std::endl;
@@ -254,6 +262,9 @@ namespace utopia {
 	    		// assert(false);
 	        	implementation().fillComplete(implementation().getDomainMap(), implementation().getRangeMap());
 	        }
+
+	        // implementation().fillComplete();
+	        
         } catch(const std::exception &ex) {
         	std::cout << ex.what() << std::endl;
         	assert(false);
@@ -286,8 +297,9 @@ namespace utopia {
 			Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &send_buff, &cols_global);
 		}
 
-	    auto col_map = Teuchos::rcp(new map_type(cols_global, indexBase, comm, Tpetra::LocallyReplicated));
-	    mat_.reset(new crs_mat_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
+	    // auto col_map = Teuchos::rcp(new map_type(cols_global, indexBase, comm, Tpetra::LocallyReplicated));
+	    // mat_.reset(new crs_mat_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
+	    mat_.reset(new crs_mat_type(row_map, nnz_x_row, Tpetra::DynamicProfile));
 	    owner_ = true;
 
 	    init_ = std::make_shared<InitStructs>();

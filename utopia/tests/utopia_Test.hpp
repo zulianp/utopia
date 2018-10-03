@@ -47,7 +47,7 @@ namespace utopia
 
         //only works for serial
         if(mpi_world_size() == 1) {
-            run_performance_test();
+            // run_performance_test();
             run_m3e_lin_sol_test();
         }
     }
@@ -88,8 +88,8 @@ namespace utopia
                    runPetscSlepcSolversTest();
                 else if(token == "nonlinear_multilevel")
                     runNonlinearMultilevelSolverTest();
-                else if (token == "performance")
-                    run_performance_test();
+                // else if (token == "performance")
+                    // run_performance_test();
                 else if (token == "algebra")
                     runAlgebraTest();
                 else if (token == "utilities")
