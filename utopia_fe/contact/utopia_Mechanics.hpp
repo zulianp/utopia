@@ -1,6 +1,7 @@
 #ifndef UTOPIA_MECHANICS_HPP
 #define UTOPIA_MECHANICS_HPP
 
+#include "utopia_libmesh_Types.hpp"
 #include "utopia.hpp"
 #include "utopia_FEForwardDeclarations.hpp"
 #include "utopia_libmesh_FEForwardDeclarations.hpp"

@@ -1,6 +1,7 @@
 #ifndef UTOPIA_ELASTIC_MATERIAL_HPP
 #define UTOPIA_ELASTIC_MATERIAL_HPP
 
+#include "utopia_libmesh_Types.hpp"
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia_LameeParameters.hpp"
 
