@@ -25,6 +25,8 @@
 
 #include <cmath>
 
+#include "utopia_trilinos_Each.hpp"
+
 namespace utopia {
     
     template<class Matrix>
@@ -1142,7 +1144,29 @@ namespace utopia {
                 A2.set(i, j, 1.);
             });
         }
+    }
 
+    void trilinos_copy_write_big()
+    {   
+        DSMatrixd petsc_P;
+
+        const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
+        bool ok = read(folder + "/I_2", petsc_P); utopia_test_assert(ok);
+
+        TSMatrixd P;
+        backend_convert_sparse(petsc_P, P);
+
+        P = transpose(P);
+        
+        TSMatrixd P2 = P;
+        P2 *= 0.;
+
+        {
+            Write<TSMatrixd> w_(P2);
+            each_read(P, [&P2](const SizeType i, const SizeType j, const double value) {
+                P2.set(i, j, value * 2.);
+            });
+        }
     }
     
     void trilinos_ghosted()
@@ -1225,6 +1249,29 @@ namespace utopia {
     }
 
 #endif //HAVE_BELOS_TPETRA
+
+
+    void trilinos_transform()
+    {
+        DSMatrixd petsc_P;
+
+        const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
+        bool ok = read(folder + "/I_2", petsc_P); utopia_test_assert(ok);
+
+        TSMatrixd P;
+        backend_convert_sparse(petsc_P, P);
+
+        double sum_P = sum(P);
+        P = transpose(P);
+
+        each_apply(P, [](const double value) -> double {
+            return value * 2.;
+        });
+
+        double sum_P_2 = sum(P);
+
+        utopia_test_assert(approxeq(sum_P * 2., sum_P_2));
+    }
     
     void run_trilinos_test()
     {
@@ -1237,13 +1284,12 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_mat_scale);
         UTOPIA_RUN_TEST(trilinos_vec_axpy);
         UTOPIA_RUN_TEST(trilinos_vec_minus);
-        UTOPIA_RUN_TEST(trilinos_mat_axpy);
         UTOPIA_RUN_TEST(trilinos_mv);
         UTOPIA_RUN_TEST(trilinos_mm);
         UTOPIA_RUN_TEST(trilinos_m_tm);
         UTOPIA_RUN_TEST(trilinos_diag);
         UTOPIA_RUN_TEST(trilinos_read);
-        UTOPIA_RUN_TEST(trilinos_cg);
+        
         UTOPIA_RUN_TEST(trilinos_rect_matrix);
         UTOPIA_RUN_TEST(trilinos_e_mul);
         UTOPIA_RUN_TEST(trilinos_row_view);
@@ -1253,7 +1299,6 @@ namespace utopia {
         
         UTOPIA_RUN_TEST(trilinos_matrix_access);
         UTOPIA_RUN_TEST(trilinos_matrix_norm);
-        UTOPIA_RUN_TEST(trilinos_exp);
         UTOPIA_RUN_TEST(trilinos_diag_ops);
         
         UTOPIA_RUN_TEST(trilinos_rmtr);
@@ -1264,22 +1309,31 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_each_read_transpose);
         UTOPIA_RUN_TEST(trilinos_local_row_view);
         UTOPIA_RUN_TEST(trilinos_ptap_square_mat);
-        UTOPIA_RUN_TEST(trilinos_ptap);
+        
         UTOPIA_RUN_TEST(trilinos_range);
         UTOPIA_RUN_TEST(trilinos_mg_1D);
         UTOPIA_RUN_TEST(trilinos_bratu_1D);
         UTOPIA_RUN_TEST(trilinos_replace_value);
-
 #ifdef HAVE_BELOS_TPETRA
         UTOPIA_RUN_TEST(trilinos_belos);
-#endif //HAVE_BELOS_TPETRA        
-        
+#endif //HAVE_BELOS_TPETRA  
+        UTOPIA_RUN_TEST(trilinos_copy_write);
+
+        ////////////////////////////////////////////
+        //test that fail on GPU if the env variables are not set correctly for cuda
+        UTOPIA_RUN_TEST(trilinos_exp);
+        UTOPIA_RUN_TEST(trilinos_cg);
+        UTOPIA_RUN_TEST(trilinos_ptap);
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(trilinos_petsc_interop);
 #endif //WITH_PETSC
 
+        //Fails on multinode GPU
+        UTOPIA_RUN_TEST(trilinos_mat_axpy);
+        ////////////////////////////////////////////
 
-        UTOPIA_RUN_TEST(trilinos_copy_write);
+        UTOPIA_RUN_TEST(trilinos_transform);
+        UTOPIA_RUN_TEST(trilinos_mg);
 
         if(mpi_world_size() <= 3) {
             //working up to 3 processes
@@ -1288,7 +1342,8 @@ namespace utopia {
         
         //tests that fail in parallel
         if(mpi_world_size() == 1) {
-            UTOPIA_RUN_TEST(trilinos_mg);
+            UTOPIA_RUN_TEST(trilinos_copy_write_big);
+            
         } else {
             m_utopia_warning_once("several tests left out for parallel execution");
         }

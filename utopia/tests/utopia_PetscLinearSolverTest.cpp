@@ -156,6 +156,7 @@ namespace utopia {
 
             Multigrid<DSMatrixd, DVectord> multigrid(smoother, direct_solver);
             // multigrid.set_use_line_search(true);
+            // multigrid.verbose(true);
 
 
             multigrid.set_transfer_operators(std::move(interpolation_operators));
@@ -327,8 +328,8 @@ namespace utopia {
             multigrid.verbose(verbose);
             // multigrid.set_use_line_search(true);
 
-            // ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> cg; //with the HOMEMADE works in parallel
-            ConjugateGradient<DSMatrixd, DVectord> cg;
+            ConjugateGradient<DSMatrixd, DVectord, HOMEMADE> cg; //with the HOMEMADE works in parallel
+            // ConjugateGradient<DSMatrixd, DVectord> cg; //FIXME does not work with the KSP implementation
             cg.verbose(verbose);
 
             DVectord x_0 = zeros(A.size().get(0));
