@@ -1231,23 +1231,23 @@ namespace utopia {
 
     void trilinos_belos()
     {
-        // std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA.xml";
+        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA.xml";
         
-        // Parameters params;
-        // params.set_param_file_name(xml_file);
-        // BelosSolver<TSMatrixd, TVectord> solver(params);
+        Parameters params;
+        params.set_param_file_name(xml_file);
+        BelosSolver<TSMatrixd, TVectord> solver(params);
 
-        // MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
-        // TVectord x = zeros(size(*ml_problem.rhs));
-        // (*ml_problem.rhs) *= 0.0001;
+        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
+        TVectord x = zeros(size(*ml_problem.rhs));
+        (*ml_problem.rhs) *= 0.0001;
         
-        // double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
 
-        // solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
+        solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
         
-        // double diff  = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        double diff  = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
 
-        // utopia_test_assert(approxeq(diff/diff0, 0., 1e-6));
+        utopia_test_assert(approxeq(diff/diff0, 0., 1e-6));
     }
 
 #endif //HAVE_BELOS_TPETRA
