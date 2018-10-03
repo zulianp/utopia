@@ -105,16 +105,17 @@ namespace utopia {
 //        Teuchos::reduceAll(comm, Teuchos::REDUCE_MIN, 1, &ret, &ret_global);
 //        return ret_global;
         
-        double min;
-        
+        Scalar min;
+
         auto data = implementation().getLocalView<host_memory_space> ();
+
+        Kokkos::Experimental::Min<Scalar> tMinReducer(min);
+
+        Kokkos::parallel_reduce("KokkosReductionOperations::mix",Kokkos::RangePolicy<>(0, data.extent(0)),
+        KOKKOS_LAMBDA(const int & i, Scalar & lmix){
+        tMinReducer.join(lmix,data(i,0));
+        }, tMinReducer);
         
-        Kokkos::parallel_reduce( "MinReduce", data.extent(0)-1, KOKKOS_LAMBDA (const int& i, double& lmin) {
-            double val = data(i+1,0);
-             //printf ("Sum y: %f\n", val);
-            if( val < lmin ) lmin = val;
-        }, Kokkos::Min<double>(min));
-            
         return min;
         
 	}
@@ -154,19 +155,20 @@ namespace utopia {
         //        double ret = ret_temp;
         //        auto &comm = *communicator();
         //        double ret_global = 0.;
-        //
+//
         //        Teuchos::reduceAll(comm, Teuchos::REDUCE_MIN, 1, &ret, &ret_global);
         //        return ret_global;
         
-        double max;
-        
+        Scalar max;
+
         auto data = implementation().getLocalView<host_memory_space> ();
-        
-        Kokkos::parallel_reduce( "MaxReduce", data.extent(0)-1, KOKKOS_LAMBDA (const int& i, double& lmax) {
-            double val = data(i+1,0);
-            //printf ("Sum y: %f\n", val);
-            if( val > lmax ) lmax = val;
-        }, Kokkos::Max<double>(max));
+
+        Kokkos::Experimental::Max<Scalar> tMaxReducer(max);
+
+        Kokkos::parallel_reduce("KokkosReductionOperations::max",Kokkos::RangePolicy<>(0, data.extent(0)),
+        KOKKOS_LAMBDA(const int & i, Scalar & lmax){
+        tMaxReducer.join(lmax,data(i,0));
+        }, tMaxReducer);
         
         return max;
         
