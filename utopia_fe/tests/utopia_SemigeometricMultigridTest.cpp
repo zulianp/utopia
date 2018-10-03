@@ -1,3 +1,4 @@
+#include "utopia_libmesh.hpp"
 #include "utopia_SemigeometricMultigridTest.hpp"
 #include "utopia.hpp"
 #include "moonolith_communicator.hpp"

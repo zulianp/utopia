@@ -1,3 +1,4 @@
+#include "utopia_libmesh.hpp"
 #include "utopia_FSITest.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"
 #include "utopia_assemble_volume_transfer.hpp"

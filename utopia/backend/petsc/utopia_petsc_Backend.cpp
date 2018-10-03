@@ -1026,7 +1026,7 @@ namespace utopia {
 			PetscInt ed, st;
 			VecGetOwnershipRange(x_to.implementation() ,&st, &ed);
 			ISCreateStride(PETSC_COMM_SELF, (ed - st), st, 1, &is);
-			VecScatterCreate(x_from.implementation(), is, x_to.implementation(), is, &newctx);
+			VecScatterCreateWithData(x_from.implementation(), is, x_to.implementation(), is, &newctx);
 			VecScatterBegin(newctx, x_from.implementation(), x_to.implementation(), INSERT_VALUES, SCATTER_FORWARD);
 			VecScatterEnd(newctx, x_from.implementation(), x_to.implementation(), INSERT_VALUES, SCATTER_FORWARD);
 
