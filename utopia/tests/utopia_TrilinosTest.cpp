@@ -1146,6 +1146,7 @@ namespace utopia {
         }
     }
 
+#ifdef WITH_PETSC
     void trilinos_copy_write_big()
     {   
         DSMatrixd petsc_P;
@@ -1168,6 +1169,7 @@ namespace utopia {
             });
         }
     }
+#endif //WITH_PETSC
     
     void trilinos_ghosted()
     {
@@ -1250,7 +1252,7 @@ namespace utopia {
 
 #endif //HAVE_BELOS_TPETRA
 
-
+#ifdef WITH_PETSC
     void trilinos_transform()
     {
         DSMatrixd petsc_P;
@@ -1285,6 +1287,7 @@ namespace utopia {
             utopia_test_assert(j == SizeType(value));
         });
     }
+#endif //WITH_PETSC
 
     void trilinos_set_zeros()
     {
@@ -1349,7 +1352,7 @@ namespace utopia {
 #endif //HAVE_BELOS_TPETRA  
         UTOPIA_RUN_TEST(trilinos_copy_write);
 
-        UTOPIA_RUN_TEST(trilinos_transform);
+        
         UTOPIA_RUN_TEST(trilinos_mg);
 
         UTOPIA_RUN_TEST(trilinos_set_zeros);
@@ -1359,9 +1362,11 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_exp);
         UTOPIA_RUN_TEST(trilinos_cg);
         UTOPIA_RUN_TEST(trilinos_ptap);
-        UTOPIA_RUN_TEST(trilinos_copy_write_big);
+        
 #ifdef WITH_PETSC
+        UTOPIA_RUN_TEST(trilinos_transform);
         UTOPIA_RUN_TEST(trilinos_petsc_interop);
+        UTOPIA_RUN_TEST(trilinos_copy_write_big);
 #endif //WITH_PETSC
 
 
