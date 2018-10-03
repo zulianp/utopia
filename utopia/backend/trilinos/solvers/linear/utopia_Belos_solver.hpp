@@ -128,7 +128,11 @@ namespace utopia {
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
         
         //////
-        
+        BelosSolver()
+        {
+
+        }
+
         BelosSolver(Parameters params)
         {
             set_parameters(params);

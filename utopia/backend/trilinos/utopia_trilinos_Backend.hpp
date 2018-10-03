@@ -672,9 +672,9 @@ namespace utopia {
 
     private:
 
-        inline static auto default_communicator() -> decltype( Tpetra::DefaultPlatform::getDefaultPlatform().getComm() )
+        inline static auto default_communicator() -> decltype( Tpetra::getDefaultComm() )
         {
-            return Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
+            return Tpetra::getDefaultComm();
         }
     };
 

@@ -278,7 +278,6 @@ namespace utopia {
 
         double val = norm1(Y * v);
         double tolerance = 30. * std::numeric_limits<double>::epsilon();
-        //std::cout << "val " << val <<std::endl;
         utopia_test_assert(approxeq(val, 0., tolerance ));
 
         TSMatrixd Id = local_identity(n, n);
@@ -1060,14 +1059,14 @@ namespace utopia {
         //params.set_param_file_name( "~/utopiaTrilinosFile.xml");
         int i = 2;
         double ii=3.442;
-        BelosSolver<TSMatrixd, TVectord> solver(params);
+        /*BelosSolver<TSMatrixd, TVectord> solver(params);
         x.implementation().replaceLocalValue(i, ii);
 
         solver.solve(A, b, x);
         std::cout << "Number of Iterations " << solver.getNumIter() << std::endl;
         
         std::cout << "Achieved tolerance " << solver.achievedTol() << std::endl;
-        
+        */
         /*   Parameters<TRILINOS> param;
          PrecondionedSolver<TSMatrixd, TVectord, TVectord, TRILINOS> prec;
          prec.set_preconditioner();
@@ -1075,8 +1074,6 @@ namespace utopia {
          linearSol.apply();
          ///////////////////
          
-         Teuchos::RCP<const Teuchos::Comm<int> > Comm =
-         Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
          int myPID = Comm->getRank();
          
          Teuchos::RCP<const map_type> Map =
@@ -1193,14 +1190,13 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_bratu_1D);
         UTOPIA_RUN_TEST(trilinos_rmtr);
         UTOPIA_RUN_TEST(trilinos_ghosted);
-        
-        
+
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(trilinos_petsc_interop);
 #endif //WITH_PETSC
 
         //tests that fail in parallel
-        if(mpi_world_size() == 1) {
+        //if(mpi_world_size() == 1) {
             UTOPIA_RUN_TEST(trilinos_ptap);
             UTOPIA_RUN_TEST(trilinos_mg_1D);
             UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);
@@ -1209,9 +1205,9 @@ namespace utopia {
             UTOPIA_RUN_TEST(trilinos_each_read_transpose);
             UTOPIA_RUN_TEST(trilinos_mg);
             
-        } else {
-            m_utopia_warning_once("several tests left out for parallel execution");
-        }
+       // } else {
+        //    m_utopia_warning_once("several tests left out for parallel execution");
+       // }
 
         //tests that always fail
         // UTOPIA_RUN_TEST(trilinos_diag_rect_matrix);

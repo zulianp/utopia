@@ -54,7 +54,7 @@ namespace utopia {
         TpetraVector()
         {
             int indexBase = 0;
-            auto comm = Tpetra::DefaultPlatform::getDefaultPlatform ().getComm ();
+            auto comm = Tpetra::getDefaultComm ();
             auto conigMap = Teuchos::rcp (new map_type (comm->getSize (), indexBase, comm));
             vec_.reset(new vector_type (conigMap, false));
         }
@@ -445,7 +445,7 @@ namespace utopia {
             return vec_.is_null();
         }
 
-        void replaceGlobalValue (const GO globalRow, const SC &value )
+/*        void replaceGlobalValue (const GO globalRow, const SC &value )
         {
             std::cout << " sono qui " << std::endl;
             vec_->replaceGlobalValue (globalRow, value);
@@ -457,7 +457,7 @@ namespace utopia {
             std::cout << localRow << " localRow " << std::endl;
             std::cout << value << " value " << std::endl;
             vec_->replaceLocalValue(localRow, value);
-        }
+        }*/
 
         bool read(const Teuchos::RCP< const Teuchos::Comm< int > > &comm, const std::string &path);
         bool write(const std::string &path) const;

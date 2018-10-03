@@ -59,17 +59,6 @@ namespace utopia {
 
         //Default Constructor
         TpetraMatrix() : owner_(true) {}
-        // TpetraMatrix(int Ndofs, int maxNumEntries) : owner_(true) {
-        // int indexBase = 0;
-        // rcp_comm_type Comm = Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
-        // rcp_map_type Map = Teuchos::rcp(new map_type(Ndofs, indexBase, Comm));
-        // mat_.reset(new crs_mat_type(Map, maxNumEntries, Tpetra::StaticProfile));
-        // }
-
-        // //Explicit Constructors
-        // TpetraMatrix(rcp_map_type Map, int maxNumEntries) : owner_(true) {
-        // mat_.reset(new crs_mat_type(Map, maxNumEntries, Tpetra::StaticProfile));
-        // }
 
         //deep copy
         //     template <class Node2>
