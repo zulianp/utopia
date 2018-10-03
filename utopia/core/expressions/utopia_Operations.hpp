@@ -13,7 +13,6 @@
 #include "utopia_Binary.hpp"
 #include "utopia_Literal.hpp"
 #include "utopia_Boolean.hpp"
-
 #include <limits>
 #include <cmath>
 
@@ -240,9 +239,10 @@ namespace utopia {
      */
     template<class Left, class Right>
     inline Binary<Left, Right, Max> max(const Expression<Left> &left, const Expression<Right> &right) {
-//        std::cout<<"Max OP"<<'\n';
+        std::cout<<"Max OP"<<'\n';
         return Binary<Left, Right, Max>(left.derived(), right.derived());
     }
+
 
 
 }

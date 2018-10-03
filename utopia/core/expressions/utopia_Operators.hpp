@@ -254,12 +254,15 @@ namespace utopia {
     };
 
     class Max {
+
     public:
         std::string getClass() const { return "Max"; }
 
         template<typename T>
         inline static T apply(const T &left, const T &right) {
+
             using std::max;
+
             return max(left, right);
         }
     };

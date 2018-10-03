@@ -6,7 +6,6 @@
 #include "utopia_Factory.hpp"
 //#include "utopia_Base.hpp"
 #include "utopia_ScalarBackend.hpp"
-
 #include <utility>
 #include <cmath>
 #include <TpetraExt_MatrixMatrix_def.hpp>
@@ -526,6 +525,7 @@ namespace utopia {
             result = vec;
             result.scale(factor);
         }
+
 
         inline static bool compare(const TpetraVector &left, const TpetraVector &right, const ApproxEqual &comp) {
             TpetraVector diff;

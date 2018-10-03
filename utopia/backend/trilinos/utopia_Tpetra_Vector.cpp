@@ -120,26 +120,6 @@ namespace utopia {
         
 	}
 
-//    TpetraVector::Scalar TpetraVector::max() const
-//    {
-//        m_utopia_warning_once("> TpetraVector::max is hand-coded");
-//
-//        auto data = implementation().getData();
-//
-//        Scalar ret_temp = data[0];
-//
-//        for(auto i = 1; i < data.size(); ++i) {
-//            ret_temp = std::max(data[i], ret_temp);
-//        }
-//
-//        double ret = ret_temp;
-//        auto &comm = *communicator();
-//        double ret_global = 0.;
-//
-//        Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
-//        return ret_global;
-//    }
-    
     TpetraVector::Scalar TpetraVector::max() const
     {
         m_utopia_warning_once("> TpetraVector::min is hand-coded");
@@ -155,7 +135,7 @@ namespace utopia {
         //        double ret = ret_temp;
         //        auto &comm = *communicator();
         //        double ret_global = 0.;
-//
+
         //        Teuchos::reduceAll(comm, Teuchos::REDUCE_MIN, 1, &ret, &ret_global);
         //        return ret_global;
         
@@ -173,6 +153,48 @@ namespace utopia {
         return max;
         
     }
+
+ 
+    // TpetraVector TpetraVector::max(const TpetraVector &rhs, TpetraVector &lhs) const
+    // {
+    //     m_utopia_warning_once("> TpetraVector::min is hand-coded");
+        
+    //     auto k_rhs = rhs.implementation().getLocalView<host_memory_space> ();
+    //     auto k_lhs = lhs.implementation().getLocalView<host_memory_space> ();
+        
+    //     TpetraVector result;
+
+    //     assert(!empty());
+    //     assert(!rhs.empty());
+    //     assert(rhs.size() == size());
+    //     assert(rhs.local_size() == local_size());
+
+    //     if(result.empty() || result.size() != rhs.size()){
+    //         result.init(rhs.implementation().getMap());
+    //     } 
+
+    //     auto k_res = result.implementation().getLocalView<host_memory_space> ();
+
+    //     Kokkos::parallel_for (k_lhs.extent(0), KOKKOS_LAMBDA (const int i) {
+
+    //     	if(k_lhs(i,0) > k_rhs(i,0)){
+
+    //     		k_res(i,0)= k_lhs(i,0);
+
+    //     	}
+
+    //     	else{
+
+    //     		k_res(i,0)= k_lhs(i,0);
+
+    //     	}
+    //     });
+    
+    //    Tpetra::Vector<> x(result.implementation(),k_res);
+
+    //     return k_res;
+        
+    // }
 
 	bool TpetraVector::is_nan_or_inf() const
 	{

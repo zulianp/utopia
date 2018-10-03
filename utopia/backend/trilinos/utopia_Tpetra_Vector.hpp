@@ -10,6 +10,7 @@
 #include <Tpetra_Map_decl.hpp>
 #include <Tpetra_Vector_decl.hpp>
 #include <Tpetra_Core.hpp>
+#include "utopia_KokkosOp.hpp"
 // This is the only header file you need to include for the "core"
 // part of Kokkos.  That includes Kokkos::View, Kokkos::parallel_*,
 // and atomic updates.
@@ -322,6 +323,8 @@ namespace utopia {
         Scalar min() const;
         Scalar max() const;
 
+        //TpetraVector max(const TpetraVector &rhs, TpetraVector &lhs) const;
+
         bool is_nan_or_inf() const;
 
         inline void scale(const Scalar alpha)
@@ -375,6 +378,8 @@ namespace utopia {
         template<typename Op>
         inline void apply_binary(const Op op, const TpetraVector &rhs, TpetraVector &result) const
         {
+
+            std::cout<<"apply_binary(const Op op, const TpetraVector &rhs, TpetraVector &result): \m"; 
             assert(!empty());
             assert(!rhs.empty());
             assert(rhs.size() == size());
@@ -385,29 +390,14 @@ namespace utopia {
                 result.init(rhs.implementation().getMap());
             } 
 
-//            auto a_lhs = this->implementation().getData();
-//            auto a_rhs = rhs.implementation().getData();
-//            auto a_res = result.implementation().getDataNonConst();
- 
-                
+
             auto k_rhs = rhs.implementation().getLocalView<host_memory_space> ();
             auto k_lhs = this->implementation().getLocalView<host_memory_space> ();
             auto k_res = result.implementation().getLocalView<host_memory_space> ();
             
-//            assert(a_res.size() == a_lhs.size());
-//            assert(a_res.size() == a_rhs.size());
-            
-//            std::cout<<"I am using KOKKOS"<<std::endl;
-            
-//            assert(k_res.extent(0) == k_lhs.extent(0));
-//            assert(k_res.extent(0) == k_rhs.extent(0));
-//
-//            for(auto i = 0; i < a_lhs.size(); ++i) {
-//               a_res[i] = op.apply(a_lhs[i], a_rhs[i]);
-//            }
-//
+
              Kokkos::parallel_for (k_lhs.extent(0), KOKKOS_LAMBDA (const int i) {
-                 k_res(i,0) = op.apply(k_lhs(i,0), k_rhs(i,0));
+                 k_res(i,0) = KokkosOp<Scalar, Op>::apply(k_lhs(i,0), k_rhs(i,0));
              });
             
         }
