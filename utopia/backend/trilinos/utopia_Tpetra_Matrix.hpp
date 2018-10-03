@@ -81,6 +81,10 @@ namespace utopia {
         : mat_(std::move(other.mat_)), owner_(std::move(other.owner_))
         {}
 
+        TpetraMatrix(const rcp_crs_mat_type &mat, const bool owner = false)
+        : mat_(mat), owner_(owner)
+        {}
+
         /////////////////////////////////////////////////////////////
         //Destructor
         /////////////////////////////////////////////////////////////

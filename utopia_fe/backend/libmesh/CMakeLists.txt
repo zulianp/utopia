@@ -15,7 +15,7 @@ set_utopia_compiler_features(utopia_fe_libmesh_backend)
 find_package(LIBMESH)
 
 if(LIBMESH_FOUND)
-	target_include_directories(utopia_fe_libmesh_backend PUBLIC ${LIBMESH_INCLUDE_DIRS})
+	target_include_directories(utopia_fe_libmesh_backend PUBLIC ${LIBMESH_INCLUDE_DIRS} ${LIBMESH_INCLUDE_DIR})
 	target_link_libraries(utopia_fe_libmesh_backend ${LIBMESH_LIBRARIES})
 
 	set(LIBMESH_INCLUDE_DIR ${LIBMESH_INCLUDE_DIR} PARENT_SCOPE)
