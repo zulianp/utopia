@@ -1,7 +1,9 @@
 #ifndef UTOPIA_EQUATIONS_HPP
-#define UTOPIA_EQUATIONS_HPP 
+#define UTOPIA_EQUATIONS_HPP
 
 #include <utility>
+
+#include "tao/tuple/tuple.hpp"
 
 namespace utopia {
 
@@ -33,22 +35,22 @@ namespace utopia {
 	class Equations : public Expression< Equations<Equation...> > {
 	public:
 
-		static const int n_equations = std::tuple_size< std::tuple<Equation...> >::value;
+		static const int n_equations = tao::tuple_size< tao::tuple<Equation...> >::value;
 
 		Equations(const Equation &...eqs)
 		: eqs_(eqs...)
 		{ }
 
 		template<int Index>
-		inline auto get() const -> const typename std::tuple_element<Index, std::tuple<Equation...>>::type
+		inline auto get() const -> const typename tao::tuple_element<Index, tao::tuple<Equation...>>::type
 		{
-			return std::get<Index>(eqs_);
+			return tao::get<Index>(eqs_);
 		}
 
 		template<int Index>
-		inline auto get() -> typename std::tuple_element<Index, std::tuple<Equation...>>::type
+		inline auto get() -> typename tao::tuple_element<Index, tao::tuple<Equation...>>::type
 		{
-			return std::get<Index>(eqs_);
+			return tao::get<Index>(eqs_);
 		}
 
 		template<class Fun>
@@ -72,7 +74,7 @@ namespace utopia {
 		}
 
 	private:
-		std::tuple<Equation...> eqs_;
+		tao::tuple<Equation...> eqs_;
 	};
 
 
@@ -108,7 +110,7 @@ namespace utopia {
 
 		class FunctionalOrder {
 		public:
-			
+
 			template<class Eq>
 			void operator()(const int index, const Eq &eq)
 			{
@@ -121,8 +123,8 @@ namespace utopia {
 			int order;
 		};
 
-		inline static int type(const Equations<Eqs...> &expr,  const AssemblyContext &ctx) 
-		{ 
+		inline static int type(const Equations<Eqs...> &expr,  const AssemblyContext &ctx)
+		{
 			FunctionalType ft(ctx);
 			expr.template each<FunctionalType &>(ft);
 			return ft.type;
