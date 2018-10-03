@@ -20,6 +20,8 @@ namespace utopia {
             SizeType n = 0;
 
             for(auto b_ptr : b) {
+                assert((b_ptr));
+                
                 n += local_size(*b_ptr).get(0);
             }
 
@@ -35,6 +37,7 @@ namespace utopia {
                     Read<Tensor> r_(*b_ptr);
 
                     for(auto i = rr.begin(); i < rr.end(); ++i) {
+                        assert(index < n);
                         l.set(index++, b_ptr->get(i));
                     }
                 }
