@@ -26,6 +26,7 @@ namespace utopia {
             }
 
             l = local_zeros(n);
+            auto r = range(l);
 
             SizeType index = 0;
 
@@ -38,7 +39,7 @@ namespace utopia {
 
                     for(auto i = rr.begin(); i < rr.end(); ++i) {
                         assert(index < n);
-                        l.set(index++, b_ptr->get(i));
+                        l.set(r.begin() + index++, b_ptr->get(i));
                     }
                 }
             }

@@ -295,7 +295,7 @@ namespace utopia {
     {
         auto n = 10;
         TVectord x = local_values(n, 5.);
-        TSMatrixd m = sparse(n, n, 3);
+        TSMatrixd m = local_sparse(n, n, 3);
         assemble_laplacian_1D(m);
         
         TVectord y = m * x;
@@ -321,7 +321,7 @@ namespace utopia {
             }
         }
         
-        TVectord v    = local_values(cols, 1.);
+        TVectord v    = local_values(rows, 1.);
         TVectord At_v = transpose(A) * v;
         
         each_read(At_v, [](const SizeType i, const double val) {
@@ -350,7 +350,7 @@ namespace utopia {
             }
         }
         
-        TVectord v    = local_values(cols, 1.);
+        TVectord v    = local_values(rows, 1.);
         //Expilcit transpose
         TSMatrixd At  = transpose(A);
         TVectord At_v = At * v;
@@ -1335,7 +1335,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_diag_ops);
         
         UTOPIA_RUN_TEST(trilinos_rmtr);
-        UTOPIA_RUN_TEST(trilinos_ghosted);
+        
         UTOPIA_RUN_TEST(trilinos_transpose);
         
         UTOPIA_RUN_TEST(trilinos_apply_transpose_explicit);
@@ -1380,14 +1380,15 @@ namespace utopia {
             //working up to 3 processes
             UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
         }
+
+
         
         //tests that fail in parallel
-        // if(mpi_world_size() == 1) {
-            
-            
-        // } else {
-        //     m_utopia_warning_once("several tests left out for parallel execution");
-        // }
+        if(mpi_world_size() == 1) {
+            UTOPIA_RUN_TEST(trilinos_ghosted);     
+        } else {
+            m_utopia_warning_once("several tests left out for parallel execution");
+        }
         
         //tests that always fail
         // UTOPIA_RUN_TEST(trilinos_diag_rect_matrix);
