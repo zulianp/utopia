@@ -134,7 +134,18 @@ namespace utopia {
     void PetscMatrix::transpose(PetscMatrix &result) const
     {
         if(implementation() == result.implementation()) {
-            result.transpose();
+            auto s = size();
+            
+            if(s.get(0) == s.get(1)) {
+                result.transpose();
+            } else {
+                PetscMatrix temp;
+                temp.destroy();
+
+                check_error( MatTranspose(implementation(), MAT_INITIAL_MATRIX, &temp.implementation()) );
+                result = std::move(temp);
+            }
+
             return;
         }
 

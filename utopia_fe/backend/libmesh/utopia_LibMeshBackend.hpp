@@ -73,14 +73,22 @@ namespace utopia {
 
 		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
+		Size ls = local_size(mat);
 		Size s = size(mat);
-		Matrix temp = mat;
+		Matrix temp = std::move(mat);
+
+		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+
+		mat = local_sparse(ls.get(0), ls.get(1), nnz_x_row);
 
 		{
 			Write<Matrix> w_t(mat);
 			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
 				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					mat.set(i, j, i == j);
+				} else {
+					mat.set(i, j, value);
 				}
 			});
 		}
