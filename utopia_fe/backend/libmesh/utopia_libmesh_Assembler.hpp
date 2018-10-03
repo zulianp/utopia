@@ -14,6 +14,13 @@ namespace utopia {
 		: verbose_(Utopia::instance().verbose())
 		{}
 
+		//FIXME put in utopia
+		template<class T>
+		static bool is_ghosted(const Wrapper<T, 1> &vec)
+		{
+			return vec.implementation().has_ghosts();
+		}
+
 		template<class Expr>
 		bool assemble(const Expr &expr, Scalar &val)
 		{
@@ -93,8 +100,9 @@ namespace utopia {
 				mat *= 0.;
 			}
 
-			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs()) {
-				vec = local_zeros(dof_map.n_local_dofs());
+			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
+				// vec = local_zeros(dof_map.n_local_dofs());
+				vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
 			} else {
 				vec.set(0.);
 			}
@@ -236,7 +244,7 @@ namespace utopia {
 			const auto &dof_map = space.dof_map();
 			auto &m = space.mesh();
 
-			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs()) {
+			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
 				// vec = local_zeros(dof_map.n_local_dofs());
 				vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
 			} else {

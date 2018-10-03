@@ -180,7 +180,12 @@ namespace utopia {
 			const Teuchos::ArrayView<const GO>
 			   local_indices(filled_with_local);
 
-			 ghost_map = Teuchos::rcp(new map_type(global_size, local_indices, 0, comm));
+			 GO local_entries = local_indices.size();
+			 GO total_entries = 0;
+
+			 Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &local_entries, &total_entries);
+
+			 ghost_map = Teuchos::rcp(new map_type(total_entries, local_indices, 0, comm));
 
 		} else {
 			ghost_map = map;

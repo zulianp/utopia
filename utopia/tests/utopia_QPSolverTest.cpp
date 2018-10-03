@@ -97,6 +97,8 @@ namespace utopia {
             UTOPIA_RUN_TEST(ngs_test);
         }
 
+        QPSolverTest() : n(20) {}
+
         SizeType n = 20;
         bool verbose = false;
     };

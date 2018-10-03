@@ -1347,48 +1347,45 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_mg_1D);
         UTOPIA_RUN_TEST(trilinos_bratu_1D);
         UTOPIA_RUN_TEST(trilinos_replace_value);
-#ifdef HAVE_BELOS_TPETRA
-        UTOPIA_RUN_TEST(trilinos_belos);
-#endif //HAVE_BELOS_TPETRA  
-        UTOPIA_RUN_TEST(trilinos_copy_write);
-
-        
-        UTOPIA_RUN_TEST(trilinos_mg);
-
+        UTOPIA_RUN_TEST(trilinos_ghosted);  
         UTOPIA_RUN_TEST(trilinos_set_zeros);
+        UTOPIA_RUN_TEST(trilinos_copy_write);
 
         ////////////////////////////////////////////
         //test that fail on GPU if the env variables are not set correctly for cuda
         UTOPIA_RUN_TEST(trilinos_exp);
+        UTOPIA_RUN_TEST(trilinos_mg);
         UTOPIA_RUN_TEST(trilinos_cg);
         UTOPIA_RUN_TEST(trilinos_ptap);
+        ////////////////////////////////////////////
         
+
+#ifdef HAVE_BELOS_TPETRA
+        UTOPIA_RUN_TEST(trilinos_belos);
+#endif //HAVE_BELOS_TPETRA  
+        
+
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(trilinos_transform);
         UTOPIA_RUN_TEST(trilinos_petsc_interop);
         UTOPIA_RUN_TEST(trilinos_copy_write_big);
-#endif //WITH_PETSC
-
-
+#endif //WITH_PETSC    
 
         //Fails on multinode GPU
         UTOPIA_RUN_TEST(trilinos_mat_axpy);
         ////////////////////////////////////////////
-
 
         if(mpi_world_size() <= 3) {
             //working up to 3 processes
             UTOPIA_RUN_TEST(trilinos_row_view_and_loops);
         }
 
-
-        
         //tests that fail in parallel
-        if(mpi_world_size() == 1) {
-            UTOPIA_RUN_TEST(trilinos_ghosted);     
-        } else {
-            m_utopia_warning_once("several tests left out for parallel execution");
-        }
+        // if(mpi_world_size() == 1) {
+               
+        // } else {
+        //     m_utopia_warning_once("several tests left out for parallel execution");
+        // }
         
         //tests that always fail
         // UTOPIA_RUN_TEST(trilinos_diag_rect_matrix);
