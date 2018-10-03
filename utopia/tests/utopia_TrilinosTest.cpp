@@ -1229,23 +1229,23 @@ namespace utopia {
 
     void trilinos_belos()
     {
-        std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA.xml";
+        // std::string xml_file = Utopia::instance().get("data_path") + "/UTOPIA.xml";
         
-        Parameters params;
-        params.set_param_file_name(xml_file);
-        BelosSolver<TSMatrixd, TVectord> solver(params);
+        // Parameters params;
+        // params.set_param_file_name(xml_file);
+        // BelosSolver<TSMatrixd, TVectord> solver(params);
 
-        MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
-        TVectord x = zeros(size(*ml_problem.rhs));
-        (*ml_problem.rhs) *= 0.0001;
+        // MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
+        // TVectord x = zeros(size(*ml_problem.rhs));
+        // (*ml_problem.rhs) *= 0.0001;
         
-        double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        // double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
 
-        solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
+        // solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
         
-        double diff  = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+        // double diff  = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
 
-        utopia_test_assert(approxeq(diff/diff0, 0., 1e-6));
+        // utopia_test_assert(approxeq(diff/diff0, 0., 1e-6));
     }
 
 #endif //HAVE_BELOS_TPETRA
@@ -1271,6 +1271,36 @@ namespace utopia {
         double sum_P_2 = sum(P);
 
         utopia_test_assert(approxeq(sum_P * 2., sum_P_2));
+
+
+        each_transform(P, [](const SizeType i, const SizeType j, const double) -> double {
+            return j;
+        });
+
+        each_read(P, [](const SizeType i, const SizeType j, const double value) {
+            if(j != SizeType(value)) {
+                std::cout << i << " " << j << " " << value << std::endl;
+            }
+
+            utopia_test_assert(j == SizeType(value));
+        });
+    }
+
+    void trilinos_set_zeros()
+    {
+        TSMatrixd m = local_identity(10, 10);
+        using SizeT = UTOPIA_SIZE_TYPE(TSMatrixd);
+        auto rr = row_range(m);
+
+        std::vector<SizeT> index;
+        index.push_back(rr.begin());
+        set_zero_rows(m, index, 2.);
+
+        // disp(m);
+
+        Read<TSMatrixd> r(m);
+        auto val = m.get(rr.begin(), rr.begin());
+        utopia_test_assert(val == 2.);
     }
     
     void run_trilinos_test()
@@ -1319,21 +1349,27 @@ namespace utopia {
 #endif //HAVE_BELOS_TPETRA  
         UTOPIA_RUN_TEST(trilinos_copy_write);
 
+        UTOPIA_RUN_TEST(trilinos_transform);
+        UTOPIA_RUN_TEST(trilinos_mg);
+
+        UTOPIA_RUN_TEST(trilinos_set_zeros);
+
         ////////////////////////////////////////////
         //test that fail on GPU if the env variables are not set correctly for cuda
         UTOPIA_RUN_TEST(trilinos_exp);
         UTOPIA_RUN_TEST(trilinos_cg);
         UTOPIA_RUN_TEST(trilinos_ptap);
+        UTOPIA_RUN_TEST(trilinos_copy_write_big);
 #ifdef WITH_PETSC
         UTOPIA_RUN_TEST(trilinos_petsc_interop);
 #endif //WITH_PETSC
+
+
 
         //Fails on multinode GPU
         UTOPIA_RUN_TEST(trilinos_mat_axpy);
         ////////////////////////////////////////////
 
-        UTOPIA_RUN_TEST(trilinos_transform);
-        UTOPIA_RUN_TEST(trilinos_mg);
 
         if(mpi_world_size() <= 3) {
             //working up to 3 processes
@@ -1341,12 +1377,12 @@ namespace utopia {
         }
         
         //tests that fail in parallel
-        if(mpi_world_size() == 1) {
-            UTOPIA_RUN_TEST(trilinos_copy_write_big);
+        // if(mpi_world_size() == 1) {
             
-        } else {
-            m_utopia_warning_once("several tests left out for parallel execution");
-        }
+            
+        // } else {
+        //     m_utopia_warning_once("several tests left out for parallel execution");
+        // }
         
         //tests that always fail
         // UTOPIA_RUN_TEST(trilinos_diag_rect_matrix);

@@ -16,14 +16,10 @@ namespace utopia {
 		inline RowView(const Tensor &t, const GO row, const bool force_local_view = true)
 		: t_(t), offset_(0)
 		{
-			if(t_.implementation().implementation().isGloballyIndexed() && !force_local_view) {
-				t_.implementation().implementation().getGlobalRowView(row, cols_, values_);
-			} else {
-				assert(t_.implementation().implementation().isLocallyIndexed());
-				auto rr = row_range(t);
-				t_.implementation().implementation().getLocalRowView(row - rr.begin(), cols_, values_);
-				offset_ = t_.implementation().implementation().getDomainMap()->getMinGlobalIndex();
-			}
+			assert(t_.implementation().implementation().isLocallyIndexed());
+			auto rr = row_range(t);
+			t_.implementation().implementation().getLocalRowView(row - rr.begin(), cols_, values_);
+			offset_ = t_.implementation().implementation().getDomainMap()->getMinGlobalIndex();
 		}
 
 		inline ~RowView()
@@ -38,16 +34,9 @@ namespace utopia {
 		{
 			assert(index < n_values());
 
-			if(offset_ == 0) {
-				return cols_[index];
-				// auto ret = cols_[index] + offset_;
-				// assert(ret < size(t_).get(1));
-				// return ret;
-			} else {
-				auto ret = t_.implementation().implementation().getColMap()->getGlobalElement(cols_[index]);
-				assert(ret < size(t_).get(1));
-				return ret;
-			}
+			auto ret = t_.implementation().implementation().getColMap()->getGlobalElement(cols_[index]);
+			assert(ret < size(t_).get(1));
+			return ret;
 		}
 
 		inline Scalar get(const int index) const
