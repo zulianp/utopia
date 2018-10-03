@@ -1,3 +1,4 @@
+#include "utopia_libmesh.hpp"
 #include "utopia_MechTest.hpp"
 
 #include "utopia_FormEvalTest.hpp"
@@ -20,7 +21,6 @@
 #include "utopia_Mechanics.hpp"
 #include "utopia_AffineTransform.hpp"
 #include "utopia_Contact.hpp"
-#include "utopia_libmesh.hpp"
 #include "utopia_LinearElasticity.hpp"
 
 #include "libmesh/exodusII_io.h"

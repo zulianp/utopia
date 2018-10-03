@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "utopia_libmesh.hpp"
 #include "par_moonolith.hpp"
 #include "utopia.hpp"
 

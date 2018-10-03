@@ -627,7 +627,7 @@ namespace utopia {
                     assert(impl.isLocallyIndexed());
                     auto rr = mat.row_range();
                     impl.getLocalRowView(row - rr.begin(), cols, values);
-                    offset = impl.getColMap()->getMinGlobalIndex();
+                    offset = impl.getDomainMap()->getMinGlobalIndex();
                 }
 
                 for(auto c : cols) {

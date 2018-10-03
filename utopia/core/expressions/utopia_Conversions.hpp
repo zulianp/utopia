@@ -83,7 +83,7 @@ namespace utopia {
     {
         Wrapper<T1, 1> r_copy;
         backend_convert(r, r_copy);
-        return approxeq(l, r_copy);
+        return approxeq(l, r_copy, 1e-10);
     }
 
     template<class T1, class T2>
@@ -91,7 +91,7 @@ namespace utopia {
     {
         Wrapper<T1, 2> r_copy;
         backend_convert_sparse(r, r_copy);
-        return approxeq(l, r_copy);
+        return approxeq(l, r_copy, 1e-10);
     }
 }
 

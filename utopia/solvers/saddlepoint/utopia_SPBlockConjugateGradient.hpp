@@ -348,7 +348,7 @@ namespace utopia {
 			Vector &lagr)
 		{
 
-			if(empty(lagr)) {
+			if(empty(lagr) || size(lagr).get(0) != size(*B).get(0)) {
 				lagr = local_zeros(local_size(*B).get(0));
 			}
 
@@ -437,7 +437,7 @@ namespace utopia {
 			Vector &sol_s,
 			Vector &lagr)
 		{
-			if(empty(lagr)) {
+			if(empty(lagr) || size(lagr).get(0) != size(*B).get(0)) {
 				lagr = local_zeros(local_size(*B).get(0));
 			}
 

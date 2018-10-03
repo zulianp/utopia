@@ -239,7 +239,7 @@ namespace utopia {
 		result.repurpose(comm, this->type(), index.size(), PETSC_DETERMINE);
 
 		ISCreateGeneral(comm, index.size(), &index[0], PETSC_USE_POINTER, &is_in);
-		VecScatterCreate(implementation(), is_in, result.implementation(), nullptr, &scatter_context);
+		VecScatterCreateWithData(implementation(), is_in, result.implementation(), nullptr, &scatter_context);
 
 		VecScatterBegin(scatter_context, implementation(), result.implementation(), INSERT_VALUES, SCATTER_FORWARD);
 		VecScatterEnd(scatter_context,   implementation(), result.implementation(), INSERT_VALUES, SCATTER_FORWARD);

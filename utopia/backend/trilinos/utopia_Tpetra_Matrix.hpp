@@ -190,9 +190,13 @@ namespace utopia {
                 return { implementation().getGlobalNumRows(), implementation().getGlobalNumCols() };
             } else {
                 assert(!implementation().getRowMap().is_null());
-                assert(!implementation().getColMap().is_null());
 
-                return { implementation().getRowMap()->getGlobalNumElements(), implementation().getColMap()->getGlobalNumElements() };
+                if(implementation().getDomainMap().is_null()) {
+                    assert(!init_->domain_map.is_null());
+                    return { implementation().getRowMap()->getGlobalNumElements(), init_->domain_map->getGlobalNumElements() };
+                } else {
+                    return { implementation().getRowMap()->getGlobalNumElements(), implementation().getDomainMap()->getGlobalNumElements() };
+                }
             }
         }
 
