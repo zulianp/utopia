@@ -280,6 +280,7 @@ namespace utopia {
         
         double val = norm1(Y * v);
         double tolerance = 30. * std::numeric_limits<double>::epsilon();
+        //std::cout << "val " << val <<std::endl;
         utopia_test_assert(approxeq(val, 0., tolerance ));
         
         TSMatrixd Id = local_identity(n, n);
@@ -1236,6 +1237,8 @@ namespace utopia {
 
         MultiLevelTestProblem<TSMatrixd, TVectord> ml_problem(10, 2);
         TVectord x = zeros(size(*ml_problem.rhs));
+        (*ml_problem.rhs) *= 0.0001;
+        
         double diff0 = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
 
         solver.solve(*ml_problem.matrix, *ml_problem.rhs, x);
@@ -1344,6 +1347,7 @@ namespace utopia {
         } else {
             m_utopia_warning_once("several tests left out for parallel execution");
         }
+        
         //tests that always fail
         // UTOPIA_RUN_TEST(trilinos_diag_rect_matrix);
         
