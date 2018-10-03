@@ -22,7 +22,6 @@ install(TARGETS utopia_fe_core
 	)
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)
-install(DIRECTORY expressions/tao DESTINATION include)
 
 set(UTOPIA_FE_LIBRARIES "${UTOPIA_FE_LIBRARIES};utopia_fe_core" PARENT_SCOPE)
 

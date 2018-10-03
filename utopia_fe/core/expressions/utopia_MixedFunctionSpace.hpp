@@ -1,8 +1,7 @@
 #ifndef UTOPIA_MIXED_FUNCTION_SPACE_HPP
-#define UTOPIA_MIXED_FUNCTION_SPACE_HPP
+#define UTOPIA_MIXED_FUNCTION_SPACE_HPP 
 
 #include <utility>
-#include "tao/tuple/tuple.hpp"
 
 namespace utopia {
 
@@ -12,26 +11,26 @@ namespace utopia {
 	struct TupleFilter {
 
 		template<class Function>
-	    static void apply(const InputTuple& in, OutputTuple& out, Function fun)
+	    static void apply(const InputTuple& in, OutputTuple& out, Function fun) 
 	    {
 	        TupleFilter<InputTuple, OutputTuple, N-1>::apply(in, out, fun);
-	        fun(tao::get<N-1>(in), tao::get<N-1>(out));
+	        fun(std::get<N-1>(in), std::get<N-1>(out));
 	    }
 	};
-
+	 
 	template<class InputTuple,
 			 class OutputTuple>
 	struct TupleFilter<InputTuple, OutputTuple, 1> {
 
 		template<class Function>
-	    static void apply(const InputTuple& in, OutputTuple& out, Function fun)
+	    static void apply(const InputTuple& in, OutputTuple& out, Function fun) 
 	    {
-	        fun(tao::get<0>(in), tao::get<0>(out));
+	        fun(std::get<0>(in), std::get<0>(out));
 	    }
 	};
 
 	template<class...T>
-	using MixedFunctionSpace = tao::tuple<T...>;
+	using MixedFunctionSpace = std::tuple<T...>;
 
 
 	class MakeTrial {
@@ -55,13 +54,13 @@ namespace utopia {
 	template<class... Args>
 	MixedFunctionSpace<FunctionSpace<Args>...> mixed(FunctionSpace<Args> &&...args)
 	{
-		return tao::make_tuple(args...);
+		return std::make_tuple(args...);
 	}
 
 	template<class... Args>
 	MixedFunctionSpace<std::shared_ptr<FunctionSpace<Args>>...> mixed(std::shared_ptr<FunctionSpace<Args> > &&... args)
 	{
-		return tao::make_tuple(args...);
+		return std::make_tuple(args...);
 	}
 
 	template<class... Args>
