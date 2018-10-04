@@ -64,7 +64,6 @@ namespace utopia {
 				ierr = VecDotEnd(x3.implementation(), x4.implementation(), &right_num); assert(ierr == 0);
 			}
 
-
 			Scalar r = 0;
 			if(std::is_same<Op, Divides>::value) {
 				r = left_num/right_num;

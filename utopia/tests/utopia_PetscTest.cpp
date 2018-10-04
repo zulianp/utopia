@@ -1125,7 +1125,7 @@ namespace utopia {
 
         PetscScalar result_mul1 = r1*r2; 
         PetscScalar result_multv2 = dot(x1, x2)*dot(x1, x3);         
-        utopia_test_assert(approxeq(result_div1, result_div2));
+        utopia_test_assert(approxeq(result_mul1, result_multv2));
 
         PetscScalar result_min1 = r1-r2; 
         PetscScalar result_min2 = dot(x1, x2)-dot(x1, x3);         
@@ -1140,49 +1140,49 @@ namespace utopia {
 #ifdef WITH_PETSC
 
         UTOPIA_UNIT_TEST_BEGIN("PetscTest");
-        // UTOPIA_RUN_TEST(petsc_line_search);
-        // UTOPIA_RUN_TEST(petsc_residual);
-        // UTOPIA_RUN_TEST(petsc_block_mat);
-        // UTOPIA_RUN_TEST(petsc_ghosted);
+        UTOPIA_RUN_TEST(petsc_line_search);
+        UTOPIA_RUN_TEST(petsc_residual);
+        UTOPIA_RUN_TEST(petsc_block_mat);
+        UTOPIA_RUN_TEST(petsc_ghosted);
 
-        // // UTOPIA_RUN_TEST(petc_optional); // fails to compile with gpu
+        // UTOPIA_RUN_TEST(petc_optional); // fails to compile with gpu
         
-        // UTOPIA_RUN_TEST(petsc_view);
-        // UTOPIA_RUN_TEST(petsc_ksp_precond_delegate);
-        // UTOPIA_RUN_TEST(petsc_hardcoded_cg);
-        // UTOPIA_RUN_TEST(petsc_reciprocal);
-        // UTOPIA_RUN_TEST(petsc_axpy);
-        // UTOPIA_RUN_TEST(petsc_vector_accessors);
-        // UTOPIA_RUN_TEST(petsc_matrix_accessors);
-        // UTOPIA_RUN_TEST(petsc_mv);
-        // UTOPIA_RUN_TEST(petsc_copy);
-        // UTOPIA_RUN_TEST(petsc_wrapper);
-        // UTOPIA_RUN_TEST(petsc_vector_composite);
-        // UTOPIA_RUN_TEST(petsc_matlab_connection);
-        // UTOPIA_RUN_TEST(petsc_matrix_composite);
-        // UTOPIA_RUN_TEST(petsc_mat_tests);
-        // UTOPIA_RUN_TEST(petsc_vec_tests);
-        // UTOPIA_RUN_TEST(petsc_read_and_write);
-        // UTOPIA_RUN_TEST(petsc_to_blas);
-        // UTOPIA_RUN_TEST(petsc_is_nan_or_inf);
-        // UTOPIA_RUN_TEST(petsc_mat_mul_add);
-        // UTOPIA_RUN_TEST(petsc_min);
-        // UTOPIA_RUN_TEST(petsc_max);
-        // UTOPIA_RUN_TEST(petsc_factory_and_operations);
-        // UTOPIA_RUN_TEST(petsc_each_sparse_matrix);
-        // UTOPIA_RUN_TEST(petsc_matrix_composition);
-        // UTOPIA_RUN_TEST(petsc_test_ptap);
-        // UTOPIA_RUN_TEST(petsc_new_eval);
-        // UTOPIA_RUN_TEST(petsc_tensor_reduction);
-        // UTOPIA_RUN_TEST(petsc_precond);
-        // UTOPIA_RUN_TEST(petsc_binary_min_max);
+        UTOPIA_RUN_TEST(petsc_view);
+        UTOPIA_RUN_TEST(petsc_ksp_precond_delegate);
+        UTOPIA_RUN_TEST(petsc_hardcoded_cg);
+        UTOPIA_RUN_TEST(petsc_reciprocal);
+        UTOPIA_RUN_TEST(petsc_axpy);
+        UTOPIA_RUN_TEST(petsc_vector_accessors);
+        UTOPIA_RUN_TEST(petsc_matrix_accessors);
+        UTOPIA_RUN_TEST(petsc_mv);
+        UTOPIA_RUN_TEST(petsc_copy);
+        UTOPIA_RUN_TEST(petsc_wrapper);
+        UTOPIA_RUN_TEST(petsc_vector_composite);
+        UTOPIA_RUN_TEST(petsc_matlab_connection);
+        UTOPIA_RUN_TEST(petsc_matrix_composite);
+        UTOPIA_RUN_TEST(petsc_mat_tests);
+        UTOPIA_RUN_TEST(petsc_vec_tests);
+        UTOPIA_RUN_TEST(petsc_read_and_write);
+        UTOPIA_RUN_TEST(petsc_to_blas);
+        UTOPIA_RUN_TEST(petsc_is_nan_or_inf);
+        UTOPIA_RUN_TEST(petsc_mat_mul_add);
+        UTOPIA_RUN_TEST(petsc_min);
+        UTOPIA_RUN_TEST(petsc_max);
+        UTOPIA_RUN_TEST(petsc_factory_and_operations);
+        UTOPIA_RUN_TEST(petsc_each_sparse_matrix);
+        UTOPIA_RUN_TEST(petsc_matrix_composition);
+        UTOPIA_RUN_TEST(petsc_test_ptap);
+        UTOPIA_RUN_TEST(petsc_new_eval);
+        UTOPIA_RUN_TEST(petsc_tensor_reduction);
+        UTOPIA_RUN_TEST(petsc_precond);
+        UTOPIA_RUN_TEST(petsc_binary_min_max);
         UTOPIA_RUN_TEST(petsc_dot_test); 
 
-//        UTOPIA_RUN_TEST(petsc_transform);
+       UTOPIA_RUN_TEST(petsc_transform);
 
         //serial tests
 #ifdef PETSC_HAVE_MUMPS
-        // UTOPIA_RUN_TEST(petsc_inverse);
+        UTOPIA_RUN_TEST(petsc_inverse);
 #endif //PETSC_HAVE_MUMPS
 
         // petsc_sparse_matrix_accessors();  // TODO:: here something doesnt work in parallel !

@@ -443,12 +443,14 @@ namespace utopia {
 				Vector expected_rosenbrock = values(2, 1);
 
 				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-
+				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+				subproblem->atol(1e-10);
 
 				Vector x0 = values(2, 2.0);
 
 				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
 				tr_solver.atol(1e-6); 
+				tr_solver.rtol(1e-9);
 
 				auto hes_approx   = std::make_shared<BFGS<Matrix, Vector> >();
 				hes_approx->set_update_hessian(true); 

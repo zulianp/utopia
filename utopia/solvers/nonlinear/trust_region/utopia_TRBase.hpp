@@ -256,9 +256,7 @@ namespace utopia
      */
     virtual bool get_pred(const Vector & g, const Matrix & B, const Vector & p_k, Scalar &pred)
     {
-      Scalar l_term = dot(g, p_k);
-      Scalar qp_term = dot(p_k, B * p_k);
-      pred = - l_term - 0.5 * qp_term; 
+      pred = -1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k);
       return true; 
     }
 

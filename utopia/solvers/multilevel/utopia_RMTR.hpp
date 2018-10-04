@@ -188,8 +188,6 @@ namespace utopia
             if(this->transfers_.size() + 1 != this->level_functions_.size())
                 utopia_error("RMTR::solve size of transfer and level functions do not match... \n");
 
-            
-
             bool converged = false;
             SizeType fine_level = this->n_levels()-1;
             Scalar r_norm, r0_norm, rel_norm, energy;
@@ -202,9 +200,7 @@ namespace utopia
             this->status_.clear();
             this->init_memory(fine_local_size);
 
-
             // initialize();
-
 
             memory_.x[fine_level] = x_h;
             memory_.g[fine_level]  = local_zeros(local_size(memory_.x[fine_level]));
@@ -939,7 +935,6 @@ namespace utopia
         Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
 
         VerbosityLevel                  _verbosity_level;
-
 
         ColorModifier red_;
         ColorModifier def_;

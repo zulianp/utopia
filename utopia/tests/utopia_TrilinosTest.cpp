@@ -707,7 +707,7 @@ namespace utopia {
         cg.rtol(1e-7);
         cg.atol(1e-6);
         cg.max_it(_n);
-        cg.verbose(true);
+        cg.verbose(false);
 
         Matrix A = sparse(_n, _n, 3);
         assemble_symmetric_laplacian_1D(A, true);
@@ -833,7 +833,7 @@ namespace utopia {
             RowView<TSMatrixd> row(A, i);
             utopia_test_assert(row.n_values() >= 2);
             auto col = row.col(0);
-            auto val = row.get(0);
+            // auto val = row.get(0);
             
             utopia_test_assert(col == i || col == i - 1 || col == i  + 1);
         }
@@ -1069,9 +1069,9 @@ namespace utopia {
     {
         using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
         
-        BratuMultilevelTestProblem<Matrix, Vector> problem(2);
-        problem.verbose = false;
-        // problem.verbose = true;
+        BratuMultilevelTestProblem<Matrix, Vector> problem(2, true);
+        // problem.verbose = false;
+        problem.verbose = true;
         
         Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
         
@@ -1254,9 +1254,9 @@ namespace utopia {
     
     void trilinos_rmtr()
     {
-        if(mpi_world_size() > 2) {
+        if(mpi_world_size() > 1) {
             if(mpi_world_rank() == 0) {
-                utopia_warning("trilinos_rmtr only works for nprocs <= 2");
+                utopia_warning("trilinos_rmtr only works for nprocs <= 1");
             }
             
             return;
