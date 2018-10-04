@@ -19,7 +19,7 @@ find_package(Intrepid2)
 
 
 	target_include_directories(utopia_fe_intrepid2_backend PUBLIC ${INTREPID2_INCLUDE_DIR})
-	target_link_libraries(utopia_fe_intrepid2_backend ${INTREPID2_LIBRARIES})
+	target_link_libraries(utopia_fe_intrepid2_backend utopia_fe_libmesh_backend ${INTREPID2_LIBRARIES})
 
 	set(INTREPID2_INCLUDE_DIR ${Intrepid2_INCLUDE_DIR} PARENT_SCOPE)
 	set(Intrepid2_LIBRARIES ${Intrepid2_LIBRARIES} PARENT_SCOPE)
