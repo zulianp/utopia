@@ -299,7 +299,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   presmoothing
             //----------------------------------------------------------------------------
-            converged = this->local_tr_solve(this->function(level), level);
+            converged = this->local_tr_solve(level);
 
             // making sure that correction does not exceed tr radius ...
             if(converged)
@@ -370,7 +370,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             if(level == 1 && smoothness_flg)
             {
-                this->local_tr_solve(this->function(level-1), level -1, true);
+                this->local_tr_solve(level -1, true);
             }
             else if(smoothness_flg)
             {
@@ -453,7 +453,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                        postsmoothing
             //----------------------------------------------------------------------------
-            this->local_tr_solve(this->function(level), level, !smoothness_flg);
+            this->local_tr_solve(level, !smoothness_flg);
 
             return true;
         }
@@ -469,7 +469,7 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool local_tr_solve(Fun &fun, const SizeType & level, const bool & exact_solve_flg = false)
+        virtual bool local_tr_solve(const SizeType & level, const bool & exact_solve_flg = false)
         {
             Vector s_global;
             Matrix  H;
@@ -481,9 +481,9 @@ namespace utopia
             Vector s = local_zeros(local_size(memory_.x[level]));
 
             this->compute_s_global(level, s_global);
-            this->get_multilevel_gradient(fun, s_global, level);
+            this->get_multilevel_gradient(this->function(level), s_global, level);
 
-            energy_old = this->get_multilevel_energy(fun, s_global, level);
+            energy_old = this->get_multilevel_energy(this->function(level), s_global, level);
             g_norm = this->criticality_measure(level);
 
             converged  = this->check_local_convergence(it_success,  g_norm, level, memory_.delta[level]);
@@ -498,7 +498,7 @@ namespace utopia
 
             while(!converged)
             {
-                this->get_multilevel_hessian(fun, H, level);
+                this->get_multilevel_hessian(this->function(level), H, level);
 
             //----------------------------------------------------------------------------
             //     solving constrained system to get correction and  building trial point
@@ -514,7 +514,7 @@ namespace utopia
                 memory_.x[level] += s;
 
                 this->compute_s_global(level, s_global);
-                energy_new = this->get_multilevel_energy(fun, s_global, level);
+                energy_new = this->get_multilevel_energy(this->function(level), s_global, level);
                 ared = energy_old - energy_new;
 
                 rho = (ared < 0) ? 0.0 : ared/pred;
@@ -544,7 +544,7 @@ namespace utopia
                 if(make_grad_updates)
                 {
                     Vector g_old = memory_.g[level];
-                    this->get_multilevel_gradient(fun, s_global, level);
+                    this->get_multilevel_gradient(this->function(level), s_global, level);
                     g_norm = this->criticality_measure(level);
 
                     // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm);
