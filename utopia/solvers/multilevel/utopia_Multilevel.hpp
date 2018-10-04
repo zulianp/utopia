@@ -22,5 +22,6 @@
 #include "utopia_MultiLevelEvaluations.hpp"
 
 #include "utopia_Transfer.hpp"
+#include "utopia_IdentityTransfer.hpp"
 
 #endif //UTOPIA_MULTILEVEL_HPP
