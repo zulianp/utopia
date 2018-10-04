@@ -44,88 +44,22 @@ namespace utopia {
 		typedef shards::CellTopology CellTopology;
 
 		typedef Kokkos::DynRankView<Scalar, Device>    DeviceRankView;
-		typedef Kokkos::DynRankView<Scalar, Device>    HostRankView;
+		typedef Kokkos::DynRankView<Scalar, Host>    HostRankView;
+		
+		template<typename T>
+		using TensorView2 = Kokkos::DualView<T**, Kokkos::LayoutRight>;
 
 		template<typename T>
-		class TensorView2 {
-		public:
-			typedef Kokkos::DualView<T*> DualView;
+		using TensorView3 = Kokkos::DualView<T***, Kokkos::LayoutRight>;
 
-			void init(const std::string &name, const int n1, const int n2)
-			{
-				n1_ = n1;
-				n2_ = n2;
-				view_ = DualView(name, n1 * n2);
+		template<typename T, typename Dev>
+		static void disp(const Kokkos::DynRankView<T, Dev> &v) {
+			auto size = v.size();
+
+			for(auto i = 0; i < size; ++i) {
+				std::cout << i << " " << v(i) << std::endl;
 			}
-
-			T &operator()(const int i, const int j)
-			{
-				return view_.template view<Kokkos::HostSpace>()(i * n2_ + j);
-			}
-
-			const T &operator()(const int i, const int j) const
-			{
-				return view_.template view<Kokkos::HostSpace>()(i * n2_ + j);
-			}
-
-			int n1_, n2_;
-			DualView view_;
-		};
-
-		template<typename T>
-		class TensorView3 {
-		public:
-			typedef Kokkos::DualView<T*> DualView;
-
-			void init(const std::string &name, const int n1, const int n2, const int n3)
-			{
-				n1_ = n1;
-				n2_ = n2;
-				n3_ = n3;
-				view_ = DualView(name, n1 * n2 * n3);
-			}
-
-			T &operator()(const int i, const int j, const int k)
-			{
-				return view_.template view<Kokkos::HostSpace>()(i * (n2_ * n3_) + j * (n3_) + k);
-			}
-
-			const T &operator()(const int i, const int j, const int k) const
-			{
-				return view_.template view<Kokkos::HostSpace>()(i * (n2_ * n3_) + j * (n3_) + k);
-			}
-
-			int n1_, n2_, n3_;
-			DualView view_;
-		};
-
-		template<typename T>
-		class TensorView4 {
-		public:
-			typedef Kokkos::DualView<T*> DualView;
-
-			void init(const std::string &name, const int n1, const int n2, const int n3, const int n4)
-			{
-				n1_ = n1;
-				n2_ = n2;
-				n3_ = n3;
-				n4_ = n4;
-				view_ = DualView(name, n1 * n2 * n3 * n4);
-			}
-
-			T &operator()(const int i, const int j, const int k, const int l)
-			{
-				return view_.template view<Kokkos::HostSpace>()(i * (n2_ * n3_ * n4_) + j * (n3_ * n4_) + k + (n4_) * l);
-			}
-
-			const T &operator()(const int i, const int j, const int k, const int l) const
-			{
-				return view_.template view<Kokkos::HostSpace>()(i * (n2_ * n3_ * n4_) + j * (n3_ * n4_) + k + (n4_) * l);
-			}
-
-			int n1_, n2_, n3_, n4_;
-			DualView view_;
-		};
+		}
 
 		class IntrepidCubature {
 		public:
@@ -139,7 +73,7 @@ namespace utopia {
 			inline void init(CellTopology &cell, const int order)
 			{
 				q = get_cubature(cell, order);
-				q_points_  = utopia::make_unique<DeviceRankView>("q_points", q->getNumPoints(), q->getDimension());
+				q_points_  = utopia::make_unique<DeviceRankView>("q_points",  q->getNumPoints(), q->getDimension());
 				q_weights_ = utopia::make_unique<DeviceRankView>("q_weights", q->getNumPoints());
 				q->getCubature(*q_points_, *q_weights_);
 			}
@@ -149,37 +83,46 @@ namespace utopia {
 			std::unique_ptr<DeviceRankView> q_weights_;
 		};
 
+	
 		
 
 		class IntrepidFunctionSpace {
 		public:
 
-			void init(LibMeshFunctionSpace &space) {
+			void init(const LibMeshFunctionSpace &space) {
 				auto &m           = space.mesh();
 				auto dim 	      = m.mesh_dimension();
 				auto num_nodes    = m.n_local_nodes(); //FIXME include ghost nodes
-				num_elements = m.n_active_local_elem();
+				num_elements      = m.n_active_local_elem();
 
-				// switch()
-				cell_ptr_ = std::make_shared<CellTopology>(shards::getCellTopologyData<shards::Triangle<3>>());
-				points_.init("points", num_elements, cell_ptr_->getNodeCount(), dim);
-				elem_to_node_.init("elem2node", num_nodes, cell_ptr_->getNodeCount());
+				cell_ptr_     = std::make_shared<CellTopology>(shards::getCellTopologyData<shards::Triangle<3>>());
+				points_ 	  = TensorView3<Scalar>("points", num_elements, cell_ptr_->getNodeCount(), dim);
+				elem_to_node_ = TensorView2<int>("elem2node", num_elements, cell_ptr_->getNodeCount());
+
+				std::vector<libMesh::dof_id_type> indices;
+
+				auto e2n = elem_to_node_.template view<Kokkos::HostSpace>();
+				auto pts = points_.template view<Kokkos::HostSpace>();
 
 				int index = 0;
-				for(auto e_it = m.active_local_elements_begin(); e_it != m.active_local_elements_end(); ++e_it) {
+				for(auto e_it = m.active_local_elements_begin(); e_it != m.active_local_elements_end(); ++e_it, ++index) {
 					const auto &e = **e_it;
+
+					space.dof_map().dof_indices(&e, indices);
+					assert(cell_ptr_->getNodeCount() == indices.size());
+					
 					for(auto i = 0; i < e.n_nodes(); ++i) {
 						const auto &node = e.node_ref(i);
-
-						elem_to_node_(index, i) = e.local_node(i);
+						e2n(index, i) = indices[i];
 
 						for(auto d = 0; d < dim; ++d) {
-							points_(index, i, d) = node(i);
+							pts(index, i, d) = node(d);
 						}
 					}
-
-					++index;
 				}
+
+				points_.sync<Device>();
+				elem_to_node_.sync<Device>();
 			}
 
 			IntrepidCubature &get_cubature(const int order)
@@ -204,43 +147,59 @@ namespace utopia {
 
 			void init(int order, IntrepidFunctionSpace &space)
 			{
-				auto &q = space.get_cubature(order);
+				try {
+					auto &q = space.get_cubature(order);
 
-				int num_elements 	= space.num_elements;
-				int num_fields 		= fe.getCardinality();
-				int num_quad_points = q.q->getNumPoints();
-				int dim 			= q.q->getDimension();
+					int num_elements 	= space.num_elements;
+					int num_fields 		= fe.getCardinality();
+					int num_quad_points = q.q->getNumPoints();
+					int dim 			= q.q->getDimension();
 
-				fun           = DeviceRankView("fun", num_elements, num_fields, num_quad_points);
-				ref_grad      = DeviceRankView("ref_grad", num_elements, num_fields, num_quad_points, dim);
-				grad     	  = DeviceRankView("grad", num_elements, num_fields, num_quad_points, dim);
-				test_weighted = DeviceRankView("test_weighted", num_elements, num_fields, num_quad_points, dim);
 
-				nodes        = DeviceRankView("nodes", num_elements, num_elements, dim);
+					std::cout << "num_elements: "    << num_elements    << std::endl;
+					std::cout << "num_fields: "      << num_fields      << std::endl;
+					std::cout << "num_quad_points: " << num_quad_points << std::endl;
+					std::cout << "dim: "             << dim             << std::endl;
+					std::cout << std::flush;
 
-				jacobian     = DeviceRankView("jacobian", num_elements, num_quad_points, dim);
-				jacobian_inv = DeviceRankView("jacobian_inv", num_elements, num_quad_points, dim);
-				jacobian_det = DeviceRankView("jacobian_det", num_elements, num_quad_points, dim);
-				dx 			 = DeviceRankView("dx", num_elements, num_quad_points);
+					fun           = DeviceRankView("fun", num_fields, num_quad_points);
+					ref_grad      = DeviceRankView("ref_grad", num_fields, num_quad_points, dim);
+					
+					grad     	  = DeviceRankView("grad", num_elements, num_fields, num_quad_points, dim);
+					test_weighted = DeviceRankView("test_weighted", num_elements, num_fields, num_quad_points, dim);
 
-				auto &q_points  = *q.q_points_;
-				auto &q_weights = *q.q_weights_;
 
-				fe.getValues(fun, 	   q_points, Intrepid2::OPERATOR_VALUE);
-				fe.getValues(ref_grad, q_points, Intrepid2::OPERATOR_GRAD);
+					jacobian     = DeviceRankView("jacobian", num_elements, num_quad_points, dim, dim);
+					jacobian_inv = DeviceRankView("jacobian_inv", num_elements, num_quad_points, dim, dim);
+					jacobian_det = DeviceRankView("jacobian_det", num_elements, num_quad_points);
+					dx 			 = DeviceRankView("dx", num_elements, num_quad_points);
 
-				Intrepid2::CellTools<Device>::setJacobian(jacobian, q_points, nodes, *space.cell_ptr_);
-				Intrepid2::CellTools<Device>::setJacobianInv(jacobian_inv, jacobian);
-				Intrepid2::CellTools<Device>::setJacobianDet(jacobian_det, jacobian);
-				FST::HGRADtransformGRAD<double>(grad, jacobian_inv, ref_grad);
-				FST::computeCellMeasure<double>(dx, jacobian_det, q_weights);
+					auto &q_points  = *q.q_points_;
+					auto &q_weights = *q.q_weights_;
+
+					fe.getValues(fun, 	   q_points, Intrepid2::OPERATOR_VALUE);
+					fe.getValues(ref_grad, q_points, Intrepid2::OPERATOR_GRAD);	
+
+					DeviceRankView nodes = space.points_.template view<Device>();
+
+					Intrepid2::CellTools<Device>::setJacobian(jacobian, q_points, nodes, *space.cell_ptr_);
+					Intrepid2::CellTools<Device>::setJacobianInv(jacobian_inv, jacobian);
+					Intrepid2::CellTools<Device>::setJacobianDet(jacobian_det, jacobian);
+					FST::HGRADtransformGRAD<double>(grad, jacobian_inv, ref_grad);
+					FST::computeCellMeasure<double>(dx, jacobian_det, q_weights);
+
+					disp(jacobian_det);
+					// disp(dx);
+				} catch(const std::exception &ex) {
+					std::cerr << ex.what() << std::endl;
+					abort();
+				}
 			}
 
 			DeviceRankView fun;
 			DeviceRankView ref_grad;
 			DeviceRankView grad;
 
-			DeviceRankView nodes;
 			DeviceRankView jacobian;
 			DeviceRankView jacobian_inv;
 			DeviceRankView jacobian_det;
@@ -263,6 +222,40 @@ namespace utopia {
 			}
 
 			DeviceRankView mat;
+		};
+
+		class ElementVector {
+		public:
+			void init(IntrepidFunctionSpace &space, IntrepidFE &fe)
+			{
+				int num_elements 	= space.num_elements;
+				int num_fields 		= fe.fe.getCardinality();
+				vec = DeviceRankView("element_matrix", num_elements, num_fields);
+			}
+
+			DeviceRankView vec;
+		};
+
+		class QuadratureData {
+		public:
+			void init(IntrepidFunctionSpace &space)
+			{
+				int num_elements 	= space.num_elements;
+				int num_quad_points = space.cub_.q->getNumPoints();
+				data = DeviceRankView("element_matrix", num_elements, num_quad_points);
+			}
+
+			void set(IntrepidFunctionSpace &space, const Scalar value) 
+			{
+				int num_quad_points = space.cub_.q->getNumPoints();
+				Kokkos::parallel_for(space.num_elements, KOKKOS_LAMBDA(int k) {
+					for(int i = 0; i < num_quad_points; ++i) {
+						data(k, i) = value;
+					}
+				});
+			}
+
+			DeviceRankView data;
 		};
 
 		//FIXME put in utopia
@@ -348,6 +341,17 @@ namespace utopia {
 				}
 
 				mat = local_sparse(dof_map.n_local_dofs(), dof_map.n_local_dofs(), nnz_x_row);
+
+				std::vector<libMesh::dof_id_type> indices;
+				typename TraitsT::Matrix zero;
+
+				Write<GlobalMatrix> w_(mat);
+				for(auto e_it = m.active_local_elements_begin(); e_it != m.active_local_elements_end(); ++e_it) {
+					dof_map.dof_indices(*e_it, indices);
+					zero = zeros(indices.size(), indices.size());
+					add_matrix(zero.implementation(), indices, indices, mat);
+				}
+				//BUILD the crs graph
 			} else {
 				mat *= 0.;
 			}
@@ -360,9 +364,12 @@ namespace utopia {
 
 			int num_fields = fe.fe.getCardinality();
 
-			auto &elem_to_node = space.elem_to_node_;
+			auto elem_to_node = i_space.elem_to_node_.template view<Device>();
 
-			Kokkos::parallel_for(space.num_elements, KOKKOS_LAMBDA(const int k) {
+			// i_space.elem_to_node_.print();
+			disp(elem_mat.mat);
+
+			Kokkos::parallel_for(i_space.num_elements, KOKKOS_LAMBDA(const int k) {
 			  for (int row = 0; row < num_fields; row++){
 			      for (int col = 0; col < num_fields; col++){
 			         
@@ -403,7 +410,7 @@ namespace utopia {
 			c.start();
 
 			typedef utopia::Traits<LibMeshFunctionSpace> TraitsT;
-			typedef typename TraitsT::Vector ElementVector;
+
 
 			static const int Backend = TraitsT::Backend;
 
@@ -414,7 +421,14 @@ namespace utopia {
 			i_space.init(space);
 
 			IntrepidFE fe;
-			fe.init(0, i_space);
+			fe.init(1, i_space);
+
+			ElementVector elem_vec;
+			elem_vec.init(i_space, fe);
+
+			QuadratureData quad_data;
+			quad_data.init(i_space);
+			quad_data.set(i_space, 1.);
 
 			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
 				// vec = local_zeros(dof_map.n_local_dofs());
@@ -423,8 +437,22 @@ namespace utopia {
 				vec *= 0.;
 			}
 
-			//assemble gradient
+			FST::multiplyMeasure<Scalar>(fe.test_weighted, fe.dx, fe.fun);
+			FST::integrate(elem_vec.vec, quad_data.data, fe.test_weighted);
 
+			//assemble gradient
+			auto local_vec = raw_type(vec)->getLocalView<Device>();
+			int num_fields = fe.fe.getCardinality();
+
+			auto elem_to_node = i_space.elem_to_node_.template view<Device>();
+			// i_space.elem_to_node_.print();
+
+			Kokkos::parallel_for(i_space.num_elements, KOKKOS_LAMBDA(const int k) {
+			  for(int row = 0; row < num_fields; row++){
+			      int row_index = elem_to_node(k, row);
+			      Kokkos::atomic_fetch_add (&local_vec(row_index, 0),  elem_vec.vec(k, row) );
+			  }
+			});
 
 			//perf
 			c.stop();

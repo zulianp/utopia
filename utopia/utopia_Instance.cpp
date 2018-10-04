@@ -3,6 +3,10 @@
 #include "utopia_Tracer.hpp"
 #include "utopia_Config.hpp"
 
+#ifdef WITH_TRILINOS
+#include <Tpetra_Core.hpp>
+#endif //WITH_TRILINOS
+
 #ifdef WITH_PETSC
 #include "petscsys.h"
 #include "utopia_petsc_build_ksp.hpp"
@@ -11,6 +15,8 @@
 #include <mpi.h>
 #endif //WITH_MPI
 #endif //WITH_PETSC
+
+
 
 #include <cassert>
 
@@ -38,6 +44,10 @@ namespace utopia {
         MPI_Init(&argc, &argv);
 #endif //WITH_MPI
 #endif //WITH_PETSC
+
+#ifdef WITH_TRILINOS
+        Tpetra::initialize(&argc, &argv);
+#endif //WITH_TRILINOS  
     }
 
 
@@ -64,6 +74,10 @@ namespace utopia {
         return MPI_Finalize();
 #endif //WITH_MPI
 #endif //WITH_PETSC
+
+#ifdef WITH_TRILINOS
+        Tpetra::finalize();
+#endif //WITH_TRILINOS  
 
         return  instance().exit_code_;
     }
