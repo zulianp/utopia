@@ -1,6 +1,7 @@
 #ifndef UTOPIA_FE_SEMI_GEOMETRIC_MULTIGRID_HPP
 #define UTOPIA_FE_SEMI_GEOMETRIC_MULTIGRID_HPP 
 
+#include "utopia_libmesh_Types.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"

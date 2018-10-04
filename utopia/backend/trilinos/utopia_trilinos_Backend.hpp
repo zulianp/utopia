@@ -614,29 +614,49 @@ namespace utopia {
             typedef typename TpetraMatrix::Scalar Scalar;
 
             auto &impl = mat.implementation();
-            static const Scalar zero = 0.;
+            auto rr = mat.row_range();
 
-            GO offset = 0;
-            Teuchos::ArrayView<const GO> cols;
-            Teuchos::ArrayView<const Scalar> values;
+            // static const Scalar zero = 0.;
 
-            for(auto row : index) {
-                if(impl.isGloballyIndexed()) {
-                    impl.getGlobalRowView(row, cols, values);
-                } else {
-                    assert(impl.isLocallyIndexed());
-                    auto rr = mat.row_range();
-                    impl.getLocalRowView(row - rr.begin(), cols, values);
-                    offset = impl.getDomainMap()->getMinGlobalIndex();
-                }
+            // // GO offset = 0;
+            // Teuchos::ArrayView<const GO> cols;
+            // Teuchos::ArrayView<const Scalar> values;
 
-                for(auto c : cols) {
-                    const GO col = c + offset;
+            // for(auto row : index) {
+            //     assert(impl.isLocallyIndexed());
+                
+            //     impl.getLocalRowView(row - rr.begin(), cols, values);
 
-                    if(col == row) {
-                        impl.replaceGlobalValues(row, 1, &diag, &col);
+            //     for(auto c : cols) {
+            //         const GO col = impl.getColMap()->getGlobalElement(c);
+
+            //         if(col == row) {
+            //             impl.replaceGlobalValues(row, 1, &diag, &col);
+            //         } else {
+            //             impl.replaceGlobalValues(row, 1, &zero, &col);
+            //         }
+            //     }
+            // }
+
+            auto col_map = impl.getColMap();
+            auto row_map = impl.getRowMap();
+            auto local_mat = impl.getLocalMatrix();
+
+            // auto n = local_mat.numRows();
+
+            for(auto i_global : index) {
+                auto i = i_global - rr.begin();
+                auto row = local_mat.row(i);
+                auto n_values = row.length;
+                
+                for(decltype(n_values) k = 0; k < n_values; ++k) {
+                    auto &val = row.value(k);
+                    const auto col = row.colidx(k);
+
+                    if(i == col) {
+                        val = diag;
                     } else {
-                        impl.replaceGlobalValues(row, 1, &zero, &col);
+                        val = 0.;
                     }
                 }
             }
@@ -672,9 +692,9 @@ namespace utopia {
 
     private:
 
-        inline static auto default_communicator() -> decltype( Tpetra::DefaultPlatform::getDefaultPlatform().getComm() )
+        inline static auto default_communicator() -> decltype( Tpetra::getDefaultComm() )
         {
-            return Tpetra::DefaultPlatform::getDefaultPlatform().getComm();
+            return Tpetra::getDefaultComm();
         }
     };
 

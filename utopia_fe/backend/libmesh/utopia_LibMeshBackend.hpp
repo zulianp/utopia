@@ -1,6 +1,9 @@
 #ifndef UTOPIA_LIB_MESH_BACKEND_HPP
 #define UTOPIA_LIB_MESH_BACKEND_HPP
 
+// bug in Kokkos-Kernels, so we have to include this first...
+#include "Eigen/Core"
+
 #include "utopia_LibMeshLambdaAssembly.hpp"
 #include "utopia_fe_core.hpp"
 
@@ -73,14 +76,22 @@ namespace utopia {
 
 		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
+		Size ls = local_size(mat);
 		Size s = size(mat);
-		Matrix temp = mat;
+		Matrix temp = std::move(mat);
+
+		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
+			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+
+		mat = local_sparse(ls.get(0), ls.get(1), nnz_x_row);
 
 		{
 			Write<Matrix> w_t(mat);
 			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
 				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					mat.set(i, j, i == j);
+				} else {
+					mat.set(i, j, value);
 				}
 			});
 		}
@@ -136,7 +147,7 @@ namespace utopia {
 
 		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
-		if(!has_constaints) return;
+		// if(!has_constaints) return;
 
 		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
@@ -145,7 +156,7 @@ namespace utopia {
 
 			Range r = range(vec);
 			for(SizeType i = r.begin(); i < r.end(); ++i) {
-				if(dof_map.is_constrained_dof(i)) {
+				if(has_constaints && dof_map.is_constrained_dof(i)) {
 					auto value = 1.;
 					vec.set(i, value);
 				}
@@ -189,18 +200,34 @@ namespace utopia {
 			has_constaints = false;
 		}
 
-		Size s = size(mat);
-		Matrix temp = mat;
+		using SizeT = UTOPIA_SIZE_TYPE(Matrix);
 
-		{
-			Write<Matrix> w_t(mat);
+		std::vector<SizeT> rows;
+		rows.reserve(local_size(mat).get(0));
 
-			each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
-				if(has_constaints && dof_map.is_constrained_dof(i)) {
-					mat.set(i, j, i == j);
-				}
-			});
+		auto rr = row_range(mat);
+
+		if(has_constaints) {
+			for(auto i = rr.begin(); i < rr.end(); ++i) {
+				dof_map.is_constrained_dof(i);
+				rows.push_back(i);
+			}
 		}
+
+		set_zero_rows(mat, rows, 1.);
+
+		// Size s = size(mat);
+		// Matrix temp = mat;
+
+		// {
+		// 	Write<Matrix> w_t(mat);
+
+		// 	each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
+		// 		if(has_constaints && dof_map.is_constrained_dof(i)) {
+		// 			mat.set(i, j, i == j);
+		// 		}
+		// 	});
+		// }
 	}
 
 	template<class DofMap, class Matrix>

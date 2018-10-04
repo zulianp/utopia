@@ -1070,6 +1070,25 @@ namespace utopia {
         utopia_test_assert(approxeq(n * mpi_world_size(), s));
     }
 
+    void petsc_transform()
+    {
+        DSMatrixd P;
+
+        const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
+        bool ok = read(folder + "/I_2", P); utopia_test_assert(ok);
+
+
+        double sum_P = sum(P);
+        P = transpose(P);
+     
+        each_apply(P, [](const double value) -> double {
+            return value * 2.;
+        });
+
+        double sum_P_2 = sum(P);
+
+        utopia_test_assert(approxeq(sum_P * 2., sum_P_2));
+    }        
 
     void petsc_dot_test()
     {
@@ -1115,52 +1134,51 @@ namespace utopia {
     }
 
 
-
     #endif //WITH_PETSC;
 
     void runPetscTest() {
 #ifdef WITH_PETSC
 
         UTOPIA_UNIT_TEST_BEGIN("PetscTest");
-        UTOPIA_RUN_TEST(petsc_line_search);
-        UTOPIA_RUN_TEST(petsc_residual);
-        UTOPIA_RUN_TEST(petsc_block_mat);
-        UTOPIA_RUN_TEST(petsc_ghosted);
+        // UTOPIA_RUN_TEST(petsc_line_search);
+        // UTOPIA_RUN_TEST(petsc_residual);
+        // UTOPIA_RUN_TEST(petsc_block_mat);
+        // UTOPIA_RUN_TEST(petsc_ghosted);
 
-        // UTOPIA_RUN_TEST(petc_optional); // fails to compile with gpu
+        // // UTOPIA_RUN_TEST(petc_optional); // fails to compile with gpu
         
-        UTOPIA_RUN_TEST(petsc_view);
-        UTOPIA_RUN_TEST(petsc_ksp_precond_delegate);
-        UTOPIA_RUN_TEST(petsc_hardcoded_cg);
-        UTOPIA_RUN_TEST(petsc_reciprocal);
-        UTOPIA_RUN_TEST(petsc_axpy);
-        UTOPIA_RUN_TEST(petsc_vector_accessors);
-        UTOPIA_RUN_TEST(petsc_matrix_accessors);
-        UTOPIA_RUN_TEST(petsc_mv);
-        UTOPIA_RUN_TEST(petsc_copy);
-        UTOPIA_RUN_TEST(petsc_wrapper);
-        UTOPIA_RUN_TEST(petsc_vector_composite);
-        UTOPIA_RUN_TEST(petsc_matlab_connection);
-        UTOPIA_RUN_TEST(petsc_matrix_composite);
-        UTOPIA_RUN_TEST(petsc_mat_tests);
-        UTOPIA_RUN_TEST(petsc_vec_tests);
-        UTOPIA_RUN_TEST(petsc_read_and_write);
-        UTOPIA_RUN_TEST(petsc_to_blas);
-        UTOPIA_RUN_TEST(petsc_is_nan_or_inf);
-        UTOPIA_RUN_TEST(petsc_mat_mul_add);
-        UTOPIA_RUN_TEST(petsc_min);
-        UTOPIA_RUN_TEST(petsc_max);
-        UTOPIA_RUN_TEST(petsc_factory_and_operations);
-        UTOPIA_RUN_TEST(petsc_each_sparse_matrix);
-        UTOPIA_RUN_TEST(petsc_matrix_composition);
-        UTOPIA_RUN_TEST(petsc_test_ptap);
-        UTOPIA_RUN_TEST(petsc_new_eval);
-        UTOPIA_RUN_TEST(petsc_tensor_reduction);
-        UTOPIA_RUN_TEST(petsc_precond);
-        UTOPIA_RUN_TEST(petsc_binary_min_max);
+        // UTOPIA_RUN_TEST(petsc_view);
+        // UTOPIA_RUN_TEST(petsc_ksp_precond_delegate);
+        // UTOPIA_RUN_TEST(petsc_hardcoded_cg);
+        // UTOPIA_RUN_TEST(petsc_reciprocal);
+        // UTOPIA_RUN_TEST(petsc_axpy);
+        // UTOPIA_RUN_TEST(petsc_vector_accessors);
+        // UTOPIA_RUN_TEST(petsc_matrix_accessors);
+        // UTOPIA_RUN_TEST(petsc_mv);
+        // UTOPIA_RUN_TEST(petsc_copy);
+        // UTOPIA_RUN_TEST(petsc_wrapper);
+        // UTOPIA_RUN_TEST(petsc_vector_composite);
+        // UTOPIA_RUN_TEST(petsc_matlab_connection);
+        // UTOPIA_RUN_TEST(petsc_matrix_composite);
+        // UTOPIA_RUN_TEST(petsc_mat_tests);
+        // UTOPIA_RUN_TEST(petsc_vec_tests);
+        // UTOPIA_RUN_TEST(petsc_read_and_write);
+        // UTOPIA_RUN_TEST(petsc_to_blas);
+        // UTOPIA_RUN_TEST(petsc_is_nan_or_inf);
+        // UTOPIA_RUN_TEST(petsc_mat_mul_add);
+        // UTOPIA_RUN_TEST(petsc_min);
+        // UTOPIA_RUN_TEST(petsc_max);
+        // UTOPIA_RUN_TEST(petsc_factory_and_operations);
+        // UTOPIA_RUN_TEST(petsc_each_sparse_matrix);
+        // UTOPIA_RUN_TEST(petsc_matrix_composition);
+        // UTOPIA_RUN_TEST(petsc_test_ptap);
+        // UTOPIA_RUN_TEST(petsc_new_eval);
+        // UTOPIA_RUN_TEST(petsc_tensor_reduction);
+        // UTOPIA_RUN_TEST(petsc_precond);
+        // UTOPIA_RUN_TEST(petsc_binary_min_max);
         UTOPIA_RUN_TEST(petsc_dot_test); 
 
-
+//        UTOPIA_RUN_TEST(petsc_transform);
 
         //serial tests
 #ifdef PETSC_HAVE_MUMPS

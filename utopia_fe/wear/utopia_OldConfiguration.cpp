@@ -1,6 +1,6 @@
+#include "utopia_libmesh.hpp"
 #include "utopia_OldConfiguration.hpp"
 
-#include "utopia_libmesh.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
 
 namespace utopia {

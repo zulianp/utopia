@@ -283,12 +283,12 @@ namespace utopia {
 		//a column operator structure as petsc
 
 		rcp_map_type row_map;
-		const int indexBase = 0;
+		const int index_base = 0;
 
 		if(rows_local == INVALID_INDEX) {
-			row_map.reset(new map_type(rows_global, indexBase, comm));
+			row_map.reset(new map_type(rows_global, index_base, comm));
 		} else {
-			row_map.reset(new map_type(rows_global, rows_local, indexBase, comm));
+			row_map.reset(new map_type(rows_global, rows_local, index_base, comm));
 		}
 
 		if(cols_global == Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid()) {
@@ -297,16 +297,16 @@ namespace utopia {
 			Teuchos::reduceAll(*comm, Teuchos::REDUCE_SUM, 1, &send_buff, &cols_global);
 		}
 
-	    // auto col_map = Teuchos::rcp(new map_type(cols_global, indexBase, comm, Tpetra::LocallyReplicated));
+	    // auto col_map = Teuchos::rcp(new map_type(cols_global, index_base, comm, Tpetra::LocallyReplicated));
 	    // mat_.reset(new crs_mat_type(row_map, col_map, nnz_x_row, Tpetra::DynamicProfile));
 	    mat_.reset(new crs_mat_type(row_map, nnz_x_row, Tpetra::DynamicProfile));
 	    owner_ = true;
 
 	    init_ = std::make_shared<InitStructs>();
 	    if(cols_local == INVALID_INDEX) {
-	    	init_->domain_map.reset(new map_type(cols_global, indexBase, comm));
+	    	init_->domain_map.reset(new map_type(cols_global, index_base, comm));
 	    } else {
-	    	init_->domain_map.reset(new map_type(cols_global, cols_local, indexBase, comm));
+	    	init_->domain_map.reset(new map_type(cols_global, cols_local, index_base, comm));
 	    }
 
 	    init_->range_map = row_map;

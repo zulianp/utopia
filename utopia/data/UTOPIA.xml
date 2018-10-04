@@ -15,9 +15,9 @@
     <Parameter name="Orthogonalization" type="string" value="ICGS"/>
 -->
     <Parameter name="Verbosity" type="int" value="1"/>
-    <Parameter name="Maximum Iterations" type="int" value="300"/>
+    <Parameter name="Maximum Iterations" type="int" value="800"/>
     <Parameter name="Output Style" type="int" value="1"/>
-    <Parameter name="Convergence Tolerance" type="double" value="1e-8" />
+    <Parameter name="Convergence Tolerance" type="double" value="1e-12" />
   </ParameterList>
 
 <!-- Ifpack2 Preconditioner parameters -->

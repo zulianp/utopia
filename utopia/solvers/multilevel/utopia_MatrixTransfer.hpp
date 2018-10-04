@@ -158,20 +158,15 @@
         {
             static const Scalar off_diag_tol = std::numeric_limits<Scalar>::epsilon() * 1e6;
 
-            // x_new = local_zeros(local_size(*_R).get(0));
-
             Matrix R_boolean = *_R;
-            R_boolean *= 0.;
 
-            {
-                Write<Matrix> w_(R_boolean);
-
-                each_read(*_R, [&R_boolean](const SizeType i, const SizeType j, const Scalar value) {
-                    if(std::abs(value) > off_diag_tol) {
-                        R_boolean.set(i, j, 1.);
-                    }
-                });
-            }
+            each_apply(R_boolean, [](const Scalar value) -> Scalar {
+                if(std::abs(value) > off_diag_tol) {
+                    return 1.;
+                } else {
+                    return 0.;
+                }
+            });
 
             x_new = R_boolean * x;
 

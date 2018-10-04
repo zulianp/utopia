@@ -1,6 +1,7 @@
 #ifndef UTOPIA_GAIT_CYCLE_HPP
 #define UTOPIA_GAIT_CYCLE_HPP
 
+#include "utopia_libmesh_Types.hpp"
 #include "utopia.hpp"
 #include <array>
 

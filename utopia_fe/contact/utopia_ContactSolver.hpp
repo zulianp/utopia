@@ -2,6 +2,7 @@
 #define UTOPIA_STEADY_CONTACTHPP
 
 
+#include "utopia_libmesh_Types.hpp"
 #include "utopia_fe_config.hpp"
 
 #ifndef WITH_TRILINOS_ALGEBRA
