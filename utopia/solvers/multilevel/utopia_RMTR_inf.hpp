@@ -121,12 +121,12 @@ namespace utopia
                 if(box_constraints_.has_upper_bound())
                     constraints_memory_.x_upper[fine_level] = *box_constraints_.upper_bound(); 
                 else
-                    constraints_memory_.x_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
+                    constraints_memory_.x_upper[fine_level] = local_values(fine_local_size, inf); 
 
                 if(box_constraints_.has_lower_bound())
                     constraints_memory_.x_lower[fine_level] = *box_constraints_.lower_bound(); 
                 else
-                    constraints_memory_.x_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0); 
+                    constraints_memory_.x_lower[fine_level] = local_values(fine_local_size, -1.0 * inf); 
 
 
                 constraints_memory_.active_upper[fine_level] = constraints_memory_.x_upper[fine_level];
@@ -134,13 +134,13 @@ namespace utopia
             }
             else
             {
-                constraints_memory_.active_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
-                constraints_memory_.active_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0);
+                constraints_memory_.active_upper[fine_level] = local_values(fine_local_size, inf); 
+                constraints_memory_.active_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
             }
 
             // inherited tr bound constraints... 
-            constraints_memory_.tr_upper[fine_level] = inf * local_values(fine_local_size, 1.0); 
-            constraints_memory_.tr_lower[fine_level] = -1.0 * inf * local_values(fine_local_size, 1.0);
+            constraints_memory_.tr_upper[fine_level] = local_values(fine_local_size, inf); 
+            constraints_memory_.tr_lower[fine_level] = local_values(fine_local_size, -1.0 * inf);
 
             // precompute norms of prolongation operators needed for projections of constraints... 
             for(auto l = 0; l < this->n_levels() -1; l++)
