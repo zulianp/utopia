@@ -3,7 +3,7 @@
 
 #include "Amesos2_config.h"
 
-#ifdef HAVE_AMESOS2_TPETRA
+//#ifdef HAVE_AMESOS2_TPETRA
 
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_trilinos_LinearSolverFactory.hpp"
@@ -65,5 +65,5 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif //HAVE_AMESOS2_TPETRA
+//#endif //HAVE_AMESOS2_TPETRA
 #endif //UTOPIA_AMESOS2_SOLVERS_HPP

@@ -5,9 +5,6 @@
 
 #include "utopia_make_unique.hpp"
 
-#include <Teuchos_ParameterList.hpp>
-#include <Teuchos_XMLParameterListCoreHelpers.hpp> //TODO remove from here
-
 #include <Amesos2_Factory.hpp>
 #include <Amesos2_Solver.hpp>
 
@@ -16,32 +13,31 @@
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_StandardCatchMacros.hpp>
-#include <Teuchos_XMLParameterListCoreHelpers.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 #include <Tpetra_DefaultPlatform.hpp>
 
 
-#ifdef HAVE_AMESOS2_TPETRA
+// #ifdef HAVE_AMESOS2_TPETRA
 
 //FIXME find right macros (these packages are optional in trilinos, they should be optional also in utopia)
 #define HAVE_AMESOS2_MUELU
 #define HAVE_AMESOS2_IFPACK2
 
 
-#ifdef HAVE_AMESOS2_MUELU
-#include <MueLu.hpp>
-#include <MueLu_CreateTpetraPreconditioner.hpp>
-#include <MueLu_TpetraOperator.hpp>
-#else
-#warning "HAVE_AMESOS2_MUELU not defined"
-#endif //HAVE_AMESOS2_MUELU
+// #ifdef HAVE_AMESOS2_MUELU
+// #include <MueLu.hpp>
+// #include <MueLu_CreateTpetraPreconditioner.hpp>
+// #include <MueLu_TpetraOperator.hpp>
+// #else
+// #warning "HAVE_AMESOS2_MUELU not defined"
+// #endif //HAVE_AMESOS2_MUELU
 
 
-#ifdef HAVE_AMESOS2_IFPACK2
-#include <Ifpack2_Factory.hpp>
-#else
-#warning "HAVE_AMESOS2_IFPACK2 not defined"
-#endif //HAVE_AMESOS2_IFPACK
+// #ifdef HAVE_AMESOS2_IFPACK2
+// #include <Ifpack2_Factory.hpp>
+// #else
+// #warning "HAVE_AMESOS2_IFPACK2 not defined"
+// #endif //HAVE_AMESOS2_IFPACK
 
 
 namespace utopia {
@@ -74,13 +70,13 @@ namespace utopia {
         typedef Amesos2::LinearProblem<SC, MV, OP> problem_type;
         typedef Amesos2::SolverManager<SC, MV, OP> solver_type;
         
-#ifdef HAVE_AMESOS2_IFPACK2
+// #ifdef HAVE_AMESOS2_IFPACK2
         typedef Ifpack2::Preconditioner<SC, LO, GO, NT> ifpack_prec_type;
-#endif //HAVE_AMESOS2_IFPACK
+// #endif //HAVE_AMESOS2_IFPACK
         
-#ifdef HAVE_AMESOS2_MUELU
+// #ifdef HAVE_AMESOS2_MUELU
         typedef MueLu::TpetraOperator<SC, LO, GO, NT> muelu_prec_type;
-#endif
+// #endif
         
         typedef Tpetra::Vector<SC, LO, GO, NT> vec_type;
         typedef Tpetra::CrsMatrix<SC, LO, GO, NT> matrix_type;
@@ -92,13 +88,13 @@ namespace utopia {
         Amesos2::SolverFactory<SC, MV, OP> amesos2_factory;
         
         //preconditioner
-#ifdef HAVE_AMESOS2_IFPACK2
+// #ifdef HAVE_AMESOS2_IFPACK2
         Teuchos::RCP<ifpack_prec_type> M_ifpack;
-#endif //HAVE_AMESOS2_IFPACK2
+// #endif //HAVE_AMESOS2_IFPACK2
         
-#ifdef HAVE_AMESOS2_MUELU
+// #ifdef HAVE_AMESOS2_MUELU
         Teuchos::RCP<muelu_prec_type> M_muelu;
-#endif //HAVE_AMESOS2_MUELU
+// #endif //HAVE_AMESOS2_MUELU
         
     };
     
@@ -173,16 +169,16 @@ namespace utopia {
         bool direct_solver = impl_->param_list->sublist("UTOPIA", true).template get<bool>("Direct Preconditioner", false);
         std::string dir_prec_type = impl_->param_list->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
         if ( direct_solver ) {
-#ifdef HAVE_AMESOS2_IFPACK2
+// #ifdef HAVE_AMESOS2_IFPACK2
             impl_->M_ifpack = Ifpack2::Factory::create<typename Impl::matrix_type>(dir_prec_type, precond.implementation().implementation_ptr());
             assert(!impl_->M_ifpack.is_null());
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
             impl_->M_ifpack->compute();
             impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
-#endif //HAVE_AMESOS2_IFPACK2
+// #endif //HAVE_AMESOS2_IFPACK2
         } else {
-#ifdef HAVE_AMESOS2_MUELU
+// #ifdef HAVE_AMESOS2_MUELU
             // Multigrid Hierarchy
             impl_->M_muelu = MueLu::CreateTpetraPreconditioner((
                                                                 Teuchos::RCP<typename Impl::OP>) precond.implementation().implementation_ptr(),
@@ -191,9 +187,9 @@ namespace utopia {
             
             assert(!impl_->M_muelu.is_null());
             impl_->linear_problem->setRightPrec(impl_->M_muelu);
-#else
+// #else
             assert(false);
-#endif //HAVE_AMESOS2_MUELU
+// #endif //HAVE_AMESOS2_MUELU
         }
     }
     
@@ -257,28 +253,28 @@ namespace utopia {
         {
             //                 M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, precond->implementation().implementation_ptr()); //TODO
             
-#ifdef HAVE_AMESOS2_IFPACK2
+// #ifdef HAVE_AMESOS2_IFPACK2
             assert(!impl_->M_ifpack.is_null());
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
             impl_->M_ifpack->compute();
             impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
-#endif //HAVE_AMESOS2_IFPACK2
+// #endif //HAVE_AMESOS2_IFPACK2
             
         } else {
-#ifdef HAVE_AMESOS2_MUELU
+// #ifdef HAVE_AMESOS2_MUELU
             // Multigrid Hierarchy
             //                M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)precond->implementation().implementation_ptr(),    //TODO
             //                                                            impl_->param_list->sublist("MueLu", false));
             assert(!impl_->M_muelu.is_null());
             impl_->linear_problem->setRightPrec(impl_->M_muelu);
-#else
+// #else
             assert(false);
-#endif //HAVE_AMESOS2_MUELU
+// #endif //HAVE_AMESOS2_MUELU
         }
     }
     
 }  // namespace utopia
 
-#endif //HAVE_AMESOS2_TPETRA
+// #endif //HAVE_AMESOS2_TPETRA
 #endif //UTOPIA_AMESOS2_IMPL_HPP

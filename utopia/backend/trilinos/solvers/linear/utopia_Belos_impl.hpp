@@ -5,10 +5,6 @@
 
 #include "utopia_make_unique.hpp"
 
-#include <Teuchos_ParameterList.hpp>
-#include <Teuchos_XMLParameterListCoreHelpers.hpp> //TODO remove from here
-
-
 #include <BelosLinearProblem.hpp>
 #include <BelosTpetraAdapter.hpp>
 
