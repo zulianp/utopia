@@ -52,15 +52,10 @@ namespace utopia {
     typedef vector_type::scalar_type                  Scalar;
 
         TpetraVector()
-        {
-            int indexBase = 0;
-            auto comm = Tpetra::getDefaultComm ();
-            auto conigMap = Teuchos::rcp (new map_type (comm->getSize (), indexBase, comm));
-            vec_.reset(new vector_type (conigMap, false));
-        }
+        {}
 
         ~TpetraVector()
-        { }
+        {}
 
         TpetraVector(const TpetraVector &other);
 

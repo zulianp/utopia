@@ -248,7 +248,7 @@ namespace utopia {
 			ghosted_vec_->assign(*other.ghosted_vec_);
 			vec_ = ghosted_vec_->offsetViewNonConst(other.vec_->getMap(), 0);
 		} else {
-			if(vec_.is_null() == other.size().get(0) != size().get(0)) {
+			if(vec_.is_null() || other.size().get(0) != size().get(0)) {
 				vec_ = (Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy)));
 			} else {
 				vec_->assign(other.implementation());

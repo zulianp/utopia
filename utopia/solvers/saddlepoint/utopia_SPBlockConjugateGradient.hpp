@@ -294,13 +294,13 @@ namespace utopia {
 			buff_m = (*B_t) * p;
 			buff_s = (*D_t) * p;
 
-			if(empty(solved_m)) {
+			if(empty(solved_m) || size(buff_m) != size(solved_m)) {
 				solved_m = local_zeros(local_size(buff_m));
 			} else {
 				solved_m.set(0.);
 			}
 
-			if(empty(solved_s)) {
+			if(empty(solved_s) || size(buff_s) != size(solved_s)) {
 				solved_s = local_zeros(local_size(buff_s));
 			} else {
 				solved_s.set(0.);
@@ -321,14 +321,13 @@ namespace utopia {
 			buff_m = rhs_m - (*B_t) * p;
 			buff_s = rhs_s - (*D_t) * p;
 
-
-			if(empty(solved_m)) {
+			if(empty(solved_m) || size(buff_m) != size(solved_m)) {
 				solved_m = local_zeros(local_size(buff_m));
 			} else {
 				solved_m.set(0.);
 			}
 
-			if(empty(solved_s)) {
+			if(empty(solved_s) || size(buff_s) != size(solved_s)) {
 				solved_s = local_zeros(local_size(buff_s));
 			} else {
 				solved_s.set(0.);
