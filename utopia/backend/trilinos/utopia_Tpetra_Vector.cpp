@@ -122,30 +122,30 @@ namespace utopia {
 
  
 
-	bool TpetraVector::is_nan_or_inf() const
-	{
+    bool TpetraVector::is_nan_or_inf() const
+    {
 		
-		m_utopia_warning_once("> TpetraVector::is_nan_or_inf is hand-coded");
+        m_utopia_warning_once("> TpetraVector::is_nan_or_inf is hand-coded");
 
-		int ret=0;
+        int ret=0;
 
-		auto data = implementation().getLocalView<Kokkos::HostSpace> ();
+        auto data = implementation().getLocalView<Kokkos::HostSpace> ();
 
-	    Kokkos::parallel_reduce(data.extent(0), KOKKOS_LAMBDA (const int i, int&err) {
-	    	if(Kokkos::Details::ArithTraits<float>::isNan(data(0,i)) || Kokkos::Details::ArithTraits<float>::isInf(data(0,i))){
-				err=1;
+	Kokkos::parallel_reduce(data.extent(0), KOKKOS_LAMBDA (const int i, Scalar&err) {
+	       if(Kokkos::Details::ArithTraits<float>::isNan(data(0,i)) || Kokkos::Details::ArithTraits<float>::isInf(data(0,i))){
+		   err=1;
 //				exit(1);}
-                 }
-	        }, ret);
+                  }
+	       }, ret);
 
 
-		auto &comm = *communicator();
+        auto &comm = *communicator();
 		int ret_global = 0;
 
-		Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
-		return ret_global;
-
-	}
+        Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
+       
+        return ret_global;
+    }
 
 
 
