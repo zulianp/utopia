@@ -127,20 +127,19 @@ namespace utopia {
 		
         m_utopia_warning_once("> TpetraVector::is_nan_or_inf is hand-coded");
 
-        int ret=0;
+        double ret=0;
 
         auto data = implementation().getLocalView<Kokkos::HostSpace> ();
 
-	Kokkos::parallel_reduce(data.extent(0), KOKKOS_LAMBDA (const int i, Scalar&err) {
+	Kokkos::parallel_reduce(data.extent(0), KOKKOS_LAMBDA (const int i, double&err) {
 	       if(Kokkos::Details::ArithTraits<float>::isNan(data(0,i)) || Kokkos::Details::ArithTraits<float>::isInf(data(0,i))){
 		   err=1;
-//				exit(1);}
                   }
 	       }, ret);
 
 
         auto &comm = *communicator();
-		int ret_global = 0;
+		double ret_global = 0;
 
         Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
        
