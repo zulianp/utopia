@@ -134,7 +134,8 @@ namespace utopia {
 	    Kokkos::parallel_reduce(data.extent(0), KOKKOS_LAMBDA (const int i, int&err) {
 	    	if(Kokkos::Details::ArithTraits<float>::isNan(data(0,i)) || Kokkos::Details::ArithTraits<float>::isInf(data(0,i))){
 				err=1;
-				exit(1);}
+//				exit(1);}
+                 }
 	        }, ret);
 
 

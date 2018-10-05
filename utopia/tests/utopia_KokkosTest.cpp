@@ -173,7 +173,7 @@ namespace utopia {
 
         auto n_rows_trilinos=P_trilinos->getGlobalNumRows();
 
-        std::cout<<"size_rows_trilinos==> "<<n_rows_trilinos<<std::endl;
+//        std::cout<<"size_rows_trilinos==> "<<n_rows_trilinos<<std::endl;
 
         auto local_mat = P_trilinos->getLocalMatrix();
 
@@ -183,24 +183,25 @@ namespace utopia {
         
         disp(n);
 
-        each_apply_parallel(P, [](const double value) -> double {
+        each_apply_parallel(P, KOKKOS_LAMBDA(const double value) -> double {
             return value * 2.;
         });
 
 
-        Kokkos::parallel_for( team_policy( n, Kokkos::AUTO ), KOKKOS_LAMBDA ( const member_type &teamMember) {
+/*        Kokkos::parallel_for( team_policy( n, Kokkos::AUTO ), KOKKOS_LAMBDA ( const member_type &teamMember) {
             
             const int j = teamMember.league_rank();
             auto row = local_mat.row(j);
             auto n_values = row.length;
 
             Kokkos::parallel_for( Kokkos::TeamThreadRange( teamMember, n_values), [&] (const int i) {
-                std::cout << i << " " << j << " " << local_mat.values(i,j) << std::endl;
+//               std::cout << i << " " << j << " " << local_mat.values(i,j) << std::endl;
             });
         });
-
+*/
 
         disp("kokkos_apply");
+        disp(P);
     }
 
 
