@@ -1,4 +1,4 @@
-// #include "utopia_Intrepid2Test.hpp"
+#include "utopia_Intrepid2Test.hpp"
 // #include "utopia_Intrepid2_Assembler.hpp"
 
 // #ifdef WITH_INTREPID2
@@ -67,9 +67,9 @@
 
 // #else
 	
-// 	namespace utopia {
-// 		void run_intrepid2_test(libMesh::LibMeshInit &){}
-// 	}
+	namespace utopia {
+		void run_intrepid2_test(libMesh::LibMeshInit &){}
+	}
 
 // #endif //WITH_INTREPID2
 
