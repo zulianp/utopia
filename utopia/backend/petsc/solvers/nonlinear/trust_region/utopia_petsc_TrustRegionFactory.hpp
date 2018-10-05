@@ -58,7 +58,6 @@ namespace utopia {
 			strategies_[DOGLEG_TAG] 		= std::make_shared< TRFactoryMethod< utopia::Dogleg<Matrix, Vector>> >(); 
 			strategies_[STEIHAUG_TOINT_TAG] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
 
-
 			strategies_[AUTO_TR_TAG] = std::make_shared< TRFactoryMethod< utopia::SteihaugToint<Matrix, Vector>> >(); 
 			
 //			strategies_[NASH_TAG] = std::make_shared< TRFactoryMethod< utopia::Nash<Matrix, Vector>> >(); 

@@ -1,12 +1,17 @@
 <rmtr-app>
 
 	<function>bratu</function>
-	<!-- <path>../data/rmtr/rmtr_test_mesh.e</path> -->
-	<path>../data/rmtr/can.e</path>
-	<mesh>file</mesh>
+	<mesh>unit-square</mesh>
+	<elem-type>quad</elem-type>
 
+	
 	<boundary-conditions>
 		
+		<entry>
+			<side>0</side>
+			<value>0</value>
+		</entry>
+
 		<entry>
 			<side>1</side>
 			<value>0</value>
@@ -21,26 +26,13 @@
 			<side>3</side>
 			<value>0</value>
 		</entry>
-
-
-
-
-		
-<!-- 		<entry>
-			<side>4</side>
-			<value>0</value>
-		</entry> -->
-
-<!-- 		<entry>
-			<side>5</side>
-			<value>0</value>
-		</entry>
-	 -->
+	
 	</boundary-conditions>
 
-	<refinements>2</refinements>
+	<refinements>0</refinements>
 	<n-levels>2</n-levels>
 	<order>1</order>
 	<verbose>true</verbose>
-	<use-newton>true</use-newton>
+	<!-- <use-newton>true</use-newton> -->
+
 </rmtr-app>

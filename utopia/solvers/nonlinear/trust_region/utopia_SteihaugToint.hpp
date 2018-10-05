@@ -99,7 +99,7 @@ namespace utopia
 
 			Scalar g_norm = norm2(g_k);  
 
-			this->init_solver(" Precond-ST-CG ", {"it. ", "||g||" });
+			this->init_solver(" Precond-ST-CG ", {"it. ", "||g||", "||s||", "||p||", "sMp" });
     		if(this->verbose())
                 PrintInfo::print_iter_status(it, {g_norm});
             it++; 
@@ -188,7 +188,7 @@ namespace utopia
 	    		g_norm = norm2(g_k);  
 
 	    		if(this->verbose())
-                    PrintInfo::print_iter_status(it, {g_norm});
+                    PrintInfo::print_iter_status(it, {g_norm, s_norm, p_norm, sMp});
 	    		
 	    		if(!std::isfinite(g_norm))
 	    			return false; 

@@ -188,8 +188,6 @@ namespace utopia
             if(this->transfers_.size() + 1 != this->level_functions_.size())
                 utopia_error("RMTR::solve size of transfer and level functions do not match... \n");
 
-            
-
             bool converged = false;
             SizeType fine_level = this->n_levels()-1;
             Scalar r_norm, r0_norm, rel_norm, energy;
@@ -202,9 +200,7 @@ namespace utopia
             this->status_.clear();
             this->init_memory(fine_local_size);
 
-
             // initialize();
-
 
             memory_.x[fine_level] = x_h;
             memory_.g[fine_level]  = local_zeros(local_size(memory_.x[fine_level]));
@@ -289,9 +285,6 @@ namespace utopia
          */
         virtual bool multiplicative_cycle(const SizeType & level)
         {
-            Vector s_global;
-            Matrix H_fine, H_coarse;  // lets not store all hessians for all levels... this is simply too much...
-
             Scalar ared=0.0, coarse_reduction=0.0, rho=0.0;
             Scalar E_old, E_new;
             bool converged = false, smoothness_flg=true;
@@ -299,14 +292,14 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   presmoothing
             //----------------------------------------------------------------------------
-            converged = this->local_tr_solve(this->function(level), level);
+            converged = this->local_tr_solve(level);
 
             // making sure that correction does not exceed tr radius ...
             if(converged)
                 return true;
 
-            this->compute_s_global(level, s_global);
-            this->get_multilevel_gradient(this->function(level), s_global, level);
+            this->compute_s_global(level, memory_.s_working[level]);
+            this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
 
             if(level == this->n_levels()-1)
             {
@@ -343,14 +336,14 @@ namespace utopia
             //----------------------------------------------------------------------------
             if(CONSISTENCY_LEVEL == SECOND_ORDER || CONSISTENCY_LEVEL == GALERKIN)
             {
-                this->get_multilevel_hessian(this->function(level), H_fine, level);
-                this->transfer(level-1).restrict(H_fine, memory_.H_diff[level-1]);
+                this->get_multilevel_hessian(this->function(level), level);
+                this->transfer(level-1).restrict(memory_.H[level], memory_.H_diff[level-1]);
 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
                 {
                     this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]);
-                    this->function(level-1).hessian(memory_.x[level-1], H_coarse);
-                    memory_.H_diff[level-1] -=  H_coarse;
+                    this->function(level-1).hessian(memory_.x[level-1], memory_.H[level-1]);
+                    memory_.H_diff[level-1] -=  memory_.H[level-1];
                 }
 
             }
@@ -370,7 +363,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             if(level == 1 && smoothness_flg)
             {
-                this->local_tr_solve(this->function(level-1), level -1, true);
+                this->local_tr_solve(level -1, true);
             }
             else if(smoothness_flg)
             {
@@ -393,14 +386,14 @@ namespace utopia
                 this->transfer(level-1).interpolate(memory_.s[level-1], memory_.s[level]);
                 this->zero_correction_related_to_equality_constrain(this->function(level), memory_.s[level]);
 
-                this->compute_s_global(level, s_global);
-                E_old = this->get_multilevel_energy(this->function(level), s_global, level);
+                this->compute_s_global(level, memory_.s_working[level]);
+                E_old = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
 
                 // new test for dbg mode
                 memory_.x[level] += memory_.s[level];
 
-                this->compute_s_global(level, s_global);
-                E_new = this->get_multilevel_energy(this->function(level), s_global, level);
+                this->compute_s_global(level, memory_.s_working[level]);
+                E_new = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
 
                 //----------------------------------------------------------------------------
                 //                        trial point acceptance
@@ -418,13 +411,13 @@ namespace utopia
                 else
                 {
                     memory_.x[level] -= memory_.s[level];
-                    this->compute_s_global(level, s_global);
+                    this->compute_s_global(level, memory_.s_working[level]);
                 }
 
                 //----------------------------------------------------------------------------
                 //                                  trust region update
                 //----------------------------------------------------------------------------
-                converged = this->delta_update(rho, level, s_global);
+                converged = this->delta_update(rho, level, memory_.s_working[level]);
 
                 // because, x + Is_{l-1} does not need to be inside of feasible set....
                 // mostly case for rmtr_inf with bounds...
@@ -453,7 +446,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                        postsmoothing
             //----------------------------------------------------------------------------
-            this->local_tr_solve(this->function(level), level, !smoothness_flg);
+            this->local_tr_solve(level, !smoothness_flg);
 
             return true;
         }
@@ -469,21 +462,20 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool local_tr_solve(Fun &fun, const SizeType & level, const bool & exact_solve_flg = false)
+        virtual bool local_tr_solve(const SizeType & level, const bool & exact_solve_flg = false)
         {
-            Vector s_global;
-            Matrix  H;
-
             SizeType it_success = 0, it = 0;
             Scalar ared = 0. , pred = 0., rho = 0., energy_old=9e9, energy_new=9e9, g_norm=1.0;
             bool make_grad_updates = true, /*make_hess_updates = true,*/ converged = false, delta_converged = false;
 
-            Vector s = local_zeros(local_size(memory_.x[level]));
+            // should be neccessary just first time, we enter given level 
+            if(empty(memory_.s_local[level]))
+                 memory_.s_local[level] = local_zeros(local_size(memory_.x[level]));
 
-            this->compute_s_global(level, s_global);
-            this->get_multilevel_gradient(fun, s_global, level);
+            this->compute_s_global(level, memory_.s_working[level]);
+            this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
 
-            energy_old = this->get_multilevel_energy(fun, s_global, level);
+            energy_old = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
             g_norm = this->criticality_measure(level);
 
             converged  = this->check_local_convergence(it_success,  g_norm, level, memory_.delta[level]);
@@ -498,23 +490,23 @@ namespace utopia
 
             while(!converged)
             {
-                this->get_multilevel_hessian(fun, H, level);
+                this->get_multilevel_hessian(this->function(level), level);
 
             //----------------------------------------------------------------------------
             //     solving constrained system to get correction and  building trial point
             //----------------------------------------------------------------------------
                 // correction needs to get prepared
-                s = local_zeros(local_size(memory_.x[level]));
-                this->solve_qp_subproblem(H, memory_.g[level], s, level, exact_solve_flg);
+                memory_.s_local[level] *= 0.0;
+                this->solve_qp_subproblem(memory_.H[level], memory_.g[level], memory_.s_local[level], level, exact_solve_flg);
 
                 // predicted reduction based on model
-                TrustRegionBase<Matrix, Vector>::get_pred(memory_.g[level], H, s, pred);
+                TrustRegionBase<Matrix, Vector>::get_pred(memory_.g[level], memory_.H[level], memory_.s_local[level], pred);
 
                 // building trial point
-                memory_.x[level] += s;
+                memory_.x[level] += memory_.s_local[level];
 
-                this->compute_s_global(level, s_global);
-                energy_new = this->get_multilevel_energy(fun, s_global, level);
+                this->compute_s_global(level, memory_.s_working[level]);
+                energy_new = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
                 ared = energy_old - energy_new;
 
                 rho = (ared < 0) ? 0.0 : ared/pred;
@@ -532,19 +524,19 @@ namespace utopia
                 }
                 else
                 {
-                    memory_.x[level] -= s; // return iterate into its initial state
-                    this->compute_s_global(level, s_global);
+                    memory_.x[level] -= memory_.s_local[level]; // return iterate into its initial state
+                    this->compute_s_global(level, memory_.s_working[level]);
                     make_grad_updates =  false;
                 }
             //----------------------------------------------------------------------------
             //     trust region update
             //----------------------------------------------------------------------------
-                delta_converged = this->delta_update(rho, level, s_global);
+                delta_converged = this->delta_update(rho, level, memory_.s_working[level]);
 
                 if(make_grad_updates)
                 {
                     Vector g_old = memory_.g[level];
-                    this->get_multilevel_gradient(fun, s_global, level);
+                    this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
                     g_norm = this->criticality_measure(level);
 
                     // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm);
@@ -822,12 +814,12 @@ namespace utopia
          *
          * @return     The multilevel hessian.
          */
-        virtual bool get_multilevel_hessian(const Fun & fun, Matrix & H, const SizeType & level)
+        virtual bool get_multilevel_hessian(const Fun & fun, const SizeType & level)
         {
             if(level < this->n_levels()-1)
-                return MultilevelHessianEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_hessian(fun, memory_.x[level], H, memory_.H_diff[level]);
+                return MultilevelHessianEval<Matrix, Vector, CONSISTENCY_LEVEL>::compute_hessian(fun, memory_.x[level], memory_.H[level], memory_.H_diff[level]);
             else
-                return fun.hessian(memory_.x[level], H);
+                return fun.hessian(memory_.x[level], memory_.H[level]);
         }
 
 
@@ -943,7 +935,6 @@ namespace utopia
         Scalar                         _hessian_update_eta;         /** * tolerance used for updating hessians */
 
         VerbosityLevel                  _verbosity_level;
-
 
         ColorModifier red_;
         ColorModifier def_;

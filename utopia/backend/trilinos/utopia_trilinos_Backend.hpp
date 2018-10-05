@@ -644,12 +644,14 @@ namespace utopia {
 
             // auto n = local_mat.numRows();
 
-            for(auto i_global : index) {
+            for(auto i_global : index) 
+            {
                 auto i = i_global - rr.begin();
                 auto row = local_mat.row(i);
                 auto n_values = row.length;
                 
-                for(decltype(n_values) k = 0; k < n_values; ++k) {
+                for(decltype(n_values) k = 0; k < n_values; ++k) 
+                {
                     auto &val = row.value(k);
                     const auto col = row.colidx(k);
 
