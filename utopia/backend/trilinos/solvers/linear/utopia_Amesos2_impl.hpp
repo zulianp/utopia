@@ -8,9 +8,8 @@
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_XMLParameterListCoreHelpers.hpp> //TODO remove from here
 
-
-#include <Amesos2LinearProblem.hpp>
-#include <Amesos2TpetraAdapter.hpp>
+#include <Amesos2_Factory.hpp>
+#include <Amesos2_Solver.hpp>
 
 //TODO remove from here
 #include <Kokkos_DefaultNode.hpp>
@@ -89,8 +88,8 @@ namespace utopia {
         Teuchos::RCP<problem_type> linear_problem;
         Teuchos::RCP<Teuchos::ParameterList> param_list;
         //  auto& utopiaPL;// impl_->param_list->sublist("UTOPIA", true);
-        Teuchos::RCP<solver_type> belos_solver;
-        Amesos2::SolverFactory<SC, MV, OP> belos_factory;
+        Teuchos::RCP<solver_type> amesos2_solver;
+        Amesos2::SolverFactory<SC, MV, OP> amesos2_factory;
         
         //preconditioner
 #ifdef HAVE_AMESOS2_IFPACK2
@@ -150,17 +149,17 @@ namespace utopia {
 
         set_problem();
 
-        assert((impl_->belos_solver));
-        impl_->belos_solver->solve();
+        assert((impl_->amesos2_solver));
+        impl_->amesos2_solver->solve();
         return true;
     }
     
     template <typename Matrix, typename Vector>
-    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_iter() const { return impl_->belos_solver->getNumIters(); }
+    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_iter() const { return impl_->amesos2_solver->getNumIters(); }
     
     
     template <typename Matrix, typename Vector>
-    double Amesos2Solver<Matrix, Vector, TRILINOS>::achieved_tol() const { return impl_->belos_solver->achievedTol(); }
+    double Amesos2Solver<Matrix, Vector, TRILINOS>::achieved_tol() const { return impl_->amesos2_solver->achievedTol(); }
     
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
@@ -230,9 +229,9 @@ namespace utopia {
     bool Amesos2Solver<Matrix, Vector, TRILINOS>::set_problem()
     {
         impl_->linear_problem->setProblem();
-        impl_->belos_solver = impl_->belos_factory.create( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
-        impl_->belos_solver->setProblem(impl_->linear_problem);
-        if (this->verbose()) { impl_->belos_solver->getCurrentParameters()->print(); }
+        impl_->amesos2_solver = impl_->amesos2_factory.create( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
+        impl_->amesos2_solver->setProblem(impl_->linear_problem);
+        if (this->verbose()) { impl_->amesos2_solver->getCurrentParameters()->print(); }
         
         return true;
     }
@@ -241,10 +240,10 @@ namespace utopia {
     bool Amesos2Solver<Matrix, Vector, TRILINOS>::set_problem(Matrix &A)
     {
         impl_->linear_problem->setProblem();
-        impl_->belos_solver = impl_->belos_factory.create( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
+        impl_->amesos2_solver = impl_->amesos2_factory.create( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
         set_preconditioner(); //(A);
-        impl_->belos_solver->setProblem(impl_->linear_problem);
-        if (this->verbose()) { impl_->belos_solver->getCurrentParameters()->print(); }
+        impl_->amesos2_solver->setProblem(impl_->linear_problem);
+        if (this->verbose()) { impl_->amesos2_solver->getCurrentParameters()->print(); }
         return true;
     }
     
