@@ -28,6 +28,10 @@ target_link_libraries(
 	utopia_fe_wear
 )
 
+# if(TARGET utopia_fe_intrepid2)
+	target_link_libraries(utopia_fe_tests utopia_fe_intrepid2)
+# endif()
+
 target_include_directories(utopia_fe_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/simulations) 
 set_utopia_compiler_features(utopia_fe_tests)
 

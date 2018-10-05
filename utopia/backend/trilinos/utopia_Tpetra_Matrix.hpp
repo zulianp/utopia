@@ -329,7 +329,6 @@ namespace utopia {
 
         inline rcp_crs_mat_type &implementation_ptr()
         {
-            assert(!mat_.is_null());
             return mat_;
         }
 
