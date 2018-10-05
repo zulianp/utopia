@@ -2,12 +2,8 @@
 #define UTOPIA_EACH_PARALLEL_HPP 
 
 #include "utopia_ForwardDeclarations.hpp"
-
 #include "utopia_Base.hpp"
-
 #include "utopia_Each.hpp"
-
-
 #include <Tpetra_Core.hpp>
 // This is the only header file you need to include for the "core"
 // part of Kokkos.  That includes Kokkos::View, Kokkos::parallel_*,
