@@ -47,9 +47,11 @@ namespace utopia {
 					for(auto k = r.begin(); k < r.end(); k += 2, ++j) {
 						I.set(k, j, 1.);
 
-						if(j + 1 < n_coarse) {
-							I.set(k + 1, j, 0.5);
-							I.set(k + 1, j + 1, 0.5);
+						auto kp1 = k + 1;
+
+						if(r.inside(kp1)) {
+							I.set(kp1, j, 0.5);
+							I.set(kp1, j + 1, 0.5);
 						}
 					}
 				}

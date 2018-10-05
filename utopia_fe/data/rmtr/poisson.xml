@@ -34,6 +34,6 @@
 	<n-levels>2</n-levels>
 
 	<verbose>true</verbose>
-	<use-newton>true</use-newton>
+	<!-- <use-newton>true</use-newton> -->
 
 </rmtr-app>

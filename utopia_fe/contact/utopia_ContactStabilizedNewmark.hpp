@@ -2,6 +2,7 @@
 #define UTOPIA_CONTACT_STABILIZED_NEWMARK_HPP
 
 
+#include "utopia_libmesh_Types.hpp"
 #include "utopia_fe_base.hpp"
 
 #ifndef WITH_TRILINOS_ALGEBRA

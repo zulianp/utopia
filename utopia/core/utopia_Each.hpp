@@ -17,6 +17,11 @@ namespace utopia {
 		inline static void apply_read(const Tensor &v, Fun fun)
 		{
 			Range r = range(v);
+
+			if(r.empty()) {
+				return;
+			}
+
 			Read<Tensor> read_lock(v);
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
@@ -28,6 +33,11 @@ namespace utopia {
 		inline static void apply_write(Tensor &v, Fun fun)
 		{
 			Range r = range(v);
+
+			if(r.empty()) {
+				return;
+			}
+
 			Write<Tensor> write_lock(v);
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
@@ -41,6 +51,11 @@ namespace utopia {
 			assert(&in != &out && "in and out cannot be the same object");
 			
 			Range r = range(in);
+			
+			if(r.empty()) {
+				return;
+			}
+
 			out = zeros(size(in));
 
 			Read<Tensor>  read_lock(in);
@@ -59,8 +74,12 @@ namespace utopia {
 		inline static void apply_read(const Tensor &m, Fun fun)
 		{
 			Range r = row_range(m);
-			Size s = size(m);
 
+			if(r.empty()) {
+				return;
+			}
+
+			Size s = size(m);
 			Read<Tensor> read_lock(m);
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
@@ -74,8 +93,12 @@ namespace utopia {
 		inline static void apply_write(Tensor &m, Fun fun)
 		{
 			Range r = row_range(m);
-			Size s = size(m);
+			
+			if(r.empty()) {
+				return;
+			}
 
+			Size s = size(m);
 			Write<Tensor> write_lock(m);
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
@@ -93,6 +116,11 @@ namespace utopia {
 		inline static void apply_read(const Tensor &m, Fun fun)
 		{
 			Range r = row_range(m);
+			
+			if(r.empty()) {
+				return;
+			}
+
 			for(auto i = r.begin(); i != r.end(); ++i) {
 				RowView<const Tensor> row_view(m, i);
 				auto n_values = row_view.n_values();

@@ -1070,7 +1070,25 @@ utopia_test_assert(approxeq(two, actual_max));
         utopia_test_assert(approxeq(n * mpi_world_size(), s));
     }
 
+    void petsc_transform()
+    {
+        DSMatrixd P;
 
+        const std::string folder =  Utopia::instance().get("data_path") + "/laplace/matrices_for_petsc";
+        bool ok = read(folder + "/I_2", P); utopia_test_assert(ok);
+
+
+        double sum_P = sum(P);
+        P = transpose(P);
+
+        each_apply(P, [](const double value) -> double {
+            return value * 2.;
+        });
+
+        double sum_P_2 = sum(P);
+
+        utopia_test_assert(approxeq(sum_P * 2., sum_P_2));
+    }
 
     #endif //WITH_PETSC;
 
@@ -1121,6 +1139,7 @@ UTOPIA_RUN_TEST(petsc_matrix_composition);
         UTOPIA_RUN_TEST(petsc_tensor_reduction);
         UTOPIA_RUN_TEST(petsc_precond);
         UTOPIA_RUN_TEST(petsc_binary_min_max);
+        UTOPIA_RUN_TEST(petsc_transform);
 
         //serial tests
 #ifdef PETSC_HAVE_MUMPS

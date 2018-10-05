@@ -1,3 +1,4 @@
+#include "libmesh/fem_context.h"
 #include "utopia_NormalTangentialCoordinateSystem.hpp"
 
 #include "libmesh/mesh_inserter_iterator.h"
@@ -7,7 +8,6 @@
 #include "libmesh/serial_mesh.h"
 #include "libmesh/fe.h"
 #include "libmesh/fe_interface.h"
-#include "libmesh/fem_context.h"
 #include "libmesh/libmesh.h"
 #include "libmesh/dof_map.h"
 #include "libmesh/quadrature_gauss.h"

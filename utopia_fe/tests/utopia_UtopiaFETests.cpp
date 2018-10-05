@@ -1,3 +1,4 @@
+#include "utopia_libmesh.hpp"
 #include "utopia_UtopiaFETests.hpp"
 #include "utopia_SemigeometricMultigridTest.hpp"
 #include "utopia_FormEvalTest.hpp"

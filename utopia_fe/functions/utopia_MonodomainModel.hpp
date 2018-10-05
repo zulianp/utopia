@@ -1,6 +1,7 @@
 #ifndef UTOPIA_MONODOMAIN_MODEL_HPP
 #define UTOPIA_MONODOMAIN_MODEL_HPP
 
+#include "utopia_libmesh_Types.hpp"
 #include "utopia.hpp"
 #include "utopia_fe_core.hpp"
 #include "utopia_libmesh_NonLinearFEFunction.hpp"

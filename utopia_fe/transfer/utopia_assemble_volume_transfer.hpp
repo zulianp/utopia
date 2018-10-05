@@ -5,9 +5,10 @@
 #include <utility>
 #include <memory>
 
+#include "Eigen/Core"
+#include "libmesh/libmesh_common.h"
 #include "utopia.hpp"
 #include "utopia_fe_base.hpp"
-#include "libmesh/libmesh_common.h"
 
 //forward decl
 namespace moonolith {

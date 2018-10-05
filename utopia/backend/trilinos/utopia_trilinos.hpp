@@ -30,6 +30,7 @@
 
 #include "utopia_trilinos_Eval_Factory.hpp"
 #include "utopia_trilinos_Eval_RAP.hpp"
+#include "utopia_trilinos_Each.hpp"
 
 #endif //WITH_TRILINOS
 #endif //UTOPIA_TRILINOS_HPP

@@ -1,7 +1,6 @@
-
+#include "MortarAssemble.hpp"
 #include <libmesh/fe.h>
 #include "utopia_triangulate.hpp"
-#include "MortarAssemble.hpp"
 #include "utopia_Polygon.hpp"
 #include "utopia_intersector.hpp"
 #include "utopia_libmesh_Utils.hpp"

@@ -1,8 +1,8 @@
+#include "utopia_libmesh.hpp"
 #include "utopia_GeometryTest.hpp"
 
 #include "utopia_NormalTangentialCoordinateSystem.hpp"
 
-#include "utopia_libmesh.hpp"
 
 #include <libmesh/const_function.h>
 #include <libmesh/petsc_vector.h>

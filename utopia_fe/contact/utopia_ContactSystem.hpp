@@ -1,8 +1,9 @@
 #ifndef UTOPIA_CONTACT_SYSTEM_HPP
 #define UTOPIA_CONTACT_SYSTEM_HPP 
 
-#include "utopia_Mechanics.hpp"
+#include "utopia_libmesh_Types.hpp"
 #include "utopia_Contact.hpp"
+#include "utopia_Mechanics.hpp"
 #include "utopia.hpp"
 
 #include <memory>

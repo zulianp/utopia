@@ -1,3 +1,4 @@
+#include "utopia_libmesh.hpp"
 #include "utopia_WearSimulation.hpp"
 
 
@@ -5,7 +6,6 @@
 
 #ifndef WITH_TRILINOS_ALGEBRA
 
-#include "utopia_libmesh.hpp"
 #include "utopia_LameeParameters.hpp"
 #include "utopia_ElasticMaterial.hpp"
 #include "utopia_LinearElasticity.hpp"

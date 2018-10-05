@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "utopia_libmesh.hpp"
 #include "par_moonolith.hpp"
 #include "utopia.hpp"
 
@@ -40,6 +41,7 @@
 #include "utopia_FractureFlowApp.hpp"
 #include "utopia_RMTRApp.hpp"
 #include "utopia_EnergyAssemblyTest.hpp"
+#include "utopia_Intrepid2Test.hpp"
 
 #include <functional>
 
@@ -94,6 +96,7 @@ int main(int argc, char *argv[])
 	    runners["vol2surf"] = run_volume_to_surface_transfer_test;
 	    runners["interp"] = run_volume_interpolation_test;
 	    runners["energy"] = run_energy_test;
+	    runners["intrepid2"] = run_intrepid2_test;
 	    // runners["coupled"] = run_coupled_equation_test;
 	    //benchmarks
 	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;
