@@ -69,7 +69,7 @@ namespace utopia {
 	{
 	    m_utopia_warning_once("> TpetraVector::sum is hand-coded");
 
-	    auto data = implementation().getLocalView<host_memory_space> ();
+	    auto data = implementation().getLocalView<Kokkos::HostSpace> ();
 
        // double ret_temp = 0;
         double ret_global = 0.;
@@ -78,36 +78,16 @@ namespace utopia {
             ret_temp += data(i,0);
         },ret_global);
 
-//        double ret = ret_temp;
-//        auto &comm = *communicator();
-//
-//
-//        Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
 	    return ret_global;
 	}
 
 	TpetraVector::Scalar TpetraVector::min() const
 	{
 	    m_utopia_warning_once("> TpetraVector::min is hand-coded");
-//
-//        auto data = implementation().getData();
-//
-//        Scalar ret_temp = data[0];
-//
-//        for(auto i = 1; i < data.size(); ++i) {
-//            ret_temp = std::min(data[i], ret_temp);
-//        }
-//
-//        double ret = ret_temp;
-//        auto &comm = *communicator();
-//        double ret_global = 0.;
-//
-//        Teuchos::reduceAll(comm, Teuchos::REDUCE_MIN, 1, &ret, &ret_global);
-//        return ret_global;
         
         Scalar min;
 
-        auto data = implementation().getLocalView<host_memory_space> ();
+        auto data = implementation().getLocalView<Kokkos::HostSpace> ();
 
         Kokkos::Experimental::Min<Scalar> tMinReducer(min);
 
@@ -123,25 +103,11 @@ namespace utopia {
     TpetraVector::Scalar TpetraVector::max() const
     {
         m_utopia_warning_once("> TpetraVector::min is hand-coded");
-        //
-        //        auto data = implementation().getData();
-        //
-        //        Scalar ret_temp = data[0];
-        //
-        //        for(auto i = 1; i < data.size(); ++i) {
-        //            ret_temp = std::min(data[i], ret_temp);
-        //        }
-        //
-        //        double ret = ret_temp;
-        //        auto &comm = *communicator();
-        //        double ret_global = 0.;
 
-        //        Teuchos::reduceAll(comm, Teuchos::REDUCE_MIN, 1, &ret, &ret_global);
-        //        return ret_global;
         
         Scalar max;
 
-        auto data = implementation().getLocalView<host_memory_space> ();
+        auto data = implementation().getLocalView<Kokkos::HostSpace> ();
 
         Kokkos::Experimental::Max<Scalar> tMaxReducer(max);
 
@@ -155,68 +121,33 @@ namespace utopia {
     }
 
  
-    // TpetraVector TpetraVector::max(const TpetraVector &rhs, TpetraVector &lhs) const
-    // {
-    //     m_utopia_warning_once("> TpetraVector::min is hand-coded");
-        
-    //     auto k_rhs = rhs.implementation().getLocalView<host_memory_space> ();
-    //     auto k_lhs = lhs.implementation().getLocalView<host_memory_space> ();
-        
-    //     TpetraVector result;
-
-    //     assert(!empty());
-    //     assert(!rhs.empty());
-    //     assert(rhs.size() == size());
-    //     assert(rhs.local_size() == local_size());
-
-    //     if(result.empty() || result.size() != rhs.size()){
-    //         result.init(rhs.implementation().getMap());
-    //     } 
-
-    //     auto k_res = result.implementation().getLocalView<host_memory_space> ();
-
-    //     Kokkos::parallel_for (k_lhs.extent(0), KOKKOS_LAMBDA (const int i) {
-
-    //     	if(k_lhs(i,0) > k_rhs(i,0)){
-
-    //     		k_res(i,0)= k_lhs(i,0);
-
-    //     	}
-
-    //     	else{
-
-    //     		k_res(i,0)= k_lhs(i,0);
-
-    //     	}
-    //     });
-    
-    //    Tpetra::Vector<> x(result.implementation(),k_res);
-
-    //     return k_res;
-        
-    // }
 
 	bool TpetraVector::is_nan_or_inf() const
 	{
+		
 		m_utopia_warning_once("> TpetraVector::is_nan_or_inf is hand-coded");
 
-		auto data = implementation().getData();
+		int ret=0;
 
-		int ret = 0;
+		auto data = implementation().getLocalView<Kokkos::HostSpace> ();
 
-		for(auto i = 0; i < data.size(); ++i) {
-		    if(std::isnan(data[i]) || std::isinf(data[i])) {
-		    	ret = 1;
-		    	break;
-		    }
-		}
+	    Kokkos::parallel_reduce(data.extent(0), KOKKOS_LAMBDA (const int i, int&err) {
+	    	if(Kokkos::Details::ArithTraits<float>::isNan(data(0,i)) || Kokkos::Details::ArithTraits<float>::isInf(data(0,i))){
+				err=1;
+				exit(1);}
+	        }, ret);
+
 
 		auto &comm = *communicator();
 		int ret_global = 0;
 
 		Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
 		return ret_global;
+
 	}
+
+
+
 
 	void TpetraVector::ghosted(
 		const rcp_comm_type &comm, 

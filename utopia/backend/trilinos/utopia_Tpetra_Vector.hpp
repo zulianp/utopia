@@ -16,7 +16,7 @@
 // and atomic updates.
 #include <Kokkos_Core.hpp>
 #include <memory>
-using host_memory_space = Kokkos::HostSpace;
+
 
 namespace utopia {
 
@@ -220,28 +220,7 @@ namespace utopia {
                     assert(local_index < n);
                     out_data[i] = data[local_index];
                 }
-            // } else {
-            //     /////////////////////////////////////////////////
 
-            //     std::vector<global_ordinal_type> tpetra_index;
-            //     tpetra_index.reserve(index.size());
-
-            //     for(auto i : index) {
-            //         tpetra_index.push_back(i);
-            //     }
-
-            //     const Teuchos::ArrayView<const global_ordinal_type>
-            //        index_view(tpetra_index);
-
-            //      auto import_map = Teuchos::rcp(new map_type(global_size, index_view, 0, comm));
-
-            //     Tpetra::Import<
-            //         local_ordinal_type,
-            //         global_ordinal_type,
-            //         vector_type::node_type> importer(map, import_map);
-
-            //     implementation().doImport(out.implementation(), importer, Tpetra::INSERT);
-            // }
         }
 
         inline Teuchos::ArrayRCP<const Scalar> get_read_only_data() const
@@ -354,15 +333,23 @@ namespace utopia {
         template<typename Op>
         inline void apply(const Op op)
         {
-            read_and_write_lock();
+            // read_and_write_lock();
 
-            assert(write_data_.size() > 0);
+            // assert(write_data_.size() > 0);
 
-            for(auto i = 0; i < write_data_.size(); ++i) {
-                write_data_[i] = op.apply(write_data_[i]);
-            }
+            auto k_res = this->implementation().getLocalView<Kokkos::HostSpace> ();
 
-            read_and_write_unlock();
+            assert(k_res.extent(0)>0);
+
+            Kokkos::parallel_for (k_res.extent(0), KOKKOS_LAMBDA (const int i) {
+                 k_res(i,0) =op.apply(k_res(i,0));
+             });
+
+            // for(auto i = 0; i < write_data_.size(); ++i) {
+            //     write_data_[i] = op.apply(write_data_[i]);
+            // }
+
+            // read_and_write_unlock();
         }
 
         void reciprocal(TpetraVector &result) const
@@ -391,9 +378,9 @@ namespace utopia {
             } 
 
 
-            auto k_rhs = rhs.implementation().getLocalView<host_memory_space> ();
-            auto k_lhs = this->implementation().getLocalView<host_memory_space> ();
-            auto k_res = result.implementation().getLocalView<host_memory_space> ();
+            auto k_rhs = rhs.implementation().getLocalView<Kokkos::HostSpace> ();
+            auto k_lhs = this->implementation().getLocalView<Kokkos::HostSpace> ();
+            auto k_res = result.implementation().getLocalView<Kokkos::HostSpace> ();
             
 
              Kokkos::parallel_for (k_lhs.extent(0), KOKKOS_LAMBDA (const int i) {
