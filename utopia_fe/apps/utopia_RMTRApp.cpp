@@ -407,7 +407,7 @@ namespace utopia {
         auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, GALERKIN> >(coarse_solver, smoother);
         rmtr->set_transfer_operators(transfers);
 
-        rmtr->max_it(1000);
+        rmtr->max_it(5);
         rmtr->max_coarse_it(1);
         rmtr->max_smoothing_it(1);
         rmtr->delta0(1000);
