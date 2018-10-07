@@ -187,14 +187,14 @@ namespace utopia
 
 
         	// auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
-        	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
+        	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
-	        rmtr->max_it(1000);
+	        rmtr->max_it(6);
 	        rmtr->max_coarse_it(1);
 	        rmtr->max_smoothing_it(1);
 	        rmtr->delta0(1);
-	        rmtr->atol(1e-6);
+	        rmtr->atol(1e-5);
 	        rmtr->rtol(1e-10);
 	        rmtr->set_grad_smoothess_termination(0.000001);
 	        rmtr->set_eps_grad_termination(1e-7);
@@ -326,7 +326,7 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("NonlinearMultilevelSolverTest");
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(4, true, false).run();
+			NonlinearBratuSolverTest(3, true, false).run();
 		#endif
 		UTOPIA_UNIT_TEST_END("NonlinearMultilevelSolverTest");
 

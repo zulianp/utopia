@@ -1131,6 +1131,20 @@ namespace utopia {
         PetscScalar result_min2 = dot(x1, x2)-dot(x1, x3);         
         utopia_test_assert(approxeq(result_min1, result_min2));        
 
+
+        DSMatrixd B = diag(DVectord(values(n,1.0)));
+        PetscScalar pred = -1.0 * dot(x1, x2) - 0.5 * dot(B * x3, x4);
+
+        PetscScalar pred1 = dot(x1, x2); 
+        PetscScalar pred2 = dot(B * x3, x4);
+        PetscScalar pred_sum = -1.0 * pred1 - 0.5 * pred2; 
+        utopia_test_assert(approxeq(pred, pred_sum));  
+
+
+        // PetscScalar energy =  dot(x1, x2) + 0.5 * dot(B * x3, x4); 
+        // std::cout<<"energy: "<< energy << "  \n"; 
+
+
     }
 
 
@@ -1177,8 +1191,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_precond);
         UTOPIA_RUN_TEST(petsc_binary_min_max);
         UTOPIA_RUN_TEST(petsc_dot_test); 
-
-       UTOPIA_RUN_TEST(petsc_transform);
+        UTOPIA_RUN_TEST(petsc_transform);
 
         //serial tests
 #ifdef PETSC_HAVE_MUMPS
