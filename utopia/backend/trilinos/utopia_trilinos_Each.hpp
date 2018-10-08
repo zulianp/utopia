@@ -15,10 +15,7 @@ namespace utopia {
 		}
 
 		auto impl = raw_type(mat);
-		auto col_map = impl->getColMap();
-		auto row_map = impl->getRowMap();
 		auto local_mat = impl->getLocalMatrix();
-
 		auto n = local_mat.numRows();
 
 		for(decltype(n) i = 0; i < n; ++i) {
@@ -39,8 +36,8 @@ namespace utopia {
 		if(rr.empty()) return;
 
 		auto impl = raw_type(mat);
-		auto col_map = impl->getColMap();
-		auto row_map = impl->getRowMap();
+		auto col_map   = impl->getColMap()->getLocalMap();
+		auto row_map   = impl->getRowMap()->getLocalMap();
 		auto local_mat = impl->getLocalMatrix();
 
 		auto n = local_mat.numRows();
@@ -51,8 +48,8 @@ namespace utopia {
 			
 			for(decltype(n_values) k = 0; k < n_values; ++k) {
 				auto &val = row.value(k);
-				const auto global_row = row_map->getGlobalElement(i);
-				const auto global_col = col_map->getGlobalElement(row.colidx(k));
+				const auto global_row = row_map.getGlobalElement(i);
+				const auto global_col = col_map.getGlobalElement(row.colidx(k));
 				
 				val = fun(global_row, global_col, val);
 			}

@@ -73,7 +73,7 @@ namespace utopia {
                  auto row = local_mat.row(row_ind);
                  auto n_values = row.length;
 
-                 Kokkos::parallel_for( Kokkos::TeamThreadRange(team_member, n_values), [&] (const int k) {
+                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&] (const int k) {
                      auto &val    = row.value(k);
                      auto col_ind = row.colidx(k);
                      val = fun(
@@ -109,7 +109,7 @@ namespace utopia {
                 auto row = local_mat.row(row_ind);
                 auto n_values = row.length;
 
-                Kokkos::parallel_for( Kokkos::TeamThreadRange(team_member, n_values), [&] (const int k) {
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&] (const int k) {
                     auto &val    = row.value(k);
                     auto col_ind = row.colidx(k);
                     fun(

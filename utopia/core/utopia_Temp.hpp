@@ -56,10 +56,6 @@ namespace utopia  {
             }
         });
 
-        if(index.empty()) {
-            return;
-        }
-
         set_zero_rows(w, index, diag);
     }
 
