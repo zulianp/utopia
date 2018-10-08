@@ -4,6 +4,7 @@
 #include "utopia_Config.hpp"
 
 #cmakedefine WITH_BOOST
+#cmakedefine WITH_INTREPID2
 
 #ifdef WITH_TRILINOS
 #cmakedefine WITH_TRILINOS_ALGEBRA

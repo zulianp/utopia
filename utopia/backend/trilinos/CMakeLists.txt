@@ -50,6 +50,7 @@ if(TRILINOS_FOUND)
 	endif()
 
     set(WITH_TRILINOS TRUE)
+  
     if(KOKKOS_CUDA_HPP)
         set(KOKKOS_CUDA TRUE)
     endif()
@@ -57,6 +58,11 @@ if(TRILINOS_FOUND)
         set(KOKKOS_OPENMP TRUE)
     endif()
 
+    find_package(TpetraExt)
+
+    if(TPETRAEXT_FOUND)
+ 	   set(WITH_TPETRAEXT TRUE PARENT_SCOPE)
+    endif()
 else()
     message(WARNING "[Warning] Trilinos not found")
     set(WITH_TRILINOS FALSE)
@@ -73,6 +79,7 @@ if(TRILINOS_FOUND)
 		solvers
 		solvers/linear
 		preconditioners
+		kokkos
 		)
 
 	find_project_files(CMAKE_CURRENT_SOURCE_DIR TRILINOS_MODULES LOCAL_HEADERS LOCAL_SOURCES)

@@ -6,6 +6,7 @@
 #cmakedefine WITH_PETSC
 #cmakedefine WITH_SLEPC
 #cmakedefine WITH_TRILINOS
+#cmakedefine WITH_TPETRAEXT
 #cmakedefine KOKKOS_CUDA
 #cmakedefine KOKKOS_OPENMP
 #cmakedefine WITH_CPP11

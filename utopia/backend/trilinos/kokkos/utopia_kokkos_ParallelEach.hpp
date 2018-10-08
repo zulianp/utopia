@@ -1,0 +1,78 @@
+#ifndef UTOPIA_KOKKOS_PARALLEL_EACH_HPP
+#define UTOPIA_KOKKOS_PARALLEL_EACH_HPP
+
+#include "utopia_ForwardDeclarations.hpp"
+#include "utopia_Base.hpp"
+#include "utopia_Each.hpp"
+#include "utopia_trilinos_Types.hpp"
+#include "utopia_ParallelEach.hpp"
+
+#include <Kokkos_Core.hpp>
+
+#include <memory>
+
+namespace utopia {
+
+    // template<class Tensor, int Order = Tensor::Order, int FILL_TYPE = Tensor::FILL_TYPE>
+    // class ParallelEach {};
+    
+    template<int FILL_TYPE>
+    class ParallelEach<TVectord, 1, FILL_TYPE>{
+    public:
+        template<class Fun>
+        inline static void apply_write(const TVectord &v, Fun fun)
+        {
+            using ExecutionSpaceT = TVectord::Implementation::vector_type::execution_space;
+
+            auto k_v = raw_type(v)->getLocalView<ExecutionSpaceT>();
+            auto offset = range(v).begin();
+            Kokkos::parallel_for(k_v.extent(0), KOKKOS_LAMBDA(const int i) {
+                k_v(i, 0) = fun(offset + i);
+            });
+        }
+        
+        template<class Fun>
+        inline static void apply_read(const TVectord &v, Fun fun)
+        {
+            using ExecutionSpaceT = TVectord::Implementation::vector_type::execution_space;
+
+            auto k_v = raw_type(v)->getLocalView<ExecutionSpaceT>();
+            auto offset = range(v).begin();
+            Kokkos::parallel_for(k_v.extent(0), KOKKOS_LAMBDA(const int i) {
+                fun(offset + i, k_v(i, 0));
+            });
+        }
+    };
+    
+    template<class Fun>
+    inline void parallel_each_apply(TSMatrixd &mat, Fun fun) 
+    {   
+        typedef Kokkos::TeamPolicy<>               team_policy;
+        typedef Kokkos::TeamPolicy<>::member_type  member_type;
+
+        auto r = row_range(mat);
+
+        if(r.empty()) {
+            return;
+        }
+
+        auto impl = raw_type(mat);
+        auto local_mat = impl->getLocalMatrix();
+
+        auto n = local_mat.numRows();
+
+        Kokkos::parallel_for(team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+            const int j = team_member.league_rank();
+            auto row = local_mat.row(j);
+            auto n_values = row.length;
+
+            Kokkos::parallel_for( Kokkos::TeamThreadRange(team_member, n_values), [&] (const int i) {
+                auto &val = row.value(i);
+                val = fun(val);
+            });
+        });
+    }
+
+}
+
+#endif //UTOPIA_KOKKOS_PARALLEL_EACH_HPP

@@ -34,6 +34,7 @@
 #include "utopia_Traits.hpp"
 #include "utopia_Wrapper.hpp"
 #include "utopia_Each.hpp"
+#include "utopia_ParallelEach.hpp"
 #include "utopia_RowView.hpp"
 #include "utopia_Unfold.hpp"
 #include "utopia_TreeProperties.hpp"

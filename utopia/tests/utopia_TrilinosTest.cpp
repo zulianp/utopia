@@ -539,6 +539,22 @@ namespace utopia {
         utopia_test_assert(approxeq(diff, 0.));
 #endif //WITH_PETSC
     }
+
+    void test_rap(const int n, const int m)
+    {
+        TSMatrixd A = local_sparse(n, n, 3);
+        assemble_laplacian_1D(A);
+        
+        TSMatrixd P;
+        build_rectangular_matrix(n, m, P);
+        
+        TSMatrixd R = transpose(P);
+
+
+        TSMatrixd res = R * A * P;
+
+        // disp(res);
+    }
     
     void trilinos_ptap_square_mat()
     {
@@ -549,6 +565,18 @@ namespace utopia {
     {
         //does not work in parallel
         test_ptap(10, 3);
+    }
+
+    void trilinos_rap_square_mat()
+    {
+        //does not work in parallel
+        test_rap(10, 10);
+    }
+
+    void trilinos_rap()
+    {
+        //does not work in parallel
+        test_rap(10, 10);
     }
     
     void trilinos_cg()
@@ -1412,6 +1440,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(trilinos_cg);
         UTOPIA_RUN_TEST(trilinos_ptap);
         ////////////////////////////////////////////
+
+        UTOPIA_RUN_TEST(trilinos_rap);
+        UTOPIA_RUN_TEST(trilinos_rap_square_mat);
         
 
 #ifdef HAVE_BELOS_TPETRA

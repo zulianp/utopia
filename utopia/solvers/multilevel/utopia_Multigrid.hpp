@@ -9,9 +9,12 @@
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_Level.hpp"
 #include "utopia_LinearMultiLevel.hpp"
-#include <ctime>
+
 
 #include "utopia_Recorder.hpp"
+
+#include <ctime>
+#include <cassert>
 
 namespace utopia
 {
@@ -236,7 +239,7 @@ namespace utopia
             Vector &c_I = memory.c_I[l];
             Vector &r_R = memory.r_R[l];
 
-            if(empty(c)) {
+            if(empty(c) || size(c) != size(r)) {
                 c = local_zeros(local_size(r).get(0));
             } else {
                 c.set(0.);

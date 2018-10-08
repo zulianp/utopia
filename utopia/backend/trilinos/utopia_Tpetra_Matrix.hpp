@@ -206,6 +206,10 @@ namespace utopia {
 
         inline Size local_size() const
         {
+            if(is_null()) {
+                return {0, 0};
+            }
+            
             assert(!implementation().getRowMap().is_null());
 
             if(implementation().getDomainMap().is_null()) {
@@ -329,7 +333,6 @@ namespace utopia {
 
         inline rcp_crs_mat_type &implementation_ptr()
         {
-            assert(!mat_.is_null());
             return mat_;
         }
 
