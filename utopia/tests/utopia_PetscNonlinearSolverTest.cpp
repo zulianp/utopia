@@ -56,7 +56,6 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
-		//	UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
 		}
 
 		void petsc_ngs_test()
@@ -708,45 +707,6 @@ namespace utopia
 			}
 		}
 
-
-
-		// void lbfgs_quasi_newton_test()
-		// {
-		// 	// because dense matrices can not be sum-up in parallel
-		// 	// if(mpi_world_size() > 1) return;
-
-		// 	std::cout<<"lbfgs_quasi_newton_test  \n"; 
-			
-		// 	SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
-
-		// 	Parameters params;
-		// 	params.atol(1e-9);
-		// 	params.rtol(1e-15);
-		// 	params.stol(1e-15);
-		// 	params.verbose(true);
-
-		// 	const auto m = 3; 
-			
-		// 	auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-
-		// 	auto hess_approx_BFGS   = std::make_shared<LBFGSB<DSMatrixd,  DVectord> >(m, linear_solver);
-
-
-	 //  		auto k = 15;
-
-
-
-	 //        DVectord v = values(k, 999); 
-	 //        DVectord y = values(k, 55); 
-	 //        DVectord s = values(k, 1); 
-
-	 //        hess_approx_BFGS->initialize(fun, v); 
-	 //        hess_approx_BFGS->update(s, y); 
-
-
-		// 	utopia_warning("Put new expressions to all backends.... ");
-				
-		// }
 
 		PetscNonlinearSolverTest()
 		: _n(100) { }

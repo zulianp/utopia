@@ -39,8 +39,6 @@ namespace utopia {
 			UTOPIA_RUN_TEST(dogleg_test);
 			UTOPIA_RUN_TEST(st_cg_test); 
 			UTOPIA_RUN_TEST(precond_st_cg_test); 
-			UTOPIA_RUN_TEST(quasi_newton_test);
-			UTOPIA_RUN_TEST(Quasi_TR_test); 
 		}
 
 		class EmptyLSFun : public LeastSquaresFunction<Matrix, Vector> {
@@ -381,85 +379,6 @@ namespace utopia {
 				tr_solver.verbose(false);
 				auto cg = std::make_shared<ConjugateGradient<Matrix, Vector> >();
 				tr_solver.set_linear_solver(cg);				
-				tr_solver.solve(rosenbrock, x0);
-
-				utopia_test_assert(approxeq(expected_rosenbrock, x0));
-			}
-		}
-
-		void quasi_newton_test()
-		{
-			// because dense matrices can not be sum-up in parallel
-			if(mpi_world_size() > 1) return;
-			
-			Parameters params;
-			params.atol(1e-9);
-			params.rtol(1e-15);
-			params.stol(1e-15);
-			params.verbose(false);
-			
-			auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector> >();
-			auto hess_approx_BFGS   = std::make_shared<BFGS<Matrix, Vector> >();
-
-
-			QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, lsolver);
-			nlsolver.set_parameters(params);
-
-			auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
-			nlsolver.set_line_search_strategy(line_search);
-			
-			
-			SimpleQuadraticFunction<Matrix, Vector> fun;
-			
-			Vector x = values(_n, 2.);
-			Vector expected_1 = zeros(x.size());
-			
-
-			nlsolver.solve(fun, x);
-			utopia_test_assert(approxeq(expected_1, x));
-			
-			TestFunctionND_1<Matrix, Vector> fun2(x.size().get(0));
-			x = values(_n, 2.0);
-			Vector expected_2 = values(x.size().get(0), 0.468919);
-
-			nlsolver.solve(fun2, x);
-			utopia_test_assert(approxeq(expected_2, x));
-
-			Rosenbrock<Matrix, Vector> rosenbrock;
-			Vector x0 = values(2, 0.5);
-			nlsolver.solve(rosenbrock, x0);
-			Vector expected_rosenbrock = values(2, 1.0);
-
-			utopia_test_assert(approxeq(x0, expected_rosenbrock));
-		}
-
-
-		void Quasi_TR_test()
-		{
-			// rosenbrock test
-			if(mpi_world_size() == 1)
-			{
-				Rosenbrock<Matrix, Vector> rosenbrock;
-				Vector expected_rosenbrock = values(2, 1);
-
-				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
-				subproblem->atol(1e-10);
-
-				Vector x0 = values(2, 2.0);
-
-				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
-				tr_solver.atol(1e-6); 
-				tr_solver.rtol(1e-9);
-
-				auto hes_approx   = std::make_shared<BFGS<Matrix, Vector> >();
-				hes_approx->set_update_hessian(true); 
-
-				tr_solver.set_hessian_approximation_strategy(hes_approx);
-
-				tr_solver.max_it(100); 
-				tr_solver.verbose(false);
-				tr_solver.delta0(1); 
 				tr_solver.solve(rosenbrock, x0);
 
 				utopia_test_assert(approxeq(expected_rosenbrock, x0));
