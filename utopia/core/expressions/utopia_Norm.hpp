@@ -132,5 +132,9 @@ namespace utopia {
         return s;
     }
 
+    //Derived types
+    template<class Left, class Right, int NormType>
+    using Distance = utopia::Norm<Binary<Left, Right, Minus>, NormType>;
+
 }
 #endif //UTOPIA_UTOPIA_NORM_HPP
