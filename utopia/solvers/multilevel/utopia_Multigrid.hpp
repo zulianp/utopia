@@ -9,9 +9,12 @@
 #include "utopia_ConvergenceReason.hpp"
 #include "utopia_Level.hpp"
 #include "utopia_LinearMultiLevel.hpp"
-#include <ctime>
+
 
 #include "utopia_Recorder.hpp"
+
+#include <ctime>
+#include <cassert>
 
 namespace utopia
 {

@@ -1,9 +1,12 @@
 #include "utopia_Tpetra_Vector.hpp"
 #include "utopia_Logger.hpp"
 #include "utopia_Instance.hpp"
+#include "utopia_kokkos_Eval_Reduce.hpp"
 
 #include <Tpetra_CrsMatrix_decl.hpp>
 #include <MatrixMarket_Tpetra.hpp>
+
+#include <Kokkos_Core.hpp>
 
 #include <cmath>
 
@@ -70,79 +73,34 @@ namespace utopia {
 
 	TpetraVector::Scalar TpetraVector::sum() const
 	{
-	    m_utopia_warning_once("> TpetraVector::sum is hand-coded");
-
-	    auto data = implementation().getData();
-
-	    Scalar ret_temp = 0.;
-
-	    for(auto i = 0; i < data.size(); ++i) {
-	        ret_temp += data[i];
-	    }
-
-	    double ret = ret_temp;
+	    Scalar ret = KokkosEvalReduce<TpetraVector, Plus>::eval(*this, Plus(), Scalar(0.));
 	    auto &comm = *communicator();
-	    double ret_global = 0.;
-
+	    Scalar ret_global = 0.;
 	    Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
 	    return ret_global;
 	}
 
 	TpetraVector::Scalar TpetraVector::min() const
 	{
-	    m_utopia_warning_once("> TpetraVector::min is hand-coded");
-
-	    auto data = implementation().getData();
-
-	    Scalar ret_temp = data[0];
-
-	    for(auto i = 1; i < data.size(); ++i) {
-	        ret_temp = std::min(data[i], ret_temp);
-	    }
-
-	    double ret = ret_temp;
+	    Scalar ret = KokkosEvalReduce<TpetraVector, Min>::eval(*this, Min(), std::numeric_limits<Scalar>::max());
 	    auto &comm = *communicator();
-	    double ret_global = 0.;
-
+	    Scalar ret_global = 0.;
 	    Teuchos::reduceAll(comm, Teuchos::REDUCE_MIN, 1, &ret, &ret_global);
 	    return ret_global;
 	}
 
 	TpetraVector::Scalar TpetraVector::max() const
 	{
-	    m_utopia_warning_once("> TpetraVector::max is hand-coded");
-
-	    auto data = implementation().getData();
-
-	    Scalar ret_temp = data[0];
-
-	    for(auto i = 1; i < data.size(); ++i) {
-	        ret_temp = std::max(data[i], ret_temp);
-	    }
-
-	    double ret = ret_temp;
-	    auto &comm = *communicator();
-	    double ret_global = 0.;
-
+	  	Scalar ret = KokkosEvalReduce<TpetraVector, Max>::eval(*this, Max(), -std::numeric_limits<Scalar>::max());
+	  	auto &comm = *communicator();
+	  	Scalar ret_global = 0.;
 	    Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
 	    return ret_global;
 	}
 
 	bool TpetraVector::is_nan_or_inf() const
 	{
-		m_utopia_warning_once("> TpetraVector::is_nan_or_inf is hand-coded");
-
-		auto data = implementation().getData();
-
-		int ret = 0;
-
-		for(auto i = 0; i < data.size(); ++i) {
-		    if(std::isnan(data[i]) || std::isinf(data[i])) {
-		    	ret = 1;
-		    	break;
-		    }
-		}
-
+		int ret = KokkosEvalReduce<TpetraVector, IsNaNOrInf>::eval(*this, IsNaNOrInf(), Scalar(0));
 		auto &comm = *communicator();
 		int ret_global = 0;
 
