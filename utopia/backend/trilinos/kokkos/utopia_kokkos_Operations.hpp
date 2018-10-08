@@ -83,6 +83,18 @@ namespace utopia {
 	};
 
 	template<class Scalar>
+	class KokkosOp<Scalar, Reciprocal<Scalar>> {
+	public:
+		KokkosOp(const Reciprocal<Scalar> &in) : num_(in.numerator()) {}
+
+		KOKKOS_INLINE_FUNCTION Scalar apply(const Scalar &value) const {
+			return num_/value;
+		}
+
+		Scalar num_;
+	};
+
+	template<class Scalar>
 	class KokkosOp<Scalar, Pow2> {
 	public:
 		KokkosOp(const Pow2 &) {}
