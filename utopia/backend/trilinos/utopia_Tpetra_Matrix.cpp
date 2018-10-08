@@ -8,6 +8,11 @@
 
 #include <iterator>
 
+
+//FIXME 
+// - crs matrix has problematic behaviour when adding to off-procs entries once assembled in finite element assembly routines
+
+
 namespace utopia {
 
 	void TpetraMatrix::set(const GO &row, const GO &col, const Scalar &value)

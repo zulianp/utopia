@@ -10,6 +10,9 @@
 
 #include <cmath>
 
+//FIXME 
+// - ghosted vector has problematic behaviour e.g.: norm2(ghosted_vec) == norm2(offset_view(ghosted_vec)) which is wrong
+// maybe this can help at least for assembly #include <Tpetra_MultiVectorFiller.hpp> or FEMultiVector
 namespace utopia {
 
 	void TpetraVector::add_vector(
