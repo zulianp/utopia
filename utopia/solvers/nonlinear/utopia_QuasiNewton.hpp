@@ -137,7 +137,7 @@ namespace utopia
         }
         
         
-    private:
+    protected:
         Scalar alpha_;                                          /*!< Dumping parameter. */
         std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
         
