@@ -19,6 +19,7 @@
 #include "utopia_UITest.hpp"
 #include "utopia_M3ELinSolTest.hpp"
 #include "utopia_QPSolverTest.hpp"
+#include "utopia_trilinos_KokkosTest.hpp"
 
 namespace utopia
 {
@@ -31,6 +32,7 @@ namespace utopia
         runPetscTest();
         runBLASTest();
         runMiscTest();
+        run_kokkos_test();
         run_trilinos_test();
         run_tao_solver_test();
         run_petsc_cuda_test();
@@ -100,6 +102,8 @@ namespace utopia
                     runBLASTest();
                 else if (token == "misc")
                     runMiscTest();
+                else if (token == "kokkos")
+                    run_kokkos_test();
                 else if (token == "trilinos")
                     run_trilinos_test();
                 else if(token == "tao") {

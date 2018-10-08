@@ -263,6 +263,17 @@ namespace utopia {
             return max(left, right);
         }
     };
+
+    class IsNaNOrInf {
+    public:
+        std::string getClass() const { return "IsNaNOrInf"; }
+        template<typename T>
+        inline static T apply(const T &value) {
+            return std::isnan(value) || std::isinf(value);
+        }
+    };
+
+    
 }
 
 #endif //SIMMOD_utopia_OPERATORS_HPP
