@@ -66,10 +66,12 @@ namespace utopia {
         
         typedef Tpetra::MultiVector<SC, LO, GO, NT> MV;
         typedef Tpetra::Operator<SC, LO, GO, NT> OP;
+
+        typedef Tpetra::Vector<SC, LO, GO, NT> vec_type;
+        typedef Tpetra::CrsMatrix<SC, LO, GO, NT> matrix_type;
         
-        typedef Amesos2::LinearProblem<SC, MV, OP> problem_type;
-        typedef Amesos2::SolverManager<SC, MV, OP> solver_type;
-        
+        //typedef Amesos2::LinearProblem<SC, MV, OP> problem_type;
+        typedef Amesos2::Solver<matrix_type, vec_type, OP> solver_type;
 // #ifdef HAVE_AMESOS2_IFPACK2
         typedef Ifpack2::Preconditioner<SC, LO, GO, NT> ifpack_prec_type;
 // #endif //HAVE_AMESOS2_IFPACK
@@ -77,11 +79,8 @@ namespace utopia {
 // #ifdef HAVE_AMESOS2_MUELU
         typedef MueLu::TpetraOperator<SC, LO, GO, NT> muelu_prec_type;
 // #endif
-        
-        typedef Tpetra::Vector<SC, LO, GO, NT> vec_type;
-        typedef Tpetra::CrsMatrix<SC, LO, GO, NT> matrix_type;
-        
-        Teuchos::RCP<problem_type> linear_problem;
+                
+        //Teuchos::RCP<problem_type> linear_problem;
         Teuchos::RCP<Teuchos::ParameterList> param_list;
         //  auto& utopiaPL;// impl_->param_list->sublist("UTOPIA", true);
         Teuchos::RCP<solver_type> amesos2_solver;
@@ -221,22 +220,22 @@ namespace utopia {
         return false;
     }
     
-    template <typename Matrix, typename Vector>
-    bool Amesos2Solver<Matrix, Vector, TRILINOS>::set_problem()
-    {
-        impl_->linear_problem->setProblem();
-        impl_->amesos2_solver = impl_->amesos2_factory.create( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
-        impl_->amesos2_solver->setProblem(impl_->linear_problem);
-        if (this->verbose()) { impl_->amesos2_solver->getCurrentParameters()->print(); }
+    // template <typename Matrix, typename Vector>
+    // bool Amesos2Solver<Matrix, Vector, TRILINOS>::set_problem()
+    // {
+    //     impl_->linear_problem->setProblem();
+    //     impl_->amesos2_solver = impl_->amesos2_factory.create( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
+    //     impl_->amesos2_solver->setProblem(impl_->linear_problem);
+    //     if (this->verbose()) { impl_->amesos2_solver->getCurrentParameters()->print(); }
         
-        return true;
-    }
+    //     return true;
+    // }
     
     template <typename Matrix, typename Vector>
     bool Amesos2Solver<Matrix, Vector, TRILINOS>::set_problem(Matrix &A)
     {
-        impl_->linear_problem->setProblem();
-        impl_->amesos2_solver = impl_->amesos2_factory.create( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
+        // impl_->linear_problem->setProblem();
+        impl_->amesos2_solver = impl_->Amesos2::create<matrix_type, vec_type>( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
         set_preconditioner(); //(A);
         impl_->amesos2_solver->setProblem(impl_->linear_problem);
         if (this->verbose()) { impl_->amesos2_solver->getCurrentParameters()->print(); }

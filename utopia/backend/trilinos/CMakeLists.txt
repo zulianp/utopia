@@ -1,4 +1,3 @@
-
 # find dependencies
 find_package(Trilinos)
 
