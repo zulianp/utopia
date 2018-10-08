@@ -150,7 +150,7 @@ namespace utopia {
 
         set_problem();
 
-        assert((impl_->belos_solver));
+        assert(!(impl_->belos_solver.is_null()));
         impl_->belos_solver->solve();
         return true;
     }
