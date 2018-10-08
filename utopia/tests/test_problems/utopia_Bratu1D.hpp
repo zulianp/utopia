@@ -83,22 +83,8 @@ namespace utopia
           hessian += Matrix(diag(d));
 
           // enforce BC conditions
-          {
-            Range r = row_range(hessian);
-            Write<Matrix> w(hessian);
-
-            if(r.begin() == 0) 
-            {
-              hessian.set(0, 0, 1.0);
-              hessian.set(0, 1, 0.0);
-            }
-
-            if(r.end() == n_) 
-            {
-              hessian.set(n_-1, n_-1, 1.0);
-              hessian.set(n_-1, n_-2, 0.0);
-            }
-          }
+          std::vector<SizeType> indices = {0, SizeType(size(hessian).get(0) - 1)}; 
+          set_zero_rows(hessian, indices, 1.0); 
 
           return true;        
         }
@@ -155,6 +141,7 @@ namespace utopia
           }
 
           A_ *= 1.0/(h_*h_); 
+
         }
   
     private:

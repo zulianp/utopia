@@ -1,5 +1,5 @@
-#ifndef UTOPIA_HESSIAN_APPROX_HPP
-#define UTOPIA_HESSIAN_APPROX_HPP
+#ifndef UTOPIA_HESSIAN_APPROXIMATIONS_HPP
+#define UTOPIA_HESSIAN_APPROXIMATIONS_HPP
 
 #include "utopia_Core.hpp"
 
@@ -7,131 +7,66 @@
 namespace utopia
 {
 
-        template<class Matrix, class Vector>
-        class HessianApproximation
-        {
-            typedef UTOPIA_SCALAR(Vector)    Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+template<class Matrix, class Vector>
+class HessianApproximation
+{
+    typedef UTOPIA_SCALAR(Vector)    Scalar;
+    typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
 
-        public:
-            virtual ~HessianApproximation() { }
+public:
 
-            virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x, Matrix &H)
-            {
-                // (void) fun;
-                // SizeType n_local = local_size(x).get(0);
-                // H = local_identity(n_local, n_local);
+    HessianApproximation(): num_tol_(1e-12), initialized_(false)
+    {
 
-                //for sparse
-                fun.hessian(x, H);
+    }
 
-                // opt 1
-                // fun.hessian(x, H);
-                // H = 0.0 * H + Matrix(diag(diag(H)));
+    virtual ~HessianApproximation() { }
 
-                //opt 2
-                //hessian *= 0.;
-                //hessian += local_identity(n_local, n_local);
+    virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) = 0;
 
-                return true;
-            }
+    Scalar num_tol()const 
+    {
+        return num_tol_; 
+    }
 
+    void num_tol(Scalar & tol ) 
+    {
+        num_tol_ = tol; 
+    }
 
+    void initialized(const bool init) 
+    {
+        initialized_ = init; 
+    }
 
-            virtual bool approximate_hessian( Function<Matrix, Vector> &/*fun*/,  const Vector & /*sol_new*/, const Vector & /*step*/, Matrix & /*hessian_old_new*/,  Vector & /*grad_old_new*/) = 0;
-            virtual bool approximate_hessian_inverse( Function<Matrix, Vector> & /*fun*/,  const Vector & /*sol_new*/, const Vector & /*step*/, Matrix & /*hessian_old_new*/,  Vector & /*grad_old_new*/) {return 0; };
-        };
+    bool initialized() const 
+    {
+        return initialized_; 
+    }
 
+    // applications of inverse of Hessian
+    virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;
+    virtual Scalar compute_uHinvv_dot(const Vector &/*u*/, const Vector & /*v*/) const {return false; }
 
-        template<class Matrix, class Vector>
-        class BFGS : public HessianApproximation<Matrix, Vector>
-        {
-            typedef UTOPIA_SCALAR(Vector)    Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+    // applications of Hessian
+    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  {return false; }
+    virtual Scalar compute_uHv_dot(const Vector &/*u*/, const Vector & /*v*/) const {return false; }
+    virtual Scalar compute_uHu_dot(const Vector &/*u*/) const {return false; }
 
-            public:
-
-                BFGS(): num_tol_(1e-12)
-                {
-
-                }
-
-
-                virtual bool approximate_hessian(
-                    Function<Matrix, Vector> &fun,
-                    const Vector &sol_new,
-                    const Vector &step,
-                    Matrix &hessian_old_new,
-                    Vector &grad_old_new) override
-                {
-                    Vector diff_grad = grad_old_new;
-                    if(!fun.gradient(sol_new, grad_old_new)) return false;
-                    diff_grad = grad_old_new - diff_grad;
-
-                    Scalar d_s = dot(diff_grad, step);
-
-                    if(d_s < num_tol_)
-                        return true;
+    // refresh vectors
+    virtual bool update(const Vector & /* s  */, const Vector &  /* y */ ) = 0;
 
 
-                    Vector H_x_step = hessian_old_new * step;
-                    hessian_old_new += (1./d_s * Matrix(outer(diff_grad, diff_grad)));
-
-                    //utopia::is_sparse<Matrix>::value
-                    // temp += (outer(H_x_step, H_x_step)/dot(step, H_x_step));
-
-                    Matrix a  = outer(H_x_step, H_x_step);
-                    Scalar b = dot(step, H_x_step);
-                    hessian_old_new -= (1./b * a);
+    virtual Matrix & get_Hessian() = 0;
+    virtual Matrix & get_Hessian_inv() = 0;
 
 
-                    return true;
-                }
+private:
+    Scalar num_tol_;
+    bool initialized_;
 
-
-                Scalar num_tol_;
-            };
-
-
-        template<class Matrix, class Vector>
-        class SR1 : public HessianApproximation<Matrix, Vector>
-        {
-
-            typedef UTOPIA_SCALAR(Vector)    Scalar;
-            typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
-
-            public:
-
-                SR1(): num_tol_(1e-8)
-                { }
-
-                virtual bool approximate_hessian(
-                    Function<Matrix, Vector> &fun,
-                    const Vector & x_new,
-                    const Vector & s,
-                    Matrix &hessian_old_new,
-                    Vector &grad_old_new) override
-                {
-                    Vector g_diff = grad_old_new;
-                    if(!fun.gradient(x_new, grad_old_new)) return false;
-                    g_diff = grad_old_new - g_diff;
-
-                    Vector help_vec = g_diff - hessian_old_new * s;
-                    Scalar denom = dot(help_vec, s);
-
-                    // here, we prevent numerical instabilities leading to very small denominator
-                    if(std::abs(denom) >= num_tol_ * norm2(s) * norm2(help_vec))
-                            hessian_old_new += 1./denom * Matrix(outer(help_vec, help_vec));
-                    return true;
-                }
-
-
-            private:
-                Scalar num_tol_;
-
-            };
-
+};
 }
 
-#endif //UTOPIA_HESSIAN_APPROX_HPP
+#endif //UTOPIA_HESSIAN_APPROXIMATIONS_HPP

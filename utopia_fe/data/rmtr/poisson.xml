@@ -31,7 +31,7 @@
 	
 	</boundary-conditions>
 
-	<n-levels>2</n-levels>
+	<n-levels>7</n-levels>
 
 	<verbose>true</verbose>
 	<!-- <use-newton>true</use-newton> -->

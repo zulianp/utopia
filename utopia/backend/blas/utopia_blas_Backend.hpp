@@ -110,7 +110,9 @@ namespace utopia {
 		}
 
 		static void build(Matrix &m, const Size &size, const Identity &);
+		static void build(Matrix &m, const Size &size, const LocalIdentity &);
 		static void build(CRSMatrix<Scalar> &m, const Size &size, const Identity &);
+		static void build(CRSMatrix<Scalar> &m, const Size &size, const LocalIdentity &);
 		static void build(CRSMatrix<Scalar> &m, const Size &size, const NNZ<int> &nnz);
 		static void build(CCSMatrix<Scalar> &m, const Size &size, const NNZ<int> &nnz);
 		static void build(CRSMatrix<Scalar> &m, const Size &size, const Zeros & /*values*/);

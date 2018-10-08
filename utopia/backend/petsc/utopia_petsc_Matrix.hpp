@@ -337,6 +337,8 @@ namespace utopia {
         void get_diag(PetscVector &result) const;
         void get_diag(PetscMatrix &result) const;
 
+        void get_col(PetscVector &result, const PetscInt id) const;
+
         inline void diag_shift(const PetscScalar factor)
         {
         	check_error( MatShift(implementation(), factor) );

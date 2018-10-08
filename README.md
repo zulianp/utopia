@@ -121,6 +121,18 @@ Follow the steps above (Compiling utopia) to compile utopia itself.
 
 The API documentation of Utopia can be generated through Doxygen by using the command *make docs* from the bin folder after calling cmake ... The API documentation is generated in the *utopia/doc/api* folder in both HTML (see html/index.html) and LateX (see refman.tex) formats.
 
+
+## GPU with Trilinos TPetra
+Following flags need to be set before lauching your code with Trilinos on GPU
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+export CUDA_LAUNCH_BLOCKING=1
+
+## Multinode GPU jobs
+Multinode GPU can be launched by exporting following flag
+export CRAY_CUDA_MPS=1
+
+
 ## CMake users
 
 a FindUtopia.cmake  and a FindUtopiaFE.cmake are available in the utopia/utopia_fe/cmake folder. Define UTOPIA_DIR in your shell environment and the use the cmake find_package.

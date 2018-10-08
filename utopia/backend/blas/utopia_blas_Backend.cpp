@@ -528,8 +528,30 @@ namespace utopia {
 		m.identity(size.get(0), size.get(1));
 	}
 
+	void BLASBackend::build(Matrix &m, const Size &size, const LocalIdentity &)
+	{
+		m.identity(size.get(0), size.get(1));
+	}
+
+
 	void BLASBackend::build(CRSMatrix<Scalar> &m, const Size &size, const Identity &)
 	{
+		using std::min;
+
+		m.resize(size.get(0), size.get(1));
+		const SizeType n = min(m.rows(), m.cols());
+
+		m.assembly_begin();
+
+		for (SizeType i = 0; i != n; ++i) {
+			m.set(i, i, 1);
+		}
+
+		m.assembly_end();
+	}
+
+	void BLASBackend::build(CRSMatrix<Scalar> &m, const Size &size, const LocalIdentity &)
+	{	
 		using std::min;
 
 		m.resize(size.get(0), size.get(1));

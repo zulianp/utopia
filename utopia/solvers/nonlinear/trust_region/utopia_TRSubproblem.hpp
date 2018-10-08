@@ -72,22 +72,22 @@ namespace  utopia
         protected:
             /**
              * @brief      Solver solves easy problem of finding minimum,
-             *             such that \f$ p_k = s + \tau d \f$ minimizes \f$ m_k(p_k) \f$
-             *             and satisfies \f$ ||p_k|| = \Delta_k  \f$
+             *             such that \f$ result = s + \tau p_k \f$ minimizes \f$ m_k(result) \f$
+             *             and satisfies \f$ ||result|| = \Delta_k  \f$
              *
              * @param[in]  s
-             * @param[in]  d
+             * @param[in]  p_k
              * @param[in]  delta  The TR radius.
-             * @param      p_k    The current iterate.
+             * @param      result    The new iterate.
              *
              * @return     tau
              */
-            Scalar quad_solver(const Vector &s, const Vector &d, const Scalar & delta,  Vector &p_k)
+            Scalar quad_solver(const Vector &s, const Vector &p_k, const Scalar & delta,  Vector &result)
             {
                 Scalar a, b, c, x1, x2, nom, denom,tau;
 
-                a = dot(d, d);
-                b = dot(2 * s, d);
+                a = dot(p_k, p_k);
+                b = dot(2 * s, p_k);
                 c = dot(s, s) - delta * delta;
 
                 nom = b * b - 4 * a * c;
@@ -102,9 +102,10 @@ namespace  utopia
                 if(tau != tau)
                     tau = 0;
 
-                p_k = s + tau * d;
+                result = s + tau * p_k;
                 return tau;
             }
+
 
 
         Scalar quadratic_function(const Scalar & a,  const Scalar & b, const Scalar &c)
@@ -173,9 +174,11 @@ namespace  utopia
          }
 
 
-    private:
+
+    protected:
         std::shared_ptr<Preconditioner> precond_;   /*!< Preconditioner to be used. */
         Scalar current_radius_;                     /*!< Radius on current iterate - used to solve constrained QP wrt TR bound. */
+
 
 
     };
