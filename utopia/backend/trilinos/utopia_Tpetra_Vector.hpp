@@ -368,16 +368,6 @@ namespace utopia {
         template<typename Op>
         inline void apply(const Op op)
         {
-            // read_and_write_lock();
-
-            // assert(write_data_.size() > 0);
-
-            // for(auto i = 0; i < write_data_.size(); ++i) {
-            //     write_data_[i] = op.apply(write_data_[i]);
-            // }
-
-            // read_and_write_unlock();
-
             KokkosEvalUnary<TpetraVector, Op>::eval(op, *this);
         }
 
