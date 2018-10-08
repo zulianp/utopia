@@ -14,7 +14,7 @@
 		<n-x>15</n-x>
 		<n-y>15</n-y>
 
-		<refinements>3</refinements>
+		<refinements>1</refinements>
 	</mesh>
 <!-- 
 	<sampler>
@@ -85,7 +85,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/midline.e</path>
-		<refinements>1</refinements>
+		<refinements>2</refinements>
 	</mesh>
 	<space>
 		<system-name>multiplier</system-name>

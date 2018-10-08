@@ -4,7 +4,6 @@
 #include "utopia_Multilevel.hpp"
 #include "utopia_Linear.hpp"
 #include "utopia_Nonlinear.hpp"
-#include "utopia_DomainDecomposition.hpp"
 #include "utopia_Parameters.hpp"
 #include "utopia_SaddlePoint.hpp"
 

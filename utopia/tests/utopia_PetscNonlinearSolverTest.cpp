@@ -6,6 +6,7 @@
 */
 #include "utopia.hpp"
 #include "utopia_SolverTest.hpp"
+#include "utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_TestProblems.hpp"
 
 namespace utopia
@@ -53,9 +54,9 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_newton_petsc_cg_test);
 			UTOPIA_RUN_TEST(petsc_tr_rr_test);
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
-			UTOPIA_RUN_TEST(petsc_inexact_newton_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
+		//	UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
 		}
 
 		void petsc_ngs_test()
@@ -326,7 +327,7 @@ namespace utopia
 				params.stol(1e-10);
 				params.verbose(false);
 				
-				auto subproblem = std::make_shared<utopia::KSP_TR<DMatrixd, DVectord> >();
+				auto subproblem = std::make_shared<utopia::SteihaugToint<DMatrixd, DVectord> >();
 				TrustRegion<DMatrixd, DVectord> tr_solver(subproblem);
 				tr_solver.set_parameters(params);
 				tr_solver.solve(fun2, x);
@@ -422,53 +423,6 @@ namespace utopia
 			expected = values(x.size().get(0), 0.468919);
 			nlsolver.solve(fun2, x);
 			utopia_test_assert(approxeq(expected, x));
-		}
-
-		void petsc_inexact_newton_test()
-		{
-			if(mpi_world_size() > 10) return;
-			
-			Parameters params;
-			params.atol(1e-15);
-			params.rtol(1e-15);
-			params.stol(1e-15);
-			params.verbose(false);
-			
-			auto lsolver = std::make_shared< BiCGStab<DMatrixd, DVectord> >();
-			InexactNewton<DMatrixd, DVectord> nlsolver(lsolver);
-			nlsolver.set_parameters(params);
-			
-			auto hess_approx_BFGS   = std::make_shared<BFGS<DMatrixd, DVectord> >();
-			nlsolver.set_hessian_approximation_strategy(hess_approx_BFGS);
-			
-			
-			SimpleQuadraticFunction<DMatrixd, DVectord> fun;
-			
-			DVectord x = values(10, 2.);
-			DVectord expected_1 = zeros(x.size());
-			
-			nlsolver.solve(fun, x);
-			utopia_test_assert(approxeq(expected_1, x));
-			
-			TestFunctionND_1<DMatrixd, DVectord> fun2(x.size().get(0));
-			x = values(10, 2.0);
-			DVectord expected_2 = values(x.size().get(0), 0.468919);
-			nlsolver.solve(fun2, x);
-
-
-			utopia_test_assert(approxeq(expected_2, x));
-			
-			// -------------------------------------- SR1 test ------------------
-			auto hess_approx_SR1    = std::make_shared<SR1<DMatrixd, DVectord> >();
-			nlsolver.set_hessian_approximation_strategy(hess_approx_SR1);
-			
-			x = values(10, 2.);
-			nlsolver.solve(fun, x);
-			utopia_test_assert(approxeq(expected_1, x));
-			
-			x = values(10, 2.0);
-			nlsolver.solve(fun2, x);
-			utopia_test_assert(approxeq(expected_2, x));			
 		}
 
 		void petsc_newton_rosenbrock_test()
@@ -658,29 +612,6 @@ namespace utopia
 			utopia_test_assert(approxeq(expected, actual));
 		}
 		
-		void petsc_newton_inexact_newton_with_KSP_test()
-		{
-			using namespace std;
-			
-			const bool verbose = false;
-			
-			auto linear_solver  = make_shared< KSPSolver<DMatrixd, DVectord> >();
-			auto preconditioner = make_shared< InvDiagPreconditioner<DMatrixd, DVectord> >();
-			linear_solver->set_preconditioner(preconditioner);
-			
-			
-			InexactNewton<DMatrixd, DVectord> newton_solver(linear_solver);
-			newton_solver.verbose(verbose);
-			
-			const int n = 10;
-			DVectord actual   = values(n, 2.);
-			DVectord expected = values(n, 0.468919);
-			
-			TestFunctionND_1<DMatrixd, DVectord> fun(n);
-			
-			newton_solver.solve(fun, actual);
-			utopia_test_assert(approxeq(expected, actual));
-		}
 
 		void petsc_snes_test()
 		{
@@ -711,7 +642,7 @@ namespace utopia
 
 
 				// std::cout<<"--------------------------------------------------- \n"; 
-				auto cg_home = std::make_shared<ConjugateGradient<DMatrixd, DVectord, HOMEMADE>>();
+				auto cg_home = std::make_shared<ConjugateGradient<DMatrixd, DVectord>>();
 				cg_home->verbose(verbose); 
 
 				SNESSolver<DMatrixd, DVectord, PETSC> nonlinear_solver2(cg_home); 
@@ -738,7 +669,6 @@ namespace utopia
 
 			}
 		}
-
 
 
 		void petsc_sparse_newton_snes_test()
@@ -780,7 +710,43 @@ namespace utopia
 
 
 
+		// void lbfgs_quasi_newton_test()
+		// {
+		// 	// because dense matrices can not be sum-up in parallel
+		// 	// if(mpi_world_size() > 1) return;
 
+		// 	std::cout<<"lbfgs_quasi_newton_test  \n"; 
+			
+		// 	SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
+
+		// 	Parameters params;
+		// 	params.atol(1e-9);
+		// 	params.rtol(1e-15);
+		// 	params.stol(1e-15);
+		// 	params.verbose(true);
+
+		// 	const auto m = 3; 
+			
+		// 	auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+
+		// 	auto hess_approx_BFGS   = std::make_shared<LBFGSB<DSMatrixd,  DVectord> >(m, linear_solver);
+
+
+	 //  		auto k = 15;
+
+
+
+	 //        DVectord v = values(k, 999); 
+	 //        DVectord y = values(k, 55); 
+	 //        DVectord s = values(k, 1); 
+
+	 //        hess_approx_BFGS->initialize(fun, v); 
+	 //        hess_approx_BFGS->update(s, y); 
+
+
+		// 	utopia_warning("Put new expressions to all backends.... ");
+				
+		// }
 
 		PetscNonlinearSolverTest()
 		: _n(100) { }

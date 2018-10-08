@@ -72,6 +72,8 @@ namespace utopia {
         check_error( MatSetOption(implementation(), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE) );
     }
 
+
+
     bool PetscMatrix::read(MPI_Comm comm, const std::string &path)
     {
         destroy();
@@ -505,6 +507,18 @@ namespace utopia {
         result.set_initialized(true);
     }
 
+    void PetscMatrix::get_col(PetscVector &result, const PetscInt id) const
+    {        
+        auto gs = size();
+
+        result.destroy();
+        MatCreateVecs(implementation(), nullptr, &result.implementation());
+
+        check_error( MatGetColumnVector(implementation(), result.implementation(), id) );
+        result.set_initialized(true);
+    }
+
+
     void PetscMatrix::dense_init_diag(MatType dense_type, const PetscVector &diag)
     {
         MPI_Comm comm = diag.communicator();
@@ -690,7 +704,10 @@ namespace utopia {
 
         const auto r = row_range();
         const PetscInt r_begin = r.begin();
-        const PetscInt r_end = PetscMin(r.end(), global_cols);
+
+        // otherwise global_cols gives -1, as it should be determined... 
+        MatGetSize(implementation(), &global_rows, &global_cols); 
+        const PetscInt r_end = PetscMin(r.end(), global_cols); 
 
         for(PetscInt i = r_begin; i < r_end; ++i) {
             set(i, i, scale_factor);

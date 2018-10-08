@@ -228,17 +228,19 @@ namespace  utopia
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public:
-        Scalar      atol() const               { return atol_; } 
-        Scalar      rtol()  const              { return rtol_; } 
-        Scalar      stol()  const              { return stol_; } 
+        virtual Scalar      atol() const               { return atol_; } 
+        virtual Scalar      rtol()  const              { return rtol_; } 
+        virtual Scalar      stol()  const              { return stol_; } 
+
         virtual SizeType    max_it()  const            { return max_it_; } 
 
-        bool      precondition() const          { return precondition_; } 
-        bool      time_statistics() const       { return time_statistics_; } 
+        virtual bool      precondition() const          { return precondition_; } 
+        virtual bool      time_statistics() const       { return time_statistics_; } 
 
-        bool log_iterates() const                { return log_iterates_; } 
-        bool log_system() const                  { return log_system_; } 
-        bool verbose() const                     { return verbose_; } 
+        virtual bool log_iterates() const                { return log_iterates_; } 
+        virtual bool log_system() const                  { return log_system_; } 
+        virtual bool verbose() const                     { return verbose_; } 
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual void atol(const Scalar & atol_in ) { atol_ = atol_in; }; 
         virtual void rtol(const Scalar & rtol_in ) { rtol_ = rtol_in; }; 
@@ -246,14 +248,14 @@ namespace  utopia
         virtual void max_it(const SizeType & max_it_in ) { max_it_ = max_it_in; }; 
         virtual void verbose(const bool & verbose_in ) {verbose_ = verbose_in; }; 
         
-        void precondition(const bool & precondition_in ) { precondition_ = precondition_in; }; 
-        void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 
-        void log_iterates(const bool & log_iterates_in ) { log_iterates_ = log_iterates_in; }; 
-        void log_system(const bool & log_system_in ) { log_system_ = log_system_in; }; 
+        virtual void precondition(const bool & precondition_in ) { precondition_ = precondition_in; }; 
+        virtual void time_statistics(const bool & time_statistics_in ) { time_statistics_ = time_statistics_in; }; 
+        virtual void log_iterates(const bool & log_iterates_in ) { log_iterates_ = log_iterates_in; }; 
+        virtual void log_system(const bool & log_system_in ) { log_system_ = log_system_in; }; 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         
-        SizeType get_convergence_reason(){ return conv_reason_;  }
-        SizeType get_num_it() { return num_it_;  }
+        virtual SizeType get_convergence_reason(){ return conv_reason_;  }
+        virtual SizeType get_num_it() { return num_it_;  }
 
     private:
         

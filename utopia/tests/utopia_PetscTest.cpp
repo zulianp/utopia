@@ -1080,7 +1080,7 @@ namespace utopia {
 
         double sum_P = sum(P);
         P = transpose(P);
-
+     
         each_apply(P, [](const double value) -> double {
             return value * 2.;
         });
@@ -1088,7 +1088,88 @@ namespace utopia {
         double sum_P_2 = sum(P);
 
         utopia_test_assert(approxeq(sum_P * 2., sum_P_2));
+    }        
+
+    void petsc_dot_test()
+    {
+        auto n = 10; 
+
+        DVectord x1 = values(n, 1.);
+        DVectord x2 = values(n, 2.);
+        DVectord x3 = values(n, 3.);
+        DVectord x4 = values(n, 4.);
+
+        std::vector<std::shared_ptr<DVectord> > vectors_x; 
+        std::vector<PetscScalar> result_x; 
+
+        vectors_x.push_back(make_ref(x2)); 
+        vectors_x.push_back(make_ref(x3)); 
+        vectors_x.push_back(make_ref(x4)); 
+
+        dots(x1, vectors_x, result_x); 
+
+        utopia_test_assert(approxeq(result_x[0], 2.*n));
+        utopia_test_assert(approxeq(result_x[1], 3.*n));
+        utopia_test_assert(approxeq(result_x[2], 4.*n));
+
+        PetscScalar r1 = dot(x1, x2); 
+        PetscScalar r2 = dot(x1, x3); 
+
+        PetscScalar result_sum1 = r1 + r2; 
+        PetscScalar result_sum2 = dot(x1, x2) + dot(x1, x3); 
+        utopia_test_assert(approxeq(result_sum1, result_sum2));
+
+        PetscScalar result_div1 = r1/r2; 
+        PetscScalar result_div2 = dot(x1, x2)/dot(x1, x3);  
+        utopia_test_assert(approxeq(result_div1, result_div2));
+
+        PetscScalar result_mul1 = r1*r2; 
+        PetscScalar result_multv2 = dot(x1, x2)*dot(x1, x3);         
+        utopia_test_assert(approxeq(result_mul1, result_multv2));
+
+        PetscScalar result_min1 = r1-r2; 
+        PetscScalar result_min2 = dot(x1, x2)-dot(x1, x3);         
+        utopia_test_assert(approxeq(result_min1, result_min2));        
+
+
+        DSMatrixd B = diag(DVectord(values(n,1.0)));
+        PetscScalar pred = -1.0 * dot(x1, x2) - 0.5 * dot(B * x3, x4);
+
+        PetscScalar pred1 = dot(x1, x2); 
+        PetscScalar pred2 = dot(B * x3, x4);
+        PetscScalar pred_sum = -1.0 * pred1 - 0.5 * pred2; 
+        utopia_test_assert(approxeq(pred, pred_sum));  
     }
+
+    void petsc_get_col_test()
+    {
+        auto n = 10; 
+        auto m = 5; 
+        auto col_id = 2; 
+
+        DMatrixd M = values(n, m, 0.0); 
+        {
+            Write<DMatrixd> w_m(M);
+            auto r = row_range(M);
+            auto c = col_range(M);
+
+            for(auto i = r.begin(); i != r.end(); ++i) 
+            {
+                for(auto j = c.begin(); j != c.end(); ++j) 
+                {
+                    M.set(i, j, j);
+                }
+            }
+        }
+
+        DVectord col_result = zeros(n); 
+        mat_get_col(M, col_result, col_id); 
+        
+        DVectord col_expected = local_values(local_size(col_result).get(0), col_id); 
+        utopia_test_assert(approxeq(col_result, col_expected));  
+
+    }
+
 
     #endif //WITH_PETSC;
 
@@ -1100,7 +1181,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_residual);
         UTOPIA_RUN_TEST(petsc_block_mat);
         UTOPIA_RUN_TEST(petsc_ghosted);
-        UTOPIA_RUN_TEST(petc_optional);
+
+        // UTOPIA_RUN_TEST(petc_optional); // fails to compile with gpu
+        
         UTOPIA_RUN_TEST(petsc_view);
         UTOPIA_RUN_TEST(petsc_ksp_precond_delegate);
         UTOPIA_RUN_TEST(petsc_hardcoded_cg);
@@ -1130,7 +1213,9 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_tensor_reduction);
         UTOPIA_RUN_TEST(petsc_precond);
         UTOPIA_RUN_TEST(petsc_binary_min_max);
+        UTOPIA_RUN_TEST(petsc_dot_test); 
         UTOPIA_RUN_TEST(petsc_transform);
+        UTOPIA_RUN_TEST(petsc_get_col_test); 
 
         //serial tests
 #ifdef PETSC_HAVE_MUMPS

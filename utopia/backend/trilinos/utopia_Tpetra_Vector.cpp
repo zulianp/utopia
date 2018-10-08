@@ -10,6 +10,9 @@
 
 #include <cmath>
 
+//FIXME 
+// - ghosted vector has problematic behaviour e.g.: norm2(ghosted_vec) == norm2(offset_view(ghosted_vec)) which is wrong
+// maybe this can help at least for assembly #include <Tpetra_MultiVectorFiller.hpp> or FEMultiVector
 namespace utopia {
 
 	void TpetraVector::add_vector(
@@ -118,9 +121,11 @@ namespace utopia {
 		rcp_map_type map(new map_type(global_size, local_size, 0, comm));
 		rcp_map_type ghost_map;
 
-		if(!ghost_index.empty()) {
+		if(comm->getSize() != 0) {
+			auto r_begin = local_size == 0 ? 0 : map->getMinGlobalIndex();
+			auto r_end   = local_size == 0 ? 0 : (map->getMaxGlobalIndex() + 1);
 
-			Range r = { map->getMinGlobalIndex(), map->getMaxGlobalIndex() + 1 };
+			Range r = { r_begin, r_end };
 
 			std::vector<GO> filled_with_local;
 			filled_with_local.reserve(r.extent() + ghost_index.size());

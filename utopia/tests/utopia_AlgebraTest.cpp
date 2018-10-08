@@ -162,6 +162,20 @@ namespace utopia {
             utopia_test_assert(approxeq(two, actual_max));
         }
 
+
+        void local_values_test()
+        {
+            auto k = 15;
+            auto m = 4;
+
+            Matrix A = local_values(k, m, 1.);
+            Vector x = local_values(k, 1.0);
+            Vector x_result = transpose(A)*x; 
+            Scalar x_norm = norm2(x_result); 
+
+            utopia_test_assert(x_norm!=0.0);
+        }
+
         void is_subtree()
         {
             Vector v;
@@ -180,19 +194,6 @@ namespace utopia {
             if(Utopia::instance().verbose() && mpi_world_rank() == 0) {
                 std::cout << "\nBackend: " << backend_info(Vector()).get_name() << std::endl;
             }
-        }
-
-        void local_values_test()
-        {
-            auto k = 15;
-            auto m = 4;
-
-            Matrix A = local_values(k, m, 1.);
-            Vector x = local_values(k, 1.0);
-            Vector x_result = transpose(A) * x; 
-            Scalar x_norm   = norm2(x_result); 
-
-            utopia_test_assert(x_norm != 0.0);
         }
 
     public:
@@ -216,9 +217,9 @@ namespace utopia {
     {
         UTOPIA_UNIT_TEST_BEGIN("AlgebraTest");
 
-#ifdef WITH_BLAS
-        AlgebraTest<Matrixd, Vectord>().run();
-#endif //WITH_BLAS
+// #ifdef WITH_BLAS
+//         AlgebraTest<Matrixd, Vectord>().run();
+// #endif //WITH_BLAS
 
 #ifdef WITH_PETSC
         AlgebraTest<DMatrixd, DVectord>().run();

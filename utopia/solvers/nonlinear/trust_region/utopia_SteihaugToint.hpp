@@ -7,6 +7,7 @@
 namespace utopia
 {
 
+
 	/**
 	 * @brief      Class for Steihaug Toint conjugate gradient.
 	 */
@@ -23,30 +24,26 @@ namespace utopia
 
         virtual ~SteihaugToint(){}
 
-        SteihaugToint * clone() const override
+        virtual SteihaugToint * clone() const override
         {
-        	return new SteihaugToint();
+        	return new SteihaugToint(*this);
         }
+
+
 
 	protected:
         bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
         {
-
 			Vector r = -1 * g, d = r, s = local_zeros(local_size(g)), s1 = s;
-	    	Scalar alpha, g_norm, d_B_d, z, z1;//, tau;
-	    	SizeType it = 0;
+	    	Scalar alpha, g_norm, d_B_d, z, z1;
+	    	SizeType it = 1;
 
 	    	p_k = local_zeros(local_size(p_k));
 	    	g_norm = norm2(g);
 	    	z = g_norm * g_norm;
 
 
-	    	// this->atol(std::min(0.5, std::sqrt(g_norm)) * g_norm);
-	    	// this->atol(1e-14);
-	    	// this->rtol(1e-14);
-	    	// this->stol(1e-14);
-
-	    	this->init_solver(" Utopia Steihaug-Toint CG ", {"it. ", "||r||" });
+	    	this->init_solver(" ST-CG ", {"it. ", "||r||" });
             bool converged = false;
 
         	while(!converged)
@@ -56,7 +53,6 @@ namespace utopia
 	    		if(d_B_d <= 0)
 	    		{
 	    			s = p_k;
-	    			// tau =
 	    			this->quad_solver(s, d, this->current_radius(),  p_k);
 	    			return true;
 	    		}
@@ -67,7 +63,6 @@ namespace utopia
 	    		if(norm2(s1) >= this->current_radius())
 	    		{
 	    			s = p_k;
-	    			// tau =
 	    			this->quad_solver(s, d, this->current_radius(),  p_k);
 	    			return true;
 	    		}
@@ -81,6 +76,7 @@ namespace utopia
 	    		z = z1;
 
         		g_norm = std::sqrt(z);
+
                 if(this->verbose())
                     PrintInfo::print_iter_status(it, {g_norm});
 
@@ -92,10 +88,116 @@ namespace utopia
         }
 
 
-        bool preconditioned_solve(const Matrix & /*B*/, const Vector &/*g*/, Vector &/*p_k*/) override
+        bool preconditioned_solve(const Matrix &B, const Vector &g, Vector &s_k) override
         {
-        	std::cout<<"SteihaugToint:: preconditioned solve not imlemented yet ... \n";
-        	return false;
+        	bool converged = false;
+            SizeType it=0; 
+
+			Vector v_k = local_zeros(local_size(g)); 
+				   s_k = local_zeros(local_size(g)); 
+			Vector g_k = g; 
+
+			Scalar g_norm = norm2(g_k);  
+
+			this->init_solver(" Precond-ST-CG ", {"it. ", "||g||", "||s||", "||p||", "sMp" });
+    		if(this->verbose())
+                PrintInfo::print_iter_status(it, {g_norm});
+            it++; 
+
+			this->precond_->apply(g_k, v_k);
+
+			Vector p_k = -1.0 * v_k; 
+
+            Scalar alpha, kappa, betta; 
+            Scalar g_v_prod_old, g_v_prod_new; 
+
+            Scalar s_norm=0.0, s_norm_new=0.0,  sMp=0.0; 
+			Scalar r2 = this->current_radius() * this->current_radius(); 
+
+
+            Scalar p_norm = dot(g_k, v_k); 
+
+			// if preconditioner yields nans or inf, or is precond. dir is indefinite - return gradient step 
+			if(!std::isfinite(p_norm) || p_norm < 0.0)
+	    	{
+	    		Scalar alpha_termination; 
+	    		if(r2 >= g_norm)
+	    			alpha_termination = 1.0;  		// grad. step is inside of tr boundary, just take it
+	    		else
+	    			alpha_termination = std::sqrt(r2/g_norm);  // grad. step is outside of tr boundary, project on the boundary
+
+	    		s_k -= alpha_termination * g_k;  
+
+	    		return true; 
+	    	}   
+
+
+        	while(!converged)
+        	{
+        		Vector B_p_k = B* p_k; 
+	    		kappa = dot(p_k,B_p_k);
+
+	    		// identify negative curvature 
+	    		if(kappa <= 0.0)
+	    		{
+	    			Scalar term1 = sMp*sMp + (p_norm  * (r2 - s_norm)); 
+		    		Scalar tau = (std::sqrt(term1) - sMp)/p_norm; 
+		    		s_k += tau * p_k; 
+
+	    			return true;
+	    		}
+
+	    		g_v_prod_old = dot(g_k, v_k); 
+	    		alpha = g_v_prod_old/kappa; 
+
+	    		s_norm_new = s_norm + (2.0* alpha * sMp) + (alpha * alpha * p_norm); 
+
+	    		// ||s_k||_M > \Delta => terminate
+	    		if(s_norm_new >= this->current_radius())
+	    		{	
+	    			Scalar term1 = sMp*sMp + (p_norm  * (r2 - s_norm)); 
+		    		Scalar tau = (std::sqrt(term1) - sMp)/p_norm; 
+		    		s_k += tau * p_k; 
+
+	    			return true;
+	    		}
+
+				s_k += alpha * p_k; 	    		
+	    		g_k += alpha * B_p_k; 
+	    		v_k = local_zeros(local_size(g_k));
+
+	    		this->precond_->apply(g_k, v_k);
+
+	    		g_v_prod_new = dot(g_k, v_k); 
+
+
+	    		// if preconditioner yields nans or inf, or is precond. dir is indefinite - just return current step 
+				if(!std::isfinite(g_v_prod_new)){
+		    		return true; 
+				}
+
+	    		betta  = g_v_prod_new/ g_v_prod_old; 
+	    		p_k = betta * p_k - v_k; 
+ 		
+	    		// updating norms recursively  - see TR book
+	    		sMp = (betta * sMp) + (alpha * p_norm); 
+	    		p_norm = g_v_prod_new + (betta*betta * p_norm); 
+	    		s_norm = s_norm_new; 
+
+
+	    		g_norm = norm2(g_k);  
+
+	    		if(this->verbose())
+                    PrintInfo::print_iter_status(it, {g_norm, s_norm, p_norm, sMp});
+	    		
+	    		if(!std::isfinite(g_norm))
+	    			return false; 
+
+                converged = this->check_convergence(it, g_norm, 1, 1);
+                it++;
+	    	}
+
+        	return true;
         }
 
 

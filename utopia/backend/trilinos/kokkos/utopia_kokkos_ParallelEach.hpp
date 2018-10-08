@@ -43,6 +43,121 @@ namespace utopia {
             });
         }
     };
+
+
+    template<int FILL_TYPE>
+    class ParallelEach<TSMatrixd, 2, FILL_TYPE>{
+    public:
+        template<class Fun>
+        inline static void apply_write(TSMatrixd &mat, Fun fun)
+        {
+             typedef Kokkos::TeamPolicy<>               team_policy;
+             typedef Kokkos::TeamPolicy<>::member_type  member_type;
+
+             auto r = row_range(mat);
+
+             if(r.empty()) {
+                 return;
+             }
+
+             auto impl = raw_type(mat);
+             auto local_mat = impl->getLocalMatrix();
+
+             auto n = local_mat.numRows();
+
+             auto row_map = impl->getRowMap()->getLocalMap();
+             auto col_map = impl->getColMap()->getLocalMap();
+
+             Kokkos::parallel_for(team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+                 const int row_ind = team_member.league_rank();
+                 auto row = local_mat.row(row_ind);
+                 auto n_values = row.length;
+
+                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&] (const int k) {
+                     auto &val    = row.value(k);
+                     auto col_ind = row.colidx(k);
+                     val = fun(
+                        row_map.getGlobalElement(row_ind),
+                        col_map.getGlobalElement(col_ind)
+                        );
+                 });
+             });
+        }
+        
+        template<class Fun>
+        inline static void apply_read(const TSMatrixd &mat, Fun fun)
+        {
+            typedef Kokkos::TeamPolicy<>               team_policy;
+            typedef Kokkos::TeamPolicy<>::member_type  member_type;
+
+            auto r = row_range(mat);
+
+            if(r.empty()) {
+                return;
+            }
+
+            auto impl = raw_type(mat);
+            auto local_mat = impl->getLocalMatrix();
+
+            auto n = local_mat.numRows();
+
+            auto row_map = impl->getRowMap()->getLocalMap();
+            auto col_map = impl->getColMap()->getLocalMap();
+
+            Kokkos::parallel_for(team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+                const int row_ind = team_member.league_rank();
+                auto row = local_mat.row(row_ind);
+                auto n_values = row.length;
+
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&] (const int k) {
+                    auto &val    = row.value(k);
+                    auto col_ind = row.colidx(k);
+                    fun(
+                       row_map.getGlobalElement(row_ind),
+                       col_map.getGlobalElement(col_ind),
+                       val
+                       );
+                });
+            });
+        }
+
+        template<class Fun>
+        inline static void apply_transform(TSMatrixd &mat, Fun fun)
+        {
+            typedef Kokkos::TeamPolicy<>               team_policy;
+            typedef Kokkos::TeamPolicy<>::member_type  member_type;
+
+            auto r = row_range(mat);
+
+            if(r.empty()) {
+                return;
+            }
+
+            auto impl = raw_type(mat);
+            auto local_mat = impl->getLocalMatrix();
+
+            auto n = local_mat.numRows();
+
+            auto row_map = impl->getRowMap()->getLocalMap();
+            auto col_map = impl->getColMap()->getLocalMap();
+
+            Kokkos::parallel_for(team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
+                const int row_ind = team_member.league_rank();
+                auto row = local_mat.row(row_ind);
+                auto n_values = row.length;
+
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, n_values), [&](const int k) {
+                    auto &val    = row.value(k);
+                    auto col_ind = row.colidx(k);
+                    val = fun(
+                       row_map.getGlobalElement(row_ind),
+                       col_map.getGlobalElement(col_ind),
+                       val
+                       );
+                });
+            });
+        }
+    };
     
     template<class Fun>
     inline void parallel_each_apply(TSMatrixd &mat, Fun fun) 
@@ -63,7 +178,7 @@ namespace utopia {
 
         Kokkos::parallel_for(team_policy(n, Kokkos::AUTO), KOKKOS_LAMBDA(const member_type &team_member) {
             const int j = team_member.league_rank();
-            auto row = local_mat.row(j);
+            auto row      = local_mat.row(j);
             auto n_values = row.length;
 
             Kokkos::parallel_for( Kokkos::TeamThreadRange(team_member, n_values), [&] (const int i) {
