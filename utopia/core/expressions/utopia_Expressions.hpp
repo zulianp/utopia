@@ -41,6 +41,7 @@
 #include "utopia_Inverse.hpp"
 
 #include "utopia_DotVecVecs.hpp"
+#include "utopia_MatGetCol.hpp"
 
 /** @defgroup 	algebra Algebra
  *  @brief      Expressions to perform specialized algebraic operations. 

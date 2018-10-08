@@ -1139,11 +1139,34 @@ namespace utopia {
         PetscScalar pred2 = dot(B * x3, x4);
         PetscScalar pred_sum = -1.0 * pred1 - 0.5 * pred2; 
         utopia_test_assert(approxeq(pred, pred_sum));  
+    }
 
+    void petsc_get_col_test()
+    {
+        auto n = 10; 
+        auto m = 5; 
+        auto col_id = 2; 
 
-        // PetscScalar energy =  dot(x1, x2) + 0.5 * dot(B * x3, x4); 
-        // std::cout<<"energy: "<< energy << "  \n"; 
+        DMatrixd M = values(n, m, 0.0); 
+        {
+            Write<DMatrixd> w_m(M);
+            auto r = row_range(M);
+            auto c = col_range(M);
 
+            for(auto i = r.begin(); i != r.end(); ++i) 
+            {
+                for(auto j = c.begin(); j != c.end(); ++j) 
+                {
+                    M.set(i, j, j);
+                }
+            }
+        }
+
+        DVectord col_result = zeros(n); 
+        mat_get_col(M, col_result, col_id); 
+        
+        DVectord col_expected = local_values(local_size(col_result).get(0), col_id); 
+        utopia_test_assert(approxeq(col_result, col_expected));  
 
     }
 
@@ -1192,6 +1215,7 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_binary_min_max);
         UTOPIA_RUN_TEST(petsc_dot_test); 
         UTOPIA_RUN_TEST(petsc_transform);
+        UTOPIA_RUN_TEST(petsc_get_col_test); 
 
         //serial tests
 #ifdef PETSC_HAVE_MUMPS

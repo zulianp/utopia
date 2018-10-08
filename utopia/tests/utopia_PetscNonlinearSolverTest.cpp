@@ -56,7 +56,7 @@ namespace utopia
 			UTOPIA_RUN_TEST(petsc_mprgp_test);
 			UTOPIA_RUN_TEST(petsc_snes_test); 
 			UTOPIA_RUN_TEST(petsc_sparse_newton_snes_test); 
-			UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
+		//	UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
 		}
 
 		void petsc_ngs_test()
@@ -710,142 +710,43 @@ namespace utopia
 
 
 
-		void lbfgs_quasi_newton_test()
-		{
-			// because dense matrices can not be sum-up in parallel
-			// if(mpi_world_size() > 1) return;
+		// void lbfgs_quasi_newton_test()
+		// {
+		// 	// because dense matrices can not be sum-up in parallel
+		// 	// if(mpi_world_size() > 1) return;
 
-			std::cout<<"lbfgs_quasi_newton_test  \n"; 
+		// 	std::cout<<"lbfgs_quasi_newton_test  \n"; 
 			
-			SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
+		// 	SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
 
-			Parameters params;
-			params.atol(1e-9);
-			params.rtol(1e-15);
-			params.stol(1e-15);
-			params.verbose(true);
+		// 	Parameters params;
+		// 	params.atol(1e-9);
+		// 	params.rtol(1e-15);
+		// 	params.stol(1e-15);
+		// 	params.verbose(true);
 
-			const auto m = 3; 
+		// 	const auto m = 3; 
 			
-			auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
+		// 	auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
 
-			auto hess_approx_BFGS   = std::make_shared<LBFGSB<DSMatrixd,  DVectord> >(m, linear_solver);
+		// 	auto hess_approx_BFGS   = std::make_shared<LBFGSB<DSMatrixd,  DVectord> >(m, linear_solver);
 
 
-	  		auto k = 15;
-
-	        // DSMatrixd A = values(k, m, 2.);
-	        // {
-	        //     Write<DSMatrixd>  w(A); 
-
-	        //     A.set(0,0., 1); 
-	        //     A.set(1,1. ,3); 
-	        //     A.set(2,2. ,7); 
-	        //     A.set(11,3., 5); 
-	        //     A.set(13,0., 9); 
-	        // }
-
-	        // disp(A); 
+	 //  		auto k = 15;
 
 
 
-	        DVectord v = values(k, 999); 
-	        DVectord y = values(k, 55); 
-	        DVectord s = values(k, 1); 
+	 //        DVectord v = values(k, 999); 
+	 //        DVectord y = values(k, 55); 
+	 //        DVectord s = values(k, 1); 
 
-	  //       hess_approx_BFGS->add_col_to_mat(A, v); 
-			// hess_approx_BFGS->shift_cols_left_replace_last_col(A, v); 
-	        
-
-	        hess_approx_BFGS->initialize(fun, v); 
-	        hess_approx_BFGS->update(s, y); 
-	        hess_approx_BFGS->update(s, s); 
-	        hess_approx_BFGS->update(s, y); 
-	        hess_approx_BFGS->update(s, v); 
-	       	hess_approx_BFGS->update(s, s); 
+	 //        hess_approx_BFGS->initialize(fun, v); 
+	 //        hess_approx_BFGS->update(s, y); 
 
 
-
-	        ///////////////////////////////////////////////////////////////////////////////////////////////
-
-	        // DSMatrixd K =values(m, m, 0.);
-	        // assemble_symmetric_laplacian_1D(K, true);
-
-
-	        // disp(K); 
-
-	        // Mat K_inv; 
-
-	        // DVectord id = values(m, 1.0);
-	        // DVectord result = values(m, 0.0);
-
-
-	        // IS rperm, cperm; 
-	        // MatGetOrdering(raw_type(K), MATORDERINGRCM, &rperm, &cperm); 
-	        // MatGetFactor(raw_type(K), MATSOLVERMUMPS, MAT_FACTOR_LU, &(K_inv)); 
-
-
-	        // MatFactorInfo info; 
-
-	        // MatFactorInfoInitialize(&info); 
-	        // MatLUFactorSymbolic(K_inv, raw_type(K), rperm, cperm, &info); 
-	        // MatLUFactorNumeric(K_inv, raw_type(K), &info); 
-
-
-	        // MatSolve(K_inv, raw_type(id), raw_type(result)); 
-
-
-	        // ISDestroy(&rperm); 
-	        // ISDestroy(&cperm); 
-
-	        // MatDestroy(&K_inv); 
-
-
-	        // disp(result); 
-
-
-
-
-
-
-
-
-			///////////////////////////////////////////////////////////////////////////////////////////////
-
-			// QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, lsolver);
-			// nlsolver.set_parameters(params);
-
-			// auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
-			// nlsolver.set_line_search_strategy(line_search);
-			
-			
-			// SimpleQuadraticFunction<Matrix, Vector> fun;
-			
-			// Vector x = values(_n, 2.);
-			// Vector expected_1 = zeros(x.size());
-			
-
-			// nlsolver.solve(fun, x);
-			// utopia_test_assert(approxeq(expected_1, x));
-			
-			// TestFunctionND_1<Matrix, Vector> fun2(x.size().get(0));
-			// x = values(_n, 2.0);
-			// Vector expected_2 = values(x.size().get(0), 0.468919);
-
-			// nlsolver.solve(fun2, x);
-			// utopia_test_assert(approxeq(expected_2, x));
-
-			// Rosenbrock<Matrix, Vector> rosenbrock;
-			// Vector x0 = values(2, 0.5);
-			// nlsolver.solve(rosenbrock, x0);
-			// Vector expected_rosenbrock = values(2, 1.0);
-
-			// utopia_test_assert(approxeq(x0, expected_rosenbrock));
-
-
-			utopia_warning("Put new expressions to all backends.... ");
+		// 	utopia_warning("Put new expressions to all backends.... ");
 				
-		}
+		// }
 
 		PetscNonlinearSolverTest()
 		: _n(100) { }
