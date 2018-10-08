@@ -27,9 +27,9 @@ namespace utopia {
 				n_dofs.resize(n_levels);
 				n_dofs[0] = n_coarse;
 
-				for(SizeType i = 1; i < n_levels; ++i)
+				for(SizeType i = 1; i < n_levels; ++i) {
 					n_dofs[i] = (n_dofs[i-1] - 1) * 2 + 1;
-
+				}
 
 				prolongations.resize(n_levels - 1);
 				restrictions.resize(n_levels - 1);
@@ -80,7 +80,17 @@ namespace utopia {
 				{
 					auto &I = *prolongations.back();
 
-					std::vector<SizeType> indices = {0, SizeType(size(I).get(0) - 1)};  
+					std::vector<SizeType> indices;
+					auto rr = row_range(I);
+					auto n  = size(I).get(0);
+
+					if(rr.begin() == 0) {
+						indices.push_back(0);
+					}
+
+					if(rr.end() == n) {
+						indices.push_back(n - 1);
+					}  
 					set_zero_rows(I, indices, 0.0); 
 				}
 

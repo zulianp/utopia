@@ -110,7 +110,22 @@ namespace utopia {
         }
     }
 
-    void kokkos_read(){
+    void kokkos_parallel_each_mat() {
+        auto n = 10;
+
+        TSMatrixd w = local_identity(n, n);
+
+        parallel_each_write(w, KOKKOS_LAMBDA(const SizeType i, const SizeType j) -> double {
+            return i * n + j;
+        });
+
+        //serial implementation for test
+        each_read(w, [=](const SizeType i, const SizeType j, const double val) {
+            utopia_test_assert(approxeq(double(i * n + j), val));
+        });
+    }
+
+    void kokkos_read() {
 
         auto n = 10;
         TVectord w = local_values(n, 50);
@@ -156,7 +171,8 @@ namespace utopia {
         UTOPIA_RUN_TEST(kokkos_sum_reduction);
         UTOPIA_RUN_TEST(kokkos_write);
         UTOPIA_RUN_TEST(kokkos_read);
-        UTOPIA_RUN_TEST(kokkos_apply)
+        UTOPIA_RUN_TEST(kokkos_apply);
+        UTOPIA_RUN_TEST(kokkos_parallel_each_mat);
         UTOPIA_UNIT_TEST_END("KokkosTest");
     }
 }

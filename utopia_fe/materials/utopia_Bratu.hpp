@@ -51,7 +51,9 @@ namespace utopia {
             auto uk = interpolate(x_, u);
 
             auto l_form = inner(grad(uk), grad(v)) * dX - lambda_ * inner(exp( uk), v) * dX; 
+
             utopia::assemble(l_form, gradient);
+
             apply_zero_boundary_conditions(V_.dof_map(), gradient);
             return true;
         }

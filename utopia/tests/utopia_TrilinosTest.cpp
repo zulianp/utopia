@@ -743,9 +743,11 @@ namespace utopia {
         Vector rhs = values(_n, 975.9);
 
         {
+            auto r = range(rhs);
+
             Write<Vector> w(rhs);
-            rhs.set(0, 0.0); 
-            rhs.set(_n-1, 0.0); 
+            if(r.begin() == 0)  rhs.set(0, 0.0); 
+            if(r.end()   == _n) rhs.set(_n-1, 0.0); 
         }           
 
         Vector x = zeros(size(rhs));
@@ -1078,14 +1080,14 @@ namespace utopia {
         ok = fun_tpetra->hessian(x_tpetra, H_tpetra); assert(ok);
         ok = fun_petsc->hessian(x_petsc, H_petsc);    assert(ok);
         
-        write("H_p.m", H_petsc);
-        write("H_t.m", H_tpetra);
+        // write("H_p.m", H_petsc);
+        // write("H_t.m", H_tpetra);
         
         
         DSMatrixd H_converted;
         backend_convert_sparse(H_tpetra, H_converted);
         
-        write("H_c.m", H_converted);
+        // write("H_c.m", H_converted);
         
         utopia_test_assert(cross_backend_approxeq(H_petsc, H_tpetra));
         
@@ -1098,8 +1100,8 @@ namespace utopia {
         using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
         
         BratuMultilevelTestProblem<Matrix, Vector> problem(2, true);
-        // problem.verbose = false;
-        problem.verbose = true;
+        problem.verbose = false;
+        // problem.verbose = tre;
         
         Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
         
@@ -1282,14 +1284,6 @@ namespace utopia {
     
     void trilinos_rmtr()
     {
-        if(mpi_world_size() > 1) {
-            if(mpi_world_rank() == 0) {
-                utopia_warning("trilinos_rmtr only works for nprocs <= 1");
-            }
-            
-            return;
-        }
-        
 #ifdef WITH_PETSC
         //petsc version
         rmtr_test<DSMatrixd, DVectord>();

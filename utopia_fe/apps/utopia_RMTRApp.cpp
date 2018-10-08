@@ -185,7 +185,7 @@ namespace utopia {
                 mesh.read(path);
             } else if(this->mesh_type == "unit-square") {
                 libMesh::MeshTools::Generation::build_square(mesh,
-                                                             5, 5,
+                                                             3, 3,
                                                              -0., 1.,
                                                              -0., 1.,
                                                              get_type(2)

@@ -91,7 +91,8 @@ namespace utopia {
 
 			auto s_m = size(mat);
 
-			if(empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
+			//FIXME trilinos backend is buggy
+			if(GlobalMatrix::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
 				auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
 					*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
 
@@ -100,16 +101,19 @@ namespace utopia {
 				mat *= 0.;
 			}
 
-			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
+
+			GlobalVector temp_vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
+			// if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
 				// vec = local_zeros(dof_map.n_local_dofs());
-				vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
-			} else {
-				vec.set(0.);
-			}
+				
+			// } 
+			// else {
+			// 	vec.set(0.);
+			// }
 
 			{
 				Write<GlobalMatrix> w_m(mat, utopia::GLOBAL_ADD);
-				Write<GlobalVector> w_v(vec, utopia::GLOBAL_ADD);
+				Write<GlobalVector> w_v(temp_vec, utopia::GLOBAL_ADD);
 
 				ElementMatrix el_mat;
 				ElementVector el_vec;
@@ -136,9 +140,15 @@ namespace utopia {
 						}
 
 						add_matrix(el_mat.implementation(), dof_indices, dof_indices, mat);
-						add_vector(el_vec.implementation(), dof_indices, vec);
+						add_vector(el_vec.implementation(), dof_indices, temp_vec);
 					}
 				}
+			}
+
+			if(GlobalVector::Backend == utopia::TRILINOS) {
+				vec = 1. * temp_vec; //avoid copying
+			} else {
+				vec = std::move(temp_vec);
 			}
 
 			//perf
@@ -170,8 +180,8 @@ namespace utopia {
 
 			auto s_m = size(mat);
 
-
-			if(empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
+			//FIXME trilinos backend is buggy
+			if(GlobalMatrix::Backend == utopia::TRILINOS || empty(mat) || s_m.get(0) != dof_map.n_dofs() || s_m.get(1) != dof_map.n_dofs()) {
 				SizeType nnz_x_row = 0;
 				if(!dof_map.get_n_nz().empty()) {
 					// nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
@@ -244,15 +254,17 @@ namespace utopia {
 			const auto &dof_map = space.dof_map();
 			auto &m = space.mesh();
 
-			if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
-				// vec = local_zeros(dof_map.n_local_dofs());
-				vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
-			} else {
-				vec *= 0.;
-			}
+			GlobalVector temp_vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
+
+			// if(empty(vec) || size(vec).get(0) != dof_map.n_dofs() || !is_ghosted(vec)) {
+			// 	// vec = local_zeros(dof_map.n_local_dofs());
+			// 	vec = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list()); 
+			// } else {
+			// 	vec *= 0.;
+			// }
 
 			{
-				Write<GlobalVector> w_v(vec, utopia::GLOBAL_ADD);
+				Write<GlobalVector> w_v(temp_vec, utopia::GLOBAL_ADD);
 				ElementVector el_vec;
 
 				if(elements_begin(m) != elements_end(m)) {
@@ -272,12 +284,17 @@ namespace utopia {
 						dof_map.dof_indices(*it, dof_indices);
 
 						if(ctx_.has_assembled()) {
-							add_vector(el_vec.implementation(), dof_indices, vec);
+							add_vector(el_vec.implementation(), dof_indices, temp_vec);
 						}
 					}
 				}
 			}
 
+			if(GlobalVector::Backend == utopia::TRILINOS) {
+				vec = 1. * temp_vec;
+			} else {
+				vec = std::move(temp_vec);
+			}
 
 			//perf
 			c.stop();

@@ -18,9 +18,9 @@ namespace utopia {
 		{
 			Range r = range(v);
 
-			if(r.empty()) {
-				return;
-			}
+			// if(r.empty()) {
+			// 	return;
+			// }
 
 			Read<Tensor> read_lock(v);
 
@@ -34,9 +34,9 @@ namespace utopia {
 		{
 			Range r = range(v);
 
-			if(r.empty()) {
-				return;
-			}
+			// if(r.empty()) {
+			// 	return;
+			// }
 
 			Write<Tensor> write_lock(v);
 
@@ -52,9 +52,9 @@ namespace utopia {
 			
 			Range r = range(in);
 			
-			if(r.empty()) {
-				return;
-			}
+			// if(r.empty()) {
+			// 	return;
+			// }
 
 			out = zeros(size(in));
 
@@ -75,9 +75,9 @@ namespace utopia {
 		{
 			Range r = row_range(m);
 
-			if(r.empty()) {
-				return;
-			}
+			// if(r.empty()) {
+			// 	return;
+			// }
 
 			Size s = size(m);
 			Read<Tensor> read_lock(m);
@@ -94,9 +94,9 @@ namespace utopia {
 		{
 			Range r = row_range(m);
 			
-			if(r.empty()) {
-				return;
-			}
+			// if(r.empty()) {
+			// 	return;
+			// }
 
 			Size s = size(m);
 			Write<Tensor> write_lock(m);
@@ -117,9 +117,9 @@ namespace utopia {
 		{
 			Range r = row_range(m);
 			
-			if(r.empty()) {
-				return;
-			}
+			// if(r.empty()) {
+			// 	return;
+			// }
 
 			for(auto i = r.begin(); i != r.end(); ++i) {
 				RowView<const Tensor> row_view(m, i);
