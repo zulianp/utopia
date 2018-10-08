@@ -118,9 +118,11 @@ namespace utopia {
 		rcp_map_type map(new map_type(global_size, local_size, 0, comm));
 		rcp_map_type ghost_map;
 
-		if(!ghost_index.empty()) {
+		if(comm->getSize() != 0) {
+			auto r_begin = local_size == 0 ? 0 : map->getMinGlobalIndex();
+			auto r_end   = local_size == 0 ? 0 : (map->getMaxGlobalIndex() + 1);
 
-			Range r = { map->getMinGlobalIndex(), map->getMaxGlobalIndex() + 1 };
+			Range r = { r_begin, r_end };
 
 			std::vector<GO> filled_with_local;
 			filled_with_local.reserve(r.extent() + ghost_index.size());

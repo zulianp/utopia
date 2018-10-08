@@ -31,6 +31,12 @@ namespace utopia {
             auto r  = interpolate(rhs_, u);
 
             utopia::assemble(0.5 * inner(grad(uk), grad(uk)) * dX - inner(uk, coeff(1.)) * dX, energy);
+
+
+            if(mpi_world_rank() == 0) {
+                std::cout << "energy: " << energy << std::endl;
+            }
+
             return true;
         }
         
@@ -52,12 +58,27 @@ namespace utopia {
             gradient -= rhs_;
 
             apply_zero_boundary_conditions(V_.dof_map(), gradient);
+
+
+            Scalar n_grad = norm2(gradient);
+
+            if(mpi_world_rank() == 0) {
+                std::cout << "norm(gradient): " << n_grad << std::endl;
+            }
+
             return true;
         }
         
         bool hessian(const Vector &x, Matrix &hessian) const override
         {
             hessian = H_;
+
+            Scalar n_hess = norm2(hessian);
+
+            if(mpi_world_rank() == 0) {
+                std::cout << "norm(hessian): " << n_hess << std::endl;
+            }
+
             return true;
         }
         

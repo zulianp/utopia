@@ -64,24 +64,19 @@ namespace utopia {
 	template<class Matrix, class Vector>
 	void apply_boundary_conditions(libMesh::DofMap &dof_map, Matrix &mat, Vector &vec)
 	{
-		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-		// std::cout << dof_map.n_constrained_dofs() << std::endl;
-		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-
 		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
-		if(!has_constaints) {
-			// std::cerr << "[Warning] no boundary conditions to apply\n" << std::endl;
-			// return;
-		}
-
 		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
 		Size ls = local_size(mat);
 		Size s = size(mat);
 		Matrix temp = std::move(mat);
 
-		auto nnz_x_row = std::max(*std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end()),
-			*std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end()));
+		auto it_nnz   = std::max_element(dof_map.get_n_nz().begin(), dof_map.get_n_nz().end());
+		auto it_o_nnz = std::max_element(dof_map.get_n_oz().begin(), dof_map.get_n_oz().end());
+
+		auto nnz_x_row = 
+		std::max(it_nnz   != dof_map.get_n_nz().end()? *it_nnz : 0,
+				 it_o_nnz != dof_map.get_n_oz().end()? *it_o_nnz : 0);
 
 		mat = local_sparse(ls.get(0), ls.get(1), nnz_x_row);
 
@@ -114,10 +109,6 @@ namespace utopia {
 	template<class Vector>
 	void apply_boundary_conditions(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
 	{
-		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-		// std::cout << dof_map.n_constrained_dofs() << std::endl;
-		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-
 		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
 
 		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
@@ -135,20 +126,12 @@ namespace utopia {
 		}
 	}
 
-
 	template<class Vector>
 	void mark_constrained_dofs(libMesh::DofMap &dof_map, Wrapper<Vector, 1> &vec)
 	{
-		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-		// std::cout << dof_map.n_constrained_dofs() << std::endl;
-		// std::cout << ":::::::::::::::::::::::::::::::::::::::"  << std::endl;
-
 		vec = local_zeros(dof_map.n_local_dofs());
 
 		const bool has_constaints = dof_map.constraint_rows_begin() != dof_map.constraint_rows_end();
-
-		// if(!has_constaints) return;
-
 		libMesh::DofConstraintValueMap &rhs_values = dof_map.get_primal_constraint_values();
 
 		{
@@ -176,7 +159,6 @@ namespace utopia {
 	{
 		bool has_constaints = true;
 		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
-			// std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
 			has_constaints = false;
 		}
 
@@ -195,8 +177,7 @@ namespace utopia {
 	void set_identity_at_constraint_rows(DofMap &dof_map, Matrix &mat)
 	{
 		bool has_constaints = true;
-		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
-			// std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
+		if(dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
 			has_constaints = false;
 		}
 
@@ -215,19 +196,6 @@ namespace utopia {
 		}
 
 		set_zero_rows(mat, rows, 1.);
-
-		// Size s = size(mat);
-		// Matrix temp = mat;
-
-		// {
-		// 	Write<Matrix> w_t(mat);
-
-		// 	each_read(temp, [&](const SizeType i, const SizeType j, const libMesh::Real value) {
-		// 		if(has_constaints && dof_map.is_constrained_dof(i)) {
-		// 			mat.set(i, j, i == j);
-		// 		}
-		// 	});
-		// }
 	}
 
 	template<class DofMap, class Matrix>
@@ -235,7 +203,6 @@ namespace utopia {
 	{
 		bool has_constaints = true;
 		if( dof_map.constraint_rows_begin() == dof_map.constraint_rows_end()) {
-			// std::cerr << "[Warning] no zero boundary conditions to apply\n" << std::endl;
 			has_constaints = false;
 		}
 

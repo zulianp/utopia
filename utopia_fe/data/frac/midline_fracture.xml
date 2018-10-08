@@ -49,7 +49,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/midline.e</path>
-		<refinements>1</refinements>
+		<refinements>2</refinements>
 	</mesh>
 
 <!-- 	<sampler>
@@ -85,7 +85,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/midline.e</path>
-		<refinements>0</refinements>
+		<refinements>2</refinements>
 	</mesh>
 	<space>
 		<system-name>multiplier</system-name>

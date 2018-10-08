@@ -1284,14 +1284,6 @@ namespace utopia {
     
     void trilinos_rmtr()
     {
-        // if(mpi_world_size() > 1) {
-        //     if(mpi_world_rank() == 0) {
-        //         utopia_warning("trilinos_rmtr only works for nprocs <= 1");
-        //     }
-            
-        //     return;
-        // }
-        
 #ifdef WITH_PETSC
         //petsc version
         rmtr_test<DSMatrixd, DVectord>();
