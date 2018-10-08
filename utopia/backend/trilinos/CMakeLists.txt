@@ -79,6 +79,7 @@ if(TRILINOS_FOUND)
 		solvers
 		solvers/linear
 		preconditioners
+		kokkos
 		)
 
 	find_project_files(CMAKE_CURRENT_SOURCE_DIR TRILINOS_MODULES LOCAL_HEADERS LOCAL_SOURCES)

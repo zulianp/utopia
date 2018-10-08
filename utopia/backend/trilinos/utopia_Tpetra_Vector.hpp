@@ -7,6 +7,9 @@
 #include "utopia_Size.hpp"
 #include "utopia_Writable.hpp"
 
+#include "utopia_kokkos_Eval_Binary.hpp"
+#include "utopia_kokkos_Eval_Unary.hpp"
+
 #include <Tpetra_Map_decl.hpp>
 #include <Tpetra_Vector_decl.hpp>
 
@@ -52,15 +55,10 @@ namespace utopia {
     typedef vector_type::scalar_type                  Scalar;
 
         TpetraVector()
-        {
-            int indexBase = 0;
-            auto comm = Tpetra::getDefaultComm ();
-            auto conigMap = Teuchos::rcp (new map_type (comm->getSize (), indexBase, comm));
-            vec_.reset(new vector_type (conigMap, false));
-        }
+        {}
 
         ~TpetraVector()
-        { }
+        {}
 
         TpetraVector(const TpetraVector &other);
 
@@ -370,15 +368,17 @@ namespace utopia {
         template<typename Op>
         inline void apply(const Op op)
         {
-            read_and_write_lock();
+            // read_and_write_lock();
 
-            assert(write_data_.size() > 0);
+            // assert(write_data_.size() > 0);
 
-            for(auto i = 0; i < write_data_.size(); ++i) {
-                write_data_[i] = op.apply(write_data_[i]);
-            }
+            // for(auto i = 0; i < write_data_.size(); ++i) {
+            //     write_data_[i] = op.apply(write_data_[i]);
+            // }
 
-            read_and_write_unlock();
+            // read_and_write_unlock();
+
+            KokkosEvalUnary<TpetraVector, Op>::eval(op, *this);
         }
 
         void reciprocal(TpetraVector &result) const
@@ -394,26 +394,7 @@ namespace utopia {
         template<typename Op>
         inline void apply_binary(const Op op, const TpetraVector &rhs, TpetraVector &result) const
         {
-            assert(!empty());
-            assert(!rhs.empty());
-            assert(rhs.size() == size());
-            assert(rhs.local_size() == local_size());
-
-            if(result.empty() || result.size() != rhs.size())
-            {
-                result.init(rhs.implementation().getMap());
-            } 
-
-            auto a_lhs = this->implementation().getData();
-            auto a_rhs = rhs.implementation().getData();
-            auto a_res = result.implementation().getDataNonConst();
-
-            assert(a_res.size() == a_lhs.size());
-            assert(a_res.size() == a_rhs.size());
-
-            for(auto i = 0; i < a_lhs.size(); ++i) {
-               a_res[i] = op.apply(a_lhs[i], a_rhs[i]);
-            }
+            KokkosEvalBinary<TpetraVector, Op>::eval(*this, op, rhs, result);
         }
 
         inline vector_type &implementation()

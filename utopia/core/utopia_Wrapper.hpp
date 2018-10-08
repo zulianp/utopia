@@ -560,7 +560,7 @@ namespace utopia {
     {
         static_assert(Order >= 1, "Does not work for scalars");
         auto s = size(w); 
-        return s.get(0) == INVALID_INDEX;
+        return s.get(0) <= 0;
     }
 
     /**
