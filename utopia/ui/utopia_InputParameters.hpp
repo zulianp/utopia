@@ -13,41 +13,54 @@
 namespace utopia {
 	class InputParameters /*final*/ : public Input {
 	public:
-		inline void read(const std::string &key, bool &val) 
+
+		inline SizeType size() const override
+		{
+			return nodes_.size() + values_.size();
+		}
+
+		inline void read(const std::string &key, bool &val) override
 		{
 			aux_read(key, val);
 		}
 
-		inline void read(const std::string &key, double &val) 
+		inline void read(const std::string &key, double &val) override
 		{
 			aux_read(key, val);
 		}
 
-		inline void read(const std::string &key, int &val) 
+		inline void read(const std::string &key, int &val) override
 		{
 			aux_read(key, val);
 		}
 
-		inline void read(const std::string &key, SizeType &val) 
+		inline void read(const std::string &key, SizeType &val) override
 		{
 			aux_read(key, val);
 		}
 
-		inline void read(const std::string &key, std::string &val) 
+		inline void read(const std::string &key, std::string &val) override
 		{
 			aux_read(key, val);
 		}
 
-		inline void read(const std::string &key, Configurable &val) 
+		inline void read(const std::string &key, Configurable &val) override
 		{
 			auto node_ptr = node(key);
-			
+
 			if(node_ptr) {
 				val.read(*node_ptr);
 			}
 		}
 
-		inline bool good() const { return true; }
+		void read_all(std::function<void(Input &)> lambda) override
+		{
+			for(auto n : nodes_) {
+				lambda(*n.second);
+			}
+		}
+
+		inline bool good() const override { return true; }
 
 		std::shared_ptr<Input> node(const std::string &key) const
 		{
@@ -67,7 +80,7 @@ namespace utopia {
 		template<typename Out>
 		void aux_read(const std::string &key, Out &out) const {
 			auto it = values_.find(key);
-			
+
 			if(it != values_.end()) {
 				it->second->get(out);
 			} //else do nothing

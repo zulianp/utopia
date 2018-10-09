@@ -45,7 +45,7 @@ namespace utopia {
 			array_finish();
 		}
 
-		void read_all(std::function<void(Input &)> lambda) {
+		virtual void read_all(std::function<void(Input &)> lambda) {
 			auto n = size();
 
 			if(n == 0) return;

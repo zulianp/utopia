@@ -2,6 +2,7 @@
 #define UTOPIA_CONVERTIBLE_HPP
 
 #include <string>
+#include <type_traits>
 
 namespace utopia {
 	class IConvertible {
@@ -13,6 +14,24 @@ namespace utopia {
 		virtual void get(long &) const = 0;
 		virtual void get(bool &) const = 0;
 		virtual void get(std::string &) const = 0;
+
+		virtual bool is_double() const { return false; }
+		virtual bool is_float() const { return false; }
+		virtual bool is_int() const { return false; }
+		virtual bool is_long() const { return false; }
+		virtual bool is_bool() const { return false; }
+		virtual bool is_string() const { return false; }
+	};
+
+	//does not do anything (no defaults)
+	class NullConvertible final : public IConvertible {
+	public:
+		void get(double &) const override {}
+		void get(float &) const override {}
+		void get(int &) const override {}
+		void get(long &) const override {}
+		void get(bool &) const override {}
+		void get(std::string &) const override {}
 	};
 
 	template<typename In, typename Out>
@@ -99,40 +118,96 @@ namespace utopia {
 	template<typename T>
 	class Convertible final : public IConvertible {
 	public:
-	
-		void get(double &in_out) const override
+
+		inline void get(double &in_out) const override
 		{
 			Convert<T, double>::apply(value_, in_out);
 		}
 
-		void get(float &in_out) const override
+		inline void get(float &in_out) const override
 		{
 			Convert<T, float>::apply(value_, in_out);
 		}
 
-		void get(int &in_out) const override
+		inline void get(int &in_out) const override
 		{
 			Convert<T, int>::apply(value_, in_out);
 		}
 
-		void get(long &in_out) const override
+		inline void get(long &in_out) const override
 		{
 			Convert<T, long>::apply(value_, in_out);
 		}
 
-		void get(bool &in_out) const override
+		inline void get(bool &in_out) const override
 		{
 			Convert<T, bool>::apply(value_, in_out);
 		}
 
-		void get(std::string &in_out) const override
+		inline void get(std::string &in_out) const override
 		{
 			Convert<T, std::string>::apply(value_, in_out);
 		}
 
+		////////////////////////////////////////
+		
+		inline void set(const double &in)
+		{
+			Convert<double, T>::apply(in, value_);
+		}
+
+		inline void set(const float &in)
+		{
+			Convert<float, T>::apply(in, value_);
+		}
+
+		inline void set(const int &in)
+		{
+			Convert<int, T>::apply(in, value_);
+		}
+
+		inline void set(const long &in)
+		{
+			Convert<long, T>::apply(in, value_);
+		}
+
+		inline void set(const bool &in)
+		{
+			Convert<bool, T>::apply(in, value_);
+		}
+
+		inline void set(const std::string &in)
+		{
+			Convert<std::string, T>::apply(in, value_);
+		}
+
+		inline operator const T &() const
+		{
+			return value_;
+		} 
+
+		inline operator T &()
+		{
+			return value_;
+		} 
+
+		inline bool is_double() const override  { return std::is_same<T, double>::value; }
+		inline bool is_float() const override 	{ return std::is_same<T, float>::value; }
+		inline bool is_int() const override 	{ return std::is_same<T, int>::value; }
+		inline bool is_long() const override 	{ return std::is_same<T, long>::value; }
+		inline bool is_bool() const override 	{ return std::is_same<T, bool>::value; }
+		inline bool is_string() const override  { return std::is_same<T, std::string>::value; }
+
 	private:
 		T value_;
 	};
+
+	using Double = Convertible<double>;
+	using Float  = Convertible<float>;
+	using Int    = Convertible<int>;
+	using Long   = Convertible<long>;
+	using Bool   = Convertible<bool>;
+	using String = Convertible<std::string>;
 }
 
 
