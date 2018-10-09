@@ -97,7 +97,7 @@ namespace utopia {
 			if(type == "l2-projection") {
 				biorth_basis = true;
 				is.read("biorth-basis", biorth_basis);
-				local_assembler_ = std::make_shared<L2LocalAssembler>(mesh_master_->mesh_dimension(), biorth_basis, assemble_mass_mat_);
+				local_assembler_ = std::make_shared<L2LocalAssembler>(mesh_master_->mesh_dimension(), biorth_basis, assemble_mass_mat_, mesh_master_->mesh_dimension() < mesh_master_->spatial_dimension());
 			} else if(type == "interpolation") {
 				local_assembler_ = std::make_shared<InterpolationLocalAssembler>(mesh_master_->mesh_dimension());
 				is_interpolation_ = true;

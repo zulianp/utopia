@@ -301,9 +301,9 @@ namespace utopia {
 		auto angle = trial_normal * test_normal;
 
 		if(std::abs(angle - 1) > 1e-14) {
+			//not coplanar
 			return false;
 		}
-
 
 		make_polygon_3(trial, trial_pts);
 		make_polygon_3(test, test_pts);
@@ -313,10 +313,18 @@ namespace utopia {
 		}
 
 		const int order = order_for_l2_integral(2, trial, trial_type.order, test, test_type.order);
-		Scalar weight = Intersector::polygon_area_3(test_pts.m(), &test_pts.get_values()[0]);
+		const Scalar weight = Intersector::polygon_area_3(test_pts.m(), &test_pts.get_values()[0]);
 		
-		make_composite_quadrature_on_surf_3D(ref_intersection_slave,  1./weight, order, q_test);
-		make_composite_quadrature_on_surf_3D(ref_intersection_master, 1./weight, order, q_trial);
+		make_composite_quadrature_on_surf_3D(intersection, 1./weight, order, composite_ir);
+
+		total_intersection_volume += Intersector::polygon_area_3(intersection.m(), &intersection.get_values()[0]);
+		
+		auto trial_trans = std::make_shared<Transform2>(trial);
+		auto test_trans  = std::make_shared<Transform2>(test);
+
+		transform_to_reference_surf(*trial_trans, trial.type(), composite_ir, q_trial);
+		transform_to_reference_surf(*test_trans,  test.type(),  composite_ir, q_test);
+		assert(false);
 		return true;
 	}
 
@@ -341,7 +349,6 @@ namespace utopia {
 										      &ref_trial_pts.get_values()[0]
 										     );
 
-		//FIXME could store reference instead of computing it each time
 		Intersector::apply_affine_transform_3(Ainv, binv, test_pts.m(),
 										 	  &test_pts.get_values()[0],
 										      &ref_test_pts.get_values()[0]
@@ -361,9 +368,9 @@ namespace utopia {
 			return false;
 		}
 
-		ref_intersection_slave.resize(ref_intersection_2.n(), 3);
-		ref_intersection_master.resize(ref_intersection_2.n(), 3);
-		intersection.resize(ref_intersection_2.n(), 3);
+		ref_intersection_slave.resize(ref_intersection_2.m(),  3);
+		ref_intersection_master.resize(ref_intersection_2.m(), 3);
+		intersection.resize(ref_intersection_2.m(), 3);
 
 		for(uint i = 0; i < ref_intersection_2.m(); ++i) {
 			ref_intersection_slave(i, 0) = ref_intersection_2(i, 0);
@@ -372,16 +379,6 @@ namespace utopia {
 		}
 
 		Intersector::apply_affine_transform_3(A, b, ref_intersection_slave.m(), &ref_intersection_slave.get_values()[0], &intersection.get_values()[0]);
-
-
-		//compute new affine transform and its inverse
-		Intersector::triangle_make_affine_transform_3(&trial_pts.get_values()[0], A, b);
-		Intersector::make_inverse_affine_transform_3(A, b, Ainv, binv);
-
-		Intersector::apply_affine_transform_3(Ainv, binv,
-										 	  intersection.m(),
-										      &intersection.get_values()[0],
-										      &ref_intersection_master.get_values()[0]);
 		return true;
 	}
 

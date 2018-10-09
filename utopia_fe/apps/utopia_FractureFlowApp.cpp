@@ -155,7 +155,9 @@ namespace utopia {
 
     static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &B, USparseMatrix &D)
     {
-        auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, true);
+        bool is_shell = from.mesh().mesh_dimension() < from.mesh().spatial_dimension();
+
+        auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, true, is_shell);
         auto local2global = std::make_shared<Local2Global>(false);
 
         TransferAssembler transfer_assembler(assembler, local2global);
@@ -183,7 +185,9 @@ namespace utopia {
 
     static bool assemble_coupling(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &B)
     {
-        auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, false);
+        bool is_shell = from.mesh().mesh_dimension() < from.mesh().spatial_dimension();
+
+        auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, false, is_shell);
         auto local2global = std::make_shared<Local2Global>(false);
 
         TransferAssembler transfer_assembler(assembler, local2global);
