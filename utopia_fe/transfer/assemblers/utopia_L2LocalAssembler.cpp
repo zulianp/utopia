@@ -8,7 +8,11 @@
 #include <numeric>
 
 namespace utopia {
-	L2LocalAssembler::L2LocalAssembler(const int dim, const bool use_biorth, const bool assemble_mass_mat)
+	L2LocalAssembler::L2LocalAssembler(
+		const int dim,
+		const bool use_biorth,
+		const bool assemble_mass_mat,
+		const bool is_shell)
 	: dim(dim),
 	use_biorth(use_biorth),
 	must_compute_biorth(use_biorth),
@@ -21,7 +25,11 @@ namespace utopia {
 		if(dim == 1) {
 			q_builder = std::make_shared<QMortarBuilder1>();
 		} else if(dim == 2) {
-			q_builder = std::make_shared<QMortarBuilder2>();
+			if(is_shell) {
+				q_builder = std::make_shared<QMortarBuilderShell2>();
+			} else {
+				q_builder = std::make_shared<QMortarBuilder2>();
+			}
 		} else {
 			assert(dim == 3);
 			q_builder = std::make_shared<QMortarBuilder3>(); 

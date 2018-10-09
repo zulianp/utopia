@@ -287,6 +287,104 @@ namespace utopia {
 		}
 	}
 
+	bool QMortarBuilderShell2::build(
+		const Elem &trial,
+		FEType trial_type,
+		const Elem &test,
+		FEType test_type,
+		QMortar &q_trial,
+		QMortar &q_test) 
+	{
+		compute_normal(trial, trial_normal);
+		compute_normal(test,  test_normal);
+
+		auto angle = trial_normal * test_normal;
+
+		if(std::abs(angle - 1) > 1e-14) {
+			return false;
+		}
+
+
+		make_polygon_3(trial, trial_pts);
+		make_polygon_3(test, test_pts);
+
+		if(!intersect()) {
+			return false;
+		}
+
+		const int order = order_for_l2_integral(2, trial, trial_type.order, test, test_type.order);
+		Scalar weight = Intersector::polygon_area_3(test_pts.m(), &test_pts.get_values()[0]);
+		
+		make_composite_quadrature_on_surf_3D(ref_intersection_slave,  1./weight, order, q_test);
+		make_composite_quadrature_on_surf_3D(ref_intersection_master, 1./weight, order, q_trial);
+		return true;
+	}
+
+	bool QMortarBuilderShell2::intersect()
+	{
+		using namespace libMesh;
+		typedef Intersector::Scalar Scalar;
+
+		ref_trial_pts.resize(trial_pts.m(), trial_pts.n());
+		ref_trial_pts_2.resize(trial_pts.m(), 2);
+
+		ref_test_pts.resize(test_pts.m(), test_pts.n());
+		ref_test_pts_2.resize(test_pts.m(), 2);
+
+
+		Intersector::triangle_make_affine_transform_3(&test_pts.get_values()[0], A, b);
+		Intersector::make_inverse_affine_transform_3(A, b, Ainv, binv);
+
+		Intersector::apply_affine_transform_3(Ainv, binv,
+										 	  trial_pts.m(),
+										      &trial_pts.get_values()[0],
+										      &ref_trial_pts.get_values()[0]
+										     );
+
+		//FIXME could store reference instead of computing it each time
+		Intersector::apply_affine_transform_3(Ainv, binv, test_pts.m(),
+										 	  &test_pts.get_values()[0],
+										      &ref_test_pts.get_values()[0]
+										      );
+
+		for(uint i = 0; i < ref_trial_pts.m(); ++i) {
+			ref_trial_pts_2(i, 0) = ref_trial_pts(i, 0);
+			ref_trial_pts_2(i, 1) = ref_trial_pts(i, 1);
+		}
+
+		for(uint i = 0; i < ref_test_pts.m(); ++i) {
+			ref_test_pts_2(i, 0) = ref_test_pts(i, 0);
+			ref_test_pts_2(i, 1) = ref_test_pts(i, 1);
+		}
+
+		if(!intersect_2D(ref_trial_pts_2, ref_test_pts_2, ref_intersection_2)) {
+			return false;
+		}
+
+		ref_intersection_slave.resize(ref_intersection_2.n(), 3);
+		ref_intersection_master.resize(ref_intersection_2.n(), 3);
+		intersection.resize(ref_intersection_2.n(), 3);
+
+		for(uint i = 0; i < ref_intersection_2.m(); ++i) {
+			ref_intersection_slave(i, 0) = ref_intersection_2(i, 0);
+			ref_intersection_slave(i, 1) = ref_intersection_2(i, 1);
+			ref_intersection_slave(i, 2) = 0.;
+		}
+
+		Intersector::apply_affine_transform_3(A, b, ref_intersection_slave.m(), &ref_intersection_slave.get_values()[0], &intersection.get_values()[0]);
+
+
+		//compute new affine transform and its inverse
+		Intersector::triangle_make_affine_transform_3(&trial_pts.get_values()[0], A, b);
+		Intersector::make_inverse_affine_transform_3(A, b, Ainv, binv);
+
+		Intersector::apply_affine_transform_3(Ainv, binv,
+										 	  intersection.m(),
+										      &intersection.get_values()[0],
+										      &ref_intersection_master.get_values()[0]);
+		return true;
+	}
+
 	bool QMortarBuilder3::build(
 		const Elem &trial,
 		FEType trial_type,
