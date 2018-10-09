@@ -42,11 +42,13 @@ namespace utopia {
 			std::string path;
 			type = "l2-projection"; //interpolation, approx-l2-projection
 			int order = 1;
+			std::string fe_family = "LAGRANGE";
 
 			////////////////// MASTER ///////////////////////
 
 			is.read("mesh-master", path);
 			is.read("order-master", order);
+			is.read("fe-family-master", fe_family);
 
 
 			mesh_master_->read(path);
@@ -61,14 +63,16 @@ namespace utopia {
 
 			equation_systems_master_ = std::make_shared<libMesh::EquationSystems>(*mesh_master_);
 			equation_systems_master_->add_system<libMesh::LinearImplicitSystem>("master");
-			space_master_            = std::make_shared<LibMeshFunctionSpace>(equation_systems_master_, libMesh::LAGRANGE, libMesh::Order(order), "u_master");
+			space_master_            = std::make_shared<LibMeshFunctionSpace>(equation_systems_master_, libMesh::Utility::string_to_enum<libMesh::FEFamily>(fe_family), libMesh::Order(order), "u_master");
 			space_master_->initialize();
 
 			////////////////// SLAVE ///////////////////////
 			order = 1;
+			fe_family = "LAGRANGE";
 
 			is.read("mesh-slave", path);
 			is.read("order-slave", order);
+			is.read("fe-family-slave", fe_family);
 			is.read("type", type);
 			mesh_slave_->read(path);
 
@@ -82,7 +86,7 @@ namespace utopia {
 
 			equation_systems_slave_ = std::make_shared<libMesh::EquationSystems>(*mesh_slave_);
 			equation_systems_slave_->add_system<libMesh::LinearImplicitSystem>("slave");
-			space_slave_            = std::make_shared<LibMeshFunctionSpace>(equation_systems_slave_, libMesh::LAGRANGE, libMesh::Order(order), "u_slave");
+			space_slave_            = std::make_shared<LibMeshFunctionSpace>(equation_systems_slave_, libMesh::Utility::string_to_enum<libMesh::FEFamily>(fe_family), libMesh::Order(order), "u_slave");
 			space_slave_->initialize();
 
 			is_interpolation_ = false;
