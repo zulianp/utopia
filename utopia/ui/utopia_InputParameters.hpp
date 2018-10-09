@@ -13,7 +13,11 @@
 namespace utopia {
 	class InputParameters /*final*/ : public Input {
 	public:
-
+		inline bool empty() const
+		{
+			return nodes_.empty() && values_.empty();
+		}
+		
 		inline SizeType size() const override
 		{
 			return nodes_.size() + values_.size();
@@ -73,6 +77,36 @@ namespace utopia {
 			return nullptr;
 		}
 
+		inline void set(const std::string &key, const bool &val)
+		{
+			aux_set(key, val);
+		}
+
+		inline void set(const std::string &key, const double &val)
+		{
+			aux_set(key, val);
+		}
+
+		inline void set(const std::string &key, const int &val)
+		{
+			aux_set(key, val);
+		}
+
+		inline void set(const std::string &key, const SizeType &val)
+		{
+			aux_set(key, val);
+		}
+
+		inline void set(const std::string &key, const std::string &val)
+		{
+			aux_set(key, val);
+		}
+
+		inline void set(const std::string &key, std::shared_ptr<Input> &in)
+		{
+			nodes_[key] = in;
+		}
+
 	private:
 		std::map<std::string, std::unique_ptr<IConvertible>> values_;
 		std::map<std::string, std::shared_ptr<Input>> nodes_;
@@ -84,6 +118,11 @@ namespace utopia {
 			if(it != values_.end()) {
 				it->second->get(out);
 			} //else do nothing
+		}
+
+		template<typename In>
+		void aux_set(const std::string &key, const In &in) {
+			values_[key] = make_unique<Convertible<In>>(in);
 		}
 	};
 }

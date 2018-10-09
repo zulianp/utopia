@@ -4,6 +4,8 @@
 #include <string>
 #include <type_traits>
 
+#include "utopia_Clonable.hpp"
+
 namespace utopia {
 	class IConvertible {
 	public:
@@ -116,8 +118,9 @@ namespace utopia {
 	};
 
 	template<typename T>
-	class Convertible final : public IConvertible {
+	class Convertible final : public IConvertible, public Clonable {
 	public:
+		Convertible(const T &value) : value_(value) {}	
 
 		inline void get(double &in_out) const override
 		{
@@ -197,6 +200,11 @@ namespace utopia {
 		inline bool is_long() const override 	{ return std::is_same<T, long>::value; }
 		inline bool is_bool() const override 	{ return std::is_same<T, bool>::value; }
 		inline bool is_string() const override  { return std::is_same<T, std::string>::value; }
+
+		inline Convertible * clone() const override
+		{
+			return new Convertible(value_);
+		}
 
 	private:
 		T value_;

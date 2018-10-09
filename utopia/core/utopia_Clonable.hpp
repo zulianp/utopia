@@ -1,14 +1,12 @@
 #ifndef UTOPIA_CLONABLE_HPP
 #define UTOPIA_CLONABLE_HPP 
 
-#include "utopia_Logger.hpp"
-
 namespace utopia {
 	class Clonable {
 	public:
 		virtual ~Clonable()
 		{
-			m_utopia_warning_once("Clone overrides are incomplete.");
+			
 		}
 
 		/** @brief This method copies the relevant 

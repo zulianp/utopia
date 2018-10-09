@@ -5,6 +5,24 @@
 #include "utopia_ui.hpp"
 
 namespace utopia {
+
+	inline double surface_area(LibMeshFunctionSpace &V, int side)
+	{
+		auto &dof_map = V.dof_map();
+		auto u = trial(V);
+		UVector x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());		
+		x.set(1.);
+		
+		double area = -1.;
+		
+		utopia::assemble(
+			surface_integral(interpolate(x, u), side),
+			area
+		);
+
+		return area;
+	}
+
 	template<class FunctionSpace, class Vector>
 	class UIForcingFunction final : public CompositeForcingFunction<Vector>, public Configurable {
 	public:
@@ -33,8 +51,17 @@ namespace utopia {
 #endif //WITH_TINY_EXPR
 
 				if(type == "surface") {
+					int normalize_by_area = 0;
+					is.read("normalize-by-area", normalize_by_area);
+
+					double area = 1.;
+					if(normalize_by_area) {
+						area = surface_area(V_, block);
+						std::cout << "normalizing by area: " << area << std::endl;
+					}
+
 					auto v = test(V_);
-					auto l_form = surface_integral(inner(f, v), block);
+					auto l_form = surface_integral((1./area) * inner(f, v), block);
 
 					auto ff = std::make_shared<ConstantForcingFunction<Vector>>();
 					ff->init(l_form);
@@ -85,8 +112,18 @@ namespace utopia {
 #endif //WITH_TINY_EXPR
 
 				if(type == "surface") {
+
+					int normalize_by_area = 0;
+					is.read("normalize-by-area", normalize_by_area);
+
+					double area = 1.;
+					if(normalize_by_area) {
+						area = surface_area(V_[0], block);
+						std::cout << "normalizing by area: " << area << std::endl;
+					}
+
 					auto v = test(V_[coord]);
-					auto l_form = surface_integral(inner(f, v), block);
+					auto l_form = surface_integral((1./area) * inner(f, v), block);
 
 					auto ff = std::make_shared<ConstantForcingFunction<Vector>>();
 					ff->init(l_form);

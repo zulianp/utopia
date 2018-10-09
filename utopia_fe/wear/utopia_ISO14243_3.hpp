@@ -62,6 +62,9 @@ namespace utopia {
 		int axial_force_side_;
 
 
+		int normalize_axial_force_by_area_;
+
+
 		//////////////////// Values from ISO ////////////////
 		//%
 		int percentage_of_time_cycle_;
