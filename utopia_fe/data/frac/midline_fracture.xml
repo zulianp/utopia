@@ -85,10 +85,17 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/midline.e</path>
-		<refinements>2</refinements>
+		<refinements>1</refinements>
 	</mesh>
 	<space>
 		<system-name>multiplier</system-name>
+		<variables>
+			<var1>
+				<name>lagr</name>
+				<order>0</order>
+				<fe-family>MONOMIAL</fe-family>
+			</var1>
+		</variables>
 	</space>
 
 </multiplier>

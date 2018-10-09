@@ -66,6 +66,8 @@
             <femural-block>1</femural-block>
             <tibial-block>2</tibial-block>
             
+            <normalize-axial-force-by-area>1</normalize-axial-force-by-area>
+            
             <dt>0.001</dt>
         </gait-cycle>
     </wear>

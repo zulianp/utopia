@@ -3048,6 +3048,19 @@ namespace utopia {
 			return ret;
 		}
 
+		static Scalar integrate(const ConstantCoefficient<double, 0> &val, AssemblyContext<LIBMESH_TAG> &ctx) 
+		{
+			auto && dx = ctx.dx();
+			uint n_quad_points = dx.size();
+
+			Scalar ret = 0.;
+			for (uint qp = 0; qp < n_quad_points; qp++) {
+				ret += dx[qp];
+			}
+
+			return ret * val.expr();
+		}
+
 		// template<class Left, class Right>
 		// static auto inner(const Left &left, const Right &right, const AssemblyContext<LIBMESH_TAG> &ctx) -> std::vector<double>
 		// {

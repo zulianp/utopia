@@ -1,4 +1,4 @@
-// #include "utopia_JSONStream.hpp"
+// #include "utopia_JSONInput.hpp"
 
 // #include <stack>
 
@@ -10,7 +10,7 @@
 // #include <fstream>
 
 // namespace utopia {
-// 	class JSONInputStream::Impl {
+// 	class JSONInput::Impl {
 // 	public:
 // 		using json = nlohmann::json;
 
@@ -41,7 +41,7 @@
 // 		SizeType n_invalid_subtrees_;
 // 	};
 
-// 	bool JSONInputStream::open(const Path &path)
+// 	bool JSONInput::open(const Path &path)
 // 	{
 // 		impl_ = make_unique<Impl>(path);
 // 		if(!impl_->valid()) {
@@ -52,11 +52,11 @@
 // 		return true;
 // 	}
 
-// 	JSONInputStream::~JSONInputStream() {}
+// 	JSONInput::~JSONInput() {}
 
-// 	JSONInputStream::JSONInputStream() {}
+// 	JSONInput::JSONInput() {}
 
-// 	bool JSONInputStream::object_begin(const std::string &name)
+// 	bool JSONInput::object_begin(const std::string &name)
 // 	{
 // 		//TODO
 
@@ -64,83 +64,83 @@
 // 		return false;
 // 	}
 
-// 	bool JSONInputStream::object_end()
+// 	bool JSONInput::object_end()
 // 	{
 // 		//TODO
 // 		return false;
 // 	}
 
-// 	void JSONInputStream::read(double &val)
+// 	void JSONInput::read(double &val)
 // 	{
 // 		if(impl_->is_invalid_subtree()) return;
 
 // 		//TODO
 // 	}
 
-// 	void JSONInputStream::read(int &val)
+// 	void JSONInput::read(int &val)
 // 	{
 // 		if(impl_->is_invalid_subtree()) return;
 // 		//TODO
 // 	}
 
-// 	void JSONInputStream::read(SizeType &val)
-// 	{
-// 		if(impl_->is_invalid_subtree()) return;
-
-// 		//TODO
-// 	}
-
-// 	void JSONInputStream::read(std::string &val)
+// 	void JSONInput::read(SizeType &val)
 // 	{
 // 		if(impl_->is_invalid_subtree()) return;
 
 // 		//TODO
 // 	}
 
-// 	void JSONInputStream::read(const std::string &key, double &val)
+// 	void JSONInput::read(std::string &val)
+// 	{
+// 		if(impl_->is_invalid_subtree()) return;
+
+// 		//TODO
+// 	}
+
+// 	void JSONInput::read(const std::string &key, double &val)
 // 	{
 // 		object_begin(key);
 // 		read(val);
 // 		object_end();
 // 	}
 
-// 	void JSONInputStream::read(const std::string &key, int &val)
+// 	void JSONInput::read(const std::string &key, int &val)
 // 	{
 // 		object_begin(key);
 // 		read(val);
 // 		object_end();
 // 	}
 
-// 	void JSONInputStream::read(const std::string &key, SizeType &val)
+// 	void JSONInput::read(const std::string &key, SizeType &val)
 // 	{
 // 		object_begin(key);
 // 		read(val);
 // 		object_end();
 // 	}
 
-// 	void JSONInputStream::read(const std::string &key, std::string &val)
+// 	void JSONInput::read(const std::string &key, std::string &val)
 // 	{
 // 		object_begin(key);
 // 		read(val);
 // 		object_end();
 // 	}
 
-// 	bool JSONInputStream::good() const
+// 	bool JSONInput::good() const
 // 	{
 // 		return impl_.get();
 // 	}
 
-// 	void JSONInputStream::start()
+// 	void JSONInput::start()
 // 	{
 // 		//TODO
 // 	}
 
-//  	void JSONInputStream::start(const std::string &name)
+//  	void JSONInput::start(const std::string &name)
 //  	{
 //  	//TODO
 //  	}
 
-// 	std::string JSONInputStream::name()
+// 	std::string JSONInput::name()
 // 	{
 // 		if(impl_->is_invalid_subtree()) return "";
 
@@ -148,19 +148,19 @@
 // 		return "";
 // 	}
 
-// 	bool JSONInputStream::good()
+// 	bool JSONInput::good()
 // 	{
 // 		return !(impl_->is_invalid_subtree());
 // 	}
 
-// 	bool JSONInputStream::next()
+// 	bool JSONInput::next()
 // 	{
 // 		if(impl_->is_invalid_subtree()) return false;
 // 		//TODO
 // 		return good();
 // 	}
 
-// 	void JSONInputStream::finish()
+// 	void JSONInput::finish()
 // 	{
 // 		//TODO
 // 		if(!good()) {

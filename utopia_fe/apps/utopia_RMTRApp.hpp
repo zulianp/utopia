@@ -20,13 +20,13 @@ namespace utopia {
 			return "-rmtr";
 		}
 
-		class Input;
+		class SimulationInput;
 
 	private:
 		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
 
-		void solve_newton(const Input &in);
-		void solve_rmtr(const Input &in);
+		void solve_newton(const SimulationInput &in);
+		void solve_rmtr(const SimulationInput &in);
 	};
 }
 

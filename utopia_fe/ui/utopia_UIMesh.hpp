@@ -10,17 +10,17 @@
 
 namespace utopia {
 	template<class Mesh>
-	class UIMesh {};// final : public Serializable { };
+	class UIMesh {};// final : public Configurable { };
 
 	template<>
-	class UIMesh<libMesh::DistributedMesh> : public Serializable {
+	class UIMesh<libMesh::DistributedMesh> : public Configurable {
 	public:
 		template<class... Args>
 		UIMesh(Args &&...args)
 		: mesh_(std::make_shared<libMesh::DistributedMesh>(std::forward<Args...>(args...))), empty_(true)
 		{}
 
-		void read(InputStream &is) override {
+		void read(Input &is) override {
 			std::string mesh_type = "square";
 			std::string path = "";
 	

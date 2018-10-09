@@ -226,10 +226,12 @@ namespace utopia {
     bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem()
     {
         impl_->linear_problem->setProblem();
-        impl_->belos_solver = impl_->belos_factory.create( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
+        auto sol_type = impl_->param_list->get("Solver Type", "CG");
+        auto belos_params = Teuchos::sublist(impl_->param_list, sol_type, false);
+        impl_->belos_solver = impl_->belos_factory.create( sol_type, belos_params); //to change it to have the specialization
         impl_->belos_solver->setProblem(impl_->linear_problem);
         if (this->verbose()) { impl_->belos_solver->getCurrentParameters()->print(); }
-        
+        set_preconditioner(); 
         return true;
     }
     
@@ -237,7 +239,9 @@ namespace utopia {
     bool BelosSolver<Matrix, Vector, TRILINOS>::set_problem(Matrix &A)
     {
         impl_->linear_problem->setProblem();
-        impl_->belos_solver = impl_->belos_factory.create( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
+        auto sol_type = impl_->param_list->get("Solver Type", "CG");
+        auto belos_params = Teuchos::sublist(impl_->param_list, sol_type, false);
+        impl_->belos_solver = impl_->belos_factory.create( sol_type, belos_params); //to change it to have the specialization
         set_preconditioner(); //(A);
         impl_->belos_solver->setProblem(impl_->linear_problem);
         if (this->verbose()) { impl_->belos_solver->getCurrentParameters()->print(); }
@@ -255,6 +259,7 @@ namespace utopia {
             //                 M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, precond->implementation().implementation_ptr()); //TODO
             
 #ifdef HAVE_BELOS_IFPACK2
+            impl_->M_ifpack = Ifpack2::Factory::create<typename Impl::matrix_type>(dir_prec_type, this->get_operator()->implementation().implementation_ptr());
             assert(!impl_->M_ifpack.is_null());
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();

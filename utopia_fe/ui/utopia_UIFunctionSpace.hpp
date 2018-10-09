@@ -12,12 +12,12 @@
 namespace utopia {
 
 	template<class FunctionSpace>
-	class UIFunctionSpace final : public Serializable {
+	class UIFunctionSpace final : public Configurable {
 	public:
 		UIFunctionSpace()
 		{}
 
-		void read(InputStream &is) override {}
+		void read(Input &is) override {}
 
 	private:
 		std::shared_ptr<FunctionSpace> space_;
@@ -25,30 +25,35 @@ namespace utopia {
 
 
 	template<>
-	class UIFunctionSpace<LibMeshFunctionSpace> final : public Serializable {
+	class UIFunctionSpace<LibMeshFunctionSpace> final : public Configurable {
 	public:
 		UIFunctionSpace(const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh)
 		: mesh_(mesh)
 		{}
 
-		void read(InputStream &is) override {
+		void read(Input &is) override {
 			int n_vars = 0;
 
 			std::vector<std::string> var_names;
 			std::vector<int> var_orders;
+			std::vector<std::string> fe_families;
 
 			std::string system_name = "main";
+			std::string fe_family = "LAGRANGE";
 
-			is.read("variables", [&](InputStream &sub_is_mid) {
-				sub_is_mid.read_all([&](InputStream &sub_is) {
+			is.read("variables", [&](Input &sub_is_mid) {
+				sub_is_mid.read_all([&](Input &sub_is) {
 					std::string var_name = "u_" + std::to_string(n_vars);
 					int var_order = 1;
+					std::string var_fe_family = fe_family;
 
 					sub_is.read("name", var_name);
 					sub_is.read("order", var_order);
+					sub_is.read("fe-family", var_fe_family);
 					
 					var_names.push_back(var_name);
 					var_orders.push_back(var_order);
+					fe_families.push_back(var_fe_family);
 
 					++n_vars;
 				});
@@ -57,6 +62,7 @@ namespace utopia {
 			if(n_vars == 0) {
 				var_names.push_back("u");
 				var_orders.push_back(1);
+				fe_families.push_back(fe_family);
 				n_vars = 1;
 			}
 
@@ -68,12 +74,18 @@ namespace utopia {
 			space_ = std::make_shared<ProductFunctionSpace<LibMeshFunctionSpace>>();
 
 			for(int i = 0; i < n_vars; ++i) {
-				auto ss = std::make_shared<LibMeshFunctionSpace>(equation_systems, libMesh::LAGRANGE, libMesh::Order(var_orders[i]), var_names[i]);
+				auto ss = std::make_shared<LibMeshFunctionSpace>(
+					equation_systems,
+					libMesh::Utility::string_to_enum<libMesh::FEFamily>(fe_families[i]),
+					libMesh::Order(var_orders[i]),
+					var_names[i]
+				);
+				
 				space_->add_subspace(ss);
 			}
 
-			is.read("boundary-conditions", [this](InputStream &is) {
-			    is.read_all([this](InputStream &is) {
+			is.read("boundary-conditions", [this](Input &is) {
+			    is.read_all([this](Input &is) {
 			        int side_set = 0;
 			        
 			        is.read("side", side_set);

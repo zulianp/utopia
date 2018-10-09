@@ -10,8 +10,8 @@ namespace libMesh {
 namespace utopia {
 	class WearSimulation {
 	public:
-		class Input;
-		class Output;
+		class SimulationInput;
+		class SimulationOutput;
 
 		void run(libMesh::LibMeshInit &init, const std::string &conf_file_path);
 

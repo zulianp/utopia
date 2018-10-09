@@ -54,6 +54,23 @@ namespace utopia {
 		write("test.e", V, x);
 	}
 
+	static void area_test(LibMeshFunctionSpace &V)
+	{
+		auto &dof_map = V.dof_map();
+		auto u = trial(V);
+		UVector x = ghosted(dof_map.n_local_dofs(), dof_map.n_dofs(), dof_map.get_send_list());		
+		x.set(1.);
+		
+		double area = -1.;
+		
+		utopia::assemble(
+			surface_integral(interpolate(x, u), 0),
+			area
+		);
+
+		std::cout << "area: " << area << std::endl;
+	}
+
 	void run_energy_test(libMesh::LibMeshInit &init)
 	{
 		libMesh::DistributedMesh mesh(init.comm());
@@ -84,6 +101,7 @@ namespace utopia {
 		//////////////////////////////////////////
 
 		laplacian_test(V);
+		area_test(V);
 
 		//////////////////////////////////////////
 	}

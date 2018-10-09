@@ -540,13 +540,13 @@ namespace utopia {
         std::vector<int> var_nums_;
     };
 
-    class FractureFlowApp::Input : public Serializable {
+    class FractureFlowApp::SimulationInput : public Configurable {
     public:
-        Input(libMesh::Parallel::Communicator &comm)
+        SimulationInput(libMesh::Parallel::Communicator &comm)
         : mesh(comm), space(make_ref(mesh))
         {}
 
-        void read(InputStream &is) override
+        void read(Input &is) override
         {
             try {
                 is.read("mesh", mesh);
@@ -783,8 +783,8 @@ namespace utopia {
 
         auto is_ptr = open_istream(conf_file_path);
 
-        Input master_in(*comm_), slave_in(*comm_);
-        Input multiplier_in(*comm_);
+        SimulationInput master_in(*comm_), slave_in(*comm_);
+        SimulationInput multiplier_in(*comm_);
 
         is_ptr->read("master", master_in);
         is_ptr->read("slave",  slave_in);
@@ -839,7 +839,17 @@ namespace utopia {
         auto u_s = trial(V_s);
         auto v_s = test(V_s);
 
-        std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " + " <<  V_s.dof_map().n_dofs();
+        std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " + " <<  V_s.dof_map().n_dofs() << " + ";
+        
+        if(multiplier_in.empty()) {
+            std::cout << V_s.dof_map().n_dofs();
+        } else {
+            //Init mult space
+            multiplier_in.space.subspace(0).initialize();
+
+            std::cout << multiplier_in.space.subspace(0).dof_map().n_dofs();
+        }
+
         std::cout << std::endl;
 
         auto eq_m = inner(master_in.diffusion_tensor * grad(u_m), ctx_fun(master_in.sampler) * grad(v_m)) * dX;
@@ -881,7 +891,7 @@ namespace utopia {
         if(solve_strategy == "staggered") {
 
             if(!multiplier_in.empty()) {
-                multiplier_in.space.subspace(0).initialize();
+
                 solve_cg_dual(
                             V_m,
                             V_s,
@@ -919,7 +929,7 @@ namespace utopia {
             if(!multiplier_in.empty()) {
 
                 std::cout << "solving with different Lagr space" << std::endl;
-                multiplier_in.space.subspace(0).initialize();
+                
                 solve_monolithic(V_m,
                                  V_s,
                                  multiplier_in.space.subspace(0),
