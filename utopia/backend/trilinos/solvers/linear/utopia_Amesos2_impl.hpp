@@ -20,8 +20,8 @@
 // #ifdef HAVE_AMESOS2_TPETRA
 
 //FIXME find right macros (these packages are optional in trilinos, they should be optional also in utopia)
-#define HAVE_AMESOS2_MUELU
-#define HAVE_AMESOS2_IFPACK2
+// #define HAVE_AMESOS2_MUELU
+// #define HAVE_AMESOS2_IFPACK2
 
 
 // #ifdef HAVE_AMESOS2_MUELU
@@ -71,7 +71,7 @@ namespace utopia {
         typedef Tpetra::CrsMatrix<SC, LO, GO, NT> matrix_type;
         
         //typedef Amesos2::LinearProblem<SC, MV, OP> problem_type;
-        typedef Amesos2::Solver<matrix_type, vec_type, OP> solver_type;
+        typedef Amesos2::Solver<matrix_type, vec_type > solver_type;
 // #ifdef HAVE_AMESOS2_IFPACK2
         typedef Ifpack2::Preconditioner<SC, LO, GO, NT> ifpack_prec_type;
 // #endif //HAVE_AMESOS2_IFPACK
@@ -84,7 +84,7 @@ namespace utopia {
         Teuchos::RCP<Teuchos::ParameterList> param_list;
         //  auto& utopiaPL;// impl_->param_list->sublist("UTOPIA", true);
         Teuchos::RCP<solver_type> amesos2_solver;
-        Amesos2::SolverFactory<SC, MV, OP> amesos2_factory;
+        // Amesos2::SolverFactory<SC, MV, OP> amesos2_factory;
         
         //preconditioner
 // #ifdef HAVE_AMESOS2_IFPACK2
@@ -132,23 +132,21 @@ namespace utopia {
     }
     
     template <typename Matrix, typename Vector>
-    bool Amesos2Solver<Matrix, Vector, TRILINOS>::apply(const Vector &rhs, Vector &lhs) {
+    bool Amesos2Solver<Matrix, Vector, TRILINOS>::apply (const Vector &rhs, Vector &lhs) {
         
-        impl_->linear_problem = Teuchos::rcp(
-                                             new typename Impl::problem_type(
+//TODO dir_sol_type e matrice
+       impl_->amesos2_solver = Amesos2::create<typename Impl::matrix_type, typename Impl::vec_type>
+        (impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "LU"), 
                                                                              this->get_operator()->implementation().implementation_ptr(),
                                                                              lhs.implementation().implementation_ptr(),
                                                                              rhs.implementation().implementation_ptr()
-                                                                             )
-                                             );
-
-        set_problem();
-
-        assert((impl_->amesos2_solver));
+                                                                             );
+        assert(!impl_->amesos2_solver.is_null());
+         // #ifdef HAVE_AMESOS2
+        // set_problem();
         impl_->amesos2_solver->solve();
         return true;
     }
-    
     template <typename Matrix, typename Vector>
     int Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_iter() const { return impl_->amesos2_solver->getNumIters(); }
     
@@ -164,7 +162,7 @@ namespace utopia {
     
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::set_preconditioner(const Matrix &precond)
-    {
+    {//TODO useless for now
         bool direct_solver = impl_->param_list->sublist("UTOPIA", true).template get<bool>("Direct Preconditioner", false);
         std::string dir_prec_type = impl_->param_list->sublist("UTOPIA", true).get("Ifpack2 Preconditioner", "prec_type_unset");
         if ( direct_solver ) {
@@ -198,6 +196,8 @@ namespace utopia {
         if(!params.param_file_name().empty()) {
             try {
                 impl_->param_list = Teuchos::getParametersFromXmlFile(params.param_file_name());
+                impl_->amesos2_solver->setParameters(impl_->param_list);
+
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
                 assert(false);
@@ -235,10 +235,9 @@ namespace utopia {
     bool Amesos2Solver<Matrix, Vector, TRILINOS>::set_problem(Matrix &A)
     {
         // impl_->linear_problem->setProblem();
-        impl_->amesos2_solver = impl_->Amesos2::create<matrix_type, vec_type>( impl_->param_list->sublist("UTOPIA", true).get("Solver Type", "CG"), impl_->param_list); //to change it to have the specialization
-        set_preconditioner(); //(A);
-        impl_->amesos2_solver->setProblem(impl_->linear_problem);
-        if (this->verbose()) { impl_->amesos2_solver->getCurrentParameters()->print(); }
+        set_preconditioner(); //TODO is it feasable??
+        // impl_->amesos2_solver->setProblem(impl_->linear_problem);
+        // if (this->verbose()) { impl_->amesos2_solver->getCurrentParameters()->print(); } //TODO print current parameters
         return true;
     }
     
@@ -250,7 +249,7 @@ namespace utopia {
         
         if ( direct_solver )
         {
-            //                 M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, precond->implementation().implementation_ptr()); //TODO
+                             M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, precond->implementation().implementation_ptr()); //TODO
             
 // #ifdef HAVE_AMESOS2_IFPACK2
             assert(!impl_->M_ifpack.is_null());
@@ -263,8 +262,8 @@ namespace utopia {
         } else {
 // #ifdef HAVE_AMESOS2_MUELU
             // Multigrid Hierarchy
-            //                M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)precond->implementation().implementation_ptr(),    //TODO
-            //                                                            impl_->param_list->sublist("MueLu", false));
+                            M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)precond->implementation().implementation_ptr(),    //TODO
+                                                                        impl_->param_list->sublist("MueLu", false));
             assert(!impl_->M_muelu.is_null());
             impl_->linear_problem->setRightPrec(impl_->M_muelu);
 // #else
