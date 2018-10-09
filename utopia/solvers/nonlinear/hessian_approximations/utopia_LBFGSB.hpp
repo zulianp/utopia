@@ -72,6 +72,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 return false; 
             }
 
+            // TODO:: check if update is SPD ... 
+
             theta_ = dot(y,y)/dot(y,s); 
 
             // this needs to be done durign first it, in order to initialize matrices 
@@ -328,6 +330,60 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         {
             linear_solver_->solve(M_, v, result);
         }
+
+
+    public:        
+
+        void compute_breakpoints(const Vector & g, const Vector & x, const Vector & lb, const Vector & ub, Vector &t)
+        {
+            auto inf = std::numeric_limits<Scalar>::infinity(); 
+
+            if(empty(t) || local_size(t)!=local_size(x))
+                t = local_values(local_size(x).get(0), inf);
+
+            // TODO:: add checks if there are not all bounds available 
+
+            {
+              Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_d(g);
+              Write<Vector> wt(t); 
+
+              each_write(t, [ub, lb, x, g, inf](const SizeType i) -> double { 
+                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  Scalar gi =  g.get(i);  
+                          if(gi < 0)
+                            return (xi - ui)/gi; 
+                          else if(gi > 0)
+                            return (xi - li)/gi; 
+                        else 
+                            return inf; 
+            }  );
+          }
+        }
+
+
+
+
+        void get_d_corresponding_to_ti(const Vector & t, const Vector & g, Vector &d, const Scalar & t_current)
+        {
+            d = -1.0 * g; 
+
+            // TODO:: add checks if there are not all bounds available 
+            {   // begin lock
+                Write<Vector>  wd(d);
+                Read<Vector>   rt(t);
+
+                Range rr = range(d);
+
+                for (SizeType i = rr.begin(); i != rr.end(); ++i)
+                {
+                    Scalar ti = t.get(i); 
+                    if(ti==t_current)
+                        d.set(i, 0.0); 
+                }
+
+            } // end of lock
+        }
+
+
 
 
     private:

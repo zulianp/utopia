@@ -13,6 +13,8 @@ namespace utopia
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
+        static_assert(!utopia::is_sparse<Matrix>::value, "BFGS does not support sparse matrices."); 
+
         public:
 
             BFGS(): HessianApproximation<Matrix, Vector>(), update_hessian_(false)
@@ -184,7 +186,6 @@ namespace utopia
 
 
         private:
-            static_assert(!utopia::is_sparse<Matrix>::value, "BFGS does not support sparse matrices."); 
             Vector s_;              // x_{k+1} - x_{k}
             Vector y_;              // g_{k+1} - g_{k}
             Matrix H_prev_inv_;     // H^{-1}_{k}

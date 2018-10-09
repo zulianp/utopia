@@ -107,7 +107,7 @@ namespace utopia
 				auto memory_size = 7; 
 
 				Bratu1D<Matrix, Vector> fun(_n);
-	    		Vector x = values(_n, 1.0);
+	    		Vector x = values(_n, -1.0);
 	    		fun.apply_bc_to_initial_guess(x);
 
 	    		auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >();
@@ -121,6 +121,36 @@ namespace utopia
 				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 	    		solver.set_box_constraints(box);				
 
+
+	    		Vector grad = 0*x; 
+	    		fun.gradient(x, grad); 
+	    		Vector t, d; 
+
+	    		hess_approx_BFGS->compute_breakpoints(grad, x, lb, ub, t); 
+
+
+	    		// {
+	    		// 	Write<Vector> w(t); 
+
+	    		// 	auto r = range(t);
+	    		// 	for(auto i=r.begin(); i < r.end(); i++)
+	    		// 	{
+	    		// 		if(i==0)
+	    		// 			t.set(i,0); 
+	    		// 		if(i==1)
+	    		// 			t.set(i,-12); 	    				
+	    		// 		if(i==2)
+	    		// 			t.set(i,-5); 	    
+	    		// 	}					    				
+	    		// }
+
+
+	    		auto t_current = 0.0; 
+	    		hess_approx_BFGS->get_d_corresponding_to_ti(t, grad, d, t_current); 
+
+	    		Vector sorted; 
+	    		vec_unique_sort_serial(t, sorted, 3);  
+	    		// disp(sorted); 
 
 
 
@@ -154,7 +184,7 @@ namespace utopia
 			}
 
 		QuasiNewtonTest()
-		: _n(100), _verbose(true) { }
+		: _n(10), _verbose(true) { }
 		
 	private:
 		int _n;
@@ -171,13 +201,13 @@ namespace utopia
 				QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
 		#endif
 
-		#ifdef WITH_BLAS
-				QuasiNewtonTest<Matrixd, Vectord>().run_dense();
-		#endif //WITH_BLAS
+		// #ifdef WITH_BLAS
+		// 		QuasiNewtonTest<Matrixd, Vectord>().run_dense();
+		// #endif //WITH_BLAS
 
-		#ifdef WITH_TRILINOS
-				QuasiNewtonTest<TSMatrixd, TVectord>().run_sparse();
-		#endif //WITH_TRILINOS				
+		// #ifdef WITH_TRILINOS
+		// 		QuasiNewtonTest<TSMatrixd, TVectord>().run_sparse();
+		// #endif //WITH_TRILINOS				
 
 		UTOPIA_UNIT_TEST_END("runQuasiNewtonTest");					
 	}

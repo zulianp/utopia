@@ -50,6 +50,8 @@ namespace utopia
             SizeType it = 0;
             
             bool converged = false;
+
+            this->make_iterate_feasible(x); 
             
             fun.gradient(x, g);
             g0_norm = norm2(g);
@@ -145,7 +147,7 @@ namespace utopia
 
       bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc)
       {
-          Pc = local_values(local_size(x).get(0), 1.0);; 
+          Pc = local_values(local_size(x).get(0), 1.0);
           {
               Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
               Write<Vector> wv(Pc); 
@@ -161,6 +163,59 @@ namespace utopia
           return true;
       }
 
+    void make_iterate_feasible(Vector & x)
+    {
+        if(!constraints_.has_upper_bound() || !constraints_.has_lower_bound())
+            return; 
+
+        const Vector x_old = x; 
+
+        if(constraints_.has_upper_bound() && constraints_.has_lower_bound())
+        {
+            const auto &ub = *constraints_.upper_bound();
+            const auto &lb = *constraints_.lower_bound();
+
+            {
+              Read<Vector> r_ub(ub), r_lb(lb), r_x(x_old);
+              Write<Vector> wv(x); 
+
+              each_write(x, [ub, lb, x_old](const SizeType i) -> double { 
+                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x_old.get(i);  
+                          if(li >= xi)
+                            return li; 
+                          else
+                            return (ui <= xi) ? ui : xi; }   );
+            }
+        }
+        else if(constraints_.has_upper_bound() && !constraints_.has_lower_bound())
+        {
+            const auto &ub = *constraints_.upper_bound();
+
+            {
+              Read<Vector> r_ub(ub), r_x(x_old);
+              Write<Vector> wv(x); 
+
+              each_write(x, [ub, x_old](const SizeType i) -> double { 
+                          Scalar ui =  ub.get(i); Scalar xi =  x_old.get(i);  
+                            return (ui <= xi) ? ui : xi; }   );
+            }
+        }
+        else
+        {
+            const auto &lb = *constraints_.lower_bound();
+
+            {
+              Read<Vector> r_lb(lb), r_x(x_old);
+              Write<Vector> wv(x); 
+
+              each_write(x, [lb, x_old](const SizeType i) -> double { 
+                          Scalar li =  lb.get(i); Scalar xi =  x_old.get(i);  
+                          return (li >= xi) ? li : xi; }   );
+            }
+        }    
+
+    }      
+
 
     
     private:
@@ -175,6 +230,7 @@ namespace utopia
 // - line solver should be delegated 
 // - create common interface for constraint nonlinear solver     
 // - constraints  
+// criticality_measure_infty should not create inf vectors     
 
 
 }
