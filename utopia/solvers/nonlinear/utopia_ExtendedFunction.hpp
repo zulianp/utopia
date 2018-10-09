@@ -38,8 +38,9 @@ namespace utopia
         {
             this->gradient_no_rhs(x, gradient);
 
-            if(local_size(gradient)==local_size(this->_rhs))
+            if(size(gradient) == size(this->_rhs)) {
                 gradient = gradient - this->_rhs;
+            }
 
             return true;
         }

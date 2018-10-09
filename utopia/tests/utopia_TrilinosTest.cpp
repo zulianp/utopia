@@ -721,7 +721,53 @@ namespace utopia {
         double sv = sum(v);
         utopia_test_assert(approxeq(sv, n * mpi_world_size()));
     }
-    
+
+
+    template<class Matrix, class Vector>
+    void st_cg_test()
+    {
+        typename Vector::SizeType _n = 10; 
+
+        SteihaugToint<Matrix, Vector, HOMEMADE> cg;
+        cg.set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+        // cg.set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+
+        cg.rtol(1e-7);
+        cg.atol(1e-6);
+        cg.max_it(_n);
+        cg.verbose(false);
+
+        Matrix A = sparse(_n, _n, 3);
+        assemble_symmetric_laplacian_1D(A, true);
+
+        Vector rhs = values(_n, 975.9);
+
+        {
+            auto r = range(rhs);
+
+            Write<Vector> w(rhs);
+            if(r.begin() == 0)  rhs.set(0, 0.0); 
+            if(r.end()   == _n) rhs.set(_n-1, 0.0); 
+        }           
+
+        Vector x = zeros(size(rhs));
+
+        cg.tr_constrained_solve(A, -1.0 * rhs, x, 1e15);
+        utopia_test_assert(approxeq(rhs, A * x, 1e-5));
+
+    }
+
+    void stcg_pt_test()
+    {
+
+#ifdef WITH_PETSC
+        //petsc version
+        st_cg_test<DSMatrixd, DVectord>();
+#endif //WITH_PETSC
+        st_cg_test<TSMatrixd, TVectord>();
+    }
+
+
     void trilinos_mg_1D()
     {
         // if(mpi_world_size() > 1) return;
@@ -817,7 +863,7 @@ namespace utopia {
             RowView<TSMatrixd> row(A, i);
             utopia_test_assert(row.n_values() >= 2);
             auto col = row.col(0);
-            auto val = row.get(0);
+            // auto val = row.get(0);
             
             utopia_test_assert(col == i || col == i - 1 || col == i  + 1);
         }
@@ -1034,14 +1080,14 @@ namespace utopia {
         ok = fun_tpetra->hessian(x_tpetra, H_tpetra); assert(ok);
         ok = fun_petsc->hessian(x_petsc, H_petsc);    assert(ok);
         
-        write("H_p.m", H_petsc);
-        write("H_t.m", H_tpetra);
+        // write("H_p.m", H_petsc);
+        // write("H_t.m", H_tpetra);
         
         
         DSMatrixd H_converted;
         backend_convert_sparse(H_tpetra, H_converted);
         
-        write("H_c.m", H_converted);
+        // write("H_c.m", H_converted);
         
         utopia_test_assert(cross_backend_approxeq(H_petsc, H_tpetra));
         
@@ -1053,9 +1099,9 @@ namespace utopia {
     {
         using IPTransferT = utopia::IPTransfer<Matrix, Vector>;
         
-        BratuMultilevelTestProblem<Matrix, Vector> problem(2);
+        BratuMultilevelTestProblem<Matrix, Vector> problem(2, true);
         problem.verbose = false;
-        // problem.verbose = true;
+        // problem.verbose = tre;
         
         Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
         
@@ -1073,10 +1119,17 @@ namespace utopia {
         }
         
         auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+
         tr_strategy_coarse->atol(1e-12);
         tr_strategy_coarse->rtol(1e-12);
         
         auto tr_strategy_fine = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+
+        
+        tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+
         tr_strategy_fine->atol(1e-12);
         tr_strategy_fine->rtol(1e-12);
         
@@ -1231,14 +1284,6 @@ namespace utopia {
     
     void trilinos_rmtr()
     {
-        if(mpi_world_size() > 2) {
-            if(mpi_world_rank() == 0) {
-                utopia_warning("trilinos_rmtr only works for nprocs <= 2");
-            }
-            
-            return;
-        }
-        
 #ifdef WITH_PETSC
         //petsc version
         rmtr_test<DSMatrixd, DVectord>();
@@ -1337,6 +1382,9 @@ namespace utopia {
     void run_trilinos_test()
     {
         UTOPIA_UNIT_TEST_BEGIN("TrilinosTest");
+
+        UTOPIA_RUN_TEST(stcg_pt_test); 
+
         UTOPIA_RUN_TEST(trilinos_structure);
         UTOPIA_RUN_TEST(trilinos_build);
         UTOPIA_RUN_TEST(trilinos_build_identity);

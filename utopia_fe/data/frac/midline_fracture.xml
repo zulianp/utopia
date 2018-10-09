@@ -11,10 +11,10 @@
 		<max-x>1</max-x>
 		<max-y>1.1</min-y>
 		
-		<n-x>3</n-x>
-		<n-y>3</n-y>
+		<n-x>15</n-x>
+		<n-y>15</n-y>
 
-		<refinements>4</refinements>
+		<refinements>1</refinements>
 	</mesh>
 <!-- 
 	<sampler>
@@ -52,12 +52,12 @@
 		<refinements>2</refinements>
 	</mesh>
 
-	<sampler>
+<!-- 	<sampler>
 		<file>../data/frac/aperture.txt</file>
 		<min-x>0.</min-x>
 		<max-x>1.</max-x>
 		<nx>5</nx>
-	</sampler>
+	</sampler> -->
 
 	<space>
 		<system-name>slave</system-name>
@@ -85,7 +85,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/midline.e</path>
-		<refinements>1</refinements>
+		<refinements>2</refinements>
 	</mesh>
 	<space>
 		<system-name>multiplier</system-name>

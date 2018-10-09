@@ -1,12 +1,18 @@
 #include "utopia_Tpetra_Vector.hpp"
 #include "utopia_Logger.hpp"
 #include "utopia_Instance.hpp"
+#include "utopia_kokkos_Eval_Reduce.hpp"
 
 #include <Tpetra_CrsMatrix_decl.hpp>
 #include <MatrixMarket_Tpetra.hpp>
 
+#include <Kokkos_Core.hpp>
+
 #include <cmath>
 
+//FIXME 
+// - ghosted vector has problematic behaviour e.g.: norm2(ghosted_vec) == norm2(offset_view(ghosted_vec)) which is wrong
+// maybe this can help at least for assembly #include <Tpetra_MultiVectorFiller.hpp> or FEMultiVector
 namespace utopia {
 
 	void TpetraVector::add_vector(
@@ -70,79 +76,34 @@ namespace utopia {
 
 	TpetraVector::Scalar TpetraVector::sum() const
 	{
-	    m_utopia_warning_once("> TpetraVector::sum is hand-coded");
-
-	    auto data = implementation().getData();
-
-	    Scalar ret_temp = 0.;
-
-	    for(auto i = 0; i < data.size(); ++i) {
-	        ret_temp += data[i];
-	    }
-
-	    double ret = ret_temp;
+	    Scalar ret = KokkosEvalReduce<TpetraVector, Plus>::eval(*this, Plus(), Scalar(0.));
 	    auto &comm = *communicator();
-	    double ret_global = 0.;
-
+	    Scalar ret_global = 0.;
 	    Teuchos::reduceAll(comm, Teuchos::REDUCE_SUM, 1, &ret, &ret_global);
 	    return ret_global;
 	}
 
 	TpetraVector::Scalar TpetraVector::min() const
 	{
-	    m_utopia_warning_once("> TpetraVector::min is hand-coded");
-
-	    auto data = implementation().getData();
-
-	    Scalar ret_temp = data[0];
-
-	    for(auto i = 1; i < data.size(); ++i) {
-	        ret_temp = std::min(data[i], ret_temp);
-	    }
-
-	    double ret = ret_temp;
+	    Scalar ret = KokkosEvalReduce<TpetraVector, Min>::eval(*this, Min(), std::numeric_limits<Scalar>::max());
 	    auto &comm = *communicator();
-	    double ret_global = 0.;
-
+	    Scalar ret_global = 0.;
 	    Teuchos::reduceAll(comm, Teuchos::REDUCE_MIN, 1, &ret, &ret_global);
 	    return ret_global;
 	}
 
 	TpetraVector::Scalar TpetraVector::max() const
 	{
-	    m_utopia_warning_once("> TpetraVector::max is hand-coded");
-
-	    auto data = implementation().getData();
-
-	    Scalar ret_temp = data[0];
-
-	    for(auto i = 1; i < data.size(); ++i) {
-	        ret_temp = std::max(data[i], ret_temp);
-	    }
-
-	    double ret = ret_temp;
-	    auto &comm = *communicator();
-	    double ret_global = 0.;
-
+	  	Scalar ret = KokkosEvalReduce<TpetraVector, Max>::eval(*this, Max(), -std::numeric_limits<Scalar>::max());
+	  	auto &comm = *communicator();
+	  	Scalar ret_global = 0.;
 	    Teuchos::reduceAll(comm, Teuchos::REDUCE_MAX, 1, &ret, &ret_global);
 	    return ret_global;
 	}
 
 	bool TpetraVector::is_nan_or_inf() const
 	{
-		m_utopia_warning_once("> TpetraVector::is_nan_or_inf is hand-coded");
-
-		auto data = implementation().getData();
-
-		int ret = 0;
-
-		for(auto i = 0; i < data.size(); ++i) {
-		    if(std::isnan(data[i]) || std::isinf(data[i])) {
-		    	ret = 1;
-		    	break;
-		    }
-		}
-
+		int ret = KokkosEvalReduce<TpetraVector, IsNaNOrInf>::eval(*this, IsNaNOrInf(), Scalar(0));
 		auto &comm = *communicator();
 		int ret_global = 0;
 
@@ -160,9 +121,11 @@ namespace utopia {
 		rcp_map_type map(new map_type(global_size, local_size, 0, comm));
 		rcp_map_type ghost_map;
 
-		if(!ghost_index.empty()) {
+		if(comm->getSize() != 0) {
+			auto r_begin = local_size == 0 ? 0 : map->getMinGlobalIndex();
+			auto r_end   = local_size == 0 ? 0 : (map->getMaxGlobalIndex() + 1);
 
-			Range r = { map->getMinGlobalIndex(), map->getMaxGlobalIndex() + 1 };
+			Range r = { r_begin, r_end };
 
 			std::vector<GO> filled_with_local;
 			filled_with_local.reserve(r.extent() + ghost_index.size());
@@ -248,7 +211,7 @@ namespace utopia {
 			ghosted_vec_->assign(*other.ghosted_vec_);
 			vec_ = ghosted_vec_->offsetViewNonConst(other.vec_->getMap(), 0);
 		} else {
-			if(vec_.is_null() == other.size().get(0) != size().get(0)) {
+			if(vec_.is_null() || other.size().get(0) != size().get(0)) {
 				vec_ = (Teuchos::rcp(new vector_type(*other.vec_, Teuchos::Copy)));
 			} else {
 				vec_->assign(other.implementation());

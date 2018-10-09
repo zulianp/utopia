@@ -68,7 +68,7 @@ namespace utopia
             Scalar E_k, E_k1, g_p;
 
             fun.value(x_0, E_k);
-            alpha_k = 1;
+            alpha_k = 1.0;
             g_p =  dot(g, p_k);
 
             E_k1 = E_k; 
@@ -84,12 +84,10 @@ namespace utopia
             // Wolfe conditions                        
             while( E_k1 >(E_k + c1_ * alpha_k * g_p) && it < max_it_  && alpha_k > 1e-6)
             {
-
                 x_k = x_0 + alpha_k * p_k;
                 fun.value(x_k, E_k1);
-                alpha_k *= rho_;
                 it++; 
-                
+                alpha_k *= rho_;
                 if(verbose_)
                     PrintInfo::print_iter_status(it, {E_k1}); 
 

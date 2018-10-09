@@ -25,8 +25,8 @@
 #ifdef HAVE_BELOS_TPETRA
 
 //FIXME find right macros (these packages are optional in trilinos, they should be optional also in utopia)
-#define HAVE_BELOS_MUELU
-#define HAVE_BELOS_IFPACK2
+//#define HAVE_BELOS_MUELU
+//#define HAVE_BELOS_IFPACK2
 
 
 #ifdef HAVE_BELOS_MUELU
@@ -150,7 +150,7 @@ namespace utopia {
 
         set_problem();
 
-        assert((impl_->belos_solver));
+        assert(!(impl_->belos_solver.is_null()));
         impl_->belos_solver->solve();
         return true;
     }

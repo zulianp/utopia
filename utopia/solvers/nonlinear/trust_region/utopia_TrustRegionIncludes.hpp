@@ -12,6 +12,8 @@
 
 // tr-based minimization algorithms 
 #include "utopia_TrustRegion.hpp"
+#include "utopia_QuasiTrustRegion.hpp"
+
 #include "utopia_TRNormalEquation.hpp" 
 #include "utopia_TrustRegionVariableBound.hpp"
 

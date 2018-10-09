@@ -15,67 +15,9 @@ namespace utopia
 		typedef UTOPIA_SCALAR(DVectord) Scalar;
 
 		NonlinearBratuSolverTest(const SizeType & n_levels = 2, bool remove_BC_contributions = false, bool verbose = false):
-					problem(n_levels, remove_BC_contributions, verbose)
+		problem(n_levels, remove_BC_contributions, verbose)
 		{
-			assert(problem.n_coarse > 0);
-			assert(problem.n_levels > 1);
 
-			problem.n_dofs.resize(problem.n_levels);
-			problem.n_dofs[0] = problem.n_coarse;
-
-			for(SizeType i = 1; i < problem.n_levels; ++i)
-				problem.n_dofs[i] = (problem.n_dofs[i-1] - 1) * 2 + 1;
-
-
-			problem.prolongations.resize(problem.n_levels - 1);
-			problem.restrictions.resize(problem.n_levels - 1);
-
-			for(SizeType i = 0; i < problem.n_levels - 1; ++i) {
-				const auto n_coarse = problem.n_dofs[i];
-				const auto n_fine   = problem.n_dofs[i + 1];
-				problem.prolongations[i] = std::make_shared<DSMatrixd>(sparse(n_fine, n_coarse, 2));
-				auto &I = *problem.prolongations[i];
-
-				Write<DSMatrixd> w_(I);
-				auto r = row_range(I);
-
-				SizeType j = r.begin()/2;
-				for(auto k = r.begin(); k < r.end(); k += 2, ++j) {
-					I.set(k, j, 1.);
-
-					if(j + 1 < n_coarse) {
-						I.set(k + 1, j, 0.5);
-						I.set(k + 1, j + 1, 0.5);
-					}
-				}
-			}
-
-			if(problem.remove_BC_contributions)
-			{
-				auto &I = *problem.prolongations.back();
-
-				Write<DSMatrixd> w_(I);
-				auto rr = row_range(I);
-
-				if(rr.inside(0)) {
-					I.set(0, 0, 0.);
-				}
-
-				auto last_node_h = size(I).get(0) - 1;
-				auto last_node_H = size(I).get(1) - 1;
-				if(rr.inside(last_node_h)) {
-					I.set(last_node_h, last_node_H, 0.);
-				}
-			}
-
-			// restrictions, but let's use them as projections...
-			// not very nice solution, but I am lazy to do something more sophisticated just for testing purposes...
-			for(auto i = 0; i < problem.prolongations.size(); ++i)
-			{
-				auto &I = *problem.prolongations[i];
-				DSMatrixd R =  0.5*  transpose(I);
-				problem.restrictions[i] = std::make_shared<DSMatrixd>(R);
-			}
 		}
 
 		void run()
@@ -88,7 +30,6 @@ namespace utopia
 
 			UTOPIA_RUN_TEST(RMTR_test);
 			UTOPIA_RUN_TEST(RMTR_inf_test);
-
 			UTOPIA_RUN_TEST(RMTR_inf_bound_test);
 		}
 
@@ -105,7 +46,7 @@ namespace utopia
 			params.stol(1e-10);
 			params.verbose(problem.verbose);
 
-			auto subproblem = std::make_shared<utopia::KSP_TR<DSMatrixd, DVectord> >();
+			auto subproblem = std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord> >();
 			TrustRegion<DSMatrixd, DVectord> tr_solver(subproblem);
 			tr_solver.set_parameters(params);
 			tr_solver.solve(fun, x);
@@ -138,9 +79,6 @@ namespace utopia
 
 	    void newton_MG_test()
 	    {
-	    	if(mpi_world_size() > 1)
-	    		return;
-
 	    	Bratu1D<DSMatrixd, DVectord> fun(problem.n_dofs[problem.n_levels - 1]);
 	    	DVectord x = values(problem.n_dofs[problem.n_levels - 1], 1.0);
 	    	fun.apply_bc_to_initial_guess(x);
@@ -155,7 +93,7 @@ namespace utopia
             multigrid->set_transfer_operators(problem.prolongations);
             multigrid->must_generate_masks(false);
             multigrid->set_fix_semidefinite_operators(true);
-            multigrid->verbose(problem.verbose);
+            multigrid->verbose(false);
             multigrid->atol(1e-11);
 
             newton.set_linear_solver(multigrid);
@@ -168,9 +106,6 @@ namespace utopia
 
 	    void FAS_test()
 	    {
-	    	if(mpi_world_size() > 1)
-	    		return;
-
 	    	// intial guess
 	        DVectord x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
 
@@ -209,7 +144,7 @@ namespace utopia
 	        fas->verbose(problem.verbose);
 	        fas->atol(1e-8);
 	        fas->rtol(1e-10);
-	        fas->max_it(10);
+	        fas->max_it(100);
 
 	        fas->set_functions(level_functions);
 	        fas->solve(x);
@@ -237,17 +172,29 @@ namespace utopia
 		    }
 
 	        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord, HOMEMADE> >();
+	        tr_strategy_coarse->atol(1e-9); 
+	        // tr_strategy_coarse->verbose(true);
 	        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<DSMatrixd, DVectord, HOMEMADE> >();
+	        tr_strategy_fine->atol(1e-9); 
+	        // tr_strategy_fine->verbose(true);
+
+	        // we should apply BC conditions in symmetric way... ASAP... 
+	        tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
+	        // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
+	        
+	        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<DSMatrixd, DVectord> >());
+	        // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());	        
+
 
         	// auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
-        	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, GALERKIN>  >(tr_strategy_coarse, tr_strategy_fine);
+        	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
-	        rmtr->max_it(1000);
+	        rmtr->max_it(6);
 	        rmtr->max_coarse_it(1);
 	        rmtr->max_smoothing_it(1);
 	        rmtr->delta0(1);
-	        rmtr->atol(1e-6);
+	        rmtr->atol(1e-5);
 	        rmtr->rtol(1e-10);
 	        rmtr->set_grad_smoothess_termination(0.000001);
 	        rmtr->set_eps_grad_termination(1e-7);
@@ -379,7 +326,7 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("NonlinearMultilevelSolverTest");
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(4, true, false).run();
+			NonlinearBratuSolverTest(3, true, false).run();
 		#endif
 		UTOPIA_UNIT_TEST_END("NonlinearMultilevelSolverTest");
 

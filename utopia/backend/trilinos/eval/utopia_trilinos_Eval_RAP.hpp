@@ -6,7 +6,7 @@
 //FIXME find right macro
 #ifdef WITH_TPETRAEXT
 
-#include "TpetraExt_TripleMatrixMultiply_decl.hpp"
+#include "TpetraExt_TripleMatrixMultiply.hpp"
 
 //useful links:
 //https://trilinos.org/docs/dev/packages/tpetra/doc/html/namespaceTpetra_1_1TripleMatrixMultiply.html
