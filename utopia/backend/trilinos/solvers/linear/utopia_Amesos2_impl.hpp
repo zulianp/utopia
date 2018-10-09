@@ -25,16 +25,16 @@
 
 
 // #ifdef HAVE_AMESOS2_MUELU
-// #include <MueLu.hpp>
-// #include <MueLu_CreateTpetraPreconditioner.hpp>
-// #include <MueLu_TpetraOperator.hpp>
+#include <MueLu.hpp>
+#include <MueLu_CreateTpetraPreconditioner.hpp>
+#include <MueLu_TpetraOperator.hpp>
 // #else
 // #warning "HAVE_AMESOS2_MUELU not defined"
 // #endif //HAVE_AMESOS2_MUELU
 
 
 // #ifdef HAVE_AMESOS2_IFPACK2
-// #include <Ifpack2_Factory.hpp>
+#include <Ifpack2_Factory.hpp>
 // #else
 // #warning "HAVE_AMESOS2_IFPACK2 not defined"
 // #endif //HAVE_AMESOS2_IFPACK
@@ -148,11 +148,11 @@ namespace utopia {
         return true;
     }
     template <typename Matrix, typename Vector>
-    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_iter() const { return impl_->amesos2_solver->getNumIters(); }
+    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_iter() const { return 0;}//impl_->amesos2_solver->getNumIters(); }
     
     
     template <typename Matrix, typename Vector>
-    double Amesos2Solver<Matrix, Vector, TRILINOS>::achieved_tol() const { return impl_->amesos2_solver->achievedTol(); }
+    double Amesos2Solver<Matrix, Vector, TRILINOS>::achieved_tol() const { return 0;}//impl_->amesos2_solver->achievedTol(); }
     
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
@@ -172,7 +172,7 @@ namespace utopia {
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
             impl_->M_ifpack->compute();
-            impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
+            //impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
 // #endif //HAVE_AMESOS2_IFPACK2
         } else {
 // #ifdef HAVE_AMESOS2_MUELU
@@ -183,7 +183,7 @@ namespace utopia {
                                                                );
             
             assert(!impl_->M_muelu.is_null());
-            impl_->linear_problem->setRightPrec(impl_->M_muelu);
+            //impl_->linear_problem->setRightPrec(impl_->M_muelu);
 // #else
             assert(false);
 // #endif //HAVE_AMESOS2_MUELU
@@ -249,23 +249,23 @@ namespace utopia {
         
         if ( direct_solver )
         {
-                             M_ifpack = Ifpack2::Factory::create<matrix_type>(dir_prec_type, precond->implementation().implementation_ptr()); //TODO
+                            // impl_->M_ifpack = Ifpack2::Factory::create<Impl::matrix_type>(dir_prec_type, (Teuchos::RCP<Impl::OP>)precond->implementation().implementation_ptr()); //TODO
             
 // #ifdef HAVE_AMESOS2_IFPACK2
             assert(!impl_->M_ifpack.is_null());
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
             impl_->M_ifpack->compute();
-            impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
+//            impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
 // #endif //HAVE_AMESOS2_IFPACK2
             
         } else {
 // #ifdef HAVE_AMESOS2_MUELU
             // Multigrid Hierarchy
-                            M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)precond->implementation().implementation_ptr(),    //TODO
-                                                                        impl_->param_list->sublist("MueLu", false));
+            //impl_->M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<Impl::OP>)precond->implementation().implementation_ptr(),    //TODO
+            //                                                            impl_->param_list->sublist("MueLu", false));
             assert(!impl_->M_muelu.is_null());
-            impl_->linear_problem->setRightPrec(impl_->M_muelu);
+//            impl_->linear_problem->setRightPrec(impl_->M_muelu);
 // #else
             assert(false);
 // #endif //HAVE_AMESOS2_MUELU
