@@ -107,7 +107,7 @@ namespace utopia
 				auto memory_size = 7; 
 
 				Bratu1D<Matrix, Vector> fun(_n);
-	    		Vector x = values(_n, -1.0);
+	    		Vector x = values(_n, 0.0);
 	    		fun.apply_bc_to_initial_guess(x);
 
 	    		auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >();
@@ -126,35 +126,17 @@ namespace utopia
 	    		fun.gradient(x, grad); 
 	    		Vector t, d; 
 
-	    		hess_approx_BFGS->compute_breakpoints(grad, x, lb, ub, t); 
-
-
-	    		// {
-	    		// 	Write<Vector> w(t); 
-
-	    		// 	auto r = range(t);
-	    		// 	for(auto i=r.begin(); i < r.end(); i++)
-	    		// 	{
-	    		// 		if(i==0)
-	    		// 			t.set(i,0); 
-	    		// 		if(i==1)
-	    		// 			t.set(i,-12); 	    				
-	    		// 		if(i==2)
-	    		// 			t.set(i,-5); 	    
-	    		// 	}					    				
-	    		// }
-
-
-	    		auto t_current = 0.0; 
-	    		hess_approx_BFGS->get_d_corresponding_to_ti(t, grad, d, t_current); 
-
-	    		Vector sorted; 
-	    		vec_unique_sort_serial(t, sorted, 3);  
-	    		// disp(sorted); 
+ 
+	    		Vector x_cp, c; 
+	    		hess_approx_BFGS->initialize(fun, x); 
+	    		hess_approx_BFGS->computeCauchyPoint(x, grad, lb, ub, x_cp, c);
 
 
 
-				
+				exit(0);
+
+
+
 				// SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
 
 				// Parameters params;
@@ -197,7 +179,7 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
-				QuasiNewtonTest<DMatrixd, DVectord>().run_dense();
+				// QuasiNewtonTest<DMatrixd, DVectord>().run_dense();
 				QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
 		#endif
 

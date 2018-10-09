@@ -22,7 +22,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         LBFGSB( const SizeType & m, 
                 const std::shared_ptr <LinSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
                 const std::shared_ptr <LSStrategy> &line_search = std::make_shared<SimpleBacktracking<Matrix, Vector> >()):
-                m_(m), current_m_(0), linear_solver_(linear_solver), line_search_strategy_(line_search)
+                m_(m), cp_memory_(-1), current_m_(0), linear_solver_(linear_solver), line_search_strategy_(line_search)
         {
 
         }
@@ -32,8 +32,18 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             SizeType n = local_size(x).get(0);
             H0_ = local_identity(n, n);
 
+            if(cp_memory_==-1)
+                cp_memory_ = size(x).get(0);
+
             this->initialized(true);
             current_m_ = 0; 
+
+            // TODO:: recheck 
+            W_ = values(size(x).get(0), 1, 0.0); 
+            M_ = zeros(1, 1); 
+
+            // TODO:: investigate proper value of theta
+            theta_ = 1.0; 
 
             return true;
         }
@@ -133,6 +143,17 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         {
             return m_;
         }
+
+        void set_Cauchy_point_memory_size(const SizeType & m)
+        {
+            cp_memory_ = m;
+        }
+
+        SizeType get_Cauchy_point_memory_size() const 
+        {
+            return cp_memory_;
+        }
+
 
 
     private:
@@ -334,6 +355,16 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
     public:        
 
+        /**
+         * @brief Computes breakpoints 
+         * @details TODO:: add TR radius 
+         * 
+         * @param g gradient
+         * @param x current iterate
+         * @param lb lower bound
+         * @param ub uppre bound
+         * @param t breakpoints - distributed vector for each point 
+         */
         void compute_breakpoints(const Vector & g, const Vector & x, const Vector & lb, const Vector & ub, Vector &t)
         {
             auto inf = std::numeric_limits<Scalar>::infinity(); 
@@ -361,12 +392,18 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 
-
+        /**
+         * @brief Determines grad. descent direction, such that lb and ub are not violated
+         * 
+         * @param t break points
+         * @param g gradient 
+         * @param d search direction
+         * @param t_current breakpoint to be found
+         */
         void get_d_corresponding_to_ti(const Vector & t, const Vector & g, Vector &d, const Scalar & t_current)
         {
             d = -1.0 * g; 
 
-            // TODO:: add checks if there are not all bounds available 
             {   // begin lock
                 Write<Vector>  wd(d);
                 Read<Vector>   rt(t);
@@ -376,12 +413,162 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 for (SizeType i = rr.begin(); i != rr.end(); ++i)
                 {
                     Scalar ti = t.get(i); 
-                    if(ti==t_current)
+                    if(std::abs(ti - t_current) < 1e-12)
                         d.set(i, 0.0); 
                 }
 
             } // end of lock
         }
+
+    void get_initial_feasible_set(const Vector & break_points, Vector & feasible_set)
+    {
+        feasible_set = local_values(local_size(break_points).get(0), 0.0); 
+
+        {   // begin lock
+            Read<Vector>  wd(break_points);
+            Write<Vector> r(feasible_set); 
+
+            Range rr = range(break_points);
+
+            for (SizeType i = rr.begin(); i != rr.end(); ++i)
+            {
+                if(break_points.get(i) > 0)
+                    feasible_set.set(i, 1); 
+            }
+   
+        } // end of lock
+    }
+
+
+
+    bool get_global_active_index(const Vector & break_points, Vector & feasible_set, const Scalar & t_current, SizeType & index)
+    {
+        SizeType prev_index = index; 
+        SizeType counter_global_sum;  
+        Scalar counter=0.0; 
+
+        // TODO:: put inf
+        Vector indices = local_values(1, 9e9); 
+        Vector counter_vec = local_values(1, 0); 
+
+        {   // begin lock
+            Read<Vector>  wd(break_points);
+            Read<Vector>  rv(feasible_set); 
+
+            Range rr = range(break_points);
+
+            for (SizeType i = rr.begin(); i != rr.end(); ++i)
+            {
+                Scalar value = break_points.get(i); 
+                if(std::abs(value - t_current) < 1e-12 && feasible_set.get(i)==1)
+                {
+                    indices.set(0,i); 
+                    break; 
+                }
+            }
+
+            index = min(indices); 
+
+            for (SizeType i = rr.begin(); i != rr.end(); ++i)
+            {
+                if(i==index)
+                    feasible_set.set(i, 0); 
+            }            
+
+
+            // horrible solution - looops should be merged 
+            for (SizeType i = rr.begin(); i != rr.end(); ++i)
+            {
+                Scalar value = break_points.get(i); 
+                if(std::abs(value - t_current) < 1e-12 && feasible_set.get(i)==1)
+                {
+                    counter++; 
+                }
+            }    
+
+
+            Write<Vector> wvv(counter_vec); 
+
+            Range r_counter = range(counter_vec);
+            for (SizeType i = r_counter.begin(); i != r_counter.end(); ++i)
+                counter_vec.set(i, counter); 
+
+
+        } // end of lock
+
+        counter_global_sum = sum(counter_vec); 
+
+        std::cout<<"counter_global_sum  \n"; 
+
+        return (counter_global_sum>1) ? true: false; 
+    }
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        void computeCauchyPoint(const Vector &x, const Vector & g, const Vector & lb, const Vector & ub, Vector & x_cp, Vector & c)
+        {
+            x_cp = x; 
+            Scalar t_old, t, dt_min, dt, f_p, f_pp; 
+            SizeType b; 
+
+            Vector break_points, feasible_set; // indexing and distribution as always
+            this->compute_breakpoints(g, x, lb, ub, break_points); 
+
+            Vector d; 
+            this->get_d_corresponding_to_ti(break_points, g, d, 0.0); 
+            this->get_initial_feasible_set(break_points, feasible_set); 
+
+            // disp(feasible_set); 
+
+            Vector sorted_break_points; 
+            vec_unique_sort_serial(break_points, sorted_break_points, cp_memory_); 
+
+            Vector p; 
+            // this two lines seem usless
+            p = transpose(W_) * d; 
+            c = zeros(local_size(W_).get(1), 1); 
+
+            f_p = -1.0 * dot(d, d); 
+            f_pp = - theta_ * f_p - dot(p, M_ * p); 
+
+            dt_min = -f_p/f_pp; 
+            t_old = 0.0; 
+
+            Vector t_help = local_values(1, 0.0); 
+
+            // this is horrible solution, but lets fix it later 
+            {
+                Read<Vector> rv(sorted_break_points); 
+                auto rr = range(sorted_break_points);
+                for (SizeType i = rr.begin(); i != rr.end(); ++i)
+                {
+                    if(i==0)
+                        t_help.add(0, sorted_break_points.get(i)); 
+                }
+            }
+
+            t = sum(t_help); 
+            dt = t - t_old; 
+
+            bool repeated_index = get_global_active_index(break_points, feasible_set, t, b); 
+
+
+
+
+
+
+
+
+
+
+
+        }
+
+
+
 
 
 
@@ -390,6 +577,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         static_assert(utopia::is_sparse<Matrix>::value, "BFGS does not support sparse matrices.");
 
         SizeType m_; // memory size
+        SizeType cp_memory_; // memory size
+
         SizeType current_m_; // iteration number 
         Matrix H0_;  // identity
 
