@@ -31,6 +31,7 @@
 #include "utopia_trilinos_Eval_Factory.hpp"
 #include "utopia_trilinos_Eval_RAP.hpp"
 #include "utopia_trilinos_Each.hpp"
+#include "utopia_trilinos_Eval_Distance.hpp"
 
 #endif //WITH_TRILINOS
 #endif //UTOPIA_TRILINOS_HPP

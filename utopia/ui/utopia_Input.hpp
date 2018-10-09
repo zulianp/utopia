@@ -11,20 +11,20 @@
 
 namespace utopia {
 	class Path;
-	class InputStream;
+	class Input;
 
-	class Serializable {
+	class Configurable {
 	public:
-		virtual ~Serializable() {}
-		virtual void read(InputStream &is)        = 0;
+		virtual ~Configurable() {}
+		virtual void read(Input &is)        = 0;
 		// virtual void write(OutputStream &is) const = 0;
 	};
 
-	class InputStream {
+	class Input {
 	public:
-		virtual ~InputStream() {}
+		virtual ~Input() {}
 
-		virtual bool open(const Path &path) = 0;
+		// virtual bool open(const Path &path) = 0;
 
 		virtual SizeType size() const = 0;
 
@@ -45,7 +45,7 @@ namespace utopia {
 			array_finish();
 		}
 
-		void read_all(std::function<void(InputStream &)> lambda) {
+		virtual void read_all(std::function<void(Input &)> lambda) {
 			auto n = size();
 
 			if(n == 0) return;
@@ -62,7 +62,7 @@ namespace utopia {
 
 		template<class T>
 		void read(const std::string &name, std::vector<T> &vec) {
-			read(name, [&vec](InputStream &sub_is) {
+			read(name, [&vec](Input &sub_is) {
 				sub_is.read(vec);
 			});
 		}
@@ -88,16 +88,16 @@ namespace utopia {
 		virtual void read(int &val) = 0;
 		virtual void read(SizeType &val) = 0;
 		virtual void read(std::string &val) = 0;
-		virtual void read(Serializable &val) = 0;
-		virtual void read(std::function<void(InputStream &)> lambda) = 0;
+		virtual void read(Configurable &val) = 0;
+		virtual void read(std::function<void(Input &)> lambda) = 0;
 
 		virtual void read(const std::string &key, bool &val) = 0;
 		virtual void read(const std::string &key, double &val) = 0;
 		virtual void read(const std::string &key, int &val) = 0;
 		virtual void read(const std::string &key, SizeType &val) = 0;
 		virtual void read(const std::string &key, std::string &val) = 0;
-		virtual void read(const std::string &key, Serializable &val) = 0;
-		virtual void read(const std::string &key, std::function<void(InputStream &)> lambda) = 0;
+		virtual void read(const std::string &key, Configurable &val) = 0;
+		virtual void read(const std::string &key, std::function<void(Input &)> lambda) = 0;
 
 		virtual bool good() const = 0;
 

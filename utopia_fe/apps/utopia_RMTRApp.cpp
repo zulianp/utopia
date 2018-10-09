@@ -86,18 +86,18 @@ namespace utopia {
         mesh_refinement.uniformly_refine(n_refs);
     }
 
-    class RMTRApp::Input : public Serializable {
+    class RMTRApp::SimulationInput : public Configurable {
     public:
 
-        void read(InputStream &is) override
+        void read(Input &is) override
         {
             try {
                 is.read("mesh", mesh_type);
                 path = "";
                 is.read("path", path);
 
-                is.read("boundary-conditions", [this](InputStream &is) {
-                    is.read_all([this](InputStream &is) {
+                is.read("boundary-conditions", [this](Input &is) {
+                    is.read_all([this](Input &is) {
                         int side_set = 0;
 
                         is.read("side", side_set);
@@ -280,7 +280,7 @@ namespace utopia {
         bool use_newton;
     };
 
-    static std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> get_function(const RMTRApp::Input &in, FunctionSpaceT &V)
+    static std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> get_function(const RMTRApp::SimulationInput &in, FunctionSpaceT &V)
     {
         std::shared_ptr<ExtendedFunction<USparseMatrix, UVector>> f;
         if(in.fun == "bratu") {
@@ -301,7 +301,7 @@ namespace utopia {
         return f;
     }
 
-    void RMTRApp::solve_newton(const Input &in)
+    void RMTRApp::solve_newton(const SimulationInput &in)
     {
         Chrono c;
         c.start();
@@ -341,7 +341,7 @@ namespace utopia {
     }
 
 
-    void RMTRApp::solve_rmtr(const Input &in)
+    void RMTRApp::solve_rmtr(const SimulationInput &in)
     {
         using TransferT   = utopia::Transfer<USparseMatrix, UVector>;
         using IPTransferT = utopia::IPTransfer<USparseMatrix, UVector>;
@@ -440,7 +440,7 @@ namespace utopia {
 
         auto is_ptr = open_istream(conf_file_path);
 
-        Input in;
+        SimulationInput in;
         is_ptr->read("rmtr-app", in);
 
         in.describe();
