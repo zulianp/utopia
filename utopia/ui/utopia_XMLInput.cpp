@@ -1,4 +1,4 @@
-#include "utopia_XMLStream.hpp"
+#include "utopia_XMLInput.hpp"
 
 #include <stack>
 
@@ -12,7 +12,7 @@
 using namespace rapidxml;
 
 namespace utopia {
-	class XMLInputStream::Impl {
+	class XMLInput::Impl {
 	public:
 		Impl(const Path &path)
 		: f(path.c_str()), current_node(nullptr), n_invalid_subtrees_(0)
@@ -80,27 +80,27 @@ namespace utopia {
 		SizeType n_invalid_subtrees_;
 	};
 
-	bool XMLInputStream::open(const Path &path)
+	bool XMLInput::open(const Path &path)
 	{
 		impl_ = make_unique<Impl>(path);
 		return impl_->valid();
 	}
 
-	XMLInputStream::~XMLInputStream() {}
+	XMLInput::~XMLInput() {}
 
-	XMLInputStream::XMLInputStream() {}
+	XMLInput::XMLInput() {}
 
-	bool XMLInputStream::object_begin(const std::string &name)
+	bool XMLInput::object_begin(const std::string &name)
 	{
 		return impl_->object_begin(name);
 	}
 
-	bool XMLInputStream::object_end()
+	bool XMLInput::object_end()
 	{
 		return impl_->object_end();
 	}
 
-	void XMLInputStream::read(double &val)
+	void XMLInput::read(double &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -109,7 +109,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInputStream::read(int &val)
+	void XMLInput::read(int &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -118,7 +118,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInputStream::read(SizeType &val)
+	void XMLInput::read(SizeType &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -127,7 +127,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInputStream::read(std::string &val)
+	void XMLInput::read(std::string &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -136,7 +136,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInputStream::read(bool &val)
+	void XMLInput::read(bool &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 		static const std::string true_val = "true";
@@ -146,7 +146,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInputStream::read(Serializable &val)
+	void XMLInput::read(Configurable &val)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -155,56 +155,56 @@ namespace utopia {
 		}
 	}
 
-	void XMLInputStream::read(const std::string &key, double &val)
+	void XMLInput::read(const std::string &key, double &val)
 	{
 		impl_->object_begin(key);
 		read(val);
 		impl_->object_end();
 	}
 
-	void XMLInputStream::read(const std::string &key, int &val)
+	void XMLInput::read(const std::string &key, int &val)
 	{
 		impl_->object_begin(key);
 		read(val);
 		impl_->object_end();
 	}
 
-	void XMLInputStream::read(const std::string &key, SizeType &val)
+	void XMLInput::read(const std::string &key, SizeType &val)
 	{
 		impl_->object_begin(key);
 		read(val);
 		impl_->object_end();
 	}
 
-	void XMLInputStream::read(const std::string &key, std::string &val)
+	void XMLInput::read(const std::string &key, std::string &val)
 	{
 		impl_->object_begin(key);
 		read(val);
 		impl_->object_end();
 	}
 
-	void XMLInputStream::read(const std::string &key, bool &val)
+	void XMLInput::read(const std::string &key, bool &val)
 	{
 		impl_->object_begin(key);
 		read(val);
 		impl_->object_end();
 	}
 
-	void XMLInputStream::read(const std::string &key, Serializable &val)
+	void XMLInput::read(const std::string &key, Configurable &val)
 	{
 		impl_->object_begin(key);
 		read(val);
 		impl_->object_end();
 	}
 
-	void XMLInputStream::read(std::function<void(InputStream &)> lambda)
+	void XMLInput::read(std::function<void(Input &)> lambda)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
 		lambda(*this);
 	}
 
-	void XMLInputStream::read(const std::string &key, std::function<void(InputStream &)> lambda)
+	void XMLInput::read(const std::string &key, std::function<void(Input &)> lambda)
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -217,12 +217,12 @@ namespace utopia {
 		impl_->object_end();
 	}
 
-	bool XMLInputStream::good() const
+	bool XMLInput::good() const
 	{
 		return impl_.get();
 	}
 
-	SizeType XMLInputStream::size() const
+	SizeType XMLInput::size() const
 	{
 		SizeType ret = 0;
 		for(auto n = impl_->current_node->first_node(); n; n = n->next_sibling()) {
@@ -232,7 +232,7 @@ namespace utopia {
 		return ret;
 	}
 
-	void XMLInputStream::array_start()
+	void XMLInput::array_start()
 	{
 		if(impl_->is_invalid_subtree()) {
 			impl_->n_invalid_subtrees_++;
@@ -247,7 +247,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInputStream::next()
+	void XMLInput::next()
 	{
 		if(impl_->is_invalid_subtree()) return;
 
@@ -259,7 +259,7 @@ namespace utopia {
 		}
 	}
 
-	void XMLInputStream::array_finish()
+	void XMLInput::array_finish()
 	{
 		if(impl_->is_invalid_subtree()) {
 			impl_->n_invalid_subtrees_--;

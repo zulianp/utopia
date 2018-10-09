@@ -4,15 +4,15 @@
 // #include <memory>
 // #include "utopia_Base.hpp"
 // #include "utopia_Path.hpp"
-// #include "utopia_InputStream.hpp"
+// #include "utopia_Input.hpp"
 
 
 // namespace utopia {
 
-// 	class JSONInputStream final : public InputStream {
+// 	class JSONInput final : public Input {
 // 	public:
-// 		JSONInputStream();
-// 		~JSONInputStream();
+// 		JSONInput();
+// 		~JSONInput();
 
 // 		bool open(const Path &path) override;
 // 		bool object_begin(const std::string &name) override;

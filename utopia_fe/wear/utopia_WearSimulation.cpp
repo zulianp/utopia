@@ -38,7 +38,7 @@ namespace utopia {
 	public:
 		virtual ~ElasticitySimulation() {}
 
-        class Desc : public Serializable {
+        class Desc : public Configurable {
         public:
             Desc() :
                 mesh_path("../data/mesh2.e"),
@@ -49,16 +49,16 @@ namespace utopia {
                 dt(0.1)
             { }
 
-            void read(InputStream &is) {
+            void read(Input &is) {
                is.read("mesh", mesh_path);
 
                mesh_refinements = 0;
                is.read("mesh-refinements", mesh_refinements);
 
-               is.read("model", [this](InputStream &is) {
+               is.read("model", [this](Input &is) {
                     is.read("material", material_name);
 
-                    is.read("parameters", [this](InputStream &is) {
+                    is.read("parameters", [this](Input &is) {
                         is.read("mu", params.default_mu);
                         is.read("lambda", params.default_lambda);
                     });
@@ -69,7 +69,7 @@ namespace utopia {
                     stabilization_mag = 0.1;
                     is.read("stabilization-mag", stabilization_mag);
 
-                    // is.read("time", [this](InputStream &is) {
+                    // is.read("time", [this](Input &is) {
                     //     is.read("dt", dt);
                     //     is.read("steps", n_time_teps);
                     // });
@@ -92,18 +92,18 @@ namespace utopia {
 		ElasticitySimulation()
 		{}
 
-		virtual bool init_sim(libMesh::Parallel::Communicator &comm, InputStream &is)
+		virtual bool init_sim(libMesh::Parallel::Communicator &comm, Input &is)
 		{
 			bool ok = false;
 
-			is.read("simulation", [this, &ok, &comm](InputStream &is) {
+			is.read("simulation", [this, &ok, &comm](Input &is) {
                 ok = init(comm, is);
             });
 
 			return ok;
 		}
 
-		virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is)
+		virtual bool init(libMesh::Parallel::Communicator &comm, Input &is)
 		{
             is.read(desc_);
 
@@ -145,10 +145,10 @@ namespace utopia {
 
             /////////////////////////////////////////////////////////////////////////////
 
-            is.read("boundary-conditions", [this](InputStream &is) {
-            	is.read("dirichlet", [this](InputStream &is) {
+            is.read("boundary-conditions", [this](Input &is) {
+            	is.read("dirichlet", [this](Input &is) {
 
-                    is.read_all([this](InputStream &is) {
+                    is.read_all([this](Input &is) {
                         int side_set = 0, coord = 0;
 
                         is.read("side", side_set);
@@ -226,7 +226,7 @@ namespace utopia {
     public:
     	virtual ~ContactSimulation() {}
 
-    	virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is) override
+    	virtual bool init(libMesh::Parallel::Communicator &comm, Input &is) override
     	{
     		bool ok = true;
     		if(!ElasticitySimulation::init(comm, is)) {
@@ -235,7 +235,7 @@ namespace utopia {
 
 
             std::set<int> temp;
-    		is.read("contact", [this,&temp](InputStream &is) {
+    		is.read("contact", [this,&temp](Input &is) {
     			is.read("radius", contact_params.search_radius);
 
                 std::string type;
@@ -264,8 +264,8 @@ namespace utopia {
 
                 is.read("n-transient-steps", n_transient_steps);
 
-                is.read("pairs", [this,&temp](InputStream &is) {
-                    is.read_all([this,&temp](InputStream &is) {
+                is.read("pairs", [this,&temp](Input &is) {
+                    is.read_all([this,&temp](Input &is) {
                         int master = -1, slave = -1;
                         is.read("master", master);
                         is.read("slave", slave);
@@ -304,17 +304,17 @@ namespace utopia {
 
     };
 
-    class WearSimulation::Input : public ContactSimulation {
+    class WearSimulation::SimulationInput : public ContactSimulation {
     public:
-    	Input()
+    	SimulationInput()
         : wear_coefficient(7e-3), extrapolation_factor(10.)
     	{}
 
-    	virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is) override
+    	virtual bool init(libMesh::Parallel::Communicator &comm, Input &is) override
     	{
     		if(!ContactSimulation::init(comm, is)) return false;
 
-            is.read("wear", [this](InputStream &is) {
+            is.read("wear", [this](Input &is) {
                 is.read("n-cycles",   n_cycles);
                 is.read("gait-cycle", gc);
                 is.read("coeff", wear_coefficient);
@@ -346,7 +346,7 @@ namespace utopia {
         typedef utopia::ContactSolver<USparseMatrix, UVector> ContactSolverT;
         typedef utopia::ContactStabilizedNewmark<USparseMatrix, UVector> TransientContactSolverT;
 
-    	Input in;
+    	SimulationInput in;
     	auto is_ptr = open_istream(conf_file_path);
     	if(!is_ptr) {
     		std::cerr << "[Error] invalid path " << conf_file_path << std::endl;

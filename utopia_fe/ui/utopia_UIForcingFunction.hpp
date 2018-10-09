@@ -6,15 +6,15 @@
 
 namespace utopia {
 	template<class FunctionSpace, class Vector>
-	class UIForcingFunction final : public CompositeForcingFunction<Vector>, public Serializable {
+	class UIForcingFunction final : public CompositeForcingFunction<Vector>, public Configurable {
 	public:
 
 		UIForcingFunction(FunctionSpace &V) : V_(V) {}
 
 		~UIForcingFunction() {}
 
-		void read(InputStream &is) override {
-			is.read_all([this](InputStream &is) {
+		void read(Input &is) override {
+			is.read_all([this](Input &is) {
 
 				int block = -1;
 
@@ -56,15 +56,15 @@ namespace utopia {
 
 
 	template<class FunctionSpace, class Vector>
-	class UIForcingFunction<ProductFunctionSpace<FunctionSpace>, Vector> final : public CompositeForcingFunction<Vector>, public Serializable {
+	class UIForcingFunction<ProductFunctionSpace<FunctionSpace>, Vector> final : public CompositeForcingFunction<Vector>, public Configurable {
 	public:
 
 		UIForcingFunction(ProductFunctionSpace<FunctionSpace> &V) : V_(V) {}
 
 		virtual ~UIForcingFunction() {}
 
-		void read(InputStream &is) override {
-			is.read_all([this](InputStream &is) {
+		void read(Input &is) override {
+			is.read_all([this](Input &is) {
 
 				int block = -1;
 				int coord = 0;

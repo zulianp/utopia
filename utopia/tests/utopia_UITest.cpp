@@ -9,30 +9,30 @@
 
 namespace utopia {
 
-	class SolveDesc : public Serializable {
+	class SolveDesc : public Configurable {
 	public:
 
-		void read(InputStream &is) override {
+		void read(Input &is) override {
 			is.read("type", type);
 			is.read("operator", op);
 			is.read("rhs", rhs);
 
 			//instead of creating another serializable use lambdas
-			is.read("solver", [this](InputStream &sub_is) {
+			is.read("solver", [this](Input &sub_is) {
 				sub_is.read("algorithm", algorithm);
 				sub_is.read("max_iter", max_iter);
 			});
 
-			is.read("array", [this](InputStream &sub_is) {
-				sub_is.read_all([this](InputStream &sub_is) {
+			is.read("array", [this](Input &sub_is) {
+				sub_is.read_all([this](Input &sub_is) {
 					std::string v;
 					sub_is.read(v);
 					array.push_back(v);
 				});
 			});
 
-			is.read("empty-array", [this](InputStream &sub_is) {
-				sub_is.read_all([this](InputStream &sub_is) {
+			is.read("empty-array", [this](Input &sub_is) {
+				sub_is.read_all([this](Input &sub_is) {
 					utopia_test_assert(false);
 					empty_array.push_back("I should not be here");
 				});
@@ -48,7 +48,7 @@ namespace utopia {
 			is.read("no-value", no_value);
 
 			no_value = false;
-			is.read("no-value-2", [](InputStream &sub_is) {
+			is.read("no-value-2", [](Input &sub_is) {
 				utopia_test_assert(false);
 			});
 		}
@@ -63,7 +63,7 @@ namespace utopia {
 		bool no_value;
 	};
 
-	void generic_stream(InputStream &is)
+	void generic_stream(Input &is)
 	{
 		utopia_test_assert(is.good());
 

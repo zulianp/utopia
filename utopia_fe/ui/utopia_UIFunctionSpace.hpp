@@ -12,12 +12,12 @@
 namespace utopia {
 
 	template<class FunctionSpace>
-	class UIFunctionSpace final : public Serializable {
+	class UIFunctionSpace final : public Configurable {
 	public:
 		UIFunctionSpace()
 		{}
 
-		void read(InputStream &is) override {}
+		void read(Input &is) override {}
 
 	private:
 		std::shared_ptr<FunctionSpace> space_;
@@ -25,13 +25,13 @@ namespace utopia {
 
 
 	template<>
-	class UIFunctionSpace<LibMeshFunctionSpace> final : public Serializable {
+	class UIFunctionSpace<LibMeshFunctionSpace> final : public Configurable {
 	public:
 		UIFunctionSpace(const std::shared_ptr<UIMesh<libMesh::DistributedMesh>> &mesh)
 		: mesh_(mesh)
 		{}
 
-		void read(InputStream &is) override {
+		void read(Input &is) override {
 			int n_vars = 0;
 
 			std::vector<std::string> var_names;
@@ -39,8 +39,8 @@ namespace utopia {
 
 			std::string system_name = "main";
 
-			is.read("variables", [&](InputStream &sub_is_mid) {
-				sub_is_mid.read_all([&](InputStream &sub_is) {
+			is.read("variables", [&](Input &sub_is_mid) {
+				sub_is_mid.read_all([&](Input &sub_is) {
 					std::string var_name = "u_" + std::to_string(n_vars);
 					int var_order = 1;
 
@@ -72,8 +72,8 @@ namespace utopia {
 				space_->add_subspace(ss);
 			}
 
-			is.read("boundary-conditions", [this](InputStream &is) {
-			    is.read_all([this](InputStream &is) {
+			is.read("boundary-conditions", [this](Input &is) {
+			    is.read_all([this](Input &is) {
 			        int side_set = 0;
 			        
 			        is.read("side", side_set);

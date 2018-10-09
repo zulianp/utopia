@@ -11,7 +11,7 @@ namespace utopia {
 		t_end = 10.;
 	}
 
-	void OldConfiguration::read(InputStream &is)
+	void OldConfiguration::read(Input &is)
 	{
 		t = 0.;
 		t_end = 1.;
@@ -23,8 +23,8 @@ namespace utopia {
 
 		dt_ = (t_end - t)/n_time_steps;
 
-		is.read("rotations", [this](InputStream &is) {
-			is.read_all([this](InputStream &is) {
+		is.read("rotations", [this](Input &is) {
+			is.read_all([this](Input &is) {
 				Rotation rot;
 
 				std::string axis;
@@ -42,8 +42,8 @@ namespace utopia {
 			});
 		});
 
-		is.read("translations", [this](InputStream &is) {
-			is.read_all([this](InputStream &is) {
+		is.read("translations", [this](Input &is) {
+			is.read_all([this](Input &is) {
 				Translation tr;
 
 				std::string axis;

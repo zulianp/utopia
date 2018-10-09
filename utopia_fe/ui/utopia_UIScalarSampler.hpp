@@ -78,14 +78,14 @@ namespace utopia {
 	}
 
 	template<typename Scalar>
-	class UIScalarSampler final : public Serializable, public UIFunction<Scalar> {
+	class UIScalarSampler final : public Configurable, public UIFunction<Scalar> {
 	public:
 
 		UIScalarSampler() {}
 
 		~UIScalarSampler() {}
 
-		void read(InputStream &is) override {
+		void read(Input &is) override {
 			std::string file = "";
 			is.read("file", file);
 

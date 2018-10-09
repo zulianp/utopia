@@ -8,7 +8,7 @@
 #include "libmesh/mesh.h"
 #include "libmesh/dof_map.h"
 
-#include "utopia_InputStream.hpp"
+#include "utopia_Input.hpp"
 #include "utopia_AffineTransform.hpp"
 #include "utopia_ProductFunctionSpace.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
@@ -17,12 +17,12 @@ namespace utopia {
 
 	class InputStream;
 
-	class GaitCycle final : public Serializable {
+	class GaitCycle final : public Configurable {
 	public:
 
 		////////////////////////////////////////////////////////////////////////////////////////
 
-		class Configuration : public Serializable {
+		class Configuration : public Configurable {
 		public:
 			Configuration() {}
 			virtual ~Configuration() {}
@@ -44,7 +44,7 @@ namespace utopia {
 		////////////////////////////////////////////////////////////////////////////////////////
 
 		GaitCycle();
-		void read(InputStream &is) override;
+		void read(Input &is) override;
 		void update(const std::size_t time_step);	
 		
 		inline int n_steps() const  {

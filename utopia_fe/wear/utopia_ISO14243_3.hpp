@@ -7,7 +7,7 @@
 #include "libmesh/mesh.h"
 #include "libmesh/dof_map.h"
 
-#include "utopia_InputStream.hpp"
+#include "utopia_Input.hpp"
 #include "utopia_AffineTransform.hpp"
 #include "utopia_ProductFunctionSpace.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
@@ -25,7 +25,7 @@ namespace utopia {
 
 		ISO14243_3() {}
 
-		void read(InputStream &is) override;
+		void read(Input &is) override;
 		void update(const int time_step) override;
 		void displacement_and_forces(
 			ProductFunctionSpace<LibMeshFunctionSpace> &space,

@@ -8,7 +8,7 @@
 
 namespace utopia {
 
-	void ISO14243_3::read(InputStream &is)
+	void ISO14243_3::read(Input &is)
 	{
 		flexion_extension_angle_axis_ = 'z';
 		char axial_force_axis_char    = 'z';

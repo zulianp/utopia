@@ -540,13 +540,13 @@ namespace utopia {
         std::vector<int> var_nums_;
     };
 
-    class FractureFlowApp::Input : public Serializable {
+    class FractureFlowApp::SimulationInput : public Configurable {
     public:
-        Input(libMesh::Parallel::Communicator &comm)
+        SimulationInput(libMesh::Parallel::Communicator &comm)
         : mesh(comm), space(make_ref(mesh))
         {}
 
-        void read(InputStream &is) override
+        void read(Input &is) override
         {
             try {
                 is.read("mesh", mesh);
@@ -783,8 +783,8 @@ namespace utopia {
 
         auto is_ptr = open_istream(conf_file_path);
 
-        Input master_in(*comm_), slave_in(*comm_);
-        Input multiplier_in(*comm_);
+        SimulationInput master_in(*comm_), slave_in(*comm_);
+        SimulationInput multiplier_in(*comm_);
 
         is_ptr->read("master", master_in);
         is_ptr->read("slave",  slave_in);

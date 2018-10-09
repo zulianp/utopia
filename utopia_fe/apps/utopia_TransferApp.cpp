@@ -38,7 +38,7 @@ namespace utopia {
 		// std::cout << "running: " << conf_file_path << std::endl;
 		auto is_ptr = open_istream(conf_file_path);
 
-		is_ptr->read("transfer", [this](InputStream &is) {
+		is_ptr->read("transfer", [this](Input &is) {
 			std::string path;
 			type = "l2-projection"; //interpolation, approx-l2-projection
 			int order = 1;

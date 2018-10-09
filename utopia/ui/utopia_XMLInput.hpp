@@ -4,33 +4,33 @@
 #include <memory>
 #include "utopia_Base.hpp"
 #include "utopia_Path.hpp"
-#include "utopia_InputStream.hpp"
+#include "utopia_Input.hpp"
 
 
 namespace utopia {
 
-	class XMLInputStream final : public InputStream {
+	class XMLInput final : public Input {
 	public:
-		XMLInputStream();
-		~XMLInputStream();
+		XMLInput();
+		~XMLInput();
 
-		bool open(const Path &path) override;
+		bool open(const Path &path);// override;
 
 		void read(bool &val) override;
 		void read(double &val) override;
 		void read(int &val) override;
 		void read(SizeType &val) override;
 		void read(std::string &val) override;
-		void read(Serializable &val) override;
-		void read(std::function<void(InputStream &)> lambda) override;
+		void read(Configurable &val) override;
+		void read(std::function<void(Input &)> lambda) override;
 
 		void read(const std::string &key, bool &val) override;
 		void read(const std::string &key, double &val) override;
 		void read(const std::string &key, int &val) override;
 		void read(const std::string &key, SizeType &val) override;
 		void read(const std::string &key, std::string &val) override;
-		void read(const std::string &key, Serializable &val) override;
-		void read(const std::string &key, std::function<void(InputStream &)> lambda) override;
+		void read(const std::string &key, Configurable &val) override;
+		void read(const std::string &key, std::function<void(Input &)> lambda) override;
 
 		bool good() const override;
 

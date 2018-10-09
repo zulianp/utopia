@@ -8,7 +8,7 @@
 #include "libmesh/mesh.h"
 #include "libmesh/dof_map.h"
 
-#include "utopia_InputStream.hpp"
+#include "utopia_Input.hpp"
 #include "utopia_AffineTransform.hpp"
 #include "utopia_ProductFunctionSpace.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
@@ -24,7 +24,7 @@ namespace utopia {
 		using Fun3d = std::function<std::array<double, 3>(const std::array<double, 3> &p)>;
 
 		OldConfiguration();
-		void read(InputStream &is) override;
+		void read(Input &is) override;
 		void update(const int time_step) override;
 		void displacement_and_forces(
 			ProductFunctionSpace<LibMeshFunctionSpace> &space,
