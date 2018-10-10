@@ -213,6 +213,75 @@ template <typename Matrix, typename Vector>
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNnzLU(); }
 
+  /**
+   * get_num_preorder Method - Returns the number of pre-orderings performed by the owning solver.
+   * \param na
+   * \return int
+   */   
+template <typename Matrix, typename Vector>
+int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_preorder () const {
+            assert(!impl_->solver_.is_null());
+        return impl_->solver_->getStatus().getNumPreOrder(); }
+ 
+   /**
+   * get_num_sym_fact Method - Returns the number of symbolic factorizations performed by the owning solver.
+   * \param na
+   * \return int
+   */   
+template <typename Matrix, typename Vector>
+int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_sym_fact () const {
+            assert(!impl_->solver_.is_null());
+        return impl_->solver_->getStatus().getNumSymbolicFact(); }
+ 
+   /**
+   * get_num_numeric_fact Method - Returns the number of numeric factorizations performed by the owning solver.
+   * \param na
+   * \return int
+   */   
+template <typename Matrix, typename Vector>
+int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_numeric_fact () const {
+        assert(!impl_->solver_.is_null());
+        return impl_->solver_->getStatus().getNumNumericFact(); }
+ 
+   /**
+   * get_num_solve Method - Returns the number of solves performed by the owning solver.
+   * \param na
+   * \return int
+   */   
+template <typename Matrix, typename Vector>
+int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_solve () const {
+        assert(!impl_->solver_.is_null());
+        return impl_->solver_->getStatus().getNumSolve(); } 
+   /**
+   * preordering_done Method - If true , then pre-ordering has been performed
+   * \param na
+   * \return int
+   */   
+template <typename Matrix, typename Vector>
+bool    Amesos2Solver<Matrix, Vector, TRILINOS>::preordering_done () const {
+.        assert(!impl_->solver_.is_null());
+        return impl_->solver_->getStatus().preOrderingDone(); }
+ 
+   /**
+   * sym_factorization_done Method - if true , then symbolic factorization has been performed.
+   * \param na
+   * \return int
+   */   
+template <typename Matrix, typename Vector>
+bool    Amesos2Solver<Matrix, Vector, TRILINOS>::sym_factorization_done () const {
+        assert(!impl_->solver_.is_null());
+        return impl_->solver_->getStatus().symbolicFactorizationDone(); }
+   
+   /**
+   * num_factorization_done Method -    If true , then numeric factorization has been performed.
+   * \param na
+   * \return int
+   */   
+template <typename Matrix, typename Vector>
+bool    Amesos2Solver<Matrix, Vector, TRILINOS>::num_factorization_done () const {
+        assert(!impl_->solver_.is_null());
+        return impl_->solver_->getStatus().numericFactorizationDone(); }
+
 
     
     template <typename Matrix, typename Vector>

@@ -42,7 +42,14 @@ namespace utopia {
         void set_preconditioner(const Matrix &precond);
         // int num_factorization() const;
         // int sym_factorization() const;
-        int get_nnzLU() const;
+        int get_nnzLU () const;
+        int get_num_preorder () const;
+        int get_num_sym_fact () const;
+        int get_num_numeric_fact () const;
+        int get_num_solve () const;
+        bool preordering_done () const;
+        bool sym_factorization_done () const;
+        bool num_factorization_done () const;
 
         /**
          * @brief      Sets the parameters.
