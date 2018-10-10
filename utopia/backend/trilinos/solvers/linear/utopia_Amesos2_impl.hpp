@@ -210,8 +210,8 @@ namespace utopia {
    */   
 template <typename Matrix, typename Vector>
     int Amesos2Solver<Matrix, Vector, TRILINOS>::get_nnzLU() const { 
-        assert(!impl_->status_.is_null());
-        return impl_->status_->getStatus().getNnzLU(); }
+        assert(!impl_->solver_.is_null());
+        return impl_->solver_->getStatus().getNnzLU(); }
 
 
     
