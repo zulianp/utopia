@@ -1,5 +1,7 @@
 #include "utopia_QMortarBuilder.hpp"
 #include "MortarAssemble.hpp"
+#include "utopia_Socket.hpp"
+#include "utopia_libmesh_Utils.hpp"
 
 #include <cmath>
 
@@ -287,6 +289,18 @@ namespace utopia {
 		}
 	}
 
+	static double counter_weight(libMesh::ElemType type)
+	{
+		if(is_tri(type)) {
+			return 1./2.;
+		} else if(is_quad(type)) {
+			return 2./2.;
+		} else {
+			assert(false && "add special case");
+			return 1.;
+		}
+	}
+
 	bool QMortarBuilderShell2::build(
 		const Elem &trial,
 		FEType trial_type,
@@ -300,13 +314,13 @@ namespace utopia {
 
 		auto angle = trial_normal * test_normal;
 
-		if(std::abs(angle - 1) > 1e-14) {
-			//not coplanar
+		if(std::abs(angle - 1.) > 1e-14) {
+			//not coplanar and not same orientation
 			return false;
 		}
 
 		make_polygon_3(trial, trial_pts);
-		make_polygon_3(test, test_pts);
+		make_polygon_3(test,  test_pts);
 
 		if(!intersect()) {
 			return false;
@@ -322,9 +336,30 @@ namespace utopia {
 		auto trial_trans = std::make_shared<Transform2>(trial);
 		auto test_trans  = std::make_shared<Transform2>(test);
 
-		transform_to_reference_surf(*trial_trans, trial.type(), composite_ir, q_trial);
-		transform_to_reference_surf(*test_trans,  test.type(),  composite_ir, q_test);
-		assert(false);
+		transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
+		transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
+
+		double cw = counter_weight(test.type());
+		for(auto &w : q_test.get_weights()) {
+			w *= cw;
+		}
+
+		cw = counter_weight(trial.type());
+		for(auto &w : q_trial.get_weights()) {
+			w *= cw;
+		}
+		
+		// assert(false);
+
+		// plot_polygon(3, test_pts.m(), 	  &test_pts.get_values()[0], 	 "test");
+		// plot_polygon(3, trial_pts.m(),    &trial_pts.get_values()[0], 	 "trial");
+
+		// static int n_isect = 0;
+		// plot_polygon(3, intersection.m(), &intersection.get_values()[0], "isect" + std::to_string(n_isect) + "/poly");
+		// plot_quad_points(3, composite_ir.get_points(), "isect" + std::to_string(n_isect) + "/qp");
+		// plot_quad_points(3, q_trial.get_points(), "qptrial");
+		// ++n_isect;
+
 		return true;
 	}
 
@@ -357,11 +392,13 @@ namespace utopia {
 		for(uint i = 0; i < ref_trial_pts.m(); ++i) {
 			ref_trial_pts_2(i, 0) = ref_trial_pts(i, 0);
 			ref_trial_pts_2(i, 1) = ref_trial_pts(i, 1);
+			assert(approxeq(0., ref_trial_pts(i, 2)));
 		}
 
 		for(uint i = 0; i < ref_test_pts.m(); ++i) {
 			ref_test_pts_2(i, 0) = ref_test_pts(i, 0);
 			ref_test_pts_2(i, 1) = ref_test_pts(i, 1);
+			assert(approxeq(0., ref_test_pts(i, 2)));
 		}
 
 		if(!intersect_2D(ref_trial_pts_2, ref_test_pts_2, ref_intersection_2)) {
@@ -378,7 +415,13 @@ namespace utopia {
 			ref_intersection_slave(i, 2) = 0.;
 		}
 
-		Intersector::apply_affine_transform_3(A, b, ref_intersection_slave.m(), &ref_intersection_slave.get_values()[0], &intersection.get_values()[0]);
+		Intersector::apply_affine_transform_3(
+			A, b,
+			ref_intersection_slave.m(),
+			&ref_intersection_slave.get_values()[0],
+			&intersection.get_values()[0]
+		);
+
 		return true;
 	}
 

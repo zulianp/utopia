@@ -1,7 +1,7 @@
 <transfer>
-	<type>approx-l2-projection</type>
+	<!-- <type>approx-l2-projection</type> -->
 	<!-- <type>interpolation</type> -->
-	<!-- <type>l2-projection</type> -->
+	<type>l2-projection</type>
 	<!-- <biorth-basis>1</biorth-basis> -->
 	<mesh-master>../data/test/quad_0.e</mesh-master>
 	<refine-master>0</refine-master>
@@ -9,7 +9,12 @@
 
 	<mesh-slave>../data/test/quad_0.e</mesh-slave>
 	<refine-slave>0</refine-slave>
-	<fe-family-slave>MONOMIAL</fe-family-slave>
-	<order-slave>0</order-slave>
-	<function>x*x+y*y</function>
+<!-- 	<fe-family-slave>MONOMIAL</fe-family-slave>
+	<order-slave>0</order-slave> -->
+	<function>-x</function>
+<!-- 	
+	<function-type>constant</function-type>
+	<function>1.</function> -->
+
+	<force-shell>true</force-shell>
 </transfer>
