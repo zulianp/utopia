@@ -131,9 +131,9 @@ namespace utopia {
 
         impl_->linear_problem = Teuchos::rcp(
                                              new typename Impl::problem_type(
-                                                                             this->get_operator()->implementation().implementation_ptr(),
-                                                                             lhs.implementation().implementation_ptr(),
-                                                                             rhs.implementation().implementation_ptr()
+                                                                             raw_type(*this->get_operator()),
+                                                                             raw_type(lhs),
+                                                                             raw_type(rhs)
                                                                              )
                                              );
 

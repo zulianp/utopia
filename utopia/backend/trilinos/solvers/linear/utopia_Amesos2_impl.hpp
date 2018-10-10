@@ -91,7 +91,6 @@ namespace utopia {
         Teuchos::RCP<Teuchos::ParameterList> param_list_;
         //  auto& utopiaPL;// impl_->param_list_->sublist("UTOPIA", true);
         Teuchos::RCP<solver_type> solver_;
-        Teuchos::RCP<Amesos2::Status> solver_status_;
         
         //preconditioner
 // #ifdef HAVE_AMESOS2_IFPACK2
@@ -157,8 +156,8 @@ namespace utopia {
     void Amesos2Solver<Matrix, Vector, TRILINOS>::update(const std::shared_ptr<const Matrix> &op)
     {
         //preordering();
-        sym_factorization();
-        num_factorization();//TODO check output boolean       
+        // sym_factorization();
+        // num_factorization();//TODO check output boolean       
         PreconditionedSolver::update(op);
         // set_problem(*op);
     }
@@ -176,10 +175,7 @@ namespace utopia {
        assert( !Amesos2::query(solver_type) ); //check if the solver type specified in the xml is available
 
        impl_->solver_ = Amesos2::create<typename Impl::matrix_type, typename Impl::vec_type>
-                        ( solver_type,
-                        this->get_operator()->implementation().implementation_ptr(),
-                        lhs.implementation().implementation_ptr(),
-                        rhs.implementation().implementation_ptr() );
+                        (solver_type, raw_type(*this->get_operator()), raw_type(lhs), raw_type(rhs));
         assert(!impl_->solver_.is_null());
          
         impl_->solver_->solve();
@@ -192,28 +188,20 @@ namespace utopia {
    * \param na
    * \return bool
    */   
-    template <typename Matrix, typename Vector>
-    int Amesos2Solver<Matrix, Vector, TRILINOS>::num_factorization() const 
-    { assert(!impl_->solver_.is_null());
-        return impl_->solver_->numericFactorization(); }
+    // template <typename Matrix, typename Vector>
+    // auto Amesos2Solver<Matrix, Vector, TRILINOS>::num_factorization() const 
+    // { assert(!impl_->solver_.is_null());
+    //     return impl_->solver_->numericFactorization(); }
 
   /**
    * sym_factorization Method - does the numeric factorization
    * \param na
    * \return bool
    */   
-    template <typename Matrix, typename Vector>
-    int Amesos2Solver<Matrix, Vector, TRILINOS>::sym_factorization() const 
-    { assert(!impl_->solver_.is_null());
-        return impl_->solver_->symbolicFactorization(); }
-
-  /**
-   * get_status Method.
-   * \param na
-   * \return Amesos2::Status
-   */   
-    template <typename Matrix, typename Vector>
-    int Amesos2Solver<Matrix, Vector, TRILINOS>::get_status() const { return impl_->solver_->getStatus(); }
+    // template <typename Matrix, typename Vector>
+    // auto Amesos2Solver<Matrix, Vector, TRILINOS>::sym_factorization() const 
+    // { assert(!impl_->solver_.is_null());
+    //     return impl_->solver_->symbolicFactorization(); }
 
   /**
    * get_nnzLU Method.
@@ -222,19 +210,10 @@ namespace utopia {
    */   
 template <typename Matrix, typename Vector>
     int Amesos2Solver<Matrix, Vector, TRILINOS>::get_nnzLU() const { 
-        assert(!impl_->status_solver_.is_null());
-        return impl_->status_solver_->getNnzLU(); }
+        assert(!impl_->status_.is_null());
+        return impl_->status_->getStatus().getNnzLU(); }
 
-  /**
-   * set_status Method.
-   * \param na
-   * \return bool
-   */   
-    template <typename Matrix, typename Vector>
-    bool Amesos2Solver<Matrix, Vector, TRILINOS>::set_status() const { 
-        if (impl_->status_solver_ == nullptr) impl_->status_solver_.reset(get_status());
-        assert(!impl_->status_solver_.is_null());
-        return true; }
+
     
     template <typename Matrix, typename Vector>
     void Amesos2Solver<Matrix, Vector, TRILINOS>::set_preconditioner(const std::shared_ptr<Preconditioner> &precond)

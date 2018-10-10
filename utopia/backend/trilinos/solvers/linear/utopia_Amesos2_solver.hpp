@@ -40,10 +40,10 @@ namespace utopia {
         
         void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
         void set_preconditioner(const Matrix &precond);
-        
-        int get_num_iter() const;
-        double achieved_tol() const;
-        
+        // int num_factorization() const;
+        // int sym_factorization() const;
+        // int get_nnzLU() const;
+
         /**
          * @brief      Sets the parameters.
          *
