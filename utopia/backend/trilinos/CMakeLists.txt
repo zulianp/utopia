@@ -24,6 +24,23 @@ if(TRILINOS_FOUND)
     message(STATUS "Trilinos_additional_headers ${Trilinos_additional_headers}")
     message(STATUS "Trilinos_TPL_INCLUDE_DIRS ${Trilinos_TPL_INCLUDE_DIRS}")
 
+    list(FIND Trilinos_PACKAGE_LIST "Amesos" AMESOS_FOUND)
+    if (NOT AMESOS_FOUND EQUAL -1)
+      set(WITH_TRILINOS_AMESOS TRUE PARENT_SCOPE)
+    endif()
+    list(FIND Trilinos_PACKAGE_LIST "Belos" BELOS_FOUND)
+    if (NOT BELOS_FOUND EQUAL -1)
+      set(WITH_TRILINOS_BELOS TRUE PARENT_SCOPE)
+    endif()
+    list(FIND Trilinos_PACKAGE_LIST "Ifpack2" IFPACK2_FOUND)
+    if (NOT IFPACK2_FOUND EQUAL -1)
+      set(WITH_TRILINOS_IFPACK2 TRUE PARENT_SCOPE)
+    endif()
+    list(FIND Trilinos_PACKAGE_LIST "MueLu" MUELUE_FOUND)
+    if (NOT MUELUE_FOUND EQUAL -1)
+      set(WITH_TRILINOS_MUELU TRUE PARENT_SCOPE)
+    endif()
+
     # set(CMAKE_C_COMPILER ${TRILINOS_COMPILER})
 
     if(NOT MPI_CXX_COMPILER)
@@ -49,7 +66,7 @@ if(TRILINOS_FOUND)
 	endif()
 
     set(WITH_TRILINOS TRUE)
-  
+
     if(KOKKOS_CUDA_HPP)
         set(KOKKOS_CUDA TRUE)
     endif()
@@ -58,9 +75,8 @@ if(TRILINOS_FOUND)
     endif()
 
     find_package(TpetraExt)
-
-    if(TPETRAEXT_FOUND)
- 	   set(WITH_TPETRAEXT TRUE PARENT_SCOPE)
+    if(TRILINOS_TPETRAEXT_FOUND)
+ 	   set(WITH_TRILINOS_TPETRAEXT TRUE PARENT_SCOPE)
     endif()
 else()
     message(WARNING "[Warning] Trilinos not found")
@@ -99,9 +115,9 @@ if(TRILINOS_FOUND)
 
 
 	install(TARGETS utopia_trilinos
-		RUNTIME DESTINATION bin 
-		LIBRARY DESTINATION lib 
-		ARCHIVE DESTINATION lib 
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
 		)
 
 	install(FILES ${LOCAL_HEADERS} DESTINATION include)
