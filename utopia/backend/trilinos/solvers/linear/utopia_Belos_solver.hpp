@@ -1,9 +1,11 @@
 #ifndef UTOPIA_BELOS_SOLVERS_HPP
 #define UTOPIA_BELOS_SOLVERS_HPP
 
-#include "Belos_config.h"
+#include <utopia_Config.hpp>
 
-#ifdef HAVE_BELOS_TPETRA
+#ifdef WITH_TRILINOS_BELOS
+
+#include "Belos_config.h"
 
 #include "utopia_PreconditionedSolver.hpp"
 #include "utopia_trilinos_LinearSolverFactory.hpp"
@@ -17,10 +19,10 @@ namespace utopia {
      */
     template <typename Matrix, typename Vector, int Backend = Traits<Matrix>::Backend>
     class BelosSolver {};
-    
+
     template <typename Matrix, typename Vector>
     class BelosSolver<Matrix, Vector, TRILINOS> final
-    : public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {        
+    : public PreconditionedSolver<Matrix, Vector>, public Smoother<Matrix, Vector> {
     public:
         typedef UTOPIA_SCALAR(Vector) Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -28,22 +30,22 @@ namespace utopia {
         typedef utopia::IterativeSolver<Matrix, Vector> IterativeSolver;
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
         typedef utopia::PreconditionedSolver<Matrix, Vector> PreconditionedSolver;
-            
+
         BelosSolver();
         BelosSolver(const BelosSolver &other);
         BelosSolver(Parameters params);
         ~BelosSolver();
-        
+
         void update(const std::shared_ptr<const Matrix> &op, const std::shared_ptr<const Matrix> &prec) override;
         void update(const std::shared_ptr<const Matrix> &op) override;
         bool apply(const Vector &rhs, Vector &lhs) override;
-        
+
         void set_preconditioner(const std::shared_ptr<Preconditioner> &precond) override;
         void set_preconditioner(const Matrix &precond);
-        
+
         int get_num_iter() const;
         double achieved_tol() const;
-        
+
         /**
          * @brief      Sets the parameters.
          *
@@ -54,7 +56,7 @@ namespace utopia {
         bool smooth(const Vector &rhs, Vector &x) override;
 
         private:
-            
+
             class Impl;
             std::unique_ptr<Impl> impl_;
 
@@ -65,5 +67,7 @@ namespace utopia {
 
 }  // namespace utopia
 
-#endif //HAVE_BELOS_TPETRA
+#else  // WITH_TRILINOS_BELOS
+  #error "Trilinos was not configured with Belos, hence you cannot use the utopia::BelosSolver."
+#endif //WITH_TRILINOS_BELOS
 #endif //UTOPIA_BELOS_SOLVERS_HPP
