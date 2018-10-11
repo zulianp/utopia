@@ -88,6 +88,8 @@ namespace utopia {
 		}
 
 		inline void remove_duplicate_points(const Scalar tol) {
+			if(points.empty()) return;
+
 			const SizeType n_original = points.size();
 			const SizeType last = n_original - 1;
 			std::vector<bool> keep(n_original, true);
