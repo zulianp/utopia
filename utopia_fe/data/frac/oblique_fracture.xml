@@ -14,7 +14,7 @@
 		<n-x>20</n-x>
 		<n-y>20</n-y>
 
-		<refinements>2</refinements>
+		<!-- <refinements>2</refinements> -->
 	</mesh>
 
 	<space>
@@ -47,7 +47,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/line.e</path>
-		<refinements>4</refinements>
+		<!-- <refinements>4</refinements> -->
 	</mesh>
 
 	<space>
@@ -75,7 +75,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/line.e</path>
-		<refinements>2</refinements>
+		<!-- <refinements>2</refinements> -->
 	</mesh>
 
 	<space>

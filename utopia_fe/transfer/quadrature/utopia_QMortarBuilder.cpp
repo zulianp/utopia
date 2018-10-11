@@ -148,11 +148,17 @@ namespace utopia {
 		assert(trial.n_nodes() == 2);
 		assert(test.n_nodes()  == 2);
 
-		const auto &p1 = trial.node_ref(0);
-		const auto &p2 = trial.node_ref(1);
+		// const auto &p1 = trial.node_ref(0);
+		// const auto &p2 = trial.node_ref(1);
 
-		const auto &q1 = test.node_ref(0);
-		const auto &q2 = test.node_ref(1);
+		// const auto &q1 = test.node_ref(0);
+		// const auto &q2 = test.node_ref(1);
+
+		const libMesh::Point p1 = trial.node_ref(0);
+		const libMesh::Point p2 = trial.node_ref(1);
+
+		const libMesh::Point q1 = test.node_ref(0);
+		const libMesh::Point q2 = test.node_ref(1);
 
 		u = p2 - p1;
 		v = q2 - q1;
@@ -182,20 +188,34 @@ namespace utopia {
 			}
 		}
 
-		for(int i = 0; i < LIBMESH_DIM; ++i) {
-			min_p(i) = std::min(p1(i), p2(i));
-			max_p(i) = std::max(p1(i), p2(i));
-			
-			min_q(i) = std::min(q1(i), q2(i));
-			max_q(i) = std::max(q1(i), q2(i));
+		const double up1 = 0.;
+		const double up2 = u * (p2 - p1);
 
-			intersection[0](i) = std::max(min_p(i), min_q(i));
-			intersection[1](i) = std::min(max_p(i), max_q(i));
+		const double min_p = std::min(up1, up2);
+		const double max_p = std::max(up1, up2);
+
+		const double uq1 = u * (q1 - p1);
+		const double uq2 = u * (q2 - p1);
+
+		const double min_q = std::min(uq1, uq2);
+		const double max_q = std::max(uq1, uq2);
+
+		if(max_q <= min_p) {
+			return false;
 		}
 
-		r = intersection[1] - intersection[0];
+		if(max_p <= min_q) {
+			return false;
+		}
 
-		auto isect_len = r.norm_sq();
+		double isect_min = std::max(min_p, min_q);
+		double isect_max = std::min(max_p, max_q);
+		double isect_len = isect_max - isect_min;
+
+		intersection[0] = p1 + isect_min * u;
+		intersection[1] = p1 + isect_max * u;
+
+		// auto isect_len = r.norm_sq();
 		if(isect_len < 1e-16) {
 			return false;
 		}
@@ -209,7 +229,8 @@ namespace utopia {
 
 		const int order = order_for_l2_integral(1, trial, trial_type.order, test, test_type.order);
 		make_composite_quadrature_on_surf_2D(line, 1./len_v, order, composite_ir);
-		total_intersection_volume += std::sqrt(isect_len);
+		// total_intersection_volume += std::sqrt(isect_len);
+		total_intersection_volume += isect_len;
 
 		auto trial_trans = std::make_shared<Transform1>(trial);
 		auto test_trans  = std::make_shared<Transform1>(test);
