@@ -427,7 +427,9 @@ namespace utopia {
 	}
 
 	inline void make(const libMesh::Elem &elem, Polygon3 &polygon) {
-		auto n_nodes = elem.n_nodes();
+		assert(is_tri(elem.type()) || is_quad(elem.type()));
+		auto n_nodes = is_tri(elem.type()) ? 3 : 4;
+
 		polygon.resize(n_nodes);
 		
 		for(auto i = 0; i < n_nodes; ++i) {
@@ -463,18 +465,30 @@ namespace utopia {
 
 		if(is_tet(elem.type())) {
 			h_poly.half_spaces.resize(4);
-			
-			//face 0
+
+			//face 0 = [0, 1, 3]
 			make(p0, p1, p3, h_poly.half_spaces[0]);
 
-			//face 1
+			//face 1 = [1, 2, 3]
 			make(p1, p2, p3, h_poly.half_spaces[1]);
 
-			//face 2
+			//face 2 = [0, 3, 2]
 			make(p0, p3, p2, h_poly.half_spaces[2]);
 
-			//face 3
+			//face 3 = [1, 2, 0]
 			make(p1, p2, p0, h_poly.half_spaces[3]);
+
+			//fix orientation
+			Vector b = p0; b += p1; b += p2; b += p3;
+			b /= 4.0;
+
+			for(int i = 0; i < 4; ++i) {
+				if(h_poly.half_spaces[i].signed_dist(b) > 0.) {
+					//change face orientation
+					h_poly.half_spaces[i].n *= -1.;
+					h_poly.half_spaces[i].d *= -1.;
+				}
+			}
 		
 		} else if(is_hex(elem.type())) {
 			h_poly.half_spaces.resize(6);

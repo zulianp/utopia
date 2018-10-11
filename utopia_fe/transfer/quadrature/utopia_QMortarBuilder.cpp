@@ -468,6 +468,16 @@ namespace utopia {
 				std::copy(intersection.points, intersection.points + intersection.n_nodes * intersection.n_dims, &shell_poly.get_values()[0]);
 				make_composite_quadrature_on_surf_3D(shell_poly, 1./weight, order, composite_ir);
 
+				// Polygon3 poly, isect;
+				// HPolyhedron3 h;
+
+				// make(test, poly);
+				// make(trial, h);
+
+				// if(!intersect(poly, h, isect, 1e-10)) {
+				// 	poly.plot("test");
+				// }
+
 			} else {
 				make_composite_quadrature_3D(intersection, weight, order, composite_ir);
 			}
@@ -538,7 +548,11 @@ namespace utopia {
 			w *= cw;
 		}
 
-		// isect.plot("isect/poly");
+		//
+		// static int n_isect = 0;
+		// isect.plot("isect/poly" + std::to_string(n_isect++));
+		//
+
 		assert(weight == weight);
 		assert(weight > 0.);
 		return true;

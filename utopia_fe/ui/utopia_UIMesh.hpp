@@ -5,6 +5,7 @@
 #include "utopia_libmesh.hpp"
 
 #include "libmesh/mesh_refinement.h"
+#include "libmesh/mesh_modification.h"
 
 #include <memory>
 
@@ -116,6 +117,13 @@ namespace utopia {
 			scale_mesh(scale, *mesh_);
 
 			refine(refinements, *mesh_);
+
+			bool convert_to_triangles = false;
+			is.read("convert-to-triangles", convert_to_triangles);
+
+			if(convert_to_triangles) {
+				libMesh::MeshTools::Modification::all_tri(*mesh_);
+			}
 
 			if(mesh_type == "file" && order == 2) {
 				mesh_->all_second_order();
