@@ -443,7 +443,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
     bool get_global_active_index(const Vector & break_points, Vector & feasible_set, const Scalar & t_current, SizeType & index)
     {
-        SizeType counter_global_sum;  
         Scalar counter=0.0; 
 
         // TODO:: put inf
@@ -453,6 +452,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         {   // begin lock
             Read<Vector>  wd(break_points);
             Read<Vector>  rv(feasible_set); 
+            Write<Vector>  rv2(indices); 
 
             Range rr = range(break_points);
             Range ind_range = range(indices);
@@ -466,8 +466,17 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                     break; 
                 }
             }
+        }
 
-            index = min(indices); 
+        index = min(indices); 
+
+        if(index<0 || index > size(break_points).get(0))
+            utopia_error("L-BFGS-B::get_global_active_index: index not valid. "); 
+
+
+        {
+            Write<Vector>  rv(feasible_set); 
+            Range rr = range(feasible_set);
 
             for (SizeType i = rr.begin(); i != rr.end(); ++i)
             {
@@ -475,6 +484,11 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                     feasible_set.set(i, 0); 
             }            
 
+        }
+
+        {
+            Read<Vector>  rv(feasible_set); 
+            Range rr = range(feasible_set);
 
             // horrible solution - looops should be merged 
             for (SizeType i = rr.begin(); i != rr.end(); ++i)
@@ -484,19 +498,19 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 {
                     counter++; 
                 }
-            }    
+            }
+        }    
 
-
+        {
             Write<Vector> wvv(counter_vec); 
-
             Range r_counter = range(counter_vec);
+
             for (SizeType i = r_counter.begin(); i != r_counter.end(); ++i)
                 counter_vec.set(i, counter); 
 
-
         } // end of lock
 
-        counter_global_sum = sum(counter_vec); 
+        SizeType counter_global_sum = sum(counter_vec); 
         return (counter_global_sum>1) ? true: false; 
     }
 
@@ -505,11 +519,11 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
     Scalar project_direction_on_boundary(const Vector & x, const Vector & d, const Vector & ub, const Vector & lb, Vector & x_cp, const SizeType & active_index)
     {
-        Vector x_local = local_values(1, 0); 
+        Vector x_local = local_values(1, 0.0); 
+        Scalar val=0; 
 
         {   // begin lock
             Write<Vector>  wd(x_cp);
-            Write<Vector>  wx(x_local);
 
             Read<Vector> r1(ub); 
             Read<Vector> r2(lb); 
@@ -518,18 +532,24 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             Range rr = range(x_cp);
 
-            Range rr_x_local = range(x_local);
-
             for (SizeType i = rr.begin(); i != rr.end(); ++i)
             {
                 if(i==active_index)
                 {
-                    Scalar val = (d.get(i)>0)? ub.get(i) : lb.get(i); 
-
+                    val = (d.get(i)>0)? ub.get(i) : lb.get(i); 
                     x_cp.set(i, val); 
-                    x_local.set(rr_x_local.begin(), val - x.get(i)); 
                 }
             }
+   
+        } // end of lock
+
+
+        ///////////////////////////////////////////////////////////
+        {   // begin lock
+            Write<Vector>  wx(x_local);
+            Range rr_x_local = range(x_local);
+
+            x_local.set(rr_x_local.begin(), val); 
    
         } // end of lock
 
@@ -602,6 +622,52 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 
+    Scalar get_next_t(const Vector & sorted_break_points, const SizeType & index)
+    {
+        Vector t_help = local_values(1, 0.0); 
+        Scalar value=0.0; 
+
+        // this is horrible solution, but lets fix it later 
+        {
+            Read<Vector> r(sorted_break_points); 
+
+            auto rr = range(sorted_break_points);
+            for (SizeType i = rr.begin(); i != rr.end(); ++i)
+            {
+                if(i==index)
+                    value = sorted_break_points.get(i); 
+            }
+        }
+
+        // this is horrible solution, but lets fix it later 
+        {
+            Write<Vector> w(t_help); 
+
+            auto rr = range(t_help);
+            for (SizeType i = rr.begin(); i != rr.end(); ++i)
+                    t_help.set(i, value); 
+        }        
+
+        return sum(t_help); 
+    }
+
+
+
+    SizeType get_number_of_sorted_break_points(const Vector & sorted_break_points)
+    {
+        Vector help = local_values(1, 0.0); 
+        SizeType val = size(sorted_break_points).get(0); 
+
+        // this is horrible solution, but lets fix it later 
+        {
+            Write<Vector> w(help); 
+
+            if(mpi_world_rank()==0)
+                help.set(0, val); 
+        }
+
+        return sum(help); 
+    }
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -611,6 +677,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             Scalar t_old, t, dt_min, dt, f_p, f_pp, z_b, g_b; 
             SizeType b; 
             Vector wbT; 
+
+            const auto inf = std::numeric_limits<Scalar>::infinity(); 
 
             Vector break_points, feasible_set; // indexing and distribution as always
             this->compute_breakpoints(g, x, lb, ub, break_points); 
@@ -635,29 +703,25 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             dt_min = -f_p/f_pp; 
             t_old = 0.0; 
 
-            Vector t_help = local_values(1, 0.0); 
+            SizeType it_sorted = 1; 
 
-            // this is horrible solution, but lets fix it later 
+            t = get_next_t(sorted_break_points, 0); 
+
+            if(t==0)
             {
-                Read<Vector> rv(sorted_break_points); 
-                auto rr = range(sorted_break_points);
-                for (SizeType i = rr.begin(); i != rr.end(); ++i)
-                {
-                    if(i==0)
-                        t_help.add(0, sorted_break_points.get(i)); 
-                }
+                t = get_next_t(sorted_break_points, 0); 
+                it_sorted = 2;                    
             }
 
-            t = sum(t_help); 
             dt = t - t_old; 
 
+
             bool repeated_index = get_global_active_index(break_points, feasible_set, t, b); 
+            SizeType num_break_points = get_number_of_sorted_break_points(sorted_break_points); 
+                
 
-
-            SizeType it_sorted = 1; 
-            
             // check logic here...
-            while(dt_min >= dt && it_sorted <= size(sorted_break_points).get(0))
+            while(dt_min >= dt && it_sorted < num_break_points)
             { 
                 z_b = project_direction_on_boundary(x, d, ub, lb, x_cp, b); 
                 g_b = get_gb(g, b); 
@@ -677,17 +741,15 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
                 f_pp -= (theta_ * (g_b*g_b)) + (2. * g_b * dot(wbT, Mp)) - ((g_b*g_b) * dot(wbT, MwbT)); 
 
-                std::cout<<"f_pp: "<< f_pp << "  \n"; 
-
                 // TODO:: add checks 
-                // if(f_pp == 0 )  
+                if(f_pp == 0 || !std::isfinite(f_pp))
+                    break;   
 
                 p += g_b * wbT; 
                 this->zero_dir_component(d, b); 
 
                 dt_min  = -f_p/f_pp;
                 t_old   = t;
-
 
                 // lets see 
                 if(repeated_index)
@@ -697,37 +759,116 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 }
                 else
                 {   
-                    t_help = local_values(1, 0.0); 
+                    t = get_next_t(sorted_break_points, it_sorted);
 
-                    {
-                        Read<Vector> rv(sorted_break_points); 
-                        auto rr = range(sorted_break_points);
-                        for (SizeType i = rr.begin(); i != rr.end(); ++i)
-                        {
-                            if(i==it_sorted)
-                                t_help.add(0, sorted_break_points.get(i)); 
-                        }
-                    }
-
-                    t = sum(t_help); 
+                    if(t==inf || !std::isfinite(t))
+                        break; 
 
                     repeated_index = get_global_active_index(break_points, feasible_set, t, b); 
                     it_sorted++; 
 
+                    // TODO:: do checks for infinity.... 
                     dt = t - t_old;
                 }
 
             }
-
 
             dt_min = std::max(dt_min, 0.0);
             t_old  = t_old + dt_min;
 
             this->add_d_to_x(x, x_cp, break_points, d, t); 
             c = c + dt_min*p;
+        }
+
+
+
+        void buildZ(const Vector &lb, const Vector & ub, const Vector & x_cp, Vector & feasible_set,  Matrix & Z)
+        {
+            feasible_set = local_values(local_size(lb).get(0), 0.); 
+
+            {
+                Write<Vector>  rv(feasible_set); 
+
+                Read<Vector>  rv1(ub); 
+                Read<Vector>  rv2(lb); 
+                Read<Vector>  rv3(x_cp); 
+
+                auto rr = range(feasible_set); 
+
+                for (SizeType i = rr.begin(); i != rr.end(); ++i)
+                {   
+                    // TODO:: put approx eq
+                    if(lb.get(i) != x_cp.get(i) &&  ub.get(i) != x_cp.get(i))
+                        feasible_set.set(i, 1); 
+                }       
+            }
+
+            SizeType free_variables = sum(feasible_set); 
+            Z = local_sparse(local_size(feasible_set).get(0), free_variables, 1); 
+
+
+            SizeType local_free_variables = 0; 
+
+
+            {
+                Read<Vector>  rv1(feasible_set); 
+                auto rr = range(feasible_set); 
+
+                for (SizeType i = rr.begin(); i != rr.end(); ++i)
+                {   
+                    // TODO:: put approx eq
+                    if(feasible_set.get(i)==1)
+                        local_free_variables++; 
+                }       
+            }
+
+
+            std::cout<<"local_free_variables:   "<< local_free_variables << " \n"; 
+
+
+            // {
+            //     Write<Matrix>  rv(Z); 
+            //     Read<Vector>  rv1(feasible_set); 
+
+            //     auto r = range(feasible_set)
+
+            //     for (SizeType i = rr.begin(); i != rr.end(); ++i)
+            //     {   
+            //         if(feasible_set.get(i)==1)
+            //             Z.set(i, )
+            //     }       
+            // }
+
+
+
+
+
 
         }
 
+
+
+
+    // TODO:: return correction
+    // returns true, if there is any free variable, otherwise return false
+    // TODO:: investigate if you need new feasible set         
+    bool compute_reduced_Newton_dir(const Vector x,     const Vector & x_cp, const Vector & c, const Vector &g, 
+                                    const Vector & lb,  const Vector & ub,  Vector & correction)
+    {
+
+        Matrix Z; 
+        Vector feasible_set; 
+
+        this->buildZ(lb, ub, x_cp, feasible_set,  Z); 
+
+
+        // disp(Z); 
+
+
+
+        return false; 
+
+    }
 
 
 

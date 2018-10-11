@@ -115,8 +115,8 @@ namespace utopia
 
 				QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
 
-				Vector lb   = local_values(local_size(x).get(0), -0.5);
-				Vector ub   = local_values(local_size(x).get(0), 0.5);
+				Vector lb   = local_values(local_size(x).get(0), -0.01);
+				Vector ub   = local_values(local_size(x).get(0), 0.01);
 
 				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 	    		solver.set_box_constraints(box);				
@@ -130,6 +130,10 @@ namespace utopia
 	    		Vector x_cp, c; 
 	    		hess_approx_BFGS->initialize(fun, x); 
 	    		hess_approx_BFGS->computeCauchyPoint(x, grad, lb, ub, x_cp, c);
+
+
+	    		Vector correction; 
+	    		hess_approx_BFGS->compute_reduced_Newton_dir(x, x_cp, c, grad, lb, ub, correction); 
 
 
 
