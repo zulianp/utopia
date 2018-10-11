@@ -148,17 +148,19 @@ namespace utopia {
 		assert(trial.n_nodes() == 2);
 		assert(test.n_nodes()  == 2);
 
-		// const auto &p1 = trial.node_ref(0);
-		// const auto &p2 = trial.node_ref(1);
+		//FIXME some computations can be avoided 
 
-		// const auto &q1 = test.node_ref(0);
-		// const auto &q2 = test.node_ref(1);
+		const auto &p1 = trial.node_ref(0);
+		const auto &p2 = trial.node_ref(1);
 
-		const libMesh::Point p1 = trial.node_ref(0);
-		const libMesh::Point p2 = trial.node_ref(1);
+		const auto &q1 = test.node_ref(0);
+		const auto &q2 = test.node_ref(1);
 
-		const libMesh::Point q1 = test.node_ref(0);
-		const libMesh::Point q2 = test.node_ref(1);
+		// const libMesh::Point p1 = trial.node_ref(0);
+		// const libMesh::Point p2 = trial.node_ref(1);
+
+		// const libMesh::Point q1 = test.node_ref(0);
+		// const libMesh::Point q2 = test.node_ref(1);
 
 		u = p2 - p1;
 		v = q2 - q1;
