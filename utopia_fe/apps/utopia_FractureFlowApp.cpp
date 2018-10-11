@@ -22,6 +22,8 @@
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_tools.h"
 
+#include "utopia_Socket.hpp"
+
 namespace utopia {
 
 
@@ -805,6 +807,14 @@ namespace utopia {
 
         int mg_levels = 5;
         is_ptr->read("mg-levels", mg_levels);
+
+
+        bool plot_matrix = false;
+        is_ptr->read("plot-matrix", plot_matrix);
+
+        if(plot_matrix) {
+            plot_mesh(master_in.mesh.mesh(), "matrix");
+        }
 
 
         std::string operator_type = "L2_PROJECTION";

@@ -40,6 +40,7 @@
 #include "utopia_RMTRApp.hpp"
 #include "utopia_EnergyAssemblyTest.hpp"
 #include "utopia_Intrepid2Test.hpp"
+#include "utopia_IntersectTest.hpp"
 
 #include <functional>
 
@@ -95,6 +96,7 @@ int main(int argc, char *argv[])
 	    runners["interp"] = run_volume_interpolation_test;
 	    runners["energy"] = run_energy_test;
 	    runners["intrepid2"] = run_intrepid2_test;
+	    runners["isect"] = run_intersect_test;
 	    // runners["coupled"] = run_coupled_equation_test;
 	    //benchmarks
 	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;

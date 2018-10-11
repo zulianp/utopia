@@ -3,6 +3,8 @@
 #include "utopia_Socket.hpp"
 #include "utopia_libmesh_Utils.hpp"
 
+#include "utopia_Intersect.hpp"
+
 #include <cmath>
 
 namespace utopia {
@@ -425,339 +427,7 @@ namespace utopia {
 		return true;
 	}
 
-	class Plane3 {
-	public:
-		using Vector = Intersector::Vector3;
-		using Scalar = Intersector::Scalar;
-
-		inline Scalar signed_dist(const Vector &q) const
-		{
-			return dot(n, q - p);
-		}
-
-		Vector n;
-		Vector p;
-	};
-
-	class HalfSpace3 {
-	public:
-		using Vector = Intersector::Vector3;
-		using Scalar = Intersector::Scalar;
-
-		Vector n;
-		Scalar d;
-
-		//negative is inside the half space
-		inline Scalar signed_dist(const Vector &q) const
-		{
-			return dot(n, q) - d;
-		}
-	};
-
-	class Line3 {
-	public:
-		using Vector = Intersector::Vector3;
-		using Scalar = Intersector::Scalar;
-
-		Vector p0;
-		Vector p1;
-	};
-
-	class Polygon3 {
-	public:
-		using Vector = Intersector::Vector3;
-		using Scalar = Intersector::Scalar;
-
-		inline void clear()
-		{
-			points.clear();
-		}
-
-		std::vector<Vector> points;
-	};
-
-	class HPolyhedron3 {
-	public:
-		std::vector<HalfSpace3> half_spaces;
-	};
-
-	static int intersect_planes(const Plane3 &plane_1, const Plane3 &plane_2, Line3 &L)
-	{
-	    using Vector = Plane3::Vector;
-	    using Scalar = Plane3::Scalar;
-	    
-	    Vector   u  = cross(plane_1.n, plane_2.n);          // cross product
-	    Scalar   ax = (u.x >= 0 ? u.x : -u.x);
-	    Scalar   ay = (u.y >= 0 ? u.y : -u.y);
-	    Scalar   az = (u.z >= 0 ? u.z : -u.z);
-
-	    // test if the two planes are parallel
-	    if ((ax+ay+az) < 1e-16) {        // plane_1 and plane_2 are near parallel
-	        // test if disjoint or coincide
-	        Vector v = plane_2.p -  plane_1.p;
-	        if (dot(plane_1.n, v) == 0)          // plane_2.p lies in plane_1
-	            return 1;                    // plane_1 and plane_2 coincide
-	        else 
-	            return 0;                    // plane_1 and plane_2 are disjoint
-	    }
-
-	    // plane_1 and plane_2 intersect in a line
-	    // first determine max abs coordinate of cross product
-	    int      maxc;                       // max coordinate
-	    if (ax > ay) {
-	        if (ax > az)
-	             maxc =  1;
-	        else maxc = 3;
-	    }
-	    else {
-	        if (ay > az)
-	             maxc =  2;
-	        else maxc = 3;
-	    }
-
-	    // next, to get a point on the intersect line
-	    // zero the max coord, and solve for the other two
-	    Vector  iP;                // intersect point
-	    Scalar    d1, d2;            // the constants in the 2 plane equations
-	    d1 = -dot(plane_1.n, plane_1.p);  // note: could be pre-stored  with plane
-	    d2 = -dot(plane_2.n, plane_2.p);  // ditto
-
-	    switch (maxc) {             // select max coordinate
-	    case 1:                     // intersect with x=0
-	        iP.x = 0;
-	        iP.y = (d2*plane_1.n.z - d1*plane_2.n.z) /  u.x;
-	        iP.z = (d1*plane_2.n.y - d2*plane_1.n.y) /  u.x;
-	        break;
-	    case 2:                     // intersect with y=0
-	        iP.x = (d1*plane_2.n.z - d2*plane_1.n.z) /  u.y;
-	        iP.y = 0;
-	        iP.z = (d2*plane_1.n.x - d1*plane_2.n.x) /  u.y;
-	        break;
-	    case 3:                     // intersect with z=0
-	        iP.x = (d2*plane_1.n.y - d1*plane_2.n.y) /  u.z;
-	        iP.y = (d1*plane_2.n.x - d2*plane_1.n.x) /  u.z;
-	        iP.z = 0;
-	    }
-
-	    L.p0 = iP;
-	    L.p1 = iP + u;
-	    return 2;
-	}
-
-	static int intersect(const Line3 &line, const Plane3 &plane, Line3::Scalar &t, const Line3::Scalar tol = 1e-10)
-	{
-		using Vector = Line3::Vector;
-		using Scalar = Line3::Scalar;
-
-		auto ray_dir = line.p1 - line.p0;
-		auto len = length(ray_dir);
-		ray_dir /= len;
-
-		const Scalar cos_angle = -dot(plane.n, ray_dir);
-
-		if(fabs(cos_angle) < tol) {
-			t = 0;
-			return 0;
-		}
-
-		//distance from plane
-		const Scalar dist = plane.signed_dist(line.p1);
-
-		//point in ray trajectory
-		t = dist/cos_angle;
-
-		if(t >= -tol && t <= 1. + tol) {
-			return 1;
-		} else {
-			return -1;
-		}
-	}
-
-	static int intersect(const Line3 &line, const HalfSpace3 &half_space, Line3 &result, const Line3::Scalar tol = 1e-10)
-	{
-		using Vector = Line3::Vector;
-		using Scalar = Line3::Scalar;
-
-		auto d0 = half_space.signed_dist(line.p0);
-		auto d1 = half_space.signed_dist(line.p1);
-
-		if(std::signbit(d0) && std::signbit(d1)) {
-			//inside half-space 
-			result = line;
-			return 2;
-		}
-
-		if(!std::signbit(d0) && !std::signbit(d1)) {
-			if(d0 > 0 || d1 > 0) {
-				//no intersection or point intersection
-				return 0;
-			}
-		}
-
-		if(approxeq(d0, 0., tol) && approxeq(d1, 0., tol)) {
-			//aligned with half-space boundary
-			result = line;
-			return 3;
-		}
-
-		Plane3 plane;
-		plane.n = half_space.n;
-		plane.p = half_space.n * half_space.d;
-
-		Scalar t = 0.;
-		auto code = intersect(line, plane, t, tol);
-
-		if(d0 < 0) {
-			result.p0 = line.p0;
-			result.p1 = line.p0 + t * (line.p1 - line.p0);
-		} else if(d1 < 0) {
-			result.p0 = line.p0 + t * (line.p1 - line.p0);
-			result.p1 = line.p1;
-		}
-
-		return 1;
-	}
-
-	static int intersect(const Polygon3 &polygon, const HPolyhedron3 &h_poly, Polygon3 &result, const Scalar tol = 1e-10)
-	{
-		using Vector = Polygon3::Vector;
-		using Scalar = Polygon3::Scalar;
-
-		const std::size_t n_points 	  = polygon.points.size();
-		const std::size_t n_half_spaces = h_poly.half_spaces.size();
-
-		// std::vector<Scalar> signed_dist(n_half_spaces * n_points, 0.);
-
-		// std::size_t n_all_negative = 0;
-		// for(std::size_t i = 0; i < n_half_spaces; ++i) {
-		// 	auto offset_i = i * n_points;
-			
-		// 	bool all_negative = true;
-		// 	bool all_positive = true;
-			
-		// 	for(std::size_t j = 0; j < n_points; ++j) {
-		// 		auto d = h_poly.half_spaces[i].signed_dist(poly.points[j]);
-		// 		all_positive = all_positive && d > 0.;
-		// 		all_negative = all_negative && d < 0.;
-		// 		signed_dist[offset_i + j] = d;
-		// 	}
-
-		// 	if(all_positive) {
-		// 		//points are all outside 
-		// 		return 0;
-		// 	}
-
-		// 	n_all_negative += all_negative;
-		// }
-
-		// if(n_all_negative == n_half_spaces) {
-		// 	//points are completely contained in convex-set
-		// 	result = poly;
-		// 	return 1;
-		// }
-
-		// static const short LINE_OUTSIDE     = 0;
-		// static const short LINE_INSIDE      = 1;
-		// static const short LINE_COINCIDE 	= 2;
-		// static const short LINE_INTERSECT_1 = 3;
-		// static const short LINE_INTERSECT_2 = 4;
-
-		// std::vector<short> intersection_types(n_points, LINE_OUTSIDE);
-		// std::vector<std::vector<std::size_t>> intersecting_with(n_points);
-		// std::vector<short> temp(n_half_spaces, LINE_OUTSIDE);
-
-		// // //for each line find all intersections
-		// for(std::size_t i = 0; i < n_points; ++i) {
-		// 	const auto ip1 = (i + 1 == n_points) ? 0 : (i+1);
-
-		// 	for(std::size_t k = 0; k < n_half_spaces; ++k) {
-		// 		const auto offset_k = k * n_points;
-				
-		// 		const auto d1 = signed_dist[offset_k + i];
-		// 		const auto d2 = signed_dist[offset_k + i];
-
-		// 		if(d1 < 0 && d2 < 0) {
-		// 			temp[k] = LINE_INSIDE;
-		// 		} else if(d1 > 0 && d2 > 0) {
-		// 			temp[k] = LINE_OUTSIDE;
-		// 		} else if(std::signbit(d1) != std::signbit(d2)) {
-		// 			temp[k] = LINE_INTERSECT_1;
-		// 		} else {
-		// 			assert(approxeq(d1, 0.) && approxeq(d2, 0.));
-		// 			temp[k] = LINE_COINCIDE;
-		// 		}
-		// 	}
-
-		// 	for(std::size_t k = 0; k < n_half_spaces; ++k) {
-		// 		if(temp[k] == LINE_INTERSECT_1) {
-		// 			intersecting_with[i].push_back(k);
-
-		// 			if(intersection_types[i] == LINE_INTERSECT_1) {
-		// 				intersection_types[i] = LINE_INTERSECT_2;
-		// 				continue;
-		// 			}
-		// 		}
-
-		// 		intersection_types[i] = std::max(temp[k], intersection_types[i]);
-		// 	}
-		// }
-
-		result.clear();
-
-		for(std::size_t i = 0; i < n_points; ++i) {
-			const auto ip1 = (i + 1 == n_points) ? 0 : (i+1);
-			Line3 line;
-			line.p0 = polygon.points[i];
-			line.p1 = polygon.points[ip1];
-
-			int n_intersected = 0;
-			bool line_outside_h_poly = false;
-			bool aligned_with_separating_plane = false;
-			Line3 isect_line;
-			
-			for(std::size_t k = 0; k < n_half_spaces; ++k) {
-				auto ret = intersect(line, h_poly.half_spaces[k], isect_line, tol);
-				switch(ret) {
-					case 0: {
-						//outside half-space
-						line_outside_h_poly = true;
-						break;
-					}
-
-					case 1: {
-						//intersection with separating plane
-						line = isect_line;
-						++n_intersected;
-						break;
-					}
-
-					case 2: {
-						//completely inside
-						// line3 = isect_line; //they are the same
-						break;
-					}
-
-					case 3: {
-						aligned_with_separating_plane = true;
-						break;
-					}
-				}
-
-				if(line_outside_h_poly) { break; }
-			}
-
-			if(line_outside_h_poly) {
-				//the segment is to be skipped
-				continue;
-			}
-
-			if(n_intersected) {
-
-			}
-		}
-
-		return true;
-	}
+	
 
 	bool QMortarBuilder3::build(
 		const Elem &trial,
@@ -772,9 +442,9 @@ namespace utopia {
 
 		static int n_isect = 0;
 
-		if(n_isect == 20) {
-			std::cout << "HERE";
-		}
+		// if(n_isect == 20) {
+		// 	std::cout << "HERE";
+		// }
 
 		if(intersect_3D(trial_poly, test_poly, intersection)) {
 			total_intersection_volume += compute_volume(intersection);
@@ -798,10 +468,24 @@ namespace utopia {
 				std::copy(intersection.points, intersection.points + intersection.n_nodes * intersection.n_dims, &shell_poly.get_values()[0]);
 				make_composite_quadrature_on_surf_3D(shell_poly, 1./weight, order, composite_ir);
 
-				// if(n_isect == 791) {
-					plot_polygon(3, shell_poly.m(), &shell_poly.get_values()[0], "isect" + std::to_string(n_isect) + "/poly");
+			
+
+				Polygon3 poly, isect;
+				HPolyhedron3 h;
+
+				make(test, poly);
+				make(trial, h);
+
+				// if(n_isect == 21) {
+				// 	poly.plot("test" + std::to_string(n_isect));
 				// }
 
+				bool ok = intersect(poly, h, isect, 1e-10);
+
+				assert(ok);
+
+				
+				isect.plot("isect" + std::to_string(n_isect));
 
 				n_isect++;
 			// plot_polygon(3, test_poly.n_nodes, test_poly.points, "polygon/" + std::to_string(comm.rank()) + "/p");
