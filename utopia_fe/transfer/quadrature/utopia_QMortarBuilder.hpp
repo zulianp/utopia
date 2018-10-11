@@ -186,6 +186,14 @@ namespace utopia {
 		Polyhedron intersection, temp_poly;
 
 		Matrix shell_poly;
+
+		bool build_vol_2_surf(
+			const Elem &trial,
+			FEType trial_type,
+			const Elem &test,
+			FEType test_type,
+			QMortar &q_trial,
+			QMortar &q_test);
 	};
 }
 

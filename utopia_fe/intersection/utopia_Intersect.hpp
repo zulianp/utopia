@@ -56,6 +56,72 @@ namespace utopia {
 			points.clear();
 		}
 
+		inline Vector barycenter() const
+		{
+			Vector res = {0., 0., 0.};
+
+			for(const auto &p : points) {
+				res += p;
+			}
+
+			res /= points.size();
+			return res;
+		}
+
+		inline Scalar area() const
+		{
+			auto n = points.size();
+
+			if(n == 3) {
+				return 0.5 * Intersector::trapezoid_area_3(points[0], points[1], points[2]);
+			}
+
+			Vector b = barycenter();
+
+			Scalar result = 0;
+			for(SizeType i = 0; i < n; ++i) {
+				const SizeType ip1 = (i + 1 == n)? 0 : (i + 1);
+				result += Intersector::trapezoid_area_3(b, points[i], points[ip1]);
+			}
+
+			return 0.5 * result;
+		}
+
+		inline void remove_duplicate_points(const Scalar tol) {
+			const SizeType n_original = points.size();
+			const SizeType last = n_original - 1;
+			std::vector<bool> keep(n_original, true);
+
+			SizeType n = n_original;
+			for(SizeType i = 1; i < n_original; ++i) {
+				const SizeType i_prev = i - 1;
+				if(distance(points[i_prev], points[i]) <= tol) {
+					n--;
+					keep[i] = false;
+				} else {
+					keep[i] = true;
+				}
+			}
+
+			if(distance(points[0], points[last]) <= tol) {
+				n--;
+				keep[last] = false;
+			} else {
+				keep[last] = true;
+			}
+
+			if(n == points.size()) return;
+
+			std::vector<Vector> old_points = std::move(points);
+			points.reserve(n);
+
+			for(std::size_t i = 0; i < n_original; ++i) {
+				if(keep[i]) {
+					points.push_back(old_points[i]);
+				}
+			}
+		}
+
 		inline void resize(const std::size_t new_size)
 		{
 			points.resize(new_size);
@@ -341,6 +407,9 @@ namespace utopia {
 					result.points.push_back(isect_line.p1);
 				}
 			}
+
+			result.remove_duplicate_points(tol);
+			if(result.points.size() < 3) return 0;
 
 			in = result;
 		}

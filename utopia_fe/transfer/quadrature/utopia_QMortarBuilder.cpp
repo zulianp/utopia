@@ -437,14 +437,16 @@ namespace utopia {
 		QMortar &q_trial,
 		QMortar &q_test)
 	{
+		const bool vol2surf = (is_tri(test.type()) || is_quad(test.type()));
+
+		if(vol2surf) {
+			return build_vol_2_surf(trial, trial_type, test, test_type, q_trial, q_test);
+		}
+
 		make_polyhedron(trial, trial_poly);
 		make_polyhedron(test,  test_poly);
 
 		static int n_isect = 0;
-
-		// if(n_isect == 20) {
-		// 	std::cout << "HERE";
-		// }
 
 		if(intersect_3D(trial_poly, test_poly, intersection)) {
 			total_intersection_volume += compute_volume(intersection);
@@ -452,11 +454,9 @@ namespace utopia {
 			auto trial_trans = std::make_shared<AffineTransform3>(trial);
 			std::shared_ptr<Transform> test_trans;
 
-			bool vol2surf = false;
 
-			if(is_tri(test.type()) || is_quad(test.type())) {
+			if(vol2surf) {
 				test_trans = std::make_shared<Transform2>(test);
-				vol2surf = true;
 			} else {
 				test_trans = std::make_shared<AffineTransform3>(test);
 			}
@@ -468,27 +468,6 @@ namespace utopia {
 				std::copy(intersection.points, intersection.points + intersection.n_nodes * intersection.n_dims, &shell_poly.get_values()[0]);
 				make_composite_quadrature_on_surf_3D(shell_poly, 1./weight, order, composite_ir);
 
-			
-
-				Polygon3 poly, isect;
-				HPolyhedron3 h;
-
-				make(test, poly);
-				make(trial, h);
-
-				// if(n_isect == 21) {
-				// 	poly.plot("test" + std::to_string(n_isect));
-				// }
-
-				bool ok = intersect(poly, h, isect, 1e-10);
-
-				assert(ok);
-
-				
-				isect.plot("isect" + std::to_string(n_isect));
-
-				n_isect++;
-			// plot_polygon(3, test_poly.n_nodes, test_poly.points, "polygon/" + std::to_string(comm.rank()) + "/p");
 			} else {
 				make_composite_quadrature_3D(intersection, weight, order, composite_ir);
 			}
@@ -504,8 +483,6 @@ namespace utopia {
 					w *= cw;
 				}
 
-
-
 			} else {
 				transform_to_reference(*test_trans, test.type(), composite_ir,  q_test);
 			}
@@ -514,5 +491,56 @@ namespace utopia {
 		} else {
 			return false;
 		}
+	}
+
+	bool QMortarBuilder3::build_vol_2_surf(
+		const Elem &trial,
+		FEType trial_type,
+		const Elem &test,
+		FEType test_type,
+		QMortar &q_trial,
+		QMortar &q_test)
+
+	{
+		Polygon3 poly, isect;
+		HPolyhedron3 h;
+
+		make(test, poly);
+		make(trial, h);
+
+		if(!intersect(poly, h, isect, 1e-10)) {
+			return false;
+		}
+
+		auto n = isect.points.size();
+		shell_poly.resize(n, 3);
+
+		for(std::size_t i = 0; i < n; ++i) {
+			shell_poly(i, 0) = isect.points[i].x;
+			shell_poly(i, 1) = isect.points[i].y;
+			shell_poly(i, 2) = isect.points[i].z;
+		}
+
+		total_intersection_volume += isect.area();
+		const libMesh::Real weight = poly.area();
+
+		const int order = order_for_l2_integral(2, trial, trial_type.order, test, test_type.order);
+		make_composite_quadrature_on_surf_3D(shell_poly, 1./weight, order, composite_ir);
+
+		auto trial_trans = std::make_shared<AffineTransform3>(trial);
+		auto test_trans = std::make_shared<Transform2>(test);
+
+		transform_to_reference(*trial_trans, trial.type(), composite_ir,  q_trial);
+		transform_to_reference(*test_trans,  test.type(),  composite_ir,  q_test);
+
+		double cw = counter_weight(test.type());
+		for(auto &w : q_test.get_weights()) {
+			w *= cw;
+		}
+
+		// isect.plot("isect/poly");
+		assert(weight == weight);
+		assert(weight > 0.);
+		return true;
 	}
 }
