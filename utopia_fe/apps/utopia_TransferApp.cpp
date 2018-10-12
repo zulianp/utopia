@@ -43,13 +43,15 @@ namespace utopia {
 			type = "l2-projection"; //interpolation, approx-l2-projection
 			int order = 1;
 			std::string fe_family = "LAGRANGE";
+			write_operators_to_disk = false;
+
+			is.read("write-operators-to-disk", write_operators_to_disk);
 
 			////////////////// MASTER ///////////////////////
 
 			is.read("mesh-master", path);
 			is.read("order-master", order);
 			is.read("fe-family-master", fe_family);
-
 
 			mesh_master_->read(path);
 
@@ -193,12 +195,19 @@ namespace utopia {
 			std::cout << "assembly time: " << c << std::endl;
 		}
 
+		int op_num = 0;
 		for(auto mat_ptr : mats) {
 			double sum_m = sum(*mat_ptr);
 			if(mpi_world_rank() == 0) {
 				std::cout << "rows x cols = " << size(*mat_ptr).get(0) << " x " << size(*mat_ptr).get(1) << std::endl;
 				std::cout << "sum(M): " << sum_m << std::endl;
 			}
+
+			if(write_operators_to_disk) {
+				write("M" + std::to_string(op_num) + ".m", *mat_ptr);
+			}
+
+			++op_num;
 		}
 
 		if(type == "l2-projection" || type == "approx-l2-projection") {
@@ -237,6 +246,11 @@ namespace utopia {
 
 		USparseMatrix mass_mat_master;
 		assemble(inner(u, v) * dX, mass_mat_master);
+
+		if(write_operators_to_disk) {
+			write("M_m.m", mass_mat_master);
+		}
+
 
 		if(!fun_is_constant) {
 			assemble(inner(*fun, v) * dX, fun_master_h);

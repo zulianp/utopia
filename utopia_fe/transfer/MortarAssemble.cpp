@@ -150,8 +150,6 @@ namespace utopia {
 		world = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem_, ref);
 	}
 
-
-
 	void AffineTransform3::compute_affine_transformation(const libMesh::Elem &elem, libMesh::DenseMatrix<libMesh::Real> &A_inv, libMesh::DenseVector<libMesh::Real> &A_inv_m_b){
 
 		libMesh::Point p0, p1, p2, p3;
