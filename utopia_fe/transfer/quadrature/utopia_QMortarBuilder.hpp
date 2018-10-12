@@ -162,7 +162,7 @@ namespace utopia {
 		using Real = libMesh::Real;
 
 		QMortarBuilder3()
-		: total_intersection_volume(0), composite_ir(3)
+		: total_intersection_volume(0.), composite_ir(3)
 		{}
 
 		bool build(

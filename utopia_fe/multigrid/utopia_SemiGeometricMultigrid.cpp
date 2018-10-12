@@ -48,12 +48,7 @@ namespace utopia {
 		const auto dim = mesh.mesh_dimension();
 
 		mg.set_fix_semidefinite_operators(true);
-
-#if LIBMESH_VERSION_LESS_THAN(1, 3, 0)
-		libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::bounding_box(mesh);
-#else
-		libMesh::MeshTools::BoundingBox bb = libMesh::MeshTools::create_bounding_box(mesh);
-#endif
+		auto bb = bounding_box(mesh);
 
 		auto r = bb.max() - bb.min();
 
