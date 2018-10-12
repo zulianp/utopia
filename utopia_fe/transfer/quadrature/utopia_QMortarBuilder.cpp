@@ -136,7 +136,6 @@ namespace utopia {
 		return res;
 	}
 
-
 	bool QMortarBuilder1::build(
 		const Elem &trial,
 		FEType trial_type,
@@ -155,12 +154,6 @@ namespace utopia {
 
 		const auto &q1 = test.node_ref(0);
 		const auto &q2 = test.node_ref(1);
-
-		// const libMesh::Point p1 = trial.node_ref(0);
-		// const libMesh::Point p2 = trial.node_ref(1);
-
-		// const libMesh::Point q1 = test.node_ref(0);
-		// const libMesh::Point q2 = test.node_ref(1);
 
 		u = p2 - p1;
 		v = q2 - q1;
@@ -217,7 +210,6 @@ namespace utopia {
 		intersection[0] = p1 + isect_min * u;
 		intersection[1] = p1 + isect_max * u;
 
-		// auto isect_len = r.norm_sq();
 		if(isect_len < 1e-16) {
 			return false;
 		}
@@ -231,7 +223,6 @@ namespace utopia {
 
 		const int order = order_for_l2_integral(1, trial, trial_type.order, test, test_type.order);
 		make_composite_quadrature_on_surf_2D(line, 1./len_v, order, composite_ir);
-		// total_intersection_volume += std::sqrt(isect_len);
 		total_intersection_volume += isect_len;
 
 		auto trial_trans = std::make_shared<Transform1>(trial);
@@ -241,7 +232,6 @@ namespace utopia {
 		transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
 		return true;
 	}
-
 
 	bool QMortarBuilder2::build(
 		const Elem &trial,
@@ -253,12 +243,10 @@ namespace utopia {
 	{
 		if(test.dim() == 1) {
 			//volume to surface
-
 			make_polygon(trial, trial_pts);
 			make_polyline(test, test_pts);
 
 			std::vector<double> intersection_temp(test_pts.get_values().size()*2, 0.);
-
 
 			SizeType n_res_pts;
 			if(intersect_convex_polygon_with_polyline(
@@ -292,37 +280,30 @@ namespace utopia {
 			return false;
 		}
 
-
 		make_polygon(trial, trial_pts);
 		make_polygon(test, test_pts);
 
 		if(intersect_2D(trial_pts, test_pts, intersection)) {
-			total_intersection_volume += fabs(Intersector::polygon_area_2(intersection.m(), &intersection.get_values()[0]));
+			auto isect_area = fabs(Intersector::polygon_area_2(intersection.m(), &intersection.get_values()[0]));
+			
+			total_intersection_volume += isect_area;
+			
 			const libMesh::Real weight = Intersector::polygon_area_2(test_pts.m(), &test_pts.get_values()[0]);
 
+			assert(isect_area <= weight + 1e-6);
+
 			const int order = order_for_l2_integral(2, trial, trial_type.order, test, test_type.order);
-			make_composite_quadrature_2D(intersection, weight, order, composite_ir);
+			make_composite_quadrature_2D(intersection, 1./weight, order, composite_ir);
+			
 			auto trial_trans  = std::make_shared<AffineTransform2>(trial);
 			auto test_trans   = std::make_shared<AffineTransform2>(test);
 
-			transform_to_reference(*trial_trans,  trial.type(), composite_ir, q_trial);
-			transform_to_reference(*test_trans, test.type(), composite_ir, q_test);
+			transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
+			transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
 
 			return true;
 		} else {
 			return false;
-		}
-	}
-
-	static double counter_weight(libMesh::ElemType type)
-	{
-		if(is_tri(type)) {
-			return 1./2.;
-		} else if(is_quad(type)) {
-			return 1./2.;
-		} else {
-			assert(false && "add special case");
-			return 1.;
 		}
 	}
 
@@ -363,28 +344,6 @@ namespace utopia {
 
 		transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
 		transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
-
-		double cw = counter_weight(test.type());
-		for(auto &w : q_test.get_weights()) {
-			w *= cw;
-		}
-
-		cw = counter_weight(trial.type());
-		for(auto &w : q_trial.get_weights()) {
-			w *= cw;
-		}
-		
-		// assert(false);
-
-		// plot_polygon(3, test_pts.m(), 	  &test_pts.get_values()[0], 	 "test");
-		// plot_polygon(3, trial_pts.m(),    &trial_pts.get_values()[0], 	 "trial");
-
-		// static int n_isect = 0;
-		// plot_polygon(3, intersection.m(), &intersection.get_values()[0], "isect" + std::to_string(n_isect) + "/poly");
-		// plot_quad_points(3, composite_ir.get_points(), "isect" + std::to_string(n_isect) + "/qp");
-		// plot_quad_points(3, q_trial.get_points(), "qptrial");
-		// ++n_isect;
-
 		return true;
 	}
 
@@ -450,8 +409,6 @@ namespace utopia {
 		return true;
 	}
 
-	
-
 	bool QMortarBuilder3::build(
 		const Elem &trial,
 		FEType trial_type,
@@ -462,14 +419,12 @@ namespace utopia {
 	{
 		const bool vol2surf = (is_tri(test.type()) || is_quad(test.type()));
 
-		// if(vol2surf) {
-		// 	return build_vol_2_surf(trial, trial_type, test, test_type, q_trial, q_test);
-		// }
+		if(vol2surf) {
+			return build_vol_2_surf(trial, trial_type, test, test_type, q_trial, q_test);
+		}
 
 		make_polyhedron(trial, trial_poly);
 		make_polyhedron(test,  test_poly);
-
-		static int n_isect = 0;
 
 		if(intersect_3D(trial_poly, test_poly, intersection)) {
 			total_intersection_volume += compute_volume(intersection);
@@ -491,34 +446,12 @@ namespace utopia {
 				std::copy(intersection.points, intersection.points + intersection.n_nodes * intersection.n_dims, &shell_poly.get_values()[0]);
 				make_composite_quadrature_on_surf_3D(shell_poly, 1./weight, order, composite_ir);
 
-				// Polygon3 poly, isect;
-				// HPolyhedron3 h;
-
-				// make(test, poly);
-				// make(trial, h);
-
-				// if(!intersect(poly, h, isect, 1e-10)) {
-				// 	poly.plot("test");
-				// }
-
 			} else {
-				make_composite_quadrature_3D(intersection, weight, order, composite_ir);
+				make_composite_quadrature_3D(intersection, 1./weight, order, composite_ir);
 			}
 
-			transform_to_reference(*trial_trans, trial.type(), composite_ir,  q_trial);
-
-			if(vol2surf) {
-				// transform_to_reference_surf(*test_trans, test.type(), composite_ir, q_test);
-				transform_to_reference(*test_trans, test.type(), composite_ir,  q_test);
-
-				double cw = counter_weight(test.type());
-				for(auto &w : q_test.get_weights()) {
-					w *= cw;
-				}
-
-			} else {
-				transform_to_reference(*test_trans, test.type(), composite_ir,  q_test);
-			}
+			transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
+			transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
 
 			return true;
 		} else {
@@ -565,17 +498,6 @@ namespace utopia {
 
 		transform_to_reference(*trial_trans, trial.type(), composite_ir,  q_trial);
 		transform_to_reference(*test_trans,  test.type(),  composite_ir,  q_test);
-
-		double cw = counter_weight(test.type());
-		for(auto &w : q_test.get_weights()) {
-			w *= cw;
-			assert(w == w);
-		}
-
-		//
-		// static int n_isect = 0;
-		// isect.plot("isect/poly" + std::to_string(n_isect++));
-		//
 
 		assert(weight == weight);
 		assert(weight > 0.);

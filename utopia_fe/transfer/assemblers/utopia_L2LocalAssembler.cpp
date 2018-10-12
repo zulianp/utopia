@@ -8,6 +8,20 @@
 #include <numeric>
 
 namespace utopia {
+	static bool check(const LocalAssembler::Matrix &mat)
+	{
+		for(const auto &v : mat.get_values()) {
+			assert(!std::isnan(v));
+			assert(!std::isinf(v));
+
+			if(std::isnan(v) || std::isinf(v)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	L2LocalAssembler::L2LocalAssembler(
 		const int dim,
 		const bool use_biorth,
@@ -73,6 +87,7 @@ namespace utopia {
 			mortar_assemble(*trial_fe, *test_fe, mat);
 		}
 
+		mortar_assemble(*trial_fe, *test_fe, mat);
 		return true;
 	}
 
@@ -118,11 +133,14 @@ namespace utopia {
 
 		if(use_biorth) {
 			mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat[0]);
-			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights,  mat[1]);
+			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights, mat[1]);
 		} else {
 			mortar_assemble(*trial_fe, *test_fe, mat[0]);
 			mortar_assemble(*test_fe,  *test_fe, mat[1]);
 		}
+
+		assert(check(mat[0]));
+		assert(check(mat[1]));
 
 		return true;
 

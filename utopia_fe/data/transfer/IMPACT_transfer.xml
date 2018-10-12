@@ -2,7 +2,7 @@
 	<type>l2-projection</type>
 	<!-- <type>approx-l2-projection</type> -->
 	<!-- <type>interpolation</type> -->
-	<!-- <biorth-basis>1</biorth-basis> -->
+	<biorth-basis>0</biorth-basis>
 	<mesh-master>../data/transfer/impact_mesh.e</mesh-master>
 	<order-master>1</order-master>
 	<!-- <refine-master>1</refine-master> -->
