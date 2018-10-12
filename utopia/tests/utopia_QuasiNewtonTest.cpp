@@ -137,7 +137,6 @@ namespace utopia
 	    		hess_approx_BFGS->compute_reduced_Newton_dir(x, x_cp, c, grad, lb, ub, correction); 
 
 
-
 				exit(0);
 
 

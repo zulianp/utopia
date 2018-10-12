@@ -872,12 +872,79 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
+    Scalar compute_alpha_star(const Vector & x_cp, const Vector & lb, const Vector & ub, const Vector & d, const Vector & feasible_set)
+    {
+        Vector alpha_stars = local_values(local_size(feasible_set).get(0), 1.0);  
+
+        {
+            Read<Vector>  rf(feasible_set); 
+            Read<Vector>  rd(d); 
+            Read<Vector>  ru(ub); 
+            Read<Vector>  rlb(lb); 
+
+            Write<Vector> wv(alpha_stars); 
+
+            auto rr = range(alpha_stars); 
+
+            for (SizeType i = rr.begin(); i != rr.end(); ++i)
+            {
+                // TODO:: put approx eq
+                if(feasible_set.get(i)==1)
+                {
+                    Scalar val = 1.0; 
+                    Scalar di = d.get(i);  Scalar xi = x_cp.get(i); Scalar li = lb.get(i);  Scalar ui = ub.get(i); 
+
+                    if(di!=0)
+                        val = (di>0) ? (ui - xi)/di : (li - xi)/di; 
+
+                    // checks for nans and infs
+                    if(val < 1.0 && std::isfinite(val) && val > -1e9)
+                        alpha_stars.set(i, val); 
+
+                }
+            }     
+        }
+
+        return min(alpha_stars); 
+    }
+
+
+
+
+    void prolongate_reduced_corr(const Vector & x_reduced,  const Vector & feasible_set,  Vector & x_prolongated)
+    {
+        x_prolongated = local_values(local_size(feasible_set).get(0), 0.0); 
+
+
+        {
+            Write<Vector>  wx(x_prolongated); 
+
+            Read<Vector>   rv(x_reduced); 
+            Read<Vector>   rf(feasible_set); 
+
+            auto rr = range(feasible_set); 
+            auto rr_red = range(x_reduced); 
+
+            SizeType counter = 0; 
+
+            for(auto i = rr.begin(); i != rr.end(); ++i)
+            {
+                if(feasible_set.get(i)==1)
+                {
+                    Scalar val = x_reduced.get(rr_red.begin() + counter); 
+                    x_prolongated.set(i, val); 
+                    counter++; 
+                }
+            }
+        }
+    }
+
 
 
     // TODO:: return correction
     // returns true, if there is any free variable, otherwise return false
     // TODO:: investigate if you need new feasible set         
-    bool compute_reduced_Newton_dir(const Vector x,     const Vector & x_cp, const Vector & c, const Vector &g, 
+    bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector & c, const Vector &g, 
                                     const Vector & lb,  const Vector & ub,  Vector & correction)
     {
         Matrix W_reduced; 
@@ -893,15 +960,44 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         this->build_reduced_quantities(lb, ub, x_cp, global_grad, W_T, feasible_set,  W_reduced, g_reduced); 
 
+        if(sum(feasible_set)==0)
+        {
+            correction = x_cp - x; 
+            return false; 
+        }
 
+        Vector WR_gR = W_reduced * g_reduced; 
+
+        Vector v; 
+        this->apply_M(WR_gR, v); 
+
+
+        Matrix N = W_T * transpose(W_T); 
+        N  = 1/theta_ * N; 
+        N = M_ * N; 
+        N = Matrix(local_identity(local_size(N))) - N; 
+
+        Vector s = local_zeros(local_size(v)); 
+        linear_solver_->solve(N, v, s); 
         
+        Vector  du = (-1.0/theta_ )* g_reduced; 
+                du -= 1.0/(theta_*theta_) * (transpose(W_reduced) * s); 
 
 
+        Scalar alpha_star = this->compute_alpha_star(x_cp, lb, ub, du, feasible_set); 
+        du *= alpha_star; 
 
 
+        Vector x_bar = x_cp; 
+        Vector du_prolongated; 
 
-        return false; 
+        this->prolongate_reduced_corr(du, feasible_set,  du_prolongated); 
 
+        x_bar = x_bar + du_prolongated; 
+        correction = x_bar - x; 
+
+
+        return true; 
     }
 
 
