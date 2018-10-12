@@ -5,10 +5,11 @@
 	<biorth-basis>0</biorth-basis>
 	<mesh-master>../data/transfer/fluid.e</mesh-master>
 	<order-master>1</order-master>
-	<refine-master>2</refine-master>
+	<!-- <refine-master>2</refine-master> -->
 	<mesh-slave>../data/transfer/solid_coarse.e</mesh-slave>
 	<order-slave>1</order-slave>
-	<function-type>constant</function-type>
-	<function>1.</function>
-	<!-- <function>x*x+y*y+z*z</function> -->
+	<!-- <function-type>constant</function-type> -->
+	<!-- <function>1.</function> -->
+	<function>x*x+y*y+z*z</function>
+	<force-shell>true</force-shell>
 </transfer>

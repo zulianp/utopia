@@ -1,11 +1,11 @@
 <transfer>
-	<!-- <type>l2-projection</type> -->
+	<type>l2-projection</type>
 	<!-- <type>approx-l2-projection</type> -->
-	<type>interpolation</type>
-	<biorth-basis>1</biorth-basis>
+	<!-- <type>interpolation</type> -->
+	<!-- <biorth-basis>1</biorth-basis> -->
 	<mesh-master>../data/transfer/impact_mesh.e</mesh-master>
 	<order-master>1</order-master>
-	<refine-master>1</refine-master>
+	<!-- <refine-master>1</refine-master> -->
 	<mesh-slave>../data/transfer/IntuityRami.e</mesh-slave>
 	<order-slave>1</order-slave>
 	<function-type>constant</function-type>

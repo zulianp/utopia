@@ -3,7 +3,7 @@
 	<mesh>
 		<type>square</type>
 		<elem-type>quad</elem-type>
-		<order>1</order>
+		<order>2</order>
 
 		<min-x>0.</min-x>
 		<min-y>0.</min-y>
@@ -14,7 +14,7 @@
 		<n-x>20</n-x>
 		<n-y>20</n-y>
 
-		<refinements>3</refinements>
+		<!-- <refinements>2</refinements> -->
 	</mesh>
 
 	<space>
@@ -23,7 +23,7 @@
 		<variables>
 			<var>
 			<name>u</name>
-			<order>1</order>
+			<order>2</order>
 			</var>
 		</variables>
 
@@ -47,7 +47,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/line.e</path>
-		<refinements>3</refinements>
+		<!-- <refinements>4</refinements> -->
 	</mesh>
 
 	<space>
@@ -75,7 +75,7 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/line.e</path>
-		<refinements>1</refinements>
+		<!-- <refinements>2</refinements> -->
 	</mesh>
 
 	<space>

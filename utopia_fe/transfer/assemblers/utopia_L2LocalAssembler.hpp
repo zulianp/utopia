@@ -13,7 +13,12 @@ namespace utopia {
 	public:
 		using Matrix = LocalAssembler::Matrix;
 
-		L2LocalAssembler(const int dim, const bool use_biorth, const bool assemble_mass_mat = false);
+		L2LocalAssembler(
+			const int dim,
+			const bool use_biorth,
+			const bool assemble_mass_mat = false,
+			const bool is_shell = false);
+
 		~L2LocalAssembler();
 
 		/**
