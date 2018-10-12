@@ -1,0 +1,10 @@
+<transfer>
+	<type>l2-projection</type>
+	<biorth-basis>0</biorth-basis>
+	<mesh-master>../data/transfer/tetmesh.e</mesh-master>
+	<order-master>1</order-master>
+	<mesh-slave>../data/transfer/tetmesh.e</mesh-slave>
+	<order-slave>1</order-slave>
+	<function-type>constant</function-type>
+	<function>1.</function>
+</transfer>
