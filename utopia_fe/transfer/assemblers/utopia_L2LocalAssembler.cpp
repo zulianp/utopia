@@ -87,7 +87,6 @@ namespace utopia {
 			mortar_assemble(*trial_fe, *test_fe, mat);
 		}
 
-		mortar_assemble(*trial_fe, *test_fe, mat);
 		return true;
 	}
 
