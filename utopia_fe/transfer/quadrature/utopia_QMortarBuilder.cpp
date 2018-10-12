@@ -462,9 +462,9 @@ namespace utopia {
 	{
 		const bool vol2surf = (is_tri(test.type()) || is_quad(test.type()));
 
-		if(vol2surf) {
-			return build_vol_2_surf(trial, trial_type, test, test_type, q_trial, q_test);
-		}
+		// if(vol2surf) {
+		// 	return build_vol_2_surf(trial, trial_type, test, test_type, q_trial, q_test);
+		// }
 
 		make_polyhedron(trial, trial_poly);
 		make_polyhedron(test,  test_poly);
@@ -569,6 +569,7 @@ namespace utopia {
 		double cw = counter_weight(test.type());
 		for(auto &w : q_test.get_weights()) {
 			w *= cw;
+			assert(w == w);
 		}
 
 		//
