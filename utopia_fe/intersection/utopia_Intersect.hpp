@@ -68,6 +68,11 @@ namespace utopia {
 			return res;
 		}
 
+		const Vector &point(const SizeType i) const
+		{
+			return points[i];
+		}
+
 		inline Scalar area() const
 		{
 			auto n = points.size();
@@ -95,9 +100,13 @@ namespace utopia {
 			std::vector<bool> keep(n_original, true);
 
 			SizeType n = n_original;
+			
 			for(SizeType i = 1; i < n_original; ++i) {
 				const SizeType i_prev = i - 1;
-				if(distance(points[i_prev], points[i]) <= tol) {
+					
+				auto d = distance(points[i_prev], points[i]);
+
+				if(d <= tol) {
 					n--;
 					keep[i] = false;
 				} else {
@@ -105,11 +114,14 @@ namespace utopia {
 				}
 			}
 
-			if(distance(points[0], points[last]) <= tol) {
-				n--;
-				keep[last] = false;
-			} else {
-				keep[last] = true;
+			if(keep[last]) {
+				auto d = distance(points[0], points[last]);
+				if(d <= tol) {
+					n--;
+					keep[last] = false;
+				} else {
+					keep[last] = true;
+				}
 			}
 
 			if(n == points.size()) return;
