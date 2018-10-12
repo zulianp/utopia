@@ -4,9 +4,9 @@
 #include "utopia_trilinos_Types.hpp"
 
 //FIXME find right macro
-#ifdef WITH_TPETRAEXT
+#ifdef WITH_TRILINOS_TPETRAEXT
 
-#include "TpetraExt_TripleMatrixMultiply_decl.hpp"
+#include "TpetraExt_TripleMatrixMultiply.hpp"
 
 //useful links:
 //https://trilinos.org/docs/dev/packages/tpetra/doc/html/namespaceTpetra_1_1TripleMatrixMultiply.html
@@ -63,7 +63,7 @@ namespace utopia {
 
 }
 
-#endif //WITH_TPETRAEXT
+#endif //WITH_TRILINOS_TPETRAEXT
 
 #endif //UTOPIA_TRILINOS_EVAL_RAP_HPP
 
