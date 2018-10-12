@@ -132,6 +132,7 @@ namespace utopia
 	    		hess_approx_BFGS->computeCauchyPoint(x, grad, lb, ub, x_cp, c);
 
 
+
 	    		Vector correction; 
 	    		hess_approx_BFGS->compute_reduced_Newton_dir(x, x_cp, c, grad, lb, ub, correction); 
 

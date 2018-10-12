@@ -597,22 +597,24 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
     }
 
 
-
-    void add_d_to_x(const Vector & x, Vector & x_cp, const Vector & break_points,  const Vector & d, const Scalar & tau)
+    // use approxeq for all stuff where u compare 
+    void add_d_to_x(const Vector & x, Vector & x_cp, const Vector & feasible_set,  const Vector & d, const Scalar & tau)
     {
+
         {   // begin lock
             Write<Vector>  wd(x_cp);
             Read<Vector>  r1(x);
-            Read<Vector>  r2(break_points);
+            Read<Vector>  r2(feasible_set);
             Read<Vector>  r3(d);
-
 
             Range rr = range(x_cp);
 
             for (SizeType i = rr.begin(); i != rr.end(); ++i)
             {
-                if(break_points.get(i) >= tau)
+                if(feasible_set.get(i) == 1.0)
+                {
                     x_cp.set(i, x.get(i) + tau * d.get(i)); 
+                }
                     
             }
    
@@ -776,15 +778,20 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             dt_min = std::max(dt_min, 0.0);
             t_old  = t_old + dt_min;
 
-            this->add_d_to_x(x, x_cp, break_points, d, t); 
+            this->add_d_to_x(x, x_cp, feasible_set, d, t_old); 
+
             c = c + dt_min*p;
         }
 
 
 
-        void buildZ(const Vector &lb, const Vector & ub, const Vector & x_cp, Vector & feasible_set,  Matrix & Z)
+        void build_reduced_quantities(  const Vector &lb, const Vector & ub, const Vector & x_cp,
+                                        const Vector & g, const Matrix & H, 
+                                        Vector & feasible_set,  Matrix & H_reduced, Vector & g_reduced)
         {
             feasible_set = local_values(local_size(lb).get(0), 0.); 
+
+            SizeType local_feasible_set = 0; 
 
             {
                 Write<Vector>  rv(feasible_set); 
@@ -798,50 +805,68 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 for (SizeType i = rr.begin(); i != rr.end(); ++i)
                 {   
                     // TODO:: put approx eq
-                    if(lb.get(i) != x_cp.get(i) &&  ub.get(i) != x_cp.get(i))
+                    if(lb.get(i) != x_cp.get(i) &&  ub.get(i) != x_cp.get(i)){
                         feasible_set.set(i, 1); 
+                        local_feasible_set++; 
+                    }
                 }       
             }
 
-            SizeType free_variables = sum(feasible_set); 
-            Z = local_sparse(local_size(feasible_set).get(0), free_variables, 1); 
-
-
-            SizeType local_free_variables = 0; 
-
+            g_reduced = local_zeros(local_feasible_set); 
 
             {
-                Read<Vector>  rv1(feasible_set); 
+                SizeType local_counter = 0; 
+
+                Read<Vector>  rf(feasible_set); 
+                Read<Vector>  rg(g); 
+
+                Write<Vector>  wg(g_reduced); 
                 auto rr = range(feasible_set); 
+                auto range_reduced = range(g_reduced); 
 
                 for (SizeType i = rr.begin(); i != rr.end(); ++i)
                 {   
                     // TODO:: put approx eq
                     if(feasible_set.get(i)==1)
-                        local_free_variables++; 
+                    {
+                        g_reduced.set(range_reduced.begin() + local_counter, g.get(i)); 
+                        local_counter++;
+                    }
                 }       
             }
 
 
-            std::cout<<"local_free_variables:   "<< local_free_variables << " \n"; 
+            H_reduced  = local_values(local_size(H).get(0), local_feasible_set, 0.0); 
+
+            {
+                SizeType local_counter = 0; 
+
+                Read<Vector>  rf(feasible_set); 
+                Read<Matrix>  rM(H); 
+
+                Write<Matrix>  wg(H_reduced); 
+
+                auto row_original = row_range(H); 
+                auto col_original = col_range(H); 
+
+                // auto row_reduced = row_range(H_reduced); 
+                auto col_reduced = col_range(H_reduced); 
 
 
-            // {
-            //     Write<Matrix>  rv(Z); 
-            //     Read<Vector>  rv1(feasible_set); 
+                for (SizeType c = col_original.begin(); c != col_original.end(); ++c)
+                {
+                    for (SizeType i = row_original.begin(); i != row_original.end(); ++i)
+                    {   
+                        // TODO:: put approx eq
+                        if(feasible_set.get(c)==1)
+                        {
+                            H_reduced.set(i, col_reduced.begin() + local_counter,  H.get(i, c)); 
+                            local_counter++;
+                        }
+                    }     
+                }  
 
-            //     auto r = range(feasible_set)
-
-            //     for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            //     {   
-            //         if(feasible_set.get(i)==1)
-            //             Z.set(i, )
-            //     }       
-            // }
-
-
-
-
+            }
 
 
         }
@@ -855,14 +880,23 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
     bool compute_reduced_Newton_dir(const Vector x,     const Vector & x_cp, const Vector & c, const Vector &g, 
                                     const Vector & lb,  const Vector & ub,  Vector & correction)
     {
-
-        Matrix Z; 
+        Matrix W_reduced; 
+        Vector g_reduced;
         Vector feasible_set; 
 
-        this->buildZ(lb, ub, x_cp, feasible_set,  Z); 
+        Vector Mc; 
+        this->apply_M(c, Mc); 
+
+        Vector global_grad   = g + (theta_*(x_cp-x)) - (W_*(Mc)); 
+        Matrix W_T = transpose(W_);  
 
 
-        // disp(Z); 
+        this->build_reduced_quantities(lb, ub, x_cp, global_grad, W_T, feasible_set,  W_reduced, g_reduced); 
+
+
+        
+
+
 
 
 
