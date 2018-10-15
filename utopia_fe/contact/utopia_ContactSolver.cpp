@@ -130,7 +130,15 @@ namespace utopia {
 		// ls->stol(1e-15);
 		// ls->max_it(1000);
 		// // ls->verbose(true);
-		// sc.set_linear_solver(ls);
+
+#ifdef WITH_M3ELINSOL
+		auto ls = std::make_shared<ASPAMG<USparseMatrix, UVector>>();
+		ls->verbose(true);
+		sc.set_linear_solver(ls);
+		sc.set_use_ssn(true);
+#endif //WITH_M3ELINSOL
+
+
 		// sc.set_bypass_contact(true);
 		sc.set_max_outer_loops(30);
 

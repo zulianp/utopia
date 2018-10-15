@@ -96,7 +96,16 @@ namespace utopia {
 		{
 			ierr = M3Elinsol_DumpLinSys(&this->solver, binwrite, systemfile); M3Elinsol_Errchk(&solver, ierr);
 		}
- 
+		
+		template<class Matrix, class Vector, int Backend> 
+		void set_options_from_interface(const ASPAMG<Matrix, Vector, Backend> &interface)
+		{	
+			//example ... fill the rest
+			// M3Elinsol_ASPAMG_SetTspMaxit(&solver.handle, interface.max_it());
+
+		}
+ 	
+ 		//default options
 		void set_options()
 		{
 			// Set Problem level
@@ -115,7 +124,7 @@ namespace utopia {
 
 			// Set Solver Options
 			M3Elinsol_ASPAMG_SetPcgRelConvTol(&solver.handle, 1e-9);
-			M3Elinsol_ASPAMG_SetPcgMaxIter(&solver.handle, 100);
+			M3Elinsol_ASPAMG_SetPcgMaxIter(&solver.handle, 800);
 		}
 
 		template<class T>
@@ -184,6 +193,7 @@ namespace utopia {
 	{
 		IterativeSolver<Matrix, Vector>::update(op);
 		solver.impl->update(*op);
+		solver.impl->set_options_from_interface(*this);
 	}
 
 	template<class Matrix, class Vector, int Backend> 
