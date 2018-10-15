@@ -19,6 +19,41 @@
 #include <Tpetra_DefaultPlatform.hpp>
 
 
+////
+#include <Amesos2_Factory.hpp>
+#include <Amesos2_Solver.hpp>
+
+#include <BelosSolverFactory.hpp>
+#include <BelosTpetraAdapter.hpp>
+#include <BelosLinearProblem.hpp>
+#include <BelosSolverManager.hpp>
+
+
+#include <Teuchos_GlobalMPISession.hpp>
+#include <Teuchos_ParameterList.hpp>
+#include <Teuchos_XMLParameterListCoreHelpers.hpp>
+#include <Tpetra_DefaultPlatform.hpp>
+ 
+#include <Kokkos_Macros.hpp>
+#include <Kokkos_DefaultNode.hpp>
+
+#include <Tpetra_CrsGraph.hpp>
+#include <Tpetra_CrsMatrix.hpp>
+#include <Tpetra_Map.hpp>
+#include <Tpetra_Operator.hpp>
+#include <Tpetra_Vector.hpp>
+#include <Tpetra_DefaultPlatform.hpp>
+#include <Tpetra_Version.hpp>
+
+#include <Ifpack2_Preconditioner.hpp>
+
+#include <MueLu_CreateTpetraPreconditioner.hpp>
+#include <MueLu_TpetraOperator.hpp>
+#include <MueLu_Utilities.hpp>
+//////
+
+
+
 // #ifdef HAVE_AMESOS2_TPETRA
 
 //FIXME find right macros (these packages are optional in trilinos, they should be optional also in utopia)
@@ -123,14 +158,14 @@ namespace utopia {
     : impl_(make_unique<Impl>(*other.impl_)) {
         //FIXME
     }
-    
+
   /**
    * Destructor.
    * \param na
    */
     template <typename Matrix, typename Vector>
     Amesos2Solver<Matrix, Vector, TRILINOS>::~Amesos2Solver() {}
-    
+
     template <typename Matrix, typename Vector>
     Amesos2Solver<Matrix, Vector, TRILINOS>::Amesos2Solver() : impl_(make_unique<Impl>()) {}
 
@@ -222,7 +257,7 @@ template <typename Matrix, typename Vector>
 int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_preorder () const {
             assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumPreOrder(); }
- 
+
    /**
    * get_num_sym_fact Method - Returns the number of symbolic factorizations performed by the owning solver.
    * \param na
@@ -232,7 +267,7 @@ template <typename Matrix, typename Vector>
 int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_sym_fact () const {
             assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().getNumSymbolicFact(); }
- 
+
    /**
    * get_num_numeric_fact Method - Returns the number of numeric factorizations performed by the owning solver.
    * \param na
@@ -259,9 +294,9 @@ int     Amesos2Solver<Matrix, Vector, TRILINOS>::get_num_solve () const {
    */   
 template <typename Matrix, typename Vector>
 bool    Amesos2Solver<Matrix, Vector, TRILINOS>::preordering_done () const {
-.        assert(!impl_->solver_.is_null());
+        assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().preOrderingDone(); }
- 
+
    /**
    * sym_factorization_done Method - if true , then symbolic factorization has been performed.
    * \param na
@@ -271,7 +306,7 @@ template <typename Matrix, typename Vector>
 bool    Amesos2Solver<Matrix, Vector, TRILINOS>::sym_factorization_done () const {
         assert(!impl_->solver_.is_null());
         return impl_->solver_->getStatus().symbolicFactorizationDone(); }
-   
+
    /**
    * num_factorization_done Method -    If true , then numeric factorization has been performed.
    * \param na
