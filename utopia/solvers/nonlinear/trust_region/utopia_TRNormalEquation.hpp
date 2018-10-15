@@ -235,12 +235,8 @@
       }
 
 
-
-  private:
-    Scalar delta, product, ared, pred, rho, E, E_k, E_k1; 
-    std::shared_ptr<TRSubproblem> tr_subproblem;
-      
-     /**
+  protected: 
+      /**
       * @brief      update of tr radius, specialized for solution in L2 norm. 
       *             In case u need to solve eq in || \cdot ||_{L_{\infty}}, there is need to change the 1st if statement.
       *
@@ -250,7 +246,7 @@
       *
       * @return    
       */
-    bool delta_update(const Scalar &rho, const Vector &p_k, Scalar &delta) override
+    virtual void delta_update(const Scalar &rho, const Vector &p_k, Scalar &delta, const bool flg=false) override
     {
         if(rho < this->eta1())
         {
@@ -261,9 +257,15 @@
         {
           delta = std::min(this->gamma2() * delta, this->delta_max()); 
         }      
-        return true; 
     }
 
+
+
+
+  private:
+    Scalar delta, product, ared, pred, rho, E, E_k, E_k1; 
+    std::shared_ptr<TRSubproblem> tr_subproblem;
+      
 
   };
 

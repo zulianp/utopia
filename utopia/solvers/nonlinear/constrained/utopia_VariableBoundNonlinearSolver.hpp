@@ -55,25 +55,23 @@ namespace utopia
 
         virtual const Vector & get_upper_bound()
         {
-          if(constraints_.has_upper_bound())
+          // if(constraints_.has_upper_bound())
             return *constraints_.upper_bound(); 
-          else
-          {
-            utopia_error("upper bound does not exist. \n"); 
-            return local_values(1, 9e9); 
-          }
+          // else
+          // {
+          //   utopia_error("upper bound does not exist. \n"); 
+          // }
 
         }
 
         virtual const Vector & get_lower_bound()
         {
-          if(constraints_.has_lower_bound())
+          // if(constraints_.has_lower_bound())
             return *constraints_.lower_bound(); 
-          else
-          {
-            utopia_error("lower bound does not exist. \n"); 
-            return local_values(1, -9e9); 
-          }
+          // else
+          // {
+          //   utopia_error("lower bound does not exist. \n"); 
+          // }
         }        
 
 
@@ -174,6 +172,47 @@ namespace utopia
         }    
 
     }      
+
+
+      virtual BoxConstraints  merge_pointwise_constraints_with_uniform_bounds(const Vector & x_k, const Scalar & lb_uniform, const Scalar & ub_uniform)
+      {
+          Vector l_f, u_f; 
+
+          if(constraints_.has_upper_bound())
+          {
+              Vector u =  *constraints_.upper_bound() - x_k; 
+              u_f = local_zeros(local_size(x_k).get(0)); 
+              {   
+                  Read<Vector> rv(u); 
+                  Write<Vector> wv(u_f); 
+
+                  each_write(u_f, [ub_uniform, u](const SizeType i) -> double { 
+                      return  (u.get(i) <= ub_uniform)  ? u.get(i) : ub_uniform; }   );
+              }
+          }
+          else
+              u_f = local_values(local_size(x_k).get(0), ub_uniform); ; 
+
+          if(constraints_.has_lower_bound())
+          {
+              Vector l = *(constraints_.lower_bound()) - x_k; 
+              l_f = local_zeros(local_size(x_k).get(0)); 
+
+              {   
+                  Read<Vector> rv(l); 
+                  Write<Vector> wv(l_f); 
+
+                  each_write(l_f, [lb_uniform, l](const SizeType i) -> double { 
+                      return  (l.get(i) >= lb_uniform)  ? l.get(i) : lb_uniform;  }   );
+              }
+          }
+          else
+              l_f = local_values(local_size(x_k).get(0), lb_uniform); 
+
+          return make_box_constaints(std::make_shared<Vector>(l_f), std::make_shared<Vector>(u_f));
+      }
+
+
 
 
     // TO BE Changed...

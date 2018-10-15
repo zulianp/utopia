@@ -12,8 +12,8 @@ namespace utopia
 		
 			void run_dense()
 			{
-				// UTOPIA_RUN_TEST(quasi_newton_test);
-				// UTOPIA_RUN_TEST(Quasi_TR_test); 
+				UTOPIA_RUN_TEST(quasi_newton_test);
+				UTOPIA_RUN_TEST(Quasi_TR_test); 
 			}
 
 			void run_sparse()
@@ -153,12 +153,12 @@ namespace utopia
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
 				// QuasiNewtonTest<DMatrixd, DVectord>().run_dense();
-				QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
+				// QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
 		#endif
 
-		// #ifdef WITH_BLAS
-		// 		QuasiNewtonTest<Matrixd, Vectord>().run_dense();
-		// #endif //WITH_BLAS
+		#ifdef WITH_BLAS
+				// QuasiNewtonTest<Matrixd, Vectord>().run_dense();
+		#endif //WITH_BLAS
 
 		// #ifdef WITH_TRILINOS
 		// 		QuasiNewtonTest<TSMatrixd, TVectord>().run_sparse();

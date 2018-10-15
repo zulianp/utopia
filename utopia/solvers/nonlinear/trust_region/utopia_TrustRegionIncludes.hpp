@@ -8,7 +8,6 @@
 #include "utopia_SteihaugToint.hpp"
 #include "utopia_ActiveSetTRSubproblem.hpp"
 #include "utopia_TRBase.hpp"
-#include "utopia_TRBoxBase.hpp"
 
 // tr-based minimization algorithms 
 #include "utopia_TrustRegion.hpp"

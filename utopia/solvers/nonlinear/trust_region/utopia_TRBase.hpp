@@ -1,10 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-05-11
-* @Last Modified by:   Alena Kopanicakova
-* @Last Modified time: 2017-07-02
-*/
-
 #ifndef UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 #define UTOPIA_SOLVER_TRUSTREGION_BASE_HPP
 
@@ -208,19 +201,36 @@ namespace utopia
     \param radius          - tr. radius
     \param p_k            - iterate step
       */
-    virtual bool delta_update(const Scalar &rho, const Vector &p_k, Scalar &radius)
+    virtual void delta_update(const Scalar &rho, const Vector &p_k, Scalar &radius, const bool inf_flg = false)
     {
-      if(rho < eta1_)
+      if(inf_flg==false)
       {
-        radius = std::max( Scalar(gamma1_ * norm2(p_k)), delta_min_); 
+        if(rho < eta1_)
+        {
+          radius = std::max( Scalar(gamma1_ * norm2(p_k)), delta_min_); 
+        }
+        else if (rho > eta2_ )
+        {
+          Scalar intermediate = std::max(Scalar(gamma2_ * norm2(p_k)), radius); 
+          radius = std::min(intermediate, delta_max_); 
+        }      
       }
-      else if (rho > eta2_ )
+      else // computing update for L_inf norm
       {
-        Scalar intermediate = std::max(Scalar(gamma2_ * norm2(p_k)), radius); 
-        radius = std::min(intermediate, delta_max_); 
-      }      
-      return true; 
+        if(rho < this->eta1())
+        {
+          radius = std::max(Scalar(this->gamma1() * norm_infty(p_k)), this->delta_min()); 
+        }
+        else if (rho > this->eta2() )
+        {
+          // Scalar intermediate = std::max(Scalar(this->gamma2() * norm_infty(p_k)), radius); 
+
+          Scalar intermediate = this->gamma2() * radius; 
+          radius = std::min(intermediate, this->delta_max()); 
+        }      
+      }
     }
+
 
     /*!
     \details

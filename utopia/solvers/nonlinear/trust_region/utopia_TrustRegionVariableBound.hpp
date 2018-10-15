@@ -1,25 +1,26 @@
 #ifndef UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
 #define UTOPIA_SOLVER_BOX_CONSTRAINT_TR_HPP
+
 #include "utopia_NonLinearSolver.hpp"
-#include "utopia_TRBoxBase.hpp"
 #include "utopia_TRBoxSubproblem.hpp"
 #include "utopia_Parameters.hpp"    
+#include "utopia_VariableBoundNonlinearSolver.hpp"
 
  namespace utopia 
  {
     	template<class Matrix, class Vector>
       /**
-       * @brief      Trust region solver taking into account also bound constrains.
+       * @brief      Trust region solver taking into account also bound constraints.
        */ 
-     	class TrustRegionVariableBound :  public NonLinearSolver<Matrix, Vector>, 
-                                        public TrustRegionBoxBase<Matrix, Vector> 
+     	class TrustRegionVariableBound :  public VariableBoundNonlinearSolver<Matrix, Vector>, 
+                                        public TrustRegionBase<Matrix, Vector> 
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::TRBoxSubproblem<Matrix, Vector> TRBoxSubproblem; 
-        typedef utopia::TrustRegionBoxBase<Matrix, Vector> TrustRegionBase; 
-        typedef utopia::NonLinearSolver<Matrix, Vector> NonLinearSolver;
+        typedef utopia::TRBoxSubproblem<Matrix, Vector>               TRBoxSubproblem; 
+        typedef utopia::TrustRegionBase<Matrix, Vector>               TrustRegionBase; 
+        typedef utopia::VariableBoundNonlinearSolver<Matrix, Vector>  NonLinearSolver;
      	
      	public:                                                                       // once generic, then = std::shared_ptr<ProjectedGaussSeidel<Matrix, Vector> >()
       TrustRegionVariableBound( const std::shared_ptr<TRBoxSubproblem> &tr_subproblem,
@@ -104,7 +105,8 @@
           if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver_.get()))
           {
             p_k = 0 * p_k; 
-            auto box = this->merge_tr_with_pointwise_constrains(x_k, delta); 
+            // auto box = this->merge_tr_with_pointwise_constrains(x_k, delta); 
+            auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta); 
             tr_subproblem->tr_constrained_solve(H, g, p_k, box);
           }
 
@@ -154,7 +156,7 @@
     //----------------------------------------------------------------------------
     //      tr. radius update 
     //----------------------------------------------------------------------------
-          this->delta_update(rho, p_k, delta); 
+          this->delta_update(rho, p_k, delta, true); 
           it++; 
         }
 
