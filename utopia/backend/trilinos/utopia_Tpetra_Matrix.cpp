@@ -9,7 +9,7 @@
 #include <iterator>
 
 
-//FIXME 
+//FIXME
 // - crs matrix has problematic behaviour when adding to off-procs entries once assembled in finite element assembly routines
 
 
@@ -26,7 +26,7 @@ namespace utopia {
 	        implementation().insertGlobalValues(row, 1, &value, &col);
 	    }
 	}
-	
+
 	void TpetraMatrix::add(const GO &row, const GO &col, const Scalar &value)
 	{
 		m_utopia_status_once(
@@ -205,9 +205,9 @@ namespace utopia {
 		try {
 			Tpetra::RowMatrixTransposer<Scalar, LO, GO, NT> transposer(mat_);
 
-			auto temp = transposer.createTranspose(); 
-			
-			
+			auto temp = transposer.createTranspose();
+
+
 
 
 			//None of this creat a valid matrix for getGlobalRowView
@@ -269,7 +269,7 @@ namespace utopia {
 	        }
 
 	        // implementation().fillComplete();
-	        
+
         } catch(const std::exception &ex) {
         	std::cout << ex.what() << std::endl;
         	assert(false);
@@ -316,6 +316,44 @@ namespace utopia {
 
 	    init_->range_map = row_map;
 	}
+
+  void TpetraMatrix::crs_init(const rcp_comm_type &comm,
+            std::size_t rows_local,
+            std::size_t cols_local,
+            Tpetra::global_size_t rows_global,
+            Tpetra::global_size_t cols_global,
+            const Teuchos::ArrayRCP<size_t> &rowPtr,
+            const Teuchos::ArrayRCP<LO> &cols,
+            const Teuchos::ArrayRCP<Scalar> &values)
+  {
+      rcp_map_type row_map;
+      rcp_map_type col_map;
+      const int index_base = 0;
+      if (rows_local == INVALID_INDEX) {
+          row_map.reset(new map_type(rows_global, index_base, comm));
+          assert(cols_local == INVALID_INDEX);
+          Kokkos::View<LO*> colInds("Column Map", cols_global);
+          Kokkos::parallel_for(cols_global, KOKKOS_LAMBDA(size_t i) { colInds(i) = i; });
+          col_map.reset(new map_type(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), Kokkos::Compat::getConstArrayView(colInds), index_base, comm));
+      } else {
+          // see for a distributed example https://github.com/trilinos/Trilinos/blob/master/packages/tpetra/core/example/Lesson07-Kokkos-Fill/04_tpetra.cpp
+          assert(false && "Sparse distributed matrix assembly with CRS structures is not implemented yet.");
+      }
+
+      mat_.reset(new crs_mat_type(row_map, col_map, rowPtr, cols, values));
+      owner_ = true;
+
+      init_ = std::make_shared<InitStructs>();
+      if(cols_local == INVALID_INDEX) {
+        init_->domain_map.reset(new map_type(cols_global, index_base, comm));
+      } else {
+        init_->domain_map.reset(new map_type(cols_global, cols_local, index_base, comm));
+      }
+      init_->range_map = row_map;
+
+      finalize();
+  }
+
 
 	void TpetraMatrix::crs_identity(const rcp_comm_type &comm,
 	              std::size_t rows_local,

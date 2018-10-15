@@ -180,6 +180,17 @@ namespace utopia {
               nnz.nnz());
         }
 
+        static void build(TpetraSparseMatrix &m, const Size &size, const CRS<Teuchos::ArrayRCP<size_t>, Teuchos::ArrayRCP<Matrix::LO>, Teuchos::ArrayRCP<Scalar>> &crs) {
+            m.crs_init(default_communicator(),
+              INVALID_INDEX,
+              INVALID_INDEX,
+              size.get(0),
+              size.get(1),
+              crs.rowPtr(),
+              crs.cols(),
+              crs.values());
+        }
+
         inline static void build(TpetraSparseMatrix &, const Size &, const Zeros &)
         {
             m_utopia_error("> Build zeros is using build values");
@@ -620,19 +631,19 @@ namespace utopia {
             auto row_map = impl.getRowMap()->getLocalMap();
             auto local_mat = impl.getLocalMatrix();
 
-            for(auto i_global : index) 
+            for(auto i_global : index)
             {
                 if(!rr.inside(i_global)) {
                     std::cerr << "[Error] index out of range " << i_global << " not in " << rr << std::endl;
                     assert(rr.inside(i_global));
-                    continue; 
+                    continue;
                 }
 
                 auto i = i_global - rr.begin();
                 auto row = local_mat.row(i);
                 auto n_values = row.length;
-                
-                for(decltype(n_values) k = 0; k < n_values; ++k) 
+
+                for(decltype(n_values) k = 0; k < n_values; ++k)
                 {
                     auto &val = row.value(k);
                     const auto col = row.colidx(k);

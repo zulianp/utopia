@@ -161,6 +161,15 @@ namespace utopia {
                       Tpetra::global_size_t cols_global,
                       std::size_t nnz_x_row);
 
+        void crs_init(const rcp_comm_type &comm,
+                      std::size_t rows_local,
+                      std::size_t cols_local,
+                      Tpetra::global_size_t rows_global,
+                      Tpetra::global_size_t cols_global,
+                      const Teuchos::ArrayRCP<size_t> &rowPtr,
+                      const Teuchos::ArrayRCP<LO> &cols,
+                      const Teuchos::ArrayRCP<Scalar> &values);
+
         void crs_identity(const rcp_comm_type &comm,
                       std::size_t rows_local,
                       std::size_t cols_local,
@@ -209,7 +218,7 @@ namespace utopia {
             if(is_null()) {
                 return {0, 0};
             }
-            
+
             assert(!implementation().getRowMap().is_null());
 
             if(implementation().getDomainMap().is_null()) {
