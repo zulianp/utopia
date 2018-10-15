@@ -84,7 +84,16 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             // TODO:: check if update is SPD ... 
 
-            theta_ = dot(y,y)/dot(y,s); 
+            Scalar denom    = dot(y,s); 
+            Scalar nom      = dot(y,y);
+
+            // if(denom > 1e-12 * nom)
+            // {
+            //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. ")
+            //     return false; 
+            // }
+
+            theta_ = nom/denom; 
 
             // this needs to be done durign first it, in order to initialize matrices 
             if(current_m_ == 0)
@@ -157,12 +166,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
     private:
-        /**
-         * @brief Appends vector into matrix as new last column
-         * 
-         * @param M Matrix to be appended to
-         * @param col Vector to be added
-         */
         void add_col_to_mat(Matrix & M, const Vector & col) const
         {
             const Matrix M_old = M;
@@ -192,13 +195,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             } // end of lock
         }
 
-        /**
-         * @brief Add shift columns of the matrix to the left by one col. 
-         * Then, replace last column with new vector
-         * 
-         * @param M Matrix to be shifted
-         * @param col Vector to be added to the last col
-         */
         void shift_cols_left_replace_last_col(Matrix & M, const Vector & col) const
         {
             const Matrix M_old = M;
@@ -223,12 +219,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             } // end of lock
         }
 
-        /**
-         * @brief Creates matrix from the vector. Basically new matrix has dimension n\times 1 
-         * 
-         * @param M matrix
-         * @param col vecotr
-         */
         void init_mat_from_vec(Matrix & M, const Vector & col) const 
         {
             M = values(size(col).get(0), 1, 0.0);
@@ -247,9 +237,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             } // end of lock
         }
 
-        /**
-         * @brief Build matrix W
-         */
         void buildW()
         {
             Matrix S_theta = theta_ * S_; 
@@ -261,10 +248,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
-        /**
-         * @brief Build matrix M from vectors Y and S
-         * 
-         */
         void buildM()
         {
             SizeType n = (current_m_ < m_)? current_m_ + 1: m_; 
@@ -347,7 +330,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         }
 
-        void apply_M(const Vector & v, Vector & result)
+        void apply_M(const Vector & v, Vector & result) const 
         {
             linear_solver_->solve(M_, v, result);
         }
@@ -355,17 +338,20 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
     public:        
 
-        /**
-         * @brief Computes breakpoints 
-         * @details TODO:: add TR radius 
-         * 
-         * @param g gradient
-         * @param x current iterate
-         * @param lb lower bound
-         * @param ub uppre bound
-         * @param t breakpoints - distributed vector for each point 
-         */
-        void compute_breakpoints(const Vector & g, const Vector & x, const Vector & lb, const Vector & ub, Vector &t)
+        bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s) const override
+        {
+            Vector x_cp, c; 
+
+            this->computeCauchyPoint(x, g, lb, ub, x_cp, c);
+            this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
+
+            return true; 
+        }
+
+
+
+
+        void compute_breakpoints(const Vector & g, const Vector & x, const Vector & lb, const Vector & ub, Vector &t) const
         {
             auto inf = std::numeric_limits<Scalar>::infinity(); 
 
@@ -392,15 +378,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 
-        /**
-         * @brief Determines grad. descent direction, such that lb and ub are not violated
-         * 
-         * @param t break points
-         * @param g gradient 
-         * @param d search direction
-         * @param t_current breakpoint to be found
-         */
-        void get_d_corresponding_to_ti(const Vector & t, const Vector & g, Vector &d, const Scalar & t_current)
+        void get_d_corresponding_to_ti(const Vector & t, const Vector & g, Vector &d, const Scalar & t_current) const
         {
             d = -1.0 * g; 
 
@@ -420,7 +398,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             } // end of lock
         }
 
-    void get_initial_feasible_set(const Vector & break_points, Vector & feasible_set)
+    void get_initial_feasible_set(const Vector & break_points, Vector & feasible_set) const
     {
         feasible_set = local_values(local_size(break_points).get(0), 0.0); 
 
@@ -441,7 +419,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 
-    bool get_global_active_index(const Vector & break_points, Vector & feasible_set, const Scalar & t_current, SizeType & index)
+    bool get_global_active_index(const Vector & break_points, Vector & feasible_set, const Scalar & t_current, SizeType & index) const
     {
         Scalar counter=0.0; 
 
@@ -517,7 +495,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 
-    Scalar project_direction_on_boundary(const Vector & x, const Vector & d, const Vector & ub, const Vector & lb, Vector & x_cp, const SizeType & active_index)
+    Scalar project_direction_on_boundary(const Vector & x, const Vector & d, const Vector & ub, const Vector & lb, Vector & x_cp, const SizeType & active_index) const
     {
         Vector x_local = local_values(1, 0.0); 
         Scalar val=0; 
@@ -556,7 +534,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         return sum(x_local); 
     }
 
-    Scalar get_gb(const Vector & g, const SizeType & index)
+    Scalar get_gb(const Vector & g, const SizeType & index) const
     {
         Vector g_local = local_values(1, 0); 
 
@@ -580,7 +558,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
     }
 
 
-    void zero_dir_component(Vector & d, const SizeType & index)
+    void zero_dir_component(Vector & d, const SizeType & index) const
     {
         {   // begin lock
             Write<Vector>  wd(d);
@@ -598,7 +576,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
     // use approxeq for all stuff where u compare 
-    void add_d_to_x(const Vector & x, Vector & x_cp, const Vector & feasible_set,  const Vector & d, const Scalar & tau)
+    void add_d_to_x(const Vector & x, Vector & x_cp, const Vector & feasible_set,  const Vector & d, const Scalar & tau) const
     {
 
         {   // begin lock
@@ -624,7 +602,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 
-    Scalar get_next_t(const Vector & sorted_break_points, const SizeType & index)
+    Scalar get_next_t(const Vector & sorted_break_points, const SizeType & index) const
     {
         Vector t_help = local_values(1, 0.0); 
         Scalar value=0.0; 
@@ -655,7 +633,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 
-    SizeType get_number_of_sorted_break_points(const Vector & sorted_break_points)
+    SizeType get_number_of_sorted_break_points(const Vector & sorted_break_points) const
     {
         Vector help = local_values(1, 0.0); 
         SizeType val = size(sorted_break_points).get(0); 
@@ -673,7 +651,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        void computeCauchyPoint(const Vector &x, const Vector & g, const Vector & lb, const Vector & ub, Vector & x_cp, Vector & c)
+        void computeCauchyPoint(const Vector &x, const Vector & g, const Vector & lb, 
+                                const Vector & ub, Vector & x_cp, Vector & c) const
         {
             x_cp = x; 
             Scalar t_old, t, dt_min, dt, f_p, f_pp, z_b, g_b; 
@@ -787,9 +766,11 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         void build_reduced_quantities(  const Vector &lb, const Vector & ub, const Vector & x_cp,
                                         const Vector & g, const Matrix & H, 
-                                        Vector & feasible_set,  Matrix & H_reduced, Vector & g_reduced)
+                                        Vector & feasible_set,  Matrix & H_reduced, Vector & g_reduced) const
         {
             feasible_set = local_values(local_size(lb).get(0), 0.); 
+
+            // std::cout<<"build_reduced_quantities: 1 ---- \n"; 
 
             SizeType local_feasible_set = 0; 
 
@@ -811,6 +792,21 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                     }
                 }       
             }
+
+            // std::cout<<"build_reduced_quantities: 2 ---- \n"; 
+
+            // std::cout<<"----- feasible set:   \n"; 
+            // disp(feasible_set); 
+
+            // we can just get things directly 
+            if(size(feasible_set).get(0)==sum(feasible_set))
+            {
+                g_reduced = g; 
+                H_reduced = H; 
+
+                return; 
+            }
+
 
             g_reduced = local_zeros(local_feasible_set); 
 
@@ -835,12 +831,26 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 }       
             }
 
+            // std::cout<<"build_reduced_quantities: 3 ---- \n"; 
 
+            // TODO:: use dense matrices for this kind of things 
             H_reduced  = local_values(local_size(H).get(0), local_feasible_set, 0.0); 
 
-            {
-                SizeType local_counter = 0; 
+            // std::cout<<"-------- H -------- \n"; 
+            // disp(H); 
 
+            // std::cout<<"H_reduced.local(0): "<< local_size(H_reduced).get(0) << "  local_size(H_reduced).get(1):  "<< local_size(H_reduced).get(1) << "  \n"; 
+            // std::cout<<"feasible_set: "<< local_size(feasible_set).get(0) << "  \n"; 
+            // std::cout<<"H.local(0): "<< local_size(H).get(0) << "  local_size(H).get(1):  "<< local_size(H).get(1) << "  \n"; 
+
+
+            if(local_size(feasible_set).get(0) != local_size(H).get(1))
+                utopia_error("feasible_set, H: local sizes do not match .... \n"); 
+
+            if(local_size(H_reduced).get(0) != local_size(H).get(0))
+                utopia_error("H_reduced, H: local sizes do not match .... \n");             
+
+            {
                 Read<Vector>  rf(feasible_set); 
                 Read<Matrix>  rM(H); 
 
@@ -852,27 +862,39 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 // auto row_reduced = row_range(H_reduced); 
                 auto col_reduced = col_range(H_reduced); 
 
+                SizeType local_counter = 0; 
 
-                for (SizeType c = col_original.begin(); c != col_original.end(); ++c)
-                {
-                    for (SizeType i = row_original.begin(); i != row_original.end(); ++i)
-                    {   
+                // for (SizeType c = col_original.begin(); c != col_original.end(); ++c)
+                for (SizeType r = row_original.begin(); r != row_original.end(); ++r)
+                {   
+
+                    for (SizeType c = col_original.begin(); c != col_original.end(); ++c)
+                    {            
+                        if(c==col_original.begin())
+                            local_counter=0;
+
+                        // std::cout<<"r: "<< r << "  c: "<< c << "  \n"; 
+
                         // TODO:: put approx eq
                         if(feasible_set.get(c)==1)
                         {
-                            H_reduced.set(i, col_reduced.begin() + local_counter,  H.get(i, c)); 
+                            H_reduced.set(r, col_reduced.begin() + local_counter,  H.get(r, c)); 
                             local_counter++;
                         }
-                    }     
+                    }    
+
+
                 }  
 
             }
 
+            // std::cout<<"-------- H_reduced -------- \n"; 
+            // disp(H_reduced); 
 
         }
 
 
-    Scalar compute_alpha_star(const Vector & x_cp, const Vector & lb, const Vector & ub, const Vector & d, const Vector & feasible_set)
+    Scalar compute_alpha_star(const Vector & x_cp, const Vector & lb, const Vector & ub, const Vector & d, const Vector & feasible_set) const
     {
         Vector alpha_stars = local_values(local_size(feasible_set).get(0), 1.0);  
 
@@ -911,7 +933,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 
-    void prolongate_reduced_corr(const Vector & x_reduced,  const Vector & feasible_set,  Vector & x_prolongated)
+    void prolongate_reduced_corr(const Vector & x_reduced,  const Vector & feasible_set,  Vector & x_prolongated) const
     {
         x_prolongated = local_values(local_size(feasible_set).get(0), 0.0); 
 
@@ -945,7 +967,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
     // returns true, if there is any free variable, otherwise return false
     // TODO:: investigate if you need new feasible set         
     bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector & c, const Vector &g, 
-                                    const Vector & lb,  const Vector & ub,  Vector & correction)
+                                    const Vector & lb,  const Vector & ub,  Vector & correction) const
     {
         Matrix W_reduced; 
         Vector g_reduced;
@@ -957,8 +979,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         Vector global_grad   = g + (theta_*(x_cp-x)) - (W_*(Mc)); 
         Matrix W_T = transpose(W_);  
 
-
         this->build_reduced_quantities(lb, ub, x_cp, global_grad, W_T, feasible_set,  W_reduced, g_reduced); 
+
 
         if(sum(feasible_set)==0)
         {
@@ -971,7 +993,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         Vector v; 
         this->apply_M(WR_gR, v); 
 
-
         Matrix N = W_T * transpose(W_T); 
         N  = 1/theta_ * N; 
         N = M_ * N; 
@@ -980,13 +1001,13 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         Vector s = local_zeros(local_size(v)); 
         linear_solver_->solve(N, v, s); 
         
+
         Vector  du = (-1.0/theta_ )* g_reduced; 
-                du -= 1.0/(theta_*theta_) * (transpose(W_reduced) * s); 
+                du -= 1.0/(theta_*theta_) * transpose(W_reduced) * s; 
 
 
         Scalar alpha_star = this->compute_alpha_star(x_cp, lb, ub, du, feasible_set); 
         du *= alpha_star; 
-
 
         Vector x_bar = x_cp; 
         Vector du_prolongated; 
@@ -996,12 +1017,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         x_bar = x_bar + du_prolongated; 
         correction = x_bar - x; 
 
-
         return true; 
     }
-
-
-
 
 
 

@@ -27,7 +27,7 @@ namespace utopia
         
         typedef utopia::LSStrategy<Matrix, Vector>              LSStrategy;
         typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation;
-        typedef utopia::IterativeSolver<Matrix, Vector>         Solver;
+        typedef utopia::LinearSolver<Matrix, Vector>         Solver;
         typedef utopia::BoxConstraints<Vector>                  BoxConstraints;
         
         
@@ -58,7 +58,7 @@ namespace utopia
             g_norm = g0_norm;
             
             if(this->verbose_) {
-                this->init_solver("QUASI NEWTON", {" it. ", "|| g ||", "r_norm", "|| p_k || ", "alpha"});
+                this->init_solver("QUASI NEWTON", {" it. ", "|| g ||", "E", "|| p_k || ", "alpha"});
                 PrintInfo::print_iter_status(it, {g_norm, s_norm});
             }
             it++; 
@@ -67,7 +67,13 @@ namespace utopia
             
             while(!converged)
             {
-                this->hessian_approx_strategy_->apply_Hinv(-1.0 * g, s); 
+                // this->hessian_approx_strategy_->apply_Hinv(-1.0 * g, s); 
+
+                const auto &ub = *constraints_.upper_bound();
+                const auto &lb = *constraints_.lower_bound();
+
+                this->hessian_approx_strategy_->constrained_solve(x, g, lb, ub, s);
+
                 
                 if(this->ls_strategy_) 
                     this->ls_strategy_->get_alpha(fun, g, x, s, this->alpha_);     
@@ -86,9 +92,12 @@ namespace utopia
                 y = g - y; 
                 this->hessian_approx_strategy_->update(s, y);
 
+                Scalar energy; 
+                fun.value(x, energy); 
+
                 // print iteration status on every iteration
                 if(this->verbose_)
-                    PrintInfo::print_iter_status(it, {g_norm, s_norm, this->alpha_});
+                    PrintInfo::print_iter_status(it, {g_norm, energy,  s_norm, this->alpha_});
                 
                 // check convergence and print interation info
                 converged = this->check_convergence(it, g_norm, 9e9, s_norm);

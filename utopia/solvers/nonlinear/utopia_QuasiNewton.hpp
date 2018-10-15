@@ -27,7 +27,7 @@ namespace utopia
         
         typedef utopia::LSStrategy<Matrix, Vector>              LSStrategy;
         typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation;
-        typedef utopia::IterativeSolver<Matrix, Vector>         Solver;
+        typedef utopia::LinearSolver<Matrix, Vector>         Solver;
         
         
     public:

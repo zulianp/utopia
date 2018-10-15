@@ -110,63 +110,33 @@ namespace utopia
 	    		Vector x = values(_n, 0.0);
 	    		fun.apply_bc_to_initial_guess(x);
 
-	    		auto linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >();
+	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
 				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix,  Vector> >(memory_size, linear_solver);
+
+				// hess_approx_BFGS->set_Cauchy_point_memory_size(10); 
 
 				QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
 
+				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				solver.set_line_search_strategy(line_search);
+				solver.max_it(100); 
+
+				// Vector lb   = local_values(local_size(x).get(0), -0.01);
+				// Vector ub   = local_values(local_size(x).get(0), 0.01);
+
 				Vector lb   = local_values(local_size(x).get(0), -0.01);
-				Vector ub   = local_values(local_size(x).get(0), 0.01);
+				Vector ub   = local_values(local_size(x).get(0), 0.01);				
 
 				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 	    		solver.set_box_constraints(box);				
 
 
-	    		Vector grad = 0*x; 
-	    		fun.gradient(x, grad); 
-	    		Vector t, d; 
+	    		solver.verbose(true); 
+	    		solver.solve(fun, x);
 
- 
-	    		Vector x_cp, c; 
-	    		hess_approx_BFGS->initialize(fun, x); 
-	    		hess_approx_BFGS->computeCauchyPoint(x, grad, lb, ub, x_cp, c);
+	    		disp(x); 
 
 
-
-	    		Vector correction; 
-	    		hess_approx_BFGS->compute_reduced_Newton_dir(x, x_cp, c, grad, lb, ub, correction); 
-
-
-				exit(0);
-
-
-
-				// SimpleQuadraticFunction<DSMatrixd, DVectord> fun;
-
-				// Parameters params;
-				// params.atol(1e-9);
-				// params.rtol(1e-15);
-				// params.stol(1e-15);
-				// params.verbose(_verbose);
-
-				// const auto m = 3; 
-				
-				// auto linear_solver = std::make_shared<Factorization<DSMatrixd, DVectord>>();
-
-				// auto hess_approx_BFGS   = std::make_shared<LBFGSB<DSMatrixd,  DVectord> >(memory_size, linear_solver);
-
-
-		  // 		auto k = 15;
-
-		  //       DVectord v = values(k, 999); 
-		  //       DVectord y = values(k, 55); 
-		  //       DVectord s = values(k, 1); 
-
-		  //       hess_approx_BFGS->initialize(fun, v); 
-		  //       hess_approx_BFGS->update(s, y); 
-
-		  //       std::cout<<"---- solver end ---- \n"; 
-					
 			}
 
 		QuasiNewtonTest()
