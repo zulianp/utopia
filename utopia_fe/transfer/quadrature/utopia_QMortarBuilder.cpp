@@ -427,11 +427,15 @@ namespace utopia {
 		make_polyhedron(test,  test_poly);
 
 		if(intersect_3D(trial_poly, test_poly, intersection)) {
-			total_intersection_volume += compute_volume(intersection);
+			const auto isect_volume = compute_volume(intersection);
+			total_intersection_volume += isect_volume;
+			
 			const libMesh::Real weight = compute_volume(test_poly);
+
+			assert(isect_volume <= weight + 1e-6);
+
 			auto trial_trans = std::make_shared<AffineTransform3>(trial);
 			std::shared_ptr<Transform> test_trans;
-
 
 			if(vol2surf) {
 				test_trans = std::make_shared<Transform2>(test);

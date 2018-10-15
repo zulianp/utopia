@@ -348,8 +348,13 @@ namespace utopia {
 					comm.all_reduce(volumes, 2, moonolith::MPISum());
 
 					if(comm.is_root()) {
-						std::cout << "sum(B): " << volumes[0] << ", vol(I): " << volumes[1] << std::endl;
+						std::cout << "sum(B): " 
+								  << volumes[0] 
+								  << ", vol(I): " 
+								  << volumes[1] << std::endl;
 					}
+
+					// moonolith::root_describe("vol(I_local) : " + std::to_string(total_intersection_volume), comm, std::cout);
 				}
 			}
 		}
