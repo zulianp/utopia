@@ -274,6 +274,7 @@ namespace utopia {
 
 				transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
 				transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
+					
 				return true;
 			}
 
@@ -284,7 +285,8 @@ namespace utopia {
 		make_polygon(test, test_pts);
 
 		if(intersect_2D(trial_pts, test_pts, intersection)) {
-			auto isect_area = fabs(Intersector::polygon_area_2(intersection.m(), &intersection.get_values()[0]));
+			auto isect_signed_area = Intersector::polygon_area_2(intersection.m(), &intersection.get_values()[0]);
+			auto isect_area = std::abs(isect_signed_area);
 			
 			total_intersection_volume += isect_area;
 			
@@ -301,6 +303,8 @@ namespace utopia {
 			transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
 			transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
 
+			// static int n_isect = 0;
+			// plot_polygon(2, intersection.m(),  &intersection.get_values()[0],  "poly/isect"  + std::to_string(n_isect++));
 			return true;
 		} else {
 			return false;
