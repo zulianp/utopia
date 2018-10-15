@@ -53,6 +53,7 @@ namespace utopia {
 #endif //WITH_TINY_EXPR
 
 		bool fun_is_constant;
+		bool write_operators_to_disk;
 
 	};
 }

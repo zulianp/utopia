@@ -8,7 +8,25 @@
 #include <numeric>
 
 namespace utopia {
-	L2LocalAssembler::L2LocalAssembler(const int dim, const bool use_biorth, const bool assemble_mass_mat)
+	static bool check(const LocalAssembler::Matrix &mat)
+	{
+		for(const auto &v : mat.get_values()) {
+			assert(!std::isnan(v));
+			assert(!std::isinf(v));
+
+			if(std::isnan(v) || std::isinf(v)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	L2LocalAssembler::L2LocalAssembler(
+		const int dim,
+		const bool use_biorth,
+		const bool assemble_mass_mat,
+		const bool is_shell)
 	: dim(dim),
 	use_biorth(use_biorth),
 	must_compute_biorth(use_biorth),
@@ -21,7 +39,11 @@ namespace utopia {
 		if(dim == 1) {
 			q_builder = std::make_shared<QMortarBuilder1>();
 		} else if(dim == 2) {
-			q_builder = std::make_shared<QMortarBuilder2>();
+			if(is_shell) {
+				q_builder = std::make_shared<QMortarBuilderShell2>();
+			} else {
+				q_builder = std::make_shared<QMortarBuilder2>();
+			}
 		} else {
 			assert(dim == 3);
 			q_builder = std::make_shared<QMortarBuilder3>(); 
@@ -110,11 +132,14 @@ namespace utopia {
 
 		if(use_biorth) {
 			mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat[0]);
-			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights,  mat[1]);
+			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights, mat[1]);
 		} else {
 			mortar_assemble(*trial_fe, *test_fe, mat[0]);
 			mortar_assemble(*test_fe,  *test_fe, mat[1]);
 		}
+
+		assert(check(mat[0]));
+		assert(check(mat[1]));
 
 		return true;
 

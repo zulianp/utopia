@@ -1,0 +1,13 @@
+<transfer>
+	<type>l2-projection</type>
+	<biorth-basis>1</biorth-basis>
+	<mesh-master>../data/transfer/quad_mesh.e</mesh-master>
+	<order-master>1</order-master>
+	<refine-master>0</refine-master>
+	<mesh-slave>../data/transfer/quad_mesh.e</mesh-slave>
+	<order-slave>1</order-slave>
+	<refine-slave>2</refine-slave>
+
+	<function-type>constant</function-type>
+	<function>1.</function>
+</transfer>

@@ -169,7 +169,7 @@ namespace utopia {
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
             impl_->M_ifpack->compute();
-            impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
+            impl_->linear_problem->setRightPrec(impl_->M_ifpack);
 #else  // WITH_TRILINOS_IFPACK2
           std::cerr << "Cannot use a Direct Preconditioner with the BelosSolver, since Trilinos was not built with Ifpack2 support!" << std::endl;
 #endif // WITH_TRILINOS_IFPACK2
@@ -257,7 +257,7 @@ namespace utopia {
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
             impl_->M_ifpack->compute();
-            impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
+            impl_->linear_problem->setRightPrec(impl_->M_ifpack);
 #else  //WITH_TRILINOS_IFPACK2
           std::cerr << "Cannot use a Direct Preconditioner with the BelosSolver, since Trilinos was not built with Ifpack2 support!" << std::endl;
 #endif //WITH_TRILINOS_IFPACK2

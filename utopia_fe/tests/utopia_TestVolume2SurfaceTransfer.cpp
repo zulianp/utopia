@@ -110,7 +110,7 @@ namespace utopia {
 	void run_volume_to_surface_transfer_test(libMesh::LibMeshInit &init)
 	{
 		const bool use_interpolation = true;
-		auto n = 10;
+		auto n = 4;
 		// auto elem_type  = libMesh::TET10;
 		auto elem_type  = libMesh::TET4;
 		// auto elem_type  = libMesh::HEX8;
