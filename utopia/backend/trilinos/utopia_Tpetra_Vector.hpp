@@ -47,6 +47,7 @@ namespace utopia {
 
     typedef Tpetra::Map<LO, GO, NT>                   map_type;
     typedef Tpetra::Vector<SC, LO, GO, NT>            vector_type;
+    typedef Tpetra::MultiVector<SC, LO, GO, NT>       multi_vector_type;
     typedef Teuchos::RCP<vector_type>                 rcpvector_type;
     typedef Teuchos::RCP<const Teuchos::Comm<int> >   rcp_comm_type;
     typedef Teuchos::RCP<const map_type>              rcp_map_type;
