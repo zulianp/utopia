@@ -1138,13 +1138,13 @@ namespace utopia {
 
     void PetscMatrix::mult(const PetscMatrix &mat, PetscMatrix &result) const
     {
-        if(mat.implementation() != result.implementation() && implementation() != result.implementation()) {
+        if(mat.implementation() != result.implementation() && implementation() != result.implementation()) 
+        {
             result.destroy();
             MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
         } else {
             PetscMatrix temp;
             temp.destroy();
-
             MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation());
             result = std::move(temp);
         }

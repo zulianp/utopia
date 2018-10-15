@@ -7,6 +7,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_HessianApproximations.hpp"
+#include "utopia_VariableBoundNonlinearSolver.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -20,7 +21,7 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class QuasiNewtonBound : public QuasiNewton<Matrix, Vector>
+    class QuasiNewtonBound : public VariableBoundNonlinearSolver<Matrix, Vector> 
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
@@ -35,7 +36,8 @@ namespace utopia
         QuasiNewtonBound(   const std::shared_ptr <HessianApproximation> &hessian_approx,
                             const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
                             const Parameters params = Parameters()):
-        QuasiNewton<Matrix, Vector>(hessian_approx, linear_solver, params)
+        VariableBoundNonlinearSolver<Matrix, Vector>(linear_solver, params), 
+        hessian_approx_strategy_(hessian_approx)
         {
             set_parameters(params);
         }
@@ -64,17 +66,14 @@ namespace utopia
             it++; 
             
             this->hessian_approx_strategy_->initialize(fun, x);
-            
+
             while(!converged)
             {
-                // this->hessian_approx_strategy_->apply_Hinv(-1.0 * g, s); 
-
-                const auto &ub = *constraints_.upper_bound();
-                const auto &lb = *constraints_.lower_bound();
+                const auto &ub = this->get_upper_bound();
+                const auto &lb = this->get_lower_bound();
 
                 this->hessian_approx_strategy_->constrained_solve(x, g, lb, ub, s);
 
-                
                 if(this->ls_strategy_) 
                     this->ls_strategy_->get_alpha(fun, g, x, s, this->alpha_);     
 
@@ -85,12 +84,13 @@ namespace utopia
                 fun.gradient(x, g);
 
                 // norms needed for convergence check
-                g_norm = criticality_measure_infty(x, g); 
+                g_norm = this->criticality_measure_infty(x, g); 
                 s_norm = norm2(s);
 
                 // diff between fresh and old grad...
                 y = g - y; 
                 this->hessian_approx_strategy_->update(s, y);
+
 
                 Scalar energy; 
                 fun.value(x, energy); 
@@ -111,135 +111,44 @@ namespace utopia
         
         virtual void set_parameters(const Parameters params) override
         {
-            QuasiNewton<Matrix, Vector>::set_parameters(params);
+            VariableBoundNonlinearSolver<Matrix, Vector>::set_parameters(params);
         }
         
-        
-        virtual bool set_box_constraints(const BoxConstraints & box)
+
+        /**
+         * @brief      Sets strategy for computing step-size.
+         *
+         * @param[in]  strategy  The line-search strategy.
+         *
+         * @return
+         */
+        virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
         {
-            constraints_ = box;
+            hessian_approx_strategy_      = strategy;
             return true;
         }
 
-        virtual bool  get_box_constraints(BoxConstraints & box)
+        /**
+         * @brief      Sets strategy for computing step-size.
+         *
+         * @param[in]  strategy  The line-search strategy.
+         *
+         * @return
+         */
+        virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
         {
-            box = constraints_;
+            ls_strategy_ = strategy;
+            ls_strategy_->set_parameters(this->parameters());
             return true;
         }
 
-    private: 
-      virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g)
-      {
-
-        Vector Pc; 
-        Vector x_g = x - g; 
-        Vector ub, lb; 
-
-        Scalar n = local_size(x).get(0); 
-
-        if(constraints_.has_upper_bound())
-          ub = *constraints_.upper_bound(); 
-        else
-          ub =  local_values(n, 9e15); 
-
-        if(constraints_.has_lower_bound())
-          lb = *constraints_.lower_bound(); 
-        else
-          lb =  local_values(n, -9e15); 
-
-        get_projection(x_g, lb, ub, Pc); 
         
-        Pc -= x; 
-        return norm2(Pc); 
-      }
-
-
-      bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc)
-      {
-          Pc = local_values(local_size(x).get(0), 1.0);
-          {
-              Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
-              Write<Vector> wv(Pc); 
-
-              each_write(Pc, [ub, lb, x](const SizeType i) -> double { 
-                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
-                          if(li >= xi)
-                            return li; 
-                          else
-                            return (ui <= xi) ? ui : xi; }   );
-          }
-
-          return true;
-      }
-
-    void make_iterate_feasible(Vector & x)
-    {
-        if(!constraints_.has_upper_bound() || !constraints_.has_lower_bound())
-            return; 
-
-        const Vector x_old = x; 
-
-        if(constraints_.has_upper_bound() && constraints_.has_lower_bound())
-        {
-            const auto &ub = *constraints_.upper_bound();
-            const auto &lb = *constraints_.lower_bound();
-
-            {
-              Read<Vector> r_ub(ub), r_lb(lb), r_x(x_old);
-              Write<Vector> wv(x); 
-
-              each_write(x, [ub, lb, x_old](const SizeType i) -> double { 
-                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x_old.get(i);  
-                          if(li >= xi)
-                            return li; 
-                          else
-                            return (ui <= xi) ? ui : xi; }   );
-            }
-        }
-        else if(constraints_.has_upper_bound() && !constraints_.has_lower_bound())
-        {
-            const auto &ub = *constraints_.upper_bound();
-
-            {
-              Read<Vector> r_ub(ub), r_x(x_old);
-              Write<Vector> wv(x); 
-
-              each_write(x, [ub, x_old](const SizeType i) -> double { 
-                          Scalar ui =  ub.get(i); Scalar xi =  x_old.get(i);  
-                            return (ui <= xi) ? ui : xi; }   );
-            }
-        }
-        else
-        {
-            const auto &lb = *constraints_.lower_bound();
-
-            {
-              Read<Vector> r_lb(lb), r_x(x_old);
-              Write<Vector> wv(x); 
-
-              each_write(x, [lb, x_old](const SizeType i) -> double { 
-                          Scalar li =  lb.get(i); Scalar xi =  x_old.get(i);  
-                          return (li >= xi) ? li : xi; }   );
-            }
-        }    
-
-    }      
-
-
-    
     private:
-        BoxConstraints                  constraints_;
+        std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
+        Scalar alpha_;                                          /*!< Dumping parameter. */
+        std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
 
-        
     };
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// TODO: 
-// - line solver should be delegated 
-// - create common interface for constraint nonlinear solver     
-// - constraints  
-// criticality_measure_infty should not create inf vectors     
 
 
 }

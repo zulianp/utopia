@@ -113,7 +113,7 @@ namespace utopia
 	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
 				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix,  Vector> >(memory_size, linear_solver);
 
-				// hess_approx_BFGS->set_Cauchy_point_memory_size(10); 
+				hess_approx_BFGS->set_Cauchy_point_memory_size(5); 
 
 				QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
 
@@ -134,8 +134,7 @@ namespace utopia
 	    		solver.verbose(true); 
 	    		solver.solve(fun, x);
 
-	    		disp(x); 
-
+	    		disp(x); 	
 
 			}
 
