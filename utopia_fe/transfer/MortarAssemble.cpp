@@ -440,7 +440,7 @@ namespace utopia {
 			v -= o;
 
 			const double tri_area = Intersector::polygon_area_2(3, triangle);
-			const double scale = tri_area * normalization_factor;
+			const double scale = std::abs(tri_area) * normalization_factor;
 
 			assert(tri_area > 0.);
 			assert(tri_area * normalization_factor <= 2.0001);

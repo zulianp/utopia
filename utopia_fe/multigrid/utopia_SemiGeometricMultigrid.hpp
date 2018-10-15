@@ -16,10 +16,10 @@ namespace utopia {
 
 		void init(const LibMeshFunctionSpace &space, const std::size_t n_levels)
 		{
-			init(space.equation_systems(), n_levels);
+			init(space.equation_system(), n_levels);
 		}
 
-		void init(const libMesh::EquationSystems &es, const std::size_t n_levels);
+		void init(const libMesh::System &es, const std::size_t n_levels);
 
 		void update_contact(Contact &contact);
 		void update(const std::shared_ptr<const USparseMatrix> &op) override;
@@ -27,7 +27,7 @@ namespace utopia {
 		
 		SemiGeometricMultigrid * clone() const override
 		{
-			return new SemiGeometricMultigrid(*this);
+			return new SemiGeometricMultigrid();
 		}
 
 		virtual void set_parameters(const Parameters params) override
@@ -77,17 +77,27 @@ namespace utopia {
 			use_interpolation_ = val;
 		}
 
+		void describe(std::ostream &os) const
+		{
+			os << "SemiGeometricMultigrid:\n";
+			mg.describe(os);
+		}
+
 	private:
 		MultigridT mg;
 		
-		std::vector<std::shared_ptr<libMesh::UnstructuredMesh>> meshes;
+		std::vector<std::unique_ptr<libMesh::MeshBase>> meshes;
 		std::vector<std::shared_ptr<libMesh::EquationSystems>> equation_systems;
 
 		std::vector<std::shared_ptr<USparseMatrix>> interpolators_;
+		std::vector<bool> use_interpolation_at_level_;
 		bool is_block_solver_;
 		bool separate_subdomains_;
 		bool use_interpolation_;
 		bool use_coarse_interpolators_;
+
+		void generate_coarse_meshes(const libMesh::MeshBase &fine_mesh, const std::size_t n_levels, const int order_fine_level);
+		std::unique_ptr<libMesh::MeshBase> generate_box_mesh(const libMesh::MeshBase &fine_mesh, const std::size_t n_levels);
 	};
 }
 

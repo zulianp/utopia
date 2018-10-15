@@ -3,7 +3,7 @@
 	<mesh>
 		<type>square</type>
 		<elem-type>quad</elem-type>
-		<order>2</order>
+		<order>1</order>
 
 		<min-x>0.</min-x>
 		<min-y>0.1</min-y>
@@ -101,4 +101,9 @@
 </multiplier>
 
 <!-- <solve-strategy>monolithic</solve-strategy> -->
+
 <solve-strategy>staggered</solve-strategy>
+<use-mg>true</use-mg>
+<mg-sweeps>1</mg-sweeps>
+<mg-levels>5</mg-levels>
+

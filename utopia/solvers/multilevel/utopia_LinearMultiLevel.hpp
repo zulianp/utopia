@@ -124,6 +124,10 @@ namespace utopia
 
 		virtual void describe(std::ostream &os = std::cout) const override
 		{
+			if(levels_.empty()) {
+				return;
+			}
+
 			SizeType i = 0;
 			for(const auto &l : levels_) {
 				const auto &A = l.A();

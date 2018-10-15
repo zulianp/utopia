@@ -600,7 +600,7 @@ namespace utopia {
     }
 
     template<typename _SizeType, typename _IntType, typename _Scalar>
-    inline Factory<CRS<_SizeType, _IntType, _Scalar>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, _SizeType &rowPtr, _IntType &crs_columns, _Scalar &values)
+    inline Factory<CRS<_SizeType, _IntType, _Scalar>, 2> crs(const Size::SizeType rows, const Size::SizeType cols, _SizeType &rowPtr, _IntType &crs_columns, _Scalar &values)
     {
         return Factory<CRS<_SizeType, _IntType, _Scalar>, 2>(Size({rows, cols}), CRS<_SizeType, _IntType, _Scalar>(rowPtr, crs_columns, values));
     }
