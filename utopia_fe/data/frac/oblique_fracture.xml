@@ -95,5 +95,5 @@
 <solve-strategy>staggered</solve-strategy>
 <use-mg>true</use-mg>
 <mg-sweeps>1</mg-sweeps>
-<mg-levels>5</mg-levels>
+<mg-levels>4</mg-levels>
 

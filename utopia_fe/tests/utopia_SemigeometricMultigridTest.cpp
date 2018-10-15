@@ -88,7 +88,7 @@ namespace utopia {
 
         // mg.convert_to_block_solver();
         mg.verbose(true);
-        mg.init(*equation_systems, 4);
+        mg.init(sys, 4);
         // mg.max_it(1);
 
         UVector sol = local_zeros(local_size(rhs));

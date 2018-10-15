@@ -642,7 +642,9 @@ namespace utopia {
         mg->algebraic().rtol(1e-9);
         mg->algebraic().atol(1e-14);
         // mg->verbose(true);
-        mg->init(space.equation_systems(), n_levels);
+        mg->init(space, n_levels);
+        
+        
         return mg;
     }
 
