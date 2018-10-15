@@ -7,7 +7,8 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_HessianApproximations.hpp"
-#include "utopia_VariableBoundNonlinearSolver.hpp"
+#include "utopia_VariableBoundSolverInterface.hpp"
+#include "utopia_NonLinearSolver.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -21,14 +22,16 @@ namespace utopia
      * @tparam     Vector
      */
     template<class Matrix, class Vector>
-    class QuasiNewtonBound : public VariableBoundNonlinearSolver<Matrix, Vector> 
+    class QuasiNewtonBound :    public NonLinearSolver<Matrix, Vector>, 
+                                public VariableBoundSolverInterface<Matrix, Vector> 
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
         
         typedef utopia::LSStrategy<Matrix, Vector>              LSStrategy;
         typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation;
-        typedef utopia::LinearSolver<Matrix, Vector>         Solver;
+
+        typedef utopia::LinearSolver<Matrix, Vector>            Solver;
         typedef utopia::BoxConstraints<Vector>                  BoxConstraints;
         
         
@@ -36,7 +39,7 @@ namespace utopia
         QuasiNewtonBound(   const std::shared_ptr <HessianApproximation> &hessian_approx,
                             const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
                             const Parameters params = Parameters()):
-        VariableBoundNonlinearSolver<Matrix, Vector>(linear_solver, params), 
+        NonLinearSolver<Matrix, Vector>(linear_solver, params), 
         hessian_approx_strategy_(hessian_approx)
         {
             set_parameters(params);
@@ -111,7 +114,7 @@ namespace utopia
         
         virtual void set_parameters(const Parameters params) override
         {
-            VariableBoundNonlinearSolver<Matrix, Vector>::set_parameters(params);
+            NonLinearSolver<Matrix, Vector>::set_parameters(params);
         }
         
 

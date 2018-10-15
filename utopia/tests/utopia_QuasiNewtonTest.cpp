@@ -153,7 +153,7 @@ namespace utopia
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
 				// QuasiNewtonTest<DMatrixd, DVectord>().run_dense();
-				// QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
+				QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
 		#endif
 
 		#ifdef WITH_BLAS

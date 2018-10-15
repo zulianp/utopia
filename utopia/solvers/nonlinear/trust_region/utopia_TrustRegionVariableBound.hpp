@@ -4,7 +4,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_TRBoxSubproblem.hpp"
 #include "utopia_Parameters.hpp"    
-#include "utopia_VariableBoundNonlinearSolver.hpp"
+#include "utopia_VariableBoundSolverInterface.hpp"
 
  namespace utopia 
  {
@@ -12,15 +12,16 @@
       /**
        * @brief      Trust region solver taking into account also bound constraints.
        */ 
-     	class TrustRegionVariableBound :  public VariableBoundNonlinearSolver<Matrix, Vector>, 
-                                        public TrustRegionBase<Matrix, Vector> 
+     	class TrustRegionVariableBound :  public VariableBoundSolverInterface<Matrix, Vector>, 
+                                        public TrustRegionBase<Matrix, Vector>, 
+                                        public NonLinearSolver<Matrix, Vector>
       {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        typedef utopia::TRBoxSubproblem<Matrix, Vector>               TRBoxSubproblem; 
-        typedef utopia::TrustRegionBase<Matrix, Vector>               TrustRegionBase; 
-        typedef utopia::VariableBoundNonlinearSolver<Matrix, Vector>  NonLinearSolver;
+        typedef utopia::TRBoxSubproblem<Matrix, Vector>       TRBoxSubproblem; 
+        typedef utopia::TrustRegionBase<Matrix, Vector>       TrustRegionBase; 
+        typedef utopia::NonLinearSolver<Matrix, Vector>       NonLinearSolver;
      	
      	public:                                                                       // once generic, then = std::shared_ptr<ProjectedGaussSeidel<Matrix, Vector> >()
       TrustRegionVariableBound( const std::shared_ptr<TRBoxSubproblem> &tr_subproblem,

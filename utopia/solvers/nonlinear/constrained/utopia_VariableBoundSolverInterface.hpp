@@ -12,35 +12,26 @@
 
 namespace utopia
 {
-
     template<class Matrix, class Vector>
-    class VariableBoundNonlinearSolver : public NonLinearSolver<Matrix, Vector>
+    class VariableBoundSolverInterface
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
         
-
-        typedef utopia::LinearSolver<Matrix, Vector>            Solver;
         typedef utopia::BoxConstraints<Vector>                  BoxConstraints;
         
         
     public:
-        VariableBoundNonlinearSolver( const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
-                                      const Parameters params = Parameters()):
-        NonLinearSolver<Matrix, Vector>(linear_solver, params)
+        VariableBoundSolverInterface()
         {
-            set_parameters(params);
+
         }
-        
-        bool solve(Function<Matrix, Vector> &fun, Vector &x) override = 0; 
-       
-       
-        virtual void set_parameters(const Parameters params) override
+
+        virtual ~VariableBoundSolverInterface()
         {
-            NonLinearSolver<Matrix, Vector>::set_parameters(params);
+
         }
-        
-        
+                
         virtual bool set_box_constraints(const BoxConstraints & box)
         {
             constraints_ = box;
