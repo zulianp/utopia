@@ -6,6 +6,7 @@
 #include "utopia_Newmark.hpp"
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_ContactStabilizedNewmark.hpp"
+#include "utopia_ui.hpp"
 
 
 #include "libmesh/mesh_refinement.h"
@@ -134,6 +135,13 @@ namespace utopia {
 #ifdef WITH_M3ELINSOL
 		auto ls = std::make_shared<ASPAMG<USparseMatrix, UVector>>();
 		ls->verbose(true);
+		auto in_ptr = open_istream("../data/amg_settings.xml");
+
+		if(in_ptr) {
+			std::cout << "Using settings" << std::endl;
+			in_ptr->read("amg", *ls);
+		}
+
 		sc.set_linear_solver(ls);
 		sc.set_use_ssn(true);
 #endif //WITH_M3ELINSOL

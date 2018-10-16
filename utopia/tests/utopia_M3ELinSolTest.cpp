@@ -29,7 +29,7 @@ namespace utopia {
 		ASPAMG<DSMatrixd, DVectord> amg;
 		amg.update(make_ref(A));
 		amg.apply(rhs, x);
-		amg.printSystem(binwrite,sysfile); // Example on how to print a linear system to file in M3E's format
+		amg.print_system(binwrite, sysfile); // Example on how to print a linear system to file in M3E's format
 
 		double res_norm = norm2(rhs - A * x);
 		utopia_test_assert(res_norm < 1e-8);
@@ -58,7 +58,7 @@ namespace utopia {
 		ASPAMG<CRSMatrixd, Vectord> amg;
 		amg.max_it(100);
 		amg.solve(A, rhs, x);
-		amg.printSystem(binwrite, sysfile); // Example on how to print a linear system to file in M3E's format
+		amg.print_system(binwrite, sysfile); // Example on how to print a linear system to file in M3E's format
 
 		double res_norm = norm2(rhs - A * x);
 		utopia_test_assert(res_norm < 1e-8);
