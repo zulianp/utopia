@@ -11,5 +11,9 @@
 #include "utopia_GenericSemismoothNewton.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
 
+
+
+#include "utopia_GeneralizedCauchyPoint.hpp"
+
 #endif //UTOPIA_CONSTRAINTED_HPP
 

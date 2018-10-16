@@ -22,9 +22,10 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         LBFGSB( const SizeType & m, 
                 const std::shared_ptr <LinSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
                 const std::shared_ptr <LSStrategy> &line_search = std::make_shared<SimpleBacktracking<Matrix, Vector> >()):
-                m_(m), cp_memory_(-1), current_m_(0), linear_solver_(linear_solver), line_search_strategy_(line_search)
+                m_(m), current_m_(0), linear_solver_(linear_solver), line_search_strategy_(line_search)
         {
-
+            // to be factored out.... 
+            cp_.set_memory_size(-1); 
         }
 
         virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) override
@@ -32,8 +33,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             SizeType n = local_size(x).get(0);
             H0_ = local_identity(n, n);
 
-            if(cp_memory_==-1)
-                cp_memory_ = size(x).get(0);
+            if(cp_.get_memory_size()==-1)
+                cp_.set_memory_size(size(x).get(0));
 
             this->initialized(true);
             current_m_ = 0; 
@@ -171,17 +172,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         {
             return m_;
         }
-
-        void set_Cauchy_point_memory_size(const SizeType & m)
-        {
-            cp_memory_ = m;
-        }
-
-        SizeType get_Cauchy_point_memory_size() const 
-        {
-            return cp_memory_;
-        }
-
 
 
     private:
@@ -377,190 +367,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 
-
-        void compute_breakpoints(const Vector & g, const Vector & x, const Vector & lb, const Vector & ub, Vector &t) const
-        {
-            auto inf = std::numeric_limits<Scalar>::infinity(); 
-
-            if(empty(t) || local_size(t)!=local_size(x))
-                t = local_values(local_size(x).get(0), inf);
-
-            // TODO:: add checks if there are not all bounds available 
-
-            {
-              Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_d(g);
-              Write<Vector> wt(t); 
-
-              each_write(t, [ub, lb, x, g, inf](const SizeType i) -> double { 
-                          Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  Scalar gi =  g.get(i);  
-                          if(gi < 0)
-                            return (xi - ui)/gi; 
-                          else if(gi > 0)
-                            return (xi - li)/gi; 
-                        else 
-                            return inf; 
-            }  );
-          }
-        }
-
-
-
-        void get_d_corresponding_to_ti(const Vector & t, const Vector & g, Vector &d, const Scalar & t_current) const
-        {
-            d = -1.0 * g; 
-
-            {   // begin lock
-                Write<Vector>  wd(d);
-                Read<Vector>   rt(t);
-
-                Range rr = range(d);
-
-                for (SizeType i = rr.begin(); i != rr.end(); ++i)
-                {
-                    Scalar ti = t.get(i); 
-                    if(std::abs(ti - t_current) < 1e-12)
-                        d.set(i, 0.0); 
-                }
-
-            } // end of lock
-        }
-
-    void get_initial_feasible_set(const Vector & break_points, Vector & feasible_set) const
-    {
-        feasible_set = local_values(local_size(break_points).get(0), 0.0); 
-
-        {   // begin lock
-            Read<Vector>  wd(break_points);
-            Write<Vector> r(feasible_set); 
-
-            Range rr = range(break_points);
-
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            {
-                if(break_points.get(i) > 0)
-                    feasible_set.set(i, 1); 
-            }
-   
-        } // end of lock
-    }
-
-
-
-    bool get_global_active_index(const Vector & break_points, Vector & feasible_set, const Scalar & t_current, SizeType & index) const
-    {
-        Scalar counter=0.0; 
-
-        // TODO:: put inf
-        Vector indices = local_values(1, 9e9); 
-        Vector counter_vec = local_values(1, 0); 
-
-        {   // begin lock
-            Read<Vector>  wd(break_points);
-            Read<Vector>  rv(feasible_set); 
-            Write<Vector>  rv2(indices); 
-
-            Range rr = range(break_points);
-            Range ind_range = range(indices);
-
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            {
-                Scalar value = break_points.get(i); 
-                if(std::abs(value - t_current) < 1e-12 && feasible_set.get(i)==1)
-                {
-                    indices.set(ind_range.begin(), i); 
-                    break; 
-                }
-            }
-        }
-
-        index = min(indices); 
-
-        if(index<0 || index > size(break_points).get(0))
-            utopia_error("L-BFGS-B::get_global_active_index: index not valid. "); 
-
-
-        {
-            Write<Vector>  rv(feasible_set); 
-            Range rr = range(feasible_set);
-
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            {
-                if(i==index)
-                    feasible_set.set(i, 0); 
-            }            
-
-        }
-
-        {
-            Read<Vector>  rv(feasible_set); 
-            Range rr = range(feasible_set);
-
-            // horrible solution - looops should be merged 
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            {
-                Scalar value = break_points.get(i); 
-                if(std::abs(value - t_current) < 1e-12 && feasible_set.get(i)==1)
-                {
-                    counter++; 
-                }
-            }
-        }    
-
-        {
-            Write<Vector> wvv(counter_vec); 
-            Range r_counter = range(counter_vec);
-
-            for (SizeType i = r_counter.begin(); i != r_counter.end(); ++i)
-                counter_vec.set(i, counter); 
-
-        } // end of lock
-
-        SizeType counter_global_sum = sum(counter_vec); 
-        return (counter_global_sum>1) ? true: false; 
-    }
-
-
-
-
-    Scalar project_direction_on_boundary(const Vector & x, const Vector & d, const Vector & ub, const Vector & lb, Vector & x_cp, const SizeType & active_index) const
-    {
-        Vector x_local = local_values(1, 0.0); 
-        Scalar val=0; 
-
-        {   // begin lock
-            Write<Vector>  wd(x_cp);
-
-            Read<Vector> r1(ub); 
-            Read<Vector> r2(lb); 
-            Read<Vector> r3(d); 
-            Read<Vector> r4(x); 
-
-            Range rr = range(x_cp);
-
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            {
-                if(i==active_index)
-                {
-                    val = (d.get(i)>0)? ub.get(i) : lb.get(i); 
-                    x_cp.set(i, val); 
-                }
-            }
-   
-        } // end of lock
-
-
-        ///////////////////////////////////////////////////////////
-        {   // begin lock
-            Write<Vector>  wx(x_local);
-            Range rr_x_local = range(x_local);
-
-            x_local.set(rr_x_local.begin(), val); 
-   
-        } // end of lock
-
-        return sum(x_local); 
-    }
-
     Scalar get_gb(const Vector & g, const SizeType & index) const
     {
         Vector g_local = local_values(1, 0); 
@@ -585,97 +391,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
     }
 
 
-    void zero_dir_component(Vector & d, const SizeType & index) const
-    {
-        {   // begin lock
-            Write<Vector>  wd(d);
-            Range rr = range(d);
-
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            {
-                if(i==index)
-                    d.set(i, 0); 
-            }
-   
-        } // end of lock
-
-    }
-
-
-    // use approxeq for all stuff where u compare 
-    void add_d_to_x(const Vector & x, Vector & x_cp, const Vector & feasible_set,  const Vector & d, const Scalar & tau) const
-    {
-
-        {   // begin lock
-            Write<Vector>  wd(x_cp);
-            Read<Vector>  r1(x);
-            Read<Vector>  r2(feasible_set);
-            Read<Vector>  r3(d);
-
-            Range rr = range(x_cp);
-
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            {
-                if(feasible_set.get(i) == 1.0)
-                {
-                    x_cp.set(i, x.get(i) + tau * d.get(i)); 
-                }
-                    
-            }
-   
-        } // end of lock
-
-    }
-
-
-
-    Scalar get_next_t(const Vector & sorted_break_points, const SizeType & index) const
-    {
-        Vector t_help = local_values(1, 0.0); 
-        Scalar value=0.0; 
-
-        // this is horrible solution, but lets fix it later 
-        {
-            Read<Vector> r(sorted_break_points); 
-
-            auto rr = range(sorted_break_points);
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            {
-                if(i==index)
-                    value = sorted_break_points.get(i); 
-            }
-        }
-
-        // this is horrible solution, but lets fix it later 
-        {
-            Write<Vector> w(t_help); 
-
-            auto rr = range(t_help);
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-                    t_help.set(i, value); 
-        }        
-
-        return sum(t_help); 
-    }
-
-
-
-    SizeType get_number_of_sorted_break_points(const Vector & sorted_break_points) const
-    {
-        Vector help = local_values(1, 0.0); 
-        SizeType val = size(sorted_break_points).get(0); 
-
-        // this is horrible solution, but lets fix it later 
-        {
-            Write<Vector> w(help); 
-
-            if(mpi_world_rank()==0)
-                help.set(0, val); 
-        }
-
-        return sum(help); 
-    }
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         void computeCauchyPoint(const Vector &x, const Vector & g, const Vector & lb, 
@@ -689,16 +404,16 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             const auto inf = std::numeric_limits<Scalar>::infinity(); 
 
             Vector break_points, feasible_set; // indexing and distribution as always
-            this->compute_breakpoints(g, x, lb, ub, break_points); 
+            cp_.compute_breakpoints(g, x, lb, ub, break_points); 
 
             Vector d; 
-            this->get_d_corresponding_to_ti(break_points, g, d, 0.0); 
-            this->get_initial_feasible_set(break_points, feasible_set); 
+            cp_.get_d_corresponding_to_ti(break_points, g, d, 0.0); 
+            cp_.get_initial_feasible_set(break_points, feasible_set); 
 
             // disp(feasible_set); 
 
             Vector sorted_break_points; 
-            vec_unique_sort_serial(break_points, sorted_break_points, cp_memory_); 
+            vec_unique_sort_serial(break_points, sorted_break_points, cp_.get_memory_size()); 
 
             Vector p; 
             // this two lines seem usless
@@ -713,25 +428,25 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             SizeType it_sorted = 1; 
 
-            t = get_next_t(sorted_break_points, 0); 
+            t = cp_.get_next_t(sorted_break_points, 0); 
 
             if(t==0)
             {
-                t = get_next_t(sorted_break_points, 0); 
+                t = cp_.get_next_t(sorted_break_points, 0); 
                 it_sorted = 2;                    
             }
 
             dt = t - t_old; 
 
 
-            bool repeated_index = get_global_active_index(break_points, feasible_set, t, b); 
-            SizeType num_break_points = get_number_of_sorted_break_points(sorted_break_points); 
+            bool repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
+            SizeType num_break_points = cp_.get_number_of_sorted_break_points(sorted_break_points); 
                 
 
             // check logic here...
             while(dt_min >= dt && it_sorted < num_break_points)
             { 
-                z_b = project_direction_on_boundary(x, d, ub, lb, x_cp, b); 
+                z_b = cp_.project_direction_on_boundary(x, d, ub, lb, x_cp, b); 
                 g_b = get_gb(g, b); 
 
                 c = c + dt * p; 
@@ -754,7 +469,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                     break;   
 
                 p += g_b * wbT; 
-                this->zero_dir_component(d, b); 
+                cp_.zero_dir_component(d, b); 
 
                 dt_min  = -f_p/f_pp;
                 t_old   = t;
@@ -762,17 +477,17 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 // lets see 
                 if(repeated_index)
                 {
-                    repeated_index = get_global_active_index(break_points, feasible_set, t, b); 
+                    repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
                     dt = t - t_old;
                 }
                 else
                 {   
-                    t = get_next_t(sorted_break_points, it_sorted);
+                    t = cp_.get_next_t(sorted_break_points, it_sorted);
 
                     if(t==inf || !std::isfinite(t))
                         break; 
 
-                    repeated_index = get_global_active_index(break_points, feasible_set, t, b); 
+                    repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
                     it_sorted++; 
 
                     // TODO:: do checks for infinity.... 
@@ -784,7 +499,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             dt_min = std::max(dt_min, 0.0);
             t_old  = t_old + dt_min;
 
-            this->add_d_to_x(x, x_cp, feasible_set, d, t_old); 
+            cp_.add_d_to_x(x, x_cp, feasible_set, d, t_old); 
 
             c = c + dt_min*p;
         }
@@ -820,11 +535,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 }       
             }
 
-            // std::cout<<"build_reduced_quantities: 2 ---- \n"; 
-
-            // std::cout<<"----- feasible set:   \n"; 
-            // disp(feasible_set); 
-
             // we can just get things directly 
             if(size(feasible_set).get(0)==sum(feasible_set))
             {
@@ -858,18 +568,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 }       
             }
 
-            // std::cout<<"build_reduced_quantities: 3 ---- \n"; 
-
             // TODO:: use dense matrices for this kind of things 
             H_reduced  = local_values(local_size(H).get(0), local_feasible_set, 0.0); 
-
-            // std::cout<<"-------- H -------- \n"; 
-            // disp(H); 
-
-            // std::cout<<"H_reduced.local(0): "<< local_size(H_reduced).get(0) << "  local_size(H_reduced).get(1):  "<< local_size(H_reduced).get(1) << "  \n"; 
-            // std::cout<<"feasible_set: "<< local_size(feasible_set).get(0) << "  \n"; 
-            // std::cout<<"H.local(0): "<< local_size(H).get(0) << "  local_size(H).get(1):  "<< local_size(H).get(1) << "  \n"; 
-
 
             if(local_size(feasible_set).get(0) != local_size(H).get(1))
                 utopia_error("feasible_set, H: local sizes do not match .... \n"); 
@@ -914,10 +614,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 }  
 
             }
-
-            // std::cout<<"-------- H_reduced -------- \n"; 
-            // disp(H_reduced); 
-
         }
 
 
@@ -1053,7 +749,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         static_assert(utopia::is_sparse<Matrix>::value, "LBFGS does not support dense matrices.");
 
         SizeType m_; // memory size
-        SizeType cp_memory_; // memory size
 
         SizeType current_m_; // iteration number 
         Matrix H0_;  // identity
@@ -1069,6 +764,9 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         std::shared_ptr<LinSolver> linear_solver_;     /*!< Linear solver parameters. - Ideally LU  */  
         std::shared_ptr<LSStrategy> line_search_strategy_;     /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */  
+
+
+        GeneralizedCauchyPoint<Matrix, Vector> cp_; 
 };
 
 
