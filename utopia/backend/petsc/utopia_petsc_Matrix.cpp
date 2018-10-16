@@ -580,7 +580,6 @@ namespace utopia {
             
             check_error( MatCreateNest(comm, nr, is_row, nc, is_col, a, &temp) );
             check_error( MatConvert(temp, type_override(), MAT_INITIAL_MATRIX, &implementation()) );
-
             check_error(  MatDestroy(&temp) );
         }
     }

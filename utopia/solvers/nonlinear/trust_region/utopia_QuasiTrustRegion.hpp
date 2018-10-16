@@ -111,12 +111,12 @@
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------
           // this should be replaced ASAP .... 
-          // H = hessian_approx_strategy_->get_Hessian(); 
-          // if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-          //   tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
+          H = hessian_approx_strategy_->get_Hessian(); 
+          if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
+            tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
 
 
-          hessian_approx_strategy_->apply_Hinv(-1.0 * g, p_k); 
+          // hessian_approx_strategy_->apply_Hinv(-1.0 * g, p_k); 
 
           // scaling correction to fit into tr radius ... 
           s_norm = norm2(p_k);

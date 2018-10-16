@@ -6,7 +6,7 @@
 namespace utopia
 {
 
-template<class Matrix, class Vector>
+template<class Matrix, class DenseMatrix, class DenseMatrixToBeRemoved, class Vector>
 class LBFGSB : public HessianApproximation<Matrix, Vector>
 {
 
@@ -25,10 +25,11 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             cp_.set_memory_size(-1); 
         }
 
+
         virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) override
         {
             SizeType n = local_size(x).get(0);
-            H0_ = local_identity(n, n);
+            H_ = local_identity(n, n);
 
             if(cp_.get_memory_size()==-1)
                 cp_.set_memory_size(size(x).get(0));
@@ -98,7 +99,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             {  
                 this->shift_cols_left_replace_last_col(Y_, y); 
                 this->shift_cols_left_replace_last_col(S_, s); 
-
             }
 
             this->buildW(); 
@@ -135,15 +135,35 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         virtual Matrix & get_Hessian() override
         {
+            if(current_m_ > 1)
+            {
+                H_ = theta_ * local_identity(local_size(H_)); 
+                DenseMatrix Y_T = transpose(Y_); 
+                DenseMatrix S_T = theta_ * transpose(S_); 
+
+                DenseMatrixToBeRemoved P =  DenseMatrix(Blocks<DenseMatrix>(2,1,
+                {
+                    make_ref(Y_T), make_ref(S_T)
+                }));
+
+                DenseMatrixToBeRemoved result; 
+
+                apply_M(P, result);    
+                H_ -= P * result;             
+            }
+            else
+            {
+                H_ = local_identity(local_size(H_)); 
+            }
             
             utopia_warning("LBFGS::get_Hessian returns dense matrix ...."); 
-            return H0_;
+            return H_; 
         }
 
         virtual Matrix & get_Hessian_inv() override
         {
             std::cerr << "--- not implemented yet---- \n";
-            return H0_;
+            return H_;
         }
 
 
@@ -159,16 +179,16 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
     private:
-        void add_col_to_mat(Matrix & M, const Vector & col) const
+        void add_col_to_mat(DenseMatrix & M, const Vector & col) const
         {
-            const Matrix M_old = M;
+            const DenseMatrix M_old = M;
             M = values(size(M_old).get(0), size(M_old).get(1) + 1, 0.0);
 
             {   // begin lock
 
-                Write<Matrix>  write(M);
+                Write<DenseMatrix>  write(M);
 
-                Read<Matrix>   read(M_old);
+                Read<DenseMatrix>   read(M_old);
                 Read<Vector>      read_vec(col);
 
                 Range r = row_range(M_old);
@@ -188,15 +208,15 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             } // end of lock
         }
 
-        void shift_cols_left_replace_last_col(Matrix & M, const Vector & col) const
+        void shift_cols_left_replace_last_col(DenseMatrix & M, const Vector & col) const
         {
-            const Matrix M_old = M;
+            const DenseMatrix M_old = M;
 
             {   // begin lock
 
-                Write<Matrix>  write(M);
+                Write<DenseMatrix>  write(M);
 
-                Read<Matrix>   read(M_old);
+                Read<DenseMatrix>   read(M_old);
                 Read<Vector>      read_vec(col);
 
                 Range r = row_range(M_old);
@@ -212,13 +232,13 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             } // end of lock
         }
 
-        void init_mat_from_vec(Matrix & M, const Vector & col) const 
+        void init_mat_from_vec(DenseMatrix & M, const Vector & col) const 
         {
             M = values(size(col).get(0), 1, 0.0);
 
             {   // begin lock
 
-                Write<Matrix>  write(M);
+                Write<DenseMatrix>  write(M);
                 Read<Vector>   read_vec(col);
 
                 Range r = row_range(M);
@@ -232,9 +252,9 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         void buildW()
         {
-            Matrix S_theta = theta_ * S_; 
+            DenseMatrix S_theta = theta_ * S_; 
 
-            W_ = Matrix(Blocks<Matrix>(1, 2,
+            W_ = DenseMatrix(Blocks<DenseMatrix>(1, 2,
             {
                 make_ref(Y_), make_ref(S_theta)
             }));
@@ -273,7 +293,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             } // end of lock
 
-            Matrix D = diag(d); 
+            DenseMatrix D = diag(d); 
 
 
             std::vector<std::vector<Scalar> > matrixL(n, std::vector<Scalar>(n));
@@ -292,10 +312,10 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 }
             }
 
-            Matrix L = zeros(n, n); 
+            DenseMatrix L = zeros(n, n); 
 
             {   // begin lock
-                Write<Matrix>   write_mat(L);
+                Write<DenseMatrix>   write_mat(L);
 
                 Range rr = row_range(L);
                 Range cc = col_range(L);
@@ -311,11 +331,11 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             } // end of lock
 
-            Matrix SS = theta_ * transpose(S_) * S_; 
-            Matrix LT = transpose(L); 
+            DenseMatrix SS = theta_ * transpose(S_) * S_; 
+            DenseMatrix LT = transpose(L); 
 
 
-            M_ = Matrix(Blocks<Matrix>(2, 2,
+            M_ = DenseMatrix(Blocks<DenseMatrix>(2, 2,
             {
                 make_ref(D), make_ref(LT), 
                 make_ref(L), make_ref(SS), 
@@ -329,240 +349,240 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
-        void apply_M(const Matrix & RHS, Matrix & result) const 
+        void apply_M(const DenseMatrixToBeRemoved & RHS, DenseMatrixToBeRemoved & result) const 
         {
-            // TO BE DONE:: 
-            // linear_solver_->solve(M_, v, result);
-            // MatLinearSolver<>
+            auto linear_solver = std::make_shared<GMRES<DenseMatrixToBeRemoved, Vector> >();
+            MatLinearSolver<DenseMatrixToBeRemoved, DenseMatrixToBeRemoved, Vector> mat_solver(linear_solver); 
+            mat_solver.solve(M_, RHS, result); 
         }
 
 
-    public:        
+//     public:        
 
-        bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s) const override
-        {
-            Vector x_cp, c; 
+//         bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s) const override
+//         {
+//             Vector x_cp, c; 
 
-            this->computeCauchyPoint(x, g, lb, ub, x_cp, c);
-            this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
+//             this->computeCauchyPoint(x, g, lb, ub, x_cp, c);
+//             this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
 
-            return true; 
-        }
+//             return true; 
+//         }
 
 
 
-    Scalar get_gb(const Vector & g, const SizeType & index) const
-    {
-        Vector g_local = local_values(1, 0); 
+//     Scalar get_gb(const Vector & g, const SizeType & index) const
+//     {
+//         Vector g_local = local_values(1, 0); 
 
-        {   // begin lock
-            Write<Vector>  wd(g_local);
-            Read<Vector> r1(g); 
+//         {   // begin lock
+//             Write<Vector>  wd(g_local);
+//             Read<Vector> r1(g); 
 
-            Range rr = range(g);
+//             Range rr = range(g);
 
-            Range rr_g_local = range(g_local);
+//             Range rr_g_local = range(g_local);
 
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            {
-                if(i==index)
-                    g_local.set(rr_g_local.begin(), g.get(i)); 
-            }
+//             for (SizeType i = rr.begin(); i != rr.end(); ++i)
+//             {
+//                 if(i==index)
+//                     g_local.set(rr_g_local.begin(), g.get(i)); 
+//             }
    
-        } // end of lock
+//         } // end of lock
 
-        return sum(g_local); 
-    }
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        void computeCauchyPoint(const Vector &x, const Vector & g, const Vector & lb, 
-                                const Vector & ub, Vector & x_cp, Vector & c) const
-        {
-            x_cp = x; 
-            Scalar t_old, t, dt_min, dt, f_p, f_pp, z_b, g_b; 
-            SizeType b; 
-            Vector wbT; 
-
-            const auto inf = std::numeric_limits<Scalar>::infinity(); 
-
-            Vector break_points, feasible_set; // indexing and distribution as always
-            cp_.compute_breakpoints(g, x, lb, ub, break_points); 
-
-            Vector d; 
-            cp_.get_d_corresponding_to_ti(break_points, g, d, 0.0); 
-            cp_.get_initial_feasible_set(break_points, feasible_set); 
-
-            // disp(feasible_set); 
-
-            Vector sorted_break_points; 
-            vec_unique_sort_serial(break_points, sorted_break_points, cp_.get_memory_size()); 
-
-            Vector p; 
-            // this two lines seem usless
-            p = transpose(W_) * d; 
-            c = local_values(local_size(W_).get(1), 1, 0); 
-
-            f_p = -1.0 * dot(d, d); 
-            f_pp = - theta_ * f_p - dot(p, M_ * p); 
-
-            dt_min = -f_p/f_pp; 
-            t_old = 0.0; 
-
-            SizeType it_sorted = 1; 
-
-            t = cp_.get_next_t(sorted_break_points, 0); 
-
-            if(t==0)
-            {
-                t = cp_.get_next_t(sorted_break_points, 0); 
-                it_sorted = 2;                    
-            }
-
-            dt = t - t_old; 
+//         return sum(g_local); 
+//     }
 
 
-            bool repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
-            SizeType num_break_points = cp_.get_number_of_sorted_break_points(sorted_break_points); 
+
+// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//         void computeCauchyPoint(const Vector &x, const Vector & g, const Vector & lb, 
+//                                 const Vector & ub, Vector & x_cp, Vector & c) const
+//         {
+//             x_cp = x; 
+//             Scalar t_old, t, dt_min, dt, f_p, f_pp, z_b, g_b; 
+//             SizeType b; 
+//             Vector wbT; 
+
+//             const auto inf = std::numeric_limits<Scalar>::infinity(); 
+
+//             Vector break_points, feasible_set; // indexing and distribution as always
+//             cp_.compute_breakpoints(g, x, lb, ub, break_points); 
+
+//             Vector d; 
+//             cp_.get_d_corresponding_to_ti(break_points, g, d, 0.0); 
+//             cp_.get_initial_feasible_set(break_points, feasible_set); 
+
+//             // disp(feasible_set); 
+
+//             Vector sorted_break_points; 
+//             vec_unique_sort_serial(break_points, sorted_break_points, cp_.get_memory_size()); 
+
+//             Vector p; 
+//             // this two lines seem usless
+//             p = transpose(W_) * d; 
+//             c = local_values(local_size(W_).get(1), 1, 0); 
+
+//             f_p = -1.0 * dot(d, d); 
+//             f_pp = - theta_ * f_p - dot(p, M_ * p); 
+
+//             dt_min = -f_p/f_pp; 
+//             t_old = 0.0; 
+
+//             SizeType it_sorted = 1; 
+
+//             t = cp_.get_next_t(sorted_break_points, 0); 
+
+//             if(t==0)
+//             {
+//                 t = cp_.get_next_t(sorted_break_points, 0); 
+//                 it_sorted = 2;                    
+//             }
+
+//             dt = t - t_old; 
+
+
+//             bool repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
+//             SizeType num_break_points = cp_.get_number_of_sorted_break_points(sorted_break_points); 
                 
 
-            // check logic here...
-            while(dt_min >= dt && it_sorted < num_break_points)
-            { 
-                z_b = cp_.project_direction_on_boundary(x, d, ub, lb, x_cp, b); 
-                g_b = get_gb(g, b); 
+//             // check logic here...
+//             while(dt_min >= dt && it_sorted < num_break_points)
+//             { 
+//                 z_b = cp_.project_direction_on_boundary(x, d, ub, lb, x_cp, b); 
+//                 g_b = get_gb(g, b); 
 
-                c = c + dt * p; 
+//                 c = c + dt * p; 
 
-                Matrix W_transpose_ = transpose(W_); 
-                mat_get_col(W_transpose_, wbT, b); 
+//                 Matrix W_transpose_ = transpose(W_); 
+//                 mat_get_col(W_transpose_, wbT, b); 
 
-                Vector Mc, MwbT, Mp; 
-                this->apply_M(c, Mc); 
-                this->apply_M(p, Mp);                 
-                this->apply_M(wbT, MwbT); 
+//                 Vector Mc, MwbT, Mp; 
+//                 this->apply_M(c, Mc); 
+//                 this->apply_M(p, Mp);                 
+//                 this->apply_M(wbT, MwbT); 
 
-                f_p += (dt * f_pp) +  (g_b*g_b) + (theta_*g_b  * z_b); 
-                f_p += g_b * dot(wbT, Mc); 
+//                 f_p += (dt * f_pp) +  (g_b*g_b) + (theta_*g_b  * z_b); 
+//                 f_p += g_b * dot(wbT, Mc); 
 
-                f_pp -= (theta_ * (g_b*g_b)) + (2. * g_b * dot(wbT, Mp)) - ((g_b*g_b) * dot(wbT, MwbT)); 
+//                 f_pp -= (theta_ * (g_b*g_b)) + (2. * g_b * dot(wbT, Mp)) - ((g_b*g_b) * dot(wbT, MwbT)); 
 
-                // TODO:: add checks 
-                if(f_pp == 0 || !std::isfinite(f_pp))
-                    break;   
+//                 // TODO:: add checks 
+//                 if(f_pp == 0 || !std::isfinite(f_pp))
+//                     break;   
 
-                p += g_b * wbT; 
-                cp_.zero_dir_component(d, b); 
+//                 p += g_b * wbT; 
+//                 cp_.zero_dir_component(d, b); 
 
-                dt_min  = -f_p/f_pp;
-                t_old   = t;
+//                 dt_min  = -f_p/f_pp;
+//                 t_old   = t;
 
-                // lets see 
-                if(repeated_index)
-                {
-                    repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
-                    dt = t - t_old;
-                }
-                else
-                {   
-                    t = cp_.get_next_t(sorted_break_points, it_sorted);
+//                 // lets see 
+//                 if(repeated_index)
+//                 {
+//                     repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
+//                     dt = t - t_old;
+//                 }
+//                 else
+//                 {   
+//                     t = cp_.get_next_t(sorted_break_points, it_sorted);
 
-                    if(t==inf || !std::isfinite(t))
-                        break; 
+//                     if(t==inf || !std::isfinite(t))
+//                         break; 
 
-                    repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
-                    it_sorted++; 
+//                     repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
+//                     it_sorted++; 
 
-                    // TODO:: do checks for infinity.... 
-                    dt = t - t_old;
-                }
+//                     // TODO:: do checks for infinity.... 
+//                     dt = t - t_old;
+//                 }
 
-            }
+//             }
 
-            dt_min = std::max(dt_min, 0.0);
-            t_old  = t_old + dt_min;
+//             dt_min = std::max(dt_min, 0.0);
+//             t_old  = t_old + dt_min;
 
-            cp_.add_d_to_x(x, x_cp, feasible_set, d, t_old); 
+//             cp_.add_d_to_x(x, x_cp, feasible_set, d, t_old); 
 
-            c = c + dt_min*p;
-        }
-
-
-
-    // TODO:: return correction
-    // returns true, if there is any free variable, otherwise return false
-    // TODO:: investigate if you need new feasible set         
-    bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector & c, const Vector &g, 
-                                    const Vector & lb,  const Vector & ub,  Vector & correction) const
-    {
-        Matrix W_reduced; 
-        Vector g_reduced;
-        Vector feasible_set; 
-
-        Vector Mc; 
-        this->apply_M(c, Mc); 
-
-        Vector global_grad   = g + (theta_*(x_cp-x)) - (W_*(Mc)); 
-        Matrix W_T = transpose(W_);  
-
-        reduced_primal_method_.build_reduced_quantities(lb, ub, x_cp, global_grad, W_T, feasible_set,  W_reduced, g_reduced); 
+//             c = c + dt_min*p;
+//         }
 
 
-        if(sum(feasible_set)==0)
-        {
-            correction = x_cp - x; 
-            return false; 
-        }
 
-        Vector WR_gR = W_reduced * g_reduced; 
+//     // TODO:: return correction
+//     // returns true, if there is any free variable, otherwise return false
+//     // TODO:: investigate if you need new feasible set         
+//     bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector & c, const Vector &g, 
+//                                     const Vector & lb,  const Vector & ub,  Vector & correction) const
+//     {
+//         Matrix W_reduced; 
+//         Vector g_reduced;
+//         Vector feasible_set; 
 
-        Vector v; 
-        this->apply_M(WR_gR, v); 
+//         Vector Mc; 
+//         this->apply_M(c, Mc); 
 
-        Matrix N = W_T * transpose(W_T); 
-        N  = 1/theta_ * N; 
-        N = M_ * N; 
-        N = Matrix(local_identity(local_size(N))) - N; 
+//         Vector global_grad   = g + (theta_*(x_cp-x)) - (W_*(Mc)); 
+//         Matrix W_T = transpose(W_);  
 
-        Vector s = local_zeros(local_size(v)); 
-        linear_solver_->solve(N, v, s); 
+//         reduced_primal_method_.build_reduced_quantities(lb, ub, x_cp, global_grad, W_T, feasible_set,  W_reduced, g_reduced); 
+
+
+//         if(sum(feasible_set)==0)
+//         {
+//             correction = x_cp - x; 
+//             return false; 
+//         }
+
+//         Vector WR_gR = W_reduced * g_reduced; 
+
+//         Vector v; 
+//         this->apply_M(WR_gR, v); 
+
+//         Matrix N = W_T * transpose(W_T); 
+//         N  = 1/theta_ * N; 
+//         N = M_ * N; 
+//         N = Matrix(local_identity(local_size(N))) - N; 
+
+//         Vector s = local_zeros(local_size(v)); 
+//         linear_solver_->solve(N, v, s); 
         
 
-        Vector  du = (-1.0/theta_ )* g_reduced; 
-                du -= 1.0/(theta_*theta_) * transpose(W_reduced) * s; 
+//         Vector  du = (-1.0/theta_ )* g_reduced; 
+//                 du -= 1.0/(theta_*theta_) * transpose(W_reduced) * s; 
 
-        Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, du, feasible_set); 
-        du *= alpha_star; 
+//         Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, du, feasible_set); 
+//         du *= alpha_star; 
 
-        Vector x_bar = x_cp; 
-        Vector du_prolongated; 
+//         Vector x_bar = x_cp; 
+//         Vector du_prolongated; 
 
-        reduced_primal_method_.prolongate_reduced_corr(du, feasible_set,  du_prolongated); 
+//         reduced_primal_method_.prolongate_reduced_corr(du, feasible_set,  du_prolongated); 
 
-        x_bar = x_bar + du_prolongated; 
-        correction = x_bar - x; 
+//         x_bar = x_bar + du_prolongated; 
+//         correction = x_bar - x; 
 
-        return true; 
-    }
+//         return true; 
+//     }
 
 
 
     private:
-        static_assert(utopia::is_sparse<Matrix>::value, "LBFGS does not support dense matrices.");
+        // static_assert(utopia::is_sparse<Matrix>::value, "LBFGS does not support dense matrices.");
 
         SizeType m_; // memory size
 
         SizeType current_m_; // iteration number 
-        Matrix H0_;  // identity
+        Matrix H_;  // identity
 
         Scalar theta_; // scaling param for H0
 
-        Matrix Y_;  // matrix n \times m of grad diffs, Y_k = [y_{k-m}, ..., y_{k-1}], where y_k = g_{k+1} - g_k
-        Matrix S_;  // matrix n \times m of directions, S_k = [s_{k-m}, ..., s_{k-1}], where s_k = x_{k+1} - x_k
+        DenseMatrix Y_;  // matrix n \times m of grad diffs, Y_k = [y_{k-m}, ..., y_{k-1}], where y_k = g_{k+1} - g_k
+        DenseMatrix S_;  // matrix n \times m of directions, S_k = [s_{k-m}, ..., s_{k-1}], where s_k = x_{k+1} - x_k
         
-        Matrix W_;  // W_k = [Y_k \theta S_k]
-        Matrix M_;  /* M_k  =   | -D       L_k^T  |
+        DenseMatrix W_;  // W_k = [Y_k \theta S_k]
+        DenseMatrix M_;  /* M_k  =   | -D       L_k^T  |
                                 | L_k      \theta S_k^T S_k | */   // in contrast to the paper, this is not the inverse
 
         std::shared_ptr<LinSolver> linear_solver_;     /*!< Linear solver parameters. - Ideally LU  */  

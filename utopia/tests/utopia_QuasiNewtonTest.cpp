@@ -12,8 +12,9 @@ namespace utopia
 		
 			void run_dense()
 			{
-				UTOPIA_RUN_TEST(quasi_newton_test);
-				UTOPIA_RUN_TEST(Quasi_TR_test); 
+				// UTOPIA_RUN_TEST(quasi_newton_test);
+				// UTOPIA_RUN_TEST(Quasi_TR_test); 
+				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 			}
 
 			void run_sparse()
@@ -100,6 +101,35 @@ namespace utopia
 				}
 			}
 
+
+			// void Quasi_TR_test_LBFGS()
+			// {
+			// 	SimpleQuadraticFunction<Matrix, Vector> fun;
+			// 	Vector expected_rosenbrock = values(2, 1);
+
+			// 	auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+			// 	subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+			// 	subproblem->atol(1e-10);
+
+			// 	Vector x0 = values(2, 2.0);
+
+			// 	QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
+			// 	tr_solver.atol(1e-6); 
+			// 	tr_solver.rtol(1e-9);
+
+			// 	auto memory_size = 7; 
+			// 	auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
+			// 	auto hes_approx   = std::make_shared<LBFGSB<Matrix, Matrix, Vector> >(memory_size, linear_solver);
+
+			// 	tr_solver.set_hessian_approximation_strategy(hes_approx);
+
+			// 	tr_solver.max_it(1); 
+			// 	tr_solver.verbose(_verbose);
+			// 	tr_solver.delta0(1); 
+			// 	tr_solver.solve(fun, x0);
+
+			// }			
+
 			void lbfgs_quasi_newton_test()
 			{
 				auto memory_size = 7; 
@@ -109,14 +139,36 @@ namespace utopia
 	    		fun.apply_bc_to_initial_guess(x);
 
 	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-				// auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix,  Vector> >(memory_size, linear_solver);
+				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix, DMatrixd,  Vector> >(memory_size, linear_solver);
+
+
+				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+				subproblem->atol(1e-10);
+
+				Vector x0 = values(2, 2.0);
+
+				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
+				tr_solver.atol(1e-6); 
+				tr_solver.rtol(1e-9);
+
+				tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
+
+				tr_solver.max_it(1); 
+				tr_solver.verbose(_verbose);
+				tr_solver.delta0(1); 
+				tr_solver.solve(fun, x0);
+
+
+
+
 
 
 				// QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
 
 				// auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
 				// solver.set_line_search_strategy(line_search);
-				// solver.max_it(100); 
+				// solver.max_it(10); 
 
 
 				// Vector lb   = local_values(local_size(x).get(0), -0.01);
@@ -130,19 +182,25 @@ namespace utopia
 	   //  		solver.solve(fun, x);
 	   //  		disp(x); 	
 
-	    		DMatrixd M; 
-	    		M=zeros(10,10); 
-	    		assemble_symmetric_laplacian_1D(M, true); 
-                disp(M); 
+
+
+
+
+
+
+	   //  		DMatrixd M; 
+	   //  		M=zeros(10,10); 
+	   //  		assemble_symmetric_laplacian_1D(M, true); 
+    //             disp(M); 
 
 				
-				auto gmres = std::make_shared<GMRES<DMatrixd, DVectord> >();
-				MatLinearSolver<DMatrixd, DMatrixd, DVectord> mat_solver(gmres); 
+				// auto gmres = std::make_shared<GMRES<DMatrixd, DVectord> >();
+				// MatLinearSolver<DMatrixd, DMatrixd, DVectord> mat_solver(gmres); 
 
-				DMatrixd M_inv; 
-				mat_solver.get_inverse(M, M_inv); 
+				// DMatrixd M_inv; 
+				// mat_solver.get_inverse(M, M_inv); 
 
-				disp(M_inv); 
+				// disp(M_inv); 
 
 
 				// DMatrixd MM_iinnvv = inv(M); 
