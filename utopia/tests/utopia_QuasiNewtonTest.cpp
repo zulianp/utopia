@@ -102,8 +102,6 @@ namespace utopia
 
 			void lbfgs_quasi_newton_test()
 			{
-				std::cout<<"lbfgs_quasi_newton_test  \n"; 
-
 				auto memory_size = 7; 
 
 				Bratu1D<Matrix, Vector> fun(_n);
@@ -111,6 +109,8 @@ namespace utopia
 	    		fun.apply_bc_to_initial_guess(x);
 
 	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
+
+
 				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix,  Vector> >(memory_size, linear_solver);
 
 				hess_approx_BFGS->set_Cauchy_point_memory_size(5); 
@@ -119,7 +119,7 @@ namespace utopia
 
 				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
 				solver.set_line_search_strategy(line_search);
-				solver.max_it(100); 
+				solver.max_it(10); 
 
 				// Vector lb   = local_values(local_size(x).get(0), -0.01);
 				// Vector ub   = local_values(local_size(x).get(0), 0.01);
@@ -133,8 +133,13 @@ namespace utopia
 
 	    		solver.verbose(true); 
 	    		solver.solve(fun, x);
+	    		// disp(x); 	
 
-	    		disp(x); 	
+
+	    		Vector result; 
+	    		hess_approx_BFGS->apply_H(x, result); 
+
+	    		disp(result); 
 
 			}
 

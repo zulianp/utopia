@@ -130,7 +130,7 @@ namespace utopia {
         // this->set_ksp_options(ksp_->implementation());
 		return ksp_->apply(b, x);
 	}
-
+	
     template<typename Matrix, typename Vector>
 	bool KSPSolver<Matrix, Vector, PETSC>::smooth(const Vector &rhs, Vector &x)
 	{
@@ -339,6 +339,8 @@ namespace utopia {
 	{
 		return ksp().implementation();
 	}
+
+
 }
 
 

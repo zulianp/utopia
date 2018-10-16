@@ -101,10 +101,11 @@ namespace utopia {
          *              It is also compatible with our own Utopia preconditioners.
          */
         bool apply(const Vector &b, Vector &x) override;
-
+        
         bool smooth(const Vector &rhs, Vector &x) override;
 
         bool must_compute_cond_number() const;
+
 
         /**
          * @brief      Sets the default options for PETSC KSP solver. \n

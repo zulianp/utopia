@@ -87,11 +87,12 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             Scalar denom    = dot(y,s); 
             Scalar nom      = dot(y,y);
 
-            // if(denom > 1e-12 * nom)
-            // {
-            //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. ")
-            //     return false; 
-            // }
+            // if denom > eps, hessian approx. should be positive semidefinite
+            if(denom < 1e-12)
+            {
+                utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. ")
+                return false; 
+            }
 
             theta_ = nom/denom; 
 
@@ -123,16 +124,34 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             return true;
         }
 
-        virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const override
+        virtual bool apply_Hinv(const Vector & g, Vector & s) const override
         {
-            // TODO
+            std::cerr << "--- not implemented yet---- \n";
             return true;
+        }
+
+
+        virtual bool apply_H(const Vector & v, Vector & result) const override
+        {
+            Vector Y_v = transpose(Y_) * v;
+            Vector S_v = theta_ * transpose(S_) * v;
+
+            Vector p =  Vector(Blocks<Vector>(
+            {
+                make_ref(Y_v), make_ref(S_v)
+            }));
+
+            this->apply_M(p, result); 
+            result = (theta_ * v) - W_*result; 
+
+            return false; 
         }
 
 
         virtual Matrix & get_Hessian() override
         {
-            std::cerr << "--- not implemented yet---- \n";
+            
+            utopia_warning("LBFGS::get_Hessian returns dense matrix ...."); 
             return H0_;
         }
 
@@ -333,6 +352,14 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         void apply_M(const Vector & v, Vector & result) const 
         {
             linear_solver_->solve(M_, v, result);
+        }
+
+
+        void apply_M(const Matrix & RHS, Matrix & result) const 
+        {
+            // TO BE DONE:: 
+            // linear_solver_->solve(M_, v, result);
+            // MatLinearSolver<>
         }
 
 
@@ -1023,7 +1050,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
     private:
-        static_assert(utopia::is_sparse<Matrix>::value, "BFGS does not support sparse matrices.");
+        static_assert(utopia::is_sparse<Matrix>::value, "LBFGS does not support dense matrices.");
 
         SizeType m_; // memory size
         SizeType cp_memory_; // memory size

@@ -29,7 +29,6 @@ namespace  utopia
 
         virtual void set_parameters(const Parameters /*params*/) override { }
 
-
         /**
          * @brief      Solve routine.
          * @param[in]  A
@@ -43,7 +42,6 @@ namespace  utopia
             update(make_ref(A));
             return apply(b, x0);
         }
-
 
 
         /*! @brief if overriden the subclass has to also call this one first
