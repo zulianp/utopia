@@ -64,6 +64,14 @@ namespace utopia
         }
 
 
+        // maybe merge with inv() fun - this one runs in parallel - although, precision depends on LS
+        virtual void get_inverse(const Matrix &A, DenseMatrix & A_inv)
+        {
+            DenseMatrix RHS = local_identity(local_size(A).get(0), local_size(A).get(0)); 
+            A_inv = local_values(local_size(A).get(1), local_size(A).get(0), 0.0);
+            
+            this->solve(A, RHS, A_inv); 
+        }
 
 
     protected:

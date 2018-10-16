@@ -109,26 +109,46 @@ namespace utopia
 	    		fun.apply_bc_to_initial_guess(x);
 
 	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix,  Vector> >(memory_size, linear_solver);
+				// auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix,  Vector> >(memory_size, linear_solver);
 
 
-				QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
+				// QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
 
-				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
-				solver.set_line_search_strategy(line_search);
-				solver.max_it(100); 
-
-
-				Vector lb   = local_values(local_size(x).get(0), -0.01);
-				Vector ub   = local_values(local_size(x).get(0), 0.01);				
-
-				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-	    		solver.set_box_constraints(box);				
+				// auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				// solver.set_line_search_strategy(line_search);
+				// solver.max_it(100); 
 
 
-	    		solver.verbose(true); 
-	    		solver.solve(fun, x);
-	    		disp(x); 	
+				// Vector lb   = local_values(local_size(x).get(0), -0.01);
+				// Vector ub   = local_values(local_size(x).get(0), 0.01);				
+
+				// auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+	   //  		solver.set_box_constraints(box);				
+
+
+	   //  		solver.verbose(true); 
+	   //  		solver.solve(fun, x);
+	   //  		disp(x); 	
+
+	    		DMatrixd M; 
+	    		M=zeros(10,10); 
+	    		assemble_symmetric_laplacian_1D(M, true); 
+                disp(M); 
+
+				
+				auto gmres = std::make_shared<GMRES<DMatrixd, DVectord> >();
+				MatLinearSolver<DMatrixd, DMatrixd, DVectord> mat_solver(gmres); 
+
+				DMatrixd M_inv; 
+				mat_solver.get_inverse(M, M_inv); 
+
+				disp(M_inv); 
+
+
+				// DMatrixd MM_iinnvv = inv(M); 
+
+				// disp(MM_iinnvv); 
+
 
 
 			   	//  		Vector result; 
