@@ -139,14 +139,12 @@ namespace utopia
 	    		fun.apply_bc_to_initial_guess(x);
 
 	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix, DMatrixd,  Vector> >(memory_size, linear_solver);
+				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
 
 
 				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
 				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
 				subproblem->atol(1e-10);
-
-				Vector x0 = values(2, 2.0);
 
 				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
 				tr_solver.atol(1e-6); 
@@ -154,10 +152,10 @@ namespace utopia
 
 				tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
 
-				tr_solver.max_it(1); 
+				tr_solver.max_it(40); 
 				tr_solver.verbose(_verbose);
 				tr_solver.delta0(1); 
-				tr_solver.solve(fun, x0);
+				tr_solver.solve(fun, x);
 
 
 

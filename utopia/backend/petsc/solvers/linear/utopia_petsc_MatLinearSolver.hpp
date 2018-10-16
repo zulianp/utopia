@@ -15,9 +15,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         typedef utopia::LinearSolver<Matrix, Vector> LinearSolver;
-
         static_assert(Traits<Matrix>::Backend == utopia::PETSC, "MatLinearSolver only works with petsc types");
-        static_assert(!utopia::is_sparse<DenseMatrix>::value, "MatLinearSolver does not support sparse matrices for X and RHS."); 
 
         MatLinearSolver(const std::shared_ptr <LinearSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >())
         :linear_solver_(linear_solver)
@@ -31,30 +29,59 @@ namespace utopia
 
             PetscInt       m,N,i;
             PetscScalar    *bb,*xx;
-            PetscBool      flg;
+            PetscBool      flgX, flgB;
 
-            PetscObjectTypeCompareAny((PetscObject)raw_type(B),&flg,MATSEQDENSE,MATMPIDENSE,NULL);
-            if (!flg) SETERRQ(PetscObjectComm((PetscObject)raw_type(B)),PETSC_ERR_ARG_WRONG,"Matrix B must be MATDENSE matrix");
-            PetscObjectTypeCompareAny((PetscObject)raw_type(X),&flg,MATSEQDENSE,MATMPIDENSE,NULL);
-            if (!flg) SETERRQ(PetscObjectComm((PetscObject)raw_type(B)),PETSC_ERR_ARG_WRONG,"Matrix X must be MATDENSE matrix");
+            PetscObjectTypeCompareAny((PetscObject)raw_type(B),&flgB,MATSEQDENSE,MATMPIDENSE,NULL);
+            PetscObjectTypeCompareAny((PetscObject)raw_type(X),&flgX,MATSEQDENSE,MATMPIDENSE,NULL);
 
-            MatDenseGetArray(raw_type(B),&bb);
-            MatDenseGetArray(raw_type(X),&xx);
-            MatGetLocalSize(raw_type(B),&m,NULL);  /* number local rows */
-            MatGetSize(raw_type(B),NULL, &N);       /* total columns in dense matrix */
-            MatCreateVecs(raw_type(A), &raw_type(x), &raw_type(b));
-            for (i=0; i<N; i++) 
+            if(flgB && flgX)
             {
-                VecPlaceArray(raw_type(b), bb + i*m);
-                VecPlaceArray(raw_type(x), xx + i*m);
-                linear_solver_->solve(A, b, x); 
-                VecResetArray(raw_type(x));
-                VecResetArray(raw_type(b));
+                MatDenseGetArray(raw_type(B),&bb);
+                MatDenseGetArray(raw_type(X),&xx);
+                MatGetLocalSize(raw_type(B),&m,NULL);  /* number local rows */
+                MatGetSize(raw_type(B),NULL, &N);       /* total columns in dense matrix */
+                MatCreateVecs(raw_type(A), &raw_type(x), &raw_type(b));
+                for (i=0; i<N; i++) 
+                {
+                    VecPlaceArray(raw_type(b), bb + i*m);
+                    VecPlaceArray(raw_type(x), xx + i*m);
+                    linear_solver_->solve(A, b, x); 
+                    VecResetArray(raw_type(x));
+                    VecResetArray(raw_type(b));
+                }
+                VecDestroy(&raw_type(b));
+                VecDestroy(&raw_type(x));
+                MatDenseRestoreArray(raw_type(B), &bb);
+                MatDenseRestoreArray(raw_type(X), &xx);
             }
-            VecDestroy(&raw_type(b));
-            VecDestroy(&raw_type(x));
-            MatDenseRestoreArray(raw_type(B), &bb);
-            MatDenseRestoreArray(raw_type(X), &xx);
+            else
+            {
+                Mat B_temp, X_temp; 
+                MatConvert(raw_type(B), MATDENSE, MAT_INITIAL_MATRIX, &B_temp); 
+                MatConvert(raw_type(X), MATDENSE, MAT_INITIAL_MATRIX, &X_temp); 
+
+                MatDenseGetArray(B_temp,&bb);
+                MatDenseGetArray(X_temp,&xx);
+                MatGetLocalSize(B_temp,&m,NULL);  /* number local rows */
+                MatGetSize(B_temp,NULL, &N);       /* total columns in dense matrix */
+                MatCreateVecs(raw_type(A), &raw_type(x), &raw_type(b));
+
+                for (i=0; i<N; i++) 
+                {
+                    VecPlaceArray(raw_type(b), bb + i*m);
+                    VecPlaceArray(raw_type(x), xx + i*m);
+                    linear_solver_->solve(A, b, x); 
+                    VecResetArray(raw_type(x));
+                    VecResetArray(raw_type(b));
+                }
+                VecDestroy(&raw_type(b));
+                VecDestroy(&raw_type(x));
+                MatDenseRestoreArray(B_temp, &bb);
+                MatDenseRestoreArray(X_temp, &xx);
+
+                MatDestroy(&B_temp);
+                MatDestroy(&X_temp);                
+            }
 
             return false; 
         }

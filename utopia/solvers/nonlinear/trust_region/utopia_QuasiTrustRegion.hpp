@@ -72,16 +72,16 @@
          Vector g, y = local_zeros(local_size(x_k).get(0)), p_k = local_zeros(local_size(x_k).get(0)); 
          Matrix H;
 
-        #define DEBUG_mode
+        // #define DEBUG_mode
 
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg);
-
         hessian_approx_strategy_->initialize(fun, x_k);
             
         fun.gradient(x_k, g);
         g0_norm = norm2(g);
         g_norm = g0_norm;
+
 
         // print out - just to have idea how we are starting
         #ifdef DEBUG_mode

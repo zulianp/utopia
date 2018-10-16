@@ -6,7 +6,7 @@
 namespace utopia
 {
 
-template<class Matrix, class DenseMatrix, class DenseMatrixToBeRemoved, class Vector>
+template<class Matrix, class DenseMatrix, class Vector>
 class LBFGSB : public HessianApproximation<Matrix, Vector>
 {
 
@@ -64,11 +64,9 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             if(!this->initialized())
             {
-                utopia_error("BFGS::update: Initialization needs to be done before updating. \n"); 
+                //utopia_error("BFGS::update: Initialization needs to be done before updating. \n"); 
                 return false; 
             }
-
-            // TODO:: check if update is SPD ... 
 
             Scalar denom    = dot(y,s); 
             Scalar nom      = dot(y,y);
@@ -76,7 +74,9 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             // if denom > eps, hessian approx. should be positive semidefinite
             if(denom < 1e-12)
             {
-                utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. ")
+                // if(mpi_world_rank()==0)
+                    // utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. ")
+
                 return false; 
             }
 
@@ -141,22 +141,22 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 DenseMatrix Y_T = transpose(Y_); 
                 DenseMatrix S_T = theta_ * transpose(S_); 
 
-                DenseMatrixToBeRemoved P =  DenseMatrix(Blocks<DenseMatrix>(2,1,
+                DenseMatrix P =  DenseMatrix(Blocks<DenseMatrix>(2,1,
                 {
                     make_ref(Y_T), make_ref(S_T)
                 }));
 
-                DenseMatrixToBeRemoved result; 
-
-                apply_M(P, result);    
-                H_ -= P * result;             
+                DenseMatrix result; 
+                this->apply_M(P, result);    
+                H_ -= transpose(P) * result;             
             }
             else
             {
                 H_ = local_identity(local_size(H_)); 
             }
             
-            utopia_warning("LBFGS::get_Hessian returns dense matrix ...."); 
+            // utopia_warning("LBFGS::get_Hessian returns dense matrix ...."); 
+
             return H_; 
         }
 
@@ -349,10 +349,12 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
-        void apply_M(const DenseMatrixToBeRemoved & RHS, DenseMatrixToBeRemoved & result) const 
+        void apply_M(const DenseMatrix & RHS, DenseMatrix & result) const 
         {
-            auto linear_solver = std::make_shared<GMRES<DenseMatrixToBeRemoved, Vector> >();
-            MatLinearSolver<DenseMatrixToBeRemoved, DenseMatrixToBeRemoved, Vector> mat_solver(linear_solver); 
+            result = local_values(local_size(RHS).get(0), local_size(RHS).get(1), 0.0); 
+            
+            auto linear_solver = std::make_shared<GMRES<DenseMatrix, Vector> >();
+            MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver); 
             mat_solver.solve(M_, RHS, result); 
         }
 
