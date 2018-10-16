@@ -14,11 +14,11 @@ namespace utopia
 			{
 				// UTOPIA_RUN_TEST(quasi_newton_test);
 				// UTOPIA_RUN_TEST(Quasi_TR_test); 
-				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 			}
 
 			void run_sparse()
 			{
+				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 				UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
 			}			
 
@@ -102,37 +102,38 @@ namespace utopia
 			}
 
 
-			// void Quasi_TR_test_LBFGS()
-			// {
-			// 	SimpleQuadraticFunction<Matrix, Vector> fun;
-			// 	Vector expected_rosenbrock = values(2, 1);
+			void Quasi_TR_test_LBFGS()
+			{
+				auto memory_size = 7; 
 
-			// 	auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-			// 	subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
-			// 	subproblem->atol(1e-10);
+				Bratu1D<Matrix, Vector> fun(_n);
+	    		Vector x = values(_n, 0.0);
+	    		fun.apply_bc_to_initial_guess(x);
 
-			// 	Vector x0 = values(2, 2.0);
+	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
+				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
 
-			// 	QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
-			// 	tr_solver.atol(1e-6); 
-			// 	tr_solver.rtol(1e-9);
 
-			// 	auto memory_size = 7; 
-			// 	auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-			// 	auto hes_approx   = std::make_shared<LBFGSB<Matrix, Matrix, Vector> >(memory_size, linear_solver);
+				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+				subproblem->atol(1e-10);
 
-			// 	tr_solver.set_hessian_approximation_strategy(hes_approx);
+				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
+				tr_solver.atol(1e-4); 
+				tr_solver.rtol(1e-9);
 
-			// 	tr_solver.max_it(1); 
-			// 	tr_solver.verbose(_verbose);
-			// 	tr_solver.delta0(1); 
-			// 	tr_solver.solve(fun, x0);
+				tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
 
-			// }			
+				tr_solver.max_it(100); 
+				tr_solver.verbose(_verbose);
+				tr_solver.delta0(1); 
+				tr_solver.solve(fun, x);
+
+			}			
 
 			void lbfgs_quasi_newton_test()
 			{
-				auto memory_size = 7; 
+				auto memory_size = 5; 
 
 				Bratu1D<Matrix, Vector> fun(_n);
 	    		Vector x = values(_n, 0.0);
