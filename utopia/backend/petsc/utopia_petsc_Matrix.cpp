@@ -1138,15 +1138,43 @@ namespace utopia {
 
     void PetscMatrix::mult(const PetscMatrix &mat, PetscMatrix &result) const
     {
-        if(mat.implementation() != result.implementation() && implementation() != result.implementation()) 
+        PetscBool      flg;
+        // this is very unefficient hack, but still better than fail... 
+        PetscObjectTypeCompareAny((PetscObject)mat.implementation(),&flg,MATMPIDENSE,NULL);
+        if (flg)
         {
-            result.destroy();
-            MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
-        } else {
-            PetscMatrix temp;
-            temp.destroy();
-            MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation());
-            result = std::move(temp);
+            if(mat.implementation() != result.implementation() && implementation() != result.implementation())
+            {
+                result.destroy();
+                Mat temp; 
+                MatConvert(mat.implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
+                MatMatMult(implementation(), temp, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
+                MatDestroy(&temp); 
+            }
+            else 
+            {
+                PetscMatrix temp2; 
+                temp2.destroy(); 
+
+                Mat temp; 
+                MatConvert(mat.implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
+                MatMatMult(implementation(), temp, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp2.implementation());
+                MatDestroy(&temp); 
+                result = std::move(temp2);
+            }                
+        }
+        else
+        {
+            if(mat.implementation() != result.implementation() && implementation() != result.implementation()) 
+            {
+                result.destroy();
+                MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
+            } else {
+                PetscMatrix temp;
+                temp.destroy();
+                MatMatMult(implementation(), mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp.implementation());
+                result = std::move(temp);
+            }
         }
     }
 

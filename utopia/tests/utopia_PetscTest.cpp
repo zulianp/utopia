@@ -1171,6 +1171,19 @@ namespace utopia {
     }
 
 
+    void petsc_dense_mat_mult_test()
+    {
+        if(mpi_world_size()>5)
+            return; 
+
+        DMatrixd A = values(5, 5, 2.0); 
+        DMatrixd B = values(5, 5, 10.0); 
+        DMatrixd C = A*B; 
+
+        utopia_test_assert(approxeq(norm_infty(C), 500));  
+    }
+
+
     #endif //WITH_PETSC;
 
     void runPetscTest() {
@@ -1216,6 +1229,8 @@ namespace utopia {
         UTOPIA_RUN_TEST(petsc_dot_test); 
         UTOPIA_RUN_TEST(petsc_transform);
         UTOPIA_RUN_TEST(petsc_get_col_test); 
+        UTOPIA_RUN_TEST(petsc_dense_mat_mult_test); 
+
 
         //serial tests
 #ifdef PETSC_HAVE_MUMPS

@@ -3,7 +3,6 @@
 
 #include "utopia_Core.hpp"
 
-
 namespace utopia
 {
 
@@ -15,14 +14,12 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
     typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
     typedef utopia::LinearSolver<Matrix, Vector>    LinSolver;
-    typedef utopia::LSStrategy<Matrix, Vector>      LSStrategy; 
 
     public:
 
         LBFGSB( const SizeType & m, 
-                const std::shared_ptr <LinSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
-                const std::shared_ptr <LSStrategy> &line_search = std::make_shared<SimpleBacktracking<Matrix, Vector> >()):
-                m_(m), current_m_(0), linear_solver_(linear_solver), line_search_strategy_(line_search)
+                const std::shared_ptr <LinSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
+                m_(m), current_m_(0), linear_solver_(linear_solver)
         {
             // to be factored out.... 
             cp_.set_memory_size(-1); 
@@ -49,19 +46,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             return true;
         }
 
-
-        /**
-         * @brief      Sets strategy for computing step-size. 
-         *
-         * @param[in]  strategy  The line-search strategy.
-         *
-         * @return     
-         */
-        virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
-        {
-          line_search_strategy_ = strategy; 
-          return true; 
-        }
 
         /**
          * @brief      Changes linear solver used inside of nonlinear-solver. 
@@ -582,7 +566,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                                 | L_k      \theta S_k^T S_k | */   // in contrast to the paper, this is not the inverse
 
         std::shared_ptr<LinSolver> linear_solver_;     /*!< Linear solver parameters. - Ideally LU  */  
-        std::shared_ptr<LSStrategy> line_search_strategy_;     /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */  
 
 
         GeneralizedCauchyPoint<Matrix, Vector> cp_; 
