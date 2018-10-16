@@ -64,7 +64,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             if(!this->initialized())
             {
-                //utopia_error("BFGS::update: Initialization needs to be done before updating. \n"); 
+                utopia_error("BFGS::update: Initialization needs to be done before updating. \n"); 
                 return false; 
             }
 
@@ -74,8 +74,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             // if denom > eps, hessian approx. should be positive semidefinite
             if(denom < 1e-12)
             {
-                // if(mpi_world_rank()==0)
-                    // utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. ")
+                if(mpi_world_rank()==0)
+                    utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n"); 
 
                 return false; 
             }
@@ -352,7 +352,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         void apply_M(const DenseMatrix & RHS, DenseMatrix & result) const 
         {
             result = local_values(local_size(RHS).get(0), local_size(RHS).get(1), 0.0); 
-            
+
             auto linear_solver = std::make_shared<GMRES<DenseMatrix, Vector> >();
             MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver); 
             mat_solver.solve(M_, RHS, result); 

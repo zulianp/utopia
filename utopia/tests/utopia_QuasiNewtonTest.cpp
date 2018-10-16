@@ -147,17 +147,19 @@ namespace utopia
 				subproblem->atol(1e-10);
 
 				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
-				tr_solver.atol(1e-6); 
+				tr_solver.atol(1e-4); 
 				tr_solver.rtol(1e-9);
 
 				tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
 
-				tr_solver.max_it(40); 
+				tr_solver.max_it(100); 
 				tr_solver.verbose(_verbose);
 				tr_solver.delta0(1); 
 				tr_solver.solve(fun, x);
 
 
+
+				disp(x); 
 
 
 

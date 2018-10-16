@@ -121,14 +121,14 @@
           // scaling correction to fit into tr radius ... 
           s_norm = norm2(p_k);
 
-          alpha = 1.0; 
-          while(s_norm >= delta)
-          {
-            alpha *= 0.8;  // shrinking alpha 
-            s_norm = norm2(alpha*p_k);
-          }
+          // alpha = 1.0; 
+          // while(s_norm >= delta)
+          // {
+          //   alpha *= 0.8;  // shrinking alpha 
+          //   s_norm = norm2(alpha*p_k);
+          // }
 
-          p_k = alpha*p_k; 
+          // p_k = alpha*p_k; 
 
           Scalar l_term = dot(g, p_k);
           Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
