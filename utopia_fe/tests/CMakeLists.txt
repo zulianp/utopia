@@ -34,13 +34,13 @@ if(TARGET utopia_fe_intrepid2)
 
 endif()
 
-target_include_directories(utopia_fe_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/simulations) 
+target_include_directories(utopia_fe_tests BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/simulations)
 set_utopia_compiler_features(utopia_fe_tests)
 
 install(TARGETS utopia_fe_tests
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
 	)
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)
