@@ -1,15 +1,15 @@
 
-list(APPEND LOCAL_HEADERS 
+list(APPEND LOCAL_HEADERS
 	utopia_Socket.hpp
 	)
 
-list(APPEND LOCAL_SOURCES 
+list(APPEND LOCAL_SOURCES
 	utopia_Socket.cpp
 	)
 
 add_library(utopia_fe_visualization STATIC ${LOCAL_SOURCES})
 target_link_libraries(utopia_fe_visualization utopia_fe_libmesh_backend transfer)
-target_include_directories(utopia_fe_visualization PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+target_include_directories(utopia_fe_visualization BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 set_utopia_compiler_features(utopia_fe_visualization)
 #----------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------
@@ -33,9 +33,9 @@ endif()
 #----------------------------------------------------------------------------------------
 
 install(TARGETS utopia_fe_visualization
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
 	)
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)

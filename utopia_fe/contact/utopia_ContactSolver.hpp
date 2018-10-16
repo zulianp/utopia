@@ -73,8 +73,8 @@ namespace utopia {
 
 			n_exports = 0;
  
-			tao_.set_type("tron"); //REMOVED_TRILINOS
-			tao_.set_ksp_types("bcgs", "jacobi", " "); //REMOVED_TRILINOS
+			tao_.set_type("tron");
+			tao_.set_ksp_types("bcgs", "jacobi", " ");
 		}
 
 		void set_tol(const Scalar tol)
@@ -304,17 +304,21 @@ namespace utopia {
 			// 	newton.solve(lhs, rhs, inc_c);
 			// } else {
 				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
-				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_);  //REMOVED_TRILINOS
-				// SemismoothNewton<Matrix, Vector> ssn(linear_solver_); 
+#ifdef WITH_M3ELINSOL
+				SemismoothNewton<Matrix, Vector> ssn(linear_solver_); 
+#else
+				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_); 
+#endif //WITH_M3ELINSOL
+				
 				// ssn.verbose(true);
-				ssn.max_it(40); //REMOVED_TRILINOS
-				ssn.atol(1e-14); //REMOVED_TRILINOS
-				ssn.rtol(1e-8); //REMOVED_TRILINOS
-				ssn.stol(1e-8); //REMOVED_TRILINOS
+				ssn.max_it(40);
+				ssn.atol(1e-14);
+				ssn.rtol(1e-8);
+				ssn.stol(1e-8);
 
 
-				ssn.set_box_constraints(box_c); //REMOVED_TRILINOS
-				ssn.solve(lhs, rhs, inc_c); //REMOVED_TRILINOS
+				ssn.set_box_constraints(box_c);
+				ssn.solve(lhs, rhs, inc_c);
 			} else if(use_pg_) {
 
 				ProjectedGradient<Matrix, Vector> pg;
@@ -346,12 +350,12 @@ namespace utopia {
 
 				QuadraticFunction<Matrix, Vector> fun(make_ref(lhs), make_ref(rhs));
 				//(linear_solver_);
-				tao_.set_box_constraints(box_c); //REMOVED_TRILINOS
+				tao_.set_box_constraints(box_c);
 				// tao_.set_ksp_types(KSPPREONLY, PCLU, "mumps");
 				// tao_.set_type("gpcg");
 
 
-				tao_.solve(fun, inc_c); //REMOVED_TRILINOS
+				tao_.solve(fun, inc_c);
 
 				force_direct_solver_ = false;
 
@@ -517,10 +521,10 @@ namespace utopia {
 			sol_to_gap_on_contact_bdr_ = val;
 		}
 
-		TaoSolver<Matrix, Vector> &tao() //REMOVED_TRILINOS
-		{								 //REMOVED_TRILINOS
-			return tao_;				 //REMOVED_TRILINOS
-		}								//REMOVED_TRILINOS
+		TaoSolver<Matrix, Vector> &tao()
+		{								
+			return tao_;				
+		}							
 
 		virtual bool stress(const Vector &x, Vector &result) {
 			return material_->stress(x, result);
@@ -572,7 +576,7 @@ namespace utopia {
 
 		int max_outer_loops_;
 
-		TaoSolver<Matrix, Vector> tao_; //REMOVED_TRILINOS
+		TaoSolver<Matrix, Vector> tao_;
 		bool use_ssn_, use_pg_;
 
 		int max_non_linear_iterations_;

@@ -5,18 +5,18 @@ list(APPEND HOMEMADE_MODULES
 find_project_files(CMAKE_CURRENT_SOURCE_DIR HOMEMADE_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 add_library(utopia_fe_homemade STATIC utopia_fe_homemade.cpp ${LOCAL_SOURCES})
-target_include_directories(utopia_fe_homemade PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+target_include_directories(utopia_fe_homemade BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 foreach(MODULE ${HOMEMADE_MODULES})
-	target_include_directories(utopia_fe_homemade PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
+	target_include_directories(utopia_fe_homemade BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
 endforeach(MODULE)
 
 target_link_libraries(utopia_fe_homemade utopia_fe_intersection utopia_fe_core)
 set_utopia_compiler_features(utopia_fe_homemade)
 
 install(TARGETS utopia_fe_homemade
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
 	)
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)

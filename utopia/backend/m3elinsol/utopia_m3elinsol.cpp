@@ -96,11 +96,20 @@ namespace utopia {
 		{
 			ierr = M3Elinsol_DumpLinSys(&this->solver, binwrite, systemfile); M3Elinsol_Errchk(&solver, ierr);
 		}
- 
+		
+		template<class Matrix, class Vector, int Backend> 
+		void set_options_from_interface(const ASPAMG<Matrix, Vector, Backend> &interface)
+		{	
+			//example ... fill the rest
+			// M3Elinsol_ASPAMG_SetTspMaxit(&solver.handle, interface.max_it());
+
+		}
+ 	
+ 		//default options
 		void set_options()
 		{
 			// Set Problem level
-			M3Elinsol_ASPAMG_SetProblemLevel(&solver.handle, 1);
+			// M3Elinsol_ASPAMG_SetProblemLevel(&solver.handle, 1);
 
 			// Set Preconditioner Options
 			// M3Elinsol_ASPAMG_SetSmtNstep(&solver.handle, 5);
@@ -114,8 +123,8 @@ namespace utopia {
 			// M3Elinsol_ASPAMG_SetAmgMaxcsize(&solver.handle, 20);
 
 			// Set Solver Options
-			M3Elinsol_ASPAMG_SetPcgRelConvTol(&solver.handle, 1e-9);
-			M3Elinsol_ASPAMG_SetPcgMaxIter(&solver.handle, 100);
+			// M3Elinsol_ASPAMG_SetPcgRelConvTol(&solver.handle, 1e-9);
+			// M3Elinsol_ASPAMG_SetPcgMaxIter(&solver.handle, 800);
 		}
 
 		template<class T>
@@ -155,7 +164,7 @@ namespace utopia {
 			mat.nrows  = n_row_local;
 			mat.nterm  = col_ind.size();
 
-			set_options();
+			
 			ierr = M3Elinsol_Set(&this->solver, &this->mat); M3Elinsol_Errchk(&solver, ierr);
 		}
 
@@ -183,13 +192,73 @@ namespace utopia {
 	void ASPAMG<Matrix, Vector, Backend>::update(const std::shared_ptr<const Matrix> &op)
 	{
 		IterativeSolver<Matrix, Vector>::update(op);
+		// solver.impl->set_options_from_interface(*this);
 		solver.impl->update(*op);
 	}
 
 	template<class Matrix, class Vector, int Backend> 
-	void ASPAMG<Matrix, Vector, Backend>::printSystem(const bool binwrite, const M3Elinsol_Str systemfile)
+	void ASPAMG<Matrix, Vector, Backend>::print_system(const bool binwrite, const M3Elinsol_Str systemfile)
 	{
-		return solver.impl->printSystem(binwrite,systemfile);
+		return solver.impl->printSystem(binwrite, systemfile);
+	}
+
+	template<class Matrix, class Vector, int Backend> 
+	void ASPAMG<Matrix, Vector, Backend>::read(Input &in)
+	{
+		assert((solver.impl));
+		auto &handle = solver.impl->solver.handle;
+
+		// Set Problem level and Preconditioner Options
+		//FIXME is there a way to read from handle what was the setting?
+
+		int problemlevel = 1;
+		in.read("ProblemLevel", problemlevel);
+		M3Elinsol_ASPAMG_SetProblemLevel(&handle, problemlevel);
+		
+		int smtnstep = 5;
+		in.read("SmtNstep", smtnstep);
+		M3Elinsol_ASPAMG_SetSmtNstep(&handle, smtnstep);
+		
+		int smtnu = 1;
+		in.read("SmtNu", smtnu);
+		M3Elinsol_ASPAMG_SetSmtNu(&handle, smtnu);
+		
+		int tspmethod = 1;
+		in.read("TspMethod", tspmethod);
+		M3Elinsol_ASPAMG_SetTspMethod(&handle, tspmethod);
+		
+		int tspntvecs = 5;
+		in.read("TspNtvecs", tspntvecs);
+		M3Elinsol_ASPAMG_SetTspNtvecs(&handle, tspntvecs);
+		
+		int tspmaxit = 50;
+		in.read("TspMaxit", tspmaxit);
+		M3Elinsol_ASPAMG_SetTspMaxit(&handle, tspmaxit);
+		
+		double csntheta = 0.5;
+		in.read("CsnTheta", csntheta);
+		M3Elinsol_ASPAMG_SetCsnTheta(&handle, csntheta);
+		
+		int prlnnzrmax = 4;
+		in.read("PrlNnzrmax", prlnnzrmax);
+		M3Elinsol_ASPAMG_SetPrlNnzrmax(&handle, prlnnzrmax);
+		
+		int amgmaxlvls = 10;
+		in.read("AmgMaxlvls", amgmaxlvls);
+		M3Elinsol_ASPAMG_SetAmgMaxlvls(&handle, amgmaxlvls);
+		
+		int amgmaxcsize = 20;
+		in.read("AmgMaxcsize", amgmaxcsize);
+		M3Elinsol_ASPAMG_SetAmgMaxcsize(&handle, amgmaxcsize);
+		
+		// Set Solver Options
+		double pcgrelconvtol = 1e-9;
+		in.read("PcgRelConvTol", pcgrelconvtol);
+		M3Elinsol_ASPAMG_SetPcgRelConvTol(&handle, pcgrelconvtol);
+
+		int pcgmaxiter = 800;
+		in.read("PcgMaxIter", pcgmaxiter);
+		M3Elinsol_ASPAMG_SetPcgMaxIter(&handle, pcgmaxiter);
 	}
 
 #ifdef WITH_PETSC
