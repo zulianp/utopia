@@ -31,26 +31,40 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             SizeType n = local_size(x).get(0);
             H_ = local_identity(n, n);
 
+
             if(cp_.get_memory_size()==-1)
                 cp_.set_memory_size(size(x).get(0));
 
             this->initialized(true);
             current_m_ = 0; 
 
-            W_ = values(size(x).get(0), 1, 0.0); 
-            M_ = zeros(1, 1); 
+            SizeType local_col_W = 0; 
+            if(mpi_world_rank()==0)
+                local_col_W = 2.0 * m_; 
+
+            // W \in R^{n \times 2m }
+            W_ = local_values(n, local_col_W, 0.0); 
+
+            // M \in R^{2m \times 2m }
+            M_ = local_values(local_col_W, local_col_W, 0.0); 
+
+            SizeType local_col_YS = 0; 
+            if(mpi_world_rank()==0)
+                local_col_YS = m_; 
+
+
+            Y_ = local_values(n, local_col_YS, 0.0); 
+            S_ = local_values(n, local_col_YS, 0.0); 
 
             theta_ = 1.0; 
+
+            d_elements_.resize(m_); 
+            L_dots_.resize(m_, std::vector<Scalar>(m_));
 
             return true;
         }
 
 
-        /**
-         * @brief      Changes linear solver used inside of nonlinear-solver. 
-         *
-         * @param[in]  linear_solver  The linear solver
-         */
         virtual void set_linear_solver(const std::shared_ptr<LinSolver> &linear_solver)
         {
             linear_solver_ = linear_solver; 
@@ -82,24 +96,10 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             std::cout<<"current_m_: "<< current_m_ <<"  \n"; 
 
-            // this needs to be done durign first it, in order to initialize matrices 
-            if(current_m_ == 0)
-            {
-                this->init_mat_from_vec(Y_, y); 
-                this->init_mat_from_vec(S_, s); 
-            }
-            // here we are just building first m elements of matrices
-            else if(current_m_ < m_)
-            {
-                this->add_col_to_mat(Y_, y); 
-                this->add_col_to_mat(S_, s); 
-            }
-            // here, we are removing first col, shifting, appending new 
-            else
-            {  
-                this->shift_cols_left_replace_last_col(Y_, y); 
-                this->shift_cols_left_replace_last_col(S_, s); 
-            }
+            this->shift_cols_left_replace_last_col(Y_, y); 
+            this->shift_cols_left_replace_last_col(S_, s); 
+
+            this->buildL_d_elems(s); 
 
             this->buildW(); 
             this->buildM(); 
@@ -188,35 +188,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
     private:
-        void add_col_to_mat(DenseMatrix & M, const Vector & col) const
-        {
-            const DenseMatrix M_old = M;
-            M = values(size(M_old).get(0), size(M_old).get(1) + 1, 0.0);
-
-            {   // begin lock
-
-                Write<DenseMatrix>  write(M);
-
-                Read<DenseMatrix>   read(M_old);
-                Read<Vector>      read_vec(col);
-
-                Range r = row_range(M_old);
-                Range c = col_range(M_old);
-
-                Range r_new = row_range(M);
-                Range c_new = col_range(M);
-
-                for (SizeType i = r.begin(); i != r.end(); ++i) {
-                    for (SizeType j = c.begin(); j != c.end(); ++j)
-                        M.set(i, j, M_old.get(i, j));
-                }
-
-                for (SizeType i = r_new.begin(); i != r_new.end(); ++i)
-                    M.set(i, c_new.end() - 1, col.get(i));
-
-            } // end of lock
-        }
-
         void shift_cols_left_replace_last_col(DenseMatrix & M, const Vector & col) const
         {
             const DenseMatrix M_old = M;
@@ -241,28 +212,9 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             } // end of lock
         }
 
-        void init_mat_from_vec(DenseMatrix & M, const Vector & col) const 
-        {
-            M = values(size(col).get(0), 1, 0.0);
-
-            {   // begin lock
-
-                Write<DenseMatrix>  write(M);
-                Read<Vector>   read_vec(col);
-
-                Range r = row_range(M);
-                Range c = col_range(M);
-
-                for (SizeType i = r.begin(); i != r.end(); ++i)
-                    M.set(i, c.end()-1, col.get(i));
-
-            } // end of lock
-        }
-
         void buildW()
         {
             DenseMatrix S_theta = theta_ * S_; 
-
             W_ = DenseMatrix(Blocks<DenseMatrix>(1, 2,
             {
                 make_ref(Y_), make_ref(S_theta)
@@ -270,84 +222,100 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
-        void buildM()
+        void buildL_d_elems(const Vector &s)
         {
-            SizeType n = (current_m_ < m_)? current_m_ + 1: m_; 
-
-            Vector d = zeros(n); 
-
-            if(size(S_)!=size(Y_) || n != size(Y_).get(1)){
-                std::cout<<"LBFGSB::buildM:: sizes do not match .... \n"; 
-                return; 
-            }
-
-            std::vector<Scalar> diag_dots(n); 
-
-
-            for(auto i=0; i < n; i++)
+            Vector dots = transpose(Y_) * s; 
+            
+            // moving things one row up and deleting diagonal elements
+            for(auto i =0; i < m_-1; i++)
             {
-                // Vector v1 = local_zeros(local_size(S_)), v2 = local_zeros(local_size(S_)); 
-                Vector v1, v2; 
-                mat_get_col(S_, v1, i);
-                mat_get_col(Y_, v2, i);
-                diag_dots[i] = -1.0 * dot(v1, v2); 
-            }
-
-            {   // begin lock
-
-                Write<Vector>   read_vec(d);
-                Range r = range(d);
-
-                for (SizeType i = r.begin(); i != r.end(); ++i)
-                        d.set(i, -1.0 * diag_dots[i]);
-
-            } // end of lock
-
-            DenseMatrix D = diag(d); 
-
-            std::vector<std::vector<Scalar> > matrixL(n, std::vector<Scalar>(n));
-
-            for(auto i=0; i < n; i++)
-            {
-                for(auto j=0; j < n; j++)
+                for(auto j =0; j < i; j++)
                 {
-                    if(i > j)
-                    {
-                        Vector v1, v2; 
-                        mat_get_col(S_, v1, i);
-                        mat_get_col(Y_, v2, j);
-                        matrixL[i][j] = dot(v1, v2); 
-                    }
+                    L_dots_[i][j] = L_dots_[i+1][j]; 
+                }
+                d_elements_[i] = d_elements_[i+1]; 
+            }
+
+            {
+                Read<Vector> rw(dots); 
+                auto r = range(dots); 
+                
+                for(auto i=r.begin(); i != r.end(); ++i)
+                {
+                    if(i==r.end()-1)
+                        d_elements_[m_-1] = dots.get(i); 
+                    else
+                        L_dots_[m_-1][i] = dots.get(i); 
                 }
             }
+        }
 
-            DenseMatrix L = zeros(n, n); 
 
-            {   // begin lock
-                Write<DenseMatrix>   write_mat(L);
+        void buildD(DenseMatrix & D)
+        {
+            SizeType local_size_d = 0; 
 
-                Range rr = row_range(L);
-                Range cc = col_range(L);
+            if(mpi_world_rank()==0)
+                local_size_d = m_; 
 
-                for (SizeType r = rr.begin(); r != rr.end(); ++r)
-                {
-                    for (SizeType c = cc.begin(); c != cc.end(); ++c)
-                    {
-                        if(r > c)
-                            L.set(r, c,  matrixL[r][c]);
-                    }
-                }
+            Vector d = local_zeros(local_size_d); 
 
-            } // end of lock
+            {
+                Write<Vector> w(d); 
+                auto r = range(d); 
 
+                for(auto i=r.begin(); i != r.end(); ++i)
+                    d.set(i, d_elements_[i]); 
+            }
+
+            D = diag(d); 
+        }
+
+
+
+        void buildM()
+        {           
+            // Doesn't work with dense matrices 
             DenseMatrix SS = theta_ * transpose(S_) * S_; 
-            DenseMatrix LT = transpose(L); 
 
-            M_ = DenseMatrix(Blocks<DenseMatrix>(2, 2,
             {
-                make_ref(D), make_ref(LT), 
-                make_ref(L), make_ref(SS), 
-            }));
+                Write<DenseMatrix> wM(M_); 
+                Read<DenseMatrix> rS(SS); 
+
+                auto r = row_range(M_); 
+                auto c = col_range(M_); 
+
+                auto rowSS = row_range(SS); 
+                auto colSS = col_range(SS); 
+
+                for(auto i=r.begin(); i!=r.end(); ++i)
+                {
+                    for(auto j=c.begin(); j!=c.end(); ++j)
+                    {
+                        Scalar value = 0.0; 
+                        
+                        if(i < m_ && j < m_ && i==j) // top left block
+                        {
+                            value =  -1.0 * d_elements_[j]; 
+                        }
+                        else if(i >= m_ && j < m_ ) // bottom left  block 
+                        {
+                            value = L_dots_[i -m_][j]; 
+                        }
+                        else if(i < m_ && j >= m_ ) // top right  block 
+                        {
+                            value = L_dots_[j-m_][i]; 
+                        }
+                        else if(i >= m_ && j >= m_ ) // bottom right  block 
+                        {
+                            value = SS.get(i - m_, j - m_); 
+                        }
+
+                        M_.set(i,j, value); 
+                    }
+                }
+            }
+
 
         }
 
@@ -577,11 +545,16 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 //     }
 
 
+    public: 
 
-    private:
+    // private:
         // static_assert(utopia::is_sparse<Matrix>::value, "LBFGS does not support dense matrices.");
 
         SizeType m_; // memory size
+
+        std::vector<Scalar> d_elements_; 
+        std::vector<std::vector<Scalar> > L_dots_; 
+
 
         SizeType current_m_; // iteration number 
         Matrix H_;  // identity

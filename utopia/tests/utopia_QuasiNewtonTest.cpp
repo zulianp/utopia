@@ -18,8 +18,8 @@ namespace utopia
 
 			void run_sparse()
 			{
-				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
-				// UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
+				UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
+				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 			}			
 
 			void quasi_newton_test()
@@ -137,13 +137,77 @@ namespace utopia
 			void lbfgs_quasi_newton_test()
 			{
 				auto memory_size = 5; 
-				const int _n = 15; 
 
 				Bratu1D<Matrix, Vector> fun(_n);
 	    		Vector x = values(_n, 0.0);
 				Vector lb   = local_values(local_size(x).get(0), 5);
 				Vector ub   = local_values(local_size(x).get(0), 10);			    		
-	    		// fun.apply_bc_to_initial_guess(x);
+	    		fun.apply_bc_to_initial_guess(x);
+
+
+	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
+	    		auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
+
+
+	    		hess_approx_BFGS->initialize(fun, x); 
+
+
+	    		Vector s = local_values(local_size(x).get(0), 2);
+	    		Vector y = local_values(local_size(x).get(0), 5);
+
+	    		hess_approx_BFGS->update(s, y); 
+	    		hess_approx_BFGS->update(s, y); 
+	    		hess_approx_BFGS->update(s, y); 
+	    		// hess_approx_BFGS->update(s, y); 
+	    		// hess_approx_BFGS->update(s, y); 
+	    		// hess_approx_BFGS->update(s, y); 
+	    		// hess_approx_BFGS->update(s, y); 	
+	    		// hess_approx_BFGS->update(s, y); 
+	    		// hess_approx_BFGS->update(s, y); 
+	    		// hess_approx_BFGS->update(s, y); 	
+
+	    		// auto L = hess_approx_BFGS->L_dots_; 
+	    		// auto D = hess_approx_BFGS->d_elements_; 
+
+	    		// std::cout<<"L_dots_: "<< L.size() << "  L_dots_[0].size(): "<< (hess_approx_BFGS->L_dots_[0]).size() << "  \n"; 
+
+
+	    		// if(mpi_world_rank()==0)
+	    		// {
+
+		    	// 	for(auto i =0; i < memory_size; i++)
+		    	// 	{
+		    	// 		for(auto j =0; j < memory_size; j++)
+		    	// 		{
+		    	// 			std::cout<<"  "<< L[i][j]; 
+		    	// 		}
+		    	// 		std::cout<<"  \n"; 
+		    	// 	}
+		    	// }
+
+
+		    	// std::cout<<"------------------- d ------------------- \n"; 
+
+		    	// if(mpi_world_rank()==0)
+	    		// {
+
+		    	// 	for(auto i =0; i < memory_size; i++)
+		    	// 	{
+
+		    	// 		std::cout<<"  "<< D[i]; 
+		    	// 	}
+		    	// }
+
+		    	// std::cout<<"   \n"; 
+
+
+
+	    		// disp(hess_approx_BFGS->S_); 
+	    		// disp(hess_approx_BFGS->Y_); 
+
+	    		// disp(hess_approx_BFGS->W_); 
+
+
 
 
 
@@ -340,8 +404,8 @@ namespace utopia
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
 				// QuasiNewtonTest<DMatrixd, DVectord>().run_dense();
-				QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
-
+			
+			QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
 			// QuasiNewtonTest<DMatrixd, DVectord>().run_sparse();
 		#endif
 
