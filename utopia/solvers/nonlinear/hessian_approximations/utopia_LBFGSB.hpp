@@ -251,28 +251,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
-        void buildD(DenseMatrix & D)
-        {
-            SizeType local_size_d = 0; 
-
-            if(mpi_world_rank()==0)
-                local_size_d = m_; 
-
-            Vector d = local_zeros(local_size_d); 
-
-            {
-                Write<Vector> w(d); 
-                auto r = range(d); 
-
-                for(auto i=r.begin(); i != r.end(); ++i)
-                    d.set(i, d_elements_[i]); 
-            }
-
-            D = diag(d); 
-        }
-
-
-
         void buildM()
         {           
             // Doesn't work with dense matrices 

@@ -18,8 +18,8 @@ namespace utopia
 
 			void run_sparse()
 			{
-				UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
-				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
+				// UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
+				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 			}			
 
 			void quasi_newton_test()
