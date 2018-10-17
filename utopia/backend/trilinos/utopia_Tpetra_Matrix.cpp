@@ -332,9 +332,10 @@ namespace utopia {
       if (rows_local == INVALID_INDEX) {
           row_map.reset(new map_type(rows_global, index_base, comm));
           assert(cols_local == INVALID_INDEX);
-          Kokkos::View<LO*> colInds("Column Map", cols_global);
-          Kokkos::parallel_for(cols_global, KOKKOS_LAMBDA(size_t i) { colInds(i) = i; });
-          col_map.reset(new map_type(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), Kokkos::Compat::getConstArrayView(colInds), index_base, comm));
+          col_map.reset(new map_type(cols_global, index_base, comm));
+          //~ Kokkos::View<LO*> colInds("Column Map", cols_global);
+          //~ Kokkos::parallel_for(cols_global, KOKKOS_LAMBDA(size_t i) { colInds(i) = i; });
+          //~ col_map.reset(new map_type(Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(), Kokkos::Compat::getConstArrayView(colInds), index_base, comm));
       } else {
           // see for a distributed example https://github.com/trilinos/Trilinos/blob/master/packages/tpetra/core/example/Lesson07-Kokkos-Fill/04_tpetra.cpp
           assert(false && "Sparse distributed matrix assembly with CRS structures is not implemented yet.");
