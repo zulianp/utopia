@@ -20,6 +20,7 @@ namespace utopia
 			{
 				// UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
 				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
+				UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 			}			
 
 			void quasi_newton_test()
@@ -128,11 +129,38 @@ namespace utopia
 				tr_solver.verbose(_verbose);
 				tr_solver.delta0(1); 
 				tr_solver.solve(fun, x);
-
-
-				disp(x); 
-
 			}			
+
+
+			void QuasiNewtonBoundTest()
+			{
+				auto memory_size = 5; 
+
+				Bratu1D<Matrix, Vector> fun(_n);
+	    		Vector x = values(_n, 1.0);
+				Vector lb   = local_values(local_size(x).get(0), -0.01);
+				Vector ub   = local_values(local_size(x).get(0), 0.01);		    		
+	    		fun.apply_bc_to_initial_guess(x);
+
+	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
+	    		auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
+
+				QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
+
+				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				solver.set_line_search_strategy(line_search);
+				solver.max_it(30); 			
+
+				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+	    		solver.set_box_constraints(box);				
+
+
+	    		solver.verbose(true); 
+	    		solver.solve(fun, x);
+	    		disp(x); 	
+			}
+
+
 
 			void lbfgs_quasi_newton_test()
 			{

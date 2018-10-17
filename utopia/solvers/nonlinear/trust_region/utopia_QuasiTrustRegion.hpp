@@ -61,7 +61,7 @@
          bool converged = false;
          NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-         Scalar delta, product, ared, pred, rho, E, E_k, E_k1, alpha;
+         Scalar delta, product, ared, pred, rho, E, E_k, E_k1;// alpha;
 
          SizeType it = 0;
          it_successful_ = 0;

@@ -94,8 +94,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             theta_ = nom/denom; 
 
-            std::cout<<"current_m_: "<< current_m_ <<"  \n"; 
-
             this->shift_cols_left_replace_last_col(Y_, y); 
             this->shift_cols_left_replace_last_col(S_, s); 
 
@@ -151,13 +149,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 DenseMatrix result; 
                 this->apply_M(P, result);    
 
-                DenseMatrix S_theta = theta_ * S_; 
-                DenseMatrix P2 =  DenseMatrix(Blocks<DenseMatrix>(1,2,
-                {
-                    make_ref(Y_), make_ref(S_theta)
-                }));
-
-                H_ =  H_ - (P2 * result);     
+                H_ =  H_ - (transpose(P) * result);     
             }
             else
             {
@@ -192,8 +184,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         {
             const DenseMatrix M_old = M;
 
-            {   // begin lock
-
+            {  
                 Write<DenseMatrix>  write(M);
 
                 Read<DenseMatrix>   read(M_old);
@@ -209,7 +200,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                     M.set(i, c.end() - 1, col.get(i));
                 }
 
-            } // end of lock
+            } 
         }
 
         void buildW()
@@ -263,8 +254,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 auto r = row_range(M_); 
                 auto c = col_range(M_); 
 
-                auto rowSS = row_range(SS); 
-                auto colSS = col_range(SS); 
+                // auto rowSS = row_range(SS); 
+                // auto colSS = col_range(SS);  // here, we assume that SS has same distribution as M_ 
 
                 for(auto i=r.begin(); i!=r.end(); ++i)
                 {
@@ -295,6 +286,18 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             }
 
 
+            // maybe once multiplication is fixed and we can use dense matrices 
+            // if(current_m_ > 10)
+            // {
+            //     DenseMatrix M_inv = local_values(local_size(M_).get(0), local_size(M_).get(1), 99.0); 
+            //     auto linear_solver = std::make_shared<GMRES<DenseMatrix, Vector> >();
+            //     linear_solver->atol(1e-12); 
+            //     MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver); 
+            //     mat_solver.get_inverse(M_, M_inv); 
+
+            //     disp(M_inv); 
+            // }
+
         }
 
         void apply_M(const Vector & v, Vector & result) const 
@@ -313,214 +316,219 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
-//     public:        
-
-//         bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s) const override
-//         {
-//             Vector x_cp, c; 
-
-//             this->computeCauchyPoint(x, g, lb, ub, x_cp, c);
-//             this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
-
-//             return true; 
-//         }
 
 
 
-//     Scalar get_gb(const Vector & g, const SizeType & index) const
-//     {
-//         Vector g_local = local_values(1, 0); 
 
-//         {   // begin lock
-//             Write<Vector>  wd(g_local);
-//             Read<Vector> r1(g); 
 
-//             Range rr = range(g);
+    public:        
 
-//             Range rr_g_local = range(g_local);
+        bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s) const override
+        {
+            Vector x_cp, c; 
 
-//             for (SizeType i = rr.begin(); i != rr.end(); ++i)
-//             {
-//                 if(i==index)
-//                     g_local.set(rr_g_local.begin(), g.get(i)); 
-//             }
+            this->computeCauchyPoint(x, g, lb, ub, x_cp, c);
+            this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
+
+            return true; 
+        }
+
+
+
+    Scalar get_gb(const Vector & g, const SizeType & index) const
+    {
+        Vector g_local = local_values(1, 0); 
+
+        {   // begin lock
+            Write<Vector>  wd(g_local);
+            Read<Vector> r1(g); 
+
+            Range rr = range(g);
+
+            Range rr_g_local = range(g_local);
+
+            for (SizeType i = rr.begin(); i != rr.end(); ++i)
+            {
+                if(i==index)
+                    g_local.set(rr_g_local.begin(), g.get(i)); 
+            }
    
-//         } // end of lock
+        } // end of lock
 
-//         return sum(g_local); 
-//     }
-
-
-
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//         void computeCauchyPoint(const Vector &x, const Vector & g, const Vector & lb, 
-//                                 const Vector & ub, Vector & x_cp, Vector & c) const
-//         {
-//             x_cp = x; 
-//             Scalar t_old, t, dt_min, dt, f_p, f_pp, z_b, g_b; 
-//             SizeType b; 
-//             Vector wbT; 
-
-//             const auto inf = std::numeric_limits<Scalar>::infinity(); 
-
-//             Vector break_points, feasible_set; // indexing and distribution as always
-//             cp_.compute_breakpoints(g, x, lb, ub, break_points); 
-
-//             Vector d; 
-//             cp_.get_d_corresponding_to_ti(break_points, g, d, 0.0); 
-//             cp_.get_initial_feasible_set(break_points, feasible_set); 
-
-//             // disp(feasible_set); 
-
-//             Vector sorted_break_points; 
-//             vec_unique_sort_serial(break_points, sorted_break_points, cp_.get_memory_size()); 
-
-//             Vector p; 
-//             // this two lines seem usless
-//             p = transpose(W_) * d; 
-//             c = local_values(local_size(W_).get(1), 1, 0); 
-
-//             f_p = -1.0 * dot(d, d); 
-//             f_pp = - theta_ * f_p - dot(p, M_ * p); 
-
-//             dt_min = -f_p/f_pp; 
-//             t_old = 0.0; 
-
-//             SizeType it_sorted = 1; 
-
-//             t = cp_.get_next_t(sorted_break_points, 0); 
-
-//             if(t==0)
-//             {
-//                 t = cp_.get_next_t(sorted_break_points, 0); 
-//                 it_sorted = 2;                    
-//             }
-
-//             dt = t - t_old; 
+        return sum(g_local); 
+    }
 
 
-//             bool repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
-//             SizeType num_break_points = cp_.get_number_of_sorted_break_points(sorted_break_points); 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        void computeCauchyPoint(const Vector &x, const Vector & g, const Vector & lb, 
+                                const Vector & ub, Vector & x_cp, Vector & c) const
+        {
+            x_cp = x; 
+            Scalar t_old, t, dt_min, dt, f_p, f_pp, z_b, g_b; 
+            SizeType b; 
+            Vector wbT; 
+
+            const auto inf = std::numeric_limits<Scalar>::infinity(); 
+
+            Vector break_points, feasible_set; // indexing and distribution as always
+            cp_.compute_breakpoints(g, x, lb, ub, break_points); 
+
+            Vector d; 
+            cp_.get_d_corresponding_to_ti(break_points, g, d, 0.0); 
+            cp_.get_initial_feasible_set(break_points, feasible_set); 
+
+            // disp(feasible_set); 
+
+            Vector sorted_break_points; 
+            vec_unique_sort_serial(break_points, sorted_break_points, cp_.get_memory_size()); 
+
+            Vector p; 
+            // this two lines seem usless
+            p = transpose(W_) * d; 
+            c = local_values(local_size(W_).get(1), 1, 0); 
+
+            f_p = -1.0 * dot(d, d); 
+            f_pp = - theta_ * f_p - dot(p, M_ * p); 
+
+            dt_min = -f_p/f_pp; 
+            t_old = 0.0; 
+
+            SizeType it_sorted = 1; 
+
+            t = cp_.get_next_t(sorted_break_points, 0); 
+
+            if(t==0)
+            {
+                t = cp_.get_next_t(sorted_break_points, 0); 
+                it_sorted = 2;                    
+            }
+
+            dt = t - t_old; 
+
+
+            bool repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
+            SizeType num_break_points = cp_.get_number_of_sorted_break_points(sorted_break_points); 
                 
 
-//             // check logic here...
-//             while(dt_min >= dt && it_sorted < num_break_points)
-//             { 
-//                 z_b = cp_.project_direction_on_boundary(x, d, ub, lb, x_cp, b); 
-//                 g_b = get_gb(g, b); 
+            // check logic here...
+            while(dt_min >= dt && it_sorted < num_break_points)
+            { 
+                z_b = cp_.project_direction_on_boundary(x, d, ub, lb, x_cp, b); 
+                g_b = get_gb(g, b); 
 
-//                 c = c + dt * p; 
+                c = c + dt * p; 
 
-//                 Matrix W_transpose_ = transpose(W_); 
-//                 mat_get_col(W_transpose_, wbT, b); 
+                Matrix W_transpose_ = transpose(W_); 
+                mat_get_col(W_transpose_, wbT, b); 
 
-//                 Vector Mc, MwbT, Mp; 
-//                 this->apply_M(c, Mc); 
-//                 this->apply_M(p, Mp);                 
-//                 this->apply_M(wbT, MwbT); 
+                Vector Mc, MwbT, Mp; 
+                this->apply_M(c, Mc); 
+                this->apply_M(p, Mp);                 
+                this->apply_M(wbT, MwbT); 
 
-//                 f_p += (dt * f_pp) +  (g_b*g_b) + (theta_*g_b  * z_b); 
-//                 f_p += g_b * dot(wbT, Mc); 
+                f_p += (dt * f_pp) +  (g_b*g_b) + (theta_*g_b  * z_b); 
+                f_p += g_b * dot(wbT, Mc); 
 
-//                 f_pp -= (theta_ * (g_b*g_b)) + (2. * g_b * dot(wbT, Mp)) - ((g_b*g_b) * dot(wbT, MwbT)); 
+                f_pp -= (theta_ * (g_b*g_b)) + (2. * g_b * dot(wbT, Mp)) - ((g_b*g_b) * dot(wbT, MwbT)); 
 
-//                 // TODO:: add checks 
-//                 if(f_pp == 0 || !std::isfinite(f_pp))
-//                     break;   
+                // TODO:: add checks 
+                if(f_pp == 0 || !std::isfinite(f_pp))
+                    break;   
 
-//                 p += g_b * wbT; 
-//                 cp_.zero_dir_component(d, b); 
+                p += g_b * wbT; 
+                cp_.zero_dir_component(d, b); 
 
-//                 dt_min  = -f_p/f_pp;
-//                 t_old   = t;
+                dt_min  = -f_p/f_pp;
+                t_old   = t;
 
-//                 // lets see 
-//                 if(repeated_index)
-//                 {
-//                     repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
-//                     dt = t - t_old;
-//                 }
-//                 else
-//                 {   
-//                     t = cp_.get_next_t(sorted_break_points, it_sorted);
+                // lets see 
+                if(repeated_index)
+                {
+                    repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
+                    dt = t - t_old;
+                }
+                else
+                {   
+                    t = cp_.get_next_t(sorted_break_points, it_sorted);
 
-//                     if(t==inf || !std::isfinite(t))
-//                         break; 
+                    if(t==inf || !std::isfinite(t))
+                        break; 
 
-//                     repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
-//                     it_sorted++; 
+                    repeated_index = cp_.get_global_active_index(break_points, feasible_set, t, b); 
+                    it_sorted++; 
 
-//                     // TODO:: do checks for infinity.... 
-//                     dt = t - t_old;
-//                 }
+                    // TODO:: do checks for infinity.... 
+                    dt = t - t_old;
+                }
 
-//             }
+            }
 
-//             dt_min = std::max(dt_min, 0.0);
-//             t_old  = t_old + dt_min;
+            dt_min = std::max(dt_min, 0.0);
+            t_old  = t_old + dt_min;
 
-//             cp_.add_d_to_x(x, x_cp, feasible_set, d, t_old); 
+            cp_.add_d_to_x(x, x_cp, feasible_set, d, t_old); 
 
-//             c = c + dt_min*p;
-//         }
-
-
-
-//     // TODO:: return correction
-//     // returns true, if there is any free variable, otherwise return false
-//     // TODO:: investigate if you need new feasible set         
-//     bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector & c, const Vector &g, 
-//                                     const Vector & lb,  const Vector & ub,  Vector & correction) const
-//     {
-//         Matrix W_reduced; 
-//         Vector g_reduced;
-//         Vector feasible_set; 
-
-//         Vector Mc; 
-//         this->apply_M(c, Mc); 
-
-//         Vector global_grad   = g + (theta_*(x_cp-x)) - (W_*(Mc)); 
-//         Matrix W_T = transpose(W_);  
-
-//         reduced_primal_method_.build_reduced_quantities(lb, ub, x_cp, global_grad, W_T, feasible_set,  W_reduced, g_reduced); 
+            c = c + dt_min*p;
+        }
 
 
-//         if(sum(feasible_set)==0)
-//         {
-//             correction = x_cp - x; 
-//             return false; 
-//         }
 
-//         Vector WR_gR = W_reduced * g_reduced; 
+    // TODO:: return correction
+    // returns true, if there is any free variable, otherwise return false
+    // TODO:: investigate if you need new feasible set         
+    bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector & c, const Vector &g, 
+                                    const Vector & lb,  const Vector & ub,  Vector & correction) const
+    {
+        Matrix W_reduced; 
+        Vector g_reduced;
+        Vector feasible_set; 
 
-//         Vector v; 
-//         this->apply_M(WR_gR, v); 
+        Vector Mc; 
+        this->apply_M(c, Mc); 
 
-//         Matrix N = W_T * transpose(W_T); 
-//         N  = 1/theta_ * N; 
-//         N = M_ * N; 
-//         N = Matrix(local_identity(local_size(N))) - N; 
+        Vector global_grad   = g + (theta_*(x_cp-x)) - (W_*(Mc)); 
+        Matrix W_T = transpose(W_);  
 
-//         Vector s = local_zeros(local_size(v)); 
-//         linear_solver_->solve(N, v, s); 
+        reduced_primal_method_.build_reduced_quantities(lb, ub, x_cp, global_grad, W_T, feasible_set,  W_reduced, g_reduced); 
+
+
+        if(sum(feasible_set)==0)
+        {
+            correction = x_cp - x; 
+            return false; 
+        }
+
+        Vector WR_gR = W_reduced * g_reduced; 
+
+        Vector v; 
+        this->apply_M(WR_gR, v); 
+
+        Matrix N = W_T * transpose(W_T); 
+        N  = 1/theta_ * N; 
+        N = M_ * N; 
+        N = Matrix(local_identity(local_size(N))) - N; 
+
+        Vector s = local_zeros(local_size(v)); 
+        linear_solver_->solve(N, v, s); 
         
 
-//         Vector  du = (-1.0/theta_ )* g_reduced; 
-//                 du -= 1.0/(theta_*theta_) * transpose(W_reduced) * s; 
+        Vector  du = (-1.0/theta_ )* g_reduced; 
+                du -= 1.0/(theta_*theta_) * transpose(W_reduced) * s; 
 
-//         Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, du, feasible_set); 
-//         du *= alpha_star; 
+        Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, du, feasible_set); 
+        du *= alpha_star; 
 
-//         Vector x_bar = x_cp; 
-//         Vector du_prolongated; 
+        Vector x_bar = x_cp; 
+        Vector du_prolongated; 
 
-//         reduced_primal_method_.prolongate_reduced_corr(du, feasible_set,  du_prolongated); 
+        reduced_primal_method_.prolongate_reduced_corr(du, feasible_set,  du_prolongated); 
 
-//         x_bar = x_bar + du_prolongated; 
-//         correction = x_bar - x; 
+        x_bar = x_bar + du_prolongated; 
+        correction = x_bar - x; 
 
-//         return true; 
-//     }
+        return true; 
+    }
 
 
     public: 

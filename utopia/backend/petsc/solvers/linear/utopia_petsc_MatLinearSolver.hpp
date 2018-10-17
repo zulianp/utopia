@@ -56,6 +56,9 @@ namespace utopia
             }
             else
             {
+                MatType typeX; 
+                MatGetType(raw_type(X), &typeX); 
+
                 Mat B_temp, X_temp; 
                 MatConvert(raw_type(B), MATDENSE, MAT_INITIAL_MATRIX, &B_temp); 
                 MatConvert(raw_type(X), MATDENSE, MAT_INITIAL_MATRIX, &X_temp); 
@@ -79,6 +82,7 @@ namespace utopia
                 MatDenseRestoreArray(B_temp, &bb);
                 MatDenseRestoreArray(X_temp, &xx);
 
+                MatConvert(X_temp, typeX, MAT_INITIAL_MATRIX, &raw_type(X)); 
                 MatDestroy(&B_temp);
                 MatDestroy(&X_temp);                
             }
@@ -90,9 +94,11 @@ namespace utopia
         // maybe merge with inv() fun - this one runs in parallel - although, precision depends on LS
         virtual void get_inverse(const Matrix &A, DenseMatrix & A_inv)
         {
-            DenseMatrix RHS = local_identity(local_size(A).get(0), local_size(A).get(0)); 
-            A_inv = local_values(local_size(A).get(1), local_size(A).get(0), 0.0);
-            
+            if(size(A).get(0) != size(A).get(1))
+                utopia_error("get_inverse:: works just with Dense matrices \n"); 
+
+            DenseMatrix RHS = local_identity(local_size(A).get(0), local_size(A).get(1)); 
+            A_inv = local_values(local_size(A).get(0), local_size(A).get(1), 0.0);
             this->solve(A, RHS, A_inv); 
         }
 
