@@ -19,7 +19,9 @@ namespace utopia
 	
 	public:
 		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
-		DEF_UTOPIA_SCALAR(Matrix)
+		
+		typedef UTOPIA_SCALAR(Vector)    Scalar;
+    	typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
 		ReducedPrimalMethod()
 		{
@@ -129,7 +131,15 @@ namespace utopia
         {
             feasible_set = local_values(local_size(lb).get(0), 0.); 
 
-            // std::cout<<"build_reduced_quantities: 1 ---- \n"; 
+            // we can just get things directly 
+            if(size(feasible_set).get(0)==sum(feasible_set))
+            {
+                g_reduced = g; 
+                H_reduced = H; 
+
+                return; 
+            }
+
 
             SizeType local_feasible_set = 0; 
 
@@ -150,15 +160,6 @@ namespace utopia
                         local_feasible_set++; 
                     }
                 }       
-            }
-
-            // we can just get things directly 
-            if(size(feasible_set).get(0)==sum(feasible_set))
-            {
-                g_reduced = g; 
-                H_reduced = H; 
-
-                return; 
             }
 
 
@@ -234,7 +235,130 @@ namespace utopia
         }
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////   CHECKED   /////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        SizeType get_local_size_feasible_set(const Vector & feasible_set)
+        {
+        	SizeType local_feasible_set = 0; 
+            each_read(feasible_set, [&local_feasible_set](const SizeType i, const Scalar value) 
+            {
+				if(approxeq(value, 1.0)) 
+					local_feasible_set++; 
+			});
 
+            return local_feasible_set; 
+        }
+
+
+        void build_feasible_set(const Vector &x, const Vector &ub, const Vector &lb, Vector & feasible_set)
+        { 
+        	if(empty(feasible_set) || local_size(feasible_set)!=local_size(x))
+        		feasible_set = local_zeros(local_size(x)); 
+
+			Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
+          	each_write(feasible_set, [ub, lb, x](const SizeType i) -> double { 
+                      	Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
+                      	if(li < xi && xi < ui)
+                        	return 1.0; 
+                      	else
+                        	return 0.0; }   );
+        }
+
+
+
+        void build_active_set(const Vector &x, const Vector &ub, const Vector &lb, Vector & active_set)
+        { 
+        	if(empty(active_set) || local_size(active_set)!=local_size(x))
+        		active_set = local_zeros(local_size(x)); 
+
+			Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
+          	each_write(active_set, [ub, lb, x](const SizeType i) -> double { 
+                      	Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
+                      	if(li < xi && xi < ui)
+                        	return 0.0; 
+                      	else
+                        	return 1.0; }   );
+        }
+
+
+        void build_reduced_vector(const Vector &x, const Vector & feasible_set, Vector &x_reduced)
+        {
+        	if(local_size(x)==local_size(x_reduced) && size(x)==size(x_reduced))
+        	{
+        		x_reduced = x; 
+        		return; 
+        	}
+
+            SizeType local_counter = 0; 
+            {
+	            Read<Vector>  rf(feasible_set); 
+	            Read<Vector>  rg(x); 
+
+	            Write<Vector>  wg(x_reduced); 
+	            auto rr = range(feasible_set); 
+	            auto range_reduced = range(x_reduced); 
+
+	            for (SizeType i = rr.begin(); i != rr.end(); ++i)
+	            {   
+	                if(approxeq(feasible_set.get(i), 1.0))
+	                {
+	                    x_reduced.set(range_reduced.begin() + local_counter, x.get(i)); 
+	                    local_counter++;
+	                }
+	            }   
+	        }
+
+        }
+
+
+
+        void build_reduced_matrix(const Matrix &M, const Vector & feasible_set, Matrix &M_reduced)
+        {
+
+        	if(local_size(feasible_set).get(0) != local_size(M).get(1))
+                utopia_error("feasible_set, H: local sizes do not match .... \n"); 
+
+            if(local_size(M_reduced).get(0) != local_size(M).get(0))
+                utopia_error("H_reduced, H: local sizes do not match .... \n");             
+
+
+
+			{
+                Read<Vector>  rf(feasible_set); 
+                Read<Matrix>  rM(M); 
+
+                Write<Matrix>  wg(M_reduced); 
+
+                auto row_original = row_range(M); 
+                auto col_original = col_range(M); 
+
+                // auto row_reduced = row_range(H_reduced); 
+                auto col_reduced = col_range(M_reduced); 
+
+                SizeType local_counter = 0; 
+
+                for (SizeType r = row_original.begin(); r != row_original.end(); ++r)
+                {   
+
+                    for (SizeType c = col_original.begin(); c != col_original.end(); ++c)
+                    {            
+                        if(c==col_original.begin())
+                            local_counter=0;
+
+                        // TODO:: put approx eq
+                        if(feasible_set.get(c)==1)
+                        {
+                            M_reduced.set(r, col_reduced.begin() + local_counter,  M.get(r, c)); 
+                            local_counter++;
+                        }
+                    }    
+                }  
+
+            }
+
+
+        }
 
 
 

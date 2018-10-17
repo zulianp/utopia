@@ -18,7 +18,7 @@ namespace utopia
 
 			void run_sparse()
 			{
-				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
+				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 				UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
 			}			
 
@@ -111,7 +111,7 @@ namespace utopia
 	    		fun.apply_bc_to_initial_guess(x);
 
 	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
+				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, DMatrixd,  Vector> >(memory_size, linear_solver);
 
 
 				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
@@ -124,7 +124,7 @@ namespace utopia
 
 				tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
 
-				tr_solver.max_it(100); 
+				tr_solver.max_it(2); 
 				tr_solver.verbose(_verbose);
 				tr_solver.delta0(1); 
 				tr_solver.solve(fun, x);
@@ -133,34 +133,154 @@ namespace utopia
 
 			void lbfgs_quasi_newton_test()
 			{
-				auto memory_size = 5; 
+				// auto memory_size = 5; 
 
-				Bratu1D<Matrix, Vector> fun(_n);
-	    		Vector x = values(_n, 0.0);
-	    		fun.apply_bc_to_initial_guess(x);
+				const int _n = 15; 
 
-	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
+				DMatrixd A = local_identity(5, 5); 
+				DMatrixd B = local_identity(5, 5); 
+				
+				DMatrixd W_ = Blocks<DMatrixd>(1, 2,
+	            {
+	                make_ref(A), make_ref(B)
+	            });
+
+				disp(W_); 
+				
 
 
-				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
-				subproblem->atol(1e-10);
-
-				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
-				tr_solver.atol(1e-4); 
-				tr_solver.rtol(1e-9);
-
-				tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
-
-				tr_solver.max_it(100); 
-				tr_solver.verbose(_verbose);
-				tr_solver.delta0(1); 
-				tr_solver.solve(fun, x);
+				// Bratu1D<Matrix, Vector> fun(_n);
+	   //  		Vector x = values(_n, 0.0);
+				// Vector lb   = local_values(local_size(x).get(0), 5);
+				// Vector ub   = local_values(local_size(x).get(0), 10);			    		
+	   //  		// fun.apply_bc_to_initial_guess(x);
 
 
 
-				disp(x); 
+	   //  		{
+	   //  			Write<Vector>  w(x); 
+
+	   //  			auto r = range(x); 
+
+	   //  			for(auto i=r.begin(); i != r.end(); ++i)
+	   //  			{
+	   //  				x.set(i, i); 
+	   //  			}
+
+	   //  		}
+
+	   //  		disp(x);
+
+
+	   //  		Vector feasible_set = local_zeros(local_size(x)); 
+
+	   //  		{
+	   //  			Write<Vector>  w(feasible_set); 
+
+	   //  			auto r = range(feasible_set); 
+
+	   //  			for(auto i=r.begin(); i != r.end(); ++i)
+	   //  			{
+	   //  				if(i==2 || i==3 || i==7 || i==9 || i==11 || i==14)
+	   //  					feasible_set.set(i, 1.0); 
+	   //  			}
+
+	   //  		}
+
+
+	   //  		// disp(feasible_set); 
+
+				// ReducedPrimalMethod<Matrix, Vector> primal_method; 
+				// auto local_size_feasible_set = primal_method.get_local_size_feasible_set(feasible_set); 
+				// // std::cout<<"local_size: "<< local_size_feasible_set << "  \n"; 
+
+
+
+
+
+				// Matrix M = values(size(feasible_set).get(0), 5, 1.0); 
+				// disp(M); 
+
+				// if(mpi_world_rank()==1)
+				// 	std::cout<<"M: "<< local_size(M).get(0) <<"  M: "<< local_size(M).get(1) << "  \n"; 
+
+				// auto global_feasible_set = sum(feasible_set); 
+
+				// Matrix M; 
+
+				// MPI_Comm comm = PetscObjectComm((PetscObject)raw_type(feasible_set));
+
+    //     		MatCreate(comm, &raw_type(M));
+    //     		MatSetFromOptions(raw_type(M));
+    //     		MatSetType(raw_type(M), MATDENSE);
+    //     		MatSetSizes(raw_type(M), local_size(feasible_set).get(0), 3, size(feasible_set).get(0), 3);
+    //     		MatSetUp(raw_type(M));
+
+    //     		MatSetOption(raw_type(M), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
+    //     		MatSetOption(raw_type(M), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
+
+
+    //     		{
+    //     			Write<Matrix>  mr(M); 
+
+    //     			auto r_range = row_range(M); 
+    //     			auto c_range = col_range(M); 
+
+
+    //     			for(auto i=r_range.begin(); i != r_range.end(); ++i)
+    //     			{
+    //     				for(auto j=c_range.begin(); j != c_range.end(); ++j)
+	   //      			{
+	   //      				M.set(i,j, j); 
+	   //      			}
+    //     			}
+    //     		}
+
+    //     		disp(M); 
+
+				// if(mpi_world_rank()==0)
+				// 	std::cout<<"M: "<< local_size(M).get(0) <<"  M: "<< local_size(M).get(1) << "  \n";         		
+
+				// Matrix M_T = transpose(M); 
+				// // disp(M_T); 
+
+				// if(mpi_world_rank()==0)
+				// 	std::cout<<"MT: "<< local_size(M_T).get(0)<<"  MT: "<< local_size(M_T).get(1) << "  \n"; 
+
+
+				// Matrix M_reduced  = local_values(local_size(M_T).get(0), local_size_feasible_set, 0.0); 
+
+				// disp(M_reduced); 
+
+				// primal_method.build_reduced_matrix(M_T, feasible_set, M_reduced); 
+
+				// disp(M_reduced); 
+
+
+
+	   			// auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
+				// auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
+
+
+				// auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+				// subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+				// subproblem->atol(1e-10);
+
+				// QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
+				// tr_solver.atol(1e-4); 
+				// tr_solver.rtol(1e-9);
+
+				// tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
+
+				// tr_solver.max_it(100); 
+				// tr_solver.verbose(_verbose);
+				// tr_solver.delta0(1); 
+				// tr_solver.solve(fun, x);
+				// disp(x); 
+
+
+
+
 
 
 
