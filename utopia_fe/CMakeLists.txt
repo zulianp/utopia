@@ -68,7 +68,7 @@ function(find_project_files rootPath dirPaths headers sources)
 	SET(DIR_PATHS ${${dirPaths}})
 
 	FOREACH(INCLUDE_PATH ${DIR_PATHS})
-		INCLUDE_DIRECTORIES(${ROOT_PATH}/${INCLUDE_PATH})
+		INCLUDE_DIRECTORIES(BEFORE ${ROOT_PATH}/${INCLUDE_PATH})
 
 		file(GLOB TEMP_HPPSRC "${ROOT_PATH}/${INCLUDE_PATH}/*.cpp" )
 		file(GLOB TEMP_SRC "${ROOT_PATH}/${INCLUDE_PATH}/*.c" )
@@ -112,8 +112,8 @@ FOREACH(MODULE ${UTOPIA_FE_MODULES})
 		add_subdirectory("${MODULE}")
 ENDFOREACH(MODULE)
 
-include_directories(${CMAKE_SOURCE_DIR})
-include_directories(${CMAKE_BINARY_DIR})
+include_directories(BEFORE ${CMAKE_SOURCE_DIR})
+include_directories(BEFORE ${CMAKE_BINARY_DIR})
 configure_file(${UTOPIA_FE_ROOT_PATH}/utopia_fe_config.hpp.in ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp)
 install(FILES ${CMAKE_BINARY_DIR}/utopia_fe_config.hpp DESTINATION include)
 
