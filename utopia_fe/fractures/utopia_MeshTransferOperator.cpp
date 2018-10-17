@@ -101,9 +101,15 @@ namespace utopia {
 			interpolation_operator->normalize_rows();
 			operator_ = interpolation_operator;
 		} else if(use_biorth) {
-			auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
-			pseudo_l2_operator->init_from_coupling_operator(*mats[0]);
-			operator_ = pseudo_l2_operator;
+			
+			if(normalize_rows_) {
+				auto pseudo_l2_operator = std::make_shared<PseudoL2TransferOperator>();
+				pseudo_l2_operator->init_from_coupling_operator(*mats[0]);
+				operator_ = pseudo_l2_operator;
+			} else {
+				operator_ = std::make_shared<PseudoL2TransferOperator>(mats[0]);
+			}
+			
 		} else {
 			auto l2_operator = std::make_shared<L2TransferOperator>(mats[0], mats[1], std::make_shared<Factorization<USparseMatrix, UVector>>());
 			l2_operator->fix_mass_matrix_operator();

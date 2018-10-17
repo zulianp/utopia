@@ -30,10 +30,14 @@ namespace utopia {
         {
             UTOPIA_TRACE_BEGIN(expr);
 
-            UTOPIA_BACKEND(Traits).build_blocks(
-                Eval<Wrapper<Left, 2>,  Traits>::apply(expr.left()),
-                expr.right()
-            );
+            if(is_sparse<Right>::value) {
+                UTOPIA_BACKEND(Traits).build_blocks(
+                    Eval<Wrapper<Left, 2>,  Traits>::apply(expr.left()),
+                    expr.right()
+                );
+            } else {
+                Eval<Construct<Wrapper<Left, 2>, Blocks<Right> >, Traits, HOMEMADE>::apply(expr);
+            }
 
             UTOPIA_TRACE_END(expr);
             return true;

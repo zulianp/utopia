@@ -232,6 +232,10 @@ namespace utopia {
 			return utopia::write(path / "T.m", *T);
 		}
 
+		inline std::shared_ptr<USparseMatrix> matrix() {
+			return T;
+		}
+
 	private:
 		std::shared_ptr<USparseMatrix> T;
 	};
