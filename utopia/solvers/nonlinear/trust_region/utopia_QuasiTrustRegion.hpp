@@ -112,6 +112,9 @@
     //----------------------------------------------------------------------------
           // this should be replaced ASAP .... 
           H = hessian_approx_strategy_->get_Hessian(); 
+
+          std::cout<<"------ 1 ------ \n"; 
+
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
             tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
 
@@ -130,10 +133,15 @@
 
           // p_k = alpha*p_k; 
 
+          std::cout<<"------ 2 ------ \n"; 
+
           Scalar l_term = dot(g, p_k);
+          std::cout<<"------ 3 ------ \n"; 
           Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
           pred = - l_term - 0.5 * qp_term; 
 
+
+          std::cout<<"------ 4 ------ \n"; 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           if(it == 1 && rad_flg)
@@ -166,6 +174,7 @@
           if (rho >= this->rho_tol())
             it_successful_++;
 
+          std::cout<<"------ 5 ------ \n"; 
 
           // good reduction, accept trial point 
           if (rho >= this->rho_tol())
@@ -184,8 +193,11 @@
             E = E_k; 
           }
 
+          std::cout<<"------ 6 ------ \n"; 
 
           hessian_approx_strategy_->update(p_k, y);
+
+          std::cout<<"------ 7 ------ \n"; 
 
     //----------------------------------------------------------------------------
     //    convergence check
@@ -201,6 +213,8 @@
               PrintInfo::print_iter_status(it, {g_norm, r_norm, E, E_k1, rho, delta, s_norm});
           #endif
 
+            std::cout<<"------ 8 ------ \n"; 
+
             converged = TrustRegionBase<Matrix, Vector>::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, 9e9, delta);
     //----------------------------------------------------------------------------
     //      tr. radius update
@@ -208,6 +222,7 @@
           this->delta_update(rho, p_k, delta);
           it++;
 
+          std::cout<<"------ 9 ------ \n"; 
         }
 
         // some benchmarking

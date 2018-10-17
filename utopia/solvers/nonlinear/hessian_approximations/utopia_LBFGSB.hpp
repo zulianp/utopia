@@ -37,11 +37,9 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             this->initialized(true);
             current_m_ = 0; 
 
-            // TODO:: recheck 
             W_ = values(size(x).get(0), 1, 0.0); 
             M_ = zeros(1, 1); 
 
-            // TODO:: investigate proper value of theta
             theta_ = 1.0; 
 
             return true;
@@ -74,19 +72,24 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             // if denom > eps, hessian approx. should be positive semidefinite
             if(denom < 1e-12)
             {
-                if(mpi_world_rank()==0)
-                    utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n"); 
+                // if(mpi_world_rank()==0)
+                //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n"); 
 
                 return false; 
             }
 
             theta_ = nom/denom; 
 
+            std::cout<<"current_m_: "<< current_m_ <<"  \n"; 
+
             // this needs to be done durign first it, in order to initialize matrices 
             if(current_m_ == 0)
             {
+                std::cout<<"-- cm 0  ----- \n"; 
                 this->init_mat_from_vec(Y_, y); 
+                std::cout<<"-- cm 1  ----- \n"; 
                 this->init_mat_from_vec(S_, s); 
+                std::cout<<"-- cm 2  ----- \n"; 
             }
             // here we are just building first m elements of matrices
             else if(current_m_ < m_)
@@ -101,9 +104,13 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 this->shift_cols_left_replace_last_col(S_, s); 
             }
 
+            std::cout<<"-- up 1  ----- \n"; 
+
             this->buildW(); 
+            std::cout<<"-- up 2 -------  \n"; 
             this->buildM(); 
 
+            std::cout<<"-- up 3 -------  \n"; 
             current_m_++; 
 
             return true;
@@ -121,7 +128,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             Vector Y_v = transpose(Y_) * v;
             Vector S_v = theta_ * transpose(S_) * v;
 
-            Vector p =  Vector(Blocks<Vector>(
+            Vector p = Vector(Blocks<Vector>(
             {
                 make_ref(Y_v), make_ref(S_v)
             }));
@@ -135,28 +142,47 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         virtual Matrix & get_Hessian() override
         {
+            std::cout<<"---- 0 ------ \n"; 
             if(current_m_ > 1)
             {
-                H_ = theta_ * local_identity(local_size(H_)); 
+                std::cout<<"---- 1 ------ \n"; 
+                H_ = local_identity(local_size(H_).get(0), local_size(H_).get(1)); 
+                H_ = theta_ * H_; 
+
+                std::cout<<"---- 2 ------ \n"; 
                 DenseMatrix Y_T = transpose(Y_); 
                 DenseMatrix S_T = theta_ * transpose(S_); 
 
-                DenseMatrix P =  DenseMatrix(Blocks<DenseMatrix>(2,1,
+                std::cout<<"---- 3 ------ \n"; 
+                DenseMatrix P =  DenseMatrix(Blocks<DenseMatrix>(2, 1,
                 {
                     make_ref(Y_T), make_ref(S_T)
                 }));
 
+                std::cout<<"---- 4 ------ \n"; 
                 DenseMatrix result; 
                 this->apply_M(P, result);    
-                H_ -= transpose(P) * result;             
+
+                std::cout<<"---- 5 ------ \n"; 
+                DenseMatrix S_theta = theta_ * S_; 
+                DenseMatrix P2 =  DenseMatrix(Blocks<DenseMatrix>(1,2,
+                {
+                    make_ref(Y_), make_ref(S_theta)
+                }));
+
+                std::cout<<"---- 6 ------ \n"; 
+                H_ =  H_ - (P2 * result);     
             }
             else
             {
-                H_ = local_identity(local_size(H_)); 
+                std::cout<<"---- 0.1 ------ \n"; 
+                H_ = local_identity(local_size(H_).get(0), local_size(H_).get(1)); 
+                std::cout<<"---- 0.2 ------ \n"; 
             }
             
             // utopia_warning("LBFGS::get_Hessian returns dense matrix ...."); 
 
+            std::cout<<"---- 0.3 ------ \n"; 
             return H_; 
         }
 
@@ -274,6 +300,9 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             std::vector<Scalar> diag_dots(n); 
 
+            std::cout<<"M ---- 1 \n"; 
+
+
             for(auto i=0; i < n; i++)
             {
                 // Vector v1 = local_zeros(local_size(S_)), v2 = local_zeros(local_size(S_)); 
@@ -282,6 +311,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 mat_get_col(Y_, v2, i);
                 diag_dots[i] = -1.0 * dot(v1, v2); 
             }
+            std::cout<<"M ---- 2 \n"; 
 
             {   // begin lock
 
@@ -294,7 +324,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             } // end of lock
 
             DenseMatrix D = diag(d); 
-
+            std::cout<<"M ---- 3 \n"; 
 
             std::vector<std::vector<Scalar> > matrixL(n, std::vector<Scalar>(n));
 
@@ -311,6 +341,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                     }
                 }
             }
+
+            std::cout<<"M ---- 4 \n"; 
 
             DenseMatrix L = zeros(n, n); 
 
@@ -334,6 +366,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             DenseMatrix SS = theta_ * transpose(S_) * S_; 
             DenseMatrix LT = transpose(L); 
 
+            std::cout<<"M ---- 5 \n"; 
 
             M_ = DenseMatrix(Blocks<DenseMatrix>(2, 2,
             {

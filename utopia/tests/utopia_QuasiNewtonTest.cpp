@@ -18,8 +18,8 @@ namespace utopia
 
 			void run_sparse()
 			{
-				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
-				UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
+				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
+				// UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
 			}			
 
 			void quasi_newton_test()
@@ -111,7 +111,7 @@ namespace utopia
 	    		fun.apply_bc_to_initial_guess(x);
 
 	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, DMatrixd,  Vector> >(memory_size, linear_solver);
+				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
 
 
 				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
@@ -124,36 +124,26 @@ namespace utopia
 
 				tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
 
-				tr_solver.max_it(2); 
+				tr_solver.max_it(100); 
 				tr_solver.verbose(_verbose);
 				tr_solver.delta0(1); 
 				tr_solver.solve(fun, x);
+
+
+				disp(x); 
 
 			}			
 
 			void lbfgs_quasi_newton_test()
 			{
-				// auto memory_size = 5; 
-
+				auto memory_size = 5; 
 				const int _n = 15; 
 
-				DMatrixd A = local_identity(5, 5); 
-				DMatrixd B = local_identity(5, 5); 
-				
-				DMatrixd W_ = Blocks<DMatrixd>(1, 2,
-	            {
-	                make_ref(A), make_ref(B)
-	            });
-
-				disp(W_); 
-				
-
-
-				// Bratu1D<Matrix, Vector> fun(_n);
-	   //  		Vector x = values(_n, 0.0);
-				// Vector lb   = local_values(local_size(x).get(0), 5);
-				// Vector ub   = local_values(local_size(x).get(0), 10);			    		
-	   //  		// fun.apply_bc_to_initial_guess(x);
+				Bratu1D<Matrix, Vector> fun(_n);
+	    		Vector x = values(_n, 0.0);
+				Vector lb   = local_values(local_size(x).get(0), 5);
+				Vector ub   = local_values(local_size(x).get(0), 10);			    		
+	    		// fun.apply_bc_to_initial_guess(x);
 
 
 
@@ -305,10 +295,6 @@ namespace utopia
 
 
 
-
-
-
-
 	   //  		DMatrixd M; 
 	   //  		M=zeros(10,10); 
 	   //  		assemble_symmetric_laplacian_1D(M, true); 
@@ -355,6 +341,8 @@ namespace utopia
 		#ifdef WITH_PETSC
 				// QuasiNewtonTest<DMatrixd, DVectord>().run_dense();
 				QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
+
+			// QuasiNewtonTest<DMatrixd, DVectord>().run_sparse();
 		#endif
 
 		#ifdef WITH_BLAS

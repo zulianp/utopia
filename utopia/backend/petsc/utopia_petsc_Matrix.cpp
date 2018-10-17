@@ -695,7 +695,9 @@ namespace utopia {
       PetscScalar scale_factor)
     {
         if(!is_initialized_as(comm, dense_type, local_rows, local_cols, global_rows, global_cols))
+        {
             dense_init(comm, dense_type, local_rows, local_cols, global_rows, global_cols);
+        }
 
         check_error( MatZeroEntries(implementation()) );
 
