@@ -21,6 +21,7 @@ namespace utopia
 				// UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
 				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 				UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
+				UTOPIA_RUN_TEST(quasi_newton_lbfgsb_test); 
 			}			
 
 			void quasi_newton_test()
@@ -158,6 +159,37 @@ namespace utopia
 	    		solver.verbose(true); 
 	    		solver.solve(fun, x);
 	    		disp(x); 	
+			}
+
+
+			void quasi_newton_lbfgsb_test()
+			{				
+				Parameters params;
+				params.atol(1e-9);
+				params.rtol(1e-15);
+				params.stol(1e-15);
+				params.verbose(_verbose);
+				
+	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
+	    		auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(5, linear_solver);				
+
+
+				QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, linear_solver);
+				nlsolver.set_parameters(params);
+
+				// auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				// nlsolver.set_line_search_strategy(line_search);
+				
+				
+				SimpleQuadraticFunction<Matrix, Vector> fun;
+				
+				Vector x = values(_n, 2.);
+				Vector expected_1 = zeros(x.size());
+				
+				nlsolver.solve(fun, x);
+				utopia_test_assert(approxeq(expected_1, x));
+				
+
 			}
 
 

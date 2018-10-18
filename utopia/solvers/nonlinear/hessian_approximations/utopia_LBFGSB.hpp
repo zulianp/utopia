@@ -494,7 +494,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         correction = x_cp - x; 
         Vector help_g; 
         this->apply_H(correction, help_g); 
-        Vector grad_quad_fun = g + help_g; 
+        Vector grad_quad_fun = -1.0 * (g + help_g); 
 
         // building feasible set 
         reduced_primal_method_.build_feasible_set(x_cp, ub, lb, feasible_set); 
@@ -502,11 +502,11 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         Vector  s; 
 
-        // all variables are feasible => perform Newton step on whole matrix
-        if(size(feasible_set).get(0)==feasible_variables)
-            this->apply_Hinv(grad_quad_fun, s); 
-        else if(feasible_variables == 0)
+    
+        if(feasible_variables == 0) // all variables are feasible => perform Newton step on whole matrix
             return false; 
+        else if(size(feasible_set).get(0)==feasible_variables)
+            this->apply_Hinv(grad_quad_fun, s); 
         else
             this->apply_reduced_Hinv(feasible_set, grad_quad_fun, s); 
 
@@ -535,20 +535,20 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         // Sherman Morison Woodbury formula for computing inverse
         virtual void apply_inverse_to_vec(const Vector &  g, const Matrix & W, Vector & s) const 
         {
-            Vector WR_gR = transpose(W) * g; 
+            Vector WR_gR = -1.0 * transpose(W) * g; 
 
             Vector v; 
             this->apply_M(WR_gR, v); 
 
-            Matrix N = transpose(W_) * W_; 
-            N  = 1.0/theta_ * N; 
+            
+            Matrix N  = 1.0/theta_ * transpose(W_) * W_; 
             N = M_ * N; 
             N = local_identity(local_size(N)) - N; 
 
             Vector N_inv_v = local_zeros(local_size(v)); 
             linear_solver_->solve(N, v, N_inv_v); 
             
-            s = (-1.0/theta_ )* g; 
+            s = (1.0/theta_ )* g; 
             s -= 1.0/(theta_*theta_) * (W* N_inv_v); 
         }
 
