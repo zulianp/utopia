@@ -150,7 +150,8 @@ namespace utopia
 
 				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
 				solver.set_line_search_strategy(line_search);
-				solver.max_it(30); 			
+				solver.max_it(100); 	
+				solver.stol(1e-12); 		
 
 				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 	    		solver.set_box_constraints(box);				

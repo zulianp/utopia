@@ -513,19 +513,20 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         reduced_primal_method_.build_feasible_set(x_cp, ub, lb, feasible_set); 
         SizeType feasible_variables = sum(feasible_set); 
 
-        Vector  s; 
     
         if(feasible_variables == 0) // all variables are feasible => perform Newton step on whole matrix
             return false; 
         else if(size(feasible_set).get(0)==feasible_variables)
         {
+            Vector  s; 
             this->apply_Hinv(grad_quad_fun, s); 
             Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, s, feasible_set); 
             correction = correction + (alpha_star * s);    
-            
+
         }
         else
         {
+            Vector  s; 
             this->apply_reduced_Hinv(feasible_set, grad_quad_fun, s); 
 
             Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, s, feasible_set); 
