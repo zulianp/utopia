@@ -177,9 +177,8 @@ namespace utopia
 				QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, linear_solver);
 				nlsolver.set_parameters(params);
 
-				// auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
-				// nlsolver.set_line_search_strategy(line_search);
-				
+				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				nlsolver.set_line_search_strategy(line_search);
 				
 				SimpleQuadraticFunction<Matrix, Vector> fun;
 				
@@ -187,8 +186,7 @@ namespace utopia
 				Vector expected_1 = zeros(x.size());
 				
 				nlsolver.solve(fun, x);
-				utopia_test_assert(approxeq(expected_1, x));
-				
+				utopia_test_assert(approxeq(expected_1, x));				
 
 			}
 

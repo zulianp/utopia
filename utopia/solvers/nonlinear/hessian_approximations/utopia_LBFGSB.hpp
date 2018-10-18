@@ -139,7 +139,16 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 make_ref(Y_v), make_ref(S_v)
             }));
 
-            this->apply_M(p, result); 
+            // if(current_m_ <= m_)
+            // {
+                this->apply_M(p, result); 
+            // }
+            // else
+            // {
+            //     result = M_*p; 
+            // }
+
+
             result = (theta_ * v) - W_*result; 
 
             return false; 
@@ -162,7 +171,14 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 }));
 
                 DenseMatrix result; 
-                this->apply_M(P, result);    
+                // if(current_m_ <= m_)
+                // {
+                    this->apply_M(P, result);    
+                // }
+                // else
+                // {
+                //     result = M_*P; 
+                // }
 
                 H_ =  H_ - (transpose(P) * result);     
             }
@@ -300,35 +316,23 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             }
 
 
-            // maybe once multiplication is fixed and we can use dense matrices 
-            // if(current_m_ > 10)
+            // // because before, matrices are singular
+            // if(current_m_ > m_)
             // {
+            //     std::cout<<"------ in ------\n"; 
             //     DenseMatrix M_inv = local_values(local_size(M_).get(0), local_size(M_).get(1), 99.0); 
-            //     auto linear_solver = std::make_shared<GMRES<DenseMatrix, Vector> >();
-            //     linear_solver->atol(1e-12); 
-            //     MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver); 
+
+            //     if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
+            //         ls->atol(1e-15); 
+
+            //     MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver_); 
             //     mat_solver.get_inverse(M_, M_inv); 
 
-            //     disp(M_inv); 
+            //     M_ = M_inv; 
+            //     std::cout<<"------ out ------\n"; 
             // }
 
         }
-
-        void apply_M(const Vector & v, Vector & result) const 
-        {
-            linear_solver_->solve(M_, v, result);
-        }
-
-
-        void apply_M(const DenseMatrix & RHS, DenseMatrix & result) const 
-        {
-            result = local_values(local_size(RHS).get(0), local_size(RHS).get(1), 0.0); 
-
-            auto linear_solver = std::make_shared<GMRES<DenseMatrix, Vector> >();
-            MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver); 
-            mat_solver.solve(M_, RHS, result); 
-        }
-
 
     public:        
 
@@ -428,13 +432,22 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
                 c = c + dt * p; 
 
-                Matrix W_transpose_ = transpose(W_); 
+                DenseMatrix W_transpose_ = transpose(W_); 
                 mat_get_col(W_transpose_, wbT, b); 
 
                 Vector Mc, MwbT, Mp; 
-                this->apply_M(c, Mc); 
-                this->apply_M(p, Mp);                 
-                this->apply_M(wbT, MwbT); 
+                // if(current_m_ <= m_)
+                // {
+                    this->apply_M(c, Mc); 
+                    this->apply_M(p, Mp);                 
+                    this->apply_M(wbT, MwbT); 
+                // }
+                // else
+                // {
+                //     Mc = M_*c; 
+                //     Mp = M_*p; 
+                //     MwbT = M_*wbT; 
+                // }
 
                 f_p += (dt * f_pp) +  (g_b*g_b) + (theta_*g_b  * z_b); 
                 f_p += g_b * dot(wbT, Mc); 
@@ -501,26 +514,28 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         SizeType feasible_variables = sum(feasible_set); 
 
         Vector  s; 
-
     
         if(feasible_variables == 0) // all variables are feasible => perform Newton step on whole matrix
             return false; 
         else if(size(feasible_set).get(0)==feasible_variables)
+        {
             this->apply_Hinv(grad_quad_fun, s); 
+            Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, s, feasible_set); 
+            correction = correction + (alpha_star * s);    
+            
+        }
         else
+        {
             this->apply_reduced_Hinv(feasible_set, grad_quad_fun, s); 
 
-
-        Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, s, feasible_set); 
-        s *= alpha_star; 
-
+            Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, s, feasible_set); 
         
-        Vector du_prolongated; 
-        reduced_primal_method_.prolongate_reduced_corr(s, feasible_set,  du_prolongated); 
+            Vector s_prolongated; 
+            reduced_primal_method_.prolongate_reduced_corr(s, feasible_set,  s_prolongated); 
 
-
-        // final correction - both CP and Newton step 
-        correction = correction + du_prolongated; 
+            // final correction - both CP and Newton step 
+            correction = correction + (alpha_star * s_prolongated); 
+        }
 
         return true; 
     }
@@ -532,18 +547,35 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
     protected: 
-        // Sherman Morison Woodbury formula for computing inverse
-        virtual void apply_inverse_to_vec(const Vector &  g, const Matrix & W, Vector & s) const 
+        // Sherman - Morison - Woodbury formula for computing inverse
+        // this formula could be spped-up by using M_inv instead of M 
+        virtual void apply_inverse_to_vec(const Vector &  g, const DenseMatrix & W, Vector & s) const 
         {
-            Vector WR_gR = -1.0 * transpose(W) * g; 
-
+            Vector WTg = -1.0 * transpose(W) * g; 
             Vector v; 
-            this->apply_M(WR_gR, v); 
 
+            // if(current_m_ <= m_)
+            // {
+                this->apply_M(WTg, v); 
+            // }
+            // else
+            // {
+            //     v = M_*WTg; 
+            // }
+
+            DenseMatrix N  = 1.0/theta_ * transpose(W_) * W_; 
             
-            Matrix N  = 1.0/theta_ * transpose(W_) * W_; 
-            N = M_ * N; 
-            N = local_identity(local_size(N)) - N; 
+            DenseMatrix MN; 
+            // if(current_m_ <= m_)
+            // {
+                this->apply_M(N, MN); 
+            // }
+            // else
+            // {   
+            //     MN = M_*N; 
+            // }
+
+            N = DenseMatrix(local_identity(local_size(MN))) - MN; 
 
             Vector N_inv_v = local_zeros(local_size(v)); 
             linear_solver_->solve(N, v, N_inv_v); 
@@ -553,6 +585,25 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
+        void apply_M(const Vector & v, Vector & result) const 
+        {
+            if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
+                    ls->atol(1e-15); 
+
+            linear_solver_->solve(M_, v, result);
+        }
+
+
+        void apply_M(const DenseMatrix & RHS, DenseMatrix & result) const 
+        {
+            result = local_values(local_size(RHS).get(0), local_size(RHS).get(1), 0.0); 
+            
+            if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
+                    ls->atol(1e-15); 
+
+            MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver_); 
+            mat_solver.solve(M_, RHS, result); 
+        }
 
 
 

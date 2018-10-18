@@ -82,20 +82,22 @@ namespace utopia
                 MatDenseRestoreArray(B_temp, &bb);
                 MatDenseRestoreArray(X_temp, &xx);
 
-                MatConvert(X_temp, typeX, MAT_INITIAL_MATRIX, &raw_type(X)); 
+
+                MatConvert(X_temp, typeX, MAT_REUSE_MATRIX , &raw_type(X)); 
+                
                 MatDestroy(&B_temp);
-                MatDestroy(&X_temp);                
+                MatDestroy(&X_temp);         
             }
 
             return false; 
         }
 
 
-        // maybe merge with inv() fun - this one runs in parallel - although, precision depends on LS
+        // very unefficient routine, precision of the inverse depends on LS
         virtual void get_inverse(const Matrix &A, DenseMatrix & A_inv)
         {
             if(size(A).get(0) != size(A).get(1))
-                utopia_error("get_inverse:: works just with Dense matrices \n"); 
+                utopia_error("get_inverse:: works just with square matrices \n"); 
 
             DenseMatrix RHS = local_identity(local_size(A).get(0), local_size(A).get(1)); 
             A_inv = local_values(local_size(A).get(0), local_size(A).get(1), 0.0);
