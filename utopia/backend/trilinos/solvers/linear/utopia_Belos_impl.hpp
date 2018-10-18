@@ -169,7 +169,13 @@ namespace utopia {
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
             impl_->M_ifpack->compute();
-            impl_->linear_problem->setRightPrec(impl_->M_ifpack);
+            std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
+            std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c) { return std::tolower(c); });
+            if (preconditioner_type == "left") {
+                impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
+            } else {
+                impl_->linear_problem->setRightPrec(impl_->M_ifpack);
+            }
 #else  // WITH_TRILINOS_IFPACK2
           std::cerr << "Cannot use a Direct Preconditioner with the BelosSolver, since Trilinos was not built with Ifpack2 support!" << std::endl;
 #endif // WITH_TRILINOS_IFPACK2
@@ -182,7 +188,13 @@ namespace utopia {
                                                                );
 
             assert(!impl_->M_muelu.is_null());
-            impl_->linear_problem->setRightPrec(impl_->M_muelu);
+            std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
+            std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c) { return std::tolower(c); });
+            if (preconditioner_type == "left") {
+                impl_->linear_problem->setLeftPrec(impl_->M_muelu);
+            } else {
+                impl_->linear_problem->setRightPrec(impl_->M_muelu);
+            }
 #else
             std::cerr << "Cannot use MueLu as preconditioner since Trilinos was not built with MueLu support." << std::endl;
 #endif //WITH_TRILINOS_MUELU
@@ -257,17 +269,28 @@ namespace utopia {
             impl_->M_ifpack->setParameters(impl_->param_list->sublist(dir_prec_type, false));
             impl_->M_ifpack->initialize();
             impl_->M_ifpack->compute();
-            impl_->linear_problem->setRightPrec(impl_->M_ifpack);
+            std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
+            std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c) { return std::tolower(c); });
+            if (preconditioner_type == "left") {
+                impl_->linear_problem->setLeftPrec(impl_->M_ifpack);
+            } else {
+                impl_->linear_problem->setRightPrec(impl_->M_ifpack);
+            }
 #else  //WITH_TRILINOS_IFPACK2
           std::cerr << "Cannot use a Direct Preconditioner with the BelosSolver, since Trilinos was not built with Ifpack2 support!" << std::endl;
 #endif //WITH_TRILINOS_IFPACK2
         } else {
 #ifdef WITH_TRILINOS_MUELU
             // Multigrid Hierarchy
-            //                M_muelu = MueLu::CreateTpetraPreconditioner((Teuchos::RCP<OP>)precond->implementation().implementation_ptr(),    //TODO
-            //                                                            impl_->param_list->sublist("MueLu", false));
+            impl_->M_muelu = MueLu::CreateTpetraPreconditioner(this->get_operator()->implementation().implementation_ptr(), impl_->param_list->sublist("MueLu", false));
             assert(!impl_->M_muelu.is_null());
-            impl_->linear_problem->setRightPrec(impl_->M_muelu);
+            std::string preconditioner_type = impl_->param_list->sublist("UTOPIA", true).get("Preconditioner Type", "right");
+            std::transform(preconditioner_type.begin(), preconditioner_type.end(), preconditioner_type.begin(), [](unsigned char c) { return std::tolower(c); });
+            if (preconditioner_type == "left") {
+                impl_->linear_problem->setLeftPrec(impl_->M_muelu);
+            } else {
+                impl_->linear_problem->setRightPrec(impl_->M_muelu);
+            }
 #else  // WITH_TRILINOS_MUELU
             std::cerr << "Cannot use MueLu as preconditioner since Trilinos was not built with MueLu support." << std::endl;
 #endif //WITH_TRILINOS_MUELU

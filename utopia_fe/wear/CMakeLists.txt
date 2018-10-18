@@ -6,7 +6,7 @@ find_project_files(CMAKE_CURRENT_SOURCE_DIR WEAR_MODULES LOCAL_HEADERS LOCAL_SOU
 
 add_library(utopia_fe_wear STATIC ${LOCAL_SOURCES})
 
-target_include_directories(utopia_fe_wear PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(utopia_fe_wear BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(
 	utopia_fe_wear

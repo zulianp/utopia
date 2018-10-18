@@ -335,6 +335,7 @@ namespace utopia {
         
 #ifdef WITH_PETSC
         BlockTest<DSMatrixd, DVectord>().run();
+        BlockTest<DMatrixd, DVectord>().run();
         
         if(mpi_world_size() == 1) {
             UtilitiesTest<DMatrixd, DVectord>().run();

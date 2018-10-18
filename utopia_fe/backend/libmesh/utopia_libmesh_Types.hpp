@@ -3,8 +3,7 @@
 
 #include <iostream>
 
-// bug in Kokkos-Kernels so we need to include this file first (https://github.com/kokkos/kokkos-kernels/issues/309)
-#include "Eigen/Core"
+#include "utopia_fe_kokkos_fix.hpp"
 
 #include "utopia_libmesh_FEForwardDeclarations.hpp"
 #include "utopia.hpp"

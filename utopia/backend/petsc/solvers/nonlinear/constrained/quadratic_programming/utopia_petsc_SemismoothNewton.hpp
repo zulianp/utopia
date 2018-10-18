@@ -109,6 +109,9 @@ namespace utopia {
 					has_linear_solver = true;
 
 					KSPSetTolerances(ksp, 0, 0, PETSC_DEFAULT, 1);
+				} else if(linear_solver_) {
+					build_ksp(linear_solver_, ksp);
+					has_linear_solver = true;
 				}
 			}
 

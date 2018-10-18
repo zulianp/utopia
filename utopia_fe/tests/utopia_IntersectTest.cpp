@@ -1,5 +1,5 @@
-#include "utopia_IntersectTest.hpp"
 #include "utopia_libmesh.hpp"
+#include "utopia_IntersectTest.hpp"
 #include "utopia_Intersect.hpp"
 
 

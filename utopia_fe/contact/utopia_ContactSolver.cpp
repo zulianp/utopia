@@ -6,6 +6,7 @@
 #include "utopia_Newmark.hpp"
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_ContactStabilizedNewmark.hpp"
+#include "utopia_ui.hpp"
 
 
 #include "libmesh/mesh_refinement.h"
@@ -22,7 +23,7 @@ namespace utopia {
 	{
 		auto mesh = std::make_shared<libMesh::DistributedMesh>(init.comm());
 		// mesh->read("../data/wear_2_b.e");
-		mesh->read("../data/wear_2_far.e");
+		mesh->read("../data/mesh_ring_box.e");
 		// mesh->read(utopia::Utopia::instance().get("data_path") + "/input_file.e");
 		// mesh->read("../data/channel_2d.e");
 		// mesh->read("../data/leaves_3d_b.e");
@@ -40,18 +41,20 @@ namespace utopia {
 		auto equation_systems = std::make_shared<libMesh::EquationSystems>(*mesh);
 		auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>("dynamic-contact");
 
-		double dt = 0.05;
+		double dt = 0.2;
 		if(dim == 3) {
 			dt = 0.0001;
 		}
 
-		double mu = 20., lambda = 20.;
+		double mu = 300., lambda = 300.;
 		if(dim == 3) {
 			mu = 300.;
 			lambda = 600.;
 		}
 
 		LameeParameters lamee_params(mu, lambda);
+		lamee_params.set_lambda(1, 1200.);
+		lamee_params.set_mu(1, 1200.);
 
 		auto elem_order = libMesh::FIRST;
 
@@ -72,8 +75,8 @@ namespace utopia {
 		auto uy = u[1];
 
 		auto constr = constraints(
-			boundary_conditions(ux == coeff(0.), {4}),
-			boundary_conditions(uy == coeff(0.), {4})
+			boundary_conditions(ux == coeff(0.), {5}),
+			boundary_conditions(uy == coeff(0.), {5})
 		);
 
 		if(dim == 3) {
@@ -98,17 +101,18 @@ namespace utopia {
 		if(dim == 3) {
 			ef->init(integral(inner(coeff(7000.), vx)));
 		} else {
-			ef->init(integral(inner(coeff(-.2), vy)));
+			ef->init(integral(inner(coeff(-0.01), vy)));
 		}
 
 		// auto material = std::make_shared<NeoHookean<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
 		// auto material = std::make_shared<IncompressibleNeoHookean<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
-		// auto material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
-		auto material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
+		auto material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
+		// auto material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
 
 		ContactParams contact_params;
 		// contact_params.contact_pair_tags = {{2, 1}};
-		contact_params.contact_pair_tags = {{1, 2}, {1, 3}, {2, 3}};
+		// contact_params.contact_pair_tags = {{1, 2}, {1, 3}, {2, 3}};
+		contact_params.contact_pair_tags = {{1, 6}, {2, 6}, {3, 6}, {4, 6}};
 
 		if(dim == 3) {
 			contact_params.search_radius = 0.0001;
@@ -116,6 +120,15 @@ namespace utopia {
 			contact_params.search_radius = 0.04;
 		}
 
+		USparseMatrix mass_mat;
+		utopia::assemble(inner(trial(V), test(V)) * dX, mass_mat);
+
+		UVector mass_x_velocity;
+
+		utopia::assemble(integral(inner(coeff(10.), vx), 2), mass_x_velocity);
+
+		UVector velocity = local_zeros(local_size(mass_x_velocity));
+		solve(mass_mat, mass_x_velocity, velocity);
 
 		// auto stabilized_material = std::make_shared<StabilizedMaterial<decltype(V), USparseMatrix, UVector> >(V, 1e-2, material);
 		// ContactSolverT sc(make_ref(V), stabilized_material, dt, contact_params);
@@ -130,13 +143,29 @@ namespace utopia {
 		// ls->stol(1e-15);
 		// ls->max_it(1000);
 		// // ls->verbose(true);
-		// sc.set_linear_solver(ls);
+
+// #ifdef WITH_M3ELINSOL
+// 		auto ls = std::make_shared<ASPAMG<USparseMatrix, UVector>>();
+// 		ls->verbose(true);
+// 		auto in_ptr = open_istream("../data/amg_settings.xml");
+
+// 		if(in_ptr) {
+// 			std::cout << "Using settings" << std::endl;
+// 			in_ptr->read("amg", *ls);
+// 		}
+
+// 		sc.set_linear_solver(ls);
+// 		sc.set_use_ssn(true);
+// #endif //WITH_M3ELINSOL
+
+
 		// sc.set_bypass_contact(true);
 		sc.set_max_outer_loops(30);
 
 		// begin: multigrid
 
 		// auto linear_solver = std::make_shared<BiCGStab<USparseMatrix, UVector>>();
+		// sc.set_linear_solver(linear_solver);
 		// auto smoother = std::make_shared<ConjugateGradient<USparseMatrix, UVector, HOMEMADE>>();
 		// auto smoother = std::make_shared<BiCGStab<USparseMatrix, UVector>>();
 		// prec->max_it(1);
@@ -165,7 +194,7 @@ namespace utopia {
 		// end: multigrid
 
 		sc.set_external_force_fun(ef);
-		sc.initial_condition(2.);
+		sc.initial_condition(2., velocity);
 		sc.solve_dynamic(400);
 	}
 }
