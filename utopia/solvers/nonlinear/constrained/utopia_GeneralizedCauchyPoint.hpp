@@ -35,33 +35,6 @@ namespace utopia
                 return cp_memory_;
             }
 
-            // TODO:: add TR bounds at some point
-            void compute_breakpoints(const Vector & g, const Vector & x, const Vector & lb, const Vector & ub, Vector &t) const
-            {
-                auto inf = std::numeric_limits<Scalar>::infinity(); 
-
-                if(empty(t) || local_size(t)!=local_size(x))
-                    t = local_values(local_size(x).get(0), inf);
-
-                // TODO:: add checks if there are both bounds available 
-                {
-                  Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_d(g);
-                  Write<Vector> wt(t); 
-
-                  each_write(t, [ub, lb, x, g, inf](const SizeType i) -> double { 
-                              Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  Scalar gi =  g.get(i);  
-                              if(gi < 0)
-                                return (xi - ui)/gi; 
-                              else if(gi > 0)
-                                return (xi - li)/gi; 
-                            else 
-                                return inf; 
-                }  );
-              }
-            }
-
-
-
         void get_d_corresponding_to_ti(const Vector & t, const Vector & g, Vector &d, const Scalar & t_current) const
         {
             d = -1.0 * g; 
@@ -305,6 +278,35 @@ namespace utopia
    
         } // end of lock
 
+    }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////// CHECKed //////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    void compute_breakpoints(const Vector & g, const Vector & x, const Vector & lb, const Vector & ub, Vector &t) const
+    {
+        auto inf = std::numeric_limits<Scalar>::infinity(); 
+
+        if(empty(t) || local_size(t)!=local_size(x))
+            t = local_values(local_size(x).get(0), inf);
+
+        // TODO:: add checks if there are both bounds available 
+        {
+          Read<Vector> r_ub(ub), r_lb(lb), r_x(x), r_d(g);
+          Write<Vector> wt(t); 
+
+          each_write(t, [ub, lb, x, g, inf](const SizeType i) -> double { 
+                      Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  Scalar gi =  g.get(i);  
+                      if(gi < 0)
+                        return (xi - ui)/gi; 
+                      else if(gi > 0)
+                        return (xi - li)/gi; 
+                    else 
+                        return inf; 
+        }  );
+      }
     }
 
 

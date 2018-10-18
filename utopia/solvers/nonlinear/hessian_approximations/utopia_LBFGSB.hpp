@@ -196,10 +196,39 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             Vector x_cp, c; 
 
             this->computeCauchyPoint(x, g, lb, ub, x_cp, c);
-            this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
+
+
+            s = x_cp - x;
+
+
+            // this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
 
             return true; 
         }        
+
+
+
+
+
+
+        void computeCauchyPoint_new_version(const Vector &x, const Vector & g, const Vector & lb, 
+                                            const Vector & ub, Vector & x_cp, Vector & c) const
+        {
+
+            
+
+
+
+        }
+
+
+
+
+
+
+
+
+
 
 
         void set_memory_size(const SizeType & m)
