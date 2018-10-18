@@ -438,10 +438,17 @@ namespace utopia {
 
 			assert(isect_volume <= weight + 1e-6);
 
-			auto trial_trans = std::make_shared<AffineTransform3>(trial);
-			std::shared_ptr<Transform> test_trans;
+			std::shared_ptr<Transform> trial_trans, test_trans;
 
-			if(vol2surf) {
+			if(is_prism(trial.type()) || is_pyramid(trial.type())) {
+				trial_trans = std::make_shared<Transform3>(trial);
+			} else {
+				trial_trans = std::make_shared<AffineTransform3>(trial);
+			}
+
+			if(is_prism(test.type()) || is_pyramid(test.type())) {
+				test_trans = std::make_shared<Transform3>(test);
+			} else if(vol2surf) {
 				test_trans = std::make_shared<Transform2>(test);
 			} else {
 				test_trans = std::make_shared<AffineTransform3>(test);

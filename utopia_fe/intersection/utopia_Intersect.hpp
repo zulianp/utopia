@@ -538,8 +538,6 @@ namespace utopia {
 			make(elem.node_ref(4), p4);
 			make(elem.node_ref(5), p5);
 
-			make(p0, p1, p5, h_poly.half_spaces[0]);
-
 			//face 0 = [0, 1, 2]
 			make(p0, p1, p2, h_poly.half_spaces[0]);
 
@@ -567,6 +565,39 @@ namespace utopia {
 				}
 			}
 		
+		} else if(is_pyramid(elem.type())) {
+			h_poly.half_spaces.resize(5);
+
+			Vector p4;
+			make(elem.node_ref(4), p4);
+
+			//face 0 = [0, 1, 4]
+			make(p0, p1, p4, h_poly.half_spaces[0]);
+
+			//face 1 = [1, 2, 4]
+			make(p1, p2, p4, h_poly.half_spaces[1]);
+
+			//face 2 = [3, 0, 4]
+			make(p3, p0, p4, h_poly.half_spaces[2]);
+
+			//face 3 = [2, 3, 4]
+			make(p2, p3, p4, h_poly.half_spaces[3]);
+
+			//face 4 = [0, 3, 2, 1]
+			make(p0, p3, p2, h_poly.half_spaces[4]);
+
+			//fix orientation
+			Vector b = p0; b += p1; b += p2; b += p3; b+= p4;
+			b /= 5.0;
+
+			for(int i = 0; i < 5; ++i) {
+				if(h_poly.half_spaces[i].signed_dist(b) > 0.) {
+					//change face orientation
+					h_poly.half_spaces[i].n *= -1.;
+					h_poly.half_spaces[i].d *= -1.;
+				}
+			}
+
 		} else {
 			assert(false);
 		}
