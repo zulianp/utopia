@@ -79,7 +79,7 @@ namespace utopia
                     Scalar val = 1.0; 
                     Scalar di = d.get(i);  Scalar xi = x_cp.get(i); Scalar li = lb.get(i);  Scalar ui = ub.get(i); 
 
-                    if(di!=0)
+                    if(di!=0.0)
                         val = (di>0) ? (ui - xi)/di : (li - xi)/di; 
 
                     // checks for nans and infs, also alpha needs to be positive... 

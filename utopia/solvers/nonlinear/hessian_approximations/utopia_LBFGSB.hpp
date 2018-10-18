@@ -131,13 +131,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         virtual bool apply_H(const Vector & v, Vector & result) const override
         {
-            Vector Y_v = transpose(Y_) * v;
-            Vector S_v = theta_ * transpose(S_) * v;
-
-            Vector p = Vector(Blocks<Vector>(
-            {
-                make_ref(Y_v), make_ref(S_v)
-            }));
+            Vector p = transpose(W_) *v; 
 
             // if(current_m_ <= m_)
             // {
@@ -148,9 +142,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             //     result = M_*p; 
             // }
 
-
             result = (theta_ * v) - W_*result; 
-
             return false; 
         }
 
@@ -197,6 +189,17 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             std::cerr << "--- not implemented yet---- \n";
             return H_;
         }
+
+        
+        bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s) const override
+        {
+            Vector x_cp, c; 
+
+            this->computeCauchyPoint(x, g, lb, ub, x_cp, c);
+            this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
+
+            return true; 
+        }        
 
 
         void set_memory_size(const SizeType & m)
@@ -333,19 +336,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             // }
 
         }
-
-    public:        
-
-        bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s) const override
-        {
-            Vector x_cp, c; 
-
-            this->computeCauchyPoint(x, g, lb, ub, x_cp, c);
-            this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
-
-            return true; 
-        }
-
 
 
     Scalar get_gb(const Vector & g, const SizeType & index) const
