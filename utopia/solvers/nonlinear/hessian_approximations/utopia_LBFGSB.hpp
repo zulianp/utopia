@@ -199,7 +199,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                     }
                     M.set(i, c.end() - 1, col.get(i));
                 }
-
             } 
         }
 
@@ -534,7 +533,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
     public: 
 
     // private:
-        // static_assert(utopia::is_sparse<Matrix>::value, "LBFGS does not support dense matrices.");
+        // static_assert(!utopia::is_sparse<Matrix>::value, "LBFGS does not support sparse matrices.");
 
         SizeType m_; // memory size
 

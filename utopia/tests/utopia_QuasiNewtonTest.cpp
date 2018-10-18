@@ -18,9 +18,9 @@ namespace utopia
 
 			void run_sparse()
 			{
-				// UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
-				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
-				UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
+				UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
+				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
+				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 			}			
 
 			void quasi_newton_test()
@@ -164,7 +164,7 @@ namespace utopia
 
 			void lbfgs_quasi_newton_test()
 			{
-				auto memory_size = 5; 
+				auto memory_size = 3; 
 
 				Bratu1D<Matrix, Vector> fun(_n);
 	    		Vector x = values(_n, 0.0);
@@ -195,148 +195,68 @@ namespace utopia
 	    		// hess_approx_BFGS->update(s, y); 	
 
 	    		// auto L = hess_approx_BFGS->L_dots_; 
-	    		// auto D = hess_approx_BFGS->d_elements_; 
+	    		auto W = hess_approx_BFGS->W_; 
 
-	    		// std::cout<<"L_dots_: "<< L.size() << "  L_dots_[0].size(): "<< (hess_approx_BFGS->L_dots_[0]).size() << "  \n"; 
-
-
-	    		// if(mpi_world_rank()==0)
-	    		// {
-
-		    	// 	for(auto i =0; i < memory_size; i++)
-		    	// 	{
-		    	// 		for(auto j =0; j < memory_size; j++)
-		    	// 		{
-		    	// 			std::cout<<"  "<< L[i][j]; 
-		    	// 		}
-		    	// 		std::cout<<"  \n"; 
-		    	// 	}
-		    	// }
+	    		// Matrix WT = transpose(W); 
 
 
-		    	// std::cout<<"------------------- d ------------------- \n"; 
+	    		//if(mpi_world_rank()==0)
+	    			std::cout<<"local_size(WT).get(0): "<< local_size(W).get(0) << "   : "<< local_size(W).get(1) << "  \n"; 
 
-		    	// if(mpi_world_rank()==0)
-	    		// {
 
-		    	// 	for(auto i =0; i < memory_size; i++)
-		    	// 	{
+	    		{
+	    			Write<Matrix> wm(W); 
 
-		    	// 		std::cout<<"  "<< D[i]; 
-		    	// 	}
-		    	// }
+	    			auto col_WT_range = col_range(W); 
+	    			auto row_WT_range = row_range(W); 
 
-		    	// std::cout<<"   \n"; 
+	    			for(auto r = row_WT_range.begin(); r != row_WT_range.end(); ++r)
+	    			{
+		    			for(auto c = col_WT_range.begin(); c != col_WT_range.end(); ++c)
+		    			{
+		    				W.set(r, c, c); 
+		    			}
+		    		}
+	    		}
+
+	    		disp(W); 
 
 
 
-	    		// disp(hess_approx_BFGS->S_); 
-	    		// disp(hess_approx_BFGS->Y_); 
+	    		Vector feasible_set = local_zeros(local_size(x)); 
 
-	    		// disp(hess_approx_BFGS->W_); 
+	    		{
+	    			Write<Vector>  w(feasible_set); 
 
+	    			auto r = range(feasible_set); 
 
+	    			for(auto i=r.begin(); i != r.end(); ++i)
+	    			{
+	    				if(i==2 || i==3 || i==7 || i==9 || i==11 || i==14)
+	    					feasible_set.set(i, 1.0); 
+	    			}
 
-
-
-	   //  		{
-	   //  			Write<Vector>  w(x); 
-
-	   //  			auto r = range(x); 
-
-	   //  			for(auto i=r.begin(); i != r.end(); ++i)
-	   //  			{
-	   //  				x.set(i, i); 
-	   //  			}
-
-	   //  		}
-
-	   //  		disp(x);
+	    		}
 
 
-	   //  		Vector feasible_set = local_zeros(local_size(x)); 
 
-	   //  		{
-	   //  			Write<Vector>  w(feasible_set); 
-
-	   //  			auto r = range(feasible_set); 
-
-	   //  			for(auto i=r.begin(); i != r.end(); ++i)
-	   //  			{
-	   //  				if(i==2 || i==3 || i==7 || i==9 || i==11 || i==14)
-	   //  					feasible_set.set(i, 1.0); 
-	   //  			}
-
-	   //  		}
+	    		ReducedPrimalMethod<Matrix, Vector> primal_method; 
+	    		disp(feasible_set); 
+				auto local_size_feasible_set = primal_method.get_local_size_feasible_set(feasible_set); 
+				std::cout<<"local_size: "<< local_size_feasible_set << "  \n"; 
 
 
-	   //  		// disp(feasible_set); 
-
-				// ReducedPrimalMethod<Matrix, Vector> primal_method; 
-				// auto local_size_feasible_set = primal_method.get_local_size_feasible_set(feasible_set); 
-				// // std::cout<<"local_size: "<< local_size_feasible_set << "  \n"; 
+				Matrix W_reduced  = local_values(local_size_feasible_set, local_size(W).get(1), 0.0); 
+				primal_method.build_reduced_matrix(W, feasible_set, W_reduced); 
+				disp(W_reduced); 
 
 
 
 
 
-				// Matrix M = values(size(feasible_set).get(0), 5, 1.0); 
-				// disp(M); 
-
-				// if(mpi_world_rank()==1)
-				// 	std::cout<<"M: "<< local_size(M).get(0) <<"  M: "<< local_size(M).get(1) << "  \n"; 
-
-				// auto global_feasible_set = sum(feasible_set); 
-
-				// Matrix M; 
-
-				// MPI_Comm comm = PetscObjectComm((PetscObject)raw_type(feasible_set));
-
-    //     		MatCreate(comm, &raw_type(M));
-    //     		MatSetFromOptions(raw_type(M));
-    //     		MatSetType(raw_type(M), MATDENSE);
-    //     		MatSetSizes(raw_type(M), local_size(feasible_set).get(0), 3, size(feasible_set).get(0), 3);
-    //     		MatSetUp(raw_type(M));
-
-    //     		MatSetOption(raw_type(M), MAT_IGNORE_OFF_PROC_ENTRIES, PETSC_FALSE);
-    //     		MatSetOption(raw_type(M), MAT_NO_OFF_PROC_ENTRIES,     PETSC_FALSE);
 
 
-    //     		{
-    //     			Write<Matrix>  mr(M); 
 
-    //     			auto r_range = row_range(M); 
-    //     			auto c_range = col_range(M); 
-
-
-    //     			for(auto i=r_range.begin(); i != r_range.end(); ++i)
-    //     			{
-    //     				for(auto j=c_range.begin(); j != c_range.end(); ++j)
-	   //      			{
-	   //      				M.set(i,j, j); 
-	   //      			}
-    //     			}
-    //     		}
-
-    //     		disp(M); 
-
-				// if(mpi_world_rank()==0)
-				// 	std::cout<<"M: "<< local_size(M).get(0) <<"  M: "<< local_size(M).get(1) << "  \n";         		
-
-				// Matrix M_T = transpose(M); 
-				// // disp(M_T); 
-
-				// if(mpi_world_rank()==0)
-				// 	std::cout<<"MT: "<< local_size(M_T).get(0)<<"  MT: "<< local_size(M_T).get(1) << "  \n"; 
-
-
-				// Matrix M_reduced  = local_values(local_size(M_T).get(0), local_size_feasible_set, 0.0); 
-
-				// disp(M_reduced); 
-
-				// primal_method.build_reduced_matrix(M_T, feasible_set, M_reduced); 
-
-				// disp(M_reduced); 
 
 
 
@@ -359,11 +279,6 @@ namespace utopia
 				// tr_solver.delta0(1); 
 				// tr_solver.solve(fun, x);
 				// disp(x); 
-
-
-
-
-
 
 
 

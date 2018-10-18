@@ -95,8 +95,6 @@ namespace utopia
     }
 
 
-
-
     void prolongate_reduced_corr(const Vector & x_reduced,  const Vector & feasible_set,  Vector & x_prolongated) const
     {
         x_prolongated = local_values(local_size(feasible_set).get(0), 0.0); 
@@ -315,13 +313,18 @@ namespace utopia
 
         void build_reduced_matrix(const Matrix &M, const Vector & feasible_set, Matrix &M_reduced)
         {
-
-        	if(local_size(feasible_set).get(0) != local_size(M).get(1))
+        	if(local_size(feasible_set).get(0) != local_size(M).get(0))
                 utopia_error("feasible_set, H: local sizes do not match .... \n"); 
 
-            if(local_size(M_reduced).get(0) != local_size(M).get(0))
+            if(local_size(M_reduced).get(1) != local_size(M).get(1))
                 utopia_error("H_reduced, H: local sizes do not match .... \n");             
 
+
+           	if(local_size(M)==local_size(M_reduced) && size(M)==size(M_reduced))
+        	{
+        		M_reduced = M; 
+        		return; 
+        	}
 
 
 			{
@@ -333,28 +336,21 @@ namespace utopia
                 auto row_original = row_range(M); 
                 auto col_original = col_range(M); 
 
-                // auto row_reduced = row_range(H_reduced); 
-                auto col_reduced = col_range(M_reduced); 
+                auto row_reduced = row_range(M_reduced); 
 
-                SizeType local_counter = 0; 
+                SizeType local_row_counter = 0; 
 
                 for (SizeType r = row_original.begin(); r != row_original.end(); ++r)
                 {   
-
-                    for (SizeType c = col_original.begin(); c != col_original.end(); ++c)
-                    {            
-                        if(c==col_original.begin())
-                            local_counter=0;
-
-                        // TODO:: put approx eq
-                        if(feasible_set.get(c)==1)
-                        {
-                            M_reduced.set(r, col_reduced.begin() + local_counter,  M.get(r, c)); 
-                            local_counter++;
-                        }
-                    }    
+                	if(approxeq(feasible_set.get(r), 1.0))
+                	{
+                		for (SizeType c = col_original.begin(); c != col_original.end(); ++c)
+	                    {            
+	                        M_reduced.set(row_reduced.begin() + local_row_counter, c,  M.get(r, c)); 
+	                    }    
+                		local_row_counter++; 
+                	}
                 }  
-
             }
 
 
