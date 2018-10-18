@@ -116,8 +116,14 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         virtual bool apply_reduced_Hinv(const Vector & feasible_set, const Vector & g, Vector & s) const
         {
-            
+            SizeType local_feasible_size = reduced_primal_method_.get_local_size_feasible_set(feasible_set); 
+            Vector g_reduced = local_zeros(local_feasible_size);         
+            reduced_primal_method_.build_reduced_vector(g, feasible_set, g_reduced); 
 
+            DenseMatrix W_reduced = local_values(local_feasible_size, local_size(W_).get(1), 0.0);
+            reduced_primal_method_.build_reduced_matrix(W_, feasible_set, W_reduced); 
+
+            this->apply_inverse_to_vec(g_reduced, W_reduced, s); 
 
             return true;
         }
@@ -483,51 +489,26 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
     bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector & c, const Vector &g, 
                                     const Vector & lb,  const Vector & ub,  Vector & correction) const
     {
-        Matrix W_reduced; 
-        Vector g_reduced;
         Vector feasible_set; 
 
-        // Vector Mc; 
-        // this->apply_M(c, Mc); 
-        // Vector global_grad   = g + (theta_*(x_cp-x)) - (W_*(Mc)); 
-
-        //////////////////////////////////////////////////////////////////////
         correction = x_cp - x; 
         Vector help_g; 
         this->apply_H(correction, help_g); 
         Vector grad_quad_fun = g + help_g; 
-        //////////////////////////////////////////////////////////////////////
 
         // building feasible set 
         reduced_primal_method_.build_feasible_set(x_cp, ub, lb, feasible_set); 
         SizeType feasible_variables = sum(feasible_set); 
 
-
         Vector  s; 
-
 
         // all variables are feasible => perform Newton step on whole matrix
         if(size(feasible_set).get(0)==feasible_variables)
-        {
             this->apply_Hinv(grad_quad_fun, s); 
-
-        }
         else if(feasible_variables == 0)
-        {
             return false; 
-        }
         else
-        {
-            SizeType local_feasible_size = reduced_primal_method_.get_local_size_feasible_set(feasible_set); 
-            g_reduced = local_zeros(local_feasible_size);         
-            reduced_primal_method_.build_reduced_vector(grad_quad_fun, feasible_set, g_reduced); 
-
-            W_reduced = local_values(local_feasible_size, local_size(W_).get(1), 0.0);
-            reduced_primal_method_.build_reduced_matrix(W_, feasible_set, W_reduced); 
-
-
-            this->apply_inverse_to_vec(g_reduced, W_reduced, s); 
-        }
+            this->apply_reduced_Hinv(feasible_set, grad_quad_fun, s); 
 
 
         Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, s, feasible_set); 
