@@ -5,27 +5,30 @@
 
 namespace utopia {
 
-	template<typename Integer, typename Scalar>
-	class IElem {
+	template<class FunctionSpaceT>
+	class FunctionSpacePolicyChecker {
 	public:
-		virtual ~IElem() {}
-		virtual std::shared_ptr<IElem> side(const Integer side_num) = 0;
-	};
+		using ElemT    = utopia::Traits<FunctionSpaceT>::Elem;
+		using ScalarT  = utopia::Traits<FunctionSpaceT>::Scalar;
+		using IntegerT = utopia::Traits<FunctionSpaceT>::Integer;
 
-	template<typename Integer, typename Scalar>
-	class IFunctionSpace {
-	public:
-		using Elem = utopia::IElem<Integer, Scalar>;
+		static void dofs(const FunctionSpaceT &space, std::vector<Integer> &indices)
+		{
+			space.dofs(indices);
+		}
 
-		virtual ~IFunctionSpace() {}
-		virtual void dofs(std::vector<Integer> &indices) = 0;
-		virtual void dofs(const Integer var_num, std::vector<Integer> &indices) = 0;
-		virtual Integer n_variables() const = 0;
-		virtual Integer n_dofs() const = 0;
-		virtual Integer n_local_dofs() const = 0;
-		virtual Integer n_elements() const = 0;
-		virtual std::unique_ptr<Elem> elem(const Integer id) = 0;
-		virtual std::unique_ptr<const Elem> elem(const Integer id) const = 0;
+		static void dofs(const FunctionSpaceT &space, const Integer var_num, std::vector<Integer> &indices)
+		{
+			space.dofs(var_num, indices);
+		}
+		
+		// Integer n_variables() const = 0;
+		// Integer n_dofs() const = 0;
+		// Integer n_local_dofs() const = 0;
+		
+		// Integer n_elements() const = 0;
+		// Elem & elem(const Integer id) = 0;
+		// const Elem & elem(const Integer id) const = 0;
 	};
 }
 

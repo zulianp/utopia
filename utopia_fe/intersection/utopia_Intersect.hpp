@@ -530,6 +530,43 @@ namespace utopia {
 			//face 5 = [6, 7, 4, 5]
 			make(p6, p7, p4, h_poly.half_spaces[5]);
 
+		} else if(is_prism(elem.type())) {
+			h_poly.half_spaces.resize(5);
+
+			Vector p4, p5;
+
+			make(elem.node_ref(4), p4);
+			make(elem.node_ref(5), p5);
+
+			make(p0, p1, p5, h_poly.half_spaces[0]);
+
+			//face 0 = [0, 1, 2]
+			make(p0, p1, p2, h_poly.half_spaces[0]);
+
+			//face 1 = [4, 3, 5]
+			make(p4, p3, p5, h_poly.half_spaces[1]);
+
+			//face 2 = [0, 2, 5, 3]
+			make(p0, p2, p5, h_poly.half_spaces[2]);
+
+			//face 3 = [1, 4, 5, 2]
+			make(p1, p4, p5, h_poly.half_spaces[3]);
+
+			//face 4 = [0, 1, 4, 3]
+			make(p0, p1, p4, h_poly.half_spaces[4]);
+
+			//fix orientation
+			Vector b = p0; b += p1; b += p2; b += p3; b+= p4; b+= p5;
+			b /= 6.0;
+
+			for(int i = 0; i < 5; ++i) {
+				if(h_poly.half_spaces[i].signed_dist(b) > 0.) {
+					//change face orientation
+					h_poly.half_spaces[i].n *= -1.;
+					h_poly.half_spaces[i].d *= -1.;
+				}
+			}
+		
 		} else {
 			assert(false);
 		}

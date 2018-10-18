@@ -486,6 +486,8 @@ namespace utopia {
 			return false;
 		}
 
+		// isect.plot("isect");
+		
 		auto n = isect.points.size();
 		shell_poly.resize(n, 3);
 

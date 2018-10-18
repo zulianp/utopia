@@ -668,6 +668,9 @@ namespace utopia {
 			return 2.;
 		} else if(is_tri(type)) {
 			return 0.5;
+		} else if(is_prism(type)) {
+			m_utopia_warning_once("> ref_volume is returned as 1.");
+			return 1.;
 		} else {
 			assert(false);
 			return 1.;
@@ -1630,6 +1633,115 @@ namespace utopia {
 		make_polyhedron_from_generic_tet(e, polyhedron);
 	}
 
+
+	void make_polyhedron_from_pyramid(const libMesh::Elem &e, Polyhedron &polyhedron)
+	{
+		assert(e.dim() == 3);
+		assert(is_pyramid(e.type()));
+
+		polyhedron.n_elements = 5;
+		polyhedron.n_nodes 	  = 5;
+		polyhedron.n_dims	  = 3;
+
+		for(int i = 0; i < 5; ++i) {
+			const int offset = i * 3;
+
+			for(int j = 0; j < 3; ++j) {
+				polyhedron.points[offset + j] = e.point(i)(j);
+			}
+		}
+
+		polyhedron.el_ptr[0] = 0;
+		polyhedron.el_ptr[1] = 3;
+		polyhedron.el_ptr[2] = 6;
+		polyhedron.el_ptr[3] = 9;
+		polyhedron.el_ptr[4] = 12;
+		polyhedron.el_ptr[5] = 16;
+
+		//face 0
+		polyhedron.el_index[0] = 0;
+		polyhedron.el_index[1] = 1;
+		polyhedron.el_index[2] = 4;
+
+		//face 1
+		polyhedron.el_index[3] = 1;
+		polyhedron.el_index[4] = 2;
+		polyhedron.el_index[5] = 4;
+
+		//face 2
+		polyhedron.el_index[6] = 3;
+		polyhedron.el_index[7] = 0;
+		polyhedron.el_index[8] = 4;
+
+		//face 3
+		polyhedron.el_index[9]  = 2;
+		polyhedron.el_index[10] = 3;
+		polyhedron.el_index[11] = 4;
+
+		//face 4
+		polyhedron.el_index[12] = 0;
+		polyhedron.el_index[13] = 3;
+		polyhedron.el_index[14] = 2;
+		polyhedron.el_index[15] = 1;
+
+		polyhedron.type = P_MESH_TYPE_UNSTRUCTURED;
+	}
+
+	void make_polyhedron_from_prism(const libMesh::Elem &e, Polyhedron &polyhedron)
+	{
+		assert(e.dim() == 3);
+		assert(is_prism(e.type()));
+
+		polyhedron.n_elements = 5;
+		polyhedron.n_nodes 	  = 6;
+		polyhedron.n_dims	  = 3;
+
+		for(int i = 0; i < 6; ++i) {
+			const int offset = i * 3;
+
+			for(int j = 0; j < 3; ++j) {
+				polyhedron.points[offset + j] = e.point(i)(j);
+			}
+		}
+
+		polyhedron.el_ptr[0] = 0;
+		polyhedron.el_ptr[1] = 3;
+		polyhedron.el_ptr[2] = 6;
+		polyhedron.el_ptr[3] = 10;
+		polyhedron.el_ptr[4] = 14;
+		polyhedron.el_ptr[5] = 18;
+
+		//face 0
+		polyhedron.el_index[0] = 0;
+		polyhedron.el_index[1] = 1;
+		polyhedron.el_index[2] = 2;
+
+		//face 1
+		polyhedron.el_index[3] = 4;
+		polyhedron.el_index[4] = 3;
+		polyhedron.el_index[5] = 5;
+
+		//face 2
+		polyhedron.el_index[6] = 0;
+		polyhedron.el_index[7] = 2;
+		polyhedron.el_index[8] = 5;
+		polyhedron.el_index[9] = 3;
+
+		//face 3
+		polyhedron.el_index[10] = 1;
+		polyhedron.el_index[11] = 4;
+		polyhedron.el_index[12] = 5;
+		polyhedron.el_index[13] = 2;
+
+		//face 4
+		polyhedron.el_index[14] = 0;
+		polyhedron.el_index[15] = 1;
+		polyhedron.el_index[16] = 4;
+		polyhedron.el_index[17] = 3;
+
+		polyhedron.type = P_MESH_TYPE_UNSTRUCTURED;
+	}
+
 	static void make_polyhedron_from_shell_element(const libMesh::Elem &e, Polyhedron &polyhedron)
 	{
 		polyhedron.n_dims = 3;
@@ -1772,6 +1884,16 @@ namespace utopia {
 
 		if(is_tri(e.type()) || is_quad(e.type())) {
 			make_polyhedron_from_shell_element(e, polyhedron);
+			return;
+		}
+
+		if(is_pyramid(e.type())) {
+			make_polyhedron_from_pyramid(e, polyhedron);
+			return;
+		}
+
+		if(is_prism(e.type())) {
+			make_polyhedron_from_prism(e, polyhedron);
 			return;
 		}
 
