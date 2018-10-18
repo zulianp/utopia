@@ -18,9 +18,9 @@ namespace utopia
 
 			void run_sparse()
 			{
-				UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
-				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
-				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
+				// UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
+				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
+				UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 			}			
 
 			void quasi_newton_test()
@@ -200,55 +200,68 @@ namespace utopia
 	    		// Matrix WT = transpose(W); 
 
 
-	    		//if(mpi_world_rank()==0)
-	    			std::cout<<"local_size(WT).get(0): "<< local_size(W).get(0) << "   : "<< local_size(W).get(1) << "  \n"; 
+	   //  		//if(mpi_world_rank()==0)
+	   //  			std::cout<<"local_size(WT).get(0): "<< local_size(W).get(0) << "   : "<< local_size(W).get(1) << "  \n"; 
 
 
-	    		{
-	    			Write<Matrix> wm(W); 
+	   //  		{
+	   //  			Write<Matrix> wm(W); 
 
-	    			auto col_WT_range = col_range(W); 
-	    			auto row_WT_range = row_range(W); 
+	   //  			auto col_WT_range = col_range(W); 
+	   //  			auto row_WT_range = row_range(W); 
 
-	    			for(auto r = row_WT_range.begin(); r != row_WT_range.end(); ++r)
-	    			{
-		    			for(auto c = col_WT_range.begin(); c != col_WT_range.end(); ++c)
-		    			{
-		    				W.set(r, c, c); 
-		    			}
-		    		}
-	    		}
+	   //  			for(auto r = row_WT_range.begin(); r != row_WT_range.end(); ++r)
+	   //  			{
+		  //   			for(auto c = col_WT_range.begin(); c != col_WT_range.end(); ++c)
+		  //   			{
+		  //   				W.set(r, c, c); 
+		  //   			}
+		  //   		}
+	   //  		}
 
-	    		disp(W); 
-
-
-
-	    		Vector feasible_set = local_zeros(local_size(x)); 
-
-	    		{
-	    			Write<Vector>  w(feasible_set); 
-
-	    			auto r = range(feasible_set); 
-
-	    			for(auto i=r.begin(); i != r.end(); ++i)
-	    			{
-	    				if(i==2 || i==3 || i==7 || i==9 || i==11 || i==14)
-	    					feasible_set.set(i, 1.0); 
-	    			}
-
-	    		}
+	   //  		disp(W); 
 
 
 
-	    		ReducedPrimalMethod<Matrix, Vector> primal_method; 
-	    		disp(feasible_set); 
-				auto local_size_feasible_set = primal_method.get_local_size_feasible_set(feasible_set); 
-				std::cout<<"local_size: "<< local_size_feasible_set << "  \n"; 
+	   //  		Vector feasible_set = local_zeros(local_size(x)); 
+
+	   //  		{
+	   //  			Write<Vector>  w(feasible_set); 
+
+	   //  			auto r = range(feasible_set); 
+
+	   //  			for(auto i=r.begin(); i != r.end(); ++i)
+	   //  			{
+	   //  				if(i==2 || i==3 || i==7 || i==9 || i==11 || i==14)
+	   //  					feasible_set.set(i, 1.0); 
+	   //  			}
+
+	   //  		}
 
 
-				Matrix W_reduced  = local_values(local_size_feasible_set, local_size(W).get(1), 0.0); 
-				primal_method.build_reduced_matrix(W, feasible_set, W_reduced); 
-				disp(W_reduced); 
+
+	   //  		ReducedPrimalMethod<Matrix, Vector> primal_method; 
+	   //  		disp(feasible_set); 
+				// auto local_size_feasible_set = primal_method.get_local_size_feasible_set(feasible_set); 
+				// std::cout<<"local_size: "<< local_size_feasible_set << "  \n"; 
+
+				// Vector x_reduced = local_zeros(local_size_feasible_set); 
+
+				// {
+				// 	Write<Vector> wr(x_reduced); 
+				// 	auto r = range(x_reduced); 
+
+				// 	for(auto i=r.begin(); i != r.end(); ++i)
+				// 		x_reduced.set(i, i+1); 
+
+				// }
+
+
+
+				// disp(x_reduced); 
+
+				// primal_method.prolongate_reduced_corr(x_reduced, feasible_set,  x); 
+				// disp(x); 
 
 
 
@@ -257,6 +270,14 @@ namespace utopia
 
 
 
+
+
+
+
+
+				// Matrix W_reduced  = local_values(local_size_feasible_set, local_size(W).get(1), 0.0); 
+				// primal_method.build_reduced_matrix(W, feasible_set, W_reduced); 
+				// disp(W_reduced); 
 
 
 
@@ -300,26 +321,6 @@ namespace utopia
 	   //  		solver.solve(fun, x);
 	   //  		disp(x); 	
 
-
-
-	   //  		DMatrixd M; 
-	   //  		M=zeros(10,10); 
-	   //  		assemble_symmetric_laplacian_1D(M, true); 
-    //             disp(M); 
-
-				
-				// auto gmres = std::make_shared<GMRES<DMatrixd, DVectord> >();
-				// MatLinearSolver<DMatrixd, DMatrixd, DVectord> mat_solver(gmres); 
-
-				// DMatrixd M_inv; 
-				// mat_solver.get_inverse(M, M_inv); 
-
-				// disp(M_inv); 
-
-
-				// DMatrixd MM_iinnvv = inv(M); 
-
-				// disp(MM_iinnvv); 
 
 
 

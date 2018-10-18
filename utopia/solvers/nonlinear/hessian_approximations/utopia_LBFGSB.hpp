@@ -109,7 +109,16 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         virtual bool apply_Hinv(const Vector & g, Vector & s) const override
         {
-            std::cerr << "--- not implemented yet---- \n";
+            this->apply_inverse_to_vec(g, W_, s); 
+            return true;
+        }
+
+
+        virtual bool apply_reduced_Hinv(const Vector & feasible_set, const Vector & g, Vector & s) const
+        {
+            
+
+
             return true;
         }
 
@@ -315,11 +324,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
-
-
-
-
-
     public:        
 
         bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s) const override
@@ -483,56 +487,95 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         Vector g_reduced;
         Vector feasible_set; 
 
-        Vector Mc; 
-        this->apply_M(c, Mc); 
+        // Vector Mc; 
+        // this->apply_M(c, Mc); 
+        // Vector global_grad   = g + (theta_*(x_cp-x)) - (W_*(Mc)); 
 
-        Vector global_grad   = g + (theta_*(x_cp-x)) - (W_*(Mc)); 
-        Matrix W_T = transpose(W_);  
+        //////////////////////////////////////////////////////////////////////
+        correction = x_cp - x; 
+        Vector help_g; 
+        this->apply_H(correction, help_g); 
+        Vector grad_quad_fun = g + help_g; 
+        //////////////////////////////////////////////////////////////////////
 
-        reduced_primal_method_.build_reduced_quantities(lb, ub, x_cp, global_grad, W_T, feasible_set,  W_reduced, g_reduced); 
+        // building feasible set 
+        reduced_primal_method_.build_feasible_set(x_cp, ub, lb, feasible_set); 
+        SizeType feasible_variables = sum(feasible_set); 
 
 
-        if(sum(feasible_set)==0)
+        Vector  s; 
+
+
+        // all variables are feasible => perform Newton step on whole matrix
+        if(size(feasible_set).get(0)==feasible_variables)
         {
-            correction = x_cp - x; 
+            this->apply_Hinv(grad_quad_fun, s); 
+
+        }
+        else if(feasible_variables == 0)
+        {
             return false; 
         }
+        else
+        {
+            SizeType local_feasible_size = reduced_primal_method_.get_local_size_feasible_set(feasible_set); 
+            g_reduced = local_zeros(local_feasible_size);         
+            reduced_primal_method_.build_reduced_vector(grad_quad_fun, feasible_set, g_reduced); 
 
-        Vector WR_gR = W_reduced * g_reduced; 
+            W_reduced = local_values(local_feasible_size, local_size(W_).get(1), 0.0);
+            reduced_primal_method_.build_reduced_matrix(W_, feasible_set, W_reduced); 
 
-        Vector v; 
-        this->apply_M(WR_gR, v); 
 
-        Matrix N = W_T * transpose(W_T); 
-        N  = 1/theta_ * N; 
-        N = M_ * N; 
-        N = Matrix(local_identity(local_size(N))) - N; 
+            this->apply_inverse_to_vec(g_reduced, W_reduced, s); 
+        }
 
-        Vector s = local_zeros(local_size(v)); 
-        linear_solver_->solve(N, v, s); 
+
+        Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, s, feasible_set); 
+        s *= alpha_star; 
+
         
-
-        Vector  du = (-1.0/theta_ )* g_reduced; 
-                du -= 1.0/(theta_*theta_) * transpose(W_reduced) * s; 
-
-        Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, du, feasible_set); 
-        du *= alpha_star; 
-
-        Vector x_bar = x_cp; 
         Vector du_prolongated; 
+        reduced_primal_method_.prolongate_reduced_corr(s, feasible_set,  du_prolongated); 
 
-        reduced_primal_method_.prolongate_reduced_corr(du, feasible_set,  du_prolongated); 
 
-        x_bar = x_bar + du_prolongated; 
-        correction = x_bar - x; 
+        // final correction - both CP and Newton step 
+        correction = correction + du_prolongated; 
 
         return true; 
     }
 
 
-    public: 
 
-    // private:
+
+
+
+
+    protected: 
+        // Sherman Morison Woodbury formula for computing inverse
+        virtual void apply_inverse_to_vec(const Vector &  g, const Matrix & W, Vector & s) const 
+        {
+            Vector WR_gR = transpose(W) * g; 
+
+            Vector v; 
+            this->apply_M(WR_gR, v); 
+
+            Matrix N = transpose(W_) * W_; 
+            N  = 1.0/theta_ * N; 
+            N = M_ * N; 
+            N = local_identity(local_size(N)) - N; 
+
+            Vector N_inv_v = local_zeros(local_size(v)); 
+            linear_solver_->solve(N, v, N_inv_v); 
+            
+            s = (-1.0/theta_ )* g; 
+            s -= 1.0/(theta_*theta_) * (W* N_inv_v); 
+        }
+
+
+
+
+
+    private:
         // static_assert(!utopia::is_sparse<Matrix>::value, "LBFGS does not support sparse matrices.");
 
         SizeType m_; // memory size
