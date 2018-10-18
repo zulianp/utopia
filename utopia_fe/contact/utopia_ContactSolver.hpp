@@ -304,11 +304,11 @@ namespace utopia {
 			// 	newton.solve(lhs, rhs, inc_c);
 			// } else {
 				// SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn;
-// #ifdef WITH_M3ELINSOL
-// 				SemismoothNewton<Matrix, Vector> ssn(linear_solver_); 
-// #else
+#ifdef WITH_M3ELINSOL
+				SemismoothNewton<Matrix, Vector> ssn(linear_solver_); 
+#else
 				SemismoothNewton<Matrix, Vector, PETSC_EXPERIMENTAL> ssn(linear_solver_); 
-// #endif //WITH_M3ELINSOL
+#endif //WITH_M3ELINSOL
 				
 				// ssn.verbose(true);
 				ssn.max_it(40);

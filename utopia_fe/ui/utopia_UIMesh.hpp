@@ -164,6 +164,14 @@ namespace utopia {
 		            type = libMesh::TET4;
 		        }
 
+		        if(elem_type == "prism") {
+		        	type = libMesh::PRISM6;
+		        }
+
+		        if(elem_type == "pyramid") {
+		        	type = libMesh::PYRAMID5;
+		        }
+
 		        if(order == 2) {
 		            type = libMesh::HEX20;
 

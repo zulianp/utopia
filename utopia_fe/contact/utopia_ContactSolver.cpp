@@ -106,8 +106,8 @@ namespace utopia {
 
 		// auto material = std::make_shared<NeoHookean<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
 		// auto material = std::make_shared<IncompressibleNeoHookean<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
-		auto material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
-		// auto material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
+		// auto material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
+		auto material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
 
 		ContactParams contact_params;
 		// contact_params.contact_pair_tags = {{2, 1}};
@@ -144,19 +144,19 @@ namespace utopia {
 		// ls->max_it(1000);
 		// // ls->verbose(true);
 
-// #ifdef WITH_M3ELINSOL
-// 		auto ls = std::make_shared<ASPAMG<USparseMatrix, UVector>>();
-// 		ls->verbose(true);
-// 		auto in_ptr = open_istream("../data/amg_settings.xml");
+#ifdef WITH_M3ELINSOL
+		auto ls = std::make_shared<ASPAMG<USparseMatrix, UVector>>();
+		ls->verbose(true);
+		auto in_ptr = open_istream("../data/amg_settings.xml");
 
-// 		if(in_ptr) {
-// 			std::cout << "Using settings" << std::endl;
-// 			in_ptr->read("amg", *ls);
-// 		}
+		if(in_ptr) {
+			std::cout << "Using settings" << std::endl;
+			in_ptr->read("amg", *ls);
+		}
 
-// 		sc.set_linear_solver(ls);
-// 		sc.set_use_ssn(true);
-// #endif //WITH_M3ELINSOL
+		sc.set_linear_solver(ls);
+		sc.set_use_ssn(true);
+#endif //WITH_M3ELINSOL
 
 
 		// sc.set_bypass_contact(true);

@@ -99,6 +99,7 @@ list(APPEND UTOPIA_FE_MODULES
 	backend/libmesh
 	backend/homemade
 	backend/intrepid2
+	backend/mars
 	intersection
 	contact
 	materials
