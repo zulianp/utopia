@@ -20,7 +20,8 @@ namespace utopia
 			{
 				// UTOPIA_RUN_TEST(lbfgs_quasi_newton_test); 
 				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
-				UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
+				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
+				UTOPIA_RUN_TEST(QuasiNewtonBoundTRTest); 
 				// UTOPIA_RUN_TEST(quasi_newton_lbfgsb_test); 
 			}			
 
@@ -167,6 +168,43 @@ namespace utopia
 	    		solver.solve(fun, x);
 	    		disp(x); 	
 			}
+
+			void QuasiNewtonBoundTRTest()
+			{
+				auto memory_size = 5; 
+
+				Bratu1D<Matrix, Vector> fun(_n);
+	    		Vector x = values(_n, 0.0);
+				Vector lb   = local_values(local_size(x).get(0), -0.01);
+				Vector ub   = local_values(local_size(x).get(0), 0.01);		    		
+	    		fun.apply_bc_to_initial_guess(x);
+
+	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
+				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
+
+
+				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+				subproblem->atol(1e-10);
+
+				QuasiTrustRegionVariableBound<Matrix, Vector> tr_solver(subproblem);
+				tr_solver.atol(1e-4); 
+				tr_solver.rtol(1e-9);
+
+				tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
+
+				tr_solver.max_it(100); 
+				tr_solver.verbose(_verbose);
+				tr_solver.delta0(1); 
+
+				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+				tr_solver.set_box_constraints(box);		
+				
+
+				tr_solver.solve(fun, x);
+	    		disp(x); 	
+			}
+
 
 
 			void quasi_newton_lbfgsb_test()

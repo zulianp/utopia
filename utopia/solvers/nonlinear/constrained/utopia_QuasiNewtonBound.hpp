@@ -75,7 +75,7 @@ namespace utopia
                 const auto &ub = this->get_upper_bound();
                 const auto &lb = this->get_lower_bound();
 
-                this->hessian_approx_strategy_->constrained_solve(x, g, lb, ub, s);
+                this->hessian_approx_strategy_->constrained_solve(x, g, lb, ub, s, 9e9);
 
                 if(this->ls_strategy_) 
                     this->ls_strategy_->get_alpha(fun, g, x, s, this->alpha_);     

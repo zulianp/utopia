@@ -219,7 +219,7 @@ namespace utopia
       {
         if(rho < this->eta1())
         {
-          radius = std::max(Scalar(this->gamma1() * norm_infty(p_k)), this->delta_min()); 
+          radius = radius * gamma1_; 
         }
         else if (rho > this->eta2() )
         {

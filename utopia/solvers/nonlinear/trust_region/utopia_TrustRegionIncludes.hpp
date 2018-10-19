@@ -15,6 +15,7 @@
 
 #include "utopia_TRNormalEquation.hpp" 
 #include "utopia_TrustRegionVariableBound.hpp"
+#include "utopia_QuasiTrustRegionVariableBound.hpp"
 
 #include "utopia_TRQuadraticFunction.hpp"
 

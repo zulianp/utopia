@@ -46,8 +46,7 @@ public:
     }
 
     // to be factored out 
-    virtual bool constrained_solve(const Vector &/*x*/, const Vector &/*g*/, const Vector & /*lb*/, const Vector & /*ub*/, Vector & /*s*/) const {return false; }
-
+    virtual bool constrained_solve(const Vector &/*x*/, const Vector &/*g*/, const Vector & /*lb*/, const Vector & /*ub*/, Vector & /*s*/, const Scalar & /*a  */) const {return false; }
 
     // applications of inverse of Hessian
     virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;

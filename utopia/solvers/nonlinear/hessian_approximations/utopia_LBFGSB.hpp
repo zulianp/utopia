@@ -139,7 +139,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             }
             else
                 result = v; 
-            
+
             return false; 
         }
 
@@ -156,7 +156,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
                 this->apply_M(WT, result);  
                 H_ =  H_ - (W_ * result);   
-
             }
             else
             {
@@ -175,26 +174,21 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
         
-        bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s) const override
+        virtual bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s, const Scalar & delta= 9e9) const override
         {
 
-            this->computeCauchyPoint(x, g, lb, ub, s);
-            Vector x_cp = x + s; 
-            this->compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
+            this->computeCauchyPoint(x, g, lb, ub, s, delta);
 
-
-            // Test of Reduced primal Newton step 
-            // this->apply_Hinv(-g, s); 
-
+            if(current_m_ > m_)
+            {
+                Vector x_cp = x + s; 
+                this->compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
+            }
 
             return true; 
         }        
 
-
-
-    // TODO:: return correction
-    // returns true, if there is any free variable, otherwise return false
-    // TODO:: investigate if you need new feasible set         
+ 
     bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector &g, 
                                     const Vector & lb,  const Vector & ub,  Vector & s) const
     {
@@ -236,12 +230,12 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
     }
 
 
-        // TODO:: simplify fun call
         void computeCauchyPoint(const Vector &x, const Vector & g, 
-                                const Vector & lb, const Vector & ub, Vector & s) const
+                                const Vector & lb, const Vector & ub,
+                                Vector & s, const Scalar & delta) const
         {
 
-            Scalar f_p, f_pp, t_current, t_next, dt, gd, delta_diff, tr_delta = 9e9;  // this should come from application at some point 
+            Scalar f_p, f_pp, t_current, t_next, dt, gd, delta_diff;
             Vector break_points, sorted_break_points, active_set, e, Hd; 
 
             bool converged = false; 
@@ -251,7 +245,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             Vector d = -1.0 * g; 
             s = 0 * d; 
 
-            cp_.get_breakpoints(d, x, lb, ub, break_points, tr_delta); 
+            cp_.get_breakpoints(d, x, lb, ub, break_points, delta); 
             vec_unique_sort_serial(break_points, sorted_break_points, cp_.get_memory_size()); 
             num_uniq_break_points = cp_.get_number_of_sorted_break_points(sorted_break_points); 
 
