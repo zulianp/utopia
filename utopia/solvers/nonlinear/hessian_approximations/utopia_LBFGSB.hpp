@@ -130,17 +130,23 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         virtual bool apply_H(const Vector & v, Vector & result) const override
         {; 
-            Vector p = transpose(W_) *v; 
-            this->apply_M(p, result); 
+            if(current_m_ > m_)
+            {
+                Vector p = transpose(W_) *v; 
+                this->apply_M(p, result); 
 
-            result = (theta_ * v) - W_*result; 
+                result = (theta_ * v) - W_*result; 
+            }
+            else
+                result = v; 
+            
             return false; 
         }
 
 
         virtual Matrix & get_Hessian() override
         {
-            if(current_m_ > 1)
+            if(current_m_ > m_)
             {
                 H_ = local_identity(local_size(H_).get(0), local_size(H_).get(1)); 
                 H_ = theta_ * H_; 
@@ -300,7 +306,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 Hd = Hd - help; 
                 it++; 
             }
-            
+
         }
 
 
@@ -421,10 +427,9 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             }
 
 
-            // // because before, matrices are singular
+            // // // because before, matrices are singular
             // if(current_m_ > m_)
             // {
-            //     std::cout<<"------ in ------\n"; 
             //     DenseMatrix M_inv = local_values(local_size(M_).get(0), local_size(M_).get(1), 99.0); 
 
             //     if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
@@ -432,9 +437,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             //     MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver_); 
             //     mat_solver.get_inverse(M_, M_inv); 
-
-            //     M_ = M_inv; 
-            //     std::cout<<"------ out ------\n"; 
             // }
 
         }
@@ -446,25 +448,32 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         // this formula could be spped-up by using M_inv instead of M 
         virtual void apply_inverse_to_vec(const Vector &  g, const DenseMatrix & W, Vector & s) const 
         {
-            Vector WTg = transpose(W) * g; 
-            Vector MWTg; 
-            this->apply_M(WTg, MWTg); 
-  
-            DenseMatrix WTW  = 1.0/theta_ * transpose(W) * W; 
+            if(current_m_ > m_)
+            {
+                Vector WTg = transpose(W) * g; 
+                Vector MWTg; 
+                this->apply_M(WTg, MWTg); 
+      
+                DenseMatrix WTW  = 1.0/theta_ * transpose(W) * W; 
 
-            DenseMatrix MWTW; 
-            this->apply_M(WTW, MWTW); 
+                DenseMatrix MWTW; 
+                this->apply_M(WTW, MWTW); 
 
-            DenseMatrix N = DenseMatrix(local_identity(local_size(MWTW))) - MWTW; 
-            Vector N_inv_v = local_zeros(local_size(WTg)); 
+                DenseMatrix N = DenseMatrix(local_identity(local_size(MWTW))) - MWTW; 
+                Vector N_inv_v = local_zeros(local_size(WTg)); 
 
-            if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
-                    ls->atol(1e-12);      
+                if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
+                        ls->atol(1e-12);      
 
-            linear_solver_->solve(N, MWTg, N_inv_v);                  
+                linear_solver_->solve(N, MWTg, N_inv_v);                  
 
-            s = (1.0/theta_ )* g; 
-            s += 1.0/(theta_*theta_) * (W* N_inv_v);    
+                s = (1.0/theta_ )* g; 
+                s += 1.0/(theta_*theta_) * (W* N_inv_v);    
+            }
+            else
+            {
+                s = g; 
+            }
         }
 
 
