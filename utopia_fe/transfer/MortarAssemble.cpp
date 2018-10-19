@@ -669,7 +669,6 @@ namespace utopia {
 		} else if(is_tri(type)) {
 			return 0.5;
 		} else if(is_prism(type)) {
-			m_utopia_warning_once("> ref_volume is returned as 1.");
 			return 1.;
 		} else if(is_pyramid(type)) {
 			return 1./0.75;

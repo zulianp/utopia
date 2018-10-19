@@ -814,9 +814,14 @@ namespace utopia {
         bool plot_matrix = false;
         is_ptr->read("plot-matrix", plot_matrix);
 
+        bool write_operators_to_disk = false;
+        is_ptr->read("write-operators-to-disk", write_operators_to_disk);
+
         if(plot_matrix) {
             plot_mesh(master_in.mesh.mesh(), "matrix");
         }
+
+
 
 
         std::string operator_type = "L2_PROJECTION";
@@ -891,6 +896,11 @@ namespace utopia {
 
         apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
         apply_boundary_conditions(V_s.dof_map(), A_s, rhs_s);
+
+        if(write_operators_to_disk) {
+            write("A_m.m", A_m);
+            write("A_s.m", A_s);
+        }
 
         // double penalty = 1000.;
         // A_s *= penalty;

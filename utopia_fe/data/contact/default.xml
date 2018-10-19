@@ -1,5 +1,6 @@
 <contact-problem>
 	<use-amg>true</use-amg>
+	<dt>0.5</dt>
 
 	<mesh>
 		<type>file</type>
@@ -17,7 +18,7 @@
 			</uy>
 		</variables>
 
-		<boundary-conditions>
+		<boundary-conditions type="array">
 			<entry>
                 <var>0</var>
                 <side>4</side>
@@ -38,8 +39,8 @@
         <stabilization>H1</stabilization>
         <stabilization-mag>0.00001</stabilization-mag>
 		<parameters>
-            <mu>20.</mu>
-            <lambda>10.</lambda>
+            <mu>60.</mu>
+            <lambda>60.</lambda>
 		</parameters>
 	</model>
 
