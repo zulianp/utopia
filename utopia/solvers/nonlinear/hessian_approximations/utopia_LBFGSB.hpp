@@ -194,14 +194,19 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s) const override
         {
             Vector x_cp, c; 
-
-            this->computeCauchyPoint(x, g, lb, ub, x_cp, c);
-
-
-            s = x_cp - x;
-
-
+            // this->computeCauchyPoint(x, g, lb, ub, x_cp, c);
+            // s = x_cp - x;
             // this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
+
+
+            this->computeCauchyPoint_new_version(x, g, lb, ub, x_cp, c);
+
+            // s = x_cp - x;
+
+            this->compute_reduced_Newton_dir(x, x_cp, c, g, lb, ub, s); 
+
+            // exit(0); 
+
 
             return true; 
         }        
@@ -210,13 +215,77 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
 
-
+        // TODO:: simplify fun call
         void computeCauchyPoint_new_version(const Vector &x, const Vector & g, const Vector & lb, 
                                             const Vector & ub, Vector & x_cp, Vector & c) const
         {
 
-            
+            Scalar f_p, f_pp, t_current, t_next, dt, gd, delta_diff, tr_delta = 9e9;  // this should come from application at some point 
+            Vector break_points, sorted_break_points, active_set, s, e, Hd; 
 
+            bool converged = false; 
+
+            SizeType num_uniq_break_points, it=0; 
+
+            Vector d = -1.0 * g; 
+            s = 0 * d; 
+
+            cp_.get_breakpoints(d, x, lb, ub, break_points, tr_delta); 
+            vec_unique_sort_serial(break_points, sorted_break_points, cp_.get_memory_size()); 
+            num_uniq_break_points = cp_.get_number_of_sorted_break_points(sorted_break_points); 
+
+            t_current = 0.0; 
+            cp_.get_breakpoint_active_set(break_points, t_current, active_set); 
+            e = e_mul(active_set, d); 
+
+            d = d - e; 
+            gd = dot(g, d); 
+            this->apply_H(d, Hd); 
+
+
+            while(it < num_uniq_break_points && !converged)
+            {
+
+                f_p = gd + dot(s, Hd); 
+                f_pp = dot(d, Hd); 
+
+                t_next = (it==num_uniq_break_points)? 9e9 : cp_.get_next_break_point(sorted_break_points, it); 
+
+                // TODO:: check for division by zero
+
+                dt = - f_p/f_pp; 
+                delta_diff = t_next - t_current; 
+
+                if(f_p >=0)
+                    converged = true; 
+                else if(f_pp >0 && dt < delta_diff)
+                {
+                    s += dt * d;
+                    converged = true; 
+                }
+
+
+                if(converged ==true)
+                    break; 
+
+                t_current = t_next; 
+                cp_.get_breakpoint_active_set(break_points, t_current, active_set); 
+                e = e_mul(active_set, d); 
+
+                s = s + delta_diff * d; 
+                d = d - e; 
+
+                gd = gd - dot(g, e); 
+                
+                Vector help; 
+                this->apply_H(e, help); 
+
+                Hd = Hd - help; 
+                it++; 
+
+            }
+
+            x_cp = x  + s; 
 
 
         }

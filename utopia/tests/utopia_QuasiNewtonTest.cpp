@@ -138,7 +138,7 @@ namespace utopia
 				auto memory_size = 5; 
 
 				Bratu1D<Matrix, Vector> fun(_n);
-	    		Vector x = values(_n, 1.0);
+	    		Vector x = values(_n, 0.0);
 				Vector lb   = local_values(local_size(x).get(0), -0.01);
 				Vector ub   = local_values(local_size(x).get(0), 0.01);		    		
 	    		fun.apply_bc_to_initial_guess(x);
