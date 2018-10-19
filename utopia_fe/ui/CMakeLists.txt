@@ -9,7 +9,7 @@ add_library(utopia_fe_ui STATIC ${LOCAL_SOURCES})
 target_include_directories(utopia_fe_ui BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(
-	utopia_fe_ui utopia_fe_core utopia_fe_materials
+	utopia_fe_ui utopia_fe_core utopia_fe_materials utopia_fe_contact
 )
 
 set_utopia_compiler_features(utopia_fe_ui)

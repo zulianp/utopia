@@ -47,25 +47,26 @@ namespace utopia {
 				material_ = std::make_shared<LinearElasticity<decltype(V_), Matrix, Vector>>(V_, params);
 			}
 
-            // if(stabilization != "none") {
-            //     std::cout << "using stabilization: " << stabilization << " mag: " << stabilization_mag << std::endl;
-            //     material_ = std::make_shared<StabilizedMaterial<decltype(V_), Matrix, Vector>>(V_, stabilization_mag, material, stabilization);
-            // }
+            if(stabilization != "none") {
+                std::cout << "using stabilization: " << stabilization << " mag: " << stabilization_mag << std::endl;
+                // StabilizedMaterial<decltype(V_), Matrix, Vector> sm(V_, stabilization_mag, material_, stabilization);
+                material_ = std::make_shared<StabilizedMaterial<decltype(V_), Matrix, Vector>>(V_, stabilization_mag, material_, stabilization);
+            }
 		}
 
-		virtual bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
+		inline bool assemble_hessian_and_gradient(const Vector &x, Matrix &hessian, Vector &gradient) override {
 			return material_->assemble_hessian_and_gradient(x, hessian, gradient);
 		}
 
-		virtual bool stress(const Vector &x, Vector &result) override {
+		inline bool stress(const Vector &x, Vector &result) override {
 			return material_->stress(x, result);
 		}
 
-		virtual void clear() override {
+		inline void clear() override {
 			material_->clear();
 		}
 
-		virtual bool is_linear() const override { return material_->is_linear(); }
+		inline bool is_linear() const override { return material_->is_linear(); }
 
 	private:
 		FunctionSpace &V_;
