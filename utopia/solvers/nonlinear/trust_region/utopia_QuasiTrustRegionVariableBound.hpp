@@ -149,7 +149,6 @@
             fun.gradient(x_k, g);
             y = g - y; 
             
-            // E_old = E_new; 
           }
           // otherwise, keep old point
           else

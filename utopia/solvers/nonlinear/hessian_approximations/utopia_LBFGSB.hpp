@@ -61,6 +61,15 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             d_elements_.resize(m_); 
             L_dots_.resize(m_, std::vector<Scalar>(m_));
 
+
+            // to be factored out
+            cp_.set_apply_H(get_apply_H()); 
+            
+            reduced_primal_method_.set_apply_H(get_apply_H()); 
+            reduced_primal_method_.set_apply_Hinv(get_apply_Hinv()); 
+            reduced_primal_method_.set_reduced_Hinv(get_apply_reduced_Hinv()); 
+
+
             return true;
         }
 
@@ -177,131 +186,17 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         virtual bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s, const Scalar & delta= 9e9) const override
         {
 
-            this->computeCauchyPoint(x, g, lb, ub, s, delta);
+            cp_.computeCauchyPoint(x, g, lb, ub, s, delta);
 
             if(current_m_ > m_)
             {
                 Vector x_cp = x + s; 
-                this->compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
+                reduced_primal_method_.compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
             }
 
             return true; 
         }        
 
- 
-    bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector &g, 
-                                    const Vector & lb,  const Vector & ub,  Vector & s) const
-    {
-        Vector feasible_set; 
-        Vector help_g; 
-        this->apply_H(s, help_g); 
-        Vector grad_quad_fun = -1.0 * (g + help_g); 
-
-        // building feasible set 
-        reduced_primal_method_.build_feasible_set(x_cp, ub, lb, feasible_set); 
-        SizeType feasible_variables = sum(feasible_set); 
-
-    
-        if(feasible_variables == 0) // all variables are feasible => perform Newton step on whole matrix
-            return false; 
-        else if(size(feasible_set).get(0)==feasible_variables)
-        {
-            Vector  local_corr; 
-            this->apply_Hinv(grad_quad_fun, local_corr); 
-            Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, local_corr, feasible_set); 
-            s += alpha_star * local_corr;    
-
-        }
-        else
-        {
-            Vector  local_corr; 
-            this->apply_reduced_Hinv(feasible_set, grad_quad_fun, local_corr); 
-
-            Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, local_corr, feasible_set); 
-        
-            Vector corr_prolongated; 
-            reduced_primal_method_.prolongate_reduced_corr(local_corr, feasible_set,  corr_prolongated); 
-
-            // final correction - both CP and Newton step 
-            s += alpha_star * corr_prolongated; 
-        }
-
-        return true; 
-    }
-
-
-        void computeCauchyPoint(const Vector &x, const Vector & g, 
-                                const Vector & lb, const Vector & ub,
-                                Vector & s, const Scalar & delta) const
-        {
-
-            Scalar f_p, f_pp, t_current, t_next, dt, gd, delta_diff;
-            Vector break_points, sorted_break_points, active_set, e, Hd; 
-
-            bool converged = false; 
-
-            SizeType num_uniq_break_points, it=0; 
-
-            Vector d = -1.0 * g; 
-            s = 0 * d; 
-
-            cp_.get_breakpoints(d, x, lb, ub, break_points, delta); 
-            vec_unique_sort_serial(break_points, sorted_break_points, cp_.get_memory_size()); 
-            num_uniq_break_points = cp_.get_number_of_sorted_break_points(sorted_break_points); 
-
-            t_current = 0.0; 
-            cp_.get_breakpoint_active_set(break_points, t_current, active_set); 
-            e = e_mul(active_set, d); 
-
-            d = d - e; 
-            gd = dot(g, d); 
-            this->apply_H(d, Hd); 
-
-
-            while(it < num_uniq_break_points && !converged)
-            {
-
-                f_p = gd + dot(s, Hd); 
-                f_pp = dot(d, Hd); 
-
-                t_next = (it==num_uniq_break_points)? 9e9 : cp_.get_next_break_point(sorted_break_points, it); 
-
-                if(f_pp ==0 || !std::isfinite(f_pp))
-                    return; 
-
-
-                dt = - f_p/f_pp; 
-                delta_diff = t_next - t_current; 
-
-                if(f_p >=0)
-                    converged = true; 
-                else if(f_pp >0 && dt < delta_diff)
-                {
-                    s += dt * d;
-                    converged = true; 
-                }
-
-
-                if(converged ==true)
-                    return; 
-
-                t_current = t_next; 
-                cp_.get_breakpoint_active_set(break_points, t_current, active_set); 
-                e = e_mul(active_set, d); 
-
-                s = s + delta_diff * d; 
-                d = d - e; 
-
-                gd = gd - dot(g, e); 
-                
-                Vector help; 
-                this->apply_H(e, help); 
-
-                Hd = Hd - help; 
-                it++; 
-            }
-
-        }
 
 
         void set_memory_size(const SizeType & m)
@@ -420,24 +315,9 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 }
             }
 
-
-            // // // because before, matrices are singular
-            // if(current_m_ > m_)
-            // {
-            //     DenseMatrix M_inv = local_values(local_size(M_).get(0), local_size(M_).get(1), 99.0); 
-
-            //     if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
-            //         ls->atol(1e-15); 
-
-            //     MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver_); 
-            //     mat_solver.get_inverse(M_, M_inv); 
-            // }
-
         }
 
 
-
-    protected: 
         // Sherman - Morison - Woodbury formula for computing inverse
         // this formula could be spped-up by using M_inv instead of M 
         virtual void apply_inverse_to_vec(const Vector &  g, const DenseMatrix & W, Vector & s) const 
@@ -489,6 +369,43 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver_); 
             mat_solver.solve(M_, RHS, result); 
+        }
+
+
+
+        std::function< void(const Vector &, Vector &) >  get_apply_H()
+        {
+            std::function< void(const Vector &, Vector &) > my_func = 
+            [this](const Vector &x, Vector & result)
+                {
+                    this->apply_H(x, result); 
+                }; 
+
+            return my_func; 
+        }
+
+
+        std::function< void(const Vector &, Vector &) >  get_apply_Hinv()
+        {
+            std::function< void(const Vector &, Vector &) > my_func = 
+            [this](const Vector &x, Vector & result)
+                {
+                    this->apply_Hinv(x, result); 
+                }; 
+
+            return my_func; 
+        }
+
+
+        std::function< void(const Vector &, const Vector &, Vector &) >  get_apply_reduced_Hinv()
+        {
+            std::function< void(const Vector &, const Vector &, Vector &) > my_func = 
+            [this](const Vector &feasible_set, const Vector & g, Vector & result)
+                {
+                    this->apply_reduced_Hinv(feasible_set, g, result); 
+                }; 
+
+            return my_func; 
         }
 
 

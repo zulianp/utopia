@@ -167,8 +167,6 @@ namespace utopia
 
     }
 
-
-
     void build_reduced_matrix(const Matrix &M, const Vector & feasible_set, Matrix &M_reduced) const 
     {
     	if(local_size(feasible_set).get(0) != local_size(M).get(0))
@@ -210,8 +208,6 @@ namespace utopia
             	}
             }  
         }
-
-
     }
 
 
@@ -245,8 +241,68 @@ namespace utopia
     }
 
 
+    bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector &g, 
+                                    const Vector & lb,  const Vector & ub,  Vector & s) const
+    {
+        Vector feasible_set; 
+        Vector help_g; 
+        this->apply_H(s, help_g); 
+        Vector grad_quad_fun = -1.0 * (g + help_g); 
+
+        // building feasible set 
+        this->build_feasible_set(x_cp, ub, lb, feasible_set); 
+        SizeType feasible_variables = sum(feasible_set); 
+
+    
+        if(feasible_variables == 0) // all variables are feasible => perform Newton step on whole matrix
+            return false; 
+        else if(size(feasible_set).get(0)==feasible_variables)
+        {
+            Vector  local_corr; 
+            this->apply_Hinv(grad_quad_fun, local_corr); 
+            Scalar alpha_star = this->compute_alpha_star(x_cp, lb, ub, local_corr, feasible_set); 
+            s += alpha_star * local_corr;    
+
+        }
+        else
+        {
+            Vector  local_corr; 
+            this->apply_reduced_Hinv(feasible_set, grad_quad_fun, local_corr); 
+
+            Scalar alpha_star = this->compute_alpha_star(x_cp, lb, ub, local_corr, feasible_set); 
+        
+            Vector corr_prolongated; 
+            this->prolongate_reduced_corr(local_corr, feasible_set,  corr_prolongated); 
+
+            // final correction - both CP and Newton step 
+            s += alpha_star * corr_prolongated; 
+        }
+
+        return true; 
+    }
+
+
+
+    virtual void set_apply_H(std::function< void(const Vector &, Vector &) > fun)
+    {   
+        apply_H = fun; 
+    }
+
+    virtual void set_apply_Hinv(std::function< void(const Vector &, Vector &) > fun)
+    {   
+        apply_Hinv = fun; 
+    }
+
+        virtual void set_reduced_Hinv(std::function< void(const Vector &, const Vector &, Vector &) > fun)
+    {   
+        apply_reduced_Hinv = fun; 
+    }
+
 	private:
 		BoxConstraints constraints_;
+        std::function< void(const Vector &, Vector &) > apply_H; 
+        std::function< void(const Vector &, Vector &) > apply_Hinv; 
+        std::function< void(const Vector &, const Vector &, Vector &) > apply_reduced_Hinv; 
 
 	};
 }
