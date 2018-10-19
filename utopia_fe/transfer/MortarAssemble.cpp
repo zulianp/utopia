@@ -672,8 +672,7 @@ namespace utopia {
 			m_utopia_warning_once("> ref_volume is returned as 1.");
 			return 1.;
 		} else if(is_pyramid(type)) {
-			m_utopia_warning_once("> ref_volume is returned as 1.");
-			return 1.;
+			return 1./0.75;
 		}else {
 			assert(false);
 			return 1.;

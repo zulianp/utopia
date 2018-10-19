@@ -29,7 +29,7 @@
 #include "utopia_NonLinearElasticityTest.hpp"
 #include "utopia_FEEvalTest.hpp"
 #include "utopia_LeastSquaresHelmholtz.hpp"
-#include "utopia_ContactSolver.hpp"
+#include "utopia_ContactApp.hpp"
 #include "utopia_CoarsenerTest.hpp"
 #include "utopia_EikonalEquationTest.hpp"
 #include "utopia_TestVolume2SurfaceTransfer.hpp"
@@ -84,10 +84,6 @@ int main(int argc, char *argv[])
 	    runners["test_msh_reader"] = test_msh_reader;
 	    runners["fe_test"] = run_fe_eval_test;
 	    runners["helm"] = run_form_least_squares_helmholtz;
-
-#ifndef WITH_TRILINOS_ALGEBRA
-	    runners["contact_steady"] = run_steady_contact;
-#endif //WITH_TRILINOS_ALGEBRA
 	    
 	    // runners["ct"] = run_contact_test;
 	    runners["coarsener_test"] = run_coarsener_test;
@@ -167,8 +163,14 @@ int main(int argc, char *argv[])
 				app.run(argv[ip1]);
 			} else if(argv[i] == RMTRApp::command()) {
 				std::cout << argv[i] << " " << argv[ip1] << std::endl;
-					
+
 				RMTRApp app;
+				app.init(init);
+				app.run(argv[ip1]);
+			} else if(argv[i] == ContactApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				ContactApp app;
 				app.init(init);
 				app.run(argv[ip1]);
 			}

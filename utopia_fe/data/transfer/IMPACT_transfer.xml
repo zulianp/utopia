@@ -1,14 +1,32 @@
 <transfer>
-	<type>l2-projection</type>
 	<!-- <type>approx-l2-projection</type> -->
 	<!-- <type>interpolation</type> -->
+	<type>l2-projection</type>
 	<biorth-basis>0</biorth-basis>
-	<mesh-master>../data/transfer/impact_mesh.e</mesh-master>
-	<order-master>1</order-master>
-	<!-- <refine-master>1</refine-master> -->
-	<mesh-slave>../data/transfer/IntuityRami.e</mesh-slave>
-	<order-slave>1</order-slave>
+<!-- 	<function>-x</function> -->
+
+	<!-- <force-shell>true</force-shell> -->
+	<!-- <assemble-mass-mat>1</assemble-mass-mat> -->
 	<function-type>constant</function-type>
-	<function>100.</function>
-	<!-- <function>x*x+y*y+z*z</function> -->
+	<!-- <function>1.</function> -->
+
+	<!-- MASTER -->
+	<master>
+		<mesh>
+			<type>file</type>
+			<path>../data/transfer/impact_mesh.e</path>			
+		</mesh>
+		<space></space>
+	</master>
+
+	<!-- SLAVE -->
+	<slave>
+		<mesh>
+			<type>file</type>
+			<path>../data/transfer/IntuityRami.e</path>
+		</mesh>
+		<space></space>
+	</slave>
+	
 </transfer>
+
