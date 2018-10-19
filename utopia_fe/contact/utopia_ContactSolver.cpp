@@ -106,8 +106,8 @@ namespace utopia {
 
 		// auto material = std::make_shared<NeoHookean<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
 		// auto material = std::make_shared<IncompressibleNeoHookean<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
-		// auto material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
-		auto material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
+		auto material = std::make_shared<SaintVenantKirchoff<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
+		// auto material = std::make_shared<LinearElasticity<decltype(V), USparseMatrix, UVector>>(V, lamee_params);
 
 		ContactParams contact_params;
 		// contact_params.contact_pair_tags = {{2, 1}};
@@ -134,7 +134,7 @@ namespace utopia {
 		// ContactSolverT sc(make_ref(V), stabilized_material, dt, contact_params);
 
 		ContactSolverT sc(make_ref(V), material, dt, contact_params);
-		sc.set_tol(5e-6);
+		sc.set_tol(5e-3);
 
 		// auto ls = std::make_shared<Factorization<USparseMatrix, UVector>>();
 		// auto ls = std::make_shared<GMRES<USparseMatrix, UVector>>();
