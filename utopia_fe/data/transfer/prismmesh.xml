@@ -1,8 +1,8 @@
 <transfer>
 	<!-- <type>approx-l2-projection</type> -->
-	<!-- <type>interpolation</type> -->
-	<type>l2-projection</type>
-	<biorth-basis>0</biorth-basis>
+	<type>interpolation</type>
+	<!-- <type>l2-projection</type> -->
+	<!-- <biorth-basis>1</biorth-basis> -->
 	
 	<function>-x</function>
 <!-- 	<function-type>constant</function-type>
