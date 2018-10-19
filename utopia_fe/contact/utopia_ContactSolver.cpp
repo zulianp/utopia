@@ -7,13 +7,65 @@
 #include "utopia_LibMeshBackend.hpp"
 #include "utopia_ContactStabilizedNewmark.hpp"
 #include "utopia_ui.hpp"
-
+#include "utopia_UIFunctionSpace.hpp"
+#include "utopia_UIForcingFunction.hpp"
+#include "utopia_UIMesh.hpp"
+#include "utopia_UIMaterial.hpp"
+#include "utopia_UIScalarSampler.hpp"
 
 #include "libmesh/mesh_refinement.h"
 
 namespace utopia {
 	template class ContactSolver<USparseMatrix, UVector>;
 	typedef utopia::ProductFunctionSpace<LibMeshFunctionSpace> VectorFunctionSpace;
+
+	class SimulationInput : public Configurable {
+	public:
+		using ProductSpaceT    = utopia::ProductFunctionSpace<LibMeshFunctionSpace>;
+		using MaterialT        = utopia::UIMaterial<ProductSpaceT, USparseMatrix, UVector>;
+		using ForcingFunctionT = UIForcingFunction<ProductSpaceT, UVector>;
+
+		void read(Input &is) override
+		{
+		    try {
+		        is.read("mesh", mesh_);
+		        is.read("space", space_);
+
+		        material_ = make_unique<MaterialT>(space_.space());
+		        forcing_function_ = make_unique<ForcingFunctionT>(space_.space());
+
+		        is.read("material", *material_);
+		        is.read("forcing-functions", *forcing_function_);
+
+		    } catch(const std::exception &ex) {
+		        std::cerr << ex.what() << std::endl;
+		        assert(false);
+		    }
+		}
+
+		inline bool empty() const
+		{
+		    return mesh_.empty();
+		}
+
+		inline libMesh::MeshBase &mesh()
+		{
+			return mesh_.mesh();
+		}
+
+		inline ProductSpaceT &space()
+		{
+			return space_.space();
+		}
+
+		ContactParams contact_params;
+		double dt;
+	private:
+		UIMesh<libMesh::DistributedMesh> mesh_;
+		UIFunctionSpace<LibMeshFunctionSpace> space_;
+		std::unique_ptr<MaterialT> material_;
+		std::unique_ptr<ForcingFunctionT> forcing_function_;
+	};
 
 	// typedef utopia::ContactSolver<USparseMatrix, UVector> ContactSolverT;
 	// typedef utopia::Newmark<USparseMatrix, UVector> ContactSolverT;
