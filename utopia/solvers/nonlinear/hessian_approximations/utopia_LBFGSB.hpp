@@ -73,7 +73,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         virtual bool update(const Vector &  s, const Vector &  y) override
         {
-
             if(!this->initialized())
             {
                 utopia_error("BFGS::update: Initialization needs to be done before updating. \n"); 
@@ -84,7 +83,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             Scalar nom      = dot(y,y);
 
             // if denom > eps, hessian approx. should be positive semidefinite
-            if(denom < 1e-12)
+            if(denom < 1e-10)
             {
                 // if(mpi_world_rank()==0)
                 //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n"); 
@@ -99,7 +98,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             this->buildL_d_elems(s); 
 
-            this->buildW(); 
+            this->buildW();     
             this->buildM(); 
 
             current_m_++; 
@@ -130,17 +129,9 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 
         virtual bool apply_H(const Vector & v, Vector & result) const override
-        {
+        {; 
             Vector p = transpose(W_) *v; 
-
-            // if(current_m_ <= m_)
-            // {
-                this->apply_M(p, result); 
-            // }
-            // else
-            // {
-            //     result = M_*p; 
-            // }
+            this->apply_M(p, result); 
 
             result = (theta_ * v) - W_*result; 
             return false; 
@@ -154,31 +145,18 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 H_ = local_identity(local_size(H_).get(0), local_size(H_).get(1)); 
                 H_ = theta_ * H_; 
 
-                DenseMatrix Y_T = transpose(Y_); 
-                DenseMatrix S_T = theta_ * transpose(S_); 
-
-                DenseMatrix P =  DenseMatrix(Blocks<DenseMatrix>(2, 1,
-                {
-                    make_ref(Y_T), make_ref(S_T)
-                }));
-
                 DenseMatrix result; 
-                // if(current_m_ <= m_)
-                // {
-                    this->apply_M(P, result);    
-                // }
-                // else
-                // {
-                //     result = M_*P; 
-                // }
+                DenseMatrix WT = transpose(W_); 
 
-                H_ =  H_ - (transpose(P) * result);     
+                this->apply_M(WT, result);  
+                H_ =  H_ - (W_ * result);   
+
             }
             else
             {
                 H_ = local_identity(local_size(H_).get(0), local_size(H_).get(1)); 
             }
-            
+
             // utopia_warning("LBFGS::get_Hessian returns dense matrix ...."); 
 
             return H_; 
@@ -195,10 +173,13 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         {
 
             this->computeCauchyPoint(x, g, lb, ub, s);
-
             Vector x_cp = x + s; 
+            this->compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
 
-            // this->compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
+
+            // Test of Reduced primal Newton step 
+            // this->apply_Hinv(-g, s); 
+
 
             return true; 
         }        
@@ -209,13 +190,11 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
     // returns true, if there is any free variable, otherwise return false
     // TODO:: investigate if you need new feasible set         
     bool compute_reduced_Newton_dir(const Vector & x,     const Vector & x_cp, const Vector &g, 
-                                    const Vector & lb,  const Vector & ub,  Vector & correction) const
+                                    const Vector & lb,  const Vector & ub,  Vector & s) const
     {
         Vector feasible_set; 
-
-        correction = x_cp - x; 
         Vector help_g; 
-        this->apply_H(correction, help_g); 
+        this->apply_H(s, help_g); 
         Vector grad_quad_fun = -1.0 * (g + help_g); 
 
         // building feasible set 
@@ -227,24 +206,24 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             return false; 
         else if(size(feasible_set).get(0)==feasible_variables)
         {
-            Vector  s; 
-            this->apply_Hinv(grad_quad_fun, s); 
-            Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, s, feasible_set); 
-            correction = correction + (alpha_star * s);    
+            Vector  local_corr; 
+            this->apply_Hinv(grad_quad_fun, local_corr); 
+            Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, local_corr, feasible_set); 
+            s += alpha_star * local_corr;    
 
         }
         else
         {
-            Vector  s; 
-            this->apply_reduced_Hinv(feasible_set, grad_quad_fun, s); 
+            Vector  local_corr; 
+            this->apply_reduced_Hinv(feasible_set, grad_quad_fun, local_corr); 
 
-            Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, s, feasible_set); 
+            Scalar alpha_star = reduced_primal_method_.compute_alpha_star(x_cp, lb, ub, local_corr, feasible_set); 
         
-            Vector s_prolongated; 
-            reduced_primal_method_.prolongate_reduced_corr(s, feasible_set,  s_prolongated); 
+            Vector corr_prolongated; 
+            reduced_primal_method_.prolongate_reduced_corr(local_corr, feasible_set,  corr_prolongated); 
 
             // final correction - both CP and Newton step 
-            correction = correction + (alpha_star * s_prolongated); 
+            s += alpha_star * corr_prolongated; 
         }
 
         return true; 
@@ -320,10 +299,8 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
                 Hd = Hd - help; 
                 it++; 
-
             }
-
-
+            
         }
 
 
@@ -469,44 +446,32 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         // this formula could be spped-up by using M_inv instead of M 
         virtual void apply_inverse_to_vec(const Vector &  g, const DenseMatrix & W, Vector & s) const 
         {
-            Vector WTg = -1.0 * transpose(W) * g; 
-            Vector v; 
+            Vector WTg = transpose(W) * g; 
+            Vector MWTg; 
+            this->apply_M(WTg, MWTg); 
+  
+            DenseMatrix WTW  = 1.0/theta_ * transpose(W) * W; 
 
-            // if(current_m_ <= m_)
-            // {
-                this->apply_M(WTg, v); 
-            // }
-            // else
-            // {
-            //     v = M_*WTg; 
-            // }
+            DenseMatrix MWTW; 
+            this->apply_M(WTW, MWTW); 
 
-            DenseMatrix N  = 1.0/theta_ * transpose(W_) * W_; 
-            
-            DenseMatrix MN; 
-            // if(current_m_ <= m_)
-            // {
-                this->apply_M(N, MN); 
-            // }
-            // else
-            // {   
-            //     MN = M_*N; 
-            // }
+            DenseMatrix N = DenseMatrix(local_identity(local_size(MWTW))) - MWTW; 
+            Vector N_inv_v = local_zeros(local_size(WTg)); 
 
-            N = DenseMatrix(local_identity(local_size(MN))) - MN; 
+            if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
+                    ls->atol(1e-12);      
 
-            Vector N_inv_v = local_zeros(local_size(v)); 
-            linear_solver_->solve(N, v, N_inv_v); 
-            
+            linear_solver_->solve(N, MWTg, N_inv_v);                  
+
             s = (1.0/theta_ )* g; 
-            s -= 1.0/(theta_*theta_) * (W* N_inv_v); 
+            s += 1.0/(theta_*theta_) * (W* N_inv_v);    
         }
 
 
         void apply_M(const Vector & v, Vector & result) const 
         {
             if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
-                    ls->atol(1e-15); 
+                    ls->atol(1e-12); 
 
             linear_solver_->solve(M_, v, result);
         }
@@ -517,7 +482,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             result = local_values(local_size(RHS).get(0), local_size(RHS).get(1), 0.0); 
             
             if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
-                    ls->atol(1e-15); 
+                    ls->atol(1e-12); 
 
             MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver_); 
             mat_solver.solve(M_, RHS, result); 

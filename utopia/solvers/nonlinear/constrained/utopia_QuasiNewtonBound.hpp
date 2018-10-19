@@ -40,7 +40,7 @@ namespace utopia
                             const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
                             const Parameters params = Parameters()):
         NonLinearSolver<Matrix, Vector>(linear_solver, params), 
-        hessian_approx_strategy_(hessian_approx)
+        hessian_approx_strategy_(hessian_approx), alpha_(1.0)
         {
             set_parameters(params);
         }

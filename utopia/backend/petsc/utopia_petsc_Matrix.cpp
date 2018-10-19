@@ -1148,8 +1148,8 @@ namespace utopia {
             {
                 result.destroy();
                 Mat temp; 
-                MatConvert(mat.implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
-                MatMatMult(implementation(), temp, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
+                MatConvert(implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
+                MatMatMult(temp, mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &result.implementation());
                 MatDestroy(&temp); 
             }
             else 
@@ -1158,8 +1158,8 @@ namespace utopia {
                 temp2.destroy(); 
 
                 Mat temp; 
-                MatConvert(mat.implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
-                MatMatMult(implementation(), temp, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp2.implementation());
+                MatConvert(implementation(), MATMPIAIJ, MAT_INITIAL_MATRIX, &temp); 
+                MatMatMult(temp, mat.implementation(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &temp2.implementation());
                 MatDestroy(&temp); 
                 result = std::move(temp2);
             }                
