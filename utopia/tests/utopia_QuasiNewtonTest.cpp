@@ -151,7 +151,8 @@ namespace utopia
 				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
 				solver.set_line_search_strategy(line_search);
 				solver.max_it(100); 	
-				solver.stol(1e-12); 		
+				solver.stol(1e-12); 	
+				solver.atol(1e-6); 		
 
 				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 	    		solver.set_box_constraints(box);				
@@ -166,7 +167,7 @@ namespace utopia
 			void quasi_newton_lbfgsb_test()
 			{				
 				Parameters params;
-				params.atol(1e-9);
+				params.atol(1e-6);
 				params.rtol(1e-15);
 				params.stol(1e-15);
 				params.verbose(_verbose);
