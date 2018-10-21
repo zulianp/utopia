@@ -240,7 +240,7 @@ namespace utopia
 
 			void quick_test()
 			{				
-				int memory_size = 10; 
+				int memory_size = 5; 
 				
 				Bratu1D<Matrix, Vector> fun(_n);
 	    		Vector x = values(_n, 0.0);
@@ -256,17 +256,16 @@ namespace utopia
 
 	    		auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);
 
-				// QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
-				QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, linear_solver);
+				QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
 
 				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
 				solver.set_line_search_strategy(line_search);
-				solver.max_it(500); 	
+				solver.max_it(50); 	
 				solver.stol(1e-12); 	
 				solver.atol(1e-6); 		
 
-				// auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-	   //  		solver.set_box_constraints(box);				
+				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+	    		solver.set_box_constraints(box);				
 
 
 	    		solver.verbose(true); 

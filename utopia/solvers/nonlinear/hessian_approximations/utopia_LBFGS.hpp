@@ -59,9 +59,12 @@ namespace utopia
                     return false; 
                 }
 
+                Scalar nom      = dot(y,y);
+                Scalar denom    = dot(y,s); 
+                theta_ = nom/denom; 
 
                 // if denom > eps, hessian approx. should be positive semidefinite
-                if(dot(y,s) < 1e-10)
+                if(denom < 1e-10)
                 {
                     // if(mpi_world_rank()==0)
                     //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n"); 
@@ -78,13 +81,6 @@ namespace utopia
                 {
                     Y_[current_m_] = y; 
                     S_[current_m_] = s; 
-
-                    // if(current_m_ >0)
-                    // {
-                    //     Scalar nom      = dot(Y_[current_m_-1],S_[current_m_-1]);   
-                    //     Scalar denom    = dot(S_[current_m_-1],S_[current_m_-1]);   
-                    //     theta_ = 1./(nom/denom);                     
-                    // }
                 }
                 else
                 {
@@ -92,11 +88,7 @@ namespace utopia
                     S_[0] = s; 
 
                     std::rotate(Y_.begin(), Y_.begin() + 1, Y_.end());
-                    std::rotate(S_.begin(), S_.begin() + 1, S_.end());
-
-                    // Scalar nom      = dot(Y_[m_-1],S_[m_-1]);     
-                    // Scalar denom    = dot(S_[m_-1],S_[m_-1]); 
-                    // theta_ = 1./(nom/denom);                     
+                    std::rotate(S_.begin(), S_.begin() + 1, S_.end());  
                 }
 
                 current_m_++; 
@@ -114,12 +106,12 @@ namespace utopia
 
 
 
-                
 
 
 
 
-                
+
+
                 return true; 
             }
 
@@ -184,7 +176,9 @@ namespace utopia
 
                 for(auto k =0; k < current_memory_size; k++)
                 {
-                    b_[k] = Y_[k] * std::pow(dot(Y_[k], S_[k]), 1./2.); 
+                    Scalar ys = 1./std::pow(dot(Y_[k], S_[k]), 1./2.); 
+                    
+                    b_[k] = ys * Y_[k]; 
                     a_[k] = (theta_*H0_) * S_[k]; 
 
                     for(auto i = 0; i < k; i++)
