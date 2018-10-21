@@ -24,6 +24,9 @@ public:
     virtual ~HessianApproximation() { }
 
     virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) = 0;
+    
+    // refresh vectors
+    virtual bool update(const Vector & /* s  */, const Vector &  /* y */ ) = 0;    
 
     Scalar num_tol()const 
     {
@@ -35,14 +38,73 @@ public:
         num_tol_ = tol; 
     }
 
-    void initialized(const bool init) 
-    {
-        initialized_ = init; 
-    }
-
     bool initialized() const 
     {
         return initialized_; 
+    }
+    
+    std::function< void(const Vector &, Vector &) >  get_apply_Hinv()
+    {
+        std::function< void(const Vector &, Vector &) > my_func = 
+        [this](const Vector &x, Vector & result)
+            {
+                this->apply_Hinv(x, result); 
+            }; 
+
+        return my_func; 
+    }
+    
+    std::function< void(const Vector &, Vector &) >  get_compute_uHinvv_dot()
+    {
+        std::function< void(const Vector &, Vector &) > my_func = 
+        [this](const Vector &x, Vector & result)
+            {
+                this->compute_uHinvv_dot(x, result); 
+            }; 
+
+        return my_func; 
+    }
+
+
+    std::function< void(const Vector &, Vector &) >  get_apply_H()
+    {
+        std::function< void(const Vector &, Vector &) > my_func = 
+        [this](const Vector &x, Vector & result)
+            {
+                this->apply_H(x, result); 
+            }; 
+
+        return my_func; 
+    }
+
+    std::function< Scalar(const Vector &, const Vector &) >  get_compute_uHv_dot()
+    {
+        std::function< Scalar(const Vector &, const Vector &) > my_func = 
+        [this](const Vector &x, const Vector & result)
+            {
+                return this->compute_uHv_dot(x, result); 
+            }; 
+
+        return my_func; 
+    }
+
+
+    std::function< Scalar(const Vector &) >  get_compute_uHu_dot()
+    {
+        std::function< Scalar(const Vector &) > my_func = 
+        [this](const Vector &x)
+            {
+                return this->compute_uHu_dot(x); 
+            }; 
+
+        return my_func; 
+    }    
+
+
+protected: 
+    void initialized(const bool init) 
+    {
+        initialized_ = init; 
     }
 
     // to be factored out 
@@ -53,16 +115,12 @@ public:
     virtual Scalar compute_uHinvv_dot(const Vector &/*u*/, const Vector & /*v*/) const {return false; }
 
     // applications of Hessian
-    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  {return false; }
-    virtual Scalar compute_uHv_dot(const Vector &/*u*/, const Vector & /*v*/) const {return false; }
-    virtual Scalar compute_uHu_dot(const Vector &/*u*/) const {return false; }
+    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  = 0 ; 
+    virtual Scalar compute_uHv_dot(const Vector &/*u*/, const Vector & /*v*/) const {return 0; }
+    virtual Scalar compute_uHu_dot(const Vector &/*u*/) const {return 0; }
 
-    // refresh vectors
-    virtual bool update(const Vector & /* s  */, const Vector &  /* y */ ) = 0;
-
-
-    virtual Matrix & get_Hessian() = 0;
-    virtual Matrix & get_Hessian_inv() = 0;
+    virtual Matrix & get_Hessian() = 0; 
+    virtual Matrix & get_Hessian_inv() = 0; 
 
 
 private:

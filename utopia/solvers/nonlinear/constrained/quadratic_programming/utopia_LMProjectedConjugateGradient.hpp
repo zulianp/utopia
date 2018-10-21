@@ -125,7 +125,7 @@ namespace utopia {
 
 					//converged = this->check_convergence(iteration, 1, 1, diff);
 
-					if(iteration > 500 || diff < 1e-9)
+					if(iteration > 1000 || diff < 1e-5)
 						converged = true; 
 				// }
 

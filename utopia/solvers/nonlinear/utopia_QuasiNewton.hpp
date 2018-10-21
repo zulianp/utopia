@@ -7,6 +7,7 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_HessianApproximations.hpp"
+#include "utopia_MatrixFreeSolverInterface.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -22,22 +23,30 @@ namespace utopia
     template<class Matrix, class Vector>
     class QuasiNewton : public NonLinearSolver<Matrix, Vector>
     {
-        typedef UTOPIA_SCALAR(Vector)                           Scalar;
-        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
+        typedef UTOPIA_SCALAR(Vector)                               Scalar;
+        typedef UTOPIA_SIZE_TYPE(Vector)                            SizeType;
         
-        typedef utopia::LSStrategy<Matrix, Vector>              LSStrategy;
-        typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation;
-        typedef utopia::LinearSolver<Matrix, Vector>         Solver;
+        typedef utopia::LSStrategy<Matrix, Vector>                  LSStrategy;
+        typedef utopia::HessianApproximation<Matrix, Vector>        HessianApproximation;
+        typedef utopia::LinearSolver<Matrix, Vector>                Solver;
+        typedef utopia::MatrixFreeSolverInterface<Matrix, Vector>   MFInterface;
         
         
     public:
+
         QuasiNewton(const std::shared_ptr <HessianApproximation> &hessian_approx,
-                    const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
+                    const std::shared_ptr <Solver> &linear_solver,
                     const Parameters params                                         = Parameters()):
         NonLinearSolver<Matrix, Vector>(linear_solver, params),alpha_(1.0),
         hessian_approx_strategy_(hessian_approx)
         {
             set_parameters(params);
+
+            if(Solver * mf_solver = dynamic_cast<Solver*>(this->linear_solver_.get()))
+                std::cout<<"mf solver--- \n"; 
+            else
+                utopia_error("QuasiNewton, linear solver is missing MatrixFreeSolverInterface\n"); 
+
         }
         
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
@@ -62,10 +71,15 @@ namespace utopia
             it++; 
             
             hessian_approx_strategy_->initialize(fun, x);
-            
+
+            if(MFInterface * mf_solver = dynamic_cast<MFInterface*>(this->linear_solver_.get()))
+                mf_solver->initialize(hessian_approx_strategy_); 
+
+
             while(!converged)
             {
-                hessian_approx_strategy_->apply_Hinv(-1.0 * g, s); 
+                this->linear_solver_->apply(-1.0 * g, s); 
+
                 
                 if(ls_strategy_) 
                     ls_strategy_->get_alpha(fun, g, x, s, alpha_);     

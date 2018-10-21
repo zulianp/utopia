@@ -13,18 +13,18 @@ namespace utopia
 			void run_dense()
 			{
 				UTOPIA_RUN_TEST(quasi_newton_test);
-				UTOPIA_RUN_TEST(Quasi_TR_test); 
+				// UTOPIA_RUN_TEST(Quasi_TR_test); 
 			}
 
 			void run_sparse()
 			{
 				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
-				UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
+				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTRTest); 
 				// UTOPIA_RUN_TEST(quasi_newton_lbfgsb_test); 
 
 
-				UTOPIA_RUN_TEST(quick_test); 
+				// UTOPIA_RUN_TEST(quick_test); 
 
 			}			
 
@@ -39,7 +39,9 @@ namespace utopia
 				params.stol(1e-15);
 				params.verbose(_verbose);
 				
-				auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector> >();
+				// auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector> >();
+
+				auto lsolver = std::make_shared<QuasiDirectSolver<Matrix, Vector> >(); 
 				auto hess_approx_BFGS   = std::make_shared<BFGS<Matrix, Vector> >();
 
 
@@ -242,35 +244,39 @@ namespace utopia
 			{				
 				int memory_size = 5; 
 				
-				Bratu1D<Matrix, Vector> fun(_n);
-	    		Vector x = values(_n, 0.0);
-				Vector lb   = local_values(local_size(x).get(0), -0.01);
-				Vector ub   = local_values(local_size(x).get(0), 0.01);		    		
-	    		fun.apply_bc_to_initial_guess(x);
+				// Bratu1D<Matrix, Vector> fun(_n);
+	   //  		Vector x = values(_n, 1.0);
+				// Vector lb   = local_values(local_size(x).get(0), -0.005);
+				// Vector ub   = local_values(local_size(x).get(0), 0.003);		    		
+	   //  		fun.apply_bc_to_initial_guess(x);
 
 
-	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-	    		linear_solver->atol(1e-12); 
-	    		linear_solver->stol(1e-11); 
-	    		linear_solver->rtol(1e-11); 
+	   //  		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
+	   //  		linear_solver->atol(1e-12); 
+	   //  		linear_solver->stol(1e-11); 
+	   //  		linear_solver->rtol(1e-11); 
 
 	    		auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);
 
-				QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
+				// QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
 
-				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
-				solver.set_line_search_strategy(line_search);
-				solver.max_it(5); 	
-				solver.stol(1e-12); 	
-				solver.atol(1e-6); 		
+				// auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				// solver.set_line_search_strategy(line_search);
+				// solver.max_it(5000); 	
+				// solver.stol(1e-12); 	
+				// solver.atol(1e-6); 		
 
-				auto box = make_box_constaints(make_ref(lb), make_ref(ub));
-	    		solver.set_box_constraints(box);				
+				// auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+	   //  		solver.set_box_constraints(box);				
 
 
-	    		solver.verbose(true); 
-	    		solver.solve(fun, x);
-	    		disp(x); 	
+	   //  		solver.verbose(true); 
+	   //  		solver.solve(fun, x);
+	   //  		disp(x); 	
+
+	    	///////////////////////////////////////////////////////////////////////////////////////
+	    		// MatrixFreeSolverInterface<Matrix, Vector> interface_; 
+	    		// interface_.initialize(hess_approx_BFGS); 
 		
 
 			}
@@ -290,9 +296,9 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
-				// QuasiNewtonTest<DMatrixd, DVectord>().run_dense();
+				QuasiNewtonTest<DMatrixd, DVectord>().run_dense();
 			
-			QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
+			// QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
 
 			// QuasiNewtonTest<DMatrixd, DVectord>().run_sparse();
 		#endif
