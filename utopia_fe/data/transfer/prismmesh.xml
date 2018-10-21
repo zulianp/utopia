@@ -4,7 +4,7 @@
 	<!-- <type>l2-projection</type> -->
 	<!-- <biorth-basis>1</biorth-basis> -->
 	
-	<function>-x</function>
+	<function>x*sin(2*y)*z</function>
 <!-- 	<function-type>constant</function-type>
 	<function>1.</function> -->
 
@@ -23,10 +23,10 @@
 		</mesh>
 		<space>
 			<variables>
-				<varu>
+				<var-u>
 					<name>u</name>
 					<order>2</order>
-				</varu>
+				</var-u>
 			</variables>
 		</space>
 	</master>
