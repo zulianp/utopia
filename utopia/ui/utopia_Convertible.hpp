@@ -7,7 +7,7 @@
 #include "utopia_Clonable.hpp"
 
 namespace utopia {
-	class IConvertible {
+	class IConvertible : public Clonable {
 	public:
 		virtual ~IConvertible() {}
 		virtual void get(double &) const = 0;
@@ -23,6 +23,7 @@ namespace utopia {
 		virtual bool is_long() const { return false; }
 		virtual bool is_bool() const { return false; }
 		virtual bool is_string() const { return false; }
+		virtual IConvertible * clone() const = 0;
 	};
 
 	//does not do anything (no defaults)
@@ -34,6 +35,11 @@ namespace utopia {
 		void get(long &) const override {}
 		void get(bool &) const override {}
 		void get(std::string &) const override {}
+		
+		NullConvertible * clone() const override
+		{
+			return new NullConvertible();
+		}
 	};
 
 	template<typename In, typename Out>
@@ -118,7 +124,7 @@ namespace utopia {
 	};
 
 	template<typename T>
-	class Convertible final : public IConvertible, public Clonable {
+	class Convertible final : public IConvertible {
 	public:
 		Convertible(const T &value) : value_(value) {}	
 

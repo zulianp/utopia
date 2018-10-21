@@ -16,21 +16,26 @@ namespace utopia {
 
 		bool open(const Path &path);// override;
 
-		void read(bool &val) override;
-		void read(double &val) override;
-		void read(int &val) override;
-		void read(SizeType &val) override;
-		void read(std::string &val) override;
-		void read(Configurable &val) override;
-		void read(std::function<void(Input &)> lambda) override;
+		void get(bool &val);// override;
+		void get(double &val);// override;
+		void get(int &val);// override;
+		void get(SizeType &val);// override;
+		void get(std::string &val);// override;
+		void get(Configurable &val);// override;
+		void get(std::function<void(Input &)> lambda);// override;
 
-		void read(const std::string &key, bool &val) override;
-		void read(const std::string &key, double &val) override;
-		void read(const std::string &key, int &val) override;
-		void read(const std::string &key, SizeType &val) override;
-		void read(const std::string &key, std::string &val) override;
-		void read(const std::string &key, Configurable &val) override;
-		void read(const std::string &key, std::function<void(Input &)> lambda) override;
+		void get(const std::string &key, bool &val) override;
+		void get(const std::string &key, double &val) override;
+		void get(const std::string &key, int &val) override;
+		void get(const std::string &key, SizeType &val) override;
+		void get(const std::string &key, std::string &val) override;
+		void get(const std::string &key, Configurable &val) override;
+		void get(const std::string &key, std::function<void(Input &)> lambda) override;
+
+		void get_all(std::function<void(Input &)> lambda) override;
+		void get(std::vector<std::shared_ptr<IConvertible>> &values) override {
+			assert(false && "implement me");
+		}
 
 		bool good() const override;
 
@@ -43,9 +48,9 @@ namespace utopia {
 		bool object_begin(const std::string &name);
 		bool object_end();
 
-		void next()   override;
-		void array_start()  override;
-		void array_finish() override;
+		void next();   //override;
+		void array_start();  //override;
+		void array_finish(); //override;
 	};
 }
 

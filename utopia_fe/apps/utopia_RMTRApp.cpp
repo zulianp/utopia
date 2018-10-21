@@ -92,19 +92,19 @@ namespace utopia {
         void read(Input &is) override
         {
             try {
-                is.read("mesh", mesh_type);
+                is.get("mesh", mesh_type);
                 path = "";
-                is.read("path", path);
+                is.get("path", path);
 
-                is.read("boundary-conditions", [this](Input &is) {
-                    is.read_all([this](Input &is) {
+                is.get("boundary-conditions", [this](Input &is) {
+                    is.get_all([this](Input &is) {
                         int side_set = 0;
 
-                        is.read("side", side_set);
+                        is.get("side", side_set);
 
 
                         double value = 0;
-                        is.read("value", value);
+                        is.get("value", value);
 
                         sides.push_back(side_set);
                         values.push_back(value);
@@ -112,26 +112,26 @@ namespace utopia {
                 });
 
                 refinements = 0;
-                is.read("refinements", refinements);
+                is.get("refinements", refinements);
 
                 order = 1;
-                is.read("order", order);
+                is.get("order", order);
 
 
                 elem_type = "quad";
-                is.read("elem-type", elem_type);
+                is.get("elem-type", elem_type);
 
                 fun = "bratu";
-                is.read("function", fun);
+                is.get("function", fun);
 
                 n_levels = 2;
-                is.read("n-levels", n_levels);
+                is.get("n-levels", n_levels);
 
                 verbose = false;
-                is.read("verbose", verbose);
+                is.get("verbose", verbose);
 
                 use_newton = false;
-                is.read("use-newton", use_newton);
+                is.get("use-newton", use_newton);
 
             } catch(const std::exception &ex) {
                 std::cerr << ex.what() << std::endl;
@@ -441,7 +441,7 @@ namespace utopia {
         auto is_ptr = open_istream(conf_file_path);
 
         SimulationInput in;
-        is_ptr->read("rmtr-app", in);
+        is_ptr->get("rmtr-app", in);
 
         in.describe();
 

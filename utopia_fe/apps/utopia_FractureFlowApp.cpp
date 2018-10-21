@@ -555,11 +555,11 @@ namespace utopia {
         void read(Input &is) override
         {
             try {
-                is.read("mesh", mesh);
-                is.read("space", space);
+                is.get("mesh", mesh);
+                is.get("space", space);
 
                 auto grid_sampler = std::make_shared<UIScalarSampler<double>>();
-                is.read("sampler", *grid_sampler);
+                is.get("sampler", *grid_sampler);
 
                 if(!grid_sampler->empty()) {
                     sampler = grid_sampler;
@@ -568,16 +568,16 @@ namespace utopia {
                 }
 
                 forcing_function = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
-                is.read("forcing-function", *forcing_function);
+                is.get("forcing-function", *forcing_function);
 
                 //material parameters
                 double diffusivity = 1.;
                 double diffusivities[3] = {1., 1., 1.};
 
-                is.read("diffusivity", diffusivity);
-                is.read("diffusivity-x", diffusivities[0]);
-                is.read("diffusivity-y", diffusivities[1]);
-                is.read("diffusivity-z", diffusivities[2]);
+                is.get("diffusivity", diffusivity);
+                is.get("diffusivity-x", diffusivities[0]);
+                is.get("diffusivity-y", diffusivities[1]);
+                is.get("diffusivity-z", diffusivities[2]);
 
                 int dim = space.subspace(0).mesh().spatial_dimension();
 
@@ -794,28 +794,28 @@ namespace utopia {
         SimulationInput master_in(*comm_), slave_in(*comm_);
         SimulationInput multiplier_in(*comm_);
 
-        is_ptr->read("master", master_in);
-        is_ptr->read("slave",  slave_in);
-        is_ptr->read("multiplier", multiplier_in);
+        is_ptr->get("master", master_in);
+        is_ptr->get("slave",  slave_in);
+        is_ptr->get("multiplier", multiplier_in);
 
         std::string solve_strategy = "monolithic";
-        is_ptr->read("solve-strategy", solve_strategy);
+        is_ptr->get("solve-strategy", solve_strategy);
 
         bool use_mg = false;
-        is_ptr->read("use-mg", use_mg);
+        is_ptr->get("use-mg", use_mg);
 
         int mg_sweeps = 1;
-        is_ptr->read("mg-sweeps", mg_sweeps);
+        is_ptr->get("mg-sweeps", mg_sweeps);
 
         int mg_levels = 5;
-        is_ptr->read("mg-levels", mg_levels);
+        is_ptr->get("mg-levels", mg_levels);
 
 
         bool plot_matrix = false;
-        is_ptr->read("plot-matrix", plot_matrix);
+        is_ptr->get("plot-matrix", plot_matrix);
 
         bool write_operators_to_disk = false;
-        is_ptr->read("write-operators-to-disk", write_operators_to_disk);
+        is_ptr->get("write-operators-to-disk", write_operators_to_disk);
 
         if(plot_matrix) {
             plot_mesh(master_in.mesh.mesh(), "matrix");
@@ -825,7 +825,7 @@ namespace utopia {
 
 
         std::string operator_type = "L2_PROJECTION";
-        is_ptr->read("operator-type", operator_type);
+        is_ptr->get("operator-type", operator_type);
 
         master_in.describe();
         slave_in.describe();

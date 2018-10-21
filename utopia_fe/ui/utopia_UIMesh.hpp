@@ -40,30 +40,30 @@ namespace utopia {
 
 			std::string elem_type = "quad";
 
-			is.read("type", mesh_type);
-			is.read("elem-type", elem_type);
-			is.read("order", order);
-			is.read("path", path);
+			is.get("type", mesh_type);
+			is.get("elem-type", elem_type);
+			is.get("order", order);
+			is.get("path", path);
 
-			is.read("refinements", refinements);
+			is.get("refinements", refinements);
 			
-			is.read("span-x", span[0]);
-			is.read("span-y", span[1]);
-			is.read("span-z", span[2]);
+			is.get("span-x", span[0]);
+			is.get("span-y", span[1]);
+			is.get("span-z", span[2]);
 			
-			is.read("min-x", min_coords[0]);
-			is.read("min-y", min_coords[1]);
-			is.read("min-z", min_coords[2]);
+			is.get("min-x", min_coords[0]);
+			is.get("min-y", min_coords[1]);
+			is.get("min-z", min_coords[2]);
 
-			is.read("max-x", max_coords[0]);
-			is.read("max-y", max_coords[1]);
-			is.read("max-z", max_coords[2]);
+			is.get("max-x", max_coords[0]);
+			is.get("max-y", max_coords[1]);
+			is.get("max-z", max_coords[2]);
 
-			is.read("n-x", n[0]);
-			is.read("n-y", n[1]);
-			is.read("n-z", n[2]);
+			is.get("n-x", n[0]);
+			is.get("n-y", n[1]);
+			is.get("n-z", n[2]);
 
-			is.read("scale", scale);
+			is.get("scale", scale);
 
 
 			if(mesh_type == "file") {
@@ -119,7 +119,7 @@ namespace utopia {
 			refine(refinements, *mesh_);
 
 			bool convert_to_triangles = false;
-			is.read("convert-to-triangles", convert_to_triangles);
+			is.get("convert-to-triangles", convert_to_triangles);
 
 			if(convert_to_triangles) {
 				libMesh::MeshTools::Modification::all_tri(*mesh_);

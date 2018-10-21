@@ -41,15 +41,15 @@ namespace utopia {
 			std::string system_name = "main";
 			std::string fe_family = "LAGRANGE";
 
-			is.read("variables", [&](Input &sub_is_mid) {
-				sub_is_mid.read_all([&](Input &sub_is) {
+			is.get("variables", [&](Input &sub_is_mid) {
+				sub_is_mid.get_all([&](Input &sub_is) {
 					std::string var_name = "u_" + std::to_string(n_vars);
 					int var_order = 1;
 					std::string var_fe_family = fe_family;
 
-					sub_is.read("name", var_name);
-					sub_is.read("order", var_order);
-					sub_is.read("fe-family", var_fe_family);
+					sub_is.get("name", var_name);
+					sub_is.get("order", var_order);
+					sub_is.get("fe-family", var_fe_family);
 					
 					var_names.push_back(var_name);
 					var_orders.push_back(var_order);
@@ -66,7 +66,7 @@ namespace utopia {
 				n_vars = 1;
 			}
 
-			is.read("system-name", system_name);
+			is.get("system-name", system_name);
 
 			auto equation_systems = std::make_shared<libMesh::EquationSystems>(mesh_->mesh());
 			auto &sys = equation_systems->add_system<libMesh::LinearImplicitSystem>(system_name);
@@ -84,18 +84,18 @@ namespace utopia {
 				space_->add_subspace(ss);
 			}
 
-			is.read("boundary-conditions", [this](Input &is) {
-			    is.read_all([this](Input &is) {
+			is.get("boundary-conditions", [this](Input &is) {
+			    is.get_all([this](Input &is) {
 			        int side_set = 0;
 			        
-			        is.read("side", side_set);
+			        is.get("side", side_set);
 			        
 			        double value = 0;
-			        is.read("value", value);
+			        is.get("value", value);
 
 			        int var_num = 0;
 
-			        is.read("var", var_num);
+			        is.get("var", var_num);
 
 			        auto u = trial(space_->subspace(var_num));
 

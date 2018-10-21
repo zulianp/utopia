@@ -25,8 +25,8 @@ namespace utopia {
 		void read(Input &is) override
 		{
 		    try {
-		        is.read("mesh", mesh_);
-		        is.read("space", space_);
+		        is.get("mesh", mesh_);
+		        is.get("space", space_);
 
 
 		    } catch(const std::exception &ex) {
@@ -69,12 +69,12 @@ namespace utopia {
 		InputSpace input_master(*comm_);
 		InputSpace input_slave(*comm_);
 
-		is_ptr->read("transfer", [&](Input &is) {
-			//read spaces
-			is_ptr->read("master", input_master);
-			is_ptr->read("slave",  input_slave);
+		is_ptr->get("transfer", [&](Input &is) {
+			//get spaces
+			is_ptr->get("master", input_master);
+			is_ptr->get("slave",  input_slave);
 
-			//read operator props
+			//get operator props
 			std::string path;
 			type = "l2-projection"; //interpolation, approx-l2-projection
 			int order = 1;
@@ -84,14 +84,14 @@ namespace utopia {
 			assemble_mass_mat_ = 0;
 			bool force_shell = false;
 
-			is.read("write-operators-to-disk", write_operators_to_disk);
-			is.read("type", type);
-			is.read("force-shell", force_shell);
-			is.read("assemble-mass-mat", assemble_mass_mat_);
+			is.get("write-operators-to-disk", write_operators_to_disk);
+			is.get("type", type);
+			is.get("force-shell", force_shell);
+			is.get("assemble-mass-mat", assemble_mass_mat_);
 
 			if(type == "l2-projection") {
 				biorth_basis = true;
-				is.read("biorth-basis", biorth_basis);
+				is.get("biorth-basis", biorth_basis);
 				
 				local_assembler_ = std::make_shared<L2LocalAssembler>(
 					input_master.mesh().mesh_dimension(),
@@ -106,7 +106,7 @@ namespace utopia {
 			} else if(type == "approx-l2-projection") {
 				int quad_order = -1;
 
-				is.read("quad-order-approx", quad_order);
+				is.get("quad-order-approx", quad_order);
 				std::cout << "quad_order: " << quad_order << std::endl;
 
 				auto apl2 = std::make_shared<ApproxL2LocalAssembler>(input_master.mesh().mesh_dimension());
@@ -124,12 +124,12 @@ namespace utopia {
 
 #ifdef WITH_TINY_EXPR
 			std::string expr = "x";
-			is.read("function", expr);
+			is.get("function", expr);
 
 			fun = std::make_shared<SymbolicFunction>(expr);
 
 			std::string fun_type = "non-linear";
-			is.read("function-type", fun_type);
+			is.get("function-type", fun_type);
 
 			if(fun_type == "constant") {
 				fun_is_constant = true;
@@ -138,7 +138,7 @@ namespace utopia {
 			}
 #else
 			double expr = 1.;
-			is.read("function", expr);
+			is.get("function", expr);
 			fun_is_constant = true;
 
 			fun = std::make_shared<ConstantCoefficient<double, 0>>(expr);
