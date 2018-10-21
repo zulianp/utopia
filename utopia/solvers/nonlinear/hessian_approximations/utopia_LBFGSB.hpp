@@ -188,11 +188,11 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             cp_.computeCauchyPoint(x, g, lb, ub, s, delta);
 
-            if(current_m_ > m_)
-            {
-                Vector x_cp = x + s; 
-                reduced_primal_method_.compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
-            }
+            // if(current_m_ > m_)
+            // {
+            //     Vector x_cp = x + s; 
+            //     reduced_primal_method_.compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
+            // }
 
             return true; 
         }        

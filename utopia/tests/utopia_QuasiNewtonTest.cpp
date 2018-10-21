@@ -18,12 +18,14 @@ namespace utopia
 
 			void run_sparse()
 			{
-				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
-				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
+				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
+				UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTRTest); 
 				// UTOPIA_RUN_TEST(quasi_newton_lbfgsb_test); 
 
-				// UTOPIA_RUN_TEST(quick_test); 
+
+				UTOPIA_RUN_TEST(quick_test); 
+
 			}			
 
 			void quasi_newton_test()
@@ -115,7 +117,7 @@ namespace utopia
 	    		fun.apply_bc_to_initial_guess(x);
 
 	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-				auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
+				auto hess_approx_BFGS = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
 
 
 				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
@@ -238,10 +240,39 @@ namespace utopia
 
 			void quick_test()
 			{				
+				int memory_size = 10; 
 				
-				GeneralizedCauchyPoint<Matrix, Vector> cp_; 
+				Bratu1D<Matrix, Vector> fun(_n);
+	    		Vector x = values(_n, 0.0);
+				Vector lb   = local_values(local_size(x).get(0), -0.01);
+				Vector ub   = local_values(local_size(x).get(0), 0.01);		    		
+	    		fun.apply_bc_to_initial_guess(x);
 
-							
+
+	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
+	    		linear_solver->atol(1e-12); 
+	    		linear_solver->stol(1e-11); 
+	    		linear_solver->rtol(1e-11); 
+
+	    		auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);
+
+				// QuasiNewtonBound<Matrix, Vector> solver(hess_approx_BFGS, linear_solver);
+				QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, linear_solver);
+
+				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				solver.set_line_search_strategy(line_search);
+				solver.max_it(500); 	
+				solver.stol(1e-12); 	
+				solver.atol(1e-6); 		
+
+				// auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+	   //  		solver.set_box_constraints(box);				
+
+
+	    		solver.verbose(true); 
+	    		solver.solve(fun, x);
+	    		disp(x); 	
+		
 
 			}
 
