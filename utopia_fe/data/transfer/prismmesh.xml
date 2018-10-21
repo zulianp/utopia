@@ -19,8 +19,16 @@
 			<elem-type>pyramid</elem-type>
 			<n-x>5</n-x>
 			<n-y>5</n-y>
+			<order>2</order>
 		</mesh>
-		<space></space>
+		<space>
+			<variables>
+				<varu>
+					<name>u</name>
+					<order>2</order>
+				</varu>
+			</variables>
+		</space>
 	</master>
 
 	<!-- SLAVE -->

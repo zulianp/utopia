@@ -7,12 +7,16 @@
 namespace utopia {
 	inline bool is_pyramid(const int type)
 	{
-		return 	type == static_cast<int>(libMesh::PYRAMID5); //FIXME add missing types
+		return type == static_cast<int>(libMesh::PYRAMID5)  ||
+			   type == static_cast<int>(libMesh::PYRAMID13) ||
+			   type == static_cast<int>(libMesh::PYRAMID14);
 	}
 
 	inline bool is_prism(const int type)
 	{
-		return 	type == static_cast<int>(libMesh::PRISM6); //FIXME add missing types
+		return type == static_cast<int>(libMesh::PRISM6)  ||
+			   type == static_cast<int>(libMesh::PRISM15) ||
+			   type == static_cast<int>(libMesh::PRISM18);
 	}
 
 	inline bool is_hex(const int type)
