@@ -46,6 +46,7 @@ namespace utopia
 
                 // to be factored out
                 cp_.set_apply_H(get_apply_H()); 
+                cg_.set_apply_H(get_apply_H()); 
 
                 return true;
             }   
@@ -101,16 +102,7 @@ namespace utopia
 
             virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const override
             {
-                
-
-
-
-
-
-
-
-
-
+            
 
                 return true; 
             }
@@ -134,13 +126,24 @@ namespace utopia
         virtual bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s, const Scalar & delta= 9e9) const override
         {
 
-            cp_.computeCauchyPoint(x, g, lb, ub, s, delta);
+            // cp_.computeCauchyPoint(x, g, lb, ub, s, delta);
 
             // if(current_m_ > m_)
             // {
             //     Vector x_cp = x + s; 
             //     reduced_primal_method_.compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
             // }
+
+            s = 0*x; 
+
+            Vector lb_sub = lb - x; 
+            Vector ub_sub = ub - x; 
+
+            // Vector lb_sub = -9e9 * lb; 
+            // Vector ub_sub = 9e9 * ub; 
+
+            cg_.solve(-1.0 * g, s, lb_sub, ub_sub); 
+
 
             return true; 
         }    
@@ -193,7 +196,6 @@ namespace utopia
                     Scalar scaling_factor = (std::pow(dot(S_[k], a_[k]), 1./2.)); 
                     a_[k] = 1.0/scaling_factor * a_[k]; 
                 }
-
             }
 
 
@@ -230,6 +232,8 @@ namespace utopia
             std::vector<Vector > a_; 
 
             GeneralizedCauchyPoint<Matrix, Vector> cp_; 
+
+            LMProjectedConjugateGradient<Matrix, Vector> cg_; 
 
 
         };
