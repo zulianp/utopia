@@ -27,7 +27,8 @@ namespace utopia {
 		from_dofs(from_dofs),
 		to_mesh(to_mesh),
 		to_dofs(to_dofs),
-		opts(opts)
+		opts(opts),
+		normalize_rows_(true)
 		{}
 
 		//@brief operator_type \in \{ INTERPOLATION| L2_PROJECTION| PSEUDO_L2_PROJECTION | APPROX_L2_PROJECTION \}
@@ -62,6 +63,17 @@ namespace utopia {
 			return false;
 		}
 
+		template<class AlgebraicOperator> 
+		inline std::shared_ptr<AlgebraicOperator> get() const
+		{
+			return std::dynamic_pointer_cast<AlgebraicOperator>(operator_);
+		}
+
+		void set_normalize_rows(const bool val)
+		{
+
+		}
+
 	private:
 		std::shared_ptr<MeshBase> from_mesh;
 		std::shared_ptr<DofMap>   from_dofs;
@@ -70,6 +82,7 @@ namespace utopia {
 		TransferOptions opts;
 
 		std::shared_ptr<TransferOperator> operator_;
+		bool normalize_rows_;
 
 	};
 

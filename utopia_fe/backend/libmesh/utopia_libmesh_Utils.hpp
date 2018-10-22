@@ -5,6 +5,16 @@
 #include "libmesh/libmesh_version.h"
 
 namespace utopia {
+	inline bool is_pyramid(const int type)
+	{
+		return 	type == static_cast<int>(libMesh::PYRAMID5); //FIXME add missing types
+	}
+
+	inline bool is_prism(const int type)
+	{
+		return 	type == static_cast<int>(libMesh::PRISM6); //FIXME add missing types
+	}
+
 	inline bool is_hex(const int type)
 	{
 		return 	type == static_cast<int>(libMesh::HEX8)  ||
@@ -66,6 +76,8 @@ namespace utopia {
 			case EDGE2:      return NODEELEM;
 			case EDGE3:      return NODEELEM;
 			case EDGE4:      return NODEELEM;
+			case PRISM6:     return QUAD4; //FIXME this is not always the case
+			case PYRAMID5:   return QUAD4; //FIXME this is not always the case
 			default: {
 				assert(false && "add special case");
 				return libMesh::INVALID_ELEM;

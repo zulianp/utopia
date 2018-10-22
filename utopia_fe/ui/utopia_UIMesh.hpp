@@ -172,6 +172,14 @@ namespace utopia {
 		            }
 		        }
 
+		        if(elem_type == "prism") {
+		        	type = libMesh::PRISM6;
+		        }
+
+		        if(elem_type == "pyramid") {
+		        	type = libMesh::PYRAMID5;
+		        }
+
 		        return type;
 
 		    } else if(dim == 2) {

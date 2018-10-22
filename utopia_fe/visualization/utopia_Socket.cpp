@@ -1,5 +1,4 @@
-// bug in Kokkos-Kernels 
-#include "Eigen/Core"
+#include "utopia_fe_kokkos_fix.hpp"
 
 #include "utopia_Socket.hpp"
 
