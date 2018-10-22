@@ -29,8 +29,16 @@ namespace utopia {
 
 		inline Array index(const Integer hash) const
 		{
-			assert(false && "implement me");
-			return Array();
+			Array ret;
+			index_from_hash(hash, ret);
+			return ret;
+		}
+
+		inline Vector point(const Integer &hash) const
+		{
+			Array index;
+			index_from_hash(hash, index);
+			return point(index);
 		}
 
 		inline Vector point(const Array &index) const
@@ -80,6 +88,20 @@ namespace utopia {
 			}
 
 			return result;
+		}
+
+		inline void index_from_hash(const Integer hash, Array &coord) const
+		{
+			Integer current = hash;
+			const Integer last = Dim - 1;
+
+			for(Integer i = last; i >= 0; --i) {
+				const Integer next = current / dims[i];
+				coord[i] = current - next * dims[i];
+				current = next;	
+			}
+
+			assert(hash == this->hash(coord));
 		}
 
 		template<typename IntT>
