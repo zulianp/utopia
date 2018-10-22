@@ -7,7 +7,10 @@
 #include "MortarAssemble.hpp"
 
 #include "utopia_intersector.hpp"
+#include "utopia_make_unique.hpp"
+
 #include "moonolith_static_math.hpp"
+#include "libmesh/serial_mesh.h"
 #include <functional>
 #include <array>
 #include <vector>
@@ -45,6 +48,7 @@ namespace utopia {
 		{
 			Vector ret;
 			for(int i = 0; i < Dim; ++i) {
+				assert(index[i] <= dims[i]);
 				ret[i] = static_cast<Scalar>(index[i])/dims[i];
 			}
 
@@ -76,15 +80,14 @@ namespace utopia {
 			return hash_from_index(coord);
 		}
 
+		//z and y major
 		inline Integer hash_from_index(const Array &coord) const
 		{
-			Integer result   = coord[0];
-			Integer total_dim = dims[0];
+			Integer result = coord[0];
 
-			for(int i = 1; i < Dim; ++i) {
+			for(int i = Dim - 1; i >= 0 ; --i) {
 				result *= dims[i];
 				result += coord[i];
-				total_dim *= dims[i];
 			}
 
 			return result;
@@ -215,7 +218,7 @@ namespace utopia {
 			Integer ret = 1;
 
 			for(auto d : dims) {
-				ret *= d;
+				ret *= (d + 1);
 			}
 
 			return ret;
@@ -262,13 +265,8 @@ namespace utopia {
 			moonolith::Communicator comm(to_mesh->comm().get());
 
 			pre_assemble(comm, from_mesh.n_nodes(), to_dofs->n_dofs());
-
-			std::vector<libMesh::Node> nodes;
-
 			Index index;
 			Vector emin, emax;
-			Polyhedron from_poly, to_poly;
-
 			// std::vector<ElementMatrix> elemmat;
 			// std::vector<double> local_element_matrices_sum(assembler_->n_forms(), 0.);
 
@@ -297,7 +295,8 @@ namespace utopia {
 
 				for(auto ind : index) {
 					// polyhedron(grid, ind, from_poly);
-					auto grid_elem = build_element(from_mesh, ind, nodes);
+					auto temp_mesh = build_element_mesh(to_mesh->comm(), from_mesh, ind);
+					auto grid_elem = temp_mesh->elem(0);
 
 					for(auto &mat_i : elemmat) {
 						mat_i.zero();
@@ -313,6 +312,7 @@ namespace utopia {
 						for(std::size_t i = 0; i < elemmat.size(); ++i) {	
 							auto &mat_i = elemmat[i];
 							auto partial_sum = std::accumulate(mat_i.get_values().begin(), mat_i.get_values().end(), libMesh::Real(0.0));
+							assert(!std::isnan(partial_sum));
 							local_element_matrices_sum[i] += partial_sum;
 
 							switch(assembler_->type(i)) {
@@ -517,18 +517,17 @@ namespace utopia {
 		inline libMesh::FEType grid_elem_type(const Grid<3> &grid)
 		{
 			libMesh::FEType type;
-			type.family = libMesh::LAGRANGE;
-			type.order = libMesh::FIRST;
+			// type.family = libMesh::LAGRANGE;
+			// type.order = libMesh::FIRST;
 			return type;
 		}
 
-		inline libMesh::UniquePtr<libMesh::Elem> build_element(
+		inline std::unique_ptr<libMesh::SerialMesh> build_element_mesh(
+			const libMesh::Parallel::Communicator &comm,
 			const Grid<3> &grid,
-			Integer cell_index,
-			std::vector<libMesh::Node> &nodes)
+			Integer cell_index)
 		{
-			auto elem = libMesh::Elem::build(libMesh::HEX8);
-
+			
 			Array index_min = grid.index(cell_index);
 			Array index_max = index_min;
 
@@ -554,54 +553,68 @@ namespace utopia {
 				*     0        1
 				*/
 
-			nodes.resize(8);
+			auto mesh = make_unique<libMesh::SerialMesh>(comm, Dim);
+			mesh->reserve_nodes(8);
 			
+			libMesh::Point p;
 			//point 0
-			nodes[0](0) = p_min.x;
-			nodes[0](0) = p_min.y;
-			nodes[0](0) = p_min.z;
+			p(0) = p_min.x;
+			p(1) = p_min.y;
+			p(2) = p_min.z;
+			mesh->add_point(p);
 
 			//point 1
-			nodes[1](0) = p_max.x;
-			nodes[1](1) = p_min.y;
-			nodes[1](2) = p_min.z;
+			p(0) = p_max.x;
+			p(1) = p_min.y;
+			p(2) = p_min.z;
+			mesh->add_point(p);
 
 			//point 2
-			nodes[2](0) = p_max.x;
-			nodes[2](1) = p_max.y;
-			nodes[2](2) = p_min.z;
+			p(0) = p_max.x;
+			p(1) = p_max.y;
+			p(2) = p_min.z;
+			mesh->add_point(p);
 
 			//point 3
-			nodes[3](0) = p_min.x;
-			nodes[3](1) = p_min.y;
-			nodes[3](2) = p_max.z;
+			p(0) = p_min.x;
+			p(1) = p_max.y;
+			p(2) = p_min.z;
+			mesh->add_point(p);
 
 			//point 4
-			nodes[4](0) = p_min.x;
-			nodes[4](1) = p_max.y;
-			nodes[4](2) = p_min.z;
+			p(0) = p_min.x;
+			p(1) = p_min.y;
+			p(2) = p_max.z;
+			mesh->add_point(p);
 
 			//point 5
-			nodes[5](0) = p_max.x;
-			nodes[5](1) = p_min.y;
-			nodes[5](2) = p_max.z;
+			p(0) = p_max.x;
+			p(1) = p_min.y;
+			p(2) = p_max.z;
+			mesh->add_point(p);
 
 			//point 6
-			nodes[6](0) = p_max.x;
-			nodes[6](1) = p_max.y;
-			nodes[6](2) = p_max.z;
+			p(0) = p_max.x;
+			p(1) = p_max.y;
+			p(2) = p_max.z;
+			mesh->add_point(p);
 
 			//point 7
-			nodes[7](0) = p_min.x;
-			nodes[7](1) = p_max.y;
-			nodes[7](2) = p_max.z;
+			p(0) = p_min.x;
+			p(1) = p_max.y;
+			p(2) = p_max.z;
+			mesh->add_point(p);
+
+			auto elem = libMesh::Elem::build(libMesh::HEX8);
 
 			for (int i = 0; i < 8; ++i) {
-				elem->set_node(i) = &nodes[i];
+				elem->set_node(i) = & mesh->node(i);
 			}
 
-			return std::move(elem);
 
+			mesh->add_elem(elem.release());
+			mesh->prepare_for_use();
+			return std::move(mesh);
 		}
 
 			//compatibility method

@@ -66,9 +66,11 @@ namespace utopia {
 		void read(Input &is) override
 		{
 		    try {
-		    	is.get("nx", grid.dims[0]);
-		    	is.get("ny", grid.dims[1]);
-		    	is.get("nz", grid.dims[2]);
+		    	is.get("grid", [&](Input &is) {
+			    	is.get("n-x", grid.dims[0]);
+			    	is.get("n-y", grid.dims[1]);
+			    	is.get("n-z", grid.dims[2]);
+		    	});
 
 		    	//FIXME
 		    	ownership_ranges[1] = grid.n_nodes();

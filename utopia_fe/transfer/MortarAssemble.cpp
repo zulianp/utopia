@@ -704,7 +704,7 @@ namespace utopia {
 		libMesh::Point p;
 		ref_ir.resize(global_ir.n_points());
 
-		libMesh::DenseMatrix<libMesh::Real> A_inv;
+		// libMesh::DenseMatrix<libMesh::Real> A_inv;
 
 		const double factor = ref_volume(type);
 		
