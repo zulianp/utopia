@@ -5,7 +5,7 @@
 #include <utility>
 #include <memory>
 
-#include <Eigen/Core>
+#include "utopia_fe_kokkos_fix.hpp"
 
 #include "utopia.hpp"
 #include "utopia_fe_base.hpp"
