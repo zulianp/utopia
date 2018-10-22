@@ -23,7 +23,6 @@ namespace utopia
 
             virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) override
             {
-
                 theta_ = 1.0; 
                 gamma_ = 1.0; 
 
@@ -62,7 +61,7 @@ namespace utopia
 
 
                 // if denom > eps, hessian approx. should be positive semidefinite
-                if(denom < 1e-10)
+                if(denom < 1e-9 || !std::isfinite(denom))
                 {
                     // if(mpi_world_rank()==0)
                     //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n"); 
@@ -72,8 +71,6 @@ namespace utopia
 
                 if(m_ ==0)
                     return true; 
-
-
 
                 if(current_m_ < m_)
                 {
@@ -137,19 +134,8 @@ namespace utopia
 
                     result += (bv * b_[i]) - (av * a_[i]); 
                 }
-
                 return true; 
             }
-
-        // virtual bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s, const Scalar & delta= 9e9) const override
-        // {
-        //     s = 0*x; 
-
-        //     Vector lb_sub = lb - x; 
-        //     Vector ub_sub = ub - x; 
-
-        //     return true; 
-        // }    
 
 
             virtual Matrix & get_Hessian() override

@@ -55,6 +55,11 @@ public:
         apply_Hinv_(v, r); 
     }
 
+    virtual Scalar compute_uHu_dot(const Vector & v) const 
+    {
+        return compute_uHu_dot_(v); 
+    }
+
 
 private:
     bool initialized_;

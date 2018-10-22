@@ -109,14 +109,31 @@ protected:
 
     // applications of inverse of Hessian
     virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;
-    virtual Scalar compute_uHinvv_dot(const Vector &/*u*/, const Vector & /*v*/) const {return false; }
-
-    // applications of Hessian
-    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  = 0 ; 
-    virtual Scalar compute_uHv_dot(const Vector &/*u*/, const Vector & /*v*/) const {return 0; }
-    virtual Scalar compute_uHu_dot(const Vector &/*u*/) const {return 0; }
-
+    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  = 0; 
     virtual Matrix & get_Hessian() = 0; 
+
+
+    virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const 
+    {        
+        Vector help; 
+        this->apply_Hinv(v, help); 
+        return dot(u, help); 
+    }
+    
+    virtual Scalar compute_uHv_dot(const Vector & u , const Vector & v) const 
+    {
+        Vector help; 
+        this->apply_H(v, help); 
+        return dot(u, help); 
+    }
+
+    virtual Scalar compute_uHu_dot(const Vector & u) const
+    {
+        Vector help; 
+        this->apply_H(u, help); 
+        return dot(u, help); 
+    }
+
 
 private:
     Scalar num_tol_;

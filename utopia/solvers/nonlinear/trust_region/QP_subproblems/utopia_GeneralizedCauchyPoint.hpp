@@ -8,7 +8,8 @@ namespace  utopia
 {
 
     template<class Matrix, class Vector>
-    class GeneralizedCauchyPoint : public TRBoxSubproblem<Matrix, Vector>
+    class GeneralizedCauchyPoint : public TRBoxSubproblem<Matrix, Vector>, 
+                                   public MatrixFreeSolverInterface<Matrix, Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
@@ -42,19 +43,29 @@ namespace  utopia
                 return cp_memory_;
             }
 
-
-
             virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
             {
-                inner_solve(H, g, s, constraints); 
+                inner_solve(g, s, constraints, H); 
                 return true;
             };
+
+            virtual bool tr_constrained_solve(const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
+            {
+                inner_solve(g, s, constraints); 
+                return true; 
+            }
+
 
         private:
 
 
-            bool inner_solve(const Matrix &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints)
+            bool inner_solve(const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints, const Matrix &H = Matrix() )
             {
+                bool approx_flg = false; 
+                if(empty(H))
+                    approx_flg = true; 
+
+
                 Scalar f_p, f_pp, t_current, t_next, dt, gd, delta_diff;
                 Vector break_points, sorted_break_points, active_set, e, Hd; 
 
@@ -78,8 +89,11 @@ namespace  utopia
 
                 d = d - e; 
                 gd = dot(g, d); 
-                // this->apply_H(d, Hd); 
-                Hd = H*d; 
+
+                if(approx_flg)
+                    this->apply_H(d, Hd); 
+                else
+                    Hd = H*d; 
 
 
                 while(it < num_uniq_break_points && !converged)
@@ -119,8 +133,10 @@ namespace  utopia
                     gd = gd - dot(g, e); 
                     
                     Vector help; 
-                    // this->apply_H(e, help); 
-                    help = H*e; 
+                    if(approx_flg)
+                        this->apply_H(e, help); 
+                    else
+                        help = H*e; 
 
                     Hd = Hd - help; 
                     it++; 
