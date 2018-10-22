@@ -1949,7 +1949,9 @@ namespace utopia {
 			intersection.type = P_MESH_TYPE_SURF;
 			return ok;
 		} else {
-			return Intersector::intersect_convex_polyhedra(poly1, poly2, &intersection);
+			bool ok = Intersector::intersect_convex_polyhedra(poly1, poly2, &intersection);
+			intersection.type = P_MESH_TYPE_UNSTRUCTURED;
+			return ok;
 		}
 	}
 

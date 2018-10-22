@@ -33,7 +33,8 @@ namespace utopia {
 	// composite_ir(dim),
 	q_trial(dim),
 	q_test(dim),
-	assemble_mass_mat_(assemble_mass_mat)
+	assemble_mass_mat_(assemble_mass_mat),
+	max_n_quad_points_(0)
 	{
 
 		if(dim == 1) {
@@ -68,6 +69,8 @@ namespace utopia {
 		if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
 			return false;
 		}
+
+		max_n_quad_points_ = std::max(max_n_quad_points_, int(q_test.get_weights().size()));
 
 		init_biorth(test, test_type);
 		init_fe(trial, trial_type, test, test_type);
@@ -187,5 +190,10 @@ namespace utopia {
 		biorth_elem->attach_quadrature_rule(&qg);
 		biorth_elem->reinit(&el);
 		mortar_assemble_weights(*biorth_elem, weights);
+	}
+
+	void L2LocalAssembler::print_stats(std::ostream &os) const
+	{
+		os << "max-n-quad-points: " << max_n_quad_points_ << "\n";
 	}
 }
