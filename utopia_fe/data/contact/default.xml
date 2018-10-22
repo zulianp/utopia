@@ -1,0 +1,70 @@
+<contact-problem>
+	<use-amg>true</use-amg>
+
+	<mesh>
+		<type>file</type>
+		<path>../data/wear_2_far.e</path>			
+	</mesh>
+
+	<space>
+		<system-name>contact_sol</system-name>
+		<variables>
+			<ux>
+				<name>disp_x</name>
+			</ux>
+			<uy>
+				<name>disp_y</name>
+			</uy>
+		</variables>
+
+		<boundary-conditions>
+			<entry>
+                <var>0</var>
+                <side>4</side>
+                <value>0.</value>
+            </entry>
+            <entry>
+                <var>1</var>
+                <side>4</side>
+                <value>0.</value>
+            </entry>
+		</boundary-conditions>
+	</space>
+
+	<model>
+        <material>LinearElasticity</material>
+        <!-- <material>NeoHookean</material> -->
+        <!-- <stabilization>L2</stabilization> -->
+        <stabilization>H1</stabilization>
+        <stabilization-mag>0.00001</stabilization-mag>
+		<parameters>
+            <mu>20.</mu>
+            <lambda>10.</lambda>
+		</parameters>
+	</model>
+
+	<forcing-functions type="array">
+	    <entry>
+	        <coord>1</coord>
+	        <value>-0.1</value>
+	    </entry>
+	</forcing-functions>
+
+	<contact>
+		<n-transient-steps>100</n-transient-steps>
+	    <!-- <type>steady</type> -->
+	    <max-nl-iter>100</max-nl-iter>
+	    <!-- <type>transient</type> -->
+	    <n-transient-steps>10</n-transient-steps>
+	    <radius>0.1</radius>
+	    <!-- <solver>pg</solver> -->
+	    <pairs type="array">
+	        <entry>
+	            <master>2</master>
+	            <slave>1</slave>
+	        </entry>
+	    </pairs>
+
+	</contact>
+
+</contact-problem>

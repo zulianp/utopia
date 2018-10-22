@@ -3,21 +3,49 @@
 	<!-- <type>interpolation</type> -->
 	<type>l2-projection</type>
 	<biorth-basis>0</biorth-basis>
-	<!-- <assemble-mass-mat>1</assemble-mass-mat> -->
-	<mesh-master>../data/test/quad_0.e</mesh-master>
-	<!-- <mesh-master>../data/frac/3D_1_square_frac_in_matrix_multiple_full_insquares_frac.e</mesh-master> -->
-	<!-- <refine-master>1</refine-master> -->
-	<order-master>2</order-master>
-
-	<mesh-slave>../data/test/quad_0.e</mesh-slave>
-	<!-- <mesh-slave>../data/frac/3D_1_square_frac_in_matrix_multiple_full_insquares_frac.e</mesh-slave> -->
-	<refine-slave>0</refine-slave>
-	<fe-family-slave>MONOMIAL</fe-family-slave>
-	<order-slave>0</order-slave>
 	<function>-x</function>
-	
-<!-- 	<function-type>constant</function-type>
-	<function>1.</function> -->
 
-	<force-shell>true</force-shell>
+	<!-- <force-shell>true</force-shell> -->
+	<!-- <assemble-mass-mat>1</assemble-mass-mat> -->
+	<!-- <function-type>constant</function-type> -->
+	<!-- <function>1.</function> -->
+
+	<!-- MASTER -->
+	<master>
+		<mesh>
+			<type>square</type>
+			<elem-type>quad</elem-type>
+			<order>2</order>
+
+			<min-x>0.</min-x>
+			<min-y>0.</min-y>
+			
+			<max-x>1.</max-x>
+			<max-y>1.</min-y>
+			
+			<n-x>20</n-x>
+			<n-y>20</n-y>
+		</mesh>
+		<space></space>
+	</master>
+
+	<!-- SLAVE -->
+	<slave>
+		<mesh>
+			<type>square</type>
+			<elem-type>quad</elem-type>
+			<order>2</order>
+
+			<min-x>0.</min-x>
+			<min-y>0.</min-y>
+			
+			<max-x>1.</max-x>
+			<max-y>1.</min-y>
+			
+			<n-x>11</n-x>
+			<n-y>11</n-y>
+		</mesh>
+		<space></space>
+	</slave>
+	
 </transfer>
