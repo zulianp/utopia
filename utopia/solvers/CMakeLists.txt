@@ -11,6 +11,7 @@ list(APPEND SOLVERS_MODULES
 	nonlinear/constrained/quadratic_programming
 	nonlinear/line_search
 	nonlinear/trust_region
+	nonlinear/trust_region/QP_subproblems
 	nonlinear/hessian_approximations
 	preconditioners
 	saddlepoint

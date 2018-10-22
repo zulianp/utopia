@@ -11,9 +11,8 @@
 #include "utopia_GenericSemismoothNewton.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
 
+// to be excluded 
 #include "utopia_ReducedPrimalMethod.hpp"
-
-#include "utopia_GeneralizedCauchyPoint.hpp"
 #include "utopia_LMProjectedConjugateGradient.hpp"
 
 #endif //UTOPIA_CONSTRAINTED_HPP

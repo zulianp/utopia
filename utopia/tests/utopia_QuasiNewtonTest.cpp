@@ -12,12 +12,17 @@ namespace utopia
 		
 			void run_dense()
 			{
-				UTOPIA_RUN_TEST(quasi_newton_test);
+				// UTOPIA_RUN_TEST(quasi_newton_test);
+
+
 				// UTOPIA_RUN_TEST(Quasi_TR_test); 
 			}
 
 			void run_sparse()
 			{
+				UTOPIA_RUN_TEST(TR_constraint_GCP_test); 
+
+
 				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTRTest); 
@@ -76,6 +81,33 @@ namespace utopia
 				utopia_test_assert(approxeq(x0, expected_rosenbrock));
 			}
 
+		    void TR_constraint_GCP_test()
+		    {
+		    	Bratu1D<Matrix, Vector> fun(_n);
+		    	Vector x = values(_n, 1.0);
+		    	fun.apply_bc_to_initial_guess(x);
+
+		    	DVectord ub, lb;
+		    	fun.generate_constraints(lb, ub);
+		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+
+		    	Parameters params;
+				params.atol(1e-6);
+				params.rtol(1e-10);
+				params.stol(1e-10);
+				params.verbose(_verbose);
+
+		        auto lsolver = std::make_shared<LUDecomposition<Matrix, Vector> >();
+		        // auto qp_solver = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
+
+		        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
+
+		        TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
+		        tr_solver.set_box_constraints(box);
+				tr_solver.set_parameters(params);
+				tr_solver.solve(fun, x);
+		    }
+
 
 			void Quasi_TR_test()
 			{
@@ -85,7 +117,7 @@ namespace utopia
 					Rosenbrock<Matrix, Vector> rosenbrock;
 					Vector expected_rosenbrock = values(2, 1);
 
-					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
+					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
 					subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
 					subproblem->atol(1e-10);
 
@@ -296,9 +328,9 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
-				QuasiNewtonTest<DMatrixd, DVectord>().run_dense();
+				// QuasiNewtonTest<DMatrixd, DVectord>().run_dense();
 			
-			// QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
+			QuasiNewtonTest<DSMatrixd, DVectord>().run_sparse();
 
 			// QuasiNewtonTest<DMatrixd, DVectord>().run_sparse();
 		#endif
