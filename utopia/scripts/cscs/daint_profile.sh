@@ -6,13 +6,14 @@ if [[ "$-" == *i* ]]; then
 fi
 
 module switch PrgEnv-cray PrgEnv-gnu
-module load CMake/3.8.1
-module load git/2.11.0
+module load CMake
+module load git
 module load cray-hdf5-parallel
 module load cudatoolkit
-module load cuda_memtest/1.2.3
+module load cuda_memtest
 module load daint-gpu
 
+export CRAYPE_LINK_TYPE=dynamic
 export CXX=$TRILINOS_DIR/bin/nvcc_wrapper
 export SRCDIR=$HOME/utopia/
 export UTOPIA_DIR=$HOME/utopia/build/
