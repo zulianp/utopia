@@ -16,20 +16,16 @@ namespace utopia
 
         public:
 
-            LBFGS(const SizeType & m): m_(m), current_m_(0), theta_(1.0)
+            LBFGS(const SizeType & m): m_(m), current_m_(0), theta_(1.0), gamma_(1.0)
             {
-                // to be factored out.... 
-                cp_.set_memory_size(-1); 
+
             }
 
             virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) override
             {
 
-                if(cp_.get_memory_size()==-1)
-                    cp_.set_memory_size(size(x).get(0));
-
                 theta_ = 1.0; 
-
+                gamma_ = 1.0; 
 
                 SizeType n = local_size(x).get(0);
                 H0_ = local_identity(n, n);
@@ -43,10 +39,7 @@ namespace utopia
                 a_.resize(m_); 
                 b_.resize(m_);                 
 
-
-                // to be factored out
-                cp_.set_apply_H(get_apply_H()); 
-                cg_.set_apply_H(get_apply_H()); 
+                rho_.resize(m_); 
 
                 return true;
             }   
@@ -62,7 +55,11 @@ namespace utopia
 
                 Scalar nom      = dot(y,y);
                 Scalar denom    = dot(y,s); 
+
+                // theta and gamma are inverse of each other
                 theta_ = nom/denom; 
+                gamma_ = denom/nom; 
+
 
                 // if denom > eps, hessian approx. should be positive semidefinite
                 if(denom < 1e-10)
@@ -80,16 +77,20 @@ namespace utopia
 
                 if(current_m_ < m_)
                 {
-                    Y_[current_m_] = y; 
-                    S_[current_m_] = s; 
+                    Y_[current_m_]      = y; 
+                    S_[current_m_]      = s; 
+                    rho_[current_m_]    = 1./denom; 
                 }
                 else
                 {
-                    Y_[0] = y; 
-                    S_[0] = s; 
+                    Y_[0]   = y; 
+                    S_[0]   = s; 
+                    rho_[0] = 1./denom; 
 
                     std::rotate(Y_.begin(), Y_.begin() + 1, Y_.end());
                     std::rotate(S_.begin(), S_.begin() + 1, S_.end());  
+
+                    std::rotate(rho_.begin(), rho_.begin() + 1, rho_.end());  
                 }
 
                 current_m_++; 
@@ -100,9 +101,26 @@ namespace utopia
                 return true; 
             }
 
-            virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const override
+            virtual bool apply_Hinv(const Vector & g, Vector & q) const override
             {
-            
+                SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
+                std::vector<Scalar> alpha_inv(current_memory_size); 
+                q = g; 
+
+                for(auto i=current_memory_size-1; i >=0; i--)
+                {
+                    alpha_inv[i] = rho_[i] * dot(S_[i], q); 
+                    q -=  alpha_inv[i] * Y_[i]; 
+                }
+
+                q = gamma_ * (H0_ * q); 
+
+
+                for(auto i=0; i < current_memory_size; i++)
+                {
+                    Scalar betta_inv = rho_[i] * dot(Y_[i], q); 
+                    q += (alpha_inv[i] - betta_inv)  * S_[i];  
+                }
 
                 return true; 
             }
@@ -123,30 +141,15 @@ namespace utopia
                 return true; 
             }
 
-        virtual bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s, const Scalar & delta= 9e9) const override
-        {
+        // virtual bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s, const Scalar & delta= 9e9) const override
+        // {
+        //     s = 0*x; 
 
-            // cp_.computeCauchyPoint(x, g, lb, ub, s, delta);
+        //     Vector lb_sub = lb - x; 
+        //     Vector ub_sub = ub - x; 
 
-            // if(current_m_ > m_)
-            // {
-            //     Vector x_cp = x + s; 
-            //     reduced_primal_method_.compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
-            // }
-
-            s = 0*x; 
-
-            Vector lb_sub = lb - x; 
-            Vector ub_sub = ub - x; 
-
-            // Vector lb_sub = -9e9 * lb; 
-            // Vector ub_sub = 9e9 * ub; 
-
-            cg_.solve(-1.0 * g, s, lb_sub, ub_sub); 
-
-
-            return true; 
-        }    
+        //     return true; 
+        // }    
 
 
             virtual Matrix & get_Hessian() override
@@ -154,13 +157,6 @@ namespace utopia
                 std::cerr<<"--- not implemented yet---- \n"; 
                 return H0_;
             } 
-
-            virtual Matrix & get_Hessian_inv() override
-            {
-                std::cerr<<"--- not implemented yet---- \n"; 
-                return H0_;
-            } 
-
 
             void set_memory_size(const SizeType & m)
             {
@@ -201,26 +197,14 @@ namespace utopia
 
 
 
-        std::function< void(const Vector &, Vector &) >  get_apply_H()
-        {
-            std::function< void(const Vector &, Vector &) > my_func = 
-            [this](const Vector &x, Vector & result)
-                {
-                    this->apply_H(x, result); 
-                }; 
-
-            return my_func; 
-        }
-
-
-
-        // private:
+        private:
             // static_assert(utopia::is_sparse<Matrix>::value, "BFGS does not support sparse matrices."); 
             // static_assert(!utopia::is_sparse<DenseMatrix>::value, "BFGS does not support sparse matrices."); 
 
             SizeType m_; // memory size 
             SizeType current_m_; // current amount of vectors in the memory 
             Scalar theta_; 
+            Scalar gamma_; 
             
             Matrix H0_; 
 
@@ -231,9 +215,8 @@ namespace utopia
             std::vector<Vector > b_; 
             std::vector<Vector > a_; 
 
-            GeneralizedCauchyPoint<Matrix, Vector> cp_; 
 
-            LMProjectedConjugateGradient<Matrix, Vector> cg_; 
+            std::vector<Scalar > rho_; 
 
 
         };

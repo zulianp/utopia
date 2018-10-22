@@ -21,8 +21,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 const std::shared_ptr <LinSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
                 m_(m), current_m_(0), linear_solver_(linear_solver)
         {
-            // to be factored out.... 
-            cp_.set_memory_size(-1); 
+           
         }
 
 
@@ -31,9 +30,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             SizeType n = local_size(x).get(0);
             H_ = local_identity(n, n);
 
-
-            if(cp_.get_memory_size()==-1)
-                cp_.set_memory_size(size(x).get(0));
 
             this->initialized(true);
             current_m_ = 0; 
@@ -60,15 +56,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
             d_elements_.resize(m_); 
             L_dots_.resize(m_, std::vector<Scalar>(m_));
-
-
-            // to be factored out
-            cp_.set_apply_H(get_apply_H()); 
-            
-            reduced_primal_method_.set_apply_H(get_apply_H()); 
-            reduced_primal_method_.set_apply_Hinv(get_apply_Hinv()); 
-            reduced_primal_method_.set_reduced_Hinv(get_apply_reduced_Hinv()); 
-
 
             return true;
         }
@@ -124,14 +111,14 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         virtual bool apply_reduced_Hinv(const Vector & feasible_set, const Vector & g, Vector & s) const
         {
-            SizeType local_feasible_size = reduced_primal_method_.get_local_size_feasible_set(feasible_set); 
-            Vector g_reduced = local_zeros(local_feasible_size);         
-            reduced_primal_method_.build_reduced_vector(g, feasible_set, g_reduced); 
+            // SizeType local_feasible_size = reduced_primal_method_.get_local_size_feasible_set(feasible_set); 
+            // Vector g_reduced = local_zeros(local_feasible_size);         
+            // reduced_primal_method_.build_reduced_vector(g, feasible_set, g_reduced); 
 
-            DenseMatrix W_reduced = local_values(local_feasible_size, local_size(W_).get(1), 0.0);
-            reduced_primal_method_.build_reduced_matrix(W_, feasible_set, W_reduced); 
+            // DenseMatrix W_reduced = local_values(local_feasible_size, local_size(W_).get(1), 0.0);
+            // reduced_primal_method_.build_reduced_matrix(W_, feasible_set, W_reduced); 
 
-            this->apply_inverse_to_vec(g_reduced, W_reduced, s); 
+            // this->apply_inverse_to_vec(g_reduced, W_reduced, s); 
 
             return true;
         }
@@ -171,8 +158,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 H_ = local_identity(local_size(H_).get(0), local_size(H_).get(1)); 
             }
 
-            // utopia_warning("LBFGS::get_Hessian returns dense matrix ...."); 
-
             return H_; 
         }
 
@@ -183,19 +168,19 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
         
-        virtual bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s, const Scalar & delta= 9e9) const override
-        {
+        // virtual bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s, const Scalar & delta= 9e9) const override
+        // {
 
-            cp_.computeCauchyPoint(x, g, lb, ub, s, delta);
+        //     // cp_.computeCauchyPoint(x, g, lb, ub, s, delta);
 
-            // if(current_m_ > m_)
-            // {
-            //     Vector x_cp = x + s; 
-            //     reduced_primal_method_.compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
-            // }
+        //     // if(current_m_ > m_)
+        //     // {
+        //     //     Vector x_cp = x + s; 
+        //     //     reduced_primal_method_.compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
+        //     // }
 
-            return true; 
-        }        
+        //     return true; 
+        // }        
 
 
 
@@ -372,44 +357,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         }
 
 
-
-        std::function< void(const Vector &, Vector &) >  get_apply_H()
-        {
-            std::function< void(const Vector &, Vector &) > my_func = 
-            [this](const Vector &x, Vector & result)
-                {
-                    this->apply_H(x, result); 
-                }; 
-
-            return my_func; 
-        }
-
-
-        std::function< void(const Vector &, Vector &) >  get_apply_Hinv()
-        {
-            std::function< void(const Vector &, Vector &) > my_func = 
-            [this](const Vector &x, Vector & result)
-                {
-                    this->apply_Hinv(x, result); 
-                }; 
-
-            return my_func; 
-        }
-
-
-        std::function< void(const Vector &, const Vector &, Vector &) >  get_apply_reduced_Hinv()
-        {
-            std::function< void(const Vector &, const Vector &, Vector &) > my_func = 
-            [this](const Vector &feasible_set, const Vector & g, Vector & result)
-                {
-                    this->apply_reduced_Hinv(feasible_set, g, result); 
-                }; 
-
-            return my_func; 
-        }
-
-
-
     private:
         // static_assert(!utopia::is_sparse<Matrix>::value, "LBFGS does not support sparse matrices.");
 
@@ -433,9 +380,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         std::shared_ptr<LinSolver> linear_solver_;     /*!< Linear solver parameters. - Ideally LU  */  
 
-
-        GeneralizedCauchyPoint<Matrix, Vector> cp_; 
-        ReducedPrimalMethod<Matrix, Vector> reduced_primal_method_; 
 };
 
 

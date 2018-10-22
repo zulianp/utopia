@@ -20,13 +20,13 @@ namespace utopia
 
 			void run_sparse()
 			{
-				UTOPIA_RUN_TEST(TR_constraint_GCP_test); 
+				UTOPIA_RUN_TEST(quasi_newton_lbfgs_test); 
 
 
+				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
 				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTRTest); 
-				// UTOPIA_RUN_TEST(quasi_newton_lbfgsb_test); 
 
 
 				// UTOPIA_RUN_TEST(quick_test); 
@@ -81,6 +81,41 @@ namespace utopia
 				utopia_test_assert(approxeq(x0, expected_rosenbrock));
 			}
 
+			void quasi_newton_lbfgs_test()
+			{				
+				Parameters params;
+				params.atol(1e-6);
+				params.rtol(1e-15);
+				params.stol(1e-15);
+				params.verbose(_verbose);
+				
+	    		auto linear_solver = std::make_shared<QuasiDirectSolver<Matrix, Vector> >(); 
+	    		auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(5);				
+
+
+				QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, linear_solver);
+				nlsolver.set_parameters(params);
+
+				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
+				nlsolver.set_line_search_strategy(line_search);
+				
+				SimpleQuadraticFunction<Matrix, Vector> fun;
+				
+				Vector x = values(_n, 2.);
+				Vector expected_1 = zeros(x.size());
+				
+				nlsolver.solve(fun, x);
+				utopia_test_assert(approxeq(expected_1, x));	
+
+
+				Bratu1D<Matrix, Vector> fun2(_n);
+	    		Vector x2 = values(_n, 1.0); 		
+	    		fun2.apply_bc_to_initial_guess(x2);
+	    		nlsolver.solve(fun2, x2);
+
+			}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		    void TR_constraint_GCP_test()
 		    {
 		    	Bratu1D<Matrix, Vector> fun(_n);
@@ -243,33 +278,6 @@ namespace utopia
 			}
 
 
-			void quasi_newton_lbfgsb_test()
-			{				
-				Parameters params;
-				params.atol(1e-6);
-				params.rtol(1e-15);
-				params.stol(1e-15);
-				params.verbose(_verbose);
-				
-	    		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-	    		auto hess_approx_BFGS   = std::make_shared<LBFGSB<Matrix, Matrix,  Vector> >(5, linear_solver);				
-
-
-				QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, linear_solver);
-				nlsolver.set_parameters(params);
-
-				auto line_search  = std::make_shared<utopia::Backtracking<Matrix, Vector> >();
-				nlsolver.set_line_search_strategy(line_search);
-				
-				SimpleQuadraticFunction<Matrix, Vector> fun;
-				
-				Vector x = values(_n, 2.);
-				Vector expected_1 = zeros(x.size());
-				
-				nlsolver.solve(fun, x);
-				utopia_test_assert(approxeq(expected_1, x));				
-
-			}
 
 
 			void quick_test()

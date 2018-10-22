@@ -107,9 +107,6 @@ protected:
         initialized_ = init; 
     }
 
-    // to be factored out 
-    virtual bool constrained_solve(const Vector &/*x*/, const Vector &/*g*/, const Vector & /*lb*/, const Vector & /*ub*/, Vector & /*s*/, const Scalar & /*a  */) const {return false; }
-
     // applications of inverse of Hessian
     virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;
     virtual Scalar compute_uHinvv_dot(const Vector &/*u*/, const Vector & /*v*/) const {return false; }
@@ -120,8 +117,6 @@ protected:
     virtual Scalar compute_uHu_dot(const Vector &/*u*/) const {return 0; }
 
     virtual Matrix & get_Hessian() = 0; 
-    virtual Matrix & get_Hessian_inv() = 0; 
-
 
 private:
     Scalar num_tol_;
