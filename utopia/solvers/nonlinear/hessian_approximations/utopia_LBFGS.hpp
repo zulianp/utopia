@@ -61,7 +61,7 @@ namespace utopia
 
 
                 // if denom > eps, hessian approx. should be positive semidefinite
-                if(denom < 1e-9 || !std::isfinite(denom))
+                if(denom < 1e-12 || !std::isfinite(denom))
                 {
                     // if(mpi_world_rank()==0)
                     //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n"); 

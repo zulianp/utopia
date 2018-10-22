@@ -72,6 +72,8 @@
 
         fun.gradient(x_k, g);
 
+        this->make_iterate_feasible(x_k); 
+
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
         // delta = 10;        // testing 
@@ -106,8 +108,7 @@
           if(TRBoxSubproblem * tr_subproblem = dynamic_cast<TRBoxSubproblem*>(this->linear_solver_.get()))
           {
             p_k = 0 * p_k; 
-            // auto box = this->merge_tr_with_pointwise_constrains(x_k, delta); 
-            auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta); 
+            auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta);
             tr_subproblem->tr_constrained_solve(H, g, p_k, box);
           }
 
@@ -117,6 +118,8 @@
     //----------------------------------------------------------------------------
           // trial point 
           x_k1 = x_k + p_k; 
+          // this->make_iterate_feasible(x_k1); 
+
 
           // value of the objective function with correction 
           fun.value(x_k1, E_new);

@@ -45,14 +45,12 @@ namespace  utopia
 
             virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
             {
-                inner_solve(g, s, constraints, H); 
-                return true;
+                return inner_solve(g, s, constraints, H); 
             };
 
             virtual bool tr_constrained_solve(const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
             {
-                inner_solve(g, s, constraints); 
-                return true; 
+                return inner_solve(g, s, constraints); 
             }
 
 

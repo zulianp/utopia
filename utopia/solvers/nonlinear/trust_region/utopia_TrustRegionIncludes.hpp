@@ -9,7 +9,7 @@
 #include "utopia_ActiveSetTRSubproblem.hpp"
 #include "utopia_GeneralizedCauchyPoint.hpp"
 #include "utopia_TRQuadraticFunction.hpp"
-
+#include "utopia_ProjectedGradientActiveSet.hpp"
 
 // tr-based minimization algorithms 
 #include "utopia_TRBase.hpp"
