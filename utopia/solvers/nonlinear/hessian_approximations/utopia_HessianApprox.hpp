@@ -4,7 +4,7 @@
 #include "utopia_HessianApproximations.hpp"
 #include "utopia_BFGS.hpp"
 #include "utopia_LBFGS.hpp"
-#include "utopia_LBFGSB.hpp"
+#include "utopia_MatrixFormLBFGS.hpp"
 
 #include "utopia_MatrixFreeSolverInterface.hpp"
 

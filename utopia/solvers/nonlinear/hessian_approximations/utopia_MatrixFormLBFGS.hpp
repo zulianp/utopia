@@ -1,5 +1,5 @@
-#ifndef UTOPIA_LBFGSB_HPP
-#define UTOPIA_LBFGSB_HPP
+#ifndef UTOPIA_MatrixFormLBFGS_HPP
+#define UTOPIA_MatrixFormLBFGS_HPP
 
 #include "utopia_Core.hpp"
 
@@ -7,7 +7,7 @@ namespace utopia
 {
 
 template<class Matrix, class DenseMatrix, class Vector>
-class LBFGSB : public HessianApproximation<Matrix, Vector>
+class MatrixFormLBFGS : public HessianApproximation<Matrix, Vector>
 {
 
     typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -17,7 +17,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
     public:
 
-        LBFGSB( const SizeType & m, 
+        MatrixFormLBFGS( const SizeType & m, 
                 const std::shared_ptr <LinSolver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >()):
                 m_(m), current_m_(0), linear_solver_(linear_solver)
         {
@@ -29,7 +29,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         {
             SizeType n = local_size(x).get(0);
             H_ = local_identity(n, n);
-
 
             this->initialized(true);
             current_m_ = 0; 
@@ -81,9 +80,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             // if denom > eps, hessian approx. should be positive semidefinite
             if(denom < 1e-10)
             {
-                // if(mpi_world_rank()==0)
-                //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n"); 
-
+                utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n"); 
                 return false; 
             }
 
@@ -161,28 +158,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
             return H_; 
         }
 
-        virtual Matrix & get_Hessian_inv() override
-        {
-            std::cerr << "--- not implemented yet---- \n";
-            return H_;
-        }
-
-        
-        // virtual bool constrained_solve(const Vector & x, const Vector & g, const Vector & lb, const Vector & ub, Vector & s, const Scalar & delta= 9e9) const override
-        // {
-
-        //     // cp_.computeCauchyPoint(x, g, lb, ub, s, delta);
-
-        //     // if(current_m_ > m_)
-        //     // {
-        //     //     Vector x_cp = x + s; 
-        //     //     reduced_primal_method_.compute_reduced_Newton_dir(x, x_cp, g, lb, ub, s); 
-        //     // }
-
-        //     return true; 
-        // }        
-
-
 
         void set_memory_size(const SizeType & m)
         {
@@ -259,7 +234,7 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         void buildM()
         {           
-            // Doesn't work with dense matrices 
+            // transpose(S_) * S_ doesn't work with dense matrices 
             DenseMatrix SS = theta_ * transpose(S_) * S_; 
 
             {
@@ -268,9 +243,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
                 auto r = row_range(M_); 
                 auto c = col_range(M_); 
-
-                // auto rowSS = row_range(SS); 
-                // auto colSS = col_range(SS);  // here, we assume that SS has same distribution as M_ 
 
                 for(auto i=r.begin(); i!=r.end(); ++i)
                 {
@@ -321,9 +293,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
                 DenseMatrix N = DenseMatrix(local_identity(local_size(MWTW))) - MWTW; 
                 Vector N_inv_v = local_zeros(local_size(WTg)); 
 
-                if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
-                        ls->atol(1e-12);      
-
                 linear_solver_->solve(N, MWTg, N_inv_v);                  
 
                 s = (1.0/theta_ )* g; 
@@ -338,9 +307,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
         void apply_M(const Vector & v, Vector & result) const 
         {
-            if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
-                    ls->atol(1e-12); 
-
             linear_solver_->solve(M_, v, result);
         }
 
@@ -348,10 +314,6 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
         void apply_M(const DenseMatrix & RHS, DenseMatrix & result) const 
         {
             result = local_values(local_size(RHS).get(0), local_size(RHS).get(1), 0.0); 
-            
-            if(IterativeSolver<Matrix, Vector> * ls = dynamic_cast<IterativeSolver<Matrix, Vector>*>(linear_solver_.get()))
-                    ls->atol(1e-12); 
-
             MatLinearSolver<DenseMatrix, DenseMatrix, Vector> mat_solver(linear_solver_); 
             mat_solver.solve(M_, RHS, result); 
         }
@@ -386,4 +348,4 @@ class LBFGSB : public HessianApproximation<Matrix, Vector>
 
 }
 
-#endif //UTOPIA_LBFGSB_HPP
+#endif //UTOPIA_MatrixFormLBFGS_HPP

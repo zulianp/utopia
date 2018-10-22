@@ -195,8 +195,6 @@ namespace utopia
             }
 
 
-
-
         private:
             // static_assert(utopia::is_sparse<Matrix>::value, "BFGS does not support sparse matrices."); 
             // static_assert(!utopia::is_sparse<DenseMatrix>::value, "BFGS does not support sparse matrices."); 
