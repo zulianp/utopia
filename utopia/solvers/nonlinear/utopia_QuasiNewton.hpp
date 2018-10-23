@@ -15,11 +15,7 @@
 
 namespace utopia
 {
-    /**
-     * @brief      The Quasi Newton solver.
-     * @tparam     Matrix
-     * @tparam     Vector
-     */
+
     template<class Matrix, class Vector>
     class QuasiNewton : public NonLinearSolver<Matrix, Vector>
     {
@@ -30,10 +26,6 @@ namespace utopia
         typedef utopia::HessianApproximation<Matrix, Vector>        HessianApproximation;
         
         typedef utopia::MatrixFreeLinearSolver<Vector>              Solver;
-
-
-        // typedef utopia::MatrixFreeSolverInterface<Matrix, Vector>   MFInterface;
-        
         
     public:
 
@@ -83,7 +75,6 @@ namespace utopia
                     auto multiplication_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_H()); 
                     lin_solver->solve(multiplication_action, -1.0*g, s); 
                 }
-
 
                 if(ls_strategy_) 
                     ls_strategy_->get_alpha(fun, g, x, s, alpha_);     
@@ -160,9 +151,7 @@ namespace utopia
         std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
         
         std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
-
-
-        std::shared_ptr<Solver> mf_linear_solver_;     /*!< Linear solver parameters. */  
+        std::shared_ptr<Solver> mf_linear_solver_;                      /*!< Linear solver parameters. */  
         
     };
     

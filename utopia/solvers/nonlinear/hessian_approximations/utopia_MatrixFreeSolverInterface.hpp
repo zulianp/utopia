@@ -102,7 +102,7 @@ private:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<class Vector>
-    class FunctionOperator final : public Operator<Vector> 
+    class FunctionOperator final: public Operator<Vector> 
     {
         public:
             FunctionOperator(const std::function< void(const Vector &, Vector &) > operator_action)
@@ -124,7 +124,7 @@ private:
 
     // TODO:: do checks if action is inverse ...
     template<class Vector>
-    class QuasiLinearSolver : public MatrixFreeLinearSolver<Vector>
+    class QuasiLinearSolver: public MatrixFreeLinearSolver<Vector>
     {
         public:
             virtual ~QuasiLinearSolver() {}
