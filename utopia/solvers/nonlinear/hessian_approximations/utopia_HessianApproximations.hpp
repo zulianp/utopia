@@ -101,7 +101,7 @@ public:
     }    
 
 
-protected: 
+// protected: 
     void initialized(const bool init) 
     {
         initialized_ = init; 

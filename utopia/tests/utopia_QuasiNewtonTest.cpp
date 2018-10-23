@@ -12,7 +12,7 @@ namespace utopia
 		
 			void run_dense()
 			{
-				UTOPIA_RUN_TEST(quasi_newton_test);
+				// UTOPIA_RUN_TEST(quasi_newton_test);
 
 
 				// UTOPIA_RUN_TEST(Quasi_TR_test); 
@@ -20,12 +20,14 @@ namespace utopia
 
 			void run_sparse()
 			{
-				UTOPIA_RUN_TEST(quasi_newton_lbfgs_test); 
-				UTOPIA_RUN_TEST(quasi_newton_matrix_form_lbfgs_test); 
-				UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-
-				
+				// UTOPIA_RUN_TEST(quasi_newton_lbfgs_test); 
+				// UTOPIA_RUN_TEST(quasi_newton_matrix_form_lbfgs_test); 
+				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
 				// UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test); 
+				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+
+				UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
+
 				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test)
 				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
@@ -172,62 +174,96 @@ namespace utopia
 				tr_solver.solve(fun, x);
 		    }
 
-		 //    void QuasiTR_constraint_GCP_test()
-		 //    {
-		 //    	Bratu1D<Matrix, Vector> fun(_n);
-		 //    	Vector x = values(_n, 1.0);
-		 //    	fun.apply_bc_to_initial_guess(x);
+		    void QuasiTR_constraint_GCP_test()
+		    {
+		    	Bratu1D<Matrix, Vector> fun(_n);
+		    	Vector x = values(_n, 1.0);
+		    	fun.apply_bc_to_initial_guess(x);
 
-			// 	Vector lb   = local_values(local_size(x).get(0), -0.01);
-			// 	Vector ub   = local_values(local_size(x).get(0), 0.01);		
-		 //    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+				Vector lb   = local_values(local_size(x).get(0), -0.01);
+				Vector ub   = local_values(local_size(x).get(0), 0.01);		
+		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-		 //    	SizeType memory_size = 5; 
-		 //    	Parameters params;
-			// 	params.atol(1e-6);
-			// 	params.rtol(1e-10);
-			// 	params.stol(1e-10);
-			// 	params.verbose(_verbose);
-			// 	params.max_it(300);
-			// 	params.delta0(1);
+		    	SizeType memory_size = 5; 
+		    	Parameters params;
+				params.atol(1e-6);
+				params.rtol(1e-10);
+				params.stol(1e-10);
+				params.verbose(_verbose);
+				params.max_it(300);
+				params.delta0(1);
 
-			// 	auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);	
-		 //        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
+				auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);	
+		        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
 
-		 //        QuasiTrustRegionVariableBound<Matrix, Vector>  tr_solver(hess_approx_BFGS, qp_solver);
-		 //        tr_solver.set_box_constraints(box);
-			// 	tr_solver.set_parameters(params);
-			// 	tr_solver.solve(fun, x);
+		        QuasiTrustRegionVariableBound<Matrix, Vector>  tr_solver(hess_approx_BFGS, qp_solver);
+		        tr_solver.set_box_constraints(box);
+				tr_solver.set_parameters(params);
+				tr_solver.solve(fun, x);
 
-		 //    }
+		    }
 
 
-		 //    void Gradient_projection_active_set_test()
-		 //    {
-		 //    	Bratu1D<Matrix, Vector> fun(_n);
-		 //    	Vector x = values(_n, 0.0);
-		 //    	fun.apply_bc_to_initial_guess(x);
+		    void Gradient_projection_active_set_test()
+		    {
+		    	Bratu1D<Matrix, Vector> fun(_n);
+		    	Vector x = values(_n, 0.0);
+		    	fun.apply_bc_to_initial_guess(x);
 
-			// 	Vector lb   = local_values(local_size(x).get(0), -0.01);
-			// 	Vector ub   = local_values(local_size(x).get(0), 0.01);		
-		 //    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+				Vector lb   = local_values(local_size(x).get(0), -0.01);
+				Vector ub   = local_values(local_size(x).get(0), 0.01);		
+		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-		 //    	Parameters params;
-			// 	params.atol(1e-6);
-			// 	params.rtol(1e-10);
-			// 	params.stol(1e-10);
-			// 	params.verbose(_verbose);
-			// 	params.max_it(1000); 
-			// 	params.delta0(1); 
+		    	Parameters params;
+				params.atol(1e-6);
+				params.rtol(1e-10);
+				params.stol(1e-10);
+				params.verbose(_verbose);
+				params.max_it(1000); 
+				params.delta0(1); 
 
-		 //        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+		        qp_solver->verbose(false); 
 
-		 //        TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
-		 //        tr_solver.set_box_constraints(box);
-			// 	tr_solver.set_parameters(params);
-			// 	tr_solver.solve(fun, x);
-		 //    }
+		        TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
+		        tr_solver.set_box_constraints(box);
+				tr_solver.set_parameters(params);
+				tr_solver.solve(fun, x);
 
+				disp(x); 
+		    }
+
+
+
+		    void Quasi_TR_Gradient_projection_active_set_test()
+		    {
+		    	SizeType memory_size = 5; 
+
+		    	Bratu1D<Matrix, Vector> fun(_n);
+		    	Vector x = values(_n, 0.0);
+		    	fun.apply_bc_to_initial_guess(x);
+
+				Vector lb   = local_values(local_size(x).get(0), -0.01);
+				Vector ub   = local_values(local_size(x).get(0), 0.01);		
+		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+
+		    	Parameters params;
+				params.atol(1e-6);
+				params.rtol(1e-10);
+				params.stol(1e-10);
+				params.verbose(_verbose);
+				params.max_it(1000); 
+				params.delta0(1); 
+
+				auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);	
+		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
+		        qp_solver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx_BFGS->get_apply_Hinv())); 
+
+		        QuasiTrustRegionVariableBound<Matrix, Vector>  tr_solver(hess_approx_BFGS, qp_solver);
+		        tr_solver.set_box_constraints(box);
+				tr_solver.set_parameters(params);
+				tr_solver.solve(fun, x);
+		    }
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

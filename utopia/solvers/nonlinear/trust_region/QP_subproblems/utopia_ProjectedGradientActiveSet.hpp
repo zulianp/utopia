@@ -8,17 +8,19 @@ namespace  utopia
 {
 
     template<class Matrix, class Vector>
-    class ProjectedGradientActiveSet : public TRBoxSubproblem<Matrix, Vector>, 
-                                   public MatrixFreeSolverInterface<Matrix, Vector>
+    class ProjectedGradientActiveSet :  public TRBoxSubproblem<Matrix, Vector>, 
+                                        public MatrixFreeLinearSolver<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
         typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
         typedef utopia::TRBoxSubproblem<Matrix, Vector>         TRBoxSubproblem;
 
+        using IterativeSolver<Matrix, Vector>::solve;
+
 
         public:
-            ProjectedGradientActiveSet(  const Parameters params = Parameters()):
+            ProjectedGradientActiveSet( const Parameters params = Parameters()):
                                         TRBoxSubproblem(params)
             {
                 
@@ -31,37 +33,50 @@ namespace  utopia
                 return new ProjectedGradientActiveSet(*this);
             }
 
+            void set_preconditioner(const std::shared_ptr<Preconditioner<Vector> > &precond) override
+            {
+                precond_ = precond;
+            }
+
 
             virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
-            {
-                return inner_solve(g, s, constraints, H); 
+            {   
+                init(local_size(g).get(0)); 
+                auto H_ptr = utopia::op(make_ref(H));
+                return aux_solve(*H_ptr, g, s, constraints); 
             };
 
-            virtual bool tr_constrained_solve(const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
+            virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
             {
-                return inner_solve(g, s, constraints); 
+                init(local_size(g).get(0));
+                return aux_solve(H, g, s, constraints); 
+            }
+
+            
+            virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override 
+            {
+                utopia_error("ProjectedGradientActiveSet missing solve implementation.... \n"); 
+                return false; 
             }
 
 
         private:
-
-
-            bool inner_solve(const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints, const Matrix &H = Matrix() )
+            bool aux_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints)
             {
-                bool approx_flg = false; 
-                if(empty(H))
-                    approx_flg = true; 
-
-
                 const auto &ub = constraints.upper_bound();
                 const auto &lb = constraints.lower_bound();
+
+                if(this->verbose())
+                    this->init_solver("ProjectedGradientActiveSet", {" "});
 
 
                 cp_.tr_constrained_solve(H, g, s, constraints); 
 
                 Vector feasible_set; 
                 
-                Vector help_g = H*s;    // this->apply_H(s, help_g); 
+                Vector help_g;
+                H.apply(s, help_g); 
+
                 Vector grad_qp_fun = g + help_g;  // minus is missing 
 
                 // building feasible set 
@@ -70,17 +85,24 @@ namespace  utopia
 
 
             
-                if(feasible_variables == 0) // all variables are feasible => perform Newton step on whole matrix
+                if(feasible_variables == 0) // no feasible variables => return CP
                 {
-                    std::cout<<"------- Feasible set empty => return CP point --------- \n";     
                     return false; 
                 }
-                else if(size(feasible_set).get(0)==feasible_variables)
+                else if(size(feasible_set).get(0)==feasible_variables) // all variables are feasible, use Newton's method to solve the system
                 {
-                    std::cout<<"------- Active set empty => apply inverse --------- \n";     
                     Vector  local_corr; 
-                    auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >(); // this->apply_Hinv(grad_quad_fun, local_corr); 
-                    linear_solver->solve(H, -1.0 * grad_qp_fun, local_corr); 
+                    if(const MatrixOperator<Matrix, Vector> * H_matrix = dynamic_cast<const MatrixOperator<Matrix, Vector> *>(&H))
+                    {
+                        std::cout<<"yes, this one.... \n"; // to be changed with the precondtiioner
+                        auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >(); 
+                        linear_solver->solve(*(H_matrix->get_matrix()), -1.0 * grad_qp_fun, local_corr); 
+                    }
+                    else
+                    {
+                        if(precond_)
+                            precond_->apply(-1.0 * grad_qp_fun, local_corr); 
+                    }
 
                     Vector lb_new = *lb - s; 
                     Vector ub_new = *ub - s; 
@@ -93,12 +115,11 @@ namespace  utopia
                 }
                 else
                 {
-                    // std::cout<<"------- Projected CG method --------- \n"; 
                     Vector  local_corr = 0*s; 
 
                     Vector lb_new = *lb - s; 
                     Vector ub_new = *ub - s; 
-                    projected_cg(grad_qp_fun, feasible_set, ub_new, lb_new, H, local_corr); 
+                    projected_cg(H, grad_qp_fun, feasible_set, ub_new, lb_new, local_corr); 
 
                     s += local_corr; 
                 }
@@ -107,73 +128,68 @@ namespace  utopia
             }
 
 
-
-            void projected_cg(const Vector & grad, const Vector & feasible_set, const Vector &ub, const Vector &lb, const Matrix & H, Vector & x)
+            void projected_cg(const Operator<Vector> &H, const Vector & grad, const Vector & feasible_set, const Vector &ub, const Vector &lb, Vector & x)
             {
-                Scalar r_norm0 = norm2(grad); 
-                Scalar alpha, betta, alpha_max; 
+                Scalar r_norm0 = norm2(grad), r_norm; 
+                Scalar alpha, betta, alpha_max, rg_old, d_norm; 
 
-                Vector r = grad; 
-                Vector g;
-                get_projection(r, feasible_set,  g); 
+                r = grad; 
+                get_projection(r, feasible_set,  q); 
+                d = -1.0 * q; 
 
-                Vector d = -1.0 * g; 
-                Vector r_plus, g_plus; 
-
-                Scalar d_norm = norm2(d); 
-
-                // disp(feasible_set); 
-
-                // std::cout<<"d_norm: "<< d_norm << "  \n"; 
+                d_norm = norm2(d); 
 
                 if(d_norm< 1e-15 || !std::isfinite(d_norm))
                     return; 
 
+                if(this->verbose())
+                    this->init_solver("Projected CG - inner solver", {"it", "alpha", "alpha_max", "betta", "|| r ||"});
+
+
+                // TODO:: setup params from outside 
                 SizeType max_it = 200, it = 0; 
                 bool converged = false; 
 
                 while(!converged)
                 {
-                    alpha = dot(r,g)/dot(d, H*d); 
+                    H.apply(d, Hd); 
+
+                    rg_old = dot(r, q); 
+                    alpha = rg_old/dot(d, Hd); 
 
                     if(!std::isfinite(alpha))
                         return; 
 
                     alpha_max = compute_alpha_max(x, lb, ub, d); 
-
-                   //  std::cout<<"alpha: "<< alpha << "  alpha_max: "<< alpha_max << "  \n"; 
-
                     if(alpha > alpha_max)
                     {
                         x += alpha_max * d; 
                         return; 
                     }
 
-                    x +=  alpha *d; 
+                    x +=  alpha * d; 
+                    r += alpha * Hd;
 
-                    r_plus = r + (alpha * H * d); 
-                    get_projection(r_plus, feasible_set, g_plus); 
-
-
-                    betta = dot(r_plus, g_plus)/dot(r, g); 
+                    get_projection(r, feasible_set, q); 
+                    betta = dot(r, q)/rg_old; 
 
                     if(!std::isfinite(betta))
                         return; 
 
-                    d = betta* d - g_plus; 
-                    g = g_plus; 
-                    r = r_plus; 
+                    d = betta* d - q; 
 
-                    converged = (it > max_it || norm2(r) < std::min(0.1, std::sqrt(r_norm0)) * r_norm0 || alpha < 1e-12 || betta < 1e-12) ? true : false; 
+                    r_norm = norm2(r); 
+
+                    // following Conn, Gould, Toint... 
+                    converged = (it > max_it || r_norm < std::min(0.1, std::sqrt(r_norm0)) * r_norm0 || alpha < 1e-12 || betta < 1e-12) ? true : false; 
                     // converged = (it > max_it || norm2(r) < 1e-5 )? true : false; 
 
                     it++; 
 
-                   // std::cout<<"  it: "<< it <<  "  alpha: "<<alpha <<  "  alpha_max: "<<alpha_max <<"   betta:  "<< betta << " ||r||  "<<  norm2(r) << "  \n"; 
-
+                    if(this->verbose())
+                        PrintInfo::print_iter_status(it, {alpha, alpha_max, betta, r_norm});
                 }
 
-                // exit(0); 
             }
 
 
@@ -263,13 +279,33 @@ namespace  utopia
             return min(alpha_stars); 
         }
 
+        void init(const SizeType &ls)
+        {
+            auto zero_expr = local_zeros(ls);
 
+            //resets all buffers in case the size has changed
+            if(!empty(r)) {
+                r = zero_expr;
+            }
 
+            if(!empty(q)) {
+                q = zero_expr;
+            }
 
+            if(!empty(d)) {
+                d = zero_expr;
+            }
+
+            if(!empty(Hd)) {
+                Hd = zero_expr;
+            }
+        }
 
 
         private:  
             GeneralizedCauchyPoint<Matrix, Vector> cp_; 
+            std::shared_ptr<Preconditioner<Vector> > precond_;
+            Vector r, q, d, Hd; 
         
     };
 }

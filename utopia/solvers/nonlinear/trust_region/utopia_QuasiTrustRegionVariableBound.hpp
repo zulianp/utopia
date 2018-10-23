@@ -9,9 +9,6 @@
  namespace utopia 
  {
     	template<class Matrix, class Vector>
-      /**
-       * @brief      Trust region solver taking into account also bound constraints.
-       */ 
      	class QuasiTrustRegionVariableBound :   public VariableBoundSolverInterface<Matrix, Vector>, 
                                               public TrustRegionBase<Matrix, Vector>, 
                                               public NonLinearSolver<Matrix, Vector>
@@ -22,10 +19,9 @@
         typedef utopia::TRBoxSubproblem<Matrix, Vector>       TRBoxSubproblem;  
         typedef utopia::TrustRegionBase<Matrix, Vector>       TrustRegionBase; 
         typedef utopia::NonLinearSolver<Matrix, Vector>       NonLinearSolver;
-        typedef utopia::LinearSolver<Matrix, Vector>                Solver;
 
         typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation;
-        typedef utopia::MatrixFreeSolverInterface<Matrix, Vector>   MFInterface;
+
      	
      	public:                                                                      
       QuasiTrustRegionVariableBound(const std::shared_ptr <HessianApproximation> &hessian_approx, 
@@ -36,12 +32,6 @@
                                     hessian_approx_strategy_(hessian_approx) 
 
       {
-
-        if(Solver * mf_solver = dynamic_cast<Solver*>(this->linear_solver_.get()))
-            std::cout<<"mf solver--- \n"; 
-        else
-          utopia_error("QuasiTrustRegionVariableBound, linear solver is missing MatrixFreeSolverInterface\n"); 
-
         set_parameters(params);        
       }
 
@@ -96,9 +86,6 @@
 
         hessian_approx_strategy_->initialize(fun, x_k);
         
-        if(MFInterface * mf_solver = dynamic_cast<MFInterface*>(this->linear_solver_.get()))
-            mf_solver->initialize(hessian_approx_strategy_); 
-
         g0_norm = norm2(g);
         g_norm = g0_norm;
         
@@ -114,6 +101,7 @@
         fun.value(x_k, E_old); 
         fun.gradient(x_k, g);
 
+
         // solve starts here 
         while(!converged)
         {
@@ -127,17 +115,13 @@
           {
             p_k = 0 * p_k; 
             auto box = this->merge_pointwise_constraints_with_uniform_bounds(x_k, -1.0 * delta, delta); 
-            tr_subproblem->tr_constrained_solve(g, p_k, box);
+            auto multiplication_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_H()); 
+            tr_subproblem->tr_constrained_solve(multiplication_action, g, p_k, box);             
           }
 
+          // compute tr ratio... 
           Scalar l_term = dot(g, p_k);
-
-          Scalar qp_term  = 0.0; 
-          if(MFInterface * mf_solver = dynamic_cast<MFInterface*>(this->linear_solver_.get()))
-            qp_term = mf_solver->compute_uHu_dot(p_k); 
-
-
-          // Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
+          Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
           pred = - l_term - 0.5 * qp_term; 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
@@ -149,7 +133,7 @@
           fun.value(x_k, E_old);
 
           // decrease ratio 
-          ared = E_old - E_new;                // reduction observed on objective function
+          ared = E_old - E_new;           // reduction observed on objective function
           pred = std::abs(pred); 
           rho = ared/ pred;               // decrease ratio         
 
