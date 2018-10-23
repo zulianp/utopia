@@ -14,7 +14,7 @@ if(INTREPID2_FOUND)
 
 	add_library(utopia_fe_intrepid2 STATIC ${LOCAL_SOURCES} ${LOCAL_HEADERS})
 	target_link_libraries(utopia_fe_intrepid2 utopia_fe_core utopia_fe_intersection utopia_fe_base)
-	target_include_directories(utopia_fe_intrepid2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+	target_include_directories(utopia_fe_intrepid2 BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 	set_utopia_compiler_features(utopia_fe_intrepid2)
 
 
@@ -28,9 +28,9 @@ if(INTREPID2_FOUND)
 	#----------------------------------------------------------------------------------------
 
 	install(TARGETS utopia_fe_intrepid2
-		RUNTIME DESTINATION bin 
-		LIBRARY DESTINATION lib 
-		ARCHIVE DESTINATION lib 
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
 		)
 
 	install(FILES ${LOCAL_HEADERS} DESTINATION include)
@@ -41,7 +41,7 @@ if(INTREPID2_FOUND)
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
 	set(WITH_INTREPID2 TRUE PARENT_SCOPE)
-	
+
 else()
 	message(WARNING "could not find Intrepid2")
 endif()

@@ -38,7 +38,7 @@ namespace utopia {
 	public:
 		virtual ~ElasticitySimulation() {}
 
-        class Desc : public Serializable {
+        class Desc : public Configurable {
         public:
             Desc() :
                 mesh_path("../data/mesh2.e"),
@@ -49,33 +49,33 @@ namespace utopia {
                 dt(0.1)
             { }
 
-            void read(InputStream &is) {
-               is.read("mesh", mesh_path);
+            void read(Input &is) {
+               is.get("mesh", mesh_path);
 
                mesh_refinements = 0;
-               is.read("mesh-refinements", mesh_refinements);
+               is.get("mesh-refinements", mesh_refinements);
 
-               is.read("model", [this](InputStream &is) {
-                    is.read("material", material_name);
+               is.get("model", [this](Input &is) {
+                    is.get("material", material_name);
 
-                    is.read("parameters", [this](InputStream &is) {
-                        is.read("mu", params.default_mu);
-                        is.read("lambda", params.default_lambda);
+                    is.get("parameters", [this](Input &is) {
+                        is.get("mu", params.default_mu);
+                        is.get("lambda", params.default_lambda);
                     });
 
                     stabilization = "none";
 
-                    is.read("stabilization", stabilization);
+                    is.get("stabilization", stabilization);
                     stabilization_mag = 0.1;
-                    is.read("stabilization-mag", stabilization_mag);
+                    is.get("stabilization-mag", stabilization_mag);
 
-                    // is.read("time", [this](InputStream &is) {
-                    //     is.read("dt", dt);
-                    //     is.read("steps", n_time_teps);
+                    // is.get("time", [this](Input &is) {
+                    //     is.get("dt", dt);
+                    //     is.get("steps", n_time_teps);
                     // });
                });
 
-               is.read("output", output_path);
+               is.get("output", output_path);
             }
 
             std::string mesh_path;
@@ -92,20 +92,21 @@ namespace utopia {
 		ElasticitySimulation()
 		{}
 
-		virtual bool init_sim(libMesh::Parallel::Communicator &comm, InputStream &is)
+		virtual bool init_sim(libMesh::Parallel::Communicator &comm, Input &is)
 		{
 			bool ok = false;
 
-			is.read("simulation", [this, &ok, &comm](InputStream &is) {
+			is.get("simulation", [this, &ok, &comm](Input &is) {
                 ok = init(comm, is);
             });
 
 			return ok;
 		}
 
-		virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is)
+		virtual bool init(libMesh::Parallel::Communicator &comm, Input &is)
 		{
-            is.read(desc_);
+            // is.read(desc_);
+            desc_.read(is);
 
 			mesh = std::make_shared<libMesh::DistributedMesh>(comm);
 			mesh->read(desc_.mesh_path);
@@ -145,24 +146,24 @@ namespace utopia {
 
             /////////////////////////////////////////////////////////////////////////////
 
-            is.read("boundary-conditions", [this](InputStream &is) {
-            	is.read("dirichlet", [this](InputStream &is) {
+            is.get("boundary-conditions", [this](Input &is) {
+            	is.get("dirichlet", [this](Input &is) {
 
-                    is.read_all([this](InputStream &is) {
+                    is.get_all([this](Input &is) {
                         int side_set = 0, coord = 0;
 
-                        is.read("side", side_set);
-                        is.read("coord", coord);
+                        is.get("side", side_set);
+                        is.get("coord", coord);
 
                         auto u = trial(V[coord]);
 
 #ifdef WITH_TINY_EXPR
                         std::string expr = "0";
-                        is.read("value", expr);
+                        is.get("value", expr);
                         auto g = symbolic(expr);
 #else
                         double value = 0;
-                        is.read("value", value);
+                        is.get("value", value);
                         auto g = coeff(value);
 #endif //WITH_TINY_EXPR
 
@@ -180,7 +181,7 @@ namespace utopia {
             V[0].initialize();
 
             auto ff = std::make_shared<UIForcingFunction<decltype(V), UVector>>(V);
-            is.read("forcing-functions", *ff);
+            is.get("forcing-functions", *ff);
             forcing_function = ff;
 
             material = std::make_shared<ForcedMaterial<USparseMatrix, UVector>>(
@@ -226,7 +227,7 @@ namespace utopia {
     public:
     	virtual ~ContactSimulation() {}
 
-    	virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is) override
+    	virtual bool init(libMesh::Parallel::Communicator &comm, Input &is) override
     	{
     		bool ok = true;
     		if(!ElasticitySimulation::init(comm, is)) {
@@ -235,17 +236,17 @@ namespace utopia {
 
 
             std::set<int> temp;
-    		is.read("contact", [this,&temp](InputStream &is) {
-    			is.read("radius", contact_params.search_radius);
+    		is.get("contact", [this,&temp](Input &is) {
+    			is.get("radius", contact_params.search_radius);
 
                 std::string type;
-                is.read("type", type);
+                is.get("type", type);
 
                 step_tol = 5e-6;
-                is.read("step-tol", step_tol);
+                is.get("step-tol", step_tol);
 
                 max_nl_iter = 30;
-                is.read("max-nl-iter", max_nl_iter);
+                is.get("max-nl-iter", max_nl_iter);
 
                 is_steady = false;
                 n_transient_steps = 1;
@@ -256,19 +257,19 @@ namespace utopia {
 
                 use_pg = false;
                 std::string solver;
-                is.read("solver", solver);
+                is.get("solver", solver);
 
                 if(solver == "pg") {
                     use_pg = true;
                 }
 
-                is.read("n-transient-steps", n_transient_steps);
+                is.get("n-transient-steps", n_transient_steps);
 
-                is.read("pairs", [this,&temp](InputStream &is) {
-                    is.read_all([this,&temp](InputStream &is) {
+                is.get("pairs", [this,&temp](Input &is) {
+                    is.get_all([this,&temp](Input &is) {
                         int master = -1, slave = -1;
-                        is.read("master", master);
-                        is.read("slave", slave);
+                        is.get("master", master);
+                        is.get("slave", slave);
 
                         // std::cout << master << " " << slave << std::endl;
 
@@ -304,21 +305,21 @@ namespace utopia {
 
     };
 
-    class WearSimulation::Input : public ContactSimulation {
+    class WearSimulation::SimulationInput : public ContactSimulation {
     public:
-    	Input()
+    	SimulationInput()
         : wear_coefficient(7e-3), extrapolation_factor(10.)
     	{}
 
-    	virtual bool init(libMesh::Parallel::Communicator &comm, InputStream &is) override
+    	virtual bool init(libMesh::Parallel::Communicator &comm, Input &is) override
     	{
     		if(!ContactSimulation::init(comm, is)) return false;
 
-            is.read("wear", [this](InputStream &is) {
-                is.read("n-cycles",   n_cycles);
-                is.read("gait-cycle", gc);
-                is.read("coeff", wear_coefficient);
-                is.read("extrapolation", extrapolation_factor);
+            is.get("wear", [this](Input &is) {
+                is.get("n-cycles",   n_cycles);
+                is.get("gait-cycle", gc);
+                is.get("coeff", wear_coefficient);
+                is.get("extrapolation", extrapolation_factor);
             });
 
             gc.init(V);
@@ -346,7 +347,7 @@ namespace utopia {
         typedef utopia::ContactSolver<USparseMatrix, UVector> ContactSolverT;
         typedef utopia::ContactStabilizedNewmark<USparseMatrix, UVector> TransientContactSolverT;
 
-    	Input in;
+    	SimulationInput in;
     	auto is_ptr = open_istream(conf_file_path);
     	if(!is_ptr) {
     		std::cerr << "[Error] invalid path " << conf_file_path << std::endl;

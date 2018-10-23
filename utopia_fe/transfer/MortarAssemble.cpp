@@ -150,8 +150,6 @@ namespace utopia {
 		world = libMesh::FE<3, libMesh::LAGRANGE>::map(&elem_, ref);
 	}
 
-
-
 	void AffineTransform3::compute_affine_transformation(const libMesh::Elem &elem, libMesh::DenseMatrix<libMesh::Real> &A_inv, libMesh::DenseVector<libMesh::Real> &A_inv_m_b){
 
 		libMesh::Point p0, p1, p2, p3;
@@ -344,6 +342,8 @@ namespace utopia {
 		libMesh::QGauss ir(2, libMesh::Order(order));
 		ir.init(libMesh::TRI6);
 
+		double normalization_factor = weight * 2.;
+
 		double triangle[3 * 2] = { 0., 0., 0., 0., 0., 0. };
 
 		const int n_triangles   = tri.size() / 3;
@@ -379,7 +379,7 @@ namespace utopia {
 			v -= o;
 
 
-			const double scale = fabs(Intersector::polygon_area_2(3, triangle)) / ( weight );
+			const double scale = fabs(Intersector::polygon_area_2(3, triangle)) * normalization_factor;
 
 			relative_weight += scale;
 
@@ -409,28 +409,26 @@ namespace utopia {
 		libMesh::QGauss ir(2, libMesh::Order(order));
 		ir.init(libMesh::TRI3);
 
-		// std::cout << "ref quad " << std::endl;
-		// ir.print_info();
-		// std::cout << "```````````" << std::endl;
+		const double normalization_factor = weight * 2.;
 
 		const int n_triangles     = polygon.m() - 2;
 		const int n_quad_points   = n_triangles * ir.n_points();
 
 		assert(fabs(sum_of_weights(ir) - 0.5) < 1e-8);
 
-		double triangle[3*2] = { polygon.get_values()[0], polygon.get_values()[1], 0., 0., 0., 0. };
+		double triangle[3 * 2] = { polygon.get_values()[0], polygon.get_values()[1], 0., 0., 0., 0. };
 
 		libMesh::DenseVector<libMesh::Real> o, u, v, p;
 		get_row(0, polygon, o);
 
 		c_ir.resize(n_quad_points);
 
-		double relative_weight = 0;
+		double sum_weights = 0.;
 
 		int quad_index = 0;
 		for(int i = 2; i < polygon.m(); ++i) {
-			get_row(i-1, polygon, u);
-			get_row(i,   polygon, v);
+			get_row(i - 1, polygon, u);
+			get_row(i,     polygon, v);
 
 			triangle[2] = u(0);
 			triangle[3] = u(1);
@@ -438,13 +436,14 @@ namespace utopia {
 			triangle[4] = v(0);
 			triangle[5] = v(1);
 
-
 			u -= o;
 			v -= o;
 
-			const double scale = fabs(Intersector::polygon_area_2(3, triangle)) / ( weight );
+			const double tri_area = Intersector::polygon_area_2(3, triangle);
+			const double scale = std::abs(tri_area) * normalization_factor;
 
-			relative_weight += scale;
+			assert(tri_area > 0.);
+			assert(tri_area * normalization_factor <= 2.0001);
 
 			for(int k = 0; k < ir.n_points(); ++k, ++quad_index) {
 				auto &qp    = ir.get_points()[k];
@@ -459,10 +458,12 @@ namespace utopia {
 				c_qp(2) = 0.0;
 
 				c_ir.get_weights()[quad_index] = ir.w(k) * scale;
+				sum_weights += c_ir.get_weights()[quad_index];
 			}
 		}
 
-		assert(relative_weight <= 1.0001);
+		assert(sum_weights > 0.);
+		assert(sum_weights <= 1.0001);
 		assert(quad_index == n_quad_points);
 	}
 
@@ -472,6 +473,8 @@ namespace utopia {
 
 		libMesh::QGauss ir(3, libMesh::Order(order));
 		ir.init(libMesh::TET4);
+
+		const double normalization_factor = weight * 6.;
 
 		const int n_sub_elements      = Intersector::n_volume_elements(polyhedron);
 		const int total_n_quad_points = n_sub_elements * ir.n_points();
@@ -502,14 +505,12 @@ namespace utopia {
 		const uint max_n_sub_els = Intersector::max_n_elements_from_facets(polyhedron);
 		const uint max_n_sub_inc = std::max(1u, MAX_QUAD_POINTS / (max_n_sub_els * ir.n_points()));
 
-		const double scale = 1.0 / ( weight );
-
 		int utopia_fe_quad_index = 0;
 
 		if(n_sub_elements == 1) {
 
 			Intersector::tetrahedron_transform(polyhedron.points, total_n_quad_points, &ref_quad_points[0], quad_points);
-			const double w = fabs(Intersector::m_tetrahedron_volume(polyhedron.points) * scale);
+			const double w = fabs(Intersector::m_tetrahedron_volume(polyhedron.points) * normalization_factor);
 
 			for(int i = 0; i < total_n_quad_points; ++i, ++utopia_fe_quad_index) {
 				const int offset = i * 3;
@@ -531,7 +532,7 @@ namespace utopia {
 																					 polyhedron,
 																					 begin_k,
 																					 end_k,
-																					 scale,
+																					 normalization_factor,
 																					 ir.n_points(),
 																					 &ref_quad_points [0],
 																					 &ref_quad_weights[0],
@@ -562,6 +563,8 @@ namespace utopia {
 
 		c_ir.resize(ir.n_points());
 
+		const double normalization_factor = weight * 0.5;
+
 		Point o, v;
 
 		for(int i = 0; i < line.n(); ++i) {
@@ -580,14 +583,12 @@ namespace utopia {
 			c_ir.get_points()[k] *= w;
 			c_ir.get_points()[k] += o;
 
-			c_ir.get_weights()[k] = ir.w(k) * length * weight * 0.5;
+			c_ir.get_weights()[k] = ir.w(k) * length * normalization_factor;
 		}
-
 	}
 
 	void make_composite_quadrature_on_surf_3D(const libMesh::DenseMatrix<libMesh::Real> &polygon, const double weight, const int order, QMortar &c_ir)
 	{
-
 		libMesh::QGauss ir(2, libMesh::Order(order));
 
 		if(order <= 2) {
@@ -596,16 +597,15 @@ namespace utopia {
 			ir.init(libMesh::TRI6);
 		}
 
-		// std::cout << "ref quad " << std::endl;
-		// ir.print_info();
-		// std::cout << "```````````" << std::endl;
+		//remove scaling of triangle quad rule..
+		const double normalization_factor = weight * 2.;
 
 		const int n_triangles     = polygon.m() - 2;
 		const int n_quad_points   = n_triangles * ir.n_points();
 
 		assert(fabs(sum_of_weights(ir) - 0.5) < 1e-8);
 
-		double triangle[3 * 3] = {  polygon.get_values()[0], polygon.get_values()[1],  polygon.get_values()[2],
+		double triangle[3 * 3] = { polygon.get_values()[0], polygon.get_values()[1],  polygon.get_values()[2],
 			0., 0., 0.,
 			0., 0., 0.
 		};
@@ -633,7 +633,7 @@ namespace utopia {
 			u -= o;
 			v -= o;
 
-			relative_weight = Intersector::polygon_area_3(3, triangle) * weight * 2.;
+			relative_weight = Intersector::polygon_area_3(3, triangle) * normalization_factor;
 
 			assert(relative_weight >= 0.);
 
@@ -656,35 +656,74 @@ namespace utopia {
 		assert(quad_index == n_quad_points);
 	}
 
+	static double ref_volume(int type)
+	{
+		if(is_hex(type)) {
+			return 8.;
+		} else if(is_tet(type)) {
+			return 1./6.;
+		} else if(is_quad(type)) {
+			return 4.;
+		} else if(is_edge(type)) {
+			return 2.;
+		} else if(is_tri(type)) {
+			return 0.5;
+		} else if(is_prism(type)) {
+			return 1.;
+		} else if(is_pyramid(type)) {
+			return 1./0.75;
+		}else {
+			assert(false);
+			return 1.;
+		}
+	}
+
+	static double ref_area_of_surf(int type)
+	{
+		if(is_tri(type)) {
+			return 2.;
+		} else if(is_quad(type)) {
+			return 2.;
+		} else if(is_hex(type)) {
+			return 1.;
+		} else if(is_tet(type)) {
+			return 0.5;
+		} else if(is_edge(type)) {
+			//Is this correct?
+			assert(false);
+			return 0.5;
+		} else {
+			assert(false && "add special case");
+			return 1.;
+		}
+	}
+
 	void transform_to_reference(const Transform &trans, const int type, const QMortar &global_ir, QMortar &ref_ir)
 	{
 		const int dim = global_ir.get_dim();
 		libMesh::Point p;
 		ref_ir.resize(global_ir.n_points());
 
-		libMesh::DenseMatrix<libMesh::Real> A_inv;
+		// libMesh::DenseMatrix<libMesh::Real> A_inv;
 
+		const double factor = ref_volume(type);
+		
+		double sum_of_weights = 0.;
 		for(int i = 0; i < global_ir.n_points(); ++i) {
 			p(0) = global_ir.qp(i)(0);
 			p(1) = global_ir.qp(i)(1);
 			p(2) = global_ir.qp(i)(2);
 
-
 			trans.transform_to_reference(p, ref_ir.get_points()[i]);
 
-			ref_ir.get_weights()[i] = global_ir.w(i);
-
-			if(is_hex(type)) {
-				//remove tet scaling and add hex scaling
-				ref_ir.get_weights()[i] *= (8.*6.);
-			} else if(is_quad(type)) {
-				//remove triangle scaling and add quad scaling
-				ref_ir.get_weights()[i] *= (4.*2.);
-			} else if(is_edge(type)) {
-				//rescale with ref-line length
-				ref_ir.get_weights()[i] *= 2.;
-			}
+			ref_ir.get_weights()[i] = global_ir.w(i) * factor;
+			
+			//for debugging
+			sum_of_weights += ref_ir.get_weights()[i];
 		}
+
+		assert(sum_of_weights > 0.);
+		assert(sum_of_weights <= factor + 1e-6);
 	}
 
 	void transform_to_reference_surf(const Transform &trans, const int type, const QMortar &global_ir, QMortar &ref_ir)
@@ -695,8 +734,9 @@ namespace utopia {
 		libMesh::Point p;
 		ref_ir.resize(global_ir.n_points());
 
-
 		libMesh::DenseMatrix<libMesh::Real> A_inv;
+
+		const double factor = ref_area_of_surf(type);
 
 		for(int i = 0; i < global_ir.n_points(); ++i) {
 			p(0) = global_ir.qp(i)(0);
@@ -704,24 +744,7 @@ namespace utopia {
 			p(2) = global_ir.qp(i)(2);
 
 			trans.transform_to_reference(p, ref_ir.get_points()[i]);
-
-			ref_ir.get_weights()[i] = global_ir.w(i);
-
-
-
-			if(is_tri(type)) {
-				ref_ir.get_weights()[i] *= 2.;
-			} else if(is_quad(type)) {
-				ref_ir.get_weights()[i] *= 2.;
-			} else if(is_hex(type)) {
-				ref_ir.get_weights()[i] *= 1.;
-			} else if(is_tet(type)) {
-				ref_ir.get_weights()[i] *= 0.5;
-			} else if(is_edge(type)) {
-				ref_ir.get_weights()[i] *= 0.5;
-			} else {
-				assert(false && "add special case");
-			}
+			ref_ir.get_weights()[i] = global_ir.w(i) * factor;
 		}
 	}
 
@@ -765,37 +788,6 @@ namespace utopia {
 			}
 		}
 	}
-
-
-	// template<class FE>
-	// void mortar_assemble_aux_reverse(
-	//                          const FE &test_fe,
-	//                          const FE &trial_fe,
-	//                          libMesh::DenseMatrix<libMesh::Real> &elmat)
-	// {
-	//     if(elmat.m() != test_fe.get_phi().size() ||  elmat.n() != trial_fe.get_phi().size()) {
-	//         elmat.resize(test_fe.get_phi().size(), trial_fe.get_phi().size());
-	//         elmat.zero();
-	//     }
-
-	//     const auto &trial = trial_fe.get_phi();
-	//     const auto &test  = test_fe.get_phi();
-	//     const auto &JxW   = test_fe.get_JxW();
-
-	//     const uint n_test  = test.size();
-	//     const uint n_trial = trial.size();
-	//     const uint n_qp    = test[0].size();
-
-	//     for(uint i = 0; i < n_test; ++i) {
-	//         for(uint j = 0; j < n_trial; ++j) {
-	//             for(uint qp = 0; qp < n_qp; ++qp) {
-	//                 elmat(i, j) += contract(test[i][qp], trial[j][qp]) * JxW[qp];
-	//             }
-	//         }
-	//     }
-	// }
-
-
 
 	libMesh::Real len(const libMesh::Real val)
 	{
@@ -1642,6 +1634,115 @@ namespace utopia {
 		make_polyhedron_from_generic_tet(e, polyhedron);
 	}
 
+
+	void make_polyhedron_from_pyramid(const libMesh::Elem &e, Polyhedron &polyhedron)
+	{
+		assert(e.dim() == 3);
+		assert(is_pyramid(e.type()));
+
+		polyhedron.n_elements = 5;
+		polyhedron.n_nodes 	  = 5;
+		polyhedron.n_dims	  = 3;
+
+		for(int i = 0; i < 5; ++i) {
+			const int offset = i * 3;
+
+			for(int j = 0; j < 3; ++j) {
+				polyhedron.points[offset + j] = e.point(i)(j);
+			}
+		}
+
+		polyhedron.el_ptr[0] = 0;
+		polyhedron.el_ptr[1] = 3;
+		polyhedron.el_ptr[2] = 6;
+		polyhedron.el_ptr[3] = 9;
+		polyhedron.el_ptr[4] = 12;
+		polyhedron.el_ptr[5] = 16;
+
+		//face 0
+		polyhedron.el_index[0] = 0;
+		polyhedron.el_index[1] = 1;
+		polyhedron.el_index[2] = 4;
+
+		//face 1
+		polyhedron.el_index[3] = 1;
+		polyhedron.el_index[4] = 2;
+		polyhedron.el_index[5] = 4;
+
+		//face 2
+		polyhedron.el_index[6] = 3;
+		polyhedron.el_index[7] = 0;
+		polyhedron.el_index[8] = 4;
+
+		//face 3
+		polyhedron.el_index[9]  = 2;
+		polyhedron.el_index[10] = 3;
+		polyhedron.el_index[11] = 4;
+
+		//face 4
+		polyhedron.el_index[12] = 0;
+		polyhedron.el_index[13] = 3;
+		polyhedron.el_index[14] = 2;
+		polyhedron.el_index[15] = 1;
+
+		polyhedron.type = P_MESH_TYPE_UNSTRUCTURED;
+	}
+
+	void make_polyhedron_from_prism(const libMesh::Elem &e, Polyhedron &polyhedron)
+	{
+		assert(e.dim() == 3);
+		assert(is_prism(e.type()));
+
+		polyhedron.n_elements = 5;
+		polyhedron.n_nodes 	  = 6;
+		polyhedron.n_dims	  = 3;
+
+		for(int i = 0; i < 6; ++i) {
+			const int offset = i * 3;
+
+			for(int j = 0; j < 3; ++j) {
+				polyhedron.points[offset + j] = e.point(i)(j);
+			}
+		}
+
+		polyhedron.el_ptr[0] = 0;
+		polyhedron.el_ptr[1] = 3;
+		polyhedron.el_ptr[2] = 6;
+		polyhedron.el_ptr[3] = 10;
+		polyhedron.el_ptr[4] = 14;
+		polyhedron.el_ptr[5] = 18;
+
+		//face 0
+		polyhedron.el_index[0] = 0;
+		polyhedron.el_index[1] = 1;
+		polyhedron.el_index[2] = 2;
+
+		//face 1
+		polyhedron.el_index[3] = 4;
+		polyhedron.el_index[4] = 3;
+		polyhedron.el_index[5] = 5;
+
+		//face 2
+		polyhedron.el_index[6] = 0;
+		polyhedron.el_index[7] = 2;
+		polyhedron.el_index[8] = 5;
+		polyhedron.el_index[9] = 3;
+
+		//face 3
+		polyhedron.el_index[10] = 1;
+		polyhedron.el_index[11] = 4;
+		polyhedron.el_index[12] = 5;
+		polyhedron.el_index[13] = 2;
+
+		//face 4
+		polyhedron.el_index[14] = 0;
+		polyhedron.el_index[15] = 1;
+		polyhedron.el_index[16] = 4;
+		polyhedron.el_index[17] = 3;
+
+		polyhedron.type = P_MESH_TYPE_UNSTRUCTURED;
+	}
+
 	static void make_polyhedron_from_shell_element(const libMesh::Elem &e, Polyhedron &polyhedron)
 	{
 		polyhedron.n_dims = 3;
@@ -1787,6 +1888,16 @@ namespace utopia {
 			return;
 		}
 
+		if(is_pyramid(e.type())) {
+			make_polyhedron_from_pyramid(e, polyhedron);
+			return;
+		}
+
+		if(is_prism(e.type())) {
+			make_polyhedron_from_prism(e, polyhedron);
+			return;
+		}
+
 		//FIXME use libMesh enum types
 		switch(e.n_nodes()) {
 			case 4:
@@ -1838,7 +1949,9 @@ namespace utopia {
 			intersection.type = P_MESH_TYPE_SURF;
 			return ok;
 		} else {
-			return Intersector::intersect_convex_polyhedra(poly1, poly2, &intersection);
+			bool ok = Intersector::intersect_convex_polyhedra(poly1, poly2, &intersection);
+			intersection.type = P_MESH_TYPE_UNSTRUCTURED;
+			return ok;
 		}
 	}
 

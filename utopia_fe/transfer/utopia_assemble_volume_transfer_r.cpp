@@ -402,7 +402,7 @@ namespace utopia {
                     const libMesh::Real weight = Intersector::polygon_area_2(slave_pts.m(), &slave_pts.get_values()[0]);
                     weight_reverse = Intersector::polygon_area_2(master_pts.m(), &master_pts.get_values()[0])/weight;
 					
-					make_composite_quadrature_2D(intersection2, weight, order, composite_ir);
+					make_composite_quadrature_2D(intersection2, 1./weight, order, composite_ir);
 					pair_intersected = true;
 					
 					master_trans  = std::make_shared<AffineTransform2>(master_el);
@@ -421,7 +421,7 @@ namespace utopia {
                     const libMesh::Real weight = Intersector::p_mesh_volume_3(slave_poly);
                     weight_reverse = Intersector::p_mesh_volume_3(master_poly)/weight;
 					
-					make_composite_quadrature_3D(intersection3, weight, order, composite_ir);
+					make_composite_quadrature_3D(intersection3, 1./weight, order, composite_ir);
 					master_trans  = std::make_shared<AffineTransform3>(master_el);
 					slave_trans = std::make_shared<AffineTransform3>(slave_el);
 					pair_intersected = true;

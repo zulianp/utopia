@@ -5,22 +5,25 @@
 
 #include "utopia_ui.hpp"
 #include "utopia_libmesh_FunctionSpace.hpp"
+#include "utopia_UIForcingFunction.hpp"
 
 namespace utopia {
 
-	void ISO14243_3::read(InputStream &is)
+	void ISO14243_3::read(Input &is)
 	{
 		flexion_extension_angle_axis_ = 'z';
 		char axial_force_axis_char    = 'z';
 		ap_motion_axis_ 			  = 'z';
 		tibial_rotation_axis_         = 'z';
+		normalize_axial_force_by_area_ = 0;
 
 		std::string temp;
-		is.read("flexion-extension-angle-axis", temp); flexion_extension_angle_axis_ = temp[0];
-		is.read("axial-force-axis", temp); 		       axial_force_axis_char = temp[0];
-		is.read("ap-motion-axis", temp); 			   ap_motion_axis_ = temp[0];
-		is.read("tibial-rotation-axis", temp); 	       tibial_rotation_axis_ = temp[0];
+		is.get("flexion-extension-angle-axis", temp); flexion_extension_angle_axis_ = temp[0];
+		is.get("axial-force-axis", temp); 		       axial_force_axis_char = temp[0];
+		is.get("ap-motion-axis", temp); 			   ap_motion_axis_ = temp[0];
+		is.get("tibial-rotation-axis", temp); 	       tibial_rotation_axis_ = temp[0];
 
+		is.get("normalize-axial-force-by-area", normalize_axial_force_by_area_);
 
 		switch(axial_force_axis_char) {
 			case 'x':
@@ -53,14 +56,14 @@ namespace utopia {
 		tibial_block_ = -1;
 		axial_force_side_ = -1;
 
-		is.read("femural-block", femural_block_); assert(femural_block_ != -1);
-		is.read("tibial-block", tibial_block_); assert(tibial_block_ != -1);
-		is.read("axial-force-side", axial_force_side_); assert(axial_force_side_ != -1);
+		is.get("femural-block", femural_block_); assert(femural_block_ != -1);
+		is.get("tibial-block", tibial_block_); assert(tibial_block_ != -1);
+		is.get("axial-force-side", axial_force_side_); assert(axial_force_side_ != -1);
 
 		dt_ = 0.1;
-		is.read("dt", dt_);
+		is.get("dt", dt_);
 
-		is.read("csv", temp);
+		is.get("csv", temp);
 
 		bool ok = read(temp); assert(ok);
 	}
@@ -137,13 +140,22 @@ namespace utopia {
 		forces = local_zeros(dof_map.n_local_dofs());
 		auto v = test(space);
 
+		double area = 1.;
+		if(normalize_axial_force_by_area_) {
+			area = surface_area(space[0], axial_force_side_);
+			std::cout << "normalizing axial force by area: " << area << std::endl;
+		}
 
 		auto l_form = surface_integral(
-			inner(coeff(axial_force_), v[axial_force_axis_]), 
+			(1./area) * inner(coeff(axial_force_), v[axial_force_axis_]), 
 			axial_force_side_
 		);
 
 		utopia::assemble(l_form, forces);
+
+		double sum_axial_force = sum(forces);
+		std::cout << "sum(axial-force): " << sum_axial_force << std::endl;
+
 	}
 
 	void ISO14243_3::describe_params(std::ostream &os) const
@@ -161,6 +173,8 @@ namespace utopia {
 
 		//degrees
 		os << "tibial_int_ext_rotation: " << tibial_int_ext_rotation_ << "\n";
+
+		os << "normalize_axial_force_by_area: " << normalize_axial_force_by_area_ << "\n";
 
 	}
 

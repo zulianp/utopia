@@ -18,9 +18,15 @@
 #include <Teuchos_ScalarTraits.hpp>
 #include <Teuchos_RCP.hpp>
 #include <Kokkos_Core.hpp>
+
+#ifdef WITH_TRILINOS_BELOS
 #include <BelosTpetraAdapter.hpp>
 #include <BelosSolverFactory.hpp>
+#endif
+
+#ifdef WITH_TRILINOS_IFPACK2
 #include <Ifpack2_Factory.hpp>
+#endif
 
 #include "utopia_trilinos_ForwardDeclaration.hpp"
 #include "utopia_trilinos_Traits.hpp"
@@ -31,6 +37,7 @@
 #include "utopia_trilinos_Eval_Factory.hpp"
 #include "utopia_trilinos_Eval_RAP.hpp"
 #include "utopia_trilinos_Each.hpp"
+#include "utopia_trilinos_Eval_Distance.hpp"
 
 #endif //WITH_TRILINOS
 #endif //UTOPIA_TRILINOS_HPP

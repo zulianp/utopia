@@ -55,6 +55,11 @@ namespace utopia {
 			(void) index;
 			return MASTER_X_SLAVE;
 		}
+
+		virtual void print_stats(std::ostream &os = std::cout) const
+		{
+			(void)os;
+		}
 	};
 }
 

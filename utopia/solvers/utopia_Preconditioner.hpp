@@ -8,12 +8,63 @@
 #include "utopia_Parameters.hpp"
 #include "utopia_StoreAs.hpp"
 #include "utopia_Expression.hpp"
+#include "utopia_make_unique.hpp"
+#include "utopia_Traits.hpp"
 
 #include <memory>
+#include <cassert>
+
+#define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename utopia::Traits<Tensor>::Vector, 1>
 
 namespace utopia {
     template<class Vector>
-    class Preconditioner {
+    class Operator {
+    public:
+        virtual ~Operator() {}
+        virtual bool apply(const Vector &rhs, Vector &sol) const = 0;
+    };
+
+    template<class Matrix, class Vector>
+    class MatrixOperator final : public Operator<Vector> {
+    public:
+        MatrixOperator(const std::shared_ptr<const Matrix> &mat)
+        : mat_(mat)
+        {}
+
+        bool apply(const Vector &rhs, Vector &ret) const override
+        {
+            ret = (*mat_) * rhs;
+            return true;
+        }
+
+       const std::shared_ptr<const Matrix> &get_matrix() const
+       {
+           return mat_;
+       }
+
+    private:
+        std::shared_ptr<const Matrix> mat_;
+    };
+
+    template<class Matrix>
+    std::unique_ptr<
+        MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)>
+    > op(const std::shared_ptr<const Matrix> &mat)
+    {
+        return make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(mat);
+    }
+
+    template<class Matrix>
+    std::unique_ptr<
+        MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)>
+    > op(const std::shared_ptr<Matrix> &mat)
+    {
+        return make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(mat);
+    }
+
+
+    template<class Vector>
+    class Preconditioner /*: public Operator<Vector>*/ {
     public:
         virtual ~Preconditioner() {}
         virtual bool apply(const Vector &rhs, Vector &sol) = 0;

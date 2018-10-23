@@ -1,5 +1,5 @@
-// bug in Kokkos-Kernels, this has to be included first (https://github.com/kokkos/kokkos-kernels/issues/309)
-#include "Eigen/Core"
+
+#include "utopia_fe_kokkos_fix.hpp"
 
 #include "utopia_BoundaryIntegralTest.hpp"
 

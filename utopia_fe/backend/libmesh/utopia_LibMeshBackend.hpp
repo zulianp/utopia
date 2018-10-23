@@ -1,8 +1,7 @@
 #ifndef UTOPIA_LIB_MESH_BACKEND_HPP
 #define UTOPIA_LIB_MESH_BACKEND_HPP
 
-// bug in Kokkos-Kernels, so we have to include this first...
-#include "Eigen/Core"
+#include "utopia_fe_kokkos_fix.hpp"
 
 #include "utopia_LibMeshLambdaAssembly.hpp"
 #include "utopia_fe_core.hpp"

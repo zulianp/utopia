@@ -3,7 +3,7 @@
 	<mesh>
 		<type>square</type>
 		<elem-type>quad</elem-type>
-		<order>2</order>
+		<order>1</order>
 
 		<min-x>0.</min-x>
 		<min-y>0.1</min-y>
@@ -85,13 +85,25 @@
 	<mesh>
 		<type>file</type>
 		<path>../data/frac/midline.e</path>
-		<refinements>2</refinements>
+		<refinements>1</refinements>
 	</mesh>
 	<space>
 		<system-name>multiplier</system-name>
+		<variables>
+			<var1>
+				<name>lagr</name>
+				<order>0</order>
+				<fe-family>MONOMIAL</fe-family>
+			</var1>
+		</variables>
 	</space>
 
 </multiplier>
 
 <!-- <solve-strategy>monolithic</solve-strategy> -->
+
 <solve-strategy>staggered</solve-strategy>
+<use-mg>true</use-mg>
+<mg-sweeps>1</mg-sweeps>
+<mg-levels>5</mg-levels>
+

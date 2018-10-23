@@ -5,18 +5,18 @@ list(APPEND BASE_MODULES
 find_project_files(CMAKE_CURRENT_SOURCE_DIR BASE_MODULES LOCAL_HEADERS LOCAL_SOURCES)
 
 add_library(utopia_fe_base STATIC ${LOCAL_SOURCES})
-target_include_directories(utopia_fe_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+target_include_directories(utopia_fe_base BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 set_utopia_compiler_features(utopia_fe_base)
 
 foreach(MODULE ${BASE_MODULES})
-	target_include_directories(utopia_fe_base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
+	target_include_directories(utopia_fe_base BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE})
 endforeach(MODULE)
 
 
 install(TARGETS utopia_fe_base
-	RUNTIME DESTINATION bin 
-	LIBRARY DESTINATION lib 
-	ARCHIVE DESTINATION lib 
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
 	)
 
 install(FILES ${LOCAL_HEADERS} DESTINATION include)

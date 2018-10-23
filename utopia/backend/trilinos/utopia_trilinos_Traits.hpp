@@ -15,8 +15,8 @@ namespace utopia
 class TrilinosTraits
     {
     public:
-        typedef double                   Scalar;
-        typedef int                      SizeType;
+        typedef TpetraMatrix::SC         Scalar;
+        typedef TpetraMatrix::GO         SizeType;
         typedef TpetraMatrix             Matrix;
         typedef TpetraSparseMatrix       SparseMatrix;
         typedef TpetraVector             Vector;

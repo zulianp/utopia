@@ -37,7 +37,7 @@ if(M3ELINSOL_FOUND)
 	target_include_directories(utopia_m3elinsol PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}  ${CMAKE_CURRENT_SOURCE_DIR}/..)
 	target_include_directories(utopia_m3elinsol PUBLIC ${M3ELINSOL_INCLUDES})
 
-	target_link_libraries(utopia_m3elinsol utopia_core utopia_utils utopia_solvers)
+	target_link_libraries(utopia_m3elinsol utopia_core utopia_utils utopia_solvers utopia_ui)
 	target_link_libraries(utopia_m3elinsol ${M3ELINSOL_LIBRARIES})
 
 	find_package(OpenMP)

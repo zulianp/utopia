@@ -16,6 +16,8 @@ namespace utopia {
 
 	class TransferApp final : public App {
 	public:
+		class InputSpace;
+
 		~TransferApp();
 		TransferApp();
 
@@ -26,14 +28,6 @@ namespace utopia {
 
 	private:
 		std::shared_ptr<libMesh::Parallel::Communicator> comm_;
-
-		std::shared_ptr<libMesh::DistributedMesh> mesh_master_;
-		std::shared_ptr<libMesh::EquationSystems> equation_systems_master_;
-		std::shared_ptr<LibMeshFunctionSpace> space_master_;
-
-		std::shared_ptr<libMesh::DistributedMesh> mesh_slave_;
-		std::shared_ptr<libMesh::EquationSystems> equation_systems_slave_;
-		std::shared_ptr<LibMeshFunctionSpace> space_slave_;
 
 		std::shared_ptr<LocalAssembler> local_assembler_;
 		std::shared_ptr<Local2Global> local2global_;
@@ -53,6 +47,7 @@ namespace utopia {
 #endif //WITH_TINY_EXPR
 
 		bool fun_is_constant;
+		bool write_operators_to_disk;
 
 	};
 }

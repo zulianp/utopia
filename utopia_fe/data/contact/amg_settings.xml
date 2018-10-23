@@ -1,0 +1,14 @@
+<amg>
+	<ProblemLevel>2</ProblemLevel>
+	<SmtNstep>5</SmtNstep>
+	<SmtNu>1</SmtNu>
+	<TspMethod>1</TspMethod>
+	<TspNtvecs>5</TspNtvecs>
+	<TspMaxit>50</TspMaxit>
+	<CsnTheta>0.5</CsnTheta>
+	<PrlNnzrmax>4</PrlNnzrmax>
+	<AmgMaxlvls>10</AmgMaxlvls>
+	<AmgMaxcsize>20</AmgMaxcsize>
+	<PcgRelConvTol>1e-7</PcgRelConvTol>
+	<PcgMaxIter>10000</PcgMaxIter>
+</amg>

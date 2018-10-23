@@ -8,20 +8,43 @@
 #include <numeric>
 
 namespace utopia {
-	L2LocalAssembler::L2LocalAssembler(const int dim, const bool use_biorth, const bool assemble_mass_mat)
+	static bool check(const LocalAssembler::Matrix &mat)
+	{
+		for(const auto &v : mat.get_values()) {
+			assert(!std::isnan(v));
+			assert(!std::isinf(v));
+
+			if(std::isnan(v) || std::isinf(v)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	L2LocalAssembler::L2LocalAssembler(
+		const int dim,
+		const bool use_biorth,
+		const bool assemble_mass_mat,
+		const bool is_shell)
 	: dim(dim),
 	use_biorth(use_biorth),
 	must_compute_biorth(use_biorth),
 	// composite_ir(dim),
 	q_trial(dim),
 	q_test(dim),
-	assemble_mass_mat_(assemble_mass_mat)
+	assemble_mass_mat_(assemble_mass_mat),
+	max_n_quad_points_(0)
 	{
 
 		if(dim == 1) {
 			q_builder = std::make_shared<QMortarBuilder1>();
 		} else if(dim == 2) {
-			q_builder = std::make_shared<QMortarBuilder2>();
+			if(is_shell) {
+				q_builder = std::make_shared<QMortarBuilderShell2>();
+			} else {
+				q_builder = std::make_shared<QMortarBuilder2>();
+			}
 		} else {
 			assert(dim == 3);
 			q_builder = std::make_shared<QMortarBuilder3>(); 
@@ -46,6 +69,8 @@ namespace utopia {
 		if(!q_builder->build(trial, trial_type, test, test_type, q_trial, q_test)) {
 			return false;
 		}
+
+		max_n_quad_points_ = std::max(max_n_quad_points_, int(q_test.get_weights().size()));
 
 		init_biorth(test, test_type);
 		init_fe(trial, trial_type, test, test_type);
@@ -110,11 +135,14 @@ namespace utopia {
 
 		if(use_biorth) {
 			mortar_assemble_weighted_biorth(*trial_fe, *test_fe, biorth_weights, mat[0]);
-			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights,  mat[1]);
+			mortar_assemble_weighted_biorth(*test_fe, *test_fe,  biorth_weights, mat[1]);
 		} else {
 			mortar_assemble(*trial_fe, *test_fe, mat[0]);
 			mortar_assemble(*test_fe,  *test_fe, mat[1]);
 		}
+
+		assert(check(mat[0]));
+		assert(check(mat[1]));
 
 		return true;
 
@@ -162,5 +190,10 @@ namespace utopia {
 		biorth_elem->attach_quadrature_rule(&qg);
 		biorth_elem->reinit(&el);
 		mortar_assemble_weights(*biorth_elem, weights);
+	}
+
+	void L2LocalAssembler::print_stats(std::ostream &os) const
+	{
+		os << "max-n-quad-points: " << max_n_quad_points_ << "\n";
 	}
 }

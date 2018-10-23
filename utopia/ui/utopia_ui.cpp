@@ -1,19 +1,29 @@
 #include "utopia_ui.hpp"
 #include "utopia_Path.hpp"
-#include "utopia_XMLStream.hpp"
+#include "utopia_XMLInput.hpp"
+#include "utopia_Convertible.hpp"
+#include "utopia_InputParameters.hpp"
 
 
 namespace utopia {
-    std::unique_ptr<InputStream> open_istream(const Path &path)
+	template class Convertible<double>;
+	template class Convertible<float>;
+	template class Convertible<long>;
+	template class Convertible<int>;
+	template class Convertible<bool>;
+	template class Convertible<std::string>;
+
+
+    std::unique_ptr<Input> open_istream(const Path &path)
 	{
 		if(path.extension() == "xml") {
-			// auto ret = make_unique<XMLInputStream>();
+			// auto ret = make_unique<XMLInput>();
 			// ret->open(path);
 			// return ret;
 			
 			//portable version when compuling with nvcc
-			auto ret = new XMLInputStream();
-			auto ret_ptr = std::unique_ptr<InputStream>(ret);
+			auto ret = new XMLInput();
+			auto ret_ptr = std::unique_ptr<Input>(ret);
 			ret->open(path);
 			return ret_ptr;
 		} else {

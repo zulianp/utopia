@@ -1,0 +1,45 @@
+<transfer>
+	<!-- <type>approx-l2-projection</type> -->
+	<type>interpolation</type>
+	<!-- <type>l2-projection</type> -->
+	<!-- <biorth-basis>1</biorth-basis> -->
+	
+	<function>x*sin(2*y)*z</function>
+<!-- 	<function-type>constant</function-type>
+	<function>1.</function> -->
+
+	<!-- <force-shell>true</force-shell> -->
+	<assemble-mass-mat>1</assemble-mass-mat>
+	
+
+	<!-- MASTER -->
+	<master>
+		<mesh>
+			<type>cube</type>
+			<elem-type>pyramid</elem-type>
+			<n-x>5</n-x>
+			<n-y>5</n-y>
+			<order>2</order>
+		</mesh>
+		<space>
+			<variables>
+				<var-u>
+					<name>u</name>
+					<order>2</order>
+				</var-u>
+			</variables>
+		</space>
+	</master>
+
+	<!-- SLAVE -->
+	<slave>
+		<mesh>
+			<type>cube</type>
+			<elem-type>prism</elem-type>		
+			<n-x>3</n-x>
+			<n-y>3</n-y>
+		</mesh>
+		<space></space>
+	</slave>
+	
+</transfer>

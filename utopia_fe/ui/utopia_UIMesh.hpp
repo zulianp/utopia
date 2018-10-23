@@ -5,22 +5,23 @@
 #include "utopia_libmesh.hpp"
 
 #include "libmesh/mesh_refinement.h"
+#include "libmesh/mesh_modification.h"
 
 #include <memory>
 
 namespace utopia {
 	template<class Mesh>
-	class UIMesh {};// final : public Serializable { };
+	class UIMesh {};// final : public Configurable { };
 
 	template<>
-	class UIMesh<libMesh::DistributedMesh> : public Serializable {
+	class UIMesh<libMesh::DistributedMesh> : public Configurable {
 	public:
 		template<class... Args>
 		UIMesh(Args &&...args)
 		: mesh_(std::make_shared<libMesh::DistributedMesh>(std::forward<Args...>(args...))), empty_(true)
 		{}
 
-		void read(InputStream &is) override {
+		void read(Input &is) override {
 			std::string mesh_type = "square";
 			std::string path = "";
 	
@@ -39,30 +40,30 @@ namespace utopia {
 
 			std::string elem_type = "quad";
 
-			is.read("type", mesh_type);
-			is.read("elem-type", elem_type);
-			is.read("order", order);
-			is.read("path", path);
+			is.get("type", mesh_type);
+			is.get("elem-type", elem_type);
+			is.get("order", order);
+			is.get("path", path);
 
-			is.read("refinements", refinements);
+			is.get("refinements", refinements);
 			
-			is.read("span-x", span[0]);
-			is.read("span-y", span[1]);
-			is.read("span-z", span[2]);
+			is.get("span-x", span[0]);
+			is.get("span-y", span[1]);
+			is.get("span-z", span[2]);
 			
-			is.read("min-x", min_coords[0]);
-			is.read("min-y", min_coords[1]);
-			is.read("min-z", min_coords[2]);
+			is.get("min-x", min_coords[0]);
+			is.get("min-y", min_coords[1]);
+			is.get("min-z", min_coords[2]);
 
-			is.read("max-x", max_coords[0]);
-			is.read("max-y", max_coords[1]);
-			is.read("max-z", max_coords[2]);
+			is.get("max-x", max_coords[0]);
+			is.get("max-y", max_coords[1]);
+			is.get("max-z", max_coords[2]);
 
-			is.read("n-x", n[0]);
-			is.read("n-y", n[1]);
-			is.read("n-z", n[2]);
+			is.get("n-x", n[0]);
+			is.get("n-y", n[1]);
+			is.get("n-z", n[2]);
 
-			is.read("scale", scale);
+			is.get("scale", scale);
 
 
 			if(mesh_type == "file") {
@@ -117,6 +118,13 @@ namespace utopia {
 
 			refine(refinements, *mesh_);
 
+			bool convert_to_triangles = false;
+			is.get("convert-to-triangles", convert_to_triangles);
+
+			if(convert_to_triangles) {
+				libMesh::MeshTools::Modification::all_tri(*mesh_);
+			}
+
 			if(mesh_type == "file" && order == 2) {
 				mesh_->all_second_order();
 			}
@@ -162,6 +170,22 @@ namespace utopia {
 		            if(elem_type == "tet") {
 		                type = libMesh::TET10;
 		            }
+		        }
+
+		        if(elem_type == "prism") {
+		        	type = libMesh::PRISM6;
+
+		        	if(order == 2) {
+		        		type = libMesh::PRISM15;
+		        	}
+		        }
+
+		        if(elem_type == "pyramid") {
+		        	type = libMesh::PYRAMID5;
+
+		        	if(order == 2) {
+		        		type = libMesh::PYRAMID13;
+		        	}
 		        }
 
 		        return type;

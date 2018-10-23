@@ -22,6 +22,8 @@
 #include "libmesh/mesh_refinement.h"
 #include "libmesh/mesh_tools.h"
 
+#include "utopia_Socket.hpp"
+
 namespace utopia {
 
 
@@ -155,7 +157,9 @@ namespace utopia {
 
     static bool assemble_projection(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &B, USparseMatrix &D)
     {
-        auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, true);
+        bool is_shell = from.mesh().mesh_dimension() < from.mesh().spatial_dimension();
+
+        auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, true, is_shell);
         auto local2global = std::make_shared<Local2Global>(false);
 
         TransferAssembler transfer_assembler(assembler, local2global);
@@ -183,7 +187,9 @@ namespace utopia {
 
     static bool assemble_coupling(FunctionSpaceT &from, FunctionSpaceT &to, USparseMatrix &B)
     {
-        auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, false);
+        bool is_shell = from.mesh().mesh_dimension() < from.mesh().spatial_dimension();
+
+        auto assembler = std::make_shared<L2LocalAssembler>(from.mesh().mesh_dimension(), false, false, is_shell);
         auto local2global = std::make_shared<Local2Global>(false);
 
         TransferAssembler transfer_assembler(assembler, local2global);
@@ -540,20 +546,20 @@ namespace utopia {
         std::vector<int> var_nums_;
     };
 
-    class FractureFlowApp::Input : public Serializable {
+    class FractureFlowApp::SimulationInput : public Configurable {
     public:
-        Input(libMesh::Parallel::Communicator &comm)
+        SimulationInput(libMesh::Parallel::Communicator &comm)
         : mesh(comm), space(make_ref(mesh))
         {}
 
-        void read(InputStream &is) override
+        void read(Input &is) override
         {
             try {
-                is.read("mesh", mesh);
-                is.read("space", space);
+                is.get("mesh", mesh);
+                is.get("space", space);
 
                 auto grid_sampler = std::make_shared<UIScalarSampler<double>>();
-                is.read("sampler", *grid_sampler);
+                is.get("sampler", *grid_sampler);
 
                 if(!grid_sampler->empty()) {
                     sampler = grid_sampler;
@@ -562,16 +568,16 @@ namespace utopia {
                 }
 
                 forcing_function = std::make_shared< UIForcingFunction<FunctionSpaceT, UVector> >(space.subspace(0));
-                is.read("forcing-function", *forcing_function);
+                is.get("forcing-function", *forcing_function);
 
                 //material parameters
                 double diffusivity = 1.;
                 double diffusivities[3] = {1., 1., 1.};
 
-                is.read("diffusivity", diffusivity);
-                is.read("diffusivity-x", diffusivities[0]);
-                is.read("diffusivity-y", diffusivities[1]);
-                is.read("diffusivity-z", diffusivities[2]);
+                is.get("diffusivity", diffusivity);
+                is.get("diffusivity-x", diffusivities[0]);
+                is.get("diffusivity-y", diffusivities[1]);
+                is.get("diffusivity-z", diffusivities[2]);
 
                 int dim = space.subspace(0).mesh().spatial_dimension();
 
@@ -636,7 +642,9 @@ namespace utopia {
         mg->algebraic().rtol(1e-9);
         mg->algebraic().atol(1e-14);
         // mg->verbose(true);
-        mg->init(space.equation_systems(), n_levels);
+        mg->init(space, n_levels);
+        
+        
         return mg;
     }
 
@@ -783,28 +791,41 @@ namespace utopia {
 
         auto is_ptr = open_istream(conf_file_path);
 
-        Input master_in(*comm_), slave_in(*comm_);
-        Input multiplier_in(*comm_);
+        SimulationInput master_in(*comm_), slave_in(*comm_);
+        SimulationInput multiplier_in(*comm_);
 
-        is_ptr->read("master", master_in);
-        is_ptr->read("slave",  slave_in);
-        is_ptr->read("multiplier", multiplier_in);
+        is_ptr->get("master", master_in);
+        is_ptr->get("slave",  slave_in);
+        is_ptr->get("multiplier", multiplier_in);
 
         std::string solve_strategy = "monolithic";
-        is_ptr->read("solve-strategy", solve_strategy);
+        is_ptr->get("solve-strategy", solve_strategy);
 
         bool use_mg = false;
-        is_ptr->read("use-mg", use_mg);
+        is_ptr->get("use-mg", use_mg);
 
         int mg_sweeps = 1;
-        is_ptr->read("mg-sweeps", mg_sweeps);
+        is_ptr->get("mg-sweeps", mg_sweeps);
 
         int mg_levels = 5;
-        is_ptr->read("mg-levels", mg_levels);
+        is_ptr->get("mg-levels", mg_levels);
+
+
+        bool plot_matrix = false;
+        is_ptr->get("plot-matrix", plot_matrix);
+
+        bool write_operators_to_disk = false;
+        is_ptr->get("write-operators-to-disk", write_operators_to_disk);
+
+        if(plot_matrix) {
+            plot_mesh(master_in.mesh.mesh(), "matrix");
+        }
+
+
 
 
         std::string operator_type = "L2_PROJECTION";
-        is_ptr->read("operator-type", operator_type);
+        is_ptr->get("operator-type", operator_type);
 
         master_in.describe();
         slave_in.describe();
@@ -839,7 +860,17 @@ namespace utopia {
         auto u_s = trial(V_s);
         auto v_s = test(V_s);
 
-        std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " + " <<  V_s.dof_map().n_dofs();
+        std::cout << "n_dofs: " << V_m.dof_map().n_dofs() << " + " <<  V_s.dof_map().n_dofs() << " + ";
+        
+        if(multiplier_in.empty()) {
+            std::cout << V_s.dof_map().n_dofs();
+        } else {
+            //Init mult space
+            multiplier_in.space.subspace(0).initialize();
+
+            std::cout << multiplier_in.space.subspace(0).dof_map().n_dofs();
+        }
+
         std::cout << std::endl;
 
         auto eq_m = inner(master_in.diffusion_tensor * grad(u_m), ctx_fun(master_in.sampler) * grad(v_m)) * dX;
@@ -866,6 +897,11 @@ namespace utopia {
         apply_boundary_conditions(V_m.dof_map(), A_m, rhs_m);
         apply_boundary_conditions(V_s.dof_map(), A_s, rhs_s);
 
+        if(write_operators_to_disk) {
+            write("A_m.m", A_m);
+            write("A_s.m", A_s);
+        }
+
         // double penalty = 1000.;
         // A_s *= penalty;
         // rhs_s *= penalty;
@@ -881,7 +917,7 @@ namespace utopia {
         if(solve_strategy == "staggered") {
 
             if(!multiplier_in.empty()) {
-                multiplier_in.space.subspace(0).initialize();
+
                 solve_cg_dual(
                             V_m,
                             V_s,
@@ -919,7 +955,7 @@ namespace utopia {
             if(!multiplier_in.empty()) {
 
                 std::cout << "solving with different Lagr space" << std::endl;
-                multiplier_in.space.subspace(0).initialize();
+                
                 solve_monolithic(V_m,
                                  V_s,
                                  multiplier_in.space.subspace(0),

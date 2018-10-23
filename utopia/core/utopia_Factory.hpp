@@ -208,6 +208,21 @@ namespace utopia {
         };
     };
 
+    template<typename _SizeType, typename _IntType, typename _Scalar>
+    class CRS {
+    public:
+        CRS(_SizeType rowPtr, _IntType cols, _Scalar values) : _rowPtr(rowPtr), _cols(cols), _values(values) {}
+
+        inline const _SizeType& rowPtr() const { return _rowPtr; }
+        inline const _IntType& cols() const { return _cols; }
+        inline const _Scalar& values() const { return _values; }
+
+    private:
+        _SizeType _rowPtr;
+        _IntType _cols;
+        _Scalar _values;
+    };
+
 
     template<typename T>
     class LocalNNZ {
@@ -582,6 +597,12 @@ namespace utopia {
     inline Factory<NNZ<T>, 2> sparse(const Size::SizeType rows, const Size::SizeType cols, T nnz_x_row_or_col)
     {
         return Factory<NNZ<T>, 2>(Size({rows, cols}), NNZ<T>(nnz_x_row_or_col));
+    }
+
+    template<typename _SizeType, typename _IntType, typename _Scalar>
+    inline Factory<CRS<_SizeType, _IntType, _Scalar>, 2> crs(const Size::SizeType rows, const Size::SizeType cols, _SizeType &rowPtr, _IntType &crs_columns, _Scalar &values)
+    {
+        return Factory<CRS<_SizeType, _IntType, _Scalar>, 2>(Size({rows, cols}), CRS<_SizeType, _IntType, _Scalar>(rowPtr, crs_columns, values));
     }
 
 

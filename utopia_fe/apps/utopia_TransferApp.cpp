@@ -7,19 +7,53 @@
 #include "utopia_ui.hpp"
 #include "utopia_SymbolicFunction.hpp"
 
+#include "utopia_UIFunctionSpace.hpp"
+#include "utopia_UIForcingFunction.hpp"
+#include "utopia_UIMesh.hpp"
+#include "utopia_UIScalarSampler.hpp"
+
 #include "libmesh/mesh_refinement.h"
 
 namespace utopia {
 
-	static void refine(const int n_refs, libMesh::MeshBase &mesh)
-	{
-		if(n_refs <= 0) return;
+	class TransferApp::InputSpace : public Configurable {
+	public:
+		InputSpace(libMesh::Parallel::Communicator &comm)
+		: mesh_(comm), space_(make_ref(mesh_))
+		{}
 
-		libMesh::MeshRefinement mesh_refinement(mesh);
-		mesh_refinement.make_flags_parallel_consistent();
-		mesh_refinement.uniformly_refine(n_refs);
-	}
+		void read(Input &is) override
+		{
+		    try {
+		        is.get("mesh", mesh_);
+		        is.get("space", space_);
 
+
+		    } catch(const std::exception &ex) {
+		        std::cerr << ex.what() << std::endl;
+		        assert(false);
+		    }
+		}
+
+		inline bool empty() const
+		{
+		    return mesh_.empty();
+		}
+
+		inline libMesh::MeshBase &mesh()
+		{
+			return mesh_.mesh();
+		}
+
+
+		inline LibMeshFunctionSpace &space()
+		{
+			return space_.space()[0];
+		}
+
+		UIMesh<libMesh::DistributedMesh> mesh_;
+		UIFunctionSpace<LibMeshFunctionSpace>  space_;
+	};
 
 	void TransferApp::init(libMesh::LibMeshInit &init)
 	{
@@ -29,81 +63,53 @@ namespace utopia {
 	void TransferApp::run(const std::string &conf_file_path)
 	{
 		Chrono c;
-
 		c.start();
 
-		mesh_master_ = std::make_shared<libMesh::DistributedMesh>(*comm_);
-		mesh_slave_  = std::make_shared<libMesh::DistributedMesh>(*comm_);
-
-		// std::cout << "running: " << conf_file_path << std::endl;
 		auto is_ptr = open_istream(conf_file_path);
+		InputSpace input_master(*comm_);
+		InputSpace input_slave(*comm_);
 
-		is_ptr->read("transfer", [this](InputStream &is) {
+		is_ptr->get("transfer", [&](Input &is) {
+			//get spaces
+			is_ptr->get("master", input_master);
+			is_ptr->get("slave",  input_slave);
+
+			//get operator props
 			std::string path;
 			type = "l2-projection"; //interpolation, approx-l2-projection
 			int order = 1;
-
-			////////////////// MASTER ///////////////////////
-
-			is.read("mesh-master", path);
-			is.read("order-master", order);
-
-
-			mesh_master_->read(path);
-
-			if(order == 2) {
-				mesh_master_->all_second_order(false);
-			}
-
-			int n_master_ref = 0;
-			is.read("refine-master", n_master_ref);
-			refine(n_master_ref, *mesh_master_);
-
-			equation_systems_master_ = std::make_shared<libMesh::EquationSystems>(*mesh_master_);
-			equation_systems_master_->add_system<libMesh::LinearImplicitSystem>("master");
-			space_master_            = std::make_shared<LibMeshFunctionSpace>(equation_systems_master_, libMesh::LAGRANGE, libMesh::Order(order), "u_master");
-			space_master_->initialize();
-
-			////////////////// SLAVE ///////////////////////
-			order = 1;
-
-			is.read("mesh-slave", path);
-			is.read("order-slave", order);
-			is.read("type", type);
-			mesh_slave_->read(path);
-
-			if(order == 2) {
-				mesh_slave_->all_second_order(false);
-			}
-
-			int n_slave_ref = 0;
-			is.read("refine-slave", n_slave_ref);
-			refine(n_slave_ref, *mesh_slave_);
-
-			equation_systems_slave_ = std::make_shared<libMesh::EquationSystems>(*mesh_slave_);
-			equation_systems_slave_->add_system<libMesh::LinearImplicitSystem>("slave");
-			space_slave_            = std::make_shared<LibMeshFunctionSpace>(equation_systems_slave_, libMesh::LAGRANGE, libMesh::Order(order), "u_slave");
-			space_slave_->initialize();
-
+			std::string fe_family = "LAGRANGE";
+			write_operators_to_disk = false;
 			is_interpolation_ = false;
 			assemble_mass_mat_ = 0;
+			bool force_shell = false;
 
-			is.read("assemble-mass-mat", assemble_mass_mat_);
+			is.get("write-operators-to-disk", write_operators_to_disk);
+			is.get("type", type);
+			is.get("force-shell", force_shell);
+			is.get("assemble-mass-mat", assemble_mass_mat_);
 
 			if(type == "l2-projection") {
 				biorth_basis = true;
-				is.read("biorth-basis", biorth_basis);
-				local_assembler_ = std::make_shared<L2LocalAssembler>(mesh_master_->mesh_dimension(), biorth_basis, assemble_mass_mat_);
+				is.get("biorth-basis", biorth_basis);
+				
+				local_assembler_ = std::make_shared<L2LocalAssembler>(
+					input_master.mesh().mesh_dimension(),
+					biorth_basis,
+					assemble_mass_mat_,
+					force_shell || input_master.mesh().mesh_dimension() < input_master.mesh().spatial_dimension()
+				);
+
 			} else if(type == "interpolation") {
-				local_assembler_ = std::make_shared<InterpolationLocalAssembler>(mesh_master_->mesh_dimension());
+				local_assembler_ = std::make_shared<InterpolationLocalAssembler>(input_master.mesh().mesh_dimension());
 				is_interpolation_ = true;
 			} else if(type == "approx-l2-projection") {
 				int quad_order = -1;
 
-				is.read("quad-order-approx", quad_order);
+				is.get("quad-order-approx", quad_order);
 				std::cout << "quad_order: " << quad_order << std::endl;
 
-				auto apl2 = std::make_shared<ApproxL2LocalAssembler>(mesh_master_->mesh_dimension());
+				auto apl2 = std::make_shared<ApproxL2LocalAssembler>(input_master.mesh().mesh_dimension());
 				apl2->set_quadrature_order(quad_order);
 				local_assembler_  = apl2;
 			}
@@ -118,12 +124,12 @@ namespace utopia {
 
 #ifdef WITH_TINY_EXPR
 			std::string expr = "x";
-			is.read("function", expr);
+			is.get("function", expr);
 
 			fun = std::make_shared<SymbolicFunction>(expr);
 
 			std::string fun_type = "non-linear";
-			is.read("function-type", fun_type);
+			is.get("function-type", fun_type);
 
 			if(fun_type == "constant") {
 				fun_is_constant = true;
@@ -132,7 +138,7 @@ namespace utopia {
 			}
 #else
 			double expr = 1.;
-			is.read("function", expr);
+			is.get("function", expr);
 			fun_is_constant = true;
 
 			fun = std::make_shared<ConstantCoefficient<double, 0>>(expr);
@@ -145,7 +151,6 @@ namespace utopia {
 		if(mpi_world_rank() == 0) {
 			std::cout << "set-up time: " << c << std::endl;
 		}
-
 
 		TransferOptions opts;
 		opts.from_var_num = 0;
@@ -160,10 +165,10 @@ namespace utopia {
 		std::vector<std::shared_ptr<USparseMatrix>> mats;
 		TransferAssembler transfer_assembler(local_assembler_, local2global_);
 		bool ok = transfer_assembler.assemble(
-			mesh_master_,
-			make_ref(space_master_->dof_map()),
-			mesh_slave_,
-			make_ref(space_slave_->dof_map()),
+			make_ref(input_master.mesh()),
+			make_ref(input_master.space().dof_map()),
+			make_ref(input_slave.mesh()),
+			make_ref(input_slave.space().dof_map()),
 			mats,
 			opts
 		);
@@ -179,12 +184,19 @@ namespace utopia {
 			std::cout << "assembly time: " << c << std::endl;
 		}
 
+		int op_num = 0;
 		for(auto mat_ptr : mats) {
 			double sum_m = sum(*mat_ptr);
 			if(mpi_world_rank() == 0) {
 				std::cout << "rows x cols = " << size(*mat_ptr).get(0) << " x " << size(*mat_ptr).get(1) << std::endl;
 				std::cout << "sum(M): " << sum_m << std::endl;
 			}
+
+			if(write_operators_to_disk) {
+				write("M" + std::to_string(op_num) + ".m", *mat_ptr);
+			}
+
+			++op_num;
 		}
 
 		if(type == "l2-projection" || type == "approx-l2-projection") {
@@ -198,8 +210,8 @@ namespace utopia {
 					l2op->fix_mass_matrix_operator();
 					transfer_op_ = l2op;
 				} else {
-					auto u = trial(*space_slave_);
-					auto v = test(*space_slave_);
+					auto u = trial(input_slave.space());
+					auto v = test(input_slave.space());
 
 					auto D = std::make_shared<USparseMatrix>();
 
@@ -214,8 +226,8 @@ namespace utopia {
 
 		////////////////////////////////////////////////////////////
 
-		auto u = trial(*space_master_);
-		auto v = test(*space_master_);
+		auto u = trial(input_master.space());
+		auto v = test(input_master.space());
 
 		c.start();
 
@@ -223,6 +235,10 @@ namespace utopia {
 
 		USparseMatrix mass_mat_master;
 		assemble(inner(u, v) * dX, mass_mat_master);
+
+		if(write_operators_to_disk) {
+			write("M_m.m", mass_mat_master);
+		}
 
 		if(!fun_is_constant) {
 			assemble(inner(*fun, v) * dX, fun_master_h);
@@ -233,9 +249,9 @@ namespace utopia {
 			solver.solve(mass_mat_master, fun_master_h, fun_master);
 		} else {
 #ifdef WITH_TINY_EXPR
-			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun->eval(0., 0., 0.));
+			fun_master = local_values(input_master.space().dof_map().n_local_dofs(), fun->eval(0., 0., 0.));
 #else
-			fun_master = local_values(space_master_->dof_map().n_local_dofs(), fun->expr());
+			fun_master = local_values(input_master.space().dof_map().n_local_dofs(), fun->expr());
 #endif //WITH_TINY_EXPR
 		}
 
@@ -260,23 +276,23 @@ namespace utopia {
 		//output
 		////////////////////////////////////////////////////////////
 
-		convert(fun_master, *space_master_->equation_system().solution);
-		space_master_->equation_system().solution->close();
+		convert(fun_master, *input_master.space().equation_system().solution);
+		input_master.space().equation_system().solution->close();
 
-		libMesh::Nemesis_IO io_master(*mesh_master_);
-		io_master.write_equation_systems("master.e", *equation_systems_master_);
+		libMesh::Nemesis_IO io_master(input_master.mesh());
+		io_master.write_equation_systems("master.e", input_master.space().equation_systems());
 
-		convert(back_fun_master, *space_master_->equation_system().solution);
-		space_master_->equation_system().solution->close();
+		convert(back_fun_master, *input_master.space().equation_system().solution);
+		input_master.space().equation_system().solution->close();
 
-		libMesh::Nemesis_IO io_master_adj(*mesh_master_);
-		io_master_adj.write_equation_systems("master_adj.e", *equation_systems_master_);
+		libMesh::Nemesis_IO io_master_adj(input_master.mesh());
+		io_master_adj.write_equation_systems("master_adj.e", input_master.space().equation_systems());
 
 		////////////////////////////////////////////////////////////
-		convert(fun_slave, *space_slave_->equation_system().solution);
-		space_slave_->equation_system().solution->close();
-		libMesh::Nemesis_IO io_slave(*mesh_slave_);
-		io_slave.write_equation_systems("slave.e", *equation_systems_slave_);
+		convert(fun_slave, *input_slave.space().equation_system().solution);
+		input_slave.space().equation_system().solution->close();
+		libMesh::Nemesis_IO io_slave(input_slave.mesh());
+		io_slave.write_equation_systems("slave.e", input_slave.space().equation_systems());
 	}
 
 	TransferApp::TransferApp() {}

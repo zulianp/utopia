@@ -78,32 +78,32 @@ namespace utopia {
 	}
 
 	template<typename Scalar>
-	class UIScalarSampler final : public Serializable, public UIFunction<Scalar> {
+	class UIScalarSampler final : public Configurable, public UIFunction<Scalar> {
 	public:
 
 		UIScalarSampler() {}
 
 		~UIScalarSampler() {}
 
-		void read(InputStream &is) override {
+		void read(Input &is) override {
 			std::string file = "";
-			is.read("file", file);
+			is.get("file", file);
 
 			std::fill(std::begin(min_), std::end(min_), 0.);
 			std::fill(std::begin(max_), std::end(max_), 0.);
 			std::fill(std::begin(dims_), std::end(dims_), 0);
 
-			is.read("min-x", min_[0]);
-			is.read("min-y", min_[1]);
-			is.read("min-z", min_[2]);
+			is.get("min-x", min_[0]);
+			is.get("min-y", min_[1]);
+			is.get("min-z", min_[2]);
 
-			is.read("max-x", max_[0]);
-			is.read("max-y", max_[1]);
-			is.read("max-z", max_[2]);
+			is.get("max-x", max_[0]);
+			is.get("max-y", max_[1]);
+			is.get("max-z", max_[2]);
 
-			is.read("nx", dims_[0]);
-			is.read("ny", dims_[1]);
-			is.read("nz", dims_[2]);
+			is.get("nx", dims_[0]);
+			is.get("ny", dims_[1]);
+			is.get("nz", dims_[2]);
 
 			n = 0;
 

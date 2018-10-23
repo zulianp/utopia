@@ -15,14 +15,14 @@
 		<system-name>master</system-name>
 		
 		<boundary-conditions>
-			<entry>
+			<first>
 				<side>3</side>
 				<value>1</value>
-			</entry>
-			<entry>
+			</first>
+			<second>
 				<side>1</side>
 				<value>4</value>
-			</entry>
+			</second>
 		</boundary-conditions>
 		
 	</space>
@@ -42,14 +42,14 @@
 		<system-name>slave</system-name>
 		
 		<boundary-conditions>
-			<entry>
+			<first>
 				<side>1</side>
 				<value>1</value>
-			</entry>
-			<entry>
+			</first>
+			<second>
 				<side>2</side>
 				<value>4</value>
-			</entry>
+			</second>
 		</boundary-conditions>
 
 	</space>

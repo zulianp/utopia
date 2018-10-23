@@ -29,7 +29,7 @@
 #include "utopia_NonLinearElasticityTest.hpp"
 #include "utopia_FEEvalTest.hpp"
 #include "utopia_LeastSquaresHelmholtz.hpp"
-#include "utopia_ContactSolver.hpp"
+#include "utopia_ContactApp.hpp"
 #include "utopia_CoarsenerTest.hpp"
 #include "utopia_EikonalEquationTest.hpp"
 #include "utopia_TestVolume2SurfaceTransfer.hpp"
@@ -40,6 +40,9 @@
 #include "utopia_RMTRApp.hpp"
 #include "utopia_EnergyAssemblyTest.hpp"
 #include "utopia_Intrepid2Test.hpp"
+#include "utopia_IntersectTest.hpp"
+
+#include "utopia_Grid2MeshTransferApp.hpp"
 
 #include <functional>
 
@@ -84,10 +87,6 @@ int main(int argc, char *argv[])
 	    runners["fe_test"] = run_fe_eval_test;
 	    runners["helm"] = run_form_least_squares_helmholtz;
 
-#ifndef WITH_TRILINOS_ALGEBRA
-	    runners["contact_steady"] = run_steady_contact;
-#endif //WITH_TRILINOS_ALGEBRA
-	    
 	    // runners["ct"] = run_contact_test;
 	    runners["coarsener_test"] = run_coarsener_test;
 	    runners["eikonal"] = run_eikonal_equation_test;
@@ -95,6 +94,7 @@ int main(int argc, char *argv[])
 	    runners["interp"] = run_volume_interpolation_test;
 	    runners["energy"] = run_energy_test;
 	    runners["intrepid2"] = run_intrepid2_test;
+	    runners["isect"] = run_intersect_test;
 	    // runners["coupled"] = run_coupled_equation_test;
 	    //benchmarks
 	    // runners["vt_benchmark"] = run_volume_transfer_benchmark;
@@ -165,8 +165,20 @@ int main(int argc, char *argv[])
 				app.run(argv[ip1]);
 			} else if(argv[i] == RMTRApp::command()) {
 				std::cout << argv[i] << " " << argv[ip1] << std::endl;
-					
+
 				RMTRApp app;
+				app.init(init);
+				app.run(argv[ip1]);
+			} else if(argv[i] == ContactApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				ContactApp app;
+				app.init(init);
+				app.run(argv[ip1]);
+			} else if(argv[i] == Grid2MeshTransferApp::command()) {
+				std::cout << argv[i] << " " << argv[ip1] << std::endl;
+
+				Grid2MeshTransferApp app;
 				app.init(init);
 				app.run(argv[ip1]);
 			}

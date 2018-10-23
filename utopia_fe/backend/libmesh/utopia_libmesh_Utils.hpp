@@ -5,6 +5,20 @@
 #include "libmesh/libmesh_version.h"
 
 namespace utopia {
+	inline bool is_pyramid(const int type)
+	{
+		return type == static_cast<int>(libMesh::PYRAMID5)  ||
+			   type == static_cast<int>(libMesh::PYRAMID13) ||
+			   type == static_cast<int>(libMesh::PYRAMID14);
+	}
+
+	inline bool is_prism(const int type)
+	{
+		return type == static_cast<int>(libMesh::PRISM6)  ||
+			   type == static_cast<int>(libMesh::PRISM15) ||
+			   type == static_cast<int>(libMesh::PRISM18);
+	}
+
 	inline bool is_hex(const int type)
 	{
 		return 	type == static_cast<int>(libMesh::HEX8)  ||
@@ -18,7 +32,7 @@ namespace utopia {
 				type == static_cast<int>(libMesh::QUAD8) 	  ||
 				type == static_cast<int>(libMesh::QUAD9)	  ||
 				type == static_cast<int>(libMesh::QUADSHELL4)
-				// || type == static_cast<int>(libMesh::QUADSHELL8)
+				|| type == static_cast<int>(libMesh::QUADSHELL8)
 			;
 	}
 
@@ -56,7 +70,7 @@ namespace utopia {
 			case QUAD8: 	 return EDGE3;
 			case QUAD9:	     return EDGE3;
 			case QUADSHELL4: return EDGE2;
-			// case QUADSHELL8: return EDGE3;
+			case QUADSHELL8: return EDGE3;
 			case TRI3:  	 return EDGE2;
 			case TRI6:  	 return EDGE3;
 			case TET4:  	 return TRI3;
@@ -66,6 +80,8 @@ namespace utopia {
 			case EDGE2:      return NODEELEM;
 			case EDGE3:      return NODEELEM;
 			case EDGE4:      return NODEELEM;
+			case PRISM6:     return QUAD4; //FIXME this is not always the case
+			case PYRAMID5:   return QUAD4; //FIXME this is not always the case
 			default: {
 				assert(false && "add special case");
 				return libMesh::INVALID_ELEM;

@@ -11,30 +11,30 @@ namespace utopia {
 		t_end = 10.;
 	}
 
-	void OldConfiguration::read(InputStream &is)
+	void OldConfiguration::read(Input &is)
 	{
 		t = 0.;
 		t_end = 1.;
 		n_time_steps = 1;
 
-		is.read("t0", t);
-		is.read("t_end", t_end);
-		is.read("steps", n_time_steps);
+		is.get("t0", t);
+		is.get("t_end", t_end);
+		is.get("steps", n_time_steps);
 
 		dt_ = (t_end - t)/n_time_steps;
 
-		is.read("rotations", [this](InputStream &is) {
-			is.read_all([this](InputStream &is) {
+		is.get("rotations", [this](Input &is) {
+			is.get_all([this](Input &is) {
 				Rotation rot;
 
 				std::string axis;
 
-				is.read("block", rot.block);
-				is.read("axis",  axis);
-				is.read("begin", rot.begin_angle_degree);
-				is.read("end",   rot.end_angle_degree);
-				is.read("from",  rot.from_step);
-				is.read("to",    rot.to_step);
+				is.get("block", rot.block);
+				is.get("axis",  axis);
+				is.get("begin", rot.begin_angle_degree);
+				is.get("end",   rot.end_angle_degree);
+				is.get("from",  rot.from_step);
+				is.get("to",    rot.to_step);
 
 				rot.axis = axis[0];
 
@@ -42,19 +42,19 @@ namespace utopia {
 			});
 		});
 
-		is.read("translations", [this](InputStream &is) {
-			is.read_all([this](InputStream &is) {
+		is.get("translations", [this](Input &is) {
+			is.get_all([this](Input &is) {
 				Translation tr;
 
 				std::string axis;
 
-				is.read("block", tr.block);
-				is.read("axis",  axis);
-				is.read("begin", tr.begin_offset);
-				is.read("end",   tr.end_offset);
+				is.get("block", tr.block);
+				is.get("axis",  axis);
+				is.get("begin", tr.begin_offset);
+				is.get("end",   tr.end_offset);
 
-				is.read("from",  tr.from_step);
-				is.read("to",    tr.to_step);
+				is.get("from",  tr.from_step);
+				is.get("to",    tr.to_step);
 
 				tr.axis = axis[0];
 
