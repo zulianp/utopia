@@ -8,6 +8,7 @@
 #define UTOPIA_CONJUGATE_GRAD_H
 
 #include "utopia_IterativeSolver.hpp"
+#include "utopia_MatrixFreeLinearSolver.hpp"
 #include "utopia_Parameters.hpp"
 #include "utopia_Preconditioner.hpp"
 #include "utopia_Smoother.hpp"
@@ -23,14 +24,16 @@ namespace utopia
 	 * @tparam     Vector
 	 */
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ConjugateGradient : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>
+	class ConjugateGradient : public IterativeSolver<Matrix, Vector>, public Smoother<Matrix, Vector>, public MatrixFreeLinearSolver<Vector>
 	{
 		typedef UTOPIA_SCALAR(Vector) 	 Scalar;
 		typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 		typedef utopia::LinearSolver<Matrix, Vector> Solver;
 		typedef utopia::Preconditioner<Vector> Preconditioner;
-		
+
 	public:
+
+		using IterativeSolver<Matrix, Vector>::solve;
 		
 		ConjugateGradient(const Parameters params = Parameters())
 		{
@@ -58,12 +61,26 @@ namespace utopia
 		bool apply(const Vector &b, Vector &x) override
 		{
 			if(precond_) {
-				return preconditioned_solve(*this->get_operator(), b, x);
+				auto A_ptr = utopia::op(this->get_operator());
+				return preconditioned_solve(*A_ptr, b, x);
 			} else {
-				return unpreconditioned_solve(*this->get_operator(), b, x);
+				auto A_ptr = utopia::op(this->get_operator());
+				return unpreconditioned_solve(*A_ptr, b, x);
 			}
 		}
+
 		
+		bool solve(const Operator<Vector> &A, const Vector &b, Vector &x) override
+		{
+			init(local_size(b).get(0));
+
+			if(precond_) {
+				return preconditioned_solve(A, b, x);
+			} else {
+				return unpreconditioned_solve(A, b, x);
+			}
+		}
+
 		/**
 		 * @brief      Sets the preconditioner.
 		 *
@@ -80,7 +97,7 @@ namespace utopia
 		{
 			IterativeSolver<Matrix, Vector>::update(op);
 
-			init(*op);
+			init(local_size(*op).get(0));
 			
 			if(precond_) {
 				auto ls_ptr = dynamic_cast<LinearSolver<Matrix, Vector> *>(precond_.get());
@@ -89,12 +106,15 @@ namespace utopia
 				}
 			}
 		}
-		
+
+
+
 		bool smooth(const Vector &rhs, Vector &x) override
 		{
 			SizeType temp = this->max_it();
 			this->max_it(this->sweeps());
-			unpreconditioned_solve(*this->get_operator(), rhs, x);
+			auto A_ptr = utopia::op(this->get_operator());
+			unpreconditioned_solve(*A_ptr, rhs, x);
 			this->max_it(temp);
 			return true;
 		}
@@ -105,7 +125,7 @@ namespace utopia
 		}
 		
 	private:
-		bool unpreconditioned_solve(const Matrix &A, const Vector &b, Vector &x)
+		bool unpreconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x)
 		{
 			Scalar it = 0;
 			Scalar rho = 1., rho_1 = 1., beta = 0., alpha = 1., r_norm = 9e9;
@@ -117,7 +137,9 @@ namespace utopia
 				r = b;
 			} else {
 				assert(local_size(x).get(0) == local_size(b).get(0));
-				r = b - A * x;
+				// r = b - A * x;
+				A.apply(x, r);
+				r = b - r;
 			}
 			
 			this->init_solver("Utopia Conjugate Gradient", {"it. ", "||r||" });
@@ -142,7 +164,8 @@ namespace utopia
 					p = r;
 				}
 				
-				q = A * p;
+				// q = A * p;
+				A.apply(p, q);
 				alpha = rho / dot(p, q);
 				
 				x += alpha * p;
@@ -162,7 +185,7 @@ namespace utopia
 			return converged;
 		}
 		
-		bool preconditioned_solve(const Matrix &A, const Vector &b, Vector &x)
+		bool preconditioned_solve(const Operator<Vector> &A, const Vector &b, Vector &x)
 		{
 			Scalar it = 0;
 			Scalar beta = 0., alpha = 1., r_norm = 9e9;
@@ -175,7 +198,8 @@ namespace utopia
 				r = b;
 			} else {
 				assert(local_size(x).get(0) == local_size(b).get(0));
-				r = b - A * x;
+				A.apply(x, r);
+				r = b - r;
 			}
 			
 			precond_->apply(r, z);
@@ -186,7 +210,8 @@ namespace utopia
 			
 			while(!stop)
 			{
-				Ap = A*p;
+				// Ap = A*p;
+				A.apply(p, Ap);
 				alpha = dot(r, z)/dot(p, Ap);
 				x += alpha * p;
 				r_new = r - alpha * Ap;
@@ -217,9 +242,9 @@ namespace utopia
 			return r_norm <= this->atol();
 		}
 
-		void init(const Matrix &A)
+		void init(const SizeType &ls)
 		{
-			auto zero_expr = local_zeros(local_size(A).get(0));
+			auto zero_expr = local_zeros(ls);
 
 			//resets all buffers in case the size has changed
 			if(!empty(r)) {

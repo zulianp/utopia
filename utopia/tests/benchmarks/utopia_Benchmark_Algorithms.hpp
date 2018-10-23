@@ -7,6 +7,7 @@
 #include "utopia_Benchmark.hpp"
 #include "test_problems/utopia_assemble_laplacian_1D.hpp"
 #include "test_problems/utopia_RastriginTestFunction.hpp"
+#include "utopia_Preconditioner.hpp"
 
 #include <string>
 #include <cassert>
@@ -57,7 +58,8 @@ namespace utopia {
 
 						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
 						cg.max_it(N);
-						cg.solve(A, b, x);
+						auto A_op = utopia::op(make_ref(A));
+						cg.solve(*A_op, b, x);
 
 						assert(approxeq(A * x, b, 1e-6));
 					}
