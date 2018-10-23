@@ -57,6 +57,8 @@ namespace utopia {
 
 	class Grid2MeshTransferApp::InputGrid : public Configurable {
 	public:
+		using Vector3 = Grid<3>::Vector;
+
 		InputGrid(libMesh::Parallel::Communicator &comm)
 		: comm_(comm)
 		{
@@ -66,11 +68,41 @@ namespace utopia {
 		void read(Input &is) override
 		{
 		    try {
+
+		    	Vector3 box_min(0., 0., 0.);
+		    	Vector3 box_max(1., 1., 1.);
+
 		    	is.get("grid", [&](Input &is) {
 			    	is.get("n-x", grid.dims[0]);
 			    	is.get("n-y", grid.dims[1]);
 			    	is.get("n-z", grid.dims[2]);
+
+			    	is.get("min-x", box_min[0]);
+			    	is.get("min-y", box_min[1]);
+			    	is.get("min-z", box_min[2]);
+
+			    	is.get("max-x", box_max[0]);
+			    	is.get("max-y", box_max[1]);
+			    	is.get("max-z", box_max[2]);
 		    	});
+
+		    	Vector3 box_range = box_max - box_min;
+
+		    	grid.map = [=](const Vector3 &x) -> Vector3 {
+		    		Vector3 y = x;
+		    		y.x *= box_range.x;
+		    		y.y *= box_range.y;
+		    		y.z *= box_range.z;
+		    		return y + box_min; 
+		    	};
+
+		    	grid.inverse_map = [=](const Vector3 &x) -> Vector3 {
+		    		Vector3 y = x - box_min;
+		    		y.x /= box_range.x;
+		    		y.y /= box_range.y;
+		    		y.z /= box_range.z;
+		    		return y;
+		    	};
 
 		    	//domain decomposition
 		    	std::size_t comm_size = comm_.size();
@@ -309,10 +341,10 @@ namespace utopia {
 
 		{
 			Write<UVector> w_(fun_master);
-			
+
 			for(int i = input_master.local_nodes_begin(); i < input_master.local_nodes_end(); ++i) {
 				if(enumerate_nodes) {
-					fun_master.set(i, i);
+					fun_master.set(i, comm_->rank());
 				} else {
 #ifdef WITH_TINY_EXPR
 					auto p = input_master.grid.point(i);
