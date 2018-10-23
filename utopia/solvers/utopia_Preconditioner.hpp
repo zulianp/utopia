@@ -34,6 +34,7 @@ namespace utopia {
         bool apply(const Vector &rhs, Vector &ret) const override
         {
             ret = (*mat_) * rhs;
+            return true;
         }
 
        const std::shared_ptr<const Matrix> &get_matrix() const
