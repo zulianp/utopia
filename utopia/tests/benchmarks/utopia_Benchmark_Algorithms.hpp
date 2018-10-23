@@ -58,7 +58,7 @@ namespace utopia {
 
 						ConjugateGradient<Matrix, Vector, HOMEMADE> cg;
 						cg.max_it(N);
-						auto A_op = utopia::op(make_ref(A));
+						auto A_op = utopia::op_ref(A);
 						cg.solve(*A_op, b, x);
 
 						assert(approxeq(A * x, b, 1e-6));

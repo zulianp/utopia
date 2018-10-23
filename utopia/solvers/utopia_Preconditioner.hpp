@@ -62,6 +62,14 @@ namespace utopia {
         return make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(mat);
     }
 
+    template<class Matrix>
+    std::unique_ptr<
+        MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)>
+    > op_ref(const Matrix &mat)
+    {
+        return make_unique< MatrixOperator<Matrix, UTOPIA_W_VECTOR(Matrix)> >(make_ref(mat));
+    }
+
 
     template<class Vector>
     class Preconditioner /*: public Operator<Vector>*/ {
