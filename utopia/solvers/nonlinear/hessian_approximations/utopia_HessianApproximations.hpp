@@ -54,12 +54,12 @@ public:
         return my_func; 
     }
     
-    std::function< void(const Vector &, Vector &) >  get_compute_uHinvv_dot()
+    std::function< Scalar(const Vector &, const Vector &) >  get_compute_uHinvv_dot()
     {
-        std::function< void(const Vector &, Vector &) > my_func = 
-        [this](const Vector &x, Vector & result)
+        std::function< Scalar(const Vector &, const Vector &) > my_func = 
+        [this](const Vector &x, const Vector & result)
             {
-                this->compute_uHinvv_dot(x, result); 
+                return this->compute_uHinvv_dot(x, result); 
             }; 
 
         return my_func; 

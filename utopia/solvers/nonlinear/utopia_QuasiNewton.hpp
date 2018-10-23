@@ -28,25 +28,24 @@ namespace utopia
         
         typedef utopia::LSStrategy<Matrix, Vector>                  LSStrategy;
         typedef utopia::HessianApproximation<Matrix, Vector>        HessianApproximation;
-        typedef utopia::LinearSolver<Matrix, Vector>                Solver;
-        typedef utopia::MatrixFreeSolverInterface<Matrix, Vector>   MFInterface;
+        
+        typedef utopia::MatrixFreeLinearSolver<Vector>              Solver;
+
+
+        // typedef utopia::MatrixFreeSolverInterface<Matrix, Vector>   MFInterface;
         
         
     public:
 
         QuasiNewton(const std::shared_ptr <HessianApproximation> &hessian_approx,
                     const std::shared_ptr <Solver> &linear_solver,
-                    const Parameters params                                         = Parameters()):
-        NonLinearSolver<Matrix, Vector>(linear_solver, params),alpha_(1.0),
-        hessian_approx_strategy_(hessian_approx)
+                    const Parameters params = Parameters()):
+                    NonLinearSolver<Matrix, Vector>(), 
+                    alpha_(1.0),
+                    hessian_approx_strategy_(hessian_approx), 
+                    mf_linear_solver_(linear_solver)
         {
             set_parameters(params);
-
-            if(Solver * mf_solver = dynamic_cast<Solver*>(this->linear_solver_.get()))
-                std::cout<<"mf solver--- \n"; 
-            else
-                utopia_error("QuasiNewton, linear solver is missing MatrixFreeSolverInterface\n"); 
-
         }
         
         bool solve(Function<Matrix, Vector> &fun, Vector &x) override
@@ -72,15 +71,20 @@ namespace utopia
             
             hessian_approx_strategy_->initialize(fun, x);
 
-            if(MFInterface * mf_solver = dynamic_cast<MFInterface*>(this->linear_solver_.get()))
-                mf_solver->initialize(hessian_approx_strategy_); 
-
-
             while(!converged)
             {
-                this->linear_solver_->apply(-1.0 * g, s); 
+                if(QuasiLinearSolver<Vector> * lin_solver = dynamic_cast<QuasiLinearSolver<Vector>*>(mf_linear_solver_.get()))
+                {
+                    auto inverse_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_Hinv()); 
+                    lin_solver->solve(inverse_action, -1.0*g, s); 
+                }
+                else
+                {
+                    auto multiplication_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_H()); 
+                    lin_solver->solve(multiplication_action, -1.0*g, s); 
+                }
 
-                
+
                 if(ls_strategy_) 
                     ls_strategy_->get_alpha(fun, g, x, s, alpha_);     
 
@@ -156,6 +160,9 @@ namespace utopia
         std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
         
         std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
+
+
+        std::shared_ptr<Solver> mf_linear_solver_;     /*!< Linear solver parameters. */  
         
     };
     

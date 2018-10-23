@@ -1,7 +1,3 @@
-//
-// Created by Patrick Zulian on 31/08/16.
-//
-
 #ifndef UTOPIA_UTOPIA_PRECONDITIONER_HPP
 #define UTOPIA_UTOPIA_PRECONDITIONER_HPP
 
@@ -16,7 +12,8 @@
 
 #define UTOPIA_W_VECTOR(Tensor) utopia::Wrapper<typename utopia::Traits<Tensor>::Vector, 1>
 
-namespace utopia {
+namespace utopia 
+{
     template<class Vector>
     class Operator {
     public:

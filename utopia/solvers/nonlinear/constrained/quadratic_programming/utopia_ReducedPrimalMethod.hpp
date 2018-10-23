@@ -58,84 +58,84 @@ namespace utopia
 		}
 
 
-    Scalar compute_alpha_star(const Vector & x_cp, const Vector & lb, const Vector & ub, const Vector & d, const Vector & feasible_set) const
-    {
-        Vector alpha_stars = local_values(local_size(feasible_set).get(0), 1.0);  
+    // Scalar compute_alpha_star(const Vector & x_cp, const Vector & lb, const Vector & ub, const Vector & d, const Vector & feasible_set) const
+    // {
+    //     Vector alpha_stars = local_values(local_size(feasible_set).get(0), 1.0);  
 
-        {
-            Read<Vector>  rf(feasible_set); 
-            Read<Vector>  rd(d); 
-            Read<Vector>  ru(ub); 
-            Read<Vector>  rlb(lb); 
+    //     {
+    //         Read<Vector>  rf(feasible_set); 
+    //         Read<Vector>  rd(d); 
+    //         Read<Vector>  ru(ub); 
+    //         Read<Vector>  rlb(lb); 
 
-            Write<Vector> wv(alpha_stars); 
+    //         Write<Vector> wv(alpha_stars); 
 
-            auto rr = range(alpha_stars); 
+    //         auto rr = range(alpha_stars); 
 
-            for (SizeType i = rr.begin(); i != rr.end(); ++i)
-            {
-                if(approxeq(feasible_set.get(i), 1.0))
-                {
-                    Scalar val = 1.0; 
-                    Scalar di = d.get(i);  Scalar xi = x_cp.get(i); Scalar li = lb.get(i);  Scalar ui = ub.get(i); 
+    //         for (SizeType i = rr.begin(); i != rr.end(); ++i)
+    //         {
+    //             if(approxeq(feasible_set.get(i), 1.0))
+    //             {
+    //                 Scalar val = 1.0; 
+    //                 Scalar di = d.get(i);  Scalar xi = x_cp.get(i); Scalar li = lb.get(i);  Scalar ui = ub.get(i); 
 
-                    if(di!=0.0)
-                        val = (di>0) ? (ui - xi)/di : (li - xi)/di; 
+    //                 if(di!=0.0)
+    //                     val = (di>0) ? (ui - xi)/di : (li - xi)/di; 
 
-                    // checks for nans and infs, also alpha needs to be positive... 
-                    if(val < 1.0 && std::isfinite(val) && val > 0.0)
-                        alpha_stars.set(i, val); 
+    //                 // checks for nans and infs, also alpha needs to be positive... 
+    //                 if(val < 1.0 && std::isfinite(val) && val > 0.0)
+    //                     alpha_stars.set(i, val); 
 
-                }
-            }     
-        }
+    //             }
+    //         }     
+    //     }
 
-        return min(alpha_stars); 
-    }
-
-
-    SizeType get_local_size_feasible_set(const Vector & feasible_set) const
-    {
-    	SizeType local_feasible_set = 0; 
-        each_read(feasible_set, [&local_feasible_set](const SizeType i, const Scalar value) 
-        {
-			if(approxeq(value, 1.0)) 
-				local_feasible_set++; 
-		});
-
-        return local_feasible_set; 
-    }
+    //     return min(alpha_stars); 
+    // }
 
 
-    void build_feasible_set(const Vector &x, const Vector &ub, const Vector &lb, Vector & feasible_set) const 
-    { 
-    	if(empty(feasible_set) || local_size(feasible_set)!=local_size(x))
-    		feasible_set = local_zeros(local_size(x)); 
+  //   SizeType get_local_size_feasible_set(const Vector & feasible_set) const
+  //   {
+  //   	SizeType local_feasible_set = 0; 
+  //       each_read(feasible_set, [&local_feasible_set](const SizeType i, const Scalar value) 
+  //       {
+		// 	if(approxeq(value, 1.0)) 
+		// 		local_feasible_set++; 
+		// });
 
-		Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
-      	each_write(feasible_set, [ub, lb, x](const SizeType i) -> double { 
-                  	Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
-                  	if(li < xi && xi < ui)
-                    	return 1.0; 
-                  	else
-                    	return 0.0; }   );
-    }
+  //       return local_feasible_set; 
+  //   }
 
 
+  //   void build_feasible_set(const Vector &x, const Vector &ub, const Vector &lb, Vector & feasible_set) const 
+  //   { 
+  //   	if(empty(feasible_set) || local_size(feasible_set)!=local_size(x))
+  //   		feasible_set = local_zeros(local_size(x)); 
 
-    void build_active_set(const Vector &x, const Vector &ub, const Vector &lb, Vector & active_set) const 
-    { 
-    	if(empty(active_set) || local_size(active_set)!=local_size(x))
-    		active_set = local_zeros(local_size(x)); 
+		// Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
+  //     	each_write(feasible_set, [ub, lb, x](const SizeType i) -> double { 
+  //                 	Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
+  //                 	if(li < xi && xi < ui)
+  //                   	return 1.0; 
+  //                 	else
+  //                   	return 0.0; }   );
+  //   }
 
-		Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
-      	each_write(active_set, [ub, lb, x](const SizeType i) -> double { 
-                  	Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
-                  	if(li < xi && xi < ui)
-                    	return 0.0; 
-                  	else
-                    	return 1.0; }   );
-    }
+
+
+  //   void build_active_set(const Vector &x, const Vector &ub, const Vector &lb, Vector & active_set) const 
+  //   { 
+  //   	if(empty(active_set) || local_size(active_set)!=local_size(x))
+  //   		active_set = local_zeros(local_size(x)); 
+
+		// Read<Vector> r_ub(ub), r_lb(lb), r_x(x);
+  //     	each_write(active_set, [ub, lb, x](const SizeType i) -> double { 
+  //                 	Scalar li =  lb.get(i); Scalar ui =  ub.get(i); Scalar xi =  x.get(i);  
+  //                 	if(li < xi && xi < ui)
+  //                   	return 0.0; 
+  //                 	else
+  //                   	return 1.0; }   );
+  //   }
 
 
     void build_reduced_vector(const Vector &x, const Vector & feasible_set, Vector &x_reduced) const

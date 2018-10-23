@@ -63,7 +63,7 @@ namespace utopia
                 return true; 
             }
 
-            virtual bool apply_Hinv(const Vector & g , Vector & s) const
+            virtual bool apply_Hinv(const Vector & g , Vector & s) const override
             {
                 if(this->initialized())
                     s = H_prev_inv_ * g; 

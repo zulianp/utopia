@@ -65,7 +65,7 @@ private:
     bool initialized_;
 
     std::function< void(const Vector &, Vector &) > apply_Hinv_; 
-    std::function< void(const Vector &, Vector &) > compute_uHinvv_dot_; 
+    std::function< Scalar(const Vector &, Vector &) > compute_uHinvv_dot_; 
     
     std::function< void(const Vector &, Vector &) > apply_H_; 
     std::function< Scalar(const Vector &, const Vector &) > compute_uHv_dot_;
@@ -75,29 +75,68 @@ private:
 };
 
 
-template<class Matrix, class Vector>
-class  QuasiDirectSolver:   public MatrixFreeSolverInterface<Matrix, Vector>, 
-                            public DirectSolver<Matrix, Vector> 
-{
+// template<class Matrix, class Vector>
+// class  QuasiDirectSolver:   public MatrixFreeSolverInterface<Matrix, Vector>, 
+//                             public DirectSolver<Matrix, Vector> 
+// {
 
-    public: 
-        virtual QuasiDirectSolver * clone() const override
-        {
-            return new QuasiDirectSolver(*this);
-        }
+//     public: 
+//         virtual QuasiDirectSolver * clone() const override
+//         {
+//             return new QuasiDirectSolver(*this);
+//         }
 
 
-        virtual bool apply(const Vector &rhs, Vector &sol) override
-        {
-            if(this->initialized())
-                this->apply_Hinv(rhs, sol); 
-            else
-                utopia_error("QuasiDirectSolver not initialized! \n"); 
+//         virtual bool apply(const Vector &rhs, Vector &sol) override
+//         {
+//             if(this->initialized())
+//                 this->apply_Hinv(rhs, sol); 
+//             else
+//                 utopia_error("QuasiDirectSolver not initialized! \n"); 
 
-            return false; 
-        }        
+//             return false; 
+//         }        
 
-};
+// };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<class Vector>
+    class FunctionOperator final : public Operator<Vector> 
+    {
+        public:
+            FunctionOperator(const std::function< void(const Vector &, Vector &) > operator_action)
+            : operator_action_(operator_action)
+            {}
+
+            bool apply(const Vector &rhs, Vector &ret) const override
+            {
+                operator_action_(rhs, ret); 
+                return true;
+            }
+
+
+        private:
+            std::function< void(const Vector &, Vector &) > operator_action_; 
+    };
+
+
+
+    // TODO:: do checks if action is inverse ...
+    template<class Vector>
+    class QuasiLinearSolver : public MatrixFreeLinearSolver<Vector>
+    {
+        public:
+            virtual ~QuasiLinearSolver() {}
+
+            virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol)
+            {
+                A.apply(rhs, sol); 
+                return true; 
+            }
+
+    };
+
 
 
 
