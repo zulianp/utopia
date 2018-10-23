@@ -15,6 +15,7 @@ namespace  utopia
 
         typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
         typedef utopia::TRBoxSubproblem<Matrix, Vector>         TRBoxSubproblem;
+        typedef utopia::LinearSolver<Matrix, Vector>            Solver;
 
         using IterativeSolver<Matrix, Vector>::solve;
 
@@ -60,6 +61,11 @@ namespace  utopia
             }
 
 
+            virtual void set_linear_solver(const std::shared_ptr<Solver> &linear_solver) override
+            {
+                linear_solver_ = linear_solver; 
+            }
+
         private:
             bool aux_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints)
             {
@@ -83,7 +89,6 @@ namespace  utopia
                 this->build_feasible_set(s, *ub, *lb, feasible_set); 
                 SizeType feasible_variables = sum(feasible_set); 
 
-
             
                 if(feasible_variables == 0) // no feasible variables => return CP
                 {
@@ -91,12 +96,16 @@ namespace  utopia
                 }
                 else if(size(feasible_set).get(0)==feasible_variables) // all variables are feasible, use Newton's method to solve the system
                 {
-                    Vector  local_corr; 
+                    Vector  local_corr = local_zeros(local_size(s).get(0)); 
                     if(const MatrixOperator<Matrix, Vector> * H_matrix = dynamic_cast<const MatrixOperator<Matrix, Vector> *>(&H))
                     {
-                        std::cout<<"yes, this one.... \n"; // to be changed with the precondtiioner
-                        auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >(); 
-                        linear_solver->solve(*(H_matrix->get_matrix()), -1.0 * grad_qp_fun, local_corr); 
+                        if(linear_solver_)
+                        {
+                            auto linear_solver = std::make_shared<Factorization<Matrix, Vector> >(); 
+                            linear_solver->solve(*(H_matrix->get_matrix()), -1.0 * grad_qp_fun, local_corr); 
+                        }
+                        else if(precond_)
+                            precond_->apply(-1.0 * grad_qp_fun, local_corr);                             
                     }
                     else
                     {
@@ -198,6 +207,8 @@ namespace  utopia
             {
                 // simple identity preconditioner - orthogonal to the nullspace of the equality constraints 
                 Pr = e_mul(r, feasible_set); 
+
+                // TODO:: extend to other possibilities...
             }
 
 
@@ -305,6 +316,7 @@ namespace  utopia
         private:  
             GeneralizedCauchyPoint<Matrix, Vector> cp_; 
             std::shared_ptr<Preconditioner<Vector> > precond_;
+            std::shared_ptr<Solver> linear_solver_;    
             Vector r, q, d, Hd; 
         
     };

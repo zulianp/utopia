@@ -25,14 +25,11 @@ namespace utopia
 				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
 				// UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test); 
 				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+				// UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
 
-				UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
 
-				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test)
 				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
-				// UTOPIA_RUN_TEST(quick_test); 
-
 			}			
 
 			void quasi_newton_test()
@@ -46,11 +43,10 @@ namespace utopia
 				params.stol(1e-15);
 				params.verbose(_verbose);
 				
-				// auto lsolver = std::make_shared< ConjugateGradient<Matrix, Vector> >();
-
-				auto lsolver = std::make_shared<QuasiLinearSolver<Vector> >(); 
 				auto hess_approx_BFGS   = std::make_shared<BFGS<Matrix, Vector> >();
 
+				auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >(); 
+				lsolver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx_BFGS->get_apply_Hinv())); 
 
 				QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, lsolver);
 				nlsolver.set_parameters(params);
@@ -93,9 +89,9 @@ namespace utopia
 				params.stol(1e-15);
 				params.verbose(_verbose);
 				
-	    		auto lsolver = std::make_shared<QuasiLinearSolver<Vector> >(); 
 	    		auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);				
-
+	    		auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >(); 
+	    		lsolver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx_BFGS->get_apply_Hinv())); 
 
 				QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, lsolver);
 				nlsolver.set_parameters(params);
@@ -129,11 +125,10 @@ namespace utopia
 				params.stol(1e-15);
 				params.verbose(_verbose);
 				
-	    		auto ls_inner = std::make_shared<GMRES<Matrix, Vector> >();
-				auto hess_approx_BFGS = std::make_shared<MatrixFormLBFGS<Matrix, Matrix,  Vector> >(memory_size, ls_inner);	
+	    		auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);				
+	    		auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >(); 
+	    		lsolver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx_BFGS->get_apply_Hinv())); 
 
-
-				auto lsolver = std::make_shared<QuasiLinearSolver<Vector> >(); 
 				QuasiNewton<Matrix, Vector> nlsolver(hess_approx_BFGS, lsolver);
 				nlsolver.set_parameters(params);
 				nlsolver.max_it(5); 

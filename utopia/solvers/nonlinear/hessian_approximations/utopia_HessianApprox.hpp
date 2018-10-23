@@ -6,8 +6,6 @@
 #include "utopia_LBFGS.hpp"
 #include "utopia_MatrixFormLBFGS.hpp"
 
-#include "utopia_MatrixFreeSolverInterface.hpp"
-
 #endif //UTOPIA_HESSIAN_APPROX_HPP
 
 

@@ -12,11 +12,14 @@ namespace utopia
 	 * @brief      Class for Steihaug Toint conjugate gradient.
 	 */
 	template<class Matrix, class Vector, int Backend = Traits<Matrix>::Backend>
-    class SteihaugToint : public TRSubproblem<Matrix, Vector>
+    class SteihaugToint : public TRSubproblem<Matrix, Vector>, public MatrixFreeLinearSolver<Vector>
     {
 		typedef UTOPIA_SCALAR(Vector) Scalar;
 
     public:
+
+    	using TRSubproblem<Matrix, Vector>::tr_constrained_solve; 
+		using TRSubproblem<Matrix, Vector>::solve; 
 
     	SteihaugToint(const Parameters params = Parameters()):
     				  TRSubproblem<Matrix, Vector>(params)
@@ -30,15 +33,48 @@ namespace utopia
         }
 
 
+        virtual bool apply(const Vector &b, Vector &x) override
+        {
+        	init(local_size(b).get(0)); 
+            if(this->precond_) 
+            {
+            	auto A_ptr = utopia::op(this->get_operator());
+                return preconditioned_solve(*A_ptr, b, x);
+            } else {
+            	auto A_ptr = utopia::op(this->get_operator());
+                return unpreconditioned_solve(*A_ptr, b, x);
+            }
+        }
+
+        virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override 
+        {
+            utopia_error("ProjectedGradientActiveSet missing solve implementation.... \n"); 
+            return false; 
+        }
+
+        virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const Scalar & tr_radius) override
+        {
+        	init(local_size(g).get(0)); 
+        	this->current_radius(tr_radius);
+
+        	if(this->precond_) {
+                return preconditioned_solve(H, g, s);
+            } else {
+                return unpreconditioned_solve(H, g, s);
+            }
+            return false;
+        }
+
 
 	protected:
-        bool unpreconditioned_solve(const Matrix &B, const Vector &g, Vector &p_k) override
+        bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr) override
         {
-			Vector r = -1 * g, d = r, s = local_zeros(local_size(g)), s1 = s;
+			r = -1 * g; 
+			v_k = r; 
 	    	Scalar alpha, g_norm, d_B_d, z, z1;
 	    	SizeType it = 1;
 
-	    	p_k = local_zeros(local_size(p_k));
+	    	corr = local_zeros(local_size(g));
 	    	g_norm = norm2(g);
 	    	z = g_norm * g_norm;
 
@@ -48,30 +84,31 @@ namespace utopia
 
         	while(!converged)
         	{
-	    		d_B_d = dot(d, B * d);
+        		B.apply(v_k, B_p_k); 
+	    		d_B_d = dot(v_k, B_p_k);
 
 	    		if(d_B_d <= 0)
 	    		{
-	    			s = p_k;
-	    			this->quad_solver(s, d, this->current_radius(),  p_k);
+	    			Vector s = corr;
+	    			this->quad_solver(s, v_k, this->current_radius(),  corr);
 	    			return true;
 	    		}
 
 	    		alpha = z / d_B_d;
-	    		s1 = p_k + alpha * d;
+	    		p_k = corr + alpha * v_k;
 
-	    		if(norm2(s1) >= this->current_radius())
+	    		if(norm2(p_k) >= this->current_radius())
 	    		{
-	    			s = p_k;
-	    			this->quad_solver(s, d, this->current_radius(),  p_k);
+	    			Vector s = corr;
+	    			this->quad_solver(s, v_k, this->current_radius(),  corr);
 	    			return true;
 	    		}
 
-	    		p_k = s1;
-	    		r -= alpha * (B * d);
+	    		corr = p_k;
+	    		r -= alpha * B_p_k;
 
 	    		z1 = dot(r,r);
-	    		d = r + (z1/z) * d;
+	    		v_k = r + (z1/z) * v_k;
 
 	    		z = z1;
 
@@ -88,25 +125,24 @@ namespace utopia
         }
 
 
-        bool preconditioned_solve(const Matrix &B, const Vector &g, Vector &s_k) override
+        bool preconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &s_k) override
         {
         	bool converged = false;
             SizeType it=0; 
 
-			Vector v_k = local_zeros(local_size(g)); 
-				   s_k = local_zeros(local_size(g)); 
-			Vector g_k = g; 
+			s_k = local_zeros(local_size(g)); 
+			r = g; 
 
-			Scalar g_norm = norm2(g_k);  
+			Scalar g_norm = norm2(r);  
 
 			this->init_solver(" Precond-ST-CG ", {"it. ", "||g||", "||s||", "||p||", "sMp" });
     		if(this->verbose())
                 PrintInfo::print_iter_status(it, {g_norm});
             it++; 
 
-			this->precond_->apply(g_k, v_k);
+			this->precond_->apply(r, v_k);
 
-			Vector p_k = -1.0 * v_k; 
+			p_k = -1.0 * v_k; 
 
             Scalar alpha, kappa, betta; 
             Scalar g_v_prod_old, g_v_prod_new; 
@@ -115,7 +151,7 @@ namespace utopia
 			Scalar r2 = this->current_radius() * this->current_radius(); 
 
 
-            Scalar p_norm = dot(g_k, v_k); 
+            Scalar p_norm = dot(r, v_k); 
 
 			// if preconditioner yields nans or inf, or is precond. dir is indefinite - return gradient step 
 			if(!std::isfinite(p_norm) || p_norm < 0.0)
@@ -126,7 +162,7 @@ namespace utopia
 	    		else
 	    			alpha_termination = std::sqrt(r2/g_norm);  // grad. step is outside of tr boundary, project on the boundary
 
-	    		s_k -= alpha_termination * g_k;  
+	    		s_k -= alpha_termination * r;  
 
 	    		return true; 
 	    	}   
@@ -134,7 +170,7 @@ namespace utopia
 
         	while(!converged)
         	{
-        		Vector B_p_k = B* p_k; 
+        		B.apply(p_k, B_p_k); 
 	    		kappa = dot(p_k,B_p_k);
 
 	    		// identify negative curvature 
@@ -147,7 +183,7 @@ namespace utopia
 	    			return true;
 	    		}
 
-	    		g_v_prod_old = dot(g_k, v_k); 
+	    		g_v_prod_old = dot(r, v_k); 
 	    		alpha = g_v_prod_old/kappa; 
 
 	    		s_norm_new = s_norm + (2.0* alpha * sMp) + (alpha * alpha * p_norm); 
@@ -163,12 +199,12 @@ namespace utopia
 	    		}
 
 				s_k += alpha * p_k; 	    		
-	    		g_k += alpha * B_p_k; 
-	    		v_k = local_zeros(local_size(g_k));
+	    		r += alpha * B_p_k; 
 
-	    		this->precond_->apply(g_k, v_k);
+	    		v_k = local_zeros(local_size(r));
+	    		this->precond_->apply(r, v_k);
 
-	    		g_v_prod_new = dot(g_k, v_k); 
+	    		g_v_prod_new = dot(r, v_k); 
 
 
 	    		// if preconditioner yields nans or inf, or is precond. dir is indefinite - just return current step 
@@ -185,7 +221,7 @@ namespace utopia
 	    		s_norm = s_norm_new; 
 
 
-	    		g_norm = norm2(g_k);  
+	    		g_norm = norm2(r);  
 
 	    		if(this->verbose())
                     PrintInfo::print_iter_status(it, {g_norm, s_norm, p_norm, sMp});
@@ -199,6 +235,36 @@ namespace utopia
 
         	return true;
         }
+
+
+
+	private:
+	    void init(const SizeType &ls)
+        {
+            auto zero_expr = local_zeros(ls);
+
+            //resets all buffers in case the size has changed
+            if(!empty(v_k)) {
+                v_k = zero_expr;
+            }
+
+            if(!empty(r)) {
+                r = zero_expr;
+            }
+
+            if(!empty(p_k)) {
+                p_k = zero_expr;
+            }
+
+            if(!empty(B_p_k)) {
+                B_p_k = zero_expr;
+            }
+        }        
+
+
+    private:
+     	Vector v_k, r, p_k, B_p_k; 
+
 
 
     };

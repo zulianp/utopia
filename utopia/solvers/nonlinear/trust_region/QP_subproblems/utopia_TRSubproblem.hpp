@@ -123,7 +123,14 @@ namespace  utopia
         virtual bool unpreconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
         virtual bool preconditioned_solve(const Matrix &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
 
+        virtual bool unpreconditioned_solve(const Operator<Vector> &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
+        virtual bool preconditioned_solve(const Operator<Vector> &/*B*/, const Vector &/*g*/, Vector &/*p_k*/){ return false; };
 
+
+        virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const Scalar & tr_radius)
+        {
+            return false;
+        };
 
         virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const Scalar & tr_radius)
         {

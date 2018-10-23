@@ -7,7 +7,6 @@
 #include "utopia_NonLinearSolver.hpp"
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_HessianApproximations.hpp"
-#include "utopia_MatrixFreeSolverInterface.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -65,16 +64,9 @@ namespace utopia
 
             while(!converged)
             {
-                if(QuasiLinearSolver<Vector> * lin_solver = dynamic_cast<QuasiLinearSolver<Vector>*>(mf_linear_solver_.get()))
-                {
-                    auto inverse_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_Hinv()); 
-                    lin_solver->solve(inverse_action, -1.0*g, s); 
-                }
-                else
-                {
-                    auto multiplication_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_H()); 
-                    lin_solver->solve(multiplication_action, -1.0*g, s); 
-                }
+                auto multiplication_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_H()); 
+                mf_linear_solver_->solve(multiplication_action, -1.0*g, s); 
+
 
                 if(ls_strategy_) 
                     ls_strategy_->get_alpha(fun, g, x, s, alpha_);     
