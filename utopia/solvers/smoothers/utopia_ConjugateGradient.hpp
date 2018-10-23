@@ -60,13 +60,8 @@ namespace utopia
 		 */
 		bool apply(const Vector &b, Vector &x) override
 		{
-			if(precond_) {
-				auto A_ptr = utopia::op(this->get_operator());
-				return preconditioned_solve(*A_ptr, b, x);
-			} else {
-				auto A_ptr = utopia::op(this->get_operator());
-				return unpreconditioned_solve(*A_ptr, b, x);
-			}
+			auto A_ptr = utopia::op(this->get_operator());
+			return solve(*A_ptr, b, x);
 		}
 
 		

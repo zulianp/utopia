@@ -72,8 +72,16 @@ namespace utopia {
 			    	is.get("n-z", grid.dims[2]);
 		    	});
 
-		    	//FIXME
-		    	ownership_ranges[1] = grid.n_nodes();
+		    	//domain decomposition
+		    	std::size_t comm_size = comm_.size();
+		    	std::size_t n = grid.n_nodes();
+		    	std::size_t n_local = n / comm_size;
+		    	std::size_t n_remainder = n % comm_size;
+
+		    	ownership_ranges[1] = n_local + n_remainder;
+		    	for(std::size_t i = 2; i <= comm_size; ++i) {
+		    		ownership_ranges[i] = n_local + ownership_ranges[i - 1];
+		    	}
 
 		    } catch(const std::exception &ex) {
 		        std::cerr << ex.what() << std::endl;
@@ -85,7 +93,6 @@ namespace utopia {
 		{
 			return ownership_ranges[comm_.rank()];
 		}
-
 
 		inline long local_nodes_end() const
 		{
@@ -125,6 +132,7 @@ namespace utopia {
 		bool assemble_mass_mat_ = 0;
 		bool force_shell  = false;
 		bool biorth_basis = false;
+		bool enumerate_nodes = false;
 		std::shared_ptr<LocalAssembler> local_assembler_;
 		std::shared_ptr<Local2Global> local2global_;
 		std::shared_ptr<TransferOperator> transfer_op_;
@@ -184,6 +192,12 @@ namespace utopia {
 			}
 
 			local2global_ = std::make_shared<Local2Global>(is_interpolation_);
+
+
+			
+
+			is.get("enumerate-nodes", enumerate_nodes);
+
 
 #ifdef WITH_TINY_EXPR
 			std::string expr = "x";
@@ -293,13 +307,21 @@ namespace utopia {
 		UVector fun_master, fun_slave;
 		fun_master = local_zeros(input_master.n_local_dofs());
 
-		for(int i = input_master.local_nodes_begin(); i < input_master.local_nodes_end(); ++i) {
+		{
+			Write<UVector> w_(fun_master);
+			
+			for(int i = input_master.local_nodes_begin(); i < input_master.local_nodes_end(); ++i) {
+				if(enumerate_nodes) {
+					fun_master.set(i, i);
+				} else {
 #ifdef WITH_TINY_EXPR
-			auto p = input_master.grid.point(i);
-			fun_master.set(i, fun->eval(p.x, p.y, p.z));
+					auto p = input_master.grid.point(i);
+					fun_master.set(i, fun->eval(p.x, p.y, p.z));
 #else
-			fun_master.set(i, fun->expr());
+					fun_master.set(i, fun->expr());
 #endif //WITH_TINY_EXPR
+				}
+			}
 		}
 
 		c.stop();

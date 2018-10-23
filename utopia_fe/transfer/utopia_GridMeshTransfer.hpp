@@ -4,10 +4,13 @@
 
 #include "utopia.hpp"
 #include "utopia_TransferAssembler.hpp"
+#include "utopia_L2LocalAssembler.hpp"
+#include "utopia_QMortarBuilder.hpp"
 #include "MortarAssemble.hpp"
 
 #include "utopia_intersector.hpp"
 #include "utopia_make_unique.hpp"
+#include "utopia_Socket.hpp"
 
 #include "moonolith_static_math.hpp"
 #include "libmesh/serial_mesh.h"
@@ -30,17 +33,12 @@ namespace utopia {
 		using Mapping = std::function<Vector (const Vector &)>;
 		using Index   = std::vector<Integer>;
 
-		inline Array index(const Integer hash) const
-		{
-			Array ret;
-			index_from_hash(hash, ret);
-			return ret;
-		}
+		//////////////////// Points, Nodes, and DOFs //////////////////
 
 		inline Vector point(const Integer &hash) const
 		{
 			Array index;
-			index_from_hash(hash, index);
+			node_index_from_hash(hash, index);
 			return point(index);
 		}
 
@@ -49,70 +47,44 @@ namespace utopia {
 			Vector ret;
 			for(int i = 0; i < Dim; ++i) {
 				assert(index[i] <= dims[i]);
-				ret[i] = static_cast<Scalar>(index[i])/dims[i];
+				ret[i] = static_cast<Scalar>(index[i])/(dims[i]);
 			}
 
 			return map(ret);
 		}
 
-		inline Integer hash(const Vector &y) const
-		{
-			Vector x = inverse_map(y);
-			Integer result = floor(x[0] * dims[0]);
-
-			Integer total_dim = dims[0];
-
-			for(int i = 1; i < Dim; ++i) {
-				result *= dims[i];
-				result += floor(x[i] * dims[i]);
-				total_dim *= dims[i];
-			}
-
-			if(result >= total_dim || result < 0) {
-				printf("error -> %ld\n", result);
-			}
-
-			return result;
-		}
-
-		inline Integer hash(const Array &coord) const
-		{
-			return hash_from_index(coord);
-		}
-
-		//z and y major
-		inline Integer hash_from_index(const Array &coord) const
+		inline Integer node_hash_from_index(const Array &coord) const
 		{
 			Integer result = coord[0];
 
-			for(int i = Dim - 1; i >= 0 ; --i) {
-				result *= dims[i];
+			for(int i = 1; i < Dim; ++i) {
+				result *= dims[i] + 1;
 				result += coord[i];
 			}
 
 			return result;
 		}
 
-		inline void index_from_hash(const Integer hash, Array &coord) const
+		inline void node_index_from_hash(const Integer hash, Array &coord) const
 		{
 			Integer current = hash;
 			const Integer last = Dim - 1;
 
 			for(Integer i = last; i >= 0; --i) {
-				const Integer next = current / dims[i];
-				coord[i] = current - next * dims[i];
+				const Integer next = current / (dims[i] + 1);
+				coord[i] = current - next * (dims[i] + 1);
 				current = next;	
 			}
 
-			assert(hash == this->hash(coord));
+			assert(hash == this->node_hash_from_index(coord));
 		}
 
 		template<typename IntT>
-		void dofs(const Integer cell_index, std::vector<IntT> &dof_indices) const
+		void dofs(const Integer cell_hash, std::vector<IntT> &dof_indices) const
 		{
 			dof_indices.resize(moonolith::StaticPow<2, Dim>::value);
 
-			auto imin = index(cell_index);
+			auto imin = element_index(cell_hash);
 			auto imax = imin;
 
 			for(auto &i : imax) {++i; }
@@ -134,49 +106,123 @@ namespace utopia {
 				*     0        1
 				*/
 
-				dof_indices[0] = hash_from_index(imin);
-				dof_indices[1] = hash_from_index({ imax[0], imin[1], imin[2] });
-				dof_indices[2] = hash_from_index({ imax[0], imax[1], imin[2] });
-				dof_indices[3] = hash_from_index({ imin[0], imax[1], imin[2] });
-				dof_indices[4] = hash_from_index({ imin[0], imin[1], imax[2] });
-				dof_indices[5] = hash_from_index({ imax[0], imin[1], imax[2] });
-				dof_indices[6] = hash_from_index(imax);
-				dof_indices[7] = hash_from_index({ imin[0], imax[1], imax[2] });
+				dof_indices[0] = node_hash_from_index(imin);
+				dof_indices[1] = node_hash_from_index({ imax[0], imin[1], imin[2] });
+				dof_indices[2] = node_hash_from_index({ imax[0], imax[1], imin[2] });
+				dof_indices[3] = node_hash_from_index({ imin[0], imax[1], imin[2] });
+				dof_indices[4] = node_hash_from_index({ imin[0], imin[1], imax[2] });
+				dof_indices[5] = node_hash_from_index({ imax[0], imin[1], imax[2] });
+				dof_indices[6] = node_hash_from_index(imax);
+				dof_indices[7] = node_hash_from_index({ imin[0], imax[1], imax[2] });
 			} else {
 				assert(false && "implement me");
 			}
 		}
 
-		
+		//////////////////// element access ////////////////////////
 
-		void hash_range(
-			const Vector &min,
-			const Vector &max, Index &hashes) const
+		inline Array element_index(const Integer hash) const
 		{
-			Array imin, imax, offsets;
+			Array ret;
+			element_index_from_hash(hash, ret);
+			return ret;
+		}
+
+		inline Integer element_hash(const Vector &y) const
+		{
+			Vector x = inverse_map(y);
+			Integer result = floor(x[0] * dims[0]);
+
+			Integer total_dim = dims[0];
+
+			for(int i = 1; i < Dim; ++i) {
+				result *= dims[i];
+				result += floor(x[i] * dims[i]);
+				total_dim *= dims[i];
+			}
+
+			if(result >= total_dim || result < 0) {
+				printf("error -> %ld\n", result);
+			}
+
+			assert(result < n_elements());
+			return result;
+		}
+
+		inline Integer element_hash(const Array &coord) const
+		{
+			return element_hash_from_index(coord);
+		}
+
+		//z and y major
+		inline Integer element_hash_from_index(const Array &coord) const
+		{
+			assert(element_is_valid(coord));
+
+			Integer result = coord[0];
+
+			for(int i = 1; i < Dim; i++) {
+				result *= dims[i];
+				result += coord[i];
+			}
+
+			assert(result < n_elements());
+			return result;
+		}
+
+		inline void element_index_from_hash(const Integer hash, Array &coord) const
+		{
+			Integer current = hash;
+			const Integer last = Dim - 1;
+
+			for(Integer i = last; i >= 0; --i) {
+				const Integer next = current / dims[i];
+				coord[i] = current - next * dims[i];
+				current = next;	
+			}
+
+			assert(hash == this->element_hash_from_index(coord));
+			assert(element_is_valid(coord));
+		}
+
+		void elements_in_range(
+			const Vector &min,
+			const Vector &max,
+			Index &hashes) const
+		{
+			hashes.clear();
+
+			Array imin, imax;
 
 			auto im_min = inverse_map(min);
 			auto im_max = inverse_map(max);
 
 			//generate tensor indices
 			for(int i = 0; i < Dim; ++i) {
-				imin[i] = floor(im_min[i] * dims[i]);
+				imin[i] = std::max(
+					Integer(0),
+					Integer(floor(im_min[i] * dims[i]))
+				);
 			}
 
 			for(int i = 0; i < Dim; ++i) {
-				imax[i] = floor(im_max[i] * dims[i]);
+				imax[i] = std::min(
+					Integer(floor(im_max[i] * dims[i])),
+					Integer(dims[i] - 1)
+				);
 			}
 
-			for(int i = 0; i < Dim; ++i) {
-				offsets[i] = imax[i] - imin[i];
-			}
+			assert(element_is_valid(imin));
+			assert(element_is_valid(imax));
 
 			//FIXME make more general for greater dim and extract to class
 			Array coord;
 			if(Dim == 1) {
 				for(int i = imin[0]; i <= imax[0]; ++i) {
 					coord[0] = i;
-					hashes.push_back(hash(coord));
+
+					auto h = element_hash(coord); assert(h < n_elements());
+					hashes.push_back(h);
 				}
 
 			} else if(Dim == 2) {
@@ -184,7 +230,9 @@ namespace utopia {
 					for(int j = imin[1]; j <= imax[1]; ++j) {
 						coord[0] = i;
 						coord[1] = j;
-						hashes.push_back(hash(coord));
+
+						auto h = element_hash(coord); assert(h < n_elements());
+						hashes.push_back(h);
 					}
 				}
 			} else if(Dim == 3) {
@@ -194,7 +242,9 @@ namespace utopia {
 							coord[0] = i;
 							coord[1] = j;
 							coord[2] = k;
-							hashes.push_back(hash(coord));
+
+							auto h = element_hash(coord); assert(h < n_elements());
+							hashes.push_back(h);
 						}
 					}
 				}
@@ -213,6 +263,38 @@ namespace utopia {
 			std::fill(std::begin(dims), std::end(dims), 0);
 		}
 
+		inline Integer n_elements(const Integer dim) const
+		{
+			return dims[dim];
+		}
+
+		inline Integer n_elements() const
+		{
+			Integer ret = 1;
+
+			for(auto d : dims) {
+				ret *= d;
+			}
+
+			return ret;
+		}
+
+		inline bool element_is_valid(const Array &index) const
+		{
+			for(int i = 0; i < Dim; ++i) {
+				if(index[i] < 0 || index[i] >= dims[i]) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		inline Integer n_nodes(const Integer dim) const
+		{
+			return dims[dim] + 1;
+		}
+
 		inline Integer n_nodes() const
 		{
 			Integer ret = 1;
@@ -224,8 +306,9 @@ namespace utopia {
 			return ret;
 		}
 
-		Array dims;
 
+		//fields
+		Array dims;
 		Mapping map;
 		Mapping inverse_map;
 	};
@@ -259,17 +342,16 @@ namespace utopia {
 			const std::vector<long> &ownership_ranges,
 			const std::shared_ptr<MeshBase> &to_mesh,
 			const std::shared_ptr<DofMap>   &to_dofs,
-			std::vector<std::shared_ptr<SparseMatrix> > &B,
+			std::vector<std::shared_ptr<SparseMatrix>> &mats,
 			const TransferOptions &opts = TransferOptions())
 		{
 			moonolith::Communicator comm(to_mesh->comm().get());
 
+			mats.resize(assembler_->n_forms());
+
 			pre_assemble(comm, from_mesh.n_nodes(), to_dofs->n_dofs());
 			Index index;
 			Vector emin, emax;
-			// std::vector<ElementMatrix> elemmat;
-			// std::vector<double> local_element_matrices_sum(assembler_->n_forms(), 0.);
-
 			std::vector<libMesh::dof_id_type> temp_slave_dofs;
 			std::vector<long> master_dofs, slave_dofs;
 
@@ -290,13 +372,15 @@ namespace utopia {
 					}
 				}
 
-				from_mesh.hash_range(emin, emax, index);
+				from_mesh.elements_in_range(emin, emax, index);
 				if(index.empty()) continue;
 
 				for(auto ind : index) {
 					// polyhedron(grid, ind, from_poly);
 					auto temp_mesh = build_element_mesh(to_mesh->comm(), from_mesh, ind);
 					auto grid_elem = temp_mesh->elem(0);
+
+					
 
 					for(auto &mat_i : elemmat) {
 						mat_i.zero();
@@ -309,9 +393,16 @@ namespace utopia {
 						to_dofs->variable_type(opts.to_var_num),
 						elemmat)) {
 
+						++n_intersections_;
+					
+						// temp_mesh->prepare_for_use();
+						// plot_mesh(*temp_mesh, "grid/m" + std::to_string(ind));
+
 						for(std::size_t i = 0; i < elemmat.size(); ++i) {	
 							auto &mat_i = elemmat[i];
 							auto partial_sum = std::accumulate(mat_i.get_values().begin(), mat_i.get_values().end(), libMesh::Real(0.0));
+
+							// std::cout << "(" << e.id() << ", " << ind << ") -> " << partial_sum << std::endl;
 							assert(!std::isnan(partial_sum));
 							local_element_matrices_sum[i] += partial_sum;
 
@@ -376,9 +467,10 @@ namespace utopia {
 			auto n_local_dofs_from = ownership_ranges[comm.rank() + 1] - ownership_ranges[comm.rank()];
 
 			for(std::size_t i = 0; i < mat_buffer.size(); ++i) {
-				post_assemble(comm, n_local_dofs_from, to_dofs, opts, i);
+				post_assemble(comm, n_local_dofs_from, to_dofs, opts, mats, i);
 			}
 
+			print_stats(comm);
 			return true;
 		}
 
@@ -428,6 +520,8 @@ namespace utopia {
 
 		void init_buffers(const SizeType n)
 		{
+			assert(n > 0);
+			n_intersections_ = 0;
 			mat_buffer.resize(n);
 			elemmat.resize(n);
 			local_element_matrices_sum.resize(n);
@@ -438,9 +532,14 @@ namespace utopia {
 			const std::size_t n_local_dofs_from,
 			const std::shared_ptr<DofMap> &to_dofs,
 			const TransferOptions &opts,
+			std::vector<std::shared_ptr<SparseMatrix>> &mats,
 			std::size_t buffer_num)
 		{
-			SparseMatrix &mat = *mats_[buffer_num];
+			if(!mats[buffer_num]) {
+				mats[buffer_num] = std::make_shared<SparseMatrix>();
+			}
+
+			SparseMatrix &mat = *mats[buffer_num];
 
 			libMesh::dof_id_type n_dofs_on_proc_trial = 0;
 			libMesh::dof_id_type n_dofs_on_proc_test  = 0;
@@ -528,7 +627,7 @@ namespace utopia {
 			Integer cell_index)
 		{
 			
-			Array index_min = grid.index(cell_index);
+			Array index_min = grid.element_index(cell_index);
 			Array index_max = index_min;
 
 			for(auto &i : index_max) {
@@ -613,14 +712,13 @@ namespace utopia {
 
 
 			mesh->add_elem(elem.release());
-			mesh->prepare_for_use();
 			return std::move(mesh);
 		}
 
 			//compatibility method
 		inline void polyhedron(
 			const Grid<Dim> &grid,
-			const Integer cell_index,
+			const Integer cell_hash,
 			Polyhedron &poly)
 		{
 			assert(Dim == 3);
@@ -630,7 +728,8 @@ namespace utopia {
 			poly.n_nodes = 8;
 			poly.type    = P_MESH_TYPE_HEX;
 
-			Array index_min = grid.index(cell_index);
+			Array index_min; 
+			grid.element_index_from_hash(cell_hash, index_min);
 			Array index_max = index_min;
 
 			for(auto &i : index_max) {
@@ -743,6 +842,32 @@ namespace utopia {
 			poly.type = P_MESH_TYPE_HEX;
 		}
 
+		void print_stats(moonolith::Communicator &comm)
+		{
+			{
+				auto l2_assembler = std::dynamic_pointer_cast<L2LocalAssembler>(assembler_);
+				if(l2_assembler) {
+					double total_intersection_volume = l2_assembler->get_q_builder().get_total_intersection_volume();
+
+					double volumes[2] = { local_element_matrices_sum[0], total_intersection_volume };
+					comm.all_reduce(volumes, 2, moonolith::MPISum());
+					comm.all_reduce(&n_intersections_, 1, moonolith::MPISum());
+
+					if(comm.is_root()) {
+						std::cout << "sum(B): " 
+								  << volumes[0] 
+								  << ", vol(I): " 
+								  << volumes[1]
+								  << ", n_intersections: "
+								  << n_intersections_ 
+								  << std::endl;
+					}
+
+					// moonolith::root_describe("vol(I_local) : " + std::to_string(total_intersection_volume), comm, std::cout);
+				}
+			}
+		}
+
 	public:
 		std::shared_ptr<LocalAssembler> assembler_;
 		std::shared_ptr<Local2Global> local2global_;
@@ -751,7 +876,7 @@ namespace utopia {
 		std::vector< libMesh::Real > local_element_matrices_sum;
 
 		std::vector< std::shared_ptr< moonolith::SparseMatrix<double> > > mat_buffer;
-		std::vector<std::shared_ptr<SparseMatrix>> mats_;
+		long n_intersections_;
 	};
 }
 
