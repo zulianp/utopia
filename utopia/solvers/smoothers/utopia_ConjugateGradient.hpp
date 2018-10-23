@@ -1,9 +1,3 @@
-/*
- * @Author: alenakopanicakova
- * @Date:   2016-06-06
- * @Last Modified by:   alenakopanicakova
- * @Last Modified time: 2016-11-06
- */
 #ifndef UTOPIA_CONJUGATE_GRAD_H
 #define UTOPIA_CONJUGATE_GRAD_H
 

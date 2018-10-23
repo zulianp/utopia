@@ -9,13 +9,14 @@ namespace  utopia
 
     template<class Matrix, class Vector>
     class GeneralizedCauchyPoint : public TRBoxSubproblem<Matrix, Vector>, 
-                                   public MatrixFreeSolverInterface<Matrix, Vector>
+                                   public MatrixFreeLinearSolver<Vector>
     {
         typedef UTOPIA_SCALAR(Vector) Scalar;
 
         typedef utopia::LinearSolver<Matrix, Vector>            LinearSolver;
         typedef utopia::TRBoxSubproblem<Matrix, Vector>         TRBoxSubproblem;
 
+        using IterativeSolver<Matrix, Vector>::solve;
 
         public:
             GeneralizedCauchyPoint(  const Parameters params = Parameters()):
@@ -44,25 +45,29 @@ namespace  utopia
             }
 
             virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
-            {
-                return inner_solve(g, s, constraints, H); 
+            {   
+                auto H_ptr = utopia::op(make_ref(H));
+                return aux_solve(*H_ptr, g, s, constraints); 
             };
 
-            virtual bool tr_constrained_solve(const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
+            virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints) override
             {
-                return inner_solve(g, s, constraints); 
+                return aux_solve(H, g, s, constraints); 
             }
 
+            virtual bool solve(const Operator<Vector> &A, const Vector &rhs, Vector &sol) override
+            {
+                utopia_error("GeneralizedCauchyPoint: solve is missing implementation.... \n"); 
+                // no box constraints... 
+                // aux_solve(A, rhs, s); 
+                return false; 
+            }
 
         private:
 
 
-            bool inner_solve(const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints, const Matrix &H = Matrix() )
+            bool aux_solve(const Operator<Vector> &H,  const Vector &g, Vector &s, const BoxConstraints<Vector> & constraints)
             {
-                bool approx_flg = false; 
-                if(empty(H))
-                    approx_flg = true; 
-
 
                 Scalar f_p, f_pp, t_current, t_next, dt, gd, delta_diff;
                 Vector break_points, sorted_break_points, active_set, e, Hd; 
@@ -88,10 +93,7 @@ namespace  utopia
                 d = d - e; 
                 gd = dot(g, d); 
 
-                if(approx_flg)
-                    this->apply_H(d, Hd); 
-                else
-                    Hd = H*d; 
+                H.apply(d, Hd);
 
 
                 while(it < num_uniq_break_points && !converged)
@@ -131,10 +133,7 @@ namespace  utopia
                     gd = gd - dot(g, e); 
                     
                     Vector help; 
-                    if(approx_flg)
-                        this->apply_H(e, help); 
-                    else
-                        help = H*e; 
+                    H.apply(e, help); 
 
                     Hd = Hd - help; 
                     it++; 

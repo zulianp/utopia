@@ -62,8 +62,7 @@ namespace  utopia
             virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const BoxConstraints & up_constrain) = 0; 
         
 
-            // to be removed... 
-            virtual bool tr_constrained_solve(const Vector &g, Vector &s, const BoxConstraints & constraints)
+            virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const BoxConstraints & constraints)
             {
                 return false;
             };

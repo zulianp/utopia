@@ -12,7 +12,7 @@ namespace utopia
 		
 			void run_dense()
 			{
-				UTOPIA_RUN_TEST(quasi_newton_test);
+				// UTOPIA_RUN_TEST(quasi_newton_test);
 
 
 				// UTOPIA_RUN_TEST(Quasi_TR_test); 
@@ -20,15 +20,13 @@ namespace utopia
 
 			void run_sparse()
 			{
-				UTOPIA_RUN_TEST(quasi_newton_lbfgs_test); 
-				UTOPIA_RUN_TEST(quasi_newton_matrix_form_lbfgs_test); 
-				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+				// UTOPIA_RUN_TEST(quasi_newton_lbfgs_test); 
+				// UTOPIA_RUN_TEST(quasi_newton_matrix_form_lbfgs_test); 
+
+
+				UTOPIA_RUN_TEST(TR_constraint_GCP_test);
 				// UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test); 
-
-
 				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test)
-
-
 				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 				// UTOPIA_RUN_TEST(quick_test); 
@@ -150,29 +148,29 @@ namespace utopia
 				utopia_test_assert(approxeq(expected_1, x));	
 			}			
 
-		 //    void TR_constraint_GCP_test()
-		 //    {
-		 //    	Bratu1D<Matrix, Vector> fun(_n);
-		 //    	Vector x = values(_n, 1.0);
-		 //    	fun.apply_bc_to_initial_guess(x);
+		    void TR_constraint_GCP_test()
+		    {
+		    	Bratu1D<Matrix, Vector> fun(_n);
+		    	Vector x = values(_n, 1.0);
+		    	fun.apply_bc_to_initial_guess(x);
 
-		 //    	DVectord ub, lb;
-		 //    	fun.generate_constraints(lb, ub);
-		 //    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+		    	DVectord ub, lb;
+		    	fun.generate_constraints(lb, ub);
+		    	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
 
-		 //    	Parameters params;
-			// 	params.atol(1e-6);
-			// 	params.rtol(1e-10);
-			// 	params.stol(1e-10);
-			// 	params.verbose(_verbose);
+		    	Parameters params;
+				params.atol(1e-6);
+				params.rtol(1e-10);
+				params.stol(1e-10);
+				params.verbose(_verbose);
 
-		 //        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
+		        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
 
-		 //        TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
-		 //        tr_solver.set_box_constraints(box);
-			// 	tr_solver.set_parameters(params);
-			// 	tr_solver.solve(fun, x);
-		 //    }
+		        TrustRegionVariableBound<Matrix, Vector>  tr_solver(qp_solver);
+		        tr_solver.set_box_constraints(box);
+				tr_solver.set_parameters(params);
+				tr_solver.solve(fun, x);
+		    }
 
 		 //    void QuasiTR_constraint_GCP_test()
 		 //    {
