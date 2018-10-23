@@ -338,7 +338,7 @@ namespace utopia
 
 
 		QuasiNewtonTest()
-		: _n(10), _verbose(true) { }
+		: _n(100), _verbose(true) { }
 		
 	private:
 		int _n;

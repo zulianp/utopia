@@ -87,13 +87,13 @@ namespace  utopia
 
                     // alternative solution is to do full Newton step and then make iterate feasible by projecting back to the boundary
                     Scalar alpha_star = compute_alpha_max(0*s, lb_new, ub_new, local_corr); 
-                    std::cout<<"alpha_star: "<< alpha_star << " \n"; 
+                    // std::cout<<"alpha_star: "<< alpha_star << " \n"; 
                     s += alpha_star * local_corr;    
                     
                 }
                 else
                 {
-                    std::cout<<"------- Projected CG method --------- \n"; 
+                    // std::cout<<"------- Projected CG method --------- \n"; 
                     Vector  local_corr = 0*s; 
 
                     Vector lb_new = *lb - s; 
@@ -141,7 +141,7 @@ namespace  utopia
 
                     alpha_max = compute_alpha_max(x, lb, ub, d); 
 
-                    // std::cout<<"alpha: "<< alpha << "  alpha_max: "<< alpha_max << "  \n"; 
+                   //  std::cout<<"alpha: "<< alpha << "  alpha_max: "<< alpha_max << "  \n"; 
 
                     if(alpha > alpha_max)
                     {
@@ -169,7 +169,7 @@ namespace  utopia
 
                     it++; 
 
-                    // std::cout<<"  it: "<< it <<  "  alpha: "<<alpha <<  "  alpha_max: "<<alpha_max <<"   betta:  "<< betta << " ||r||  "<<  norm2(r) << "  \n"; 
+                   // std::cout<<"  it: "<< it <<  "  alpha: "<<alpha <<  "  alpha_max: "<<alpha_max <<"   betta:  "<< betta << " ||r||  "<<  norm2(r) << "  \n"; 
 
                 }
 

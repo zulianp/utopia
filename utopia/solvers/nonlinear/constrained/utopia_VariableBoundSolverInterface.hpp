@@ -123,10 +123,6 @@ namespace utopia
             const auto &ub = *constraints_.upper_bound();
             const auto &lb = *constraints_.lower_bound();
 
-            disp(ub); 
-            disp(lb); 
-            disp(x); 
-
             {
               Read<Vector> r_ub(ub), r_lb(lb), r_x(x_old);
               Write<Vector> wv(x); 
@@ -138,8 +134,6 @@ namespace utopia
                           else
                             return (ui <= xi) ? ui : xi; }   );
             }
-
-            disp(x); 
         }
         else if(constraints_.has_upper_bound() && !constraints_.has_lower_bound())
         {
