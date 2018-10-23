@@ -12,7 +12,7 @@ namespace utopia
 		
 			void run_dense()
 			{
-				// UTOPIA_RUN_TEST(quasi_newton_test);
+				UTOPIA_RUN_TEST(quasi_newton_test);
 
 
 				// UTOPIA_RUN_TEST(Quasi_TR_test); 
@@ -20,11 +20,11 @@ namespace utopia
 
 			void run_sparse()
 			{
-				// UTOPIA_RUN_TEST(quasi_newton_lbfgs_test); 
-				// UTOPIA_RUN_TEST(quasi_newton_matrix_form_lbfgs_test); 
-
-
+				UTOPIA_RUN_TEST(quasi_newton_lbfgs_test); 
+				UTOPIA_RUN_TEST(quasi_newton_matrix_form_lbfgs_test); 
 				UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+
+				
 				// UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test); 
 				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test)
 				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 

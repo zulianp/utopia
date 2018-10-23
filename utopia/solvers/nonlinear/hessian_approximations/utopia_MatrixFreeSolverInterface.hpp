@@ -122,7 +122,8 @@ private:
 
 
 
-    // TODO:: do checks if action is inverse ...
+    
+    // TODO:: fix me, use precond with inverse action instead... 
     template<class Vector>
     class QuasiLinearSolver: public MatrixFreeLinearSolver<Vector>
     {
