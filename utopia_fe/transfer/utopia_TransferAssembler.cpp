@@ -219,49 +219,6 @@ namespace utopia {
 			}
 		}
 
-		// void pre_assemble()
-		// {
-		// 	const std::size_t n_forms = mat_buffer.size();
-			
-		// 	for(std::size_t i = 0; i < n_forms; ++i) {
-		// 		mat_buffer[i] = std::make_shared< moonolith::SparseMatrix<double> >(comm);
-		// 		local_element_matrices_sum[i] = 0.;
-
-		// 		switch(assembler->type(i)) {
-					
-		// 			case LocalAssembler::MASTER_X_SLAVE: 
-		// 			{
-		// 				mat_buffer[i]->set_size(to_dofs->n_dofs(), from_dofs->n_dofs());
-		// 				break;
-		// 			}
-
-		// 			case LocalAssembler::SLAVE_X_SLAVE:
-		// 			{
-		// 				mat_buffer[i]->set_size(to_dofs->n_dofs(), to_dofs->n_dofs());
-		// 				break;
-		// 			}
-
-		// 			case LocalAssembler::MASTER_X_MASTER:
-		// 			{
-		// 				mat_buffer[i]->set_size(from_dofs->n_dofs(), from_dofs->n_dofs());
-		// 				break;
-		// 			}
-
-		// 			case LocalAssembler::SLAVE_X_MASTER: 
-		// 			{
-		// 				mat_buffer[i]->set_size(from_dofs->n_dofs(), to_dofs->n_dofs());
-		// 				break;
-		// 			}
-
-		// 			default:
-		// 			{
-		// 				assert(false);
-		// 				break;
-		// 			}
-		// 		}
-		// 	}
-		// }
-
 		bool assemble(Adapter &master,
 					  Adapter &slave)
 		{
@@ -283,166 +240,8 @@ namespace utopia {
 					master_dofs = master.dof_map();
 					slave_dofs  = slave.dof_map();
 				}
-				);
-
-			// for(auto &mat_i : elemmat) {
-			// 	mat_i.zero();
-			// }
-
-			// if(assembler->assemble(master_el, master_type, slave_el, slave_type, elemmat)) {
-				
-			// 	for(std::size_t i = 0; i < elemmat.size(); ++i) {	
-			// 		auto &mat_i = elemmat[i];
-			// 		auto partial_sum = std::accumulate(mat_i.get_values().begin(), mat_i.get_values().end(), libMesh::Real(0.0));
-			// 		local_element_matrices_sum[i] += partial_sum;
-
-			// 		switch(assembler->type(i)) {
-						
-			// 			case LocalAssembler::MASTER_X_SLAVE: 
-			// 			{
-			// 				const auto &master_dofs = master.dof_map();
-			// 				const auto &slave_dofs  = slave.dof_map();
-
-			// 				local2global->apply(master_dofs, slave_dofs, elemmat[i], *mat_buffer[i]);
-			// 				break;
-			// 			}
-
-			// 			case LocalAssembler::SLAVE_X_SLAVE:
-			// 			{
-			// 				const auto &slave_dofs  = slave.dof_map();
-
-			// 				local2global->apply(slave_dofs, slave_dofs, elemmat[i], *mat_buffer[i]);
-			// 				break;
-			// 			}
-
-			// 			case LocalAssembler::MASTER_X_MASTER:
-			// 			{
-			// 				const auto &master_dofs  = master.dof_map();
-
-			// 				local2global->apply(master_dofs, master_dofs, elemmat[i], *mat_buffer[i]);
-			// 				break;
-			// 			}
-
-			// 			case LocalAssembler::SLAVE_X_MASTER: 
-			// 			{
-			// 				const auto &master_dofs = master.dof_map();
-			// 				const auto &slave_dofs  = slave.dof_map();
-
-			// 				local2global->apply(slave_dofs, master_dofs, elemmat[i], *mat_buffer[i]);
-			// 				break;
-			// 			}
-
-			// 			default:
-			// 			{
-			// 				assert(false);
-			// 				break;
-			// 			}
-			// 		}
-			// 	}
-
-			// 	return true;
-			// } else {
-			// 	return false;
-			// }
+			);
 		}
-
-		// void print_stats()
-		// {
-		// 	double total_intersection_volume = 0.;
-		// 	{
-		// 		auto l2_assembler = std::dynamic_pointer_cast<L2LocalAssembler>(assembler);
-		// 		if(l2_assembler) {
-		// 			total_intersection_volume = l2_assembler->get_q_builder().get_total_intersection_volume();
-
-		// 			double volumes[2] = { local_element_matrices_sum[0], total_intersection_volume };
-		// 			comm.all_reduce(volumes, 2, moonolith::MPISum());
-
-		// 			if(comm.is_root()) {
-		// 				std::cout << "sum(B): " 
-		// 						  << volumes[0] 
-		// 						  << ", vol(I): " 
-		// 						  << volumes[1] << std::endl;
-		// 			}
-
-		// 			// moonolith::root_describe("vol(I_local) : " + std::to_string(total_intersection_volume), comm, std::cout);
-		// 		}
-		// 	}
-		// }
-
-		// void post_assemble(std::size_t buffer_num)
-		// {
-		// 	SparseMatrix &mat = *mats_[buffer_num];
-
-		// 	libMesh::dof_id_type n_dofs_on_proc_trial = 0;
-		// 	libMesh::dof_id_type n_dofs_on_proc_test  = 0;
-
-		// 	switch(assembler->type(buffer_num)) {
-				
-		// 		case LocalAssembler::MASTER_X_SLAVE: 
-		// 		{
-		// 			n_dofs_on_proc_trial = from_dofs->n_local_dofs();
-		// 			n_dofs_on_proc_test  = to_dofs->n_local_dofs();
-		// 			break;
-		// 		}
-
-		// 		case LocalAssembler::SLAVE_X_SLAVE:
-		// 		{
-		// 			n_dofs_on_proc_trial = to_dofs->n_local_dofs();
-		// 			n_dofs_on_proc_test  = to_dofs->n_local_dofs();
-		// 			break;
-		// 		}
-
-		// 		case LocalAssembler::MASTER_X_MASTER:
-		// 		{
-		// 			n_dofs_on_proc_trial = from_dofs->n_local_dofs();
-		// 			n_dofs_on_proc_test  = from_dofs->n_local_dofs();
-		// 			break;
-		// 		}
-
-		// 		case LocalAssembler::SLAVE_X_MASTER: 
-		// 		{
-		// 			n_dofs_on_proc_trial = to_dofs->n_local_dofs();
-		// 			n_dofs_on_proc_test  = from_dofs->n_local_dofs();
-		// 			break;
-		// 		}
-
-		// 		default:
-		// 		{
-		// 			assert(false);
-		// 			break;
-		// 		}
-		// 	}
-
-		// 	local2global->redistribute(comm, n_dofs_on_proc_trial, n_dofs_on_proc_test, *mat_buffer[buffer_num]);
-
-		// 	SizeType m_max_row_entries = mat_buffer[buffer_num]->local_max_entries_x_col();
-		// 	comm.all_reduce(&m_max_row_entries, 1, moonolith::MPIMax());
-
-		// 	USparseMatrix mat_x = utopia::local_sparse(n_dofs_on_proc_test, n_dofs_on_proc_trial, m_max_row_entries);
-
-		// 	{
-		// 		utopia::Write<utopia::USparseMatrix> write(mat_x);
-		// 		for (auto it = mat_buffer[buffer_num]->iter(); it; ++it) {
-		// 			mat_x.set(it.row(), it.col(), *it);
-
-		// 		}
-		// 	}
-
-		// 	if(opts.n_var == 1) {
-		// 		mat = std::move(mat_x);
-		// 		return;
-		// 	}
-
-		// 	auto s_mat_x = local_size(mat_x);
-		// 	mat = local_sparse(s_mat_x.get(0), s_mat_x.get(1), opts.n_var * m_max_row_entries);
-
-		// 	utopia::Write<USparseMatrix> w_mat(mat);
-		// 	utopia::each_read(mat_x, [&](const utopia::SizeType i, const utopia::SizeType j, const double value) {
-		// 		for(utopia::SizeType d = 0; d < opts.n_var; ++d) {
-		// 			mat.set(i + d, j + d, value);
-		// 		}
-		// 	});
-		// }
 
 		bool assemble(std::vector<std::shared_ptr<SparseMatrix> > &mats)
 		{
@@ -456,7 +255,6 @@ namespace utopia {
 				}
 			}
 
-			// init_buffers(assembler->n_forms());
 			mats_ = mats;
 			return assemble_aux();
 		}
@@ -494,19 +292,9 @@ namespace utopia {
 				serializer.write(ownerrank, recvrank, begin, end, data, out);
 			};
 
-			// long n_false_positives = 0, n_intersections = 0;
-
 			auto fun = [&](Adapter &master, Adapter &slave) -> bool {
-				if(this->assemble(master, slave)) {
-					// n_intersections++;
-					return true;
-				} else {
-					// n_false_positives++;
-					return false;
-				}
+				return this->assemble(master, slave);
 			};
-
-			// pre_assemble();
 
 			pg_assembler_.initialize(
 				comm,
@@ -523,23 +311,6 @@ namespace utopia {
 
 			pg_assembler_.finalize(mats_);
 			pg_assembler_.print_stats();
-			// print_stats();
-			
-			// for(std::size_t i = 0; i < mats_.size(); ++i) {
-			// 	post_assemble(i);
-			// }
-
-			// long n_total_candidates = n_intersections + n_false_positives;
-			// long n_collection[3] = {n_intersections, n_total_candidates, n_false_positives};
-
-			// comm.all_reduce(n_collection, 3, moonolith::MPISum());
-
-			// if (comm.is_root()) {
-			// 	std::cout << "n_intersections: " << n_collection[0]
-			// 	<< ", n_total_candidates: " 	 << n_collection[1]
-			// 	<< ", n_false_positives: " 	     << n_collection[2] << std::endl;
-			// }
-
 			return true;
 		}
 
@@ -612,13 +383,6 @@ namespace utopia {
 			MOONOLITH_EVENT_END("create_adapters");
 		}
 
-		// void init_buffers(const SizeType n)
-		// {
-		// 	mat_buffer.resize(n);
-		// 	elemmat.resize(n);
-		// 	local_element_matrices_sum.resize(n);
-		// }
-
 	private:
 		std::shared_ptr<MeshBase> from_mesh;
 		std::shared_ptr<DofMap>   from_dofs;
@@ -636,18 +400,12 @@ namespace utopia {
 		std::shared_ptr<NTreeT> tree;
 		std::shared_ptr<FESpacesAdapter> local_spaces;
 
-		// std::vector< libMesh::DenseMatrix<libMesh::Real> > elemmat;
-		// std::vector< libMesh::Real > local_element_matrices_sum;
-
-		// std::vector< std::shared_ptr< moonolith::SparseMatrix<double> > > mat_buffer;
-		
 		private_::PetrovGalerkinAssembler pg_assembler_;
 		std::vector<std::shared_ptr<SparseMatrix>> mats_;
 	};
 
 	template class DefaultAlgorithm<2>;
 	template class DefaultAlgorithm<3>;
-
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
