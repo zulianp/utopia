@@ -36,7 +36,7 @@ namespace utopia {
             PetrovGalerkinAssembler();
             
             //dof_fun(master_dofs, slave_dofs)
-            void assemble(const Elem &master,
+            bool assemble(const Elem &master,
                           FEType master_type,
                           const Elem &slave,
                           FEType slave_type,
@@ -69,6 +69,7 @@ namespace utopia {
             SizeType to_n_dofs_;
             SizeType to_n_local_dofs_;
             long n_intersections_;
+            long n_false_positives_;
             
             std::vector< libMesh::DenseMatrix<libMesh::Real> > elemmat_;
             std::vector< libMesh::Real > local_element_matrices_sum_;

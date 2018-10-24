@@ -7,7 +7,7 @@ namespace utopia {
 		PetrovGalerkinAssembler::PetrovGalerkinAssembler()
 		{}
 
-		void PetrovGalerkinAssembler::assemble(
+		bool PetrovGalerkinAssembler::assemble(
 			const Elem &master,
 			FEType master_type,
 			const Elem &slave,
@@ -69,8 +69,11 @@ namespace utopia {
 					}
 				}
 			}  
+
+			return true;
 		} else {
-                   //count false positives 
+			n_false_positives_++;
+			return false;
 		}
 	}
 
@@ -95,6 +98,7 @@ namespace utopia {
 		to_n_local_dofs_ = to_n_local_dofs;
 
 		n_intersections_ = 0;
+		n_false_positives_ = 0;
 
 		init_buffers();
 	}
@@ -244,18 +248,22 @@ namespace utopia {
         auto l2_assembler = std::dynamic_pointer_cast<L2LocalAssembler>(assembler_);
         if(l2_assembler) {
             double total_intersection_volume = l2_assembler->get_q_builder().get_total_intersection_volume();
-
             double volumes[2] = { local_element_matrices_sum_[0], total_intersection_volume };
+            long isect_stats[2] = { n_intersections_, n_false_positives_};
             comm_.all_reduce(volumes, 2, moonolith::MPISum());
-            comm_.all_reduce(&n_intersections_, 1, moonolith::MPISum());
+            comm_.all_reduce(isect_stats, 2, moonolith::MPISum());
 
             if(comm_.is_root()) {
                 std::cout << "sum(B): " 
                           << volumes[0] 
                           << ", vol(I): " 
                           << volumes[1]
+                          << "\nn_candidates: "
+                          << (isect_stats[0] + isect_stats[1])
                           << ", n_intersections: "
-                          << n_intersections_ 
+                          << isect_stats[0]
+                          << ", n_false_positives: "
+                          << isect_stats[1] 
                           << std::endl;
             }
 
