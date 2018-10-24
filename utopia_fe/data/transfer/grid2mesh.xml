@@ -1,31 +1,30 @@
 <transfer>
-	<!-- <type>approx-l2-projection</type> -->
-	<type>interpolation</type>
+	<type>approx-l2-projection</type>
+	<!-- <type>interpolation</type> -->
 	<!-- <type>l2-projection</type> -->
-	<!-- <biorth-basis>0</biorth-basis> -->
-	<function>-z</function>
-	<enumerate-nodes>true</enumerate-nodes>
+	<biorth-basis>0</biorth-basis>
+	<function>x*z*y</function>
+	<!-- <enumerate-nodes>true</enumerate-nodes> -->
 
 	<!-- <force-shell>true</force-shell> -->
-	<!-- <assemble-mass-mat>1</assemble-mass-mat> -->
+	<assemble-mass-mat>1</assemble-mass-mat>
 	<!-- <function-type>constant</function-type> -->
 	<!-- <function>1.</function> -->
 
 	<!-- MASTER -->
 	<master>
 		<grid>		
-			<n-x>16</n-x>
-			<n-y>80</n-y>
-			<n-z>160</n-z>
+			<n-x>15</n-x>
+			<n-y>15</n-y>
+			<n-z>15</n-z>
 
-
-			<min-x>0.</min-x>
-			<min-y>0.</min-y>
-			<min-z>0.</min-z>
+			<min-x>-1.</min-x>
+			<min-y>-1.</min-y>
+			<min-z>-1.</min-z>
 			
 			<max-x>1.</max-x>
-			<max-y>5.</min-y>
-			<max-z>10.</min-z>
+			<max-y>1.</min-y>
+			<max-z>1.</min-z>
 			
 		</grid>
 		<!-- <ownership> -->
@@ -36,12 +35,17 @@
 	<!-- SLAVE -->
 	<slave>
 		<mesh>
-			<type>cube</type>
+			<type>sphere</type>
+			<radius>1.</radius>
+			<sphere-refine>4</sphere-refine>
+
+			<!-- <type>cube</type> -->
 			<elem-type>hex</elem-type>
 			<order>1</order>			
-			<n-x>16</n-x>
-			<n-y>80</n-y>
-			<n-z>160</n-z>
+		<!-- 	
+			<n-x>3</n-x>
+			<n-y>15</n-y>
+			<n-z>30</n-z>
 
 			<min-x>0.</min-x>
 			<min-y>0.</min-y>
@@ -49,7 +53,7 @@
 			
 			<max-x>1.</max-x>
 			<max-y>5.</min-y>
-			<max-z>10.</min-z>
+			<max-z>10.</min-z> -->
 		</mesh>
 		<space></space>
 	</slave>
