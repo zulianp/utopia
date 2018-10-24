@@ -1,8 +1,8 @@
 #ifndef UTOPIA_GRID_MESH_TRANSFER_HPP
 #define UTOPIA_GRID_MESH_TRANSFER_HPP
 
-
 #include "utopia.hpp"
+#include "utopia_Grid.hpp"
 #include "utopia_TransferAssembler.hpp"
 #include "utopia_L2LocalAssembler.hpp"
 #include "utopia_QMortarBuilder.hpp"
@@ -12,7 +12,6 @@
 #include "utopia_make_unique.hpp"
 #include "utopia_Socket.hpp"
 
-#include "moonolith_static_math.hpp"
 #include "libmesh/serial_mesh.h"
 #include <functional>
 #include <array>
@@ -20,308 +19,9 @@
 
 namespace utopia {
 
-	//grid defined in unit-cube
-	template<int Dim>
-	class Grid {
+	
+	class Grid2MeshTransferAssembler {
 	public:
-		using Scalar  = double;
-		using Integer = long;
-		using SizeT   = std::size_t;
-
-		using Vector  = moonolith::Vector<Scalar, Dim>;
-		using Array   = std::array<Integer, Dim>;
-		using Mapping = std::function<Vector (const Vector &)>;
-		using Index   = std::vector<Integer>;
-
-		//////////////////// Points, Nodes, and DOFs //////////////////
-
-		inline Vector point(const Integer &hash) const
-		{
-			Array index;
-			node_index_from_hash(hash, index);
-			return point(index);
-		}
-
-		inline Vector point(const Array &index) const
-		{
-			Vector ret;
-			for(int i = 0; i < Dim; ++i) {
-				assert(index[i] <= dims[i]);
-				ret[i] = static_cast<Scalar>(index[i])/(dims[i]);
-			}
-
-			return map(ret);
-		}
-
-		inline Integer node_hash_from_index(const Array &coord) const
-		{
-			Integer result = coord[0];
-
-			for(int i = 1; i < Dim; ++i) {
-				result *= dims[i] + 1;
-				result += coord[i];
-			}
-
-			return result;
-		}
-
-		inline void node_index_from_hash(const Integer hash, Array &coord) const
-		{
-			Integer current = hash;
-			const Integer last = Dim - 1;
-
-			for(Integer i = last; i >= 0; --i) {
-				const Integer next = current / (dims[i] + 1);
-				coord[i] = current - next * (dims[i] + 1);
-				current = next;	
-			}
-
-			assert(hash == this->node_hash_from_index(coord));
-		}
-
-		template<typename IntT>
-		void dofs(const Integer cell_hash, std::vector<IntT> &dof_indices) const
-		{
-			dof_indices.resize(moonolith::StaticPow<2, Dim>::value);
-
-			auto imin = element_index(cell_hash);
-			auto imax = imin;
-
-			for(auto &i : imax) {++i; }
-
-			if(Dim == 3) {
-
-				/*
-				* HEX8:   7        6
-				*         o--------o
-				*        /:       /|
-				*       / :      / |
-				*    4 /  :   5 /  |
-				*     o--------o   |
-				*     |   o....|...o 2
-				*     |  .3    |  /
-				*     | .      | /
-				*     |.       |/
-				*     o--------o
-				*     0        1
-				*/
-
-				dof_indices[0] = node_hash_from_index(imin);
-				dof_indices[1] = node_hash_from_index({ imax[0], imin[1], imin[2] });
-				dof_indices[2] = node_hash_from_index({ imax[0], imax[1], imin[2] });
-				dof_indices[3] = node_hash_from_index({ imin[0], imax[1], imin[2] });
-				dof_indices[4] = node_hash_from_index({ imin[0], imin[1], imax[2] });
-				dof_indices[5] = node_hash_from_index({ imax[0], imin[1], imax[2] });
-				dof_indices[6] = node_hash_from_index(imax);
-				dof_indices[7] = node_hash_from_index({ imin[0], imax[1], imax[2] });
-			} else {
-				assert(false && "implement me");
-			}
-		}
-
-		//////////////////// element access ////////////////////////
-
-		inline Array element_index(const Integer hash) const
-		{
-			Array ret;
-			element_index_from_hash(hash, ret);
-			return ret;
-		}
-
-		inline Integer element_hash(const Vector &y) const
-		{
-			Vector x = inverse_map(y);
-			Integer result = floor(x[0] * dims[0]);
-
-			Integer total_dim = dims[0];
-
-			for(int i = 1; i < Dim; ++i) {
-				result *= dims[i];
-				result += floor(x[i] * dims[i]);
-				total_dim *= dims[i];
-			}
-
-			if(result >= total_dim || result < 0) {
-				printf("error -> %ld\n", result);
-			}
-
-			assert(result < n_elements());
-			return result;
-		}
-
-		inline Integer element_hash(const Array &coord) const
-		{
-			return element_hash_from_index(coord);
-		}
-
-		//z and y major
-		inline Integer element_hash_from_index(const Array &coord) const
-		{
-			assert(element_is_valid(coord));
-
-			Integer result = coord[0];
-
-			for(int i = 1; i < Dim; i++) {
-				result *= dims[i];
-				result += coord[i];
-			}
-
-			assert(result < n_elements());
-			return result;
-		}
-
-		inline void element_index_from_hash(const Integer hash, Array &coord) const
-		{
-			Integer current = hash;
-			const Integer last = Dim - 1;
-
-			for(Integer i = last; i >= 0; --i) {
-				const Integer next = current / dims[i];
-				coord[i] = current - next * dims[i];
-				current = next;	
-			}
-
-			assert(hash == this->element_hash_from_index(coord));
-			assert(element_is_valid(coord));
-		}
-
-		void elements_in_range(
-			const Vector &min,
-			const Vector &max,
-			Index &hashes) const
-		{
-			hashes.clear();
-
-			Array imin, imax;
-
-			auto im_min = inverse_map(min);
-			auto im_max = inverse_map(max);
-
-			//generate tensor indices
-			for(int i = 0; i < Dim; ++i) {
-				imin[i] = std::max(
-					Integer(0),
-					Integer(floor(im_min[i] * dims[i]))
-				);
-			}
-
-			for(int i = 0; i < Dim; ++i) {
-				imax[i] = std::min(
-					Integer(floor(im_max[i] * dims[i])),
-					Integer(dims[i] - 1)
-				);
-			}
-
-			assert(element_is_valid(imin));
-			assert(element_is_valid(imax));
-
-			//FIXME make more general for greater dim and extract to class
-			Array coord;
-			if(Dim == 1) {
-				for(int i = imin[0]; i <= imax[0]; ++i) {
-					coord[0] = i;
-
-					auto h = element_hash(coord); assert(h < n_elements());
-					hashes.push_back(h);
-				}
-
-			} else if(Dim == 2) {
-				for(int i = imin[0]; i <= imax[0]; ++i) {
-					for(int j = imin[1]; j <= imax[1]; ++j) {
-						coord[0] = i;
-						coord[1] = j;
-
-						auto h = element_hash(coord); assert(h < n_elements());
-						hashes.push_back(h);
-					}
-				}
-			} else if(Dim == 3) {
-				for(int i = imin[0]; i <= imax[0]; ++i) {
-					for(int j = imin[1]; j <= imax[1]; ++j) {
-						for(int k = imin[2]; k <= imax[2]; ++k) {
-							coord[0] = i;
-							coord[1] = j;
-							coord[2] = k;
-
-							auto h = element_hash(coord); assert(h < n_elements());
-							hashes.push_back(h);
-						}
-					}
-				}
-			} else {
-				assert(false && "dim > 3 not supported yet!");
-			}
-
-			assert(!hashes.empty());
-		}
-
-
-		Grid()
-		{
-			map = [](const Vector &x) -> Vector { return x; };
-			inverse_map = map;
-			std::fill(std::begin(dims), std::end(dims), 0);
-		}
-
-		inline Integer n_elements(const Integer dim) const
-		{
-			return dims[dim];
-		}
-
-		inline Integer n_elements() const
-		{
-			Integer ret = 1;
-
-			for(auto d : dims) {
-				ret *= d;
-			}
-
-			return ret;
-		}
-
-		inline bool element_is_valid(const Array &index) const
-		{
-			for(int i = 0; i < Dim; ++i) {
-				if(index[i] < 0 || index[i] >= dims[i]) {
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		inline Integer n_nodes(const Integer dim) const
-		{
-			return dims[dim] + 1;
-		}
-
-		inline Integer n_nodes() const
-		{
-			Integer ret = 1;
-
-			for(auto d : dims) {
-				ret *= (d + 1);
-			}
-
-			return ret;
-		}
-
-
-		//fields
-		Array dims;
-		Mapping map;
-		Mapping inverse_map;
-	};
-
-	template<int Dim>
-	class GridMeshTransfer {
-	public:
-		using Vector = typename Grid<Dim>::Vector;
-		using Array  = typename Grid<Dim>::Array;
-		using Index  = typename Grid<Dim>::Index;
-		using Scalar = typename Grid<Dim>::Scalar;
-		using Integer = typename Grid<Dim>::Integer;
-
 		using FunctionSpace = utopia::LibMeshFunctionSpace;
 		using SparseMatrix  = utopia::USparseMatrix;
 		using MeshBase      = libMesh::MeshBase;
@@ -329,14 +29,13 @@ namespace utopia {
 
 		using ElementMatrix = LocalAssembler::Matrix;
 
-		GridMeshTransfer(
+		Grid2MeshTransferAssembler(
 			const std::shared_ptr<LocalAssembler> &assembler,
 			const std::shared_ptr<Local2Global>   &local2global)
 		: assembler_(assembler), local2global_(local2global)
-		{
+		{}
 
-		}
-
+		template<int Dim>
 		bool assemble(
 			const Grid<Dim> &from_mesh,
 			const std::vector<long> &ownership_ranges,
@@ -345,6 +44,12 @@ namespace utopia {
 			std::vector<std::shared_ptr<SparseMatrix>> &mats,
 			const TransferOptions &opts = TransferOptions())
 		{
+			using Vector  = typename Grid<Dim>::Vector;
+			using Array   = typename Grid<Dim>::Array;
+			using Index   = typename Grid<Dim>::Index;
+			using Scalar  = typename Grid<Dim>::Scalar;
+			using Integer = typename Grid<Dim>::Integer;
+
 			moonolith::Communicator comm(to_mesh->comm().get());
 
 			mats.resize(assembler_->n_forms());
@@ -380,11 +85,12 @@ namespace utopia {
 					auto temp_mesh = build_element_mesh(to_mesh->comm(), from_mesh, ind);
 					auto grid_elem = temp_mesh->elem(0);
 
-					
-
 					for(auto &mat_i : elemmat) {
 						mat_i.zero();
 					}
+
+					// temp_mesh->prepare_for_use();
+					// plot_mesh(*temp_mesh, "grid/m" + std::to_string(ind));
 
 					if(assembler_->assemble(
 						*grid_elem,
@@ -395,14 +101,10 @@ namespace utopia {
 
 						++n_intersections_;
 					
-						// temp_mesh->prepare_for_use();
-						// plot_mesh(*temp_mesh, "grid/m" + std::to_string(ind));
-
 						for(std::size_t i = 0; i < elemmat.size(); ++i) {	
 							auto &mat_i = elemmat[i];
 							auto partial_sum = std::accumulate(mat_i.get_values().begin(), mat_i.get_values().end(), libMesh::Real(0.0));
 
-							// std::cout << "(" << e.id() << ", " << ind << ") -> " << partial_sum << std::endl;
 							assert(!std::isnan(partial_sum));
 							local_element_matrices_sum[i] += partial_sum;
 
@@ -612,8 +314,8 @@ namespace utopia {
 			});
 		}
 
-
-		inline libMesh::FEType grid_elem_type(const Grid<3> &grid)
+		template<int Dim>
+		inline libMesh::FEType grid_elem_type(const Grid<Dim> &grid)
 		{
 			libMesh::FEType type;
 			// type.family = libMesh::LAGRANGE;
@@ -623,19 +325,69 @@ namespace utopia {
 
 		inline std::unique_ptr<libMesh::SerialMesh> build_element_mesh(
 			const libMesh::Parallel::Communicator &comm,
-			const Grid<3> &grid,
-			Integer cell_index)
+			const Grid<2> &grid,
+			Grid<2>::Integer cell_index)
 		{
-			
-			Array index_min = grid.element_index(cell_index);
-			Array index_max = index_min;
+			auto index_min = grid.element_index(cell_index);
+			auto index_max = index_min;
 
 			for(auto &i : index_max) {
 				++i;
 			}
 
-			Vector p_min = grid.point(index_min);
-			Vector p_max = grid.point(index_max);
+			auto p_min = grid.point(index_min);
+			auto p_max = grid.point(index_max);
+
+			auto mesh = make_unique<libMesh::SerialMesh>(comm, 2);
+			mesh->reserve_nodes(4);
+			
+			libMesh::Point p;
+			//point 0
+			p(0) = p_min.x;
+			p(1) = p_min.y;
+			mesh->add_point(p);
+
+			//point 1
+			p(0) = p_max.x;
+			p(1) = p_min.y;
+			mesh->add_point(p);
+
+			//point 2
+			p(0) = p_max.x;
+			p(1) = p_max.y;
+			mesh->add_point(p);
+
+			//point 3
+			p(0) = p_min.x;
+			p(1) = p_max.y;
+			mesh->add_point(p);
+
+			auto elem = libMesh::Elem::build(libMesh::QUAD4);
+
+			for (int i = 0; i < 4; ++i) {
+				elem->set_node(i) = & mesh->node(i);
+			}
+
+
+			mesh->add_elem(elem.release());
+			return std::move(mesh);
+		}
+
+		inline std::unique_ptr<libMesh::SerialMesh> build_element_mesh(
+			const libMesh::Parallel::Communicator &comm,
+			const Grid<3> &grid,
+			Grid<3>::Integer cell_index)
+		{
+			
+			auto index_min = grid.element_index(cell_index);
+			auto index_max = index_min;
+
+			for(auto &i : index_max) {
+				++i;
+			}
+
+			auto p_min = grid.point(index_min);
+			auto p_max = grid.point(index_max);
 
 				/*
 				* HEX8:   7        6
@@ -652,7 +404,7 @@ namespace utopia {
 				*     0        1
 				*/
 
-			auto mesh = make_unique<libMesh::SerialMesh>(comm, Dim);
+			auto mesh = make_unique<libMesh::SerialMesh>(comm, 3);
 			mesh->reserve_nodes(8);
 			
 			libMesh::Point p;
@@ -714,134 +466,7 @@ namespace utopia {
 			mesh->add_elem(elem.release());
 			return std::move(mesh);
 		}
-
-			//compatibility method
-		inline void polyhedron(
-			const Grid<Dim> &grid,
-			const Integer cell_hash,
-			Polyhedron &poly)
-		{
-			assert(Dim == 3);
-
-			poly.n_elements = 6;
-			poly.n_dims  = Dim;
-			poly.n_nodes = 8;
-			poly.type    = P_MESH_TYPE_HEX;
-
-			Array index_min; 
-			grid.element_index_from_hash(cell_hash, index_min);
-			Array index_max = index_min;
-
-			for(auto &i : index_max) {
-				++i;
-			}
-
-			Vector p_min = grid.point(index_min);
-			Vector p_max = grid.point(index_max);
-
-				/*
-				* HEX8:   7        6
-				*         o--------o
-				*        /:       /|
-				*       / :      / |
-				*    4 /  :   5 /  |
-				*     o--------o   |
-				*     |   o....|...o 2
-				*     |  .3    |  /
-				*     | .      | /
-				*     |.       |/
-				*     o--------o
-				*     0        1
-				*/
-
-				//point 0
-			poly.points[0] = p_min.x;
-			poly.points[1] = p_min.y;
-			poly.points[2] = p_min.z;
-
-				//point 1
-			poly.points[3] = p_max.x;
-			poly.points[4] = p_min.y;
-			poly.points[5] = p_min.z;
-
-				//point 2
-			poly.points[6] = p_max.x;
-			poly.points[7] = p_max.y;
-			poly.points[8] = p_min.z;
-
-				//point 3
-			poly.points[6] = p_min.x;
-			poly.points[7] = p_min.y;
-			poly.points[8] = p_max.z;
-
-				//point 4
-			poly.points[6] = p_min.x;
-			poly.points[7] = p_max.y;
-			poly.points[8] = p_min.z;
-
-				//point 5
-			poly.points[9]  = p_max.x;
-			poly.points[10] = p_min.y;
-			poly.points[11] = p_max.z;
-
-				//point 6
-			poly.points[12] = p_max.x;
-			poly.points[13] = p_max.y;
-			poly.points[14] = p_max.z;
-
-				//point 7
-			poly.points[15] = p_min.x;
-			poly.points[16] = p_max.y;
-			poly.points[17] = p_max.z;
-
-				//el pointer
-			poly.el_ptr[0] = 0;
-			poly.el_ptr[1] = 4;
-			poly.el_ptr[2] = 8;
-			poly.el_ptr[3] = 12;
-			poly.el_ptr[4] = 16;
-			poly.el_ptr[5] = 20;
-			poly.el_ptr[6] = 24;
-
-				//face 0
-			poly.el_index[0] = 0;
-			poly.el_index[1] = 1;
-			poly.el_index[2] = 5;
-			poly.el_index[3] = 4;
-
-				//face 1
-			poly.el_index[4] = 1;
-			poly.el_index[5] = 2;
-			poly.el_index[6] = 6;
-			poly.el_index[7] = 5;
-
-				//face 2
-			poly.el_index[8]  = 3;
-			poly.el_index[9]  = 7;
-			poly.el_index[10] = 6;
-			poly.el_index[11] = 2;
-
-				//face 3
-			poly.el_index[12] = 0;
-			poly.el_index[13] = 4;
-			poly.el_index[14] = 7;
-			poly.el_index[15] = 3;
-
-				//face 4
-			poly.el_index[16] = 2;
-			poly.el_index[17] = 1;
-			poly.el_index[18] = 0;
-			poly.el_index[19] = 3;
-
-				//face 5
-			poly.el_index[20] = 6;
-			poly.el_index[21] = 7;
-			poly.el_index[22] = 4;
-			poly.el_index[23] = 5;
-
-			poly.type = P_MESH_TYPE_HEX;
-		}
-
+		
 		void print_stats(moonolith::Communicator &comm)
 		{
 			{

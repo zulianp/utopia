@@ -1,0 +1,52 @@
+<transfer>
+	<!-- <type>approx-l2-projection</type> -->
+	<!-- <type>interpolation</type> -->
+	<type>l2-projection</type>
+	<!-- <biorth-basis>0</biorth-basis> -->
+	<function>-x*y</function>
+	<!-- <enumerate-nodes>true</enumerate-nodes> -->
+
+	<!-- <force-shell>true</force-shell> -->
+	<!-- <assemble-mass-mat>1</assemble-mass-mat> -->
+	<!-- <function-type>constant</function-type> -->
+	<function>1.</function>
+	<print-info>true</print-info>
+
+	<!-- MASTER -->
+	<master>
+		<dim>2</dim>
+		<grid>	
+			<n-x>10</n-x>
+			<n-y>13</n-y>
+
+			<min-x>0.</min-x>
+			<min-y>0.</min-y>
+			
+			<max-x>1.</max-x>
+			<max-y>1.</min-y>
+			
+		</grid>
+		<!-- <ownership> -->
+		<!-- </ownership> -->
+		<space></space>
+	</master>
+
+	<!-- SLAVE -->
+	<slave>
+		<mesh>
+			<type>square</type>
+			<elem-type>quad</elem-type>
+			<order>1</order>			
+			<n-x>10</n-x>
+			<n-y>10</n-y>
+
+			<min-x>0.</min-x>
+			<min-y>0.</min-y>
+
+			<max-x>1.</max-x>
+			<max-y>1.</min-y>
+		</mesh>
+		<space></space>
+	</slave>
+	
+</transfer>

@@ -1,0 +1,56 @@
+<transfer>
+	<!-- <type>approx-l2-projection</type> -->
+	<!-- <type>interpolation</type> -->
+	<type>l2-projection</type>
+	<biorth-basis>0</biorth-basis>
+	<function>-z</function>
+	<!-- <enumerate-nodes>true</enumerate-nodes> -->
+
+	<!-- <force-shell>true</force-shell> -->
+	<!-- <assemble-mass-mat>1</assemble-mass-mat> -->
+	<!-- <function-type>constant</function-type> -->
+	<!-- <function>1.</function> -->
+
+	<!-- MASTER -->
+	<master>
+			<mesh>
+			<type>cube</type>
+			<elem-type>hex</elem-type>
+			<order>1</order>			
+			<n-x>16</n-x>
+			<n-y>80</n-y>
+			<n-z>180</n-z>
+
+			<min-x>0.</min-x>
+			<min-y>0.</min-y>
+			<min-z>0.</min-z>
+			
+			<max-x>1.</max-x>
+			<max-y>5.</min-y>
+			<max-z>10.</min-z>
+		</mesh>
+		<space></space>
+	</master>
+
+	<!-- SLAVE -->
+	<slave>
+		<mesh>
+			<type>cube</type>
+			<elem-type>hex</elem-type>
+			<order>1</order>			
+			<n-x>16</n-x>
+			<n-y>80</n-y>
+			<n-z>180</n-z>
+
+			<min-x>0.</min-x>
+			<min-y>0.</min-y>
+			<min-z>0.</min-z>
+			
+			<max-x>1.</max-x>
+			<max-y>5.</min-y>
+			<max-z>10.</min-z>
+		</mesh>
+		<space></space>
+	</slave>
+	
+</transfer>
