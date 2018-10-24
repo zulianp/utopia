@@ -19,12 +19,12 @@ namespace utopia
 			void run_sparse()
 			{
 				UTOPIA_RUN_TEST(quasi_newton_lbfgs_test); 
-				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
 				UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test); 
-				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
 				UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
 				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 
+				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
 				
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 			}			
@@ -272,7 +272,7 @@ namespace utopia
 				params.rtol(1e-10);
 				params.stol(1e-10);
 				params.verbose(_verbose);
-				params.max_it(1000); 
+				params.max_it(20); 
 				params.delta0(1); 
 
 				auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);	

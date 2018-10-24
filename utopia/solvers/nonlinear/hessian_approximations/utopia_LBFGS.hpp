@@ -39,6 +39,7 @@ namespace utopia
                 b_.resize(m_);                 
 
                 rho_.resize(m_); 
+                Sb_dots_.resize(m_, std::vector<Scalar>(m_));
 
                 return true;
             }   
@@ -81,6 +82,8 @@ namespace utopia
                     Scalar ys = 1./std::pow(denom, 1./2.); 
                     b_[current_m_] = ys * y; 
 
+                    if(current_m_ > 0)
+                        dots(S_[current_m_], b_, Sb_dots_[current_m_]); 
                 }
                 else
                 {
@@ -89,13 +92,24 @@ namespace utopia
                     rho_[0] = 1./denom; 
 
                     Scalar ys = 1./std::pow(denom, 1./2.); 
-                    b_[0] = ys * y;                     
+                    b_[0] = ys * y;    
 
                     std::rotate(Y_.begin(), Y_.begin() + 1, Y_.end());
                     std::rotate(S_.begin(), S_.begin() + 1, S_.end());  
 
                     std::rotate(rho_.begin(), rho_.begin() + 1, rho_.end());  
                     std::rotate(b_.begin(), b_.begin() + 1, b_.end());  
+
+                    dots(S_[m_-1], b_, Sb_dots_[0]); 
+                    std::rotate(Sb_dots_.begin(), Sb_dots_.begin() + 1, Sb_dots_.end());  
+
+
+                    for(auto i=0; i < Sb_dots_.size()-1; i++){
+                        for(auto j=1; j < Sb_dots_.size(); j++){
+                            Sb_dots_[i][j-1] = Sb_dots_[i][j]; 
+                        }
+                    }
+
                 }
 
                 current_m_++; 
@@ -173,10 +187,11 @@ namespace utopia
 
                     for(auto i = 0; i < k; i++)
                     {
-                        Scalar bS = dot(b_[i], S_[k]) ; 
+                        // Scalar bS = dot(b_[i], S_[k]) ; 
                         Scalar aS = dot(a_[i], S_[k]); 
 
-                        a_[k] += bS * b_[i]; 
+                        // a_[k] += bS * b_[i]; 
+                        a_[k] += Sb_dots_[k][i] * b_[i]; 
                         a_[k] -= aS * a_[i]; 
                     }
 
@@ -203,9 +218,9 @@ namespace utopia
 
             std::vector<Vector > b_; 
             std::vector<Vector > a_; 
-
-
             std::vector<Scalar > rho_; 
+
+            std::vector<std::vector<Scalar> > Sb_dots_; 
 
 
         };
