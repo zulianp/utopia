@@ -12,23 +12,21 @@ namespace utopia
 		
 			void run_dense()
 			{
-				// UTOPIA_RUN_TEST(quasi_newton_test);
-
-
-				// UTOPIA_RUN_TEST(Quasi_TR_test); 
+				UTOPIA_RUN_TEST(quasi_newton_test);
+				UTOPIA_RUN_TEST(Quasi_TR_test); 
 			}
 
 			void run_sparse()
 			{
-				// UTOPIA_RUN_TEST(quasi_newton_lbfgs_test); 
-				// UTOPIA_RUN_TEST(quasi_newton_matrix_form_lbfgs_test); 
-				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-				// UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test); 
-				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
-				// UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
+				UTOPIA_RUN_TEST(quasi_newton_lbfgs_test); 
+				UTOPIA_RUN_TEST(quasi_newton_matrix_form_lbfgs_test); 
+				UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+				UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test); 
+				UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+				UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
+				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 
-
-				// UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
+				
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 			}			
 
@@ -77,6 +75,62 @@ namespace utopia
 				Vector expected_rosenbrock = values(2, 1.0);
 
 				utopia_test_assert(approxeq(x0, expected_rosenbrock));
+			}
+
+			void Quasi_TR_test_LBFGS()
+			{
+				auto memory_size = 7; 
+
+				Bratu1D<Matrix, Vector> fun(_n);
+	    		Vector x = values(_n, 1.0);
+	    		fun.apply_bc_to_initial_guess(x);
+
+				auto hess_approx_BFGS = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);
+				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
+				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+				// subproblem->verbose(true);
+
+				QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
+				tr_solver.atol(1e-5); 
+				tr_solver.rtol(1e-9);
+				tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
+
+				tr_solver.max_it(50); 
+				tr_solver.verbose(_verbose);
+				tr_solver.delta0(1); 
+				tr_solver.solve(fun, x);
+			}		
+
+			void Quasi_TR_test()
+			{
+				// rosenbrock test
+				if(mpi_world_size() == 1)
+				{
+					Rosenbrock<Matrix, Vector> rosenbrock;
+					Vector expected_rosenbrock = values(2, 1);
+
+					auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
+					subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+					subproblem->atol(1e-10);
+
+					Vector x0 = values(2, 2.0);
+
+					QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
+					tr_solver.atol(1e-6); 
+					tr_solver.rtol(1e-9);
+
+					auto hes_approx   = std::make_shared<BFGS<Matrix, Vector> >();
+					hes_approx->set_update_hessian(true); 
+
+					tr_solver.set_hessian_approximation_strategy(hes_approx);
+
+					tr_solver.max_it(100); 
+					tr_solver.verbose(_verbose);
+					tr_solver.delta0(1); 
+					tr_solver.solve(rosenbrock, x0);
+
+					utopia_test_assert(approxeq(expected_rosenbrock, x0));
+				}
 			}
 
 			void quasi_newton_lbfgs_test()
@@ -263,69 +317,6 @@ namespace utopia
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		    // ST should be able to take into account Quasi matrices
-			// void Quasi_TR_test()
-			// {
-			// 	// rosenbrock test
-			// 	if(mpi_world_size() == 1)
-			// 	{
-			// 		Rosenbrock<Matrix, Vector> rosenbrock;
-			// 		Vector expected_rosenbrock = values(2, 1);
-
-			// 		auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
-			// 		subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
-			// 		subproblem->atol(1e-10);
-
-			// 		Vector x0 = values(2, 2.0);
-
-			// 		QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
-			// 		tr_solver.atol(1e-6); 
-			// 		tr_solver.rtol(1e-9);
-
-			// 		auto hes_approx   = std::make_shared<BFGS<Matrix, Vector> >();
-			// 		hes_approx->set_update_hessian(true); 
-
-			// 		tr_solver.set_hessian_approximation_strategy(hes_approx);
-
-			// 		tr_solver.max_it(100); 
-			// 		tr_solver.verbose(_verbose);
-			// 		tr_solver.delta0(1); 
-			// 		tr_solver.solve(rosenbrock, x0);
-
-			// 		utopia_test_assert(approxeq(expected_rosenbrock, x0));
-			// 	}
-			// }
-
-
-			// void Quasi_TR_test_LBFGS()
-			// {
-			// 	auto memory_size = 7; 
-
-			// 	Bratu1D<Matrix, Vector> fun(_n);
-	  //   		Vector x = values(_n, 0.0);
-	  //   		fun.apply_bc_to_initial_guess(x);
-
-	  //   		auto linear_solver = std::make_shared<GMRES<Matrix, Vector> >();
-			// 	auto hess_approx_BFGS = std::make_shared<MatrixFormLBFGS<Matrix, Matrix,  Vector> >(memory_size, linear_solver);
-
-
-			// 	auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector> >();
-			// 	subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
-			// 	subproblem->atol(1e-10);
-
-			// 	QuasiTrustRegion<Matrix, Vector> tr_solver(subproblem);
-			// 	tr_solver.atol(1e-4); 
-			// 	tr_solver.rtol(1e-9);
-
-			// 	tr_solver.set_hessian_approximation_strategy(hess_approx_BFGS);
-
-			// 	tr_solver.max_it(100); 
-			// 	tr_solver.verbose(_verbose);
-			// 	tr_solver.delta0(1); 
-			// 	tr_solver.solve(fun, x);
-			// }			
-
-
 			// void QuasiNewtonBoundTest()
 			// {
 			// 	auto memory_size = 5; 
@@ -384,7 +375,7 @@ namespace utopia
 		#endif
 
 		#ifdef WITH_BLAS
-				// QuasiNewtonTest<Matrixd, Vectord>().run_dense();
+				QuasiNewtonTest<Matrixd, Vectord>().run_dense();
 		#endif //WITH_BLAS
 
 		// #ifdef WITH_TRILINOS

@@ -61,7 +61,7 @@
          bool converged = false;
          NumericalTollerance<Scalar> tol(this->atol(), this->rtol(), this->stol());
 
-         Scalar delta, product, ared, pred, rho, E, E_k, E_k1;// alpha;
+         Scalar delta, product, ared, pred, rho, E_taken, E_old, E_new;// alpha;
 
          SizeType it = 0;
          it_successful_ = 0;
@@ -69,8 +69,7 @@
 
          bool rad_flg = false;
 
-         Vector g, y = local_zeros(local_size(x_k).get(0)), p_k = local_zeros(local_size(x_k).get(0)); 
-         Matrix H;
+         Vector g, y = local_zeros(local_size(x_k).get(0)), p_k = local_zeros(local_size(x_k).get(0)), x_trial; 
 
         // #define DEBUG_mode
 
@@ -106,31 +105,22 @@
         // solve starts here
         while(!converged)
         {
-          fun.value(x_k, E_k);
+          fun.value(x_k, E_old);
     //----------------------------------------------------------------------------
     //     new step p_k w.r. ||p_k|| <= delta
     //----------------------------------------------------------------------------
-          // this should be replaced ASAP .... 
-          H = hessian_approx_strategy_->get_Hessian(); 
-
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
-            tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
+          {
+            auto multiplication_action = FunctionOperator<Vector>(hessian_approx_strategy_->get_apply_H()); 
+            tr_subproblem->tr_constrained_solve(multiplication_action, g, p_k, delta);             
+          }
 
-
-          // hessian_approx_strategy_->apply_Hinv(-1.0 * g, p_k); 
+          x_trial = x_k + p_k; 
 
           // scaling correction to fit into tr radius ... 
           s_norm = norm2(p_k);
 
-          // alpha = 1.0; 
-          // while(s_norm >= delta)
-          // {
-          //   alpha *= 0.8;  // shrinking alpha 
-          //   s_norm = norm2(alpha*p_k);
-          // }
-
-          // p_k = alpha*p_k; 
-
+          // compute tr ratio... 
           Scalar l_term = dot(g, p_k);
           Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
           pred = - l_term - 0.5 * qp_term; 
@@ -144,11 +134,11 @@
           }
 
           // value of the objective function with correction
-          fun.value(x_k + p_k, E_k1);
+          fun.value(x_trial, E_new);
           product = dot(g, p_k);            // just to do tests
 
           // decrease ratio
-          ared = E_k - E_k1;                // reduction observed on objective function
+          ared = E_old - E_new;                // reduction observed on objective function
           pred = std::abs(pred);
           rho = ared/ pred;               // decrease ratio
 
@@ -175,13 +165,18 @@
             y = g; 
             fun.gradient(x_k, g);
             y = g - y; 
+
+            E_taken = E_new; 
             
-            E = E_k1; 
           }
           // otherwise, keep old point
           else
           {
-            E = E_k; 
+            Vector grad_trial; 
+            fun.gradient(x_trial, grad_trial);
+            y = grad_trial - g;       
+
+            E_taken = E_old;
           }
 
           hessian_approx_strategy_->update(p_k, y);
@@ -194,10 +189,10 @@
 
           #ifdef DEBUG_mode
             if(this->verbose_)
-              PrintInfo::print_iter_status(it, {g_norm, r_norm, product, E, E_k, E_k1, ared, pred, rho, delta, s_norm});
+              PrintInfo::print_iter_status(it, {g_norm, r_norm, product, E_taken, E_old, E_new, ared, pred, rho, delta, s_norm});
           #else
             if(this->verbose_)
-              PrintInfo::print_iter_status(it, {g_norm, r_norm, E, E_k1, rho, delta, s_norm});
+              PrintInfo::print_iter_status(it, {g_norm, r_norm, E_taken, E_new, rho, delta, s_norm});
           #endif
 
             converged = TrustRegionBase<Matrix, Vector>::check_convergence(*this, tol, this->max_it(), it, g_norm, r_norm, 9e9, delta);

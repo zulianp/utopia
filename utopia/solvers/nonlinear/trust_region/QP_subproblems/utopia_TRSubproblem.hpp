@@ -4,8 +4,8 @@
 * @Last Modified by:   Alena Kopanicakova
 * @Last Modified time: 2017-07-03
 */
-#ifndef TR_SUBPROBLEM
-#define TR_SUBPROBLEM
+#ifndef TR_SUBPROBLEM_L2NORM_HPP
+#define TR_SUBPROBLEM_L2NORM_HPP
 #include <string>
 #include "utopia_IterativeSolver.hpp"
 
@@ -129,7 +129,15 @@ namespace  utopia
 
         virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const Scalar & tr_radius)
         {
-            return false;
+            this->current_radius(tr_radius);
+
+            if(this->precond_) 
+            {
+                return preconditioned_solve(H, g, s);
+            } else {
+                return unpreconditioned_solve(H, g, s);
+            }
+            return true;
         };
 
         virtual bool tr_constrained_solve(const Matrix &H, const Vector &g, Vector &p_k, const Scalar & tr_radius)
@@ -164,7 +172,7 @@ namespace  utopia
           */
          virtual void set_preconditioner(const std::shared_ptr<Preconditioner> &precond)
          {
-             precond_ = precond;
+            precond_ = precond;
          }
 
          /*! @brief if overriden the subclass has to also call this one first.
@@ -191,4 +199,4 @@ namespace  utopia
     };
 }
 
-#endif //TR_SUBPROBLEM
+#endif //TR_SUBPROBLEM_L2NORM_HPP

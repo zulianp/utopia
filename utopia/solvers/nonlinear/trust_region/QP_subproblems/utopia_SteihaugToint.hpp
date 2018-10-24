@@ -1,5 +1,5 @@
-#ifndef UTOPIA_TR_SUBPROBLEM_STEIHAUG_TOINT_HPP
-#define UTOPIA_TR_SUBPROBLEM_STEIHAUG_TOINT_HPP
+#ifndef UTOPIA_TR_L2_SUBPROBLEM_STEIHAUG_TOINT_HPP
+#define UTOPIA_TR_L2_SUBPROBLEM_STEIHAUG_TOINT_HPP
 #include "utopia_TRSubproblem.hpp"
 #include "utopia_IterativeSolver.hpp"
 #include "utopia_Preconditioner.hpp"
@@ -19,7 +19,8 @@ namespace utopia
     public:
 
     	using TRSubproblem<Matrix, Vector>::tr_constrained_solve; 
-		using TRSubproblem<Matrix, Vector>::solve; 
+    	using TRSubproblem<Matrix, Vector>::set_preconditioner; 
+    	
 
     	SteihaugToint(const Parameters params = Parameters()):
     				  TRSubproblem<Matrix, Vector>(params)
@@ -52,23 +53,10 @@ namespace utopia
             return false; 
         }
 
-        virtual bool tr_constrained_solve(const Operator<Vector> &H, const Vector &g, Vector &s, const Scalar & tr_radius) override
+	public:
+        virtual bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr) override
         {
         	init(local_size(g).get(0)); 
-        	this->current_radius(tr_radius);
-
-        	if(this->precond_) {
-                return preconditioned_solve(H, g, s);
-            } else {
-                return unpreconditioned_solve(H, g, s);
-            }
-            return false;
-        }
-
-
-	protected:
-        bool unpreconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &corr) override
-        {
 			r = -1 * g; 
 			v_k = r; 
 	    	Scalar alpha, g_norm, d_B_d, z, z1;
@@ -125,8 +113,9 @@ namespace utopia
         }
 
 
-        bool preconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &s_k) override
+        virtual bool preconditioned_solve(const Operator<Vector> &B, const Vector &g, Vector &s_k) override
         {
+        	init(local_size(g).get(0)); 
         	bool converged = false;
             SizeType it=0; 
 
@@ -162,7 +151,8 @@ namespace utopia
 	    		else
 	    			alpha_termination = std::sqrt(r2/g_norm);  // grad. step is outside of tr boundary, project on the boundary
 
-	    		s_k -= alpha_termination * r;  
+	    		if(std::isfinite(alpha_termination))
+	    			s_k -= alpha_termination * r;  
 
 	    		return true; 
 	    	}   
@@ -178,7 +168,9 @@ namespace utopia
 	    		{
 	    			Scalar term1 = sMp*sMp + (p_norm  * (r2 - s_norm)); 
 		    		Scalar tau = (std::sqrt(term1) - sMp)/p_norm; 
-		    		s_k += tau * p_k; 
+
+		    		if(std::isfinite(tau))
+		    			s_k += tau * p_k; 
 
 	    			return true;
 	    		}
@@ -193,12 +185,18 @@ namespace utopia
 	    		{	
 	    			Scalar term1 = sMp*sMp + (p_norm  * (r2 - s_norm)); 
 		    		Scalar tau = (std::sqrt(term1) - sMp)/p_norm; 
-		    		s_k += tau * p_k; 
+
+		    		if(std::isfinite(tau))
+		    			s_k += tau * p_k; 
 
 	    			return true;
 	    		}
 
-				s_k += alpha * p_k; 	    		
+	    		if(std::isfinite(alpha))
+					s_k += alpha * p_k; 	    		
+				else
+					return false; 
+
 	    		r += alpha * B_p_k; 
 
 	    		v_k = local_zeros(local_size(r));

@@ -87,7 +87,6 @@ namespace utopia
 
             virtual bool apply_H(const Vector & v, Vector & result) const override
             {
-                std::cout<<"apply_H: update_hessian_: "<< update_hessian_ << "  \n"; 
                 if(update_hessian_ && this->initialized())
                     result = H_prev_ * v; 
                 else
