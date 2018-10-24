@@ -6,8 +6,6 @@
 
 namespace utopia
 {
-
-
 	/**
 	 * @brief      Class for Steihaug Toint conjugate gradient.
 	 */
@@ -20,6 +18,7 @@ namespace utopia
 
     	using TRSubproblem<Matrix, Vector>::tr_constrained_solve; 
     	using TRSubproblem<Matrix, Vector>::set_preconditioner; 
+    	using TRSubproblem<Matrix, Vector>::solve; 
     	
 
     	SteihaugToint(const Parameters params = Parameters()):

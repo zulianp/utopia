@@ -77,6 +77,10 @@ namespace utopia
                     Y_[current_m_]      = y; 
                     S_[current_m_]      = s; 
                     rho_[current_m_]    = 1./denom; 
+
+                    Scalar ys = 1./std::pow(denom, 1./2.); 
+                    b_[current_m_] = ys * y; 
+
                 }
                 else
                 {
@@ -84,10 +88,14 @@ namespace utopia
                     S_[0]   = s; 
                     rho_[0] = 1./denom; 
 
+                    Scalar ys = 1./std::pow(denom, 1./2.); 
+                    b_[0] = ys * y;                     
+
                     std::rotate(Y_.begin(), Y_.begin() + 1, Y_.end());
                     std::rotate(S_.begin(), S_.begin() + 1, S_.end());  
 
                     std::rotate(rho_.begin(), rho_.begin() + 1, rho_.end());  
+                    std::rotate(b_.begin(), b_.begin() + 1, b_.end());  
                 }
 
                 current_m_++; 
@@ -161,9 +169,6 @@ namespace utopia
 
                 for(auto k =0; k < current_memory_size; k++)
                 {
-                    Scalar ys = 1./std::pow(dot(Y_[k], S_[k]), 1./2.); 
-                    
-                    b_[k] = ys * Y_[k]; 
                     a_[k] = (theta_*H0_) * S_[k]; 
 
                     for(auto i = 0; i < k; i++)
