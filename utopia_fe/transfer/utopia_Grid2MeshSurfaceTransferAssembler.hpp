@@ -1,5 +1,5 @@
-#ifndef UTOPIA_GRID_MESH_TRANSFER_HPP
-#define UTOPIA_GRID_MESH_TRANSFER_HPP
+#ifndef UTOPIA_GRID_2_MESH_SURFACE_TRANSFER_ASSEMBLER_HPP
+#define UTOPIA_GRID_2_MESH_SURFACE_TRANSFER_ASSEMBLER_HPP
 
 #include "utopia.hpp"
 #include "utopia_Grid.hpp"
@@ -20,9 +20,10 @@
 #include <array>
 #include <vector>
 
+
 namespace utopia {
 
-	class Grid2MeshTransferAssembler {
+	class Grid2MeshSurfaceTransferAssembler {
 	public:
 		using FunctionSpace = utopia::LibMeshFunctionSpace;
 		using SparseMatrix  = utopia::USparseMatrix;
@@ -31,7 +32,7 @@ namespace utopia {
 
 		using ElementMatrix = LocalAssembler::Matrix;
 
-		Grid2MeshTransferAssembler(
+		Grid2MeshSurfaceTransferAssembler(
 			const std::shared_ptr<LocalAssembler> &assembler,
 			const std::shared_ptr<Local2Global>   &local2global)
 		: assembler_(assembler), local2global_(local2global)
@@ -64,7 +65,7 @@ namespace utopia {
 				n_local_dofs_from,
 				to_dofs->n_dofs(),
 				to_dofs->n_local_dofs()
-			);
+				);
 
 			Index index;
 			Vector emin, emax;
@@ -75,39 +76,50 @@ namespace utopia {
 			for(auto it = to_mesh->active_local_elements_begin(); it != to_mesh->active_local_elements_end(); ++it) {
 				const auto &e = **it;
 
-				for(int i = 0; i < Dim; ++i) {
-					emin[i] = std::numeric_limits<Scalar>::max();
-					emax[i] = -std::numeric_limits<Scalar>::max();
-				}
-
-				for(auto k = 0; k < e.n_nodes(); ++k) {
-					for(int i = 0; i < Dim; ++i) {
-						emin[i] = std::min(emin[i], e.node_ref(k)(i));
-						emax[i] = std::max(emax[i], e.node_ref(k)(i));
+				for(uint side_num = 0; side_num < e.n_sides(); ++side_num) {
+					if(e.neighbor_ptr(side_num) != nullptr) {
+						continue;
 					}
-				}
 
-				from_mesh.elements_in_range(emin, emax, index);
-				if(index.empty()) continue;
+					auto side_elem_ptr = e.build_side_ptr(side_num);
+					auto &side_elem = *side_elem_ptr;
 
-				for(auto ind : index) {
-					auto temp_mesh = Voxel2Element::build(to_mesh->comm(), from_mesh, ind);
-					auto grid_elem = temp_mesh->elem(0);
+					for(int i = 0; i < Dim; ++i) {
+						emin[i] = std::numeric_limits<Scalar>::max();
+						emax[i] = -std::numeric_limits<Scalar>::max();
+					}
+
+					for(auto k = 0; k < side_elem.n_nodes(); ++k) {
+						for(int i = 0; i < Dim; ++i) {
+							emin[i] = std::min(emin[i], side_elem.node_ref(k)(i));
+							emax[i] = std::max(emax[i], side_elem.node_ref(k)(i));
+						}
+					}
+
+					from_mesh.elements_in_range(emin, emax, index);
+					if(index.empty()) continue;
+
+					//detect face that is aligned or almost with side of voxel grid and mark voxel neighs
+
+					for(auto ind : index) {
+						auto temp_mesh = Voxel2Element::build(to_mesh->comm(), from_mesh, ind);
+						auto grid_elem = temp_mesh->elem(0);
 
 					// temp_mesh->prepare_for_use();
 					// plot_mesh(*temp_mesh, "grid/m" + std::to_string(ind));
-					pg_assembler_.assemble(
-						*grid_elem,
-						from_elem_type,
-						e,
-						to_dofs->variable_type(opts.to_var_num),
-						[&](std::vector<long> &master_dofs, std::vector<long> &slave_dofs) {
-							from_mesh.dofs(ind, master_dofs);
-							to_dofs->dof_indices(&e, temp_slave_dofs);
-							slave_dofs.clear(); 
-							slave_dofs.insert(slave_dofs.begin(), temp_slave_dofs.begin(), temp_slave_dofs.end());
-						}
-					);
+						pg_assembler_.assemble(
+								*grid_elem,
+								from_elem_type,
+								side_elem,
+								to_dofs->variable_type(opts.to_var_num),
+								[&](std::vector<long> &master_dofs, std::vector<long> &slave_dofs) {
+									from_mesh.dofs(ind, master_dofs);
+									to_dofs->dof_indices(&e, temp_slave_dofs);
+									slave_dofs.clear(); 
+									slave_dofs.insert(slave_dofs.begin(), temp_slave_dofs.begin(), temp_slave_dofs.end());
+								}
+						);
+					}
 				}
 			}
 
@@ -132,5 +144,5 @@ namespace utopia {
 	};
 }
 
-#endif //UTOPIA_GRID_MESH_TRANSFER_HPP
+#endif //UTOPIA_GRID_2_MESH_SURFACE_TRANSFER_ASSEMBLER_HPP
 

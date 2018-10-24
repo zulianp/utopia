@@ -219,7 +219,7 @@ namespace utopia {
 			}
 		}
 
-		bool assemble(Adapter &master,
+		inline bool assemble(Adapter &master,
 					  Adapter &slave)
 		{
 			//FIXME assuming elements are all the same
