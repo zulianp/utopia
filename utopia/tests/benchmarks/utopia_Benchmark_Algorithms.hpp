@@ -11,6 +11,8 @@
 #include "utopia_ProjectedGradient.hpp"
 #include "utopia_ProjectedConjugateGradient.hpp"
 #include "utopia_ProjectedGaussSeidel.hpp"
+#include "utopia_MultiLevelTestProblem.hpp"
+#include "utopia_IPTransfer.hpp"
 
 #include <string>
 #include <cassert>
@@ -64,7 +66,7 @@ namespace utopia {
 						auto A_op = utopia::op_ref(A);
 						cg.solve(*A_op, b, x);
 
-						assert(approxeq(A * x, b, 1e-6));
+						utopia_test_assert(approxeq(A * x, b, 1e-6));
 					}
 				);
 
@@ -89,7 +91,7 @@ namespace utopia {
 
 						double mag_x = -1.;
 						fun.value(x, mag_x);
-						assert(mag_x <= mag_x0);
+						utopia_test_assert(mag_x <= mag_x0);
 					}
 				);
 
@@ -109,13 +111,12 @@ namespace utopia {
 
 						double mag_x = -1.;
 						fun.value(x, mag_x);
-						assert(mag_x <= mag_x0);
+						utopia_test_assert(mag_x <= mag_x0);
 					}
 				);
 
-
 				this->register_experiment(
-					"projected_gradient" + std::to_string(i),
+					"projected_gradient_" + std::to_string(i),
 					[i]() {
 						ProjectedGradient<Matrix, Vector, HOMEMADE> pg;
 						run_qp_solver((base_n/2) * (i + 1), pg);
@@ -123,7 +124,7 @@ namespace utopia {
 				);
 
 				this->register_experiment(
-					"projected_conjugate_gradient" + std::to_string(i),
+					"projected_conjugate_gradient_" + std::to_string(i),
 					[i]() {
 						ProjectedConjugateGradient<Matrix, Vector, HOMEMADE> pg;
 						run_qp_solver((base_n/2) * (i + 1), pg);
@@ -131,12 +132,25 @@ namespace utopia {
 				);
 
 				this->register_experiment(
-					"projected_gauss_seidel" + std::to_string(i),
+					"projected_gauss_seidel_" + std::to_string(i),
 					[i]() {
 						ProjectedGaussSeidel<Matrix, Vector, HOMEMADE> pg;
 						run_qp_solver((base_n/2) * (i + 1), pg);
 					}
 				);
+
+				this->register_experiment("multigrid_" + std::to_string(i), [n]() {
+
+					auto smoother      = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+					auto coarse_solver = std::make_shared<ConjugateGradient<Matrix, Vector, HOMEMADE>>();
+					
+					Multigrid<Matrix, Vector, HOMEMADE> multigrid(
+					                                    smoother,
+					                                    coarse_solver
+					                                    );
+
+					run_multigrid(n, multigrid);
+				});
 
 			}
 		}
@@ -189,7 +203,60 @@ namespace utopia {
 		    qp_solver.set_box_constraints(make_upper_bound_constraints(make_ref(upper_bound)));
 
 		    bool ok = qp_solver.solve(m, rhs, solution);
-		    assert(ok);
+		    utopia_test_assert(ok);
+		}
+
+		template<class MultigridSolver>
+		static void run_multigrid(const SizeType n, MultigridSolver &multigrid)
+		{
+			using TransferT       = utopia::Transfer<Matrix, Vector>;
+			using IPTransferT     = utopia::IPTransfer<Matrix, Vector>;
+			using MatrixTransferT = utopia::MatrixTransfer<Matrix, Vector>;
+			
+			const static bool verbose   = false;
+			const static bool use_masks = false;
+			
+			const SizeType n_levels = 6;
+			MultiLevelTestProblem<Matrix, Vector> ml_problem(n/pow(2, n_levels-1), n_levels, !use_masks);
+			
+			multigrid.max_it(50);
+			multigrid.atol(1e-13);
+			multigrid.stol(1e-13);
+			multigrid.rtol(1e-9);
+			multigrid.pre_smoothing_steps(3);
+			multigrid.post_smoothing_steps(3);
+			multigrid.set_fix_semidefinite_operators(true);
+			multigrid.must_generate_masks(use_masks);;
+			multigrid.verbose(verbose);
+			
+			std::vector<std::shared_ptr<TransferT>> transfers;
+			
+			for(auto &interp_ptr : ml_problem.interpolators) {
+			    if(use_masks) {
+			        //compute transpose explicitly for restriction
+			        transfers.push_back( std::make_shared<MatrixTransferT>(interp_ptr) );
+			    } else {
+			        //apply transpose for restriction
+			        transfers.push_back( std::make_shared<IPTransferT>(interp_ptr) );
+			    }
+			}
+			
+			multigrid.set_transfer_operators(transfers);
+			
+			Vector x = zeros(size(*ml_problem.rhs));
+			multigrid.update(ml_problem.matrix);
+			
+			if(verbose) {
+			    multigrid.describe();
+			}
+			
+			multigrid.apply(*ml_problem.rhs, x);
+			
+			double diff0 = norm2(*ml_problem.matrix * x);
+			double diff  = norm2(*ml_problem.rhs - *ml_problem.matrix * x);
+			double rel_diff = diff/diff0;
+			
+			utopia_test_assert(rel_diff < 1e-8);
 		}
 
 	};
