@@ -124,6 +124,20 @@ namespace utopia {
 				x_old = x;
 				A.apply(p, Ap);
 				alpha = dot(u, p)/dot(p, Ap);
+
+				if(std::isinf(alpha) || alpha == 0. || std::isnan(alpha)) {
+					const Scalar diff = norm2(x_old - x);
+
+					// UTOPIA_RECORD_VALUE("x_old - x", Vector(x_old - x));
+
+					if(this->verbose()) {
+					    PrintInfo::print_iter_status({static_cast<Scalar>(iteration), diff});
+					}
+
+					converged = this->check_convergence(iteration, 1, 1, diff);
+					break;
+
+				}
 			}
 
 			// UTOPIA_RECORD_SCOPE_END("apply");
