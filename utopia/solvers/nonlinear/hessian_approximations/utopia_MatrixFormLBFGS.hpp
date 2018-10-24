@@ -137,7 +137,7 @@ class MatrixFormLBFGS : public HessianApproximation<Matrix, Vector>
         }
 
 
-        virtual Matrix & get_Hessian() override
+        virtual Matrix & get_Hessian() 
         {
             if(current_m_ > m_)
             {

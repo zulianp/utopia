@@ -63,6 +63,11 @@ namespace utopia
                 return true; 
             }
 
+            virtual Matrix & get_Hessian() 
+            {
+                return H_prev_; 
+            }
+
             virtual bool apply_Hinv(const Vector & g , Vector & s) const override
             {
                 if(this->initialized())
@@ -128,12 +133,6 @@ namespace utopia
                 return update_hessian_; 
             }
 
-
-            virtual Matrix & get_Hessian() override
-            {
-                return H_prev_; 
-            }
-         
 
         private:
             virtual void update_Hessian_inverse()

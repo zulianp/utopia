@@ -23,8 +23,8 @@ namespace utopia
 				UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
 				UTOPIA_RUN_TEST(Quasi_TR_test_LBFGS); 
 
-				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+				UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+				UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
 				
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 			}			

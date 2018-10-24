@@ -27,7 +27,7 @@ namespace utopia
                 gamma_ = 1.0; 
 
                 SizeType n = local_size(x).get(0);
-                H0_ = local_identity(n, n);
+                H0_ = local_values(n, 1.0);
 
                 current_m_ = 0; 
                 this->initialized(true); 
@@ -103,7 +103,6 @@ namespace utopia
                     dots(S_[m_-1], b_, Sb_dots_[0]); 
                     std::rotate(Sb_dots_.begin(), Sb_dots_.begin() + 1, Sb_dots_.end());  
 
-
                     for(auto i=0; i < Sb_dots_.size()-1; i++){
                         for(auto j=1; j < Sb_dots_.size(); j++){
                             Sb_dots_[i][j-1] = Sb_dots_[i][j]; 
@@ -132,8 +131,7 @@ namespace utopia
                     q -=  alpha_inv[i] * Y_[i]; 
                 }
 
-                q = gamma_ * (H0_ * q); 
-
+                q = gamma_ * (e_mul(H0_, q)); 
 
                 for(auto i=0; i < current_memory_size; i++)
                 {
@@ -146,7 +144,7 @@ namespace utopia
 
             virtual bool apply_H(const Vector & v , Vector & result) const  override
             {
-                result = (theta_ * H0_) * v; 
+                result = theta_ * e_mul(H0_, v); 
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
 
                 for(auto i=0; i < current_memory_size; i++)
@@ -158,13 +156,6 @@ namespace utopia
                 }
                 return true; 
             }
-
-
-            virtual Matrix & get_Hessian() override
-            {
-                std::cerr<<"--- not implemented yet---- \n"; 
-                return H0_;
-            } 
 
             void set_memory_size(const SizeType & m)
             {
@@ -183,7 +174,7 @@ namespace utopia
 
                 for(auto k =0; k < current_memory_size; k++)
                 {
-                    a_[k] = (theta_*H0_) * S_[k]; 
+                    a_[k] = theta_ * e_mul(H0_, S_[k]); 
 
                     for(auto i = 0; i < k; i++)
                     {
@@ -210,11 +201,10 @@ namespace utopia
             Scalar theta_; 
             Scalar gamma_; 
             
-            Matrix H0_; 
+            Vector H0_; // just diagonal of identity 
 
             std::vector<Vector> Y_; 
             std::vector<Vector> S_; 
-
 
             std::vector<Vector > b_; 
             std::vector<Vector > a_; 

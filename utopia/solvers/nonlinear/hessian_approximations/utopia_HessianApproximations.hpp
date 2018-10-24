@@ -110,9 +110,7 @@ public:
     // applications of inverse of Hessian
     virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;
     virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  = 0; 
-    virtual Matrix & get_Hessian() = 0; 
-
-
+    
     virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const 
     {        
         Vector help; 
