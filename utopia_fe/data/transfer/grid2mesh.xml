@@ -3,7 +3,7 @@
 	<!-- <type>interpolation</type> -->
 	<!-- <type>l2-projection</type> -->
 	<biorth-basis>0</biorth-basis>
-	<function>x*z*y</function>
+	<function>x*z*sin(4.*y)</function>
 	<!-- <enumerate-nodes>true</enumerate-nodes> -->
 
 	<!-- <force-shell>true</force-shell> -->
