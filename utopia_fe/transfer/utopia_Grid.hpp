@@ -31,6 +31,7 @@ namespace utopia {
 		using Vector  = moonolith::Vector<Scalar, Dim>;
 		using Array   = std::array<Integer, Dim>;
 		using Mapping = std::function<Vector (const Vector &)>;
+		using DOFMapping = std::function<Integer (const Integer &)>;
 		using Index   = std::vector<Integer>;
 
 		//////////////////// Points, Nodes, and DOFs //////////////////
@@ -63,6 +64,16 @@ namespace utopia {
 			}
 
 			return result;
+		}
+
+		inline Integer node_dof_from_hash(const Integer &hash) const
+		{
+			return dof_map(hash);
+		}
+
+		inline Integer node_dof_from_index(const Array &coord) const
+		{
+			return node_dof_from_hash(node_hash_from_index(coord));
 		}
 
 		inline void node_index_from_hash(const Integer hash, Array &coord) const
@@ -226,6 +237,7 @@ namespace utopia {
 		{
 			map = [](const Vector &x) -> Vector { return x; };
 			inverse_map = map;
+			dof_map = [](const Integer &hash) -> Integer { return hash; };
 			std::fill(std::begin(dims), std::end(dims), 0);
 		}
 
@@ -285,6 +297,7 @@ namespace utopia {
 		Array dims;
 		Mapping map;
 		Mapping inverse_map;
+		DOFMapping dof_map;
 	};
 
 	namespace private_ {
@@ -301,8 +314,8 @@ namespace utopia {
 
 				for(auto &i : imax) {++i; }
 
-				dof_indices[0] = grid.node_hash_from_index(imin);
-				dof_indices[1] = grid.node_hash_from_index(imax);
+				dof_indices[0] = grid.node_dof_from_index(imin);
+				dof_indices[1] = grid.node_dof_from_index(imax);
 			}
 		};
 
@@ -318,10 +331,10 @@ namespace utopia {
 
 				for(auto &i : imax) {++i; }
 
-				dof_indices[0] = grid.node_hash_from_index(imin);
-				dof_indices[1] = grid.node_hash_from_index({ imax[0], imin[1] });
-				dof_indices[2] = grid.node_hash_from_index(imax);
-				dof_indices[3] = grid.node_hash_from_index({ imin[0], imax[1] });
+				dof_indices[0] = grid.node_dof_from_index(imin);
+				dof_indices[1] = grid.node_dof_from_index({ imax[0], imin[1] });
+				dof_indices[2] = grid.node_dof_from_index(imax);
+				dof_indices[3] = grid.node_dof_from_index({ imin[0], imax[1] });
 			}
 		};
 
@@ -351,14 +364,14 @@ namespace utopia {
 					*     0        1
 					*/
 
-				dof_indices[0] = grid.node_hash_from_index(imin);
-				dof_indices[1] = grid.node_hash_from_index({ imax[0], imin[1], imin[2] });
-				dof_indices[2] = grid.node_hash_from_index({ imax[0], imax[1], imin[2] });
-				dof_indices[3] = grid.node_hash_from_index({ imin[0], imax[1], imin[2] });
-				dof_indices[4] = grid.node_hash_from_index({ imin[0], imin[1], imax[2] });
-				dof_indices[5] = grid.node_hash_from_index({ imax[0], imin[1], imax[2] });
-				dof_indices[6] = grid.node_hash_from_index(imax);
-				dof_indices[7] = grid.node_hash_from_index({ imin[0], imax[1], imax[2] });
+				dof_indices[0] = grid.node_dof_from_index(imin);
+				dof_indices[1] = grid.node_dof_from_index({ imax[0], imin[1], imin[2] });
+				dof_indices[2] = grid.node_dof_from_index({ imax[0], imax[1], imin[2] });
+				dof_indices[3] = grid.node_dof_from_index({ imin[0], imax[1], imin[2] });
+				dof_indices[4] = grid.node_dof_from_index({ imin[0], imin[1], imax[2] });
+				dof_indices[5] = grid.node_dof_from_index({ imax[0], imin[1], imax[2] });
+				dof_indices[6] = grid.node_dof_from_index(imax);
+				dof_indices[7] = grid.node_dof_from_index({ imin[0], imax[1], imax[2] });
 				
 			}
 		};

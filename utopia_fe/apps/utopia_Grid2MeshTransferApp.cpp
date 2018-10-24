@@ -128,6 +128,7 @@ namespace utopia {
 		    	Vector box_range = box_max - box_min;
 
 		    	this->map = [=](const Vector &x) -> Vector {
+		    		//parametrization from unit-square to transformed quadrilateral
 		    		Vector y = x;
 		    		y.x *= box_range.x;
 		    		y.y *= box_range.y;
@@ -135,10 +136,16 @@ namespace utopia {
 		    	};
 
 		    	this->inverse_map = [=](const Vector &x) -> Vector {
+		    		//inverse-parametrization from  transformed quadrilateral to unit-square
 		    		Vector y = x - box_min;
 		    		y.x /= box_range.x;
 		    		y.y /= box_range.y;
 		    		return y;
+		    	};
+
+		    	this->dof_map = [](const Integer &hash) -> Integer {
+		    		//dof-map starting from the hash (generated from x major)
+		    		return hash;
 		    	};
 
 		    	ownership_ranges.init(this->n_nodes());
@@ -202,6 +209,7 @@ namespace utopia {
 		    	Vector box_range = box_max - box_min;
 
 		    	this->map = [=](const Vector &x) -> Vector {
+		    		//parametrization from unit-cube to transformed hexahedron
 		    		Vector y = x;
 		    		y.x *= box_range.x;
 		    		y.y *= box_range.y;
@@ -210,11 +218,17 @@ namespace utopia {
 		    	};
 
 		    	this->inverse_map = [=](const Vector &x) -> Vector {
+		    		//inverse-parametrization from  transformed hexahedron to unit-square
 		    		Vector y = x - box_min;
 		    		y.x /= box_range.x;
 		    		y.y /= box_range.y;
 		    		y.z /= box_range.z;
 		    		return y;
+		    	};
+
+		    	this->dof_map = [](const Integer &hash) -> Integer {
+		    		//dof-map starting from the hash (generated from x major)
+		    		return hash;
 		    	};
 
 		    	ownership_ranges.init(this->n_nodes());
