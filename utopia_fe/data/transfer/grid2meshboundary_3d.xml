@@ -3,7 +3,6 @@
 	<!-- <type>interpolation</type> -->
 	<type>l2-projection</type>
 	<biorth-basis>0</biorth-basis>
-	<!-- <function>x*z*sin(4.*y)</function> -->
 	<function>1. + x * z * sin(4. * y) * sin(4. * y)</function>
 	<!-- <enumerate-nodes>true</enumerate-nodes> -->
 
@@ -11,6 +10,7 @@
 	<assemble-mass-mat>1</assemble-mass-mat>
 	<!-- <function-type>constant</function-type> -->
 	<!-- <function>1.</function> -->
+	<volume-to-surface>true</volume-to-surface>
 
 	<!-- MASTER -->
 	<master>

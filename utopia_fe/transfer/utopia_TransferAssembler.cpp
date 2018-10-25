@@ -468,9 +468,6 @@ namespace utopia {
 			ss << "end: utopia::TransferAssembler::assemble\n";
 			ss << c;
 			ss << "---------------------------------------";
-			moonolith::root_describe(ss.str(), comm, std::cout);
-
-			ss.clear();
 			ss << "\n";
 			assembler_->print_stats(ss);
 			moonolith::root_describe(ss.str(), comm, std::cout);

@@ -42,6 +42,15 @@ namespace utopia {
 			std::vector<Matrix> &mat
 			) override;
 
+		// bool volume_to_side_assemble(
+		// 	const Elem &master,
+		// 	FEType master_type,
+		// 	const Elem &slave,
+		// 	FEType slave_type,
+		// 	const int slave_side_num,
+		// 	std::vector<Matrix> &mat
+		// ) override;
+
 		inline const QMortarBuilder &get_q_builder() const
 		{
 			assert(q_builder);

@@ -13,6 +13,7 @@
 #include "utopia_UIScalarSampler.hpp"
 
 #include "utopia_GridMeshTransfer.hpp"
+#include "utopia_Grid2MeshSurfaceTransferAssembler.hpp"
 
 namespace utopia {
 
@@ -27,6 +28,8 @@ namespace utopia {
 		    try {
 		        is.get("mesh", mesh_);
 		        is.get("space", space_);
+
+		        is_shell = mesh_.mesh().spatial_dimension() > mesh_.mesh().mesh_dimension();
 
 
 		    } catch(const std::exception &ex) {
@@ -53,6 +56,7 @@ namespace utopia {
 
 		UIMesh<libMesh::DistributedMesh> mesh_;
 		UIFunctionSpace<LibMeshFunctionSpace>  space_;
+		bool is_shell;
 	};
 
 	class OwnershipRanges {
@@ -334,6 +338,7 @@ namespace utopia {
 
 		bool fun_is_constant;
 		bool print_info = false;
+		bool volume_to_surface = false;
 
 		auto master_mesh_dim = 3;
 		auto master_spatial_dim = 3;
@@ -352,6 +357,7 @@ namespace utopia {
 			is.get("type", type);
 			is.get("assemble-mass-mat", assemble_mass_mat_);
 			is.get("print-info", print_info);
+			is.get("volume-to-surface", volume_to_surface);
 
 			if(type == "l2-projection") {
 				biorth_basis = true;
@@ -360,7 +366,7 @@ namespace utopia {
 				local_assembler_ = std::make_shared<L2LocalAssembler>(
 					master_mesh_dim,
 					biorth_basis,
-					assemble_mass_mat_,
+					assemble_mass_mat_ || !biorth_basis,
 					force_shell || master_mesh_dim < master_spatial_dim
 				);
 
@@ -430,7 +436,7 @@ namespace utopia {
 		c.start();
 
 		std::vector<std::shared_ptr<USparseMatrix>> mats;
-		Grid2MeshTransferAssembler transfer_assembler(local_assembler_, local2global_);
+		
 		
 		bool ok = false;
 
@@ -442,14 +448,28 @@ namespace utopia {
 				grid3.describe(std::cout);
 			}
 
-			ok = transfer_assembler.assemble(
-				grid3,
-				grid3.ownership_ranges.get(),
-				make_ref(input_slave.mesh()),
-				make_ref(input_slave.space().dof_map()),
-				mats,
-				opts
-			);
+			if(volume_to_surface) {
+				Grid2MeshSurfaceTransferAssembler transfer_assembler(local_assembler_, local2global_);
+				ok = transfer_assembler.assemble(
+					grid3,
+					grid3.ownership_ranges.get(),
+					make_ref(input_slave.mesh()),
+					make_ref(input_slave.space().dof_map()),
+					mats,
+					opts
+				);
+
+			} else {
+				Grid2MeshTransferAssembler transfer_assembler(local_assembler_, local2global_);
+				ok = transfer_assembler.assemble(
+					grid3,
+					grid3.ownership_ranges.get(),
+					make_ref(input_slave.mesh()),
+					make_ref(input_slave.space().dof_map()),
+					mats,
+					opts
+				);
+			}
 		} else {
 			auto &grid2 = input_master.grid2;
 
@@ -458,14 +478,27 @@ namespace utopia {
 				grid2.describe(std::cout);
 			}
 
-			ok = transfer_assembler.assemble(
-				grid2,
-				grid2.ownership_ranges.get(),
-				make_ref(input_slave.mesh()),
-				make_ref(input_slave.space().dof_map()),
-				mats,
-				opts
-			);
+			if(volume_to_surface) {
+				Grid2MeshSurfaceTransferAssembler transfer_assembler(local_assembler_, local2global_);
+				ok = transfer_assembler.assemble(
+					grid2,
+					grid2.ownership_ranges.get(),
+					make_ref(input_slave.mesh()),
+					make_ref(input_slave.space().dof_map()),
+					mats,
+					opts
+				);
+			} else {
+				Grid2MeshTransferAssembler transfer_assembler(local_assembler_, local2global_);
+				ok = transfer_assembler.assemble(
+					grid2,
+					grid2.ownership_ranges.get(),
+					make_ref(input_slave.mesh()),
+					make_ref(input_slave.space().dof_map()),
+					mats,
+					opts
+				);
+			}
 		}
 
 		if(!ok) {

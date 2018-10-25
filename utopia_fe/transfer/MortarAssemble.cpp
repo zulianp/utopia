@@ -59,6 +59,12 @@ namespace utopia {
 		return order;
 	}
 
+	void Transform1::apply(const libMesh::Point &ref, libMesh::Point &world) const
+	{
+		assert( (libMesh::FE<1, libMesh::LAGRANGE>::on_reference_element(ref, elem_.type(), 1e-3)) );
+		world = libMesh::FE<1, libMesh::LAGRANGE>::map(&elem_, ref);
+	}
+
 	void Transform1::transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const
 	{
 		ref = libMesh::FE<1, libMesh::LAGRANGE>::inverse_map(&elem_, world, 1e-10);
@@ -722,8 +728,8 @@ namespace utopia {
 			sum_of_weights += ref_ir.get_weights()[i];
 		}
 
-		assert(sum_of_weights > 0.);
-		assert(sum_of_weights <= factor + 1e-6);
+		// assert(sum_of_weights > 0.);
+		// assert(sum_of_weights <= factor + 5e-4);
 	}
 
 	void transform_to_reference_surf(const Transform &trans, const int type, const QMortar &global_ir, QMortar &ref_ir)

@@ -292,7 +292,7 @@ namespace utopia {
 			
 			const libMesh::Real weight = Intersector::polygon_area_2(test_pts.m(), &test_pts.get_values()[0]);
 
-			assert(isect_area <= weight + 1e-6);
+			// assert(isect_area <= weight + 1e-6);
 
 			const int order = order_for_l2_integral(2, trial, trial_type.order, test, test_type.order);
 			make_composite_quadrature_2D(intersection, 1./weight, order, composite_ir);
@@ -436,7 +436,7 @@ namespace utopia {
 			
 			const libMesh::Real weight = compute_volume(test_poly);
 
-			assert(isect_volume <= weight + 1e-6);
+			assert(isect_volume <= weight + 5e-4);
 
 			std::shared_ptr<Transform> trial_trans, test_trans;
 

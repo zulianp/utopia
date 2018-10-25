@@ -105,6 +105,17 @@ namespace utopia {
 			return ret;
 		}
 
+		inline void element_aabb(const Integer element_hash, Vector &emin, Vector &emax) const
+		{
+			auto imin = element_index(element_hash);
+			auto imax = imin;
+
+			for(auto &i : imax) { ++i; }
+
+			emin = point(imin);
+			emax = point(imax);
+		}
+
 		inline Integer element_hash(const Vector &y) const
 		{
 			Vector x = inverse_map(y);
@@ -176,17 +187,13 @@ namespace utopia {
 
 			//generate tensor indices
 			for(int i = 0; i < Dim; ++i) {
-				imin[i] = std::max(
-					Integer(0),
-					Integer(floor(im_min[i] * dims[i]))
-					);
+				const Integer id = floor(im_min[i] * dims[i]);
+				imin[i] = std::min( std::max(id, Integer(0)), Integer(dims[i] - 1) );
 			}
 
 			for(int i = 0; i < Dim; ++i) {
-				imax[i] = std::min(
-					Integer(floor(im_max[i] * dims[i])),
-					Integer(dims[i] - 1)
-					);
+				const Integer id = floor(im_max[i] * dims[i]);
+				imax[i] = std::min( std::max(id, Integer(0)), Integer(dims[i] - 1) );
 			}
 
 			assert(element_is_valid(imin));

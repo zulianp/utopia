@@ -2,30 +2,29 @@
 	<!-- <type>approx-l2-projection</type> -->
 	<!-- <type>interpolation</type> -->
 	<type>l2-projection</type>
-	<biorth-basis>0</biorth-basis>
-	<!-- <function>x*z*sin(4.*y)</function> -->
-	<function>1. + x * z * sin(4. * y) * sin(4. * y)</function>
+	<biorth-basis>1</biorth-basis>
+	<function> 1. + 10 * x * y</function>
 	<!-- <enumerate-nodes>true</enumerate-nodes> -->
 
 	<!-- <force-shell>true</force-shell> -->
 	<assemble-mass-mat>1</assemble-mass-mat>
 	<!-- <function-type>constant</function-type> -->
 	<!-- <function>1.</function> -->
+	<print-info>true</print-info>
+	<volume-to-surface>true</volume-to-surface>
 
 	<!-- MASTER -->
 	<master>
-		<grid>		
-			<n-x>20</n-x>
-			<n-y>20</n-y>
-			<n-z>20</n-z>
+		<dim>2</dim>
+		<grid>	
+			<n-x>10</n-x>
+			<n-y>10</n-y>
 
-			<min-x>-1.</min-x>
-			<min-y>-1.</min-y>
-			<min-z>-1.</min-z>
+			<min-x>0.</min-x>
+			<min-y>0.</min-y>
 			
 			<max-x>1.</max-x>
 			<max-y>1.</min-y>
-			<max-z>1.</min-z>
 			
 		</grid>
 		<!-- <ownership> -->
@@ -36,26 +35,19 @@
 	<!-- SLAVE -->
 	<slave>
 		<mesh>
-			<type>sphere</type>
-			<radius>1.</radius>
-			<sphere-refine>4</sphere-refine>
-
-			<!-- <type>cube</type> -->
-			<elem-type>hex</elem-type>
+			<type>square</type>
+			<elem-type>quad</elem-type>
 			<order>1</order>			
-		<!-- 	
-			<n-x>3</n-x>
-			<n-y>15</n-y>
-			<n-z>30</n-z>
+			<n-x>10</n-x>
+			<n-y>10</n-y>
 
 			<min-x>0.</min-x>
 			<min-y>0.</min-y>
-			<min-z>0.</min-z>
-			
-			<max-x>1.</max-x>
-			<max-y>5.</min-y>
-			<max-z>10.</min-z> -->
+			<max-x>.5101</max-x>
+			<max-y>.50001</min-y>
 		</mesh>
+		<!-- <ownership> -->
+		<!-- </ownership> -->
 		<space></space>
 	</slave>
 	

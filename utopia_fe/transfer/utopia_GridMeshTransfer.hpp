@@ -53,6 +53,17 @@ namespace utopia {
 			using Integer = typename Grid<Dim>::Integer;
 
 			moonolith::Communicator comm(to_mesh->comm().get());
+
+			
+			if(Utopia::instance().verbose()) {
+				moonolith::root_describe("---------------------------------------\n"
+					"begin: utopia::Grid2MeshTransferAssembler::assemble",
+					comm, std::cout);
+			}
+
+			Chrono c;
+			c.start();
+
 			auto n_local_dofs_from = ownership_ranges[comm.rank() + 1] - ownership_ranges[comm.rank()];
 
 			pg_assembler_.initialize(
@@ -113,6 +124,18 @@ namespace utopia {
 
 			pg_assembler_.finalize(mats);
 			pg_assembler_.print_stats();
+
+			c.stop();
+
+			if(Utopia::instance().verbose()) {
+				std::stringstream ss;
+				ss << "end: utopia::Grid2MeshTransferAssembler::assemble\n";
+				ss << c;
+				ss << "---------------------------------------";
+				ss << "\n";
+				assembler_->print_stats(ss);
+				moonolith::root_describe(ss.str(), comm, std::cout);
+			}
 			return true;
 		}
 

@@ -53,7 +53,7 @@ namespace utopia {
 		{}
 
 		void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const override;
-		void apply(const libMesh::Point &ref, libMesh::Point &world) const override { assert(false && "implement me"); }
+		void apply(const libMesh::Point &ref, libMesh::Point &world) const override;
 
 	private:
 		const libMesh::Elem &elem_;

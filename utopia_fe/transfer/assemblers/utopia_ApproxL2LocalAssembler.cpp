@@ -33,7 +33,9 @@ namespace utopia {
 		// 		}
 		// 	}
 		// } else {
-			if(dim == 2) {
+			if(elem.dim() == 1) {
+				elem_trafo = std::make_shared<Transform1>(elem);
+			} else if(dim == 2) {
 				assert(elem.dim() == 2);
 				elem_trafo = std::make_shared<Transform2>(elem);
 			} else {
