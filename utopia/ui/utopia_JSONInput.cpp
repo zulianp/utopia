@@ -286,6 +286,7 @@ namespace utopia {
 		assert(impl_);
 		auto it = impl_->json().find(key);
 		if(it == impl_->json().end()) {
+			// std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
 			return;
 		}
 
@@ -293,9 +294,13 @@ namespace utopia {
 
 		if(!j.is_null()) {
 			JSONInput child;
-			child.impl_ = utopia::make_unique<Impl>(make_ref(impl_->json()[key]));
+			child.impl_ = utopia::make_unique<Impl>(make_ref(j));
 			val.read(child);
-		}
+		} 
+		
+		// else {
+		// 	std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
+		// }
 	}
 
 	void JSONInput::get(const std::string &key, std::function<void(Input &)> lambda)
@@ -303,6 +308,7 @@ namespace utopia {
 		assert(impl_);
 		auto it = impl_->json().find(key);
 		if(it == impl_->json().end()) {
+			// std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
 			return;
 		}
 
@@ -310,9 +316,13 @@ namespace utopia {
 
 		if(!j.is_null()) {
 			JSONInput child;
-			child.impl_ = utopia::make_unique<Impl>(make_ref(impl_->json()[key]));
+			child.impl_ = utopia::make_unique<Impl>(make_ref(j));
 			lambda(child);
-		}
+		} 
+
+		// else {
+		// 	std::cout << "[Warning] key " << key << " not found in " << impl_->json().dump() << std::endl;
+		// }
 	}
 
 	bool JSONInput::good() const

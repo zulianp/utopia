@@ -26,8 +26,8 @@
 			<min-z>0.</min-z>
 			
 			<max-x>1.</max-x>
-			<max-y>5.</min-y>
-			<max-z>10.</min-z>
+			<max-y>5.</max-y>
+			<max-z>10.</max-z>
 		</mesh>
 		<space></space>
 	</master>
@@ -47,8 +47,8 @@
 			<min-z>0.</min-z>
 			
 			<max-x>1.</max-x>
-			<max-y>5.</min-y>
-			<max-z>10.</min-z>
+			<max-y>5.</max-y>
+			<max-z>10.</max-z>
 		</mesh>
 		<space></space>
 	</slave>

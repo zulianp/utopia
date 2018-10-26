@@ -71,8 +71,8 @@ namespace utopia {
 
 		is_ptr->get("transfer", [&](Input &is) {
 			//get spaces
-			is_ptr->get("master", input_master);
-			is_ptr->get("slave",  input_slave);
+			is.get("master", input_master);
+			is.get("slave",  input_slave);
 
 			//get operator props
 			std::string path;
