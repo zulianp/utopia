@@ -152,7 +152,7 @@ namespace utopia {
 			Chrono c;
 			c.start();
 
-
+			skipped_duplicate_intersections_ = 0;
 			
 			auto n_local_dofs_from = ownership_ranges[comm.rank() + 1] - ownership_ranges[comm.rank()];
 
@@ -287,6 +287,7 @@ namespace utopia {
 									if(it == element_global_to_local_index.end()) continue;
 
 									if(intersected[it->second]) {
+										++skipped_duplicate_intersections_;
 										skip_element = true;
 									}
 								}
@@ -358,6 +359,7 @@ namespace utopia {
 				ss << "end: utopia::Grid2MeshSurfaceTransferAssembler::assemble\n";
 				ss << c;
 				ss << "\n";
+				ss << "skipped duplicate intersections " << skipped_duplicate_intersections_ << "\n";
 
 				assembler_->print_stats(ss);
 				ss << "---------------------------------------";
@@ -380,6 +382,7 @@ namespace utopia {
 		std::shared_ptr<LocalAssembler> assembler_;
 		std::shared_ptr<Local2Global> local2global_;
 		private_::PetrovGalerkinAssembler pg_assembler_;
+		long skipped_duplicate_intersections_;
 	};
 }
 

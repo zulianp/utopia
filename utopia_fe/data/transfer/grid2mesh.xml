@@ -38,7 +38,7 @@
 		<mesh>
 			<type>sphere</type>
 			<radius>1.</radius>
-			<sphere-refine>4</sphere-refine>
+			<sphere-refine>5</sphere-refine>
 
 			<!-- <type>cube</type> -->
 			<elem-type>hex</elem-type>
