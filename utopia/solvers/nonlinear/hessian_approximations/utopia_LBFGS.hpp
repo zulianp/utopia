@@ -178,10 +178,8 @@ namespace utopia
 
                     for(auto i = 0; i < k; i++)
                     {
-                        // Scalar bS = dot(b_[i], S_[k]) ; 
                         Scalar aS = dot(a_[i], S_[k]); 
 
-                        // a_[k] += bS * b_[i]; 
                         a_[k] += Sb_dots_[k][i] * b_[i]; 
                         a_[k] -= aS * a_[i]; 
                     }
