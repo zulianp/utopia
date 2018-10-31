@@ -179,7 +179,7 @@ namespace utopia
 	        // tr_strategy_fine->verbose(true);
 
 	        // we should apply BC conditions in symmetric way... ASAP... 
-	        tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
+	        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<DSMatrixd, DVectord> >());
 	        // tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<DSMatrixd, DVectord> >());
 	        
 	        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<DSMatrixd, DVectord> >());
@@ -190,10 +190,10 @@ namespace utopia
         	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
-	        rmtr->max_it(6);
+	        rmtr->max_it(50);
 	        rmtr->max_coarse_it(1);
-	        rmtr->max_smoothing_it(1);
-	        rmtr->delta0(1);
+	        rmtr->max_smoothing_it(3);
+	        rmtr->delta0(10);
 	        rmtr->atol(1e-5);
 	        rmtr->rtol(1e-10);
 	        rmtr->set_grad_smoothess_termination(0.000001);
@@ -326,7 +326,7 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("NonlinearMultilevelSolverTest");
 		#ifdef  WITH_PETSC
-			NonlinearBratuSolverTest(3, true, false).run();
+			NonlinearBratuSolverTest(3, true, true).run();
 		#endif
 		UTOPIA_UNIT_TEST_END("NonlinearMultilevelSolverTest");
 

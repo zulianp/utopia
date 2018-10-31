@@ -168,7 +168,7 @@
           if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->linear_solver_.get()))
             tr_subproblem->tr_constrained_solve(H, g, p_k, delta);
 
-          this->get_pred(g, H, p_k, pred);
+          pred = this->get_pred(g, H, p_k);
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
 

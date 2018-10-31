@@ -22,6 +22,8 @@
 
         typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation;
 
+        using TrustRegionBase::get_pred; 
+
      	
      	public:                                                                      
       QuasiTrustRegionVariableBound(const std::shared_ptr <HessianApproximation> &hessian_approx, 
@@ -119,9 +121,7 @@
           }
 
           // compute tr ratio... 
-          Scalar l_term = dot(g, p_k);
-          Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
-          pred = - l_term - 0.5 * qp_term; 
+          pred = this->get_pred(g, p_k); 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           // trial point 
@@ -225,6 +225,14 @@
           hessian_approx_strategy_      = strategy;
       }
       
+
+      virtual Scalar get_pred(const Vector & g, const Vector & p_k)
+      {
+        // compute tr ratio... 
+        Scalar l_term = dot(g, p_k);
+        Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
+        return  (- l_term - 0.5 * qp_term); 
+      }      
 
 
     private:

@@ -25,6 +25,8 @@
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
         typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation;
 
+        using TrustRegionBase<Matrix, Vector>::get_pred; 
+
      	public:
       QuasiTrustRegion( const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>(),
                         const Parameters params = Parameters()) : 
@@ -119,11 +121,7 @@
 
           // scaling correction to fit into tr radius ... 
           s_norm = norm2(p_k);
-
-          // compute tr ratio... 
-          Scalar l_term = dot(g, p_k);
-          Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
-          pred = - l_term - 0.5 * qp_term; 
+          pred = this->get_pred(g, p_k); 
 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
@@ -231,6 +229,14 @@
           return _has_hessian_approx_strategy;
       }
         
+
+      virtual Scalar get_pred(const Vector & g, const Vector & p_k)
+      {
+        // compute tr ratio... 
+        Scalar l_term = dot(g, p_k);
+        Scalar qp_term = hessian_approx_strategy_->compute_uHu_dot(p_k); 
+        return  (- l_term - 0.5 * qp_term); 
+      }        
         
 
   private:

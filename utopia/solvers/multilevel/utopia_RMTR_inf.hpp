@@ -178,7 +178,7 @@ namespace utopia
 
 
         // this routine is correct only under assumption, that P/R/I have only positive elements ... 
-        virtual void init_coarse_level_constrains(const SizeType & level) override
+        virtual void init_coarse_level(const SizeType & level) override
         {
             // init delta on the coarser level...
             this->memory_.delta[level-1]  = this->memory_.delta[level]; 
@@ -353,7 +353,7 @@ namespace utopia
          * @param[in]  level  The level
          *
          */
-        virtual bool solve_qp_subproblem(const Matrix & H, const Vector & g, Vector & s, const SizeType & level, const bool & flg) override
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
             Scalar radius = this->memory_.delta[level]; 
 
@@ -382,7 +382,7 @@ namespace utopia
                 this->_coarse_tr_subproblem->max_it(this->max_QP_coarse_it()); 
 
                 if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_coarse_tr_subproblem.get()))
-                    tr_subproblem->tr_constrained_solve(H, g, s, box);
+                    tr_subproblem->tr_constrained_solve(this->memory_.H[level], this->memory_.g[level], this->memory_.s_local[level], box);
             }
             else
             {
@@ -390,7 +390,7 @@ namespace utopia
                 this->_smoother_tr_subproblem->max_it(this->max_QP_smoothing_it());
                 
                 if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_smoother_tr_subproblem.get()))
-                    tr_subproblem->tr_constrained_solve(H, g, s, box);
+                    tr_subproblem->tr_constrained_solve(this->memory_.H[level], this->memory_.g[level], this->memory_.s_local[level], box);
             }
 
             return true; 

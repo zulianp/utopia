@@ -40,6 +40,7 @@ namespace utopia
     public:
 
         using TrustRegionBase<Matrix, Vector>::delta_update;
+        using TrustRegionBase<Matrix, Vector>::get_pred; 
 
        /**
         * @brief      Multigrid class
@@ -316,7 +317,7 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                   initializing coarse level constrains
             //----------------------------------------------------------------------------
-            this->init_coarse_level_constrains(level);
+            this->init_coarse_level(level);
 
             //----------------------------------------------------------------------------
             //                   first order coarse level objective managment
@@ -417,7 +418,7 @@ namespace utopia
                 //----------------------------------------------------------------------------
                 //                                  trust region update
                 //----------------------------------------------------------------------------
-                converged = this->delta_update(rho, level, memory_.s_working[level]);
+                converged = this->update_level(rho, level); 
 
                 // because, x + Is_{l-1} does not need to be inside of feasible set....
                 // mostly case for rmtr_inf with bounds...
@@ -497,10 +498,10 @@ namespace utopia
             //----------------------------------------------------------------------------
                 // correction needs to get prepared
                 memory_.s_local[level] *= 0.0;
-                this->solve_qp_subproblem(memory_.H[level], memory_.g[level], memory_.s_local[level], level, exact_solve_flg);
+                this->solve_qp_subproblem(level, exact_solve_flg);
 
                 // predicted reduction based on model
-                TrustRegionBase<Matrix, Vector>::get_pred(memory_.g[level], memory_.H[level], memory_.s_local[level], pred);
+                pred = this->get_pred(level);
 
                 // building trial point
                 memory_.x[level] += memory_.s_local[level];
@@ -581,8 +582,13 @@ namespace utopia
         }
 
 
+        virtual Scalar get_pred(const SizeType & level)
+        {
+            return TrustRegionBase<Matrix, Vector>::get_pred(memory_.g[level], memory_.H[level], memory_.s_local[level]);
+        }
 
-        virtual void init_coarse_level_constrains(const SizeType & level)
+
+        virtual void init_coarse_level(const SizeType & level)
         {
             memory_.delta[level-1]  = memory_.delta[level];
         }
@@ -634,6 +640,12 @@ namespace utopia
 
                 return converged;
             }
+        }
+
+
+        virtual bool update_level(const Scalar & rho, const SizeType & level)
+        {
+            return this->delta_update(rho, level, memory_.s_working[level]);
         }
 
 
@@ -775,26 +787,24 @@ namespace utopia
         /**
          * @brief      Solves TR subroblem for given level
          *
-         * @param[in]  H      The hessian
-         * @param[in]  g      The gradient
-         * @param      s      New correction
          * @param[in]  level  The level
+         * @param[in]  flg  The exact solve flag
          *
          */
-        virtual bool solve_qp_subproblem(const Matrix & H, const Vector & g, Vector & s, const SizeType & level, const bool & flg)
+        virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg)
         {
             // this params should not be as hardcodded as they are...
             if(flg)
             {
                 _coarse_tr_subproblem->atol(1e-16);
                 _coarse_tr_subproblem->max_it(_max_QP_coarse_it);
-                _coarse_tr_subproblem->tr_constrained_solve(H, g, s, memory_.delta[level]);
+                _coarse_tr_subproblem->tr_constrained_solve(memory_.H[level], memory_.g[level], memory_.s_local[level], memory_.delta[level]);
             }
             else
             {
                 _smoother_tr_subproblem->atol(1e-16);
                 _smoother_tr_subproblem->max_it(_max_QP_smoothing_it);
-                _smoother_tr_subproblem->tr_constrained_solve(H, g, s, memory_.delta[level]);
+                _smoother_tr_subproblem->tr_constrained_solve(memory_.H[level], memory_.g[level], memory_.s_local[level], memory_.delta[level]);
             }
 
             return true;

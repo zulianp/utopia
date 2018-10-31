@@ -264,10 +264,10 @@ namespace utopia
      * @param[in]  p_k    step 
      * @param      pred  The predicted reduction. 
      */
-    virtual bool get_pred(const Vector & g, const Matrix & B, const Vector & p_k, Scalar &pred)
+    virtual Scalar get_pred(const Vector & g, const Matrix & B, const Vector & p_k)
     {
-      pred = -1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k);
-      return true; 
+      Scalar pred = -1.0 * dot(g, p_k) -0.5 *dot(B * p_k, p_k);
+      return pred; 
     }
 
   private: 

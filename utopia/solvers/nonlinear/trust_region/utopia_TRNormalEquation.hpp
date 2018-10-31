@@ -164,7 +164,7 @@
             tr_subproblem->current_radius(delta);
 
           this->linear_solve(J_k, r_k, p_k);
-          this->get_pred(g, H, p_k, pred); 
+          pred = this->get_pred(g, H, p_k); 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
           if(it == 1 && rad_flg)
