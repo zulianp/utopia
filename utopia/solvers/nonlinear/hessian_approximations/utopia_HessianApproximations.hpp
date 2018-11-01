@@ -8,7 +8,7 @@ namespace utopia
 {
 
 template<class Vector>
-class HessianApproximation
+class HessianApproximation : public virtual Clonable 
 {
     typedef UTOPIA_SCALAR(Vector)    Scalar;
     typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
@@ -24,9 +24,10 @@ public:
     virtual ~HessianApproximation() { }
 
     virtual void initialize(const SizeType & n) = 0;
-    
-    // refresh vectors
     virtual bool update(const Vector & /* s  */, const Vector &  /* y */ ) = 0;    
+
+    virtual HessianApproximation<Vector> * clone() const override = 0;
+
 
     Scalar num_tol()const 
     {

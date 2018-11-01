@@ -56,6 +56,11 @@ class MatrixFormLBFGS : public HessianApproximation<Vector>
             this->initialized(true);
         }
 
+        inline MatrixFormLBFGS<Matrix, DenseMatrix, Vector> * clone() const override
+        {
+            return new MatrixFormLBFGS<Matrix, DenseMatrix, Vector>(*this);
+        }
+
 
         virtual void set_linear_solver(const std::shared_ptr<LinSolver> &linear_solver)
         {

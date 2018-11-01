@@ -41,6 +41,12 @@ namespace utopia
                 this->initialized(true); 
             }   
 
+
+            inline LBFGS<Vector> * clone() const override
+            {
+                return new LBFGS<Vector>(*this);
+            }
+
             virtual bool update(const Vector &  s, const Vector &  y ) override
             {
                 

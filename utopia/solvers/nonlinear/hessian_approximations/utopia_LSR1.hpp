@@ -37,6 +37,11 @@ namespace utopia
                 this->initialized(true); 
             }   
 
+            inline LSR1<Vector> * clone() const override
+            {
+                return new LSR1<Vector>(*this);
+            }
+
             virtual bool update(const Vector &  s, const Vector &  y ) override
             {
                 
