@@ -87,6 +87,9 @@ namespace utopia
 
             virtual bool apply_Hinv(const Vector & v, Vector & result) const override
             {
+                if(!this->initialized())
+                    utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n"); 
+
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
                 result = gamma_ * v;
 
@@ -101,6 +104,9 @@ namespace utopia
 
             virtual bool apply_H(const Vector & v, Vector & result) const  override
             {
+                if(!this->initialized())
+                    utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n"); 
+
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
                 result = theta_ * v;
 
@@ -127,6 +133,9 @@ namespace utopia
         private:
             void precompute_p()
             {
+                if(!this->initialized())
+                    utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n"); 
+
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
 
                 for(auto i=0; i < current_memory_size; i++)
@@ -143,6 +152,9 @@ namespace utopia
 
             void precompute_p_inv()
             {
+                if(!this->initialized())
+                    utopia_error("utopia::LSR1::apply_Hinv:: missing initialization... \n"); 
+                                    
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
 
                 for(auto i=0; i < current_memory_size; i++)

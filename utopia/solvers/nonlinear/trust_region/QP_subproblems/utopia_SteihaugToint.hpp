@@ -137,8 +137,6 @@ namespace utopia
 
             Scalar s_norm=0.0, s_norm_new=0.0,  sMp=0.0; 
 			Scalar r2 = this->current_radius() * this->current_radius(); 
-
-
             Scalar p_norm = dot(r, v_k); 
 
 			// if preconditioner yields nans or inf, or is precond. dir is indefinite - return gradient step 

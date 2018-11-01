@@ -355,17 +355,22 @@ namespace utopia
 		        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 		        tr_strategy_fine->atol(1e-9); 
 		        
-		        tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());		        
-		        tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
+		        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());		        
+		        tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
 
 	        	auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 		        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
+
+		        const SizeType memory_size = 5; 
+				auto hes_approx   = std::make_shared<ApproxType >(memory_size);
+				rmtr->set_hessian_approximation_strategy(hes_approx);
+
 
 		        rmtr->max_it(50);
 		        rmtr->max_coarse_it(1);
 		        rmtr->max_smoothing_it(3);
 		        rmtr->delta0(100);
-		        rmtr->atol(1e-5);
+		        rmtr->atol(1e-4);
 		        rmtr->rtol(1e-10);
 		        rmtr->set_grad_smoothess_termination(0.000001);
 		        rmtr->set_eps_grad_termination(1e-7);

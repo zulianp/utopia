@@ -124,6 +124,9 @@ namespace utopia
 
             virtual bool apply_Hinv(const Vector & g, Vector & q) const override
             {
+                if(!this->initialized())
+                    utopia_error("utopia::LBFGS::apply_Hinv:: missing initialization... \n"); 
+
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
                 std::vector<Scalar> alpha_inv(current_memory_size); 
                 q = g; 
@@ -147,6 +150,9 @@ namespace utopia
 
             virtual bool apply_H(const Vector & v , Vector & result) const  override
             {
+                if(!this->initialized())
+                    utopia_error("utopia::LBFGS::apply_Hinv:: missing initialization... \n"); 
+                
                 result = theta_ * v; 
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
 
@@ -174,6 +180,9 @@ namespace utopia
         private: 
             void update_a_b()
             {
+                if(!this->initialized())
+                    utopia_error("utopia::LBFGS::apply_Hinv:: missing initialization... \n"); 
+
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
 
                 for(auto k =0; k < current_memory_size; k++)
