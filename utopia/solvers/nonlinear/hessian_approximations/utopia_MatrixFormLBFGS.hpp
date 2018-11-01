@@ -7,7 +7,7 @@ namespace utopia
 {
 
 template<class Matrix, class DenseMatrix, class Vector>
-class MatrixFormLBFGS : public HessianApproximation<Matrix, Vector>
+class MatrixFormLBFGS : public HessianApproximation<Vector>
 {
 
     typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -25,12 +25,10 @@ class MatrixFormLBFGS : public HessianApproximation<Matrix, Vector>
         }
 
 
-        virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) override
+        virtual void initialize(const SizeType & n) override
         {
-            SizeType n = local_size(x).get(0);
             H_ = local_identity(n, n);
 
-            this->initialized(true);
             current_m_ = 0; 
 
             SizeType local_col_W = 0; 
@@ -47,7 +45,6 @@ class MatrixFormLBFGS : public HessianApproximation<Matrix, Vector>
             if(mpi_world_rank()==0)
                 local_col_YS = m_; 
 
-
             Y_ = local_values(n, local_col_YS, 0.0); 
             S_ = local_values(n, local_col_YS, 0.0); 
 
@@ -56,7 +53,7 @@ class MatrixFormLBFGS : public HessianApproximation<Matrix, Vector>
             d_elements_.resize(m_); 
             L_dots_.resize(m_, std::vector<Scalar>(m_));
 
-            return true;
+            this->initialized(true);
         }
 
 

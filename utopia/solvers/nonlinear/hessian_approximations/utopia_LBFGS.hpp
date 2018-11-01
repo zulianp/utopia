@@ -6,13 +6,14 @@
 
 namespace utopia
 {
-    // TO BE DONE.... 
-    template<class Matrix, class Vector>
-    class LBFGS : public HessianApproximation<Matrix, Vector>
+    // TODO:: speedup by preallocating just for H_inv, or H products... 
+    template<class Vector>
+    class LBFGS : public HessianApproximation<Vector>
     {
 
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
+
 
         public:
 
@@ -21,16 +22,14 @@ namespace utopia
 
             }
 
-            virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) override
+            virtual void initialize(const SizeType & n) override
             {
                 theta_ = 1.0; 
                 gamma_ = 1.0; 
 
-                SizeType n = local_size(x).get(0);
                 H0_ = local_values(n, 1.0);
 
                 current_m_ = 0; 
-                this->initialized(true); 
 
                 Y_.resize(m_); 
                 S_.resize(m_); 
@@ -41,10 +40,10 @@ namespace utopia
                 rho_.resize(m_); 
                 Sb_dots_.resize(m_, std::vector<Scalar>(m_));
 
-                return true;
+                this->initialized(true); 
             }   
 
-            virtual bool update(const Vector &  s  , const Vector &  y ) override
+            virtual bool update(const Vector &  s, const Vector &  y ) override
             {
                 
                 if(!this->initialized())
@@ -191,15 +190,12 @@ namespace utopia
 
 
         private:
-            // static_assert(utopia::is_sparse<Matrix>::value, "BFGS does not support sparse matrices."); 
-            // static_assert(!utopia::is_sparse<DenseMatrix>::value, "BFGS does not support sparse matrices."); 
-
             SizeType m_; // memory size 
             SizeType current_m_; // current amount of vectors in the memory 
             Scalar theta_; 
             Scalar gamma_; 
             
-            Vector H0_; // just diagonal of identity 
+            Vector H0_; // diagonal of identity 
 
             std::vector<Vector> Y_; 
             std::vector<Vector> S_; 
@@ -212,8 +208,6 @@ namespace utopia
 
 
         };
-
-
 
 }
 

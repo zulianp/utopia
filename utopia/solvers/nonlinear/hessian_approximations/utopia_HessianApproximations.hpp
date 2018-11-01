@@ -7,7 +7,7 @@
 namespace utopia
 {
 
-template<class Matrix, class Vector>
+template<class Vector>
 class HessianApproximation
 {
     typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -23,7 +23,7 @@ public:
 
     virtual ~HessianApproximation() { }
 
-    virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) = 0;
+    virtual void initialize(const SizeType & n) = 0;
     
     // refresh vectors
     virtual bool update(const Vector & /* s  */, const Vector &  /* y */ ) = 0;    

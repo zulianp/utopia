@@ -22,7 +22,7 @@ namespace utopia
         typedef UTOPIA_SIZE_TYPE(Vector)                            SizeType;
         
         typedef utopia::LSStrategy<Matrix, Vector>                  LSStrategy;
-        typedef utopia::HessianApproximation<Matrix, Vector>        HessianApproximation;
+        typedef utopia::HessianApproximation<Vector>                HessianApproximation;
         
         typedef utopia::MatrixFreeLinearSolver<Vector>              Solver;
         
@@ -60,7 +60,7 @@ namespace utopia
             }
             it++; 
             
-            hessian_approx_strategy_->initialize(fun, x);
+            this->hessian_approx_strategy_->initialize(local_size(x).get(0));
 
             while(!converged)
             {

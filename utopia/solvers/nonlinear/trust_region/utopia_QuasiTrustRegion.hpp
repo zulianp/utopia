@@ -23,7 +23,7 @@
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
         typedef utopia::TRSubproblem<Matrix, Vector> TRSubproblem;
-        typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation;
+        typedef utopia::HessianApproximation<Vector>    HessianApproximation;
 
         using TrustRegionBase<Matrix, Vector>::get_pred; 
 
@@ -77,7 +77,7 @@
 
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg);
-        hessian_approx_strategy_->initialize(fun, x_k);
+        hessian_approx_strategy_->initialize(local_size(x_k).get(0));
             
         fun.gradient(x_k, g);
         g0_norm = norm2(g);

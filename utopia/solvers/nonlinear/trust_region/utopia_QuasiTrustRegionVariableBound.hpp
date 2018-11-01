@@ -20,7 +20,7 @@
         typedef utopia::TrustRegionBase<Matrix, Vector>       TrustRegionBase; 
         typedef utopia::NonLinearSolver<Matrix, Vector>       NonLinearSolver;
 
-        typedef utopia::HessianApproximation<Matrix, Vector>    HessianApproximation;
+        typedef utopia::HessianApproximation<Vector>          HessianApproximation;
 
         using TrustRegionBase::get_pred; 
 
@@ -86,7 +86,7 @@
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg); 
 
-        hessian_approx_strategy_->initialize(fun, x_k);
+        hessian_approx_strategy_->initialize(local_size(x_k).get(0));
         
         g0_norm = norm2(g);
         g_norm = g0_norm;

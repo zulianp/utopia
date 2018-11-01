@@ -8,28 +8,25 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class BFGS : public HessianApproximation<Matrix, Vector>
+    class BFGS : public HessianApproximation<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
 
-        static_assert(!utopia::is_sparse<Matrix>::value, "BFGS does not support sparse matrices."); 
+        static_assert(!utopia::is_sparse<Matrix>::value, "LBFGS does not support sparse matrices.");
 
         public:
 
-            BFGS(): HessianApproximation<Matrix, Vector>(), update_hessian_(false)
+            BFGS(): HessianApproximation<Vector>(), update_hessian_(false)
             {
 
             }
 
-            virtual bool initialize(Function<Matrix, Vector> &fun, const Vector &x) override
+            virtual void initialize(const SizeType & n) override
             {
-                SizeType n = local_size(x).get(0);
-
                 if(update_hessian_)
                 {
-                    if(!fun.hessian(x, H_prev_))
-                        H_prev_ = local_identity(n, n);
+                    H_prev_ = local_identity(n, n);
                 }
 
                 H_prev_inv_ = local_identity(n, n);
@@ -38,8 +35,6 @@ namespace utopia
                 y_ = local_zeros(n); 
 
                 this->initialized(true); 
-
-                return true;
             }                
 
             virtual bool update(const Vector & s_in, const Vector & y_in ) override

@@ -84,7 +84,7 @@ namespace utopia
 	    		Vector x = values(_n, 1.0);
 	    		fun.apply_bc_to_initial_guess(x);
 
-				auto hess_approx_BFGS = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);
+				auto hess_approx_BFGS = std::make_shared<LBFGS<Vector> >(memory_size);
 				auto subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >();
 				subproblem->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
 				// subproblem->verbose(true);
@@ -143,7 +143,7 @@ namespace utopia
 				params.max_it(1000); 
 				params.verbose(_verbose);
 				
-	    		auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);				
+	    		auto hess_approx_BFGS   = std::make_shared<LBFGS<Vector> >(memory_size);				
 	    		auto lsolver = std::make_shared<EmptyPrecondMatrixFreeLinearSolver<Vector> >(); 
 	    		lsolver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx_BFGS->get_apply_Hinv())); 
 
@@ -214,7 +214,7 @@ namespace utopia
 				params.max_it(1000);
 				params.delta0(1);
 
-				auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);	
+				auto hess_approx_BFGS   = std::make_shared<LBFGS<Vector> >(memory_size);	
 		        auto qp_solver = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
 
 		        QuasiTrustRegionVariableBound<Matrix, Vector>  tr_solver(hess_approx_BFGS, qp_solver);
@@ -275,7 +275,7 @@ namespace utopia
 				params.max_it(20); 
 				params.delta0(1); 
 
-				auto hess_approx_BFGS   = std::make_shared<LBFGS<Matrix,  Vector> >(memory_size);	
+				auto hess_approx_BFGS   = std::make_shared<LBFGS<Vector> >(memory_size);	
 		        auto qp_solver = std::make_shared<ProjectedGradientActiveSet<Matrix, Vector> >();
 		        qp_solver->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approx_BFGS->get_apply_Hinv())); 
 
