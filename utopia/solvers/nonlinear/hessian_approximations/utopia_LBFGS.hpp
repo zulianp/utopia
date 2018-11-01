@@ -8,7 +8,7 @@ namespace utopia
 {
     // TODO:: speedup by preallocating just for H_inv, or H products... 
     template<class Vector>
-    class LBFGS : public HessianApproximation<Vector>
+    class LBFGS final: public HessianApproximation<Vector>
     {
 
         typedef UTOPIA_SCALAR(Vector)    Scalar;
@@ -26,8 +26,6 @@ namespace utopia
             {
                 theta_ = 1.0; 
                 gamma_ = 1.0; 
-
-                H0_ = local_values(n, 1.0);
 
                 current_m_ = 0; 
 
@@ -130,7 +128,7 @@ namespace utopia
                     q -=  alpha_inv[i] * Y_[i]; 
                 }
 
-                q = gamma_ * (e_mul(H0_, q)); 
+                q = gamma_ * q; 
 
                 for(auto i=0; i < current_memory_size; i++)
                 {
@@ -143,7 +141,7 @@ namespace utopia
 
             virtual bool apply_H(const Vector & v , Vector & result) const  override
             {
-                result = theta_ * e_mul(H0_, v); 
+                result = theta_ * v; 
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
 
                 for(auto i=0; i < current_memory_size; i++)
@@ -167,13 +165,14 @@ namespace utopia
             }
 
 
+        private: 
             void update_a_b()
             {
                 SizeType current_memory_size = (current_m_ < m_) ? current_m_ : m_; 
 
                 for(auto k =0; k < current_memory_size; k++)
                 {
-                    a_[k] = theta_ * e_mul(H0_, S_[k]); 
+                    a_[k] = theta_ * S_[k]; 
 
                     for(auto i = 0; i < k; i++)
                     {
@@ -195,8 +194,6 @@ namespace utopia
             Scalar theta_; 
             Scalar gamma_; 
             
-            Vector H0_; // diagonal of identity 
-
             std::vector<Vector> Y_; 
             std::vector<Vector> S_; 
 

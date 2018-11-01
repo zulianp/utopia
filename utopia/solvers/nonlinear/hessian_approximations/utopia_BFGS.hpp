@@ -8,7 +8,7 @@ namespace utopia
 {
 
     template<class Matrix, class Vector>
-    class BFGS : public HessianApproximation<Vector>
+    class BFGS final: public HessianApproximation<Vector>
     {
         typedef UTOPIA_SCALAR(Vector)    Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector) SizeType;
