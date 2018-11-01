@@ -1,9 +1,3 @@
-/*
-* @Author: alenakopanicakova
-* @Date:   2016-08-10
-* @Last Modified by:   alenakopanicakova
-* @Last Modified time: 2016-10-12
-*/
 #ifndef UTOPIA_Linear_SOLVER_H
 #define UTOPIA_Linear_SOLVER_H
 

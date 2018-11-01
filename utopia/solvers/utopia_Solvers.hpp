@@ -6,6 +6,7 @@
 #include "utopia_Nonlinear.hpp"
 #include "utopia_Parameters.hpp"
 #include "utopia_SaddlePoint.hpp"
+#include "utopia_Smoothers.hpp"
 
 /**
  * @defgroup   solving Solvers
