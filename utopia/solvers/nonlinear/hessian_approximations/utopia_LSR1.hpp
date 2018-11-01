@@ -18,10 +18,10 @@ namespace utopia
 
             LSR1(const SizeType & m): m_(m), current_m_(0), theta_(1.0), gamma_(1.0)
             {
-
+            
             }
 
-            virtual void initialize(const SizeType & n) override
+            virtual void initialize() override
             {
                 theta_ = 1.0; 
                 gamma_ = 1.0; 
@@ -36,6 +36,17 @@ namespace utopia
 
                 this->initialized(true); 
             }   
+
+            virtual void reset() override
+            {
+                Y_.clear(); 
+                S_.clear(); 
+
+                p_.clear(); 
+                p_inv_.clear(); 
+
+                this->initialize(); 
+            }            
 
             inline LSR1<Vector> * clone() const override
             {
@@ -53,14 +64,17 @@ namespace utopia
                 else if(m_ == 0)
                     return true; 
             
-                // if denom > eps, hessian approx. should be positive semidefinite
-                // if(denom < 1e-12 || !std::isfinite(denom))
-                // {
-                //     // if(mpi_world_rank()==0)
-                //     //     utopia_warning("L-BFGS-B: Curvature condition not satified. Skipping update. \n"); 
+                Vector diff = y - s; 
+                Scalar nom = std::abs(dot(s, diff)); 
+                Scalar denom = norm2(s) * norm2(diff); 
 
-                //     return false; 
-                // }
+                if(nom/denom < this->num_tol() || !std::isfinite(denom) || !std::isfinite(nom))
+                {
+                    if(mpi_world_rank()==0)
+                        utopia_warning("L-SR1: Curvature condition not satified. Skipping update. \n"); 
+
+                    return false; 
+                }
 
 
                 if(current_m_ < m_)
@@ -99,6 +113,9 @@ namespace utopia
                     result += scaling_factor * p_inv_[i];
                 }
 
+                if(has_nan_or_inf(result))
+                    result = gamma_ * v;
+
                 return true; 
             }
 
@@ -115,6 +132,9 @@ namespace utopia
                     Scalar scaling_factor = dot(p_[i], v)/dot(p_[i], S_[i]); 
                     result += scaling_factor * p_[i];
                 }
+
+                if(has_nan_or_inf(result))
+                    result = theta_ * v;
 
                 return true; 
             }

@@ -77,7 +77,7 @@
 
         // TR delta initialization
         delta =  this->delta_init(x_k , this->delta0(), rad_flg);
-        hessian_approx_strategy_->initialize(local_size(x_k).get(0));
+        hessian_approx_strategy_->initialize();
             
         fun.gradient(x_k, g);
         g0_norm = norm2(g);

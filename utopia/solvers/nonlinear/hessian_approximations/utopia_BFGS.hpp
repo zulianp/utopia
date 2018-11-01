@@ -17,9 +17,9 @@ namespace utopia
 
         public:
 
-            BFGS(): HessianApproximation<Vector>(), update_hessian_(false)
+            BFGS(): HessianApproximation<Vector>(), update_hessian_(false), current_it_(0)
             {
-
+                
             }
 
             inline BFGS<Matrix, Vector> * clone() const override
@@ -27,20 +27,23 @@ namespace utopia
                 return new BFGS<Matrix, Vector>(*this);
             }
 
-            virtual void initialize(const SizeType & n) override
+            virtual void initialize() override
             {
-                if(update_hessian_)
-                {
-                    H_prev_ = local_identity(n, n);
-                }
-
-                H_prev_inv_ = local_identity(n, n);
-
-                s_ = local_zeros(n); 
-                y_ = local_zeros(n); 
-
+                current_it_ = 0; 
                 this->initialized(true); 
+
+                H_prev_ = Matrix(); 
+                H_prev_inv_ = Matrix(); 
             }                
+
+            virtual void reset() override
+            {
+                if(!empty(H_prev_))
+                    H_prev_ = local_identity(local_size(H_prev_)); 
+
+                if(!empty(H_prev_inv_))
+                    H_prev_inv_ = local_identity(local_size(H_prev_inv_));                 
+            }
 
             virtual bool update(const Vector & s_in, const Vector & y_in ) override
             {
@@ -48,6 +51,19 @@ namespace utopia
                 {
                     utopia_error("BFGS::update: Initialization needs to be done before updating. \n"); 
                     return false; 
+                }
+
+
+                if(current_it_ == 0)
+                {
+                    SizeType n = local_size(s_in).get(0); 
+
+                    if(update_hessian_)
+                    {
+                        H_prev_ = local_identity(n, n);
+                    }
+
+                    H_prev_inv_ = local_identity(n, n);
                 }
 
 
@@ -60,6 +76,8 @@ namespace utopia
                     this->update_Hessian(); 
                 }
 
+                current_it_++; 
+
                 return true; 
             }
 
@@ -71,40 +89,57 @@ namespace utopia
             virtual bool apply_Hinv(const Vector & g , Vector & s) const override
             {
                 if(this->initialized())
-                    s = H_prev_inv_ * g; 
+                {
+                    if(!empty(H_prev_inv_))
+                        s = H_prev_inv_ * g; 
+                    else
+                        s = g; 
+                }
                 else
                     utopia_error("BFGS::apply_Hinv: Initialization needs to be done first. \n"); 
              
                 return true; 
             }
 
-
-            virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const override
-            {
-                if(this->initialized())
-                    return dot(u, H_prev_inv_ * v); 
-                else{
-                    utopia_error("BFGS::compute_uHinvv_dot: Initialization needs to be done first. \n"); 
-                    return false; 
-                }
-            }
-
-
             virtual bool apply_H(const Vector & v, Vector & result) const override
             {
                 if(update_hessian_ && this->initialized())
-                    result = H_prev_ * v; 
+                {
+                    if(!empty(H_prev_))
+                        result = H_prev_ * v; 
+                    else
+                        result = v; 
+                }
                 else
                    utopia_error("BFGS::apply_H can be used only, if H is computed. \n Please turn on update_hessian option. \n"); 
 
                 return true; 
             }
 
+            virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const override
+            {
+                if(this->initialized())
+                {
+                    if(!empty(H_prev_inv_))
+                        return dot(u, H_prev_inv_ * v); 
+                    else
+                        return dot(u, v); 
+                }
+                else{
+                    utopia_error("BFGS::compute_uHinvv_dot: Initialization needs to be done first. \n"); 
+                    return false; 
+                }
+            }
 
             virtual Scalar compute_uHv_dot(const Vector & u, const Vector & v) const override
             {
                 if(update_hessian_ && this->initialized())
-                    return dot(u, H_prev_ * v); 
+                {
+                    if(!empty(H_prev_))
+                        return dot(u, H_prev_ * v); 
+                    else
+                        return dot(u,v); 
+                }
                 else
                 {
                     utopia_error("BFGS::compute_uHv_dot can be used only, if H is computed. \n Please turn on update_hessian option. \n"); 
@@ -115,7 +150,12 @@ namespace utopia
             virtual Scalar compute_uHu_dot(const Vector & u) const override
             {
                 if(update_hessian_ && this->initialized())
-                    return dot(u, H_prev_ * u);
+                {
+                    if(!empty(H_prev_))
+                        return dot(u, H_prev_ * u);
+                    else
+                        return dot(u, u); 
+                }
                 else
                 { 
                     utopia_error("BFGS::compute_uHu_dot can be used only, if H is computed. \n Please turn on update_hessian option. \n"); 
@@ -182,9 +222,12 @@ namespace utopia
         private:
             Vector s_;              // x_{k+1} - x_{k}
             Vector y_;              // g_{k+1} - g_{k}
+
             Matrix H_prev_inv_;     // H^{-1}_{k}
             Matrix H_prev_;         // H^{1}_{k}
+
             bool update_hessian_; 
+            SizeType current_it_; 
 
         };
 

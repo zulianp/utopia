@@ -447,6 +447,8 @@ namespace utopia
             //----------------------------------------------------------------------------
             //                        postsmoothing
             //----------------------------------------------------------------------------
+
+            this->reset_level(level); // TODO:: find better name for this...
             this->local_tr_solve(level, !smoothness_flg);
 
             return true;
@@ -648,6 +650,13 @@ namespace utopia
             }
 
             return this->delta_update(rho, level, memory_.s_working[level]);
+        }
+
+
+
+        virtual void reset_level(const SizeType & level)
+        {
+            // does not do anything
         }
 
 

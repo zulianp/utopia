@@ -81,7 +81,7 @@ namespace utopia
                     hessian_approxs_[l] = std::shared_ptr<HessianApproximation>(hessian_approx_clonable_->clone());
 
                     if(l == this->n_levels() - 1)
-                        hessian_approxs_[l]->initialize(fine_local_size);
+                        hessian_approxs_[l]->initialize();
                 }
             }
 
@@ -90,7 +90,9 @@ namespace utopia
         virtual void init_level(const SizeType & level) override
         {
             RMTR::init_level(level);
-            hessian_approxs_[level]->initialize(local_size(this->memory_.x[level]).get(0));
+
+            // maybe different strategies over here...
+            hessian_approxs_[level]->initialize();
         }
 
 
@@ -139,6 +141,12 @@ namespace utopia
             hessian_approxs_[level]->update(this->memory_.s[level], y);
 
             return this->delta_update(rho, level, this->memory_.s_working[level]);
+        }
+
+
+        virtual void reset_level(const SizeType & level) override
+        {
+            hessian_approxs_[level]->reset();
         }
 
 

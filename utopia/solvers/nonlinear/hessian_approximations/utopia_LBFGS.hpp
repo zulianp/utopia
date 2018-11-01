@@ -19,10 +19,10 @@ namespace utopia
 
             LBFGS(const SizeType & m): m_(m), current_m_(0), theta_(1.0), gamma_(1.0)
             {
-
+               
             }
 
-            virtual void initialize(const SizeType & n) override
+            virtual void initialize() override
             {
                 theta_ = 1.0; 
                 gamma_ = 1.0; 
@@ -41,6 +41,20 @@ namespace utopia
                 this->initialized(true); 
             }   
 
+
+            virtual void reset() override
+            {
+                Y_.clear(); 
+                S_.clear(); 
+
+                a_.clear(); 
+                b_.clear(); 
+
+                rho_.clear(); 
+                Sb_dots_.clear(); 
+
+                this->initialize(); 
+            }
 
             inline LBFGS<Vector> * clone() const override
             {
@@ -145,6 +159,9 @@ namespace utopia
                     q += (alpha_inv[i] - betta_inv)  * S_[i];  
                 }
 
+                if(has_nan_or_inf(q))
+                    q = gamma_ * g;
+
                 return true; 
             }
 
@@ -163,6 +180,10 @@ namespace utopia
 
                     result += (bv * b_[i]) - (av * a_[i]); 
                 }
+
+                if(has_nan_or_inf(result))
+                    result = theta_ * v;
+
                 return true; 
             }
 

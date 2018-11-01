@@ -333,7 +333,7 @@ namespace utopia
 		    void Quasi_RMTR_test()
 		    {	
 		    	// 									(n_levels, remove_BC_contributions, verbose)
-		    	BratuMultilevelTestProblem<Matrix, Vector> problem(2, true, true); 
+		    	BratuMultilevelTestProblem<Matrix, Vector> problem(3, true, true); 
 
 		    	// intial guess
 		        Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
@@ -365,10 +365,9 @@ namespace utopia
 				auto hes_approx   = std::make_shared<ApproxType >(memory_size);
 				rmtr->set_hessian_approximation_strategy(hes_approx);
 
-
 		        rmtr->max_it(50);
 		        rmtr->max_coarse_it(1);
-		        rmtr->max_smoothing_it(3);
+		        rmtr->max_smoothing_it(5);
 		        rmtr->delta0(100);
 		        rmtr->atol(1e-4);
 		        rmtr->rtol(1e-10);
@@ -376,8 +375,8 @@ namespace utopia
 		        rmtr->set_eps_grad_termination(1e-7);
 
 				rmtr->verbose(problem.verbose);
-				rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-				// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+				// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+				rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 		        rmtr->set_functions(level_functions);
 
 		        rmtr->solve(x);
@@ -400,11 +399,12 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
-			// QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
-			// QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
-			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
+			QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
+			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
+			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
 
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_multilevel();
+			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_multilevel();
 		#endif
 
 		// #ifdef WITH_BLAS

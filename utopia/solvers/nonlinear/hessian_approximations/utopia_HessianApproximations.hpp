@@ -18,13 +18,14 @@ public:
 
     HessianApproximation(): num_tol_(1e-12), initialized_(false)
     {
-
+        
     }
 
     virtual ~HessianApproximation() { }
 
-    virtual void initialize(const SizeType & n) = 0;
+    virtual void initialize() = 0;
     virtual bool update(const Vector & /* s  */, const Vector &  /* y */ ) = 0;    
+    virtual void reset() = 0; 
 
     virtual HessianApproximation<Vector> * clone() const override = 0;
 
@@ -43,7 +44,37 @@ public:
     {
         return initialized_; 
     }
+
+    void initialized(const bool init) 
+    {
+        initialized_ = init; 
+    }
+
+    // applications of inverse of Hessian
+    virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;
+    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  = 0; 
     
+    virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const 
+    {        
+        Vector help; 
+        this->apply_Hinv(v, help); 
+        return dot(u, help); 
+    }
+    
+    virtual Scalar compute_uHv_dot(const Vector & u , const Vector & v) const 
+    {
+        Vector help; 
+        this->apply_H(v, help); 
+        return dot(u, help); 
+    }
+
+    virtual Scalar compute_uHu_dot(const Vector & u) const
+    {
+        Vector help; 
+        this->apply_H(u, help); 
+        return dot(u, help); 
+    }
+
     std::function< void(const Vector &, Vector &) >  get_apply_Hinv()
     {
         std::function< void(const Vector &, Vector &) > my_func = 
@@ -100,38 +131,6 @@ public:
 
         return my_func; 
     }    
-
-
-// protected: 
-    void initialized(const bool init) 
-    {
-        initialized_ = init; 
-    }
-
-    // applications of inverse of Hessian
-    virtual bool apply_Hinv(const Vector & /* g */, Vector & /*s */) const  = 0;
-    virtual bool apply_H(const Vector & /*v*/ , Vector & /*r */) const  = 0; 
-    
-    virtual Scalar compute_uHinvv_dot(const Vector & u, const Vector & v) const 
-    {        
-        Vector help; 
-        this->apply_Hinv(v, help); 
-        return dot(u, help); 
-    }
-    
-    virtual Scalar compute_uHv_dot(const Vector & u , const Vector & v) const 
-    {
-        Vector help; 
-        this->apply_H(v, help); 
-        return dot(u, help); 
-    }
-
-    virtual Scalar compute_uHu_dot(const Vector & u) const
-    {
-        Vector help; 
-        this->apply_H(u, help); 
-        return dot(u, help); 
-    }
 
 
 private:
