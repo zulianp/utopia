@@ -27,8 +27,6 @@ namespace utopia {
             UTOPIA_RUN_TEST(petsc_mg_jacobi);
             UTOPIA_RUN_TEST(petsc_factorization);
             UTOPIA_RUN_TEST(petsc_st_cg_mg); 
-            UTOPIA_RUN_TEST(mat_linear_solve_test); 
-
 
 #endif //PETSC_HAVE_MUMPS
         }
@@ -581,23 +579,7 @@ namespace utopia {
 
             //! [MG solve example]
         }        
-
-
-
-        void mat_linear_solve_test()
-        {
-            DSMatrixd A = sparse(_n, _n, 3);
-            assemble_symmetric_laplacian_1D(A, true);
-
-            DMatrixd B = local_identity(local_size(A)); 
-            DMatrixd  X= local_values(local_size(A).get(0), local_size(A).get(1), 0.0); 
-
-            auto linear_solver = std::make_shared<GMRES<DSMatrixd, DVectord> >();
-            MatLinearSolver<DSMatrixd, DMatrixd, DVectord> mat_solver(linear_solver); 
-            mat_solver.solve(A, B, X);
-
-            utopia_test_assert( approxeq(A*X, B, 1e-6) );
-        }        
+    
 
         PetscLinearSolverTest()
         : _n(10) { }

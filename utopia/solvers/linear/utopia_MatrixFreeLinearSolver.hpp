@@ -37,26 +37,6 @@ namespace  utopia
             std::function< void(const Vector &, Vector &) > operator_action_; 
     };
 
-
-    template<class Vector>
-    class FunctionPreconditioner final: public Preconditioner<Vector> 
-    {
-        public:
-            FunctionPreconditioner(const std::function< void(const Vector &, Vector &) > operator_action)
-            : operator_action_(operator_action)
-            {}
-
-            bool apply(const Vector &rhs, Vector &ret) override
-            {
-                operator_action_(rhs, ret); 
-                return true;
-            }
-
-
-        private:
-            std::function< void(const Vector &, Vector &) > operator_action_; 
-    };
-
     
     template<class Vector>
     class EmptyPrecondMatrixFreeLinearSolver: public MatrixFreeLinearSolver<Vector>

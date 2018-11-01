@@ -117,6 +117,7 @@ namespace utopia
     private:
         std::shared_ptr<const Matrix> op_;
     };
+    
 }
 
 #endif //UTOPIA_UTOPIA_PRECONDITIONER_HPP

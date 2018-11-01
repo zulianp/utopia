@@ -355,11 +355,10 @@ namespace utopia
 		        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 		        tr_strategy_fine->atol(1e-9); 
 		        
-		        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());		        
-		        tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
+		        tr_strategy_coarse->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());		        
+		        tr_strategy_fine->set_preconditioner(std::make_shared<InvDiagPreconditioner<Matrix, Vector> >());
 
-	        	// auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
-	        	auto rmtr = std::make_shared<RMTR<Matrix, Vector, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+	        	auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 		        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
 		        rmtr->max_it(50);

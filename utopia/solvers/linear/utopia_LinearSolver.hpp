@@ -67,66 +67,6 @@ namespace  utopia
         std::shared_ptr<const Matrix> op_;
     };
 
-
-
-    template<class Matrix, class Vector>
-    class InvDiagPreconditioner : public LinearSolver<Matrix, Vector>
-    {
-    public:
-        virtual bool apply(const Vector &rhs, Vector &sol) override
-        {
-            sol = e_mul(d, rhs);
-            return true;
-        }
-
-        /*! @brief if overriden the subclass has to also call this one first
-         */
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
-            LinearSolver<Matrix, Vector>::update(op);
-            d = diag(*op);
-            d  = 1.0 / d;
-        }
-
-
-        virtual Vector get_d()
-        {
-            return d;
-        }
-
-        InvDiagPreconditioner * clone() const override
-        {
-            return new InvDiagPreconditioner(*this);
-        }
-
-    private:
-        Vector d;
-    };
-
-    template<class Matrix, class Vector>
-    class IdentityPreconditioner : public LinearSolver<Matrix, Vector>
-    {
-    public:
-        virtual bool apply(const Vector &rhs, Vector &sol) override
-        {
-            sol = rhs; 
-            return true;
-        }
-
-        /*! @brief if overriden the subclass has to also call this one first
-         */
-        virtual void update(const std::shared_ptr<const Matrix> &op) override
-        {
-            LinearSolver<Matrix, Vector>::update(op);
-        }
-
-        IdentityPreconditioner * clone() const override
-        {
-            return new IdentityPreconditioner(*this);
-        }
-
-    };
-
 }
 
 #endif //UTOPIA_SOLVER_SOLVER_H

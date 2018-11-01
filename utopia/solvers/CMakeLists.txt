@@ -3,6 +3,7 @@ list(APPEND SOLVERS_MODULES
 	domain_decomposition
 	linear 
 	multilevel
+	multilevel/transfer
 	smoothers
 	nonlinear
 	nonlinear/affine_similarity

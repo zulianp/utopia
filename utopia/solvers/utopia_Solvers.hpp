@@ -7,6 +7,7 @@
 #include "utopia_Parameters.hpp"
 #include "utopia_SaddlePoint.hpp"
 #include "utopia_Smoothers.hpp"
+#include "utopia_Preconditioners.hpp"
 
 /**
  * @defgroup   solving Solvers
