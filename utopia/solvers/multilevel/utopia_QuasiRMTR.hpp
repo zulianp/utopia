@@ -104,22 +104,15 @@ namespace utopia
 
         virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg) override
         {
-            // this params should not be as hardcodded as they are...
+            this->_tr_subproblems[level]->atol(1e-16);
             if(flg)
-            {
-                this->_coarse_tr_subproblem->atol(1e-16);
-                this->_coarse_tr_subproblem->max_it(this->_max_QP_coarse_it);
-
-                auto multiplication_action = FunctionOperator<Vector>(hessian_approxs_[level]->get_apply_H()); 
-                this->_coarse_tr_subproblem->tr_constrained_solve(multiplication_action, this->memory_.g[level], this->memory_.s[level], this->memory_.delta[level]);
-            }
+                this->_tr_subproblems[level]->max_it(this->_max_QP_coarse_it);
             else
-            {
-                this->_smoother_tr_subproblem->atol(1e-16);
-                this->_smoother_tr_subproblem->max_it(this->_max_QP_smoothing_it);
-                auto multiplication_action = FunctionOperator<Vector>(hessian_approxs_[level]->get_apply_H()); 
-                this->_smoother_tr_subproblem->tr_constrained_solve(multiplication_action, this->memory_.g[level], this->memory_.s[level], this->memory_.delta[level]);
-            }
+                this->_tr_subproblems[level]->max_it(this->_max_QP_smoothing_it);
+
+
+            auto multiplication_action = FunctionOperator<Vector>(hessian_approxs_[level]->get_apply_H()); 
+            this->_tr_subproblems[level]->tr_constrained_solve(multiplication_action, this->memory_.g[level], this->memory_.s[level], this->memory_.delta[level]);            
 
             return true;
         }

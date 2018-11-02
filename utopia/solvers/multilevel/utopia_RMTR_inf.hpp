@@ -111,6 +111,7 @@ namespace utopia
         virtual void init_memory(const SizeType & fine_local_size) override 
         {   
             RMTR::init_memory(fine_local_size);
+            
             constraints_memory_.init(this->n_levels()); 
 
             const SizeType fine_level = this->n_levels()-1; 
@@ -376,23 +377,19 @@ namespace utopia
             // generating constraints to go for QP solve 
             auto box = make_box_constaints(std::make_shared<Vector>(l), std::make_shared<Vector>(u));
 
-            if(flg)
-            {
-                // setting should be really parameters from outside ... 
-                this->_coarse_tr_subproblem->atol(1e-16); 
-                this->_coarse_tr_subproblem->max_it(this->max_QP_coarse_it()); 
 
-                if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_coarse_tr_subproblem.get()))
-                    tr_subproblem->tr_constrained_solve(this->memory_.H[level], this->memory_.g[level], this->memory_.s[level], box);
-            }
+            // setting should be really parameters from outside ... 
+            this->_tr_subproblems[level]->atol(1e-16); 
+
+            if(flg)
+                this->_tr_subproblems[level]->max_it(this->max_QP_coarse_it()); 
             else
-            {
-                this->_smoother_tr_subproblem->atol(1e-16); 
-                this->_smoother_tr_subproblem->max_it(this->max_QP_smoothing_it());
-                
-                if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_smoother_tr_subproblem.get()))
-                    tr_subproblem->tr_constrained_solve(this->memory_.H[level], this->memory_.g[level], this->memory_.s[level], box);
-            }
+                this->_tr_subproblems[level]->max_it(this->max_QP_smoothing_it());
+
+
+            if(TRSubproblem * tr_subproblem = dynamic_cast<TRSubproblem*>(this->_tr_subproblems[level].get()))
+                    tr_subproblem->tr_constrained_solve(this->memory_.H[level], this->memory_.g[level], this->memory_.s[level], box);            
+
 
             return true; 
         }

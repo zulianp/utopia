@@ -31,7 +31,10 @@ namespace utopia
     {
         typedef UTOPIA_SCALAR(Vector)                       Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                    SizeType;
+        
         typedef utopia::TRSubproblem<Matrix, Vector>        TRSubproblem;
+        typedef std::shared_ptr<TRSubproblem>               TRSubproblemPtr; 
+
         typedef utopia::Transfer<Matrix, Vector>            Transfer;
         typedef utopia::Level<Matrix, Vector>               Level;
 
@@ -52,8 +55,8 @@ namespace utopia
                 const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother,
                 const Parameters params = Parameters()):
                 NonlinearMultiLevelBase<Matrix,Vector>(params),
-                _coarse_tr_subproblem(tr_subproblem_coarse),
-                _smoother_tr_subproblem(tr_subproblem_smoother),
+                _coarse_tr_subproblem_clonable(tr_subproblem_coarse),
+                _smoother_tr_subproblem_clonable(tr_subproblem_smoother),
                 red_(FG_LIGHT_MAGENTA),
                 def_(FG_DEFAULT),
                 yellow_(FG_LIGHT_YELLOW),
@@ -574,6 +577,21 @@ namespace utopia
             // init deltas to some default value...
             for(Scalar l = 0; l < this->n_levels(); l ++)
                 memory_.delta[l] = this->delta0();
+
+
+            if(_tr_subproblems.size() !=  this->n_levels())
+            {
+                utopia_warning("utopia::RMTR:: TRSubproblems not set on each level. Cloning.... \n"); 
+                _tr_subproblems.resize(this->n_levels());
+
+                for(auto l = 0; l < _tr_subproblems.size(); l++)
+                {
+                    if(l == 0 )
+                        _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(_coarse_tr_subproblem_clonable->clone());
+                    else
+                        _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(_smoother_tr_subproblem_clonable->clone());
+                }
+            }
         }
 
 
@@ -806,18 +824,13 @@ namespace utopia
         virtual bool solve_qp_subproblem(const SizeType & level, const bool & flg)
         {
             // this params should not be as hardcodded as they are...
+            _tr_subproblems[level]->atol(1e-16);
             if(flg)
-            {
-                _coarse_tr_subproblem->atol(1e-16);
-                _coarse_tr_subproblem->max_it(_max_QP_coarse_it);
-                _coarse_tr_subproblem->tr_constrained_solve(memory_.H[level], memory_.g[level], memory_.s[level], memory_.delta[level]);
-            }
+                _tr_subproblems[level]->max_it(_max_QP_coarse_it);
             else
-            {
-                _smoother_tr_subproblem->atol(1e-16);
-                _smoother_tr_subproblem->max_it(_max_QP_smoothing_it);
-                _smoother_tr_subproblem->tr_constrained_solve(memory_.H[level], memory_.g[level], memory_.s[level], memory_.delta[level]);
-            }
+                _tr_subproblems[level]->max_it(_max_QP_smoothing_it);
+            
+            _tr_subproblems[level]->tr_constrained_solve(memory_.H[level], memory_.g[level], memory_.s[level], memory_.delta[level]);                
 
             return true;
         }
@@ -930,11 +943,81 @@ namespace utopia
 
 
 
+    public: 
+        virtual bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        {
+            _coarse_tr_subproblem_clonable = strategy; 
+
+            if(_tr_subproblems.size() > 0)
+                _tr_subproblems[0] = std::shared_ptr<TRSubproblem>(_coarse_tr_subproblem_clonable->clone());
+
+            return true;
+        }
+
+        virtual bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        {
+            _smoother_tr_subproblem_clonable = strategy; 
+
+            if(_tr_subproblems.size() ==  this->n_levels())
+            {
+                // starting from level 1 .... 
+                for(std::size_t l = 1; l != _tr_subproblems.size(); ++l) 
+                    _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(_smoother_tr_subproblem_clonable->clone());
+            }
+
+            return true;
+        }
+
+
+        virtual bool set_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy, const SizeType & level)
+        {
+            if(this->n_levels() > 0 && _tr_subproblems.size() != this->n_levels())
+            {
+                _tr_subproblems.resize(this->n_levels()); 
+            }
+            else
+            {
+                utopia_error("utopia::RMTR::set_tr_strategy:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
+            }
+            
+            if(level <= this->n_levels())
+            {
+                _tr_subproblems[level] = strategy;
+            }
+            else
+                utopia_error("utopia::RMTR::set_tr_strategy:: requested level exceeds number of levels in ML hierarchy.... \n"); 
+
+            return true;
+        }
+
+
+        virtual bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
+        {
+            if(this->n_levels() > 0 && strategies.size() == this->n_levels())
+            {
+                if(this->n_levels() != _tr_subproblems.size())
+                    _tr_subproblems.resize(this->n_levels()); 
+            }
+            else
+            {
+                utopia_error("utopia::RMTR::set_tr_strategy:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
+            }
+            
+            _tr_subproblems.clear();
+            _tr_subproblems.insert(strategies.begin(), strategies.begin(), strategies.end());
+
+            return true;
+        }
+
+
     protected:
         SizeType                            _it_global;                 /** * global iterate counter  */
 
-        std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem;     /** * solver used to solve coarse level TR subproblems  */
-        std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem;   /** * solver used to solve fine level TR subproblems  */
+        std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem_clonable;     /** * solver used to solve coarse level TR subproblems  */
+        std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem_clonable;   /** * solver used to solve fine level TR subproblems  */
+
+
+        std::vector<TRSubproblemPtr>        _tr_subproblems; 
 
 
         // ----------------------- PARAMETERS ----------------------

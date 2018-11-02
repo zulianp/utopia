@@ -31,7 +31,7 @@ namespace utopia {
 
             TaoTRSubproblem * clone() const override
             {
-                return new TaoTRSubproblem(std::shared_ptr<LinearSolver>(linear_solver_->clone()));
+                return new TaoTRSubproblem(*this);
             }
             
             virtual ~TaoTRSubproblem( ){}
