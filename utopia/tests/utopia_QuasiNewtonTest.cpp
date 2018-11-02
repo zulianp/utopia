@@ -337,6 +337,13 @@ namespace utopia
 		    	// 									(n_levels, remove_BC_contributions, verbose)
 		    	BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, true); 
 
+		    	// put TR strategy out of constructor.... 
+		        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+		        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+		    	auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+		    	rmtr->n_levels(n_levels); 
+
+
 		    	// intial guess
 		        Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
 		    	std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions(problem.n_levels);
@@ -351,27 +358,6 @@ namespace utopia
 			    		fun->apply_bc_to_initial_guess(x);
 			    }
 
-
-			    std::vector<std::shared_ptr<utopia::TRSubproblem<Matrix, Vector> > > subproblems(problem.n_levels);
-		    	for(auto l=0; l < problem.n_levels; l++)
-		    	{
-		    		auto tr_strategy = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		    		tr_strategy->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());		        
-
-		    		subproblems[l] = tr_strategy; 
-
-			    }			   
-
-			    // put TR strategy out of constructor.... 
-		        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-
-	        	auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
-		        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
-
-		        // TODO:: change constructor 
-		        rmtr->set_tr_strategies(subproblems); 
-
 		        const SizeType memory_size = 5; 
 		        std::vector<std::shared_ptr<HessianApproximation<Vector> > > hess_approxs(problem.n_levels);
 		    	for(auto l=0; l < problem.n_levels; l++)
@@ -381,6 +367,22 @@ namespace utopia
 			    }
 
 				rmtr->set_hessian_approximation_strategies(hess_approxs);
+
+			    std::vector<std::shared_ptr<utopia::TRSubproblem<Matrix, Vector> > > subproblems(problem.n_levels);
+		    	for(auto l=0; l < problem.n_levels; l++)
+		    	{
+		    		auto tr_strategy = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+		    		// tr_strategy->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());	
+
+
+		    		tr_strategy->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approxs[l]->get_apply_Hinv()));	        
+		    		subproblems[l] = tr_strategy; 
+
+			    }			  
+		        // TODO:: change constructor 
+		        rmtr->set_tr_strategies(subproblems); 			     
+		        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
+
 
 		        rmtr->max_it(50);
 		        rmtr->max_coarse_it(1);
@@ -392,8 +394,8 @@ namespace utopia
 		        rmtr->set_eps_grad_termination(1e-7);
 
 				rmtr->verbose(problem.verbose);
-				// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-				rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+				rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+				// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 		        rmtr->set_functions(level_functions);
 
 
