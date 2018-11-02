@@ -88,6 +88,12 @@ namespace utopia {
         virtual bool set_functions(const std::vector<FunPtr> &level_functions)
         {
             level_functions_.clear();
+
+            if(this->n_levels() <= 0)
+                this->n_levels(level_functions.size()); 
+            else if(this->n_levels() != level_functions.size())
+                utopia_error("utopia::NonlinearMultilevelBase:: number of levels and level_functions do not match ... \n"); 
+
             level_functions_.insert(level_functions_.begin(), level_functions.begin(), level_functions.end());
             return true;
         }
@@ -103,6 +109,14 @@ namespace utopia {
         virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators,
                                             const std::vector<std::shared_ptr<Matrix>> &projection_operators)
         {
+            if(interpolation_operators.size()!=projection_operators.size())
+                utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: number of interpolation_operators and projection_operators do not match ... \n"); 
+
+            if(this->n_levels() <= 0)
+                this->n_levels(interpolation_operators.size() + 1); 
+            else if(this->n_levels() != interpolation_operators.size() + 1)
+                utopia_error("utopia::NonlinearMultilevelBase:: number of levels and transfers do not match ... \n"); 
+
             this->transfers_.clear();
             for(auto I = interpolation_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && P != projection_operators.end(); ++I, ++P )
                 this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I, *P));
@@ -122,6 +136,15 @@ namespace utopia {
                                             const std::vector<std::shared_ptr<Matrix>> &restriction_operators,
                                             const std::vector<std::shared_ptr<Matrix>> &projection_operators)
         {
+
+            if(interpolation_operators.size()!=restriction_operators.size() || interpolation_operators.size()!=projection_operators.size())
+                utopia_error("utopia::NonlinearMultilevelBase::set_transfer_operators:: number of interpolation_operators and projection_operators do not match ... \n"); 
+
+            if(this->n_levels() <= 0)
+                this->n_levels(interpolation_operators.size() + 1); 
+            else if(this->n_levels() != interpolation_operators.size() + 1)
+                utopia_error("utopia::NonlinearMultilevelBase:: number of levels and transfers do not match ... \n"); 
+
             this->transfers_.clear();
             for(auto I = interpolation_operators.begin(), R = restriction_operators.begin(), P = projection_operators.begin(); I != interpolation_operators.end() && R != restriction_operators.end() &&  P != projection_operators.end(); ++I, ++R, ++P )
                 this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I, *R, *P));

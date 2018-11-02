@@ -50,6 +50,11 @@ namespace utopia
 		 */
 		virtual bool set_transfer_operators(const std::vector<std::shared_ptr<Matrix>> &interpolation_operators)
 		{
+			if(this->n_levels() <= 0)
+				this->n_levels(interpolation_operators.size() + 1); 
+			else if(this->n_levels() != interpolation_operators.size() + 1)
+				utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n"); 
+
 			this->transfers_.clear();
 			for(auto I = interpolation_operators.begin(); I != interpolation_operators.end() ; ++I )
 				this->transfers_.push_back(std::make_shared<MatrixTransfer>(*I));
@@ -106,6 +111,11 @@ namespace utopia
 		 */
 		inline bool set_linear_operators(const std::vector<std::shared_ptr<const Matrix>> &A)
 		{
+			if(this->n_levels() <= 0 )
+				this->n_levels(A.size()); 
+			else if(this->n_levels() != A.size())
+				utopia_error("utopia::MultilevelBase:: number of levels and linear operators do not match ... \n"); 
+
 			levels_.clear();
 			levels_.insert(levels_.begin(), A.begin(), A.end());
 			return true;
