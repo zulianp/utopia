@@ -12,6 +12,7 @@
 #include "utopia_RMTR.hpp"
 #include "utopia_RMTR_inf.hpp"
 #include "utopia_QuasiRMTR.hpp"
+#include "utopia_QuasiRMTR_inf.hpp"
 
 #include "utopia_NonlinearMultiLevelBase.hpp"
 #include "utopia_MultiLevelEvaluations.hpp"

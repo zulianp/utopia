@@ -32,6 +32,7 @@ namespace utopia
 			void run_multilevel()
 			{
 				UTOPIA_RUN_TEST(Quasi_RMTR_test); 
+				UTOPIA_RUN_TEST(Quasi_RMTR_inf_bound_test); 
 			}	
 
 			void quasi_newton_test()
@@ -398,6 +399,84 @@ namespace utopia
 
 		        rmtr->solve(x);
 		    }
+
+
+
+		void Quasi_RMTR_inf_bound_test()
+	    {
+	    	const SizeType n_levels = 3; 
+		    BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, true); 
+
+        	auto tr_strategy_fine = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
+        	auto tr_strategy_coarse = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
+        	auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+        	rmtr->n_levels(n_levels); 
+
+
+	    	// intial guess
+	        Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
+
+	        // upper, lower bound...
+	        Vector ub, lb;
+	        std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions(problem.n_levels);
+	    	for(auto l=0; l < problem.n_levels; l++)
+	    	{
+		    	auto fun = std::make_shared<Bratu1D<Matrix, Vector> >(problem.n_dofs[l]);
+		    	level_functions[l] = fun;
+
+		    	// making sure that fine level IG is feasible
+		    	if(l+1 == problem.n_levels)
+		    	{
+		    		fun->apply_bc_to_initial_guess(x);
+		    		fun->generate_constraints(lb, ub, -10, 0.01);
+		    	}
+		    }
+
+	        const SizeType memory_size = 5; 
+	        std::vector<std::shared_ptr<HessianApproximation<Vector> > > hess_approxs(problem.n_levels);
+	    	for(auto l=0; l < problem.n_levels; l++)
+	    	{
+	    		auto hes_approx   = std::make_shared<ApproxType >(memory_size);
+	    		hess_approxs[l] = hes_approx; 
+		    }
+
+			rmtr->set_hessian_approximation_strategies(hess_approxs);
+
+
+		    std::vector<std::shared_ptr<utopia::TRSubproblem<Matrix, Vector> > > subproblems(problem.n_levels);
+	    	for(auto l=0; l < problem.n_levels; l++)
+	    	{
+	    		auto tr_strategy = std::make_shared<utopia::ProjectedGradientActiveSet<Matrix, Vector> >();
+	    		tr_strategy->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approxs[l]->get_apply_Hinv()));	        
+	    		subproblems[l] = tr_strategy; 
+		    }	
+
+	        // TODO:: change constructor 
+	        rmtr->set_tr_strategies(subproblems); 
+
+	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
+
+	        rmtr->max_it(30);
+	        rmtr->max_coarse_it(3);
+	        rmtr->max_smoothing_it(3);
+	        rmtr->delta0(1);
+	        rmtr->atol(1e-4);
+	        rmtr->rtol(1e-10);
+	        rmtr->set_grad_smoothess_termination(0.000001);
+	        rmtr->set_eps_grad_termination(1e-7);
+
+			rmtr->verbose(problem.verbose);
+			// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+			rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+
+	        rmtr->set_functions(level_functions);
+
+	       	auto box = make_box_constaints(make_ref(lb), make_ref(ub));
+	    	rmtr->set_box_constraints(box);
+
+	        rmtr->solve(x);
+
+	    }
 
 
 

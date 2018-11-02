@@ -75,7 +75,6 @@ namespace  utopia
                 if(this->verbose())
                     this->init_solver("ProjectedGradientActiveSet", {" "});
 
-
                 cp_.tr_constrained_solve(H, g, s, constraints); 
 
                 Vector feasible_set; 
