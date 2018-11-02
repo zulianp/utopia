@@ -67,7 +67,7 @@ namespace utopia
                     hessian_approxs_.resize(this->n_levels()); 
 
                 for(auto l  = 0; l != hessian_approxs_.size(); ++l) 
-                    hessian_approxs_[l] = std::shared_ptr<HessianApproximation>(hessian_approx_clonable_->clone());
+                    hessian_approxs_[l] = std::shared_ptr<HessianApproximation>(strategy->clone());
             }
             else
             {
@@ -90,6 +90,8 @@ namespace utopia
             }
             
             hessian_approxs_ = strategies; 
+            hessian_approx_clonable_ = hessian_approxs_[this->n_levels()-1]; 
+
             return true;
         }
 
@@ -121,16 +123,20 @@ namespace utopia
         {   
             RMTR::init_memory(fine_local_size);
 
-            if(hessian_approx_clonable_ == nullptr)
-            {
-                utopia_error("utopia::QuasiRMTR:: Hessian approximation strategy not provided..."); 
-            }
-            else
-            {
-                hessian_approxs_.resize(this->n_levels());
 
-                for(std::size_t l = 0; l != hessian_approxs_.size(); ++l) 
-                    hessian_approxs_[l] = std::shared_ptr<HessianApproximation>(hessian_approx_clonable_->clone());
+            if(this->n_levels() != hessian_approxs_.size())
+            {
+                if(hessian_approx_clonable_ == nullptr)
+                {
+                    utopia_error("utopia::QuasiRMTR:: Hessian approximation strategy not provided..."); 
+                }
+                else
+                {
+                    hessian_approxs_.resize(this->n_levels());
+
+                    for(std::size_t l = 0; l != hessian_approxs_.size(); ++l) 
+                        hessian_approxs_[l] = std::shared_ptr<HessianApproximation>(hessian_approx_clonable_->clone());
+                }
             }
 
             hessian_approxs_[this->n_levels() - 1 ]->initialize();
@@ -141,6 +147,7 @@ namespace utopia
             RMTR::init_level(level);
 
             // maybe different strategies over here...
+            // smoothed vectors and so on...
             hessian_approxs_[level]->initialize();
         }
 

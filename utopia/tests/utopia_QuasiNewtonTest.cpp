@@ -332,9 +332,7 @@ namespace utopia
 
 		    void Quasi_RMTR_test()
 		    {	
-		    	const SizeType n_levels = 2; 
-
-		    	// 									(n_levels, remove_BC_contributions, verbose)
+		    	const SizeType n_levels = 3; 
 		    	BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, true); 
 
 		    	// put TR strategy out of constructor.... 
@@ -383,19 +381,18 @@ namespace utopia
 		        rmtr->set_tr_strategies(subproblems); 			     
 		        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
-
 		        rmtr->max_it(50);
 		        rmtr->max_coarse_it(3);
 		        rmtr->max_smoothing_it(3);
-		        rmtr->delta0(100);
+		        rmtr->delta0(1);
 		        rmtr->atol(1e-4);
 		        rmtr->rtol(1e-10);
 		        rmtr->set_grad_smoothess_termination(0.000001);
 		        rmtr->set_eps_grad_termination(1e-7);
 
 				rmtr->verbose(problem.verbose);
-				rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
-				// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
+				// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
+				rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 		        rmtr->set_functions(level_functions);
 
 
