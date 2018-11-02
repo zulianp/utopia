@@ -59,9 +59,62 @@ namespace utopia
         virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
         {
             hessian_approx_clonable_ = strategy; 
+
+
+            if(this->n_levels() > 0)
+            {
+                if(this->n_levels() != hessian_approxs_.size())
+                    hessian_approxs_.resize(this->n_levels()); 
+
+                for(auto l  = 0; l != hessian_approxs_.size(); ++l) 
+                    hessian_approxs_[l] = std::shared_ptr<HessianApproximation>(hessian_approx_clonable_->clone());
+            }
+            else
+            {
+                utopia_error("utopia::QuasiRMTR::set_hessian_approximation_strategies:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
+            }
+
             return true;
         }
       
+        virtual bool set_hessian_approximation_strategies(const std::vector<HessianApproxPtr> &strategies)
+        {
+            if(this->n_levels() > 0 && strategies.size() == this->n_levels())
+            {
+                if(this->n_levels() != hessian_approxs_.size())
+                    hessian_approxs_.resize(this->n_levels()); 
+            }
+            else
+            {
+                utopia_error("utopia::QuasiRMTR::set_hessian_approximation_strategies:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
+            }
+            
+            hessian_approxs_ = strategies; 
+            return true;
+        }
+
+        virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy, const SizeType & level)
+        {
+            if(this->n_levels() > 0 && hessian_approxs_.size() != this->n_levels())
+            {
+                hessian_approxs_.resize(this->n_levels()); 
+            }
+            else
+            {
+                utopia_error("utopia::RMTR::set_tr_strategy:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
+            }
+            
+            if(level <= this->n_levels())
+            {
+                hessian_approxs_[level] = strategy;
+            }
+            else
+                utopia_error("utopia::RMTR::set_tr_strategy:: requested level exceeds number of levels in ML hierarchy.... \n"); 
+
+            return true;
+        }
+
+
 
     protected:
         virtual void init_memory(const SizeType & fine_local_size) override 
@@ -77,14 +130,10 @@ namespace utopia
                 hessian_approxs_.resize(this->n_levels());
 
                 for(std::size_t l = 0; l != hessian_approxs_.size(); ++l) 
-                {
                     hessian_approxs_[l] = std::shared_ptr<HessianApproximation>(hessian_approx_clonable_->clone());
-
-                    if(l == this->n_levels() - 1)
-                        hessian_approxs_[l]->initialize();
-                }
             }
 
+            hessian_approxs_[this->n_levels() - 1 ]->initialize();
         }
 
         virtual void init_level(const SizeType & level) override

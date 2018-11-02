@@ -179,6 +179,70 @@ namespace utopia
         }
   
 
+        virtual bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        {
+            _coarse_tr_subproblem_clonable = strategy; 
+
+            if(_tr_subproblems.size() > 0)
+                _tr_subproblems[0] = std::shared_ptr<TRSubproblem>(_coarse_tr_subproblem_clonable->clone());
+
+            return true;
+        }
+
+        virtual bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
+        {
+            _smoother_tr_subproblem_clonable = strategy; 
+
+            if(_tr_subproblems.size() ==  this->n_levels())
+            {
+                // starting from level 1 .... 
+                for(std::size_t l = 1; l != _tr_subproblems.size(); ++l) 
+                    _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(_smoother_tr_subproblem_clonable->clone());
+            }
+
+            return true;
+        }
+
+
+        virtual bool set_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy, const SizeType & level)
+        {
+            if(this->n_levels() > 0 && _tr_subproblems.size() != this->n_levels())
+            {
+                _tr_subproblems.resize(this->n_levels()); 
+            }
+            else
+            {
+                utopia_error("utopia::RMTR::set_tr_strategy:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
+            }
+            
+            if(level <= this->n_levels())
+            {
+                _tr_subproblems[level] = strategy;
+            }
+            else
+                utopia_error("utopia::RMTR::set_tr_strategy:: requested level exceeds number of levels in ML hierarchy.... \n"); 
+
+            return true;
+        }
+
+
+        virtual bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
+        {
+            if(this->n_levels() > 0 && strategies.size() == this->n_levels())
+            {
+                if(this->n_levels() != _tr_subproblems.size())
+                    _tr_subproblems.resize(this->n_levels()); 
+            }
+            else
+            {
+                utopia_error("utopia::RMTR::set_tr_strategy:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
+            }
+            
+            _tr_subproblems = strategies; 
+
+            return true;
+        }
+
 
         /**
          * @brief      The solve function for multigrid method.
@@ -939,74 +1003,6 @@ namespace utopia
                     this->print_init_message(solver_type, {" it. ", "|| g ||", "   E + <g_diff, s>", "ared   ",  "  pred  ", "  rho  ", "  delta "});
                 }
             }
-        }
-
-
-
-    public: 
-        virtual bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
-        {
-            _coarse_tr_subproblem_clonable = strategy; 
-
-            if(_tr_subproblems.size() > 0)
-                _tr_subproblems[0] = std::shared_ptr<TRSubproblem>(_coarse_tr_subproblem_clonable->clone());
-
-            return true;
-        }
-
-        virtual bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
-        {
-            _smoother_tr_subproblem_clonable = strategy; 
-
-            if(_tr_subproblems.size() ==  this->n_levels())
-            {
-                // starting from level 1 .... 
-                for(std::size_t l = 1; l != _tr_subproblems.size(); ++l) 
-                    _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(_smoother_tr_subproblem_clonable->clone());
-            }
-
-            return true;
-        }
-
-
-        virtual bool set_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy, const SizeType & level)
-        {
-            if(this->n_levels() > 0 && _tr_subproblems.size() != this->n_levels())
-            {
-                _tr_subproblems.resize(this->n_levels()); 
-            }
-            else
-            {
-                utopia_error("utopia::RMTR::set_tr_strategy:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
-            }
-            
-            if(level <= this->n_levels())
-            {
-                _tr_subproblems[level] = strategy;
-            }
-            else
-                utopia_error("utopia::RMTR::set_tr_strategy:: requested level exceeds number of levels in ML hierarchy.... \n"); 
-
-            return true;
-        }
-
-
-        virtual bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
-        {
-            if(this->n_levels() > 0 && strategies.size() == this->n_levels())
-            {
-                if(this->n_levels() != _tr_subproblems.size())
-                    _tr_subproblems.resize(this->n_levels()); 
-            }
-            else
-            {
-                utopia_error("utopia::RMTR::set_tr_strategy:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
-            }
-            
-            _tr_subproblems.clear();
-            _tr_subproblems.insert(strategies.begin(), strategies.begin(), strategies.end());
-
-            return true;
         }
 
 

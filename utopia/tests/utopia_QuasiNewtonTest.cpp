@@ -332,8 +332,10 @@ namespace utopia
 
 		    void Quasi_RMTR_test()
 		    {	
+		    	const SizeType n_levels = 2; 
+
 		    	// 									(n_levels, remove_BC_contributions, verbose)
-		    	BratuMultilevelTestProblem<Matrix, Vector> problem(3, true, true); 
+		    	BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, true); 
 
 		    	// intial guess
 		        Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
@@ -349,21 +351,36 @@ namespace utopia
 			    		fun->apply_bc_to_initial_guess(x);
 			    }
 
+
+			    std::vector<std::shared_ptr<utopia::TRSubproblem<Matrix, Vector> > > subproblems(problem.n_levels);
+		    	for(auto l=0; l < problem.n_levels; l++)
+		    	{
+		    		auto tr_strategy = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
+		    		tr_strategy->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());		        
+
+		    		subproblems[l] = tr_strategy; 
+
+			    }			   
+
+			    // put TR strategy out of constructor.... 
 		        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		        tr_strategy_coarse->atol(1e-9); 
-		        
 		        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		        tr_strategy_fine->atol(1e-9); 
-		        
-		        tr_strategy_coarse->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());		        
-		        tr_strategy_fine->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());
 
 	        	auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
 		        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
+		        // TODO:: change constructor 
+		        rmtr->set_tr_strategies(subproblems); 
+
 		        const SizeType memory_size = 5; 
-				auto hes_approx   = std::make_shared<ApproxType >(memory_size);
-				rmtr->set_hessian_approximation_strategy(hes_approx);
+		        std::vector<std::shared_ptr<HessianApproximation<Vector> > > hess_approxs(problem.n_levels);
+		    	for(auto l=0; l < problem.n_levels; l++)
+		    	{
+		    		auto hes_approx   = std::make_shared<ApproxType >(memory_size);
+		    		hess_approxs[l] = hes_approx; 
+			    }
+
+				rmtr->set_hessian_approximation_strategies(hess_approxs);
 
 		        rmtr->max_it(50);
 		        rmtr->max_coarse_it(1);
@@ -378,6 +395,8 @@ namespace utopia
 				// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 				rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 		        rmtr->set_functions(level_functions);
+
+
 
 		        rmtr->solve(x);
 		    }
@@ -399,12 +418,12 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
-			QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
-			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
-			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
+			// QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
+			// QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
+			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
 
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_multilevel();
-			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_multilevel();
+			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_multilevel();
 		#endif
 
 		// #ifdef WITH_BLAS
