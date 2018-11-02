@@ -583,11 +583,9 @@ namespace utopia
                 rho = (rho != rho) ? 0.0 : rho;
 
 
-            //----------------------------------------------------------------------------
-            //     updating level (deltas, hessian approx - new vectors, ...)
-            //----------------------------------------------------------------------------
-                make_grad_updates = (rho >= this->rho_tol()) ? true : false; 
-                delta_converged = this->update_level(rho, level, make_grad_updates, g_norm);                 
+                // update in hessian approx ...
+                // TODO:: could be done in more elegant way.... 
+                this->update_level(level);   
 
             //----------------------------------------------------------------------------
             //     acceptance of trial point
@@ -597,11 +595,27 @@ namespace utopia
                 {
                     it_success++;
                     energy_old = energy_new;
+                    make_grad_updates = true;
                 }
                 else
                 {
                     memory_.x[level] -= memory_.s[level]; // return iterate into its initial state
                     this->compute_s_global(level, memory_.s_working[level]);
+                    make_grad_updates = false;
+                }
+
+                //----------------------------------------------------------------------------
+                //     updating level (deltas, hessian approx - new vectors, ...)
+                //----------------------------------------------------------------------------
+                delta_converged = this->delta_update(rho, level, memory_.s_working[level]);
+
+                if(make_grad_updates)
+                {
+                    Vector g_old = memory_.g[level];
+                    this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
+                    g_norm = this->criticality_measure(level);
+
+                    // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm);
                 }
 
 
@@ -720,18 +734,9 @@ namespace utopia
         }
 
 
-        virtual bool update_level(const Scalar & rho, const SizeType & level, const bool & make_grad_updates, Scalar & g_norm)
+        virtual bool update_level(const SizeType & level)
         {
-            if(make_grad_updates)
-            {
-                Vector g_old = memory_.g[level];
-                this->get_multilevel_gradient(this->function(level), memory_.s_working[level], level);
-                g_norm = this->criticality_measure(level);
-
-                // make_hess_updates =   this->update_hessian(memory_.g[level], g_old, s, H, rho, g_norm);
-            }
-
-            return this->delta_update(rho, level, memory_.s_working[level]);
+            return false; 
         }
 
 

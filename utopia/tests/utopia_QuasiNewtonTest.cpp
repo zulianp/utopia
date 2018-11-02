@@ -374,19 +374,19 @@ namespace utopia
 		    		auto tr_strategy = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 		    		// tr_strategy->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());	
 
-
 		    		tr_strategy->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approxs[l]->get_apply_Hinv()));	        
 		    		subproblems[l] = tr_strategy; 
 
-			    }			  
+			    }			 
+
 		        // TODO:: change constructor 
 		        rmtr->set_tr_strategies(subproblems); 			     
 		        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
 
 		        rmtr->max_it(50);
-		        rmtr->max_coarse_it(1);
-		        rmtr->max_smoothing_it(5);
+		        rmtr->max_coarse_it(3);
+		        rmtr->max_smoothing_it(3);
 		        rmtr->delta0(100);
 		        rmtr->atol(1e-4);
 		        rmtr->rtol(1e-10);
@@ -397,7 +397,6 @@ namespace utopia
 				rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_VERY_VERBOSE);
 				// rmtr->verbosity_level(utopia::VERBOSITY_LEVEL_NORMAL);
 		        rmtr->set_functions(level_functions);
-
 
 
 		        rmtr->solve(x);

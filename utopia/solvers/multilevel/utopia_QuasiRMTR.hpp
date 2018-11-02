@@ -174,15 +174,18 @@ namespace utopia
         }
 
 
-        virtual bool update_level(const Scalar & rho, const SizeType & level, const bool & make_grad_updates, Scalar & g_norm) override
+        virtual bool update_level(const SizeType & level) override
         {
-            Vector y = this->memory_.g[level];
+            Vector grad_old = this->memory_.g[level];
             this->get_multilevel_gradient(this->function(level), this->memory_.s_working[level], level);
-            g_norm = this->criticality_measure(level);
-            y = this->memory_.g[level] - y; 
+            Vector y = this->memory_.g[level] - grad_old; 
+
+            // swap back.... 
+            this->memory_.g[level] = grad_old; 
+
             hessian_approxs_[level]->update(this->memory_.s[level], y);
 
-            return this->delta_update(rho, level, this->memory_.s_working[level]);
+            return true; 
         }
 
 
