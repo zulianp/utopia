@@ -404,13 +404,16 @@ namespace utopia {
             functions[i] = get_function(in, *spaces[i]);
         }
 
-        auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, GALERKIN> >(coarse_solver, smoother);
+        auto rmtr = std::make_shared<RMTR<USparseMatrix, UVector, GALERKIN> >(n_levels);
         rmtr->set_transfer_operators(transfers);
+        
+        rmtr->set_coarse_tr_strategy(coarse_solver); 
+        rmtr->set_fine_tr_strategy(smoother); 
 
-        rmtr->max_it(1000);
-        rmtr->max_coarse_it(1);
-        rmtr->max_smoothing_it(1);
-        rmtr->delta0(1000);
+        rmtr->max_it(100);
+        rmtr->max_coarse_it(3);
+        rmtr->max_smoothing_it(3);
+        rmtr->delta0(1);
         rmtr->atol(1e-6);
         rmtr->rtol(1e-10);
         rmtr->set_grad_smoothess_termination(0.000001);
