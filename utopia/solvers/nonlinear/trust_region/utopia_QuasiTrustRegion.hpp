@@ -28,7 +28,7 @@
         using TrustRegionBase<Matrix, Vector>::get_pred; 
 
      	public:
-      QuasiTrustRegion( const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector>>(),
+      QuasiTrustRegion( const std::shared_ptr<TRSubproblem> &tr_subproblem = std::make_shared<SteihaugToint<Matrix, Vector, HOMEMADE> >(),
                         const Parameters params = Parameters()) : 
                         TrustRegion<Matrix, Vector>(tr_subproblem, params), 
                         _has_hessian_approx_strategy(false)

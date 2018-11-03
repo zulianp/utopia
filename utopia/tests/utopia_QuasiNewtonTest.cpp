@@ -20,12 +20,14 @@ namespace utopia
 			void run_sparse()
 			{
 				UTOPIA_RUN_TEST(Quasi_TR_test_sparse); 
-				UTOPIA_RUN_TEST(quasi_newton_test_sparse); 
-				UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
-				UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
-				UTOPIA_RUN_TEST(TR_constraint_GCP_test);
-				UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
+				// UTOPIA_RUN_TEST(quasi_newton_test_sparse); 
+				// UTOPIA_RUN_TEST(QuasiTR_constraint_GCP_test);
+				// UTOPIA_RUN_TEST(Quasi_TR_Gradient_projection_active_set_test); 
+				// UTOPIA_RUN_TEST(TR_constraint_GCP_test);
+				// UTOPIA_RUN_TEST(Gradient_projection_active_set_test);
 				
+
+
 				// UTOPIA_RUN_TEST(QuasiNewtonBoundTest); 
 			}	
 
@@ -481,9 +483,10 @@ namespace utopia
 	{
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
-			// QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
-			// QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
-			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
+			QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
+			
+			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
+			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
 
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_multilevel();
 			// QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_multilevel();

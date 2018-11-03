@@ -63,8 +63,6 @@ namespace  utopia
 
     };
 
-
-
 }
 
 #endif //UTOPIA_MATRIX_FREE_LINEAR_SOLVER_HPP

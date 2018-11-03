@@ -6,4 +6,5 @@
 	#include "utopia_IterativeSolver.hpp"
 	#include "utopia_LinearSolverFactory.hpp"
 
+	#include "utopia_MatrixFreeLinearSolver.hpp"
 #endif

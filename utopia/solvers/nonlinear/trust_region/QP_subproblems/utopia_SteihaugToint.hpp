@@ -6,6 +6,7 @@
 
 namespace utopia
 {
+
 	/**
 	 * @brief      Class for Steihaug Toint conjugate gradient.
 	 */
@@ -263,7 +264,6 @@ namespace utopia
 
 
     };
-
 
 }
 
