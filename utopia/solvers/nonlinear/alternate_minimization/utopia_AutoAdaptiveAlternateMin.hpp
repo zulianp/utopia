@@ -104,7 +104,7 @@ namespace utopia
                         tr_subproblem->current_radius(global_delta);  
 
                     this->linear_solve(H_mono, g_mono, s_mono);
-                    this->get_pred(g_mono, H_mono, s_mono, pred); 
+                    pred = this->get_pred(g_mono, H_mono, s_mono); 
 
                     x_trial_mono = x_mono + s_mono; 
 
@@ -138,7 +138,7 @@ namespace utopia
                     level.transfer_from_stag1_to_monolithic(x_trial_stag, x_trial_mono); 
                     s_mono = x_trial_mono - x_mono; 
 
-                    this->get_pred(g_mono, H_mono, s_mono, pred); 
+                    pred = this->get_pred(g_mono, H_mono, s_mono); 
 
                     stag1_it++; 
                     it_scaled += 0.666666666; 
@@ -174,7 +174,7 @@ namespace utopia
                     level.transfer_from_stag2_to_monolithic(x_trial_stag, x_trial_mono); 
                     s_mono = x_trial_mono - x_mono; 
 
-                    this->get_pred(g_mono, H_mono, s_mono, pred); 
+                    pred = this->get_pred(g_mono, H_mono, s_mono); 
                     stag1_it = 0; 
 
                     it_scaled += 0.33333333333; 
