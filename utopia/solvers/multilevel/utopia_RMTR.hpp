@@ -84,6 +84,8 @@ namespace utopia
             _max_QP_coarse_it           = 50;
 
             _verbosity_level           = params.verbosity_level();
+
+            _skip_BC_checks            =  false; 
         }
 
         VerbosityLevel verbosity_level() const
@@ -108,6 +110,16 @@ namespace utopia
             return _grad_smoothess_termination;
         }
 
+
+        void skip_BC_checks(const bool skip_BC_checks)
+        {
+            _skip_BC_checks = skip_BC_checks; 
+        }
+
+        bool skip_BC_checks() const 
+        {
+            return _skip_BC_checks; 
+        }
 
         using NonlinearMultiLevelBase<Matrix, Vector>::solve;
 
@@ -245,8 +257,7 @@ namespace utopia
             SizeType fine_level = this->n_levels()-1;
             Scalar r_norm, r0_norm, rel_norm, energy;
 
-            //-------------- INITIALIZATIONS ---------------
-            
+            //-------------- INITIALIZATIONS ---------------            
             this->function(fine_level).get_eq_constrains_values(x_h);
             SizeType fine_local_size = local_size(x_h).get(0);
 
@@ -285,7 +296,6 @@ namespace utopia
                     std::cout<<"ERROR::UTOPIA_RMTR << unknown cycle type, solving in multiplicative manner ... \n";
                     this->multiplicative_cycle(fine_level);
                 }
-
 
                 #ifdef CHECK_NUM_PRECISION_mode
                     if(has_nan_or_inf(memory_.x[fine_level]) == 1)
@@ -364,7 +374,8 @@ namespace utopia
             this->transfer(level-1).restrict(memory_.g[level], memory_.g_diff[level-1]);
             this->transfer(level-1).project_down(memory_.x[level], memory_.x[level-1]);
 
-            this->make_iterate_feasible(this->function(level-1), memory_.x[level-1]);
+            if(!skip_BC_checks())
+                this->make_iterate_feasible(this->function(level-1), memory_.x[level-1]);
 
             //----------------------------------------------------------------------------
             //                  initializing coarse level (deltas, constriants, hessian approx, ...)
@@ -376,8 +387,11 @@ namespace utopia
             //----------------------------------------------------------------------------
             this->function(level-1).gradient(memory_.x[level-1], memory_.g[level-1]);
 
-            if(CONSISTENCY_LEVEL != GALERKIN)
-                this->zero_correction_related_to_equality_constrain(this->function(level-1), memory_.g_diff[level-1]);
+            if(!skip_BC_checks())
+            {
+                if(CONSISTENCY_LEVEL != GALERKIN)
+                    this->zero_correction_related_to_equality_constrain(this->function(level-1), memory_.g_diff[level-1]);
+            }
 
             smoothness_flg = this->grad_smoothess_termination(memory_.g_diff[level-1], memory_.g[level-1], level-1);
 
@@ -394,7 +408,9 @@ namespace utopia
 
                 if(CONSISTENCY_LEVEL == SECOND_ORDER)
                 {
-                    this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]);
+                    if(!skip_BC_checks())
+                        this->zero_correction_related_to_equality_constrain_mat(this->function(level-1), memory_.H_diff[level-1]);
+                    
                     this->function(level-1).hessian(memory_.x[level-1], memory_.H[level-1]);
                     memory_.H_diff[level-1] -=  memory_.H[level-1];
                 }
@@ -437,7 +453,9 @@ namespace utopia
                 coarse_reduction -= this->get_multilevel_energy(this->function(level-1), memory_.s[level-1], level-1);
 
                 this->transfer(level-1).interpolate(memory_.s[level-1], memory_.s[level]);
-                this->zero_correction_related_to_equality_constrain(this->function(level), memory_.s[level]);
+                
+                if(!skip_BC_checks())
+                    this->zero_correction_related_to_equality_constrain(this->function(level), memory_.s[level]);
 
                 this->compute_s_global(level, memory_.s_working[level]);
                 E_old = this->get_multilevel_energy(this->function(level), memory_.s_working[level], level);
@@ -1003,13 +1021,12 @@ namespace utopia
 
     protected:
         SizeType                            _it_global;                 /** * global iterate counter  */
-
         std::vector<TRSubproblemPtr>        _tr_subproblems; 
 
 
         // ----------------------- PARAMETERS ----------------------
         Parameters                      _parameters;
-
+        bool                            _skip_BC_checks; 
 
         SizeType                        _max_coarse_it;             /** * maximum iterations on coarse level   */
         SizeType                        _max_smoothing_it;          /** * max smoothing iterations  */

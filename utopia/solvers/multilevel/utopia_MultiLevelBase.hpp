@@ -165,7 +165,8 @@ namespace utopia
 		{
 			if(num_levels_ <= 0)
 				num_levels_ = transfers_.size() + 1; 
-			else if(num_levels_ != transfers_.size() + 1)
+
+			if(num_levels_ != transfers.size() + 1)
 				utopia_error("utopia::MultilevelBase:: number of levels and transfer operators do not match ... \n"); 
 
 			transfers_ = transfers;

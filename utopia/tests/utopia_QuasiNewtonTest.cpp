@@ -371,7 +371,6 @@ namespace utopia
 
 			    }			 
 
-		        // TODO:: change constructor 
 		        rmtr->set_tr_strategies(subproblems); 			     
 		        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
@@ -440,9 +439,7 @@ namespace utopia
 	    		subproblems[l] = tr_strategy; 
 		    }	
 
-	        // TODO:: change constructor 
 	        rmtr->set_tr_strategies(subproblems); 
-
 	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
 	        rmtr->max_it(30);
