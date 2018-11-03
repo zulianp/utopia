@@ -336,13 +336,8 @@ namespace utopia
 		    	const SizeType n_levels = 3; 
 		    	BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, true); 
 
-		    	// put TR strategy out of constructor.... 
-		        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		    	auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(n_levels, tr_strategy_coarse, tr_strategy_fine);
-		    	rmtr->n_levels(n_levels); 
-
-
+		    	auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(n_levels);
+		    
 		    	// intial guess
 		        Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);
 		    	std::vector<std::shared_ptr<ExtendedFunction<Matrix, Vector> > >  level_functions(problem.n_levels);
@@ -407,11 +402,7 @@ namespace utopia
 	    	const SizeType n_levels = 3; 
 		    BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, true); 
 
-        	auto tr_strategy_fine = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
-        	auto tr_strategy_coarse = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
-        	auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>  >(n_levels, tr_strategy_coarse, tr_strategy_fine);
-        	rmtr->n_levels(n_levels); 
-
+        	auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>  >(n_levels);
 
 	    	// intial guess
 	        Vector x = values(problem.n_dofs[problem.n_levels -1 ], 0.0);

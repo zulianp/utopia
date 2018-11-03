@@ -187,8 +187,12 @@ namespace utopia
 
 
         	// auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, SECOND_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
-        	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, FIRST_ORDER>  >(problem.n_levels, tr_strategy_coarse, tr_strategy_fine);
+        	auto rmtr = std::make_shared<RMTR<DSMatrixd, DVectord, FIRST_ORDER>  >(problem.n_levels);
 	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
+
+	        rmtr->set_coarse_tr_strategy(tr_strategy_coarse); 
+	        rmtr->set_fine_tr_strategy(tr_strategy_fine); 
+
 
 	        rmtr->max_it(50);
 	        rmtr->max_coarse_it(1);
@@ -234,7 +238,11 @@ namespace utopia
         	auto tr_strategy_coarse = std::make_shared<TaoTRSubproblem<DSMatrixd, DVectord> >(lsolver);
         	tr_strategy_coarse->pc_type("lu");
 
-        	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(problem.n_levels, tr_strategy_coarse, tr_strategy_fine);
+        	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(problem.n_levels);
+	        rmtr->set_coarse_tr_strategy(tr_strategy_coarse); 
+	        rmtr->set_fine_tr_strategy(tr_strategy_fine); 
+
+
 	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
 	        rmtr->max_it(1000);
@@ -290,7 +298,10 @@ namespace utopia
         	// tr_strategy_coarse->verbose(true);
         	tr_strategy_coarse->verbose(false);
 
-        	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(problem.n_levels, tr_strategy_coarse, tr_strategy_fine);
+        	auto rmtr = std::make_shared<RMTR_inf<DSMatrixd, DVectord, SECOND_ORDER>  >(problem.n_levels);
+	        rmtr->set_coarse_tr_strategy(tr_strategy_coarse); 
+	        rmtr->set_fine_tr_strategy(tr_strategy_fine); 
+
 	        rmtr->set_transfer_operators(problem.prolongations, problem.restrictions);
 
 	        rmtr->max_it(1000);

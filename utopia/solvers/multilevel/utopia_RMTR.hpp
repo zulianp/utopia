@@ -52,18 +52,15 @@ namespace utopia
         * @param[in]  direct_solver  The direct solver for coarse level.
         */
         RMTR(   const SizeType & n_levels, 
-                const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,
-                const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother,
                 const Parameters params = Parameters()):
                 NonlinearMultiLevelBase<Matrix,Vector>(n_levels, params),
-                _coarse_tr_subproblem_clonable(tr_subproblem_coarse),
-                _smoother_tr_subproblem_clonable(tr_subproblem_smoother),
                 red_(FG_LIGHT_MAGENTA),
                 def_(FG_DEFAULT),
                 yellow_(FG_LIGHT_YELLOW),
                 green_(FG_LIGHT_GREEN)
         {
             set_parameters(params);
+            _tr_subproblems.resize(n_levels); 
         }
 
         virtual ~RMTR(){}
@@ -182,24 +179,23 @@ namespace utopia
 
         virtual bool set_coarse_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            _coarse_tr_subproblem_clonable = strategy; 
+            if(_tr_subproblems.size() != this->n_levels())
+                _tr_subproblems.resize(this->n_levels()); 
 
-            if(_tr_subproblems.size() > 0)
-                _tr_subproblems[0] = std::shared_ptr<TRSubproblem>(_coarse_tr_subproblem_clonable->clone());
+            _tr_subproblems[0] = strategy;
 
             return true;
         }
 
         virtual bool set_fine_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy)
         {
-            _smoother_tr_subproblem_clonable = strategy; 
+            if(_tr_subproblems.size() != this->n_levels())
+                _tr_subproblems.resize(this->n_levels()); 
 
-            if(_tr_subproblems.size() ==  this->n_levels())
-            {
-                // starting from level 1 .... 
-                for(std::size_t l = 1; l != _tr_subproblems.size(); ++l) 
-                    _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(_smoother_tr_subproblem_clonable->clone());
-            }
+            // starting from level 1 .... 
+            for(std::size_t l = 1; l != _tr_subproblems.size(); ++l) 
+                _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(strategy->clone());
+
 
             return true;
         }
@@ -207,21 +203,15 @@ namespace utopia
 
         virtual bool set_tr_strategy(const std::shared_ptr<TRSubproblem> &strategy, const SizeType & level)
         {
-            if(this->n_levels() > 0 && _tr_subproblems.size() != this->n_levels())
-            {
+            if(_tr_subproblems.size() != this->n_levels())
                 _tr_subproblems.resize(this->n_levels()); 
-            }
-            else
-            {
-                utopia_error("utopia::RMTR::set_tr_strategy:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
-            }
             
             if(level <= this->n_levels())
             {
                 _tr_subproblems[level] = strategy;
             }
             else
-                utopia_error("utopia::RMTR::set_tr_strategy:: requested level exceeds number of levels in ML hierarchy.... \n"); 
+                utopia_error("utopia::RMTR::set_tr_strategy:: Requested level exceeds number of levels in ML hierarchy. \n"); 
 
             return true;
         }
@@ -229,15 +219,8 @@ namespace utopia
 
         virtual bool set_tr_strategies(const std::vector<TRSubproblemPtr> &strategies)
         {
-            if(this->n_levels() > 0 && strategies.size() == this->n_levels())
-            {
-                if(this->n_levels() != _tr_subproblems.size())
-                    _tr_subproblems.resize(this->n_levels()); 
-            }
-            else
-            {
-                utopia_error("utopia::RMTR::set_tr_strategy:: Number of levels in ML hierarchy not set yet. \n Please set and call routine again .... \n"); 
-            }
+            if(strategies.size() != this->n_levels())
+                utopia_error("utopia::RMTR::set_tr_strategies:: Number of tr strategies MUST be equal to number of levels in ML hierarchy. \n"); 
             
             _tr_subproblems = strategies; 
 
@@ -657,20 +640,6 @@ namespace utopia
             for(Scalar l = 0; l < this->n_levels(); l ++)
                 memory_.delta[l] = this->delta0();
 
-
-            if(_tr_subproblems.size() !=  this->n_levels())
-            {
-                utopia_warning("utopia::RMTR:: TRSubproblems not set on each level. Cloning.... \n"); 
-                _tr_subproblems.resize(this->n_levels());
-
-                for(auto l = 0; l < _tr_subproblems.size(); l++)
-                {
-                    if(l == 0 )
-                        _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(_coarse_tr_subproblem_clonable->clone());
-                    else
-                        _tr_subproblems[l] = std::shared_ptr<TRSubproblem>(_smoother_tr_subproblem_clonable->clone());
-                }
-            }
         }
 
 
@@ -1014,10 +983,6 @@ namespace utopia
 
     protected:
         SizeType                            _it_global;                 /** * global iterate counter  */
-
-        std::shared_ptr<TRSubproblem>        _coarse_tr_subproblem_clonable;     /** * solver used to solve coarse level TR subproblems  */
-        std::shared_ptr<TRSubproblem>        _smoother_tr_subproblem_clonable;   /** * solver used to solve fine level TR subproblems  */
-
 
         std::vector<TRSubproblemPtr>        _tr_subproblems; 
 

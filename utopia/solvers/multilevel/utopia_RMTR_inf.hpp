@@ -58,11 +58,8 @@ namespace utopia
         * @param[in]  direct_solver  The direct solver for coarse level. 
         */
         RMTR_inf(   const SizeType & n_levels, 
-                    const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  
-                    const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother,  
                     const Parameters params = Parameters()): 
-                    
-                    RMTR(n_levels, tr_subproblem_coarse, tr_subproblem_smoother, params), 
+                    RMTR(n_levels, params), 
                     has_box_constraints_(false)
         {
             set_parameters(params); 
