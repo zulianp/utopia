@@ -339,7 +339,7 @@ namespace utopia
 		    	// put TR strategy out of constructor.... 
 		        auto tr_strategy_coarse = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
 		        auto tr_strategy_fine 	= std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		    	auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+		    	auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(n_levels, tr_strategy_coarse, tr_strategy_fine);
 		    	rmtr->n_levels(n_levels); 
 
 
@@ -409,7 +409,7 @@ namespace utopia
 
         	auto tr_strategy_fine = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
         	auto tr_strategy_coarse = std::make_shared<GeneralizedCauchyPoint<Matrix, Vector> >();
-        	auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>  >(tr_strategy_coarse, tr_strategy_fine);
+        	auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>  >(n_levels, tr_strategy_coarse, tr_strategy_fine);
         	rmtr->n_levels(n_levels); 
 
 

@@ -51,10 +51,11 @@ namespace utopia
         * @param[in]  smoother       The smoother.
         * @param[in]  direct_solver  The direct solver for coarse level.
         */
-        RMTR(   const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,
+        RMTR(   const SizeType & n_levels, 
+                const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,
                 const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother,
                 const Parameters params = Parameters()):
-                NonlinearMultiLevelBase<Matrix,Vector>(params),
+                NonlinearMultiLevelBase<Matrix,Vector>(n_levels, params),
                 _coarse_tr_subproblem_clonable(tr_subproblem_coarse),
                 _smoother_tr_subproblem_clonable(tr_subproblem_smoother),
                 red_(FG_LIGHT_MAGENTA),

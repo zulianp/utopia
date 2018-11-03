@@ -35,10 +35,12 @@ namespace utopia
             return false; 
         }
 
-        MG_OPT( const std::shared_ptr<Solver> &smoother, const std::shared_ptr<Solver> &coarse_solver,
+        MG_OPT( const SizeType & n_levels,
+                const std::shared_ptr<Solver> &smoother, 
+                const std::shared_ptr<Solver> &coarse_solver,
                 const std::shared_ptr<LSStrategy> &ls_strategy = std::make_shared<utopia::SimpleBacktracking<Matrix, Vector> >(),
                 const Parameters params = Parameters()): 
-                NonlinearMultiLevelBase<Matrix,Vector>(params), 
+                NonlinearMultiLevelBase<Matrix,Vector>(n_levels, params), 
                 _smoother(smoother), 
                 _coarse_solver(coarse_solver), 
                 _ls_strategy(ls_strategy) 

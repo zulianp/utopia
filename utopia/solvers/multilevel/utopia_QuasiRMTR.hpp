@@ -30,10 +30,11 @@ namespace utopia
 
     public:
 
-        QuasiRMTR(  const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  
+        QuasiRMTR(  const SizeType & n_levels, 
+                    const std::shared_ptr<TRSubproblem> &tr_subproblem_coarse,  
                     const std::shared_ptr<TRSubproblem> &tr_subproblem_smoother,  
                     const Parameters params = Parameters()): 
-                    RMTR(tr_subproblem_coarse, tr_subproblem_smoother, params)
+                    RMTR(n_levels, tr_subproblem_coarse, tr_subproblem_smoother, params)
         {
             set_parameters(params); 
         }

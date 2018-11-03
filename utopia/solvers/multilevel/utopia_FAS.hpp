@@ -28,8 +28,11 @@ namespace utopia
 
         public:
 
-            FAS( const std::shared_ptr<Smoother> &smoother, const std::shared_ptr<Solver> &coarse_solver, const Parameters params = Parameters()): 
-                    NonlinearMultiLevelBase<Matrix,Vector>(params),
+            FAS(    const SizeType & n_levels,
+                    const std::shared_ptr<Smoother> &smoother, 
+                    const std::shared_ptr<Solver> &coarse_solver, 
+                    const Parameters params = Parameters()): 
+                    NonlinearMultiLevelBase<Matrix,Vector>(n_levels, params),
                     smoother_(smoother), 
                     coarse_solver_(coarse_solver) 
             {
