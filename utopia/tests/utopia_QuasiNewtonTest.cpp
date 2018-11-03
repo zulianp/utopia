@@ -366,8 +366,6 @@ namespace utopia
 		    	for(auto l=0; l < problem.n_levels; l++)
 		    	{
 		    		auto tr_strategy = std::make_shared<utopia::SteihaugToint<Matrix, Vector, HOMEMADE> >();
-		    		// tr_strategy->set_preconditioner(std::make_shared<IdentityPreconditioner<Matrix, Vector> >());	
-
 		    		tr_strategy->set_preconditioner(std::make_shared<FunctionPreconditioner<Vector> >(hess_approxs[l]->get_apply_Hinv()));	        
 		    		subproblems[l] = tr_strategy; 
 

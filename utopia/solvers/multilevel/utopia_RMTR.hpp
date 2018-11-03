@@ -237,8 +237,9 @@ namespace utopia
          */
         virtual bool solve(Vector &x_h) override
         {
-            if(this->transfers_.size() + 1 != this->level_functions_.size())
-                utopia_error("RMTR::solve size of transfer and level functions do not match... \n");
+            if(!this->check_initialization())
+                return false; 
+            
 
             bool converged = false;
             SizeType fine_level = this->n_levels()-1;
@@ -626,6 +627,25 @@ namespace utopia
 
 
     protected:
+
+        virtual bool check_initialization()
+        {
+            if(this->level_functions_.size() != this->n_levels()){
+                utopia_error("utopia::RMTR:: number of level Functions and levels not equal. \n"); 
+                return false; 
+            }
+            if(this->transfers_.size() + 1 != this->n_levels()){
+                utopia_error("utopia::RMTR:: number of transfers and levels not equal. \n"); 
+                return false; 
+            }
+            
+            if(this->_tr_subproblems.size() != this->n_levels()){
+                utopia_error("utopia::RMTR:: number of QP solvers and levels not equal. \n");             
+                return false; 
+            }
+
+            return true; 
+        }
 
         virtual bool check_feasibility(const SizeType & level )
         {
