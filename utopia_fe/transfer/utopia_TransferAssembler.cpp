@@ -332,12 +332,20 @@ namespace utopia {
 				int space_num = 0;
 
 				for(auto s : local_spaces->spaces()) {
+					// const bool boundary_elements_only = opts.to_trace_space && space_num == 1;
 
 					if(s)
 					{
 						bool first = true;
 						libMesh::dof_id_type local_element_id = 0;
 						for (auto it = s->active_local_elements_begin(); it != s->active_local_elements_end(); ++it, ++local_element_id) {
+							
+							// if(boundary_elements_only) {
+							// 	if(!(*it)->is_boundary()) {
+							// 		continue;
+							// 	}
+							// }
+
 							auto elem = *it;
 							Adapter a(*s, elem->id(), offset+local_element_id,space_num);
 							assert(!local_spaces->dof_map(space_num)[local_element_id].empty());

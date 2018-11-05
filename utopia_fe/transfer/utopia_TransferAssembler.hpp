@@ -14,12 +14,13 @@ namespace utopia {
 	class TransferOptions {
 	public:
 		TransferOptions()
-		: from_var_num(0), to_var_num(0), n_var(1), tags({})
+		: from_var_num(0), to_var_num(0), n_var(1), to_trace_space(false), tags({})
 		{}
 
 		int from_var_num;
 		int to_var_num;
 		int n_var;
+		bool to_trace_space;
 		std::vector< std::pair<int, int> > tags;
 	};
 
