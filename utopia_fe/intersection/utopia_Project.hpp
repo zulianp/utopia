@@ -3,27 +3,16 @@
 
 #include "utopia_Intersect.hpp"
 #include "utopia_Polygon2.hpp"
+
+
 #include <vector>
+
+
 
 namespace utopia {
 
-	// namespace new_types {
-
 		template<typename Scalar, int Dim>
 		using Vector = moonolith::Vector<Scalar, Dim>;
-
-		// template<typename Scalar, int Dim>
-		// class Transform {
-		// public:
-		// 	using Vector = utopia::new_types::Vector<Scalar, Dim>;
-
-		// 	//FIXME use custom type instead of stl vector
-		// 	using Matrix = std::vector<Scalar>;
-
-		// 	bool apply(const Vector &ref, Vector &world) const = 0;
-		// 	bool apply_inverse(const Vector &ref, Vector &world) const = 0;
-		// 	bool jacobian(const Vector &ref, Matrix &mat) const = 0;
-		// };
 
 		template<typename Scalar, int Dim>
 		class Ray {
@@ -36,33 +25,10 @@ namespace utopia {
 		public:
 			virtual ~Shape() {}
 
-			// Transform<Scalar, Dim> &transform();
 			virtual bool intersect(
 				const Ray<Scalar, Dim> &ray,
 				Scalar &t) = 0;
 		};
-
-		template<typename Scalar, int Dim>
-		class LibMeshShape final {
-		public:
-			LibMeshShape(const libMesh::Elem &elem)
-			: elem_(elem)
-			{}
-
-			bool intersect(
-				const Ray<Scalar, Dim> &ray,
-				Scalar &t) override
-			{
-				return false;
-			}
-
-		private:
-			const libMesh::Elem &elem_;
-		};
-
-		
-
-	// }
 
 	/**
 	 * @brief poly1 and poly2 can be non-planar and non-convex polygons
