@@ -43,6 +43,12 @@ namespace utopia {
 		virtual ~Transform() {}
 		virtual void transform_to_reference(const libMesh::Point &world, libMesh::Point &ref) const = 0;
 		virtual void apply(const libMesh::Point &ref, libMesh::Point &world) const = 0;
+		virtual void jacobian(const libMesh::Point &ref, libMesh::DenseMatrix<libMesh::Real> &result) const 
+		{
+			(void) ref;
+			(void) result;
+			assert(false && "implement me");
+		}
 	};
 
 
