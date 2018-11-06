@@ -23,7 +23,7 @@ namespace utopia
      */
     template<class Matrix, class Vector>
     class QuasiNewtonBound :    public NonLinearSolver<Matrix, Vector>, 
-                                public VariableBoundSolverInterface<Matrix, Vector> 
+                                public VariableBoundSolverInterface<Vector> 
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;

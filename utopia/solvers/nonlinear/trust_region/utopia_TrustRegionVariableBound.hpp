@@ -12,7 +12,7 @@
       /**
        * @brief      Trust region solver taking into account also bound constraints.
        */ 
-     	class TrustRegionVariableBound :  public VariableBoundSolverInterface<Matrix, Vector>, 
+     	class TrustRegionVariableBound :  public VariableBoundSolverInterface<Vector>, 
                                         public TrustRegionBase<Matrix, Vector>, 
                                         public NonLinearSolver<Matrix, Vector>
       {

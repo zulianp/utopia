@@ -336,7 +336,7 @@ namespace utopia
 		    void Quasi_RMTR_test()
 		    {	
 		    	const SizeType n_levels = 3; 
-		    	BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, true); 
+		    	BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, _verbose); 
 
 		    	auto rmtr = std::make_shared<QuasiRMTR<Matrix, Vector, FIRST_ORDER>  >(n_levels);
 		    
@@ -399,7 +399,7 @@ namespace utopia
 		void Quasi_RMTR_inf_bound_test()
 	    {
 	    	const SizeType n_levels = 3; 
-		    BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, true); 
+		    BratuMultilevelTestProblem<Matrix, Vector> problem(n_levels, true, _verbose); 
 
         	auto rmtr = std::make_shared<QuasiRMTR_inf<Matrix, Vector, FIRST_ORDER>  >(n_levels);
 
@@ -470,7 +470,7 @@ namespace utopia
 
 
 		QuasiNewtonTest()
-		: _n(10), _verbose(true) { }
+		: _n(10), _verbose(false) { }
 		
 	private:
 		int _n;
@@ -484,7 +484,7 @@ namespace utopia
 		UTOPIA_UNIT_TEST_BEGIN("runQuasiNewtonTest");
 		#ifdef WITH_PETSC
 			QuasiNewtonTest<DMatrixd, DVectord, BFGS<DMatrixd, DVectord> >().run_dense();
-			
+
 			QuasiNewtonTest<DSMatrixd, DVectord, LBFGS<DVectord> >().run_sparse();
 			QuasiNewtonTest<DSMatrixd, DVectord, LSR1<DVectord> >().run_sparse();
 

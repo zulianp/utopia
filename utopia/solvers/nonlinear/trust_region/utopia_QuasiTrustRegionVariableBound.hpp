@@ -9,7 +9,7 @@
  namespace utopia 
  {
     	template<class Matrix, class Vector>
-     	class QuasiTrustRegionVariableBound :   public VariableBoundSolverInterface<Matrix, Vector>, 
+     	class QuasiTrustRegionVariableBound :   public VariableBoundSolverInterface<Vector>, 
                                               public TrustRegionBase<Matrix, Vector>, 
                                               public NonLinearSolver<Matrix, Vector>
       {

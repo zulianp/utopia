@@ -78,11 +78,6 @@ namespace utopia
     }
 
 
-    // this class needs some refactoring.... and more thinking... 
-    template<typename Matrix, typename DenseMatrix, typename Vector, int Backend = Traits<Matrix>::Backend>
-    class MatLinearSolver {};
-
-
 }
 
 #endif //utopia_TEMP_HPP

@@ -13,26 +13,20 @@
 #include <cmath>
 #include <cassert>
 
-namespace utopia {
+namespace utopia 
+{
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedGradient : public IterativeSolver<Matrix, Vector>, public MatrixFreeLinearSolver<Vector> {
+	class ProjectedGradient : public QPSolver<Matrix, Vector>, public MatrixFreeLinearSolver<Vector> {
 	public:
-		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
 		DEF_UTOPIA_SCALAR(Matrix)
 
-		using IterativeSolver<Matrix, Vector>::solve;
+		using QPSolver<Matrix, Vector>::solve;
 
-		virtual bool set_box_constraints(const BoxConstraints & box)
-		{
-			constraints_ = box;
-			constraints_.fill_empty_bounds();
-			return true;
-		}
 
 		virtual void set_parameters(const Parameters params) override
 		{
-			IterativeSolver<Matrix, Vector>::set_parameters(params);
+			QPSolver<Matrix, Vector>::set_parameters(params);
 		}
 
 
@@ -50,9 +44,12 @@ namespace utopia {
 				this->init_solver("utopia ProjectedGradient", {" it. ", "|| u - u_old ||"});
 
 			init(local_size(b).get(0));
+
+			// ideally, we have two separate implementations, or cases
+			this->constraints_.fill_empty_bounds(); 
 			
-			const auto &upbo = *constraints_.upper_bound();
-			const auto &lobo = *constraints_.lower_bound();
+			const auto &upbo = this->get_upper_bound();
+			const auto &lobo = this->get_lower_bound();
 
 			x_old = x;
 			A.apply(x, u);
@@ -140,7 +137,7 @@ namespace utopia {
 
 		virtual void update(const std::shared_ptr<const Matrix> &op) override
 		{
-		    IterativeSolver<Matrix, Vector>::update(op);
+		    QPSolver<Matrix, Vector>::update(op);
 		    // init(*op);
 		}
 
@@ -156,8 +153,6 @@ namespace utopia {
 		}
 
 	private:
-		BoxConstraints constraints_;
-
 		//buffers
 		Vector x_old, x_half, p, u, Ap;
 	};

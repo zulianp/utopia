@@ -12,7 +12,7 @@
 
 namespace utopia
 {
-    template<class Matrix, class Vector>
+    template<class Vector>
     class VariableBoundSolverInterface
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
@@ -46,23 +46,18 @@ namespace utopia
 
         virtual const Vector & get_upper_bound()
         {
-          // if(constraints_.has_upper_bound())
-            return *constraints_.upper_bound(); 
-          // else
-          // {
-          //   utopia_error("upper bound does not exist. \n"); 
-          // }
+          if(!constraints_.has_upper_bound())
+            utopia_error("VariableBoundSolverInterface::upper bound does not exist. \n"); 
 
+          return *constraints_.upper_bound(); 
         }
 
         virtual const Vector & get_lower_bound()
         {
-          // if(constraints_.has_lower_bound())
-            return *constraints_.lower_bound(); 
-          // else
-          // {
-          //   utopia_error("lower bound does not exist. \n"); 
-          // }
+          if(!constraints_.has_lower_bound())
+            utopia_error("VariableBoundSolverInterface::lower bound does not exist. \n"); 
+
+          return *constraints_.lower_bound(); 
         }        
 
 
@@ -205,8 +200,6 @@ namespace utopia
 
 
 
-
-    // TO BE Changed...
     protected:
         BoxConstraints                  constraints_;
 
