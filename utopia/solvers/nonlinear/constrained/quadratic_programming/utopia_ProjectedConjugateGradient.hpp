@@ -2,43 +2,50 @@
 #define UTOPIA_PROJECTED_CONJUGATE_GRADIENT_HPP
 
 #include "utopia_ForwardDeclarations.hpp"
-#include "utopia_BoxConstraints.hpp"
-#include "utopia_IterativeSolver.hpp"
-#include "utopia_Smoother.hpp"
+
 
 #include <cmath>
 #include <cassert>
 
-namespace utopia {
+namespace utopia 
+{
 	//slow and innefficient implementation just for testing
 	template<class Matrix, class Vector, int Backend = Traits<Vector>::Backend>
-	class ProjectedConjugateGradient : public IterativeSolver<Matrix, Vector> {
+	class ProjectedConjugateGradient : public QPSolver<Matrix, Vector> {
 	public:
-		typedef utopia::BoxConstraints<Vector>  BoxConstraints;
+
 		DEF_UTOPIA_SCALAR(Matrix)
 
-		virtual bool set_box_constraints(const BoxConstraints & box)
+		ProjectedConjugateGradient() {}
+
+		ProjectedConjugateGradient(const ProjectedConjugateGradient &) = default;
+
+		inline ProjectedConjugateGradient * clone() const override
 		{
-			constraints_ = box;
-			constraints_.fill_empty_bounds();
-			return true;
+			auto ptr = new ProjectedConjugateGradient(*this);
+			ptr->set_box_constraints(this->get_box_constraints());
+			return ptr;
 		}
 
 		virtual void set_parameters(const Parameters params) override
 		{
-			IterativeSolver<Matrix, Vector>::set_parameters(params);
+			QPSolver<Matrix, Vector>::set_parameters(params);
 		}
 
 
-		bool apply(const Vector &b, Vector &x) override
+		virtual bool apply(const Vector &b, Vector &x) override
 		{
 			if(this->verbose()) {
 				this->init_solver("ProjectedConjugateGradient", {" it. ", "|| u - u_old ||"});
 			}
 
 			const Matrix &A = *this->get_operator();
-			const auto &ub = *constraints_.upper_bound();
-			const auto &lb = *constraints_.lower_bound();
+
+			// ideally, we have two separate implementations, or cases
+			this->fill_empty_bounds(); 
+			
+			const auto &ub = this->get_upper_bound();
+			const auto &lb = this->get_lower_bound();			
 
 			x_old = x;
 			uk = b - A * x;
@@ -122,22 +129,12 @@ namespace utopia {
 
 		virtual void update(const std::shared_ptr<const Matrix> &op) override
 		{
-		    IterativeSolver<Matrix, Vector>::update(op);
+		    QPSolver<Matrix, Vector>::update(op);
 		    init(*op);
 		}
 
-		ProjectedConjugateGradient() {}
-
-		ProjectedConjugateGradient(const ProjectedConjugateGradient &) = default;
-
-		inline ProjectedConjugateGradient * clone() const override
-		{
-			return new ProjectedConjugateGradient(*this);
-		}
 
 	private:
-		BoxConstraints constraints_;
-
 		//buffers
 		Vector x_old, x_half, r, uk, wk, zk, pk;
 	};

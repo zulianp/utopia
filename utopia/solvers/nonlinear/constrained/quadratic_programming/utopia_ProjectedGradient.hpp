@@ -23,6 +23,20 @@ namespace utopia
 
 		using QPSolver<Matrix, Vector>::solve;
 
+		ProjectedGradient()
+		{
+		}
+
+		ProjectedGradient(const ProjectedGradient &) = default;
+
+		inline ProjectedGradient * clone() const override
+		{
+			auto ptr = new ProjectedGradient(*this);
+			ptr->set_box_constraints(this->get_box_constraints());
+
+			return ptr; 
+		}
+
 
 		virtual void set_parameters(const Parameters params) override
 		{
@@ -46,7 +60,7 @@ namespace utopia
 			init(local_size(b).get(0));
 
 			// ideally, we have two separate implementations, or cases
-			this->constraints_.fill_empty_bounds(); 
+			this->fill_empty_bounds(); 
 			
 			const auto &upbo = this->get_upper_bound();
 			const auto &lobo = this->get_lower_bound();
@@ -139,17 +153,6 @@ namespace utopia
 		{
 		    QPSolver<Matrix, Vector>::update(op);
 		    // init(*op);
-		}
-
-		ProjectedGradient()
-		{
-		}
-
-		ProjectedGradient(const ProjectedGradient &) = default;
-
-		inline ProjectedGradient * clone() const override
-		{
-			return new ProjectedGradient(*this);
 		}
 
 	private:

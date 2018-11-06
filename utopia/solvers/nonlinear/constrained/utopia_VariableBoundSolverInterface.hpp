@@ -5,6 +5,8 @@
 #include "utopia_LinearSolver.hpp"
 #include "utopia_Function.hpp"
 #include "utopia_NonLinearSolver.hpp"
+#include "utopia_BoxConstraints.hpp"
+
 
 #include <iomanip>
 #include <limits>
@@ -38,13 +40,12 @@ namespace utopia
             return true;
         }
 
-        virtual bool  get_box_constraints(BoxConstraints & box)
+        virtual const BoxConstraints & get_box_constraints() const
         {
-            box = constraints_;
-            return true;
+            return constraints_; 
         }
 
-        virtual const Vector & get_upper_bound()
+        virtual const Vector & get_upper_bound() const 
         {
           if(!constraints_.has_upper_bound())
             utopia_error("VariableBoundSolverInterface::upper bound does not exist. \n"); 
@@ -52,7 +53,7 @@ namespace utopia
           return *constraints_.upper_bound(); 
         }
 
-        virtual const Vector & get_lower_bound()
+        virtual const Vector & get_lower_bound() const
         {
           if(!constraints_.has_lower_bound())
             utopia_error("VariableBoundSolverInterface::lower bound does not exist. \n"); 
@@ -60,9 +61,30 @@ namespace utopia
           return *constraints_.lower_bound(); 
         }        
 
+        virtual bool has_bound() const
+        {
+          return constraints_.has_bound(); 
+        }
+
+        virtual bool has_lower_bound() const
+        {
+          return constraints_.has_lower_bound(); 
+        }
+
+        virtual bool has_upper_bound() const
+        {
+          return constraints_.has_upper_bound(); 
+        }    
+
+        virtual void fill_empty_bounds()
+        {
+          return constraints_.fill_empty_bounds(); 
+        }    
+
+
 
     protected: 
-      virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g)
+      virtual Scalar criticality_measure_infty(const Vector & x, const Vector & g) const 
       {
 
         Vector Pc; 
@@ -88,7 +110,7 @@ namespace utopia
       }
 
 
-      bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc)
+      bool get_projection(const Vector & x, const Vector &lb, const Vector &ub, Vector & Pc) const 
       {
           Pc = local_values(local_size(x).get(0), 1.0);
           {
@@ -106,7 +128,7 @@ namespace utopia
           return true;
       }
 
-    void make_iterate_feasible(Vector & x)
+    void make_iterate_feasible(Vector & x) const 
     {
         if(!constraints_.has_upper_bound() && !constraints_.has_lower_bound())
             return; 
@@ -160,7 +182,7 @@ namespace utopia
     }      
 
 
-      virtual BoxConstraints  merge_pointwise_constraints_with_uniform_bounds(const Vector & x_k, const Scalar & lb_uniform, const Scalar & ub_uniform)
+      virtual BoxConstraints  merge_pointwise_constraints_with_uniform_bounds(const Vector & x_k, const Scalar & lb_uniform, const Scalar & ub_uniform) const 
       {
           Vector l_f, u_f; 
 

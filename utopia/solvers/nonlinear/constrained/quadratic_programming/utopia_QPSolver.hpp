@@ -3,6 +3,7 @@
 
 #include "utopia_ForwardDeclarations.hpp"
 #include "utopia_IterativeSolver.hpp"
+#include "utopia_VariableBoundSolverInterface.hpp"
 
 #include <cmath>
 
@@ -14,10 +15,7 @@ namespace utopia
 						public VariableBoundSolverInterface<Vector> 
 	{
 		public:
-		
-			typedef UTOPIA_SCALAR(Vector)                           Scalar;
-	        typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
-
+	
 			QPSolver()
 			{
 
@@ -32,14 +30,6 @@ namespace utopia
 			{
 				IterativeSolver<Matrix, Vector>::set_parameters(params);
 			}
-
-
-
-			bool apply(const Vector &b, Vector &x) override = 0; 
-
-			virtual void update(const std::shared_ptr<const Matrix> &op) override = 0; 
-
-			inline QPSolver * clone() const override = 0; 
 
 	};
 }
