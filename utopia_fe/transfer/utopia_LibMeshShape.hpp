@@ -137,7 +137,7 @@ namespace utopia {
 
 		inline void get_point(Vectord &x) const
 		{
-			x.set(0.);
+			// x.set(0.);
 
 			Write<Vectord> w_(x);
 
@@ -145,11 +145,11 @@ namespace utopia {
 			const auto &phi = fe_->get_phi();
 			const auto n_shape_fun = phi.size();
 
-			for(std::size_t k = 0; k < n_shape_fun; ++k) {
+			// for(std::size_t k = 0; k < n_shape_fun; ++k) {
 				for(int i = 0; i < Dim; ++i) {
-					x.add(i, xyz[0](i) * phi[k][0]));
+					x.set(i, xyz[0](i));// * phi[k][0]));
 				}
-			}
+			// }
 		}
 
 		inline void get_hessian(const Vectord &v, Matrixd &H) const
