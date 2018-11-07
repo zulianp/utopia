@@ -8,7 +8,7 @@
 #include "utopia_LS_Strategy.hpp"
 #include "utopia_HessianApproximations.hpp"
 #include "utopia_VariableBoundSolverInterface.hpp"
-#include "utopia_NonLinearSolver.hpp"
+#include "utopia_QPSolver.hpp"
 
 #include <iomanip>
 #include <limits>
@@ -16,14 +16,11 @@
 
 namespace utopia
 {
-    /**
-     * @brief      The Quasi Newton solver.
-     * @tparam     Matrix
-     * @tparam     Vector
-     */
-    template<class Matrix, class Vector>
-    class QuasiNewtonBound :    public NewtonBase<Matrix, Vector>, 
-                                public VariableBoundSolverInterface<Vector> 
+    template<class Vector>
+    class QuasiNewtonBound :    public MatrixFreeNonLinearSolver<Vector>, 
+                                public VariableBoundSolverInterface<Vector>,
+                                public QuasiNewtonBase<Vector>
+
     {
         typedef UTOPIA_SCALAR(Vector)                           Scalar;
         typedef UTOPIA_SIZE_TYPE(Vector)                        SizeType;
@@ -31,21 +28,22 @@ namespace utopia
         typedef utopia::LSStrategy<Vector>                      LSStrategy;
         typedef utopia::HessianApproximation<Vector>            HessianApproximation;
 
-        typedef utopia::LinearSolver<Matrix, Vector>            Solver;
-        typedef utopia::BoxConstraints<Vector>                  BoxConstraints;
+        typedef utopia::MatrixFreeLinearSolver<Vector>          LinSolver;
+        // typedef utopia::QPSolver<Vector>                        QPSolver;
         
         
     public:
         QuasiNewtonBound(   const std::shared_ptr <HessianApproximation> &hessian_approx,
-                            const std::shared_ptr <Solver> &linear_solver = std::make_shared<ConjugateGradient<Matrix, Vector> >(),
+                            const std::shared_ptr <LinSolver> &linear_solver,
                             const Parameters params = Parameters()):
-        NewtonBase<Matrix, Vector>(linear_solver, params), 
-        hessian_approx_strategy_(hessian_approx), alpha_(1.0)
+                            MatrixFreeNonLinearSolver<Vector>(params), 
+                            QuasiNewtonBase<Vector>(hessian_approx, linear_solver), 
+                            alpha_(1.0)
         {
             set_parameters(params);
         }
         
-        bool solve(Function<Matrix, Vector> &fun, Vector &x) override
+        bool solve(FunctionBase<Vector> &fun, Vector &x) override
         {
             using namespace utopia;
             
@@ -114,22 +112,9 @@ namespace utopia
         
         virtual void set_parameters(const Parameters params) override
         {
-            NonLinearSolver<Matrix, Vector>::set_parameters(params);
+            MatrixFreeNonLinearSolver<Vector>::set_parameters(params);
         }
         
-
-        /**
-         * @brief      Sets strategy for computing step-size.
-         *
-         * @param[in]  strategy  The line-search strategy.
-         *
-         * @return
-         */
-        virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
-        {
-            hessian_approx_strategy_      = strategy;
-            return true;
-        }
 
         /**
          * @brief      Sets strategy for computing step-size.
@@ -147,7 +132,6 @@ namespace utopia
 
         
     private:
-        std::shared_ptr<HessianApproximation> hessian_approx_strategy_;
         Scalar alpha_;                                          /*!< Dumping parameter. */
         std::shared_ptr<LSStrategy> ls_strategy_;               /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */
 

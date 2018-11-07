@@ -32,6 +32,8 @@ namespace utopia
 			}
 
 	};
+
+
 }
 
 #endif //UTOPIA_QP_SOLVER_HPP

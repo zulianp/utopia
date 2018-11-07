@@ -36,7 +36,7 @@ namespace utopia
         
 
         virtual ~QuasiNewtonBase() {}
-        
+
 
         virtual bool set_hessian_approximation_strategy(const std::shared_ptr<HessianApproximation> &strategy)
         {
@@ -59,6 +59,12 @@ namespace utopia
             hessian_approx_strategy_->update(s, y);
         }
 
+
+        virtual void initialize_approximation()
+        {
+            return hessian_approx_strategy_->initialize(); 
+        }        
+
     protected:         
         inline bool linear_solve(const Vector &rhs, Vector &sol)
         {
@@ -66,7 +72,7 @@ namespace utopia
             return mf_linear_solver_->solve(multiplication_action, rhs, sol);             
         }
 
-    protected:
+    private:
         std::shared_ptr<HessianApproximation>   hessian_approx_strategy_;    
         std::shared_ptr<MFSolver>               mf_linear_solver_;   
 

@@ -107,19 +107,12 @@ namespace utopia
 
     virtual void set_parameters(const Parameters params) override
     {
-        NonLinearSolver<Matrix, Vector>::set_parameters(params);
+        MatrixFreeNonLinearSolver<Vector>::set_parameters(params);
         alpha_ = params.alpha();
 
     }
 
 
-    /**
-     * @brief      Sets strategy for computing step-size. 
-     *
-     * @param[in]  strategy  The line-search strategy.
-     *
-     * @return     
-     */
     virtual bool set_line_search_strategy(const std::shared_ptr<LSStrategy> &strategy)
     {
       ls_strategy_ = strategy; 
@@ -135,8 +128,8 @@ namespace utopia
 
 
     private:
-        Scalar alpha_;   /*!< Dumping parameter. */
-        std::shared_ptr<LSStrategy> ls_strategy_;     /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */  
+        Scalar alpha_;                              /*!< Dumping parameter. */
+        std::shared_ptr<LSStrategy> ls_strategy_;   /*!< Strategy used in order to obtain step \f$ \alpha_k \f$ */  
 
     };
 

@@ -60,7 +60,7 @@ namespace utopia
             }
             it++; 
             
-            this->hessian_approx_strategy_->initialize();
+            this->initialize_approximation(); 
 
             while(!converged)
             {
