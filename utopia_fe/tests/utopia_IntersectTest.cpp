@@ -1,20 +1,20 @@
 #include "utopia_libmesh.hpp"
 #include "utopia_IntersectTest.hpp"
 #include "utopia_Intersect.hpp"
-
+#include "utopia_LibMeshShape.hpp"
 
 namespace utopia {
 	void intersect_hex_with_polygon_test()
 	{
 		Polygon3 poly =
 		{
-			{ 
+			{
 				{ 0.4, 0.5, 0.3 },
 				{ 0.4, 0.5, 0.2 },
 				{ 0.3, 0.5, 0.2 },
 				{ 0.3, 0.5, 0.3 }
 			}
-		}; 
+		};
 
 		HPolyhedron3 h =
 		{
@@ -69,13 +69,13 @@ namespace utopia {
 	{
 		Polygon3 poly =
 		{
-			{ 
+			{
 				{0.5, 0.3, 0.},
 				{0.5, 0.3, 0.1},
 				{0.5, 0.2, 0.1},
 				{0.5, 0.2, 0.}
 			}
-		}; 
+		};
 
 		HPolyhedron3 h =
 		{
@@ -117,13 +117,13 @@ namespace utopia {
 	{
 		Polygon3 poly =
 		{
-			{ 
+			{
 				{0.5, 0.3, 0.},
 				{0.5, 0.3, 0.1},
 				{0.5, 0.2, 0.1},
 				{0.5, 0.2, 0.}
 			}
-		}; 
+		};
 
 		HPolyhedron3 h =
 		{
@@ -166,7 +166,7 @@ namespace utopia {
 	{
 		Polygon3 poly =
 		{
-			{ 
+			{
 				// { 0.5, 0.099999999999999978, 0.099999999999999978 },
 				// { 0.5, 0.099999999999999978, 0.19999999999999996 },
 				// { 0.5, 0, 0.19999999999999996 },
@@ -176,7 +176,7 @@ namespace utopia {
 				{ 0.5, 0.,  0.2 },
 				{ 0.5, 0.,  0.1 }
 			}
-		}; 
+		};
 
 		HPolyhedron3 h =
 		{
@@ -214,7 +214,7 @@ namespace utopia {
 
 		// assert(ok);
 	}
-	
+
 	void intersect_convex_polyhedra_test()
 	{
 		Polyhedron poly1, poly2;
@@ -235,7 +235,7 @@ namespace utopia {
 		    24 	//[6]
 		};
 
-		std::vector<int> el_index = 
+		std::vector<int> el_index =
 		{
 		    0, 	//[0]
 		    1, 	//[1]
@@ -263,7 +263,7 @@ namespace utopia {
 		    5 	//[23]
 		};
 
-		std::vector<double>  points = 
+		std::vector<double>  points =
 		{
 		    -0.30000000000000004, 	//[0]
 		    -0.30000000000000004, 	//[1]
@@ -302,7 +302,7 @@ namespace utopia {
 		poly2.n_elements = 6;
 		poly2.n_nodes = 8;
 		poly2.n_dims = 3;
-		
+
 		el_ptr = {
 		  0,		//[0]
 		  4,		//[1]
@@ -384,12 +384,67 @@ namespace utopia {
 		bool ok = Intersector::intersect_convex_polyhedra(poly1, poly2, &isect);
 	}
 
+	void intesect_ray_elem_tet(libMesh::Parallel::Communicator &comm)
+	{
+		libMesh::Mesh mesh(comm);
+		libMesh::MeshTools::Generation::build_square(mesh,
+			1, 1,
+			0., 1.,
+			0., 2.,
+			libMesh::QUAD8
+		);
+
+		LibMeshFunctionSpace V(mesh, libMesh::LAGRANGE, libMesh::SECOND);
+		V.initialize();
+
+		Ray<double, 2> ray = {
+			{-0.5, 0.6 },
+			{ 1., 0. }
+		};
+
+		// int q = 0;
+
+		for(auto e_it = elements_begin(mesh); e_it != elements_end(mesh); ++e_it) {
+			const auto &e = **e_it;
+
+			auto n_sides = e.n_sides();
+
+			for(std::size_t i = 0; i < n_sides; ++i) {
+				if(i != 1 && i != 3) continue;
+
+				auto side_ptr = e.build_side_ptr(i);
+				LibMeshShape<double, 2> shape(*side_ptr, V.dof_map().variable_type(0));
+
+				// std::cout << "elem: " << i << std::endl;
+				// std::cout << "(" << side_ptr->node_ref(0)(0) << ", " << side_ptr->node_ref(0)(1) << ") ";
+				// std::cout << "(" << side_ptr->node_ref(1)(0) << ", " << side_ptr->node_ref(1)(1) << ") " << std::endl;;
+
+				double t = 0.;
+				shape.intersect(ray, t);
+
+				if(i == 1) {
+					utopia_test_assert(approxeq(t, 1.5, 1e-8));
+				} else if(i == 3) {
+					utopia_test_assert(approxeq(t, 0.5, 1e-8));
+				}
+
+				// std::cout << "intersection: " << t << std::endl;
+			}
+		}
+	}
+
 	void run_intersect_test(libMesh::LibMeshInit &init)
 	{
-		intersect_hex_with_polygon_test();
-		intersect_tet_with_polygon_test_1();
-		intersect_tet_with_polygon_test_2();
-		intersect_tet_with_polygon_test_3();
-		intersect_convex_polyhedra_test();
+		UTOPIA_UNIT_TEST_BEGIN("IntersectTest");
+
+		intesect_ray_elem_tet(init.comm());
+
+		UTOPIA_RUN_TEST(intersect_hex_with_polygon_test);
+		UTOPIA_RUN_TEST(intersect_tet_with_polygon_test_1);
+		UTOPIA_RUN_TEST(intersect_tet_with_polygon_test_2);
+		UTOPIA_RUN_TEST(intersect_tet_with_polygon_test_3);
+		UTOPIA_RUN_TEST(intersect_convex_polyhedra_test);
+
+		UTOPIA_UNIT_TEST_END("IntersectTest");
 	}
 }
