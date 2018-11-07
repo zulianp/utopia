@@ -17,6 +17,13 @@ namespace utopia {
 	static const int ON_EDGE = 2;
 	static const int OUTSIDE = 0;
 
+	inline static void rescale_weights(const double factor, QMortar &q)
+	{
+		for(auto &w : q.get_weights()) {
+			w *= factor;
+		}
+	}
+
 	inline bool intersect_convex_polygon_with_polyline(
 		const SizeType n_vertices_1,
 		const Scalar *polygon_1,
@@ -230,6 +237,8 @@ namespace utopia {
 
 		transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
 		transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
+
+		rescale_weights(len_v/len_u, q_trial);
 		return true;
 	}
 
@@ -263,18 +272,20 @@ namespace utopia {
 				intersection.get_values() = intersection_temp;
 
 				total_intersection_volume += polyline_length(n_res_pts, &intersection.get_values()[0]);
-				const Scalar weight = polyline_length(test_pts.n(), &test_pts.get_values()[0]);
+				const Scalar slave_volume = polyline_length(test_pts.n(), &test_pts.get_values()[0]);
 
 				const int order = order_for_l2_integral(2, trial, trial_type.order, test, test_type.order);
 
 				auto trial_trans  = std::make_shared<AffineTransform2>(trial);
 				auto test_trans   = std::make_shared<Transform1>(test);
 
-				make_composite_quadrature_on_surf_2D(intersection, 1./weight, order, composite_ir);
+				make_composite_quadrature_on_surf_2D(intersection, 1./slave_volume, order, composite_ir);
 
 				transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
 				transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
-					
+
+				// auto master_volume = Intersector::polygon_area_2(trial_pts.m(), &trial_pts.get_values()[0]);
+				// rescale_weights(slave_volume/trial_volume, q_trial);
 				return true;
 			}
 
@@ -290,12 +301,12 @@ namespace utopia {
 			
 			total_intersection_volume += isect_area;
 			
-			const libMesh::Real weight = Intersector::polygon_area_2(test_pts.m(), &test_pts.get_values()[0]);
+			const libMesh::Real slave_volume = Intersector::polygon_area_2(test_pts.m(), &test_pts.get_values()[0]);
 
-			assert(isect_area <= weight + 1e-6);
+			// assert(isect_area <= slave_volume + 1e-6);
 
 			const int order = order_for_l2_integral(2, trial, trial_type.order, test, test_type.order);
-			make_composite_quadrature_2D(intersection, 1./weight, order, composite_ir);
+			make_composite_quadrature_2D(intersection, 1./slave_volume, order, composite_ir);
 			
 			auto trial_trans  = std::make_shared<AffineTransform2>(trial);
 			auto test_trans   = std::make_shared<AffineTransform2>(test);
@@ -303,8 +314,8 @@ namespace utopia {
 			transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
 			transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
 
-			// static int n_isect = 0;
-			// plot_polygon(2, intersection.m(),  &intersection.get_values()[0],  "poly/isect"  + std::to_string(n_isect++));
+			// auto master_volume = Intersector::polygon_area_2(trial_pts.m(), &trial_pts.get_values()[0]);
+			// rescale_weights(slave_volume/trial_volume, q_trial);
 			return true;
 		} else {
 			return false;
@@ -337,9 +348,9 @@ namespace utopia {
 		}
 
 		const int order = order_for_l2_integral(2, trial, trial_type.order, test, test_type.order);
-		const Scalar weight = Intersector::polygon_area_3(test_pts.m(), &test_pts.get_values()[0]);
+		const Scalar slave_volume = Intersector::polygon_area_3(test_pts.m(), &test_pts.get_values()[0]);
 		
-		make_composite_quadrature_on_surf_3D(intersection, 1./weight, order, composite_ir);
+		make_composite_quadrature_on_surf_3D(intersection, 1./slave_volume, order, composite_ir);
 
 		total_intersection_volume += Intersector::polygon_area_3(intersection.m(), &intersection.get_values()[0]);
 		
@@ -348,6 +359,9 @@ namespace utopia {
 
 		transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
 		transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
+
+		// const double trial_volume = Intersector::polygon_area_3(trial_pts.m(), &trial_pts.get_values()[0]);
+		// rescale_weights(slave_volume/trial_volume, q_trial);
 		return true;
 	}
 
@@ -434,9 +448,9 @@ namespace utopia {
 			const auto isect_volume = compute_volume(intersection);
 			total_intersection_volume += isect_volume;
 			
-			const libMesh::Real weight = compute_volume(test_poly);
+			const libMesh::Real slave_volume = compute_volume(test_poly);
 
-			assert(isect_volume <= weight + 1e-6);
+			assert(isect_volume <= slave_volume + 5e-4);
 
 			std::shared_ptr<Transform> trial_trans, test_trans;
 
@@ -459,15 +473,17 @@ namespace utopia {
 			if(vol2surf) {
 				shell_poly.resize(intersection.n_nodes, 3);
 				std::copy(intersection.points, intersection.points + intersection.n_nodes * intersection.n_dims, &shell_poly.get_values()[0]);
-				make_composite_quadrature_on_surf_3D(shell_poly, 1./weight, order, composite_ir);
+				make_composite_quadrature_on_surf_3D(shell_poly, 1./slave_volume, order, composite_ir);
 
 			} else {
-				make_composite_quadrature_3D(intersection, 1./weight, order, composite_ir);
+				make_composite_quadrature_3D(intersection, 1./slave_volume, order, composite_ir);
 			}
 
 			transform_to_reference(*trial_trans, trial.type(), composite_ir, q_trial);
 			transform_to_reference(*test_trans,  test.type(),  composite_ir, q_test);
 
+			const double trial_volume = compute_volume(trial_poly);
+			rescale_weights(slave_volume/trial_volume, q_trial);
 			return true;
 		} else {
 			return false;

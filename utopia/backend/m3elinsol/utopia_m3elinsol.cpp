@@ -212,52 +212,52 @@ namespace utopia {
 		//FIXME is there a way to read from handle what was the setting?
 
 		int problemlevel = 1;
-		in.read("ProblemLevel", problemlevel);
+		in.get("ProblemLevel", problemlevel);
 		M3Elinsol_ASPAMG_SetProblemLevel(&handle, problemlevel);
 		
 		int smtnstep = 5;
-		in.read("SmtNstep", smtnstep);
+		in.get("SmtNstep", smtnstep);
 		M3Elinsol_ASPAMG_SetSmtNstep(&handle, smtnstep);
 		
 		int smtnu = 1;
-		in.read("SmtNu", smtnu);
+		in.get("SmtNu", smtnu);
 		M3Elinsol_ASPAMG_SetSmtNu(&handle, smtnu);
 		
 		int tspmethod = 1;
-		in.read("TspMethod", tspmethod);
+		in.get("TspMethod", tspmethod);
 		M3Elinsol_ASPAMG_SetTspMethod(&handle, tspmethod);
 		
 		int tspntvecs = 5;
-		in.read("TspNtvecs", tspntvecs);
+		in.get("TspNtvecs", tspntvecs);
 		M3Elinsol_ASPAMG_SetTspNtvecs(&handle, tspntvecs);
 		
 		int tspmaxit = 50;
-		in.read("TspMaxit", tspmaxit);
+		in.get("TspMaxit", tspmaxit);
 		M3Elinsol_ASPAMG_SetTspMaxit(&handle, tspmaxit);
 		
 		double csntheta = 0.5;
-		in.read("CsnTheta", csntheta);
+		in.get("CsnTheta", csntheta);
 		M3Elinsol_ASPAMG_SetCsnTheta(&handle, csntheta);
 		
 		int prlnnzrmax = 4;
-		in.read("PrlNnzrmax", prlnnzrmax);
+		in.get("PrlNnzrmax", prlnnzrmax);
 		M3Elinsol_ASPAMG_SetPrlNnzrmax(&handle, prlnnzrmax);
 		
 		int amgmaxlvls = 10;
-		in.read("AmgMaxlvls", amgmaxlvls);
+		in.get("AmgMaxlvls", amgmaxlvls);
 		M3Elinsol_ASPAMG_SetAmgMaxlvls(&handle, amgmaxlvls);
 		
 		int amgmaxcsize = 20;
-		in.read("AmgMaxcsize", amgmaxcsize);
+		in.get("AmgMaxcsize", amgmaxcsize);
 		M3Elinsol_ASPAMG_SetAmgMaxcsize(&handle, amgmaxcsize);
 		
 		// Set Solver Options
 		double pcgrelconvtol = 1e-9;
-		in.read("PcgRelConvTol", pcgrelconvtol);
+		in.get("PcgRelConvTol", pcgrelconvtol);
 		M3Elinsol_ASPAMG_SetPcgRelConvTol(&handle, pcgrelconvtol);
 
 		int pcgmaxiter = 800;
-		in.read("PcgMaxIter", pcgmaxiter);
+		in.get("PcgMaxIter", pcgmaxiter);
 		M3Elinsol_ASPAMG_SetPcgMaxIter(&handle, pcgmaxiter);
 	}
 

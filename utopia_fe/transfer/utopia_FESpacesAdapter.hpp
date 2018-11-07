@@ -198,7 +198,7 @@ template<class Iterator>
 // Estimate for allocation
         os.request_space( (n_elements * 8 + n_nodes * dim) * (sizeof(double) + sizeof(long)) );
 
-//WRITE 1
+        //WRITE 1
         os << dim << role;
 
 
@@ -207,10 +207,10 @@ template<class Iterator>
             mapping[nodeId] = index++;
         }
 
-//WRITE 2
+        //WRITE 2
         os << n_nodes;
 
-//WRITE 6
+        //WRITE 6
         os << n_elements;
 
         for(auto node_id : nodeIds){
@@ -219,7 +219,7 @@ template<class Iterator>
 
             for(int i = 0; i < LIBMESH_DIM; ++i) {
 
-//WRITE 3
+                //WRITE 3
                 os << p(i);
 
             }
@@ -240,7 +240,7 @@ template<class Iterator>
 
             const int type = elem->type();
 
-//WRITE 7
+            //WRITE 7
             os << type << e_n_nodes;
 
             for (int i = 0; i != e_n_nodes; ++i) {
@@ -251,25 +251,22 @@ template<class Iterator>
 
                 int index = it->second;
 
-//WRITE 8
+                //WRITE 8
                 os << index;
 
             }
 
-//WRITE 9
+            //WRITE 9
             assert(!dof_map.at(local_element_id).empty());
             os << dof_map.at(local_element_id);
-//Volume Tag
+            //WRITE 10
             int volume_tag=elem->subdomain_id();
             os << volume_tag;
         }
 
         CHECK_STREAM_WRITE_END("elements", os);
 
-//WRITE 10
-//        os << variable_number.at(0);
-
-//WRITE 11
+        //WRITE 11
         os << variable_order.at(0);
     }
 
@@ -358,17 +355,15 @@ template<class Iterator>
 
         using namespace std;
 
-
-
-//READ 1
+        //READ 1
         int dim, role;
         is >> dim >> role;
 
-//READ 2
+        //READ 2
         long n_nodes;
         is >> n_nodes;
 
-//READ 6
+        //READ 6
         long n_elements;
         is >> n_elements;
 
@@ -381,7 +376,7 @@ template<class Iterator>
             libMesh::Point p;
 
             for(int j = 0; j < LIBMESH_DIM; ++j) {
-//READ 3
+                //READ 3
                 is >> p(j);
             }
 
@@ -397,7 +392,7 @@ template<class Iterator>
 
         for(long i = 0; i !=n_elements; ++i) {
             handle_to_element_id[i] = i; 
-//READ 7
+            //READ 7
 
             int type, e_n_nodes;
 
@@ -410,24 +405,20 @@ template<class Iterator>
 
             for (int ii = 0; ii != e_n_nodes; ++ii) {
 
-//READ 8
+                //READ 8
                 is >> index;
 
                 elem->set_node(ii) = & mesh_ptr->node(index);
-                
-                
-
             }
             
             mesh_ptr->add_elem(elem);
             
             libmesh_assert(elem);
 
-//READ 9
+            //READ 9
             is >> dof_map.at(i);
             
-//Set Volume Tag
-            
+            //READ 10
             int volume_tag;
             
             is >> volume_tag;
@@ -437,16 +428,10 @@ template<class Iterator>
 
         CHECK_STREAM_READ_END("elements", is);
 
-//READ 10
-//  variable_number.resize(1);
-//  is >> variable_number.at(0);
-
-//READ 11
+        //READ 11
         variable_order.resize(1);
         is >> variable_order.at(0);
-
         space = mesh_ptr;
-
     }
 
     static void read_spaces(
